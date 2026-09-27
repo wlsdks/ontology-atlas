@@ -2,6 +2,8 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { extname, join, relative } from "node:path";
 
+import { blankComments } from "./quality/source-language/inventory.mjs";
+
 export const DEFAULT_ONTOLOGY_DESIGN_TARGET_DIRS = [
   "src/views/docs-vault",
   "src/widgets/docs-vault",
@@ -39,41 +41,6 @@ export const ONTOLOGY_DESIGN_FORBIDDEN_CHECKS = [
       "The node detail classification card uses a compact marker and neutral divider instead of a full-height colored rail.",
   },
 ];
-
-// Blank out comment content (both `/* … */` blocks — including JSX `{/* … */}` —
-// and `//` line comments) while preserving character positions, so line/column
-// reporting stays accurate. A design gate scans styling CODE, not prose comments
-// that merely mention a forbidden token to explain it is deliberately avoided.
-export function blankComments(source) {
-  let out = "";
-  let i = 0;
-  let state = "code"; // code | block | line | string
-  let quote = "";
-  while (i < source.length) {
-    const c = source[i];
-    const next = source[i + 1];
-    if (state === "code") {
-      if (c === "/" && next === "*") { out += "  "; i += 2; state = "block"; continue; }
-      // `//` line comment, but not `://` (URLs like https://).
-      if (c === "/" && next === "/" && source[i - 1] !== ":") { out += "  "; i += 2; state = "line"; continue; }
-      if (c === '"' || c === "'" || c === "`") { quote = c; state = "string"; out += c; i += 1; continue; }
-      out += c; i += 1; continue;
-    }
-    if (state === "string") {
-      if (c === "\\") { out += source.slice(i, i + 2); i += 2; continue; }
-      if (c === quote) { state = "code"; }
-      out += c; i += 1; continue;
-    }
-    if (state === "block") {
-      if (c === "*" && next === "/") { out += "  "; i += 2; state = "code"; continue; }
-      out += c === "\n" ? "\n" : " "; i += 1; continue;
-    }
-    // line comment
-    if (c === "\n") { out += "\n"; i += 1; state = "code"; continue; }
-    out += " "; i += 1;
-  }
-  return out;
-}
 
 export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
   {
@@ -220,7 +187,8 @@ export function findForbiddenPatternViolations({
 }) {
   const rawSource = readFileSync(file, "utf8");
   const rawLines = rawSource.split(/\r?\n/);
-  const lines = blankComments(rawSource).split(/\r?\n/);
+  // The gate judges styling code; a comment that names a forbidden token to explain its absence is not a use.
+  const lines = blankComments(file, rawSource).split(/\r?\n/);
   const violations = [];
 
   lines.forEach((line, lineIndex) => {
@@ -251,7 +219,7 @@ export function findRequiredMarkerViolations({
   for (const requirement of requiredSurfaceMarkers) {
     const files = requirement.files ?? [requirement.file];
     const source = files
-      .map((file) => readFileSync(join(root, file), "utf8"))
+      .map((file) => blankComments(file, readFileSync(join(root, file), "utf8")))
       .join("\n");
     for (const marker of requirement.markers) {
       if (source.includes(marker)) continue;

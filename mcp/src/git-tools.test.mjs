@@ -534,7 +534,7 @@ test('inspectVaultGit preserves unicode and spaces as usable paths', () => {
 test('collectPathLastChanges resolves cited paths against the caller\'s repoRoot, not the Git toplevel', () => {
   const { root } = makeRepo();
   try {
-    // A package inside a repository: its vault and its `path:` values are its own, not the toplevel's.
+    // A package inside a repository: its vault and `path:` values are its own, not the toplevel's.
     const pkg = join(root, 'packages', 'app');
     mkdirSync(join(pkg, 'src'), { recursive: true });
     const vault = join(pkg, 'vault');

@@ -65,8 +65,8 @@ export function parseArgs(argv) {
 /** A release tag, not a bare version: the artifact URL is built from it. */
 export function tagProblems(tag) {
   if (!tag) return ['--tag is required when writing server.json (for example --tag=v1.1.0)'];
-  if (!/^v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(tag)) {
-    return [`--tag must look like v1.2.3 or v1.2.3-rc.1, received ${tag}`];
+  if (!/^v\d+\.\d+\.\d+$/.test(tag)) {
+    return [`--tag must look like v1.2.3, received ${tag}`];
   }
   return [];
 }

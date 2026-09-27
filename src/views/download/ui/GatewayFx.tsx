@@ -5,34 +5,11 @@ import { useEffect, useRef } from 'react';
 import { registerGatewayFrameClient } from '../lib/gateway-frame-loop';
 
 /**
- * The gateway's effect layer — **the current field, the grain, and the custom cursor ring.**
- *
- * This is the one explicit exception to the charter's ban on animated gradient backgrounds
- * (`.claude/rules/forbidden.md`, the design section — same form as the footprint bloom). Four
- * conditions: ① it lives only inside `.gateway-fx-stage` (the gateway) ② its alpha ceilings are
- * locked by `--gateway-fx-*` tokens (light 0.14, grain 0.05, motes 0.28) ③ the first second paints
- * in a still state and only then does ambient motion begin (the first-three-seconds rule — the
- * background must not disturb the headline's entrance) ④ under reduced-motion the rAF loop does
- * not run at all (one still frame).
- *
- * Frames come from the gateway's shared loop (`gateway-frame-loop.ts`) — the same single rAF as
- * the hero object, decelerating over a 2s ramp and sleeping after 30s of no input (the map's
- * `ambient-sleep.ts` contract verbatim). Any input restores it on the next frame.
- * Gates: `tests/contract/gateway-fx-exception.contract.test.ts` plus the gateway-fx scope selector
- * in `eslint.config.mjs`.
- *
- * ## The cursor ring
- *
- * It **does not remove** the native cursor — there is no `cursor: none`, and the pointer
- * affordance contract (`tests/e2e/cursor-affordance.spec.ts`) is untouched. The ring carries one
- * piece of information: "expanded plus accent tint = what is under the pointer is pressable".
- * 28px at rest, 44px over an interactive target. Under `pointer: coarse` CSS hides it entirely (a
- * finger has no cursor). Under reduced-motion it attaches instantly with no lerp.
- *
- * ## The accent
- *
- * The light's colour reads the computed `--color-indigo-brand` at mount — the token is named
- * indigo but its value follows the accent switch (indigo ↔ amber). No hex is written into the code.
+ * The gateway's light field, grain and cursor ring. Only inside `.gateway-fx-stage`, alpha capped
+ * by `--gateway-fx-*` tokens, still for the first second so the headline enters undisturbed, one
+ * still frame under reduced motion (`tests/contract/gateway-fx-reduced-motion.contract.test.ts`).
+ * The ring never hides the native cursor (`tests/e2e/cursor-affordance.spec.ts`); it grows over
+ * pressable targets.
  */
 export function GatewayFx() {
   const fieldRef = useRef<HTMLCanvasElement | null>(null);
@@ -68,13 +45,7 @@ export function GatewayFx() {
     const dustRaw = styles.getPropertyValue('--gateway-fx-dust').trim() || '#ececf0';
     const dustInk = dustRaw.startsWith('#') ? hexRgb(dustRaw) : ([236, 236, 240] as const);
 
-    /**
-     * A low-resolution buffer (0.5×, dpr pinned to 1) — this layer's ink is **inherently blurred
-     * radial light**, so pixel density adds no information. Drawing at full resolution every frame
-     * makes compositing cost slow the whole page where there is no GPU (headless e2e, low-end
-     * machines) — measured, the hover audit hit a 60s timeout. The motes (1–3px) soften slightly
-     * under upscaling, which if anything makes them more mote-like.
-     */
+    /** Blurred light gains nothing from density, and full resolution slows GPU-less pages to a crawl. */
     const BUFFER_SCALE = 0.5;
     let W = 0;
     let H = 0;
@@ -89,17 +60,12 @@ export function GatewayFx() {
     }
     size();
 
-    // Three low-luminance lights — relative weights (1 / .64 / .5) used only multiplied by the alpha ceiling.
+    // Weights stay at most 1: they multiply the `--gateway-fx-blob-alpha` ceiling, the cap.
     const blobs = [
       { w: 1, r: 0.46, cx: 0.26, cy: 0.34, sp: 1.0, ph: 0, follow: false },
       { w: 0.64, r: 0.52, cx: 0.76, cy: 0.22, sp: 0.66, ph: 2.2, follow: false },
       { w: 0.5, r: 0.6, cx: 0.52, cy: 0.92, sp: 0.5, ph: 4.4, follow: false },
-      /*
-       * The fourth light follows the hand (2026-09-02). Same ink, same ceiling (`w` < 1 keeps it
-       * under `--gateway-fx-blob-alpha`), no new colour: the field answers where the pointer is,
-       * trailing it with inertia so the light reads as weather, not a cursor. Fine pointers only;
-       * a finger has no resting position, and reduced motion paints one still frame anyway.
-       */
+      /* Trails a fine pointer with inertia so it reads as weather, not a cursor. */
       { w: 0.5, r: 0.3, cx: 0.5, cy: 0.45, sp: 0, ph: 0, follow: true },
     ];
     let handX = 0.5;
@@ -117,22 +83,16 @@ export function GatewayFx() {
       x: Math.random(),
       y: Math.random(),
       s: 0.3 + Math.random() * 1.1,
-      a: 0.2 + Math.random() * 0.8, // relative weight — used only multiplied by the alpha ceiling
+      a: 0.2 + Math.random() * 0.8,
       vx: -0.008 - Math.random() * 0.012,
       vy: -0.004 - Math.random() * 0.01,
       tw: Math.random() * 6.28,
     }));
-    // Target intensity per section — bright in the hero, subdued in the body, up slightly again lower down.
-    const KEY = [1, 0.42, 0.3, 0.36, 0.55];
+    const SECTION_INTENSITY = [1, 0.42, 0.3, 0.36, 0.55];
     let intensity = 1;
-    let ambient = 0; // 0→1 after 1000ms (the first-three-seconds rule)
+    let ambient = 0;
 
-    /**
-     * This page's scroller is not `window` but **the app shell's body slot** (an `overflow-y: auto`
-     * div) — reading `scrollY` always gives 0, pinning the per-section intensity at the hero's value
-     * (measured 2026-08-18). The canvas's scrolling ancestor is found once, falling back to `window`
-     * if the structure changes.
-     */
+    /** The scroller is the app shell's body slot, where `scrollY` is always 0; `window` is the fallback. */
     let scrollHost: HTMLElement | null | undefined;
     const readScrollTop = (): number => {
       if (scrollHost === undefined) {
@@ -150,10 +110,10 @@ export function GatewayFx() {
 
     function targetIntensity(): number {
       const p = readScrollTop() / Math.max(1, innerHeight);
-      const i = Math.min(Math.floor(p), KEY.length - 1);
+      const i = Math.min(Math.floor(p), SECTION_INTENSITY.length - 1);
       const f = Math.min(p - i, 1);
-      const next = KEY[Math.min(i + 1, KEY.length - 1)];
-      return KEY[i] + (next - KEY[i]) * f;
+      const next = SECTION_INTENSITY[Math.min(i + 1, SECTION_INTENSITY.length - 1)];
+      return SECTION_INTENSITY[i] + (next - SECTION_INTENSITY[i]) * f;
     }
 
     let lastT = 0;
@@ -165,8 +125,7 @@ export function GatewayFx() {
       for (const b of blobs) {
         if (b.follow) {
           if (!handSeen) continue;
-          // Time-based (council, 2026-09-02): the field paints every ~33ms, so the follower
-          // eases by 1 − e^(−dt/370ms) per paint, the same on a 60Hz and a 120Hz panel.
+          // Time-based, so it eases the same on 60Hz and 120Hz panels.
           const k = 1 - Math.exp(-(t - lastT) / 370);
           b.cx += (handX - b.cx) * k;
           b.cy += (handY - b.cy) * k;
@@ -210,39 +169,34 @@ export function GatewayFx() {
     addEventListener('resize', onResize);
 
     if (reduced) {
-      draw(0); // a background, but permanently still
+      draw(0);
     } else {
-      draw(0); // 0–150ms: paint in the still state
+      draw(0);
       startTimer = window.setTimeout(() => {
         let ampTime = 0;
         let lastPaint = 0;
-        // Ride the gateway's shared loop — the same single rAF as the hero object. Ambient sleep
-        // (after 30s of no input, decelerate over a 2s ramp → stop → skip frames) is owned by the
-        // driver. See the `gateway-frame-loop.ts` doc-block.
         unregisterFrame = registerGatewayFrameClient(({ t, dtMs, factor }) => {
           if (disposed) return;
-          ambient = Math.min(ambient + dtMs / 1500, 1); // 1.5s ease-in
-          // An accumulated clock with no phase jump — the sleep factor multiplies «speed», so drift
-          // and twinkle decelerate to a stop and any input returns the factor to 1 on the next frame.
+          ambient = Math.min(ambient + dtMs / 1500, 1);
+          // The sleep factor scales speed, so idle decelerates to a stop without a phase jump.
           ampTime += dtMs * ambient * factor;
           fxLoopLive = true;
-          // 30fps is enough for the ambient layer — for drift with a period of tens of seconds,
-          // 60fps is power rather than information. Only the cursor follows every frame (that is the hand's work).
+          // 30fps for drift with a period of tens of seconds; only the cursor follows every frame.
           if (t - lastPaint >= 33) {
             lastPaint = t;
             draw(ampTime);
           }
-          cursorTick?.(); // cursor lerp — the same rAF, no separate loop
+          cursorTick?.();
         });
-      }, 1000); // 1000ms: ambient motion eases in (the first-three-seconds rule)
+      }, 1000);
     }
 
-    // ── The cursor ring — pointer: fine only, hidden on blur or leave, translate3d only ──
-    const cur = cursorRef.current;
+    // translate3d only, so following the pointer never lays out the page.
+    const ringHost = cursorRef.current;
     let cleanupCursor: (() => void) | null = null;
-    if (cur && typeof matchMedia === 'function' && matchMedia('(pointer: fine)').matches) {
-      const ring = cur.firstElementChild as HTMLElement | null;
-      cur.classList.add('is-live');
+    if (ringHost && typeof matchMedia === 'function' && matchMedia('(pointer: fine)').matches) {
+      const ring = ringHost.firstElementChild as HTMLElement | null;
+      ringHost.classList.add('is-live');
       let tx = innerWidth / 2;
       let ty = innerHeight / 2;
       let cx = tx;
@@ -250,19 +204,18 @@ export function GatewayFx() {
       const HOT =
         'a,button,[role="button"],video,summary,input,select,textarea,label';
       const put = (): void => {
-        cur.style.transform = `translate3d(${cx}px,${cy}px,0)`;
+        ringHost.style.transform = `translate3d(${cx}px,${cy}px,0)`;
       };
       const onPointerMove = (e: PointerEvent): void => {
         tx = e.clientX;
         ty = e.clientY;
-        // With no loop (reduced-motion, or the first second) or before it starts, it attaches
-        // instantly — a laggy cursor is not an equivalent for a reduced-motion user, it is a defect.
+        // Without the loop it attaches instantly: a lagging cursor under reduced motion is a defect.
         if (!fxLoopLive || reduced) {
           cx = tx;
           cy = ty;
           put();
         }
-        cur.classList.add('is-on');
+        ringHost.classList.add('is-on');
         const target = e.target as Element | null;
         ring?.classList.toggle('is-hot', Boolean(target?.closest?.(HOT)));
       };
@@ -271,8 +224,8 @@ export function GatewayFx() {
         cy += (ty - cy) * 0.3;
         put();
       };
-      const onBlur = (): void => cur.classList.remove('is-on');
-      const onLeave = (): void => cur.classList.remove('is-on');
+      const onBlur = (): void => ringHost.classList.remove('is-on');
+      const onLeave = (): void => ringHost.classList.remove('is-on');
       addEventListener('pointermove', onPointerMove, { passive: true });
       addEventListener('blur', onBlur);
       document.documentElement.addEventListener('mouseleave', onLeave);

@@ -462,8 +462,8 @@ function reviewPage(projection, start, count) {
 }
 
 /**
- * Project the already-loaded graph/source inventory into a bounded human review packet.
- * This function never upgrades a competency answer and never carries private source coordinates.
+ * A bounded human review packet from the loaded graph and source inventory. It
+ * never upgrades an answer and never carries private source coordinates.
  */
 export function buildMeaningRepair(input = {}) {
   const projection = buildProjection(input);

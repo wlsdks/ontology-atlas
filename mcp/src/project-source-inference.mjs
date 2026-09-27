@@ -1,35 +1,12 @@
 /**
- * Project source inference — the pure half.
- *
- * Canonical implementation shared by the MCP server, the CLI, and the browser
- * bridge (`src/shared/lib/project-source-inference.mjs`). Nothing here touches
- * the filesystem: callers collect candidates however their runtime can (node
- * `fs` + `git rev-parse` in `project-source-discovery.mjs`; a single Tauri
- * `inspect_project_source` call in the app, which already climbs to the git
- * root) and hand them to `inferProjectSourceProposal` for the ranking, the
- * confidence, and the reason.
- *
- * Why the rules are what they are:
- *
- *   1. `enclosing_git_repository` outranks everything. A repository root is a
- *      declared, machine-verifiable boundary that the person already drew —
- *      not a guess — and the bounded source probe (`inspectProjectSource`,
- *      `src-tauri/src/lib.rs`) normalizes to it anyway, so proposing anything
- *      *inside* a repo would be measured as the repo regardless.
- *   2. `ancestor_project_manifest` is the fallback for vaults that live in a
- *      plain folder. The **nearest** manifest-bearing ancestor wins, never the
- *      outermost: over-reaching proposes a parent directory holding unrelated
- *      projects, and a too-narrow root is visible in the witness count while a
- *      too-wide one silently passes.
- *   3. Nothing nominates a root by node `path:` values. They are repo-relative,
- *      so they cannot identify an absolute root; they are used to *score* the
- *      nominee instead (`witnessSummary`), by the same function that mints the
- *      receipt. Nomination and scoring stay separate on purpose — one bad
- *      `path:` must not move the root.
- *
- * The proposal is never self-confirming. It names a candidate and how well the
- * declared implementation paths land in it; a human or an explicit `confirm`
- * writes the binding.
+ * Project source inference, the pure half shared by the MCP server, the CLI and
+ * the browser bridge (`src/shared/lib/project-source-inference.mjs`). Callers
+ * collect candidates (`project-source-discovery.mjs`, or the
+ * app's `inspect_project_source`); this ranks them. An enclosing git repository wins
+ * (a boundary the person drew, and the probe normalizes to it anyway); else the
+ * nearest manifest-bearing ancestor, never the outermost, since a too-wide root
+ * passes silently. Node `path:` values only score the nominee, so one bad path
+ * cannot move the root. Never self-confirming: a person or `confirm` writes it.
  */
 
 const PROJECT_SOURCE_INFERENCE_CONTRACT = 'projectSourceInference:v1';
@@ -85,9 +62,8 @@ function normalizeCandidate(value) {
 }
 
 /**
- * Deterministic candidate order: marker rank, then nearest to the vault, then
- * path. Exported so the CLI/UI can list alternatives in the same order the
- * chooser used — "why not that one" has to be answerable.
+ * Marker rank, then nearest to the vault, then path; exported so the CLI and UI
+ * list alternatives in the chooser's order.
  */
 export function rankProjectSourceCandidates(candidates) {
   return (Array.isArray(candidates) ? candidates : [])
@@ -111,10 +87,9 @@ function supportRatio(witnessSummary) {
 }
 
 /**
- * Confidence is a statement about the *evidence*, never about the model's
- * feelings. A git root whose declared paths land is `high`; a git root nobody
- * can check yet is `medium`; anything a manifest nominated needs the paths to
- * land before it is better than `low`.
+ * Confidence describes the evidence: a git root whose declared paths land
+ * is `high`, an uncheckable git root `medium`, a manifest nominee `low` until
+ * its paths land.
  */
 export function rateProjectSourceCandidate(candidate, witnessSummary) {
   if (!candidate) return 'low';

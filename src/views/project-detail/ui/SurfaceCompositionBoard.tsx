@@ -6,19 +6,9 @@ import { controlClass } from "@/shared/ui/control-class";
 import type { SurfaceCell } from "../model/surface-composition";
 
 /**
- * The project's composition across Atlas's own surfaces, as the page's first block.
- *
- * The shape is a catalog entity's plugin cards (Backstage draws one small card per surface, each
- * with its headline and its door) rather than a dashboard of equal tiles: a project *is* its
- * ontology, so that cell is the wide one and the Library and Harness stand beside it. One
- * attention winner is the rule this page had lost — five figures at one weight read as
- * "everything matters, so nothing does".
- *
- * **Every cell is the same height and its door sits on the same line**, whatever its copy
- * length. Cards whose heights vary only because their copy differs is a named don't
- * (`forbidden.md`), and it is exactly what the owner saw as the page looking crooked
- * (2026-09-19). The grid gives each cell `grid-rows-[auto_1fr_auto]`: heading, body that takes
- * the slack, door at the bottom.
+ * One card per surface, the ontology wide. Cells share a height and a door line whatever their
+ * copy (`.claude/rules/forbidden.md`, content-decided card height). No proportion bar over the
+ * totals: they form a containment pyramid, not parts of a whole.
  */
 export function SurfaceCompositionBoard({
   cells,
@@ -27,11 +17,7 @@ export function SurfaceCompositionBoard({
 }: {
   cells: readonly SurfaceCell[];
   titles: Record<SurfaceCell["id"], string>;
-  /**
-   * A cell without a label draws no door. The ontology cell's door would be the map, which the
-   * hero's primary action already opens one block above (2026-09-25, round three: "View on the
-   * map" and "Open on the map" stood ~100px apart on one address).
-   */
+  /** A cell without a label draws no door. */
   openLabels: Partial<Record<SurfaceCell["id"], string>>;
 }) {
   const closesOnNote = (cell: SurfaceCell) =>
@@ -39,12 +25,7 @@ export function SurfaceCompositionBoard({
   return (
     <ul
       data-testid="project-detail-surface-board"
-      /*
-       * Three equal columns once the page column passes 48rem, and the ontology cell worth two of
-       * the others past 64rem: at 1024 the weighted split left the two narrow cells 210px, where a
-       * sentence broke into four lines and the row stopped reading as a band (measured 2026-09-19).
-       * Below 48rem every cell takes the full width and the reading order is the same one.
-       */
+      /* Weighted only past 64rem; earlier it squeezed the narrow cells into four-line sentences. */
       className="grid list-none grid-cols-1 gap-[var(--card-gap)] p-0 @3xl/project-page:grid-cols-3 @5xl/project-page:grid-cols-[2fr_1fr_1fr]"
     >
       {cells.map((cell) => (
@@ -61,13 +42,7 @@ export function SurfaceCompositionBoard({
             {cell.figures.length > 0 ? (
               <dl className="flex flex-wrap items-baseline gap-x-4 gap-y-1.5">
                 {cell.figures.map((figure) => (
-                  /*
-                   * `dt` before `dd` in the document, drawn the other way round. A description
-                   * list groups a term with its description in that order — reversed, "9" is a
-                   * description whose term has not been read yet, and a screen reader pairs them
-                   * wrongly. The figure still reads "9 domains" on screen, because the row is
-                   * reversed visually rather than in the markup.
-                   */
+                  /* Term first in the markup for screen readers; reversed visually to read "9 domains". */
                   <div key={figure.label} className="flex flex-row-reverse items-baseline justify-end gap-1.5">
                     <dt className="text-body text-[color:var(--color-text-tertiary)]">{figure.label}</dt>
                     <dd className="font-mono text-title tabular-nums text-[color:var(--color-text-primary)]">
@@ -86,9 +61,7 @@ export function SurfaceCompositionBoard({
               </p>
             ) : null}
           </div>
-          {/* A cell with figures and no door closes on its note, on the line where its neighbours'
-              doors stand (round four): the ontology cell's "N relations among these concepts" used
-              to sit under the figures with the cell's lower half bare beneath it. */}
+          {/* Without a door the note takes the door line. */}
           {closesOnNote(cell) ? (
             <p
               data-testid="project-detail-surface-note"
@@ -102,14 +75,7 @@ export function SurfaceCompositionBoard({
             href={cell.href}
             prefetch={false}
             data-testid="project-detail-surface-open"
-            /*
-             * The door is the cell's whole point — read the figures, then choose where to go — and
-             * as a text link it has no height token, so it measured 24px on a phone against the
-             * 44px touch contract. `touch-hit-expand` widens the hit area only under
-             * `pointer: coarse` and changes nothing visible, which is the remedy `globals.css`
-             * wrote for text-shaped controls. Safe here because each cell holds one door and the
-             * cards sit a card gap apart, so no two expanded areas can meet.
-             */
+            /* 44px coarse-pointer target; one door per cell a card gap apart, so no expanded areas meet. */
             className={controlClass({ shape: "link", tone: "accent", className: "touch-hit-expand self-end" })}
           >
             {openLabels[cell.id]}

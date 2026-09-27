@@ -21,9 +21,8 @@ const SOURCE_READ_LIMITS = Object.freeze({
   rangeBytes: 8 * 1024,
   aggregateTextBytes: 32 * 1024,
   packetBytes: 64 * 1024,
-  // An outline is a table of contents, so it is bounded like one range of text:
-  // it stops at the declaration ceiling `source-outline.mjs` applies and again
-  // at these bytes, and what it returns counts against the same aggregate.
+  // An outline is bounded like a text range: the declaration ceiling
+  // of `source-outline.mjs`, these bytes, and the same aggregate.
   outlineDeclarations: OUTLINE_DECLARATION_LIMIT,
   outlineBytes: 16 * 1024,
 });
@@ -32,11 +31,8 @@ const SOURCE_EXTENSIONS = new Set([
   '.c', '.cc', '.cpp', '.cs', '.css', '.go', '.h', '.hpp', '.html', '.java',
   '.js', '.jsx', '.kt', '.kts', '.mjs', '.mts', '.php', '.py', '.rb', '.rs',
   '.scss', '.sh', '.swift', '.ts', '.tsx', '.vue', '.zig',
-  // Prose the project ships beside its code. A headless construction run on an
-  // unfamiliar repository (2026-09-21) could cite the README only "by heading
-  // name and line number" because this list refused it, so the project's own
-  // statement of purpose reached the builder through the package manifest
-  // alone. Prose is text under the same byte caps; it is not a manifest.
+  // Prose shipped beside the code (the README's statement of purpose) under the
+  // same byte caps; not a manifest.
   '.markdown', '.md', '.rst', '.txt',
 ]);
 const MANIFESTS = new Set([
@@ -106,9 +102,8 @@ export function validateSourceReadSelectors(selectors) {
       throw new Error(`sourceReads[${index}].path must be at most ${SOURCE_READ_LIMITS.pathCharacters} characters.`);
     }
     if (isOutline(selector)) {
-      // An outline has no range: it lists the whole file's declarations. A
-      // selector that carries one is asking for two different reads at once,
-      // and silently ignoring the range would return lines nobody can see.
+      // An outline lists the whole file; a range with it asks for two reads, and
+      // ignoring the range would return lines nobody sees.
       for (const key of ['startLine', 'maxLines']) {
         if (selector[key] !== undefined) {
           throw new Error(`sourceReads[${index}].${key} does not apply to mode "outline".`);
@@ -221,13 +216,9 @@ function completeLines(text) {
 }
 
 /**
- * One outline row: the file's declarations with their line numbers, so the next
- * bounded read can name an exact range instead of starting at line 1 again.
- *
- * It returns no source text and mints no citation, because a list of names is
- * not evidence of behaviour. The declarations are trimmed to `outlineBytes` and
- * the row says `truncated` when either that budget or the declaration ceiling
- * cut the list short.
+ * One outline row: declarations with line numbers so the next read names an
+ * exact range. No source text and no citation, since names are no evidence of
+ * behaviour; `truncated` when `outlineBytes` or the declaration ceiling cut it.
  */
 function outlineOne(selector, bytes, text, fileLines, fullFileSha256) {
   const outline = outlineSource(text, selector.path);
@@ -336,7 +327,6 @@ export function readSourceEvidence(
   };
   for (const selector of selectors) {
     let row = readOne(rootPath, selector, ignore, { onBeforeOpen, onDescriptorRead });
-    // An outline row is bounded like a text row and spends the same aggregate.
     const delivered = row.status === 'read' || row.status === 'outlined';
     if (delivered && packet.totalReturnedBytes + row.returnedBytes > SOURCE_READ_LIMITS.aggregateTextBytes) {
       row = { ...refuse(selector, 'aggregate_text_budget'), status: 'omitted' };

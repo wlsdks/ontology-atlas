@@ -1,11 +1,23 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  lstatSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
 import { inspectCodexRunContract } from "./lib/codex-run-contract.mjs";
+import { extractCommentTokens } from "./quality/source-language/inventory.mjs";
 
 // The release gates compare a tag against package.json/Tauri/Cargo, so the
 // fixtures have to follow the repo version instead of freezing one.
@@ -425,7 +437,7 @@ test("desktop release helper scripts expose credential-aware help", () => {
   assert.match(verifyDownload.stdout, /exactly one DMG per architecture/);
   assert.match(verifyDownload.stdout, /Intel/);
   assert.match(verifyDownload.stdout, /x64/);
-  assert.match(verifyDownload.stdout, /--allow-prerelease/);
+  assert.doesNotMatch(verifyDownload.stdout, /--allow-prerelease/);
 
   assert.equal(releaseGithub.status, 0, releaseGithub.stderr);
   assert.match(releaseGithub.stdout, /GitHub-side prerequisites/);
@@ -782,6 +794,78 @@ test("desktop readiness check fails readably when a tracked source file disappea
   );
 });
 
+// The repository with `edits` applied to copies; every other entry links back to the real tree.
+function readinessWith(edits) {
+  const repo = process.cwd();
+  const root = mkdtempSync(join(tmpdir(), "desktop-readiness-tree-"));
+  const link = (dir) => {
+    for (const name of readdirSync(join(repo, dir))) symlinkSync(join(repo, dir, name), join(root, dir, name));
+  };
+  try {
+    link("");
+    for (const [file, edit] of Object.entries(edits)) {
+      const parts = file.split("/");
+      for (let depth = 1; depth < parts.length; depth += 1) {
+        const dir = parts.slice(0, depth).join("/");
+        if (lstatSync(join(root, dir)).isSymbolicLink()) {
+          unlinkSync(join(root, dir));
+          mkdirSync(join(root, dir));
+          link(dir);
+        }
+      }
+      const before = readFileSync(join(repo, file), "utf8");
+      const after = edit(before);
+      assert.notEqual(after, before, `the plant did not change ${file}`);
+      unlinkSync(join(root, file));
+      writeFileSync(join(root, file), after);
+    }
+    return spawnSync(process.execPath, [join(repo, "scripts/check-desktop-readiness.mjs")], { cwd: root, encoding: "utf8" });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+const withoutComments = (file, source) =>
+  extractCommentTokens(file, source)
+    .reverse()
+    .reduce((text, { start, end }) => text.slice(0, start) + text.slice(end), source);
+
+test("desktop readiness verdicts survive deleting comments and comments that name a forbidden string", () => {
+  const strip = (file, appended = "") => [file, (source) => withoutComments(file, source) + appended];
+  const result = readinessWith(Object.fromEntries([
+    strip("src/widgets/bottom-tab-bar/lib/is-tab-active.ts", "// normalized === '/' && !hasLoadedVault\n"),
+    strip("src/widgets/topology-controls/ui/TopologyEmptyState.tsx"),
+    strip("src/views/download/model/macos-release.generated.ts"),
+    strip(
+      ".github/workflows/deploy-pages.yml",
+      "# NEXT_PUBLIC_BASE_PATH: /ontology-atlas\n# uses: pnpm/action-setup@v4\n# firebase-tools deploy --only hosting\n",
+    ),
+    strip(".github/workflows/release-macos.yml", "# uses: pnpm/action-setup@v4\n# GITHUB_REF_NAME\n"),
+    ["scripts/check-macos-download-release.mjs", (source) => `${source}// aarch64|x64|universal\n`],
+    ["src/views/download/ui/DownloadPage.tsx", (source) => `${source}// /docs/?intent=local\n`],
+    ["app/[locale]/download/page.tsx", (source) => `${source}// NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING\n`],
+    ["src/shared/lib/tauri-vault-fs.ts", (source) => `${source}// __TAURI_INTERNALS__\n`],
+  ]));
+
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test("desktop readiness does not pass a check on text that survives only in a comment", () => {
+  const result = readinessWith({
+    "src/shared/lib/tauri-vault-fs.ts": (source) =>
+      `${source.replace("from '@tauri-apps/api/core'", "from '@tauri-apps/api/mocks'")}// from '@tauri-apps/api/core'\n`,
+    ".github/workflows/deploy-pages.yml": (source) =>
+      source.replace(/uses: (actions\/setup-node)@([0-9a-f]{40})/g, "uses: $1@v6 # uses: $1@$2"),
+    "src-tauri/src/lib.rs": (source) =>
+      `${source.replaceAll("open_vault_in_finder", "open_vault_elsewhere")}// open_vault_in_finder\n`,
+  });
+
+  assert.equal(result.status, 1);
+  assert.doesNotMatch(result.stdout, /✓ Tauri vault bridge uses the supported JavaScript invoke API/);
+  assert.doesNotMatch(result.stdout, /✓ GitHub Pages workflow builds/);
+  assert.match(result.stderr, /Tauri native vault command bridge is incomplete: missing open_vault_in_finder/);
+});
+
 test("desktop release slot gate rejects an existing same-tag release", () => {
   const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-gh-slot-"));
   const ghPath = join(dir, "gh");
@@ -982,6 +1066,8 @@ test("desktop release tag gate requires the v-prefixed tag to match app versions
   const ok = run(`v${version}`);
   const mismatch = run(`v${otherVersion}`);
   const invalid = run(version);
+  const suffixed = run(`v${version}-rc.1`);
+  const partial = run(`v${major}.${minor}`);
 
   assert.equal(ok.status, 0, ok.stderr);
   assert.match(
@@ -1000,4 +1086,9 @@ test("desktop release tag gate requires the v-prefixed tag to match app versions
 
   assert.equal(invalid.status, 1);
   assert.match(invalid.stderr, /must be v-prefixed/);
+  assert.equal(suffixed.status, 1);
+  assert.match(suffixed.stderr, /pre-release or build suffix/);
+  assert.ok(suffixed.stderr.includes(`tag v${version} instead`), suffixed.stderr);
+  assert.equal(partial.status, 1);
+  assert.match(partial.stderr, /must be vMAJOR\.MINOR\.PATCH/);
 });

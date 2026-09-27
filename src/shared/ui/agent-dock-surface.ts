@@ -1,11 +1,7 @@
 /**
- * The actual conversation surface inside the agent dock next to the map.
- *
- * The outer flex container is merely a layout device that yields to the map width, and
- * the panel the user sees is this single inset surface. Use radius / border /
- * surface / shadow tokens like INDEX·node data sheets so all four sides are visible. `inset-y-3`·`right-3`
- * are 12px steps from the spacing ramp, and the sum of the two horizontal margins equals the existing
- * `--chrome-inset`(24px) so consumers do not need to calculate a new number when computing fixed content width.
+ * The visible conversation surface inside the agent dock; its flex parent only yields to the
+ * map. Its two 12px horizontal margins sum to `--chrome-inset` (24px), so fixed content widths
+ * need no new number.
  */
 export const AGENT_DOCK_INSET_SURFACE_CLASS = [
   "absolute inset-y-3 right-3",

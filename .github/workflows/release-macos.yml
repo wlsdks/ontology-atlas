@@ -69,8 +69,8 @@ jobs:
         run: pnpm desktop:release-tag -- --tag="$RELEASE_TAG"
 
       # The *previous* release's facts must already be on main: this token cannot push them, so
-      # a person lands the uploaded file, and on 2026-08-29 that handoff had been forgotten twice.
-      # At admit time the newest published release is exactly what the facts must describe.
+      # a person lands the uploaded file, and a forgotten handoff leaves /download naming an older
+      # build. At admit time the newest published release is exactly what the facts must describe.
       # **When blocked**: apply the previous run's `ontology-atlas-release-facts-*` artifact, or
       # `pnpm download:release-facts -- --tag=<previous>`, then dispatch again.
       - name: Verify the download page names the newest published release
@@ -150,8 +150,8 @@ jobs:
         with:
           toolchain: stable
 
-      # `bun build --compile` bakes the sidecar and embeds this runtime; the runner has no bun
-      # (`v1.0.0-rc.2` stopped here, #732).
+      # `bun build --compile` bakes the sidecar and embeds this runtime; the runner does not ship
+      # bun. Toolchain installations are gathered at the top.
       - name: Setup Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
@@ -160,10 +160,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # `mcp/` is not a pnpm workspace member and uses its own `node_modules`
-      # (remnant of packages previously published separately to npm). Root install does not install it,
-      # so it exists only on human machines, not runners — `v1.0.0-rc.2` stopped while baking the sidecar
-      # because it could not find `@modelcontextprotocol/sdk`. There is exactly one pinned dependency.
+      # `mcp/` is not a pnpm workspace member and uses its own `node_modules`, which the root
+      # install does not populate on a runner. There is exactly one pinned dependency.
       #
       # Reason for `--frozen-lockfile`: the `package-lock.json` in this folder is **npm's**,
       # and pnpm does not read it. Running without a lock file causes the runner to resolve fresh
@@ -190,10 +188,9 @@ jobs:
 
       # After `tauri.conf.json` declares the MCP sidecar via `externalBin`,
       # **all cargo calls** require that file — not just the bundle step but also the below
-      # `cargo test`, which checks resource paths in the build script. The order of creating
-      # the sidecar only inside `desktop:build:app` stops here first
-      # (2026-07-28 v1.0.0-rc.2 failure). The runner is native architecture, so the host triple
-      # default is correct. The later bundle step calls it again but produces the same output.
+      # `cargo test`, which checks resource paths in the build script, so the sidecar is built
+      # here first. The runner is native architecture, so the host triple default is correct.
+      # The later bundle step calls it again but produces the same output.
       - name: Build bundled MCP sidecar
         run: pnpm mcp:build-binary
 
@@ -602,10 +599,6 @@ jobs:
           tag_name: ${{ needs.admit-release.outputs.release_tag }}
           target_commitish: ${{ needs.admit-release.outputs.release_sha }}
           draft: true
-          # Semver pre-release tags come after the hyphen (v1.1.0-rc.1). That single character
-          # separates "early adopters" from "everyone" — GitHub uses this flag to
-          # attach the Pre-release badge and exclude it from `releases/latest`.
-          prerelease: ${{ contains(needs.admit-release.outputs.release_tag, '-') }}
           generate_release_notes: true
           files: |
             release-assets/*/*.dmg
@@ -703,14 +696,9 @@ jobs:
 
       - name: Publish verified stable release
         run: |
-          # At publish time, the tag is the source of truth. Pinning `--prerelease=false` here
-          # means that as soon as the RC tag leaves draft status, it promotes to a stable release,
-          # completely removing the pre-release indicator.
-          if [[ "${RELEASE_TAG}" == *-* ]]; then
-            gh release edit "${RELEASE_TAG}" --draft=false --prerelease=true
-          else
-            gh release edit "${RELEASE_TAG}" --draft=false --prerelease=false
-          fi
+          # Clears a pre-release flag set by hand on the draft: the hosted updater skips a GitHub
+          # pre-release, and `desktop:verify-download` and `download:release-facts` below refuse one.
+          gh release edit "${RELEASE_TAG}" --draft=false --prerelease=false
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
@@ -721,7 +709,7 @@ jobs:
 
       - name: Generate verified release facts from admitted source
         run: |
-          pnpm download:release-facts -- --tag="${RELEASE_TAG}" --allow-prerelease
+          pnpm download:release-facts -- --tag="${RELEASE_TAG}"
           cp src/views/download/model/macos-release.generated.ts "$RUNNER_TEMP/macos-release.generated.ts"
         env:
           GITHUB_TOKEN: ${{ github.token }}

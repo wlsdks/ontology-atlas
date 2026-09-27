@@ -1,10 +1,7 @@
 /**
- * Tiny in-process compiled graph cache for MCP read sessions.
- *
- * Claude Code / Codex often call query_ontology several times in one run order
- * (workspace_brief -> health -> node_profile -> path). The vault is still the
- * source of truth; this cache only reuses the compiled artifact while the loaded
- * docs have the same slug/mtime/content signature.
+ * In-process compiled graph cache for one MCP session's repeated query_ontology
+ * calls. The vault stays the truth: the artifact is reused only while the docs
+ * keep the same slug, mtime and content signature.
  */
 export function createCompiledOntologyCache({ loadDocs, compile }) {
   let cached = null;
@@ -15,8 +12,8 @@ export function createCompiledOntologyCache({ loadDocs, compile }) {
     return getWithDocs(options).artifact;
   }
 
-  // Always load current bytes, including on a cache hit. Read-only callers can
-  // share these documents through one request without walking the vault again.
+  // Current bytes are loaded even on a hit, so read-only callers can share them
+  // within one request.
   function getWithDocs(options = {}) {
     const docs = loadDocs();
     const signature = docsSignature(docs);

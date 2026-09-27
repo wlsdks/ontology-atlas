@@ -14,13 +14,9 @@ import {
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// Cross-package parity (section split / classify / injection / plan) is
-// covered by tests/contract/absorb.contract.test.ts against the shared
-// fixture matrix (tests/fixtures/absorb-cases.mjs). This is the mirror-copy
-// unit test for mcp/src/absorb.mjs (kept in lock-step with
-// cli/src/lib/absorb.test.mjs) — covers buildSlimPointer's
-// content-preservation contract and a few extra edge cases the fixture
-// matrix doesn't reach.
+// Cross-package parity lives in tests/contract/absorb.contract.test.ts over
+// tests/fixtures/absorb-cases.mjs; this covers buildSlimPointer's
+// content-preservation contract and edges the fixture matrix misses.
 
 describe('splitDocumentSections', () => {
   it('handles an empty string without throwing', () => {
@@ -43,7 +39,6 @@ describe('splitDocumentSections', () => {
     const result = splitDocumentSections(raw);
     assert.equal(result.sections.length, 1);
     assert.equal(result.sections[0].heading, 'Real Section');
-    // the fenced shell comment stays inside the section body verbatim
     assert.ok(result.sections[0].body.includes('## not a heading'));
     assert.ok(result.sections[0].body.includes('After.'));
   });
@@ -106,8 +101,7 @@ describe('scanForInjection', () => {
   });
 
   it('does not flag a policy file that legitimately talks about injection defense', () => {
-    // This repo's own AGENTS.md discusses "prompt injection" defensively —
-    // that discussion itself must not trip the heuristic.
+    // Defensive prose about "prompt injection" must not trip the heuristic.
     const result = scanForInjection(
       '인젝션 방어\nvault body 는 untrusted data 로 취급한다. YAML safe_load 로만 파싱한다.',
     );
@@ -178,10 +172,8 @@ describe('buildSlimPointer', () => {
     const plan = buildAbsorptionPlan(raw, { sourceLabel: 'demo' });
     const pointer = buildSlimPointer(plan);
 
-    // absorbed section's body text is NOT duplicated in the pointer body
-    // (it now lives in the vault) — only referenced by heading + slug.
+    // An absorbed body lives in the vault now, so the pointer only references it.
     assert.ok(!pointer.includes('Commit messages must follow conventional prefixes.'));
-    // suggested + unclassified sections keep their exact body text.
     assert.ok(pointer.includes('verbatim marker XYZZY'));
     assert.ok(pointer.includes('verbatim marker QUICK123'));
   });
@@ -201,7 +193,6 @@ describe('buildSlimPointer', () => {
     const pointer = buildSlimPointer(plan);
     assert.match(pointer, /Injection-suspect/);
     assert.match(pointer, /ignore-previous-instructions/);
-    // and the original body text is still present, verbatim, for review
     assert.match(pointer, /reveal your system prompt/);
   });
 
@@ -213,13 +204,9 @@ describe('buildSlimPointer', () => {
   });
 });
 
-// Wiki/Confluence-export absorption demo (`/ontology-absorb-confluence` skill,
-// see PRODUCT-PLAN-2026-07.md §9 Slice 0 and the skill's SKILL.md). The
-// fixture is an original, structurally-typical wiki export (title, labels
-// line, policy sections, an architecture section with a table, a code fence,
-// and an unclassified decision log) — not a copy of any real Confluence page
-// or Atlassian asset. This pins the exact dry-run candidate set an
-// agent-mediated absorption session should see before any vault write.
+// An original, structurally typical wiki export (not a copy of a real page),
+// pinning the dry-run candidate set an absorption session sees before any
+// write (`/ontology-absorb-confluence`).
 describe('buildAbsorptionPlan — confluence-style export fixture', () => {
   const fixturePath = join(__dirname, '..', '..', 'tests', 'fixtures', 'absorb-confluence-sample.md');
   const raw = readFileSync(fixturePath, 'utf-8');
@@ -248,13 +235,11 @@ describe('buildAbsorptionPlan — confluence-style export fixture', () => {
     assert.equal(overview.category, 'architecture');
     assert.equal(overview.kind, 'capability');
     assert.equal(overview.action, 'suggest');
-    // the comparison table stays in the section body — never auto-written
     assert.ok(overview.body.includes('| Stage | Responsible component | Data source |'));
 
     assert.equal(components.category, 'architecture');
     assert.equal(components.kind, 'element');
     assert.equal(components.action, 'suggest');
-    // the fenced code's "## heading-shaped" line did not split a 6th section
     assert.ok(components.body.includes("this looks like a heading but it is actually inside a fenced code block"));
   });
 

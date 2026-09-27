@@ -29,7 +29,6 @@ describe('the retired /mcp address', () => {
 
   it('carries its own section into the tab and keeps every other parameter', () => {
     expect(buildMcpRedirectHref(new URLSearchParams('tab=connectors'))).toBe('/agents/?tab=mcp&mcp=connectors');
-    // The installed app's deep link: `install` must survive, or the connectors dialog never opens.
     expect(buildMcpRedirectHref(new URLSearchParams('tab=connectors&install=abc&focus=main'))).toBe(
       '/agents/?tab=mcp&mcp=connectors&install=abc&focus=main',
     );

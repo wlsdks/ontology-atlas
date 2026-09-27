@@ -1,10 +1,8 @@
 /**
- * One predicate for the two places that judge whether a capability reaches code:
- * the immediate write-path notice and the durable maintenance queue.
- *
- * `path` is a capability's one canonical repo-relative implementation entrypoint.
- * `hasElementsEdge` means the capability points to a resolved ontology concept.
- * A raw file path must not be smuggled into that graph relation.
+ * Does a capability reach code? Shared by the write-path notice and the
+ * maintenance queue. `path` is its one repo-relative
+ * entrypoint; `hasElementsEdge` means it points to a resolved concept. A raw file path must
+ * not be smuggled into that graph relation.
  */
 export function hasCapabilityImplementationEvidence({
   path,

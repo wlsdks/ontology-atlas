@@ -1,23 +1,10 @@
 /**
- * The cheap step between "which file" and "which lines".
- *
- * The bounded source reader answers "give me lines a through b". Two measured
- * construction runs on unfamiliar repositories showed what that leaves out: a
- * builder facing a 2,000-line file read the first 40-60 lines of every file —
- * imports and the module docstring — and then recorded honestly that "the parse
- * methods were not read" and "I could not find which file defines the
- * suggestion logic", while the function in question lived past line 900 of a
- * single Go file. Both runs answered "the vault does not say" for the behaviour
- * the reader had gone looking for.
- *
- * An outline is the missing middle: the file's declarations with their line
- * numbers, so the next bounded read lands on the right range instead of the
- * head of the file. It is a table of contents, never a claim about behaviour.
- *
- * `outlineSource` is pure and deterministic: it takes text that a caller has
- * already read under the reader's byte caps and never opens a file itself. It
- * is a line scanner, not a parser — a declaration it lists is a literal line in
- * the file, and a declaration it misses is not evidence of absence.
+ * A file's declarations with line numbers, so the next bounded read lands on
+ * the right range instead of the head of a long file. A table of contents,
+ * never a claim about behaviour. `outlineSource` is pure over text the caller
+ * already read; a line scanner, not a parser, so a missed declaration is not
+ * evidence of absence. One pass over lines, but JVM_MEMBER is unanchored, so one
+ * long line (minified Java, Kotlin, C#) costs time quadratic in its length.
  */
 
 /** Declarations per outline. A longer file reports `truncated: true`. */
@@ -48,10 +35,7 @@ const LANGUAGE_BY_EXTENSION = new Map(Object.entries({
   '.tsx': 'typescript',
 }));
 
-/**
- * Words that read like a declaration only because a call and a declaration
- * share the shape `name(`. Without this list `if (ready) {` becomes a method.
- */
+/** Call-shaped words (`name(`) that are not declarations; without them `if (ready) {` is a method. */
 const NOT_A_DECLARATION = new Set([
   'case', 'catch', 'do', 'else', 'fixed', 'for', 'foreach', 'function', 'if',
   'lock', 'new', 'return', 'switch', 'synchronized', 'try', 'unsafe', 'using',
@@ -98,9 +82,8 @@ function collector() {
 }
 
 /**
- * Brace-family comment openers only. `#` is deliberately absent: it opens a
- * comment in Python and Ruby, which check it themselves, but it names a private
- * class member in JavaScript, where skipping the line would hide `#parse()`.
+ * Brace-family comment openers only: `#` is a comment in Python and Ruby (which
+ * check it themselves) but a private member in JavaScript (`#parse()`).
  */
 function isCommentLine(trimmed) {
   return trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed.startsWith('*');
@@ -187,10 +170,8 @@ function outlinePython(lines, out) {
 }
 
 /**
- * A Go method carries its receiver type, because `Run` alone is not an address
- * a second reader can find: the measured transcript lost `command.go`'s
- * suggestion method exactly there. `func (c *Command) SuggestionsFor(` is
- * listed as `Command.SuggestionsFor`.
+ * A Go method keeps its receiver type, since `Run` alone is no findable
+ * address: `func (c *Command) SuggestionsFor(` is listed as `Command.SuggestionsFor`.
  */
 const GO_METHOD = /^func\s*\(\s*(?:[A-Za-z_]\w*\s+)?\*?([A-Za-z_]\w*)(?:\[[^\]]*\])?\s*\)\s*([A-Za-z_]\w*)\s*[(\[]/u;
 const GO_FUNCTION = /^func\s+([A-Za-z_]\w*)\s*[(\[]/u;
@@ -354,12 +335,8 @@ const SCANNERS = new Map(Object.entries({
 }));
 
 /**
- * List a file's declarations with their line numbers.
- *
- * `text` is content the caller already read; this function opens nothing. The
- * result is a map of where to read next, never a statement about what the code
- * does. A language with no scanner returns an empty list, which means "not
- * outlined here", not "no declarations".
+ * Declarations with line numbers from text the caller already read. A language
+ * with no scanner returns an empty list: "not outlined", not "no declarations".
  */
 export function outlineSource(text, path) {
   const language = languageForPath(path);

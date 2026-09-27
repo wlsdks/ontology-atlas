@@ -1,34 +1,12 @@
 /**
- * Meaning gaps a write can see in the body — the half of a node the eligibility
- * gate never opened.
- *
- * ## Why here, and why now
- *
- * The app's ACP session cannot complete the bulk qualification lifecycle, so
- * every real ontology build lands through `add_concept` / `add_concepts` /
- * `patch_concept`. That door judged frontmatter only: capability evidence at
- * creation, path-shaped titles, unresolved references, dense parents, bulk
- * provenance. Nothing looked at the prose, and the prose is where a concept
- * either exists or does not. This is the 2026-08-31 decision's recorded
- * **dissent** («A refusal names the path that stays open, or it is a dead
- * end»): a person routed to incremental writing may build a shallow vault
- * while believing they completed construction. Not its falsifier — that names
- * junk vaults, validation red with wrong kinds, and the vaults measured here
- * validated clean with real paths. Shallow and clean at once is precisely what
- * nothing in the product was saying out loud.
- *
- * ## The contract
- *
- * Pure functions over `{ kind, slug, frontmatter, body, repoRoot }`. No disk
- * writes, no vault scan; the only filesystem question asked is whether one
- * cited path is a directory, and it is skipped whenever the answer would be a
- * guess. Findings come back in the shape `runNodeEligibilityGate` already
- * pushes, so the write response and the maintenance plan need no new channel.
- *
- * Advisory, always. Construction rule 5 is not negotiable here either: refusing
- * a body would make the honest sequence (name it, then say what it is) into an
- * error, and an agent that cannot write turns around and edits the file behind
- * the tool's back.
+ * Meaning gaps a write can see in the body, the half of a node the eligibility
+ * gate does not open. Every real build lands through add_concept and
+ * patch_concept, so this door must say when a vault is shallow yet validates
+ * clean (`docs/DECISIONS.md`, the dissent on "A refusal names the path that
+ * stays open"). Pure over `{ kind, slug, frontmatter, body, repoRoot }`: no
+ * writes or vault scan, and the only disk question is whether a cited path is a
+ * directory. Advisory (construction rule 5). `src/shared/lib/meaning-findings.ts`
+ * is the app twin, compared by `tests/contract/meaning-findings-parity.contract.test.ts`.
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
@@ -58,34 +36,20 @@ import {
 } from './schema.mjs';
 
 /**
- * Words of real prose before the first `##` below which a body is a label.
- *
- * Eight, because that is roughly the shortest English sentence that can carry
- * both halves of a definition ("X turns a vault folder into a graph"). Lower and
- * a title restated as a sentence passes; higher and a genuinely terse
- * definition is accused.
+ * Words of prose a definition needs: about the shortest English sentence that
+ * carries both halves of a definition. Lower passes a restated title; higher
+ * accuses a terse real one.
  */
 const DEFINITION_MIN_WORDS = 8;
 
 /**
- * Words a definition must carry that the title does not already say.
- *
- * A review falsifier, and a fair one: "Mobile/web bottom tab navigation widget
- * for the app" is eight words and clears the length bar while telling a reader
- * nothing the title `Bottom Tab Bar` did not. Construction rule 3a asks for a
- * *non-circular* sentence, and length alone cannot tell circular from terse.
- * Six, because a definition that adds five new words is a paraphrase and one
- * that adds six has begun to say something — measured against both trial vaults
- * and this repository's own.
+ * Words a definition must add beyond the title, since construction rule 3a asks
+ * for a non-circular sentence and length alone cannot tell circular from terse.
+ * Five new words read as a paraphrase in the trial vaults; six begin to say something.
  */
 const DEFINITION_MIN_NOVEL_WORDS = 6;
 
-/**
- * Words that carry no meaning of their own, so restating the title around them
- * is still restating the title. Deliberately tiny: a long stop list starts
- * deciding which real words count, and this only needs to stop grammar from
- * passing as content.
- */
+/** Grammar words, so restating the title around them still counts as restating. Kept tiny on purpose. */
 const DEFINITION_STOP_WORDS = Object.freeze(
   new Set(['a', 'an', 'the', 'of', 'and', 'or', 'for', 'to', 'in', 'on', 'is', 'are']),
 );
@@ -96,11 +60,7 @@ const UNCERTAINTY_KINDS = new Set(['domain', 'capability', 'element']);
 const EPISTEMIC_KINDS = new Set(['domain', 'capability', 'element', 'project']);
 const FOLDER_EVIDENCE_KINDS = new Set(['capability', 'element']);
 
-/**
- * Entry-point filenames a folder can offer, in the order an unfamiliar agent
- * would try them. Naming one is the difference between "this is wrong" and "do
- * this instead" — the 2026-08-31 decision's whole subject.
- */
+/** Entry-point filenames in the order an unfamiliar agent would try them, to say "open this instead". */
 const ENTRY_POINT_BASENAMES = [
   'index', 'main', 'mod', 'app', 'server', 'cli', 'lib', 'init', '__init__',
 ];
@@ -121,11 +81,7 @@ function wordTokens(text) {
     .filter(Boolean);
 }
 
-/**
- * How much of this sentence is not already in the title?
- *
- * Counts distinct tokens, so repeating one new word six times does not pass.
- */
+/** Distinct tokens not in the title, so one new word repeated does not pass. */
 function novelWordCount(text, titleWords) {
   const novel = new Set();
   for (const token of wordTokens(text)) {
@@ -141,22 +97,15 @@ function wordCount(text) {
     .filter((token) => /[\p{L}\p{N}]/u.test(token)).length;
 }
 
-/**
- * The starter line every kind template ends with is schema furniture, not the
- * author's prose. Counting it would let an empty node clear the definition bar
- * on boilerplate alone.
- */
+/** The starter line every template ends with; counting it would let an empty node pass on boilerplate. */
 function isSchemaFurniture(line) {
   return String(line ?? '').includes(ONTOLOGY_META_MODEL_REFERENCE);
 }
 
 /**
- * Split a body into the prose before the first `##` and the sections after it.
- *
- * The `#` title is neither: it repeats the frontmatter `title`, so treating it
- * as a definition would mean every node defines itself by its own name.
- * Fenced code is skipped so a `##` comment inside a snippet cannot invent a
- * section that is not there.
+ * Splits a body into the prose before the first `##` and the sections after.
+ * The `#` title is neither (it repeats `title`), and fenced code is skipped so
+ * a `##` inside a snippet invents no section.
  */
 function parseBodySections(body) {
   const lead = [];
@@ -207,11 +156,8 @@ function headingNames(heading, synonyms) {
 }
 
 /**
- * Which section states this side of the boundary, if any.
- *
- * The negative side is tested first on purpose: "out of scope" contains
- * "scope", so testing the positive list first would read every `## Out of scope`
- * as an `Includes` and then report the exclusions as missing.
+ * The section stating this side of the boundary. The negative side is tested
+ * first: "out of scope" contains "scope", or `## Out of scope` reads as Includes.
  */
 function findBoundarySection(sections, side) {
   for (const section of sections) {
@@ -227,13 +173,9 @@ function findBoundarySection(sections, side) {
 }
 
 /**
- * Which section carries this node's definition, if any.
- *
- * Measured 2026-09-21: the shape the qualification lane writes has nothing
- * above its first `##` and puts the definition under `## Definition`. Reading
- * only the lead accused 15 of 16 nodes in a fresh vault and 72 of 109 in this
- * repository's own, every one of them defined. The heading is a second place to
- * look, not a second rule — the same word count decides.
+ * The section carrying the definition. The qualification lane writes it
+ * under `## Definition` with nothing above, so the heading is a second place to look,
+ * judged by the same word counts.
  */
 function findDefinitionSection(sections) {
   return sections.find((section) => headingNames(section.heading, BODY_DEFINITION_SECTIONS)) ?? null;
@@ -248,13 +190,7 @@ function starterShape(kind, title) {
   }
 }
 
-/**
- * Every placeholder line the starter template ships, folded for comparison.
- *
- * Derived from the template rather than listed here, so the scaffold and the
- * check cannot drift: changing a placeholder's wording changes what counts as
- * unfilled in the same commit.
- */
+/** Placeholder lines, derived from the template so the scaffold and this check cannot drift. */
 function starterPlaceholders(starter) {
   const placeholders = new Set();
   if (!starter) return placeholders;
@@ -266,12 +202,8 @@ function starterPlaceholders(starter) {
 }
 
 /**
- * Is this line still a slot rather than a statement?
- *
- * Two tests, because an author edits a scaffold in two ways. Either the line is
- * untouched — matched against the template itself — or the wording moved while
- * the `<…>` slot stayed, which is the shape that reads as filled to a counter
- * and says nothing to a reader.
+ * Is this line still a slot? Either untouched (matches the template) or reworded
+ * around a surviving `<…>` slot, which a counter reads as filled.
  */
 function isPlaceholderLine(line, placeholders) {
   const text = stripMarker(line);
@@ -288,14 +220,9 @@ function contentLines(section, placeholders) {
 }
 
 /**
- * Does the body say what this node is?
- *
- * Two failures, one code. A body that still carries the template's definition
- * line has not been written; a body with fewer than {@link DEFINITION_MIN_WORDS}
- * words of prose before its first `##` was written as headings. Containment
- * rather than equality on the template half, for the reason the empty-bridge
- * audit already uses it: keeping the boilerplate and appending one line still
- * says nothing.
+ * Does the body say what this node is? A template definition line kept (by
+ * containment, so appending one line does not pass) or too little new prose
+ * before the first `##` share one code.
  */
 export function definitionFinding({ kind, slug, title, body }) {
   if (!DEFINITION_KINDS.has(kind)) return null;
@@ -308,9 +235,8 @@ export function definitionFinding({ kind, slug, title, body }) {
   const stated = contentLines(findDefinitionSection(sections), placeholders)
     .map((line) => stripMarker(line))
     .join(' ');
-  // Either place may hold the definition, and one of them holding it is enough.
-  // Each candidate has to clear both bars: long enough to be a sentence, and
-  // new enough not to be the title with grammar around it.
+  // Either place may hold the definition; the candidate must be long enough and
+  // add enough beyond the title.
   const titleWords = new Set(wordTokens(title));
   for (const candidate of [leadIsStarter ? '' : leadText, stated]) {
     if (wordCount(candidate) < DEFINITION_MIN_WORDS) continue;
@@ -328,12 +254,8 @@ export function definitionFinding({ kind, slug, title, body }) {
 }
 
 /**
- * Does the body draw both sides of the boundary?
- *
- * One finding per missing side, named in `key`, because the two are different
- * work: an author who listed what a capability covers has not yet answered what
- * it is confused with. Reporting them together would let half the answer read
- * as the whole one.
+ * One finding per missing boundary side, named in `key`: the two are different
+ * work, and reporting them together lets half an answer read as whole.
  */
 export function boundaryFindings({ kind, slug, title, body }) {
   if (!BOUNDARY_KINDS.has(kind)) return [];
@@ -356,14 +278,9 @@ export function boundaryFindings({ kind, slug, title, body }) {
 }
 
 /**
- * Does the body say what the writer did not check?
- *
- * A node that records no unknown claims completeness, and the claim is always
- * false — the builder read some files and not others. A placeholder bullet does
- * not count, for the same reason it does not count on either boundary side: a
- * slot is not an answer, and letting the scaffold satisfy the check would mean
- * the default write silences the one question the default write cannot have
- * answered.
+ * Does the body say what the writer did not check? No stated unknown claims
+ * completeness. A placeholder bullet does not count, or the default write would
+ * silence the question it cannot have answered.
  */
 export function uncertaintyFinding({ kind, slug, title, body }) {
   if (!UNCERTAINTY_KINDS.has(kind)) return null;
@@ -382,14 +299,9 @@ export function uncertaintyFinding({ kind, slug, title, body }) {
 }
 
 /**
- * The author's own uncertainty lines for one node, placeholders removed.
- *
- * {@link uncertaintyFinding} above asks whether this section says anything;
- * a reader that wants to act on what it says needs the same lines, chosen by
- * the same section synonyms and filtered by the same starter scaffold. Exported
- * so `uncertainty-reads.mjs` can turn those lines into next reads without a
- * second copy of the heading rules — two copies would mean the write-time
- * question and the read-time queue disagreeing about which bullet is filled.
+ * The author's uncertainty lines, placeholders removed, chosen by the same
+ * synonyms and scaffold as {@link uncertaintyFinding}. `uncertainty-reads.mjs`
+ * imports it so the write-time question and the read-time queue agree.
  */
 export function uncertaintySectionLines({ kind, title, body }) {
   const { sections } = parseBodySections(body);
@@ -399,12 +311,9 @@ export function uncertaintySectionLines({ kind, title, body }) {
 }
 
 /**
- * Exclusions that state what the writer did not see rather than what the
- * product does not do.
- *
- * The judgement is imported, never re-derived: `meaning-evaluation.mjs` already
- * owns this sentence for the qualification lane, and the failure mode of two
- * copies is the two doors disagreeing about one bullet.
+ * Exclusions stating what the writer did not see rather than what the product
+ * does not do. The rule is imported from `construction-rules.mjs`, never
+ * re-derived, so the qualification lane and this door agree on each bullet.
  */
 export function epistemicExclusionFinding({ kind, slug, title, body }) {
   if (!EPISTEMIC_KINDS.has(kind)) return null;
@@ -455,29 +364,20 @@ function entryPointInside(directory) {
 }
 
 /**
- * Evidence that names a folder.
- *
- * Silent when `repoRoot` is unknown or the path is not on disk. A missing path
- * is `validate_vault`'s `pathDrift` answer and saying it twice trains the reader
- * to skim; an ungrounded root would compare this vault against whichever
- * directory the process happened to start in, which is the mistake
- * `REPO_ROOT_IS_GROUNDED` exists to prevent.
+ * Evidence that names a folder. Silent when `repoRoot` is unknown (an ungrounded
+ * root would measure against the process cwd) or the path is missing
+ * (validate_vault's `pathDrift` already says that).
  */
 export function folderOnlyEvidenceFinding({ kind, slug, frontmatter, repoRoot }) {
   if (!FOLDER_EVIDENCE_KINDS.has(kind)) return null;
   const path = typeof frontmatter?.path === 'string' ? frontmatter.path.trim() : '';
   if (!path || !repoRoot || isAbsolute(path)) return null;
   /*
-   * **Stay inside the repository.** Rejecting an absolute path is not enough:
-   * `path: ../../somewhere` resolves out of the tree just as well, and the two
-   * things this function does next are read someone's directory and put one of
-   * its filenames into a tool response. A vault is ordinary Markdown an agent
-   * writes, so the value in that slot is untrusted input, not a promise.
-   *
-   * The comparison is lexical and deliberately so — no `realpath`, because the
-   * caller's root is the one `assertScanRootAllowed` already settled, and
-   * re-resolving it here would disagree with every other boundary in the server
-   * on a machine whose temp or home directory is a symlink.
+   * Security: `path:` is untrusted agent-written input, and `../../somewhere`
+   * escapes as well as an absolute path; this then lists a directory and echoes a
+   * filename, so it must stay inside the repository. Lexical, no realpath: the
+   * root was settled by `assertScanRootAllowed`, and re-resolving would disagree
+   * with every other server boundary where temp or home is a symlink.
    */
   const boundary = resolve(repoRoot);
   const absolute = resolve(boundary, path);
@@ -506,17 +406,9 @@ export function folderOnlyEvidenceFinding({ kind, slug, frontmatter, repoRoot })
 }
 
 /**
- * Resolve one vault-relative path against the repository and say what it is.
- *
- * The clamp is the one `folderOnlyEvidenceFinding` already uses, reused rather
- * than restated: a vault is ordinary Markdown an agent writes, so `path:` is
- * untrusted input, and `path: ../../somewhere` leaves the tree just as well as
- * an absolute one. Lexical comparison only — no `realpath`, so this agrees with
- * every other boundary in the server on a machine whose temp directory is a
- * symlink.
- *
- * Returns `null` whenever the answer would be a guess, which is what every
- * caller here treats as "do not speak".
+ * Resolves a vault-relative path inside the repository, with the same lexical
+ * clamp as `folderOnlyEvidenceFinding` (`path:` is untrusted input). `null`
+ * whenever the answer would be a guess, which callers treat as "do not speak".
  */
 function insideRepo(repoRoot, path) {
   const value = typeof path === 'string' ? path.trim() : '';
@@ -543,12 +435,9 @@ function declaredDependencies(frontmatter) {
 }
 
 /**
- * `src/shared/lib/nav.ts` → `nav`, the name an import statement would carry.
- * A module root answers to its folder instead: `src/export/mod.rs` is what
- * `use crate::export::…` reaches, `src/lib/index.ts` is what `'./lib'` loads,
- * `pkg/__init__.py` is `import pkg`. Measured on a Rust trial vault
- * (2026-09-23): eight edges pointed at `mod.rs` files and the basename alone
- * witnessed none of them.
+ * Maps `src/shared/lib/nav.ts` → `nav`, the name an import carries. A module root
+ * answers to its folder: `src/export/mod.rs` is `use
+ * crate::export`, `src/lib/index.ts` is `'./lib'`, `pkg/__init__.py` is `import pkg`.
  */
 const MODULE_ROOT_BASENAMES = new Set(['mod', 'index', '__init__']);
 function witnessNamesFor(path) {
@@ -591,17 +480,10 @@ function moduleSpecifiers(text) {
 }
 
 /**
- * Does this file bring that file in?
- *
- * Two spellings count, and only two. The target path verbatim is what a
- * relative-free reference looks like; the basename without its extension as
- * the last segment of an import specifier is what every import statement in
- * every language this vault describes actually writes. A bare name anywhere
- * else in the file is not a witness: measured on this repository's own vault
- * (2026-09-23), the words "camera" and "layout" inside unrelated hook names
- * kept two edges green with no import behind them, which is the false
- * confidence the decision's falsifier names. Case-sensitive on purpose:
- * `Vault` and `vault` are different modules.
+ * Does this file bring that file in? Only two spellings count: the target path
+ * verbatim, or its extensionless basename as the last segment of an import
+ * specifier. A bare word elsewhere is no witness (unrelated identifiers would
+ * keep an edge green with no import). Case-sensitive: `Vault` and `vault` differ.
  */
 function textWitnesses(text, targetPath, witnessNames, moduleNamesByText) {
   if (String(text).includes(targetPath)) return true;
@@ -620,14 +502,10 @@ function textWitnesses(text, targetPath, witnessNames, moduleNamesByText) {
 }
 
 /**
- * A repo-relative file path written inside a sentence.
- *
- * `/` **and** an extension, both required, backticked or not. The rule is the
- * conservative half of the one `uncertainty-reads.mjs` uses on prose — that
- * module also accepts a bare backticked basename, which cannot be resolved
- * against a repository root and so is useless here. It is restated rather than
- * imported because that module does not export it, and a `why` is a sentence a
- * person wrote: every token that is not plainly an address has to fall through.
+ * A repo-relative file path inside a sentence: `/` and an extension, backticked
+ * or not. The conservative half of `uncertainty-reads.mjs`'s rule (which also
+ * takes a bare basename, useless against a root), restated since that module
+ * does not export it.
  */
 const NOTE_PATH_EDGES = /^[([{"'`\u201c\u2018]+|[)\]}"'`\u201d\u2019.,;:!?]+$/g;
 const NOTE_PATH_EXTENSION = /\.[A-Za-z][A-Za-z0-9]{0,9}$/;
@@ -669,50 +547,23 @@ function relationNoteText(frontmatter, target) {
 }
 
 /**
- * A declared dependency the file it stands on never mentions.
- *
- * Measured 2026-09-22 on this repository's own vault: 70 of 85 file-to-file
- * `depends_on` edges are witnessed by the citing file naming the cited one;
- * 15 are declared with a `why` and witnessed nowhere. `impact` already answers
- * `sourceBacked: false` for every declared edge and must keep doing so — this
- * does not change that flag, it names the rows behind it, at the moment the
- * writer still holds the reason.
- *
- * **New edges only.** `previousFrontmatter` is what the door held before this
- * write, so an edge somebody landed last week is not re-accused on every
- * unrelated patch — the restraint that kept `missing-expected-field` from
- * becoming invisible. A whole-vault pass omits it and judges them all, which is
- * the same rule read at a different moment.
- *
- * **Where the witness may live.** Two places, and the second was added on
- * 2026-09-22 after the first repair turn found the message lying. It told the
- * writer to name, in the `why`, the file and line that carries the dependency —
- * and then read only the source node's own `path:`, so a `why` naming the exact
- * importing file cleared nothing and the finding stood. The candidates are now
- * the source node's file *and* every repo-relative file path written in
- * `relation_notes` for that edge, each clamped inside the repository and each
- * required to be a file that exists. Any one of them naming the target is
- * enough. This is what makes the repair the message asks for actually work, and
- * it is the honest shape besides: a browser module depending on an MCP module,
- * or TypeScript on Rust, is witnessed by a third file — the barrel, the bridge,
- * the contract test — not by either end.
- *
- * Silent whenever an input is a guess: no repository root, no `path:` on either
- * end, a source `path:` that is a directory (`folder-only-evidence` owns that
- * one and saying it twice trains the reader to skim), or either path resolving
- * out of the tree. A note path that is missing, a directory, or outside the
- * repository is dropped, never guessed at.
+ * A declared dependency its file never mentions; `impact` keeps
+ * answering `sourceBacked: false` for every declared edge, and this names the rows behind
+ * it. New edges only when `previousFrontmatter` is given, so an old edge is not
+ * re-accused on every patch; a whole-vault pass omits it. The witness may be the
+ * source node's file or any repo-relative file the edge's `relation_notes`
+ * names (a cross-boundary edge is witnessed by the bridge, not either end), each
+ * clamped inside the repository and required to exist. Silent whenever an input
+ * is a guess: no root, no `path:` on either end, a directory source
+ * (`folder-only-evidence` owns that), or a path outside the tree.
  *
  * @param {object} args
  * @param {string} args.slug
  * @param {Record<string, unknown>} args.frontmatter
- * @param {Record<string, unknown>} [args.previousFrontmatter] absent means every
- *   declared dependency is judged.
+ * @param {Record<string, unknown>} [args.previousFrontmatter] absent judges every dependency
  * @param {string|null} args.repoRoot
- * @param {(ref: string) => string|null} args.resolveTargetPath maps a target
- *   slug to its frontmatter `path:`, or null when the caller cannot say.
- * @returns {Array<object>} one finding per unwitnessed target; `key` is the
- *   target slug so the gate's own notice key is per edge, not per node.
+ * @param {(ref: string) => string|null} args.resolveTargetPath target slug → its `path:`, or null
+ * @returns {Array<object>} one finding per unwitnessed target, `key` = target slug (a per-edge notice key)
  */
 export function dependencyWitnessFinding({
   slug,
@@ -734,16 +585,12 @@ export function dependencyWitnessFinding({
   const previous = previousFrontmatter ? declaredDependencies(previousFrontmatter) : new Set();
   /** One read per file however many edges cite it; `null` marks unreadable. */
   const textCache = new Map([[source.path, sourceText]]);
-  // Several dependencies often share the same source or rationale file. Parse
-  // its imports once for this invocation; later calls still read current bytes.
+  // Parse each shared source or rationale file's imports once per invocation.
   const moduleNamesByText = new Map();
   /**
-   * Where a note path is looked for: as written from the repository root,
-   * then from each ancestor folder of the citing file, nearest first. A
-   * writer copies paths the way an editor shows them ("features/library/
-   * index.ts:13" from a file under src/), and the first repair turn wrote
-   * exactly that; a root-only reading dropped every one of them. Each try is
-   * still clamped inside the repository and must be an existing file.
+   * A note path is tried from the repository root, then from each ancestor of the
+   * citing file, nearest first, since writers copy editor-relative paths. Every
+   * try stays clamped inside the repository and must be an existing file.
    */
   const sourceAncestors = [];
   for (let dir = dirname(source.path); dir && dir !== '.'; dir = dirname(dir)) {
@@ -778,7 +625,6 @@ export function dependencyWitnessFinding({
     const resolved = insideRepo(repoRoot, targetPath);
     if (!resolved) continue;
     const witnessNames = witnessNamesFor(resolved.path);
-    // The source file first, then every file the edge's own rationale names.
     const candidates = [sourceText];
     for (const token of pathTokensIn(relationNoteText(frontmatter, target))) {
       const text = readCandidate(token);
@@ -807,29 +653,12 @@ export function dependencyWitnessFinding({
 const STARTER_EXAMPLE_KINDS = new Set(Object.keys(STARTER_EXAMPLE_SLUGS));
 
 /**
- * Is this node one of the examples `init` wrote for somebody to copy?
- *
- * Two shapes, and the second is why the first is not the whole rule. The three
- * addresses the templates ship are recognised outright — `vault/` and
- * `vault-ko/` use the same slugs, and the browser's starter mirrors them. Beyond
- * those, a slug whose last segment opens with `example-` **and** whose title
- * opens with "Example" is the same thing under another name: someone copied the
- * file and renamed neither half.
- *
- * ⚠️ Both halves of the second shape are required, and the pair is still not a
- * proof. A slug alone would accuse a real domain at `domains/example-rendering`;
- * a title alone would accuse one genuinely called "Example Rendering" at an
- * ordinary address. Requiring both narrows it to the shape a copied scaffold
- * actually has, and what remains — a real node that is *about* examples, named
- * "Example …", and addressed `example-…` — is a false positive this accepts on
- * purpose. It is advisory, the repair for such a node is the rename it wanted
- * anyway, and the alternative is missing every starter somebody copied rather
- * than renamed. The three template addresses above need no title at all.
- *
- * The body is deliberately **not** consulted: a starter whose prose somebody
- * rewrote while keeping the name is still a starter address on the map, and
- * letting an edited body clear the check would reward exactly the half-finished
- * state this exists to name.
+ * Is this one of the examples `init` wrote to be copied? The three template
+ * addresses match outright. Otherwise both an `example-` slug tail and an
+ * "Example" title are required: either alone would accuse a real node, and a
+ * real node that is about examples and named both ways is an accepted false
+ * positive. The body is not consulted, so rewriting the prose but keeping the
+ * name still counts.
  */
 export function isStarterExampleNode({ slug, kind, title }) {
   const address = typeof slug === 'string' ? slug.trim() : '';
@@ -838,7 +667,6 @@ export function isStarterExampleNode({ slug, kind, title }) {
   if (Object.values(STARTER_EXAMPLE_SLUGS).includes(address)) return true;
   const tail = address.split('/').pop() ?? '';
   if (!tail.startsWith('example-')) return false;
-  // "Example", capitalised, is what every template writes and what a copy keeps.
   return String(title ?? '').trim().startsWith('Example');
 }
 
@@ -849,12 +677,8 @@ function hasUntouchedStarterBody(body) {
 }
 
 /**
- * One starter example that is no longer alone.
- *
- * Pure: the caller states which real node of the same kind now exists, because
- * "is there a real sibling" is a whole-vault question and this module answers
- * one node at a time. `realSlug` may be null when the caller knows a sibling
- * exists but not which one.
+ * One starter example no longer alone. Pure: the caller says which real sibling
+ * exists (a whole-vault question); `realSlug` may be null when unknown.
  */
 export function starterExampleFinding({ slug, kind, title, body, realSlug = null }) {
   const address = typeof slug === 'string' ? slug.trim() : '';
@@ -879,14 +703,9 @@ export function starterExampleFinding({ slug, kind, title, body, realSlug = null
 }
 
 /**
- * Every starter example in a vault that has outgrown it.
- *
- * The whole-vault half, shared by `validate_vault`, the CLI command and the
- * maintenance plan. It needs no bodies and no repository root — a slug, a kind
- * and a title are the entire input — which matters, because the vault most in
- * need of this answer is the one nobody has compiled with bodies loaded.
- *
- * `nodes` is any iterable of `{ slug, kind, title, body? }`.
+ * Every starter example a vault has outgrown, for validate_vault, the CLI and
+ * the maintenance plan. Needs only slug, kind and title, so it works on a vault
+ * nobody compiled with bodies. `nodes`: iterable of `{ slug, kind, title, body? }`.
  */
 export function starterExampleFindings(nodes) {
   const rows = [];
@@ -898,8 +717,7 @@ export function starterExampleFindings(nodes) {
   const findings = [];
   for (const node of rows) {
     if (!node.starter) continue;
-    // The one condition: a real node of the same kind. Until one exists the
-    // starter is the instructions, and the product wrote it.
+    // Until a real node of the kind exists, the starter is the product's own instructions.
     const sibling = rows.find((other) => other.kind === node.kind && !other.starter);
     if (!sibling) continue;
     const finding = starterExampleFinding({ ...node, realSlug: sibling.slug ?? null });
@@ -909,12 +727,9 @@ export function starterExampleFindings(nodes) {
 }
 
 /**
- * Every meaning finding for one written node.
- *
- * `bodyWritten` and `pathWritten` say what this write actually touched, so a
- * patch that renames a node is not answered with an accusation about a body it
- * never opened — the same restraint `capability-without-evidence` applies by
- * firing at creation only.
+ * Every meaning finding for one written node. `bodyWritten` and `pathWritten`
+ * say what this write touched, so a rename patch is not answered about a body it
+ * never opened.
  */
 export function meaningFindings({
   kind,

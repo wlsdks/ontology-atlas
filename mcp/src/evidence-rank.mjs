@@ -1,12 +1,6 @@
-// evidence-rank — Atlas roadmap Track A #4 (planner team 2026-05-31).
-//
-// find_evidence is the front-door "where does X live in the vault?" query, but
-// it was a flat substring sweep returning matches in vault-walk order — the
-// best node buried among incidental body mentions. This adds a deterministic
-// relevance score so the caller (the agent) gets the best match first. Local +
-// deterministic — no embeddings, no backend (stays local-first). INCLUSION is
-// unchanged: score>0 iff a substring matched, exactly as before — purely additive
-// ordering, so the result SET is identical, only re-sorted.
+// Relevance order for find_evidence, local and deterministic (no embeddings).
+// A doc is included iff a substring matched (score > 0); the score only orders
+// the results.
 
 const TOKEN_RE = /[a-z0-9]+/g;
 function tokenize(s) {
@@ -14,12 +8,9 @@ function tokenize(s) {
 }
 
 /**
- * Relevance score for one doc against a query.
- * Base signal (by where the substring matched, best→worst):
- *   exact title 1.0 · title prefix 0.9 · title substring 0.75 · frontmatter ref 0.5 · body 0.3
- * Plus a small title token-overlap tiebreaker (≤0.1) so a title containing more
- * of the query's words ranks above one containing fewer. score>0 ⟺ a substring
- * matched somewhere (same inclusion as the old flat sweep).
+ * Relevance of one doc: by where the substring matched (exact title 1.0, title
+ * prefix 0.9, title substring 0.75, frontmatter ref 0.5, body 0.3), plus a title
+ * token-overlap tiebreaker of at most 0.1. score > 0 iff a substring matched.
  *
  * @param {string} query
  * @param {{title?:string, frontmatterHaystack?:string, body?:string}} fields
@@ -51,18 +42,17 @@ export function scoreEvidence(query, { title = '', frontmatterHaystack = '', bod
     base = 0.3;
     matchedIn = 'body';
   } else {
-    return { score: 0, matchedIn: null }; // no substring match → excluded (unchanged)
+    return { score: 0, matchedIn: null }; // no substring match: excluded
   }
 
-  // Tiebreaker: fraction of the query's distinct tokens present in the title.
   const qTokens = [...new Set(tokenize(needle))];
-  let bonus = 0;
+  let titleOverlapTiebreak = 0;
   if (qTokens.length > 0) {
     const titleTokens = new Set(tokenize(t));
-    const present = qTokens.filter((tok) => titleTokens.has(tok)).length;
-    bonus = (present / qTokens.length) * 0.1;
+    const queryTokensInTitle = qTokens.filter((tok) => titleTokens.has(tok)).length;
+    titleOverlapTiebreak = (queryTokensInTitle / qTokens.length) * 0.1;
   }
 
-  const score = Math.round((base + bonus) * 1000) / 1000;
+  const score = Math.round((base + titleOverlapTiebreak) * 1000) / 1000;
   return { score, matchedIn };
 }

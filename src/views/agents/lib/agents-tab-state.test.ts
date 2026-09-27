@@ -11,7 +11,6 @@ describe('agents tab state', () => {
     expect(parseAgentsTab('agents')).toBe('agents');
     expect(parseAgentsTab(null)).toBe('agents');
     expect(parseAgentsTab('connectors')).toBe('agents');
-    // The retired settings pane's name is not a tab: it lands on the default, never a blank panel.
     expect(parseAgentsTab('ai')).toBe('agents');
   });
 

@@ -1,10 +1,7 @@
 /**
- * Project source connect — inference, minting, sidecar round trip, remedy.
- *
- * The defect these cover: the receipt vocabulary named `connect_source` as the
- * next action and nothing anywhere could perform it. Each test below fails if
- * one of the four halves goes missing again — nomination, scoring, persistence,
- * prescription.
+ * Nomination, scoring, persistence and prescription of a project source: each
+ * test fails if one half goes missing, since `connect_source` once had nothing
+ * that could perform it.
  */
 
 import { describe, it, beforeEach, afterEach } from 'node:test';
@@ -160,7 +157,7 @@ describe('witnesses', () => {
 
   it('collects declared paths once per ontology role, in a stable order', () => {
     const witnesses = deriveProjectSourceWitnessesFromDocs({ projectSlug: 'music-streaming', docs });
-    // Sorted by witness id, so the same vault always mints the same receipt.
+    // Sorted by witness id, so one vault always mints one receipt.
     assert.deepEqual(
       witnesses.map((witness) => witness.id),
       [

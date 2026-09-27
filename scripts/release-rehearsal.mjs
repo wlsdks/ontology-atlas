@@ -1,37 +1,8 @@
 #!/usr/bin/env node
 /**
- * Walks the release runner's steps on this machine, in order, **before** a tag is
- * pushed.
- *
- * **Why this exists.** `v1.0.0-rc.2` was tagged four times and stopped in the build
- * all four times. Each fix moved the failure to **the very next step**:
- *
- *   1st  Desktop readiness            gate demanded yesterday's doc sentence (#743)
- *   2nd  Native vault bridge tests    externalBin sidecar built too late      (#744)
- *   3rd  Build bundled MCP sidecar    bun, the build tool, absent on runner   (#745)
- *   4th  Build bundled MCP sidecar    mcp/ dependencies absent on runner      (#746)
- *
- * All four **passed locally**, because a person's machine already has everything.
- * And these steps are wired nowhere outside
- * `.github/workflows/release-macos.yml` — neither `checks.yml` nor
- * `deploy-pages.yml` runs `desktop:check` / `desktop:smoke` / `mcp:build-binary` /
- * `test:desktop:bridge`. So these steps **are first executed only by pushing a
- * tag**, and you learn one failure per round trip, at roughly 20 minutes of human
- * time each.
- *
- * This script moves that round trip to before the tag.
- *
- * **Why it reads the workflow file.** Copying the step list in here means this file
- * goes quietly stale when the workflow changes — a failure mode this repository has
- * hit repeatedly (a gate verifying its own constants). So the list is not written
- * down; it is **read straight from the workflow's `build-macos` job**, and a new
- * step in the workflow is picked up by the next rehearsal automatically. Both the
- * protected `admit-release` and `build-macos` are covered.
- *
- * **It says what it cannot do.** Signing and notarisation need Apple secrets; the
- * release slot and draft verification need a real tag. Such steps are not skipped
- * quietly — they are **listed as `SKIP` with the reason**. If green came to mean
- * "everything was checked", this script would be reassurance rather than a gate.
+ * Walks the release workflow's `admit-release` and `build-macos` steps on this machine
+ * before a tag is pushed, reading them from the workflow so a new step is never missed;
+ * a step that needs Apple secrets or a real tag is listed as SKIP with its reason.
  *
  *   node scripts/release-rehearsal.mjs            # everything through the build
  *   node scripts/release-rehearsal.mjs --fast     # stop before app compile / DMG

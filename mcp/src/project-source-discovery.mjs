@@ -1,11 +1,8 @@
 /**
- * Project source discovery — the filesystem half of the inference.
- *
- * Node-only. Collects the candidate roots that `project-source-inference.mjs`
- * ranks. The walk is bounded (`PROJECT_SOURCE_MAX_ANCESTOR_DEPTH`) and it never
- * nominates the filesystem root or the user's home directory: a source binding
- * that wide would make every later measurement meaningless and is far more
- * likely to be an accident than an intent.
+ * The filesystem half of project source inference: collects the candidate
+ * roots `project-source-inference.mjs` ranks. Bounded
+ * (`PROJECT_SOURCE_MAX_ANCESTOR_DEPTH`), and never the filesystem root or home
+ * directory, a binding too wide to measure anything and more likely an accident.
  */
 
 import { execFileSync } from 'node:child_process';
@@ -103,9 +100,9 @@ export function collectProjectSourceCandidates(vaultRootPath) {
 }
 
 /**
- * One call for "which folder is this vault's code?", with no write and no
- * side effect. `witnessSummary` is optional — pass it after probing the
- * candidate to upgrade the confidence from a marker claim to measured support.
+ * "Which folder is this vault's code?", with no side effect.
+ * Pass `witnessSummary` after probing to raise confidence from a marker claim to
+ * measured support.
  */
 export function inferProjectSourceRoot(vaultRootPath, witnessSummary = null) {
   const { vaultRootPath: vaultRoot, candidates } = collectProjectSourceCandidates(vaultRootPath);

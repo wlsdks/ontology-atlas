@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, 
 import { tmpdir } from 'node:os';
 import { basename, extname, join, relative } from 'node:path';
 
+import ts from 'typescript';
 import { afterAll, describe, expect, it } from 'vitest';
 
 import { judgeRatchet, RAISES_DIR, type RatchetJudgement } from './lib/ratchet-base';
@@ -695,12 +696,91 @@ const BUTTON_TAGS = ['button'] as const;
 const ANCHOR_TAGS = ['Link', 'a'] as const;
 const FIELD_TAGS = ['input', 'textarea', 'select', 'label'] as const;
 
+const VALUE_LAYER_CALL = /(?:controlClass|fieldClass|fieldLabel)\s*\(/;
+const VALUE_LAYER = new Set(['controlClass', 'fieldClass', 'fieldLabel']);
+const helperCache = new Map<string, string[]>();
+
+const isFunctionLike = (n: ts.Node): n is ts.FunctionLikeDeclaration =>
+  ts.isArrowFunction(n) || ts.isFunctionExpression(n) || ts.isFunctionDeclaration(n) || ts.isMethodDeclaration(n);
+const rendersJsx = (n: ts.Node): boolean =>
+  ts.isJsxElement(n) || ts.isJsxSelfClosingElement(n) || ts.isJsxFragment(n) || ts.forEachChild(n, rendersJsx) === true;
+
+function returnedValues(fn: ts.FunctionLikeDeclaration): ts.Node[] {
+  if (!fn.body) return [];
+  if (!ts.isBlock(fn.body)) return [fn.body];
+  const values: ts.Node[] = [];
+  const visit = (n: ts.Node): void => {
+    if (isFunctionLike(n)) return;
+    if (ts.isReturnStatement(n) && n.expression) values.push(n.expression);
+    ts.forEachChild(n, visit);
+  };
+  ts.forEachChild(fn.body, visit);
+  return values;
+}
+
+/** A value only the value layer can produce: its call, or a function every return of which is one. */
+function yieldsValueLayer(node: ts.Node): boolean {
+  if (rendersJsx(node)) return false;
+  if (isFunctionLike(node)) {
+    const values = returnedValues(node);
+    return values.length > 0 && values.every(yieldsValueLayer);
+  }
+  const visit = (n: ts.Node): boolean =>
+    isFunctionLike(n)
+      ? yieldsValueLayer(n)
+      : (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && VALUE_LAYER.has(n.expression.text)) ||
+        ts.forEachChild(n, (child) => (visit(child) ? true : undefined)) === true;
+  return visit(node);
+}
+
+/** Names (and `NAME.key`) whose every same-file binding yields the value layer. */
+function valueLayerNames(source: string): string[] {
+  const cached = helperCache.get(source);
+  if (cached) return cached;
+  const verdicts = new Map<string, boolean[]>();
+  const record = (name: string, value: ts.Node) => verdicts.set(name, [...(verdicts.get(name) ?? []), yieldsValueLayer(value)]);
+  const visit = (node: ts.Node): void => {
+    if (ts.isFunctionDeclaration(node) && node.name) record(node.name.text, node);
+    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer) {
+      if (!ts.isObjectLiteralExpression(node.initializer)) record(node.name.text, node.initializer);
+      else {
+        for (const property of node.initializer.properties) {
+          const value = ts.isPropertyAssignment(property) ? property.initializer : property;
+          if (property.name && (ts.isIdentifier(property.name) || ts.isStringLiteral(property.name))) {
+            record(`${node.name.text}.${property.name.text}`, value);
+          }
+        }
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(ts.createSourceFile('control.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX));
+  const names = [...verdicts].filter(([, each]) => each.every(Boolean)).map(([name]) => name);
+  helperCache.set(source, names);
+  return names;
+}
+
+function classValue(tag: string): string {
+  const at = tag.search(/\bclassName\s*=/);
+  if (at < 0) return '';
+  let i = tag.indexOf('=', at) + 1;
+  while (/\s/.test(tag[i] ?? '')) i += 1;
+  if (tag[i] !== '{') return tag.slice(i, tag.indexOf(tag[i], i + 1) + 1);
+  for (let j = i, depth = 0, quote = ''; j < tag.length; j += 1) {
+    if (quote) {
+      if (tag[j] === quote && tag[j - 1] !== '\\') quote = '';
+    } else if (tag[j] === '"' || tag[j] === "'" || tag[j] === '`') quote = tag[j];
+    else if (tag[j] === '{') depth += 1;
+    else if (tag[j] === '}' && --depth === 0) return tag.slice(i, j + 1);
+  }
+  return tag.slice(i);
+}
+
 function handWrittenTags(file: string, tags: readonly string[] = BUTTON_TAGS): string[] {
   const source = stripComments(readFileSync(file, 'utf8'));
-  // Names bound by `const X = controlClass({…})` / `const X = cn(controlClass({…}), …)`.
-  const systemConstants = [
-    ...source.matchAll(/const\s+([A-Za-z_$][\w$]*)\s*=[^;\n]*(?:controlClass|fieldClass|fieldLabel)\s*\(/g),
-  ].map((m) => m[1]);
+  const systemNames = valueLayerNames(source).map(
+    (name) => new RegExp(`(?<![\\w$.])${name.replace(/[.$]/g, (c) => `\\${c}`)}(?![\\w$])`),
+  );
   const found: string[] = [];
   for (const m of source.matchAll(new RegExp(`<(?:${tags.join('|')})\\b`, 'g'))) {
     const tag = openingTag(source, m.index + m[0].length);
@@ -720,8 +800,9 @@ function handWrittenTags(file: string, tags: readonly string[] = BUTTON_TAGS): s
      * places keep counting as debt, so the baseline never falls** — the system
      * (design-systems) seat named this the top idling candidate in that PR.
      */
-    if (/(?:controlClass|fieldClass|fieldLabel)\s*\(/.test(tag)) continue;
-    if (systemConstants.length > 0 && systemConstants.some((name) => new RegExp(`\\b${name}\\b`).test(tag))) continue;
+    const className = classValue(tag);
+    if (VALUE_LAYER_CALL.test(className)) continue;
+    if (systemNames.some((name) => name.test(className))) continue;
     found.push(tag);
   }
   return found;
@@ -1403,6 +1484,118 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
      * scanner's field of view) instead; that is independent of debt.
      */
     expect(scannedFiles.length, '훑은 파일이 너무 적다 — 스캐너의 시야가 죽었다').toBeGreaterThan(150);
+  });
+
+  it('a class counts as adopted only when every path to it runs through the value layer', () => {
+    const cases: Record<string, [string[], number]> = {
+      'a helper, a component, and a hand-written tag that names the component': [
+        [
+          'function chipClass(active: boolean) {',
+          "  return controlClass({ shape: 'pill', active });",
+          '}',
+          'function Toolbar() {',
+          "  return <span className={controlClass({ shape: 'pill' })} />;",
+          '}',
+          'export const P = ({ active }: { active: boolean }) => (',
+          '  <>',
+          '    <button className={chipClass(active)} />',
+          '    <button className={chipClass(!active)} />',
+          '    <button data-owner={Toolbar} className="h-9 px-3" />',
+          '  </>',
+          ');',
+        ],
+        1,
+      ],
+      'a helper that discards the value layer': [
+        [
+          'function chipClass() {',
+          "  void controlClass({ shape: 'pill' });",
+          "  return 'h-8 rounded-full border px-3';",
+          '}',
+          'export const P = () => <button className={chipClass()} />;',
+        ],
+        1,
+      ],
+      'a helper with one hand-written branch': [
+        [
+          'function chipClass(active: boolean) {',
+          "  if (active) return controlClass({ shape: 'pill', active });",
+          "  return 'h-8 rounded-full border px-3';",
+          '}',
+          'export const P = () => <button className={chipClass(false)} />;',
+        ],
+        1,
+      ],
+      'an object mixing adopted and hand-written tones': [
+        [
+          'const TONE = {',
+          "  primary: controlClass({ shape: 'pill' }),",
+          "  ghost: 'h-9 rounded-md px-3',",
+          '};',
+          'export const P = () => <><button className={TONE.primary} /><button className={TONE.ghost} /></>;',
+        ],
+        1,
+      ],
+      'a wrapped local className constant': [
+        [
+          'export function P({ selected }: { selected: boolean }) {',
+          '  const className = cn(',
+          "    controlClass({ shape: 'row' }),",
+          "    selected && 'bg-x',",
+          '  );',
+          '  return (',
+          '    <div>',
+          '      <button className={className}>A</button>',
+          '      <button className="h-9 rounded-md px-3">B</button>',
+          '      <button type="button" className="h-8 rounded px-2">C</button>',
+          '    </div>',
+          '  );',
+          '}',
+        ],
+        2,
+      ],
+      'a helper named label beside aria-label': [
+        [
+          'function label(kind: string) {',
+          '  return fieldLabel({ kind });',
+          '}',
+          'export const P = () => <button aria-label="Close" className="h-9 rounded-md px-3">x</button>;',
+        ],
+        1,
+      ],
+      'a helper named active beside data-active': [
+        [
+          'const active = (on: boolean) =>',
+          "  controlClass({ shape: 'pill', active: on });",
+          'export const P = ({ on }: { on: boolean }) => <button data-active={on} className="h-9 rounded-md px-3">x</button>;',
+        ],
+        1,
+      ],
+      'a shadowed local name': [
+        [
+          "function B() { const chip = 'h-9 px-3'; return <button className={chip} />; }",
+          "function A() { const chip = controlClass({ shape: 'pill' }); return <button className={chip} />; }",
+        ],
+        2,
+      ],
+      'a wrapped cn constant': [
+        ['const CHIP = cn(', "  controlClass({ shape: 'pill' }),", "  'bg-x',", ');', 'export const P = () => <button className={CHIP} />;'],
+        0,
+      ],
+    };
+    const dir = mkdtempSync(join(tmpdir(), 'control-adoption-helper-'));
+    try {
+      const counts = Object.entries(cases).map(([name, [lines]], index) => {
+        const probe = join(dir, `Probe${index}.tsx`);
+        writeFileSync(probe, lines.join('\n'));
+        return [name, countInFile(probe)];
+      });
+      expect(Object.fromEntries(counts)).toEqual(
+        Object.fromEntries(Object.entries(cases).map(([name, [, expected]]) => [name, expected])),
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it('② 등재 안 된 자리를 손 컨트롤로 만들면 **부채**로 잡힌다 — 등재 쪽으로 새지 않는다', () => {

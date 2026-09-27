@@ -6,30 +6,19 @@ import { reportWebviewError } from '@/shared/lib/report-webview-error';
 import { controlClass } from './control-class';
 
 interface WidgetErrorFallbackProps {
-  /** The error the boundary caught. Forwarded to the app log, never printed on screen. */
+  /** Forwarded to the app log, never printed on screen. */
   error: Error;
-  /** The boundary's own reset — one button, one action. */
   onReset: () => void;
-  /** Which panel failed, in the user's language. */
   title: string;
   /** One sentence: the rest of the screen still works. */
   body: string;
-  /** The retry button's label. */
   retryLabel: string;
   className?: string;
 }
 
 /**
- * The compact surface a single widget shows when its render throws — the map
- * canvas, the coding-agent chat, the vault agent panel.
- *
- * **Why compact.** A boundary exists so one dead widget does not take the page with
- * it. A full-screen apology in a 360px dock would be the same failure with extra
- * steps: the user must still be able to read the map beside it.
- *
- * The error text itself stays off screen. A stack trace is not something a person
- * can act on, and the place it is actually needed — the installed app's log — is
- * where `reportWebviewError` sends it.
+ * The compact surface a single widget shows when its render throws, so the rest of the screen
+ * stays usable. The error goes to the app log through `reportWebviewError`.
  */
 export function WidgetErrorFallback({
   error,
@@ -39,7 +28,7 @@ export function WidgetErrorFallback({
   retryLabel,
   className,
 }: WidgetErrorFallbackProps) {
-  // In an effect, not during render: a fallback that re-renders must not re-report.
+  // In an effect so a re-rendering fallback does not report again.
   useEffect(() => {
     reportWebviewError('render', error);
   }, [error]);

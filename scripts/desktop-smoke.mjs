@@ -67,20 +67,9 @@ export const DESKTOP_SMOKE_ROUTE_TITLES = resolveRouteTitles();
  * surface. Client workbenches are covered by route-specific component markers
  * below instead of brittle historical prose.
  *
- * **The copy is not written here — it is read from the message catalogue.**
- *
- * Four sentences used to be pinned into this file verbatim. When #730 rebuilt the
- * download screen those sentences went away, and this gate was left demanding
- * **yesterday's copy**. `scripts/desktop-smoke.test.mjs` only checked the constant
- * against its own literal, so all 249 tests stayed green and the defect surfaced
- * only where `desktop:smoke` actually runs after `pnpm build` — **the release build
- * after the tag was cut**. (`desktop:check` blocked the first attempt at
- * v1.0.0-rc.2 for the same reason, #743.)
- *
- * Pinning keys alone makes that kind of decay impossible: copy changes together
- * with the catalogue, and a deleted key stops `resolveRouteText` below immediately.
- * What the gate must protect is not yesterday's sentence but **whether today's
- * screen actually landed in the static output.**
+ * The copy is read from the message catalogue, never pinned here: a pinned sentence
+ * goes stale when a screen is rebuilt, while a deleted key stops `resolveRouteText`
+ * at once. The gate protects whether today's screen landed in the static output.
  */
 export const DESKTOP_SMOKE_ROUTE_TEXT_KEYS = {
   // `download.title` disappeared in the 2026-07-29 gateway redesign — the hero split

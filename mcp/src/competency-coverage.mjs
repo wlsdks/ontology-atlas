@@ -1,9 +1,7 @@
 /**
- * Derive quantifier coverage for competency questions that say "each".
- *
- * Callers supply their own trusted target inventory. Proposal validation has
- * canonical capability paths; fresh-receipt validation has only the compiled
- * containment graph. Both still share the same target and relation semantics.
+ * Coverage for competency questions that say "each", over a target inventory the
+ * caller trusts (canonical capability paths for proposals, the compiled
+ * containment graph for fresh receipts), with one target and relation semantics.
  */
 export function evaluateQuantifiedCompetencyCoverage({
   id,

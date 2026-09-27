@@ -181,7 +181,7 @@ describe('TabBar', () => {
     expect(onSelect).toHaveBeenLastCalledWith('overview');
   });
 
-  it('배지가 무엇을 세는지 title 로 말하고, 배지 없는 탭에는 붙이지 않는다', () => {
+  it('titles a badge with what it counts and leaves badgeless tabs untitled', () => {
     render(
       <TabBar
         items={[
@@ -195,18 +195,15 @@ describe('TabBar', () => {
     );
 
     expect(screen.getByRole('tab', { name: /개요/ })).toHaveAttribute('title', '개념 수');
-    // No count means nothing to explain: a tooltip on an empty slot promises a
-    // badge that is not there.
+    // Without a count, a tooltip would promise a badge that is not there.
     expect(screen.getByRole('tab', { name: /신선도/ })).not.toHaveAttribute('title');
   });
 
   /*
-   * Measured on `/en/mcp/`, 2026-09-05: the connectors tab's accessible name was
-   * `Connectors0` — the label text node and the count span sit side by side, and the name
-   * computation runs them together. Read aloud that is one word, and someone hunting for
-   * "Connectors" hears a tab that is not it.
+   * The label and count spans would otherwise concatenate into one word (`Connectors0`) that
+   * someone hunting for "Connectors" cannot find.
    */
-  it('배지가 라벨에 달라붙지 않는다 — 이름은 「라벨, 숫자」로 읽힌다', () => {
+  it('names a badged tab as label, comma, number', () => {
     render(
       <TabBar
         items={[{ key: 'connectors', label: 'Connectors', count: 2, countTitle: '켜 둔 개수' }]}
@@ -220,13 +217,13 @@ describe('TabBar', () => {
     expect(tab).toBeInTheDocument();
     expect(
       screen.queryByRole('tab', { name: 'Connectors2' }),
-      '라벨과 숫자가 한 낱말로 붙어 읽힌다',
+      'the label and number read as one word',
     ).toBeNull();
     // The number is still on screen — only its second reading was removed.
     expect(screen.getByText('2')).toBeInTheDocument();
   });
 
-  it('배지가 없으면 이름을 손대지 않는다 — 라벨 그대로다', () => {
+  it('keeps the plain label as the name when there is no badge', () => {
     render(
       <TabBar
         items={[{ key: 'share', label: 'Share this folder' }]}

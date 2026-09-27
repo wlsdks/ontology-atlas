@@ -4,18 +4,10 @@ import { RELEASE_VERSION } from './release-facts';
 import { ARCH_ORDER, formatAssetSize, macosAssetFor } from './release-state';
 
 describe('release-state', () => {
-  /**
-   * **Decimal MB — what the reader's own machine says.**
-   *
-   * This used to divide by 1024² and still label it "MB", so the page
-   * promised 39.5 MB for a file macOS Finder reports as 41.4 MB. The unit and
-   * the divisor disagreed; the divisor moved, because the label is what the
-   * reader compares against their Finder window.
-   */
   it('formats byte sizes as decimal MB with one decimal', () => {
     expect(formatAssetSize(12_000_000)).toBe('12.0 MB');
     expect(formatAssetSize(13_002_342)).toBe('13.0 MB');
-    // The real shipped asset — the number a visitor checks against Finder.
+    // The Finder size of a real shipped asset.
     expect(formatAssetSize(41_435_263)).toBe('41.4 MB');
   });
 
@@ -24,10 +16,6 @@ describe('release-state', () => {
     expect(formatAssetSize(Number.NaN)).toBe('');
   });
 
-  // The generated module is the only thing allowed to claim a release
-  // exists. If it says published, it must carry facts the page can show —
-  // a published flag with no assets would render download buttons that lead
-  // nowhere, which is the exact defect this state machine removes.
   it('never claims a published release without downloadable assets', () => {
     if (!MACOS_RELEASE.published) {
       expect(MACOS_RELEASE.assets).toHaveLength(0);
@@ -37,21 +25,9 @@ describe('release-state', () => {
 
     expect(MACOS_RELEASE.assets.length).toBeGreaterThan(0);
 
-    /**
-     * An asset's filename must match **the tag**, not `package.json`.
-     *
-     * This assertion originally required equality with `buildDmgName(arch)` (i.e. `package.json`'s
-     * development version). The intent was right — stopping a stale generation module from serving
-     * the wrong file. But that shape **forbade the ordinary state between releases**: the moment
-     * `package.json` moved to rc.3 after shipping v1.0.0-rc.2, the contract blocked the page from
-     * offering a signed DMG that really was downloadable (measured 2026-07-28: with two rc.2 assets
-     * already downloaded six times, the page displayed "not published yet").
-     *
-     * The real invariants are three:
-     * ① the filename, URL, and tag are consistent **with each other**
-     * ② the size and checksum exist
-     * ③ what is published is **not ahead of** the development version — being ahead would mean
-     *    advertising a build that does not exist yet, which is still a defect.
+    /*
+     * Asset names follow the tag, not `package.json`, which moves ahead between releases: name,
+     * URL and tag agree, size and checksum exist, and the tag is never ahead of the version.
      */
     const tagVersion = MACOS_RELEASE.tag.replace(/^v/, '');
     for (const arch of ARCH_ORDER) {
@@ -65,18 +41,15 @@ describe('release-state', () => {
     }
     expect(MACOS_RELEASE.publishedAt).not.toBeNull();
 
-    // ③ The published tag must not be ahead of the development version. It is equal (release day)
-    //    or behind (working on the next version).
     expect(compareVersions(tagVersion, RELEASE_VERSION)).toBeLessThanOrEqual(0);
   });
 });
 
-/** A semver-ish comparison — this repository's tags are only `major.minor.patch[-rc.N]`. */
+/** Enough for this repository's `major.minor.patch[-rc.N]` tags. */
 function compareVersions(a: string, b: string): number {
   const parse = (v: string) => {
     const [core, pre] = v.split('-');
     const nums = core.split('.').map((n) => Number.parseInt(n, 10));
-    // A prerelease comes **before** the final of the same core (rc.2 < 1.0.0).
     const preRank = pre ? Number.parseInt(pre.replace(/\D/g, ''), 10) || 0 : Number.MAX_SAFE_INTEGER;
     return [...nums, preRank];
   };

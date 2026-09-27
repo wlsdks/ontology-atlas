@@ -108,6 +108,15 @@ const NAME_MATCH_TIERS = [
 
 export type NameMatchTier = (typeof NAME_MATCH_TIERS)[number];
 
+/** The palette score each tier earns, one ladder for concepts and projects. */
+export const NAME_TIER_SCORE: Readonly<Record<NameMatchTier, number>> = {
+  equals: 7,
+  prefix: 6,
+  includes: 5,
+  "hangul-prefix": 4,
+  "hangul-includes": 3,
+};
+
 /** Which name matched, and how. */
 export interface NameMatch {
   /** The name as written — what a result row shows when it is not the one already on screen. */

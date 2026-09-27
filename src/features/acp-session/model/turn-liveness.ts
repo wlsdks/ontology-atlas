@@ -1,20 +1,9 @@
 /**
  * Is a turn that has not answered yet still **alive**?
  *
- * ⚠️ **Why this exists** (measured in the installed v1.0.0-rc.11 build, 2026-08-25). A turn ended on
- * the agent's side without the app ever learning: all nine of its steps completed, the adapter
- * process stayed up but burned 0.35s of CPU over thirteen minutes, and no `session/prompt` result
- * arrived. `send()` returns to `ready` only when that promise resolves, and `prompt` is deliberately
- * given **no timeout** — a turn sweeping a codebase can legitimately take minutes.
- *
- * So the screen kept claiming progress forever, the composer refused to send, and pressing Return
- * did nothing. The stop control (`acpChat.stop`) did recover it, but nothing on screen said so, and
- * a person has no way to tell "still working" from "stopped answering" when both look identical.
- *
- * The repair is not a timeout on the turn; that would cut off the long sweeps the no-limit rule was
- * written to protect. It is a **liveness check**: a working turn emits `session/update` constantly
- * — tool rows, thoughts, plan entries — so silence for far longer than any gap between steps means
- * the turn has stopped talking, whatever it is doing.
+ * `prompt` has no timeout, because a turn sweeping a codebase can take minutes, so a
+ * turn that stopped answering looks exactly like a working one. A working turn emits
+ * `session/update` constantly; silence far longer than any gap means it stopped talking.
  *
  * This module is pure. The caller supplies the clock, so the decision is testable without waiting.
  */
@@ -47,9 +36,8 @@ export function turnLiveness(
 ): TurnLiveness {
   if (status !== 'thinking') return 'idle';
   /*
-   * ⚠️ **The ball is in the person's court, so silence is theirs, not the agent's.** Caught in the
-   * installed rc.12 build: a permission card sat on screen while the notice underneath said the
-   * agent had gone quiet for three minutes. Updates genuinely stop while an answer is awaited, so
+   * ⚠️ **The ball is in the person's court, so silence is theirs, not the agent's.** Updates
+   * genuinely stop while a permission card awaits an answer, so
    * the check below sees a stall — but the wait is already explained by the card, and telling
    * somebody that nothing is happening while they are the thing that is not happening is worse than
    * saying nothing.

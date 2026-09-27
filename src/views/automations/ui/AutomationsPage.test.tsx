@@ -97,7 +97,6 @@ describe('Automations manager', () => {
     fireEvent.click(screen.getByTestId('automations-new'));
     fireEvent.change(screen.getByTestId('ontology-automation-name'), { target: { value: 'Discard this name' } });
     fireEvent.change(screen.getByTestId('ontology-automation-focus'), { target: { value: 'Discard this scope' } });
-    /* The same unit + rail picker as the documents sheet; every six hours is the rail's 6h detent. */
     fireEvent.click(screen.getByRole('radio', { name: 'Day' }));
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     await waitFor(() => expect(screen.queryByTestId('ontology-automation-sheet')).not.toBeInTheDocument());
@@ -139,7 +138,6 @@ describe('Automations manager', () => {
     };
     renderPage(runner({ rounds: [round], state: { v: 1, rounds: [round] }, ledger: [entry] }));
 
-    // The row header states the latest outcome; the expanded report leads with its summary.
     expect(screen.getByTestId('automation-ontology-1')).toHaveTextContent(en.automations.outcome.reviewed);
     expect(screen.getByTestId('automations-last-run')).not.toHaveTextContent(en.automations.outcome.reviewed);
     expect(screen.getByTestId('automations-last-run')).toHaveTextContent('one source binding gap');
@@ -147,11 +145,6 @@ describe('Automations manager', () => {
     expect(screen.getByTestId('automations-last-run')).toHaveTextContent('query_ontology');
   });
 
-  /*
-   * Owner review, 2026-09-26: the empty lane said "no schedules yet" in its title, then again as
-   * "schedules appear here" in the list body and "results appear here after the first run" at its
-   * foot. The list under the title is its frame now: title, count and column heads.
-   */
   it.each(['ontology', 'documents'] as const)('says an empty %s lane once, over a list that is only its frame', (lane) => {
     search = `kind=${lane}`;
     renderPage(runner({ storeStatus: 'missing' }));

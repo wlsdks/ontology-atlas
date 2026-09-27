@@ -96,7 +96,6 @@ describe("Select — selection", () => {
     fireEvent.click(screen.getByRole("option", { name: /요소/ }));
     expect(onChange).toHaveBeenCalledWith("element");
     expect(screen.getByRole("combobox")).toHaveTextContent("요소");
-    // closes after selection
     expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
   });
 });
@@ -114,7 +113,6 @@ describe("Select — keyboard navigation", () => {
     const onChange = vi.fn();
     render(<Harness onChange={onChange} />);
     const trigger = screen.getByRole("combobox");
-    // open with selection at index 0 (unselected -> starts 0)
     fireEvent.keyDown(trigger, { key: "ArrowDown" }); // open, active 0
     fireEvent.keyDown(trigger, { key: "ArrowDown" }); // active 1
     fireEvent.keyDown(trigger, { key: "Enter" });
@@ -153,14 +151,11 @@ describe("Select — disabled", () => {
 });
 
 /**
- * A regression measured in the installed app on 2026-08-02: the list was clipped
- * by an ancestor's `overflow: hidden`, so 1 of 7 models was visible (14.8%) and
- * ArrowDown moved the view by 0px. The clipping ancestor (`.ai-row-disclosure`)
- * needs its `overflow: hidden` for the height transition, so moving the list
- * outside it was the only fix.
+ * An `overflow: hidden` ancestor (`.ai-row-disclosure`, which needs it for its height
+ * transition) clipped the list, so the list must render outside it.
  */
-describe("Select — 목록은 잘리는 조상 밖에 산다", () => {
-  it("목록은 트리거의 DOM 서브트리가 아니라 body 아래로 포털된다", () => {
+describe("Select listbox lives outside clipping ancestors", () => {
+  it("portals the listbox under body rather than the trigger subtree", () => {
     const { container } = render(<Harness />);
     fireEvent.click(screen.getByRole("combobox"));
     const listbox = screen.getByRole("listbox");
@@ -168,7 +163,7 @@ describe("Select — 목록은 잘리는 조상 밖에 산다", () => {
     expect(document.body.contains(listbox)).toBe(true);
   });
 
-  it("잘리는 조상 안에서 열어도 목록은 그 조상 밖에 그려진다", () => {
+  it("draws the listbox outside a clipping ancestor it opens in", () => {
     render(
       <div data-testid="clipper" style={{ overflow: "hidden", height: 40 }}>
         <Harness />
@@ -178,20 +173,19 @@ describe("Select — 목록은 잘리는 조상 밖에 산다", () => {
     expect(screen.getByTestId("clipper").contains(screen.getByRole("listbox"))).toBe(false);
   });
 
-  it("목록은 뷰포트 좌표로 고정되고 자기 자리를 스스로 판다", () => {
+  it("fixes the listbox in viewport coordinates and places it itself", () => {
     render(<Harness />);
     fireEvent.click(screen.getByRole("combobox"));
     const listbox = screen.getByRole("listbox");
     expect(listbox).toHaveClass("fixed");
-    // Whether it opens downward or flips up must be visible in the DOM, or it cannot be measured or audited.
+    // The direction must be in the DOM to be measured or audited.
     expect(listbox).toHaveAttribute("data-placement");
     expect(listbox.style.maxHeight).not.toBe("");
   });
 
-  it("오른쪽 끝의 트리거에서 넓게 열린 목록은 창 안으로 미끄러진다 (작성창의 작업 방식 목록, 2026-09-03)", () => {
-    // jsdom has no layout, so the rects the placement reads are stated here: a
-    // 200px trigger whose left edge sits at 620 in a 1000px window, and a list
-    // that renders 400px wide — 620 + 400 runs 28px past the 8px viewport pad.
+  it("slides a wide listbox from a right-edge trigger back inside the window", () => {
+    // jsdom has no layout, so the rects are stated: a trigger at 620 in a 1000px window and a
+    // 400px list, which runs 28px past the 8px viewport pad.
     const rect = (left: number, width: number) =>
       ({ left, right: left + width, width, top: 300, bottom: 336, height: 36, x: left, y: 300 }) as DOMRect;
     const spy = vi
@@ -215,24 +209,22 @@ describe("Select — 목록은 잘리는 조상 밖에 산다", () => {
     }
   });
 
-  it("포털된 목록 위의 pointerdown 은 바깥 클릭이 아니다", () => {
+  it("does not treat a pointerdown on the portalled listbox as an outside click", () => {
     render(<Harness />);
     fireEvent.click(screen.getByRole("combobox"));
     const option = screen.getByRole("option", { name: /요소/ });
     fireEvent.pointerDown(option);
-    // Closing here would swallow the following click and make **nothing selectable**.
+    // Closing here would swallow the following click and make nothing selectable.
     expect(screen.getByRole("listbox")).toBeInTheDocument();
   });
 });
 
 /**
- * The exit must be **visible on screen and absent from the accessibility tree.**
- * If the frame that stays in the DOM during the exit window keeps its role, a
- * screen reader keeps announcing a closed list — paying for motion with
- * accessibility.
+ * The exiting frame stays visible but leaves the accessibility tree, or a screen reader keeps
+ * announcing a closed list.
  */
-describe("Select — 퇴장 프레임", () => {
-  it("닫는 순간 목록은 접근성 트리에서 빠지고 inert 가 된다", () => {
+describe("Select exit frame", () => {
+  it("removes the listbox from the accessibility tree and makes it inert on close", () => {
     render(<Harness />);
     const trigger = screen.getByRole("combobox");
     fireEvent.click(trigger);

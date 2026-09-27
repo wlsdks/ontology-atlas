@@ -6,61 +6,13 @@ import { cn } from '@/shared/lib/cn';
 import { ICON_SIZE } from './icon-size';
 
 /**
- * **Service marks — a 20px monochrome glyph naming the service a connector talks to.**
- *
- * ## Why the connector list has one
- *
- * A connector row is *one product*, not one setting, and the same reasoning the runner list
- * already recorded applies: with the product's mark present the eye finds the row before reading
- * the name, and a list of eight commands is otherwise eight lines of identical grey text. The
- * owner asked for it directly — *"for services there are free, open icons, aren't there? Notion,
- * GitHub, that sort of thing"*.
- *
- * ## ⚠️ One mark ships, and the reason is not the licence
- *
- * The `d` below is copied **verbatim** from Simple Icons (24×24 viewBox), released under
- * **CC0 1.0** — a public-domain dedication, so no attribution is required and none is implied.
- * **CC0 waives copyright, not trademark**, and Simple Icons' own disclaimer says so. Copyright was
- * never the question here; whether each owner permits a recoloured copy of their mark is.
- *
- * A permissibility review on 2026-09-05 cut the set from ten to one:
- *
- * - **Kept** where the owner's published guideline was read and permits monochrome use to show an
- *   integration. Each entry cites that page and the date it was read.
- * - **Removed** where the guideline says the mark must not be modified or altered — recolouring to
- *   `currentColor` at 20px is a modification, whatever it looks like.
- * - **Removed** where the guideline could not be verified in that session. **Silence is not
- *   permission**, and a mark shipped on the assumption that nobody minds is the assumption doing
- *   the work.
- *
- * Adding one back is a one-line entry plus a header note carrying the guideline URL and the date
- * it was read. Everything else falls back to lucide `Plug`, which is honest: the row still says
- * "this is an MCP connector", which is what we actually know.
- *
- * ## Why the paths are inlined rather than a dependency
- *
- * `simple-icons` is a 3,000-icon package, and a dependency exists to be updated; an update that
- * changes a path changes a logo without anyone looking at it. One reviewed path in one reviewed
- * file is the whole surface, and it is diffable. `lucide-react` cannot supply it either — it
- * dropped every brand icon (measured 2026-07-29).
- *
- * ## Colour and size
- *
- * One `currentColor`, so the mark inherits the row's ink and this app stays neutrals plus one
- * indigo (a mark arriving with its own brand colour would be a second colour system, which
- * `.claude/rules/design.md` forbids).
- *
- * Size is **20px through `size-5`**, and no new value is invented: that is exactly the box
- * `VendorMark` already draws another product's mark in, and this is the same role in a different
- * list. A product mark is not a content icon, so 20 is deliberately not on the content ramp
- * (12/14/16) — the box is a class, never a `size={20}` prop the ramp gate would rightly catch.
- *
- * ⚠️ **The fallback is 16 inside that 20 box, and the difference is optical, not a second value.**
- * A Simple Icons mark fills its 24 viewBox edge to edge, while a lucide outline draws inside the
- * same viewBox with padding — the correction `github-mark.tsx` measured for the same swap
- * (14 vs 16 there). Rendering `Plug` at 20 would make the row we know least about the heaviest
- * one on the list. So the box stays 20 for every row, and the glyph inside it is `ICON_SIZE.lg`,
- * on the content ramp where a lucide icon belongs.
+ * 20px monochrome marks for the service a connector talks to. Each path is copied from Simple
+ * Icons (CC0), but CC0 waives copyright, not trademark: a mark ships only when its owner's
+ * guideline, cited with the date it was read, permits a monochrome integration use
+ * (service-mark.test.tsx reads those citations). Paths are inlined so a dependency update
+ * cannot change a logo unreviewed. `currentColor` keeps one colour system
+ * (`.claude/rules/design.md`); the lucide fallback is `ICON_SIZE.lg` inside the same 20px box
+ * because it draws with padding.
  */
 const SERVICE_MARK_PATHS: Record<string, string> = {
   /*
@@ -76,30 +28,17 @@ const SERVICE_MARK_PATHS: Record<string, string> = {
 export type ServiceMarkName = keyof typeof SERVICE_MARK_PATHS;
 
 /**
- * Which mark a connector wears — matched on **its name and on what it actually runs**.
- *
- * The name alone is not enough: people call the same server `github`, `gh`, or `work-repos`, while
- * the command (`github-mcp-server`) and the address host (`api.githubcopilot.com`) are the parts
- * that cannot lie about which service is on the other end. Both are searched, and neither wins
- * over the other — a person who renamed the row still pointed it at GitHub.
- *
- * ⚠️ **The table stays even though it holds one row.** It is the shape a re-added mark drops into
- * after its guideline is read (one path above, one line here), and a lookup written for one entry
- * would have to be rewritten to take the second. Fragments are matched case-insensitively against
- * `<name> <command and arguments, or URL>`, so each must be specific enough not to appear by
- * accident — the reason a removed Chrome entry could not simply be `chrome`, which occurs inside
- * ordinary paths, and the reason Drive's was the full `drive.google.com`.
+ * Matches the connector name and what it runs (command or URL host), so a renamed row still finds
+ * its service. Fragments must not occur by accident in ordinary paths. A table even at one row,
+ * because a re-added mark drops in as one line once its guideline is read.
  */
 const SERVICE_MARK_HINTS: ReadonlyArray<readonly [ServiceMarkName, readonly string[]]> = [
   ['github', ['github', 'githubcopilot.com']],
 ];
 
 /**
- * The mark for one connector, or `null` when nothing matches — the caller draws the fallback.
- *
- * `runs` is the row's own "what will actually run" line: the command with its arguments, or the
- * address. Passing the rendered line rather than the record keeps this function pure and testable
- * without a connector shape.
+ * The `runs` argument is the row's rendered command-or-address line, which keeps this
+ * pure; `null` means the caller draws the fallback.
  */
 export function resolveServiceMark(name: string, runs: string): ServiceMarkName | null {
   const haystack = `${name} ${runs}`.toLowerCase();
@@ -111,7 +50,6 @@ export function resolveServiceMark(name: string, runs: string): ServiceMarkName 
 
 export interface ServiceMarkProps
   extends Omit<SVGProps<SVGSVGElement>, 'width' | 'height' | 'viewBox' | 'children'> {
-  /** The resolved service, or `null`/an unknown name for the generic MCP fallback. */
   mark: ServiceMarkName | null | undefined;
 }
 
@@ -127,8 +65,7 @@ export function ServiceMark({ mark, className, ...rest }: ServiceMarkProps) {
         <svg
           viewBox="0 0 24 24"
           fill="currentColor"
-          // Decorative: every row states the service in text right beside this, so announcing
-          // the mark as well would read the same name twice.
+          // Decorative: the row names the service in text beside it.
           aria-hidden
           focusable="false"
           className="size-full"
@@ -137,11 +74,7 @@ export function ServiceMark({ mark, className, ...rest }: ServiceMarkProps) {
           <path data-mark-part="simple-icon" d={path} />
         </svg>
       ) : (
-        /*
-         * The fallback is lucide `Plug` — the rail's own icon for this destination. A row whose
-         * service we do not recognise still says "this is an MCP connector", which is true,
-         * instead of leaving a hole the eye reads as a failed image.
-         */
+        /* An unrecognised service still reads as an MCP connector instead of a broken image. */
         <Plug size={ICON_SIZE.lg} aria-hidden focusable="false" />
       )}
     </span>

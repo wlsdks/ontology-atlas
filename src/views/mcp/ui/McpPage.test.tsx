@@ -49,18 +49,18 @@ function draw(next: Partial<VaultConnectorsState>, handle: FileSystemDirectoryHa
   );
 }
 
-describe('MCP 탭 — 답하기 전에는 쓰라고 하지 않는다', () => {
-  it('폴더를 읽는 중에는 추가 버튼을 내지 않는다', () => {
+describe('MCP tab offers no write before the store answers', () => {
+  it('shows no add button while the folder is loading', () => {
     draw({ status: 'loading' });
     expect(screen.queryByTestId('connectors-add-open')).toBeNull();
   });
 
-  it('파일이 우리 것이 아니면 추가 버튼을 내지 않는다 — 쓸 수 없는 상태다', () => {
+  it('shows no add button when the file is not ours to write', () => {
     draw({ status: 'malformed' });
     expect(screen.queryByTestId('connectors-add-open')).toBeNull();
   });
 
-  it('스토어가 답하면 추가 버튼이 선다', () => {
+  it('shows the add button once the store answers', () => {
     draw({
       status: 'ready',
       connectors: [
@@ -71,33 +71,28 @@ describe('MCP 탭 — 답하기 전에는 쓰라고 하지 않는다', () => {
   });
 });
 
-describe('MCP 탭 — 폴더는 한 번만 청한다', () => {
-  it('폴더가 없으면 연결 도구 칸은 카드 대신 한 줄로, 두 번째 버튼 없이', () => {
+describe('MCP tab asks for a folder once', () => {
+  it('renders the connector section as one line without a second button when no folder is open', () => {
     draw({ status: 'unavailable' }, null);
     expect(screen.getByTestId('mcp-connectors-need-folder')).toBeInTheDocument();
-    // The share group above already asks and carries the button; the panel is not drawn at all.
     expect(screen.queryByTestId('connectors-panel')).toBeNull();
   });
 
-  it('폴더가 있으면 연결 도구 판을 그대로 그린다', () => {
+  it('renders the connector board when a folder is open', () => {
     draw({ status: 'ready' });
     expect(screen.getByTestId('connectors-panel')).toBeInTheDocument();
     expect(screen.queryByTestId('mcp-connectors-need-folder')).toBeNull();
   });
 });
 
-describe('MCP 탭 — 아직 모르는 수를 말하지 않는다', () => {
-  it('폴더를 읽는 중에는 머리글이 개수를 주장하지 않는다', () => {
+describe('MCP tab states no count it does not know yet', () => {
+  it('claims no count in the heading while the folder is loading', () => {
     draw({ status: 'loading' });
     expect(screen.getByText(ko.mcp.connectorsHeading)).toBeInTheDocument();
   });
 
-  /*
-   * Both numbers, because the card below stopped saying the denominator on 2026-09-20 and this
-   * heading is now the only place it appears. A heading that dropped back to "1 on" would leave
-   * a person unable to tell a missing connector from a switched-off one.
-   */
-  it('스토어가 답하면 그때 켜 둔 수와 전체 수를 함께 말한다', () => {
+  /* The heading is the only place the total appears. */
+  it('states the enabled and total counts once the store answers', () => {
     draw({
       status: 'ready',
       connectors: [

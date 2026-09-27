@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { StaggeredFadeIn } from './staggered-fade-in';
 
 describe('StaggeredFadeIn', () => {
-  it('모든 자식을 그대로 렌더한다 (애니메이션이 콘텐츠를 가리지 않음)', () => {
+  it('renders every child so the animation never hides content', () => {
     render(
       <StaggeredFadeIn as="ul">
         <li>alpha</li>
@@ -16,7 +16,7 @@ describe('StaggeredFadeIn', () => {
     expect(screen.getByText('gamma')).toBeInTheDocument();
   });
 
-  it('ariaLabel 을 컨테이너에 전달한다 (의미 있는 region 보존)', () => {
+  it('passes ariaLabel to the container region', () => {
     render(
       <StaggeredFadeIn as="section" ariaLabel="통계 strip">
         <div>x</div>
@@ -27,7 +27,7 @@ describe('StaggeredFadeIn', () => {
     ).toBeInTheDocument();
   });
 
-  it('각 자식에 motion-reduce 안전 클래스를 주입한다 (prefers-reduced-motion 존중)', () => {
+  it('adds the motion-reduce class to each child', () => {
     render(
       <StaggeredFadeIn>
         <div data-testid="child">y</div>
@@ -38,7 +38,7 @@ describe('StaggeredFadeIn', () => {
     );
   });
 
-  it('자식에 inline transform/opacity transition style 을 주입한다', () => {
+  it('adds an inline transform and opacity transition to each child', () => {
     render(
       <StaggeredFadeIn>
         <div data-testid="child">z</div>
@@ -49,7 +49,7 @@ describe('StaggeredFadeIn', () => {
     expect(style).toContain('transition');
   });
 
-  it('큰 리스트에서 stagger delay 를 maxStaggerSteps 로 상한 (절름발이 cascade 방지)', () => {
+  it('caps the stagger delay at maxStaggerSteps for a long list', () => {
     render(
       <StaggeredFadeIn stagger={60} maxStaggerSteps={8}>
         {Array.from({ length: 12 }, (_, i) => (
@@ -59,9 +59,9 @@ describe('StaggeredFadeIn', () => {
         ))}
       </StaggeredFadeIn>,
     );
-    // Within the cap (index 2) → 2*60 = 120ms.
+    // Within the cap: index 2 waits 2 * 60 = 120ms.
     expect(screen.getByTestId('c2').getAttribute('style')).toContain('120ms');
-    // Past the cap (index 11) → capped at 8*60 = 480ms, not 660ms.
+    // Past the cap: index 11 waits 8 * 60 = 480ms, not 660ms.
     const capped = screen.getByTestId('c11').getAttribute('style') ?? '';
     expect(capped).toContain('480ms');
     expect(capped).not.toContain('660ms');

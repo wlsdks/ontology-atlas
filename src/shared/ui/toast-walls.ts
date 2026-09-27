@@ -1,30 +1,15 @@
 /**
- * **The free lane a toast stands in** (owner, 2026-09-24).
- *
- * A toast is centred at the bottom of the space the screen's own chrome leaves free,
- * never across that chrome. A surface says which of its boxes are walls with
- * `data-toast-wall="left" | "right" | "bottom"` — the nav rail, the map's INDEX stack
- * and docked panel stand at the sides; the map's corner readout and its first-visit hint
- * stand on the floor — and the toaster centres between the innermost left and right
- * walls, above the highest floor wall.
- *
- * **Why walls are declared rather than computed from tokens.** INDEX is 300px expanded
- * and a 26px tab collapsed, the dock is whatever width a person dragged it to, the
- * readout steps aside while a panel is open, and the rail zooms at 1920 and disappears
- * below `lg`. A token formula would have to repeat every one of those rules; the
- * rendered box already knows the answer.
- *
- * Measured only while a toast is on screen (`ToastProvider`), so the cost of the lane is
- * zero when there is nothing to place.
+ * The free lane a toast stands in. A surface marks its chrome
+ * with `data-toast-wall="left" | "right" | "bottom"`, and the toaster centres between the
+ * innermost side walls above the highest floor wall. Walls are declared rather than derived
+ * from tokens because widths change at run time (INDEX folding, a dragged dock); the rendered
+ * box already knows. Measured only while a toast is on screen.
  */
 
-/** Below this much free width the side walls are ignored and the toast uses the viewport. */
+/** Below this free width the side walls are ignored and the toast uses the viewport. */
 export const TOAST_LANE_MIN_WIDTH_PX = 360;
 
-/**
- * A floor wall taller than this share of the window is a sheet, not a floor: standing a
- * toast on top of it would put the box in the middle of the screen.
- */
+/** A floor wall above this share of the window is a sheet; a toast on it would stand mid-screen. */
 export const TOAST_FLOOR_MAX_SHARE = 0.4;
 
 export const TOAST_LEFT_WALL_VAR = '--app-toast-left-wall';
@@ -41,19 +26,15 @@ export interface ToastWallRect {
 }
 
 export interface ToastLane {
-  /** px from the viewport's left edge to the lane. */
   left: number;
-  /** px from the viewport's right edge to the lane. */
   right: number;
   /** px from the viewport's bottom edge to the top of the highest floor wall. */
   bottom: number;
 }
 
 /**
- * The lane between the walls. A wall with no area (a hidden rail, an unmounted tab) is
- * not a wall. A lane narrower than {@link TOAST_LANE_MIN_WIDTH_PX} — a panel drawn as a
- * full-width sheet — is no lane at all, and the toast falls back to the viewport's
- * width, drawn above that sheet like any transient.
+ * A wall with no area is not a wall. A lane narrower than {@link TOAST_LANE_MIN_WIDTH_PX}, as
+ * beside a full-width sheet, falls back to the viewport width above that sheet.
  */
 export function resolveToastLane(
   viewportWidth: number,
@@ -80,17 +61,13 @@ export function resolveToastLane(
   return { left: Math.round(left), right: Math.round(right), bottom: Math.round(bottom) };
 }
 
-/**
- * A wall that has stepped aside is not a wall: the map's readout fades to `opacity: 0`
- * and marks itself `aria-hidden` while a panel is open, and keeps its box.
- */
+/** A readout that faded and set `aria-hidden` keeps its box but is not a wall. */
 function standing(element: HTMLElement): boolean {
   if (element.closest('[aria-hidden="true"]')) return false;
   const style = window.getComputedStyle(element);
   return style.visibility !== 'hidden' && Number.parseFloat(style.opacity) > 0.05;
 }
 
-/** Reads every declared wall from the document and publishes the lane as variables. */
 export function publishToastLane(): Element[] {
   if (typeof document === 'undefined' || typeof window === 'undefined') return [];
   const elements = Array.from(document.querySelectorAll<HTMLElement>('[data-toast-wall]'));

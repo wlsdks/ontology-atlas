@@ -7,22 +7,26 @@ import {
 } from "./lib/release-script-contract.mjs";
 import { inspectCodexRunContract } from "./lib/codex-run-contract.mjs";
 import { connectSrcIsExact, DESKTOP_CONNECT_SRC_TOKENS } from "./lib/desktop-csp.mjs";
+import { blankComments } from "./quality/source-language/inventory.mjs";
 
 const root = process.cwd();
 
 // A missing target file is downgraded to a readable failure rather than a raw
-// ENOENT stack trace: a crash reads as "no gate" instead of "gate failed", and
-// this script — still reading the deleted `VaultToolsMenu.tsx` — sat silently
-// dead across several merges (review 2026-07-25). Returning an empty string lets
-// the following `.includes(...)` assertion fail naturally, which also names which
-// contract broke.
+// ENOENT stack trace: a crash reads as "no gate" instead of "gate failed".
+// Returning an empty string lets the following `.includes(...)` assertion fail
+// naturally, which also names which contract broke.
+//
+// Every check reads code: comments in .ts/.tsx/.mjs, .rs, .yml, .toml, .sh and
+// .gitignore are blanked, so deleting a history comment cannot turn a check red
+// and a comment naming a forbidden string cannot either. .json, .md, .plist and
+// .webmanifest files are read unchanged.
 function readText(relativePath) {
   const absolute = path.join(root, relativePath);
   if (!fs.existsSync(absolute)) {
     fail(`tracked source file is missing — ${relativePath}. Point this gate at the surface that replaced it, or drop the check.`);
     return "";
   }
-  return fs.readFileSync(absolute, "utf8").replace(/\r\n?/g, "\n");
+  return blankComments(relativePath, fs.readFileSync(absolute, "utf8").replace(/\r\n?/g, "\n"));
 }
 
 // scripts/verify-macos-app-launch.mjs was decomposed (refactor: cohesive-seam
@@ -588,15 +592,15 @@ if (
   /workflow_dispatch:/.test(pagesDeployWorkflow) &&
   /PAGES_BASE_URL:\s*https:\/\/ontologyatlas\.com/.test(pagesDeployWorkflow) &&
   !/NEXT_PUBLIC_BASE_PATH:\s*\/ontology-atlas/.test(pagesDeployWorkflow) &&
-  /uses:\s*actions\/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38\s+# v6/.test(pagesDeployWorkflow) &&
+  /uses:\s*actions\/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38\b/.test(pagesDeployWorkflow) &&
   /node-version:\s*24/.test(pagesDeployWorkflow) &&
   /corepack enable/.test(pagesDeployWorkflow) &&
   /corepack prepare pnpm@10\.18\.0 --activate/.test(pagesDeployWorkflow) &&
   /pnpm --version/.test(pagesDeployWorkflow) &&
   !/uses:\s*pnpm\/action-setup@/.test(pagesDeployWorkflow) &&
-  /pnpm build/.test(pagesDeployWorkflow) &&
-  /actions\/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa\s+# v3/.test(pagesDeployWorkflow) &&
-  /actions\/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e\s+# v4/.test(pagesDeployWorkflow) &&
+  /^\s*(?:-\s+)?run:\s*pnpm build\s*$/m.test(pagesDeployWorkflow) &&
+  /actions\/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa\b/.test(pagesDeployWorkflow) &&
+  /actions\/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e\b/.test(pagesDeployWorkflow) &&
   /pnpm desktop:verify-hosted -- --base-url="\$PAGES_BASE_URL"/.test(pagesDeployWorkflow) &&
   /pnpm desktop:verify-download -- --tag="\$PUBLISHED_RELEASE_TAG"/.test(pagesDeployWorkflow) &&
   !/FIREBASE|firebase-tools|deploy --only hosting/.test(pagesDeployWorkflow)
@@ -613,13 +617,10 @@ if (
   downloadReleaseVerifier.includes("do not match the tag version") &&
   downloadReleaseVerifier.includes("allowDraft") &&
   downloadReleaseVerifier.includes("per_page=100") &&
-  // The fallback finds the draft **by tag**, and does not filter again on
-  // prerelease status — a caller who named the tag has already said what it wants,
-  // and filtering once more makes an RC draft impossible to verify (measured on
-  // v1.0.0-rc.1, 2026-07-27).
   downloadReleaseVerifier.includes("export function isRequestedDraft") &&
   downloadReleaseVerifier.includes("release?.tag_name === tag && release?.draft === true") &&
-  downloadReleaseVerifier.includes("if (!options.tag && release.prerelease && !options.allowPrerelease)") &&
+  downloadReleaseVerifier.includes("if (release.prerelease) {") &&
+  !downloadReleaseVerifier.includes("allowPrerelease") &&
   downloadReleaseVerifier.includes("unsupported macOS DMG asset names") &&
   downloadReleaseVerifier.includes("function isAnyDmgAsset") &&
   downloadReleaseVerifier.includes('asset.name.endsWith(".dmg")') &&
@@ -637,7 +638,7 @@ if (
   pass("desktop download verifier re-downloads and hashes the required macOS and Windows installers");
 } else {
   fail(
-    "scripts/check-macos-download-release.mjs must require explicit one-per-architecture aarch64 and x64 ontology-atlas DMGs plus exactly one Windows x64 setup executable, reject unsupported or duplicate DMGs, verify artifact filename versions match the release tag, re-download macOS and Windows bytes to match their checksums, and let --allow-draft find tagged draft pre-publish assets",
+    "scripts/check-macos-download-release.mjs must require explicit one-per-architecture aarch64 and x64 ontology-atlas DMGs plus exactly one Windows x64 setup executable, reject unsupported or duplicate DMGs, verify artifact filename versions match the release tag, re-download macOS and Windows bytes to match their checksums, and let --allow-draft find tagged draft pre-publish assets, and refuse any release GitHub marks as a pre-release",
   );
 }
 
@@ -657,15 +658,9 @@ if (desktopPreflightContract.ok) {
  * This order is a contract, not a preference. **DMG signing must sit between
  * packaging and notarisation.**
  *
- * Measured on v1.0.0-rc.1, 2026-07-27: signing only the `.app` and wrapping it in
- * a DMG passes notarisation, but Gatekeeper rejects it —
- *
- *   [desktop-notarize] notarized and stapled ...aarch64.dmg
- *   spctl --assess --type open ... : rejected
- *   source=no usable signature
- *
- * The notarisation ticket attached but the wrapper had no signature. Signing
- * **after** notarisation invalidates the staple, so there is exactly one slot.
+ * Gatekeeper evaluates the DMG container itself, so a notarised but unsigned DMG
+ * around a signed `.app` is still rejected, and signing after notarisation
+ * invalidates the staple: there is exactly one slot.
  *
  * **The updater archive (`desktop:repack-updater`) also has exactly one slot —
  * immediately after app signing.** Packed earlier it carries the pre-signature app,
@@ -905,14 +900,8 @@ if (
   // The hub is the map: `/ontology`'s tree hub (OntologyViewPage) was retired and
   // both `/` and `/ontology` converged on this empty state, so the check converges
   // too.
-  topologyEmptyState.includes("isTauriVaultRuntime") &&
-  // Measure the destination, **not the quote character** (2026-08-03). This used
-  // to pin double quotes, so a refactor that wrote the same link with single quotes
-  // turned the gate red — the destination was unchanged and only the character
-  // differed. A gate that guards formatting instead of the spec makes the next
-  // person revert the formatting rather than fix the gate.
-  /["']\/download\/["']/.test(topologyEmptyState) &&
-  /["']\/docs\/\?intent=local["']/.test(topologyEmptyState) &&
+  // Measure the destination, not the formatting.
+  /showPickerPath\s*\?\s*['"]\/docs\/\?intent=local['"]\s*:\s*['"]\/download\/['"]/.test(topologyEmptyState) &&
   /Install the desktop app/i.test(enMessages.topology?.empty?.bodyNoProjectsDownload ?? "")
 ) {
   pass("the topology empty state routes hosted users to the app download while preserving desktop vault picking");
@@ -959,8 +948,7 @@ if (
   internalPipelineLeaks.every(
     (marker) => !downloadPage.includes(marker) && !downloadRoute.includes(marker),
   ) &&
-  downloadGeneratedRelease.includes("Generated by `pnpm download:release-facts`") &&
-  /published:\s*(true|false)/.test(downloadGeneratedRelease) &&
+  /^export const MACOS_RELEASE: MacosRelease = \{\n\s+published: (?:true|false),/m.test(downloadGeneratedRelease) &&
   // Before publication only one state remains, "not yet", instead of placeholders.
   /has not been published yet/.test(enMessages.download?.macosPendingBody ?? "") &&
   /게시 전/.test(koMessages.download?.macosPendingBody ?? "") &&
@@ -1033,7 +1021,6 @@ if (
 if (
   bottomTabBar.includes("shouldHideBottomTabBar(pathname") &&
   /normalized === ['"]\/download['"]/.test(bottomTabBarPolicy) &&
-  /root-first-open/.test(bottomTabBarPolicy) &&
   !/normalized === ['"]\/['"] &&\s*!hasLoadedVault/.test(bottomTabBarPolicy)
 ) {
   pass("mobile bottom navigation hides only on the standalone download page, keeping global nav on the root map");
@@ -1044,14 +1031,14 @@ if (
 }
 
 if (
-  (releaseWorkflow.match(/uses:\s*actions\/checkout@d23441a48e516b6c34aea4fa41551a30e30af803\s+# v6/g)?.length ?? 0) >= 4 &&
-  (releaseWorkflow.match(/uses:\s*actions\/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38\s+# v6/g)?.length ?? 0) >= 4 &&
+  (releaseWorkflow.match(/uses:\s*actions\/checkout@d23441a48e516b6c34aea4fa41551a30e30af803\b/g)?.length ?? 0) >= 4 &&
+  (releaseWorkflow.match(/uses:\s*actions\/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38\b/g)?.length ?? 0) >= 4 &&
   (releaseWorkflow.match(/corepack enable/g)?.length ?? 0) >= 4 &&
   (releaseWorkflow.match(/corepack prepare pnpm@10\.18\.0 --activate/g)?.length ?? 0) >= 4 &&
   (releaseWorkflow.match(/pnpm --version/g)?.length ?? 0) >= 4 &&
-  /uses:\s*actions\/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a\s+# v7/.test(releaseWorkflow) &&
-  /uses:\s*actions\/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131\s+# v7/.test(releaseWorkflow) &&
-  /uses:\s*softprops\/action-gh-release@c12583777ecdfd3be55c69cf75464299dc01057e\s+# v3/.test(releaseWorkflow) &&
+  /uses:\s*actions\/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a\b/.test(releaseWorkflow) &&
+  /uses:\s*actions\/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131\b/.test(releaseWorkflow) &&
+  /uses:\s*softprops\/action-gh-release@c12583777ecdfd3be55c69cf75464299dc01057e\b/.test(releaseWorkflow) &&
   !/uses:\s*pnpm\/action-setup@/.test(releaseWorkflow)
 ) {
   pass("macOS release workflow uses Node 24 action majors and Corepack pnpm without pnpm/action-setup");

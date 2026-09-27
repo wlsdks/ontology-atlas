@@ -4,10 +4,8 @@ import { render, screen } from '@testing-library/react';
 import { HiddenCountLine } from './hidden-count-line';
 
 /**
- * The rule: a counted group that draws fewer rows than it holds must say how
- * many it withheld and point at where the rest is readable — and must say
- * nothing at all when it withheld nothing. A permanently visible remainder line
- * is noise; a permanently absent one is the silent truncation this round fixed.
+ * A group drawing fewer rows than it holds says how many it withheld and where to read them,
+ * and says nothing when it withheld nothing.
  */
 describe('HiddenCountLine', () => {
   it('renders nothing when the view shows everything it counted', () => {
@@ -44,8 +42,7 @@ describe('HiddenCountLine', () => {
   });
 
   it('computes the difference itself, so a caller cannot print a disagreeing number', () => {
-    // `label` receives the component's own subtraction — there is no prop that
-    // takes a finished sentence, so a stale count cannot be passed in.
+    // No prop takes a finished sentence, so a stale count cannot be passed in.
     let seen = -1;
     render(
       <HiddenCountLine

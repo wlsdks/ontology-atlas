@@ -208,19 +208,10 @@ test('mandatory proposal warnings block the first review before qualification wo
 });
 
 /**
- * A refusal is the only thing a blocked caller gets to read, so it has to name an
- * action rather than a noun. This one used to end at "Complete the
- * constructionQualification:v1 packet", which describes what is missing and never
- * what is available: the bulk `writePlan` is gated on an independent evaluation,
- * but `add_concepts` and `add_relation` are not. A person with one coding agent
- * therefore stalled with a legitimate, ungated path installed on their own disk
- * and unnamed. A recorded field trial watched exactly that happen on three
- * unfamiliar repositories, where the builder stopped at `canWrite:false` with zero
- * semantic writes.
- *
- * Naming the open path must not soften the closed one, so both halves are asserted
- * together: the gate still reports not-qualified with no `writePlan`, and it still
- * refuses a fabricated evaluator.
+ * A refusal is all a blocked caller reads, so it names an action: the bulk
+ * writePlan waits for an independent evaluation, but add_concepts and
+ * add_relation do not. Naming the open path must not soften the closed one, so
+ * the gate is asserted still closed (no writePlan, fabricated evaluator refused).
  */
 test('a stalled lifecycle names the path that stays open without opening the gated one', () => {
   const stalled = evaluate(null);

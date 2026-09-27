@@ -2,15 +2,6 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { GitPage } from "./GitPage";
 
-/**
- * The history destination (elements/git) composes elements/atlas-git-panel as its
- * route body and owns nothing else — no rendering, no diff formatting, no writes.
- * What is genuinely its own is the composition contract stated in the source: the
- * vault git context is read once here and handed to the panel, and the page takes
- * the height the shell offers instead of collapsing to content height (the measured
- * 2026-07-26 defect where the canvas stopped at y=554 on a 1223px viewport).
- */
-
 const panelProps = vi.fn();
 
 vi.mock("@/widgets/atlas-git-panel", () => ({

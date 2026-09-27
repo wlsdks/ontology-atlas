@@ -10,49 +10,22 @@ const buttonVariants = cva(
     'border border-transparent',
     'select-none',
     /*
-     * ⚠️ No duration here (2026-08-15). It used to be `--motion-base` (180ms), which is
-     * the **move** step. Hover only acknowledges a state that already changed, so its
-     * budget is `--motion-fast` (120ms) — and Tailwind's default transition already
-     * spends exactly that (`.claude/rules/design.md`: at the default value, omit the
-     * duration class entirely). The `active:translate-y-[1px]` press feedback rides the
-     * same group and therefore also lands at 120ms, which is right — a press must feel
-     * immediate. `ease-` is dropped for the same reason: it equalled the default.
+     * No duration class: hover acknowledges a changed state, so it takes Tailwind's default
+     * (`--motion-fast`), and so does the press feedback (`.claude/rules/design.md`).
      */
     'transition-[background-color,border-color,color,box-shadow,transform]',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]',
     'active:translate-y-[1px]',
     'motion-reduce:transition-none motion-reduce:transform-none',
-    // Disabled uses `cursor-not-allowed` rather than `pointer-events-none`, so hovering
-    // still answers "why won't this press". Hover styling is suppressed while disabled.
+    // Disabled keeps pointer events so hovering still answers "why won't this press".
     'disabled:cursor-not-allowed disabled:opacity-55 disabled:shadow-none disabled:hover:bg-inherit disabled:hover:border-inherit disabled:active:translate-y-0',
   ].join(' '),
   {
     variants: {
       variant: {
-        // **The tinted key shadow was removed** (owner decision, 2026-08-06).
-        //
-        // `primary` used to carry an indigo-tinted drop shadow — `0 10px 24px
-        // var(--color-indigo-a22)` at rest and `0 6px 14px var(--color-indigo-a20)` when
-        // pressed. A tinted shadow implies a second light source; once the owner allowed
-        // the colour to change, the answer was already on the ramp:
-        // `--shadow-control-press`.
-        //
-        // Why no drop shadow at rest: a full inventory (2026-08-06) found that of the 21
-        // non-token `shadow-[…]` uses in this repo, **18 were inset only** (material), and
-        // the 4 hand-written drops were the outliers. `outline` in this same cva is also
-        // inset-only at rest. The convention is therefore: resting controls get material,
-        // drop shadows belong to things that float. What makes `primary` win attention is
-        // the filled indigo plane, not a shadow.
-        //
-        // Result: two off-ramp geometries removed, zero new tokens, one light source.
-        //
-        // The ink is `--color-text-on-accent` (#ffffff), **not `--color-text-primary`**.
-        // On filled indigo (`#5e6ad2`), `#f7f8f8` composites to **4.42:1**, under WCAG
-        // 1.4.3 AA (4.5); `#ffffff` reaches **4.70:1** and passes. That token was created
-        // on 2026-08-03 as "ink on filled indigo" and `accentSolid` in `control-class.ts`
-        // already used it — this primitive was the one site the migration missed, which is
-        // why the gateway's main CTA, the most prominent control in the app, was the only
-        // one below AA.
+        // Resting controls get inset material; drop shadows belong to floating things,
+        // so `primary` wins attention by its filled plane. The ink is `--color-text-on-accent`
+        // because `--color-text-primary` on filled indigo falls under WCAG AA.
         primary:
           'bg-[color:var(--color-indigo-brand)] text-[color:var(--color-text-on-accent)] shadow-[inset_0_1px_0_var(--color-border-strong)] hover:border-[color:var(--color-indigo-pale-a28)] hover:bg-[color:var(--color-indigo-brand-hover)] active:shadow-[inset_0_1px_0_var(--color-divider),var(--shadow-control-press)]',
         ghost:
@@ -60,47 +33,17 @@ const buttonVariants = cva(
         outline:
           'border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-primary)] shadow-[inset_0_1px_0_var(--color-overlay-2)] hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] active:bg-[color:var(--color-overlay-2)] active:shadow-[inset_0_1px_0_var(--color-overlay-2),var(--shadow-control-press)]',
         /*
-         * **The one irreversible action in a confirm row** (2026-09-25). A destructive
-         * confirm used to borrow `ghost` or `outline`, so "Remove" and "Cancel" differed only
-         * by order. The hue comes from the existing danger ramp (`a08`/`a12` plane, `a32`/`a50`
-         * rule, `--color-danger-text` ink) — the same four steps the insights copy-failure
-         * state already wears by hand — so the variant adds no value, only a name.
-         * Use it for the confirm step only, never for the button that opens the question.
-         *
-         * **Disabled drops the hue, not the value.** The one disabled treatment
-         * (`opacity-55`) took the danger ink to 2.42:1 on /en/automations while the removal
-         * was pending (rendered pixels, 1512, 2026-09-25); the neutral ink at the same
-         * opacity stays readable. So while disabled the variant wears `outline`'s plane,
-         * rule and ink, and the shared opacity still says "not now" — a pending confirm has
-         * nothing left to warn about.
+         * For the confirm step of an irreversible action only, never for the button that asks.
+         * Disabled wears `outline`'s plane and ink, because danger ink at `opacity-55` is
+         * unreadable and a pending confirm has nothing left to warn about.
          */
         danger:
           'border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] text-[color:var(--color-danger-text)] hover:border-[color:var(--color-danger-a50)] hover:bg-[color:var(--color-danger-a12)] active:bg-[color:var(--color-danger-a12)] active:shadow-[var(--shadow-control-press)] disabled:border-[color:var(--color-overlay-3)] disabled:bg-[color:var(--color-overlay-1)] disabled:text-[color:var(--color-text-primary)]',
       },
       /*
-       * **Radius follows the box** (2026-09-25).
-       *
-       * Every size used to wear `rounded-panel` (12px). A 32px `Button sm` stood beside a
-       * 32px `controlClass` chip `lg` and a 32px `fieldClass` field, both `rounded-chip`
-       * (6px), and read as a second product — the seam three screen reviews found at 32px
-       * (Harness toolbar, Insights brief, Projects top bar). `sm` joins them.
-       *
-       * `lg` (44px) is the download hero, whose every consumer already overrode the panel
-       * radius back to the chip radius (six call sites); the override moved here. The other
-       * `lg` consumers — the Harness toolbar's split action and rules toggle — sit in a row of
-       * chip-radius controls, so they gain the same radius, not lose one. `md` (40px) kept
-       * `rounded-panel` until a seam showed there too: the 2026-09-26 screen review found
-       * page-level primaries reading as a pill on some screens (40px with the 12px panel
-       * corner) and as a rectangle beside them (the chip corner at 32/44px). So the rule is
-       * one line now — **every Button wears the chip radius; only the boxes that hold
-       * content (card, panel, sheet) wear theirs** (owner: "decide it and make it
-       * consistent").
-       *
-       * Type stays `text-body-lg` (14px) at every size: a 32px field (`fieldClass` md) sets
-       * its text at 14px, and a 12.5px `sm` label beside it read one step smaller than the
-       * value it acts on (captured /en/project/new, 2026-09-25).
-       *
-       * No new value: every class here is an existing ramp step.
+       * Every size wears the chip radius so a Button matches chips and fields of its height;
+       * only content boxes wear theirs. Type stays `text-body-lg` to match a 32px field's value
+       * text.
        */
       size: {
         sm: 'h-8 px-3.5 rounded-chip',
@@ -125,17 +68,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         /*
-         * **The default is `type="button"`** (found by a portability test, 2026-08-15).
-         *
-         * The sibling primitives (`Chip`, `IconButton`, `RowButton`) all name the same
-         * hazard as their reason to exist — inside a form a bare `<button>` defaults to
-         * submit, so one chip submits the form — yet the standard button was the one that
-         * stayed a raw `<button>`. It never broke here because this repo has a single form
-         * and all seven buttons in it set `type` by hand. For anyone who does not know
-         * that convention (i.e. anyone adopting this system), "Cancel" submits the form.
-         *
-         * `{...props}` spreads **after** this, so passing `type="submit"` still wins and
-         * no existing call site changes.
+         * Defaults to `type="button"` so it never submits a form by accident; the spread props
+         * come after, so `type="submit"` still wins.
          */
         type="button"
         className={cn(buttonVariants({ variant, size }), className)}

@@ -1,46 +1,25 @@
-// The "absorption tool" (single spine — one spine). See
-// docs/plans/PRODUCT-PLAN-2026-07.md §4 (target — "CLAUDE.md is not replaced but absorbed":
-// the target, absorbing CLAUDE.md rather than replacing it), §7 (trust architecture —
-// injection Tier 1: trust architecture, injection Tier 1), §9 (roadmap — the roadmap).
-//
-// Converts a CLAUDE.md/AGENTS.md-style markdown file into typed vault nodes
-// without dual maintenance: rule/policy/decision sections become
-// `kind: document` nodes with a `role: policy` frontmatter extra;
-// architecture/component sections become element/capability *suggestions*
-// only (never auto-written — a human or agent must explicitly `add`/
-// `add_concept` them). Sections the tool cannot confidently classify, and any
-// section flagged injection-suspect, are excluded from absorption and stay
-// verbatim in the rewritten "slim pointer" file.
-//
-// Mirror copy: `mcp/src/absorb.mjs` (the `absorb_document` MCP tool). Kept in
-// lock-step by `tests/contract/absorb.contract.test.ts` — if you change
-// anything here, mirror it there (and vice versa).
-//
-// Pure module — no filesystem access. Callers supply `isSlugTaken` so the
-// plan stays deterministic and unit-testable; the CLI/MCP write path wires
-// that predicate to a real vault existence check.
+// Absorbs a CLAUDE.md/AGENTS.md-style file into typed vault nodes instead of
+// replacing it (docs/plans/PRODUCT-PLAN-2026-07.md §4, §7). Rule, policy and
+// decision sections become `kind: document` nodes with `role: policy`;
+// architecture sections become element/capability suggestions only, never
+// written automatically. Unclassified and injection-suspect sections stay
+// verbatim in the rewritten slim pointer file. `cli/src/lib/absorb.mjs`
+// re-exports this module. Pure: callers supply `isSlugTaken`.
 
 import { folderForKind } from './schema.mjs';
 
 const H1_RE = /^#\s+(.+?)\s*$/;
 const SECTION_HEADING_RE = /^##\s+(.+?)\s*$/;
-// Fenced-code-block delimiter (``` or ~~~, 3+ chars, optional leading indent).
-// Lines inside a fence — and the delimiter lines themselves — are NEVER treated
-// as headings, so `## comment` / `# title` written inside a shell/markdown code
-// block don't spuriously split the document (real CONTRIBUTING/AGENTS docs are
-// full of these). See the code-fence contract fixtures in absorb-cases.mjs.
+// Fence delimiter (``` or ~~~, 3+ chars, optional indent). Lines inside a fence,
+// delimiters included, are never headings, so `## comment` in a shell block does
+// not split the document (the code-fence fixtures in absorb-cases.mjs).
 const FENCE_RE = /^\s*(?:```+|~~~+)/;
 
-// ── section splitting ───────────────────────────────────────────────────
 
 /**
- * Split a markdown file by top-level (`##`) headings. Nested `###`+ headings
- * stay inside their parent section's body — only `##` is a split boundary.
- * The first `# ` line anywhere before the first `##` is taken as the title;
- * everything else before the first `##` (minus that title line) is `intro`.
- *
- * Fenced code blocks are respected: any `#`/`##` line inside a ``` or ~~~
- * fence is code content, not a heading, and never splits the document.
+ * Splits markdown at `##` headings; `###`+ stay in their parent section, and
+ * headings inside a fence never split. The first `# ` line before the first `##`
+ * is the title; the rest before it is `intro`.
  *
  * @returns {{ title: string|null, intro: string, sections: Array<{heading: string, body: string, raw: string}> }}
  */
@@ -48,8 +27,6 @@ export function splitDocumentSections(rawText) {
   const text = String(rawText || '');
   const lines = text.split(/\r?\n/);
 
-  // Precompute which lines are inside a fenced code block (delimiter lines
-  // included) so heading detection can ignore them.
   const inFence = new Array(lines.length).fill(false);
   let fenceOpen = false;
   for (let i = 0; i < lines.length; i += 1) {
@@ -110,12 +87,9 @@ export function splitDocumentSections(rawText) {
   return { title, intro, sections };
 }
 
-// ── kind-mapping heuristics ─────────────────────────────────────────────
 
-// Policy/convention vocabulary. Plurals and common variants are matched
-// explicitly — real AGENTS.md/CONTRIBUTING headings say "Conventions",
-// "Commits", "Tests", "Style Guide", "Best Practices", not the bare singular,
-// and missing them was the dominant driver of skipped policy sections.
+// Plurals and variants are explicit: real headings say "Conventions", "Commits",
+// "Style Guide", "Best Practices", and missing them skipped most policy sections.
 const POLICY_HEADING_RE =
   /\b(rules?|polic(?:y|ies)|conventions?|guide(?:line)?s?|governance|principles?|practices?|workflows?|forbidden|do[-\s]?not|verification|test(?:s|ing)?|commit(?:s|ted|ting)?|contributing|security)\b/i;
 const POLICY_HEADING_RE_KO =
@@ -141,10 +115,9 @@ function clamp(value, min, max) {
 }
 
 /**
- * Heuristic mapping (task scope): rule/policy/decision headings → `document`
- * nodes with `role: policy`; architecture/component headings → `element` or
- * `capability` *suggestions* (never written automatically). Anything else is
- * `unclassified` and stays in the pointer file untouched.
+ * Rule, policy and decision headings → `document` with `role: policy`;
+ * architecture headings → `element` or `capability` suggestions (never
+ * written); anything else is `unclassified` and stays in the pointer file.
  */
 export function classifySection({ heading, body }) {
   const headingText = String(heading || '');
@@ -183,13 +156,10 @@ export function classifySection({ heading, body }) {
   };
 }
 
-// ── Injection Tier 1 (PRODUCT-PLAN-2026-07.md §7) ──────────────────────
-//
-// A vault body is untrusted data. Conservative, named patterns only — ordinary
-// policy prose (which carries plenty of imperative Korean and English, e.g.
-// "things you must never do", "never use --no-verify") must NOT be flagged. Only
-// direct-address instruction-hijack phrasing and executable shell/SQL fragments
-// count as suspect.
+// Injection Tier 1 (PRODUCT-PLAN-2026-07.md §7). A vault body is untrusted
+// data, but ordinary policy prose is full of imperatives ("never use
+// --no-verify"), so only named instruction-hijack phrasing and executable
+// shell/SQL fragments count as suspect.
 
 const INJECTION_PATTERNS = [
   {
@@ -218,12 +188,7 @@ const INJECTION_PATTERNS = [
   },
 ];
 
-/**
- * Scan section text for imperative instruction patterns aimed at agents
- * (prompt-injection Tier 1). Returns every matched pattern, not just the
- * first — the caller reports them all so a human reviewer sees why a
- * section was excluded.
- */
+/** Every matched injection pattern, so a reviewer sees why a section was excluded. */
 export function scanForInjection(text) {
   const value = String(text || '');
   const matches = [];
@@ -236,7 +201,6 @@ export function scanForInjection(text) {
   return { suspect: matches.length > 0, matches };
 }
 
-// ── slug helpers ─────────────────────────────────────────────────────────
 
 export function slugifyText(text) {
   return String(text || '')
@@ -256,19 +220,12 @@ function nextFreeSlug(candidate, usedInPlan, isSlugTaken) {
   return candidate;
 }
 
-// ── absorption plan ──────────────────────────────────────────────────────
 
 /**
- * Build the full absorption plan for a source file's raw text: split
- * sections, classify each, flag injection-suspects, and decide each
- * section's `action`:
- *
- *   - `absorb`  — policy/document section, not injection-suspect. Written to
- *                 the vault when the caller passes `--write`/`confirm: true`.
- *   - `suggest` — architecture/component section. Reported as a candidate
- *                 element/capability; NEVER auto-written.
- *   - `skip`    — unclassified, or injection-suspect regardless of category.
- *                 Stays verbatim in the rewritten source file.
+ * The absorption plan: split, classify, flag injection suspects, and set each
+ * section's `action`: `absorb` (policy, not suspect; written on `--write`
+ * or `confirm: true`), `suggest` (architecture; never written), or `skip`
+ * (unclassified or suspect; stays verbatim in the source).
  *
  * @param {string} rawText
  * @param {{ sourceLabel: string, isSlugTaken?: (slug: string) => boolean }} options
@@ -330,13 +287,10 @@ export function buildAbsorptionPlan(rawText, options = {}) {
   return { sourceLabel, title, intro, sections, summary };
 }
 
-// ── slim pointer rewrite ──────────────────────────────────────────────────
 
 /**
- * Build the rewritten "slim pointer" markdown that replaces the original
- * source file after `--write`/`confirm: true`. Never destroys content: every
- * section that was not absorbed (suggested, unclassified, or
- * injection-suspect) is reproduced verbatim below the notice block.
+ * The slim pointer that replaces the source after a write. Never destroys
+ * content: every section not absorbed is reproduced verbatim below the notice.
  */
 export function buildSlimPointer(plan) {
   const absorbed = plan.sections.filter((s) => s.action === 'absorb');

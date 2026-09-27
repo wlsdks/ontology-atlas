@@ -23,31 +23,25 @@ function makeProject(slug: string, name: string): Project {
   };
 }
 
-/**
- * The static-mode fallback (15 `SEED_PROJECTS`) was removed. Those seeds described **already-removed
- * features as fact** (Firebase Hosting, Sigma/WebGL, a whitelist admin), and since `/project/[slug]`
- * routes are generated from the vault those slugs were unreachable to begin with. Better to say "it does
- * not exist" than to describe a product that does not.
- */
 describe("resolveSubscribeUpdate", () => {
-  it("현재 목록에 slug 가 없으면 next=null — 호출부의 not-found 상태가 뜬다", () => {
+  it("returns next=null when the slug is not in the current list, so the caller shows not-found", () => {
     const result = resolveSubscribeUpdate([makeProject("other", "Other")], "iam");
     expect(result.next).toBeNull();
   });
 
-  it("현재 목록에 slug 가 있으면 그 프로젝트를 돌려준다", () => {
+  it("returns the project when the slug is in the current list", () => {
     const freshIam = makeProject("iam", "IAM fresh");
     const result = resolveSubscribeUpdate([freshIam], "iam");
     expect(result.next).toBe(freshIam);
   });
 
-  it("목록이 비면 related 도 빈 배열 — 시드 데이터로 채우지 않는다", () => {
+  it("returns an empty related list for an empty list instead of seed data", () => {
     const result = resolveSubscribeUpdate([], "iam");
     expect(result.next).toBeNull();
     expect(result.related).toEqual([]);
   });
 
-  it("related 는 항상 현재 목록 그대로 — 두 진실원을 섞지 않는다", () => {
+  it("returns the current list as related, never mixing two sources of truth", () => {
     const list = [makeProject("iam", "IAM"), makeProject("reactor", "Reactor")];
     const result = resolveSubscribeUpdate(list, "iam");
     expect(result.related).toBe(list);

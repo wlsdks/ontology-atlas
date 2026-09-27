@@ -1003,7 +1003,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### Release tag version alignment
 
 **Run**: `pnpm desktop:release-tag`
-**Proves**: The v-prefixed Git tag matches `package.json`, Tauri, Cargo, and the download page's release facts before signing.
+**Proves**: The Git tag is a plain `vX.Y.Z` (a pre-release or build suffix is refused) and matches `package.json`, Tauri, Cargo, and the download page's release facts before signing.
 **Escalate**: none.
 
 ### Release tag/SHA admission

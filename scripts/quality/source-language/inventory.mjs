@@ -284,6 +284,19 @@ export function extractCommentTokens(path, source) {
   return [];
 }
 
+/** `source` with each comment code unit but `\n` turned into a space, so offsets and lines hold. */
+export function blankComments(path, source) {
+  let out = '';
+  let cursor = 0;
+  for (const { start, end } of extractCommentTokens(path, source)) {
+    if (end <= cursor) continue;
+    const from = Math.max(start, cursor);
+    out += source.slice(cursor, from) + source.slice(from, end).replace(/[^\n]/g, ' ');
+    cursor = end;
+  }
+  return out + source.slice(cursor);
+}
+
 function lineStarts(source) {
   const starts = [0];
   for (let index = 0; index < source.length; index += 1) {

@@ -61,11 +61,9 @@ import {
 import { defaultBody } from './schema.mjs';
 
 /**
- * Is this body still the template `add_concept` writes when no body is given?
- *
- * Compared with whitespace folded, and accepted when the body merely *contains*
- * the template's prose tail — an agent that kept the boilerplate and appended one
- * line has still not said anything, and an exact-match check would miss that.
+ * Is this body still the template add_concept writes? Whitespace-folded, and
+ * true when the body merely contains the template's prose tail: boilerplate
+ * plus one appended line still says nothing.
  */
 function bodyIsStarterTemplate(kind, title, body) {
   if (typeof body !== 'string' || body.trim() === '') return false;
@@ -144,10 +142,9 @@ export {
   RELATION_TYPE_VALUES,
   WRITE_RELATION_TYPE_VALUES,
 } from './ontology-engine/query-values.mjs';
-// dangling-reference correction hints (reason text only, no schema impact) —
-// frontmatter key (edge.via) → the public `type` value `relate`/add_relation
-// expect. Only 'dependencies' differs from its key ('depends_on'); rest are
-// identity. Mirrors RELATION_KEY's inverse in mcp/src/index.js.
+// Frontmatter key (edge.via) → the public relation `type` for dangling-reference
+// hints; only `dependencies` differs (`depends_on`). The inverse of
+// RELATION_KEY in tools/relation-keys.mjs.
 const RELATION_TYPE_FOR_KEY = Object.freeze({
   dependencies: 'depends_on',
   relates: 'relates',
@@ -159,36 +156,15 @@ const RELATION_TYPE_FOR_KEY = Object.freeze({
   domain: 'domain',
 });
 /**
- * Which nodes are **bridge-shaped** — a layer somebody inserted into the hierarchy.
+ * Bridge-shaped nodes: a node whose containment parent or child has its own kind
+ * (a capability under a capability). The four kinds nest flat, so same-kind
+ * containment happens only when someone inserted a grouping layer; no frontmatter
+ * flag to forge or lose. ("Parent is a capability, children all elements" is
+ * vacuously true of every leaf.) O(V + E): a slug→kind Map, one pass over edges.
  *
- * ## The rule, and why it is this one
- *
- * The four kinds nest flat: project → domain → capability → element. Nothing in
- * that chain ever puts a node next to another of its own kind. So *same-kind
- * containment adjacency* — a capability whose containment parent or child is also
- * a capability — happens only when someone inserted a grouping layer. That is the
- * whole predicate, and it needs no frontmatter key: forging a `bridge: true` flag
- * or dropping it during a hand edit are both possible, and neither is possible here.
- *
- * ## The candidate this replaced, and the measurement that replaced it
- *
- * A proposed second clause was "the parent is a capability and the children are all
- * elements". Read literally it is **vacuously true for every element in the vault**
- * — a leaf has no children, and "all of none are elements" holds. Measured on this
- * repo's own vault it matched 41 of 98 nodes, every one of them an ordinary leaf.
- * Requiring at least one child collapses it into the same-kind rule it sits beside,
- * because a node under a capability that has element children *is* a capability
- * under a capability. So the clause is dropped: it adds either 41 false positives
- * or nothing at all.
- *
- * `looksLikePath` misjudged an English prose title on its first real-vault run, and
- * a check that is wrong on debut is one people stop reading. This one was measured
- * on 98 real nodes and 3,000 synthetic ones before it shipped: zero false positives
- * on both.
- *
- * @param {{nodes?: Array, edges?: Array}} graph compiled artifact, or anything with
- *   the same `{slug, kind}` / `{from, to|ref, via, resolved}` shape — deliberately
- *   plain so the web renderer can mirror this function without importing `mcp/`.
+ * @param {{nodes?: Array, edges?: Array}} graph compiled artifact, or anything of
+ *   the same `{slug, kind}` / `{from, to|ref, via, resolved}` shape, kept plain so
+ *   the web renderer can mirror this without importing `mcp/`.
  * @returns {Map<string, {via: 'same-kind-parent'|'same-kind-child', counterpart: string}>}
  *   keyed by slug; absent means "not bridge-shaped".
  */
@@ -200,8 +176,7 @@ export function deriveBridgeShapes(graph) {
 
   const note = (slug, via, counterpart) => {
     if (kindBySlug.get(slug) !== kindBySlug.get(counterpart)) return;
-    // A same-kind PARENT is the stronger statement — it says this node was pushed
-    // down a level — so it wins when a node has both.
+    // A same-kind parent (pushed down a level) wins over a same-kind child.
     if (via === 'same-kind-child' && shapes.has(slug)) return;
     shapes.set(slug, { via, counterpart });
   };
@@ -233,43 +208,20 @@ export const MAINTENANCE_KIND_VALUES = Object.freeze([
   'materialize_external_element',
   'unassigned_node',
   'empty_domain',
-  // Node-eligibility gate, write path only (2026-07-31 council). These two
-  // cannot be derived from a compiled snapshot, which is why they are separate
-  // kinds rather than extra reasons on an existing one:
-  //
-  //   - `separate_evidence_from_concept` — a file path in a meaning slot. The
-  //     vault validator *exempts* path-shaped `elements:` entries, and the
-  //     compiler routes them to `materialize_external_element`, whose only
-  //     prescription is "create one node per file". Between the two, the shape
-  //     that was 100% of the measured defect (92/92 unresolved on one
-  //     capability) had no channel that said "this does not belong here".
-  //   - `fold_bulk_siblings` — provenance, not population. Five nodes a person
-  //     wrote over a week and five one machine batch emitted look identical in
-  //     a snapshot; only the write path saw which was which.
+  // Write-path only: a compiled snapshot cannot derive these two.
+  //   - `separate_evidence_from_concept`: a file path in a meaning slot, which
+  //     validate_vault exempts and the compiler would materialize as a node.
+  //   - `fold_bulk_siblings`: provenance, which only the write path sees.
   'separate_evidence_from_concept',
   'fold_bulk_siblings',
-  // A bridge node that groups nothing (2026-08-01 ledger extension). The
-  // construction rules tell an LLM to insert a bridge when siblings are
-  // interchangeable — so the rules themselves can manufacture empty buckets if
-  // nothing checks the fourth condition ("you actually reparent the children").
-  // Prompt text alone leaks on weaker models, so the check is deterministic and
-  // vault-wide rather than a sentence.
+  // A bridge that groups nothing: the construction rules can manufacture empty
+  // buckets, so the reparenting condition is checked deterministically.
   'retire_unearned_node',
-  // A capability that never reaches code (2026-08-01 field trial). On a
-  // 50-node vault an agent built from an unfamiliar repository, 8 of 16
-  // capabilities carried an empty `elements:`, and the handoff agent — given
-  // the vault without the source — could only answer "there is no code entry
-  // point" for every one of them. The construction rules ask for evidence and
-  // never blocked its absence, which is correct: blocking would make the vault
-  // hostile. So the absence is not rejected, it is *reported*.
+  // A capability that never reaches code: reported, not rejected.
   'capability_without_evidence',
-  // Appended last on purpose: the README documents this enum in declaration order,
-  // and appending keeps that contract diff-legible instead of renumbering prose.
-  //
-  //   - `rejudge_summary_membership` — a domain or project whose containment list
-  //     changed after its description was last written. Two clocks live in one file
-  //     and a compiled snapshot sees neither; only Git history separates the
-  //     judgement from the membership it judges.
+  // Appended last: the README documents this enum in declaration order.
+  //   - `rejudge_summary_membership`: a summary whose containment list changed after
+  //     its description; only Git history separates the two clocks.
   'rejudge_summary_membership',
   'definition_missing',
   'boundary_missing',
@@ -277,14 +229,8 @@ export const MAINTENANCE_KIND_VALUES = Object.freeze([
   'folder_only_evidence',
   'slug_outside_kind_folder',
   'uncertainty_missing',
-  // An `init` starter example still standing beside real nodes (2026-09-22).
-  // Measured on two unfamiliar repositories: both builders wrote a real map and
-  // left all three scaffold examples in the finished vault, connected only to
-  // each other, with "Example domain" rendering on the map. `review` / `info`
-  // and not executable — the repair deletes somebody's file, and a queue that
-  // hands over a ready-made delete of three nodes is the one kind of row a
-  // person must read before running. Unlike every other meaning kind it needs
-  // no bodies and no repository root, so it answers on every call.
+  // An `init` starter beside real nodes. review/info and never executable: the
+  // repair deletes somebody's file. Needs no bodies or root, so it always answers.
   'retire_starter_example',
 ]);
 const MAINTENANCE_PHASES = new Set(MAINTENANCE_PHASE_VALUES);
@@ -345,22 +291,10 @@ export function queryCompiledOntology(artifact, query = {}, options = {}) {
   );
 }
 /**
- * The **runnable** prefix of the "use this when MCP is unavailable" line.
- *
- * **Why the default is an absolute path** (measured 2026-08-17): this slot used
- * to hold a bare `ontology-atlas`. **No global command by that name exists**
- * (registry publishing was abandoned — decision ledger, 2026-07-27), so pasting
- * it yields `command not found` — at the exact moment MCP is missing and this
- * line matters most.
- *
- * The same defect was fixed once in the graph-DB pack on 2026-07-29 (a comment in
- * `cli/src/commands/agent-brief.mjs`), but **this producer was not fixed**: one
- * repository held two places telling the same lie and only one was corrected.
- *
- * A caller that knows its own entry point supplies it (the CLI passes
- * `cliInvocation()`). With nothing supplied, the repository's CLI entry point is
- * derived from this file's location — not a guess, but a value that falls out of
- * **where this package lives**.
+ * The runnable prefix of the "use this when MCP is unavailable" line. No
+ * global `ontology-atlas` command exists, so the default is this repository's CLI entry
+ * point derived from this file's location; a caller that knows its entry point
+ * (the CLI passes `cliInvocation()`) supplies it.
  */
 function defaultCliInvocation() {
   try {
@@ -368,11 +302,8 @@ function defaultCliInvocation() {
     return `node ${/[\s"'$`\\]/.test(entry) ? `'${entry.replace(/'/g, "'\\''")}'` : entry}`;
   } catch {
     /*
-     * This module can be called from somewhere that is not a file (a browser
-     * bundle, a test harness — there `import.meta.url` is not `file:` and the
-     * conversion above throws). **It still lands on something runnable**: inside
-     * the repository this relative path works as-is. Same value
-     * `cli/src/lib/self-invocation.mjs` uses when it cannot determine the entry point.
+     * Not loaded from a file (browser bundle, test harness): the relative path still
+     * runs inside the repository, the value `cli/src/lib/self-invocation.mjs` uses.
      */
     return 'node cli/src/index.mjs';
   }
@@ -386,20 +317,14 @@ export function createOntologyEngine(artifact, options = {}) {
   const ontologyAtlasIgnorePatterns = Array.isArray(options.ontologyAtlasIgnorePatterns)
     ? options.ontologyAtlasIgnorePatterns
     : [];
-  /**
-   * Findings the write-path node-eligibility gate produced since the last drain
-   * (`drainNodeEligibilityFindings` in `mcp/src/vault.mjs`). Empty for every
-   * read-only caller — only a write response has anything to hand over.
-   */
+  /** Write-gate findings since the last drain (`drainNodeEligibilityFindings`); empty for read-only callers. */
   const nodeEligibilityFindings = Array.isArray(options.nodeEligibilityFindings)
     ? options.nodeEligibilityFindings
     : [];
   /**
-   * Summary nodes whose membership outran their description, from
-   * `findStaleParentSummaries`. Injected for the same reason as the findings
-   * above: the comparison needs Git history, which a compiled artifact does not
-   * carry. Empty when the vault is not in a repository, which reads as "not
-   * checked" rather than "clean".
+   * Summaries whose membership outran their description (`findStaleParentSummaries`),
+   * injected because the comparison needs Git history. Empty outside a repository,
+   * which reads as "not checked".
    */
   const staleSummaries = Array.isArray(options.staleSummaries) ? options.staleSummaries : [];
   const {

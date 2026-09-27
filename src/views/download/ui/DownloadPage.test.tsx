@@ -31,17 +31,9 @@ vi.mock('@/i18n/navigation', () => ({
   ),
 }));
 
-// What the page may claim is decided by one generated fact: is a macOS
-// release actually published? Both states have to be exercised — the
-// pre-release state is what the public site serves until the tag ships, and
-// it is the state that used to leak placeholder facts and internal pipeline
-// status.
+// Both publication states are exercised: the public site serves the unpublished one until a tag ships.
 const mocks = vi.hoisted(() => ({
-  /**
-   * This surface **lives at two addresses** — `/` (the web visitor's face) and `/download` (the
-   * install deeplink). Two pieces of chrome (the breadcrumb segment and "back to the map") differ
-   * by address, so the tests must be able to swap it.
-   */
+  /** The view lives at `/` and `/download`, whose chrome differs. */
   pathname: '/download',
   release: {
     published: false,
@@ -147,9 +139,7 @@ describe('DownloadPage', () => {
     mocks.release = {
       published: false,
       prerelease: false,
-      // While unpublished this tag is **deliberately stale** — it is what was written when the
-      // last `--unpublished` reset ran, not the version coming next. The old fixture always set it
-      // to `v${RELEASE_VERSION}`, which made it impossible to see the page mixing two sources.
+      // Deliberately stale, as the generated file is between releases, so mixing sources shows.
       tag: 'v0.9.0-stale',
       publishedAt: null,
       releaseUrl: 'https://github.com/wlsdks/ontology-atlas/releases',
@@ -171,22 +161,6 @@ describe('DownloadPage', () => {
   });
 
   describe('before a release is published', () => {
-    /**
-     * While unpublished, the tag comes from **the repository's current version**.
-     *
-     * Measured 2026-07-28: one screen showed `v1.0.0-rc.3` (the title) and "v1.0.0-rc.2 is not
-     * published yet" (the body) at the same time. The title branches on publication and uses
-     * `RELEASE_VERSION`, while the body used the generated file's `tag` **regardless of
-     * publication** — and that file updates only when a release actually ships, so a
-     * generation-old tag survives the window after a version bump and before a release.
-     *
-     * So this test **does not expect the fixture's tag (`v1.0.0`)** — expecting it would freeze the
-     * old defect into a contract.
-     *
-     * [Retargeted 2026-08-19] The unpublished notice this fact lived on (`download-macos-pending`)
-     * was deleted with the install section. The place carrying the same property now is the
-     * instrument strip — its version row branches on publication and calls the same helper.
-     */
     it('names the current repo version — not the stale generated tag — while unpublished', () => {
       renderDownloadPage();
 
@@ -195,32 +169,18 @@ describe('DownloadPage', () => {
         new RegExp(`v${RELEASE_VERSION.replace(/\./g, '\\.')}`),
       );
       expect(facts).toHaveTextContent(/not published yet/i);
-      // The fixture's generated tag never appears on screen while unpublished.
       expect(facts).not.toHaveTextContent('v0.9.0-stale');
-      // A size and a checksum are per-release facts. With no release there is
-      // no honest value for either, so neither row exists at all.
       expect(facts).not.toHaveTextContent(/SHA-256/);
       expect(facts).not.toHaveTextContent(/DMG/);
     });
 
-    // Today the GitHub releases page has nothing on it. A filled button is the
-    // page's one strongest promise, and pointing it at an empty page spends
-    // that promise on a dead end. So the winner before publication is the
-    // thing that actually works right now — the map in the browser — while
-    // the releases link stays available at a lower weight.
-    // [Revised 2026-08-19] The second half ("the releases page is still linked") was deleted —
-    // that link (`MacosDownloadLink`) lived only inside the panel, and the panel is gone.
     it('makes the browser map the strongest action while nothing is published', () => {
       renderDownloadPage();
 
       const primary = screen.getByTestId('gateway-hero-cta');
-      // ⚠️ `/topology`, not `/` (evening of 2026-07-29). The owner decided `/` becomes a
-      // **marketing page**, so sending "try it in the browser" to `/` loops back to the
-      // introduction. This assertion's intent is *"send them where something works today, without
-      // the app"* — that place is the web product, `/topology`.
+      // Not `/`, which is this page again.
       expect(primary).toHaveAttribute('href', '/topology');
       expect(primary).toHaveTextContent(/Try it in the browser/i);
-      // The filled variant is the page's single attention winner.
       expect(primary.className).toMatch(/--color-indigo-brand/);
       expect(
         Array.from(document.querySelectorAll('a[class*="--color-indigo-brand"]')),
@@ -230,8 +190,6 @@ describe('DownloadPage', () => {
     it('keeps operator-only release-pipeline status off the public page', () => {
       renderDownloadPage();
 
-      // These read as build-process status, not as an answer to "can I
-      // install this?" — the release runbook owns them now.
       expect(screen.queryByText(/waiting on PR review/i)).not.toBeInTheDocument();
       expect(screen.queryByText(/version alignment/i)).not.toBeInTheDocument();
       expect(screen.queryByText(/desktop:release-status/i)).not.toBeInTheDocument();
@@ -242,21 +200,9 @@ describe('DownloadPage', () => {
   describe('once a release is published', () => {
     beforeEach(publishRelease);
 
-    /*
-     * [Retargeted 2026-08-19] The download panel these assertions lived on was deleted. The place
-     * carrying the same property — a direct per-architecture file link, the winner's real size, and
-     * exactly one filled winner — is now the hero.
-     *
-     * [Deleted 2026-08-19] The three checksum-row tests (per-asset SHA exposure, copy, release-note
-     * link) lost their subject and were removed. The checksum is now nowhere on this page
-     * (`docs/DECISIONS.md` 2026-08-19 — the owner accepted that cost).
-     */
     it('offers both Mac files with their real sizes behind one Mac control', () => {
       renderDownloadPage();
 
-      // The winner is one control for the whole Mac line (owner, 2026-09-08: "press Mac and get
-      // Silicon and Intel"); a browser cannot tell which chip a Mac has, so the choice is a menu
-      // under it, and each row is the real file with its real size.
       const mac = screen.getByTestId('gateway-hero-cta');
       expect(mac).toHaveAttribute('aria-haspopup', 'menu');
       expect(mac).toHaveTextContent(/Download for Mac/i);
@@ -270,23 +216,16 @@ describe('DownloadPage', () => {
         `https://github.com/wlsdks/ontology-atlas/releases/download/v${RELEASE_VERSION}/ontology-atlas_${RELEASE_VERSION}_aarch64.dmg`,
       );
       expect(appleSilicon).toHaveTextContent(/Apple Silicon/i);
-      // 13,002,342 B → 13.0 MB (decimal) — the same unit Finder reports.
+      // 13,002,342 B in decimal MB, as Finder reports.
       expect(appleSilicon).toHaveTextContent(/13\.0 MB/);
       expect(screen.getByTestId('gateway-hero-macos-x64')).toHaveAttribute(
         'href',
         `https://github.com/wlsdks/ontology-atlas/releases/download/v${RELEASE_VERSION}/ontology-atlas_${RELEASE_VERSION}_x64.dmg`,
       );
-      // There is **one** filled accent in the whole document.
       const filled = Array.from(document.querySelectorAll('a[class*="--color-indigo-brand"], button[class*="--color-indigo-brand"]'));
       expect(filled.map((el) => el.getAttribute('data-testid'))).toEqual(['gateway-hero-cta']);
     });
 
-    /**
-     * The hero's three destinations (owner 2026-09-08: *"Mac, one Windows, one playground — the
-     * demo button goes"*) — ① the file for my platform (filled, the sole winner) ② the other
-     * desktop file ③ the browser playground. All three stay reachable on the detection fallback
-     * (macOS), and nothing else stands in the row.
-     */
     it('hero holds exactly the Mac control, the Windows file, and the playground — one filled winner', () => {
       publishWindowsRelease();
       renderDownloadPage();
@@ -295,7 +234,6 @@ describe('DownloadPage', () => {
       expect(primary).toHaveAttribute('aria-haspopup', 'menu');
       expect(primary.className).toMatch(/--color-indigo-brand/);
 
-      // The demo has no button: it is the page's second section now.
       expect(screen.queryByTestId('gateway-hero-demo-link')).toBeNull();
       expect(screen.queryByTestId('gateway-hero-alt-row')).toBeNull();
 
@@ -304,28 +242,20 @@ describe('DownloadPage', () => {
         'href',
         expect.stringMatching(/_windows_x64-setup\.exe$/),
       );
-      // Signing status is a fact you need **before** downloading — the marker rides on the button.
       expect(windows).toHaveTextContent(/unsigned/i);
 
       const web = screen.getByTestId('gateway-hero-web-cta');
       expect(web).toHaveAttribute('href', '/topology');
       expect(web).toHaveTextContent(/playground/i);
 
-      // The row holds three controls and nothing more.
       const row = primary.parentElement!.parentElement!;
       expect(row.querySelectorAll(':scope > a, :scope > div > button')).toHaveLength(3);
 
-      // The hero has **one** filled winner — everything else is a step down.
       for (const secondary of [windows, web]) {
         expect(secondary.className).not.toMatch(/--color-indigo-brand/);
       }
     });
 
-    /**
-     * For a Windows visitor the Windows file is the winner — and that promotion must bring the
-     * unsigned fact with it: in the same slot where a macOS visitor reads about signing and
-     * notarization, a Windows visitor reads unsigned and the SmartScreen warning.
-     */
     it('promotes the Windows installer for a Windows visitor, unsigned fact in the trust slot', () => {
       publishWindowsRelease();
       Object.defineProperty(navigator, 'userAgent', {
@@ -341,11 +271,9 @@ describe('DownloadPage', () => {
           'href',
           expect.stringMatching(/_windows_x64-setup\.exe$/),
         );
-        // 21,500,000 B → 21.5 MB — the winner's size must be the winner's file.
         expect(primary).toHaveTextContent(/21\.5 MB/);
-        // Two slots since 2026-09-02: the hero trust line and the closing band's mirror of it.
+        // The hero trust line and the closing band.
         expect(screen.getAllByText(/Unsigned beta · SmartScreen/i)).toHaveLength(2);
-        // The closing band verifies the winner's file, with the Windows command for it.
         expect(screen.getByTestId('download-closing-cta')).toHaveAttribute(
           'href',
           expect.stringMatching(/_windows_x64-setup\.exe$/),
@@ -354,7 +282,6 @@ describe('DownloadPage', () => {
           /Get-FileHash ontology-atlas_.*_windows_x64-setup\.exe -Algorithm SHA256/,
         );
 
-        // The Mac files do not disappear; they move one step down, behind the same Mac control.
         const mac = screen.getByTestId('gateway-hero-mac');
         expect(mac.className).not.toMatch(/--color-indigo-brand/);
         fireEvent.click(mac);
@@ -365,14 +292,11 @@ describe('DownloadPage', () => {
         expect(screen.getByTestId('gateway-hero-macos-x64')).toBeInTheDocument();
         expect(screen.queryByTestId('gateway-hero-windows')).not.toBeInTheDocument();
       } finally {
-        // Deleting the own property set on the instance restores the prototype getter.
+        // Removing the instance property restores the prototype getter.
         delete (navigator as { userAgent?: string }).userAgent;
       }
     });
 
-    // While the Windows build is unpublished, a Windows UA still gets the macOS winner — promoting
-    // a file that does not exist is an empty promise, and that visitor's today is opened by the
-    // browser CTA.
     it('keeps the mac winner for a Windows visitor while the Windows build is unpublished', () => {
       Object.defineProperty(navigator, 'userAgent', {
         value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
@@ -391,75 +315,31 @@ describe('DownloadPage', () => {
   });
 
 
-  /*
-   * [Deleted 2026-08-19] Two platform-section tests — "tells an unpublished Windows visitor where
-   * things stand" and "the full warning for a published unsigned Windows beta comes before the
-   * button" — had subjects (`download-platform-windows`, `download-windows-unsigned-warning`,
-   * `download-windows-x64`, `download-exit-row`, `download-repo-link`) that all lived inside the
-   * install section, and that section was deleted.
-   *
-   * What remains: when a Windows visitor is promoted to winner, the hero trust line still carries
-   * the unsigned fact (see `promotes the Windows installer …` above). **What is gone**: the
-   * unpublished-Windows notice and its progress link, the full SmartScreen warning, and the
-   * repository exit row. `docs/DECISIONS.md` 2026-08-19 records that cost.
-   */
-
-  // 2026-07-27: the Developer ID certificate exists (docs/DECISIONS.md), so
-  // the release path signs and notarizes again. Until this remake the page
-  // still printed the unsigned-era copy — and printed it *contradicting
-  // itself*, with "Not signed yet" as a row label and "codesign --verify
-  // passes" as that same row's note. Neither the old future tense ("the gate
-  // requires") nor the stale present tense survives: what ships is what is
-  // true now, plus the way a visitor checks it themselves.
-  /*
-   * [Narrowed 2026-08-19] The four proof rows (Developer ID signature, notarization plus staple,
-   * `codesign verified`, `stapler validate passes`) and the `shasum -a 256 <file>` verification
-   * command belonged to the verification rail, and that rail was deleted. The **only** remaining
-   * slot for this claim is the hero trust line, so this test measures there — if that sentence
-   * shrinks, the signing fact disappears from this page entirely, and this assertion is the last
-   * line of defence.
-   *
-   * [Widened 2026-09-02] The closing band at the page's foot mirrors the hero trust line beside
-   * its own download control, so the sentence now stands in exactly two slots — the top and the
-   * foot — and the band adds the verification recipe the 2026-08-19 deletion had removed.
-   */
+  /* The only slots left for the signing fact, so this is its last line of defence. */
   it('states the signing status that is true today, at the top and at the foot', () => {
     publishRelease();
     renderDownloadPage();
 
     expect(screen.getAllByText(/Signed and notarized by Apple/i)).toHaveLength(2);
-    // The verification recipe: the winner's file, the command, and its full checksum.
     expect(screen.getByTestId('download-closing-command')).toHaveTextContent(
       /shasum -a 256 ontology-atlas_.*_aarch64\.dmg/,
     );
     expect(screen.getByTestId('download-closing-sha')).toHaveTextContent(/^[0-9a-f]{64}$/);
 
-    // The unsigned-era instructions are gone: they are false today, and a
-    // Gatekeeper detour is the single most expensive first impression.
     expect(screen.queryByText(/Not signed yet/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Open Anyway/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/certificate pending/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Release gate requires/i)).not.toBeInTheDocument();
   });
 
-  // The product's core promise is local-first. Keep the claim scoped to Atlas:
-  // the updater and a connected agent can use the network without implying that
-  // Atlas has a backend or uploads the user's vault.
-  /*
-   * [Narrowed 2026-08-19] Two of the three sentences — "No account, no server" and "This website
-   * sends nothing to a server" — were rows of the verification rail and went with it. Only the
-   * promise about the app survived in the hero trust line. It is now phrased as the durable
-   * boundary (no Atlas backend), not the false absolute that no network traffic ever occurs.
-   */
+  // Scoped to Atlas: the updater and a connected agent do use the network.
   it('states the local-first promise where the download decision is made', () => {
     publishRelease();
     renderDownloadPage();
 
-    // Top and foot (2026-09-02): the hero trust line and the closing band's mirror.
     expect(screen.getAllByText(/no Atlas backend/i)).toHaveLength(2);
     expect(screen.queryByText(/nothing sent to a server/i)).not.toBeInTheDocument();
-    // Checks that the false capability claim removed on 2026-07-27 has not returned — Chromium on
-    // the web really does open a folder.
+    // Chromium on the web does open a folder.
     expect(
       screen.queryByText(/never opens or edits your folders/i),
     ).not.toBeInTheDocument();
@@ -471,19 +351,6 @@ describe('DownloadPage', () => {
     expect(screen.queryByRole('link', { name: /Open my markdown folder/i })).not.toBeInTheDocument();
   });
 
-  // Installing is not the end of the journey. Saying the app updates itself
-  // is what makes this page a one-time visit rather than a recurring chore.
-
-  // ─── The background is evidence (2026-07-28 blank-page redesign) ──────────
-  //
-  // This page's headline **points at** the background ("the map behind this is … this repository's
-  // real folder"). For that sentence to be true, what is drawn behind must be a real vault, so the
-  // background is a contract rather than removable decoration. Replacing the old miniature (an
-  // 8-node diagram) carried that honesty contract across too.
-  // Verdict ① of 2026-07-29 — a caption counts **the picture it describes**. The old version
-  // printed the build script's frontmatter file count (`DOGFOOD_CENSUS.concepts` = 96) beside a
-  // derived graph of 287 nodes. Two definitions on one screen means neither is believed — the hub
-  // engraving `379` against the caption's `96` was the symptom.
   it('draws the real vault in the evidence section, with the same numbers the caption claims', () => {
     renderDownloadPage();
 
@@ -493,53 +360,23 @@ describe('DownloadPage', () => {
     expect(graph.nodes.length).toBeGreaterThan(0);
     expect(caption).toHaveTextContent(`${graph.nodes.length} concepts`);
     expect(caption).toHaveTextContent(`${graph.edges.length} relations`);
-    // [Deleted 2026-08-01] `expect(graph.nodes.length).not.toBe(DOGFOOD_CENSUS.concepts)`
-    //
-    // That was not a gate measuring a number but **a gate demanding a defect**. The two differed
-    // because the old vault had derived nodes that were named without a file — 96 frontmatter
-    // files against a 287-node derived graph — and pinning that gap was, at the time, a barrier
-    // against "do not put the caption back to a file count".
-    // Now that the vault has been regenerated to spec, **every node has its own document** and the
-    // two definitions can legitimately coincide. Leaving "they must differ" would require reviving
-    // the defect to go green.
-    //
-    // What it meant to protect is already protected by the two lines above: the caption counts
-    // **the graph it draws**. Both come from one `useStageGraph()` hook, so there is no number to
-    // reconcile by hand, and reverting to the old file-count version turns this red immediately.
-
-    // This number needs a scope label — opening your own folder yields a different number under a
-    // different definition (the runtime derived graph), and without the label the same user sees
-    // two numbers and loses trust.
+    // Scoped, since the reader's own folder yields a different number.
     expect(caption).toHaveTextContent(/docs\/ontology/i);
     expect(caption).toHaveTextContent(/your own numbers/i);
 
-    // **The scope of a capability must be honest too** (council, 2026-08-08). This section long
-    // said only *"in the app"*, but a browser with FSA support opens a folder from the web as well —
-    // that is what `.claude/rules/surfaces.md` names "writing that something does not work when it
-    // does", and understating what works makes people give up on things they could do. It is the
-    // counterpart of the decision not to put a folder-opening control on the gateway, so narrowing
-    // the copy makes that decision a lie too.
+    // Understating what works is dishonest too (`.claude/rules/surfaces.md`).
     expect(caption).toHaveTextContent(/web version/i);
 
-    // The **visible** signal that it can be handled. It is the only affordance on a still frame
-    // (the cursor is hover-gated, the aria-label is AT-only), so removing it makes the map read as
-    // "a fixed picture" again — which the owner actually reported.
+    // The only visible affordance on a still frame.
     expect(caption).toHaveTextContent(/drag to move/i);
   });
 
-  // The stage map is **the real engine** (owner instruction 2026-07-28). What structurally keeps
-  // the background from being decoration is now that its source is pinned to the same vault as the
-  // caption — `useDogfoodInsight` does not follow the session's sample choice.
   it('mounts the real map engine in the evidence section', () => {
     renderDownloadPage();
 
     expect(screen.getByTestId('download-stage-map')).toBeInTheDocument();
   });
 
-  // The retired LandingPage hero was absorbed here in 2026-07 and became a
-  // second landing page stapled under the install decision: its own eyebrow,
-  // its own h1, a four-line lead, and three value-chain cards. The remake
-  // keeps only the part that is evidence rather than pitch.
   it('does not stack a second landing page under the evidence section', () => {
     renderDownloadPage();
 
@@ -549,16 +386,6 @@ describe('DownloadPage', () => {
     expect(screen.queryByText(/One folder, three views/i)).not.toBeInTheDocument();
   });
 
-  /**
-   * The order — **four sections, one idea each** (revised 2026-08-19): hero (type + object + CTA)
-   * → demo → evidence (map + census) → the agent round trip → (footer) colophon.
-   *
-   * ⑤ install and download was deleted (owner: *"Looks like this last one isn't needed? It's all at the top anyway."* — the last one can go; it's all at the top anyway). So **the decision is in the first
-   * section**: the download button lives in the hero, and the three sections after it are the
-   * argument for that decision. The property this test protects is the argument order
-   * (problem → the three readings, map then architecture then library → something moving → agents),
-   * and that property survives one section going away.
-   */
   it('walks problem → demo → map → architecture → library → agents, with the decision in the first screen', () => {
     publishRelease();
     renderDownloadPage();
@@ -567,13 +394,8 @@ describe('DownloadPage', () => {
     const primaryCta = screen.getByTestId('gateway-hero-cta');
     const demo = screen.getByTestId('demo-stage');
     const caption = screen.getByTestId('download-portrait-caption');
-    // Reworked 2026-08-18: the agent section's scene changed from an mcp-verify terminal to a
-    // re-enactment of the in-app (ACP) conversation — the fourth slot of the order contract is unchanged.
     const terminal = screen.getByTestId('gateway-agent-chat');
     const colophon = screen.getByTestId('download-bottom-band');
-    // 2026-09-08 (owner): the demo is second — it moves before a person reads what is in it —
-    // then the live map, then (2026-09-24) the folder's other screens on one stage in the app
-    // rail's order, which still puts the architecture before the library, and the agents last.
     const architecture = screen.getByTestId('gateway-architecture-capture');
     const library = screen.getByTestId('gateway-library-capture');
 
@@ -592,14 +414,6 @@ describe('DownloadPage', () => {
     }
   });
 
-  /**
-   * **One stage, the app's own rail** (owner, 2026-09-24). The page shows the folder's other
-   * screens as one list of the rail's names beside one captured picture. Three properties are
-   * locked: the names come in the rail's order with the rail's words (a visitor meets the same
-   * list after installing), the map row goes back up to the live map instead of repeating it,
-   * and pressing a name swaps the picture, caption and door in place — the door naming the
-   * destination it opens.
-   */
   it('shows the folder’s other screens on one stage, in the rail’s order, swapped in place', () => {
     renderDownloadPage();
 
@@ -616,19 +430,15 @@ describe('DownloadPage', () => {
 
     const map = screen.getByTestId('gateway-screens-map');
     expect(map).toHaveAttribute('href', '#evidence');
-    // The link it points at is the live map's own section.
     expect(document.getElementById('evidence')).toBe(screen.getByTestId('gateway-evidence-section'));
 
-    // Every tab's panel exists, so no `aria-controls` points at nothing.
     for (const tab of tabs) {
       expect(document.getElementById(tab.getAttribute('aria-controls')!)).not.toBeNull();
     }
 
     const harness = screen.getByTestId('gateway-architecture-section');
     expect(harness).toHaveAttribute('data-state', 'active');
-    // The picture is the page's own language — this render is English.
     expect(harness.querySelector('img')?.getAttribute('src')).toMatch(/\/gateway\/harness\.en\.png$/);
-    // The door stands at the rail's foot (2026-09-25), one per screen, following the active tab.
     const door = (id: string) => screen.getByTestId(`gateway-${id}-door`);
     expect(door('architecture')).toHaveAttribute('href', '/architecture');
     expect(door('architecture').parentElement).toHaveAttribute('data-state', 'active');
@@ -641,77 +451,38 @@ describe('DownloadPage', () => {
     expect(door('git').parentElement).toHaveAttribute('data-state', 'active');
     expect(harness).toHaveAttribute('data-state', 'leaving');
 
-    // The keyboard walks the same list.
     const gitTab = screen.getByTestId('gateway-screens-tab-git');
     fireEvent.keyDown(gitTab, { key: 'Home' });
     expect(harness).toHaveAttribute('data-state', 'active');
     expect(door('library')).toHaveAttribute('href', '/library');
   });
 
-  /**
-   * The agent section (reworked 2026-08-18) — the scene is **a measured round trip of the in-app
-   * conversation (ACP)**. It locks two contracts:
-   *
-   * 1. The re-enacted tool call is the ledger's verbatim measurement (2026-08-16 (7)) — replacing
-   *    it with invented output collapses this section's argument (a re-enactment, not a staging).
-   * 2. Copy describing our runner list uses only the vendor's permitted display name (ledger
-   *    2026-08-16 (5), the same rule as `vendor-naming.contract.test.ts` — that gate's reach is the
-   *    registry and configuration copy, so this section is locked here).
-   */
   it('replays the measured in-app ACP round trip verbatim, under the allowed vendor name', () => {
     renderDownloadPage();
 
     const chat = screen.getByTestId('gateway-agent-chat');
-    // The call **name** is a program record and is identical on every screen.
     expect(chat).toHaveTextContent('add_relation');
-    /*
-     * The `why` payload **follows the screen's language** (corrected 2026-08-18). That sentence is
-     * not something a program invented — it is the person's sentence from the bubble directly
-     * above — and the `locale-purity` e2e caught the state where the English screen had an English
-     * bubble and a Korean call. Here (the English render) English is required, and **the date stays
-     * in both languages**, because which day the measurement comes from is this scene's evidence.
-     */
+    /* The payload follows the screen's language; the date is the measurement's evidence. */
     expect(chat).toHaveTextContent(/auth goes down payments go down with it \(2026-08-16\)/);
 
     const section = screen.getByTestId('gateway-agents-section');
     expect(section).not.toHaveTextContent(/Claude Code/i);
     expect(section).toHaveTextContent(/Claude Agent/);
-    // No impression that we provide model access — the copy carries the "a tool you already use" premise.
     expect(section).toHaveTextContent(/already use/i);
   });
 
-  /**
-   * **No empty box on the first frame** (regression 2026-08-22).
-   *
-   * The old score put all three lines on timers (250/1050/1750ms), so after the section entered the
-   * viewport a 17rem bordered box stood there **with nothing in it**. Measured: in a screenshot
-   * taken right after the scroll arrival, 250px beneath the heading was entirely empty. A box with
-   * nothing but a border does not read as "waiting for the choreography" — it reads as broken, or loading.
-   *
-   * The person's sentence is the **premise** the agent's response answers, not a result of the
-   * choreography. So the first line is out of the choreography and is on from the start.
-   *
-   * What this test locks is not "how many ms" but **"is there text in the first paint"** — pinning
-   * timings as values turns every rhythm adjustment red, which is noise rather than a spec. The one
-   * property to lock is that the box is never empty.
-   */
+  /** Locks text in the first paint, not timings, which would redden every rhythm change. */
   it('never paints the ACP scene as an empty box — the human line is the premise', () => {
     renderDownloadPage();
 
     const chat = screen.getByTestId('gateway-agent-chat');
     const lines = chat.querySelectorAll('.gateway-term-line');
-    expect(lines.length, '재연 세 줄이 있어야 이 시험이 뜻을 갖는다').toBe(3);
+    expect(lines.length, 'the replay needs three lines for this test to mean anything').toBe(3);
 
-    // The first line is the person's sentence. It is on even though no timer has run.
     expect(lines[0].className).toContain('is-on');
-    // And that line really has text — turning the class on while empty is the same defect.
     expect((lines[0].textContent ?? '').trim().length).toBeGreaterThan(0);
   });
 
-  /**
-   * The message catalogue owns public wording. This test protects the rendering boundary: both
-   * configured headline lines form the heading, and the configured lead reaches body copy.
-   */
   it('renders the catalogue headline and lead in their semantic slots', () => {
     renderDownloadPage();
 
@@ -726,23 +497,7 @@ describe('DownloadPage', () => {
     expect(lead.tagName).toBe('P');
   });
 
-  /**
-   * The demo section states the length of the asset that is actually attached.
-   *
-   * ⚠️ **Do not pin a sentence a human wrote** (`.claude/rules/documentation.md`). The 2026-08-03
-   * version matched `/provisional 24s capture/` whole, and when new footage changed both the length
-   * and the wording it went red for "is the sentence unchanged" rather than "is it honest" — which
-   * is not the property this test protects. What is checked is the one thing a machine can produce:
-   * the seconds on screen equal the registry's measured `seconds`. The wording is free to change.
-   *
-   * **A second assertion used to live here and was removed on 2026-08-22, not weakened.** It
-   * required the note to say both locales shared one Korean-UI recording, which was the honest
-   * thing to state while that was true. English footage was filmed, so the sentence it demanded
-   * became the false one — the assertion would have forced the screen to keep claiming a defect it
-   * no longer had. What that assertion was really guarding (an English visitor being shown a Korean
-   * screen) is now held by something stronger than copy: `demo-clip-assets.contract` compares the
-   * two locales' bytes, so the two files cannot silently become one again.
-   */
+  /** Checks only the seconds, never the human-written sentence (`.claude/rules/documentation.md`). */
   it('states the attached clip at the registry length', () => {
     renderDownloadPage();
 
@@ -753,8 +508,7 @@ describe('DownloadPage', () => {
   it('quotes the request the take was filmed on, word for word, with its tool names as code', () => {
     renderDownloadPage();
 
-    // The shoot sends `download.demoAgentPrompt` verbatim (docs/launch/demo-scenario.md §3), so the page
-    // quotes that message and nothing else — the backticks become code, not characters.
+    // The shoot sends this message verbatim (docs/launch/demo-scenario.md §3); backticks render as code.
     const prompt = screen.getByTestId('gateway-demo-prompt');
     const sentence = enMessages.download.demoAgentPrompt;
     expect(prompt.querySelector('blockquote')!.textContent).toBe(sentence.replaceAll('`', ''));
@@ -763,46 +517,21 @@ describe('DownloadPage', () => {
     expect(codes).toContain('find_path');
   });
 
-  // ─── One screen, one version (regression 2026-07-28) ──────────────────────
-  //
-  // The deployed site really did this: `v1.0.0-rc.3` (package.json) in the badge at the card's
-  // right, and "v1.0.0-rc.2 is not published yet" (the generation module's stale tag) in the same
-  // card's body.
-  //
-  // [Deleted 2026-08-19] The paired test "verifies the file actually published" had the
-  // verification command (`shasum -a 256 …`) as its subject, and that command is gone. The second
-  // instrument that caught the published tag and the development tag diverging no longer exists —
-  // the one that remains is the unpublished test below.
   it('names exactly one version while no build is out', () => {
     renderDownloadPage();
 
     const facts = screen.getByTestId('gateway-facts');
-    // The single source for what has not shipped yet is the development version. A stale generated
-    // tag leaking into the body makes one screen state two versions.
     expect(facts).toHaveTextContent(`v${RELEASE_VERSION}`);
     expect(facts).not.toHaveTextContent('v0.9.0-stale');
   });
 
-  // The page reserves no bottom-tab-bar height because this route has no tab
-  // bar. That is a cross-module coupling: if the bar ever returns here, the
-  // scroll end would sit underneath it. The old code hardcoded a 56px reserve
-  // for a bar that was never rendered, which is the same defect mirrored.
+  // A cross-module coupling: if the bar returns here, the scroll end sits under it.
   it('stays the one route without a bottom tab bar, which is why it reserves no height for one', () => {
     expect(shouldHideBottomTabBar('/download', false)).toBe(true);
     expect(shouldHideBottomTabBar('/ko/download/', false)).toBe(true);
   });
 
-  /**
-   * ## One screen, two addresses
-   *
-   * With the owner's sign-off on 2026-07-29, `/` became the web visitor's **face** (the ledger's
-   * reversal of "root-first-open"), and that face is this view. `/download` remains the deeplink
-   * that calls for an install.
-   *
-   * Two pieces of chrome must differ by address. Both exist to prevent **dead promises**, so they
-   * are locked by meaning rather than by value.
-   */
-  describe('두 주소에 사는 한 화면', () => {
+  describe('one screen served at two addresses', () => {
     it('carries the pixel identity in the gateway chrome, and only there', () => {
       mocks.pathname = '/download';
       renderDownloadPage();
@@ -815,61 +544,37 @@ describe('DownloadPage', () => {
         'data-brand-detail',
         'compact',
       );
-      // The hero carries no mascot (owner, 2026-09-02: standing beside the dome it read as part
-      // of the map, and it is not data). The chrome's compact mark is the page's one mascot.
+      // Beside the dome a mascot reads as map data; the chrome's mark is the one mascot.
       expect(screen.queryByTestId('gateway-hero-mascot')).toBeNull();
     });
 
-    it('/download 에서는 빵부스러기가 여기가 어디인지 말한다', () => {
+    it('names the page in the breadcrumb at /download', () => {
       mocks.pathname = '/download';
       renderDownloadPage();
       expect(screen.getByTestId('download-gnb')).toHaveTextContent(/다운로드|Download/);
     });
 
-    it('/ 에서는 「다운로드」 마디를 지운다 — 그 주소가 아니다', () => {
+    it('drops the Download crumb at /, which is not that address', () => {
       mocks.pathname = '/';
       renderDownloadPage();
       expect(screen.getByTestId('download-gnb')).not.toHaveTextContent(/다운로드|Download/);
     });
 
-    /**
-     * ⚠️ "Back to the map" **disappeared from both addresses** (2026-07-31, owner: *"This is a promo page; navigation should only be possible from the main screen."* — this is a promo page; make navigation possible
-     * only from the main screen).
-     *
-     * It used to be removed on `/` but kept on `/download`, reasoning that someone arriving by
-     * deeplink needs a way back. That reasoning was weak: the gateway is read by a **pre-install**
-     * visitor, so it recommends the workbench to someone who has no vault yet, while someone who
-     * does have a vault reaches the map from `/` in the first place (`isGatewaySurface()`).
-     *
-     * The one path to the map is "try it in the browser without installing", inside the panel —
-     * two links doing the same job, one in the chrome and one in the panel, makes one of them a
-     * dead promise.
-     */
-    it.each(['/', '/download'])('%s 크롬에 「지도로 돌아가기」가 없다', (pathname) => {
+    it.each(['/', '/download'])('offers no back-to-map link in the %s chrome', (pathname) => {
       mocks.pathname = pathname;
       renderDownloadPage();
       expect(screen.queryByTestId('download-back-to-map')).toBeNull();
     });
 
-    it('지도로 가는 유일한 길은 히어로의 웹 CTA 이고 /topology 를 가리킨다', () => {
+    it('makes the hero web CTA the only way to the map, pointing at /topology', () => {
       mocks.pathname = '/';
       publishRelease();
       renderDownloadPage();
       expect(screen.getByTestId('gateway-hero-web-cta')).toHaveAttribute('href', '/topology');
     });
 
-    /**
-     * The bottom tab bar reserve — this only checks **that the prescription is in the right place**.
-     *
-     * Whether pixels are actually recovered is measured by `tests/e2e/scroll-end-gap.spec.ts`
-     * (`.claude/rules/design.md`: keep the class-string assertion and the measurement as two
-     * layers). This layer is needed separately because **why it differs** is this component's
-     * verdict: the same view lives at two addresses, and the tab bar stands only on `/`.
-     *
-     * Measured defect (2026-08-06): with no reserve, the last line at the end of `/`'s scroll went
-     * **17px** behind the tab bar — at both 390 and 768, and in the production static export too.
-     */
-    it('/ 에서는 하단 탭바 높이를 예약한다 — 탭바가 서는 주소다', () => {
+    /** The class only; `tests/e2e/scroll-end-gap.spec.ts` measures the pixels (`.claude/rules/design.md`). */
+    it('reserves the bottom tab bar height at /, where the tab bar shows', () => {
       mocks.pathname = '/';
       renderDownloadPage();
       const band = screen.getByTestId('download-bottom-band');
@@ -882,7 +587,7 @@ describe('DownloadPage', () => {
       );
     });
 
-    it('/download 에서는 예약하지 않는다 — 그 주소엔 탭바가 없다', () => {
+    it('reserves nothing at /download, which has no tab bar', () => {
       mocks.pathname = '/download';
       renderDownloadPage();
       const band = screen.getByTestId('download-bottom-band');
@@ -890,14 +595,7 @@ describe('DownloadPage', () => {
       expect(band.className).not.toContain('--topology-mobile-bottom-tab-reserve');
     });
 
-    /**
-     * The contract that the reserve decision uses **the same function as the tab bar itself**.
-     *
-     * Two places listing their own routes lets one drift, and the side that drifts is "the reserve",
-     * so content is occluded again with no error. Hence this test checks the premise of the two
-     * assertions above directly through `shouldHideBottomTabBar`.
-     */
-    it('예약 판정의 전제는 탭바의 판정과 같다', () => {
+    it('decides the reservation with the same premise as the tab bar', () => {
       expect(shouldHideBottomTabBar('/download', false)).toBe(true);
       expect(shouldHideBottomTabBar('/', false)).toBe(false);
     });

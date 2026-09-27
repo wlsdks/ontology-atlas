@@ -15,35 +15,13 @@ import { cn } from "@/shared/lib/cn";
 import { fieldClass, fieldLabel, type FieldFrame, type FieldSize } from "./control-class";
 
 /**
- * Input / Textarea — the **behaviour layer** of a form field (ratified
- * 2026-08-15 by the design-systems seat).
- *
- * **It does not exist for styling.** Adoption of the value layer (`fieldClass`)
- * was already complete — 0 text fields bypassed it, and the form-debt ratchet was
- * declared closed. What this component carries is **wiring**:
- *
- * 1. **A required accessible name** — the type demands one of `label` (wired via
- *    htmlFor), `aria-label`, or `labelledBy`. A nameless field does not compile.
- * 2. **Automatic error/hint wiring** — the founding inventory found
- *    `aria-invalid` at 7 sites, `aria-describedby` at 11, and `role="alert"`
- *    across 14 files, all hand-wired and all in different patterns. One
- *    `error`/`hint` prop now wires `aria-invalid`, `aria-describedby` (error
- *    first) and `role="alert"` together through `useId`, which is the gate when
- *    an agent assembles a form in an extracted repo.
- *
- * **Values live only in the value layer.** The input's className is the result of
- * `fieldClass(...)` **verbatim**, and a contract test asserts byte equality. Zero
- * new axes, zero new tokens and zero pixel movement were the conditions of
- * ratification. The `spellCheck` default is left alone too — slugs, paths and
- * keys are a per-site judgement.
- *
- * **Existing direct `fieldClass` calls are not debt.** They already comply with
- * the value layer, so no migration is forced (a ledger declared closed is not
- * reopened). The `field-adoption-ratchet` holds raw text fields in **new files**
- * at 0 from day one.
+ * Behaviour layer of a form field, not styling: a required accessible name, and
+ * one `error`/`hint` prop that wires `aria-invalid`, `aria-describedby` (error first)
+ * and `role="alert"` through `useId`. The className is `fieldClass(...)` verbatim, asserted by
+ * a contract; `field-adoption-ratchet` holds raw text fields in new files at 0.
  */
 
-/** Accessible name — the type requires one of the three. A nameless field is misinformation. */
+/** The type requires one of the three; a nameless field does not compile. */
 type FieldNameProps =
   | { label: ReactNode; "aria-label"?: string; labelledBy?: never }
   | { label?: undefined; "aria-label": string; labelledBy?: never }
@@ -52,11 +30,11 @@ type FieldNameProps =
 interface FieldCommonProps {
   size?: FieldSize;
   frame?: FieldFrame;
-  /** One line of guidance below the field, wired through `aria-describedby`. */
+  /** One line of guidance, wired through `aria-describedby`. */
   hint?: ReactNode;
-  /** One line of error text — `aria-invalid` + `aria-describedby` + `role="alert"`. */
+  /** Wired through `aria-invalid`, `aria-describedby` and `role="alert"`. */
   error?: ReactNode;
-  /** The wrapper's placement and width — spec values do not go here. */
+  /** Placement and width only; spec values do not go here. */
   className?: string;
 }
 
@@ -141,10 +119,8 @@ export type TextareaProps = FieldCommonProps &
   FieldNameProps &
   Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "className" | "aria-label"> & {
     /**
-     * Grow with the text (owner, 2026-09-06: the relation reason field was three lines
-     * for a sentence that ran to five). `rows` stays the floor; `maxRows` is the ceiling,
-     * after which the field scrolls inside itself. Height is set from `scrollHeight` on
-     * every value change, so a paste and a deletion both land on the right size.
+     * Grows with the text from the `rows` floor to `maxRows`, then scrolls; the height is set
+     * from `scrollHeight` on every value change.
      */
     autoGrow?: boolean;
     maxRows?: number;

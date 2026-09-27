@@ -5,11 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import enMessages from "../../../../messages/en.json";
 import { ProjectSelectorPage } from "./ProjectSelectorPage";
 
-// Regression guard (2026-07-26) — `VaultDoc.slug` is the file path (`ontology/project`) while
-// `Project.slug` is the frontmatter `slug:` (`ontology-atlas`). A card comparing the two directly fails
-// to find the document of any project that declared its slug in frontmatter and lies with "this project
-// has no description yet" — while the detail screen showed that same description perfectly. Pinned to
-// the same shape as the real dogfood manifest.
+// A doc slug is its file path while a project slug is the frontmatter `slug:`; comparing them directly misses.
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, children, ...props }: { href: string; children: ReactNode }) => (
     <a href={href} {...props}>

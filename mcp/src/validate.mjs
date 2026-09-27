@@ -1,18 +1,10 @@
 /**
- * Input validation helpers for the MCP tools.
- *
- * Kept at parity with the UI: the same rule as the Inspector check in
- * `src/views/ontology-edit/lib/is-untitled-title.ts` — non-empty, and still
- * non-empty after trimming — so an agent cannot create silent pollution
- * (untitled or blank-title nodes).
+ * Input validation for the MCP tools. A title must be non-empty after trimming,
+ * so an agent cannot create untitled nodes.
  */
 
 /**
- * Whether a value is safe as a vault frontmatter `title`. Rejects non-strings,
- * undefined, null, the empty string, and whitespace-only values.
- *
- * Used by addConcept (required input) and patchConcept (when the frontmatter
- * carries `title`).
+ * A usable frontmatter `title`: a string that is non-empty after trimming.
  *
  * @param {unknown} value
  * @returns {value is string}
@@ -36,39 +28,12 @@ import {
 } from './schema.mjs';
 import { slugOutsideKindFolderMessage } from './construction-rules.mjs';
 
-/**
- * Detects silent corruption in vault frontmatter. Guarantees the same issue codes
- * as `src/shared/lib/validate-vault-document.ts` (a contract test blocks drift),
- * and reads the raw text too so unclosed blocks and zero-key parses are caught.
- *
- * issue codes:
- *  - unclosed-frontmatter (error)
- *  - empty-kind (error)
- *  - missing-kind (warning)
- *  - unknown-kind (warning)
- *  - missing-expected-field (warning)
- *  - non-canonical-graph-array (warning)
- *  - parse-zero-keys (warning)
- *  - malformed-frontmatter-line (error)
- *  - malformed-quoted-scalar (error)
- *  - dangling-graph-reference (warning) — whole-vault graph validation
- *  - definition-missing / boundary-missing / epistemic-exclusion /
- *    uncertainty-missing (warning) — the body half, read from the same raw text
- *  - slug-outside-kind-folder (warning) — only when the caller knows the slug
- *
- * @param {string} raw
- * @param {{ slug?: string }} [options] the document's vault-relative slug, when
- *   the caller knows it. `slug-outside-kind-folder` is a fact about where the
- *   file sits, so a caller holding only the bytes cannot be told it.
- * @returns {{ ok: boolean, issues: Array<{code: string, severity: 'error'|'warning', message: string}> }}
- */
 export const VAULT_ISSUE_CODE_VALUES = Object.freeze([
   'unclosed-frontmatter',
   'parse-zero-keys',
   'malformed-frontmatter-line',
-  // A scalar whose opening quote never closes as the last character. The parser
-  // keeps the quote as literal text, so the value renders wrong in every reader
-  // while nothing else fails (found in this repository's own vault, 2026-08-31).
+  // An opening quote that never closes: the parser keeps it as literal text, so
+  // the value renders wrong everywhere while nothing else fails.
   'malformed-quoted-scalar',
   'missing-kind',
   'empty-kind',
@@ -80,21 +45,14 @@ export const VAULT_ISSUE_CODE_VALUES = Object.freeze([
   'missing-expected-field',
   'non-canonical-graph-array',
   'dangling-graph-reference',
-  // Two documents claiming the same canonical slug (measured 2026-07-29).
-  // A per-file check cannot catch it in principle — either file alone looks perfect.
+  // Two documents claiming one canonical slug; each file alone looks perfect.
   'duplicate-slug',
   'duplicate-uid',
   /*
-   * The six meaning findings the write door already reports to the agent.
-   *
-   * They arrived here on 2026-09-22 because the door alone was not enough: an
-   * agent reads them, tells the person "validation is clean", and every surface
-   * the person can check for themselves agreed. Five are decided by one
-   * document's own text and live in `validateVaultDocument`;
-   * `folder-only-evidence` needs a repository root and the filesystem, so it is
-   * a whole-vault pass beside the dangling-reference one. All six are warnings —
-   * `construction-rules.mjs` rule 5 does not stop being true because the reader
-   * changed.
+   * The meaning findings the write door reports, so a person running validate
+   * sees what the agent saw. Five are decided by one document's text
+   * here; `folder-only-evidence` needs a repository root, so it is a whole-vault pass.
+   * All warnings (construction rule 5).
    */
   'definition-missing',
   'boundary-missing',
@@ -103,22 +61,14 @@ export const VAULT_ISSUE_CODE_VALUES = Object.freeze([
   'slug-outside-kind-folder',
   'folder-only-evidence',
   /*
-   * The seventh, and the second that no single document can decide: a
-   * `dependencies:` entry whose citing file never imports the cited one. It needs
-   * a repository root, the file on disk, AND the `path:` of the node at the
-   * other end of the edge, so like `folder-only-evidence` it is a whole-vault
-   * pass in `validate_vault` and in the CLI, and absent from the per-document
-   * validator. A warning, and never more than that: an import is evidence of a
-   * dependency, but its absence is not proof of independence.
+   * Whole-vault only: needs a repository root, the cited file and the `path:` of
+   * the node at the other end. A warning: a missing import is not proof of
+   * independence.
    */
   'dependency-unwitnessed',
   /*
-   * The eighth, and the only one of the three whole-vault meaning codes that
-   * needs nothing but the vault itself: an `init` starter example still standing
-   * after real nodes of its kind arrived. No repository root, no bodies, no
-   * filesystem — so unlike the two above it never goes quiet, which matters
-   * because the vault that most needs telling is the freshly built one nobody
-   * has compiled yet.
+   * Whole-vault only, yet needs nothing but the vault, so it speaks even on a
+   * freshly built, uncompiled vault.
    */
   'starter-example-node',
 ]);
@@ -143,20 +93,26 @@ const GRAPH_ARRAY_KEYS = [
   'relates',
   'contains',
   'describes',
-  // `broader` (is_a / SKOS) was missing from this list when it was introduced
-  // (audit 2026-07-25). This one list drives **both** the canonical-sort check and
-  // the dangling-reference check, so the omission meant CI stayed green while an
-  // agent wrote a typo slug into `broader`. The contract fixture pins it.
+  // This one list drives both the canonical-sort and the dangling-reference
+  // checks; the contract fixture pins `broader` in it.
   'broader',
 ];
 
+/**
+ * Detects silent corruption in vault frontmatter, reading the raw text so an
+ * unclosed block and a zero-key parse are caught. Issue codes
+ * match `src/shared/lib/validate-vault-document.ts`; a contract test blocks
+ * drift. `slug-outside-kind-folder` needs `options.slug` (where the file sits), and a
+ * caller holding only bytes cannot be told it.
+ *
+ * @param {string} raw
+ * @param {{ slug?: string }} [options]
+ * @returns {{ ok: boolean, issues: Array<{code: string, severity: 'error'|'warning', message: string}> }}
+ */
 export function validateVaultDocument(raw, options = {}) {
   const issues = [];
-  // The same normalization the parser applies (bug sweep 2026-09-01): a
-  // Windows-authored `﻿---` file failed `startsWith('---')`, so this
-  // validator returned ok with zero issues — missing-uid, empty-kind, even an
-  // unclosed frontmatter all skipped — while the graph treated the same bytes
-  // as a live node.
+  // The parser's normalization: a BOM-prefixed or CRLF file must not skip every
+  // check while the graph reads the same bytes as a live node.
   raw = String(raw).replace(/^\uFEFF/, '').replace(/\r\n/g, '\n');
   const startsWithDelim = raw.startsWith('---');
   const closingIndex = startsWithDelim ? raw.indexOf('\n---', 3) : -1;
@@ -215,9 +171,7 @@ export function validateVaultDocument(raw, options = {}) {
       message: `\`kind: ${rawKind.trim()}\` is not a recognised value.`,
     });
   } else {
-    // Advisory for a kind's expected field being absent (a capability's or
-    // element's `domain`). schema.mjs is the single source, so UI, CLI, and MCP
-    // all read the same dictionary.
+    // Expected-field advisory from schema.mjs, the dictionary UI, CLI and MCP share.
     const trimmedKind = rawKind.trim();
     for (const key of missingExpectedFields(trimmedKind, frontmatter)) {
       issues.push({
@@ -243,14 +197,9 @@ export function validateVaultDocument(raw, options = {}) {
 }
 
 /**
- * The slug this document is addressed by, when anybody knows it.
- *
- * The caller's value wins: it is the file's real position in the vault, while
- * `slug:` in frontmatter is a claim the document makes about itself, and a
- * document can claim the wrong one. The fallback exists because two of the three
- * validators (the app's raw path, and a caller holding only bytes) never have the
- * position, and a self-declared slug is still better than pretending the node has
- * no name.
+ * The slug this document is addressed by. The caller's value (the file's real
+ * position) wins over frontmatter `slug:`, a claim that can be wrong; callers
+ * holding only bytes fall back to the claim.
  */
 function resolveDocumentSlug(frontmatter, options) {
   const given = typeof options?.slug === 'string' ? options.slug.trim() : '';
@@ -260,31 +209,12 @@ function resolveDocumentSlug(frontmatter, options) {
 }
 
 /**
- * The half of a node the frontmatter checks never opened.
- *
- * **Why this is a validator question and not only a write-door one.** Every one
- * of these findings already existed, and an agent already read them at
- * `add_concept` time. What did not exist was any way for the *person* to ask.
- * `validate_vault`, `ontology-atlas validate`, and the app's to-do queue all
- * answered from frontmatter alone, so an agent could report six findings, call
- * the vault clean in the same sentence, and nothing the owner could run
- * disagreed. A finding nobody but the writer can see is a finding that becomes
- * reassurance.
- *
- * The logic is **imported, never re-derived**: `meaning-findings.mjs` owns these
- * five judgements for the write door, and two copies would mean the door and the
- * validator disagreeing about one body. Severity is `warning` for all of them,
- * which is construction rule 5 restated — the vault is valid, it is thin, and
- * telling those apart is the whole point of the two severities.
- *
- * `folder-only-evidence` and `dependency-unwitnessed` are deliberately absent.
- * One has to ask the filesystem whether a cited path is a directory and the
- * other has to read the cited file and the `path:` of the node at the far end of
- * an edge; both need a repository root this function has no way to know, and the
- * second needs the whole vault besides. `starter-example-node` needs neither a
- * root nor a file, but it does need every other node's kind, which one document
- * cannot supply. All three run in `validate_vault` and in the CLI command,
- * beside the other whole-vault passes.
+ * The body half, so validate_vault, `ontology-atlas validate` and the app's
+ * queue report what the write door told the agent. The judgements are imported
+ * from `meaning-findings.mjs`, never re-derived; all warnings (valid but
+ * thin). `folder-only-evidence`, `dependency-unwitnessed` and `starter-example-node`
+ * need a repository root or every other node, so they run as whole-vault passes
+ * in validate_vault and the CLI.
  */
 function pushMeaningIssues({ frontmatter, body, slug, issues }) {
   const kind = typeof frontmatter?.kind === 'string' ? frontmatter.kind.trim() : '';
@@ -304,12 +234,9 @@ function pushMeaningIssues({ frontmatter, body, slug, issues }) {
 }
 
 /**
- * A node written at the vault root instead of inside its kind folder.
- *
- * Silent when the slug is unknown, because the question is literally "where does
- * this file sit" and guessing an answer would accuse every document a caller
- * handed over as bytes. Silent for `project` and `document` too — `folderForKind`
- * returns an empty prefix for both, and those kinds live at the root by design.
+ * A node written outside its kind folder. Silent without a known slug (guessing
+ * would accuse every byte-only document) and for project and document, which
+ * live at the root.
  */
 function pushSlugOutsideKindFolderIssue({ kind, slug, issues }) {
   if (!slug) return;
@@ -327,43 +254,19 @@ function pushSlugOutsideKindFolderIssue({ kind, slug, issues }) {
 }
 
 /**
- * Finds **the mark left when one reason swallowed the reasons after it**.
- *
- * **Why** (review 2026-08-16 — found in our own vault):
- * `domains/agent-integration.md` declared three relation reasons, but reading it
- * there was **one**. The other two had been swallowed as text inside the first value:
- *
- * ```
- * capabilities/acp-runtime: "…permission gate., capabilities/skill-process-handoff: …"
- * ```
- *
- * The cause was **a single apostrophe** inside the value (`user's`). When a value
- * is not wrapped in quotes, that one character opens a quote state and the commas
- * after it stop reading as separators. The writing rule was fixed the same day
- * (apostrophes now force wrapping), but **marks already made stay**.
- *
- * And at that moment `validate` answered **`issue 0`** — the relation arrays were
- * intact so the graph was fine, and only the reasons were gone, which no check
- * looked at. «Why it was connected this way» is the record this product values
- * most, and the path for it to vanish silently was open.
- *
- * The test: if a reason value contains **another relation target this node
- * actually declared**, in `target: ` form, that is a swallowed entry rather than a
- * sentence. The condition is narrow — no sentence coincidentally quotes its own
- * neighbour's slug down to the colon.
- *
- * The second test covers the key side: every `relation_notes` key must name a
- * relation this node declares. A comma inside an unquoted value ends the entry
- * early and turns the remainder plus the next slug into a pseudo-key, which the
- * value test cannot see. That key is reported as `orphaned-relation-note`.
+ * Finds a relation note that swallowed the entries after it: an unquoted value
+ * with an apostrophe opens a quote state and the following commas stop
+ * separating, while the relation arrays stay intact and nothing else fails.
+ * Value side: a note containing `target: ` for another target this node declares
+ * is a swallowed entry (narrow; prose does not quote a neighbour's slug to the
+ * colon). Key side: a comma ends an unquoted value early and turns the rest into
+ * a pseudo-key naming no declared relation (`orphaned-relation-note`).
  */
 function pushSwallowedRelationNoteIssues(frontmatter, issues) {
   const notes = frontmatter.relation_notes;
   if (!notes || typeof notes !== 'object' || Array.isArray(notes)) return;
 
-  // Where this node declared it connects to: every relation array entry plus the
-  // inline `domain` parent. A note key must name one of these, and if something
-  // was swallowed, one of these is inside a value.
+  // Every relation array entry plus the inline `domain` parent.
   const declared = new Set();
   for (const [key, value] of Object.entries(frontmatter)) {
     if (key === 'relation_notes') continue;
@@ -371,24 +274,18 @@ function pushSwallowedRelationNoteIssues(frontmatter, issues) {
     if (!Array.isArray(value)) continue;
     for (const item of value) if (typeof item === 'string' && item.trim()) declared.add(item.trim());
   }
-  // A note may spell its target as the full slug while the array holds the tail
-  // alias, or the other way round; both address one node.
+  // A note may spell its target as the full slug or the tail alias.
   const isDeclared = (key) =>
     declared.has(key) ||
     [...declared].some((ref) => ref.endsWith(`/${key}`) || key.endsWith(`/${ref}`));
 
-  // Slug-shaped targets only for the value test, so a short alias such as `b`
-  // cannot match ordinary prose by accident.
+  // Slug-shaped targets only, so a short alias such as `b` cannot match prose.
   const targets = new Set([...declared].filter((ref) => ref.includes('/')));
   for (const key of Object.keys(notes)) targets.add(key);
 
   for (const [key, value] of Object.entries(notes)) {
-    // The key side of the same accident (found 2026-08-30 in
-    // `capabilities/acp-runtime.md`): an unquoted value containing a comma ends at
-    // the comma, and the rest of the sentence plus the NEXT entry's slug become the
-    // next KEY. The value test below cannot see it because the swallowed slug sits
-    // in a key, not in a value. Any key that names no declared relation is a note
-    // no edge can carry, so every reader silently drops the sentence.
+    // A note key naming no declared relation is carried by no edge, so every
+    // reader drops its sentence.
     if (!isDeclared(key)) {
       issues.push({
         code: 'orphaned-relation-note',
@@ -417,10 +314,7 @@ function pushSwallowedRelationNoteIssues(frontmatter, issues) {
   }
 }
 
-/**
- * Parser diagnostics that are vault issues in their own right. Both mean the
- * author wrote frontmatter the reader cannot honour, so both are errors.
- */
+/** Parser diagnostics that are vault issues: frontmatter the reader cannot honour, so errors. */
 const SURFACED_DIAGNOSTIC_CODES = new Set([
   'malformed-frontmatter-line',
   'malformed-quoted-scalar',
@@ -488,16 +382,9 @@ function pushNonCanonicalGraphArrayIssues(frontmatter, issues) {
 }
 
 /**
- * **A parent established by containment** — when another node contains this slug,
- * it has a parent in the tree.
- *
- * 2026-08-11, found walking the north-star journey: a vault created by
- * `init --quick-start` failed its own gate. There was a single warning
- * (`missing-expected-field: domain`), and that one warning turned `health`,
- * `mcp-verify`, and `agent-brief` red. But the warning's wording was *"a parent
- * can be found in the tree"*, and that vault's project node already held those
- * capabilities under `contains:` — **it said there was no parent when there was
- * one.** The gate sees one file at a time, so the narrowing happens at vault level.
+ * Slugs another node contains, which therefore have a tree parent. The per-file
+ * check cannot see containment, so the missing-`domain:` warning is narrowed at
+ * vault level; otherwise a `contains:` project fails its own health gate.
  */
 export function parentedSlugs(docs) {
   const parented = new Set();
@@ -515,29 +402,13 @@ export function parentedSlugs(docs) {
   return parented;
 }
 
-/** The keys through which containment establishes a parent — only the downward direction, a project or domain holding what is below it. */
+/** Downward containment keys: a project or domain holding what is below it. */
 const CONTAINMENT_KEYS = ['contains', 'capabilities', 'elements', 'domains'];
 
 /**
- * Clears **only the missing-`domain:` warning** on a node that already has a parent.
- *
- * ⚠️ This **narrows** rather than removes — a node nothing contains keeps the
- * warning, and there the parent really is absent. Warnings with other codes and
- * expected fields other than `domain` are untouched: containment establishes a
- * parent, nothing more.
- */
-/**
- * `missing-kind` is not a defect on a library file — **it is the contract.**
- *
- * A vault holds three kinds of file and only one is the graph (`docs/DECISIONS.md`,
- * 2026-09-05). A wiki page under `wiki/` MUST NOT carry `kind:`; that absence is what
- * keeps it out of the map. Warning about it would tell a person to break the one rule
- * the page has to follow, and once a folder holds twenty pages the warning is twenty
- * lines of noise in front of the frontmatter problems that are real.
- *
- * Only that one code is dropped, and only for that one folder. Everything else a wiki
- * page can get wrong — malformed frontmatter, an unclosed block — is still reported here,
- * and whether the page fits its own contract is `wiki-schema.mjs`'s separate answer.
+ * A `missing-kind` on a wiki page is the contract, not a defect: a page must carry
+ * no `kind:` to stay off the map (`docs/DECISIONS.md`). Only that code, only in
+ * that folder; `wiki-schema.mjs` judges the page's own contract.
  */
 function isLibraryPageSlug(slug) {
   return typeof slug === 'string' && slug.startsWith('wiki/');
@@ -553,6 +424,10 @@ export function suppressLibraryKindIssues(issuesBySlug) {
   return issuesBySlug;
 }
 
+/**
+ * Clears only the missing-`domain:` warning on a node that already has a parent.
+ * A node nothing contains keeps it; other codes and other expected fields stay.
+ */
 export function suppressParentedExpectedFieldIssues(issuesBySlug, docs) {
   const parented = parentedSlugs(docs);
   if (parented.size === 0) return issuesBySlug;

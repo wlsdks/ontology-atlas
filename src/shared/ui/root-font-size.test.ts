@@ -3,10 +3,8 @@ import { describe, expect, it } from "vitest";
 import { cssLengthToPx, DEFAULT_ROOT_FONT_PX } from "./root-font-size";
 
 /**
- * The defect this helper exists for, written as a test: `Number.parseFloat("0.6875rem")` is
- * **0.6875** — finite, positive, and off by a factor of sixteen. Every guard a caller writes
- * against a bad token (`Number.isFinite`, `> 0`) passes on it, so the canvas that reads
- * `--text-label` drew its names at two thirds of a pixel and threw nothing.
+ * Parsing `Number.parseFloat("0.6875rem")` gives 0.6875: finite and positive, so a caller's
+ * guards pass while it is off by sixteen.
  */
 describe("cssLengthToPx", () => {
   it("resolves rem against the root, which is the whole point", () => {
@@ -27,8 +25,7 @@ describe("cssLengthToPx", () => {
   });
 
   it("refuses em rather than guessing — it resolves against a parent this cannot see", () => {
-    // Returning a number here would be the same class of defect as the one above: quietly
-    // plausible and wrong. `NaN` fails at the caller's own guard, where the token is named.
+    // A number here would be plausible and wrong; `NaN` fails at the caller's own guard.
     expect(cssLengthToPx("0.6875em", 16)).toBeNaN();
     expect(cssLengthToPx("2em", 32)).toBeNaN();
   });

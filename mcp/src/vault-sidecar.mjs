@@ -139,9 +139,9 @@ function sidecarContext(vaultRoot, { create = false, subdirectory = undefined } 
     return { root, sidecarPath, sidecarIdentity: revisionOf(verified ?? sidecarMetadata) };
   }
 
-  // One named level below .ontology-atlas, held to the same discipline as the
-  // sidecar itself: a real directory, no symlink, resolving under the verified
-  // sidecar. The returned context re-checks that chain before every operation.
+  // Security: one named level below .ontology-atlas, held to the sidecar's own rule
+  // (a real directory, no symlink, under the verified sidecar); the returned
+  // context re-checks that chain before every operation.
   assertSubdirectoryName(subdirectory);
   let sidecarReal;
   try {

@@ -1,24 +1,12 @@
 /**
- * The text of a raw source, in the units a wiki citation can name.
- *
- * A wiki page cites `[[src:sources/<file>#<anchor>]]`, and the anchor grammar
- * (`wiki-schema.mjs`) names a heading in a document, a sheet and row in a workbook, a row
- * in a table, a line in a text file, a page in a PDF. An agent that reads a DOCX or an XLSX
- * with its own tools has to reach for a shell (`unzip -p … | sed …`), which in the app
- * raises an execute permission card on a turn that only reads — the first ask about a
- * passage on 2026-09-07 stopped at exactly that card. This module reads the same files
- * without a shell and returns their text already cut into citable units, so the agent
- * cites the anchor it was handed instead of inventing one.
- *
- * Nothing is converted and kept: the file is read on request and the text returned once.
- * Only the formats an agent cannot read natively get a real parser (DOCX, XLSX); CSV and
- * text formats are split the way their anchors count (records, lines). A PDF is reported as
- * something the agent reads itself, because the runtimes do, page numbers included.
- *
- * The zip reader below is deliberately small: central directory, local header, one
- * `inflateRawSync` per entry. Office files are plain zips with XML inside, and pulling a
- * dependency for that would put a third-party parser between a person's document and the
- * wiki that quotes it.
+ * A raw source's text cut into the units a wiki citation anchor names (heading,
+ * sheet and row, row, line; `wiki-schema.mjs`), so an agent cites the anchor it
+ * was handed and needs no shell (which raises an execute card in the app on a
+ * read-only turn). Read on request, nothing kept. DOCX and XLSX get a real
+ * parser; CSV and text split the way their anchors count; a PDF is left to the
+ * agent's runtime. The zip reader is deliberately small (central directory,
+ * local header, one `inflateRawSync` per entry) so no third-party parser sits
+ * between a person's document and the wiki quoting it.
  */
 import { inflateRawSync } from 'node:zlib';
 
@@ -28,17 +16,14 @@ export const READ_SOURCE_MAX_LIMIT = 1000;
 /** Characters of text returned at most per call, whatever the unit count. */
 export const READ_SOURCE_MAX_CHARS = 60_000;
 
-// ── zip ─────────────────────────────────────────────────────────────────────────
 
 const EOCD_SIGNATURE = 0x06054b50;
 const CENTRAL_SIGNATURE = 0x02014b50;
 const LOCAL_SIGNATURE = 0x04034b50;
 
 /**
- * Every entry of a zip, by name, decompressed on demand.
- *
  * @param {Buffer} buffer
- * @returns {Map<string, () => Buffer>}
+ * @returns {Map<string, () => Buffer>} every entry by name, decompressed on demand
  */
 export function readZipEntries(buffer) {
   if (!Buffer.isBuffer(buffer) || buffer.length < 22) throw new Error('not a zip file: too short');
@@ -86,7 +71,6 @@ export function readZipEntries(buffer) {
   return entries;
 }
 
-// ── xml, the little that Office text needs ───────────────────────────────────────
 
 const XML_ENTITIES = { lt: '<', gt: '>', amp: '&', quot: '"', apos: "'" };
 
@@ -121,7 +105,6 @@ export function headingSlug(title) {
     .slice(0, 64);
 }
 
-// ── formats ─────────────────────────────────────────────────────────────────────
 
 /**
  * A DOCX: its paragraphs in order. A paragraph styled as a heading opens a section, and
@@ -137,7 +120,7 @@ function parseDocx(buffer) {
   let headingCount = 0;
   for (const match of xml.matchAll(/<w:p\b[\s\S]*?<\/w:p>/g)) {
     const paragraph = match[0];
-    // Runs keep their order; tabs and breaks become spaces so words do not fuse.
+    // Tabs and breaks become spaces so words do not fuse.
     const text = textOf(
       paragraph.replace(/<w:tab\/>/g, ' ').replace(/<w:br\b[^>]*\/>/g, ' ').replace(/<w:t\b[^>]*>/g, '<w:t>'),
     )
@@ -158,8 +141,8 @@ function parseDocx(buffer) {
     if (paragraph.kind !== 'heading') continue;
     baseCounts.set(paragraph.base, (baseCounts.get(paragraph.base) ?? 0) + 1);
   }
-  // Reserve every natural base before allocating duplicate suffixes. This keeps a
-  // unique heading such as `Scope 2` at h:scope-2 even when h:scope is repeated.
+  // Reserve every natural base first, so a unique `Scope 2` keeps h:scope-2 even
+  // when h:scope repeats.
   const reservedBases = new Set(baseCounts.keys());
   const usedAnchors = new Set();
   const nextSuffixByBase = new Map();
@@ -339,7 +322,6 @@ export function htmlUnits(html) {
   return lineUnits(text);
 }
 
-// ── the tool's answer ───────────────────────────────────────────────────────────
 
 const FORMAT_BY_EXTENSION = {
   docx: 'docx',
@@ -359,13 +341,12 @@ const FORMAT_BY_EXTENSION = {
 };
 
 /**
- * Read one raw source into citable units.
+ * Reads one raw source into citable units.
  *
  * @param {Buffer} buffer the file's bytes
  * @param {string} path vault-relative, `sources/<file>`
- * @param {{ from?: number, limit?: number, sheet?: number }} [options]
- *   `from` is the 1-based index of the first unit to return; `limit` the count; `sheet`
- *   narrows a workbook to one sheet number.
+ * @param {{ from?: number, limit?: number, sheet?: number }} [options] `from` is
+ *   the 1-based first unit, `limit` the count, `sheet` one workbook sheet number.
  * @returns {{ path, format, units, unitCount, from, truncated, note? }}
  */
 export function readSourceText(buffer, path, options = {}) {

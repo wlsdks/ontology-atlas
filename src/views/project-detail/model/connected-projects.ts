@@ -1,15 +1,7 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import type { Project } from "@/entities/project";
 
-/**
- * The project slugs the "connected projects" summary rail uses — only those joined to another project
- * node through the ontology graph's `relates:` frontmatter (edge type `related_to`). The
- * `project:<slug>` id convention comes from derive-ontology-from-vault's kind:slug rule (the same basis
- * as `buildOntologyDeeplinkForDoc`).
- *
- * An empty array when this project has no project node in the vault (i.e. it is not in the ontology) —
- * in a vault like dogfood with a single project document, the result is naturally always empty.
- */
+/** Projects joined by a `related_to` edge; empty when this project has no node in the graph. */
 export function findRelatesGraphProjectSlugs(
   nodes: readonly KnowledgeGraphNode[],
   edges: readonly KnowledgeGraphEdge[],
@@ -37,17 +29,7 @@ export function findRelatesGraphProjectSlugs(
   return out;
 }
 
-/**
- * The "connected projects" list for the project detail's summary rail — the union of three sources,
- * excluding self and deduplicated by slug:
- *
- *  1. `project.dependencies` — other projects this one depends on.
- *  2. referencedBy — another project's `dependencies` pointing at this one.
- *  3. relates-graph — projects joined through the ontology's `relates:` (a related_to edge).
- *
- * (1) and (2) predate this rail and are kept, so a vault that already linked projects with
- * `dependencies:` keeps showing them without regression. (3) is the `relates` path the newer design added.
- */
+/** Dependencies both ways plus `relates:` edges, without self, deduplicated by slug. */
 export function buildConnectedProjects(
   project: Project,
   related: readonly Project[],

@@ -1,10 +1,12 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
 import { composite, contrastRatio, parseColor } from "../../scripts/lib/contrast.mjs";
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
+import { classNameOf, readClassSource, stringsOf } from "./lib/jsx-class-source";
 
 /**
  * The **surface licence contract** for quaternary ink (system seat verdict,
@@ -52,6 +54,31 @@ import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
  */
 
 const read = (rel: string) => readFileSync(join(process.cwd(), rel), "utf8");
+
+type JsxFact = { tag: string; start: number; end: number; classText: string; literalText: string; childText: string };
+
+function readJsx(rel: string, text = read(rel)): JsxFact[] {
+  const resolved = readClassSource(rel, text);
+  const { source } = resolved;
+  const facts: JsxFact[] = [];
+  const collect = (node: ts.Node): void => {
+    const opening = ts.isJsxElement(node) ? node.openingElement : ts.isJsxSelfClosingElement(node) ? node : undefined;
+    if (opening) {
+      const className = classNameOf(opening);
+      facts.push({
+        tag: opening.tagName.getText(source),
+        start: node.getStart(source),
+        end: node.end,
+        classText: className?.initializer ? stringsOf(resolved, className.initializer).join(" ") : "",
+        literalText: stringsOf(resolved, node, false).join(" "),
+        childText: ts.isJsxElement(node) ? node.children.map((child) => child.getText(source)).join("") : "",
+      });
+    }
+    ts.forEachChild(node, collect);
+  };
+  collect(source);
+  return facts;
+}
 
 type Rgba = readonly number[];
 
@@ -150,30 +177,58 @@ describe("실측으로 잡힌 자리가 되돌아가지 않는다 — 글로벌 
      * span (4.39). cmdk's selection travels every row, so the slug and status spans fall
      * under the same rule.
      */
-    const src = read("src/widgets/global-search/ui/GlobalSearch.tsx");
-    const kbd = /<kbd[^>]*className="[^"]*"/.exec(src)?.[0] ?? "";
-    expect(kbd).toContain("--color-text-tertiary");
-    expect(kbd).not.toContain("--color-text-quaternary");
-    // A selected row (aria-selected:bg-indigo-a14) has no quaternary child.
-    const items = src.split("aria-selected:bg-[color:var(--color-indigo-a14)]");
-    expect(items.length, "선택 행 문법이 사라졌다 — 이 단언의 대상을 다시 찾아라").toBeGreaterThan(1);
-    for (const chunk of items.slice(1)) {
-      // Only up to where the row element closes (before the next Group heading).
-      const scope = chunk.split("</Command.Item>")[0] ?? chunk;
+    const search = readJsx("src/widgets/global-search/ui/GlobalSearch.tsx");
+    const kbds = search.filter((element) => element.tag === "kbd");
+    expect(kbds.length, "the search kbd is gone; find this assertion's subject again").toBeGreaterThan(0);
+    for (const kbd of kbds) {
+      expect(kbd.classText).toContain("--color-text-tertiary");
+      expect(kbd.classText).not.toContain("--color-text-quaternary");
+    }
+    const rows = search.filter((element) => element.classText.includes("aria-selected:bg-[color:var(--color-indigo-a14)]"));
+    expect(rows.length, "선택 행 문법이 사라졌다 — 이 단언의 대상을 다시 찾아라").toBeGreaterThan(0);
+    for (const row of rows) {
+      const inside = search.filter((element) => element.start >= row.start && element.end <= row.end);
       expect(
-        scope.includes("--color-text-quaternary"),
+        [row.literalText, ...inside.map((element) => element.classText)].join(" ").includes("--color-text-quaternary"),
         "선택 행(indigo-a14 합성) 안에 quaternary 잉크가 되돌아왔다 — 4.39:1 로 AA 미달이다. tertiary 부터 쓴다.",
       ).toBe(false);
     }
+  });
+
+  it("probe: a class hoisted into a constant or a helper resolves to its value", () => {
+    const facts = readJsx(
+      "probe.tsx",
+      [
+        'const ROW = "aria-selected:bg-[color:var(--color-indigo-a14)]";',
+        'const meta = () => cn("text-[color:var(--color-text-quaternary)]");',
+        "// <span className=\"text-[color:var(--color-text-tertiary)]\" />",
+        "export const Row = () => <div className={ROW}><span className={meta()} /></div>;",
+      ].join("\n"),
+    );
+    expect(facts.map((fact) => [fact.tag, fact.classText])).toEqual([
+      ["div", "aria-selected:bg-[color:var(--color-indigo-a14)]"],
+      ["span", "text-[color:var(--color-text-quaternary)]"],
+    ]);
+
+    const shadowed = readJsx(
+      "shadow.tsx",
+      [
+        "function A() { const meta = 'text-[color:var(--color-text-quaternary)]'; return <span className={meta} />; }",
+        "function B() { const meta = 'text-[color:var(--color-text-tertiary)]'; return <span className={meta} />; }",
+      ].join("\n"),
+    );
+    const both = "text-[color:var(--color-text-quaternary)] text-[color:var(--color-text-tertiary)]";
+    expect(shadowed.map((fact) => fact.classText)).toEqual([both, both]);
   });
 });
 
 describe("실측으로 잡힌 자리가 되돌아가지 않는다 — 아키텍처 프로필 행", () => {
   it("눌리는 프로필 행의 범위 설명은 tertiary 부터 쓴다", () => {
-    const src = read("src/views/architecture/ui/ArchitectureWorkbench.tsx");
-    const scopeLine = /<span\s+className="([^"]*)"[^>]*>\s*\{profile\.scopePaths\.join/.exec(src);
-    expect(scopeLine, "프로필 범위 행을 못 찾았다 — 단언 대상을 다시 찾아라").not.toBeNull();
-    expect(scopeLine?.[1]).toContain("--color-text-tertiary");
-    expect(scopeLine?.[1]).not.toContain("--color-text-quaternary");
+    const scopeLine = readJsx("src/views/architecture/ui/ArchitectureWorkbench.tsx").find(
+      (element) => element.tag === "span" && /^\s*\{profile\.scopePaths\.join/.test(element.childText),
+    );
+    expect(scopeLine, "프로필 범위 행을 못 찾았다 — 단언 대상을 다시 찾아라").toBeDefined();
+    expect(scopeLine?.classText).toContain("--color-text-tertiary");
+    expect(scopeLine?.classText).not.toContain("--color-text-quaternary");
   });
 });

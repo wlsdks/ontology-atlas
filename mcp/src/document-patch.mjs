@@ -21,10 +21,10 @@ function normalizeDocumentRelationRefs(values) {
 }
 
 /**
- * Pure exact-byte preview for the existing MCP update writer. It deliberately reconstructs
- * frontmatter through the canonical parser/serializer, just as the writer already does: comments
- * and original spacing are normalized, while parsed unknown fields and an untouched body survive.
- * Supplying a writer-minted UID is explicit; this function never invents identity or writes a file.
+ * Exact-byte preview for the MCP update writer, rebuilt through the canonical
+ * parser and serializer as the writer does: comments and spacing normalize,
+ * unknown fields and an untouched body survive. A writer-minted UID must be
+ * supplied; nothing is invented or written.
  * @param {{rawBefore: string, frontmatterPatch?: Record<string, unknown>, body?: string, mintedUid?: string}} input
  * @returns {{status: 'unavailable', reason: 'writer_minted_uid_required'} | {status: 'available', frontmatter: Record<string, unknown>, body: string, markdown: string}}
  */

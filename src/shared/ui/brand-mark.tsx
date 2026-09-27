@@ -2,9 +2,8 @@ import type { CSSProperties, ImgHTMLAttributes } from 'react';
 import { withBasePath } from '@/shared/lib/base-path';
 
 /**
- * The pixel mascot is the complete Ontology Atlas identity. Each tier is a real,
- * separately authored RGBA master; this component never redraws it with SVG or
- * scales the full figure down into the tiny favicon form.
+ * Each tier is a separately authored RGBA master; never redraw it as SVG or scale the full
+ * figure down to the favicon form.
  */
 export type BrandMarkDetail = 'full' | 'compact' | 'micro';
 
@@ -25,7 +24,7 @@ export interface BrandMarkProps
     ImgHTMLAttributes<HTMLImageElement>,
     'src' | 'width' | 'height' | 'children'
   > {
-  /** Rendered square size in CSS pixels. Prefer an integer multiple of the native tier. */
+  /** Square, in CSS pixels; prefer an integer multiple of the native tier. */
   size?: number;
   /** full=64px raised-hand mascot · compact=32px body · micro=16px helmet. */
   detail?: BrandMarkDetail;
@@ -48,8 +47,8 @@ export function BrandMark({
   };
 
   return (
-    // The exact native pixel grids must not pass through Next image optimization,
-    // whose responsive resampling would make nominally equal pixels unequal.
+    // Native pixel grids must skip Next image optimization, whose resampling would make equal
+    // pixels unequal.
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src={withBasePath(BRAND_MARK_ASSET[detail])}

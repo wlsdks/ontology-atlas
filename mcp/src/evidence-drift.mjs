@@ -1,11 +1,6 @@
-// evidence-drift — does the meaning still stand on the code it cites?
-//
-// A concept document names its implementation (`path:`, and its `elements:` name theirs).
-// When those files change after the document was last touched, the recorded meaning stands
-// on moved ground: the cognitive-diff probe (2026-09-13) found this the one fact that cut a
-// reader's missed impacts by 75%. This module states it per concept from Git alone, in the
-// same four words the desktop app uses, so an agent asking `validate_vault` and a person on
-// the analysis brief read the same verdicts. A missing time is unknown, never current.
+// Does a concept's meaning still stand on the code it cites? Per concept from Git
+// alone (`path:` and its elements' paths), in the desktop app's four words, so
+// validate_vault and the analysis brief agree. A missing time is unknown, never current.
 
 import { judgeEvidence } from './evidence-verdict.mjs';
 

@@ -11,18 +11,13 @@ export interface CompactCopyButtonProps {
   ariaLabel: string;
   onClick: () => void;
   className?: string;
-  /**
-   * Draw the glyph alone. The label stays the tooltip and `ariaLabel` stays the
-   * accessible name; use it where a crowded chrome row has no room for the words.
-   */
+  /** The label stays the tooltip and `ariaLabel` the accessible name. */
   iconOnly?: boolean;
 }
 
 /**
- * A compact "copy to clipboard" pill — icon flips check↔clipboard, label
- * stays. Shared across the topology analysis rail, the INDEX agent-handoff
- * menu, and the insights page's agent-check row so all three copy affordances
- * read as the same control instead of drifting into near-duplicate buttons.
+ * A compact copy pill whose icon flips to a check; shared so every copy affordance reads as one
+ * control.
  */
 export function CompactCopyButton({
   copied,

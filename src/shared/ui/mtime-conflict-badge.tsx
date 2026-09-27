@@ -6,18 +6,9 @@ export interface MtimeConflictBadgeProps {
 }
 
 /**
- * rank7 (design-council B5) — expected_mtime conflict badge, shared by
- * `DocFrontmatterBlock`, `OntologyMapDetailPanel`, and `FullDetailA1`.
- *
- * Rendered ONLY by the caller when a real mtime mismatch was detected
- * (`hasUnaccountedMtimeChange`) — this component has no vault knowledge, it
- * just paints the warning once told to. amber signal ladder (never
- * red/error — a "check before you overwrite" heads-up, not a failure).
- * Entrance reuses the existing `atlasStatusIn` keyframe (opacity 0→1 +
- * translateY 4px→0, 180ms) already used for the builder's draft-status
- * callout — no new keyframe/duration literal. `prefers-reduced-motion` is
- * handled by the global base-layer rule (animation-duration 0.01ms) like
- * every other entrance in this app.
+ * Warns that the file changed since it was read (`expected_mtime`); the caller renders it only
+ * after `hasUnaccountedMtimeChange`. Amber, not red: a check-before-overwrite, not a failure.
+ * Enters with the existing `atlasStatusIn` keyframe; the base layer handles reduced motion.
  */
 export function MtimeConflictBadge({ message, className }: MtimeConflictBadgeProps) {
   return (

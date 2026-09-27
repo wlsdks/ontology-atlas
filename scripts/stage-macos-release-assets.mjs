@@ -3,13 +3,8 @@
  * Collects the four release assets into one folder — **so that we decide the
  * artifact's root.**
  *
- * **Why this step exists.** Giving `actions/upload-artifact` several paths makes
- * the root their **lowest common ancestor**. Passing `bundle/dmg/*` and
- * `bundle/macos/*` together makes the root `bundle/`, adding an extra `dmg/` /
- * `macos/` layer inside the artifact that the downloading side never chose and
- * cannot know about. v1.0.0-rc.1 stalled there three times — build, signing, and
- * notarisation all passed while the manifest ended with "architectures with no
- * updater artifact: aarch64, x64".
+ * Several upload paths would make their lowest common ancestor the artifact root
+ * and hide the files one level deeper than the downloading side expects.
  *
  * Uploading **one** path makes that folder the root. So the assets are gathered
  * here: the producing side declares the layout, and the consuming side (manifest
@@ -91,7 +86,7 @@ function stageDsymArchive(dsymDir, outDir, archiveName) {
   return archiveName;
 }
 
-/** `ontology-atlas_1.0.0-rc.2_aarch64.dmg` → `{ version, arch }`. */
+/** `ontology-atlas_1.3.0_aarch64.dmg` → `{ version, arch }`. */
 export function parseDmgName(name) {
   const match = name.match(/^ontology-atlas_(.+)_(aarch64|x64)\.dmg$/);
   return match ? { version: match[1], arch: match[2] } : null;

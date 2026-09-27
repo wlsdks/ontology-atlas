@@ -11,39 +11,27 @@ import { cn } from "@/shared/lib/cn";
 import { fieldClass } from '@/shared/ui/control-class';
 
 interface Props {
-  /** Current value — shown in view mode, seeded into edit mode. */
+  /** Shown in view mode and seeded into edit mode. */
   value: string;
-  /** When false, clicking does not enter edit mode. */
   editable: boolean;
-  /** Called on commit (Enter or blur). Not called when the value is unchanged. */
+  /** Called on commit (Enter or blur), not when the value is unchanged. */
   onSave: (next: string) => void | Promise<void>;
-  /**
-   * The tag to render. Edit mode swaps in an input/textarea, so this exists to keep
-   * view mode at the same block level and preserve the surrounding layout.
-   */
+  /** Keeps view mode at the same block level as the edit field it swaps in. */
   as?: "h1" | "h2" | "h3" | "p" | "span" | "div";
-  /** textarea when true, input when false. */
   multiline?: boolean;
   className?: string;
-  /** Placeholder shown in view mode when the value is empty. */
+  /** Shown in view mode when the value is empty. */
   placeholder?: string;
-  /** Whether an empty value may be saved. When false (default) an empty submit cancels. */
+  /** When false (default), an empty submit cancels. */
   allowEmpty?: boolean;
-  /** Accessible name for screen readers. */
   ariaLabel?: string;
-  /** E2E id, applied to both the view and the edit element. */
+  /** Applied to both the view and the edit element. */
   dataTestId?: string;
 }
 
 /**
- * Click → edit in place → commit on Enter/blur, cancel on Esc.
- *
- * The building block for the Notion/Obsidian expectation that a space you own is
- * editable on the spot: an owner reading their own project detail page can fix the
- * `h1` and the description without leaving it.
- *
- * Handling a failed save is the caller's job (`onSave`). This component swallows
- * the throw rather than propagating it and returns to view mode.
+ * Click to edit in place, commit on Enter or blur, cancel on Escape. A failed save is the
+ * caller's to report: the throw is swallowed and view mode returns.
  */
 export function InlineEditable({
   value,
@@ -63,7 +51,6 @@ export function InlineEditable({
   const inputRef = useRef<HTMLInputElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
-  // Sync an externally changed value (live subscription and the like) only while not editing.
   useEffect(() => {
     if (!editing) queueMicrotask(() => setDraft(value));
   }, [value, editing]);
@@ -72,7 +59,6 @@ export function InlineEditable({
     if (!editing) return;
     const el = multiline ? textareaRef.current : inputRef.current;
     el?.focus();
-    // Selection applies to the input case only.
     if (el && "select" in el && typeof el.select === "function") {
       el.select();
     }
@@ -103,7 +89,7 @@ export function InlineEditable({
     try {
       await onSave(next);
     } catch {
-      // The caller reports the failure (a toast, say); here we only return to view mode.
+      // The caller reports the failure; here we only return to view mode.
     } finally {
       setSaving(false);
       setEditing(false);
@@ -116,9 +102,8 @@ export function InlineEditable({
       cancel();
       return;
     }
-    // Single-line commits on Enter; multiline needs Cmd/Ctrl+Enter.
-    if (e.key === "Enter") {
-      if (multiline && !(e.metaKey || e.ctrlKey)) return;
+    const isCommitKey = e.key === "Enter" && (!multiline || e.metaKey || e.ctrlKey);
+    if (isCommitKey) {
       e.preventDefault();
       void commit();
     }
@@ -183,7 +168,6 @@ export function InlineEditable({
   });
 }
 
-/** What makes the view read as editable: the hover wash and the keyboard ring. */
 const EDITABLE_VIEW_CLASS =
   "cursor-text rounded-chip transition-colors hover:bg-[color:var(--color-overlay-1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a32)]";
 
@@ -210,12 +194,8 @@ function renderView({
   ariaLabel?: string;
   dataTestId?: string;
 }) {
-  // `ariaLabel` names the *field* ("Project name"), and in edit mode it labels the input.
-  // In view mode it must not become the element's accessible name: an `aria-label` on the
-  // `h1` replaced "Online Store" with "Project name" for every screen reader, on the
-  // read-only page too (measured 2026-09-19). The name stays the content. When the view is
-  // a button, the field name rides along as the description so a reader still hears which
-  // field the button edits.
+  // `ariaLabel` names the field for the edit input only. In view mode the content stays the
+  // accessible name, and a button view carries the field name as its description.
   const buttonProps = interactive
     ? {
         role: "button" as const,
@@ -231,13 +211,8 @@ function renderView({
     content
   );
   /*
-   * **A heading stays a heading when its owner may edit it** (2026-09-25 sweep). The button
-   * role used to sit on the host, and on an `h1` it replaced the heading: the project page's
-   * one title answered as `button "Ontology Atlas"`, and heading navigation found no level-1
-   * heading on the page — only for the people who can edit it. Dropping the role would have
-   * traded that for a focusable heading nothing announces as pressable. So the heading keeps
-   * its tag and role, and the pressable surface is one block inside it, filling the same
-   * box: the heading is named by its words, and the button inside it by the same words.
+   * A heading keeps its tag and role when editable: the pressable surface is a block inside it,
+   * because a button role on the host erased the heading from heading navigation.
    */
   if (interactive && HEADING_TAGS.has(as)) {
     const Heading = as as "h1" | "h2" | "h3";

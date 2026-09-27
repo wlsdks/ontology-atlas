@@ -1,52 +1,23 @@
 import { parseFrontmatter } from './parser.mjs';
 
 /**
- * The Wiki page contract — **our format, written down once.**
- *
- * `docs/ONTOLOGY-ATLAS-SPEC.md` §11 is the public statement of this shape; this file is
- * its machine half, exactly as `schema.mjs` is the machine half of §3. Nothing here
- * invents meaning the spec does not carry, and nothing there describes a field this file
- * does not enforce.
- *
- * **Why the shape has to exist before anything writes one.** A wiki page can be produced
- * by an ACP agent, by a local model through the app's own LLM path, or by a person
- * typing. Three writers producing three shapes is three formats, and a reader then has
- * to guess which one it is holding — which is the same failure as having no format. So
- * the template is the prompt, the validator is the acceptance test, and both come from
- * this module rather than from whatever each writer remembered.
- *
- * **What the shape is protecting.** A compiled page is a claim about a document nobody
- * is re-reading. Three fields carry the whole trust story:
- *
- *   - `sources` says which files it came from;
- *   - `source_hash` says which *version* of those files, so the claim can go stale
- *     out loud instead of silently;
- *   - `sources_truncated` says which of them the run only read part of, because a hash
- *     that matches every byte of a file only the first pages of which were read is a
- *     true statement that reads as a false one;
- *   - every bullet under `## Facts` ends in a citation, so a reader can check one
- *     sentence without re-reading the document.
- *
- * And `## Not in sources` is where anything ungrounded goes. Without a named place for
- * it, an ungrounded sentence has only two homes: deleted, or mixed in with the cited
- * ones. The first loses information and the second is worse than losing it.
- *
- * **There is never a `kind:`.** That single absence is what keeps every page in this
- * folder out of the graph — `deriveDocNode` requires `kind:` — so it is checked first
- * and reported as its own problem code.
+ * The wiki page contract, the machine half of `docs/ONTOLOGY-ATLAS-SPEC.md` §11.
+ * An ACP agent, a local model and a person all write pages, so the template (the
+ * prompt) and the validator (the acceptance test) both come from here. Trust
+ * rests on `sources` (which files), `source_hash` (which version, so staleness
+ * is loud), `sources_truncated` (which were only partly read) and a citation on
+ * every `## Facts` bullet; ungrounded text goes under `## Not in sources`. A
+ * page never has `kind:` (`deriveDocNode` requires it), checked first.
+ * The app twin src/shared/lib/wiki-page-schema.ts must return the same problem
+ * codes; tests/contract/wiki-page-schema.contract.test.ts runs both on one table.
  */
 
 /** Vault folder holding wiki pages. */
 export const WIKI_DIR = 'wiki';
 
 /**
- * Whether a vault-relative slug names the wiki's own furniture rather than a page.
- *
- * One rule: a file under `wiki/` whose name starts with `_` is not a page. `_template.md`
- * is the shape `init` writes; `_log.md` is the append-only record the app keeps of what
- * happened to the wiki. Neither is judged, listed, compiled, or linked, and a person who
- * renames one loses the underscore and the file starts being a page, which is the moment
- * it should.
+ * A file under `wiki/` whose name starts with `_` (`_template.md`, `_log.md`) is
+ * furniture, not a page: never judged, listed, compiled or linked.
  */
 export function isWikiFurnitureSlug(slug) {
   if (typeof slug !== 'string') return false;
@@ -57,12 +28,9 @@ export function isWikiFurnitureSlug(slug) {
 const WIKI_SOURCES_DIR = 'sources';
 
 /**
- * Frontmatter, in the order the template writes it.
- *
- * `required: true` means the key must be present. `sources` and `source_hash` may be
- * empty — an empty list is a page that grounds nothing, which is a legible state — but
- * the key itself must exist, because a reader who has to distinguish "no sources" from
- * "the writer forgot the field" is back to guessing.
+ * Frontmatter in template order. `required` means the key must exist; `sources`
+ * and `source_hash` may be empty, but "no sources" must be distinguishable from a
+ * forgotten field.
  */
 export const WIKI_FIELDS = Object.freeze([
   Object.freeze({
@@ -127,11 +95,9 @@ export const WIKI_REQUIRED_FIELDS = Object.freeze(
 );
 
 /**
- * The five level-2 sections, in this order, always all five.
- *
- * Fixed rather than free, and empty sections are kept rather than dropped: a reader
- * scanning ten pages should find "Open questions" in the same place on all ten, and an
- * empty one says "nothing open" — which a missing one does not.
+ * The five level-2 sections, always all five in this order: a reader finds each
+ * in the same place, and an empty one says "nothing here", which a missing one
+ * does not.
  */
 export const WIKI_SECTION_ORDER = Object.freeze([
   'Summary',
@@ -142,27 +108,10 @@ export const WIKI_SECTION_ORDER = Object.freeze([
 ]);
 
 /**
- * The citation syntax: `[[src:sources/<path>#<anchor>]]`.
- *
- * Wiki-link brackets because a vault is Markdown a person reads in any editor, and
- * `src:` because a vault also holds ordinary `[[wikilinks]]` between documents — the
- * prefix is what keeps a citation from being mistaken for a link to a node.
- *
- * The anchor names the place inside the document, and the five forms cover what the
- * common formats can actually point at:
- *
- * | Form | Means | Example |
- * |---|---|---|
- * | `p<n>` | page | `[[src:sources/plan.pdf#p12]]` |
- * | `s<n>` | sheet | `[[src:sources/budget.xlsx#s2]]` |
- * | `s<n>r<n>` | sheet and row | `[[src:sources/budget.xlsx#s2r14]]` |
- * | `r<n>` | row | `[[src:sources/orders.csv#r89]]` |
- * | `h:<heading-slug>` | heading | `[[src:sources/spec.docx#h:error-handling]]` |
- * | `l<n>` | line | `[[src:sources/log.txt#l204]]` |
- *
- * An anchor is required. "This document says so somewhere" is not a citation a reader
- * can check, and an uncheckable citation is the failure this whole shape exists to
- * prevent.
+ * Citation syntax `[[src:sources/<path>#<anchor>]]`: wiki brackets for any
+ * editor, `src:` so it is not mistaken for a node link. Anchors: `p<n>`
+ * page, `s<n>` sheet, `s<n>r<n>` sheet row, `r<n>` row, `h:<heading-slug>`
+ * heading, `l<n>` line. An anchor is required: "somewhere in this document" is uncheckable.
  */
 const WIKI_CITATION_ANCHOR_PATTERN = 'p\\d+|s\\d+(?:r\\d+)?|r\\d+|l\\d+|h:[a-z0-9][a-z0-9-]*';
 export const WIKI_CITATION_PATTERN =
@@ -190,10 +139,8 @@ function extractWikiCitations(text) {
 }
 
 /**
- * The copy-ready page. This exact text is what `init` writes into a new vault, what the
- * Compile brief embeds, and what a local model receives as its shape instruction —
- * **one string, three consumers**, so a writer cannot be told a different shape than the
- * validator enforces.
+ * The copy-ready page: what `init` writes, the Compile brief embeds and a local
+ * model receives, so no writer is told a different shape than the validator enforces.
  */
 export const WIKI_PAGE_TEMPLATE = `---
 title: <the page name>
@@ -230,14 +177,9 @@ summary: <one sentence about what this page is about>
 `;
 
 /**
- * A finding.
- *
- * `message` is the English sentence every machine consumes — the CLI's output,
- * `validate_wiki`'s payload, the retry an agent branches on. `detail` carries the same
- * sentence's *pieces* (`{ key, values }`) so a UI can retell it in the reader's own
- * language instead of parsing them back out of English prose. `key` names the sentence
- * rather than the code, because `section-order` and two others have two shapes and only
- * this module knows which one it just found.
+ * The `message` is the English sentence machines consume; `detail` carries its
+ * pieces so a UI can retell it in the reader's language. `key` names the
+ * sentence, not the code, since some codes have two shapes.
  *
  * @param {string} code
  * @param {string} message
@@ -282,10 +224,8 @@ function sectionBullets(body, offset, sections, title) {
     if (/^\s*[-*]\s+\S/.test(line)) {
       out.push({ text: line, line: offset + index + 1 });
     } else if (out.length > 0 && /^\s+\S/.test(line)) {
-      // A wrapped bullet: Markdown continues a list item on the indented lines that
-      // follow it, and a writer who wraps at 80 columns puts the citation on the last of
-      // them. Judging only the first line reported every wrapped fact as uncited
-      // (accumulation probe, 2026-09-06: seven false `uncited-fact` on one page).
+      // A wrapped bullet continues on indented lines, and the citation sits on the
+      // last of them, so the whole item is judged.
       out[out.length - 1].text += `\n${line}`;
     }
   }
@@ -293,32 +233,25 @@ function sectionBullets(body, offset, sections, title) {
 }
 
 /**
- * Judge one wiki page.
- *
- * Pure and linear: one frontmatter parse, one pass for headings, one pass per checked
- * section. Nothing here reads the filesystem, which is what lets a caller validate a
- * thousand pages without a thousand stats — see `wiki-schema.test.mjs`, which measures
- * exactly that.
+ * Judges one wiki page. Pure and linear (one frontmatter parse, one pass per
+ * section), with no filesystem reads.
  *
  * @param {string} raw the file's whole text
- * @param {{ knownSources?: Iterable<string> }} [options] vault-relative paths that exist
- *   on disk. Given, a citation naming a path that is not there is reported; omitted,
- *   citations are only checked against the page's own `sources:` list, because a
- *   validator that guesses about files it cannot see would report a problem a person
- *   cannot act on.
+ * @param {{ knownSources?: Iterable<string> }} [options] vault-relative paths on
+ *   disk. Given, a citation of a missing path is reported; omitted, citations are
+ *   checked only against the page's `sources:`, never guessed.
  * @returns {{ ok: boolean, problems: Array<{ code: string, message: string, line?: number }> }}
  */
 export function validateWikiPage(raw, options = {}) {
   const text = String(raw ?? '');
   const problems = [];
   const { frontmatter, body } = parseFrontmatter(text);
-  // Line the body starts on, so every reported line number is a line in the real file.
+  // Body start line, so reported lines are lines in the real file.
   const frontmatterLines = text.startsWith('---')
     ? text.slice(0, text.length - body.length).split('\n').length - 1
     : 0;
 
-  // 1. `kind:` — checked first because it is the one problem that changes what the file
-  //    *is*. A wiki page with a kind is an ontology node, and the graph will draw it.
+  // `kind:` first: a wiki page with a kind is an ontology node the graph draws.
   if (Object.prototype.hasOwnProperty.call(frontmatter, 'kind')) {
     problems.push(
       problem(
@@ -332,7 +265,6 @@ export function validateWikiPage(raw, options = {}) {
     );
   }
 
-  // 2. Required fields.
   for (const key of WIKI_REQUIRED_FIELDS) {
     if (!Object.prototype.hasOwnProperty.call(frontmatter, key)) {
       const field = WIKI_FIELDS.find((candidate) => candidate.key === key);
@@ -347,7 +279,7 @@ export function validateWikiPage(raw, options = {}) {
     }
   }
 
-  // 3. `describes` on a draft: a claim about the graph nobody has approved.
+  // `describes` on a draft: a claim about the graph nobody has approved.
   const status = typeof frontmatter.status === 'string' ? frontmatter.status.trim() : '';
   if (Object.prototype.hasOwnProperty.call(frontmatter, 'describes') && status !== 'reviewed') {
     problems.push(
@@ -362,7 +294,6 @@ export function validateWikiPage(raw, options = {}) {
     );
   }
 
-  // 4. Sections: all five, in this order.
   const sections = readSections(body, frontmatterLines);
   const found = sections.map((section) => section.title);
   const expected = [...WIKI_SECTION_ORDER];
@@ -390,7 +321,6 @@ export function validateWikiPage(raw, options = {}) {
     );
   }
 
-  // 5. Every fact carries a citation, and every citation is well formed.
   const declaredSources = Array.isArray(frontmatter.sources)
     ? frontmatter.sources.filter((value) => typeof value === 'string').map((value) => value.trim())
     : typeof frontmatter.sources === 'string' && frontmatter.sources.trim()
@@ -398,10 +328,8 @@ export function validateWikiPage(raw, options = {}) {
       : [];
   const known = options.knownSources ? new Set(options.knownSources) : null;
 
-  // 6. `sources_truncated`: a boundary a reader can place, or no boundary at all. The
-  //    Library reads it to say `partial` where it would otherwise say `compiled`, and it
-  //    reads it only for paths the page cites — so a path outside `sources:` reaches no
-  //    screen, and is reported here rather than discovered as a row that never changed.
+  // The Library reads `sources_truncated` only for cited paths, so a path
+  // outside `sources:` would reach no screen; it is reported here instead.
   if (Object.prototype.hasOwnProperty.call(frontmatter, 'sources_truncated')) {
     const raw = frontmatter.sources_truncated;
     const listed = Array.isArray(raw)
@@ -451,13 +379,12 @@ export function validateWikiPage(raw, options = {}) {
     }
   }
 
-  // A malformed citation is reported rather than ignored: silently skipping it would let
-  // `[[src:plan.pdf]]` read as prose and take an ungrounded claim through the fact check.
+  // A malformed citation is reported, or `[[src:plan.pdf]]` reads as prose and an
+  // ungrounded claim passes the fact check.
   const bodyLines = body.split('\n');
   let inFence = false;
   for (let index = 0; index < bodyLines.length; index += 1) {
-    // A fenced block is quoted text — a page explaining the citation syntax must be able
-    // to show a wrong one without being told it is wrong.
+    // Fenced text is quoted: a page may show a wrong citation to explain the syntax.
     if (/^\s*(```|~~~)/.test(bodyLines[index])) {
       inFence = !inFence;
       continue;
@@ -506,28 +433,6 @@ export function validateWikiPage(raw, options = {}) {
   return { ok: problems.length === 0, problems };
 }
 
-/**
- * The folder-level half of the contract — what no single page can know about itself.
- *
- * `validateWikiPage` judges one page against its own frontmatter and body. Three things
- * are only visible with every page on the table, and the accumulation probe
- * (`docs/benchmark/FINDINGS-2026-09-06-wiki-accumulation-probe.md`) found all three at
- * zero in every condition: no page linked another, so every page was an orphan, and
- * pages that cited the same document never mentioned each other. A wiki whose pages
- * never point at each other is a folder of write-ups, not a graph a person can walk.
- *
- * Deterministic on purpose. Whether two pages *disagree* is a judgement and belongs to
- * a Lint pass an agent runs and a person reads; whether a link resolves, whether a page
- * has any inbound link, and whether two pages share a source without linking are facts
- * of the folder, and a fact of the folder is reported by a script, not a model.
- *
- * Codes:
- *
- *   - `dangling-wikilink`      a `[[wiki/…]]` link whose target is not in the folder
- *   - `orphan-page`            no other page links to this one (two or more pages only)
- *   - `shared-source-unlinked` another page was written from a source this page lists
- *                              (or the reverse), and neither links the other
- */
 
 /** `[[target]]`, `[[target|text]]`, `[[target#anchor]]` — a citation (`src:`) is not a link. */
 function wikiPageLinkRegex() {
@@ -549,18 +454,9 @@ function normalizeWikiLinkTarget(target) {
 }
 
 /**
- * Whether a normalised target is a link *into this folder*, and so one this module is
- * entitled to call broken when it is absent.
- *
- * Everything else — `capabilities/checkout`, `domains/commerce`, a top-level
- * `[[CHANGELOG]]`-shaped slug — addresses the surrounding vault, which the folder half
- * never receives. Silence there is not approval; it is the honest report of a check that
- * was handed the folder and asked about the vault. Raising `dangling-wikilink` for those
- * made the Library report three broken links over three links its own graph drew as
- * concepts (2026-09-09).
- *
- * @param {string} target
- * @returns {boolean}
+ * Whether a normalised target is a link into this folder, the only kind this
+ * module may call broken. Targets into the rest of the vault (`capabilities/…`)
+ * were never handed to it, so it stays silent on them.
  */
 function namesWikiFolder(target) {
   return target.startsWith(`${WIKI_DIR}/`);
@@ -597,10 +493,15 @@ function readDeclaredSources(frontmatter) {
 }
 
 /**
- * Judge the folder.
+ * The folder half: facts only visible with every page present. Whether pages
+ * disagree is an agent's lint judgement; these are deterministic
+ * facts: `dangling-wikilink` (a `[[wiki/…]]` target not in the folder), `orphan-page` (no
+ * inbound link, two or more pages only), `shared-source-unlinked` (pages written
+ * from one primary source that do not link each other).
+ * Why these three: docs/benchmark/FINDINGS-2026-09-06-wiki-accumulation-probe.md.
  *
- * @param {Array<{ path: string, raw: string }>} pages every wiki page in the folder, the
- *   template excluded, `path` vault-relative (`wiki/<slug>.md`)
+ * @param {Array<{ path: string, raw: string }>} pages every page, template excluded,
+ *   each with a vault-relative `path` (`wiki/<slug>.md`)
  * @returns {Array<{ path: string, problems: Array<{ code: string, message: string, line?: number }> }>}
  *   one entry per input page, in input order, `problems` possibly empty
  */
@@ -666,19 +567,9 @@ export function validateWikiFolder(pages) {
     for (let b = a + 1; b < entries.length; b += 1) {
       const first = entries[a];
       const second = entries[b];
-      // Only a page's primary source counts — the first it lists, the document it was
-      // written from. A source a page merely cites for a disagreement fans out across
-      // every page that carries the dispute, and asking each such pair to link (probe F,
-      // 2026-09-06: six findings on seven pages) reports the wiring the disagreement
-      // rule itself created. "Two write-ups of one document" means two pages that were
-      // each compiled from it.
-      // Sorted, not in frontmatter order. The sentence names these paths, and which page
-      // is `first` here follows the caller's input order — `wiki-validate` sorts its file
-      // walk, `validate_wiki` takes the vault's document order, the Library takes its own
-      // read order. Measured 2026-09-12 on the same folder: the CLI said
-      // "`dispute-handling-standard.docx`, `chargeback-runbook.md`" and `validate_wiki`
-      // said the reverse. Codes and page lists agreed, so the contract held, but a person
-      // holding the report beside a terminal read one finding worded two ways.
+      // Only a page's primary source (its first) counts: a source cited for a
+      // disagreement fans out across every page carrying the dispute. Sorted, so the
+      // sentence names paths in one order whatever the caller's walk order.
       const shared = [...first.sources]
         .filter(
           (source) =>

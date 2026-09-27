@@ -398,15 +398,9 @@ function invalidAssessment(input) {
 }
 
 /**
- * A project that has never run `finalize_project_meaning` (2026-08-17).
- *
- * This case used to be routed to `invalidAssessment`, so **checking a
- * freshly created vault** produced `invalid (assessment_input_invalid)` and
- * someone who had done nothing wrong concluded they had broken something.
- *
- * The verdict itself is unchanged — the meaning is genuinely not confirmed yet.
- * Only **the name and the remedy** change. Passing `competency: null` sends the
- * evaluator down the "not written yet" branch.
+ * A project that never ran finalize_project_meaning: the verdict is still "not
+ * confirmed", but `competency: null` routes it to "not written yet" instead
+ * of `assessment_input_invalid`.
  */
 function notAuthoredAssessment(input) {
   return deriveMeaningAssessment({
@@ -437,7 +431,6 @@ export function readProjectMeaningAssessment(input) {
   }
   const receipt = stored.state?.receipts.find((row) => row.projectSlug === projectSlug);
   if (!receipt) {
-    // "Not done yet" is not "broken".
     return notAuthoredAssessment({ projectSlug, graphHash, structure, source, inventory });
   }
 

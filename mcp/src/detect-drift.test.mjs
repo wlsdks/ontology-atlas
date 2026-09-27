@@ -1,4 +1,3 @@
-// detect-drift — unit test (node:test). Atlas roadmap Track A #2.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { resolve } from 'node:path';
@@ -27,7 +26,7 @@ test('detectVaultPathDrift — flags missing path: and missing path-like element
   const r = detectVaultPathDrift({ docs, repoRoot: '/repo', fileExists });
 
   assert.equal(r.nodesScanned, 3);
-  // path: 2 checked (a,b) + elements: 2 path-like checked (owned, missing) — slug refs skipped
+  // path: a and b; elements: the two path-like entries; slug refs skipped.
   assert.equal(r.pathsChecked, 4);
   assert.deepEqual(
     r.drifts.map((d) => `${d.slug}:${d.key}:${d.missingPath}`).sort(),
@@ -64,10 +63,6 @@ test('detectVaultPathDrift — uses doc.slug when frontmatter.slug absent', () =
   assert.equal(r.drifts[0].slug, 'elements/from-path');
 });
 
-// Atlas roadmap Track A #3 — reconcile suggestion. When a frontmatter path
-// drifts (file missing) and EXACTLY ONE existing repo source file shares the
-// same basename, surface it as a one-step reconcile target. Conservative: an
-// ambiguous (>1) or absent match yields no suggestion (never misleads).
 test('suggestPathReconciliations — unique same-basename file → suggestedPath', () => {
   const drifts = [
     { slug: 'elements/b', kind: 'element', key: 'path', missingPath: 'src/foo/Bar.tsx' },
@@ -75,7 +70,6 @@ test('suggestPathReconciliations — unique same-basename file → suggestedPath
   const repoFiles = ['src/baz/Bar.tsx', 'src/lib/util.ts'];
   const out = suggestPathReconciliations(drifts, repoFiles);
   assert.equal(out[0].suggestedPath, 'src/baz/Bar.tsx');
-  // original drift fields preserved
   assert.equal(out[0].slug, 'elements/b');
   assert.equal(out[0].missingPath, 'src/foo/Bar.tsx');
 });
@@ -102,9 +96,7 @@ test('suggestPathReconciliations — empty inputs are safe no-ops', () => {
   assert.deepEqual(suggestPathReconciliations(drifts, []), drifts);
 });
 
-// Reality smoke: the dogfood vault must be drift-0 (same contract the
-// build-time `pnpm vault:audit` gate enforces). Catches accidental drift AND
-// any regression in the shared logic against real frontmatter.
+// The dogfood vault must be drift-0, the contract `pnpm vault:audit` enforces.
 test('detectVaultPathDrift — dogfood vault docs/ontology is drift-0 against the real repo', () => {
   const docs = loadVaultDocs(resolve(REPO, 'docs/ontology'));
   const r = detectVaultPathDrift({ docs, repoRoot: REPO }); // real existsSync

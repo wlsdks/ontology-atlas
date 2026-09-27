@@ -2,11 +2,9 @@ import { evaluateQuantifiedCompetencyCoverage } from "./competency-coverage.mjs"
 import { isPersistableEvidenceReference, isPersistablePathWitness, parseSourceRangeCitation } from './source-range-citation.mjs';
 
 /**
- * Deterministic project-meaning assessment.
- *
- * This module deliberately does not calculate a score. Structural readiness,
- * competency evidence, and source currentness stay separate so one healthy
- * dimension cannot hide a gap in another.
+ * Deterministic project-meaning assessment, deliberately without a score:
+ * structural readiness, competency evidence and source currentness stay
+ * separate so one healthy dimension cannot hide another's gap.
  */
 
 import { PROJECT_SOURCE_GAP_IDS as SOURCE_GAP_IDS } from "./project-source-vocabulary.mjs";
@@ -171,16 +169,9 @@ function normalizeInventory(value) {
 
 function normalizeQuestions(competency, projectSlug) {
   /*
-   * **Separate "not written yet" from "broken"** (measured 2026-08-17).
-   *
-   * Checking a freshly created vault produced `assessment_input_invalid`. `init`
-   * does not create the competency-question block, and the block being **absent**
-   * was collapsed into `malformed` below. So a newborn vault declared itself
-   * broken and the user concluded they had broken it.
-   *
-   * The verdict is unchanged (the meaning genuinely is not confirmed yet). What
-   * changes is **the name and the remedy**: say it was not written, and say what
-   * to do about it.
+   * An absent competency block (a fresh `init` vault) is not malformed: the
+   * verdict is the same, but the name and remedy say "not written yet" instead
+   * of making a newborn vault report itself broken.
    */
   const absent = competency === null || competency === undefined;
   const rows = Array.isArray(competency?.questions) ? competency.questions : [];
@@ -366,9 +357,8 @@ function result(input, normalized, status, topGap, nextAction) {
 }
 
 /**
- * Derive a categorical assessment from versioned evidence receipts.
- * Unknown input fields are intentionally ignored so private source coordinates
- * cannot leak into a handoff by object spreading.
+ * A categorical assessment from versioned evidence receipts. Unknown input fields
+ * are ignored so private source coordinates cannot leak through object spreading.
  */
 export function deriveMeaningAssessment(input) {
   const safeInput = input && typeof input === "object" ? input : {};
@@ -384,8 +374,7 @@ export function deriveMeaningAssessment(input) {
     || !STRUCTURE_STATUS_NORMALIZATION.has(rawStructureStatus)
     || sourceReceiptMalformed(safeInput.source);
 
-  // If something else is wrong, say that first — "not written yet" masking a real
-  // defect sends the user to fix the wrong place.
+  // Another defect is reported first: "not written yet" must not mask it.
   if (inputBroken || (normalized.malformed && !normalized.absent)) {
     return result(
       safeInput,
@@ -396,9 +385,6 @@ export function deriveMeaningAssessment(input) {
     );
   }
 
-  // The competency answers are **not there yet**. That is work not done, not
-  // breakage, and the name and remedy must say so — otherwise a brand-new vault
-  // reports itself broken.
   if (normalized.absent) {
     return result(
       safeInput,
