@@ -17,7 +17,8 @@ import { MapEntryLoadingVisual } from './map-entry-loading-visual';
  * not arrived yet sees the page.
  *
  * **No new copy is written here.** The headline and lead are sentences the README
- * already published; inventing positioning here is a PO-council trigger. No install
+ * already published; inventing positioning here is a positioning change routed through
+ * `pnpm po:route`. No install
  * command either — nothing is published to npm, so that command would be a lie.
  *
  * It is replaced once the map hydrates, so nothing changes for a human eye, and on a
