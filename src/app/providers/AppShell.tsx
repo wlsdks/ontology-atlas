@@ -42,14 +42,6 @@ import { useHydrated } from "@/shared/lib/use-hydrated";
 import { LibraryRoundsProvider } from "@/views/library";
 
 /**
- * The persistent SPA shell, mounted once in `app/[locale]/layout.tsx` so the rail keeps its
- * React identity and only the content area swaps between routes.
- *
- * The shell owns viewport height: an `h-dvh overflow-hidden` column where only the body slot
- * scrolls. A page root fills the slot with `h-full` / `min-h-full`; `h-screen` or
- * `min-h-screen` on a page pushes whatever the shell puts below the body off screen.
- */
-/**
  * Releases a route crossfade after commit and before paint, when the View Transitions API
  * wants the new state to exist (`shared/lib/route-view-transition.ts`).
  */
@@ -61,6 +53,14 @@ function RouteViewTransitionSettle() {
   return null;
 }
 
+/**
+ * The persistent SPA shell, mounted once in `app/[locale]/layout.tsx` so the rail keeps its
+ * React identity and only the content area swaps between routes.
+ *
+ * The shell owns viewport height: an `h-dvh overflow-hidden` column where only the body slot
+ * scrolls. A page root fills the slot with `h-full` / `min-h-full`; a page using the
+ * classes `h-screen` or `min-h-screen` pushes whatever the shell puts below the body off screen.
+ */
 export function AppShell({ children }: { children: ReactNode }) {
   useGuideOverride();
   /*
@@ -106,7 +106,6 @@ function useGuideOverride(): void {
   });
 }
 
-/** The shell body: rail, scrolling body slot, and destination guides. */
 function ShellColumn({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? "/";
   const surface = resolveActiveNavDestination(pathname);
@@ -269,8 +268,8 @@ function AppNavRailSlot() {
 
   // Gateway routes hide the rail with `lg:hidden`, not an unmount, so the shell keeps its DOM
   // identity; the shell decides during render so the rail never paints for one frame.
-  // `isGatewaySurface` is shared with `RootEntryPage`.
-  // `isDesktopShell()` is false in the static prerender, and hydration does not correct a
+  // The verdict comes from `isGatewaySurface`, shared with `RootEntryPage`.
+  // In the static prerender `isDesktopShell()` is false, and hydration does not correct a
   // baked `lg:hidden`, so `useHydrated()` forces one re-render after hydration.
   const hydrated = useHydrated();
   const desktopWithoutVault = hydrated && isDesktopShell() && !vault.manifest;
@@ -280,13 +279,8 @@ function AppNavRailSlot() {
     vaultKnown: vault.restoreAttempted,
   });
 
-  /*
-   * Counts finished installs (not progress) from other screens and clears once the agents
-   * screen is visited, like the git badge.
-   */
-  const installNotice = useInstallNotice(
-    resolveActiveNavDestination(pathname) === "agents",
-  );
+  const atAgents = resolveActiveNavDestination(pathname) === "agents";
+  const installNotice = useInstallNotice(atAgents);
 
   /* The rail and the keys read the same verdict: what this folder's files say it holds. */
   const visibleDestinations = useMemo(

@@ -15,7 +15,7 @@ import { RouteLoadingFallback, TabBar } from '@/shared/ui';
 
 import styles from './library-workspace.module.css';
 
-// Loaded when its tab opens. The app layer composes both views so neither imports the other.
+// The app layer composes both views so neither imports the other.
 const OntologyPage = dynamic(
   () => import('@/views/docs-vault').then((module) => module.DocsVaultPage),
   { loading: () => <RouteLoadingFallback /> },

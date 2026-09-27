@@ -1,6 +1,6 @@
 /**
- * The connector catalogue: the shortcut past typing a package name. The data lives in
- * `mcp-catalogue.generated.ts` (from `scripts/build-mcp-catalogue.mjs`); this file owns the
+ * The connector catalogue: the shortcut past typing a package name. The data lives
+ * in `mcp-catalogue.generated.ts` (from `scripts/build-mcp-catalogue.mjs`); this file owns the
  * shape, the search, and turning a chosen entry into a connector draft.
  *
  * The type keeps two shapes apart, and so does the screen:

@@ -8,7 +8,7 @@ import { blockingSurfaceOpen } from "@/shared/lib/use-destination-shortcuts";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 
 /*
- * `ssr: false` is load-bearing: the sheet calls `useSearchParams`, which in the static prerender
+ * The `ssr: false` option is load-bearing: the sheet calls `useSearchParams`, which in the static prerender
  * bails every route out (see `AppShell`). Nothing else is imported from either widget, so neither
  * dialog lands in the chunk every route loads first.
  */
@@ -22,7 +22,7 @@ const MountedGlobalSearch = dynamic(
 );
 
 /**
- * `?` and ⌘K answer on every screen the rail stands on, as the shortcut sheet promises. Screens
+ * The keys `?` and ⌘K answer on every screen the rail stands on, as the shortcut sheet promises. Screens
  * that answer a key themselves claim it (`shared/lib/shell-key-claims.ts`). `disabled` is the
  * rail's verdict: no rail, no keys, the same rule as the `G` keys.
  *

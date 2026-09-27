@@ -26,9 +26,8 @@ export type DestinationId = (typeof DESTINATION_IDS)[number] | 'docs' | 'mcp';
 
 /*
  * Persistent bottom tabs below `lg`; web may add Get App as a sixth. Architecture stays so a
- * selected route remains visible. MCP and Agents are deliberately absent: they are desk work,
- * reached below `lg` from their contextual entry points and typed addresses, and
- * `destination-shortcuts.contract.test.ts` asserts the absence.
+ * selected route remains visible. MCP and Agents are absent on purpose: they are desk work,
+ * reached below `lg` from their contextual entry points and typed addresses.
  */
 export const MOBILE_DESTINATION_IDS = [
   'map',
@@ -60,7 +59,7 @@ export const DESTINATION_HREF: Record<DestinationId, string> = {
 
 /**
  * The Agents models tab (API keys, local runners, the external check and the record of what
- * left). Every door that used to open the settings API Key pane goes here.
+ * left). Every door to API keys, such as the settings signpost, opens it.
  */
 export const AGENTS_MODELS_HREF = '/agents/?tab=models';
 
@@ -98,8 +97,10 @@ export const DESTINATION_BY_KEY: Record<string, DestinationId> = {
 
 /**
  * The destinations a folder of this shape earns. The shape comes from the files
- * (`describeVaultShape`), never a setting, so a teammate sees the same rail. A wiki without a
- * map keeps the Library, Automations, Agents and Git; an empty folder or none earns everything.
+ * (`describeVaultShape`), never a setting, so a teammate sees the same rail. Map,
+ * Architecture, Docs, Insights and Projects would be empty doors without code; an agent
+ * compiles a wiki and Git reads it as diffs, and the Library holds `sources/` for any folder
+ * (`docs/DECISIONS.md`, 2026-09-06). An empty folder or none earns everything.
  */
 export function destinationsForVaultShape(
   shape: { map: boolean; wiki: boolean } | null | undefined,

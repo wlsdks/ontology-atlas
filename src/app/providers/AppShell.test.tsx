@@ -16,7 +16,7 @@ const shellMocks = vi.hoisted(() => ({
   },
 }));
 
-/** #65: the shell owns the rail's utility tier, so it stands even when no page injects a slot. */
+/** The shell owns the rail's utility tier, so it stands even when no page injects a slot. */
 
 vi.mock("next-intl", () => ({
   useTranslations: () => Object.assign((key: string) => key, { rich: (key: string) => key }),
@@ -67,7 +67,7 @@ beforeEach(() => {
   shellMocks.vault.isReloadingSameVault = false;
 });
 
-describe("AppShell rail utility tier (#65)", () => {
+describe("AppShell rail utility tier", () => {
   it("shows settings when no page injects a slot", () => {
     render(
       <AppShell>

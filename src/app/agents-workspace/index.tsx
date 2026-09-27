@@ -12,7 +12,7 @@ import { selectOpenVaultHandle } from '@/shared/lib/select-open-vault-handle';
  *
  * This layer owns the one connectors store and hands it to both the tab count and the panel: a
  * second `useVaultConnectors` would never learn of the first one's writes, the two-canonical-
- * stores defect `.claude/rules/forbidden.md` names. `?tab=mcp` is what `/mcp/` and the app's
+ * stores defect `.claude/rules/local-first.md` names. `?tab=mcp` is what `/mcp/` and the app's
  * deep link (`ontology-atlas://mcp?install=…`) resolve into.
  */
 export function AgentsWorkspace() {

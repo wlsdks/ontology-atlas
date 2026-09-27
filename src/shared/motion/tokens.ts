@@ -1,7 +1,7 @@
 /**
- * JS mirror of the `--motion-*` ramp in `app/globals.css`. framer-motion cannot read a CSS
- * `var()` in a numeric `transition`, so the values are copied, and
- * `tests/contract/motion-token-mirror.contract.test.ts` fails when they drift or a name
+ * JS mirror of the `--motion-*` ramp in `app/globals.css`. framer-motion cannot read a
+ * CSS `var()` in a numeric `transition`, so the values are copied, and the contract in
+ * tests/contract (`motion-token-mirror.contract.test.ts`) fails when they drift or a name
  * leaves the ramp. Every JS duration goes through this file, because the Tailwind lint only
  * reads class strings.
  *
@@ -46,9 +46,9 @@ export const STAGGER = 0.035;
 export const OVERLAY_SPRING = { type: "spring", duration: 0.3, bounce: 0 } as const;
 
 /**
- * Reduced-motion overlay transition: a 120ms opacity cross-fade, the value of
- * `.overlay-fade-only` and `--map-tip-fade-ms`, which is scoped to ontology-map and so cannot
- * be read through var() here.
+ * Reduced-motion overlay transition: a 120ms opacity cross-fade, the value of both the
+ * class `.overlay-fade-only` and `--map-tip-fade-ms`; the token is scoped to ontology-map, so it
+ * cannot be read through var() here.
  */
 export const OVERLAY_SPRING_REDUCED = { duration: 0.12, ease: "linear" } as const;
 
@@ -90,10 +90,11 @@ export const SHEET_RISE_REDUCED = { opacity: 0, y: 0, scale: 1 } as const;
 
 /**
  * Leaving is not arriving rewound: framer's `exit` otherwise reuses the entry `transition`
- * backwards. The CSS exits run at `calc(var(--motion-base) * 0.67)` = 120ms, the ramp's `fast`
- * step, on `--motion-ease-exit`, so framer and CSS exits share one clock and one curve.
- * `framer-exit-asymmetry.contract.test.ts` requires this name at every exit; the input lockout
- * lives in `useExitLockout`, so this stays a numeric `{ duration, ease }`.
+ * backwards. CSS exits run at `calc(var(--motion-base) * 0.67)` = 120ms, the ramp's fast
+ * step. The curve accelerates away instead of slowing on screen, as the inspector's movement
+ * exit (topologyChromeOut) does; CSS fades stay on --motion-ease. The exit contract
+ * (`framer-exit-asymmetry.contract.test.ts`) requires this name at every exit; the input
+ * lockout lives in `useExitLockout`, so this stays a numeric `{ duration, ease }`.
  */
 export const EXIT_TRANSITION = {
   duration: MOTION.fast.duration,

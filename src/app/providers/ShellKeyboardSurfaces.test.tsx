@@ -79,7 +79,7 @@ describe("ShellKeyboardSurfaces", () => {
     expect(screen.queryByTestId("shell-sheet")).toBeNull();
   });
 
-  // A dialog in its exit motion no longer blocks `?`.
+  // A dialog in its exit motion does not block `?`.
   it("opens the sheet at once while another dialog is only leaving", async () => {
     mocks.realGuard = true;
     otherDialog({ leaving: true });

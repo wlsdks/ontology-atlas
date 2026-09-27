@@ -1,7 +1,7 @@
 /*
  * One short enter for every tab's panel, so a switch arrives rather than cuts in.
  *
- * `backwards`, not `both`: a finished transform would leave `translateY(0)` on the panel, making
+ * Fill mode `backwards`, not `both`: a finished transform would leave `translateY(0)` on the panel, making
  * it the containing block for every `position: fixed` popover inside it.
  */
 .panel {

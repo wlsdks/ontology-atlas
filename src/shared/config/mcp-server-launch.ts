@@ -32,7 +32,7 @@ function normalizedLaunchPath(value: string): string {
 /**
  * Judges whether the config matches one of the two stdio launch shapes Atlas distributes, not
  * whether the product name appears in it. File existence and a real startup belong to
- * `mcp-verify`: a browser cannot stat a path outside the vault.
+ * the `mcp-verify` step: a browser cannot stat a path outside the vault.
  */
 export function inspectMcpServerLaunch(
   command: unknown,
@@ -95,7 +95,7 @@ export interface AgentServerAvailability {
   reason: string | null;
   /**
    * The probe has not answered yet, as distinct from answering "no". Without it the installed
-   * app shows the browser's degradation card until the lookup returns; callers draw nothing.
+   * app shows the browser's degradation card until the lookup returns; while it is set, callers draw nothing.
    */
   pending?: boolean;
 }
