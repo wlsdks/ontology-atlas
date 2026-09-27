@@ -481,9 +481,13 @@ const GO_IMPORT_BLOCK = /^[ \t]*import\s*\(((?:(?!\n[ \t]*import\b)[^)])*)\)/gm;
 const WITNESS_TEXT_MAX_BYTES = 2 * 1024 * 1024;
 
 function readWitnessText(absolute) {
-  const stat = statSync(absolute);
-  if (!stat.isFile()) return null;
-  return stat.size > WITNESS_TEXT_MAX_BYTES ? { tooLarge: true } : { text: readFileSync(absolute, 'utf-8') };
+  try {
+    const stat = statSync(absolute);
+    if (!stat.isFile()) return null;
+    return stat.size > WITNESS_TEXT_MAX_BYTES ? { tooLarge: true } : { text: readFileSync(absolute, 'utf-8') };
+  } catch {
+    return null;
+  }
 }
 
 function moduleSpecifiers(text) {
@@ -577,20 +581,10 @@ function relationNoteText(frontmatter, target) {
   return '';
 }
 
-export function createDependencyWitnessReads() {
-  return { files: new Map(), moduleNames: new Map() };
-}
+export const createDependencyWitnessReads = () => ({ files: new Map(), moduleNames: new Map() });
 
 function cachedWitnessRead(fileReads, absolute) {
-  if (!fileReads.files.has(absolute)) {
-    let read = null;
-    try {
-      read = readWitnessText(absolute);
-    } catch {
-      read = null;
-    }
-    fileReads.files.set(absolute, read);
-  }
+  if (!fileReads.files.has(absolute)) fileReads.files.set(absolute, readWitnessText(absolute));
   return fileReads.files.get(absolute);
 }
 
