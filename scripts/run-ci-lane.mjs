@@ -1,6 +1,8 @@
 #!/usr/bin/env node
-import { appendFileSync } from 'node:fs';
-import { spawnSync } from 'node:child_process';
+import { appendFileSync, closeSync, mkdtempSync, openSync, readFileSync, rmSync } from 'node:fs';
+import { spawn as spawnAsync, spawnSync } from 'node:child_process';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 import { decodePlan, FULL_LANE_COMMANDS } from './classify-change.mjs';
 
@@ -178,20 +180,43 @@ export function commandsForLane({
   throw new Error(`unknown CI lane: ${lane}`);
 }
 
-export function runCommands({
+/**
+ * Commands that read the tree and write nothing, long enough to run beside the rest of their
+ * lane. `pnpm lint` was 108 of the gates lane's 210 serial seconds (train run 36285265924);
+ * beside the other 57 commands it costs the lane nothing it was not already waiting for.
+ */
+export const CONCURRENT_COMMANDS = Object.freeze(['pnpm lint']);
+
+/** Start a command beside the serial ones, its output held in a file until it is reported. */
+function startConcurrent(command, { cwd, env }) {
+  const dir = mkdtempSync(join(tmpdir(), 'atlas-ci-lane-'));
+  const file = join(dir, 'output.log');
+  const fd = openSync(file, 'w');
+  const started = Date.now();
+  const child = spawnAsync(command, { cwd, env, shell: true, stdio: ['ignore', fd, fd] });
+  closeSync(fd);
+  const done = new Promise((resolve) => {
+    child.once('error', () => resolve(1));
+    child.once('exit', (code) => resolve(code ?? 1));
+  });
+  return done.then((status) => {
+    const output = readFileSync(file, 'utf8');
+    rmSync(dir, { recursive: true, force: true });
+    return { status, output, started };
+  });
+}
+
+export async function runCommands({
   commands,
   cwd = process.cwd(),
   env = process.env,
   spawn = spawnSync,
+  startBeside = startConcurrent,
   stdout = process.stdout,
   stderr = process.stderr,
 }) {
   const failures = [];
-  for (const [index, command] of commands.entries()) {
-    stdout.write(`\n[ci-lane] (${index + 1}/${commands.length}) ${command}\n`);
-    const started = Date.now();
-    const result = spawn(command, { cwd, env, shell: true, stdio: 'inherit' });
-    const status = result.status ?? 1;
+  const report = (command, status, started) => {
     const seconds = ((Date.now() - started) / 1000).toFixed(1);
     stdout.write(`[ci-lane] ${status === 0 ? 'PASS' : 'FAIL'} ${seconds}s: ${command}\n`);
     if (env.GITHUB_STEP_SUMMARY) {
@@ -199,6 +224,23 @@ export function runCommands({
       try { appendFileSync(env.GITHUB_STEP_SUMMARY, `- ${status === 0 ? 'PASS' : 'FAIL'} **${seconds}s**: ${safe}\n`); } catch { /* Reporting cannot change the gate verdict. */ }
     }
     if (status !== 0) failures.push({ command, status });
+  };
+  const beside = commands.length > 1 ? commands.filter((command) => CONCURRENT_COMMANDS.includes(command)) : [];
+  const running = beside.map((command) => {
+    stdout.write(`\n[ci-lane] started beside the lane: ${command}\n`);
+    return { command, result: startBeside(command, { cwd, env }) };
+  });
+  const serial = commands.filter((command) => !beside.includes(command));
+  for (const [index, command] of serial.entries()) {
+    stdout.write(`\n[ci-lane] (${index + 1}/${serial.length}) ${command}\n`);
+    const started = Date.now();
+    const result = spawn(command, { cwd, env, shell: true, stdio: 'inherit' });
+    report(command, result.status ?? 1, started);
+  }
+  for (const { command, result } of running) {
+    const { status, output, started } = await result;
+    stdout.write(`\n[ci-lane] beside the lane: ${command}\n${output}`);
+    report(command, status, started);
   }
   if (failures.length > 0) {
     stderr.write(
@@ -212,7 +254,7 @@ export function runCommands({
   return 0;
 }
 
-export function runCiLane({ argv = process.argv.slice(2), env = process.env } = {}) {
+export async function runCiLane({ argv = process.argv.slice(2), env = process.env } = {}) {
   const lane = argv.find((arg) => arg.startsWith('--lane='))?.slice('--lane='.length);
   const base = argv.find((arg) => arg.startsWith('--base='))?.slice('--base='.length) || '';
   const shard = argv.find((arg) => arg.startsWith('--shard='))?.slice('--shard='.length) || '1/3';
@@ -259,5 +301,5 @@ export function runCiLane({ argv = process.argv.slice(2), env = process.env } = 
 }
 
 if (process.argv[1]?.endsWith('run-ci-lane.mjs')) {
-  process.exitCode = runCiLane();
+  runCiLane().then((code) => { process.exitCode = code; });
 }

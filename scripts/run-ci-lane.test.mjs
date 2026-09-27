@@ -188,9 +188,9 @@ test('comparison refs remain one shell argument and malformed shards fail closed
   );
 });
 
-test('the lane runner reports every independent failure', () => {
+test('the lane runner reports every independent failure', async () => {
   const seen = [];
-  const status = runCommands({
+  const status = await runCommands({
     commands: ['first', 'second', 'third'],
     stdout: { write() {} },
     stderr: { write() {} },
@@ -202,6 +202,29 @@ test('the lane runner reports every independent failure', () => {
 
   assert.equal(status, 1);
   assert.deepEqual(seen, ['first', 'second', 'third']);
+});
+
+test('lint runs beside the serial commands and its failure still fails the lane', async () => {
+  const serial = [];
+  const beside = [];
+  const run = (lintStatus) => runCommands({
+    commands: ['pnpm lint', 'first', 'second'],
+    stdout: { write() {} },
+    stderr: { write() {} },
+    spawn(command) { serial.push(command); return { status: 0 }; },
+    startBeside(command) {
+      beside.push(command);
+      return Promise.resolve({ status: lintStatus, output: '', started: Date.now() });
+    },
+  });
+  assert.equal(await run(0), 0);
+  assert.deepEqual(serial, ['first', 'second'], 'lint never joins the serial loop');
+  assert.deepEqual(beside, ['pnpm lint']);
+  assert.equal(await run(3), 1, 'a lint failure beside the lane still fails it');
+  serial.length = 0;
+  await runCommands({ commands: ['pnpm lint'], stdout: { write() {} }, stderr: { write() {} },
+    spawn(command) { serial.push(command); return { status: 0 }; } });
+  assert.deepEqual(serial, ['pnpm lint'], 'a lane of one runs it in the foreground');
 });
 
 /*
