@@ -181,6 +181,7 @@
     "failedReason": "Could not add: {reason}",
     "revealFailed": "Could not show it in Finder: {reason}",
     "openFailed": "Could not open that file.",
+    "savedInstead": "Saved {name} to your downloads instead: opened in this page, a file of this kind could run code here.",
     "needsCompileSplit": "{notCompiled, plural, one {# not written up yet} other {# not written up yet}} · {stale, plural, one {# source version needs review} other {# source versions need review}}",
     "staleOnly": "{count, plural, one {# source version needs review} other {# source versions need review}}",
     "partialOnly": "{count, plural, one {# read only in part} other {# read only in part}}",

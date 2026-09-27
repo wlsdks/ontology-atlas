@@ -24,6 +24,7 @@
   "groupFound": "Already on this computer",
   "groupCatalogue": "Ready to attach",
   "catalogueMeta": "As of {date}. Only what attaches in the app; the app fetches nothing.",
+  "catalogueVersion": "version {version}, as checked on {date}",
   "customToggle": "Not in the list? Add it by hand",
   "noneForSearchTitle": "Nothing matches “{query}”.",
   "noneForSearchBody": "A server that is not listed can still be added by hand, with its name and how it runs.",

@@ -3,6 +3,7 @@ import { AccentBootScript, JsonLd, WebviewErrorReporter } from '@/shared/ui';
 import { JetBrains_Mono } from 'next/font/google';
 import localFont from 'next/font/local';
 import { SITE_URL } from '@/shared/config';
+import { WEB_CONTENT_SECURITY_POLICY } from '@/shared/config/web-content-security-policy';
 import { withBasePath } from '@/shared/lib/base-path';
 import { StandaloneMessagesProvider } from '@/views/terminal-state';
 import { ROUTE_ERROR_PICK, pickStandaloneMessages } from '@/i18n/standalone-messages';
@@ -105,6 +106,11 @@ export default function RootLayout({
       className={`${pretendard.variable} ${jetbrainsMono.variable} h-full overflow-x-hidden`}
       suppressHydrationWarning
     >
+      <head>
+        {process.env.NODE_ENV === 'production' ? (
+          <meta httpEquiv="Content-Security-Policy" content={WEB_CONTENT_SECURITY_POLICY} />
+        ) : null}
+      </head>
       {/* The tab-bar reserve padding (pb-56px) was removed (2026-08-08) — it is a relic of the
           document-scroll era, before the shell owned the viewport with `h-dvh`. That padding now
           protects nothing while creating 56px of dead document scroll on every page below `md`.
