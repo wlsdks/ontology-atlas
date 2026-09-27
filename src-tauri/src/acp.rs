@@ -696,6 +696,40 @@ pub(crate) fn preflight_npx_cache(launch: &AcpLaunch, home: Option<&Path>) -> Np
     }
 }
 
+/// The ready entry's pinned bin without the idle `npm exec` parent; PATH as npm sets it.
+pub(crate) fn launch_from_npx_cache(
+    launch: &AcpLaunch,
+    home: Option<&Path>,
+    is_executable: &dyn Fn(&Path) -> bool,
+) -> Option<AcpLaunch> {
+    let package = npx_launch_package(launch)?;
+    let (name, pinned) = package
+        .rsplit_once('@')
+        .filter(|(name, _)| !name.is_empty())?;
+    let modules = npx_cache_entry_dir(&npx_cache_root(home)?, package).join("node_modules");
+    let manifest = std::fs::read_to_string(modules.join(name).join("package.json")).ok()?;
+    let manifest: serde_json::Value = serde_json::from_str(&manifest).ok()?;
+    if manifest.get("version")?.as_str()? != pinned {
+        return None;
+    }
+    let bin_dir = modules.join(".bin");
+    let program = bin_dir.join(adapter_bin_name(package)?);
+    if !is_executable(&program) {
+        return None;
+    }
+    let inherited =
+        std::env::split_paths(&launch.path_env).filter(|dir| !dir.as_os_str().is_empty());
+    let path_env = std::env::join_paths(std::iter::once(bin_dir).chain(inherited))
+        .ok()?
+        .to_string_lossy()
+        .to_string();
+    Some(AcpLaunch {
+        program,
+        args: launch.args.get(2..)?.to_vec(),
+        path_env,
+    })
+}
+
 /// Only bytes received so far: the total is pinned nowhere. Symlinks are not followed.
 pub(crate) fn dir_size_bytes(dir: &Path) -> u64 {
     let Ok(entries) = std::fs::read_dir(dir) else {
@@ -3896,6 +3930,73 @@ mod npx_cache_tests {
         assert_eq!(
             preflight_npx_cache(&npx_launch(CLAUDE_SPEC), None),
             NpxCachePreflight::CacheUnknown,
+        );
+        let _ = std::fs::remove_dir_all(&home);
+    }
+
+    fn plant_adapter(home: &Path, installed_version: &str) -> PathBuf {
+        let entry = npx_cache_entry_dir(&npx_cache_root(Some(home)).unwrap(), CLAUDE_SPEC);
+        build_entry(
+            &entry,
+            &EntryShape {
+                package_json: Some(HEALTHY_MANIFEST),
+                node_modules: true,
+                bin_entries: &["claude-agent-acp"],
+            },
+        );
+        let manifest = entry
+            .join("node_modules")
+            .join("@agentclientprotocol")
+            .join("claude-agent-acp")
+            .join("package.json");
+        std::fs::write(manifest, format!(r#"{{"version":"{installed_version}"}}"#)).unwrap();
+        entry
+    }
+
+    #[test]
+    fn a_ready_entry_launches_its_pinned_bin_without_npm_exec() {
+        let home = scratch("direct");
+        let entry = plant_adapter(&home, "0.69.0");
+        let mut launch = npx_launch(CLAUDE_SPEC);
+        launch.args.push("--acp".to_string());
+        launch.path_env = "/opt/node/bin".to_string();
+
+        let direct = launch_from_npx_cache(&launch, Some(&home), &|_| true).expect("direct launch");
+
+        let bin = entry.join("node_modules").join(".bin");
+        assert_eq!(direct.program, bin.join("claude-agent-acp"));
+        assert_eq!(direct.args, vec!["--acp".to_string()]);
+        let path_env = std::env::join_paths([bin, PathBuf::from("/opt/node/bin")]).unwrap();
+        assert_eq!(direct.path_env, path_env.to_string_lossy());
+        let _ = std::fs::remove_dir_all(&home);
+    }
+
+    #[test]
+    fn a_direct_launch_needs_the_exact_pinned_version_and_a_runnable_bin() {
+        let home = scratch("direct-refused");
+        let launch = npx_launch(CLAUDE_SPEC);
+        plant_adapter(&home, "0.70.0");
+        assert_eq!(launch_from_npx_cache(&launch, Some(&home), &|_| true), None);
+
+        plant_adapter(&home, "0.69.0");
+        assert_eq!(
+            launch_from_npx_cache(&launch, Some(&home), &|_| false),
+            None
+        );
+
+        let unpinned = npx_launch("@agentclientprotocol/claude-agent-acp");
+        assert_eq!(
+            launch_from_npx_cache(&unpinned, Some(&home), &|_| true),
+            None
+        );
+        let installed = AcpLaunch {
+            program: PathBuf::from("/usr/local/bin/claude-agent-acp"),
+            args: vec![],
+            path_env: String::new(),
+        };
+        assert_eq!(
+            launch_from_npx_cache(&installed, Some(&home), &|_| true),
+            None
         );
         let _ = std::fs::remove_dir_all(&home);
     }

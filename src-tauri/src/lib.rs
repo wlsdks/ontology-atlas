@@ -853,14 +853,26 @@ fn acp_start(
         &launch.path_env,
     )?;
 
-    let mut command = Command::new(&launch.program);
+    let spawned = matches!(npx_preflight, acp::NpxCachePreflight::CacheReady)
+        .then(|| acp::launch_from_npx_cache(&launch, home.as_deref(), &is_executable))
+        .flatten();
+    log::info!(
+        "acp start {runtime_id}: {}",
+        if spawned.is_some() {
+            "cached adapter bin"
+        } else {
+            "resolved launcher"
+        }
+    );
+    let spawned = spawned.unwrap_or_else(|| launch.clone());
+    let mut command = Command::new(&spawned.program);
     command
-        .args(&launch.args)
+        .args(&spawned.args)
         .current_dir(&root)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
-    acp::apply_runtime_environment(&mut command, &runtime_id, &launch.path_env);
+    acp::apply_runtime_environment(&mut command, &runtime_id, &spawned.path_env);
     command.env(isolation_env, isolation_dir);
 
     #[cfg(unix)]
