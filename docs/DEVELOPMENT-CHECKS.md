@@ -59,6 +59,8 @@ before relying on it.
 | E2E · Playwright chromium (x3) | 600 s | 392-421 s avg | rendered journeys |
 | Vault freshness | 30 s | 24 s avg | frontmatter integrity and node drift (FYI, never fails the PR) |
 | Windows beta · verify | 700 s | 582 s avg | Windows-only bundle facts |
+| Windows beta · Rust audit (also in the release) | 40 s | not yet measured alone; its steps took 10 s inside the Windows job | Rust advisories and unsoundness, from a lockfile-only checkout |
+| Dependency audit (manifests, lockfiles, weekly) | 40 s | not yet measured; reads lockfiles, installs nothing | a high production advisory in the app or the bundled MCP server |
 | Checks · Windows install canary | 100 s | derived from the release job's 57 s of shared steps | that **any** change can break `pnpm install` on Windows, which is why it carries no path filter |
 | Pages · build · deploy · verify | 120 s · 30 s · 40 s | 97 s · 9 s · 18 s | the static export builds and the hosted surface answers |
 
@@ -990,7 +992,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Run**: `pnpm desktop:release-secrets`
 **Proves**: The Apple signing/notary secrets and Tauri updater secrets are present and structurally valid before a signed build begins.
 **Escalate**: none.
-**Fix**: Use `--updater-only` to require just the two Tauri updater values before a Windows build.
+**Fix**: `--updater-only` checks just the two Tauri updater values; the Windows build needs neither, because the Windows beta ships no in-app update.
 
 ### Release slot cleanliness
 

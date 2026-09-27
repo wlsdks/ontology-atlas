@@ -70,8 +70,8 @@ export const REHEARSAL_SKIPS = {
     "This step builds a temporary keychain from APPLE_CERTIFICATE_P12_BASE64. It cannot run without the secrets, and running it would touch this machine's keychain, so the rehearsal deliberately leaves it out.",
   "Enable Corepack pnpm":
     "This step installs pnpm on the runner. This machine already has pnpm, and whether the version matches the runner is answered by the tool probe above.",
-  "Build signed and notarized release artifact":
-    "codesign (Developer ID) plus notarytool are required. Instead, the local substitute for the same step runs the ad-hoc signing path end to end and proves the build, smoke, sidecar bundling, DMG, checksum and install smoke. Only Developer ID signing, notarization and DMG container signing are first stepped on by a real tag.",
+  "Sign and notarize release artifact":
+    "codesign (Developer ID) plus notarytool are required. The substitute on the build step already walked ad-hoc signing, the updater repack, DMG, checksum and install smoke; only Developer ID signing, notarization and DMG container signing are first stepped on by a real tag.",
   "Summarize macOS release assets": "It only writes a table into GITHUB_STEP_SUMMARY, so there is nothing here that can hold or fail.",
   "Cleanup Apple signing keychain": "It removes a keychain that only the signing path creates.",
 };
@@ -89,15 +89,15 @@ export const REHEARSAL_SUBSTITUTES = {
     argv: ["node", "scripts/release-rehearsal.mjs", "--check-versions"],
     note: "Instead of a tag name, it checks that the package.json, tauri.conf.json and Cargo.toml versions agree with each other.",
   },
-  "Build signed and notarized release artifact": {
+  "Build release app bundle": {
     argv: ["pnpm", "desktop:release-artifact:unsigned"],
-    note: "The public workflow has no unsigned fallback. Only locally does the ad-hoc signing substitute run the path end to end and prove the chain apart from Developer ID signing and notarization.",
+    note: "The public workflow has no unsigned fallback. Only locally does the ad-hoc signing substitute run the build and the signing chain end to end, apart from Developer ID signing and notarization.",
   },
 };
 
 /** App compile, DMG, and install smoke are slow — `--fast` stops here. */
 export const REHEARSAL_SLOW_STEPS = new Set([
-  "Build signed and notarized release artifact",
+  "Build release app bundle",
 ]);
 
 /**

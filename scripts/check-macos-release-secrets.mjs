@@ -55,8 +55,8 @@ ${appleReleaseSecrets.map((secret) => `  ${formatSecret(secret)}`).join("\n")}
 The default mode also requires:
 ${updaterReleaseSecrets.map((secret) => `  ${formatSecret(secret)}`).join("\n")}
 
-Use --updater-only for the Windows updater-signing check; that mode requires
-only the two Tauri updater secrets and does not inspect the Apple certificate.
+Use --updater-only to check just the two Tauri updater secrets without
+inspecting the Apple certificate.
 
 The certificate secret must be a base64-encoded Developer ID Application .p12
 export in PKCS#12 DER form. The notarization key secret must be the base64 of

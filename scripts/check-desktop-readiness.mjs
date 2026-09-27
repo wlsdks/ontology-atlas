@@ -667,17 +667,9 @@ if (desktopPreflightContract.ok) {
  * The notarisation ticket attached but the wrapper had no signature. Signing
  * **after** notarisation invalidates the staple, so there is exactly one slot.
  *
- * **Repacking the updater archive (`desktop:repack-updater`) also has exactly one
- * slot — immediately after app signing.** `tauri build` emits `.app.tar.gz`
- * alongside the `.app`, and this repository code-signs separately afterwards. So
- * the archive carries the **pre-signature app**, and only users who updated meet
- * "the app is damaged" (users who took the DMG are fine). Measured 2026-07-28 on a
- * clean checkout:
- *
- *   tar xzf "Ontology Atlas.app.tar.gz" && codesign --verify --deep --strict …
- *     → code has no resources but signature indicates they must be present
- *
- * Repacking after signing and re-signing with minisign yields `valid on disk`.
+ * **The updater archive (`desktop:repack-updater`) also has exactly one slot —
+ * immediately after app signing.** Packed earlier it carries the pre-signature app,
+ * which updated users meet as "damaged" (measured 2026-07-28).
  */
 const RELEASE_ARTIFACT_COMMAND = "node scripts/build-macos-release-artifact.mjs";
 const RELEASE_ARTIFACT_STEP_MARKERS = [
@@ -1131,17 +1123,10 @@ if (
   fail("stage-macos and publish-macos must need admit-release, checkout its release_sha, and use the workflow_dispatch tag rather than a ref-derived tag");
 }
 
-const updaterGateIndex = buildWindowsJob.indexOf("pnpm desktop:release-secrets -- --updater-only");
-const windowsBuildIndex = buildWindowsJob.indexOf("pnpm desktop:build:windows");
-if (
-  updaterGateIndex >= 0 &&
-  updaterGateIndex < windowsBuildIndex &&
-  /TAURI_SIGNING_PRIVATE_KEY:\s*\$\{\{\s*secrets\.TAURI_SIGNING_PRIVATE_KEY\s*\}\}/.test(buildWindowsJob.slice(0, windowsBuildIndex)) &&
-  !/APPLE_[A-Z_]+:\s*\$\{\{\s*secrets\./.test(buildWindowsJob)
-) {
-  pass("Windows checks updater-only signing credentials before its installer build");
+if (buildWindowsJob.includes("pnpm desktop:build:windows") && !/\$\{\{\s*secrets\./.test(buildWindowsJob)) {
+  pass("Windows builds its installer with no signing secret in the job");
 } else {
-  fail("build-windows must run desktop:release-secrets -- --updater-only with only updater secrets before desktop:build:windows");
+  fail("build-windows must run desktop:build:windows and reference no secret; the Windows beta publishes no updater signature");
 }
 
 if (

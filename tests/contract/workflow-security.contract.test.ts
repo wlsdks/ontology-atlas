@@ -23,9 +23,13 @@ function workflows(): { name: string; source: string }[] {
     .map((name) => ({ name, source: readFileSync(join(WORKFLOW_DIR, name), "utf-8") }));
 }
 
-/** Does the `on:` block carry this trigger? Comments are not counted. */
+/** Does `on:` carry this trigger, in block or flow style? Comments are not counted. */
 function hasTrigger(source: string, trigger: string): boolean {
-  return new RegExp(`^\\s{2}${trigger}:`, "m").test(source.replace(/^\s*#.*$/gm, ""));
+  const code = source.replace(/^\s*#.*$/gm, "");
+  return (
+    new RegExp(`^\\s{2}${trigger}:`, "m").test(code) ||
+    new RegExp(`^on:\\s*(?:${trigger}|\\[[^\\]\\n]*\\b${trigger}\\b[^\\]\\n]*\\])\\s*$`, "m").test(code)
+  );
 }
 
 function escapePattern(value: string): string {
@@ -44,20 +48,61 @@ function jobBlock(source: string, jobName: string): string {
 }
 
 /**
- * The part of a job that declares **who it runs as**, stopping before what it runs.
- *
- * Two body shapes end that header. A normal job's is `steps:`; a job that calls a
- * reusable workflow has no steps at all and opens with a job-level `uses:` (four
- * spaces — a step's `uses:` is six and lives inside `steps:`). Recognising only the
- * first was fail-closed rather than silently wrong: `list-mcp-registry` threw here
- * instead of passing unexamined. It still has to be recognised, because a permission
- * this helper cannot see is a permission `writePermissionsByJob` cannot audit.
+ * The part of a job that declares **who it runs as**: everything before `steps:`, or
+ * before the job-level `uses:` of a reusable-workflow call (four spaces; a step's is
+ * six), so `writePermissionsByJob` audits callers too.
  */
 function jobHeader(source: string, jobName: string): string {
   const block = jobBlock(source, jobName);
   const body = /\n    (?:steps|uses):/.exec(block);
   if (!body) throw new Error(`workflow job body not found: ${jobName}`);
   return block.slice(0, body.index);
+}
+
+/** Every `${{ … }}` body, single-quoted literals blanked: a literal may hold `}}`. */
+function expressions(source: string): string[] {
+  const found: string[] = [];
+  let at = source.indexOf("${{");
+  while (at >= 0) {
+    let i = at + 3;
+    let body = "";
+    while (i < source.length && !source.startsWith("}}", i)) {
+      if (source[i] !== "'") {
+        body += source[i];
+        i += 1;
+        continue;
+      }
+      i += 1;
+      while (i < source.length && !(source[i] === "'" && source[i + 1] !== "'")) i += source[i] === "'" ? 2 : 1;
+      i += 1;
+      body += "''";
+    }
+    found.push(body.trim());
+    at = source.indexOf("${{", i + 2);
+  }
+  return found;
+}
+
+/** Each `run:` and `script:` value, inline or block. */
+function shellScripts(source: string): string[] {
+  const lines = source.split("\n");
+  const scripts: string[] = [];
+  for (let i = 0; i < lines.length; i += 1) {
+    const key = /^( *)(- )?(?:run|script):\s*(.*)$/.exec(lines[i]);
+    if (!key) continue;
+    if (!/^[|>][+-]?\s*$/.test(key[3])) {
+      scripts.push(key[3]);
+      continue;
+    }
+    const indent = key[1].length + (key[2] ? 2 : 0);
+    const body: string[] = [];
+    while (i + 1 < lines.length && (lines[i + 1].trim() === "" || /^ */.exec(lines[i + 1])![0].length > indent)) {
+      body.push(lines[i + 1]);
+      i += 1;
+    }
+    scripts.push(body.join("\n"));
+  }
+  return scripts;
 }
 
 function stepNamesUsingSecret(source: string, secretName: string): string[] {
@@ -92,6 +137,9 @@ describe("워크플로 보안 계약", () => {
 
   it("스캔 대상 워크플로를 찾는다", () => {
     expect(all.length).toBeGreaterThan(3);
+    expect(hasTrigger("on: [push, pull_request]\n", "pull_request")).toBe(true);
+    expect(hasTrigger("on: pull_request\n", "pull_request")).toBe(true);
+    expect(hasTrigger("on: [pull_request_target]\n", "pull_request")).toBe(false);
   });
 
   it("pull_request_target 을 쓰지 않는다", () => {
@@ -108,8 +156,31 @@ describe("워크플로 보안 계약", () => {
     // signals "this workflow touches credentials". Not touching them is the contract.
     const offenders = all
       .filter(({ source }) => hasTrigger(source, "pull_request"))
-      .filter(({ source }) => /\$\{\{\s*secrets\./.test(source))
+      .filter(({ source }) => expressions(source).some((body) => /\bsecrets\b/.test(body)) || /^\s+secrets:/m.test(source))
       .map((w) => w.name);
+    expect(offenders).toEqual([]);
+  });
+
+  it("names every secret whole, so each one a workflow reads is visible by name", () => {
+    // Blocks toJSON(secrets), secrets['X'], format(…, secrets.X) and secrets: inherit.
+    const bodies = all.flatMap(({ name, source }) => expressions(source).map((body) => ({ name, body })));
+    expect(bodies.length, "no expression found: this scan would pass vacuously").toBeGreaterThan(100);
+    const indirect = bodies
+      .filter(({ body }) => /\bsecrets\b/.test(body) && !/^secrets\.[A-Za-z_][A-Za-z0-9_]*$/.test(body))
+      .map(({ name, body }) => `${name}: \${{ ${body} }}`);
+    const inherited = all.filter(({ source }) => /^\s+secrets:\s*inherit\b/m.test(source)).map((w) => w.name);
+    expect([...indirect, ...inherited]).toEqual([]);
+    expect(expressions("${{ format('{0}}', secrets.X) }}")).toEqual(["format('', secrets.X)"]);
+  });
+
+  it("keeps workflow inputs out of shell source", () => {
+    // An input is caller-chosen text: through `env:` it is an argument, inlined it is code.
+    const scripts = all.flatMap(({ name, source }) => shellScripts(source).map((script) => ({ name, script })));
+    expect(scripts.length, "no run: or script: body found").toBeGreaterThan(100);
+    expect(shellScripts("      - run: |\n          a\n\n          b\n        env:\n")).toEqual(["          a\n\n          b"]);
+    const offenders = scripts
+      .filter(({ script }) => expressions(script).some((body) => /\b(?:github\.event\.)?inputs\./.test(body)))
+      .map(({ name, script }) => `${name}: ${script.trim().split("\n")[0]}`);
     expect(offenders).toEqual([]);
   });
 
@@ -206,14 +277,11 @@ describe("워크플로 보안 계약", () => {
     expect(jobBlock(release, "publish-macos")).toContain("--mode=pin");
   });
 
-  it("Windows updater 개인키는 build 직전 별도 실패-폐쇄 게이트를 지난다", () => {
+  it("keeps every signing secret out of the Windows job, which ships no in-app update", () => {
     const release = all.find((w) => w.name === "release-macos.yml")!.source;
     const windows = jobBlock(release, "build-windows");
-    const gate = windows.indexOf("- name: Require updater signing credentials");
-    const build = windows.indexOf("- name: Build Windows NSIS installer");
-    expect(gate).toBeGreaterThan(0);
-    expect(build).toBeGreaterThan(gate);
-    expect(windows.slice(gate, build)).toContain("desktop:release-secrets -- --updater-only");
+    expect(windows).toContain("- name: Build Windows NSIS installer\n        run: pnpm desktop:build:windows\n");
+    expect(expressions(windows).filter((body) => /\bsecrets\b/.test(body))).toEqual([]);
   });
 
   it("macOS 직접 다운로드 릴리스는 서명·공증 자격증명이 없으면 실패한다", () => {
@@ -224,11 +292,66 @@ describe("워크플로 보안 계약", () => {
       /- name: Require signed release credentials\n(?:        env:[\s\S]*?)?        run: pnpm desktop:release-secrets/,
     );
     expect(build).toMatch(
-      /- name: Build signed and notarized release artifact\n        run: pnpm desktop:release-artifact/,
+      /- name: Sign and notarize release artifact\n        run: pnpm desktop:release-artifact -- --phase=sign\n/,
     );
     expect(build).not.toContain("desktop:release-artifact:unsigned");
     expect(build).not.toContain("steps.signing.outputs.signed");
     expect(build).not.toContain("UNSIGNED build");
+  });
+
+  it("builds the macOS app before any signing identity exists, and imports it without -A", () => {
+    const build = jobBlock(all.find((w) => w.name === "release-macos.yml")!.source, "build-macos");
+    const at = (marker: string) => build.indexOf(marker);
+    expect(build).toContain("- name: Build release app bundle\n        run: pnpm desktop:release-artifact -- --phase=build\n");
+    expect(at("--phase=build")).toBeGreaterThan(at("run: pnpm desktop:release-secrets"));
+    expect(at("--phase=build"), "build code would run beside the imported identity").toBeLessThan(
+      at("- name: Import Apple Developer ID certificate"),
+    );
+    expect(at("- name: Import Apple Developer ID certificate")).toBeLessThan(at("--phase=sign"));
+
+    const importStep = build.slice(at("- name: Import Apple Developer ID certificate"), at("- name: Sign and notarize"));
+    const importLine = importStep.split("\n").find((line) => line.includes("security import"))!;
+    expect(importLine).toContain("-T /usr/bin/codesign");
+    expect(importLine).not.toMatch(/\s-A\s/);
+    const afterImport = importStep.slice(importStep.indexOf(importLine) + importLine.length).split("\n");
+    expect(afterImport.find((line) => line.trim() !== "")?.trim(), "the .p12 outlives its import").toBe(
+      'rm -f "$CERTIFICATE_PATH"',
+    );
+  });
+
+  it("keeps the token out of git config wherever a job can write or holds a secret", () => {
+    let guarded = 0;
+    const offenders: string[] = [];
+    for (const { name, source } of all) {
+      const workflowWrites = /: write\s*$/m.test(/^permissions:\n((?: {2}.*\n?)*)/m.exec(source)?.[1] ?? "");
+      const jobsSource = source.slice(source.indexOf("\njobs:\n") + 1);
+      for (const job of [...jobsSource.matchAll(/^  ([A-Za-z0-9_-]+):\s*$/gm)].map((match) => match[1])) {
+        const header = jobHeader(source, job);
+        const block = jobBlock(source, job);
+        const writes = /^    permissions:/m.test(header) ? job in writePermissionsByJob(source) : workflowWrites;
+        if (!writes && !expressions(block).some((body) => /\bsecrets\b/.test(body))) continue;
+        for (const step of block.split(/(?=^      - (?:name|uses):)/m).filter((s) => s.includes("actions/checkout@"))) {
+          guarded += 1;
+          if (!/^\s+persist-credentials: false$/m.test(step)) offenders.push(`${name}:${job}`);
+        }
+      }
+    }
+    expect(guarded, "no guarded checkout found").toBeGreaterThanOrEqual(6);
+    expect(offenders).toEqual([]);
+  });
+
+  it("checks out only the lockfile where the audit's check-run token lives", () => {
+    const checkWriters = all.flatMap(({ name, source }) =>
+      Object.entries(writePermissionsByJob(source))
+        .filter(([, keys]) => keys.includes("checks"))
+        .map(([job]) => ({ name, block: jobBlock(source, job) })),
+    );
+    expect(checkWriters.map(({ name }) => name).sort()).toEqual(["release-macos.yml", "windows-beta-check.yml"]);
+    for (const { name, block } of checkWriters) {
+      expect(block, name).toMatch(/sparse-checkout: src-tauri\/Cargo\.lock\n\s+sparse-checkout-cone-mode: false\n/);
+      expect(block, name).not.toMatch(/\bpnpm\b|\bnode\b/);
+      expect(block, name).toMatch(/CARGO_AUDIT_SHA256: [a-f0-9]{64}\n[\s\S]*sha256sum --check --strict/);
+    }
   });
 
   it("발행은 승인 환경 뒤에 있다", () => {
@@ -246,7 +369,8 @@ describe("워크플로 보안 계약", () => {
     // receive the same token.
     expect(release).toMatch(/^permissions:\n  contents: read\s*$/m);
     expect(jobBlock(release, "build-macos")).not.toMatch(/^    permissions:/m);
-    expect(jobBlock(release, "build-windows")).toMatch(
+    expect(jobBlock(release, "build-windows")).not.toMatch(/^    permissions:/m);
+    expect(jobBlock(release, "audit-rust")).toMatch(
       /^    permissions:\n      contents: read\n      checks: write\s*$/m,
     );
     expect(jobBlock(release, "stage-macos")).toMatch(
@@ -260,7 +384,7 @@ describe("워크플로 보안 계약", () => {
     // proof of namespace ownership. It is listed rather than exempted, so a job that
     // quietly gained `contents: write` beside it would still show up here.
     expect(writePermissionsByJob(release)).toEqual({
-      "build-windows": ["checks"],
+      "audit-rust": ["checks"],
       "stage-macos": ["contents"],
       "publish-macos": ["contents"],
       "list-mcp-registry": ["id-token"],
@@ -293,40 +417,13 @@ describe("워크플로 보안 계약", () => {
     }
 
     const expectedSteps: Record<string, string[]> = {
-      APPLE_CERTIFICATE_P12_BASE64: [
-        "Require signed release credentials",
-        "Import Apple Developer ID certificate",
-        "Build signed and notarized release artifact",
-      ],
-      APPLE_CERTIFICATE_PASSWORD: [
-        "Require signed release credentials",
-        "Import Apple Developer ID certificate",
-        "Build signed and notarized release artifact",
-      ],
-      APPLE_API_KEY_P8_BASE64: [
-        "Require signed release credentials",
-        "Build signed and notarized release artifact",
-      ],
-      APPLE_API_KEY_ID: [
-        "Require signed release credentials",
-        "Build signed and notarized release artifact",
-      ],
-      APPLE_API_ISSUER_ID: [
-        "Require signed release credentials",
-        "Build signed and notarized release artifact",
-      ],
-      TAURI_SIGNING_PRIVATE_KEY: [
-        "Require signed release credentials",
-        "Build signed and notarized release artifact",
-        "Require updater signing credentials",
-        "Build Windows NSIS installer",
-      ],
-      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: [
-        "Require signed release credentials",
-        "Build signed and notarized release artifact",
-        "Require updater signing credentials",
-        "Build Windows NSIS installer",
-      ],
+      APPLE_CERTIFICATE_P12_BASE64: ["Require signed release credentials", "Import Apple Developer ID certificate"],
+      APPLE_CERTIFICATE_PASSWORD: ["Require signed release credentials", "Import Apple Developer ID certificate"],
+      APPLE_API_KEY_P8_BASE64: ["Require signed release credentials", "Sign and notarize release artifact"],
+      APPLE_API_KEY_ID: ["Require signed release credentials", "Sign and notarize release artifact"],
+      APPLE_API_ISSUER_ID: ["Require signed release credentials", "Sign and notarize release artifact"],
+      TAURI_SIGNING_PRIVATE_KEY: ["Require signed release credentials", "Sign and notarize release artifact"],
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ["Require signed release credentials", "Sign and notarize release artifact"],
     };
 
     for (const [secret, steps] of Object.entries(expectedSteps)) {
