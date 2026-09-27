@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * MCP server verify CLI: checks in one command that a registered server boots,
- * lists its tools, and answers every read and dry-run write contract.
+ * lists its tools, and passes the first-contact read calls and destructive dry-runs.
  *
  * Usage:
  *   node mcp/scripts/verify.mjs [vault] [--vault <dir>] [--timeout-ms <n>]

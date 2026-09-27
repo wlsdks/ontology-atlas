@@ -121,6 +121,7 @@ export function createMaintenanceQueries({
     };
   }
 
+  // Review rows only: no proposedAction, or an agent following it literally creates one node per unresolved string; danglingReferenceCandidates already reports plain unresolved refs, and no row states a count.
   function nodeEligibilityActions() {
     const shape = {
       'path-shaped-title': { kind: 'separate_evidence_from_concept', phase: 'repair', severity: 'warn', score: 0.9 },

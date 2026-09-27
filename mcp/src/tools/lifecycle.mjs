@@ -150,8 +150,8 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
   }
 
   /**
-   * Step 2: the three steps are one plan (`deferWrite`) applied all-or-nothing and
-   * rolled back on failure, or a partial failure splits the graph across two names
+   * Step 2: the three steps are one plan (`deferWrite`) applied all-or-nothing and,
+   * while the process lives, rolled back on failure, or a partial failure splits the graph across two names
    * that `validate` and `health` both call clean.
    */
   const nextFrontmatter = { ...sourceDoc.frontmatter };

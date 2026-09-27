@@ -167,11 +167,6 @@ function requireAgentWritableReviewFields(frontmatter) {
 }
 
 /**
- * Refuses the whole write when the node itself is reserved, since the reserved
- * meaning lives in the body and relations too. Every write tool naming an existing
- * node runs this before touching disk.
- */
-/**
  * The node as it is on disk, or `null` when it does not exist yet; a node that
  * does not exist cannot be reserved.
  */
@@ -214,6 +209,11 @@ function describeReview(doc) {
   };
 }
 
+/**
+ * Refuses the whole write when the node itself is reserved, since the reserved
+ * meaning lives in the body and relations too. Every write tool naming an existing
+ * node runs this before touching disk.
+ */
 function requireNodeNotReservedForHuman(doc, operation) {
   const state = doc?.frontmatter?.[REVIEW_STATE_KEY];
   if (state !== REVIEW_STATE_HUMAN_DECIDES) return;
@@ -328,8 +328,6 @@ function missingSlugMessage(prefix, slug, { createHint = false } = {}) {
   return lines.join(' ');
 }
 
-// validate_vault: the whole vault's health in the shape of CLI
-// `ontology-atlas validate --json`, combining per-doc warnings and the aggregate.
 /**
  * The summary-freshness section of `validate_vault`: domains and projects whose
  * containment changed after their description was written. Advisory only, and

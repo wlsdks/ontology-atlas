@@ -1295,16 +1295,12 @@ const OUTGOING_EDGE_OUTPUT_SCHEMA = Object.freeze({
   required: ['to', 'via'],
   additionalProperties: false,
 });
-// Growth signal, attached only when a read tool hits an empty or unresolved
-// result — never on a success response. `mcp/src/growth-hint.mjs` fills it from
-// real vault data only (inventory, near-miss slugs and titles).
 /**
  * How the body is delivered: `'excerpt'` is the first prose paragraph (<=800
  * chars, the default for payload size) and `'full'` the whole markdown body,
  * because the construction rules put the evidence in the body.
  */
 const BODY_DELIVERY_MODES = Object.freeze(['excerpt', 'full']);
-/** Row cap for one `get_concepts({ body: 'full' })` call. Excerpt mode stays 50. */
 
 /**
  * How much body was delivered and what was left out. Always present:
@@ -1325,6 +1321,9 @@ const BODY_INFO_OUTPUT_SCHEMA = Object.freeze({
   additionalProperties: false,
 });
 
+// Growth signal, attached only when a read tool hits an empty or unresolved
+// result — never on a success response. `mcp/src/growth-hint.mjs` fills it from
+// real vault data only (inventory, near-miss slugs and titles).
 const GROWTH_HINT_OUTPUT_SCHEMA = Object.freeze({
   type: 'object',
   properties: {

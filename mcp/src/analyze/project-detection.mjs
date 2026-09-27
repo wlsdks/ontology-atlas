@@ -220,7 +220,7 @@ export function detectExistingOntologyEvidence(rootPath, skipped = []) {
   const rows = [];
   const seen = new Set();
 
-  // Recursive walk of docs/ontology: O(entries); `seen` keeps the first doc per slug.
+  // Recursive walk of docs/ontology, O(entries) only without directory symlinks: it follows them with no visited set or root check.
   function visit(dir) {
     for (const entry of readdirSync(dir)) {
       const path = join(dir, entry);

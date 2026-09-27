@@ -534,7 +534,7 @@ export function createScopeQueries({
     const cycleMap = new Map();
     const sortedNodes = [...nodes].sort((a, b) => a.slug.localeCompare(b.slug));
     // Path enumeration is exponential and a cycle-free graph never trips the cycle
-    // limit, so this shares `allPaths`' budget; hitting it reports `exhaustive: false`
+    // limit, so this uses `allPaths`' searchBudget contract; hitting it reports `exhaustive: false`
     // rather than truncating silently.
     let expandedStates = 0;
     let truncatedByBudget = false;
@@ -617,7 +617,7 @@ export function createScopeQueries({
     }
   }
 
-  // Kahn's algorithm over deduplicated edge pairs: O(V + E) with an indegree map.
+  // Layered Kahn's algorithm over deduplicated edge pairs (adjacency Map of Sets, indegree Map): O((V + E) log V), since each layer and adjacency set is sorted for a stable order.
   function topologicalOrder(options = {}) {
     const limit = normalizeLimit(options.limit, 100);
     const typeSet = normalizeTypes(options.types ?? ['dependencies'], options.typeName || 'types');
@@ -817,11 +817,6 @@ export function createScopeQueries({
     };
   }
 
-  /**
-   * Write-path gate findings as review actions: no `resolve_dangling_reference` row
-   * (reported above already), no `proposedAction` (a literal agent would create a
-   * node per string), and no count in the wording.
-   */
   return {
     lineage, containmentTree, cycles, topologicalOrder, recommendRelations, growthPlan,
     collectContainmentScope, collectLineage, domainMapRow, intersectSlugSets, nearestDomainFor,
