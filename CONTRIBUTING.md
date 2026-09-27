@@ -74,6 +74,24 @@ depends on (no `pull_request_target`, no secrets in pull-request workflows, no
 untrusted strings in shell commands). See [`SECURITY.md`](SECURITY.md) for the
 full picture and for how to report a vulnerability.
 
+### Reviewing a fork pull request
+
+For maintainers. In a clone where `pnpm install` has run, Git's hooks path is the
+tracked `.githooks/`, whose `post-checkout` and `post-merge` run scripts from the
+tree just checked out. Git reads a hook after it updates the tree, so a fork that
+edits those scripts runs as you the moment its branch is checked out, with
+everything your account can reach. That is why `pnpm pr:land` refuses forks.
+Review one without running it:
+
+- Read it: `gh pr diff <number>`, or the Files tab.
+- Try it in a throwaway clone that never ran `pnpm install`, on a machine or
+  account that holds no credentials you would mind losing.
+- For a single checkout in an existing clone, switch hooks off for that command:
+  `git -c core.hooksPath=/dev/null checkout <branch>`. Every later Git or `pnpm`
+  command on that branch runs its code again, so run none there.
+
+Then land it by hand.
+
 ### Branch & commit
 
 - Branch: `feat/...`, `fix/...`, `refactor/...`, `chore/...`, `docs/...`.

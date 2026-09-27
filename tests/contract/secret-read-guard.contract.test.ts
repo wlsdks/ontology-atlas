@@ -59,7 +59,27 @@ describe("secret read guard", () => {
   });
 
   it("denies private key material wherever it sits", () => {
-    for (const rule of ["Read(**/*.pem)", "Read(**/id_rsa)", "Read(**/id_ed25519)"]) {
+    for (const rule of [
+      "Read(**/*.pem)",
+      "Read(**/*.p8)",
+      "Read(**/*.p12)",
+      "Read(**/*.key)",
+      "Read(**/id_rsa)",
+      "Read(**/id_ed25519)",
+      "Read(**/id_ecdsa*)",
+    ]) {
+      expect(deny, `${rule} is missing from permissions.deny`).toContain(rule);
+    }
+  });
+
+  it("denies the signing folder and the credential stores a session could reach", () => {
+    for (const rule of [
+      "Read(~/.ontology-atlas-signing/**)",
+      "Read(~/.config/gh/**)",
+      "Read(~/.npmrc)",
+      "Read(~/.netrc)",
+      "Read(~/.aws/**)",
+    ]) {
       expect(deny, `${rule} is missing from permissions.deny`).toContain(rule);
     }
   });

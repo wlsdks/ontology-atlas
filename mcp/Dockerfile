@@ -35,7 +35,9 @@
 # `OATLAS_VAULT` defaults to /vault, and the server treats a folder with no nodes
 # as empty rather than failing — an inspector with nothing mounted still gets a
 # complete `tools/list`.
-FROM node:24-alpine
+# By digest, so a moved tag cannot change what the published image runs on. The
+# multi-arch index resolved 2026-09-27 (linux/amd64, linux/arm64/v8); bump it on purpose.
+FROM node:24-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1
 
 LABEL io.modelcontextprotocol.server.name="io.github.wlsdks/ontology-atlas"
 LABEL org.opencontainers.image.title="Ontology Atlas MCP server"
