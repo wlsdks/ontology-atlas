@@ -1,46 +1,19 @@
 import type { KnowledgeGraphNode } from "../../model";
 
 /**
- * Single source of truth for the "recent changes" lens. The semantics are a
- * **window of N days over each document's change date** — a different question
- * from `ontology-changeset.ts`, which asks "what changed since the last
- * baseline". This module answers "which documents were actually modified in the
- * last N days".
- *
- * The dates are the caller's (`useVaultDocDates` in the app: Git's last commit
- * for a document Git shows untouched since, the file's own date for one edited
- * since or never committed). A file's date alone is not one: a clone, a checkout
- * or a restored backup stamps every file with the moment it landed, and this lens
- * then read the whole vault as changed today.
- *
- * Two surfaces share the window arithmetic: the map lens
- * (`computeRecentChanges`, ontology node → `evidenceIds[0]` → the vault
- * document's change date, looked up indirectly) and the docs sidebar strip
- * (`selectRecentVaultDocs`, reading the `updatedAt` each document carries). Both
- * call the same `isWithinRecentWindow` / `daysAgoFromIso` helpers so that
- * "recent" cannot come to mean different things on different surfaces.
+ * Documents changed in the last N days, by caller-supplied dates (Git's last commit for untouched
+ * files, since checkouts restamp mtimes). Map lens and docs sidebar share the window arithmetic.
  */
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-/** The lens's default window — 7 days, matching the question it answers ("what changed in the last 7 days"). */
+/** Default window in days. */
 export const RECENT_CHANGES_DEFAULT_WINDOW_DAYS = 7;
 
-/**
- * Tolerance for timestamps slightly in the future. `nowMs` is a snapshot taken at
- * the session's first render, so a document created later in the session (the
- * first bootstrap, for instance) has an mtime *after* that snapshot. Excluding
- * all of those produced the observed contradiction "6 nodes just created, 0
- * recent changes". Anything within 24h ahead counts as today; beyond that is real
- * clock skew or bad data and is excluded.
- */
+/** `nowMs` is a session snapshot, so documents created later count as today within 24h. */
 const FUTURE_TOLERANCE_MS = 24 * 60 * 60 * 1000;
 
-/**
- * Whether `updatedAtIso` falls inside the past `windowDays` relative to `nowMs`.
- * An unparseable value is false — unknown is not the same as recent. A future
- * timestamp counts as today when it is inside the 24h tolerance.
- */
+/** Unparseable dates are false: unknown is not recent. */
 export function isWithinRecentWindow(
   updatedAtIso: string,
   nowMs: number,
@@ -53,29 +26,17 @@ export function isWithinRecentWindow(
   return ageMs <= windowDays * DAY_MS;
 }
 
-/** Whole days between `updatedAtIso` and `nowMs`, rounded down. +Infinity when unparseable. */
+/** Whole days, floored; +Infinity when unparseable. */
 export function daysAgoFromIso(updatedAtIso: string, nowMs: number): number {
   const updatedMs = Date.parse(updatedAtIso);
   if (!Number.isFinite(updatedMs)) return Number.POSITIVE_INFINITY;
-  // A future timestamp inside the tolerance (created mid-session) is day 0, "today" — never negative.
+  // Never negative.
   return Math.max(0, Math.floor((nowMs - updatedMs) / DAY_MS));
 }
 
-/**
- * The kinds that own a document but are never drawn as a node — `document` is
- * evidence and `vault-readme` is the reader guide a scaffolded folder gets. Both
- * are filtered out by `buildOntologyTree` before a row is drawn, and
- * `computeCanonicalCensus` leaves `vault-readme` out of the concept count.
- *
- * The lens has to agree with them (owner report, 2026-09-04). Right after the
- * starter files are written, the INDEX segment read "Last 1d · 5" while the
- * census said 4 concepts and the segment drew 4 rows: the fifth was the
- * starter's own README.md, changed but never a node. A count nobody can point
- * at on screen is a miscount, so a kind that is not drawn is not counted.
- */
+/** Kinds with a document that are never drawn as nodes, so the lens does not count them. */
 const NON_GRAPH_NODE_KINDS: ReadonlySet<string> = new Set(["document", "vault-readme"]);
 
-/** Whether this kind is drawn as a node, and so may be counted by the lens. */
 export function isGraphDrawnKind(kind: string): boolean {
   return !NON_GRAPH_NODE_KINDS.has(kind);
 }
@@ -84,26 +45,17 @@ interface RecentChangeRow {
   id: string;
   title: string;
   kind: string;
-  /** From `daysAgoFromIso` — 0 means today. */
+  /** 0 means today. */
   agoDays: number;
 }
 
 export interface RecentChangesResult {
   recentNodeIds: Set<string>;
-  /** Newest first (ascending `agoDays`). */
+  /** Newest first. */
   rows: RecentChangeRow[];
 }
 
-/**
- * Ontology nodes → the "recent changes" lens. A node carries no timestamp of its
- * own (frontmatter has none), but `node.evidenceIds[0]` is the slug of the vault
- * document it derives from (the `derivationToInsight` contract, same convention
- * as `use-vault-doc-freshness.ts`), so the date is looked up indirectly through
- * `freshnessIndex` (slug → real `updatedAt` ISO). A node with no `evidenceIds`,
- * or one absent from `freshnessIndex`, is treated as unknown and left out of the
- * lens rather than assumed present, and so is a kind that is never drawn as a
- * node (`isGraphDrawnKind`).
- */
+/** Node dates come from `freshnessIndex` via `evidenceIds[0]`; unknown and undrawn nodes are left out. */
 export function computeRecentChanges(
   nodes: readonly KnowledgeGraphNode[],
   freshnessIndex: ReadonlyMap<string, string>,
@@ -114,8 +66,7 @@ export function computeRecentChanges(
   const rows: RecentChangeRow[] = [];
 
   for (const node of nodes) {
-    // A kind the map and the INDEX tree never draw cannot be one of the rows the
-    // segment shows, so counting it would make the label disagree with the list.
+    // Undrawn kinds would make the count disagree with the rows.
     if (!isGraphDrawnKind(node.kind)) continue;
     const slug = node.evidenceIds[0];
     if (!slug) continue;
@@ -137,17 +88,13 @@ export function computeRecentChanges(
 }
 
 /**
- * Adaptive lens window. On a day with a bulk commit, a 7-day window let 80% of the
- * graph through and the lens stopped filtering anything. The window narrows down
- * this ramp and uses the first step whose pass rate is at or under `maxShare`
- * (default 50%). If even 1 day overflows, the 1-day result is returned as is — a
- * vault where everything really did change today is not lied about by narrowing
- * the window until the answer is 0.
+ * Narrows the window until at most `maxShare` passes; the 1-day result is returned even when it
+ * overflows, rather than narrowing to zero.
  */
 const RECENT_CHANGES_ADAPTIVE_LADDER_DAYS: readonly number[] = [7, 3, 1];
 
 export interface AdaptiveRecentChangesResult extends RecentChangesResult {
-  /** The window actually used, in days. */
+  /** The window used, in days. */
   windowDays: number;
 }
 
@@ -157,9 +104,7 @@ export function computeAdaptiveRecentChanges(
   nowMs: number,
   maxShare = 0.5,
 ): AdaptiveRecentChangesResult {
-  // The denominator is the same population as the numerator — nodes that are
-  // actually drawn — so "what share of the map is lit" cannot be diluted by
-  // documents the map never shows.
+  // Only drawn nodes in the denominator too.
   const total = nodes.filter((node) => isGraphDrawnKind(node.kind)).length;
   let last: AdaptiveRecentChangesResult | null = null;
   for (const windowDays of RECENT_CHANGES_ADAPTIVE_LADDER_DAYS) {
@@ -170,14 +115,7 @@ export function computeAdaptiveRecentChanges(
   return last as AdaptiveRecentChangesResult;
 }
 
-/**
- * Vault documents (the minimal `VaultDoc`-compatible shape) → the "recent
- * changes" list, newest first. The document already carries a real `updatedAt`
- * (local mode: `file.lastModified`; static/dogfood: the build-time value), so the
- * indirect `freshnessIndex` lookup `computeRecentChanges` needs is unnecessary
- * here — but the same `isWithinRecentWindow` arithmetic is shared so the two
- * surfaces cannot diverge on what "recent" means.
- */
+/** Recent documents by their own `updatedAt`, with the lens's window arithmetic. */
 export function selectRecentVaultDocs<T extends { updatedAt: string }>(
   docs: readonly T[],
   nowMs: number,
@@ -189,9 +127,5 @@ export function selectRecentVaultDocs<T extends { updatedAt: string }>(
     .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
 }
 
-// The node id behind the "agent just touched this" badge is deliberately not
-// derived here. `HomePage.tsx` already normalises heartbeat focus → graph node id
-// through `resolveAgentFocusNodeId`
-// (`views/home/lib/resolve-agent-focus-node.ts`), so the badge is one set lookup
-// against `recentNodeIds`. A second matching heuristic would let the two surfaces
-// disagree about which node the agent is looking at.
+// The agent-focus badge reuses `resolveAgentFocusNodeId` (views/home/lib) against `recentNodeIds`
+// rather than a second matching heuristic.

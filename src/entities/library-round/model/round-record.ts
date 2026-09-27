@@ -1,25 +1,7 @@
 /**
- * **A Library round** — a rule the Library keeps on its own while the app is open.
- *
- * Spec: `docs/specs/2026-09-17-library-rounds-design.md`. Decision:
- * `docs/records/decisions/2026-09-17-library-rounds-standing-scope-*.md`.
- *
- * Two kinds exist in this slice. A **consistency** round hashes every cited source and runs the
- * structural wiki report on this machine, with no agent turn; it may start one Compile turn for
- * the sources that went stale. A **service** round is one agent turn per pass that re-reads the
- * documents one attached connector brought in, then writes or redrafts their pages.
- *
- * The record is what the person approved in the registration sheet. Nothing here executes; the
- * runner (`views/library/lib/use-rounds-runner.ts`) reads these, and the scope judge in
- * `features/library-rounds` decides per request.
- *
- * ## Cadence is local wall-clock time
- *
- * "Daily at 09:00" means the person's 09:00, on the Mac that runs the round. The next due time
- * is computed from local date components so that a daylight-saving change moves the run with the
- * clock on the wall rather than by a fixed number of milliseconds. Hourly and six-hourly rounds
- * run on the hour (00, 06, 12, 18 for six-hourly) so two rounds with the same cadence line up
- * and the ledger reads as a grid.
+ * A Library round the person approved (spec `docs/specs/2026-09-17-library-rounds-design.md`; decision
+ * `docs/records/decisions/2026-09-17-library-rounds-standing-scope-0e82da66-48d2-44f1-a923-82857d7a3710.md`).
+ * Cadence is local wall-clock time, so daylight saving moves a run with the clock.
  */
 
 const ROUND_STORE_VERSION = 1 as const;
@@ -32,40 +14,30 @@ export type RoundOnStale = 'mark' | 'redraft';
 export type RoundCadence =
   | { every: 'hour' }
   | { every: '6h' }
-  /**
-   * The one interval form (2026-09-21). `hour` and `6h` stay as the two literals already on
-   * disk, and the writer keeps emitting them for 60 and 360, so a file written today still
-   * reads on the build before this one. Every other interval travels as minutes.
-   */
+  /** `hour` and `6h` stay the on-disk literals for 60 and 360 so older builds still read them. */
   | { everyMinutes: number }
   | { daily: string; weekdaysOnly: boolean };
 
 export type RoundCadenceKey = 'hour' | '6h' | 'minutes' | 'hours' | 'daily' | 'weekdays';
 
-/** The longest interval the rail can say: a day. Anything longer is the daily form. */
+/** A day; anything longer is the daily form. */
 const MAX_INTERVAL_MINUTES = 1440;
 
-/**
- * **A place a round reads** (spec `2026-09-21-round-cadence-and-scope.md` §3).
- *
- * A round used to name one connector and nothing else, so the sheet could not say *which*
- * Slack channel or *which* Confluence space, and neither could the ledger next morning. A place
- * is either folders inside this vault or one connector narrowed to a location.
- */
+/** A place a round reads: vault folders, or one connector narrowed to a location (spec `2026-09-21-round-cadence-and-scope.md` §3). */
 export interface RoundPlaceVault {
   kind: 'vault';
-  /** Folders relative to the root, picked from the real folder list. `[]` is the whole vault. */
+  /** Folders relative to the root; `[]` is the whole vault. */
   paths: string[];
-  /** Only files under `sources/` with no `source_url` — what a person dropped in themselves. */
+  /** Only `sources/` files without `source_url`, i.e. ones a person added. */
   ownDocumentsOnly?: boolean;
 }
 
 export interface RoundPlaceService {
   kind: 'service';
   connectorId: string;
-  /** The name the connector is attached under — the `mcp__<name>__` prefix of its tools. */
+  /** The `mcp__<name>__` prefix of the connector's tools. */
   connectorName: string;
-  /** The part of the service this round is limited to: `#release-room`, `ENG`, `Roadmap DB`. */
+  /** e.g. `#release-room`, `ENG`, `Roadmap DB`. */
   location?: string;
   /** What to look for beyond re-reading the documents already here. */
   query?: string;
@@ -75,7 +47,7 @@ export type RoundPlace = RoundPlaceVault | RoundPlaceService;
 
 export interface RoundRecord {
   id: string;
-  /** Shown in the index and the ledger. Derived at registration, editable afterwards. */
+  /** Derived at registration, editable afterwards. */
   name: string;
   kind: RoundKind;
   cadence: RoundCadence;
@@ -84,32 +56,26 @@ export interface RoundRecord {
   onStale?: RoundOnStale;
   /** Service only: the `ConnectorRecord.id` whose tools this round may call. */
   connectorId?: string;
-  /** Service only: the label the person knows the connector by, kept for the brief and the ledger. */
+  /** Service only: the connector label the person knows. */
   connectorName?: string;
   /** Service only: what to look for beyond re-reading known documents. */
   query?: string;
   /** Service only: cap on new documents per pass. */
   limit?: number;
-  /**
-   * The places this round reads. Absent on records written before 2026-09-21, which read as
-   * one whole-vault place plus, for a service round, the connector in the legacy fields.
-   */
+  /** Absent on older records, which read as the whole vault plus the legacy connector fields. */
   places?: RoundPlace[];
   createdAt: string;
   lastPassAt?: string;
-  /** ISO-8601. The next scheduled time; a pass runs at the first tick at or after it. */
+  /** ISO-8601; a pass runs at the first tick at or after it. */
   nextDueAt: string;
 }
 
 export interface RoundState {
   v: typeof ROUND_STORE_VERSION;
   rounds: RoundRecord[];
-  /**
-   * When the window last went hidden with the app still open, so the morning card can say
-   * "since you left" with a real span. Moved into `lastAway` when the person is back.
-   */
+  /** When the window last went hidden, moved into `lastAway` on return. */
   awayFrom?: string;
-  /** The last completed absence — what "since you left" spans until the next one begins. */
+  /** The last completed absence, spanned by "since you left". */
   lastAway?: { from: string; to: string };
 }
 
@@ -129,10 +95,7 @@ export function cadenceMinutes(cadence: RoundCadence): number | null {
   return null;
 }
 
-/**
- * The cadence an interval is stored as. 60 and 360 keep their literals because a build older
- * than 2026-09-21 reads only those two; every other interval is minutes.
- */
+/** 60 and 360 keep their literals for older builds; other intervals are minutes. */
 export function cadenceFromMinutes(minutes: number): RoundCadence {
   if (minutes === 60) return { every: 'hour' };
   if (minutes === 360) return { every: '6h' };
@@ -149,7 +112,7 @@ export function cadenceKey(cadence: RoundCadence): RoundCadenceKey {
   return 'daily' in cadence && cadence.weekdaysOnly ? 'weekdays' : 'daily';
 }
 
-/** About how many agent turns a day a cadence costs when every pass spends one (spec §2.1). */
+/** Approximate agent turns per day when every pass spends one (spec §2.1). */
 export function turnsPerDay(cadence: RoundCadence): number {
   const minutes = cadenceMinutes(cadence);
   return minutes !== null && minutes > 0 ? Math.round(MAX_INTERVAL_MINUTES / minutes) : 1;
@@ -163,8 +126,7 @@ export function cadenceFromKey(key: RoundCadenceKey, time = '09:00'): RoundCaden
       return { every: '6h' };
     case 'minutes':
     case 'hours':
-      // The two interval keys are descriptions of a stored interval, not choices a caller
-      // makes blind: a caller that wants one builds it from minutes.
+      // Interval keys describe a stored interval; callers build one from minutes.
       return { every: 'hour' };
     case 'daily':
       return { daily: time, weekdaysOnly: false };
@@ -178,30 +140,19 @@ function isWeekend(date: Date): boolean {
   return day === 0 || day === 6;
 }
 
-/**
- * The first scheduled time **strictly after** `from`, in local time.
- *
- * Strictly after is what makes a catch-up run once: the runner passes the moment it actually
- * ran, and the next boundary after that moment is always in the future, so a window missed
- * during sleep produces one pass, never one per missed hour.
- */
+/** The first scheduled time strictly after `from`, so a missed window catches up once. */
 export function nextDueAt(cadence: RoundCadence, from: Date): Date {
   const minutes = cadenceMinutes(cadence);
   if (minutes !== null && minutes > 0) {
     const next = new Date(from);
     if (minutes < 60 && 60 % minutes === 0) {
-      // Shorter than an hour: the hour is the grid, so :00 :05 :10 … and two five-minute
-      // rounds share one column in the ledger.
+      // Under an hour: aligned to the hour so equal cadences share a ledger column.
       next.setSeconds(0, 0);
       next.setMinutes(Math.floor(next.getMinutes() / minutes) * minutes);
       while (next.getTime() <= from.getTime()) next.setMinutes(next.getMinutes() + minutes);
       return next;
     }
-    /*
-     * An hour or longer: the **day** is the grid, counted from local midnight, so a two-hour
-     * round runs at 00 02 04 … and a daylight-saving day moves the run with the clock on the
-     * wall rather than by a fixed number of milliseconds — `setMinutes` walks wall time.
-     */
+    /* An hour or longer: aligned to local midnight; `setMinutes` walks wall time across DST. */
     next.setHours(0, 0, 0, 0);
     const elapsed = Math.floor((from.getTime() - next.getTime()) / 60_000);
     next.setMinutes(Math.max(0, Math.floor(elapsed / minutes)) * minutes);
@@ -209,7 +160,7 @@ export function nextDueAt(cadence: RoundCadence, from: Date): Date {
     return next;
   }
   if (!('daily' in cadence)) {
-    // An interval of zero or less is not a cadence; treat it as an hour rather than looping.
+    // A non-positive interval falls back to hourly rather than looping.
     return nextDueAt({ every: 'hour' }, from);
   }
   const [clockHours, clockMinutes] = cadence.daily.split(':').map(Number);
@@ -281,11 +232,7 @@ function readPlaces(value: unknown): RoundPlace[] | null {
   return places;
 }
 
-/**
- * The places a record describes, for a record written before 2026-09-21 too: the whole vault,
- * plus the connector the legacy fields name. Nothing here invents a location the person never
- * chose — an old service round watched wherever its connector reached, and still says so.
- */
+/** The places a record describes, including older records: the whole vault plus the legacy connector. */
 export function roundPlaces(round: RoundRecord): RoundPlace[] {
   if (round.places && round.places.length > 0) return round.places;
   const places: RoundPlace[] = [{ kind: 'vault', paths: [] }];
@@ -302,22 +249,17 @@ export function servicePlaces(places: readonly RoundPlace[]): RoundPlaceService[
   return places.filter((place): place is RoundPlaceService => place.kind === 'service');
 }
 
-/** The one vault place a round always has; the first when a file somehow holds two. */
+/** The first vault place. */
 export function vaultPlace(places: readonly RoundPlace[]): RoundPlaceVault {
   return places.find((place): place is RoundPlaceVault => place.kind === 'vault') ?? { kind: 'vault', paths: [] };
 }
 
-/**
- * The kind is **derived** from the places, never chosen (spec §3.2): a round that names any
- * service spends an agent turn per pass and is a service round; one that names none is the
- * local check. The stored `kind` stays in the record because the scope judge, the ledger and
- * every build before this one read it.
- */
+/** Derived from the places (spec §3.2); the stored `kind` remains for older readers. */
 export function deriveRoundKind(places: readonly RoundPlace[]): RoundKind {
   return servicePlaces(places).length > 0 ? 'service' : 'consistency';
 }
 
-/** The short labels the index row, the ledger and the morning card name a pass's places by. */
+/** Labels naming a pass's places. */
 export function roundPlaceLabels(places: readonly RoundPlace[]): string[] {
   const labels: string[] = [];
   for (const place of places) {
@@ -370,11 +312,7 @@ export function emptyRoundState(): RoundState {
   return { v: ROUND_STORE_VERSION, rounds: [] };
 }
 
-/**
- * A malformed file is reported, not repaired: the store refuses to write over a file it could not
- * read, the same rule `connector-store.ts` keeps, so a person's hand edit is never erased by a
- * round that happened to tick first.
- */
+/** A malformed file is reported, not repaired, so the store never overwrites a hand edit. */
 export function parseRoundState(text: string | null): RoundStateParse {
   if (text === null || text.trim() === '') return { status: 'missing', state: emptyRoundState() };
   let parsed: unknown;

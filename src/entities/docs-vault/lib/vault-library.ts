@@ -3,65 +3,25 @@ import { isWikiFurnitureSlug } from '@/shared/lib/wiki-page-schema';
 import type { VaultDoc, VaultSourceFile } from '../model/types';
 
 /**
- * The library — the two vault file kinds that are not the graph.
- *
- * `docs/DECISIONS.md`, 2026-09-05: *a vault holds three kinds of file and only one is
- * the graph.* A **raw source** under `sources/` is what a document said, kept verbatim.
- * A **wiki page** under `wiki/` is what we made of it: ordinary Markdown with **no
- * `kind:`**, so `deriveDocNode` returns null for it and the map never draws it. An
- * ontology node has `kind:` and remains the only graph truth.
- *
- * Everything in this file is pure. It answers one question about a raw source — *has
- * anybody written it up, and does that write-up still match the file on disk?* — from
- * two frontmatter fields on the wiki pages:
- *
- * ```yaml
- * ---
- * created_by: agent:claude
- * sources: [sources/quarter-plan.pdf]
- * source_hash:
- *   sources/quarter-plan.pdf: 3b1f…
- * sources_truncated: [sources/quarter-plan.pdf]
- * compiled_at: 2026-09-05T10:00:00Z
- * ---
- * ```
- *
- * The hash is what makes the answer honest. Without it a page that cites a file says
- * only "somebody once read something with this name", which is exactly the claim that
- * goes stale in silence when the file is replaced.
- *
- * `sources_truncated` is the second half of that honesty, added 2026-09-07. A long file
- * is cut at the per-read cap, so a page can be written from the first forty pages of a
- * two-hundred-page document and still record a hash that matches every byte of it. The
- * hash then says *this page describes this file*, which is true of the part that was read
- * and false of the rest — and the row said `compiled`, which is how half a document
- * disappears without anybody being told. The writer records which sources it only got
- * part of, and the row says `partial` instead.
+ * The two vault file kinds that are not the graph: raw sources under `sources/` and wiki pages
+ * under `wiki/` (no `kind:`). A page's `sources`, `source_hash` and `sources_truncated` say
+ * whether its write-up still matches the file on disk. Vault file kinds:
+ * `docs/DECISIONS.md` 2026-09-05, "A vault holds three kinds of file and only one is the graph".
  */
 
-/** The top-level folder holding wiki pages. Mirrors `VAULT_SOURCES_DIR`. */
+/** The top-level wiki folder, anchored at the root like `VAULT_SOURCES_DIR`. */
 const VAULT_WIKI_DIR = 'wiki';
 
+/** Retained answers are revised through their own review workflow, not Compile. */
+const WIKI_ANSWERS_PREFIX = 'wiki/answers/';
+
 /**
- * What the library knows about one raw source.
- *
- * - `not-compiled` — no wiki page cites it. Nothing is wrong; nobody has written it up.
- * - `compiled` — a page cites it **and** names a sha256 equal to the file's own.
- * - `stale` — a page cites it and the hashes disagree, or the page cites it without a
- *   hash at all. Both mean the same thing to a person: *the write-up may no longer
- *   describe this file*, and the cure is the same.
- * - `partial` — a page cites it, its hash still matches, and that page says it read only
- *   part of this file. Nothing is wrong with the write-up; it simply stops short of the
- *   document, and a person deciding whether to open the original needs that before they
- *   trust the page instead.
- * - `checking` — a page cites it with a hash and the file has not been hashed yet. A
- *   transient state, never a resting one; showing "compiled" during it would be a claim
- *   nothing has verified.
+ * `stale` covers a hash mismatch and a missing hash; `partial` means the matching page read only
+ * part of the file; `checking` is transient until the file is hashed.
  */
 type SourceCompileState = 'not-compiled' | 'compiled' | 'partial' | 'stale' | 'checking';
 
 interface WikiCitation {
-  /** Slug of the wiki page, as `VaultDoc.slug` spells it (`wiki/quarter-plan`). */
   wikiSlug: string;
   /** Vault-relative path of the cited source (`sources/quarter-plan.pdf`). */
   sourcePath: string;
@@ -74,21 +34,15 @@ interface WikiCitation {
 export interface LibraryWikiPage {
   slug: string;
   title: string;
-  /** Sources this page cites, in the order the frontmatter lists them. */
   sourcePaths: string[];
-  /** `created_by`, verbatim — `agent:claude`, `human`, or absent. */
   createdBy: string | null;
-  /** `compiled_at`, verbatim, when present. */
   compiledAt: string | null;
 }
 
-/** Whether a doc is a wiki page: under `wiki/` **and** carrying no `kind:`. */
 export function isWikiPage(doc: VaultDoc): boolean {
   if (!doc.slug.startsWith(`${VAULT_WIKI_DIR}/`)) return false;
   const kind = doc.frontmatter.kind;
-  // A file under `wiki/` that grew a `kind:` is an ontology node someone filed in the
-  // wrong folder. It belongs to the graph, and calling it a wiki page here would hide it
-  // from every screen that lists concepts.
+  // A `kind:` under `wiki/` is a misfiled ontology node, which must stay visible as a concept.
   return typeof kind !== 'string' || kind.trim() === '';
 }
 
@@ -97,8 +51,7 @@ function readStringArray(value: unknown): string[] {
     return value.filter((item): item is string => typeof item === 'string' && item.trim() !== '')
       .map((item) => item.trim());
   }
-  // A single citation written as a scalar is the commonest hand-edit. Reading it costs
-  // nothing and refusing it would tell a person their page cites nothing.
+  // A scalar citation is the commonest hand-edit; read it as one entry.
   return typeof value === 'string' && value.trim() ? [value.trim()] : [];
 }
 
@@ -111,27 +64,12 @@ function readHashMap(value: unknown): Map<string, string> {
   return out;
 }
 
-/**
- * Wiki pages in the manifest, by slug order.
- *
- * The shipped `wiki/_template.md` is not a page: it is the copy-ready shape `init` writes,
- * and listing it put "<the page name>" at the top of the Wiki list and opened it as the
- * first page a person reads (installed app, 2026-09-06, on a folder with five real
- * pages). The validators already skip it; the list does too, for the same reason.
- */
-/** A wiki page the Wiki list draws: under `wiki/`, carrying no `kind:`, and not furniture. */
+/** A listed wiki page: under `wiki/`, no `kind:`, and not the shipped `_template.md`. */
 function isListedWikiPage(doc: VaultDoc): boolean {
   return isWikiPage(doc) && !isWikiFurnitureSlug(doc.slug);
 }
 
-/**
- * How many wiki pages the folder holds, by the same rule the Wiki list draws.
- *
- * The project page's Library cell counted every `wiki/` slug instead, so it reported the
- * template `init` writes and any ontology node misfiled under `wiki/` as pages, and told a
- * reader a larger number than the Library screen listed for the same folder. Two screens
- * contradicting each other about one folder is the defect this entity exists to prevent.
- */
+/** Wiki pages counted by the Wiki list's own rule, so screens agree. */
 export function countWikiPages(docs: readonly VaultDoc[]): number {
   let count = 0;
   for (const doc of docs) if (isListedWikiPage(doc)) count += 1;
@@ -154,7 +92,6 @@ export function selectWikiPages(docs: readonly VaultDoc[]): LibraryWikiPage[] {
   }));
 }
 
-/** Every citation any wiki page makes, grouped by the source path it names. */
 function collectWikiCitations(
   docs: readonly VaultDoc[],
 ): Map<string, WikiCitation[]> {
@@ -162,8 +99,7 @@ function collectWikiCitations(
   for (const doc of docs) {
     if (!isWikiPage(doc)) continue;
     const hashes = readHashMap(doc.frontmatter.source_hash);
-    // Read with the same tolerance as `sources:` — a hand-edited scalar is the commonest
-    // shape, and a page that named one truncated file should not be read as naming none.
+    // Same scalar tolerance as `sources:`.
     const truncated = new Set(readStringArray(doc.frontmatter.sources_truncated));
     for (const sourcePath of readStringArray(doc.frontmatter.sources)) {
       const citation: WikiCitation = {
@@ -181,22 +117,8 @@ function collectWikiCitations(
 }
 
 /**
- * One source's state.
- *
- * `actualHash` is `undefined` while the file has not been hashed. Hashing is deliberately
- * lazy and only ever asked for on cited files: a source nobody has written up is
- * `not-compiled` whatever its bytes are, so hashing it would spend a person's disk on a
- * question nobody asked.
- *
- * **Any** citing page matching is enough for `compiled`. Two pages may cover one document
- * and one of them may be older; the source is still described somewhere by something
- * current, and marking it stale would send a person to re-compile a file that is already
- * covered. The same generosity decides `partial`: it takes **every** matching page having
- * read only part of the file, because one page that read it whole covers it whole.
- *
- * `stale` outranks `partial`. A page that read half a file and a file that has since been
- * replaced is not a page describing half of what is on disk — it is a page describing half
- * of something else, and the cure is the one `stale` already names.
+ * `actualHash` is undefined until hashed; only cited files are hashed. Any matching page makes it
+ * `compiled`; `partial` needs every matching page truncated; `stale` outranks `partial`.
  */
 function deriveSourceState(
   citations: readonly WikiCitation[] | undefined,
@@ -204,9 +126,7 @@ function deriveSourceState(
 ): SourceCompileState {
   if (!citations || citations.length === 0) return 'not-compiled';
   const hashed = citations.filter((citation) => citation.sourceHash !== null);
-  // Cited with no hash at all: the page claims coverage it cannot prove. That is the same
-  // problem as a mismatch — the write-up may not describe this file — so it gets the same
-  // name and the same cure.
+  // A citation without a hash cannot prove coverage, so it is stale.
   if (hashed.length === 0) return 'stale';
   if (actualHash === undefined) return 'checking';
   const matching = hashed.filter((citation) => citation.sourceHash === actualHash.toLowerCase());
@@ -216,9 +136,8 @@ function deriveSourceState(
 
 export interface LibrarySourceRow extends VaultSourceFile {
   state: SourceCompileState;
-  /** Wiki pages citing this source, whether or not their hash still matches. */
   citedBy: string[];
-  /** Compilable pages with a different source receipt; retained-answer revisions have their own review workflow. */
+  /** Compilable pages with a different source receipt; retained answers are reviewed elsewhere. */
   reviewPages?: string[];
 }
 
@@ -231,36 +150,23 @@ export function sourceNeedsCompile(row: LibrarySourceRow): boolean {
 export interface LibraryModel {
   sources: LibrarySourceRow[];
   wikiPages: LibraryWikiPage[];
-  /**
-   * Sources whose state is `not-compiled`, `partial` or `stale` — the count Compile acts on.
-   *
-   * `partial` joined it on 2026-09-07. A page written from the first part of a file is a
-   * page with more of that file still to read, so the run that would read the rest is the
-   * same run this count exists to offer. It is the least urgent of the three, which is why
-   * the surfaces name it in its own clause rather than folding it into the others.
-   */
+  /** Sources in `not-compiled`, `partial` or `stale`: the count Compile acts on. */
   needsCompileCount: number;
-  /** Sources nobody has written up. The footer names this apart from `staleCount`: a person
-   *  reading "5 not written up" when two of them have pages is being told something false. */
+  /** Sources nobody has written up, named apart from `staleCount`. */
   notCompiledCount: number;
   /** Sources whose page cites a hash the bytes no longer match. */
   staleCount: number;
   /** Sources every citing page read only part of, with the bytes still matching. */
   partialCount: number;
-  /** Paths worth hashing: cited, hash recorded, not yet measured. */
+  /** Cited sources with a recorded hash that are not yet measured. */
   pathsNeedingHash: string[];
   /** Both crossings between a source and the pages written from it. */
   pairing: LibraryPairing;
 }
 
 /**
- * The whole library, derived from the manifest plus whatever hashes are already known.
- *
- * Nothing here is stored. The folder is the state: the source list comes from the walk,
- * the citations come from wiki frontmatter, and the only thing held in memory is a
- * session cache of hashes, which is a measurement rather than a fact about the vault.
- * A second store of any of this would be a second canonical store, which
- * `.claude/rules/forbidden.md` refuses.
+ * Derived from the manifest and known hashes; the only held state is a session hash cache, since a
+ * second canonical store is refused (`.claude/rules/forbidden.md`).
  */
 export function buildLibraryModel({
   sources,
@@ -280,7 +186,7 @@ export function buildLibraryModel({
       state: deriveSourceState(cited, hashes.get(source.path)),
       citedBy: [...new Set((cited ?? []).map((citation) => citation.wikiSlug))].sort(),
       reviewPages: actual === undefined ? [] : [...new Set((cited ?? [])
-        .filter((citation) => citation.sourceHash !== actual && !citation.wikiSlug.startsWith('wiki/answers/'))
+        .filter((citation) => citation.sourceHash !== actual && !citation.wikiSlug.startsWith(WIKI_ANSWERS_PREFIX))
         .map((citation) => citation.wikiSlug))].sort(),
     };
   });
@@ -291,15 +197,13 @@ export function buildLibraryModel({
     notCompiledCount: rows.filter((row) => row.state === 'not-compiled').length,
     staleCount: rows.filter((row) => row.state === 'stale').length,
     partialCount: rows.filter((row) => row.state === 'partial').length,
-    // `checking` **is** the definition of "worth hashing": cited, a hash recorded, and
-    // nothing measured yet. The caller drops a path from its cache when the file's mtime
-    // changes, which puts the row back into `checking` and back into this list.
+    // `checking` rows are exactly the paths worth hashing; an mtime change drops a cached hash.
     pathsNeedingHash: rows.filter((row) => row.state === 'checking').map((row) => row.path),
     pairing: buildLibraryPairing({ docs, sources, hashes }),
   };
 }
 
-/** `1536` → `1.5 KB`. Locale-independent: the unit is a symbol, not a word. */
+/** `1536` → `1.5 KB`; locale-independent. */
 export function formatSourceBytes(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes < 0) return '—';
   if (bytes < 1000) return `${bytes} B`;
@@ -313,56 +217,27 @@ export function formatSourceBytes(bytes: number): string {
   return `${value >= 100 ? Math.round(value) : value.toFixed(1)} ${units[unit]}`;
 }
 
-/* ────────────────────────────────────────────────────────────────────────────────
- * Pairing: the original and the write-up, from one side to the other.
- *
- * The owner's instruction on 2026-09-06: *"'view the original' and 'view the
- * template-based write-up' must be separate."* Separate is what the two panes already
- * are — a wiki page renders as Markdown, a source states the six facts a file Atlas
- * never opened can honestly carry. What was missing is the **crossing**: standing on
- * one, there was no named way to the other.
- *
- * Both directions come from the same two frontmatter fields the state machine above
- * already reads, so nothing new is stored and nothing new can drift. `sources:` gives
- * page → file; inverting it gives file → page; `source_hash` decides whether that
- * crossing lands on a write-up that still describes the bytes.
- * ──────────────────────────────────────────────────────────────────────────────── */
-
-/** One source a wiki page cites, resolved against the files really in this folder. */
 export interface LibraryOriginalLink {
-  /** Vault-relative path exactly as the page cites it. */
   path: string;
   /** File name, or the whole path when the citation has no `/`. */
   name: string;
-  /**
-   * The cited file's state, or `null` when **no such file is in this folder**.
-   *
-   * A citation naming a file nobody can open is not the same fact as a citation
-   * naming a stale one, and a chip that behaved identically for both would send a
-   * person looking for a document that is not there.
-   */
+  /** The cited file's state, or `null` when no such file is in this folder. */
   state: SourceCompileState | null;
 }
 
 /**
- * How a write-up stands to the bytes it was written from.
- *
- * - `current` — the page recorded a hash for this source and it matches the measured one.
- * - `partial` — the hash matches and the page says it read only part of the file. What it
- *   says is current; what it leaves out is the rest of the document.
- * - `behind` — the hashes disagree, or the page recorded none. A reader can act on
- *   neither, and the cure is the same.
- * - `unchecked` — the page recorded a hash and **nothing has measured the file yet**.
- *
- * `unchecked` exists because collapsing it into `behind` was a measured lie (PO steward,
- * 2026-09-06): the source row's own state says `checking` in exactly that window, so one
- * pane stated two things about one file. It is transient on the app path and permanent
- * whenever hashing cannot happen at all — a browser without `crypto.subtle`, or a source
- * the session holds no handle for — so it is a resting state, not a flicker.
+ * `unchecked`: a hash was recorded but the file is not measured; permanent when hashing is
+ * impossible, so it must not collapse into `behind`.
  */
 type WriteUpFreshness = 'current' | 'partial' | 'behind' | 'unchecked';
 
-/** One wiki page citing a source, and how it stands to the bytes on disk. */
+function writeUpFreshness(citation: WikiCitation, actualHash: string | undefined): WriteUpFreshness {
+  if (citation.sourceHash === null) return 'behind';
+  if (actualHash === undefined) return 'unchecked';
+  if (citation.sourceHash !== actualHash) return 'behind';
+  return citation.truncated ? 'partial' : 'current';
+}
+
 export interface LibraryWriteUpLink {
   slug: string;
   title: string;
@@ -370,19 +245,13 @@ export interface LibraryWriteUpLink {
 }
 
 interface LibraryPairing {
-  /** Wiki slug → the sources that page cites. Empty array for a page citing none. */
+  /** Wiki slug → the sources it cites. */
   originalsByWiki: Map<string, LibraryOriginalLink[]>;
-  /** Source path → the wiki pages citing it, in slug order. */
+  /** Source path → citing wiki pages, in slug order. */
   writeUpsBySource: Map<string, LibraryWriteUpLink[]>;
 }
 
-/**
- * Both directions of the pairing, from the manifest plus whatever hashes are measured.
- *
- * `hashes` is the same lazily filled map the state machine reads: a source nobody has
- * written up is never hashed, so a page citing it is reported `current: false` — which
- * is exactly right, because an unproven claim is not a proven one.
- */
+/** Both pairing directions from the manifest and the lazily filled hash map. */
 function buildLibraryPairing({
   docs,
   sources,
@@ -420,16 +289,7 @@ function buildLibraryPairing({
       bySlug.set(citation.wikiSlug, {
         slug: citation.wikiSlug,
         title: titles.get(citation.wikiSlug) ?? citation.wikiSlug,
-        freshness:
-          citation.sourceHash === null
-            ? 'behind'
-            : actual === undefined
-              ? 'unchecked'
-              : citation.sourceHash !== actual
-                ? 'behind'
-                : citation.truncated
-                  ? 'partial'
-                  : 'current',
+        freshness: writeUpFreshness(citation, actual),
       });
     }
     writeUpsBySource.set(
@@ -441,14 +301,7 @@ function buildLibraryPairing({
   return { originalsByWiki, writeUpsBySource };
 }
 
-/**
- * Which wiki page to open first, for the shelf's “start with” row.
- *
- * `compiled_at` before a slug tiebreak: the freshest write-up is the one whose facts a
- * person has the best chance of still being able to check, and a folder whose pages
- * were all written by hand (no `compiled_at` anywhere) still gets a stable answer
- * rather than none.
- */
+/** Newest `compiled_at` first, then slug, so hand-written folders still get a stable answer. */
 export function newestWikiPage(
   pages: readonly LibraryWikiPage[],
 ): LibraryWikiPage | null {
@@ -465,11 +318,7 @@ export function newestWikiPage(
   return best;
 }
 
-/**
- * The formats present, most files first — the shelf's honest answer to “what did I
- * bring in”. A file with no extension is counted under `''` and the screen names it,
- * because dropping it would make the total disagree with the source count above it.
- */
+/** Formats by file count; extensionless files count under `''` so totals match. */
 export function countSourceFormats(
   sources: readonly VaultSourceFile[],
 ): Array<{ format: string; count: number }> {
@@ -483,9 +332,3 @@ export function countSourceFormats(
     .sort((a, b) => (b.count - a.count) || a.format.localeCompare(b.format));
 }
 
-/*
- * `lastSourceAddedAt` lived here until 2026-09-06. It had one consumer, the Library
- * shelf's four-row "Last added" table, and that table went when the guide became a
- * three-row stepper whose rows carry one caption each. A derivation with no surface is a
- * fact nobody can check, so it left with its reader rather than waiting for one.
- */

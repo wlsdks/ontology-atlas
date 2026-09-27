@@ -2,15 +2,8 @@ import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../model/types";
 import { countConnectedDocuments } from "./ontology-tree/domain-census";
 
 /**
- * The real counts behind the engraved metric strip in the project detail's hero band (domains,
- * capabilities, elements, documents, relations). `KnowledgeGraphNode.projectIds` is already filled by the
- * BFS containment walk (`derivationToInsight`), so this only filters and counts — no fabrication, just
- * the vault frontmatter.
- *
- * `KnowledgeGraphEdge` does not carry projectIds (see `derivationToInsight` — an edge always has an
- * empty array). The "relations" count is therefore decided not by the edge itself but by whether both
- * endpoints belong to this project — so it counts only the project's internal containment and behaviour
- * structure, and `relates` edges spanning to another project are (deliberately) excluded.
+ * Counts for the project hero band from `projectIds`. Edges carry no projectIds, so a relation counts
+ * when both endpoints are in the project; cross-project `relates` are excluded.
  */
 export interface ProjectOntologyMetrics {
   domains: number;
@@ -48,16 +41,13 @@ export function buildProjectOntologyMetrics(
         metrics.elements += 1;
         break;
       case "document":
-        // `countConnectedDocuments` below counts membership inclusion in one pass.
         break;
       default:
         break;
     }
   }
 
-  // The document count uses the same shared one-hop connection rule (`countConnectedDocuments`) as the
-  // `/projects` cards. Two copies of the rule reproduce adjacent-surface contradictions like
-  // "0 documents vs 3".
+  // Documents use the shared one-hop rule, as the `/projects` cards do.
   metrics.documents = countConnectedDocuments(nodes, edges, projectNodeIds);
 
   for (const edge of edges) {

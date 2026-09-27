@@ -9,23 +9,14 @@ import {
 } from './vault-library';
 import type { VaultDoc, VaultSourceFile } from '../model/types';
 
-/**
- * The pairing is reached through `buildLibraryModel`, the way every screen reaches it.
- * Testing the derivation directly would pin an internal name and let the wiring between
- * it and the model break silently, which is the one failure a screen would actually show.
- */
+/** Reached through `buildLibraryModel`, as screens reach it, so the wiring is tested too. */
 const buildLibraryPairing = (input: {
   docs: readonly VaultDoc[];
   sources: readonly VaultSourceFile[] | undefined;
   hashes: ReadonlyMap<string, string>;
 }) => buildLibraryModel(input).pairing;
 
-/**
- * The pairing is the crossing a person makes between what a document said and what we
- * made of it. Every case below is a way that crossing can lie: a page citing a file
- * that is not in the folder, a page citing it with no hash, and two pages covering one
- * file where only one is current.
- */
+/** Each case is a way the source ↔ write-up crossing can mislead. */
 
 function source(path: string, mtime = 1_757_000_000_000): VaultSourceFile {
   return {
@@ -85,8 +76,7 @@ const DOCS: VaultDoc[] = [
     { sources: ['sources/deleted.docx'], source_hash: {}, compiled_at: '2026-09-06T10:00:00Z' },
     'Ghost',
   ),
-  // A file under `wiki/` carrying a kind is an ontology node someone filed wrong; it is
-  // not a write-up and must not appear on either side of the crossing.
+  // A `kind:` under `wiki/` is a misfiled node, on neither side of the crossing.
   wiki('wiki/impostor', { kind: 'domain', sources: ['sources/budget.xlsx'] }, 'Impostor'),
 ];
 
@@ -177,15 +167,10 @@ describe('a source points forward at the pages written from it', () => {
     expect(current.freshness).toBe('current');
   });
 
-  /**
-   * The defect this pins (PO steward, 2026-09-06): an unmeasured file was reported
-   * `behind`, while the same pane's own state row said `checking`. Two claims about one
-   * file, and only one of them true.
-   */
+  /** An unmeasured file is `unchecked`, not `behind`, matching the source row's `checking`. */
   it('separates “nothing measured this yet” from “the page is behind”', () => {
     const unmeasured = buildLibraryPairing({ docs: DOCS, sources: SOURCES, hashes: new Map() });
     expect(unmeasured.writeUpsBySource.get('sources/plan.pdf')).toEqual([
-      // Cited with a hash, nothing measured: unchecked, not behind.
       { slug: 'wiki/older-take', title: 'Older take', freshness: 'unchecked' },
       { slug: 'wiki/quarter-plan', title: 'Quarter plan', freshness: 'unchecked' },
     ]);
@@ -262,14 +247,7 @@ describe('what the shelf counts', () => {
   });
 });
 
-/**
- * **Half a document is not a written-up document.**
- *
- * A long file is cut at the per-read cap, and the page still records a hash of the whole
- * file — so the hash matches and the row said `compiled` while the second half of a
- * 200-page PDF had never reached any page. `sources_truncated:` is the writer's record of
- * exactly that, and these cases are the four ways it can be read wrong.
- */
+/** A page written from a truncated read (`sources_truncated:`) must not read as fully compiled. */
 describe('a source only part of which reached a page', () => {
   const PARTIAL_DOCS: VaultDoc[] = [
     wiki(
@@ -300,17 +278,12 @@ describe('a source only part of which reached a page', () => {
   it('counts it as work Compile can still do, so the shelf offers the second read', () => {
     const model = modelWith(PARTIAL_DOCS);
     expect(model.needsCompileCount).toBe(1);
-    // …and never as one of the other two. A partial page is not a missing page, and it is
-    // not a page behind its bytes; a screen adding these up would count one file twice.
+    // A partial source is neither missing nor behind, so no screen counts it twice.
     expect(model.notCompiledCount).toBe(0);
     expect(model.staleCount).toBe(0);
   });
 
-  /**
-   * The precedence that matters: a page that read half a file, of a file that has since
-   * been replaced, is not describing half of what is on disk. It is describing half of
-   * something else, and `stale` is the word for that.
-   */
+  /** A replaced file makes the partial page describe something else, so `stale` wins. */
   it('becomes stale, not partial, once the file changes underneath it', () => {
     const model = modelWith(PARTIAL_DOCS, 'd'.repeat(64));
     expect(model.sources[0].state).toBe('stale');
@@ -379,8 +352,7 @@ describe('a source only part of which reached a page', () => {
 
 describe('the shipped template is not a page', () => {
   it('leaves wiki/_template.md out of the list, as the validators leave it out of judgement', () => {
-    // Seen in the installed app on 2026-09-06: "<the page name>" at the top of five real
-    // pages, opened first in the reader. The template is the shape, not a page.
+    // The template is the shape `init` writes, not a page.
     const pages = selectWikiPages([
       wiki('wiki/_template', { title: '<the page name>', created_by: 'agent:claude' }),
       wiki('wiki/a', { created_by: 'agent:claude' }),
@@ -389,11 +361,7 @@ describe('the shipped template is not a page', () => {
   });
 });
 
-/**
- * The count and the list must answer the same question. The project page counted every `wiki/`
- * slug of its own instead, so it reported the template `init` writes, and any ontology node
- * misfiled under `wiki/`, as pages — a larger number than the Library listed for one folder.
- */
+/** The count must follow the list's rule, or two screens disagree about one folder. */
 describe('countWikiPages', () => {
   it('counts what the Wiki list draws', () => {
     const docs = [

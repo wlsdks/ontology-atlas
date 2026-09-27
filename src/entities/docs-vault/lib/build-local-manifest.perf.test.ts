@@ -4,21 +4,12 @@ import {
   computeLocalVaultFingerprint,
 } from './build-local-manifest';
 
-/**
- * Performance regression guard on a large vault.
- *
- * jsdom is slower than a real browser, so absolute numbers mean little but the
- * *ratio* does: fingerprinting must be meaningfully faster than a build, since it
- * skips content reads and parsing. The threshold is a lenient 0.85 to absorb
- * environment noise — fingerprint under 85% of build passes.
- *
- * Absolute times are logged for information only and are not a failure condition.
- */
+/** Fingerprinting must stay below 85% of a build's time, a ratio that survives jsdom noise. */
 
 const FILE_COUNT = 200;
 
 function makeFileHandle(name: string, mtime: number): FileSystemFileHandle {
-  // Deliberately average-length bodies — 1 frontmatter, 1 heading, 5 body lines.
+  // Average-length bodies.
   const body = [
     '---',
     `title: ${name}`,
@@ -79,16 +70,6 @@ describe('large vault perf', () => {
       `[perf] ${FILE_COUNT} files — build: ${buildMs.toFixed(1)}ms, fingerprint: ${fingerprintMs.toFixed(1)}ms, ratio: ${(fingerprintMs / buildMs).toFixed(2)}`,
     );
 
-    // Ratio gate: fingerprint must stay under 85% of build. Lenient to absorb jsdom noise.
     expect(fingerprintMs).toBeLessThan(buildMs * 0.85);
   });
-
-  /*
-   * Deleted 2026-09-12: a second test built the same 200-file root and asserted
-   * `elapsed < 5_000`. Measured build cost is **17.7 ms**, so the bound could only fire
-   * on a hang — which Vitest's own test timeout already reports, with a better message.
-   * Its `docs.length` assertion repeated the test above verbatim. The falsifier that
-   * matters (fingerprinting must stay cheaper than building) lives in the ratio gate
-   * above and is measured in the same run.
-   */
 });

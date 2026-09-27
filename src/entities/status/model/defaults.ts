@@ -1,9 +1,6 @@
 import type { Status } from './types';
 
-/**
- * The eight lifecycle statuses. IDs stay compatible with the earlier literal
- * union, so stored project records keep resolving.
- */
+/** The eight lifecycle statuses; ids stay compatible so stored records resolve. */
 export const DEFAULT_STATUSES: Status[] = [
   { id: 'idea', label: '아이디어', labelEn: 'Idea', dotColor: 'neutral' },
   { id: 'planning', label: '기획', labelEn: 'Planning', dotColor: 'warning' },

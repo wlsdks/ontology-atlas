@@ -45,13 +45,13 @@ const tree = { orphans: [] as KnowledgeGraphNode[] };
 describe("buildAgentBriefingPacket", () => {
   const packet = buildAgentBriefingPacket(nodes, edges, tree);
 
-  it("framing 인트로 + mental-model/readiness 헤더로 시작한다", () => {
+  it("starts with the framing intro and mental-model and readiness headers", () => {
     expect(packet.briefing).toContain("agent onboarding brief");
     expect(packet.briefing).toContain("Claude Code / Codex / Cursor");
     expect(packet.briefing).toContain("## Mental model & readiness");
   });
 
-  it("agent가 path/API보다 business ontology를 먼저 읽도록 business-to-code lens를 readiness 앞에 둔다", () => {
+  it("places the business-to-code lens before readiness", () => {
     const businessLensIndex = packet.briefing.indexOf("## Business-to-code ontology lens");
     const readinessIndex = packet.briefing.indexOf("## Mental model & readiness");
 
@@ -69,22 +69,22 @@ describe("buildAgentBriefingPacket", () => {
     );
   });
 
-  it("census 에 kind 별 카운트를 담는다", () => {
+  it("includes per-kind counts in the census", () => {
     expect(packet.briefing).toMatch(/census: .*project 1/);
     expect(packet.briefing).toContain("domain 1");
     expect(packet.briefing).toContain("capability 2");
     expect(packet.briefing).toContain("element 1");
   });
 
-  it("readiness status/score + blocker 를 헤더에 노출", () => {
+  it("shows readiness status, score and blockers in the header", () => {
     expect(packet.briefing).toMatch(/readiness: (ready|needs-links|needs-shape) \(score \d+\/100\)/);
     expect(packet.briefing).toContain("blockers: unknown");
     expect(packet.readiness.status).toMatch(/^(ready|needs-links|needs-shape)$/);
     expect(packet.readiness.score).toBeGreaterThanOrEqual(0);
   });
 
-  it("handoff 본문(run order + query_ontology payload + write guardrails)을 포함한다", () => {
-    // Composed by buildAgentHandoffPrompt — these must all land in one briefing.
+  it("includes the handoff body", () => {
+    // From buildAgentHandoffPrompt.
     expect(packet.briefing).toContain("query_ontology");
     expect(packet.briefing.toLowerCase()).toContain("guardrail");
     expect(packet.briefing).toContain("CLI fallback");
@@ -105,11 +105,11 @@ describe("buildAgentBriefingPacket", () => {
     expect(packet.briefing).toContain("ontology color feels wrong");
   });
 
-  it("entrypoints(추천 hub) 를 함께 반환한다", () => {
+  it("returns recommended hub entrypoints", () => {
     expect(Array.isArray(packet.entrypoints)).toBe(true);
   });
 
-  it("빈 vault 도 안전 — census 'empty vault', 깨지지 않음", () => {
+  it("reports an empty census for an empty vault", () => {
     const empty = buildAgentBriefingPacket([], [], { orphans: [] });
     expect(empty.briefing).toContain("agent onboarding brief");
     expect(empty.briefing).toContain("census: empty vault");

@@ -3,18 +3,15 @@ import type { Project } from "./types";
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 export interface DetectStaleOptions {
-  /** The reference "now"; injected by tests, `new Date()` at runtime. */
+  /** Injected by tests; `new Date()` at runtime. */
   now: Date;
   /** Stale requires strictly more days than this (`>`). */
   daysThreshold: number;
-  /** Truncate to the top N. Unset returns everything. */
+  /** Unset returns everything. */
   limit?: number;
 }
 
-/**
- * Projects untouched for at least the given number of days, oldest first — the
- * repair backlog.
- */
+/** Projects untouched for more than the threshold, oldest first. */
 export function detectStaleProjects(
   projects: readonly Project[],
   { now, daysThreshold, limit }: DetectStaleOptions,
@@ -27,10 +24,7 @@ export function detectStaleProjects(
   return typeof limit === "number" ? stale.slice(0, limit) : stale;
 }
 
-/**
- * "Orphan" projects with zero incoming references and zero outgoing dependencies.
- * Hubs are excluded because a hub is meaningful on its own. Sorted by name.
- */
+/** Non-hub projects with no incoming or outgoing links, by name. */
 export function detectOrphanProjects(projects: readonly Project[]): Project[] {
   const referencedSlugs = new Set<string>();
   for (const project of projects) {
@@ -53,7 +47,7 @@ export function detectOrphanProjects(projects: readonly Project[]): Project[] {
 export interface DetectPromotionOptions {
   /** A non-hub project referenced at least this many times is a promotion candidate. */
   minFanIn: number;
-  /** Top N only. Unset returns everything. */
+  /** Unset returns everything. */
   limit?: number;
 }
 
@@ -61,10 +55,7 @@ export interface PromotionCandidate extends Project {
   fanIn: number;
 }
 
-/**
- * Non-hub nodes that are in fact heavily referenced — likely candidates whose
- * `isHub` flag was simply never set. Sorted by fan-in descending.
- */
+/** Heavily referenced non-hub projects whose `isHub` was likely never set, by fan-in. */
 export function detectPromotionCandidates(
   projects: readonly Project[],
   { minFanIn, limit }: DetectPromotionOptions,

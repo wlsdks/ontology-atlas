@@ -326,14 +326,7 @@ export function buildAgentReadinessPrompt(summary: AgentReadinessSummary): strin
 
 const MEANINGFUL_KINDS = new Set(["domain", "capability", "element", "unknown"]);
 
-/**
- * Agent-facing graph quality signal for the web insights surface.
- *
- * This deliberately mirrors the MCP/CLI "first-contact" idea without calling
- * the MCP server from the browser: use only the already-derived vault graph,
- * then summarize whether an agent has enough shaped nodes and relations to
- * navigate the ontology confidently.
- */
+/** Whether the derived graph gives an agent enough shaped nodes and relations; mirrors MCP first-contact without calling it. */
 export function buildAgentReadinessSummary(
   nodes: readonly KnowledgeGraphNode[],
   edges: readonly KnowledgeGraphEdge[],

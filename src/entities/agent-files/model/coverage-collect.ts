@@ -11,27 +11,12 @@ import { agentToolsForPath } from './agent-files';
 import type { HookConfigFacts } from './hook-wiring';
 
 /**
- * **Turning one repository's files into scope declarations, and refusing to keep the ones that do
- * not resolve.**
- *
- * The extractors in `coverage-scopes.ts` deliberately over-collect: a shell script's `^em-dash/` is
- * a regex over finding names, not a directory, and a check command names the runner it uses beside
- * the files it runs over. Two filters keep that from becoming a false claim on screen.
- *
- * 1. **It has to reach something the vault records.** A candidate that touches no capability path is
- *    dropped before anything is asked of the disk, which also keeps the probe below — one round trip
- *    per surviving candidate — down to a handful of calls.
- * 2. **It has to exist.** Whatever survives is asked of the filesystem. `^eslint/` inside
- *    `/^eslint/.test(finding)` names no path in this repository and disappears; `mcp/src/` inside
- *    the same script is a real prefix and stays.
- *
- * What is left is printed with the text that declared it, so a reader who thinks an attribution is
- * wrong can open the file and check rather than take the screen's word for it.
+ * Keeps only candidate scopes that reach a recorded capability path and exist on disk, and
+ * prints each with its declaring text.
  */
 
-/** What `collectScopeDeclarations` needs from the scan that produced it. */
 export interface CoverageScanInput {
-  /** Every file the harness scan read, keyed by repo-relative path. */
+  /** Every scanned file's text by repo-relative path. */
   contents: ReadonlyMap<string, string>;
   /** Hook configs and the scripts they name, from `collectHookFacts`. */
   hookGroups: readonly HookConfigFacts[];
@@ -43,7 +28,7 @@ export interface CoverageScanInput {
   workflows: ReadonlyMap<string, string>;
 }
 
-/** Asked once per surviving candidate scope: is there a file or directory at this path? */
+/** Whether a file or directory exists at this path. */
 export type PathExistsPort = (relativePath: string) => Promise<boolean>;
 
 const RULE_PREFIX = '.claude/rules/';
@@ -56,14 +41,10 @@ function hookLabel(path: string): string {
   return (path.split('/').pop() ?? path).replace(/\.(sh|mjs|cjs|js|py)$/, '');
 }
 
-/**
- * Candidate declarations, before the disk is consulted. Exported for the unit tests, which assert
- * the extraction rules without needing a filesystem.
- */
+/** Candidates before the disk is consulted; exported for tests. */
 export function candidateScopeDeclarations(input: CoverageScanInput): ScopeDeclaration[] {
   const out: ScopeDeclaration[] = [];
 
-  // ── Told ────────────────────────────────────────────────────────────────
   for (const path of input.contents.keys()) {
     if (!/^[^/]+\/AGENTS\.md$/.test(path)) continue;
     const directory = path.slice(0, path.indexOf('/'));
@@ -72,9 +53,7 @@ export function candidateScopeDeclarations(input: CoverageScanInput): ScopeDecla
       id: path,
       label: path,
       origin: 'nested-agents',
-      /* Its own folder is the declaration: Codex merges nested AGENTS.md root-down along the
-         working path, so this file is instructions for everything beneath it and for nothing
-         beside it. Claude Code never auto-loads it at all, which the guides table already says. */
+      /* Codex merges nested AGENTS.md root-down, so its folder is its scope. */
       declaration: `${directory}/`,
       declaresPath: true,
       scopes: [directory],
@@ -96,12 +75,9 @@ export function candidateScopeDeclarations(input: CoverageScanInput): ScopeDecla
     });
   }
 
-  // ── Gated ───────────────────────────────────────────────────────────────
   for (const group of input.hookGroups) {
     for (const hook of group.hooks) {
-      /* Only a hook whose script the disk actually has. A config entry naming a path that does not
-         resolve produces no block and no error — the guides table's hook section already prints
-         that as its own failure, and a guard that is not there cannot gate an area. */
+      /* Only hooks whose script exists; an unresolved config entry cannot gate anything. */
       if (hook.status !== 'wired' || !hook.ref.path) continue;
       const body = input.contents.get(hook.ref.path) ?? '';
       const scopes = scriptPathScopes(body);
@@ -132,7 +108,6 @@ export function candidateScopeDeclarations(input: CoverageScanInput): ScopeDecla
     });
   }
 
-  // ── Watched ─────────────────────────────────────────────────────────────
   for (const [name, command] of input.checkScripts) {
     const scopes = commandPathScopes(command);
     out.push({
@@ -164,19 +139,8 @@ export function candidateScopeDeclarations(input: CoverageScanInput): ScopeDecla
 }
 
 /**
- * Candidates → declarations whose scopes were checked against the disk.
- *
- * Only a scope that was **worth probing** is probed: one that reaches an implementation path the
- * vault records. That keeps the round trips to a handful, and it is also the only set whose
- * resolution can change an answer. A probed scope that is not there is dropped, because it cannot be
- * the reason anything is governed; a scope nobody probed is kept as written, because it is still
- * what the file says even though it reaches nothing here.
- *
- * `declaresPath` is what separates the two silences. A rule with no `paths:` and a rule whose
- * `paths:` reach nothing both end with no matching scope, and they mean opposite things: the first
- * is loaded for every file in the repository, the second is loaded for none of the areas the vault
- * records. Collapsing them would print an always-loaded rule as absent, or a narrowly scoped one as
- * universal.
+ * Probes only scopes that reach a recorded path and drops the missing ones; unprobed scopes
+ * stay as written. `declaresPath` separates no `paths:` (everywhere) from paths reaching nothing.
  */
 export async function resolveScopeDeclarations(
   candidates: readonly ScopeDeclaration[],

@@ -1,21 +1,13 @@
-/**
- * A project status. Unlike a category it has no layout effect — it only
- * changes the dot colour at the node's top right and the label in the drawer
- * and the form.
- */
+/** A project status: a dot colour and label, with no layout effect. */
 
 type StatusDotColor = 'success' | 'warning' | 'paused' | 'neutral';
 
 export interface Status {
-  /** Stable ID: lowercase, digits, hyphens — e.g. 'live'. */
+  /** Lowercase, digits and hyphens, e.g. 'live'. */
   id: string;
   /** Korean UI label. */
   label: string;
-  /**
-   * English label. Same contract as `Category`: used on English screens, and
-   * falls back to `label` when absent — but the defaults must always fill it
-   * (`tests/contract/taxonomy-locale-label.contract.test.ts` enforces this).
-   */
+  /** English label, falling back to `label`; defaults must fill it (`taxonomy-locale-label.contract.test.ts`). */
   labelEn?: string;
   dotColor: StatusDotColor;
 }

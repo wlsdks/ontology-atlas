@@ -1,14 +1,9 @@
-/**
- * The ontology TBox — node class (kind) definitions.
- *
- * Four layers (Project → Domain → Capability → Element) plus the Document evidence
- * node and the Unknown stub, matching 1:1 the legal values of vault frontmatter `kind:`.
- */
+/** A node class, one per legal `kind:` value. */
 export interface OntologyClass {
-  /** kebab-case id: 'project' / 'domain' / 'capability' / 'element' / 'document' / 'unknown'. */
+  /** 'project', 'domain', 'capability', 'element', 'document' or 'unknown'. */
   id: string;
-  /** Display name — the source of truth for `getOntologyKindLabel`. */
+  /** The source for `getOntologyKindLabel`. */
   name: string;
-  /** What the class represents. Intended for tooltips and review guidance; not rendered yet. */
+  /** For tooltips and review guidance; not rendered yet. */
   description?: string;
 }

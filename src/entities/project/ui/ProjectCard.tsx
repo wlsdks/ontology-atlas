@@ -4,46 +4,41 @@ import { cn } from '@/shared/lib/cn';
 import { MOTION, OVERLAY_RISE, STAGGER } from '@/shared/motion';
 import type { Project } from '../model/types';
 
-/**
- * The category facts a card needs, so `ProjectCard` never has to know the whole
- * `Category` entity. Callers map `Category` → `CardCategoryMeta`.
- */
+/** The category facts a card needs; callers map `Category` → `CardCategoryMeta`. */
 export interface CardCategoryMeta {
   borderStyle: 'underline' | 'dashed' | 'sideLabel' | 'solid';
   /** Vertical text on the left, for the `sideLabel` style. */
   sideLabelText?: string;
 }
 
-/** Preset status-dot colour — same set as `StatusDotColor` in entities/status. */
+/** Same set as `StatusDotColor` in entities/status. */
 export type CardStatusDotColor = 'success' | 'warning' | 'paused' | 'neutral';
 type ProjectCardViewMode = 'card' | 'compact';
 
 interface Props {
   project: Project;
-  /** Category meta; defaults to `solid` when absent. */
+  /** Defaults to `solid`. */
   category?: CardCategoryMeta;
-  /** Status dot colour; defaults to `neutral`. */
+  /** Defaults to `neutral`. */
   statusDotColor?: CardStatusDotColor;
-  /** Dimmed against the topology background. Unused in preview. */
+  /** Dimmed against the topology background. */
   dimmed?: boolean;
-  /** Selection marker — an indigo outline. */
   selected?: boolean;
-  /** SHARED badge, shown when the project depends on two or more hubs. */
+  /** Shown when the project depends on two or more hubs. */
   shared?: boolean;
   /** Whether this is directly connected to the selected project. */
   related?: boolean;
-  /** Index used for the initial staggered fade-in delay. Zero in preview. */
+  /** Staggers the initial fade-in. */
   index?: number;
   /** Lowers information density on large graphs. */
   dense?: boolean;
-  /** Preview mode: no pointer cursor, motion transitions skipped. */
+  /** No pointer cursor or motion. */
   preview?: boolean;
-  /** Eyebrow above the card when `isHub`. The caller passes the translated string;
-   *  absent falls back to English 'Core hub', the primitive default. */
+  /** Translated eyebrow when `isHub`; defaults to 'Core hub'. */
   hubEyebrow?: string;
-  /** Eyebrow when `shared`. Absent falls back to English 'Shared system'. */
+  /** Defaults to 'Shared system'. */
   sharedEyebrow?: string;
-  /** Placeholder when the description is empty. Absent falls back to 'No description'. */
+  /** Defaults to 'No description'. */
   descriptionEmptyLabel?: string;
   /** How the public map renders this card. */
   viewMode?: ProjectCardViewMode;
@@ -68,18 +63,7 @@ function borderClass(borderStyle: CardCategoryMeta['borderStyle'], isHub: boolea
     return 'border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a12)]';
   }
   switch (borderStyle) {
-    /*
-     * **The category underline is gone** (owner instruction, 2026-08-17).
-     *
-     * This case used to mark the "in progress" category with a 2px indigo
-     * underline (the charter's "categories are told by border shape, not colour").
-     * It was softened and re-reviewed, and the verdict held — *"drop the blue line at the bottom entirely"* (drop the blue line at the bottom entirely).
-     *
-     * So it falls back to the same plain border as every other category. The
-     * category is still stated by the card's side label and by the category marks
-     * in the list and detail views — the fact does not disappear, one of the places
-     * that state it does.
-     */
+    /* Plain border: the category is stated by the side label and list marks, not an underline. */
     case 'underline':
       return 'border border-[color:var(--color-border-soft)]';
     case 'dashed':
@@ -92,11 +76,7 @@ function borderClass(borderStyle: CardCategoryMeta['borderStyle'], isHub: boolea
   }
 }
 
-/**
- * The project card's pure visuals, independent of any graph renderer, so the
- * admin preview and the card rendering share one implementation. Category and
- * status meta are looked up by the caller and injected as props.
- */
+/** Renderer-independent card visuals; category and status meta come from the caller. */
 export function ProjectCard({
   project,
   category,
@@ -114,7 +94,7 @@ export function ProjectCard({
   descriptionEmptyLabel = 'No description',
 }: Props) {
   const { name, description, owner, tags } = project;
-  // A vault whose frontmatter omits `isHub` yields undefined — read that as false.
+  // A missing `isHub` reads as false.
   const isHub = Boolean(project.isHub);
   const borderStyle = category?.borderStyle ?? 'solid';
   const sideLabelText = category?.sideLabelText;
@@ -208,18 +188,7 @@ export function ProjectCard({
       }
       className={cn(
         'group relative flex flex-col rounded-sheet border bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-1)] md:rounded-sheet',
-        /*
-         * On the map a card has **fixed dimensions**, so the grid stays regular.
-         *
-         * Preview is the one exception (owner, 2026-08-17: *"The card has a lot of space on either side?"* — the card has a lot of space on either side). Measured: a
-         * 220px card sat inside a 260px rail leaving 40px of slack, while the
-         * completeness box directly beneath used the full 260 — so the card looked
-         * shrunken.
-         *
-         * The width fills the rail but the **true ratio (220:140 = 11:7)** is kept.
-         * The caption claims this is "how it is drawn on the real map", so changing
-         * the ratio would make that caption false.
-         */
+        /* Fixed size on the map; preview fills the rail but keeps the 11:7 ratio its caption claims. */
         preview
           ? 'aspect-[11/7] w-full px-3.5 py-3 md:px-4 md:py-3.5'
           : dense
@@ -275,12 +244,7 @@ export function ProjectCard({
               {eyebrow}
             </div>
           )}
-          {/*
-            Visually an H3, but deliberately not a heading landmark: 17 topology
-            nodes stamping page-level H3s makes the document outline useless to a
-            screen-reader user. The whole node is already a labelled clickable
-            group, so the title keeps the styling only.
-          */}
+          {/* Styled as H3 but not a heading: many nodes would flood the screen-reader outline. */}
           <p
             className={cn(
               dense
@@ -292,9 +256,7 @@ export function ProjectCard({
             )}
           >
             {name || (
-              // Show the slug when the name is empty, rather than a placeholder like
-              // "untitled" — the user needs at least one identifying string to tell
-              // which project this is.
+              // An empty name shows the slug so the project stays identifiable.
               <span className="font-mono text-[color:var(--color-text-quaternary)]">
                 {project.slug}
               </span>
@@ -307,9 +269,7 @@ export function ProjectCard({
         <div className="mt-2 flex-1" data-topology-card-detail="true">
           <p className="line-clamp-2 text-caption leading-label text-[color:var(--color-text-tertiary)] md:text-label">
             {description || (
-              // Keeps the card height while making the placeholder read as a state
-              // rather than as a real description. The caller passes the string in
-              // the screen's language (same contract as `hubEyebrow`).
+              // Keeps card height; the caller passes the placeholder in the screen's language.
               <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]">
                 {descriptionEmptyLabel}
               </span>
@@ -346,13 +306,7 @@ export function ProjectCard({
 
       <div
         className={cn(
-          /*
-           * No duration here (2026-08-15). The previous `--motion-base` (180ms) is
-           * the **movement** ramp, but both triggers for this ring report a state
-           * that has already happened — hover (`group-hover:opacity-40`) and
-           * `selected`. Both belong to the `--motion-fast` (120ms) budget, which is
-           * what Tailwind's default transition already provides.
-           */
+          /* No duration: hover and selection report settled state, so the default fast transition applies. */
           'pointer-events-none absolute inset-0 rounded-sheet border border-[color:var(--color-indigo-accent)] transition-opacity md:rounded-sheet',
           selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-40',
         )}

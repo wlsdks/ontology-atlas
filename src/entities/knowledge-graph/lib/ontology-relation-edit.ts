@@ -44,10 +44,8 @@ function matchesRef(value: string, targetSlug: string): boolean {
   const normalized = value.trim().replace(/^ontology\//, '');
   const target = targetSlug.trim().replace(/^ontology\//, '');
   if (normalized === target) return true;
-  // The tail fallback exists for bare authored refs ("search" meaning the
-  // target). Two FULL paths that differ can never alias each other — comparing
-  // tails there made removing a relation to elements/search silently strip a
-  // ref to capabilities/search from the same array (bug sweep 2026-09-01).
+  // The tail fallback is for bare refs; two differing full paths never alias, or removing
+  // `elements/search` would also strip `capabilities/search`.
   if (normalized.includes('/') && target.includes('/')) return false;
   return slugify(tail(normalized)) === slugify(tail(target));
 }
@@ -57,19 +55,8 @@ function sameValue(a: unknown, b: unknown): boolean {
 }
 
 /*
- * ⚠️ **An emptied key is deleted, never written empty** (owner inspection, 2026-09-26).
- *
- * Removing the only `relates` entry of `capabilities/wiki-pages` from the map's edge panel left
- * `relates: []` in the file, and removing a relation that carried the only reason left
- * `relation_notes: {  }` — residue a person has to clean by hand, and a git diff that says a key
- * was kept when the relation was taken away. `applyFrontmatterUpdates` deletes a key written as
- * `null`, so that is what an emptied list or map is written as here.
- *
- * The MCP writers (`remove_relation`, `replace_relation`) and the CLI's `remove-relation` follow
- * the same rule, with one difference this editor never meets: a kind's own containment list
- * (`add_concept` scaffolds a capability with `elements: []`) goes back to that `[]`. The four
- * keys written here — `broader`, `dependencies`, `contains`, `relates` — are no kind's scaffold,
- * so they always go.
+ * An emptied list or map is written as `null`, which deletes the key, instead of `[]` or `{}`,
+ * matching the MCP and CLI relation writers; none of these four keys is a kind's scaffold.
  */
 function writtenRelationList(refs: string[]): string[] | null {
   return refs.length > 0 ? refs : null;

@@ -1,19 +1,6 @@
 import type { KnowledgeGraphNode } from "../../model";
 
-/**
- * The node kinds a user actually thinks in — the set every stat surface counts.
- *
- * Excluded:
- *  - `project` — a meta label. It is the root of the tree, but nobody counts it when saying
- *    "my ontology has N of these".
- *  - `document` — an evidence node, linked to concepts through `describes`. It does not
- *    belong in statistics the user reads as domains, capabilities and elements.
- *
- * Included:
- *  - `domain` / `capability` / `element` — the real units of meaning.
- *  - `unknown` — a stub placeholder. It appears in the distribution because the user needs to
- *    see it as awaiting review, highlighted in the amber tone (the UI's job).
- */
+/** Kinds counted in stats: domain, capability, element, and the `unknown` stub; not project or document. */
 export const MEANINGFUL_ONTOLOGY_KINDS = [
   "domain",
   "capability",
@@ -35,10 +22,7 @@ export interface OntologyKindStats {
   byKind: Record<MeaningfulOntologyKind, number>;
 }
 
-/**
- * The kind distribution every stat surface shares. Regardless of input order, `byKind` is a
- * dense map in `MEANINGFUL_ONTOLOGY_KINDS` order, zeros included.
- */
+/** Dense counts in `MEANINGFUL_ONTOLOGY_KINDS` order, zeros included. */
 export function buildMeaningfulOntologyStats(
   nodes: readonly KnowledgeGraphNode[],
 ): OntologyKindStats {

@@ -1,13 +1,7 @@
-/**
- * Project category id — a free string matching either an `entities/category`
- * default or a vault frontmatter taxonomy.
- */
+/** A free string: an `entities/category` default or a vault taxonomy. */
 export type ProjectCategory = string;
 
-/**
- * Project status id — a free string matching either an `entities/status` default
- * or a vault frontmatter taxonomy.
- */
+/** A free string: an `entities/status` default or a vault taxonomy. */
 type ProjectStatus = string;
 
 interface ProjectLink {
@@ -25,34 +19,15 @@ export interface ProjectPosition {
   y: number;
 }
 
-/**
- * The project domain model used inside the app.
- *
- * Source of truth: the `<slug>.md` frontmatter with `kind: project` — the user's
- * vault in local mode, the build-time dogfood manifest in static mode.
- *
- * **Every field the frontmatter does not state is optional.** Derivation used to
- * stamp fabricated defaults (`category: 'uncategorized'`, `status: 'active'`,
- * `isHub: false`, `position: { x:0, y:0 }`), so the web displayed information the
- * vault does not have — a direct violation of "frontmatter is the graph". The UI
- * shows nothing for an undefined field, or says explicitly that it is a placeholder.
- *
- * `createdAt` / `updatedAt` derive from frontmatter or the file mtime; filesystem
- * metadata is not fabrication.
- */
+/** A `kind: project` document; any field the frontmatter omits stays undefined rather than defaulted. */
 export interface Project {
   slug: string;
-  /** The canonical name: frontmatter `name`/`title`. What identifies the document. */
+  /** Frontmatter `name`/`title`. */
   name: string;
   nameEn?: string;
-  /**
-   * `display_<locale>` frontmatter keys, by locale, when the document carries any. The word a
-   * screen draws for the project (`projectDisplayName`); the map already draws nodes by it.
-   */
+  /** `display_<locale>` names, drawn via `projectDisplayName`. */
   displayNames?: Record<string, string>;
-  /** From vault frontmatter `category:`; undefined when absent. */
   category?: ProjectCategory;
-  /** From vault frontmatter `status:`; undefined when absent. */
   status?: ProjectStatus;
   description: string;
   detail?: string;
@@ -63,27 +38,20 @@ export interface Project {
   owner?: string;
   icon?: string;
   screenshots: string[];
-  /** From vault frontmatter `timeline:` / `startedAt:` / `launchedAt:`; undefined when absent. */
   timeline?: ProjectTimeline;
   progress?: number;
-  /** True only when the vault frontmatter states `isHub:`. Absent is undefined, which is not false. */
+  /** Undefined unless stated; absent is not false. */
   isHub?: boolean;
-  /** Only when frontmatter states `position:` or `positionX/Y:`; undefined otherwise. */
   position?: ProjectPosition;
   createdAt: Date;
   updatedAt: Date;
 }
 
-/**
- * The partial type used as input when creating or editing. The form is a tool for
- * *writing vault frontmatter*, so it keeps category/status/position required
- * form-locally and records them on submit. `Project` itself stays honest about what
- * the vault may not have, and leaves them optional.
- */
+/** Form input: category, status and position are required when writing frontmatter. */
 export type ProjectInput = {
   slug: string;
   name: string;
-  /** Editing can preserve "unset" so it never invents a typed fact the original lacked. */
+  /** Editing can keep "unset". */
   category?: ProjectCategory;
   status?: ProjectStatus;
   description: string;

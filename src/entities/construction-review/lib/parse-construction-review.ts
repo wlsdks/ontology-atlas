@@ -70,12 +70,7 @@ function statusSignals(qualification: UnknownRecord, analysis: UnknownRecord): C
   return { red, unknown, conflict };
 }
 
-/**
- * Accept one session-only JSON envelope containing the existing qualification
- * packet and analyze response. This function never re-evaluates quality. It
- * only refuses envelopes whose identities or exact plans disagree, then makes
- * the validator-owned fields easier to read.
- */
+/** Reads a session-only envelope of packet and analyze response; refuses mismatched identities or plans and never re-evaluates. */
 export function parseConstructionReviewEnvelope(
   raw: unknown,
   expectedProjectSlug: string,

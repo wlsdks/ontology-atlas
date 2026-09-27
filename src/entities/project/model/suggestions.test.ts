@@ -24,7 +24,7 @@ function makeProject(overrides: Partial<Project> = {}): Project {
 }
 
 describe("computeSuggestedDependencies", () => {
-  it("description 안의 다른 프로젝트 이름을 찾아 제안한다", () => {
+  it("suggests another project named in the description", () => {
     const current = makeProject({
       slug: "checkout-api",
       name: "Checkout API",
@@ -41,7 +41,7 @@ describe("computeSuggestedDependencies", () => {
     expect(result.map((r) => r.slug)).toEqual(["iam-core", "payment-gateway"]);
   });
 
-  it("이미 dependencies 에 있는 프로젝트는 제외한다", () => {
+  it("excludes projects already in dependencies", () => {
     const current = makeProject({
       slug: "checkout-api",
       description: "IAM Core 와 Payment Gateway 를 씁니다.",
@@ -57,7 +57,7 @@ describe("computeSuggestedDependencies", () => {
     expect(result.map((r) => r.slug)).toEqual(["payment-gateway"]);
   });
 
-  it("자기 자신은 후보에서 제외한다", () => {
+  it("excludes the project itself", () => {
     const current = makeProject({
       slug: "self-ref",
       name: "Self Ref",
@@ -68,7 +68,7 @@ describe("computeSuggestedDependencies", () => {
     expect(computeSuggestedDependencies(current, candidates)).toEqual([]);
   });
 
-  it("detail (markdown) 텍스트도 검사한다", () => {
+  it("searches the markdown detail", () => {
     const current = makeProject({
       slug: "app",
       description: "설명.",
@@ -82,7 +82,7 @@ describe("computeSuggestedDependencies", () => {
     expect(result.map((r) => r.slug)).toEqual(["ingest-worker"]);
   });
 
-  it("이름이 2자 이하인 프로젝트는 매칭 대상에서 제외한다 (오검출 방지)", () => {
+  it("ignores project names of two characters or fewer", () => {
     const current = makeProject({
       slug: "consumer",
       description: "AI 와 UI 를 개선했습니다.",
@@ -95,7 +95,7 @@ describe("computeSuggestedDependencies", () => {
     expect(computeSuggestedDependencies(current, candidates)).toEqual([]);
   });
 
-  it("영문 이름은 단어 경계 기준으로 매칭한다 (부분 매칭 방지)", () => {
+  it("matches English names on word boundaries", () => {
     const current = makeProject({
       slug: "consumer",
       description: "We use Stripe for payments.",
@@ -110,7 +110,7 @@ describe("computeSuggestedDependencies", () => {
     expect(result.map((r) => r.slug)).toEqual(["stripe"]);
   });
 
-  it("영문 매칭은 대소문자 무시", () => {
+  it("matches English names case-insensitively", () => {
     const current = makeProject({
       description: "we rely on stripe.",
     });
@@ -121,7 +121,7 @@ describe("computeSuggestedDependencies", () => {
     ]);
   });
 
-  it("nameEn 도 매칭 대상에 포함한다", () => {
+  it("matches nameEn", () => {
     const current = makeProject({
       description: "connects to Payment Gateway service",
     });
@@ -138,7 +138,7 @@ describe("computeSuggestedDependencies", () => {
     ]);
   });
 
-  it("중복 매칭을 제거하고 slug 기준 1회만 반환한다", () => {
+  it("returns each slug once", () => {
     const current = makeProject({
       description: "IAM Core 는 중요합니다. IAM Core 를 통해 인증.",
     });
@@ -149,7 +149,7 @@ describe("computeSuggestedDependencies", () => {
     expect(result[0].slug).toBe("iam-core");
   });
 
-  it("발견된 문맥 excerpt 을 함께 반환한다", () => {
+  it("returns the matching excerpt", () => {
     const current = makeProject({
       description: "우리는 IAM Core 로 인증합니다. 문장 계속.",
     });
