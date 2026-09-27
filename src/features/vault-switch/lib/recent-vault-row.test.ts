@@ -30,18 +30,14 @@ describe('recentVaultRowKey', () => {
   });
 
   it('falls back to the folder name in a browser session, not the record id', () => {
-    // Every web record's id is 'current' (single-vault mode), so keying on the id collapsed
-    // every folder to one identity - the bug the store's own `recordIdentity` comment
-    // records. This mirror must agree with it or two folders share a React key.
+    // Every web record's id is 'current', so the key must follow the store's `recordIdentity`.
     expect(recentVaultRowKey(record({ name: 'atlas' }))).toBe('fsa:atlas');
   });
 });
 
 describe('canOpenReachability', () => {
   it('allows a press that can still lead to an opened folder', () => {
-    // `needs-permission` is pressable on purpose: the press is the gesture that grants
-    // permission. `unknown` is pressable because refusing on an unanswered probe would
-    // strand a folder that is probably fine.
+    // Pressable: the press grants permission, and an unanswered probe must not strand a folder.
     expect(canOpenReachability('ready')).toBe(true);
     expect(canOpenReachability('needs-permission')).toBe(true);
     expect(canOpenReachability('unknown')).toBe(true);
@@ -81,9 +77,7 @@ describe('buildRecentVaultRows', () => {
   });
 
   it('reports absent counts as null rather than zero', () => {
-    // A folder last opened before the counts were cached has an *unknown* content count.
-    // Rendering that as `0 documents` would make it indistinguishable from an empty folder,
-    // and one of those two readings is false.
+    // An unknown count must not render as `0 documents`.
     const rows = buildRecentVaultRows({
       records: [record({ name: 'legacy', desktopRootPath: '/Users/dana/legacy' })],
       reachability: {},
@@ -94,8 +88,7 @@ describe('buildRecentVaultRows', () => {
   });
 
   it('treats a partially written count as no count', () => {
-    // Two of the three fields is not an answer: without `countedAt` the row cannot say how
-    // old the number is, and an unlabelled count reads as "this is what is in there now".
+    // Without `countedAt` a count cannot say how old it is.
     const rows = buildRecentVaultRows({
       records: [
         record({ name: 'half', desktopRootPath: '/Users/dana/half', docCount: 12 }),
@@ -128,9 +121,7 @@ describe('buildRecentVaultRows', () => {
       currentKey: '/Users/dana/atlas',
     });
 
-    // Deliberately not the first row: the list is ordered by last access, and "was open
-    // last" is a separate stored fact that stops agreeing with list order the moment a
-    // touch or a failed open reorders it.
+    // "Was open last" is a stored fact, independent of list order.
     expect(rows.map((row) => row.isCurrent)).toEqual([false, true]);
   });
 });
@@ -155,8 +146,7 @@ describe('partitionRecentVaultRows', () => {
     });
 
     const { listed, missing } = partitionRecentVaultRows(rows);
-    // A refused folder is still there and one picker press away; an unchecked one stays
-    // pressable by design. Only a folder that is gone leaves the answer.
+    // Only a folder that is gone leaves the list.
     expect(listed.map((row) => row.name)).toEqual(['walled', 'atlas', 'unchecked']);
     expect(missing.map((row) => row.name)).toEqual(['qa-run-a', 'qa-run-b']);
   });

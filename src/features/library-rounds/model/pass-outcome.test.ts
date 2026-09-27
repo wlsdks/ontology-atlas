@@ -18,8 +18,7 @@ describe('what a pass writes into the ledger', () => {
   });
 
   it('never lends a service pass the consistency check it did not run', () => {
-    // The round re-read four documents and changed nothing: "held", not "stale · 1" about a
-    // page it never looked at.
+    // A service pass that changed nothing is "held", not stale about a page it never read.
     expect(passLedgerFacts({ kind: 'service', check: null, refreshed: 4, failed: false, written: [], refused: [] }))
       .toEqual({ outcome: 'held', checked: 4, stale: [] });
     expect(passLedgerFacts({ kind: 'service', check: null, refreshed: 4, failed: false, written: ['sources/a.md'], refused: [] }))

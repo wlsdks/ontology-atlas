@@ -6,16 +6,7 @@ import enMessages from '../../../../messages/en.json';
 import { RecentVaultList } from './RecentVaultList';
 import { RAIL_LABEL_MAX_CHARS, railLabel } from './VaultSwitchRailTile';
 
-/**
- * **A row must not be a list entry with a name on it.** The owner rejected bare-name lists
- * three times on 2026-09-13 on other screens, and this list is the one place the objection
- * is structural rather than aesthetic: `atlas` and `atlas-old` are indistinguishable by
- * name, and telling them apart is the entire reason the person is looking at this list.
- *
- * The second rule these hold: **a folder that cannot be opened says so before it is
- * pressed.** A stored handle is a claim about the past, and a row that keeps its ordinary
- * look and then fails spends the person's press to report something the probe already knew.
- */
+/** Rows state what a folder holds and whether it opens, before it is pressed. */
 
 const mocks = vi.hoisted(() => ({
   reachability: vi.fn<() => Record<string, string>>(() => ({})),
@@ -78,8 +69,7 @@ describe('RecentVaultList row facts', () => {
   });
 
   it('carries the same facts in the accessible name', () => {
-    // A row whose accessible name is only the folder's name is the bare-name list again for
-    // anyone reading by screen reader.
+    // A name-only accessible name is the bare-name list for screen reader users.
     mocks.reachability.mockReturnValue({ '/Users/dana/atlas': 'ready' });
     renderList([
       record('atlas', { docCount: 232, conceptCount: 41, countedAt: Date.now() }),
@@ -116,9 +106,7 @@ describe('RecentVaultList reachability', () => {
   });
 
   it('keeps a folder that will prompt pressable, and warns that it will', () => {
-    // The ordinary browser case. Pressing is exactly the gesture that grants permission, so
-    // blocking the press would strand the folder - but presenting it as a plain open would
-    // hide a dialog the person did not expect.
+    // The press is the gesture that grants permission, so it stays pressable but warns.
     mocks.reachability.mockReturnValue({ '/Users/dana/atlas': 'needs-permission' });
     renderList([record('atlas')]);
 
@@ -155,9 +143,7 @@ describe('RecentVaultList current folder', () => {
   });
 
   it('does not offer to forget the folder you were last in', () => {
-    // Forget is the release valve for the launch rule - drop back to one folder and the next
-    // launch resumes directly. Pointing it at the current folder would make the most obvious
-    // use of it the one that throws away where you were.
+    // Forget on the current folder would throw away where you were.
     mocks.reachability.mockReturnValue({ '/Users/dana/atlas': 'ready' });
     renderList([record('atlas')], '/Users/dana/atlas');
 
@@ -167,9 +153,7 @@ describe('RecentVaultList current folder', () => {
 
 describe('RecentVaultList leaves no dead ends', () => {
   it('offers the picker on a folder that cannot be opened', () => {
-    // A row that states a problem and offers only "throw this folder out of the list" is a
-    // dead end. The recovery is the same picker the screen offers elsewhere, labelled for
-    // the folder in front of the person rather than for one Atlas has never seen.
+    // A missing row also offers the picker, labelled for this folder.
     mocks.reachability.mockReturnValue({ '/Users/dana/gone': 'missing' });
     const { onLocate } = renderList([record('gone')]);
 
@@ -196,9 +180,7 @@ describe('RecentVaultList leaves no dead ends', () => {
   });
 
   it('offers forget on the folder you were last in when it cannot be opened', () => {
-    // Forget is normally withheld from the current folder so the obvious use of it is not
-    // the one that throws away where you were. That reason lapses once the folder cannot be
-    // opened at all: the person is not in it, and clearing it is the way forward.
+    // A current folder that cannot open may be forgotten.
     mocks.reachability.mockReturnValue({ '/Users/dana/gone': 'missing' });
     renderList([record('gone')], '/Users/dana/gone');
 
@@ -208,12 +190,7 @@ describe('RecentVaultList leaves no dead ends', () => {
   });
 });
 
-/**
- * **Folders that are gone are one quiet line at the end, not rows above the live ones**
- * (owner inspection, 2026-09-26). After a few QA runs the launch chooser opened on five dead rows,
- * each with a warning and two buttons, above the folders that still exist — the deleted temporary
- * folders were the most recently opened. Nothing is removed unless the person presses for it.
- */
+/** Missing folders gather into one line at the end; nothing is removed without a press. */
 describe('RecentVaultList gathers missing folders at the end', () => {
   const now = Date.now();
   const deadThenLive = [
@@ -363,9 +340,7 @@ describe('the rail label keeps the end of the name', () => {
   });
 
   it('trims the head, because sibling folders differ in the tail', () => {
-    // `ontology-atlas` and `ontology-atlas-old` share every character a head truncation
-    // would have left on the 64px rail, so the label answered "which folder" with the one
-    // part that does not distinguish them.
+    // Head truncation would render sibling names identically.
     const a = railLabel('ontology-atlas');
     const b = railLabel('ontology-atlas-old');
     // The two must not render identically - that is the defect being prevented.
@@ -375,20 +350,14 @@ describe('the rail label keeps the end of the name', () => {
     expect('ontology-atlas-old'.endsWith(b.replace(/^\u2026/, ''))).toBe(true);
     expect(a.length).toBeLessThanOrEqual(RAIL_LABEL_MAX_CHARS);
     expect(b.length).toBeLessThanOrEqual(RAIL_LABEL_MAX_CHARS);
-    // The budget must stay small enough that CSS does not truncate on top of it; the
-    // rendered check lives in `tests/e2e/vault-launch-chooser.spec.ts`.
+    // The rendered check is in `tests/e2e/vault-launch-chooser.spec.ts`.
     expect(RAIL_LABEL_MAX_CHARS).toBeLessThanOrEqual(9);
   });
 });
 
 describe('RecentVaultList labels the count with the count\'s own age', () => {
   it('names how old the numbers are when that differs from the opening', () => {
-    /*
-     * The case that made this necessary: `openRecent` writes `lastAccessedAt: now` before it
-     * loads the folder, and the counts are written only after a load that succeeds. A folder
-     * opened and then refused therefore carried weeks-old numbers beside "opened just now",
-     * while the type comment and the decision record both claimed the age was labelled.
-     */
+    /* `openRecent` writes `lastAccessedAt` before the load that writes the counts. */
     mocks.reachability.mockReturnValue({ '/Users/dana/atlas': 'ready' });
     const now = Date.now();
     renderList([
@@ -408,8 +377,7 @@ describe('RecentVaultList labels the count with the count\'s own age', () => {
   });
 
   it('says it once when the numbers are as old as the opening', () => {
-    // The ordinary path: the counts were taken by the load this opening triggered. Printing
-    // the same age twice would be noise, so the row stays one line.
+    // On the ordinary path the ages match, so the row stays one line.
     mocks.reachability.mockReturnValue({ '/Users/dana/atlas': 'ready' });
     const now = Date.now();
     renderList([

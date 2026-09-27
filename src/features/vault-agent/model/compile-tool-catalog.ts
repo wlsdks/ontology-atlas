@@ -4,52 +4,15 @@ import type { AgentToolDefinition } from './tool-catalog';
 import { PARSER_SOURCE_FORMATS, READABLE_SOURCE_FORMATS, SOURCE_TEXT_CHAR_CAP } from './source-text';
 
 /**
- * **The three tools a Compile turn gets, and nothing else.**
- *
- * ## Why they are not in `AGENT_TOOLS`
- *
- * `tool-catalog.ts` states the rule it lives by: *a tool we hand out has exactly the MCP
- * name, arguments, and effects*, and `tests/contract/agent-tool-catalog.contract.test.ts`
- * reads `mcp/src/index.js` to enforce it. None of the names below exists on the MCP server —
- * a coding agent reaching Atlas over MCP already opens files and writes pages with its
- * own tools, so mirroring these there would add a second way to do something the
- * terminal does better. Keeping them in a separate export is what lets that contract stay
- * exact instead of gaining an exception, and `compile-tool-catalog.test.ts` pins the
- * separation so a later hand cannot merge the two lists by accident.
- *
- * ## Why the shape is this shape
- *
- * `propose_wiki_page` takes **fields, not Markdown**. A page assembled by Atlas from
- * typed fields cannot arrive with four sections, a stray `kind:`, or frontmatter that
- * disagrees with the bytes; a page pasted as Markdown by a 8B model routinely does all
- * three, and every one of those is a validation failure a person then has to read. The
- * writer is asked for what only it can supply — the sentences — and Atlas supplies what
- * only it can vouch for: the section skeleton, `created_by`, `compiled_at`, `sources`,
- * and the `source_hash` of the bytes actually read this turn.
- *
- * Note what is **not** an argument: `sources` and `source_hash`. A model cannot name a
- * source it did not open, because it never gets to write that list at all.
+ * The three Compile tools, kept out of `AGENT_TOOLS` so tests/contract/agent-tool-catalog.contract.test.ts
+ * stays exact against MCP. The writer supplies fields, not Markdown; Atlas mints the skeleton,
+ * provenance and `source_hash`, so a model cannot name a source it did not open.
  */
 
-/**
- * How many pages one Compile turn may propose. One per waiting source, bounded.
- *
- * Three, not five, and the arithmetic is the reason (PO steward, 2026-09-06). One file
- * costs two tool calls — a read and a proposal — plus a round to correct a proposal the
- * validator refuses. Five files is at least ten calls, and a turn that runs out of rounds
- * before proposing anything has sent the person's documents to the model and produced no
- * card at all. Three fits inside `COMPILE_ROUND_CAP` with room for corrections. Wiki context
- * reads use the same 40,000-character turn budget and stop with an explicit refusal when it is full.
- */
+/** Pages per turn: each needs a read, a proposal and room for a correction inside `COMPILE_ROUND_CAP`. */
 export const COMPILE_SOURCES_PER_TURN = 3;
 
-/**
- * Round trips a Compile turn may take, in place of the conversational `AGENT_ROUND_CAP`.
- *
- * Source reads, bounded Wiki context reads, proposals, and enough left over that a page
- * refused by the validator can be corrected rather than lost. It is still a ceiling:
- * nothing here runs unbounded.
- */
+/** Round trips per Compile turn, with room to correct a refused page; still a ceiling. */
 export const COMPILE_ROUND_CAP = 10;
 
 const READ_SOURCE_TEXT_TOOL: AgentToolDefinition = {

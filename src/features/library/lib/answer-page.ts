@@ -8,19 +8,9 @@ import {
 } from "@/shared/lib/wiki-page-schema";
 
 /**
- * File an answer back into the wiki as a page (the LLM Wiki pattern's "good answers can
- * be filed back"). Owner direction 2026-09-07: the answer to a question a person asked
- * should not vanish into the chat.
- *
- * The page is built by the app, not by another agent turn: a response that uses the
- * canonical wiki headings keeps each line in its declared section, while an unstructured
- * response keeps the legacy citation-driven filing (cited lines become facts and uncited
- * lines go under "Not in sources"). The cited files become `sources:` either way.
- * Citation presence is not proof of semantic entailment. Nor do the Library's current
- * file hashes prove which bytes the answer read: a retained answer may predate them.
- * Until the answer carries a verified read receipt, its source hashes stay unmeasured.
- * The result is judged by the same validator every page meets; a page that does not fit
- * is not written, and the problems come back instead.
+ * Files an answer back into the wiki as a page the app builds. Canonical headings keep their
+ * sections; otherwise cited lines become facts. Source hashes stay unmeasured without a read
+ * receipt, and a page the shared validator rejects is not written.
  */
 export interface AnswerPageInput {
   question: string;
@@ -31,12 +21,7 @@ export interface AnswerPageInput {
   now: Date;
   /** A fresh filing identity; callers may supply one for a deterministic retry/test. */
   filingId?: string;
-  /**
-   * The wiki pages that already write up a source path, so the answer can point at them.
-   * A page that lists a source another page lists and links neither is the folder finding
-   * `shared-source-unlinked`; the first answer filed from the installed app raised it on
-   * three pages at once (2026-09-07). One "See also" line under the summary settles it.
-   */
+  /** Pages that already write up a source, so a "See also" line avoids `shared-source-unlinked`. */
   pagesForSource?: (sourcePath: string) => readonly string[];
   knownSources: readonly string[];
   /** An observation at filing, never a receipt proving which bytes the answer read. */
@@ -51,14 +36,7 @@ export interface AnswerPageResult {
   problems: ReadonlyArray<{ code: string; message: string; line?: number }>;
 }
 
-/**
- * A citation the way an agent tends to write one when answering in prose: the wiki form
- * `[[src:sources/<file>#p3]]`, or the same address bare or in backticks, with or without the
- * `src:` prefix. All of them mean one place in one document; only the wiki form survives
- * the page contract, so the others are rewritten into it before the page is judged. Seen
- * in the installed app on 2026-09-07: an answer whose every fact pointed at
- * `sources/change-request-CR3.docx#p1` in backticks was refused as uncited.
- */
+/** Loose citations (bare, backticked, with or without `src:`) rewritten to the wiki form before judging. */
 const LOOSE_CITATION = new RegExp(
   `\`?(?:\\[\\[)?(?:src:)?(${WIKI_SOURCES_DIR}\\/[^\\s\\]\\)\`#|]+)#(${WIKI_CITATION_ANCHOR_PATTERN})(?:\\]\\])?\`?`,
   "g",
@@ -119,12 +97,7 @@ function answerSection(value: string): AnswerSection | null {
     : null;
 }
 
-/**
- * A response gets section semantics only from the exact wiki headings. Phrases such as
- * "Decision:" in an ordinary answer stay on the old citation-driven path. Unknown level-2
- * headings also end the structured section; their body is handled as unstructured text so
- * this formatter never invents a category for it.
- */
+/** Only exact wiki headings give sections; any other level-2 heading ends them, never inventing a category. */
 function parseAnswerSections(answer: string): ParsedAnswerSections | null {
   const sections = emptyAnswerSections();
   const lines: ParsedAnswerLine[] = [];

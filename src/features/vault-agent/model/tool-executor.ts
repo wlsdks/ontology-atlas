@@ -19,21 +19,9 @@ import {
 export { GRAPH_FRONTMATTER_KEYS } from './concept-evidence-pack';
 
 /**
- * Normalized tool call → actual execution.
- *
- * **This file's one invariant: a model's write call never reaches the disk.** The
- * executor is injected with `VaultReadPort` alone (a type with no write methods),
- * and a write tool is not executed but returned as `blocked-write`. Converting
- * that into a proposal card is the caller's (the loop's) job, and the real write
- * belongs to a separate module the consent card's handler calls.
- *
- * This structure is a code path, not a discipline — even trying to call a write
- * by mistake finds no function to call here.
- *
- * **Why results are truncated.** A tool result is carried verbatim into the next
- * round trip, so a whole `list_concepts` would quietly grow the user's cost (BYOK
- * billing). Beyond the cap it is truncated and the model is told to "narrow it and
- * ask again".
+ * Normalized tool call to execution. A model's write never reaches disk: the executor gets only
+ * a `VaultReadPort` and returns writes as `blocked-write`. Results over the cap are truncated so
+ * BYOK cost cannot grow quietly.
  */
 
 export interface ToolExecution {
@@ -72,14 +60,7 @@ function lastSegment(slug: string): string {
   return index < 0 ? slug : slug.slice(index + 1);
 }
 
-/**
- * Folds the result into JSON, shrinking honestly when it exceeds the cap.
- *
- * **Truncated output must still be valid JSON.** Cutting the string with scissors
- * hands the model broken JSON, and what a model does then is guess — the guidance
- * to narrow the question never even arrives. So the array fields' row counts are
- * reduced and it is re-serialized.
- */
+/** Truncates array rows and re-serializes, so a result over the cap is still valid JSON. */
 function pack(payload: unknown): { content: string; truncated: boolean } {
   const raw = JSON.stringify(payload);
   if (raw.length <= AGENT_TOOL_RESULT_CHAR_CAP) return { content: raw, truncated: false };
@@ -196,9 +177,7 @@ export function createToolExecutor(port: VaultReadPort) {
     }
     const target = resolveNodeAgentTarget(node);
     if (!target.documented) {
-      // A concept that was merely named is not "absent". Give who references it and
-      // the path to creating the document, and never push a wrong node forward by
-      // guessing at a typo.
+      // A merely named concept gets its referrers and the path to creating its document, never a typo guess.
       const referencedBy = port.edges
         .filter((edge) => edge.to === node.id || edge.from === node.id)
         .map((edge) => (edge.to === node.id ? edge.from : edge.to))
@@ -223,9 +202,7 @@ export function createToolExecutor(port: VaultReadPort) {
     const slug = target.ref as string;
     const doc = docBySlug.get(slug);
     const fullBody = (await port.readDocText(slug)) ?? doc?.excerpt ?? '';
-    // This surface's default is **the full body** — unlike MCP, it reads the user's
-    // own disk directly with no round-trip cost. `body: 'excerpt'` is only for an
-    // explicitly requested skim. Either way, truncation is stated.
+    // The full body by default, since this reads local disk; `body: 'excerpt'` is an explicit skim.
     const body = bodyMode === 'excerpt' ? (doc?.excerpt ?? fullBody) : fullBody;
     return {
       found: true as const,
@@ -279,7 +256,6 @@ export function createToolExecutor(port: VaultReadPort) {
 
     const args = asArgs(call.args);
 
-    // ── Writes: not executed. They go out only as proposals. ─────────────
     if (tool.effect === 'write') {
       const bodies = call.name === 'add_concepts' && Array.isArray(args.concepts)
         ? args.concepts.map((row) => asArgs(row).body)
@@ -363,9 +339,8 @@ export function createToolExecutor(port: VaultReadPort) {
           }
         }
         const documentTotal = Object.values(byKind).reduce((sum, n) => sum + n, 0);
-    // The field names match MCP's `list_kinds` exactly — a contract test compares them.
-    // The document count and the "merely named concepts" count are stated together;
-    // stating only one makes the screen and the agent believe different numbers.
+    // Field names match MCP's `list_kinds` (a contract test compares them); both counts are stated
+    // so the screen and the agent believe one number.
         const packed = pack({
           total: documentTotal,
           byKind,

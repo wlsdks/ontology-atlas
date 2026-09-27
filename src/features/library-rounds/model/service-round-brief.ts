@@ -1,27 +1,9 @@
 import { DEFAULT_SERVICE_ROUND_LIMIT, type RoundPlaceService } from '@/entities/library-round';
 
 /**
- * **The service pass brief** — the one agent turn a service round spends per pass.
- *
- * It composes two briefs that already exist rather than inventing a third rule set: the
- * Bring-from-a-service brief (how a document from a service lands under `sources/`, with
- * `source_url` and `fetched_at`) and the Compile brief (how a page is written from a source).
- * The Compile rules ride verbatim through `compileBrief`, built by the caller with
- * `buildCompileBrief` for the sources that need a page, because the rules that keep a page
- * honest are owned by that module and must not be paraphrased here.
- *
- * What is new is the order and the boundary: refresh what is known, then look for what is new,
- * then write pages, and nothing else. The standing scope (`round-scope.ts`) refuses anything
- * outside it, but the brief says so first, because a refusal a person reads in the morning is
- * worse than an instruction the agent followed at night.
- *
- * ## One turn, several places (2026-09-21)
- *
- * A round may now name more than one place: a Slack channel *and* a Confluence space. They
- * arrive as one numbered list inside **one** turn, because the cost line above the primary
- * press promises one agent turn per pass, and splitting a pass per place would multiply the
- * bill the person approved. Each place carries its own location and its own query, so the
- * brief can say "in #release-room" rather than "somewhere in Slack".
+ * The one agent turn a service pass spends: refresh known documents, look for new ones, write
+ * pages, nothing else. The Compile brief rides verbatim, and all places go in one turn so the
+ * pass costs the one turn the person approved.
  */
 
 export interface ServiceRoundBriefInput {

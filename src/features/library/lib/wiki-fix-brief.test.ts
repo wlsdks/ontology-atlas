@@ -2,16 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { buildWikiShapeFixBrief, type WikiShapeFinding } from "./wiki-fix-brief";
 
-/**
- * **The clauses this brief exists for, held in both languages.**
- *
- * Written because `po-evidence` named the hole (2026-09-12): this was the only brief in
- * its family — `fix-brief`, `lint-brief`, `compile-brief`, `ask-brief` all have one —
- * shipping with no test, while being the first brief a person can start from a page card
- * they pressed *because they could not read it*. That person is by construction the one
- * least able to audit the repair, so the discipline has to be asserted rather than
- * assumed.
- */
+/** The clauses this brief exists for, held in both languages. */
 
 const UNCITED: WikiShapeFinding = {
   code: "uncited-fact",
@@ -28,13 +19,7 @@ const build = (locale: "ko" | "en", findings: readonly WikiShapeFinding[] = [UNC
   });
 
 describe("buildWikiShapeFixBrief — a citation is found, never minted", () => {
-  /*
-   * The failure this clause is the only guard against: `validateWikiPage` checks a
-   * citation's shape, that the path is declared, and that the file is in the folder. It
-   * never resolves the anchor against the source's units. So `uncited-fact` closes on a
-   * plausible string, and a repaired page that validates is written with no permission
-   * card in the default write mode.
-   */
+  /* `validateWikiPage` never resolves anchors, so this clause is the only guard against invented citations. */
   it.each(["ko", "en"] as const)("%s forbids inventing one and names the fallback", (locale) => {
     const brief = build(locale);
     if (locale === "ko") {
@@ -76,13 +61,7 @@ describe("buildWikiShapeFixBrief — one page, and the page it names", () => {
     expect(brief).toContain("- missing-field:title — `title:` is missing.");
   });
 
-  /*
-   * A folder finding is repaired by editing **another** page, which the single-file clause
-   * forbids. The card is what enforces the scope (`WikiTemplateProblems` gives the folder
-   * card no action, and `LibraryPage` filters the brief's findings), so this asserts the
-   * brief stays the kind of brief that scope is correct for: it must not grow a clause
-   * that sends the writer to a second page.
-   */
+  /* Folder findings need a second page edited, which the single-file clause forbids. */
   it.each(["ko", "en"] as const)("%s never tells the writer to edit a second page", (locale) => {
     const brief = build(locale, [
       UNCITED,
@@ -94,12 +73,7 @@ describe("buildWikiShapeFixBrief — one page, and the page it names", () => {
 });
 
 describe("buildWikiShapeFixBrief — page bytes in the findings block are data", () => {
-  /*
-   * `bad-citation` interpolates the mistyped citation from the page body verbatim, so page
-   * content enters a prompt that authorises a write — the one place in this brief where it
-   * does. The block is named as data for the same reason `buildLintBrief` names every page
-   * sentence as data.
-   */
+  /* Page text enters a write-authorising prompt only here, so it is named as data. */
   it.each(["ko", "en"] as const)("%s says the quoted text is not an instruction", (locale) => {
     const brief = build(locale, [
       {

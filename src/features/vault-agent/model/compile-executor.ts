@@ -26,24 +26,9 @@ import {
 } from './wiki-proposal';
 
 /**
- * The Compile turn's tool executor — **the second place in this feature where a model's
- * write call does not reach the disk.**
- *
- * It is injected with a `SourceReadPort` (no write method) and returns proposals; the file
- * is created only by `applyProposal`, from the consent card's handler, exactly as a
- * concept change is. `propose_wiki_page` is declared `effect: 'write'` and is still
- * executed here, because "executing" it means assembling and judging a page — no byte
- * leaves this module.
- *
- * **Two facts a model may not assert are asserted here instead**: which sources it
- * actually received, and the sha256 of each. Both are recorded as the read happens, and
- * `wiki-proposal.ts` builds the frontmatter from this record rather than from the writer's
- * answer.
- *
- * **A failed proposal is returned to the writer, not swallowed.** The problems come back
- * as the tool result so the next round can fix them; only the last proposal for a given
- * page survives, so a corrected second attempt replaces the first rather than queueing two
- * cards for one file.
+ * The Compile tool executor: no write reaches disk here (`applyProposal` does that). The read
+ * sources and their sha256 are recorded as read, never taken from the writer; a failed
+ * proposal returns to the writer, and only the last proposal per page survives.
  */
 
 export interface CompileExecutorDeps {
@@ -241,13 +226,7 @@ export function createCompileExecutor(deps: CompileExecutorDeps): CompileExecuto
 
     const decoded = decodeSourceText(bytes, entry.format);
     const measure = measureSourceText(decoded.text);
-    /*
-     * The hash is of **the whole file**, never of the capped slice. `deriveSourceState`
-     * in `vault-library.ts` compares a page's recorded hash against the file's own
-     * sha256, so a partial-bytes hash would render a brand-new page stale the moment it
-     * landed (PO steward, 2026-09-06). What the cap costs is stated instead: `truncated`
-     * rides the result, the page says it under Not in sources, and the card says it too.
-     */
+    /* Hash the whole file, never the capped slice, or `deriveSourceState` marks a new page stale. */
     let sha256: string | null = null;
     try {
       sha256 = await deps.sourcePort.hashSource(path, bytes);
@@ -259,8 +238,8 @@ export function createCompileExecutor(deps: CompileExecutorDeps): CompileExecuto
     const relatedPages = deps.findRelatedPages?.(path, decoded.text);
     const relatedPagesJson = relatedPages === undefined ? undefined : JSON.stringify(relatedPages);
     const relatedPagesChars = relatedPagesJson?.length ?? 0;
-    // Charge both the numbered source text and the actual serialized suggestions before
-    // returning either. Search metadata is untrusted cache data, not free control text.
+    // Charge the source text and the serialized suggestions before returning either; search
+    // metadata is untrusted cache data.
     if (!reserveVaultChars(text.length + relatedPagesChars)) {
       return fail('read_source_text', path, `Read budget reached before ${path} could be returned`, {
         path,
@@ -312,17 +291,13 @@ export function createCompileExecutor(deps: CompileExecutorDeps): CompileExecuto
         ? `Read the first ${SOURCE_TEXT_CHAR_CAP.toLocaleString('en-US')} characters of ${path}`
         : `Read ${path}`,
       readSlugs: [],
-      // Measured: these are the characters that ride the next round trip and land in the
-      // audit line's `vaultChars`. A source's contents leaving this computer is the fact
-      // the transfer sentence on the shelf is about, so it is counted, never estimated.
+      // Measured characters that ride the next round trip into the audit line, never estimated.
       vaultChars: text.length + relatedPagesChars,
     };
   }
 
   function proposalFields(args: Record<string, unknown>, target: CompileWikiTarget) {
-    // The shared builder keeps new names portable by normalising to ASCII. An existing
-    // inventoried page may have a nested or non-ASCII address; validate its fields with a
-    // safe surrogate, then restore the reader's exact target on the proposal below.
+    // Validate an inventoried nested or non-ASCII page with an ASCII surrogate, then restore its target.
     const validationSlug = wikiSlugFromName(target.slug) || wikiSlugFromName(String(args.title ?? '')) || 'existing-page';
     return {
       slug: validationSlug,
@@ -476,8 +451,7 @@ export function createCompileExecutor(deps: CompileExecutorDeps): CompileExecuto
       proposalFields(args, target),
       { reads, model: deps.model, now: deps.now(), existing },
     );
-    // `buildWikiPageProposal` normalises a name to a root slug. For an inventoried nested
-    // page the reader's target is the authority, so restore that exact path after judging.
+    // The reader's target is the authority for an inventoried nested page.
     const proposal: WikiPageProposal = {
       ...draft,
       slug: target.slug,

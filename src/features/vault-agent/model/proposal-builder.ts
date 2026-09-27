@@ -14,15 +14,7 @@ import type {
 } from './types';
 import type { VaultReadPort } from './vault-read-port';
 
-/**
- * A model's attempted write → **a proposal card**.
- *
- * The `ProposedFileChange.after` built here is both the string the card draws and
- * the string the applier writes to disk — **one and the same value**. If what the
- * card showed differs from what actually gets written, consent is not consent.
- *
- * This module does not write to disk. It takes only a read port.
- */
+/** A model's attempted write becomes a proposal card; `after` is both what the card draws and what the applier writes. */
 
 interface WriteIntent {
   name: string;
@@ -39,15 +31,7 @@ export interface BuildProposalInput {
   /** The screen's language — fills the per-locale name field of a new document. */
   locale: string;
   labels: ProposalLabels;
-  /**
-   * The name of the actor who actually wrote this turn's draft — the LLM provider
-   * the panel is attached to (`anthropic` / `openai` / …), the same identity the
-   * audit log (`llm-audit.jsonl`) already records. No new identity scheme is invented.
-   *
-   * **This surface is a web UI but the author is an agent** (2026-07-31 ledger). A
-   * person's [apply] click is approval, not authorship, so it does not flip to
-   * `human`. When unknown, only the name is unknown, so it falls to `agent:unknown`.
-   */
+  /** The provider that drafted this turn, as the audit log records it; a person's [apply] is approval, not authorship. */
   agentName: string | null;
 }
 
@@ -77,10 +61,7 @@ function appendRef(current: unknown, ref: string): string[] {
   return list.includes(ref) ? list : [...list, ref];
 }
 
-/**
- * `add_relation`'s relation type → the source document's frontmatter key. The same
- * mapping as MCP `add_relation`'s normalization.
- */
+/** `add_relation` type to frontmatter key, as MCP `add_relation` normalizes it. */
 const RELATION_KEY: Record<string, string> = {
   depends_on: 'dependencies',
   dependencies: 'dependencies',
@@ -100,8 +81,7 @@ export async function buildProposal(
   input: BuildProposalInput,
 ): Promise<AgentProposal | null> {
   const changes: ProposalChange[] = [];
-  // Even when a proposal edits the same file several times, the diff must be drawn
-  // once — the accumulated result is held here and appended to.
+  // Several edits to one file accumulate so the diff is drawn once.
   const pending = new Map<string, { before: string | null; after: string }>();
 
   async function currentText(slug: string): Promise<string | null> {
@@ -196,8 +176,7 @@ function buildAddConcept(
     slug,
     domain: str(args.domain),
     localeLabels: {
-  // The screen language's field must always be filled — filling only one exposes the
-  // raw title to speakers of the other language.
+  // Fill the screen locale's name field, or the raw title shows to that locale's speakers.
       [input.locale]: str(labels[input.locale]) ?? title,
       ...Object.fromEntries(
         Object.entries(labels).filter(([, value]) => typeof value === 'string'),
@@ -233,8 +212,7 @@ async function buildAddRelation(
   const doc = input.port.docs.find(
     (candidate) => candidate.slug === from || candidate.slug.endsWith(`/${from}`),
   );
-  // A relation cannot be written on a concept with no document — writing it into
-  // someone else's document makes that document assert something it never said.
+  // No relation on a concept without a document, or another document asserts it.
   if (!doc) return null;
 
   const before = await currentText(doc.slug);

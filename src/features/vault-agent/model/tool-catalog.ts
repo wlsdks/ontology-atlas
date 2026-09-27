@@ -1,31 +1,7 @@
 /**
- * The tool list given to the agent — **names, arguments, and effects are exactly
- * the MCP server's.**
- *
- * The screen, the CLI, and MCP giving the same answer is this repository's
- * recurring contract, and drift between the executor and the MCP server is blocked
- * by `tests/contract/agent-tool-catalog.contract.test.ts`, which extracts names and
- * arguments from `mcp/src/index.js` itself and compares. Inventing a new name here
- * breaks that test immediately.
- *
- * **What is deliberately not given:**
- *
- * - `analyze_repo_structure` / `infer_imports` / `index_project` — **source
- *   scanning outside the vault**, beyond the app agent's field of view. It
- *   collides head-on with local-first's "no automatic scanning of arbitrary
- *   files", and work needing the code belongs to the terminal.
- * - `rename_concept` / `merge_concepts` / `delete_concept` / `remove_relation`
- *   / `replace_relation` / `reclassify_concept` — the six structural changes. A
- *   dry-run figures card must come first, so they are deferred to a later slice.
- * - `absorb_document` — bulk ingestion. A dedicated skill flow already exists.
- * - `git_snapshot` — not a model's tool but **an app feature of the consent
- *   card**. The model does not get to decide when to commit.
- * - `query_ontology` — an omnibus tool with twenty arguments. v1 covers it with
- *   the ten individual read tools and adds it when a need is measured.
- * - `query_concepts` — would require reimplementing the filter expression parser
- *   (`mcp/src/query.mjs`) in the web bundle, and a reimplementation is drift.
- *   `list_concepts`'s kind/domain filters plus `find_evidence` cover real use.
- * - `connection_info` / `compile_ontology` — things the app already knows.
+ * The agent's tools, with names, arguments and effects exactly the MCP server's
+ * (tests/contract/agent-tool-catalog.contract.test.ts). Source scanning, structural changes,
+ * bulk ingestion, snapshots and omnibus queries are deliberately not handed out.
  */
 
 /** The JSON Schema subset we use. Per-vendor conversion belongs to the adapter. */
@@ -371,12 +347,7 @@ export const AGENT_READ_TOOLS: readonly AgentToolDefinition[] = [
   },
 ];
 
-/**
- * The five write tools — all additive and conservative, so the blast radius is small.
- *
- * **These tools are not executed.** The executor only converts them into proposal
- * cards, and they touch the disk only when the user presses [apply]. No exceptions.
- */
+/** The five additive write tools; never executed, only turned into proposal cards. */
 export const AGENT_WRITE_TOOLS: readonly AgentToolDefinition[] = [
   {
     name: 'add_concept',

@@ -6,22 +6,8 @@ import { useAppUpdate } from './use-app-update';
 import type { UpdatePhase } from './update-state';
 
 /**
- * Keeps **exactly one** app-update state machine for the whole app.
- *
- * ## Why it became necessary (2026-08-20)
- *
- * Only the toast inside `AppShell` used this hook. Then settings gained a "check for updates" button,
- * making two consumers, and each calling `useAppUpdate()` gives **two state machines** — settings
- * showing "a new version exists" while the toast says nothing, or the once-a-day automatic check
- * timer running twice.
- *
- * The same rule this repository set for values: **never hold one concept's value in two places and
- * treat both as correct** (`.claude/rules/forbidden.md`).
- *
- * ## What happens where it is absent
- *
- * `null` comes back, and the consumer then **draws nothing** — not pretending an absent capability
- * exists is this repository's degradation rule, and on the web `useAppUpdate` does not check at all.
+ * Exactly one update state machine for the app, or settings and the toast disagree and the
+ * daily timer runs twice (one value, one place: .claude/rules/forbidden.md). Absent (the web), consumers get `null` and draw nothing.
  */
 export interface AppUpdateValue {
   readonly phase: UpdatePhase;

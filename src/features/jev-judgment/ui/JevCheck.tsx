@@ -15,19 +15,9 @@ import { Chip } from '@/shared/ui/controls';
 import { Textarea } from '@/shared/ui/input';
 
 /**
- * The experimental Jev evidence check, as the composer under the models tab's Jev row.
- *
- * What this surface promises, and where each promise is kept:
- * - **The exact request is on screen before any press can send it.** The preview is not folded
- *   into a disclosure (the first port had it inside `<details>`, so the send button could fire a
- *   request nobody had looked at). It is the same string `jev_judge` receives, and the Rust
- *   bridge refuses any other shape (`validate_payload`), so what is shown is what goes.
- * - **Nothing is sent without a folder to record it in.** The bridge reserves the audit line
- *   before the HTTP call and refuses to send when it cannot; the button says why it is disabled.
- * - **Advice, not acceptance.** The answer is drawn with the sentence that it changes nothing, and
- *   no write path exists from here to the vault.
- * - **The key never passes through here.** Key entry is the row's own form; this composer only
- *   knows that a key exists.
+ * The experimental Jev evidence check: the exact request is shown unfolded before any send,
+ * nothing is sent without a folder to audit it in, the answer is advice with no write path,
+ * and the key never passes through here.
  */
 export function JevCheck({
   vaultPath,
@@ -62,8 +52,7 @@ export function JevCheck({
     } finally {
       setSending(false);
       onSent();
-      // The send button was disabled while the request was out, which drops focus to <body> in
-      // Chromium and WebKit; put it back unless something else took it.
+      // A disabled button drops focus to <body> in Chromium and WebKit; restore it unless taken.
       window.setTimeout(() => {
         const active = document.activeElement;
         if (!active || active === document.body) sendRef.current?.focus({ preventScroll: true });
@@ -107,13 +96,7 @@ export function JevCheck({
         <h4 id={previewId} className="text-label text-[color:var(--color-text-secondary)]">
           {t('requestTitle', { host: JEV_DESTINATION })}
         </h4>
-        {/*
-          The whole request, never a scrolling window onto it (responsive seat, 2026-09-25): a
-          capped box at the 1040 minimum window hid 41% of a pasted function under a scrollbar
-          macOS does not draw, so a person could send what they never saw. The page scroll
-          carries it, and Send comes after all of it. Tokens wrap where they must, not mid-word,
-          and ligatures are off so `!==` reads as the three characters that are sent.
-        */}
+        {/* The whole request with no inner scroll, so nothing unseen is sent; ligatures off so `!==` reads as sent. */}
         <pre
           data-testid="jev-request-preview"
           className="min-w-0 whitespace-pre-wrap [overflow-wrap:anywhere] [font-variant-ligatures:none] rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 py-2.5 font-mono text-label leading-label text-[color:var(--color-text-secondary)]"
@@ -124,8 +107,7 @@ export function JevCheck({
           {t('requestNote')}
         </p>
       </section>
-      {/* A disabled send says why, beside it: a greyed button alone leaves the person guessing
-          which of three things is missing. */}
+      {/* A disabled send says why beside it. */}
       <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-2">
         {!ready ? (
           <p
@@ -135,8 +117,7 @@ export function JevCheck({
             {vaultPath ? t('needBoth') : t('needVault')}
           </p>
         ) : null}
-        {/* The panel's commit tone (tinted indigo), not the tab's one filled press: an
-            experimental check must not be the strongest control on the screen. */}
+        {/* Commit tone, not filled: an experimental check must not be the strongest control. */}
         <Chip
           size="lg"
           tone="accentOnTint"

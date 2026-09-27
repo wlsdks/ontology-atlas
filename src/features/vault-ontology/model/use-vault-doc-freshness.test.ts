@@ -42,12 +42,7 @@ describe('manifestToFreshnessIndex', () => {
   });
 });
 
-/*
- * The defect this answers (measured 2026-09-25 through the app's bridge): a vault built by
- * `git archive` and committed with dates one to four days back carries today's date on every
- * file, and the lens read 98 of 98 concepts as changed in the last day. Git said one uncommitted
- * edit and one commit from yesterday.
- */
+/* A freshly landed checkout stamps every file today; Git dates must win. */
 describe('resolveDocChangeDates', () => {
   const landedToday = '2026-09-26T00:30:00.000Z';
   const docs = manifest([

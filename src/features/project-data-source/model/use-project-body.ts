@@ -9,23 +9,11 @@ export interface UseProjectBodyState {
   body: string | null;
 }
 
-/**
- * The lazy body loader for the "body" card on `/project/[slug]`.
- *
- * `useProjects` (the shared derivation the list screen also uses) needs only the excerpt and
- * never pre-reads a full body. This hook does I/O only when `ProjectDetailPage` mounts, and
- * only for that slug.
- *
- * - static: content.json is already bundled, so the lookup is synchronous (no extra I/O).
- * - local: the real file is read asynchronously through `FileSystemFileHandle.getFile()`,
- *   reusing the same mechanism as node description editing on HomePage.
- */
+/** Lazy body loader for `/project/[slug]`: bundled content for static, `getFile()` for local. */
 export function useProjectBody(slug: string | null): UseProjectBodyState {
   const mode = useDataSourceMode();
   const vault = useLocalVault();
-  // The manifest and the content are taken **as a pair** — the old defect was precisely
-  // "manifest storefront, content dogfood". It returns one module constant, so the reference
-  // is stable and putting it in an effect's dependencies causes no re-run loop.
+  // Manifest and content are taken as one stable pair from the resolver.
   const staticSource = useStaticVaultSource();
   const [resolved, setResolved] = useState<{ slug: string; body: string | null } | null>(
     null,
@@ -54,9 +42,7 @@ export function useProjectBody(slug: string | null): UseProjectBodyState {
         };
       }
 
-  // Only gateway documents are in the synchronous fallback map. Project documents are read
-  // from the public raw asset the static export already copied, so the full content.json is
-  // not loaded into the initial chunk.
+  // Project docs come from the exported raw asset, keeping content.json out of the initial chunk.
       fetchServerDocContent(doc.slug, {
         bundledContent: staticSource.content,
         locationHref: typeof window === 'undefined' ? undefined : window.location.href,
@@ -72,7 +58,6 @@ export function useProjectBody(slug: string | null): UseProjectBodyState {
       };
     }
 
-    // local
     const doc = vault.manifest ? findProjectVaultDoc(vault.manifest, slug) : null;
     const fh = doc ? vault.fileHandles.get(doc.slug) : null;
     if (!fh) {

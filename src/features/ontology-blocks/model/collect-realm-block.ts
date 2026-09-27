@@ -2,15 +2,8 @@ import type { VaultDoc } from '@/entities/docs-vault';
 import type { OntologyTreeNode } from '@/entities/knowledge-graph';
 
 /**
- * Realm subtree → the vault documents to export as a block.
- *
- * A tree node id (`<kind>:<tail>`) and a vault doc slug (`capabilities/mcp-server`) are
- * different coordinate systems. This reapplies, in reverse, the rule `deriveDocNode` in
- * `derive-ontology-from-vault.ts` uses going doc → id (kind plus the last segment of the
- * file slug, with frontmatter slug winning for projects), selecting only "the real `.md`
- * that owns this id". Stub nodes synthesized purely from relation references (nodes with no
- * file of their own) fall out naturally — export copies original files, so only nodes with
- * a file mean anything.
+ * Realm subtree to the vault documents it exports: reverses `deriveDocNode`'s doc-to-id rule, so
+ * stub nodes with no file of their own fall out.
  */
 
 export interface RealmBlockDoc {

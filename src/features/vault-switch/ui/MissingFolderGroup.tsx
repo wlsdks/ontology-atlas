@@ -12,32 +12,14 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 import type { RecentVaultRow } from '../lib/recent-vault-row';
 
 /**
- * Where the missing folders are reviewed.
- *
- * - `dialog` — the page seats (the launch chooser, the docs chooser). Both centre their content
- *   vertically, so a group that opened in place grew the page and re-centred it: the line moved
- *   up by half the growth and a per-folder "forget" slid under the pointer that had just pressed
- *   "review" (measured at 1512×945: the toggle moved up 129px and a second press at the same spot
- *   landed on a forget chip). A dialog changes nothing behind it.
- * - `inline` — the rail switcher. It is a popover hung from the top, so it grows downward and the
- *   line stays under the pointer; a dialog opened from it would close the popover it came from.
+ * A dialog on centred page seats, where growing in place re-centres the page under the pointer;
+ * inline in the rail popover, which grows downward and would close if a dialog opened.
  */
 export type MissingFolderReviewMode = 'dialog' | 'inline';
 
 /**
- * **The known folders that are gone, as one quiet line at the end of the list.**
- *
- * Owner inspection, 2026-09-26: after a few QA runs the launch chooser opened on five dead rows,
- * each with a warning and two buttons, above the folders that still exist. A folder that cannot
- * be opened is not an answer to "which folder do you want to work in", so it no longer takes a
- * row in the answer. The line says how many there are and opens onto what they were: each one's
- * name, where it was, when it was last open, and a way to stop listing it. Nothing leaves the
- * list unless the person presses for it — one folder at a time, or all of them at once from the
- * place that lists them.
- *
- * `wide` is the page list's grammar (32px glyph column, text 60px in); otherwise the compact
- * list's (28px, 52px). The line takes the rows' glyph and text columns so it reads as the list's
- * last entry, not as a control bolted under it.
+ * Folders that are gone, as one quiet line at the end of the list that opens onto a review.
+ * Nothing leaves the list unless the person presses for it. `wide` follows the page list's columns.
  */
 export function MissingFolderGroup({
   rows,
@@ -67,12 +49,7 @@ export function MissingFolderGroup({
   const titleId = useId();
   const toggleRef = useRef<HTMLButtonElement | null>(null);
   const count = rows.length;
-  /*
-   * A forget inside the review takes the pressed button off the page with its row. While other
-   * missing folders remain, focus goes to where the review is read from — the line when it opened
-   * in place, the dialog itself when it is a dialog — never to `<body>`. When none remain the list
-   * moves focus (see `RecentVaultList`).
-   */
+  /* After a forget, focus goes to where the review is read from, never `<body>`. */
   const refocus = useRef(false);
   useEffect(() => {
     if (!refocus.current) return;
@@ -81,12 +58,7 @@ export function MissingFolderGroup({
     if (review === 'inline') toggleRef.current?.focus({ preventScroll: true });
     else document.querySelector<HTMLElement>('[data-testid="recent-vault-missing-review"]')?.focus({ preventScroll: true });
   }, [count, review]);
-  /*
-   * Nothing left to review: the review closes itself (the dialog's exit keeps its last rows on
-   * screen), and a folder that goes missing later does not reopen it. Adjusted during render —
-   * React's documented pattern for state that follows a prop — so no frame shows an open, empty
-   * review.
-   */
+  /* An empty review closes itself during render, so no frame shows it open and empty. */
   if (open && count === 0) setOpen(false);
 
   const forgetOne = (record: LocalFsHandleRecord) => {
@@ -129,18 +101,14 @@ export function MissingFolderGroup({
               hoverSurface: 'lift',
               className: cn(
                 'atlas-touch-floor grid w-full items-center border-0 text-left',
-                // `pr-8` puts the trailing word on the right edge the rows' "Open" ends at
-                // (their button's 16px plus their row's 16px).
+                // `pr-8` ends the trailing word where the rows' "Open" ends.
                 wide
                   ? 'grid-cols-[32px_minmax(0,1fr)_auto] gap-3 py-3 pl-4 pr-8'
                   : 'grid-cols-[28px_minmax(0,1fr)_auto] gap-3 px-3 py-2',
               ),
             })}
           >
-            {/*
-              The glyph sits in the rows' glyph column, bare: the live rows' tinted chip says
-              "this opens", and this line opens no folder.
-            */}
+            {/* A bare glyph: the tinted chip means "this opens", and this line opens no folder. */}
             <span className="flex items-center justify-center text-[color:var(--color-text-quaternary)]">
               <FolderX size={wide ? ICON_SIZE.md : ICON_SIZE.sm} aria-hidden />
             </span>
@@ -211,11 +179,7 @@ export function MissingFolderGroup({
         </div>
       ) : null}
       {review === 'dialog' ? (
-        /*
-          Mounted while the line is, and one render longer: when the last missing folder is
-          forgotten the dialog closes through its own exit, showing the rows it last had, instead
-          of vanishing with the line in one frame.
-        */
+        /* Mounted one render longer than the line so the dialog plays its exit. */
         <Dialog
           open={open && count > 0}
           onClose={() => setOpen(false)}
@@ -241,11 +205,7 @@ export function MissingFolderGroup({
               t={t}
             />
           </div>
-          {/*
-            `atlas-touch-floor` on each: a standard button is 40px, and no sweep reaches this
-            dialog (it needs gone folders in IndexedDB), so it carries the 44px coarse floor the
-            chooser's own help dialog carries.
-          */}
+          {/* 44px coarse floor on each, since no sweep reaches this dialog. */}
           <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
             {locate ? (
               <Button
@@ -363,11 +323,7 @@ function MissingFolderRow({
           </span>
         </p>
         {row.path ? (
-          /*
-            The whole path, wrapped: it is what tells two missing folders of one name apart, and
-            what a person checks before letting one go. It breaks after a slash where it can,
-            so a line never ends inside a folder name that fits whole on the next.
-          */
+          /* The whole path, wrapped after slashes, tells two missing folders of one name apart. */
           <p className="mt-0.5 break-words font-mono text-label leading-body text-[color:var(--color-text-quaternary)]">
             {row.path.split('/').map((segment, index, segments) => (
               <Fragment key={index}>

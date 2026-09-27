@@ -1,11 +1,4 @@
-/**
- * Where the three vendors are shaped into one form.
- *
- * Rust neither builds the request nor parses the response — it handles secrets,
- * transport, and auditing only. Vendor format differences are absorbed **here, in
- * one place**, which is what separates what can change without rebuilding the app
- * from what cannot.
- */
+/** Where the three vendors take one form; Rust only handles secrets, transport and auditing. */
 
 import type { AgentJsonSchema, AgentToolDefinition } from './tool-catalog';
 
@@ -21,18 +14,10 @@ export interface ToolResultPayload {
 
 /** One assistant turn plus the tool results for it. */
 export interface WireExchange {
-  /**
-   * The assistant turn of the vendor's response **verbatim**. It is sent back
-   * unchanged — in particular, editing Anthropic's thinking blocks makes the next
-   * round trip rejected.
-   */
+  /** The vendor's assistant turn verbatim; editing Anthropic's thinking blocks gets the next round trip rejected. */
   assistant: unknown;
   toolResults: ToolResultPayload[];
-  /**
-   * A provider ignored a required tool call. The next request preserves that
-   * assistant turn, then sends one deterministic correction instead of silently
-   * accepting an evidence-free answer.
-   */
+  /** A required tool call was ignored: resend that turn with one deterministic correction. */
   retry?: { expectedTool: string; instruction: string };
 }
 
@@ -82,14 +67,7 @@ export interface ProviderAdapter {
   reviewResponse?(turn: TurnAssembly, response: NormalizedResponse): ProviderResponseReview;
 }
 
-/**
- * The default model per vendor — the user does not choose (no model picker is built).
- *
- * If a vendor retires one of these names, the first round trip fails and the screen
- * shows the vendor's own sentence verbatim alongside the model name. It never
- * quietly switches to a different model — knowing which model your data was sent to
- * is the charter.
- */
+/** Per-vendor defaults with no picker; a retired name fails visibly rather than switching models. */
 export const PROVIDER_DEFAULT_MODELS: Record<string, string> = {
   anthropic: 'claude-opus-5',
   openai: 'gpt-5.1',
@@ -108,10 +86,7 @@ export function readVendorErrorMessage(parsed: unknown): string | undefined {
   return undefined;
 }
 
-/**
- * Gemini's functionDeclarations accept only a subset of OpenAPI. An unknown key
- * makes the whole request a 400, so only allowed keys survive.
- */
+/** Gemini rejects the whole request on an unknown schema key, so only these survive. */
 const GEMINI_ALLOWED_SCHEMA_KEYS = [
   'type',
   'description',

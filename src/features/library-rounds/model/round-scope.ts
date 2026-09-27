@@ -1,24 +1,9 @@
 import type { RoundKind } from '@/entities/library-round';
 
 /**
- * **The standing scope of a round** — what one pass may do with nobody at the screen.
- *
- * Decision: `docs/records/decisions/2026-09-17-library-rounds-standing-scope-*.md`. A person
- * approves a round once, in the sheet whose primary press reads "Allow and save" above these
- * exact sentences. During a pass every permission request the adapter raises comes here, and the
- * answer is allow or reject — never "ask", because there is nobody to ask.
- *
- * The table in the spec (§6) is the contract; this file is that table as code. Fail closed: a
- * request this judge does not recognise is refused, and the refusal is named in the pass ledger so
- * the person reads "refused: <tool>" in the morning rather than nothing.
- *
- * ## Connector tools and `toolKind`
- *
- * ACP adapters classify their own file tools (`read`, `edit`, …) but rarely classify an MCP
- * server's tools, which arrive as `other` or with no kind. A round's own connector is a source
- * the person approved for exactly this round, so its tools are allowed unless the adapter says
- * the call edits, deletes, moves or executes. Every connector tool the pass calls is listed in
- * the ledger, so a tool that should not have been called is visible the next morning.
+ * What one unattended pass may do: allow or reject, never ask, and fail closed on anything
+ * unrecognised. Decision: docs/records/decisions/2026-09-17-library-rounds-standing-scope-*.md.
+ * The round's connector tools pass unless the adapter says they edit, delete, move or execute.
  */
 
 export interface ScopeRequest {
@@ -34,11 +19,7 @@ interface ScopeRound {
   onStale?: 'mark' | 'redraft';
   /** The name the connector is attached under — the `mcp__<name>__` prefix of its tools. */
   connectorName?: string;
-  /**
-   * Every connector the round's places name (2026-09-21). A round may watch a Slack room and a
-   * Confluence space in one pass, so the allow-list is the union; `connectorName` stays because
-   * a record written before places holds only that one.
-   */
+  /** Every connector the round's places name; `connectorName` stays for older records. */
   connectorNames?: readonly string[];
 }
 
@@ -55,10 +36,7 @@ export interface ScopeInput {
   judgeWrite: (request: ScopeRequest) => { path: string; ok: boolean } | null;
 }
 
-/**
- * `note` is what the transcript and the ledger record: `read <path>`, `write <path>` or
- * `call <tool>`. The first word is what lets the ledger list writes apart from reads.
- */
+/** The note the ledger records: `read <path>`, `write <path>` or `call <tool>`. */
 export type ScopeVerdict =
   | { decision: 'allow'; note: string }
   | { decision: 'reject'; reason: string };
@@ -86,15 +64,7 @@ function vaultRelative(filePath: string | null, vaultRoot: string): string | nul
   return relative;
 }
 
-/**
- * Is this one of `server`'s tools?
- *
- * Matched as the whole prefix `mcp__<server>__`, never by splitting at the first `__`: a
- * connector the person attached as `notion__staging` owns `mcp__notion__staging__search`, and
- * reading the name up to the first separator called that server `notion` — a name that matches
- * neither the vault server nor the round's own connector, so every tool of that connector was
- * refused as "other connector".
- */
+/** Matches the whole `mcp__<server>__` prefix, since a server name may itself contain `__`. */
 function isToolOf(toolName: string | null, server: string): boolean {
   return Boolean(toolName && server && toolName.startsWith(`mcp__${server}__`));
 }
@@ -147,9 +117,7 @@ export function judgeRoundScope({
     return { decision: 'reject', reason: relative };
   }
 
-  // Ontology refinement rounds are unattended read-only reviews. The map's writer gate is
-  // deliberately still owned by the foreground ACP session; a scheduled review may inspect
-  // source evidence, but it cannot edit any vault file or turn a proposal into meaning.
+  // Ontology rounds are read-only reviews: they may inspect source evidence but never edit the vault.
   if (round.kind === 'ontology') {
     return { decision: 'reject', reason: relative || request.toolName || 'ontology review is read-only' };
   }

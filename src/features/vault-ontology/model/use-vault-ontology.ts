@@ -7,21 +7,11 @@ import {
   type VaultOntologyDerivation,
 } from '@/entities/docs-vault';
 
-/**
- * Exposes the ontology nodes and edges derived from the active local vault's frontmatter,
- * live.
- *
- * A real derivation is returned only while the vault is 'loaded'; otherwise an empty result
- * plus one warning line. Frontmatter is the source of truth, so there is no promote or
- * approve step before it surfaces as the graph.
- */
+/** Nodes and edges derived live from the local vault's frontmatter; empty plus a warning unless loaded. */
 export function useVaultOntology(): VaultOntologyDerivation {
   const vault = useLocalVault();
-  // While the same folder is being re-read (right after a save, or on tab return), keep
-  // showing what was there a moment ago — a re-read is not "no data". Without this
-  // distinction the screen blanked and came back on every save, and the "saved" confirmation
-  // on the inline row unmounted in that frame was never seen (measured 2026-07-26). It is
-  // false while **switching** folders, so another folder's graph is never drawn.
+  // A same-folder re-read keeps the last graph, or every save blanks the screen; false while
+  // switching folders, so another folder's graph is never drawn.
   const usable = vault.status === 'loaded' || vault.isReloadingSameVault;
   return useMemo<VaultOntologyDerivation>(() => {
     if (!usable || !vault.manifest) {

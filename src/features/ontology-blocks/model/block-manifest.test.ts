@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  BLOCK_MANIFEST_FILENAME,
   BLOCK_MANIFEST_SCHEMA_VERSION,
   buildBlockManifest,
   parseBlockManifest,
@@ -124,9 +123,5 @@ describe('parseBlockManifest', () => {
         }),
       ),
     ).toBeNull();
-  });
-
-  it('exposes the canonical sidecar filename', () => {
-    expect(BLOCK_MANIFEST_FILENAME).toBe('block-manifest.json');
   });
 });

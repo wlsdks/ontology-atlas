@@ -16,26 +16,8 @@ import { aggregateWikiFindings, type WikiReport } from "@/shared/lib/wiki-report
 import { mergeWikiVerdict } from "./merge-wiki-verdict";
 
 /**
- * The library, measured lazily, for one open folder.
- *
- * Two measurements sit on top of what the manifest already knows, and both are
- * deliberately **lazy and cached**, because both cost a file read:
- *
- * 1. **A source's sha256**, asked for only when some wiki page cites that source *and*
- *    recorded a hash for it. A source nobody has written up is `not-compiled` whatever
- *    its bytes are, so hashing it would spend a person's disk on a question nobody
- *    asked. In the app this is one native call for the whole batch; in a browser it is
- *    `crypto.subtle` over the bytes the person's own disk already holds.
- * 2. **A wiki page's bytes**, read once per `slug@mtime`. The page
- *    body is not in the manifest — `VaultDoc` keeps frontmatter, headings and an
- *    excerpt — and `uncited-fact` is a question about bullets, so the file is read.
- *    Bounded to `wiki/` and cached, an edit re-reads exactly the page that changed.
- *
- * The bytes are cached, but verdicts are derived against the current page and source
- * membership: deleting another file can break an unchanged page's citation or link.
- * A changed file invalidates its own byte entry. Neither cache is written
- * anywhere: the folder is the state, and a second store of what the folder already says
- * is what `.claude/rules/forbidden.md` refuses.
+ * The library for one open folder. Source hashes and wiki page bytes cost a read, so both are
+ * lazy and cached in memory only: the folder is the state (`.claude/rules/forbidden.md`).
  */
 
 interface LibraryWikiVerdict {
@@ -56,41 +38,16 @@ export interface LibraryUiModel extends LibraryModel {
   verdicts: Map<string, LibraryWikiVerdict>;
   /** Wiki pages that do not fit the contract, and have been measured. */
   offTemplateCount: number;
-  /**
-   * Page text by wiki slug, as last read for judging. The permission card applies an
-   * agent's edit to this to judge the page that would land; a slug absent here has not
-   * been read yet and gets no verdict rather than a guessed one.
-   */
+  /** Page text by wiki slug as last read; a slug absent here gets no verdict rather than a guess. */
   pageTexts: ReadonlyMap<string, string>;
-  /**
-   * The last Compile and the last Check-the-wiki run, read from `wiki/_log.md` — the
-   * app's own record, so the header can say what happened without asking anybody.
-   * Null when the log has no such line yet.
-   */
+  /** Last Compile and Check runs from `wiki/_log.md`; null when the log has no such line. */
   log: { lastCompile: WikiLogEntry | null; lastLint: WikiLogEntry | null };
   /**
-   * **The structural check, grouped the way a person reads it** — one entry per finding
-   * kind, the pages under it, advisory kinds last.
-   *
-   * Derived, never remembered: it is `verdicts` regrouped by
-   * `mcp/src/wiki-report.mjs`, the same module `wiki-validate` and `validate_wiki` group
-   * with, so the Check-results page and a terminal cannot enumerate one folder two ways
-   * (`docs/DECISIONS.md` 2026-09-11 makes that difference a falsifier). It is therefore
-   * true on every open, on every route, with no button and no agent.
-   *
-   * `unmeasured` is the honest half: page bytes are read lazily, so on the first frames
-   * of a folder there are pages this report has not judged. A reader is told that rather
-   * than being shown a short list as if it were complete.
+   * Verdicts regrouped by `mcp/src/wiki-report.mjs`, the module the CLI and MCP use, so the app
+   * and a terminal count one folder one way. The `unmeasured` field names pages not yet read.
    */
   structural: WikiReport;
-  /**
-   * Measured sha256 by source path, for the rows the reader opens.
-   *
-   * The map is already built inside this hook to derive the state words; exposing it is
-   * what lets a source's own pane print the hash rather than measure it a second time,
-   * and a path absent from it means **not measured**, which the pane says in those words
-   * instead of showing an empty cell.
-   */
+  /** Measured sha256 by source path; a path absent here was not measured. */
   hashes: ReadonlyMap<string, string>;
 }
 
@@ -127,28 +84,14 @@ export function useLibraryModel({
   vaultRootPath: string | null;
   /** The actual folder session identity, including distinct browser handles with the same name. */
   vaultScope: string;
-  /**
-   * False while the folder is a read-only sample or still loading. Guarding the work as
-   * well as the surface is the rule in `.claude/rules/architecture.md`: a section that
-   * is not drawn must not pay for its model.
-   */
+  /** False for a read-only sample or while loading; an undrawn section must not pay for its model (`.claude/rules/architecture.md`). */
   enabled: boolean;
 }): LibraryUiModel {
-  /**
-   * Measured hashes, keyed by `path@mtime` rather than by path.
-   *
-   * That one choice removes the invalidation problem instead of solving it: a file whose
-   * mtime moved is a different key, so its old measurement simply stops matching and the
-   * row falls back to `checking`. Pruning the cache in an effect would be the same
-   * behaviour written as a cascading render.
-   */
+  /** Keyed by `path@mtime`, so a moved mtime simply stops matching instead of needing pruning. */
   const [stampedHashes, setStampedHashes] = useState<Map<string, string>>(() => new Map());
   /**
-   * Cache only completed reads. A cancelled effect must not mark a page judged and
-   * prevent its successor from publishing the verdict. The key includes the folder
-   * identity, so a page with the same slug and mtime in another open vault cannot leak
-   * into this one. Current membership selects which cached bytes may reach readers or
-   * the permission card; verdicts remain derived from those current bytes below.
+   * Only completed reads are cached, or a cancelled effect blocks its successor's verdict. The
+   * key includes the folder identity so another vault's page cannot leak in.
    */
   const [rawByStamp, setRawByStamp] = useState<Map<string, string>>(() => new Map());
   const [logEntries, setLogEntries] = useState<WikiLogEntry[]>([]);
@@ -228,10 +171,8 @@ export function useLibraryModel({
     if (stamp === null || stamp === logStamp.current) return;
     const handle = fileHandles.get("wiki/_log");
     if (!handle) return;
-    // Claimed before the read so a re-run with the same stamp (the manifest and the
-    // handle map are rebuilt as new objects) does not start a second read; not cancelled
-    // on cleanup, because a read for this exact stamp is the one wanted and a cleanup
-    // that discarded it left the header blank (measured in the browser, 2026-09-06).
+    // Claimed before the read so a rebuilt manifest does not start a second read; not cancelled
+    // on cleanup, because this stamp's read is the wanted one.
     logStamp.current = stamp;
     void (async () => {
       try {
@@ -321,13 +262,7 @@ export function useLibraryModel({
     return { pageTexts, verdicts };
   }, [pageInputs, rawByStamp, sources]);
 
-  /*
-   * One aggregator decides both numbers. `offTemplateCount` used to be counted here from
-   * `!verdict.ok` while `wiki-validate` counted every page with any finding, so the app's
-   * footer said "2 pages do not fit the template" on the folder a terminal called
-   * `0/6 pages fit` — two correct numbers from two rules (both PO seats, 2026-09-12).
-   * `blockingPageCount` is now that one rule, and the report's head states what it counts.
-   */
+  /* One aggregator decides both numbers, so the footer and `wiki-validate` never disagree. */
   const structural = useMemo(
     () =>
       aggregateWikiFindings({

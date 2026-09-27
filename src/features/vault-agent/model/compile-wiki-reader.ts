@@ -38,12 +38,7 @@ function isReservedAnswerSlug(slug: string): boolean {
   return slug === `${WIKI_DIR}/answers` || slug.startsWith(`${WIKI_DIR}/answers/`);
 }
 
-/**
- * Existing pages are resolved from the vault's inventory. The inventory is the authority
- * for nested and non-ASCII addresses; normalising an unlisted nested path would turn a
- * model string into an arbitrary file. Root pages keep the short basename spelling used by
- * the original local Compile contract.
- */
+/** Existing pages resolve only from the inventory, or a model string becomes an arbitrary file. */
 function wikiAddress(value: unknown): string | null {
   if (typeof value !== 'string') return null;
   const raw = value.trim();
@@ -104,11 +99,7 @@ function finiteCursor(value: unknown): value is number {
   return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
 }
 
-/**
- * One reader owns address validation, inventory membership, snapshots, cursors and
- * receipts. The executor only asks it for a target or a result; it never keeps a second
- * Wiki snapshot that could disagree with this state.
- */
+/** The one owner of addresses, inventory, snapshots, cursors and receipts for Compile's wiki reads. */
 export function createCompileWikiReader(
   slugs: readonly string[],
   readPage: (slug: string) => Promise<CompileWikiPageSnapshot | null>,
@@ -250,8 +241,7 @@ export function createCompileWikiReader(
         exists: true,
         readable: true,
         cursor,
-        // `from`/`next` remain harmless response aliases for older local runners; the
-        // advertised contract and all new calls use `cursor`/`nextCursor`.
+        // `from`/`next` stay as aliases for older local runners.
         from: cursor,
         nextCursor: current.nextCursor,
         ...(current.nextCursor === null ? {} : { next: current.nextCursor }),
@@ -314,8 +304,7 @@ export function createCompileWikiReader(
       }
 
       const previous = states.get(pageTarget.slug);
-      // An omitted cursor starts a page. A zero cursor may restart a failed or complete
-      // read, but it cannot skip an in-progress continuation.
+      // A zero cursor may restart a failed or complete read, never skip an in-progress one.
       const initial =
         !cursorProvided ||
         rawCursor === undefined ||

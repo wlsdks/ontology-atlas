@@ -1,15 +1,7 @@
 /**
- * The bounded brief for an unattended ontology refinement pass.
- *
- * A scheduled pass may keep the map's understanding current by measuring and proposing. It never
- * becomes the person who accepts meaning: the existing ACP writer card and MCP construction
- * lifecycle remain the only path to an ontology write or a meaning receipt.
- *
- * **A proposal names the finding it answers, so the reviewer can price it.** The MCP write door
- * already classifies body defects by a fixed code, and the person reading this packet is deciding
- * which proposals are worth a turn. A proposal carrying the code repairs something the tools
- * already measured; one carrying none is this pass's own judgement, and saying which is which is
- * cheaper than re-deriving it at review time.
+ * The brief for an unattended ontology pass: it measures and proposes but never accepts meaning,
+ * which only the ACP writer card and the MCP lifecycle do. Each proposal names the write-door
+ * finding it answers, or says it answers none.
  */
 
 export interface OntologyRoundBriefInput {

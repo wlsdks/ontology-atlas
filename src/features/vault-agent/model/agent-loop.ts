@@ -21,24 +21,8 @@ import {
 } from './types';
 
 /**
- * One turn's state machine.
- *
- * **Three contracts:**
- *
- * 1. **It responds on the frame it was pressed.** `startTurn` does not wait for
- *    the network; it returns **synchronously** with the turn holding the user's
- *    bubble, and the screen draws that result immediately.
- * 2. **Every run can be interrupted.** `abort()` cuts an in-flight request where
- *    it stands and leaves a "read this far" closing row. Closing the panel takes
- *    the same path — closing is stopping, not continuing in the background.
- * 3. **There is no path that runs without a user turn.** Round trips happen only
- *    inside `run()` and are capped (6). Zero autonomous execution.
- *
- * **Progress shows only what has actually happened.** A tool row is confirmed
- * only **after its round trip completes**. Marking something "read" before it is
- * sent makes the screen state something that has not happened yet. While in
- * flight there is one pending dot and nothing else — no fake progress bar is
- * ever built.
+ * One turn's state machine: `startTurn` returns synchronously, `abort()` stops in place, and
+ * round trips run only inside `runTurn` under a cap. A tool row is confirmed only after its round trip.
  */
 
 export interface AgentLoopDeps {
@@ -53,27 +37,14 @@ export interface AgentLoopDeps {
   execute(call: NormalizedToolCall): Promise<ToolExecution>;
   /** The tool list carried in this turn. */
   tools: readonly AgentToolDefinition[];
-  /**
-   * The round-trip ceiling for this turn. Defaults to `AGENT_ROUND_CAP` (6), which is the
-   * number a conversational turn needs.
-   *
-   * Compile is a different shape of job and needed its own number: one read plus one
-   * proposal per file means a three-file turn cannot finish inside six rounds, and the
-   * measured result of running it anyway is the person's documents going to the model and
-   * the turn ending at the cap with no card at all (PO steward, 2026-09-06). The ceiling
-   * is still a ceiling — it is stated by the caller rather than removed.
-   */
+  /** Defaults to `AGENT_ROUND_CAP`; Compile passes more, but always a finite cap. */
   roundCap?: number;
   system: string;
   model: string;
   /** Cap-reached, aborted, and error copy arrive in the screen's language — the model does not write them. */
   notices: {
     roundCap: string;
-    /**
-     * The single line for a turn that stopped without calling a tool. The round
-     * number is carried so it is **symmetric** with the cap-reached copy — both
-     * say "which round it stopped at".
-     */
+    /** The line for a turn that stopped without a tool, carrying the round like the cap notice. */
     noToolCall: (args: { round: number; cap: number }) => string;
     aborted: string;
     networkFailed: string;
@@ -101,10 +72,7 @@ export interface TurnRunResult {
 
 let turnSeq = 0;
 
-/**
- * The turn created on **the very frame** [send] was pressed. There is no network
- * yet. The screen draws this value as is, locking the input and seating the bubble.
- */
+/** The turn created on the frame [send] was pressed, before any network. */
 export function startTurn(input: StartTurnInput): AgentTurn {
   turnSeq += 1;
   return {
@@ -120,9 +88,8 @@ export function startTurn(input: StartTurnInput): AgentTurn {
 }
 
 /**
- * Machine-readable prefixes minted by `src-tauri/src/llm.rs`. Mirrored here rather than imported
- * because the Rust side cannot export to TypeScript; `tests/contract/agent-notice-codes.contract.test.ts`
- * is what keeps the two copies honest.
+ * Prefixes minted by `src-tauri/src/llm.rs`, mirrored because Rust cannot export to TypeScript;
+ * tests/contract/agent-notice-codes.contract.test.ts keeps the copies equal.
  */
 export const AUDIT_BLOCKED_PREFIX = 'audit-blocked:';
 export const TIMED_OUT_PREFIX = 'timed-out:';
@@ -132,11 +99,8 @@ function noticeFor(deps: AgentLoopDeps, status: number | null, message: string):
   if (status === 401 || status === 403) {
     return { kind: 'notice', code: 'rejected', text: deps.notices.rejected };
   }
-  // Codes, not prose. These used to match Korean substrings of the Rust error text, which made
-  // the sentence a cross-language contract nothing pinned — and `forbidden.md` tells the next
-  // agent to translate exactly that prose. Doing so would have dropped an unwritable vault
-  // through to `network-failed`, telling the user to check their network while the real blocker
-  // was the folder. `tests/contract/agent-notice-codes.contract.test.ts` now holds both sides.
+  // Codes, not prose, or an unwritable vault reads as a network failure;
+  // tests/contract/agent-notice-codes.contract.test.ts holds both sides.
   if (message.includes(AUDIT_BLOCKED_PREFIX)) {
     return { kind: 'notice', code: 'audit-blocked', text: deps.notices.auditBlocked };
   }
@@ -146,13 +110,7 @@ function noticeFor(deps: AgentLoopDeps, status: number | null, message: string):
   return { kind: 'notice', code: 'network-failed', text: deps.notices.networkFailed };
 }
 
-/**
- * Runs one turn to completion. If `signal` is cut it tidies up where it stands and
- * returns.
- *
- * The return value is **a new turn object**, and intermediate states are streamed
- * through `onProgress` so the screen can redraw on every round trip.
- */
+/** Runs one turn to completion, tidying up where it stands if `signal` is cut. */
 export async function runTurn(
   deps: AgentLoopDeps,
   initial: AgentTurn,
@@ -191,6 +149,22 @@ export async function runTurn(
   const emit = () => options.onProgress?.(snapshot());
   emit();
 
+  const assemble = (tools: AgentLoopDeps['tools']) => ({
+    model: deps.model,
+    system: deps.system,
+    userText: question,
+    screenContextBlock,
+    exchanges,
+    tools,
+  });
+  const sendScope = (body: string) => ({
+    nodes: [...new Set(readSlugs)],
+    // Measured: the UTF-16 length actually sent in this round trip.
+    promptChars: body.length,
+    vaultChars,
+    tools: [...toolRefs],
+  });
+
   while (rounds < roundCap) {
     if (options.signal.aborted) {
       status = 'aborted';
@@ -199,14 +173,7 @@ export async function runTurn(
       return { turn: snapshot(), readSlugs, writeIntents };
     }
 
-    const assembly = {
-      model: deps.model,
-      system: deps.system,
-      userText: question,
-      screenContextBlock,
-      exchanges,
-      tools: deps.tools,
-    };
+    const assembly = assemble(deps.tools);
     const payload = deps.adapter.buildBody(assembly);
 
     let echo: LlmChatEcho;
@@ -215,13 +182,7 @@ export async function runTurn(
         body: payload,
         model: deps.model,
         question,
-        scope: {
-          nodes: [...new Set(readSlugs)],
-          // Measured only — the byte length actually sent in this round trip.
-          promptChars: payload.length,
-          vaultChars,
-          tools: [...toolRefs],
-        },
+        scope: sendScope(payload),
       });
     } catch (error) {
       if (options.signal.aborted) {
@@ -284,19 +245,7 @@ export async function runTurn(
 
     if (parsed.toolCalls.length === 0) {
       pushAssistant(parsed.text);
-      /**
-       * **A turn that ended without calling a single tool must not die quietly.**
-       *
-       * This branch catches two things at once: ① a normal finish that wraps up
-       * after using tools (where `toolRefs` is populated) ② a turn that stopped
-       * without ever opening the vault. ② is "it stopped here" exactly as the cap
-       * is, but unlike `round-cap` it gave no notice at all, so the screen could
-       * not be told apart from a normal completion. Those are the turns that
-       * appear in the measured audit log as `agent ok tools=[]`.
-       *
-       * The notice attaches to ② only — attaching it to ① adds wallpaper to every
-       * normal turn.
-       */
+      /* A turn that never called a tool gets a notice like the cap; a normal finish after tools does not. */
       if (toolRefs.length === 0) {
         events.push({
           kind: 'notice',
@@ -309,13 +258,11 @@ export async function runTurn(
       return { turn: snapshot(), readSlugs, writeIntents };
     }
 
-    // If text arrived alongside, seat it before the tool rows — it must read in the
-    // order the model said what it was going to do.
+    // Text before the tool rows, in the order the model said it.
     if (parsed.text.trim()) pushAssistant(parsed.text);
 
     const results: ToolResultPayload[] = [];
-    // Parallel tool calls are executed **sequentially** — the screen's rows are
-    // sequential too, so the user can follow what went out when.
+    // Parallel tool calls run sequentially so the rows show what went out when.
     for (const call of parsed.toolCalls) {
       if (options.signal.aborted) break;
       const execution = await deps.execute(call);
@@ -366,25 +313,13 @@ export async function runTurn(
   // Cap reached — ask once more to wrap up (with no tools).
   if (!options.signal.aborted) {
     try {
-      const closingAssembly = {
-        model: deps.model,
-        system: deps.system,
-        userText: question,
-        screenContextBlock,
-        exchanges,
-        tools: [],
-      };
+      const closingAssembly = assemble([]);
       const closingBody = deps.adapter.buildBody(closingAssembly);
       const echo = await deps.send({
         body: closingBody,
         model: deps.model,
         question,
-        scope: {
-          nodes: [...new Set(readSlugs)],
-          promptChars: closingBody.length,
-          vaultChars,
-          tools: [...toolRefs],
-        },
+        scope: sendScope(closingBody),
       });
       sentChars += closingBody.length;
       auditCount += 1;
@@ -412,17 +347,14 @@ export async function runTurn(
   return { turn: snapshot(), readSlugs, writeIntents };
 
   function pushAssistant(text: string) {
-    // Split off the next-step line **first** — letting it into citation validation
-    // draws the marker as a paragraph, showing the model's internal notation to the user.
+    // Split off the next-step line first, or citation validation draws it as a paragraph.
     const { body, nextStep } = splitNextStep(text);
     const cited = extractCitations(body, readSlugs);
     events.push({
       kind: 'assistant',
       paragraphs: cited.paragraphs,
       grounding: cited.grounding,
-    // Carry the read list as of this moment so the screen can draw evidence even
-    // with no citation notation (the material for compensation that does not rely
-    // on the model complying).
+    // The read list lets the screen show evidence without relying on citation markers.
       sources: [...readSlugs],
       nextStep,
     });

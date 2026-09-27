@@ -2,15 +2,7 @@ import type { VaultDoc, VaultSourceFile } from '@/entities/docs-vault';
 import { buildLibraryModel } from '@/entities/docs-vault';
 import { isWikiFurnitureSlug, validateWikiPage } from '@/shared/lib/wiki-page-schema';
 
-/**
- * **A consistency pass** — does every page still match its sources? Computed here, on this
- * machine, from bytes and frontmatter. No agent turn.
- *
- * The verdicts are the ones the Library already draws: `buildLibraryModel` derives a source's
- * state from the pages that cite it and the hash measured now, and `validateWikiPage` is the
- * same judge the Wiki list and `wiki-validate` run. This pass adds nothing to those rules; it
- * runs them at a time nobody pressed and turns the result into one ledger line.
- */
+/** Does every page still match its sources? The Library's own verdicts, computed locally with no agent turn. */
 
 export interface ConsistencyPassInput {
   sources: readonly VaultSourceFile[];
@@ -19,12 +11,7 @@ export interface ConsistencyPassInput {
   hashes: ReadonlyMap<string, string>;
   /** Raw text by wiki slug (`wiki/<name>`), for the structural check. */
   pageTexts: ReadonlyMap<string, string>;
-  /**
-   * Folders the round's vault place names, relative to the root. `[]` — the default — is the
-   * whole folder, which is what every round written before 2026-09-21 means. A page counts
-   * when its own file or any source it cites sits under one of them, so limiting a round to
-   * `sources/planning` still judges the pages built on those documents wherever they live.
-   */
+  /** Folders the vault place names; `[]` is the whole folder. A page counts when it or a cited source is under one. */
   paths?: readonly string[];
   /** The vault place watches only files under `sources/` with no `source_url`. */
   ownDocumentsOnly?: boolean;
@@ -61,12 +48,7 @@ export function runConsistencyPass({
   fromService,
 }: ConsistencyPassInput): ConsistencyPassResult {
   const model = buildLibraryModel({ sources, docs, hashes });
-  /*
-   * **The filter is applied to the model, not to the hashing.** The hashes were measured for
-   * whatever the caller asked for; deciding here which rows count keeps one rule in one place
-   * and keeps a page that cites a watched document in the pass even when the page itself lives
-   * elsewhere — the person said "watch these documents", not "watch these pages".
-   */
+  /* The filter applies to the model, so a page citing a watched document counts wherever it lives. */
   const inScope = (path: string) => {
     if (ownDocumentsOnly && fromService?.has(path)) return false;
     return paths.length === 0 || paths.some((folder) => isUnder(path, folder));
