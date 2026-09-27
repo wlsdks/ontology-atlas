@@ -59,9 +59,22 @@ import { loadVaultDocs } from '../vault.mjs';
 import { attachVaultValidation } from './maintenance.mjs';
 import { buildSummaryFreshness } from './vault-nodes.mjs';
 
+/**
+ * What `compile_ontology` answers when no argument asks for arrays, and the two
+ * ways to ask: the artifact grows with the vault (44 MB of nodes and edges at 12k
+ * nodes, 103 MB with indexes), so the default is its counts.
+ */
+const COMPILE_SUMMARY_DELIVERY = Object.freeze({
+  selection: 'summary_default',
+  reason: 'No argument asked for arrays, so this is the bounded summary: counts, graphHash and aggregates.',
+  fullArguments: Object.freeze({ full: true }),
+  pageArguments: Object.freeze({ nodesLimit: 500, edgesLimit: 500 }),
+});
+
 function compileOntologyTool({
   includeIndexes,
   summary,
+  full,
   nodesLimit,
   nodesOffset,
   edgesLimit,
@@ -69,13 +82,18 @@ function compileOntologyTool({
 } = {}) {
   requireOptionalBoolean(includeIndexes, 'includeIndexes');
   requireOptionalBoolean(summary, 'summary');
+  requireOptionalBoolean(full, 'full');
   requireOptionalPositiveInteger(nodesLimit, 'nodesLimit', { max: 500 });
   requireOptionalNonNegativeInteger(nodesOffset, 'nodesOffset');
   requireOptionalPositiveInteger(edgesLimit, 'edgesLimit', { max: 500 });
   requireOptionalNonNegativeInteger(edgesOffset, 'edgesOffset');
+  const asksForArrays = full === true
+    || includeIndexes === true
+    || [nodesLimit, nodesOffset, edgesLimit, edgesOffset].some((value) => value !== undefined);
+  const summaryOnly = summary === true || !asksForArrays;
   const artifact = compileOntology(loadVaultDocs(VAULT_ROOT), {
     includeIndexes: includeIndexes === true,
-    summary: summary === true,
+    summary: summaryOnly,
     nodesLimit: typeof nodesLimit === 'number' ? nodesLimit : undefined,
     nodesOffset: typeof nodesOffset === 'number' ? nodesOffset : undefined,
     edgesLimit: typeof edgesLimit === 'number' ? edgesLimit : undefined,
@@ -84,6 +102,7 @@ function compileOntologyTool({
   // Summary mode — the artifact is itself the count/aggregate, so the wrapper's
   // extra summary stats would duplicate it. Returned as-is.
   if (summary === true) return artifact;
+  if (summaryOnly) return { ...artifact, delivery: COMPILE_SUMMARY_DELIVERY };
   return {
     ...artifact,
     summary: {

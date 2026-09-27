@@ -1,14 +1,16 @@
 #!/usr/bin/env node
 // Memory windows for the MCP server, measured over real stdio on a generated
-// vault. Each window reads the heap after two forced collections through a
-// test-only fd-3 preload (`scripts/lib/mcp-memory-probe.mjs`) and never resident
-// size, which depends on the allocator and on other processes.
+// vault. The leak and HEAD windows read the heap after two forced collections
+// through a test-only fd-3 preload (`scripts/lib/mcp-memory-probe.mjs`) and never
+// resident size, which depends on the allocator and on other processes; the
+// briefs window reads the bytes each brief puts on the wire.
 //
 // Usage:
 //   node scripts/perf-mcp-memory.mjs              # measure and print
 //   node scripts/perf-mcp-memory.mjs --check      # exit 1 when a window is over budget
 //   node scripts/perf-mcp-memory.mjs --json
 //   node scripts/perf-mcp-memory.mjs --calls=50 --commits=10
+//   node scripts/perf-mcp-memory.mjs --server=/other/checkout/mcp/src/index.js
 //
 // Kept out of pre-push: it starts a server and runs several hundred calls.
 
@@ -19,12 +21,13 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const SERVER = join(ROOT, 'mcp', 'src', 'index.js');
 const PROBE = join(ROOT, 'scripts', 'lib', 'mcp-memory-probe.mjs');
 const KB = 1024;
 const MB = 1024 * 1024;
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
+// Another checkout's server, to measure a change against its base.
+const SERVER = resolve(args.find((arg) => arg.startsWith('--server='))?.slice('--server='.length) ?? join(ROOT, 'mcp', 'src', 'index.js'));
 const check = args.includes('--check');
 const json = args.includes('--json');
 const calls = integerFlag('--calls=', 50, { min: 10, max: 500 });
@@ -35,6 +38,7 @@ const FIRST_MEASURED_COMMIT = 2;
 const BUDGETS = {
   leakBytesPerCall: 64 * KB,
   headMoveBytesPerCommit: 2 * MB,
+  briefWireBytes: 256 * KB,
 };
 
 function integerFlag(prefix, fallback, { min, max }) {
@@ -145,7 +149,7 @@ async function startServer(vault) {
       for (let end = pending.indexOf('\n'); end >= 0; end = pending.indexOf('\n')) {
         const line = pending.slice(0, end);
         pending = pending.slice(end + 1);
-        if (line.trim()) handle(JSON.parse(line));
+        if (line.trim()) handle(JSON.parse(line), Buffer.byteLength(line, 'utf8') + 1);
       }
     });
   };
@@ -161,7 +165,7 @@ async function startServer(vault) {
     replies.delete(key);
     settle?.(value);
   };
-  onLines(child.stdout, (message) => settleReply(`rpc:${message.id}`, message));
+  onLines(child.stdout, (message, bytes) => settleReply(`rpc:${message.id}`, { ...message, bytes }));
   onLines(child.stdio[3], (message) => settleReply(`probe:${message.id}`, message));
   let nextId = 1;
   const rpc = (method, params) => {
@@ -180,12 +184,12 @@ async function startServer(vault) {
   };
   await rpc('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'perf-mcp-memory', version: '1' } });
   child.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' })}\n`);
-  const call = async (name, argumentsValue) => {
+  const call = async (name, argumentsValue, { withBytes = false } = {}) => {
     const reply = await rpc('tools/call', { name, arguments: argumentsValue });
     if (reply.error || reply.result?.isError) {
       throw new Error(`${name} failed: ${JSON.stringify(reply.error ?? reply.result?.content)}`.slice(0, 400));
     }
-    return reply.result;
+    return withBytes ? { result: reply.result, bytes: reply.bytes } : reply.result;
   };
   const stop = async () => {
     child.kill('SIGKILL');
@@ -237,9 +241,24 @@ async function measureHeadMoves(server, fixture) {
   return [{ window: 'head-moves', label: `commits ${FIRST_MEASURED_COMMIT}-${commits}`, commits: measured, bytesPerCommit }];
 }
 
+const BRIEF_OPERATIONS = ['health', 'workspace_brief', 'agent_brief'];
+
+async function measureBriefs(server) {
+  const rows = [];
+  for (const operation of BRIEF_OPERATIONS) {
+    // measurement window: one answer each, after the leak window warmed the
+    // server. A brief must fit by its own bounds (20 problem files and a pointer
+    // to validate_vault), so an answer the response budget had to cut fails too.
+    const { result, bytes } = await server.call('query_ontology', { operation }, { withBytes: true });
+    rows.push({ window: 'briefs', label: operation, bytes, cut: result?.structuredContent?.truncated === true });
+  }
+  return rows;
+}
+
 function overBudget(row) {
   if (row.window === 'leak') return row.bytesPerCall > BUDGETS.leakBytesPerCall;
   if (row.window === 'head-moves') return row.bytesPerCommit > BUDGETS.headMoveBytesPerCommit;
+  if (row.window === 'briefs') return row.bytes > BUDGETS.briefWireBytes || row.cut;
   return true;
 }
 
@@ -247,6 +266,9 @@ function describe(row) {
   const kilobytes = (bytes) => `${(bytes / KB).toFixed(1)} KB`;
   if (row.window === 'leak') {
     return `${row.label.padEnd(26)} ${kilobytes(row.bytesPerCall).padStart(10)} per call  (budget ${kilobytes(BUDGETS.leakBytesPerCall)}, ${row.calls} calls)`;
+  }
+  if (row.window === 'briefs') {
+    return `${row.label.padEnd(26)} ${kilobytes(row.bytes).padStart(10)} on the wire (budget ${kilobytes(BUDGETS.briefWireBytes)}${row.cut ? ', cut by the response budget' : ''})`;
   }
   return `${row.label.padEnd(26)} ${kilobytes(row.bytesPerCommit).padStart(10)} per commit (budget ${kilobytes(BUDGETS.headMoveBytesPerCommit)})`;
 }
@@ -258,6 +280,7 @@ try {
   const leakServer = await startServer(fixture.vault);
   try {
     rows.push(...await measureLeaks(leakServer));
+    rows.push(...await measureBriefs(leakServer));
   } finally {
     await leakServer.stop();
   }
@@ -278,7 +301,7 @@ if (failure) {
   process.exit(1);
 }
 // A window that measured nothing must not read as a pass.
-const expectedRows = LEAK_CALLS.length + 1;
+const expectedRows = LEAK_CALLS.length + 1 + BRIEF_OPERATIONS.length;
 if (rows.length !== expectedRows) {
   console.error(`[perf-mcp-memory] measured ${rows.length} of ${expectedRows} windows`);
   process.exit(1);
@@ -287,10 +310,10 @@ rows = rows.map((row) => ({ ...row, overBudget: overBudget(row) }));
 if (json) {
   console.log(JSON.stringify({ budgets: BUDGETS, rows }, null, 2));
 } else {
-  console.log('[perf-mcp-memory] heap after two forced collections, per window');
+  console.log('[perf-mcp-memory] heap after two forced collections, and brief sizes on the wire');
   for (const row of rows) console.log(`  ${row.overBudget ? '✗' : '✓'} ${row.window.padEnd(10)} ${describe(row)}`);
 }
 if (check && rows.some((row) => row.overBudget)) {
-  console.error('[perf-mcp-memory] over budget: a repeated call or a moved HEAD keeps memory it should release');
+  console.error('[perf-mcp-memory] over budget: a repeated call or a moved HEAD keeps memory it should release, or a brief outgrew its bounds');
   process.exit(1);
 }

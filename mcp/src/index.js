@@ -26,6 +26,7 @@ import {
   WRITE_CONSENT_MODE,
 } from './server/registry.mjs';
 import {
+  callerChoseSize,
   error,
   formatUnknownToolError,
   ok,
@@ -114,6 +115,9 @@ server.setRequestHandler('tools/call', async (request) => {
       );
     }
     const args = normalizeToolArguments(request.params.arguments, name);
+    // An answer whose size the caller did not choose is cut to the per-response
+    // budget in `ok()`, which names this tool's paging arguments when it cuts.
+    const respond = (result) => ok(result, { tool: name, bounded: !callerChoseSize(args) });
 
     // The write checkpoint sits before the switch, so a tool added later is covered
     // by not being in the read set, not by someone remembering to guard it.
@@ -136,89 +140,89 @@ server.setRequestHandler('tools/call', async (request) => {
 
     switch (name) {
       case 'connection_info':
-        return ok(connectionInfoTool(args));
+        return respond(connectionInfoTool(args));
       case 'git_status':
-        return ok(gitStatusTool());
+        return respond(gitStatusTool());
       case 'git_history':
-        return ok(gitHistoryTool(args));
+        return respond(gitHistoryTool(args));
       case 'git_snapshot':
         // The commit is the audit record; logging activity after it would dirty the
         // vault again.
-        return ok(gitSnapshotTool(args));
+        return respond(gitSnapshotTool(args));
       case 'list_concepts':
-        return ok(listConcepts(args));
+        return respond(listConcepts(args));
       case 'list_constellations':
-        return ok(listConstellationsTool(args));
+        return respond(listConstellationsTool(args));
       case 'get_constellation':
-        return ok(getConstellationTool(args));
+        return respond(getConstellationTool(args));
       case 'get_concept':
-        return ok(getConcept(args));
+        return respond(getConcept(args));
       case 'get_concepts':
-        return ok(getConceptsBatch(args));
+        return respond(getConceptsBatch(args));
       case 'find_evidence':
-        return ok(findEvidence(args));
+        return respond(findEvidence(args));
       case 'finalize_project_meaning':
         // The receipt is the whole durable write; an activity line after it would be a
         // second, non-atomic mutation.
-        return ok(finalizeProjectMeaningTool(args));
+        return respond(finalizeProjectMeaningTool(args));
       case 'connect_project_source':
-        return ok(logWrite(name, args, connectProjectSourceTool(args)));
+        return respond(logWrite(name, args, connectProjectSourceTool(args)));
       case 'disconnect_project_source':
-        return ok(logWrite(name, args, disconnectProjectSourceTool(args)));
+        return respond(logWrite(name, args, disconnectProjectSourceTool(args)));
       case 'add_concept':
-        return ok(logWrite(name, args, addConcept(args)));
+        return respond(logWrite(name, args, addConcept(args)));
       case 'add_concepts':
-        return ok(logWrite(name, args, addConceptsBatch(args)));
+        return respond(logWrite(name, args, addConceptsBatch(args)));
       case 'add_relation':
-        return ok(logWrite(name, args, addRelation(args)));
+        return respond(logWrite(name, args, addRelation(args)));
       case 'remove_relation':
-        return ok(logWrite(name, args, removeRelation(args)));
+        return respond(logWrite(name, args, removeRelation(args)));
       case 'replace_relation':
-        return ok(logWrite(name, args, replaceRelation(args)));
+        return respond(logWrite(name, args, replaceRelation(args)));
       case 'add_relations':
-        return ok(logWrite(name, args, addRelationsBatch(args)));
+        return respond(logWrite(name, args, addRelationsBatch(args)));
       case 'patch_concept':
-        return ok(logWrite(name, args, patchConcept(args)));
+        return respond(logWrite(name, args, patchConcept(args)));
       case 'find_backlinks':
-        return ok(findBacklinksTool(args));
+        return respond(findBacklinksTool(args));
       case 'find_neighbors':
-        return ok(findNeighborsTool(args));
+        return respond(findNeighborsTool(args));
       case 'find_path':
-        return ok(findPathTool(args));
+        return respond(findPathTool(args));
       case 'list_kinds':
-        return ok(listKindsTool());
+        return respond(listKindsTool());
       case 'find_orphans':
-        return ok(findOrphansTool(args));
+        return respond(findOrphansTool(args));
       case 'query_concepts':
-        return ok(queryConceptsTool(args));
+        return respond(queryConceptsTool(args));
       case 'compile_ontology':
-        return ok(compileOntologyTool(args));
+        return respond(compileOntologyTool(args));
       case 'query_ontology':
-        return ok(await queryOntologyTool(args));
+        return respond(await queryOntologyTool(args));
       case 'validate_vault':
-        return ok(validateVaultTool(args));
+        return respond(validateVaultTool(args));
       case 'read_source':
-        return ok(readSourceTool(args));
+        return respond(readSourceTool(args));
       case 'validate_wiki':
-        return ok(validateWikiTool(args));
+        return respond(validateWikiTool(args));
       case 'inspect_architecture':
-        return ok(inspectArchitectureTool(args));
+        return respond(inspectArchitectureTool(args));
       case 'analyze_repo_structure':
-        return ok(analyzeRepoStructureTool(args));
+        return respond(analyzeRepoStructureTool(args));
       case 'infer_imports':
-        return ok(inferImportsTool(args));
+        return respond(inferImportsTool(args));
       case 'index_project':
-        return ok(indexProjectTool(args));
+        return respond(indexProjectTool(args));
       case 'rename_concept':
-        return ok(logWrite(name, args, renameConcept(args)));
+        return respond(logWrite(name, args, renameConcept(args)));
       case 'reclassify_concept':
-        return ok(logWrite(name, args, reclassifyConcept(args)));
+        return respond(logWrite(name, args, reclassifyConcept(args)));
       case 'merge_concepts':
-        return ok(logWrite(name, args, mergeConcepts(args)));
+        return respond(logWrite(name, args, mergeConcepts(args)));
       case 'delete_concept':
-        return ok(logWrite(name, args, deleteConcept(args)));
+        return respond(logWrite(name, args, deleteConcept(args)));
       case 'absorb_document':
-        return ok(logWrite(name, args, absorbDocumentTool(args)));
+        return respond(logWrite(name, args, absorbDocumentTool(args)));
       default:
         throw new Error(formatUnknownToolError(name));
     }

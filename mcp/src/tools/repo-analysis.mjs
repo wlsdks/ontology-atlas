@@ -43,7 +43,7 @@ import {
   requireOptionalStringArray,
 } from '../server/validate.mjs';
 import { loadVaultDocs } from '../vault.mjs';
-import { validateVaultTool } from './validate-vault.mjs';
+import { validateVaultReport } from './validate-vault.mjs';
 import {
   relative,
   sep,
@@ -508,7 +508,7 @@ function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports
     maxDepth,
     precomputedPythonImports: importAnalysis,
   });
-  const validation = validateVaultTool({ repoRoot: target });
+  const validation = validateVaultReport({ repoRoot: target });
 
   const conceptCount =
     (analyze.project ? 1 : 0) +

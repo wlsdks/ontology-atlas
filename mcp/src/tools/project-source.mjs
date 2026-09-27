@@ -50,7 +50,7 @@ import {
   projectSourceScope,
 } from './graph.mjs';
 import { attachVaultValidation } from './maintenance.mjs';
-import { validateVaultTool } from './validate-vault.mjs';
+import { validateVaultReport } from './validate-vault.mjs';
 import { resolveExistingVaultSlug } from './vault-nodes.mjs';
 import { isAbsolute } from 'node:path';
 
@@ -309,7 +309,7 @@ function finalizeProjectMeaningTool({ projectSlug, expected_mtime } = {}) {
 
   // One read of the vault serves validation, the compile and the project scope, so
   // the receipt is judged against a single snapshot.
-  const validation = validateVaultTool({}, allDocs);
+  const validation = validateVaultReport({}, allDocs);
   if (validation.summary.errorFiles > 0) {
     throw new Error(
       `finalize_project_meaning blocked: validate_vault found ${validation.summary.errorFiles} file(s) with errors. Repair them before finalizing.`,

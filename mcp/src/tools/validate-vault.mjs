@@ -15,7 +15,12 @@ import {
   VAULT_ROOT,
   assertScanRootAllowed,
 } from '../server/runtime.mjs';
-import { requireOptionalNonBlankString } from '../server/validate.mjs';
+import { RESPONSE_TEXT_BUDGET_BYTES } from '../server/rpc.mjs';
+import {
+  requireOptionalNonBlankString,
+  requireOptionalNonNegativeInteger,
+  requireOptionalPositiveInteger,
+} from '../server/validate.mjs';
 import {
   suppressLibraryKindIssues,
   suppressParentedExpectedFieldIssues,
@@ -120,7 +125,124 @@ function validateWikiTool({ paths } = {}) {
   };
 }
 
-function validateVaultTool({ repoRoot } = {}, loadedDocs = null) {
+/** Problem files one `validate_vault` page returns unless `limit` says otherwise. */
+const VALIDATION_PAGE_LIMIT = 100;
+/** Problem files a brief (`health`, `workspace_brief`, `agent_brief`) carries. */
+const BRIEF_PROBLEM_LIMIT = 20;
+/** Files each `summary.byCode` entry names; its `count` stays the full number. */
+const BY_CODE_FILE_SAMPLE = 20;
+/** Path drifts one `validate_vault` answer lists; `driftsOmitted` counts the rest. */
+const VALIDATION_DRIFT_LIMIT = 100;
+/** Path drifts a brief carries. */
+const BRIEF_DRIFT_LIMIT = 20;
+
+/**
+ * `validate_vault`: one page of the problem files (`offset`, `limit`, default 100)
+ * with the whole-vault counts. A 12k-node vault's full report was 30 MB, and the
+ * three briefs embedded it whole.
+ */
+function validateVaultTool({ repoRoot, offset, limit } = {}, loadedDocs = null) {
+  requireOptionalNonNegativeInteger(offset, 'offset');
+  requireOptionalPositiveInteger(limit, 'limit', { max: 500 });
+  return pageVaultValidation(validateVaultReport({ repoRoot }, loadedDocs), {
+    offset: offset ?? 0,
+    limit: limit ?? VALIDATION_PAGE_LIMIT,
+    // A default page fits the response budget; an explicit `limit` is delivered as asked.
+    textBudget: limit === undefined ? RESPONSE_TEXT_BUDGET_BYTES : null,
+  });
+}
+
+/** Text a page keeps free for its hint and the response envelope. */
+const PAGE_TEXT_RESERVE_BYTES = 4096;
+
+const prettyBytes = (value) => Buffer.byteLength(JSON.stringify(value, null, 2), 'utf8');
+
+/**
+ * One page of a report: problem files from `offset`, errors first and then by
+ * slug, so pages are stable while the vault is; `summary` keeps the whole-vault
+ * counts and names at most `BY_CODE_FILE_SAMPLE` files per code, and `pathDrift`
+ * lists at most `driftLimit` drifts and counts the rest in `driftsOmitted`. With
+ * a `textBudget` the page also stops before its text would pass it (a problem
+ * file is about 2 KB, so 100 of them could not fit), and `nextOffset` resumes there.
+ */
+function pageVaultValidation(report, { offset, limit, textBudget = null, driftLimit = VALIDATION_DRIFT_LIMIT }) {
+  const total = report.problems.length;
+  const start = Math.min(offset, total);
+  const byCode = Object.fromEntries(Object.entries(report.summary.byCode).map(([code, entry]) => [code, {
+    severity: entry.severity,
+    count: entry.count,
+    files: entry.files.slice(0, BY_CODE_FILE_SAMPLE),
+    ...(entry.files.length > BY_CODE_FILE_SAMPLE ? { filesOmitted: entry.files.length - BY_CODE_FILE_SAMPLE } : {}),
+  }]));
+  const drifts = report.pathDrift?.drifts ?? [];
+  const frame = {
+    ...report,
+    problems: [],
+    problemsPagination: { offset: start, limit, total, returned: 0, hasMore: false, nextOffset: null },
+    summary: { ...report.summary, byCode },
+    ...(drifts.length > driftLimit
+      ? { pathDrift: { ...report.pathDrift, drifts: drifts.slice(0, driftLimit), driftsOmitted: drifts.length - driftLimit } }
+      : {}),
+  };
+  let problems = report.problems.slice(start, start + limit);
+  let stoppedForSize = false;
+  if (textBudget !== null) {
+    let room = textBudget - prettyBytes(frame) - PAGE_TEXT_RESERVE_BYTES;
+    let fitting = 0;
+    for (const row of problems) {
+      // Inside the answer every line of a row is indented four more spaces.
+      const text = JSON.stringify(row, null, 2);
+      const rowBytes = Buffer.byteLength(text, 'utf8') + 4 * (text.split('\n').length) + 2;
+      if (fitting > 0 && rowBytes > room) break;
+      room -= rowBytes;
+      fitting += 1;
+    }
+    stoppedForSize = fitting < problems.length;
+    problems = problems.slice(0, fitting);
+  }
+  const end = start + problems.length;
+  const nextOffset = end < total ? end : null;
+  return {
+    ...frame,
+    problems,
+    problemsPagination: { offset: start, limit, total, returned: problems.length, hasMore: nextOffset !== null, nextOffset },
+    ...(start > 0 || nextOffset !== null
+      ? {
+          problemsHint:
+            (problems.length > 0
+              ? `Problem files ${start + 1}-${end} of ${total}, files with errors first and then by slug`
+              : `No problem files from offset ${start}; the vault has ${total}`)
+            + (stoppedForSize ? `; the page stopped before ${limit} files to stay within the response size budget` : '')
+            + (nextOffset !== null ? `. The next page: validate_vault({ offset: ${nextOffset} }).` : '.'),
+        }
+      : {}),
+  };
+}
+
+/**
+ * What a brief embeds: the whole-vault counts, the first problem files, the first
+ * path drifts, and the `validate_vault` call that returns the rest.
+ */
+function briefVaultValidation(report) {
+  const page = pageVaultValidation(report, { offset: 0, limit: BRIEF_PROBLEM_LIMIT, driftLimit: BRIEF_DRIFT_LIMIT });
+  return {
+    ...page,
+    ...(page.problemsPagination.hasMore || page.pathDrift?.driftsOmitted > 0
+      ? {
+          nextCall: {
+            tool: 'validate_vault',
+            arguments: page.problemsPagination.hasMore ? { offset: page.problemsPagination.nextOffset } : {},
+          },
+        }
+      : {}),
+  };
+}
+
+/**
+ * The whole report, every problem file included, for callers that judge the vault
+ * (the briefs' checks, finalize, git_snapshot, index_project) rather than show it.
+ */
+function validateVaultReport({ repoRoot } = {}, loadedDocs = null) {
   requireOptionalNonBlankString(repoRoot, 'repoRoot');
   const docs = loadedDocs ?? loadVaultDocs(VAULT_ROOT);
   const docIssues = new Map();
@@ -160,9 +282,14 @@ function validateVaultTool({ repoRoot } = {}, loadedDocs = null) {
   let warningFiles = 0;
   // byCode aggregation: { code → { severity, count, files: Set<slug> } }
   const byCodeMap = new Map();
-  for (const doc of docs) {
-    const issues = docIssues.get(doc.slug) || [];
-    if (issues.length === 0) continue;
+  // Files with an error first, then by slug: the order every page and brief shows.
+  const problemDocs = docs
+    .filter((doc) => (docIssues.get(doc.slug) || []).length > 0)
+    .map((doc) => ({ doc, hasError: docIssues.get(doc.slug).some((issue) => issue.severity === 'error') }))
+    .sort((left, right) => Number(right.hasError) - Number(left.hasError) || left.doc.slug.localeCompare(right.doc.slug))
+    .map(({ doc }) => doc);
+  for (const doc of problemDocs) {
+    const issues = docIssues.get(doc.slug);
     let hasError = false;
     const seenInDoc = new Set();
     for (const issue of issues) {
@@ -442,6 +569,8 @@ function buildEvidenceDrift(docs, repoRoot, vaultRoot) {
 }
 
 export {
+  briefVaultValidation,
   validateWikiTool,
+  validateVaultReport,
   validateVaultTool,
 };

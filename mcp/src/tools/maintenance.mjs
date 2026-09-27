@@ -11,23 +11,28 @@ import {
   VAULT_ROOT,
 } from '../server/runtime.mjs';
 import { drainNodeEligibilityFindings } from '../vault.mjs';
-import { validateVaultTool } from './validate-vault.mjs';
+import {
+  briefVaultValidation,
+  validateVaultReport,
+} from './validate-vault.mjs';
 import { buildSummaryFreshness } from './vault-nodes.mjs';
 
 /**
- * `validation` is a `validate_vault({})` report the caller already computed over
- * the same documents; without it the vault is validated here.
+ * The check is judged on the whole report (`report`, when the caller already built
+ * it over the same documents), and the result carries its bounded view: counts,
+ * the first problem files and drifts, and the `validate_vault` call for the rest.
  */
-function attachVaultValidation(result, args = {}, loadedDocs = null, validation = validateVaultTool({}, loadedDocs)) {
-  const pathsChecked = validation.pathDrift?.checked !== false;
-  const driftCount = validation.pathDrift?.drifts?.length ?? 0;
-  const errorCount = validation.summary.errorFiles;
-  const frontmatterWarnings = validation.summary.warningFiles;
+function attachVaultValidation(result, args = {}, loadedDocs = null, report = validateVaultReport({}, loadedDocs)) {
+  const validation = briefVaultValidation(report);
+  const pathsChecked = report.pathDrift?.checked !== false;
+  const driftCount = report.pathDrift?.drifts?.length ?? 0;
+  const errorCount = report.summary.errorFiles;
+  const frontmatterWarnings = report.summary.warningFiles;
   const warningCount = frontmatterWarnings + driftCount;
   // The sentence names which check found the warnings, so frontmatter warnings and
   // code-path warnings are never merged into one unexplained number.
   const scopeTail = pathsChecked
-    ? ` (frontmatter/graph refs ${frontmatterWarnings}, source paths ${driftCount}; repoRoot ${validation.pathDrift?.repoRoot ?? 'unknown'})`
+    ? ` (frontmatter/graph refs ${frontmatterWarnings}, source paths ${driftCount}; repoRoot ${report.pathDrift?.repoRoot ?? 'unknown'})`
     : ' (frontmatter/graph refs only — source paths were NOT checked; pass repoRoot / OATLAS_REPO_ROOT to include them)';
   const check = {
     id: 'vault_validation',

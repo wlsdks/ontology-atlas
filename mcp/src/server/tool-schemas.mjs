@@ -1995,6 +1995,53 @@ function nonBlankStringSchema(description, extra = {}) {
   };
 }
 
+/**
+ * The two fields any answer may gain when its text passes the per-response budget
+ * (`ok()` in `rpc.mjs`). Every tool's `outputSchema` declares them, because a
+ * client validates `structuredContent` against it and would reject a cut answer.
+ */
+const RESPONSE_TRUNCATION_OUTPUT_PROPERTIES = Object.freeze({
+  truncated: {
+    type: 'boolean',
+    enum: [true],
+    description: 'Present only when the answer was cut to the per-response budget; `truncation` says where.',
+  },
+  truncation: {
+    type: 'object',
+    description:
+      'Present only with `truncated`: the longest lists keep their first rows, a page reported for a cut list is corrected so `nextOffset` resumes exactly, and `hint` names the arguments that page or narrow the call.',
+    properties: {
+      budgetBytes: { type: 'integer', minimum: 1 },
+      fullBytes: { type: 'integer', minimum: 0 },
+      cut: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            path: NON_BLANK_STRING_SCHEMA,
+            kept: { type: 'integer', minimum: 0 },
+            total: { type: 'integer', minimum: 0 },
+          },
+          required: ['path', 'kept', 'total'],
+          additionalProperties: false,
+        },
+      },
+      hint: NON_BLANK_STRING_SCHEMA,
+    },
+    required: ['budgetBytes', 'fullBytes', 'cut', 'hint'],
+    additionalProperties: false,
+  },
+});
+
+/** `outputSchema` with the truncation fields added at the top level. */
+function withResponseTruncationFields(outputSchema) {
+  if (!outputSchema || outputSchema.type !== 'object') return outputSchema;
+  return {
+    ...outputSchema,
+    properties: { ...(outputSchema.properties ?? {}), ...RESPONSE_TRUNCATION_OUTPUT_PROPERTIES },
+  };
+}
+
 function paginationOutputSchema() {
   return {
     type: 'object',
@@ -2222,6 +2269,7 @@ export {
   MEANING_ASSESSMENT_OUTPUT_SCHEMA,
   nonBlankStringSchema,
   paginationOutputSchema,
+  withResponseTruncationFields,
   QUERY_ONTOLOGY_OPERATION_UNION,
   QUERY_PLAN_TARGET_OPERATION_UNION,
   RELATION_TYPE_UNION,

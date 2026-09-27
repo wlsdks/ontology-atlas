@@ -263,7 +263,6 @@ export function compileOntology(docs, options = {}) {
       graphHash,
       maxMtime,
       nodeCount,
-    skippedNonNodeCount,
       // `.md` files passed over for having no kind: reported, not an issue.
       skippedNonNodeCount,
       edgeCount,
