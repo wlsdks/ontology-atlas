@@ -6,30 +6,19 @@ type LastEditSubjectKind = "agent" | "human";
 
 export interface LastEditSubjectRowProps {
   kind: LastEditSubjectKind;
-  /** The "last edited" label — the caller resolves it via i18n. */
+  /** Resolved by the caller via i18n. */
   prefixLabel: string;
-  /** Who edited it (agent or the user) — the caller resolves it via i18n. */
+  /** Agent or person, resolved by the caller via i18n. */
   subjectLabel: string;
-  /** Relative age, e.g. "3 minutes ago" — the caller resolves it via `computeEditAge` plus i18n (tabular-nums). */
+  /** Resolved by the caller from `computeEditAge` plus i18n (tabular-nums). */
   ageLabel: string;
   className?: string;
 }
 
 /**
- * rank7 (design-council B5) — last-edit provenance row, shared by
- * `DocFrontmatterBlock`, `OntologyMapDetailPanel`, and `FullDetailA1`.
- *
- * Human vs AI is distinguished ONLY by a lucide glyph (User/Bot) + plain
- * label — never by hue. The product identity is "agent-native,
- * human-sovereign": both subjects are equal, neutral facts, so this
- * component paints them with the exact same text color and no new color
- * channel. Static, no motion — a plain fact, not a status change.
- *
- * Every string is resolved by the caller from a REAL data source
- * (`resolveDocLastEditSubject` in docs-vault, `resolveNodeLastEditSubject`
- * in home) — this component has no opinion about vault state and never
- * fabricates a subject. If the caller has no evidence, it renders nothing
- * instead of mounting this row.
+ * Last-edit provenance row. Person and agent differ only by glyph and label, never hue: both
+ * are equal neutral facts. Every string comes from real data resolved by the caller, which
+ * renders nothing without evidence.
  */
 export function LastEditSubjectRow({
   kind,

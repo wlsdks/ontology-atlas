@@ -19,7 +19,7 @@ describe("Textarea autoGrow", () => {
     expect(el.style.overflowY).toBe("hidden");
     scroll = 400;
     rerender(<Textarea label="Why" autoGrow maxRows={4} rows={3} value="one line\ntwo\nthree\nfour\nfive\nsix" onChange={() => {}} />);
-    // ceiling = 4 rows * 20 + 18 of padding and border
+    // Ceiling: 4 rows of 20 plus 18 of padding and border.
     expect(el.style.height).toBe("98px");
     expect(el.style.overflowY).toBe("auto");
   });

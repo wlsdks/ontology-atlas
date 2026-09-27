@@ -1,27 +1,13 @@
 /**
- * **Resolving a length that the reader's font setting can move.**
- *
- * Since 2026-09-12 the type ramp is declared in `rem` so a browser's text-only zoom reaches it
- * (`app/globals.css`, "The ramp is written in `rem`"). That makes `getPropertyValue('--text-label')`
- * return `"0.6875rem"` where it used to return `"11px"`, and `Number.parseFloat` on that string
- * returns **0.6875** — a number that is finite, positive, and off by a factor of sixteen. Nothing
- * throws; a canvas simply draws its names at two thirds of a pixel.
- *
- * That is the whole reason this file exists: a token's *value* is now a length in a unit, and the
- * only honest way to turn one into pixels outside the style engine is to resolve it against the
- * root the page is actually using.
+ * Resolves lengths the reader's font setting can move. The type ramp is in `rem`
+ * (`app/globals.css`), so `Number.parseFloat` on a token would return 0.6875 for 11px; lengths
+ * must be resolved against the root the page is using.
  */
 
-/** The root font size the document is rendering at — 16 unless the reader changed it. */
+/** 16 unless the reader changed it. */
 export const DEFAULT_ROOT_FONT_PX = 16;
 
-/**
- * The root font size right now, in pixels.
- *
- * Read fresh at every call rather than cached: the value a reader is asking about is the one in
- * effect at the moment they look, and a browser font-size preference can change between frames
- * without any resize event firing.
- */
+/** Read at every call: a font-size preference can change without a resize event. */
 export function rootFontPx(): number {
   if (typeof document === "undefined") return DEFAULT_ROOT_FONT_PX;
   const parsed = Number.parseFloat(getComputedStyle(document.documentElement).fontSize);
@@ -29,12 +15,8 @@ export function rootFontPx(): number {
 }
 
 /**
- * A CSS length string in pixels, resolved against a root size.
- *
- * `px` and `rem` only, and that is deliberate. `em` resolves against the *parent's* size, which
- * this function cannot see and a caller outside the style engine almost never means; returning
- * `NaN` makes such a token fail loudly at its own consumer rather than draw at the wrong scale.
- * A unitless number is read as pixels, because that is what every historical caller meant.
+ * Handles `px` and `rem` only. `em` depends on the parent, which this cannot see, so it
+ * returns `NaN` and fails at its consumer; a unitless number is read as pixels.
  */
 export function cssLengthToPx(value: string, root: number = rootFontPx()): number {
   const trimmed = value.trim();

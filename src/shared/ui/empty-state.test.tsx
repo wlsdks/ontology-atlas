@@ -105,7 +105,6 @@ describe('EmptyState — heading and action lines', () => {
     const actionRow = container.querySelector('[data-empty-action]');
     const icon = container.querySelector('[data-empty-icon]');
     expect(actionRow).not.toBeNull();
-    // The icon's sibling column holds the title, the description and the action.
     expect(icon?.nextElementSibling?.contains(actionRow)).toBe(true);
     expect(icon?.nextElementSibling?.contains(screen.getByText('t'))).toBe(true);
   });
@@ -137,44 +136,26 @@ describe('EmptyState — size variant', () => {
 });
 
 /**
- * **A page whose entire content is this one card still needs a heading.**
- *
- * **Why this check exists** (measured at narrow widths, 2026-07-29). Below
- * 1024px the studio turns into an honest degradation card, and that route then
- * had **zero** heading elements. The screen showed 「The studio opens on a wider screen」 in large type, but the document
- * had no heading at all, so a screen-reader user could learn from the headings
- * neither what the page was nor why the studio had not opened.
- *
- * A degradation card's contract is "why, and where to instead"
- * (`.claude/rules/surfaces.md`). **If the "why" cannot be read, the contract is
- * not met.**
- *
- * The cause was not this one card but the shared primitive: `EmptyState` always
- * emitted its title as a `<p>`. The fix went into the primitive, and this check
- * pins both of its branches — **`p` by default** (an empty state inside a list
- * is not a document section) and **`h1` chosen by the caller when the card is
- * the page's content**.
+ * A page whose whole content is this card still needs a heading, so a screen reader can hear
+ * why the surface did not open (`.claude/rules/surfaces.md`): `p` by default, `h1` when the
+ * caller says the card is the page.
  */
-describe("EmptyState — 제목 태그", () => {
-  it("기본은 p 다 — 목록/섹션 안의 빈 상태는 문서 구획이 아니다", () => {
+describe("EmptyState title tag", () => {
+  it("renders the title as p by default", () => {
     render(<EmptyState title="아직 없어요" />);
     expect(screen.queryByRole("heading")).not.toBeInTheDocument();
     expect(screen.getByText("아직 없어요").tagName).toBe("P");
   });
 
-  it("titleAs 로 heading 을 낼 수 있다", () => {
+  it("renders a heading when titleAs is set", () => {
     render(<EmptyState titleAs="h1" title="공방은 넓은 화면에서 열려요" />);
     expect(
       screen.getByRole("heading", { level: 1, name: "공방은 넓은 화면에서 열려요" }),
     ).toBeInTheDocument();
   });
 
-  /**
-   * Zero visual change is the premise of the swap: Tailwind preflight resets a
-   * heading's size and weight to `inherit`, so the classes keep deciding. Lose
-   * the classes and the title jumps to the browser's default h1 size.
-   */
-  it("태그가 바뀌어도 같은 클래스를 싣는다", () => {
+  /** Preflight resets heading size and weight, so the classes keep deciding the look. */
+  it("keeps the same classes when the tag changes", () => {
     const { unmount } = render(<EmptyState title="X" />);
     const asP = screen.getByText("X").className;
     unmount();

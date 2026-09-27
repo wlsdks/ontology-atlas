@@ -1,82 +1,29 @@
 /**
- * Where the toaster stands.
- *
- * **The bottom of the free lane is the default** (owner, 2026-09-24). The toaster is
- * centred between the walls a screen declares with `data-toast-wall` (`toast-walls.ts`)
- * and stands 16px above the floor. It replaces two earlier answers: under the map's
- * toolbar, top-centred (2026-09-06), and centred on the viewport (2026-09-07). Measured
- * on 2026-09-24 the top-centred box lay over INDEX at 1040, over an open dock at 1040
- * and over the agent status line at 1512; the bottom of the lane had nothing standing
- * in it at 1040, 1512 or 1920, panel open or closed.
- *
- * A surface whose notices are about one pane claims that pane's corner instead with
- * `useToastAnchor` and plants the edges below — the Library is the one that does
- * (owner, 2026-09-12).
+ * The toaster defaults to the bottom of the free lane between the `data-toast-wall` walls
+ * (`toast-walls.ts`), 16px above the floor. A surface whose notices concern one pane claims its
+ * corner with `useToastAnchor` and plants the offsets below.
  */
 
 /**
- * **The Library's toast stands in the corner of the pane it is about, not over its head.**
- *
- * Owner, 2026-09-12, on the installed app's Library: *"the toast at the top — its
- * position is odd too, right? (and of course a toast should adjust its position
- * adaptively)"*. The two constants that stood here were the measurement of that
- * oddness rather than a cure for it: a top-centred box on this surface had to be pushed
- * **124px** down (601px and up) and **173px** down (below it) just to miss the pane's own
- * chrome, and at the end of that push it was still a notification about the right pane's
- * work, resting above the left column's title.
- *
- * So this surface anchors to the corner instead, and states the two walls that are not
- * the window's:
- *
- * | Wall | Why it is not the viewport's edge |
- * |---|---|
- * | right | with the conversation open, the pane's right-hand wall is the dock's left edge — `--app-right-dock-width`, already published by this view (`right-dock-reserve.ts`) |
- * | bottom | below `lg` the bottom tab bar stands over this pane, so the floor is its top — `--topology-mobile-bottom-tab-reserve` |
- *
- * Both walls are read through reserves that switch on the width in `app/globals.css`,
- * not in JavaScript: the dock is only a flex sibling of the reader from `xl`, and the tab
- * bar is `lg:hidden`, so each reserve collapses to `0px` exactly where its thing stops
- * existing. A media query is where that already lives; a resize listener recomputing the
- * same two breakpoints in JS would be a second copy of them.
+ * The Library anchors to its reading pane's corner. Its right wall is the open dock's edge and
+ * its floor the tab bar's top below `lg`; both come from reserves that switch
+ * in `app/globals.css`, so the breakpoints are not copied into JavaScript.
  */
 const TOAST_PANE_GUTTER_PX = 16;
 
 /**
- * The gap from the pane's right-hand wall, whichever wall that is.
- *
- * `--app-toast-dock-reserve` is the open conversation's width from `xl` up and `0px`
- * everywhere else. Below `xl` the dock is a full-width overlay with no reader beside it,
- * so there is no pane left to stand in and the toast is drawn above it — the same
- * transient-above-the-dock judgement the map's own placement already accepted
- * (`docs/DECISIONS.md`, 2026-09-07).
+ * The `--app-toast-dock-reserve` value is the dock width from `xl` up and `0px` elsewhere;
+ * below `xl` the dock is a full-width overlay, so the toast is drawn above it
+ * (`docs/DECISIONS.md`).
  */
 export const LIBRARY_TOAST_RIGHT_OFFSET = `calc(var(--app-toast-dock-reserve, 0px) + ${TOAST_PANE_GUTTER_PX}px)`;
 
-/**
- * The gap from the pane's floor — the window's edge from `lg` up, the bottom tab bar's
- * top below it. Measured at 1040×720 the bar is not drawn and this is 16px; at 620×900 it
- * is 56px of bar plus the safe-area inset plus the same 16px.
- */
+/** The window edge from `lg` up, the bottom tab bar's top below it. */
 export const LIBRARY_TOAST_BOTTOM_OFFSET = `calc(var(--app-toast-bottom-reserve, 0px) + ${TOAST_PANE_GUTTER_PX}px)`;
 
 /**
- * **Inside a viewport-filling dialog, not across its edge.**
- *
- * The Library's two full-surface dialogs — the graph and the answer comparison — are
- * `size="viewport"`: `--chrome-inset` from every window edge, with `p-4` inside that
- * (`src/shared/ui/dialog.tsx`). At the plain gutter the toast came to rest in the corner
- * of that box, on the dialog's own padding and its close control — a dismissible aside
- * laid over a surface a person is reading, which is the floating-box soup the design
- * charter refuses. So while one of them stands, both gutters grow to the dialog's inset
- * plus its padding plus the same gutter, and the box sits **inside** the dialog's safe
- * area.
- *
- * The narrow `size="md"` dialogs need nothing: they are centred and bounded, so the
- * window's bottom-right corner is beside them rather than on them (measured at
- * 1512×901 and 1040×720).
- *
- * `LibraryPage` decides, because it owns both open states. A second surface with a
- * full-window dialog and a corner-anchored toast is the moment to move this into the
- * `Dialog` primitive itself; one is not.
+ * While a viewport-sized Library dialog stands, the gutters grow by its inset and padding so
+ * the toast stays inside the dialog instead of on its close control. `LibraryPage` decides
+ * because it owns both open states.
  */
 export const LIBRARY_TOAST_DIALOG_OFFSET = `calc(var(--chrome-inset) + ${TOAST_PANE_GUTTER_PX}px * 2)`;

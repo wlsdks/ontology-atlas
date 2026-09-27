@@ -5,8 +5,8 @@ import { JsonLd, serializeJsonForHtml } from './json-ld';
 
 const ATTACK = '</script><script data-owned="yes">alert(1)</script>&\u2028\u2029';
 
-describe('JsonLd HTML 경계', () => {
-  it('script 종료 문자열을 HTML로 내보내지 않으면서 JSON 의미를 보존한다', () => {
+describe('JsonLd HTML boundary', () => {
+  it('keeps the JSON value while never emitting a script end tag into HTML', () => {
     const payload = { name: ATTACK };
     const html = renderToStaticMarkup(<JsonLd data={payload} />);
 
@@ -19,13 +19,13 @@ describe('JsonLd HTML 경계', () => {
     expect(JSON.parse(body ?? '')).toEqual(payload);
   });
 
-  it('HTML 민감 문자를 모두 JSON 유니코드 escape로 바꾼다', () => {
+  it('escapes every HTML-sensitive character as a JSON unicode escape', () => {
     const serialized = serializeJsonForHtml({ value: '<>&\u2028\u2029' });
     expect(serialized).toContain('\\u003c\\u003e\\u0026\\u2028\\u2029');
     expect(serialized).not.toMatch(/[<>&\u2028\u2029]/u);
   });
 
-  it('JSON이 될 수 없는 루트 값은 빈 script로 숨기지 않는다', () => {
+  it('throws on a root value that cannot become JSON instead of emitting an empty script', () => {
     expect(() => serializeJsonForHtml(undefined)).toThrow(/JSON-serializable/u);
   });
 });

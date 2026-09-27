@@ -25,10 +25,7 @@ const floor = (top: number, height: number): ToastWallRect => ({
   height,
 });
 
-/*
- * The toast's free lane (2026-09-24). The numbers are the map's measured walls at 1512:
- * rail 0–64, INDEX expanded 88–388 or its tab 64–90, the dock from 1004.
- */
+/* The map's measured walls at 1512: rail 0-64, INDEX 88-388 or its tab 64-90, dock from 1004. */
 describe('resolveToastLane', () => {
   it('no walls is the whole viewport — the 2026-09-07 centre', () => {
     expect(resolveToastLane(1512, 900, [])).toEqual({ left: 0, right: 0, bottom: 0 });

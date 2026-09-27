@@ -2,45 +2,24 @@ import type { ReactNode } from 'react';
 import { cn } from '@/shared/lib/cn';
 
 export interface HiddenCountLineProps {
-  /** How many rows the group really holds. */
   total: number;
-  /** How many of them this view drew. */
   shown: number;
   /**
-   * The sentence, formatted from the difference the component computes. Taking a
-   * function rather than a finished string is the whole guarantee: a caller
-   * cannot render this line with a number that disagrees with `total - shown`.
+   * A function of the difference, not a finished string, so the rendered number cannot disagree
+   * with `total - shown`.
    */
   label: (hidden: number) => string;
-  /**
-   * Where the rest lives — a `Link` or a button. Required: a remainder with
-   * nowhere to go is the dead number this repository already rejected once
-   * (the project detail's "N more capabilities", 2026-08-12).
-   */
+  /** Required: a remainder with nowhere to go is a dead number. */
   route: ReactNode;
   className?: string;
   'data-testid'?: string;
 }
 
 /**
- * One plain line saying what a truncated view is not showing, and where to read it.
- *
- * **Why a primitive and not a per-site paragraph.** Four counted groups were
- * measured truncating in silence (2026-09-05 audit): the insights hero census
- * relation strip, the freshness "recently updated" list, the full-detail reach
- * domain bars, and the domain-coupling example edges. Each knew its true total
- * one line away from where it cut the array. A shared component makes the
- * invariant checkable in one place — `hidden-count-line.test.tsx`
- * asserts it renders **iff** `total > shown` and always carries the difference —
- * instead of trusting four hand-written ternaries to keep agreeing.
- *
- * **No trailing arrow.** `tests/contract/label-decoration.contract.test.ts`
- * forbids a decorative arrow after a link label, so the route reads as an
- * ordinary link and a middot carries the separation.
- *
- * Quiet by design: label-size quaternary text on the caller's own surface. This
- * states a boundary of the view, not a problem with the vault, so it introduces
- * no colour channel and no icon.
+ * One quiet line saying what a truncated view leaves out and where to read it. Renders only
+ * when `total > shown` (`hidden-count-line.test.tsx`). No trailing arrow
+ * (`tests/contract/label-decoration.contract.test.ts`), and no colour or icon, because it
+ * states a view boundary, not a vault problem.
  */
 export function HiddenCountLine({
   total,

@@ -39,15 +39,13 @@ export function RouteMemory() {
       try {
         window.localStorage.setItem(ROUTE_MEMORY_KEY, route);
       } catch {
-        // localStorage unavailable — route restore is a convenience only.
+        // localStorage unavailable: route restore is only a convenience.
       }
     };
 
     rememberCurrentRoute();
-    // Docs and topology update the URL with history.replaceState for fine-grained
-    // work state and then emit this event. Watching pathname alone would miss the
-    // selection within a surface (?slug=, ?node=), so relaunching the app would
-    // return to the first document.
+    // Surfaces replace the URL for in-surface selection (`?slug=`, `?node=`) and emit this
+    // event; watching the pathname alone would lose that selection on relaunch.
     window.addEventListener('app:urlchange', rememberCurrentRoute);
     window.addEventListener('popstate', rememberCurrentRoute);
     window.addEventListener('hashchange', rememberCurrentRoute);

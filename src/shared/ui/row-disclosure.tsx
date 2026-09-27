@@ -7,7 +7,7 @@ import { cn } from '@/shared/lib/cn';
 import { Button } from './button';
 import { ICON_SIZE } from './icon-size';
 
-/** Inline height + opacity grammar; children survive exit but immediately leave focus order. */
+/** Height and opacity grammar; children survive the exit but leave the focus order at once. */
 export function RowDisclosure({ open, id, children, className }: {
   open: boolean;
   id: string;

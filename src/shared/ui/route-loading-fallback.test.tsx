@@ -6,10 +6,8 @@ import koMessages from '../../../messages/ko.json';
 import { RouteLoadingFallback } from './route-loading-fallback';
 
 /**
- * The placeholder keeps exactly two promises: ① it establishes the `#main` landmark
- * immediately, giving the focus manager and screen readers somewhere to land, and ② it states
- * the one fact it knows. No spinner, no progress bar, no percentage — it never pretends to
- * know progress it cannot measure.
+ * The placeholder establishes `#main` at once and states the one fact it knows, never progress
+ * it cannot measure.
  */
 function renderFallback() {
   return render(
@@ -31,7 +29,7 @@ describe('RouteLoadingFallback', () => {
     expect(html).toContain(koMessages.nav.surfaceLoading);
   });
 
-  it('#main 랜드마크를 세우고 로딩 중임을 표시한다', () => {
+  it('establishes the #main landmark and marks it busy', () => {
     renderFallback();
     const main = screen.getByTestId('route-loading-fallback');
     expect(main.id).toBe('main');
@@ -39,7 +37,7 @@ describe('RouteLoadingFallback', () => {
     expect(main).toHaveAttribute('aria-busy', 'true');
   });
 
-  it('포커스 관리자가 목적지로 착각하지 않도록 표식을 단다', () => {
+  it('carries the marker that keeps the focus manager from treating it as a destination', () => {
     renderFallback();
     expect(screen.getByTestId('route-loading-fallback')).toHaveAttribute(
       'data-route-loading',
@@ -47,7 +45,7 @@ describe('RouteLoadingFallback', () => {
     );
   });
 
-  it('빈 화면 대신 평문 한 문장을 말한다', () => {
+  it('states one plain sentence instead of a blank screen', () => {
     renderFallback();
     const status = screen.getByRole('status');
     expect(status.textContent?.trim()).toBe(koMessages.nav.surfaceLoading);
@@ -55,14 +53,14 @@ describe('RouteLoadingFallback', () => {
     expect(status).toContainElement(screen.getByTestId('brand-waiting-mark'));
   });
 
-  it('가짜 진행 표시(진행바 · 퍼센트)를 그리지 않는다', () => {
+  it('draws no fake progress bar or percentage', () => {
     const { container } = renderFallback();
     expect(container.querySelector('[role="progressbar"]')).toBeNull();
     expect(container.querySelector('svg')).toBeNull();
     expect(container.textContent).not.toMatch(/%/);
   });
 
-  it('자막은 400ms 침묵 뒤 등장한다 — 빠른 진입에서 번쩍이지 않는다', () => {
+  it('delays the status line so a fast arrival does not flash it', () => {
     renderFallback();
     expect(screen.getByRole('status').className).toContain('route-loading-in');
   });

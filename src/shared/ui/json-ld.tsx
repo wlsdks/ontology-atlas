@@ -9,12 +9,8 @@ const HTML_ESCAPE: Record<string, string> = {
 };
 
 /**
- * Serialise JSON into a string safe to embed in an HTML raw-text `<script>`.
- *
- * With plain `JSON.stringify`, a `</script>` inside the data closes the tag and
- * turns the following HTML into an executable sibling. This keeps the JSON string's
- * meaning intact and only rewrites the characters HTML treats as a boundary into
- * JSON unicode escapes.
+ * Escapes the characters HTML treats as a boundary as JSON unicode escapes, or a `</script>` in
+ * the data would close the tag and run what follows.
  */
 export function serializeJsonForHtml(value: unknown): string {
   const json = JSON.stringify(value);

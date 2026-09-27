@@ -1,11 +1,7 @@
 import { Fragment } from 'react';
 import { splitHighlightSegments } from '@/shared/lib/highlight-match';
 
-/**
- * Text with query matches highlighted in an indigo `<mark>`. An empty query
- * returns the plain text unchanged (fast path). This is the shared highlighting
- * primitive for every search surface — the tree, global search and the rest.
- */
+/** Highlights query matches in an indigo `<mark>`; shared by every search surface. */
 export function HighlightedText({
   text,
   query,
