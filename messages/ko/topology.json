@@ -466,6 +466,7 @@
     "packetTitle": "걸어온 길 (탐색 경로)",
     "packetOrder": "방문 순서 (오래된 → 최근):",
     "packetReviewHint": "각 노드 맥락 검토:",
+    "packetUndocumented": "아직 문서 없음(참조로만 존재). add_concept로 만들 수 있어요",
     "packetPathHint": "여정 양 끝 사이 경로 확인:",
     "packetDustyHint": "오래 손대지 않은 노드 {count}개: 유지보수 후보 살펴보기:",
     "pastLinkLabel": "지난 길 {count}",
