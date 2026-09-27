@@ -124,8 +124,7 @@ pub struct VaultFileHash {
     pub sha256: Option<String>,
 }
 
-/// Hashed natively because a byte array over IPC would cost millions of numbers;
-/// the screen asks only for sources a wiki page cites.
+/// Hashed natively so a scan never crosses IPC; the screen asks only for cited sources.
 #[tauri::command(async)]
 pub fn hash_vault_files(
     root_path: String,

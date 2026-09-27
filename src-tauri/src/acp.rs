@@ -696,7 +696,7 @@ pub(crate) fn preflight_npx_cache(launch: &AcpLaunch, home: Option<&Path>) -> Np
     }
 }
 
-/// The ready entry's pinned bin without the idle `npm exec` parent; PATH as npm sets it.
+/// A ready entry's pinned bin, run without the idle `npm exec` parent.
 pub(crate) fn launch_from_npx_cache(
     launch: &AcpLaunch,
     home: Option<&Path>,

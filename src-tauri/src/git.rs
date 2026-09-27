@@ -58,31 +58,34 @@ fn silence_git_credential_prompts(command: &mut Command) {
 /// connection and then never answers, since git has no timeout of its own.
 const NETWORK_GIT_DEADLINE: std::time::Duration = std::time::Duration::from_secs(120);
 
+/// Spawns so the wait has a deadline and the whole attempt is killed on expiry.
 fn run_network_git(cwd: &Path, args: &[&str]) -> Result<GitRun, String> {
+    use std::process::Stdio;
+
     let mut command = Command::new("git");
-    command.args(args).current_dir(cwd);
+    command
+        .args(args)
+        .current_dir(cwd)
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
     silence_git_credential_prompts(&mut command);
+
+    let mut child = command
+        .spawn()
+        .map_err(|err| coded("git-not-runnable", err))?;
     let label = args.first().copied().unwrap_or("command");
-    run_with_deadline(command, label, NETWORK_GIT_DEADLINE)
+    wait_with_deadline(&mut child, label, NETWORK_GIT_DEADLINE)
 }
 
 /// The pipes drain while waiting, or output past their 64 KiB buffer blocks the child.
-fn run_with_deadline(
-    mut command: Command,
+fn wait_with_deadline(
+    child: &mut std::process::Child,
     label: &str,
     deadline: std::time::Duration,
 ) -> Result<GitRun, String> {
-    use std::process::Stdio;
-
-    let mut child = command
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .map_err(|err| coded("git-not-runnable", err))?;
     let stdout = drain_pipe(child.stdout.take());
     let stderr = drain_pipe(child.stderr.take());
-
     let started = std::time::Instant::now();
     loop {
         match child.try_wait() {
@@ -1997,12 +2000,19 @@ mod tests {
 
     #[test]
     fn a_waited_command_drains_output_larger_than_a_pipe_buffer() {
-        let mut command = Command::new("node");
-        command.args([
-            "-e",
-            "process.stdout.write('o'.repeat(200000)); process.stderr.write('e'.repeat(100000))",
-        ]);
-        let run = run_with_deadline(command, "probe", std::time::Duration::from_secs(20)).unwrap();
+        use std::process::Stdio;
+        let mut child = Command::new("node")
+            .args([
+                "-e",
+                "process.stdout.write('o'.repeat(200000)); process.stderr.write('e'.repeat(100000))",
+            ])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .unwrap();
+        let run =
+            wait_with_deadline(&mut child, "probe", std::time::Duration::from_secs(20)).unwrap();
         assert!(run.success);
         assert_eq!(run.stdout.len(), 200_000);
         assert_eq!(run.stderr.len(), 100_000);
