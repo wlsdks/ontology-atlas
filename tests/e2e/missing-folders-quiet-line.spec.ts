@@ -167,34 +167,3 @@ test('the review opens without moving its line, and forgets only what is pressed
     'recent-vault-open',
   );
 });
-
-/**
- * No sweep reaches this surface (it needs gone folders in IndexedDB), so it brings its own touch
- * floor, with the `Math.round(...) < 44` filter `touch-target-contract.spec.ts` uses.
- */
-test.describe('under a coarse pointer', () => {
-  test.use({ hasTouch: true, isMobile: false });
-
-  test('the line and every control of its review are at least 44 by 44', async ({ page }) => {
-    await page.goto('/en/?guides=off');
-    const toggle = page.getByTestId('recent-vault-missing-toggle');
-    await expect(toggle).toBeVisible({ timeout: 30_000 });
-    await toggle.click();
-    const review = page.getByTestId('recent-vault-missing-review');
-    await expect(review).toBeVisible();
-
-    const measured = await page.evaluate(() =>
-      [
-        document.querySelector<HTMLElement>('[data-testid="recent-vault-missing-toggle"]'),
-        ...document.querySelectorAll<HTMLElement>('[data-testid="recent-vault-missing-review"] button'),
-      ].map((control) => {
-        const r = control!.getBoundingClientRect();
-        return { control: control!.getAttribute('data-testid') ?? control!.textContent, w: Math.round(r.width), h: Math.round(r.height) };
-      }),
-    );
-    // Anti-idle: the line, three forgets, find, close and forget all.
-    expect(measured.length).toBe(7);
-    const undersized = measured.filter(({ w, h }) => w < 44 || h < 44);
-    expect(undersized, JSON.stringify(undersized)).toEqual([]);
-  });
-});

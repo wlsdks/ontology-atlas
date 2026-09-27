@@ -26,11 +26,10 @@ import { waitForBoxStill, waitForDomeEntered, waitForMapSettled, waitForMapStill
  * the canvas) shows up here rather than being trusted.
  */
 
+/** The app's window floor and its opening window: the two sizes the installed app is read at. */
 const SIZES = [
   { width: 1040, height: 720 },
-  { width: 1280, height: 800 },
   { width: 1512, height: 949 },
-  { width: 1920, height: 1080 },
 ] as const;
 /** Half a node's rim: past it a person sees the drawing sit to one side. */
 const TOLERANCE = 4;
@@ -173,7 +172,7 @@ test("the overview stands in the middle of the free map, on one chrome line, wit
 test("beside the open agent dock the overview still stands in the middle of the free map", async ({ page }) => {
   test.setTimeout(300_000);
   await installDesktopRailRuntime(page);
-  await page.setViewportSize(SIZES[2]);
+  await page.setViewportSize(SIZES[1]);
   await page.goto("/ko/?guides=off&e2e=1", { waitUntil: "domcontentloaded" });
   await page.getByTestId("first-run-open").click();
   await waitForMapSettled(page);
@@ -193,36 +192,6 @@ test("beside the open agent dock the overview still stands in the middle of the 
     failures.push(...check(await measure(page), `${where} entry`, { chromeLine: false }));
     await pressFit(page);
     failures.push(...check(await measure(page), `${where} fit`, { chromeLine: false }));
-  }
-  expect(failures, failures.join("\n")).toEqual([]);
-});
-
-/**
- * **At tablet widths the half-canvas cap keeps the centre** (2026-09-26). Between 768 and
- * 1023 the side lanes ask for more than half the canvas and the fit caps them. The cap cut
- * each lane in proportion to its give above what it measurably covers, and the rail's
- * lane had no measured floor, so it gave twice INDEX's air and the overview slid toward
- * the rail: +6.6 px at 900 and +15.4 px at 800 wide, and at 768 +18.2 px with the drawing
- * 9 px into the tiles' column. The lanes now give way by equal pixels, which keeps the
- * drawing between INDEX and the rail.
- */
-test("at tablet widths, with INDEX open, the overview still stands in the middle of the free map", async ({ page }) => {
-  test.setTimeout(240_000);
-  await seedFirstRunSeen(page);
-  const failures: string[] = [];
-  for (const size of [
-    { width: 768, height: 1024 },
-    { width: 800, height: 1000 },
-    { width: 900, height: 1000 },
-  ]) {
-    await page.setViewportSize(size);
-    await page.goto("/ko/topology/?e2e=1&guides=off&index=expanded", { waitUntil: "domcontentloaded" });
-    await expect(page.getByTestId("topology-index-panel")).toBeVisible({ timeout: 30_000 });
-    await page.evaluate(() => document.fonts.ready);
-    await waitForMapSettled(page);
-    failures.push(...check(await measure(page), `${size.width}x${size.height} tablet entry`, { chromeLine: false }));
-    await pressFit(page);
-    failures.push(...check(await measure(page), `${size.width}x${size.height} tablet fit`, { chromeLine: false }));
   }
   expect(failures, failures.join("\n")).toEqual([]);
 });

@@ -90,7 +90,9 @@ const MIN_PILL_CLEARANCE = 8;
  * is disabled.
  *
  * So three things were fixed together: the list became canonical, phone width
- * joined the matrix, and ③ now fails if it never ran (`tabMeasured` below). Since
+ * joined the matrix, and ③ failed if it never ran. Phone and tablet widths left the
+ * matrix on 2026-09-27 (not a target), so ③ now judges only a fixed bottom strip that
+ * happens to stand at a desktop width, and its never-ran guard went with them. Since
  * `audited-route-coverage.contract.test.ts` already forces a new route into the
  * canonical list, this gate follows automatically — one fewer hand-maintained
  * list.
@@ -115,8 +117,6 @@ async function waitForAuditDestination(
   ).toBeVisible();
 }
 
-/** The width where the bottom tab bar stands — `BottomTabBar` is `lg:hidden`, so below 1024. */
-const BOTTOM_TAB_BAR_MAX_WIDTH = 1024;
 
 /**
  * Routes where **having no shell body slot is correct**.
@@ -144,10 +144,8 @@ const VIEWPORTS = [
   // owner's last size, so the floor is a routine first viewport, not an occasional one. Still
   // `≥lg` (1024): no tab bar; the `lg:pb-10` 40px `--page-bottom-breath` reservation applies.
   { label: "desktop-1040x720", w: 1040, h: 720 },
-  // `<lg` — the width where the bottom tab bar stands and the page contracts its reservation.
-  { label: "tablet-768x950", w: 768, h: 950 },
-  // Phone. Absent from the previous matrix, leaving **the narrowest width with a tab bar** unmeasured.
-  { label: "phone-390x844", w: 390, h: 844 },
+  // Tablet and phone widths (where the bottom tab bar stands) are not a target (owner
+  // direction, 2026-09-27); every width here is `≥lg`.
 ] as const;
 
 type Measured = {
@@ -344,7 +342,6 @@ for (const vp of VIEWPORTS) {
     /** Which frame widths ④ actually saw — both must appear, or one frame is unmeasured. */
     const framedWidths = new Set<string>();
     /** How many routes ③ actually judged. 0 means that check never ran. */
-    let tabMeasured = 0;
 
     for (const [label, url] of ROUTES) {
       await page.goto(auditDestination(url), { waitUntil: "domcontentloaded" });
@@ -374,7 +371,7 @@ for (const vp of VIEWPORTS) {
        * A reservation is measurable whether or not the page is long enough to need it today, which
        * is exactly why it is the part that can be judged here.
        */
-      if (vp.w >= BOTTOM_TAB_BAR_MAX_WIDTH && m.framed) {
+      if (m.framed) {
         framedRoutes += 1;
         framedWidths.add(m.frameWidth);
         if (m.rootPaddingBottom < MIN_FRAME_RESERVE) {
@@ -403,7 +400,6 @@ for (const vp of VIEWPORTS) {
       }
       // ③ With a bottom tab bar present, nothing may slip behind it.
       if (m.tabClearance !== null) {
-        tabMeasured += 1;
         if (m.tabClearance < MIN_GAP) {
           violations.push(`${label}: 마지막 줄이 하단 탭바에 가렸다 (여유 ${m.tabClearance}px)`);
         }
@@ -421,22 +417,13 @@ for (const vp of VIEWPORTS) {
       "셸 본문 슬롯이 있어야 하는 라우트 수가 안 맞는다 — 셸 구조나 404 배선이 바뀌었다",
     ).toBe(ROUTES.length - SLOTLESS_ROUTES.size);
 
-    /**
-     * Asserts that ③ **judged at least once**.
-     *
-     * `tabClearance` is `null` when no tab bar is found, and `null` silently skips the
-     * check above. The previous list held only routes without a tab bar, so this check
-     * **never ran once** while the test stayed green — that is how the 17px occlusion
-     * stayed hidden. At widths where the tab bar stands, at least one route must
-     * actually be judged.
-     */
     /*
      * ④'s idling guard, the same shape as ③'s. `framed` is detected from the rendered max width,
      * so a shell change or a token rename would silently take every frame member out of view and
      * this check would pass while measuring nothing — which is the exact failure mode that let the
      * reservation defect through in the first place.
      */
-    if (vp.w >= BOTTOM_TAB_BAR_MAX_WIDTH) {
+    {
       expect(
         framedRoutes,
         `${vp.label}: 페이지 틀을 입은 라우트를 한 번도 못 찾았다 — ④ 검사가 통째로 공회전했다. ` +
@@ -460,14 +447,6 @@ for (const vp of VIEWPORTS) {
         [...framedWidths],
         `${vp.label}: 960 폼 틀을 한 번도 계측하지 못했다 — 폭 판별이 옛 틀만 안다`,
       ).toContain(FORM_FRAME_WIDTH);
-    }
-
-    if (vp.w < BOTTOM_TAB_BAR_MAX_WIDTH) {
-      expect(
-        tabMeasured,
-        `${vp.label}: 하단 탭바를 한 번도 못 찾았다 — ③ 검사가 통째로 공회전했다. ` +
-          `탭바가 사라졌거나(그러면 이 폭의 계약이 바뀐 것) 셀렉터가 낡았다.`,
-      ).toBeGreaterThan(0);
     }
 
     expect(violations, violations.join("\n")).toEqual([]);

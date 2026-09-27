@@ -43,11 +43,12 @@ async function ringFill(page: import("@playwright/test").Page, width: number, he
 test("the spine ring fills a short window instead of a tall reservation", async ({ page }) => {
   test.setTimeout(90_000);
   await seedFirstRunSeen(page);
-  // At 1024 wide the ring is bound by the side lanes, not the height, so only
-  // the 14-inch window carries a fill floor; both keep the clipping invariants.
+  // At the app's 1040×720 floor the ring is bound by the side lanes, not the
+  // height, so only the 14-inch window carries a fill floor; both keep the
+  // clipping invariants.
   for (const [width, height, floor] of [
     [1512, 806, 0.7],
-    [1024, 768, 0],
+    [1040, 720, 0],
   ] as const) {
     const fill = await ringFill(page, width, height);
     if (floor > 0) {
