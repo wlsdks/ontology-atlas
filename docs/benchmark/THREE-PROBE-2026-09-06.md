@@ -1,3 +1,11 @@
+---
+title: "three.js structure probe, 2026-09-06"
+doc_type: finding
+status: historical
+area: map
+date: 2026-09-06
+---
+
 # three.js structure probe, 2026-09-06
 
 A **trial, not a feature.** The owner asked two questions on 2026-09-06: try

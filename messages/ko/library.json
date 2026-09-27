@@ -196,7 +196,7 @@
     "fixMyself": "직접 고치기",
     "fixMyselfTooltip": "이 문서 파일을 Finder에서 골라 줘요. 어느 편집기에서 고쳐도 목록이 파일을 따라와요.",
     "technical": "기술 정보 · 점검 코드와 줄 번호",
-    "technicalNote": "ontology-atlas wiki-validate 명령과 validate_wiki 도구가 아래와 같은 코드를 알려 줘요.",
+    "technicalNote": "wiki-validate 명령과 validate_wiki 도구가 아래와 같은 코드를 알려 줘요.",
     "technicalFile": "파일: {path}",
     "goToPlace": "{place}로 가기",
     "openPage": "{name} 열기",

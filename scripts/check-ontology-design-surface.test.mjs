@@ -174,68 +174,6 @@ function writeCleanWorkbenchFixtures(root) {
   );
   writeFixture(
     root,
-    "docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md",
-    [
-      "pnpm design:route",
-      "computer-use-loop",
-      "/design-build",
-      "real macOS screen",
-      "Independent review",
-      "No UI lens always applies",
-      "No-Human-Designer Working Mode",
-      "Source -> Atlas rule -> verifier",
-      "Reference Permission Test",
-      "Relief/Topology Graph Engine Fit Gate",
-      "ontology-map",
-      "Graphology",
-      "ForceAtlas2",
-      "Composer blocks the map",
-      "Click focus must be durable",
-      "Drag is editing, not discovery",
-      "Installed macOS app proof",
-      "WebView marker",
-      "Computer Use",
-    ].join("\n"),
-  );
-  writeFixture(
-    root,
-    "docs/DESIGN-SYSTEM.md",
-    [
-      "Tokenization Contract For Relief/Topology",
-      "--topology-*",
-      "product reason",
-      "WebView/test marker",
-      "stacked floating panels",
-      "popup soup",
-      "modal without modality",
-      "drag-only discovery",
-    ].join("\n"),
-  );
-  writeFixture(
-    root,
-    ".claude/rules/design.md",
-    [
-      "--topology-*",
-      "product reason",
-      "WebView/test marker",
-      "stacked floating panels",
-      "popup soup",
-      "modal without modality",
-      "drag-only discovery",
-    ].join("\n"),
-  );
-  writeFixture(
-    root,
-    "AGENTS.md",
-    [
-      "docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md",
-      "/design-build",
-      "pnpm design:route",
-      "/motion-verify",
-    ].join("\n"),
-  );
-  writeFixture(
-    root,
     "src/widgets/docs-vault/ui/DocsVaultTree.tsx",
     "export function DocsVaultTree() { return null; }",
   );
@@ -257,11 +195,10 @@ test("ontology design surface passes when visual and workbench contracts are pre
   });
 
   assert.equal(report.ok, true);
-  // The two markers "browse-workbench-loop" and "browse-tree-row-graph-handle" were
-  // removed along with the retired `/ontology` tree hub, taking the count 8 → 6.
-  assert.equal(report.requiredSurfaceMarkerCount, 6);
+  // Only code-surface contracts remain; the three that pinned doc prose were removed.
+  assert.equal(report.requiredSurfaceMarkerCount, 3);
   assert.equal(report.violations.length, 0);
-  assert.match(renderOntologyDesignSurfaceReport(report).join("\n"), /5 surfaces \+ 6 workbench structure contracts/);
+  assert.match(renderOntologyDesignSurfaceReport(report).join("\n"), /5 surfaces \+ 3 workbench structure contracts/);
 });
 
 test("ontology design surface fails closed when its scan matches zero files", () => {
@@ -545,39 +482,5 @@ test("ontology design surface reports missing workspace execution cells", () => 
       "missing marker: SOURCE_VAULT_RUNTIME_REPLAY_MARKERS",
       "missing marker: pattern_walk/project_map",
     ],
-  );
-});
-
-test("ontology design surface requires the PO-linked product design operating system", () => {
-  const root = makeFixture();
-  writeCleanWorkbenchFixtures(root);
-  writeFixture(
-    root,
-    "docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md",
-    [
-      "Independent review",
-      "No UI lens always applies",
-      "Reference source packet:",
-      "Apple HIG",
-    ].join("\n"),
-  );
-
-  const report = evaluateOntologyDesignSurface({
-    root,
-    targetDirs: ["src/widgets/docs-vault"],
-  });
-
-  assert.equal(report.ok, false);
-  assert.deepEqual(
-    Array.from(new Set(report.violations.map((violation) => violation.check.id))),
-    ["product-design-operating-system"],
-  );
-  assert.match(
-    report.violations.map((violation) => violation.source).join("\n"),
-    /missing marker: Source -> Atlas rule -> verifier/,
-  );
-  assert.match(
-    report.violations.map((violation) => violation.source).join("\n"),
-    /missing marker: Computer Use/,
   );
 });

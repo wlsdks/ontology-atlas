@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 
-import { checkDoc, contractBumpProblems, listLivingDocs, routeExists, run } from './check-doc-meta.mjs';
+import { checkDoc, citationProblems, contractBumpProblems, listLivingDocs, routeExists, run } from './check-doc-meta.mjs';
 import { createDoc } from './new-doc.mjs';
 import { formerPaths } from './doc-history.mjs';
 import { DOC_TYPES } from './lib/doc-types.mjs';
@@ -69,7 +69,7 @@ test('frozen history is outside the scan, and the living set is not empty', () =
     'docs/DECISIONS.md': '# frozen\n',
     'docs/records/decisions/x.md': 'fragment\n',
     'docs/records/README.md': '# guide\n',
-    'docs/archive/old.md': '# old\n',
+    'docs/benchmark/results/old.md': '# old\n',
     'docs/ontology/capabilities/a.md': '---\nkind: capability\n---\n',
     'docs/.templates/feature.md': '# template\n',
     'docs/ARCHITECTURE.md': '# arch\n',
@@ -163,6 +163,42 @@ test('run reports problems with the file and the key', () => {
     const { checked, problems } = run(root);
     assert.equal(checked, 1);
     assert.deepEqual(problems.map(({ file, key }) => `${file}:${key}`), ['docs/NOTE.md:area']);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('instruction files cite no retired document; a live citation of a superseded one names its successor', () => {
+  const doc = (status, extra = '') => `---\ntitle: T\ndoc_type: finding\nstatus: ${status}\narea: agents\n${extra}---\n# T\n`;
+  const root = fixture({
+    'docs/benchmark/OLD.md': doc('historical'),
+    'docs/benchmark/NEW.md': doc('historical'),
+    'docs/benchmark/SPLIT.md': doc('current'),
+    'docs/benchmark/GONE.md': doc('superseded', 'superseded_by: docs/benchmark/SPLIT.md\n'),
+    'docs/history/2026.md': '# no frontmatter\n',
+    'docs/DECISIONS.md': '# ledger\nSee `docs/benchmark/GONE.md` and `docs/benchmark/OLD.md`.\n',
+    // Flagged: a skill, a rule, and AGENTS.md citing retired or history files.
+    '.claude/skills/probe/SKILL.md': '# s\nRead [old](../../../docs/benchmark/OLD.md).\n',
+    '.claude/rules/probe.md': '# r\nSee `docs/history/2026.md`.\n',
+    'AGENTS.md': '# a\nSee `docs/benchmark/GONE.md` and `docs/benchmark/SPLIT.md`.\n',
+    // Flagged: a current doc citing a superseded one without its successor.
+    'docs/features/bad.md': `${doc('current')}See [gone](../benchmark/GONE.md).\n`,
+    // Passes: the successor is cited too; a draft; a historical doc may cite anything.
+    'docs/features/good.md': `${doc('draft')}See [gone](../benchmark/GONE.md#x) and \`docs/benchmark/SPLIT.md\`.\n`,
+    'docs/benchmark/FREE.md': `${doc('historical')}See \`docs/benchmark/GONE.md\`.\n`,
+    // Passes: an instruction file citing a current doc.
+    '.codex/probe.md': '# c\nSee `docs/benchmark/SPLIT.md`.\n',
+  });
+  try {
+    assert.deepEqual(
+      citationProblems(root).map(({ file, message }) => `${file}: ${message.split(',')[0]}`),
+      [
+        '.claude/rules/probe.md: cites docs/history/2026.md',
+        '.claude/skills/probe/SKILL.md: cites docs/benchmark/OLD.md',
+        'AGENTS.md: cites docs/benchmark/GONE.md',
+        'docs/features/bad.md: cites superseded docs/benchmark/GONE.md without its successor docs/benchmark/SPLIT.md',
+      ],
+    );
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

@@ -8,7 +8,7 @@ area: architecture
 # Technology stack
 
 > Decisions recorded 2026-07-17. Package and runtime facts refreshed from the repository
-> 2026-08-23. Next full review January 2027, or sooner if one of the branch conditions below
+> 2026-09-27. Next full review January 2027, or sooner if one of the branch conditions below
 > actually fires.
 
 The default is to keep a stack that has been verified working. It is the same reasoning that
@@ -29,7 +29,7 @@ would overturn it.
 
 | Layer | Version | What would overturn "keep" |
 |---|---|---|
-| Next.js | 16.2.12, static export | Static export stops covering a case this product needs. Astro or React Router would cost more in local-first redesign than they return |
+| Next.js | 16.3.3, static export | Static export stops covering a case this product needs. Astro or React Router would cost more in local-first redesign than they return |
 | React | 19.2.8 | A performance measurement on the map renderer that the React Compiler would fix; that measurement is the gate for turning it on |
 | TypeScript | `typescript` aliased to `@typescript/typescript6` 6.0.2, plus `@typescript/native` 7.0.2 | Next and ESLint supporting the native 7.0 API directly. Until then the manifest carries both, and the 6.0 alias exists for those two consumers |
 | Tailwind | 4.3.3 | Losing `@theme` token stability, which the whole design system is built on |
@@ -56,7 +56,7 @@ means hidden or an opaque token, low alpha is prohibited, and unit tests enforce
 | Module format | plain `.mjs` ESM, documented with JSDoc | A TypeScript conversion paying for the build pipeline it adds. If types are ever needed downstream, the cheaper path is `tsc --emit-declaration-only` |
 | Node | `>=24 <25` | Nothing pending. Root, CLI and MCP manifests share this one contract |
 | Argument parsing | hand-written, `cli-args.mjs` | The flat registry of 54 commands growing flags complex enough to need a framework. `citty` and its peers were rejected because `--help` automation alone did not pay for them |
-| MCP SDK | `@modelcontextprotocol/core` and `server` 2.0.0 | Stdio transport is settled. Re-check the registry and tool schemas whenever a published contract changes |
+| MCP SDK | `@modelcontextprotocol/server` 2.0.0, which pins `core` 2.0.0 itself | Stdio transport is settled. Re-check the registry and tool schemas whenever a published contract changes |
 | Vitest, Playwright | 4.1.10, 1.62.0 | Nothing pending. Take major upgrades opportunistically, after reading the release notes |
 
 **npm publish preparation was retired on 2026-07-27.** npm is not a delivery channel for this

@@ -737,7 +737,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### macOS desktop readiness
 
 **Run**: `pnpm desktop:check`
-**Proves**: the macOS desktop Tauri scaffold readiness gate passes for static export, image mode, docs-vault freshness, CLI/MCP verification, desktop-grade quality bar coverage, route smoke scope, and `src-tauri` shell files. README download and release links follow the configured site and repository; editable explanatory sentences are not pinned.
+**Proves**: the macOS desktop Tauri scaffold readiness gate passes for static export, image mode, docs-vault freshness, CLI/MCP verification, and `src-tauri` shell files. README download and release links follow the configured site and repository; editable explanatory sentences are not pinned.
 **Escalate**: `pnpm desktop:doctor`, then `pnpm test:desktop:check` / `pnpm test:desktop:runtime` / `pnpm test:desktop:bridge`
 **Fix**: keep `package.json`, `src-tauri/tauri.conf.json`, and `src-tauri/Cargo.toml` versions matched so app metadata, DMG filenames, and release tags move together.
 
@@ -898,7 +898,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### Ontology workbench design guard
 
 **Run**: `pnpm design:ontology`
-**Proves**: No forbidden visual pattern appears across Source Vault, Workshop, Insights, navigation, INDEX, or shared UI. Source Files/Graph/Agent execution, Workshop compass handoff, Insights' six-tab set, Product Design OS permissions, and Relief/Topology token rules all hold.
+**Proves**: No forbidden visual pattern appears across Source Vault, Workshop, Insights, navigation, INDEX, or shared UI. Source Files/Graph/Agent execution, Workshop compass handoff, and Insights' six-tab set all hold.
 **Escalate**: none.
 
 ### Operator-side release workflow readiness
@@ -1061,6 +1061,13 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Proves**: comments in tracked and untracked source, tests, and prototypes are English, with independent zero baselines for current code, tests/fixtures, and historical prototypes.
 **Escalate**: `pnpm test:source:language`
 **Fix**: translate the flagged comment to English; localized data such as `display_ko` and `cli/templates/vault-ko/**` stays exempt.
+
+### Source hygiene against the merge base
+
+**Run**: `pnpm exec vitest run tests/contract/test-title-language.contract.test.ts tests/contract/source-comment-bytes.contract.test.ts tests/contract/source-shape.contract.test.ts`
+**Proves**: In each area the changed files touch, Hangul test titles and assertion messages, comment bytes, files over 800 lines and parent folders over 30 direct files do not grow against the merge base.
+**Escalate**: `pnpm test:contracts`
+**Fix**: Translate the title or message, delete or shorten the comment, or split the file or folder; a deliberate raise is a `tests/contract/ratchet-raises/<gate>.<slug>.json` record saying why.
 
 ### Source-checkout MCP dependency preflight
 

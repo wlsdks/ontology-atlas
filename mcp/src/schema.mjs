@@ -119,7 +119,7 @@ export function inspectMergedUids(uid, mergedUids) {
   };
 }
 
-export function normalizeMergedUids(uid, mergedUids) {
+function normalizeMergedUids(uid, mergedUids) {
   const inspected = inspectMergedUids(uid, mergedUids);
   if (inspected.invalidIssue) throw new Error(inspected.invalidIssue);
   return inspected.canonical;

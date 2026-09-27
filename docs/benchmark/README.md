@@ -1,3 +1,10 @@
+---
+title: "Benchmark — does the ontology actually help AI agents?"
+doc_type: index
+status: current
+area: agents
+---
+
 # Benchmark — does the ontology actually help AI agents?
 
 For local wiki revision, related-page retrieval and omission checks, see the

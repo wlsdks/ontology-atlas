@@ -8,6 +8,18 @@
       "witness": "require_.resolve('ontology-atlas-mcp/scripts/verify.mjs')"
     },
     {
+      "key": "cli:runtime:exports:src/lib/interop-format.mjs:INTEROP_SCHEMA_VERSION",
+      "reason": "The interop schema version is pinned by the cross-surface contract test; the export is consumed outside its Knip scope, where the lane cannot see it.",
+      "consumer": "tests/contract/interop-format.contract.test.ts",
+      "witness": "INTEROP_SCHEMA_VERSION"
+    },
+    {
+      "key": "cli:runtime:exports:src/lib/relation-types.mjs:RELATION_TYPE_VALUES",
+      "reason": "The package contract test compares CLI relation types against the MCP schema; the export is consumed outside its Knip scope, where the lane cannot see it.",
+      "consumer": "scripts/check-package-contracts.test.mjs",
+      "witness": "RELATION_TYPE_VALUES"
+    },
+    {
       "key": "cli:runtime:exports:src/lib/schema.mjs:generateNodeUid",
       "reason": "The UID migration (scripts/migrate-node-uids.mjs inventory) mints node UIDs through the CLI's schema shim; the cli runtime lane cannot see that cross-scope consumer. Dropping the export broke pnpm test:vault:migrate on 2026-08-31.",
       "consumer": "scripts/migrations/2026-08-02-add-node-uids.mjs",
@@ -74,6 +86,12 @@
       "witness": "@tailwindcss/postcss"
     },
     {
+      "key": "frontend:runtime:duplicates:src/shared/motion/tokens.ts:OVERLAY_SPRING_REDUCED|SCRIM_FADE_REDUCED",
+      "reason": "The two reduced-motion tokens are named separately on purpose: each surface keeps its own reduced-motion equivalent even while their values coincide.",
+      "consumer": "src/shared/motion/tokens.ts",
+      "witness": "SCRIM_FADE_REDUCED"
+    },
+    {
       "key": "frontend:verification:binaries:scripts/benchmark-change-flow.mjs:codex",
       "reason": "Knip follows root script declarations while the verification lane isolates test symbols.",
       "consumer": "scripts/benchmark-change-flow.mjs",
@@ -116,16 +134,118 @@
       "witness": "pkill"
     },
     {
-      "key": "mcp:runtime:dependencies:package.json:@modelcontextprotocol/core",
-      "reason": "The MCP core package is intentionally direct-pinned for the public server protocol boundary.",
-      "consumer": "mcp/README.md",
-      "witness": "@modelcontextprotocol/core"
-    },
-    {
       "key": "mcp:runtime:exports:src/architecture-profile.mjs:matchesPathPattern",
       "reason": "Path-glob semantics are a cross-surface contract: the web occupant join mirrors this function, and the contract test consumes the export from outside the mcp scope where Knip cannot see it.",
       "consumer": "tests/contract/architecture-profile.contract.test.ts",
       "witness": "matchesPathPattern"
+    },
+    {
+      "key": "mcp:runtime:exports:src/construction-rules.mjs:CHAT_RULES_DELTA_EN",
+      "reason": "The construction-rules contract test reads the chat delta directly; the export is consumed outside its Knip scope, where the lane cannot see it.",
+      "consumer": "tests/contract/construction-rules.contract.test.ts",
+      "witness": "CHAT_RULES_DELTA_EN"
+    },
+    {
+      "key": "mcp:runtime:exports:src/meaning-assessment.mjs:normalizeMeaningStructureStatus",
+      "reason": "The web meaning-assessment test exercises the shared normalizer; the export is consumed outside its Knip scope, where the lane cannot see it.",
+      "consumer": "src/shared/lib/meaning-assessment.test.ts",
+      "witness": "normalizeMeaningStructureStatus"
+    },
+    {
+      "key": "mcp:runtime:exports:src/meaning-evaluation.mjs:candidateProposalFromAnalysis",
+      "reason": "The meaning-corpus evaluator script builds candidate proposals with it; the export is consumed outside its Knip scope, where the lane cannot see it.",
+      "consumer": "scripts/evaluate-meaning-corpus.mjs",
+      "witness": "candidateProposalFromAnalysis"
+    },
+    {
+      "key": "mcp:runtime:exports:src/ontology-engine.mjs:createOntologyEngine",
+      "reason": "The graph-truth parity contract test drives the engine directly; the export is consumed outside its Knip scope, where the lane cannot see it.",
+      "consumer": "tests/contract/graph-truth-parity.contract.test.ts",
+      "witness": "createOntologyEngine"
+    },
+    {
+      "key": "mcp:runtime:exports:src/project-source-receipt.mjs:serializeProjectSourceState",
+      "reason": "The web project-source store serializes through the MCP receipt format; the export is consumed outside its Knip scope, where the lane cannot see it.",
+      "consumer": "src/shared/lib/project-source-store.ts",
+      "witness": "serializeProjectSourceState"
+    },
+    {
+      "key": "mcp:runtime:exports:src/project-source-witnesses.mjs:looksLikeCodePath",
+      "reason": "The field-help consumer contract test checks path detection; the export is consumed outside its Knip scope, where the lane cannot see it.",
+      "consumer": "tests/contract/field-help-consumers.contract.test.ts",
+      "witness": "looksLikeCodePath"
+    },
+    {
+      "key": "mcp:runtime:exports:src/schema.mjs:CREATED_BY_AGENT_PREFIX",
+      "reason": "The CLI schema shim re-exports the provenance prefix; the export is consumed outside its Knip scope, where the lane cannot see it.",
+      "consumer": "cli/src/lib/schema.mjs",
+      "witness": "CREATED_BY_AGENT_PREFIX"
+    },
+    {
+      "key": "mcp:runtime:exports:src/schema.mjs:CREATED_BY_AGENT_UNKNOWN",
+      "reason": "The created-by provenance contract test compares the MCP unknown-agent value with the web writer; the export is consumed outside its Knip scope, where the lane cannot see it.",
+      "consumer": "tests/contract/created-by-provenance.contract.test.ts",
+      "witness": "CREATED_BY_AGENT_UNKNOWN"
+    },
+    {
+      "key": "mcp:runtime:exports:src/schema.mjs:CREATED_BY_HUMAN",
+      "reason": "The CLI schema shim re-exports the human provenance value; the export is consumed outside its Knip scope, where the lane cannot see it.",
+      "consumer": "cli/src/lib/schema.mjs",
+      "witness": "CREATED_BY_HUMAN"
+    },
+    {
+      "key": "mcp:runtime:exports:src/schema.mjs:VAULT_KINDS",
+      "reason": "The CLI schema shim re-exports the vault kind list; the export is consumed outside its Knip scope, where the lane cannot see it.",
+      "consumer": "cli/src/lib/schema.mjs",
+      "witness": "VAULT_KINDS"
+    },
+    {
+      "key": "mcp:runtime:exports:src/validate.mjs:KNOWN_VAULT_KINDS",
+      "reason": "The vault validation script reads the known kinds; the export is consumed outside its Knip scope, where the lane cannot see it.",
+      "consumer": "scripts/validate-vault.mjs",
+      "witness": "KNOWN_VAULT_KINDS"
+    },
+    {
+      "key": "mcp:runtime:exports:src/vault.mjs:pathToSlug",
+      "reason": "The CLI vault walker shares slug derivation with MCP; the export is consumed outside its Knip scope, where the lane cannot see it.",
+      "consumer": "cli/src/lib/walk-vault.mjs",
+      "witness": "pathToSlug"
+    },
+    {
+      "key": "mcp:runtime:exports:src/vault.mjs:walkMd",
+      "reason": "The CLI vault walker shares Markdown enumeration with MCP; the export is consumed outside its Knip scope, where the lane cannot see it.",
+      "consumer": "cli/src/lib/walk-vault.mjs",
+      "witness": "walkMd"
+    },
+    {
+      "key": "mcp:runtime:exports:src/wiki-schema.mjs:WIKI_CITATION_PATTERN",
+      "reason": "The web wiki page schema mirrors the MCP wiki schema from one source; the export is consumed outside its Knip scope, where the lane cannot see it.",
+      "consumer": "src/shared/lib/wiki-page-schema.ts",
+      "witness": "WIKI_CITATION_PATTERN"
+    },
+    {
+      "key": "mcp:runtime:exports:src/wiki-schema.mjs:WIKI_FIELDS",
+      "reason": "The web wiki page schema mirrors the MCP wiki schema from one source; the export is consumed outside its Knip scope, where the lane cannot see it.",
+      "consumer": "src/shared/lib/wiki-page-schema.ts",
+      "witness": "WIKI_FIELDS"
+    },
+    {
+      "key": "mcp:runtime:exports:src/wiki-schema.mjs:WIKI_PAGE_TEMPLATE",
+      "reason": "The web wiki page schema mirrors the MCP wiki schema from one source; the export is consumed outside its Knip scope, where the lane cannot see it.",
+      "consumer": "src/shared/lib/wiki-page-schema.ts",
+      "witness": "WIKI_PAGE_TEMPLATE"
+    },
+    {
+      "key": "mcp:runtime:exports:src/wiki-schema.mjs:WIKI_REQUIRED_FIELDS",
+      "reason": "The web wiki page schema mirrors the MCP wiki schema from one source; the export is consumed outside its Knip scope, where the lane cannot see it.",
+      "consumer": "src/shared/lib/wiki-page-schema.ts",
+      "witness": "WIKI_REQUIRED_FIELDS"
+    },
+    {
+      "key": "mcp:runtime:exports:src/wiki-schema.mjs:WIKI_SECTION_ORDER",
+      "reason": "The web wiki page schema mirrors the MCP wiki schema from one source; the export is consumed outside its Knip scope, where the lane cannot see it.",
+      "consumer": "src/shared/lib/wiki-page-schema.ts",
+      "witness": "WIKI_SECTION_ORDER"
     },
     {
       "key": "mcp:runtime:files:src/wiki-report.mjs:src/wiki-report.mjs",
@@ -210,6 +330,24 @@
       "reason": "macOS accessibility verification compiles its native helper through Swift.",
       "consumer": "scripts/lib/verify-macos/window-accessibility.mjs",
       "witness": "swift"
+    },
+    {
+      "key": "scripts:runtime:exports:scripts/lib/dogfood-walk/rpc-client.mjs:SERVER",
+      "reason": "The dogfood-walk summaries test locates the server through this constant; the export is consumed outside its Knip scope, where the lane cannot see it.",
+      "consumer": "scripts/lib/dogfood-walk/summaries.test.mjs",
+      "witness": "SERVER"
+    },
+    {
+      "key": "scripts:runtime:exports:scripts/migrations/2026-08-02-add-node-uids.mjs:description",
+      "reason": "The migration runner imports every migration module dynamically and lists its description.",
+      "consumer": "scripts/migrate-vault.mjs",
+      "witness": "mod.description"
+    },
+    {
+      "key": "scripts:runtime:exports:scripts/migrations/2026-08-02-add-node-uids.mjs:id",
+      "reason": "The migration runner imports every migration module dynamically and selects it by id.",
+      "consumer": "scripts/migrate-vault.mjs",
+      "witness": "mod.id"
     },
     {
       "key": "scripts:runtime:files:scripts/install-brand-icons.mjs:scripts/install-brand-icons.mjs",

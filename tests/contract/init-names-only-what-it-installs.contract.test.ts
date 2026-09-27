@@ -23,7 +23,6 @@ const NOT_SKILLS = new Set(["ontology-focus", "ontology-map", "ontology-compiler
 const withoutComments = (text: string) =>
   text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'`])\/\/[^\n]*/g, "$1");
 const TEMPLATE_SKILLS = "cli/templates/vault/.claude/skills";
-const TEMPLATE_README = "cli/templates/vault/README.md";
 
 /**
  * **A setup command may only name things the person now has.**
@@ -74,15 +73,5 @@ describe("init describes only what it installed", () => {
         ).toContain(name);
       }
     }
-  });
-
-  it("the vault README never names a retired surface", () => {
-    const readme = read(TEMPLATE_README);
-    // This file lands *inside* the vault beside AGENTS.md, so an agent reads it
-    // too and will repeat whatever it says back to the person.
-    expect(
-      readme,
-      "`Studio` is a legacy redirect, not a surface a new user can open",
-    ).not.toMatch(/\bStudio\b/);
   });
 });

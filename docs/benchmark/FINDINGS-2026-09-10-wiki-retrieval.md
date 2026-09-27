@@ -1,3 +1,11 @@
+---
+title: "Local wiki retrieval and revision pilot — 2026-09-10"
+doc_type: finding
+status: historical
+area: library
+date: 2026-09-10
+---
+
 # Local wiki retrieval and revision pilot — 2026-09-10
 
 Related-page retrieval found the saved answer in all three fictional arrivals,

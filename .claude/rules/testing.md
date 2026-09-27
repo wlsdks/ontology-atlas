@@ -123,3 +123,18 @@ expected results through every implementation: the table lives in
 `tests/contract/<topic>.contract.test.ts` (for example `parse-frontmatter`,
 `validate-vault-document`). Codes and data structures must match; wording may
 differ. Change the shared table only for an intentional change.
+
+## Names, messages and necessity
+
+- Test titles (`describe`, `it`, `test`, `test.step`) and assertion messages
+  are English with no Hangul; Korean under test lives in the body or an
+  `.each` table; a contract enforces this.
+- A title names the behaviour and its condition, not the implementation:
+  `rejects a slug with a path separator`, not `calls validateSlug`.
+- One test per behaviour. Delete a test that asserts nothing, compares an
+  imported constant with a literal, pins prose or source text, restates the
+  implementation, or is contained in a stronger test of the same subject.
+  Deleting a gate, a regression test a record names, or a cross-package table
+  row needs a `reviewer`.
+- Renaming a title matched by a `--test-name-pattern` keeps the matched set
+  identical, or changes the pattern in the same commit.

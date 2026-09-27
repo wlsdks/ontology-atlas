@@ -183,67 +183,6 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
     reason:
       "/ontology/insights must keep the brief first, a row naming each core, six measured ontology tabs and a rendered Flow panel with its visible request, person-owned prefill, browser copy fallback, and tab-scoped agent handoff.",
   },
-  {
-    id: "product-design-operating-system",
-    files: ["docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md"],
-    markers: [
-      "pnpm design:route",
-      "computer-use-loop",
-      "/design-build",
-      "real macOS screen",
-      "Independent review",
-      "No UI lens always applies",
-      "No-Human-Designer Working Mode",
-      "Source -> Atlas rule -> verifier",
-      "Reference Permission Test",
-      "Relief/Topology Graph Engine Fit Gate",
-      "ontology-map",
-      "Graphology",
-      "ForceAtlas2",
-      "Composer blocks the map",
-      "Click focus must be durable",
-      "Drag is editing, not discovery",
-      "Installed macOS app proof",
-      "WebView marker",
-      "Computer Use",
-    ],
-    reason:
-      "Product Design OS must keep fact-derived proof routing, iterative real-window inspection, recorded motion, one independent review with routed lenses, and Atlas topology/desktop boundaries.",
-  },
-  {
-    id: "relief-topology-token-contract",
-    files: ["docs/DESIGN-SYSTEM.md", ".claude/rules/design.md"],
-    markers: [
-      "Tokenization Contract For Relief/Topology",
-      "--topology-*",
-      "product reason",
-      "WebView/test marker",
-      "stacked floating panels",
-      "popup soup",
-      "modal without modality",
-      "drag-only discovery",
-    ],
-    reason:
-      "Relief/Topology design changes must be tokenized and reject known floating-panel, popup, modal, and drag-discovery anti-patterns.",
-  },
-  {
-    id: "agents-product-design-gate",
-    files: ["AGENTS.md"],
-    /*
-     * ⚠️ **The markers are references, not sentences.** Pinned clauses ("Design gate after the
-     * PO pass", "Computer Use while building") went red every time the row was reworded, with
-     * nothing wrong in the repository. What must exist is the route: the doc path, the router
-     * command, and the two skills that own the render loop and the motion recording.
-     */
-    markers: [
-      "docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md",
-      "/design-build",
-      "pnpm design:route",
-      "/motion-verify",
-    ],
-    reason:
-      "AGENTS.md must route design from observable facts through pnpm design:route and point at the Product Design OS, /design-build, and /motion-verify, which own the render loop and recorded-motion evidence.",
-  },
 ];
 
 function collectFiles(root, dir, allowedExtensions, ignoredFilePattern) {

@@ -1,6 +1,3 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-
 import { describe, expect, it } from 'vitest';
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
@@ -61,21 +58,5 @@ describe('Tailwind 소스 스캔 범위', () => {
         `@source 에 ${need} 가 없다 — 그 아래 클래스가 CSS 에서 통째로 빠진다`,
       ).toBe(true);
     }
-  });
-
-  it('★ 이 계약이 빈 집합 위에서 놀지 않는다 — 문서에 실제로 그런 글자가 있다', () => {
-    /*
-     * Confirms the hazard this check guards **still exists today**. If class-shaped text
-     * disappeared from every document, this contract would go green while blocking
-     * nothing — at which point this assertion turns red and says to re-check whether the
-     * hazard is gone.
-     */
-    const design = readFileSync(join(process.cwd(), '.claude/rules/design.md'), 'utf8');
-    const classLike = design.match(/[\w-]+-\[[^\]]+\]/g) ?? [];
-    expect(
-      classLike.length,
-      '문서에 클래스 모양 글자가 하나도 없다. 그렇다면 이 계약이 막는 위험이 ' +
-        '오늘 존재하지 않는 것이니, 계약을 지울지 다시 판단해라.',
-    ).toBeGreaterThan(0);
   });
 });

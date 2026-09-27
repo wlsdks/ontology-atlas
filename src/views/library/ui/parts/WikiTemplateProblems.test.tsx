@@ -361,7 +361,7 @@ describe("WikiTemplateProblems — the machine's vocabulary is one press away, n
   it("says there that the command and the tool report the same codes", () => {
     renderPanel([LINK_PROBLEM]);
     const card = screen.getByTestId("library-wiki-link-findings");
-    expect(card.textContent).toContain("ontology-atlas wiki-validate");
+    expect(card.textContent).toContain("wiki-validate");
     expect(card.textContent).toContain("validate_wiki");
     // …and the card's own explanation no longer does.
     expect(screen.getByText(ko.library.wiki.linkFindingsBody).textContent).not.toContain(
