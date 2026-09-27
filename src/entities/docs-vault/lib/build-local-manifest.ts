@@ -185,13 +185,16 @@ async function walk(
   return acc.entries;
 }
 
-/** Children by name per tree node; a linear `children.find` made a flat folder quadratic. */
-const childIndex = new WeakMap<VaultTreeNode, Map<string, VaultTreeNode>>();
-
 /** One collator for every sort: `localeCompare(x, 'ko')` resolves the locale per comparison. */
 const KO_COLLATOR = new Intl.Collator('ko');
 
-function insertIntoTree(root: VaultTreeNode, slug: string, title: string) {
+/** `childIndex` finds a child by name; a linear search made a flat folder quadratic. */
+function insertIntoTree(
+  root: VaultTreeNode,
+  slug: string,
+  title: string,
+  childIndex: Map<VaultTreeNode, Map<string, VaultTreeNode>>,
+) {
   const parts = slug.split('/');
   let node = root;
   for (let i = 0; i < parts.length; i += 1) {
@@ -491,7 +494,8 @@ function aggregateBuild(
   sources.sort((a, b) => KO_COLLATOR.compare(a.path, b.path));
 
   const tree: VaultTreeNode = { name: rootName, path: '', type: 'dir' };
-  for (const doc of docs) insertIntoTree(tree, doc.slug, doc.title);
+  const childIndex = new Map<VaultTreeNode, Map<string, VaultTreeNode>>();
+  for (const doc of docs) insertIntoTree(tree, doc.slug, doc.title, childIndex);
   sortTree(tree);
 
   const backlinksDetail: Record<string, VaultBacklinkEntry[]> = {};
@@ -531,8 +535,38 @@ function aggregateBuild(
   };
 }
 
-/** Reads in flight at once: overlaps the per-read wait of the bridge or FSA without flooding it. */
-const VAULT_READ_CONCURRENCY = 32;
+/** Reads in flight at once (study D7): overlaps each bridge or FSA wait without flooding it. */
+const VAULT_READ_CONCURRENCY = 16;
+
+/**
+ * Maps `items` through `read` with at most `concurrency` in flight, results in input order. The
+ * first failure in time rejects the call, and no worker starts another read after it.
+ */
+async function mapPooled<T, R>(
+  items: readonly T[],
+  concurrency: number,
+  read: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let next = 0;
+  let failed = false;
+  const worker = async () => {
+    while (!failed && next < items.length) {
+      const at = next;
+      next += 1;
+      try {
+        results[at] = await read(items[at]);
+      } catch (error) {
+        failed = true;
+        throw error;
+      }
+    }
+  };
+  await Promise.all(
+    Array.from({ length: Math.min(Math.max(1, concurrency), items.length) }, worker),
+  );
+  return results;
+}
 
 async function collectEntries(
   root: FileSystemDirectoryHandle,
@@ -576,21 +610,7 @@ async function collectEntries(
     const raw = await file.text();
     return buildMdEntry(entry, raw, file.lastModified);
   };
-  /* A bounded pool; results land in walk order, so the manifest is the same as a serial read.
-   * One failed read still rejects the whole build, as the serial loop did. */
-  const entries: BuiltVaultEntry[] = new Array(files.length);
-  let next = 0;
-  const worker = async () => {
-    while (next < files.length) {
-      const at = next;
-      next += 1;
-      entries[at] = await readOne(files[at]);
-    }
-  };
-  await Promise.all(
-    Array.from({ length: Math.min(Math.max(1, concurrency), files.length) }, worker),
-  );
-  return entries;
+  return mapPooled(files, concurrency, readOne);
 }
 
 async function sourceStampFromHandle(
@@ -612,7 +632,7 @@ export async function buildLocalManifestWithEntries(
 /** Builds a local manifest in the same VaultManifest shape as `scripts/build-docs-vault.mjs`. */
 export async function buildLocalManifest(
   root: FileSystemDirectoryHandle,
-  /** Reads in flight; its caller with 1 is the order test's one-at-a-time reference. */
+  /** Tests pass 1 as a one-at-a-time reference. */
   readConcurrency = VAULT_READ_CONCURRENCY,
 ): Promise<LocalVaultBuild> {
   const walkInfo = { truncated: false, prunedDirs: [] as string[], sourceFileCount: 0 };
@@ -629,6 +649,8 @@ export async function rebuildLocalManifestIncremental(
   previous: BuiltVaultEntry[],
   /** Native stamps already fetched by the caller's change check, so the vault is walked once. */
   providedStamps?: VaultStampIndex | null,
+  /** Tests pass 1 as a one-at-a-time reference. */
+  readConcurrency = VAULT_READ_CONCURRENCY,
 ): Promise<{ build: LocalVaultBuild; entries: BuiltVaultEntry[] }> {
   /* The walk info must survive an incremental rebuild: the first-run card reads
    * `sourceFileCount`, and its absence reorders the card while it is on screen. */
@@ -643,8 +665,7 @@ export async function rebuildLocalManifestIncremental(
   /* Decide from native mtimes before calling `getFile()`, which under Tauri transfers the whole
    * body. The web has no batch API and gets null (`.claude/rules/surfaces.md`). */
   const nativeStamps: VaultStampIndex | null = providedStamps ?? (await nativeStampIndex(root));
-  const entries: BuiltVaultEntry[] = [];
-  for (const entry of files) {
+  const readOne = async (entry: WalkEntry): Promise<BuiltVaultEntry> => {
     // An unchanged native mtime means the file is never opened; an unknown path is read to be safe.
     const nativeStamp = nativeStamps?.get(entry.relativePath);
     if (nativeStamp !== undefined) {
@@ -654,8 +675,7 @@ export async function rebuildLocalManifestIncremental(
         prevNative.kind === entry.kind &&
         prevNative.lastModified === nativeStamp.lastModified
       ) {
-        entries.push({ ...prevNative, handle: entry.handle });
-        continue;
+        return { ...prevNative, handle: entry.handle };
       }
     }
     if (entry.kind === 'source') {
@@ -663,24 +683,22 @@ export async function rebuildLocalManifestIncremental(
       const { lastModified, bytes } = nativeStamp
         ? { lastModified: nativeStamp.lastModified, bytes: nativeStamp.size }
         : await sourceStampFromHandle(entry.handle);
-      entries.push({
+      return {
         relativePath: entry.relativePath,
         lastModified,
         bytes,
         handle: entry.handle,
         kind: 'source',
-      });
-      continue;
+      };
     }
     if (entry.kind === 'image' && nativeStamp) {
       // An image's mtime is all the build needs; its bytes stay native.
-      entries.push({
+      return {
         relativePath: entry.relativePath,
         lastModified: nativeStamp.lastModified,
         handle: entry.handle,
         kind: 'image',
-      });
-      continue;
+      };
     }
     const file = await entry.handle.getFile();
     const prev = prevByPath.get(entry.relativePath);
@@ -690,20 +708,19 @@ export async function rebuildLocalManifestIncremental(
       prev.lastModified === file.lastModified
     ) {
       // Unchanged — reuse the previous result without re-reading; take the fresh handle.
-      entries.push({ ...prev, handle: entry.handle });
-      continue;
+      return { ...prev, handle: entry.handle };
     }
     if (entry.kind === 'image') {
-      entries.push({
+      return {
         relativePath: entry.relativePath,
         lastModified: file.lastModified,
         handle: entry.handle,
         kind: 'image',
-      });
-      continue;
+      };
     }
     const raw = await file.text();
-    entries.push(buildMdEntry(entry, raw, file.lastModified));
-  }
+    return buildMdEntry(entry, raw, file.lastModified);
+  };
+  const entries = await mapPooled(files, readConcurrency, readOne);
   return { build: aggregateBuild(entries, root.name, walkInfo), entries };
 }

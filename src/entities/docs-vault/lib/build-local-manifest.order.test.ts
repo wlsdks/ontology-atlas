@@ -12,7 +12,8 @@ vi.mock('@/shared/lib/tauri-vault-fs', () => ({
   nativeVaultFingerprint: (rootPath: string) => nativeVaultFingerprint(rootPath),
 }));
 
-const { buildLocalManifest } = await import('./build-local-manifest');
+const { buildLocalManifest, buildLocalManifestWithEntries, rebuildLocalManifestIncremental } =
+  await import('./build-local-manifest');
 
 interface FakeFile {
   text: string;
@@ -29,6 +30,7 @@ function makeRoot(
   files: Map<string, FakeFile>,
   opens: string[],
   rootPath?: string,
+  flight = { reads: 0 },
 ): FileSystemDirectoryHandle {
   interface Dir {
     dirs: Map<string, Dir>;
@@ -61,8 +63,13 @@ function makeRoot(
           lastModified: file.lastModified,
           size: file.size,
           text: async () => {
-            await yieldTurns((turn += 5));
-            return file.text;
+            flight.reads += 1;
+            try {
+              await yieldTurns((turn += 5));
+              return file.text;
+            } finally {
+              flight.reads -= 1;
+            }
           },
         } as unknown as File;
       },
@@ -175,17 +182,64 @@ describe('pooled manifest build', () => {
     expect(opens.filter((path) => path.endsWith('.png')).length).toBe(60);
   });
 
-  it('rejects the whole build when one read fails, as the serial read did', async () => {
-    const files = makeVault();
+  it('rejects on the first failed read and starts no read after it', async () => {
+    const files = new Map<string, FakeFile>();
+    for (let n = 0; n < 2000; n += 1) {
+      files.set(`notes/n-${n}.md`, { text: `# N ${n}\n`, lastModified: n, size: 8 });
+    }
     nativeVaultFingerprint.mockResolvedValue(null);
-    const root = makeRoot(files, []);
-    const broken = files.get('elements/e-700.md')!;
-    Object.defineProperty(broken, 'text', {
+    const opens: string[] = [];
+    const flight = { reads: 0 };
+    let openedAtFailure = 0;
+    Object.defineProperty(files.get('notes/n-0.md')!, 'text', {
       get() {
+        openedAtFailure = opens.length;
         throw new Error('unreadable');
       },
     });
-    await expect(buildLocalManifest(root)).rejects.toThrow('unreadable');
+    await expect(buildLocalManifest(makeRoot(files, opens, undefined, flight))).rejects.toThrow(
+      'unreadable',
+    );
+    await vi.waitFor(() => expect(flight.reads).toBe(0));
+    expect(opens.length).toBeLessThanOrEqual(openedAtFailure + 16);
+  });
+
+  it('rebuilds incrementally in the same order as one read at a time', async () => {
+    const files = makeVault();
+    nativeVaultFingerprint.mockResolvedValue(null);
+    const seed = await buildLocalManifestWithEntries(makeRoot(files, []));
+    for (const path of ['elements/e-3.md', 'guides/g1/deep/doc-1.md', 'assets/img-2.png']) {
+      const file = files.get(path)!;
+      files.set(path, { ...file, text: `${file.text}\nchanged`, lastModified: file.lastModified + 1 });
+    }
+    const serial = await rebuildLocalManifestIncremental(makeRoot(files, []), seed.entries, null, 1);
+    const pooled = await rebuildLocalManifestIncremental(makeRoot(files, []), seed.entries, null);
+
+    expect(serialize(pooled.build.manifest)).toBe(serialize(serial.build.manifest));
+    expect(pooled.build.fingerprint).toBe(serial.build.fingerprint);
+    expect(serialize(pooled.build.manifest)).toBe(
+      serialize((await buildLocalManifest(makeRoot(files, []), 1)).manifest),
+    );
+  });
+
+  it('rebuilds a changed image from its native stamp without opening it', async () => {
+    const files = makeVault();
+    nativeVaultFingerprint.mockResolvedValue(stampsFor(files));
+    const seed = await buildLocalManifestWithEntries(makeRoot(files, [], '/vault'));
+    const image = files.get('assets/img-7.png')!;
+    files.set('assets/img-7.png', { ...image, lastModified: image.lastModified + 5 });
+    nativeVaultFingerprint.mockResolvedValue(stampsFor(files));
+
+    const opens: string[] = [];
+    const result = await rebuildLocalManifestIncremental(
+      makeRoot(files, opens, '/vault'),
+      seed.entries,
+    );
+    expect(opens.filter((path) => path.endsWith('.png'))).toEqual([]);
+    expect(result.build.fingerprint).not.toBe(seed.build.fingerprint);
+    expect(result.entries.find((e) => e.relativePath === 'assets/img-7.png')?.lastModified).toBe(
+      image.lastModified + 5,
+    );
   });
 
   it('inserts 20,000 children of one folder with a linear number of child searches', async () => {
