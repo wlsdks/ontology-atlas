@@ -11,16 +11,13 @@ import {
   type PersistedBaseline,
 } from "./change-baseline-persist";
 
-/** One entry, for the open vault only; it names that vault, so no other vault restores it. */
 const PERSIST_KEY = "demo:change-baseline:v2";
-/** The first form: an entry per vault at `<prefix>:<scope>`, and before scopes at `<prefix>`. */
 const LEGACY_KEY_PREFIX = "demo:change-baseline:v1";
 const legacyKeyFor = (scope: string) => `${LEGACY_KEY_PREFIX}:${scope}`;
 
 /** The active vault; while null nothing is stored or restored. */
 let baselineScope: string | null = null;
 
-/** Null where the page may not use storage; then the baseline lives in memory only. */
 function storage(): Storage | null {
   try {
     return typeof window === "undefined" ? null : window.localStorage;
@@ -106,7 +103,6 @@ export function restorePersistedBaseline(
 ): boolean {
   const store = storage();
   if (!store || baseline !== null || baselineScope === null) return false;
-  // Read once: the first form's entry becomes the current form below, or is gone.
   const legacyKey = legacyKeyFor(baselineScope);
   const legacy = store.getItem(legacyKey);
   store.removeItem(legacyKey);

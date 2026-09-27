@@ -119,7 +119,6 @@ export function useRoundsRunner(): RoundsRunnerValue {
   const stateRef = useRef<RoundState | null>(null);
   const runningRef = useRef<RoundsRunnerValue['running']>(null);
   const lastTickRef = useRef<Date | null>(null);
-  // Callbacks read these, never `vault`, which carries the manifest.
   const manifestRef = useLatestRef(vault.manifest);
   const codexRegisteredCommand = vault.agentConfigStatus?.codexRegisteredCommand ?? null;
   const codexConfigValid = vault.agentConfigStatus?.codexConfigValid === true;

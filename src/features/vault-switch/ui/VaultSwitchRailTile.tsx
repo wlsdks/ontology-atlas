@@ -67,7 +67,6 @@ const POPOVER_MAX_HEIGHT_PX = 640;
 export function VaultSwitchRailTile() {
   const t = useTranslations('vaultSwitch');
   const vault = useLocalVault();
-  // Callbacks read these, never `vault`, which carries the manifest.
   const { open: pickFolder, openRecent, forgetRecent, status: vaultStatus } = vault;
   const { open, setOpen, ref, surfaceRef } = useDismissibleMenu();
   const triggerRef = useRef<HTMLButtonElement | null>(null);

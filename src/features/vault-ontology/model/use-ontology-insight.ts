@@ -148,7 +148,6 @@ export function useDogfoodInsight(): KnowledgeProjectInsight {
   return useMemo(() => sampleInsight('dogfood', locale).insight, [locale]);
 }
 
-/** One insight per derivation and locale, shared by every consumer. */
 const localInsightCache = new WeakMap<VaultOntologyDerivation, Map<string, KnowledgeProjectInsight>>();
 function localInsight(d: VaultOntologyDerivation, locale: string): KnowledgeProjectInsight {
   let byLocale = localInsightCache.get(d);

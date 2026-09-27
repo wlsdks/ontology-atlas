@@ -98,7 +98,6 @@ describe("change-baseline-store persistence", () => {
     markChangeBaseline(nodes, edges, 2);
     expect(warn).toHaveBeenCalledTimes(1);
     expect(getChangeBaseline()?.takenAt).toBe(2);
-    // The earlier save is gone rather than restored after a reload as if it were this one.
     expect(window.localStorage.getItem(STORED_KEY)).toBeNull();
   });
 
@@ -156,7 +155,6 @@ describe("change-baseline-store vault switching", () => {
     markChangeBaseline(bravoNodes, edges, 99);
     expect(storedScope()).toBe(VAULT_B);
 
-    // Back in A there is nothing of A's to restore; A takes a new baseline.
     setChangeBaselineScope(VAULT_A);
     expect(restorePersistedBaseline(nodes)).toBe(false);
   });
@@ -170,7 +168,6 @@ describe("change-baseline-store vault switching", () => {
 
 describe("change-baseline-store carry-over from the first stored form", () => {
   it("restores the open vault's first-form baseline once and drops every first-form entry", async () => {
-    // The first form: one entry per vault, each node's signature kept as text.
     const firstForm = JSON.stringify({
       v: 1,
       nodeSigs: [["a", "capability\u0001a\u0001\u0001"], ["b", "capability\u0001b\u0001\u0001"]],
@@ -181,7 +178,6 @@ describe("change-baseline-store carry-over from the first stored form", () => {
     window.localStorage.setItem(firstFormKeyFor(VAULT_A), firstForm);
     window.localStorage.setItem(firstFormKeyFor(VAULT_B), firstForm);
     window.localStorage.setItem("demo:change-baseline:v1", firstForm);
-    // A fresh module is a fresh page: the first scope it hears of prunes the old entries.
     vi.resetModules();
     const fresh = await import("./change-baseline-store");
     const { computeOntologyChangeset } = await import("./ontology-changeset");

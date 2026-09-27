@@ -9,7 +9,7 @@ import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../../model";
 const SEP = "\u0001";
 
 export interface OntologySnapshot {
-  /** nodeId → `hashNodeSignature` of its kind, title, summary and sorted outgoing edges. */
+  /** nodeId → hash of kind/title/summary plus sorted outgoing edges. */
   nodeSigs: Map<string, number>;
   /** Kept apart from the signature so a removed node's kind can still be shown. */
   nodeKinds: Map<string, string>;
@@ -37,7 +37,6 @@ export function joinEdgeKey(from: string, to: string, type: string): string {
   return `${from}${SEP}${to}${SEP}${type}`;
 }
 
-/** Null for a string `joinEdgeKey` did not make. */
 export function splitEdgeKey(key: string): [string, string, string] | null {
   const parts = key.split(SEP);
   return parts.length === 3 ? [parts[0], parts[1], parts[2]] : null;
@@ -47,7 +46,7 @@ function edgeKey(edge: Pick<KnowledgeGraphEdge, "from" | "to" | "type">): string
   return joinEdgeKey(edge.from, edge.to, edge.type);
 }
 
-/** cyrb53. A node's edit goes unseen only if its old and new signatures collide, about 2^-53. */
+// cyrb53: an edit is missed only if one node's old and new signatures collide (about 2^-53).
 export function hashNodeSignature(signature: string): number {
   let h1 = 0xdeadbeef;
   let h2 = 0x41c6ce57;
@@ -63,7 +62,7 @@ export function hashNodeSignature(signature: string): number {
   return 4294967296 * (2097151 & h2) + (h1 >>> 0);
 }
 
-/** Kind, title, summary and sorted outgoing edges, hashed; coordinates and timestamps are ignored. */
+/** Kind, title, summary and sorted outgoing edges; coordinates and timestamps are ignored. */
 function nodeSignature(
   node: KnowledgeGraphNode,
   outgoingByNode: Map<string, string[]>,

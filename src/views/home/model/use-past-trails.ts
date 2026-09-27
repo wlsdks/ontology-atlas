@@ -49,7 +49,7 @@ export interface UsePastTrailsResult {
   replayPastWalk: (walkId: string) => string | null;
 }
 
-/** Refined so the row's title and count match what a replay loads. */
+// Refined so the row's title and count match what a replay loads.
 function refinePastWalks(
   pastWalks: readonly PastWalk[],
   footprintNodeLookup: UsePastTrailsArgs["footprintNodeLookup"],

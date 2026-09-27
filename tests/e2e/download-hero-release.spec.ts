@@ -1,15 +1,7 @@
 import { expect, test, type CDPSession, type Page } from "@playwright/test";
 
 import { seedFirstRunSeen } from "./first-run-seed";
-
-/**
- * Leaving `/download` gives back its WebGL context and its page. Before the hero borrowed one
- * renderer for the session, every visit kept one more context and about 1,200 DOM nodes (web
- * memory audit, 2026-09-27). Counted after a forced collection: at most one WebGL2 context after
- * five round trips, and DOM nodes within 5% of the first round trip (a leaked page is about 100%).
- * `?hero=three` forces WebGL on the software-rendered CI browser; reduced motion draws each visit
- * once instead of every frame, which a software renderer could not keep up with.
- */
+import { liveInstances } from "./heap-census";
 
 async function heroOnCanvas(page: Page): Promise<void> {
   await page.waitForFunction(() => {
@@ -26,23 +18,12 @@ async function roundTripToGuide(page: Page): Promise<void> {
 }
 
 async function census(cdp: CDPSession): Promise<{ domNodes: number; webgl2Contexts: number }> {
-  await cdp.send("HeapProfiler.collectGarbage");
+  const webgl2Contexts = await liveInstances(cdp, "WebGL2RenderingContext");
   const { nodes } = await cdp.send("Memory.getDOMCounters");
-  const { result: prototype } = await cdp.send("Runtime.evaluate", {
-    expression: "WebGL2RenderingContext.prototype",
-  });
-  const { objects } = await cdp.send("Runtime.queryObjects", { prototypeObjectId: prototype.objectId! });
-  const { result: count } = await cdp.send("Runtime.callFunctionOn", {
-    objectId: objects.objectId!,
-    functionDeclaration: "function () { return this.length; }",
-    returnByValue: true,
-  });
-  await cdp.send("Runtime.releaseObject", { objectId: objects.objectId! });
-  await cdp.send("Runtime.releaseObject", { objectId: prototype.objectId! });
-  return { domNodes: nodes, webgl2Contexts: count.value as number };
+  return { domNodes: nodes, webgl2Contexts };
 }
 
-test("round trips from /download keep one WebGL context and a flat DOM", async ({ page }) => {
+test("five visits to /download keep one WebGL context and leave no page behind", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.emulateMedia({ reducedMotion: "reduce" });
   await seedFirstRunSeen(page);

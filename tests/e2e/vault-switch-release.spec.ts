@@ -1,34 +1,10 @@
-import { expect, test, type CDPSession, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 import { seedFirstRunSeen } from "./first-run-seed";
 import { FIXTURE_VAULT, FIXTURE_VAULT_NODE_COUNT } from "./fixture-vault";
+import { liveInstances } from "./heap-census";
 import { stubDirectoryPicker } from "./vault-picker-stub";
 
-/**
- * Switching folders lets the previous folders go. Callbacks that outlived their render kept the
- * folder open at that render: two 5k switches held two earlier folders whole (web memory audit,
- * 2026-09-27). Every folder the stub hands out has the same files, and the app holds one
- * `FileSystemFileHandle` per file it read, so after two switches the page may hold no more
- * handles than with the first folder open.
- */
-
-async function liveFileHandles(cdp: CDPSession): Promise<number> {
-  await cdp.send("HeapProfiler.collectGarbage");
-  const { result: prototype } = await cdp.send("Runtime.evaluate", {
-    expression: "FileSystemFileHandle.prototype",
-  });
-  const { objects } = await cdp.send("Runtime.queryObjects", { prototypeObjectId: prototype.objectId! });
-  const { result: count } = await cdp.send("Runtime.callFunctionOn", {
-    objectId: objects.objectId!,
-    functionDeclaration: "function () { return this.length; }",
-    returnByValue: true,
-  });
-  await cdp.send("Runtime.releaseObject", { objectId: objects.objectId! });
-  await cdp.send("Runtime.releaseObject", { objectId: prototype.objectId! });
-  return count.value as number;
-}
-
-/** The chip has named a folder other than `previous` and finished opening it, and the map holds it. */
 async function folderOpen(page: Page, previous: string | null): Promise<string> {
   const tile = page.getByTestId("vault-switch-rail-tile");
   await expect(tile).not.toHaveAttribute("data-busy", "true");
@@ -41,7 +17,7 @@ async function folderOpen(page: Page, previous: string | null): Promise<string> 
   return (await tile.getAttribute("aria-label")) ?? "";
 }
 
-test("switching folders twice keeps no more of them than one open folder", async ({ page }) => {
+test("two folder switches leave no earlier folder alive", async ({ page }) => {
   await page.setViewportSize({ width: 1512, height: 949 });
   await stubDirectoryPicker(page, { ...FIXTURE_VAULT });
   await seedFirstRunSeen(page);
@@ -51,7 +27,7 @@ test("switching folders twice keeps no more of them than one open folder", async
   await page.getByTestId("first-run-starter-open").click();
   await page.getByTestId("vault-guide-pick-existing").click();
   let label = await folderOpen(page, null);
-  const oneFolder = await liveFileHandles(cdp);
+  const oneFolder = await liveInstances(cdp, "FileSystemFileHandle");
   expect(oneFolder, "the open folder's files were read through handles").toBeGreaterThan(0);
 
   for (let switchCount = 1; switchCount <= 2; switchCount += 1) {
@@ -60,5 +36,5 @@ test("switching folders twice keeps no more of them than one open folder", async
     label = await folderOpen(page, label);
   }
 
-  expect(await liveFileHandles(cdp), `file handles with one folder open: ${oneFolder}`).toBeLessThanOrEqual(oneFolder);
+  expect(await liveInstances(cdp, "FileSystemFileHandle"), `file handles with one folder open: ${oneFolder}`).toBeLessThanOrEqual(oneFolder);
 });

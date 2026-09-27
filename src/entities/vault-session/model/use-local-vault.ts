@@ -1016,7 +1016,6 @@ export function useLocalVaultInternal() {
   // Always start 'idle' and let a mount effect switch to 'unsupported' when FSA is
   // missing — one frame looks supported, but the hydration error is gone.
   const [state, setState] = useState<State>(() => emptyState('idle'));
-  // Callbacks read `stateRef`, never `state`: a callback holding `state` holds a past manifest.
   const stateRef = useLatestRef(state);
   const [restoreAttempted, setRestoreAttempted] = useState(false);
   /**

@@ -8,11 +8,6 @@ import {
 
 /** Baseline (de)serialization and the content-overlap guard deciding whether a restore applies. Pure. */
 
-/**
- * Each id once; everything else a number. `sigs[i]` and `kindOf[i]` belong to `ids[i]`, and
- * `ids` continues with edge endpoints that are not nodes. `edges` is flat [from, to, type] index
- * triples into `ids` and `types`.
- */
 interface SerializedSnapshot {
   v: 2;
   scope: string;
@@ -34,7 +29,6 @@ interface SerializedSnapshotV1 {
 }
 
 export interface PersistedBaseline {
-  /** Null for the first form, which kept the vault in its storage key. */
   scope: string | null;
   snapshot: OntologySnapshot;
 }

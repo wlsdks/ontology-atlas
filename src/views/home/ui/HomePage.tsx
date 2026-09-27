@@ -236,7 +236,6 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     vault, selectedOntologyNode, ontologyInsight, recentChanges, docFreshnessIndex, docFileDateIndex, docDatesReading,
     updatedAgoNowMs, spotlightOn, changedSlugs, dustySlugs, deeplinkSourceReady, handoffSource, vaultIdentity
   } = topologyVaultReadModel;
-  // Callbacks read these, never `vault`, which carries the manifest.
   const vaultStatus = vault.status;
   const openVault = vault.open;
   // `AppNavRail` lives in the layout, so this page registers its settings node

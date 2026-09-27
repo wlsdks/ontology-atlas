@@ -5,16 +5,8 @@ import { syntheticVault } from "./hex-board-vaults";
 import { waitForDomQuiet, waitForPageSettled } from "./settle";
 import { stubDirectoryPicker } from "./vault-picker-stub";
 
-/**
- * A tour of every destination leaves nothing behind. With a 1k-document folder open, each tour
- * used to add about 990 DOM nodes and 64 listeners, all of it `/download` (web memory audit,
- * 2026-09-27). Counted at the map with garbage collected, after the first tour, which pays every
- * one-time cost, and after the third: within 5%, against about 70% of the map's nodes per tour.
- */
-
 const DOCS = syntheticVault(990, 10);
 
-/** Where a tour stops, and what says it has arrived. */
 const STOPS: { go: { rail?: string; tab?: string; push?: string }; ready: string }[] = [
   { go: { rail: "architecture" }, ready: '[data-testid="harness-views"]' },
   { go: { rail: "library" }, ready: '[data-testid="library-workspace-panel"]' },
@@ -33,17 +25,17 @@ const STOPS: { go: { rail?: string; tab?: string; push?: string }; ready: string
 async function visit(page: Page, go: (typeof STOPS)[number]["go"], ready: string): Promise<void> {
   if (go.rail) await page.getByTestId(`app-nav-rail-item-${go.rail}`).click();
   else if (go.tab) await page.getByTestId(go.tab).click();
-  else if (go.push) {
-    // A full load would start a new heap; the app's own links to the gateway navigate client-side.
-    const href = go.push;
-    await page.evaluate((url) => (window as unknown as { next: { router: { push: (u: string) => void } } }).next.router.push(url), href);
-  }
+  else if (go.push) await routerPush(page, go.push);
   await page.locator(ready).first().waitFor();
   await waitForDomQuiet(page);
 }
 
+async function routerPush(page: Page, url: string): Promise<void> {
+  await page.evaluate((to) => (window as unknown as { next: { router: { push: (u: string) => void } } }).next.router.push(to), url);
+}
+
 async function backToMap(page: Page): Promise<void> {
-  await page.evaluate(() => (window as unknown as { next: { router: { push: (u: string) => void } } }).next.router.push("/en/topology/?guides=off"));
+  await routerPush(page, "/en/topology/?guides=off");
   await page.waitForFunction(
     (count) =>
       Number(document.querySelector('[data-testid="ontology-map"]')?.getAttribute("data-source-node-count")) >= count,
@@ -59,7 +51,6 @@ async function census(cdp: CDPSession): Promise<{ nodes: number; listeners: numb
 }
 
 test("three tours of every destination leave the map's DOM and listeners flat", async ({ page }) => {
-  // A hang ceiling for three sweeps over a 1k-document folder, not a budget.
   test.setTimeout(300_000);
   await page.setViewportSize({ width: 1512, height: 949 });
   await stubDirectoryPicker(page, DOCS);

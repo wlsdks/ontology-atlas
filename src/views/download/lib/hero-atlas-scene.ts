@@ -101,11 +101,6 @@ function createRenderer(): THREE.WebGLRenderer | null {
   }
 }
 
-/**
- * One renderer for the session, lent to each mount. three.js registers every renderer on objects
- * it keeps for the session (the sprite geometry, the empty texture) and `dispose()` never
- * unregisters it, so a renderer per mount leaked its context, its canvas and the page around it.
- */
 let sessionRenderer: THREE.WebGLRenderer | null = null;
 let sessionRendererLent = false;
 
@@ -138,7 +133,6 @@ function borrowRenderer(): RendererLease | null {
   };
 }
 
-/** Draws on a canvas it appends to `host` and takes back on dispose. */
 export function mountHeroAtlas(host: HTMLElement, data: AtlasData, opts: AtlasOptions = {}): AtlasHandle | null {
   const lease = borrowRenderer();
   if (!lease) return null;

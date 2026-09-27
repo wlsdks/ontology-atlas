@@ -84,7 +84,6 @@ export function useTopologyAgentOrchestration({
 }: Options) {
   const { selectedOntologyNode, spotlightOn, gitVaultPath, tAgent, vaultConceptFacts, llmBridgeAvailable, vault } = topologyVaultReadModel;
   const { realmTitle, ontologyMapGraph } = topologyGraphProjection;
-  // Callbacks read these, never the graph, the vault or the facts themselves.
   const visibleNodeCount = ontologyMapGraph.nodes.length;
   const vaultHandle = vault.handle;
   const vaultConceptFactsRef = useLatestRef(vaultConceptFacts);
