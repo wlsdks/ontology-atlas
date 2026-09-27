@@ -18,8 +18,8 @@ import { waitForDomeAssembled, waitForFlatMap, waitForMapStill, waitFrames } fro
  *    which appends a footprint step and derives that node's `contains` ancestors
  *    into `open=`, the flat map's expansion state.
  *
- * So this spec walks 2D → 3D → 2D twice: once with the picker used as intended,
- * and once dismissing the picker over a node, which is the reported accident.
+ * So this spec walks 2D → 3D → 2D, dismissing the picker over a node on the way (the
+ * reported accident) and returning through the picker as intended, which leaves nothing behind.
  */
 const trailChip = (page: import("@playwright/test").Page) => page.getByText(/걸어온 길/);
 
@@ -27,26 +27,6 @@ async function openPicker(page: import("@playwright/test").Page) {
   await page.getByTestId("topology-view-3d").click();
   await expect(page.getByTestId("topology-view-3d-menu")).toBeVisible();
 }
-
-test("2D → 3D → 2D leaves no trail and no expansion behind", async ({ page }) => {
-  test.setTimeout(150_000);
-  await page.setViewportSize({ width: 1512, height: 917 });
-  await seedFirstRunSeen(page);
-  await page.goto("/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
-  await waitForMapStill(page);
-  await expect(trailChip(page), "출발선에 자취가 있으면 안 된다").toHaveCount(0);
-
-  await openPicker(page);
-  await page.getByTestId("topology-view-3d-choice-strata").click();
-  await waitForDomeAssembled(page);
-
-  await openPicker(page);
-  await page.getByTestId("topology-view-3d-choice-flat").click();
-  await waitForFlatMap(page);
-
-  await expect(trailChip(page), "3D 를 다녀왔다고 걸어온 길이 생기지 않는다").toHaveCount(0);
-  expect(new URL(page.url()).searchParams.get("open"), "3D 왕복이 2D 펼침을 만들지 않는다").toBeNull();
-});
 
 test("the press that dismisses the 3D picker does not also walk the map", async ({ page }) => {
   test.setTimeout(150_000);

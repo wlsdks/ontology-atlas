@@ -14,8 +14,7 @@ import { installLibraryCheckBridge, openLibraryCheckFolder } from "./library-che
  * with **no** agent never reached the page at all, because its door was drawn only once a
  * check had run.
  *
- * So this spec plants the folder from
- * `/Users/jinan/scratch/atlas-library-fixture-20260911/vault` — the four codes it fires —
+ * So this spec plants the owner's 2026-09-11 library fixture folder — the four codes it fires —
  * and holds the whole product to the proof the PO pass wrote before implementation.
  * `library-check-fixture.ts` owns those bytes and the bridge that serves them, because the
  * touch-target contract now measures the same page and a spec may not import a spec:

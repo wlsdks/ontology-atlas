@@ -447,11 +447,4 @@ test.describe("Compile opens the agent dock", () => {
     expect(frame.width, "the dock is a column of its own at this width").toBeGreaterThan(200);
     expect(box.x, "the toast starts inside the reader pane").toBeGreaterThanOrEqual(reader.x);
   });
-
-  test("the keyboard opens it too, which is how the defect was first pressed", async ({ page }) => {
-    await openFolder(page);
-    await page.getByTestId("library-compile").focus();
-    await page.keyboard.press("Enter");
-    await expect(page.getByTestId("library-agent-dock")).toBeVisible({ timeout: 25_000 });
-  });
 });

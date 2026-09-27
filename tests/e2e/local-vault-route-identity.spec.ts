@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { seedFirstRunSeen } from './first-run-seed';
+import { waitFrames } from './settle';
 import { stubDirectoryPicker } from './vault-picker-stub';
 
 const PROJECT_UID = '10000000-0000-4000-8000-000000000001';
@@ -122,7 +123,8 @@ async function expectLocalOnlyTransition(
     await expect(tab).toHaveAttribute('aria-selected', 'true');
   }
   await expect(page.locator('main')).toContainText(localMarker, { timeout: 20_000 });
-  await page.waitForTimeout(250);
+  // Keep sampling for a run of drawn frames after arrival, so a late flash of the sample is caught.
+  await waitFrames(page, 15);
   const frames = await stopFrameTextTrace(page);
 
   expect(frames.length, `${destination}: 프레임 표본이 없다`).toBeGreaterThan(2);

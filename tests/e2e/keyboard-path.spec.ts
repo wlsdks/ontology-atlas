@@ -56,11 +56,6 @@ async function openDatasheetByKeyboard(page: import("@playwright/test").Page) {
 }
 
 test.describe("키보드 경로 (신뢰 이벤트)", () => {
-  test("INDEX 행에서 Enter 로 데이터시트를 연다", async ({ page }) => {
-    await openTopology(page);
-    await openDatasheetByKeyboard(page);
-  });
-
   test("데이터시트는 이름을 가진 그룹이다 (스크린리더가 등장을 안다)", async ({ page }) => {
     await openTopology(page);
     await openDatasheetByKeyboard(page);

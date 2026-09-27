@@ -16,16 +16,6 @@ import { installDesktopBridge, openRounds } from "./rounds-desktop-bridge";
  * value onto the other rail, and what the index row says afterwards is what the store holds.
  */
 
-/**
- * Evidence for a person to look at. Every entrance and exit is disabled and the dialog is
- * scrolled to its head first, so the frame shows the finished screen rather than one caught
- * mid-motion — a half-faded capture says nothing about the layout it was taken to show.
- */
-async function shoot(page: import("@playwright/test").Page, name: string) {
-  await page.evaluate(() => document.querySelector("[data-testid='library-rounds-sheet']")?.scrollTo(0, 0));
-  await page.screenshot({ path: `/tmp/atlas-rounds-${name}.png`, animations: "disabled" });
-}
-
 async function openNewDocumentSchedule(page: import("@playwright/test").Page) {
   await page.getByTestId("library-rounds-new").click();
   await expect(page.getByTestId("automations")).toHaveAttribute("data-automations-lane", "documents");
@@ -54,7 +44,6 @@ test.describe("Library rounds — the cadence rail", () => {
     // It opens on the cadence every round had before the rail existed.
     await expect(readback).toContainText("Every hour");
     await expect(thumb).toHaveAttribute("aria-valuetext", "every 1 hours");
-    await shoot(page, "rounds-sheet-default");
 
     /*
      * Minutes, then a real drag. Five detents sit at 0 / 25 / 50 / 75 / 100 percent, so 40%
@@ -106,7 +95,6 @@ test.describe("Library rounds — the cadence rail", () => {
     // 144 turns a day is past the 48 the cost line tolerates quietly.
     await expect(page.getByTestId("library-rounds-cost")).toHaveAttribute("data-cost-tone", "alarming");
     await expect(page.getByTestId("library-rounds-add-menu")).toHaveCount(0);
-    await shoot(page, "rounds-sheet-two-places");
 
     await page.getByTestId("library-rounds-allow").click();
     await expect(sheet).toBeHidden();
@@ -115,7 +103,6 @@ test.describe("Library rounds — the cadence rail", () => {
     // The index row says how often first — the column's own job — then where.
     const list = page.getByTestId("library-rounds-list");
     await expect(list).toContainText("Every 10 minutes · Confluence · ENG space");
-    await shoot(page, "rounds-index-ten-minutes");
 
     const stored = await page.evaluate(() => {
       const files = (window as unknown as { __roundsStubFiles: Record<string, string> }).__roundsStubFiles;

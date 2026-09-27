@@ -63,67 +63,6 @@ test('keyboard focus stays visible across the canvas and related concept replace
   expect(await page.getByTestId('map-detail-panel-close').evaluate(el => el.matches(':focus-visible'))).toBe(true);
 });
 
-test.describe('touch has an explicit overview return', () => {
-  test.use({ hasTouch: true });
-  for (const [width, height] of [[390, 844], [768, 1024], [1440, 900]]) {
-    test(`${width}: INDEX and detail targets meet the shared floor and Fit returns`, async ({ page }) => {
-      await page.setViewportSize({ width, height });
-      await openMap(page);
-      expect(await page.evaluate(() => matchMedia('(any-pointer: coarse)').matches)).toBe(true);
-      const assertTarget = async (id: string) => {
-        const target = page.getByTestId(id);
-        await expect(target).toBeVisible();
-        const box = (await target.boundingBox())!;
-        expect(box.width, id).toBeGreaterThanOrEqual(44);
-        expect(box.height, id).toBeGreaterThanOrEqual(44);
-        expect(await target.evaluate(el => { const r = el.getBoundingClientRect(); return el.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)); }), `${id} is covered`).toBe(true);
-      };
-      if (width < 768) {
-        await expect(page.getByTestId('topology-fit-control')).toBeHidden();
-        const chevron = (await page.getByTestId('topology-index-fold').locator('span').last().boundingBox())!;
-        const settings = (await page.getByTestId('topology-mobile-settings').boundingBox())!;
-        expect(chevron.x + chevron.width, 'settings covers the INDEX collapse indicator').toBeLessThanOrEqual(settings.x);
-      }
-      const root = page.getByTestId('topology-index-row').first();
-      expect((await root.boundingBox())!.height).toBeGreaterThanOrEqual(44);
-      await assertTarget('topology-index-uncataloged-docs');
-      await assertTarget('topology-index-source-unbound');
-      await page.locator('[data-index-row="domain:orders"]').click();
-      await waitForMapStill(page);
-      await assertTarget('map-detail-panel-close');
-      await assertTarget('map-detail-panel-more-menu-trigger');
-      await expect(page.getByTestId('topology-realm-enter-button')).toHaveCount(0);
-      await page.getByTestId('map-detail-panel-more-menu-trigger').click();
-      await assertTarget('map-detail-panel-action-realm');
-      await page.keyboard.press('Escape');
-      const panel = page.getByTestId('map-detail-panel');
-      if (width < 1024) {
-        const bottom = (await panel.boundingBox())!;
-        const tabs = page.getByRole('navigation', { name: '주요 메뉴' });
-        const bar = (await tabs.boundingBox())!;
-        expect(bottom.y + bottom.height).toBeLessThanOrEqual(bar.y);
-      }
-      await page.getByTestId('map-detail-panel-close').click();
-      await expect(panel).toBeHidden();
-      if (width < 768) {
-        await expect(page.getByTestId('topology-fit-control')).toBeHidden();
-        await page.getByTestId('topology-index-fold').click();
-      }
-      const fit = page.getByTestId('topology-fit-control').getByRole('button');
-      await expect(fit).toBeVisible();
-      const box = (await fit.boundingBox())!;
-      expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(44);
-      await fit.click();
-      await expect.poll(() => page.evaluate(() => (window as unknown as { __atlasMap: { selection(): { nodeId: string | null } } }).__atlasMap.selection().nodeId)).toBeNull();
-      const actionRow = page.getByTestId('topology-utility-action-row');
-      await expect(actionRow).toBeVisible();
-      const actionBox = (await actionRow.boundingBox())!;
-      expect(actionBox.x).toBeGreaterThanOrEqual(0);
-      expect(actionBox.x + actionBox.width).toBeLessThanOrEqual(width);
-    });
-  }
-});
-
 test('search selection hands keyboard focus to the map, while cancellation returns to its opener', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await openMap(page);

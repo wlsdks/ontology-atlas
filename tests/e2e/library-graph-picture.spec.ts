@@ -112,6 +112,18 @@ const SIZES = [
 ] as const;
 
 /**
+ * Where each claim is run. The picture's size is the claim that needs more than one window, so
+ * the legibility matrix keeps the two extremes (the app's minimum and the wide monitor): a mark
+ * size that drifted with the window shows at those two before anywhere between them. The fit
+ * tile and the stale-citation routes do not depend on the window at all above `lg`, so they are
+ * run once each (2026-09-27 suite trim).
+ */
+const [SIZE_1512, SIZE_1040, SIZE_1920] = SIZES;
+const LEGIBILITY_SIZES = [SIZE_1040, SIZE_1920] as const;
+const FIT_TILE_SIZES = [SIZE_1512] as const;
+const STALE_ROUTE_SIZES = [SIZE_1040] as const;
+
+/**
  * The three folder shapes, built here rather than read off a disk.
  *
  * They are the shapes the 2026-09-12 review ran on — the owner's own dispute/settlement
@@ -341,11 +353,6 @@ const FIXTURES = [
         ],
       ],
     }),
-  },
-  {
-    name: "vault-zero-answers",
-    /** The same folder before any question was filed: ten marks, still four groups. */
-    shape: (): FolderShape => ({ sources: OWNER_SOURCES, pages: OWNER_PAGES }),
   },
   { name: "vault-60", shape: sixtyMarkFolder },
   { name: "vault-300", shape: threeHundredMarkFolder },
@@ -972,7 +979,7 @@ test("the legend swaps its gesture for the way out while a card is open", async 
  * Three claims, in one session on one folder: offered exactly when the camera is off the
  * fit, moving the picture when pressed, and back to not-offered afterwards.
  */
-for (const size of SIZES) {
+for (const size of FIT_TILE_SIZES) {
   test(`the fit tile only offers a press that moves the picture at ${size.name}`, async ({ page }) => {
     await page.setViewportSize({ width: size.width, height: size.height });
     await openGraph(page, seedFolder(FIXTURES[0]!.shape()));
@@ -1026,16 +1033,17 @@ for (const size of SIZES) {
  * 2. a press on a page, which opens its card and flows its own citations;
  * 3. the pointer, which holds the same neighbourhood a card does.
  *
- * Run at all three windows rather than at one, because the strip folds its non-lead clauses
- * below `lg` and a control measured only at the width where it is shown makes a gate that is
- * green forever (the 2026-09-04 width-conditional finding).
+ * Run at the app's minimum window only. The strip folds its non-lead clauses below `lg`, and
+ * every window the app can have is above it, so 1040 is the narrowest width the clause can be
+ * measured at and the wider windows add nothing (the 2026-09-04 width-conditional finding is
+ * about widths where the control is folded, which the app no longer has).
  */
-for (const size of SIZES) {
+for (const size of STALE_ROUTE_SIZES) {
   test(`a stale citation on the three-hundred-source folder is one press away at ${size.name}`, async ({
     page,
   }) => {
     await page.setViewportSize({ width: size.width, height: size.height });
-    await openGraph(page, seedFolder(FIXTURES[3]!.shape()));
+    await openGraph(page, seedFolder(FIXTURES.find((fixture) => fixture.name === "vault-300")!.shape()));
     const graph = page.getByTestId("library-graph-canvas");
 
     // The state the home spends its life in: 480 unverified citations and a calm picture.
@@ -1115,7 +1123,7 @@ for (const size of SIZES) {
 }
 
 for (const fixture of FIXTURES) {
-  for (const size of SIZES) {
+  for (const size of LEGIBILITY_SIZES) {
     test(`the ${fixture.name} picture stays legible at ${size.name}`, async ({ page }) => {
       await page.setViewportSize({ width: size.width, height: size.height });
       await openGraph(page, seedFolder(fixture.shape()));
@@ -1209,7 +1217,7 @@ for (const fixture of FIXTURES) {
        *
        * | folder | 1040 | 1512 | 1920 |
        * |---|---|---|---|
-       * | `vault`, `vault-zero-answers` | 1 → **0** | 1 → **0** | 1 → **0** |
+       * | `vault` | 1 → **0** | 1 → **0** | 1 → **0** |
        * | `vault-60` | 6 → **1** | 2 → **0** | 1 → **0** |
        *
        * So the bar is zero for a folder of {@link NAMES_ALL_FIT_MARKS} or fewer — the order

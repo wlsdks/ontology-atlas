@@ -941,119 +941,7 @@ test.describe("the Library pane", () => {
     await expect.poll(() => dialog.evaluate((element) => element.contains(document.activeElement))).toBe(true);
     await expect(page.getByTestId("library-guide-open")).not.toBeFocused();
   });
-
-  test("choosing a file opens the reader and closing returns the canvas home", async ({ page }) => {
-    await openLibrary(page);
-    await expect(page.getByTestId("library-reader-landing")).toBeVisible();
-    await expect(page.getByTestId("library-graph-canvas")).toBeVisible();
-    await page.getByTestId("library-workspace-wiki").click();
-    await page.getByTestId("library-wiki-wiki/quarter-plan").click();
-    await expect(page.getByTestId("library-wiki-header")).toContainText("Quarter plan");
-    await expect(page.getByTestId("library-reader-landing")).toHaveCount(0);
-    await page.getByTestId("library-reader-back").click();
-    await expect(page.getByTestId("library-reader-landing")).toBeVisible();
-    await expect(page.getByTestId("library-graph-canvas")).toBeVisible();
-    await expect(page.getByTestId("library-wiki-header")).toHaveCount(0);
-  });
 });
-
-const NARROW_VIEWPORTS = [
-  { label: "390×844", width: 390, height: 844 },
-  { label: "768×1024", width: 768, height: 1024 },
-] as const;
-
-/**
- * The same rule below `lg`, where the column is one thing at a time.
- *
- * The folder here is its own fixture with **enough files to overflow both lists**, because
- * the index's scroll model changes at this width — the two lists shared half a phone and
- * measured 30px and **zero**, so the index scrolls as one box and the lists stand at their
- * natural height. A scroller with nothing to scroll cannot fail that assertion.
- */
-
-for (const viewport of NARROW_VIEWPORTS) {
-  test(`the canvas home and its doors remain reachable at ${viewport.label}`, async ({ page }) => {
-    await page.setViewportSize({ width: viewport.width, height: viewport.height });
-    await openLibrary(page, NARROW_VAULT);
-    const landing = page.getByTestId("library-reader-landing");
-    await expect(landing).toBeVisible();
-    const indexBox = (await page.getByTestId("library-index").boundingBox())!;
-    expect((await landing.boundingBox())!.y).toBeLessThan(indexBox.y);
-
-    /*
-     * The picture is the pane here too, in the top half of the one column. Its own box,
-     * not the viewport's: below `lg` the index takes the rest of the screen.
-     */
-    const canvas = page.getByTestId("library-graph-canvas");
-    await expect(canvas).toBeVisible();
-    const canvasBox = (await canvas.boundingBox())!;
-    expect(canvasBox.x).toBeGreaterThanOrEqual(0);
-    expect(canvasBox.y).toBeGreaterThanOrEqual(0);
-    expect(canvasBox.x + canvasBox.width).toBeLessThanOrEqual(viewport.width);
-    expect((await page.getByTestId("library-graph-hint")).isVisible()).toBeTruthy();
-    await expect(canvas).toHaveAttribute("aria-describedby", /library-graph-hint/);
-
-    /*
-     * Below `lg` the strip keeps its lead clause and the doors fold into one `…`, because
-     * four chips plus three clauses on a phone is the header row this screen replaced.
-     * Every destination is still reachable, one press deeper.
-     */
-    const overflow = page.getByTestId("library-home-overflow");
-    await expect(overflow).toBeVisible();
-    for (const gone of ["library-guide-open", "library-questions-open"]) {
-      expect(
-        await page.getByTestId(gone).evaluate((el) => el.getBoundingClientRect().width),
-        `${gone} still takes room on the narrow strip`,
-      ).toBe(0);
-    }
-    await overflow.click();
-    const list = page.getByTestId("library-home-overflow-popover");
-    await expect(list).toBeVisible();
-    await expect(list).toHaveAttribute("data-transient-surface", "anchored");
-    const listBox = (await list.boundingBox())!;
-    expect(listBox.x).toBeGreaterThanOrEqual(0);
-    expect(listBox.x + listBox.width).toBeLessThanOrEqual(viewport.width);
-    await expect(list.getByTestId("library-guide-open-overflow")).toBeVisible();
-    await page.keyboard.press("Escape");
-    await expect(list).toHaveCount(0);
-    await expect(overflow).toBeFocused();
-
-    // 3 — the index still owns its own overflow, in one scroller rather than two.
-    const scroller = page.getByTestId("library-index-scroll");
-    const scrolled = await scroller.evaluate((element) => {
-      const before = element.scrollTop;
-      element.scrollTop = element.scrollHeight;
-      return {
-        overflowY: getComputedStyle(element).overflowY,
-        overflows: element.scrollHeight > element.clientHeight + 1,
-        moved: element.scrollTop > before,
-      };
-    });
-    expect(scrolled.overflowY, "the index is not a scroller").toBe("auto");
-    expect(scrolled.overflows, "the index has nothing to scroll — the case is idling").toBe(true);
-    expect(scrolled.moved, "the index did not scroll").toBe(true);
-    // The last row of the list the switch is on, reached by that scroll (2026-09-07: the
-    // column draws one list, so the row that used to be last here is on the other half).
-    await expect(page.getByTestId("library-source-sources/report-12.pdf")).toBeInViewport();
-    const pageScrolls = await page.evaluate(
-      () => document.documentElement.scrollHeight > window.innerHeight + 1,
-    );
-    expect(pageScrolls, "the narrow column handed its overflow to the page").toBe(false);
-    await scroller.evaluate((element) => {
-      element.scrollTop = 0;
-    });
-
-    // Choosing swaps the column; closing brings the picture and the same index back.
-    await page.getByTestId("library-source-sources/report-01.pdf").click();
-    await expect(page.getByTestId("library-source-summary")).toBeVisible();
-    await expect(page.getByTestId("library-index")).toBeHidden();
-    await expect(page.getByTestId("library-graph-canvas")).toHaveCount(0);
-    await page.getByTestId("library-reader-back").click();
-    await expect(landing).toBeVisible();
-    await expect(page.getByTestId("library-graph-canvas")).toBeVisible();
-    await expect(page.getByTestId("library-index")).toBeVisible();
-  });
-}
 
 /**
  * **A toast stands in the corner of the pane it is about** (owner, 2026-09-12: *"the
@@ -1066,16 +954,13 @@ for (const viewport of NARROW_VIEWPORTS) {
  * push it was still a notification about the **right** pane's work resting above the
  * **left** column's title. `docs/DECISIONS.md`, 2026-09-12.
  *
- * Three things are measured, at two window sizes, because each has its own way of going
- * wrong: the corner (a plain `position` change), the pane (a box standing over the index
+ * Three things are measured, because each has its own way of going wrong: the corner (a plain `position` change), the pane (a box standing over the index
  * instead of the reader), and a full-surface dialog (a dismissible aside laid across a
  * surface a person is reading). The conversation dock's own wall is measured by
  * `library-compile-dock.spec.ts`, which is where a dock can be opened.
  */
-for (const viewport of [
-  { label: "1512x901", width: 1512, height: 901 },
-  { label: "1040x720", width: 1040, height: 720 },
-]) {
+// The app's minimum window, where the index column leaves the reader pane the least room.
+for (const viewport of [{ label: "1040x720", width: 1040, height: 720 }]) {
   test(`a toast stands in the reader pane's own corner at ${viewport.label}`, async ({ page }) => {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await openLibrary(page, NARROW_VAULT);

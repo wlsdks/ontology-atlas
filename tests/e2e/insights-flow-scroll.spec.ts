@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
-test('long Flow requests keep the handoff below their content at laptop width', async ({ page }) => {
-  await page.setViewportSize({ width: 1024, height: 768 });
+test('long Flow requests keep the handoff below their content at the app minimum', async ({ page }) => {
+  await page.setViewportSize({ width: 1040, height: 720 });
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/ko/ontology/insights/?tab=flow&guides=off');
   // The panel's heading is the tab's own name, and the questions were renamed when a reader could
