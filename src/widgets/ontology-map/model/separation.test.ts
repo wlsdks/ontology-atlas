@@ -5,7 +5,7 @@ import { relaxNodeSeparation, type SeparationNode } from "./separation";
 const dist = (a: SeparationNode, b: SeparationNode) => Math.hypot(b.x - a.x, b.y - a.y);
 
 describe("relaxNodeSeparation", () => {
-  it("겹친 쌍을 최소 거리 이상으로 밀어낸다", () => {
+  it("pushes an overlapping pair to at least the minimum distance", () => {
     const nodes: SeparationNode[] = [
       { id: "parent", x: 0, y: 0, r: 28 },
       { id: "child", x: 5, y: 0, r: 7 },
@@ -14,7 +14,7 @@ describe("relaxNodeSeparation", () => {
     expect(dist(nodes[0], nodes[1])).toBeGreaterThanOrEqual((28 + 7) * 1.35 - 0.01);
   });
 
-  it("핀 노드는 절대 움직이지 않는다 — 상대만 밀린다", () => {
+  it("never moves a pinned node; only its partner moves", () => {
     const nodes: SeparationNode[] = [
       { id: "pinned", x: 0, y: 0, r: 17 },
       { id: "other", x: 3, y: 0, r: 17 },
@@ -25,7 +25,7 @@ describe("relaxNodeSeparation", () => {
     expect(dist(nodes[0], nodes[1])).toBeGreaterThanOrEqual(34 * 1.35 - 0.01);
   });
 
-  it("이미 떨어진 쌍은 건드리지 않는다 (결정론·무부작용)", () => {
+  it("leaves an already separated pair alone (deterministic, no side effect)", () => {
     const nodes: SeparationNode[] = [
       { id: "a", x: 0, y: 0, r: 10 },
       { id: "b", x: 200, y: 0, r: 10 },
@@ -35,7 +35,7 @@ describe("relaxNodeSeparation", () => {
     expect(nodes[1]).toMatchObject({ x: 200, y: 0 });
   });
 
-  it("완전 동일 좌표도 결정론적으로 분리한다 (0 나누기 방어)", () => {
+  it("separates identical coordinates deterministically (division by zero guard)", () => {
     const nodes: SeparationNode[] = [
       { id: "a", x: 50, y: 50, r: 10 },
       { id: "b", x: 50, y: 50, r: 10 },
@@ -132,8 +132,8 @@ function makeNodes(rng: () => number, count: number): SeparationNode[] {
   return out;
 }
 
-describe("relaxNodeSeparation — 활성 집합 열거 최적화", () => {
-  it("무작위 그래프 30개에서 최적화 이전 열거와 결과가 동일하다", () => {
+describe("relaxNodeSeparation active-set enumeration", () => {
+  it("matches the unoptimised enumeration on 30 random graphs", () => {
     for (let seed = 1; seed <= 30; seed += 1) {
       const rng = makeRng(seed * 7919);
       const base = makeNodes(rng, 60);
@@ -154,7 +154,7 @@ describe("relaxNodeSeparation — 활성 집합 열거 최적화", () => {
     }
   });
 
-  it("활성 집합이 없으면(=전 노드 활성) 종전 경로와 동일하다", () => {
+  it("matches the plain path without an active set (every node active)", () => {
     const rng = makeRng(4242);
     const base = makeNodes(rng, 40);
     const mine = base.map((n) => ({ ...n }));
@@ -164,7 +164,7 @@ describe("relaxNodeSeparation — 활성 집합 열거 최적화", () => {
     expect(mine.map((n) => `${n.x}:${n.y}`)).toEqual(ref.map((n) => `${n.x}:${n.y}`));
   });
 
-  it("연쇄 전파가 살아 있다 — 활성 하나가 정지 사슬 A→B→C 를 민다", () => {
+  it("keeps chain propagation: one active node pushes a resting chain A to B to C", () => {
     // Overlap them in a row: only `a` is active, yet `c` must still be pushed.
     const nodes: SeparationNode[] = [
       { id: "a", x: 0, y: 0, r: 20 },

@@ -155,8 +155,8 @@ describe("computeRealmLayout", () => {
   });
 });
 
-describe("computeRealmLayout — 소수-자식 수평 구도 (소유자 실보고 2026-07-23)", () => {
-  it("depth1 자식 2개는 수평축에 앉는다 — 첫 자식 왼쪽, 둘째 오른쪽", () => {
+describe("computeRealmLayout with few children lies horizontal", () => {
+  it("seats two depth 1 children on the horizontal axis: the first left, the second right", () => {
     const sub = extractRealmSubtree("c", new Map([["c", ["e1", "e2"]]]));
     const layout = computeRealmLayout(sub, RINGS, RADII);
     expect(layout.get("c")).toEqual({ id: "c", x: 0, y: 0 });
@@ -169,7 +169,7 @@ describe("computeRealmLayout — 소수-자식 수평 구도 (소유자 실보�
     expect(Math.abs(e2.y)).toBeLessThan(1e-9);
   });
 
-  it("depth1 자식 1개는 수평축(왼쪽)에 앉는다 — 같은 −90° 강체 회전 규칙", () => {
+  it("seats one depth 1 child on the horizontal axis (left) by the same -90 degree rigid rotation", () => {
     const sub = extractRealmSubtree("c", new Map([["c", ["only"]]]));
     const layout = computeRealmLayout(sub, RINGS, RADII);
     const only = layout.get("only")!;
@@ -177,7 +177,7 @@ describe("computeRealmLayout — 소수-자식 수평 구도 (소유자 실보�
     expect(Math.abs(only.y)).toBeLessThan(1e-9);
   });
 
-  it("회전은 강체다 — 미회전 concentric 레이아웃의 정확한 (x,y)→(y,−x) 사상", () => {
+  it("rotates rigidly: exactly (x,y) to (y,-x) of the unrotated concentric layout", () => {
     const children = new Map([
       ["c", ["e1", "e2"]],
       ["e1", ["g1"]],
@@ -199,7 +199,7 @@ describe("computeRealmLayout — 소수-자식 수평 구도 (소유자 실보�
     }
   });
 
-  it("depth1 자식 3개 이상은 미회전 — 첫 자식이 위(-90°) 그대로 (깊은/넓은 영역 회귀 0)", () => {
+  it("leaves three or more depth 1 children unrotated, the first at the top (-90 degrees)", () => {
     const sub = extractRealmSubtree("c", new Map([["c", ["a", "b", "d"]]]));
     const layout = computeRealmLayout(sub, RINGS, RADII);
     const a = layout.get("a")!;
@@ -230,8 +230,8 @@ describe("computeWardingRadius", () => {
   });
 });
 
-describe("computeVisibleWardingRadius (S9 결함 2)", () => {
-  it("가장 먼 reach + 콘텐츠 비례 마진", () => {
+describe("computeVisibleWardingRadius", () => {
+  it("is the farthest reach plus a content-proportional margin", () => {
     // outer=200 → margin = max(40, 200*0.1=20) = 40 → 240.
     expect(computeVisibleWardingRadius([50, 120, 200])).toBe(200 + Math.max(WARDING_VISIBLE_MIN_MARGIN, 200 * WARDING_VISIBLE_MARGIN_RATIO));
     expect(computeVisibleWardingRadius([50, 120, 200])).toBe(240);
@@ -239,24 +239,24 @@ describe("computeVisibleWardingRadius (S9 결함 2)", () => {
     expect(computeVisibleWardingRadius([800])).toBe(800 + 800 * WARDING_VISIBLE_MARGIN_RATIO);
   });
 
-  it("가시 집합이 줄면(접힘) 반경이 줄어든다", () => {
+  it("shrinks the radius when the visible set shrinks (folded)", () => {
     const full = computeVisibleWardingRadius([100, 400, 900]);
     const folded = computeVisibleWardingRadius([100, 400]); // the folded child at 900 is excluded
     expect(folded).toBeLessThan(full);
   });
 
-  it("가시 멤버가 없으면(루트만) 하한 마진만 남는다", () => {
+  it("keeps only the minimum margin without visible members (root only)", () => {
     expect(computeVisibleWardingRadius([])).toBe(WARDING_VISIBLE_MIN_MARGIN);
   });
 });
 
-describe("computeVisibleBounds (S9 결함 2)", () => {
+describe("computeVisibleBounds", () => {
   const fallback = { minX: -1, minY: -1, maxX: 1, maxY: 1 };
-  it("점집합 bbox + 마진", () => {
+  it("is the point set bbox plus margin", () => {
     const b = computeVisibleBounds([{ x: -10, y: 20 }, { x: 30, y: -5 }], 4, fallback);
     expect(b).toEqual({ minX: -14, minY: -9, maxX: 34, maxY: 24 });
   });
-  it("점이 없으면 fallback 을 그대로 돌려준다", () => {
+  it("returns the fallback unchanged without points", () => {
     expect(computeVisibleBounds([], 4, fallback)).toBe(fallback);
   });
 });

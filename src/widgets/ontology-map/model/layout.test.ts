@@ -148,7 +148,7 @@ describe("computeConcentricLayout — deterministic de-pileup", () => {
   });
 });
 
-describe("computeConcentricLayout — 비표준 계보 / 고아 (2026-07 블롭 회귀)", () => {
+describe("computeConcentricLayout with nonstandard lineage and orphans (blob regression)", () => {
   // A vault where a domain holds elements directly (no capability in between).
   // These nodes used not to be placed at all: they stacked at (0,0), and live
   // physics dragged the stack toward the hub into a "blob" where even the labels
@@ -161,7 +161,7 @@ describe("computeConcentricLayout — 비표준 계보 / 고아 (2026-07 블롭 
     { id: "el-3", kind: "element", parentId: "d" },
   ];
 
-  it("도메인 직속 element 를 (0,0) 적층 없이 도메인 주변에 부채꼴 배치한다", () => {
+  it("fans elements directly under a domain around it instead of stacking them at (0,0)", () => {
     const points = computeConcentricLayout(DOMAIN_DIRECT, RINGS);
     const d = byId(points, "d");
     for (const id of ["el-1", "el-2", "el-3"]) {
@@ -176,7 +176,7 @@ describe("computeConcentricLayout — 비표준 계보 / 고아 (2026-07 블롭 
     expect(Math.hypot(b.x - c.x, b.y - c.y)).toBeGreaterThan(1);
   });
 
-  it("element ⊃ element 체인의 자식도 배치된 부모 주변에 놓인다", () => {
+  it("places children of an element-in-element chain around their placed parent", () => {
     const chain: readonly LayoutGraphNode[] = [
       { id: "p", kind: "project", parentId: null },
       { id: "d", kind: "domain", parentId: "p" },
@@ -192,7 +192,7 @@ describe("computeConcentricLayout — 비표준 계보 / 고아 (2026-07 블롭 
     expect(Math.hypot(child.x - parent.x, child.y - parent.y)).toBeCloseTo(RINGS.element, 4);
   });
 
-  it("containment 밖 고아 노드는 도메인 링 바깥 나선에 서로 떨어져 배치된다", () => {
+  it("spirals orphans outside containment apart beyond the domain ring", () => {
     const withOrphans: readonly LayoutGraphNode[] = [
       { id: "p", kind: "project", parentId: null },
       { id: "d", kind: "domain", parentId: "p" },
@@ -209,7 +209,7 @@ describe("computeConcentricLayout — 비표준 계보 / 고아 (2026-07 블롭 
     expect(Math.hypot(orphans[1].x - orphans[2].x, orphans[1].y - orphans[2].y)).toBeGreaterThan(1);
   });
 
-  it("표준형 vault 출력은 종전과 동일하게 유지된다 (fan 합류 no-op 계약)", () => {
+  it("keeps the output of a standard vault unchanged (the fan merge is a no-op)", () => {
     // FIXTURE has no direct elements → every new pass is a no-op. Re-checks the core ring contract.
     const points = computeConcentricLayout(FIXTURE, RINGS);
     for (const capId of ["cap-a1", "cap-a2", "cap-b1"]) {
@@ -226,7 +226,7 @@ describe("computeConcentricLayout — 비표준 계보 / 고아 (2026-07 블롭 
  * phyllotaxis disc instead of a runaway fan. Parents at or below it keep the fan
  * contract above — the regression tests below re-check that.
  */
-describe("computeConcentricLayout — phyllotaxis 디스크 (밀집 부모)", () => {
+describe("computeConcentricLayout phyllotaxis disc for dense parents", () => {
   // One domain with 108 capabilities — the dogfood Onboarding & UX density, as-is.
   const DENSE_DOMAIN: LayoutGraphNode[] = [
     { id: "p", kind: "project", parentId: null },
@@ -238,7 +238,7 @@ describe("computeConcentricLayout — phyllotaxis 디스크 (밀집 부모)", ()
   }
   const RADII = { project: 25, domain: 17, capability: 11, element: 7 };
 
-  it("디스크 반지름이 유계다 (부채꼴 폭주 방지 — 옛 n=108 부채꼴은 2000+)", () => {
+  it("bounds the disc radius, preventing fan runaway (a 108-child fan exceeded 2000)", () => {
     const points = computeConcentricLayout(DENSE_DOMAIN, RINGS, { radii: RADII });
     const d = byId(points, "d");
     let maxFromParent = 0;
@@ -252,13 +252,13 @@ describe("computeConcentricLayout — phyllotaxis 디스크 (밀집 부모)", ()
     expect(maxFromParent).toBeLessThan(700);
   });
 
-  it("결정론 — 두 번 돌려 바이트 동일", () => {
+  it("is deterministic: two runs are byte identical", () => {
     const a = computeConcentricLayout(DENSE_DOMAIN, RINGS, { radii: RADII });
     const b = computeConcentricLayout(DENSE_DOMAIN, RINGS, { radii: RADII });
     expect(b).toEqual(a);
   });
 
-  it("겹침 없음 — 어떤 두 노드도 결합 충돌 반지름보다 가깝지 않다", () => {
+  it("leaves no two nodes closer than the combined collision radius", () => {
     const points = computeConcentricLayout(DENSE_DOMAIN, RINGS, { radii: RADII, relaxPadding: 6 });
     let min = Infinity;
     for (let i = 0; i < points.length; i += 1) {
@@ -270,7 +270,7 @@ describe("computeConcentricLayout — phyllotaxis 디스크 (밀집 부모)", ()
     expect(min).toBeGreaterThanOrEqual(22);
   });
 
-  it("임계 초과 capability→element 도 디스크로 유계 배치된다", () => {
+  it("bounds a capability-to-element set above the threshold into a disc too", () => {
     const chain: LayoutGraphNode[] = [
       { id: "p", kind: "project", parentId: null },
       { id: "d", kind: "domain", parentId: "p" },
@@ -288,7 +288,7 @@ describe("computeConcentricLayout — phyllotaxis 디스크 (밀집 부모)", ()
     expect(maxFromParent).toBeLessThan(450);
   });
 
-  it("임계 경계: 12개는 부채꼴, 13개는 디스크 (경로 분기)", () => {
+  it("at the threshold edge, 12 children fan and 13 form a disc (branch split)", () => {
     const mk = (n: number): LayoutGraphNode[] => {
       const g: LayoutGraphNode[] = [
         { id: "p", kind: "project", parentId: null },
@@ -326,7 +326,7 @@ describe("computeConcentricLayout — phyllotaxis 디스크 (밀집 부모)", ()
  * covered above through the grid (default) path, so this block only checks
  * equivalence.
  */
-describe("computeConcentricLayout — 그리드/브루트포스 동일성 (S1)", () => {
+describe("computeConcentricLayout grid and brute force agree", () => {
   const RADII = { project: 25, domain: 17, capability: 11, element: 7 };
 
   // Several domains · mixed fan densities (both sides of the threshold) · direct
@@ -359,13 +359,13 @@ describe("computeConcentricLayout — 그리드/브루트포스 동일성 (S1)",
 
   const MIXED = buildMixedFixture();
 
-  it("그리드 경로가 브루트포스 경로와 바이트 동일하다(중형 혼합 픽스처)", () => {
+  it("the grid path is byte identical to brute force (medium mixed fixture)", () => {
     const grid = computeConcentricLayout(MIXED, RINGS, { radii: RADII, relaxStrategy: "grid" });
     const brute = computeConcentricLayout(MIXED, RINGS, { radii: RADII, relaxStrategy: "bruteforce" });
     expect(grid).toEqual(brute);
   });
 
-  it("DENSE(단일 도메인 팬)에서도 두 경로가 바이트 동일하다", () => {
+  it("both paths are byte identical on DENSE (one domain fan)", () => {
     const dense: LayoutGraphNode[] = [
       { id: "p", kind: "project", parentId: null },
       { id: "d", kind: "domain", parentId: "p" },
@@ -380,7 +380,7 @@ describe("computeConcentricLayout — 그리드/브루트포스 동일성 (S1)",
     expect(grid).toEqual(brute);
   });
 
-  it("기본 DENSE(0 relax seed 겹침)에서도 두 경로가 seed 를 실제로 벌리고 동일하다", () => {
+  it("both paths separate the seed and agree on default DENSE (0 relax seed overlap)", () => {
     // Checks both that relax actually separates overlaps rather than being a
     // no-op, and that the result is the same on both paths — re-confirming grid ≡
     // brute at the production radius (25) in a state where work is being done, not
@@ -408,7 +408,7 @@ describe("computeConcentricLayout — 그리드/브루트포스 동일성 (S1)",
     expect(grid).toEqual(brute); // and both paths are byte-identical
   });
 
-  it("초대형 반지름(비현실적 극단)에서도 그리드는 결정론적이고 분리를 수행한다", () => {
+  it("the grid stays deterministic and separates at an unrealistically large radius", () => {
     // Radius 400 is an extreme production never sees (real max 25). Per-iteration
     // movement exceeds the cell slack here, so byte-identity with brute force is
     // not guaranteed — but the grid path itself stays deterministic and really

@@ -15,7 +15,7 @@ const PARENTS: Record<string, string | null> = {
 const parentOf = (id: string) => PARENTS[id] ?? null;
 
 describe('collectDomeAncestry', () => {
-  it('요소에서 꼭대기까지 부모 사슬을 그대로 걷는다', () => {
+  it('walks the parent chain from an element to the apex', () => {
     const nodes = new Set<string>();
     const edges = new Set<string>();
     const n = collectDomeAncestry('element:panel', parentOf, nodes, edges);
@@ -28,7 +28,7 @@ describe('collectDomeAncestry', () => {
     expect(edges.size).toBe(3);
   });
 
-  it('꼭대기를 누르면 켤 것이 없다 — 0 을 돌려주고 집합은 빈다', () => {
+  it('lights nothing for the apex: returns 0 and empties the set', () => {
     const nodes = new Set<string>(['stale']);
     const edges = new Set<string>(['stale']);
     expect(collectDomeAncestry('project:atlas', parentOf, nodes, edges)).toBe(0);
@@ -41,7 +41,7 @@ describe('collectDomeAncestry', () => {
    * A malformed vault can write `contains` cycles (the `cycles` query exists because they really
    * occur). The walk must stop on the first repeat rather than hanging the frame loop.
    */
-  it('순환하는 부모 사슬에서 멈춘다 — 프레임 루프를 매달지 않는다', () => {
+  it('stops on a cyclic parent chain instead of hanging the frame loop', () => {
     const cyc = (id: string) => ({ a: 'b', b: 'c', c: 'a' })[id] ?? null;
     const nodes = new Set<string>();
     const edges = new Set<string>();
@@ -50,7 +50,7 @@ describe('collectDomeAncestry', () => {
     expect(nodes.has('a')).toBe(false);
   });
 
-  it('자기 자신이 부모여도 멈춘다', () => {
+  it('stops when a node is its own parent', () => {
     const selfy = (id: string) => (id === 'x' ? 'x' : null);
     const nodes = new Set<string>();
     const edges = new Set<string>();

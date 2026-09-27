@@ -172,7 +172,7 @@ describe("effectiveNodeAlpha", () => {
   });
 });
 
-describe("isSpineOnlyZoom (QA 소실 A — clamp-bounds source)", () => {
+describe("isSpineOnlyZoom (clamp-bounds source)", () => {
   it("is true at the overview entry and while zoomed out (only the spine draws)", () => {
     expect(isSpineOnlyZoom(ENTRY, DEFAULT_TIER_REVEAL)).toBe(true);
     expect(isSpineOnlyZoom(0.5, DEFAULT_TIER_REVEAL)).toBe(true);
@@ -241,7 +241,7 @@ describe("isNodeHittable", () => {
     expect(isNodeHittable(hiddenCapability, ENTRY, "domain:x", neighbors, DEFAULT_TIER_REVEAL, clustered)).toBe(false);
   });
 
-  it("uses the realm depth-tier override so a depth1 element child is hittable at spine zoom (S10 결함 3)", () => {
+  it("uses the realm depth-tier override so a depth1 element child is hittable at spine zoom", () => {
     // In a realm the child's ORIGINAL kind is `element` (tier-gated at spine
     // zoom), but its depth-1 placement makes the draw pass treat it as a
     // `domain`-tier node (always drawn). Without the override the hit test gates
@@ -283,7 +283,7 @@ describe("isNodeHittable", () => {
  * `capability` matches DEFAULT, leaving the map's upper structure intact, and the
  * ego exemption (`effectiveNodeAlpha`) works regardless of this config.
  */
-describe("PLAIN_TIER_REVEAL (슬라이스 C — 비개발 모드 element 상시 숨김)", () => {
+describe("PLAIN_TIER_REVEAL (elements always hidden outside developer mode)", () => {
   const REALISTIC_RATIOS = [0.5, 1, 1.5, 2, 2.85, 4, 10, 50];
 
   it("hides elements at every realistic zoom ratio (0.5~50)", () => {

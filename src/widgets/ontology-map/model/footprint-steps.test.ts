@@ -3,20 +3,20 @@ import { describe, expect, it } from "vitest";
 import { buildFootprintSteps, buildTrailGlintLegs, buildWalkedEdgeArrivalSteps, buildWalkedEdgeDirections, buildWalkedEdgeKeys, trailGlintLocalPhase, walkedEdgeKey } from "./footprint-steps";
 
 describe("buildFootprintSteps", () => {
-  it("재방문 노드는 순번을 여러 개 갖는다(1부터)", () => {
+  it("gives a revisited node several step numbers, starting at 1", () => {
     const steps = buildFootprintSteps(["a", "b", "a", "c", "a"]);
     expect(steps.get("a")).toEqual([1, 3, 5]);
     expect(steps.get("b")).toEqual([2]);
     expect(steps.get("c")).toEqual([4]);
   });
 
-  it("빈 트레일은 빈 맵", () => {
+  it("maps an empty trail to an empty map", () => {
     expect(buildFootprintSteps([]).size).toBe(0);
   });
 });
 
 describe("buildWalkedEdgeKeys", () => {
-  it("연달아 방문한 쌍만 후보가 된다", () => {
+  it("makes candidates only of consecutively visited pairs", () => {
     const keys = buildWalkedEdgeKeys(["a", "b", "c"]);
     expect(keys.has(walkedEdgeKey("a", "b"))).toBe(true);
     expect(keys.has(walkedEdgeKey("b", "c"))).toBe(true);
@@ -24,15 +24,15 @@ describe("buildWalkedEdgeKeys", () => {
     expect(keys.has(walkedEdgeKey("a", "c"))).toBe(false);
   });
 
-  it("방향이 달라도 같은 키 — 엣지는 무향으로 조회된다", () => {
+  it("keys an edge the same in either direction, since edges are undirected", () => {
     expect(buildWalkedEdgeKeys(["b", "a"]).has(walkedEdgeKey("a", "b"))).toBe(true);
   });
 
-  it("같은 노드로 이어지는 자기 쌍은 만들지 않는다", () => {
+  it("makes no self pair for a step to the same node", () => {
     expect(buildWalkedEdgeKeys(["a", "a"]).size).toBe(0);
   });
 
-  it("걸음이 하나면 쌍이 없다", () => {
+  it("has no pair with a single step", () => {
     expect(buildWalkedEdgeKeys(["a"]).size).toBe(0);
   });
 });

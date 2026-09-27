@@ -156,7 +156,7 @@ describe("stepEmphasis", () => {
   });
 });
 
-describe("stepFocusRamp (클릭 포커스 색 램프)", () => {
+describe("stepFocusRamp (click focus colour ramp)", () => {
   const TAU = 0.16;
 
   it("rises toward 1 while a focus is active", () => {
@@ -184,21 +184,21 @@ describe("stepFocusRamp (클릭 포커스 색 램프)", () => {
   });
 });
 
-describe("edge pair focus (선 선택 = 페어 포커스)", () => {
+describe("edge pair focus (selecting a line focuses its pair)", () => {
   const pair = { sourceId: "a", targetId: "b" };
 
-  it("노드 포커스 없이 페어만 있으면 양끝=neighbor, 나머지=dim", () => {
+  it("with only a pair and no node focus, the ends are neighbor and the rest dim", () => {
     expect(resolveNodeEgoStateWithPair("a", null, new Set(), pair)).toBe("neighbor");
     expect(resolveNodeEgoStateWithPair("b", null, new Set(), pair)).toBe("neighbor");
     expect(resolveNodeEgoStateWithPair("c", null, new Set(), pair)).toBe("dim");
   });
 
-  it("노드 포커스가 있으면 기존 ego 규칙이 우선한다 (클릭=안전 계약)", () => {
+  it("node focus takes precedence over the pair, keeping the ego rule (click is safe)", () => {
     expect(resolveNodeEgoStateWithPair("x", "x", new Set(["y"]), pair)).toBe("center");
     expect(resolveNodeEgoStateWithPair("a", "x", new Set(["y"]), pair)).toBe("dim");
   });
 
-  it("페어 중 선택 엣지만 ego, 다른 엣지는 dim; 페어 없으면 종전 규칙", () => {
+  it("only the selected edge of the pair is ego, other edges dim; without a pair the plain rule holds", () => {
     expect(resolveEdgeEgoStateWithPair(false, null, pair, true)).toBe("ego");
     expect(resolveEdgeEgoStateWithPair(false, null, pair, false)).toBe("dim");
     expect(resolveEdgeEgoStateWithPair(true, "x", pair, false)).toBe("ego");
@@ -206,32 +206,32 @@ describe("edge pair focus (선 선택 = 페어 포커스)", () => {
   });
 });
 
-describe("resolveTrailLensNodeEgoState (걸어온 길 렌즈)", () => {
+describe("resolveTrailLensNodeEgoState (walked trail lens)", () => {
   const trail = new Set(["domain:core", "capability:x", "element:y"]);
 
-  it("방문 노드는 값을 지키고(normal) 나머지는 기존 dim 으로 물러난다", () => {
+  it("keeps visited nodes normal and dims the rest", () => {
     expect(resolveTrailLensNodeEgoState("domain:core", "element:y", trail)).toBe("normal");
     expect(resolveTrailLensNodeEgoState("capability:x", "element:y", trail)).toBe("normal");
     expect(resolveTrailLensNodeEgoState("domain:other", "element:y", trail)).toBe("dim");
   });
 
-  it("현재 포커스 노드는 center 로 남아 선택 링 위계가 불변이다", () => {
+  it("keeps the focused node center, so the selection ring hierarchy holds", () => {
     expect(resolveTrailLensNodeEgoState("element:y", "element:y", trail)).toBe("center");
   });
 
-  it("이웃(관계)은 더 이상 keep-set 이 아니다 — 방문하지 않았으면 dim", () => {
+  it("dims an unvisited neighbour, which is no longer in the keep set", () => {
     // The point of the lens: the keep-set swaps wholesale from 1-hop neighbours to visited nodes.
     expect(resolveTrailLensNodeEgoState("capability:neighbor-of-y", "element:y", trail)).toBe("dim");
   });
 
-  it("포커스가 없어도(빈 캔버스 클릭 후) 방문/비방문 구분은 그대로 선다", () => {
+  it("separates visited from unvisited even without focus (after an empty-canvas click)", () => {
     expect(resolveTrailLensNodeEgoState("capability:x", null, trail)).toBe("normal");
     expect(resolveTrailLensNodeEgoState("domain:other", null, trail)).toBe("dim");
   });
 });
 
-describe("rankEgoNeighborsByDOI (S2 파트 3a)", () => {
-  it("kind 가중치(domain>capability>element) → degree 내림차순 → slug 사전순, 결정론", () => {
+describe("rankEgoNeighborsByDOI", () => {
+  it("orders by kind weight (domain, capability, element), then degree descending, then slug, deterministically", () => {
     const neighbors: EgoNeighborRankEntry[] = [
       { id: "el-b", kind: "element", degree: 9 },
       { id: "cap-hi", kind: "capability", degree: 5 },
@@ -245,7 +245,7 @@ describe("rankEgoNeighborsByDOI (S2 파트 3a)", () => {
     expect(rankEgoNeighborsByDOI([...neighbors].reverse())).toEqual(ranked);
   });
 
-  it("같은 kind·같은 degree 면 관계 타입 위계가 가른다 — contains > depends > relates", () => {
+  it("breaks a same-kind same-degree tie by relation type: contains, then depends, then relates", () => {
     // Slugs are laid out in **reverse** of the relation hierarchy, so slug order
     // alone can never produce the expected result — that pins the relation weight.
     const neighbors: EgoNeighborRankEntry[] = [
@@ -261,7 +261,7 @@ describe("rankEgoNeighborsByDOI (S2 파트 3a)", () => {
     expect(rankEgoNeighborsByDOI([...neighbors].reverse())).toEqual(ranked);
   });
 
-  it("kind 가중치가 관계 타입보다 우선한다 — domain-relates 가 element-contains 를 앞선다", () => {
+  it("ranks kind weight above relation type: domain-relates precedes element-contains", () => {
     const neighbors: EgoNeighborRankEntry[] = [
       { id: "el-contains", kind: "element", degree: 99, relationType: "contains" },
       { id: "dom-relates", kind: "domain", degree: 0, relationType: "relates" },
@@ -270,7 +270,7 @@ describe("rankEgoNeighborsByDOI (S2 파트 3a)", () => {
     expect(rankEgoNeighborsByDOI(neighbors)).toEqual(["dom-relates", "cap-relates", "el-contains"]);
   });
 
-  it("관계 타입이 degree 보다 우선한다 — 저차수 contains 자식이 고차수 relates 이웃을 앞선다", () => {
+  it("ranks relation type above degree: a low-degree contains child precedes a high-degree relates neighbour", () => {
     const neighbors: EgoNeighborRankEntry[] = [
       { id: "el-relates-hub", kind: "element", degree: 40, relationType: "relates" },
       { id: "el-contains-leaf", kind: "element", degree: 1, relationType: "contains" },
@@ -278,7 +278,7 @@ describe("rankEgoNeighborsByDOI (S2 파트 3a)", () => {
     expect(rankEgoNeighborsByDOI(neighbors)).toEqual(["el-contains-leaf", "el-relates-hub"]);
   });
 
-  it("relationType 미상(생략)은 가중치 1 — 레이아웃 등 기존 호출부의 순서를 바꾸지 않는다", () => {
+  it("weights an omitted relationType as 1, keeping the order of existing callers such as layout", () => {
     const neighbors: EgoNeighborRankEntry[] = [
       { id: "el-unknown", kind: "element", degree: 4 },
       { id: "el-relates", kind: "element", degree: 4, relationType: "relates" },
@@ -289,10 +289,10 @@ describe("rankEgoNeighborsByDOI (S2 파트 3a)", () => {
   });
 });
 
-describe("selectiveEgoNeighbors (S2 파트 3a)", () => {
+describe("selectiveEgoNeighbors", () => {
   const ids = Array.from({ length: 60 }, (_, i) => `n${String(i).padStart(2, "0")}`);
 
-  it("배치 1 = 상위 limit 만 visible, 나머지 hidden", () => {
+  it("shows only the top limit in batch 1 and hides the rest", () => {
     const r = selectiveEgoNeighbors(ids, 1);
     expect(r.visibleNeighbors.size).toBe(EGO_NEIGHBOR_LIMIT);
     expect(r.hiddenCount).toBe(60 - EGO_NEIGHBOR_LIMIT);
@@ -300,27 +300,27 @@ describe("selectiveEgoNeighbors (S2 파트 3a)", () => {
     expect(r.hiddenNeighbors.has("n59")).toBe(true);
   });
 
-  it("배치가 늘면 다음 limit 개가 추가 점등, 전부 점등되면 hiddenCount 0", () => {
+  it("lights the next limit as batches grow, with hiddenCount 0 once all are lit", () => {
     expect(selectiveEgoNeighbors(ids, 2).visibleNeighbors.size).toBe(48);
     expect(selectiveEgoNeighbors(ids, 3).hiddenCount).toBe(0);
     expect(selectiveEgoNeighbors(ids, 9).hiddenCount).toBe(0);
   });
 });
 
-describe("clusterMoreChipId / parseClusterMoreChipId (고팬아웃 배치-공개)", () => {
-  it("실제 부모 id 를 예약 접두어로 감싸고 다시 원복한다(왕복)", () => {
+describe("clusterMoreChipId / parseClusterMoreChipId (batched reveal of high fan-out)", () => {
+  it("wraps the real parent id in the reserved prefix and restores it (round trip)", () => {
     const wrapped = clusterMoreChipId("domain-onboarding");
     expect(wrapped).toBe(`${CLUSTER_MORE_CHIP_PREFIX}domain-onboarding`);
     expect(parseClusterMoreChipId(wrapped)).toBe("domain-onboarding");
   });
 
-  it("합성 id 가 아니면 null — 실제 노드 id/ego 칩 id 는 배치 분기로 새지 않는다", () => {
+  it("returns null for a non-synthetic id, so real node and ego chip ids never reach the batch branch", () => {
     expect(parseClusterMoreChipId("domain-onboarding")).toBeNull();
     expect(parseClusterMoreChipId("__ego_neighbors__")).toBeNull();
     expect(parseClusterMoreChipId("")).toBeNull();
   });
 
-  it("빈 부모 id 도 접두어만으로 왕복(경계)", () => {
+  it("round-trips an empty parent id with the prefix alone (edge case)", () => {
     expect(parseClusterMoreChipId(clusterMoreChipId(""))).toBe("");
   });
 });

@@ -42,36 +42,36 @@ function revealSeries(frames: number): number[] {
   return out;
 }
 
-describe("방금 생긴 노드가 지도에 떠오른다", () => {
-  it("개요 배율의 역량은 원래 안 보인다 — 아니면 이 검사가 헛돈다", () => {
+describe("a node born this moment rises onto the map", () => {
+  it("hides an overview-scale capability without the reveal, or this check tests nothing", () => {
     expect(HIDDEN_CAPABILITY).toBe(0);
     expect(effectiveNodeAlpha(HIDDEN_CAPABILITY, false, 0)).toBe(0);
   });
 
-  it("티어가 0 이어도 방금 생긴 노드는 보인다", () => {
+  it("shows a just-born node even at tier 0", () => {
     expect(effectiveNodeAlpha(HIDDEN_CAPABILITY, true, 1)).toBe(1);
   });
 
-  it("**한 프레임에 튀지 않는다** — 하드컷이면 결함이다", () => {
+  it("does not jump in one frame, since a hard cut is the defect", () => {
     const first = revealSeries(1)[0];
     // The recording measured 29.7%; the model starts lower still (one frame = 13%).
     expect(first).toBeLessThan(0.7);
     expect(first).toBeGreaterThan(0);
   });
 
-  it("단조롭게 오른다 — 오르내리면 그게 깜빡임이다", () => {
+  it("rises monotonically, since rising and falling is a flicker", () => {
     const series = revealSeries(40);
     for (let i = 1; i < series.length; i += 1) {
-      expect(series[i], `프레임 ${i} 에서 되떨어졌다`).toBeGreaterThanOrEqual(series[i - 1]);
+      expect(series[i], `fell back at frame ${i}`).toBeGreaterThanOrEqual(series[i - 1]);
     }
   });
 
-  it("반 초 안에 다 떠오른다 — 기다리게 하지 않는다", () => {
+  it("finishes rising within half a second", () => {
     const series = revealSeries(30); // 0.5 s @60fps
     expect(series.at(-1)).toBeGreaterThan(0.95);
   });
 
-  it("다 떠오른 뒤에는 티어가 다시 숨기지 못한다 — 사라지면 그게 깜빡임이다", () => {
+  it("cannot be hidden by the tier once fully risen, since vanishing is a flicker", () => {
     // While the ramp sits at 1, alpha is 1. That is why it holds for the session.
     expect(effectiveNodeAlpha(HIDDEN_CAPABILITY, true, 1)).toBe(1);
     expect(effectiveNodeAlpha(0, true, 1)).toBe(1);

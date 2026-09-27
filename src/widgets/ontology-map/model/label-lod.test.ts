@@ -108,7 +108,7 @@ describe("selectDiscLabelEligible (high-fan disc label budget)", () => {
   });
 });
 
-describe("isEgoNeighborLabelExempt (포커스 도메인 자식 라벨 겹침 LOD, 노드 감사 처방)", () => {
+describe("isEgoNeighborLabelExempt (label overlap LOD for focused domain children)", () => {
   it("null eligible set (focus under the DISC_LABEL_TOP_K band) keeps every neighbor exempt", () => {
     expect(isEgoNeighborLabelExempt("any-id", null)).toBe(true);
   });
