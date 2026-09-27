@@ -248,12 +248,11 @@ function refreshDownloadPage(options) {
     "download:release-facts",
     "--",
     `--tag=${options.tag}`,
-    "--allow-prerelease",
   ]);
   if (!attempt.ok) {
     console.log(`[desktop-release-run] could not regenerate ${generated}: ${attempt.output}`);
     console.log(
-      `[desktop-release-run] run it yourself: pnpm download:release-facts -- --tag=${options.tag} --allow-prerelease`,
+      `[desktop-release-run] run it yourself: pnpm download:release-facts -- --tag=${options.tag}`,
     );
     return;
   }
@@ -269,7 +268,7 @@ function refreshDownloadPage(options) {
   const steps = [
     ["git", ["fetch", "origin", "main", "--quiet"]],
     ["git", ["checkout", "-B", branch, "origin/main", "--quiet"]],
-    ["pnpm", ["download:release-facts", "--", `--tag=${options.tag}`, "--allow-prerelease"]],
+    ["pnpm", ["download:release-facts", "--", `--tag=${options.tag}`]],
     ["git", ["add", "--", generated]],
     ["git", ["commit", "--quiet", "-m", `chore: point /download at ${options.tag}`]],
     ["git", ["push", "--quiet", "-u", "origin", branch]],
