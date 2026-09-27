@@ -36,8 +36,9 @@ guarded full-array `patch_concept` and `validate_vault`; do not invent
 ## SDK and protocol baseline
 
 As of 2026-07-29, this package targets the **v2 SDK** —
-`@modelcontextprotocol/server@2.0.0` (+ `@modelcontextprotocol/core`). Upstream
-split the monolithic `@modelcontextprotocol/sdk` into `core` / `server` / `node`
+`@modelcontextprotocol/server@2.0.0`, the one SDK package the server imports. It
+pins `@modelcontextprotocol/core@2.0.0` itself, so `core` is not declared here.
+Upstream split the monolithic `@modelcontextprotocol/sdk` into `core` / `server` / `node`
 on 2026-07-27 alongside the `2026-07-28` specification, and v2 is now the stable
 release line. v1 moved to a long-lived `v1.x` branch receiving bug and security
 fixes for at least six months.
