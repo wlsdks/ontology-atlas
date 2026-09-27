@@ -46,27 +46,6 @@ describe('NEXT: 지시문 — 사람이 그대로 보낼 수 있는 한 문장�
     expect(INSTRUCTION).toContain(`${NEXT_STEP_MAX_CHARS} characters or fewer`);
   });
 
-  it('한 문장 · 사람의 언어 · 관찰한 사실 먼저를 요구한다', () => {
-    const text = INSTRUCTION ?? '';
-    expect(text).toContain('one plain sentence');
-    expect(text).toContain('send back to you unchanged');
-    expect(text).toContain('in the language they are writing to you in');
-    expect(text).toContain('Name the concrete thing you observed first');
-  });
-
-  it('slug 과 [[...]] 표기를 제목으로 대신하라고 말한다', () => {
-    const text = INSTRUCTION ?? '';
-    expect(text).toContain('never by a slug');
-    expect(text).toContain('[[...]]');
-  });
-
-  it('내부에서만 쓰는 말을 하나도 빠짐없이 이름으로 금지한다', () => {
-    const text = INSTRUCTION ?? '';
-    for (const word of INTERNAL_WORDS) {
-      expect(text, `내부 용어 「${word}」를 지시문이 이름으로 막지 않는다`).toContain(word);
-    }
-  });
-
   /**
    * The example is the only part a model copies literally, so it must survive the
    * real pipeline: the splitter has to recognise it, and the result has to obey

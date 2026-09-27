@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildImpactRanking } from '@/views/ontology-insights/lib/impact-ranking';
+import { buildImpactRanking } from './impact-ranking';
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from '@/entities/knowledge-graph';
 
 /**
@@ -25,6 +25,9 @@ import type { KnowledgeGraphEdge, KnowledgeGraphNode } from '@/entities/knowledg
  * catches is not "how many ms slower" but **"has it regressed to rebuilding the index"**
  * — a 100× difference, which a 20× margin still catches reliably. Tighter than that and
  * it goes red at random with machine conditions, and then nobody looks at it.
+ *
+ * It lives in the `perf` project (moved from `tests/contract/`, 2026-09-27) so the clock is
+ * read one file at a time on a runner of its own, not beside a third of the sweep.
  */
 
 const CEILING_MS = 400;

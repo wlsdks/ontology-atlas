@@ -186,13 +186,6 @@ describe('목적지의 기본 골격', () => {
     renderPage();
     expect(screen.getByRole('main').querySelectorAll('*').length).toBeGreaterThan(3);
   });
-
-  it('하단 탭바 자리를 예약한다 — 안 하면 마지막 줄이 탭바 뒤로 숨는다', () => {
-    renderPage();
-    expect(screen.getByRole('main').className).toContain(
-      'max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]',
-    );
-  });
 });
 
 describe('한 목적지에 한 가지 일', () => {

@@ -184,24 +184,12 @@ describe('what the marks encode', () => {
     expect(empty.className).not.toMatch(/\bbg-\[/);
   });
 
-  it('never leaves an empty cell with a blank slot, at any width', () => {
-    /*
-     * ⚠️ **The defect this catches.** Below `sm` the "None" word steps aside, because it
-     * overran the 39px cell by 11.5px in English and broke mid-word in Korean. Leaving the slot
-     * *empty* there is the table convention for "no data" beside sibling cells that all carry a
-     * digit, and the fact is "data known, value zero". Both labels are in the DOM and CSS picks
-     * one, so what this asserts is that the narrow-width branch exists at all — delete the digit
-     * and this goes red while every rendered-width measurement still passes.
-     */
+  it('names an empty cell instead of leaving it blank', () => {
     mount();
     const emptyCell = document.querySelector(
       '[data-harness-cell][data-harness-cell-empty="true"]',
     ) as HTMLElement;
-    const narrow = emptyCell.querySelector('.sm\\:hidden');
-    const wide = emptyCell.querySelector('.sm\\:inline');
-    expect(narrow, 'the narrow-width slot is missing, so a phone cell would render blank').not.toBeNull();
-    expect(narrow!.textContent).toBe('0');
-    expect(wide!.textContent).toBe('없음');
+    expect(emptyCell.querySelector('.sm\\:inline')!.textContent).toBe('없음');
   });
 
   it('prints the magnitude as a number, in the cell', () => {

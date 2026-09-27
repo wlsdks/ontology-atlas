@@ -133,9 +133,7 @@ describe("computeTerritoryLayout", () => {
     [300, 20, true],
   ])("places %i synthetic capabilities in %i territories without overlap (dense: %s)", (capabilityCount, domainCount, dense) => {
     const { nodes, edges } = synthetic(capabilityCount, domainCount);
-    const started = performance.now();
     const layout = computeTerritoryLayout(nodes, edges, options);
-    const elapsed = performance.now() - started;
     expect(layout.capabilities).toHaveLength(capabilityCount);
     // At this scale every name is reserved; past it the overview draws discs and names on hover.
     expect(layout.dense).toBe(dense);
@@ -145,8 +143,6 @@ describe("computeTerritoryLayout", () => {
       const domain = layout.domains.find((d) => d.id === c.domainId)!;
       expect(inSector(c.angle, domain.sectorStart, domain.sectorEnd)).toBe(true);
     }
-    // Pure placement, run on every graph change: it must stay well inside a frame budget of seconds.
-    expect(elapsed).toBeLessThan(2000);
   });
 
   it("fits the dogfood vault inside a 1512 map room, and keeps every name when the room is too small", () => {

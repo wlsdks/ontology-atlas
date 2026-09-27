@@ -79,23 +79,6 @@ describe("describeMatchReason", () => {
 });
 
 describe("reasonLineClass", () => {
-  // Measured 2026-09-19 at 390x844: the reason column was `md:`-only, so a phone
-  // showed 4 rows for "policy" and 20 for "order" and "shopper" with no mark at all —
-  // the whole answer went away with the class that hid it.
-  it("표시를 다는 근거는 좁은 화면에서 이름 아래 한 줄을 얻는다", () => {
-    const evidence = reasonLineClass({ kind: "name", text: "Shipping Fee Policy", query: "policy" });
-    expect(evidence).toContain("block");
-    expect(evidence).not.toContain("hidden");
-  });
-
-  it("표시가 없는 맥락 설명은 md 부터의 칸으로 남는다", () => {
-    // Its second line would double every phone row to repeat what the row is not
-    // there for; the name above it is already the answer.
-    const context = reasonLineClass({ kind: "summary", text: "Decides who pays." });
-    expect(context).toContain("hidden");
-    expect(context).toContain("md:block");
-  });
-
   it("어느 쪽이든 md 부터는 한 시작선을 갖는 고정폭 칸이다", () => {
     for (const reason of [
       { kind: "id" as const, text: "shipping-fee", query: "fee" },

@@ -36,19 +36,12 @@ describe('TopologyFitControl — Fit 타일', () => {
     expect(fitButton.className).toContain('focus-visible:outline-none');
   });
 
-  it('우측 레일 위치 토큰 계약(phone-bottom / desktop-top)을 유지한다', () => {
+  it('우측 레일 위치 토큰 계약(desktop-top)을 유지한다', () => {
     const { container } = render(<TopologyFitControl onFitView={() => {}} />);
     const rail = container.querySelector('[data-testid="topology-fit-control"]');
 
     expect(rail?.className).toContain(
-      'bottom-[var(--topology-floating-control-phone-bottom)]',
-    );
-    expect(rail?.className).toContain(
       'md:top-[var(--topology-floating-control-desktop-top)]',
-    );
-    expect(rail).toHaveAttribute(
-      'data-control-phone-bottom-token',
-      '--topology-floating-control-phone-bottom',
     );
     expect(rail).toHaveAttribute(
       'data-control-desktop-top-token',

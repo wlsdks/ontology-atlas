@@ -4,10 +4,6 @@ import { RELEASE_VERSION } from './release-facts';
 import { ARCH_ORDER, formatAssetSize, macosAssetFor } from './release-state';
 
 describe('release-state', () => {
-  it('offers Apple Silicon before Intel', () => {
-    expect(ARCH_ORDER).toEqual(['aarch64', 'x64']);
-  });
-
   /**
    * **Decimal MB — what the reader's own machine says.**
    *

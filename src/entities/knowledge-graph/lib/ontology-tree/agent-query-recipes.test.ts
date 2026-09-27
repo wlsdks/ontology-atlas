@@ -83,22 +83,14 @@ describe("AGENT_PRACTITIONER_CONCERNS", () => {
 
     const checklist = formatAgentPractitionerConcernsChecklist();
 
-    expect(checklist).toContain("Context reliability");
-    expect(checklist).toContain("Ontology research anchor: documents/agent-practice-research");
+    // Every concern reaches the checklist with its gate and its sources; the wording is
+    // the data's, so only the structure is asserted here.
+    for (const concern of AGENT_PRACTITIONER_CONCERNS) {
+      expect(checklist).toContain(concern.title);
+      expect(checklist).toContain(concern.gate);
+      for (const url of concern.sourceUrls) expect(checklist).toContain(url);
+    }
     expect(checklist).toContain('get_concept({"slug":"documents/agent-practice-research"})');
-    expect(checklist).toContain("Claude Code /mcp or Codex codex mcp list");
-    expect(checklist).toContain("relation_check");
-    expect(checklist).toContain("health or maintenance_plan");
-    expect(checklist).toContain("one small read-check-write-sync loop");
-    expect(checklist).toContain("Research signal:");
-    expect(checklist).toContain("Anthropic: simple workflows and explicit context");
-    expect(checklist).toContain("MCP security guidance");
-    expect(checklist).toContain("LangChain: semantic memory");
-    expect(checklist).toContain("Sources:");
-    expect(checklist).toContain("https://cdn.openai.com/pdf/");
-    expect(checklist).toContain("https://modelcontextprotocol.io/docs/tutorials/security/authorization");
-    expect(checklist).toContain("Ontology Atlas response:");
-    expect(checklist).toContain("Turn graph DB checks");
     expect(checklist).toContain('query_ontology({"operation":"agent_brief"})');
     expect(checklist).toContain("pnpm dogfood:graph-db");
   });

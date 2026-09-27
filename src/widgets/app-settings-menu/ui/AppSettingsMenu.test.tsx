@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { MouseEventHandler, ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -576,8 +576,16 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
 
     mocks.locale = 'ko';
     // jsdom: offsetParent is null, so this instance counts as not on screen.
-    render(<AppSettingsMenu mode="static" triggerVariant="chrome-tile" />);
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    // The reopen check runs on a timer after mount; run it rather than sleep past it.
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      render(<AppSettingsMenu mode="static" triggerVariant="chrome-tile" />);
+      act(() => {
+        vi.runOnlyPendingTimers();
+      });
+    } finally {
+      vi.useRealTimers();
+    }
     expect(screen.getByTestId('app-settings-trigger')).toHaveAttribute('aria-expanded', 'false');
     expect(window.sessionStorage.getItem('ontology-atlas:settings-locale-focus')).not.toBeNull();
     window.sessionStorage.clear();

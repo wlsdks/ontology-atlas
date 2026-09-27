@@ -45,22 +45,8 @@ describe("DocReadingPane bottom reserve", () => {
     );
   });
 
-  /**
-   * The clearance token already steps above `--topology-mobile-bottom-tab-reserve` below
-   * `lg`, so a second `max-lg:pb-*` beside it would be a merge contest rather than a
-   * larger reserve. This asserts the branch is exclusive, not additive.
-   */
-  it("does not also apply the bare tab-bar reserve while the pill is drawn", () => {
-    renderPane(true);
-    expect(scrollContainer().className).not.toContain("--topology-mobile-bottom-tab-reserve");
-  });
-
-  it("still reserves the bottom tab bar when there is no pill — the Docs editor", () => {
+  it("drops the back-to-top clearance when there is no pill — the Docs editor", () => {
     renderPane(false);
-    const className = scrollContainer().className;
-    expect(className).toContain(
-      "max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+12px)]",
-    );
-    expect(className).not.toContain("--doc-reading-back-to-top-clearance");
+    expect(scrollContainer().className).not.toContain("--doc-reading-back-to-top-clearance");
   });
 });

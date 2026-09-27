@@ -277,10 +277,6 @@ describe('ArchitectureWorkbench', () => {
         'Rules apply to connections that pull in running code. Connections that pull in only type definitions are shown but never counted as violations.',
       ),
     ).toBeInTheDocument();
-    expect(screen.getByTestId('architecture-bottom-tab-reserve')).toHaveClass(
-      'h-[var(--topology-mobile-bottom-tab-reserve)]',
-      'lg:hidden',
-    );
     const currentProfile = screen.getByTestId('architecture-profile-current');
     expect(currentProfile).toHaveAttribute('aria-current', 'true');
     expect(currentProfile).toHaveTextContent('Current');

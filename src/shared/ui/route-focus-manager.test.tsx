@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { useLayoutEffect, useRef } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import {
@@ -314,36 +314,47 @@ describe('RouteFocusManager', () => {
   // A loading placeholder is not a destination: focusing it drops focus to body the
   // moment the real screen replaces that node.
   it('waits past the loading placeholder and lands on the real destination', async () => {
-    route.pathname = '/ko/topology/';
-    const view = render(
-      <>
-        <RouteFocusManager />
-        <Surface title="지도" />
-      </>,
-    );
+    // Only the settle and deadline timers are faked, so the 120 ms settle window can be
+    // run past on purpose instead of slept past.
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      route.pathname = '/ko/topology/';
+      const view = render(
+        <>
+          <RouteFocusManager />
+          <Surface title="지도" />
+        </>,
+      );
 
-    route.pathname = '/ko/ontology/studio/';
-    view.rerender(
-      <>
-        <RouteFocusManager />
-        <main id="main" data-route-loading="true" data-testid="loading-main">
-          <p>화면을 불러오는 중이에요.</p>
-        </main>
-      </>,
-    );
+      route.pathname = '/ko/ontology/studio/';
+      view.rerender(
+        <>
+          <RouteFocusManager />
+          <main id="main" data-route-loading="true" data-testid="loading-main">
+            <p>화면을 불러오는 중이에요.</p>
+          </main>
+        </>,
+      );
 
-    await new Promise((resolve) => setTimeout(resolve, 200));
-    expect(screen.getByTestId('loading-main')).not.toHaveFocus();
+      // Well past the settle window, still inside the 2 s deadline.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(500);
+      });
+      expect(screen.getByTestId('loading-main')).not.toHaveFocus();
 
-    view.rerender(
-      <>
-        <RouteFocusManager />
-        <Surface title="공방" />
-      </>,
-    );
+      view.rerender(
+        <>
+          <RouteFocusManager />
+          <Surface title="공방" />
+        </>,
+      );
 
-    await waitFor(() => {
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(200);
+      });
       expect(screen.getByRole('heading', { name: '공방' })).toHaveFocus();
-    });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

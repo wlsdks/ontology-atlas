@@ -272,12 +272,13 @@ describe('mcp-call response parsing', () => {
     process.env.OATLAS_CLI_MCP_TIMEOUT_MS = '25';
     process.env.OATLAS_CLI_MCP_KILL_GRACE_MS = '25';
     try {
-      const started = Date.now();
+      // The rejection itself is the claim: a call that waited on a SIGTERM-ignoring child
+      // would hang here. A wall-clock bar added nothing — with a 25 ms kill grace the
+      // SIGKILL path also finishes far inside any bar a slow runner could honour.
       await assert.rejects(
         () => callMcpTool(root, 'list_kinds'),
         /mcp call timed out after 25ms while calling list_kinds/,
       );
-      assert.ok(Date.now() - started < 750, 'timeout rejection should not wait for process exit');
     } finally {
       if (previousPath === undefined) delete process.env.OATLAS_MCP_PATH;
       else process.env.OATLAS_MCP_PATH = previousPath;

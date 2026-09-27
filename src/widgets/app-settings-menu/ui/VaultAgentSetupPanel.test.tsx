@@ -9,6 +9,9 @@ import { TooltipProvider } from '@/shared/ui';
 import { AGENT_CLIENTS } from '@/entities/vault-session';
 import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
 
+/** Copy is read from the catalogue, so a wording change does not break the behaviour checks. */
+const setupCopy = koMessages.docsVault.agentSetup;
+
 vi.mock('@/shared/lib/copy-text', () => ({
   copyText: vi.fn(),
 }));
@@ -139,37 +142,37 @@ describe('VaultAgentSetupPanel', () => {
     // council S2, 2026-08-02) — the row stating the number is still directly below
     // it, and that is the single statement.
     expect(screen.queryByText('누락')).toBeNull();
-    expect(screen.getByText('Claude Code · Codex 연결 파일 1/2개 준비됨')).toBeInTheDocument();
+    expect(screen.getByText(
+        setupCopy.statusSummary.replace('{tools}', 'Claude Code · Codex').replace('{ready}', '1').replace('{total}', '2'),
+      )).toBeInTheDocument();
     expect(screen.getByTestId('agent-setup-status-next')).toHaveTextContent('다음: .mcp.json 만들기');
     expect(
-      screen.getByText('이 폴더 기준으로 설정돼요 · 다른 코드 폴더에서 열려면 절대경로가 필요해요'),
+      screen.getByText(setupCopy.rootSummaryMissing),
     ).toBeInTheDocument();
-    expect(screen.getByText('밖의 도구를 잇는 자리예요')).toBeInTheDocument();
+    expect(screen.getByText(setupCopy.boundaryTitle)).toBeInTheDocument();
     expect(
-      screen.getByText(
-        '이 패널은 Claude Code·Codex·Cursor를 각자의 앱이나 터미널에서 쓰도록 연결하며 여기서 대화를 열지는 않아요. 폴더 밖을 건드리기 전에 먼저 묻는 앱 안 Claude Agent 대화는 별도 화면이에요.',
-      ),
+      screen.getByText(setupCopy.boundaryDesc),
     ).toBeInTheDocument();
-    expect(screen.getByText('더 확인하려면')).toBeInTheDocument();
+    expect(screen.getByText(setupCopy.nextStepsSummary)).toBeInTheDocument();
     // Inside the dialog (a framer surface whose opacity jsdom never animates), visibility is
     // the `<details>` open state, not computed style.
-    const deeper = screen.getByText('더 확인하려면').closest('details');
+    const deeper = screen.getByText(setupCopy.nextStepsSummary).closest('details');
     expect(deeper).not.toHaveAttribute('open');
 
-    fireEvent.click(screen.getByText('더 확인하려면'));
+    fireEvent.click(screen.getByText(setupCopy.nextStepsSummary));
 
     expect(deeper).toHaveAttribute('open');
     // The first three (config files · restart · verify connection) were **promoted
     // into the three steps**, so only the three that follow remain here. This is the
     // cleanup of a screen that had four separate numbering systems.
     expect(
-      screen.getByText('고치기 전에 확인 명령을 돌려 「되나」와 「빠른가」를 따로 봐요.'),
+      screen.getByText(setupCopy.stepGate),
     ).toBeInTheDocument();
     expect(
-      screen.getByText('에이전트를 연 폴더에서 mcp-verify를 돌려 현재 도구 목록이 맞는지 확인해요.'),
+      screen.getByText(setupCopy.stepMcpVerify),
     ).toBeInTheDocument();
     expect(
-      screen.getByText('처음 고치기 전에 폴더 요약(workspace-brief · agent-brief)을 먼저 읽어요.'),
+      screen.getByText(setupCopy.stepGraphProof),
     ).toBeInTheDocument();
     // The tool rows stand on the page; restart and check stand in the dialog (open above).
     expect(screen.getByTestId('agent-setup-steps')).toBeInTheDocument();

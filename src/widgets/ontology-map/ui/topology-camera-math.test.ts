@@ -774,7 +774,7 @@ describe("clampFitInsets — the chrome may not eat the map", () => {
     expect(clampFitInsets(600, 120, 900, 600, 0, "equal")).toEqual({ lo: 600, hi: 0 });
   });
 
-  it("the overview at tablet widths lands centred between INDEX and the rail", () => {
+  it("the overview on a narrow canvas lands centred between INDEX and the rail", () => {
     // The resting lanes and what the map's chrome measurably covers with INDEX open:
     // the panel's right edge at 324, the rail's column 60 from the right edge.
     const tokens = {
