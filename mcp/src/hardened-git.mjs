@@ -10,7 +10,7 @@ import { spawnSync } from 'node:child_process';
 // files (which also delivers a repo's config); core.fsmonitor=false blocks the
 // fsmonitor hook that fires on `status` with no click. Repository hooks are left
 // alone: a hook runs only on a user-initiated commit/checkout, as with plain git.
-export const BASE_HARDENING = ['-c', 'safe.bareRepository=explicit', '-c', 'core.fsmonitor=false'];
+const BASE_HARDENING = ['-c', 'safe.bareRepository=explicit', '-c', 'core.fsmonitor=false'];
 
 // ext:: transports run an arbitrary command; a hostile remote URL must not reach one.
 const NETWORK_HARDENING = ['-c', 'protocol.ext.allow=never'];
