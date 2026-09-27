@@ -84,6 +84,7 @@ jobs:
     # budget: 260s
     timeout-minutes: 6
     env:
+      CI_LANE_REPORT: ci-lane-report.jsonl
       ACTIVE: ${{ needs.plan.outputs.gates }}
       NEED_MCP: ${{ needs.plan.outputs.gates_needs_mcp }}
       CI_IMPACT_PLAN: ${{ needs.plan.outputs.plan }}
@@ -135,6 +136,15 @@ jobs:
         if: env.ACTIVE != 'true' && needs.plan.result == 'success'
         run: echo "No affected type, lint, or documentation gate"
 
+      - name: Upload lane report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: ci-lane-report-gates
+          path: ci-lane-report.jsonl
+          if-no-files-found: ignore
+          retention-days: 90
+
   # The slowest job in PR CI and the only unsharded one: 437 s average and 705 s at
   # the tail over the last 20 runs (measured 2026-09-12), against an 8-minute budget
   # for the whole pull request. None of that was wasted work — the impact plan
@@ -162,6 +172,7 @@ jobs:
       matrix:
         shard: [1, 2, 3]
     env:
+      CI_LANE_REPORT: ci-lane-report.jsonl
       ACTIVE: ${{ needs.plan.outputs.unit != 'skip' && (needs.plan.outputs.unit_sharded != 'false' || matrix.shard == 1) }}
       NEED_MCP: ${{ needs.plan.outputs.unit_needs_mcp }}
       CI_IMPACT_PLAN: ${{ needs.plan.outputs.plan }}
@@ -209,6 +220,15 @@ jobs:
         if: env.ACTIVE != 'true' && needs.plan.result == 'success'
         run: echo "No affected unit or contract evidence"
 
+      - name: Upload lane report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: ci-lane-report-unit-${{ matrix.shard }}
+          path: ci-lane-report.jsonl
+          if-no-files-found: ignore
+          retention-days: 90
+
   # The measurement files (the Vitest `perf` project), alone on a runner of
   # their own. Their verdicts are cached-against-naive ratios, and only the cached side pays for
   # company. Train #1928 (2026-09-26) read 9.25 against a bar of 10 on
@@ -232,6 +252,7 @@ jobs:
     # budget: 60s
     timeout-minutes: 2
     env:
+      CI_LANE_REPORT: ci-lane-report.jsonl
       ACTIVE: ${{ needs.plan.outputs.perf != 'skip' }}
       CI_IMPACT_PLAN: ${{ needs.plan.outputs.plan }}
     steps:
@@ -273,6 +294,15 @@ jobs:
       - name: Skip unaffected performance setup
         if: env.ACTIVE != 'true' && needs.plan.result == 'success'
         run: echo "No changed module can reach a performance ratio"
+
+      - name: Upload lane report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: ci-lane-report-perf
+          path: ci-lane-report.jsonl
+          if-no-files-found: ignore
+          retention-days: 90
 
   # `Unit · Contract` is one of the eight required status contexts on `main`. Sharding
   # renamed it to three, and a required context that never reports again blocks every
@@ -325,6 +355,7 @@ jobs:
     # budget: 390s
     timeout-minutes: 9
     env:
+      CI_LANE_REPORT: ci-lane-report.jsonl
       ACTIVE: ${{ needs.plan.outputs.mcp != 'skip' }}
       CI_IMPACT_PLAN: ${{ needs.plan.outputs.plan }}
     steps:
@@ -366,6 +397,15 @@ jobs:
       - name: Skip unaffected MCP setup
         if: env.ACTIVE != 'true' && needs.plan.result == 'success'
         run: echo "MCP and CLI boundaries are untouched — skipped both dependency trees and tests"
+
+      - name: Upload lane report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: ci-lane-report-mcp
+          path: ci-lane-report.jsonl
+          if-no-files-found: ignore
+          retention-days: 90
 
   # ── The Windows install canary ────────────────────────────────────────────────
   #

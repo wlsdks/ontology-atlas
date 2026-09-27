@@ -178,6 +178,29 @@ export function commandsForLane({
   throw new Error(`unknown CI lane: ${lane}`);
 }
 
+/**
+ * One JSON line per command into `CI_LANE_REPORT`, so `pnpm gates:yield` can later ask
+ * which gates ever caught anything. A report is evidence about the gate, never the gate:
+ * a write that fails says so on stderr and the lane's verdict stays what the commands made it.
+ */
+export function appendLaneReport({ env = process.env, record, appendFile = appendFileSync, stderr = process.stderr }) {
+  if (!env.CI_LANE_REPORT) return;
+  const line = {
+    lane: record.lane ?? '',
+    shard: record.shard ?? '',
+    command: record.command,
+    status: record.status,
+    ms: record.ms ?? 0,
+    sha: env.GITHUB_SHA || '',
+    runId: env.GITHUB_RUN_ID || '',
+  };
+  try {
+    appendFile(env.CI_LANE_REPORT, `${JSON.stringify(line)}\n`);
+  } catch (error) {
+    stderr.write(`[ci-lane] could not write lane report ${env.CI_LANE_REPORT}: ${error instanceof Error ? error.message : String(error)}\n`);
+  }
+}
+
 export function runCommands({
   commands,
   cwd = process.cwd(),
@@ -185,6 +208,9 @@ export function runCommands({
   spawn = spawnSync,
   stdout = process.stdout,
   stderr = process.stderr,
+  lane = '',
+  shard = '',
+  appendFile = appendFileSync,
 }) {
   const failures = [];
   for (const [index, command] of commands.entries()) {
@@ -198,6 +224,10 @@ export function runCommands({
       const safe = command.replace(/[|`\r\n]/g, ' ');
       try { appendFileSync(env.GITHUB_STEP_SUMMARY, `- ${status === 0 ? 'PASS' : 'FAIL'} **${seconds}s**: ${safe}\n`); } catch { /* Reporting cannot change the gate verdict. */ }
     }
+    appendLaneReport({
+      env, appendFile, stderr,
+      record: { lane, shard, command, status: status === 0 ? 'pass' : 'fail', ms: Date.now() - started },
+    });
     if (status !== 0) failures.push({ command, status });
   }
   if (failures.length > 0) {
@@ -241,6 +271,7 @@ export function runCiLane({ argv = process.argv.slice(2), env = process.env } = 
         platform: 'darwin',
       });
       for (const command of planned.filter((entry) => !commands.includes(entry))) {
+        appendLaneReport({ env, record: { lane, shard, command, status: 'skip', ms: 0 } });
         process.stdout.write(
           `[ci-lane] ${lane}: ${command} needs a Tauri toolchain and runs on the Windows beta job and the macOS release rehearsal instead of this ${process.platform} runner\n`,
         );
@@ -250,7 +281,7 @@ export function runCiLane({ argv = process.argv.slice(2), env = process.env } = 
       process.stdout.write(`[ci-lane] ${lane}: no affected command\n`);
       return 0;
     }
-    return runCommands({ commands, env });
+    return runCommands({ commands, env, lane, shard });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     process.stderr.write(`[ci-lane] ${message}\n`);

@@ -584,6 +584,13 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Proves**: The complete MCP integration suite passes, including that `health`/`workspace_brief`/`agent_brief` preserve the stale-summary receipt while sharing one bounded union log and object batch.
 **Escalate**: none.
 
+### Gate yield report
+
+**Run**: `node --test scripts/gate-yield.test.mjs`
+**Proves**: `scripts/gate-yield.mjs` collapses volatile bases and shards into one command, counts runs and failures per command, and calls a check a retire candidate only at 50+ runs, zero failures and 60+ days since first seen.
+**Escalate**: `pnpm gates:yield -- --runs=5` when the GitHub listing, artifact download or cache changed; it spends one REST call per page and per uncached run.
+**Fix**: keep `aggregateYield` pure and fixture-tested; the lane report shape is written by `appendLaneReport` in `scripts/run-ci-lane.mjs`.
+
 ### Gateway evidence specimen
 
 **Run**: `pnpm gateway:specimen:check`
