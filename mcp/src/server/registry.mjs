@@ -3807,7 +3807,7 @@ const TOOLS = [
           type: 'integer',
           minimum: 0,
           maximum: 10,
-          description: 'Folder walk depth forwarded to analyze_repo_structure (default 2, max 10).',
+          description: 'Forwarded to analyze_repo_structure, which ignores it, so no value changes the analysis. When given, it must be an integer from 0 to 10.',
         },
         maxFiles: {
           type: 'integer',
@@ -4108,7 +4108,7 @@ const TOOLS = [
           type: 'integer',
           minimum: 0,
           maximum: 10,
-          description: 'Non-negative integer folder walk depth (default 2, max 10). Higher → more elements.',
+          description: 'Accepted but ignored: no value changes the analysis. When given, it must be an integer from 0 to 10.',
         },
         ignore: {
           type: 'array',
