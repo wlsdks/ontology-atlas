@@ -1,41 +1,16 @@
 /**
- * Semantic-zoom tier gating — the "level 0 = project + domain + hub only"
- * charter from `.claude/rules/design.md` ("default view = overview-first ... level 0
- * = project + domain + hub only, others expand on click (semantic zoom)") — the
- * default view is overview-first; level 0 draws only project + domain + hub and
- * everything else expands on click.
- *
- * P3 live diagnosis (chrome-devtools, dogfood 295 nodes / 505 edges) showed
- * the overview drawing *every* node — capabilities and elements fanned into
- * tight concentric arcs (the owner's "fan-arc pileup") with label
- * and trace soup on top. The lead's decision is to gate the NODES (and their
- * traces), not just the labels: at the overview entry only project + domain +
- * the single hub node draw; capabilities appear as you zoom into a transition
- * band, elements deeper still.
- *
- * DECOUPLING (this pass): tier visibility no longer rides `farT`. `farT` is the
- * *visual-expression* axis (constellation ↔ circuit) and the redesign wants the
- * default overview to read as CIRCUIT (`farT ≈ 0`) — but circuit-at-entry with a
- * farT-based gate would un-hide every capability/element and recreate the soup.
- * So tier visibility is now driven by a separate **zoom ratio** signal
- * (`computeZoomRatio`) = `cameraScale / overviewEntryScale`: `1.0` at the
- * overview entry, `>1` zoomed IN, `<1` zoomed OUT. At ratio ≈ 1 only the
- * project/domain/hub spine shows; capabilities cross-fade in past a zoom-in
- * threshold, elements deeper. Zooming OUT (ratio < 1) keeps only the spine —
- * never soup — regardless of what the far-field expression is doing.
- *
- * The gate stays a continuous `alpha ∈ [0,1]` (smoothstep bands) so the "no
- * discrete mode flip" invariant is preserved: nodes fade in/out, they never
- * pop. Pure math — no camera/DOM/token knowledge beyond the numbers passed in.
+ * Semantic-zoom tier gating (overview first, `.claude/rules/design.md`): at the overview
+ * only the project, domains and the hub draw; capabilities fade in past a zoom-in band and
+ * elements deeper. Driven by the zoom ratio `cameraScale / overviewEntryScale`, not `farT`,
+ * so the circuit expression at entry does not un-hide every node. Continuous smoothstep
+ * alpha, never a discrete flip.
  */
 
 import { smoothstep } from "./altitude";
 import type { LayoutNodeKind } from "./layout";
 
 interface TierRevealBand {
-  /** zoomRatio at/below which the tier is fully hidden (overview / zoomed out). */
   enterRatio: number;
-  /** zoomRatio at/above which the tier is fully shown (zoomed in). */
   fullRatio: number;
 }
 
@@ -45,49 +20,34 @@ export interface TierRevealConfig {
 }
 
 /**
- * Default reveal bands, in **zoom-ratio** units (`cameraScale / overviewEntryScale`).
- * At entry (ratio = 1) both tiers are hidden. Capabilities cross-fade in across
- * the first zoom-in band; elements only in a deeper band — so zooming in reveals
- * the hierarchy one level at a time (domain → capability → element) while the
- * 8-node spine stays put. Tuned live against the dogfood vault (295 nodes) so
- * both tiers finish revealing within the camera's zoom-in headroom
- * (`--map-camera-scale-max`).
+ * At entry (ratio 1) both tiers are hidden; tuned on the dogfood vault so both finish
+ * revealing within `--map-camera-scale-max`.
  */
 export const DEFAULT_TIER_REVEAL: TierRevealConfig = {
   capability: { enterRatio: 1.75, fullRatio: 2.0 },
   element: { enterRatio: 2.575, fullRatio: 2.85 },
 };
 
-/** Plain (non-developer) lens — pushes the element tier into an unreachable band
- * so it is always hidden. The ego exemption (`effectiveNodeAlpha`) still applies:
- * hidden by default, revealed opt-in when you click the node. The sentinel is
- * finite so `smoothstep` cannot produce NaN. */
+/**
+ * Pushes the element tier to an unreachable band; the ego exemption still reveals a clicked
+ * node. Finite sentinels so `smoothstep` cannot produce NaN.
+ */
 export const PLAIN_TIER_REVEAL: TierRevealConfig = {
   capability: DEFAULT_TIER_REVEAL.capability,
   element: { enterRatio: 1e6, fullRatio: 2e6 },
 };
 
-/**
- * Zoom ratio = `cameraScale / overviewEntryScale`. `1.0` exactly at the overview
- * entry (where `cameraScale === overviewEntryScale`), `>1` zoomed in, `<1`
- * zoomed out. Guards a non-positive entry scale (returns 1 so nothing gates
- * unexpectedly before the camera has initialized).
- */
+/** Returns 1 for a non-positive entry scale, so nothing gates before the camera initialises. */
 export function computeZoomRatio(cameraScale: number, overviewEntryScale: number): number {
   if (overviewEntryScale <= 0) return 1;
   return cameraScale / overviewEntryScale;
 }
 
-/** `smoothstep(enter, full, ratio)` — 0 at/below `enter` (overview), 1 at/above `full` (zoomed in). */
 function revealAlpha(zoomRatio: number, band: TierRevealBand): number {
   return smoothstep(band.enterRatio, band.fullRatio, zoomRatio);
 }
 
-/**
- * Alpha for a node at the current zoom ratio. Project/domain and the single hub
- * node are always fully visible (the level-0 spine); capabilities/elements fade
- * in per their reveal band as the camera zooms in.
- */
+/** Project, domains and the hub are always fully visible (the level-0 spine). */
 export function nodeTierAlpha(
   kind: LayoutNodeKind,
   isHub: boolean,
@@ -99,56 +59,28 @@ export function nodeTierAlpha(
   return revealAlpha(zoomRatio, config.element);
 }
 
-/** An edge is only as visible as its least-visible endpoint (both ends must be present for the relation to read). */
+/** Both ends must be present for the relation to read. */
 export function edgeTierAlpha(sourceAlpha: number, targetAlpha: number): number {
   return Math.min(sourceAlpha, targetAlpha);
 }
 
 /**
- * C1 A2 — focus ego tier exemption ("expand on click"). A node that's semantic-
- * zoom-gated (e.g. a capability at overview zoom, tierAlpha ≈ 0) must still
- * become visible + clickable once it's the focused node or one of its 1-hop
- * neighbors — that's the entire point of clicking a domain to "expand" it.
- * `egoRamp` is the smooth 0..1 reveal ramp (`stepEmphasis`-driven, physics-step
- * owns stepping it) so the ego set FADES in over its rise tau, never pops.
- * Non-ego-members are untouched — the tier gate still governs them normally.
+ * A tier-gated node in the focus ego set fades in on `egoRamp`, so clicking a domain
+ * expands it without a pop; non-members stay under the tier gate.
  */
 export function effectiveNodeAlpha(tierAlpha: number, isEgoMember: boolean, egoRamp: number): number {
   return isEgoMember ? Math.max(tierAlpha, egoRamp) : tierAlpha;
 }
 
 /**
- * The one floor: below it a node is not painted, not grabbable, and not
- * nameable — above it, all three.
- *
- * It is a single exported constant on purpose. The draw pass skipped at a bare
- * `0.02` repeated per call site, the hit test used this name at 0.5, and the
- * label ramp repeated 0.5 again; three numbers in three files, agreeing or
- * disagreeing by luck. A second name for the same value was tried here and the
- * dead-code gate rejected it as a duplicate export, which was the right answer:
- * one fact, one name.
- *
- * Minimum tier/effective alpha for a node to be grabbable/hoverable/clickable,
- * and the floor of the label-eligibility ramp
- * (`render/labels.ts#computeLabelAlpha`). Shared by the pointer hit-test
- * (`ui/topology-pointer-handlers.ts#hitVisibleNode` via `isNodeHittable`) so
- * "if you can click it, you can read it" holds by construction.
- *
- * ⚠️ **It is the draw pass's own paint floor** (2026-08-29). It was 0.5, on the
- * argument that a near-transparent mark should not intercept a click — but the
- * bands started at 0, so the first half of every reveal band painted circles
- * that could not be named, hovered, clicked, or grabbed. Measured on the
- * storefront sample at the fully-out camera: about ninety painted nodes, one of
- * them clickable by luck of tier, and a click aimed at a dead disc fell through
- * to an edge crossing the same pixels (`Campaign Planning leans on Category
- * Management` selected under a pointer on a circle). The bands now start where
- * the old floor was, so paint, hit and label begin together, and this file's own
- * two statements — "if it isn't painted this frame, it isn't hittable" and "if
- * it is drawn, it is grabbable" — are true in both directions.
+ * The one floor for paint, hit test (`isNodeHittable`) and label eligibility
+ * (`render/labels.ts` `computeLabelAlpha`): one exported name so the three cannot disagree.
+ * A higher hit floor would paint circles that cannot be named, hovered or clicked, with a
+ * click falling through to an edge behind.
  */
 export const HITTABLE_MIN_TIER_ALPHA = 0.02;
 
-/** Minimal node shape `isNodeHittable` needs — structurally compatible with `WorldNode`. */
+/** Structurally compatible with `WorldNode`. */
 export interface HittableNodeInput {
   id: string;
   kind: LayoutNodeKind;
@@ -156,24 +88,9 @@ export interface HittableNodeInput {
 }
 
 /**
- * Whether a node is currently hittable (grabbable/hoverable/clickable) —
- * mirrors the draw pass's `effectiveNodeAlpha` ego exemption exactly: a node
- * that's semantic-zoom-gated below `HITTABLE_MIN_TIER_ALPHA` is STILL
- * hittable once it's the focused node or one of its 1-hop neighbors (C1 A2's
- * "click a domain to expand it"). Pure predicate — extracted from
- * `ui/topology-pointer-handlers.ts#hitVisibleNode`'s inline filter so the
- * ego-exemption hit/commit contract has a unit test independent of canvas/
- * pointer-event plumbing (label-clarity persona eval — "child click ejects
- * to overview instead of selecting").
- *
- * S3 finishing polish (designed by fable, S2 known gap) — `clusteredIds` is the
- * frame's NOT-DRAWN set: subtree nodes collapsed by the density condition AND,
- * critically, the selective-ego neighbors folded behind the "+N neighbours"
- * chip when a focused node exceeds the ego limit. Those hidden
- * neighbors are still 1-hop neighbors, so the ego exemption below would
- * (wrongly) keep them clickable — grabbing an invisible node. Excluding the
- * clustered set FIRST keeps hit and draw in lockstep: if it isn't painted this
- * frame, it isn't hittable.
+ * Mirrors the draw pass's ego exemption so a clicked domain's neighbours are
+ * clickable. `clusteredIds` is the frame's not-drawn set, including neighbours folded behind the `+N`
+ * chip, and is excluded first so an invisible node is never grabbable.
  */
 export function isNodeHittable(
   node: HittableNodeInput,
@@ -183,53 +100,21 @@ export function isNodeHittable(
   config: TierRevealConfig = DEFAULT_TIER_REVEAL,
   clusteredIds?: ReadonlySet<string>,
   /**
-   * S10 defect 3 (critical, designed by fable) — while a realm is expanded a
-   * node's tier is redefined by its **depth from the root** (root = project,
-   * one level down = domain, …) rather than by its own `kind`. The draw pass
-   * already applies that override in `topology-frame-draw.ts` via
-   * `realmTierKinds?.get(node.id) ?? node.kind`, but the hit path ran the
-   * condition on the original kind, so a depth1 `element` child was drawn at
-   * SPINE zoom yet could not be clicked or hovered (entering via
-   * `?realm=domain:…` left every non-centre child inert). Injecting the same
-   * override here keeps draw and hit in lockstep: if it is drawn, it is
-   * grabbable.
+   * In a realm the tier follows depth from the root, as the draw pass applies it; without
+   * this a depth-1 element drawn at spine zoom could not be clicked.
    */
   tierKindById?: ReadonlyMap<string, LayoutNodeKind> | null,
   /**
-   * **The alpha the draw pass actually used this frame**
-   * (`effectiveAlphaById` in `topology-frame-draw.ts`). When supplied, the hit
-   * test uses it as the **single source**.
-   *
-   * Why it exists (full inventory, 2026-07-31): four channels pierce the tier
-   * condition in the draw pass — edge selection, the footprint lens, ego focus,
-   * and the recently-changed spotlight — while the hit path had **only ego**. So
-   * a node raised by the footprint lens was **visible but unclickable**, even
-   * though the draw-side comment claimed *"the same piercing applies to the hit
-   * test, so you can click it again straight from the map"*. The exact case the
-   * comment described was the one still broken; it had been written by reading
-   * only the draw side.
-   *
-   * Threading one more argument per channel **drifts again the next time a
-   * channel is added** — that is how this defect was created. Reading the map
-   * the draw pass already builds cannot drift.
-   *
-   * Omitting it falls back to the previous computation, which guards the first
-   * frame: before the first paint the map is empty, and for that one frame the
-   * fallback matches today's behaviour.
+   * The alpha the draw pass used this frame, the single source: several channels (edge
+   * selection, trail lens, ego, spotlight) pierce the tier gate, and one argument per
+   * channel drifts when a channel is added. Omitted, the fallback covers the first frame.
    */
   effectiveAlphaById?: ReadonlyMap<string, number> | null,
 ): boolean {
   if (clusteredIds?.has(node.id)) return false;
   const drawn = effectiveAlphaById?.get(node.id);
   if (drawn !== undefined) {
-    // ⚠️ **The floor is the draw pass's own paint skip** (2026-08-29, overturning
-    // "the floor is 0.5 — do not swap in the draw pass's 0.02"). That comment
-    // defended a band deliberately "drawn but not grabbable" against mis-clicks,
-    // an argument never measured; what was measured is the other side of it —
-    // about ninety painted circles at the storefront vault's resting camera, a
-    // click on one of them doing nothing, and another falling through to an edge
-    // crossing the same pixels. The bands now begin where this floor is, so the
-    // band no longer exists rather than being made clickable.
+    // The draw pass's own paint floor, so nothing is drawn but not grabbable.
     return drawn >= HITTABLE_MIN_TIER_ALPHA;
   }
   const tierKind = tierKindById?.get(node.id) ?? node.kind;
@@ -238,37 +123,21 @@ export function isNodeHittable(
 }
 
 /**
- * True while the semantic zoom still shows ONLY the project/domain/hub spine
- * (the capability tier has not begun to reveal). Pan/flick clamps must then use
- * the SPINE bounds, not the full-graph bounds: the de-pileup layout spreads all
- * 295 nodes over a far larger area than the ~8 spine nodes actually drawn at
- * the overview, so clamping to the full bounds leaves a vast legal-but-EMPTY
- * region the camera can strand in — the owner's "drag and the canvas disappears" (drag and the canvas disappears; QA loss A). One strong flick
- * projected thousands of world units
- * and landed inside the invisible fan; every pixel was "in bounds", nothing was
- * drawn.
+ * Pan and flick clamps must use the spine bounds here: the full layout spans far more than
+ * the drawn spine, so a flick could strand the camera in a legal but empty region.
  */
 export function isSpineOnlyZoom(zoomRatio: number, config: TierRevealConfig): boolean {
   return zoomRatio < config.capability.enterRatio;
 }
 
-/**
- * The altitude tier the reader is currently at, for the corner readout's
- * orientation label (M-5). Derived from the SAME reveal bands the draw pass
- * gates node visibility with, so the readout can never claim "zoom in to see
- * elements" while elements are actually on screen (the exact orientation lie
- * the UX round caught). A tier is "reached" once its band is at least
- * half-revealed (`revealAlpha ≥ 0.5`), matching the `HITTABLE_MIN_TIER_ALPHA`
- * threshold — the point where the tier's nodes become legible/clickable, not
- * the instant their alpha leaves zero.
- *
- *   spine     — only project/domain/hub drawn (capabilities not yet revealed)
- *   circuit   — capabilities revealed, elements not yet
- *   element   — elements revealed (the "zoom in to see elements" hint is now
- *               false and must be dropped)
- */
 export type ZoomTier = "spine" | "circuit" | "element";
 
+/**
+ * The reader's tier for the corner readout, from the same bands the draw pass gates with,
+ * so the readout never says "zoom in to see elements" while elements are on screen. A tier is
+ * reached once its band's alpha reaches `HITTABLE_MIN_TIER_ALPHA`, the floor at which its nodes
+ * become hittable.
+ */
 export function classifyZoomTier(
   zoomRatio: number,
   config: TierRevealConfig = DEFAULT_TIER_REVEAL,
