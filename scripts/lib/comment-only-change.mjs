@@ -1,7 +1,7 @@
 import { extractCommentTokens } from '../quality/source-language/inventory.mjs';
 
 /** The source with every comment removed and whitespace runs collapsed, so layout and comments never count as a change. */
-export function codeWithoutComments(path, source) {
+function codeWithoutComments(path, source) {
   let code = '';
   let cursor = 0;
   for (const { start, end } of extractCommentTokens(path, source)) {
