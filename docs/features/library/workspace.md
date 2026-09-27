@@ -11,13 +11,28 @@ routes: [/library]
 ### `/library` — Library (2026-09-06, its own destination)
 
 A vault holds three kinds of file and **only one is the graph**. Library keeps their distinct
-meaning and adds a fourth presentation tab: Ontology draws the explicitly typed graph nodes,
-Sources and Wiki draw the other two file kinds, and Work scopes lists saved Galaxy constellations.
+meaning across Sources, Wiki, Ontology, Work scopes, and Check history. Ontology
+draws the explicitly typed graph nodes; Sources and Wiki draw the other two file
+kinds, while Work scopes lists saved Galaxy constellations.
 
 The Library supports general knowledge as well as documents associated with code.
 Sources remain original files; write-ups and filed answers remain wiki pages.
 Documents-only folders need no code nodes or separate mode switch. The ontology
 retains its codebase scope.
+
+**Question desk (2026-09-27).** With nothing selected in Wiki, the reader pane
+asks a question and searches locally only after a press. It lists matching Wiki
+fact and decision sentences separately from original source units, with exact
+anchors, read coverage, skipped files and hidden match counts. A matching hash
+means the cited source bytes agree with the page's receipt; it does not verify
+the sentence. Results from an older folder listing disappear until searched
+again. The source units are cached only in memory for the current folder and
+inventoried file version. An ACP Ask passes these as untrusted leads and asks
+the agent to re-read originals and cite its answer; that turn disables automatic
+Wiki approval, while the existing permission path still governs unexpected
+writes. Jev remains optional in the installed app: a current cited claim opens
+an exact-transfer consent dialog, and its result is advice on that pair only.
+Neither a key nor an agent is needed to search or open the originals.
 
 **Retained questions and explicit revisions.** The Library landing lists saved
 questions and the tips of their answer histories. It distinguishes source-byte
@@ -73,8 +88,9 @@ facts the folder holds about a file Atlas has never opened (path, format, size, 
 sha256 or "not measured") plus one door that reveals it in Finder or hands over the bytes.
 With no folder open the whole screen is one centred stage naming the two kinds of file and
 offering the picker, and a folder that is open but holds nothing gets the same grammar with
-the two doors instead. **With a folder open and nothing selected, the right pane *is* the folder's graph**
-(2026-09-12, restoring 2026-09-06). Above it sits one `text-label` row — the canvas's own
+the two doors instead. **With a folder open and nothing selected in Sources,
+the right pane is the folder's graph** (2026-09-12, restoring 2026-09-06);
+in Wiki it is the question desk. Above the Sources graph sits one `text-label` row — the canvas's own
 counts caption, then the step facts as pressable clauses (`Compile next: <source>` opens
 Compile and its brain picker; `N sources changed` lights that citation and its two ends
 without moving a mark; `N off-template` presses into the check report, whose one door with
@@ -82,9 +98,10 @@ live state — a count, *running*, *unseen* — is the index's own row) — and 
 `How to use`, the saved questions, and the existing `Conversation`. `How to
 use` holds the three source-to-wiki steps in an anchored popup and raises itself once per
 machine; at exactly one saved answer the questions door is that question, so reopening it
-is one press. Selecting a document replaces the canvas and gives it back on close. Below
-`lg` there is one column — the graph above the index — the strip keeps its lead clause, and
-the rest of the doors fold into one. A folder that holds wiki
+is one press. Selecting a document replaces the graph or question desk and
+gives it back on close. Below `lg`, Sources keeps the graph above the index;
+Wiki gives the question desk the available height and opens its page index with
+an explicit Browse action and return focus. A folder that holds wiki
 pages and no `kind:` node opens here rather than on the map: it is a wiki on its own, and
 an empty canvas had nothing to say to the person who chose it (ledger, 2026-09-06). A
 folder with even one node still opens on the map.

@@ -304,11 +304,13 @@ your own API key kept in the Keychain, plus the count of every transfer recorded
 the folder. **MCP** holds the folder's own connection, the setup for each client,
 and the Connectors that attach external servers to that conversation.
 
-**Jev is an optional, experimental check under Models in the macOS app.** Save your
-own TypeSafe key in the Keychain, paste one explanation and the passage meant to
-support it, read the exact request on screen, and press send. The answer is advice:
-Atlas records the transfer in the folder first and never changes or accepts meaning
-because of it. See the [Jev evidence-check guide](docs/guide/external-judgment.md).
+**Jev is an optional, experimental check in the macOS app.** Models keeps the
+Keychain key and the manual claim check. In Library → Wiki, a person may also
+check one cited claim against its current original passage. A blocking preview
+shows the exact JSON and explains that it and the authentication key go to
+TypeSafe only after Send. The result is advice; it never changes accepted
+meaning or writes a file. The [Jev evidence-check guide](docs/guide/external-judgment.md)
+describes both entries.
 
 ![The current MCP screen in the installed macOS app, with Share this folder open: how many connection files are ready and which file comes next, one connect button each for Claude Code, Codex, Cursor and Antigravity, the note that the server runs only while a conversation needs it, and the two later steps to restart the agent and confirm the connection](docs/assets/readme/mcp-connect.png)
 
@@ -379,6 +381,15 @@ the page; the traffic goes from your coding agent straight to its own provider,
 which the screen states instead of implying that Atlas sits in the middle.
 
 Markdown source headings open their original cited lines inside Library, including the surrounding passage. No converted file is stored.
+
+**Library → Wiki opens on a question desk.** A question searches Wiki claims and
+original passages locally when you press **Find evidence**. Each candidate opens
+its page or exact source address; coverage and omitted files stay visible, and
+a matching source hash is not presented as proof that a claim is true. The
+existing page browser remains one action away. An attached ACP agent can use
+the candidates as leads, re-read originals, and answer with citations; an Ask
+turn does not automatically approve Wiki writes. Search and source inspection
+work without Jev or an agent.
 
 Creating a Wiki page opens a centered, background-blocking dialog that previews its live `wiki/<slug>.md` path, Markdown draft state, and five required section headings before any write. The current local-work receipt stays visible while earlier receipts remain under History. A successful app write produces one actionable notification; the folder watcher suppresses its matching duplicate.
 

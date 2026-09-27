@@ -481,6 +481,19 @@ graph. The separation is a property of the **walk**, not a filter applied later.
   `evaluate:wiki` runner uses this index and the production Compile executor, loop,
   review builder and proposal applier against memory-only fixtures; its textual
   omission rubric is not a production gate or a semantic truth assessment.
+- `src/features/library/lib/question-desk.ts` ranks bounded local Wiki fact and
+  decision leads and source units for the Wiki tab's unselected question desk.
+  `LibraryQuestionDesk` retains its in-memory source-unit cache only for the
+  current vault and inventoried file version, reports unread and omitted work,
+  and opens exact source anchors. `question-desk-brief.ts` passes leads to ACP
+  as untrusted context and requests a cited, no-write answer; `LibraryPage`
+  disables automatic Wiki approval for Ask turns, while the existing human
+  permission path still governs unexpected writes. In the installed app, a
+  current claim and its cited original can reach the existing fixed Jev bridge
+  only through a blocking exact-payload consent dialog. Its Keychain key and
+  audit-before-send contract remain in `src-tauri/src/jev.rs`; the answer is
+  advisory and grants no Wiki or ontology authority. The browser has no Jev
+  key or send path.
 
 The Library's live-work projection is separate from the persisted graph:
 `src/features/library/model/library-work-activity.ts` normalizes structured ACP
