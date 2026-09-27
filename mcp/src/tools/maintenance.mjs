@@ -17,11 +17,6 @@ import {
 } from './validate-vault.mjs';
 import { buildSummaryFreshness } from './vault-nodes.mjs';
 
-/**
- * The check is judged on the whole report (`report`, when the caller already built
- * it over the same documents), and the result carries its bounded view: counts,
- * the first problem files and drifts, and the `validate_vault` call for the rest.
- */
 function attachVaultValidation(result, args = {}, loadedDocs = null, report = validateVaultReport({}, loadedDocs)) {
   const validation = briefVaultValidation(report);
   const pathsChecked = report.pathDrift?.checked !== false;
@@ -111,7 +106,6 @@ function attachVaultValidation(result, args = {}, loadedDocs = null, report = va
 
 function compactPostWriteMaintenance(limit = 5) {
   COMPILED_ONTOLOGY_CACHE.clear();
-  // One read of the vault serves the compile and the bodies the plan needs below.
   const { artifact, docs: maintenanceDocs } = COMPILED_ONTOLOGY_CACHE.getWithDocs();
   const ontologyAtlasIgnorePatterns = loadOntologyAtlasIgnore(VAULT_ROOT);
   // The node-eligibility gate runs inside `commitDoc` for every write door. Draining

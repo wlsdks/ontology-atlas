@@ -57,9 +57,9 @@ describe('저장소가 커밋하는 연결 설정 — 누구 컴퓨터에서든 
       );
       expect(
         hits,
-        `${file} 이 이 컴퓨터에서만 통하는 값을 담고 있다:\n  ${hits.join('\n  ')}\n` +
-          '이 파일은 `init` · 「에이전트 연결」이 자동으로 고친다. 이 저장소 안에서 그것을 ' +
-          '돌렸으면 커밋하기 전에 되돌려라 — `.mcp.json.example` 이 정본이다.',
+        `${file} holds values that only work on this computer:\n  ${hits.join('\n  ')}\n` +
+          '`init` and Connect agent rewrite this file automatically. If you ran them inside this repository, ' +
+          'revert it before committing: `.mcp.json.example` is the canonical copy.',
       ).toEqual([]);
     });
   }
@@ -76,8 +76,8 @@ describe('저장소가 커밋하는 연결 설정 — 누구 컴퓨터에서든 
     expect(codexVault, '.codex/config.toml 에 볼트 경로가 없다').toBeTruthy();
     expect(
       codexVault,
-      'Claude 쪽과 Codex 쪽이 서로 다른 폴더를 본다 — 같은 저장소에서 두 도구가 ' +
-        '다른 지도를 읽게 된다',
+      'The Claude side and the Codex side point at different folders, so in one repository the two tools ' +
+        'read different maps',
     ).toBe(mcpVault);
   });
 

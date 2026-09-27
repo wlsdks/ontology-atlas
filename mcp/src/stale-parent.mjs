@@ -51,26 +51,11 @@ function digest(text) {
   return createHash('sha256').update(text).digest('base64url');
 }
 
-/**
- * The two clocks of one revision as fixed-size digests: `lastMovementOf` only asks
- * whether neighbouring revisions differ. A history reader keeps these instead of
- * the text, so a cached walk costs bytes per revision rather than the file.
- *
- * @param {{ body?: string, children?: string[] }} revision
- * @returns {{ bodyDigest: string, membershipDigest: string }}
- */
 export function revisionClocks({ body, children } = {}) {
   return {
     bodyDigest: digest(String(body ?? '')),
     membershipDigest: digest(membershipKey(children)),
   };
-}
-
-/** A revision that already carries its digests is compared as it is. */
-function clocksOf(revision) {
-  return typeof revision.bodyDigest === 'string' && typeof revision.membershipDigest === 'string'
-    ? revision
-    : revisionClocks(revision);
 }
 
 function toTime(value) {
@@ -80,27 +65,25 @@ function toTime(value) {
 }
 
 /**
- * Walks revisions (newest first, the first is current) and reports when each clock
- * last moved. A revision is `{ changedAt, body, children }` or, as the history
- * reader returns it, `{ changedAt, bodyDigest, membershipDigest }` (`revisionClocks`).
- * A value unchanged back to the oldest revision is `null`: unknown, not "never".
+ * Walks revisions (`{ changedAt, bodyDigest, membershipDigest }`, newest first,
+ * the first is current) and reports when each clock last moved. A value
+ * unchanged back to the oldest revision is `null`: unknown, not "never".
  */
 export function lastMovementOf(revisions) {
   const list = Array.isArray(revisions) ? revisions.filter(Boolean) : [];
   if (list.length === 0) return { bodyChangedAt: null, membershipChangedAt: null, truncated: true };
-  const clocks = list.map(clocksOf);
 
   let bodyChangedAt = null;
   let membershipChangedAt = null;
 
   for (let index = 0; index < list.length - 1; index += 1) {
-    const newer = clocks[index];
-    const older = clocks[index + 1];
+    const newer = list[index];
+    const older = list[index + 1];
     if (bodyChangedAt == null && newer.bodyDigest !== older.bodyDigest) {
-      bodyChangedAt = list[index].changedAt ?? null;
+      bodyChangedAt = newer.changedAt ?? null;
     }
     if (membershipChangedAt == null && newer.membershipDigest !== older.membershipDigest) {
-      membershipChangedAt = list[index].changedAt ?? null;
+      membershipChangedAt = newer.changedAt ?? null;
     }
     if (bodyChangedAt != null && membershipChangedAt != null) break;
   }
@@ -120,7 +103,7 @@ export function lastMovementOf(revisions) {
  * Summary nodes whose membership changed after their description last did.
  *
  * @param docs `{ slug, frontmatter }` documents.
- * @param revisionsOf `(slug) => revisions` in either shape `lastMovementOf` reads,
+ * @param revisionsOf `(slug) => [{ changedAt, bodyDigest, membershipDigest }]`,
  *   newest first; a slug with no revisions is skipped, never guessed.
  * @returns Rows by lag, then slug, stable across runs.
  */

@@ -23,20 +23,14 @@ const GRAPH_ARRAY_KEYS = new Set([
 ]);
 const UNSAFE_OBJECT_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
-/**
- * A copy of a parsed string that shares nothing with the file text. Every value
- * this parser returns is a slice of its input, and V8 keeps the whole input alive
- * for as long as one slice lives, so a holder that outlives the document (the
- * compiled-graph cache, the write gate's name index) keeps a copy instead. The
- * JSON round trip is the cheapest flat copy measured: 67 bytes retained per UUID,
- * against 3,263 for the slice of a 1.5 KB file it replaces.
- *
- * @template T
- * @param {T} value
- * @returns {T}
- */
-export function detachString(value) {
-  return typeof value === 'string' ? JSON.parse(JSON.stringify(value)) : value;
+/** A copy that shares no memory with its file: V8 keeps a whole file alive for any slice of it. */
+export function detachText(value) {
+  if (typeof value === 'string') return JSON.parse(JSON.stringify(value));
+  if (Array.isArray(value)) return value.map(detachText);
+  if (value !== null && typeof value === 'object' && Object.getPrototypeOf(value) === Object.prototype) {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, detachText(item)]));
+  }
+  return value;
 }
 
 function assignParsedKey(target, key, value, diagnostics, line) {
@@ -299,8 +293,6 @@ function unquote(value) {
 }
 
 // A separator inside quotes is data: `labels: { ko: "map, search" }` is one value.
-// Each part is one slice of the input: growing a string a character at a time
-// allocated three times as much per whole-vault parse (242 MB against 78 MB at 12k nodes).
 function splitTopLevel(input, separator) {
   const parts = [];
   let start = 0;
@@ -308,7 +300,6 @@ function splitTopLevel(input, separator) {
   for (let i = 0; i < input.length; i += 1) {
     const ch = input[i];
     if (quote) {
-      // An escaped character, the closing quote included, stays inside the value.
       if (ch === '\\' && i + 1 < input.length) {
         i += 1;
         continue;

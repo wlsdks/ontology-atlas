@@ -18,8 +18,10 @@ import {
   REVIEW_STATE_CONFIRMED,
   REVIEW_STATE_HUMAN_DECIDES,
   REVIEW_STATE_KEY,
+  VAULT_SOURCES_DIR,
   agentCreatedBy,
   nodeUidIssue,
+  rawSourceSlugIssue,
   reviewCurrentness,
 } from '../schema.mjs';
 import { server } from '../server/instance.mjs';
@@ -44,6 +46,7 @@ import {
   collectNeighborRefs,
   findGraphReferences,
   loadVaultDocs,
+  rawSourceSlugAt,
   readDoc,
   slugToPath,
   suggestSimilarSlugs,
@@ -55,6 +58,13 @@ import { join } from 'node:path';
 // verify contract depend on the literal string); only growthHint rides on the
 // Error instance, and error() lifts it into structuredContent.
 function docNotFoundError(slug, docs) {
+  const rawSourceSlug = rawSourceSlugAt(VAULT_ROOT, slug);
+  if (rawSourceSlug) {
+    const err = new Error(`Doc not found: ${slug}. ${rawSourceSlugIssue(rawSourceSlug)}`);
+    err.repairFields = { missingSubject: 'Doc not found', missingSlug: slug, recoveryTools: ['read_source'] };
+    err.growthHint = buildSlugNotFoundGrowthHint({ slug, rawSourceSlug });
+    return err;
+  }
   const err = new Error(`Doc not found: ${slug}`);
   const candidateSlugs = suggestSimilarSlugs(VAULT_ROOT, slug);
   // A name the vault references without a document is a reference-only concept;
@@ -260,12 +270,6 @@ function assertGraphNodeEndpoint(canonicalSlug, role) {
   );
 }
 
-/**
- * The names one loaded document list answers to, built on its first lookup and
- * dropped with the list. find_neighbors resolves every reference in the vault
- * against one list; walking the disk and the list per reference took 140 s on a
- * 12k-node vault.
- */
 const slugIndexByDocs = new WeakMap();
 
 function slugIndexOf(docs) {
@@ -289,8 +293,6 @@ function slugIndexOf(docs) {
 
 function resolveExistingVaultSlug(slug, docs = null) {
   if (typeof slug !== 'string' || slug.trim() === '') return null;
-  // A slug the loaded list holds names a file the walk just listed, and the disk
-  // lookup below would return it unchanged. Only other spellings go to the disk.
   if (docs && slugIndexOf(docs).slugs.has(slug)) return slug;
   // Return the on-disk letter case: `existsSync` accepts a wrong-case slug on macOS
   // and Windows, but every backlink and relation match downstream is case-sensitive.
@@ -337,6 +339,8 @@ function resolveExistingVaultUid(uid, docs = null) {
 }
 
 function missingSlugMessage(prefix, slug, { createHint = false } = {}) {
+  const rawSourceSlug = rawSourceSlugAt(VAULT_ROOT, slug);
+  if (rawSourceSlug) return rawSourceSlugIssue(rawSourceSlug);
   const suggestions = suggestSimilarSlugs(VAULT_ROOT, slug);
   const lines = [
     `${prefix}: "${slug}". Use list_concepts() to see all slugs, or find_evidence({title:"${slug}"}) to search by title.`,
@@ -398,7 +402,7 @@ function buildSummaryFreshness(docs) {
 
 function listVaultSourcePaths() {
   const out = [];
-  const stack = [{ dir: join(VAULT_ROOT, 'sources'), prefix: 'sources' }];
+  const stack = [{ dir: join(VAULT_ROOT, VAULT_SOURCES_DIR), prefix: VAULT_SOURCES_DIR }];
   while (stack.length > 0) {
     const { dir, prefix } = stack.pop();
     let entries;

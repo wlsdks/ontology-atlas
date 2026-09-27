@@ -111,8 +111,8 @@ describe('두 열 폼 격자 — 자기 틀 안에 들어가는가', () => {
     const gap = gapWidth(form);
     expect(
       fixed + gap * (tracks.length - 1),
-      `고정 트랙(${fixed}px) + 간격(${gap}px)이 틀의 내용 상자 ${content}px 를 넘는다 — ` +
-        `오른쪽 열이 컨테이너 밖으로 나간다`,
+      `Fixed tracks (${fixed}px) plus gaps (${gap}px) exceed the frame's content box of ${content}px, ` +
+        `so the right column leaves the container`,
     ).toBeLessThanOrEqual(content);
   });
 

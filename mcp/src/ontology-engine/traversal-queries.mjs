@@ -270,7 +270,6 @@ export function createTraversalQueries({
         candidates.push({ next: edge.from, edge });
       }
     }
-    // Each key once, not twice per comparison: this runs for every node a traversal visits.
     const keyed = candidates.map((candidate) => ({
       candidate,
       key: `${candidate.next}:${edgeSortKey(candidate.edge)}`,

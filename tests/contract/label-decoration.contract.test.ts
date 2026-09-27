@@ -75,8 +75,8 @@ describe("라벨 장식 — 화살표는 정보를 나를 때만", () => {
       offences,
       offences.length === 0
         ? ""
-        : `라벨 끝의 장식 화살표는 정보를 더하지 않는다. 지우고 라벨만 남겨라.\n` +
-            `문장 가운데의 화살표(경로·순서·인과)는 데이터라 허용된다.\n${report}`,
+        : `A decorative arrow at the end of a label adds no information. Delete it and keep the label.\n` +
+            `An arrow inside a sentence (path, order, causality) is data and is allowed.\n${report}`,
     ).toEqual([]);
   });
 
@@ -172,9 +172,9 @@ describe("라벨 장식 — 화살표는 정보를 나를 때만", () => {
       offences,
       offences.length === 0
         ? ""
-        : `마크업에 박힌 장식 화살표. 앱 안에서 이동하는 링크라면 지워라 — 어디로\n` +
-            `가는지는 라벨이, 누를 수 있다는 건 컨트롤이 이미 말한다. 앱을 떠나는\n` +
-            `링크라면 라벨 **앞**에 두고 ${EXTERNAL_MARKER} 로 선언하라.\n${offences.join("\n")}`,
+        : `A decorative arrow baked into markup. For a link that moves within the app, delete it: the label\n` +
+            `already says where it goes and the control already says it can be pressed. For a link that leaves\n` +
+            `the app, put it **before** the label and declare it with ${EXTERNAL_MARKER}.\n${offences.join("\n")}`,
     ).toEqual([]);
   });
 
@@ -200,8 +200,8 @@ describe("라벨 장식 — 화살표는 정보를 나를 때만", () => {
       offences,
       offences.length === 0
         ? ""
-        : `라벨 끝의 화살표는 정보를 더하지 않는다 — 지우고 라벨만 남겨라.\n` +
-            `문장 가운데({a} → {b})는 데이터라 통과한다.\n${offences.join("\n")}`,
+        : `An arrow at the end of a label adds no information: delete it and keep the label.\n` +
+            `An arrow inside a sentence ({a} → {b}) is data and passes.\n${offences.join("\n")}`,
     ).toEqual([]);
   });
 

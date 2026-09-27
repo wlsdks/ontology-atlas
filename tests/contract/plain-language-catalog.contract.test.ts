@@ -152,8 +152,8 @@ describe('카탈로그 전체 — 내부에서 만든 말이 화면에 닿지 �
 
       expect(
         unlisted,
-        `「${term}」이(가) 아래 새 자리에 들어왔다. 이 말은 이 저장소가 자기끼리 쓰려고 만든 ` +
-          `말이라, 화면에서는 그 자리에서 실제로 일어나는 일을 쓴다.\n${unlisted.join('\n')}`,
+        `"${term}" entered the new places below. It is a word this repository coined for its own use, ` +
+          `so on screen say what actually happens at that place instead.\n${unlisted.join('\n')}`,
       ).toEqual([]);
 
       expect(
@@ -262,9 +262,9 @@ describe('한국어 카탈로그 — 번역되지 않은 영어 문장', () => {
 
     expect(
       unlisted,
-      '한국어 화면에 번역되지 않은 영어 문장이 새로 들어왔다.\n' +
-        '이름(제품명·명령·URL·라이선스·기술 이름)이라 번역하면 안 되는 것이면 ' +
-        'INTENTIONALLY_ENGLISH 에 이유와 함께 등재하라.\n' +
+      'An untranslated English sentence entered the Korean screen.\n' +
+        'If it is a name that must not be translated (product, command, URL, licence, technology), ' +
+        'list it in INTENTIONALLY_ENGLISH with the reason.\n' +
         unlisted.join('\n'),
     ).toEqual([]);
 
@@ -389,8 +389,8 @@ describe('머리글자 — 같은 화면 안에서 무슨 말인지 밝힌다', 
 
     expect(
       unlisted,
-      'MCP · ACP · CLI 를 쓰면서 같은 네임스페이스 어디에서도 그것이 무엇인지 밝히지 않는다.\n' +
-        '같은 화면의 문장 하나에 「에이전트 연결(MCP)」처럼 한 번만 풀어 쓰면 된다.\n' +
+      'MCP, ACP or CLI is used, but nowhere in the same namespace says what it is.\n' +
+        'Spell it out once in one sentence on the same screen, as in "agent connection (MCP)".\n' +
         unlisted.join('\n'),
     ).toEqual([]);
 

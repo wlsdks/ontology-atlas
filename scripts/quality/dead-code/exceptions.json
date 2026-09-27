@@ -194,12 +194,6 @@
       "witness": "CREATED_BY_HUMAN"
     },
     {
-      "key": "mcp:runtime:exports:src/schema.mjs:VAULT_KINDS",
-      "reason": "The CLI schema shim re-exports the vault kind list; the export is consumed outside its Knip scope, where the lane cannot see it.",
-      "consumer": "cli/src/lib/schema.mjs",
-      "witness": "VAULT_KINDS"
-    },
-    {
       "key": "mcp:runtime:exports:src/validate.mjs:KNOWN_VAULT_KINDS",
       "reason": "The vault validation script reads the known kinds; the export is consumed outside its Knip scope, where the lane cannot see it.",
       "consumer": "scripts/validate-vault.mjs",
@@ -354,6 +348,12 @@
       "reason": "Manual brand-raster installer is intentionally invoked from the brand asset procedure.",
       "consumer": "docs/design/brand.md",
       "witness": "scripts/install-brand-icons.mjs"
+    },
+    {
+      "key": "scripts:runtime:files:scripts/lib/mcp-memory-probe.mjs:scripts/lib/mcp-memory-probe.mjs",
+      "reason": "The memory check loads this test-only preload into the server with node --import by path, so no module imports it.",
+      "consumer": "scripts/perf-mcp-memory.mjs",
+      "witness": "scripts/lib/mcp-memory-probe.mjs"
     },
     {
       "key": "scripts:runtime:files:scripts/measure-a11y.mjs:scripts/measure-a11y.mjs",

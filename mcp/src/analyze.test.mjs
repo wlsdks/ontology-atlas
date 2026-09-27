@@ -4678,6 +4678,24 @@ test('existing ontology evidence keeps the canonical slug when an alias sorts fi
   }
 });
 
+test('existing ontology evidence skips the raw-source folder and a link to it', () => {
+  const root = withRepo((r) => {
+    mkdirSync(join(r, 'docs/ontology/domains'), { recursive: true });
+    mkdirSync(join(r, 'docs/ontology/sources/Planning'), { recursive: true });
+    writeFileSync(join(r, 'docs/ontology/domains/ops.md'), ontologyDomainDoc('Ops'));
+    writeFileSync(join(r, 'docs/ontology/sources/Planning/roadmap.md'), ontologyDomainDoc('Roadmap'));
+    symlinkSync('sources', join(r, 'docs/ontology/inbox'));
+  });
+  try {
+    const { rows, skipped } = ontologyEvidence(root);
+
+    assert.deepEqual(rows, [{ slug: 'domains/ops', source: 'docs/ontology/domains/ops.md' }]);
+    assert.deepEqual(skipped, []);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('existing ontology evidence lists a shared subfolder once under its real path', () => {
   const root = withRepo((r) => {
     mkdirSync(join(r, 'docs/ontology/domains/alpha'), { recursive: true });

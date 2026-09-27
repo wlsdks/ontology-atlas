@@ -14,6 +14,7 @@ test.describe("Library live work activity", () => {
       if (message.type() === "error") consoleErrors.push(message.text());
     });
     const harness = await openLibraryWorkScenario(page);
+    await page.getByTestId("library-workspace-sources").click();
 
     /*
      * The canvas is the home now (2026-09-12), so there is nothing to open: the picture is
@@ -61,6 +62,7 @@ test.describe("Library live work activity", () => {
     expect(await page.evaluate(() => (window as unknown as PaintWindow).__libraryPaintCount ?? 0)).toBe(hiddenPaints);
     // The way back to the picture is the reader's own close control.
     await page.getByTestId("library-reader-back").click();
+    await page.getByTestId("library-workspace-sources").click();
     await expect(canvas).toBeVisible();
     await expect.poll(() => page.evaluate(() => (window as unknown as PaintWindow).__libraryPaintCount ?? 0)).toBeGreaterThan(hiddenPaints);
 

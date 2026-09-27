@@ -307,8 +307,6 @@ function finalizeProjectMeaningTool({ projectSlug, expected_mtime } = {}) {
     throw new VaultConflictError(canonicalSlug, expected_mtime, projectDoc.mtime);
   }
 
-  // One read of the vault serves validation, the compile and the project scope, so
-  // the receipt is judged against a single snapshot.
   const validation = validateVaultReport({}, allDocs);
   if (validation.summary.errorFiles > 0) {
     throw new Error(

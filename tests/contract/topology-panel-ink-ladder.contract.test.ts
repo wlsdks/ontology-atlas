@@ -159,8 +159,8 @@ describe('지도 패널 잉크 램프 (표면 전용 두 번째 램프)', () => 
   it.each(INK_LEDGER)('%s 의 실측 대비가 장부와 같다', (token, ratio) => {
     expect(
       Number(ratioOnPanel(token).toFixed(2)),
-      `${token} 의 대비가 장부(${ratio})와 다르다 — 값을 바꿨으면 INK_LEDGER 도 같이 고쳐라. ` +
-        `그 diff 가 «패널 잉크를 조정했다» 를 기록하는 자리다.`,
+      `The contrast of ${token} differs from the ledger (${ratio}). If you changed the value, update INK_LEDGER with it; ` +
+        `that diff is where the panel ink adjustment gets recorded.`,
     ).toBeCloseTo(ratio, 1);
   });
 

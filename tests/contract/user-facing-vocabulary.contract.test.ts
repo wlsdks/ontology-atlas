@@ -121,8 +121,8 @@ describe('사용자가 읽는 말 — 한 가지는 한 이름으로', () => {
     const current = hits('AI').length;
     expect(
       current,
-      `「AI」가 ${AI_BASELINE} → ${current} 로 늘었다. 이 폴더에 연결된 그것을 가리킨다면 ` +
-        `「에이전트」를 써라 — 상한을 올리는 것은 래칫을 푸는 것이다.`,
+      `"AI" grew from ${AI_BASELINE} to ${current}. If it means what is connected to this folder, ` +
+        `use the agent word instead; raising the ceiling unlocks the ratchet.`,
     ).toBeLessThanOrEqual(AI_BASELINE);
   });
 
@@ -142,8 +142,8 @@ describe('사용자가 읽는 말 — 한 가지는 한 이름으로', () => {
     const current = hits('프로젝트').length;
     expect(
       current,
-      `「프로젝트」가 ${PROJECT_BASELINE} → ${current} 로 늘었다. 종류가 요점이 아닌 자리라면 ` +
-        `「개념」이나 그 화면이 실제로 가리키는 것을 써라 — 상한을 올리는 것은 래칫을 푸는 것이다.`,
+      `The project-kind word grew from ${PROJECT_BASELINE} to ${current}. Where the kind is not the point, ` +
+        `use the concept word or what the screen actually points at; raising the ceiling unlocks the ratchet.`,
     ).toBeLessThanOrEqual(PROJECT_BASELINE);
   });
 
@@ -177,8 +177,8 @@ describe('사용자가 읽는 말 — 한 가지는 한 이름으로', () => {
       const current = hits(softened).length;
       expect(
         current,
-        `「${softened}」가 ${cap} → ${current} 로 늘었다. 종류를 가리키는 자리라면 그 종류의 실제 ` +
-          `이름(the kinds' real names)을 써라 — 쉬운 말로 바꾸면 사람이 파일과 CLI 에서 다시 배워야 한다.`,
+        `"${softened}" grew from ${cap} to ${current}. Where it names a kind, use that kind's real ` +
+          `name; a plainer word makes people learn the vocabulary again in files and the CLI.`,
       ).toBeLessThanOrEqual(cap);
     }
   });

@@ -65,13 +65,27 @@ test('prose-only PRs do not install or execute unrelated test lanes', () => {
   assert.ok(plan.lanes.gates.commands.includes('pnpm docs:links'));
 });
 
-test('app tests run affected Vitest without waking Playwright', () => {
+test('app tests run affected Vitest and the test-source ratchets without waking Playwright', () => {
   const plan = buildImpactPlan({ files: ['src/shared/lib/cn.test.ts'] });
 
   assert.equal(plan.lanes.unit.mode, 'affected');
   assert.equal(plan.lanes.unit.affected, true);
-  assert.equal(plan.lanes.unit.contract, 'skip');
+  assert.equal(plan.lanes.unit.contract, 'focused');
+  assert.deepEqual(plan.lanes.unit.contractFiles, [
+    'tests/contract/source-comment-bytes.contract.test.ts',
+    'tests/contract/test-title-language.contract.test.ts',
+  ]);
   assert.equal(plan.lanes.e2e.mode, 'skip');
+});
+
+test('a stylesheet change runs the token gates that read it whole', () => {
+  for (const file of ['app/globals.css', 'app/styles/tokens.css']) {
+    assert.deepEqual(buildImpactPlan({ files: [file] }).lanes.unit.contractFiles, [
+      'tests/contract/design-doc-token-integrity.contract.test.ts',
+      'tests/contract/undeclared-token-ref.contract.test.ts',
+      'tests/contract/unused-token-ratchet.contract.test.ts',
+    ], file);
+  }
 });
 
 test('a widely imported source leaves related tests to the sharded affected run', () => {

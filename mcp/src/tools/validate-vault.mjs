@@ -22,6 +22,7 @@ import {
   requireOptionalPositiveInteger,
 } from '../server/validate.mjs';
 import {
+  rawSourceKindIssues,
   suppressLibraryKindIssues,
   suppressParentedExpectedFieldIssues,
   validateVaultDocument,
@@ -248,8 +249,7 @@ function validateVaultReport({ repoRoot } = {}, loadedDocs = null) {
   const docIssues = new Map();
   for (const doc of docs) {
     // The slug is passed because `slug-outside-kind-folder` is a fact about
-    // where the file sits, and only this caller knows it. The loaded document
-    // already holds the parse of these bytes.
+    // where the file sits, and only this caller knows it.
     const result = validateVaultDocument(doc.raw || '', { slug: doc.slug, parsed: doc });
     docIssues.set(doc.slug, result.issues || []);
   }
@@ -277,19 +277,24 @@ function validateVaultReport({ repoRoot } = {}, loadedDocs = null) {
   // never tells a node that has a parent that it has none.
   suppressParentedExpectedFieldIssues(docIssues, docs);
   suppressLibraryKindIssues(docIssues);
+  const rawSourceSlugs = [];
+  for (const { path, issue } of rawSourceKindIssues(VAULT_ROOT)) {
+    const slug = path.replace(/\.md$/, '');
+    docIssues.set(slug, [issue]);
+    rawSourceSlugs.push(slug);
+  }
   const problems = [];
   let errorFiles = 0;
   let warningFiles = 0;
   // byCode aggregation: { code → { severity, count, files: Set<slug> } }
   const byCodeMap = new Map();
-  // Files with an error first, then by slug: the order every page and brief shows.
-  const problemDocs = docs
-    .filter((doc) => (docIssues.get(doc.slug) || []).length > 0)
-    .map((doc) => ({ doc, hasError: docIssues.get(doc.slug).some((issue) => issue.severity === 'error') }))
-    .sort((left, right) => Number(right.hasError) - Number(left.hasError) || left.doc.slug.localeCompare(right.doc.slug))
-    .map(({ doc }) => doc);
-  for (const doc of problemDocs) {
-    const issues = docIssues.get(doc.slug);
+  const problemSlugsInPageOrder = [...docs.map((doc) => doc.slug), ...rawSourceSlugs]
+    .filter((slug) => (docIssues.get(slug) || []).length > 0)
+    .map((slug) => ({ slug, hasError: docIssues.get(slug).some((issue) => issue.severity === 'error') }))
+    .sort((left, right) => Number(right.hasError) - Number(left.hasError) || left.slug.localeCompare(right.slug))
+    .map(({ slug }) => slug);
+  for (const slug of problemSlugsInPageOrder) {
+    const issues = docIssues.get(slug);
     let hasError = false;
     const seenInDoc = new Set();
     for (const issue of issues) {
@@ -308,13 +313,13 @@ function validateVaultReport({ repoRoot } = {}, loadedDocs = null) {
       if (!seenInDoc.has(issue.code)) {
         seenInDoc.add(issue.code);
         entry.count += 1;
-        entry.files.add(doc.slug);
+        entry.files.add(slug);
       }
     }
     if (hasError) errorFiles += 1;
     else warningFiles += 1;
     problems.push({
-      slug: doc.slug,
+      slug,
       issues: issues.map((i) => ({
         code: i.code,
         severity: i.severity,

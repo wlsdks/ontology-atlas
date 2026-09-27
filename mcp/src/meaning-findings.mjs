@@ -58,6 +58,7 @@ const DEFINITION_KINDS = new Set(['domain', 'capability', 'element']);
 const BOUNDARY_KINDS = new Set(['domain', 'capability']);
 const UNCERTAINTY_KINDS = new Set(['domain', 'capability', 'element']);
 const EPISTEMIC_KINDS = new Set(['domain', 'capability', 'element', 'project']);
+const BODY_CHECK_KINDS = new Set([...DEFINITION_KINDS, ...BOUNDARY_KINDS, ...UNCERTAINTY_KINDS, ...EPISTEMIC_KINDS]);
 const FOLDER_EVIDENCE_KINDS = new Set(['capability', 'element']);
 
 /** Entry-point filenames in the order an unfamiliar agent would try them, to say "open this instead". */
@@ -201,30 +202,20 @@ function starterPlaceholders(starter) {
   return placeholders;
 }
 
-/**
- * One document's sections with its kind's starter and placeholders. The body
- * checks below run back to back on one document (validate_vault, the write door,
- * the maintenance plan), and each parsed the body and rendered and parsed the
- * starter itself, four to five times per document on every whole-vault pass.
- * Keeping the last document's view makes it once. Callers only read it.
- */
-let lastBodyView = null;
-
 function bodyView(kind, title, body) {
-  const text = String(body ?? '');
-  const heading = title ?? '';
-  const last = lastBodyView;
-  if (last && last.kind === kind && last.title === heading && last.text === text) return last;
-  const starter = starterShape(kind, heading);
-  lastBodyView = {
-    kind,
-    title: heading,
-    text,
-    ...parseBodySections(text),
-    starter,
-    placeholders: starterPlaceholders(starter),
-  };
-  return lastBodyView;
+  const starter = starterShape(kind, title);
+  return { ...parseBodySections(body), starter, placeholders: starterPlaceholders(starter) };
+}
+
+export function bodyMeaningFindings(input) {
+  if (!BODY_CHECK_KINDS.has(input.kind)) return [];
+  const view = bodyView(input.kind, input.title, input.body);
+  return [
+    definitionFinding(input, view),
+    ...boundaryFindings(input, view),
+    uncertaintyFinding(input, view),
+    epistemicExclusionFinding(input, view),
+  ].filter(Boolean);
 }
 
 /**
@@ -250,9 +241,9 @@ function contentLines(section, placeholders) {
  * containment, so appending one line does not pass) or too little new prose
  * before the first `##` share one code.
  */
-export function definitionFinding({ kind, slug, title, body }) {
+export function definitionFinding({ kind, slug, title, body }, view = null) {
   if (!DEFINITION_KINDS.has(kind)) return null;
-  const { lead, sections, starter, placeholders } = bodyView(kind, title, body);
+  const { lead, sections, starter, placeholders } = view ?? bodyView(kind, title, body);
   const leadText = lead.join(' ');
   const starterLead = starter ? starter.lead.join(' ') : '';
   const leadIsStarter = Boolean(starterLead) && fold(leadText).includes(fold(starterLead));
@@ -281,9 +272,9 @@ export function definitionFinding({ kind, slug, title, body }) {
  * One finding per missing boundary side, named in `key`: the two are different
  * work, and reporting them together lets half an answer read as whole.
  */
-export function boundaryFindings({ kind, slug, title, body }) {
+export function boundaryFindings({ kind, slug, title, body }, view = null) {
   if (!BOUNDARY_KINDS.has(kind)) return [];
-  const { sections, placeholders } = bodyView(kind, title, body);
+  const { sections, placeholders } = view ?? bodyView(kind, title, body);
   const findings = [];
   for (const side of ['includes', 'excludes']) {
     const section = findBoundarySection(sections, side);
@@ -305,9 +296,9 @@ export function boundaryFindings({ kind, slug, title, body }) {
  * completeness. A placeholder bullet does not count, or the default write would
  * silence the question it cannot have answered.
  */
-export function uncertaintyFinding({ kind, slug, title, body }) {
+export function uncertaintyFinding({ kind, slug, title, body }, view = null) {
   if (!UNCERTAINTY_KINDS.has(kind)) return null;
-  const { sections, placeholders } = bodyView(kind, title, body);
+  const { sections, placeholders } = view ?? bodyView(kind, title, body);
   const section = sections.find((row) => headingNames(row.heading, BODY_UNCERTAINTY_SECTIONS)) ?? null;
   if (contentLines(section, placeholders).length > 0) return null;
   return {
@@ -337,9 +328,9 @@ export function uncertaintySectionLines({ kind, title, body }) {
  * does not do. The rule is imported from `construction-rules.mjs`, never
  * re-derived, so the qualification lane and this door agree on each bullet.
  */
-export function epistemicExclusionFinding({ kind, slug, title, body }) {
+export function epistemicExclusionFinding({ kind, slug, title, body }, view = null) {
   if (!EPISTEMIC_KINDS.has(kind)) return null;
-  const { sections, placeholders } = bodyView(kind, title, body);
+  const { sections, placeholders } = view ?? bodyView(kind, title, body);
   const section = findBoundarySection(sections, 'excludes');
   if (!section) return null;
   const offending = contentLines(section, placeholders)
@@ -567,12 +558,6 @@ function relationNoteText(frontmatter, target) {
   return '';
 }
 
-/**
- * What one pass over many documents shares: each cited file's text (`null` when
- * it is not a readable file), read once however many documents cite it, and the
- * module names parsed from it. A whole-vault pass re-read a file once per citing
- * document, 363 MB per `health` call at 12k nodes. Drop it when the pass ends.
- */
 export function createDependencyWitnessReads() {
   return { texts: new Map(), moduleNames: new Map() };
 }
@@ -607,7 +592,7 @@ function citedFileText(reads, absolute) {
  * @param {Record<string, unknown>} [args.previousFrontmatter] absent judges every dependency
  * @param {string|null} args.repoRoot
  * @param {(ref: string) => string|null} args.resolveTargetPath target slug → its `path:`, or null
- * @param {ReturnType<typeof createDependencyWitnessReads>} [args.reads] shared by a whole-vault pass
+ * @param {ReturnType<typeof createDependencyWitnessReads>} [args.reads]
  * @returns {Array<object>} one finding per unwitnessed target, `key` = target slug (a per-edge notice key)
  */
 export function dependencyWitnessFinding({
@@ -623,11 +608,10 @@ export function dependencyWitnessFinding({
   if (!source) return [];
   const previous = previousFrontmatter ? declaredDependencies(previousFrontmatter) : new Set();
   const targets = [...declaredDependencies(frontmatter)].filter((target) => !previous.has(target));
-  // Nothing to judge, so nothing to read.
   if (targets.length === 0) return [];
   const sourceText = citedFileText(reads, source.absolute);
   if (sourceText === null) return [];
-  /** Each note path resolved once however many edges cite it; `null` marks unreadable. */
+  /** One read per file however many edges cite it; `null` marks unreadable. */
   const textCache = new Map([[source.path, sourceText]]);
   const moduleNamesByText = reads.moduleNames;
   /**

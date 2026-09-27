@@ -363,7 +363,7 @@ function inferImportsTool({
   let effectiveReviewMode = requestedReviewMode ?? 'full';
   let delivery;
   if (reviewMode === undefined || (reviewMode === 'full' && allowLargeResponse !== true)) {
-    const estimatedFullResponseBytes = estimateMcpToolResultUtf8Bytes(result);
+    const estimatedFullResponseBytes = okResponseBytes(result);
     if (estimatedFullResponseBytes <= automaticLimitBytes) {
       return result;
     }
@@ -460,19 +460,8 @@ function inferImportsTool({
   return result;
 }
 
-/**
- * Alias → slug, the compiler's `indexes.aliasToSlug`, read from the `aliases` rows
- * every artifact carries: the session's cached artifact is compiled without
- * `indexes`, which no query reads and which held 14 MB at 12k nodes.
- */
 function aliasToSlugOf(artifact) {
   return Object.fromEntries((artifact?.aliases ?? []).map(({ alias, slug }) => [alias, slug]));
-}
-
-function estimateMcpToolResultUtf8Bytes(result) {
-  // Serialized once; building the response to measure it serialized the result
-  // three times over (5.6 MB for this repository's full import scan).
-  return okResponseBytes(result);
 }
 
 function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports = false } = {}) {

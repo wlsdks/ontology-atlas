@@ -8,6 +8,7 @@ import {
   createDependencyWitnessReads,
   dependencyWitnessFinding,
   folderOnlyEvidenceFinding,
+  rawSourceKindIssues,
   starterExampleFindings,
   validateVaultDocument,
   suppressLibraryKindIssues,
@@ -156,6 +157,12 @@ export const KNOWN_CODES = [
     scope: 'vault',
     description: 'two nodes claim the same primary or merged UID as their permanent identity.',
   },
+  {
+    code: 'kind-under-sources',
+    severity: 'warning',
+    scope: 'vault',
+    description: 'a file under `sources/` carries `kind:`, but every file there is a raw source, never a node.',
+  },
 ];
 
 /**
@@ -223,8 +230,7 @@ export function runValidate(args) {
     const { frontmatter, body } = parsed;
     entries.push({ file, slug, frontmatter, body });
     // The slug travels with the raw text: `slug-outside-kind-folder` is a fact
-    // about where the file sits, which the bytes alone never state. The parse
-    // above is handed over so the file is parsed once.
+    // about where the file sits, which the bytes alone never state.
     const report = validateVaultDocument(raw, { slug, parsed });
     reportByFile.set(file, report);
   }
@@ -269,6 +275,10 @@ export function runValidate(args) {
     });
     if (report.issues.some((i) => i.severity === 'error')) errorFiles += 1;
     else warningFiles += 1;
+  }
+  for (const { path, issue } of rawSourceKindIssues(vaultPath)) {
+    reports.push({ file: path, report: { ok: true, issues: [issue] } });
+    warningFiles += 1;
   }
 
   // Count issues, not files: counting files with a problem hid a warning inside a file that also had
@@ -657,7 +667,6 @@ function findDependencyWitnessIssues(entries) {
     : '';
   if (!repoRoot) return [];
   const resolveTargetPath = evidencePathIndex(entries);
-  // Each cited file is read once for the whole pass, however many nodes cite it.
   const reads = createDependencyWitnessReads();
   const issues = [];
   for (const entry of entries) {

@@ -77,8 +77,8 @@ describe('디자인 토큰 가드 — inline style 에 raw hex 색 금지', () =
 
     expect(
       violations,
-      `inline style 에 토큰 대신 raw hex 를 쓴 곳:\n${violations.join('\n')}\n` +
-        `→ var(--color-*) 토큰으로 교체하세요.`,
+      `Inline styles that use a raw hex instead of a token:\n${violations.join('\n')}\n` +
+        `Replace each with a var(--color-*) token.`,
     ).toEqual([]);
   });
 });

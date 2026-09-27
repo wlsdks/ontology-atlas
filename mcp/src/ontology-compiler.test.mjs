@@ -592,9 +592,6 @@ describe('compileOntology', () => {
 
 describe('compileOntology retention', () => {
   it('keeps no document text alive once the documents are dropped', () => {
-    // A frontmatter value is a slice of its file, and one kept slice pins the whole
-    // file; the session cache keeps the artifact between calls. Measured in its own
-    // process, after two forced collections, so nothing else shares the heap.
     const script = `
       import { compileOntology } from ${JSON.stringify(new URL('./ontology-compiler.mjs', import.meta.url).href)};
       import { parseFrontmatter } from ${JSON.stringify(new URL('./parser.mjs', import.meta.url).href)};

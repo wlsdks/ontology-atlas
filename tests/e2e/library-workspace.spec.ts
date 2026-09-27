@@ -3,8 +3,8 @@ import { FIXTURE_VAULT } from './fixture-vault';
 import { DAY_ONE_TEXT } from './library-day-one-fixture';
 import { stubDirectoryPicker } from './vault-picker-stub';
 
-async function openLibrary(page: Page) {
-  await stubDirectoryPicker(page, { ...FIXTURE_VAULT, ...DAY_ONE_TEXT });
+async function openLibrary(page: Page, files = { ...FIXTURE_VAULT, ...DAY_ONE_TEXT }) {
+  await stubDirectoryPicker(page, files);
   await page.goto('/en/topology/?guides=off&e2e=1');
   await page.getByTestId('first-run-starter-open').click();
   await page.getByTestId('vault-guide-pick-existing').click();
@@ -12,6 +12,42 @@ async function openLibrary(page: Page) {
   await page.goto('/en/library/?guides=off&e2e=1');
   await expect(page.getByTestId('library-workspace-tabs')).toBeVisible();
 }
+
+test('legacy concept sets remain reachable with no current nodes and retain saved identity and URL context', async ({ page }) => {
+  const folderId = '33333333-3333-4333-8333-333333333333';
+  const itemId = '44444444-4444-4444-8444-444444444444';
+  await openLibrary(page, {
+    'sources/notes.md': '# Notes\nKeep evidence before changing meaning.\n',
+    '.ontology-atlas/library-collections.json': JSON.stringify({
+      schema: 'ontology-atlas/library-collections/v1',
+      folders: [{ id: folderId, name: 'Review saved evidence', parentId: null, order: 0,
+        presentation: 'constellation', purpose: 'Recover the prior review scope.',
+        createdAt: '2026-09-15T00:00:00.000Z', updatedAt: '2026-09-15T00:00:00.000Z' }],
+      items: [{ id: itemId, folderId, order: 0, label: 'Missing review concept',
+        target: { kind: 'ontology', uid: '11111111-1111-4111-8111-111111111111', lastKnownPath: 'capabilities/review.md' } }],
+    }),
+  });
+  await page.goto(`/en/library/?tab=collections&view=edit&constellation=${folderId}&context=original&guides=off&e2e=1#saved-review`);
+  await expect(page.getByTestId('library-workspace-ontology')).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByTestId('library-ontology-sets')).toHaveAttribute('aria-checked', 'true');
+  await expect.poll(() => new URL(page.url()).searchParams.get('tab')).toBe('ontology');
+  const url = new URL(page.url());
+  expect(url.searchParams.get('ontologyView')).toBe('sets');
+  expect(url.searchParams.get('view')).toBe('edit');
+  expect(url.searchParams.get('constellation')).toBe(folderId);
+  expect(url.searchParams.get('context')).toBe('original');
+  expect(url.hash).toBe('#saved-review');
+  await expect(page.getByTestId(`library-constellation-${folderId}`)).toBeVisible();
+  await expect(page.getByTestId(`library-constellation-unresolved-${itemId}`)).toContainText('capabilities/review.md');
+  await page.getByTestId('library-ontology-sets').focus();
+  await page.keyboard.press('ArrowLeft');
+  await expect(page.getByTestId('library-ontology-documents')).toHaveAttribute('aria-checked', 'true');
+  await page.keyboard.press('ArrowRight');
+  await expect(page.getByTestId(`library-constellation-${folderId}`)).toBeVisible();
+  await page.getByRole('button', { name: 'View Review saved evidence on the map' }).click();
+  await expect.poll(() => new URL(page.url()).searchParams.get('constellation')).toBe(folderId);
+  await expect(page).toHaveURL(/\/topology\//);
+});
 
 async function expectSingleLibraryPageHeading(page: Page, name: string | RegExp) {
   await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
@@ -31,6 +67,16 @@ test('a no-slug Ontology entry opens graph-backed evidence instead of a Wiki gui
   );
   await expect(page.locator('[data-docs-viewer]')).toBeVisible();
   await expect(page.locator('[data-docs-viewer]')).not.toContainText('<the page name>');
+});
+
+test('an empty concept set starts the ontology in a documents-only folder', async ({ page }) => {
+  await openLibrary(page, { 'sources/notes.md': '# Notes\nKeep the source as evidence.\n' });
+  await page.goto('/en/library/?tab=ontology&ontologyView=sets&guides=off&e2e=1');
+  await page.getByTestId('library-collections-add-concepts').click();
+  await expect(page.getByTestId('library-workspace-ontology')).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByTestId('library-ontology-documents')).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByRole('button', { name: 'Create starter seed', exact: true })).toBeVisible();
+  await expect(page.getByTestId('library-collections')).toHaveCount(0);
 });
 
 test('closing New wiki page preserves the source passage underneath', async ({ page }) => {
@@ -59,6 +105,13 @@ test('a legacy document link and the last unsaved keystroke survive a Library ta
   await expect(editor).toHaveCount(1);
   const original = await editor.inputValue();
   await editor.fill(`${original}\n\nUnsaved Library round trip.`);
+  const documentView = new URL(page.url()).searchParams.get('view');
+  await page.getByTestId('library-ontology-sets').click();
+  await expect(page.getByTestId('library-collections')).toBeVisible();
+  expect(new URL(page.url()).searchParams.get('view')).toBe(documentView);
+  await page.getByTestId('library-ontology-documents').click();
+  await page.getByRole('tab', { name: 'Edit', exact: true }).click();
+  await expect(editor).toHaveValue(`${original}\n\nUnsaved Library round trip.`);
   await page.getByTestId('library-workspace-sources').click();
   await expect(page.getByTestId('library-index')).toBeVisible();
   await page.getByTestId('library-workspace-ontology').click();

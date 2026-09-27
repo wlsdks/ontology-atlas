@@ -282,11 +282,6 @@ function privateCurrentProjectSourceAccess(projectSlug, projectSource, graphHash
   };
 }
 
-/**
- * The analysis archive reader, imported on first use: its record schema is a
- * TypeScript module, and loading it at startup pulled Node's type stripper into
- * every source-run server (about 26 MB each) that never reads the archive.
- */
 function analysisRecords() {
   return import('../analysis-records.mjs');
 }

@@ -150,7 +150,6 @@ test('graph read requests load every vault document once and observe edits on th
 
 test('write-side maintenance and project-source tools read each vault document once per call', () => {
   const root = realpathSync(mkdtempSync(join(tmpdir(), 'atlas-write-vault-load-')));
-  // The code a project binds to sits apart, so measuring it opens no vault document.
   const sourceRoot = realpathSync(mkdtempSync(join(tmpdir(), 'atlas-write-vault-source-')));
   writeFileSync(join(sourceRoot, 'index.js'), 'export const ready = true;\n');
   try {
@@ -205,8 +204,6 @@ test('write-side maintenance and project-source tools read each vault document o
     }));
     assert.equal(result.maintenance.outcome, 'returned');
     assert.equal(result.connect.outcome, 'returned');
-    // Nothing is bound yet, so finalize stops at the witness inventory, after it
-    // validated, compiled and scoped the vault.
     assert.match(result.finalize.outcome, /finalize_project_meaning blocked: current project witness inventory/);
     for (const [tool, { reads }] of Object.entries(result)) {
       assert.deepEqual(reads, [1, 1, 1], `${tool} must read each document once`);
@@ -238,8 +235,6 @@ test('find_neighbors lists each vault directory once however many references it 
       depends_on: [capabilities[(index + 1) % capabilities.length], capabilities[(index + 5) % capabilities.length]],
     }));
     const readModule = new URL('./tools/read.mjs', import.meta.url).href;
-    // Every reference here is an exact slug of a loaded document, so the walk that
-    // loaded them is the only listing the call needs.
     const script = `
       import fs from 'node:fs';
       import { syncBuiltinESMExports } from 'node:module';

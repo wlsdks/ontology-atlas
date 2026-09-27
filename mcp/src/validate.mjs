@@ -13,14 +13,13 @@ export function isValidVaultTitle(value) {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
-import {
-  boundaryFindings,
-  definitionFinding,
-  epistemicExclusionFinding,
-  uncertaintyFinding,
-} from './meaning-findings.mjs';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { bodyMeaningFindings } from './meaning-findings.mjs';
 import { parseFrontmatter } from './parser.mjs';
 import {
+  VAULT_KINDS,
+  VAULT_SOURCES_DIR,
   folderForKind,
   inspectMergedUids,
   missingExpectedFields,
@@ -71,7 +70,59 @@ export const VAULT_ISSUE_CODE_VALUES = Object.freeze([
    * freshly built, uncompiled vault.
    */
   'starter-example-node',
+  'kind-under-sources',
 ]);
+
+export function rawSourceKindIssues(rootPath) {
+  const rows = [];
+  const stack = directoryEntries(rootPath).some((entry) => entry.name === VAULT_SOURCES_DIR && entry.isDirectory())
+    ? [VAULT_SOURCES_DIR]
+    : [];
+  while (stack.length > 0) {
+    const dir = stack.pop();
+    for (const entry of directoryEntries(join(rootPath, dir))) {
+      if (entry.name.startsWith('.')) continue;
+      const path = `${dir}/${entry.name}`;
+      if (entry.isDirectory()) stack.push(path);
+      else if (entry.isFile() && entry.name.endsWith('.md')) {
+        const vaultPath = path.normalize('NFC');
+        const issue = rawSourceKindIssue(vaultPath, readFrontmatterKind(join(rootPath, path)));
+        if (issue) rows.push({ path: vaultPath, issue });
+      }
+    }
+  }
+  return rows.sort((a, b) => a.path.localeCompare(b.path));
+}
+
+function directoryEntries(directory) {
+  try {
+    return readdirSync(directory, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+}
+
+function readFrontmatterKind(filePath) {
+  try {
+    const kind = parseFrontmatter(readFileSync(filePath, 'utf8')).frontmatter?.kind;
+    return typeof kind === 'string' ? kind.trim() : '';
+  } catch {
+    return '';
+  }
+}
+
+function rawSourceKindIssue(path, kind) {
+  if (!kind) return null;
+  const home = folderForKind(kind) || (VAULT_KINDS.includes(kind) ? 'the vault root' : 'its kind folder');
+  return {
+    code: 'kind-under-sources',
+    severity: 'warning',
+    message:
+      `${path} carries \`kind: ${kind}\`, but every file under sources/ is read as a raw source, never as a node. ` +
+      `To make it a node, move it into ${home}, then patch_concept each node that validate_vault reports with a ` +
+      `dangling-graph-reference to ${path.replace(/\.md$/, '')} so it names the new slug.`,
+  };
+}
 
 export const KNOWN_VAULT_KINDS = [
   'project',
@@ -103,12 +154,10 @@ const GRAPH_ARRAY_KEYS = [
  * unclosed block and a zero-key parse are caught. Issue codes
  * match `src/shared/lib/validate-vault-document.ts`; a contract test blocks
  * drift. `slug-outside-kind-folder` needs `options.slug` (where the file sits), and a
- * caller holding only bytes cannot be told it. A caller that already parsed `raw`
- * (a loaded vault document) passes the result as `options.parsed`, so a
- * whole-vault pass does not parse every file a second time.
+ * caller holding only bytes cannot be told it.
  *
  * @param {string} raw
- * @param {{ slug?: string, parsed?: { frontmatter: object, body?: string, diagnostics?: object[] } }} [options]
+ * @param {{ slug?: string, parsed?: object }} [options]
  * @returns {{ ok: boolean, issues: Array<{code: string, severity: 'error'|'warning', message: string}> }}
  */
 export function validateVaultDocument(raw, options = {}) {
@@ -222,14 +271,7 @@ function pushMeaningIssues({ frontmatter, body, slug, issues }) {
   const kind = typeof frontmatter?.kind === 'string' ? frontmatter.kind.trim() : '';
   if (!kind || !KNOWN_VAULT_KINDS.includes(kind)) return;
   const title = typeof frontmatter?.title === 'string' ? frontmatter.title : '';
-  const findings = [
-    definitionFinding({ kind, slug, title, body }),
-    ...boundaryFindings({ kind, slug, title, body }),
-    uncertaintyFinding({ kind, slug, title, body }),
-    epistemicExclusionFinding({ kind, slug, title, body }),
-  ];
-  for (const finding of findings) {
-    if (!finding) continue;
+  for (const finding of bodyMeaningFindings({ kind, slug, title, body })) {
     issues.push({ code: finding.code, severity: 'warning', message: finding.message });
   }
   pushSlugOutsideKindFolderIssue({ kind, slug, issues });

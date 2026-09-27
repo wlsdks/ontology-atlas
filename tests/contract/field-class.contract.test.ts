@@ -175,14 +175,14 @@ describe('frame — 누가 상자를 내는가', () => {
     },
   );
 
-  it('bare 는 size·multiline 이 무엇이든 같은 문자열이다 — 축이 헛돌지 않는지 못박는다', () => {
+  it('bare size changes only typography while the parent retains the frame', () => {
     const variants = new Set(
       SIZES.flatMap((size) =>
-        MULTILINE.map((multiline) => fieldClass({ frame: 'bare', size, multiline: multiline })),
+        MULTILINE.map((multiline) => fieldClass({ frame: 'bare', size, multiline })
+          .split(/\s+/).filter((token) => !/^(?:text-body(?:-lg)?|leading-body-lg)$/.test(token)).join(' ')),
       ),
     );
-    // Only multiline adds `resize-none`, so there must be exactly two.
-    expect([...variants].length, `실제: ${[...variants].join(' | ')}`).toBe(2);
+    expect([...variants].length, `Frame variants: ${[...variants].join(' | ')}`).toBe(2);
   });
 });
 
@@ -193,17 +193,18 @@ describe('base — 모든 필드가 공유하는 것', () => {
    * assertion really did stay green right after type was paired with size.
    *
    * The rule: **wide fields (md, lg) use `text-body-lg` (14); dense fields (xs, sm)
-   * and `bare` use `text-body` (12.5).** The evidence is on screen — dropping
+   * and compact `bare` use `text-body` (12.5); bare/lg uses the existing 14px step.
+   * The evidence is on screen — dropping
    * `/project/new` to 12.5px made **the value the user typed nearly the same rank as
    * the label the app wrote (11px)**. In a form, the most readable thing must be
    * what the user entered.
    */
   it.each(all.map((c) => [`${c.frame}/${c.size}`, c] as const))(
-    '%s — 타입이 크기와 짝이다 (md·lg=body-lg · xs·sm·bare=body)',
+    '%s uses the type step for its density and composed-field role',
     (_name, c) => {
       const step = c.cls.match(/(?:^|\s)(text-body(?:-lg)?)(?:\s|$)/)?.[1];
-      const expected = c.frame === 'boxed' && (c.size === 'md' || c.size === 'lg') ? 'text-body-lg' : 'text-body';
-      expect(step, `실제 클래스: ${c.cls}`).toBe(expected);
+      const expected = c.size === 'lg' || (c.frame === 'boxed' && c.size === 'md') ? 'text-body-lg' : 'text-body';
+      expect(step, `Rendered class: ${c.cls}`).toBe(expected);
     },
   );
 

@@ -59,8 +59,6 @@ const REPO_RESOLUTION = process.env.OATLAS_REPO_ROOT
     ? 'git.rev-parse'
     : 'process.cwd';
 // SERVER_VERSION is embedded as a constant so the server stays compilable (see server-version.mjs).
-// Every call shares the cached artifact and none modifies it, so the query engine
-// indexes it once (`shareArtifact`).
 const COMPILED_ONTOLOGY_CACHE = createCompiledOntologyCache({
   loadDocs: () => loadVaultDocs(VAULT_ROOT),
   compile: (docs, options) => shareArtifact(compileOntology(docs, options)),
