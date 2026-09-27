@@ -3,9 +3,11 @@
 // auto-init, no credentials, nothing outside the vault pathspec.
 
 use serde::Serialize;
+use std::collections::HashMap;
 use std::fs;
 use std::path::{Component, Path, PathBuf};
 use std::process::Command;
+use std::sync::{Arc, Mutex, OnceLock};
 
 use crate::errors::coded;
 
@@ -29,11 +31,142 @@ struct GitRun {
     stderr: String,
 }
 
-/// `Err` only when spawn fails; stderr is piped so it stays off the user's terminal.
-fn run_git(cwd: &Path, args: &[&str]) -> Result<GitRun, String> {
+/// Config that neutralises code execution driven by a repository's own git config
+/// before git can honour a hostile repo's settings. The opened vault or connected
+/// project source may be attacker-authored, so every invocation carries these.
+/// `safe.bareRepository=explicit` makes git refuse a bare/embedded repo committed
+/// as tracked files (the `<project>/atlas` open path, which also delivers a repo's
+/// config), and `core.fsmonitor=false` blocks the fsmonitor hook that fires on
+/// `status` with no click. Repository hooks are intentionally left alone: a
+/// snapshot classifies a rejecting pre-commit hook (`classify_git_error`), and a
+/// hook only runs on a user-initiated commit, as with plain git.
+pub(crate) const BASE_HARDENING: &[&str] = &[
+    "-c",
+    "safe.bareRepository=explicit",
+    "-c",
+    "core.fsmonitor=false",
+];
+
+/// `ext::` remote transports run an arbitrary command; a hostile remote URL must
+/// never reach one. Added on top of the base flags for network invocations.
+const NETWORK_HARDENING: &[&str] = &["-c", "protocol.ext.allow=never"];
+
+/// A `git` command with the base hardening and prompt silencing already applied.
+/// The single builder for every runtime invocation in this module and the source
+/// inspector in `lib.rs`.
+pub(crate) fn hardened_base_command() -> Command {
     let mut command = Command::new("git");
-    command.args(args).current_dir(cwd);
+    command.args(BASE_HARDENING);
     silence_git_credential_prompts(&mut command);
+    command
+}
+
+/// Diff, log, and show honour `diff.external` and per-driver `textconv`, both of
+/// which run a config-supplied command; `--no-ext-diff --no-textconv` right after
+/// the subcommand disables them without affecting other verbs.
+fn with_diff_family_guard<'a>(args: &[&'a str]) -> Vec<&'a str> {
+    let mut out: Vec<&str> = Vec::with_capacity(args.len() + 2);
+    let mut guarded = false;
+    let mut skip_value = false;
+    for (index, arg) in args.iter().enumerate() {
+        out.push(arg);
+        if guarded {
+            continue;
+        }
+        if skip_value {
+            skip_value = false;
+            continue;
+        }
+        if *arg == "-c" {
+            skip_value = true;
+            continue;
+        }
+        if arg.starts_with('-') {
+            continue;
+        }
+        // First non-option token is the subcommand.
+        if matches!(*arg, "diff" | "log" | "show") {
+            out.push("--no-ext-diff");
+            out.push("--no-textconv");
+        }
+        guarded = true;
+        let _ = index;
+    }
+    out
+}
+
+/// Per-repository overrides that neutralise clean/smudge/process filters. A repo's
+/// own config may bind an attribute to a filter whose command git runs on
+/// `add`/`commit`/`checkout`; the base flags cannot express a wildcard, so each
+/// filter defined in the repo's local config is redirected to an identity passthrough.
+/// Computed once per working directory since a session's repo config is stable, and
+/// discovered with the base flags so reading a hostile embedded repo is itself refused.
+fn filter_overrides_cache() -> &'static Mutex<HashMap<PathBuf, Arc<Vec<String>>>> {
+    static CACHE: OnceLock<Mutex<HashMap<PathBuf, Arc<Vec<String>>>>> = OnceLock::new();
+    CACHE.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+fn discover_filter_overrides(cwd: &Path) -> Vec<String> {
+    let output = hardened_base_command()
+        .args([
+            "config",
+            "--local",
+            "--name-only",
+            "--get-regexp",
+            "^filter\\.",
+        ])
+        .current_dir(cwd)
+        .output();
+    let Ok(output) = output else {
+        return Vec::new();
+    };
+    if !output.status.success() {
+        return Vec::new();
+    }
+    let text = String::from_utf8_lossy(&output.stdout);
+    let mut names: Vec<String> = Vec::new();
+    for key in text.lines() {
+        // key: filter.<name>.clean|smudge|process — name may contain dots.
+        let Some(rest) = key.strip_prefix("filter.") else {
+            continue;
+        };
+        let Some(dot) = rest.rfind('.') else {
+            continue;
+        };
+        let name = &rest[..dot];
+        if !name.is_empty() && !names.iter().any(|n| n == name) {
+            names.push(name.to_string());
+        }
+    }
+    let mut overrides = Vec::with_capacity(names.len() * 6);
+    for name in names {
+        overrides.push("-c".to_string());
+        overrides.push(format!("filter.{name}.clean=cat"));
+        overrides.push("-c".to_string());
+        overrides.push(format!("filter.{name}.smudge=cat"));
+        overrides.push("-c".to_string());
+        overrides.push(format!("filter.{name}.process="));
+    }
+    overrides
+}
+
+fn filter_overrides_for(cwd: &Path) -> Arc<Vec<String>> {
+    let mut cache = filter_overrides_cache().lock().unwrap_or_else(|e| e.into_inner());
+    if let Some(found) = cache.get(cwd) {
+        return found.clone();
+    }
+    let overrides = Arc::new(discover_filter_overrides(cwd));
+    cache.insert(cwd.to_path_buf(), overrides.clone());
+    overrides
+}
+
+/// `Err` only when spawn fails; stderr is piped so it stays off the user's terminal.
+/// Every invocation carries the base hardening, per-repo filter neutralisers, and
+/// the diff-family guard so no call site can forget them.
+fn run_git(cwd: &Path, args: &[&str]) -> Result<GitRun, String> {
+    let mut command = hardened_base_command();
+    command.args(filter_overrides_for(cwd).iter());
+    command.args(with_diff_family_guard(args)).current_dir(cwd);
     let output = command
         .output()
         .map_err(|err| coded("git-not-runnable", err))?;
@@ -63,14 +196,15 @@ fn run_network_git(cwd: &Path, args: &[&str]) -> Result<GitRun, String> {
     use std::io::Read;
     use std::process::Stdio;
 
-    let mut command = Command::new("git");
+    let mut command = hardened_base_command();
+    command.args(NETWORK_HARDENING);
+    command.args(filter_overrides_for(cwd).iter());
     command
-        .args(args)
+        .args(with_diff_family_guard(args))
         .current_dir(cwd)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
-    silence_git_credential_prompts(&mut command);
 
     let mut child = command
         .spawn()
@@ -1891,7 +2025,7 @@ const MAX_FRESHNESS_SLUGS: usize = 64;
 #[tauri::command]
 pub fn git_probe() -> GitProbe {
     let platform = host_platform().to_string();
-    match Command::new("git").arg("--version").output() {
+    match hardened_base_command().arg("--version").output() {
         Ok(out) if out.status.success() => {
             let version = String::from_utf8_lossy(&out.stdout).trim().to_string();
             GitProbe {
@@ -2577,6 +2711,218 @@ mod tests {
         let refused = detached.push.expect("a push was asked for");
         assert!(!refused.pushed);
         assert!(refused.message.unwrap().starts_with("push-detached-head"));
+        let _ = fs::remove_dir_all(&base);
+    }
+
+    // Security regression: a hostile repository (opened as a vault or connected as a
+    // source) must not run code that its own git config asks for. Each test proves
+    // the fixture is a live weapon under an unhardened invocation, then that the
+    // module's helper leaves no marker. Reintroducing the defect fails these.
+
+    fn plain_git(dir: &Path, args: &[&str]) {
+        let out = Command::new("git")
+            .args(args)
+            .current_dir(dir)
+            .output()
+            .unwrap();
+        assert!(
+            out.status.success(),
+            "git {args:?}: {}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+    }
+
+    fn seed_identity(dir: &Path) {
+        plain_git(dir, &["config", "user.email", "test@example.invalid"]);
+        plain_git(dir, &["config", "user.name", "atlas test"]);
+        plain_git(dir, &["config", "commit.gpgsign", "false"]);
+        plain_git(dir, &["config", "core.autocrlf", "false"]);
+    }
+
+    #[test]
+    fn a_hostile_embedded_repo_config_does_not_execute_on_status() {
+        let base = std::env::temp_dir().join(format!("atlas-sec-embedded-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&base);
+        let upstream = base.join("upstream");
+        let objects = upstream.join("atlas/objects");
+        let refs = upstream.join("atlas/refs/heads");
+        fs::create_dir_all(&objects).unwrap();
+        fs::create_dir_all(&refs).unwrap();
+        // git drops empty dirs on commit; .keep keeps the embedded git dir valid.
+        fs::write(objects.join(".keep"), b"").unwrap();
+        fs::write(refs.join(".keep"), b"").unwrap();
+        fs::write(upstream.join("atlas/HEAD"), b"ref: refs/heads/main\n").unwrap();
+        fs::write(upstream.join("atlas/README.md"), b"# node\n").unwrap();
+        let marker = base.join("EMBEDDED_EXECUTED");
+        let config = format!(
+            "[core]\n\trepositoryformatversion = 0\n\tbare = false\n\tworktree = .\n\tfsmonitor = \"touch {}; false\"\n",
+            marker.display()
+        );
+        fs::write(upstream.join("atlas/config"), config).unwrap();
+        plain_git(&upstream, &["init", "-q"]);
+        seed_identity(&upstream);
+        plain_git(&upstream, &["add", "-A"]);
+        plain_git(&upstream, &["commit", "-qm", "seed"]);
+
+        let clone = base.join("clone");
+        let out = Command::new("git")
+            .args(["clone", "-q"])
+            .arg(&upstream)
+            .arg(&clone)
+            .output()
+            .unwrap();
+        assert!(
+            out.status.success(),
+            "clone: {}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+        let atlas = clone.join("atlas");
+        let status_args = [
+            "-c",
+            "core.quotepath=false",
+            "status",
+            "--porcelain",
+            "--untracked-files=all",
+            "--",
+            ".",
+        ];
+
+        let _ = Command::new("git")
+            .args(status_args)
+            .current_dir(&atlas)
+            .output()
+            .unwrap();
+        assert!(
+            marker.exists(),
+            "fixture precondition: an unhardened git runs the embedded config"
+        );
+        fs::remove_file(&marker).unwrap();
+
+        let _ = run_git(&atlas, &status_args);
+        assert!(
+            !marker.exists(),
+            "hardened run_git must not execute a hostile embedded repo config"
+        );
+        assert!(
+            find_repo_root(&atlas).unwrap().is_none(),
+            "Atlas must treat a bare embedded repo as not-a-repo, not operate in it"
+        );
+        let _ = fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn a_hostile_local_fsmonitor_is_neutralised_on_status() {
+        let base = std::env::temp_dir().join(format!("atlas-sec-fsmon-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&base);
+        let repo = base.join("repo");
+        fs::create_dir_all(&repo).unwrap();
+        plain_git(&repo, &["init", "-q"]);
+        seed_identity(&repo);
+        fs::write(repo.join("note.md"), b"# one\n").unwrap();
+        plain_git(&repo, &["add", "-A"]);
+        plain_git(&repo, &["commit", "-qm", "one"]);
+        let marker = base.join("FSMON_EXECUTED");
+        plain_git(
+            &repo,
+            &["config", "core.fsmonitor", &format!("touch {}; false", marker.display())],
+        );
+        fs::write(repo.join("note.md"), b"# two\n").unwrap();
+        let status_args = [
+            "-c",
+            "core.quotepath=false",
+            "status",
+            "--porcelain",
+            "--untracked-files=all",
+            "--",
+            ".",
+        ];
+
+        let _ = Command::new("git")
+            .args(status_args)
+            .current_dir(&repo)
+            .output()
+            .unwrap();
+        assert!(marker.exists(), "fixture precondition: fsmonitor fires unhardened");
+        fs::remove_file(&marker).unwrap();
+
+        let run = run_git(&repo, &status_args).unwrap();
+        assert!(run.success, "a normal repo's status still succeeds");
+        assert!(
+            !marker.exists(),
+            "core.fsmonitor=false must suppress the hook even in a non-bare repo"
+        );
+        let _ = fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn a_hostile_clean_filter_is_neutralised_on_add() {
+        let base = std::env::temp_dir().join(format!("atlas-sec-filter-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&base);
+        let repo = base.join("repo");
+        fs::create_dir_all(&repo).unwrap();
+        plain_git(&repo, &["init", "-q"]);
+        seed_identity(&repo);
+        fs::write(repo.join(".gitattributes"), b"*.md filter=evil\n").unwrap();
+        fs::write(repo.join("note.md"), b"# one\n").unwrap();
+        plain_git(&repo, &["add", "-A"]);
+        plain_git(&repo, &["commit", "-qm", "one"]);
+        let marker = base.join("CLEAN_FILTER_EXECUTED");
+        plain_git(
+            &repo,
+            &[
+                "config",
+                "filter.evil.clean",
+                &format!("sh -c 'touch {}; cat'", marker.display()),
+            ],
+        );
+        fs::write(repo.join("note.md"), b"# two changed\n").unwrap();
+
+        // Prove the clean filter fires on an unhardened add, in a fresh clone so the
+        // module's per-directory filter cache never saw this path unhardened.
+        let mirror = base.join("mirror");
+        let out = Command::new("git")
+            .args(["clone", "-q"])
+            .arg(&repo)
+            .arg(&mirror)
+            .output()
+            .unwrap();
+        assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
+        // The clone carries .gitattributes but not the local filter config; recreate it.
+        seed_identity(&mirror);
+        plain_git(
+            &mirror,
+            &[
+                "config",
+                "filter.evil.clean",
+                &format!("sh -c 'touch {}; cat'", marker.display()),
+            ],
+        );
+        fs::write(mirror.join("note.md"), b"# two changed\n").unwrap();
+        let _ = Command::new("git")
+            .args(["add", "-A", "--", "."])
+            .current_dir(&mirror)
+            .output()
+            .unwrap();
+        assert!(
+            marker.exists(),
+            "fixture precondition: clean filter fires on an unhardened add"
+        );
+        fs::remove_file(&marker).unwrap();
+
+        // The hardened helper discovers the repo-local filter and redirects it to an
+        // identity passthrough, so the add stages the file without running the command.
+        let run = run_git(&repo, &["add", "-A", "--", "."]).unwrap();
+        assert!(run.success, "add still succeeds: {}", run.stderr);
+        assert!(
+            !marker.exists(),
+            "a repo-local clean filter must not run under the hardened helper"
+        );
+        let staged = run_git(&repo, &["diff", "--cached", "--name-only"]).unwrap();
+        assert!(
+            staged.stdout.contains("note.md"),
+            "the file is still staged: {:?}",
+            staged.stdout
+        );
         let _ = fs::remove_dir_all(&base);
     }
 }

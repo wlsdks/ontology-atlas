@@ -13,6 +13,8 @@ import { existsSync, realpathSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join, parse, resolve, sep } from 'node:path';
 
+import { hardenedGitArgv } from './hardened-git.mjs';
+
 import {
   PROJECT_SOURCE_MANIFEST_FILES,
   PROJECT_SOURCE_MAX_ANCESTOR_DEPTH,
@@ -51,7 +53,7 @@ function isForbiddenRoot(path) {
 
 function gitRoot(vaultRoot) {
   try {
-    const found = execFileSync('git', ['-C', vaultRoot, 'rev-parse', '--show-toplevel'], {
+    const found = execFileSync('git', hardenedGitArgv(vaultRoot, ['rev-parse', '--show-toplevel']), {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
     }).trim();

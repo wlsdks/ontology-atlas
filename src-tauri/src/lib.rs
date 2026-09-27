@@ -1433,8 +1433,12 @@ fn open_external_url(url: String) -> Result<(), String> {
     };
     #[cfg(target_os = "windows")]
     let mut command = {
-        let mut c = Command::new("cmd");
-        c.args(["/C", "start", "", &url]);
+        // No shell: `cmd /C start` would let a metacharacter in the URL (`&`, `|`,
+        // `%`, `^`) run a command, and the openable-URL check allows those since it
+        // only bars whitespace. rundll32 hands the URL straight to the protocol
+        // handler as one argument.
+        let mut c = Command::new("rundll32.exe");
+        c.args(["url.dll,FileProtocolHandler", &url]);
         c
     };
     #[cfg(all(not(target_os = "macos"), not(target_os = "windows")))]
@@ -1850,7 +1854,11 @@ fn inspect_source_inventory(root: &Path) -> Result<(String, bool, Vec<String>), 
 }
 
 fn run_source_git(root: &Path, args: &[&str]) -> Result<Vec<u8>, String> {
-    let output = Command::new("git")
+    // A connected project source is untrusted repo content; the base hardening
+    // refuses an embedded bare repo and disables fsmonitor/hooks before git reads
+    // the source's own config. These reads (ls-files/diff --name-only/status/
+    // rev-parse) run no content filter, so name discovery is not needed here.
+    let output = git::hardened_base_command()
         .args(args)
         .current_dir(root)
         .output()
