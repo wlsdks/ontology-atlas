@@ -9,7 +9,6 @@ const SOURCE_LEAD_LIMIT = 400;
 const WIKI_LEAD_LIMIT = 400;
 const WIKI_SECTION_BUDGET = 5_000;
 const SOURCE_SECTION_BUDGET = 4_000;
-/** Includes the folder, question, coverage, bounded leads, and every closing rule. */
 export const QUESTION_DESK_BRIEF_MAX_CHARS = 14_000;
 const CITATION = /\[\[src:[^\]]+\]\]/g;
 const markdownParser = unified().use(remarkParse).use(remarkGfm);
@@ -35,7 +34,6 @@ function boundedLeads(lines: readonly string[], budget: number, ko: boolean, max
   let used = 0;
   for (const line of lines) {
     if (kept.length >= maxLeads) break;
-    // Reserve space for an omission sentence. Dropping a ranked tail is explicit.
     if (used + line.length + 1 > budget - 100) break;
     kept.push(line);
     used += line.length + 1;
@@ -47,7 +45,6 @@ function boundedLeads(lines: readonly string[], budget: number, ko: boolean, max
   return { lines: kept, kept: lines.length - omitted };
 }
 
-/** A read-only ACP handoff: retrieved snippets are leads, originals remain authority. */
 export function buildQuestionDeskBrief(input: {
   question: string;
   vaultRoot: string;
@@ -94,7 +91,6 @@ function buildBoundedBrief(input: Parameters<typeof buildQuestionDeskBrief>[0], 
   ].join('\n');
   let brief = assemble();
   while (brief.length + reserveChars > QUESTION_DESK_BRIEF_MAX_CHARS) {
-    // Original source addresses outrank Wiki prose; drop the ranked Wiki tail first.
     if (wiki.kept > 0) wiki = boundedLeads(leads, WIKI_SECTION_BUDGET, ko, wiki.kept - 1);
     else if (source.kept > 0) source = boundedLeads(originals, SOURCE_SECTION_BUDGET, ko, source.kept - 1);
     else throw new Error('question-desk-brief-over-budget');
@@ -103,7 +99,6 @@ function buildBoundedBrief(input: Parameters<typeof buildQuestionDeskBrief>[0], 
   return brief;
 }
 
-/** The same bounded, read-only leads with an explicit report shape requested of ACP. */
 export function buildQuestionDeskReportBrief(input: Parameters<typeof buildQuestionDeskBrief>[0]): string {
   const ko = input.locale === 'ko';
   const format = ko
@@ -114,7 +109,6 @@ export function buildQuestionDeskReportBrief(input: Parameters<typeof buildQuest
   return brief;
 }
 
-/** Presentation only. A malformed ACP response stays raw instead of gaining invented sections. */
 export function splitQuestionDeskReportSections(text: string, locale: string): Array<{ title: string; markdown: string }> | null {
   const titles = locale === 'ko'
     ? ['답', '원문 근거', '불일치하거나 변경된 주장', '모르는 점과 검색 한계']
@@ -151,7 +145,6 @@ export interface QuestionDeskReportContent {
   generatedAt: string;
 }
 
-/** Export keeps the agent's prose but removes active remote fetch/navigation syntax. */
 function inertExportMarkdown(text: string, ko: boolean): string {
   const imageNote = ko ? '[외부 이미지 생략]' : '[external image omitted]';
   const linkNote = ko ? '[외부 링크 사용 불가]' : '[external link unavailable]';
@@ -164,14 +157,12 @@ function inertExportMarkdown(text: string, ko: boolean): string {
     .replace(/https?:\/\/[^\s<>)`]+/gi, (url) => `\`${url}\``);
 }
 
-/** Envelope fields are plain text even when a person types Markdown image/link syntax. */
 function exportPlainText(text: string): string {
   return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/\[/g, '&#91;').replace(/\]/g, '&#93;').replace(/!/g, '&#33;')
     .replace(/https?:\/\//gi, (url) => url.replace(':', '&#58;'));
 }
 
-/** Portable text only: one unreviewed dossier, no local key, verdict, or hidden app state. */
 export function serializeQuestionDeskReport(report: QuestionDeskReportContent, locale: string, knownSources: ReadonlySet<string>): string {
   const ko = locale === 'ko';
   const title = ko ? 'Ontology Atlas · 질문 보고서' : 'Ontology Atlas · Knowledge Report';
@@ -228,7 +219,6 @@ export type ReportFilePlan =
   | { ok: true; answer: string; citations: Array<{ path: string; anchor: string }> }
   | { ok: false; reason: 'shape' | 'no-evidence' | 'citation' | 'source' | 'unsafe' };
 
-/** Only an exact four-section ACP report can enter the existing Wiki filing validator. */
 export function planQuestionDeskReportFile(report: QuestionDeskReportContent, locale: string, knownSources: ReadonlySet<string>): ReportFilePlan {
   if (hasUnsafeMarkdownNode(markdownParser.parse(report.text))) return { ok: false, reason: 'unsafe' };
   const headings = locale === 'ko'

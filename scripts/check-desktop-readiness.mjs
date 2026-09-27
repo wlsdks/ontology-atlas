@@ -1638,8 +1638,6 @@ const ALLOWED_CAPABILITY_PERMISSIONS = [
   // control. Not the version in the first log line: that one comes from Rust `package_info()`,
   // which the permission system does not gate at all.
   "core:app:default",
-  // Question Desk's explicit Print / Save PDF action calls `window.print()` in the main window.
-  // This grants that command only, without `core:webview:default`.
   "core:webview:allow-print",
   // Check for and install updates. The network target is fixed by the endpoint in
   // `tauri.conf.json` and no user input reaches it. minisign signature verification

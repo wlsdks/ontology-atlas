@@ -663,8 +663,6 @@
       color: #1a1a1a;
     }
 
-    /* Question Desk print is a separate, explicit scope. Its report and the
-       Markdown download read the same question, ACP text, and search receipts. */
     html[data-print-scope="question-desk"] [data-docs-viewer],
     html[data-print-scope="question-desk"] [data-docs-viewer] * {
       visibility: hidden;

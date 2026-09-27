@@ -69,7 +69,6 @@ describe('question desk evidence', () => {
       { anchor: 'l4', kind: 'line', text: '승인 뒤에는 재고를 별도 작업으로 복구합니다.' },
     ], terms);
     expect(hits.hits[0]?.anchor).toBe('l4');
-    // Bigram overlap is a limited lexical fallback, not semantic coverage.
     expect(hits.hits[0]?.score).toBeGreaterThan(0);
   });
 

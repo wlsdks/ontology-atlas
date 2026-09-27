@@ -102,7 +102,6 @@ async function digestHex(bytes: ArrayBuffer): Promise<string | null> {
   } catch { return null; }
 }
 
-/** Untrusted ACP Markdown: local source citations alone become controls. */
 function SafeReportMarkdown({ text, sources, onOpenSource, answer = false }: {
   text: string;
   sources: readonly LibrarySourceRow[];
@@ -111,7 +110,6 @@ function SafeReportMarkdown({ text, sources, onOpenSource, answer = false }: {
 }) {
   const t = useTranslations('library.questionDesk');
   const known = useMemo(() => normalizeOriginalPaths(new Set(sources.map((source) => source.path))), [sources]);
-  // The first ACP paragraph earns headline scale only when it is actually a short conclusion.
   const firstParagraph = text.trim().split(/\n\s*\n/, 1)[0] ?? '';
   const headlineAnswer = answer && firstParagraph.length <= 160 && !/^(?:[-*+] |\d+\. |#{1,6} |>|```|~~~)/.test(firstParagraph);
   return <div className={answer
@@ -182,7 +180,6 @@ function DraftReport({ text, sources, onOpenSource, actions }: {
   </div>;
 }
 
-/** The Wiki tab's local question desk. All source reads start with Search, never with typing. */
 export function LibraryQuestionDesk({
   docs,
   pageTexts,
@@ -212,7 +209,6 @@ export function LibraryQuestionDesk({
   vaultRoot: string | null;
   vaultScope: string;
   agentReady: boolean;
-  /** Keep the question state mounted across reader navigation without rendering its heavy report while hidden. */
   visible: boolean;
   turnRunning: boolean;
   report: QuestionDeskReportDraft | null;
@@ -240,7 +236,6 @@ export function LibraryQuestionDesk({
   const [printError, setPrintError] = useState<string | null>(null);
   const searchId = useRef(0);
   const printCleanupRef = useRef<(() => void) | null>(null);
-  /** Only the current folder's inventoried versions, in memory; no persisted search index. */
   const sourceUnitsByStamp = useRef(new Map<string, SourceUnit[]>());
   const jevRequestId = useRef(0);
   const liveScope = useRef(vaultScope);

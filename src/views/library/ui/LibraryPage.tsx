@@ -237,7 +237,6 @@ export function restoreFiledAnswer(current: RetainedLibraryAnswer | null, filed:
   return generation === filed.generation && current === null ? filed : current;
 }
 
-/** After mobile Browse → page → Back, focus the visible Browse exit, never its hidden reader. */
 export function librarySelectionFocusTarget({
   selected, mobileBrowseOpen, narrow, browseBack, reader,
 }: {

@@ -22,7 +22,6 @@ function deskPages(docs: readonly VaultDoc[]): VaultDoc[] {
   return docs.filter((doc) => doc.slug.startsWith('wiki/') && !doc.slug.split('/').some((part) => part.startsWith('_')) && !doc.frontmatter.kind);
 }
 
-/** One search/report snapshot, independent of the folder handle's display name. */
 export function questionDeskListingVersion(docs: readonly VaultDoc[], sources: readonly { path: string; mtime: number; bytes: number }[]): string {
   return JSON.stringify([
     docs.filter((doc) => doc.slug.startsWith('wiki/')).map((doc) => [doc.slug, doc.mtime ?? null]),
@@ -38,7 +37,6 @@ export function countDeskReadablePages(docs: readonly VaultDoc[], rawBySlug: Rea
   return deskPages(docs).filter((doc) => rawBySlug.has(doc.slug)).length;
 }
 
-/** A large early file cannot hide later small originals from this bounded local search. */
 export function planDeskSourceReads<T extends { path: string; bytes: number }>(sources: readonly T[]): T[] {
   const planned: T[] = [];
   let bytes = 0;
@@ -51,14 +49,12 @@ export function planDeskSourceReads<T extends { path: string; bytes: number }>(s
   return planned;
 }
 
-/** Lexical matches are discovery leads, never an answer or a truth judgment. */
 export function questionTerms(question: string): string[] {
   return [...new Set((question.normalize('NFKC').toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [])
     .filter((term) => term.length > 1 && !STOP.has(term)))];
 }
 
 function questionScore(text: string, terms: readonly string[]): number {
-  // Addresses identify evidence; their file names are not words asserted by the passage.
   const lower = text.replace(CITATION, ' ').replace(/\]\([^)]*\)/g, ']')
     .normalize('NFKC').toLowerCase();
   return terms.reduce((score, term) => {
@@ -127,7 +123,6 @@ export function jevClaimEligibility(claim: DeskClaim, citation: DeskCitation, pa
   return recorded.toLowerCase() === measuredHash.toLowerCase() ? 'ready' : 'stale';
 }
 
-/** Mirror the native bridge's length limits before offering the exact preview. */
 export function jevPayloadEligibility(claim: string, evidence: string, payload: string): 'ready' | 'missing' | 'too-long' {
   if (!claim.trim() || !evidence.trim()) return 'missing';
   if (Array.from(claim).length > 2_000 || Array.from(evidence).length > 8_000 || new TextEncoder().encode(payload).length > 16_384) return 'too-long';
