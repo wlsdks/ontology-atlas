@@ -231,11 +231,7 @@ describe("useUnboundProjectSource", () => {
   });
 
   it("stays silent once that project has a binding", async () => {
-    /*
-     * ⚠️ Asserting only "it is null" also passes on the **first frame, before
-     * any read** — a truth about the initial value, not about the product. So
-     * the read is confirmed to have happened first, and null is asserted after.
-     */
+    // Null alone also holds before any read, so the read is confirmed first.
     let reads = 0;
     const { result } = renderHook(() =>
       useUnboundProjectSource({
@@ -261,10 +257,7 @@ describe("useUnboundProjectSource", () => {
     expect(result.current).toBeNull();
   });
 
-  /**
-   * Failing to read the sidecar is a different fact from "there is no folder".
-   * If the quiet line beside the map conflates them, the row starts lying.
-   */
+  /** An unreadable sidecar is not "no folder", or the row lies. */
   it("does not claim 'no folder' when the sidecar itself is unreadable", async () => {
     const { result } = renderHook(() =>
       useUnboundProjectSource({

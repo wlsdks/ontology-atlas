@@ -19,12 +19,9 @@ type RouteAskDockSyncPlan = {
 };
 
 /**
- * Plans the one route-request transition that may open the agent dock.
- *
- * A new request outranks an older manual close. Re-rendering the same request
- * is inert, while asynchronous runtime discovery may move that request from the
- * fallback key branch to the runtime branch once. A close marks the dock touched
- * and blocks every same-request transition until the URL request disappears.
+ * A new request outranks an older manual close; re-rendering the same request is inert, and late
+ * runtime discovery may move it from the key branch to the runtime once. A close blocks the same
+ * request until the URL drops it.
  */
 export function planRouteAskDockSync({
   requestKey,

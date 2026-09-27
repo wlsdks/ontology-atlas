@@ -3,30 +3,11 @@ import type { SessionAbilities } from "./session-abilities";
 import { fixBlockOrder, type FixBlockKey } from "./fix-list";
 
 /**
- * **The "to do" tab's finding groups — one row per kind of finding, and their counts add up to
- * the one title count.**
- *
- * ## Why the flat list became grouped rows (owner, 2026-09-06)
- *
- * The one flat list of 2026-08-31 was right about counting the work once and wrong about how a
- * person reads it. Measured on the dogfood folder at 1512×949: the first screen was eight rows,
- * every one of them 1,230px wide and 80px tall, and all eight carried **the same sentence** —
- * "the domain it belongs to does not point back at this concept". Eight rows to say one thing
- * eight times, with the actual scale of the work only visible by scrolling. The owner's words:
- * *"the to-do list just keeps getting longer and its content only runs sideways."*
- *
- * A group row says the same thing once with a number beside it, and opens to the named rows on
- * demand. Nothing was removed: expanding a group shows exactly the rows the flat list drew.
- *
- * ## The invariant that makes grouping safe
- *
- * Splitting one number into ten is the shape of the accident recorded in 2026-08-07 (3), where a
- * tab badge read 7 above a group heading reading 8. So the group counts are not a second census:
- * they are **the same `InsightsSignalCounts` the verdict is built from**, re-keyed. `groupCounts`
- * and `buildInsightsVerdict` therefore take one argument, and
- * `tests/contract/do-next-group-sum.contract.test.ts` pins `sum(groupCounts) === verdict.total`
- * over generated inputs. A group whose count is not in that record fails type checking, exactly
- * as `SECTION_SEVERITY` does.
+ * The to-do tab's finding groups: one row per kind of finding, whose counts add up to the title count. A group says
+ * a repeated sentence once with its number and opens to the same rows the flat list drew. The counts are the
+ * verdict's own `InsightsSignalCounts` re-keyed, not a second census; the
+ * contract `tests/contract/do-next-group-sum.contract.test.ts` pins `sum(groupCounts) === verdict.total`, and a group
+ * missing from that record fails type checking.
  */
 export type DoNextGroupKey =
   | "blocked-document"
@@ -46,10 +27,7 @@ export type DoNextGroupKey =
 
 export type DoNextGroupCounts = Record<DoNextGroupKey, number>;
 
-/**
- * The per-group scale, derived from the **same** signal counts the verdict reads. There is no
- * second traversal and no second list of section names, so the two can never disagree.
- */
+/** The per-group scale from the verdict's signal counts: no second traversal or list of section names. */
 export function buildDoNextGroupCounts(counts: InsightsSignalCounts): DoNextGroupCounts {
   return {
     "blocked-document": Math.max(0, counts.blockedDocuments),
@@ -74,11 +52,8 @@ export function sumDoNextGroupCounts(counts: DoNextGroupCounts): number {
 }
 
 /**
- * The group order. It is `fixBlockOrder` — the standing order the flat list already rendered,
- * which still follows the session's abilities — with the single `repair` block expanded into the
- * two signals it always carried separately (`islandCount`, `missingContainmentCount`). Those two
- * were one block only because one flat list has no place to state two numbers; a grouped list
- * does, and the CLI has reported them apart all along.
+ * The group order is `fixBlockOrder` with the `repair` block split into its two signals
+ * (`islandCount`, `missingContainmentCount`), which the CLI reports apart.
  */
 export function doNextGroupOrder(abilities: SessionAbilities): DoNextGroupKey[] {
   return fixBlockOrder(abilities).flatMap((block: FixBlockKey): DoNextGroupKey[] =>
@@ -87,9 +62,8 @@ export function doNextGroupOrder(abilities: SessionAbilities): DoNextGroupKey[] 
 }
 
 /**
- * Which group holds a given review id, so returning from the map re-opens the group the row lives
- * in. Review ids are `<kind>:<node id>` (and `cycle:<cycle id>`), so the prefix is the group —
- * except the two repair signals, which have no review id of their own.
+ * The group holding a review id, so returning from the map reopens it. Ids are `<kind>:<node id>`
+ * or `cycle:<cycle id>`, so the prefix is the group; the two repair signals have no review id.
  */
 export function groupOfReviewId(reviewId: string | null | undefined): DoNextGroupKey | null {
   if (!reviewId) return null;
@@ -100,7 +74,7 @@ export function groupOfReviewId(reviewId: string | null | undefined): DoNextGrou
     "orphan",
     "cycle",
     "duplicate",
-    // The four finding sections claim their rows the same way (2026-09-23).
+    // The four finding sections claim their rows the same way.
     "missing-boundary",
     "missing-uncertainty",
     "epistemic-exclusion",

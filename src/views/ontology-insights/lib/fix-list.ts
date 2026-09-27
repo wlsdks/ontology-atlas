@@ -3,17 +3,8 @@ import type { SessionAbilities } from "./session-abilities";
 import { queueGroupOrder } from "./queue-work-groups";
 
 /**
- * **One list, one order.**
- *
- * The "to do" tab used to show the same items three ways: a readiness meter, a counter band, and
- * a queue split into two labelled groups. The owner could not tell why the screen existed
- * (recorded decision, 2026-08-31). The data sources did not change; only the presentation did.
- * This module owns the one thing that presentation still needs from a pure function: **which
- * kinds of item come first**.
- *
- * Keeping the order here rather than inline in the tab means the order is testable without a
- * renderer, and adding a kind fails type checking in `FIX_BLOCK_KEYS` rather than silently
- * appending itself at the bottom of the screen.
+ * One list, one order: which kinds of item come first on the to-do tab. Kept pure so the order is testable
+ * without a renderer, and `FixBlockKey` makes a new kind a type error instead of a silent last place.
  */
 export type FixBlockKey =
   | "blocked-document"
@@ -31,29 +22,16 @@ export type FixBlockKey =
   | "cycle";
 
 /**
- * The blocks that come before the queue's own sections.
- *
- * **blocked-document** and **repair** carry what the removed counter band used to state. They are
- * the blocking family (`insights-verdict`): a document that fails validation never becomes a
- * usable node, and an island or a missing parent is what flips the same verdict the CLI reports
- * to `needs_attention`. Blocking work sits above advisory work.
- *
- * A third block, **touch-up**, led this order until 2026-09-06. It drew the three highest-ranked
- * items again at the top of the list, deduplicated out of the sections they came from. With the
- * list grouped by finding (`do-next-groups.ts`), a picks band would be a group whose count is not
- * in the verdict record — the one thing the sum contract forbids — and priority is now carried by
- * the group order itself. `pickTodaysTouchUps` went with it.
+ * The blocks before the queue's own sections. Blocked documents and repairs are the blocking family
+ * (`insights-verdict`), so they sit above advisory work. Priority is carried by the group order, not by a
+ * picks band, whose count would not be in the verdict record.
  */
 const LEADING_BLOCKS: readonly FixBlockKey[] = ["blocked-document", "repair"];
 
-/** The queue's own sections, in the order each group already rendered them. */
+/** The queue's own sections, in each group's render order. */
 const GROUP_BLOCKS = {
-  /*
-   * The meaning order is the order the validator asks its questions in: what is this,
-   * what does it include and exclude, what did you not check, is an exclusion really a
-   * limit of the reading, and where does the file sit. The two write-in-place rows keep
-   * the top, because they close without leaving the screen.
-   */
+  // The validator's question order: what is this, what it includes and excludes, what was not checked, whether an
+  // exclusion is a reading limit, where the file sits. The two write-in-place rows stay on top.
   meaning: [
     "missing-definition",
     "missing-domain",
@@ -68,9 +46,8 @@ const GROUP_BLOCKS = {
 } as const satisfies Record<"meaning" | "code", readonly FixBlockKey[]>;
 
 /**
- * The full render order. The group order still follows the session's abilities
- * (`queueGroupOrder`) — in a read-only session the work that closes with a handoff comes first —
- * but no group heading is drawn any more, so this is one flat sequence of row kinds.
+ * The full render order. Groups still follow session abilities (`queueGroupOrder`), but without headings this is
+ * one flat sequence of row kinds.
  */
 export function fixBlockOrder(abilities: SessionAbilities): FixBlockKey[] {
   return [
@@ -81,19 +58,15 @@ export function fixBlockOrder(abilities: SessionAbilities): FixBlockKey[] {
 
 /** One document that failed validation, reduced to what a row needs. */
 export interface BlockedDocumentRow {
-  /** Vault slug, used both as the row identity and as the address in the documents surface. */
+  /** Vault slug: the row identity and the documents-surface address. */
   slug: string;
-  /** The first error-severity issue, which is the one the row states in plain words. */
+  /** The first error-severity issue, which the row states in plain words. */
   code: VaultDocumentIssue["code"];
 }
 
 /**
- * Blocked documents, derived from the **same** `summarizeVaultValidation` result the removed
- * readiness meter counted. The meter said "5 blocked" and named none of them; these rows name
- * them. Nothing about the computation changed.
- *
- * Warnings are excluded on purpose: only an error stops a document becoming a node an agent can
- * use, and a list that mixes the two makes "blocked" mean nothing.
+ * Blocked documents from the same `summarizeVaultValidation` result, each named. Warnings are excluded:
+ * only an error stops a document becoming a usable node.
  */
 export function buildBlockedDocumentRows(
   summary: Pick<VaultValidationSummary, "issuesBySlug">,
@@ -109,7 +82,7 @@ export function buildBlockedDocumentRows(
   return rows;
 }
 
-/** How many documents are blocked in total, so a truncated list can still state its scale. */
+/** All blocked documents, so a truncated list still states its scale. */
 export function countBlockedDocuments(
   summary: Pick<VaultValidationSummary, "issuesBySlug">,
 ): number {

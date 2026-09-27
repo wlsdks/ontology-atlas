@@ -105,10 +105,8 @@ describe("buildTopologyOntologyDrawerModel", () => {
   });
 
   it("counts transitive blast radius (dependents) and dependencies, not just direct degree", () => {
-    // a depends_on core and b depends_on a, so core's transitive dependents are
-    // {a, b} (2) while direct incoming is just a (1); core depends_on util gives
-    // one transitive dependency. 1-hop degree understates the blast radius —
-    // transitive reach is the real number.
+    // core has transitive dependents {a, b} but one direct incoming edge; 1-hop degree understates
+    // the blast radius.
     const core = node("capabilities/core");
     const nodes = [
       core,
@@ -151,9 +149,8 @@ describe("buildTopologyOntologyDrawerModel", () => {
   });
 
   it("P1-③ — domain node with an INCOMING domain edge still has no owner domain (no cross-domain misattribution)", () => {
-    // One domain holds an incoming relation from another (a cross-domain
-    // relation). Reading that as ownership misattributes the domain in both the
-    // datasheet header and the handoff packet's `domain:` field.
+    // A cross-domain relation is not ownership, or the header and the handoff `domain:` field
+    // misattribute it.
     const vault = node("domains/vault-local-first", "domain");
     const agent = node("domains/ai-agent-partner", "domain");
     const model = buildTopologyOntologyDrawerModel(vault, [vault, agent], [

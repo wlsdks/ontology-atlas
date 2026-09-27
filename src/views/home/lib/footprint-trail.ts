@@ -1,33 +1,15 @@
 import { ATLAS_CLI } from "@/shared/config/cli-invocation";
 /**
- * Session model for the footprint trail — the path walked, appended to every
- * time a node takes ego focus on the map. It is not a mode but a passive record
- * layer over the map: never in the URL, never in localStorage, reset on reload.
- *
- * Pure functions only; no React or DOM knowledge.
+ * Session model for the footprint trail, appended whenever a node takes ego focus.
+ * Never in the URL or localStorage; reset on reload.
  */
 
-/** Session trail cap; oldest visits are pushed out so it cannot grow without bound. */
 export const FOOTPRINT_TRAIL_MAX = 30;
 
 /**
- * Appends a visit. **A revisit is a new step** — the same node may appear many
- * times. Immutable; returns a new array.
- *
- * **Why dedup was removed (owner instruction, 2026-07-29).** The old
- * implementation deleted the previous position and moved the node to the end, so
- * a node existed at most once in the trail, which made the owner's request —
- * *"repeat visits should show several numbers"* (repeat visits should show several
- * numbers) — structurally impossible: no amount of fixing the number-drawing
- * code helps when the data holds one step.
- *
- * The trail is a route, not a set of recent visits. Collapsing A->B->A into A,B
- * erases the fact that the user came back, which is the only thing this feature
- * carries.
- *
- * **Consecutive duplicates are ignored**: clicking the same node twice, or focus
- * being reconfirmed, is not a step. Counting those makes the numbers climb while
- * the user sits still.
+ * A revisit is a new step, because the trail is a route: collapsing A->B->A erases that the user
+ * came back. Consecutive duplicates are ignored, or reclicking a node advances the count while the
+ * user sits still.
  */
 export function appendFootprintVisit(
   trail: readonly string[],
@@ -41,11 +23,8 @@ export function appendFootprintVisit(
 }
 
 /**
- * Collapsed trail for the handoff packet and the timeline: only each node's last
- * visit survives, in original order. Handing an agent the same `get_concept`
- * three times is noise, and so is a human timeline that repeats.
- *
- * Only the map uses the raw trail, because repetition is legible there as shape.
+ * Only each node's last visit survives, in order: the handoff packet and timeline would repeat
+ * themselves otherwise. Only the map uses the raw trail, where repetition reads as shape.
  */
 export function collapseFootprintTrail(trail: readonly string[]): string[] {
   const out: string[] = [];
@@ -55,46 +34,28 @@ export function collapseFootprintTrail(trail: readonly string[]): string[] {
   return out;
 }
 
-/** The fields of a graph edge this module reads. Structural, so the lib stays dependency-free. */
 export interface TrailEdge {
   from: string;
   to: string;
   type: string;
-  /** `relation_notes` — the recorded reason the two are connected. */
   label?: string;
 }
 
-/**
- * How one step connects to the step before it, or `null` when the two nodes are not
- * directly related (the trail is a walk, not a path: two consecutive visits need not
- * share an edge).
- */
+/** `null` when the two nodes share no edge: a walk need not follow edges. */
 export interface TrailStepLink {
-  /** The relation type as recorded on the edge; the caller names it for a human. */
   type: string;
-  /** The recorded reason, trimmed; `null` when the edge carries no `relation_notes`. */
   reason: string | null;
 }
 
-/** Unordered pair key — the walk may cross an edge in either direction. */
+/** Unordered: the walk may cross an edge in either direction. */
 function pairKey(a: string, b: string): string {
   return a < b ? `${a}\u0000${b}` : `${b}\u0000${a}`;
 }
 
 /**
- * Per-step connections along the walked trail: entry `i` describes how `trail[i]`
- * connects to `trail[i - 1]`. Index 0 is always `null` — the oldest step has no
- * predecessor, which is a different fact from "not related" and the caller renders it
- * as nothing rather than as a caption.
- *
- * **Why this exists.** The trail listed names and distances only, so it recorded *where*
- * the reader went and lost *why they could go there* — while the reason is the durable
- * thing Atlas keeps (`relation_notes`, the same text the map draws as the edge label).
- * A walk read back with its reasons is an argument; without them it is a browser history.
- *
- * Direction is not part of the key: crossing an edge backwards is still crossing that
- * edge. When several edges join the same pair the one **carrying a reason wins**, since a
- * bare type is what the caption falls back to anyway.
+ * Entry `i` links `trail[i]` to `trail[i - 1]`; index 0 is always null (no predecessor, not
+ * "unrelated"). O(E + T) with a pair-key map. When several edges join a pair, the one carrying a
+ * reason wins.
  */
 export function buildTrailStepLinks(
   trail: readonly string[],
@@ -117,13 +78,11 @@ export function buildTrailStepLinks(
   return trail.map((id, i) => (i === 0 ? null : byPair.get(pairKey(trail[i - 1], id)) ?? null));
 }
 
-/** A step link named for a human — the relation word in the reader's register, plus the reason. */
 export interface TrailStepCaption {
   relationLabel: string;
   reason: string | null;
 }
 
-/** Bare concept slug from a graph node id (`project:foo` -> `foo`); unprefixed ids pass through. */
 export function graphIdToConceptSlug(nodeId: string): string {
   const idx = nodeId.indexOf(":");
   if (idx < 0) return nodeId;
@@ -132,46 +91,35 @@ export function graphIdToConceptSlug(nodeId: string): string {
 }
 
 export interface FootprintTrailEntry {
-  /** Graph node id (`<kind>:<slug>`). */
   id: string;
   title: string;
   kind: string;
   /**
-   * The name the agent knows: the vault-root document slug or the raw reference
-   * (`resolveNodeAgentTarget`). Deriving it from the id tail instead emits names
-   * the vault does not have for derived nodes whose slug was flattened
-   * (`element:srcentitiesfoots`).
+   * The vault-known name (`resolveNodeAgentTarget`); deriving it from the id tail invents names for
+   * flattened derived slugs.
    */
   agentRef?: string | null;
-  /** Whether the node has its own document; if not, the packet suggests creating one instead of `get_concept`. */
+  /** Without a document the packet suggests creating one instead of `get_concept`. */
   documented?: boolean;
 }
 
-/** Name for the handoff text: the agent-known name if any, else the id tail. */
 function agentRefOf(entry: FootprintTrailEntry): string {
   return entry.agentRef?.trim() || graphIdToConceptSlug(entry.id);
 }
 
 export interface FootprintTrailPacketLabels {
-  /** Packet heading. */
   title: string;
-  /** Lead-in for the ordered visit list. */
   order: string;
-  /** One line introducing the `get_concept` sequence. */
   reviewHint: string;
-  /** One line introducing the `find_path` hint; only with 2+ visits. */
+  /** Only with 2+ visits. */
   pathHint: string;
-  /** Drift handoff: one line about dusty nodes. The caller formats the count, and
-   *  the whole section is omitted when there are none. */
+  /** Omitted when there are no dusty nodes. */
   dustyHint?: string;
-  /** Caption for a step whose node shares no edge with the step before it. */
   unrelated?: string;
 }
 
 /**
- * Serializes the visit chain into the handoff-packet grammar. The MCP calls are
- * stable English regardless of UI locale, so the packet pastes straight into a
- * coding agent — the same discipline the path chip's packet follows.
+ * MCP calls stay English regardless of UI locale so the packet pastes straight into a coding agent.
  */
 export function formatFootprintTrailAgentPacket(
   entries: readonly FootprintTrailEntry[],
@@ -182,12 +130,8 @@ export function formatFootprintTrailAgentPacket(
   const lines: string[] = [`# ${labels.title}`, labels.order];
   entries.forEach((entry, i) => {
     lines.push(`${i + 1}. ${entry.title} (${entry.kind}): ${entry.id}`);
-    /*
-     * The connection to the previous step, indented under it. Without it the agent
-     * receives the places walked but not the argument the walk made — and the reason
-     * is the one thing the vault holds that the source code cannot state. Silent when
-     * the caller passes no captions, so the packet's older shape still holds.
-     */
+    // The reason for each step is what the vault holds that source cannot state; silent without
+    // captions.
     if (i === 0 || i >= captions.length) return;
     const caption = captions[i];
     if (caption) {
@@ -199,8 +143,7 @@ export function formatFootprintTrailAgentPacket(
   lines.push("");
   lines.push(labels.reviewHint);
   for (const entry of entries) {
-    // `get_concept` on an undocumented concept answers "not found" the moment it
-    // is pasted, so state the only form the vault knows: a reference another
+    // `get_concept` on an undocumented concept answers "not found", so name the reference another
     // document wrote down.
     lines.push(
       entry.documented === false
@@ -215,8 +158,6 @@ export function formatFootprintTrailAgentPacket(
     lines.push(labels.pathHint);
     lines.push(`find_path("${first}", "${last}")`);
   }
-  // Carry the staleness signal the map already shows into the agent packet too:
-  // three representatives plus the CLI queue hint. Silent when there are none.
   if (labels.dustyHint && dustySlugs.length > 0) {
     lines.push("");
     lines.push(labels.dustyHint);

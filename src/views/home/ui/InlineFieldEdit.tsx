@@ -7,21 +7,18 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { controlClass, fieldClass } from "@/shared/ui/control-class";
 
 /**
- * Inline edit primitive for one frontmatter field (domain, for example), turning
- * a drawer row between read, edit, and save/cancel. Labels arrive as props, the
- * same pattern the drawer uses, so this stays independent of `useTranslations`.
+ * One frontmatter field switching between read, edit and save/cancel; labels arrive as props, so it
+ * stays independent of `useTranslations`.
  */
 export interface InlineFieldEditLabels {
-  /** The field's name, e.g. "domain". */
   field: string;
   /** aria for the button that enters edit mode. */
   edit: string;
   save: string;
   cancel: string;
   placeholder: string;
-  /** Shown in read mode when the value is an empty string. */
+  /** Read mode, empty string value. */
   empty: string;
-  /** Shown while saving. */
   saving: string;
 }
 

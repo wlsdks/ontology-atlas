@@ -37,7 +37,7 @@ const facts = (partial: Partial<ConceptDocFacts> = {}): ConceptDocFacts => ({
 });
 
 describe("buildMeaningGapRows", () => {
-  it("뜻도 본문도 없는 개념만 정의 공백으로 뽑는다", () => {
+  it("marks only concepts with neither meaning nor body as definition gaps", () => {
     const nodes = [
       node({ id: "capability:a", title: "A", evidenceIds: ["capabilities/a"], hasOwnDocument: true }),
       node({ id: "capability:b", title: "B", evidenceIds: ["capabilities/b"], hasOwnDocument: true }),
@@ -54,7 +54,7 @@ describe("buildMeaningGapRows", () => {
     expect(result.counts.missingDefinition).toBe(1);
   });
 
-  it("자기 문서가 없는 파생 개념은 절대 오지 않는다 — 남의 문서에 쓰지 않기 위해", () => {
+  it("never includes a derived concept without its own document", () => {
     const nodes = [
       node({
         id: "element:srcfoots",
@@ -74,7 +74,7 @@ describe("buildMeaningGapRows", () => {
     expect(result.domainRows).toEqual([]);
   });
 
-  it("도메인 키가 필요한 kind(역량·요소)만 소속 공백으로 센다", () => {
+  it("counts domain gaps only for kinds that need a domain key", () => {
     const nodes = [
       node({ id: "capability:a", title: "A", evidenceIds: ["capabilities/a"], hasOwnDocument: true }),
       node({
@@ -105,7 +105,7 @@ describe("buildMeaningGapRows", () => {
     expect(result.counts.missingDomain).toBe(2);
   });
 
-  it("표시 상한을 넘겨도 총계는 절단 전 규모를 말한다", () => {
+  it("reports the pre-truncation total past the display cap", () => {
     const nodes = Array.from({ length: 5 }, (_, i) =>
       node({
         id: `capability:c${i}`,
@@ -123,7 +123,7 @@ describe("buildMeaningGapRows", () => {
     expect(result.counts.missingDefinition).toBe(5);
   });
 
-  it("행은 쓸 파일·인계 이름·동시수정 기준을 함께 들고 온다", () => {
+  it("carries the target file, handoff name and concurrency baseline on each row", () => {
     const result = buildMeaningGapRows(
       [
         node({
@@ -144,7 +144,7 @@ describe("buildMeaningGapRows", () => {
     expect(row.handoffPayload).toContain('patch_concept({slug:"capabilities/pay"');
   });
 
-  it("매니페스트에 없는 문서에는 행을 만들지 않는다", () => {
+  it("makes no row for a document missing from the manifest", () => {
     const result = buildMeaningGapRows(
       [node({ id: "capability:ghost", evidenceIds: ["capabilities/ghost"], hasOwnDocument: true })],
       new Map(),
@@ -154,7 +154,7 @@ describe("buildMeaningGapRows", () => {
   });
 });
 
-describe("buildMeaningGapRows — 검사 소견 줄", () => {
+describe("buildMeaningGapRows check finding rows", () => {
   const nodes = [
     node({
       id: "capability:pay",
@@ -170,7 +170,7 @@ describe("buildMeaningGapRows — 검사 소견 줄", () => {
     }),
   ];
 
-  it("경계가 없는 개념은 경계 자리에 한 줄로 선다", () => {
+  it("lists a concept without boundaries once in the boundary slot", () => {
     const result = buildMeaningGapRows(
       nodes.slice(0, 1),
       new Map([["capabilities/pay", facts({ findings: ["boundary-missing"] })]]),
@@ -194,7 +194,7 @@ describe("buildMeaningGapRows — 검사 소견 줄", () => {
     expect(result.definitionRows).toEqual([]);
   });
 
-  it("양쪽이 다 비어도 문서 하나에 줄 하나", () => {
+  it("makes one row per document even when both sides are empty", () => {
     const result = buildMeaningGapRows(
       nodes.slice(0, 1),
       new Map([
@@ -209,7 +209,7 @@ describe("buildMeaningGapRows — 검사 소견 줄", () => {
     expect(result.counts.findings["missing-boundary"]).toBe(1);
   });
 
-  it("줄은 이름순이고, 총계는 자르기 전 수를 말한다", () => {
+  it("sorts rows by name and reports the pre-truncation total", () => {
     const result = buildMeaningGapRows(
       nodes,
       new Map([
@@ -224,7 +224,7 @@ describe("buildMeaningGapRows — 검사 소견 줄", () => {
     expect(result.counts.findings["missing-uncertainty"]).toBe(2);
   });
 
-  it("자기 문서가 없는 개념은 소견 줄도 만들지 않는다", () => {
+  it("makes no finding row for a concept without its own document", () => {
     const derived = node({
       id: "capability:derived",
       title: "Derived",
@@ -241,8 +241,7 @@ describe("buildMeaningGapRows — 검사 소견 줄", () => {
 });
 
 describe("buildDomainChoices", () => {
-  // Values are the domain document's own address since 2026-09-26 (map-edit QA D10): the
-  // bare tail was a second spelling of the relation every agent-written node qualifies.
+  // Values are the domain document's own address, the spelling every agent-written relation uses.
   it("offers only domains with a document, by that document's address, in name order", () => {
     const choices = buildDomainChoices([
       node({
@@ -269,8 +268,7 @@ describe("buildDomainChoices", () => {
       }),
       node({ id: "capability:x", kind: "capability", evidenceIds: ["capabilities/x"] }),
     ]);
-    // By name — that latin sorts before Korean is ICU's decision; the property needed here is that
-    // opening the same folder twice gives the same order.
+    // By name; latin before Korean is ICU's choice, and what matters is the same order on every open.
     expect(choices).toEqual([
       { value: "domains/zeta", label: "Zeta" },
       { value: "ontology/domains/alpha", label: "알파" },

@@ -5,50 +5,37 @@ import type {
 } from "@/entities/knowledge-graph";
 
 /**
- * Where a node sits in the structural-skeleton entry view:
- * - `anchor`: every project + every domain — the coordinate system the audience
- *   reads (business spine). Never thresholded.
- * - `landmark`: the per-domain capabilities that govern the largest subtree,
- *   plus a tiny evidence landmark so the entry map shows implementation proof.
- * - `hidden`: non-landmark capabilities, most elements, documents — present in
- *   the graph but not part of the entry skeleton (revealed on demand).
+ * `anchor`: every project and domain, never thresholded. `landmark`: each domain's capabilities
+ * governing the largest subtree, plus one evidence element. `hidden`: the rest, revealed on demand.
  */
 type SkeletonLevel = "anchor" | "landmark" | "hidden";
 
 export interface OntologySkeleton {
-  /** anchors ∪ landmarks — the entry node set. */
   skeletonSlugs: Set<string>;
   levelBySlug: Map<string, SkeletonLevel>;
   /**
-   * Transitive contained-element count per node (the tree's own magnitude) —
-   * drives node SIZE so the overview is honest about where the system's gravity
-   * sits, even though hidden descendants aren't drawn.
+   * Drives node size, so the overview shows where the system's weight sits even with descendants
+   * hidden.
    */
   subtreeWeightBySlug: Map<string, number>;
-  /** Domain slug → ordered landmark capability slugs chosen for it. */
   landmarksByDomain: Map<string, string[]>;
-  /** Domain slug → at most one element shown as overview evidence. */
   evidenceLandmarksByDomain: Map<string, string[]>;
-  /** Domain slug → capabilities hidden beyond the cap (for an aggregate "+N"). */
+  /** Capabilities hidden beyond the cap, for "+N". */
   overflowByDomain: Map<string, number>;
 }
 
 export interface BuildSkeletonOptions {
-  /** Max landmark capabilities surfaced per domain (default 3). */
+  /** Default 3. */
   perDomainCap?: number;
 }
 
 const DEFAULT_PER_DOMAIN_CAP = 3;
 
 interface ContainmentIndex {
-  /** parent slug → child slugs (via contains forward / belongs_to reverse). */
+  /** Via `contains` forward and `belongs_to` reversed. */
   childrenByParent: Map<string, string[]>;
 }
 
-/**
- * Build the parent→children adjacency from containment edges only.
- * `contains` is parent→child (from→to); `belongs_to` is the reverse (child→parent).
- */
 function buildContainmentIndex(
   edges: readonly KnowledgeGraphEdge[],
 ): ContainmentIndex {
@@ -68,8 +55,8 @@ function buildContainmentIndex(
 }
 
 /**
- * Transitive count of element-kind descendants reachable through containment.
- * Cycle-safe (visited set). Memoized across nodes for cheapness.
+ * One DFS per node with its own visited set, each level re-copying its child's elements:
+ * O(V × (V + E) + V² × h) for containment depth h, cubic on a deep chain. Not memoised.
  */
 function computeSubtreeWeights(
   nodes: readonly KnowledgeGraphNode[],
@@ -77,26 +64,15 @@ function computeSubtreeWeights(
 ): Map<string, number> {
   const kindBySlug = new Map(nodes.map((node) => [node.id, node.kind]));
   const weightBySlug = new Map<string, number>();
-
-  const visit = (slug: string, seen: Set<string>): Set<string> => {
-    // returns the set of element descendant slugs (deduped) under `slug`.
-    const elements = new Set<string>();
-    for (const child of index.childrenByParent.get(slug) ?? []) {
-      if (seen.has(child)) continue;
-      seen.add(child);
-      if (kindBySlug.get(child) === "element") elements.add(child);
-      for (const deep of visit(child, seen)) elements.add(deep);
-    }
-    return elements;
-  };
-
   for (const node of nodes) {
-    weightBySlug.set(node.id, visit(node.id, new Set([node.id])).size);
+    weightBySlug.set(
+      node.id,
+      collectElementDescendants(node.id, index, kindBySlug, new Set([node.id])).length,
+    );
   }
   return weightBySlug;
 }
 
-/** Count incoming edges of a given type pointing at `slug`. */
 function countIncomingOfType(
   slug: string,
   type: string,
@@ -126,12 +102,9 @@ function collectElementDescendants(
 }
 
 /**
- * Compute the structural skeleton: anchors (project/domain) + per-domain landmark
- * capabilities by governed subtree weight, deterministically.
- *
- * Landmark ranking (per the luminary panel): subtree weight desc → describes-
- * evidence fan-in desc → depends_on fan-in desc → slug asc. Deterministic and
- * replay-identical so the entry map is stable across renders.
+ * Landmarks rank by subtree weight, then describes fan-in, depends_on fan-in, slug ascending:
+ * stable across renders. Each comparison rescans every edge (`countIncomingOfType`), so the ranking
+ * is O(C log C × E) for C capabilities, most of the build at 10,000 nodes.
  */
 export function buildOntologySkeleton(
   nodes: readonly KnowledgeGraphNode[],
@@ -149,7 +122,6 @@ export function buildOntologySkeleton(
   const evidenceLandmarksByDomain = new Map<string, string[]>();
   const overflowByDomain = new Map<string, number>();
 
-  // every node starts hidden; anchors/landmarks are promoted below.
   for (const node of nodes) levelBySlug.set(node.id, "hidden");
 
   const promote = (slug: string, level: SkeletonLevel) => {
@@ -157,14 +129,12 @@ export function buildOntologySkeleton(
     skeletonSlugs.add(slug);
   };
 
-  // anchors — every project + every domain, unconditional.
   for (const node of nodes) {
     if (node.kind === "project" || node.kind === "domain") {
       promote(node.id, "anchor");
     }
   }
 
-  // landmarks — per domain, rank its capability children and take top-N.
   const domains = nodes.filter((node) => node.kind === "domain");
   for (const domain of domains) {
     const capabilityChildren = (index.childrenByParent.get(domain.id) ?? [])
@@ -190,8 +160,8 @@ export function buildOntologySkeleton(
     for (const slug of landmarks) promote(slug, "landmark");
   }
 
-  // One global evidence landmark — the overview should prove that the ontology
-  // reaches implementation evidence without flooding the entry map with leaves.
+  // One global evidence landmark proves the ontology reaches implementation without flooding the
+  // map with leaves.
   const rankEvidence = (candidates: string[]) =>
     candidates.sort((a, b) => {
       const da = countIncomingOfType(a, "describes", edges);

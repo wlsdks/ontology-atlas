@@ -94,14 +94,8 @@ export function useTopologyAnalysisReview({
         };
       });
   }, [ontologyInsight, meaningWorkbenchOpen, acpDockFrameOpen, selectedOntologyNode, selectedEdge, t, relationVocabulary, relationRegister]);
-  /*
-   * Edges in the workbench's scope with no `relation_notes`: the count the Meaning view offers
-   * to have written. Scope follows the selection the way `meaningRelations` does — one edge,
-   * one node's edges, or the whole graph. A `belongs_to` edge is a child's `domain:` back-pointer;
-   * the reason for that pair lives on the parent's containment line (decision 2026-09-06), so the
-   * back-pointer is never a gap the agent could fill and is left out of the count (the view said
-   * "1 missing" for a domain whose every reason was written, 2026-09-06).
-   */
+  // Scoped edges without `relation_notes`, following the selection like `meaningRelations`.
+  // `belongs_to` back-pointers are excluded: their reason lives on the parent's containment line.
   const relationNoteGaps = useMemo(() => {
     if (!ontologyInsight || (!meaningWorkbenchOpen && !acpDockFrameOpen)) return 0;
     const focus = selectedOntologyNode?.id;
@@ -122,7 +116,7 @@ export function useTopologyAnalysisReview({
     setMeaningEditorState(null);
     setFullDetailSlug(null);
     setSelectedRelationActive(false);
-    // The existing path lens reveals both ancestor chains and frames their visible endpoints.
+    // The path lens reveals both ancestor chains and frames the endpoints.
     setRouteState((current) => selectTopologyPathRouteState({ ...current, realmSlug: null }, {
       sourceSlug: edge.sourceId, targetSlug: edge.targetId,
     }));

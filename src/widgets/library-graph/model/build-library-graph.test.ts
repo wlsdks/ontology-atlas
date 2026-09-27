@@ -101,8 +101,8 @@ describe("the library graph", () => {
   });
 
   it("draws a map node's link to a wiki page as a mention the other way — the bridge the wiki proposed", () => {
-    // The node the Library proposed cites its pages as `[[wiki/…]]` (2026-09-06); on the
-    // installed app the picture still showed no concept, because only page→concept was read.
+    // A Library-proposed node cites its pages as `[[wiki/…]]`, so concept→page links must
+    // draw too, or the picture shows no concept.
     const timber = doc({
       slug: "elements/timber-sash-frames",
       title: "Timber sash frames",

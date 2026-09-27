@@ -13,28 +13,23 @@ import {
 } from "./footprint-trail";
 
 describe("appendFootprintVisit", () => {
-  it("빈 트레일에 첫 방문을 추가", () => {
+  it("adds the first visit to an empty trail", () => {
     expect(appendFootprintVisit([], "capability:a")).toEqual(["capability:a"]);
   });
 
-  it("순서를 보존하며 끝에 추가", () => {
+  it("appends at the end and keeps the order", () => {
     expect(appendFootprintVisit(["a", "b"], "c")).toEqual(["a", "b", "c"]);
   });
 
-  /**
-   * A revisit used to delete the earlier position and move the node to the end.
-   * With at most one step per node, several numbers on one node were impossible
-   * at the data layer.
-   */
-  it("재방문은 지우지 않고 새 걸음으로 쌓인다 — 되돌아온 사실이 경로에 남는다", () => {
+  it("a revisit stacks as a new step instead of erasing the earlier one", () => {
     expect(appendFootprintVisit(["a", "b", "c"], "a")).toEqual(["a", "b", "c", "a"]);
   });
 
-  it("연속 중복은 걸음이 아니다 — 같은 노드 재클릭으로 순번이 늘지 않는다", () => {
+  it("a consecutive duplicate is not a step, so reclicking a node does not advance the count", () => {
     expect(appendFootprintVisit(["a", "b"], "b")).toEqual(["a", "b"]);
   });
 
-  it("상한 초과 시 가장 오래된 방문을 밀어낸다", () => {
+  it("pushes out the oldest visit past the cap", () => {
     const full = Array.from({ length: FOOTPRINT_TRAIL_MAX }, (_, i) => `n${i}`);
     const next = appendFootprintVisit(full, "new");
     expect(next.length).toBe(FOOTPRINT_TRAIL_MAX);
@@ -42,7 +37,7 @@ describe("appendFootprintVisit", () => {
     expect(next[0]).toBe("n1"); // n0 pushed out
   });
 
-  it("불변 — 입력 배열을 변형하지 않는다", () => {
+  it("does not mutate the input array", () => {
     const input = ["a", "b"];
     appendFootprintVisit(input, "c");
     expect(input).toEqual(["a", "b"]);
@@ -50,21 +45,21 @@ describe("appendFootprintVisit", () => {
 });
 
 describe("collapseFootprintTrail", () => {
-  it("같은 노드는 마지막 방문만 남기고 순서를 보존한다", () => {
+  it("keeps only the last visit of each node and preserves order", () => {
     expect(collapseFootprintTrail(["a", "b", "a", "c"])).toEqual(["b", "a", "c"]);
   });
 
-  it("중복이 없으면 그대로", () => {
+  it("returns the trail unchanged without duplicates", () => {
     expect(collapseFootprintTrail(["a", "b", "c"])).toEqual(["a", "b", "c"]);
   });
 });
 
 describe("graphIdToConceptSlug", () => {
-  it("kind 접두를 벗겨 bare 슬러그를 반환", () => {
+  it("strips the kind prefix to return the bare slug", () => {
     expect(graphIdToConceptSlug("capability:ai-agent-partner")).toBe("ai-agent-partner");
     expect(graphIdToConceptSlug("project:atlas")).toBe("atlas");
   });
-  it("접두 없는 id 는 그대로", () => {
+  it("returns an id without a prefix unchanged", () => {
     expect(graphIdToConceptSlug("plain")).toBe("plain");
   });
 });
@@ -82,7 +77,7 @@ describe("formatFootprintTrailAgentPacket", () => {
     { id: "capability:x", title: "Cap X", kind: "capability" },
   ];
 
-  it("슬러그 순서 + get_concept 시퀀스 + find_path 힌트를 담는다", () => {
+  it("carries the slug order, the get_concept sequence and a find_path hint", () => {
     const text = formatFootprintTrailAgentPacket(entries, LABELS);
     expect(text).toContain("# 걸어온 길");
     expect(text).toContain("1. Core (domain): domain:core");
@@ -92,16 +87,15 @@ describe("formatFootprintTrailAgentPacket", () => {
     expect(text).toContain('find_path("core", "x")');
   });
 
-  it("방문이 1개면 find_path 힌트를 넣지 않는다", () => {
+  it("omits the find_path hint for a single visit", () => {
     const text = formatFootprintTrailAgentPacket([entries[0]], LABELS);
     expect(text).toContain('get_concept("core")');
     expect(text).not.toContain("find_path");
   });
 
   /**
-   * The packet used to hand over the places walked and drop the argument between them.
-   * An agent that is told only "Core, then Cap X" has to guess the connection it was
-   * being handed; the reason is exactly what the vault holds and the source does not.
+   * The reason is what the vault holds and the source does not, so the packet carries it under each
+   * step.
    */
   it("carries the connection under each step — relation word plus the recorded reason", () => {
     const text = formatFootprintTrailAgentPacket(entries, { ...LABELS, unrelated: "직접 연결 없음" }, [], [
@@ -124,9 +118,8 @@ describe("formatFootprintTrailAgentPacket", () => {
 });
 
 /**
- * The walked pairs read back against the vault's own edges. Not every pair is an edge:
- * the trail is a **walk**, and clicking two unrelated nodes in turn is a normal thing to
- * do — so "not directly related" is an answer this function must be able to give.
+ * The trail is a walk: consecutive nodes need not share an edge, so "not directly related" is a
+ * valid answer.
  */
 describe("buildTrailStepLinks", () => {
   const edges: TrailEdge[] = [
@@ -161,7 +154,6 @@ describe("buildTrailStepLinks", () => {
     });
   });
 
-  /** A bare type is the fallback anyway, so among parallel edges the one with a reason wins. */
   it("prefers the edge that carries a reason when a pair has several", () => {
     const parallel: TrailEdge[] = [
       { from: "a", to: "b", type: "related_to" },

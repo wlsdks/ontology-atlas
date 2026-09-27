@@ -16,36 +16,24 @@ interface AgentBriefReceipt {
 
 export interface AgentBriefInput {
   entries: readonly AgentBriefEntry[];
-  /** Write receipts, so the card can say what a person decided rather than only what ran. */
+  /** Write receipts, so the card says what a person decided, not only what ran. */
   receipts?: readonly AgentBriefReceipt[];
-  /** Whether a tool name writes to the vault — the app's own tool policy, never a second list. */
+  /** Whether a tool writes to the vault, from the app's tool policy, never a second list. */
   isWriteTool: (tool: string) => boolean;
   anchorMs: number;
 }
 
 /**
- * What agents did since the anchor: calls, of which writes, by how many distinct agents.
- * The three columns are reads / writes / agents rather than current/stale/unknown — an
- * activity log has no truth to be stale about, only a count of what happened.
+ * What agents did since the anchor: calls, writes and distinct agents. An activity log has no truth to be stale
+ * about, so its columns are reads, writes and agents.
  */
 export function buildAgentBrief(input: AgentBriefInput): BriefCore {
   const since = input.entries.filter((entry) => isAfter(entry.at, input.anchorMs));
   const writes = since.filter((entry) => input.isWriteTool(entry.tool)).length;
   const agents = new Set(since.map((entry) => entry.agent ?? 'unknown')).size;
-  /*
-   * What happened to what the agent proposed, not how much it produced. A count of writes
-   * rewards volume; a count of what a person allowed, refused, or has not answered yet is the
-   * one a person can act on — the pending row is work waiting for them (reference survey,
-   * 2026-09-19: CodeRabbit measures the proposal funnel rather than lines generated).
-   */
-  /*
-   * ⚠️ **The receipt lines are not "since you left".** A write that is allowed and unfinished is
-   * still waiting for the person; it does not stop waiting because they looked at this screen.
-   * Their three sentences say so — "allowed and not finished", "that failed", "a person refused"
-   * — while the three activity sentences below say "since". The anchor filter belonged to the
-   * activity lines only, and applying it here emptied the pending row the moment the visit was
-   * marked (2026-09-20).
-   */
+  // What happened to the agent's proposals, not their volume: allowed and unfinished, failed, refused. These lines
+  // ignore the anchor, since a write waiting for the person keeps waiting after they look; only the activity lines
+  // below count "since".
   const receipts = input.receipts ?? [];
   const waiting = receipts.filter((receipt) => receipt.decision === 'allowed' && receipt.result === 'pending').length;
   const refused = receipts.filter((receipt) => receipt.decision === 'rejected').length;
@@ -60,8 +48,7 @@ export function buildAgentBrief(input: AgentBriefInput): BriefCore {
   ];
   return {
     core: 'agent',
-    // Both halves are the unfiltered inputs: "this folder has never recorded agent work" is a
-    // fact about the folder, not about the window the counts are measured over.
+    // Both halves are unfiltered: "never recorded agent work" is a fact about the folder, not the window.
     availability: input.entries.length === 0 && receipts.length === 0 ? 'no-data' : 'measured',
     headline: since.length,
     current: since.length - writes,

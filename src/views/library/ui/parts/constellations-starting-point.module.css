@@ -1,8 +1,4 @@
-/*
- * Top-anchored, not centred (2026-09-25). A 24rem centred box left a ~150px dead band between
- * the page lede and the first line of this state at 1512; the block now starts one section step
- * under the header, on the same top line as the list beside it.
- */
+/* The parent centers the complete empty state; these two columns share one local origin. */
 .layout { display: grid; grid-template-columns: minmax(0,.85fr) minmax(0,1.15fr); align-items: start; gap: clamp(2rem,5vw,5rem); padding: .5rem 0 0; }
 .intro { min-width: 0; max-width: 34rem; padding-top: .75rem; }
 .icon { color: var(--color-indigo-text-soft); }
@@ -19,7 +15,7 @@
 .kind { flex: none; margin-left: auto; color: var(--color-text-tertiary); font-size: var(--text-label); line-height: var(--leading-label); }
 .more { width: 100%; min-height: 2.5rem; justify-content: flex-start; gap: .625rem; padding: 0 .5rem; border-top: 1px solid var(--color-divider); border-radius: 0; font-size: var(--text-body); line-height: var(--leading-body); }
 .more .mark { color: var(--color-indigo-text-soft); }
-.noConcepts { padding: 1.25rem .5rem; border-top: 1px solid var(--color-divider); color: var(--color-text-tertiary); font-size: var(--text-body); }
+.noConcepts { padding: 1.25rem .5rem; border-top: 1px solid var(--color-divider); color: var(--color-text-tertiary); font-size: var(--text-body); line-height: var(--leading-body); }
 @keyframes sourceIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @media (max-width: 63.99rem) { .layout { grid-template-columns: minmax(0,1fr); gap: 2rem; } .intro { max-width: 38rem; } }
 @media (prefers-reduced-motion: reduce) { .source { animation: none; } }

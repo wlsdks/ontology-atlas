@@ -1,37 +1,12 @@
 import { useCallback, useSyncExternalStore } from "react";
 
 /**
- * **Which unmatched rows this viewer has chosen not to look at.**
- *
- * ## It is a preference, never a vault write
- *
- * "I have seen this one" is a fact about a reader, not about the ontology. Writing it
- * into the vault would put one person's screen state into everyone's Git diff and make
- * a shared source of truth carry a private opinion — and, worse, would make a row
- * disappear for a colleague who never dismissed it. So it lives in this browser only.
- * Nothing here reaches the folder, and `buildUnmatchedBoard` keeps the vault's own
- * counts unmoved by it: dismissing hides a row, it does not fix one.
- *
- * ## Scoped to the vault, for the reason the notification box already learned
- *
- * `agent-activity/model/read-at-storage.ts` records the same defect from 2026-08-01: one
- * global key meant opening the bell in one vault marked another vault's items read. The
- * list of missing names is per vault, so its dismissals are too. An empty scope is
- * refused outright rather than falling back to a shared slot — a fallback is how the
- * global key comes back.
- *
- * ⚠️ **The scope is the folder's *name*, not the folder.** `useVaultIdentityScope` derives
- * it from `handle.name` because that is the only part of a directory handle that survives
- * being persisted, so two folders both called `ontology/` under different parents share
- * one dismissal set: hiding a row in one hides it in the other. That is a bounded wrong
- * answer — it hides, never writes, and the count beside the heading still reports what the
- * open folder holds — and it is the same trade every persisted per-vault slot in this
- * repository already makes. Narrowing it needs a persistable identity, which is
- * `useVaultSessionIdentityScope`'s explicit non-goal (that value must never be stored).
- *
- * Persistence grammar follows `shared/lib/audience-preference.ts`: localStorage is the
- * truth, a custom event plus `storage` drives live updates, and the server snapshot is
- * empty so a static export hydrates without a mismatch.
+ * Unmatched rows this viewer chose not to look at: a browser preference, never a vault write, so it never reaches
+ * a colleague's diff and `buildUnmatchedBoard`'s counts ignore it. Scoped per vault
+ * (as `agent-activity/model/read-at-storage.ts`), and an empty scope is refused rather than falling back to a shared
+ * slot. The scope is the folder's name (`handle.name`, the only persistable part), so two same-named folders share
+ * dismissals: a bounded error that hides and never writes. Persistence follows `shared/lib/audience-preference.ts`:
+ * localStorage is the truth, events drive updates, and the server snapshot is empty for static export.
  */
 const DISMISSED_KEY_PREFIX = "atlas.insights.unmatchedDismissed:";
 const DISMISSED_EVENT = "ontology-atlas:insights-unmatched-dismissals-change";
@@ -50,8 +25,7 @@ function parse(raw: string | null): ReadonlySet<string> {
   try {
     const parsed: unknown = JSON.parse(raw);
     if (!Array.isArray(parsed)) return EMPTY;
-    // A slot is ordinary browser storage anything on this origin can write. Only
-    // strings become row ids; nothing else is coerced into one.
+    // Anything on this origin can write the slot, so only strings become row ids.
     return new Set(parsed.filter((value): value is string => typeof value === "string"));
   } catch {
     return EMPTY;
@@ -81,7 +55,7 @@ export function writeUnmatchedDismissals(
   snapshot.set(vaultScope, new Set(ids));
   try {
     const key = unmatchedDismissalKey(vaultScope);
-    // Nothing dismissed is the absence of a slot, not a slot holding nothing.
+    // Nothing dismissed is no slot at all.
     if (ids.size === 0) window.localStorage.removeItem(key);
     else window.localStorage.setItem(key, JSON.stringify([...ids].sort()));
   } catch {
