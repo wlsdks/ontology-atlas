@@ -26,18 +26,9 @@ function history(limit: number): VaultHistoryCommit[] {
 }
 
 /**
- * **The rewind, checked against the truth it claims to reconstruct.**
- *
- * `vault-history.test.ts` pins the arithmetic on fixtures. This one runs it over this
- * repository's own dogfood vault and compares every week it produces against a direct
- * `git ls-tree` count at that commit — the thing the algorithm exists to avoid having to
- * do at runtime. It is the difference between "the code does what I wrote" and "what I
- * wrote is true", and it is what caught nothing today only because it was written first:
- * 18 of 18 weeks matched on the first run.
- *
- * Guarded rather than unconditional: a shallow clone, a worktree without the dogfood
- * vault, or a tarball has no history to check, and a proof that cannot run is not a
- * failure of the code under test.
+ * Checks the rewind against a direct `git ls-tree` count at each commit of this repository's dogfood
+ * vault: `vault-history.test.ts` pins the arithmetic, this pins that it is true. It skips when there is no history to
+ * check (shallow clone, no dogfood vault, tarball).
  */
 const runnable = (() => {
   if (!existsSync("docs/ontology")) return false;
@@ -50,18 +41,9 @@ const runnable = (() => {
 })();
 
 /**
- * **The chart and the summary card have to say the same number.**
- *
- * They reach it by different roads and always will: the card counts graph nodes by their
- * frontmatter `kind`, while this chart replays Git history, where a past commit's frontmatter
- * is not available and only the path is. That is a legitimate difference in method, not a
- * licence for two answers.
- *
- * Measured 2026-09-09 on the installed app: the card read 102 and the chart read 103 under the
- * same word, both on screen at once. The extra one was the vault's own README — `kind:
- * vault-readme`, which the card never counted because it is not an authorable node. A reader
- * had no way to tell which number to trust, so the gate is the agreement itself rather than
- * either number.
+ * The chart and the summary card must give the same number by different roads: the card counts nodes by
+ * frontmatter `kind`, the chart counts paths. The gate is their agreement; the vault README is the node that once
+ * split them.
  */
 const AUTHORABLE_KINDS = new Set(["project", "domain", "capability", "element"]);
 

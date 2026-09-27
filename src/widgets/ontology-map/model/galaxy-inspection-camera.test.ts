@@ -24,7 +24,7 @@ describe("galaxyInspectionTarget", () => {
     const camera = { tx: 0, ty: 0, tscale: 1 };
     const target = galaxyInspectionTarget({
       camera,
-      node: { x: 462, y: 0 }, // screen x 1,250 inside the 1,128px panel
+      node: { x: 462, y: 0 },
       viewport,
       canvasRect,
       freeArea: { x: 64, y: 0, width: 1064, height: 900 },

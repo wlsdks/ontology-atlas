@@ -7,17 +7,7 @@ import type { AppUpdateValue } from '@/features/app-update';
 import type { UpdatePhase } from '@/features/app-update';
 import { AppUpdateSettings } from './AppUpdateSettings';
 
-/**
- * 「Check for updates」 — this test's subject is **what was blocked
- * while this section did not exist**.
- *
- * Automatic checking and the bottom-right toast have existed since 2026-07-27, but
- * there was **no way for the user to press it**: `check(manual)` had 0 callers in
- * the whole repository, and 「Latest」 could not even be drawn because the toast
- * returned `null` for it. Automatic checks run once a day and a dismissal is
- * remembered for that version, so anyone who pressed 「Later」 once had **no way to
- * reach an update at all until the next version shipped.**
- */
+/** The manual check is the only way to reach a version the daily check's toast was dismissed for. */
 
 const checkNow = vi.fn();
 let contextValue: AppUpdateValue | null = null;
@@ -63,15 +53,15 @@ beforeEach(() => {
   versionRead = () => Promise.resolve('1.2.6');
 });
 
-describe('업데이트 확인 절', () => {
-  it('자동 확인이 기억하는 것만 사실로 말한다 — 확인한 적 없음과 미뤄 둔 판', () => {
+describe('AppUpdateSettings', () => {
+  it('states only what the automatic check remembers: never checked, or a deferred version', () => {
     renderAt({ kind: 'idle' });
     const auto = screen.getByTestId('app-settings-update-auto');
     expect(auto).toHaveTextContent(ko.nav.settingsMenu.appUpdate.autoNever);
     expect(auto.textContent).not.toContain('「나중에」');
   });
 
-  it('미뤄 둔 판이 있으면 그 판을 대고, 확인이 다시 보여 준다고 말한다', () => {
+  it('names a deferred version and says a check shows it again', () => {
     memory = { lastCheckedAt: Date.UTC(2026, 8, 25, 5, 3), dismissedVersion: '1.2.7' };
     renderAt({ kind: 'idle' });
     const auto = screen.getByTestId('app-settings-update-auto');
@@ -79,19 +69,19 @@ describe('업데이트 확인 절', () => {
     expect(auto).toHaveTextContent('1.2.7');
   });
 
-  it('버튼이 실제로 확인을 시작한다 — 이 배선이 없던 것이 결함이었다', () => {
+  it('starts a check when the button is pressed', () => {
     renderAt({ kind: 'idle' });
     fireEvent.click(screen.getByTestId('app-settings-update-check'));
     expect(checkNow).toHaveBeenCalledTimes(1);
   });
 
-  it('아직 안 눌렀으면 결과를 말하지 않는다', () => {
+  it('shows no result before the button is pressed', () => {
     renderAt({ kind: 'idle' });
     // The live region stands empty so the first result is announced when it arrives.
     expect(screen.getByTestId('app-settings-update-result').textContent).toBe('');
   });
 
-  it('확인 중에는 두 번 누르지 못한다', () => {
+  it('disables the button while a check runs', () => {
     renderAt({ kind: 'checking' });
     const check = screen.getByTestId('app-settings-update-check');
     // aria-disabled rather than disabled: a disabled button drops the focus it holds.
@@ -101,20 +91,20 @@ describe('업데이트 확인 절', () => {
     expect(checkNow).not.toHaveBeenCalled();
   });
 
-  it('최신이면 최신이라고 말한다 — 토스트가 못 하던 말이다', () => {
+  it('says the app is up to date', () => {
     renderAt({ kind: 'current' });
     const result = screen.getByTestId('app-settings-update-result');
     expect(result).toHaveAttribute('data-phase', 'current');
     expect(result.textContent).toBe(ko.nav.settingsMenu.appUpdate.resultCurrent);
   });
 
-  it('새 버전이 있으면 버전을 대고, 이어지는 자리를 가리킨다', () => {
+  it('names an available version and points to where the update continues', () => {
     renderAt({ kind: 'available', version: '1.2.0', notes: null });
     const result = screen.getByTestId('app-settings-update-result');
     expect(result.textContent).toContain('1.2.0');
   });
 
-  it('실패는 실패라고 말한다 — 조용히 아무 일도 없던 척하지 않는다', () => {
+  it('reports a failed check', () => {
     renderAt({ kind: 'failed', operation: 'check', message: 'network' });
     expect(screen.getByTestId('app-settings-update-result')).toHaveAttribute(
       'data-phase',
@@ -122,7 +112,7 @@ describe('업데이트 확인 절', () => {
     );
   });
 
-  it('웹에서는 절 자체가 없다 — 탭은 자기를 교체할 수 없다', () => {
+  it('renders nothing on the web', () => {
     desktop = false;
     contextValue = makeValue({ kind: 'idle' });
     const { container } = render(
@@ -133,7 +123,7 @@ describe('업데이트 확인 절', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('상태 기계가 없으면 아무것도 안 그린다 — 없는 능력을 있는 척하지 않는다', () => {
+  it('renders nothing without an updater state machine', () => {
     contextValue = null;
     const { container } = render(
       <NextIntlClientProvider locale="ko" messages={ko}>
@@ -157,7 +147,7 @@ describe('업데이트 확인 절', () => {
       </NextIntlClientProvider>,
     );
     await screen.findByText(copy.versionUnknownRetried);
-    // The row no longer promises the retry that just ran, and only the result line warns.
+    // The row does not promise the retry that just ran, and only the result line warns.
     expect(row.textContent).not.toContain(copy.versionUnknown);
     const warnings = Array.from(view.container.querySelectorAll('[class*="status-warning"]'));
     expect(warnings.map((node) => node.textContent)).toEqual([copy.resultFailed]);

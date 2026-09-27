@@ -1,18 +1,7 @@
 /**
- * C1 B3 — auto-arrange restores canonical layout. The `relayoutToken` effect
- * (`use-topology-loop.ts`) used to only re-target the CAMERA — node positions
- * mutated by a prior drag/force-sim tick stayed put. This module springs each
- * node's live position back to its own `homeX`/`homeY` (`topology-world.ts`,
- * the deterministic layout coordinate cached at build time) over a short
- * critically-damped transition, reusing `engine/spring.ts#stepSpring` — the
- * same primitive the camera already uses — so the motion language is
- * consistent rather than a bespoke lerp.
- *
- * Pure — no DOM/rAF/world knowledge. The caller (`use-topology-loop.ts`) owns
- * a `Map<nodeId, HomeSpringState>` seeded at relayout-trigger time, steps it
- * every frame, writes `state.x.value`/`state.y.value` back into the world
- * node, and stops once `isHomeSpringConverged` is true for every node (or a
- * frame budget elapses).
+ * Auto-arrange springs each node back to its `homeX`/`homeY` (`topology-world.ts`, the
+ * layout coordinate cached at build time) with the camera's `engine/spring.ts` primitive.
+ * The caller (`use-topology-loop.ts`) owns the per-node state and stops once all converge.
  */
 
 import { stepSpring, type SpringAxisState } from "../engine/spring";
@@ -22,12 +11,11 @@ export interface HomeSpringState {
   y: SpringAxisState;
 }
 
-/** Seeds a spring at the node's CURRENT (possibly drag/sim-displaced) position, zero velocity. */
+/** Seeded at the current, possibly displaced, position with zero velocity. */
 export function initHomeSpring(currentX: number, currentY: number): HomeSpringState {
   return { x: { value: currentX, velocity: 0 }, y: { value: currentY, velocity: 0 } };
 }
 
-/** Advances both axes one frame toward `(homeX, homeY)`. */
 export function stepHomeSpring(
   state: HomeSpringState,
   homeX: number,
@@ -42,7 +30,7 @@ export function stepHomeSpring(
   };
 }
 
-/** True once both axes are within `epsilon` world units of home — the caller can stop stepping (and drop the map entry) at that point. */
+/** The caller can drop the entry once both axes are within `epsilon`. */
 export function isHomeSpringConverged(state: HomeSpringState, homeX: number, homeY: number, epsilon: number): boolean {
   return Math.abs(state.x.value - homeX) < epsilon && Math.abs(state.y.value - homeY) < epsilon;
 }

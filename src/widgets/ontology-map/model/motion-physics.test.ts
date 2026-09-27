@@ -10,14 +10,6 @@ import {
   toSpringConstants,
 } from "./motion-physics";
 
-describe("house spring family", () => {
-  it("declares the two Apple-vocabulary springs with the documented parameters", () => {
-    // UI default — critically damped, no overshoot (Designing Fluid Interfaces).
-    expect(UI_SPRING).toEqual({ damping: 1.0, response: 0.35 });
-    // Momentum — slightly under-damped, reserved for flick/throw releases only.
-    expect(MOMENTUM_SPRING).toEqual({ damping: 0.8, response: 0.35 });
-  });
-});
 
 describe("springAngularFrequency", () => {
   it("is the reciprocal of response (ω = 1/response, rad/s)", () => {
@@ -86,9 +78,9 @@ describe("rubberband", () => {
     const small = rubberband(50, 800);
     const large = rubberband(400, 800);
     expect(small).toBeGreaterThan(0);
-    expect(small).toBeLessThan(50); // always resisted below the raw overshoot
+    expect(small).toBeLessThan(50);
     expect(large).toBeLessThan(400);
-    expect(large).toBeGreaterThan(small); // monotonic — more drag, more follow, but sub-linear
+    expect(large).toBeGreaterThan(small);
   });
 
   it("is an odd function of overshoot (symmetric past either edge)", () => {

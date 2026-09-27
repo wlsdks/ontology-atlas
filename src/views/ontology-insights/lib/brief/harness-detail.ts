@@ -9,7 +9,7 @@ import {
 interface HarnessDeclarationEvidence {
   /** The exact declaration object emitted by the repository scan and matrix join. */
   declaration: ScopeDeclaration;
-  /** Only capability entrypoints this declaration reaches through the canonical predicate. */
+  /** Only the capability entrypoints this declaration reaches through the canonical predicate. */
   matchedCapabilities: readonly CoverageCapability[];
 }
 
@@ -29,7 +29,7 @@ interface HarnessAreaEvidence {
 
 export interface HarnessCoverageEvidence {
   areas: readonly HarnessAreaEvidence[];
-  /** Unscoped or effectively universal declarations, listed once rather than copied per area. */
+  /** Unscoped or universal declarations, listed once rather than per area. */
   everywhere: Readonly<Record<CoverageColumn, readonly ScopeDeclaration[]>>;
   /** Scoped declarations whose paths reach none of the ontology-recorded areas. */
   outsideAreas: readonly ScopeDeclaration[];
@@ -44,12 +44,8 @@ export interface HarnessCoverageProjectionInput {
 }
 
 /**
- * Adds display evidence to the matrix without scanning or changing its join.
- *
- * A matrix row already establishes that each declaration reaches at least one capability in the
- * area. This projection retains the declaration identity and applies the same exported predicate
- * to name exactly which existing capability entrypoints justified that attribution. It does not
- * validate those paths on disk or claim that a configured hook/check executed.
+ * Adds display evidence to the matrix without rescanning or changing its join: the same exported predicate names
+ * which capability entrypoints justified each attribution. It does not check paths on disk or claim a hook ran.
  */
 export function projectHarnessCoverageEvidence(
   matrix: HarnessCoverageProjectionInput,

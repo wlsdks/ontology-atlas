@@ -22,10 +22,7 @@ function contrastOnPanel(alpha: number): number {
 }
 
 describe("relationTypeAlpha", () => {
-  /*
-   * Round 4 review, 2026-09-25: depends_on at 0.85 and related_to at 0.62 were two nearly
-   * identical indigos. The families now differ in kind: two solids a full scale apart, and a hatch.
-   */
+  // Alpha alone gives two readable steps, so the families differ in kind: two solids a full scale apart, and a hatch.
   it("draws containment and depends_on as two solids a full scale apart, and hatches the rest", () => {
     expect(relationTypeAlpha("contains")).toBe(0.95);
     expect(relationTypeAlpha("depends_on")).toBe(RELATION_TYPE_MIN_ALPHA);

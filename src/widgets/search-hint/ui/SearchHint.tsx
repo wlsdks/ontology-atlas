@@ -17,55 +17,27 @@ interface Props {
   allExpanded?: boolean;
   density?: 'default' | 'compact-focus';
   /**
-   * In selected-node focus, the popover takes input priority. At 1024px measured,
-   * the 308px toolbar dropped to the second column from the right and overlapped
-   * with the 352px detail panel. This lane retreats until there is 75px of clearance
-   * before xl (1280px).
+   * In selected-node focus the popover takes input priority; below xl this lane
+   * hides, or the toolbar overlaps the 352px detail panel.
    */
   phoneFocusSuppressed?: boolean;
   /**
-   * Below `md` the expanded INDEX is a full-bleed sheet (responsive audit rank7).
-   * While the sheet was the primary surface, the top chrome lay behind it with only
-   * its top 8px poking out (overlap sweep, measured at 600×900). With the sheet open
-   * this lane withdraws entirely below `md` — the same "sheet is primary, chrome
-   * demotes" grammar as the utility lane.
+   * Below `md` the expanded INDEX is a full-bleed sheet; with it open this lane
+   * withdraws, as the utility lane does, or its top edge pokes out above the sheet.
    */
   phoneSheetSuppressed?: boolean;
   /**
-   * Grid placement inside the map's top toolbar. The toolbar
-   * (`TopologyCommandChrome`) owns position, insets, scale and the reserves for
-   * INDEX and the node inspector; this lane is only a row of controls that can
-   * shrink.
+   * Grid placement inside the map's top toolbar. `TopologyCommandChrome` owns
+   * position, insets and the INDEX and inspector reserves; this lane only shrinks.
    */
   className?: string;
-  /**
-   * Path mode status chip (`TopologyPathChip`, analysis panel complete elimination phase 2 §b) —
-   * satisfies the "next to top-center search" placement requirement by riding in this
-   * lane, which the top toolbar centres, without a position calculation of its own.
-   * Rendered only when this slot exists — if
-   * not in path mode, it is completely empty and identical to the previous search/sort
-   * 2-button layout.
-   */
+  /** Path mode status chip (`TopologyPathChip`), placed beside search by riding in this lane. */
   pathChip?: ReactNode;
-  /**
-   * The insights deeplink return chip (`TopologyInsightsReturnChip`) — the same
-   * "top-centre chrome column" grammar as pathChip. With both present they stay grouped
-   * in the same flex column, so no floating panel is added. An empty slot costs nothing
-   * to render.
-   */
+  /** The insights deeplink return chip (`TopologyInsightsReturnChip`). */
   returnChip?: ReactNode;
-  /**
-   * The S4 "realm expansion" status chip — the same "top-centre chrome column" grammar
-   * as pathChip/returnChip. Rendered only while a realm is active, announcing the current
-   * world as "Realm: {title} ✕" with ✕ returning to the full map. An empty slot costs
-   * nothing to render.
-   */
+  /** The realm status chip, present only while a realm is active. */
   realmChip?: ReactNode;
-  /**
-   * The "trail" chip (`TopologyTrailChip`) — the same "top-centre chrome column"
-   * grammar as pathChip/realmChip. Rendered only with 2 or more session visits,
-   * announcing the route taken as "Trail · N". An empty slot costs nothing to render.
-   */
+  /** The session trail chip (`TopologyTrailChip`). */
   trailChip?: ReactNode;
   /** Saved working scopes share this toolbar without owning its positioning. */
   constellationControl?: ReactNode;
@@ -76,16 +48,7 @@ const getIsMac = () => /Mac|iPhone|iPad|iPod/i.test(navigator.userAgent);
 const getIsMacServer = () => false;
 const ARRANGE_FEEDBACK_MS = 950;
 
-/**
- * The top-centre toolbar — two buttons, auto-arrange and search. It honours the
- * glassmorphism (backdrop-blur) ban and uses a solid panel background only.
- *
- * feat/chrome-system §6 — reskinned as ChromeChip (44px, 10px radius). The
- * top-right "workspace" chip (`HomePage`) later moved onto the same ChromeChip, so the
- * whole top row converged on 44px (feat/chrome-finish, which also cleaned the
- * remaining TopologyReviewLink/Create-Node buttons' `--topology-utility-lane-height`
- * leftovers over to `--chrome-tile-size`).
- */
+/** The map toolbar's tool lane: expand-all, auto-arrange, map view, scopes, search, then status chips. */
 export function SearchHint({
   onOpenSearch,
   onRelayout,
@@ -103,8 +66,7 @@ export function SearchHint({
 }: Props) {
   const t = useTranslations('searchWidgets.hint');
   const isMac = useSyncExternalStore(subscribe, getIsMac, getIsMacServer);
-  // Map view — subscribe to every stored fact so the compact picker names the
-  // same Flat/Galaxy/Cone/Strata/Neural view the canvas is currently drawing.
+  // Every stored view fact, so the chip names the view the canvas is drawing.
   const view3d = useView3d();
   const galaxy = useGalaxy();
   const territories = useTerritories();
@@ -127,43 +89,19 @@ export function SearchHint({
   return (
     <div
       /*
-       * An item of the map's top toolbar, not an overlay of its own (owner report,
-       * 2026-09-24). This lane
-       * used to centre itself with `left-1/2 -translate-x-1/2` while the utility lane
-       * pinned itself to the right edge: two boxes that never measured each other.
-       * With the meaning-review panel open at 1512 the map column is 928px wide, the
-       * centred lane (784px with a path chip and the trail chip) ran 136px into the
-       * utility lane, and eight icons were drawn on top of one another. Inside one
-       * box the utility lane keeps its width and this lane gets what is left, so it
-       * truncates instead of overlapping.
+       * An item of the toolbar box, not a self-centred overlay: sharing one box with
+       * the utility lane makes this lane truncate instead of drawing over it.
        */
       className={cn(
         /*
-         * **One row: the tools first, the status chips after them** (2026-09-25). The
-         * lane used to enter the toolbar at its natural width, chips included, so when
-         * the path and trail chips made it 12px wider than the free map beside the
-         * utility lane (632 against 620 at 1512), the whole lane wrapped to a second
-         * line, and choosing Galaxy (which hides expand-all) made it fit again, so every
-         * tile jumped a line. Letting the chips wrap under the tools instead made the
-         * toolbar three lines tall at 1040 and 1280 (a staircase over map nodes the
-         * top reserve had promised to keep clear), and the same two chips sat side by
-         * side at 1512 but one per line at 1280.
-         *
-         * So the lane is one row at every width and never a second one of its own: the
-         * tools, then the chips. From `xl` the lane joins the utility lane's line
-         * whenever its tools and its chips (capped, see the chip group) fit beside it
-         * (`basis-0`, growing into the rest, never under its min-content), and
-         * otherwise takes the next line whole, where the chips truncate.
-         *
-         * Below `xl`, where the lane is its own line under the utility lane, it spans
-         * the free map and starts at its left edge, and it keeps out of the right
-         * rail's column (one tile and one gap): right-aligned, its search tile stood
-         * at 980–1016 directly above the rail's fit tile at 1040 and read as part of
-         * that rail. The box, not this lane, keeps the collapsed INDEX tab clear.
+         * One row at every width, tools then chips; wrapping chips would stack the
+         * toolbar over nodes the top reserve keeps clear. From `xl` it shares the utility
+         * lane's line when it fits (`basis-0`, grow), else takes the next line whole.
+         * Below `xl` it starts at the left and keeps out of the right rail's column,
+         * or its search tile reads as part of that rail.
          */
         "pointer-events-auto min-w-0 max-w-full md:self-stretch md:max-xl:pr-[calc(var(--chrome-tile-size)+var(--topology-chrome-gap))] xl:min-w-min xl:basis-0 xl:grow",
-        // When both downgrades happen simultaneously, the stricter focus (<lg) wins —
-        // applying both classes causes md:block to revive hidden at md, creating a conflict.
+        // Focus suppression wins over sheet suppression; both classes together let md:block revive the lane.
         phoneFocusSuppressed
           ? "hidden xl:block"
           : phoneSheetSuppressed
@@ -216,11 +154,7 @@ export function SearchHint({
             </ChromeChip>
           </div>
         ) : null}
-        {/* Auto-arrange — exposed on desktop only. On mobile, the visual weight of a
-            floating button in the upper-right corner is a greater loss for an action
-            used infrequently. Trigger it inside the graph control panel if needed. The
-            wrapper's hidden/md:block handles visibility without clashing with ChromeChip's
-            own display utility. */}
+        {/* Desktop only; the wrapper hides it so ChromeChip's own display utility does not clash. */}
         <div className="hidden md:block">
           <ChromeChip
             type="button"
@@ -247,21 +181,10 @@ export function SearchHint({
             {arranging ? t('relayoutActiveLabel') : t('relayoutLabel')}
           </ChromeChip>
         </div>
-        {/* The map-view picker chooses Flat (the default), Galaxy, or one of the
-            three 3D arrangements. The label names the current view while the active
-            indigo tint states that a spatial presentation is on. Same <md demotion
-            as auto-arrange. */}
-        {/*
-          The map-view chip **opens a picker rather than toggling** (owner instruction,
-          2026-08-18: *"Pressing 3D should bring up a selection popup."* — pressing 3D should bring
-          up a selection popup). With several presentations inside the picker, an on/off toggle
-          cannot say 「what am I looking at」 — the rationale and the three reasons are in
-          the `View3dMenu` doc-block.
-        */}
-        {/* The chip and its picker share one wrapper, and `view3dAnchorRef` hands that
-            wrapper to the picker so a press on the chip is not treated as 「outside」 —
-            without it the chip closed and reopened the picker in the same batch and
-            could never put it away (`View3dMenu`'s dismissal block). */}
+        {/* The map-view chip opens a picker, not a toggle: an on/off switch cannot name
+            which of several views is showing (`View3dMenu` doc-block). */}
+        {/* `view3dAnchorRef` hands the shared wrapper to the picker so a chip press is not
+            "outside", or the chip closes and reopens the picker in one batch. */}
         <div
           ref={view3dAnchorRef}
           className="relative hidden md:block"
@@ -304,8 +227,6 @@ export function SearchHint({
             open={view3dMenuOpen}
             onClose={(returnFocus) => {
               setView3dMenuOpen(false);
-              // A choice or Escape hands focus back to the chip that opened the picker;
-              // a press elsewhere keeps it where that press put it.
               if (returnFocus) view3dChipRef.current?.focus();
             }}
             anchorRef={view3dAnchorRef}
@@ -326,11 +247,8 @@ export function SearchHint({
           compact={compact}
           icon={<Search />}
           kbd={isMac ? '⌘K' : 'CtrlK'}
-          // Review round defect 1 (2026-07-23) — at 1440 width in the EN locale, the
-          // centre lane's right end (the search pill) overlapped the right cluster
-          // ("Switch to my data"). It is the reserved width pushing out as English
-          // labels grow, so the min-width and the ⌘K cap reservation are deferred to
-          // 2xl (1536+ — 1440 is xl, the overlapping band).
+          // The min-width and ⌘K cap wait for 2xl: at xl, English labels push the
+          // reserved width into the right cluster.
           className={compact ? undefined : '2xl:min-w-[208px] max-2xl:[&_[data-chip-kbd]]:hidden'}
           aria-label={t('searchAriaLabel')}
           title={t('searchTitle')}
@@ -339,14 +257,9 @@ export function SearchHint({
         </ChromeChip>
         </div>
         {returnChip || realmChip || pathChip || trailChip ? (
-          // The status chips are the part of the row that yields. From `xl` the
-          // group asks for its natural width up to a cap (`max-w-md`, which also caps
-          // what it adds to the lane's min-content), so on the utility lane's line
-          // the chips read whole: with no width of its own the group left the path
-          // chip one letter and an ellipsis at 1280. Past the cap, or on a line of its own
-          // below `xl`, each chip truncates its own label (the full text stays on
-          // hover and in its accessible name), and the tool tiles keep their 36px
-          // boxes and their place at every width.
+          // The status chips are what yields. From `xl` the group takes its natural
+          // width up to `max-w-md`, or the path chip shrinks to one letter; past that
+          // each chip truncates its label (full text in hover and accessible name).
           <div
             className="flex min-w-0 items-center gap-[var(--topology-chrome-gap)] xl:max-w-md"
             data-testid="topology-status-chip-group"
@@ -358,12 +271,9 @@ export function SearchHint({
           </div>
         ) : null}
         {!onToggleExpandAll ? (
-          // Galaxy hides expand-all, and the lane's width decides from `xl` whether it
-          // shares the utility lane's line. Without this the lane shrank by one tile,
-          // fitted where it had not, and every tile jumped a line on a view change
-          // (1920 with INDEX open, 2026-09-25). An invisible copy at the row's end, 0px
-          // tall and out of the tab order, keeps the width the decision reads; it sits
-          // in space the lane's grow fills anyway, so nothing visible moves.
+          // Galaxy hides expand-all; this invisible, inert copy keeps the lane width
+          // that decides from `xl` whether it shares the utility line, or every tile
+          // jumps a line on a view change.
           <div
             aria-hidden="true"
             inert

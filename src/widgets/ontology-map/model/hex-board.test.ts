@@ -18,7 +18,6 @@ import {
 import { axialRound, axialToUnit, hexDistance, hexKey, hexSpiral, HEX_NEIGHBORS, insideHex, ringsFor, unitToAxial } from "./hex-grid";
 import { buildHexLattice, closedNodes, HexRouter, pickPillSpot } from "./hex-router";
 
-/** A conservative width model: Hangul full-width, Latin a little over half an em. */
 function measure(text: string, role: HexTextRole): number {
   const px = HEX_TYPE[role === "capabilityStrong" ? "capability" : role];
   let w = 0;
@@ -55,7 +54,6 @@ function dogfoodGraph(): { nodes: TerritoryInputNode[]; edges: TerritoryInputEdg
   return { nodes, edges };
 }
 
-/** `capabilityCount` capabilities over `domainCount` domains, unevenly, with dependencies. */
 function synthetic(capabilityCount: number, domainCount: number): { nodes: TerritoryInputNode[]; edges: TerritoryInputEdge[] } {
   const nodes: TerritoryInputNode[] = [{ id: "project:p", label: "합성 프로젝트", kind: "project" }];
   const edges: TerritoryInputEdge[] = [];
@@ -138,13 +136,12 @@ describe("hex board placement", () => {
     expect(layout.domains).toHaveLength(nodes.filter((n) => n.kind === "domain").length);
     expect(layout.occupied.size).toBe(layout.tiles.length);
     for (const region of layout.regions) {
-      // Contiguous: every capability cell touches another cell of its region.
       const keys = new Set(region.cells.map(([q, r]) => hexKey(q, r)));
       for (const [q, r] of region.cells.slice(1)) {
         expect(HEX_NEIGHBORS.some(([dq, dr]) => keys.has(hexKey(q + dq, r + dr)))).toBe(true);
       }
     }
-    // Apart: no cell of one region touches a cell of another (the moat).
+    // No cell of one region touches another region's cell (the moat).
     const regionOf = new Map<string, string>();
     for (const region of layout.regions) for (const [q, r] of region.cells) regionOf.set(hexKey(q, r), region.domainId);
     for (const [key, domain] of regionOf) {
@@ -166,7 +163,7 @@ describe("hex board placement", () => {
     const { nodes, edges } = dogfoodGraph();
     const first = computeHexBoard(nodes, edges, { aspect: 1.6 });
     const domain = first.regions[1]!.domainId;
-    // An id that sorts first: a pure re-layout would have shifted the whole region.
+    // An id that sorts first: a pure re-layout would shift the whole region.
     const extra = { id: "capability:000-new", label: "새 역량", kind: "capability" as const };
     const second = computeHexBoard([...nodes, extra], [...edges, { source: domain, target: extra.id, kind: "contains", relationType: "contains" }], {
       prior: first.record,
@@ -300,8 +297,7 @@ describe("hex board labels", () => {
         expect(hits, `R=${R}`).toEqual([]);
       }
       if (name === "dogfood") {
-        // The real vault opens with its names on at 1512 px (spec: R = 55 there), and every
-        // domain title carries its counts there.
+        // At 1512 px the real vault opens with names on (R = 55) and every title carries counts.
         const R = fitHexRadius(layout.bounds, room);
         expect(R).toBeGreaterThanOrEqual(from!);
         for (const d of layout.domains) expect(hexLineSpills(hexTileLines(d, R, measure, extrasFor(layout)(d)), R, measure), d.id).toEqual([]);
@@ -333,14 +329,13 @@ describe("hex board keyboard walk", () => {
     }
     const t = layout.capabilities.find((c) => layout.occupied.has(hexKey(c.q, c.r - 1)))!;
     expect(hexNeighborInDirection(layout, t.id, "up")).toBe(layout.occupied.get(hexKey(t.q, t.r - 1)));
-    // From the project, every direction reaches some tile.
     for (const dir of ["up", "down", "left", "right"] as const) expect(hexNeighborInDirection(layout, layout.project!.id, dir)).not.toBeNull();
   });
 });
 
 describe("hex board router", () => {
   const offFaces = (layout: HexBoardLayout, route: { points: { x: number; y: number }[] }, R: number) => {
-    // Every sample of every segment stays out of every occupied face (face = R − gutter).
+    // Face = R − gutter.
     const face = (R - (R >= 44 ? 4 : R >= 28 ? 3 : 1.5)) / R;
     const bad: string[] = [];
     for (let i = 0; i < route.points.length - 1; i++) {
@@ -413,7 +408,7 @@ describe("hex board router", () => {
     const layout = computeHexBoard(nodes, edges);
     const lattice = buildHexLattice(layout);
     const b = layout.bounds;
-    // The strip above the board's top row is chrome (the tool lane): closed.
+    // The strip above the top row is chrome (the tool lane), so it is closed.
     const top = b.minY + 0.5;
     const closed = closedNodes(lattice, (_x, y) => y >= top);
     const open = new HexRouter(lattice, 1.15);
@@ -430,7 +425,6 @@ describe("hex board router", () => {
       expect(r.points.every((p) => p.y >= top)).toBe(true);
       expect(offFaces(layout, r, 30)).toEqual([]);
     }
-    // The open lattice does use that strip (the defect's shape), and closing it still routes.
     expect(aboveBefore).toBeGreaterThan(0);
     expect(routed).toBeGreaterThan(layout.dependencies.length * 0.8);
   });
@@ -439,7 +433,6 @@ describe("hex board router", () => {
     const { nodes, edges } = dogfoodGraph();
     const layout = computeHexBoard(nodes, edges);
     const lattice = buildHexLattice(layout);
-    // Close the right third of the board, as an inspector would cover it.
     const cut = layout.bounds.maxX - (layout.bounds.maxX - layout.bounds.minX) / 3;
     const closed = closedNodes(lattice, (x) => x <= cut);
     const dep = layout.dependencies.find((d) => layout.byId.get(d.from)!.x < cut - 4 && layout.byId.get(d.to)!.x > cut + 1.5);

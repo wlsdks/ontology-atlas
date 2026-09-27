@@ -7,7 +7,7 @@ import {
 } from "./queue-work-groups";
 
 describe("queue-work-groups", () => {
-  it("뜻으로 답이 나오는 섹션은 의미 작업, 개념 바깥을 읽어야 하는 섹션은 코드 작업", () => {
+  it("groups sections answered by meaning as meaning work and those needing outside reading as code work", () => {
     expect(groupOfQueueSection("missing-definition")).toBe("meaning");
     expect(groupOfQueueSection("missing-domain")).toBe("meaning");
     expect(groupOfQueueSection("duplicate")).toBe("meaning");
@@ -17,7 +17,7 @@ describe("queue-work-groups", () => {
     expect(groupOfQueueSection("cycle")).toBe("code");
   });
 
-  it("쓸 수 있는 세션은 내 몫이 먼저, 읽기 전용 세션은 인계로 닫히는 일이 먼저", () => {
+  it("puts own work first when writable and handoff work first when read-only", () => {
     expect(queueGroupOrder({ canWriteVault: true, agentObserved: false })).toEqual([
       "meaning",
       "code",
@@ -28,7 +28,7 @@ describe("queue-work-groups", () => {
     ]);
   });
 
-  it("순서 키는 능력이 바뀔 때만 달라진다 — 렌더마다 크로스페이드가 돌지 않게", () => {
+  it("changes the order key only when abilities change", () => {
     const a = queueGroupOrderKey({ canWriteVault: true, agentObserved: false });
     const b = queueGroupOrderKey({ canWriteVault: true, agentObserved: true });
     const c = queueGroupOrderKey({ canWriteVault: false, agentObserved: true });
@@ -36,7 +36,7 @@ describe("queue-work-groups", () => {
     expect(a).not.toBe(c);
   });
 
-  it("묶음 규모는 섹션 총계(절단 전)의 합이다", () => {
+  it("sizes a group as the sum of its pre-truncation section totals", () => {
     expect(
       sumQueueGroupCounts([
         { section: "missing-definition", total: 4 },

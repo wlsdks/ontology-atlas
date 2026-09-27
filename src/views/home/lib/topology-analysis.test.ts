@@ -356,11 +356,11 @@ describe("formatTopologyHealthBrief", () => {
     );
   });
 
-  it("maps graph ids to canonical builder repair URLs (H5 발신 문법 통일)", () => {
+  it("maps graph ids to canonical builder repair URLs with one outbound grammar", () => {
     expect(buildTopologyHealthRepairHref("domain:views")).toBe(
       "/topology/?p=domain%3Aviews&workbench=edit",
     );
-    // Legacy multi-slash input is promoted to canonical form before it is emitted.
+    // Legacy multi-slash input is promoted to canonical form.
     expect(buildTopologyHealthRepairHref("capabilities/topology-analysis-modes")).toBe(
       "/topology/?p=capability%3Atopology-analysis-modes&workbench=edit",
     );
@@ -491,8 +491,8 @@ describe("formatTopologyPathAgentPacket", () => {
         sourceTitle: "Views",
         targetTitle: "Topology Analysis Modes",
         hopCount: 2,
-        // The two ends arrive in two grammars (a `pathFrom=` slug and a map node id);
-        // the packet speaks one, and links to the live map under the locale.
+        // A `pathFrom=` slug and a map node id normalise to one grammar, linking the live map
+        // under the locale.
         locale: "ko",
         labels: {
           title: "Topology path",

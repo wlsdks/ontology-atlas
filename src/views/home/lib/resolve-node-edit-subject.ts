@@ -3,18 +3,10 @@ import { pickLastEditSubject, type LastEditSubjectFact } from "@/shared/lib/last
 import { hasUnaccountedMtimeChange } from "@/shared/lib/mtime-conflict";
 
 /**
- * Resolves the "last edited by human/AI" fact for `OntologyMapDetailPanel` and
- * `FullDetailA1`, the graph-node counterparts of `resolveDocLastEditSubject`
- * (docs-vault). Same two real sources, adapted to the graph's own id shape:
- *
- * - **AI agent**: a fresh heartbeat whose focus resolves (via the existing
- *   `resolveAgentFocusNodeId`) to THIS node id — passed in as a param rather
- *   than re-derived here, so the "agent just now" badge and this fact always
- *   agree on which node the agent is looking at.
- * - **Human**: `selfEditTimestamps` keyed by vault slug (`sourceSlug`) —
- *   the same cross-page self-write record `resolveDocLastEditSubject`
- *   reads, shared via the `LocalVaultProvider` singleton so an edit made on
- *   `/docs` shows up here too.
+ * The graph-node twin of `resolveDocLastEditSubject`: the same two sources keyed by graph id. The
+ * agent side takes the resolved focus id as a param so the "agent just now" badge agrees on the
+ * node; the human side reads `selfEditTimestamps` by vault slug, shared
+ * through `LocalVaultProvider` with `/docs`.
  */
 export function resolveNodeLastEditSubject(params: {
   nodeId: string;
@@ -39,11 +31,8 @@ export function resolveNodeLastEditSubject(params: {
 }
 
 /**
- * The `expected_mtime` conflict badge: true only when this node's source
- * document freshness (ISO, derived from mtime) has moved away from the baseline
- * taken when the panel opened, and the difference is not explained by our own
- * write. Reuses shared `hasUnaccountedMtimeChange` — the same rule as
- * docs-vault's numeric-mtime version.
+ * True only when the document's freshness moved from the panel-open baseline and our own write does
+ * not explain it. Same rule as docs-vault (`hasUnaccountedMtimeChange`).
  */
 export function hasNodeMtimeConflict(params: {
   sourceSlug: string | null;

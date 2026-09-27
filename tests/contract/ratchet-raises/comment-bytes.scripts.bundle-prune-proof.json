@@ -1,0 +1,1 @@
+{ "gate": "comment-bytes.scripts", "raise": 1051, "why": "bundle:prune now deletes branches on a proof, so its comments state what counts as landed, when a lock may lift, and which worktrees it may remove; a reader must see those safety rules without reading the tests." }

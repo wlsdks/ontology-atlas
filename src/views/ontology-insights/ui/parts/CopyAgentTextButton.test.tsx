@@ -27,42 +27,26 @@ function renderCompactButton() {
   );
 }
 
-/**
- * A regression guard on token usage.
- *
- * The idle text colour was once a hardcoded rgba (e.g. rgba(211,215,255,0.96)) — now that the app is
- * dark-only (`.claude/rules/design.md`, 2026-07-19) that hue is tokenized as
- * `--color-indigo-pale-*`. This button must use only indigo-accent tokens, with no raw literal.
- */
-describe("CopyAgentTextButton — 텍스트 색 토큰 사용", () => {
+/** Token usage guard: the button uses indigo tokens only, never a raw literal. */
+describe("CopyAgentTextButton text color tokens", () => {
   beforeEach(() => {
     copyTextMock.mockClear();
     copyTextMock.mockResolvedValue(true);
   });
 
-  /**
-   * 2026-08-05 — the pinned token changed from `indigo-accent` to `indigo-text-soft`.
-   *
-   * This button carries an indigo **tint**, and hover raises that tint one step (a06 → a13).
-   * `accent` (#7170ff) ink barely passed at rest with 4.56 and then **broke AA at 4.41 on hover**
-   * (measured). `.claude/rules/design.md`'s rule that "a control carrying a tint uses accentOnTint
-   * ink" already prescribed this, and switching gives 8.92 / 8.66.
-   *
-   * This test's original intent was **forbidding raw rgba from returning**, and that is unchanged —
-   * only «which token is correct» moved.
-   */
-  it("idle 텍스트는 하드코딩 rgba 가 아니라 틴트용 잉크 토큰을 쓴다", () => {
+  /** The tint ink (`indigo-text-soft`), since accent ink fails AA on the hovered tint (`.claude/rules/design.md`). */
+  it("uses the tint ink token for idle text instead of a hard-coded rgba", () => {
     renderButton();
     const button = screen.getByRole("button");
     expect(button.className).toContain("text-[color:var(--color-indigo-text-soft)]");
-    // It must not revert to the accent ink that breaks AA on a tint.
+    // Not the accent ink, which fails AA on a tint.
     expect(button.className).not.toContain("text-[color:var(--color-indigo-accent)]");
-    // The raw literal behind the earlier regression must not reappear.
+    // The raw literal behind the earlier regression must not return.
     expect(button.className).not.toContain("rgba(211,215,255");
     expect(button.className).not.toContain("rgba(211, 215, 255");
   });
 
-  it("compact copy 버튼도 모바일에서 32px hit target 아래로 내려가지 않는다", () => {
+  it("keeps the compact button at a 32px hit target or larger on mobile", () => {
     renderCompactButton();
     const button = screen.getByRole("button");
     const classTokens = button.className.split(/\s+/);
@@ -70,7 +54,7 @@ describe("CopyAgentTextButton — 텍스트 색 토큰 사용", () => {
     expect(classTokens).not.toContain("py-1");
   });
 
-  it("복사 성공 후에도 보이는 라벨 폭을 늘리지 않고 아이콘과 live region 으로 피드백한다", async () => {
+  it("confirms a copy with an icon and live region without widening the label", async () => {
     renderButton();
     const button = screen.getByRole("button", { name: "복사" });
 

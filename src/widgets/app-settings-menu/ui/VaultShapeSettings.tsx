@@ -13,13 +13,9 @@ import { useToast } from '@/shared/ui/toast';
 import { DETAIL_TOGGLE_CHIP, SettingsRow } from './settings-primitives';
 
 /**
- * "This folder holds": the map, the wiki, or both — read from the files, never stored.
- *
- * The row is add-only. A part that exists shows as present; a part that does not offers
- * one chip that writes its starter files (`scaffoldOntology` with that part alone), and
- * the rail follows the files. There is no "turn off": hiding a tab while its pages or
- * nodes still exist would make the screen disagree with the folder, and deleting the
- * folder in Finder is the honest way to stop.
+ * "This folder holds": the map, the wiki, or both, read from the files and never stored.
+ * Add-only: a missing part offers a chip that scaffolds it. There is no "turn off", which
+ * would make the screen disagree with the folder.
  */
 export function VaultShapeSettings() {
   const t = useTranslations('settings');
@@ -37,7 +33,7 @@ export function VaultShapeSettings() {
       await localVault.scaffoldOntology(locale, chosen);
       toast.show(t('workspaceShapeStarted'), 'success');
     } catch (err) {
-      // A translated sentence for the failure kind; the raw text stays for the console (B2).
+      // A translated sentence for the failure kind; the raw text stays in the console.
       toast.show(failureSentence(err, t('workspaceFolderErrorFallback')).sentence, 'error');
     } finally {
       setBusy(null);
@@ -54,7 +50,7 @@ export function VaultShapeSettings() {
         {label}
       </span>
     ) : (
-      // The sheet's one trailing-action grammar: `lg` secondary chip (2026-09-25).
+      // The sheet's one trailing-action grammar: `lg` secondary chip.
       <Chip
         data-testid={`app-settings-shape-start-${id}`}
         size="lg"

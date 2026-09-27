@@ -39,8 +39,7 @@ describe("resolveDeeplinkMissDecision", () => {
   });
 
   it("notifies immediately for an unresolved kind-prefixed slug, even before the project list loads", () => {
-    // #342/#353 contract — kind-prefixed values can never be a project
-    // slug, so there is nothing worth waiting for.
+    // A kind-prefixed value can never be a project slug, so there is nothing to wait for.
     expect(
       resolveDeeplinkMissDecision({
         selectedSlug: "element:does-not-exist",
@@ -65,11 +64,8 @@ describe("resolveDeeplinkMissDecision", () => {
   });
 
   it("waits (rather than staying silent forever) for an unresolved bare slug while the project list is still loading", () => {
-    // Ledger item 3 (2026-07-19 UX expert round, cross-verified): this used
-    // to resolve to `{ action: "none" }` — a bare `?p=project` miss never
-    // got a toast if `projectsLoaded` never became true, so the dangling
-    // param was cleared with no visible notice. It must now resolve to a
-    // bounded wait, never a silent no-op.
+    // A bare miss must resolve to a bounded wait, never a silent no-op, even if projects never
+    // load.
     expect(
       resolveDeeplinkMissDecision({
         selectedSlug: "project",

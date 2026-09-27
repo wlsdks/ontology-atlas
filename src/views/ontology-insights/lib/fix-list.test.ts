@@ -11,18 +11,18 @@ const WRITABLE = { canWriteVault: true, agentObserved: true };
 const READ_ONLY = { canWriteVault: false, agentObserved: false };
 
 describe("fixBlockOrder", () => {
-  it("차단되는 일이 먼저다 — 못 읽는 문서, 끊어진 연결 순", () => {
+  it("puts blocking work first: unreadable documents, then broken links", () => {
     expect(fixBlockOrder(WRITABLE).slice(0, 2)).toEqual(["blocked-document", "repair"]);
   });
 
-  it("쓸 수 있는 세션은 뜻 작업이 먼저, 읽기 전용은 뒤집힌다", () => {
+  it("puts meaning work first in a writable session and reverses it when read-only", () => {
     const writable = fixBlockOrder(WRITABLE);
     const readOnly = fixBlockOrder(READ_ONLY);
     expect(writable[2]).toBe("missing-definition");
     expect(readOnly[2]).toBe("neglected-hub");
   });
 
-  it("모든 종류가 정확히 한 번씩 나온다 — 한 항목이 두 자리에 놓이지 않는다", () => {
+  it("lists every kind exactly once", () => {
     const expected: FixBlockKey[] = [
       "blocked-document",
       "repair",
@@ -61,23 +61,23 @@ describe("buildBlockedDocumentRows", () => {
     ],
   };
 
-  it("오류가 있는 문서만 행이 된다 — 경고만 있는 문서는 막힌 것이 아니다", () => {
+  it("makes rows only for documents with errors, not warnings", () => {
     expect(buildBlockedDocumentRows(summary, 10)).toEqual([
       { slug: "capabilities/broken", code: "invalid-uid" },
       { slug: "domains/dup", code: "duplicate-uid" },
     ]);
   });
 
-  it("첫 오류 하나만 문장이 된다 — 한 문서가 여러 줄로 늘어나지 않는다", () => {
+  it("turns only the first error of a document into a sentence", () => {
     const rows = buildBlockedDocumentRows(summary, 10);
     expect(rows.filter((row) => row.slug === "capabilities/broken")).toHaveLength(1);
   });
 
-  it("상한을 넘지 않는다", () => {
+  it("stays within the cap", () => {
     expect(buildBlockedDocumentRows(summary, 1)).toHaveLength(1);
   });
 
-  it("잘려도 전체 규모는 따로 셀 수 있다", () => {
+  it("still counts the full total when truncated", () => {
     expect(countBlockedDocuments(summary)).toBe(2);
   });
 });

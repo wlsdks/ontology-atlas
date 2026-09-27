@@ -76,7 +76,7 @@ function renderSection(
 }
 
 describe("MeaningGapSection", () => {
-  it("한 문장을 적어 저장하면 그 파일 한 곳에만 쓴다 — 저장 전엔 아무 쓰기도 없다", async () => {
+  it("writes only that file on save and nothing before", async () => {
     const { onWrite } = renderSection();
     expect(onWrite).not.toHaveBeenCalled();
 
@@ -96,7 +96,7 @@ describe("MeaningGapSection", () => {
     await waitFor(() => expect(screen.getByTestId("meaning-gap-saved")).toBeInTheDocument());
   });
 
-  it("저장은 누른 프레임에 잠긴다 — 연타해도 한 번만 쓴다", async () => {
+  it("writes once when save is pressed repeatedly", async () => {
     const pending: Array<() => void> = [];
     const onWrite = vi.fn(
       () =>
@@ -119,7 +119,7 @@ describe("MeaningGapSection", () => {
     await waitFor(() => expect(screen.getByTestId("meaning-gap-saved")).toBeInTheDocument());
   });
 
-  it("취소는 파일을 만지지 않고, 적은 내용이 있으면 한 번 더 물어본다", () => {
+  it("leaves the file untouched on cancel and confirms when text was entered", () => {
     const { onWrite } = renderSection();
     fireEvent.click(screen.getByTestId("meaning-gap-write-toggle"));
     fireEvent.change(screen.getByTestId("meaning-gap-definition-input"), {
@@ -134,7 +134,7 @@ describe("MeaningGapSection", () => {
     expect(onWrite).not.toHaveBeenCalled();
   });
 
-  it("Esc 는 2단이다 — 펼친 행에서는 이 행이 먹고, 접힌 행에서는 위로 흘려보낸다", () => {
+  it("handles Escape in an expanded row and lets it bubble from a collapsed one", () => {
     const onOuterEscape = vi.fn();
     const { container } = render(
       <div onKeyDown={onOuterEscape}>
@@ -163,7 +163,7 @@ describe("MeaningGapSection", () => {
     expect(screen.getByTestId("meaning-gap-disclosure")).toHaveAttribute("data-state", "closed");
   });
 
-  it("동시수정 충돌은 조용히 덮지 않고 행 안에서 알린다 — 적은 문장은 남는다", async () => {
+  it("reports a concurrent edit conflict in the row and keeps the entered text", async () => {
     const conflict = Object.assign(new Error("Vault conflict"), { name: "VaultConflictError" });
     const onWrite = vi.fn(async () => {
       throw conflict;
@@ -179,7 +179,7 @@ describe("MeaningGapSection", () => {
     expect(screen.getByTestId("meaning-gap-definition-input")).toHaveValue("한 문장");
   });
 
-  it("실패는 토스트가 아니라 행 안에서 말한다 — 입력 문맥을 떠나지 않게", async () => {
+  it("reports failure in the row instead of a toast", async () => {
     const onWrite = vi.fn(async () => {
       throw new Error("no permission");
     });
@@ -201,7 +201,7 @@ describe("MeaningGapSection", () => {
    * that opens a folder, rather than once per run of rows). What the row must still do is offer a
    * door that opens: no input, but a way to look and a command to hand over.
    */
-  it("읽기 전용 세션엔 입력칸이 없고, 대신 넘길 명령이 있다 — 회색 비활성 버튼 0", () => {
+  it("offers a handoff command instead of an input in a read-only session", () => {
     renderSection({ abilities: { canWriteVault: false, agentObserved: false } });
     expect(screen.queryByTestId("meaning-gap-write-toggle")).toBeNull();
     expect(screen.getByTestId("do-next-item-view")).toHaveTextContent("View on map");
@@ -212,7 +212,7 @@ describe("MeaningGapSection", () => {
     ).toHaveLength(0);
   });
 
-  it("소속 미정 행은 볼트에 있는 영역만 칩으로 고르게 한다", async () => {
+  it("offers only vault domains as chips for a row without a domain", async () => {
     const domainRow: MeaningGapRow = {
       ...row,
       id: "missing-domain:capabilities/pay",
@@ -247,7 +247,7 @@ describe("MeaningGapSection", () => {
     await waitFor(() => expect(onWrite).toHaveBeenCalledWith(domainRow, "orders"));
   });
 
-  it("행이 없으면 섹션 자체를 그리지 않는다 — 「0건」 성공 카드는 잉크만 쓴다", () => {
+  it("renders no section without rows", () => {
     const { container } = render(
       <MeaningGapSection
         gapKind="missing-definition"

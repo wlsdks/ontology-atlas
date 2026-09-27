@@ -134,9 +134,7 @@ describe("realmOutsidePosition (gravity fling)", () => {
   });
 
   it("uses the fallback angle when the node sits exactly on the center", () => {
-    // reduced-motion (duration 0) flings straight along the fallback angle with
-    // no curl — a coincident node still leaves the center in a deterministic
-    // direction (straight up for PI/2) instead of collapsing to NaN.
+    // A coincident node leaves along the fallback angle (straight up for PI/2), never NaN.
     const p = realmOutsidePosition({ x: 0, y: 0 }, { x: 0, y: 0 }, 5, { duration: 0, fallbackAngle: Math.PI / 2 });
     expect(p.x).toBeCloseTo(0);
     expect(p.y).toBeGreaterThan(0);
@@ -157,40 +155,39 @@ describe("realmWardingDrawProgress", () => {
   });
 });
 
-describe("realmInsideFlipDelayFor (S5 깊이 계단 조립)", () => {
-  it("루트·도메인(depth≤1)은 기본 지연", () => {
+describe("realmInsideFlipDelayFor (depth-staggered assembly)", () => {
+  it("uses the base delay for the root and domains (depth <= 1)", () => {
     expect(realmInsideFlipDelayFor(0)).toBe(REALM_INSIDE_FLIP_DELAY_MS);
     expect(realmInsideFlipDelayFor(1)).toBe(REALM_INSIDE_FLIP_DELAY_MS);
   });
 
-  it("depth2 는 +1 스텝, depth3+ 는 +2 스텝에서 포화", () => {
+  it("adds one step at depth 2 and saturates at two steps for depth 3+", () => {
     expect(realmInsideFlipDelayFor(2)).toBe(REALM_INSIDE_FLIP_DELAY_MS + REALM_INSIDE_FLIP_DELAY_STEP_MS);
     expect(realmInsideFlipDelayFor(3)).toBe(REALM_INSIDE_FLIP_DELAY_MS + REALM_INSIDE_FLIP_DELAY_STEP_MS * 2);
     expect(realmInsideFlipDelayFor(9)).toBe(realmInsideFlipDelayFor(3));
   });
 
-  it("가장 깊은 링의 지연 + FLIP 이 봉투 안에 정착한다", () => {
+  it("settles the deepest ring delay plus FLIP inside the envelope", () => {
     expect(realmInsideFlipDelayFor(3) + REALM_INSIDE_FLIP_MS).toBe(REALM_ENVELOPE_MS);
   });
 
-  it("깊을수록 지연이 단조 증가한다", () => {
+  it("increases the delay monotonically with depth", () => {
     expect(realmInsideFlipDelayFor(1)).toBeLessThan(realmInsideFlipDelayFor(2));
     expect(realmInsideFlipDelayFor(2)).toBeLessThan(realmInsideFlipDelayFor(3));
   });
 });
 
-describe("realmDepthClarity (S5 깊이 선명도)", () => {
-  it("알파는 깊을수록 낮고 depth≤1 은 1.0", () => {
+describe("realmDepthClarity (depth clarity)", () => {
+  it("lowers alpha with depth and keeps 1.0 at depth <= 1", () => {
     expect(realmDepthClarityAlpha(0)).toBe(1);
     expect(realmDepthClarityAlpha(1)).toBe(1);
-    // Raised from 0.92/0.84 on 2026-08-18: 0.84 composited with the leaf ink
-    // gave 2.58:1, under the WCAG 1.4.11 floor of 3:1. Safe minimum is 0.955.
+    // 0.84 composited with the leaf ink gave 2.58:1, under the 3:1 WCAG 1.4.11 floor; the minimum is 0.955.
     expect(realmDepthClarityAlpha(2)).toBeCloseTo(0.98);
     expect(realmDepthClarityAlpha(3)).toBeCloseTo(0.96);
     expect(realmDepthClarityAlpha(7)).toBe(realmDepthClarityAlpha(3));
   });
 
-  it("스케일도 깊을수록 작고 depth≤1 은 1.0 (알파와 대칭)", () => {
+  it("shrinks scale with depth and keeps 1.0 at depth <= 1, mirroring alpha", () => {
     expect(realmDepthClarityScale(1)).toBe(1);
     expect(realmDepthClarityScale(2)).toBeCloseTo(0.97);
     expect(realmDepthClarityScale(3)).toBeCloseTo(0.94);
@@ -207,8 +204,8 @@ describe("realmDustParallaxFactor", () => {
   });
 });
 
-describe("realmExitFlipDelayFor (S6 퇴장 깊이 역순 — 깊은 층 먼저)", () => {
-  it("depth3+ 가 먼저(0), 얕을수록 늦다 — 입장 계단의 역순", () => {
+describe("realmExitFlipDelayFor (exit in reverse depth order, deepest first)", () => {
+  it("leaves depth 3+ first (0) and shallower later, reversing the entry stagger", () => {
     expect(realmExitFlipDelayFor(3)).toBe(0);
     expect(realmExitFlipDelayFor(9)).toBe(0);
     expect(realmExitFlipDelayFor(2)).toBe(REALM_EXIT_FLIP_DELAY_STEP_MS);
@@ -216,59 +213,58 @@ describe("realmExitFlipDelayFor (S6 퇴장 깊이 역순 — 깊은 층 먼저)"
     expect(realmExitFlipDelayFor(0)).toBe(REALM_EXIT_FLIP_DELAY_STEP_MS * 2);
   });
 
-  it("입장 지연과 방향이 반대다(깊이 증가 시 단조 감소)", () => {
+  it("runs opposite to the entry delay, decreasing as depth grows", () => {
     expect(realmExitFlipDelayFor(3)).toBeLessThan(realmExitFlipDelayFor(2));
     expect(realmExitFlipDelayFor(2)).toBeLessThan(realmExitFlipDelayFor(1));
-    // Entry runs the other way: the deeper the layer, the later it starts.
     expect(realmInsideFlipDelayFor(1)).toBeLessThan(realmInsideFlipDelayFor(3));
   });
 });
 
-describe("realmWardingEraseProgress (S6 결계 역방향 지우기)", () => {
-  it("역재생 1→0, clamp", () => {
+describe("realmWardingEraseProgress (reverse erase of the ward)", () => {
+  it("plays back from 1 to 0, clamped", () => {
     expect(realmWardingEraseProgress(0)).toBe(1);
     expect(realmWardingEraseProgress(REALM_EXIT_WARDING_ERASE_MS)).toBe(0);
     expect(realmWardingEraseProgress(9999)).toBe(0);
     expect(realmWardingEraseProgress(-5)).toBe(1);
   });
 
-  it("duration<=0 이면 즉시 0(지워짐)", () => {
+  it("is 0 (erased) at once for duration <= 0", () => {
     expect(realmWardingEraseProgress(5, 0)).toBe(0);
   });
 });
 
-describe("realmOutsideReturnReach (S6 역중력 reach 1→0)", () => {
-  it("elapsed 0 → 1(완전 이탈), duration → 0(홈)", () => {
+describe("realmOutsideReturnReach (reverse gravity reach from 1 to 0)", () => {
+  it("is 1 (fully out) at elapsed 0 and 0 (home) at duration", () => {
     expect(realmOutsideReturnReach(0)).toBeCloseTo(1);
     expect(realmOutsideReturnReach(REALM_EXIT_OUTSIDE_RETURN_MS)).toBeCloseTo(0);
   });
 
-  it("감속 착지 — 후반(착지 근처)이 전반보다 느리게 변한다", () => {
+  it("lands decelerating: the late part changes slower than the early part", () => {
     const d = REALM_EXIT_OUTSIDE_RETURN_MS;
     const early = realmOutsideReturnReach(0, d) - realmOutsideReturnReach(d * 0.1, d);
     const late = realmOutsideReturnReach(d * 0.9, d) - realmOutsideReturnReach(d, d);
     expect(early).toBeGreaterThan(late);
   });
 
-  it("duration<=0 이면 0", () => {
+  it("is 0 for duration <= 0", () => {
     expect(realmOutsideReturnReach(5, 0)).toBe(0);
   });
 });
 
-describe("realmOutsideReturnAlpha (S7 밖 노드 귀환 materialize — 모션 감사 처방 B)", () => {
-  it("elapsed 0 → 0(완전 이탈, 안 보임), duration → 1(홈, 풀 알파)", () => {
+describe("realmOutsideReturnAlpha (outside nodes materialise on return)", () => {
+  it("is 0 (fully out, hidden) at elapsed 0 and 1 (home, full alpha) at duration", () => {
     expect(realmOutsideReturnAlpha(0)).toBeCloseTo(0);
     expect(realmOutsideReturnAlpha(REALM_EXIT_OUTSIDE_RETURN_MS)).toBeCloseTo(1);
   });
 
-  it("reach 의 정확한 보수다(1 - reach) — 항상 합이 1", () => {
+  it("is the exact complement of reach (1 - reach), always summing to 1", () => {
     const d = REALM_EXIT_OUTSIDE_RETURN_MS;
     for (const t of [0, d * 0.25, d * 0.5, d * 0.75, d]) {
       expect(realmOutsideReturnAlpha(t, d) + realmOutsideReturnReach(t, d)).toBeCloseTo(1);
     }
   });
 
-  it("단조 증가 — 귀환할수록 더 또렷해진다(팝인 없이 램프)", () => {
+  it("increases monotonically, sharpening on return without a pop-in", () => {
     const d = REALM_EXIT_OUTSIDE_RETURN_MS;
     const early = realmOutsideReturnAlpha(d * 0.2, d);
     const mid = realmOutsideReturnAlpha(d * 0.5, d);
@@ -277,16 +273,16 @@ describe("realmOutsideReturnAlpha (S7 밖 노드 귀환 materialize — 모션 �
     expect(mid).toBeLessThan(late);
   });
 
-  it("duration<=0 이면 1(reduced-motion — 즉시 풀 알파, reach 0 의 보수)", () => {
+  it("is 1 for duration <= 0 (reduced motion: full alpha at once, the complement of reach 0)", () => {
     expect(realmOutsideReturnAlpha(5, 0)).toBe(1);
   });
 });
 
-describe("realmOutsideReturnPosition (S6 fling 역재생)", () => {
-  it("elapsed 0 은 fling 끝점과 일치, duration 은 정확히 홈으로 착지(튐 없음)", () => {
+describe("realmOutsideReturnPosition (fling played in reverse)", () => {
+  it("matches the fling end at elapsed 0 and lands exactly home at duration (no jump)", () => {
     const from = { x: 120, y: -40 };
     const center = { x: 0, y: 0 };
-    // Reproduce where the entry fling ended (e = 1 at the fling duration).
+    // Where the entry fling ended (e = 1 at the fling duration).
     const flungEnd = realmOutsidePosition(from, center, REALM_OUTSIDE_FLING_MS);
     const start = realmOutsideReturnPosition(from, center, 0);
     expect(start.x).toBeCloseTo(flungEnd.x, 3);
@@ -296,7 +292,7 @@ describe("realmOutsideReturnPosition (S6 fling 역재생)", () => {
     expect(landed.y).toBeCloseTo(from.y, 3);
   });
 
-  it("반경이 시간에 따라 단조 감소한다(귀환)", () => {
+  it("decreases the radius monotonically over time (returning)", () => {
     const from = { x: 100, y: 0 };
     const center = { x: 0, y: 0 };
     const d = REALM_EXIT_OUTSIDE_RETURN_MS;
@@ -308,11 +304,11 @@ describe("realmOutsideReturnPosition (S6 fling 역재생)", () => {
     expect(r0).toBeCloseTo(100 + REALM_FLING_REACH, 0);
   });
 
-  it("reduced-motion(duration 0) 은 즉시 홈", () => {
+  it("goes home at once under reduced motion (duration 0)", () => {
     expect(realmOutsideReturnPosition({ x: 7, y: 3 }, { x: 0, y: 0 }, 5, { duration: 0 })).toEqual({ x: 7, y: 3 });
   });
 
-  it("중심과 겹친 노드는 fallback 각도로 귀환(NaN 없음)", () => {
+  it("returns a node on the centre along the fallback angle (no NaN)", () => {
     const p = realmOutsideReturnPosition({ x: 0, y: 0 }, { x: 0, y: 0 }, 10, { fallbackAngle: Math.PI / 2 });
     expect(Number.isNaN(p.x)).toBe(false);
     expect(Number.isNaN(p.y)).toBe(false);

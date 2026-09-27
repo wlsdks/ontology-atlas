@@ -118,7 +118,7 @@ describe("buildTopologyNodeFocus", () => {
     });
   });
 
-  it("과제 ⑩ — node.display 가 있으면 displayTitle 은 그것, title 은 원본 그대로", () => {
+  it("displayTitle uses node.display when present while title keeps the original", () => {
     const selected = node("capabilities/cli-developer-entry", "capability", [
       "capabilities/cli-developer-entry",
     ], {
@@ -187,10 +187,9 @@ describe("buildTopologyNodeFocus", () => {
     expect(focus.summary).toBeNull();
   });
 
-  // Regression: for a node with no `.md` of its own, `sourceSlug` is the
-  // document that cites it. Emitting the two slugs separately is what keeps a
-  // surface drawing "this node's document" from lying.
-  it("자기 문서가 없는 노드는 ownDocumentSlug 대신 mentionedInSlug 를 낸다", () => {
+  // Without its own `.md`, `sourceSlug` is the citing document; separate slugs keep "this node's
+  // document" honest.
+  it("a node without its own document gives mentionedInSlug instead of ownDocumentSlug", () => {
     const citedBy = "ontology/capabilities/frontmatter-to-ontology";
     const selected = node(
       "element:derive-ontology-from-vault",

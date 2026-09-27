@@ -1,25 +1,12 @@
 /**
- * The hex board's **lattice router** (spec §4). Routes never cross a tile — not by a check made
- * afterwards, but because the graph they are searched on has no edge over an occupied face.
- *
- * Nodes (unit space, cell circumradius 1):
- * - hex vertices — the gutter lattice between faces;
- * - centres of **empty** cells — the moat;
- * - face-edge midpoints of occupied cells — terminals, open only to the route that starts or
- *   ends on that tile.
- *
- * Edges (cost = length × weight): seams along cell edges (1.0 in the moat, 1.05 beside a tile,
- * 1.35 in the gutter between two tiles); empty centre ↔ its vertices (1.0); empty centre ↔ empty
- * neighbour centre (0.85, straight runs through the moat); terminal ↔ empty neighbour centre
- * (0.75, a perpendicular arrival); terminal ↔ its own edge's vertices (1.9, tangential; 5.0 when
- * the edge is shared with another tile).
- *
- * Search is Dijkstra from a set of terminals to a set of terminals. Routes drawn in one pass
- * share a `use` ledger: an edge already used by the same bundle costs ×0.5, so arrows into one
- * region share a trunk; by another bundle ×`otherPenalty`, so unrelated flows spread out.
- *
- * Everything is scale-free: every node sits at a fixed multiple of the cell radius, so the
- * lattice is built once per board and drawn at any R.
+ * The hex board's lattice router (spec §4). Routes never cross a tile because the search
+ * graph has no edge over an occupied face. Nodes: hex vertices (the gutter), empty cell
+ * centres (the moat), and occupied cells' edge midpoints (terminals open only to their own
+ * route). Edge cost is length × weight: seams 1.0 in the moat, 1.05 beside a tile, 1.35
+ * between tiles; empty centre ↔ vertices 1.0, ↔ empty neighbour 0.85; terminal ↔ empty
+ * neighbour 0.75, ↔ own vertices 1.9 (5.0 on a shared edge). Multi-source Dijkstra on a
+ * binary heap, O((V + E) log V). A shared ledger makes same-bundle edges cost ×0.5 and
+ * other-bundle edges ×`otherPenalty`. Scale-free: built once per board.
  */
 
 import { axialToUnit, hexKey, HEX_NEIGHBORS, SQRT3 } from "./hex-grid";
@@ -31,36 +18,32 @@ export interface HexLattice {
   xs: Float64Array;
   ys: Float64Array;
   kind: NodeKind[];
-  /** Adjacency: [neighbour, cost, edge id]. */
+  /** [neighbour, cost, edge id] */
   adj: [number, number, number][][];
-  /** Terminal node → the tile ids whose edge it sits on (two on a shared seam). */
+  /** Two tiles on a shared seam. */
   terminalOwners: (string[] | null)[];
-  /** Tile id → its six terminal nodes. */
   terminalsOf: Map<string, number[]>;
   edgeCount: number;
   buildMs: number;
 }
 
 export interface HexRoute {
-  /** Node indices, source terminal first. */
+  /** Source terminal first. */
   nodes: readonly number[];
-  /** Unit-space polyline. */
   points: { x: number; y: number }[];
-  /** The tile the route arrives at (the arrival notch points into it). */
+  /** The arrival notch points into it. */
   targetId: string;
   sourceId: string;
   /**
-   * The route stops short: the open lattice (see `HexRouter`'s `blocked`) had no way to the
-   * target, so this runs from the source as far toward it as the open lattice allows. Drawn
-   * as a stub with an arrow pointing at the target, never as an arrival.
+   * The open lattice had no way to the target, so this runs as far toward it as it can; drawn
+   * as a stub pointing at the target, never as an arrival.
    */
   stub?: boolean;
 }
 
 /**
- * Close every lattice node the predicate rejects — the router's way of keeping out of the
- * chrome. `open(x, y)` is asked in unit space; a closed node is never entered, so no route
- * can run over it, and a tile whose every terminal is closed can neither send nor receive.
+ * Keeps routes out of the chrome: a closed node is never entered, and a tile whose every
+ * terminal is closed can neither send nor receive.
  */
 export function closedNodes(lattice: HexLattice, open: (x: number, y: number) => boolean): Uint8Array {
   const n = lattice.xs.length;
@@ -71,10 +54,7 @@ export function closedNodes(lattice: HexLattice, open: (x: number, y: number) =>
 
 const APO = SQRT3 / 2;
 
-/**
- * Build the lattice over the board plus a margin of `pad` rings, so a route may run round the
- * board's edge when that is the only way.
- */
+/** The margin lets a route run round the board's edge when that is the only way. */
 export function buildHexLattice(layout: HexBoardLayout, pad = 2): HexLattice {
   const t0 = typeof performance !== "undefined" ? performance.now() : 0;
   const xs: number[] = [];
@@ -109,7 +89,6 @@ export function buildHexLattice(layout: HexBoardLayout, pad = 2): HexLattice {
     adj[b]!.push([a, L * w, id]);
   };
 
-  // The window: every cell within `pad` rings of an occupied one.
   let qMin = Infinity;
   let qMax = -Infinity;
   let rMin = Infinity;
@@ -180,7 +159,6 @@ export function buildHexLattice(layout: HexBoardLayout, pad = 2): HexLattice {
   };
 }
 
-/** A binary min-heap over (cost, node). */
 class Heap {
   private d: number[] = [];
   private n: number[] = [];
@@ -227,21 +205,15 @@ class Heap {
   }
 }
 
-/**
- * One routing pass: routes share its ledger, so later routes bundle with (or spread away from)
- * earlier ones. Build one per drawn state, not per frame.
- */
+/** Routes share one ledger, so build one per drawn state, not per frame. */
 export class HexRouter {
   private use = new Map<number, Map<string, number>>();
   constructor(
     readonly lattice: HexLattice,
     private otherPenalty = 1.15,
     /**
-     * Nodes a route may not enter (1 = closed), from `closedNodes`: the lattice is padded two
-     * rings past the board, and on screen those rings can lie under the map's chrome — the
-     * toolbar above, INDEX on the left, the inspector on the right, the legend below. Without
-     * this, the cheapest way round the board ran along the canvas's top edge under the
-     * toolbar (owner report, 2026-09-25).
+     * The padding rings can lie under the toolbar, INDEX, inspector or legend on screen;
+     * without closing them the cheapest way round ran under the toolbar.
      */
     private readonly blocked: Uint8Array | null = null,
   ) {}
@@ -250,7 +222,7 @@ export class HexRouter {
     src: ReadonlySet<number>,
     dst: ReadonlySet<number>,
     bundle: string,
-    /** When the target is unreachable, the reached node nearest this point (unit space). */
+    /** When the target is unreachable, the reached node nearest this point. */
     toward?: { x: number; y: number },
   ): { path: number[]; stub: boolean } | null {
     const L = this.lattice;
@@ -283,7 +255,7 @@ export class HexRouter {
       }
       for (const [v, w, e] of L.adj[u]!) {
         if (blocked && blocked[v]) continue;
-        // Other tiles' terminals are closed: a route never touches a tile it does not serve.
+        // A route never touches a tile it does not serve.
         if (L.kind[v] === "m" && !dst.has(v) && !src.has(v)) continue;
         const used = this.use.get(e);
         let m = 1;
@@ -319,7 +291,6 @@ export class HexRouter {
     return out;
   }
 
-  /** From any of `from`'s tiles to any of `to`'s. */
   route(from: Iterable<string>, to: Iterable<string>, bundle: string): HexRoute | null {
     const fromIds = new Set(from);
     const toIds = new Set(to);
@@ -327,11 +298,9 @@ export class HexRouter {
     const L = this.lattice;
     const allDst = this.terminals(toIds);
     const dst = new Set([...allDst].filter((t) => !blocked?.[t]));
-    // A seam two neighbours share is an arrival, never a departure: leaving from it would be
-    // a route of no length and no direction.
+    // A seam two neighbours share is an arrival, never a departure, or the route has no length.
     const src = new Set([...this.terminals(fromIds)].filter((t) => !allDst.has(t) && !blocked?.[t]));
     if (!src.size || !allDst.size) return null;
-    // Where the target is, for a stub when the open lattice cannot reach it.
     let tx = 0;
     let ty = 0;
     for (const t of allDst) {
@@ -343,8 +312,7 @@ export class HexRouter {
     if (!found || found.path.length < 2) return null;
     const { path, stub } = found;
     if (stub) {
-      // A stub earns its place only by getting clearly nearer: at least one cell radius closer
-      // to the target than the edge it left from.
+      // A stub must end at least one cell radius nearer the target than it started.
       const start = path[0]!;
       const end = path[path.length - 1]!;
       const d0 = Math.hypot(L.xs[start]! - toward.x, L.ys[start]! - toward.y);
@@ -363,9 +331,8 @@ export class HexRouter {
 }
 
 /**
- * Where a count pill sits on a canal (spec §4): on a moat centre, or a vertex touching at most
- * one tile, as near the route's middle as possible and at least `minGap` (unit space) from any
- * pill already placed.
+ * On a moat centre or a vertex touching at most one tile, near the route's middle and at
+ * least `minGap` from any placed pill.
  */
 export function pickPillSpot(
   layout: HexBoardLayout,
@@ -373,7 +340,7 @@ export function pickPillSpot(
   route: Pick<HexRoute, "nodes">,
   placed: readonly { x: number; y: number }[],
   minGap: number,
-  /** The pill's half-extent over R: no part of the pill may sit over a tile's face. */
+  /** No part of the pill may sit over a tile's face. */
   clearance = 0,
 ): { x: number; y: number } | null {
   const nearest = (x: number, y: number) => {
@@ -395,7 +362,6 @@ export function pickPillSpot(
       if (k === "v" && n > 1) return false;
       return d >= SQRT3 / 2 + clearance;
     })
-    // Moat centres first, then vertices; nearest the middle of the route within each.
     .sort((a, b) => Number(a.k !== "c") - Number(b.k !== "c") || Math.abs(a.i - mid) - Math.abs(b.i - mid) || a.i - b.i);
   for (const { id } of cands) {
     const x = lattice.xs[id]!;

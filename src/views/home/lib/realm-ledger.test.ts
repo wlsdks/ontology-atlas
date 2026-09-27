@@ -10,13 +10,8 @@ import {
 } from "./realm-ledger";
 
 /**
- * Realm ledger derivations over a small ontology:
- *   project P ─contains→ domain D1 ─contains→ cap C1 ─contains→ elem E1
- *                     └─contains→ cap C2
- *   project P ─contains→ domain D2 ─contains→ cap C3
- *   lateral boundary: C1 ─depends_on→ C3   (leaves D1's realm for D2)
- *                     E1 ─uses→ E9 (an element outside the graph, no domain)
- * Structural `contains` edges must be excluded from the boundary.
+ * Fixture: P contains D1 (C1 contains E1, C2) and D2 (C3).
+ * Lateral boundary: C1 depends_on C3 (D1 to D2) and E1 uses E9 (outside, no domain).
  */
 const node = (id: string, kind: string, title = id): KnowledgeGraphNode => ({
   id,
@@ -112,8 +107,7 @@ describe("computeRealmBoundary", () => {
   it("keeps only lateral edges that cross the member boundary", () => {
     const memberIds = collectRealmMemberIds(findRealmSubtree(roots, "D1")!);
     const boundary = computeRealmBoundary({ edges, memberIds, nodeById });
-    // C1 -depends_on-> C3 (out to D2) and E1 -uses-> E9 (out to E9). The
-    // parent contains P->D1 is structural → excluded.
+    // C1 -> C3 and E1 -> E9 cross; the structural P -> D1 contains edge does not.
     expect(boundary.total).toBe(2);
     const byEdge = new Map(boundary.crossings.map((c) => [c.edgeId, c]));
     expect(byEdge.get("C1-depends_on-C3")?.outsideId).toBe("C3");
