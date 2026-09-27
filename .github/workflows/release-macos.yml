@@ -72,10 +72,8 @@ jobs:
       #
       # This workflow generates `macos-release.generated.ts` after publishing, but its token
       # cannot push to protected main, so it uploads the file as an artifact for a person to
-      # apply in an ordinary pull request. On 2026-08-29 the owner found the download page still
-      # naming v1.0.0-rc.14 while rc.15 was published and the repository was on rc.16: the handoff
-      # had been forgotten twice and nothing went red, so visitors were being handed an older
-      # build with a straight face.
+      # apply in an ordinary pull request; a forgotten handoff leaves /download naming an older
+      # build.
       #
       # **Why here**: at admit time the newest published release is the last one, which is exactly
       # what the committed facts must describe. Checking after publication would compare against
@@ -105,8 +103,7 @@ jobs:
       # **It blocks on the runtimes this app runs, and only those** (narrowed 2026-08-26). It used
       # to fail on any of 39 listed agents moving, and it fired on all four releases of 2026-08-25/26
       # without the mover ever being one we launch. Each cost a refresh, a PR, a CI round and a
-      # retag to ship a version number for a tool nobody here uses; on rc.14 it was green at tag
-      # time and stale twenty seconds later, which is a rule nobody can satisfy. The blocking set is
+      # retag to ship a version number for a tool nobody here uses. The blocking set is
       # read from Rust's `ISOLATION` table so it cannot drift from what the app actually knows;
       # everything else is reported and does not stop the release.
       #
@@ -176,10 +173,8 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
 
-      # The compiler that bakes the MCP sidecar into a single binary (`bun build --compile`).
-      # It is not installed by default on the runner, so `v1.0.0-rc.2` stopped here — when bringing
-      # in bundling (#732), this installation step did not come along. Toolchain installations are
-      # gathered at the top.
+      # The compiler that bakes the MCP sidecar into a single binary (`bun build --compile`); the
+      # runner does not ship it. Toolchain installations are gathered at the top.
       - name: Setup Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
@@ -188,10 +183,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # `mcp/` is not a pnpm workspace member and uses its own `node_modules`
-      # (remnant of packages previously published separately to npm). Root install does not install it,
-      # so it exists only on human machines, not runners — `v1.0.0-rc.2` stopped while baking the sidecar
-      # because it could not find `@modelcontextprotocol/sdk`. There is exactly one pinned dependency.
+      # `mcp/` is not a pnpm workspace member and uses its own `node_modules`, which the root
+      # install does not populate on a runner. There is exactly one pinned dependency.
       #
       # Reason for `--frozen-lockfile`: the `package-lock.json` in this folder is **npm's**,
       # and pnpm does not read it. Running without a lock file causes the runner to resolve fresh
@@ -218,10 +211,9 @@ jobs:
 
       # After `tauri.conf.json` declares the MCP sidecar via `externalBin`,
       # **all cargo calls** require that file — not just the bundle step but also the below
-      # `cargo test`, which checks resource paths in the build script. The order of creating
-      # the sidecar only inside `desktop:build:app` stops here first
-      # (2026-07-28 v1.0.0-rc.2 failure). The runner is native architecture, so the host triple
-      # default is correct. The later bundle step calls it again but produces the same output.
+      # `cargo test`, which checks resource paths in the build script, so the sidecar is built
+      # here first. The runner is native architecture, so the host triple default is correct.
+      # The later bundle step calls it again but produces the same output.
       - name: Build bundled MCP sidecar
         run: pnpm mcp:build-binary
 
@@ -602,10 +594,6 @@ jobs:
           tag_name: ${{ needs.admit-release.outputs.release_tag }}
           target_commitish: ${{ needs.admit-release.outputs.release_sha }}
           draft: true
-          # Semver pre-release tags come after the hyphen (v1.1.0-rc.1). That single character
-          # separates "early adopters" from "everyone" — GitHub uses this flag to
-          # attach the Pre-release badge and exclude it from `releases/latest`.
-          prerelease: ${{ contains(needs.admit-release.outputs.release_tag, '-') }}
           generate_release_notes: true
           files: |
             release-assets/*/*.dmg
@@ -703,14 +691,9 @@ jobs:
 
       - name: Publish verified stable release
         run: |
-          # At publish time, the tag is the source of truth. Pinning `--prerelease=false` here
-          # means that as soon as the RC tag leaves draft status, it promotes to a stable release,
-          # completely removing the pre-release indicator.
-          if [[ "${RELEASE_TAG}" == *-* ]]; then
-            gh release edit "${RELEASE_TAG}" --draft=false --prerelease=true
-          else
-            gh release edit "${RELEASE_TAG}" --draft=false --prerelease=false
-          fi
+          # Clears a pre-release flag set by hand on the draft: the hosted updater skips a GitHub
+          # pre-release, and `desktop:verify-download` and `download:release-facts` below refuse one.
+          gh release edit "${RELEASE_TAG}" --draft=false --prerelease=false
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
@@ -721,7 +704,7 @@ jobs:
 
       - name: Generate verified release facts from admitted source
         run: |
-          pnpm download:release-facts -- --tag="${RELEASE_TAG}" --allow-prerelease
+          pnpm download:release-facts -- --tag="${RELEASE_TAG}"
           cp src/views/download/model/macos-release.generated.ts "$RUNNER_TEMP/macos-release.generated.ts"
         env:
           GITHUB_TOKEN: ${{ github.token }}

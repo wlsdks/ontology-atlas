@@ -1968,12 +1968,8 @@ describe('대화 패널 — 못 하는 일은 정직하게', () => {
   });
 
   /*
-   * ⚠️ Measured in the installed v1.0.0-rc.11 build: a turn ended on the agent's side without a
-   * `session/prompt` result. All nine steps finished, the adapter went idle at 0.35s of CPU over
-   * thirteen minutes, and because `prompt` is deliberately given **no timeout**, the panel kept
-   * claiming progress and refused every keystroke. `cancel` recovered it; nothing on screen said so.
-   *
-   * The point of these two is that a long turn and a dead one must *not* look the same.
+   * `prompt` has no timeout, so a turn that stopped answering must not look like a long
+   * one: these two check that the panel says so and points at the way out.
    */
   it('턴이 오래 조용하면 사실대로 말하고 나가는 길을 가리킨다', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });

@@ -31,7 +31,7 @@ export const TEMPLATE = `## YYYY-MM-DD · vX.Y.Z: <what this release means in on
 **Removed**: <what no longer exists>`;
 
 const HEADING = /^## (\d{4}-\d{2}-\d{2}) · (.+)$/;
-const RELEASE = /^(v\d+\.\d+\.\d+(?:-rc\.\d+)?|Unreleased): \S/;
+const RELEASE = /^(v\d+\.\d+\.\d+|Unreleased): \S/;
 const LABEL = /^\*\*([^*]+)\*\*[:：]?\s*(.*)$/;
 
 /** Split the changelog into entries; the preamble before the first entry is dropped. */

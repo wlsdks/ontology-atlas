@@ -118,17 +118,8 @@ test("both architectures are required", () => {
 });
 
 /**
- * v1.0.0-rc.1 stopped here on 2026-07-27: "architectures with no updater artifact:
- * aarch64, x64". Both arches built and signed successfully; **the place being searched
- * was wrong** — `merge-multiple: false` turns the artifact *name* into the folder, so
- * it is `release-assets/ontology-atlas-macos-aarch64/`, not `release-assets/aarch64/`.
- *
- * The first version of this fixture reproduced only the folder name and created an
- * **empty folder**, so it went green while CI stayed red — there were two
- * divergences: the name, and **the depth**. While there were four upload paths the
- * artifact root was their lowest common ancestor `bundle/`, so directly under the arch
- * folder there were only `dmg/` and `macos/`. The fixture therefore places the files
- * at their real locations too.
+ * CI names the arch folder after the artifact and may nest the archive below it, so
+ * the fixture places files where the release job really puts them.
  */
 test("resolves the arch folder CI actually produces, not the bare arch name", () => {
   const root = mkdtempSync(join(tmpdir(), "oa-archdir-"));
