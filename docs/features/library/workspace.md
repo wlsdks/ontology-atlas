@@ -106,7 +106,9 @@ The Galaxy candidate keeps a separate `mapId` for map focus; the compatible `v1`
 sidecar stores immutable UID identity and the manifest's exact `document.path` as
 display-only `lastKnownPath`. Source and Wiki attachments stay
 distinguishable from ontology members. Empty, loading, corrupt, and read-only states remain
-explicit, and creation routes to Galaxy instead of writing a second Library collection.
+explicit. With concepts available, creation routes to Map. With none, the primary
+action opens the existing Ontology document starter, since a documents-only folder
+redirects Map back to Library. Neither navigation writes a second collection.
 The empty state centers its complete explanation and next action inside the available
 pane; saved lists retain a top origin for scanning.
 

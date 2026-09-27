@@ -771,7 +771,7 @@
     "emptyDescription": "Pick concepts on the map and give the set a name. It stays in this folder when you reopen it.",
     "startingSource": "Concepts available in this ontology",
     "startingNoConcepts": "The map has no concepts yet.",
-    "addConcepts": "Add concepts on the map",
+    "addConcepts": "Start an ontology",
     "stepsLabel": "From selection to a saved set",
     "step": {
       "pick": "Pick",

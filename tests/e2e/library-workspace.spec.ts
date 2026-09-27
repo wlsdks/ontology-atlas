@@ -69,6 +69,16 @@ test('a no-slug Ontology entry opens graph-backed evidence instead of a Wiki gui
   await expect(page.locator('[data-docs-viewer]')).not.toContainText('<the page name>');
 });
 
+test('an empty concept set starts the ontology in a documents-only folder', async ({ page }) => {
+  await openLibrary(page, { 'sources/notes.md': '# Notes\nKeep the source as evidence.\n' });
+  await page.goto('/en/library/?tab=ontology&ontologyView=sets&guides=off&e2e=1');
+  await page.getByTestId('library-collections-add-concepts').click();
+  await expect(page.getByTestId('library-workspace-ontology')).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByTestId('library-ontology-documents')).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByRole('button', { name: 'Create starter seed', exact: true })).toBeVisible();
+  await expect(page.getByTestId('library-collections')).toHaveCount(0);
+});
+
 test('closing New wiki page preserves the source passage underneath', async ({ page }) => {
   await openLibrary(page);
   await page.getByRole('button', { name: /settlement-policy\.md/ }).first().click();

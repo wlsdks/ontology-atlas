@@ -771,7 +771,7 @@
     "emptyDescription": "지도에서 개념을 고르고 이름을 붙이면, 이 폴더를 다시 열 때도 그대로 남아요.",
     "startingSource": "이 온톨로지에서 고를 수 있는 개념",
     "startingNoConcepts": "아직 지도에 개념이 없어요.",
-    "addConcepts": "지도에서 개념 추가하기",
+    "addConcepts": "온톨로지 시작하기",
     "stepsLabel": "개념을 모으고 다시 살펴보는 방법",
     "step": {
       "pick": "고르기",

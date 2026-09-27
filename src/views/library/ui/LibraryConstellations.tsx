@@ -158,12 +158,7 @@ export function LibraryConstellations({
       />
     );
   } else if (saved.constellations.length === 0) {
-    /*
-     * **The primary door is the step the folder needs next** (2026-09-25, round four). With no
-     * concept in the folder, "Pick on the map" was the screen's accent button beside a list
-     * saying there was nothing to pick: the most prominent thing on the page contradicted the
-     * fact next to it. Then the door is the map itself, named for what to do there first.
-     */
+    // A documents-only folder redirects Map back to Library; start its ontology here first.
     const canPick = availableConcepts.length > 0;
     content = <ConstellationsStartingPoint title={t('emptyTitle')} description={t('emptyDescription')}
       sourceLabel={t('startingSource')} sourceCount={availableConcepts.length} concepts={startingConcepts} noConcepts={t('startingNoConcepts')}
@@ -172,7 +167,7 @@ export function LibraryConstellations({
       steps={(['pick', 'name', 'return'] as const).map((id) => ({ id, name: t(`step.${id}`), body: t(`step.${id}Body`) }))}
       action={canPick
         ? <Button className="atlas-touch-floor atlas-touch-floor-wide" onClick={createInGalaxy}><Plus size={ICON_SIZE.sm} aria-hidden />{t('create')}</Button>
-        : <Button data-testid="library-collections-add-concepts" className="atlas-touch-floor atlas-touch-floor-wide" onClick={() => router.push('/topology/')}><Orbit size={ICON_SIZE.sm} aria-hidden />{t('addConcepts')}</Button>} />;
+        : <Button data-testid="library-collections-add-concepts" className="atlas-touch-floor atlas-touch-floor-wide" onClick={() => router.push('/library/?tab=ontology&ontologyView=documents')}><Plus size={ICON_SIZE.sm} aria-hidden />{t('addConcepts')}</Button>} />;
   } else {
     content = (
       <ul
