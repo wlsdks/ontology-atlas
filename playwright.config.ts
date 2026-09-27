@@ -1,3 +1,5 @@
+import { existsSync } from 'node:fs';
+
 import { defineConfig } from '@playwright/test';
 
 import { POST_MERGE_SPECS } from './tests/e2e/post-merge-specs';
@@ -11,6 +13,9 @@ const webServerPort = new URL(baseURL).port || '3100';
 // that another worktree or project started (lesson 823b9af4).
 const foreignServerMessage = process.env.CI ? null : foreignServer(new URL(baseURL).hostname, webServerPort, process.cwd());
 if (foreignServerMessage) throw new Error(foreignServerMessage);
+if (!process.env.CI && process.env.PLAYWRIGHT_STATIC && !existsSync('out/index.html')) {
+  throw new Error('PLAYWRIGHT_STATIC=1 serves the static export in out/, which is missing: run `pnpm build` first.');
+}
 
 export function resolvePlaywrightWorkers(
   env: Record<string, string | undefined>,
