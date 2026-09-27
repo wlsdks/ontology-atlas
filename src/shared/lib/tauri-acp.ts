@@ -1,5 +1,4 @@
-import { invoke as tauriInvoke, isTauri } from '@tauri-apps/api/core';
-import { listen } from '@tauri-apps/api/event';
+import { Channel, invoke as tauriInvoke, isTauri } from '@tauri-apps/api/core';
 
 /**
  * ACP harness — the Tauri IPC bridge (`src-tauri/src/acp.rs` plus the five commands in
@@ -7,14 +6,13 @@ import { listen } from '@tauri-apps/api/event';
  *
  * Contract (the Rust code is the source of truth):
  * - `acp_detect_runtimes()` → `AcpRuntimeStatus[]` — what exists on this machine
- * - `acp_start(runtimeId, cwd)` → session name — spawns the process
+ * - `acp_start(runtimeId, cwd, onEvent)` → session name — spawns the process
  * - `acp_send(sessionId, line)` → send one line (Rust appends the newline)
  * - `acp_stop(sessionId)` → ends that session **and everything it spawned**
  * - `acp_permission_verdict(sessionId, filePath)` → `allow-inside-vault` | `ask`
  *
- * Four events come up from the child: `acp://message` (one protocol line),
- * `acp://stderr` (diagnostics), `acp://exit` (finished), `acp://notice` (dropped lines
- * and similar).
+ * Four kinds of event come up the session's own channel: `message` (one protocol line),
+ * `stderr` (diagnostics), `exit` (finished), `notice` (dropped lines and similar).
  *
  * **Web degradation contract.** A browser cannot spawn a process — not a gap, an
  * impossibility. Outside the Tauri runtime `isAcpBridgeAvailable()` is false and every
@@ -145,7 +143,11 @@ export async function startAcpSession(
 ): Promise<string | null> {
   const invoke = getInvoke();
   if (!invoke) return null;
-  return invoke<string>('acp_start', { runtimeId, cwd });
+  const stream: AcpSessionStream = { early: [], listeners: new Set() };
+  const onEvent = new Channel<AcpStreamEvent>((event) => deliver(stream, event));
+  const sessionId = await invoke<string>('acp_start', { runtimeId, cwd, onEvent });
+  sessionStreams.set(sessionId, stream);
+  return sessionId;
 }
 
 export async function sendAcpLine(sessionId: string, line: string): Promise<void> {
@@ -157,6 +159,7 @@ export async function sendAcpLine(sessionId: string, line: string): Promise<void
 export async function stopAcpSession(sessionId: string): Promise<void> {
   const invoke = getInvoke();
   if (!invoke) return;
+  sessionStreams.delete(sessionId);
   await invoke<void>('acp_stop', { sessionId });
 }
 
@@ -178,53 +181,52 @@ export async function acpPermissionVerdict(
   });
 }
 
-interface AcpLineEvent {
-  sessionId: string;
-  line: string;
+type AcpStreamEvent =
+  | { kind: 'message'; line: string }
+  | { kind: 'stderr'; line: string }
+  | { kind: 'notice'; message: string }
+  | { kind: 'exit'; code: number | null };
+
+interface AcpSessionHandlers {
+  onMessage?: (line: string) => void;
+  onStderr?: (line: string) => void;
+  onNotice?: (message: string) => void;
+  onExit?: (code: number | null) => void;
 }
 
-interface AcpExitEvent {
-  sessionId: string;
-  code: number | null;
+/** Events before the first listener wait for it. */
+interface AcpSessionStream {
+  early: AcpStreamEvent[] | null;
+  listeners: Set<AcpSessionHandlers>;
 }
 
-interface AcpNoticeEvent {
-  sessionId: string;
-  message: string;
+const sessionStreams = new Map<string, AcpSessionStream>();
+
+function dispatch(handlers: AcpSessionHandlers, event: AcpStreamEvent): void {
+  if (event.kind === 'message') handlers.onMessage?.(event.line);
+  else if (event.kind === 'stderr') handlers.onStderr?.(event.line);
+  else if (event.kind === 'notice') handlers.onNotice?.(event.message);
+  else handlers.onExit?.(event.code);
 }
 
-/**
- * Listens to one session's events. Calling the returned function detaches all of them.
- *
- * **Filtering out other sessions' lines happens here.** Leaving each caller to re-write
- * that filter means one of them eventually forgets, and then two conversations receive
- * each other's messages.
- */
+function deliver(stream: AcpSessionStream, event: AcpStreamEvent): void {
+  if (stream.early) stream.early.push(event);
+  else for (const handlers of stream.listeners) dispatch(handlers, event);
+}
+
+/** Listens to one session's own channel. Calling the returned function detaches. */
 export async function listenToAcpSession(
   sessionId: string,
-  handlers: {
-    onMessage?: (line: string) => void;
-    onStderr?: (line: string) => void;
-    onNotice?: (message: string) => void;
-    onExit?: (code: number | null) => void;
-  },
+  handlers: AcpSessionHandlers,
 ): Promise<() => void> {
-  if (!isAcpBridgeAvailable()) return () => {};
-  const unlisteners = await Promise.all([
-    listen<AcpLineEvent>('acp://message', (event) => {
-      if (event.payload.sessionId === sessionId) handlers.onMessage?.(event.payload.line);
-    }),
-    listen<AcpLineEvent>('acp://stderr', (event) => {
-      if (event.payload.sessionId === sessionId) handlers.onStderr?.(event.payload.line);
-    }),
-    listen<AcpNoticeEvent>('acp://notice', (event) => {
-      if (event.payload.sessionId === sessionId) handlers.onNotice?.(event.payload.message);
-    }),
-    listen<AcpExitEvent>('acp://exit', (event) => {
-      if (event.payload.sessionId === sessionId) handlers.onExit?.(event.payload.code);
-    }),
-  ]);
+  const stream = sessionStreams.get(sessionId);
+  if (!stream) return () => {};
+  stream.listeners.add(handlers);
+  const early = stream.early ?? [];
+  stream.early = null;
+  for (const event of early) dispatch(handlers, event);
   return () => {
-    for (const off of unlisteners) off();
+    stream.listeners.delete(handlers);
+    if (stream.listeners.size === 0) sessionStreams.delete(sessionId);
   };
 }

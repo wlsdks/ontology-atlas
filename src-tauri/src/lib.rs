@@ -752,26 +752,17 @@ impl AcpSessions {
 /// A counter, not the pid, which the OS reuses.
 static ACP_SESSION_SEQ: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
 
+/// A channel fetches payloads of 8 KB or more; `app.emit` evaluates them as script.
 #[derive(Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct AcpLineEvent {
-    session_id: String,
-    line: String,
+#[serde(tag = "kind", rename_all = "camelCase")]
+enum AcpStreamEvent {
+    Message { line: String },
+    Stderr { line: String },
+    Notice { message: String },
+    Exit { code: Option<i32> },
 }
 
-#[derive(Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct AcpExitEvent {
-    session_id: String,
-    code: Option<i32>,
-}
-
-#[derive(Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct AcpNoticeEvent {
-    session_id: String,
-    message: String,
-}
+type AcpStream = tauri::ipc::Channel<AcpStreamEvent>;
 
 /// The working folder must pass the picker's vault-root check, the child gets its
 /// own process group so grandchildren end with it, and PATH is rebuilt from the
@@ -782,6 +773,7 @@ fn acp_start(
     sessions: State<'_, AcpSessions>,
     runtime_id: String,
     cwd: String,
+    on_event: AcpStream,
 ) -> Result<String, String> {
     let root = fs::canonicalize(&cwd).map_err(|err| format!("cwd-unreadable:{err}"))?;
     if !root.is_dir() {
@@ -892,23 +884,19 @@ fn acp_start(
     let stdout = child.stdout.take().ok_or("stdout-unavailable")?;
     let stderr = child.stderr.take().ok_or("stderr-unavailable")?;
 
-    // Keeps the child's first stderr lines (at most three, `DEAD_SESSION_LOG_CHARS`
-    // each) for the exit log; an early exit with no output is logged as such, since
-    // silence is itself the clue.
+    // The first stderr lines go to the exit log; silence is itself the clue.
     let early_stderr: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
     let started_at = Instant::now();
     spawn_acp_line_pump(
-        app.clone(),
-        session_id.clone(),
+        on_event.clone(),
         stdout,
-        "acp://message",
+        |line| AcpStreamEvent::Message { line },
         None,
     );
     spawn_acp_line_pump(
-        app.clone(),
-        session_id.clone(),
+        on_event.clone(),
         stderr,
-        "acp://stderr",
+        |line| AcpStreamEvent::Stderr { line },
         Some(early_stderr.clone()),
     );
 
@@ -920,6 +908,7 @@ fn acp_start(
     {
         let app = app.clone();
         let session_id = session_id.clone();
+        let on_event = on_event.clone();
         std::thread::spawn(move || {
             let code = child.wait().ok().and_then(|status| status.code());
             log::info!("acp session {session_id} exited with code {code:?}");
@@ -939,12 +928,10 @@ fn acp_start(
             if let Some(state) = app.try_state::<AcpSessions>() {
                 let _ = state.remove(&session_id);
             }
-            let _ = app.emit("acp://exit", AcpExitEvent { session_id, code });
+            let _ = on_event.send(AcpStreamEvent::Exit { code });
         });
     }
 
-    // Emit after this command returns: the screen subscribes to `acp://notice` only once
-    // it has the session name. Progress every second covers a missed first notice.
     let first_run_message = match &npx_preflight {
         // Mention the healing for diagnostics.
         acp::NpxCachePreflight::HealedBrokenEntry { reason } => {
@@ -971,15 +958,7 @@ fn acp_start(
         let app = app.clone();
         let session_id = session_id.clone();
         std::thread::spawn(move || {
-            // Time for the screen to subscribe.
-            std::thread::sleep(std::time::Duration::from_millis(250));
-            let _ = app.emit(
-                "acp://notice",
-                AcpNoticeEvent {
-                    session_id: session_id.clone(),
-                    message,
-                },
-            );
+            let _ = on_event.send(AcpStreamEvent::Notice { message });
             let (Some(entry), Some(package)) = (entry, package) else {
                 return; // Only the healing failure; nothing to measure.
             };
@@ -998,23 +977,15 @@ fn acp_start(
                     break;
                 }
                 if acp::npx_entry_health(&entry, &package) == acp::NpxEntryHealth::Usable {
-                    let _ = app.emit(
-                        "acp://notice",
-                        AcpNoticeEvent {
-                            session_id: session_id.clone(),
-                            message: "npx-download-done".to_string(),
-                        },
-                    );
+                    let _ = on_event.send(AcpStreamEvent::Notice {
+                        message: "npx-download-done".to_string(),
+                    });
                     break;
                 }
                 let mb = acp::dir_size_bytes(&entry) / (1024 * 1024);
-                let _ = app.emit(
-                    "acp://notice",
-                    AcpNoticeEvent {
-                        session_id: session_id.clone(),
-                        message: format!("npx-download-progress:{mb}"),
-                    },
-                );
+                let _ = on_event.send(AcpStreamEvent::Notice {
+                    message: format!("npx-download-progress:{mb}"),
+                });
             }
         });
     }
@@ -1036,12 +1007,10 @@ fn clip_for_log(line: &str) -> String {
     format!("{kept}…")
 }
 
-/// Oversized lines are dropped and reported: truncation feeds half-JSON to the parser.
 fn spawn_acp_line_pump<R: std::io::Read + Send + 'static>(
-    app: AppHandle,
-    session_id: String,
+    on_event: AcpStream,
     stream: R,
-    event: &'static str,
+    event: fn(String) -> AcpStreamEvent,
     // A child that dies at once leaves nothing else to quote.
     early_lines: Option<Arc<Mutex<Vec<String>>>>,
 ) {
@@ -1050,7 +1019,7 @@ fn spawn_acp_line_pump<R: std::io::Read + Send + 'static>(
         loop {
             match acp::read_bounded_line(&mut reader, acp::MAX_LINE_BYTES) {
                 Ok(Some(bytes)) => {
-                    let line = String::from_utf8_lossy(&bytes).to_string();
+                    let line = acp_line_text(bytes);
                     if let Some(sink) = early_lines.as_ref() {
                         if let Ok(mut held) = sink.lock() {
                             if held.len() < DEAD_SESSION_LOG_LINES {
@@ -1058,23 +1027,13 @@ fn spawn_acp_line_pump<R: std::io::Read + Send + 'static>(
                             }
                         }
                     }
-                    let _ = app.emit(
-                        event,
-                        AcpLineEvent {
-                            session_id: session_id.clone(),
-                            line,
-                        },
-                    );
+                    let _ = on_event.send(event(line));
                 }
                 Ok(None) => break,
                 Err(err) => {
-                    let _ = app.emit(
-                        "acp://notice",
-                        AcpNoticeEvent {
-                            session_id: session_id.clone(),
-                            message: format!("dropped-line:{err}"),
-                        },
-                    );
+                    let _ = on_event.send(AcpStreamEvent::Notice {
+                        message: format!("dropped-line:{err}"),
+                    });
                     if err.kind() != std::io::ErrorKind::InvalidData {
                         break;
                     }
@@ -1082,6 +1041,11 @@ fn spawn_acp_line_pump<R: std::io::Read + Send + 'static>(
             }
         }
     });
+}
+
+fn acp_line_text(bytes: Vec<u8>) -> String {
+    String::from_utf8(bytes)
+        .unwrap_or_else(|invalid| String::from_utf8_lossy(invalid.as_bytes()).into_owned())
 }
 
 /// Never reimplemented on the screen: the looser copy would win, and only Rust can
@@ -3868,6 +3832,35 @@ mod tests {
         let expected = super::metadata_mtime_ms(&file).unwrap() as u64;
         assert_eq!(u64::from_le_bytes(stamp.try_into().unwrap()), expected);
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn an_agent_line_keeps_its_buffer_and_repairs_only_broken_utf8() {
+        let bytes = b"{\"jsonrpc\":\"2.0\"}".to_vec();
+        let buffer = bytes.as_ptr();
+        let line = super::acp_line_text(bytes);
+        assert_eq!(line, "{\"jsonrpc\":\"2.0\"}");
+        assert_eq!(line.as_ptr(), buffer, "a valid line must not be copied");
+        assert_eq!(super::acp_line_text(vec![b'a', 0xff, b'b']), "a\u{fffd}b");
+    }
+
+    #[test]
+    fn an_agent_event_names_its_kind_for_the_screen() {
+        let json = |event: &super::AcpStreamEvent| serde_json::to_value(event).unwrap();
+        assert_eq!(
+            json(&super::AcpStreamEvent::Message { line: "{}".into() }),
+            serde_json::json!({ "kind": "message", "line": "{}" })
+        );
+        assert_eq!(
+            json(&super::AcpStreamEvent::Exit { code: Some(1) }),
+            serde_json::json!({ "kind": "exit", "code": 1 })
+        );
+        assert_eq!(
+            json(&super::AcpStreamEvent::Notice {
+                message: "npx-download-done".into()
+            }),
+            serde_json::json!({ "kind": "notice", "message": "npx-download-done" })
+        );
     }
 
     #[test]

@@ -1623,7 +1623,7 @@ const ALLOWED_CAPABILITY_PERMISSIONS = [
   // to a webview that never called them: the frontend reaches Rust through app-defined commands
   // (which capabilities do not gate) plus one `listen`. Enumerating is what makes that visible.
   "core:default",
-  // `listen`, the frontend's only event-plugin call — `vault-changed`, `acp://*`.
+  // `listen`, the frontend's only event-plugin call.
   "core:event:default",
   // `getVersion()` in `AppUpdateSettings.tsx` — the app's own version shown beside the update
   // control. Not the version in the first log line: that one comes from Rust `package_info()`,

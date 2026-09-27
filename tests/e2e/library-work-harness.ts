@@ -171,7 +171,14 @@ export async function installLibraryWorkHarness(
         events.push({ event, payload });
         for (const id of listeners.get(event) ?? []) callbacks.get(id)?.({ event, payload });
       };
-      const acp = (line: Record<string, unknown>) => emit("acp://message", { sessionId, line: JSON.stringify(line) });
+      let acpChannel: { id: number } | null = null;
+      let acpChannelIndex = 0;
+      const acp = (line: Record<string, unknown>) => {
+        const message = { kind: "message", line: JSON.stringify(line) };
+        events.push({ event: "acp:message", payload: message });
+        const deliver = acpChannel ? (callbacks.get(acpChannel.id) as unknown as ((raw: { message: unknown; index: number }) => void) | undefined) : undefined;
+        deliver?.({ message, index: acpChannelIndex++ });
+      };
       const result = (id: JsonRpcId, value: unknown) => acp({ jsonrpc: "2.0", id, result: value });
       const update = (value: Record<string, unknown>) => acp({ jsonrpc: "2.0", method: "session/update", params: { sessionId, update: value } });
       const relative = (value: unknown) => {
@@ -365,7 +372,7 @@ export async function installLibraryWorkHarness(
           return Promise.resolve({ status: 200, body, host: "127.0.0.1:11434", durationMs: 1, loggedAt: new Date().toISOString() });
         }
         if (command === "secret_status") return Promise.resolve({ provider: args.provider, stored: false, last4: null });
-        if (command === "acp_start") return startError ? Promise.reject(new Error(startError)) : Promise.resolve(sessionId);
+        if (command === "acp_start") { if (startError) return Promise.reject(new Error(startError)); acpChannel = args.onEvent as { id: number }; acpChannelIndex = 0; return Promise.resolve(sessionId); }
         if (command === "acp_stop" || command === "start_vault_watch" || command === "ensure_vault_directory") return Promise.resolve(null);
         if (command === "acp_send") { try { const message: unknown = JSON.parse(String(args.line ?? "")); const parsed = record(message); if (parsed) handleClientMessage(parsed); } catch {} return Promise.resolve(null); }
         if (command === "acp_permission_verdict") return Promise.resolve("ask");
