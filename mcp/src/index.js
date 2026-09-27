@@ -115,8 +115,6 @@ server.setRequestHandler('tools/call', async (request) => {
       );
     }
     const args = normalizeToolArguments(request.params.arguments, name);
-    // An answer whose size the caller did not choose is cut to the per-response
-    // budget in `ok()`, which names this tool's paging arguments when it cuts.
     const respond = (result) => ok(result, { tool: name, bounded: !callerChoseSize(args) });
 
     // The write checkpoint sits before the switch, so a tool added later is covered

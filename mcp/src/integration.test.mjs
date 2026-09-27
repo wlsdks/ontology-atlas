@@ -2834,8 +2834,7 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
      * Frontmatter clean, meaning thin, and validate_vault says both. The exact three
      * findings are pinned because each proves a different wiring: two body checks
      * on the written prose, and `folder-only-evidence` (`path: src/review` is a
-     * directory) from the whole-vault pass. Files are listed in page order: those
-     * with errors first, then by slug.
+     * directory) from the whole-vault pass.
      */
     assert.equal(validatedResult.summary.errorFiles, 0);
     assert.deepEqual(
@@ -4602,8 +4601,6 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
       briefValidation.problems.some((problem) => problem.slug === "capabilities/session"),
       "full detail keeps whole-vault validation findings even when graph guidance is project-scoped",
     );
-    // The brief carries the first 20 problem files of the whole vault and names the
-    // validate_vault call for any beyond them; this vault's all fit.
     assert.deepEqual(
       {
         offset: briefValidation.problemsPagination.offset,

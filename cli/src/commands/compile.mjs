@@ -57,7 +57,6 @@ export async function runCompile(args) {
   let artifact;
   try {
     artifact = await callMcpTool(vaultRoot, 'compile_ontology', {
-      // The tool answers without arrays unless asked; this command prints the artifact.
       full: true,
       includeIndexes: parsed.includeIndexes,
       summary: parsed.summary && !parsed.fix,

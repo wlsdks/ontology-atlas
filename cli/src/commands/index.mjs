@@ -136,7 +136,6 @@ export async function runIndex(args) {
       problemFiles: validation.summary?.problemFiles ?? 0,
       errorFiles: validation.summary?.errorFiles ?? 0,
       warningFiles: validation.summary?.warningFiles ?? 0,
-      // validate_vault lists the first 100 drifts and counts the rest in `driftsOmitted`.
       pathDrift: (validation.pathDrift?.drifts?.length ?? 0) + (validation.pathDrift?.driftsOmitted ?? 0),
       /*
        * `checked: false` is not zero drift: when nothing was looked at every count is 0, so report

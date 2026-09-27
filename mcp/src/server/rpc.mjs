@@ -40,34 +40,14 @@ function okResponseBytes(result, prettyText = JSON.stringify(result, null, 2)) {
   return OK_ENVELOPE_BYTES + textFieldBytes + structuredContentBytes;
 }
 
-/**
- * Bytes of response text one call may return, the automatic limit `infer_imports`
- * already keeps. The wire carries the text twice (as text and as
- * `structuredContent`), so a response stays near 256 KiB.
- */
 const RESPONSE_TEXT_BUDGET_BYTES = 128 * 1024;
-/** Room kept for the `truncation` note and the corrected pages. */
-const TRUNCATION_NOTE_BYTES = 2048;
+const TRUNCATION_NOTE_RESERVE_BYTES = 2048;
 const TRUNCATION_MAX_DEPTH = 6;
 const TRUNCATION_MAX_PASSES = 4;
 
 const isRecord = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 const prettyBytes = (value) => Buffer.byteLength(JSON.stringify(value, null, 2) ?? '', 'utf8');
 
-/**
- * Every tool result goes out as pretty JSON text and as the same object in
- * `structuredContent`. The MCP specification asks a tool with structured output to
- * send the text too, and a client that declared the tool's `outputSchema` (the
- * SDK client Claude Code uses) rejects a success without `structuredContent`, so
- * both stay.
- *
- * A result whose text is over the budget keeps only the first rows of its longest
- * lists (`fitToResponseBudget`). `bounded: false` delivers it as it is, for a call
- * whose caller chose the size (`callerChoseSize`).
- *
- * @param {unknown} result
- * @param {{ tool?: string|null, bounded?: boolean }} [options]
- */
 function ok(result, { tool = null, bounded = true } = {}) {
   const compactPrompt = result?.contract === 'agentBriefCompact:v2'
     && typeof result?.handoffPrompt === 'string'
@@ -87,7 +67,6 @@ function ok(result, { tool = null, bounded = true } = {}) {
   return response;
 }
 
-/** Arrays reachable through plain objects, largest first; array elements are not entered. */
 function arraysByTextSize(result) {
   const found = [];
   const visit = (value, path) => {
@@ -104,10 +83,9 @@ function arraysByTextSize(result) {
   return found.sort((left, right) => right.bytes - left.bytes);
 }
 
-/** How many leading elements to keep so about `excess` bytes go; at least one stays. */
 function leadingElementsToKeep(array, excess, depth) {
-  // Each element sits on its own lines, indented once more than its array.
-  const lineOverhead = 2 * (depth + 1) + 2;
+  const elementIndentBytes = 2 * (depth + 1);
+  const lineOverhead = elementIndentBytes + ',\n'.length;
   let kept = array.length;
   let removed = 0;
   while (kept > 1 && removed < excess) {
@@ -128,13 +106,6 @@ function withValueAt(root, path, value) {
   return copy;
 }
 
-/**
- * The page a result reports for a cut array, corrected so `nextOffset` resumes
- * right after the rows that stayed: `<key>Pagination` beside it, or a
- * `pagination` whose `returned` counted exactly this array (`list_concepts`). A
- * `nextCall` beside it that resumed at the old offset moves with it, and a
- * `<key>Hint` that described the old page is dropped.
- */
 function withCorrectedPage(root, path, originalLength, kept) {
   const parentPath = path.slice(0, -1);
   const key = path.at(-1);
@@ -160,42 +131,25 @@ function withCorrectedPage(root, path, originalLength, kept) {
 }
 
 const PAGING_ARGUMENT = /(?:limit|offset|cursor)$/i;
-/** Arguments that choose an answer's shape or size without paging it. */
 const SHAPE_ARGUMENTS = new Set(['full', 'detail', 'body', 'summary', 'includeIndexes', 'allowLargeResponse', 'reviewMode']);
 
-/** The arguments of `tool` that page or bound its answer, for the truncation hint. */
 function pagingArgumentsOf(tool) {
   const properties = TOOL_BY_NAME.get(tool)?.inputSchema?.properties ?? {};
   return Object.keys(properties).filter((name) => PAGING_ARGUMENT.test(name));
 }
 
-/**
- * Whether the caller chose the answer's size: a page argument (`limit`, `offset`,
- * `cursor` and their prefixed forms) or a shape argument (`full`, `detail`,
- * `body`, `summary`, ...). Such an answer is delivered as asked, the way
- * `infer_imports` honours an explicit request for its full scan: `project_scope`
- * with `limit: 500` has no offset, so a cut would leave rows no call can reach.
- */
 function callerChoseSize(args) {
   return Object.entries(args ?? {}).some(([name, value]) => (
     value !== undefined && (PAGING_ARGUMENT.test(name) || SHAPE_ARGUMENTS.has(name))
   ));
 }
 
-/**
- * Cuts the longest lists of an over-budget result to their first rows until its
- * text fits, and says so: `truncated: true` and `truncation` (budget, full size,
- * each cut list's path with the rows kept of the total, and how to page or
- * narrow). A page the result reports for a cut list is corrected, so an agent
- * that follows `nextOffset` loses no row. A result with no list to cut is
- * returned unchanged.
- */
 function fitToResponseBudget(result, { bytes, budgetBytes, tool }) {
   let fitted = result;
   let current = bytes;
   const cuts = new Map();
   for (let pass = 0; pass < TRUNCATION_MAX_PASSES && current > budgetBytes; pass += 1) {
-    let excess = current - budgetBytes + TRUNCATION_NOTE_BYTES;
+    let excess = current - budgetBytes + TRUNCATION_NOTE_RESERVE_BYTES;
     for (const { path, array } of arraysByTextSize(fitted)) {
       if (excess <= 0) break;
       const { kept, removed } = leadingElementsToKeep(array, excess, path.length);

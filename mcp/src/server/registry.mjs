@@ -4922,7 +4922,6 @@ const TOOLS_FOR_LIST_ALL = TOOLS.map((tool) => ({
     ...tool.inputSchema,
     additionalProperties: false,
   },
-  // Any answer may be cut to the per-response budget (`ok()`), so every schema allows the note.
   ...(tool.outputSchema ? { outputSchema: withResponseTruncationFields(tool.outputSchema) } : {}),
 }));
 // tools/list surface — filtered down to read tools in read-only mode.

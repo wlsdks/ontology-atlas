@@ -126,46 +126,32 @@ function validateWikiTool({ paths } = {}) {
   };
 }
 
-/** Problem files one `validate_vault` page returns unless `limit` says otherwise. */
 const VALIDATION_PAGE_LIMIT = 100;
-/** Problem files a brief (`health`, `workspace_brief`, `agent_brief`) carries. */
 const BRIEF_PROBLEM_LIMIT = 20;
-/** Files each `summary.byCode` entry names; its `count` stays the full number. */
 const BY_CODE_FILE_SAMPLE = 20;
-/** Path drifts one `validate_vault` answer lists; `driftsOmitted` counts the rest. */
 const VALIDATION_DRIFT_LIMIT = 100;
-/** Path drifts a brief carries. */
 const BRIEF_DRIFT_LIMIT = 20;
 
-/**
- * `validate_vault`: one page of the problem files (`offset`, `limit`, default 100)
- * with the whole-vault counts. A 12k-node vault's full report was 30 MB, and the
- * three briefs embedded it whole.
- */
 function validateVaultTool({ repoRoot, offset, limit } = {}, loadedDocs = null) {
   requireOptionalNonNegativeInteger(offset, 'offset');
   requireOptionalPositiveInteger(limit, 'limit', { max: 500 });
   return pageVaultValidation(validateVaultReport({ repoRoot }, loadedDocs), {
     offset: offset ?? 0,
     limit: limit ?? VALIDATION_PAGE_LIMIT,
-    // A default page fits the response budget; an explicit `limit` is delivered as asked.
     textBudget: limit === undefined ? RESPONSE_TEXT_BUDGET_BYTES : null,
   });
 }
 
-/** Text a page keeps free for its hint and the response envelope. */
-const PAGE_TEXT_RESERVE_BYTES = 4096;
+const PAGE_HINT_AND_ENVELOPE_BYTES = 4096;
+const PROBLEM_ROW_INDENT_BYTES = 4;
 
 const prettyBytes = (value) => Buffer.byteLength(JSON.stringify(value, null, 2), 'utf8');
 
-/**
- * One page of a report: problem files from `offset`, errors first and then by
- * slug, so pages are stable while the vault is; `summary` keeps the whole-vault
- * counts and names at most `BY_CODE_FILE_SAMPLE` files per code, and `pathDrift`
- * lists at most `driftLimit` drifts and counts the rest in `driftsOmitted`. With
- * a `textBudget` the page also stops before its text would pass it (a problem
- * file is about 2 KB, so 100 of them could not fit), and `nextOffset` resumes there.
- */
+function problemRowBytes(row) {
+  const text = JSON.stringify(row, null, 2);
+  return Buffer.byteLength(text, 'utf8') + PROBLEM_ROW_INDENT_BYTES * text.split('\n').length + ',\n'.length;
+}
+
 function pageVaultValidation(report, { offset, limit, textBudget = null, driftLimit = VALIDATION_DRIFT_LIMIT }) {
   const total = report.problems.length;
   const start = Math.min(offset, total);
@@ -188,12 +174,10 @@ function pageVaultValidation(report, { offset, limit, textBudget = null, driftLi
   let problems = report.problems.slice(start, start + limit);
   let stoppedForSize = false;
   if (textBudget !== null) {
-    let room = textBudget - prettyBytes(frame) - PAGE_TEXT_RESERVE_BYTES;
+    let room = textBudget - prettyBytes(frame) - PAGE_HINT_AND_ENVELOPE_BYTES;
     let fitting = 0;
     for (const row of problems) {
-      // Inside the answer every line of a row is indented four more spaces.
-      const text = JSON.stringify(row, null, 2);
-      const rowBytes = Buffer.byteLength(text, 'utf8') + 4 * (text.split('\n').length) + 2;
+      const rowBytes = problemRowBytes(row);
       if (fitting > 0 && rowBytes > room) break;
       room -= rowBytes;
       fitting += 1;
@@ -220,10 +204,6 @@ function pageVaultValidation(report, { offset, limit, textBudget = null, driftLi
   };
 }
 
-/**
- * What a brief embeds: the whole-vault counts, the first problem files, the first
- * path drifts, and the `validate_vault` call that returns the rest.
- */
 function briefVaultValidation(report) {
   const page = pageVaultValidation(report, { offset: 0, limit: BRIEF_PROBLEM_LIMIT, driftLimit: BRIEF_DRIFT_LIMIT });
   return {
@@ -239,10 +219,6 @@ function briefVaultValidation(report) {
   };
 }
 
-/**
- * The whole report, every problem file included, for callers that judge the vault
- * (the briefs' checks, finalize, git_snapshot, index_project) rather than show it.
- */
 function validateVaultReport({ repoRoot } = {}, loadedDocs = null) {
   requireOptionalNonBlankString(repoRoot, 'repoRoot');
   const docs = loadedDocs ?? loadVaultDocs(VAULT_ROOT);

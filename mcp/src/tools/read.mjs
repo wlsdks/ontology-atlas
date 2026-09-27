@@ -371,7 +371,6 @@ function getConceptsBatch({ slugs, uids, body }) {
   return { concepts };
 }
 
-/** Matches find_evidence returns unless `limit` says otherwise: an unlimited search for a common word was 12.9 MB at 12k nodes. */
 const FIND_EVIDENCE_DEFAULT_LIMIT = 50;
 
 function findEvidence({ title, limit = FIND_EVIDENCE_DEFAULT_LIMIT, nodesOnly = false } = {}) {

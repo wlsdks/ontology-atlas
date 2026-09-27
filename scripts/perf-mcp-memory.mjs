@@ -24,6 +24,7 @@ const BUDGETS = {
   leakBytesPerCall: 64 * KB,
   // measured 2026-09-28: 85 KB per commit
   headMoveBytesPerCommit: 2 * MB,
+  // measured 2026-09-28: at most 243 KB (agent_brief), the response budget itself
   briefWireBytes: 256 * KB,
 };
 

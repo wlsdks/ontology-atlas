@@ -22,11 +22,6 @@ function typeOf(value) {
   return typeof value;
 }
 
-/**
- * The keywords the tool output schemas use, checked as an MCP client checks
- * `structuredContent`; any other keyword fails, so a schema cannot pass by being
- * misunderstood.
- */
 function schemaErrors(schema, value, path = '$') {
   if (schema === true || schema === undefined) return [];
   if (schema === false) return [`${path}: not allowed`];
@@ -95,10 +90,6 @@ function writeNode(root, slug, frontmatter, body) {
   ].join('\n'));
 }
 
-/**
- * 30 capabilities that leave their definition, boundaries and uncertainty
- * unstated (warnings), and two notes with an empty `kind:` (errors).
- */
 function vaultWithProblems() {
   const root = realpathSync(mkdtempSync(join(tmpdir(), 'atlas-response-bounds-')));
   mkdirSync(join(root, 'domains'));
@@ -124,7 +115,6 @@ function vaultWithProblems() {
   return root;
 }
 
-/** Runs tool handlers in their own process, with the vault root they read at import. */
 function inServer(root, body) {
   const modules = Object.fromEntries(['tools/graph.mjs', 'tools/validate-vault.mjs', 'tools/read.mjs', 'server/rpc.mjs']
     .map((file) => [file, new URL(`./${file}`, import.meta.url).href]));
@@ -314,6 +304,13 @@ test('the response budget cuts the longest list, keeps its page resumable and sa
   assert.deepEqual(structured.small, [1, 2, 3]);
   assert.match(structured.truncation.hint, /offset, limit/);
   assert.deepEqual(result.rows.length, 900, 'the handler result is not modified');
+});
+
+test('ok() sends the JSON text the MCP spec asks for and the structuredContent an outputSchema client requires', () => {
+  const result = { rows: [{ slug: 'a' }] };
+  const response = ok(result);
+  assert.equal(response.content[0].text, JSON.stringify(result, null, 2));
+  assert.equal(response.structuredContent, result);
 });
 
 test('the response budget leaves small, explicit and list-free answers alone', () => {

@@ -59,11 +59,6 @@ import { loadVaultDocs } from '../vault.mjs';
 import { attachVaultValidation } from './maintenance.mjs';
 import { buildSummaryFreshness } from './vault-nodes.mjs';
 
-/**
- * What `compile_ontology` answers when no argument asks for arrays, and the two
- * ways to ask: the artifact grows with the vault (44 MB of nodes and edges at 12k
- * nodes, 103 MB with indexes), so the default is its counts.
- */
 const COMPILE_SUMMARY_DELIVERY = Object.freeze({
   selection: 'summary_default',
   reason: 'No argument asked for arrays, so this is the bounded summary: counts, graphHash and aggregates.',

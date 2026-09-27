@@ -846,10 +846,9 @@ function finalizeProjectMeaningSchemaFailure(tool) {
     'measuredAt',
     'meaningAssessment',
   ];
-  // Every tool schema also declares the response-budget note (`truncated`,
-  // `truncation`); the flat receipt fields are what this contract pins.
+  const responseBudgetFields = new Set(['truncated', 'truncation']);
   const receiptFields = Object.keys(output?.properties ?? {})
-    .filter((name) => name !== 'truncated' && name !== 'truncation');
+    .filter((name) => !responseBudgetFields.has(name));
   if (
     output?.type !== 'object' ||
     !sameArray(output.required, required) ||

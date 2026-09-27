@@ -1995,11 +1995,6 @@ function nonBlankStringSchema(description, extra = {}) {
   };
 }
 
-/**
- * The two fields any answer may gain when its text passes the per-response budget
- * (`ok()` in `rpc.mjs`). Every tool's `outputSchema` declares them, because a
- * client validates `structuredContent` against it and would reject a cut answer.
- */
 const RESPONSE_TRUNCATION_OUTPUT_PROPERTIES = Object.freeze({
   truncated: {
     type: 'boolean',
@@ -2033,7 +2028,6 @@ const RESPONSE_TRUNCATION_OUTPUT_PROPERTIES = Object.freeze({
   },
 });
 
-/** `outputSchema` with the truncation fields added at the top level. */
 function withResponseTruncationFields(outputSchema) {
   if (!outputSchema || outputSchema.type !== 'object') return outputSchema;
   return {

@@ -43,7 +43,6 @@ export async function runExport(args) {
   let artifact;
   try {
     // Full graph — no pagination — so the export is a complete snapshot.
-    // Every node and edge: without `full` the tool answers with counts only.
     artifact = await callMcpTool(vaultRoot, 'compile_ontology', { full: true });
   } catch (err) {
     process.stderr.write(
