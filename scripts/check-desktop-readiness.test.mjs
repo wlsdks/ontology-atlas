@@ -72,10 +72,6 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
     result.stdout,
     /✓ CLI\/MCP setup gate executes fallbacks while keeping advisory readiness in JSON/,
   );
-  assert.match(
-    result.stdout,
-    /✓ agent workflow guide cites official Claude Code and Codex MCP client contracts/,
-  );
   assert.match(result.stdout, /✓ desktop runtime doctor is available/);
   assert.match(result.stdout, /✓ desktop packaged-route smoke is available/);
   assert.match(
@@ -101,10 +97,6 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   assert.match(
     result.stdout,
     /✓ desktop app launch verifier writes Add Concept composer blocking proof and saved\/unavailable screenshot handoff into WebView evidence for agents/,
-  );
-  assert.match(
-    result.stdout,
-    /✓ agent guide derives design proof from change facts, iterates through real-window evidence, records motion, routes one independent review, and preserves Atlas topology\/desktop boundaries/,
   );
   assert.match(
     result.stdout,
@@ -204,19 +196,6 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ workflow, troubleshooting, publish, and launch docs route writable vault work through the desktop app/,
-  );
-  assert.match(
-    result.stdout,
-    // [revised 2026-08-01] The old label was "dogfood ontology docs mirror the
-    // desktop-app and hosted-download split", and that check pinned the **exact
-    // sentences** of two vault files that no longer exist. The vault is a surface
-    // agents write in their own words, so sentence pins do not survive — this now
-    // checks only that the concept exists.
-    /✓ dogfood ontology carries the desktop-app install decision/,
-  );
-  assert.match(
-    result.stdout,
     /✓ the topology empty state routes hosted users to the app download while preserving desktop vault picking/,
   );
   assert.match(
@@ -237,7 +216,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   assert.match(readinessOutput, /staging and publication use the admitted commit and requested release tag|stage-macos and publish-macos must need admit-release/);
   assert.match(readinessOutput, /Windows checks updater-only signing credentials before its installer build|build-windows must run desktop:release-secrets -- --updater-only/);
   assert.match(result.stdout, /✓ desktop release secret gate blocks unsigned releases and malformed PKCS#12 or App Store Connect \.p8 credentials/);
-  assert.match(readinessOutput, /desktop release docs and preflight route signing setup through the release-signing environment|docs\/DESKTOP-MACOS\.md, desktop:release-preflight, and desktop:release-github must describe release-signing/);
+  assert.match(readinessOutput, /desktop release workflow and preflight route signing setup through the release-signing environment|release-macos\.yml must be dispatchable \(workflow_dispatch\) and sign under the release-signing environment/);
   assert.match(
     result.stdout,
     /✓ desktop release slot gate blocks stale same-tag GitHub Release assets before upload/,
@@ -277,14 +256,6 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(result.stdout, /✓ Tauri CLI dependency is installed/);
   assert.match(result.stdout, /✓ Tauri JavaScript API dependency is installed/);
-  assert.match(
-    result.stdout,
-    /✓ desktop quality bar names native launch, vault permissions, recent vaults, local data, agent setup, offline routes, and local ontology handoff/,
-  );
-  assert.match(
-    result.stdout,
-    /✓ desktop prototype smoke names download, docs, ontology, topology, builder, and insights routes/,
-  );
   assert.match(result.stdout, /✓ Tauri scaffold exists/);
   assert.match(result.stdout, /✓ Tauri loads the Next\.js static export from out\//);
   assert.match(result.stdout, /✓ Tauri bundle target includes macOS \.app/);

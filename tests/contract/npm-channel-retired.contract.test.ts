@@ -2,6 +2,8 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { CLI_COMMANDS as REGISTERED_CLI_COMMANDS } from "../../cli/src/lib/cli-commands.mjs";
+
 /**
  * Gate against guidance that resurrects the retired npm channel.
  *
@@ -49,6 +51,27 @@ import { describe, expect, it } from "vitest";
  * (`src/shared/config/cli-invocation.ts`).
  */
 
+/**
+ * Tier C — bare invocations in source that **read as a command**. The product
+ * name in prose ("ontology-atlas contributors", "Use this ontology-atlas run
+ * order") is not a command, so it is a violation **only when a real CLI command
+ * name follows**.
+ */
+// Derived from the CLI's own registry: a hand-kept copy had drifted to miss ten
+// real commands (`analysis`, `architecture`, `wiki-validate`, …) by 2026-09-27.
+const CLI_COMMANDS: readonly string[] = [...REGISTERED_CLI_COMMANDS];
+if (CLI_COMMANDS.length === 0) throw new Error("the CLI command registry is empty");
+
+/**
+ * A name inside a **placeholder** such as `<ontology-atlas checkout>` is not a
+ * command — it is part of the live form (`node <…>/cli/src/index.mjs`). So an
+ * opening angle bracket and a path separator are excluded from the preceding
+ * position.
+ */
+const BARE_CLI_PATTERN = new RegExp(
+  `(?<![\\w/<-])ontology-atlas (?:${CLI_COMMANDS.map((c) => c.replace(/-/g, "\\-")).join("|")})(?![\\w-])`,
+);
+
 /** An attempt to run the dead channel — only forms where runner and package meet on one line. */
 const DEAD_INVOCATION: ReadonlyArray<{ id: string; pattern: RegExp }> = [
   { id: "npx-ontology-atlas", pattern: /\bnpx\b[^\n]*\bontology-atlas\b/ },
@@ -65,11 +88,7 @@ const DEAD_INVOCATION: ReadonlyArray<{ id: string; pattern: RegExp }> = [
    * Tier A and inside fences only in Tier B (saying "that is dead" in prose requires
    * naming it).
    */
-  {
-    id: "bare-ontology-atlas",
-    pattern:
-      /(?<![\w/<-])ontology-atlas (?:absorb|add|agent-activity|agent-brief|agent-files|agent-setup|all-paths|analyze|backlinks|blast-radius|bootstrap|compile|components|cycles|delete|domain-matrix|explain|export|facets|find|growth|health|hubs|import|index|infer-imports|init|list|maintenance|match-edges|match-nodes|mcp-verify|merge|moment|node|node-profile|orphans|overview|path|pattern-walk|preflight|project-map|query|reachability|relate|relation-check|rename|schema|similar|snapshot|topological-order|validate|workspace-brief)(?![\w-])/,
-  },
+  { id: "bare-ontology-atlas", pattern: BARE_CLI_PATTERN },
 ];
 
 /**
@@ -108,33 +127,6 @@ const TIER_B_FILES = [
   "mcp/README.md",
 ];
 
-/**
- * Tier C — bare invocations in source that **read as a command**. The product
- * name in prose ("ontology-atlas contributors", "Use this ontology-atlas run
- * order") is not a command, so it is a violation **only when a real CLI command
- * name follows**.
- */
-const CLI_COMMANDS = [
-  "absorb", "add", "agent-activity", "agent-brief", "agent-files", "agent-setup",
-  "all-paths", "analyze", "backlinks", "blast-radius", "bootstrap",
-  "compile", "components", "cycles", "delete", "domain-matrix", "explain",
-  "export", "facets", "find", "growth", "health", "hubs", "import", "index",
-  "infer-imports", "init", "list", "maintenance", "match-edges", "match-nodes",
-  "mcp-verify", "merge", "moment", "node", "node-profile", "orphans", "overview",
-  "path", "pattern-walk", "preflight", "project-map", "query", "reachability",
-  "relate", "relation-check", "rename", "schema", "similar", "snapshot",
-  "topological-order", "validate", "workspace-brief",
-] as const;
-
-/**
- * A name inside a **placeholder** such as `<ontology-atlas checkout>` is not a
- * command — it is part of the live form (`node <…>/cli/src/index.mjs`). So an
- * opening angle bracket and a path separator are excluded from the preceding
- * position.
- */
-const BARE_CLI_PATTERN = new RegExp(
-  `(?<![\\w/<-])ontology-atlas (?:${CLI_COMMANDS.map((c) => c.replace(/-/g, "\\-")).join("|")})(?![\\w-])`,
-);
 
 /**
  * Only these files may carry the dead name literally — one **produces the live

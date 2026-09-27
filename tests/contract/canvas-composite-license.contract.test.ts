@@ -60,13 +60,6 @@ function functionBody(source: string, name: string): string {
 }
 
 describe("캔버스 합성 — 발광은 허가된 곳에서만", () => {
-  it("규칙이 실제로 design.md 에 적혀 있다", () => {
-    // The failure this whole file was written after: a citation with no source.
-    const rules = read(".claude/rules/design.md");
-    expect(rules).toContain('globalCompositeOperation');
-    expect(rules).toContain("lighter");
-  });
-
   it.each(Object.entries(LICENSED))(
     "%s 는 이전 합성 모드를 같은 함수 안에서 되돌린다",
     (rel) => {

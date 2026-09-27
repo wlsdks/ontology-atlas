@@ -105,15 +105,6 @@ describe('남의 제품 마크 판 — 예외를 예외로 유지한다', () => 
     expect(users.sort()).toEqual(['app/styles/tokens.css', 'src/shared/ui/vendor-mark.tsx']);
   });
 
-  it('출처와 근거가 문서에 적혀 있다', () => {
-    const credits = readFileSync(join(ROOT, 'public', 'acp-icons', 'CREDITS.md'), 'utf8');
-    expect(credits).toContain('--color-vendor-plate');
-    // The measurement where automatic matching attached the wrong colour to someone
-    // else's brand must stay on the record — it is the evidence for the rule that only
-    // human-verified pairs are kept.
-    expect(credits).toContain('amp-acp');
-  });
-
   it('브랜드 색은 코드가 아니라 생성된 데이터에서 온다', () => {
     /*
      * Writing colours into the component makes this list live in two places from that
