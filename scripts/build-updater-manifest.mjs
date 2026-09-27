@@ -41,18 +41,9 @@ function fail(message) {
 }
 
 /**
- * Finds the per-arch artifact folder.
- *
- * In CI the folder name is the **artifact name**, not the arch
- * (`ontology-atlas-macos-aarch64`), because `merge-multiple: false` turns that name
- * straight into a folder. The first version looked for `<dir>/aarch64` and stopped a
- * real release with "architectures with no updater artifact: aarch64, x64"
- * (v1.0.0-rc.1, 2026-07-27). The build was fine; the place being searched was wrong.
- *
- * Rather than pinning the name, it looks for **a folder ending in the arch**, which
- * survives an artifact rename. There must be exactly one: with several there is no
- * way to know which belongs to that arch, and choosing wrong ships users an app for
- * a different architecture.
+ * Finds the per-arch artifact folder. CI names it after the artifact
+ * (`ontology-atlas-macos-aarch64`), so exactly one folder ending in the arch must
+ * match: with several, a wrong-architecture app could ship.
  */
 export function resolveArchDir(root, arch) {
   if (!fs.existsSync(root)) return null;
@@ -85,22 +76,9 @@ function collectArchives(dir) {
 }
 
 /**
- * Finds the updater artifact **anywhere under** the arch folder.
- *
- * The depth was never our choice. Given several paths,
- * `actions/upload-artifact` takes their lowest common ancestor as the artifact root,
- * and while `bundle/dmg/*` and `bundle/macos/*` were uploaded together that root was
- * `bundle/` — directly under the arch folder there were only `dmg/` and `macos/`,
- * with `.app.tar.gz` one level deeper. That is what stopped v1.0.0-rc.1 with
- * "architectures with no updater artifact".
- *
- * Today `scripts/stage-macos-release-assets.mjs` gathers everything into one flat
- * folder before upload. The finder still avoids depending on depth, because a rule
- * that lives in one person's head goes out of step again.
- *
- * There must be **exactly one** archive for that arch — with several there is no way
- * to know which is this arch's, and choosing wrong ships users an app for a
- * different architecture.
+ * Finds the updater archive at any depth under the arch folder, because the upload
+ * step's common-ancestor root decides the depth. Exactly one archive per arch: with
+ * several, a wrong-architecture app could ship.
  */
 export function findUpdaterArtifacts(dir) {
   if (!dir || !fs.existsSync(dir)) return null;

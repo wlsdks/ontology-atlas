@@ -10,10 +10,8 @@ import { describe, expect, it } from "vitest";
  * build script checks the resource path exists and dies with
  * `resource path ... doesn't exist` when it does not.
  *
- * On 2026-07-28 `v1.0.0-rc.2` stopped exactly here. The sidecar was built only
- * inside `desktop:build:app`, but the workflow runs `cargo test`
- * (= `test:desktop:bridge`) before that. Both architectures failed and staging and
- * publishing were skipped.
+ * The workflow runs `cargo test` (= `test:desktop:bridge`) before
+ * `desktop:build:app`, so the sidecar must be built before both.
  *
  * It does not show up locally — once a person has built the file it stays, and
  * every later cargo call passes. **A defect visible only on a clean checkout**, so
@@ -36,7 +34,7 @@ const CARGO_RUN_LINES = [/^\s*run:\s*pnpm test:desktop:bridge\b/m, /^\s*run:.*\b
 
 const SIDECAR_STEP = "pnpm mcp:build-binary";
 
-describe("release workflow — 사이드카 순서 (v1.0.0-rc.2 회귀)", () => {
+describe("release workflow — the sidecar is built before the first cargo call", () => {
   const workflow = readFileSync(WORKFLOW_PATH, "utf8");
   const pkg = JSON.parse(readFileSync(PACKAGE_PATH, "utf8")) as {
     scripts?: Record<string, string>;
@@ -57,9 +55,7 @@ describe("release workflow — 사이드카 순서 (v1.0.0-rc.2 회귀)", () => 
 
   /**
    * The compiler that builds the sidecar (`bun build --compile`) is not on the runner
-   * by default. When bundling was introduced (#732) the install step did not come
-   * with it, and `v1.0.0-rc.2` stopped here once more — **right after** the ordering
-   * was fixed.
+   * by default, so its install step must precede the sidecar build.
    *
    * Locking the order alone cannot catch "called first, but the tool to call is
    * missing".
