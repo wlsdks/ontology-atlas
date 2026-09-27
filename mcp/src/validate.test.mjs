@@ -1,6 +1,9 @@
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { isValidVaultTitle, validateVaultDocument } from './validate.mjs';
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
+import { isValidVaultTitle, rawSourceKindIssues, validateVaultDocument } from './validate.mjs';
 
 const TEST_UID = '00000000-0000-4000-8000-000000000001';
 
@@ -309,5 +312,43 @@ describe('relation_notes guard (swallowed entries and orphaned keys)', () => {
     );
     assert.deepEqual(r.issues.map((issue) => issue.code), ['orphaned-relation-note']);
     assert.match(r.issues[0].message, /declared: .*capabilities\/mcp-server/);
+  });
+});
+
+describe('rawSourceKindIssues', () => {
+  function withFolder(files, run) {
+    const root = mkdtempSync(join(tmpdir(), 'atlas-raw-kind-'));
+    try {
+      for (const [path, text] of Object.entries(files)) {
+        mkdirSync(dirname(join(root, path)), { recursive: true });
+        writeFileSync(join(root, path), text);
+      }
+      return run(root);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }
+  const domainNote = '---\nkind: domain\ntitle: Roadmap\n---\n\n# Roadmap\n';
+
+  it('names a kind: under sources/ once, with its folder and the relation repair', () => {
+    withFolder({ 'vault/sources/Planning/roadmap.md': domainNote }, (root) => {
+      const rows = rawSourceKindIssues(join(root, 'vault'));
+      assert.deepEqual(rows.map((row) => [row.path, row.issue.code]), [['sources/Planning/roadmap.md', 'kind-under-sources']]);
+      assert.match(rows[0].issue.message, /move it into domains\/, then patch_concept each node/);
+      assert.match(rows[0].issue.message, /dangling-graph-reference to sources\/Planning\/roadmap/);
+    });
+  });
+
+  it('leaves a real folder spelled Sources/ to the node walk', () => {
+    withFolder({ 'vault/Sources/Planning/roadmap.md': domainNote }, (root) => {
+      assert.deepEqual(rawSourceKindIssues(join(root, 'vault')), []);
+    });
+  });
+
+  it('does not follow a sources link out of the vault', () => {
+    withFolder({ 'vault/domains/.keep': '', 'outside/roadmap.md': domainNote }, (root) => {
+      symlinkSync(join(root, 'outside'), join(root, 'vault/sources'));
+      assert.deepEqual(rawSourceKindIssues(join(root, 'vault')), []);
+    });
   });
 });
