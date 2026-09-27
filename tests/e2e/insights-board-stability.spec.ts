@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+import { waitForBoxStill } from "./settle";
+
 /**
  * **Picking a subject must not move the control you just clicked.**
  *
@@ -40,6 +42,8 @@ for (const [width, height] of [
       for (const subject of SUBJECTS) {
         await page.getByTestId(`insights-core-${subject}`).click();
         await expect(page.getByTestId(`insights-core-${subject}`)).toHaveAttribute("aria-checked", "true");
+        // The panel swap lays out a frame or more after the press; read where the control lands.
+        await waitForBoxStill(page.getByTestId("insights-core-switch"));
         tops[subject] = await subjectControlTop(page);
       }
 

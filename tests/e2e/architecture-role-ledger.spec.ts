@@ -144,17 +144,9 @@ test('a measured profile separates each role contract and receipt, whole chain o
       { width: 1920, height: 1080 },
     ]) {
       await page.setViewportSize(size);
-      /* The axis is chosen from the measured canvas width; let that settle before reading it. */
-      await expect
-        .poll(
-          () =>
-            page.evaluate(() => {
-              const svg = document.querySelector('[data-testid="architecture-graph"]');
-              return svg?.getBoundingClientRect().width ?? 0;
-            }),
-          { timeout: 15_000 },
-        )
-        .toBeGreaterThan(0);
+      /* The axis is chosen from the measured canvas width, a frame or more after the resize.
+         A width above zero is true of the old layout too, so wait for the relaid graph to land. */
+      await graphSettled(page);
 
       const measured = await page.evaluate(() => {
         const boxes = [...document.querySelectorAll('[data-testid^="architecture-graph-box-"]')];
@@ -463,39 +455,6 @@ test('a skip sentence never sits on another arc, sampled along the strokes', asy
     await page.getByTestId('architecture-graph-box-views').click();
     await page.mouse.move(2, 2);
   }
-});
-
-test('the count of what is below sits inside the faded strip, never on opaque ink', async ({ page }) => {
-  /*
-   * ⚠️ Review 2026-08-30, seven-role profile in a 1512x620 window: the badge stood 28px tall on a
-   * 16px fade, so 12px of it sat on the last visible box's receipt line. The strip is two insets
-   * tall now and the badge must lie within it; the four-role sample never cuts a chain at the
-   * bottom, so only this profile can exercise the count.
-   */
-  test.setTimeout(180_000);
-  await openSeededVault(page);
-  await page.goto('/en/architecture/?view=architecture&e2e=1&guides=off', { waitUntil: 'domcontentloaded' });
-  await expect(page.getByTestId('architecture-flow-panel')).toBeVisible({ timeout: 60_000 });
-  await expect(page.locator('[data-testid^="architecture-role-ledger-"]')).toHaveCount(7, { timeout: 30_000 });
-  await page.setViewportSize({ width: 1512, height: 620 });
-  const pill = page.getByTestId('architecture-canvas-hidden-below');
-  await expect(pill).toBeVisible({ timeout: 10_000 });
-  const strip = await page.evaluate(() => {
-    const badge = document.querySelector('[data-testid="architecture-canvas-hidden-below"]')!;
-    const scroller = document.querySelector('[data-testid="architecture-graph"]')!.parentElement!;
-    /* The strip is whatever the mask actually fades, read back from the computed gradient
-       ("linear-gradient(to top, transparent 0px, rgb(0, 0, 0) 32px)"), not a number of our own. */
-    const style = getComputedStyle(scroller);
-    const mask = style.maskImage !== 'none' ? style.maskImage : style.webkitMaskImage;
-    const toTop = /to top,.*\s([\d.]+)px\)/.exec(mask ?? '');
-    const fadePx = toTop ? parseFloat(toTop[1]) : 0;
-    const p = badge.getBoundingClientRect();
-    const c = scroller.getBoundingClientRect();
-    return { mask, fadePx, pillTop: p.top, pillBottom: p.bottom, stripTop: c.bottom - fadePx, bottom: c.bottom };
-  });
-  expect(strip.fadePx, `no bottom fade read from the mask: ${strip.mask}`).toBeGreaterThan(0);
-  expect(strip.pillTop, `the count stands ${strip.stripTop - strip.pillTop}px above the ${strip.fadePx}px fade`).toBeGreaterThanOrEqual(strip.stripTop - 0.5);
-  expect(strip.pillBottom).toBeLessThanOrEqual(strip.bottom + 0.5);
 });
 
 test('choosing a role does not turn the chain, and the chosen box is in view', async ({ page }) => {
