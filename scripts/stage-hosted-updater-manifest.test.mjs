@@ -10,9 +10,9 @@ import {
   validateHostedUpdaterManifest,
 } from './stage-hosted-updater-manifest.mjs';
 
-const tag = 'v1.0.0-rc.9';
+const tag = 'v1.3.0';
 const manifest = {
-  version: '1.0.0-rc.9',
+  version: '1.3.0',
   notes: 'release',
   pub_date: '2026-08-22T00:00:00.000Z',
   platforms: {
@@ -23,23 +23,21 @@ const manifest = {
   },
 };
 
-test('selects the newest non-draft release even when it is a prerelease', () => {
+test('selects the newest published plain release, skipping drafts and pre-releases', () => {
   const selected = pickPublishedRelease([
     { tag_name: 'v2-draft', draft: true },
-    {
-      tag_name: 'v1.0.0-rc.8',
-      draft: false,
-      prerelease: true,
-      published_at: '2026-08-21T00:00:00Z',
-    },
-    {
-      tag_name: tag,
-      draft: false,
-      prerelease: true,
-      published_at: '2026-08-22T00:00:00Z',
-    },
+    { tag_name: 'v1.4.0', draft: false, prerelease: true, published_at: '2026-08-23T00:00:00Z' },
+    { tag_name: 'v1.2.5', draft: false, prerelease: false, published_at: '2026-08-21T00:00:00Z' },
+    { tag_name: tag, draft: false, prerelease: false, published_at: '2026-08-22T00:00:00Z' },
   ]);
   assert.equal(selected.tag_name, tag);
+});
+
+test('refuses a requested tag that GitHub marks as a pre-release', () => {
+  assert.throws(
+    () => pickPublishedRelease([{ tag_name: 'v1.4.0', draft: false, prerelease: true }], 'v1.4.0'),
+    /no published plain release matches v1\.4\.0/,
+  );
 });
 
 test('stages and validates the release latest.json at the stable Pages path', async () => {
@@ -54,7 +52,7 @@ test('stages and validates the release latest.json at the stable Pages path', as
           {
             tag_name: tag,
             draft: false,
-            prerelease: true,
+            prerelease: false,
             assets: [{ name: 'latest.json', browser_download_url: 'https://assets.test/latest.json' }],
           },
         ]),
@@ -80,7 +78,7 @@ test('stages and validates the release latest.json at the stable Pages path', as
 
 test('rejects a manifest whose version or asset URLs belong to another release', () => {
   assert.throws(
-    () => validateHostedUpdaterManifest({ ...manifest, version: '1.0.0-rc.8' }, tag),
+    () => validateHostedUpdaterManifest({ ...manifest, version: '1.2.5' }, tag),
     /does not match/,
   );
   assert.throws(
@@ -91,7 +89,7 @@ test('rejects a manifest whose version or asset URLs belong to another release',
           platforms: {
             'darwin-aarch64': {
               signature: 'signed',
-              url: 'https://github.com/wlsdks/ontology-atlas/releases/download/v1.0.0-rc.8/app.tar.gz',
+              url: 'https://github.com/wlsdks/ontology-atlas/releases/download/v1.2.5/app.tar.gz',
             },
           },
         },
@@ -106,7 +104,7 @@ test('fails closed when the selected release has no updater manifest', async () 
     stageHostedUpdaterManifest({
       out: '/tmp/never-written-atlas-latest.json',
       fetchImpl: async () =>
-        new Response(JSON.stringify([{ tag_name: tag, draft: false, prerelease: true, assets: [] }]), {
+        new Response(JSON.stringify([{ tag_name: tag, draft: false, prerelease: false, assets: [] }]), {
           status: 200,
         }),
     }),
