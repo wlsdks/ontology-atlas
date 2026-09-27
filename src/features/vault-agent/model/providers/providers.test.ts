@@ -644,7 +644,6 @@ describe('vendor adapters fold into one shape', () => {
   it('lists write tools too because the executor is what blocks them', () => {
     expect(findAgentTool('patch_concept')?.effect).toBe('write');
     expect(findAgentTool('get_concept')?.effect).toBe('read');
-    // Source-scanning tools outside the vault are never given in the first place.
     expect(findAgentTool('analyze_repo_structure')).toBeUndefined();
     expect(findAgentTool('index_project')).toBeUndefined();
     expect(findAgentTool('delete_concept')).toBeUndefined();

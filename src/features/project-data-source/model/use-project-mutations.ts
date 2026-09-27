@@ -31,7 +31,7 @@ export interface ProjectMutations {
     slug: string,
     patch: ProjectFrontmatterPatch,
   ) => Promise<void>;
-  /** Deletes by slug. A no-op when it does not exist. */
+  /** A no-op when the slug does not exist. */
   deleteProject: (slug: string) => Promise<void>;
   /** The up-front gate for UI — whether mutation is possible in the current mode. */
   canCreate: boolean;

@@ -269,10 +269,7 @@ export function ProjectQuickEditPanel({
         {open ? t("closeLabel") : t("openLabel")}
       </Button>
 
-      {/*
- `Surface` owns the exit window, class and `inert`; `origin` is the trigger's side. This
- component owns the values, so nothing needs holding during the exit.
- */}
+      {/* Surface owns the exit and `inert`; `origin` is the trigger's side; values are local, so nothing is held. */}
       <Surface
         open={open}
         origin="top right"

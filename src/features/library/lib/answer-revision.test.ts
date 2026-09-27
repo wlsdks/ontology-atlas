@@ -60,7 +60,6 @@ describe('retained answer evidence', () => {
     expect(answerObservation({ ...fm, source_hash: { [source]: oldHash } }, new Set([source]), new Map([[source, newHash]]))).toMatchObject({ state: 'changed', changed: [source] });
     // `unmeasured` is what a filed answer starts with, and it never means caught up.
     expect(answerObservation({ ...fm, source_hash: { [source]: 'unmeasured' } }, new Set([source]), new Map([[source, newHash]]))).toMatchObject({ state: 'changed', changed: [source] });
-    // A source that never moved stays the quiet state it already was.
     expect(answerObservation(fm, new Set([source]), new Map([[source, oldHash]]))).toMatchObject({ state: 'unchanged', rewritten: [] });
   });
 

@@ -203,10 +203,7 @@ function ChangeDetails({
 
   return (
     <>
-      {/*
- One grid for the whole list, whose `auto` column fits the widest label. The field list keeps
- 6rem, which `contextual-meaning-editor.spec.ts` measures at 96px.
- */}
+      {/* One grid, `auto` label column; the field list keeps 6rem, measured by `contextual-meaning-editor.spec.ts`. */}
       {item.relation ? (
         <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1.5 text-label">
           {([

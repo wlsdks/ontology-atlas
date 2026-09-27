@@ -1,7 +1,6 @@
 import { createTauriVaultTextFile, getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
 import { WIKI_DIR } from '@/shared/lib/wiki-page-schema';
 
-/** Writes one app-composed file whole, creating folders on the way; a partial write tears a page. */
 /** Removes a file the app just wrote (a toast's undo); folders created on the way stay. */
 export async function deleteWikiFile(vault: FileSystemDirectoryHandle, relPath: string): Promise<void> {
   const parts = relPath.split("/").filter(Boolean);
@@ -12,6 +11,7 @@ export async function deleteWikiFile(vault: FileSystemDirectoryHandle, relPath: 
   await dir.removeEntry(fileName);
 }
 
+/** Writes one app-composed file whole, creating folders on the way; a partial write tears a page. */
 export async function writeWikiFile(
   vault: FileSystemDirectoryHandle,
   relPath: string,

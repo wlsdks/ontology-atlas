@@ -36,7 +36,7 @@ export const PARSER_SOURCE_FORMATS: readonly string[] = [
   'odp',
 ];
 
-/** Characters per read; five reads equal `AGENT_TURN_VAULT_CHAR_CAP`, so the card and the loop state one bound. */
+/** Characters per read, each leaving the machine on the next round trip; five reads equal `AGENT_TURN_VAULT_CHAR_CAP`, so the card and the loop state one bound. */
 export const SOURCE_TEXT_CHAR_CAP = 8_000;
 
 export type SourceFormatVerdict = 'readable' | 'needs-a-parser' | 'unknown-format';

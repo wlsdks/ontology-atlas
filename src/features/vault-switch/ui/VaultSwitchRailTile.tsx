@@ -18,10 +18,6 @@ import { measureSwitcherPlacement, type SwitcherPlacement } from '../lib/switche
 import { RecentVaultList } from './RecentVaultList';
 
 /**
- * The open folder's name and the way to switch it, at the top of the rail on every destination.
- * Renders only while a folder is open: the chooser and the sample have no folder to name.
- */
-/**
  * Characters the 64px rail label shows, keeping the tail where sibling folders differ. Small
  * enough that CSS `truncate` never cuts again; `vault-launch-chooser.spec.ts` measures it.
  */
@@ -42,12 +38,13 @@ function tabbables(root: ParentNode): HTMLElement[] {
   );
 }
 
-/* Fits a realistic facts line at 320px; the placement shrinks it when the free map is narrower. */
+/* 416, not 320: at 320 the text column was 168px against a ~260px facts line; the placement shrinks it when the free map is narrower. */
 const POPOVER_WIDTH_PX = 416;
 
 /**
  * Dims and blocks the workspace right of the rail while the popover is open; a press on it
- * closes the popover and never reaches a map node.
+ * closes the popover and never reaches a map node. It reuses the settings scrim classes
+ * so reduced motion keeps its fade.
  */
 function SwitcherScrim({ open, left }: { open: boolean; left: number }) {
   const { mounted, exiting } = usePanelPresence(open);
@@ -63,6 +60,10 @@ function SwitcherScrim({ open, left }: { open: boolean; left: number }) {
 }
 const POPOVER_MAX_HEIGHT_PX = 640;
 
+/**
+ * The open folder's name and the way to switch it, at the top of the rail on every destination.
+ * Renders only while a folder is open: the chooser and the sample have no folder to name.
+ */
 export function VaultSwitchRailTile() {
   const t = useTranslations('vaultSwitch');
   const vault = useLocalVault();
@@ -253,10 +254,7 @@ export function VaultSwitchRailTile() {
         >
           <HardDrive size={ICON_SIZE.md} aria-hidden className={busy ? 'animate-pulse' : undefined} />
         </span>
-        {/*
- Trimmed in JS rather than with `direction: rtl` to avoid bidi reordering around punctuation.
- The `leading-caption` pair keeps the tile on the destinations' 60px pitch.
- */}
+        {/* Trimmed in JS, not `direction: rtl` (bidi reorders punctuation); `leading-caption` keeps the 60px pitch. */}
         <span className="block w-full truncate px-0.5 text-center text-[length:var(--app-nav-rail-label-size)] leading-caption text-[color:var(--color-text-tertiary)]">
           {railLabel(name)}
         </span>

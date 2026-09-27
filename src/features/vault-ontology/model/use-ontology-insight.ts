@@ -74,7 +74,7 @@ export function derivationToInsight(
   }));
 
   // Without `project:` keys, BFS the `contains` closure to attach each project to its descendants.
-  // O(P·(V+E)) over an adjacency map, one BFS per project node.
+  // One BFS per project over a contains adjacency map: O(P·(V+E)), plus an O(P) `includes` per visit.
   const projectNodes = nodes.filter((n) => n.kind === 'project');
   if (projectNodes.length > 0) {
     const containsAdj = new Map<string, string[]>();
@@ -93,7 +93,7 @@ export function derivationToInsight(
       const visited = new Set<string>([p.id]);
       const queue: string[] = [p.id];
       // Head pointer for O(1) dequeue — `Array.shift()` is O(n), which makes this O(n²)
-      // on a large vault (same pattern as depth.ts / reachability.ts).
+      // on a large vault (same pattern as ontology-tree/reachability.ts).
       let head = 0;
       while (head < queue.length) {
         const cur = queue[head++];
@@ -120,7 +120,7 @@ export function derivationToInsight(
   };
 }
 
-// Cached once per locale. Derivation still runs once; only the insight mapping is per locale.
+// Cached per source and locale; derivation runs once, only the insight mapping varies.
 const staticInsightByLocale = new Map<string, { insight: KnowledgeProjectInsight; error: null }>();
 function sampleInsight(
   source: 'dogfood' | 'storefront',
@@ -142,13 +142,13 @@ function sampleInsight(
   return cached;
 }
 
-/** Mode-aware insight: local derives from the user's vault; static from the bundled sample, memoized. */
 /** This repository's own vault, pinned, because the `/download` caption claims it; same cache. */
 export function useDogfoodInsight(): KnowledgeProjectInsight {
   const locale = useLocale();
   return useMemo(() => sampleInsight('dogfood', locale).insight, [locale]);
 }
 
+/** Mode-aware insight: local derives from the user's vault; static from the bundled sample, memoized. */
 export function useOntologyInsight(): {
   insight: KnowledgeProjectInsight | null;
   error: Error | null;

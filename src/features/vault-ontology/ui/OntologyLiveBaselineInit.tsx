@@ -14,7 +14,7 @@ import { useOntologyInsight } from "../model/use-ontology-insight";
 /**
  * Once per vault scope: restore a persisted baseline if it matches the graph, otherwise capture
  * one, so later edits appear as one changeset. Per scope, not per mount, or a folder switch
- * compares one vault's baseline against another's graph.
+ * compares one vault's baseline against another's graph. Once, so an explicit Clear is not re-marked.
  */
 export function OntologyLiveBaselineInit() {
   const mode = useDataSourceMode();
@@ -28,7 +28,7 @@ export function OntologyLiveBaselineInit() {
     handledScopeRef.current = vaultScope;
     // A scope change discards the previous vault's baseline and switches the save key.
     setChangeBaselineScope(vaultScope);
-    // 1) Try restoring a persisted baseline (overlap-guarded); on success, skip auto-mark.
+    // Try restoring a persisted baseline (overlap-guarded); on success, skip auto-mark.
     const restored = restorePersistedBaseline(insight.nodes);
     // Read `getChangeBaseline()` directly: the scope switch above may just have discarded it.
     if (

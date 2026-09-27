@@ -1,6 +1,7 @@
 /**
  * The Compile turn's only window onto raw sources: no write method, so a model cannot edit its
- * evidence. Only paths from the folder's own inventory can be read. Do not add a write here.
+ * evidence. Inventory membership, not a path prefix: a path the walk skipped (a symlink) or
+ * outside `sources/` is refused. Do not add a write here.
  */
 
 /** One raw source, as the folder's walk found it. */

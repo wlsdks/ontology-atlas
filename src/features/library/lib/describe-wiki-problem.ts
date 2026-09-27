@@ -226,6 +226,7 @@ export function describeWikiProblem(
   const place = context?.place ?? "full";
   const key = problem.detail?.key;
   const what = key ? (`wiki.problem.${key}.what` as ProblemPath) : null;
+  // `t.has`, not a key table: a key the validator adds first shows its English message, not a raw path.
   if (!what || !t.has(what)) {
     return {
       code: problem.code,
@@ -257,7 +258,8 @@ export function wikiProblemMachineLine(problem: WikiTemplateProblem): string {
 
 /**
  * One row per thing a person fixes: identical findings merge and keep each place in the
- * sentence. The technical disclosure still lists every finding separately.
+ * sentence. The technical disclosure still lists every finding separately, as `wiki-validate`
+ * reports them.
  */
 export interface WikiProblemRow {
   /** The row's sentence, from the first finding it stands for. */

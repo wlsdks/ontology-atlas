@@ -22,7 +22,7 @@ import {
 
 /**
  * One turn's state machine: `startTurn` returns synchronously, `abort()` stops in place, and
- * round trips run only inside `run()` under a cap. A tool row is confirmed only after its round trip.
+ * round trips run only inside `runTurn` under a cap. A tool row is confirmed only after its round trip.
  */
 
 export interface AgentLoopDeps {
@@ -37,7 +37,7 @@ export interface AgentLoopDeps {
   execute(call: NormalizedToolCall): Promise<ToolExecution>;
   /** The tool list carried in this turn. */
   tools: readonly AgentToolDefinition[];
-  /** Defaults to `AGENT_ROUND_CAP`; Compile passes more, since each file needs a read and a proposal. */
+  /** Defaults to `AGENT_ROUND_CAP`; Compile passes more, but always a finite cap. */
   roundCap?: number;
   system: string;
   model: string;
@@ -175,7 +175,7 @@ export async function runTurn(
         question,
         scope: {
           nodes: [...new Set(readSlugs)],
-          // Measured only — the byte length actually sent in this round trip.
+          // Measured: the UTF-16 length actually sent in this round trip.
           promptChars: payload.length,
           vaultChars,
           tools: [...toolRefs],

@@ -375,10 +375,7 @@ function RecentVaultRowView({
           </button>
         </div>
       ) : null}
-      {/*
- Forget is not offered for the current folder, or its obvious use throws away where you were.
- Laid over the top-right corner so rows keep equal height; `pr-20` keeps it off the name.
- */}
+      {/* No forget on the current folder; laid over the corner so rows keep equal height, clear of the name via the row's action reserve. */}
       {row.isCurrent && openable ? null : (
       <div className={wrapName ? 'mb-3 flex shrink-0 sm:mb-0' : 'absolute right-2 top-2'}>
         <button
@@ -389,7 +386,7 @@ function RecentVaultRowView({
           aria-label={[t('forgetFolder', { name: row.name }), row.path]
             .filter(Boolean)
             .join(' · ')}
-          // The width half of the touch floor; see the note on the locate chip below.
+          // The width half of the touch floor; see the note on the locate chip above.
           className={controlClass({
             shape: 'chip',
             size: wrapName ? 'md' : 'xs',

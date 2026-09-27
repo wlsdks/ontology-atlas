@@ -13,7 +13,8 @@ import type { DiscoveryOutcome } from "../lib/discover-sources";
 
 /**
  * Candidates a person approves before anything is copied: blocking, every box unticked. Rows show
- * only what discovery learned without opening a file; refusals are remembered per browser.
+ * only what discovery learned without opening a file; refusals are remembered per browser,
+ * and their count is shown with a way to clear them.
  */
 
 export interface FindDocumentsDialogProps {

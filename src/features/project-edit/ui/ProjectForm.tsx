@@ -357,7 +357,6 @@ export function ProjectForm({
       )
       .map((project) => project.slug);
   }, [allProjects, initialProject]);
-  // Candidates that would create a cycle are already excluded by `invalidDependencySlugs`.
   const dependencySuggestions = useMemo(() => {
     const invalidSet = new Set(invalidDependencySlugs);
     return computeSuggestedDependencies(
@@ -1423,6 +1422,7 @@ export function ProjectForm({
         expandLabel={t("sections.expandLabel")}
       >
         {dependenciesField}
+        {/* No screenshot uploader: images live inline in Markdown or as vault assets. */}
       </FormSection>
 
       <FormSection
