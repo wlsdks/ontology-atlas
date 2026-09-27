@@ -1274,13 +1274,5 @@
 
   /* Padding does not have a separate ramp. Previously `--pad-card`/`--pad-panel` existed but **0 usage**, and `--pad-card` actually overlapped values with the used `--card-pad`, while `--pad-panel`(12px) **differed in value** from what panels actually use `--map-panel-pad`(14px) — meaning docs pointed to dead tokens with wrong values. Card uses `--card-pad`, panel uses
      `--map-panel-pad` as single source. (2026-07-26) */
-
-  /* Codex index — geometry/motion tokens already defined at the bottom of this file:
-     · --chrome-tile-size (36px) chrome tile square
-     · --topology-motion-panel-duration / -ease-out chrome transition (180ms) ·
-       --topology-motion-camera / -drag-settle canvas only (420/720ms) ·
-       damping/response spring family
-       (Old --topology-motion-*-duration aliases 4 deleted on 2026-07-29 for 0 consumers)
-     Full spec table is docs/DESIGN-SYSTEM.md "Geometry & Type Codex". */
 }
 

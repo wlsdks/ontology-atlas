@@ -3373,7 +3373,7 @@ The settings row-measure token (658px) bound the API Key drill-in's rows to the 
 --control-h-lg: 40px;   /* Select default trigger */
 ```
 
-- **A row that holds controls is taller than its controls (2026-07-26).** Owner feedback («key register button looks too cramped») came from [AI Connection] vendor rows as tall as their 32px buttons: no margin above or below, and three rows parted only by a 1px divider read as one block. That height is `row` `lg` (`min-h-11`, 44px) today, matching `--touch-target-min` in value and rationale. The row-height token that once carried it lost its last consumer when model connections moved to the Agents Models tab (2026-09-25) and was removed.
+- **A row that holds controls is taller than its controls (2026-07-26).** Owner feedback («key register button looks too cramped») came from [AI Connection] vendor rows as tall as their 32px buttons: no margin above or below, and three rows parted only by a 1px divider read as one block. Those rows are now `ModelRow` on the Agents Models tab (`src/widgets/app-settings-menu/ui/ModelConnectionsPanel.tsx`), whose header band is `min-h-14` (56px) around its controls; the row-height token that carried the old 44px lost its last consumer in that move (2026-09-25) and was removed.
 - Chrome fill/tiles continue using separate lock token `--chrome-tile-size` (36px) — this control scale is for interactive controls **outside** the chrome system (canonical Select, form inputs, etc.). Map top-right toolbar (auto-align·search·recent changes·workspace·+ concept) belongs to chrome system, all converging to `--chrome-tile-size` (36px) — «+ concept» primary also aligns in height·radius·typography (text-label·icon 14px) (#13).
 
 ### Dialog Width Scale
