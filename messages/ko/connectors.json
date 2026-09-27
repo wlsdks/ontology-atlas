@@ -24,6 +24,7 @@
   "groupFound": "이 컴퓨터에 이미 있는 것",
   "groupCatalogue": "바로 붙일 수 있는 것",
   "catalogueMeta": "{date} 기준. 앱 안에서 실제로 붙는 것만 있고, 앱은 어디에서도 받아 오지 않아요.",
+  "catalogueVersion": "{date}에 확인한 {version} 버전",
   "customToggle": "목록에 없으면 직접 적기",
   "noneForSearchTitle": "「{query}」에 맞는 게 없어요.",
   "noneForSearchBody": "목록에 없는 서버도 이름과 실행 방법을 직접 적으면 넣을 수 있어요.",

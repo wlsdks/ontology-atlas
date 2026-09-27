@@ -148,6 +148,11 @@ and Escape. The record is in `docs/DECISIONS.md` (one list).
   carries no download count, no ranking and no "recommended", and the screen states its
   size, its capture date, that Atlas has audited none of it, and that *By hand* reaches
   everything it does not list.
+- **A program runs the version that was checked.** Each program is pinned to the release
+  current on its row's check date (`npx -y <package>@<version>`, an image by tag and
+  digest), and the row says which, so a session never starts whatever was published last.
+  `pnpm mcp:catalogue -- --from-snapshot` rebuilds the file from the committed capture
+  without the network.
 - **Only what the press can make work.** A hosted address that signs in with OAuth
   (Notion's, Atlassian's, GitHub's, and the rest) is **not** offered: measured
   against claude-agent-acp 0.75.0, such an address handed to the in-app session
