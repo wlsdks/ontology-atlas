@@ -33,13 +33,13 @@ beforeEach(() => {
   window.localStorage.clear();
 });
 
-describe("View3dMenu — 보기 고르개", () => {
-  it("지도 보기로 이름 붙는다 — 평면 보기까지 포함하는 고르개다", () => {
+describe("View3dMenu view picker", () => {
+  it("names the radiogroup as the map view picker, flat view included", () => {
     mount();
     expect(screen.getByRole("radiogroup")).toHaveAccessibleName("지도 보기");
   });
 
-  it("세 줄이다 — 평면·돔·구름이 한 목록에 있다", () => {
+  it("lists flat, strata and coupling rows in one list", () => {
     mount();
     expect(screen.getByTestId("topology-view-3d-choice-flat")).toBeInTheDocument();
     expect(screen.getByTestId("topology-view-3d-choice-strata")).toBeInTheDocument();
@@ -65,7 +65,7 @@ describe("View3dMenu — 보기 고르개", () => {
    * words on screen have to be the visible things (cone, cloud) — that was (84)'s
    * second correction.
    */
-  it("눈에 보이는 것으로 부른다 — 화면에 「소유」·「결합」이 없다", () => {
+  it("labels rows by what is visible, never by the abstract arrangement nouns", () => {
     mount();
     expect(screen.getByText("층")).toBeInTheDocument();
     expect(screen.getByText("뉴런")).toBeInTheDocument();
@@ -73,7 +73,7 @@ describe("View3dMenu — 보기 고르개", () => {
     expect(screen.queryByText("결합")).toBeNull();
   });
 
-  it("줄마다 무엇이 다른지 한 줄이 붙는다 — 이름만으로는 안 읽힌다", () => {
+  it("gives every row a hint line under its title", () => {
     mount();
     for (const id of ["flat", "strata", "coupling"]) {
       const row = screen.getByTestId(`topology-view-3d-choice-${id}`);
@@ -82,12 +82,12 @@ describe("View3dMenu — 보기 고르개", () => {
     }
   });
 
-  it("기본 상태에서는 평면이 골라져 있다 — 3D 는 옵트인이다", () => {
+  it("checks flat by default, since 3D is opt-in", () => {
     mount();
     expect(screen.getByTestId("topology-view-3d-choice-flat")).toHaveAttribute("aria-checked", "true");
   });
 
-  it("구름을 고르면 3D 가 켜지고 배치가 함께 저장된다 (두 값이 한 번에)", () => {
+  it("stores 3D on and the coupling arrangement together when coupling is picked", () => {
     mount();
     fireEvent.click(screen.getByTestId("topology-view-3d-choice-coupling"));
     expect(window.localStorage.getItem("atlas.appearance.view3d")).toBe("on");
@@ -100,7 +100,7 @@ describe("View3dMenu — 보기 고르개", () => {
    * picker must never be able to produce — the map's contrast floors for 3D assume the flat
    * sky is not also being painted (`tests/e2e/map-3d-relation-ink.spec.ts`).
    */
-  it("갤럭시를 고르면 하늘이 켜지고 3D 는 꺼진다 — 둘 다 켜진 상태는 만들 수 없다", () => {
+  it("turns the sky on and 3D off when galaxy is picked, so both are never on", () => {
     window.localStorage.setItem("atlas.appearance.view3d", "on");
     mount();
     fireEvent.click(screen.getByTestId("topology-view-3d-choice-galaxy"));
@@ -108,7 +108,7 @@ describe("View3dMenu — 보기 고르개", () => {
     expect(window.localStorage.getItem("atlas.appearance.view3d")).toBe("off");
   });
 
-  it("3D 를 고르면 하늘이 꺼진다 — 반대 방향도 같은 규칙", () => {
+  it("turns the sky off when a 3D view is picked", () => {
     window.localStorage.setItem("atlas.appearance.galaxy", "on");
     mount();
     fireEvent.click(screen.getByTestId("topology-view-3d-choice-coupling"));
@@ -116,7 +116,7 @@ describe("View3dMenu — 보기 고르개", () => {
     expect(window.localStorage.getItem("atlas.appearance.view3d")).toBe("on");
   });
 
-  it("평면을 고르면 하늘도 3D 도 꺼진다", () => {
+  it("turns both the sky and 3D off when flat is picked", () => {
     window.localStorage.setItem("atlas.appearance.galaxy", "on");
     mount();
     fireEvent.click(screen.getByTestId("topology-view-3d-choice-flat"));
@@ -124,7 +124,7 @@ describe("View3dMenu — 보기 고르개", () => {
     expect(window.localStorage.getItem("atlas.appearance.view3d")).toBe("off");
   });
 
-  it("평면을 고르면 3D 가 꺼진다 — 끄기가 같은 목록에 있다", () => {
+  it("turns 3D off from the same list when flat is picked", () => {
     window.localStorage.setItem("atlas.appearance.view3d", "on");
     mount();
     fireEvent.click(screen.getByTestId("topology-view-3d-choice-flat"));
@@ -144,7 +144,7 @@ describe("View3dMenu — 보기 고르개", () => {
    * is alive». Drop the latter and an implementation that merely skips `onClose` while
    * still swallowing would pass.
    */
-  it("닫혀 있으면 문서 Esc 를 삼키지 않는다 — 앱 전역 Esc 가 죽지 않는다", () => {
+  it("lets document Escape through while closed, so app-wide Escape keeps working", () => {
     let closed = 0;
     mountClosed(() => {
       closed += 1;
@@ -158,7 +158,7 @@ describe("View3dMenu — 보기 고르개", () => {
     fireEvent.keyDown(document, { key: "Escape" });
     document.removeEventListener("keydown", spy);
 
-    expect(closed, "닫혀 있는데 onClose 가 불렸다").toBe(0);
-    expect(reachedDocument, "Esc 가 문서까지 못 갔다 — 고르개가 삼키고 있다").toBe(1);
+    expect(closed, "onClose ran while the picker was closed").toBe(0);
+    expect(reachedDocument, "the picker swallowed Escape before it reached the document").toBe(1);
   });
 });
