@@ -47,22 +47,11 @@ type TranslateFn = ReturnType<typeof useTranslations<'harness'>>;
 
 const COLUMNS: readonly CoverageColumn[] = ['told', 'gated', 'watched'];
 
-const COLUMN_HEAD: Readonly<Record<CoverageColumn, string>> = {
-  told: 'coverageColumnTold',
-  gated: 'coverageColumnGated',
-  watched: 'coverageColumnWatched',
-};
-
-const COLUMN_HINT: Readonly<Record<CoverageColumn, string>> = {
-  told: 'coverageColumnToldHint',
-  gated: 'coverageColumnGatedHint',
-  watched: 'coverageColumnWatchedHint',
-};
-
-const COLUMN_EMPTY: Readonly<Record<CoverageColumn, string>> = {
-  told: 'coverageEmptyTold',
-  gated: 'coverageEmptyGated',
-  watched: 'coverageEmptyWatched',
+/** Message keys per column: its head, hint, empty-cell word and the noun its card numeral counts. */
+const COLUMN_KEYS: Readonly<Record<CoverageColumn, { head: string; hint: string; empty: string; gapNoun: string }>> = {
+  told: { head: 'coverageColumnTold', hint: 'coverageColumnToldHint', empty: 'coverageEmptyTold', gapNoun: 'coverageGapTold' },
+  gated: { head: 'coverageColumnGated', hint: 'coverageColumnGatedHint', empty: 'coverageEmptyGated', gapNoun: 'coverageGapGated' },
+  watched: { head: 'coverageColumnWatched', hint: 'coverageColumnWatchedHint', empty: 'coverageEmptyWatched', gapNoun: 'coverageGapWatched' },
 };
 
 /**
@@ -76,12 +65,6 @@ const HINT_ANCHOR: Readonly<Record<CoverageColumn, 'left' | 'center' | 'right'>>
   watched: 'right',
 };
 
-const COLUMN_GAP_NOUN: Readonly<Record<CoverageColumn, string>> = {
-  told: 'coverageGapTold',
-  gated: 'coverageGapGated',
-  watched: 'coverageGapWatched',
-};
-
 /** What kind of file a declaration is, for the popover. */
 const ORIGIN_LABEL: Readonly<Record<ScopeDeclaration['origin'], string>> = {
   'nested-agents': 'coverageKindNested',
@@ -92,14 +75,7 @@ const ORIGIN_LABEL: Readonly<Record<ScopeDeclaration['origin'], string>> = {
   workflow: 'coverageKindWorkflow',
 };
 
-const ORIGIN_ORDER: ReadonlyArray<ScopeDeclaration['origin']> = [
-  'nested-agents',
-  'rule',
-  'hook',
-  'git-hook',
-  'script',
-  'workflow',
-];
+const ORIGIN_ORDER = Object.keys(ORIGIN_LABEL) as ReadonlyArray<ScopeDeclaration['origin']>;
 
 /**
  * One name and every file that carries it, keyed by origin and label: `.githooks/fast-sensor` and
@@ -297,7 +273,7 @@ function CellDetail({
       <div className="flex items-center justify-between gap-3">
         {/* The domain's own name: once the header scrolls away and at 390, where the row name truncates, this is the only full name. */}
         <p className="min-w-0 text-label uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
-          {t(COLUMN_HEAD[column])} · <span className="normal-case">{area.title}</span>
+          {t(COLUMN_KEYS[column].head)} · <span className="normal-case">{area.title}</span>
         </p>
         {/* A ghost `Button` sm close, the same way the Analysis guidance evidence closes. */}
         <Button variant="ghost" size="sm" className="atlas-touch-floor shrink-0" onClick={onClose}>
@@ -309,7 +285,7 @@ function CellDetail({
         className="mt-2 max-h-[22rem] overflow-y-auto"
         tabIndex={0}
         role="group"
-        aria-label={t(COLUMN_HEAD[column])}
+        aria-label={t(COLUMN_KEYS[column].head)}
       >
         <p className="mb-3 border-b border-[color:var(--color-border-soft)] pb-3 text-body leading-body text-[color:var(--color-text-secondary)]">
           {area.purpose}
@@ -317,7 +293,7 @@ function CellDetail({
         {entries.length === 0 ? (
           <div className="flex flex-col gap-2">
             <p className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-amber-source-a90)]">
-              {t(COLUMN_EMPTY[column])}
+              {t(COLUMN_KEYS[column].empty)}
             </p>
             {/* "No check names this domain" says nothing about whether a runner discovers tests there, so the discovered-test count stands beside it. */}
             {column === 'watched' ? (
@@ -344,7 +320,7 @@ function CellDetail({
         )}
       </div>
       <p className="mt-3 text-label text-[color:var(--color-text-quaternary)]">
-        {t(COLUMN_HINT[column])}
+        {t(COLUMN_KEYS[column].hint)}
       </p>
     </div>
   );
@@ -563,11 +539,9 @@ export function HarnessCoverageView({
   ].sort();
 
   /* The count of empty squares in each column, which a reader can verify by counting. */
-  const gapCount: Record<CoverageColumn, number> = {
-    told: matrix.areas.filter((area) => area.told.length === 0).length,
-    gated: matrix.areas.filter((area) => area.gated.length === 0).length,
-    watched: matrix.areas.filter((area) => area.watched.length === 0).length,
-  };
+  const emptySquareCount = Object.fromEntries(
+    COLUMNS.map((column) => [column, matrix.areas.filter((area) => area[column].length === 0).length]),
+  ) as Record<CoverageColumn, number>;
 
   return (
     <section data-testid="harness-coverage" className="flex flex-col gap-5">
@@ -584,16 +558,16 @@ export function HarnessCoverageView({
       >
         {COLUMNS.map((column) => {
           const everywhere = groupMirroredDeclarations(matrix.everywhere[column]);
-          const gaps = gapCount[column];
+          const gaps = emptySquareCount[column];
           return (
             <CensusTile
               key={column}
               testId="harness-coverage-column-card"
               rowKey={column}
-              label={t(COLUMN_HEAD[column])}
+              label={t(COLUMN_KEYS[column].head)}
               labelSuffix={
-                <PlacedInfoHint preferred={HINT_ANCHOR[column]} label={t(COLUMN_HEAD[column])}>
-                  {t(COLUMN_HINT[column])}
+                <PlacedInfoHint preferred={HINT_ANCHOR[column]} label={t(COLUMN_KEYS[column].head)}>
+                  {t(COLUMN_KEYS[column].hint)}
                 </PlacedInfoHint>
               }
             >
@@ -608,7 +582,7 @@ export function HarnessCoverageView({
                 />
               </div>
               <p className="break-keep text-label text-[color:var(--color-text-tertiary)]">
-                {t(COLUMN_GAP_NOUN[column])}
+                {t(COLUMN_KEYS[column].gapNoun)}
               </p>
               {everywhere.length > 0 ? (
                 /* The always-loaded set, counted on its column's card, next to the empty cells it qualifies. */
@@ -662,7 +636,7 @@ export function HarnessCoverageView({
           <div className="flex items-baseline justify-between gap-3">
             <h2 className="text-label uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
               {t('coverageEverywhereTitle')} ·{' '}
-              <span className="normal-case">{t(COLUMN_HEAD[openEverywhere])}</span>
+              <span className="normal-case">{t(COLUMN_KEYS[openEverywhere].head)}</span>
             </h2>
             <Button variant="ghost" size="sm" className="atlas-touch-floor shrink-0" onClick={closeEverywhere}>
               {t('coverageCloseNames')}
@@ -703,7 +677,7 @@ export function HarnessCoverageView({
                   /* No `InfoHint` here: `scope="col"` would make its paragraph every cell's header name, and three hit areas overlapped at 390. The hint lives on the column card. */
                   className="px-3 pb-2 text-label uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]"
                 >
-                  {t(COLUMN_HEAD[column])}
+                  {t(COLUMN_KEYS[column].head)}
                 </th>
               ))}
             </tr>
@@ -751,7 +725,7 @@ export function HarnessCoverageView({
                           aria-controls={openCell === key ? cellDetailId(area.slug) : undefined}
                           aria-label={t('coverageOpenNames', {
                             area: area.title,
-                            column: t(COLUMN_HEAD[column]),
+                            column: t(COLUMN_KEYS[column].head),
                             count: entries.length,
                           })}
                           data-harness-cell={column}

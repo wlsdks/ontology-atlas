@@ -1,3 +1,12 @@
+/** One value for every line, or one per line with the last repeating. */
+function perLine(values: number | readonly number[], line: number): number {
+  return typeof values === 'number' ? values : (values[line] ?? values[values.length - 1] ?? 0);
+}
+
+/** How far back the ellipsis may move to end on a word boundary, in characters and in pixels. */
+const WORD_BACKOFF_CHARS = 10;
+const WORD_BACKOFF_PX = 48;
+
 /**
  * Breaks a role's sentence into the caption lines its box can hold, by character budget because an
  * SVG text node neither wraps nor ellipsizes. Words wrap greedily; only the last line is ellipsized,
@@ -11,11 +20,9 @@ export function splitSummaryLines(
   const words = summary.trim().split(/\s+/).filter(Boolean);
   const lines: string[] = [];
   let index = 0;
-  const budgetFor = (line: number) =>
-    typeof budget === 'number' ? budget : (budget[line] ?? budget[budget.length - 1] ?? 0);
 
   while (index < words.length && lines.length < maxLines) {
-    const lineBudget = budgetFor(lines.length);
+    const lineBudget = perLine(budget, lines.length);
     let line = '';
     while (index < words.length) {
       const next = line ? `${line} ${words[index]}` : words[index];
@@ -35,10 +42,10 @@ export function splitSummaryLines(
 
   if (index < words.length && lines.length > 0) {
     const last = lines[lines.length - 1];
-    const room = budgetFor(lines.length - 1) - 1;
+    const room = perLine(budget, lines.length - 1) - 1;
     const boundary = last.lastIndexOf(' ', room);
     const cut =
-      last.length <= room ? last.length : boundary > room - 10 ? boundary : room;
+      last.length <= room ? last.length : boundary > room - WORD_BACKOFF_CHARS ? boundary : room;
     lines[lines.length - 1] = `${last.slice(0, cut).trimEnd()}…`;
   }
 
@@ -128,7 +135,8 @@ const CLAUSE_BREAK_SLACK = 1.08;
 /**
  * `text-wrap: balance` for SVG text: the greedy line count at the narrowest room that holds it, so
  * the last line is never a lone word under a full line. Within `CLAUSE_BREAK_SLACK`, a break ending on a clause wins.
- * A wrap that had to ellipsize is returned as it was.
+ * A wrap that had to ellipsize is returned as it was. O(W²) candidate rooms for W words, each a full
+ * re-wrap: sized for one caption sentence.
  */
 export function balanceLinesByWidthAt(
   text: string,
@@ -174,7 +182,7 @@ export function captionLineRoom(boxW: number): number {
 
 /**
  * `splitSummaryLines` budgeted by estimated width, so a Korean sentence wraps where its glyphs
- * reach; the ellipsis itself counts against the room.
+ * reach; the ellipsis itself counts against the room. O(n·L): each appended word re-measures its line.
  */
 export function splitSummaryLinesByWidth(
   summary: string,
@@ -184,8 +192,6 @@ export function splitSummaryLinesByWidth(
   const words = summary.trim().split(/\s+/).filter(Boolean);
   const lines: string[] = [];
   let index = 0;
-  const roomFor = (line: number) =>
-    typeof roomPx === 'number' ? roomPx : (roomPx[line] ?? roomPx[roomPx.length - 1] ?? 0);
   const fitByWidth = (word: string, room: number) => {
     let cut = '';
     for (const character of word) {
@@ -196,7 +202,7 @@ export function splitSummaryLinesByWidth(
   };
 
   while (index < words.length && lines.length < maxLines) {
-    const room = roomFor(lines.length);
+    const room = perLine(roomPx, lines.length);
     let line = '';
     while (index < words.length) {
       const next = line ? `${line} ${words[index]}` : words[index];
@@ -217,11 +223,11 @@ export function splitSummaryLinesByWidth(
 
   if (index < words.length && lines.length > 0) {
     const last = lines[lines.length - 1];
-    const room = roomFor(lines.length - 1) - estimateCaptionWidth('…');
+    const room = perLine(roomPx, lines.length - 1) - estimateCaptionWidth('…');
     let kept = last;
     while (kept && estimateCaptionWidth(kept) > room) kept = kept.slice(0, -1);
     const boundary = kept.lastIndexOf(' ');
-    const cut = kept.length < last.length && boundary > 0 && estimateCaptionWidth(kept) - estimateCaptionWidth(kept.slice(0, boundary)) < 48
+    const cut = kept.length < last.length && boundary > 0 && estimateCaptionWidth(kept) - estimateCaptionWidth(kept.slice(0, boundary)) < WORD_BACKOFF_PX
       ? kept.slice(0, boundary)
       : kept;
     lines[lines.length - 1] = `${cut.trimEnd()}…`;

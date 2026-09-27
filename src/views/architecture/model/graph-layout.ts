@@ -84,7 +84,7 @@ export function buildArchitectureGraph(
     kind: 'traffic' as const,
     count: edge.count,
     weight: busiest === 0 ? 0 : edge.count / busiest,
-    columnSpan: Math.abs((columnOf.get(edge.toRole) ?? 0) - (columnOf.get(edge.fromRole) ?? 0)),
+    columnSpan: spanOf({ from: edge.fromRole, to: edge.toRole }),
   }));
 
   const edgeSource: ArchitectureGraph['edgeSource'] =
@@ -100,11 +100,12 @@ export function buildArchitectureGraph(
   const declaredIn = new Set(layout.edges.map((edge) => edge.to));
   const declaredOut = new Set(layout.edges.map((edge) => edge.from));
 
+  const drawnEdges = [...permitted, ...measured];
   return {
-    boxes: assignSlots(layout.rows, [...permitted, ...measured], (id) =>
+    boxes: assignSlots(layout.rows, drawnEdges, (id) =>
       declaredIn.has(id) && declaredOut.has(id) ? 'process' : 'terminator',
     ),
-    edges: [...permitted, ...measured].sort(
+    edges: drawnEdges.sort(
       (a, b) =>
         b.columnSpan - a.columnSpan ||
         (b.count ?? 0) - (a.count ?? 0) ||
@@ -119,6 +120,7 @@ export function buildArchitectureGraph(
 /**
  * Orders boxes in each column to reduce crossings: one barycentre pass, declaration order breaking
  * ties. One pass suffices for columns of one or two, and the stable tie-break keeps renders still.
+ * O(V·E): each box scans every edge for placed predecessors; slots are a Map.
  */
 function assignSlots(
   rows: readonly (readonly string[])[],

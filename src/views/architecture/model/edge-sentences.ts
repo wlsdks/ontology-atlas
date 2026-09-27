@@ -142,6 +142,7 @@ export function placeEdgeSentences(input: SentenceLayoutInput): SentencePlacemen
   const taken: { x: number; y: number; width: number; height: number }[] = [...occupied];
   const pitch = axis === 'across' ? boxW + colGap : boxH + rowGap;
 
+  /* O(E log E + E·(E + C·(B + E))) for E edges, B boxes, C budget retries: greedy first-fit over flat rectangle arrays, no spatial index. */
   /* Drawn first, then focus, rules, shorter spans, busier traffic: the sentence a reader needs wins a contested place. */
   const touchesFocus = (e: SentenceEdge) => focus !== null && (e.from === focus || e.to === focus);
   const isDrawn = (e: SentenceEdge) => e.drawn !== false;
@@ -250,36 +251,27 @@ export function placeEdgeSentences(input: SentenceLayoutInput): SentencePlacemen
       out.push({ key, kind: edge.kind, from: edge.from, to: edge.to, text: full, x, y, anchor, hidden: 'no-room' });
       continue;
     }
-    let fittedBudget = budget;
-    let [text] = splitSummaryLines(full, fittedBudget, 1);
-    let width = estimatedTextWidth(text);
-    let rect = {
-      x: anchor === 'end' ? x - width : anchor === 'middle' ? x - width / 2 : x,
-      y: y - 9,
-      width,
-      height: LINE_H,
-    };
-    let collision =
-      width > roomPx ||
-      boxes.some((box) => intersects(rect, box)) ||
-      taken.some((item) => intersects(rect, item));
-    /* Two nested focused skips can share a baseline: tighten only the later budget until both clear. */
-    while (collision && fittedBudget > MIN_CHARS) {
-      fittedBudget -= 1;
-      [text] = splitSummaryLines(full, fittedBudget, 1);
-      width = estimatedTextWidth(text);
-      rect = {
+    const fitAt = (chars: number) => {
+      const [text] = splitSummaryLines(full, chars, 1);
+      const width = estimatedTextWidth(text);
+      const rect = {
         x: anchor === 'end' ? x - width : anchor === 'middle' ? x - width / 2 : x,
         y: y - 9,
         width,
         height: LINE_H,
       };
-      collision =
+      const collides =
         width > roomPx ||
         boxes.some((box) => intersects(rect, box)) ||
         taken.some((item) => intersects(rect, item));
-    }
-    if (collision) {
+      return { text, rect, collides };
+    };
+    let chars = budget;
+    let fit = fitAt(chars);
+    /* Two nested focused skips can share a baseline: tighten only the later budget until both clear. */
+    while (fit.collides && chars > MIN_CHARS) fit = fitAt(--chars);
+    const { text, rect } = fit;
+    if (fit.collides) {
       out.push({ key, kind: edge.kind, from: edge.from, to: edge.to, text, x, y, anchor, hidden: 'collision' });
       continue;
     }
