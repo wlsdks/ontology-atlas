@@ -23,7 +23,7 @@ import {
 describe("parseDocsVaultView", () => {
   // Since folder-topology was removed, 'doc' is the only view. An unknown value is always
   // normalized to 'doc' too.
-  it("항상 'doc' 반환", () => {
+  it("always returns 'doc'", () => {
     expect(parseDocsVaultView("doc")).toBe("doc");
     expect(parseDocsVaultView(null)).toBe("doc");
     expect(parseDocsVaultView(undefined)).toBe("doc");
@@ -46,7 +46,7 @@ describe("persistEditorSave", () => {
   // version did), `doSave` marks the buffer phantom-clean, shows "saved", and the next poll
   // re-fetch overwrites the unsaved edit. `persistEditorSave` never swallows a conflict; it
   // re-throws so the editor keeps the buffer dirty.
-  it("성공 시 resolve, onConflict 미호출", async () => {
+  it("resolves on success without calling onConflict", async () => {
     const saveDoc = vi.fn().mockResolvedValue(undefined);
     const onConflict = vi.fn();
     await expect(
@@ -56,7 +56,7 @@ describe("persistEditorSave", () => {
     expect(onConflict).not.toHaveBeenCalled();
   });
 
-  it("VaultConflictError 는 swallow 하지 않고 re-throw + onConflict 호출", async () => {
+  it("rethrows VaultConflictError and calls onConflict", async () => {
     const conflict = new VaultConflictError("a", 10, 20);
     const saveDoc = vi.fn().mockRejectedValue(conflict);
     const onConflict = vi.fn();
@@ -66,7 +66,7 @@ describe("persistEditorSave", () => {
     expect(onConflict).toHaveBeenCalledWith(conflict);
   });
 
-  it("conflict 가 아닌 에러는 onConflict 없이 re-throw", async () => {
+  it("rethrows other errors without calling onConflict", async () => {
     const boom = new Error("disk full");
     const saveDoc = vi.fn().mockRejectedValue(boom);
     const onConflict = vi.fn();
@@ -76,7 +76,7 @@ describe("persistEditorSave", () => {
     expect(onConflict).not.toHaveBeenCalled();
   });
 
-  it("onConflict 미제공이어도 conflict 를 re-throw", async () => {
+  it("rethrows a conflict when onConflict is absent", async () => {
     const conflict = new VaultConflictError("a", 10, 20);
     const saveDoc = vi.fn().mockRejectedValue(conflict);
     await expect(
@@ -86,15 +86,15 @@ describe("persistEditorSave", () => {
 });
 
 describe("escapeHtml", () => {
-  it("4 entity 정확히 치환", () => {
+  it("replaces the four entities", () => {
     expect(escapeHtml("a&b<c>d\"e")).toBe("a&amp;b&lt;c&gt;d&quot;e");
   });
 
-  it("entity 없는 일반 문자열은 그대로", () => {
+  it("leaves a string without entities unchanged", () => {
     expect(escapeHtml("로그인 spec — auth")).toBe("로그인 spec — auth");
   });
 
-  it("빈 문자열은 빈 문자열", () => {
+  it("returns an empty string for an empty string", () => {
     expect(escapeHtml("")).toBe("");
   });
 });
@@ -107,17 +107,17 @@ describe("source storage", () => {
     window.localStorage.clear();
   });
 
-  it("source: 빈 storage 는 'server' default", () => {
+  it("source defaults to 'server' with empty storage", () => {
     expect(readStoredSource()).toBe("server");
   });
 
-  it("source: 저장 후 다시 read", () => {
+  it("source reads back the saved value", () => {
     storeSource("local");
     expect(readStoredSource()).toBe("local");
     expect(window.localStorage.getItem(DOCS_VAULT_SOURCE_KEY)).toBe("local");
   });
 
-  it("source: 잘못된 값 저장돼 있으면 'server' fallback", () => {
+  it("source falls back to 'server' for an invalid value", () => {
     window.localStorage.setItem(DOCS_VAULT_SOURCE_KEY, "garbage");
     expect(readStoredSource()).toBe("server");
   });
@@ -175,23 +175,23 @@ describe("doc list collapse storage", () => {
     window.localStorage.clear();
   });
 
-  it("list-collapsed: 빈 storage 는 펼침(false) default", () => {
+  it("list-collapsed defaults to expanded with empty storage", () => {
     expect(readStoredListCollapsed()).toBe(false);
   });
 
-  it("list-collapsed: 접기 저장 후 다시 read 하면 true 유지", () => {
+  it("list-collapsed reads back true after saving collapsed", () => {
     storeListCollapsed(true);
     expect(window.localStorage.getItem(DOCS_VAULT_LIST_COLLAPSED_KEY)).toBe("1");
     expect(readStoredListCollapsed()).toBe(true);
   });
 
-  it("list-collapsed: 펼침 저장은 '0' 으로 기록", () => {
+  it("list-collapsed writes '0' for expanded", () => {
     storeListCollapsed(false);
     expect(window.localStorage.getItem(DOCS_VAULT_LIST_COLLAPSED_KEY)).toBe("0");
     expect(readStoredListCollapsed()).toBe(false);
   });
 
-  it("list-collapsed: 잘못된 값이면 펼침(false) fallback", () => {
+  it("list-collapsed falls back to expanded for an invalid value", () => {
     window.localStorage.setItem(DOCS_VAULT_LIST_COLLAPSED_KEY, "garbage");
     expect(readStoredListCollapsed()).toBe(false);
   });
@@ -369,7 +369,7 @@ describe("capability-gated local vault source", () => {
 });
 
 describe("scheduleStateSync", () => {
-  it("queueMicrotask 로 호출 (즉시 실행 안 됨)", async () => {
+  it("runs in a microtask rather than immediately", async () => {
     const fn = vi.fn();
     scheduleStateSync(fn);
     expect(fn).not.toHaveBeenCalled();

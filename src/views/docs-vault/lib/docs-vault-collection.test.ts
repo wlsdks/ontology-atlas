@@ -200,13 +200,13 @@ describe('docs vault collections', () => {
  * This is a question of **honesty** before complexity — the screen was lying about its own state.
  * So the verdict is not "what looks nicer" but "does what was counted match what was shown".
  */
-describe('resolveInitialDocsCollection — 첫 화면은 빈 목록으로 열리지 않는다', () => {
-  it('선호 컬렉션에 문서가 있으면 그대로 연다', () => {
+describe('resolveInitialDocsCollection never opens on an empty list', () => {
+  it('opens the preferred collection when it has docs', () => {
     const docs = [doc('a'), doc('b', { kind: 'capability' })];
     expect(resolveInitialDocsCollection(docs)).toBe('guides');
   });
 
-  it('선호 컬렉션이 0건이고 다른 곳에 문서가 있으면 전체로 연다', () => {
+  it('opens all docs when the preferred collection is empty but others are not', () => {
     // This repository's dogfood sample has exactly this shape — everything is an ontology node, so
     // guides is zero.
     const docs = [doc('a', { kind: 'domain' }), doc('b', { kind: 'element' })];
@@ -215,11 +215,11 @@ describe('resolveInitialDocsCollection — 첫 화면은 빈 목록으로 열리
 
   // Switching to 'all' in an empty vault still gives zero. A fallback that says nothing only churns
   // state and gives the user nothing, so the preference is kept.
-  it('볼트가 비어 있으면 선호 컬렉션을 지킨다', () => {
+  it('keeps the preferred collection when the vault is empty', () => {
     expect(resolveInitialDocsCollection([])).toBe('guides');
   });
 
-  it('선호 컬렉션을 지정할 수 있다', () => {
+  it('accepts an explicit preferred collection', () => {
     const docs = [doc('a')];
     expect(resolveInitialDocsCollection(docs, 'ontology')).toBe('all');
   });

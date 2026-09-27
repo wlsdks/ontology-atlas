@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { resolveVaultChipIdentity } from "./vault-chip-identity";
 
-describe("볼트 칩 정체 — 고른 소스를 말한다", () => {
-  it("폴더를 연 로컬은 폴더 이름과 문서 수를 말한다", () => {
+describe("vault chip identity names the chosen source", () => {
+  it("names the folder and doc count for an opened local folder", () => {
     expect(
       resolveVaultChipIdentity({
         source: "local",
@@ -17,7 +17,7 @@ describe("볼트 칩 정체 — 고른 소스를 말한다", () => {
    * documents". That number belongs to the sample manifest, so putting it on a local screen reads
    * as "my folder has 31 documents".
    */
-  it("폴더를 아직 안 고른 로컬은 샘플이 아니다 — 숫자를 숨긴다", () => {
+  it("hides the count for local without a folder and is not the sample", () => {
     const pending = resolveVaultChipIdentity({
       source: "local",
       isLocalSourceLoaded: false,
@@ -27,7 +27,7 @@ describe("볼트 칩 정체 — 고른 소스를 말한다", () => {
     expect(pending.showDocCount).toBe(false);
   });
 
-  it("로컬인데 폴더 이름이 비어 있어도 샘플로 떨어지지 않는다", () => {
+  it("stays local when the folder name is empty", () => {
     expect(
       resolveVaultChipIdentity({
         source: "local",
@@ -37,7 +37,7 @@ describe("볼트 칩 정체 — 고른 소스를 말한다", () => {
     ).toBe("local-pending");
   });
 
-  it("샘플은 샘플이라고 말하고 문서 수를 보여준다", () => {
+  it("names the sample and shows its doc count", () => {
     expect(
       resolveVaultChipIdentity({
         source: "server",

@@ -68,17 +68,17 @@ describe("DocFrontmatterBlock", () => {
    * ⚠️ Without this test it comes back — the earlier unit tests only check DOM presence with
    * `getByTestId`, so they were all green even with the toggle **outside** the details (measured).
    */
-  it("규격 예시 토글은 접힌 속성 블록 안에 있다 — 읽는 화면에 상주하지 않는다", () => {
+  it("keeps the spec example toggle inside the collapsed properties block", () => {
     renderBlock();
     const details = screen.getByTestId("doc-frontmatter-block").querySelector("details");
     expect(details).not.toHaveAttribute("open");
 
     const toggle = screen.queryByTestId("doc-frontmatter-example-toggle");
     // With a kind that has no example this test spins idly — exclude that case first.
-    expect(toggle, "이 fixture 에 규격 예시가 없다 — 시험이 헛돈다").not.toBeNull();
+    expect(toggle, "this fixture has no spec example, so the test would pass idly").not.toBeNull();
     expect(
       toggle?.closest("details:not([open])"),
-      "「규격 예시 보기」가 접힌 속성 블록 밖에 있다 — 읽으러 온 사람의 본문을 밀어낸다",
+      "the spec example toggle sits outside the collapsed block and pushes the body down",
     ).toBe(details);
   });
 
@@ -565,7 +565,7 @@ describe("DocFrontmatterBlock", () => {
 // not in `GRAPH_KEYS` above (not a single-line key:value fact), so it was invisible even when
 // expanded. This adds a dedicated, distinguishable section: raw code paths in plain monospace,
 // rather than the clickable `REFERENCE_KEYS` ref-token pattern.
-describe("DocFrontmatterBlock — 코드 위치 (code location) section", () => {
+describe("DocFrontmatterBlock code location section", () => {
   const docWithElements: VaultDoc = {
     ...doc,
     frontmatter: {
@@ -772,8 +772,8 @@ describe("DocFrontmatterBlock — last-edit provenance", () => {
  * document to the person editing it. It never read them, so a broken line cost the document a
  * field and no screen in the product said a word about it.
  */
-describe("DocFrontmatterBlock - 파서가 못 읽은 줄", () => {
-  it("못 읽은 줄과 닫히지 않은 따옴표를 사람 말로 말한다", () => {
+describe("DocFrontmatterBlock unreadable parser lines", () => {
+  it("explains unreadable lines and unclosed quotes in plain words", () => {
     renderBlock("ko", {
       diagnostics: [
         { code: "malformed-frontmatter-line", line: 3, message: "raw parser text" },
@@ -792,7 +792,7 @@ describe("DocFrontmatterBlock - 파서가 못 읽은 줄", () => {
     for (const row of rows) expect(row).toHaveAttribute("data-severity", "error");
   });
 
-  it("진단이 없는 문서에는 아무 줄도 만들지 않는다", () => {
+  it("renders no issue rows for a doc without diagnostics", () => {
     renderBlock("ko");
     expect(screen.queryByTestId("doc-frontmatter-issue")).not.toBeInTheDocument();
   });

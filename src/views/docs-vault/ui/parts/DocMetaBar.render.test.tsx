@@ -60,7 +60,7 @@ describe("DocMetaBar", () => {
    * no frontmatter jargon appears on screen. The case that does need an explanation (a document not
    * on the map) is held by the test below.
    */
-  it("in-graph 문서는 칩으로만 말한다 — 같은 말을 문장으로 되풀이하지 않는다", () => {
+  it("states in-graph status only as a chip without repeating it as a sentence", () => {
     renderMetaBar();
 
     expect(

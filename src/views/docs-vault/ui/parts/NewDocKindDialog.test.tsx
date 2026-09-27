@@ -35,7 +35,7 @@ describe("NewDocKindDialog", () => {
     return trigger;
   }
 
-  it("열리면 첫 kind 버튼에 포커스한다", () => {
+  it("focuses the first kind button on open", () => {
     renderWithTrigger();
     render(<NewDocKindDialog open onSelect={() => {}} onClose={() => {}} />);
 
@@ -45,7 +45,7 @@ describe("NewDocKindDialog", () => {
     expect(document.activeElement).toBe(firstKindButton);
   });
 
-  it("ESC 를 누르면 onClose 가 호출된다", () => {
+  it("calls onClose on Escape", () => {
     renderWithTrigger();
     const onClose = vi.fn();
     render(<NewDocKindDialog open onSelect={() => {}} onClose={onClose} />);
@@ -55,7 +55,7 @@ describe("NewDocKindDialog", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it("kind 버튼을 고르면 onSelect 가 해당 kind 로 호출된다", () => {
+  it("calls onSelect with the chosen kind", () => {
     renderWithTrigger();
     const onSelect = vi.fn();
     render(<NewDocKindDialog open onSelect={onSelect} onClose={() => {}} />);
@@ -65,7 +65,7 @@ describe("NewDocKindDialog", () => {
     expect(onSelect).toHaveBeenCalledWith("domain");
   });
 
-  it("Tab 이 다이얼로그 밖으로 새지 않는다 (마지막 → 첫 focusable 순환)", () => {
+  it("wraps Tab from the last focusable to the first", () => {
     renderWithTrigger();
     render(<NewDocKindDialog open onSelect={() => {}} onClose={() => {}} />);
 
@@ -78,7 +78,7 @@ describe("NewDocKindDialog", () => {
     expect(document.activeElement).toBe(buttons[0]);
   });
 
-  it("Shift+Tab 이 첫 focusable 에서 마지막으로 순환한다", () => {
+  it("wraps Shift+Tab from the first focusable to the last", () => {
     renderWithTrigger();
     render(<NewDocKindDialog open onSelect={() => {}} onClose={() => {}} />);
 
@@ -90,7 +90,7 @@ describe("NewDocKindDialog", () => {
     expect(document.activeElement).toBe(buttons[buttons.length - 1]);
   });
 
-  it("언마운트되면 트리거로 포커스가 복귀한다", () => {
+  it("returns focus to the trigger on unmount", () => {
     const trigger = renderWithTrigger();
     const { unmount } = render(
       <NewDocKindDialog open onSelect={() => {}} onClose={() => {}} />,

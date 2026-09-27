@@ -97,12 +97,12 @@ function renderSidebar(
   return { ...view, onSelect, onCreateNewDoc, onSortChange, onGroupChange };
 }
 
-describe("DocsSidebarBody — 최근 바뀐 문서 (목록 안 조용한 섹션, 기본 접힘)", () => {
+describe("DocsSidebarBody recently changed docs section", () => {
   const now = Date.now();
   const recentIso = new Date(now - 2 * 24 * 60 * 60 * 1000).toISOString(); // 2 days ago
   const oldIso = new Date(now - 90 * 24 * 60 * 60 * 1000).toISOString(); // 90 days ago
 
-  it("기본 접힘 — 토글을 열면 최근 변경 문서만 보인다", () => {
+  it("is collapsed by default and shows only recent docs when opened", () => {
     renderSidebar([makeDoc("a", "Recent Doc", recentIso), makeDoc("b", "Old Doc", oldIso)]);
 
     // Collapsed by default, so the list is hidden at first.
@@ -138,8 +138,8 @@ describe("DocsSidebarBody — 최근 바뀐 문서 (목록 안 조용한 섹션,
   });
 });
 
-describe("DocsSidebarBody — #22 아이콘 행: 검색 토글 + 카운트", () => {
-  it("검색은 토글로 열고, 열면 입력이 나타나 매칭 수를 카운트 줄에 반영한다", () => {
+describe("DocsSidebarBody icon row search toggle and count", () => {
+  it("opens search from the toggle and shows the match count", () => {
     renderSidebar([
       makeDoc("payment", "결제 문서", new Date().toISOString()),
       makeDoc("order", "주문 문서", new Date().toISOString()),
@@ -160,7 +160,7 @@ describe("DocsSidebarBody — #22 아이콘 행: 검색 토글 + 카운트", () 
     expect(screen.getAllByText("검색 결과 1개").length).toBeGreaterThan(0);
   });
 
-  it("화면에 보이는 현지화 이름으로 목록을 찾고 같은 결과 수를 말한다", () => {
+  it("matches the visible localized name and reports the same count", () => {
     renderSidebar([
       makeDoc(
         "capabilities/local-vault",
@@ -180,7 +180,7 @@ describe("DocsSidebarBody — #22 아이콘 행: 검색 토글 + 카운트", () 
     expect(screen.getAllByText("검색 결과 1개").length).toBeGreaterThan(0);
   });
 
-  it("세 컬렉션(전체/가이드/지도 문서) 아이콘을 노출하고 클릭이 전환을 호출한다", () => {
+  it("shows the three collection icons and switches on click", () => {
     const onCollectionChange = vi.fn();
     render(
       <NextIntlClientProvider locale="ko" messages={koMessages}>
@@ -216,7 +216,7 @@ describe("DocsSidebarBody — #22 아이콘 행: 검색 토글 + 카운트", () 
     expect(onCollectionChange).toHaveBeenCalledWith("ontology");
   });
 
-  it("고정된 온톨로지 범위에서는 다른 컬렉션으로 빠지는 선택지를 숨긴다", () => {
+  it("hides other collections in a fixed ontology scope", () => {
     renderSidebar([], { showCollectionChooser: false });
 
     expect(screen.queryByTestId("docs-sidebar-collection-all")).not.toBeInTheDocument();
@@ -240,7 +240,7 @@ describe("DocsSidebarBody — #22 아이콘 행: 검색 토글 + 카운트", () 
    * tags. So the tests look for the name **on the chip**. The regression they were written
    * for (choosing "map documents" while the screen says "all documents") is still caught.
    */
-  it("켜진 보기가 자기 이름을 화면에 말한다", () => {
+  it("shows the name of the active view", () => {
     const docs = [
       makeDoc("a", "A", new Date().toISOString()),
       makeDoc("b", "B", new Date().toISOString()),
@@ -260,7 +260,7 @@ describe("DocsSidebarBody — #22 아이콘 행: 검색 토글 + 카운트", () 
     expect(screen.queryByText("전체 문서")).not.toBeInTheDocument();
   });
 
-  it("전체 보기를 고르면 그 이름이 켜진 칩에 있다", () => {
+  it("shows the all-docs name on the active chip", () => {
     const docs = [
       makeDoc("a", "A", new Date().toISOString()),
       makeDoc("b", "B", new Date().toISOString()),
@@ -290,7 +290,7 @@ describe("DocsSidebarBody — #22 아이콘 행: 검색 토글 + 카운트", () 
    * round was opened for. jsdom computes no container query, so the pair is what can be
    * checked here; `docs-sidebar-head.spec.ts` measures the rendered rects.
    */
-  it("켠 이름은 줄 너비가 감당할 때만 그려진다", () => {
+  it("draws the active name only when the row is wide enough", () => {
     const docs = [makeDoc("a", "A", new Date().toISOString())];
     renderSidebar(docs, {
       collection: "all",
@@ -313,7 +313,7 @@ describe("DocsSidebarBody — #22 아이콘 행: 검색 토글 + 카운트", () 
    * The caption line appears only for **values a control cannot hold**. An empty line left
    * behind when there is no state at all is just a placeholder for information that is gone.
    */
-  it("검색어도 태그도 없으면 캡션 줄 자체가 없다", () => {
+  it("renders no caption row without a query or tag", () => {
     renderSidebar([makeDoc("a", "A", new Date().toISOString())], {
       collection: "all",
       collectionCounts: { all: 1, guides: 0, ontology: 1 },
@@ -322,7 +322,7 @@ describe("DocsSidebarBody — #22 아이콘 행: 검색 토글 + 카운트", () 
   });
 });
 
-describe("DocsSidebarBody — 에이전트 파일 그룹 (읽기 전용 감지)", () => {
+describe("DocsSidebarBody agent files group", () => {
   const model: AgentFilesUiModel = {
     records: [
       { slug: "CLAUDE", path: "CLAUDE.md", kind: "instructions", tools: ["claude-code"], drift: ["missing-agents-import"] },
@@ -366,7 +366,7 @@ describe("DocsSidebarBody — 에이전트 파일 그룹 (읽기 전용 감지)"
   });
 });
 
-describe("DocsSidebarBody — [D-4] 새 문서 진입점", () => {
+describe("DocsSidebarBody new doc entry point", () => {
   it("hides creation in the exact-document compatibility reader", () => {
     renderSidebar([], { showCreateDocument: false });
     expect(screen.queryByTestId("docs-sidebar-new-doc")).not.toBeInTheDocument();
@@ -405,7 +405,7 @@ describe("DocsSidebarBody — [D-4] 새 문서 진입점", () => {
   });
 });
 
-describe("DocsSidebarBody — 목록 순서 메뉴", () => {
+describe("DocsSidebarBody list order menu", () => {
   // A miniature of the dogfood top-level folder. With folders and documents mixed into one
   // alphabetical run, folders get buried among documents (measured: the 96-document ontology
   // folder landed 23rd of 36 rows).
@@ -452,17 +452,17 @@ describe("DocsSidebarBody — 목록 순서 메뉴", () => {
     );
   }
 
-  it("기본은 폴더 먼저 — 폴더가 문서 사이에 흩어지지 않는다", () => {
+  it("lists folders first by default", () => {
     renderSidebar(docs, { tree });
     expect(treeLabels().slice(0, 2)).toEqual(["archive", "benchmark"]);
   });
 
-  it("문서 먼저를 고르면 문서가 앞으로 온다", () => {
+  it("lists docs first when chosen", () => {
     renderSidebar(docs, { tree, group: "docs" });
     expect(treeLabels().slice(0, 2)).toEqual(["Architecture", "Backlog"]);
   });
 
-  it("메뉴는 접혀 있고, 열면 두 축을 따로 보여준다", () => {
+  it("starts closed and shows both axes when opened", () => {
     renderSidebar(docs, { tree });
     expect(screen.queryByTestId("docs-sidebar-order-menu")).not.toBeInTheDocument();
     fireEvent.click(screen.getByTestId("docs-sidebar-order-toggle"));
@@ -471,7 +471,7 @@ describe("DocsSidebarBody — 목록 순서 메뉴", () => {
     expect(screen.getByTestId("docs-sidebar-order-group-docs")).toBeInTheDocument();
   });
 
-  it("고른 값에 체크가 붙는다 — 지금 무슨 순서인지 메뉴가 답한다", () => {
+  it("checks the chosen value in each axis", () => {
     renderSidebar(docs, { tree, sort: "recent", group: "docs" });
     fireEvent.click(screen.getByTestId("docs-sidebar-order-toggle"));
     expect(screen.getByTestId("docs-sidebar-order-sort-recent")).toHaveAttribute("aria-checked", "true");
@@ -479,7 +479,7 @@ describe("DocsSidebarBody — 목록 순서 메뉴", () => {
     expect(screen.getByTestId("docs-sidebar-order-group-docs")).toHaveAttribute("aria-checked", "true");
   });
 
-  it("한 줄을 고르면 그 축만 바뀌고 메뉴가 닫힌다", () => {
+  it("changes only the chosen axis and closes the menu", () => {
     const { onSortChange, onGroupChange } = renderSidebar(docs, { tree });
     fireEvent.click(screen.getByTestId("docs-sidebar-order-toggle"));
     fireEvent.click(screen.getByTestId("docs-sidebar-order-sort-recent"));
@@ -507,7 +507,7 @@ describe("DocsSidebarBody — 목록 순서 메뉴", () => {
  * `button[aria-pressed]` is perfectly valid markup to axe. Whether a button really is a
  * toggle depends on **what its handler does**, and that has to be measured.
  */
-describe("DocsSidebarBody — 레일 버튼의 상태 어휘", () => {
+describe("DocsSidebarBody rail button state semantics", () => {
   const orderTree: VaultManifest["tree"] = {
     name: "root",
     path: "",
@@ -518,7 +518,7 @@ describe("DocsSidebarBody — 레일 버튼의 상태 어휘", () => {
   };
   const orderDocs = [makeDoc("architecture", "Architecture", new Date().toISOString())];
 
-  it("새 문서는 행동이다 — 눌림 상태를 낭독하지 않는다", () => {
+  it("announces no pressed state for the new doc action", () => {
     renderSidebar([], { canCreateNewDoc: true });
     const button = screen.getByTestId("docs-sidebar-new-doc");
     // It used to keep announcing aria-pressed="false". This button has no pressed state —
@@ -527,7 +527,7 @@ describe("DocsSidebarBody — 레일 버튼의 상태 어휘", () => {
     expect(button).not.toHaveAttribute("aria-expanded");
   });
 
-  it("거르기는 토글이다 — 켜고 끄는 상태를 낭독한다", () => {
+  it("announces the pressed state for the filter toggle", () => {
     renderSidebar([]);
     const button = screen.getByTestId("docs-sidebar-search-toggle");
     expect(button).toHaveAttribute("aria-pressed", "false");
@@ -535,7 +535,7 @@ describe("DocsSidebarBody — 레일 버튼의 상태 어휘", () => {
     expect(screen.getByTestId("docs-sidebar-search-toggle")).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("정렬은 메뉴를 여는 버튼이다 — expanded/haspopup 이지 pressed 가 아니다", () => {
+  it("marks the sort button with expanded and haspopup, not pressed", () => {
     renderSidebar(orderDocs, { tree: orderTree });
     const button = screen.getByTestId("docs-sidebar-order-toggle");
     expect(button).not.toHaveAttribute("aria-pressed");
@@ -551,7 +551,7 @@ describe("DocsSidebarBody — 레일 버튼의 상태 어휘", () => {
    * two into one value, so closing the menu left "pressed" behind whenever the order was not
    * the default.
    */
-  it("정렬이 기본이 아니면 인디고는 켜지고, 그래도 메뉴는 닫혀 있다고 말한다", () => {
+  it("highlights a non-default sort while reporting the menu closed", () => {
     /*
      * No specific class name is pinned — a value-layer ramp change would turn this red while
      * the content is still correct (`.claude/rules/documentation.md`: do not pin a string a
