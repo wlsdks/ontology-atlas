@@ -654,9 +654,9 @@ if (desktopPreflightContract.ok) {
  * This order is a contract, not a preference. **DMG signing must sit between
  * packaging and notarisation.**
  *
- * Gatekeeper evaluates the DMG container itself, so a notarised DMG around a
- * signed `.app` is still rejected, and signing after notarisation invalidates the
- * staple: there is exactly one slot.
+ * Gatekeeper evaluates the DMG container itself, so a notarised but unsigned DMG
+ * around a signed `.app` is still rejected, and signing after notarisation
+ * invalidates the staple: there is exactly one slot.
  *
  * **Repacking the updater archive (`desktop:repack-updater`) also has exactly one
  * slot — immediately after app signing.** `tauri build` emits `.app.tar.gz`

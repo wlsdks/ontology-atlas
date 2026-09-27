@@ -6,10 +6,10 @@
  *
  *   https://ontologyatlas.com/update/latest.json
  *
- * GitHub's `releases/latest` excludes pre-releases, resulting in 404s during RC-only periods.
- * Pages deployment copies this file from the newest non-draft release (including pre-releases) to the stable
- * address above (`stage-hosted-updater-manifest.mjs`). Pre-install minisign verification
- * remains unchanged, so the trust boundary does not change even if the publication address changes.
+ * Pages deployment copies this file from the newest published plain release (drafts and
+ * GitHub pre-releases are skipped) to the stable address above
+ * (`stage-hosted-updater-manifest.mjs`). Pre-install minisign verification remains
+ * unchanged, so the trust boundary does not change even if the publication address changes.
  *
  * **Why two layers of signature.** The Apple certificate attests who built it; the
  * minisign key attests that this update package is ours. Those are different

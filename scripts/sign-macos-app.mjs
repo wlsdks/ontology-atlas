@@ -12,8 +12,9 @@ const { appBundleName } = names;
 /**
  * `--dmg` signs **the DMG container itself**.
  *
- * Gatekeeper evaluates the container, so a notarised DMG around a signed `.app` is
- * still rejected. Order: sign app → package DMG → sign DMG → notarise → staple.
+ * Gatekeeper evaluates the container, so a notarised but unsigned DMG around a
+ * signed `.app` is still rejected. Order: sign app → package DMG → sign DMG →
+ * notarise → staple.
  *
  * Hardened runtime is not used here. That applies to executing code, and a DMG is a
  * container.

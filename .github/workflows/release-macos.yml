@@ -691,7 +691,8 @@ jobs:
 
       - name: Publish verified stable release
         run: |
-          # `--prerelease=false` keeps the release on `releases/latest`, which the updater and /download read.
+          # Clears a pre-release flag set by hand on the draft: the hosted updater skips a GitHub
+          # pre-release, and `desktop:verify-download` and `download:release-facts` below refuse one.
           gh release edit "${RELEASE_TAG}" --draft=false --prerelease=false
         env:
           GITHUB_TOKEN: ${{ github.token }}

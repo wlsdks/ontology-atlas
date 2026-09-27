@@ -9,7 +9,7 @@ area: release
 
 This runbook is for the maintainer who builds, verifies, signs, and releases
 the **Ontology Atlas** desktop app. It covers local builds, the installed-app
-log, release channels, the protected release workflow, Apple signing and
+log, release versions, the protected release workflow, Apple signing and
 notarization, and the Windows beta. Where a script owns a procedure, the script
 wins over this page.
 
@@ -111,8 +111,8 @@ not, so a blank screen with a clean log points at the frontend.
 ## Release versions
 
 Every release is a plain `vX.Y.Z` tag published as a normal GitHub release.
-`pnpm desktop:release-tag`, the admission job's first step, refuses a tag with a
-pre-release or build suffix such as `v1.4.0-rc.1`, so there is no
+`pnpm desktop:release-tag`, the admission job's first check of the tag, refuses a
+tag with a pre-release or build suffix such as `v1.4.0-rc.1`, so there is no
 release-candidate channel; to soak a build, install the draft the workflow
 stages before approving publication. The public `/download` facts describe the
 release the workflow published, and the hosted updater manifest

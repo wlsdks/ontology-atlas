@@ -53,11 +53,9 @@ function parseArgs(argv) {
       process.exit(0);
     }
     /*
-     * ⚠️ **The refresh must be retryable without re-releasing.** Measured on the rc.13 run: the
-     * watcher died on `ENOBUFS` after the release had been dispatched, and because this command
-     * always dispatches, the only way to reach the refresh again was to start a whole second
-     * release of a tag that had already published. A recovery path that costs a duplicate build is
-     * not a recovery path.
+     * ⚠️ **The refresh must be retryable without re-releasing.** If the watcher dies after the
+     * release was dispatched, the only other way back to the refresh is a second release of a tag
+     * that already published, and a recovery path that costs a duplicate build is not one.
      */
     if (arg === "--refresh-only") {
       options.refreshOnly = true;
@@ -120,10 +118,9 @@ function gitBin() {
 }
 
 /**
- * ⚠️ `maxBuffer` is raised because `gh run watch` **streams for the length of the build**. Node's
- * 1 MB default overflowed on the rc.13 run: the watcher died with `spawnSync gh ENOBUFS` after the
- * release had already been dispatched, so the build finished fine while the command that was
- * supposed to follow it never got there.
+ * ⚠️ `maxBuffer` is raised because `gh run watch` **streams for the length of the build**, which
+ * overflows Node's 1 MB default with `spawnSync gh ENOBUFS` after the release was dispatched, so
+ * the command that should follow the build never gets there.
  */
 function run(bin, args, { parseJson = false, allowFailure = false } = {}) {
   const result = spawnSync(bin, args, {
@@ -218,8 +215,7 @@ function findReleaseRun(options, sha) {
  * bot token cannot push to protected `main`. True, and irrelevant: **a person dispatches the
  * release**, so the credentials that just pushed the tag are the same ones that can open this PR.
  * Handing somebody a list of commands at the end of a twenty-minute build is handing them a step to
- * forget — and it was forgotten twice on 2026-08-25, leaving the public download page advertising
- * rc.10 while rc.11 and rc.12 had both shipped.
+ * forget, and a forgotten one leaves the public download page advertising an older release.
  *
  * The generator reads the **published** release for real byte sizes and SHA-256 values, so it is run
  * here rather than copied out of the build artifact: same numbers, one less thing to move by hand.

@@ -36,9 +36,8 @@ export function turnLiveness(
 ): TurnLiveness {
   if (status !== 'thinking') return 'idle';
   /*
-   * ⚠️ **The ball is in the person's court, so silence is theirs, not the agent's.** Caught in the
-   * installed rc.12 build: a permission card sat on screen while the notice underneath said the
-   * agent had gone quiet for three minutes. Updates genuinely stop while an answer is awaited, so
+   * ⚠️ **The ball is in the person's court, so silence is theirs, not the agent's.** Updates
+   * genuinely stop while a permission card awaits an answer, so
    * the check below sees a stall — but the wait is already explained by the card, and telling
    * somebody that nothing is happening while they are the thing that is not happening is worse than
    * saying nothing.
