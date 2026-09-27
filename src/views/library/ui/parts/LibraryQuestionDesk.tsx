@@ -129,7 +129,14 @@ function SafeReportMarkdown({ text, sources, onOpenSource, answer = false }: {
         if (!answer) return <p className="my-3 break-words">{children}</p>;
         const parts = Children.toArray(children);
         const citations = parts.filter(isCitationLink);
-        const prose = citations.length ? parts.filter((child) => !isCitationLink(child)) : parts;
+        const prose = citations.length ? parts.filter((child) => !isCitationLink(child)).reduce<ReactNode[]>((merged, child) => {
+          if (typeof child === 'string' && typeof merged[merged.length - 1] === 'string') {
+            merged[merged.length - 1] = String(merged[merged.length - 1]) + child;
+          } else merged.push(child);
+          return merged;
+        }, []).map((child) => typeof child === 'string'
+          ? child.replace(/[ \t]{2,}/gu, ' ').replace(/\s+([.,!?;:)\]])/gu, '$1')
+          : child) : parts;
         const isAnswerLead = node?.position?.start.offset === 0;
         return <div data-report-paragraph="answer" className="my-4 first:mt-0">
           <p className={isAnswerLead
@@ -196,7 +203,7 @@ function DraftReport({ text, sources, onOpenSource }: {
   };
   return <div data-report-sections="true" data-testid="question-desk-report-sections" className="space-y-7">
     {renderSection(0)}
-    <div data-report-evidence-pair="true" className="flex flex-col gap-7">
+    <div data-report-evidence-pair="true">
       {renderSection(1)}
       <div data-report-right="true" className="flex flex-col gap-7">
         {renderSection(2)}

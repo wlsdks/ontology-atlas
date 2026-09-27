@@ -56,6 +56,7 @@ export {
   localCompileWaitingEvent,
   observedWikiWriteEvents,
   successfulLocalWriteEvents,
+  showLibraryWorkStrip,
 } from "./model/library-work-activity";
 export type {
   LibraryWorkActivity,

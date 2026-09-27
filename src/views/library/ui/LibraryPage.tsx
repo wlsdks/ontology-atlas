@@ -66,6 +66,7 @@ import {
   localCompileWaitingEvent,
   observedWikiWriteEvents,
   successfulLocalWriteEvents,
+  showLibraryWorkStrip,
 } from "@/features/library";
 import {
   DocReadingPane,
@@ -2556,6 +2557,8 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
         count: segment === "sources" ? model.sources.length : model.wikiPages.length,
       })
     : t("title");
+  const questionReportVisible = homeVisible && indexSegment === 'wiki' && deskReport?.answer === lastAnswer
+    && questionDeskReportFileCurrent(deskReport.vaultScope, workVaultScope, deskReport.listingVersion, currentDeskListingVersion);
 
   return (
     /*
@@ -2861,7 +2864,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
         className={cn("flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden max-lg:order-first focus-visible:outline-none", indexSegment === 'wiki' && homeVisible && mobileBrowseOpen && 'max-lg:hidden')}
       >
         {/* Work stays above the reader and guidance, independent of the graph dialog. */}
-        <LibraryWorkActivityStrip
+        {showLibraryWorkStrip(libraryWorkActivity, questionReportVisible) ? <LibraryWorkActivityStrip
           activity={libraryWorkActivity}
           /* The lane belongs to an open conversation, not to the folder: see the prop's
              own note for the 112px an idle Library was paying without one. */
@@ -2873,7 +2876,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
                 : { kind: "source", path: target.ref },
             )
           }
-        />
+        /> : null}
         <div ref={paneBodyRef} data-testid="library-pane-body" className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           {/*
            * ⚠️ **One row above the pane, not two** (owner, 2026-09-12; `docs/DECISIONS.md`

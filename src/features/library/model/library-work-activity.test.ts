@@ -14,9 +14,21 @@ import {
   localCompileWaitingEvent,
   observedWikiWriteEvents,
   successfulLocalWriteEvents,
+  showLibraryWorkStrip,
 } from "./library-work-activity";
 
 describe("Library work activity", () => {
+  it('hides completed receipts behind a current report while retaining active and error work', () => {
+    const complete = { id: 'r', kind: 'read' as const, phase: 'complete' as const, target: null, at: 1 };
+    const activity = { isActive: false, current: null, recent: [complete] };
+    expect(showLibraryWorkStrip(activity, false)).toBe(true);
+    expect(showLibraryWorkStrip(activity, true)).toBe(false);
+    expect(showLibraryWorkStrip({ ...activity, recent: [{ ...complete, kind: 'write' }] }, true)).toBe(false);
+    expect(showLibraryWorkStrip({ ...activity, isActive: true, current: { ...complete, phase: 'active' } }, true)).toBe(true);
+    expect(showLibraryWorkStrip({ ...activity, isActive: true, current: { ...complete, kind: 'waiting', phase: 'active' } }, true)).toBe(true);
+    expect(showLibraryWorkStrip({ ...activity, recent: [{ ...complete, kind: 'error' }] }, true)).toBe(true);
+  });
+
   it("accepts only structured vault paths, never a sentence that happens to name one", () => {
     expect(libraryWorkTargetFromToolInput({ filePath: "/vault/sources/plan.pdf" }, "/vault")).toEqual({ kind: "source", ref: "sources/plan.pdf" });
     expect(libraryWorkTargetFromToolInput({ text: "read sources/plan.pdf" }, "/vault")).toBeNull();

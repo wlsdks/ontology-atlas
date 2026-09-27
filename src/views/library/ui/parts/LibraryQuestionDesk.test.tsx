@@ -170,7 +170,7 @@ describe('Library question desk transfer boundary', () => {
     const request = onSummarize.mock.calls[0]![0];
     const report: QuestionDeskReportDraft = {
       question: request.question, searchId: request.searchId, listingVersion: request.listingVersion, vaultScope: request.vaultScope,
-      text: '## Answer\nNo owner is recorded in the originals. [[src:sources/refund.md#l2]]\n\n> A later quoted note remains ordinary prose.\n\n- A loose list note remains ordinary prose.\n\n  Its second paragraph also stays ordinary.\n## Source-backed evidence\n- The plan lists no owner. [[src:sources/refund.md#l2]]\n## Disagreements or changed claims\n- One page suggests an owner.\n## Unknowns and search limits\n- Another-language documents may be missed.',
+      text: '## Answer\nNo owner is recorded in the originals [[src:sources/refund.md#l2]] [[src:sources/refund.md#l1]].\n\n> A later quoted note remains ordinary prose.\n\n- A loose list note remains ordinary prose.\n\n  Its second paragraph also stays ordinary.\n## Source-backed evidence\n- The plan lists no owner. [[src:sources/refund.md#l2]]\n## Disagreements or changed claims\n- One page suggests an owner.\n## Unknowns and search limits\n- Another-language documents may be missed.',
       coverage: request.coverage, limits: request.limits, generatedAt: '2026-09-27T17:00:00Z',
     };
     rendered.rerender(<Desk report={report} onSummarize={onSummarize} onOpenSource={onOpenSource} />);
@@ -186,6 +186,8 @@ describe('Library question desk transfer boundary', () => {
     expect(answerParagraphs[0]).toHaveClass('text-display');
     expect(answerParagraphs[0]).not.toHaveTextContent('sources/refund.md#l2');
     expect(answer.querySelector('[data-report-citations]')).toHaveTextContent('sources/refund.md#l2');
+    expect(answerParagraphs[0]).toHaveTextContent('No owner is recorded in the originals.');
+    expect(answerParagraphs[0]?.textContent).not.toMatch(/\s\./u);
     fireEvent.click(within(answer).getByRole('button', { name: 'sources/refund.md#l2' }));
     expect(onOpenSource).toHaveBeenCalledWith('sources/refund.md', 'l2');
     expect(answerParagraphs.slice(1).every((paragraph) => !paragraph.classList.contains('text-display'))).toBe(true);
@@ -199,6 +201,7 @@ describe('Library question desk transfer boundary', () => {
     expect(screen.getByTestId('question-desk-report')).toHaveAttribute('data-dock-open', 'true');
     expect(screen.getByTestId('library-question-desk').firstElementChild).toHaveClass('max-w-[var(--measure-doc-column)]');
     expect(screen.getByTestId('question-desk-report-section-1')).not.toHaveClass('border-t');
+    expect(screen.getByTestId('question-desk-report-sections').querySelector('[data-report-evidence-pair]')).not.toHaveClass('flex');
     expect(screen.getByTestId('question-desk-report-section-1')).toHaveTextContent('The plan lists no owner.');
     expect(screen.getByTestId('question-desk-report-section-2')).toHaveClass('border-t');
     expect(screen.getByTestId('question-desk-report-section-2')).toHaveTextContent('One page suggests an owner.');
