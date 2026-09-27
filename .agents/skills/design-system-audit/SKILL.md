@@ -30,14 +30,14 @@ authorize edits. Report unmeasured areas rather than expanding the audit silentl
 
 ## 0. Read actual ramps
 
-Extract values from `app/globals.css`; do not audit from memory or a stale prose
-copy.
+Extract values from `app/styles/*.css`, the parts `app/globals.css` imports; do
+not audit from memory or a stale prose copy.
 
 ```bash
-grep -oE "\-\-text-[a-z-]+:\s*[0-9.]+px" app/globals.css | sort -u
-grep -oE "\-\-radius-[a-z-]+:\s*[0-9.]+px" app/globals.css | sort -u
-grep -oE "\-\-leading-[a-z-]+:" app/globals.css | sort -u
-grep -oE "\-\-shadow-elevation-[a-z0-9-]+:" app/globals.css | sort -u
+grep -rhoE "\-\-text-[a-z-]+:\s*[0-9.]+px" app/styles | sort -u
+grep -rhoE "\-\-radius-[a-z-]+:\s*[0-9.]+px" app/styles | sort -u
+grep -rhoE "\-\-leading-[a-z-]+:" app/styles | sort -u
+grep -rhoE "\-\-shadow-elevation-[a-z0-9-]+:" app/styles | sort -u
 ```
 
 ## 1. Measure gate reach

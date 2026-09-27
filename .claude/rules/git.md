@@ -29,7 +29,7 @@
 | Add or remove a route | `docs/ARCHITECTURE.md` (canonical route list), its `docs/features/` file, and a `docs/records/decisions/` fragment (`decisions:check` enforces this) |
 | Add a command or script | `README.md` |
 | Restructure architecture | `docs/ARCHITECTURE.md` and `AGENTS.md` |
-| Add a design token | `docs/DESIGN-SYSTEM.md` and `app/styles/tokens.css`; a ramp step also in `cn.ts` |
+| Add a design token | `docs/DESIGN-SYSTEM.md`, its `app/styles/` part (`@theme`: `tokens.css`), `cn.ts` |
 | Add or rename an MCP tool | `mcp/README.md`, `docs/ontology/capabilities/mcp-tool-server.md`, and the vault README |
 | Add a capability, domain, or element | `docs/ontology/<kind>s/<slug>.md` |
 

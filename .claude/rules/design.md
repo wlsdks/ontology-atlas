@@ -168,8 +168,9 @@ tokens. Contract tests cover cross-file values and rendered geometry, and
 
 ## Tokens and surfaces
 
-- All colours go through CSS variables, defined in the `@theme` and `:root`
-  blocks of `app/globals.css`. Declare translucent values in `:root` as well:
+- All colours go through CSS variables: `@theme` in `app/styles/tokens.css`,
+  `:root` alpha in `base-root-alpha.css`, `--map-*` in `base-map-tokens.css`
+  (parts `app/globals.css` imports). Declare translucent values in `:root` as well:
   Tailwind v4 may emit the utility without the root variable.
 - Topology dimensions, surfaces, shadows, radii, insets, camera, focus, panel
   and drag motion use `--topology-*`. A new clamp, shadow, easing or duration

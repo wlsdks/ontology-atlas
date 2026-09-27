@@ -540,7 +540,7 @@ Reference anchors for this bar:
 
 ## Design tokens
 
-Defined via Tailwind 4's CSS-based `@theme`. The tokens live in `app/styles/tokens.css`; `app/globals.css` is only the entry that imports the `app/styles/*.css` parts in order. Gates read the joined text through `readGlobalCss()` in `scripts/lib/global-css.mjs`.
+Defined via Tailwind 4's CSS-based `@theme`. The `@theme` tokens live in `app/styles/tokens.css`, `:root` alpha values in `app/styles/base-root-alpha.css`, and `--map-*` in `app/styles/base-map-tokens.css`; `app/globals.css` is only the entry that imports the `app/styles/*.css` parts in order. Gates read the joined text through `readGlobalCss()` in `scripts/lib/global-css.mjs`.
 
 ### Scale fixed contract (2026-07-24, owner confirmed — "fixed as is now")
 
@@ -3116,10 +3116,10 @@ The result appeared on screen: we reduced chip sizes from 50 types to 3, but **t
 
 **Procedure** — If you feel you need new dimensions, colors, or spacing, stop right there and:
 
-1. Find the token for that role in `app/globals.css` (`--control-h-*` ·
+1. Find the token for that role in the `app/styles/` parts (`grep -rn -- '--<token>' app/styles`; `--control-h-*` ·
    `--chrome-*` · `--text-*` · `--leading-*` · `--radius-*` · `--motion-*`).
 2. Read this document's **「Control Height Ladder」** and ramp sections.
-3. Run `git log --oneline -- app/globals.css | head -20` to see why those values
+3. Run `git log --oneline -S'<token>' -- app/globals.css app/styles | head -20` to see why those values
    were set — there is usually a reason, and that reason is likely still valid.
 4. If they still don't exist, **only then** proceed to Rule 4 (count how many are blocked).
 
