@@ -78,8 +78,8 @@ import { groupDiscovered, shortSourceKey, type DiscoveredGroup } from './discove
  *
  * ## What the press does
  *
- * One rule, so the button can read the same everywhere: **a press attaches what asks nothing and
- * asks, in place, for what asks one thing.** A hosted address with OAuth asks nothing of this
+ * One rule, so the button can read the same everywhere: **a press attaches what its row shows and
+ * asks nothing; anything else unfolds in place.** A hosted address with OAuth asks nothing of this
  * dialog — the coding agent opens the sign-in window and holds what comes back — so the row goes
  * straight into the folder, switched off. A local program that needs a token unfolds a small panel
  * under its own row: the command written out, one password field per required variable, and the
@@ -222,10 +222,12 @@ function variantKey(variant: CatalogueVariant): string {
   return variantRuns(variant);
 }
 
-/** What a press on this variant will do: write the row, or ask for something first. */
+/** Write at once only the primary, whose line is on the row, and only if it asks nothing. */
 type PressOutcome = 'attaches' | 'asks';
-function pressOutcome(variant: CatalogueVariant): PressOutcome {
-  return requiredVariables(variant).length > 0 ? 'asks' : 'attaches';
+function pressOutcome(entry: CatalogueEntry, variant: CatalogueVariant): PressOutcome {
+  return variant === primaryVariant(entry) && requiredVariables(variant).length === 0
+    ? 'attaches'
+    : 'asks';
 }
 
 export function AddConnectorDialog({
@@ -426,10 +428,10 @@ export function AddConnectorDialog({
     });
   };
 
-  /** The one rule: attach what asks nothing, ask in place for what asks one thing. */
+  /** The one rule: attach what the row shows and asks nothing, unfold what it does not. */
   const pressCatalogue = (entry: CatalogueEntry, variant: CatalogueVariant) => {
     setFailure(null);
-    if (pressOutcome(variant) === 'attaches') {
+    if (pressOutcome(entry, variant) === 'attaches') {
       setAsking(null);
       void addWithSecrets(catalogueRecord(entry, variant), []);
       return;
@@ -812,7 +814,8 @@ function FoundSection({
           {visible.map((group) => {
             const server = group.server;
             const usable = isAttachableTransport(server.transport);
-            const runs = server.url ?? [server.command, ...server.args].join(' ');
+            const commandLine = [server.command, ...server.args].join(' ');
+            const runs = server.transport === 'stdio' ? commandLine : (server.url ?? commandLine);
             return (
               <li
                 key={group.key}
@@ -999,7 +1002,7 @@ function CatalogueSection({
                     data-testid={`${testIdPrefix}-catalogue-runs`}
                     className="mt-1 flex min-w-0 flex-wrap items-baseline gap-x-2 text-label leading-label text-[color:var(--color-text-quaternary)]"
                   >
-                    <code className="min-w-0 max-w-full truncate font-mono">
+                    <code className="min-w-0 max-w-full break-all font-mono">
                       {variantRuns(primary, primaryPath)}
                     </code>
                     <span className="break-keep">{asksClause(t, primary)}</span>
@@ -1016,12 +1019,16 @@ function CatalogueSection({
                           size="lg"
                           data-testid={`${testIdPrefix}-catalogue-other`}
                           data-variant-kind={variant.kind}
-                          data-press={pressOutcome(variant)}
+                          data-press={pressOutcome(entry, variant)}
                           disabled={attached}
                           aria-expanded={
-                            pressOutcome(variant) === 'asks' ? askingHere === variant : undefined
+                            pressOutcome(entry, variant) === 'asks'
+                              ? askingHere === variant
+                              : undefined
                           }
-                          aria-controls={pressOutcome(variant) === 'asks' ? askId : undefined}
+                          aria-controls={
+                            pressOutcome(entry, variant) === 'asks' ? askId : undefined
+                          }
                           onClick={() => onPress(entry, variant)}
                         >
                           {variantLabel(t, variant)}
@@ -1042,9 +1049,11 @@ function CatalogueSection({
                     size="lg"
                     data-testid={`${testIdPrefix}-catalogue-add`}
                     data-variant-kind={primary.kind}
-                    data-press={pressOutcome(primary)}
-                    aria-expanded={pressOutcome(primary) === 'asks' ? askingHere === primary : undefined}
-                    aria-controls={pressOutcome(primary) === 'asks' ? askId : undefined}
+                    data-press={pressOutcome(entry, primary)}
+                    aria-expanded={
+                      pressOutcome(entry, primary) === 'asks' ? askingHere === primary : undefined
+                    }
+                    aria-controls={pressOutcome(entry, primary) === 'asks' ? askId : undefined}
                     onClick={() => onPress(entry, primary)}
                   >
                     <Plus size={ICON_SIZE.sm} aria-hidden />
@@ -1092,7 +1101,7 @@ function variantLabel(t: Translate, variant: CatalogueVariant): string {
 }
 
 /**
- * **A row asking for the one thing it cannot attach without**, unfolded under itself.
+ * **A way in, unfolded under its row before anything is written**.
  *
  * What it shows, in order: where these facts came from; the command written out, with this
  * machine's resolved runtime where one was found; the sentence saying where the value goes; one
@@ -1155,12 +1164,14 @@ function VariantAsk({
       <code className="mt-1 block break-all font-mono text-label leading-label text-[color:var(--color-text-tertiary)]">
         {variantRuns(variant, resolved)}
       </code>
-      <p className="mt-1 break-keep text-label leading-prose text-[color:var(--color-text-quaternary)]">
-        {canStoreSecrets
-          ? t('variantAsksToken', { keys: required.map((variable) => variable.name).join(', ') })
-          : t('secretsWeb', { keys: required.map((variable) => variable.name).join(', ') })}
-      </p>
-      {canStoreSecrets ? (
+      {required.length > 0 ? (
+        <p className="mt-1 break-keep text-label leading-prose text-[color:var(--color-text-quaternary)]">
+          {canStoreSecrets
+            ? t('variantAsksToken', { keys: required.map((variable) => variable.name).join(', ') })
+            : t('secretsWeb', { keys: required.map((variable) => variable.name).join(', ') })}
+        </p>
+      ) : null}
+      {canStoreSecrets && required.length > 0 ? (
         <div className="mt-2 flex flex-col gap-2">
           {required.map((variable, index) => (
             <div key={variable.name} className="flex flex-col gap-1">
@@ -1211,7 +1222,7 @@ function VariantAsk({
         on the chip `lg` step: the submit filled, the rest quiet with a transparent border.
       */}
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        {canStoreSecrets ? (
+        {canStoreSecrets || required.length === 0 ? (
           <button
             type="button"
             data-testid={`${testIdPrefix}-catalogue-ask-add`}
@@ -1314,6 +1325,10 @@ function CustomConnectorForm({
   }, [args, command, name, transport, url, variables]);
 
   const problems = connectorProblems(draft);
+  const runs =
+    draft.transport === 'http'
+      ? (draft.url ?? '').trim()
+      : [draft.command ?? '', ...draft.args].join(' ').trim();
   const changeVariable = (index: number, next: Partial<DraftVariable>) =>
     setVariables((current) =>
       current.map((variable, position) =>
@@ -1588,6 +1603,17 @@ function CustomConnectorForm({
           </Chip>
         </div>
       </div>
+
+      {runs ? (
+        <div data-testid={`${testIdPrefix}-custom-runs`} className="mt-3">
+          <p className="text-label leading-label text-[color:var(--color-text-quaternary)]">
+            {t('whatRunsLabel')}
+          </p>
+          <code className="mt-1 block break-all font-mono text-label leading-label text-[color:var(--color-text-primary)]">
+            {runs}
+          </code>
+        </div>
+      ) : null}
 
       {name.trim() && problems.length > 0 ? (
         <p

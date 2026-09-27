@@ -834,7 +834,7 @@ function AttachedList({
                 */}
                 <code
                   data-testid={`${testIdPrefix}-item-runs`}
-                  className="min-w-0 flex-1 truncate font-mono text-label leading-label text-[color:var(--color-text-quaternary)]"
+                  className="min-w-0 flex-1 break-all font-mono text-label leading-label text-[color:var(--color-text-quaternary)]"
                 >
                   {runs}
                 </code>
