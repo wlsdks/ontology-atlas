@@ -1,51 +1,6 @@
-// analyze_repo_structure — the *deterministic* tool an agent (Claude Code, Codex,
-// Cursor) calls after the user says "analyse this codebase". Zero side effects: it
-// never changes the vault, it only proposes candidates for the agent to show the
-// user, who then calls `add_concept` explicitly.
-//
-// That is what preserves the single source of truth: results are returned, never
-// written to frontmatter, so the only way into the vault is user review plus an
-// explicit add — and drift stays at zero.
-//
-// Detection patterns are generic, covering roughly 80% of codebases; finer
-// framework-specific detection belongs to the follow-up tools (infer_imports,
-// extract_domains_from_readme):
-//   - package.json `name` → project slug + title
-//   - README.md first H1 → project title (fallback when package.json is absent)
-//   - README.md H2 sections → domain candidates
-//   - depth-1 folders under src/ (or root) → capability candidates (dotfiles and
-//     the usual ignored folders excluded)
-//   - the main file of each capability folder (index.ts/js/mjs/tsx) → element candidate
-//
-// Result shape:
-//   {
-//     rootPath, framework: 'fsd' | 'next' | 'generic',
-//     project?: { slug, title, definition, evidence, includes, excludes, confidence, uncertainty },
-//     domains: [{ slug, title, evidence: { source, line? } }],
-//     capabilities: [{ slug, title, evidence: { source } }],
-//     elements: [{ slug, title, path, evidence: { source } }],
-//       — the slug is a flat role name; location lives only in path/evidence (2026-08-01 decision)
-//     meaningGate: {
-//       policy: 'business-first',
-//       sourceStructureRole: 'implementation-evidence',
-//       businessOntology: { domains: [slug], capabilities: [slug], evidence: [{ slug, kind, source }] },
-//       proposedBusinessOntology: {
-//         domains: [{ slug, reason, evidence, title, definition, includes, excludes, confidence, uncertainty, evidenceSources }],
-//         capabilities: [{ slug, reason, evidence, title, definition, includes, excludes, confidence, uncertainty, evidenceSources }],
-//       },
-//       implementationEvidence: { elements: [slug], reviewRequiredCapabilities: [{ slug, reason, evidence }] },
-//       reviewQuestions: [string],
-//     },
-//     extractionContract: {
-//       standard, status, assertionPolicy,
-//       competencyQuestions: [{ id, type, question, priority, requiredWitnesses }],
-//       qualityGates,
-//     },
-//     semanticEvidence: [{ source, role, title, headings, excerpt, trust,
-//       riskFlags, reviewRequiredEvidence? }],
-//     suggestedRelations: [{ from, to, type }],
-//     skipped: [{ path, reason }],
-//   }
+// analyze_repo_structure: the deterministic, side-effect-free scan an agent runs
+// when asked to analyse a codebase. It only proposes candidates; the vault changes
+// only through a reviewed, explicit add, so frontmatter stays the single truth.
 
 import { readdirSync, statSync, existsSync } from 'node:fs';
 import { join, basename, relative } from 'node:path';
@@ -104,13 +59,7 @@ import {
   enrichProjectCandidate,
 } from './meaning-gate.mjs';
 
-/**
- * Walks a codebase root and analyses its README into a list of ontology node candidates.
- *
- * @param {string} rootPath — the directory to analyse (usually cwd, or user-provided).
- * @param {{ maxDepth?: number, ignore?: string[], precomputedPythonImports?: object|null }} options
- * @returns analysis result
- */
+/** Walks a codebase root and analyses its README into ontology node candidates. */
 export function analyzeRepoStructure(rootPath, options = {}) {
   validateRootPath(rootPath);
   if (!existsSync(rootPath) || !statSync(rootPath).isDirectory()) {
@@ -136,7 +85,6 @@ export function analyzeRepoStructure(rootPath, options = {}) {
   const configurationEvidence = collectRustFeatureConfigurationEvidence(rootPath);
   const domainForName = (name) => matchDomainSlug(name, domains);
 
-  // The first existing entry in SOURCE_FOLDERS becomes the src dir
   let srcDir = null;
   for (const cand of SOURCE_FOLDERS) {
     const p = join(rootPath, cand);
@@ -157,22 +105,9 @@ export function analyzeRepoStructure(rootPath, options = {}) {
     skipped,
   });
 
-  // Framework heuristic — `features/` alone is enough for fsd (lean FSD, as in
-  // ontology-atlas itself).
-  //
-  // **Detect only on folders that can be scanned** (fix measured while dogfooding,
-  // 2026-07-28). The old marker list included `shared`, a name common to any
-  // TS/Node project. A lone `src/shared/` was enough to detect fsd, and the FSD
-  // path below scans only `features/entities/widgets/views` — so a repository with
-  // none of those silently returned **0 capabilities and 0 elements**, with
-  // nothing anywhere in the response saying "zero because of the framework
-  // verdict". `inferImports` in the same call extracted the feature folders of
-  // that same repository correctly, so two tools were saying different things
-  // about one repository.
-  //
-  // The rule: **if a verdict cannot change what gets read, do not make it.** When
-  // the only consequence of calling something fsd is "there is nothing to scan",
-  // that name does nothing but suppress.
+  // `features/` alone is enough for fsd. Detect only on folders the FSD path scans:
+  // a verdict that cannot change what gets read must not be made, or a lone
+  // `src/shared/` yields zero capabilities with no explanation.
   let framework = 'generic';
   if (srcDir) {
     const subs = readdirSync(srcDir).filter((s) =>
@@ -216,18 +151,11 @@ export function analyzeRepoStructure(rootPath, options = {}) {
         });
       }
     }
-    // FSD pattern — features/ is the main area for capabilities
     const fsdRoots = framework === 'fsd' ? FSD_SCAN_ROOTS : null;
 
     if (fsdRoots) {
-      // A slug is a flat identifier (2026-08-01 decision — docs/DECISIONS.md).
-      // This used to propose `elements/${relative(rootPath, subPath)}`, and an
-      // agent with no spec context landed all 43 path-shaped slugs in the vault
-      // **verbatim** — this generator was the primary cause of the regenerated
-      // vault's defects. Now the role name goes in the slug and the location in
-      // `path`; when basenames collide across layers (`entities/docs-vault` vs
-      // `views/docs-vault`) they are split deterministically by a singular layer
-      // suffix, removing tail collisions at generation time.
+      // Slugs are flat role names and location goes in `path` (docs/DECISIONS.md);
+      // basenames that collide across layers get a singular layer suffix.
       const elementCandidates = [];
       for (const r of fsdRoots) {
         const dir = join(srcDir, r);
@@ -293,10 +221,9 @@ export function analyzeRepoStructure(rootPath, options = {}) {
           continue;
         }
         if (IMPLEMENTATION_ONLY_SOURCE_FOLDERS.has(basename(srcDir))) {
-          // Some large repositories keep product implementation below an
-          // internal/ root instead of src/ or lib/. Its direct children are
-          // implementation evidence only: a folder name must not become a
-          // business capability without trusted narrative evidence.
+          // Some large repositories keep implementation under internal/ instead of src/ or
+          // lib/. Its children are implementation evidence only, never a business
+          // capability without trusted narrative evidence.
           if (!subStat.isDirectory()) continue;
           if (directImplementationElementCount >= IMPLEMENTATION_SOURCE_ELEMENT_LIMIT) {
             if (!directImplementationLimitRecorded) {
@@ -389,16 +316,14 @@ export function analyzeRepoStructure(rootPath, options = {}) {
     }
   }
 
-  // Native C projects expose source files and build manifests directly rather
-  // than through the JS/Python folder conventions above. Keep those paths as
-  // implementation evidence; the meaning gate still prevents them from
-  // becoming business capabilities without semantic witnesses.
+  // Native C projects expose source files and build manifests directly. Keep them as
+  // implementation evidence; the meaning gate still needs semantic witnesses before
+  // they become business capabilities.
   elements.push(...nativeImplementationEvidence.elements);
 
-  // Repositories may have both a conventional lib/ or src/ root and a
-  // separately owned internal/ implementation tree. Keep the primary-root
-  // behavior above, but admit bounded internal evidence as an additional
-  // implementation witness instead of silently dropping it.
+  // A repository may have both a primary lib/ or src/ root and a separately owned
+  // internal/ tree; admit bounded internal evidence as an extra witness instead of
+  // dropping it.
   for (const candidate of IMPLEMENTATION_ONLY_SOURCE_FOLDERS) {
     if (candidate === basename(srcDir ?? '')) continue;
     const implementationRoot = join(rootPath, candidate);
@@ -503,16 +428,14 @@ export function analyzeRepoStructure(rootPath, options = {}) {
     semanticEvidence,
   });
 
-  // Element paths are implementation observations. Even an exact token match
-  // with a README domain name does not prove that implementation role, so raw
-  // elements stay project-scoped until a reviewed capability/element relation
-  // carries role-specific evidence.
+  // Element paths are implementation observations: even an exact token match with a
+  // README domain does not prove the role, so raw elements stay project-scoped until
+  // a reviewed relation carries role evidence.
   for (const element of elements) delete element.domain;
 
-  // Suggested relations form one coherent containment spine. A README-backed
-  // domain sits under the project; matched capability candidates may sit under
-  // that domain. Raw implementation elements remain directly under the project
-  // instead of inventing business-role meaning from a name match.
+  // One containment spine: README-backed domains under the project, matched
+  // capabilities under their domain, raw elements directly under the project rather
+  // than a role invented from a name match.
   const suggestedRelations = [];
   if (project) {
     for (const domain of domains) {

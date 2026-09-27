@@ -50,10 +50,9 @@ import {
 
 const ABSORB_BACKUP_SUFFIX = '.pre-absorb.bak';
 
-// Slice 0 — absorb_document. Mirror of cli/src/commands/absorb.mjs's write
-// path; core plan logic lives in ./absorb.mjs (mirrored at
-// cli/src/lib/absorb.mjs, kept in lock-step by
-// tests/contract/absorb.contract.test.ts).
+// Mirrors the write path of cli/src/commands/absorb.mjs. The plan logic lives in
+// mcp/src/absorb.mjs, kept in lock-step with cli/src/lib/absorb.mjs by
+// tests/contract/absorb.contract.test.ts.
 /**
  * `review_state: human_decides` on the file `absorb_document` was pointed at.
  *
@@ -102,10 +101,9 @@ function absorbDocumentTool({ filePath, confirm = false, allowOutsideRepo = fals
     ...(existsSync(backupPath)
       ? [`backup already exists and would be overwritten: ${backupPath}`]
       : []),
-    // **Absorption rewrites its source**, and a source can be a vault node a
-    // person reserved (Codex review, 2026-09-02). It does not go through the
-    // multi-file plan guard, so the refusal has to be stated here. A backup
-    // makes the rewrite recoverable; it does not make it permitted.
+    // Absorption rewrites its source, which may be a node a person reserved, and it
+    // bypasses the multi-file plan guard, so the refusal is stated here. A backup makes
+    // the rewrite recoverable, not permitted.
     ...(reservedSourceIssue(abs) ? [reservedSourceIssue(abs)] : []),
   ];
   const raw = readFileSync(abs, 'utf-8');
@@ -152,12 +150,9 @@ function absorbDocumentTool({ filePath, confirm = false, allowOutsideRepo = fals
     };
   }
 
-  // **The dry-run branch reports; this branch blocks.** `blockedReasons` is
-  // assembled above for the preview and never consulted here — each condition is
-  // re-thrown on the write path individually. A refusal added to the list alone
-  // would read as enforced and write anyway, which is how this one was found
-  // (Codex review, 2026-09-02: the first fix landed in the list and the test
-  // still recorded `ok: true, dryRun: false`).
+  // The dry-run branch reports; this branch blocks. `blockedReasons` only feeds the
+  // preview, so each condition is re-thrown here, or a refusal added to the list
+  // alone would read as enforced and still write.
   const reservedSource = reservedSourceIssue(abs);
   if (reservedSource) {
     throw new Error(`absorb_document blocked: ${reservedSource}`);
@@ -174,17 +169,9 @@ function absorbDocumentTool({ filePath, confirm = false, allowOutsideRepo = fals
     );
   }
 
-  /*
-   * All-or-nothing (2026-09-01 review): rename/merge/reclassify apply their
-   * multi-file writes as one unit, and absorption has the same shape — N new
-   * node files plus one source rewrite. Writing sections in a bare loop meant a
-   * mid-loop failure (a slug created concurrently, EACCES, ENOSPC) left a
-   * half-absorbed vault, and the retry re-planned around the already-landed
-   * files into `-2`-suffixed duplicates. writeDoc still performs each write
-   * (slug/identity validation, uid minting, the growth gate); the pre-check
-   * refuses before anything lands and the rollback removes what this call
-   * created — every written file is new, so unlink restores the vault.
-   */
+  // All-or-nothing, like rename/merge/reclassify: N new node files plus one source
+  // rewrite. The pre-check refuses before anything lands and rollback unlinks what
+  // this call created, or a mid-loop failure leaves a half-absorbed vault.
   const absorbSections = plan.sections.filter((section) => section.action === 'absorb');
   for (const section of absorbSections) {
     if (existsSync(slugToPath(VAULT_ROOT, section.targetSlug))) {

@@ -79,13 +79,9 @@ export function topHubs(nodes, limit) {
 }
 
 /**
- * Checks whether a dangling ref was meant as a typo or a missing prefix for an
- * existing vault node — the minimum implementation for the real bug in the
- * persona-2026-07 QA log (`domain: checkout` while `domains/checkout` already
- * existed). Exact tail (last segment) match first, then tail prefix. Two or more
- * candidates (ambiguous) return null: never propose a confidently wrong fix.
- * Reuses the tiering idea from `suggestSimilarSlugs` in `mcp/src/vault.mjs`,
- * adapted to in-memory nodes.
+ * Finds the existing node a dangling ref most likely meant (a typo or a missing
+ * folder prefix): exact tail match first, then tail prefix. Ambiguous matches
+ * return null so a confidently wrong fix is never proposed.
  */
 export function findNearMatchSlug(ref, nodes) {
   const raw = String(ref || '').trim();

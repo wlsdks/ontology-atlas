@@ -52,10 +52,9 @@ function addRelation({ from, to, type, why, expected_mtime }, options = {}) {
   const canonicalFrom = resolveExistingVaultSlug(from);
   const canonicalTo = resolveExistingVaultSlug(to);
   requireNodeNotReservedForHuman(readDocIfPresent(canonicalFrom ?? from), 'add_relation');
-  // Both endpoints are verified to exist in the vault. Without this a dangling
-  // reference is silently appended to a frontmatter array when an agent sends a
-  // typo or a hallucinated slug; now it surfaces as a clean error. Beyond direct
-  // slugs, tail and frontmatter slug aliases are stored as the canonical slug.
+  // Both endpoints must exist, so a typo or hallucinated slug is an error rather than
+  // a dangling reference; tail and frontmatter slug aliases are stored as the
+  // canonical slug.
   if (!canonicalFrom) {
     throw new Error(missingSlugMessage('Source slug does not exist in vault', from, {
       createHint: true,
@@ -66,18 +65,8 @@ function addRelation({ from, to, type, why, expected_mtime }, options = {}) {
       createHint: true,
     }));
   }
-  /*
-   * ⚠️ **Both ends of a relation must be nodes** (measured 2026-08-08).
-   *
-   * The existence check above asks «is there a .md by that name». So it rejected
-   * nonexistent slugs correctly but **let a diary memo through** — markdown that
-   * is not a node lives in a vault legitimately, by design.
-   *
-   * The result is a dangling reference written into the graph. It is caught
-   * afterwards (compile, maintenance queue), but only after the write, and in
-   * between the graph carries a relation the compiler will discard. The write
-   * gate saying it first is cheaper.
-   */
+  // Both ends must be graph nodes, not just existing .md files, or a memo in the
+  // vault becomes a dangling reference the compiler later discards.
   assertGraphNodeEndpoint(canonicalFrom, 'Source');
   assertGraphNodeEndpoint(canonicalTo, 'Target');
   const doc = readDoc(VAULT_ROOT, slugToPath(VAULT_ROOT, canonicalFrom));
@@ -218,10 +207,8 @@ function replaceRelation({ from, oldTo, oldType, newTo, newType, why, confirm = 
   if (!relationExists(doc, oldKey, canonicalOldTo)) throw new Error(`Relation does not exist: ${canonicalFrom} --${oldType}--> ${canonicalOldTo}.`);
   const oldRelation = { to: canonicalOldTo, type: oldType, key: oldKey };
   const newRelation = { to: canonicalNewTo, type: newType, key: newKey };
-  // Rationale resolution happens before the dry-run return so the "every new
-  // depends_on carries a why" contract (schema.mjs) holds here too — converting
-  // an edge to depends_on used to slip through with no why and no prior note to
-  // inherit (bug sweep 2026-09-01).
+  // Resolve the rationale before the dry-run return, so converting an edge to
+  // depends_on still needs a `why` (schema.mjs).
   const notes = doc.frontmatter.relation_notes && typeof doc.frontmatter.relation_notes === 'object' ? { ...doc.frontmatter.relation_notes } : {};
   const oldNoteKeys = matchingRelationNoteKeys(notes, canonicalOldTo);
   const priorWhy = oldNoteKeys
@@ -269,12 +256,9 @@ function replaceRelation({ from, oldTo, oldType, newTo, newType, why, confirm = 
   return { ...base, ok: true, dryRun: false, changed: true, postWriteMaintenance: compactPostWriteMaintenance() };
 }
 
-// Batch variant of add_relation, for landing relations whose meaning was already
-// reviewed and approved. Rows are dispatched serially through addRelation, so the
-// same `from` slug can appear in several rows and readDoc re-reads from disk each
-// time, accumulating without loss (but passing expected_mtime alongside makes
-// every row after the first stale and fail — the tool description says so). Input
-// order preserved, partial results, no atomic rollback.
+// Batch add_relation for already-approved relations. Rows run serially, so one
+// `from` may repeat (but expected_mtime then makes later rows stale). Input order
+// preserved, partial results, no atomic rollback.
 function addRelationsBatch({ relations }) {
   if (!Array.isArray(relations)) {
     throw new Error('relations must be an array of relation specs');

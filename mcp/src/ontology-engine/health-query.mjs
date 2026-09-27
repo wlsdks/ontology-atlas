@@ -44,12 +44,8 @@ export function createHealthQuery({
     const issueCount = Array.isArray(artifact?.issues) ? artifact.issues.length : 0;
     const graph = overviewResult.graph;
     const checks = [
-      // Ask first whether there is anything to count. Without this, the `pass` of
-      // the checks below proves nothing — with zero nodes there are zero cycles,
-      // zero unresolved edges, and zero disconnected components, so **everything
-      // passes and it reports healthy** (measured 2026-08-16: a folder that was
-      // not a vault came back healthy with exit 0). This is the only place a person
-      // who pointed at the wrong folder can find that out.
+      // Ask first whether there is anything to count: with zero nodes every check below
+      // passes, so a folder that is not a vault would report healthy.
       healthCheck({
         id: 'vault_present',
         status: graph.nodes === 0 ? 'fail' : 'pass',
