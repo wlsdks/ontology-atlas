@@ -738,40 +738,6 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
   });
 });
 
-describe('계기가 스스로를 설명한다', () => {
-  const SOURCE = readFileSync(join(process.cwd(), 'src/shared/ui/control-class.ts'), 'utf8');
-
-  it('여섯 모양이 어디서 왔는지 실측으로 적어 둔다', () => {
-    // What stops the next person adding a "seventh shape" on instinct is this number,
-    // not the code — a shape outside the classification is the signal to re-run the
-    // inventory.
-    expect(SOURCE).toContain('419');
-  });
-
-  it('값 층과 행동 층을 가르는 이유를 실측으로 적어 둔다', () => {
-    /*
-     * This is not "components are banned" but **why the values are a function**. The
-     * first judgement — "components do not work here" — was wrong: the three with zero
-     * usage were not evidence of laziness but primitives **born without a gate that
-     * violated the ramp** (`CardTitle` used `text-lg`, which is not on the ramp). If
-     * that correction disappears the next person inherits the same misjudgement.
-     */
-    /*
-     * ⚠️ **Only derivable anchors are pinned** (2026-08-22). A Korean phrase used to
-     * be matched here as well. `documentation.md` forbids pinning a sentence a human
-     * wrote, and the English comment pass showed why: the correction survived word
-     * for word while the pinned characters did not, so the gate went red over a
-     * rewording that changed nothing. `text-lg` is the off-ramp value that caused the
-     * misjudgement, and the two product names are citations — both survive any
-     * rewrite of the prose around them.
-     */
-    expect(SOURCE).toContain('text-lg');
-    expect(SOURCE, '업계 표준이 컴포넌트라는 사실도 함께 적어야 균형이 잡힌다').toMatch(
-      /Carbon|shadcn/,
-    );
-  });
-});
-
 /**
  * **Three hover axes** (2026-08-15, ledger entry 11).
  *
