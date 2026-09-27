@@ -21,6 +21,7 @@ quality gain was measured
 |---|---|---|
 | lead session | xhigh from `.claude/settings.json`; `/effort max` for one session | decide, plan small changes, talk to the owner |
 | `planner` | max | slices a low-effort implementer can build without judgment |
+| `product-planner` | max | the product spec of a one-way product change, before its review |
 | `implementer` | low | one planned slice from `/parallel-brief` |
 | `investigator` | max | root cause of a failure or flake, then the fix |
 | `reviewer` | max | an independent review of a returned diff, or of a routed product or design decision |
