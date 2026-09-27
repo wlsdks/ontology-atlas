@@ -613,7 +613,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### Global CSS/PostCSS overflow smoke
 
 **Run**: `pnpm exec playwright test tests/e2e/overflow-sweep.spec.ts`
-**Proves**: A `postcss.config.mjs` or `app/globals.css` change does not overflow the core responsive routes.
+**Proves**: A `postcss.config.mjs` or `app/globals.css` or `app/styles/*.css` change does not overflow the core responsive routes.
 **Escalate**: none.
 
 ### Graph hot-path perf

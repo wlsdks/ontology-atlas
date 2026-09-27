@@ -253,6 +253,12 @@ test('the external judgment example is inventoried and runs its offline contract
 test('token, toc, and package gates reach the PRs that touch their inputs', () => {
   const tokens = buildImpactPlan({ files: ['app/globals.css'] });
   assert.ok(tokens.lanes.gates.commands.includes('pnpm check:tokens'));
+  // The stylesheet lives in app/styles parts that app/globals.css imports; a
+  // part-only change must plan the same token gate and styling sweep.
+  const part = buildImpactPlan({ files: ['app/styles/tokens.css'] });
+  assert.ok(part.lanes.gates.commands.includes('pnpm check:tokens'));
+  assert.deepEqual(part.lanes.e2e.specs, ['tests/e2e/overflow-sweep.spec.ts']);
+  assert.equal(part.lanes.e2e.webSurface, true);
 
   const toc = buildImpactPlan({ files: ['docs/DESIGN-SYSTEM.md'] });
   assert.ok(toc.lanes.gates.commands.includes('pnpm design:toc:check'));

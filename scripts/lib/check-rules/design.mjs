@@ -10,7 +10,7 @@ export const rules = [
     // red after the fact.
     command: 'pnpm check:tokens',
     reason: 'styles or ramp registries changed — the raw-color and token gates apply',
-    matches: [/^app\/globals\.css$/, /^src\/.+\.css$/, /^src\/shared\/lib\/cn\.ts$/],
+    matches: [/^app\/(?:globals|styles\/[^/]+)\.css$/, /^src\/.+\.css$/, /^src\/shared\/lib\/cn\.ts$/],
   },
   {
     order: 100,
