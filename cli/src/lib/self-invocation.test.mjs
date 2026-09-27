@@ -30,21 +30,21 @@ function stripAnsi(text) {
   return text.replace(/\[[0-9;]*m/g, '');
 }
 
-test('cliInvocation 은 실행 가능한 자기 호출을 절대 경로로 준다', () => {
+test('cliInvocation returns a runnable absolute self-invocation', () => {
   const invocation = cliInvocation({ argv: ['/usr/bin/node', '/abs/cli/src/index.mjs'] });
   assert.equal(invocation, 'node /abs/cli/src/index.mjs');
 });
 
-test('공백 든 경로만 따옴표로 감싼다', () => {
+test('quotes only paths containing spaces', () => {
   assert.equal(shellQuoteIfNeeded('/plain/path.mjs'), '/plain/path.mjs');
   assert.equal(shellQuoteIfNeeded('/with space/path.mjs'), "'/with space/path.mjs'");
 });
 
-test('argv 가 없으면 체크아웃 상대 경로로 물러선다', () => {
+test('falls back to the checkout-relative path without argv', () => {
   assert.equal(cliInvocation({ argv: ['node'] }), 'node cli/src/index.mjs');
 });
 
-test('cliCommand 는 자기 호출 뒤에 하위 명령을 이어 붙인다', () => {
+test('cliCommand appends the subcommand to the self-invocation', () => {
   // Whatever launched the process (the test runner's own file, here), the prefix is
   // `cliInvocation` with the arguments appended. Only that composition is asserted.
   assert.equal(cliCommand('list'), `${cliInvocation()} list`);
@@ -53,7 +53,7 @@ test('cliCommand 는 자기 호출 뒤에 하위 명령을 이어 붙인다', ()
 
 // This is the exact reproduction of the defect — run the printed line **verbatim**
 // and check that it succeeds.
-test('init 이 안내하는 명령을 그대로 실행하면 실제로 돈다', () => {
+test('the command init suggests runs as printed', () => {
   const dir = mkdtempSync(path.join(tmpdir(), 'oatlas-init-'));
   try {
     const stdout = stripAnsi(
@@ -65,7 +65,7 @@ test('init 이 안내하는 명령을 그대로 실행하면 실제로 돈다', 
     assert.equal(
       /(^|\s)ontology-atlas (list|validate|mcp-verify|add|find|analyze|bootstrap)/.test(nextSteps),
       false,
-      `죽은 명령이 Next steps 에 남아 있다:\n${nextSteps}`,
+      `Next steps still names a dead command:\n${nextSteps}`,
     );
 
     // Extract the first suggested command from the output and run it as-is.
@@ -73,7 +73,7 @@ test('init 이 안내하는 명령을 그대로 실행하면 실제로 돈다', 
       .split('\n')
       .map((line) => line.trim())
       .find((line) => line.endsWith('list') || line.includes('index.mjs list'));
-    assert.ok(listLine, `안내에서 list 명령 줄을 못 찾았다:\n${nextSteps}`);
+    assert.ok(listLine, `no list command line in the next steps:\n${nextSteps}`);
 
     const command = listLine.split('#')[0].trim();
     const args = command.split(/\s+/).slice(1); // everything after `node`

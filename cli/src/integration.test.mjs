@@ -336,7 +336,7 @@ await test('top-level command typos include closest command hints', async () => 
   }
 });
 
-await test('list — empty vault: 0 노드 메시지', async () => {
+await test('list — empty vault: zero-node message', async () => {
   const root = withVault([]);
   try {
     const r = await run(['list', root]);
@@ -571,12 +571,12 @@ await test('init --locale=ko — Korean starter bodies, identical graph, English
       assert.equal(
         skillFiles.length,
         0,
-        `${dir}: 절차 스킬은 볼트가 아니라 저장소 루트에 깔려야 한다 — 볼트에서 본 것: ${skillFiles.map((e) => e.name).join(', ') || '없음'}`,
+        `${dir}: procedure skills belong at the repository root, not the vault; found in the vault: ${skillFiles.map((e) => e.name).join(', ') || 'none'}`,
       );
       for (const skill of ['atlas-review', 'atlas-grow', 'atlas-absorb']) {
         assert.ok(
           existsSync(join(repo, '.claude', 'skills', skill, 'SKILL.md')),
-          `${dir}: ${skill} 이 에이전트가 도는 자리(저장소 루트)에 있어야 한다`,
+          `${dir}: ${skill} must sit at the repository root where the agent runs`,
         );
       }
       const markdownFileCount = markdownEntries.length - skillFiles.length;
@@ -715,7 +715,7 @@ await test('init --quick-start — bootstrap failure reports written configs as 
  * So the contract is unchanged and **one line goes on screen** — the same shape as
  * this repository's refusal cards (why, and where to go).
  */
-await test('agent-brief — readiness 로 1을 낼 때 그것이 실패가 아니라고 화면에서 말한다', async () => {
+await test('agent-brief — exit 1 for readiness says on screen that it is not a failure', async () => {
   const repo = makeQuickStartRepoFixture();
   try {
     const init = await run(['init', 'ontology', '--quick-start'], { cwd: repo });
@@ -724,11 +724,11 @@ await test('agent-brief — readiness 로 1을 낼 때 그것이 실패가 아�
     const brief = await run(['agent-brief', 'ontology'], { cwd: repo });
     const clean = stripAnsi(brief.stdout) + stripAnsi(brief.stderr);
     // This vault is thin, so readiness is not ready yet — hence the 1.
-    assert.equal(brief.code, 1, `이 픽스처는 아직 ready 가 아니어야 한다:\n${clean}`);
+    assert.equal(brief.code, 1, `this fixture must not be ready yet:\n${clean}`);
     assert.match(
       clean,
       /--exit-zero/,
-      `1을 내면서 그것이 실패가 아니라는 말과 탈출구를 안 알려 준다:\n${clean}`,
+      `exit 1 without saying it is not a failure or naming the way out:\n${clean}`,
     );
   } finally {
     rmSync(repo, { recursive: true, force: true });
@@ -748,16 +748,16 @@ await test('init --quick-start — fresh starter validates and reports health at
      */
     const validate = await run(['validate', 'ontology'], { cwd: repo });
     const validateOut = stripAnsi(validate.stdout) + stripAnsi(validate.stderr);
-    assert.equal(validate.code, 0, `validate 가 실패했다:\n${validateOut}`);
+    assert.equal(validate.code, 0, `validate failed:\n${validateOut}`);
     assert.doesNotMatch(
       validateOut,
       /missing-expected-field/,
-      `갓 만든 볼트가 자기 검사에서 경고를 받았다 — 첫 명령이 만든 상태가 다음 명령에서 실패로 보고된다:\n${validateOut}`,
+      `a freshly created vault fails its own validation:\n${validateOut}`,
     );
     assert.match(
       validateOut,
       /0 frontmatter or graph-reference issues/,
-      `경고 0이어야 한다:\n${validateOut}`,
+      `expected zero warnings:\n${validateOut}`,
     );
 
     const health = await run(['health', 'ontology'], { cwd: repo });
@@ -2865,7 +2865,7 @@ await test('compile --json — unresolved graph references exit non-zero', async
   }
 });
 
-await test('list — kind 있는 노드만 카운트', async () => {
+await test('list — counts only nodes with a kind', async () => {
   const root = withVault([
     { slug: 'a', content: '---\nkind: capability\ntitle: A\n---\n' },
     { slug: 'b', content: '---\nkind: domain\ntitle: B\n---\n' },
@@ -2880,7 +2880,7 @@ await test('list — kind 있는 노드만 카운트', async () => {
   }
 });
 
-await test('list --json — JSON 머신 가독', async () => {
+await test('list --json — machine-readable JSON', async () => {
   const root = withVault([
     { slug: 'foo', content: '---\nkind: capability\ntitle: Foo\n---\n' },
   ]);
@@ -3073,7 +3073,7 @@ await test('local/frontmatter commands — reject invalid vault and value argume
   }
 });
 
-await test('add — --body= 명시 빈 문자열은 기본 본문으로 대체하지 않음', async () => {
+await test('add — an explicit empty --body= is not replaced by the default body', async () => {
   const root = withVault([]);
   try {
     const empty = await run([
@@ -3170,7 +3170,7 @@ await test('validate — empty kind: exit 1 + empty-kind code', async () => {
   }
 });
 
-await test('validate — 2+ 같은 code → "grouped by code" 요약 섹션 (R+)', async () => {
+await test('validate — two or more of one code produce a "grouped by code" summary', async () => {
   // The same missing-expected-field warning in 3 files — the grouped section must
   // show "missing-expected-field — 3 occurrences" plus the first 3 files.
   const root = withVault([
@@ -3194,7 +3194,7 @@ await test('validate — 2+ 같은 code → "grouped by code" 요약 섹션 (R+)
   }
 });
 
-await test('validate — 1회짜리 code 는 grouped 섹션 안 보임 (per-file 만)', async () => {
+await test('validate — a code seen once stays per-file, not grouped', async () => {
   // A single issue needs only the per-file output — the grouped section would be noise.
   const root = withVault([
     { slug: 'bad', content: '---\nkind:\n---\n' }, // empty-kind error
@@ -3210,7 +3210,7 @@ await test('validate — 1회짜리 code 는 grouped 섹션 안 보임 (per-file
   }
 });
 
-await test('validate --list-codes — issue code 목록 출력 (R+ cycle 44)', async () => {
+await test('validate --list-codes — prints the issue codes', async () => {
   const r = await run(['validate', '--list-codes']);
   assert.equal(r.code, 0);
   const clean = stripAnsi(r.stdout);
@@ -3224,14 +3224,14 @@ await test('validate --list-codes — issue code 목록 출력 (R+ cycle 44)', a
     'non-canonical-graph-array',
     'dangling-graph-reference',
   ]) {
-    assert.match(clean, new RegExp(code), `${code} 가 출력에 있어야`);
+    assert.match(clean, new RegExp(code), `${code} missing from output`);
   }
     // Severity marker
   assert.match(clean, /error/i);
   assert.match(clean, /warning/i);
 });
 
-await test('validate --list-codes --json — codes 배열 머신 가독', async () => {
+await test('validate --list-codes --json — machine-readable codes array', async () => {
   const r = await run(['validate', '--list-codes', '--json']);
   assert.equal(r.code, 0);
   const data = JSON.parse(r.stdout);
@@ -3244,7 +3244,7 @@ await test('validate --list-codes --json — codes 배열 머신 가독', async 
   }
 });
 
-await test('validate --fail-on=does-not-exist — stderr 에 unknown code 경고 (R+ cycle 44)', async () => {
+await test('validate --fail-on=does-not-exist — warns about an unknown code on stderr', async () => {
   const root = withVault([
     { slug: 'p', content: '---\nkind: project\ntitle: P\n---\n' },
   ]);
@@ -3258,7 +3258,7 @@ await test('validate --fail-on=does-not-exist — stderr 에 unknown code 경고
   }
 });
 
-await test('validate --fail-on=empty-kind — empty-kind 있으면 exit 1 (R+ cycle 43)', async () => {
+await test('validate --fail-on=empty-kind — exits 1 when empty-kind is present', async () => {
   const root = withVault([
     { slug: 'broken', content: '---\nkind:\ntitle: X\n---\n' },
     { slug: 'capWithoutDomain', content: '---\nkind: capability\ntitle: A\n---\n' },
@@ -3273,7 +3273,7 @@ await test('validate --fail-on=empty-kind — empty-kind 있으면 exit 1 (R+ cy
   }
 });
 
-await test('validate --fail-on=empty-kind — empty-kind 없으면 exit 0 (warning 무관)', async () => {
+await test('validate --fail-on=empty-kind — exits 0 without empty-kind despite other warnings', async () => {
   // A vault carrying a different warning (missing-expected-field) only. `--fail-on`
   // names another code, so exit 0.
   const root = withVault([
@@ -3281,7 +3281,7 @@ await test('validate --fail-on=empty-kind — empty-kind 없으면 exit 0 (warni
   ]);
   try {
     const r = await run(['validate', root, '--fail-on=empty-kind']);
-    assert.equal(r.code, 0, 'empty-kind 없으니 exit 0 (warning 무시)');
+    assert.equal(r.code, 0, 'other warnings must not fail --fail-on=empty-kind');
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /--fail-on=empty-kind: no match → exit 0/);
   } finally {
@@ -3289,7 +3289,7 @@ await test('validate --fail-on=empty-kind — empty-kind 없으면 exit 0 (warni
   }
 });
 
-await test('validate --fail-on=code1,code2 — 다중 code (CSV) 중 하나라도 매치되면 exit 1', async () => {
+await test('validate --fail-on=code1,code2 — exits 1 when any listed code matches', async () => {
   const root = withVault([
     { slug: 'a', content: '---\nkind: capability\ntitle: A\n---\n' },
   ]);
@@ -3308,7 +3308,7 @@ await test('validate --fail-on=code1,code2 — 다중 code (CSV) 중 하나라�
   }
 });
 
-await test('validate --fail-on 이 --strict 보다 우선 — 다른 warning 은 fail 안 함', async () => {
+await test('validate --fail-on overrides --strict for other warnings', async () => {
   // With --strict, a missing-expected-field warning exits 1.
   // With --strict --fail-on=empty-kind, only empty-kind counts, so exit 0.
   const root = withVault([
@@ -3321,13 +3321,13 @@ await test('validate --fail-on 이 --strict 보다 우선 — 다른 warning 은
       '--strict',
       '--fail-on=empty-kind',
     ]);
-    assert.equal(r.code, 0, '--fail-on 이 --strict 무력화');
+    assert.equal(r.code, 0, '--fail-on must override --strict');
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 });
 
-await test('validate --json --fail-on — summary.failOn 노출', async () => {
+await test('validate --json --fail-on — exposes summary.failOn', async () => {
   const root = withVault([
     { slug: 'broken', content: '---\nkind:\ntitle: X\n---\n' },
   ]);
@@ -3346,7 +3346,7 @@ await test('validate --json --fail-on — summary.failOn 노출', async () => {
   }
 });
 
-await test('validate --strict — warning 만 있어도 exit 1 (R+ cycle 42)', async () => {
+await test('validate --strict — exits 1 on warnings alone', async () => {
   // A capability missing its domain yields a missing-expected-field warning: exit 0
   // by default (only errors fail), exit 1 under --strict.
   const root = withVault([
@@ -3366,7 +3366,7 @@ await test('validate --strict — warning 만 있어도 exit 1 (R+ cycle 42)', a
   }
 });
 
-await test('validate --strict — clean vault 면 strict 여도 exit 0', async () => {
+await test('validate --strict — exits 0 on a clean vault', async () => {
   const root = withVault([
     { slug: 'p', content: '---\nkind: project\ntitle: P\n---\n' },
   ]);
@@ -3378,7 +3378,7 @@ await test('validate --strict — clean vault 면 strict 여도 exit 0', async (
   }
 });
 
-await test('validate --json --strict — summary.strict=true, warning 시 exit 1', async () => {
+await test('validate --json --strict — summary.strict=true and exit 1 on warnings', async () => {
   const root = withVault([
     { slug: 'a', content: '---\nkind: capability\ntitle: A\n---\n' },
   ]);
@@ -3409,7 +3409,7 @@ await test('validate --json reports issue files relative to an absolute external
   }
 });
 
-await test('validate --json — clean vault: scanned/problems[]/summary 노출, exit 0 (R+ cycle 40)', async () => {
+await test('validate --json — clean vault exposes scanned/problems[]/summary and exits 0', async () => {
   // A capability missing its domain warns with missing-expected-field, so the
   // genuinely clean vault is built out of a project.
   const root = withVault([
@@ -3439,7 +3439,7 @@ await test('validate --json — empty-kind error: problems[] / summary.byCode, e
     const data = JSON.parse(r.stdout);
     assert.ok(data.problems.length >= 1);
     const p = data.problems.find((x) => /broken\.md$/.test(x.file));
-    assert.ok(p, 'broken.md 가 problems 에 있어야');
+    assert.ok(p, 'broken.md missing from problems');
     assert.ok(p.issues.some((i) => i.code === 'empty-kind'));
     assert.ok(data.summary.byCode['empty-kind']);
     assert.equal(data.summary.byCode['empty-kind'].severity, 'error');
@@ -3458,7 +3458,7 @@ await test('validate --json — dangling graph reference warning', async () => {
     assert.equal(r.code, 0);
     const data = JSON.parse(r.stdout);
     const p = data.problems.find((x) => /a\.md$/.test(x.file));
-    assert.ok(p, 'a.md 가 problems 에 있어야');
+    assert.ok(p, 'a.md missing from problems');
     assert.ok(p.issues.some((i) => i.code === 'dangling-graph-reference'));
     assert.equal(data.summary.byCode['dangling-graph-reference'].severity, 'warning');
   } finally {
@@ -3478,7 +3478,7 @@ await test('validate --json — dangling graph reference warning', async () => {
  * vault reported `unresolved 1 · issues 1`. **Two tools said opposite things about
  * one vault, and the one a person reads first was the wrong one.**
  */
-await test('validate — 그래프 참조가 잡문으로 resolve 되면 dangling 이다', async () => {
+await test('validate — a graph reference resolving to a non-node document is dangling', async () => {
   const root = withVault([
     {
       slug: 'capabilities/checkout',
@@ -3491,14 +3491,14 @@ await test('validate — 그래프 참조가 잡문으로 resolve 되면 danglin
     const r = await run(['validate', root, '--json']);
     const data = JSON.parse(r.stdout);
     const p = data.problems.find((x) => /checkout\.md$/.test(x.file));
-    assert.ok(p, `잡문 참조를 못 잡았다: ${r.stdout.slice(0, 400)}`);
+    assert.ok(p, `the non-node reference was not reported: ${r.stdout.slice(0, 400)}`);
     assert.ok(
       p.issues.some((i) => i.code === 'dangling-graph-reference'),
-      `dangling 으로 안 잡혔다: ${JSON.stringify(p.issues)}`,
+      `not reported as dangling: ${JSON.stringify(p.issues)}`,
     );
     // Say why it is refused — a missing file and a non-node are different problems.
     const issue = p.issues.find((i) => i.code === 'dangling-graph-reference');
-    assert.match(String(issue.message), /kind|node|노드/i, `이유를 안 말한다: ${issue.message}`);
+    assert.match(String(issue.message), /kind|node|노드/i, `the reason is missing: ${issue.message}`);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -3528,7 +3528,7 @@ await test('validate --json — duplicate primary/merged UID claims are hard err
   }
 });
 
-await test('add — 새 노드 + duplicate throws', async () => {
+await test('add — creates a node and rejects a duplicate', async () => {
   const root = withVault([]);
   try {
     const r1 = await run([
@@ -3564,7 +3564,7 @@ await test('add — 새 노드 + duplicate throws', async () => {
   }
 });
 
-await test('add capability --path — 정본 구현 진입점을 elements 노드 없이 기록', async () => {
+await test('add capability --path — records the canonical entry point without an element node', async () => {
   const root = withVault([]);
   try {
     const r = await run([
@@ -3589,7 +3589,7 @@ await test('add capability --path — 정본 구현 진입점을 elements 노드
   }
 });
 
-await test('add — title 빈 문자열 거부', async () => {
+await test('add — rejects an empty title', async () => {
   const root = withVault([]);
   try {
     const r = await run(['add', 'capability', 'foo', '--title', '', '--vault', root]);
@@ -3600,7 +3600,7 @@ await test('add — title 빈 문자열 거부', async () => {
   }
 });
 
-await test('add — slug/title/domain padded 값은 쓰기 전에 거부', async () => {
+await test('add — rejects padded slug/title/domain values before writing', async () => {
   const root = withVault([]);
   try {
     const cases = [
@@ -3652,7 +3652,7 @@ await test('add — unknown kind closest-value hint before writing', async () =>
   }
 });
 
-await test('add --auto-prefix — kind 별 folder 자동 (R12 #37)', async () => {
+await test('add --auto-prefix — places the file in its kind folder', async () => {
   const root = withVault([]);
   try {
     const r = await run([
@@ -3673,7 +3673,7 @@ await test('add --auto-prefix — kind 별 folder 자동 (R12 #37)', async () =>
   }
 });
 
-await test('add (default) — kind→folder 자동 (R15 default on)', async () => {
+await test('add (default) — places the file in its kind folder', async () => {
   const root = withVault([]);
   try {
     const r = await run([
@@ -3694,7 +3694,7 @@ await test('add (default) — kind→folder 자동 (R15 default on)', async () =
   }
 });
 
-await test('add --raw-slug — auto-prefix 명시 opt-out (R15)', async () => {
+await test('add --raw-slug — opts out of the kind folder prefix', async () => {
   const root = withVault([]);
   try {
     const r = await run([
@@ -3716,7 +3716,7 @@ await test('add --raw-slug — auto-prefix 명시 opt-out (R15)', async () => {
   }
 });
 
-await test('add element path-style → 거부 (2026-08-01 판정 「슬러그는 평평한 식별자다」)', async () => {
+await test('add element path-style slug → rejected (slugs are flat identifiers)', async () => {
   // Path-style slugs used to pass with a cyan hint. They are a hard error now:
   // tail-alias collisions folded nodes together on screen (43 cases measured in the
   // dogfood vault).
@@ -3741,7 +3741,7 @@ await test('add element path-style → 거부 (2026-08-01 판정 「슬러그는
   }
 });
 
-await test('add element flat slug → hint 없음 (정상 case)', async () => {
+await test('add element flat slug → no hint', async () => {
   const root = withVault([]);
   try {
     const r = await run([
@@ -3762,7 +3762,7 @@ await test('add element flat slug → hint 없음 (정상 case)', async () => {
   }
 });
 
-await test('add capability path slug → 거부 (모든 kind 폴더에 적용)', async () => {
+await test('add capability path slug → rejected (every kind folder)', async () => {
   const root = withVault([]);
   try {
     const r = await run([
@@ -3783,7 +3783,7 @@ await test('add capability path slug → 거부 (모든 kind 폴더에 적용)',
   }
 });
 
-await test('find — title 부분매칭', async () => {
+await test('find — partial title match', async () => {
   const root = withVault([
     {
       slug: 'auth-token',
@@ -3876,7 +3876,7 @@ await test('find — ambiguous primary or absorbed UID claims fail closed', asyn
   }
 });
 
-await test('find — 매칭 0 도 exit 0 (정상)', async () => {
+await test('find — zero matches still exits 0', async () => {
   const root = withVault([
     { slug: 'foo', content: '---\nkind: capability\ntitle: Foo\n---\n' },
   ]);
@@ -3889,7 +3889,7 @@ await test('find — 매칭 0 도 exit 0 (정상)', async () => {
   }
 });
 
-await test('find --kind 필터', async () => {
+await test('find --kind filters by kind', async () => {
   const root = withVault([
     { slug: 'foo-cap', content: '---\nkind: capability\ntitle: foo cap\n---\n' },
     { slug: 'foo-dom', content: '---\nkind: domain\ntitle: foo dom\n---\n' },
@@ -3911,7 +3911,7 @@ function withTmpDir() {
   return mkdtempSync(join(tmpdir(), 'cli-import-src-'));
 }
 
-await test('import — input frontmatter 의 kind 사용, schema arrayDefaults 적용', async () => {
+await test('import — uses the input frontmatter kind and applies schema arrayDefaults', async () => {
   const vault = withVault([]);
   const src = withTmpDir();
   try {
@@ -3937,7 +3937,7 @@ await test('import — input frontmatter 의 kind 사용, schema arrayDefaults �
   }
 });
 
-await test('import — frontmatter kind 없으면 --kind fallback', async () => {
+await test('import — falls back to --kind without a frontmatter kind', async () => {
   const vault = withVault([]);
   const src = withTmpDir();
   try {
@@ -3965,7 +3965,7 @@ await test('import — frontmatter kind 없으면 --kind fallback', async () => 
   }
 });
 
-await test('import — kindless skip (kind 도 --kind 도 없음)', async () => {
+await test('import — skips a file with neither kind nor --kind', async () => {
   const vault = withVault([]);
   const src = withTmpDir();
   try {
@@ -3998,7 +3998,7 @@ await test('import — invalid frontmatter kind reports closest-value hint', asy
   }
 });
 
-await test('import --auto-prefix — kind→folder 자동', async () => {
+await test('import --auto-prefix — places files in their kind folder', async () => {
   const vault = withVault([]);
   const src = withTmpDir();
   try {
@@ -4024,7 +4024,7 @@ await test('import --auto-prefix — kind→folder 자동', async () => {
   }
 });
 
-await test('import — UID를 보존하고, 없으면 새 UUIDv4를 발급한다', async () => {
+await test('import — keeps an existing UID and mints a UUIDv4 when absent', async () => {
   const vault = withVault([]);
   const src = withTmpDir();
   const preservedUid = '11111111-1111-4111-8111-111111111111';
@@ -4051,7 +4051,7 @@ await test('import — UID를 보존하고, 없으면 새 UUIDv4를 발급한다
   }
 });
 
-await test('import — 잘못된 UID와 기존 identity 충돌을 거부한다', async () => {
+await test('import — rejects an invalid UID and an existing identity collision', async () => {
   const claimedUid = '22222222-2222-4222-8222-222222222222';
   const vault = withVault([
     {
@@ -4084,7 +4084,7 @@ await test('import — 잘못된 UID와 기존 identity 충돌을 거부한다',
   }
 });
 
-await test('import — 잘못된 UID 행을 격리하고 뒤의 유효한 파일은 계속 처리한다', async () => {
+await test('import — isolates an invalid UID row and continues with later valid files', async () => {
   const vault = withVault([]);
   const src = withTmpDir();
   try {
@@ -4104,7 +4104,7 @@ await test('import — 잘못된 UID 행을 격리하고 뒤의 유효한 파일
   }
 });
 
-await test('import — slug 충돌 시 default skip, --rename 시 -2 회피', async () => {
+await test('import — skips a slug collision by default and suffixes -2 with --rename', async () => {
   // Start with a `.md` for the same slug already in the vault.
   // auto-prefix is on by default, so the seeded slug sits under capabilities/ too.
   const vault = withVault([
@@ -4144,7 +4144,7 @@ await test('import — slug 충돌 시 default skip, --rename 시 -2 회피', as
   }
 });
 
-await test('import --dry-run — 디스크 변경 0', async () => {
+await test('import --dry-run — writes nothing to disk', async () => {
   const vault = withVault([]);
   const src = withTmpDir();
   try {
@@ -4170,7 +4170,7 @@ await test('import --dry-run — 디스크 변경 0', async () => {
   }
 });
 
-await test('import --dry-run — 기존 vault의 UID 충돌을 성공 계획으로 보고하지 않는다', async () => {
+await test('import --dry-run — does not plan a UID collision with the vault as success', async () => {
   const claimedUid = '33333333-3333-4333-8333-333333333333';
   const vault = withVault([
     {
@@ -4193,7 +4193,7 @@ await test('import --dry-run — 기존 vault의 UID 충돌을 성공 계획으�
   }
 });
 
-await test('import --dry-run — 같은 batch 안의 UID 충돌도 두 성공 계획으로 보고하지 않는다', async () => {
+await test('import --dry-run — does not plan a UID collision within one batch as two successes', async () => {
   const vault = withVault([]);
   const src = withTmpDir();
   const claimedUid = '55555555-5555-4555-8555-555555555555';
@@ -4216,7 +4216,7 @@ await test('import --dry-run — 같은 batch 안의 UID 충돌도 두 성공 �
   }
 });
 
-await test('import — 디렉토리 재귀 walk', async () => {
+await test('import — walks directories recursively', async () => {
   const vault = withVault([]);
   const src = withTmpDir();
   try {
@@ -4297,7 +4297,7 @@ function buildCycleFixture() {
   ]);
 }
 
-await test('backlinks — capabilities/foo 의 backlinks (bar relates + auth capabilities)', async () => {
+await test('backlinks — capabilities/foo backlinks (bar relates + auth capabilities)', async () => {
   const root = await buildGraphFixture();
   try {
     const r = await run(['backlinks', 'capabilities/foo', root]);
@@ -4392,7 +4392,7 @@ await test('backlinks — a slug that names no node fails closed with the closes
   }
 });
 
-await test('backlinks --json — JSON 응답 파싱', async () => {
+await test('backlinks --json — parses the JSON response', async () => {
   const root = await buildGraphFixture();
   try {
     const r = await run(['backlinks', 'capabilities/foo', root, '--json']);
@@ -4450,7 +4450,7 @@ await test('path — capabilities/bar → capabilities/foo (1 hop, via relates)'
   }
 });
 
-await test('path --json — edges[] 포함된 raw 응답 파싱', async () => {
+await test('path --json — parses the raw response with edges[]', async () => {
   const root = await buildGraphFixture();
   try {
     const r = await run([
@@ -4462,11 +4462,11 @@ await test('path --json — edges[] 포함된 raw 응답 파싱', async () => {
     ]);
     assert.equal(r.code, 0);
     const data = JSON.parse(r.stdout);
-    assert.ok(Array.isArray(data.hops), 'hops 배열');
-    assert.ok(Array.isArray(data.edges), 'edges 배열');
-    assert.ok(Array.isArray(data.nodes), 'nodes 배열');
-    assert.equal(data.edges.length, data.hops.length - 1, 'edges 길이는 hops - 1');
-    assert.equal(data.nodes.length, data.hops.length, 'nodes 길이는 hops 와 같다');
+    assert.ok(Array.isArray(data.hops));
+    assert.ok(Array.isArray(data.edges));
+    assert.ok(Array.isArray(data.nodes));
+    assert.equal(data.edges.length, data.hops.length - 1);
+    assert.equal(data.nodes.length, data.hops.length);
     assert.equal(data.found, true);
     assert.equal(data.edges[0].via, 'relates');
     assert.deepEqual(
@@ -4619,7 +4619,7 @@ await test('explain --json — unrelated verdict exits non-zero with evidence pa
   }
 });
 
-await test('relate — depends_on 신규 쓰기는 why 없이 실패 닫힌다', async () => {
+await test('relate — a new depends_on write fails closed without why', async () => {
   const root = withVault([
     { slug: 'a', content: '---\nkind: capability\ntitle: A\n---\n' },
     { slug: 'b', content: '---\nkind: capability\ntitle: B\n---\n' },
@@ -4636,7 +4636,7 @@ await test('relate — depends_on 신규 쓰기는 why 없이 실패 닫힌다',
   }
 });
 
-await test('relate --why — 관계와 relation_notes 근거를 같은 쓰기로 남긴다 (P6)', async () => {
+await test('relate --why — writes the relation and its relation_notes reason together', async () => {
   const root = withVault([
     { slug: 'a', content: '---\nkind: capability\ntitle: A\n---\n' },
     { slug: 'b', content: '---\nkind: capability\ntitle: B\n---\n' },
@@ -4655,7 +4655,7 @@ await test('relate --why — 관계와 relation_notes 근거를 같은 쓰기로
   }
 });
 
-await test('CLI 쓰기(add/relate/import)는 감사 로그에 기록된다 (P2-①)', async () => {
+await test('CLI writes (add/relate/import) are recorded in the audit log', async () => {
   const root = withVault([
     { slug: 'a', content: '---\nkind: capability\ntitle: A\n---\n' },
     { slug: 'b', content: '---\nkind: capability\ntitle: B\n---\n' },
@@ -5106,7 +5106,7 @@ await test('relation-check --json — fails closed on malformed relation_check p
   }
 });
 
-await test('path — 두 인자 누락 시 usage + exit 1', async () => {
+await test('path — prints usage and exits 1 without both arguments', async () => {
   const r = await run(['path', 'only-one']);
   assert.equal(r.code, 1);
   assert.match(stripAnsi(r.stderr), /from.*to.*required|both/);
@@ -5675,7 +5675,7 @@ await test('graph diagnostic commands — reject invalid option values before MC
   }
 });
 
-await test('orphans — graph fixture 에서 referenced 노드 0건 보고', async () => {
+await test('orphans — reports no referenced nodes in the graph fixture', async () => {
   // buildGraphFixture: foo (referenced by bar.relates + auth.capabilities),
   // bar (referenced by auth's domain.capabilities),
   // auth (referenced by foo/bar domain: inline parent).
@@ -5695,7 +5695,7 @@ await test('orphans — graph fixture 에서 referenced 노드 0건 보고', asy
   }
 });
 
-await test('orphans --json — JSON 응답 파싱', async () => {
+await test('orphans --json — parses the JSON response', async () => {
   const root = await buildGraphFixture();
   try {
     const r = await run(['orphans', root, '--json']);
@@ -5737,7 +5737,7 @@ await test('orphans --json — fails closed on malformed find_orphans payloads b
   }
 });
 
-await test('orphans --kind capability — 필터 적용', async () => {
+await test('orphans --kind capability — applies the kind filter', async () => {
   const root = await buildGraphFixture();
   try {
     const r = await run(['orphans', root, '--kind', 'capability']);
@@ -6237,7 +6237,7 @@ await test('reachability --plan --json — preserves traversal filters in query_
   }
 });
 
-await test('overview — graph fixture 의 counts + 허브 정확', async () => {
+await test('overview — exact counts and hubs for the graph fixture', async () => {
   // buildGraphFixture: 3 nodes (capabilities/foo, capabilities/bar, domains/auth)
   const root = await buildGraphFixture();
   try {
@@ -6257,7 +6257,7 @@ await test('overview — graph fixture 의 counts + 허브 정확', async () => 
   }
 });
 
-await test('overview --json — JSON 응답 graph/byKind/hubs 키 노출', async () => {
+await test('overview --json — exposes graph/byKind/hubs keys', async () => {
   const root = await buildGraphFixture();
   try {
     const r = await run(['overview', root, '--json']);
@@ -6385,7 +6385,7 @@ await test('blast-radius --plan --json — returns query_plan evidence with resu
   }
 });
 
-await test('overview --limit 3 — 허브 N 만 출력', async () => {
+await test('overview --limit 3 — prints only N hubs', async () => {
   const root = await buildGraphFixture();
   try {
     const r = await run(['overview', root, '--limit', '3']);
@@ -7776,7 +7776,7 @@ await test('cycles --json — fails closed on malformed cycles payloads before o
   }
 });
 
-await test('node — graph fixture 의 capabilities/foo deep dive', async () => {
+await test('node — deep dive on capabilities/foo in the graph fixture', async () => {
   const root = await buildGraphFixture();
   try {
     const r = await run(['node', 'capabilities/foo', root]);
@@ -7793,7 +7793,7 @@ await test('node — graph fixture 의 capabilities/foo deep dive', async () => 
   }
 });
 
-await test('node --json — JSON 응답 node/edges/lineage 키 노출', async () => {
+await test('node --json — exposes node/edges/lineage keys', async () => {
   const root = await buildGraphFixture();
   try {
     const r = await run(['node', 'capabilities/foo', root, '--json']);
@@ -7925,14 +7925,14 @@ await test('node --json — fails closed on malformed node_profile payloads befo
   }
 });
 
-await test('node — slug 누락 시 usage + exit 1', async () => {
+await test('node — prints usage and exits 1 without a slug', async () => {
   const r = await run(['node']);
   assert.equal(r.code, 1);
   const clean = stripAnsi(r.stderr);
   assert.match(clean, /slug is required/);
 });
 
-await test('similar — title 매치로 graph fixture 의 비슷한 노드 발견', async () => {
+await test('similar — finds similar nodes by title in the graph fixture', async () => {
   const root = await buildGraphFixture();
   try {
     const r = await run(['similar', 'foo capability', root]);
@@ -7946,7 +7946,7 @@ await test('similar — title 매치로 graph fixture 의 비슷한 노드 발�
   }
 });
 
-await test('similar --json — JSON 응답 matches/score/signals 키 노출', async () => {
+await test('similar --json — exposes matches/score/signals keys', async () => {
   const root = await buildGraphFixture();
   try {
     const r = await run(['similar', 'foo', root, '--json']);
@@ -7992,7 +7992,7 @@ await test('similar --json — fails closed on malformed similar_nodes payloads 
   }
 });
 
-await test('similar — query / --slug 둘 다 없으면 usage + exit 1', async () => {
+await test('similar — prints usage and exits 1 without a query or --slug', async () => {
   const r = await run(['similar']);
   assert.equal(r.code, 1);
   const clean = stripAnsi(r.stderr);
@@ -8026,7 +8026,7 @@ await test('rename — dry-run preview, no disk change', async () => {
   }
 });
 
-await test('rename --confirm — 파일 이동 + backlink redirect', async () => {
+await test('rename --confirm — moves the file and redirects backlinks', async () => {
   const root = await buildGraphFixture();
   try {
     const r = await run([
@@ -8058,7 +8058,7 @@ await test('rename --confirm — 파일 이동 + backlink redirect', async () =>
   }
 });
 
-await test('rename --confirm --overwrite — existing target slug 대체', async () => {
+await test('rename --confirm --overwrite — replaces an existing target slug', async () => {
   const root = await buildGraphFixture();
   try {
     const blocked = await run([
@@ -8090,7 +8090,7 @@ await test('rename --confirm --overwrite — existing target slug 대체', async
   }
 });
 
-await test('delete — backlinks 있으면 dry-run 에서 경고', async () => {
+await test('delete — dry-run warns about backlinks', async () => {
   const root = await buildGraphFixture();
   try {
     const r = await run(['delete', 'capabilities/foo', root]);
@@ -8106,7 +8106,7 @@ await test('delete — backlinks 있으면 dry-run 에서 경고', async () => {
   }
 });
 
-await test('delete --confirm — backlinks 있으면 MCP error 로 실패', async () => {
+await test('delete --confirm — fails with an MCP error when backlinks exist', async () => {
   const root = await buildGraphFixture();
   try {
     const r = await run([
@@ -8125,7 +8125,7 @@ await test('delete --confirm — backlinks 있으면 MCP error 로 실패', asyn
   }
 });
 
-await test('delete --confirm --force — 적용 출력에 dangling backlink 를 보여준다', async () => {
+await test('delete --confirm --force — applied output shows dangling backlinks', async () => {
   const root = await buildGraphFixture();
   try {
     const r = await run([
@@ -8153,7 +8153,7 @@ await test('delete --confirm --force — 적용 출력에 dangling backlink 를 
   }
 });
 
-await test('delete --confirm (no backlinks) — 파일 삭제', async () => {
+await test('delete --confirm (no backlinks) — deletes the file', async () => {
   const root = withVault([
     {
       slug: 'capabilities/lonely',
@@ -8203,7 +8203,7 @@ await test('merge — dry-run preview', async () => {
   }
 });
 
-await test('merge --confirm — 적용 출력에 변경 파일과 key 를 보여준다', async () => {
+await test('merge --confirm — applied output shows changed files and keys', async () => {
   const root = await buildGraphFixture();
   try {
     const r = await run([
@@ -8829,7 +8829,7 @@ await test('analyze --apply — human output remains an approval-gated review', 
   }
 });
 
-await test('analyze (default, no --apply) — vault 변경 0', async () => {
+await test('analyze (default, no --apply) — leaves the vault unchanged', async () => {
   const vault = withVault([]);
   const repo = makeRepoFixture();
   try {
@@ -8841,7 +8841,7 @@ await test('analyze (default, no --apply) — vault 변경 0', async () => {
     assert.equal(
       existsSyncTest(join(vault, 'test-app.md')),
       false,
-      'project file 안 만들어짐 (default mode)',
+      'default mode must not create the project file',
     );
   } finally {
     rmSync(vault, { recursive: true, force: true });
@@ -8966,7 +8966,7 @@ function makeImportKindRepo() {
   return repo;
 }
 
-await test('infer-imports --apply — raw import를 semantic depends_on으로 자동 승격하지 않는다', async () => {
+await test('infer-imports --apply — does not promote raw imports to semantic depends_on', async () => {
   const vault = withVault([
     {
       slug: 'capabilities/a',
@@ -9051,7 +9051,7 @@ await test('infer-imports preview — labels Go package rows as package imports,
   }
 });
 
-await test('infer-imports (default) — vault 변경 0', async () => {
+await test('infer-imports (default) — leaves the vault unchanged', async () => {
   const vault = withVault([
     {
       slug: 'capabilities/a',
@@ -9064,14 +9064,14 @@ await test('infer-imports (default) — vault 변경 0', async () => {
     const r = await run(['infer-imports', repo, '--vault', vault]);
     assert.equal(r.code, 0);
     const after = readFileSync(join(vault, 'capabilities', 'a.md'), 'utf-8');
-    assert.equal(after, before, 'a.md 내용 그대로 (default 모드)');
+    assert.equal(after, before, 'default mode must not change a.md');
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });
   }
 });
 
-await test('infer-imports --apply — endpoint 유무와 무관하게 자동 승격을 먼저 차단한다', async () => {
+await test('infer-imports --apply — blocks promotion whether or not endpoints exist', async () => {
   // The vault has a but not b — the a → b edge is a failed row while the batch itself is OK.
   const vault = withVault([
     {
@@ -9097,7 +9097,7 @@ await test('infer-imports --apply — endpoint 유무와 무관하게 자동 승
   }
 });
 
-await test('infer-imports --apply — 차단된 쓰기는 성공 census를 내지 않는다', async () => {
+await test('infer-imports --apply — a blocked write emits no success census', async () => {
   const vault = withVault([
     { slug: 'capabilities/a', content: '---\nkind: capability\ntitle: A\ndomain: x\n---\n' },
     { slug: 'capabilities/b', content: '---\nkind: capability\ntitle: B\ndomain: x\n---\n' },
@@ -9121,7 +9121,7 @@ await test('infer-imports --apply — 차단된 쓰기는 성공 census를 내�
   }
 });
 
-await test('infer-imports --apply --json — JSON 모드도 raw write를 우회하지 못한다', async () => {
+await test('infer-imports --apply --json — JSON mode cannot bypass the raw-write block', async () => {
   const vault = withVault([
     {
       slug: 'capabilities/a',
@@ -9151,7 +9151,7 @@ await test('infer-imports --apply --json — JSON 모드도 raw write를 우회�
   }
 });
 
-await test('infer-imports --apply — MCP writer를 호출하기 전에 차단한다', async () => {
+await test('infer-imports --apply — blocks before calling the MCP writer', async () => {
   const vault = withVault([
     {
       slug: 'capabilities/a',
@@ -9201,7 +9201,7 @@ await test('infer-imports --apply — MCP writer를 호출하기 전에 차단�
   }
 });
 
-await test('infer-imports --apply — add_relations 응답 계약보다 앞에서 차단한다', async () => {
+await test('infer-imports --apply — blocks ahead of the add_relations response contract', async () => {
   const vault = withVault([
     {
       slug: 'capabilities/a',
@@ -9408,7 +9408,7 @@ function makeStrongImportRepo() {
   return repo;
 }
 
-await test('infer-imports --threshold 3 — count < 3 edges 필터 (preview 모드)', async () => {
+await test('infer-imports --threshold 3 — filters edges with count < 3 in preview', async () => {
   const vault = withVault([]);
   const repo = makeStrongImportRepo();
   try {
@@ -9453,7 +9453,7 @@ await test('infer-imports --threshold 3 — count < 3 edges 필터 (preview 모�
   }
 });
 
-await test('infer-imports --threshold 3 --apply — count threshold도 semantic 승격 권한이 아니다', async () => {
+await test('infer-imports --threshold 3 --apply — a count threshold does not authorise semantic promotion', async () => {
   // a, b, and c all exist in the vault — with no threshold both a→b and a→c land.
   // At threshold 3 only a→b lands; a→c is filtered out (no depends_on c appears).
   const vault = withVault([
@@ -9482,7 +9482,7 @@ await test('infer-imports --threshold 3 --apply — count threshold도 semantic 
   }
 });
 
-await test('infer-imports --threshold 0 (또는 미지정) — 변경 없음', async () => {
+await test('infer-imports --threshold 0 (or unset) — no change', async () => {
   const vault = withVault([]);
   const repo = makeStrongImportRepo();
   try {
@@ -9506,7 +9506,7 @@ await test('infer-imports --threshold 0 (또는 미지정) — 변경 없음', a
   }
 });
 
-await test('infer-imports --threshold abc — 잘못된 입력 거부', async () => {
+await test('infer-imports --threshold abc — rejects invalid input', async () => {
   const vault = withVault([]);
   const repo = makeStrongImportRepo();
   try {
@@ -9698,7 +9698,7 @@ await test('bootstrap --skip-imports — exposes all review candidates without i
   }
 });
 
-await test('bootstrap — import endpoint와 depends_on을 자동 생성하지 않고 검토 후보만 반환한다', async () => {
+await test('bootstrap — returns review candidates without creating import endpoints or depends_on', async () => {
   const vault = withVault([]);
   const repo = makeSingleFileLayeredRepo();
   try {
@@ -9797,7 +9797,7 @@ await test('bootstrap --skip-imports — sole README domain remains a review can
   }
 });
 
-await test('bootstrap --json — analyze / imports / approval plan 모두 단일 JSON', async () => {
+await test('bootstrap --json — analyze, imports and approval plan in one JSON', async () => {
   const vault = withVault([]);
   const repo = makeFullRepo();
   try {
@@ -9807,11 +9807,11 @@ await test('bootstrap --json — analyze / imports / approval plan 모두 단일
     assert.equal(data.mode, 'review');
     assert.equal(data.writeEligible, false);
     assert.equal(data.reason, 'approval_required');
-    assert.ok(data.analyze, 'analyze 필드');
+    assert.ok(data.analyze);
     assert.ok(data.analyze.project);
     assert.ok(Array.isArray(data.analyze.capabilities));
     assert.ok(Array.isArray(data.analyze.suggestedRelations));
-    assert.ok(data.imports, 'imports 필드');
+    assert.ok(data.imports);
     assert.ok(Array.isArray(data.imports.moduleEdges));
     assert.ok(data.imports.moduleEdges.length > 0);
     assert.ok(data.plan.importRelations > 0);
@@ -9849,7 +9849,7 @@ await test('bootstrap --json — compact import delivery preserves review totals
   }
 });
 
-await test('bootstrap --threshold 3 — 약한 import (count<3) 안 land', async () => {
+await test('bootstrap --threshold 3 — weak imports (count<3) do not land', async () => {
   // billing is imported only once → at threshold 3 the import edge does not land.
   const vault = withVault([]);
   const repo = makeFullRepo();
@@ -10252,7 +10252,7 @@ await test('bootstrap — approval gate prevents add_relations response drift fr
   }
 });
 
-await test('bootstrap 두번째 실행 — repeated review remains approval-gated and write-free', async () => {
+await test('bootstrap second run — repeated review remains approval-gated and write-free', async () => {
   const vault = withVault([]);
   const repo = makeFullRepo();
   try {

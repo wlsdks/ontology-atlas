@@ -19,19 +19,19 @@ import { strict as assert } from 'node:assert';
 
 import { relationWriteRefusal } from './relate.mjs';
 
-describe('미리보기와 실제가 같은 규칙을 본다', () => {
-  it('근거 없는 새 의존 관계는 양쪽 다 거절한다 — 실측 재현', () => {
+describe('relate dry-run and write apply the same rules', () => {
+  it('both reject a new dependency without evidence', () => {
     const refusal = relationWriteRefusal({
       frontmatter: {},
       relation: 'dependencies',
       to: 'capabilities/mcp-server',
       why: null,
     });
-    assert.ok(refusal, '거절 사유가 있어야 한다');
+    assert.ok(refusal, 'a rejection reason is required');
     assert.match(refusal, /why/i);
   });
 
-  it('근거를 주면 통과한다 — 늘 거절하면 그것도 규칙이 아니다', () => {
+  it('both accept a dependency with evidence', () => {
     assert.equal(
       relationWriteRefusal({
         frontmatter: {},
@@ -43,7 +43,7 @@ describe('미리보기와 실제가 같은 규칙을 본다', () => {
     );
   });
 
-  it('이미 다른 도메인이 박혀 있으면 거절한다 — 이것도 쓰기 함수 안에만 있었다', () => {
+  it('both reject a domain when another domain is already set', () => {
     const refusal = relationWriteRefusal({
       frontmatter: { domain: 'domains/auth' },
       relation: 'domain',
@@ -54,7 +54,7 @@ describe('미리보기와 실제가 같은 규칙을 본다', () => {
     assert.match(refusal, /domains\/auth/);
   });
 
-  it('같은 도메인을 다시 쓰는 것은 거절이 아니다', () => {
+  it('accepts rewriting the same domain', () => {
     assert.equal(
       relationWriteRefusal({
         frontmatter: { domain: 'domains/auth' },
@@ -66,17 +66,17 @@ describe('미리보기와 실제가 같은 규칙을 본다', () => {
     );
   });
 
-  it('의존이 아닌 관계는 근거를 요구하지 않는다', () => {
+  it('does not require evidence for a non-dependency relation', () => {
     assert.equal(
       relationWriteRefusal({ frontmatter: {}, relation: 'relates', to: 'x/y', why: null }),
       null,
     );
   });
 
-  it('프론트매터 키 표기로 불러도 같게 판정한다 — preflight 가 그렇게 돌려준다', () => {
+  it('judges the frontmatter key spelling the same as the relation type', () => {
     assert.ok(
       relationWriteRefusal({ frontmatter: {}, relation: 'depends_on', to: 'x/y', why: '' }),
-      'depends_on 표기도 dependencies 와 같은 규칙을 받아야 한다',
+      'depends_on must follow the dependencies rules',
     );
   });
 });

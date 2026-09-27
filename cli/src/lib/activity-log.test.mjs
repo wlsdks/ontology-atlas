@@ -26,7 +26,7 @@ function tmpVault() {
 }
 
 describe('cli activity-log — recordCliWrite (P2-①)', () => {
-  it('append 는 mcp 와 같은 activity.jsonl 로 읽히고 cli: 접두 tool 을 남긴다', async () => {
+  it('append writes the MCP activity.jsonl with a cli:-prefixed tool', async () => {
     const root = tmpVault();
     try {
       await recordCliWrite(root, {
@@ -47,7 +47,7 @@ describe('cli activity-log — recordCliWrite (P2-①)', () => {
     }
   });
 
-  it('heartbeat 의 agent 를 복사한다', async () => {
+  it('copies the agent from the heartbeat', async () => {
     const root = tmpVault();
     try {
       mkdirSync(join(root, '.ontology-atlas'), { recursive: true });
@@ -65,7 +65,7 @@ describe('cli activity-log — recordCliWrite (P2-①)', () => {
     }
   });
 
-  it('여러 번 append 하면 순서대로 누적된다 (import 배치)', async () => {
+  it('accumulates repeated appends in order', async () => {
     const root = tmpVault();
     try {
       await recordCliWrite(root, { tool: 'cli:import', target: 'capabilities/a', summary: 'import capability:capabilities/a' });
@@ -78,7 +78,7 @@ describe('cli activity-log — recordCliWrite (P2-①)', () => {
     }
   });
 
-  it('append 가 불가능한 경로에서도 throw 하지 않는다 (best-effort)', async () => {
+  it('does not throw when the path cannot be appended', async () => {
     // It must still pass silently once the file cannot be created under a missing
     // parent. (Here a file sits where a directory is expected, so mkdir fails.)
     const root = tmpVault();

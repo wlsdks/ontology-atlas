@@ -15,7 +15,7 @@ import { partitionReadmeOnlyDomains } from './bootstrap.mjs';
 describe('partitionReadmeOnlyDomains', () => {
   const d = (slug, source) => ({ slug, title: slug, evidence: { source } });
 
-  it('README 에서만 나온 도메인은 보류로 간다', () => {
+  it('defers a domain whose only evidence is a README', () => {
     const r = partitionReadmeOnlyDomains({
       domains: [d('domains/quick-start-from-source', 'README.md')],
       capabilities: [],
@@ -25,7 +25,7 @@ describe('partitionReadmeOnlyDomains', () => {
     assert.equal(r.readmeOnly.length, 1);
   });
 
-  it('코드 디렉터리 evidence 를 가진 도메인은 확증이다', () => {
+  it('confirms a domain with code-directory evidence', () => {
     const r = partitionReadmeOnlyDomains({
       domains: [d('domains/auth', 'src/auth')],
       capabilities: [],
@@ -35,7 +35,7 @@ describe('partitionReadmeOnlyDomains', () => {
     assert.equal(r.readmeOnly.length, 0);
   });
 
-  it('코드에서 나온 역량이 부모로 지목하면 README 도메인도 확증이 된다', () => {
+  it('confirms a README domain when a code-backed capability names it as parent', () => {
     const r = partitionReadmeOnlyDomains({
       domains: [d('domains/typed-api', 'README.md')],
       capabilities: [
@@ -43,10 +43,10 @@ describe('partitionReadmeOnlyDomains', () => {
       ],
       elements: [],
     });
-    assert.equal(r.corroborated.length, 1, 'README 출처라도 코드가 지목하면 심는다');
+    assert.equal(r.corroborated.length, 1, 'a README-sourced domain named by code is planted');
   });
 
-  it('README 출처 역량의 지목은 확증이 아니다 — README 가 README 를 확증하면 순환이다', () => {
+  it('does not confirm a domain named only by a README-sourced capability', () => {
     const r = partitionReadmeOnlyDomains({
       domains: [d('domains/typed-api', 'README.md')],
       capabilities: [
@@ -57,14 +57,14 @@ describe('partitionReadmeOnlyDomains', () => {
     assert.equal(r.readmeOnly.length, 1);
   });
 
-  it('readme 변형(readme.md · README.rst · README)을 전부 README 출처로 본다', () => {
+  it('treats every readme variant (readme.md, README.rst, README) as README evidence', () => {
     for (const src of ['readme.md', 'README.rst', 'README']) {
       const r = partitionReadmeOnlyDomains({ domains: [d('domains/x', src)], capabilities: [], elements: [] });
       assert.equal(r.readmeOnly.length, 1, src);
     }
   });
 
-  it('evidence 가 아예 없으면 보류하지 않는다 — 모르는 것을 잔재 취급하지 않는다', () => {
+  it('does not defer a domain with no evidence at all', () => {
     const r = partitionReadmeOnlyDomains({ domains: [{ slug: 'domains/x', title: 'x' }], capabilities: [], elements: [] });
     assert.equal(r.corroborated.length, 1);
   });

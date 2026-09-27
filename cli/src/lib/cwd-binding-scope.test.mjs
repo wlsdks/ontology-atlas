@@ -54,6 +54,6 @@ describe('cwd binding scope — whose agents may this command repoint', () => {
   it('is not fooled by a shared name prefix', () => {
     // `/Users/dana/my-product-archive` is not inside `/Users/dana/my-product`.
     const scope = cwdBindingScope('/Users/dana/my-product', '/Users/dana/my-product-archive/atlas');
-    assert.equal(scope.write, false, '이름이 비슷하다고 안에 있는 것은 아니다');
+    assert.equal(scope.write, false, 'a sibling with a shared prefix is not inside');
   });
 });

@@ -24,8 +24,8 @@ function withVault(fn) {
   }
 }
 
-describe('write-vault writeDoc — 슬러그 평면성 게이트 배선', () => {
-  it('스키마 폴더 아래 경로형 슬러그를 거부한다', () => {
+describe('write-vault writeDoc enforces flat slugs', () => {
+  it('rejects a path-shaped slug under a schema folder', () => {
     withVault((root) => {
       assert.throws(
         () =>
@@ -39,7 +39,7 @@ describe('write-vault writeDoc — 슬러그 평면성 게이트 배선', () => 
     });
   });
 
-  it('평평한 슬러그와 스키마 폴더 밖 중첩은 그대로 통과한다', () => {
+  it('accepts flat slugs and nesting outside schema folders', () => {
     withVault((root) => {
       writeDoc(root, 'elements/jwt-token', {
         frontmatter: { uid: '11890f3e-7b5d-4c0a-8f14-123456789abc', slug: 'elements/jwt-token', kind: 'element', title: 'JWT Token' },
@@ -100,7 +100,7 @@ describe('write-vault writeDoc — UID identity gate', () => {
 });
 
 describe('write-vault snapshot write', () => {
-  it('읽은 문서가 사람이 수정한 뒤에는 stale patch를 쓰지 않는다', () => {
+  it('does not write a stale patch after a person edits the document', () => {
     withVault((root) => {
       writeDoc(root, 'first', {
         frontmatter: {
@@ -122,7 +122,7 @@ describe('write-vault snapshot write', () => {
     });
   });
 
-  it('읽은 문서가 삭제된 뒤에는 stale patch로 되살리지 않는다', () => {
+  it('does not recreate a deleted document with a stale patch', () => {
     withVault((root) => {
       writeDoc(root, 'first', {
         frontmatter: {

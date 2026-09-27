@@ -16,7 +16,7 @@ import { readFileRevision, writeFileAtomically } from './atomic-write.mjs';
  * The two implementations are indistinguishable by their end result, so what is
  * measured here is **when the original disappears**.
  */
-test('쓰는 도중에도 원본이 0바이트가 되지 않는다', () => {
+test('never leaves the original at zero bytes during a write', () => {
   const dir = mkdtempSync(join(tmpdir(), 'oatlas-atomic-'));
   const target = join(dir, 'note.md');
   const original = 'x'.repeat(200_000);
@@ -43,18 +43,18 @@ test('쓰는 도중에도 원본이 0바이트가 되지 않는다', () => {
   rmSync(dir, { recursive: true, force: true });
 });
 
-test('쓰다 실패해도 원본이 그대로 남는다', () => {
+test('keeps the original when the write fails', () => {
   const dir = mkdtempSync(join(tmpdir(), 'oatlas-atomic-fail-'));
   // Targeting a directory makes the rename fail.
   const target = join(dir, 'as-dir');
   mkdirSync(target);
 
   assert.throws(() => writeFileAtomically(target, 'new'));
-  assert.ok(statSync(target).isDirectory(), '대상이 파일로 바뀌었다');
+  assert.ok(statSync(target).isDirectory(), 'the target turned into a file');
   rmSync(dir, { recursive: true, force: true });
 });
 
-test('stale revision으로는 사람의 최신 바이트를 원자 rename으로 덮지 않는다', () => {
+test('does not rename over newer bytes with a stale revision', () => {
   const dir = mkdtempSync(join(tmpdir(), 'oatlas-atomic-conflict-'));
   const target = join(dir, 'note.md');
   writeFileSync(target, 'agent-before', 'utf-8');
@@ -69,7 +69,7 @@ test('stale revision으로는 사람의 최신 바이트를 원자 rename으로 
   assert.deepEqual(
     readdirSync(dir).filter((name) => name.includes('oatlas-tmp')),
     [],
-    'conflict 뒤 temp 파일이 남았다',
+    'a temp file remained after the conflict',
   );
   rmSync(dir, { recursive: true, force: true });
 });

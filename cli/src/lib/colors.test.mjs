@@ -3,7 +3,7 @@ import { strict as assert } from 'node:assert';
 import { COLORS, KIND_COLORS } from './colors.mjs';
 
 describe('COLORS shared palette', () => {
-  it('정확한 ANSI 코드를 노출 (인라인 정의에서 통합 — 회귀 가드)', () => {
+  it('exposes the exact ANSI codes', () => {
     assert.deepEqual(COLORS, {
       reset: '\x1b[0m',
       bold: '\x1b[1m',
@@ -19,7 +19,7 @@ describe('COLORS shared palette', () => {
 });
 
 describe('KIND_COLORS shared kind palette', () => {
-  it('각 kind 가 고유 색 — element 는 green(≠ capability cyan), document 는 dim', () => {
+  it('gives each kind its own colour (element green, capability cyan, document dim)', () => {
     // Regression gate for two drifts: pattern-walk's element=cyan (colliding with
     // capability) and find/orphans/list's document=white.
     assert.equal(KIND_COLORS.project, COLORS.magenta);
