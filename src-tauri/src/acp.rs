@@ -1405,6 +1405,7 @@ pub(crate) fn read_bounded_line<R: std::io::BufRead>(
     max_bytes: usize,
 ) -> std::io::Result<Option<Vec<u8>>> {
     let mut out: Vec<u8> = Vec::new();
+    let mut oversized = false;
     loop {
         let available = match reader.fill_buf() {
             Ok(buf) => buf,
@@ -1412,39 +1413,41 @@ pub(crate) fn read_bounded_line<R: std::io::BufRead>(
             Err(e) => return Err(e),
         };
         if available.is_empty() {
+            if oversized {
+                return Err(line_too_long(max_bytes));
+            }
             return Ok(if out.is_empty() { None } else { Some(out) });
         }
-        match available.iter().position(|b| *b == b'\n') {
-            Some(at) => {
-                if out.len() + at > max_bytes {
-                    reader.consume(at + 1);
-                    return Err(std::io::Error::new(
-                        std::io::ErrorKind::InvalidData,
-                        format!("acp line exceeded {max_bytes} bytes"),
-                    ));
-                }
-                out.extend_from_slice(&available[..at]);
-                reader.consume(at + 1);
-                // Lines ending in `\r\n` are accepted too.
-                if out.last() == Some(&b'\r') {
-                    out.pop();
-                }
-                return Ok(Some(out));
-            }
-            None => {
-                let len = available.len();
-                if out.len() + len > max_bytes {
-                    reader.consume(len);
-                    return Err(std::io::Error::new(
-                        std::io::ErrorKind::InvalidData,
-                        format!("acp line exceeded {max_bytes} bytes"),
-                    ));
-                }
-                out.extend_from_slice(available);
-                reader.consume(len);
-            }
+        let newline = available.iter().position(|b| *b == b'\n');
+        let content = &available[..newline.unwrap_or(available.len())];
+        if !oversized && out.len() + content.len() > max_bytes {
+            oversized = true;
+            out = Vec::new();
         }
+        if !oversized {
+            out.extend_from_slice(content);
+        }
+        let consumed = content.len() + usize::from(newline.is_some());
+        reader.consume(consumed);
+        if newline.is_none() {
+            continue;
+        }
+        if oversized {
+            return Err(line_too_long(max_bytes));
+        }
+        // Lines ending in `\r\n` are accepted too.
+        if out.last() == Some(&b'\r') {
+            out.pop();
+        }
+        return Ok(Some(out));
     }
+}
+
+fn line_too_long(max_bytes: usize) -> std::io::Error {
+    std::io::Error::new(
+        std::io::ErrorKind::InvalidData,
+        format!("acp line exceeded {max_bytes} bytes"),
+    )
 }
 
 /// Generous because adapters may send a whole file in one line.
@@ -2636,6 +2639,19 @@ mod tests {
             Some(&b"{\"ok\":true}"[..]),
             "one oversized line must not kill the session"
         );
+    }
+
+    #[test]
+    fn bounded_line_reader_drops_the_whole_oversized_line_across_buffer_refills() {
+        let data = b"{\"a\":\"0123456789\"}\n{\"ok\":1}\n";
+        let mut input = std::io::BufReader::with_capacity(8, &data[..]);
+        assert!(read_bounded_line(&mut input, 10).is_err());
+        assert_eq!(
+            read_bounded_line(&mut input, 10).unwrap().as_deref(),
+            Some(&b"{\"ok\":1}"[..]),
+            "the tail of the dropped line must not come back as a line of its own"
+        );
+        assert_eq!(read_bounded_line(&mut input, 10).unwrap(), None);
     }
 
     /// Reaping is asynchronous.
