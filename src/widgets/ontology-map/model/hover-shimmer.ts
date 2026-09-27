@@ -1,6 +1,6 @@
 /**
- * Time to phase for the hover shimmer: one bright arc travels the hover ring through
- * `setLineDash`/`lineDashOffset`, with no glow. The caller (`render/node-shapes.ts`) passes
+ * Time to phase for the hover shimmer: one bright arc travels the hover ring
+ * through `setLineDash`/`lineDashOffset`, with no glow. The caller (`render/node-shapes.ts`) passes
  * the perimeter, which varies by kind and farT, and owns the reduced-motion check.
  */
 

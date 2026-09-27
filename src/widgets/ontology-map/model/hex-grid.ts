@@ -1,7 +1,7 @@
 /**
  * Flat-top hexagon maths in axial `(q, r)` unit space (circumradius 1), so the board is
- * laid out once and drawn at any cell size R. Centre `x = 1.5q`, `y = √3(r + q/2)`; corner
- * `i` at `i·60°` (y down); distance `max(|dq|, |dr|, |dq+dr|)`.
+ * laid out once and drawn at any cell size R. Centre `x = 1.5q`, `y = √3(r + q/2)`;
+ * corner `i` at `i·60°` (y down); distance `max(|dq|, |dr|, |dq+dr|)`.
  */
 
 export type Axial = readonly [number, number];

@@ -102,8 +102,8 @@ export type RealmTransitionEvent =
   | { type: "tick"; now: number };
 
 /**
- * `enter` re-enters on a new root from any state; `exit` applies only when a realm exists;
- * `tick` settles once the duration elapses (next tick under reduced motion).
+ * The `enter` event re-enters on a new root from any state; `exit` applies only when a realm
+ * exists; `tick` settles once the duration elapses (next tick under reduced motion).
  */
 export function realmTransitionReducer(
   state: RealmTransitionState,
@@ -183,8 +183,8 @@ export function realmInsidePosition(
 }
 
 /**
- * Radial acceleration plus a tangential curl; a node on the centre leaves along
- * `fallbackAngle`, keeping it deterministic.
+ * Radial acceleration plus a tangential curl; a node on the centre leaves
+ * along `fallbackAngle`, keeping it deterministic.
  */
 export function realmOutsidePosition(
   from: Point,
@@ -230,7 +230,7 @@ export function realmWardingEraseProgress(
 }
 
 /**
- * `easeInCubic(1 - t)`: the reverse of the entry fling, fastest at the start and
+ * Computed as `easeInCubic(1 - t)`: the reverse of the entry fling, fastest at the start and
  * decelerating into the landing.
  */
 export function realmOutsideReturnReach(
@@ -242,7 +242,7 @@ export function realmOutsideReturnReach(
 }
 
 /**
- * `1 - realmOutsideReturnReach`, so a returning node materialises instead of popping in at
+ * Computed as `1 - realmOutsideReturnReach`, so a returning node materialises instead of popping in at
  * full alpha the frame it stops being culled.
  */
 export function realmOutsideReturnAlpha(
@@ -253,7 +253,7 @@ export function realmOutsideReturnAlpha(
 }
 
 /**
- * `from` is home, where the entry fling started; the radius and curl rewind to land
+ * The `from` point is home, where the entry fling started; the radius and curl rewind to land
  * exactly there. `duration <= 0` goes home at once.
  */
 export function realmOutsideReturnPosition(

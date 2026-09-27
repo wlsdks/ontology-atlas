@@ -75,7 +75,8 @@ function resolveOwningDomain(
 /**
  * Domains sit staggered along three arms with their real descendants in local clouds;
  * ungrouped concepts stay visible at the outer edge rather than get a fictional domain.
- * No synthetic nodes or relations. O(N) over parent and child Maps.
+ * No synthetic nodes or relations. O(N log N) for the id sorts, plus an O(depth) parent
+ * walk per node through the `byId` Map.
  */
 export function computeGalaxyLayout(
   nodes: readonly LayoutGraphNode[],

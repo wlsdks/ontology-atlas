@@ -26,6 +26,7 @@ export function chipAnchorRadius(ring: number, expanded: boolean): number {
 export interface DensityGateParentGeometry {
   x: number;
   y: number;
+  /** Outward fan direction in radians; the chip sits along it. */
   angle: number;
   /** Defaults to `DEFAULT_CHIP_RING`. */
   ring?: number;

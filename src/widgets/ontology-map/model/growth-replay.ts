@@ -15,6 +15,7 @@ export interface GrowthReplayNode {
 export interface GrowthReplay {
   startMs: number;
   endMs: number;
+  /** ms after `startMs` at which each node starts to appear. */
   bornAt: Map<string, number>;
 }
 
@@ -76,7 +77,7 @@ function easeOutCubic(t: number): number {
   return 1 - Math.pow(1 - c, 3);
 }
 
-/** Nodes born after the replay started are left untouched and keep their own ramp. */
+/** Writes each node's appear value into `out`; true once over. Nodes born after it started keep their ramp. */
 export function stepGrowthReplay(replay: GrowthReplay, nowMs: number, out: Map<string, number>): boolean {
   const elapsed = nowMs - replay.startMs;
   for (const [id, born] of replay.bornAt) {

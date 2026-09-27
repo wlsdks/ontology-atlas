@@ -88,8 +88,8 @@ export interface HittableNodeInput {
 }
 
 /**
- * Mirrors the draw pass's ego exemption so a clicked domain's neighbours are clickable.
- * `clusteredIds` is the frame's not-drawn set, including neighbours folded behind the `+N`
+ * Mirrors the draw pass's ego exemption so a clicked domain's neighbours are
+ * clickable. `clusteredIds` is the frame's not-drawn set, including neighbours folded behind the `+N`
  * chip, and is excluded first so an invisible node is never grabbable.
  */
 export function isNodeHittable(
@@ -130,13 +130,14 @@ export function isSpineOnlyZoom(zoomRatio: number, config: TierRevealConfig): bo
   return zoomRatio < config.capability.enterRatio;
 }
 
-/**
- * The reader's tier for the corner readout, from the same bands the draw pass gates with,
- * so the readout never says "zoom in to see elements" while elements are on screen. A tier
- * is reached once its band is half revealed.
- */
 export type ZoomTier = "spine" | "circuit" | "element";
 
+/**
+ * The reader's tier for the corner readout, from the same bands the draw pass gates with,
+ * so the readout never says "zoom in to see elements" while elements are on screen. A tier is
+ * reached once its band's alpha reaches `HITTABLE_MIN_TIER_ALPHA`, the floor at which its nodes
+ * become hittable.
+ */
 export function classifyZoomTier(
   zoomRatio: number,
   config: TierRevealConfig = DEFAULT_TIER_REVEAL,

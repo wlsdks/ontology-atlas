@@ -83,7 +83,7 @@ export interface SelectiveEgoResult {
 }
 
 /**
- * `revealedBatches` starts at 1 and grows by one per chip click; session-only, never
+ * The `revealedBatches` count starts at 1 and grows by one per chip click; session-only, never
  * written to the URL.
  */
 export function selectiveEgoNeighbors(
@@ -171,10 +171,10 @@ export function resolveTrailLensNodeEgoState(
 }
 
 /**
- * Trail ink (0 to 1) a node takes while the lens is on: its existing stroke moves toward
- * the trail ink, with no new ring, orbit, hue or bloom (`.claude/rules/forbidden.md`). Only
- * while the lens ramps, only visited nodes, and never the selected node, so "here now"
- * stays apart from "been there".
+ * Trail ink (0 to 1) a node takes while the lens is on: its existing stroke moves toward the
+ * trail ink and adds no ring, orbit, hue or bloom, so no effect needs a token under the rules
+ * in `.claude/rules/forbidden.md`. Only while the lens ramps, only visited nodes, and never
+ * the selected node, so "here now" stays apart from "been there".
  */
 export function trailNodeInkStrength(input: {
   kept: boolean;
@@ -243,8 +243,8 @@ export function scheduleRipple(
 
 /**
  * One exponential-smoothing step: rises toward 1 while in the active ego set with the
- * ripple started, else decays. Taus are `--map-emphasis-rise-tau` (0.09) and
- * `--map-emphasis-decay-tau` (0.15).
+ * ripple started, else decays. Taus are `--map-emphasis-rise-tau` (0.09)
+ * and `--map-emphasis-decay-tau` (0.15).
  */
 export function stepEmphasis(
   currentEmphasis: number,
@@ -261,17 +261,17 @@ export function stepEmphasis(
   return currentEmphasis + (0 - currentEmphasis) * (1 - Math.exp(-dt / decayTau));
 }
 
-/**
- * Rises toward 1 while any node or edge-pair focus is live and falls otherwise; the frame
- * draw lerps colours by it so a click ramps in with the camera dive instead of a hard cut.
- * One symmetric τ (`--map-focus-dim-tau`, about 0.16 s) for entering and leaving.
- */
 /** Rides the same ramp as the dim colour, so ink and presence move as one. */
 export function egoRestSink(focusRamp: number, restAlpha: number): number {
   const ramp = Math.min(1, Math.max(0, focusRamp));
   return 1 - ramp * (1 - restAlpha);
 }
 
+/**
+ * Rises toward 1 while any node or edge-pair focus is live and falls otherwise; the frame
+ * draw lerps colours by it so a click ramps in with the camera dive instead of a hard cut.
+ * One symmetric τ (`--map-focus-dim-tau`, about 0.16 s) for entering and leaving.
+ */
 export function stepFocusRamp(current: number, focusActive: boolean, dt: number, tau: number): number {
   const target = focusActive ? 1 : 0;
   return current + (target - current) * (1 - Math.exp(-dt / tau));

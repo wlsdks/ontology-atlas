@@ -9,8 +9,8 @@ import type { WorldNodeKind } from "../ui/topology-world";
 
 /**
  * Normalises the `size + fullDegree * 18` ranking `topology-world.ts` already uses, so the
- * sky has magnitudes rather than a special top N. The square root follows Stevens' law, as
- * `computeMagnitudeScale` does for radius.
+ * sky has magnitudes rather than a special top N. The square root follows Stevens' law,
+ * as `computeMagnitudeScale` does for radius.
  */
 export function starMagnitude(size: number, fullDegree: number, maxRaw: number): number {
   const raw = Math.max(0, (Number.isFinite(size) ? size : 0) + Math.max(0, fullDegree) * 18);

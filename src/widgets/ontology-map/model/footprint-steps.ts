@@ -4,7 +4,7 @@
  */
 
 /**
- * `["a","b","a"]` → `{a:[1,3], b:[2]}`, counted from 1 because it is shown. Positions are
+ * For example `["a","b","a"]` → `{a:[1,3], b:[2]}`, counted from 1 because it is shown. Positions are
  * in the current trail, so a capped trail renumbers from 1 rather than showing no 1.
  */
 export function buildFootprintSteps(trail: readonly string[]): Map<string, number[]> {
@@ -55,7 +55,7 @@ export function buildWalkedEdgeArrivalSteps(trail: readonly string[]): Map<strin
 }
 
 /**
- * `true` when walked from the lower id to the higher. The star mark cannot carry a heading,
+ * The value is `true` when walked from the lower id to the higher. The star mark cannot carry a heading,
  * so this is the only record of direction. A relation walked both ways keeps the last
  * crossing, the way the person most recently went.
  */

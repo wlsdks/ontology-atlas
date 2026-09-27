@@ -129,9 +129,9 @@ function opticalFlowSpread(
     const w = (VIEW_W / prev.scale + VIEW_W / now.scale) / 2;
     const dlnw = Math.abs(Math.log(prev.scale / now.scale));
     /*
-     * The paper's metric: with u'(s)/w(s) = sech(ρs+r₀)/ρ and w'(s)/w(s) = −ρ·tanh(ρs+r₀),
-     * `ρ²(u'/w)² + (w'/w)²/ρ² = sech² + tanh² = 1`. Travel alone (du/w) or ρ applied the other
-     * way is not constant along the path and would draw the wrong conclusion.
+     * The paper's metric: with u'(s)/w(s) = sech(ρs+r₀)/ρ and w'(s)/w(s) =
+     * −ρ·tanh(ρs+r₀), `ρ²(u'/w)² + (w'/w)²/ρ² = sech² + tanh² = 1`. Travel alone (du/w) or
+     * ρ applied the other way is not constant along the path and would draw the wrong conclusion.
      */
     flow.push(Math.hypot((VAN_WIJK_RHO * du) / w, dlnw / VAN_WIJK_RHO));
     prev = now;
@@ -153,8 +153,8 @@ describe("van Wijk path keeps optical flow constant", () => {
   });
 
   /*
-   * The only assertion that measures the wiring: every other test calls
-   * `vanWijkCameraKeyframe` directly, so a linear `easeCameraKeyframe` would leave them green.
+   * The only assertion that measures the wiring: every other test
+   * calls `vanWijkCameraKeyframe` directly, so a linear `easeCameraKeyframe` would leave them green.
    */
   it("changes the path when given a viewport width: linear without, van Wijk with", () => {
     const a: CameraKeyframe = { x: 0, y: 0, scale: 1 };

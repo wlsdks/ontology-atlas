@@ -55,9 +55,8 @@ describe("shouldSkipFrame", () => {
 describe("focusFadeSettling (deselect ring residue regression)", () => {
   // The ramp decays and colorFocus clears only inside a frame, so skipping frames during the
   // retained fade would freeze the selection ring at full opacity.
-  // --map-focus-dim-tau
-  const TAU = 0.16; // the colorFocus clear threshold in use-topology-loop
-  const CLEAR_THRESHOLD = 0.02;
+  const TAU = 0.16; // --map-focus-dim-tau
+  const CLEAR_THRESHOLD = 0.02; // the colorFocus clear threshold in use-topology-loop
 
   it("stays active during the retained colorFocus fade with no other activity", () => {
     expect(isCanvasActive({ ...IDLE, focusFadeSettling: true })).toBe(true);
@@ -94,7 +93,7 @@ describe("focusFadeSettling (deselect ring residue regression)", () => {
       ramp = stepFocusRamp(ramp, false, dt, TAU);
       if (ramp < CLEAR_THRESHOLD) colorFocusRetained = false;
       frames += 1;
-      if (frames > 600) throw new Error("페이드가 수렴하지 않음");
+      if (frames > 600) throw new Error("the fade did not converge within 600 frames");
     }
 
     // About 4τ ≈ 0.64 s at 60 fps ≈ 39 frames.
@@ -233,7 +232,7 @@ describe("isDomeSpinAnimating", () => {
 
 describe("keeps the loop awake while the walked trail is open", () => {
   /*
-   * `trailLensSettling` buys one frame per toggle; without this the twinkle and the light
+   * The `trailLensSettling` flag buys one frame per toggle; without this the twinkle and the light
    * carrying direction would never run while the lens stays open.
    */
   it("is active when the lens is open and walked relations exist", () => {

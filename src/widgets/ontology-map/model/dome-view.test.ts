@@ -1098,7 +1098,7 @@ describe("cloud relaxation slices give the same bytes when cut inside the pair l
   });
 });
 
-describe("Strata — four labelled planes, and drops that cannot cross (2026-09-06)", () => {
+describe("Strata — four labelled planes, and drops that cannot cross", () => {
   const tree: DomeInputNode[] = [
     { id: "p", kind: "project", x: 0, y: 0, parentId: null },
     { id: "d-a", kind: "domain", x: -200, y: 0, parentId: "p" },
@@ -1294,8 +1294,8 @@ describe("Strata — four labelled planes, and drops that cannot cross (2026-09-
 
 describe("domeEdgeFogAlpha x domeEdgeWidthFactor floors the depth ink of relation lines", () => {
   /**
-   * The floor the two private factors multiply to (0.62 alpha x 0.72 width), stated here
-   * so moving either without the other fails.
+   * A lower bound: the product of the two private floors (0.62 × 0.72). The edge pass holds
+   * the product at 0.62 past the crossover, so this passes unless a floor drops sharply.
    */
   const INK_FLOOR = 0.4464;
   const ink = (u: number) => domeEdgeFogAlpha(u) * domeEdgeWidthFactor(u);

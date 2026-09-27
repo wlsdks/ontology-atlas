@@ -1,9 +1,9 @@
 /**
  * The house spring family in Apple's two-parameter grammar (Designing Fluid Interfaces,
  * WWDC 2018): `damping` ζ (1.0 is critically damped, lower overshoots) and `response` in
- * seconds (ω = 1/response for `engine/spring.ts`). The spokes (camera spring, CSS
- * `--topology-motion-*` tokens, `engine/momentum.ts`) derive from here. The camera's
- * `--map-camera-spring-angfreq-*` tokens are tuned specialisations of the same grammar.
+ * seconds (ω = 1/response for `engine/spring.ts`). The spokes (camera spring,
+ * CSS `--topology-motion-*` tokens, `engine/momentum.ts`) derive from here. The
+ * camera's `--map-camera-spring-angfreq-*` tokens are tuned specialisations of the same grammar.
  */
 
 /**
@@ -40,15 +40,15 @@ export function toSpringConstants(spring: Spring): {
 
 /**
  * The geometric-series gain `d/(1-d)` of iOS scroll deceleration; `engine/momentum.ts`
- * `projectFlickLanding` projects through it so flick landing has one source.
+ * function `projectFlickLanding` projects through it so flick landing has one source.
  */
 export function momentumDecayGain(decay: number): number {
   return decay / (1 - decay);
 }
 
 /**
- * `project(v) = (v/1000)·d/(1-d)` from release velocity in px/s, returning px.
- * `engine/momentum.ts` works in px/ms and calls `momentumDecayGain` directly.
+ * Computes `project(v) = (v/1000)·d/(1-d)` from release velocity in px/s, returning
+ * px. `engine/momentum.ts` works in px/ms and calls `momentumDecayGain` directly.
  */
 export function projectMomentum(velocityPxPerSec: number, decay = 0.998): number {
   return (velocityPxPerSec / 1000) * momentumDecayGain(decay);

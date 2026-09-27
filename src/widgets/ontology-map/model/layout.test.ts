@@ -293,8 +293,8 @@ describe("computeConcentricLayout phyllotaxis disc for dense parents", () => {
 });
 
 /**
- * The spatial-grid `relaxCollisions` must be byte-identical to the O(n²) brute force;
- * `relaxStrategy` runs both paths so this block checks only equivalence.
+ * The spatial-grid `relaxCollisions` must be byte-identical to the O(n²) brute
+ * force; `relaxStrategy` runs both paths so this block checks only equivalence.
  */
 describe("computeConcentricLayout grid and brute force agree", () => {
   const RADII = { project: 25, domain: 17, capability: 11, element: 7 };

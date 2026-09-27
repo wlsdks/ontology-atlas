@@ -1,8 +1,8 @@
 /**
- * Layout-only communities from actual adjacency, never declared domains: a bounded local
- * modularity pass (Blondel et al., 2008) plus aggregation, about O(passes x E) over
- * adjacency Sets and Int32Arrays. Stable visitation and strict positive gains keep reloads
- * deterministic.
+ * Layout-only communities from actual adjacency, never declared domains: at most 24 local
+ * modularity passes (Blondel et al., 2008) and 64 single best-pair merges, each O(N + E)
+ * plus small sorts, over adjacency Sets, per-node weight Maps and Int32Arrays. Stable
+ * visitation and strict positive gains keep reloads deterministic.
  */
 export function findCouplingGroups(
   ids: readonly string[],

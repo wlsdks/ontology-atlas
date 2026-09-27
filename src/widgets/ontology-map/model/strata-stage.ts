@@ -99,7 +99,7 @@ function arc(
 const emptyPath = (kind: DomeViewKind): StagePath => ({ kind, a: 0, xs: [], ys: [], us: [], length: 0 });
 
 /**
- * `litIds` names the focused line's sectors, whose bands light. Only planes that carry
+ * The `litIds` set names the focused line's sectors, whose bands light. Only planes that carry
  * nodes get a floor, or it would assert a level this vault does not have.
  */
 export function sampleStrataStage(

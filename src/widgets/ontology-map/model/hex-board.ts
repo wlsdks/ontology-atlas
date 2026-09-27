@@ -470,12 +470,12 @@ export function computeHexBoard(
 }
 
 
-/** spec §1 */
+/** Largest cell size at rest (spec §1). */
 const HEX_MAX_FIT_RADIUS = 60;
-/** spec §6 */
+/** The zoom clamp (spec §6). */
 export const HEX_MIN_RADIUS = 8;
 export const HEX_MAX_RADIUS = 96;
-/** spec §7 */
+/** Semantic zoom thresholds (spec §7). */
 export const HEX_BAND_PIPS = 28;
 export const HEX_BAND_NAMES = 44;
 

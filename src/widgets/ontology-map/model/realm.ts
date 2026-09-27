@@ -1,8 +1,8 @@
 /**
  * Pure realm geometry: subtree extraction, re-rooted layout and ward radius. Rings follow
  * depth from the root, not kind (0 origin, 1 domain, 2 capability, 3+ element), so any
- * root reads as that node's own map; render kind is untouched. Deterministic through
- * `computeConcentricLayout`. Motion is `model/realm-transition.ts`.
+ * root reads as that node's own map; render kind is untouched. Deterministic
+ * through `computeConcentricLayout`. Motion is `model/realm-transition.ts`.
  */
 
 import {

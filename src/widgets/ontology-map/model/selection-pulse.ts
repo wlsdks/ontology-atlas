@@ -1,7 +1,8 @@
 /**
- * A one-shot commit pulse (ring expansion and fade over `--map-select-pulse-duration-ms`) in
- * place of a glow, which `.claude/rules/design.md` forbids; the static double ring is the
- * permanent indicator. The caller passes elapsed time, so this stays deterministic.
+ * A one-shot commit pulse (ring expansion and fade over `--map-select-pulse-duration-ms`)
+ * rather than a standing glow, which `.claude/rules/design.md` allows only as a token naming
+ * its state; the static double ring already carries this one. The caller passes elapsed
+ * time, so this stays deterministic.
  */
 export interface SelectionPulseVisual {
   scaleFactor: number;
@@ -12,10 +13,10 @@ export interface SelectionPulseVisual {
 const DEFAULT_SCALE_DELTA = 0.28;
 
 /**
- * `null` before commit and once played out; no modulo, so a stale ref stays expired. The
+ * Returns `null` before commit and once played out; no modulo, so a stale ref stays expired. The
  * ring expands on easeOutCubic and alpha dies quadratically, both with zero end slope, so
- * the commit reads as received rather than cut off. `scaleDelta` is
- * `--map-select-pulse-scale-delta`.
+ * the commit reads as received rather than cut off. `scaleDelta`
+ * is `--map-select-pulse-scale-delta`.
  */
 export function computeSelectionPulse(
   elapsedMs: number,

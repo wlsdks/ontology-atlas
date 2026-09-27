@@ -3,7 +3,7 @@ import { findCouplingGroups } from './coupling-groups';
 /**
  * The opt-in 3D view: arrangements where height and bearing carry typed facts (height is
  * the kind's containment tier, bearing is ownership) or where relations place nodes
- * (`buildCouplingCloudTargets`). Opt-in because 3D multiplies edge crossings, which dominate
+ * (`createCouplingCloudRelaxer`). Opt-in because 3D multiplies edge crossings, which dominate
  * readability (`docs/DECISIONS.md`, 2026-08-18). Coordinates project into world 2D through
  * weak perspective `s = f/(f+z)` and ride the existing camera; draw, hit test and
  * instrumentation share one frame map (`DomeRuntime.frame`), so a click during rotation
@@ -24,6 +24,7 @@ export const KIND_DEPTH: Readonly<Record<DomeViewKind, number>> = {
   element: 3,
 };
 
+/** Idle spin: one turn per 48 s. */
 export const DOME_PERIOD_MS = 48000;
 /** Steep enough that the small base circles under each parent read as circles, not lines. */
 export const DOME_PITCH_DEFAULT = 0.5;
@@ -59,16 +60,13 @@ export const ORBIT_YAW_PER_PX = 0.0075;
 /** Lower than yaw so horizontal stays the primary axis. */
 export const ORBIT_PITCH_PER_PX = 0.005;
 /**
- * During a drag yaw and pitch chase the pointer's target by `1−exp(−dt/τ)`, spreading the
- * empty frames a 60 Hz pointer leaves on a 120 Hz display so rotation does not staircase.
- * Reduced motion snaps to the target.
+ * During a drag yaw and pitch chase the pointer's target by `1−exp(−dt/τ)`, so the empty
+ * 8.3 ms frame a 60 Hz pointer leaves on a 120 Hz display spreads over two with about a
+ * frame of lag; a wider τ trails the hand, and below the frame interval the staircase
+ * returns. Reduced motion snaps to the target.
  */
 export const ORBIT_SMOOTH_TAU_MS = 14;
 
-/*
- * τ = 14 ms spreads one empty 8.3 ms frame over two while lagging about a frame; wider τ
- * trails the hand, and below the frame interval the staircase returns.
- */
 /** The `--map-camera-momentum-decay` value, so an orbit coasts like a camera flick. */
 const ORBIT_VEL_DECAY_PER_MS = 0.998;
 /**
@@ -130,7 +128,7 @@ export function snapOrbitLanding(
 }
 
 /**
- * `τ = (target − yaw)/yawVel`, so the approach starts at the release velocity; a fixed τ
+ * Derived as `τ = (target − yaw)/yawVel`, so the approach starts at the release velocity; a fixed τ
  * makes speed jump when the hand lifts. Clamped: too short teleports, too long never stops.
  */
 export const ORBIT_SNAP_TAU_MIN_MS = 90;
@@ -150,7 +148,7 @@ export function orbitSnapTauMs(delta: number, yawVel: number): number {
   return Math.min(ORBIT_SNAP_TAU_MAX_MS, Math.max(ORBIT_SNAP_TAU_MIN_MS, tau));
 }
 
-/** Prevents an infinite tail. */
+/** Below this |yawVel| (rad/ms) the coast snaps to 0, or its tail never ends. */
 const ORBIT_VEL_EPS = 0.000005;
 
 /**
@@ -180,7 +178,7 @@ const DOME_DRAG_MAX_RADIUS = DOME_FIT_RADIUS * 1.5;
 const DOME_PLANE_SOLVE_DENOM_MIN = 30;
 
 /**
- * Near 1.0, far 0.09, quadratic. Deeper than the 2D 3:1 ink floor by a 3D-only dispensation
+ * Near 1.0, far 0.09, falling as (1 − u)^1.8. Deeper than the 2D 3:1 ink floor by a 3D-only dispensation
  * (`docs/DECISIONS.md`, 3D exemption list); anything that must be read (hover, focus, ego,
  * trail) is exempted. `u` is depth normalised in this frame, 0 near.
  */
@@ -216,12 +214,11 @@ export function domeLineWidthFactor(u: number): number {
 }
 
 /**
- * Floor under a resting relation line's `fog alpha × width factor`, as a share of a lit
- * near line's 0.90. Stacked, fog and width drew the far end at 3.5% of the near ink. The
- * floor holds the product, which is what the eye receives: past the crossover (u ≈ 0.17)
- * alpha rises as width falls. The near side is unchanged, and width, halo, node fog,
- * perspective and draw order still carry depth. Browser gate:
- * `tests/e2e/map-3d-relation-ink.spec.ts`.
+ * Floor under a resting relation line's `fog alpha × width factor` product (a lit near line
+ * has 0.90); stacked, fog and width would draw the far end at 3.5% of the near ink. Past the
+ * crossover (u ≈ 0.17) alpha rises as width falls. The near side is unchanged; width, halo,
+ * node fog, perspective and draw order still carry depth. The browser gate is
+ * the spec `tests/e2e/map-3d-relation-ink.spec.ts`.
  */
 const DOME_EDGE_INK_FLOOR = 0.62;
 
@@ -277,8 +274,8 @@ export function domeDetailFactor(u: number): number {
 }
 
 /**
- * Dome-unit radii, now only the collision radius the coupling cloud relaxes against;
- * `DOME_NODE_PX` decides screen size.
+ * Dome-unit radii, now only the collision radius the coupling cloud relaxes
+ * against; `DOME_NODE_PX` decides screen size.
  */
 const DOME_NODE_R: Readonly<Record<DomeViewKind, number>> = {
   project: 10.5,
@@ -381,16 +378,6 @@ export interface DomeSector {
   to: number;
 }
 
-/**
- * Ownership as a cone tree (Robertson, Mackinlay & Card, CHI 1991): height is the tier and
- * a parent's children rest on a base circle directly under it, so a subtree is a bump you
- * can rotate to the front. Deterministic (sorted by id). Domains take sectors of the
- * project's ring in proportion to subtree size; each base radius comes from the child count
- * capped by the room to its siblings (`coneRoom`), so sibling cones never intersect. One
- * child hangs straight down with no base; crowded bases alternate two radii; a node whose
- * parent is missing gets a hash bearing on its plane. The footprint stays inside
- * `DOME_FIT_RADIUS`, and y stays one value per kind for `solveDomePlanePoint`. O(N log N).
- */
 const CONE_SPACING: Readonly<Record<DomeViewKind, number>> = {
   project: 0,
   domain: 0,
@@ -402,16 +389,27 @@ const CONE_SPACING: Readonly<Record<DomeViewKind, number>> = {
 /** Below this a base reads as a smear, not a circle. */
 const CONE_MIN_R: Readonly<Record<DomeViewKind, number>> = { project: 0, domain: 0, capability: 10, element: 6 };
 /**
- * Keeps a giant domain from swallowing its neighbours' room; `coneRoom`, not this, keeps
- * siblings apart, so a high ceiling spends interior space rather than the silhouette.
+ * Keeps a giant domain from swallowing its neighbours' room; the room cap in `baseRadius`,
+ * not this, keeps siblings apart, so a high ceiling spends interior space, not the silhouette.
  */
 const CONE_MAX_R: Readonly<Record<DomeViewKind, number>> = { project: 0, domain: 0, capability: 96, element: 40 };
-/** The rest is the gap between sibling cones. */
+/** A base takes this share of its room; the rest is the gap between sibling cones. */
 const CONE_ROOM_FILL = 0.82;
 const CONE_STAGGER_FROM = 8;
 const CONE_STAGGER_OUT = 1.12;
 const CONE_STAGGER_IN = 0.9;
 
+/**
+ * Ownership as a cone tree (Robertson, Mackinlay & Card, CHI 1991): height is the tier and
+ * a parent's children rest on a base circle directly under it, so a subtree is a bump you
+ * can rotate to the front. Deterministic (sorted by id). Domains take sectors of the
+ * project's ring in proportion to subtree size; each base radius comes from the child count
+ * capped by the room to its siblings (the cap in `baseRadius`), so sibling cones never
+ * intersect. One child hangs straight down with no base; crowded bases alternate two radii;
+ * a node whose parent is missing gets a hash bearing on its plane. The footprint stays
+ * inside `DOME_FIT_RADIUS` and y stays one value per kind for `solveDomePlanePoint`.
+ * O(N log N): id sorts plus memoised subtree weights in Maps.
+ */
 function layoutConeTree(nodes: readonly DomeInputNode[]): { coords: Map<string, DomeCoord>; circles: DomeCircle[] } {
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const coords = new Map<string, DomeCoord>();
@@ -537,8 +535,8 @@ function layoutConeTree(nodes: readonly DomeInputNode[]): { coords: Map<string, 
  * nothing else; children split their parent's sector by subtree size and sit at their own
  * sector's midpoint. Every bearing stays inside its parent's sector and sibling sectors are
  * disjoint, so containment drops from different parents cannot cross; `dome-view.test.ts`
- * asserts it on the shape. `STRATA_BARYCENTER_SWEEPS` orders siblings within a sector and
- * `applyLanes` alternates two radii. The cost is a wider silhouette than the cone.
+ * asserts it on the shape. `STRATA_BARYCENTER_SWEEPS` orders siblings within a sector
+ * and `applyLanes` alternates two radii. The cost is a wider silhouette than the cone.
  */
 
 /**
@@ -561,7 +559,7 @@ const STRATA_PROJECT_RING_R = 34;
 const STRATA_BARYCENTER_SWEEPS = 6;
 
 /**
- * Scoring counts crossings, O(E²) per candidate: cheap at the few hundred relations a real
+ * Scoring counts crossings, O(E²) per sweep: cheap at the few hundred relations a real
  * vault has, too slow in a build that must not hitch beyond this. Past it the sweeps run
  * unscored.
  */
@@ -603,6 +601,8 @@ function strataCrossings(
 /**
  * Pure and deterministic (siblings sorted by id first, no randomness or clock). `edges` only
  * order siblings inside a sector; they never move a node between planes or sectors.
+ * At most `STRATA_BARYCENTER_SWEEPS` sweeps, each O(N log N + E) plus O(E²) crossing
+ * scoring while E stays within `STRATA_SCORED_EDGE_BUDGET`.
  */
 export function buildStrataTargets(
   nodes: readonly DomeInputNode[],
@@ -645,12 +645,12 @@ export function buildStrataTargets(
   for (const [parentId, list] of kids) orderOf.set(parentId, [...list]);
   const bearingOf = new Map<string, number>();
 
+  /** So one subtree can be re-dealt without redoing the walk. */
+  const sectorOf = new Map<string, readonly [number, number, number, number]>();
   /**
    * Seat a node mid-sector and deal the sector to its children; `index`/`siblings` choose only
    * the lane radius, and the bearing never leaves the sector, or a drop could cross.
    */
-  /** So one subtree can be re-dealt without redoing the walk. */
-  const sectorOf = new Map<string, readonly [number, number, number, number]>();
   const place = (node: DomeInputNode, from: number, to: number, index: number, siblings: number): void => {
     sectorOf.set(node.id, [from, to, index, siblings]);
     const mid = (from + to) / 2;
@@ -676,8 +676,8 @@ export function buildStrataTargets(
   /*
    * Two lanes per plane: bearing comes from the sector, so neighbours from different parents
    * can fuse on one circle, and the sweep pulls related nodes together. The cone's stagger
-   * applied to the whole plane, radius only, so sector containment survives. It runs inside
-   * `layout`, so the crossing score reads the drawn geometry.
+   * applied to the whole plane, radius only, so sector containment survives. It runs
+   * inside `layout`, so the crossing score reads the drawn geometry.
    */
   const applyLanes = (): void => {
     for (const kind of STRATA_PLANE_ORDER) {
@@ -799,7 +799,7 @@ export function buildStrataTargets(
         bestOrder = new Map([...orderOf].map(([k, v]) => [k, [...v]]));
       }
     }
-    // The oscillation guard.
+    // Keep the best ordering seen, not the last: the barycenter oscillates.
     if (bestOrder !== null) {
       for (const [k, v] of bestOrder) orderOf.set(k, v);
       layout();
@@ -854,12 +854,12 @@ export function domeRingAlphaFor(arrangement: DomeArrangement): number {
 }
 
 /**
- * `ownership` (default) is the cone: height is the tier and bearing comes from containment.
- * `coupling` is the cloud: a deterministic force layout lets relations decide all three
+ * Arrangement `ownership` (default) is the cone: height is the tier and bearing comes from
+ * containment. `coupling` is the cloud: a deterministic force layout lets relations decide all three
  * coordinates, a genuinely different question.
  */
 /**
- * `strata` answers the same containment question as `ownership`, drawn as stacked labelled
+ * Arrangement `strata` answers the same containment question as `ownership`, drawn as stacked labelled
  * planes (`buildStrataTargets`; `docs/DECISIONS.md` for the declined three.js probe).
  */
 export type DomeArrangement = "ownership" | "coupling" | "strata";
@@ -1218,8 +1218,8 @@ export interface DomeModelBuild {
 }
 
 /**
- * Builds the ownership seed at once and hands only the coupling cloud's O(n²) relaxation to
- * `step` (see `CouplingCloudRelaxer`).
+ * Builds the ownership seed at once and hands only the coupling cloud's O(n²) relaxation
+ * to `step` (see `CouplingCloudRelaxer`).
  */
 export function beginDomeModelBuild(
   nodes: readonly DomeInputNode[],
@@ -1299,7 +1299,7 @@ export function buildDomeModel(
 export const DOME_GRIP_MARGIN = 1.08;
 
 /**
- * `bounds` is `DomeRuntime.drawnBounds`. With none (2D, or before assembly) it is false,
+ * The `bounds` argument is `DomeRuntime.drawnBounds`. With none (2D, or before assembly) it is false,
  * so the default pan wins.
  */
 export function isInsideDomeGrip(
@@ -1323,9 +1323,9 @@ export interface DomeProjection {
   /** The existing camera looks at these. */
   wx: number;
   wy: number;
-  /** Radii and hit discs multiply by it too. */
+  /** Weak perspective factor f/(f+z); radii and hit discs multiply by it too. */
   s: number;
-  /** Input to per-frame fog normalisation (`updateDomeFrame`). */
+  /** Camera-space depth, input to per-frame fog normalisation (`updateDomeFrame`). */
   z: number;
 }
 
@@ -1465,9 +1465,9 @@ export interface DomeNodeFrame {
    * perspective ÷ zoom; draw, hit and instrumentation all use base × s, so they agree.
    */
   s: number;
-  /** Interpolator for presentation crossfades (label, fog, width). */
+  /** This kind's assembly ramp, 0..1, the interpolator for crossfades (label, fog, width). */
   a: number;
-  /** Input to fog and line width. */
+  /** Normalised depth this frame, 0 near to 1 far; input to fog and line width. */
   u: number;
 }
 
@@ -1867,7 +1867,7 @@ export function domeWorldBounds(
 }
 
 /**
- * `allowancePx` pads each centre by its disc. The 3D fit asks it of the right-edge chrome
+ * The `allowancePx` argument pads each centre by its disc. The 3D fit asks it of the right-edge chrome
  * before the drawing uses that column.
  */
 export function domeReachesRect(
@@ -1967,11 +1967,6 @@ interface DomeFlight {
   returnCamera: { tx: number; ty: number; tscale: number };
 }
 
-/**
- * The one state box the loop (`use-topology-loop.ts`) updates each frame; pointer handlers
- * and instrumentation read this frame's coordinates and pose from it, and gestures decide
- * through the same `hitTestWorld` as 2D.
- */
 /** Normalised like `DomeNodeFrame`, or equal depths would draw at different brightness. */
 interface DomeRingSample {
   wx: number;
@@ -2020,6 +2015,11 @@ interface DomeMorph {
   durationMs: number;
 }
 
+/**
+ * The one state box the loop (`use-topology-loop.ts`) updates each frame; pointer handlers
+ * and instrumentation read this frame's coordinates and pose from it, and gestures decide
+ * through the same `hitTestWorld` as 2D.
+ */
 export interface DomeRuntime {
   model: DomeModel;
   /** The idle gate counts a morph as motion. */
@@ -2065,13 +2065,14 @@ export interface DomeRuntime {
   yaw: number;
   pitch: number;
   /**
-   * Pointer events set it and the loop relaxes yaw and pitch toward it at
-   * `ORBIT_SMOOTH_TAU_MS`; outside a drag it tracks yaw.
+   * Pointer events set it and the loop relaxes yaw and pitch toward it
+   * at `ORBIT_SMOOTH_TAU_MS`; outside a drag it tracks yaw.
    */
   yawTarget: number;
   pitchTarget: number;
-  /** Reduced every frame by `decayOrbitVelocity`. */
+  /** Release momentum in rad/ms, reduced every frame by `decayOrbitVelocity`. */
   yawVel: number;
+  /** Pitch release momentum in rad/ms, the same decay. */
   pitchVel: number;
   /**
    * The meaningful landing the release momentum is aimed at (see `ORBIT_SNAP_WINDOW_RAD`), or
@@ -2086,19 +2087,19 @@ export interface DomeRuntime {
   spinArmed: boolean;
   /** Any gesture clears it and inherits the current pose. */
   poseTween: DomePoseTween | null;
-  /** Charged by orbit drag, decayed every frame. */
+  /** Per-kind yaw torsion in rad, charged by orbit drag and decayed every frame. */
   lag: Record<DomeViewKind, number>;
-  /** Forward when switching on, backward when switching off. */
+  /** Assembly clock in ms, 0 to `DOME_ASSEMBLE_TOTAL_MS`: forward on, backward off. */
   rampClock: number;
   /**
    * Off the moment a hand touches the map: the sweep offsets only the drawn pose, so a grab
    * would back-project against a different pose and the node would jump.
    */
   entryArmed: boolean;
-  /** From 0 on every re-entry. */
+  /** Entry sweep clock in ms, from 0 on every re-entry. */
   entryClock: number;
   /**
-   * `yaw/pitch` plus the sweep offset, written every frame; relation control points read it,
+   * Holds `yaw/pitch` plus the sweep offset, written every frame; relation control points read it,
    * or during entry a curve would pass through a different world than its endpoints.
    */
   drawYaw: number;
@@ -2108,7 +2109,7 @@ export interface DomeRuntime {
   drawSinYaw: number;
   drawCosPitch: number;
   drawSinPitch: number;
-  /** The branch between orbit and in-plane drag. */
+  /** 3D is on and no realm is active: the branch between orbit and in-plane drag. */
   active: boolean;
   /** Stops idle spin and momentum. */
   orbiting: boolean;

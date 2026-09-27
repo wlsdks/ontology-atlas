@@ -133,8 +133,8 @@ describe("edgeTierAlpha", () => {
 });
 
 /**
- * A tier-hidden node in the focused ego set still becomes visible, ramping through
- * `egoRamp` without a pop and without touching non-members.
+ * A tier-hidden node in the focused ego set still becomes visible, ramping
+ * through `egoRamp` without a pop and without touching non-members.
  */
 describe("effectiveNodeAlpha", () => {
   it("is unchanged for a non-ego-member regardless of egoRamp", () => {
@@ -207,7 +207,7 @@ describe("isNodeHittable", () => {
     expect(isNodeHittable(otherCapability, ENTRY, "domain:x", neighbors)).toBe(false);
   });
 
-  it("is NOT hittable when clustered (selective-ego hidden neighbor), even as a 1-hop neighbor of the focus (S3 known gap)", () => {
+  it("is not hittable when clustered behind the +N chip, even as a 1-hop neighbour of the focus", () => {
     const neighbors = new Set(["capability:hidden"]);
     expect(isNodeHittable(hiddenCapability, ENTRY, "domain:x", neighbors)).toBe(true);
     // Folded behind the `+N` chip it is not drawn, so it must not be grabbable.
@@ -301,14 +301,14 @@ describe("PLAIN_TIER_REVEAL (elements always hidden outside developer mode)", ()
   });
 });
 
-describe("classifyZoomTier (M-5 — corner readout orientation)", () => {
+describe("classifyZoomTier (corner readout orientation)", () => {
   const C = DEFAULT_TIER_REVEAL;
 
   it("is 'spine' at the overview entry (nothing below the spine revealed yet)", () => {
     expect(classifyZoomTier(ENTRY, C)).toBe("spine");
   });
 
-  it("is 'spine' while capabilities are still less than half-revealed", () => {
+  it("is 'spine' at the capability band's opening ratio, before its hit floor", () => {
     expect(classifyZoomTier(C.capability.enterRatio, C)).toBe("spine");
   });
 
@@ -321,7 +321,7 @@ describe("classifyZoomTier (M-5 — corner readout orientation)", () => {
     expect(classifyZoomTier(ZOOMED_IN, C)).toBe("element");
   });
 
-  it("never reports 'element' while still at the spine (the exact orientation lie the UX round caught)", () => {
+  it("never reports 'element' while still at the spine", () => {
     expect(classifyZoomTier(ENTRY, C)).not.toBe("element");
     expect(classifyZoomTier(ZOOMED_OUT, C)).not.toBe("element");
   });

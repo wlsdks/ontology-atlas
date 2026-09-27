@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 import { initHomeSpring, isHomeSpringConverged, stepHomeSpring } from "./relayout-home";
 
 /**
- * Auto-arrange springs each displaced node back to its `homeX`/`homeY` with the camera's
- * `engine/spring.ts` `stepSpring`, so the approach is monotonic and never pops.
+ * Auto-arrange springs each displaced node back to its `homeX`/`homeY` with the
+ * camera's `engine/spring.ts` `stepSpring`, so the approach is monotonic and never pops.
  */
 describe("stepHomeSpring / isHomeSpringConverged", () => {
   // The caller passes `--map-camera-spring-angfreq-transition`; any critical value serves here.

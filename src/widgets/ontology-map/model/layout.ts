@@ -1,10 +1,12 @@
 /**
- * Deterministic concentric-ring layout (prototype `docs/prototypes/topology-b2plus.html` §4;
- * `docs/design/ontology-map.md` §4 P2): the project at the origin, domains on
- * `--map-layout-ring-domain`, capabilities fanned on `--map-layout-ring-capability` round
+ * Deterministic concentric-ring layout (prototype `docs/prototypes/topology-b2plus.html`
+ * §4; `docs/design/ontology-map.md` §4 P2): the project at the origin, domains
+ * on `--map-layout-ring-domain`, capabilities fanned on `--map-layout-ring-capability` round
  * their domain, elements on `--map-layout-ring-element` round their capability. The same
  * radius on both axes at every ring (no aspect stretch). Positions never depend on the
- * camera. Seeding is O(N); the collision relax is O(N × iterations) on a spatial grid.
+ * camera. Seeding filters every node once per domain and per capability, O(N × parents);
+ * the grid relax costs O(N × k) per iteration for k nodes in a 3×3 cell block, which is
+ * O(N²) when the seed piles nodes together.
  */
 
 import { DEFAULT_EXPAND } from "@/shared/lib/appearance-preferences";
@@ -47,7 +49,7 @@ export interface LayoutOptions {
   /** Gap beyond the two radii before a pair collides. Default 6. */
   relaxPadding?: number;
   /**
-   * `"grid"` (default) buckets by spatial hash; `"bruteforce"` is the all-pairs reference
+   * Strategy `"grid"` (default) buckets by spatial hash; `"bruteforce"` is the all-pairs reference
    * oracle. Both are byte-identical (`layout.test.ts`); only tests set this.
    */
   relaxStrategy?: "grid" | "bruteforce";
@@ -284,8 +286,8 @@ function placePhyllotaxisDisk(
 const FAN_SPREAD = Math.PI * 0.62;
 
 /**
- * Under `magnitudeScale` a capability grows to 15.4, so two side by side need 30.8, and
- * `relaxCollisions` pushes by base radius only and cannot recover the excess.
+ * Under `magnitudeScale` a capability grows to 15.4, so two side by side need 30.8,
+ * and `relaxCollisions` pushes by base radius only and cannot recover the excess.
  */
 const FAN_ARC_SPACING = 34;
 /** The same value for the same reason: rows also stand side by side. */
@@ -421,11 +423,6 @@ function coincidentSeparation(id: string): { x: number; y: number } {
   return { x: Math.cos(angle), y: Math.sin(angle) };
 }
 
-/**
- * A one-shot deterministic de-pileup, not a live force tick: fixed iterations, fixed order
- * and an id-hashed tie-break. Only actual overlaps move, symmetrically along their axis,
- * and the project stays pinned.
- */
 /** Both point shapes satisfy it, so the initial and incremental relax share one code path. */
 interface MutablePoint {
   x: number;
@@ -483,6 +480,11 @@ function resolveCollisionPair(
   }
 }
 
+/**
+ * A one-shot deterministic de-pileup, not a live force tick: fixed iterations, fixed order
+ * and an id-hashed tie-break. Only actual overlaps move, symmetrically along their axis,
+ * and the project stays pinned.
+ */
 function relaxCollisions(
   nodes: readonly LayoutGraphNode[],
   placed: Map<string, PlacedPoint>,
@@ -533,11 +535,11 @@ function relaxBruteForce(
 }
 
 /**
- * Spatial-grid de-pileup, about O(n) per iteration instead of O(n²). Byte-identical to
- * `relaxBruteForce`: the grid is rebuilt each iteration, rows i run ascending, and partners
- * j > i from the 3×3 neighbourhood are sorted by j, reproducing brute force's order. The
- * grid only needs a superset of the pushed pairs, since each re-checks distance. Cell size
- * is twice the maximum collision distance, a movement margin.
+ * Spatial-grid de-pileup, O(n × k) per iteration for k nodes in a 3×3 cell block, so near
+ * O(n) only while cells stay sparse. Byte-identical to `relaxBruteForce`: the grid is rebuilt
+ * each iteration, rows i run ascending, and partners j > i from the block are sorted by j,
+ * reproducing its order. The grid only needs a superset of the pushed pairs, since each
+ * re-checks distance. Cell size is twice the maximum collision distance, a movement margin.
  */
 function relaxGrid(
   items: readonly RelaxItem[],
@@ -605,7 +607,7 @@ function relaxGrid(
 }
 
 /**
- * `relaxScope` is fixed when the world is built, so an expand shows its children on raw
+ * The `relaxScope` set is fixed when the world is built, so an expand shows its children on raw
  * seeds that can overlap other parents' fans. Relaxing everything again would move nodes
  * the person is looking at, so only newly visible nodes relax, with already-placed nodes
  * near their bbox as pinned obstacles; bounded fans keep that neighbourhood constant.

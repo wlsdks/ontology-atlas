@@ -37,7 +37,8 @@ describe("a node born this moment rises onto the map", () => {
 
   it("does not jump in one frame, since a hard cut is the defect", () => {
     const first = revealSeries(1)[0];
-    // Under the 70% first-frame hard-cut threshold in `.claude/rules/design.md`.
+    // Under the 70% first-frame hard-cut threshold (`docs/DESIGN-SYSTEM.md`, "Motion budget
+    // goes to the protagonist").
     expect(first).toBeLessThan(0.7);
     expect(first).toBeGreaterThan(0);
   });

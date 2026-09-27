@@ -46,8 +46,8 @@ describe("relaxNodeSeparation", () => {
 });
 
 /**
- * The function edits coordinates in place, so the pair visitation order is the result.
- * `referenceRelax` is the unoptimised enumeration, and on random graphs both must match
+ * The function edits coordinates in place, so the pair visitation order is the
+ * result. `referenceRelax` is the unoptimised enumeration, and on random graphs both must match
  * bit for bit. Moving `iActive` inside its j loop turns this red.
  */
 function referenceRelax(nodes: SeparationNode[], options: {
