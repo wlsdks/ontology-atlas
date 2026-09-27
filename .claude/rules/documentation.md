@@ -42,6 +42,6 @@ mention its command in `README.md`.
 
 `docs/DECISIONS.md`, `docs/CHANGELOG.md` and `docs/PO-PILOT.md` are frozen.
 Add one immutable fragment per decision, change or release with
-`pnpm record:new`, and PO pilot records with `pnpm po:record`; flags live in
+`pnpm record:new`; flags live in
 `docs/records/README.md`. Never edit a generated composite to resolve a
 conflict.
