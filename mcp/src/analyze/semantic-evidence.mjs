@@ -265,6 +265,8 @@ function discoverSemanticEvidenceCandidates(rootPath, skipped = []) {
     });
     return true;
   }
+  // Sorted depth-first walk: O(entries), capped by the file and entry budgets;
+  // `visitedDirectories` (real paths) stops symlink loops.
   function visit(dir) {
     if (filesSeen >= SEMANTIC_DISCOVERY_MAX_FILES || walkBudgetReached(dir)) return;
     const realDirectory = realpathSync(dir);

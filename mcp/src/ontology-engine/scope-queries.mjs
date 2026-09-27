@@ -617,6 +617,7 @@ export function createScopeQueries({
     }
   }
 
+  // Kahn's algorithm over deduplicated edge pairs: O(V + E) with an indegree map.
   function topologicalOrder(options = {}) {
     const limit = normalizeLimit(options.limit, 100);
     const typeSet = normalizeTypes(options.types ?? ['dependencies'], options.typeName || 'types');

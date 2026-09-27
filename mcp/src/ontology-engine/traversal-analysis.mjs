@@ -238,6 +238,8 @@ export function createTraversalAnalysis({
     };
   }
 
+  // Layered expansion, one relation per pattern step: O(paths x degree) per layer,
+  // with simple paths only and `limit` capping each layer.
   function patternWalk(slugOrAlias, options = {}) {
     const start = resolve(slugOrAlias, 'slug');
     const pattern = normalizePattern(options.pattern);
@@ -314,6 +316,7 @@ export function createTraversalAnalysis({
     };
   }
 
+  // Breadth-first to `depth`: O(V + E) over the reached subgraph, stopped at `limit`.
   function impact(slugOrAlias, options = {}) {
     const center = resolve(slugOrAlias, 'slug');
     const direction = normalizeDirection(options.direction, 'incoming');
