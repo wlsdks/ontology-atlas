@@ -93,11 +93,11 @@ function renderControl() {
 }
 
 async function openEditedDraft() {
-  fireEvent.click(screen.getByRole('button', { name: '내 별자리' }));
+  fireEvent.click(screen.getByRole('button', { name: koMessages.constellations.openLabel }));
   fireEvent.click(await screen.findByRole('button', { name: '편집' }));
   fireEvent.change(screen.getByRole('textbox', { name: '이름' }), { target: { value: '내 초안' } });
   fireEvent.click(screen.getByRole('checkbox', { name: /두 번째/ }));
-  fireEvent.click(screen.getByRole('button', { name: '별자리 저장' }));
+  fireEvent.click(screen.getByRole('button', { name: koMessages.constellations.save }));
   await screen.findByRole('button', { name: '변경 내용 확인' });
 }
 
@@ -108,14 +108,14 @@ async function openEditedDraft() {
 describe('SavedConstellationsControl — the chip expands a named region', () => {
   it('names the region, ties it to the chip, and claims no dialog', () => {
     renderControl();
-    const trigger = screen.getByRole('button', { name: '내 별자리' });
+    const trigger = screen.getByRole('button', { name: koMessages.constellations.openLabel });
     expect(trigger).not.toHaveAttribute('aria-haspopup', 'dialog');
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByRole('region', { name: '저장한 범위' })).toBeNull();
+    expect(screen.queryByRole('region', { name: koMessages.constellations.listTitle })).toBeNull();
 
     fireEvent.click(trigger);
 
-    const region = screen.getByRole('region', { name: '저장한 범위' });
+    const region = screen.getByRole('region', { name: koMessages.constellations.listTitle });
     const id = region.getAttribute('id');
     expect(id, 'the region needs an id for aria-controls').toBeTruthy();
     expect(trigger).toHaveAttribute('aria-controls', id!);
@@ -178,7 +178,7 @@ describe('SavedConstellationsControl conflict recovery', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '변경 내용 확인' }));
     expect(await screen.findByTestId('saved-constellation-conflict-review')).toHaveTextContent('삭제되었어요');
-    fireEvent.click(screen.getByRole('button', { name: '새 별자리로 저장' }));
+    fireEvent.click(screen.getByRole('button', { name: koMessages.constellations.saveDraftAsNew }));
     await waitFor(() => expect(mocks.save).toHaveBeenCalledTimes(2));
     expect(mocks.save.mock.calls[1]?.[0]).not.toHaveProperty('id');
   });
