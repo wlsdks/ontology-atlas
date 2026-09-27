@@ -40,35 +40,35 @@ afterEach(() => {
   window.history.replaceState(null, '', '/ko/agents/');
 });
 
-describe('에이전트 목적지', () => {
-  it('제목과 한 줄 설명을 갖는다', () => {
+describe('agents destination', () => {
+  it('renders a title and a one-line lede', () => {
     renderPage();
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(ko.agents.title);
     expect(screen.getByText(ko.agents.lede)).toBeInTheDocument();
   });
 
-  it('웹에서는 설명의 주어가 데스크톱 앱이다 — 바로 아래 카드가 브라우저는 못 띄운다고 말한다', () => {
+  it('makes the desktop app the lede subject on the web, since the card below says a browser cannot launch agents', () => {
     bridge = false;
     renderPage();
     expect(screen.getByText(ko.agents.ledeWeb)).toBeInTheDocument();
     expect(screen.queryByText(ko.agents.lede)).toBeNull();
   });
 
-  it('패널에게 자기 소개를 그리지 말라고 말한다 — 페이지가 이미 말했다', () => {
+  it('tells the runtime panel not to draw its own intro because the page already did', () => {
     renderPage();
     expect(screen.getByTestId('acp-runtimes')).toHaveAttribute('data-embedded', 'true');
   });
 
-  it('설명이 헤더 밖에 있다 — 안에 두면 제목 반대쪽 끝으로 밀린다', () => {
+  it('keeps the lede outside the header so it is not pushed to the far end of the title row', () => {
     renderPage();
     const heading = screen.getByRole('heading', { level: 1 });
     const lede = screen.getByText(ko.agents.lede);
     const header = heading.closest('header');
-    expect(header, '헤더가 없다').not.toBeNull();
-    expect(header!.contains(lede), '설명이 헤더 안에 있다').toBe(false);
+    expect(header).not.toBeNull();
+    expect(header!.contains(lede)).toBe(false);
   });
 
-  it('설명은 한 줄뿐이다 — 접힌 문단도, 아래를 가리키는 문장도 없다', () => {
+  it('says one lede sentence with no folded paragraph or pointer sentence', () => {
     // Owner, 2026-09-19: "there is so much useless text here". The fold "what this screen
     // does" and its paragraph are gone; the page says one sentence and then the strip.
     renderPage();
@@ -79,8 +79,8 @@ describe('에이전트 목적지', () => {
   });
 });
 
-describe('한 목록에 이름 하나', () => {
-  it('보이지 않는 구역 이름과 보이는 묶음 이름이 같은 말로 시작한다', () => {
+describe('one name per list', () => {
+  it('starts the hidden region name and the visible group label with the same words', () => {
     // The region heading and the group label named the same list two different ways, and the
     // count rode parentheses here while the MCP tab's rode a middot. One noun phrase, one
     // count grammar, across both tabs.
@@ -91,8 +91,8 @@ describe('한 목록에 이름 하나', () => {
   });
 });
 
-describe('세 탭, 한 번에 하나', () => {
-  it('기본은 에이전트 탭이고 MCP 탭의 몸통은 그리지 않는다', () => {
+describe('three tabs, one at a time', () => {
+  it('opens the agents tab by default and does not render the MCP body', () => {
     renderPage(<div data-testid="mcp-body" />);
     expect(screen.getByRole('tab', { name: ko.agents.workspace.agents })).toHaveAttribute(
       'aria-selected',
@@ -103,7 +103,7 @@ describe('세 탭, 한 번에 하나', () => {
     expect(screen.getByRole('main')).toHaveAttribute('data-agents-tab', 'agents');
   });
 
-  it('?tab=mcp 는 MCP 탭을 열고 그 탭의 설명을 위에 둔다', () => {
+  it('opens the MCP tab for ?tab=mcp with that tab lede on top', () => {
     search = 'tab=mcp';
     renderPage(<div data-testid="mcp-body" />);
     expect(screen.getByTestId('mcp-body')).toBeInTheDocument();
@@ -113,7 +113,7 @@ describe('세 탭, 한 번에 하나', () => {
     expect(screen.getByRole('main')).toHaveAttribute('data-agents-tab', 'mcp');
   });
 
-  it('탭을 누르면 주소가 따라온다 — 새로 고침과 공유 링크가 같은 탭을 연다', () => {
+  it('writes the clicked tab into the URL so reload and shared links open the same tab', () => {
     window.history.replaceState(null, '', '/ko/agents/?guides=off');
     renderPage(<div data-testid="mcp-body" />);
     fireEvent.click(screen.getByRole('tab', { name: ko.agents.workspace.mcp }));
@@ -124,7 +124,7 @@ describe('세 탭, 한 번에 하나', () => {
     expect(window.location.search).toBe('?guides=off');
   });
 
-  it('탭은 에이전트 | 모델 | MCP 순서다', () => {
+  it('orders the tabs agents, models, MCP', () => {
     renderPage();
     expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
       ko.agents.workspace.agents,
@@ -133,7 +133,7 @@ describe('세 탭, 한 번에 하나', () => {
     ]);
   });
 
-  it('?tab=models 는 모델 탭을 열고 그 탭의 설명을 위에 둔다 — 설정에서 옮겨 온 문이 여기로 온다', () => {
+  it('opens the models tab for ?tab=models with that tab lede on top, where the settings door lands', () => {
     search = 'tab=models';
     renderPage(<div data-testid="mcp-body" />);
     expect(screen.getByTestId('model-connections')).toBeInTheDocument();
@@ -145,7 +145,7 @@ describe('세 탭, 한 번에 하나', () => {
     expect(screen.getByRole('tabpanel')).toHaveAttribute('aria-labelledby', 'agents-tab-models');
   });
 
-  it('모델 탭을 누르면 주소가 ?tab=models 가 되고, MCP 전용 키는 떨어진다', () => {
+  it('writes ?tab=models when the models tab is clicked and drops the MCP-only keys', () => {
     window.history.replaceState(null, '', '/ko/agents/?tab=mcp&mcp=connectors&install=abc');
     search = 'tab=mcp';
     renderPage(<div data-testid="mcp-body" />);
@@ -154,7 +154,7 @@ describe('세 탭, 한 번에 하나', () => {
     expect(window.location.search).toBe('?tab=models');
   });
 
-  it('탭 띠는 페이지 몸통에 있다 — 머리띠(56px 크롬)가 아니다', () => {
+  it('places the tab strip in the page body below the title, not in the 56px chrome', () => {
     // 2026-09-18 the owner rejected a header strip; 2026-09-19 the stack. The strip lives
     // inside `<main>`, below the title, as the Library's and Insights' do.
     renderPage();
@@ -165,7 +165,7 @@ describe('세 탭, 한 번에 하나', () => {
     expect(h1.compareDocumentPosition(strip) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it('켜 둔 연결 도구 수가 MCP 탭 옆에 선다 — 알기 전에는 0을 찍지 않는다', () => {
+  it('shows the enabled connector count beside the MCP tab and prints no 0 before it is known', () => {
     renderPage(undefined, 2);
     expect(screen.getByRole('tab', { name: `${ko.agents.workspace.mcp}, 2` })).toBeInTheDocument();
     const { unmount } = renderPage();
@@ -173,8 +173,8 @@ describe('세 탭, 한 번에 하나', () => {
   });
 });
 
-describe('목적지의 기본 골격', () => {
-  it('`<main>` 랜드마크를 소유한다 — 이 저장소는 셸이 아니라 뷰가 소유한다', () => {
+describe('destination skeleton', () => {
+  it('owns the <main> landmark, which views own in this repo instead of the shell', () => {
     renderPage();
     const main = screen.getByRole('main');
     expect(main).toHaveAttribute('id', 'main');
@@ -182,14 +182,14 @@ describe('목적지의 기본 골격', () => {
     expect(main).toHaveAttribute('tabindex', '-1');
   });
 
-  it('본문이 비어 있지 않다 — 빈 `<main>` 은 검사에 «위반 0» 으로 보인다', () => {
+  it('renders a non-empty main, since an empty one reads as zero violations to audits', () => {
     renderPage();
     expect(screen.getByRole('main').querySelectorAll('*').length).toBeGreaterThan(3);
   });
 });
 
-describe('한 목적지에 한 가지 일', () => {
-  it('MCP 칸을 스스로 그리지 않는다 — 앱 층이 자식으로 건넨다', () => {
+describe('one job per destination', () => {
+  it('does not render the MCP section itself; the app layer passes it as a child', () => {
     renderPage();
     expect(screen.queryByTestId('agent-setup-section')).toBeNull();
     expect(screen.queryByTestId('connectors-panel')).toBeNull();
@@ -201,7 +201,7 @@ describe('한 목적지에 한 가지 일', () => {
    * runtime panel saying the same words. The heading went; the region's name is the invariant
    * this test was always about, and it is what assistive tech announces on entry.
    */
-  it('남은 한 칸은 이름을 갖는다 — 훑을 수 있어야 한다', () => {
+  it('names the remaining region so it can be scanned', () => {
     renderPage();
     expect(screen.getByRole('region', { name: ko.agents.runtimesHeading })).toBeInTheDocument();
   });

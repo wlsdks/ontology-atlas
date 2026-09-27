@@ -32,18 +32,18 @@ describe('EvidenceSpecimen', () => {
    * shows to appear in it, verbatim. A hand-edited generated file, a stale commit, or a "nicer"
    * hand-written sample all fail here.
    */
-  it('보여 주는 줄이 전부 실제 볼트 파일에 그대로 있다', () => {
+  it('shows only lines that appear verbatim in the real vault file', () => {
     const onDisk = readFileSync(join(process.cwd(), EVIDENCE_SPECIMEN.file), 'utf8');
     for (const locale of ['ko', 'en'] as const) {
       const shown = EVIDENCE_SPECIMEN.frontmatter[locale];
-      expect(shown.length, `${locale}: 보여 줄 줄이 하나도 없다 — 이 시험이 헛돈다`).toBeGreaterThan(4);
+      expect(shown.length, `${locale}: no lines to show, so this test is vacuous`).toBeGreaterThan(4);
       for (const line of shown) {
-        expect(onDisk, `${locale}: 이 줄이 파일에 없다: ${line}`).toContain(line);
+        expect(onDisk, `${locale}: line missing from the file: ${line}`).toContain(line);
       }
     }
   });
 
-  it('화면에 그 줄들이 그대로 그려진다', () => {
+  it('renders those lines verbatim', () => {
     render(wrap(<EvidenceSpecimen />));
     const panel = screen.getByTestId('evidence-specimen');
     for (const line of EVIDENCE_SPECIMEN.frontmatter.en) {
@@ -56,7 +56,7 @@ describe('EvidenceSpecimen', () => {
    * Showing a subset of a file as if it were the file is the same untruth the section exists to
    * disprove, so the count of dropped lines has to reach the screen.
    */
-  it('뺀 줄 수가 실제로 뺀 만큼이다 — 화면이 부분을 전체라고 말하지 않는다', () => {
+  it('reports an omitted-line count that matches the file, so a subset never passes as the whole', () => {
     /*
      * ⚠️ **Count against the file, not against the sentence.** The first version of this test
      * only asked whether one of the two honesty sentences was on screen, and the probe walked
@@ -67,14 +67,14 @@ describe('EvidenceSpecimen', () => {
      */
     const onDisk = readFileSync(join(process.cwd(), EVIDENCE_SPECIMEN.file), 'utf8');
     const total = /^---\n([\s\S]*?)\n---/.exec(onDisk)?.[1].split('\n').length ?? 0;
-    expect(total, 'frontmatter 를 못 읽었다 — 이 시험이 헛돈다').toBeGreaterThan(4);
+    expect(total, 'could not read the frontmatter, so this test is vacuous').toBeGreaterThan(4);
     for (const locale of ['ko', 'en'] as const) {
       const shown = EVIDENCE_SPECIMEN.frontmatter[locale].length;
       const omitted = EVIDENCE_SPECIMEN.omittedLines[locale];
       expect(
         shown + omitted,
-        `${locale}: 보여 준 ${shown}줄 + 뺐다고 한 ${omitted}줄 이 파일의 ${total}줄과 안 맞는다 ` +
-          `— 부분을 전체라고 말하고 있다`,
+        `${locale}: ${shown} shown + ${omitted} omitted lines do not match the file's ${total}; ` +
+          `a subset is posing as the whole`,
       ).toBe(total);
     }
 
@@ -89,20 +89,20 @@ describe('EvidenceSpecimen', () => {
    * The specimen must keep being a *graph* specimen. A node with no edge would still render fine
    * and would quietly stop demonstrating the one thing this section is for.
    */
-  it('표본은 관계를 하나 갖는다 — 홀로 있는 노드는 그래프의 증거가 아니다', () => {
+  it('keeps at least one relation, since a lone node is no graph evidence', () => {
     expect(EVIDENCE_SPECIMEN.facts.dependency.ko.length).toBeGreaterThan(0);
     expect(EVIDENCE_SPECIMEN.facts.domain.ko.length).toBeGreaterThan(0);
     expect(EVIDENCE_SPECIMEN.facts.implPath.length).toBeGreaterThan(0);
   });
 
-  it('한국어로 열면 노드 이름이 한국어다', () => {
+  it('shows Korean node names in the Korean locale', () => {
     render(wrap(<EvidenceSpecimen />, 'ko'));
     const panel = screen.getByTestId('evidence-specimen');
     expect(panel.textContent ?? '').toContain(EVIDENCE_SPECIMEN.facts.name.ko);
     expect(panel.textContent ?? '').toContain(EVIDENCE_SPECIMEN.facts.domain.ko);
   });
 
-  it('영어로 열면 노드 이름이 영어다', () => {
+  it('shows English node names in the English locale', () => {
     render(wrap(<EvidenceSpecimen />, 'en'));
     const panel = screen.getByTestId('evidence-specimen');
     expect(panel.textContent ?? '').toContain(EVIDENCE_SPECIMEN.facts.name.en);
@@ -117,11 +117,11 @@ describe('EvidenceSpecimen', () => {
    * counts it, so this asserts the property at the unit level too — an e2e failure is a slow way
    * to learn it.
    */
-  it('영문 패널에 한글이 하나도 안 그려진다', () => {
+  it('draws no Hangul on the English panel', () => {
     render(wrap(<EvidenceSpecimen />, 'en'));
     const text = screen.getByTestId('evidence-specimen').textContent ?? '';
     const hangul = text.match(/[\u3131-\u318E\uAC00-\uD7A3]/g) ?? [];
-    expect(hangul, `영문 화면에 한글이 그려졌다: ${hangul.join('')}`).toEqual([]);
+    expect(hangul, `Hangul drawn on the English screen: ${hangul.join('')}`).toEqual([]);
   });
 
   /**
@@ -129,7 +129,7 @@ describe('EvidenceSpecimen', () => {
    * plus its fact row answering together — a highlight that lands on the wrong line teaches the
    * wrong correspondence, which is worse than none.
    */
-  it('demoKey 가 그 줄과 그 사실 행만 켠다', () => {
+  it('lights only the matching line and fact row for a demoKey', () => {
     const { container } = render(wrap(<EvidenceSpecimen demoKey="domain" />, 'ko'));
     const litLines = [...container.querySelectorAll('pre span')].filter((el) =>
       el.className.includes('overlay-2'),
@@ -144,7 +144,7 @@ describe('EvidenceSpecimen', () => {
     expect(litRows[0].textContent).toContain(EVIDENCE_SPECIMEN.facts.domain.ko);
   });
 
-  it('demoKey 가 없으면 아무것도 안 켠다 — 쉬는 상태가 기본이다', () => {
+  it('lights nothing without a demoKey, the resting default', () => {
     const { container } = render(wrap(<EvidenceSpecimen />, 'ko'));
     const lit = [...container.querySelectorAll('pre span, dl > div')].filter((el) =>
       el.className.includes('overlay-2'),
@@ -152,7 +152,7 @@ describe('EvidenceSpecimen', () => {
     expect(lit).toHaveLength(0);
   });
 
-  it("title 비트는 이름 줄들(title·display)을 함께 켠다 — 한 뜻이 여러 줄에 적혀 있어서다", () => {
+  it("lights every name line (title and display) for the title beat, since one meaning spans several lines", () => {
     const { container } = render(wrap(<EvidenceSpecimen demoKey="title" />, 'ko'));
     const lit = [...container.querySelectorAll('pre span')]
       .filter((el) => el.className.includes('overlay-2'))
@@ -162,7 +162,7 @@ describe('EvidenceSpecimen', () => {
   });
 
   /** The claim "go and check" is only worth making if the link actually resolves to the file. */
-  it('링크가 화면에 적힌 그 파일을 가리킨다', () => {
+  it('links to the file named on screen', () => {
     render(wrap(<EvidenceSpecimen />));
     const link = screen.getByRole('link', { name: /open this file/i });
     expect(link.getAttribute('href')).toContain(EVIDENCE_SPECIMEN.file);

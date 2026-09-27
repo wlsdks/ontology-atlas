@@ -31,7 +31,7 @@ describe("resolveAuthoredDescription", () => {
 
   // The list draws one line, and a paragraph-length description was cut by the clamp at whatever
   // pixel the row ran out of. The hero has taken the first sentence since 2026-07-26; so does this.
-  it("문단짜리 설명은 첫 문장에서 끝난다", () => {
+  it("cuts a paragraph description at its first sentence", () => {
     const paragraph =
       "Not a real company: an example built so that a first-time visitor can learn how to read the map. " +
       "It draws a small online store that ships physical goods out of a single warehouse.";

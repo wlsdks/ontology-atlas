@@ -140,7 +140,7 @@ describe("buildRecentActivityRows", () => {
     expect(rows[0].nodeId).toBeNull();
   });
 
-  it("설명이 없으면 발췌로 떨어지지 않는다 — 카드 본문과 같은 규칙(A2)", () => {
+  it("does not fall back to the excerpt without a description, like the card body", () => {
     // `node.summary` is excluded from the fallback too: that value itself falls back to `doc.excerpt`, so
     // keeping it lets the excerpt back in via one detour.
     const docs: VaultDoc[] = [
@@ -161,7 +161,7 @@ describe("buildRecentActivityRows", () => {
     expect(rows[0].what).toBe("");
   });
 
-  it("사람이 쓴 frontmatter description 만 행에 실린다 — 카드 본문과 같은 함수", () => {
+  it("shows only the authored frontmatter description, through the card body's function", () => {
     const written = doc({
       slug: "ontology/elements/a",
       updatedAt: "2026-07-18T09:00:00.000Z",

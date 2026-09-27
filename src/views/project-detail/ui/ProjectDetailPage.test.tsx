@@ -306,7 +306,7 @@ describe("ProjectDetailPage", () => {
     };
   });
 
-  it("local source가 확정되면 같은 slug의 static initial fact를 지운다", async () => {
+  it("clears the same slug's static initial fact once the local source settles", async () => {
     mocks.insightNodes = [];
     mocks.insightEdges = [];
     mocks.projectsMode = "local";
@@ -520,7 +520,7 @@ describe("ProjectDetailPage", () => {
   // The Library cell once counted wiki pages out of the chosen sample while counting sources out
   // of the open local folder, so every reader without a folder open — the web, and any sample —
   // was told the folder held no sources whatever it held. One manifest answers both now.
-  it("자료실 칸은 폴더를 열지 않아도 그 표본의 원본 수를 센다", () => {
+  it("counts the sample's sources in the library cell without an open folder", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
     mocks.projectsMode = "static";
@@ -549,7 +549,7 @@ describe("ProjectDetailPage", () => {
   // Relations say how connected the map is, not how much of it there is, so they are a different
   // kind from the containment figures and ride the cell's note line instead of becoming a fourth
   // figure of equal weight. Pinned so that hierarchy inside the cell cannot collapse.
-  it("관계 수는 네 번째 지표가 아니라 온톨로지 칸의 한 줄로 붙는다", () => {
+  it("shows the relation count as a line in the ontology cell, not a fourth metric", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
     mocks.canEdit = false;
@@ -573,7 +573,7 @@ describe("ProjectDetailPage", () => {
    * map's INDEX row reads. Counting the raw node array added the vault readme, and the same folder
    * read 7 here and 6 on the map, one click apart.
    */
-  it("폴더 전체 개념 수는 지도 INDEX 와 같은 규칙으로 센다", () => {
+  it("counts folder-wide concepts by the same rule as the map INDEX", () => {
     mocks.insightNodes = [
       ...BASE_NODES,
       ontologyNode("vault-readme:README", "vault-readme", [], "My ontology vault"),
@@ -591,7 +591,7 @@ describe("ProjectDetailPage", () => {
 
   // Only the ontology half of the board is this project's; sources and wiki pages count the folder.
   // Two scopes side by side read as one unless the difference is said in words.
-  it("구성 판 옆에 스코프 캡션이 붙는다 — 온톨로지만 이 프로젝트의 것이다", () => {
+  it("captions the composition board with its scope, since only the ontology belongs to this project", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
     mocks.canEdit = false;
@@ -602,7 +602,7 @@ describe("ProjectDetailPage", () => {
     );
   });
 
-  it("구성 탭의 도메인 행을 펼치면 그 도메인의 지도 딥링크가 나온다", () => {
+  it("reveals the domain map deep link when a composition-tab domain row expands", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
     mocks.canEdit = false;
@@ -627,7 +627,7 @@ describe("ProjectDetailPage", () => {
   // difference between 17 and 6 was 4.7px (17 against 16 was 0.3px) and the lines ran through the label.
   // A promise that cannot be kept is a misunderstanding, not ink — instead of layering another picture
   // there, the list lives in a judgeable form (rows plus bars) in **one place only**.
-  it("히어로에 방사 도메인 지도가 없다 — 도메인 목록은 구성 탭 한 곳에만 있다", () => {
+  it("draws no radial domain map in the hero; the domain list lives only in the composition tab", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
     mocks.canEdit = false;
@@ -650,7 +650,7 @@ describe("ProjectDetailPage", () => {
   });
 
   // The same sentence is not said twice — the footnote appears once, where the list is.
-  it("겹침 각주는 목록과 같은 자리에 한 번만 나온다", () => {
+  it("shows the overlap footnote once, beside the list", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
     mocks.canEdit = false;
@@ -689,7 +689,7 @@ describe("ProjectDetailPage", () => {
 
   // A folder with one project cannot answer "which other project is this tied to": connecting needs
   // a second project to exist, so the card's empty state would sit at the top of the rail forever.
-  it("폴더에 프로젝트가 하나뿐이면 연결 카드를 아예 묻지 않는다", () => {
+  it("skips the connection card when the folder has one project", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
     mocks.canEdit = false;
@@ -751,7 +751,7 @@ describe("ProjectDetailPage", () => {
     expect(screen.getByTestId("public-quick-edit-toggle")).toBeInTheDocument();
   });
 
-  it("explains the read-only state instead of just omitting the edit entry point (UX 부대 — [P-7])", () => {
+  it("explains the read-only state instead of just omitting the edit entry point", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
 
@@ -835,7 +835,7 @@ describe("ProjectDetailPage", () => {
 
   // A body can open with a list. The summary used to look for a paragraph, find none, and draw
   // nothing at all about the document — the one thing this card exists to carry.
-  it("목록으로 시작하는 본문도 그 첫 블록을 보여준다", () => {
+  it("shows the first block of a body that starts with a list", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
     mocks.vaultBody = "- A storefront that sells one thing\n- Built in the open";

@@ -132,7 +132,7 @@ describe("ProjectSelectorPage", () => {
   // directly (so the rail's DOM identity survives route changes). So this unit test asserts only the
   // settings and agent-status cluster the page still owns, not the rail itself — rail persistence is
   // verified by Playwright (rail DOM identity preserved under production static serving).
-  it("설정은 남고, 실시간 표시는 여기 없다", () => {
+  it("keeps settings but shows no live indicator here", () => {
     /*
      * "Live · N changes" is **the map's object** — that number leads to a next action only on a screen
      * that draws what changed onto the nodes. On a list screen it has nowhere to go while taking the
@@ -158,13 +158,13 @@ describe("ProjectSelectorPage", () => {
    *
    * This test stops that row from quietly coming back.
    */
-  it("폴더 전체 개념·관계 수를 다시 들이지 않는다 — 세는 곳은 프로젝트 카드 하나다", () => {
+  it("does not repeat the folder-wide concept and relation counts; the project card is the one place that counts", () => {
     renderPage();
     const main = screen.getByRole("main").textContent ?? "";
-    expect(main, "이 시험이 헛돌지 않는지 — 화면이 실제로 그려졌나").toContain("project");
+    expect(main, "the screen did not render, so this test is vacuous").toContain("project");
     expect(main).not.toContain("CONCEPTS");
     expect(main).not.toContain("RELATIONS");
-    expect(screen.queryByTestId("projects-back-to-map"), "지도 입구는 레일 하나다").toBeNull();
+    expect(screen.queryByTestId("projects-back-to-map"), "the rail is the one way to the map").toBeNull();
   });
 
   it("renders a compact project row without graph metrics or activity", () => {

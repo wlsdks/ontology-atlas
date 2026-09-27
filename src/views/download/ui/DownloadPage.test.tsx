@@ -700,7 +700,7 @@ describe('DownloadPage', () => {
 
     const chat = screen.getByTestId('gateway-agent-chat');
     const lines = chat.querySelectorAll('.gateway-term-line');
-    expect(lines.length, '재연 세 줄이 있어야 이 시험이 뜻을 갖는다').toBe(3);
+    expect(lines.length, 'the replay needs three lines for this test to mean anything').toBe(3);
 
     // The first line is the person's sentence. It is on even though no timer has run.
     expect(lines[0].className).toContain('is-on');
@@ -802,7 +802,7 @@ describe('DownloadPage', () => {
    * Two pieces of chrome must differ by address. Both exist to prevent **dead promises**, so they
    * are locked by meaning rather than by value.
    */
-  describe('두 주소에 사는 한 화면', () => {
+  describe('one screen served at two addresses', () => {
     it('carries the pixel identity in the gateway chrome, and only there', () => {
       mocks.pathname = '/download';
       renderDownloadPage();
@@ -820,13 +820,13 @@ describe('DownloadPage', () => {
       expect(screen.queryByTestId('gateway-hero-mascot')).toBeNull();
     });
 
-    it('/download 에서는 빵부스러기가 여기가 어디인지 말한다', () => {
+    it('names the page in the breadcrumb at /download', () => {
       mocks.pathname = '/download';
       renderDownloadPage();
       expect(screen.getByTestId('download-gnb')).toHaveTextContent(/다운로드|Download/);
     });
 
-    it('/ 에서는 「다운로드」 마디를 지운다 — 그 주소가 아니다', () => {
+    it('drops the Download crumb at /, which is not that address', () => {
       mocks.pathname = '/';
       renderDownloadPage();
       expect(screen.getByTestId('download-gnb')).not.toHaveTextContent(/다운로드|Download/);
@@ -845,13 +845,13 @@ describe('DownloadPage', () => {
      * two links doing the same job, one in the chrome and one in the panel, makes one of them a
      * dead promise.
      */
-    it.each(['/', '/download'])('%s 크롬에 「지도로 돌아가기」가 없다', (pathname) => {
+    it.each(['/', '/download'])('offers no back-to-map link in the %s chrome', (pathname) => {
       mocks.pathname = pathname;
       renderDownloadPage();
       expect(screen.queryByTestId('download-back-to-map')).toBeNull();
     });
 
-    it('지도로 가는 유일한 길은 히어로의 웹 CTA 이고 /topology 를 가리킨다', () => {
+    it('makes the hero web CTA the only way to the map, pointing at /topology', () => {
       mocks.pathname = '/';
       publishRelease();
       renderDownloadPage();
@@ -869,7 +869,7 @@ describe('DownloadPage', () => {
      * Measured defect (2026-08-06): with no reserve, the last line at the end of `/`'s scroll went
      * **17px** behind the tab bar — at both 390 and 768, and in the production static export too.
      */
-    it('/ 에서는 하단 탭바 높이를 예약한다 — 탭바가 서는 주소다', () => {
+    it('reserves the bottom tab bar height at /, where the tab bar shows', () => {
       mocks.pathname = '/';
       renderDownloadPage();
       const band = screen.getByTestId('download-bottom-band');
@@ -882,7 +882,7 @@ describe('DownloadPage', () => {
       );
     });
 
-    it('/download 에서는 예약하지 않는다 — 그 주소엔 탭바가 없다', () => {
+    it('reserves nothing at /download, which has no tab bar', () => {
       mocks.pathname = '/download';
       renderDownloadPage();
       const band = screen.getByTestId('download-bottom-band');
@@ -897,7 +897,7 @@ describe('DownloadPage', () => {
      * so content is occluded again with no error. Hence this test checks the premise of the two
      * assertions above directly through `shouldHideBottomTabBar`.
      */
-    it('예약 판정의 전제는 탭바의 판정과 같다', () => {
+    it('decides the reservation with the same premise as the tab bar', () => {
       expect(shouldHideBottomTabBar('/download', false)).toBe(true);
       expect(shouldHideBottomTabBar('/', false)).toBe(false);
     });

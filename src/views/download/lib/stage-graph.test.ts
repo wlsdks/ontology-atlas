@@ -20,7 +20,7 @@ const edge = (from: string, to: string, type: string): KnowledgeGraphEdge =>
   ({ from, to, type, evidenceIds: [] }) as unknown as KnowledgeGraphEdge;
 
 describe('buildStageGraph', () => {
-  it('아무도 참조되지 않으면 허브를 만들지 않는다', () => {
+  it('marks no hub when nothing is referenced', () => {
     // The amber hub ring is a single-node emphasis. Picking the first node as hub in a graph with
     // zero references draws a fact absent from the data.
     const { nodes } = buildStageGraph(
@@ -30,7 +30,7 @@ describe('buildStageGraph', () => {
     expect(nodes.every((n) => !n.isHub)).toBe(true);
   });
 
-  it('허브는 정확히 하나 — 최다 피참조, 동점은 id 오름차순', () => {
+  it('marks exactly one hub: the most referenced, ties broken by ascending id', () => {
     const { nodes } = buildStageGraph(
       [node('p', 'project'), node('x', 'capability'), node('y', 'capability')],
       [edge('p', 'x', 'contains'), edge('y', 'x', 'depends_on'), edge('p', 'y', 'contains')],
@@ -39,7 +39,7 @@ describe('buildStageGraph', () => {
     expect(nodes.find((n) => n.isHub)?.id).toBe('x');
   });
 
-  it('자기참조 엣지는 그리지 않는다', () => {
+  it('drops self-referencing edges', () => {
     const { edges } = buildStageGraph(
       [node('a', 'domain'), node('b', 'capability')],
       [edge('a', 'a', 'related_to'), edge('a', 'b', 'contains')],
@@ -48,7 +48,7 @@ describe('buildStageGraph', () => {
     expect(edges[0]).toMatchObject({ source: 'a', target: 'b', kind: 'contains' });
   });
 
-  it('순환하는 containment 에서도 멈춘다', () => {
+  it('terminates on cyclic containment', () => {
     // Cycles genuinely exist in this vault. Descendant counting must not recurse infinitely.
     const { nodes } = buildStageGraph(
       [node('a', 'domain'), node('b', 'capability')],
@@ -66,7 +66,7 @@ describe('buildStageGraph', () => {
    * multiple parents, inflating by 4×. This page's honesty contract is that the background and the
    * caption share one source, so that contract is pinned here.
    */
-  it('다중 부모를 지나도 자손을 한 번만 센다 (경로 합 금지)', () => {
+  it('counts a descendant once across multiple parents instead of summing paths', () => {
     const { nodes } = buildStageGraph(
       [
         node('p', 'project'),
@@ -92,7 +92,7 @@ describe('buildStageGraph', () => {
     expect(countById.get('leaf')).toBe(0);
   });
 
-  it('관문에 근거가 없는 사실은 꾸며내지 않는다', () => {
+  it('invents no fact the gateway has no evidence for', () => {
     const { nodes, edges } = buildStageGraph(
       [node('a', 'domain'), node('b', 'element')],
       [edge('a', 'b', 'contains')],

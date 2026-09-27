@@ -62,7 +62,7 @@ describe("release-facts", () => {
     // so it cannot pick up a dependency's version.
     const packageSection = cargo.split(/^\[/m)[1] ?? cargo;
     const match = /^version\s*=\s*"([^"]+)"/m.exec(packageSection);
-    expect(match?.[1], "src-tauri/Cargo.toml 의 [package] version 을 못 읽었다").toBeDefined();
+    expect(match?.[1], "could not read [package] version from src-tauri/Cargo.toml").toBeDefined();
     expect(RELEASE_VERSION).toBe(match?.[1]);
   });
 

@@ -100,7 +100,7 @@ describe("buildProjectDomainComposition", () => {
     expect(result.maxTotal).toBe(2);
   });
 
-  it("P-1 — containment 도달 멤버는 projectIds 와 무관하게 센다 (4면 census 정합)", () => {
+  it("counts members reached by containment regardless of projectIds, matching the four-surface census", () => {
     // The old contract (filtering by projectIds) was why the numbers diverged from the single-source BFS
     // used by the map INDEX, insights, and `/projects`. If a domain contains it, it counts toward that
     // domain's size whatever project stamp it carries — the same number across surfaces takes precedence

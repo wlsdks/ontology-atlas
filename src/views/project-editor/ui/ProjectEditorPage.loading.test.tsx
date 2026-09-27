@@ -89,7 +89,7 @@ describe("ProjectEditorPage loading contract", () => {
     mocks.projects = [{ slug: "ontology-atlas" }] as never[];
   });
 
-  it("project source 로딩 중에는 not-found로 확정하지 않는다", async () => {
+  it("does not settle on not-found while the project source is loading", async () => {
     render(<ProjectEditorPage mode="edit" slug="project" />);
 
     expect(screen.getByText("loadingLabel")).toBeInTheDocument();
@@ -103,7 +103,7 @@ describe("ProjectEditorPage loading contract", () => {
     expect(screen.queryByText("loadErrorEdit")).not.toBeInTheDocument();
   });
 
-  it("초기 fallback not-found 뒤 로컬 project가 도착하면 편집 폼으로 회복한다", async () => {
+  it("recovers to the edit form when a local project arrives after the initial not-found fallback", async () => {
     mocks.loaded = true;
     mocks.projects = [{ slug: "ontology-atlas" }] as never[];
     const { rerender } = render(
