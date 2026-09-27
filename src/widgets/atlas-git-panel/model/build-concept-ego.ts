@@ -1,20 +1,5 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 
-/**
- * One concept's **immediate neighbours** (depth 1) and the typed facts it holds.
- *
- * Why the history screen draws this: the answer to "what did this step change"
- * has to be concepts rather than a commit title, and once you are looking at a
- * concept its properties and neighbours must be right there, so you never have
- * to leave for the map (owner instruction, 2026-08-02).
- *
- * ⚠️ **A missing field gets no slot.** A `status:` cell existed in the mockup
- * and was removed — **0** of the vault's 70 nodes used that key, and a cell
- * nobody fills is misinformation, not a specification. `created_by`/`path` are
- * left out for the same reason: `KnowledgeGraphNode` does not carry them, so
- * drawing them here would leave a permanently empty cell. Only facts the
- * derivation guarantees are carried.
- */
 export type EgoBearing = "belongsTo" | "contains" | "dependsOn" | "usedBy";
 
 /** Fixed order of the four bearings, so positions never shift between concepts. */
@@ -31,6 +16,11 @@ interface EgoNeighbor {
   kind: string;
 }
 
+/**
+ * One concept's immediate neighbours (depth 1) and the typed facts it holds.
+ * Only facts the derivation guarantees are carried; a field it lacks would be a
+ * permanently empty cell.
+ */
 export interface ConceptEgo {
   id: string;
   label: string;
@@ -39,13 +29,9 @@ export interface ConceptEgo {
   domainLabel: string | null;
   /** This concept's evidence document (a slug inside the vault). The derivation always guarantees one. */
   docSlug: string | null;
-  /** The human-written one-line summary — the **first fact a person reads** on this card. */
+  /** The human-written one-line summary, the first fact read on the card. */
   summary: string | null;
-  /**
-   * The reference used to point an agent at this concept — MCP/CLI take it
-   * verbatim. This product has two users, human and agent, so carrying only the
-   * name a person reads shows half of it.
-   */
+  /** The reference MCP and CLI take verbatim to point an agent at this concept. */
   agentSlug: string | null;
   /** Names of the projects it belongs to — where a multi-project vault splits. */
   projectLabels: readonly string[];
@@ -59,11 +45,8 @@ function emptyNeighbors(): Record<EgoBearing, EgoNeighbor[]> {
 }
 
 /**
- * Edge type → bearing. **Direction is half of the relation.**
- *
- * An incoming `contains` means **"what contains me"**, not "what I contain".
- * Filing both into one cell in the mockup wiring made a domain node's ↑17 and
- * ↓16 nearly the same set (measured).
+ * Edge type → bearing. Direction is half of the relation: an incoming `contains`
+ * means "what contains me", not "what I contain".
  */
 function outgoingBearing(type: KnowledgeGraphEdge["type"]): EgoBearing {
   if (type === "is_a") return "belongsTo";
@@ -77,9 +60,8 @@ function incomingBearing(type: KnowledgeGraphEdge["type"]): EgoBearing {
 }
 
 /**
- * Build one node's ego. `null` when `nodeId` is absent from the graph — markdown
- * never registered as a concept, such as the root `README.md`. The screen then
- * draws "not registered as a concept yet" instead of the drawing.
+ * One node's ego in O(nodes + edges) with a Map by id and a Set of seen neighbours; null
+ * when `nodeId` is not a concept, such as the root `README.md`.
  */
 export function buildConceptEgo(
   nodeId: string,
@@ -131,12 +113,9 @@ export function buildConceptEgo(
 }
 
 /**
- * Map a commit-touched file's `slug` onto a graph node id.
- *
- * Rust ships the frontmatter `kind`/`slug` (#842) while the derivation builds
- * node ids as `<kind>:<slug tail>`. The two grammars differ, so **the strings
- * never match outright** — match on the tail plus the kind instead. No matching
- * node means `null`: that file is plain markdown, not a vault concept.
+ * Map a commit-touched file's frontmatter `slug` onto a graph node id, a linear scan.
+ * Node ids are `<kind>:<slug tail>`, so the slug never matches outright; the tail plus
+ * the kind does. `null` means plain markdown, not a vault concept.
  */
 export function matchNodeId(
   file: { slug: string; kind: string | null },

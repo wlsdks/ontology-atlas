@@ -4,14 +4,8 @@ import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type Reac
 import { controlClass } from "@/shared/ui";
 
 /**
- * The Git screen's inline confirms — commit, restore and discard — share one grammar
- * (2026-09-25 interaction sweep).
- *
- * Measured before: the commit pair was 36px at 12.5px, restore 32px at 11px filled, discard
- * 32px at 11px outlined, and the two document doors 24px at 9.5px and 32px at 11px — five
- * shapes for one kind of decision on one screen. Every pair and both doors now sit on the
- * chip `lg` step (the ramp's 32px at `text-body`), the same step the Agents tab's row
- * actions use, and only the tone says which decision it is.
+ * The Git screen's inline confirms (commit, restore, discard) share one shape: every pair
+ * and door sits on the chip `lg` step, and only the tone says which decision it is.
  */
 export const CONFIRM_PRIMARY_CLASS = controlClass({
   shape: "chip",
@@ -44,14 +38,9 @@ const DOCUMENT_DOOR_CLASS = controlClass({
 });
 
 /**
- * Focus for a confirm that swaps in where its trigger stood.
- *
- * The trigger unmounts on press, so without this the focus fell to `<body>`, Escape did
- * nothing, and cancelling left the keyboard at the top of the document (measured on all
- * three steps at 1512 and 1040). Opening moves focus into the step; Escape or cancel closes
- * it and puts focus back on whoever opened it — the element that held focus when the step
- * opened if it is still on the page (Push, which stays mounted), otherwise the trigger that
- * took the step's place again.
+ * Focus for a confirm that swaps in where its trigger stood. The trigger unmounts on press, so
+ * without this hook, focus falls to `<body>` and Escape does nothing. Opening focuses the step;
+ * Escape or cancel returns focus to the opener if still mounted (Push), else to the trigger.
  */
 export function useInlineConfirmFocus(
   open: boolean,
@@ -116,11 +105,8 @@ export function useInlineConfirmFocus(
 }
 
 /**
- * One document's destructive-or-reversible confirm: a door, and in its place a full-width card
- * with the consequence and one pair. Restore and discard were the same decision drawn two
- * ways — discard a 424px card floating right in the reader's header, restore a full-width
- * card under the file list — so both now render through this one shape, left-aligned under
- * the document's metadata.
+ * One document's restore or discard confirm: a door that opens into a full-width card with
+ * the consequence and one pair, left-aligned under the document's metadata.
  */
 export function DocumentConfirmStep({
   testIdPrefix,

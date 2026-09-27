@@ -9,9 +9,8 @@ import { SettingsRow } from './settings-primitives';
 
 /**
  * How an agent's wiki page lands: written at once when it fits the contract, or stopped
- * at the permission card every time. A setting, not a door — it governs every Compile,
- * Fix and proposal — so it sits here beside the folder's shape rather than in the Library
- * column (owner, 2026-09-07).
+ * at the permission card every time. It governs every Compile, Fix and proposal, so it is
+ * a setting beside the folder's shape, not a Library door.
  */
 export function WikiWriteModeSettings() {
   const t = useTranslations('settings');
