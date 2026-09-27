@@ -7,6 +7,7 @@
     "backToQuestion": "질문으로 돌아가기",
     "intro": "위키와 원문을 함께 찾아보세요. 검색 결과는 읽을 후보일 뿐입니다. 판단하기 전에 원문을 여세요.",
     "questionLabel": "질문",
+    "editQuestion": "질문 수정",
     "search": "근거 찾기",
     "reading": "파일 {read, number}개 읽는 중…",
     "coverage": "위키 {totalPages, number}개 중 {readPages, number}개, 원문 {totalSources, number}개 중 {readSources, number}개를 검색했습니다.",

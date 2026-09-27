@@ -641,6 +641,19 @@
     touch-action: manipulation;
   }
 
+  [data-question-desk-container] {
+    container: question-desk / inline-size;
+  }
+
+  @container question-desk (min-width: 1024px) {
+    [data-question-desk-report][data-dock-open="false"] [data-report-evidence-pair] {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 28px;
+      align-items: start;
+    }
+  }
+
   body > [data-question-desk-print-root] {
     display: none;
   }
@@ -706,6 +719,10 @@
       transform: none !important;
       animation: none !important;
       transition: none !important;
+    }
+    html[data-print-scope="question-desk"] [data-report-evidence-pair],
+    html[data-print-scope="question-desk"] [data-report-right] {
+      display: block !important;
     }
     html[data-print-scope="question-desk"] [data-question-desk-print-root] header,
     html[data-print-scope="question-desk"] [data-question-desk-print-root] footer,

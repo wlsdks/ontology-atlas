@@ -46,9 +46,9 @@ function fixture(hash = currentHash, listedMtime = 10) {
   return { doc, raw, source, handle };
 }
 
-function Desk({ hash = currentHash, scope = 'folder-a', listedMtime = 10, includeWiki = true, visible = true, agentReady = true, locale = 'en', onSummarize = () => {}, report = null, onFileReport = null, onOpenSource = () => {} }: {
+function Desk({ hash = currentHash, scope = 'folder-a', listedMtime = 10, includeWiki = true, visible = true, agentReady = true, dockOpen = false, locale = 'en', onSummarize = () => {}, report = null, onFileReport = null, onOpenSource = () => {} }: {
   hash?: string; scope?: string; listedMtime?: number; includeWiki?: boolean;
-  visible?: boolean; agentReady?: boolean; locale?: 'en' | 'ko';
+  visible?: boolean; agentReady?: boolean; dockOpen?: boolean; locale?: 'en' | 'ko';
   onSummarize?: (request: QuestionDeskReportRequest) => void;
   report?: QuestionDeskReportDraft | null;
   onFileReport?: (() => void) | null;
@@ -58,7 +58,7 @@ function Desk({ hash = currentHash, scope = 'folder-a', listedMtime = 10, includ
   return <NextIntlClientProvider locale={locale} messages={locale === 'ko' ? ko : en}>
     <LibraryQuestionDesk docs={includeWiki ? [doc] : []} pageTexts={includeWiki ? new Map([[doc.slug, raw]]) : new Map()}
       sources={[source]} sourceHandles={new Map([[path, handle]])} hashes={new Map([[path, currentHash]])}
-      vaultRoot="/fixture" vaultScope={scope} agentReady={agentReady}
+      vaultRoot="/fixture" vaultScope={scope} agentReady={agentReady} dockOpen={dockOpen}
       visible={visible}
       turnRunning={false} report={report} onSummarize={onSummarize}
       onInvalidateReport={() => {}}
@@ -160,7 +160,8 @@ describe('Library question desk transfer boundary', () => {
 
   it('makes an exact four-section report answer-first and keeps local-zero diagnostics secondary', async () => {
     const onSummarize = vi.fn<(request: QuestionDeskReportRequest) => void>();
-    const rendered = render(<Desk onSummarize={onSummarize} />);
+    const onOpenSource = vi.fn();
+    const rendered = render(<Desk onSummarize={onSummarize} onOpenSource={onOpenSource} />);
     fireEvent.change(screen.getByTestId('question-desk-input'), { target: { value: 'Who owns the lunar migration?' } });
     fireEvent.click(screen.getByTestId('question-desk-search'));
     await screen.findByTestId('question-desk-unknown');
@@ -169,27 +170,57 @@ describe('Library question desk transfer boundary', () => {
     const request = onSummarize.mock.calls[0]![0];
     const report: QuestionDeskReportDraft = {
       question: request.question, searchId: request.searchId, listingVersion: request.listingVersion, vaultScope: request.vaultScope,
-      text: '## Answer\nNo owner is recorded in the originals.\n\n> A later quoted note remains ordinary prose.\n\n- A loose list note remains ordinary prose.\n\n  Its second paragraph also stays ordinary.\n## Source-backed evidence\n- The plan lists no owner. [[src:sources/refund.md#l2]]\n## Disagreements or changed claims\n- One page suggests an owner.\n## Unknowns and search limits\n- Another-language documents may be missed.',
+      text: '## Answer\nNo owner is recorded in the originals. [[src:sources/refund.md#l2]]\n\n> A later quoted note remains ordinary prose.\n\n- A loose list note remains ordinary prose.\n\n  Its second paragraph also stays ordinary.\n## Source-backed evidence\n- The plan lists no owner. [[src:sources/refund.md#l2]]\n## Disagreements or changed claims\n- One page suggests an owner.\n## Unknowns and search limits\n- Another-language documents may be missed.',
       coverage: request.coverage, limits: request.limits, generatedAt: '2026-09-27T17:00:00Z',
     };
-    rendered.rerender(<Desk report={report} onSummarize={onSummarize} />);
+    rendered.rerender(<Desk report={report} onSummarize={onSummarize} onOpenSource={onOpenSource} />);
     expect(screen.queryByTestId('question-desk-unknown')).not.toBeInTheDocument();
     expect(screen.queryByTestId('question-desk-summarize')).not.toBeInTheDocument();
     const answer = screen.getByTestId('question-desk-report-section-0');
+    expect(screen.getByTestId('question-desk-report')).toHaveAttribute('data-dock-open', 'false');
+    expect(screen.getByTestId('library-question-desk').firstElementChild?.className).toContain('max-w-[calc(');
     expect(within(answer).getByText('Answer')).toHaveClass('text-title');
     expect(answer).toHaveTextContent('No owner is recorded in the originals.');
     const answerParagraphs = Array.from(answer.querySelectorAll('p'));
     expect(answerParagraphs.length).toBeGreaterThanOrEqual(3);
     expect(answerParagraphs[0]).toHaveClass('text-display');
+    expect(answerParagraphs[0]).not.toHaveTextContent('sources/refund.md#l2');
+    expect(answer.querySelector('[data-report-citations]')).toHaveTextContent('sources/refund.md#l2');
+    fireEvent.click(within(answer).getByRole('button', { name: 'sources/refund.md#l2' }));
+    expect(onOpenSource).toHaveBeenCalledWith('sources/refund.md', 'l2');
     expect(answerParagraphs.slice(1).every((paragraph) => !paragraph.classList.contains('text-display'))).toBe(true);
-    expect(within(answer).getByTestId('question-desk-download-markdown')).toBeInTheDocument();
-    expect(answer.querySelector('[data-report-actions]')).not.toHaveClass('border-t');
+    expect(screen.getByTestId('question-desk-download-markdown')).toBeInTheDocument();
+    expect(answer.querySelector('[data-report-actions]')).toBeNull();
+    expect(screen.queryByTestId('question-desk-input')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('question-desk-edit-question'));
+    expect(screen.getByTestId('question-desk-input')).toBeInTheDocument();
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByTestId('question-desk-input')));
+    rendered.rerender(<Desk dockOpen report={report} onSummarize={onSummarize} />);
+    expect(screen.getByTestId('question-desk-report')).toHaveAttribute('data-dock-open', 'true');
+    expect(screen.getByTestId('library-question-desk').firstElementChild).toHaveClass('max-w-[var(--measure-doc-column)]');
     expect(screen.getByTestId('question-desk-report-section-1')).not.toHaveClass('border-t');
     expect(screen.getByTestId('question-desk-report-section-1')).toHaveTextContent('The plan lists no owner.');
     expect(screen.getByTestId('question-desk-report-section-2')).toHaveClass('border-t');
     expect(screen.getByTestId('question-desk-report-section-2')).toHaveTextContent('One page suggests an owner.');
     expect(screen.getByTestId('question-desk-report-section-3')).toHaveTextContent('Another-language documents may be missed.');
     expect(screen.getByTestId('question-desk-coverage-toggle')).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('keeps a focused question field mounted when the report arrives', async () => {
+    const onSummarize = vi.fn<(request: QuestionDeskReportRequest) => void>();
+    const rendered = render(<Desk onSummarize={onSummarize} />);
+    await search();
+    fireEvent.click(screen.getByTestId('question-desk-summarize'));
+    const request = onSummarize.mock.calls[0]![0];
+    const input = screen.getByTestId('question-desk-input');
+    act(() => { input.focus(); });
+    rendered.rerender(<Desk onSummarize={onSummarize} report={{
+      question: request.question, searchId: request.searchId, listingVersion: request.listingVersion,
+      vaultScope: request.vaultScope, text: 'A draft.', coverage: request.coverage,
+      limits: request.limits, generatedAt: '2026-09-27T17:00:00Z',
+    }} />);
+    expect(input).toBeInTheDocument();
+    expect(document.activeElement).toBe(input);
   });
 
   it('keeps Korean masthead type untracked and renders a localized human timestamp', async () => {
@@ -267,9 +298,12 @@ describe('Library question desk transfer boundary', () => {
     fireEvent.click(screen.getByTestId('question-desk-print-pdf'));
     expect(print).toHaveBeenCalledTimes(1);
     expect(document.documentElement.dataset.printScope).toBe('question-desk');
+    const printPageStyle = Array.from(document.head.querySelectorAll('style')).find((style) => style.textContent?.includes('@page { size: A4; margin: 18mm 16mm; }'));
+    expect(printPageStyle).toBeInTheDocument();
     expect(document.body.querySelector('[data-question-desk-print-root]')).toBeInTheDocument();
     window.dispatchEvent(new Event('afterprint'));
     expect(document.documentElement.dataset.printScope).toBeUndefined();
+    expect(printPageStyle).not.toBeInTheDocument();
     expect(document.body.querySelector('[data-question-desk-print-root]')).toBeNull();
     print.mockImplementationOnce(() => Promise.reject(new Error('ACL')) as never);
     fireEvent.click(screen.getByTestId('question-desk-print-pdf'));
@@ -327,6 +361,7 @@ describe('Library question desk transfer boundary', () => {
       expect(printRoot).toHaveTextContent(report.limits);
       expect(printRoot?.querySelector('[data-source-path="sources/refund.md"]')).toHaveTextContent('sources/refund.md#l2');
       expect(printRoot?.querySelector('[data-report-actions]')).toBeNull();
+      expect(printRoot?.querySelector('[data-report-scope-disclosure]')).toBeNull();
       expect(printRoot?.querySelectorAll('[data-report-section-heading] + [data-report-markdown]')).toHaveLength(4);
       const chapterStart = printRoot?.querySelectorAll('[data-report-chapter-start]');
       expect(chapterStart).toHaveLength(1);

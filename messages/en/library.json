@@ -7,6 +7,7 @@
     "backToQuestion": "Back to question",
     "intro": "Ask across Wiki pages and original files. Matches are reading leads; open each source before deciding what is true.",
     "questionLabel": "Your question",
+    "editQuestion": "Edit question",
     "search": "Find evidence",
     "reading": "Reading {read, number} files…",
     "coverage": "Searched {readPages, number} of {totalPages, number} Wiki pages and {readSources, number} of {totalSources, number} original files.",

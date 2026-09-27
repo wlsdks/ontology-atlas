@@ -2939,6 +2939,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
               vaultRoot={nativeVaultRootPath}
               vaultScope={workVaultScope}
               agentReady={agent.route === 'agent' && agent.runtime !== null && nativeVaultRootPath !== null}
+              dockOpen={dockOpen}
               visible={homeVisible && indexSegment === 'wiki'}
               turnRunning={turnRunning}
               report={deskReport && deskReport.answer === lastAnswer ? {

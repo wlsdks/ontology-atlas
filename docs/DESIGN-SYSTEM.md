@@ -1857,10 +1857,14 @@ A closed graph must not keep a drawing loop running. The Dialog reads system mot
 
 ## Wiki question report — editorial evidence grammar (2026-09-27)
 
-The Wiki question desk uses the same Atlas shell as other workbenches, then gives
-the report one reading column. The question and answer lead; original evidence,
-disagreement, and unknowns follow in distinct sections. Search coverage and raw
-leads remain one named disclosure away. A zero local word match is a retrieval
+The Wiki question desk uses the same Atlas shell as other workbenches. Once a
+report arrives, its question is the sole visible headline; the search form becomes
+an explicit Edit question control. Answer prose stays within the document measure.
+The report may span 1120px by combining two existing `--measure-note-column` widths:
+when its actual container is at least 1024px wide and the ACP dock is closed,
+original evidence sits beside a column containing disagreements and unknowns,
+with a 28px gap. Smaller containers read in one column. Search coverage and raw
+leads remain named disclosures. A zero local word match is a retrieval
 limit, not a claim that the originals have no answer. The exact source address
 stays visible beside an actionable citation, and an unreviewed draft never looks
 like accepted Wiki meaning.
@@ -1868,17 +1872,20 @@ like accepted Wiki meaning.
 | Role | Existing Atlas type and measure | Treatment |
 |---|---|---|
 | Question | `--text-display` + `--leading-display` | One aligned headline above the report; no repeated card title. |
-| Short answer lead | `--text-hero` + `--leading-hero` on roomy windows, `--text-display` on narrow windows | Only a genuinely short first paragraph earns this step. Long answers stay at reading size; no truncation or fabricated summary. |
+| Answer lead | `--text-display` + `--leading-display` | The actual first paragraph stays at 23/28 even when long; later explanation uses the reading step. No truncation or fabricated summary. |
 | Explanation and source excerpts | `--text-reading` + `--leading-prose`, within `--measure-doc-column` | Paragraph rhythm and line length carry the reading hierarchy. |
-| Section and source labels | `--text-title` for sections; body steps for citations; `--text-label` for metadata | Source paths may break anywhere; Korean sentences keep word boundaries and never inherit Latin mono decoration. |
+| Section and source labels | `--text-title` for sections; `--text-body-lg` with `--leading-body` for answer citation blocks; `--text-label` for metadata | Exact source addresses move below their answer paragraph, remain one press away, and break anywhere. Korean sentences keep word boundaries and never inherit Latin mono decoration. |
 
 The report is an open document surface with thin rules, not a stack of cards.
+Markdown, PDF, and filing controls sit in a quiet top-right toolbar; the report
+body has no export row. The PDF reuses the rendered report, keeps all source
+addresses, and requests A4 margins of 18mm vertically and 16mm horizontally.
 Violet marks the selected question and citation path; amber is reserved for a
 confirmed conflict status, not for an agent's unreviewed disagreement heading.
 An unknown remains neutral. Status and source limits use words as well as
 colour. The actual response and visible source addresses survive Markdown and print; print hides controls
 and motion, not uncertainty. No new numeric type or motion token is needed:
-the existing scale already covers 23px question, 30px short answer, and 16px
+the existing scale already covers 23px question and answer, 14px citations, and 16px
 reading body. A new value needs a measured role and more than one real consumer.
 
 Search completion uses the shared base arrival; report arrival uses settle.
