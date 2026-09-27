@@ -1200,9 +1200,8 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   const activeReadOnlyTurnRef = useRef(false);
   const [lastAnswer, setLastAnswer] = useState<RetainedLibraryAnswer | null>(null);
   const [deskReport, setDeskReport] = useState<{ answer: RetainedLibraryAnswer; searchId: number; listingVersion: string; vaultScope: string; coverage: string; limits: string; generatedAt: string } | null>(null);
-  const [deskWorkStartedAt, setDeskWorkStartedAt] = useState<number | null>(null);
-  useEffect(() => { setDeskWorkStartedAt(null); }, [workVaultScope]);
-  const deskWorkActivity = libraryWorkSince(libraryWorkActivity, deskWorkStartedAt);
+  const [deskWorkRequest, setDeskWorkRequest] = useState<{ scope: string; startedAt: number } | null>(null);
+  const deskWorkActivity = libraryWorkSince(libraryWorkActivity, deskWorkRequest?.scope === workVaultScope ? deskWorkRequest.startedAt : null);
   const latestDeskReportRef = useRef(deskReport);
   useEffect(() => { latestDeskReportRef.current = deskReport; }, [deskReport]);
   const reportEpochRef = useRef(0);
@@ -2965,7 +2964,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
               } : null}
               onSummarize={({ brief, question, searchId, listingVersion, vaultScope, coverage, limits }) => {
                 invalidateDeskReport();
-                setDeskWorkStartedAt(Date.now());
+                setDeskWorkRequest({ scope: vaultScope, startedAt: Date.now() });
                 pendingAskRef.current = { question, askedOn: null, report: { searchId, listingVersion, vaultScope, coverage, limits, epoch: reportEpochRef.current } };
                 agent.start(brief, 'ask');
               }}
