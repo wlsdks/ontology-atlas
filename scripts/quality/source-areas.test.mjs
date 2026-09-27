@@ -1,7 +1,17 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { areaGate, sourceArea } from './source-areas.mjs';
+import { areaGate, isAreaGate, sourceArea } from './source-areas.mjs';
+
+test('accepts area gates for known prefixes and existing areas only', () => {
+  assert.equal(isAreaGate('comment-bytes.src-shared'), true);
+  assert.equal(isAreaGate('wide-folders.src-tauri'), true);
+  assert.equal(isAreaGate('oversize-files.tests-contract'), true);
+  assert.equal(isAreaGate('comment-bytes.no-such-area'), false);
+  assert.equal(isAreaGate('comment-bytes.src-no-such-layer'), false);
+  assert.equal(isAreaGate('unknown-prefix.src-shared'), false);
+  assert.throws(() => areaGate('unknown-prefix', 'mcp'));
+});
 
 test('assigns each path to its area', () => {
   const cases = {

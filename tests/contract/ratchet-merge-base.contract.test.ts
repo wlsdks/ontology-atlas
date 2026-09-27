@@ -5,6 +5,7 @@ import { join } from "node:path";
 
 import { afterAll, describe, expect, it } from "vitest";
 
+import { isAreaGate } from "../../scripts/quality/source-areas.mjs";
 import { judgeRatchet, RAISES_DIR, raiseProblems, readRaises } from "./lib/ratchet-base";
 
 /**
@@ -157,7 +158,7 @@ describe("raise records", () => {
     );
     expect(gates.size, "no converted ratchet found; the gate-name check would pass vacuously").toBeGreaterThanOrEqual(4);
     for (const record of readRaises()) {
-      expect(gates.has(record.gate), `${record.file} names a gate no ratchet reads`).toBe(true);
+      expect(gates.has(record.gate) || isAreaGate(record.gate), `${record.file} names a gate no ratchet reads`).toBe(true);
     }
   });
 });

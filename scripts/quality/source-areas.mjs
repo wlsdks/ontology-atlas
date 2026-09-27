@@ -25,6 +25,7 @@ export function sourceArea(path) {
 }
 
 export function areaGate(prefix, area) {
+  if (!AREA_GATE_PREFIXES.includes(prefix)) throw new Error(`${prefix} is not in AREA_GATE_PREFIXES`);
   return `${prefix}.${area.replaceAll('/', '-')}`;
 }
 
@@ -57,4 +58,17 @@ export function directFilesAtCommit(dir, sha, cwd = process.cwd()) {
   } catch {
     return 0;
   }
+}
+
+export const AREA_GATE_PREFIXES = ['test-title-hangul', 'comment-bytes', 'oversize-files', 'wide-folders'];
+
+const FIXED_AREAS = new Set(['src', 'app', 'tests', 'mcp', 'cli', 'scripts', 'src-tauri', 'harness', 'root']);
+
+export function isAreaGate(gate, cwd = process.cwd()) {
+  const prefix = AREA_GATE_PREFIXES.find((p) => gate.startsWith(`${p}.`));
+  if (prefix === undefined) return false;
+  const area = gate.slice(prefix.length + 1);
+  if (FIXED_AREAS.has(area)) return true;
+  const nested = /^(src|tests)-([a-z0-9-]+)$/.exec(area);
+  return nested !== null && existsSync(join(cwd, nested[1], nested[2]));
 }
