@@ -107,7 +107,7 @@ describe("computeFreshnessSummary", () => {
     });
   });
 
-  it("sums real per-domain update counts into a single weekly trend series (신선도 탭 스파크라인 진실원)", () => {
+  it("sums real per-domain update counts into the weekly trend the freshness sparkline reads", () => {
     const nodes = [
       node("domain:views", "domain", { evidenceIds: ["domain-views"] }),
       node("domain:core", "domain", { evidenceIds: ["domain-core"] }),
@@ -130,7 +130,7 @@ describe("computeFreshnessSummary", () => {
     expect(summary.weeklyTotals.at(-1)).toBe(2);
     expect(summary.weeklyTotals.slice(0, -1).every((n) => n === 0)).toBe(true);
   });
-  it("최근 갱신은 자기 문서를 가진 개념만 세운다 — 파생 이름은 접힌 근거 계층으로", () => {
+  it("lists only concepts with their own document as recent updates and folds derived names into the evidence layer", () => {
     // A derived node's "update date" is not its own but the mtime of the document that cited it.
     // The two derived nodes (`.claude/` and `.codex/`) share a title and are indistinguishable
     // without the reference string — carrying that value on the row is what makes the two lines state different facts.

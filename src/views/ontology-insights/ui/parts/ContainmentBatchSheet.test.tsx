@@ -78,7 +78,7 @@ const renderSheet = (
  * before Apply is pressed.
  */
 describe("ContainmentBatchSheet", () => {
-  it("모든 쓰기가 한 줄씩 보이고, 어느 문서가 바뀌는지 그 줄이 말한다", () => {
+  it("shows one row per write naming the document it changes", () => {
     renderSheet();
     const rows = screen.getAllByTestId("containment-batch-row");
     expect(rows).toHaveLength(2);
@@ -86,7 +86,7 @@ describe("ContainmentBatchSheet", () => {
     expect(rows[1]).toHaveTextContent("Receipt → the elements list in Billing");
   });
 
-  it("열릴 때는 전부 체크돼 있고, 적용은 체크한 것만 보낸다", () => {
+  it("opens with every row checked and applies only checked rows", () => {
     const onApply = vi.fn();
     renderSheet({ onApply });
     for (const box of screen.getAllByRole("checkbox")) expect(box).toBeChecked();
@@ -101,13 +101,13 @@ describe("ContainmentBatchSheet", () => {
     expect([...onApply.mock.calls[0][0]]).toEqual(["domains/billing::capabilities/pay"]);
   });
 
-  it("아무것도 고르지 않으면 적용할 수 없다 — 빈 실행은 없다", () => {
+  it("disables apply when nothing is selected", () => {
     renderSheet();
     for (const box of screen.getAllByRole("checkbox")) fireEvent.click(box);
     expect(screen.getByTestId("containment-batch-apply")).toBeDisabled();
   });
 
-  it("줄마다 결과를 말한다 — 충돌은 실패가 아니라 막아 세운 것이다", () => {
+  it("reports a result per row and shows a conflict as stopped, not failed", () => {
     renderSheet({
       finished: true,
       statuses: new Map<string, ContainmentRowStatus>([
@@ -123,20 +123,20 @@ describe("ContainmentBatchSheet", () => {
     expect(screen.getByTestId("containment-batch-outcome")).toHaveTextContent("1 written, 1 left");
   });
 
-  it("끝난 뒤에는 다시 실행할 길을 주지 않는다 — 같은 쓰기를 두 번 보내지 않는다", () => {
+  it("offers no rerun after finishing", () => {
     renderSheet({ finished: true });
     expect(screen.queryByTestId("containment-batch-apply")).toBeNull();
     expect(screen.getByTestId("containment-batch-close")).toBeInTheDocument();
   });
 
-  it("쓰는 중에는 체크도 취소도 잠긴다", () => {
+  it("locks checkboxes and cancel while writing", () => {
     renderSheet({ running: true });
     for (const box of screen.getAllByRole("checkbox")) expect(box).toBeDisabled();
     expect(screen.getByTestId("containment-batch-apply")).toBeDisabled();
     expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
   });
 
-  it("닫혀 있으면 아무것도 그리지 않는다", () => {
+  it("renders nothing when closed", () => {
     renderSheet({ open: false });
     expect(screen.queryByTestId("containment-batch-row")).toBeNull();
   });
@@ -190,7 +190,7 @@ describe("ContainmentBatchSheet with the real plan", () => {
   const plan = buildContainmentPlan(proposals, DOCS);
   const accepted = new Set(proposals.map((proposal) => proposal.id));
 
-  it("줄이 적는 파일 이름을 그대로 말한다 — 제목이 같은 문서가 둘이어도 어느 쪽인지 안다", () => {
+  it("names the exact file each row writes so same-titled documents stay distinct", () => {
     const run = selectContainmentWrites(plan, accepted, DOCS);
     render(
       <ContainmentBatchSheet
@@ -215,7 +215,7 @@ describe("ContainmentBatchSheet with the real plan", () => {
     }
   });
 
-  it("앞 파일이 충돌해도 뒤 파일은 적히고, 마무리 문장이 몇 개를 적었는지 말한다", async () => {
+  it("still writes later files after a conflict and reports how many were written", async () => {
     const run = selectContainmentWrites(plan, accepted, DOCS);
     expect(run.writes).toHaveLength(2);
     const write = vi

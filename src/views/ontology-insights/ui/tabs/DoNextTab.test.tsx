@@ -194,8 +194,8 @@ const duplicate: DuplicatePairRow = {
  * the rows are grouped by finding, so the eight identical sentences the owner measured are one row
  * with an "8" beside it. These checks are the barrier against a second census returning.
  */
-describe("DoNextTab — 한 목록, 한 총계", () => {
-  it("제목 하나가 규모를 말하고, 계기·수치 띠·옛 묶음 머리는 없다", () => {
+describe("DoNextTab one list with one total", () => {
+  it("states the size in one title without gauges, a figure strip or old group heads", () => {
     renderTab();
     expect(screen.getByTestId("do-next-list-title")).toHaveTextContent("4 things to fix");
     for (const gone of [
@@ -211,11 +211,11 @@ describe("DoNextTab — 한 목록, 한 총계", () => {
       // line adding them up again would be the screen counting one thing twice.
       "do-next-list-truncated",
     ]) {
-      expect(screen.queryByTestId(gone), `${gone} 이 남아 있다`).toBeNull();
+      expect(screen.queryByTestId(gone), `${gone} is still rendered`).toBeNull();
     }
   });
 
-  it("묶음 수의 합은 제목이 말하는 수와 같다", () => {
+  it("sums group counts to the title count", () => {
     renderTab();
     const counts = screen
       .getAllByTestId("do-next-group-count")
@@ -223,7 +223,7 @@ describe("DoNextTab — 한 목록, 한 총계", () => {
     expect(counts.reduce((a, b) => a + b, 0)).toBe(4);
   });
 
-  it("수가 0인 종류는 줄을 만들지 않는다 — 없는 일은 목록에 없다", () => {
+  it("makes no group for a kind with zero items", () => {
     renderTab();
     const kinds = screen
       .getAllByTestId("do-next-group")
@@ -231,7 +231,7 @@ describe("DoNextTab — 한 목록, 한 총계", () => {
     expect(kinds).toEqual(["neglected-hub", "orphan"]);
   });
 
-  it("첫 묶음만 열려 이름을 말하고, 닫힌 묶음은 행을 만들지 않다가 펼치면 세던 행이 나온다", () => {
+  it("opens only the first group and renders a closed group rows when expanded", () => {
     renderTab();
     const groups = screen.getAllByTestId("do-next-group");
     expect(groups[0]).toHaveAttribute("data-group-open", "true");
@@ -246,7 +246,7 @@ describe("DoNextTab — 한 목록, 한 총계", () => {
     expect(within(groups[1]).getAllByTestId("do-next-item").length).toBeGreaterThan(0);
   });
 
-  it("펼침 버튼의 이름이 규모를 함께 말한다", () => {
+  it("includes the count in the expand button name", () => {
     renderTab();
     const toggle = screen.getAllByTestId("do-next-group-toggle")[0];
     expect(toggle).toHaveAccessibleName("Hubs unchanged for a long time, 3 items");
@@ -255,7 +255,7 @@ describe("DoNextTab — 한 목록, 한 총계", () => {
     expect(toggle).toHaveAttribute("aria-expanded", "false");
   });
 
-  it("모든 행이 같은 모양이다 — 이름 한 줄, 관찰한 사실 한 문장", () => {
+  it("renders every row as one name line and one observed fact", () => {
     renderExpanded({
       groupCounts: { ...NO_COUNTS, "neglected-hub": 3, orphan: 1, duplicate: 1 },
       totalCount: 5,
@@ -269,7 +269,7 @@ describe("DoNextTab — 한 목록, 한 총계", () => {
     }
   });
 
-  it("펼친 묶음이 세던 것보다 적게 그리면 그 묶음 안에서 밝힌다", () => {
+  it("states the remainder inside a group that renders fewer rows than it counts", () => {
     renderExpanded({
       totalCount: 9,
       groupCounts: { ...NO_COUNTS, "neglected-hub": 8, orphan: 1 },
@@ -277,20 +277,20 @@ describe("DoNextTab — 한 목록, 한 총계", () => {
     expect(screen.getAllByTestId("do-next-group-truncated")[0]).toHaveTextContent("+7 more");
   });
 
-  it("전부 보이면 절단 문구를 만들지 않는다", () => {
+  it("omits the truncation line when everything is shown", () => {
     renderExpanded({ totalCount: 2, groupCounts: { ...NO_COUNTS, "neglected-hub": 1, orphan: 1 } });
     expect(screen.queryByTestId("do-next-group-truncated")).toBeNull();
   });
 
-  it("할 일이 없으면 목록 대신 한 문장", () => {
+  it("shows one sentence instead of a list when nothing is due", () => {
     renderTab({ totalCount: 0, groupCounts: NO_COUNTS, queue: emptyQueue });
     expect(screen.queryByTestId("do-next-group")).toBeNull();
     expect(screen.getByText("Nothing needs attention.")).toBeInTheDocument();
   });
 });
 
-describe("DoNextTab — 행의 행동", () => {
-  it("세 행동이 늘 같은 순서다 — 맡기기 · 직접 고치기 · 보기", () => {
+describe("DoNextTab row actions", () => {
+  it("orders the three actions as delegate, fix yourself, view", () => {
     renderExpanded({ askAgentHref: () => null });
     const row = screen.getAllByTestId("do-next-item")[0];
     expect(within(row).getByTestId("do-next-item-fix")).toHaveAttribute(
@@ -303,7 +303,7 @@ describe("DoNextTab — 행의 행동", () => {
     );
   });
 
-  it("케밥은 원문과 복사할 명령만 남긴다 — 「직접 고치기」를 두 번 주지 않는다", () => {
+  it("keeps only the raw text and copy command in the kebab menu", () => {
     renderExpanded();
     const row = screen.getAllByTestId("do-next-item")[0];
     fireEvent.click(within(row).getByTestId("do-next-row-menu"));
@@ -316,7 +316,7 @@ describe("DoNextTab — 행의 행동", () => {
     expect(within(menu).getByTestId("do-next-row-menu-handoff")).toHaveTextContent("Verify with agent");
   });
 
-  it("문서 없는 개념 행은 무채색 배지로 첫 걸음이 다르다는 것을 밝힌다", () => {
+  it("marks a concept row without a document with a neutral badge", () => {
     renderExpanded({
       queue: {
         ...queue,
@@ -328,11 +328,11 @@ describe("DoNextTab — 행의 행동", () => {
   });
 });
 
-describe("DoNextTab — 종류마다 관찰한 사실 한 문장", () => {
+describe("DoNextTab one observed fact per kind", () => {
   const kindOf = (kind: string) =>
     screen.getAllByTestId("do-next-item").find((el) => el.getAttribute("data-fix-kind") === kind);
 
-  it("방치 허브·고아·중복·사이클", () => {
+  it("stale hubs, orphans, duplicates and cycles", () => {
     renderExpanded({
       totalCount: 6,
       groupCounts: { ...NO_COUNTS, "neglected-hub": 3, orphan: 1, duplicate: 1, cycle: 1 },
@@ -367,7 +367,7 @@ describe("DoNextTab — 종류마다 관찰한 사실 한 문장", () => {
    * say which check failed, and they link to the file rather than the map: a document that fails
    * validation is not a node, so the map has nothing to show.
    */
-  it("검사에 막힌 문서는 스스로를 밝히고 문서함으로 간다", () => {
+  it("names a document blocked by the check and links to the library", () => {
     renderExpanded({
       totalCount: 5,
       groupCounts: { ...NO_COUNTS, "blocked-document": 1, "neglected-hub": 3, orphan: 1 },
@@ -384,7 +384,7 @@ describe("DoNextTab — 종류마다 관찰한 사실 한 문장", () => {
     expect(view).toHaveAttribute("href", "/docs/?slug=domains%2Fbilling");
   });
 
-  it("끊어진 섬과 빠진 소속은 각각 제 묶음의 행이 된다", () => {
+  it("puts disconnected islands and missing domains in their own groups", () => {
     renderExpanded({
       totalCount: 6,
       groupCounts: { ...NO_COUNTS, island: 1, containment: 1, "neglected-hub": 3, orphan: 1 },
@@ -402,8 +402,8 @@ describe("DoNextTab — 종류마다 관찰한 사실 한 문장", () => {
   });
 });
 
-describe("DoNextTab — 순서", () => {
-  it("차단되는 일이 먼저다 — 못 읽는 문서·끊어진 무리·되가리키지 않는 도메인 순", () => {
+describe("DoNextTab order", () => {
+  it("puts blocking work first: unreadable documents, broken clusters, then domains without backlinks", () => {
     renderTab({
       totalCount: 7,
       groupCounts: {
@@ -425,13 +425,13 @@ describe("DoNextTab — 순서", () => {
     ).toEqual(["blocked-document", "island", "containment", "neglected-hub", "orphan"]);
   });
 
-  it("같은 항목이 두 묶음에 놓이지 않는다", () => {
+  it("never places one item in two groups", () => {
     renderExpanded();
     const rows = screen.getAllByTestId("do-next-item");
     expect(rows.filter((row) => row.textContent?.includes("MCP Server"))).toHaveLength(1);
   });
 
-  it("읽기 전용이면 넘길 일이 먼저 오고, 폴더 여는 길이 같은 상자 안에 있다", () => {
+  it("puts handoff work first when read-only with the open-folder action in the same box", () => {
     renderExpanded({
       abilities: { canWriteVault: false, agentObserved: false },
       openVaultAction: <button data-testid="do-next-open-vault">Open a folder</button>,
@@ -444,8 +444,8 @@ describe("DoNextTab — 순서", () => {
   });
 });
 
-describe("DoNextTab — 검토 루프", () => {
-  it("cleared 상태는 성공 장식 없이 현재 폴더 관측 문장과 polite live region만 보여준다", () => {
+describe("DoNextTab review loop", () => {
+  it("shows the cleared state as a folder observation in a polite live region without success decoration", () => {
     renderTab({
       reviewState: { phase: "cleared", id: "orphan:element:alone", title: "Alone" },
     });
@@ -459,7 +459,7 @@ describe("DoNextTab — 검토 루프", () => {
    * is behind a disclosure, so **the group holding it opens by itself** — otherwise the review
    * loop would return a person to a closed accordion and lose their place.
    */
-  it("active 상태는 그 행이 든 묶음을 스스로 펼치고 현재 단계로 표시한다", () => {
+  it("expands the group holding an active row and marks it as the current step", () => {
     renderTab({
       reviewState: { phase: "active", id: "orphan:element:alone", title: "Alone" },
     });
@@ -483,7 +483,7 @@ describe("DoNextTab — 검토 루프", () => {
  * built inside the open branch of `rowsOfGroup`, so a key wired to the wrong list would
  * draw a boundary row under "records no unknown" and nothing would fail elsewhere.
  */
-describe("DoNextTab — 검사 소견 묶음", () => {
+describe("DoNextTab check finding groups", () => {
   const findingRow = (gap: MeaningFindingGapKind, slug: string, title: string) => ({
     id: `${gap}:${slug}`,
     gap,
@@ -523,7 +523,7 @@ describe("DoNextTab — 검사 소견 묶음", () => {
     ["slug-outside-kind-folder", "Loose"],
   ];
 
-  it("네 자리 모두 자기 개념을 이름으로 세우고, 사유 한 줄과 여는 길을 준다", () => {
+  it("names the concept, gives a reason line and an open action in all four slots", () => {
     renderExpanded({
       totalCount: 4,
       groupCounts: {
@@ -559,7 +559,7 @@ describe("DoNextTab — 검사 소견 묶음", () => {
    * reopen their group and mark the row: measured on the CI sample vault (2026-09-23),
    * the first group was a finding section and Back returned to a closed accordion.
    */
-  it("소견 행의 review 로 돌아오면 그 묶음이 스스로 열리고 그 행이 현재 단계다", () => {
+  it("opens the group and marks the row current when returning with a finding review", () => {
     renderTab({
       totalCount: 4,
       groupCounts: {
@@ -583,7 +583,7 @@ describe("DoNextTab — 검사 소견 묶음", () => {
     expect(active).toHaveTextContent("Refund");
   });
 
-  it("소견이 없으면 그 자리는 그려지지 않는다 — 0을 말하는 빈 묶음이 생기지 않는다", () => {
+  it("renders no group for a slot without findings", () => {
     renderExpanded({ totalCount: 4, queue, meaningGaps: null });
     for (const [kind] of sections) {
       expect(

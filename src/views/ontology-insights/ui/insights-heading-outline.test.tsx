@@ -20,7 +20,7 @@ import { InsightsSectionTitle } from "./parts/InsightsSectionTitle";
  * it **passes the visual spec through unchanged** — keeping only one of the two makes the change meaningless.
  */
 describe("InsightsSectionTitle", () => {
-  it("level 2 는 h2, level 3 은 h3 을 낸다", () => {
+  it("renders h2 for level 2 and h3 for level 3", () => {
     render(
       <>
         <InsightsSectionTitle level={2}>수리 큐</InsightsSectionTitle>
@@ -38,7 +38,7 @@ describe("InsightsSectionTitle", () => {
    * font-size and weight to `inherit`, so size and weight are decided entirely by the classes
    * passed in — losing the classes makes the title jump to the browser's default h2 size.
    */
-  it("넘긴 클래스를 그대로 싣는다 — 램프 클래스가 유실되면 크기가 튄다", () => {
+  it("keeps the passed class so the ramp size survives", () => {
     render(
       <InsightsSectionTitle
         level={2}
@@ -64,12 +64,12 @@ describe("InsightsSectionTitle", () => {
    * and this check holds it there. The side that should be squeezed is always the figures and chips
    * beside it.
    */
-  it("flex 행에서 제목이 먼저 눌리지 않는다 — shrink-0 을 싣는다", () => {
+  it("carries shrink-0 so the title does not shrink first in a flex row", () => {
     render(<InsightsSectionTitle level={2}>수리 큐</InsightsSectionTitle>);
     expect(screen.getByRole("heading", { level: 2 }).className).toContain("shrink-0");
   });
 
-  it("호출부 클래스와 함께 실려도 shrink-0 이 살아남는다", () => {
+  it("keeps shrink-0 beside a caller class", () => {
     render(
       <InsightsSectionTitle level={3} className="text-body font-[var(--font-weight-signature)]">
         여러 곳에서 참조돼요
@@ -80,7 +80,7 @@ describe("InsightsSectionTitle", () => {
     expect(el.className).toContain("text-body");
   });
 
-  it("data-* 같은 속성을 통과시킨다", () => {
+  it("passes through data attributes", () => {
     render(
       <InsightsSectionTitle level={3} data-testid="probe">
         경계
@@ -97,7 +97,7 @@ describe("InsightsSectionTitle", () => {
  * `<span className="text-body-lg font-[var(--font-weight-signature)] …">` again, it passes.
  * So the source is scanned directly. This check holds because the class string *is* the role declaration.
  */
-describe("인사이트 소스 — 구획 제목 클래스가 span 으로 남아 있지 않다", async () => {
+describe("insights sources render section title classes on headings, not spans", async () => {
   const { readFileSync, readdirSync, statSync } = await import("node:fs");
   const { join } = await import("node:path");
 
@@ -124,11 +124,11 @@ describe("인사이트 소스 — 구획 제목 클래스가 span 으로 남아 
 
   const files = walk(ROOT);
 
-  it("probe: 실제로 파일을 읽고 있다", () => {
+  it("probe reads real files", () => {
     expect(files.length).toBeGreaterThan(5);
   });
 
-  it.each(TITLE_CLASSES)("`%s` 를 span 이 쓰지 않는다", (cls) => {
+  it.each(TITLE_CLASSES)("no span in %s uses a section title class", (cls) => {
     const offenders = files.filter((f) => readFileSync(f, "utf8").includes(`<span className="${cls}"`));
     expect(
       offenders,

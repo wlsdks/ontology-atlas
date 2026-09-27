@@ -103,7 +103,7 @@ function renderCard(overrides: Partial<React.ComponentProps<typeof DomainCouplin
 }
 
 describe("DomainCouplingCard", () => {
-  it("도메인×도메인 히트그리드로 그린다 — 칸마다 숫자와 읽을 이름이 있다", () => {
+  it("draws a domain by domain heat grid with a number and accessible name per cell", () => {
     renderCard();
 
     expect(screen.getByTestId("domain-coupling-grid")).toBeInTheDocument();
@@ -116,7 +116,7 @@ describe("DomainCouplingCard", () => {
     expect(screen.getByText(/self 2 · cross 3/)).toBeInTheDocument();
   });
 
-  it("칸을 누르면 그 두 도메인을 잇는 실제 연결이 지도 딥링크로 펼쳐진다", () => {
+  it("expands a cell into map deep links for the links between its two domains", () => {
     renderCard();
 
     // The space is held even before a selection, and it guides the next step.
@@ -138,21 +138,21 @@ describe("DomainCouplingCard", () => {
     expect(screen.queryByTestId("domain-coupling-pair")).toBeNull();
   });
 
-  it("교차가 0인 칸은 누를 수 없다 — 펼칠 연결이 없기 때문", () => {
+  it("disables a cell with zero cross links", () => {
     renderCard();
 
     expect(screen.getAllByTestId("domain-coupling-cell")).toHaveLength(1);
     expect(screen.getByLabelText("0 links from Billing to Auth").tagName).toBe("SPAN");
   });
 
-  it("도메인이 상한을 넘으면 절단과 격자 밖 교차 수를 함께 밝힌다", () => {
+  it("states the truncation and the off-grid cross count past the domain cap", () => {
     renderCard({ grid: { ...grid, totalDomainCount: 9, hiddenCrossEdgeCount: 12 } });
 
     expect(screen.getByText(/Top 2 of 9 domains/)).toBeInTheDocument();
     expect(screen.getByText(/12 cross links outside the grid/)).toBeInTheDocument();
   });
 
-  it("경계 압력 막대는 캡션이 읽으라고 한 값(교차 비중)을 그린다 — 총량이 아니다", () => {
+  it("draws boundary pressure bars as cross share, not totals", () => {
     renderCard({
       boundaries: [
         // Total 4, share 100% — drawn by total this would be the shortest bar.
@@ -171,13 +171,13 @@ describe("DomainCouplingCard", () => {
     expect(bars[1].style.width).toBe("25%");
   });
 
-  it("경계 압력 목록이 잘리면 상세와 같은 절단 문구를 붙인다", () => {
+  it("adds the detail truncation line to a truncated boundary list", () => {
     renderCard({ boundaryTotalCount: 9 });
 
     expect(screen.getByText(/Top 1 of 9 domains/)).toBeInTheDocument();
   });
 
-  it("대각선 칸의 농도도 값에 반응한다 — 가장 큰 수가 가장 옅으면 캡션이 거짓이 된다", () => {
+  it("scales diagonal cell intensity with the value", () => {
     renderCard({
       grid: {
         ...grid,
@@ -203,7 +203,7 @@ describe("DomainCouplingCard", () => {
     );
   });
 
-  it("숫자를 실은 칸은 secondary 텍스트를 쓴다 — quaternary 는 대각선 최고 농도에서 AA 미달", () => {
+  it("uses secondary text in numbered cells because quaternary fails AA at peak diagonal intensity", () => {
     renderCard();
 
     expect(screen.getByLabelText("2 links inside Auth").className).toContain(
@@ -211,7 +211,7 @@ describe("DomainCouplingCard", () => {
     );
   });
 
-  it("콜드스타트 — 도메인 2개 미만이거나 교차가 없으면 격자 대신 빈 상태 (rank #10 계약)", () => {
+  it("shows an empty state instead of the grid with fewer than two domains or no cross links", () => {
     renderCard({
       domainCount: 1,
       crossDomainEdgeCount: 0,
@@ -247,17 +247,17 @@ describe("DomainCouplingCard", () => {
  * data. This test locks both branches to the same width rule at the class layer — the real pixels
  * are measured by `insights-boundary-cell.spec.ts`.
  */
-describe("격자 칸 치수", () => {
-  it("클릭 가능한 칸과 아닌 칸이 같은 폭 규칙을 쓴다", () => {
+describe("grid cell size", () => {
+  it("uses one width rule for clickable and inert cells", () => {
     const source = readFileSync(
       join(import.meta.dirname, "DomainCouplingCard.tsx"),
       "utf8",
     );
     const shared = source.match(/const shared = `([^`]+)`/)?.[1] ?? "";
-    expect(shared, "shared 클래스를 못 찾았다 — 이 시험이 헛돈다").toContain("h-[var(--coupling-cell)]");
+    expect(shared, "the shared class was not found in the source").toContain("h-[var(--coupling-cell)]");
     expect(
       shared,
-      "폭을 명시하지 않으면 `shape: 'icon'` 의 하드 치수(w-7)가 살아남아 칸이 직사각이 된다",
+      "without an explicit width the w-7 of `shape: 'icon'` makes the cell a rectangle",
     ).toContain("w-[var(--coupling-cell)]");
   });
 });

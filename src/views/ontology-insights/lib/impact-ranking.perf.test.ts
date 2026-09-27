@@ -68,8 +68,8 @@ function makeGraph(n: number): {
   return { nodes, edges };
 }
 
-describe('분석 화면 규모 — 색인을 매번 다시 만들지 않는다', () => {
-  it(`${NODE_COUNT}개 노드의 영향도 순위가 ${CEILING_MS}ms 안에 끝난다`, () => {
+describe('impact ranking at analysis-screen scale', () => {
+  it(`ranks ${NODE_COUNT} nodes within ${CEILING_MS}ms without rebuilding the index`, () => {
     const { nodes, edges } = makeGraph(NODE_COUNT);
     // The first run pays for JIT warm-up — measure twice and take the faster.
     buildImpactRanking(nodes, edges, 12);
@@ -86,7 +86,7 @@ describe('분석 화면 규모 — 색인을 매번 다시 만들지 않는다',
      */
     expect(
       ranking.rankedCount + ranking.evidenceRankedCount,
-      '아무것도 안 세고 있다 — 이 측정은 무의미하다',
+      'the measurement counts nothing',
     ).toBeGreaterThan(100);
     expect(
       elapsed,

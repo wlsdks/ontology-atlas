@@ -64,7 +64,7 @@ const evidenceRows = [
 ];
 
 describe("ImpactRankingCard", () => {
-  it("행마다 지도 딥링크와 두 수를 함께 읽어준다", () => {
+  it("gives each row a map deep link that reads both counts", () => {
     render(
       <ImpactRankingCard
         rows={rows}
@@ -86,7 +86,7 @@ describe("ImpactRankingCard", () => {
     expect(screen.getByText("9")).toBeInTheDocument();
   });
 
-  it("표시 행보다 순위가 많으면 절단 문구를 각주에 붙인다", () => {
+  it("adds a truncation line to the footnote when ranks exceed shown rows", () => {
     const { container } = render(
       <ImpactRankingCard
         rows={rows}
@@ -103,7 +103,7 @@ describe("ImpactRankingCard", () => {
     expect(footers).toContain("Top 2 / 40 total · Number = concepts to re-check.");
   });
 
-  it("절단이 없으면 각주는 설명 한 줄만 — 같은 수치를 두 번 쓰지 않는다", () => {
+  it("keeps the footnote to one explanation line without truncation", () => {
     const { container } = render(
       <ImpactRankingCard
         rows={rows}
@@ -120,7 +120,7 @@ describe("ImpactRankingCard", () => {
     expect(footers).toContain("Number = concepts to re-check.");
   });
 
-  it("빈 볼트에서도 머리만 남지 않고 다음 한 걸음을 안내한다", () => {
+  it("shows a next step for an empty vault", () => {
     render(
       <ImpactRankingCard
         rows={[]}
@@ -138,7 +138,7 @@ describe("ImpactRankingCard", () => {
     expect(screen.queryByTestId("insights-impact-row-link")).toBeNull();
   });
 
-  it("빈 상태에서도 두 세그먼트의 뜻은 머리에 남는다", () => {
+  it("keeps both segment meanings in the header when empty", () => {
     render(
       <ImpactRankingCard
         rows={[]}
@@ -155,7 +155,7 @@ describe("ImpactRankingCard", () => {
     expect(screen.getByText("indirect")).toBeInTheDocument();
   });
 
-  it("두 칸으로 접히므로 둘째 칸의 첫 행도 구분선을 지운다", () => {
+  it("drops the divider on the first row of the second column", () => {
     render(
       <ImpactRankingCard
         rows={rows}
@@ -177,7 +177,7 @@ describe("ImpactRankingCard", () => {
     expect(links[0].className).not.toContain("border-t");
   });
 
-  describe("근거 계층", () => {
+  describe("evidence layer", () => {
     const renderWithEvidence = () =>
       render(
         <ImpactRankingCard
@@ -191,7 +191,7 @@ describe("ImpactRankingCard", () => {
         />,
       );
 
-    it("문서 없는 개념은 기본 목록에 없고 접힌 계층에만 있다", () => {
+    it("lists a concept without a document only in the folded layer", () => {
       renderWithEvidence();
 
       // The reason this card exists — the top of a slot asking about risk is not filled with test
@@ -202,7 +202,7 @@ describe("ImpactRankingCard", () => {
       ).toHaveAttribute("aria-expanded", "false");
     });
 
-    it("펼치면 같은 수를 위험도가 아니라 인용 수로 읽어 준다", () => {
+    it("reads the same number as citations, not risk, when expanded", () => {
       renderWithEvidence();
 
       fireEvent.click(screen.getByTestId("insights-impact-evidence-toggle"));
@@ -217,7 +217,7 @@ describe("ImpactRankingCard", () => {
       expect(screen.getByText(/The number here is not risk/)).toBeInTheDocument();
     });
 
-    it("펼친 행은 무채색 배지와 참조 원문으로 어느 파일인지 밝힌다", () => {
+    it("identifies the file of an expanded row with a neutral badge and raw reference", () => {
       renderWithEvidence();
       fireEvent.click(screen.getByTestId("insights-impact-evidence-toggle"));
 
@@ -231,7 +231,7 @@ describe("ImpactRankingCard", () => {
       expect(screen.getByText("mcp/src/integration.test.mjs")).toBeInTheDocument();
     });
 
-    it("근거가 없는 볼트에서는 토글 자체가 없다", () => {
+    it("renders no toggle for a vault without evidence", () => {
       render(
         <ImpactRankingCard
           rows={rows}

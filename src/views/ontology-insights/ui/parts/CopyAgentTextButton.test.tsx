@@ -34,7 +34,7 @@ function renderCompactButton() {
  * dark-only (`.claude/rules/design.md`, 2026-07-19) that hue is tokenized as
  * `--color-indigo-pale-*`. This button must use only indigo-accent tokens, with no raw literal.
  */
-describe("CopyAgentTextButton — 텍스트 색 토큰 사용", () => {
+describe("CopyAgentTextButton text color tokens", () => {
   beforeEach(() => {
     copyTextMock.mockClear();
     copyTextMock.mockResolvedValue(true);
@@ -51,7 +51,7 @@ describe("CopyAgentTextButton — 텍스트 색 토큰 사용", () => {
    * This test's original intent was **forbidding raw rgba from returning**, and that is unchanged —
    * only «which token is correct» moved.
    */
-  it("idle 텍스트는 하드코딩 rgba 가 아니라 틴트용 잉크 토큰을 쓴다", () => {
+  it("uses the tint ink token for idle text instead of a hard-coded rgba", () => {
     renderButton();
     const button = screen.getByRole("button");
     expect(button.className).toContain("text-[color:var(--color-indigo-text-soft)]");
@@ -62,7 +62,7 @@ describe("CopyAgentTextButton — 텍스트 색 토큰 사용", () => {
     expect(button.className).not.toContain("rgba(211, 215, 255");
   });
 
-  it("compact copy 버튼도 모바일에서 32px hit target 아래로 내려가지 않는다", () => {
+  it("keeps the compact button at a 32px hit target or larger on mobile", () => {
     renderCompactButton();
     const button = screen.getByRole("button");
     const classTokens = button.className.split(/\s+/);
@@ -70,7 +70,7 @@ describe("CopyAgentTextButton — 텍스트 색 토큰 사용", () => {
     expect(classTokens).not.toContain("py-1");
   });
 
-  it("복사 성공 후에도 보이는 라벨 폭을 늘리지 않고 아이콘과 live region 으로 피드백한다", async () => {
+  it("confirms a copy with an icon and live region without widening the label", async () => {
     renderButton();
     const button = screen.getByRole("button", { name: "복사" });
 

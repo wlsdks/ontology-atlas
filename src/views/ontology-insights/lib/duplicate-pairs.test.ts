@@ -32,13 +32,13 @@ function edge(id: string, from: string, to: string, type: string): KnowledgeGrap
 }
 
 describe("similarityTokens", () => {
-  it("소문자 영숫자 덩어리만 남기고 1자는 버린다", () => {
+  it("keeps lowercase alphanumeric runs and drops single characters", () => {
     expect(similarityTokens("Ontology-Drawer v2 a")).toEqual(["ontology", "drawer", "v2"]);
   });
 });
 
 describe("scoreNodeSimilarity", () => {
-  it("이름·종류·소속·이웃이 전부 같으면 1", () => {
+  it("scores 1 when name, kind, domain and neighbours all match", () => {
     const shared = {
       slug: "elements/drawer",
       title: "Node drawer",
@@ -51,7 +51,7 @@ describe("scoreNodeSimilarity", () => {
     ).toBe(1);
   });
 
-  it("소속이 없는 두 노드는 소속 점수를 서로 나눠 갖지 않는다", () => {
+  it("gives no domain score to two nodes without a domain", () => {
     const left = { slug: "a", title: "A", kind: "element", domain: null, neighbors: new Set<string>() };
     expect(scoreNodeSimilarity(left, { ...left }).domain).toBe(0);
   });
@@ -70,7 +70,7 @@ describe("buildDuplicatePairs", () => {
     edge("c3", "domain:map", "element:camera-easing", "contains"),
   ];
 
-  it("이름이 크게 겹치는 쌍만 올리고, 연결이 많은 쪽을 남길 쪽으로 제안한다", () => {
+  it("lists only pairs with a large name overlap and keeps the better connected node", () => {
     const { rows, suspectCount } = buildDuplicatePairs(nodes, edges, 5);
 
     expect(rows).toHaveLength(1);
@@ -83,13 +83,13 @@ describe("buildDuplicatePairs", () => {
     expect(rows[0].sharedTokens).toEqual(["drawer", "node"]);
   });
 
-  it("상한을 넘겨도 전체 의심 수는 남긴다 — 조용히 줄이지 않는다", () => {
+  it("keeps the full suspect count past the cap", () => {
     const { rows, suspectCount } = buildDuplicatePairs(nodes, edges, 0);
     expect(rows).toHaveLength(0);
     expect(suspectCount).toBe(1);
   });
 
-  it("자기 문서가 없는 노드는 후보에서 뺀다 — 합칠 파일이 없기 때문", () => {
+  it("excludes a node without its own document, which has no file to merge", () => {
     // A node born from a code path written in another document's `elements:` — its evidence slug
     // belongs not to itself but to the document that named it. A source file and its test file have
     // near-identical names, so left alone they rise to the top as the leading duplicate.
@@ -112,7 +112,7 @@ describe("buildDuplicatePairs", () => {
     expect(rows).toHaveLength(1);
   });
 
-  it("id 꼬리가 파일 이름과 달라도 문서가 있으면 후보다 — 프로젝트 노드", () => {
+  it("keeps a project node whose id tail differs from its file name", () => {
     // A project id is built from frontmatter `slug:` (`ontology/project.md` →
     // `project:ontology-atlas`) and differs from the filename tail. While the screen inferred its
     // own document as "id tail == document slug tail", this node was silently missed.
@@ -131,12 +131,12 @@ describe("buildDuplicatePairs", () => {
     ]);
   });
 
-  it("빈 볼트/한 개짜리 볼트는 한 쌍도 만들지 않는다 — 카드가 렌더되지 않는 조건", () => {
+  it("makes no pair for an empty or single-node vault", () => {
     expect(buildDuplicatePairs([], [], 5).rows).toHaveLength(0);
     expect(buildDuplicatePairs([nodes[1]], [], 5).rows).toHaveLength(0);
   });
 
-  it("임계값이 이름 없이 도달 가능한 상한보다 낮으면 전수 비교로 되돌린다", () => {
+  it("falls back to comparing every pair when the threshold is reachable without a name match", () => {
     // Kind (0.1) plus parent (0.1) gives 0.2 — at this threshold even a pair sharing no words is a
     // candidate. Narrowing with the inverted index would miss it.
     const { rows } = buildDuplicatePairs(nodes, edges, 20, 0.2);

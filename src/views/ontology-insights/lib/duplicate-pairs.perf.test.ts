@@ -44,8 +44,8 @@ function node(id: string, kind: string, title: string, slug: string): KnowledgeG
   };
 }
 
-describe("buildDuplicatePairs 성능 게이트", () => {
-  it("공유 폴더 낱말로 버킷이 전수가 되어도(600 노드 ≈ 18만 쌍) 쌍당 재토큰화 없이 끝난다", () => {
+describe("buildDuplicatePairs performance gate", () => {
+  it("finishes without per-pair retokenizing when a shared folder word buckets all 600 nodes (about 180k pairs)", () => {
     const N = 600;
     const nodes: KnowledgeGraphNode[] = [];
     for (let i = 0; i < N; i += 1) {

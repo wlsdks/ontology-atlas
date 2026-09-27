@@ -27,8 +27,8 @@ function nodes(...ids: string[]): KnowledgeGraphNode[] {
   return ids.map(n);
 }
 
-describe("findDependencyCycles 성능", () => {
-  it("성능 — 300 노드 링 + 화음에서 ms 급으로 끝난다", () => {
+describe("findDependencyCycles performance", () => {
+  it("finishes in milliseconds on a 300-node ring with chords", () => {
     // `pad(id)` stabilizes digit alignment (consistent string min-vertex comparison).
     const pad = (i: number) => `c:${String(i).padStart(3, "0")}`;
     const ids = Array.from({ length: 300 }, (_, i) => pad(i));

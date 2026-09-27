@@ -27,7 +27,7 @@ function edge(id: string, from: string, to: string, type: string): KnowledgeGrap
 }
 
 describe("buildDomainCouplingSummary", () => {
-  it("도메인 2개 이상 + 교차 edge 가 있으면 pair/boundary row 를 채운다", () => {
+  it("fills pair and boundary rows with two or more domains and a cross edge", () => {
     const nodes = [
       node("domain:auth", "domain", "Auth"),
       node("domain:billing", "domain", "Billing"),
@@ -70,7 +70,7 @@ describe("buildDomainCouplingSummary", () => {
     expect(authBoundary?.crossRatio).toBe(1);
   });
 
-  it("콜드스타트 — 도메인 1개면 pair/boundary 없이 isColdStart true", () => {
+  it("is a cold start with one domain", () => {
     const nodes = [node("domain:auth", "domain", "Auth"), node("capability:login", "capability", "Login")];
     const edges: KnowledgeGraphEdge[] = [edge("c1", "domain:auth", "capability:login", "contains")];
 
@@ -81,7 +81,7 @@ describe("buildDomainCouplingSummary", () => {
     expect(summary.pairs).toHaveLength(0);
   });
 
-  it("콜드스타트 — 도메인 2개 이상이어도 교차 edge 가 0건이면 isColdStart true", () => {
+  it("is a cold start with several domains and no cross edge", () => {
     const nodes = [
       node("domain:auth", "domain", "Auth"),
       node("domain:billing", "domain", "Billing"),
@@ -102,7 +102,7 @@ describe("buildDomainCouplingSummary", () => {
     expect(summary.pairs).toHaveLength(0);
   });
 
-  it("격자는 대각선에 안쪽 연결, 나머지에 방향별 교차 수를 담는다", () => {
+  it("puts internal links on the grid diagonal and directed cross counts elsewhere", () => {
     const nodes = [
       node("domain:auth", "domain", "Auth"),
       node("domain:billing", "domain", "Billing"),
@@ -135,7 +135,7 @@ describe("buildDomainCouplingSummary", () => {
     expect(grid.totalDomainCount).toBe(2);
   });
 
-  it("도메인이 상한을 넘으면 앞에서 자르고, 잘린 쪽 교차 수를 따로 센다", () => {
+  it("truncates domains past the cap and counts the cut cross links separately", () => {
     const nodes = [
       node("domain:a", "domain", "A"),
       node("domain:b", "domain", "B"),
@@ -162,7 +162,7 @@ describe("buildDomainCouplingSummary", () => {
     expect(grid.hiddenCrossEdgeCount).toBe(1);
   });
 
-  it("pairs 는 자르지 않는다 — 어느 칸을 눌러도 펼칠 상세가 있어야 한다", () => {
+  it("keeps every pair so each cell has a detail to open", () => {
     const nodes = [
       node("domain:a", "domain", "A"),
       node("domain:b", "domain", "B"),
@@ -186,7 +186,7 @@ describe("buildDomainCouplingSummary", () => {
     expect(summary.totalPairCount).toBe(3);
   });
 
-  it("boundary row 는 edge 가 전혀 없는 도메인을 제외한다", () => {
+  it("omits a domain with no edges from boundary rows", () => {
     const nodes = [
       node("domain:auth", "domain", "Auth"),
       node("domain:billing", "domain", "Billing"),
@@ -205,7 +205,7 @@ describe("buildDomainCouplingSummary", () => {
     expect(summary.boundaries.some((b) => b.id === "domain:empty")).toBe(false);
   });
 
-  it("boundary row 는 교차 비중 내림차순이다 — 카드 캡션이 읽으라고 하는 순서", () => {
+  it("orders boundary rows by descending cross share, as the card caption reads", () => {
     // leaky: 0 inside, 2 crossing → 100% share, total 2 (small)
     // busy:  3 inside, 3 crossing → 50% share,  total 6 (large)
     // Ordered by total, busy comes first — the opposite of what the caption says.
@@ -240,7 +240,7 @@ describe("buildDomainCouplingSummary", () => {
     expect(boundaries[1]?.crossRatio).toBeCloseTo(0.4, 5);
   });
 
-  it("boundary 목록이 상한에서 잘리면 전체 수를 따로 세어 각주가 가능하게 한다", () => {
+  it("counts all boundary rows when the list is truncated so a footnote can say so", () => {
     const nodes = [
       node("domain:a", "domain", "A"),
       node("domain:b", "domain", "B"),
@@ -263,7 +263,7 @@ describe("buildDomainCouplingSummary", () => {
     expect(summary.boundaryTotalCount).toBe(3);
   });
 
-  it("격자는 대각선 최대값을 따로 센다 — 대각선이 교차와 같은 척도를 쓰면 안 된다", () => {
+  it("tracks the diagonal maximum separately from the cross scale", () => {
     const nodes = [
       node("domain:auth", "domain", "Auth"),
       node("domain:billing", "domain", "Billing"),

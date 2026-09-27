@@ -376,7 +376,7 @@ describe("marking the visit", () => {
 
     fireEvent.click(screen.getByTestId("brief-mark-seen"));
     expect(markSeen).toHaveBeenCalledTimes(1);
-    expect(status.textContent?.trim().length, "누른 뒤에도 화면이 아무 말을 하지 않는다").toBeGreaterThan(0);
+    expect(status.textContent?.trim().length, "the status stays silent after the press").toBeGreaterThan(0);
 
     // Pressing again re-anchors to now; the control must not become a dead end.
     fireEvent.click(screen.getByTestId("brief-mark-seen"));
@@ -446,7 +446,7 @@ describe("a line that cannot be checked", () => {
       </NextIntlClientProvider>,
     );
     const inApp = app.container.querySelector('[data-brief-line="ontology-evidence-unchecked"] a');
-    expect(app.container.querySelector('a[href="/download/"]'), "앱 안에서 앱을 받으라고 한다").toBeNull();
+    expect(app.container.querySelector('a[href="/download/"]'), "the app links to its own download").toBeNull();
     expect(inApp?.getAttribute("href")).toContain("/topology/");
   });
 });

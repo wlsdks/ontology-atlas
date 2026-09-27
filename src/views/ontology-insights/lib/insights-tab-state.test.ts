@@ -40,12 +40,12 @@ describe("parseInsightsTab", () => {
     }
   });
 
-  it("구 개요/관계 링크 호환 — 각각 구성/연결로", () => {
+  it("maps legacy overview and relations links to composition and connections", () => {
     expect(parseInsightsTab("overview")).toBe("composition");
     expect(parseInsightsTab("relations")).toBe("connections");
   });
 
-  it("구 구조 탭 링크 호환 — 3분할의 첫 질문인 구성으로", () => {
+  it("maps a legacy structure tab link to composition", () => {
     expect(parseInsightsTab("structure")).toBe("composition");
   });
 
