@@ -556,7 +556,7 @@ export function LibraryQuestionDesk({
           onFocusCapture={() => setQuestionFormFocused(true)}
           onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setQuestionFormFocused(false); }}
           className="mb-5 max-w-[var(--measure-doc-column)]">
-          <div className="flex flex-wrap items-center gap-3 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 py-2 transition-colors focus-within:border-[color:var(--color-indigo-line-a54)]">
+          <div className="flex flex-wrap items-center gap-3 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] transition-colors focus-within:border-[color:var(--color-indigo-line-a54)]">
           <Search size={ICON_SIZE.lg} className="flex-none text-[color:var(--color-text-tertiary)]" aria-hidden="true" />
           <Input ref={questionInputRef} frame="bare" size="lg" aria-label={t('questionLabel')} placeholder={t('questionPlaceholder')} value={question} readOnly={jevSending} onChange={(event) => {
             onInvalidateReport();

@@ -182,7 +182,6 @@ describe('frame — 누가 상자를 내는가', () => {
           .split(/\s+/).filter((token) => !/^(?:text-body(?:-lg)?|leading-body-lg)$/.test(token)).join(' ')),
       ),
     );
-    // Only multiline adds `resize-none`, so there must be exactly two.
     expect([...variants].length, `Frame variants: ${[...variants].join(' | ')}`).toBe(2);
   });
 });
