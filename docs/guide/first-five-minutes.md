@@ -24,7 +24,7 @@ The first run card shows the count of concepts, relationships, and domains toget
 
 ## 1. Clicking the Map (2 minutes)
 
-Clicking the card's **"2-Minute Tour: How to Read the Map"** starts an eight-step guide. It covers that the map is a document, node size and shape, relationship legend, clicking directly, datasheets, INDEX, and the recent changes lens.
+Clicking the card's **"2-minute tour: how to read the map"** starts an eight-step guide. It covers that the map is a document, node size and shape, relationship legend, clicking directly, datasheets, INDEX, and the recent changes lens.
 
 You can skip it. You can restart anytime from the compass tile in the upper-right corner.
 

@@ -14,10 +14,10 @@ The old `/ontology/studio` URL still works. It reads `node`, `mode`, and `edit` 
 ## Editing a Single Relation
 
 1. Select a concept on the map.
-2. Click "Edit relations" in the small info panel on the right.
+2. In the small info panel on the right, open "Edit" and choose "Edit relations".
 3. Choose the relation type and the target concept, then specify why they are connected.
 4. Verify the direction and endpoints using the dashed arrow that appears on the map.
-5. Check the resulting frontmatter array and reason in "Review change".
+5. Press "Review change" and check the resulting frontmatter array and reason.
 6. Click "Confirm and write" to actually update the file.
 
 If you open an existing relation, "Remove this relation" also goes through the same change preview screen. If you change the target, it replaces the old target and reason with the new ones in one step, leaving no trace of the previous values.
@@ -28,10 +28,10 @@ Only one relation is handled at a time. Putting all features from the old studio
 
 | Screen Name | Graph Relation | Stored Key |
 |---|---|---|
-| Broader Concept | `is_a` | `broader:` |
-| Container | `contains` | `contains:` |
-| Dependency | `depends_on` | `dependencies:` |
-| Related | `related_to` | `relates:` |
+| Is a kind of (belongs to a broader category) | `is_a` | `broader:` |
+| Contains (holds it inside this concept) | `contains` | `contains:` |
+| Depends on (this concept needs it to work) | `depends_on` | `dependencies:` |
+| Related to (neither one needs the other) | `related_to` | `relates:` |
 
 We do not use color alone to indicate type or direction. In the editor, relation names appear as text, and the map preview shows dashed lines with arrows. Once confirmed, these converge into solid lines. Collapsed targets briefly show only their node and name at their actual coordinates. Surrounding nodes and layout remain unchanged. During editing, the left INDEX collapses to free up map space; closing it restores the original expanded state. With motion reduction enabled, only the state changes without position movement or additional delay.
 

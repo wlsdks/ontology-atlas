@@ -140,7 +140,7 @@ The six checks name what they look for. You can view only what you need.
 |---|---|
 | `validate` | Do frontmatter and references hold? |
 | `orphans` | Are there nodes pointed to by no one? |
-| `cycles` | Do "required item" relations form a loop? |
+| `cycles` | Do "leans on" relations form a loop? |
 | `components` | Is the graph split into islands? |
 | `overview` | What shape is Vault currently in? |
 
@@ -169,7 +169,7 @@ If you want to commit only the vault:
 node cli/src/index.mjs snapshot my-vault --dry-run
 ```
 
-Creates a commit for the vault folder scope along with a summary of changes. If there are no changes, it says "No snapshot changes" and finishes.
+Creates a commit for the vault folder scope along with a summary of changes. If there are no changes, it prints `nothing to snapshot` and exits 0.
 
 ## 6. When editing simultaneously: Preventing silent overwrites
 
