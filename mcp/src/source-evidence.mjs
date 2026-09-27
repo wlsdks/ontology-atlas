@@ -142,6 +142,10 @@ function pathRefusal(path, ignore) {
   return null;
 }
 
+export function namesHiddenOrCredentialFile(path) {
+  return path.split('/').some((part) => part.startsWith('.') || SENSITIVE.test(part));
+}
+
 function sameIdentity(left, right) {
   return left.dev === right.dev && left.ino === right.ino && left.size === right.size &&
     left.mtimeNs === right.mtimeNs && left.ctimeNs === right.ctimeNs;
@@ -158,7 +162,11 @@ function inspectPathComponents(root, literalPath) {
   return { finalStat };
 }
 
-function readStableFile(rootPath, literalPath, { onBeforeOpen, onDescriptorRead } = {}) {
+export function readStableFile(
+  rootPath,
+  literalPath,
+  { onBeforeOpen, onDescriptorRead, maxBytes = SOURCE_READ_LIMITS.fileBytes } = {},
+) {
   const root = realpathSync(rootPath);
   const target = resolve(root, literalPath);
   const rel = relative(root, target);
@@ -179,7 +187,7 @@ function readStableFile(rootPath, literalPath, { onBeforeOpen, onDescriptorRead 
     );
     const before = fstatSync(fd, { bigint: true });
     if (!before.isFile()) return { reason: 'non_regular_file' };
-    if (before.size > BigInt(SOURCE_READ_LIMITS.fileBytes)) return { reason: 'file_too_large' };
+    if (before.size > BigInt(maxBytes)) return { reason: 'file_too_large' };
     const buffer = Buffer.alloc(Number(before.size) + 1);
     let offset = 0;
     while (offset < buffer.length) {
@@ -188,7 +196,7 @@ function readStableFile(rootPath, literalPath, { onBeforeOpen, onDescriptorRead 
       offset += count;
     }
     onDescriptorRead?.({ target, bytes: buffer.subarray(0, offset) });
-    if (offset > SOURCE_READ_LIMITS.fileBytes || offset !== Number(before.size)) return { reason: 'file_changed' };
+    if (offset > maxBytes || offset !== Number(before.size)) return { reason: 'file_changed' };
     const after = fstatSync(fd, { bigint: true });
     let named;
     try { named = lstatSync(target, { bigint: true }); } catch { return { reason: 'file_changed' }; }

@@ -138,6 +138,12 @@ export const KNOWN_CODES = [
     description: 'a declared dependency whose citing file never names the file the target cites, so nothing in the source witnesses the edge.',
   },
   {
+    code: 'dependency-unjudged',
+    severity: 'warning',
+    scope: 'vault',
+    description: 'a declared dependency whose citing file is too large to read, so no witness was looked for and the edge is not judged.',
+  },
+  {
     code: 'starter-example-node',
     severity: 'warning',
     scope: 'vault',

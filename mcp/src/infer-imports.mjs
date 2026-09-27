@@ -32,6 +32,7 @@ const GO_IMPORTS_PER_FILE_LIMIT = 256;
 const GO_PACKAGE_EDGE_EVIDENCE_LIMIT = 5;
 const GO_SOURCE_EXTENSION = '.go';
 const RUST_IMPORT_TEXT_MAX_BYTES = 256 * 1024;
+const SOURCE_IMPORT_TEXT_MAX_BYTES = 2 * 1024 * 1024;
 const RUST_DEPENDENCIES_PER_FILE_LIMIT = 256;
 const RUST_SOURCE_EXTENSION = '.rs';
 const RUST_BUILTIN_CRATE_ROOTS = new Set(['alloc', 'core', 'proc_macro', 'std', 'test']);
@@ -95,6 +96,7 @@ export const IMPORT_UNRESOLVED_REASON_VALUES = Object.freeze([
   'relative-not-found',
   'alias-not-found',
   'unsupported-static-form',
+  'file-too-large',
 ]);
 
 const SUPPORT_ELEMENT_BUCKETS = new Set([
@@ -121,16 +123,19 @@ const SUPPORT_ELEMENT_BUCKETS = new Set([
 ]);
 
 // import ... from "X", import("X"), require("X"), export ... from "X"
-const IMPORT_RE =
-  /(?:\bimport\s+(?:[\s\S]*?)\s+from\s+|\bimport\s*\(\s*|\brequire\s*\(\s*|\bexport\s+(?:[\s\S]*?)\s+from\s+)['"]([^'"]+)['"]/g;
+const IMPORT_CLAUSE = String.raw`(?!\s)(?:(?!\b(?:import|export)\b)[\s\S])*?\S`;
+const IMPORT_RE = new RegExp(
+  String.raw`(?:\bimport\s+${IMPORT_CLAUSE}\s+from\s+|\bimport\s*\(\s*|\brequire\s*\(\s*|\bexport\s+${IMPORT_CLAUSE}\s+from\s+)['"]([^'"]+)['"]`,
+  'g',
+);
 // Bare `import "X"` (side-effect import).
 const SIDE_IMPORT_RE = /\bimport\s+['"]([^'"]+)['"]/g;
 
 /**
  * Walks a code repository and infers file-level import edges: one bounded walk
  * (`maxFiles`), a regex pass per file and a few fs probes per import; module
- * edges are aggregated in Maps. IMPORT_RE scans lazily from each import or
- * export keyword to the next `from '…'`, so one file costs O(bytes × keywords).
+ * edges are aggregated in Maps. IMPORT_RE stops each clause at the next import
+ * or export keyword, so one file costs O(bytes).
  *
  * @param {string} rootPath — repo root (must exist)
  * @param {{ sourceFolders?: string[], ignore?: string[], maxFiles?: number }} options
@@ -177,7 +182,7 @@ export function inferImports(rootPath, options = {}) {
   let configuredRootExists = false;
   for (const f of scanSourceFolders) {
     const p = join(rootPath, f);
-    if (!existsSync(p) || !statSync(p).isDirectory()) continue;
+    if (!isDirectoryInsideRoot(rootPath, p)) continue;
     configuredRootExists = true;
     if (ignore.has(f)) continue;
     roots.push(p);
@@ -185,7 +190,7 @@ export function inferImports(rootPath, options = {}) {
   if (workspaceDiscovery?.hasDeclaration) configuredRootExists = true;
   for (const workspacePackage of workspacePackages) {
     const packageRoot = join(rootPath, workspacePackage.path);
-    if (!existsSync(packageRoot) || !statSync(packageRoot).isDirectory()) continue;
+    if (!isDirectoryInsideRoot(rootPath, packageRoot)) continue;
     roots.push(packageRoot);
   }
   const uniqueRoots = pruneNestedRoots(roots, rootPath);
@@ -211,19 +216,18 @@ export function inferImports(rootPath, options = {}) {
     : null;
 
   for (const file of files) {
-    if (extname(file) === RUST_SOURCE_EXTENSION) {
-      try {
-        if (statSync(file).size > RUST_IMPORT_TEXT_MAX_BYTES) {
-          unresolved.push({
-            from: relative(rootPath, file).replaceAll('\\', '/'),
-            spec: '<source-text>',
-            reason: 'unsupported-static-form',
-          });
-          continue;
-        }
-      } catch {
+    const maxBytes = extname(file) === RUST_SOURCE_EXTENSION ? RUST_IMPORT_TEXT_MAX_BYTES : SOURCE_IMPORT_TEXT_MAX_BYTES;
+    try {
+      if (statSync(file).size > maxBytes) {
+        unresolved.push({
+          from: relative(rootPath, file).replaceAll('\\', '/'),
+          spec: '<source-text>',
+          reason: 'file-too-large',
+        });
         continue;
       }
+    } catch {
+      continue;
     }
     let content;
     try {
@@ -2164,6 +2168,15 @@ function pathResolvesInsideRoot(rootPath, path) {
       resolvedFromRoot.startsWith(`..${sep}`) ||
       isAbsolute(resolvedFromRoot)
     );
+  } catch {
+    return false;
+  }
+}
+
+function isDirectoryInsideRoot(rootPath, path) {
+  try {
+    const stat = lstatSync(path);
+    return !stat.isSymbolicLink() && stat.isDirectory() && pathResolvesInsideRoot(rootPath, path);
   } catch {
     return false;
   }

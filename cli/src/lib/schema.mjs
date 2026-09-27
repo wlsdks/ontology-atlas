@@ -21,3 +21,4 @@ export const generateNodeUid = schema.generateNodeUid;
 export const inspectMergedUids = schema.inspectMergedUids;
 export const missingExpectedFields = schema.missingExpectedFields;
 export const nodeUidIssue = schema.nodeUidIssue;
+export const unwritableSlugIssue = schema.unwritableSlugIssue;

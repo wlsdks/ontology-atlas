@@ -125,6 +125,14 @@ test('the zip reader returns every entry, deflated or stored, by name', () => {
   assert.throws(() => readZipEntries(Buffer.from('not a zip at all, not even close')), /not a zip/);
 });
 
+test('the zip reader stops inflating an entry at the size it declares', () => {
+  const bomb = zip({ 'word/document.xml': ' '.repeat(8 * 1024 * 1024) });
+  const centralStart = bomb.readUInt32LE(bomb.length - 22 + 16);
+  bomb.writeUInt32LE(1024, centralStart + 24);
+  assert.throws(() => readZipEntries(bomb).get('word/document.xml')(), /inflates past 1024 bytes/);
+  assert.throws(() => readSourceText(bomb, 'sources/bomb.docx'), /inflates past 1024 bytes/);
+});
+
 test('a DOCX becomes paragraphs under heading anchors, with runs and tabs joined', () => {
   const units = docxUnits(DOCX);
   assert.deepEqual(

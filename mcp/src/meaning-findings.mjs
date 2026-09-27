@@ -21,6 +21,7 @@ import {
   STARTER_EXAMPLE_SLUGS,
   boundaryMissingMessage,
   definitionMissingMessage,
+  dependencyUnjudgedMessage,
   dependencyUnwitnessedMessage,
   epistemicExclusionMessage,
   folderOnlyEvidenceMessage,
@@ -459,12 +460,19 @@ const SPECIFIER_PATTERNS = [
   /\bfrom\s*['"]([^'"\n]+)['"]/g,
   /\bimport\s*\(\s*['"]([^'"\n]+)['"]/g,
   /\bimport\s+['"]([^'"\n]+)['"]/g,
-  /\brequire(?:_relative)?\s*\(?\s*['"]([^'"\n]+)['"]/g,
-  /^\s*(?:from\s+([\w.]+)\s+import\b|import\s+([\w.]+))/gm,
-  /^\s*(?:pub(?:\([^)]*\))?\s+)?(?:use|mod)\s+([\w:{}\s,]+?)\s*;/gm,
-  /^\s*#\s*include\s*[<"]([^>"\n]+)[>"]/gm,
+  /\brequire(?:_relative)?\s*(?:\(\s*)?['"]([^'"\n]+)['"]/g,
+  /^[ \t]*(?:from\s+([\w.]+)\s+import\b|import\s+([\w.]+))/gm,
+  /^[ \t]*(?:pub(?:\([^)\n]*\))?\s+)?(?:use|mod)\s+(?!\s)((?:(?!\b(?:use|mod)\b)[\w:{}\s,])*?[\w:{},])\s*;/gm,
+  /^[ \t]*#\s*include\s*[<"]([^>"\n]+)[>"]/gm,
 ];
-const GO_IMPORT_BLOCK = /^\s*import\s*\(([\s\S]*?)\)/gm;
+const GO_IMPORT_BLOCK = /^[ \t]*import\s*\(((?:(?!\n[ \t]*import\b)[^)])*)\)/gm;
+const WITNESS_TEXT_MAX_BYTES = 2 * 1024 * 1024;
+
+function readWitnessText(absolute) {
+  const stat = statSync(absolute);
+  if (!stat.isFile()) return null;
+  return stat.size > WITNESS_TEXT_MAX_BYTES ? { tooLarge: true } : { text: readFileSync(absolute, 'utf-8') };
+}
 
 function moduleSpecifiers(text) {
   const specifiers = [];
@@ -507,8 +515,18 @@ function textWitnesses(text, targetPath, witnessNames, moduleNamesByText) {
  * takes a bare basename, useless against a root), restated since that module
  * does not export it.
  */
-const NOTE_PATH_EDGES = /^[([{"'`\u201c\u2018]+|[)\]}"'`\u201d\u2019.,;:!?]+$/g;
+const NOTE_PATH_OPENERS = new Set(['(', '[', '{', '"', "'", '`', '\u201c', '\u2018']);
+const NOTE_PATH_CLOSERS = new Set([')', ']', '}', '"', "'", '`', '\u201d', '\u2019', '.', ',', ';', ':', '!', '?']);
+const NOTE_PATH_MAX_CHARS = 1024;
 const NOTE_PATH_EXTENSION = /\.[A-Za-z][A-Za-z0-9]{0,9}$/;
+
+function trimNotePathEdges(token) {
+  let start = 0;
+  let end = token.length;
+  while (start < end && NOTE_PATH_OPENERS.has(token[start])) start += 1;
+  while (end > start && NOTE_PATH_CLOSERS.has(token[end - 1])) end -= 1;
+  return token.slice(start, end);
+}
 
 /**
  * The `:42` the message explicitly asks the writer to append, and the `:42:7`
@@ -520,11 +538,12 @@ const NOTE_PATH_LINE_SUFFIX = /(?::\d+(?:[-\u2013]\d+)?(?::\d+)?|#L\d+(?:-L?\d+)
 function pathTokensIn(text) {
   const tokens = new Set();
   for (const raw of String(text ?? '').split(/\s+/)) {
+    if (raw.length > NOTE_PATH_MAX_CHARS) continue;
     let token = raw;
     let previous = null;
     while (token !== previous) {
       previous = token;
-      token = token.replace(NOTE_PATH_EDGES, '').replace(NOTE_PATH_LINE_SUFFIX, '');
+      token = trimNotePathEdges(token).replace(NOTE_PATH_LINE_SUFFIX, '');
     }
     if (!token || token.startsWith('http://') || token.startsWith('https://')) continue;
     if (!token.includes('/') || !NOTE_PATH_EXTENSION.test(token)) continue;
@@ -575,16 +594,16 @@ export function dependencyWitnessFinding({
   if (!repoRoot || typeof resolveTargetPath !== 'function') return [];
   const source = insideRepo(repoRoot, frontmatter?.path);
   if (!source) return [];
-  let sourceText;
+  let sourceRead;
   try {
-    if (!statSync(source.absolute).isFile()) return [];
-    sourceText = readFileSync(source.absolute, 'utf-8');
+    sourceRead = readWitnessText(source.absolute);
   } catch {
     return [];
   }
+  if (sourceRead === null) return [];
   const previous = previousFrontmatter ? declaredDependencies(previousFrontmatter) : new Set();
   /** One read per file however many edges cite it; `null` marks unreadable. */
-  const textCache = new Map([[source.path, sourceText]]);
+  const readCache = new Map([[source.path, { ...sourceRead, path: source.path }]]);
   // Parse each shared source or rationale file's imports once per invocation.
   const moduleNamesByText = new Map();
   /**
@@ -597,21 +616,21 @@ export function dependencyWitnessFinding({
     sourceAncestors.push(dir);
   }
   const readCandidate = (path) => {
-    if (textCache.has(path)) return textCache.get(path);
-    let text = null;
+    if (readCache.has(path)) return readCache.get(path);
+    let read = null;
     for (const base of ['', ...sourceAncestors]) {
       const resolved = insideRepo(repoRoot, base ? `${base}/${path}` : path);
       if (!resolved) continue;
       try {
-        if (!statSync(resolved.absolute).isFile()) continue;
-        text = readFileSync(resolved.absolute, 'utf-8');
-        break;
+        const found = readWitnessText(resolved.absolute);
+        read = found && { ...found, path: resolved.path };
+        if (read) break;
       } catch {
         continue;
       }
     }
-    textCache.set(path, text);
-    return text;
+    readCache.set(path, read);
+    return read;
   };
   const findings = [];
   for (const target of declaredDependencies(frontmatter)) {
@@ -625,25 +644,29 @@ export function dependencyWitnessFinding({
     const resolved = insideRepo(repoRoot, targetPath);
     if (!resolved) continue;
     const witnessNames = witnessNamesFor(resolved.path);
-    const candidates = [sourceText];
+    const reads = [readCache.get(source.path)];
     for (const token of pathTokensIn(relationNoteText(frontmatter, target))) {
-      const text = readCandidate(token);
-      if (typeof text === 'string') candidates.push(text);
+      const read = readCandidate(token);
+      if (read) reads.push(read);
     }
-    if (candidates.some((text) => textWitnesses(text, resolved.path, witnessNames, moduleNamesByText))) continue;
+    const texts = reads.filter((read) => read.text !== undefined).map((read) => read.text);
+    if (texts.some((text) => textWitnesses(text, resolved.path, witnessNames, moduleNamesByText))) continue;
+    const unread = [...new Set(reads.filter((read) => read.tooLarge).map((read) => read.path))];
     findings.push({
-      code: 'dependency-unwitnessed',
+      code: unread.length > 0 ? 'dependency-unjudged' : 'dependency-unwitnessed',
       slug,
       key: target,
       refs: [target],
       count: 1,
-      message: dependencyUnwitnessedMessage({
-        slug,
-        sourcePath: source.path,
-        target,
-        targetPath: resolved.path,
-        witnessName: witnessNames[0],
-      }),
+      message: unread.length > 0
+        ? dependencyUnjudgedMessage({ slug, target, unreadPaths: unread, maxBytes: WITNESS_TEXT_MAX_BYTES })
+        : dependencyUnwitnessedMessage({
+          slug,
+          sourcePath: source.path,
+          target,
+          targetPath: resolved.path,
+          witnessName: witnessNames[0],
+        }),
     });
   }
   return findings;

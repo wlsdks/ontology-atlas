@@ -2,7 +2,7 @@ import { mkdirSync, existsSync, readFileSync, realpathSync } from 'node:fs';
 import { readFileRevision, sameFileRevision, writeFileAtomically } from './atomic-write.mjs';
 import { dirname, resolve, sep } from 'node:path';
 import { buildMarkdown, parseFrontmatter } from './parse-frontmatter.mjs';
-import { flatSlugIssue, inspectMergedUids, nodeUidIssue } from './schema.mjs';
+import { flatSlugIssue, inspectMergedUids, nodeUidIssue, unwritableSlugIssue } from './schema.mjs';
 import { walkMd, pathToSlug } from './walk-vault.mjs';
 
 /**
@@ -28,6 +28,12 @@ export function slugToPath(rootPath, slug) {
   // outside it. Same contract as `mcp/src/vault.mjs`.
   assertRealPathInside(candidate, normalizedRoot, slug);
   return candidate;
+}
+
+function slugToWritePath(rootPath, slug) {
+  const issue = unwritableSlugIssue(slug);
+  if (issue) throw new Error(issue);
+  return slugToPath(rootPath, slug);
 }
 
 /** Still inside the vault after link resolution. A path that does not exist yet is
@@ -73,7 +79,7 @@ export function writeDoc(rootPath, slug, { frontmatter, body = '' }) {
 /** The single preflight through which a dry run and a real write check the same
  * slug and UID contract. */
 export function preflightWriteDoc(rootPath, slug, frontmatter) {
-  const filePath = slugToPath(rootPath, slug);
+  const filePath = slugToWritePath(rootPath, slug);
   if (existsSync(filePath)) {
     throw new Error(`Doc already exists: ${slug}`);
   }
@@ -145,7 +151,7 @@ export function writeFrontmatterKey(rootPath, slug, key, value, options) {
  * atomically — written separately, a failure between them leaves one without the
  * other. */
 export function writeFrontmatterKeys(rootPath, slug, patch, { expectedRevision = null } = {}) {
-  const filePath = slugToPath(rootPath, slug);
+  const filePath = slugToWritePath(rootPath, slug);
   let current;
   try {
     current = readDocFrontmatter(rootPath, slug);

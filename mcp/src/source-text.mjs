@@ -15,6 +15,10 @@ export const READ_SOURCE_DEFAULT_LIMIT = 200;
 export const READ_SOURCE_MAX_LIMIT = 1000;
 /** Characters of text returned at most per call, whatever the unit count. */
 export const READ_SOURCE_MAX_CHARS = 60_000;
+/** A source is held in memory whole while it is read. */
+export const READ_SOURCE_MAX_FILE_BYTES = 100 * 1024 * 1024;
+/** Bytes one read may unpack across a zip's entries, each entry unpacked once. */
+const SOURCE_UNPACK_MAX_BYTES = 64 * 1024 * 1024;
 
 
 const EOCD_SIGNATURE = 0x06054b50;
@@ -39,6 +43,7 @@ export function readZipEntries(buffer) {
   if (eocd < 0) throw new Error('not a zip file: no end-of-central-directory record');
   const entryCount = buffer.readUInt16LE(eocd + 10);
   let offset = buffer.readUInt32LE(eocd + 16);
+  let unpackBudget = SOURCE_UNPACK_MAX_BYTES;
   const entries = new Map();
   for (let index = 0; index < entryCount; index += 1) {
     if (buffer.readUInt32LE(offset) !== CENTRAL_SIGNATURE) throw new Error('zip central directory is damaged');
@@ -50,7 +55,7 @@ export function readZipEntries(buffer) {
     const commentLength = buffer.readUInt16LE(offset + 32);
     const localOffset = buffer.readUInt32LE(offset + 42);
     const name = buffer.toString('utf8', offset + 46, offset + 46 + nameLength);
-    entries.set(name, () => {
+    const unpack = () => {
       if (buffer.readUInt32LE(localOffset) !== LOCAL_SIGNATURE) throw new Error(`zip entry ${name} is damaged`);
       const localNameLength = buffer.readUInt16LE(localOffset + 26);
       const localExtraLength = buffer.readUInt16LE(localOffset + 28);
@@ -58,13 +63,29 @@ export function readZipEntries(buffer) {
       const raw = buffer.subarray(start, start + compressedSize);
       if (method === 0) return Buffer.from(raw);
       if (method === 8) {
-        const out = inflateRawSync(raw);
+        const limit = Math.max(1, Math.min(uncompressedSize === 0xffffffff ? Infinity : uncompressedSize, unpackBudget));
+        let out;
+        try {
+          out = inflateRawSync(raw, { maxOutputLength: limit });
+        } catch (error) {
+          if (error?.code !== 'ERR_BUFFER_TOO_LARGE') throw error;
+          throw new Error(`zip entry ${name} inflates past ${limit} bytes, more than it declares or than one read unpacks`);
+        }
         if (uncompressedSize !== 0xffffffff && out.length !== uncompressedSize) {
           throw new Error(`zip entry ${name} inflated to ${out.length} bytes, expected ${uncompressedSize}`);
         }
         return out;
       }
       throw new Error(`zip entry ${name} uses compression method ${method}, which is not supported`);
+    };
+    let unpacked;
+    entries.set(name, () => {
+      unpacked ??= unpack();
+      if (unpacked.length > unpackBudget) {
+        throw new Error(`zip entry ${name} would take this read past ${SOURCE_UNPACK_MAX_BYTES} unpacked bytes, the most one read unpacks`);
+      }
+      unpackBudget -= unpacked.length;
+      return unpacked;
     });
     offset += 46 + nameLength + extraLength + commentLength;
   }
@@ -87,7 +108,103 @@ function decodeXmlText(text) {
 
 /** The character data of every `<tag>` element in order, tags themselves dropped. */
 function textOf(xml) {
-  return decodeXmlText(xml.replace(/<[^>]+>/g, ''));
+  return decodeXmlText(xml.replace(/<[^<>]*>/g, ''));
+}
+
+/* One-pass index scans: a lazy `<a>[\s\S]*?</a>` rescans from every unclosed tag. */
+function tagStart(xml, name, from) {
+  let at = xml.indexOf(`<${name}`, from);
+  while (at >= 0 && /\w/.test(xml[at + name.length + 1] ?? '')) at = xml.indexOf(`<${name}`, at + 1);
+  return at;
+}
+
+function elementSpans(xml, name) {
+  const close = `</${name}>`;
+  const spans = [];
+  for (let from = 0; ;) {
+    const start = tagStart(xml, name, from);
+    const end = start < 0 ? -1 : xml.indexOf(close, start);
+    if (end < 0) return spans;
+    spans.push(xml.slice(start, end + close.length));
+    from = end + close.length;
+  }
+}
+
+function between(xml, open, close) {
+  const found = [];
+  for (let from = 0; ;) {
+    const start = xml.indexOf(open, from);
+    const end = start < 0 ? -1 : xml.indexOf(close, start + open.length);
+    if (end < 0) return found;
+    found.push(xml.slice(start + open.length, end));
+    from = end + close.length;
+  }
+}
+
+function openTags(xml, name) {
+  const tags = [];
+  for (let from = 0; ;) {
+    const start = tagStart(xml, name, from);
+    const end = start < 0 ? -1 : xml.indexOf('>', start);
+    if (end < 0) return tags;
+    tags.push(xml.slice(start, end));
+    from = end + 1;
+  }
+}
+
+function attributePair(tag, first, second) {
+  const head = new RegExp(`\\b${first}="([^"]*)"`).exec(tag);
+  const tail = head && new RegExp(`\\b${second}="([^"]+)"`).exec(tag.slice(head.index + head[0].length));
+  return tail ? [head[1], tail[1]] : null;
+}
+
+function sheetRows(xml) {
+  const rows = [];
+  for (let from = 0; ;) {
+    const start = tagStart(xml, 'row', from);
+    const tagEnd = start < 0 ? -1 : xml.indexOf('>', start);
+    if (tagEnd < 0) return rows;
+    const number = /\br="(\d+)"/.exec(xml.slice(start, tagEnd))?.[1];
+    const close = number === undefined ? tagEnd : xml.indexOf('</row>', tagEnd + 1);
+    if (close < 0) return rows;
+    if (number !== undefined) rows.push({ number, body: xml.slice(tagEnd + 1, close) });
+    from = number === undefined ? tagEnd + 1 : close + '</row>'.length;
+  }
+}
+
+function rowCells(xml) {
+  const cells = [];
+  let closeMayFollow = true;
+  for (let from = 0; ;) {
+    const start = tagStart(xml, 'c', from);
+    const tagEnd = start < 0 ? -1 : xml.indexOf('>', start);
+    if (tagEnd < 0) return cells;
+    const attrs = xml.slice(start + 2, tagEnd);
+    const close = closeMayFollow ? xml.indexOf('</c>', tagEnd + 1) : -1;
+    if (close >= 0) {
+      cells.push({ attrs, body: xml.slice(tagEnd + 1, close) });
+      from = close + '</c>'.length;
+      continue;
+    }
+    closeMayFollow = false;
+    if (attrs.endsWith('/')) cells.push({ attrs: attrs.slice(0, -1), body: '' });
+    from = tagEnd + 1;
+  }
+}
+
+function withoutElements(html, name) {
+  const open = new RegExp(`<${name}\\b`, 'gi');
+  const close = new RegExp(`</${name}>`, 'gi');
+  let kept = '';
+  for (let from = 0; ;) {
+    open.lastIndex = from;
+    const start = open.exec(html);
+    if (start) close.lastIndex = start.index;
+    const end = start && close.exec(html);
+    if (!end) return kept + html.slice(from);
+    kept += html.slice(from, start.index);
+    from = end.index + end[0].length;
+  }
 }
 
 /**
@@ -118,16 +235,15 @@ function parseDocx(buffer) {
   const xml = document().toString('utf8');
   const paragraphs = [];
   let headingCount = 0;
-  for (const match of xml.matchAll(/<w:p\b[\s\S]*?<\/w:p>/g)) {
-    const paragraph = match[0];
+  for (const paragraph of elementSpans(xml, 'w:p')) {
     // Tabs and breaks become spaces so words do not fuse.
     const text = textOf(
-      paragraph.replace(/<w:tab\/>/g, ' ').replace(/<w:br\b[^>]*\/>/g, ' ').replace(/<w:t\b[^>]*>/g, '<w:t>'),
+      paragraph.replace(/<w:tab\/>/g, ' ').replace(/<w:br\b[^<>]*\/>/g, ' ').replace(/<w:t\b[^<>]*>/g, '<w:t>'),
     )
       .replace(/\s+/g, ' ')
       .trim();
     if (!text) continue;
-    const style = /<w:pStyle\b[^>]*w:val="([^"]+)"/.exec(paragraph)?.[1] ?? '';
+    const style = openTags(paragraph, 'w:pStyle').map((tag) => /w:val="([^"]+)"/.exec(tag)?.[1]).find(Boolean) ?? '';
     if (/^(heading|title)\d*$/i.test(style) || /^(제목|見出し)\d*$/.test(style)) {
       headingCount += 1;
       paragraphs.push({ text, kind: 'heading', base: `h:${headingSlug(text) || `heading-${headingCount}`}` });
@@ -190,20 +306,18 @@ export function xlsxUnits(buffer, { sheet } = {}) {
   const entries = readZipEntries(buffer);
   const workbook = entries.get('xl/workbook.xml');
   if (!workbook) throw new Error('not an XLSX: xl/workbook.xml is missing');
-  const sheets = [...workbook().toString('utf8').matchAll(/<sheet\b[^>]*\bname="([^"]*)"[^>]*\br:id="([^"]+)"/g)].map(
-    (match, index) => ({ index: index + 1, name: decodeXmlText(match[1]), rid: match[2] }),
-  );
+  const sheets = openTags(workbook().toString('utf8'), 'sheet')
+    .map((tag) => attributePair(tag, 'name', 'r:id'))
+    .filter(Boolean)
+    .map(([name, rid], index) => ({ index: index + 1, name: decodeXmlText(name), rid }));
   const rels = entries.get('xl/_rels/workbook.xml.rels')?.().toString('utf8') ?? '';
   const targetByRid = new Map(
-    [...rels.matchAll(/<Relationship\b[^>]*\bId="([^"]+)"[^>]*\bTarget="([^"]+)"/g)].map((match) => [
-      match[1],
-      match[2],
-    ]),
+    openTags(rels, 'Relationship').map((tag) => attributePair(tag, 'Id', 'Target')).filter(Boolean),
   );
   const shared = [];
   const sharedXml = entries.get('xl/sharedStrings.xml')?.().toString('utf8');
   if (sharedXml) {
-    for (const item of sharedXml.matchAll(/<si>([\s\S]*?)<\/si>/g)) shared.push(textOf(item[1]));
+    for (const item of between(sharedXml, '<si>', '</si>')) shared.push(textOf(item));
   }
   const units = [];
   for (const meta of sheets) {
@@ -211,27 +325,25 @@ export function xlsxUnits(buffer, { sheet } = {}) {
     const target = (targetByRid.get(meta.rid) ?? `worksheets/sheet${meta.index}.xml`).replace(/^\/?(xl\/)?/, '');
     const sheetXml = entries.get(`xl/${target}`)?.().toString('utf8');
     if (!sheetXml) continue;
-    for (const row of sheetXml.matchAll(/<row\b[^>]*\br="(\d+)"[^>]*>([\s\S]*?)<\/row>/g)) {
+    for (const row of sheetRows(sheetXml)) {
       const cells = [];
-      for (const cell of row[2].matchAll(/<c\b([^>]*)(?:\/>|>([\s\S]*?)<\/c>)/g)) {
-        const attrs = cell[1];
-        const body = cell[2] ?? '';
+      for (const { attrs, body } of rowCells(row.body)) {
         const type = /\bt="([^"]+)"/.exec(attrs)?.[1];
         let value = '';
         if (type === 's') {
-          const index = Number.parseInt(textOf(/<v>([\s\S]*?)<\/v>/.exec(body)?.[1] ?? ''), 10);
+          const index = Number.parseInt(textOf(between(body, '<v>', '</v>')[0] ?? ''), 10);
           value = shared[index] ?? '';
         } else if (type === 'inlineStr') {
-          value = textOf(/<is>([\s\S]*?)<\/is>/.exec(body)?.[1] ?? '');
+          value = textOf(between(body, '<is>', '</is>')[0] ?? '');
         } else {
-          value = textOf(/<v>([\s\S]*?)<\/v>/.exec(body)?.[1] ?? '');
+          value = textOf(between(body, '<v>', '</v>')[0] ?? '');
         }
         cells.push(value.replace(/\s+/g, ' ').trim());
       }
       while (cells.length > 0 && cells[cells.length - 1] === '') cells.pop();
       const text = cells.join(' | ').trim();
       if (!text) continue;
-      units.push({ anchor: `s${meta.index}r${row[1]}`, sheet: meta.name, text, kind: 'row' });
+      units.push({ anchor: `s${meta.index}r${row.number}`, sheet: meta.name, text, kind: 'row' });
     }
   }
   return units;
@@ -312,12 +424,10 @@ function lineUnits(text) {
 /** An HTML file: tags dropped, then lines like a text file. */
 export function htmlUnits(html) {
   const text = decodeXmlText(
-    String(html)
-      .replace(/<script\b[\s\S]*?<\/script>/gi, '')
-      .replace(/<style\b[\s\S]*?<\/style>/gi, '')
-      .replace(/<\/(p|div|li|tr|h[1-6]|br|section|article|header|footer)\b[^>]*>/gi, '\n')
-      .replace(/<br\b[^>]*\/?>/gi, '\n')
-      .replace(/<[^>]+>/g, ''),
+    withoutElements(withoutElements(String(html), 'script'), 'style')
+      .replace(/<\/(p|div|li|tr|h[1-6]|br|section|article|header|footer)\b[^<>]*>/gi, '\n')
+      .replace(/<br\b[^<>]*\/?>/gi, '\n')
+      .replace(/<[^<>]*>/g, ''),
   );
   return lineUnits(text);
 }
