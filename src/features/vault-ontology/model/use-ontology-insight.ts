@@ -148,6 +148,22 @@ export function useDogfoodInsight(): KnowledgeProjectInsight {
   return useMemo(() => sampleInsight('dogfood', locale).insight, [locale]);
 }
 
+/** One insight per derivation and locale, shared by every consumer. */
+const localInsightCache = new WeakMap<VaultOntologyDerivation, Map<string, KnowledgeProjectInsight>>();
+function localInsight(d: VaultOntologyDerivation, locale: string): KnowledgeProjectInsight {
+  let byLocale = localInsightCache.get(d);
+  if (!byLocale) {
+    byLocale = new Map();
+    localInsightCache.set(d, byLocale);
+  }
+  let insight = byLocale.get(locale);
+  if (!insight) {
+    insight = derivationToInsight(d, locale);
+    byLocale.set(locale, insight);
+  }
+  return insight;
+}
+
 /** Mode-aware insight: local derives from the user's vault; static from the bundled sample, memoized. */
 export function useOntologyInsight(): {
   insight: KnowledgeProjectInsight | null;
@@ -163,7 +179,7 @@ export function useOntologyInsight(): {
       return sampleInsight(sampleSource === 'storefront' ? 'storefront' : 'dogfood', locale);
     }
     return {
-      insight: derivationToInsight(vault, locale),
+      insight: localInsight(vault, locale),
       error: null,
     };
   }, [mode, vault, sampleSource, locale]);
