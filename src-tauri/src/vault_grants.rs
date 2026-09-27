@@ -11,8 +11,8 @@
 //! prior choice (never a path the renderer merely asserts).
 //!
 //! Enforcement turns on once `initialize` runs at startup. Before that (unit tests
-//! that never call it) the gate is permissive, so this file's own tests exercise the
-//! real `Registry` methods on local instances rather than flipping global state.
+//! that never call it) the gate is permissive; a test enforces on its own thread
+//! through `EnforcedScope` rather than flipping global state.
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -139,6 +139,9 @@ pub(crate) fn grant_vault_root(root: &Path) {
 
 /// Gate for vault content, git and archive commands. Permissive until `initialize`.
 pub(crate) fn is_vault_granted(path: &Path) -> bool {
+    if let Some(answer) = thread_override(|reg| reg.is_vault_granted(path)) {
+        return answer;
+    }
     if !ENFORCING.load(Ordering::SeqCst) {
         return true;
     }
@@ -148,10 +151,51 @@ pub(crate) fn is_vault_granted(path: &Path) -> bool {
 /// Gate for project-source inspection, which may target the repo a granted vault
 /// lives in. Permissive until `initialize`.
 pub(crate) fn is_source_granted(path: &Path) -> bool {
+    if let Some(answer) = thread_override(|reg| reg.is_source_granted(path)) {
+        return answer;
+    }
     if !ENFORCING.load(Ordering::SeqCst) {
         return true;
     }
     lock().is_source_granted(path)
+}
+
+#[cfg(not(test))]
+fn thread_override(_check: impl Fn(&Registry) -> bool) -> Option<bool> {
+    None
+}
+
+#[cfg(test)]
+thread_local! {
+    static THREAD_REGISTRY: std::cell::RefCell<Option<Registry>> =
+        const { std::cell::RefCell::new(None) };
+}
+
+#[cfg(test)]
+fn thread_override(check: impl Fn(&Registry) -> bool) -> Option<bool> {
+    THREAD_REGISTRY.with(|slot| slot.borrow().as_ref().map(check))
+}
+
+#[cfg(test)]
+pub(crate) struct EnforcedScope;
+
+#[cfg(test)]
+impl EnforcedScope {
+    pub(crate) fn granting(vaults: &[PathBuf]) -> Self {
+        let mut reg = Registry::default();
+        for vault in vaults {
+            reg.grant(vault.clone(), None);
+        }
+        THREAD_REGISTRY.with(|slot| *slot.borrow_mut() = Some(reg));
+        EnforcedScope
+    }
+}
+
+#[cfg(test)]
+impl Drop for EnforcedScope {
+    fn drop(&mut self) {
+        THREAD_REGISTRY.with(|slot| *slot.borrow_mut() = None);
+    }
 }
 
 #[cfg(test)]
