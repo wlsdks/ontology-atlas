@@ -230,8 +230,8 @@ afterEach(cleanup);
  * The failed sentence is also deliberately **not** "found none". An empty result is a claim
  * about this computer; a read that failed has not earned it.
  */
-describe('연결 도구 패널 — 실패한 훑기는 끝났다고 말한다', () => {
-  it('훑기가 실패하면 읽는 중이라고 하지 않고 실패를 말한다', async () => {
+describe('connectors panel reports a failed scan as finished', () => {
+  it('reports scan failure instead of loading', async () => {
     bridge.discoveryRejects = true;
     const vault = fakeVault(seeded(stdioRecord));
     draw(<Panel handle={vault.handle} />);
@@ -241,7 +241,7 @@ describe('연결 도구 패널 — 실패한 훑기는 끝났다고 말한다', 
     expect(screen.queryByTestId('connectors-scanning')).toBeNull();
   });
 
-  it('추가 대화상자도 같은 자리에서 실패를 말한다 — 「없음」이 아니다', async () => {
+  it('reports scan failure in the add dialog instead of none found', async () => {
     bridge.discoveryRejects = true;
     const vault = fakeVault(seeded(stdioRecord));
     draw(<Panel handle={vault.handle} />);
@@ -254,15 +254,15 @@ describe('연결 도구 패널 — 실패한 훑기는 끝났다고 말한다', 
   });
 });
 
-describe('연결 도구 패널 — 개수는 한 곳에서만 말한다', () => {
-  it('머리글이 없으면 카드가 켜진 수를 말한다', async () => {
+describe('connectors panel states the count once', () => {
+  it('shows the enabled count on the card without a header', async () => {
     const vault = fakeVault(seeded(stdioRecord));
     draw(<Panel handle={vault.handle} />);
     await waitFor(() => expect(screen.getByTestId('connectors-item')).toBeInTheDocument());
     expect(screen.getByTestId('connectors-on-of-total')).toHaveTextContent('1');
   });
 
-  it('머리글이 이미 말했다면 카드는 같은 수를 다시 말하지 않는다', async () => {
+  it('does not repeat the count on the card when the header shows it', async () => {
     const vault = fakeVault(seeded(stdioRecord));
     draw(<Panel handle={vault.handle} countInHeading />);
     await waitFor(() => expect(screen.getByTestId('connectors-item')).toBeInTheDocument());
@@ -270,8 +270,8 @@ describe('연결 도구 패널 — 개수는 한 곳에서만 말한다', () => 
   });
 });
 
-describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다', () => {
-  it('무엇이 실제로 실행되는지, 어디로 오가는지, 어떤 기록에 안 남는지 켜기 전에 말한다', async () => {
+describe('connectors panel explains what runs before enabling', () => {
+  it('states the command, the traffic destination and the unlogged records before enabling', async () => {
     const vault = fakeVault(seeded(stdioRecord));
     draw(<Panel handle={vault.handle} />);
     await waitFor(() =>
@@ -319,7 +319,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     );
   });
 
-  it('켜면 폴더에 적히고, 그 전까지는 아무것도 붙지 않는다', async () => {
+  it('writes to the folder only when enabled', async () => {
     const vault = fakeVault(seeded(stdioRecord));
     draw(<Panel handle={vault.handle} />);
     await waitFor(() => expect(screen.getByTestId('connectors-item-toggle')).toBeInTheDocument());
@@ -333,7 +333,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     expect(vault.files.get('.ontology-atlas/connectors.json')).toContain('"enabled": true');
   });
 
-  it('이름이 이미 등록되어 있으면, 켜기 전에 그 사실을 말한다', async () => {
+  it('states that a name is already registered before enabling', async () => {
     // codex-acp drops a same-named ACP server without a word. Learning that afterwards
     // looks exactly like Atlas failing to attach anything.
     bridge.discovered = {
@@ -357,7 +357,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     );
   });
 
-  it('못 도는 연결 도구는 켜지 못하게 하고 이유를 적는다', async () => {
+  it('disables enabling a connector that cannot run and states why', async () => {
     // A bare command finds nothing in the agent's sanitized environment, so switching it
     // on would produce a session whose tools are silently absent.
     const vault = fakeVault(seeded({ ...stdioRecord, command: 'npx' }));
@@ -366,7 +366,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     expect(screen.getByTestId('connectors-item-toggle')).toBeDisabled();
   });
 
-  it('토큰은 키체인으로 보내고 입력란에서 지운다', async () => {
+  it('sends the token to the keychain and clears the input', async () => {
     const vault = fakeVault(seeded(stdioRecord));
     draw(<Panel handle={vault.handle} />);
     await waitFor(() => expect(screen.getByTestId('connectors-item-menu')).toBeInTheDocument());
@@ -392,7 +392,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     );
   });
 
-  it('키체인에 값이 없는 동안에는 켜지 못한다 — 자격 증명 없이 붙어 멀쩡해 보이는 일이 없게', async () => {
+  it('cannot enable while the keychain has no value', async () => {
     /*
      * The failure this whole per-variable choice exists to prevent: the connector attaches, the
      * agent lists its tools, and every call is refused by a service that has no idea why.
@@ -413,7 +413,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     await waitFor(() => expect(screen.getByTestId('connectors-item-toggle')).toBeEnabled());
   });
 
-  it('이름이 자격 증명처럼 안 보여도 키체인을 고를 수 있다', async () => {
+  it('allows choosing the keychain for a name that does not look like a credential', async () => {
     /*
      * Measured 2026-09-05. `OPENAPI_MCP_HEADERS` is the variable Notion's own MCP server
      * documents and it carries `Bearer ntn_…`. A name-only rule offered no field for it at all,
@@ -445,7 +445,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     expect(screen.getByTestId('connectors-item-secret-input')).toBeInTheDocument();
   });
 
-  it('자격 증명이 아닌 변수의 값은 폴더 안 파일에 그대로 적힌다', async () => {
+  it('writes a non-credential value into the folder file', async () => {
     // Forcing a version pin into a keychain would make somebody re-enter it per machine, and a
     // rule people route around stops protecting anything.
     const vault = fakeVault(seeded({ ...stdioRecord, env: [{ name: 'NOTION_VERSION' }] }));
@@ -463,7 +463,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     );
   });
 
-  it('키체인을 끈 자격 증명 이름에는 적을 칸을 주지 않고 이유를 말한다', async () => {
+  it('gives no input for a credential name with the keychain off and states why', async () => {
     // The writer refuses a literal under this name, so a box would be somewhere to type
     // something that is then thrown away.
     const vault = fakeVault(seeded({ ...stdioRecord, env: [{ name: 'NOTION_TOKEN' }] }));
@@ -476,7 +476,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     expect(screen.queryByTestId('connectors-item-variable-value')).toBeNull();
   });
 
-  it('연결 도구를 지우면 그것이 가리키던 토큰도 이 컴퓨터에서 지운다', async () => {
+  it('deletes the referenced token from this computer when a connector is removed', async () => {
     /*
      * Measured in the installed app on 2026-09-05: removing a connector took the row out of
      * connectors.json and left the keychain item behind, so `security find-generic-password`
@@ -517,7 +517,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     expect(vault.files.get('.ontology-atlas/connectors.json') ?? '').not.toContain('notion');
   });
 
-  it('키체인 선택을 끄면 그 변수의 값도 이 컴퓨터에서 지운다', async () => {
+  it('deletes the stored value when the keychain choice is turned off', async () => {
     // Turning the choice off is the person saying this value should not be on this machine.
     // Dropping only the reference would leave the value with nothing on screen pointing at it.
     const vault = fakeVault(seeded(stdioRecord));
@@ -539,7 +539,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     expect(bridge.stored.size).toBe(0);
   });
 
-  it('지우기 전에 무엇이 사라지는지 이름으로 말하고 물어본다', async () => {
+  it('names what will be removed and asks before deleting', async () => {
     /*
      * The two halves of Remove are not the same kind of act. Taking the row out of
      * connectors.json is a line in a file somebody can retype; forgetting the tokens is an OS
@@ -573,7 +573,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     expect(screen.getByTestId('connectors-item')).toBeInTheDocument();
   });
 
-  it('취소하면 줄도 토큰도 그대로다 — 물어본 값이 있어야 대답이 의미가 있다', async () => {
+  it('keeps the row and token on cancel', async () => {
     const vault = fakeVault(seeded(stdioRecord));
     bridge.stored.set('connector:c1:NOTION_TOKEN', 'alue');
     draw(<Panel handle={vault.handle} />);
@@ -591,7 +591,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     expect(vault.files.get('.ontology-atlas/connectors.json') ?? '').toContain('notion');
   });
 
-  it('지우고 나면 어디로 갔는지 말하고, 초점을 갈 곳에 놓는다', async () => {
+  it('announces the removal and moves focus after deleting', async () => {
     /*
      * ⚠️ Measured before this step existed: the row left and focus landed on `<body>`, so a
      * keyboard or screen-reader user was returned to the top of the document with no word about
@@ -614,7 +614,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     expect(live?.textContent ?? '').toContain('notion');
   });
 
-  it('폴더가 없으면 빈 목록이 아니라 폴더를 열라고 말하고, 붙이라고 권하지 않는다', async () => {
+  it('asks to open a folder instead of showing an empty list without a vault', async () => {
     /*
      * ⚠️ **Measured in a cold walkthrough, 2026-09-05.** With no folder, `useVaultConnectors` has
      * no store, so `upsert()` resolved to `null` — and the list said "Nothing attached yet", which
@@ -634,7 +634,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     expect(screen.queryByTestId('connectors-add-open')).toBeNull();
   });
 
-  it('저장이 안 되면 대화상자가 닫히지 않고 이유를 말한다 — 버린 것과 저장한 것이 같아 보이지 않게', async () => {
+  it('keeps the dialog open and states why when saving fails', async () => {
     /*
      * The defensive half of the same defect. Even with the gate above, a write can come back
      * refused — a malformed file, a folder that will not take the write — and the dialog used to
@@ -663,7 +663,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     expect(vault.files.get('.ontology-atlas/connectors.json')).toBe('{ not json');
   });
 
-  it('브라우저에서는 왜 못 보는지와 무엇은 되는지를 함께 말한다', async () => {
+  it('explains in the browser what is unavailable and what still works', async () => {
     bridge.discoveryAvailable = false;
     bridge.secretsAvailable = false;
     const vault = fakeVault(seeded(stdioRecord));
@@ -697,7 +697,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     expect(screen.getByTestId('connectors-item-variable-keychain')).toBeDisabled();
   });
 
-  it('직접 추가한 연결 도구도 꺼진 채로 들어간다', async () => {
+  it('adds a manual connector disabled', async () => {
     const vault = fakeVault();
     draw(<Panel handle={vault.handle} />);
     await waitFor(() => expect(screen.getByTestId('connectors-empty')).toBeInTheDocument());
@@ -731,7 +731,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     expect(written).toContain('secretRef');
   });
 
-  it('설치된 앱에서는 이미 등록된 서버를 찾아 주고, 받을 수 없는 방식은 이유를 말한다', async () => {
+  it('discovers registered servers in the app and states why a transport is unsupported', async () => {
     bridge.discovered = {
       connectors: [
         {
@@ -768,7 +768,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     expect(screen.getAllByTestId('connectors-found-add')).toHaveLength(1);
   });
 
-  it('같은 것이 여러 파일에 등록돼 있어도 줄은 하나다 — 어디서 찾았는지는 함께 적는다', async () => {
+  it('shows one row for a server registered in several files and lists the sources', async () => {
     /*
      * Anyone who set up two coding tools has byte-identical entries in both config files. Drawing
      * one row per file offers the same command twice, and choosing between identical rows teaches
@@ -816,7 +816,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     ]);
   });
 
-  it('찾기로 목록을 좁힌다 — 이름으로도, 명령으로도', async () => {
+  it('filters the list by name or command', async () => {
     bridge.discovered = {
       connectors: [
         {
@@ -871,7 +871,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     expect(screen.getByTestId('connectors-custom-toggle')).toHaveAttribute('aria-expanded', 'true');
   });
 
-  it('묻는 게 없는 카탈로그 줄은 한 번 눌러 붙고, 꺼진 채로 들어가며, 어디서 왔는지 적힌다', async () => {
+  it('adds a catalog row without inputs in one press, disabled and with its source', async () => {
     /*
      * The one rule of the list (2026-09-07, afternoon): a press attaches what asks nothing.
      * Context7's address needs no sign-in and no token, so the row goes straight into the
@@ -904,7 +904,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     expect(bridge.secretSets).toEqual([]);
   });
 
-  it('토큰이 필요한 줄은 그 자리에서 하나만 묻고, 값은 키체인으로, 파일에는 이름만 간다', async () => {
+  it('asks inline for one token, stores the value in the keychain and writes only the name', async () => {
     const vault = fakeVault();
     draw(<Panel handle={vault.handle} />);
     await waitFor(() => expect(screen.getByTestId('connectors-empty')).toBeInTheDocument());
@@ -939,7 +939,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     expect(bridge.secretSets[0].ref).toMatch(/NOTION_TOKEN$/);
   });
 
-  it('키체인이 없는 자리에서는 값을 받는 칸을 내밀지 않고 이유를 말한다', async () => {
+  it('offers no value input without a keychain and states why', async () => {
     bridge.discoveryAvailable = false;
     bridge.secretsAvailable = false;
     const vault = fakeVault();
@@ -983,7 +983,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     expect(scrollSpy).toHaveBeenLastCalledWith({ block: 'start', behavior: 'auto' });
   });
 
-  it('이미 붙어 있는 서비스는 버튼 대신 붙어 있다고 적는다', async () => {
+  it('labels an already connected service instead of showing a button', async () => {
     const vault = fakeVault(seeded(stdioRecord));
     draw(<Panel handle={vault.handle} />);
     await waitFor(() => expect(screen.getByTestId('connectors-list')).toBeInTheDocument());
@@ -996,7 +996,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     expect(notion.querySelector('[data-testid="connectors-catalogue-attached"]')).not.toBeNull();
   });
 
-  it('이 컴퓨터에서 찾은 것은 세 줄까지만 펼치고, 나머지는 개수로 접어 둔다 — 검색하면 전부 보인다', async () => {
+  it('shows three discovered rows and folds the rest into a count until searched', async () => {
     /*
      * Installed-app check, 2026-09-07: on a developer's machine the scan found nine servers —
      * chrome-devtools, codegraph, pencil — and Notion sat below the fold. The services a person
@@ -1041,7 +1041,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     expect(screen.getAllByTestId('connectors-found-item')).toHaveLength(4);
   });
 
-  it('연결 도구 상세도 닫기는 모서리 하나다', async () => {
+  it('connector detail has one corner close button', async () => {
     const vault = fakeVault(seeded(stdioRecord));
     draw(<Panel handle={vault.handle} />);
     await waitFor(() => expect(screen.getByTestId('connectors-item-menu')).toBeInTheDocument());
@@ -1056,7 +1056,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     await waitFor(() => expect(screen.queryByTestId('connectors-item-dialog')).toBeNull());
   });
 
-  it('닫기는 모서리에 하나, 그리고 Escape — 목록 아래에 버튼을 두지 않는다', async () => {
+  it('closes by the corner button or Escape with no button below the list', async () => {
     const vault = fakeVault();
     draw(<Panel handle={vault.handle} />);
     await waitFor(() => expect(screen.getByTestId('connectors-empty')).toBeInTheDocument());

@@ -57,13 +57,13 @@ function mount(nodeSelected: boolean) {
 
 const REOPEN = koMessages.firstRunStarter.reopenLabel;
 
-describe("첫 실행 카드 — 지도를 쓰기 시작하면 접힌다", () => {
-  it("아무 노드도 안 골랐으면 펼쳐져 있다", () => {
+describe("first-run card collapses once the map is in use", () => {
+  it("stays expanded while no node is selected", () => {
     mount(false);
     expect(screen.queryByText(REOPEN)).toBeNull();
   });
 
-  it("노드를 고르면 접히고, 되돌아오는 줄이 남는다", () => {
+  it("collapses on node selection and leaves a return row", () => {
     mount(true);
     expect(screen.getByText(REOPEN)).toBeInTheDocument();
   });

@@ -73,7 +73,7 @@ function renderWithLocale(locale: "ko" | "en") {
   );
 }
 
-describe("FirstRunStarterModule 3-용어 glossary 승격 (rank17)", () => {
+describe("FirstRunStarterModule three-term glossary", () => {
   beforeEach(() => {
     mocks.vault = makeVault();
     mocks.mode = "static";
@@ -81,7 +81,7 @@ describe("FirstRunStarterModule 3-용어 glossary 승격 (rank17)", () => {
     window.localStorage.removeItem("demo:sample-source:v1");
   });
 
-  it("접힘 없이(disclosure 뒤 아님) 항상 도메인/역량/요소 정의가 보인다 (ko)", () => {
+  it("always shows domain, capability and element definitions outside a disclosure (ko)", () => {
     renderWithLocale("ko");
 
     const glossary = screen.getByTestId("first-run-starter-glossary");
@@ -109,7 +109,7 @@ describe("FirstRunStarterModule 3-용어 glossary 승격 (rank17)", () => {
     ).toBeInTheDocument();
   });
 
-  it("영문 로케일에서도 같은 키로 렌더된다 (en)", () => {
+  it("renders the same keys in the English locale (en)", () => {
     renderWithLocale("en");
 
     const glossary = within(screen.getByTestId("first-run-starter-glossary"));
@@ -120,7 +120,7 @@ describe("FirstRunStarterModule 3-용어 glossary 승격 (rank17)", () => {
     expect(glossary.getByText(enMessages.searchWidgets.shortcuts.glossary.elementTerm)).toBeInTheDocument();
   });
 
-  it("지도 계층 순서(도메인 → 역량 → 요소)로 렌더된다", () => {
+  it("renders in map hierarchy order domain, capability, element", () => {
     renderWithLocale("ko");
 
     const glossary = screen.getByTestId("first-run-starter-glossary");

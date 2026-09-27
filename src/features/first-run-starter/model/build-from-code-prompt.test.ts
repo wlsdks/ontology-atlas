@@ -15,13 +15,13 @@ import { buildFromCodePrompt } from './build-from-code-prompt';
  * stated unknown after the node already exists, and a node that states none reads as a complete
  * claim about the product — so the person's own turn asks for it the first time.
  */
-describe('코드로 첫 온톨로지 — 보낸 순서가 곧 만드는 순서다', () => {
+describe('build-from-code prompt step order', () => {
   const prompt = buildFromCodePrompt('/Users/dana/my-product', null);
   // The prompt is wrapped for the transcript, so a sentence can straddle a line break. What is
   // asserted is the sentence, not where it happens to wrap.
   const flat = prompt.replace(/\s+/g, ' ');
 
-  it('세 단계가 살피기 → 문장으로 제안 → 승인 뒤 쓰기 순서로 온다', () => {
+  it('orders the three steps as inspect, propose in sentences, then write after approval', () => {
     const survey = prompt.indexOf('1. Survey the code');
     const propose = prompt.indexOf('2. Tell me, in plain sentences');
     const write = prompt.indexOf('3. After I say yes');
@@ -30,13 +30,13 @@ describe('코드로 첫 온톨로지 — 보낸 순서가 곧 만드는 순서�
     expect(write).toBeGreaterThan(propose);
   });
 
-  it('제안 단계가 후보마다 정의·경계·근거 파일을 요구한다', () => {
+  it('asks for a definition, boundary and evidence file per candidate in the propose step', () => {
     expect(flat).toContain('a single sentence defining it');
     expect(flat).toContain('what it includes and what it excludes');
     expect(flat).toContain('the file that proves it');
   });
 
-  it('쓰기 단계가 작은 검토 묶음과 그 뒤 세 호출을 이름으로 부른다', () => {
+  it('names small reviewed batches and the three follow-up calls in the write step', () => {
     expect(flat).toContain('small reviewed batches');
     // Each write still carries what makes it judgeable later.
     expect(flat).toContain('each node carrying its definition, its boundary and what you could not check in the body');
@@ -46,7 +46,7 @@ describe('코드로 첫 온톨로지 — 보낸 순서가 곧 만드는 순서�
     }
   });
 
-  it('불러야 할 조사 도구만 부르고, 대량 승인 경로를 기다리게 하지 않는다', () => {
+  it('names only the needed inspection tools and not the bulk approval path', () => {
     expect(flat).toContain('`analyze_repo_structure`');
     expect(flat).toContain('`infer_imports`');
     // The bulk qualification lifecycle cannot complete in an app session; this turn must not
@@ -56,12 +56,12 @@ describe('코드로 첫 온톨로지 — 보낸 순서가 곧 만드는 순서�
     expect(prompt).not.toContain('qualification');
   });
 
-  it('세는 것이 아니라 근거를 고르라고 말하고, 겹치면 묻게 한다', () => {
+  it('asks to choose evidence rather than count and to ask on overlap', () => {
     expect(flat).toContain('Prefer few, well-evidenced concepts over many thin ones.');
     expect(flat).toContain('ask me instead of making both');
   });
 
-  it('살필 대상은 볼트가 아니라 그것을 품은 프로젝트다', () => {
+  it('inspects the project that contains the vault rather than the vault', () => {
     expect(prompt).toContain('/Users/dana/my-product (the vault sits inside it, at /Users/dana/my-product/atlas)');
   });
 });

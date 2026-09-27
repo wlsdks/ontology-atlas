@@ -112,7 +112,7 @@ describe("VaultOpenGuideSheet", () => {
 
   // In an unsupported browser (Safari, Firefox) both CTAs did nothing when pressed, and the sheet
   // simply closed, taking away both why it failed and where to go.
-  it("unsupported 면 두 FSA CTA 를 걷고 macOS 앱 경로만 남긴다", () => {
+  it("drops both FSA CTAs and keeps only the macOS app path when unsupported", () => {
     render(<VaultOpenGuideSheet open unsupported onClose={vi.fn()} />);
     expect(screen.getByTestId("vault-guide-pick-existing")).not.toBeVisible();
     expect(screen.getByTestId("vault-guide-create-new")).not.toBeVisible();

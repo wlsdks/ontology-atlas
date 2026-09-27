@@ -61,7 +61,7 @@ function renderButtons() {
  * answer and three rejects"** rather than four options. They write to different files, so this is not
  * an exclusive single choice and there cannot be a "right answer".
  */
-describe("AgentClientButtons — 넷은 같은 무게다", () => {
+describe("AgentClientButtons gives the four clients equal weight", () => {
   it("gives no client a filled treatment the others cannot get", () => {
     renderButtons();
     const classNames = AGENT_CLIENTS.map(
@@ -89,7 +89,7 @@ describe("AgentClientButtons — 넷은 같은 무게다", () => {
       const control = screen.getByTestId(CLIENT_TESTID[client.id]);
       expect(
         control.querySelectorAll("svg").length,
-        `${client.id} 연결 버튼의 글리프 수`,
+        `${client.id} connect button glyph count`,
       ).toBe(1);
     }
   });
@@ -100,7 +100,7 @@ describe("AgentClientButtons — 넷은 같은 무게다", () => {
  * render branch, so a refused write left the button in its resting label with nothing said
  * anywhere. What a person saw was indistinguishable from never having pressed it.
  */
-describe("AgentClientButtons — 쓰지 못한 write 는 성공처럼 보이지 않는다", () => {
+describe("AgentClientButtons does not show a failed write as success", () => {
   function renderWithWriter(onWriteConfigs: () => Promise<void>) {
     return render(
       <NextIntlClientProvider locale="ko" messages={ko}>
@@ -145,7 +145,7 @@ describe("AgentClientButtons — 쓰지 못한 write 는 성공처럼 보이지 
     expect(ready.querySelector('[data-brand-detail]')).toBeNull();
   });
 
-  it("실패한 write 는 실패라고 말한다", async () => {
+  it("reports a failed write as failed", async () => {
     const onWriteConfigs = vi.fn(() => Promise.reject(new Error("Permission denied")));
     renderWithWriter(onWriteConfigs);
 
@@ -166,7 +166,7 @@ describe("AgentClientButtons — 쓰지 못한 write 는 성공처럼 보이지 
     );
   });
 
-  it("성공한 write 만 완료 표시를 받는다", async () => {
+  it("marks only a successful write as done", async () => {
     const onWriteConfigs = vi.fn(() => Promise.resolve());
     renderWithWriter(onWriteConfigs);
 

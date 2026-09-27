@@ -17,7 +17,7 @@ describe("first-run-seen", () => {
   describe("FIRST_RUN_SEEN_ENTRIES", () => {
     // If this list is not derived from the destinations, someone adding a new guide can
     // omit it and no check fails — the guidance simply appears in that audit session.
-    it("모든 목적지 안내를 덮는다 (파생 계약)", () => {
+    it("covers every destination guide", () => {
       const keys = new Set(FIRST_RUN_SEEN_ENTRIES.map(([key]) => key));
       for (const id of Object.keys(DESTINATION_TOURS)) {
         expect(keys).toContain(destinationTourStatusKey(id));
@@ -31,13 +31,13 @@ describe("first-run-seen", () => {
   });
 
   describe("resolveGuideOverride", () => {
-    it("아는 값만 통과시킨다", () => {
+    it("accepts only known values", () => {
       expect(resolveGuideOverride("?guides=off")).toBe("off");
       expect(resolveGuideOverride("?guides=reset")).toBe("reset");
     });
 
     // If a typo quietly disabled the guidance, nobody could find out why it stopped appearing.
-    it("모르는 값·없는 값은 null", () => {
+    it("returns null for unknown or missing values", () => {
       expect(resolveGuideOverride("?guides=nope")).toBeNull();
       expect(resolveGuideOverride("?guides=")).toBeNull();
       expect(resolveGuideOverride("?other=off")).toBeNull();
@@ -46,7 +46,7 @@ describe("first-run-seen", () => {
   });
 
   describe("applyGuideOverride", () => {
-    it("off 는 모든 키를 봤음으로 표시한다", () => {
+    it("marks every key seen for off", () => {
       expect(applyGuideOverride("?guides=off")).toBe("off");
       for (const [key, value] of FIRST_RUN_SEEN_ENTRIES) {
         expect(window.localStorage.getItem(key)).toBe(value);
@@ -54,7 +54,7 @@ describe("first-run-seen", () => {
     });
 
     // With only a door to turn it off and none to turn it back on, an auditor could never see the guidance again.
-    it("reset 은 되돌린다", () => {
+    it("clears the keys for reset", () => {
       applyFirstRunSeen();
       expect(applyGuideOverride("?guides=reset")).toBe("reset");
       for (const [key] of FIRST_RUN_SEEN_ENTRIES) {
@@ -62,12 +62,12 @@ describe("first-run-seen", () => {
       }
     });
 
-    it("파라미터가 없으면 아무것도 건드리지 않는다", () => {
+    it("changes nothing without the parameter", () => {
       expect(applyGuideOverride("?p=domain%3Apayment")).toBeNull();
       expect(window.localStorage.length).toBe(0);
     });
 
-    it("멱등이다 (StrictMode 이중 렌더 안전)", () => {
+    it("is idempotent under StrictMode double render", () => {
       applyGuideOverride("?guides=off");
       const first = { ...window.localStorage };
       applyGuideOverride("?guides=off");
@@ -75,7 +75,7 @@ describe("first-run-seen", () => {
     });
   });
 
-  it("clearFirstRunSeen 은 무관한 키를 지우지 않는다", () => {
+  it("clearFirstRunSeen keeps unrelated keys", () => {
     window.localStorage.setItem("demo:docs-vault:source", "local");
     applyFirstRunSeen();
     clearFirstRunSeen();

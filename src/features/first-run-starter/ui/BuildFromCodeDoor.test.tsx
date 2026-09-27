@@ -48,8 +48,8 @@ function renderDoor(errorText: string | null, locale: 'ko' | 'en') {
   );
 }
 
-describe('내 코드로 지도 만들기 — 실패는 코드가 아니라 문장으로 보인다', () => {
-  it.each(CODES)('%s 는 화면에 토큰으로 남지 않는다 (ko)', (code) => {
+describe('BuildFromCodeDoor shows failures as sentences rather than codes', () => {
+  it.each(CODES)('does not render %s as a raw token (ko)', (code) => {
     renderDoor(code, 'ko');
     const line = screen.getByTestId('first-run-build-error');
     expect(line.textContent, 'the producer\'s code is being painted as copy').not.toContain(code);
@@ -66,7 +66,7 @@ describe('내 코드로 지도 만들기 — 실패는 코드가 아니라 문�
     expect(line.getAttribute('data-failure-detail')).toBe(code);
   });
 
-  it('알아보지 못한 실패는 이 문의 자기 문장으로 떨어진다', () => {
+  it('falls back to the door sentence for an unrecognised failure', () => {
     // `messageOf` returns `''` for "it failed and nothing recognised it".
     renderDoor('', 'ko');
     const line = screen.getByTestId('first-run-build-error');
@@ -74,7 +74,7 @@ describe('내 코드로 지도 만들기 — 실패는 코드가 아니라 문�
     expect(line.getAttribute('data-failure-detail')).toBeNull();
   });
 
-  it('실패가 없으면 오류 줄 대신 안내가 선다', () => {
+  it('shows guidance instead of an error line when nothing failed', () => {
     renderDoor(null, 'ko');
     expect(screen.queryByTestId('first-run-build-error')).toBeNull();
     expect(screen.getByText(koMessages.firstRunStarter.buildFromCodeHint)).toBeTruthy();

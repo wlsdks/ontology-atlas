@@ -221,7 +221,7 @@ describe("GuidedTourOverlay", () => {
    * and if Tab then kept walking outside, a control unreachable by pointer could be
    * activated by keyboard alone. Checking only the wrap lets that route pass.
    */
-  it("포커스가 이미 투어 밖에 있어도 Tab 이 투어 안으로 되돌린다", () => {
+  it("returns Tab focus into the tour when focus is already outside it", () => {
     render(<Harness />);
     act(() => screen.getByTestId("test-start").click());
 
@@ -252,7 +252,7 @@ describe("GuidedTourOverlay", () => {
    * This check walks into steps that cannot be passed with `next`, so if the
    * interactive step's forward path (activating the anchor) dies, it breaks here too.
    */
-  it("모든 단계에서 「이전」이 자리를 지킨다 — 대화형 단계 포함", () => {
+  it("keeps the previous button on every step including interactive ones", () => {
     const onActivateAnchor = vi.fn();
     const { rerender } = render(<Harness onActivateAnchor={onActivateAnchor} />);
     act(() => screen.getByTestId("test-start").click());
@@ -273,7 +273,7 @@ describe("GuidedTourOverlay", () => {
         expect(back, "the first step shows a dead [back]").not.toBeInTheDocument();
         expect(screen.getByTestId("guided-tour-back-slot")).toBeInTheDocument();
       } else {
-        expect(back, `단계 "${stepId}" 에 「이전」이 없다`).toBeInTheDocument();
+        expect(back, `step "${stepId}" has no previous button`).toBeInTheDocument();
       }
 
       const next = screen.queryByTestId("guided-tour-next");
@@ -298,7 +298,7 @@ describe("GuidedTourOverlay", () => {
     // A probe against the detector being silently defeated — confirms it really walked
     // into the interactive step. Had it stopped at the first step, the assertion above
     // would have run once and passed.
-    expect(seen.length, `걸은 단계: ${seen.join(" → ")}`).toBeGreaterThanOrEqual(4);
+    expect(seen.length, `steps walked: ${seen.join(" → ")}`).toBeGreaterThanOrEqual(4);
   });
 });
 
@@ -360,7 +360,7 @@ describe("GuidedTourOverlay · the interactive card opens clear of the lit node"
       top + height > LIT_NODE.top;
     expect(
       overlaps,
-      `첫 프레임 카드(${left},${top})가 켜진 노드(${JSON.stringify(LIT_NODE)})를 덮는다`,
+      `first-frame card (${left},${top}) covers the lit node ${JSON.stringify(LIT_NODE)}`,
     ).toBe(false);
     // The centred fallback is the exact rectangle that was reported; it must not be what opens.
     expect(left).not.toBeCloseTo((1200 - width) / 2, 0);

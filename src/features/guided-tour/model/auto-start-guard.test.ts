@@ -14,7 +14,7 @@ describe("canAutoStartGuidedTour (stacked-transient guard)", () => {
     expect(canAutoStartGuidedTour(document)).toBe(false);
   });
 
-  it("blocks auto start while a blocking edit composer (개념 추가) is open (#96)", () => {
+  it("blocks auto start while a blocking edit composer is open", () => {
     vi.spyOn(document, "hasFocus").mockReturnValue(true);
     // CreateNodeForm/OntologyBootstrapForm declare modality via
     // data-surface-role, not role=dialog — the tour must still defer.
@@ -23,7 +23,7 @@ describe("canAutoStartGuidedTour (stacked-transient guard)", () => {
     expect(canAutoStartGuidedTour(document)).toBe(false);
   });
 
-  it("정직 강등 카드가 선 화면에는 안내를 쏘지 않는다 — 없는 표면을 소개할 수 없다", () => {
+  it("blocks auto start while an honest fallback card is shown", () => {
     vi.spyOn(document, "hasFocus").mockReturnValue(true);
     // A screen that says "you cannot get here" (the workshop below `lg`). Raising
     // "this is the workshop" over it is a lie rather than guidance.
@@ -44,7 +44,7 @@ describe("canAutoStartGuidedTour (stacked-transient guard)", () => {
     expect(canAutoStartGuidedTour(document)).toBe(false);
   });
 
-  it("안내가 가리키려는 모달(공방 진입 선택)도 예외 없이 막는다", () => {
+  it("blocks auto start while the workshop entry modal is open", () => {
     vi.spyOn(document, "hasFocus").mockReturnValue(true);
     // The workshop puts this decision screen up the moment you arrive; firing guidance
     // over it covers the entry-choice cards the card meant to introduce and puts two
@@ -83,15 +83,15 @@ describe("canAutoStartGuidedTour (stacked-transient guard)", () => {
  * not modality but **where the attention is**, so a marker has to bridge the place
  * where the attribute was lost.
  */
-describe("설정 도크 위에는 안내를 쏘지 않는다", () => {
-  it("settings-dock 마커가 서 있으면 자동 시작이 막힌다", () => {
+describe("settings dock blocking", () => {
+  it("blocks auto start while the settings-dock marker is present", () => {
     vi.spyOn(document, "hasFocus").mockReturnValue(true);
     document.body.innerHTML =
       '<div role="dialog" data-surface-role="settings-dock">설정</div>';
     expect(canAutoStartGuidedTour(document)).toBe(false);
   });
 
-  it("도크가 닫히면 다시 열린다 — 영구 차단이 아니다", () => {
+  it("allows auto start again after the dock closes", () => {
     // This guard also looks at document focus (so guidance is not fired into a background tab).
     vi.spyOn(document, "hasFocus").mockReturnValue(true);
     document.body.innerHTML = "";

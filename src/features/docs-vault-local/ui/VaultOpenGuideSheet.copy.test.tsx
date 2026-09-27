@@ -72,28 +72,28 @@ function bulletCount(): number {
   return screen.getByRole('dialog').querySelectorAll('ul li').length;
 }
 
-describe('첫 실행 폴더 안내 카드 — 세는 숫자와 그리는 개수', () => {
+describe('first-run folder guide card count against drawn items', () => {
   for (const locale of ['ko', 'en'] as const) {
-    it(`${locale} 웹 — 머리글의 숫자가 실제 항목 수와 같다`, () => {
+    it(`${locale} web header count equals the drawn item count`, () => {
       renderSheet(locale);
       const drawn = bulletCount();
     // Anti-idling: with zero items the comparison below proves nothing.
-      expect(drawn, '불릿이 하나도 안 그려졌다 — 이 시험이 헛돈다').toBeGreaterThan(2);
+      expect(drawn, 'no bullet was drawn, so this test proves nothing').toBeGreaterThan(2);
       expect(
         subtitleCount(),
-        `머리글은 ${subtitleCount()}가지라고 말하는데 화면에는 ${drawn}개가 그려졌다`,
+        `header says ${subtitleCount()} but ${drawn} items were drawn`,
       ).toBe(drawn);
     });
 
-    it(`${locale} 설치된 앱 — 브라우저 허용 안내가 사라지고 숫자도 따라 줄어든다`, () => {
+    it(`${locale} installed app drops the browser permission item and the count follows`, () => {
       isDesktopShell.mockReturnValue(true);
       renderSheet(locale);
       const drawn = bulletCount();
-      expect(drawn, '앱에서도 안내는 남아야 한다 — 통째로 사라지면 안 된다').toBeGreaterThan(1);
+      expect(drawn, 'the app must still show the guide items').toBeGreaterThan(1);
       // A sentence true only in a browser is absent from the app.
       expect(
         screen.getByRole('dialog').textContent,
-        '설치된 앱에서 「브라우저가 허용을 묻는다」고 말하고 있다 — 앱은 OS 폴더창을 연다',
+        'the installed app mentions the browser permission prompt',
       ).not.toMatch(/브라우저|browser/i);
       // And the subtitle's number follows the reduced count.
       expect(subtitleCount()).toBe(drawn);
@@ -105,7 +105,7 @@ describe('첫 실행 폴더 안내 카드 — 세는 숫자와 그리는 개수'
    * equal, the two tests above would be measuring one state twice and the runtime branch would be
    * doing nothing.
    */
-  it('계기가 살아 있다 — 웹과 앱이 그리는 항목 수가 다르다', () => {
+  it('draws a different item count on web and app', () => {
     isDesktopShell.mockReturnValue(false);
     const web = renderSheet('ko');
     const webCount = bulletCount();
@@ -115,6 +115,6 @@ describe('첫 실행 폴더 안내 카드 — 세는 숫자와 그리는 개수'
     renderSheet('ko');
     const appCount = bulletCount();
 
-    expect(webCount, '웹이 앱보다 항목이 많아야 한다(브라우저 전용 한 줄)').toBe(appCount + 1);
+    expect(webCount, 'web must draw the browser-only item the app omits').toBe(appCount + 1);
   });
 });

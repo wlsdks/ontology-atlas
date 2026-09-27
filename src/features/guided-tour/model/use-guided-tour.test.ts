@@ -102,7 +102,7 @@ describe("useGuidedTour", () => {
   // hides the anchors of later steps (INDEX, spotlight) and the list is cut off, but
   // `advance()` closes the panel, re-reads the DOM, and moves on. By length, [done]
   // was drawn at 5/7 and pressing it ended the tour early.
-  it("datasheet 단계는 목록의 끝이어도 마지막 장이 아니다", () => {
+  it("does not treat the datasheet step as final even at the end of the list", () => {
     // Models the state where only the datasheet anchor resolves and later anchors are hidden.
     const canResolveAnchor = (anchor: TourAnchor) =>
       anchor === null ||
@@ -126,7 +126,7 @@ describe("useGuidedTour", () => {
     expect(result.current.isFinalStep).toBe(false);
   });
 
-  it("진짜 마지막 장에서만 isFinalStep 이 참이다", () => {
+  it("sets isFinalStep only on the real final step", () => {
     const { result } = setup();
     act(() => result.current.start());
     expect(result.current.isFinalStep).toBe(false);
@@ -341,7 +341,7 @@ describe("useGuidedTour", () => {
  * Destination guides (docs, workshop, and so on) swap only the step array into **the
  * same state machine** — this test pins that no second guidance system was built.
  */
-describe("useGuidedTour — 주입된 스텝 배열", () => {
+describe("useGuidedTour with injected steps", () => {
   const DEST_KEY = "guided-tour:docs:v1:test";
   const steps = [
     { id: "a", anchor: null, persona: "all", copyKey: "a" },
@@ -361,7 +361,7 @@ describe("useGuidedTour — 주입된 스텝 배열", () => {
     );
   }
 
-  it("지도 여정 대신 주입된 배열을 밟는다", () => {
+  it("walks the injected steps instead of the map journey", () => {
     const { result } = setupDestination();
     act(() => result.current.start());
     expect(result.current.step?.id).toBe("a");
@@ -370,7 +370,7 @@ describe("useGuidedTour — 주입된 스텝 배열", () => {
     expect(result.current.step?.id).toBe("b");
   });
 
-  it("마지막 장에서 진행하면 그 목적지 키에만 '봤음'이 기록된다", () => {
+  it("records seen only for that destination key after the last step", () => {
     const { result } = setupDestination();
     act(() => result.current.start());
     act(() => result.current.advance());

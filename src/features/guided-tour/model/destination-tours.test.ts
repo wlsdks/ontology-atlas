@@ -27,8 +27,8 @@ const DESTINATIONS = Object.keys(DESTINATION_TOURS) as DestinationTourId[];
  * current destination. Adding a destination makes this check say **there is no
  * guidance**, while preserving a compatibility section does not erase its guide.
  */
-describe("목적지 안내", () => {
-  it("지도를 뺀 모든 레일 목적지가 자기 안내를 갖는다", () => {
+describe("destination tours", () => {
+  it("gives every rail destination except the map its own tour", () => {
     // The map is an eight-step journey with canvas anchors and an interactive click, so `TOUR_STEPS` owns it.
     const primary = new Set<string>(DESTINATION_IDS);
     const compatibleSections = Object.entries(DESTINATION_HREF)
@@ -38,13 +38,13 @@ describe("목적지 안내", () => {
     expect(DESTINATIONS.slice().sort()).toEqual(expected);
   });
 
-  it("검사기가 헛돌지 않는다 — 목적지를 실제로 읽어 왔다", () => {
+  it("reads a non-empty destination list", () => {
     // If the source of truth were empty, the test above would pass as "empty == empty".
     expect(DESTINATION_IDS.length).toBeGreaterThan(5);
     expect(DESTINATION_IDS).toContain("map");
   });
 
-  it("각 안내는 '무엇을 하는 곳' 한 장 + 실제 요소 한 장이다", () => {
+  it("has one purpose card and one element card per tour", () => {
     for (const id of DESTINATIONS) {
       const steps = DESTINATION_TOURS[id];
       expect(steps).toHaveLength(2);
@@ -56,7 +56,7 @@ describe("목적지 안내", () => {
     }
   });
 
-  it("문구가 ko/en 양쪽에 모두 있다 — 한쪽만 채우면 다른 언어에서 키가 노출된다", () => {
+  it("has copy in both ko and en", () => {
     for (const id of DESTINATIONS) {
       for (const step of DESTINATION_TOURS[id]) {
         for (const [locale, messages] of [
@@ -73,13 +73,13 @@ describe("목적지 안내", () => {
     }
   });
 
-  it("'봤음' 기록은 목적지마다 따로다 — 한 화면을 본다고 나머지가 삼켜지면 안 된다", () => {
+  it("keeps a separate seen key per destination", () => {
     const keys = DESTINATIONS.map((id) => destinationTourStatusKey(id));
     expect(new Set(keys).size).toBe(keys.length);
     expect(keys).not.toContain("guided-tour:v1");
   });
 
-  it("둘째 장의 앵커가 지금 화면에 없으면 한 장짜리로 접힌다", () => {
+  it("collapses to one card when the second anchor is absent", () => {
     const visible = computeVisibleSteps(DESTINATION_TOURS.docs, {
       persona: "all",
       hasSelection: false,

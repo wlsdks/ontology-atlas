@@ -53,7 +53,7 @@ afterEach(() => {
 });
 
 describe("DestinationGuide", () => {
-  it("첫 방문이면 잠시 뒤 그 목적지의 안내가 뜬다", async () => {
+  it("opens the destination tour shortly after a first visit", async () => {
     renderGuide();
     expect(screen.queryByTestId("guided-tour-card")).toBeNull();
     await act(async () => {
@@ -65,7 +65,7 @@ describe("DestinationGuide", () => {
     );
   });
 
-  it("이미 본 목적지에서는 다시 자동으로 뜨지 않는다 — 매번 뜨는 안내는 방해다", async () => {
+  it("does not auto-open again on a seen destination", async () => {
     window.localStorage.setItem(DOCS_KEY, "skipped");
     renderGuide();
     await act(async () => {
@@ -74,7 +74,7 @@ describe("DestinationGuide", () => {
     expect(screen.queryByTestId("guided-tour-card")).toBeNull();
   });
 
-  it("본 뒤에도 설정 메뉴가 쓰는 '다시 보기' 로 되돌아올 수 있다", async () => {
+  it("reopens through replay after being seen", async () => {
     window.localStorage.setItem(DOCS_KEY, "done");
     renderGuide();
     await act(async () => {
@@ -92,7 +92,7 @@ describe("DestinationGuide", () => {
   // covers the very choices the card meant to introduce and puts two `aria-modal`
   // elements up at once (the card vanishes for a screen reader). The contract is to
   // wait until the decision is made and appear on the work surface.
-  it("결정 모달이 서 있는 동안은 겹쳐 쏘지 않고, 물러난 뒤에 뜬다", async () => {
+  it("waits for a decision modal to close before opening", async () => {
     const modal = document.createElement("section");
     modal.setAttribute("role", "dialog");
     modal.setAttribute("aria-modal", "true");
@@ -115,7 +115,7 @@ describe("DestinationGuide", () => {
   // swallowed the click with no response. Blocking that does not say "blocked" reads
   // to the user as "broken". Pressing a blocked spot withdraws the guidance, and a
   // second press goes through.
-  it("막힌 자리를 누르면 안내가 물러난다 — 말없이 삼키지 않는다", async () => {
+  it("dismisses the tour when a blocked area is pressed", async () => {
     renderGuide();
     await act(async () => {
       vi.advanceTimersByTime(1000);
@@ -139,7 +139,7 @@ describe("DestinationGuide", () => {
   // waiting" guard, which only the map had, was ported to the five destination tours.
   // With a 30-second waiting window, a card appearing belatedly over someone who had
   // started exploring on their own was the defect.
-  it("대기 중 사용자가 먼저 움직이면 안내가 아예 뜨지 않는다", async () => {
+  it("never opens when the user acts during the delay", async () => {
     renderGuide();
     await act(async () => {
       fireEvent.pointerDown(document.body);
@@ -150,7 +150,7 @@ describe("DestinationGuide", () => {
     expect(screen.queryByTestId("guided-tour-card")).toBeNull();
   });
 
-  it("취소돼도 길이 막히지 않는다 — 기록을 남기지 않고 '다시 보기' 가 연다", async () => {
+  it("leaves replay available after a cancelled auto start without recording seen", async () => {
     renderGuide();
     await act(async () => {
       fireEvent.pointerDown(document.body);
@@ -165,7 +165,7 @@ describe("DestinationGuide", () => {
     expect(screen.getByTestId("guided-tour-card")).toBeInTheDocument();
   });
 
-  it("안내가 이미 뜬 뒤의 클릭은 취소가 아니다 — 카드는 그대로 서 있다", async () => {
+  it("keeps the card open on a click after it appeared", async () => {
     renderGuide();
     await act(async () => {
       vi.advanceTimersByTime(1000);
@@ -177,7 +177,7 @@ describe("DestinationGuide", () => {
     expect(screen.getByTestId("guided-tour-card")).toBeInTheDocument();
   });
 
-  it("지도(목적지 없음)에서는 아무것도 렌더하지 않는다 — 지도는 자기 여정을 따로 갖는다", async () => {
+  it("renders nothing on the map without a destination", async () => {
     renderGuide(null);
     await act(async () => {
       vi.advanceTimersByTime(5000);
@@ -195,8 +195,8 @@ describe("DestinationGuide", () => {
  * called, that is not a switch but **deletion**. The owner asked for the former
  * ("Or else when clicked" — or else when clicked).
  */
-describe("화면 안내 자동 표시 스위치", () => {
-  it("끄면 목적지 안내가 저절로 뜨지 않는다", async () => {
+describe("tour auto-show switch", () => {
+  it("does not auto-open when the switch is off", async () => {
     window.localStorage.setItem(AUTO_START_KEY, "0");
     renderGuide();
     await act(async () => {
@@ -205,7 +205,7 @@ describe("화면 안내 자동 표시 스위치", () => {
     expect(screen.queryByRole("heading", { level: 2 })).toBeNull();
   });
 
-  it("켜져 있으면 저절로 뜬다 — 스위치가 실제로 그 발화를 막고 있다는 증거", async () => {
+  it("auto-opens when the switch is on", async () => {
     window.localStorage.setItem(AUTO_START_KEY, "1");
     renderGuide();
     await act(async () => {
@@ -214,7 +214,7 @@ describe("화면 안내 자동 표시 스위치", () => {
     expect(screen.getByRole("heading", { level: 2 })).toBeInTheDocument();
   });
 
-  it("기본(저장값 없음)이면 저절로 뜨지 않는다 — 2026-08-13 소유자 확정", async () => {
+  it("does not auto-open by default with no stored value", async () => {
     window.localStorage.removeItem(AUTO_START_KEY);
     renderGuide();
     await act(async () => {
@@ -223,7 +223,7 @@ describe("화면 안내 자동 표시 스위치", () => {
     expect(screen.queryByRole("heading", { level: 2 })).toBeNull();
   });
 
-  it("꺼져 있어도 「다시 보기」로는 열린다 — 스위치는 삭제가 아니다", async () => {
+  it("still opens through replay when the switch is off", async () => {
     window.localStorage.setItem(AUTO_START_KEY, "0");
     renderGuide();
     await act(async () => {

@@ -27,11 +27,11 @@ beforeEach(() => {
 });
 
 describe("useGuidedTourAutoStartReady", () => {
-  it("모드가 아직 안 정해졌으면 띄우지 않는다 — 빈 화면 위에 카드가 뜬다", () => {
+  it("is not ready while the mode is undecided", () => {
     expect(ready()).toBe(false);
   });
 
-  it("샘플 지도로 정착하면 띄운다", () => {
+  it("is ready once the sample map settles", () => {
     mocks.vault = { status: "idle", restoreAttempted: true };
     expect(ready()).toBe(true);
   });
@@ -42,13 +42,13 @@ describe("useGuidedTourAutoStartReady", () => {
    * even though the map, INDEX, and datasheet the tour explains are the same screen in
    * both modes.
    */
-  it("내 폴더를 골라 로드돼도 띄운다", () => {
+  it("is ready once a chosen folder loads", () => {
     mocks.mode = "local";
     mocks.vault = { status: "loaded", restoreAttempted: true };
     expect(ready()).toBe(true);
   });
 
-  it("폴더를 고르는 중(로드 전)에는 띄우지 않는다", () => {
+  it("is not ready while a folder is being chosen", () => {
     mocks.mode = "local";
     for (const status of ["idle", "loading", "error"]) {
       mocks.vault = { status, restoreAttempted: true };

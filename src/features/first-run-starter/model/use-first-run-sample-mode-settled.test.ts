@@ -47,7 +47,7 @@ describe('useFirstRunSampleModeSettled', () => {
    * a folder previously saw the first-time visitor's screen whenever they closed the
    * vault. This case blocks that regression.
    */
-  it('연결 이력이 있으면 static 모드여도 샘플 안내를 띄우지 않는다', () => {
+  it('does not show the sample hint in static mode when a connection history exists', () => {
     mocks.restoreAttempted = true;
     mocks.mode = 'static';
     mocks.recentVaults = [{ id: 'previously-opened' }];

@@ -30,7 +30,7 @@ describe('OntologyStarterCta', () => {
     copyTextMock.mockReset();
   });
 
-  it('빈 vault CTA에서 AI agent 검증 루프를 생성 전에 보여준다', () => {
+  it('shows the AI agent verification loop before creation in the empty-vault CTA', () => {
     render(<OntologyStarterCta docCount={0} onScaffold={vi.fn()} />);
 
     expect(
@@ -61,7 +61,7 @@ describe('OntologyStarterCta', () => {
     ).toBeInTheDocument();
   });
 
-  it('AI 검증 프롬프트를 clipboard 로 복사한다', async () => {
+  it('copies the AI verification prompt to the clipboard', async () => {
     copyTextMock.mockResolvedValue(true);
     render(<OntologyStarterCta docCount={0} onScaffold={vi.fn()} />);
 
@@ -89,7 +89,7 @@ describe('OntologyStarterCta', () => {
     expect(await screen.findByRole('button', { name: '프롬프트 복사됨' })).toBeInTheDocument();
   });
 
-  it('기존 vault 에서도 시작 시드 추가 없이 AI 검증 프롬프트를 복사할 수 있다', async () => {
+  it('copies the AI verification prompt in an existing vault without adding the starter seed', async () => {
     const onScaffold = vi.fn();
     copyTextMock.mockResolvedValue(true);
     render(<OntologyStarterCta docCount={3} onScaffold={onScaffold} />);
@@ -105,7 +105,7 @@ describe('OntologyStarterCta', () => {
     expect(await screen.findByRole('button', { name: '프롬프트 복사됨' })).toBeInTheDocument();
   });
 
-  it('AI 없이 재현 가능한 터미널 근거 묶음을 복사한다', async () => {
+  it('copies a terminal evidence bundle reproducible without AI', async () => {
     copyTextMock.mockResolvedValue(true);
     render(<OntologyStarterCta docCount={3} onScaffold={vi.fn()} />);
 
@@ -125,7 +125,7 @@ describe('OntologyStarterCta', () => {
     expect(await screen.findByRole('button', { name: '터미널 근거 복사됨' })).toBeInTheDocument();
   });
 
-  it('자동화에서 파싱 가능한 JSON gate 명령을 복사한다', async () => {
+  it('copies a machine-readable JSON gate command', async () => {
     copyTextMock.mockResolvedValue(true);
     render(<OntologyStarterCta docCount={0} onScaffold={vi.fn()} />);
 
@@ -139,7 +139,7 @@ describe('OntologyStarterCta', () => {
     expect(await screen.findByRole('button', { name: '자동 점검 명령을 복사했어요' })).toBeInTheDocument();
   });
 
-  it('데스크톱 vault 절대경로가 있으면 바로 실행 가능한 proof 명령을 복사한다', async () => {
+  it('copies a runnable proof command when the desktop vault path is known', async () => {
     copyTextMock.mockResolvedValue(true);
     render(
       <OntologyStarterCta
@@ -162,7 +162,7 @@ describe('OntologyStarterCta', () => {
     );
   });
 
-  it('vault 절대경로에 작은따옴표가 있어도 JSON gate 명령을 shell-safe 하게 만든다', () => {
+  it('keeps the JSON gate command shell-safe when the vault path has a single quote', () => {
     expect(buildOntologyStarterJsonGateCommand("/Users/dana/Client's Vault")).toContain(
       "node $ATLAS/cli/src/index.mjs agent-brief '/Users/dana/Client'\\''s Vault' --verify-fallbacks --json --exit-zero",
     );

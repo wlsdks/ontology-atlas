@@ -35,8 +35,8 @@ function fill(testId: string, value: string) {
   fireEvent.change(screen.getByTestId(testId), { target: { value } });
 }
 
-describe('WebManualConnectPanel — 브라우저는 경로를 모르지만 사람은 안다', () => {
-  it('채우기 전에도 무엇을 해야 하는지 보인다 — 자리표시자가 든 진짜 설정', () => {
+describe('WebManualConnectPanel manual path entry', () => {
+  it('shows a real config with placeholders before paths are filled', () => {
     renderPanel();
     const body = screen.getByTestId('web-manual-connect-config-body');
     expect(body.textContent).toContain('mcpServers');
@@ -50,10 +50,10 @@ describe('WebManualConnectPanel — 브라우저는 경로를 모르지만 사�
    * "Your tool". The inner one does not switch a section of the page; it parameterises one config
    * block, which is a radiogroup.
    */
-  it('도구 고르기는 두 번째 탭 묶음이 아니다 — 패널 안의 배타 선택은 radiogroup 이다', () => {
+  it('uses a radiogroup rather than a second tablist for the client choice', () => {
     renderPanel();
 
-    expect(screen.queryAllByRole('tablist'), '패널이 자기 탭 묶음을 또 만든다').toHaveLength(0);
+    expect(screen.queryAllByRole('tablist'), 'the panel rendered its own tablist').toHaveLength(0);
     const group = screen.getByRole('radiogroup');
     expect(within(group).getAllByRole('radio')).toHaveLength(4);
     expect(screen.getByTestId('web-manual-connect-tool-claude-code')).toHaveAttribute(
@@ -67,7 +67,7 @@ describe('WebManualConnectPanel — 브라우저는 경로를 모르지만 사�
    * movement that never happened — the failure `use-roving-radio-group.ts` measured across 18
    * groups. Going through `SegmentedControl` brings the behaviour with the container.
    */
-  it('화살표로 도구 사이를 옮길 수 있다 — 역할이 약속한 것을 실제로 한다', () => {
+  it('moves between clients with arrow keys', () => {
     renderPanel();
 
     const first = screen.getByTestId('web-manual-connect-tool-claude-code');
@@ -80,7 +80,7 @@ describe('WebManualConnectPanel — 브라우저는 경로를 모르지만 사�
     );
   });
 
-  it('덜 채운 설정은 복사되지 않는다 — 붙지 않는 설정은 함정이다', () => {
+  it('does not copy an incomplete config', () => {
     renderPanel();
     expect(screen.getByTestId('web-manual-connect-copy-config')).toBeDisabled();
     expect(screen.getByTestId('web-manual-connect-copy-cli')).toBeDisabled();
@@ -95,7 +95,7 @@ describe('WebManualConnectPanel — 브라우저는 경로를 모르지만 사�
     expect(screen.getByTestId('web-manual-connect-copy-verify')).toBeEnabled();
   });
 
-  it('두 경로가 채워지면 자리표시자 없는 실행 가능한 설정이 나온다', () => {
+  it('produces a runnable config without placeholders once both paths are filled', () => {
     renderPanel();
     fill('web-manual-connect-vault-input', '/Users/me/notes');
     fill('web-manual-connect-checkout-input', '/Users/me/ontology-atlas');
@@ -107,7 +107,7 @@ describe('WebManualConnectPanel — 브라우저는 경로를 모르지만 사�
     ]);
   });
 
-  it('도구를 바꾸면 그 도구의 설정 파일과 포맷이 나온다', () => {
+  it('switches the config file and format with the selected client', () => {
     renderPanel();
     fill('web-manual-connect-vault-input', '/Users/me/notes');
     fill('web-manual-connect-checkout-input', '/Users/me/ontology-atlas');
@@ -120,14 +120,14 @@ describe('WebManualConnectPanel — 브라우저는 경로를 모르지만 사�
     );
   });
 
-  it('물결(~)을 잡고, 왜 안 되는지 말한다 — 설정 파일에서 펼쳐지지 않는다', () => {
+  it('flags a tilde path and explains why it fails', () => {
     renderPanel();
     fill('web-manual-connect-vault-input', '~/notes');
     expect(screen.getByTestId('web-manual-connect-vault-input-issue').textContent).toMatch(/물결/);
     expect(screen.getByTestId('web-manual-connect-copy-config')).toBeDisabled();
   });
 
-  it('상대 경로를 잡는다', () => {
+  it('flags a relative path', () => {
     renderPanel();
     fill('web-manual-connect-checkout-input', './atlas');
     expect(screen.getByTestId('web-manual-connect-checkout-input-issue').textContent).toMatch(
@@ -135,12 +135,12 @@ describe('WebManualConnectPanel — 브라우저는 경로를 모르지만 사�
     );
   });
 
-  it('빈 값은 오류로 꾸짖지 않는다 — 아직 안 채운 것뿐이다', () => {
+  it('does not flag an empty value as an error', () => {
     renderPanel();
     expect(screen.queryByTestId('web-manual-connect-vault-input-issue')).toBeNull();
   });
 
-  it('확인했다고 말하지 않는다 — 모양만 본다고 화면이 먼저 말한다', () => {
+  it('states that only the path shape is checked', () => {
     /*
      * Assert against the message itself, not a hand-typed excerpt of it. The old
      * regex pinned two fragments of the sentence, so rewording the copy — even into
@@ -154,8 +154,8 @@ describe('WebManualConnectPanel — 브라우저는 경로를 모르지만 사�
   });
 });
 
-describe('AgentClientButtons — 웹 강등이 막다른 길이 아니다', () => {
-  it('연결 불가라고 말하지 않고, 그 자리에서 만드는 길을 함께 준다', () => {
+describe('AgentClientButtons web fallback is not a dead end', () => {
+  it('offers manual config in place instead of saying connection is impossible', () => {
     render(
       <NextIntlClientProvider locale="ko" messages={ko}>
         <AgentClientButtons

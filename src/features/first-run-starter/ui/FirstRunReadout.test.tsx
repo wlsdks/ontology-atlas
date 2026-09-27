@@ -89,7 +89,7 @@ describe('FirstRunReadout', () => {
   // In plain (non-developer) mode the element tier is unreachable
   // (`PLAIN_TIER_REVEAL`), so "zoom in to see elements" stays false forever. Plain mode
   // always shows the click-based wording regardless of tier.
-  describe('audiencePlain (P1 결함①b)', () => {
+  describe('audiencePlain', () => {
     it('shows the plain click-based hint instead of the zoom hint, regardless of tier', () => {
       render(<FirstRunReadout conceptCount={36} totalConceptCount={125} domainCount={6} tier="circuit" audiencePlain />);
       expect(screen.getByTestId('first-run-readout-zoom-hint')).toHaveTextContent('zoomHintPlain');

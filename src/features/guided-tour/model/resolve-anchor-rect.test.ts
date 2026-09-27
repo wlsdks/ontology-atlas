@@ -200,7 +200,7 @@ describe("computeCardPlacement · avoidTarget (the card clears the lit node)", (
       const card = cardBox(placement);
       expect(
         intersects(card, targetRect),
-        `카드(${JSON.stringify(card)})가 켜진 노드(${JSON.stringify(targetRect)})를 덮는다`,
+        `card ${JSON.stringify(card)} covers the lit node ${JSON.stringify(targetRect)}`,
       ).toBe(false);
       // The name band under the disc stays clear too, which is what `belowGap` bought.
       expect(intersects(card, { ...targetRect, height: targetRect.height + CARD.belowGap })).toBe(false);

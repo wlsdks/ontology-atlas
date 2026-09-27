@@ -442,7 +442,7 @@ describe('FirstRunStarterModule', () => {
 
   // A non-developer had no way to discover the "plain" view-mode toggle. One
   // quiet nudge line sits near the dismiss row.
-  it('P2 결함③ — renders a quiet nudge toward the plain-mode gear toggle near the dismiss row', () => {
+  it('renders a quiet nudge toward the plain-mode gear toggle near the dismiss row', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
 
     const hint = screen.getByTestId('first-run-starter-plain-mode-hint');
@@ -577,7 +577,7 @@ describe('FirstRunStarterModule', () => {
 // Structure change 2026-07-24 (owner report: "Separate scrollbars for top and bottom",
 // separate scrollbars top and bottom) — the guide card and the INDEX (children)
 // render exclusively, so the panel always has exactly one scroller.
-describe('FirstRunStarterModule — 가이드/INDEX 배타 렌더', () => {
+describe('FirstRunStarterModule renders the guide or INDEX exclusively', () => {
   // This describe sits outside the block above and needs its own reset (a session
   // dismiss persists across the whole file).
   beforeEach(() => {
@@ -588,7 +588,7 @@ describe('FirstRunStarterModule — 가이드/INDEX 배타 렌더', () => {
     window.localStorage.setItem('vault-open-guide:auto:v1', '1');
   });
 
-  it('가이드가 펼쳐져 있으면 INDEX children 을 렌더하지 않는다', () => {
+  it('does not render INDEX children while the guide is expanded', () => {
     render(
       <FirstRunStarterModule concepts={1} relations={1} domains={1}>
         <div data-testid="index-body" />
@@ -598,7 +598,7 @@ describe('FirstRunStarterModule — 가이드/INDEX 배타 렌더', () => {
     expect(screen.queryByTestId('index-body')).not.toBeInTheDocument();
   });
 
-  it('닫으면 되돌아오기 1행 + INDEX children 이 열린다', () => {
+  it('shows a one-row return and INDEX children after closing', () => {
     render(
       <FirstRunStarterModule concepts={1} relations={1} domains={1}>
         <div data-testid="index-body" />
@@ -611,7 +611,7 @@ describe('FirstRunStarterModule — 가이드/INDEX 배타 렌더', () => {
     expect(screen.getByTestId('index-body')).toBeInTheDocument();
   });
 
-  it('되돌아오기를 누르면 다시 가이드가 패널을 차지한다', () => {
+  it('restores the guide to the panel when return is pressed', () => {
     render(
       <FirstRunStarterModule concepts={1} relations={1} domains={1}>
         <div data-testid="index-body" />
@@ -624,7 +624,7 @@ describe('FirstRunStarterModule — 가이드/INDEX 배타 렌더', () => {
     expect(screen.queryByTestId('index-body')).not.toBeInTheDocument();
   });
 
-  it('로컬 vault 모드에서는 가이드 없이 INDEX 만 그린다', () => {
+  it('draws only INDEX in local vault mode', () => {
     mocks.mode = 'local';
     render(
       <FirstRunStarterModule concepts={1} relations={1} domains={1}>
@@ -651,7 +651,7 @@ describe('FirstRunStarterModule — 가이드/INDEX 배타 렌더', () => {
  * effect**, so the next person deleting the `lensActive` wiring gets no complaint
  * from either types or lint.
  */
-describe('FirstRunStarterModule — 렌즈가 켜지면 INDEX 에 자리를 넘긴다', () => {
+describe('FirstRunStarterModule yields to INDEX when a lens is active', () => {
   beforeEach(() => {
     // Other describes in this file mutate the shared mocks (local mode, restore
     // incomplete, and so on). Lens collapse is meaningful only while the card is
@@ -667,20 +667,20 @@ describe('FirstRunStarterModule — 렌즈가 켜지면 INDEX 에 자리를 넘�
     resetSampleSourceCacheForTests();
   });
 
-  it('lensActive 가 켜지면 카드가 접히고 children 이 렌더된다', () => {
+  it('collapses the card and renders children when lensActive turns on', () => {
     const { rerender } = render(
       <FirstRunStarterModule concepts={1} relations={1} domains={1}>
         <div data-testid="index-body" />
       </FirstRunStarterModule>,
     );
-    expect(screen.queryByTestId('index-body'), '처음엔 카드가 자리를 차지한다').toBeNull();
+    expect(screen.queryByTestId('index-body'), 'the card must fill the panel first').toBeNull();
 
     rerender(
       <FirstRunStarterModule concepts={1} relations={1} domains={1} lensActive>
         <div data-testid="index-body" />
       </FirstRunStarterModule>,
     );
-    expect(screen.getByTestId('index-body'), '렌즈를 켰는데 INDEX 가 안 열렸다').toBeInTheDocument();
+    expect(screen.getByTestId('index-body'), 'INDEX did not open when the lens turned on').toBeInTheDocument();
   });
 
   it('the tour pointing at the INDEX folds the card for that step, and gives it back after', () => {
@@ -717,7 +717,7 @@ describe('FirstRunStarterModule — 렌즈가 켜지면 INDEX 에 자리를 넘�
     expect(screen.getByTestId('first-run-starter-cli-toggle')).toHaveAttribute('aria-expanded', 'false');
   });
 
-  it('렌즈를 꺼도 다시 펼치지 않는다 — 보던 트리를 뺏지 않는다', () => {
+  it('stays collapsed when the lens turns off', () => {
     const { rerender } = render(
       <FirstRunStarterModule concepts={1} relations={1} domains={1} lensActive>
         <div data-testid="index-body" />
@@ -730,14 +730,14 @@ describe('FirstRunStarterModule — 렌즈가 켜지면 INDEX 에 자리를 넘�
         <div data-testid="index-body" />
       </FirstRunStarterModule>,
     );
-    expect(screen.getByTestId('index-body'), '렌즈를 껐다고 트리가 사라졌다').toBeInTheDocument();
+    expect(screen.getByTestId('index-body'), 'the tree disappeared when the lens turned off').toBeInTheDocument();
   });
 
   /*
    * ⚠️ The door for someone who already has code (decision, 2026-08-24). Measured on the shipped
    * card: of its four actions none makes an ontology from a repository that already exists.
    */
-  it('코드를 이미 가진 사람에게 문을 준다 — 무엇을 할지와, 쓰기 전에 묻는다는 것까지', async () => {
+  it('offers the build-from-code door and says it asks before writing', async () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
     const door = screen.getByTestId('first-run-build-from-code');
     expect(door).toHaveTextContent('buildFromCodeLabel');
@@ -758,7 +758,7 @@ describe('FirstRunStarterModule — 렌즈가 켜지면 INDEX 에 자리를 넘�
     );
     expect(
       mocks.ensureChildDir,
-      '경로를 보여 주기만 해야 하는 단계에서 이미 폴더를 만들었다',
+      'created a folder at the path preview step',
     ).not.toHaveBeenCalled();
 
     await act(async () => {
@@ -773,7 +773,7 @@ describe('FirstRunStarterModule — 렌즈가 켜지면 INDEX 에 자리를 넘�
     expect(mocks.requestAgentChat).toHaveBeenCalledTimes(1);
   });
 
-  it('취소하면 만들지 않고 경로도 치운다', async () => {
+  it('creates nothing and clears the path on cancel', async () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
     await act(async () => {
       fireEvent.click(screen.getByTestId('first-run-build-from-code'));
@@ -792,7 +792,7 @@ describe('FirstRunStarterModule — 렌즈가 켜지면 INDEX 에 자리를 넘�
    * never opened a folder", so the door it contained was invisible to the person who opened folders
    * repeatedly, saw an empty map each time, and gave up — the exact person it was built for.
    */
-  it('폴더를 여러 번 열어 봤어도 지도를 못 만든 사람에게 문이 보인다', () => {
+  it('shows the door to someone who opened folders many times without building a map', () => {
     // The card itself is gone (a vault is open, so first-run guidance is finished), and the door
     // must not go with it.
     mocks.mode = 'local';
@@ -801,16 +801,16 @@ describe('FirstRunStarterModule — 렌즈가 켜지면 INDEX 에 자리를 넘�
         <div data-testid="index-body" />
       </FirstRunStarterModule>,
     );
-    expect(screen.queryByTestId('first-run-starter'), '카드는 이미 할 일을 마쳤다').toBeNull();
+    expect(screen.queryByTestId('first-run-starter'), 'the card was already done').toBeNull();
     expect(
       screen.getByTestId('index-build-from-code'),
-      '폴더를 여러 번 연 것은 끝냈다는 뜻이 아니라 더 헤맸다는 뜻이다',
+      'opening folders many times must not count as done',
     ).toBeInTheDocument();
     // It sits above their own tree, not instead of it.
     expect(screen.getByTestId('index-body')).toBeInTheDocument();
   });
 
-  it('코드가 이미 붙어 있으면 그 문은 사라진다 — 끝난 일을 다시 권하지 않는다', () => {
+  it('hides the door once code is connected', () => {
     mocks.mode = 'local';
     render(
       <FirstRunStarterModule concepts={40} relations={30} domains={5} agentAvailable>
@@ -831,7 +831,7 @@ describe('FirstRunStarterModule — 렌즈가 켜지면 INDEX 에 자리를 넘�
    * box to live in, and the error was written into state that nothing rendered — so a picker that
    * threw left the person pressing a button that did nothing, twice.
    */
-  it('프로젝트를 고르기도 전에 실패하면 그 사실을 말한다 — 눌러도 아무 일 없는 버튼이 되지 않는다', async () => {
+  it('reports a failure that happens before the project pick', async () => {
     mocks.pickerThrows = true;
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
     await act(async () => {
@@ -840,14 +840,14 @@ describe('FirstRunStarterModule — 렌즈가 켜지면 INDEX 에 자리를 넘�
     expect(screen.getByTestId('first-run-build-error')).toBeInTheDocument();
   });
 
-  it('넘길 에이전트가 없으면 문을 그리지 않는다 — 폴더만 만들고 끝나면 약속을 어긴 것이다', () => {
+  it('does not draw the door without an agent to hand off to', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
     expect(screen.queryByTestId('first-run-build-from-code')).toBeNull();
     // The rest of the card is untouched: this removes a dead end, it does not re-rank anything.
     expect(screen.getByTestId('first-run-starter-open')).toBeInTheDocument();
   });
 
-  it('에이전트가 없으면 사람 B 의 줄도 그리지 않는다', () => {
+  it('does not draw the code-owner row without an agent', () => {
     mocks.mode = 'local';
     render(
       <FirstRunStarterModule concepts={4} relations={2} domains={1} mapUnbuilt>
@@ -858,12 +858,12 @@ describe('FirstRunStarterModule — 렌즈가 켜지면 INDEX 에 자리를 넘�
     expect(screen.getByTestId('index-body')).toBeInTheDocument();
   });
 
-  it('웹에서는 그 문이 아예 없다 — 「곧 됩니다」도 비활성 버튼도 아니다', () => {
+  it('has no door at all on the web', () => {
     mocks.desktop = false;
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
     expect(
       screen.queryByTestId('first-run-build-from-code'),
-      '넘길 에이전트가 없는데 문을 그렸다 — 열리지 않는 문은 없는 문보다 나쁘다',
+      'drew the door without an agent to hand off to',
     ).toBeNull();
     // The rest of the card is untouched: this is an addition, not a re-ranking.
     expect(screen.getByTestId('first-run-starter-open')).toBeInTheDocument();

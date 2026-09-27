@@ -91,14 +91,14 @@ beforeEach(() => {
   lastInstallProgress.mockResolvedValue(null);
 });
 
-describe('연동 점검 화면', () => {
-  it('누르기 전에는 아무 줄도 안 그린다', () => {
+describe('agent doctor screen', () => {
+  it('draws no rows before the check is pressed', () => {
     renderHarness();
     expect(screen.queryByTestId('agent-doctor')).toBeNull();
     expect(screen.getByTestId('agent-doctor-scan')).toBeVisible();
   });
 
-  it('다 괜찮으면 **한 줄**로 접는다 — 일곱 줄이 아니다', async () => {
+  it('collapses to one row when every check passes', async () => {
     diagnoseAgent.mockResolvedValue(['cli', 'launcher', 'npx-cache', 'config-dir', 'credentials-link', 'shadow-keychain', 'login'].map(ok));
     renderHarness();
 
@@ -117,7 +117,7 @@ describe('연동 점검 화면', () => {
     expect(screen.getAllByRole('listitem')).toHaveLength(7);
   });
 
-  it('막힌 것만 펴고, 통과한 것은 개수로 남긴다', async () => {
+  it('expands only blocked checks and counts the passed ones', async () => {
     diagnoseAgent.mockResolvedValue([
       ok('cli'),
       ok('launcher'),
@@ -140,7 +140,7 @@ describe('연동 점검 화면', () => {
     expect(screen.getByTestId('agent-doctor-rest').textContent).not.toMatch(/\d/);
   });
 
-  it('고칠 수 있는 것에만 버튼이 붙는다', async () => {
+  it('offers a fix button only for fixable checks', async () => {
     diagnoseAgent.mockResolvedValue([
       problem('shadow-keychain', true),
       { id: 'login', state: 'problem', fixable: false, blocked: false },
@@ -155,7 +155,7 @@ describe('연동 점검 화면', () => {
     expect(screen.queryByTestId('agent-doctor-fix-login')).toBeNull();
   });
 
-  it('고친 뒤에는 말이 아니라 **다시 잰 값**을 그린다', async () => {
+  it('draws the re-measured result after a fix', async () => {
     diagnoseAgent.mockResolvedValue([ok('cli'), problem('shadow-keychain')]);
     repairAgentCheck.mockResolvedValue([ok('cli'), ok('shadow-keychain')]);
     renderHarness();
@@ -170,7 +170,7 @@ describe('연동 점검 화면', () => {
     expect(screen.queryByTestId('agent-doctor-check-shadow-keychain')).toBeNull();
   });
 
-  it('모르는 것은 **괜찮음이 아니다** — 줄로 그려진다', async () => {
+  it('draws an unknown check as a row instead of passing it', async () => {
     diagnoseAgent.mockResolvedValue([ok('cli'), unknown('login')]);
     renderHarness();
 
@@ -184,7 +184,7 @@ describe('연동 점검 화면', () => {
     expect(screen.queryByTestId('agent-doctor-all-clear')).toBeNull();
   });
 
-  it('앱이 못 고치는 문제에는 **사람이 할 일**을 적는다', async () => {
+  it('states the manual step for a problem the app cannot fix', async () => {
     diagnoseAgent.mockResolvedValue([
       { id: 'cli', state: 'problem', fixable: false, blocked: false },
       problem('shadow-keychain'),
@@ -200,7 +200,7 @@ describe('연동 점검 화면', () => {
     expect(screen.queryByTestId('agent-doctor-next-shadow-keychain')).toBeNull();
   });
 
-  it('「연결 다시 맺기」는 점검을 본 뒤에만 나온다', async () => {
+  it('shows the reconnect action only after a check ran', async () => {
     diagnoseAgent.mockResolvedValue([ok('cli')]);
     renderHarness();
 
@@ -211,7 +211,7 @@ describe('연동 점검 화면', () => {
     await waitFor(() => expect(screen.getByTestId('agent-doctor-reset')).toBeVisible());
   });
 
-  it('다시 맺으면 **다시 잰 값**을 그린다', async () => {
+  it('draws the re-measured result after reconnecting', async () => {
     diagnoseAgent.mockResolvedValue([problem('config-dir')]);
     resetAgentConnection.mockResolvedValue([ok('config-dir')]);
     renderHarness();
@@ -231,7 +231,7 @@ describe('연동 점검 화면', () => {
    * Someone with no tool at all was being offered "fix the app's config" and "reconnect". Pressing
    * them is useless — there is no tool to launch in the first place.
    */
-  it('앞 단계가 막히면 뒷 단계의 수리를 권하지 않는다', async () => {
+  it('does not offer a later fix while an earlier step is blocked', async () => {
     diagnoseAgent.mockResolvedValue([
       { id: 'cli', state: 'problem', fixable: false, blocked: false },
       { id: 'config-dir', state: 'problem', fixable: false, blocked: true },
@@ -254,7 +254,7 @@ describe('연동 점검 화면', () => {
    * With only an "install into this app" button and no view of what will be run, the user presses
    * without knowing what happens on their own machine.
    */
-  it('설치 버튼 옆에 실행할 명령이 그대로 적힌다', async () => {
+  it('shows the exact install command beside the install button', async () => {
     diagnoseAgent.mockResolvedValue([{ id: 'cli', state: 'problem', fixable: false, blocked: false }]);
     agentInstallPlan.mockResolvedValue('npm install --prefix /app/managed-node --global @anthropic-ai/claude-code@2.1.236');
     renderHarness();
@@ -268,7 +268,7 @@ describe('연동 점검 화면', () => {
     expect(screen.getByTestId('agent-doctor-install')).toBeVisible();
   });
 
-  it('깔 수 없는 도구에는 설치 제안을 안 낸다', async () => {
+  it('does not offer install for a tool that cannot be installed', async () => {
     diagnoseAgent.mockResolvedValue([{ id: 'cli', state: 'problem', fixable: false, blocked: false }]);
     agentInstallPlan.mockResolvedValue(null);
     renderHarness();
@@ -282,7 +282,7 @@ describe('연동 점검 화면', () => {
     expect(screen.getByTestId('agent-doctor-next-cli')).toBeVisible();
   });
 
-  it('설치한 뒤에는 다시 잰 값을 그린다', async () => {
+  it('draws the re-measured result after install', async () => {
     diagnoseAgent.mockResolvedValue([{ id: 'cli', state: 'problem', fixable: false, blocked: false }]);
     agentInstallPlan.mockResolvedValue('npm install --prefix /app/managed-node --global x@1.0.0');
     installAgentCli.mockResolvedValue([ok('cli')]);
@@ -296,7 +296,7 @@ describe('연동 점검 화면', () => {
     expect(installAgentCli).toHaveBeenCalledWith('claude-acp');
   });
 
-  it('도구가 멀쩡하면 설치 제안이 안 나온다', async () => {
+  it('does not offer install when the tool is healthy', async () => {
     diagnoseAgent.mockResolvedValue([ok('cli')]);
     agentInstallPlan.mockResolvedValue('npm install --prefix /app/managed-node --global x@1.0.0');
     renderHarness();
@@ -313,7 +313,7 @@ describe('연동 점검 화면', () => {
    * no tooling at all: launching the adapter needs Node, and without it all the screen could say was
    * "install it yourself".
    */
-  it('Node 가 없으면 받을 주소와 해시를 보여 준다', async () => {
+  it('shows the Node download URL and hash when Node is missing', async () => {
     diagnoseAgent.mockResolvedValue([
       { id: 'launcher', state: 'problem', fixable: false, blocked: false },
     ]);
@@ -330,7 +330,7 @@ describe('연동 점검 화면', () => {
     expect(screen.getByTestId('agent-doctor-install-node')).toBeVisible();
   });
 
-  it('등재 안 된 플랫폼에는 Node 받기를 안 낸다', async () => {
+  it('does not offer a Node download on an unlisted platform', async () => {
     diagnoseAgent.mockResolvedValue([
       { id: 'launcher', state: 'problem', fixable: false, blocked: false },
     ]);
@@ -345,7 +345,7 @@ describe('연동 점검 화면', () => {
     expect(screen.getByTestId('agent-doctor-next-launcher')).toBeVisible();
   });
 
-  it('Node 를 받은 뒤에는 다시 잰 값을 그린다', async () => {
+  it('draws the re-measured result after the Node download', async () => {
     diagnoseAgent.mockResolvedValue([
       { id: 'launcher', state: 'problem', fixable: false, blocked: false },
     ]);
@@ -361,7 +361,7 @@ describe('연동 점검 화면', () => {
     expect(installManagedNode).toHaveBeenCalledWith('claude-acp');
   });
 
-  it('점검이 실패하면 그 사실을 말한다 — 조용히 빈 화면이 되지 않는다', async () => {
+  it('reports a failed check instead of rendering an empty screen', async () => {
     diagnoseAgent.mockRejectedValue(new Error('boom'));
     renderHarness();
 
@@ -382,8 +382,8 @@ describe('연동 점검 화면', () => {
  * was leave the chip disabled — the pattern the walkthrough named **"the silent wait"**. So what is
  * measured here is not "does the install work" but **"what is visible while it runs"**.
  */
-describe('설치 진행', () => {
-  it('아무것도 시작 안 했으면 진행 줄이 없다 — 0% 막대를 미리 세우지 않는다', async () => {
+describe('install progress', () => {
+  it('shows no progress row before any install starts', async () => {
     diagnoseAgent.mockResolvedValue([ok('cli'), ok('launcher')]);
     renderHarness();
     fireEvent.click(screen.getByTestId('agent-doctor-scan'));
@@ -391,7 +391,7 @@ describe('설치 진행', () => {
     expect(screen.queryByTestId('agent-doctor-progress')).toBeNull();
   });
 
-  it('분모를 아는 동안에는 퍼센트와 막대를 그린다', async () => {
+  it('draws a percentage and bar while the total is known', async () => {
     diagnoseAgent.mockResolvedValue([problem('launcher', false)]);
     renderHarness();
     fireEvent.click(screen.getByTestId('agent-doctor-scan'));
@@ -416,7 +416,7 @@ describe('설치 진행', () => {
     expect((bar.firstElementChild as HTMLElement).style.width).toBe('50%');
   });
 
-  it('분모를 모르면 막대 대신 그 도구가 뱉은 줄을 보여 준다 — 가짜 퍼센트 금지', async () => {
+  it('shows the tool output line instead of a bar when the total is unknown', async () => {
     diagnoseAgent.mockResolvedValue([problem('cli', false)]);
     renderHarness();
     fireEvent.click(screen.getByTestId('agent-doctor-scan'));
@@ -441,7 +441,7 @@ describe('설치 진행', () => {
     expect(screen.getByTestId('agent-doctor-progress').textContent).not.toContain('%');
   });
 
-  it('끝나면 끝났다고 남긴다 — 목록이 조용히 초록이 되는 것만으로는 모른다', async () => {
+  it('leaves a completion line when the install finishes', async () => {
     diagnoseAgent.mockResolvedValue([ok('cli')]);
     renderHarness();
     fireEvent.click(screen.getByTestId('agent-doctor-scan'));
@@ -462,7 +462,7 @@ describe('설치 진행', () => {
     expect(row.textContent).toContain(ko.acpChat.doctor.progress.cli.done);
   });
 
-  it('다시 재기 시작하면 지난 설치 결과 줄은 지운다', async () => {
+  it('clears the previous install result when a new check starts', async () => {
     diagnoseAgent.mockResolvedValue([ok('cli')]);
     renderHarness();
     fireEvent.click(screen.getByTestId('agent-doctor-scan'));
@@ -490,8 +490,8 @@ describe('설치 진행', () => {
  * 「install instructions」 for that tool in this list, install it, then press 「check again」 above"*.
  * The user cannot tell which of the two is real.
  */
-describe('모순된 안내', () => {
-  it('앱 설치를 제안할 때는 「직접 설치하고 다시 확인하라」를 안 띄운다', async () => {
+describe('contradictory guidance', () => {
+  it('hides the manual install hint while the app offers install', async () => {
     diagnoseAgent.mockResolvedValue([problem('cli', false)]);
     agentInstallPlan.mockResolvedValue('npm install --prefix /x --global pkg@1');
     renderHarness();
@@ -501,7 +501,7 @@ describe('모순된 안내', () => {
     expect(screen.queryByTestId('agent-doctor-next-cli')).toBeNull();
   });
 
-  it('앱이 내줄 길이 없으면 그때는 사람이 할 일을 말한다', async () => {
+  it('states the manual step when the app has no install path', async () => {
     diagnoseAgent.mockResolvedValue([problem('cli', false)]);
     agentInstallPlan.mockResolvedValue(null);
     renderHarness();
@@ -511,7 +511,7 @@ describe('모순된 안내', () => {
     expect(screen.queryByTestId('agent-doctor-install-plan')).toBeNull();
   });
 
-  it('Node 도 같다 — 받아 줄 수 있으면 「직접 설치하라」를 안 띄운다', async () => {
+  it('hides the manual Node hint while the app can download Node', async () => {
     diagnoseAgent.mockResolvedValue([problem('launcher', false)]);
     nodeInstallPlan.mockResolvedValue('https://nodejs.org/dist/x.tar.gz (abc123)');
     renderHarness();
@@ -530,8 +530,8 @@ describe('모순된 안내', () => {
  * be bound to one line with `whitespace-pre`, putting the overflowing third behind a horizontal
  * scroll — and **nobody ever discovers a horizontal scroll.**
  */
-describe('명령 원문', () => {
-  it('한 줄로 고정하지 않는다 — 넘치는 부분을 스크롤 뒤에 숨기지 않는다', async () => {
+describe('raw command text', () => {
+  it('wraps the command instead of hiding overflow behind a scroll', async () => {
     diagnoseAgent.mockResolvedValue([problem('cli', false)]);
     agentInstallPlan.mockResolvedValue(
       'npm install --prefix /Users/x/Library/Application Support/dev.jinan.ontology-atlas/managed-node --global @anthropic-ai/claude-code@2.1.236',
@@ -558,7 +558,7 @@ describe('명령 원문', () => {
  * and going past in the meantime means it is never seen — which is exactly the "check off completion"
  * the owner asked for.
  */
-describe('언마운트를 건너뛰는 완료 표시', () => {
+describe('completion that survives unmount', () => {
   const done = {
     runtimeId: 'claude-acp',
     job: 'cli' as const,
@@ -569,13 +569,13 @@ describe('언마운트를 건너뛰는 완료 표시', () => {
     at: Date.now(),
   };
 
-  it('마운트할 때 Rust 에 마지막 진행을 물어본다', async () => {
+  it('asks the native side for the last progress on mount', async () => {
     diagnoseAgent.mockResolvedValue([ok('cli')]);
     renderHarness();
     await waitFor(() => expect(lastInstallProgress).toHaveBeenCalledWith('claude-acp'));
   });
 
-  it('닫아 둔 사이에 끝났으면 다시 열었을 때 완료가 보인다', async () => {
+  it('shows a completion that happened while the screen was closed', async () => {
     diagnoseAgent.mockResolvedValue([ok('cli')]);
     lastInstallProgress.mockResolvedValue(done);
     renderHarness();
@@ -585,7 +585,7 @@ describe('언마운트를 건너뛰는 완료 표시', () => {
     expect(row.textContent).toContain(ko.acpChat.doctor.progress.cli.done);
   });
 
-  it('들고 있는 것이 없으면 아무것도 안 그린다 — 없는 일을 지어내지 않는다', async () => {
+  it('draws nothing when no progress is held', async () => {
     diagnoseAgent.mockResolvedValue([ok('cli')]);
     lastInstallProgress.mockResolvedValue(null);
     renderHarness();
@@ -593,7 +593,7 @@ describe('언마운트를 건너뛰는 완료 표시', () => {
     expect(screen.queryByTestId('agent-doctor-progress')).toBeNull();
   });
 
-  it('구독이 먼저 답했으면 그쪽이 이긴다 — 옛 값으로 덮지 않는다', async () => {
+  it('keeps a subscription event that arrived before the held progress', async () => {
     diagnoseAgent.mockResolvedValue([ok('cli')]);
     // Rust holds an old completion while a new install is running right now.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- the test controls when it resolves
@@ -637,8 +637,8 @@ describe('언마운트를 건너뛰는 완료 표시', () => {
  * right now" — drawing green without measuring, in direct violation of the first of this screen's
  * two rules.
  */
-describe('재지 않은 것을 괜찮다고 말하지 않는다', () => {
-  it('진행 상태만 있고 점검을 안 했으면 「문제 없어요」를 안 그린다', async () => {
+describe('unmeasured state is not reported as healthy', () => {
+  it('does not show the all-clear when only progress exists and no check ran', async () => {
     lastInstallProgress.mockResolvedValue({
       runtimeId: 'claude-acp',
       job: 'node',
@@ -657,7 +657,7 @@ describe('재지 않은 것을 괜찮다고 말하지 않는다', () => {
     expect(screen.queryByTestId('agent-doctor-checks')).toBeNull();
   });
 
-  it('점검을 돌린 뒤에는 평소대로 말한다', async () => {
+  it('reports normally after a check ran', async () => {
     diagnoseAgent.mockResolvedValue([ok('cli'), ok('launcher')]);
     renderHarness();
     fireEvent.click(screen.getByTestId('agent-doctor-scan'));

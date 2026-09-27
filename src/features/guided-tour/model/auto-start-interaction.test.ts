@@ -27,7 +27,7 @@ describe("watchGuidedTourAutoStartCancel", () => {
     return modal;
   }
 
-  it("지도 위 포인터 입력이면 자동 발화를 취소한다", () => {
+  it("cancels auto start on pointer input over the map", () => {
     const onCancel = vi.fn();
     const stop = watchGuidedTourAutoStartCancel(onCancel);
 
@@ -37,7 +37,7 @@ describe("watchGuidedTourAutoStartCancel", () => {
     stop();
   });
 
-  it("모달이 떠 있는 동안의 입력은 취소로 세지 않는다 — 시트의 [다음에] 클릭이 곧 투어 차례다", () => {
+  it("does not count input while a modal is open as cancellation", () => {
     const onCancel = vi.fn();
     const stop = watchGuidedTourAutoStartCancel(onCancel);
     const modal = openModal();
@@ -53,7 +53,7 @@ describe("watchGuidedTourAutoStartCancel", () => {
     stop();
   });
 
-  it("수정자 키만 눌린 것은 탐색 시작이 아니다", () => {
+  it("does not count a modifier-only key press", () => {
     const onCancel = vi.fn();
     const stop = watchGuidedTourAutoStartCancel(onCancel);
 
@@ -66,7 +66,7 @@ describe("watchGuidedTourAutoStartCancel", () => {
     stop();
   });
 
-  it("한 번만 알리고 스스로 떨어진다", () => {
+  it("notifies once and detaches itself", () => {
     const onCancel = vi.fn();
     const stop = watchGuidedTourAutoStartCancel(onCancel);
 
@@ -77,7 +77,7 @@ describe("watchGuidedTourAutoStartCancel", () => {
     stop();
   });
 
-  it("해제하면 더 이상 감지하지 않는다", () => {
+  it("stops detecting after dispose", () => {
     const onCancel = vi.fn();
     const stop = watchGuidedTourAutoStartCancel(onCancel);
     stop();
