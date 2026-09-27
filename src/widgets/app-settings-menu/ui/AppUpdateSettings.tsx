@@ -13,47 +13,19 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { DETAIL_TOGGLE_CHIP, SettingsGroup, SettingsRow } from './settings-primitives';
 
 /**
- * 「App」 (app) — the version in use and **an update check you press yourself.**
- *
- * ## Why it was missing (owner report, 2026-08-20)
- *
- * Automatic checking and the bottom-right toast have existed since 2026-07-27. But
- * **there was no way for the user to press it** — `useAppUpdate` exposes
- * `check(manual)` and **0 places** in the whole repository called it, while
- * 「It's up to date」 (the `current` stage) **could not even be drawn**, because the toast
- * returned `null` for it. The design was complete and the wiring was not.
- *
- * The hole that left open: automatic checks run **once a day** and a dismissal is
- * remembered for that version. So anyone who pressed 「Later」 once had **no way to
- * reach an update at all** until the next version shipped.
- *
- * ## Why installation does not happen here
- *
- * Download, install and restart are already handled by the toast. Building the same
- * flow twice draws progress in two places and nobody knows which is real. This
- * pane's one job is **starting the check**, and the result always continues in the
- * same place (the toast).
- *
- * ## Not drawn on the web
- *
- * A browser tab cannot replace itself. Talking about updates there **offers
- * something we cannot do**, so there is not even a degradation card — the section
- * simply does not exist.
+ * The version in use and a manual update check, the only way back to a version whose
+ * daily-check toast was dismissed. It only starts the check; download, install and restart
+ * stay in the toast so progress is drawn in one place. Not drawn on the web, where a tab
+ * cannot replace itself.
  */
 export function AppUpdateSettings() {
   const t = useTranslations('nav.settingsMenu.appUpdate');
   const update = useAppUpdateContext();
-  /*
-   * `undefined` while the read is in flight, `null` when it failed, a string once known. A
-   * label standing with no value reads as unfinished (2026-09-25), so each state says something.
-   */
+  // `undefined` while reading, `null` on failure, a string once known; each state says something.
   const [version, setVersion] = useState<string | null | undefined>(undefined);
   const [readAttempt, setReadAttempt] = useState(0);
 
-  /*
-   * The running version comes from **what the bundle knows**. A build constant would
-   * state "what this source was when it was built" rather than "what I am running".
-   */
+  // Read from the running bundle; a build constant would describe the source, not the running app.
   useEffect(() => {
     if (!isDesktopShell()) return;
     let alive = true;
@@ -71,12 +43,8 @@ export function AppUpdateSettings() {
     };
   }, [readAttempt]);
 
-  /*
-   * What the automatic check remembers, stated as facts (2026-09-25). The pane held one row and
-   * left most of the fixed sheet blank; these are the two things a person here can not see
-   * anywhere else — when the app last asked, and which build they put off. Re-read whenever the
-   * phase moves, because a finished manual check writes a new time.
-   */
+  // What the automatic check remembers: when it last asked and which build was put off.
+  // Re-read when the phase moves, because a finished manual check writes a new time.
   const format = useFormatter();
   const phaseKind = update?.phase.kind;
   // eslint-disable-next-line react-hooks/exhaustive-deps -- the phase is the re-read signal, not an input
@@ -86,10 +54,7 @@ export function AppUpdateSettings() {
 
   const phase = update.phase;
   const checking = phase.kind === 'checking';
-  /*
-   * **What it says** — only what was measured. Before a press there is no result
-   * line. After `available`, the toast takes over, so this only announces the fact.
-   */
+  // No result line before a press; after `available` the toast takes over.
   const outcome = (() => {
     switch (phase.kind) {
       case 'current':
@@ -121,12 +86,8 @@ export function AppUpdateSettings() {
                   : t('versionUnknown')
                 : t('versionReading')
           }
-          /*
-           * **One failure, one warning line.** After a check that also failed, the row promised a
-           * retry that had just run, in warning tone, stacked over the result line's warning about
-           * the same press (review, 2026-09-25). Once the re-read has been tried the row states the
-           * fact only, and the warning tone stays with the result line when that line has one.
-           */
+          // One failure, one warning line: once the re-read was tried, the row states the fact
+          // and the warning tone stays with the result line.
           captionTone={version === null && phase.kind !== 'failed' ? 'warning' : 'neutral'}
           testId="app-settings-update-version"
           control={
@@ -134,12 +95,7 @@ export function AppUpdateSettings() {
               size="lg"
               tone="secondary"
               data-testid="app-settings-update-check"
-              /*
-               * `aria-disabled`, not `disabled`, while checking. A `disabled` button drops the
-               * focus it holds, so pressing this sent the keyboard to `<body>` (inspection,
-               * 2026-09-25). The press is ignored instead, and the result is announced by the
-               * status line below.
-               */
+              // `aria-disabled`, not `disabled`, while checking: `disabled` drops focus to `<body>`.
               aria-disabled={checking || undefined}
               onClick={() => {
                 if (checking) return;
@@ -178,10 +134,8 @@ export function AppUpdateSettings() {
         />
       </SettingsGroup>
       {/*
-        The result line starts on the rows' text line - the group's 1px border plus the row's
-        `px-3` - rather than 16px left of it, and a failure reads in the warning tone the version
-        row already uses for its own failure (inspection, 2026-09-25: grey at x=517 against the
-        rows' 533). The live region is always present, so the first result is announced too.
+        Aligned to the rows' text line (group border plus row `px-3`); always mounted so the
+        live region announces the first result too.
       */}
       <p
         data-testid="app-settings-update-result"

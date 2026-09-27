@@ -4,17 +4,6 @@ import { describe, expect, it, vi } from "vitest";
 import { ConceptEgoGraph } from "./ConceptEgoGraph";
 import type { ConceptEgo } from "../model/build-concept-ego";
 
-/**
- * **The count the reading table shows and the count the drawing renders must
- * agree.**
- *
- * Measured 2026-08-02: the label said "contains 3" and only two circles were
- * visible. With a single relation kind the fan spans the whole circle, and
- * placing slots at `i/(slots-1)` puts the first and last at **exactly the same
- * angle**, so one hides under the other.
- *
- * An overlap is worse than a gap — the user cannot tell what they lost.
- */
 function ego(count: number): ConceptEgo {
   return {
     id: "self",
@@ -39,9 +28,9 @@ function ego(count: number): ConceptEgo {
   };
 }
 
-describe("ConceptEgoGraph — 그린 이웃 수", () => {
+describe("ConceptEgoGraph drawn neighbour count", () => {
   for (const count of [2, 3, 4, 5]) {
-    it(`관계가 한 종류뿐이어도 ${count}개를 다 그린다 (겹침 0)`, () => {
+    it(`draws all ${count} neighbours of a single relation kind without overlap`, () => {
       render(
         <ConceptEgoGraph
           ego={ego(count)}
@@ -61,11 +50,6 @@ describe("ConceptEgoGraph — 그린 이웃 수", () => {
     });
   }
 
-  /*
-   * Round four: the relation table carries every name, so the drawing names a neighbour only
-   * while it is pointed at, with a canvas halo so no spoke strikes it; the centre's name is
-   * the card header and is not drawn again.
-   */
   it("draws no name at rest and exactly the pointed-at neighbour's name with a halo", () => {
     const { rerender } = render(
       <ConceptEgoGraph ego={ego(4)} bearingLabel={() => "담고 있는 것"} moreLabel={(n) => `외 ${n}`} />,
@@ -81,11 +65,7 @@ describe("ConceptEgoGraph — 그린 이웃 수", () => {
     expect(labels[0].style.paintOrder).toBe("stroke");
   });
 
-  /*
-   * One neighbour can stand on two bearings: an element that belongs to a capability which also
-   * uses it (real vault, 2026-09-25). Keyed by id alone, the two marks shared one React key, and
-   * React warned that children may be duplicated or dropped across updates.
-   */
+  // One neighbour can stand on two bearings, so its two marks need distinct React keys.
   it("draws a neighbour that stands on two bearings once per bearing, each under its own key", () => {
     const errors = vi.spyOn(console, "error").mockImplementation(() => {});
     const twice: ConceptEgo = {

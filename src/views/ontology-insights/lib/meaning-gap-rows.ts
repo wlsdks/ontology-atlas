@@ -13,59 +13,31 @@ import { canonicalizeDomainRef } from "@/shared/lib/canonicalize-domain-ref";
 import { fillHandoffTemplate, withDoNextVerification } from "./do-next-queue";
 
 /**
- * **The meaning rows of the to-do queue** — the two gaps someone who does not read code can close
- * on the spot, plus the four findings that name a node and open it.
- *
- * - `missing-definition` — nowhere states what this concept means.
- * - `missing-domain` — a capability or element with no stated parent area.
- *
- * Those two are written from here, one frontmatter key each. The other four —
- * `missing-boundary`, `missing-uncertainty`, `epistemic-exclusion` and
- * `slug-outside-kind-folder` — are `MeaningFindingRow`s: they name the node and open it,
- * because each is answered by writing prose or moving a file, not by filling a field.
- *
- * **Where the definition is written.** It goes in the **frontmatter `description` key**. Because:
- * ① the schema source of truth (`mcp/src/schema.mjs`) gives all four kinds a `description` and
- * places it immediately after title in `preferredOrder`; ② MCP `patch_concept`, the CLI, and the
- * map popover already read that key; ③ being one scalar it can be fixed without touching the body —
- * writing into the body's first paragraph would mean rewriting the whole document, breaking this
- * row's promise that only one field changes.
- *
- * **What does not count as missing a definition.** Even with no `description`, **a body that
- * explains the concept counts as a definition.** Measured 2026-07-26: 91 of the dogfood vault's 92
- * concepts stated their meaning in the body with no `description`. Judging by key presence alone
- * would raise 91 false to-dos on a well-written vault, which makes the queue unusable.
- *
- * Which body counts is no longer decided here. Until 2026-09-22 the test was "a `description` or
- * any excerpt at all", so a heading and a placeholder bullet passed, and the queue called a node
- * defined while `validate_vault` was reporting `definition-missing` on the same file to the agent
- * standing next to the person. The verdict is now the manifest's recorded finding
- * (`VaultDoc.meaningFindings`), which both manifest builders take from
- * `src/shared/lib/meaning-findings.ts` — the port the parity contract holds to the canonical rule.
- *
- * **A concept with no document never appears here.** The verdict on where to write uses
- * `resolveNodeDocument` **alone**. A derived concept with no `.md` of its own has no file to fix
- * and is excluded from this list — its first step is "create the document", which another queue row
- * already hands off. Writing a second verdict reopens the accident of writing into someone else's
- * document.
+ * The to-do queue's meaning rows: `missing-definition` and `missing-domain` are written here, one frontmatter key
+ * each; the four findings name the node and open it, since prose or a file move answers
+ * them: `missing-boundary`, `missing-uncertainty`, `epistemic-exclusion`, `slug-outside-kind-folder`.
+ * A definition goes in frontmatter `description`: the schema (`mcp/src/schema.mjs`) gives every kind one, MCP,
+ * CLI and the map popover read it, and it changes one field without rewriting the body. Whether a body already
+ * defines the concept is the manifest's recorded finding (`VaultDoc.meaningFindings`,
+ * from `src/shared/lib/meaning-findings.ts`), the same rule `validate_vault` reports. Only nodes with their own
+ * document appear (`resolveNodeDocument`), so nothing is written into another concept's file.
  */
 
 /**
- * The kinds of gap and the verdict are owned by `@/entities/knowledge-graph` — the agent panel's
- * opening-line chips ask the same question, so a second verdict would eventually have the queue and
- * the panel naming different concepts. This only re-exports the names.
+ * The gap kinds and verdict belong to `@/entities/knowledge-graph`, shared with the agent panel's opening-line
+ * chips so both name the same concepts; this only re-exports them.
  */
 export type { ConceptDocFacts };
 
 export interface MeaningGapRow {
-  /** The row's unique id — for the review loop and for `key`. */
+  /** Unique row id, for the review loop and `key`. */
   id: string;
   gap: MeaningGapKind;
-  /** The graph node id — for map and workshop deeplinks. */
+  /** The graph node id, for map and workshop deep links. */
   nodeId: string;
-  /** **The file to write** — `resolveNodeDocument(node).ownSlug`. Nothing is written to any other path. */
+  /** The file to write, `resolveNodeDocument(node).ownSlug`; nothing else is written. */
   ownSlug: string;
-  /** The name to point an agent at for this concept — `resolveNodeAgentTarget`. */
+  /** The name an agent is pointed at (`resolveNodeAgentTarget`). */
   agentRef: string;
   title: string;
   nodeKind: string;
@@ -75,18 +47,14 @@ export interface MeaningGapRow {
 }
 
 /**
- * One node reported by a finding the person cannot close by typing into a field.
- *
- * Narrower than `MeaningGapRow` on purpose: there is no handoff template and no write
- * form, because answering "what does this exclude?" or "where should this file sit?"
- * means opening the node and writing prose, not filling one frontmatter key. The row
- * carries only what is needed to name the node and open it.
+ * A node reported by a finding answered with prose or a file move, so no handoff template or write form:
+ * only what is needed to name the node and open it.
  */
 interface MeaningFindingRow {
-  /** The row's unique id — `<section>:<slug>`, the same shape the queue's other ids use. */
+  /** Unique row id, `<section>:<slug>`, the shape the queue's other ids use. */
   id: string;
   gap: MeaningFindingGapKind;
-  /** The graph node id — for map and workshop deeplinks. */
+  /** The graph node id, for map and workshop deep links. */
   nodeId: string;
   /** The document the finding is about. */
   ownSlug: string;
@@ -94,17 +62,14 @@ interface MeaningFindingRow {
   nodeKind: string;
 }
 
-/** Per-section row lists and pre-truncation totals, one entry per finding section. */
+/** Row lists per finding section. */
 export type MeaningFindingRows = Record<MeaningFindingGapKind, MeaningFindingRow[]>;
 type MeaningFindingCounts = Record<MeaningFindingGapKind, number>;
 
 export interface MeaningGapResult {
   definitionRows: MeaningGapRow[];
   domainRows: MeaningGapRow[];
-  /**
-   * The four advisory finding sections, already truncated to the display limit.
-   * Their totals live in `counts.findings`, so a shortened list still states its scale.
-   */
+  /** The four advisory finding sections, truncated to the display limit; `counts.findings` keeps their totals. */
   findingRows: MeaningFindingRows;
   counts: {
     missingDefinition: number;
@@ -122,15 +87,13 @@ function emptyFindingRows(): MeaningFindingRows {
   };
 }
 
-/** One area available when assigning a parent. */
 export interface DomainChoice {
-  /** The value written into the frontmatter — the tail-slug form the whole vault uses. */
+  /** The frontmatter value: the domain document's own address (`canonicalizeDomainRef` of its slug), not its tail. */
   value: string;
-  /** The name shown on screen. */
   label: string;
 }
 
-/** The meaning-gap templates (`%ref%` token) plus the shared verification gate. */
+/** Meaning-gap templates (`%ref%` token) plus the shared verification gate. */
 export interface MeaningGapProse {
   verificationGate: string;
   missingDefinition: string;
@@ -141,7 +104,7 @@ export interface MeaningGapProse {
 
 export interface BuildMeaningGapOptions {
   prose: MeaningGapProse;
-  /** The display limit per kind. Defaults to 3 (the same rhythm as the queue card's other sections). */
+  /** Display limit per kind; defaults to 3, the queue card's rhythm. */
   perKindLimit?: number;
 }
 
@@ -158,9 +121,9 @@ export function buildMeaningGapRows(
 
   for (const node of nodes) {
     const { ownSlug } = resolveNodeDocument(node);
-    if (!ownSlug) continue; // no document means no file to fix
+    if (!ownSlug) continue; // No document means no file to fix.
     const doc = facts.get(ownSlug);
-    if (!doc) continue; // never write to a document absent from the manifest
+    if (!doc) continue; // Never write to a document absent from the manifest.
     const agentRef = resolveNodeAgentTarget(node).ref ?? ownSlug;
     const base = {
       nodeId: node.id,
@@ -207,7 +170,7 @@ export function buildMeaningGapRows(
     }
   }
 
-  // By name — if the order changed between two visits to the same screen, the row just seen would have to be found again.
+  // By name, so the row just seen stays in place between visits.
   const byTitle = (a: { title: string }, b: { title: string }) =>
     a.title.localeCompare(b.title);
   definitionRows.sort(byTitle);
@@ -234,10 +197,7 @@ export function buildMeaningGapRows(
   };
 }
 
-/**
- * Parent candidates — only domain documents that actually exist in the vault. A new area is not
- * created from this slot (creating an area means establishing new meaning, which is the workshop's job).
- */
+/** Parent candidates: only domain documents in the vault. Creating an area is new meaning, the workshop's job. */
 export function buildDomainChoices(
   nodes: readonly KnowledgeGraphNode[],
 ): DomainChoice[] {

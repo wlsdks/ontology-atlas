@@ -9,20 +9,16 @@ import { selectOpenVaultHandle } from '@/shared/lib/select-open-vault-handle';
 import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
 import { gitPathsLastChange, isGitBridgeAvailable, type GitPathLastChange } from '@/shared/lib/tauri-git';
 
-/** One concept's evidence, in the three words the map draws. */
 type MapEvidenceState = 'current' | 'stale' | 'unknown';
 
-/**
- * Why the states are what they are. Only `measured` may draw anything but `unknown`; every
- * other value is said out loud in the legend, so an unknown is never mistaken for current.
- */
+/** Only `measured` may draw anything but `unknown`; every other value is named in the legend. */
 export type MapEvidenceAvailability = 'measured' | 'reading' | 'app-only' | 'unreadable' | 'no-paths';
 
 export interface MapEvidence {
   availability: MapEvidenceAvailability;
-  /** node id → state. Absent ids are `unknown`. */
+  /** Absent ids are `unknown`. */
   states: ReadonlyMap<string, MapEvidenceState>;
-  /** Stale node id → the cited path that moved (or is gone), for a view that names it. */
+  /** Stale node id to the cited path that moved or is gone. */
   movedPaths: ReadonlyMap<string, string>;
 }
 
@@ -31,14 +27,9 @@ const NO_STATES: ReadonlyMap<string, MapEvidenceState> = new Map();
 const NO_PATHS: ReadonlyMap<string, string> = new Map();
 
 /**
- * The map's evidence states, from the same rule and the same Git walk the insights brief uses
- * (`shared/lib/evidence-states.ts` over `shared/lib/evidence-verdict.mjs`, which the MCP server
- * also runs). Nothing here is decided by the map: a concept whose cited code changed after its
- * document is stale, one whose cited path is gone is stale too (the meaning stands on nothing),
- * and anything the walk could not date is unknown.
- *
- * `enabled` is the Territories view being drawn — the walk is one Git call per load, and no
- * other view reads it.
+ * Same rule and Git walk as the insights brief and MCP (`shared/lib/evidence-states.ts`
+ * over `shared/lib/evidence-verdict.mjs`). `enabled` is Territories being drawn, the only view that
+ * reads it.
  */
 export function useMapEvidenceStates({
   nodes,

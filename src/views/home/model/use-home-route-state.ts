@@ -10,7 +10,7 @@ import {
 } from './url-state';
 import { guardedHistoryWrite } from '@/shared/lib/history-write-guard';
 
-/** Custom event dispatched right after history.pushState. */
+/** Dispatched right after history.pushState. */
 const HOME_URL_CHANGE_EVENT = 'app:urlchange';
 
 function readHomeSearch() {
@@ -18,26 +18,19 @@ function readHomeSearch() {
   return window.location.search;
 }
 
-/**
- * Serialises the home page's route state into URL query parameters and reads
- * it back.
- *
- * It subscribes **twice**: (1) `useSyncExternalStore` for popstate plus the
- * in-app pushState event, and (2) Next.js `useSearchParams` for app-router
- * navigation. Subscribing only to (1) meant a button navigating with a Next.js
- * `<Link>` changed the URL without refreshing route state. `window.location`
- * is always read fresh so the value is current whichever path changed it.
- */
 export interface HomeRouteStateUpdateOptions {
   /**
-   * Overwrite the current history entry instead of adding one. For writes that
-   * *normalise the URL that was arrived at* (expanding the ancestors a deep
-   * link needs, say) rather than user navigation — pushing those makes Back
-   * walk through entries the user never visited.
+   * For normalising the arrival URL rather than navigation, so Back does not walk unvisited
+   * entries.
    */
   replace?: boolean;
 }
 
+/**
+ * Serialises route state to query parameters and back. It subscribes to popstate, the in-app push
+ * event and `useSearchParams`, or a Next `<Link>` changes the URL without refreshing state; the
+ * value always reads `window.location` fresh.
+ */
 export function useHomeRouteState(): [
   HomeRouteState,
   (
@@ -52,9 +45,7 @@ export function useHomeRouteState(): [
     () => true,
     () => false,
   );
-  // useSearchParams subscribes to app-router changes (Link / router.push). Its
-  // value tracks window.location, so it is referenced only as a re-render
-  // trigger and never feeds the routeState computation below.
+  // Only a re-render trigger for app-router changes; never feeds routeState.
   const routerSearchParams = useSearchParams();
   const search = useSyncExternalStore(
     (onStoreChange) => {
@@ -70,12 +61,9 @@ export function useHomeRouteState(): [
     () => '',
   );
 
-  // In deps so the useMemo re-runs when routerSearchParams changes;
-  // window.location.search remains the source of truth. The react-hooks lint
-  // rule cannot infer the dependency, hence the explicit .toString() variable.
+  // An explicit string so the react-hooks lint rule sees the dependency.
   const routerSearchKey = routerSearchParams?.toString() ?? '';
   const routeState = useMemo(() => {
-    // routerSearchKey is a dependency purely to trigger a re-run.
     void routerSearchKey;
     if (!hydrated) return DEFAULT_HOME_ROUTE_STATE;
     const currentSearch =
@@ -105,24 +93,16 @@ export function useHomeRouteState(): [
         next,
       );
       const query = params.toString();
-      // Use the *actual browser path*. next-intl's usePathname returns the
-      // locale-stripped path (`/topology`), which drops `/ko` from the URL, and
-      // reloading that URL breaks the static export's [locale] route. User
-      // report: "reloading leaves the screen stuck loading" (reloading leaves the screen
-      // stuck loading).
+      // The actual browser path: next-intl's `usePathname` drops the locale, and reloading that
+      // breaks the static export's [locale] route.
       const browserPath = window.location.pathname;
       const nextUrl = query ? `${browserPath}?${query}` : browserPath;
-      // An identical result means there is no change to record. Pushing anyway
-      // stacks **the same address** as another history entry, and the first
-      // Back then changes nothing on screen — which reads as "Back is broken".
-      // Measured on the project detail → map landing: history 2→4, and one Back
-      // produced zero visible change. Most normalisation effects that run right
-      // after landing are exactly this no-op.
+      // An identical URL pushes nothing, or Back changes nothing on screen and reads as broken.
       if (nextUrl === `${window.location.pathname}${window.location.search}`) {
         return;
       }
-      // Through the shared budget: a runaway loop must not reach WebKit's 100-per-10s limit,
-      // which throws and takes the whole route down (`shared/lib/history-write-guard.ts`).
+      // Through the shared budget, or a runaway loop hits WebKit's 100-per-10s limit and throws
+      // (`shared/lib/history-write-guard.ts`).
       if (!guardedHistoryWrite(options?.replace ? 'replace' : 'push', nextUrl)) return;
       window.dispatchEvent(new Event(HOME_URL_CHANGE_EVENT));
     },

@@ -23,35 +23,31 @@ export interface FreshnessTabLabels {
   domainFreshnessTitle: string;
   windowCaption: string;
   noDomains: string;
-  /**
-   * The same door the composition tab already offers for this identical fact.
-   * Stating "there are no domains" and stopping is the copy that lost its
-   * sibling's link (2026-09-05 empty-state audit).
-   */
+  /** The same door the composition tab offers for this fact. */
   noDomainsAction: string;
   stale: string;
   currentWeek: string;
   unknownDate: string;
   daysAgo: (days: number) => string;
   older: string;
-  /** Direction labels for the heat strip's time axis — left (past) / right (present). */
+  /** Heat strip time axis ends: left is past, right is present. */
   axisStart: string;
   axisEnd: string;
-  /** Cell tooltip — "N weeks ago · M updates" (weeksAgo ≥ 1). */
+  /** Cell tooltip, "N weeks ago · M updates" (weeksAgo >= 1). */
   weekCell: (weeksAgo: number, count: number) => string;
-  /** This week's cell tooltip — "this week · M updates". */
+  /** This week's cell tooltip, "this week · M updates". */
   weekCellCurrent: (count: number) => string;
   recentUpdatesTitle: string;
   noRecentUpdates: string;
-  /** The remainder sentence for the capped concept list, formatted from the difference. */
+  /** The capped concept list's remainder sentence, from the difference. */
   recentHidden: (hidden: number) => string;
-  /** Where the rest are readable — every vault document, each carrying its own dates. */
+  /** Where the rest are readable: every vault document, each with its own dates. */
   recentHiddenRoute: string;
   staleCountLabel: string;
-  /** The toggle opening and closing the evidence layer — it shares its copy with the "connections" tab. */
+  /** Shares its copy with the connections tab. */
   evidenceShow: (count: number) => string;
   evidenceHide: string;
-  /** The evidence layer's caption — why this date is not that node's own. */
+  /** Why this date is not that node's own. */
   evidenceCaption: string;
   evidenceTruncated: (shown: number, total: number) => string;
   evidenceBadge: string;
@@ -59,8 +55,7 @@ export interface FreshnessTabLabels {
 }
 
 interface FreshnessTabRecentLink {
-  /** Clicking a recently-updated row deeplinks to that node on the map (`buildOntologyNodeHref`,
-   *  the same source as the relations tab's hub rows). */
+  /** A recently updated row deep-links to its node on the map (`buildOntologyNodeHref`, as the relations tab's hub rows). */
   href: (nodeId: string) => string;
   ariaLabel: (title: string) => string;
 }
@@ -68,13 +63,9 @@ interface FreshnessTabRecentLink {
 export interface FreshnessTabProps {
   domainRows: DomainFreshnessRow[];
   recent: RecentUpdateRow[];
-  /**
-   * How many concept rows carry a date in all. `recent` is capped, and until
-   * 2026-09-05 the overflow was dropped without a word — while the evidence
-   * layer directly below stated its own truncation.
-   */
+  /** How many concept rows carry a date in all; `recent` is capped, so the overflow is stated. */
   recentTotal: number;
-  /** The evidence layer — the folded area. `computeFreshnessSummary` already separates it. */
+  /** The folded evidence layer, already separated by `computeFreshnessSummary`. */
   recentEvidence: RecentUpdateRow[];
   recentEvidenceTotal: number;
   staleCount: number;
@@ -84,9 +75,8 @@ export interface FreshnessTabProps {
 }
 
 /**
- * Tab 3, freshness — the heat-strip grammar. Cell values are not a hardcoded array but aggregations
- * `computeFreshnessSummary` derives from real vault document `updatedAt` values. Only this week's
- * cell is indigo; the rest use the neutral ramp.
+ * Tab 3, freshness: heat-strip cells aggregate real vault `updatedAt` values (`computeFreshnessSummary`).
+ * Only this week's cell is indigo; the rest use the neutral ramp.
  */
 export function FreshnessTab({
   domainRows,
@@ -99,35 +89,12 @@ export function FreshnessTab({
   recentLink,
   labels,
 }: FreshnessTabProps) {
-  /*
-   * ⚠️ **These two are the detail under the growth figure, and until 2026-09-09 nothing
-   * said so.** Measured on the built tab, all three sections carried the same background,
-   * the same border, the same radius and padding, and an `h2` at the same size and ink —
-   * while the "supporting detail" stood 2.1x the height and 4.3x the area of the thing it
-   * supported. Order was the only demotion signal on the tab, and order alone loses to mass
-   * (design-interaction).
-   *
-   * So the panel chrome went to the figure alone, and these two sat under a bare divider.
-   * That traded one defect for another (2026-09-25 design sweep): without a surface their
-   * text started 17px left of every other card's text line and the recent list ran to the
-   * panels' outer edge, so the tab had two start lines. They are panels again, and the
-   * demotion is carried by what the figure has and they do not — its full-width row and
-   * its place first — while the outline still says `h2` with two `h3` under it.
-   *
-   * The competing prescription was to promote this card's twelve-week strip into the
-   * protagonist frame. It was not taken: that strip is derived from file update dates, and
-   * the same day's PO pass put file-date claims *below* the Git-derived one for exactly the
-   * reason its own caption states. Making it the headline of a tab named growth would undo
-   * that on the same screen.
-   */
+  // These two cards are the detail under the growth figure: they keep their panels so every card shares one text
+  // start line, and the figure's full-width row and first place carry the demotion (outline: one `h2`, two `h3`).
+  // The strip stays out of the protagonist frame because it is derived from file dates, which rank below Git's.
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   return (
-    /*
-     * ⚠️ **Stacked, not paired.** Side by side, three domain strips stood beside twelve recent
-     * rows and the strip card was ~60% empty at 1920 (2026-09-25). The heat strip is a wide
-     * instrument anyway, so it takes the full row; the recent list takes the next one and lays
-     * its rows out in two columns from 960, which is what fills the width instead of a gap.
-     */
+    // Stacked, not paired: the heat strip takes a full row, and the recent list lays its rows in two columns from 960.
     <div className="flex min-h-0 flex-col gap-[var(--card-gap)]">
       <section
         aria-label={labels.domainFreshnessTitle}
@@ -159,11 +126,8 @@ export function FreshnessTab({
           <div className="mt-2 mb-2.5 flex flex-col">
             <div className={INSIGHTS_LIST}>
             {domainRows.map((row) => (
-              // Row hover highlight — it aids the 700px horizontal scan (label → 12 cells → date)
-              // using the same -mx/px offset pattern as the existing hub and recently-updated rows,
-              // so the cell and axis alignment is unchanged (content x positions do not move).
-              // The divider sits on this plain cell, on the card's padding line; the row inside
-              // bleeds 6px for its hover surface only (`insights-list.ts`).
+              // Row hover aids the horizontal scan with the hub rows' -mx/px offset, so cell and axis positions do not move.
+              // The divider sits on this plain cell; the row bleeds 6px for its hover surface only (`insights-list.ts`).
               <div key={row.domainId}>
               <div
                 data-testid="insights-freshness-domain-row"
@@ -187,9 +151,7 @@ export function FreshnessTab({
                   {row.weeks.map((week, i) => (
                     <i
                       key={i}
-                      // A cell is one week's update count. A `max-w` cap would bunch the strip to
-                      // the left and misalign the axis label below ("this week") with the last cell —
-                      // filling with `flex-1` shares one width with the axis, legend, and date columns.
+                      // A `flex-1` cell, not a `max-w` cap: a cap bunches the strip left and misaligns the "this week" label with the last cell.
                       title={
                         week.isCurrentWeek
                           ? labels.weekCellCurrent(week.count)
@@ -231,13 +193,8 @@ export function FreshnessTab({
           <i className="h-2.5 w-2.5 flex-none rounded-micro" style={{ backgroundColor: "var(--color-indigo-brand)" }} />
           <span>{labels.currentWeek}</span>
         </div>
-        {/*
-          * **The aggregate trend line left this card on 2026-09-06.** The same 12-week series is
-          * now the board's fourth census tile, drawn above the tab bar and therefore on screen at
-          * the same time as this card. One screen does not draw one series twice
-          * (2026-08-07 (3)). What stays here is the per-domain heat strip, which is a different
-          * fact: *which* area moved, not how much moved in total.
-          */}
+        {/* Only the per-domain heat strip stays here (which area moved); the total series is the census strip's fourth tile,
+           so one screen does not draw one series twice. */}
       </section>
 
       <section
@@ -255,7 +212,7 @@ export function FreshnessTab({
           ) : (
             <div
               data-testid="insights-recent-rows"
-              // The second column's first row drops its divider as the first column's does.
+              // The second column's first row drops its divider like the first column's.
               className="grid grid-cols-1 @min-[960px]/insights:grid-cols-2 @min-[960px]/insights:gap-x-[var(--card-gap)] @min-[960px]/insights:[&>*:nth-child(2)]:border-t-0"
             >
             {recent.map((row) => (
@@ -264,9 +221,7 @@ export function FreshnessTab({
                 kind={row.kind}
                 title={row.title}
                 subtitle={`${kindLabel(row.kind)}${row.domainTitle ? ` · ${row.domainTitle}` : ""}`}
-                // The date is rendered in the local timezone (`formatDate`). `toISOString()`
-                // rendered in UTC, so an update near midnight showed the previous day
-                // (03:12 KST is the day before in UTC).
+                // Rendered with `formatDate` in the local day; UTC would show the previous day for an update near midnight in KST.
                 trailing={formatDate(row.updatedAt)}
                 href={recentLink.href(row.nodeId)}
                 ariaLabel={recentLink.ariaLabel(row.title)}
@@ -293,9 +248,8 @@ export function FreshnessTab({
           />
         </div>
 
-        {/* The evidence layer — the same quiet toggle and the same copy as the impact ranking on the
-            "connections" tab. Pushed down rather than deleted: a derived name is a vault fact too,
-            and this is the only place the "create a document" promotion path is visible. */}
+        {/* The evidence layer, the same quiet toggle and copy as the connections tab's impact ranking. A derived name is a
+           vault fact, and this is the one place its "create a document" promotion path shows. */}
         {recentEvidenceTotal > 0 ? (
           <div className="mt-2 border-t border-[color:var(--color-divider)] pt-1">
             <button
@@ -303,9 +257,8 @@ export function FreshnessTab({
               aria-expanded={evidenceOpen}
               data-testid="insights-freshness-evidence-toggle"
               onClick={() => setEvidenceOpen((open) => !open)}
-              // **The same ramp call** as the quiet toggles on the "to do" and "connections" tabs —
-              // the same kind of truncation must look the same. What remains is the hover ink the
-              // ramp deliberately omits and the negative margin pairing with the inset (`px-2`).
+              // The same ramp call as the other tabs' quiet toggles, plus the hover ink the ramp omits and the margin pairing
+              // the `px-2` inset.
               className={controlClass({
                 shape: "row",
                 size: "sm",
@@ -341,7 +294,7 @@ export function FreshnessTab({
                       </>
                     }
                     trailing={formatDate(row.updatedAt)}
-                    // The single fact separating two rows when two derived nodes share a title.
+                    // The single fact separating two derived rows that share a title.
                     trailingSecondary={row.ref}
                     href={recentLink.href(row.nodeId)}
                     ariaLabel={recentLink.ariaLabel(row.title)}

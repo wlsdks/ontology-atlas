@@ -2,13 +2,9 @@
 export type Lens = "concepts" | "files";
 
 /**
- * The document a person is following through its own history.
- *
- * A press on a row of "Other steps that changed this document" carries it to the step it opens,
- * so that step opens on the same document rather than on its first one. Found with the
- * real-bridge QA harness on a real git vault (2026-09-25): the jump cleared the focus, the older
- * step opened on the vault's `README.md`, and "Restore this version" there put back `README.md`
- * instead of the document the person was following.
+ * The document a person is following through its own history. A press on "Other steps that
+ * changed this document" carries it to the opened step, or "Restore this version" there would
+ * restore that step's first document instead of the followed one.
  */
 export interface DocumentFollow {
   /** Repository-relative path, as `GitChangeEntry.path`: the document's identity across steps. */

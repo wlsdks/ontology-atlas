@@ -13,13 +13,13 @@ interface WikiBriefPage {
   sourcePaths: readonly string[];
 }
 
-/** Deterministic folder checks (`validateWikiFolder` codes), already counted by the caller. */
+/** Deterministic folder checks (`validateWikiFolder` codes), counted by the caller. */
 interface WikiFolderProblemCounts {
   orphanPages: number;
   danglingLinks: number;
 }
 
-/** The last agent-judged check, parsed from the wiki log's JSON block. Null when none ran. */
+/** The last agent-judged check, parsed from the wiki log's JSON block; null when none ran. */
 interface WikiLintCounts {
   disagreement: number;
   superseded: number;
@@ -49,10 +49,8 @@ export interface WikiBriefInput {
 const WRITE_KINDS = new Set(['compile', 'fix', 'answer', 'redraft']);
 
 /**
- * Wiki pages by state. A page is `stale` when any source it cites changed under it
- * (`stale`) or was only partly read (`partial`); `unknown` when a cited source is still being
- * hashed or is not in the folder; `current` otherwise. A page citing nothing is `unknown`:
- * with no receipt there is nothing to check against.
+ * Wiki pages by state: `stale` when a cited source changed or was only partly read; `unknown` when a cited source
+ * is still hashing or missing, or the page cites nothing; `current` otherwise.
  */
 export function buildWikiBrief(input: WikiBriefInput): BriefCore {
   const byPath = new Map(input.sources.map((source) => [source.path, source] as const));

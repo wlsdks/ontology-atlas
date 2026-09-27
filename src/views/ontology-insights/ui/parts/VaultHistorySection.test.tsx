@@ -7,10 +7,8 @@ import type { VaultHistoryState } from "../../lib/use-vault-history";
 import { VaultHistorySection } from "./VaultHistorySection";
 
 /**
- * Four states, and three of them draw no chart. That ratio is the surface's whole honesty
- * claim: the series is recomputed from the folder's Git history and Atlas keeps no record
- * of its own, so there are ordinary situations with nothing to show — and each one has to
- * say *whose* limitation it is rather than drawing a flat line at zero.
+ * Four states and three draw no chart: the series is recomputed from Git and Atlas keeps no record, so each state
+ * says whose limitation it is instead of drawing a flat line at zero.
  */
 
 function Harness({ state }: { state: VaultHistoryState }) {
@@ -18,7 +16,7 @@ function Harness({ state }: { state: VaultHistoryState }) {
   return <VaultHistorySection state={state} t={t} />;
 }
 
-/** The folder these tests describe, as it stands — every state now carries it. */
+/** The folder these tests describe, as it stands; every state carries it. */
 const PRESENT = { concept: 71, writeUp: 0, module: 0, document: 11 };
 
 const mount = (state: VaultHistoryState) =>
@@ -29,9 +27,8 @@ const mount = (state: VaultHistoryState) =>
   );
 
 /**
- * The series this repository's own folder actually produced, cross-checked against
- * `git ls-tree` at every one of these commits. Kept as the fixture because it carries the
- * shape the surface exists to show — a fall in one layer beside a rise in another.
+ * The series this repository's own folder produced, cross-checked against `git ls-tree` at each commit: a fall in
+ * one layer beside a rise in another.
  */
 const MEASURED = [
   { week: "2026-06-29", hash: "798a74a7", counts: { concept: 107, writeUp: 0, module: 0, document: 4 } },
@@ -41,12 +38,7 @@ const MEASURED = [
 ];
 
 describe("VaultHistorySection — the states with no time axis", () => {
-  /*
-   * ⚠️ These states used to draw *nothing*, and that was the defect the owner found: in a
-   * browser, where Git is out of reach, the surface was a paragraph explaining an absence.
-   * The folder needs no history to be counted, so the present is drawn in every state; only
-   * the weekly tracks wait for Git.
-   */
+  // The folder needs no history to be counted, so the present is drawn in every state; only the tracks wait for Git.
   it.each(["unavailable", "none", "loading", "failed"] as const)(
     "draws the folder as it stands, even with no weeks to show (%s)",
     (status) => {
@@ -69,11 +61,7 @@ describe("VaultHistorySection — the states with no time axis", () => {
     expect(screen.queryByTestId("vault-history-track-concept")).toBeNull();
   });
 
-  /*
-   * ⚠️ The condition the PO steward set for this surface existing: a folder with no commits
-   * has *no series*, and drawing zeroes would say the folder was empty — a claim about the
-   * person where the truth is a claim about the data.
-   */
+  // A folder with no commits has no series; zeroes would claim the folder was empty.
   it("says a folder with no commits has no history, rather than drawing zeroes", () => {
     mount({ status: "none", present: PRESENT });
     const section = screen.getByTestId("vault-history");
@@ -116,7 +104,7 @@ describe("VaultHistorySection — the chart", () => {
     for (const layer of ["concept", "module", "writeUp", "document"]) {
       expect(screen.getByTestId(`vault-history-track-${layer}`)).toBeInTheDocument();
     }
-    // A fourth track would be a total, which is the thing both PO seats refused.
+    // One track per layer; a further track would be a total.
     expect(document.querySelectorAll('[data-testid^="vault-history-track-"]')).toHaveLength(4);
   });
 
@@ -126,11 +114,7 @@ describe("VaultHistorySection — the chart", () => {
     expect(screen.getByTestId("vault-history-track-document").textContent).toContain("11");
   });
 
-  /*
-   * The divergence is the reason the surface exists: a reader must be able to hear that one
-   * layer fell while another rose. The accessible name carries it in words, because the
-   * columns are `aria-hidden` marks.
-   */
+  // The accessible name says in words that one layer fell while another rose, since the columns are `aria-hidden`.
   it("says the fall and the rise in words, not only in the marks", () => {
     mount(ready);
     const concept = screen.getByTestId("vault-history-track-concept");
@@ -143,17 +127,11 @@ describe("VaultHistorySection — the chart", () => {
 
   it("keeps a layer that is genuinely zero as a track rather than hiding it", () => {
     mount(ready);
-    // `wiki` was 0 for this whole window because the Library shipped later. A missing track
-    // would read as "not measured"; a present one at zero reads as "measured, and none".
+    // A present track at zero reads as "measured, and none"; a missing one would read as "not measured".
     expect(screen.getByTestId("vault-history-track-writeUp")).toBeInTheDocument();
   });
 
-  /*
-   * Found by rendering, not by reading: the first build framed every track at the tallest
-   * one's height, so on this repository's own folder the two small layers were empty boxes
-   * about 130px tall and roughly 60% of the card was reserved for nothing. The shared scale
-   * is the block, not the frame — a track holds only as much room as it has contents.
-   */
+  // The shared scale is the block, not the frame, so a track takes only the height its contents need.
   it("gives a track only as much height as its own contents need", () => {
     mount(ready);
     const heightOf = (layer: string) =>
@@ -170,11 +148,7 @@ describe("VaultHistorySection — the chart", () => {
 });
 
 describe("a failed read is not an empty folder", () => {
-  /*
-   * ⚠️ A thrown Git bridge used to be folded into "none", whose copy says the folder has no
-   * commits — a factual claim about somebody's folder that may be false. This file's own
-   * argument about zeroes applies to it: an error and an absence have to look different.
-   */
+  // An error and an absence look different: a failed read must not claim the folder has no commits.
   it("says the read failed, and does not say the folder has no commits", () => {
     mount({ status: "failed", present: PRESENT });
     const section = screen.getByTestId("vault-history");

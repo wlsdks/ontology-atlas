@@ -395,6 +395,7 @@ async function openLocalRouteLibrary(page: Page, keepLocalAddress: boolean) {
   await page.getByRole('button', { name: /Open my folder/i }).click();
   await expect(page.getByRole('heading', { name: 'Map', level: 1 })).toBeVisible({ timeout: 30_000 });
   await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Library' }).click();
+  await page.getByTestId('library-workspace-sources').click();
   await page.getByTestId('library-graph-canvas').waitFor({ timeout: 30_000 });
 }
 
@@ -459,6 +460,7 @@ test.describe('the Library home states availability once per surface', () => {
      * pointing across a closed surface (the 2026-09-12 repair).
      */
     await page.keyboard.press('Escape');
+    await page.getByTestId('library-workspace-sources').click();
     await page.getByTestId('library-guide-open').click();
     const guide = page.getByTestId('library-guide-popover');
     await expect(guide.locator('[data-landing-blocked-reason]')).toHaveCount(1);

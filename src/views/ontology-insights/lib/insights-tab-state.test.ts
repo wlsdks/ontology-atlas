@@ -20,7 +20,7 @@ describe("parseInsightsTab", () => {
 
   it("accepts every question tab", () => {
     expect(INSIGHTS_TABS).toEqual([
-      // What in this reader's understanding has to change — across all three cores.
+      // What in this reader's understanding has to change, across all three cores.
       "brief",
       // The two cores that answer for themselves; the rest are the ontology's questions.
       "library",
@@ -31,8 +31,7 @@ describe("parseInsightsTab", () => {
       "connections",
       "boundaries",
       "growth",
-      // Written by an agent rather than computed from the graph — the one tab
-      // whose question ("what is this product and how does it move") is prose.
+      // The one tab written by an agent: prose on what this product is and how it moves.
       "flow",
     ]);
     for (const tab of INSIGHTS_TABS) {
@@ -40,12 +39,12 @@ describe("parseInsightsTab", () => {
     }
   });
 
-  it("구 개요/관계 링크 호환 — 각각 구성/연결로", () => {
+  it("maps legacy overview and relations links to composition and connections", () => {
     expect(parseInsightsTab("overview")).toBe("composition");
     expect(parseInsightsTab("relations")).toBe("connections");
   });
 
-  it("구 구조 탭 링크 호환 — 3분할의 첫 질문인 구성으로", () => {
+  it("maps a legacy structure tab link to composition", () => {
     expect(parseInsightsTab("structure")).toBe("composition");
   });
 
@@ -57,12 +56,7 @@ describe("parseInsightsTab", () => {
 });
 
 describe("the freshness rename", () => {
-  /*
-   * ⚠️ Bookmarks and agent return-chip links (`via=insights:freshness`) live a long time.
-   * The tab that asked "what moved lately" now asks "what has this folder grown into", and
-   * the old name has to keep landing somewhere real rather than dumping a saved link on the
-   * default tab.
-   */
+  // Saved links and return chips with `via=insights:freshness` land on the tab that replaced freshness.
   it("still lands an old ?tab=freshness link on the tab that replaced it", () => {
     expect(parseInsightsTab("freshness")).toBe("growth");
   });
@@ -81,7 +75,7 @@ describe("the first row names the thing a tab is about", () => {
     expect(tabOfCore("ontology")).toBe("do-next");
     expect(tabOfCore("brief")).toBe("brief");
     expect(tabOfCore("library")).toBe("library");
-    // Every core's landing tab is a real tab, so the address always names something drawable.
+    // Every core lands on a real tab, so the address always names something drawable.
     for (const core of INSIGHTS_CORES) expect(INSIGHTS_TABS).toContain(tabOfCore(core));
   });
 });
@@ -110,11 +104,7 @@ describe("buildInsightsTabHref", () => {
 });
 
 describe("switching tabs keeps the rest of the address", () => {
-  /*
-   * ⚠️ The old form returned `${pathname}?tab=${tab}`, which replaced the whole query, so a
-   * single tab click dropped `guides=off` and the first-run overlay came back mid-session.
-   * `/architecture` pins the same property; these two must not drift.
-   */
+  // A tab switch keeps other query flags such as `guides=off`, as `/architecture` does.
   it("preserves orthogonal flags across a switch", () => {
     expect(buildInsightsTabHref("growth", "/ontology/insights/", "?guides=off")).toBe(
       "/ontology/insights/?guides=off&tab=growth",
@@ -141,7 +131,7 @@ describe("parseInsightsTabHref", () => {
   it("answers with the tab for a destination on this same board", () => {
     expect(parseInsightsTabHref("/ontology/insights/?tab=do-next")).toBe("do-next");
     expect(parseInsightsTabHref("/ontology/insights/?tab=growth")).toBe("growth");
-    // No query is the default tab, and a retired name still resolves through the aliases.
+    // No query is the default tab; a retired name resolves through the aliases.
     expect(parseInsightsTabHref("/ontology/insights/")).toBe("brief");
     expect(parseInsightsTabHref("/ontology/insights/?tab=freshness")).toBe("growth");
   });
@@ -152,7 +142,7 @@ describe("parseInsightsTabHref", () => {
     expect(parseInsightsTabHref("/architecture/?view=coverage")).toBeNull();
     expect(parseInsightsTabHref("/download/")).toBeNull();
     expect(parseInsightsTabHref("/topology/")).toBeNull();
-    // A different screen whose path merely starts with the same words is not this board.
+    // A different screen whose path starts with the same words is not this board.
     expect(parseInsightsTabHref("/ontology/insights-archive/")).toBeNull();
   });
 });

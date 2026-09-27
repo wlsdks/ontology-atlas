@@ -46,20 +46,15 @@ const EDGES = [
   edge("capability:mcp", "element:rail", "depends_on"),
 ];
 
-describe("buildConceptEgo — 방향이 관계의 절반이다", () => {
-  /*
-   * The mockup wiring filed an incoming `contains` under "what I contain", which
-   * made a domain node's ↑17 and ↓16 nearly the same set. This catches that
-   * regression.
-   */
-  it("들어오는 contains 는 「나를 담은 곳」이지 「내가 담은 것」이 아니다", () => {
+describe("buildConceptEgo relation direction", () => {
+  it("files an incoming contains under containers, not contents", () => {
     const ego = buildConceptEgo("element:rail", NODES, EDGES);
     expect(ego).not.toBeNull();
     expect(ego!.neighbors.belongsTo.map((n) => n.id)).toContain("domain:shell");
     expect(ego!.neighbors.contains).toHaveLength(0);
   });
 
-  it("나가는 contains 는 「담고 있는 것」이다", () => {
+  it("files an outgoing contains under contents", () => {
     const ego = buildConceptEgo("domain:shell", NODES, EDGES)!;
     expect(ego.neighbors.contains.map((n) => n.id).sort()).toEqual([
       "element:rail",
@@ -68,48 +63,43 @@ describe("buildConceptEgo — 방향이 관계의 절반이다", () => {
     expect(ego.neighbors.belongsTo.map((n) => n.id)).toEqual(["capability:mcp"]);
   });
 
-  it("depends_on 은 방향에 따라 「기대는 곳」과 「이곳을 쓰는 곳」으로 갈린다", () => {
+  it("splits depends_on into dependencies and dependants by direction", () => {
     const from = buildConceptEgo("capability:mcp", NODES, EDGES)!;
     expect(from.neighbors.dependsOn.map((n) => n.id)).toEqual(["element:rail"]);
     const to = buildConceptEgo("element:rail", NODES, EDGES)!;
     expect(to.neighbors.usedBy.map((n) => n.id)).toEqual(["capability:mcp"]);
   });
 
-  it("같은 이웃이 두 번 세어지지 않는다", () => {
+  it("counts a repeated neighbour once", () => {
     const dup = [...EDGES, edge("domain:shell", "element:rail", "contains")];
     const ego = buildConceptEgo("domain:shell", NODES, dup)!;
     expect(ego.neighbors.contains).toHaveLength(2);
     expect(ego.total).toBe(3);
   });
 
-  it("도메인 이름은 belongsTo 의 도메인 이웃에서 온다", () => {
+  it("takes the domain name from the belongsTo domain neighbour", () => {
     expect(buildConceptEgo("element:rail", NODES, EDGES)!.domainLabel).toBe("온보딩·배포·앱 셸");
     // A domain has no parent domain of its own — an empty cell is the right answer.
     expect(buildConceptEgo("domain:shell", NODES, EDGES)!.domainLabel).toBeNull();
   });
 
-  it("그래프에 없는 노드는 null — 볼트의 개념이 아닌 마크다운이 그렇다", () => {
+  it("returns null for a node missing from the graph", () => {
     expect(buildConceptEgo("element:nope", NODES, EDGES)).toBeNull();
   });
 });
 
-describe("matchNodeId — 커밋이 건드린 파일을 그래프 노드에 맞춘다", () => {
-  /*
-   * Rust uses the frontmatter slug (#842); the derivation uses `<kind>:<tail>`.
-   * The strings do not match outright, so without this bridge **every step looks
-   * like it touched nothing in the graph** — and nothing errors.
-   */
-  it("frontmatter slug 로 맞춘다", () => {
+describe("matchNodeId maps a committed file to a graph node", () => {
+  it("matches by frontmatter slug", () => {
     expect(matchNodeId({ slug: "capabilities/mcp-server", kind: "capability" }, NODES)).toBe(
       "capability:mcp",
     );
   });
 
-  it("kind 가 비어 있어도 근거 슬러그로 맞춘다 (지워진 파일)", () => {
+  it("matches a deleted file with an empty kind by its evidence slug", () => {
     expect(matchNodeId({ slug: "elements/app-nav-rail", kind: null }, NODES)).toBe("element:rail");
   });
 
-  it("볼트의 개념이 아니면 null", () => {
+  it("returns null for a file that is not a vault concept", () => {
     expect(matchNodeId({ slug: "README", kind: null }, NODES)).toBeNull();
   });
 });

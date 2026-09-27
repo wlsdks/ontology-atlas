@@ -92,11 +92,7 @@ describe('InsightsAgentDock', () => {
       presentationIntent: 'business-flow',
       runtimeId: 'claude-acp',
     }));
-    /*
-     * ⚠️ The origin label and the close button belong to the **workbench** (2026-09-06). Passing
-     * them down as well drew the same words twice and put a second X a few pixels from the
-     * workbench's own — and the inner one closed a surface the chat panel does not own.
-     */
+    // The workbench owns the origin label and the one close button, so the chat panel receives neither.
     expect(screen.getByTestId('mock-workbench')).toHaveAttribute('data-workbench-context', 'Analysis · Flow');
     expect(screen.getByTestId('mock-acp-chat')).toHaveAttribute('data-close', 'absent');
     expect(screen.getByTestId('mock-acp-chat')).toHaveAttribute('data-context', 'undefined');
