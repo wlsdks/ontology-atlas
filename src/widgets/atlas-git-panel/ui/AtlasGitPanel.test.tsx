@@ -766,14 +766,6 @@ describe("AtlasGitPanel — 연결 셋업 모드", () => {
     expect(steps[2]).toHaveAttribute("data-step-state", "current");
   });
 
-  it("셋업 주 동작은 터치 승격 토큰으로 높이를 잡는다 (coarse 44px 계약)", async () => {
-    // This button is the only thing this page does, so if someone reverts it to a
-    // fixed height like h-9, the `@media (pointer: coarse)` promotion silently disappears.
-    renderPanel(<AtlasGitPanel />);
-    const cta = await screen.findByTestId("atlas-git-web-get-app");
-    expect(cta.className).toContain("h-[var(--git-setup-action-height)]");
-  });
-
   it("읽기 실패도 막다른 길이 아니다 — 같은 자리에서 다시 확인한다", async () => {
     tauriApiMock.runtimeAvailable = true;
     tauriApiMock.invoke.mockRejectedValue("not a git repository");

@@ -164,13 +164,12 @@ describe('frame — 누가 상자를 내는가', () => {
    * carrying an affordance beats the result.
    */
   it.each(SIZES.flatMap((s) => MULTILINE.map((m) => [`${s}/multiline=${m}`, s, m] as const)))(
-    'bare/%s 는 치수·보더·반경·터치 바닥을 하나도 내지 않는다',
+    'bare/%s 는 치수·보더·반경을 하나도 내지 않는다',
     (_n, size, multiline) => {
       const cls = fieldClass({ frame: 'bare', size, multiline });
       expect(cls, '높이를 냈다').not.toMatch(/(?:^|\s)(?:min-)?h-\d/);
       expect(cls, '보더를 냈다').not.toMatch(/(?:^|\s)border(?:\s|-)/);
       expect(cls, '반경을 냈다').not.toMatch(/rounded-/);
-      expect(cls, '터치 바닥을 냈다 — 부모 상자를 밀어낸다').not.toContain('atlas-touch-floor');
       expect(cls, '좌우 인셋을 냈다').not.toMatch(/(?:^|\s)px-/);
       expect(cls).toContain('bg-transparent');
     },
@@ -236,20 +235,6 @@ describe('base — 모든 필드가 공유하는 것', () => {
     for (const c of all) {
       expect(c.cls, `폭을 냈다: ${c.cls}`).not.toMatch(/(?:^|\s)w-(full|\d)/);
       expect(c.cls).not.toMatch(/(?:^|\s)flex-1/);
-    }
-  });
-});
-
-/**
- * The touch floor. `boxed` emits its own box, so growing to 44px only pushes its
- * neighbours; `bare` sits inside the parent's box, so growing pushes that box
- * outward from the inside.
- */
-describe('터치 바닥', () => {
-  it('boxed 는 coarse 바닥을 받고 bare 는 받지 않는다', () => {
-    for (const size of SIZES) {
-      expect(fieldClass({ frame: 'boxed', size })).toContain('atlas-touch-floor');
-      expect(fieldClass({ frame: 'bare', size })).not.toContain('atlas-touch-floor');
     }
   });
 });

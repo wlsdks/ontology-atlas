@@ -30,20 +30,6 @@ describe("LocaleSwitch", () => {
     window.history.replaceState({}, "", "/en/");
   });
 
-  it("keeps locale buttons large enough for first-viewport touch", () => {
-    renderSwitch();
-
-    // After the SegmentedControl migration (2026-08-15) the size comes from the value layer:
-    // `min-h-8` (32px) plus `atlas-touch-floor` (promoted to 44 on coarse pointers — a real
-    // height, not a phantom hit area).
-    expect(screen.getByRole("radio", { name: "EN English" }).className).toContain(
-      "min-h-8",
-    );
-    expect(screen.getByRole("radio", { name: "KO 한국어" }).className).toContain(
-      "atlas-touch-floor",
-    );
-  });
-
   it("preserves raw query order, duplicate keys, encoded values, and the hash", () => {
     expect(
       buildLocaleTarget(

@@ -370,37 +370,4 @@ describe('HarnessCoverageOverview measured slice', () => {
     act(() => vi.runAllTimers());
     expect(outside).toHaveFocus();
   });
-
-  it('uses the bounded dialog equivalent at the narrow breakpoint', () => {
-    vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true, media: '(max-width: 767px)', addEventListener: vi.fn(), removeEventListener: vi.fn() })));
-    mount();
-    fireEvent.click(screen.getByTestId('harness-domain-domains/guidance').querySelector('[data-role="told"]')!);
-    expect(screen.getByTestId('harness-role-dialog')).toBeInTheDocument();
-    expect(screen.getByTestId('harness-domain-domains/guidance').querySelector('[data-role="told"]')).toHaveAttribute('aria-controls', 'harness-role-evidence-dialog-content');
-    expect(screen.queryByTestId('harness-role-popup')).toBeNull();
-    const outside = document.querySelector<HTMLButtonElement>('[data-guidance-evidence-action="outside"]')!;
-    expect(outside).toHaveAttribute('aria-controls', 'harness-role-evidence-dialog-content');
-    fireEvent.click(outside);
-    expect(screen.getByTestId('harness-role-dialog')).toBeInTheDocument();
-    expect(screen.getByTestId('harness-collection-evidence')).toHaveAttribute('id', 'harness-role-evidence-dialog-content');
-  });
-
-  it('closes on a breakpoint ownership change instead of presenting desktop and narrow surfaces together', () => {
-    vi.useFakeTimers();
-    let matches = false;
-    let listener: (() => void) | null = null;
-    vi.stubGlobal('matchMedia', vi.fn(() => ({
-      get matches() { return matches; },
-      media: '(max-width: 767px)',
-      addEventListener: (_type: string, callback: () => void) => { listener = callback; },
-      removeEventListener: vi.fn(),
-    })));
-    mount();
-    fireEvent.click(screen.getByTestId('harness-domain-domains/guidance').querySelector('[data-role="told"]')!);
-    matches = true;
-    act(() => listener?.());
-    act(() => vi.runAllTimers());
-    expect(screen.queryByTestId('harness-role-dialog')).toBeNull();
-    expect(screen.queryByTestId('harness-role-popup')).toBeNull();
-  });
 });

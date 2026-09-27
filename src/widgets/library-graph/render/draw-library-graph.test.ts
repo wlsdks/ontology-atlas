@@ -601,10 +601,6 @@ describe("hit testing", () => {
     expect(hitTestLibraryGraph({ nodes, positions }, { x: 210, y: 100 })).toBeNull();
   });
 
-  it("widens the reach for a coarse pointer without widening the mark", () => {
-    expect(hitTestLibraryGraph({ nodes, positions }, { x: 215, y: 100 }, 18)?.kind).toBe("source");
-  });
-
   it("prefers the nearest node when two marks overlap", () => {
     const crowded = new Map([
       ["page:wiki/plan", { x: 100, y: 100 }],

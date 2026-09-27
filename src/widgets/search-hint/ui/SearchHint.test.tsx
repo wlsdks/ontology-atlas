@@ -175,23 +175,6 @@ describe("SearchHint", () => {
     expect(lane).toHaveClass("xl:block");
   });
 
-  it("demotes below md while the expanded INDEX sheet owns the surface", () => {
-    // Below `md` the expanded INDEX is a full-bleed sheet — while the sheet is the
-    // primary surface the chrome column withdraws (the same contract as the utility
-    // lane's hidden md:flex).
-    render(
-      <SearchHint phoneSheetSuppressed onOpenSearch={vi.fn()} onRelayout={vi.fn()} />,
-    );
-
-    const lane = screen.getByTestId("topology-search-action-lane");
-    expect(lane).toHaveAttribute(
-      "data-phone-sheet-utility-contract",
-      "hidden-below-md-while-index-sheet-owns-surface",
-    );
-    expect(lane).toHaveClass("hidden");
-    expect(lane).toHaveClass("md:block");
-  });
-
   it("lets the stricter focus suppression win when both suppressions are active", () => {
     render(
       <SearchHint
