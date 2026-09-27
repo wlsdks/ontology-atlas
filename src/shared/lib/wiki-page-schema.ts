@@ -392,7 +392,6 @@ export function validateWikiPage(
     : typeof frontmatter.sources === 'string' && frontmatter.sources.trim()
       ? [frontmatter.sources.trim()]
       : [];
-  // A caller validating many pages passes one Set; rebuilding it per page is O(P·S).
   const known = options.knownSources
     ? options.knownSources instanceof Set
       ? (options.knownSources as Set<string>)
@@ -679,10 +678,7 @@ export function validateWikiFolder(pages: readonly WikiFolderPageInput[]): WikiF
     }
   }
 
-  // Only a pair where one page's primary source is listed by the other can share a
-  // source that counts, so pages are indexed by the sources they list and only those
-  // pairs are visited, in the (a, b) order the all-pairs loop used: O(P + Σ kₛ) pair
-  // candidates instead of O(P²), where kₛ is the number of pages listing source s.
+  // O(P + Σ kₛ²), kₛ = pages listing s; pairs sorted (a, b) so partners keep input order.
   const listedBy = new Map<string, number[]>();
   entries.forEach((entry, index) => {
     for (const source of entry.sources) {
@@ -707,50 +703,36 @@ export function validateWikiFolder(pages: readonly WikiFolderPageInput[]): WikiF
   });
   pairs.sort((x, y) => x[0] - y[0] || x[1] - y[1]);
   for (const [a, b] of pairs) {
-    {
-      const first = entries[a]!;
-      const second = entries[b]!;
-      // Only a page's primary source counts — the first it lists, the document it was
-      // written from. A source a page merely cites for a disagreement fans out across
-      // every page that carries the dispute, and asking each such pair to link (probe F,
-      // 2026-09-06: six findings on seven pages) reports the wiring the disagreement
-      // rule itself created. "Two write-ups of one document" means two pages that were
-      // each compiled from it.
-      // Sorted, not in frontmatter order. The sentence names these paths, and which page
-      // is `first` here follows the caller's input order — `wiki-validate` sorts its file
-      // walk, `validate_wiki` takes the vault's document order, the Library takes its own
-      // read order. Measured 2026-09-12 on the same folder: the CLI said
-      // "`dispute-handling-standard.docx`, `chargeback-runbook.md`" and `validate_wiki`
-      // said the reverse. Codes and page lists agreed, so the contract held, but a person
-      // holding the report beside a terminal read one finding worded two ways.
-      const shared = [...first.sources]
-        .filter(
-          (source) =>
-            second.sources.has(source) && (first.primary === source || second.primary === source),
-        )
-        .sort();
-      if (shared.length === 0) continue;
-      const linked =
-        inbound.get(first.slug)!.has(second.slug) || inbound.get(second.slug)!.has(first.slug);
-      if (linked) continue;
-      const sourceList = shared.map((source) => `\`${source}\``).join(', ');
-      first.problems.push(
-        problem(
-          'shared-source-unlinked',
-          `\`${second.path}\` also lists ${sourceList} and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.`,
-          undefined,
-          { key: 'shared-source-unlinked', values: { other: second.path, sources: sourceList } },
-        ),
-      );
-      second.problems.push(
-        problem(
-          'shared-source-unlinked',
-          `\`${first.path}\` also lists ${sourceList} and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.`,
-          undefined,
-          { key: 'shared-source-unlinked', values: { other: first.path, sources: sourceList } },
-        ),
-      );
-    }
+    const first = entries[a]!;
+    const second = entries[b]!;
+    // Only a page's primary source (its first) counts; sorted so every caller words it alike.
+    const shared = [...first.sources]
+      .filter(
+        (source) =>
+          second.sources.has(source) && (first.primary === source || second.primary === source),
+      )
+      .sort();
+    if (shared.length === 0) continue;
+    const linked =
+      inbound.get(first.slug)!.has(second.slug) || inbound.get(second.slug)!.has(first.slug);
+    if (linked) continue;
+    const sourceList = shared.map((source) => `\`${source}\``).join(', ');
+    first.problems.push(
+      problem(
+        'shared-source-unlinked',
+        `\`${second.path}\` also lists ${sourceList} and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.`,
+        undefined,
+        { key: 'shared-source-unlinked', values: { other: second.path, sources: sourceList } },
+      ),
+    );
+    second.problems.push(
+      problem(
+        'shared-source-unlinked',
+        `\`${first.path}\` also lists ${sourceList} and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.`,
+        undefined,
+        { key: 'shared-source-unlinked', values: { other: first.path, sources: sourceList } },
+      ),
+    );
   }
 
   return entries.map((entry) => ({ path: entry.path, problems: entry.problems }));

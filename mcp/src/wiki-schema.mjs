@@ -326,10 +326,9 @@ export function validateWikiPage(raw, options = {}) {
     : typeof frontmatter.sources === 'string' && frontmatter.sources.trim()
       ? [frontmatter.sources.trim()]
       : [];
-  // A caller validating many pages passes one Set; rebuilding it per page is O(P·S).
   const known = options.knownSources
     ? options.knownSources instanceof Set
-      ? (options.knownSources)
+      ? options.knownSources
       : new Set(options.knownSources)
     : null;
 
@@ -568,10 +567,7 @@ export function validateWikiFolder(pages) {
     }
   }
 
-  // Only a pair where one page's primary source is listed by the other can share a
-  // source that counts, so pages are indexed by the sources they list and only those
-  // pairs are visited, in the (a, b) order the all-pairs loop used: O(P + Σ kₛ) pair
-  // candidates instead of O(P²), where kₛ is the number of pages listing source s.
+  // O(P + Σ kₛ²), kₛ = pages listing s; pairs sorted (a, b) so partners keep input order.
   const listedBy = new Map();
   entries.forEach((entry, index) => {
     for (const source of entry.sources) {
@@ -596,40 +592,36 @@ export function validateWikiFolder(pages) {
   });
   pairs.sort((x, y) => x[0] - y[0] || x[1] - y[1]);
   for (const [a, b] of pairs) {
-    {
-      const first = entries[a];
-      const second = entries[b];
-      // Only a page's primary source (its first) counts: a source cited for a
-      // disagreement fans out across every page carrying the dispute. Sorted, so the
-      // sentence names paths in one order whatever the caller's walk order.
-      const shared = [...first.sources]
-        .filter(
-          (source) =>
-            second.sources.has(source) && (first.primary === source || second.primary === source),
-        )
-        .sort();
-      if (shared.length === 0) continue;
-      const linked =
-        inbound.get(first.slug).has(second.slug) || inbound.get(second.slug).has(first.slug);
-      if (linked) continue;
-      const sourceList = shared.map((source) => `\`${source}\``).join(', ');
-      first.problems.push(
-        problem(
-          'shared-source-unlinked',
-          `\`${second.path}\` also lists ${sourceList} and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.`,
-          undefined,
-          { key: 'shared-source-unlinked', values: { other: second.path, sources: sourceList } },
-        ),
-      );
-      second.problems.push(
-        problem(
-          'shared-source-unlinked',
-          `\`${first.path}\` also lists ${sourceList} and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.`,
-          undefined,
-          { key: 'shared-source-unlinked', values: { other: first.path, sources: sourceList } },
-        ),
-      );
-    }
+    const first = entries[a];
+    const second = entries[b];
+    // Only a page's primary source (its first) counts; sorted so every caller words it alike.
+    const shared = [...first.sources]
+      .filter(
+        (source) =>
+          second.sources.has(source) && (first.primary === source || second.primary === source),
+      )
+      .sort();
+    if (shared.length === 0) continue;
+    const linked =
+      inbound.get(first.slug).has(second.slug) || inbound.get(second.slug).has(first.slug);
+    if (linked) continue;
+    const sourceList = shared.map((source) => `\`${source}\``).join(', ');
+    first.problems.push(
+      problem(
+        'shared-source-unlinked',
+        `\`${second.path}\` also lists ${sourceList} and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.`,
+        undefined,
+        { key: 'shared-source-unlinked', values: { other: second.path, sources: sourceList } },
+      ),
+    );
+    second.problems.push(
+      problem(
+        'shared-source-unlinked',
+        `\`${first.path}\` also lists ${sourceList} and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.`,
+        undefined,
+        { key: 'shared-source-unlinked', values: { other: first.path, sources: sourceList } },
+      ),
+    );
   }
 
   return entries.map((entry) => ({ path: entry.path, problems: entry.problems }));

@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import { WIKI_PAGE_CASES } from '../../../tests/fixtures/wiki-page-cases.mjs';
-import { validateWikiFolder, validateWikiPage as validateTs } from './wiki-page-schema';
+import { validateWikiFolder as validateFolderMcp } from '../../../mcp/src/wiki-schema.mjs';
+import { validateWikiFolder as validateFolderTs, validateWikiPage as validateTs } from './wiki-page-schema';
 
 /*
  * Moved from `tests/contract/wiki-page-schema.contract.test.ts` (2026-09-27): a clock read
@@ -38,11 +39,8 @@ describe('validation stays linear as a folder grows', () => {
   });
 
   /**
-   * The folder check pairs pages by shared primary source. It used to compare every
-   * pair (O(P²)); indexed by source it is O(P + Σ kₛ²), where kₛ is the number of
-   * pages listing source s. Four pages per source here, as a Library grows: a
-   * quadratic check makes 4× the pages cost 16× the time; a near-linear one about 4×.
-   * A ratio in one run, so a loaded machine slows both sizes alike.
+   * Four pages per source: quadratic is 16×, near-linear about 4×. Measured 2026-09-27,
+   * load averages 38–81 on 12 cores: fixed 3.0–5.0; the all-pairs loop 8.6–15.7.
    */
   it('folder check grows near-linearly', () => {
     const folder = (size: number) =>
@@ -80,26 +78,23 @@ describe('validation stays linear as a folder grows', () => {
         ].join('\n');
         return { path: `wiki/${name}.md`, raw };
       });
-    // Per-call time over a sample of several calls, so one sample lasts long enough
-    // that a scheduler slice or a collection pause is a small part of it.
-    const time = (pages: Array<{ path: string; raw: string }>, calls: number) => {
-      const started = performance.now();
-      for (let call = 0; call < calls; call += 1) validateWikiFolder(pages);
-      return (performance.now() - started) / calls;
-    };
     const small = folder(1000);
     const large = folder(4000);
-    time(small, 8);
-    time(large, 2);
-    // Interleaved, fastest sample of each: both sizes see the same machine load, and
-    // the fastest sample is the one it disturbed least.
-    let smallBest = Infinity;
-    let largeBest = Infinity;
-    for (let round = 0; round < 5; round += 1) {
-      smallBest = Math.min(smallBest, time(small, 8));
-      largeBest = Math.min(largeBest, time(large, 2));
+    for (const validate of [validateFolderTs, validateFolderMcp]) {
+      const time = (pages: Array<{ path: string; raw: string }>, calls: number) => {
+        const started = performance.now();
+        for (let call = 0; call < calls; call += 1) validate(pages);
+        return (performance.now() - started) / calls;
+      };
+      time(small, 8);
+      time(large, 2);
+      let smallBest = Infinity;
+      let largeBest = Infinity;
+      for (let round = 0; round < 5; round += 1) {
+        smallBest = Math.min(smallBest, time(small, 8));
+        largeBest = Math.min(largeBest, time(large, 2));
+      }
+      expect(largeBest / smallBest).toBeLessThan(8);
     }
-    const ratio = largeBest / smallBest;
-    expect(ratio).toBeLessThan(8);
   });
 });
