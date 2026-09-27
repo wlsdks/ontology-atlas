@@ -73,16 +73,14 @@ function computeSubtreeWeights(
   return weightBySlug;
 }
 
-function countIncomingOfType(
-  slug: string,
-  type: string,
-  edges: readonly KnowledgeGraphEdge[],
-): number {
-  let count = 0;
+function countFanIn(edges: readonly KnowledgeGraphEdge[]) {
+  const describes = new Map<string, number>();
+  const dependsOn = new Map<string, number>();
   for (const edge of edges) {
-    if (edge.to === slug && edge.type === type) count += 1;
+    const counts = edge.type === "describes" ? describes : edge.type === "depends_on" ? dependsOn : null;
+    if (counts) counts.set(edge.to, (counts.get(edge.to) ?? 0) + 1);
   }
-  return count;
+  return { describes, dependsOn };
 }
 
 function collectElementDescendants(
@@ -103,8 +101,8 @@ function collectElementDescendants(
 
 /**
  * Landmarks rank by subtree weight, then describes fan-in, depends_on fan-in, slug ascending:
- * stable across renders. Each comparison rescans every edge (`countIncomingOfType`), so the ranking
- * is O(C log C × E) for C capabilities, most of the build at 10,000 nodes.
+ * stable across renders. Fan-in is counted in one pass, so ranking is O(E + C log C) for C
+ * capabilities.
  */
 export function buildOntologySkeleton(
   nodes: readonly KnowledgeGraphNode[],
@@ -115,6 +113,11 @@ export function buildOntologySkeleton(
   const index = buildContainmentIndex(edges);
   const subtreeWeightBySlug = computeSubtreeWeights(nodes, index);
   const kindBySlug = new Map(nodes.map((node) => [node.id, node.kind]));
+  const fanIn = countFanIn(edges);
+  const byFanIn = (a: string, b: string) =>
+    (fanIn.describes.get(b) ?? 0) - (fanIn.describes.get(a) ?? 0) ||
+    (fanIn.dependsOn.get(b) ?? 0) - (fanIn.dependsOn.get(a) ?? 0) ||
+    a.localeCompare(b);
 
   const levelBySlug = new Map<string, SkeletonLevel>();
   const skeletonSlugs = new Set<string>();
@@ -141,18 +144,9 @@ export function buildOntologySkeleton(
       .filter((child) => kindBySlug.get(child) === "capability");
     const unique = [...new Set(capabilityChildren)];
 
-    const ranked = unique.slice().sort((a, b) => {
-      const wa = subtreeWeightBySlug.get(a) ?? 0;
-      const wb = subtreeWeightBySlug.get(b) ?? 0;
-      if (wa !== wb) return wb - wa;
-      const da = countIncomingOfType(a, "describes", edges);
-      const db = countIncomingOfType(b, "describes", edges);
-      if (da !== db) return db - da;
-      const pa = countIncomingOfType(a, "depends_on", edges);
-      const pb = countIncomingOfType(b, "depends_on", edges);
-      if (pa !== pb) return pb - pa;
-      return a.localeCompare(b);
-    });
+    const ranked = unique.slice().sort(
+      (a, b) => (subtreeWeightBySlug.get(b) ?? 0) - (subtreeWeightBySlug.get(a) ?? 0) || byFanIn(a, b),
+    );
 
     const landmarks = ranked.slice(0, perDomainCap);
     landmarksByDomain.set(domain.id, landmarks);
@@ -162,17 +156,6 @@ export function buildOntologySkeleton(
 
   // One global evidence landmark proves the ontology reaches implementation without flooding the
   // map with leaves.
-  const rankEvidence = (candidates: string[]) =>
-    candidates.sort((a, b) => {
-      const da = countIncomingOfType(a, "describes", edges);
-      const db = countIncomingOfType(b, "describes", edges);
-      if (da !== db) return db - da;
-      const pa = countIncomingOfType(a, "depends_on", edges);
-      const pb = countIncomingOfType(b, "depends_on", edges);
-      if (pa !== pb) return pb - pa;
-      return a.localeCompare(b);
-    });
-
   const evidenceForDomain = (domainSlug: string): string | null => {
     const candidateCapabilities = landmarksByDomain.get(domainSlug) ?? [];
     const candidates = candidateCapabilities
@@ -185,7 +168,7 @@ export function buildOntologySkeleton(
         ),
       )
       .filter((slug, index, list) => list.indexOf(slug) === index);
-    return rankEvidence(candidates)[0] ?? null;
+    return candidates.sort(byFanIn)[0] ?? null;
   };
 
   const maxDomainWeight = Math.max(
