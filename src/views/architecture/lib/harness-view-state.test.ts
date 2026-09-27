@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildHarnessViewHref,
+  DEFAULT_HARNESS_VIEW,
   defaultViewForSurface,
   HARNESS_VIEW_ORDER,
   parseHarnessView,
@@ -24,6 +25,7 @@ describe('parseHarnessView', () => {
     expect(parseHarnessView(undefined)).toBe('structure');
     expect(parseHarnessView('')).toBe('structure');
     expect(parseHarnessView('not-a-view')).toBe('structure');
+    expect(parseHarnessView(null)).toBe(DEFAULT_HARNESS_VIEW);
   });
 
   it('sends the retired sensors address to the view that answers it', () => {

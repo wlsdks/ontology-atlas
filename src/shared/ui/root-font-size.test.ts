@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { cssLengthToPx } from "./root-font-size";
+import { cssLengthToPx, DEFAULT_ROOT_FONT_PX } from "./root-font-size";
 
 /**
  * The defect this helper exists for, written as a test: `Number.parseFloat("0.6875rem")` is
@@ -39,6 +39,7 @@ describe("cssLengthToPx", () => {
   });
 
   it("defaults the root to 16, the value a browser starts at", () => {
+    expect(cssLengthToPx("1rem")).toBe(DEFAULT_ROOT_FONT_PX);
     expect(cssLengthToPx("0.6875rem")).toBeCloseTo(11, 10);
   });
 });
