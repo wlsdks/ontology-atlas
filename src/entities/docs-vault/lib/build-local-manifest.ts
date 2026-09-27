@@ -185,6 +185,12 @@ async function walk(
   return acc.entries;
 }
 
+/** Children by name per tree node; a linear `children.find` made a flat folder quadratic. */
+const childIndex = new WeakMap<VaultTreeNode, Map<string, VaultTreeNode>>();
+
+/** One collator for every sort: `localeCompare(x, 'ko')` resolves the locale per comparison. */
+const KO_COLLATOR = new Intl.Collator('ko');
+
 function insertIntoTree(root: VaultTreeNode, slug: string, title: string) {
   const parts = slug.split('/');
   let node = root;
@@ -192,7 +198,12 @@ function insertIntoTree(root: VaultTreeNode, slug: string, title: string) {
     const name = parts[i];
     const isLeaf = i === parts.length - 1;
     if (!node.children) node.children = [];
-    let child = node.children.find((c) => c.name === name);
+    let index = childIndex.get(node);
+    if (!index) {
+      index = new Map();
+      childIndex.set(node, index);
+    }
+    let child = index.get(name);
     if (!child) {
       child = {
         name,
@@ -204,6 +215,7 @@ function insertIntoTree(root: VaultTreeNode, slug: string, title: string) {
         child.title = title;
       }
       node.children.push(child);
+      index.set(name, child);
     } else if (isLeaf && !child.slug) {
       child.type = 'doc';
       child.slug = slug;
@@ -217,7 +229,7 @@ function sortTree(node: VaultTreeNode) {
   if (!node.children) return;
   node.children.sort((a, b) => {
     if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
-    return a.name.localeCompare(b.name, 'ko');
+    return KO_COLLATOR.compare(a.name, b.name);
   });
   for (const c of node.children) sortTree(c);
 }
@@ -386,8 +398,10 @@ function buildMdEntry(
     lastModified,
     handle: entry.handle,
     kind: 'md',
-    doc,
-    linkContexts,
+    /* Fresh copies: a V8 substring of 13+ characters keeps its whole parent alive, so the title,
+     * excerpt, display names and link text would pin every file's full text (58 MB at 12k). */
+    doc: structuredClone(doc),
+    linkContexts: structuredClone(linkContexts),
   };
 }
 
@@ -473,8 +487,8 @@ function aggregateBuild(
     }
   }
 
-  docs.sort((a, b) => a.slug.localeCompare(b.slug, 'ko'));
-  sources.sort((a, b) => a.path.localeCompare(b.path, 'ko'));
+  docs.sort((a, b) => KO_COLLATOR.compare(a.slug, b.slug));
+  sources.sort((a, b) => KO_COLLATOR.compare(a.path, b.path));
 
   const tree: VaultTreeNode = { name: rootName, path: '', type: 'dir' };
   for (const doc of docs) insertIntoTree(tree, doc.slug, doc.title);
@@ -487,7 +501,7 @@ function aggregateBuild(
       if (!byFrom.has(entry.fromSlug)) byFrom.set(entry.fromSlug, entry);
     }
     backlinksDetail[slug] = [...byFrom.values()].sort((a, b) =>
-      a.fromSlug.localeCompare(b.fromSlug, 'ko'),
+      KO_COLLATOR.compare(a.fromSlug, b.fromSlug),
     );
   }
   const tags: Record<string, string[]> = {};
@@ -517,9 +531,13 @@ function aggregateBuild(
   };
 }
 
+/** Reads in flight at once: overlaps the per-read wait of the bridge or FSA without flooding it. */
+const VAULT_READ_CONCURRENCY = 32;
+
 async function collectEntries(
   root: FileSystemDirectoryHandle,
   walkInfo?: { truncated: boolean; prunedDirs: string[]; sourceFileCount?: number },
+  concurrency = VAULT_READ_CONCURRENCY,
 ): Promise<BuiltVaultEntry[]> {
   const walked = await walkVault(root);
   if (walkInfo) {
@@ -528,40 +546,50 @@ async function collectEntries(
     walkInfo.sourceFileCount = walked.sourceFileCount;
   }
   const files = walked.entries;
-  const entries: BuiltVaultEntry[] = [];
-  /* Sources are listed by size and mtime from native stamps, never opened (`getFile()` under
-   * Tauri transfers the whole file). On the web a directory `File` is metadata only. */
-  const stamps = files.some((entry) => entry.kind === 'source')
+  /* Images and sources are listed from native stamps, never opened (`getFile()` under Tauri
+   * transfers the whole file). On the web a directory `File` is metadata only. */
+  const stamps = files.some((entry) => entry.kind !== 'md')
     ? await nativeStampIndex(root)
     : null;
-  for (const entry of files) {
+  const readOne = async (entry: WalkEntry): Promise<BuiltVaultEntry> => {
     if (entry.kind === 'source') {
       const stamp = stamps?.get(entry.relativePath);
       const { lastModified, bytes } = stamp
         ? { lastModified: stamp.lastModified, bytes: stamp.size }
         : await sourceStampFromHandle(entry.handle);
-      entries.push({
+      return {
         relativePath: entry.relativePath,
         lastModified,
         bytes,
         handle: entry.handle,
         kind: 'source',
-      });
-      continue;
+      };
+    }
+    if (entry.kind === 'image') {
+      const stamp = stamps?.get(entry.relativePath);
+      const lastModified = stamp
+        ? stamp.lastModified
+        : (await entry.handle.getFile()).lastModified;
+      return { relativePath: entry.relativePath, lastModified, handle: entry.handle, kind: 'image' };
     }
     const file = await entry.handle.getFile();
-    if (entry.kind === 'image') {
-      entries.push({
-        relativePath: entry.relativePath,
-        lastModified: file.lastModified,
-        handle: entry.handle,
-        kind: 'image',
-      });
-      continue;
-    }
     const raw = await file.text();
-    entries.push(buildMdEntry(entry, raw, file.lastModified));
-  }
+    return buildMdEntry(entry, raw, file.lastModified);
+  };
+  /* A bounded pool; results land in walk order, so the manifest is the same as a serial read.
+   * One failed read still rejects the whole build, as the serial loop did. */
+  const entries: BuiltVaultEntry[] = new Array(files.length);
+  let next = 0;
+  const worker = async () => {
+    while (next < files.length) {
+      const at = next;
+      next += 1;
+      entries[at] = await readOne(files[at]);
+    }
+  };
+  await Promise.all(
+    Array.from({ length: Math.min(Math.max(1, concurrency), files.length) }, worker),
+  );
   return entries;
 }
 
@@ -584,9 +612,11 @@ export async function buildLocalManifestWithEntries(
 /** Builds a local manifest in the same VaultManifest shape as `scripts/build-docs-vault.mjs`. */
 export async function buildLocalManifest(
   root: FileSystemDirectoryHandle,
+  /** Reads in flight; its caller with 1 is the order test's one-at-a-time reference. */
+  readConcurrency = VAULT_READ_CONCURRENCY,
 ): Promise<LocalVaultBuild> {
   const walkInfo = { truncated: false, prunedDirs: [] as string[], sourceFileCount: 0 };
-  const entries = await collectEntries(root, walkInfo);
+  const entries = await collectEntries(root, walkInfo, readConcurrency);
   return aggregateBuild(entries, root.name, walkInfo);
 }
 
@@ -639,6 +669,16 @@ export async function rebuildLocalManifestIncremental(
         bytes,
         handle: entry.handle,
         kind: 'source',
+      });
+      continue;
+    }
+    if (entry.kind === 'image' && nativeStamp) {
+      // An image's mtime is all the build needs; its bytes stay native.
+      entries.push({
+        relativePath: entry.relativePath,
+        lastModified: nativeStamp.lastModified,
+        handle: entry.handle,
+        kind: 'image',
       });
       continue;
     }
