@@ -1,4 +1,5 @@
 import type { LibraryGraph, LibraryGraphNode, LibraryGraphNodeKind } from "./build-library-graph";
+import { maxOf, minOf } from "./library-graph-extremes";
 import type { LayoutPoint } from "./library-graph-layout";
 
 /**
@@ -131,8 +132,8 @@ export function islandsLayout(graph: LibraryGraph, world: { width: number; heigh
   // A page's dot grows with the files it read, 0.85 to 1.25 page radii, scaled within the folder.
   const reads = new Map<string, number>();
   for (const page of pages) reads.set(page.id, (cites.get(page.id) ?? []).length);
-  const mostRead = Math.max(1, ...reads.values());
-  const leastRead = Math.min(mostRead, ...reads.values());
+  const mostRead = maxOf(reads.values(), 1);
+  const leastRead = minOf(reads.values(), mostRead);
   const pageRadius = (id: string): number => {
     const t = mostRead > leastRead ? ((reads.get(id) ?? 0) - leastRead) / (mostRead - leastRead) : 0.5;
     return ISLAND_PAGE_RADIUS * (ISLAND_PAGE_GRAIN_MIN + (ISLAND_PAGE_GRAIN_MAX - ISLAND_PAGE_GRAIN_MIN) * t);

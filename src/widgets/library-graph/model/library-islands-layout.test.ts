@@ -172,4 +172,10 @@ describe("islands layout", () => {
     const two = islandsLayout(sameTitles(folder, true), WORLD, LABELS);
     expect([...one.positions.entries()].sort()).toEqual([...two.positions.entries()].sort());
   });
+
+  it("lays a folder of 250,000 pages without a stack overflow", () => {
+    const pages = Array.from({ length: 250_000 }, (_, i) => `p${String(i).padStart(6, "0")}`);
+    const layout = islandsLayout(graph({ pages }), WORLD, LABELS);
+    expect(layout.positions.size).toBe(pages.length);
+  });
 });

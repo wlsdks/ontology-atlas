@@ -1,4 +1,5 @@
 import type { LibraryGraph, LibraryGraphNodeKind } from "./build-library-graph";
+import { maxOf, minOf } from "./library-graph-extremes";
 import type { LayoutPoint } from "./library-graph-layout";
 
 /**
@@ -307,7 +308,7 @@ export function flowLayout(graph: LibraryGraph, world: FlowWorld): FlowLayout {
     const pageIndex = new Map(pageColumn.ids.map((id, index) => [id, index]));
     const stackOf = new Map<string, number>();
     for (const id of sourceColumn.ids) {
-      const first = Math.min(...(neighbours.get(id) ?? []).map((other) => pageIndex.get(other) ?? Number.POSITIVE_INFINITY));
+      const first = minOf((neighbours.get(id) ?? []).map((other) => pageIndex.get(other) ?? Number.POSITIVE_INFINITY));
       stackOf.set(id, Number.isFinite(first) ? Math.floor(first / rows) : stacks - 1);
     }
     const groups: string[][] = Array.from({ length: stacks }, () => []);
@@ -359,7 +360,7 @@ export function flowLayout(graph: LibraryGraph, world: FlowWorld): FlowLayout {
       conceptColumn.x = conceptX + shift;
     }
     sourceColumn.x = stackX.reduce((sum, at) => sum + at.files, 0) / stackX.length + shift;
-    sourceColumn.grid = Math.max(...groupGrid);
+    sourceColumn.grid = maxOf(groupGrid);
     pageColumn.x = stackX.reduce((sum, at) => sum + at.pages, 0) / stackX.length + shift;
     settleLabelRooms(columns, stackWidth);
     return { positions, columns, rowGap, extent: { width: stackWidth, height }, scale };
