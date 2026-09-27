@@ -285,7 +285,6 @@
   --color-overlay-recessed-a12: rgba(0, 0, 0, 0.12);
 
   /* Popover/dialog drop shadow alpha — inserted inside the box-shadow value. */
-  --color-shadow-a22: rgba(0, 0, 0, 0.22);
   --color-shadow-a42: rgba(0, 0, 0, 0.42);
   --color-shadow-a46: rgba(0, 0, 0, 0.46);
 
@@ -866,21 +865,12 @@
    * were dimensions — ① **forcing** two columns and leaving only one line on the right
    * (at 1512×950, right column valid ink 1 row / empty height 1,010px, yet vertical dividers extend to screen edge) ② list row height determined by character count, causing uncontrolled grid rhythm wobble. Both violate "container dimensions are design decisions, not content byproducts" (design.md dimension regularity).
    *
-   * Hence these three values are tokens — one hardcoded 600px existed inside JSX,
-   * and the other two were absent, letting content dictate them.
+   * Hence the row height below is a token rather than something content dictates.
    */
-
-  /* Minimum width for evidence column. 11px mono 80 columns ≈ 528px + gutter + padding.
-     Tokenized value previously hardcoded as `minmax(0,600px)` in old code — below this width, all lines clip and **clipped diffs are not evidence**. */
-  --git-evidence-min: 600px;
 
   /* Changed list row height. As a repeated set, content length must not determine height —
      names are clamped and space is held. 26px is 12.5px body + top/bottom optical padding; on touch, the coarse block below elevates to 44px. */
   --git-row-h: 26px;
-
-  /* Step row height — same reason (repeated set). One summary line + one name line, so
-     it is one level higher than change rows. */
-  --git-step-h: 44px;
 
   /* Stair interval for list row appearance. If 15 rows turn on at once, it reads as "screen redrawn";
      if they turn on sequentially, it reads as "list filling." Steps climb only up to 8 rows,

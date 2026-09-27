@@ -971,7 +971,7 @@ panel entry, drag settle, and focus confirmation before adding bespoke easing:
 
 - `--topology-motion-focus-duration`: short focus confirmation.
 - `--topology-motion-panel-duration`: panel/support chrome entry.
-- `--topology-motion-camera-duration`: camera pan/zoom continuity.
+- Camera pan/zoom continuity is canvas physics: `CAMERA_TWEEN_MIN_MS`/`CAMERA_TWEEN_MAX_MS` in `src/widgets/ontology-map/model/motion-physics.ts`.
 - `--topology-motion-drag-settle-duration`: post-drag settle.
 - `--topology-motion-ease-standard`: default topology state transition.
 - `--topology-motion-ease-out`: landing/settle transition.
@@ -1086,7 +1086,7 @@ Canonical utility classes (globals.css `@layer base`):
 The canonical contract for the surface where an inline card opens upon row click ([AI Connection] vendor list).
 
 - **One surface, two states.** Drawing different rows per state (replacement) leaves nothing to transition.
-  The header band (`--control-row-h`) is always the same DOM; only the detail area below
+  The header band is always the same DOM; only the detail area below
   grows in height. Thus, the folded row **becomes** the expanded row rather than changing into something else,
   a fact conveyed through motion.
 - **Open/close/content swap share the same transition.** With only one class, there is no room for
@@ -1231,10 +1231,8 @@ Forcing pages to remember `shrink-0` actually failed: after fixing one screen, t
 |---|---|---|
 | `--git-setup-measure` | 520px | Single task column width before connection (no web/folder, before recording starts) |
 | `--git-setup-action-height` | 36px (coarse 44px) | Primary/secondary action row height |
-| `--git-evidence-min` | 600px | Minimum evidence column width. 11px mono 80 columns ≈ 528 + gutter + padding |
 | `--git-evidence-stack-max` | 460px | Upper bound for vertically stacked evidence (scrolls within) |
 | `--git-row-h` | 26px (coarse 44px) | Change row height — content cannot dictate this as it's a repeating set |
-| `--git-step-h` | 44px | Step row height (summary + name, two lines) |
 | `--git-row-stagger` | 14ms | List appearance stagger interval. Max 8 rows → total delay ≤112ms |
 | `--git-single-measure` | 920px | Single column width when no evidence column is present |
 
@@ -2687,8 +2685,6 @@ Widths have **no shared unit; that is the specification.** All widths in this re
 |---|---|---|
 | `--git-setup-measure` | 520px | Single-task column (reuse of prose measured width) |
 
-| `--git-evidence-min` | 600px | 11px mono 80 columns ≈ 528 + gutter + padding |
-
 | `--git-single-measure` | 920px | Single column when evidence column is absent |
 
 | `--agent-panel-width` | `clamp(320px, 26vw, 420px)` | Viewport function |
@@ -3003,7 +2999,7 @@ All reuse existing lamps. Enforcement is not lint but the **full contract of cva
 | **32** | `--control-h-md` | `chip`/`pill` `md`·`lg`, `segment` `lg`, `card` `sm`, `icon` `lg`, `--app-nav-rail-tile-height` | **The app's default control height.** The value layer stands on this value via `min-h-8` |
 | **36** | `--chrome-tile-size` | Chrome field/tile, **document header tile**, `row` `md`, `card` `md` | Workbench chrome dimensions nailed by the "scale fixed contract" |
 | **40** | `--control-h-lg` | Select, large form controls, `card` `lg` | Box for entering text |
-| **44** | `--touch-target-min` | `row` `lg`, `--control-row-h`, `pointer: coarse` promotion (token override + `.touch-hit-expand`) | Touch value from Apple HIG / Material / WCAG **2.5.5(AAA)** — **coarse single source**. The fine front of `link` was reset to 44 (`min-h-11`) on 2026-08-04, then back to 24 below (see "link floor" section) |
+| **44** | `--touch-target-min` | `row` `lg`, `pointer: coarse` promotion (token override + `.touch-hit-expand`) | Touch value from Apple HIG / Material / WCAG **2.5.5(AAA)** — **coarse single source**. The fine front of `link` was reset to 44 (`min-h-11`) on 2026-08-04, then back to 24 below (see "link floor" section) |
 
 **34 disappeared from this table on 2026-08-03.** It was listed as a single-line "chrome lock," but that listing **only recorded it, not justified it**. Tracing the basis leads to a single comment in `DocsHeaderTile` — *"`ChromeTile` fixes `--chrome-tile-size`(**44px**) and does not match header density (34px)."* The chrome tile was **lowered to 36px on 2026-07-23** (owner: "obviously too big"), and on that day the only basis for 34 vanished, yet no one re-derived 34. Only two values and two coarse promotion rules remained for the same role (square icon tile). Now there is only one: `--chrome-tile-size`. Source: `docs/DECISIONS.md` 2026-08-03 "Tile dimensions are one".
 
@@ -3308,11 +3304,9 @@ The settings row-measure token (658px) bound the API Key drill-in's rows to the 
 --control-h-sm: 28px;
 --control-h-md: 32px;   /* Select size="md", dense form controls */
 --control-h-lg: 40px;   /* Select default trigger */
---control-row-h: calc(var(--control-h-md) + 12px);  /* = 44px, list row containing controls */
 ```
 
-- **`--control-row-h` (2026-07-26)** — List row height where buttons/controls sit. Must not equal control height: owner feedback («key register button looks too cramped») stemmed from [AI Connection] vendor row height 32px = button height, leaving 0 vertical margin above/below the button. Three rows touched each other with only a 1px divider between, making the three buttons read as one block. Write as an **expression** so rows grow when controls grow. Resulting 44px matches `--touch-target-min` in value and rationale — fingers and eyes read boundaries via padding around controls.
-  In expanded lists, **expanded card headers must also use this token** to maintain rhythm and name column alignment with other rows (dimensional regularity).
+- **A row that holds controls is taller than its controls (2026-07-26).** Owner feedback («key register button looks too cramped») came from [AI Connection] vendor rows as tall as their 32px buttons: no margin above or below, and three rows parted only by a 1px divider read as one block. That height is `row` `lg` (`min-h-11`, 44px) today, matching `--touch-target-min` in value and rationale. The row-height token that once carried it lost its last consumer when model connections moved to the Agents Models tab (2026-09-25) and was removed.
 - Chrome fill/tiles continue using separate lock token `--chrome-tile-size` (36px) — this control scale is for interactive controls **outside** the chrome system (canonical Select, form inputs, etc.). Map top-right toolbar (auto-align·search·recent changes·workspace·+ concept) belongs to chrome system, all converging to `--chrome-tile-size` (36px) — «+ concept» primary also aligns in height·radius·typography (text-label·icon 14px) (#13).
 
 ### Dialog Width Scale
