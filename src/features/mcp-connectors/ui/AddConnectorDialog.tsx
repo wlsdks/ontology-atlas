@@ -61,7 +61,7 @@ import { groupDiscovered, shortSourceKey, type DiscoveredGroup } from './discove
  * attach (`mcp-catalogue.generated.ts`, showing the verbatim address or command and what it
  * asks), and by hand (a folded form, where an install link lands filled in).
  *
- * A press attaches what asks nothing and asks in place for what asks one thing: a hosted OAuth
+ * A press attaches what its row shows and asks nothing, else unfolds in place: a hosted OAuth
  * address goes straight into the folder switched off; a local program needing a token unfolds
  * one password field per required variable under its row. Nothing is written until the press,
  * and no value ever goes into the folder's file. Record: `docs/DECISIONS.md` (2026-09-07,
@@ -197,8 +197,10 @@ function variantKey(variant: CatalogueVariant): string {
 }
 
 type PressOutcome = 'attaches' | 'asks';
-function pressOutcome(variant: CatalogueVariant): PressOutcome {
-  return requiredVariables(variant).length > 0 ? 'asks' : 'attaches';
+function pressOutcome(entry: CatalogueEntry, variant: CatalogueVariant): PressOutcome {
+  return variant === primaryVariant(entry) && requiredVariables(variant).length === 0
+    ? 'attaches'
+    : 'asks';
 }
 
 /** jsdom has no `scrollIntoView`; the form is still unfolded, which is the contract. */
@@ -379,10 +381,10 @@ export function AddConnectorDialog({
     });
   };
 
-  /** Attaches what asks nothing; asks in place for what asks one thing. */
+  /** Attaches what its row shows and asks nothing; unfolds the rest. */
   const pressCatalogue = (entry: CatalogueEntry, variant: CatalogueVariant) => {
     setFailure(null);
-    if (pressOutcome(variant) === 'attaches') {
+    if (pressOutcome(entry, variant) === 'attaches') {
       setAsking(null);
       void addWithSecrets(catalogueRecord(entry, variant), []);
       return;
@@ -742,7 +744,8 @@ function FoundSection({
           {visible.map((group) => {
             const server = group.server;
             const usable = isAttachableTransport(server.transport);
-            const runs = server.url ?? [server.command, ...server.args].join(' ');
+            const commandLine = [server.command, ...server.args].join(' ');
+            const runs = server.transport === 'stdio' ? commandLine : (server.url ?? commandLine);
             return (
               <li
                 key={group.key}
@@ -936,12 +939,16 @@ function CatalogueSection({
                           size="lg"
                           data-testid={`${testIdPrefix}-catalogue-other`}
                           data-variant-kind={variant.kind}
-                          data-press={pressOutcome(variant)}
+                          data-press={pressOutcome(entry, variant)}
                           disabled={attached}
                           aria-expanded={
-                            pressOutcome(variant) === 'asks' ? askingHere === variant : undefined
+                            pressOutcome(entry, variant) === 'asks'
+                              ? askingHere === variant
+                              : undefined
                           }
-                          aria-controls={pressOutcome(variant) === 'asks' ? askId : undefined}
+                          aria-controls={
+                            pressOutcome(entry, variant) === 'asks' ? askId : undefined
+                          }
                           onClick={() => onPress(entry, variant)}
                         >
                           {variantLabel(t, variant)}
@@ -962,9 +969,11 @@ function CatalogueSection({
                     size="lg"
                     data-testid={`${testIdPrefix}-catalogue-add`}
                     data-variant-kind={primary.kind}
-                    data-press={pressOutcome(primary)}
-                    aria-expanded={pressOutcome(primary) === 'asks' ? askingHere === primary : undefined}
-                    aria-controls={pressOutcome(primary) === 'asks' ? askId : undefined}
+                    data-press={pressOutcome(entry, primary)}
+                    aria-expanded={
+                      pressOutcome(entry, primary) === 'asks' ? askingHere === primary : undefined
+                    }
+                    aria-controls={pressOutcome(entry, primary) === 'asks' ? askId : undefined}
                     onClick={() => onPress(entry, primary)}
                   >
                     <Plus size={ICON_SIZE.sm} aria-hidden />
@@ -1011,8 +1020,8 @@ function variantLabel(t: Translate, variant: CatalogueVariant): string {
 }
 
 /**
- * Unfolded under a row that needs one value: provenance, the command with this machine's
- * runtime, where the value goes, one password field per required variable, and the press.
+ * Unfolded under its row before any write: provenance, the command with this machine's
+ * runtime, where any value goes, one password field per required variable, and the press.
  * Without a keychain the field is not offered, since its contents would be thrown away.
  */
 function VariantAsk({
@@ -1070,12 +1079,14 @@ function VariantAsk({
       <code className="mt-1 block break-all font-mono text-label leading-label text-[color:var(--color-text-tertiary)]">
         {variantRuns(variant, resolved)}
       </code>
-      <p className="mt-1 break-keep text-label leading-prose text-[color:var(--color-text-quaternary)]">
-        {canStoreSecrets
-          ? t('variantAsksToken', { keys: required.map((variable) => variable.name).join(', ') })
-          : t('secretsWeb', { keys: required.map((variable) => variable.name).join(', ') })}
-      </p>
-      {canStoreSecrets ? (
+      {required.length > 0 ? (
+        <p className="mt-1 break-keep text-label leading-prose text-[color:var(--color-text-quaternary)]">
+          {canStoreSecrets
+            ? t('variantAsksToken', { keys: required.map((variable) => variable.name).join(', ') })
+            : t('secretsWeb', { keys: required.map((variable) => variable.name).join(', ') })}
+        </p>
+      ) : null}
+      {canStoreSecrets && required.length > 0 ? (
         <div className="mt-2 flex flex-col gap-2">
           {required.map((variable, index) => (
             <div key={variable.name} className="flex flex-col gap-1">
@@ -1123,7 +1134,7 @@ function VariantAsk({
        * Every control stands on the chip `lg` step, so the row has one height.
        */}
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        {canStoreSecrets ? (
+        {canStoreSecrets || required.length === 0 ? (
           <button
             type="button"
             data-testid={`${testIdPrefix}-catalogue-ask-add`}
@@ -1222,6 +1233,10 @@ function CustomConnectorForm({
   }, [args, command, name, transport, url, variables]);
 
   const problems = connectorProblems(draft);
+  const runs =
+    draft.transport === 'http'
+      ? (draft.url ?? '').trim()
+      : [draft.command ?? '', ...draft.args].join(' ').trim();
   const changeVariable = (index: number, next: Partial<DraftVariable>) =>
     setVariables((current) =>
       current.map((variable, position) =>
@@ -1488,6 +1503,17 @@ function CustomConnectorForm({
           </Chip>
         </div>
       </div>
+
+      {runs ? (
+        <div data-testid={`${testIdPrefix}-custom-runs`} className="mt-3">
+          <p className="text-label leading-label text-[color:var(--color-text-quaternary)]">
+            {t('whatRunsLabel')}
+          </p>
+          <code className="mt-1 block break-all font-mono text-label leading-label text-[color:var(--color-text-primary)]">
+            {runs}
+          </code>
+        </div>
+      ) : null}
 
       {name.trim() && problems.length > 0 ? (
         <p

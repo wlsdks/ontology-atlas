@@ -64,6 +64,9 @@ vi.mock('@/shared/lib/tauri-connector-secrets', async () => {
   };
 });
 
+import { MCP_CATALOGUE } from '@/shared/config/mcp-catalogue';
+import type { ConnectorRecord } from '@/shared/lib/connector-record';
+
 import { ConnectorsPanel, connectorDestination, whatRuns } from './ConnectorsPanel';
 import { groupDiscovered, shortSourceKey } from './discovered-groups';
 import { useVaultConnectors } from '../model/use-vault-connectors';
@@ -973,6 +976,131 @@ describe('connectors panel explains what runs before enabling', () => {
     expect(closers).toHaveLength(0);
     fireEvent.click(screen.getByTestId('connectors-add-close'));
     await waitFor(() => expect(screen.queryByTestId('connectors-add-dialog')).toBeNull());
+  });
+});
+
+describe('a press that writes shows the whole line first', () => {
+  function wholeLines(scope: ParentNode): string[] {
+    return Array.from(scope.querySelectorAll('code'))
+      .filter(
+        (code) =>
+          (code.classList.contains('break-all') ||
+            code.classList.contains('[overflow-wrap:anywhere]')) &&
+          !code.classList.contains('truncate'),
+      )
+      .map((code) => code.textContent ?? '');
+  }
+
+  function writtenLines(files: Map<string, string>): string[] {
+    const text = files.get('.ontology-atlas/connectors.json');
+    if (!text) return [];
+    return (JSON.parse(text) as { connectors: ConnectorRecord[] }).connectors.map(whatRuns);
+  }
+
+  it.each(
+    MCP_CATALOGUE.flatMap((entry) =>
+      entry.variants.map((variant) => [entry.id, variant.kind] as const),
+    ),
+  )('the %s row writes its %s way in only after showing that line whole', async (id, kind) => {
+    const vault = fakeVault();
+    draw(<Panel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-empty')).toBeInTheDocument());
+    openAdd();
+    const row = document.querySelector(
+      `[data-testid="connectors-catalogue-item"][data-catalogue-id="${id}"]`,
+    ) as HTMLElement;
+    let shown = wholeLines(row);
+    fireEvent.click(
+      row.querySelector(
+        `[data-testid="connectors-catalogue-add"][data-variant-kind="${kind}"], [data-testid="connectors-catalogue-other"][data-variant-kind="${kind}"]`,
+      ) as HTMLElement,
+    );
+    if (screen.queryByTestId('connectors-catalogue-ask')) {
+      expect(writtenLines(vault.files)).toEqual([]);
+      for (const field of screen.queryAllByTestId('connectors-catalogue-ask-value')) {
+        fireEvent.change(field, { target: { value: 'typed-value' } });
+      }
+      shown = wholeLines(row);
+      fireEvent.click(screen.getByTestId('connectors-catalogue-ask-add'));
+    }
+    await waitFor(() => expect(writtenLines(vault.files)).toHaveLength(1));
+    expect(shown).toContain(writtenLines(vault.files)[0]);
+  });
+
+  it('without a keychain, a way in that asks nothing still attaches from its panel', async () => {
+    bridge.secretsAvailable = false;
+    const vault = fakeVault();
+    draw(<Panel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-empty')).toBeInTheDocument());
+    openAdd();
+    const context7 = document.querySelector(
+      '[data-testid="connectors-catalogue-item"][data-catalogue-id="context7"]',
+    ) as HTMLElement;
+    fireEvent.click(
+      context7.querySelector('[data-testid="connectors-catalogue-other"]') as HTMLElement,
+    );
+    const shown = wholeLines(await screen.findByTestId('connectors-catalogue-ask'));
+    fireEvent.click(screen.getByTestId('connectors-catalogue-ask-add'));
+    await waitFor(() => expect(writtenLines(vault.files)).toHaveLength(1));
+    expect(shown).toContain(writtenLines(vault.files)[0]);
+  });
+
+  it.each([
+    ['a program', { transport: 'stdio', command: '/usr/bin/npx', args: ['-y', 'pkg'], url: null }],
+    ['an address', { transport: 'http', command: null, args: [], url: 'https://mcp.example.test/mcp' }],
+    [
+      'a program that also names an address',
+      {
+        transport: 'stdio',
+        command: '/bin/sh',
+        args: ['-c', 'echo unseen'],
+        url: 'https://mcp.example.test/mcp',
+      },
+    ],
+  ])('a found row for %s writes only the line it showed whole', async (_, shape) => {
+    bridge.discovered = {
+      connectors: [{ source: 'vault-mcp-json', name: 'found', envKeys: [], headerKeys: [], ...shape }],
+      sources: [],
+    };
+    const vault = fakeVault();
+    draw(<Panel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-add-open')).toBeInTheDocument());
+    openAdd();
+    const row = await screen.findByTestId('connectors-found-item');
+    const shown = wholeLines(row);
+    fireEvent.click(row.querySelector('[data-testid="connectors-found-add"]') as HTMLElement);
+    await waitFor(() => expect(writtenLines(vault.files)).toHaveLength(1));
+    expect(shown).toContain(writtenLines(vault.files)[0]);
+  });
+
+  it('the by-hand form, arriving filled, adds only the line it showed whole', async () => {
+    const vault = fakeVault();
+    draw(<Panel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-empty')).toBeInTheDocument());
+    openAdd();
+    const notion = document.querySelector(
+      '[data-testid="connectors-catalogue-item"][data-catalogue-id="notion"]',
+    ) as HTMLElement;
+    fireEvent.click(notion.querySelector('[data-testid="connectors-catalogue-add"]') as HTMLElement);
+    fireEvent.click(await screen.findByTestId('connectors-catalogue-ask-edit'));
+    await waitFor(() => expect(screen.getByTestId('connectors-custom-name')).toHaveValue('notion'));
+    fireEvent.change(screen.getByTestId('connectors-custom-command'), {
+      target: { value: '/opt/homebrew/bin/npx' },
+    });
+    const shown = wholeLines(screen.getByTestId('connectors-custom'));
+    fireEvent.click(screen.getByTestId('connectors-custom-add'));
+    await waitFor(() => expect(writtenLines(vault.files)).toHaveLength(1));
+    expect(shown).toContain(writtenLines(vault.files)[0]);
+  });
+
+  it('the switch turns on only a line its row showed whole', async () => {
+    const vault = fakeVault(seeded(stdioRecord));
+    draw(<Panel handle={vault.handle} />);
+    const row = await screen.findByTestId('connectors-item');
+    const shown = wholeLines(row);
+    fireEvent.click(screen.getByTestId('connectors-item-toggle'));
+    await waitFor(() => expect(row).toHaveAttribute('data-connector-enabled', 'true'));
+    expect(shown).toContain(whatRuns(stdioRecord));
   });
 });
 

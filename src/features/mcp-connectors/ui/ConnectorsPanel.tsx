@@ -561,7 +561,7 @@ export function ConnectorsPanel({
 }
 
 /**
- * One line per connector: the service, what runs, and whether it is on; the rest is one press
+ * One row per connector: the service, what runs, and whether it is on; the rest is one press
  * away. Problem and collision lines stay in the row because they explain a disabled switch.
  */
 function AttachedList({
@@ -663,7 +663,7 @@ function AttachedList({
                  */}
                 <code
                   data-testid={`${testIdPrefix}-item-runs`}
-                  className="min-w-0 flex-1 truncate font-mono text-label leading-label text-[color:var(--color-text-quaternary)]"
+                  className="min-w-0 flex-1 break-all font-mono text-label leading-label text-[color:var(--color-text-quaternary)]"
                 >
                   {runs}
                 </code>
