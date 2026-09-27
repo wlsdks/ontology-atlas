@@ -341,7 +341,7 @@ function findDependencyWitnessIssues(docs, repoRoot) {
   if (!grounded) return [];
   const root = repoRoot ? assertScanRootAllowed(repoRoot, 'repoRoot') : REPO_ROOT;
   const resolveTargetPath = evidencePathIndex(docs);
-  const reads = createDependencyWitnessReads();
+  const fileReads = createDependencyWitnessReads();
   const issues = [];
   for (const doc of docs) {
     const kind = typeof doc?.frontmatter?.kind === 'string' ? doc.frontmatter.kind.trim() : '';
@@ -351,7 +351,7 @@ function findDependencyWitnessIssues(docs, repoRoot) {
       frontmatter: doc.frontmatter,
       repoRoot: root,
       resolveTargetPath,
-      reads,
+      fileReads,
     })) {
       issues.push({
         slug: doc.slug,

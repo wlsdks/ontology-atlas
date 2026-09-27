@@ -184,8 +184,9 @@ their modified version. That is possible here, and this is how:
 - The sidecar's own source is this repository's \`mcp/\` directory, published under
   the MIT License with no additional restriction.
 - The sidecar is rebuilt from that source by \`pnpm mcp:build-binary\`, which runs
-  \`bun build --compile\`. Substituting a Bun built against a modified WebKit
-  reproduces the sidecar with the modified library.
+  \`bun build --compile\` with the Bun release named in \`.bun-version\`.
+  Substituting a Bun built against a modified WebKit, with \`.bun-version\` set to
+  the version it reports, reproduces the sidecar with the modified library.
 
 No part of JavaScriptCore or WebKit was modified for this distribution.
 

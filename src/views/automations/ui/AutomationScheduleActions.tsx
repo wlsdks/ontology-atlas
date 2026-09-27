@@ -8,9 +8,11 @@ import type { RoundsRunnerValue } from '@/features/library-rounds';
 import { Button } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 
-export function AutomationScheduleActions({ round, runner }: {
+export function AutomationScheduleActions({ round, runner, notAllowedSentenceId = null }: {
   round: RoundRecord;
   runner: RoundsRunnerValue;
+  /** While set, "Run now" waits and names why; Resume stays, because resuming here allows. */
+  notAllowedSentenceId?: string | null;
 }) {
   const t = useTranslations('automations');
   const [confirmRemove, setConfirmRemove] = useState(false);
@@ -79,8 +81,8 @@ export function AutomationScheduleActions({ round, runner }: {
       ) : (
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => runner.runNow(round.id)}
-            disabled={runner.running !== null || pending}
-            aria-describedby={runner.running ? `${detailId}-busy` : undefined}
+            disabled={runner.running !== null || pending || notAllowedSentenceId !== null}
+            aria-describedby={notAllowedSentenceId ?? (runner.running ? `${detailId}-busy` : undefined)}
             data-testid="automations-run-now" className="atlas-touch-floor">
             <Play size={ICON_SIZE.sm} aria-hidden />{t('runNow')}
           </Button>

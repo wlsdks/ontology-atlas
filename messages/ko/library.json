@@ -181,6 +181,7 @@
     "failedReason": "넣지 못했어요: {reason}",
     "revealFailed": "Finder에서 보여 주지 못했어요: {reason}",
     "openFailed": "그 파일을 열지 못했어요.",
+    "savedInstead": "{name}은 여기서 열면 이 페이지에서 코드가 돌 수 있는 종류라, 대신 내려받았어요.",
     "needsCompileSplit": "{notCompiled, number}개는 아직 정리되지 않았고, {stale, number}개는 원문 버전 확인이 필요해요",
     "staleOnly": "원문 {count, number}개의 버전을 확인해야 해요",
     "partialOnly": "{count, number}개는 앞부분만 읽었어요",
@@ -858,7 +859,8 @@
     "state": {
       "on": "켜짐",
       "paused": "멈춤",
-      "running": "도는 중"
+      "running": "도는 중",
+      "notHere": "이 맥에선 꺼짐"
     },
     "outcome": {
       "held": "바뀐 것 없음",
@@ -875,7 +877,8 @@
       "next": "다음 {time} · {name}",
       "running": "지금 도는 중 · {name}",
       "nothingYet": "아직 실행 없음",
-      "paused": "모두 멈춤"
+      "paused": "모두 멈춤",
+      "waitingHere": "자동화 화면에서 이 맥의 허용을 기다리는 중"
     },
     "runNow": "지금 돌리기",
     "runNowNamed": "{name} 지금 돌리기",

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# PreToolUse hook — blocks shell reads of the files .gitignore treats as secrets.
+# PreToolUse hook — blocks shell reads of the files .gitignore treats as secrets,
+# and of the key and credential files `.claude/settings.json` denies.
 #
 # Why this exists on the Codex side only.
 #
@@ -74,8 +75,6 @@ with open(os.environ["GITIGNORE"], encoding="utf-8") as handle:
         entry = raw.strip()
         if re.fullmatch(r"\.env(\.[A-Za-z0-9._-]+)?", entry):
             secrets.append(entry)
-if not secrets:
-    sys.exit(0)
 
 # Readers only, and a guard against the ordinary path rather than against an
 # author working around it; the header says so. `cp`, `tee` and `install` move bytes without putting them in a
@@ -99,6 +98,21 @@ for name in secrets:
     if re.search(rf"{start}(?:{reader})\b[^\n;|&]*?{target}", command):
         print(name)
         sys.exit(0)
+
+# The key material and credential stores Claude's permissions.deny names;
+# scripts/claude-hooks.test.mjs holds the two lists to each other.
+home = r"(?:~|\$HOME|\$\{HOME\}|/Users/[^/\s'\"]+|/home/[^/\s'\"]+)"
+KEY_FILES = (
+    r"[^\s'\";|&)]*\.(?:p8|p12|key|pem)",
+    r"(?:[^\s'\";|&)]*/)?id_(?:rsa|ed25519|ecdsa)[^\s'\";|&)]*",
+    rf"{home}/\.(?:ontology-atlas-signing|config/gh|aws|ssh)(?:/[^\s'\";|&)]*)?",
+    rf"{home}/\.(?:npmrc|netrc)",
+)
+for target in KEY_FILES:
+    found = re.search(rf"{start}(?:{reader})\b[^\n;|&]*?({target})(?=$|[\s'\";|&)])", command)
+    if found:
+        print(re.sub(r"[^A-Za-z0-9._/~$@+{}-]", "", found.group(1)))
+        sys.exit(0)
 PY
 ) || VERDICT=""
 
@@ -109,7 +123,7 @@ cat <<JSON
   "hookSpecificOutput": {
     "hookEventName": "PreToolUse",
     "permissionDecision": "deny",
-    "permissionDecisionReason": "secret read guard: this command reads \`${VERDICT}\`, which .gitignore treats as a secret.\n\nBasis: .claude/rules/local-first.md, section \"Security\" — never scan password, credential or key files. A value read into a transcript has left the machine.\n\nIf you need the shape of the configuration rather than its values, read \`.env.example\`, which is tracked for exactly that. If the user explicitly asked for this, have them run it themselves in the terminal."
+    "permissionDecisionReason": "secret read guard: this command reads \`${VERDICT}\`, which this repository treats as a secret (an env file .gitignore names, key material, or a credential store).\n\nBasis: .claude/rules/local-first.md, section \"Security\" — never scan password, credential or key files. A value read into a transcript has left the machine.\n\nIf you need the shape of the configuration rather than its values, read \`.env.example\`, which is tracked for exactly that. If the user explicitly asked for this, have them run it themselves in the terminal."
   }
 }
 JSON

@@ -17,15 +17,18 @@
  * failure mode, so it is caught here.
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, statSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 
 import {
+  BUN_VERSION_FILE,
   MCP_BINARY_OUTPUT_DIR,
   MCP_SERVER_ENTRY,
   binaryFileNameForTriple,
   bunCompileArgs,
+  bunVersionVerdict,
   hostTargetTriple,
+  pinnedBunVersion,
   SUPPORTED_TARGET_TRIPLES,
 } from './lib/mcp-binary.mjs';
 import {
@@ -71,13 +74,20 @@ if (!existsSync(path.join(root, MCP_SERVER_ENTRY))) {
   fail(`MCP entry not found: ${MCP_SERVER_ENTRY} (run from the repository root)`);
 }
 
+let pinnedBun;
+try {
+  pinnedBun = pinnedBunVersion(readFileSync(path.join(root, BUN_VERSION_FILE), 'utf-8'));
+} catch (error) {
+  fail(error.message);
+}
+
 const bunProbe = spawnSync('bun', ['--version'], { encoding: 'utf-8' });
 if (bunProbe.status !== 0) {
-  fail(
-    'bun is required to compile the bundled MCP binary.\n' +
-      '  Install: curl -fsSL https://bun.sh/install | bash',
-  );
+  fail(`bun is required to compile the bundled MCP binary.\n  Install: curl -fsSL https://bun.sh/install | bash -s "bun-v${pinnedBun}"`);
 }
+const bunVerdict = bunVersionVerdict(pinnedBun, bunProbe.stdout, { ci: Boolean(process.env.CI) });
+if (bunVerdict?.fatal) fail(bunVerdict.message);
+if (bunVerdict) console.warn(`⚠ ${bunVerdict.message}\n  Continuing locally; a CI build refuses this.`);
 
 mkdirSync(outDir, { recursive: true });
 

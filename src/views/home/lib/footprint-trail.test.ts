@@ -1,5 +1,8 @@
+import { createTranslator } from "next-intl";
 import { describe, expect, it } from "vitest";
 
+import en from "../../../../messages/en.json";
+import ko from "../../../../messages/ko.json";
 import {
   appendFootprintVisit,
   buildTrailStepLinks,
@@ -68,6 +71,7 @@ const LABELS: FootprintTrailPacketLabels = {
   title: "걸어온 길",
   order: "방문 순서:",
   reviewHint: "각 노드 맥락 검토:",
+  undocumented: "아직 문서 없음",
   pathHint: "여정 양 끝 경로 확인:",
 };
 
@@ -114,6 +118,24 @@ describe("formatFootprintTrailAgentPacket", () => {
 
   it("keeps its older shape when the caller passes no captions", () => {
     expect(formatFootprintTrailAgentPacket(entries, LABELS)).not.toContain("   — ");
+  });
+});
+
+describe.each([
+  { locale: "en", messages: en, hangul: false },
+  { locale: "ko", messages: ko, hangul: true },
+])("the $locale packet", ({ locale, messages, hangul }) => {
+  it("words a node with no document yet in that locale's catalogue", () => {
+    const t = createTranslator({ locale, messages, namespace: "topology.footprint" });
+    const text = formatFootprintTrailAgentPacket([{ id: "capability:ghost", title: "Ghost", kind: "capability", documented: false }], {
+      title: t("packetTitle"),
+      order: t("packetOrder"),
+      reviewHint: t("packetReviewHint"),
+      pathHint: t("packetPathHint"),
+      undocumented: t("packetUndocumented"),
+    });
+    expect(text).toContain(`# ghost — ${t("packetUndocumented")}`);
+    expect(/\p{Script=Hangul}/u.test(text)).toBe(hangul);
   });
 });
 

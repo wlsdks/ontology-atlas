@@ -38,18 +38,6 @@ function run(args, env) {
   });
 }
 
-test("updater-only mode accepts only the Tauri signing secrets", () => {
-  const env = cleanEnv();
-  env.APPLE_CERTIFICATE_P12_BASE64 = "not base64";
-  env.TAURI_SIGNING_PRIVATE_KEY = "private-key";
-  env.TAURI_SIGNING_PRIVATE_KEY_PASSWORD = "private-key-password";
-
-  const result = run(["--updater-only"], env);
-
-  assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /updater signing secrets are present/);
-});
-
 test("default mode requires the five Apple secrets and both Tauri secrets", () => {
   const env = cleanEnv();
   Object.assign(env, {
@@ -114,17 +102,6 @@ test("legacy Apple ID password credentials cannot satisfy the hosted notarizatio
   assert.match(result.stderr, /APPLE_API_ISSUER_ID/);
 });
 
-test("updater-only mode fails when either Tauri secret is missing", () => {
-  const env = cleanEnv();
-  env.TAURI_SIGNING_PRIVATE_KEY = "private-key";
-
-  const result = run(["--updater-only"], env);
-
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /TAURI_SIGNING_PRIVATE_KEY_PASSWORD/);
-  assert.doesNotMatch(result.stderr, /APPLE_CERTIFICATE_P12_BASE64/);
-});
-
 test("default mode preserves structural PKCS#12 validation", () => {
   const env = cleanEnv();
   Object.assign(env, {
@@ -161,11 +138,11 @@ test("default mode rejects base64 that is not an App Store Connect p8 key", () =
   assert.match(result.stderr, /must decode to an App Store Connect \.p8 private key/);
 });
 
-test("help documents the updater-only mode and both Tauri secrets", () => {
+test("help documents both Tauri secrets", () => {
   const result = run(["--help"], cleanEnv());
 
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /--updater-only/);
+  assert.doesNotMatch(result.stdout, /--updater-only/);
   assert.match(result.stdout, /TAURI_SIGNING_PRIVATE_KEY/);
   assert.match(result.stdout, /TAURI_SIGNING_PRIVATE_KEY_PASSWORD/);
 });

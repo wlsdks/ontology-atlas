@@ -1,5 +1,13 @@
 import type { Page } from "@playwright/test";
 
+import { roundFingerprint, type RoundRecord } from "../../src/entities/library-round/model/round-record";
+import { connectorFingerprint, type ConnectorRecord } from "../../src/shared/lib/connector-record";
+import {
+  MACHINE_APPROVALS_STORAGE_KEY,
+  serializeApprovals,
+  type ApprovalEntry,
+} from "../../src/shared/lib/machine-approvals-format";
+
 /**
  * **The Rounds tab's desktop bridge, stubbed** — shared by every Rounds spec.
  *
@@ -47,14 +55,43 @@ function wikiPage(title: string, source: string): string {
   ].join("\n");
 }
 
+const SEEDED_ROUNDS: Omit<RoundRecord, "createdAt" | "nextDueAt">[] = [
+  { id: "r-consistency", name: "Pages still match", kind: "consistency", cadence: { every: "hour" }, enabled: true, onStale: "redraft" },
+  { id: "r-confluence", name: "Confluence", kind: "service", cadence: { daily: "07:30", weekdaysOnly: true }, enabled: true, connectorId: "c1", connectorName: "confluence", query: "pages changed in the last day", limit: 20 },
+];
+
+const SEEDED_CONNECTOR: ConnectorRecord = {
+  id: "c1",
+  name: "confluence",
+  transport: "http",
+  args: [],
+  url: "https://mcp.atlassian.com/v1/mcp",
+  env: [],
+  headers: [],
+  enabled: true,
+};
+
+function allowancesFor(seedRounds: boolean): string {
+  const entries: ApprovalEntry[] = [
+    ["connector", VAULT_ROOT, SEEDED_CONNECTOR.id, connectorFingerprint(SEEDED_CONNECTOR)],
+  ];
+  if (seedRounds) {
+    for (const round of SEEDED_ROUNDS) {
+      entries.push(["round", VAULT_ROOT, round.id, roundFingerprint({ ...round, createdAt: "", nextDueAt: "" })]);
+    }
+  }
+  return serializeApprovals(entries);
+}
+
 /** Timestamps are built at page time so "today" and "yesterday" are the runner's, not the author's. */
 const SEED_SCRIPT = `
   const day = (offsetDays, h, m, s = 0) => { const d = new Date(); d.setDate(d.getDate() + offsetDays); d.setHours(h, m, s, 0); return d; };
   const iso = (d) => d.toISOString();
-  const rounds = { v: 1, rounds: [
-    { id: "r-consistency", name: "Pages still match", kind: "consistency", cadence: { every: "hour" }, enabled: true, onStale: "redraft", createdAt: iso(day(-3, 9, 0)), lastPassAt: iso(day(0, 9, 0)), nextDueAt: iso(day(1, 9, 0)) },
-    { id: "r-confluence", name: "Confluence", kind: "service", cadence: { daily: "07:30", weekdaysOnly: true }, enabled: true, connectorId: "c1", connectorName: "confluence", query: "pages changed in the last day", limit: 20, createdAt: iso(day(-3, 9, 0)), lastPassAt: iso(day(0, 7, 30)), nextDueAt: iso(day(1, 7, 30)) },
-  ], lastAway: { from: iso(day(-1, 18, 30)), to: iso(day(0, 9, 2)) } };
+  const clock = {
+    "r-consistency": { createdAt: iso(day(-3, 9, 0)), lastPassAt: iso(day(0, 9, 0)), nextDueAt: iso(day(1, 9, 0)) },
+    "r-confluence": { createdAt: iso(day(-3, 9, 0)), lastPassAt: iso(day(0, 7, 30)), nextDueAt: iso(day(1, 7, 30)) },
+  };
+  const rounds = { v: 1, rounds: definitions.map((round) => ({ ...round, ...clock[round.id] })), lastAway: { from: iso(day(-1, 18, 30)), to: iso(day(0, 9, 2)) } };
   const held = (id, d) => ({ v: 1, id, roundId: "r-consistency", roundName: "Pages still match", kind: "consistency", startedAt: iso(d), endedAt: iso(new Date(d.getTime() + 3000)), outcome: "held", checked: 4, stale: [], written: [], refused: [], called: [], agentTurns: 0, summary: "", trigger: "clock" });
   const ledger = [
     held("p1", day(-1, 19, 0)),
@@ -77,12 +114,7 @@ const VAULT: Record<string, string> = {
   "wiki/design-system.md": wikiPage("Design system", "sources/design-system.pdf"),
   "wiki/onboarding.md": wikiPage("Onboarding", "sources/onboarding.md"),
   ".ontology-atlas/.gitignore": "*\n",
-  ".ontology-atlas/connectors.json": JSON.stringify({
-    version: 1,
-    connectors: [
-      { id: "c1", name: "confluence", transport: "http", args: [], url: "https://mcp.atlassian.com/v1/mcp", env: [], headers: [], enabled: true },
-    ],
-  }),
+  ".ontology-atlas/connectors.json": JSON.stringify({ version: 1, connectors: [SEEDED_CONNECTOR] }),
 };
 
 const RUNTIME = {
@@ -102,13 +134,22 @@ const RUNTIME = {
   isolated: true,
 };
 
-export async function installDesktopBridge(page: Page, options: { seedRounds: boolean }) {
+export async function installDesktopBridge(
+  page: Page,
+  options: {
+    seedRounds: boolean;
+    allowedHere?: boolean;
+  },
+) {
   await page.addInitScript(
-    ({ files, runtime, rootPath, seed }) => {
+    ({ files, runtime, rootPath, seed, definitions, allowances }) => {
       const MTIME = 1_757_000_000_000;
       const encoder = new TextEncoder();
       if (seed) {
-        new Function("files", seed)(files);
+        new Function("files", "definitions", seed)(files, definitions);
+      }
+      if (allowances && window.localStorage.getItem(allowances.key) === null) {
+        window.localStorage.setItem(allowances.key, allowances.value);
       }
       const listDirectory = (relative: string) => {
         const prefix = relative ? `${relative}/` : "";
@@ -196,7 +237,17 @@ export async function installDesktopBridge(page: Page, options: { seedRounds: bo
       (window as unknown as { isTauri?: boolean }).isTauri = true;
       (window as unknown as { __roundsStubFiles?: Record<string, string> }).__roundsStubFiles = files;
     },
-    { files: { ...VAULT }, runtime: RUNTIME, rootPath: VAULT_ROOT, seed: options.seedRounds ? SEED_SCRIPT : "" },
+    {
+      files: { ...VAULT },
+      runtime: RUNTIME,
+      rootPath: VAULT_ROOT,
+      seed: options.seedRounds ? SEED_SCRIPT : "",
+      definitions: SEEDED_ROUNDS,
+      allowances:
+        options.allowedHere === false
+          ? null
+          : { key: MACHINE_APPROVALS_STORAGE_KEY, value: allowancesFor(options.seedRounds) },
+    },
   );
 }
 
