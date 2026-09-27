@@ -73,8 +73,8 @@ describe("디자인 규격 → 원장 게이트", () => {
       const census = censusFor(path, path === "app/globals.css" ? readGlobalCss() : readFileSync(path, "utf8")) as Map<string, string>;
       expect(
         census.size,
-        `${path} 의 센서스가 비었다 — 파일이 옮겨졌거나 추출 규칙이 낡았다. ` +
-          `빈 센서스는 «아무것도 안 잡는 게이트» 와 구별되지 않는다.`,
+        `The census of ${path} is empty: the file moved or the extraction rule is stale. ` +
+          `An empty census cannot be told apart from a gate that catches nothing.`,
       ).toBeGreaterThan(0);
     }
   });

@@ -196,24 +196,24 @@ test("표면 조합이 늘지 않는다", async ({ page }) => {
 
   expect(
     surfaces.size,
-    `표면 조합이 ${BASELINE_SURFACE_COMBOS} → ${surfaces.size} 로 늘었다.\n` +
-      `상자의 생김새(반경×보더×배경)를 새로 조립하지 말고 이미 있는 조합을 쓴다.\n` +
-      `정말 새 역할이면 「체계」를 소집해 규격을 먼저 세워라. 상한을 올리는 것은 래칫을 푸는 것이다.\n` +
+    `Surface combinations grew from ${BASELINE_SURFACE_COMBOS} to ${surfaces.size}.\n` +
+      `Do not assemble a new box look (radius × border × background); use a combination that exists.\n` +
+      `If it truly is a new role, convene the System seat to set the spec first. Raising the ceiling unlocks the ratchet.\n` +
       [...surfaces].sort().join("\n"),
   ).toBeLessThanOrEqual(BASELINE_SURFACE_COMBOS);
 
   expect(
     surfaces.size,
-    `표면 조합이 ${BASELINE_SURFACE_COMBOS} → ${surfaces.size} 로 줄었다. ` +
-      `BASELINE_SURFACE_COMBOS 도 ${surfaces.size} 로 내려라. 안 내리면 줄인 만큼이 다시 여유가 된다.\n` +
+    `Surface combinations fell from ${BASELINE_SURFACE_COMBOS} to ${surfaces.size}. ` +
+      `Lower BASELINE_SURFACE_COMBOS to ${surfaces.size} too; otherwise what you cut becomes slack again.\n` +
       `Runner: ${process.platform}\n${[...surfaces].sort().join("\n")}`,
   ).toBe(BASELINE_SURFACE_COMBOS);
 
   // Locked alongside so new combinations cannot hide on the control side.
   expect(
     controls.size,
-    `컨트롤 조합이 ${BASELINE_CONTROL_COMBOS} → ${controls.size} 로 늘었다.\n` +
-      `값 층(controlClass · fieldClass)의 톤·모양으로 표현해라.\n` +
+    `Control combinations grew from ${BASELINE_CONTROL_COMBOS} to ${controls.size}.\n` +
+      `Express them with the tones and shapes of the value layer (controlClass · fieldClass).\n` +
       [...controls].sort().join("\n"),
   ).toBeLessThanOrEqual(BASELINE_CONTROL_COMBOS);
 });

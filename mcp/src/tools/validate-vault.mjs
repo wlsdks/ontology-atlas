@@ -17,6 +17,7 @@ import {
 } from '../server/runtime.mjs';
 import { requireOptionalNonBlankString } from '../server/validate.mjs';
 import {
+  rawSourceKindIssues,
   suppressLibraryKindIssues,
   suppressParentedExpectedFieldIssues,
   validateVaultDocument,
@@ -154,13 +155,19 @@ function validateVaultTool({ repoRoot } = {}, loadedDocs = null) {
   // never tells a node that has a parent that it has none.
   suppressParentedExpectedFieldIssues(docIssues, docs);
   suppressLibraryKindIssues(docIssues);
+  const rawSourceSlugs = [];
+  for (const { path, issue } of rawSourceKindIssues(VAULT_ROOT)) {
+    const slug = path.replace(/\.md$/, '');
+    docIssues.set(slug, [issue]);
+    rawSourceSlugs.push(slug);
+  }
   const problems = [];
   let errorFiles = 0;
   let warningFiles = 0;
   // byCode aggregation: { code → { severity, count, files: Set<slug> } }
   const byCodeMap = new Map();
-  for (const doc of docs) {
-    const issues = docIssues.get(doc.slug) || [];
+  for (const slug of [...docs.map((doc) => doc.slug), ...rawSourceSlugs]) {
+    const issues = docIssues.get(slug) || [];
     if (issues.length === 0) continue;
     let hasError = false;
     const seenInDoc = new Set();
@@ -180,13 +187,13 @@ function validateVaultTool({ repoRoot } = {}, loadedDocs = null) {
       if (!seenInDoc.has(issue.code)) {
         seenInDoc.add(issue.code);
         entry.count += 1;
-        entry.files.add(doc.slug);
+        entry.files.add(slug);
       }
     }
     if (hasError) errorFiles += 1;
     else warningFiles += 1;
     problems.push({
-      slug: doc.slug,
+      slug,
       issues: issues.map((i) => ({
         code: i.code,
         severity: i.severity,

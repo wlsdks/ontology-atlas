@@ -1629,6 +1629,7 @@ const ALLOWED_CAPABILITY_PERMISSIONS = [
   // control. Not the version in the first log line: that one comes from Rust `package_info()`,
   // which the permission system does not gate at all.
   "core:app:default",
+  "core:webview:allow-print",
   // Check for and install updates. The network target is fixed by the endpoint in
   // `tauri.conf.json` and no user input reaches it. minisign signature verification
   // is enforced before install.
@@ -1641,12 +1642,9 @@ const ALLOWED_CAPABILITY_PERMISSIONS = [
 /**
  * The core baseline this window genuinely needs, measured rather than assumed (2026-08-24).
  *
- * `core:event` carries `listen`, the frontend's only event-plugin call. `core:app` carries
- * `getVersion`, shown beside the update control. Nothing in `src/` or `app/` imports
- * `@tauri-apps/api/path`, `/window`, `/webview`, `/menu`, `/tray` or `/image`, and the modules that
- * are imported invoke only the `event`, `app` and `resources` plugins. Removing `core:path`,
- * `core:window` and `core:webview` was then verified on a packaged build: it launches, loads a real
- * vault, renders, and logs no permission denial.
+ * `core:event` carries `listen`; `core:app` carries `getVersion` for the update control.
+ * Question Desk also invokes `window.print()` through `core:webview:allow-print`. The frontend
+ * still needs no `core:path`, `core:window`, or broad `core:webview:default` grant.
  *
  * Capabilities gate JS-to-Rust IPC only. This app resizes and positions its window from Rust, which
  * is why dropping `core:window` changes nothing a user can see.

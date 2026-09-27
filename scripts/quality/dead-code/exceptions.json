@@ -194,12 +194,6 @@
       "witness": "CREATED_BY_HUMAN"
     },
     {
-      "key": "mcp:runtime:exports:src/schema.mjs:VAULT_KINDS",
-      "reason": "The CLI schema shim re-exports the vault kind list; the export is consumed outside its Knip scope, where the lane cannot see it.",
-      "consumer": "cli/src/lib/schema.mjs",
-      "witness": "VAULT_KINDS"
-    },
-    {
       "key": "mcp:runtime:exports:src/validate.mjs:KNOWN_VAULT_KINDS",
       "reason": "The vault validation script reads the known kinds; the export is consumed outside its Knip scope, where the lane cannot see it.",
       "consumer": "scripts/validate-vault.mjs",

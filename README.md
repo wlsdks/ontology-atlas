@@ -284,9 +284,10 @@ samples/storefront` prints its current census.
 **Library → Ontology** opens only the folder's explicitly typed `project`, `domain`,
 `capability`, `element`, and `document` nodes without the canvas: preview or edit Markdown,
 inspect the frontmatter that becomes the graph, follow backlinks, and jump back to the map.
-There is no imported copy to synchronize. Sources, Wiki, Ontology, and Work scopes share one
-Library destination. Work scopes lists saved Galaxy constellations, their purpose, and resolved
-ontology members; each member opens its actual Ontology document and each constellation returns
+There is no imported copy to synchronize. Sources, Wiki, Ontology, and Check history share one
+Library destination. Ontology contains Concept documents and Concept sets. Concept sets lists saved
+map selections, their purpose, and resolved ontology members; each member opens its actual
+Ontology document and each set returns
 to the whole saved set on the map. An existing `/docs/?slug=…` link to ordinary Markdown opens that exact file in a
 single-document compatibility reader with a return to Library. The Ontology tree's name-and-path
 search matches localized display names as well as canonical paths.
@@ -302,11 +303,13 @@ your own API key kept in the Keychain, plus the count of every transfer recorded
 the folder. **MCP** holds the folder's own connection, the setup for each client,
 and the Connectors that attach external servers to that conversation.
 
-**Jev is an optional, experimental check under Models in the macOS app.** Save your
-own TypeSafe key in the Keychain, paste one explanation and the passage meant to
-support it, read the exact request on screen, and press send. The answer is advice:
-Atlas records the transfer in the folder first and never changes or accepts meaning
-because of it. See the [Jev evidence-check guide](docs/guide/external-judgment.md).
+**Jev is an optional, experimental check in the macOS app.** Models keeps the
+Keychain key and the manual claim check. In Library → Wiki, a person may also
+check one cited claim against its current original passage. A blocking preview
+shows the exact JSON and explains that it and the authentication key go to
+TypeSafe only after Send. The result is advice; it never changes accepted
+meaning or writes a file. The [Jev evidence-check guide](docs/guide/external-judgment.md)
+describes both entries.
 
 ![The current MCP screen in the installed macOS app, with Share this folder open: how many connection files are ready and which file comes next, one connect button each for Claude Code, Codex, Cursor and Antigravity, the note that the server runs only while a conversation needs it, and the two later steps to restart the agent and confirm the connection](docs/assets/readme/mcp-connect.png)
 
@@ -378,6 +381,23 @@ which the screen states instead of implying that Atlas sits in the middle.
 
 Markdown source headings open their original cited lines inside Library, including the surrounding passage. No converted file is stored.
 
+**Library → Wiki opens on a question desk.** A question searches Wiki claims and
+original passages locally when you press **Find evidence**. Each candidate opens
+its page or exact source address; a compact search summary opens the full
+coverage and omitted-file detail in one action, and
+a matching source hash is not presented as proof that a claim is true. The
+existing page browser remains one action away. An attached ACP agent can use
+the candidates as leads, re-read originals, and answer with citations; an Ask
+turn does not automatically approve Wiki writes. Search and source inspection
+work without Jev or an agent. **Summarize as report** explicitly asks ACP to
+re-read the originals and organize an answer, cited evidence, disagreements,
+and unknowns in a report before the expandable search leads. Local word matching
+can miss a question phrased in another language; ACP can still read the originals
+on that explicit request. The result is an unreviewed draft, not a
+Wiki page until you file it. Its editorial document template can be downloaded
+as Markdown or opened in the app's Print dialog to save as PDF; both retain the
+question, citations, search coverage, and limits.
+
 Creating a Wiki page opens a centered, background-blocking dialog that previews its live `wiki/<slug>.md` path, Markdown draft state, and five required section headings before any write. The current local-work receipt stays visible while earlier receipts remain under History. A successful app write produces one actionable notification; the folder watcher suppresses its matching duplicate.
 
 Library also works without code or ontology nodes. Keep a question and its cited
@@ -389,7 +409,7 @@ available. Local Compile has its own read and approval path. See
 Galaxy can also save the current ontology-node selection as a named constellation
 with a purpose. Atlas stores that compatible `v1` task scope in the selected vault,
 uses immutable node UIDs for membership, and keeps the manifest's exact
-`document.path` only as display context. Library → Work scopes shows resolved and
+`document.path` only as display context. Library → Ontology → Concept sets shows resolved and
 unresolved members without turning membership into an ontology relation. Use
 `ontology-atlas constellations [vault]` or
 `ontology-atlas constellation <id> [vault]` when an agent session cannot attach

@@ -230,8 +230,8 @@ test.describe("막다른 CTA 금지 — 폴더를 열라고 말한 자리", () =
 
     expect(
       unpaired,
-      "「폴더를 열면 …」이라 말하면서 그 자리에 여는 길이 없다 — 막다른 CTA 다. " +
-        "`OpenVaultCta` 를 그 상자 안에 놓아라",
+      "It says \"open a folder and …\" with no way to open one right there: a dead-end CTA. " +
+        "Put `OpenVaultCta` inside that box",
     ).toEqual([]);
   });
 

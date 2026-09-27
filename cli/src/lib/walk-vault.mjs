@@ -1,5 +1,6 @@
 import { readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import { VAULT_SOURCES_DIR } from './schema.mjs';
 
 const SKIP_DIRS = new Set([
   'node_modules',
@@ -11,7 +12,7 @@ const SKIP_DIRS = new Set([
   '.serena',
 ]);
 
-/** Absolute paths of every .md under the vault root; dotfiles and build-artifact folders are skipped. */
+/** Absolute paths of every .md in the vault; dotfiles, build folders and sources/ are skipped. */
 export function walkMd(rootPath) {
   const out = [];
   const stack = [rootPath];
@@ -27,6 +28,7 @@ export function walkMd(rootPath) {
       if (entry.name.startsWith('.')) continue;
       if (entry.isDirectory()) {
         if (SKIP_DIRS.has(entry.name)) continue;
+        if (dir === rootPath && entry.name === VAULT_SOURCES_DIR) continue;
         stack.push(join(dir, entry.name));
       } else if (entry.isFile() && entry.name.endsWith('.md')) {
         out.push(join(dir, entry.name));

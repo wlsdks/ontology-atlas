@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import koMessages from '../../messages/ko.json';
 import { installDesktopRailRuntime } from "./desktop-rail-arrival-harness";
 import { waitForBoxStill, waitForMapStill } from "./settle";
 
@@ -82,7 +83,7 @@ test("the constellation popover stays in the free map beside INDEX, open and col
 
       // An absent file is the empty state, never the read-failure notice.
       await expect(page.getByTestId("saved-constellations-load-error"), `${where}: read failure shown`).toHaveCount(0);
-      await expect(popover.getByText("이 우주에 작업 범위를 남기세요")).toBeVisible();
+      await expect(popover.getByText(koMessages.constellations.emptyTitle)).toBeVisible();
 
       const m = await measure(page);
       console.log(

@@ -126,8 +126,8 @@ test.describe("관문 읽을거리 — 좁은 화면에서도 닿는다", () => 
 
       expect(
         dead,
-        `이 폭에서 읽을거리에 닿을 길이 없다 — 크롬이 접었으면 판이 대신 내야 한다 ` +
-          `(관문/내려받기는 푸터의 GatewayReadingLinks, 가이드 장은 GuideChapterPicker)`,
+        `At this width there is no way to reach the reading material; if the chrome folded it, the page has to offer it instead ` +
+          `(GatewayReadingLinks in the footer for the gateway and download, GuideChapterPicker for guide chapters)`,
       ).toEqual([]);
     });
   }

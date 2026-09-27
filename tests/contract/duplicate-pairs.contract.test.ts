@@ -120,8 +120,8 @@ describe('duplicate-pairs contract — 화면의 유사도 == MCP similar_nodes'
         ).toBeDefined();
         expect(
           row.score,
-          `${testCase.name} / ${row.id} — 화면은 ${row.score}, 에이전트는 ${agent!.score} 라고 말합니다. ` +
-            '한쪽 정규화·가중치가 바뀌었다면 다른 쪽도 같이 바꾸세요.',
+          `${testCase.name} / ${row.id}: the screen says ${row.score}, the agent says ${agent!.score}. ` +
+            'If one side changed its normalization or weights, change the other side too.',
         ).toBe(agent!.score);
 
         // Matching totals with a divergent internal split inverts the ranking on a different

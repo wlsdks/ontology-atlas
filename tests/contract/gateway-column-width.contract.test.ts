@@ -76,8 +76,8 @@ describe("관문 본문 컬럼 상한 — --gateway-page-max 의 불변식", () 
   it("(b) ≤1920 무회귀 — 상한이 --page-max 밑으로 내려가지 않는다", () => {
     expect(
       gatewayMax,
-      `상한(${gatewayMax})이 --page-max(${pageMax}) 미만이면 vw ≤ ${pageMax + 400} 구간의 ` +
-        "원점·컬럼이 종전 공식과 달라진다 — 게이트가 지키는 1440–1920 폭의 렌더가 움직인다",
+      `With the cap (${gatewayMax}) below --page-max (${pageMax}), the origin and columns for vw ≤ ${pageMax + 400} ` +
+        "differ from the previous formula, so the render at the 1440–1920 widths this gate protects moves",
     ).toBeGreaterThanOrEqual(pageMax);
   });
 
