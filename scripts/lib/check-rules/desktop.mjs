@@ -86,7 +86,7 @@ export const rules = [
     reason: 'macOS desktop readiness inputs changed',
     matches: [
       /^scripts\/check-desktop-readiness\.(?:mjs|test\.mjs)$/,
-      /^scripts\/quality\/source-language\/inventory\.mjs$/,
+      /^scripts\/quality\/source-language\/(?:inventory|source-paths)\.mjs$/,
       /^scripts\/desktop-doctor\.(?:mjs|test\.mjs)$/,
       /^scripts\/desktop-smoke\.(?:mjs|test\.mjs)$/,
       /^scripts\/verify-macos-dmg\.mjs$/,

@@ -16,8 +16,10 @@ const root = process.cwd();
 // Returning an empty string lets the following `.includes(...)` assertion fail
 // naturally, which also names which contract broke.
 //
-// Every check reads code: comments are blanked, so deleting a history comment
-// cannot turn a check red and a comment naming a forbidden string cannot either.
+// Every check reads code: comments in .ts/.tsx/.mjs, .rs, .yml, .toml, .sh and
+// .gitignore are blanked, so deleting a history comment cannot turn a check red
+// and a comment naming a forbidden string cannot either. .json, .md, .plist and
+// .webmanifest files are read unchanged.
 function readText(relativePath) {
   const absolute = path.join(root, relativePath);
   if (!fs.existsSync(absolute)) {
@@ -596,7 +598,7 @@ if (
   /corepack prepare pnpm@10\.18\.0 --activate/.test(pagesDeployWorkflow) &&
   /pnpm --version/.test(pagesDeployWorkflow) &&
   !/uses:\s*pnpm\/action-setup@/.test(pagesDeployWorkflow) &&
-  /^\s+run:\s*pnpm build\s*$/m.test(pagesDeployWorkflow) &&
+  /^\s*(?:-\s+)?run:\s*pnpm build\s*$/m.test(pagesDeployWorkflow) &&
   /actions\/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa\b/.test(pagesDeployWorkflow) &&
   /actions\/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e\b/.test(pagesDeployWorkflow) &&
   /pnpm desktop:verify-hosted -- --base-url="\$PAGES_BASE_URL"/.test(pagesDeployWorkflow) &&
@@ -915,7 +917,8 @@ if (
   // The hub is the map: `/ontology`'s tree hub (OntologyViewPage) was retired and
   // both `/` and `/ontology` converged on this empty state, so the check converges
   // too.
-  /href=\{showPickerPath \? ['"]\/docs\/\?intent=local['"] : ['"]\/download\/['"]\}/.test(topologyEmptyState) &&
+  // Measure the destination, not the formatting.
+  /showPickerPath\s*\?\s*['"]\/docs\/\?intent=local['"]\s*:\s*['"]\/download\/['"]/.test(topologyEmptyState) &&
   /Install the desktop app/i.test(enMessages.topology?.empty?.bodyNoProjectsDownload ?? "")
 ) {
   pass("the topology empty state routes hosted users to the app download while preserving desktop vault picking");

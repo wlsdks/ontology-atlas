@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
+import { classNameOf, readClassSource, stringsOf } from './lib/jsx-class-source';
 
 /**
  * Prose-link contract — **a link inside markdown body flow is not a control.**
@@ -48,17 +49,11 @@ type ProseSource = { anchors: StyledAnchor[]; callSites: StyledAnchor[]; proseLi
 
 /** Styled anchors in a file, and those its markdown `a` override renders; comments never count. */
 function readProseSource(fileName: string, text: string): ProseSource {
-  const source = ts.createSourceFile(fileName, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
-  const bindings = new Map<string, ts.Node>();
-  const strings = new Map<string, string>();
+  const resolved = readClassSource(fileName, text);
+  const { source, bindings } = resolved;
   const overrides: ts.Node[] = [];
   const proseLiterals: string[] = [];
   const index = (node: ts.Node): void => {
-    if (ts.isFunctionDeclaration(node) && node.name) bindings.set(node.name.text, node);
-    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer) {
-      if (ts.isStringLiteralLike(node.initializer)) strings.set(node.name.text, node.initializer.text);
-      else bindings.set(node.name.text, node.initializer);
-    }
     if (ts.isStringLiteralLike(node) && /\bprose-link\b/.test(node.text)) proseLiterals.push(node.text);
     if (
       (ts.isMethodDeclaration(node) || ts.isPropertyAssignment(node)) &&
@@ -72,35 +67,20 @@ function readProseSource(fileName: string, text: string): ProseSource {
   };
   index(source);
 
-  const classText = (value: ts.Node): string | null => {
-    const parts: string[] = [];
-    const read = (node: ts.Node): void => {
-      if (ts.isStringLiteralLike(node) || ts.isTemplateHead(node) || ts.isTemplateMiddle(node) || ts.isTemplateTail(node)) {
-        parts.push(node.text);
-      } else if (ts.isIdentifier(node) && strings.has(node.text)) {
-        parts.push(strings.get(node.text)!);
-      } else {
-        ts.forEachChild(node, read);
-      }
-    };
-    read(value);
-    return parts.length > 0 ? parts.join(' ') : null;
-  };
   const collect = (node: ts.Node, into: StyledAnchor[], follow: Set<ts.Node> | null): StyledAnchor[] => {
     if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
       const tag = node.tagName.getText(source);
-      const className = node.attributes.properties.find(
-        (attribute): attribute is ts.JsxAttribute => ts.isJsxAttribute(attribute) && attribute.name.getText(source) === 'className',
-      );
+      const className = classNameOf(node);
       if ((tag === 'a' || tag === 'Link') && className) {
+        const parts = className.initializer ? stringsOf(resolved, className.initializer) : [];
         into.push({
           line: source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1,
-          className: className.initializer ? classText(className.initializer) : null,
+          className: parts.length > 0 ? parts.join(' ') : null,
         });
       }
-      const component = bindings.get(tag);
-      if (follow && component && !follow.has(component)) {
-        follow.add(component);
+      for (const component of follow ? (bindings.get(tag) ?? []) : []) {
+        if (follow?.has(component)) continue;
+        follow?.add(component);
         collect(component, into, follow);
       }
     }
@@ -110,8 +90,8 @@ function readProseSource(fileName: string, text: string): ProseSource {
   const callSites: StyledAnchor[] = [];
   const followed = new Set<ts.Node>();
   for (const override of overrides) {
-    const rendered = ts.isIdentifier(override) ? bindings.get(override.text) : override;
-    if (rendered && !followed.has(rendered)) {
+    for (const rendered of ts.isIdentifier(override) ? (bindings.get(override.text) ?? []) : [override]) {
+      if (followed.has(rendered)) continue;
       followed.add(rendered);
       collect(rendered, callSites, followed);
     }
@@ -218,6 +198,19 @@ describe('산문 링크 계약 (.prose-link)', () => {
     );
     expect(named.callSites.map((anchor) => anchor.className)).toEqual(['prose-link text-x']);
     expect(named.anchors.map((anchor) => anchor.line)).toEqual([2, 4]);
+
+    const hoisted = readProseSource(
+      'hoisted.tsx',
+      [
+        "const PROSE = cn('prose-link', 'break-words');",
+        "function proseClass() { return 'prose-link'; }",
+        "function Shadow() { const PROSE = 'inline-flex'; return null; }",
+        'const components = {',
+        '  a: ({ href, children }) => (href ? <a className={PROSE}>{children}</a> : <Link className={proseClass()}>{children}</Link>),',
+        '};',
+      ].join('\n'),
+    );
+    expect(hoisted.callSites.map((anchor) => anchor.className)).toEqual(['prose-link break-words inline-flex', 'prose-link']);
   });
 
   it('프로브 — 탐지기가 위반을 실제로 잡고, 정상을 지나보낸다', () => {

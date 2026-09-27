@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 
 import { composite, contrastRatio, parseColor } from "../../scripts/lib/contrast.mjs";
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
+import { classNameOf, readClassSource, stringsOf } from "./lib/jsx-class-source";
 
 /**
  * The **surface licence contract** for quaternary ink (system seat verdict,
@@ -56,48 +57,20 @@ const read = (rel: string) => readFileSync(join(process.cwd(), rel), "utf8");
 
 type JsxFact = { tag: string; start: number; end: number; classText: string; literalText: string; childText: string };
 
-/** Each JSX element, its className resolved through same-file constants and helpers, read from the syntax tree. */
 function readJsx(rel: string, text = read(rel)): JsxFact[] {
-  const source = ts.createSourceFile(rel, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
-  const bindings = new Map<string, ts.Node>();
-  const index = (node: ts.Node): void => {
-    if ((ts.isFunctionDeclaration(node) || ts.isVariableDeclaration(node)) && node.name && ts.isIdentifier(node.name)) {
-      const bound = ts.isFunctionDeclaration(node) ? node.body : node.initializer;
-      if (bound) bindings.set(node.name.text, bound);
-    }
-    ts.forEachChild(node, index);
-  };
-  index(source);
-  const strings = (root: ts.Node, follow: boolean): string => {
-    const out: string[] = [];
-    const seen = new Set<ts.Node>();
-    const visit = (node: ts.Node): void => {
-      if (ts.isStringLiteralLike(node) || ts.isTemplateHead(node) || ts.isTemplateMiddle(node) || ts.isTemplateTail(node)) {
-        out.push(node.text);
-      }
-      const bound = follow && ts.isIdentifier(node) ? bindings.get(node.text) : undefined;
-      if (bound && !seen.has(bound)) {
-        seen.add(bound);
-        visit(bound);
-      }
-      ts.forEachChild(node, visit);
-    };
-    visit(root);
-    return out.join(" ");
-  };
+  const resolved = readClassSource(rel, text);
+  const { source } = resolved;
   const facts: JsxFact[] = [];
   const collect = (node: ts.Node): void => {
     const opening = ts.isJsxElement(node) ? node.openingElement : ts.isJsxSelfClosingElement(node) ? node : undefined;
     if (opening) {
-      const className = opening.attributes.properties.find(
-        (attribute): attribute is ts.JsxAttribute => ts.isJsxAttribute(attribute) && attribute.name.getText(source) === "className",
-      );
+      const className = classNameOf(opening);
       facts.push({
         tag: opening.tagName.getText(source),
         start: node.getStart(source),
         end: node.end,
-        classText: className?.initializer ? strings(className.initializer, true) : "",
-        literalText: strings(node, false),
+        classText: className?.initializer ? stringsOf(resolved, className.initializer).join(" ") : "",
+        literalText: stringsOf(resolved, node, false).join(" "),
         childText: ts.isJsxElement(node) ? node.children.map((child) => child.getText(source)).join("") : "",
       });
     }
@@ -236,6 +209,16 @@ describe("실측으로 잡힌 자리가 되돌아가지 않는다 — 글로벌 
       ["div", "aria-selected:bg-[color:var(--color-indigo-a14)]"],
       ["span", "text-[color:var(--color-text-quaternary)]"],
     ]);
+
+    const shadowed = readJsx(
+      "shadow.tsx",
+      [
+        "function A() { const meta = 'text-[color:var(--color-text-quaternary)]'; return <span className={meta} />; }",
+        "function B() { const meta = 'text-[color:var(--color-text-tertiary)]'; return <span className={meta} />; }",
+      ].join("\n"),
+    );
+    const both = "text-[color:var(--color-text-quaternary)] text-[color:var(--color-text-tertiary)]";
+    expect(shadowed.map((fact) => fact.classText)).toEqual([both, both]);
   });
 });
 
