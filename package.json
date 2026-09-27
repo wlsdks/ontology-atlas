@@ -110,7 +110,7 @@
     "dev-checks:check": "node scripts/check-dev-checks.mjs",
     "test:dev-checks": "node --test scripts/lib/dev-checks-template.test.mjs",
     "test:changelog": "node --test scripts/lib/changelog-entry-template.test.mjs",
-    "test:decisions": "node --test scripts/decisions-find.test.mjs scripts/lib/decision-record-template.test.mjs scripts/lib/global-css.test.mjs",
+    "test:decisions": "node --test scripts/decisions-find.test.mjs scripts/lib/comment-only-change.test.mjs scripts/lib/decision-record-template.test.mjs scripts/lib/global-css.test.mjs",
     "po:route": "node scripts/po-risk-router.mjs",
     "po:pilot": "node scripts/po-pilot.mjs",
     "test:po": "vitest run tests/contract/po-route.contract.test.ts tests/contract/reviewer-wiring.contract.test.ts",
