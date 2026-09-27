@@ -136,13 +136,11 @@ describe("computeRealmLayout", () => {
     const layout = computeRealmLayout(sub, RINGS, RADII);
     const root = layout.get("c");
     expect(root).toEqual({ id: "c", x: 0, y: 0 });
-    // depth-1 children (e1, e2) fan around the domain ring — at exactly the
-    // ring radius from the origin (same invariant layout.test pins for domains).
+    // Depth-1 children ring the origin at the ring radius, the invariant layout.test pins for domains.
     for (const id of ["e1", "e2"]) {
       const p = layout.get(id);
       expect(p).toBeDefined();
-      // Two depth-1 siblings sit on the ring at radius `domain` before de-pileup;
-      // the de-pileup only nudges local overlaps, so they stay near the ring.
+      // De-pileup only nudges local overlaps, so the siblings stay near the ring.
       const r = Math.hypot(p!.x, p!.y);
       expect(r).toBeGreaterThan(RINGS.domain * 0.5);
     }
@@ -155,36 +153,35 @@ describe("computeRealmLayout", () => {
   });
 });
 
-describe("computeRealmLayout — 소수-자식 수평 구도 (소유자 실보고 2026-07-23)", () => {
-  it("depth1 자식 2개는 수평축에 앉는다 — 첫 자식 왼쪽, 둘째 오른쪽", () => {
+describe("computeRealmLayout with few children lies horizontal", () => {
+  it("seats two depth 1 children on the horizontal axis: the first left, the second right", () => {
     const sub = extractRealmSubtree("c", new Map([["c", ["e1", "e2"]]]));
     const layout = computeRealmLayout(sub, RINGS, RADII);
     expect(layout.get("c")).toEqual({ id: "c", x: 0, y: 0 });
     const e1 = layout.get("e1")!;
     const e2 = layout.get("e2")!;
-    // −90° rigid rotation of the even TAU split (a vertical dumbbell): (0,−R)→(−R,0), (0,R)→(R,0).
+    // −90° rigid rotation of the even split: (0,−R)→(−R,0), (0,R)→(R,0).
     expect(e1.x).toBeLessThan(0);
     expect(Math.abs(e1.y)).toBeLessThan(1e-9);
     expect(e2.x).toBeGreaterThan(0);
     expect(Math.abs(e2.y)).toBeLessThan(1e-9);
   });
 
-  it("depth1 자식 1개는 수평축(왼쪽)에 앉는다 — 같은 −90° 강체 회전 규칙", () => {
+  it("seats one depth 1 child on the horizontal axis (left) by the same -90 degree rigid rotation", () => {
     const sub = extractRealmSubtree("c", new Map([["c", ["only"]]]));
     const layout = computeRealmLayout(sub, RINGS, RADII);
     const only = layout.get("only")!;
-    expect(only.x).toBeLessThan(0); // (0,−R)→(−R,0)
+    expect(only.x).toBeLessThan(0);
     expect(Math.abs(only.y)).toBeLessThan(1e-9);
   });
 
-  it("회전은 강체다 — 미회전 concentric 레이아웃의 정확한 (x,y)→(y,−x) 사상", () => {
+  it("rotates rigidly: exactly (x,y) to (y,-x) of the unrotated concentric layout", () => {
     const children = new Map([
       ["c", ["e1", "e2"]],
       ["e1", ["g1"]],
     ]);
     const sub = extractRealmSubtree("c", children);
     const rotated = computeRealmLayout(sub, RINGS, RADII);
-    // Compare coordinate by coordinate against the unrotated baseline from the same input.
     const rawInput = [...sub.depthById.keys()].map((id) => ({
       id,
       kind: realmLayoutKind(sub.depthById.get(id) ?? 0),
@@ -199,11 +196,11 @@ describe("computeRealmLayout — 소수-자식 수평 구도 (소유자 실보�
     }
   });
 
-  it("depth1 자식 3개 이상은 미회전 — 첫 자식이 위(-90°) 그대로 (깊은/넓은 영역 회귀 0)", () => {
+  it("leaves three or more depth 1 children unrotated, the first at the top (-90 degrees)", () => {
     const sub = extractRealmSubtree("c", new Map([["c", ["a", "b", "d"]]]));
     const layout = computeRealmLayout(sub, RINGS, RADII);
     const a = layout.get("a")!;
-    // The even TAU split starts at −90°, so the first child sits on top (x≈0, y<0).
+    // The even split starts at −90°, so the first child sits on top.
     expect(Math.abs(a.x)).toBeLessThan(1e-9);
     expect(a.y).toBeLessThan(0);
   });
@@ -230,33 +227,33 @@ describe("computeWardingRadius", () => {
   });
 });
 
-describe("computeVisibleWardingRadius (S9 결함 2)", () => {
-  it("가장 먼 reach + 콘텐츠 비례 마진", () => {
-    // outer=200 → margin = max(40, 200*0.1=20) = 40 → 240.
+describe("computeVisibleWardingRadius", () => {
+  it("is the farthest reach plus a content-proportional margin", () => {
+    // outer 200: margin = max(40, 200*0.1) = 40.
     expect(computeVisibleWardingRadius([50, 120, 200])).toBe(200 + Math.max(WARDING_VISIBLE_MIN_MARGIN, 200 * WARDING_VISIBLE_MARGIN_RATIO));
     expect(computeVisibleWardingRadius([50, 120, 200])).toBe(240);
-    // outer=800 → margin = max(40, 80) = 80 → 880.
+    // outer 800: margin = max(40, 80) = 80.
     expect(computeVisibleWardingRadius([800])).toBe(800 + 800 * WARDING_VISIBLE_MARGIN_RATIO);
   });
 
-  it("가시 집합이 줄면(접힘) 반경이 줄어든다", () => {
+  it("shrinks the radius when the visible set shrinks (folded)", () => {
     const full = computeVisibleWardingRadius([100, 400, 900]);
-    const folded = computeVisibleWardingRadius([100, 400]); // the folded child at 900 is excluded
+    const folded = computeVisibleWardingRadius([100, 400]);
     expect(folded).toBeLessThan(full);
   });
 
-  it("가시 멤버가 없으면(루트만) 하한 마진만 남는다", () => {
+  it("keeps only the minimum margin without visible members (root only)", () => {
     expect(computeVisibleWardingRadius([])).toBe(WARDING_VISIBLE_MIN_MARGIN);
   });
 });
 
-describe("computeVisibleBounds (S9 결함 2)", () => {
+describe("computeVisibleBounds", () => {
   const fallback = { minX: -1, minY: -1, maxX: 1, maxY: 1 };
-  it("점집합 bbox + 마진", () => {
+  it("is the point set bbox plus margin", () => {
     const b = computeVisibleBounds([{ x: -10, y: 20 }, { x: 30, y: -5 }], 4, fallback);
     expect(b).toEqual({ minX: -14, minY: -9, maxX: 34, maxY: 24 });
   });
-  it("점이 없으면 fallback 을 그대로 돌려준다", () => {
+  it("returns the fallback unchanged without points", () => {
     expect(computeVisibleBounds([], 4, fallback)).toBe(fallback);
   });
 });

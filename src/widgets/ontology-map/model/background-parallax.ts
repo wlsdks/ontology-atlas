@@ -1,48 +1,14 @@
 /**
- * Parallax origin for the constellation background — pure computation.
- *
- * **Why it exists** (2026-07-28 design council). Owner: *"It would be nice to add a setting for a background
- * that feels like space, with some kind of inertia."* (a background
- * with space-like inertia would be a good setting to add).
- *
- * Seven seats independently reached the same answer — **an autonomous
- * (time-driven) background is rejected; input-coupled parallax is approved.** The
- * 「System」 seat (design systems) found the decisive fact: the setting **already
- * exists** — `constellation`, one of the three `CanvasBackground` choices in
- * `appearance-preferences.ts`, is already a starfield. The delta the owner wanted
- * was not a new background but **camera-coupled parallax on that starfield**.
- *
- * What was missing: the background rode `worldToScreen(camera, 0, 0)` directly, at
- * **factor 1.0 — welded to the world**. Right for the blueprint grid, which is the
- * ground; wrong for a starfield, whose stars are a far layer that must move less
- * than the ground. That **difference** is the depth information.
- *
- * **Autonomous motion is 0, which is why this passes the charter.** The return
- * value is only a function of the camera origin, so a stopped camera means a
- * stopped background: zero idle-frame cost, a different axis from `forbidden.md`'s
- * ban on "moving gradient backgrounds / aurora" (time-driven decoration), and
- * inside WCAG 2.2 §2.3.3's user-initiated exception.
- *
- * The precondition was already met — the 「Interaction」 seat (interaction) required
- * that *"a background without camera
- * inertia is a lie"*, and the camera measurably glides for 819 ms after a flick
- * release (2026-07-28, measured once ambient sleep had removed the contaminant).
+ * Camera-coupled parallax for the constellation background. The starfield is a far
+ * layer, so it moves less than the ground; the blueprint grid is ground and stays at
+ * factor 1. The origin depends only on the camera, so a still camera means a still
+ * background: no idle-frame cost and no time-driven motion.
  */
 
 /**
- * Parallax-adjusted background tile origin.
- *
- * @param origin Current screen coordinate of world origin (0,0) — the background
- *   origin at factor 1.0.
- * @param viewport Viewport size, and the pivot the factor turns about, so the
- *   background holds still while the camera sits at the origin.
- * @param k Parallax factor. 1 = welded to the world (previous behaviour),
- *   0 = welded to the screen.
- *
- * The factor is applied **about the viewport centre** because that is where the
- * camera is looking, and no two layers may disagree at that point. Applied about
- * the top-left, the layers start out misaligned even at rest — a background that
- * looks wrong before anything has moved.
+ * Applied about the viewport centre, where the camera looks, so the layers agree there;
+ * about the top-left they would be misaligned at rest. `k` 1 welds to the world, 0 to
+ * the screen.
  */
 export function backgroundParallaxOrigin(
   origin: { x: number; y: number },
@@ -59,18 +25,9 @@ export function backgroundParallaxOrigin(
 }
 
 /**
- * The parallax factor for this frame.
- *
- * Under `prefers-reduced-motion` it is **1.0**, not 0. Vestibular stimulus comes
- * from **relative motion between layers**, so at 1.0 the background moves at
- * exactly the content's speed and relative motion disappears (= previous
- * behaviour). At 0 the background welds to the screen and relative motion against
- * the content **appears** — manufacturing the thing being avoided.
- *
- * Every background other than the near starfield is 1.0 here. The dot grid is
- * ground; **depth dots carry a per-layer factor** that one number cannot express —
- * `render/grid.ts`'s `DEPTH_DOT_LAYERS` holds the per-layer values and
- * `topology-frame-draw` computes an origin for each layer separately.
+ * Reduced motion is 1, not 0: relative motion between layers is the vestibular trigger,
+ * and 0 would weld the background to the screen and create it. Depth dots carry
+ * per-layer factors (`render/grid.ts` `DEPTH_DOT_LAYERS`), computed by the frame draw.
  */
 export function resolveBackgroundOrigin(
   gridOrigin: { x: number; y: number },
@@ -94,8 +51,7 @@ export function resolveBackgroundParallax(
   if (variant !== "web") return 1;
   if (reducedMotion) return 1;
   if (!Number.isFinite(token)) return 1;
-  // Above 1 the background outruns the content and reads as a *near* layer, the
-  // opposite of what a starfield means. Negative flows the other way and makes
-  // people motion-sick. Clamp both.
+  // Above 1 the background outruns the content and reads as a near layer; negative
+  // flows backwards and causes motion sickness.
   return Math.min(1, Math.max(0, token));
 }
