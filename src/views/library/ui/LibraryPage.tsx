@@ -106,7 +106,7 @@ import {
 } from "@/shared/ui/toast-position";
 import { SegmentedControl } from "@/shared/ui/segmented-control";
 import { useFailureSentence } from "@/shared/lib/use-failure-sentence";
-import { Button, Tooltip, TooltipProvider, useToast, useToastAnchor } from "@/shared/ui";
+import { Button, Chip, Tooltip, TooltipProvider, useToast, useToastAnchor } from "@/shared/ui";
 
 import { compactOntologyDescription } from "@/shared/lib/ontology-description";
 import { isWikiFurnitureSlug, WIKI_CITATION_PATTERN } from "@/shared/lib/wiki-page-schema";
@@ -143,6 +143,7 @@ import { SourceSummary } from "./parts/SourceSummary";
 import { WikiPageHeader } from "./parts/WikiPageHeader";
 import { WikiTemplateProblems } from "./parts/WikiTemplateProblems";
 import { LibraryQuestions } from './parts/LibraryQuestions';
+import { LibraryQuestionDesk } from './parts/LibraryQuestionDesk';
 import { RetainedAnswerContext, RetainedAnswerFooter } from './parts/RetainedAnswerContext';
 import { AnswerRevisionComparison } from './parts/AnswerRevisionComparison';
 import { LibraryConstellation } from "./parts/LibraryConstellation";
@@ -274,6 +275,16 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   const [selected, setSelected] = useState<
     { kind: "wiki"; slug: string } | { kind: "source"; path: string } | { kind: "report" } | null
   >(null);
+  const [mobileBrowseOpen, setMobileBrowseOpen] = useState(false);
+  const mobileBrowseBackRef = useRef<HTMLButtonElement | null>(null);
+  const browseFocusPendingRef = useRef(false);
+  useEffect(() => {
+    if (mobileBrowseOpen) mobileBrowseBackRef.current?.focus();
+    else if (browseFocusPendingRef.current) {
+      browseFocusPendingRef.current = false;
+      document.querySelector<HTMLButtonElement>('[data-testid="question-desk-browse"]')?.focus();
+    }
+  }, [mobileBrowseOpen]);
   /** What is open right now, readable from a completion callback made turns ago. */
   const latestSelectedRef = useRef<typeof selected>(null);
   useEffect(() => {
@@ -1162,6 +1173,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   /* The last question asked from a page and the answer it got: the pair a person can file
      back as a wiki page (owner direction 2026-09-07, the LLM Wiki pattern). */
   const pendingAskRef = useRef<{ question: string; askedOn: string | null } | null>(null);
+  const activeReadOnlyTurnRef = useRef(false);
   const [lastAnswer, setLastAnswer] = useState<RetainedLibraryAnswer | null>(null);
   const answerGenerationRef = useRef(0);
   const filedAnswersRef = useRef(new WeakSet<RetainedLibraryAnswer>());
@@ -1326,6 +1338,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
 
   const autoDecide = useCallback(
     (request: { filePath: string | null; rawInput: Record<string, unknown>; toolKind: string | null; toolName: string | null }) => {
+      if (activeReadOnlyTurnRef.current) return null;
       if (writeMode !== "auto" || !nativeVaultRootPath || captureAnswerRefresh()) return null;
       const page = wikiPagePathOf(request.filePath, nativeVaultRootPath);
       if (!page || !automaticWikiWriteAllowed(page)) return null;
@@ -1386,6 +1399,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
       // Unmatched prompts are ordinary conversation, not another run of the last
       // Compile/Check action. This classification never changes judgeWrite/autoDecide.
       const kind = opening?.kind ?? "ask";
+      activeReadOnlyTurnRef.current = kind === 'ask';
       const refreshTurn = kind === 'refresh' ? captureAnswerRefresh() : null;
       const selectionAtStart = latestSelectedRef.current;
       const asked = kind === "ask"
@@ -1409,6 +1423,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
       if (kind === "compile") setCompileRunning(true);
       if (kind === "lint") setLintRunning(true);
       return async (completion: AcpTurnCompletion) => {
+        activeReadOnlyTurnRef.current = false;
         setTurnRunning(false);
         setCompileRunning(false);
         setLintRunning(false);
@@ -2525,9 +2540,13 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
              the window's height and the floor never binds. */
           "flex w-full min-w-0 min-h-0 flex-1 flex-col overflow-hidden bg-[color:var(--color-panel)] max-lg:min-h-[var(--library-index-min)] max-lg:border-t max-lg:border-[color:var(--color-border-soft)] lg:w-[var(--docs-list-width)] lg:flex-none lg:border-r lg:border-[color:var(--color-border-soft)]",
           narrowShowsReader && "max-lg:hidden",
+          indexSegment === 'wiki' && homeVisible && !mobileBrowseOpen && 'max-lg:hidden',
           indexCollapsed && "lg:hidden",
         )}
       >
+        {indexSegment === 'wiki' && mobileBrowseOpen ? <div className="flex-none border-b border-[color:var(--color-border-soft)] px-3 py-2 lg:hidden">
+          <Chip ref={mobileBrowseBackRef} tone="muted" onClick={() => { browseFocusPendingRef.current = true; setMobileBrowseOpen(false); }} data-testid="question-desk-back">{t('questionDesk.backToQuestion')}</Chip>
+        </div> : null}
         {/*
           **The head does not scroll** (owner, 2026-09-07: *"a switch at the top is
           better"*). It is the name of the place, the switch, and the fold — three things a
@@ -2747,7 +2766,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
            The focus it takes is for reading order, not a control's: it is a region, so
            it draws no ring. Without this the global focus-visible floor outlined the
            whole pane in indigo after every row press (installed app, 2026-09-18). */
-        className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden max-lg:order-first focus-visible:outline-none"
+        className={cn("flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden max-lg:order-first focus-visible:outline-none", indexSegment === 'wiki' && homeVisible && mobileBrowseOpen && 'max-lg:hidden')}
       >
         {/* Work stays above the reader and guidance, independent of the graph dialog. */}
         <LibraryWorkActivityStrip
@@ -2817,7 +2836,30 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
               </div>
             </div>
           ) : null}
-          {homeVisible ? (
+          <div className={cn('flex min-h-0 min-w-0 flex-1 flex-col', (!homeVisible || indexSegment !== 'wiki') && 'hidden')}>
+            <LibraryQuestionDesk
+              key={workVaultScope}
+              docs={docs}
+              pageTexts={model.pageTexts}
+              sources={model.sources}
+              sourceHandles={localVault.sourceHandles}
+              hashes={model.hashes}
+              vaultRoot={nativeVaultRootPath}
+              vaultScope={workVaultScope}
+              agentReady={agent.route === 'agent' && agent.runtime !== null && nativeVaultRootPath !== null}
+              onBrowse={() => setMobileBrowseOpen(true)}
+              onAsk={(brief, question) => {
+                pendingAskRef.current = { question, askedOn: null };
+                agent.start(brief, 'ask');
+              }}
+              onOpenWiki={(slug) => choose({ kind: 'wiki', slug })}
+              onOpenSource={(path, anchor) => {
+                choose({ kind: 'source', path });
+                setSourceCitation({ path, anchor });
+              }}
+            />
+          </div>
+          {homeVisible && indexSegment !== 'wiki' ? (
             <div
               data-testid="library-reader-landing"
               /*

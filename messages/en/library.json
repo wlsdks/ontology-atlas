@@ -1,5 +1,56 @@
 {
   "title": "Library",
+  "questionDesk": {
+    "eyebrow": "WIKI · QUESTION DESK",
+    "title": "What do the documents say?",
+    "browse": "Browse pages",
+    "backToQuestion": "Back to question",
+    "intro": "Ask across Wiki pages and original files. Matches are reading leads; open each source before deciding what is true.",
+    "questionLabel": "Your question",
+    "search": "Find evidence",
+    "reading": "Reading {read, number} files…",
+    "coverage": "Searched {readPages, number} of {totalPages, number} Wiki pages and {readSources, number} of {totalSources, number} original files.",
+    "limits": "Unreadable originals: {unreadable, number} · changed during search: {changed, number} · skipped by read limit: {skipped, number} · matching leads omitted: {omitted, number}. Search is lexical and uses the last inventoried file versions; external edits may appear after a folder refresh.",
+    "unknown": "No matching passage found in the files read. The answer remains unknown; inspect the unread or omitted files before treating this as absence.",
+    "outdated": "The folder changed after this search. Search again to use the current files.",
+    "wikiTitle": "Wiki claims to inspect",
+    "wikiCaveat": "These are statements on pages, not verified answers. Source freshness does not establish that a claim follows from its source.",
+    "noWikiHits": "No matching Wiki fact or decision in the pages read.",
+    "sourceTitle": "Original passages",
+    "noSourceHits": "No matching text unit in the originals Atlas could read. PDFs and unsupported formats may need another reader.",
+    "noCitation": "No source anchor on this claim; its original cannot be checked here.",
+    "reviewBadge": "Source needs review",
+    "unmeasuredBadge": "Source unmeasured",
+    "sourceState": {
+      "observed": "Source bytes match the recorded hash; meaning unverified",
+      "unmeasured": "Source version unmeasured",
+      "stale": "Source changed since this page was written",
+      "missing": "Original missing"
+    },
+    "ask": "Ask agent with these leads",
+    "askNote": "The brief asks the agent to read again and write nothing. App auto-approval is off; any write still needs permission.",
+    "askUnavailable": "Connect an agent in the installed app to ask. The local evidence and source links above remain usable.",
+    "jev": {
+      "check": "Check claim with Jev",
+      "missing": "The exact cited original is missing or cannot be resolved; Jev check unavailable.",
+      "stale": "The source changed since this Wiki claim was recorded; Jev check unavailable.",
+      "unmeasured": "The source version cannot be verified against this Wiki claim; Jev check unavailable.",
+      "obsolete": "The page, source, or folder changed. Review the current evidence and select the claim again.",
+      "failed": "The Jev request failed. No advice was applied.",
+      "consentTitle": "Send this claim and passage to Jev?",
+      "transfer": "This JSON and your API key (in an authentication header) go to {host} after Send. The original file stays in this folder.",
+      "keyNote": "The key value is hidden from this preview and the Wiki. A metadata transfer record is reserved before the request.",
+      "cancel": "Cancel",
+      "send": "Send once",
+      "sending": "Sending…",
+      "advisory": "Jev advice only. This does not approve the claim, change source freshness, or write to the folder.",
+      "choice": {
+        "supported": "Jev: supported by the supplied passage.",
+        "contradicted": "Jev: contradicted by the supplied passage.",
+        "insufficient": "Jev: the supplied passage is insufficient."
+      }
+    }
+  },
   "workActivity": {
     "title": "Observed library work",
     "now": "HAPPENING NOW",
