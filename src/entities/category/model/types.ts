@@ -13,7 +13,7 @@ interface CategorySize {
 }
 
 export interface Category {
-  /** Lowercase, digits and hyphens, e.g. 'in-progress'. */
+  /** Stable: lowercase, digits and hyphens, e.g. 'in-progress'; projects reference it. */
   id: string;
   /** Korean label, the UI default. */
   label: string;

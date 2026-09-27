@@ -80,7 +80,7 @@ export function snapshotOntology(
   return { nodeSigs, nodeKinds, edgeKeys, takenAt };
 }
 
-/** A null baseline reports no changes. Signature maps and edge-key sets diff in O(V + E). */
+/** A null baseline reports no changes. Signature maps and edge-key sets diff in O(V + E log d), sorting each outgoing list. */
 export function computeOntologyChangeset(
   baseline: OntologySnapshot | null,
   nodes: readonly KnowledgeGraphNode[],
@@ -152,7 +152,7 @@ export function computeOntologyChangeset(
 /**
  * Advances the baseline for one node only, so a later edit is flagged again. Returns a new
  * snapshot for `useSyncExternalStore`; vault files are untouched. Null baseline: no-op.
- * Copies the baseline maps and scans its edge keys: O(V + E).
+ * Copies the baseline maps and scans its edge keys: O(V + E log d).
  */
 export function acknowledgeNodeChange(
   baseline: OntologySnapshot | null,

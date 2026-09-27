@@ -5,7 +5,8 @@ import { resolveStaticVaultSource } from './static-vault-source';
 
 /**
  * Every bundled sample's project nodes: the full set of `/project/[slug]/` routes static export
- * must generate. Only for route generation and SSR seeding; screens ask `resolveStaticVaultSource()`.
+ * must generate. Only for route generation and SSR seeding; screens ask `resolveStaticVaultSource()`,
+ * or one screen would mix two vaults.
  */
 const BUNDLED_SOURCES: SampleSource[] = ['dogfood', 'storefront'];
 

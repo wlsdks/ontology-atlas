@@ -86,6 +86,7 @@ export const AGENT_FILE_RULES: readonly AgentFileRule[] = Object.freeze([
    * Exclusion files, one product each (sources in `guide-citations.ts`): `.cursorignore` and
    * `.cursorindexingignore` Cursor, `.codeiumignore` Windsurf, `.aiexclude` Gemini Code Assist
    * (not Gemini CLI), `.aiignore` JetBrains. `tools` stays empty for products outside `AgentTool`.
+   * `.claudeignore`, `.windsurfignore` and `.agentignore` are absent on purpose: no product reads them.
    */
   { id: 'cursor-ignore', kind: 'exclusion', tools: ['cursor'], pattern: /^\.cursorignore$/ },
   { id: 'cursor-indexing-ignore', kind: 'exclusion', tools: ['cursor'], pattern: /^\.cursorindexingignore$/ },

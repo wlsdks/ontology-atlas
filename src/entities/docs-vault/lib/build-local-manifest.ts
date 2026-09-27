@@ -74,8 +74,10 @@ interface WalkEntry {
 const IMAGE_EXT = /\.(png|jpe?g|gif|webp|svg|avif|bmp)$/i;
 
 /**
- * The top-level raw-source folder: listed by name, format, size and mtime, never read (`docs/DECISIONS.md`).
- * Mirrored in `src-tauri/src/lib.rs`; `vault-walk-rules.contract.test.ts` holds them together.
+ * The top-level raw-source folder: listed by name, format, size and mtime, never read
+ * (`docs/DECISIONS.md` 2026-09-05, "A vault holds three kinds of file and only one is the graph").
+ * Mirrored in `src-tauri/src/lib.rs` (`vault-walk-rules.contract.test.ts`); if the walks diverge the
+ * fingerprint counts a different file set, so the app rebuilds constantly or misses a new document.
  */
 export const VAULT_SOURCES_DIR = 'sources';
 

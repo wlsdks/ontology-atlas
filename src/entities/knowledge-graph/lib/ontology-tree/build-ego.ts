@@ -9,6 +9,7 @@ export interface BuildOntologyEgoOptions {
 /**
  * Ego subgraph: self-loops excluded, a two-way neighbor kept twice, a missing neighbor kept as
  * `node = null`. At 2 hops the nearer hop wins, edges back to center and stub pivots are skipped.
+ * Rescans every edge per hop-1 neighbour: O(h·E) for h neighbours.
  */
 export function buildOntologyEgoSubgraph(
   centerId: string,

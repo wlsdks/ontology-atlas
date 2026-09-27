@@ -228,7 +228,11 @@ describe('architecture profile read model', () => {
   });
 });
 
-/** Each case pins a constraint behind the standing architecture-profile record (`docs/DECISIONS.md`). */
+/**
+ * Each case pins a constraint from `docs/DECISIONS.md` 2026-08-26, "The first architecture draft is proposed
+ * by an agent and named by a person", and 2026-08-28, "A role may say what it is for, and the pattern axis
+ * is the stage's subject".
+ */
 describe('buildArchitectureDraftPrompt', () => {
   const prompt = () => buildArchitectureDraftPrompt(null);
 

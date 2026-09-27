@@ -1,5 +1,6 @@
 /**
- * A Library round the person approved (spec `docs/specs/2026-09-17-library-rounds-design.md`).
+ * A Library round the person approved (spec `docs/specs/2026-09-17-library-rounds-design.md`; decision
+ * `docs/records/decisions/2026-09-17-library-rounds-standing-scope-0e82da66-48d2-44f1-a923-82857d7a3710.md`).
  * Cadence is local wall-clock time, so daylight saving moves a run with the clock.
  */
 

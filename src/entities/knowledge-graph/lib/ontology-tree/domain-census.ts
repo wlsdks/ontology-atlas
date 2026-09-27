@@ -22,6 +22,7 @@ export interface DomainCensusOptions {
   collectCapabilityIds?: boolean;
 }
 
+// One containment search per target over adjacency lists: O(T·(V + E)).
 export function computeDomainCensusRows(
   nodes: readonly KnowledgeGraphNode[],
   edges: readonly KnowledgeGraphEdge[],

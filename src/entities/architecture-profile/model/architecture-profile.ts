@@ -374,10 +374,12 @@ export function buildArchitectureAgentPrompt(
 }
 
 /**
- * The empty state's request to a connected agent; the app never calls MCP itself. It must not ask for
+ * The empty state's request to a connected agent; the app never calls MCP itself, since analysing the
+ * repository here would be a second canonical `analyze_repo_structure`, which `AGENTS.md` forbids. It must not ask for
  * `allow_*`, `dependency_policy`, `dependency_usages`, pattern or role names, or generated evidence:
  * rules derived from imports approve the status quo, and `patterns` stays a person's decision.
- * Why role names and generated evidence are refused: `docs/DECISIONS.md`.
+ * Why: `docs/DECISIONS.md` 2026-08-26, "The first architecture draft is proposed by an agent and named by a
+ * person"; role names: 2026-08-28, "A role may say what it is for, and the pattern axis is the stage's subject".
  */
 export function buildArchitectureDraftPrompt(
   context: ArchitectureHandoffContext | null = null,

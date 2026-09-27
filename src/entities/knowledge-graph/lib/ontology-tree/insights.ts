@@ -97,7 +97,8 @@ export function rankAllByDegree(
 
 /**
  * Local counterpart of MCP `query_ontology(domain_matrix)`: nodes join their nearest domain
- * ancestor, and containment edges are left out of the coupling count.
+ * ancestor, and containment edges are left out of the coupling count. One ancestor walk per node:
+ * O(V·d + E) for containment depth d.
  */
 export function computeDomainCouplingMatrix(
   nodes: readonly KnowledgeGraphNode[],

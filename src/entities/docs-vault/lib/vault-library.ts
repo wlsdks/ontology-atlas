@@ -5,7 +5,8 @@ import type { VaultDoc, VaultSourceFile } from '../model/types';
 /**
  * The two vault file kinds that are not the graph: raw sources under `sources/` and wiki pages
  * under `wiki/` (no `kind:`). A page's `sources`, `source_hash` and `sources_truncated` say
- * whether its write-up still matches the file on disk. Vault file kinds: `docs/DECISIONS.md`.
+ * whether its write-up still matches the file on disk. Vault file kinds:
+ * `docs/DECISIONS.md` 2026-09-05, "A vault holds three kinds of file and only one is the graph".
  */
 
 /** The top-level wiki folder, anchored at the root like `VAULT_SOURCES_DIR`. */

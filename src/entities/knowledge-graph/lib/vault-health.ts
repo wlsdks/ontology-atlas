@@ -342,7 +342,8 @@ function missingDomainContainment(graph: CompiledGraph): MissingContainmentTarge
 }
 
 // Dependency cycles up to MAX_DEPTH, matching the engine's `cycles({types:['dependencies']})`.
-// Adjacency lists; a reverse BFS per start (O(V·(V+E))) prunes a depth-bounded DFS.
+// Search lists simple cycles up to MAX_DEPTH, worst case O(V·b^MAX_DEPTH) for out-degree b; a reverse
+// BFS per start, O(V·(V+E)), prunes branches that cannot close.
 function dependencyCycleCount(graph: CompiledGraph): number {
   const MAX_DEPTH = 8;
   const dependencySuccessors = new Map<string, string[]>();
@@ -364,7 +365,8 @@ function dependencyCycleCount(graph: CompiledGraph): number {
 
   /**
    * Nodes that can reach `start` within MAX_DEPTH, with distances; other branches cannot close a
-   * cycle and are pruned, which keeps a dense 2000-node graph on the main thread in milliseconds.
+   * cycle and are pruned; a 2000-node graph with few short cycles stays in milliseconds, while dense
+   * short cycles still grow exponentially with MAX_DEPTH.
    */
   const reverseDistances = (start: string): Map<string, number> => {
     const dist = new Map<string, number>();

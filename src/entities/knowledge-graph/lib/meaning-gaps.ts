@@ -31,7 +31,7 @@ export interface ConceptDocFacts {
   findings: readonly string[];
   /** Raw `domain:`; empty means no parent. */
   domainRef: string | null;
-  /** Null for static samples. */
+  /** For the concurrent-edit guard when a gap is filled; null for static samples. */
   mtime: number | null;
 }
 
