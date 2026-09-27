@@ -34,6 +34,10 @@ test('Wiki question desk finds contradictory leads and keeps the no-key source p
   await page.getByTestId('question-desk-input').fill('Does refund approval immediately restore stock?');
   await page.getByTestId('question-desk-search').click();
   await expect(page.getByTestId('question-desk-results')).toBeVisible();
+  await expect(page.getByTestId('question-desk-results')).toContainText('Wiki 2/2 · Originals 2/2 · 0 leads omitted');
+  await expect(page.getByTestId('question-desk-coverage-toggle')).toHaveAttribute('aria-expanded', 'false');
+  await page.getByTestId('question-desk-coverage-toggle').click();
+  await expect(page.getByTestId('question-desk-coverage-toggle')).toHaveAttribute('aria-expanded', 'true');
   await expect(page.getByTestId('question-desk-results')).toContainText('Searched 2 of 2 Wiki pages and 2 of 2 original files.');
   await expect(page.getByTestId('question-desk-results')).toContainText('Refund approval immediately restores stock.');
   await expect(page.getByTestId('question-desk-results')).toContainText('Refund approval does not immediately restore inventory.');
