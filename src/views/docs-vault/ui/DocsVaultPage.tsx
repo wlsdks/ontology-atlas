@@ -767,8 +767,6 @@ function DocsVaultContent({
   useEffect(() => {
     scheduleStateSync(() => setEditing(false));
   }, [selectedSlug]);
-  useEffect(() => {
-  }, [selectedSlug]);
 
   // Rename and delete open `RenameDocDialog` and `DeleteDocDialog`, from the header and the palette.
   const failureSentence = useFailureSentence();
