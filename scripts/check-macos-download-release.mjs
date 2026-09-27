@@ -12,7 +12,7 @@ const REQUIRED_UPDATER_PLATFORMS = ["darwin-aarch64", "darwin-x86_64"];
 const MAX_DOWNLOAD_HASH_BYTES = 2 * 1024 * 1024 * 1024;
 
 function printHelp() {
-  console.log(`Usage: pnpm desktop:verify-download [--repo=${DEFAULT_REPO}] [--tag=vX.Y.Z] [--allow-prerelease] [--allow-draft] [--require-updater]
+  console.log(`Usage: pnpm desktop:verify-download [--repo=${DEFAULT_REPO}] [--tag=vX.Y.Z] [--allow-draft] [--require-updater]
 
 Verifies that a public GitHub Release exposes reachable Apple Silicon
 (aarch64) and Intel (x64) macOS DMGs with exactly one DMG per architecture and
@@ -22,6 +22,7 @@ checks that every platform URL points at an archive (and .sig) that actually
 exists in this release. Draft releases are never accepted because the
 hosted landing page cannot serve them as a real user download unless
 --allow-draft is explicitly passed for the pre-publish CI gate.
+A release GitHub marks as a pre-release is always refused.
 `);
 }
 
@@ -29,7 +30,6 @@ function parseArgs(argv) {
   const options = {
     repo: DEFAULT_REPO,
     tag: null,
-    allowPrerelease: false,
     allowDraft: false,
     requireUpdater: false,
   };
@@ -41,10 +41,6 @@ function parseArgs(argv) {
     if (arg === "--help" || arg === "-h") {
       printHelp();
       process.exit(0);
-    }
-    if (arg === "--allow-prerelease") {
-      options.allowPrerelease = true;
-      continue;
     }
     if (arg === "--allow-draft") {
       options.allowDraft = true;
@@ -300,21 +296,7 @@ function isChecksumFor(asset, artifactName) {
   );
 }
 
-/**
- * Is this a draft found by name?
- *
- * It does **not** filter on prerelease status. `allowPrerelease` exists to stop a
- * prerelease being **picked** when no tag was given and the script chooses "the
- * current release"; the moment a caller names `--tag=v1.0.0-rc.1` that mechanism
- * has no job — they have already said what they want.
- *
- * The direct lookup (`releases/tags/<tag>`) has no such filter, so the two paths
- * answered the same question differently, and that asymmetry was the defect. An RC
- * draft is a draft, so it 404s and falls through to this list fallback, where it
- * was filtered out again for being a prerelease and ended in the misleading message
- * "tag not found". (Measured on v1.0.0-rc.1, 2026-07-27 — a final tag never
- * exposes it.)
- */
+/** A draft is found by its tag in the release list, because the tag endpoint does not return drafts. */
 export function isRequestedDraft(release, tag) {
   return release?.tag_name === tag && release?.draft === true;
 }
@@ -344,11 +326,7 @@ async function findRelease(options) {
   if (!Array.isArray(releases)) {
     fail("GitHub releases response was not an array.");
   }
-  return releases.find((release) => {
-    if (release?.draft && !options.allowDraft) return false;
-    if (!options.allowPrerelease && release?.prerelease) return false;
-    return true;
-  });
+  return releases.find((release) => !release?.prerelease && (options.allowDraft || !release?.draft));
 }
 
 function assetRequestTarget(asset, release) {
@@ -454,26 +432,16 @@ try {
 }
 
 if (!release) {
-  fail(
-    options.allowPrerelease
-      ? `no ${options.allowDraft ? "release" : "public non-draft release"} found for ${options.repo}.`
-      : `no ${options.allowDraft ? "stable release" : "public stable release"} found for ${options.repo}; pass --allow-prerelease to accept prereleases.`,
-  );
+  fail(`no ${options.allowDraft ? "release" : "public release"} found for ${options.repo}.`);
 }
 
 if (release.draft && !options.allowDraft) {
   fail(`release ${release.tag_name ?? "(unknown tag)"} is a draft and is not downloadable from the hosted landing page.`);
 }
-// Prereleases are blocked only when no tag was named.
-//
-// Called without a tag, this script **picks** "the currently public release", and
-// an RC must not be picked there — it is not what the gateway page advertises. But
-// a caller naming `--tag=v1.0.0-rc.1` has already said what they want to verify,
-// and rejecting that for being a prerelease makes **an RC impossible to verify.**
-// This is exactly the path the release workflow takes to check its own tag's
-// draft.
-if (!options.tag && release.prerelease && !options.allowPrerelease) {
-  fail(`release ${release.tag_name ?? "(unknown tag)"} is a prerelease; pass --allow-prerelease to accept it.`);
+if (release.prerelease) {
+  fail(
+    `release ${release.tag_name ?? "(unknown tag)"} is marked as a pre-release on GitHub. Atlas publishes only plain releases, which the updater and the download page serve; clear the flag or publish a plain tag.`,
+  );
 }
 
 const assets = Array.isArray(release.assets) ? release.assets : [];

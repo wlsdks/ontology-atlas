@@ -83,6 +83,14 @@ test("admit accepts a lightweight tag pinned to the current default-branch head"
   });
 });
 
+test("admit refuses a pre-release tag before asking GitHub", () => {
+  withFakeGh({}, (fakeGhPath) => {
+    const result = runReleaseSource(fakeGhPath, ["--mode=admit", "--tag=v1.2.3-rc.1", `--sha=${headSha}`]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /plain vMAJOR\.MINOR\.PATCH/);
+  });
+});
+
 test("admit peels an annotated tag to its commit", () => {
   withFakeGh({
     refObject: { type: "tag", sha: annotatedSha },

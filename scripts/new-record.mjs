@@ -6,7 +6,7 @@ import { isCalendarDate, validateNewRecord } from './lib/record-ledgers.mjs';
 import { createRequire } from 'node:module';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const VERSION = /^v\d+\.\d+\.\d+(?:-rc\.\d+)?$/;
+const VERSION = /^v\d+\.\d+\.\d+$/;
 
 export function safeSlug(value) {
   const slug = value.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
@@ -29,7 +29,7 @@ export function createRecord({ kind, date, slug, body, category, id = randomUUID
   }
   let directory; let relativePath; let content;
   if (kind === 'release') {
-    if (!VERSION.test(version ?? '')) throw new Error('release version must be vX.Y.Z or vX.Y.Z-rc.N');
+    if (!VERSION.test(version ?? '')) throw new Error('release version must be vX.Y.Z');
     if (!title?.trim() || title.includes('\n') || Buffer.byteLength(title.trim()) > 200) throw new Error('release title must fit one 200-byte line');
     const ids = Array.isArray(changes) ? changes : String(changes ?? '').split(',').map((value) => value.trim()).filter(Boolean);
     if (ids.length === 0 || ids.some((value) => !UUID.test(value))) throw new Error('release changes must be an explicit list of UUIDv4 values');

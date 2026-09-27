@@ -15,7 +15,7 @@ export function pickPublishedRelease(releases, requestedTag = null) {
   if (!Array.isArray(releases) || releases.length === 0) {
     fail('GitHub returned no releases.');
   }
-  const published = releases.filter((entry) => entry?.draft !== true);
+  const published = releases.filter((entry) => entry?.draft !== true && entry?.prerelease !== true);
   const release = requestedTag
     ? published.find((entry) => entry?.tag_name === requestedTag)
     : published.reduce((newest, entry) => {
@@ -29,8 +29,8 @@ export function pickPublishedRelease(releases, requestedTag = null) {
   if (!release) {
     fail(
       requestedTag
-        ? `no published release matches ${requestedTag}`
-        : 'no non-draft release is available',
+        ? `no published plain release matches ${requestedTag}; drafts and GitHub pre-releases are never staged`
+        : 'no published plain release is available',
     );
   }
   return release;
