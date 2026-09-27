@@ -12,6 +12,15 @@ This check is **experimental**. In the installed macOS app, open a local vault, 
 
 The website shows the Models tab's desktop-only card; it cannot store a Jev key or send a judgment. The source-only synthetic probe below remains useful when you want to test the endpoint without sharing project text.
 
+The installed app's **Library → Wiki** question desk also works with no Jev
+key: local question search, source anchors, and the existing ACP answer path
+remain available. With a saved key, select **Check claim with Jev** on a Wiki claim whose
+cited original still matches its recorded source hash. A blocking dialog shows
+the exact JSON and states that both it and the authentication key are sent to
+TypeSafe after **Send once**. A changed, missing, or unmeasured source cannot open
+that send. The returned judgment stays beside that one citation as advice; it
+does not certify the page, accept ontology meaning, or grant a write.
+
 Atlas keeps vault meaning in local Markdown and requires human review. The source example tests the same hosted choice judgment with fixed synthetic text. It is not an Atlas CLI command, automatic reviewer, or meaning-acceptance gate. It reads no vault or repository files and sends only the fixed text shown in its preview.
 
 The example uses the [documented TypeSafe HTTP API](https://docs.typesafe.ai/api) directly, so it adds no SDK dependency or vendor code to Atlas. TypeSafe also publishes an [agent skill](https://docs.typesafe.ai/agent-skill) with API guidance. That skill runs in an agent environment; it does not itself connect Atlas to Jev. The [JavaScript SDK is MIT-licensed](https://github.com/typesafe-ai/typesafe-sdk-js/blob/main/LICENSE), while use of the hosted API is subject to TypeSafe's [separate service agreement](https://typesafe.ai/legal/mca). Sections 2.1–2.2 allow API integration into a customer's application under the agreement; Section 2.3 restricts standalone redistribution of the service and development of a similar or competing service. The agreement does not explicitly settle every open-source, independently keyed distribution scenario. Atlas distributes original client code and no credential or hosted service. TypeSafe's written confirmation for this open-source, bring-your-own-key distribution is still pending; until it arrives the check stays labelled experimental and is not presented as contractually cleared. Review the data terms before sending real project material.

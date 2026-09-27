@@ -981,6 +981,7 @@ const field = cva(`${fieldBase} ${DISABLED}`, {
     { frame: 'boxed', multiline: true, size: 'sm', class: 'min-h-7 rounded-chip px-2 py-1.5 text-body' },
     { frame: 'boxed', multiline: true, size: 'md', class: 'min-h-8 rounded-chip px-2.5 py-1.5 text-body-lg' },
     { frame: 'boxed', multiline: true, size: 'lg', class: 'min-h-10 rounded-chip px-3 py-2 text-body-lg' },
+    { frame: 'bare', size: 'lg', class: 'text-body-lg leading-body-lg' },
   ],
   defaultVariants: { frame: 'boxed', multiline: false, size: 'md' },
 });

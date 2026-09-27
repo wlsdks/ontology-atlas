@@ -11,13 +11,61 @@ routes: [/library]
 ### `/library` — Library (2026-09-06, its own destination)
 
 A vault holds three kinds of file and **only one is the graph**. Library keeps their distinct
-meaning and adds a fourth presentation tab: Ontology draws the explicitly typed graph nodes,
-Sources and Wiki draw the other two file kinds, and Work scopes lists saved Galaxy constellations.
+meaning across Sources, Wiki, Ontology, and Check history. Ontology contains
+Concept documents (the explicitly typed graph nodes) and Concept sets (saved map
+selections). Sources and Wiki draw the other two file kinds.
 
 The Library supports general knowledge as well as documents associated with code.
 Sources remain original files; write-ups and filed answers remain wiki pages.
 Documents-only folders need no code nodes or separate mode switch. The ontology
 retains its codebase scope.
+
+**Question desk (2026-09-27).** With nothing selected in Wiki, the reader pane
+asks a question and searches locally only after a press. The complete inquiry group
+centers horizontally and vertically inside the reader pane, including its original-file
+rows; safe auto margins collapse when content exceeds the viewport. Short positive and no-match
+results retain that balance. Expanding long evidence collapses vertical auto margins;
+reports read from the top.
+Position-only motion connects those states without scaling text. It separates matching
+Wiki fact and decision sentences from original source units, with exact anchors;
+a compact summary opens read coverage, skipped files and hidden match counts.
+A matching hash
+means the cited source bytes agree with the page's receipt; it does not verify
+the sentence. Results from an older folder listing disappear until searched
+again. The source units are cached only in memory for the current folder and
+inventoried file version. An ACP Ask passes these as untrusted leads and asks
+the agent to re-read originals and cite its answer; that turn disables automatic
+Wiki approval, while the existing permission path still governs unexpected
+writes. Jev remains optional in the installed app: a current cited claim opens
+an exact-transfer consent dialog, and its result is advice on that pair only.
+Neither a key nor an agent is needed to search or open the originals. The existing
+Conversation control remains available on the inquiry and report surfaces, so a
+person can choose a runtime or return to the transcript before starting another
+report request. Saved questions retain their direct entry there too. Opening a
+conversation does not submit a question or change permissions; only an explicit
+Ask brief suppresses the folder's ordinary automatic-write policy.
+Exact Ask retries retain that authority and their original report context across
+runtime changes. A changed question, vault, or report version cannot turn a stale
+report reply into an ordinary fileable answer.
+
+**Report and document (2026-09-27).** One explicit ACP action turns the current
+question into a report request: answer, cited originals, disagreements or
+changed claims, and unknowns. The screen leads with the answer and separates
+those sections before expandable evidence leads, with an unreviewed draft label.
+Zero local word matches do not assert that a differently worded original lacks
+the answer; ACP can re-read the folder on request. Only citations to inventoried originals open
+inside Library. The draft follows the current query and file listing; a new
+search or external folder change clears it. Filing remains an explicit Wiki
+review/write action. One editorial document template preserves the question,
+response, cited addresses, search coverage and omissions in a local Markdown
+download or the app's Print/Save as PDF flow. Jev judgment is not exported as
+accepted meaning. External links and images stay inert in Markdown exports;
+unusual syntax that cannot be safely rewritten is preserved as a literal text
+document. Before searching, the desk shows inventoried originals that can be
+opened directly without an agent or an invented citation. A failed agent action
+stays visible beside the question with a path back to the conversation. Search
+completion, report arrival and evidence expansion use
+brief, interruptible motion; reduced-motion settings preserve every fact.
 
 **Retained questions and explicit revisions.** The Library landing lists saved
 questions and the tips of their answer histories. It distinguishes source-byte
@@ -41,7 +89,7 @@ legacy addresses and malformed quoted remainders. Original bytes and existing
 wiki citations are not rewritten, and a matching source hash does not prove that
 an old ambiguous citation identifies the intended passage.
 
-Library has five tabs — Sources, Wiki, Ontology, Work scopes and Check history
+Library has four tabs — Sources, Wiki, Ontology and Check history
 (`LibraryTab` in `src/app/library-workspace/index.tsx`; labels in
 `messages/en/library.json` `workspace.*`) — and each tab keeps its own reader and
 file meaning. The mobile Library tab
@@ -53,16 +101,24 @@ draft state, and five required section headings before creation. The current loc
 receipt remains primary while earlier receipts are available from History; an app write's
 matching folder-watch event is consumed instead of producing a second notification.
 
-**Saved constellation task scope (2026-09-15).** Work scopes (named Collections until
-2026-09-25, when the English name followed the Korean one) lists each saved
-constellation's name, purpose, and ontology concept count. Expanding a row resolves
+**Concept sets (2026-09-28; stored as saved constellations since 2026-09-15).**
+Ontology → Concept sets lists each saved selection's name, purpose, and ontology
+concept count. The earlier Work scopes tab is a compatible URL alias:
+`tab=collections` becomes `tab=ontology&ontologyView=sets`, preserving all other
+parameters and the fragment. `ontologyView` is independent of the document
+reader's legacy `view` parameter; drafts survive switching between documents and sets.
+The set view stays available even when the folder currently has no ontology nodes. Expanding a row resolves
 members by immutable UID against the current manifest; resolved names open the actual
 Ontology document, unresolved members stay visible, and the whole set opens in Galaxy.
 The Galaxy candidate keeps a separate `mapId` for map focus; the compatible `v1`
 sidecar stores immutable UID identity and the manifest's exact `document.path` as
 display-only `lastKnownPath`. Source and Wiki attachments stay
 distinguishable from ontology members. Empty, loading, corrupt, and read-only states remain
-explicit, and creation routes to Galaxy instead of writing a second Library collection.
+explicit. With concepts available, creation routes to Map. With none, the primary
+action opens the existing Ontology document starter, since a documents-only folder
+redirects Map back to Library. Neither navigation writes a second collection.
+The empty state centers its complete explanation and next action inside the available
+pane; saved lists retain a top origin for scanning.
 
 **Two panes.** The index on the left carries the active Sources or Wiki tab with that
 list's own doors. The right
@@ -73,8 +129,9 @@ facts the folder holds about a file Atlas has never opened (path, format, size, 
 sha256 or "not measured") plus one door that reveals it in Finder or hands over the bytes.
 With no folder open the whole screen is one centred stage naming the two kinds of file and
 offering the picker, and a folder that is open but holds nothing gets the same grammar with
-the two doors instead. **With a folder open and nothing selected, the right pane *is* the folder's graph**
-(2026-09-12, restoring 2026-09-06). Above it sits one `text-label` row — the canvas's own
+the two doors instead. **With a folder open and nothing selected in Sources,
+the right pane is the folder's graph** (2026-09-12, restoring 2026-09-06);
+in Wiki it is the question desk. Above the Sources graph sits one `text-label` row — the canvas's own
 counts caption, then the step facts as pressable clauses (`Compile next: <source>` opens
 Compile and its brain picker; `N sources changed` lights that citation and its two ends
 without moving a mark; `N off-template` presses into the check report, whose one door with
@@ -82,9 +139,10 @@ live state — a count, *running*, *unseen* — is the index's own row) — and 
 `How to use`, the saved questions, and the existing `Conversation`. `How to
 use` holds the three source-to-wiki steps in an anchored popup and raises itself once per
 machine; at exactly one saved answer the questions door is that question, so reopening it
-is one press. Selecting a document replaces the canvas and gives it back on close. Below
-`lg` there is one column — the graph above the index — the strip keeps its lead clause, and
-the rest of the doors fold into one. A folder that holds wiki
+is one press. Selecting a document replaces the graph or question desk and
+gives it back on close. Below `lg`, Sources keeps the graph above the index;
+Wiki gives the question desk the available height and opens its page index with
+an explicit Browse action and return focus. A folder that holds wiki
 pages and no `kind:` node opens here rather than on the map: it is a wiki on its own, and
 an empty canvas had nothing to say to the person who chose it (ledger, 2026-09-06). A
 folder with even one node still opens on the map.
