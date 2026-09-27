@@ -1,31 +1,16 @@
 /**
- * Galaxy's pure visual model. The explicit flat view keeps the graph intact
- * while its sibling `galaxy-layout.ts` supplies view-specific positions and
- * this module paints each concept as a borderless circular light core,
- * corona, and sparse glint. INDEX and inspector text state kind; the existing
- * warm-to-cool token ramp reinforces it without making size stand for kind.
- *
- * Resting luminance retains the map's connection-count magnitude formula.
- * Deterministic atmospheric twinkle modulates that baseline, so one instant is
- * not an exact importance rank and never means activity or recency. Reduced
- * motion returns a steady readable level. All functions stay canvas-free and
- * deterministic so the renderer owns paint while tests own the timing bounds.
+ * Galaxy's pure visual model: each concept is a borderless light core, corona and sparse
+ * glint, with positions from `galaxy-layout.ts`. Resting luminance keeps the connection-count
+ * magnitude; deterministic twinkle modulates it, so one instant is not an importance rank.
+ * Reduced motion returns a steady level.
  */
 
 import type { WorldNodeKind } from "../ui/topology-world";
 
 /**
- * A node's magnitude, 0–1, from the two numbers this map has always ranked stars by.
- *
- * `size + fullDegree * 18` is not a new formula: it is the one `topology-world.ts` already sorts
- * by to pick which nodes wear a diffraction cross, ported from the prototype. Normalising it
- * instead of taking the top N is the whole difference between "twelve nodes are special" and "a
- * sky has magnitudes".
- *
- * The square root is Stevens' law doing its job: perceived brightness grows more slowly than
- * luminance, so a linear map would make a hub of degree 40 look barely brighter than one of
- * degree 20 while crushing everything below degree 5 into the same dark. It is the same reason
- * `computeMagnitudeScale` takes the root of child count for radius.
+ * Normalises the `size + fullDegree * 18` ranking `topology-world.ts` already uses, so the
+ * sky has magnitudes rather than a special top N. The square root follows Stevens' law,
+ * as `computeMagnitudeScale` does for radius.
  */
 export function starMagnitude(size: number, fullDegree: number, maxRaw: number): number {
   const raw = Math.max(0, (Number.isFinite(size) ? size : 0) + Math.max(0, fullDegree) * 18);
@@ -34,13 +19,8 @@ export function starMagnitude(size: number, fullDegree: number, maxRaw: number):
 }
 
 /**
- * How brightly a node of this magnitude burns, 0–1.
- *
- * ⚠️ **The floor is the whole argument.** A galaxy whose faint stars reach zero is not a galaxy,
- * it is a few bright nodes on an empty field — and worse, it would be a lie: a node that exists
- * and connects to nothing is still there, and the overview's job is to show what you have. The
- * floor is what keeps a leaf element visible while still letting a hub outshine it, and the
- * range above it is what carries the fact.
+ * A node connected to nothing still exists, and the overview shows what you have, so faint
+ * stars never reach zero; the range above the floor carries the fact.
  */
 export const GALAXY_DIM_FLOOR = 0.42;
 
@@ -50,9 +30,8 @@ export function starLuminance(magnitude: number): number {
 }
 
 /**
- * Blend two star inks while retaining the `#rrggbb` contract consumed by
- * `drawStarEmission`. The general grid lerp returns `rgb(...)`, which Canvas
- * accepts directly but the shared emitter's alpha helper cannot parse.
+ * Keeps the `#rrggbb` contract of `drawStarEmission`: the grid lerp returns `rgb(...)`,
+ * which the emitter's alpha helper cannot parse.
  */
 export function galaxySelectionInk(temperatureInk: string, selectionInk: string, ramp: number): string {
   const amount = Math.min(1, Math.max(0, Number.isFinite(ramp) ? ramp : 0));
@@ -70,13 +49,8 @@ export function galaxySelectionInk(temperatureInk: string, selectionInk: string,
 }
 
 /**
- * Kind → the colour-temperature step used by Galaxy's borderless stars.
- *
- * The ramp runs warm to cool **down the containment ladder** — project, domain, capability,
- * element — so the temperature is not an arbitrary lookup but a reading of depth: the thing that
- * contains everything is the warm centre, and the leaves are the cool rim. INDEX labels and the
- * inspector remain the non-colour statement of kind; radius keeps its existing containment-count
- * meaning and does not identify kind.
+ * Warm to cool down the containment ladder, so temperature reads as depth. INDEX and the
+ * inspector remain the non-colour statement of kind; radius does not identify kind.
  */
 export const GALAXY_TEMPERATURE_ORDER: readonly WorldNodeKind[] = [
   "project",
@@ -85,7 +59,6 @@ export const GALAXY_TEMPERATURE_ORDER: readonly WorldNodeKind[] = [
   "element",
 ];
 
-/** The token key whose value paints a node of this kind at galaxy altitude. */
 export function galaxyTemperatureKey(
   kind: WorldNodeKind,
 ): "galaxyProject" | "galaxyDomain" | "galaxyCapability" | "galaxyElement" {
@@ -102,11 +75,8 @@ export function galaxyTemperatureKey(
 }
 
 /**
- * How much of the node's ordinary body survives at this galaxy level.
- *
- * A selected Galaxy frame switches the ordinary body off immediately; this
- * ramp is used after returning coordinates have settled, so Flat bodies can
- * reappear without geometric outlines travelling across the sky.
+ * Used after returning coordinates settle, so Flat bodies reappear without outlines
+ * travelling across the sky.
  */
 export function bodyPresence(galaxy: number): number {
   const g = Number.isFinite(galaxy) ? Math.min(1, Math.max(0, galaxy)) : 0;
@@ -115,29 +85,23 @@ export function bodyPresence(galaxy: number): number {
 }
 
 export interface GalaxyAppearance {
-  /** Compact heart: responds first so the view change is acknowledged immediately. */
+  /** Responds first so the view change is acknowledged at once. */
   core: number;
-  /** Stellar atmosphere presence; the readable hot core uses the mode identity. */
   field: number;
-  /** Broad, faint corona: settles after the heart without extending the duration. */
+  /** Settles after the heart without extending the duration. */
   corona: number;
-  /** Relation thinning: follows the aura so structure never cuts ahead of its stars. */
+  /** Follows the aura so structure never cuts ahead of its stars. */
   filament: number;
 }
 
-/** Smooth a normalized interval without introducing another duration or clock. */
 function phase(ramp: number, start: number, end: number): number {
   const t = Math.min(1, Math.max(0, (ramp - start) / (end - start)));
   return t * t * (3 - 2 * t);
 }
 
 /**
- * Resolve one existing Galaxy mode ramp into coordinated paint phases.
- *
- * The heart answers immediately, then the field, corona, and relations settle
- * inside that same reversible ramp. Independent deterministic twinkle runs only
- * after this mode clock has made the stars present; reversing the view retraces
- * these entry values.
+ * Heart first, then field, corona and relations inside the same reversible ramp; reversing
+ * the view retraces these values.
  */
 export function galaxyAppearance(galaxy: number): GalaxyAppearance {
   const g = Number.isFinite(galaxy) ? Math.min(1, Math.max(0, galaxy)) : 0;
@@ -165,7 +129,7 @@ export interface GalaxyTwinkle {
   periodMs: number;
 }
 
-/** Deterministic intermittent stellar atmosphere; no frame mutates graph meaning. */
+/** Deterministic; no frame changes graph meaning. */
 export function galaxyTwinkle(nodeId: string, nowMs: number, reducedMotion: boolean): GalaxyTwinkle {
   const seed = atmosphereHash(nodeId);
   const periodMs = 4000 + atmosphereHash(`${nodeId}:interval`) * 4000;
@@ -176,8 +140,8 @@ export function galaxyTwinkle(nodeId: string, nowMs: number, reducedMotion: bool
   const flareProgress = cycleMs <= flareDurationMs ? cycleMs / flareDurationMs : -1;
   const glint = flareProgress < 0 ? 0 : Math.sin(Math.PI * flareProgress) ** 2;
   return {
-    // The hot core has its own contrast floor in the painter. This stronger
-    // range belongs to corona/glint, so a leaf can flare without blinking out.
+    // The painter floors the hot core's contrast; this wider range is for corona and glint, so
+    // a leaf flares without blinking out.
     intensity: 0.9 + glint * 0.7,
     glint,
     rotation,
@@ -198,7 +162,7 @@ export interface GalaxyMeteorPhase {
 const METEOR_FIRST_AT_MS = 1800;
 const METEOR_INTERVAL_COUNT = 12;
 
-/** FNV plus Murmur's final avalanche; neighboring cycle suffixes must not share visible lanes. */
+/** FNV plus Murmur's final avalanche, so neighbouring cycle suffixes never share visible lanes. */
 function meteorHash(value: string): number {
   let mixed = Math.floor(atmosphereHash(value) * 0xffff_ffff) >>> 0;
   mixed ^= mixed >>> 16;
@@ -215,9 +179,8 @@ const METEOR_INTERVALS_MS = Array.from({ length: METEOR_INTERVAL_COUNT }, (_, in
 const METEOR_INTERVAL_BLOCK_MS = METEOR_INTERVALS_MS.reduce((sum, value) => sum + value, 0);
 
 /**
- * One bounded meteor with a deterministic position, path, speed, and gap for
- * each apparition. A repeating interval block finds the cycle in constant
- * time; the global cycle id keeps the visible paths from repeating with it.
+ * A repeating interval block finds the cycle in constant time; the global cycle id keeps
+ * visible paths from repeating with it.
  */
 export function galaxyMeteorPhase(elapsedMs: number, entrySeed = 0): GalaxyMeteorPhase | null {
   if (!Number.isFinite(elapsedMs) || elapsedMs < METEOR_FIRST_AT_MS) return null;
@@ -258,21 +221,15 @@ export function galaxyMeteorPhase(elapsedMs: number, entrySeed = 0): GalaxyMeteo
 }
 
 export interface GalaxyNebulaMotion {
-  /** Multiplicative light level only; geometry never breathes or zooms. */
+  /** Geometry never breathes or zooms. */
   luminance: number;
-  /** Small counter-moving rotations for the two diffuse wisp layers. */
   innerRotation: number;
   outerRotation: number;
 }
 
 /**
- * Calm motion for the diffuse Galaxy atmosphere.
- *
- * The anchored base texture and every real concept stay fixed. Two transparent
- * wisp layers carry fine dust through shallow, unequal arcs. The movement must
- * be visible during an ordinary glance, while the real concepts and base disc
- * never rotate, re-layout, or become harder to point at.
- * Reduced motion resolves to the readable anchored frame at every timestamp.
+ * Two transparent wisp layers move through shallow unequal arcs while the base texture and
+ * every real concept stay fixed and easy to point at. Reduced motion is the anchored frame.
  */
 export function galaxyNebulaMotion(elapsedMs: number, reducedMotion: boolean): GalaxyNebulaMotion {
   if (reducedMotion) {
@@ -280,8 +237,7 @@ export function galaxyNebulaMotion(elapsedMs: number, reducedMotion: boolean): G
   }
   const time = Number.isFinite(elapsedMs) ? Math.max(0, elapsedMs) : 0;
   return {
-    // Six percent is visible across a few seconds without making the whole
-    // canvas pulse. Only light changes; the footprint never scales.
+    // Six percent reads across a few seconds without making the canvas pulse.
     luminance: 0.94 + Math.sin((time / 8400) * Math.PI * 2) * 0.06,
     innerRotation: Math.sin((time / 18000) * Math.PI * 2) * (Math.PI / 26),
     outerRotation: Math.sin((time / 27000) * Math.PI * 2 + Math.PI * 0.72) * (Math.PI / 36),
@@ -289,13 +245,8 @@ export function galaxyNebulaMotion(elapsedMs: number, reducedMotion: boolean): G
 }
 
 /**
- * How much of a relation's ink survives at this galaxy level.
- *
- * Relations do not disappear — a galaxy with no structure between its stars is a scatter plot,
- * and the structure is the thing Atlas is for. They thin to filaments: enough to read the shape
- * of the graph as gas between the stars, not enough to compete with the stars themselves. It
- * never reaches zero, and it is floored well above the point where a line stops being visible on
- * this canvas at all.
+ * Relations thin to filaments but never vanish: without structure between stars the galaxy
+ * is a scatter plot. Floored well above where a line stops being visible.
  */
 export const GALAXY_FILAMENT_FLOOR = 0.34;
 
