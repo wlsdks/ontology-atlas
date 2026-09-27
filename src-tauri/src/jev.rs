@@ -204,10 +204,8 @@ where
 {
     let (claim_chars, evidence_chars) = validate_payload(payload)?;
     let logged_at = llm_audit::now_iso();
-    // What left is what the person typed or pasted, not vault content: Atlas reads no file for
-    // this check. So the scope says `vault_chars: 0` and counts the claim and evidence as the
-    // person's own words — the sent log must not read "N folder characters" beside a screen
-    // that says the folder is not read.
+    // What leaves is the person's own claim and evidence, never vault content, so
+    // the audit scope records `vault_chars: 0`.
     let reservation = llm_audit::reserve(
         vault_path,
         AuditDraft {
@@ -271,9 +269,7 @@ where
     parsed.ok_or_else(|| coded("jev-response-invalid", "missing parsed answer"))?
 }
 
-/// `async` moves the body off the macOS main thread: the request waits on the network for up to
-/// 30 seconds, and a sync command would freeze the whole window for that long (the same reason
-/// `secret_verify` and `llm_chat` are async in `llm.rs`).
+/// `async` keeps the up-to-30-second network wait off the macOS main thread.
 #[tauri::command(async)]
 pub fn jev_judge(vault_path: String, payload: String) -> Result<JevJudgment, String> {
     validate_payload(&payload)?;
@@ -295,15 +291,11 @@ mod tests {
     use std::fs;
     use std::path::PathBuf;
 
-    /// The request the web side builds (`buildJevPayload` in `src/shared/lib/tauri-jev.ts`) for the
-    /// guide's example pair. Both suites read this one file, so the shape the screen previews and
-    /// the shape this bridge accepts cannot drift apart silently.
+    /// The web side reads the same fixture, so preview and bridge shapes cannot drift.
     const SAMPLE_REQUEST: &str = include_str!("../../tests/fixtures/jev-request.sample.json");
 
     const OK_ANSWER: &str = r#"{"model":"jev-1.13.0","answers":{"claim_judgment":{"type":"choice","choice":"contradicted","confidence":0.91,"probabilities":{"supported":0.04,"contradicted":0.91,"insufficient":0.05}}}}"#;
 
-    /// A fresh vault directory under the platform's own temp root. `Path::join` builds every child
-    /// path, so the same test reads correctly on macOS, Linux and Windows.
     fn temp_vault(tag: &str) -> PathBuf {
         let dir = std::env::temp_dir().join(format!(
             "atlas-jev-{tag}-{}",
@@ -340,7 +332,6 @@ mod tests {
         )
         .is_err());
         assert!(validate_payload(r#"{"model":"jev-latest","state":{"claim":"a","evidence":"b"},"questions":{},"url":"https://elsewhere"}"#).is_err());
-        // A second model or a smuggled extra state field is refused before any key is read.
         let other_model = SAMPLE_REQUEST.replace("jev-latest", "jev-other");
         assert!(validate_payload(other_model.trim()).is_err());
         let extra_state =
@@ -353,10 +344,8 @@ mod tests {
         assert!(validate_payload(&oversized).is_err());
     }
 
-    /// Source reflection, the same discipline as `secrets.rs` and `llm.rs`: every command here
-    /// returns a type that cannot hold the key, and the one that waits on the network is `async`
-    /// so it never blocks the main thread. Both spellings of the attribute are counted, so a
-    /// matcher that saw only one would not pass while checking nothing.
+    /// Every command returns a type that cannot hold the key, and the networked one
+    /// is `async`; both attribute spellings are counted so the check cannot go idle.
     #[test]
     fn commands_never_hand_the_key_back_and_the_network_one_is_async() {
         let source = include_str!("jev.rs").replace("\r\n", "\n");
@@ -405,8 +394,7 @@ mod tests {
         assert!(parse_answer(r#"{"answers":{}}"#, String::new()).is_err());
     }
 
-    /// Where the audit log can be written (unix), the line is reserved **before** the send runs,
-    /// finished after it, and carries neither the key nor the claim text.
+    /// On unix the audit line is reserved before the send and holds neither key nor claim.
     #[cfg(unix)]
     #[test]
     fn records_the_transfer_before_sending_and_keeps_the_text_out_of_the_record() {
@@ -414,7 +402,6 @@ mod tests {
         let audit_path = crate::llm_audit::audit_log_path(&vault);
         let sent = Cell::new(false);
         let judgment = judge_with(&vault, SAMPLE_REQUEST.trim(), "sample-secret", |config| {
-            // The reservation is on disk at the moment of sending.
             let reserved = fs::read_to_string(&audit_path).unwrap();
             assert!(reserved.contains("\"provider\":\"jev\""));
             assert!(!reserved.contains("\"outcome\""));
@@ -430,7 +417,6 @@ mod tests {
         assert!(line.contains("\"host\":\"api.typesafe.ai\""));
         assert!(line.contains("\"purpose\":\"judgment\""));
         assert!(line.contains("\"outcome\":\"ok\""));
-        // Nothing came from the vault; what left is the person's own claim and evidence.
         assert!(line.contains("\"vaultChars\":0"));
         let typed = "A refund request immediately restores inventory."
             .chars()
@@ -439,7 +425,6 @@ mod tests {
                 .chars()
                 .count();
         assert!(line.contains(&format!("\"promptChars\":{typed}")));
-        // The receipt's hash is the hash of exactly the previewed request.
         assert!(line.contains(&crate::llm_audit::sha256_hex(SAMPLE_REQUEST.trim())));
         assert!(!line.contains("sample-secret"));
         assert!(!line.contains("restores inventory"));
@@ -459,8 +444,7 @@ mod tests {
         fs::remove_dir_all(&vault).ok();
     }
 
-    /// Where the audit log cannot yet be written safely (Windows fails closed in `llm_audit`),
-    /// nothing is sent: a transfer without a record is structurally impossible.
+    /// Where the audit log cannot be written safely, nothing is sent.
     #[cfg(not(unix))]
     #[test]
     fn sends_nothing_where_the_record_cannot_be_written() {

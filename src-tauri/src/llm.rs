@@ -1,20 +1,6 @@
-// Verify BYOK connection (#80 S2) — check if the key actually works with one click and
-// leave that call in the bolt's audit log.
-//
-// ## Invariants this file upholds
-//
-// 1. **The key is not passed via IPC.** Keychain reading and transmission end within Rust,
-//    and only `LlmVerifyResult` (pass/fail, status code, elapsed time) goes to the WebView.
-// 2. **log-before-send.** If audit line reservation (`llm_audit::reserve`) fails, the sender
-//    is not called at all. This turns Trust Charter §2 from a principle into a code path.
-// 3. **Zero bolt data.** Connection verification is an auth check with no body. The screen
-//    can say "0 bytes of bolt data" because `AuditScope` has three zeros.
-// 4. **No automatic invocation.** It runs only when the user clicks [Verify Connection].
-//
-// ## Why curl shell-out?
-//
-// ① No new HTTP client crate is added, keeping the supply chain surface at zero (git.rs
-// already has precedent for shell-ing out to system git), and ② crucially, **the key never enters argv** — URL and headers are passed to stdin via `--config -`, so other processes on the same machine can't see the key with `ps`. Common implementations passing the key as a `-H` argument are themselves a leak path.
+// BYOK connection checks and chat round trips. The key never crosses IPC or argv
+// (curl reads URL and headers from stdin, or `ps` would show it), an audit line is
+// reserved before every send, and nothing runs without a user click.
 
 use crate::errors::coded;
 use crate::llm_audit::{self, AuditDraft, AuditOutcome, AuditScope, AuditToolRef};
@@ -25,110 +11,76 @@ use std::path::Path;
 use std::process::{Command, Stdio};
 use std::time::Instant;
 
-/// Minimal endpoint for auth verification only — since it's not a model call, there's no
-/// token billing/generation,
-/// and no body to send.
+/// Auth check only: no model call, no billing, no body.
 const ANTHROPIC_VERIFY_URL: &str = "https://api.anthropic.com/v1/models?limit=1";
 const OPENAI_VERIFY_URL: &str = "https://api.openai.com/v1/models";
-/// Gemini official model list endpoint (public docs `ai.google.dev/api/models`).
-/// The key is sent **only in headers** — the `?key=` query form in docs is not used. Secrets
-/// embedded in URLs remain in proxy logs, referrers, and crash reports,
-/// and since our audit log also keeps the destination URL, this eliminates places where the key could be recorded.
+/// The key goes only in headers, never `?key=`: URLs persist in proxy logs and in
+/// our audit line.
 const GEMINI_VERIFY_URL: &str = "https://generativelanguage.googleapis.com/v1beta/models";
-/// Version header required by Anthropic API. If the value changes, a 400 comes instead of 401.
+/// A changed value yields 400 instead of 401.
 const ANTHROPIC_VERSION: &str = "2023-06-01";
 
-/// Chat endpoint — uses the **same host** as the verification URL. If the host diverges,
-/// the destination promised during key registration differs from where the actual chat goes.
+/// Same host as the verify URL, or chat goes somewhere key registration never promised.
 const ANTHROPIC_CHAT_URL: &str = "https://api.anthropic.com/v1/messages";
 const OPENAI_CHAT_URL: &str = "https://api.openai.com/v1/chat/completions";
-/// Gemini puts the model name **in the path** — so this constant is a prefix,
-/// followed by `{model}:generateContent`. Since the model string flows into the path,
-/// narrow it first with `validate_model_id` (block path escape/query injection).
+/// The model name flows into the path, so `validate_model_id` must narrow it first
+/// or it could escape the path or inject a query.
 const GEMINI_CHAT_URL_PREFIX: &str = "https://generativelanguage.googleapis.com/v1beta/models/";
 
-/// curl timeout for chat round-trip (seconds). Longer than verification (20s) — it's normal for models to take
-/// tens of seconds to decide on tool calls; cutting here makes the user see an unexplained failure. Still not infinite: [Stop] is the user-side upper bound,
-/// and this value is the upper bound for hanging sockets.
+/// Models may take tens of seconds on tool calls; [Stop] is the user-side bound
+/// and this bounds a hanging socket.
 const CHAT_TIMEOUT_SECONDS: &str = "180";
-/// The local runner runs on the user's same machine and retries are free. It's more
-/// honest to close one round-trip as a failure and prompt for smaller models/questions than to hold the panel for 3 minutes.
-/// Separate from remote models' long generation allowances.
+/// Local retries are free, so fail one round trip sooner than a remote model.
 const LOCAL_CHAT_TIMEOUT_SECONDS: &str = "60";
 
-/// Status codes that should be read as "key is wrong." Vendors differ, so carry it with the request —
-/// this gives the screen a basis to distinguish `Rejected` (user fixes key) from `Failed` (our/network issue).
+/// Per request, so the screen can tell `Rejected` (fix the key) from `Failed`.
 const AUTH_DENIED_STATUSES: &[u16] = &[401, 403];
-/// ── Connect by address (keyless local runner) ──────────────────────────────────────
-///
-/// This is the branch left behind when `secrets.rs` froze vendor names at 3:
-/// **The user enters the address directly.** The reason to open one door instead of adding another vendor name is long-tail — Ollama · LM Studio · llama.cpp server ·
-/// vLLM · LocalAI all offer the same OpenAI-compatible syntax (`/v1/chat/completions`), so if the address is variable, the runner list doesn't need to be in our code.
-///
-/// **No key in this branch.** It doesn't pass through the keychain (not in `secrets::PROVIDERS`) and doesn't attach auth headers. So a spot opens where the existing shape "provider = secret key" doesn't hold.
+/// Keyless connect-by-address: any OpenAI-compatible runner (Ollama, LM Studio,
+/// vLLM) without naming vendors. No keychain and no auth header on this branch.
 pub const LOCAL_PROVIDER: &str = "local";
-/// Default port for Ollama. **It's a default, not a constant** — the user changes it.
+/// A default the user changes.
 pub const LOCAL_DEFAULT_BASE_URL: &str = "http://localhost:11434";
-/// List of installed models. Uses an **OpenAI-compatible** list, not Ollama native (`/api/tags`) —
-/// the same single verification must work for runners other than Ollama for this branch to become a door for "open-source ones" (2026-08-01 measurement: Ollama
-/// 0.12 returns 7 models with 200 on `/v1/models`).
+/// The OpenAI-compatible list, not Ollama's `/api/tags`, so any runner verifies the same way.
 const LOCAL_MODELS_PATH: &str = "models";
 const LOCAL_CHAT_PATH: &str = "chat/completions";
 
-/// Gemini **gives 400 for wrong keys** (2026-07-26 measurement: body
-/// `{"error":{"code":400,"status":"INVALID_ARGUMENT","details":[…"reason":
-/// "API_KEY_INVALID"…]}}`). If judged only by 401/403, wrong keys fall into the misleading "Couldn't verify" message.
-///
-/// Why it's safe to read 400 entirely as rejection: this call is a fixed GET with no body,
-/// and URL/header names are all code constants, so the **only changing value in the request is the key**.
-/// There's no other input on our side that could produce a 400.
+/// Gemini answers a wrong key with 400. Safe to read all 400s as denial because
+/// the fixed bodiless GET varies only in the key.
 const GEMINI_DENIED_STATUSES: &[u16] = &[400, 401, 403];
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LlmVerifyResult {
     pub provider: String,
-    /// Whether auth passed. Give `http_status` along with it so the screen can distinguish rejection (401/403) from other failures.
     pub ok: bool,
     pub http_status: Option<u16>,
-    /// Whether the key itself was rejected — absorb vendor-specific status code differences (Gemini is 400) here.
-    /// If the UI reinterprets the status code, that knowledge splits across two places every time a new vendor is added.
+    /// Vendor status differences are absorbed here so the UI does not re-derive them.
     pub denied: bool,
-    /// A single line for network failures, etc. Since keys only go via stdin, they cannot be included here.
+    /// Keys go only via stdin, so they cannot appear here.
     pub message: Option<String>,
     pub duration_ms: u64,
-    /// The timestamp of the audit line left by this call — ensures the UI states "recorded" as a fact.
+    /// Lets the UI state "recorded" as a fact.
     pub logged_at: String,
-    /// The **body** of the confirmation response — populated only in the address branch.
-    ///
-    /// Why named vendors are `None`: that confirmation is a call that only checks authentication, so the UI
-    /// has no business with the body, and there is no reason to expose account information mixed into the response via IPC.
-    /// The address branch is different — this body is the **installed model list**, which the UI must select so users don't fail due to a single typo when manually typing model names. Parsing is not done here (see § why this file doesn't know vendor schemas) — the web adapter does.
+    /// Only the address branch returns the installed model list; named vendors keep
+    /// account data in the response out of IPC.
     pub body: Option<String>,
 }
 
-/// How this request exits — **preventing invalid combinations entirely** via type
-/// separation. Named vendors attach keys and use hardcoded addresses; the address branch
-/// goes to user-provided addresses without keys. Requests mixing both (named vendor keys with arbitrary
-/// addresses) cannot be created.
+/// Separate variants make a vendor key sent to a user address unrepresentable.
 pub enum Target<'a> {
-    /// Named vendor — attaches the key, and the address is a constant in this file.
     Vendor { secret: &'a str },
-    /// Connect via address — goes only to the base URL provided by the user, with no auth headers.
     Address { base_url: &'a str },
 }
 
-/// The request to send. It has no body (`GET`).
 pub struct VerifyRequest {
     url: String,
     headers: Vec<(String, String)>,
-    /// Status codes that mean "the key is wrong" for this vendor.
     denied_statuses: &'static [u16],
-    /// Returns the response body to the UI — true only for the address branch receiving the model list.
+    /// Only the address branch returns its model list.
     returns_body: bool,
 }
 
-/// The host in the URL — **derived from a single URL constant** so that the `host` in the audit line and the UI's "where it goes" write the same value. Keeping the host as a separate constant risks silent drift when updating the URL, causing records to point to a different destination than the actual target.
+/// Derived from the URL so the audit `host` and the screen never drift from the real target.
 fn host_of(url: &str) -> &str {
     let without_scheme = url.split_once("://").map_or(url, |(_, rest)| rest);
     without_scheme
@@ -137,18 +89,16 @@ fn host_of(url: &str) -> &str {
         .unwrap_or(without_scheme)
 }
 
-/// What remains in the **audit line** from the response — only status code and length. The body is not recorded.
+/// Status and length only; the body is not recorded.
 pub struct HttpEcho {
     pub status: u16,
     pub body_chars: usize,
-    /// The body to return to the UI — populated only for requests that `returns_body` (the model list in the address branch).
-    /// This is not a recorded value.
+    /// Returned to the UI, not recorded.
     pub body: Option<String>,
 }
 
 impl HttpEcho {
-    /// Confirmation that does not return a body — shape of the named vendor set. Actual transmission
-    /// is built directly by `send_via_curl`; this shortcut is used only when tests mimic that shape.
+    /// Test-only shortcut; `send_via_curl` builds the real transmission.
     #[cfg(test)]
     pub fn status_only(status: u16, body_chars: usize) -> Self {
         Self {
@@ -159,16 +109,9 @@ impl HttpEcho {
     }
 }
 
-/// Narrows the user-provided address into a form usable in requests.
-///
-/// Rejections here and their reasons:
-/// - **`http` is only for loopback.** Does not open paths to send plaintext vault excerpts over the internet.
-///   Plaintext is normal within the same machine (runners don't use TLS); outside, `https` is required.
-/// - **No userinfo (`user:pass@host`).** Secrets in URLs remain visible in audit lines and proxy
-///   logs. Same discipline as sending Gemini keys only via headers.
-/// - **No whitespace, newlines, quotes, or backslashes.** curl config is line-based; a single value could
-///   create a new option line.
-/// - **No query strings or fragments.** Since paths are appended later, `?` or `#` would result in an endpoint we didn't configure.
+/// Rejects `http` beyond loopback (no plaintext vault excerpts on the internet),
+/// userinfo (URL secrets leak into logs), whitespace or quotes (a new curl config
+/// line) and query or fragment (an unconfigured endpoint).
 fn normalize_base_url(raw: &str) -> Result<String, String> {
     let trimmed = raw.trim().trim_end_matches('/');
     if trimmed.is_empty() {
@@ -202,10 +145,8 @@ fn normalize_base_url(raw: &str) -> Result<String, String> {
     Ok(trimmed.to_string())
 }
 
-/// Is this machine itself. Only checks the host (port is irrelevant).
 fn is_loopback_authority(authority: &str) -> bool {
     let host = match authority.strip_prefix('[') {
-        // IPv6 literal — `[::1]:11434`
         Some(rest) => rest.split(']').next().unwrap_or(""),
         None => authority.split(':').next().unwrap_or(""),
     };
@@ -215,9 +156,7 @@ fn is_loopback_authority(authority: &str) -> bool {
             .is_ok_and(|address| address.is_loopback())
 }
 
-/// base URL + OpenAI compatible path. Do not append if it already ends with `/v1` —
-/// Ollama provides `http://localhost:11434` and LM Studio provides `http://localhost:1234/v1`
-/// as guidance, so both should work as-is when pasted.
+/// Accepts both Ollama's bare address and LM Studio's `/v1` as pasted.
 fn local_endpoint(base_url: &str, path: &str) -> String {
     if base_url.ends_with("/v1") {
         format!("{base_url}/{path}")
@@ -226,8 +165,7 @@ fn local_endpoint(base_url: &str, path: &str) -> String {
     }
 }
 
-/// curl config files are line-based, so values containing newlines break syntax. The save path
-/// trims, so normal keys won't have this, but stopping here is better than sending malformed requests.
+/// A newline would break curl's line-based config.
 fn checked_secret(secret: &str) -> Result<&str, String> {
     if secret.contains('\n') || secret.contains('\r') {
         return Err(coded("secret-has-newline", ""));
@@ -235,9 +173,7 @@ fn checked_secret(secret: &str) -> Result<&str, String> {
     Ok(secret)
 }
 
-/// A single line for when the address branch arrives at a named vendor or vice versa. If combinations are mismatched,
-/// it does not silently pick one side — the accident of keys going to user-provided addresses
-/// arises precisely from that "silence".
+/// A mismatch never silently picks a side, or a key could go to a user address.
 fn wrong_target(provider: &str) -> String {
     if provider == LOCAL_PROVIDER {
         coded("endpoint-not-for-key", "")
@@ -266,23 +202,18 @@ fn verify_request(provider: &str, target: &Target<'_>) -> Result<VerifyRequest, 
             denied_statuses: AUTH_DENIED_STATUSES,
             returns_body: false,
         }),
-        // Gemini uses a dedicated header, not Bearer — authentication that cannot be
-        // absorbed into the OpenAI-compatible branch, so it gets a named-vendor slot.
+        // Gemini uses a dedicated header, not Bearer, so it has a named-vendor slot.
         ("gemini", Target::Vendor { secret }) => Ok(VerifyRequest {
             url: GEMINI_VERIFY_URL.to_string(),
             headers: vec![("x-goog-api-key".into(), checked_secret(secret)?.to_string())],
             denied_statuses: GEMINI_DENIED_STATUSES,
             returns_body: false,
         }),
-        // Connection check for the address branch = **fetching the installed model list**.
-        // One request settles three things at once: is the runner alive (connection) ·
-        // is this address OpenAI-compatible (200 vs 404) · which models can be chosen
-        // (the body). Splitting check and listing into two commands would also mean two
-        // audit lines, and the user would meet the unexplainable state
-        // "verification passed but the list is empty".
+        // One request answers liveness, compatibility (200 vs 404) and the model list,
+        // with one audit line.
         (LOCAL_PROVIDER, Target::Address { base_url }) => Ok(VerifyRequest {
             url: local_endpoint(&normalize_base_url(base_url)?, LOCAL_MODELS_PATH),
-            // There is **no** auth header. That is the very reason this branch exists.
+            // No auth header: the reason this branch exists.
             headers: vec![],
             denied_statuses: AUTH_DENIED_STATUSES,
             returns_body: true,
@@ -292,13 +223,11 @@ fn verify_request(provider: &str, target: &Target<'_>) -> Result<VerifyRequest, 
     }
 }
 
-/// Arguments that go on argv — **not a single secret among them**. URL, headers, and
-/// body go via stdin. Chat round-trips differ only in the timeout.
+/// No secret on argv; URL, headers and body go via stdin.
 pub(crate) fn curl_argv_with_timeout(timeout_seconds: &'static str) -> [&'static str; 9] {
     [
-        // curl skips ~/.curlrc only when this option is the **first argument**. It keeps
-        // user config from adding redirect/proxy/header entries that would change the
-        // key's transmission boundary.
+        // Only as the first argument does curl skip ~/.curlrc, whose entries could add
+        // redirects or proxies that move the key.
         "--disable",
         "--silent",
         "--show-error",
@@ -329,7 +258,7 @@ fn curl_quote(value: &str) -> String {
     out
 }
 
-/// curl config passed via stdin — keys are only here, and in conversation round-trips, **vault excerpts in the body** also go only here (no argv or temp file intermediaries).
+/// Keys and vault excerpts travel only here, never argv or temp files.
 pub(crate) fn curl_config_for(
     url: &str,
     headers: &[(String, String)],
@@ -353,18 +282,8 @@ fn curl_config(request: &VerifyRequest) -> String {
     curl_config_for(&request.url, &request.headers, None)
 }
 
-/// curl exit code → a single line enabling humans to **know what to do next**.
-///
-/// Why not use stderr messages directly: the three most common failures in local runners (down · port mismatch · address typo) all collapse into a single "Couldn't connect to
-/// server" message in stderr. The exit code is the only stable signal separating these three (curl manual § EXIT CODES).
-/// Machine-readable prefixes for the two failures the screen must branch on.
-///
-/// The screen used to recognise them by matching **Korean substrings** of these messages, which
-/// made the sentence itself a cross-language contract no test held — and `forbidden.md` actively
-/// invites translating exactly such prose. Translating it would have silently downgraded "your
-/// vault could not be written" into "check your network", the one diagnosis the audit notice
-/// exists to give. Same convention as `vault-root-rejected:`: a code, because composing
-/// human-readable copy inside Rust traps the translation there.
+/// Codes, not sentences, so the screen can branch and translate; matching prose
+/// would turn a vault-write failure into "check your network".
 pub(crate) const AUDIT_BLOCKED_PREFIX: &str = "audit-blocked:";
 pub(crate) const TIMED_OUT_PREFIX: &str = "timed-out:";
 
@@ -372,9 +291,7 @@ fn curl_failure_message(code: Option<i32>, stderr: &str) -> String {
     match code {
         Some(6) => coded("host-not-found", ""),
         Some(7) => coded("connection-refused", ""),
-        // The colon belongs to the prefix, so this arm is written out rather than
-        // built by `coded`: the screen matches `timed-out:` by `startsWith`, and a
-        // curl run that says nothing on stderr must still carry the colon.
+        // Written out because the screen matches `timed-out:` by prefix and needs the colon.
         Some(28) => format!("{TIMED_OUT_PREFIX} curl exit 28"),
         Some(35) | Some(60) => coded("tls-failed", ""),
         _ if stderr.is_empty() => coded("no-response", ""),
@@ -407,14 +324,8 @@ pub(crate) fn run_curl(argv: [&'static str; 9], config: &str) -> Result<(u16, St
     )
 }
 
-/// What curl left behind → (status code, body) or a **failure that carries a reason**.
-///
-/// ⚠️ Checking the exit code first is the whole point here. Even when the connection
-/// itself fails, curl **prints `000`** in the `--write-out %{http_code}` slot — parsing
-/// that as-is yields the plausible number `0`, fabricating the nonexistent fact
-/// "it responded with HTTP 0", and the screen shows `failure: 0` instead of saying the
-/// runner is down (2026-08-01 measurement: checking against a closed port gave
-/// `status=Some(0), message=None`).
+/// Checks the exit code first: curl prints `000` on connection failure, which would
+/// read as a fabricated HTTP 0.
 fn interpret_curl_output(
     exit_code: Option<i32>,
     success: bool,
@@ -448,9 +359,7 @@ fn send_via_curl(request: &VerifyRequest) -> Result<HttpEcho, String> {
     })
 }
 
-/// The body of the verification flow — the sender is injected so the contract can be
-/// tested without a network. **The order is the contract**: reserve → (only on success)
-/// send → finalize.
+/// Sender injected for tests. Order is the contract: reserve, send only on success, finalize.
 pub fn verify_with<S>(
     provider: &str,
     vault_dir: &Path,
@@ -461,17 +370,15 @@ where
     S: FnOnce(&VerifyRequest) -> Result<HttpEcho, String>,
 {
     let request = verify_request(provider, target)?;
-    // GET without body — characters sent from vault are 0. Even the hash of an empty payload
-    // is a fact that can be post-verified as "sent 0 bytes".
+    // A bodiless GET; the empty-payload hash proves 0 bytes were sent.
     let payload = "";
     let logged_at = llm_audit::now_iso();
     let draft = AuditDraft {
         v: 1,
         at: logged_at.clone(),
         provider: provider.to_string(),
-        // Records the destination by **host**, not provider name. Names are labels we assign, but hosts are where the request actually went, so when a branch for manually entering addresses opens later, it can be read honestly with the same syntax.
+        // Records the host, not the provider label: where the request really went.
         host: host_of(&request.url).to_string(),
-        // No model name for calls that don't invoke models — do not fabricate a missing value.
         model: None,
         purpose: "verify".into(),
         question: None,
@@ -480,11 +387,10 @@ where
             prompt_chars: 0,
             vault_chars: 0,
         },
-        // Calls that don't use tools — leave even an empty list (see § llm_audit).
         tools: None,
         payload_sha256: llm_audit::sha256_hex(payload),
     };
-    // No transmission if recording fails. This `?` is the code path for Charter ②.
+    // No transmission if recording fails.
     let reservation = llm_audit::reserve(vault_dir, draft)
         .map_err(|error| format!("{AUDIT_BLOCKED_PREFIX}{error}"))?;
 
@@ -507,7 +413,7 @@ where
             } else {
                 "error"
             };
-            // The body goes to the UI **only on success**. Failure bodies vary by runner and can be misread as a list by the UI; what's needed then is not a list but a status code.
+            // Only successful bodies reach the UI; a failure body could be misread as a list.
             let body = if ok && request.returns_body {
                 body
             } else {
@@ -518,8 +424,7 @@ where
         Err(err) => ("error", false, false, None, 0, Some(err), None),
     };
 
-    // If confirmation fails, the promise of "a completed recording call" breaks — the reservation line
-    // remains, so the fact is preserved, but the UI does not report success.
+    // A failed finalize keeps the reservation line but must not report success.
     llm_audit::finalize(
         reservation,
         &AuditOutcome {
@@ -542,11 +447,8 @@ where
     })
 }
 
-/// Connection check — **only when the user clicks [Connection Check]**. The reason vault paths are needed:
-/// audit logs live inside the vault: if there's nowhere to record, don't send.
-///
-/// `base_url` comes **only from the address branch**. If an address arrives with a named vendor,
-/// reject it — allowing it would cause keys from the keychain to go to hosts the UI never promised.
+/// Runs only on the user's click. Needs the vault path because the audit log lives
+/// there; a named vendor with an address is rejected, or the key could leave.
 #[tauri::command(async)]
 pub fn secret_verify(
     provider: String,
@@ -578,25 +480,17 @@ pub fn secret_verify(
     )
 }
 
-// ── Conversation Round-Trip (Bolt Agent) ─────────────────────────────────────────────
-//
-// Rust does only three things here: **confidentiality · transmission · audit.** It does not
-// construct the request body, nor interpret the response — that is WebView's job (vendor format differences
-// are better absorbed in one place by the adapter; if Rust starts knowing vendor schemas,
-// the app must be rebuilt every time a vendor changes).
-//
-// **Rust knows nothing of loops.** One round-trip = one invocation of this command. The concepts of upper bound, interruption, and turn
-// all belong to WebView, so without user turns, there is no path for this command to loop in the first place.
+// Rust owns confidentiality, transmission and audit only; the WebView builds
+// bodies, parses responses and owns the loop, one command call per round trip.
 
-/// Conversation request. Unlike confirmation requests, it **has a body** — vault excerpts are included in that body.
+/// Carries vault excerpts in its body.
 pub struct ChatRequest {
     url: String,
     headers: Vec<(String, String)>,
     body: String,
 }
 
-/// What is returned from the response to the WebView — status code and **body**. The body is passed for normalization
-/// purposes only, and only its length remains in the audit log (not a conversation store).
+/// The body is returned for normalization; only its length is logged.
 pub struct ChatEcho {
     pub status: u16,
     pub body: String,
@@ -607,14 +501,12 @@ pub struct ChatEcho {
 pub struct LlmChatEcho {
     pub status: u16,
     pub body: String,
-    /// The destination of this round trip — the screen footer and audit line both state the same value.
+    /// The screen footer and audit line state the same value.
     pub host: String,
     pub duration_ms: u64,
-    /// The timestamp of the audit line left by this round trip. It is the basis for the screen to assert "recorded" as fact.
     pub logged_at: String,
 }
 
-/// The transmission scope measured and passed by the WebView + tool calls carried in this round trip.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AuditScopeInput {
@@ -628,14 +520,12 @@ pub struct AuditScopeInput {
     pub tools: Vec<AuditToolRef>,
 }
 
-/// Where the model name is embedded in the request — the reason allowed characters differ.
+/// Placement decides which characters are allowed.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum ModelPlacement {
-    /// Inside the JSON body. Since runners use names like `qwen3:8b` · `hf.co/user/repo`,
-    /// `:` and `/` are valid characters.
+    /// Runner names like `qwen3:8b` need `:` and `/`.
     Body,
-    /// Inside the URL path (Gemini). Since `:` and `/` are **syntax**, passing them causes keys to go to
-    /// endpoints we did not intend.
+    /// There `:` and `/` are syntax and would redirect the key.
     UrlPath,
 }
 
@@ -647,8 +537,6 @@ fn model_placement(provider: &str) -> ModelPlacement {
     }
 }
 
-/// Narrow the model name. The degree of narrowing depends on where the name is embedded.
-/// (§ `ModelPlacement`).
 fn validate_model_id(model: &str, placement: ModelPlacement) -> Result<&str, String> {
     let trimmed = model.trim();
     if trimmed.is_empty() {
@@ -702,11 +590,8 @@ fn chat_request(
             ],
             body: body.to_string(),
         }),
-        // The address branch goes to the **OpenAI-compatible chat endpoint**. Why the
-        // native one (`/api/chat`) was not chosen: that is Ollama's syntax alone, so a
-        // change of runner would mean writing yet another adapter, while the compatible
-        // branch is already offered in the same shape by LM Studio · llama.cpp server ·
-        // vLLM. There is no auth header here either.
+        // The OpenAI-compatible endpoint rather than Ollama's `/api/chat`, so any runner
+        // works. No auth header.
         (LOCAL_PROVIDER, Target::Address { base_url }) => Ok(ChatRequest {
             url: local_endpoint(&normalize_base_url(base_url)?, LOCAL_CHAT_PATH),
             headers: vec![json],
@@ -740,7 +625,7 @@ fn send_local_chat_via_curl(request: &ChatRequest) -> Result<ChatEcho, String> {
     send_chat_via_curl_with_timeout(request, LOCAL_CHAT_TIMEOUT_SECONDS)
 }
 
-/// The body of the conversation round trip — sender-injected. **Order is a contract**: reserve → (only if successful) transmit → finalize. We intentionally repeat syntax like `verify_with`.
+/// Order is the contract: reserve, send only on success, finalize.
 #[allow(clippy::too_many_arguments)]
 pub fn chat_with<S>(
     provider: &str,
@@ -771,11 +656,9 @@ where
             prompt_chars: scope.prompt_chars,
             vault_chars: scope.vault_chars,
         },
-        // An empty list is the fact "a round trip sent with no tools", so it stays as-is —
-        // a different meaning from the absence (`None`) on connection-check lines.
+        // An empty list means "sent with no tools", unlike `None` on connection checks.
         tools: Some(scope.tools),
-        // Hash of the **full transmitted payload**. The only anchor for checking after the
-        // fact that the bytes that actually went out match the scope the screen showed.
+        // The only anchor that the bytes sent match the scope the screen showed.
         payload_sha256: llm_audit::sha256_hex(body),
     };
     // No recording, no transmission.
@@ -810,8 +693,7 @@ where
         },
     )?;
 
-    // If the network itself failed there is no status code — we do not fabricate a 0,
-    // we return failure to the caller (the screen says "the connection failed").
+    // No status on network failure; never fabricate a 0.
     if let Some(message) = message {
         return Err(message);
     }
@@ -825,9 +707,7 @@ where
     })
 }
 
-/// One chat round trip — **only within a turn where the user pressed [Send]**. The vault
-/// path is required for the same reason as the verification flow: with nowhere to record,
-/// nothing is sent.
+/// Only within a turn where the user pressed [Send]; no vault path, no send.
 #[tauri::command(async)]
 pub fn llm_chat(
     provider: String,
@@ -892,7 +772,6 @@ mod tests {
 
     #[test]
     fn the_key_never_appears_in_argv() {
-        // Other processes must not be able to see the key with `ps` — secrets go only in the stdin config.
         let request = verify_request(
             "anthropic",
             &Target::Vendor {
@@ -924,7 +803,7 @@ mod tests {
         .unwrap();
         let config = curl_config(&request);
         assert!(config.contains(r#"Bearer abc\"def\\ghi"#), "{config}");
-        // Header/URL take one line each — a value cannot add lines to create a new option.
+        // One line each, so a value cannot add an option line.
         assert_eq!(config.lines().count(), 2);
     }
 
@@ -941,9 +820,7 @@ mod tests {
 
     #[test]
     fn the_gemini_key_travels_in_a_header_never_in_the_url() {
-        // The official docs also describe the `?key=` query form, but we use only the
-        // header — the URL is a place preserved verbatim in audit lines and proxy logs,
-        // so no secret may ride on it.
+        // Header only: the URL is kept verbatim in audit and proxy logs.
         let request = verify_request(
             "gemini",
             &Target::Vendor {
@@ -969,8 +846,7 @@ mod tests {
 
     #[test]
     fn curl_never_follows_a_redirect() {
-        // Following a redirect would retransmit the key to a host we did not choose.
-        // This assertion pins the absence of that option against regression.
+        // A followed redirect would resend the key to a host we did not choose.
         for arg in curl_argv() {
             assert_ne!(arg, "-L");
             assert_ne!(arg, "--location");
@@ -991,8 +867,6 @@ mod tests {
 
     #[test]
     fn the_recorded_host_is_derived_from_the_url_the_request_actually_uses() {
-        // Keeping the host as a separate constant drifts silently when the URL is fixed —
-        // being a derived value, the record cannot depart from the actual destination.
         assert_eq!(
             host_of("https://api.anthropic.com/v1/models?limit=1"),
             "api.anthropic.com"
@@ -1007,9 +881,7 @@ mod tests {
 
     #[test]
     fn the_hosts_match_the_shared_fixture_the_screen_promises() {
-        // The screen states "where this key goes" **before** the key is pasted. Whether
-        // that sentence matches the actual destination is caught jointly by the web-side
-        // tests using the same fixture.
+        // Web tests read the same fixture, so the promised destination matches.
         let fixture: serde_json::Value =
             serde_json::from_str(include_str!("../../tests/fixtures/llm-provider-hosts.json"))
                 .unwrap();
@@ -1028,9 +900,6 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn a_gemini_key_rejected_with_400_is_a_rejection_not_a_failure() {
-        // 2026-07-26 measurement: Gemini gives 400 (`API_KEY_INVALID`) for a wrong key.
-        // Judging only by 401/403, the user sees "Couldn't verify" and assumes the app is
-        // broken rather than their key.
         let vault = temp_vault("gemini400");
         let result = verify_with(
             "gemini",
@@ -1054,8 +923,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn a_400_from_a_bearer_vendor_is_still_a_plain_failure() {
-        // Denied statuses are a per-vendor list — if Gemini's 400 rule leaked to other
-        // vendors, even a request mistake on our side would be misdiagnosed as "the key is wrong".
+        // Gemini's 400 rule must not leak to other vendors.
         let vault = temp_vault("openai400");
         let result = verify_with(
             "openai",
@@ -1085,14 +953,12 @@ mod tests {
         let raw = fs::read_to_string(llm_audit::audit_log_path(&vault)).unwrap();
         let line: serde_json::Value = serde_json::from_str(raw.trim()).unwrap();
         assert_eq!(line["host"], "api.openai.com");
-        // An additive extension, so the schema version stays the same — old lines must keep reading.
         assert_eq!(line["v"], 1);
         fs::remove_dir_all(&vault).ok();
     }
 
     #[test]
     fn refuses_to_send_when_the_audit_line_cannot_be_written() {
-        // The heart of log-before-send: if it cannot be recorded, **there is no transmission at all**.
         let vault = temp_vault("blocked");
         fs::write(vault.join(".ontology-atlas"), b"not a directory").unwrap();
         let sent = Cell::new(false);
@@ -1137,7 +1003,6 @@ mod tests {
         let line: serde_json::Value = serde_json::from_str(raw.trim()).unwrap();
         assert_eq!(line["outcome"], "ok");
         assert_eq!(line["purpose"], "verify");
-        // The basis for the screen to say "0 characters of vault data".
         assert_eq!(line["scope"]["vaultChars"], 0);
         assert_eq!(line["scope"]["promptChars"], 0);
         assert_eq!(line["question"], serde_json::Value::Null);
@@ -1166,7 +1031,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn a_network_failure_is_still_recorded() {
-        // A failed call is still the fact that "something went out" — omitting it from the record makes the audit a lie.
+        // A failed call still went out, so it is recorded.
         let vault = temp_vault("neterr");
         let result = verify_with(
             "anthropic",
@@ -1188,13 +1053,9 @@ mod tests {
 
     #[test]
     fn no_command_here_hands_the_key_back_to_the_webview() {
-        // The same discipline as the source-reflection contract in secrets.rs: commands in
-        // this file return only types that cannot hold a key. Even as new commands are
-        // added, a return type outside this allowlist gets caught here.
+        // Commands here return only types that cannot hold a key.
         let source = include_str!("llm.rs").replace("\r\n", "\n");
-        // Both spellings count. `#[tauri::command(async)]` moves the body off the macOS main
-        // thread, and a matcher that saw only the bare form would report zero commands here and
-        // pass while checking nothing — the failure this assertion exists to prevent.
+        // Both attribute spellings count, or the matcher could see zero commands and pass.
         let commands: Vec<usize> = source
             .match_indices("\n#[tauri::command")
             .filter(|(idx, _)| source[*idx..].contains("]\npub fn "))
@@ -1212,12 +1073,10 @@ mod tests {
         }
     }
 
-    // ── Chat round trip ───────────────────────────────────────────────────
 
     #[test]
     fn a_chat_key_never_appears_in_argv_and_neither_does_the_vault_excerpt() {
-        // If a vault excerpt rode on argv, another process on the same machine could read
-        // the user's documents with `ps` — like the key, it must ride only in the stdin config.
+        // A vault excerpt on argv would be readable with `ps`.
         let request = chat_request(
             "anthropic",
             "claude-sonnet-4-5",
@@ -1239,9 +1098,8 @@ mod tests {
 
     #[test]
     fn a_json_body_survives_the_curl_config_escape_round_trip() {
-        // Inside quotes, curl config turns `\n` back into a real newline. Without escaping
-        // backslashes first, a `\n` inside a JSON string becomes a raw newline and the
-        // body we send is itself broken JSON.
+        // Inside quotes curl turns `\n` back into a newline, so backslashes are escaped
+        // first or the sent JSON breaks.
         let body = r#"{"text":"first\nsecond","quote":"say \"hi\""}"#;
         let request = chat_request(
             "openai",
@@ -1255,7 +1113,6 @@ mod tests {
             .lines()
             .find(|line| line.starts_with("data = "))
             .expect("a data line must exist");
-        // Unescape by the same rule curl applies and check it matches the original.
         let quoted = data_line.trim_start_matches("data = ");
         let inner = &quoted[1..quoted.len() - 1];
         let mut restored = String::new();
@@ -1268,14 +1125,12 @@ mod tests {
             }
         }
         assert_eq!(restored, body);
-        // The config is still line-based — the body cannot create a new option line.
-        // url · header×2 · request · data = 5.
+        // url, two headers, request, data: still one option per line.
         assert_eq!(config.lines().count(), 5, "{config}");
     }
 
     #[test]
     fn every_chat_endpoint_is_https_and_shares_the_verify_host() {
-        // The destination the key-registration screen promised and where chat goes must be the same.
         let fixture: serde_json::Value =
             serde_json::from_str(include_str!("../../tests/fixtures/llm-provider-hosts.json"))
                 .unwrap();
@@ -1303,8 +1158,7 @@ mod tests {
 
     #[test]
     fn a_model_name_cannot_escape_the_gemini_url_path() {
-        // Only Gemini puts the model in the path — if slashes or queries pass through,
-        // the key goes out to an endpoint we did not choose.
+        // A slash or query in a Gemini model path would send the key elsewhere.
         for bad in ["../../v1/evil", "x?key=leak", "a b", "m#frag", ""] {
             assert!(
                 validate_model_id(bad, ModelPlacement::UrlPath).is_err(),
@@ -1328,7 +1182,6 @@ mod tests {
 
     #[test]
     fn a_chat_round_trip_refuses_to_send_when_the_audit_line_cannot_be_written() {
-        // log-before-send — exactly the same on the chat path.
         let vault = temp_vault("chat-blocked");
         fs::write(vault.join(".ontology-atlas"), b"not a directory").unwrap();
         let sent = Cell::new(false);
@@ -1406,9 +1259,7 @@ mod tests {
         assert_eq!(line["scope"]["nodes"][0], "capabilities/payment");
         assert_eq!(line["tools"][0]["name"], "get_concept");
         assert_eq!(line["model"], "claude-sonnet-4-5");
-        // The payload anchor must be the hash of the **string actually sent** for post-hoc comparison to work.
         assert_eq!(line["payloadSha256"], llm_audit::sha256_hex(body));
-        // Only the length of the response body remains — this is not a conversation store.
         assert_eq!(line["responseChars"], 14);
         assert!(
             !raw.contains("content\\\":[]"),
@@ -1420,9 +1271,8 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn the_agent_line_this_module_writes_matches_the_shared_reader_fixture() {
-        // Blocks drift between writer (here) ↔ reader (web `llm-audit-log.ts`). The
-        // fixture's `purpose:"agent"` line must match what this code actually writes —
-        // only timestamp and duration vary per call, so those two are excluded from the comparison.
+        // Writer and reader (`llm-audit-log.ts`) share this fixture; only timestamp and
+        // duration are excluded.
         let fixture = include_str!("../../tests/fixtures/llm-audit-log.sample.jsonl");
         let expected: serde_json::Value = fixture
             .lines()
@@ -1526,7 +1376,6 @@ mod tests {
             },
         )
         .unwrap();
-        // A denial is still a response — passed through as-is so the screen can pick guidance by status code.
         assert_eq!(result.status, 401);
         let raw = fs::read_to_string(llm_audit::audit_log_path(&vault)).unwrap();
         let line: serde_json::Value = serde_json::from_str(raw.trim()).unwrap();
@@ -1534,12 +1383,9 @@ mod tests {
         fs::remove_dir_all(&vault).ok();
     }
 
-    // ── Connect by address (keyless local runner) ────────────────────────
 
     #[test]
     fn the_address_branch_carries_no_authorization_header_at_all() {
-        // This is the very reason this branch exists. If even one header is attached, the
-        // old shape "provider = one secret key" has quietly come back to life.
         let request = verify_request(
             LOCAL_PROVIDER,
             &Target::Address {
@@ -1554,8 +1400,7 @@ mod tests {
 
     #[test]
     fn a_named_vendor_key_can_never_travel_to_an_address_the_user_typed() {
-        // This assertion is the single most important one in this slice. If it passed,
-        // a keychain key would go out to a host the screen never promised.
+        // Otherwise a keychain key would go to a host the screen never promised.
         for provider in ["anthropic", "openai", "gemini"] {
             assert!(
                 verify_request(
@@ -1577,15 +1422,13 @@ mod tests {
             )
             .is_err());
         }
-        // The opposite direction is blocked too — the address branch has no place to carry a key.
         assert!(verify_request(LOCAL_PROVIDER, &Target::Vendor { secret: "sk" }).is_err());
         assert!(chat_request(LOCAL_PROVIDER, "m", &Target::Vendor { secret: "sk" }, "{}").is_err());
     }
 
     #[test]
     fn plaintext_http_is_allowed_only_to_this_machine() {
-        // What the charter allows is **localhost**. We do not open a path that sends vault
-        // excerpts in plaintext across the internet — going outside requires https.
+        // Plain `http` only on localhost.
         for ok in [
             "http://localhost:11434",
             "http://127.0.0.1:1234",
@@ -1613,7 +1456,7 @@ mod tests {
             "http://user:pw@localhost:11434",  // a secret carried in the URL
             "http://localhost:11434?key=leak", // a query we did not choose
             "http://localhost:11434#frag",
-            "http://local host:11434", // whitespace = a new token in curl config
+            "http://local host:11434", // whitespace starts a new curl config token
             "http://localhost:11434\nheader = evil",
             "http://localhost:11434\" \nheader = evil",
         ] {
@@ -1626,8 +1469,6 @@ mod tests {
 
     #[test]
     fn an_lm_studio_style_base_url_does_not_get_a_second_v1() {
-        // Ollama documents `http://localhost:11434`, LM Studio documents `…/v1`. Both must
-        // work exactly as pasted for this to become the door for "the open-source ones".
         assert_eq!(
             local_endpoint("http://localhost:11434", LOCAL_CHAT_PATH),
             "http://localhost:11434/v1/chat/completions"
@@ -1636,7 +1477,6 @@ mod tests {
             local_endpoint("http://localhost:1234/v1", LOCAL_CHAT_PATH),
             "http://localhost:1234/v1/chat/completions"
         );
-        // People also commonly append a trailing slash.
         assert_eq!(
             local_endpoint(
                 &normalize_base_url("http://localhost:11434/").unwrap(),
@@ -1648,37 +1488,30 @@ mod tests {
 
     #[test]
     fn a_local_model_name_may_carry_a_colon_but_a_gemini_one_may_not() {
-        // Ollama's names look like `qwen3:8b`. Keeping the old rule (`:` forbidden) as-is
-        // would make this branch fail entirely on the first round trip — that `:` ban
-        // exists because of Gemini, where the model goes into the **URL path**, so the
-        // right fix is to split by placement.
+        // The `:` ban applies only to Gemini's URL path.
         assert_eq!(
             validate_model_id("qwen3:8b", ModelPlacement::Body).unwrap(),
             "qwen3:8b"
         );
         assert!(validate_model_id("hf.co/user/repo:Q4", ModelPlacement::Body).is_ok());
         assert!(validate_model_id("qwen3:8b", ModelPlacement::UrlPath).is_err());
-        // Things blocked regardless of placement.
         for bad in ["", "a b", "m#frag", "x?key=leak"] {
             assert!(
                 validate_model_id(bad, ModelPlacement::Body).is_err(),
                 "{bad:?}"
             );
         }
-        // Does the actual wiring pick the right placement.
         assert!(model_placement("gemini") == ModelPlacement::UrlPath);
         assert!(model_placement(LOCAL_PROVIDER) == ModelPlacement::Body);
     }
 
     #[test]
     fn curl_exit_codes_tell_off_from_wrong_port_from_timeout_apart() {
-        // The only stable signal that lets the screen say "why it is failing". The stderr
-        // sentence flattens these three into a single message.
+        // The exit code separates these cases; stderr collapses them.
         let refused = curl_failure_message(Some(7), "Couldn't connect to server");
         let unknown_host = curl_failure_message(Some(6), "Could not resolve host");
         let timeout = curl_failure_message(Some(28), "Operation timed out");
-        // The codes, not the wording: the sentence lives in `messages/<locale>.json`
-        // now, and asserting a sentence here would pin one language into Rust again.
+        // Codes, not wording: sentences live in `messages/<locale>.json`.
         assert_eq!(refused, "connection-refused");
         assert_eq!(unknown_host, "host-not-found");
         assert!(timeout.starts_with(TIMED_OUT_PREFIX));
@@ -1696,9 +1529,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn a_local_check_records_localhost_and_hands_back_the_model_list() {
-        // The place where this product's trust story is proven by the log — because the
-        // destination is a host, not a provider **name**, this line itself is the evidence
-        // that "nothing left the machine".
+        // The host in the log is the evidence nothing left the machine.
         let vault = temp_vault("local-ok");
         let listing = r#"{"object":"list","data":[{"id":"qwen3:8b"},{"id":"gemma4:12b"}]}"#;
         let result = verify_with(
@@ -1718,7 +1549,6 @@ mod tests {
         )
         .unwrap();
         assert!(result.ok);
-        // The screen parses the list — Rust does not know vendor schemas.
         assert_eq!(result.body.as_deref(), Some(listing));
 
         let raw = fs::read_to_string(llm_audit::audit_log_path(&vault)).unwrap();
@@ -1727,7 +1557,6 @@ mod tests {
         assert_eq!(line["host"], "localhost:11434");
         assert_eq!(line["outcome"], "ok");
         assert_eq!(line["scope"]["vaultChars"], 0);
-        // The list body is **not recorded** — only the length remains.
         assert!(!raw.contains("qwen3:8b"), "the probe response body was logged");
         assert_eq!(line["responseChars"], listing.chars().count());
         fs::remove_dir_all(&vault).ok();
@@ -1736,9 +1565,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn a_local_check_that_hits_the_wrong_port_returns_a_status_not_a_list() {
-        // Common case where another program runs on the same address — connection succeeds but returns 404.
-        // In that case, what the screen needs is not a list but a status code, and we eliminate
-        // any room for misreading the failure body as a list.
+        // Another program on the address answers 404; the failure body must not read as a list.
         let vault = temp_vault("local-404");
         let result = verify_with(
             LOCAL_PROVIDER,
@@ -1783,7 +1610,6 @@ mod tests {
             },
             |request| {
                 assert_eq!(request.url, "http://localhost:11434/v1/chat/completions");
-                // This round trip also lacks an auth header — only content-type.
                 assert_eq!(request.headers.len(), 1);
                 assert_eq!(request.headers[0].0, "content-type");
                 Ok(ChatEcho {
@@ -1801,16 +1627,13 @@ mod tests {
         assert_eq!(line["host"], "localhost:11434");
         assert_eq!(line["model"], "qwen3:8b");
         assert_eq!(line["scope"]["vaultChars"], 1_020);
-        // Since old lines must continue to be read, the schema version remains unchanged (additive extension).
         assert_eq!(line["v"], 1);
         fs::remove_dir_all(&vault).ok();
     }
 
     #[test]
     fn a_local_round_trip_still_refuses_to_send_when_the_audit_line_cannot_be_written() {
-        // log-before-send is the same regardless of branch count. If we relax it under the
-        // rationale that "it won't go out anyway" because it's local, the sales logic of this branch —
-        // that records are evidence — collapses.
+        // Log-before-send holds for local runners too.
         let vault = temp_vault("local-blocked");
         fs::write(vault.join(".ontology-atlas"), b"not a directory").unwrap();
         let sent = Cell::new(false);
@@ -1832,15 +1655,11 @@ mod tests {
 
     #[test]
     fn a_connection_that_never_happened_is_not_http_zero() {
-        // curl writes `000` in the `%{http_code}` position even on connection failure. Parsing it as-is
-        // creates the false fact that "HTTP 0 was returned," and the screen
-        // displays `failure: 0` instead of saying the runner is down — then this branch's
-        // promise to "explain why it failed" breaks immediately at the first failure.
+        // curl writes `000` on connection failure; it must not read as HTTP 0.
         let refused = interpret_curl_output(Some(7), false, "\n000", "Couldn't connect to server");
         assert!(refused.is_err());
         assert_eq!(refused.unwrap_err(), "connection-refused");
 
-        // Normal responses pass through as-is.
         let ok = interpret_curl_output(Some(0), true, "{\"data\":[]}\n200", "").unwrap();
         assert_eq!(ok.0, 200);
         assert_eq!(ok.1, "{\"data\":[]}");

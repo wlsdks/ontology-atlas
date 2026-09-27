@@ -15,9 +15,8 @@
                               const insightsSelectedTabs = insightsQuestionTabs.filter(
                                 (tab) => tab.getAttribute("aria-selected") === "true"
                               );
-                              // The first row names the subject and is a radiogroup, not a second
-                              // tab row. Three of the four subjects draw no question tabs at all,
-                              // so the panel is found by its own marker rather than through a tab.
+                              // The subject row is a radiogroup and most subjects draw no question tabs,
+                              // so the panel is found by its own marker.
                               const insightsSubjectRadios = Array.from(
                                 insightsMaintenanceBoard?.querySelectorAll('[role="radio"]') || []
                               );
@@ -78,8 +77,7 @@
                                 : libraryOntologyStarterVisible
                                   ? "ontology-starter"
                                   : "";
-                              // Model connections live on the Agents destination's models tab since
-                              // 2026-09-25; the marker names are kept so the payload contract is stable.
+                              // Model connections live on the Agents page; marker names stay for the payload contract.
                               const aiSettingsPopover = document.querySelector('[data-testid="agents-page"]');
                               const aiSettingsAiView = document.querySelector('[data-testid="ai-connection-view"]');
                               const aiSettingsUrlInput = document.querySelector('[data-testid="ai-local-url"]');
@@ -422,15 +420,8 @@
                                 topologyCreateNodeBackdropRect.width > 0 &&
                                 topologyCreateNodeBackdropRect.height > 0
                               );
-                              /*
-                               * ⚠️ 2026-08-11 — **check that it covers what it declared it would block, not the viewport.**
-                               * This backdrop's contract is written in the code:
-                               * `data-backdrop-contract="blocks-map-and-clears-create-intent"` — that is, it blocks
-                               * the **map** and leaves the rail alive (escaping through the rail clears the create
-                               * intent). Yet this verification demanded the full viewport, so it **always failed**
-                               * because the measured 1448×900 backdrop fell 64px short of the 1512 viewport.
-                               * The rail width is a specification, not a defect.
-                               */
+                              // The backdrop blocks the map and leaves the rail alive
+                              // (`data-backdrop-contract`), so compare against the map rect, not the viewport.
                               const topologyCreateNodeBackdropTargetRect = (
                                 document.querySelector('[data-surface-role="map-canvas"]') ||
                                 document.querySelector('[data-testid="ontology-map"]')
@@ -1349,14 +1340,7 @@
                                     topologyCreateNodePanelRect?.width || 0,
                                   topologyCreateNodePanelHeight:
                                     topologyCreateNodePanelRect?.height || 0,
-                                  /*
-                                   * ⚠️ 2026-08-11 — **the reference for centring is also the map.** Measured
-                                   * against the viewport centre, this value was always off by half the rail
-                                   * width (measured 31.5 ≈ 64/2), exceeding the 24 tolerance and so always
-                                   * failing. The composer stands at the centre of the region it blocks (the
-                                   * map), and that region is the same `topologyCreateNodeBackdropTargetRect`
-                                   * as above.
-                                   */
+                                  // The composer centres on the map region it blocks, not the viewport.
                                   topologyCreateNodePanelCenterOffset:
                                     topologyCreateNodePanelRect
                                       ? Math.abs(
@@ -2060,9 +2044,7 @@
                                 }
                               });
                               } catch (markerError) {
-                                // If marker collection throws in a particular mode's DOM, an empty
-                                // payload gets logged 12 times and the cause disappears — expose the
-                                // error as the payload.
+                                // Return the error as the payload so a throwing mode does not log empty payloads.
                                 return JSON.stringify({
                                   href: location.href,
                                   title: document.title,

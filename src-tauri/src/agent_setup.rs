@@ -1,11 +1,5 @@
-//! 「Agent Connection」 — The app points to its bundled MCP server and verifies it in place.
-//!
-//! Why the app does this: To break the contradiction where installed apps fail to attach agents.
-//! Web cannot structurally know absolute paths of open folders, so it cannot launch the bundled
-//! server against one directly.
-//!
-//! Charter compliance:
-//!   * **Zero transmission.** Spawning is local. No network usage.
+//! Points agents at the bundled MCP server and verifies it in place: the web build
+//! cannot know an open folder's absolute path. Spawning is local; no network.
 
 use std::fs;
 use std::io::{BufRead, BufReader, Write};
@@ -17,9 +11,8 @@ use std::time::Duration;
 
 use serde::Serialize;
 
-/// Filename of the bundled MCP server. Must match `MCP_BINARY_NAME` in
-/// `scripts/lib/mcp-binary.mjs` — Tauri's `externalBin` bakes it into
-/// `Contents/MacOS/<name>`.
+/// Must match `MCP_BINARY_NAME` in `scripts/lib/mcp-binary.mjs`; Tauri's `externalBin`
+/// bakes it into Contents/MacOS.
 const MCP_BINARY_NAME: &str = "ontology-atlas-mcp";
 
 fn bundled_binary_name() -> &'static str {
@@ -30,16 +23,15 @@ fn bundled_binary_name() -> &'static str {
     }
 }
 
-/// Budget for one round of self-verification. The first spawn can be slow while macOS scans the signature.
+/// The first spawn can be slow while macOS scans the signature.
 const VERIFY_TIMEOUT: Duration = Duration::from_secs(25);
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BundledServer {
-    /// Absolute path of the bundled binary. `None` when it is missing.
     pub path: Option<String>,
     pub available: bool,
-    /// Human-readable reason when it could not be found (diagnostic; the UI shows it verbatim).
+    /// Diagnostic; the UI shows it verbatim.
     pub reason: Option<String>,
 }
 
@@ -49,11 +41,10 @@ pub struct McpVerifyResult {
     pub ok: bool,
     pub server_version: Option<String>,
     pub tool_count: Option<usize>,
-    /// Whether a real vault node came back from an actual `get_concept` call — the light
-    /// turns green only after proving "it reads this folder", not merely that it booted.
+    /// Green only after a real `get_concept` proves this folder is readable.
     pub sample_slug: Option<String>,
     pub sample_title: Option<String>,
-    /// Failure reason. This sentence is shown instead of a fake progress bar.
+    /// Shown instead of a fake progress bar.
     pub failure: Option<String>,
 }
 
@@ -61,8 +52,7 @@ fn err_str(message: impl Into<String>) -> String {
     message.into()
 }
 
-/// The bundled binary is a sibling of the app executable (`Contents/MacOS/`). `tauri dev`
-/// follows the same rule — it is copied next to the dev executable.
+/// A sibling of the app executable; `tauri dev` copies it next to the dev executable.
 fn resolve_bundled_binary() -> Result<PathBuf, String> {
     let exe = std::env::current_exe()
         .map_err(|e| err_str(format!("could not resolve the app executable: {e}")))?;
@@ -120,11 +110,8 @@ fn unix_name(value: &std::ffi::OsStr) -> Result<std::ffi::CString, String> {
         .map_err(|_| err_str("agent config path contains an unsupported NUL byte"))
 }
 
-/// Opens absolute directories piece by piece from `/` using `openat(O_NOFOLLOW)`.
-///
-/// Opening the completed path at once with `open` means only the last piece is no-follow, so its **parent**
-/// could be swapped to a link immediately after inspection. By chaining directory FDs one step at a time,
-/// even if names are later replaced, writes remain within the originally opened tree.
+/// Opens each component with `openat(O_NOFOLLOW)` from `/`, or a parent swapped to
+/// a link after inspection would redirect the write.
 #[cfg(unix)]
 pub(crate) fn open_absolute_directory_no_follow(path: &Path) -> Result<fs::File, String> {
     use std::os::fd::{AsRawFd, FromRawFd};
@@ -133,10 +120,8 @@ pub(crate) fn open_absolute_directory_no_follow(path: &Path) -> Result<fs::File,
         return Err(err_str("native write root must be absolute"));
     }
 
-    // A `c"…"` literal, not `CString::new("/").expect(…)`. The `expect` could never fire, but
-    // the callers here are synchronous Tauri commands, which Tauri runs on the macOS main
-    // thread — a panic there aborts the app rather than failing one call, so the crate keeps
-    // no panicking step on that path even when the input is a constant.
+    // Not `CString::new(..).expect(..)`: callers are sync commands on the macOS main
+    // thread, where a panic aborts the app.
     let slash = c"/";
     let root_fd = unsafe {
         libc::open(
@@ -182,7 +167,6 @@ pub(crate) fn open_absolute_directory_no_follow(path: &Path) -> Result<fs::File,
     Ok(current)
 }
 
-/// Creates and opens relative directories under a stable root FD piece by piece with no-follow.
 #[cfg(unix)]
 pub(crate) fn open_or_create_relative_directory(
     root: &fs::File,
@@ -263,8 +247,7 @@ pub(crate) fn open_relative_directory(
     Ok(Some(current))
 }
 
-/// Opens the parent of allowed relative config paths using a stable directory FD. Missing intermediate folders
-/// are created based on the already-opened parent FD, not the path string.
+/// Missing folders are created from the open parent FD, not the path string.
 #[cfg(unix)]
 pub(crate) fn open_entry_parent(
     config_root: &fs::File,
@@ -282,8 +265,7 @@ pub(crate) fn open_entry_parent(
     Ok((parent, unix_name(file_name)?))
 }
 
-/// Completes a new inode within the stable parent FD and replaces only the name via `renameat`.
-/// Even if the existing target is a hardlink, its inode is not truncated, so other paths remain unchanged.
+/// Replaces only the name via `renameat`, so a hardlinked target's inode is not truncated.
 #[cfg(unix)]
 fn ensure_private_temporary(file: &fs::File, stage: &str) -> std::io::Result<()> {
     use std::os::unix::fs::MetadataExt;
@@ -307,7 +289,6 @@ pub(crate) fn write_entry_atomically(
     write_entry_bytes_atomically(parent, file_name, contents.as_bytes(), create_mode)
 }
 
-/// Reads one regular file relative to an already-open parent directory without following links.
 #[cfg(unix)]
 pub(crate) fn read_entry_text(
     parent: &fs::File,
@@ -352,8 +333,7 @@ pub(crate) fn read_entry_text(
     Ok(Some(text))
 }
 
-/// Publish complete bytes under a new name. Unlike renameat, linkat cannot
-/// replace an entry another writer created before the publication point.
+/// Unlike renameat, linkat cannot replace an entry another writer created first.
 #[cfg(unix)]
 pub(crate) fn create_entry_atomically(
     parent: &fs::File,
@@ -437,19 +417,9 @@ pub(crate) fn create_entry_atomically(
     Ok(published)
 }
 
-/// The same guarded write for bytes that are not text.
-///
-/// A raw source imported into `sources/` is a PDF, a spreadsheet, a scan — never a
-/// string. It has to reach disk through **this** path and not `fs::write`, because every
-/// protection here is about the parent directory rather than the content: the write goes
-/// through an already-open parent descriptor, `O_NOFOLLOW` refuses a symlink planted at
-/// the name, and the rename is atomic, so a torn file is never left in a person's folder.
-/// Splitting text off as a thin caller keeps one implementation of that guarantee.
-///
-/// **`#[cfg(unix)]` like its caller**, and the omission broke the Windows build: every
-/// protection named above is a POSIX descriptor operation (`openat`, `O_NOFOLLOW`,
-/// `renameat`), so the body cannot exist on a target without them. Windows takes the
-/// `resolve_write_target_inside` path in `library.rs` instead.
+/// Binary sources take this path, not `fs::write`: the open parent FD, `O_NOFOLLOW`
+/// and atomic rename are the protections. Unix only; Windows uses `resolve_write_target_inside`
+/// in `library.rs`.
 #[cfg(unix)]
 pub(crate) fn write_entry_bytes_atomically(
     parent: &fs::File,
@@ -469,10 +439,8 @@ pub(crate) fn write_entry_bytes_atomically(
 
     for _ in 0..64 {
         let sequence = TEMP_SEQUENCE.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        // `file_name` is a `&CStr`, so `printable_name` cannot contain an interior NUL and this
-        // conversion cannot fail. It is still an error rather than a panic: the callers are
-        // synchronous Tauri commands, and Tauri runs those on the macOS main thread, where an
-        // unwinding panic aborts the whole app instead of failing the one write.
+        // Cannot fail for a `&CStr` name, but stays an error: a panic on the macOS main
+        // thread aborts the app.
         let temporary_name = match std::ffi::CString::new(format!(
             ".{printable_name}.oatlas-tmp-{}-{nonce:x}-{sequence:x}",
             std::process::id()
@@ -546,10 +514,8 @@ fn rpc_line(id: u64, method: &str, params: serde_json::Value) -> String {
     )
 }
 
-/// Self-verification immediately after button press. `initialize` → `tools/list` → 1 `get_concept`.
-///
-/// Why go to actual invocation here: If only boot is checked, the system reports "server is up but cannot read this folder"
-/// with a green light. What users want to know is not whether the process is alive, but **whether their vault is readable**.
+/// Runs `initialize`, `tools/list` and one `get_concept`, because a live process
+/// that cannot read the vault must not show green.
 #[tauri::command(async)]
 pub fn verify_mcp_server(vault_path: String, sample_slug: Option<String>) -> McpVerifyResult {
     match verify_inner(&vault_path, sample_slug.as_deref()) {
@@ -757,8 +723,7 @@ mod tests {
         let root = open_absolute_directory_no_follow(&canonical_vault).unwrap();
         let (parent, file_name) = open_entry_parent(&root, ".codex/config.toml").unwrap();
 
-        // Swap names after inspect/opening the parent. Re-opening with string paths
-        // would write to outside/config.toml, but the already-opened parent FD holds the original directory.
+        // The already-open parent FD must hold the original directory after the rename.
         fs::rename(vault.join(".codex"), &original_parent).unwrap();
         symlink(&outside, vault.join(".codex")).unwrap();
         write_entry_atomically(&parent, &file_name, "inside", 0o600).unwrap();

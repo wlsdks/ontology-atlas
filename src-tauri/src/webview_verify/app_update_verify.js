@@ -65,7 +65,7 @@
       return;
     }
     result.sectionOpen = true;
-    // The build currently running — this line shows whether `getVersion()` actually answered.
+    // Shows whether `getVersion()` answered.
     result.versionText = find("app-settings-update-version")?.innerText || "";
 
     if (!result.checkClicked) {
