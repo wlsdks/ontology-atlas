@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
 import type { VaultDoc } from '@/entities/docs-vault';
-import { countDeskReadablePages, findDeskClaims, findDeskSourceHits, jevClaimEligibility, jevPayloadEligibility, planDeskSourceReads, questionTerms } from './question-desk';
+import { countDeskReadablePages, findDeskClaims, findDeskSourceHits, jevClaimEligibility, jevPayloadEligibility, planDeskSourceReads, questionDeskReportFileCurrent, questionTerms } from './question-desk';
 import { buildQuestionDeskBrief, buildQuestionDeskReportBrief, questionDeskReportFilename, serializeQuestionDeskReport, QUESTION_DESK_BRIEF_MAX_CHARS } from './question-desk-brief';
 import { planQuestionDeskReportFile } from './question-desk-brief';
 import { buildAnswerPage } from './answer-page';
@@ -79,6 +79,12 @@ describe('question desk evidence', () => {
       { path: 'sources/b-policy.md', bytes: 400 },
     ]);
     expect(planned.map((source) => source.path)).toEqual(['sources/b-policy.md']);
+  });
+
+  it('refuses an old folder report even when relative paths and inventory stamps match exactly', () => {
+    expect(questionDeskReportFileCurrent('folder-a#1', 'folder-b#2', 'same-listing', 'same-listing')).toBe(false);
+    expect(questionDeskReportFileCurrent('folder-a#1', 'folder-a#1', 'old-listing', 'new-listing')).toBe(false);
+    expect(questionDeskReportFileCurrent('folder-a#1', 'folder-a#1', 'same-listing', 'same-listing')).toBe(true);
   });
 
   it('counts matching source units hidden by the per-file display limit', () => {
@@ -217,6 +223,30 @@ describe('question desk evidence', () => {
     expect(markdown).toContain('search-time file inventory');
   });
 
+  it('prints a labelled source citation as an exact portable address in Markdown', () => {
+    const markdown = serializeQuestionDeskReport({
+      question: 'Which policy?', generatedAt: '2026-09-27T17:00:00Z', coverage: '1/1', limits: 'none',
+      text: 'See [[src:sources/refund.md#l2|refund policy]].',
+    }, 'en', new Set(['sources/refund.md']));
+    expect(markdown).toContain('refund policy [[src:sources/refund.md#l2]]');
+    expect(markdown).not.toContain('[citation unavailable');
+  });
+
+  it('renders user-supplied Markdown syntax in question and coverage as inert export text', () => {
+    const markdown = serializeQuestionDeskReport({
+      question: 'Explain ![diagram](https://example.com/image.png)',
+      generatedAt: '2026-09-27T17:00:00Z',
+      coverage: 'Skipped ![map](//example.com/map.png)', limits: '[read more]( https://example.com)',
+      text: 'Original [[src:sources/refund.md#l2]].',
+    }, 'en', new Set(['sources/refund.md']));
+    expect(markdown).not.toContain('![diagram](');
+    expect(markdown).not.toContain('![map](');
+    expect(markdown).not.toContain('[read more](');
+    expect(markdown).toContain('&#33;&#91;diagram&#93;');
+    expect(markdown).toContain('https&#58;//example.com/image.png');
+    expect(markdown).toContain('[[src:sources/refund.md#l2]]');
+  });
+
   it('makes external links, remote images, and raw HTML inert in downloaded Markdown', () => {
     const markdown = serializeQuestionDeskReport({
       question: 'Can this be shared?', generatedAt: '2026-09-27T17:00:00Z', coverage: 'one source', limits: 'none',
@@ -270,6 +300,8 @@ describe('question desk evidence', () => {
     expect(planQuestionDeskReportFile({ ...base, text: base.text.replace('sources/refund.md', 'sources/gone.md') }, 'en', known)).toMatchObject({ ok: false, reason: 'source' });
     expect(planQuestionDeskReportFile({ ...base, text: base.text.replace('#l2', '#bogus') }, 'en', known)).toMatchObject({ ok: false, reason: 'citation' });
     expect(planQuestionDeskReportFile({ ...base, text: base.text.replace('Later.', '[outside](https://example.com)') }, 'en', known)).toMatchObject({ ok: false, reason: 'unsafe' });
+    expect(planQuestionDeskReportFile({ ...base, text: base.text.replace('Later.', '![remote](//example.com/x.png)') }, 'en', known)).toMatchObject({ ok: false, reason: 'unsafe' });
+    expect(planQuestionDeskReportFile({ ...base, text: base.text.replace('Later.', '[outside]( https://example.com)') }, 'en', known)).toMatchObject({ ok: false, reason: 'unsafe' });
     const korean = { ...base, text: base.text.replace('## Answer', '## 답').replace('## Source-backed evidence', '## 원문 근거').replace('## Disagreements or changed claims', '## 불일치하거나 변경된 주장').replace('## Unknowns and search limits', '## 모르는 점과 검색 한계') };
     expect(planQuestionDeskReportFile(korean, 'ko', known)).toMatchObject({ ok: true });
   });

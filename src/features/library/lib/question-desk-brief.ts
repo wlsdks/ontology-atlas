@@ -125,6 +125,13 @@ function inertExportMarkdown(text: string, ko: boolean): string {
     .replace(/https?:\/\/[^\s<>)`]+/gi, (url) => `\`${url}\``);
 }
 
+/** Envelope fields are plain text even when a person types Markdown image/link syntax. */
+function exportPlainText(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/\[/g, '&#91;').replace(/\]/g, '&#93;').replace(/!/g, '&#33;')
+    .replace(/https?:\/\//gi, (url) => url.replace(':', '&#58;'));
+}
+
 /** Portable text only: one unreviewed dossier, no local key, verdict, or hidden app state. */
 export function serializeQuestionDeskReport(report: QuestionDeskReportContent, locale: string, knownSources: ReadonlySet<string>): string {
   const ko = locale === 'ko';
@@ -132,14 +139,15 @@ export function serializeQuestionDeskReport(report: QuestionDeskReportContent, l
   const status = ko ? '에이전트 초안 · 미검토' : 'Agent draft · Unreviewed';
   const known = normalizeOriginalPaths(knownSources);
   const anchorPattern = new RegExp(`^(?:${WIKI_CITATION_ANCHOR_PATTERN})$`);
-  const annotatedAnswer = inertExportMarkdown(report.text, ko).replace(/\[\[src:([^\]]+)\]\]/g, (whole, address: string) => {
+  const annotatedAnswer = inertExportMarkdown(report.text, ko).replace(/\[\[src:([^\]|]+)(?:\|([^\]]+))?\]\]/g, (whole, address: string, label?: string) => {
     const hash = address.lastIndexOf('#');
     const rawPath = hash < 0 ? address : address.slice(0, hash);
     const rawAnchor = hash < 0 ? undefined : address.slice(hash + 1);
     const citation = resolveSourceCitation(`src:${rawPath}`, rawAnchor, known, true);
+    const portable = `[[src:${address}]]`;
     return citation?.status === 'known' && citation.anchor && anchorPattern.test(citation.anchor)
-      ? whole
-      : `${whole} **${ko ? '[이 폴더에서 인용을 확인할 수 없음]' : '[citation unavailable in this folder]'}**`;
+      ? label ? `${label} ${portable}` : whole
+      : `${label ? `${label} ` : ''}${portable} **${ko ? '[이 폴더에서 인용을 확인할 수 없음]' : '[citation unavailable in this folder]'}**`;
   });
   return [
     `# ${title}`,
@@ -149,7 +157,7 @@ export function serializeQuestionDeskReport(report: QuestionDeskReportContent, l
     '',
     `## ${ko ? '질문' : 'Question'}`,
     '',
-    report.question,
+    exportPlainText(report.question),
     '',
     `## ${ko ? '에이전트 초안' : 'Agent report draft'}`,
     '',
@@ -159,9 +167,9 @@ export function serializeQuestionDeskReport(report: QuestionDeskReportContent, l
     '',
     `## ${ko ? '검색 당시 범위와 한계' : 'Search-time scope and limits'}`,
     '',
-    report.coverage,
+    exportPlainText(report.coverage),
     '',
-    report.limits,
+    exportPlainText(report.limits),
     '',
     ko
       ? '원문 인용은 이동 가능한 텍스트 주소입니다. 검색 당시 파일 목록을 기준으로 표시되며, 이 내보내기에서 원문을 다시 읽어 검증하지 않았습니다. 외부 링크와 이미지는 비활성화했습니다.'
@@ -198,7 +206,7 @@ export function planQuestionDeskReportFile(report: QuestionDeskReportContent, lo
       continue;
     }
     if (section < 0 || /^#{1,6}\s/.test(line) || /^(```|~~~)/.test(line)) return { ok: false, reason: 'shape' };
-    if (/!?\[[^\]]*\]\((?:https?:|data:|javascript:)/i.test(line) || /<[^>]+>/.test(line)) return { ok: false, reason: 'unsafe' };
+    if (/!?\[[^\]]*\]\s*(?:\([^)]*\)|\[[^\]]*\])/.test(line) || /^\[[^\]]+\]:/.test(line) || /<[^>]+>/.test(line)) return { ok: false, reason: 'unsafe' };
     if (section > 0 && !/^[-*]\s+/.test(line)) return { ok: false, reason: 'shape' };
     sections[section]!.push(line);
   }

@@ -30,6 +30,10 @@ export function questionDeskListingVersion(docs: readonly VaultDoc[], sources: r
   ]);
 }
 
+export function questionDeskReportFileCurrent(reportScope: string, currentScope: string, reportListing: string, currentListing: string): boolean {
+  return reportScope === currentScope && reportListing === currentListing;
+}
+
 export function countDeskReadablePages(docs: readonly VaultDoc[], rawBySlug: ReadonlyMap<string, string>): number {
   return deskPages(docs).filter((doc) => rawBySlug.has(doc.slug)).length;
 }

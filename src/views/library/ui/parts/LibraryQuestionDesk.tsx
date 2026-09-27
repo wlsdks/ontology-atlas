@@ -126,13 +126,13 @@ function DraftReport({ text, sources, onOpenSource }: {
           return <button type="button" data-source-path={citation.path} data-source-anchor={citation.anchor}
             aria-label={address} onClick={() => onOpenSource(citation.path!, citation.anchor!)}
             className={controlClass({ shape: 'link', tone: 'accentOnTint', hoverInk: 'strong', className: 'inline break-all underline' })}>
-            {wikilink?.labelled ? children : address}
+            {wikilink?.labelled ? <>{children} · {address}</> : address}
           </button>;
         }
         return <span title={citation ? t('report.citationUnavailable') : t('report.externalUnavailable')}
           className="break-all border-b border-dashed border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)]"
           data-testid={citation ? 'question-desk-report-citation-unavailable' : undefined}>
-          {children} {citation ? t('report.unavailableShort') : null}
+          {children} {citation ? `${citation.rawPath}${citation.anchor ? `#${citation.anchor}` : ''} ${t('report.unavailableShort')}` : null}
         </span>;
       },
     }}>{rewriteWikilinks(text)}</ReactMarkdown>

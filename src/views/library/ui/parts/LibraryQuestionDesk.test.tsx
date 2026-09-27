@@ -114,7 +114,7 @@ describe('Library question desk transfer boundary', () => {
     expect(request.brief).toContain('Write no files.');
     const report: QuestionDeskReportDraft = {
       question: request.question, searchId: request.searchId, listingVersion: request.listingVersion, vaultScope: request.vaultScope,
-      text: '# A freeform heading\n\nThe job runs later. [[src:sources/refund.md#l2]]\n\nMissing [[src:sources/gone.md#l4]]. Invalid [[src:sources/refund.md#bogus]]. [external](https://example.com) ![remote](https://example.com/image.png)<img src="https://example.com/raw.png" />',
+      text: '# A freeform heading\n\nThe job runs later. [[src:sources/refund.md#l2]] and [[src:sources/refund.md#l2|refund policy]].\n\nMissing [[src:sources/gone.md#l4]]. Invalid [[src:sources/refund.md#bogus]]. [external](https://example.com) ![remote](https://example.com/image.png)<img src="https://example.com/raw.png" />',
       coverage: request.coverage, limits: request.limits, generatedAt: '2026-09-27T17:00:00Z',
     };
     rendered.rerender(<Desk report={report} onSummarize={onSummarize} onFileReport={onFileReport} onOpenSource={onOpenSource} />);
@@ -122,9 +122,10 @@ describe('Library question desk transfer boundary', () => {
     expect(draft).toHaveTextContent('AGENT DRAFT · UNREVIEWED');
     expect(draft).toHaveTextContent('A freeform heading');
     expect(draft).not.toHaveTextContent('Source-backed evidence');
-    const cited = within(draft).getByRole('button', { name: 'sources/refund.md#l2' });
+    const cited = within(draft).getAllByRole('button', { name: 'sources/refund.md#l2' })[0]!;
     fireEvent.click(cited);
     expect(onOpenSource).toHaveBeenCalledWith('sources/refund.md', 'l2');
+    expect(draft).toHaveTextContent('refund policy · sources/refund.md#l2');
     expect(screen.getAllByTestId('question-desk-report-citation-unavailable')).toHaveLength(2);
     expect(screen.queryByRole('button', { name: 'sources/refund.md#bogus' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'external' })).not.toBeInTheDocument();

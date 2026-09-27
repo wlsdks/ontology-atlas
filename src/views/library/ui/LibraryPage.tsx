@@ -41,6 +41,7 @@ import {
   buildAskBrief,
   planQuestionDeskReportFile,
   questionDeskListingVersion,
+  questionDeskReportFileCurrent,
   buildFixBrief,
   buildWikiShapeFixBrief,
   parseLintFindings,
@@ -279,6 +280,8 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   const localVault = useLocalVault();
   const { markSelfWrite, unmarkSelfWrite } = localVault;
   const workVaultScope = useVaultSessionIdentityScope();
+  const latestWorkVaultScopeRef = useRef(workVaultScope);
+  useEffect(() => { latestWorkVaultScopeRef.current = workVaultScope; }, [workVaultScope]);
 
   const handle = selectOpenVaultHandle(localVault.status, localVault.handle);
   const manifest = localVault.manifest;
@@ -1206,6 +1209,13 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
     if (previous) setLastAnswer((current) => current === previous.answer ? null : current);
     setDeskReport(null);
   }, []);
+  const previousReportScopeRef = useRef(workVaultScope);
+  useEffect(() => {
+    if (previousReportScopeRef.current === workVaultScope) return;
+    previousReportScopeRef.current = workVaultScope;
+    if (pendingAskRef.current?.report) pendingAskRef.current = null;
+    queueMicrotask(invalidateDeskReport);
+  }, [invalidateDeskReport, workVaultScope]);
   const answerGenerationRef = useRef(0);
   const filedAnswersRef = useRef(new WeakSet<RetainedLibraryAnswer>());
   const [filingAnswer, setFilingAnswer] = useState<RetainedLibraryAnswer | null>(null);
@@ -1369,6 +1379,10 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
 
   const handleFileReport = useCallback(async () => {
     if (!deskReport || deskReport.answer !== lastAnswer || !handle) return;
+    if (!questionDeskReportFileCurrent(deskReport.vaultScope, workVaultScope, deskReport.listingVersion, currentDeskListingVersion)) {
+      setFileAnswerNote(t('questionDesk.report.outdated'));
+      return;
+    }
     setFileAnswerNote(null);
     const plan = planQuestionDeskReportFile({
       question: deskReport.answer.question, text: deskReport.answer.text,
@@ -1391,13 +1405,14 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
         if (resolveCitedPassage(bytes, path, anchor).state !== 'resolved') { setFileAnswerNote(t('questionDesk.report.fileRefused.anchor')); return; }
       }
       if (answerGenerationRef.current !== deskReport.answer.generation || latestDeskReportRef.current !== deskReport
-        || latestDeskListingVersionRef.current !== deskReport.listingVersion) {
+        || !questionDeskReportFileCurrent(deskReport.vaultScope, latestWorkVaultScopeRef.current,
+          deskReport.listingVersion, latestDeskListingVersionRef.current)) {
         setFileAnswerNote(t('questionDesk.report.outdated'));
         return;
       }
       await handleFileAnswer(plan.answer);
     } catch { setFileAnswerNote(t('questionDesk.report.fileRefused.source')); }
-  }, [deskReport, handle, handleFileAnswer, lastAnswer, localVault.sourceHandles, locale, model.sources, t]);
+  }, [currentDeskListingVersion, deskReport, handle, handleFileAnswer, lastAnswer, localVault.sourceHandles, locale, model.sources, t, workVaultScope]);
 
   const autoDecide = useCallback(
     (request: { filePath: string | null; rawInput: Record<string, unknown>; toolKind: string | null; toolName: string | null }) => {
@@ -3526,7 +3541,9 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
           onTurnActivityChange={setAgentActivity}
           onTurnToolActivityChange={handleAcpToolActivityChange}
           onTerminalToolObservation={handleTerminalToolObservation}
-          onFileAnswer={lastAnswer ? deskReport?.answer === lastAnswer ? handleFileReport : handleFileAnswer : null}
+          onFileAnswer={lastAnswer ? deskReport?.answer === lastAnswer
+            ? deskReport.vaultScope === workVaultScope ? handleFileReport : null
+            : handleFileAnswer : null}
           filingAnswer={lastAnswer !== null && filingAnswer === lastAnswer}
           fileAnswerNote={fileAnswerNote}
           noticeActions={{
