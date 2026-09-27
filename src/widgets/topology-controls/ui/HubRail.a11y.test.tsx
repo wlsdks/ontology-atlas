@@ -8,8 +8,7 @@ import type { Project } from '@/entities/project';
 
 const RAIL_OPEN_KEY = 'demo:sigma-hub-rail-open:v1';
 
-// jsdom implements neither scrollIntoView nor matchMedia — stubbed so the
-// component's effects do not throw.
+// jsdom has neither scrollIntoView nor matchMedia; stubbed so effects do not throw.
 if (!Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = () => {};
 }
@@ -61,12 +60,7 @@ const HUBS = [
   project({ slug: 'leaf', name: 'Leaf', isHub: false }),
 ];
 
-/**
- * HubRail roving tabindex — a listbox (role=listbox) must have exactly one tab stop.
- * Every option (a native button) used to carry the default tabIndex 0, so Tab
- * stopped at every hub (a roving-pattern violation). Only the active option (or the
- * first, when there is none) is 0; the rest are -1.
- */
+/** A listbox has exactly one tab stop: the active option, or the first without one. */
 describe('HubRail — roving tabindex a11y', () => {
   beforeEach(() => {
     window.localStorage.setItem(RAIL_OPEN_KEY, '1'); // render with the rail expanded

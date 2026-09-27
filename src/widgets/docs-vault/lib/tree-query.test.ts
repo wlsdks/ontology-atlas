@@ -26,8 +26,6 @@ describe('matchesDocsTreeQuery', () => {
 });
 
 describe('Hangul keyboard queries answer like the palette', () => {
-  // Measured 2026-09-19: the vault tree's own box answered nothing to either of
-  // these while the palette resolved them against the same documents.
   const doc = {
     title: '장바구니',
     slug: 'capabilities/cart',

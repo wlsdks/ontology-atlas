@@ -8,12 +8,8 @@ import type { FullDetailConnectionRow, FullDetailGroups } from "../lib/full-deta
 import { controlClass } from '@/shared/ui/control-class';
 
 /**
- * Full-detail A1 direction groups — FOUR full (uncapped) lists replacing the
- * rejected badge-soup FROM THIS/CONTAINS rows: contains (contains, 2-col grid)
- * / usedBy / dependsOn / belongsTo. Every row
- * carries a per-row trace mark (solid=containment, dashed=depends) and
- * navigates on click (`onSelectNode`) — see
- * `docs/prototypes/detail-a1-datasheet.html`.
+ * Four uncapped direction groups; each row has a trace mark (solid containment, dashed depends) and
+ * navigates on click (`docs/prototypes/detail-a1-datasheet.html`).
  */
 
 export interface FullDetailA1GroupsLabels {

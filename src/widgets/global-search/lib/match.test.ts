@@ -38,9 +38,7 @@ describe("matchOntologyNodes", () => {
   });
 
   it('ranks an exact match above a more recently approved prefix match', () => {
-    // Measured: typing 「Order」 put the domain 「Order」 (an exact match) 6th, below five
-    // later-approved prefix matches — after the tie at 4, recency sank the exact
-    // match. Someone who typed a name in full is looking for the node with that name.
+    // An exact match must rank above later-approved prefix matches that tie on score.
     const earlier = new Date("2026-04-01T00:00:00Z");
     const later = new Date("2026-04-27T00:00:00Z");
     const vault = [
@@ -65,8 +63,7 @@ describe("matchOntologyNodes", () => {
     const { results: r } = matchOntologyNodes("logout", corpus);
     expect(r).toHaveLength(1);
     expect(r[0]?.node.id).toBe("auth-logout");
-    // A title containing 'logout' would score in the name tier; 1 is the id-only
-    // fallback. The title "Logout" has no English logout, so this is that fallback.
+    // A title containing 'logout' would score in the name tier; 1 is the id-only fallback.
     expect(r[0]?.score).toBe(1);
   });
 
@@ -89,9 +86,7 @@ describe("matchOntologyNodes", () => {
     expect(r).toHaveLength(0);
   });
 
-  // Flow review 2026-07-26 D1 — the map and INDEX draw `display_ko` while search
-  // looked only at the canonical title, so typing the Korean name read off the
-  // screen returned zero results.
+  // Search must find the display name the map and INDEX draw.
   describe('per-locale display names', () => {
     const localized = node({
       id: "ontology-core",
@@ -145,10 +140,8 @@ describe("matchOntologyNodes", () => {
     });
   });
 
-  // 2026-09-19 — measured against the bundled Online Store sample: every one of
-  // these returned 0 results, because the matcher only ever compared normalised
-  // substrings. The last two are not a convenience — a Hangul IME emits a syllable
-  // one jamo at a time, so every Korean word is typed through them.
+  // A Hangul IME emits a syllable one jamo at a time, so every Korean word is typed through these
+  // states.
   describe('queries a Hangul keyboard actually produces', () => {
     const shop: KnowledgeGraphNode[] = [
       node({ id: "cap-cart", title: "장바구니" }),
@@ -175,9 +168,8 @@ describe("matchOntologyNodes", () => {
     });
 
     it('matches a syllable still being composed', () => {
-      // The half-typed syllable reaches one name at the front and another in the
-      // middle — both are names this typist is genuinely on the way to, and the one
-      // it starts ranks first.
+      // The half-typed syllable reaches one name at the front and another in the middle; the front
+      // match ranks first.
       expect(matchOntologyNodes("자", shop).results.map((m) => m.node.id)).toEqual([
         "cap-cart",
         "cap-order",
@@ -210,9 +202,7 @@ describe("matchOntologyNodes", () => {
     });
   });
 
-  // 2026-09-19 — measured on the bundled sample: 97 of 317 rows over thirty English
-  // queries carried no highlight, because the row drew only the localised name and the
-  // summary while matching looked at every name, the summary and the id.
+  // Every row must say why it matched: the name, the summary or the id.
   describe('matched reason for each row', () => {
     const localized = node({
       id: "capability:shipping-fee",
@@ -255,8 +245,7 @@ describe("matchOntologyNodes", () => {
     ];
 
     it('does not pull in every node of a kind for a kind word', () => {
-      // Every element id begins with it, so this used to return the whole kind —
-      // which the filter chips already select, properly.
+      // Every element id begins with the kind, which the filter chips select.
       expect(matchOntologyNodes("element", kinds).results).toHaveLength(0);
       expect(matchOntologyNodes("capability", kinds).results).toHaveLength(0);
     });
@@ -274,9 +263,7 @@ describe("matchOntologyNodes", () => {
   });
 
   it('returns the found count alongside the limited list', () => {
-    // The palette drew the limit as if it were the count: a common letter put
-    // "match · 20" in the heading and "21 matches" in the footer beside the folder's
-    // name, when the folder held far more (measured 2026-09-19).
+    // The found count must not be the drawn limit.
     const many = Array.from({ length: 50 }, (_, i) =>
       node({ id: `node-${i}`, title: `노드 ${i}` }),
     );
@@ -444,12 +431,7 @@ describe("matchProjects", () => {
     expect(r[0]?.score).toBe(4);
   });
 
-  /*
-   * The node matcher normalises both sides (`normalizeForMatch`); this one compared raw
-   * strings, so a decomposed name — what a local vault filename and the macOS clipboard
-   * hand over — never reached the literal tiers. An exact name landed on the Hangul rung
-   * (4) instead of 7, and a decomposed word in the description matched nothing at all.
-   */
+  /* Both sides are normalised, so decomposed (NFD) names reach the literal tiers. */
   it('gives decomposed (NFD) input the same result as the node matcher', () => {
     const shops = [project({ slug: "shop", name: "온라인 쇼핑몰", description: "결제와 배송" })];
     const exact = matchProjects("온라인 쇼핑몰".normalize("NFD"), shops);

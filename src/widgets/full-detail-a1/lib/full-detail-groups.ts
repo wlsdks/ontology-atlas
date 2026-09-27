@@ -1,15 +1,7 @@
 /**
- * Full-detail A1 direction groups — the "expanded datasheet" (expanded datasheet)
- * replaces the rejected badge-soup FROM THIS/CONTAINS rows with FOUR uncapped groups:
- * contains / usedBy / dependsOn / belongsTo. Unlike the compact canvas datasheet
- * (`map-datasheet.ts`), which demotes containment vs depends to a
- * per-row trace mark under a DIRECTION-only split, the full-detail surface
- * elevates containment back into its own two groups (outgoing containment =
- * contains, incoming containment = belongsTo) while non-containment stays
- * direction-split (usedBy/dependsOn) — see `docs/prototypes/detail-a1-datasheet.html`.
- *
- * Reuses `buildConnections` (entities/knowledge-graph/lib/ontology-tree) for the full
- * dir-tagged connection list — no forked BFS/edge-scan.
+ * Full-detail direction groups: four uncapped lists, contains, usedBy, dependsOn and belongsTo
+ * (`docs/prototypes/detail-a1-datasheet.html`). Built from `buildConnections`, with no forked edge
+ * scan.
  */
 import {
   buildConnections,
@@ -50,13 +42,8 @@ export interface FullDetailGroups {
 }
 
 /**
- * Count of a node's OWN containment children — reused for every row
- * (contains/usedBy/dependsOn/belongsTo alike) so any row's neighbor shows
- * "how big is that node" uniformly, not just contains-specific rows. Handles
- * both containment encodings: `contains` (parent→child, so `nodeId` is
- * parent when `edge.from === nodeId`) and `belongs_to` (child→parent, so
- * `nodeId` is parent when `edge.to === nodeId`) — same rule as
- * `buildContainmentParents`.
+ * A node's own containment child count, shown on every row; handles both `contains` (parent to
+ * child) and `belongs_to` (child to parent) like `buildContainmentParents`.
  */
 function countContainmentChildren(
   nodeId: string,
@@ -76,11 +63,8 @@ export function buildFullDetailGroups(
   edges: readonly ConnectionSourceEdge[],
   changedIds?: ReadonlySet<string>,
 ): FullDetailGroups {
-  // The four-bucket role split (contains / usedBy / dependsOn / belongsTo) +
-  // per-bucket neighbor dedup lives in the shared `groupConnectionsByRole`
-  // (M-2) so the compact canvas popover renders the SAME numbers from the SAME
-  // construction — the two surfaces can't drift. This widget only enriches
-  // each row with `childCount` / `fresh` / `containment` for its denser view.
+  // The role split and per-bucket dedup live in the shared `groupConnectionsByRole`, so the compact
+  // popover shows the same numbers; this adds `childCount`, `fresh` and `containment` per row.
   const connections = buildConnections(nodeId, nodes, edges);
   const grouped = groupConnectionsByRole(connections);
 

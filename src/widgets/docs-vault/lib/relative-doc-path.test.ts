@@ -4,12 +4,8 @@ import { resolveDocLink } from './resolve-doc-link';
 import { buildDocLinkMarkdown, relativeDocPath } from './relative-doc-path';
 
 /**
- * The point of this test is not «is the path string pretty» but **does the viewer
- * resolve that link back to the same document**. So the producing side
- * (`relativeDocPath`) and the resolving side (`resolveDocLink`) are measured as a
- * **round trip**. Measuring one side alone can go green while the two disagree,
- * and that is exactly the accident this feature had (the parser passed an encoded
- * URL and the resolving side did not know).
+ * Measured as a round trip: `relativeDocPath` builds the link and `resolveDocLink` must resolve it
+ * back to the same slug.
  */
 
 const VAULT = new Set([
@@ -63,12 +59,7 @@ describe('relativeDocPath produces links the viewer resolves back', () => {
     });
   });
 
-  /**
-   * A Hangul slug is this feature's weak spot. The wikilink side had the same
-   * defect — the markdown parser passes URLs percent-encoded and the resolving side
-   * did not decode. **An ASCII slug has nothing to encode, so it stays fine and the
-   * defect appears only in a Hangul vault.**
-   */
+  /** Hangul slugs arrive percent-encoded from the parser; ASCII slugs cannot show that defect. */
   it('round-trips a Hangul slug even when it arrives percent-encoded', () => {
     const href = relativeDocPath('domains/typed-api', 'capabilities/스윕-검증-절차');
     expect(href).toBe('../capabilities/스윕-검증-절차.md');

@@ -56,9 +56,8 @@ interface Props {
   /** Every document in the vault (for wikilink autocomplete). Without it, autocomplete is off. */
   allDocs?: VaultDoc[];
   /**
-   * **Which vault this draft belongs to** — with the slug alone, different folders
-   * produce the same key and overwrite each other's drafts (the data-loss path in
-   * the `draftStorageKey` comment below).
+   * The vault this draft belongs to; with the slug alone, different folders share a key and
+   * overwrite each other's drafts.
    */
   vaultScope: string;
 }
@@ -78,22 +77,9 @@ const MENTION_MENU_MAX_HEIGHT = 280;
 const DRAFT_STORAGE_PREFIX = 'ontology-atlas:docs-vault-editor-draft:';
 
 /**
- * A draft key **carries the vault too** (fix, 2026-08-01).
- *
- * It used to be slug-only (`…:README`), so **files of the same name in different
- * folders overwrote each other's drafts** — opening folder A's `README.md` to edit
- * showed folder B's body carrying a "Temporarily Saved · Final Save Required" tag. Prose the user
- * never wrote, presented as the user's unsaved changes.
- *
- * What follows is worse: if the two files were **byte-identical** at that moment
- * (common for a README or a scaffolded ontology document), the conflict branch did
- * not fire and the mtime guard passed, so **a save wrote folder A's draft over
- * folder B's file.** A data-loss path.
- *
- * ⚠️ Old keys (`…:<slug>`) are **not read back.** Reading them back is the defect,
- * and there is no way to know which vault such a draft belongs to. Leftover old
- * keys are harmless because nobody reads them, and editing the same document again
- * overwrites with the new key.
+ * Draft key carries the vault, or same-named files in different folders share drafts and a save can
+ * write one folder's draft over another's file. Old slug-only keys are never read back, because
+ * their vault is unknown.
  */
 function draftStorageKey(vaultScope: string, slug: string) {
   return `${DRAFT_STORAGE_PREFIX}${vaultScope}:${slug}`;
@@ -140,10 +126,7 @@ function clearEditorDraft(vaultScope: string, slug: string) {
 }
 
 /**
- * A simple textarea-based markdown editor. It does not go as far as Obsidian's vim
- * mode or live preview — the level is "quickly edit a local file in the browser".
- * On save it overwrites the original file through the File System Access API's
- * writable.
+ * A textarea markdown editor that saves over the original file through the File System Access API.
  */
 export function DocsVaultEditor({
   doc,
@@ -164,10 +147,8 @@ export function DocsVaultEditor({
   const [savedContent, setSavedContent] = useState<string | null>(null);
   const [loadedSlug, setLoadedSlug] = useState<string | null>(null);
   /*
-   * ⚠️ The editor's failure carries **two halves** (v1.2.2 repair). It used to hold a plain string
-   * that was `err.message` on both the load and the save path, so a rejected write printed the
-   * vault layer's English into this pane. `sentence` is what the pane renders; `detail` is the
-   * machine half and only ever reaches `data-failure-detail`.
+   * A failure has two halves: `sentence` is rendered; `detail` is the machine half and only reaches
+   * `data-failure-detail`.
    */
   const [error, setError] = useState<FailureCopy | null>(null);
   const [saving, setSaving] = useState(false);
@@ -177,9 +158,8 @@ export function DocsVaultEditor({
   const [preview, setPreview] = useState(false);
   const [debounced, setDebounced] = useState<string | null>(null);
   const taRef = useRef<HTMLTextAreaElement | null>(null);
-  // Even when an external poll refreshes doc.mtime, the write baseline for unsaved
-  // edits must be the disk version first read. Passing the latest prop through makes
-  // the conflict guard compare two current values and silently overwrite an external change.
+  // The write baseline for unsaved edits stays the version first read, or the conflict guard
+  // compares two current values and silently overwrites an external change.
   const loadedMtimeRef = useRef<number | undefined>(doc.mtime);
   const savedFlashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingDraftRef = useRef<{ vaultScope: string; draft: EditorDraft } | null>(null);
@@ -192,17 +172,8 @@ export function DocsVaultEditor({
   } | null>(null);
 
   /*
-   * The trigger is `@` — it replaced the old `[[` on 2026-08-08.
-   *
-   * Two things changed. The notation (`[[` → `@`) is the surface; **what gets
-   * written after choosing** is the substance. It used to put `[[slug]]` in the body,
-   * and **that changed not one bit of the graph** (adding and removing it in the same
-   * vault left the compile at 9 edges with an identical hash). Now it asks for the
-   * relation kind and **writes it to frontmatter** — the decision logic lives in the
-   * pure functions of `lib/mention-relation` and this file only handles the screen.
-   *
-   * `[[` is not kept alongside. With two syntaxes coexisting, the user has to judge
-   * 「which one is the real connection」 every time, and the screen gives no clue.
+   * The trigger is `@`, which writes a relation to frontmatter (`lib/mention-relation`); `[[` is
+   * not kept alongside so there is one syntax for a real connection.
    */
 
   const acMatches = useMemo<VaultDoc[]>(() => {
@@ -220,25 +191,12 @@ export function DocsVaultEditor({
   }, [autocomplete, allDocs, doc.slug]);
 
   /**
-   * Separate the autocomplete's **openness** from its **content** — that is what
-   * makes an exit possible.
-   *
-   * ★ A **key** is passed to `useHeldValue`. This model is a fresh object every
-   * render, so without a key the identity comparison loops forever and React #301
-   * fires (the edge panel actually killed the map that way). Only a changed query or
-   * caret position counts as a new value.
+   * Separate the menu's openness from its content. `useHeldValue` gets a key because the model is a
+   * fresh object each render; without it React #301 loops.
    */
   /**
-   * The condition for opening the menu — **once a query is typed, it opens even with
-   * zero results.**
-   *
-   * It used to be `matches.length > 0`, so a miss made the menu vanish silently, and
-   * then the user could not distinguish 「the feature is broken」 from 「no such
-   * concept exists」 — the lesson this repository keeps relearning (silence reads as
-   * success, or as breakage).
-   *
-   * With only `@` typed it still shows the list (the first 8). Answering an empty
-   * query with 「No results」 would simply be wrong.
+   * Opens once a query is typed, even with zero results, so a miss is visible; with only `@` it
+   * shows the first 8.
    */
   const acHasQuery = (autocomplete?.query ?? '') !== '';
   const acEmpty = autocomplete !== null && acHasQuery && acMatches.length === 0;
@@ -253,17 +211,15 @@ export function DocsVaultEditor({
   );
 
   const dirty = content !== null && content !== savedContent;
-  // Atlas A#5(a) — latest dirty in a ref so the content-load effect can skip a
-  // poll-driven re-fetch over unsaved edits WITHOUT listing dirty as a dep
-  // (which would re-fetch on every dirty toggle, incl. on save). Synced in an
-  // effect, not during render (lint-clean).
+  // Latest dirty in a ref so the load effect can skip a poll-driven re-fetch without listing dirty
+  // as a dependency (which would re-fetch on every save).
   const dirtyRef = useRef(false);
   useEffect(() => {
     dirtyRef.current = dirty;
   }, [dirty]);
 
-  // Live preview debounce — update `debounced` 200ms after a keystroke to cushion
-  // the react-markdown re-render cost. A no-op while the preview is off.
+  // Preview debounce of 200ms to cushion react-markdown re-renders; a no-op while the preview is
+  // off.
   useEffect(() => {
     if (!preview || content === null) return;
     const handle = window.setTimeout(() => setDebounced(content), 200);
@@ -278,8 +234,7 @@ export function DocsVaultEditor({
       : src;
   }, [debounced, content]);
 
-  // Wrap the selection in a wrapper (e.g. **) and restore the caret. With no
-  // selection, insert a placeholder at the caret and select it.
+  // Wrap the selection and restore the caret; with no selection insert a selected placeholder.
   const wrapSelection = useCallback((wrapper: string, placeholder?: string) => {
     const ta = taRef.current;
     if (!ta || content === null) return;
@@ -310,14 +265,11 @@ export function DocsVaultEditor({
       ta.setSelectionRange(p, p);
     });
   }, [content]);
-  // Wikilink autocomplete selection — replace the `[[<query>` part of content with
-  // `[[slug]]`. `autocomplete.start + 2 + query.length` is used explicitly instead
-  // of the caret, so the trigger range is covered exactly even after the user moved
-  // the caret with arrow keys.
+  // Replace exactly `autocomplete.start + 2 + query.length`, so the range holds even after arrow
+  // keys moved the caret.
   /**
-   * The chosen concept — **the relation is not decided yet.** This step existing is
-   * the whole of this feature: stopping at the name makes it identical to the old
-   * wikilink, which the graph never sees.
+   * The chosen concept before its relation is decided; stopping at the name would add nothing to
+   * the graph.
    */
   const [pendingMention, setPendingMention] = useState<{
     doc: VaultDoc;
@@ -328,11 +280,7 @@ export function DocsVaultEditor({
     MENTION_RELATIONS[0].id,
   );
 
-  /**
-   * **Say** that the relation was written. This action's result is inside the
-   * frontmatter, so saying nothing makes it look as though only a name went into the
-   * body — and then the user reads it as the same thing the old wikilink did.
-   */
+  /** Announce that the relation was written, since its result is only in frontmatter. */
   const [mentionNotice, setMentionNotice] = useState<'added' | 'exists' | null>(null);
   useEffect(() => {
     if (!mentionNotice) return;
@@ -340,12 +288,7 @@ export function DocsVaultEditor({
     return () => clearTimeout(timer);
   }, [mentionNotice]);
 
-  /**
-   * Where the menu stands — **exactly where the typing was**. It used to be pinned
-   * to the editor's bottom-left corner (inherited from the wikilink popover). A
-   * mention menu is an extension of the character being typed, so far from the eyes
-   * it does not read as the result of what was just done — owner report, 2026-08-08.
-   */
+  /** The menu stands where the typing was. */
   const [menuAt, setMenuAt] = useState<{ top: number; left: number } | null>(null);
   const placeMenuAtCaret = useCallback((caretIndex: number) => {
     const ta = taRef.current;
@@ -356,8 +299,8 @@ export function DocsVaultEditor({
       clampMenuToBox({
         caret,
         box: { width: ta.clientWidth, height: ta.clientHeight },
-        // The menu's real size is only known after drawing, but an upper bound is
-        // enough for placement — if the real size is smaller there is slack, not clipping.
+        // Placement uses an upper bound on the menu size; a smaller real size leaves slack, never
+        // clipping.
         menu: { width: MENTION_MENU_WIDTH, height: MENTION_MENU_MAX_HEIGHT },
       }),
     );
@@ -381,10 +324,8 @@ export function DocsVaultEditor({
       const ta = taRef.current;
       if (!ta || content === null || !pendingMention) return;
       /*
-       * ⚠️ Do not destructure this as `doc` — the component's prop is already named
-       * `doc` (the document being edited) and would be shadowed. That mistake was
-       * actually made, and the link's base point matched its destination, producing
-       * `./same-folder.md` (measured 2026-08-08).
+       * Do not destructure this as `doc`: it shadows the edited document and the link comes out as
+       * `./same-folder.md`.
        */
       const { doc: targetDoc, trigger } = pendingMention;
       const result = insertMentionRelation({
@@ -421,7 +362,7 @@ export function DocsVaultEditor({
     setContent(next);
     requestAnimationFrame(() => {
       ta.focus();
-  // Put the caret at the url — computed back from after the text part (`url` is 4 characters).
+  // Put the caret at the url, computed back from the text part (`url` is 4 characters).
       const urlStart = start + body.indexOf('(url)') + 1;
       ta.setSelectionRange(urlStart, urlStart + 3);
     });
@@ -449,11 +390,8 @@ export function DocsVaultEditor({
         setSavedFlash(false);
       }, 1500);
     } catch (err) {
-      // A rejected save (e.g. VaultConflictError — the file changed on disk
-      // between read and write) must NOT mark the buffer clean: we never reached
-      // setSavedContent, so dirty stays true and the #5(a) poll guard keeps the
-      // unsaved edits safe. Surface a localized, reassuring message for the
-      // conflict case (the raw message is technical English).
+      // A rejected save (e.g. VaultConflictError) must not mark the buffer clean, so the poll guard
+      // keeps the edits; show a localized message for conflicts.
       const name = err instanceof Error ? err.name : '';
       setError(
         name === 'VaultConflictError'
@@ -486,18 +424,13 @@ export function DocsVaultEditor({
   }, [dirty, doc.slug, onClose, saving, t, vaultScope]);
 
   useEffect(() => {
-    // Atlas A#5(a) — data-loss guard. A background poll rebuilds the manifest →
-    // `getDocContent` (editResolver, memoized on fileHandles) gets a new identity
-    // → this effect re-runs. With UNSAVED edits, do NOT re-fetch: it would
-    // silently overwrite the user's edits. A CLEAN editor still re-fetches
-    // (reflects external changes). New-doc loads go through a fresh mount (the
-    // editor `key` includes the slug), where dirtyRef is false.
+    // Data-loss guard: a poll gives `getDocContent` a new identity; with unsaved edits do not
+    // re-fetch. A clean editor still re-fetches, and new documents mount fresh with dirtyRef false.
     if (dirtyRef.current) return;
     let cancelled = false;
     getDocContent(doc.slug)
       .then((text) => {
-        // Also re-check dirty here: a CLEAN re-fetch that was already in flight
-        // when the user started typing must not land over the new edits.
+        // Re-check dirty: an in-flight clean re-fetch must not land over edits started meanwhile.
         if (cancelled || dirtyRef.current) return;
         const draft = readEditorDraft(vaultScope, doc.slug);
         const shouldRestoreDraft =
@@ -534,9 +467,8 @@ export function DocsVaultEditor({
     };
   }, [doc.mtime, doc.slug, failureSentence, getDocContent, t, vaultScope]);
 
-  // After a clean save, once the parent manifest refreshes with the new mtime, the
-  // baseline for the next edit advances too. External mtime changes while dirty are
-  // never absorbed.
+  // After a clean save the baseline advances with the refreshed mtime; external changes while dirty
+  // are never absorbed.
   useEffect(() => {
     if (!dirty && loadedSlug === doc.slug) {
       loadedMtimeRef.current = doc.mtime;
@@ -562,8 +494,8 @@ export function DocsVaultEditor({
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [dirty]);
 
-  // Leaving for another Library tab must retain the last keystroke even before
-  // the normal draft debounce has elapsed. Disk writes still require Save.
+  // Leaving for another Library tab keeps the last keystroke before the draft debounce elapses;
+  // disk writes still need Save.
   useEffect(() => () => {
     const pending = pendingDraftRef.current;
     if (pending) writeEditorDraft(pending.vaultScope, pending.draft);
@@ -623,12 +555,7 @@ export function DocsVaultEditor({
   }, [doSave, insertLink, requestClose, wrapSelection]);
 
   const loading = loadedSlug !== doc.slug;
-  /*
-   * Deferred for the same reason as the viewer — switching documents flashed this
-   * three-bar skeleton for a single frame (the measurement in the `SKELETON_DELAY_MS`
-   * comment). Both surfaces on the same screen have to follow the same discipline so
-   * that moving between editing and reading does not make only one of them flash.
-   */
+  /* Deferred like the viewer's skeleton so switching documents does not flash it for a frame. */
   const showSkeleton = useDelayedVisible(loading || content === null);
   const saveState = saving
     ? { label: t('saving'), body: t('savingDetail'), tone: 'saving' }
@@ -648,8 +575,7 @@ export function DocsVaultEditor({
         className="flex h-full flex-col items-center justify-center gap-2 p-8 text-center"
         data-failure-detail={error.detail ?? undefined}
       >
-        {/* The sentence is the reader's. The English cause stays on `data-failure-detail`: it used
-            to sit here in mono, which is raw `Error.message` on a Korean screen. */}
+        {/* The sentence is the reader's; the English cause stays on `data-failure-detail`. */}
         <div className="text-body text-[color:var(--color-text-tertiary)]">
           {error.sentence}
         </div>
@@ -674,7 +600,6 @@ export function DocsVaultEditor({
   }
   return (
     <div className="flex h-full flex-col">
-      {/* Top action bar */}
       <div className="flex flex-none items-center gap-2 border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-4 py-2 text-label">
         <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
           {t.rich('editorEyebrow', {
@@ -682,14 +607,10 @@ export function DocsVaultEditor({
             value: (chunks) => <span className="normal-case tracking-normal">{chunks}</span>,
           })}
         </span>
-        {/* ⚠️ **The status chips on this row are one specification** (measured fix,
-            2026-08-08). Only the save-status chip was `text-caption` (9.5px) while
-            its neighbours 「Auto Backup · Last Saved」 and 「Verify · Undo」 were
-            `text-label` (11px) — chips of the same kind standing side by side on one
-            row, with the ramp off by a step (the parent row is itself `text-label`).
-            The same defect type as the one caught in the settings sheet on
-            2026-08-02, with the same cause: nobody decided "only this chip is small".
-            Gate: `tests/contract/editor-status-chip-dialect.contract.test.ts`. */}
+        {/*
+         * The status chips on this row share one type step
+         * (`tests/contract/editor-status-chip-dialect.contract.test.ts`).
+         */}
         <span
           className={
             saveState.tone === 'dirty'
@@ -848,7 +769,6 @@ export function DocsVaultEditor({
           {error.sentence}
         </div>
       ) : null}
-      {/* Formatting toolbar */}
       <div className="flex flex-none items-center gap-0.5 border-b border-[color:var(--color-overlay-2)] bg-[color:var(--color-elevated)] px-3 py-1 text-[color:var(--color-text-tertiary)]">
         <ToolbarButton
           icon={<Bold size={ICON_SIZE.sm} />}
@@ -933,19 +853,14 @@ export function DocsVaultEditor({
             }}
             onKeyDown={(e) => {
               /*
-               * Step 2 (choosing the relation) is also **completable from the
-               * keyboard**. Someone who picked step 1 with Enter already has their
-               * hands on the keyboard, and demanding a mouse there breaks the flow —
-               * for a keyboard-only user it is a closed door. Focus stays in the
-               * textarea, so it is handled here.
+               * Step 2 is completable from the keyboard; focus stays in the textarea, so it is
+               * handled here.
                */
               if (pendingMention) {
                 if (e.key === 'Escape') {
                   e.preventDefault();
-                  // Dismissing the picker must not also close the editor: the
-                  // window-level Escape handler runs requestClose (with the
-                  // discard dialog on a dirty buffer) on any Escape that
-                  // reaches it (bug sweep 2026-09-01).
+                  // Dismissing the picker must not reach the window-level Escape handler, which
+                  // would close the editor.
                   e.stopPropagation();
                   setPendingMention(null);
                   return;
@@ -968,8 +883,7 @@ export function DocsVaultEditor({
               }
               if (!autocomplete) return;
               if (acMatches.length === 0) {
-                // It must be **closable** even with no results. A box you cannot close
-                // stops the user from continuing to write.
+                // Closable even with no results, so the user can keep writing.
                 if (e.key === 'Escape') {
                   e.preventDefault();
                   e.stopPropagation();
@@ -1027,16 +941,11 @@ export function DocsVaultEditor({
           {heldAutocomplete ? (
             <Surface
               open={acOpen}
-              // It hangs at the editor's bottom-left and grows upward — the entry origin is that corner too.
               origin="bottom left"
               /*
-                Uses this repository's menu dialect — the same
-                `--chrome-radius-inner` · `border-soft` · `elevated` ·
-                `--chrome-shadow` as the vault chip and the sort menu. It used to be
-                an indigo border plus `surface-deep` plus `elevation-2`, which made
-                **this menu alone look like a different object** on this screen
-                (owner report, 2026-08-08).
-              */
+               * This repository's menu dialect: `--chrome-radius-inner`, `border-soft`, `elevated`,
+               * `--chrome-shadow`.
+               */
               className="pointer-events-auto absolute z-10 overflow-hidden rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] shadow-[var(--chrome-shadow)]"
               style={{
                 width: MENTION_MENU_WIDTH,
@@ -1045,16 +954,13 @@ export function DocsVaultEditor({
               }}
             >
               <div className="border-b border-[color:var(--color-border-soft)] px-2 py-1.5 text-label text-[color:var(--color-text-tertiary)]">
-                {/* With an empty query, an empty pair of quotes (`· ""`) was left on screen (confirmed on a real device). */}
+                {/* Hide the empty quotes for an empty query. */}
                 <span className="block truncate">
                   {t('mentionLabel', {
                     query: heldAutocomplete.query ? ` · “${heldAutocomplete.query}”` : '',
                   })}
                 </span>
-                {/* State up front 「what happens if I choose」 — this menu's result is
-                    inside the frontmatter, so unsaid it reads as a feature that only
-                    inserts a link (owner: *"I don't understand what this means"* — I can't tell
-                    what this means). */}
+                {/* States up front that choosing writes to frontmatter, not only a link. */}
                 <span className="block truncate text-label text-[color:var(--color-text-quaternary)]">
                   {t('mentionHint')}
                 </span>
@@ -1077,11 +983,10 @@ export function DocsVaultEditor({
                       onClick={() => pickMentionTarget(d)}
                       className="hover:bg-[color:var(--color-overlay-1)]"
                     >
-                      {/* Kind marker — owner: *"I don't even know which concept this refers to"* (I
-                          can't tell which concept this even is). A list of titles
-                          alone cannot say whether something is a domain, a capability
-                          or an element, and without that you cannot decide which
-                          relation to use. Same glyphs as the map and the studio. */}
+                      {/*
+                       * Kind marker, same glyphs as the map and studio, so the relation can be
+                       * chosen knowingly.
+                       */}
                       <OntologyMapKindGlyph
                         kind={String(d.frontmatter?.kind ?? 'unknown')}
                         size={12}
@@ -1101,19 +1006,8 @@ export function DocsVaultEditor({
               </div>
             </Surface>
           ) : null}
-          {/*
-            Step 2 — **where the relation is chosen.** This step is the whole of the
-            feature. Stopping at the name here makes it identical to the old wikilink,
-            which neither the map nor path-finding sees (measured: adding and removing
-            one left the compile identical). The vocabulary is the studio compass's —
-            different words for the same job teach the user two features.
-          */}
-          {/*
-            The relation is written inside the frontmatter, so **unsaid it is
-            invisible.** In silence the user reads it as only a name going into the
-            body, which is exactly the impression of the old wikilink we removed. It
-            goes to assistive technology too.
-          */}
+          {/* Step 2 chooses the relation, with the studio compass's vocabulary. */}
+          {/* Announces the frontmatter write, including to assistive technology. */}
           {mentionNotice ? (
             <p
               role="status"
@@ -1139,13 +1033,9 @@ export function DocsVaultEditor({
                 ),
               })}
               /*
-                Uses this repository's menu dialect — the same
-                `--chrome-radius-inner` · `border-soft` · `elevated` ·
-                `--chrome-shadow` as the vault chip and the sort menu. It used to be
-                an indigo border plus `surface-deep` plus `elevation-2`, which made
-                **this menu alone look like a different object** on this screen
-                (owner report, 2026-08-08).
-              */
+               * This repository's menu dialect: `--chrome-radius-inner`, `border-soft`, `elevated`,
+               * `--chrome-shadow`.
+               */
               className="pointer-events-auto absolute z-10 overflow-hidden rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] shadow-[var(--chrome-shadow)]"
               style={{
                 width: MENTION_MENU_WIDTH,

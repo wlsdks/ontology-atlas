@@ -80,7 +80,6 @@ describe('analysis context workbench', () => {
     render(wrapper(<AnalysisWorkbench context={context} contextLabel="Refund" open initialTab="history" onClose={() => {}} />));
     const empty = await screen.findByTestId('analysis-history-empty');
     expect(screen.queryByRole('heading', { name: messages.analysisWorkbench.meaningTransitions.title })).not.toBeInTheDocument();
-    // This build cannot read decisions and runs no agent: one line says where both work.
     expect(empty).toHaveTextContent(messages.analysisWorkbench.agentUnavailableWithDecisions);
     expect(screen.queryByText(messages.analysisWorkbench.meaningTransitions.unavailable)).not.toBeInTheDocument();
   });

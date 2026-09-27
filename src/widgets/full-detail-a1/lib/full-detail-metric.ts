@@ -1,9 +1,6 @@
 /**
- * Full-detail A1's ONE engraved metric strip — contains N · usedBy N
- * · dependsOn N · 3-step reach N. Same "every fact appears exactly
- * once" principle as the compact datasheet's `formatV2MetricLine`
- * (`map-datasheet.ts`), extended to four segments so the reach
- * headline number also lives in the strip, not just the sentence below it.
+ * Full-detail metric strip: contains, used by, depends on and 3-step reach, each fact once, like
+ * the compact datasheet's `formatV2MetricLine`.
  */
 
 export interface FullDetailMetricValues {

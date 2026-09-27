@@ -88,26 +88,10 @@ export interface TopologyRealmLedgerProps {
 }
 
 /**
- * The realm ledger — while a realm is expanded (`?realm=slug`), the left panel
- * transforms to show **only this node's world** instead of the global INDEX (fable's
- * design plus the owner's instruction to keep it restrained). The global first-run
- * card, global census, global tree and global footer all hide, and exactly three
- * blocks remain:
- *
- *   1. Header — root glyph, title, a one-line census, and a quiet 「Leave Realm」 (leave
- *      realm) text button.
- *   2. Realm tree — the root subtree only, search included.
- *   3. Boundary relations — a collapsed-by-default summary line ("N relations
- *      touching the outside"); the list appears only when expanded.
- *
- * The restraint contract (the owner's rejection criteria): no box inside a box
- * (sections are separated by a caps eyebrow, whitespace and one hairline divider),
- * no badge or chip soup (the census is one line of text, and the jump is a quiet
- * action revealed only on row hover), and an empty state is one line of copy. It
- * reuses the global `TopologyIndexPanel`'s `--map-panel-*` /
- * `--topology-index-*` tokens, the same aside shell and the same
- * `TopologyIndexTreeRow` — a sister panel with only its content narrowed to the
- * realm's scope.
+ * The realm ledger shown instead of the global INDEX while a realm is expanded (`?realm=slug`):
+ * header, the realm tree with search, and boundary relations collapsed behind one summary line. No
+ * box in a box, no chip soup, one-line empty states; it reuses INDEX's tokens, shell and
+ * `TopologyIndexTreeRow`.
  */
 export function TopologyRealmLedger({
   rootKind,
@@ -187,11 +171,8 @@ export function TopologyRealmLedger({
 
   return (
     /*
-     * Content height up to the slot (`max-h-full`), the same box rule as `TopologyIndexPanel`
-     * (2026-09-25). The two take turns in one slot through a crossfade; with INDEX ending under
-     * its last row and this ledger still `h-full`, entering a realm also jumped the surface from
-     * content height to the floor (463 to 1056px at 1920), so the swap read as a new panel rather
-     * than the same box changing its contents. A long subtree still scrolls inside the list.
+     * Content height up to the slot (`max-h-full`), like `TopologyIndexPanel`, so swapping the two
+     * reads as one box changing contents.
      */
     <aside
       aria-label={labels.label}
@@ -199,17 +180,15 @@ export function TopologyRealmLedger({
       className={`flex max-h-full flex-col rounded-[var(--map-panel-radius)] border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] p-3 shadow-[var(--map-panel-shadow)] ${className ?? ""}`}
       style={{ width: "var(--topology-index-width)" }}
     >
-      {/* ── 1. Header ── caps eyebrow + title + one-line census + a quiet leave action. */}
       <header className="mb-3 shrink-0 px-0.5">
         <div className="mb-1 flex items-center justify-between gap-2">
           <span className="min-w-0 flex-1 truncate font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--map-panel-text-tertiary)]">
             {labels.label}
           </span>
-          {/* "Export this realm as a block". A self-contained module (the
-              FirstRunStarterModule contract): it reads vault state and labels itself
-              rather than widening this widget's prop surface, and renders null on its
-              own when the local vault is not loaded (the static sample). It stands
-              beside the exit text button in the same quiet action grammar. */}
+          {/*
+           * Export this realm as a block: a self-contained module that renders null without a local
+           * vault.
+           */}
           <RealmBlockExportAction rootTitle={rootTitle} census={census} subtree={subtree} />
           <button
             type="button"
@@ -273,7 +252,6 @@ export function TopologyRealmLedger({
         />
       </div>
 
-      {/* ── 2. Realm tree ── the root subtree only, indented by depth. */}
       <nav
         ref={treeRef}
         role="tree"
@@ -315,7 +293,6 @@ export function TopologyRealmLedger({
         )}
       </nav>
 
-      {/* ── 3. Boundary relations ── separated by one hairline, a collapsed-by-default summary line. */}
       <div
         data-testid="topology-realm-boundary"
         className="mt-2.5 shrink-0 border-t border-[color:var(--map-panel-divider)] pt-2"

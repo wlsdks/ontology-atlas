@@ -7,19 +7,9 @@ export interface SearchResult {
 }
 
 /**
- * Simple multi-field search — enough for 20–200 projects without adding a dependency.
- *
- * Scoring:
- * - exact name match 100
- * - name prefix match 80
- * - name contains 60
- * - nameEn contains 55
- * - slug contains 50
- * - tag contains 40
- * - stack contains 35
- * - description contains 20
- *
- * With several fields matching, the highest score applies.
+ * Multi-field project search, O(n * fields) per query with no index, enough for 20-200 projects.
+ * Scores: exact name 100, name prefix 80, name contains 60, nameEn 55, slug 50, tag 40, stack 35,
+ * description 20; the highest matching field wins.
  */
 export function searchProjects(projects: Project[], rawQuery: string): SearchResult[] {
   const query = rawQuery.trim().toLowerCase();

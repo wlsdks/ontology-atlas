@@ -16,93 +16,28 @@ export interface DomainCapacityBarLabels {
 export interface DomainCapacityBarProps {
   row: DomainCapacityBarRow;
   labels: DomainCapacityBarLabels;
-  /** Responsive width utility classes for the title column — callers place
-   * this row in containers of different widths (a dense insights list vs. a
-   * full-width project card), so the title column is the one thing left
-   * tunable per call site. Defaults to the insights list's column width. */
+  /** Title column width classes, tunable per call site; defaults to the insights list's column. */
   titleWidthClassName?: string;
   /**
-   * `stacked` (default): the total over its breakdown, right-aligned in the fixed tail column.
-   * `inline`: the total and its breakdown on one line, left-aligned directly after the track, for
-   * a wide card where a right-aligned column left ~185px of dead gutter between the bar's end and
-   * its number (project page at 1512, measured 2026-09-25). Its width is `--capacity-tail-inline`,
-   * which the list sets to its widest tail, so every row's track still ends on one axis and no row
-   * carries a gutter wider than its longest number. Unset, the tail is as wide as its own words.
-   * (A fixed 200px only moved the gutter: ~100px stood between the breakdown and the chevron.)
+   * `stacked` (default): total over breakdown, right-aligned in the fixed tail. `inline`: one line
+   * after the track, width `--capacity-tail-inline`, which the list sets to its widest tail so
+   * tracks end on one axis.
    */
   tail?: "stacked" | "inline";
   /**
-   * Where the `Capability N · Element M` breakdown sits. `tail` (the default) keeps it
-   * in the tail: under the total in the `stacked` 192px column, or after it on the `inline` line.
-   * `title` puts it under the domain name and leaves the tail to the total alone, so the number
-   * stands right beside the bar it counts: in the insights list the Korean tail used about 80 of
-   * those 192px and each bar ended ~150px short of its number at 1512 (review, 2026-09-25).
+   * Where the breakdown sits: `tail` (default) or `title`, under the domain name, leaving the tail
+   * to the total so the number stands beside its bar.
    */
   breakdownPlacement?: "tail" | "title";
 }
 
 /**
- * One domain's **composition** — the ratio between words (capabilities) and evidence
- * (elements).
- *
- * ## This bar does not state size (2026-08-09, owner's choice)
- *
- * Length used to be **size** (the largest domain filled the whole track). But the
- * number immediately to its right was already answering that, and measured, length
- * taught almost nothing new:
- *
- * - The fill ratios were **100 / 94 / 88 / 82 / 76 / 65 / 53 / 47%** — even the
- *   smallest domain filled nearly half the track. With values clustered between 8 and
- *   17, that compression follows directly from the data as long as the denominator is
- *   the maximum.
- * - Meanwhile the bar group used **414 of the card's 685px height (60%)**.
- *
- * So the track was changed to **fill completely, with only the boundary position to
- * read**. What the bar now answers is 「are there many words but thin evidence, or the
- * reverse」 — a fact that previously required mental arithmetic on two numbers. Size is
- * handled entirely by the number column on the right.
- *
- * **Zero new data** — it draws from the two numbers the row already held. Measured: in
- * this repository's vault the boundary spreads between **8% and 60%** (from a domain
- * of 1 capability : 11 elements to one at 3 : 2).
- *
- * ⚠️ **What would show this judgement to be wrong** — if real vaults all have similar
- * composition ratios and the boundary stands in one place, this ink becomes as
- * meaningless as the old length. The example vault (storefront) is in fact 38–57% and
- * nearly flat — which means the demo does not show the variety the product is trying
- * to reveal, and that is homework for the example data rather than for this bar.
- *
- * Two screens share this part (`/ontology/insights`' composition tab and `/projects`
- * cards) — **their meanings must not diverge, so fixes happen in the part.**
- *
- * The colouring follows the app's shared bar grammar — **neutrals plus one indigo**.
- * Capabilities are the primary series, so indigo (`--color-indigo-brand`); elements
- * are neutral (`--color-text-quaternary`); and the boundary is carried not by colour
- * but by a **1px seam** (a gap that lets the track colour show through).
- *
- * Why the kind tones (amber/eucalyptus) were dropped — composited over the track those
- * two measure 1.14:1 in luminance contrast, so they never separated by brightness at
- * all, only by hue. And that hue pair (orange–green) happens to be the axis red-green
- * colour blindness separates worst — for roughly 8% of men this bar was already
- * monochrome. Meanwhile which side is capabilities was already stated three times
- * over by **order** (capabilities always left), **the unit word**, and **the number
- * beside it**. Colour carried no fact and was duplicate ink (Tufte data-ink), so it
- * was removed.
- *
- * Why the seam is essential — indigo and neutral measure 1.12:1 against each other
- * too, so an adjacent boundary is invisible by colour. A 1px seam is a
- * colour-independent separator, guaranteeing "a bar of two values" in colour
- * blindness, greyscale and high-contrast mode (a path WCAG 1.4.11 recognises). It
- * exists only when both values are above 0 — with one value there is nothing to split.
- *
- * No minimum-width floor is applied — a constant floor inflates small values and
- * creates a lie factor. The value of a segment that vanishes below 1px is carried by
- * the number beside it.
- *
- * Decision record: `.qa-scratch/domain-bar-color-2026-07-26.md`. The charter boundary
- * is `docs/DESIGN-SYSTEM.md` "Three ambers, three rules" — the kind palette survives
- * only where colour is the **only** channel carrying identity (the kind census's
- * unlabelled stack, map dots, tree chips).
+ * One domain's composition, capabilities against elements; the track always fills and only the
+ * boundary moves (size is the number column's job). Shared by `/ontology/insights` and `/projects`,
+ * so fixes land here. Indigo plus neutral with a 1px seam, since kind tones separate only by hue.
+ * No minimum width, which would inflate small values. Record:
+ * `.qa-scratch/domain-bar-color-2026-07-26.md`; charter: `docs/DESIGN-SYSTEM.md` "Three ambers,
+ * three rules".
  */
 export function DomainCapacityBar({
   row,
@@ -111,9 +46,7 @@ export function DomainCapacityBar({
   tail = "stacked",
   breakdownPlacement = "tail",
 }: DomainCapacityBarProps) {
-  // The denominator is **this row's own sum**, not the list's maximum. So the track is
-  // always full and what gets compared between rows is not length but **where the
-  // boundary sits**.
+  // The denominator is this row's own sum, so rows compare where the boundary sits.
   const filled = row.capabilityCount + row.elementCount;
   const capWidth = filled > 0 ? (row.capabilityCount / filled) * 100 : 0;
   const elWidth = filled > 0 ? (row.elementCount / filled) * 100 : 0;
@@ -137,13 +70,10 @@ export function DomainCapacityBar({
           </span>
         ) : null}
       </span>
-      {/* The track is `aria-hidden` — the same fact (capability N · element M) sits as
-          text immediately to its right, so reading it out makes a screen-reader user
-          hear the same numbers twice. The 1px seam between the two segments is a flex
-          gap. Segments render only when their value is above 0, so the seam exists only
-          when both values do — a domain with one side at 0 (say 「words but zero
-          evidence」) becomes **a single solid colour**, and that is the state this bar
-          says loudest. */}
+      {/*
+       * aria-hidden: the same numbers sit as text beside it. Segments render only above 0, so the
+       * seam exists only when both values do.
+       */}
       <span
         aria-hidden
         data-testid="domain-capacity-bar-track"
@@ -164,16 +94,10 @@ export function DomainCapacityBar({
           />
         ) : null}
       </span>
-      {/* The tail column is **fixed width**. Leaving the width to the content lets the
-          text-width difference between `Capability 4 · Element 110` and `Capability 2 · Element 5` set the
-          length of the `flex-1` track beside it, splitting an axis six rows must share
-          into three lengths (measured 2026-07-26: 929.8 / 935.5 / 941.2px — an 11.4px
-          staircase at the right edge). A domain with smaller values then got a longer
-          axis, distorting the comparison value itself by up to 1.2%.
-          The 「Connections」 (connections) tab's impact ranking already uses this grammar (fixed
-          track plus fixed number column), so its column-width discipline is taken
-          verbatim. `w-48` (192px, on the spacing scale) fits all nine current English Storefront tails without clipping.
-          `tabular-nums` is applied to both rows so the digit positions do not shift either. */}
+      {/*
+       * Fixed-width tail so text width cannot change the track length and split the shared axis;
+       * `w-48` fits every current English tail. `tabular-nums` keeps digits aligned.
+       */}
       {tail === "inline" ? (
         <span
           data-testid="domain-capacity-bar-tail"
@@ -194,8 +118,8 @@ export function DomainCapacityBar({
       ) : (
         <span
           data-testid="domain-capacity-bar-tail"
-          // With the breakdown under the name the tail holds the total alone: still a fixed
-          // column, now as wide as three title-step digits.
+          // With the breakdown under the name, the tail holds the total alone in a fixed column
+          // three digits wide.
           className={`${underTitle ? "w-8" : "w-48"} flex-none text-right`}
         >
           <span className="block font-mono text-title tabular-nums text-[color:var(--map-numeral-face)]">
@@ -216,20 +140,8 @@ export function DomainCapacityBar({
 }
 
 /**
- * The key identifying the bar's two pieces — drawn **once per bar block**.
- *
- * Repeating a swatch per row (6 rows × 2 = 12) turns the key into noise. Omitting it
- * entirely leaves someone seeing it for the first time, after colour was removed, with
- * no way to know "what is the left piece" except inferring from order. So: one line
- * per bar group.
- *
- * Why `aria-hidden` — this line is the key to a bar graphic that is itself
- * `aria-hidden`. Hiding the graphic and reading out only the key leaves a screen
- * reader with two words and no context. The same fact is carried as text by each row's
- * `Capability N · Element M` caption.
- *
- * It always renders when the bar does — appearing and disappearing makes the space
- * above the bar wobble (dimension regularity).
+ * The legend for both pieces, once per bar block and always rendered so the space above does not
+ * wobble. aria-hidden like the graphic it keys; each row's caption carries the fact.
  */
 export function DomainCapacityLegend({
   labels,

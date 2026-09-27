@@ -8,13 +8,7 @@ import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { badgeClass } from '@/shared/ui/badge-class';
 
-/**
- * The section label — **sans, not mono caps** (owner, 2026-09-06). The reasoning, and the
- * measurement behind it, is in `AnalysisWorkbench.tsx` beside the same constant: `uppercase` does
- * nothing to Hangul, `:lang(ko)` already zeroes the caps tracking, and what was left of the
- * eyebrow was a fixed-advance face pushing syllable blocks apart. Kept identical to the
- * workbench's so the two halves of one panel do not label their groups two different ways.
- */
+/** Sans, not mono caps; identical to the workbench's section label in `AnalysisWorkbench.tsx`. */
 const SECTION_LABEL = 'text-caption font-[var(--font-weight-emphasis)] text-[color:var(--color-text-tertiary)]';
 
 /** Explanatory UI for the normative kinds and relation directions in the Atlas specification. */
@@ -36,51 +30,16 @@ export function MeaningContext({ node, relations, onSelectRelation, onEvidence, 
   const kindsLabel = useTranslations('kinds');
   const kinds = ['project', 'domain', 'capability', 'element', 'document'];
   const selectedKind = node && [...kinds, 'vault-readme'].includes(node.kind) ? node.kind : 'unknown';
-  /*
-   * **The tab answers "what did I pick" first** (owner, 2026-09-06: "messy"). With nothing
-   * picked it used to open on the ontology glossary, the five kind definitions, a checkbox with
-   * its help text, a relations heading with its guide, and only then the sentence that mattered
-   * — pick something on the map. Every block wore the same grey, so a person read a wall to
-   * find the one instruction. Now: the picked thing or the instruction to pick one; the map
-   * display switch on its own line; the glossary folded under one question at the end.
-   */
   const divided = 'border-t border-[color:var(--color-divider)] pt-4';
-  /*
-   * ⚠️ **A rule needs something above it to divide** (measured 2026-09-06, 460px panel). With
-   * nothing picked this tab was one sentence, a rule, a switch and a fold, a rule, and another
-   * fold — three hairlines around two lines of content, and the first thing the eye met after the
-   * instruction was a horizontal line rather than the switch it was drawing.
-   *
-   * The map-display switch and the two folds are one trailing group — what the map shows and what
-   * the words mean — so they take one rule between them, and they take it only when something
-   * stands above them to be divided from.
-   */
+  /* The trailing group takes a rule only when something stands above it. */
   const trailing = node || relations.length ? divided : '';
-  /*
-   * ⚠️ **One fact once** (measured 2026-09-25, 1512 wide). Every relation card carried the same
-   * two-line "no reason was recorded" warning and the same two full-size buttons: six cards said
-   * one fact six times across about 1,056px of scroll, while the header chip already offered to
-   * write the missing reasons. The fact is now one line over the group; each card keeps what is
-   * its own — the sentence, the relation tag, its reason when there is one — and one compact
-   * action row, so cards in the list come out the same height.
-   */
   const missingReasons = relations.filter((relation) => !relation.why).length;
   const mixedReasons = missingReasons > 0 && missingReasons < relations.length;
   /*
-   * ⚠️ **The count stands once** (round three, 2026-09-25). With every relation unexplained, the
-   * header action said "Fill 6 missing reasons" and this line said "6 connections have no recorded
-   * reason" about 250px lower. The line speaks only when there is no action to say it, or when it
-   * adds something the action cannot: that some, not all, of the listed relations lack a reason.
+   * Speaks only when no header action states the count, or when only some relations lack a reason.
    */
   const reasonLine = missingReasons > 0 && (!reasonsAction || mixedReasons);
   return <div className="flex flex-col gap-4">
-    {/*
-      ⚠️ **The name belongs to the header, not the body** (2026-09-25). The panel header already
-      titles the picked node (its `h2`), and the body repeated the kind and the name as a second
-      headline 180px lower — two title-weight strings for one name in one column. The kind moved
-      into the header's eyebrow line; the body starts with what the node means, then what its kind
-      means, both at reading size rather than the micro caption.
-    */}
     {node ? <section className="space-y-2" aria-label={node.title}>
       <p className="whitespace-pre-wrap text-body-lg leading-body-lg">{node.summary?.trim() || t('definitionMissing')}</p>
       <p className="text-body leading-body text-[color:var(--color-text-secondary)]">{glossary(`criteria.${selectedKind}`)}</p>
@@ -91,15 +50,6 @@ export function MeaningContext({ node, relations, onSelectRelation, onEvidence, 
         <p className={SECTION_LABEL}>{t('relationsEyebrow')}{relations.length ? <span className="tabular-nums"> · {relations.length}</span> : null}</p>
         {reasonLine ? <p data-testid="meaning-relations-missing-reasons" className="text-label leading-label text-[color:var(--color-text-secondary)]">{t('rationaleMissingGroup', { count: missingReasons })}</p> : null}
       </div>
-      {/*
-        ⚠️ **The sentence is the button** (round three, 2026-09-25, 1920 wide). Each relation was a
-        460px card whose tag, sentence and two chips filled the left 55 to 60%, and every card
-        carried the same two chips — twelve look-alike buttons in one column competing with the
-        sentences they served. Now the relations are one list surface: each row is a single
-        pressable target (tag, sentence, reason) that shows the connection on the map, and the
-        declaring document is one quiet icon at the row's end, so the sentence leads and the row's
-        width belongs to it.
-      */}
       {relations.length ? <ul data-testid="meaning-relations" className="overflow-hidden rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] divide-y divide-[color:var(--color-divider)]">{relations.map((relation) => <li key={relation.id} data-testid="meaning-relation" className="flex items-center">
         <button
           type="button"

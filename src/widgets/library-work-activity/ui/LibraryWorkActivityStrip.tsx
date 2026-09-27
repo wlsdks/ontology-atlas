@@ -24,13 +24,8 @@ export function LibraryWorkActivityStrip({ activity, onSelect, reserved = false 
   activity: LibraryWorkActivity;
   onSelect: (target: LibraryWorkTarget) => void;
   /**
-   * Whether a session is open to report on. The lane holds its height so a receipt never
-   * resizes the canvas, but holding it *always* charged every folder 112px of the picture
-   * for work that was not happening: measured 2026-09-08 at 1920x1080, an idle Library
-   * rendered `library-work-lane` at y 0..112 with no text and no `Surface` inside it, and
-   * the canvas began at 160 instead of 48. So the reservation follows the session that
-   * causes the receipts, and standing it up costs one shift at a moment the person asked
-   * for by opening the conversation — never on the arriving receipt itself.
+   * Whether a session is open to report on; the lane reserves its height only then, so an idle
+   * Library does not lose canvas space.
    */
   reserved?: boolean;
 }) {
@@ -55,46 +50,20 @@ export function LibraryWorkActivityStrip({ activity, onSelect, reserved = false 
       setHistoryOpen(false);
       historyTriggerRef.current?.focus();
     };
-    // WKWebView can leave focus on the reader after a pointer opens this anchored
-    // surface. Capture before the reader's own Escape handler closes the document.
+    // WKWebView can leave focus on the reader after a pointer opens this surface; capture before
+    // the reader's own Escape handler closes the document.
     document.addEventListener("keydown", handleHistoryEscape, true);
     return () => document.removeEventListener("keydown", handleHistoryEscape, true);
   }, [historyOpen, setHistoryOpen]);
-  // Nothing to report and no session that could report: the picture keeps the height.
-  // A receipt still outlives its conversation, which is the whole point of a receipt, so
-  // the lane stands for one that is already there even after the dock is closed.
+  // Nothing to report and no session: no lane. A receipt outlives its conversation, so the lane
+  // stands for one already there.
   if (!reserved && headline === null) return null;
   return (
     /*
-     * Reserve the activity lane before the first event: mounting a receipt must not
-     * resize the canvas and move the very marks whose work it is explaining.
-     *
-     * **One line from `sm` up, two below it** (`docs/DECISIONS.md`, 2026-09-11 — "The
-     * Library keeps its spine, and computes the structural check itself"). Two stacked
-     * rows plus the status strip put a **third** header band over the reader: measured at
-     * 1512, the landing and the document under it fell 112px the moment a conversation
-     * opened, and 112 → 64 gives 48 of that back. 64px is the height the coarse-pointer
-     * receipt chip needs (44px) plus its own inset.
-     *
-     * ⚠️ **The single line does not survive a phone, and two measurements say so.** At
-     * 390px the first receipt chip came to rest at x 216..411 — past the right edge, so
-     * reaching it needed a sideways scroll — and its row moved up to y 10..54, under the
-     * toast, which sonner places at its own `mobileOffset` on a small viewport whatever
-     * `--app-toast-top-offset` says. Both are the width's fault, not the lane's, so in
-     * that band the two facts stack the way they always did and the reader there is
-     * full-width anyway (`max-lg:order-first`).
-     *
-     * ⚠️ **The fold is 601px, not `sm` (640), and the boundary is sonner's** (design-
-     * responsive C2, council 2026-09-11). Between 601 and 639 the lane still stacked two
-     * rows while the toaster had already gone back to reading `--app-toast-top-offset`
-     * (124, a measurement of the one-row lane), so the box landed 37px inside the
-     * receipts at 620×900. Height and row direction now switch together on the same
-     * width sonner switches its offset on. ⚠️ The toast half of that agreement lapsed on
-     * 2026-09-12: this surface's toasts anchor to the pane's bottom-right corner and no
-     * longer pass over this lane at any width (`src/shared/ui/toast-position.ts`). The
-     * 601px fold stands on its first measurement — the receipt chip past the right edge
-     * at 390. The horizontal insets keep their own `sm`/`md` steps: an inset is not part
-     * of that agreement.
+     * Reserve the lane before the first event so a receipt never resizes the canvas. One line from
+     * 601px, two below (`docs/DECISIONS.md`, "The Library keeps its spine, and computes the
+     * structural check itself"): at 390px one line pushed the receipt chip past the right edge.
+     * 64px fits the 44px coarse-pointer chip plus inset.
      */
     <div className="h-28 flex-none min-[601px]:h-16" data-testid="library-work-lane">
     <Surface open={headline !== null} motion="overlay" as="section"

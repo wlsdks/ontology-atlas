@@ -7,14 +7,8 @@ import koMessages from "../../../../messages/ko.json";
 import { DocReadingPane } from "./DocReadingPane";
 
 /**
- * **The reserve the scroll end owes the floating back-to-top pill.**
- *
- * The pixel proof lives in `tests/e2e/scroll-end-gap.spec.ts`, which scrolls the Library's
- * reader to its end and measures the last ink against the pill's rect — jsdom performs no
- * layout and can measure neither. What this file holds is the part e2e cannot reach: the
- * check-results page needs findings from an agent turn, so no harness can open it full, and
- * it is one of the three documents this one pane draws. Asserting the prescription here means
- * the report is covered by the same line the wiki reader is measured on.
+ * The scroll-end reserve owed to the back-to-top pill; the pixel proof is
+ * `tests/e2e/scroll-end-gap.spec.ts`, and this covers the check-results page e2e cannot open.
  */
 function renderPane(withBackToTop: boolean) {
   return render(

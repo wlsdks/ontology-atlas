@@ -14,10 +14,8 @@ function render(ui: React.ReactElement) {
 }
 
 /**
- * TopologyFitControl — the only tile left after the demolition (Fit). Even with the
- * dead control panel removed, this guards regressions in (1) the Fit button's
- * accessible name and click callback, (2) the right rail's position token contract,
- * and (3) the keyboard focus ring (WCAG 2.4.7).
+ * Guards the fit button's name and callback, the right rail's position token contract, and the
+ * focus ring.
  */
 describe('TopologyFitControl fit tile', () => {
   it('gives the fit button an accessible name and calls onFitView on click', () => {

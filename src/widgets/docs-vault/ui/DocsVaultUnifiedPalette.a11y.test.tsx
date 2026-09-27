@@ -6,8 +6,8 @@ import koMessages from '../../../../messages/ko.json';
 import { DocsVaultUnifiedPalette } from './DocsVaultUnifiedPalette';
 import type { VaultDoc } from '@/entities/docs-vault';
 
-// next-intl's navigation wrapper cannot resolve next/navigation under vitest, so
-// Link is mocked as a plain <a>, as in the other widget tests.
+// next-intl's navigation wrapper cannot resolve next/navigation under vitest, so Link is a plain
+// <a>.
 vi.mock('@/i18n/navigation', () => ({
   Link: ({
     href,
@@ -25,8 +25,7 @@ vi.mock('@/i18n/navigation', () => ({
   ),
 }));
 
-// jsdom does not implement scrollIntoView — stubbed so the active-option scroll
-// effect does not throw.
+// jsdom has no scrollIntoView; stubbed so the active-option scroll effect does not throw.
 if (!Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = vi.fn();
 }
@@ -72,12 +71,7 @@ function renderPalette(initialQuery = '') {
   );
 }
 
-/**
- * Unified palette a11y — the WAI-ARIA combobox pattern. For a screen reader to
- * follow arrow-key movement, the input has to point at the active option's id
- * through aria-activedescendant (previously only aria-selected was present, so AT
- * could not read the movement).
- */
+/** WAI-ARIA combobox: the input points at the active option through aria-activedescendant. */
 describe('DocsVaultUnifiedPalette — combobox a11y', () => {
   it('links the combobox input to the listbox through aria-controls', () => {
     renderPalette();
@@ -113,8 +107,7 @@ describe('DocsVaultUnifiedPalette — combobox a11y', () => {
     expect(input).not.toHaveAttribute('aria-activedescendant');
   });
 
-  // aria-activedescendant alone does not convey "how many results" to AT → announce
-  // the count through a polite live region (standard combobox practice).
+  // A polite live region announces the result count, which aria-activedescendant cannot convey.
   it('announces the result count in a live region when there is a query', () => {
     renderPalette('alpha');
     expect(screen.getByRole('status')).toHaveTextContent(/결과 1개/);

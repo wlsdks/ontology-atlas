@@ -90,9 +90,7 @@ describe("buildFullDetailGroups", () => {
   });
 
   it('classifies containment authored as belongs_to in the reverse direction', () => {
-    // capability:child-1 --belongs_to--> domain:a : domain:a is the parent (the
-    // container) and capability:child-1 the child — the opposite direction encoding
-    // from `contains` (parent→child).
+    // belongs_to encodes containment child to parent, the opposite of `contains`.
     const belongsToEdges = [
       { from: "capability:child-1", to: "domain:a", type: "belongs_to" },
     ];

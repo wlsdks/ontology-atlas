@@ -7,14 +7,9 @@ import messages from '../../../../messages/ko.json';
 import { LibraryImportDialog } from './LibraryImportDialog';
 
 /**
- * The three steps, with the service mocked.
- *
- * ⚠️ **Nothing here reaches Notion, and nothing could.** Atlas is not the MCP client — the coding
- * agent is — so the fetch and the picking happen one surface over, inside the agent turn. What
- * this file can prove, and does, is the half that is Atlas's: which descriptor gets written, that
- * it is switched on, that a token never lands in the folder's file, and that the brief handed
- * over is bounded and names the folder. The half that is not proven anywhere is a real service
- * answering; that is stated in the report rather than implied by a green test.
+ * The three steps with the service mocked. Nothing here reaches a real service; this proves the
+ * descriptor written, that it is on, that no token lands in the folder file, and that the brief is
+ * bounded.
  */
 
 const secretSet = vi.fn(async (_ref: string, _value: string) => true);
@@ -73,17 +68,10 @@ beforeEach(() => {
 
 describe('bringing documents in from a service', () => {
   it('never says MCP, stdio, npx or environment variable to the person', () => {
-    /*
-     * The owner's condition, 2026-09-07: *"it has to be really easy to use, or nobody will."* The
-     * technical dialog still exists one destination away and still uses those words; this door
-     * is for somebody who wants their Notion pages and has no reason to learn them.
-     */
+    /* This door never uses the technical words; the MCP screen still does. */
     draw();
     /*
-     * ⚠️ **The escape-hatch tile is excluded on purpose.** It is the one place the word MCP is
-     * the right word: it names the other door, for somebody whose service this list does not
-     * know, and calling it anything vaguer would hide the only route they have. Everything else
-     * on this screen is checked.
+     * The escape-hatch tile is excluded on purpose: there MCP is the right word for the other door.
      */
     const other = screen
       .getAllByTestId('library-import-service')
@@ -105,9 +93,8 @@ describe('bringing documents in from a service', () => {
 
   it('step one asks for the one value, says where it is issued, and who uses it', () => {
     /*
-     * A program with a token, since 2026-09-07 evening: the hosted sign-in this step once
-     * promised cannot happen inside the app. The value goes to the keychain, the folder's file
-     * gets the name, and the coding tool — not Atlas — is what reaches the service with it.
+     * The token goes to the keychain, the folder's file gets the name, and the coding tool reaches
+     * the service.
      */
     draw();
     pickService('notion');
@@ -149,9 +136,8 @@ describe('bringing documents in from a service', () => {
 
   it('stays on step one and says so when the folder saved nothing', async () => {
     /*
-     * A write that never happened and one that succeeded must not look the same — the defect the
-     * connector dialog already had to fix once (`ConnectorsPanel`, 2026-09-05). Here it would be
-     * worse: the next step would open a conversation against a connection that does not exist.
+     * A failed write must not look like a successful one, or the next step opens a conversation on
+     * a missing connection.
      */
     const refuse = vi.fn(async () => ({ status: 'blocked_unavailable' as const, connectors: [] }));
     draw({ onAttach: refuse });
@@ -188,11 +174,8 @@ describe('bringing documents in from a service', () => {
 
   it('offers no press it cannot honour, and says what did happen instead', async () => {
     /*
-     * ⚠️ **Cold walkthrough, 2026-09-07.** On a surface with no agent the last press closed the
-     * dialog and produced nothing — no window, no message, no change behind it. The walker's own
-     * words: *"if I hadn't been told this was expected, I would assume the feature was broken"*.
-     * So the press is not offered at all, and what actually happened is said out loud: the
-     * connection is saved and switched on, and any coding tool pointed at this folder can use it.
+     * With no agent the last press is not offered; the screen says the connection is saved and on
+     * for any coding tool on this folder.
      */
     draw({ canRunAgent: false });
     pickService('notion');
@@ -217,10 +200,8 @@ describe('bringing documents in from a service', () => {
 
   it('names the right absence: the app has a runtime gap, not a browser', () => {
     /*
-     * ⚠️ **Two different absences** (caught by `surface-naming-ratchet`, 2026-09-07). A browser
-     * cannot start any program; the installed app can and has simply verified no coding tool
-     * yet. One sentence for both would be false in the app, and the remedies differ — the app
-     * versus the runtimes screen.
+     * A browser cannot start programs while the app simply has no verified coding tool yet, so the
+     * two absences get different sentences.
      */
     draw({ canRunAgent: false, agentGap: 'runtime' });
     pickService('notion');
@@ -249,10 +230,8 @@ describe('bringing documents in from a service', () => {
 
   it('says which conversation can reach it, so Codex does not meet a silent absence', () => {
     /*
-     * `connectorAcpServers` hands connectors only to a runtime whose permission path was
-     * measured, which today is Claude alone. Without this line somebody on Codex presses
-     * Connect, opens the conversation, and the agent has no Notion tools — arriving at the
-     * silently-absent failure through the friendliest door in the product.
+     * Connectors reach only runtimes with a measured permission path (Claude today), so Codex users
+     * must be told.
      */
     draw();
     pickService('notion');
@@ -264,11 +243,7 @@ describe('bringing documents in from a service', () => {
   });
 
   it('says where the picking happens instead of implying this screen will draw the list', () => {
-    /*
-     * Atlas cannot draw it: it has no way to call the service's tools or receive their result as
-     * data. A screen that implies a list will appear here and then does not produce one is worse
-     * than one that names the place the results actually are.
-     */
+    /* Atlas cannot draw the result list, so the screen names where the results are. */
     draw();
     pickService('notion');
     typeToken();

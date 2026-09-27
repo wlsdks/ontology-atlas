@@ -11,12 +11,8 @@ import { buildOntologyTree } from "@/entities/knowledge-graph/lib/ontology-tree"
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { TopologyIndexPanel } from "./TopologyIndexPanel";
 
-// `@/i18n/navigation`'s Link needs an IntlProvider context this file doesn't
-// stand up (established pattern, see `DocsVaultViewer.test.tsx`) — mocked to
-// a plain anchor so href/click assertions still work (the agent-activity deep link).
-// This widget receives labels as props, but the rows below it read the screen's
-// language (the decision that keeps a Latin eyebrow off Hangul,
-// `shared/lib/latin-eyebrow`).
+// `@/i18n/navigation`'s Link needs an IntlProvider this file does not set up, so it is a plain
+// anchor. The rows read the screen's language through `shared/lib/latin-eyebrow`.
 vi.mock("next-intl", () => ({
   useLocale: () => "ko",
   useTranslations: () => (key: string) => key,
@@ -30,27 +26,18 @@ vi.mock("@/i18n/navigation", () => ({
   ),
 }));
 
-// TopologyIndexPanel's own tests exercise the tree/search/census — the
-// root-first-open "get started" module it mounts at the top needs a
-// LocalVaultProvider + i18n context it doesn't stand up here, and its
-// visibility logic is unit-tested separately
-// (`@/features/first-run-starter/ui/FirstRunStarterModule.test.tsx`). Stub
-// it to a spy so this file can still assert it receives the right census
-// props without pulling in vault/i18n providers.
+// The first-run module needs vault and i18n providers and is tested in
+// `FirstRunStarterModule.test.tsx`; stubbed to a spy that renders children, so this file checks
+// INDEX alone and the props it passes.
 const firstRunStarterProps = vi.hoisted(() => ({ current: null as unknown }));
 vi.mock("@/features/first-run-starter", () => ({
-  // The 2026-07-24 restructure — the module wraps the INDEX body (children) and
-  // draws exclusively against the guide. The stub imitates the "no guide" state
-  // (children as-is) so this file verifies INDEX behaviour alone.
   FirstRunStarterModule: (props: { children?: React.ReactNode }) => {
     firstRunStarterProps.current = props;
     return <>{props.children}</>;
   },
 }));
 
-// The ontology block "import" module is stubbed for the same reason (it needs its own
-// vault and i18n context, and its behaviour is unit-verified by
-// `BlockImportModule.test.tsx`) — this file only checks that the panel mounts it.
+// The block import module is stubbed for the same reason (`BlockImportModule.test.tsx`).
 const blockImportMounted = vi.hoisted(() => ({ current: 0 }));
 vi.mock("@/features/ontology-blocks", () => ({
   BlockImportModule: () => {
@@ -136,12 +123,8 @@ function buildFixtureTree() {
 
 describe("TopologyIndexPanel", () => {
   /*
-   * **One badge column, one meaning.** The number at the right of a row is the same
-   * mark the map draws inside a node, and the map counts every kind from the domain
-   * census (`views/home/lib/map-adapter.ts`). The row read that census for domains
-   * only, so a project row fell through to `children.length`: measured on the sample
-   * folder at 1512×982, the one project said **3** in the INDEX while its own node on
-   * the canvas said **16**, and the three domain rows agreed at 5/7/4.
+   * One badge column, one meaning: the row's number is the map node's mark, counted from the same
+   * domain census for every kind (`views/home/lib/map-adapter.ts`).
    */
   it("a project row counts everything below it, the same number its node carries", () => {
     const census = new Map([
@@ -207,12 +190,7 @@ describe("TopologyIndexPanel", () => {
     expect(tree.tagName).toBe("DIV");
   });
 
-  /*
-   * Audit, 2026-09-05: opening a folder from the first-run panel redrew the map with the
-   * person's own concepts, and nothing on the screen said which folder had been read. The panel
-   * that had said 「sample」 a second earlier simply stopped saying anything, so the one visible
-   * confirmation that the pick landed disappeared at the moment it was wanted.
-   */
+  /* After opening a folder the panel must name the folder that was read. */
   describe("naming the folder the rows came from", () => {
     const base = {
       treeResult: buildFixtureTree(),
@@ -235,8 +213,8 @@ describe("TopologyIndexPanel", () => {
     });
 
     /*
-     * `entities/docs-vault/model/types.ts` sets the rule: a screen saying "N documents" must be
-     * able to say in the same place whether N is all of them.
+     * `entities/docs-vault/model/types.ts`: a screen saying "N documents" must say in the same
+     * place whether N is all of them.
      */
     it("marks a count the walk did not finish rather than presenting it as the whole folder", () => {
       render(
@@ -266,9 +244,7 @@ describe("TopologyIndexPanel", () => {
     });
   });
 
-  // 2026-09-19 — INDEX filtered 125 concepts down to two and marked nothing in
-  // either, on an 11px label, while the palette on the same screen had been marking
-  // its rows for months. The filter says which rows survived; the mark says where.
+  // The filter says which rows survived; the mark says where the query landed.
   it('marks where the typed text sits in the remaining rows', async () => {
     render(
       <TopologyIndexPanel
@@ -359,16 +335,7 @@ describe("TopologyIndexPanel", () => {
     expect(screen.getByText("Onboarding & UX")).toBeInTheDocument();
   });
 
-  /**
-   * 「Import nodes from another folder」 (import nodes from another folder) is **not in
-   * INDEX** (moved 2026-08-02, owner: *"What is this? Why is this text here..?"* — what is
-   * this? why is this text here?).
-   *
-   * Something used once or twice in a lifetime stood as a permanent button on the
-   * screen for reading the map. Its home is now settings → workspace
-   * (`AppSettingsMenu`). This case stops it **coming back** — it is a self-contained
-   * module, so putting one line back here revives it silently.
-   */
+  /** Block import is not in INDEX (it lives in settings); this stops one line from reviving it. */
   it('does not carry the block import module in INDEX', () => {
     blockImportMounted.current = 0;
     render(
@@ -414,15 +381,8 @@ describe("TopologyIndexPanel", () => {
   });
 
   /**
-   * **A flat tree must say its own shape** (map round, 2026-09-20).
-   *
-   * The rows are siblings in the DOM — there is no nested `role="group"`, and
-   * the hierarchy is drawn with a left margin of `depth * 16`. WAI-ARIA then
-   * requires each `treeitem` to carry `aria-level`, and `aria-posinset` /
-   * `aria-setsize` for its place among its siblings. Measured before the fix on
-   * the sample map: 10 rows, 0 groups, and not one level — a screen reader
-   * announced a project and its nine domains as ten peers, and an expanded
-   * domain's capabilities joined the same flat list.
+   * A flat tree must state its shape: each treeitem carries aria-level, aria-posinset and
+   * aria-setsize, since the hierarchy is only a left margin.
    */
   it("every row states its level and its place among its siblings", () => {
     const treeResult = buildFixtureTree();
@@ -473,10 +433,7 @@ describe("TopologyIndexPanel", () => {
   });
 
   it("INDEX tree is a single Tab stop — roving tabindex + Arrow/Home/End move the roving focus (P0)", () => {
-    // Regression (accessibility audit P0): every treeitem used to carry tabIndex=0,
-    // so expanding a domain added +N Tab stops and a keyboard user had to Tab
-    // through the whole tree. WAI-ARIA `tree` requires exactly ONE Tab entry
-    // point (the active row), with Arrow keys walking siblings.
+    // WAI-ARIA `tree` has exactly one Tab entry point, with arrow keys walking siblings.
     const treeResult = buildFixtureTree();
     render(
       <TopologyIndexPanel
@@ -509,7 +466,6 @@ describe("TopologyIndexPanel", () => {
     expect(domain).toHaveAttribute("tabindex", "-1");
 
     // ArrowDown rolls the single tabindex=0 onto the next visible sibling and
-    // moves DOM focus with it.
     fireEvent.keyDown(project, { key: "ArrowDown" });
     expect(document.activeElement).toBe(domain);
     expect(tabbableRows()).toEqual([domain]);
@@ -521,7 +477,6 @@ describe("TopologyIndexPanel", () => {
     expect(tabbableRows()).toEqual([domain]);
 
     // ArrowDown from the domain lands on its first child (whatever the tree's
-    // child sort is — the +N rows are reachable by Arrow, never by Tab).
     const order = rowsInDomOrder();
     const firstChild = order[1 + 1]; // [project, domain, firstChild, ...]
     fireEvent.keyDown(domain, { key: "ArrowDown" });
@@ -535,10 +490,7 @@ describe("TopologyIndexPanel", () => {
   });
 
   it("collapses when any part of the header row is clicked, not just the chevron", () => {
-    // Regression: the chevron used to be the only hit area for collapsing
-    // INDEX. The whole header row is now the toggle (role=button via a real
-    // <button>), so a click anywhere in it — including the label text far
-    // from the chevron — must fire onCollapse.
+    // The whole header row is the collapse toggle, not just the chevron.
     const onCollapse = vi.fn();
     const treeResult = buildFixtureTree();
     render(
@@ -612,7 +564,6 @@ describe("TopologyIndexPanel", () => {
     });
 
     // matched leaf + its ancestor chain (capability, domain) stay visible —
-    // filterTreeByQuery's "keep ancestors" contract.
     expect(screen.getByText("Agent Brief")).toBeInTheDocument();
     expect(screen.getByText("MCP Server")).toBeInTheDocument();
     // sibling capability with no matching descendant is pruned out.
@@ -722,8 +673,7 @@ describe("TopologyIndexPanel", () => {
       concepts: 102,
       relations: 478,
       domains: 6,
-      // The tour and plain-mode callbacks are defined only when HomePage supplies them
-      // (this test passes neither — confirming undefined passes through).
+      // Tour and plain-mode callbacks exist only when HomePage supplies them.
       onStartTour: undefined,
       onEnablePlainMode: undefined,
       audiencePlain: false,
@@ -791,9 +741,7 @@ describe("TopologyIndexPanel", () => {
     fireEvent.click(screen.getByTestId("topology-index-segment-recent"));
     fireEvent.click(screen.getByTestId("topology-index-segment-all"));
 
-    // A collapsed branch unmounts after the expansion transition
-    // (`.ai-row-disclosure`) finishes — the price of removing the "sudden vanish" is
-    // that it disappears one beat later.
+    // A collapsed branch unmounts after its disclosure transition (`.ai-row-disclosure`).
     await waitForElementToBeRemoved(() => screen.queryByText("CLI Developer Entry"));
     const domainRow = screen.getByText("Onboarding & UX").closest('[data-index-row]')!;
     fireEvent.click(domainRow.querySelector("button")!);
@@ -946,10 +894,8 @@ describe("TopologyIndexPanel", () => {
     expect(screen.getByTestId("topology-index-census")).toBeInTheDocument();
   });
 
-  // P1 Defect ①a (Usability full inspection 2026-07-23) — General (non-developer) mode
-  // excludes element rows from the tree (via caller's filterTreeExcludeKind), but
-  // there is no text explaining that fact, so "Capacity 2 · Element 7" was read as
-  // a consistency defect where expanding shows only 2 rows.
+  // Plain mode drops element rows, so a hint explains why a domain's counts exceed its visible
+  // rows.
   describe('plainMode hint', () => {
     it("renders the quiet plain-mode hint when plainMode is true and the label is provided", () => {
       render(
@@ -1007,10 +953,8 @@ describe("TopologyIndexPanel", () => {
     });
   });
 
-  // Unify attention winner in the overview left rail (2026-07-24) — in vault disconnected
-  // (static sample) state, maintenance controls like "dusty nodes" are not exposed to
-  // first-time visitors. If `vaultLoaded=false`, rendering is suppressed;
-  // if `vaultLoaded=true` (or omitted — backward-compatible default), it must appear as usual.
+  // Maintenance rows are hidden in the static sample and shown with a vault (or when `vaultLoaded`
+  // is omitted).
   describe('vault-connected gate for maintenance controls', () => {
     it("hides maintenance rows when vaultLoaded is false", () => {
       render(
@@ -1056,11 +1000,7 @@ describe("TopologyIndexPanel", () => {
       expect(screen.getByTestId("topology-index-uncataloged-docs")).toBeInTheDocument();
     });
 
-    /*
-     * Census state 3, 2026-08-31: a document the checks caught is drawn as a healthy node or as no
-     * node at all, and the only screen that explains it is the document library, which somebody
-     * has to already suspect a problem to open. This row is the map's one quiet way to say so.
-     */
+    /* The map's one quiet line for documents the checks caught. */
     it('tells the map about docs that failed checks and links to the docs', () => {
       render(
         <TopologyIndexPanel
@@ -1123,10 +1063,7 @@ describe("TopologyIndexPanel", () => {
 
     it("surfaces the unbound-code-folder fact without anyone clicking the project node", () => {
       /*
-       * Why this row exists — measured 2026-08-04: 「This project has no code folder attached」 (this project has no code folder attached) appeared **0 times** on the
-       * first screen and was visible only after clicking that one exact project node
-       * (a 15-node fixture; 100+ nodes in dogfood). A prescription is worthless if the
-       * diagnosis is never seen.
+       * Surfaces an unbound project on the first screen instead of only after clicking that node.
        */
       const onSelect = vi.fn();
       render(
@@ -1151,11 +1088,7 @@ describe("TopologyIndexPanel", () => {
       expect(onSelect).toHaveBeenCalledWith("project:root");
     });
 
-    /*
-     * ⚠️ Owner, 2026-08-24: picking a project root now opens the map inside it. That substitution is
-     * the helpful one, but a product that quietly opens a folder other than the one somebody chose
-     * teaches them it does not do what they asked. The fact has to be on screen.
-     */
+    /* Opening a folder other than the one chosen must be stated on screen. */
     it("says so when the map inside the picked project was opened instead", () => {
       render(
         <TopologyIndexPanel
@@ -1177,21 +1110,14 @@ describe("TopologyIndexPanel", () => {
       );
     });
 
+    /* The notice can be closed; nothing else clears it. */
     /*
-     * ⚠️ A one-time fact must not become permanent furniture. Nothing else clears this notice, so
-     * without a way to close it the line sits in the panel for the rest of the session, long after
-     * it has told the person everything it knows.
+     * A map with many concepts is built, so the make-a-map-from-code door would read as starting
+     * over.
      */
     /*
-     * ⚠️ Measured in the installed app, 2026-08-25: the door appeared on the owner's own vault of
-     * 82 concepts, because one project node there has no code folder attached. Someone with a map
-     * that size has plainly built one, and 「make a map from my code」 reads as an invitation to
-     * start over — pressing it would create a different vault and leave this one behind.
-     */
-    /*
-     * ⚠️ Measured in the installed app, 2026-08-25. `unboundProjectNodeId` is null both when every
-     * project has code bound and when the vault holds no project at all, so keying only on it hid
-     * the door from an empty vault — the person it exists for, sitting in front of nothing.
+     * `unboundProjectNodeId` is also null for a vault with no projects, which must still get the
+     * door.
      */
     it("shows the door on an empty vault, where nothing has been built at all", () => {
       render(
@@ -1234,8 +1160,7 @@ describe("TopologyIndexPanel", () => {
           vaultLoaded
         />,
       );
-      // ⚠️ Asserted on the prop, not on the rendered door: this file stubs the starter module, so
-      // querying for the button would pass whether or not the rule holds.
+      // Asserted on the prop because this file stubs the starter module.
       expect(
         (firstRunStarterProps.current as { mapUnbuilt?: boolean } | null)?.mapUnbuilt,
         'suggesting map creation on an existing map reads as starting over',
@@ -1323,8 +1248,7 @@ describe("TopologyIndexPanel", () => {
   });
 });
 
-// Owner report from real use (2026-07-24) — resolving the sensitivity of expanding
-// only on an exact chevron hit: a row with children now does select and expand in one click.
+// A row with children selects and expands in one click.
 describe('TopologyIndexPanel row click expands', () => {
   it('opens children and selects when a row with children is clicked', () => {
     const onSelect = vi.fn();
@@ -1372,15 +1296,7 @@ describe('TopologyIndexPanel row click expands', () => {
   });
 
   it('says what the capability and element counts mean in place', () => {
-    /*
-     * ⚠️ Owner, 2026-08-24: *"more people than not will not know what a capability or an element even is —
-     * something is needed so that a person who does not know what an ontology is can understand."*
-     *
-     * The words cannot change (meta-model kind names, owned by the spec), and a second teaching
-     * screen is forbidden. So the definition travels to the confusion: the same `title` treatment
-     * this panel already uses for its other numbers, composed by the caller from the **existing**
-     * glossary strings so there is one source.
-     */
+    /* The kind definitions travel to the counts, composed from the existing glossary strings. */
     render(
       <TopologyIndexPanel
         treeResult={buildFixtureTree()}
@@ -1405,10 +1321,8 @@ describe('TopologyIndexPanel row click expands', () => {
 });
 
 /*
- * **The tree follows the selection** (measured 2026-09-25 through the app's bridge). This panel
- * says it shows what the map shows, yet a node selected by a `?p=` link stayed folded away under
- * a closed domain, and a pick from this search vanished from the tree the moment the search was
- * cleared, while the map still held it selected.
+ * The tree follows the selection: rows above a selected node open even when it was selected
+ * elsewhere.
  */
 describe("TopologyIndexPanel follows the selection", () => {
   const rowOf = (id: string) => document.querySelector(`[data-index-row="${id}"]`);
@@ -1453,8 +1367,7 @@ describe("TopologyIndexPanel follows the selection", () => {
     fireEvent.click(rowOf("element:agent-brief")!);
     fireEvent.change(search, { target: { value: "" } });
 
-    // A branch folding away keeps its rows for the exit transition, so the branch state is the
-    // claim: the rows above the pick stay open once the whole tree returns.
+    // A folding branch keeps its rows for the exit transition, so the branch state is asserted.
     expect(rowOf("domain:onboarding"), "the pick's domain folded when the search ended").toHaveAttribute("aria-expanded", "true");
     expect(rowOf("capability:mcp-server")).toHaveAttribute("aria-expanded", "true");
     expect(rowOf("element:agent-brief")).toHaveAttribute("aria-selected", "true");

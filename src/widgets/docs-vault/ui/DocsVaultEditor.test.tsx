@@ -5,8 +5,8 @@ import koMessages from '../../../../messages/ko.json';
 import type { VaultDoc } from '@/entities/docs-vault';
 import { DocsVaultEditor } from './DocsVaultEditor';
 
-// Render wrapped in the next-intl provider so useTranslations does not throw. The
-// existing Korean copy assertions keep working against the ko messages.
+// Wrapped in the next-intl provider so useTranslations does not throw; Korean copy assertions use
+// the ko messages.
 function render(ui: React.ReactElement) {
   return rtlRender(
     <NextIntlClientProvider locale="ko" messages={koMessages}>
@@ -30,9 +30,8 @@ const doc: VaultDoc = {
 };
 
 /**
- * A draft key **includes the vault scope** (2026-08-01). While it was slug-only,
- * files of the same name in different folders overwrote each other's drafts, and if
- * the two files were byte-identical a save overwrote the other file.
+ * Draft keys include the vault scope, or same-named files in different folders overwrite each
+ * other's drafts.
  */
 const VAULT_SCOPE = 'test-vault';
 const draftKey = `ontology-atlas:docs-vault-editor-draft:${VAULT_SCOPE}:${doc.slug}`;
@@ -117,10 +116,8 @@ describe('DocsVaultEditor', () => {
     expect(screen.getByLabelText('저장·검증·되돌리기 흐름')).toBeInTheDocument();
     expect(screen.getByText('검증')).toBeInTheDocument();
     /*
-     * Read from the catalogue rather than pinned as a literal. `documentation.md` forbids pinning a
-     * sentence written by a person, and this one broke when the copy repair on 2026-08-25 settled the
-     * product on one name for the folder — a test with no opinion about wording standing in the way
-     * of better wording.
+     * Read from the catalogue rather than pinned as a literal (`documentation.md` forbids pinning
+     * authored sentences).
      */
     expect(
       screen.getByText(koMessages.vaultWidgets.editor.validateContractClean),
@@ -173,10 +170,8 @@ describe('DocsVaultEditor', () => {
     expect(screen.getByText('임시 보관 중 · 최종 저장 필요')).toBeInTheDocument();
   });
 
-  // Atlas A#5(a) — data-loss guard. A background poll rebuilds the vault
-  // manifest, which gives `getDocContent` (editResolver, memoized on fileHandles)
-  // a new identity on every detected change. The content-load effect must NOT
-  // re-fetch over the user's UNSAVED edits when that identity changes.
+  // Data-loss guard: a poll gives `getDocContent` a new identity, and the load effect must not
+  // re-fetch over unsaved edits.
   it('does not clobber unsaved edits when getDocContent identity changes (poll)', async () => {
     const { rerender } = render(
       <DocsVaultEditor vaultScope={VAULT_SCOPE} doc={doc} getDocContent={async () => 'initial'} onSave={vi.fn()} onClose={vi.fn()} />,
@@ -281,11 +276,8 @@ describe('DocsVaultEditor', () => {
     );
   });
 
-  // Data-loss guard: a save REJECTED by a disk conflict (VaultConflictError —
-  // the file changed between read and write) must NOT phantom-clean the buffer
-  // or flash "Saved". If it did, dirty would drop and the next poll would
-  // clobber the unsaved edits. The buffer stays dirty + a localized conflict
-  // message is surfaced; a subsequent poll re-fetch must not overwrite.
+  // Data-loss guard: a save rejected by VaultConflictError must keep the buffer dirty and show a
+  // localized conflict message, so the next poll cannot overwrite the edits.
   it('keeps edits dirty (and a poll cannot clobber) when the save is rejected by a conflict', async () => {
     const conflict = Object.assign(new Error('Vault conflict — external change'), {
       name: 'VaultConflictError',
@@ -299,8 +291,7 @@ describe('DocsVaultEditor', () => {
     fireEvent.click(screen.getByRole('button', { name: '저장' }));
     await waitFor(() => expect(onSave).toHaveBeenCalled());
 
-    // rejected save → NO phantom "Saved", and a localized conflict message shows once the
-    // rejection has settled (the same race as the identity-guard case below)
+    // Rejected save: no phantom "Saved"; the conflict message shows once the rejection settles.
     expect(
       await screen.findByText(
         '디스크에서 먼저 변경되어 저장하지 못했어요. 편집 내용은 유지돼요. 내용을 복사한 뒤 새로고침해 최신 파일에 다시 반영하세요.',
@@ -320,9 +311,7 @@ describe('DocsVaultEditor', () => {
     expect(screen.queryByDisplayValue('DISK VERSION')).not.toBeInTheDocument();
   });
 
-  // A save blocked by the identity guard (clearing or changing uid, editing
-  // merged_uids) is translated with the same grammar as a conflict — previously an
-  // English developer sentence appeared verbatim on a Korean screen.
+  // A save blocked by the identity guard is translated like a conflict.
   it('surfaces a localized message when the save is rejected by the uid identity guard', async () => {
     const guard = Object.assign(
       new Error('`uid:` is immutable. Rename or reclassify the node without changing its UID.'),
@@ -387,15 +376,7 @@ describe('DocsVaultEditor', () => {
   });
 
   /*
-   * **A slow load is still announced.**
-   *
-   * On 2026-08-08 the skeleton was deferred behind `SKELETON_DELAY_MS` (150ms),
-   * because switching documents flashed the three-bar skeleton for a single frame
-   * (measured 8.2–15.9ms). So this test also has to measure **past that window**.
-   *
-   * ⚠️ Why this test is not deleted: the delay exists for "invisible when fast",
-   * and the property "announced when slow" has to stay alive. Delete it and the next
-   * person can remove the skeleton entirely with nothing breaking.
+   * Kept on purpose: the skeleton delay hides fast loads, and this test keeps slow loads announced.
    */
   it('announces a slow load through role=status', async () => {
     let resolve!: (v: string) => void;
@@ -417,16 +398,8 @@ describe('DocsVaultEditor', () => {
   });
 
   /**
-   * **Another vault's draft does not leak into this vault's editor** (added
-   * 2026-08-01).
-   *
-   * The old key was slug-only (`…:README`). So opening folder A's `README.md`
-   * showed folder B's body carrying a 「Temporarily saved · Final save required」 tag — prose the
-   * user never wrote, presented as the user's unsaved changes.
-   *
-   * And if the two files were **byte-identical** at that moment, both the conflict
-   * branch and the mtime guard passed, so a save wrote A's draft **over B's file**.
-   * What this test pins is not cosmetics but that data-loss path.
+   * Another vault's draft must not leak into this editor; with byte-identical files a save could
+   * write A's draft over B's file.
    */
   it('does not read another vault\'s draft because the key includes the vault', async () => {
     window.localStorage.setItem(
@@ -455,16 +428,8 @@ describe('DocsVaultEditor', () => {
   });
 
   /**
-   * **Switching vaults with the editor open** — the only candidate defect from the
-   * 2026-08-06 `exhaustive-deps` audit that **touches data**.
-   *
-   * `vaultScope` is what builds the draft's localStorage key, and the four hooks
-   * that write and clear drafts were **not holding it in their dependencies**. Then
-   * a scope change does not rebuild the hook, and the closed-over value (the old
-   * scope) writes to or clears **another vault's key**.
-   *
-   * This check reproduces that defect **through behaviour** — remove the dependency
-   * and the draft does not appear under the new scope's key.
+   * Switching vaults with the editor open: `vaultScope` builds the draft key, so hooks missing it
+   * write to or clear another vault's key.
    */
   it('moves a pending debounced draft to the new scope when the vault switches', async () => {
     const OTHER = 'other-vault';
@@ -485,15 +450,8 @@ describe('DocsVaultEditor', () => {
     window.localStorage.clear();
 
     /*
-     * ⚠️ **The order is the whole of this check.** Typing runs the draft-write effect
-     * and arms a 250ms debounce timer. Switching only the vault **after that** leaves
-     * `content`, `dirty` and `doc.slug` unchanged, so unless `vaultScope` is in the
-     * dependencies the effect **does not re-run** and the armed timer writes to **the
-     * old scope's key**.
-     *
-     * Written in the reverse order at first, the defect did not reproduce: typing
-     * **after** the switch changes `content`, so the effect re-runs with a fresh
-     * closure and the missing dependency is masked.
+     * Order matters: type first, then switch only the vault, so an armed debounce without
+     * `vaultScope` in its deps writes to the old key. Typing after the switch would mask it.
      */
     fireEvent.change(area, { target: { value: '# 고친 것' } });
 

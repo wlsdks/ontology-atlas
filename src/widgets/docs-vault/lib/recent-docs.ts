@@ -1,18 +1,12 @@
-// The slugs of up to 5 recently opened documents, kept in localStorage —
-// equivalent to Obsidian's "Recent files". Namespaced per vault so a server vault
-// and each local folder keep independent lists and slug collisions cannot tangle.
+// Up to 5 recently opened slugs in localStorage, namespaced per vault so lists and slugs do not
+// tangle.
 
 export const RECENT_DOCS_STORAGE_PREFIX = 'demo:docs-vault:recent:v2:';
 const STORAGE_PREFIX = RECENT_DOCS_STORAGE_PREFIX;
 const MAX_RECENTS = 5;
 
 /**
- * Vault namespace key.
- *  - server vault: 'server'
- *  - local vault: 'local:{folder name}'
- * Only the folder name distinguishes them, so registering several folders of the
- * same name can mix them — a rare edge case in practice. Introduce an IDB-key UUID
- * if it ever matters.
+ * Vault namespace key: 'server' or 'local:{folder name}'. Folders with the same name share a key.
  */
 export type VaultRecentKey = 'server' | `local:${string}`;
 
@@ -65,8 +59,7 @@ export function migrateLegacyRecentDocs(): void {
     const slugs = parsed
       .filter((x): x is string => typeof x === 'string')
       .slice(0, MAX_RECENTS);
-    // The old single list is treated as the server vault's — local vaults did not
-    // exist at the time, so that is a safe assumption.
+    // The old single list belonged to the server vault; local vaults did not exist then.
     const targetKey = storageKey('server');
     if (!window.localStorage.getItem(targetKey) && slugs.length > 0) {
       window.localStorage.setItem(targetKey, JSON.stringify(slugs));

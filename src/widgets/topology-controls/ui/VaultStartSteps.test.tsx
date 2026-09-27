@@ -4,13 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import koMessages from "../../../../messages/ko.json";
 import { VaultStartSteps, type VaultStartStepsProps } from "./VaultStartSteps";
 
-/**
- * The first-steps card — **one at a time, blocking nothing, with an end.**
- *
- * What this file holds are the places the owner actually got stuck (2026-08-16): a
- * row with no explanation, progress that does not count a press, a first step you
- * cannot pass, and a card that never ends.
- */
+/** The first-steps card: one step at a time, blocking nothing, with an end. */
 function renderSteps(props: Partial<VaultStartStepsProps> = {}) {
   const base: VaultStartStepsProps = {
     analyzePrompt: "분석해줘",
@@ -76,11 +70,7 @@ describe('the agent step says what the app knows', () => {
       acpRuntimeInk: "#D97757",
       onOpenAgentConnect,
     });
-    /*
-     * ⚠️ The found tool has its own row now (owner, 2026-08-25). It used to be the tail of a
-     * sentence — "found an AI tool: Claude Agent" — which buried the one concrete thing
-     * this step exists to report. Naming it is not enough; the row carries the vendor's own mark.
-     */
+    /* The found tool has its own row with the vendor's mark. */
     const runtimeRow = screen.getByTestId("start-step-runtime");
     expect(runtimeRow.textContent).toContain("Claude Agent");
     expect(runtimeRow.querySelector('[data-vendor-mark="true"]')).not.toBeNull();
@@ -168,13 +158,8 @@ describe('existing docs in the folder become the first step', () => {
 });
 
 /**
- * **A codebase's owner has code, so that is the first step.**
- *
- * The rule above — the first step is what they have — could only see Markdown.
- * A first-run walkthrough pointed the app at a repository of five TypeScript
- * files and one README, and the card opened by announcing it had "found 1
- * documents" and offering to map them, with the step that reads code sitting
- * third (`docs/audits/USER-WALKTHROUGH-FIRST-RUN-2026-08-31.md`, finding 3).
+ * A codebase's owner has code, so the read-code step leads
+ * (`docs/audits/USER-WALKTHROUGH-FIRST-RUN-2026-08-31.md`, finding 3).
  */
 describe('code comes first when there is more code than docs', () => {
   it('puts the read-code step first when sources outnumber docs', () => {
@@ -218,17 +203,8 @@ describe('code comes first when there is more code than docs', () => {
 });
 
 /**
- * ⚠️ **Reversed on 2026-08-25** (owner: *"from the user's side it is not actually centred"*).
- *
- * This block used to require the opposite: with INDEX open, the wrapper had to add left padding the
- * width of INDEX. That padding pushes the card right by half its size, so the surface asking for the
- * person's attention sat off the middle of the window while still claiming the middle — the exact
- * thing the owner saw.
- *
- * The first repair collapsed INDEX whenever this card was up. That was far too broad: the card is up
- * by default for anybody who just opened a folder, so INDEX became unreachable, and the web smoke
- * test caught it in CI. The card is a floating overlay above INDEX; it can simply stay in the
- * window's centre and let INDEX pass beneath its left edge.
+ * The card stays centred in the window and INDEX passes beneath it; neither padding nor collapsing
+ * INDEX.
  */
 describe('the start card keeps the window centre', () => {
   const wrapper = () => card().parentElement as HTMLElement;

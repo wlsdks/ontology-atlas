@@ -3,12 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DocsQuickDrawer } from "./DocsQuickDrawer";
 
-/**
- * #61 — this drawer is quick access to **the active vault**. It used to read the
- * build-time bundled `vaultManifest` directly, so selecting a 5-document local
- * vault still produced Atlas bundle documents (review 2026-07-25 · codex audit P1).
- * Pinned and recent were fixed at `:server` too, mixing in another vault's lists.
- */
+/** The drawer lists the active vault, and pinned and recent are scoped to it. */
 
 const mocks = vi.hoisted(() => ({
   mode: "server" as "server" | "local",
@@ -91,12 +86,10 @@ describe('DocsQuickDrawer scopes to the active vault', () => {
     // It appears in both the tree and the list, so only existence is checked, not the count.
     expect(screen.getAllByText("정산 규칙").length).toBeGreaterThan(0);
     expect(screen.getAllByText("환불").length).toBeGreaterThan(0);
-    // The bundled dogfood documents (ARCHITECTURE and so on) are not in this vault.
     expect(screen.queryByText("ARCHITECTURE")).not.toBeInTheDocument();
   });
 
   it('scopes pinned and recent docs per vault so sample pins stay out of a local vault', () => {
-    // Plant a pin in the bundle scope.
     window.localStorage.setItem(
       "demo:docs-vault:pinned:v1:server",
       JSON.stringify(["ARCHITECTURE"]),

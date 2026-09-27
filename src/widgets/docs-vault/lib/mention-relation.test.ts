@@ -6,15 +6,7 @@ import {
   MENTION_RELATIONS,
 } from './mention-relation';
 
-/**
- * The `@` mention holds one property: **choosing changes the graph.**
- *
- * The old `[[` wikilink did not. Adding and removing a wikilink in the same vault
- * left the compiled edge count and the graph hash identical (9 · `c07785b6`,
- * measured 2026-08-08). So these tests measure not 「does the menu appear」 but
- * **「does the frontmatter change」**. A menu that appears and changes nothing is
- * the same defect under a new name.
- */
+/** Choosing a mention must change frontmatter, not only show a menu. */
 
 const DOC = [
   '---',
@@ -43,9 +35,7 @@ describe('detectMentionTrigger leaves plain text alone when nothing matches', ()
   });
 
   /**
-   * With a local vault open, the docs vault can also edit `CLAUDE.md` and
-   * `AGENTS.md`, and in those files `@AGENTS.md` is **real import syntax**. A menu
-   * intruding there hijacks someone else's syntax.
+   * In `CLAUDE.md` and `AGENTS.md`, `@AGENTS.md` is real import syntax the menu must not hijack.
    */
   it('does not capture path notation such as @AGENTS.md or @docs/', () => {
     for (const src of ['@AGENTS.md', '읽어라 @docs/FOUNDATIONS.md', '@.claude/rules']) {
@@ -53,9 +43,8 @@ describe('detectMentionTrigger leaves plain text alone when nothing matches', ()
       // A query starting with `.` or `/` is not a trigger.
       expect(hit === null || !/^[/.]/.test(hit.query)).toBe(true);
     }
-    // It withdraws **the moment a path character arrives**, not the moment it
-    // becomes a path — a menu that appears and vanishes mid-typing leaves an Enter
-    // in that flicker turning someone else's syntax into a node name.
+    // Withdraws as soon as a path character arrives, or an Enter during the flicker turns another
+    // syntax into a node name.
     expect(detectMentionTrigger('@AGENTS', 7)).not.toBeNull(); // still an ordinary query
     expect(detectMentionTrigger('@AGENTS.md', 10)).toBeNull(); // the dot ends it
     expect(detectMentionTrigger('@docs/x', 7)).toBeNull();
@@ -91,10 +80,7 @@ describe('insertMentionRelation writes prose to the body and facts to frontmatte
     expect(result.relationAdded).toBe(true);
     // ① The fact — frontmatter
     expect(result.content).toContain('dependencies: [capabilities/beta]');
-    // ② The prose — the body gets **a notation you can click through**. Plain text
-    //    looks as though nothing happened (owner report, 2026-08-08). The viewer,
-    //    Obsidian and GitHub all read this notation as a link, so no format of our
-    //    own is invented.
+    // The body gets a clickable standard link.
     expect(result.content).toContain('이 기능은 [베타](./beta.md)');
     expect(result.content).not.toContain('@베');
   });
@@ -135,10 +121,8 @@ describe('insertMentionRelation writes prose to the body and facts to frontmatte
   });
 
   /**
-   * The sort rule is not redefined here — `non-canonical-graph-array` in
-   * `validate-vault-document.ts` already requires «deduplicated plus localeCompare
-   * sorted». Writing it differently would make the file we just wrote raise a
-   * warning in our own check.
+   * The sort rule matches `non-canonical-graph-array` in `validate-vault-document.ts`, or our own
+   * check would warn.
    */
   it('merges into existing entries as a sorted set', () => {
     const withRelation = DOC.replace(
@@ -172,14 +156,7 @@ describe('insertMentionRelation writes prose to the body and facts to frontmatte
   });
 
   /**
-   * **A node cannot link to itself** — and this assertion caught a real bug.
-   *
-   * 2026-08-08: at the call site, `const { doc, trigger } = pendingMention` shadowed
-   * the component prop `doc` (the document being edited), so **the chosen target**
-   * was passed as the base point. The base and destination then match and the link
-   * comes out as `./same-folder.md`. It was caught by measuring the screen, but with
-   * this assertion in place it would have thrown **at the call**. An API that is
-   * hard to misuse beats a comment.
+   * A node cannot link to itself; the assertion throws if the chosen target is passed as the base.
    */
   it('rejects picking the document being edited', () => {
     const content = `${DOC}@알`;

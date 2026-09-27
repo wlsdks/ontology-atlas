@@ -1,22 +1,8 @@
 /**
- * The docs viewer's markdown link resolver, extracted as a pure function so it can
- * be unit tested.
- *
- * It decides how the `/docs` viewer's `a` component handles a relative `.md` link.
- * The regression it exists for: a relative path pointing **outside** the vault
- * (say `docs/`) — a link that escapes the vault root with `..`, like
- * `../mcp/README.md` — rendered straight into `<a href>` is interpreted by the
- * browser relative to the current route (`/ko/docs/`) as `/ko/mcp/README.md` and
- * falls into the app's 404. That is why the link to the MCP registration doc
- * (`mcp/README.md`) was dead.
- *
- * Decision rules:
- *   - absolute URL (http(s)://…) · anchor (`#…`) · non-md path → passthrough
- *   - vault-internal relative path with a known slug → internal (app routing)
- *   - escapes the vault root, or is internal with an unknown slug →
- *       · with a repoBlobBase, external (GitHub blob, new tab)
- *       · without one (a local vault, repo location unknown), unresolved — rendered
- *         without routing rather than as a dead 404
+ * Resolves a relative `.md` link in the /docs viewer, or a vault-escaping link like
+ * `../mcp/README.md` resolves against the route and 404s. Absolute URLs, anchors and non-md paths
+ * pass through; known slugs route internally; others go to a GitHub blob with repoBlobBase, else
+ * stay unresolved.
  */
 
 export type ResolvedDocLink =
@@ -33,14 +19,13 @@ export interface ResolveDocLinkParams {
   /** Every slug present in the vault (used to decide internal vs external). */
   vaultSlugs: Set<string>;
   /**
-   * The base used to turn a vault-external relative path into a GitHub blob URL
-   * (e.g. `https://github.com/wlsdks/ontology-atlas/blob/main`). Undefined where the
-   * repo location is unknown, as in a local vault — then it is unresolved.
+   * Base for a vault-external GitHub blob URL; undefined for a local vault, where such links stay
+   * unresolved.
    */
   repoBlobBase?: string;
   /**
-   * Where this vault sits inside the repo (the bundled docs vault = `docs`). An
-   * external URL is only built when this is present alongside repoBlobBase.
+   * Where this vault sits in the repo (bundled docs vault = `docs`); needed with repoBlobBase for
+   * external URLs.
    */
   vaultRepoRoot?: string;
 }
@@ -61,11 +46,8 @@ function collapsePath(pathStr: string): string {
 }
 
 /**
- * Put a vault path segment into a comparable form — **percent-decode plus NFC**.
- *
- * Decoding has to come first for normalisation to apply to real characters. A
- * truncated percent sequence (`%`) makes `decodeURIComponent` throw, so the raw
- * value is returned — a throw here means the whole document does not render.
+ * Percent-decode then NFC-normalise a path segment; a truncated `%` returns the raw value, or a
+ * throw would stop the document rendering.
  */
 function decodeVaultPath(value: string): string {
   let decoded = value;
@@ -90,22 +72,8 @@ export function resolveDocLink({
   }
   const [rawTarget, rawAnchor] = href.split('#');
   /*
-   * ⚠️ **Percent-decode and normalise to NFC** (measured fix, 2026-08-08).
-   *
-   * The markdown parser passes link URLs percent-encoded —
-   * `../capabilities/sweep-verification-procedure.md` arrives as `%EC%8A%A4%EC%9C%95…`. That string
-   * is not in the vault's slug set, so **every link to a Hangul slug fell through
-   * to "unknown document"**. An ASCII slug has nothing to encode and stays fine, so
-   * this defect appears only in a vault with Hangul (or space, or non-ASCII) slugs —
-   * our samples were ASCII, so nobody saw it.
-   *
-   * The same defect was caught first on the wikilink side (`DocsVaultViewer`); this
-   * revives **hand-written standard links** too.
-   *
-   * NFC is matched as well: Hangul splits into NFC/NFD depending on origin (the
-   * macOS filesystem uses NFD), so the characters are identical while the strings
-   * do not match. Normalising only one side leaves that state intact
-   * (`cli/src/commands/validate.mjs` records the same judgement).
+   * Percent-decode and NFC-normalise both sides: the parser passes Hangul slugs encoded and macOS
+   * stores NFD (same judgement as `cli/src/commands/validate.mjs`).
    */
   const target = decodeVaultPath(rawTarget);
   const anchor = rawAnchor ? decodeVaultPath(rawAnchor) : undefined;
@@ -143,8 +111,8 @@ export function resolveDocLink({
     }
   }
 
-  // Getting here means either outside the vault (escape) or internal with an unknown
-  // slug. With the repo location known, an external GitHub blob link; otherwise unresolved.
+  // Outside the vault or an unknown internal slug: external GitHub blob when the repo location is
+  // known, otherwise unresolved.
   if (repoBlobBase && vaultRepoRoot !== undefined) {
     const repoRel = collapsePath(`${vaultRepoRoot}/${joined}`);
     const base = repoBlobBase.replace(/\/+$/, '');
@@ -159,7 +127,6 @@ export const ONTOLOGY_ATLAS_REPO_BLOB_BASE =
   'https://github.com/wlsdks/ontology-atlas/blob/main';
 export const DOCS_VAULT_REPO_ROOT = 'docs';
 
-/** A repo-root-relative path as a GitHub blob URL. Reused for canonical shortcuts (mcp/README and so on). */
 export function githubBlobUrl(
   repoRelativePath: string,
   base: string = ONTOLOGY_ATLAS_REPO_BLOB_BASE,

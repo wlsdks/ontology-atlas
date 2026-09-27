@@ -72,9 +72,7 @@ describe('searchDocs body tier ranks lowest', () => {
     expect(out[0].titleHit).toBeNull();
     expect(out[0].bodyHit).not.toBeNull();
     const hit = out[0].bodyHit!;
-    // Exact-phrase boost — the snippet highlights the whole matched phrase rather
-    // than the first token (P1 review #2: a clicked result's snippet must contain
-    // the actual match).
+    // The exact-phrase boost highlights the whole matched phrase, not the first token.
     expect(
       hit.text.slice(hit.hit.start, hit.hit.end).toLowerCase(),
     ).toBe('deterministic compile');
@@ -126,14 +124,11 @@ describe('searchDocs body tier ranks lowest', () => {
     expect(out.map((m) => m.doc.slug)).toEqual(['a']);
   });
 
-  // Landing defect (P1 review) #2 — a document with an exact phrase match must rank
-  // above one with scattered token AND matches, for trust to hold. Only then does the
-  // clicked top result's snippet actually contain a highlightable match (the
-  // precondition for landing in the viewer).
+  // An exact phrase match must outrank scattered token matches, so the top result's snippet holds a
+  // markable match.
   it('ranks an exact-phrase body match above scattered tokens', () => {
     const docs = [
-      // The tokens are each present but do not form a phrase (a scattered match) — at
-      // idx 0, the old logic would have ranked this document higher instead.
+      // Each token is present but not as a phrase (a scattered match).
       doc('scattered', 'zzz'),
     // "deterministic compile" as one contiguous exact phrase.
       doc('exact', 'yyy'),
@@ -161,10 +156,7 @@ describe('searchDocs body tier ranks lowest', () => {
     expect(out).toHaveLength(1);
     expect(out[0].bodyHit).not.toBeNull();
     const hit = out[0].bodyHit!;
-    // Even when extractBodySnippet flattens newlines into display spaces (a one-line
-    // snippet), the hit range must preserve the matched phrase's real length (measured
-    // against the raw text, newlines included) — evidence that the boost found the
-    // right position and length.
+    // The hit range keeps the phrase's raw length even when the snippet flattens newlines.
     expect(hit.text.slice(hit.hit.start, hit.hit.end)).toBe(
       'git-backed mental model',
     );

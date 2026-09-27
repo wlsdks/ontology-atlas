@@ -1,16 +1,7 @@
 /**
- * Full-detail A1 "reach = sentence instrument" — replaces the rejected
- * query-builder reach explorer (from/to/both direction × 1/2/3-step
- * segments) with ONE outward-only reach reading at a selectable step (1/2/3)
- * plus a per-domain breakdown ("mostly in X(a) and Y(b)").
- *
- * Reuses the EXISTING reachability engine (`buildOntologyReachability`) —
- * ONE BFS to the max depth, then per-depth counts are derived from its
- * `layers` (cumulative sum of `distance <= depth`), not re-run per step.
- * Domain ownership per reachable node reuses `nearestDomainId` +
- * `buildContainmentParents` (entities/knowledge-graph/lib/ontology-tree/insights.ts) — the
- * same containment-tree walk `computeDomainCouplingMatrix` already uses, so
- * a node's "owning domain" can't drift between the two features.
+ * Outward reach at a selectable step (1-3) with a per-domain breakdown. One BFS to the max depth
+ * through `buildOntologyReachability`, per-depth counts from its layers; domain ownership via
+ * `nearestDomainId` and `buildContainmentParents`, shared with `computeDomainCouplingMatrix`.
  */
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import {
@@ -57,8 +48,8 @@ export function buildFullDetailReachModel(
   const startNode = nodeById.get(nodeId);
   const selfDomainId = startNode ? nearestDomainId(startNode, parentOf, nodeById) : null;
 
-  // ONE BFS to depth 3 with an unlimited visible-layer cap — per-depth counts
-  // and per-domain breakdowns both derive from these layers, no re-BFS.
+  // One BFS to depth 3 with no layer cap; per-depth counts and domain breakdowns derive from its
+  // layers.
   const reachability = buildOntologyReachability(nodeId, nodes, edges, {
     direction: "outgoing",
     depth: 3,

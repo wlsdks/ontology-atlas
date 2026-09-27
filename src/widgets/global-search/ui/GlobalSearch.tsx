@@ -50,40 +50,25 @@ export interface GlobalSearchProps {
   /** Ontology node selection callback. */
   onSelectNode: (node: KnowledgeGraphNode) => void;
   /**
-   * projects — optional. One ⌘K searches ontology and projects together. Must arrive
-   * alongside `onSelectProject`.
+   * Optional projects, searched together with ontology by one Cmd+K; must arrive with
+   * `onSelectProject`.
    */
   projects?: readonly Project[];
   onSelectProject?: (project: Project) => void;
   /** Inline selection can hand focus to its destination after the dialog releases it. */
   onSelectionFocus?: (keyboard: boolean) => void;
   /**
-   * **Opened on the map**, whose drawing is exactly what this dialog searches, so there it may
-   * call itself "Search this map" and its scope "this map".
-   *
-   * Off by default (2026-09-26). The shell now opens the same dialog on Library, Git, Automations,
-   * Agents, the harness and Insights, where there is no map on screen; there the copy names what
-   * it searches — concepts, a project being one — and the folder or sample they come from. The
-   * Korean copy keeps the kind's name out of these sentences on purpose: the count of strings that
-   * say it is ratcheted (`user-facing-vocabulary.contract.test.ts`). A reviewer read
-   * `No matches for "…" in this map.` on the Library. Only the caller that is the map says so, so
-   * a new place to open the search cannot inherit the map's words.
+   * Opened on the map, where it may call itself "Search this map". Off by default, so other
+   * surfaces name what they search; the Korean copy keeps the kind name out
+   * (`user-facing-vocabulary.contract.test.ts`).
    */
   onMap?: boolean;
 }
 
 /**
- * The search palette (cmdk based) for concepts and projects. It searches one scope —
- * the vault or sample currently loaded — and says so in the footer beside the count,
- * in every state, as well as in the empty state sentence.
- *
- * Our own matchers (`matchOntologyNodes`, `matchProjects`) do the scoring and
- * sorting, and cmdk handles display and keyboard nav only (`shouldFilter={false}`) —
- * deliberately, so mixed Korean/English matching stays ours.
- *
- * The two sources (ontology plus projects) are exposed as separate groups. cmdk item
- * values are prefixed `<source>:<id>` to avoid collisions. With an empty query both
- * sources show a sample (ontology by lastApprovedAt desc, projects by updatedAt desc).
+ * Search palette for concepts and projects over one loaded scope, named in the footer. Our matchers
+ * (`matchOntologyNodes`, `matchProjects`) score and sort; cmdk only displays and navigates
+ * (`shouldFilter={false}`). Item values are `<source>:<id>` to avoid collisions.
  */
 export function GlobalSearch({
   open,
@@ -97,30 +82,21 @@ export function GlobalSearch({
 }: GlobalSearchProps) {
   const t = useTranslations("searchWidgets.globalSearch");
   /*
-   * The strings that speak of the map live under `onMap`, with a counterpart of the same key that
-   * names what is searched instead. Keeping the two sets key for key is what lets a test prove no
-   * map-only string renders off the map.
+   * Map wording lives under `onMap` with a same-key counterpart, so a test can prove none renders
+   * off the map.
    */
   const placed = (key: PlacedCopyKey) => (onMap ? `onMap.${key}` : key);
   const kindLabel = useOntologyKindLabel();
   const reducedMotion = useReducedMotion();
   const inputRef = useRef<HTMLInputElement | null>(null);
-  // rank18 — return focus to the trigger. Radix Dialog/FocusScope restores it by
-  // default (capturing the internal activeElement), but this captures it in our own
-  // ref as well, to guarantee it explicitly whichever trigger path opened it (button
-  // click or ⌘K shortcut).
+  // Capture the trigger in our own ref as well as Radix's, whichever path opened the dialog.
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const selectedResultRef = useRef(false);
   const keyboardInteractionRef = useRef(false);
   const contentRef = useRef<HTMLDivElement | null>(null);
   /*
-   * **Focus leaves with the dialog, not after its exit motion** (2026-09-26).
-   *
-   * Radix keeps the content mounted while its exit animation plays and hands focus back only when
-   * it unmounts, so for that stretch focus sat in a field that had already closed. Measured against
-   * a real folder: `?` pressed right after Esc closed the search landed in that field, counted as
-   * typing, and opened nothing. Letting go as soon as `open` turns false sends the next key to the
-   * page; `onCloseAutoFocus` below still decides where focus lands once the content is gone.
+   * Release focus as soon as `open` turns false so the next key reaches the page during the exit
+   * motion; `onCloseAutoFocus` still decides where it lands.
    */
   useLayoutEffect(() => {
     if (open) return;
@@ -128,8 +104,8 @@ export function GlobalSearch({
     if (holder instanceof HTMLElement && contentRef.current?.contains(holder)) holder.blur();
   }, [open]);
   const [query, setQuery] = useState("");
-  // Narrow the ontology results with kind and project filter chips. A set-based
-  // multi-select (toggle) model, cleared along with the query on close.
+  // Kind and project filter chips narrow ontology results; multi-select sets, cleared with the
+  // query on close.
   const [selectedKinds, setSelectedKinds] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
@@ -155,10 +131,8 @@ export function GlobalSearch({
     });
   }, []);
 
-  // What the map draws is what the palette searches and counts: a starter's
-  // README (`vault-readme`) is a document, not a node, and counting it said
-  // "5 indexed" beside a census of 4 concepts (design audit 2026-09-04). The
-  // predicate is the one the recent-changes lens uses, so the two agree.
+  // Count what the map draws: a `vault-readme` is a document, not a node (same predicate as the
+  // recent-changes lens).
   const drawnNodes = useMemo(() => nodes.filter((node) => isGraphDrawnKind(node.kind)), [nodes]);
   const ontologyPage = useMemo(
     () =>
@@ -178,33 +152,20 @@ export function GlobalSearch({
   const isEmptyQuery = query.trim() === "";
   const ontologySize = drawnNodes.length;
   const projectSize = projects?.length ?? 0;
-  // M-6 — a project card is the same entity as ontology's kind:project node. Adding
-  // them straight gives "296 indexed", one more than the canonical inventory (295) —
-  // the same species as the P0c map double-count. Projects already counted as nodes
-  // are subtracted before summing.
+  // A project card is the same entity as its kind:project node, so projects already counted as
+  // nodes are subtracted.
   const projectNodes = useMemo(() => drawnNodes.filter((node) => node.kind === "project"), [drawnNodes]);
   const projectNodeCount = projectNodes.length;
   const totalCorpus = ontologySize + Math.max(0, projectSize - projectNodeCount);
   /**
-   * **Name what was actually searched** (owner report, 2026-09-04).
-   *
-   * A visitor on the bundled "Online Store" sample typed "MCP" under a palette
-   * titled "Global search" and read "0 MATCHES · 125 INDEXED". Nothing was
-   * broken — MCP is not in that sample — but the title promised a search wider
-   * than the loaded vault, so the empty result read as a defect in the search.
-   *
-   * The scope has a name whenever exactly one project is loaded (the sample, or
-   * a single-project vault); it is already on screen as the project chip. With
-   * several projects there is no single honest name, so the copy falls back to
-   * "this folder" — or "this map" on the map. Both bundled samples hold exactly
-   * one project, so the fallback only ever stands for a folder the person opened.
+   * Names the searched scope: the single loaded project's name, otherwise "this folder" ("this map"
+   * on the map).
    */
   const locale = useLocale();
   const scopeName = useMemo(() => {
     if (projects?.length !== 1) return null;
     const project = projects[0];
-    // The project node already carries `display_<locale>`; the footer reads the
-    // same name the map label and the INDEX row show, not the canonical title.
+    // The project node's display name, as the map label and INDEX row show it.
     const projectNode = drawnNodes.find(
       (node) => node.kind === "project" && (node.id === `project:${project.slug}` || node.id.endsWith(`:${project.slug}`)),
     );
@@ -212,13 +173,8 @@ export function GlobalSearch({
     return localized || project.name.trim() || null;
   }, [projects, drawnNodes, locale]);
   const scope = scopeName ?? t(placed("scopeFallback"));
-  // The footer names the scope it searched, so its number is read as a fact about
-  // that folder — it has to be what was found, not what fitted (measured 2026-09-19).
-  //
-  // The same subtraction as `totalCorpus`, because the same entity is on both sides: typing a
-  // project's name matches its card *and* its `kind:project` node, and adding the two totals
-  // said "2 matches" about one project. There is one project node per project, so re-running
-  // the matcher over just those is the cheapest way to learn how many of the two lists overlap.
+  // The footer number is what was found, with the same card-and-node subtraction as `totalCorpus`;
+  // re-running the matcher over project nodes finds the overlap.
   const projectNodeMatches = useMemo(
     () =>
       matchOntologyNodes(query, projectNodes, 0, {
@@ -230,19 +186,12 @@ export function GlobalSearch({
   const totalMatches = ontologyPage.total + Math.max(0, projectPage.total - projectNodeMatches);
   const hasFilter = selectedKinds.size > 0 || selectedProjectIds.size > 0;
 
-  // The source for the workspace project chip row — the projects prop when present
-  // (slug plus name), otherwise a fallback built from the distinct projectIds found
-  // in nodes (slug only), so it works both when the projects prop flows and when only
-  // nodes do.
-  //
-  // A `@tanstack/react-virtual` horizontal virtualizer renders only the chips in the
-  // viewport (~10–15) even in a large vault. The ontology-frequency weighting is kept
-  // so the most relevant chips appear first on the initial screen.
+  // Project chips come from the projects prop, or from distinct node projectIds when only nodes
+  // flow; a horizontal virtualizer renders only visible chips, most relevant first.
   const projectChipSource = useMemo(() => buildProjectChips(projects, nodes), [projects, nodes]);
 
-  // Horizontal virtualizer — chip widths vary because the labels are Korean.
-  // estimateSize is an average (~110px including padding for a 10–16 character chip),
-  // and measureElement corrects the real size. overscan 4 avoids stutter on horizontal scroll.
+  // Chip widths vary with Korean labels: estimateSize is an average, measureElement corrects it,
+  // overscan 4 avoids stutter.
   const projectScrollRef = useRef<HTMLDivElement | null>(null);
   // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Virtual owns imperative measurement functions; this component does not pass the virtualizer through memoized children.
   const projectVirtualizer = useVirtualizer({
@@ -252,13 +201,8 @@ export function GlobalSearch({
     getScrollElement: () => projectScrollRef.current,
     estimateSize: () => 110,
   });
-  // The dialog's content mounts a render after `open` flips (Radix Presence),
-  // so the virtualizer first looked for its scroll element and found nothing —
-  // and nothing re-rendered until the person typed. Opened fresh, the row said
-  // "Project · 1" with no chip under it (2026-09-19). Measuring when the
-  // element arrives is the re-render that lets the virtualizer find it. The
-  // callback is stable and guarded, because an inline one runs every render
-  // and each measure is itself a render.
+  // The content mounts a render after `open` flips, so the virtualizer re-measures when its scroll
+  // element arrives; the callback is stable and guarded because each measure is a render.
   const attachProjectScroll = useCallback(
     (element: HTMLDivElement | null) => {
       if (projectScrollRef.current === element) return;
@@ -269,20 +213,8 @@ export function GlobalSearch({
   );
 
   /**
-   * Enter belongs to whichever control has focus.
-   *
-   * cmdk's root listens for Enter across the whole palette and turns it into "open
-   * the highlighted row", `preventDefault` included — so it also swallowed Enter
-   * pressed on a control. Measured 2026-09-19: tabbing to a kind filter chip and
-   * pressing Enter left the chip `aria-pressed="false"` and instead **closed the
-   * palette and flew the map to `capability:account-closure`**, whichever row
-   * happened to be highlighted. The close button did the same: Enter navigated
-   * instead of closing. Space was unaffected, so the two keys disagreed about what
-   * the focused control does.
-   *
-   * Stopping Enter at the control's own row (bubble phase, so the button still gets
-   * it) leaves cmdk's root handling only Enter from the search field, which is the
-   * one place "open the highlighted row" is what a person means.
+   * Enter belongs to the focused control: stopped at the control's row in the bubble phase, so
+   * cmdk's root only handles Enter from the search field.
    */
   const keepEnterOnTheFocusedControl = (event: ReactKeyboardEvent<HTMLDivElement>) => {
     if (event.key !== "Enter") return;
@@ -297,17 +229,14 @@ export function GlobalSearch({
     setSelectedProjectIds(new Set());
   };
 
-  // cmdk's built-in Command.Dialog wraps Radix Dialog but supplies no Title or
-  // Description node, so Radix logs a console error. Radix Dialog is wrapped directly
-  // here so a VisuallyHidden Title/Description can be planted.
+  // cmdk's Command.Dialog has no Title or Description, so Radix Dialog is used directly with
+  // visually hidden ones.
   return (
     <Dialog.Root
       open={open}
       onOpenChange={(next) => {
-        // Esc, a scrim click and the close button all converge here — the footer's
-        // promise of "ESC closes" closes the window in one press and clears the input
-        // and filters with it. (The Esc path used to clear only the query and leave
-        // the kind/project filters, so reopening showed inexplicably narrowed results.)
+        // Escape, a scrim click and the close button converge here, clearing the input and the
+        // filters.
         if (!next) {
           closeAndClear();
           return;
@@ -326,34 +255,22 @@ export function GlobalSearch({
         <Dialog.Content
           ref={contentRef}
           aria-label={t(placed("dialogAriaLabel"))}
-          // Radix sets `aria-hidden` on sibling nodes rather than adding `aria-modal`
-          // itself. But this app's global Esc discipline decides "is a modal open"
-          // with `[role="dialog"][aria-modal="true"]` (the first-run card's capture
-          // handler, the auto-tour firing guard, and so on). With no declaration those
-          // checks could not see this search window, and the first-run card intercepted
-          // the first Esc with preventDefault, so **the first press did nothing**
-          // (measured 2026-07-26: one Esc left both the input and the dialog
-          // untouched; only the second closed it). Every other modal in the app
-          // (SearchPalette, the studio entry chooser, the docs palette …) declares this
-          // attribute and only this search window was missing it. It has a scrim, a
-          // focus trap and outside-click-to-close, so the declaration is also true.
+          // Declares aria-modal: the app's global Escape handlers look for
+          // `[role="dialog"][aria-modal="true"]`, or the first Escape is swallowed. The scrim and
+          // focus trap make it true.
           aria-modal="true"
           data-overlay-spring="true"
           data-global-search-responsive-contract="mobile-sheet-md-floating"
           data-global-search-floating-width-token="--topology-search-sheet-floating-width"
           data-global-search-radius-token="--radius-sheet"
           data-global-search-mobile-bottom-reserve-token="--topology-mobile-bottom-tab-reserve"
-          // The animation classes go on Dialog.Content itself — Radix Presence listens
-          // only for animationend on the node it rendered (target === node) and ignores
-          // events bubbling from children, so putting them on a child (Command)
-          // unmounts before the exit animation finishes.
+          // Animation classes sit on Dialog.Content: Radix Presence listens only to animationend on
+          // its own node, so a child's animation would unmount early.
           className={cn(
             "fixed inset-0 z-50 flex items-stretch justify-center md:items-start md:px-4 md:pt-[12vh]",
             reducedMotion ? "overlay-fade-only" : "overlay-spring-surface",
           )}
-          // rank18 — focus the first input (the search box) on open. The result matches
-          // Radix's default (the first focusable element), but it is specified directly
-          // to guarantee preventScroll explicitly.
+          // Focus the search box on open with preventScroll.
           onOpenAutoFocus={(event) => {
             event.preventDefault();
             previousFocusRef.current = document.activeElement as HTMLElement | null;
@@ -363,16 +280,13 @@ export function GlobalSearch({
           }}
           onCloseAutoFocus={(event) => {
             event.preventDefault();
-            // Cancel returns to the opener; choosing a map result continues the
-            // task on the map after Radix has released the modal focus scope.
+            // Cancel returns to the opener; a map result continues on the map after Radix releases
+            // focus.
             if (selectedResultRef.current && onSelectionFocus) {
               onSelectionFocus(keyboardInteractionRef.current);
               return;
             }
-            // Focus left this dialog when it closed (above). If something took it
-            // during the exit — the shortcut sheet, for `?` pressed right after Esc —
-            // it keeps it: pulling focus back to the opener would leave that sheet up
-            // with the keyboard behind it.
+            // If something took focus during the exit (the shortcut sheet), it keeps it.
             const holder = document.activeElement;
             if (holder && holder !== document.body && holder !== document.documentElement) return;
             if (keyboardInteractionRef.current && previousFocusRef.current?.dataset.surfaceRole === MAP_CANVAS_SURFACE_ROLE) focusMapCanvasWhenReady(undefined, true);
@@ -381,17 +295,9 @@ export function GlobalSearch({
           onKeyDownCapture={() => { keyboardInteractionRef.current = true; }}
           onEscapeKeyDown={() => { keyboardInteractionRef.current = true; }}
           onPointerDownCapture={() => { keyboardInteractionRef.current = false; }}
-          // An outside click closes (the de facto standard for command palettes:
-          // Linear · VS Code · Raycast · Spotlight). Radix's `onPointerDownOutside`
-          // does not fire here — this `Dialog.Content` is itself a `fixed inset-0` flex
-          // wrapper covering the whole screen, so what looks like a scrim is actually
-          // **inside** Content and no "outside" exists as far as Radix is concerned
-          // (owner report 2026-07-25: "clicking outside should close it and doesn't" — clicking
-          // outside should close it and doesn't). So it closes only when the wrapper
-          // itself is the pressed target; the panel (Command) already stopPropagations,
-          // so inside clicks never reach here. `onPointerDown` matches the settings
-          // sheet's (`AppSettingsMenu`) existing scrim contract while covering mouse,
-          // touch and pen together.
+          // Closes only when the full-screen wrapper itself is pressed: Radix's
+          // `onPointerDownOutside` never fires because the scrim is inside Content. Matches the
+          // settings sheet's scrim contract for mouse, touch and pen.
           onPointerDown={(event) => {
             if (event.target === event.currentTarget) closeAndClear();
           }}
@@ -440,9 +346,9 @@ export function GlobalSearch({
           </button>
         </div>
 
-        {/* kind / project chip filter row — narrows the ontology results only
-            (documents and projects results are unaffected). Expanded by default so
-            the user can see at a glance how they can narrow. Multi-select toggle. */}
+        {/*
+         * Kind and project chips narrow ontology results only; expanded by default, multi-select.
+         */}
         <div
           className="flex flex-col gap-1 border-b border-[color:var(--color-border-soft)] px-3 py-2"
           aria-label={t('filterAriaLabel')}
@@ -500,16 +406,11 @@ export function GlobalSearch({
               >
                 {t('projectLabel', { count: projectChipSource.length })}
               </span>
-              {/* @tanstack/react-virtual horizontal virtualizer — renders only the
-                  chips in the viewport (~10–15) even in a workspace of 1,979 projects.
-                  The overflow-x-auto + relative + absolute-child pattern. */}
-              {/* The scroller's height is the control's, not a number.
-                  `overflow-x: auto` clips the other axis too, and this was a hardcoded
-                  24px while the chip inside it is `--control-h-sm` — 28px on a mouse
-                  and 44px under a coarse pointer, where the touch floor raises it.
-                  Measured 2026-09-19 at 390x844: the chip rendered 44px tall inside a
-                  24px box and lost its bottom 20px, so the control the touch floor
-                  exists for was clipped to 24. */}
+              {/* Horizontal virtualizer renders only chips in the viewport. */}
+              {/*
+               * The scroller height follows `--control-h-sm`; `overflow-x: auto` clips vertically,
+               * so a fixed height cut the coarse-pointer chip.
+               */}
               <div
                 ref={attachProjectScroll}
                 className="relative h-[var(--control-h-sm)] flex-1 overflow-x-auto"
@@ -582,29 +483,14 @@ export function GlobalSearch({
                 </span>
               }
             >
-              {/* After R10 the vault is the only mode — node.evidenceCount is
-                  permanently undefined, so the 'Evidence N' chip was removed under the
-                  same policy as cycle 16's cleanup of the old detail panel (now
-                  FullDetailA1). If the same information is ever needed, cycle 6's
-                  ontology→docs jump chip shows it more richly. */}
               {ontologyResults.map(({ node, matched }) => {
-                // N12 (persona-ux-2026-07 report) — element titles that are
-                // literal file paths ("mcp/src/ontology-engine.mjs") read as
-                // body-text noise at full title weight next to plain-language
-                // capability/domain titles in the same list. Demote to mono +
-                // quaternary tone instead of hiding the row — the path is
-                // still the row's only identifying label.
-                // Results are named with the same name the map and INDEX draw. With
-                // only the result rows showing the raw title, a user who searched by
-                // the name just read on screen has to re-check "is this that node".
+                // File-path element titles are demoted to mono quaternary, never hidden, because
+                // the path is the row's only label.
+                // Results use the name the map and INDEX draw.
                 const label = node.display ?? node.title;
                 const pathLike = node.kind === "element" && isPathLikeTitle(label);
-                // The trailing column is the row's reason for being in the list.
-                // A name match on the name already drawn needs no second copy, so the
-                // summary keeps that seat as context; every other match shows the text
-                // that actually earned the row — another of the node's names, the
-                // summary opened at the match, or the id's slug. Measured 2026-09-19:
-                // without this, 30.6% of rows over thirty queries carried no mark at all.
+                // The trailing column is the row's reason: the summary as context when the drawn
+                // name matched, otherwise the text that earned the row.
                 const reason = describeMatchReason({ matched, label, summary: node.summary, query });
                 return (
                   <Command.Item
@@ -615,19 +501,14 @@ export function GlobalSearch({
                       onSelectNode(node);
                       closeAndClear();
                     }}
-                    // A result row is a control, so it stands on the control ladder rather than
-                    // on whatever its padding happens to add up to: `px-3 py-2` measured
-                    // **38px**, a step that does not exist (24/28/32/36/40/44), and it stayed
-                    // 38 under a coarse pointer because nothing here read a height token
-                    // (measured 2026-09-05). `--control-h-lg` is 40 on a mouse and the coarse
-                    // block already redefines it to 44, so one reference pays both.
+                    // Result rows stand on the control ladder (`--control-h-lg`, 44 under a coarse
+                    // pointer).
                     className="flex min-h-[var(--control-h-lg)] cursor-pointer items-center gap-2 rounded-chip px-3 py-2 text-body-lg text-[color:var(--color-text-secondary)] aria-selected:bg-[color:var(--color-indigo-a14)] aria-selected:text-[color:var(--color-text-primary)]"
                   >
                     <span className="inline-flex shrink-0 items-center rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-1.5 py-[1px] font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-tertiary)]">
                       {kindLabel(node.kind)}
                     </span>
-                    {/* Beside the name from `md` up, under it below — see
-                        `reasonLineClass`. */}
+                    {/* Beside the name from `md` up, under it below; see `reasonLineClass`. */}
                     <div className="flex min-w-0 flex-1 flex-col md:flex-row md:items-center md:gap-2">
                       <span
                         data-search-result-path-like={pathLike ? "true" : undefined}
@@ -678,20 +559,14 @@ export function GlobalSearch({
                     onSelectProject(project);
                     closeAndClear();
                   }}
-                  // Same ladder height as the concept rows above — the two result kinds are one
-                  // row role and must not differ by which block introduced them.
+                  // Same ladder height as the concept rows.
                   className="flex min-h-[var(--control-h-lg)] cursor-pointer items-center gap-2 rounded-chip px-3 py-2 text-body-lg text-[color:var(--color-text-secondary)] aria-selected:bg-[color:var(--color-indigo-a14)] aria-selected:text-[color:var(--color-text-primary)]"
                 >
                   <span className="inline-flex shrink-0 items-center rounded-full border border-[color:var(--color-indigo-a20)] bg-[color:var(--color-indigo-a06)] px-1.5 py-[1px] font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-indigo-text-strong)]">
                     {project.isHub ? t('hub') : t('project')}
                   </span>
-                  {/* Marked like the concept rows above. The same project appears in
-                      both groups — as a concept and as a project — and only one of the
-                      two was showing why it was there (measured live 2026-09-19). */}
-                  {/* Same seat, same job as the concept rows: the reason. It holds the
-                      slug until something else earned the row — the English name, or
-                      the description, tag or category that matched and which this row
-                      otherwise never shows. */}
+                  {/* Marked like the concept rows. */}
+                  {/* The reason: the slug until another field earned the row. */}
                   <div className="flex min-w-0 flex-1 flex-col md:flex-row md:items-center md:gap-2">
                     <span className="min-w-0 truncate text-[color:var(--color-text-primary)] md:flex-1">
                       {/* The word this screen draws for the project, with the match still lit. */}
@@ -724,22 +599,10 @@ export function GlobalSearch({
 
         <div className="flex items-center justify-between gap-3 border-t border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-4 py-2 font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]">
           {/*
-           * **The count and the scope travel together** (owner report, 2026-09-04).
-           *
-           * The dialog title is visually hidden for Radix, so the only place the
-           * scope was ever written was the zero-result sentence. A visitor reading
-           * "0 MATCHES" under a palette that names nothing read it as a broken search
-           * rather than as a sample that does not contain the word. A visible title
-           * bar was rejected — it pushes the input down — so the name joins the
-           * number that is already permanent, in every state.
-           *
-           * `scope` is the loaded project when there is exactly one; with several
-           * there is no honest single name, so the copy falls back to "this folder"
-           * ("this map" on the map).
+           * The count and the scope travel together in every state, since the dialog title is
+           * visually hidden.
            */}
-          {/* The number never truncates and the hints never shrink; only the
-              name yields, and it yields by truncating, not by breaking mid-word
-              (measured 2026-09-04: "ONLINE / STORE" on every phone width). */}
+          {/* Only the scope name yields, by truncating. */}
           <span data-testid="global-search-footer-count" className="flex min-w-0 items-center gap-1">
             <span className="shrink-0">
               {isEmptyQuery

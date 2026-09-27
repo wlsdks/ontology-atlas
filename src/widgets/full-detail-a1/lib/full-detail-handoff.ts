@@ -1,8 +1,6 @@
 /**
- * Full-detail A1 agent-handoff row — a single suggested MCP/CLI call chain,
- * not the old drawer's rich "collaborator brief" (vocabulary review, quality
- * gates, lens chips …). `docs/prototypes/detail-a1-datasheet.html`'s handoff
- * row shows exactly this chain; the copy button copies the same string.
+ * Full-detail agent handoff: one suggested MCP/CLI call chain, the same string the copy button
+ * copies (`docs/prototypes/detail-a1-datasheet.html`).
  */
 import type { FullDetailReachDepth } from "./full-detail-reach";
 
@@ -10,10 +8,8 @@ export function formatFullDetailHandoffChain(
   slug: string,
   maxDepth: FullDetailReachDepth,
   /**
-   * `get_concept` does not hold for a concept with no document (a derived node named
-   * only in another document's relation key) — pasted, it returns "not found"
-   * immediately. In that case the document is created first, under the only name the
-   * vault knows (the raw reference text).
+   * `get_concept` fails for a concept with no document, so the chain creates the document first
+   * under the raw reference name.
    */
   options: { documented?: boolean; kind?: string } = {},
 ): string {

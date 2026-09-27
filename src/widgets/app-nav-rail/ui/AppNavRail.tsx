@@ -21,9 +21,7 @@ import {
   CalendarClock,
   Download,
   FolderKanban,
-  // `History as HistoryIcon` — under certain HMR/bundle states the bare `History`
-  // identifier resolves to the global DOM History constructor and crashes the screen
-  // with "Illegal constructor". The alias cannot collide with that global.
+  // Aliased: a bare `History` can resolve to the DOM History constructor under some HMR states.
   History as HistoryIcon,
   Library,
   LineChart,
@@ -51,52 +49,22 @@ import { controlClass } from '@/shared/ui/control-class';
 
 export interface AppNavRailProps {
   /**
-   * The open folder's identity and the way to another one, above the destinations.
-   *
-   * **Why the rail carries it, when the rule below says the rail starts with
-   * destinations** (2026-09-13, recorded): the shell has no shared header, so this rail and
-   * the bottom tab bar are the only chrome that survives a route change - and the folder's
-   * name must not depend on which destination you are on, because a wiki-only vault has no
-   * `/docs` destination and `/docs` was the one surface that named the folder. The rule's
-   * subject is the **brand mark**: do not spend the app's most valuable chrome slot on a
-   * repeated decoration. A vault identity tile is the opposite of decoration, so the
-   * sentence was amended rather than ignored. `AppShell` supplies it; the feature itself
-   * renders nothing unless a folder is open.
+   * The open folder's identity; the rail carries it because it is the only chrome that survives
+   * route changes.
    */
   vaultSlot?: ReactNode;
-  /** The settings trigger (`AppSettingsMenu` rail-tile and the like) — the slot at
-   *  the rail's bottom. The persistent shell's `AppShell` supplies the default
-   *  trigger, and a page overrides it only by registering its own slot through
-   *  `useNavRailShellValue()`. */
+  /** The settings trigger in the rail's bottom slot; AppShell supplies the default. */
   settingsSlot?: ReactNode;
-  /** When true the rail is hidden with CSS rather than unmounted (an immersive
-   *  fullscreen surface). Keeping the rail in the layout preserves its DOM identity,
-   *  which is the point of the persistent-shell promotion, so this prop exists
-   *  instead of conditional rendering. */
+  /** Hides the rail with CSS instead of unmounting, to keep its DOM identity across routes. */
   hidden?: boolean;
-  /** A context override that swaps a rail item's href for one based on "what you were
-   *  just looking at" (currently the docs vault only). Only the named keys replace
-   *  their default href; every other item, and any unnamed key, keeps its static href.
-   *  `AppShell` passes through what it read from `useNavRailShellValue()`. */
+  /** Per-item href overrides from context (docs vault only); other items keep their static href. */
   contextHrefs?: NavRailContextHrefs | null;
-  /**
-   * The Git destination's uncommitted change count. `AppShell` reads the same
-   * changeset as the Git workbench and passes only the count, preserving the
-   * widget boundary. At zero the ambient badge disappears.
-   */
+  /** Uncommitted change count for the Git destination; the badge disappears at zero. */
   gitDirtyCount?: number;
-  /**
-   * How many tools finished installing while the user was on another screen. It
-   * counts **terminal states only** — progress is not drawn here, because this is a
-   * place seen out of the corner of the eye.
-   */
+  /** Tools that finished installing while the user was elsewhere; terminal states only. */
   agentsNoticeCount?: number;
   /** Whether the connection sheet is currently open — the truth source for the tile's `aria-expanded` (global launcher `wantOpen`). */
-  /**
-   * The destinations this folder earns (`destinationsForVaultShape`); `null` draws all.
-   * A wiki without a map does not get the map, the architecture reading, Docs, Insights
-   * or Projects as empty doors; a map without a wiki does not get the Library.
-   */
+  /** Destinations this folder earns (`destinationsForVaultShape`); `null` draws all. */
   visibleDestinations?: ReadonlySet<AppNavRailItemId> | null;
   className?: string;
 }
@@ -106,11 +74,7 @@ interface RailDestination {
   href: string;
   label: string;
   Icon: ComponentType<{ size?: number; className?: string; "aria-hidden"?: boolean }>;
-  /**
-   * The count badge at the top right (uncommitted changes). At `0`/`undefined` it
-   * **disappears** rather than greying out. It is an ambient signal from off screen,
-   * so it does not enter the attention hierarchy.
-   */
+  /** Count badge at the top right; disappears at 0 instead of greying out. */
   badgeCount?: number;
 }
 
@@ -128,33 +92,16 @@ function rememberRailRouteFocus(
   ) {
     return false;
   }
-  // By here the click is confirmed to «go through» (the guards above filtered out new
-  // tabs, modifier keys and cancellation). Signal so a surface with a permanent loop,
-  // like the map, can yield its frame budget — measured rationale in
-  // `shared/lib/navigation-intent.ts`.
+  // Only a click that navigates signals, so a surface with a permanent loop can yield frames
+  // (`shared/lib/navigation-intent.ts`).
   signalNavigationIntent();
   rememberRouteFocusIntent(pathname);
   return true;
 }
 
 /**
- * The 64px left nav rail (feat/chrome-system,
- * `docs/prototypes/chrome-rail-combined.html`, final owner approval) — permanent
- * chrome owning the global destinations (map · architecture · library · automations ·
- * insights · projects · agents · history) plus the settings tile at the bottom. #375
- * mounted it on the topology (HomePage) only, and feat/rail-rollout (#377) extended
- * it to every other page (docs vault, studio, insights, project list/detail/edit,
- * download), consolidating three navigation systems (the `OperationsNav` top tabs,
- * `BottomTabBar` and this rail) into one — the old top tabs (`OperationsNav`) and
- * subtabs (`OntologySubNav`) were retired.
- *
- * The book/network utility tiles and the right rail's settings gear were absorbed
- * here (HeroCollapsed keeps only its pill, and the right vertical rail holds the
- * three map-only tiles). The rail is narrow (`--app-nav-rail-width`), so the settings
- * sheet body opens through a portal, and detailed state such as
- * `AgentActivityChip` lives in the contextual map controls that need it.
- *
- * It is shown from the `lg` breakpoint (≥1024px); below that `BottomTabBar` takes over.
+ * The 64px left nav rail (`docs/prototypes/chrome-rail-combined.html`): global destinations plus
+ * the settings tile, shown from `lg`; below it `BottomTabBar` takes over.
  */
 export function AppNavRail({
   contextHrefs,
@@ -169,15 +116,9 @@ export function AppNavRail({
   const t = useTranslations("navRail");
   const pathname = usePathname() ?? "/";
   const router = useRouter();
-  /**
-   * 「Get the app」 (get the app) — the only download prompt, drawn **on the web only**.
-   * How that is decided, and why it happens after mount, is in
-   * `../lib/show-get-app-tile`.
-   */
-  // Why it is read through `useSyncExternalStore`: the server snapshot can be
-  // **`null` (not known yet)**, so the prerendered HTML never asserts "web". That is
-  // what stops the app from loading that HTML and then flickering the tile away at
-  // hydration.
+  /** The web-only download tile; the decision lives in `../lib/show-get-app-tile`. */
+  // The server snapshot is `null` (unknown), so prerendered HTML never asserts web and the tile
+  // does not flicker at hydration.
   const desktopRuntime = useSyncExternalStore(
     subscribeToRuntime,
     isTauriVaultRuntime,
@@ -191,16 +132,8 @@ export function AppNavRail({
   const activeId = resolveActiveNavRailItem(pathname);
 
   /**
-   * Where the active indicator sits — decided by **measuring** the active tile.
-   *
-   * It is not computed from index × row height: row height depends on the rail's size
-   * tokens and the label's line count, so a hard-coded constant silently diverges the
-   * day a token changes. The screen then looks like "the indicator is slightly off the
-   * tile", which is exactly the kind of thing a person does not reliably catch by eye.
-   *
-   * It attaches through a **callback ref** — called the moment the node attaches, so
-   * ordering problems cannot arise in principle (on 2026-07-28 the studio's clamp fell
-   * into that trap with `[]` deps).
+   * The active indicator position is measured from the active tile through a callback ref, not
+   * computed from row height.
    */
   const [indicator, setIndicator] = useState<{ top: number; height: number } | null>(null);
   const [indicatorReady, setIndicatorReady] = useState(false);
@@ -236,9 +169,7 @@ export function AppNavRail({
 
   useEffect(() => () => listObserverRef.current?.disconnect(), []);
 
-  // Re-measure whenever the active destination changes. The transition is enabled only
-  // after the first placement — sliding in on the first paint would read as an entrance
-  // rather than a movement.
+  // The transition turns on only after the first placement, so the first paint does not slide in.
   useLayoutEffect(() => {
     measureIndicator();
   }, [activeId, measureIndicator]);
@@ -249,46 +180,25 @@ export function AppNavRail({
     return () => cancelAnimationFrame(raf);
   }, [indicator, indicatorReady]);
 
-  // The addresses have one source of truth, `shared/config/destinations` — keyboard
-  // navigation and the shortcut sheet must read the same table, so it moved outside
-  // this component (with two copies the routes diverge). Labels and icons belong to
-  // the screen and stay here.
+  // Addresses come from `shared/config/destinations` so keyboard navigation and the shortcut sheet
+  // share them.
   const allDestinations: RailDestination[] = [
     { id: "map", href: DESTINATION_HREF.map, label: t("map"), Icon: MapIcon },
     { id: "architecture", href: DESTINATION_HREF.architecture, label: t("architecture"), Icon: Blocks },
     { id: "library", href: contextHrefs?.docs ?? DESTINATION_HREF.library, label: t("library"), Icon: Library },
     { id: "automations", href: DESTINATION_HREF.automations, label: t("automations"), Icon: CalendarClock },
-    /*
-     * Why the icon is `LineChart` and not `BarChart3` (owner, 2026-09-08: *"these two icons
-     * are too alike to tell apart"*). The note above chose `Library` against the tile **above**
-     * it and never looked at the tile below: `Library` is a row of upright spines and
-     * `BarChart3` is a row of upright bars, so at 20px the two were one silhouette. The
-     * Library's own screen is built on that shelf of spines, so the chart moved instead —
-     * `LineChart` is a rising diagonal, the only stroke of its kind in this list, and it still
-     * says "measures", which is what this destination opens on.
-     */
+    /* `LineChart`, not `BarChart3`: a bar chart shares the Library icon's silhouette at 20px. */
     { id: "insights", href: DESTINATION_HREF.insights, label: t("insights"), Icon: LineChart },
     { id: "projects", href: contextHrefs?.projects ?? DESTINATION_HREF.projects, label: t("projects"), Icon: FolderKanban },
-    // Agents — a new destination on 2026-08-20 (ledger 90). The install and connect
-    // screens were pulled out of the settings sheet to here.
-    //
-    // Why the icon is `Bot` (measured from the workbench position): the candidate
-    // `SquareTerminal` is "a square with a mark in it" at 20px on the rail and its
-    // silhouette collides with `FolderKanban` (projects). `Bot` is the only outline in
-    // this list with «a head and ears».
+    // `Bot`, not `SquareTerminal`, which collides with `FolderKanban` at 20px.
     {
       id: "agents",
       href: DESTINATION_HREF.agents,
       label: t("agents"),
       Icon: Bot,
-      // A badge stands here when an install finished while the user was on another
-      // screen — **terminal states only**, no progress (a place seen out of the corner
-      // of the eye cannot be read if it changes every second).
+      // Badge only for terminal install states; peripheral chrome shows no progress.
       badgeCount: agentsNoticeCount,
     },
-    // MCP left the rail on 2026-09-17: it is the second tab of Agents (`/agents/?tab=mcp`).
-    // Owner correction, 2026-08-26: Architecture is additive. Git keeps its
-    // primary destination, current-route marker, and uncommitted-change badge.
     { id: "git", href: DESTINATION_HREF.git, label: t("git"), Icon: HistoryIcon, badgeCount: gitDirtyCount },
   ];
   const destinations = allDestinations.filter(
@@ -304,16 +214,8 @@ export function AppNavRail({
       data-hidden={hidden ? "true" : "false"}
       className={cn(
         /*
-         * ⚠️ **The rail is deliberately not named for the view transition** (2026-09-13).
-         *
-         * It used to carry `app-nav-rail-view-transition`, so the route crossfade lifted it
-         * out of the document snapshot and it did not fade. In WebKit — the installed app's
-         * engine — the root group paints over every other group, so the rail was covered by
-         * the departing screen's snapshot and the whole window read as blank, rail included,
-         * for 0.3-0.5 s (inspection 122, B1). The crossfade now captures only the shell's
-         * pane and never the document, so the rail stays live: it is not snapshotted at all,
-         * which is why its active indicator can still slide during the crossfade rather than
-         * being a picture of one. The measurements are in `app/globals.css`.
+         * Not named for the view transition: in WebKit the root group paints over named groups and
+         * blanked the rail; the crossfade captures only the pane.
          */
         "hidden w-[var(--app-nav-rail-width)] shrink-0 flex-col items-center border-r border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] py-3 lg:flex",
         hidden && "lg:hidden",
@@ -321,55 +223,29 @@ export function AppNavRail({
       )}
     >
       {/*
-        The rail's ownership is the same however the destination count, window height
-        or UI scale changes. Only the destinations pane scrolls (without `min-h-0` a
-        flex child does not shrink), scrolling does not leak to the parent
-        (`overscroll-contain`), and the utility tier **never shrinks** (`shrink-0`).
-        The cap itself is held by a contract
-        (`destination-shortcuts.contract.test.ts`).
-      */}
+       * Only the destinations pane scrolls; the utility tier never shrinks (cap:
+       * `destination-shortcuts.contract.test.ts`).
+       */}
       {/*
-        The vault tile sits **outside** the scrolling destinations pane on purpose. Inside
-        it, the one fact that says where all this data comes from would scroll away as soon
-        as the destination list grew past a short window - and the window floor (1040x720)
-        is exactly where that happens.
-      */}
+       * The vault tile sits outside the scrolling pane so it never scrolls away at the 1040x720
+       * floor.
+       */}
       {vaultSlot}
       <nav
         aria-label={t("ariaLabel")}
         className="flex w-full min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overscroll-contain"
       >
         <ul ref={attachDestinationList} className="relative flex w-full flex-col gap-0.5">
-          {/*
-            The active marker is **one element that moves** (motion audit, 2026-07-28).
-
-            Two tiles used to kill and light their own colour — by Gestalt common fate,
-            two markers that disappear and reappear are perceived as "two things",
-            while one marker that moves is perceived as "**the same thing went
-            there**". The rail's vertical order is this app's only spatial model, and
-            the indicator's direction and distance carry **information** on that model:
-            where you came from and where you went. Turning it off loses that
-            information, so it is not decoration.
-
-            Not one bit of content moves (a route change is only a fast cross-fade). So
-            the attention budget goes to what the user asked for, and the chrome moves
-            a single point.
-          */}
+          {/* One moving active marker, so a route change reads as the same thing moving. */}
           <span
             aria-hidden
             data-testid="app-nav-rail-active-indicator"
             data-placed={indicator ? "true" : "false"}
             className={cn(
-              // Horizontal centring is done by **one inline transform**. Tailwind v4's
-              // movement utilities use the **standard `translate` property** rather
-              // than `transform`, so giving `-translate-x-1/2` as a class and
-              // `transform: translate(-50%, …)` inline applies **both and shifts
-              // twice** (measured: 19px left of the tile, clipped outside the rail).
+              // One inline transform: Tailwind v4 `translate` utilities plus an inline transform
+              // would shift twice.
               "pointer-events-none absolute left-1/2 z-0 rounded-card bg-[color:var(--color-indigo-a14)] shadow-[inset_0_0_0_1px_var(--color-indigo-line-a22)]",
-              // The first placement is not a transition — sliding in from 0 on the
-              // first paint makes it an "entrance" rather than a "movement", and that
-              // is motion the user did not ask for (the same lesson `use-row-disclosure`
-              // learned).
+              // No transition on the first placement, so it does not read as an entrance.
               indicatorReady && "transition-[transform,height] duration-[var(--motion-base)] ease-[var(--motion-ease)] motion-reduce:transition-none",
             )}
             style={
@@ -393,9 +269,7 @@ export function AppNavRail({
                   href={buildRouteFocusHref(href)}
                   onClick={(event) => {
                     if (!rememberRailRouteFocus(event, surfacePath)) return;
-                    // Ordinary destinations crossfade; Map paints live preparation before
-                    // starting its graph work. The anchor keeps
-                    // its href for new tabs, modifier clicks, and the keyboard.
+                    // The anchor keeps its href for new tabs, modifier clicks and the keyboard.
                     event.preventDefault();
                     const target = buildRouteFocusHref(href);
                     if (id === "map" && !isActive) {
@@ -405,42 +279,32 @@ export function AppNavRail({
                       navigateWithViewTransition(() => router.push(target));
                     }
                   }}
-                  /* No `title` — the label is **already visible** right under the icon.
-                     A native tooltip covers that label with a grey box drawn by the OS,
-                     so neither its tokens nor its motion are ours. The icon-only bottom
-                     utility tiles still carry `title`; there it is the only name.
-                     (Owner report 2026-08-01: that box was caught in a demo video.) */
+                  /*
+                   * No `title`: the label is visible under the icon and a native tooltip would
+                   * cover it.
+                   */
                   aria-current={isActive ? "page" : undefined}
                   data-testid={`app-nav-rail-item-${id}`}
                   data-active={isActive ? "true" : "false"}
-                  /* 2026-08-05: with no focus ring, arriving by keyboard drew the **OS
-                     accent colour** — outside the charter's "neutrals plus one indigo".
-                     The bottom utility tiles in this same file already had this ring,
-                     so the siblings had diverged. `rounded-card` matches the shape of
-                     the box the ring wraps (including the label) to the icon tile, and
-                     the box's dimensions do not change by a pixel because of
-                     `ring-inset`. */
-                  /* ⚠️ **`py-1`, not `py-1.5` — the padding moved with the destination cap** (2026-09-06).
-                     The tile's fixed tokens did not change: 38×32 tile, 20px icon, 11px label. What
-                     changed is the button's own padding, and with it the list pitch: 64px → 60px.
-                     Measured on the rendered rail at the app's window floor (1040×720), where the
-                     destinations pane is 616px tall — eight tiles at 64 stood in 12–522; nine at 64
-                     reach 586 and leave 30px, nine at 60 stand in 12–550 and leave 66px. The gear
-                     stays 48px above the window edge in both, and nothing scrolls. Padding is what
-                     gives way here because it is the one quantity in the tile that carries no
-                     information: the icon must stay legible and the label must stay readable, while
-                     the gap between two tiles only has to keep them separate. Gate:
-                     `destination-shortcuts.contract.test.ts` and `desktop-shell-rail.spec.ts`. */
-                  /* ⚠️ `border-0` — this position borrows `card` only for **the focus ring's geometry** (radius and ring box), exactly as the comment above says. But the #961 migration also brought along the 1px hairline the card shape carries, and the hand-written classes before the migration had no border — the owner caught it on the real thing (2026-08-08: "Why does this area have a border now?" — why does this area have a border now?). The visible tile is drawn by the inner span below. Gate: desktop-shell-rail.spec.ts. */
+                  /*
+                   * Focus ring so keyboard focus never draws the OS accent colour; ring-inset keeps
+                   * the box size.
+                   */
+                  /*
+                   * `py-1`: nine tiles fit the 616px pane at the 1040x720 window floor
+                   * (`destination-shortcuts.contract.test.ts`).
+                   */
+                  /*
+                   * `border-0`: this borrows `card` only for the focus ring geometry, not its
+                   * hairline.
+                   */
                   className={controlClass({ shape: "card", className: "group relative w-full flex-col gap-1 border-0 px-0 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]" })}
                 >
                   <span
                     className={cn(
                       "relative flex h-[var(--app-nav-rail-tile-height)] w-[var(--app-nav-rail-tile-width)] items-center justify-center rounded-card transition-colors",
-                      // This tile does not draw the active surface — the single
-                      // indicator above moves in and lays it down. What remains here is
-                      // **colour**, and colour is confirmation rather than movement, so
-                      // it rides the fast ramp (the default).
+                      // The moving indicator draws the active surface; the tile only changes
+                      // colour, on the fast ramp.
                       isActive
                         ? "z-[1] text-[color:var(--color-indigo-accent)]"
                         : "text-[color:var(--color-text-tertiary)] group-hover:bg-[color:var(--color-overlay-2)] group-hover:text-[color:var(--color-text-primary)]",
@@ -452,12 +316,8 @@ export function AppNavRail({
                       className="h-[var(--app-nav-rail-icon-size)] w-[var(--app-nav-rail-icon-size)]"
                     />
                     {badgeCount ? (
-                      // Signal tone warning — only the `--color-status-warning` alpha
-                      // ramp is used. "There are unrecorded changes" is neither an error
-                      // nor a completion but an unresolved state calling for attention,
-                      // which is warning's definition (an extension of the distinction
-                      // GitStatusTile already shipped, not a new exception). Three
-                      // digits break the tile geometry, so it caps at `9+`.
+                      // Warning tone for unrecorded changes; caps at `9+` to keep the tile
+                      // geometry.
                       <span
                         data-testid={`app-nav-rail-badge-${id}`}
                         className="absolute -right-1 -top-0.5 grid h-[15px] min-w-[15px] place-items-center rounded-full border border-[color:var(--color-amber-source-a30)] bg-[color:var(--color-amber-source-a14)] px-[3px] text-caption font-[var(--font-weight-strong)] leading-display-tight tabular-nums text-[color:var(--color-status-warning)]"
@@ -468,11 +328,8 @@ export function AppNavRail({
                   </span>
                   <span
                     className={cn(
-                      // The size comes from the rail's size token (multiplied by the UI
-                      // zoom factor) and the leading **explicitly** names the ramp's
-                      // pair — an arbitrary-length reference carries only the size and
-                      // cannot bring the companion leading. While it was missing, this
-                      // rendered at an inherited 1.5 (14.25px) (measured 2026-07-28).
+                      // Leading named explicitly: an arbitrary-length size does not bring its ramp
+                      // leading.
                       "text-[length:var(--app-nav-rail-label-size)] leading-caption",
                       isActive
                         ? "font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
@@ -488,22 +345,14 @@ export function AppNavRail({
         </ul>
       </nav>
 
-      {/* Bottom utility tier — only settings and web-only app download. The agent owns connection, conversation, and status checks through the single destination above. */}
       <div
         data-testid="app-nav-rail-utility-tier"
         className="mt-auto flex w-full shrink-0 flex-col items-center gap-1 pt-2"
       >
         {/*
-          The one position that exists on the web only. Why a single tile in the chrome
-          rather than a banner planted on every surface is written in
-          `../lib/show-get-app-tile` — the rail's utility tier is in the same place on
-          every destination, so one element is already "many places".
-
-          The destination is `/download`. The visitor's OS is not guessed here — that
-          screen already separates the macOS file from "Windows coming" honestly.
-          Deciding the OS in the rail turns a wrong guess into a **dead-end CTA**, which
-          this repository forbids by name.
-        */}
+         * Web-only download tile; the visitor's OS is not guessed here
+         * (`../lib/show-get-app-tile`).
+         */}
         {showGetApp ? (
           <Link
             href="/download/"
@@ -513,11 +362,8 @@ export function AppNavRail({
             className={controlClass({ shape: "card", tone: "muted", className: "group relative min-h-0 p-0 h-[var(--app-nav-rail-tile-height)] w-[var(--app-nav-rail-tile-width)] justify-center border-0 transition-[color,background-color,transform] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] active:translate-y-px active:bg-[color:var(--color-overlay-3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset" })}
           >
             {/*
-              `min-h-0 p-0` on the tile: the `card` shape's own `min-h-9 px-3 py-1.5` beat the
-              tile height, so this stood 36px beside the gear's 32 and its 12px side insets left
-              a 38px box 14px for the glyph, squashing it to 14x20 (inspection, 2026-09-25). The
-              tile's geometry is the rail token, as the gear and the history tile have it.
-            */}
+             * `min-h-0 p-0`: the card shape's own padding would override the rail tile geometry.
+             */}
             <Download
               aria-hidden
               className="h-[var(--app-nav-rail-utility-icon-size)] w-[var(--app-nav-rail-utility-icon-size)] shrink-0"

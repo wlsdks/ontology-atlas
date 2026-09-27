@@ -112,9 +112,7 @@ describe('DocsVaultUnifiedPalette body search results', () => {
     expect(onDocSelect).toHaveBeenCalledWith('beta', 'deterministic');
   });
 
-  // Landing defect (P1 review) — the keyboard (Enter) path has to pass the query just
-  // like the mouse. The `row.onRun` reference is shared, but a separate assertion pins
-  // it against a measured regression.
+  // The Enter path must pass the query like the mouse path.
   it('passes the query to onDocSelect when a body hit is chosen with Enter', () => {
     const onDocSelect = vi.fn();
     renderPalette({ initialQuery: 'deterministic', bodyIndex, onDocSelect });
@@ -129,8 +127,7 @@ describe('DocsVaultUnifiedPalette body search results', () => {
   });
 
   it('adds an indexing notice when zero results come while indexing', () => {
-    // Look the notice up by its message key, not by a fragment of its wording — the
-    // contract is "the notice appears", not "the notice reads like this".
+    // Found by message key: the contract is that the notice appears, not its wording.
     renderPalette({ initialQuery: 'zzz-no-match', bodyIndexing: true });
     expect(
       screen.getByText(koMessages.vaultWidgets.palette.bodyIndexingNotice),

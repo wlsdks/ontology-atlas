@@ -10,8 +10,7 @@ import { GlobalSearch } from "./GlobalSearch";
 /** The search field's accessible name, read from the catalogue rather than pinned as prose. */
 const COMMAND_LABEL = enMessages.searchWidgets.globalSearch.commandLabel;
 
-// cmdk (Command) plus @tanstack/react-virtual's project chip row require
-// ResizeObserver, which jsdom lacks — a minimal stub is needed.
+// cmdk and @tanstack/react-virtual need ResizeObserver, which jsdom lacks.
 beforeAll(() => {
   class ResizeObserverStub {
     observe() {}
@@ -74,16 +73,8 @@ function findOntologyOption(nodeId: string): HTMLElement | null {
 }
 
 /**
- * persona-P1 regression guard — the two contracts underlying the flow of finding
- * "MCP Server" and choosing it without leaving the map, pinned at component level:
- *
- * 1. The onSelectNode callback — HomePage overrides it with handleSelect(node.id) to
- *    stay on the map. That the callback is called with the right node is the
- *    precondition for the override to mean anything.
- * 2. The kind filter chips — the old header search (SearchPalette)'s ALL/HUB/NODE
- *    chips were on an axis that never touched ontology nodes, so they felt like a
- *    no-op. This pins that the unified palette's (GlobalSearch) kind chips really do
- *    narrow the results.
+ * Pins the two contracts behind choosing a node without leaving the map: onSelectNode gets the
+ * right node, and the kind chips really narrow the results.
  */
 describe("GlobalSearch", () => {
   const nodes: KnowledgeGraphNode[] = [
@@ -165,11 +156,8 @@ describe("GlobalSearch", () => {
     expect(findOntologyOption("element:mcp-index")).not.toBeNull();
   });
 
-  // 2026-09-19 — cmdk's root listens for Enter across the whole palette and turns it
-  // into "open the highlighted row", preventDefault included, so it swallowed Enter
-  // pressed on a control. Measured live: tabbing to a kind chip and pressing Enter
-  // left the chip aria-pressed="false" and instead closed the palette and flew the
-  // map to whichever row happened to be highlighted. The close button did the same.
+  // cmdk's root turns Enter anywhere into "open the highlighted row" with preventDefault, which
+  // swallowed Enter on a focused chip or close button.
   describe('Enter belongs to the focused control', () => {
     const openPalette = (onSelectNode = vi.fn()) => {
       render(
@@ -208,8 +196,7 @@ describe("GlobalSearch", () => {
     });
 
     it('opens the result on Enter in the search input', () => {
-      // The behaviour the guard must not cost: from the field, Enter is exactly
-      // "open the highlighted row".
+      // From the search field, Enter still opens the highlighted row.
       const onSelectNode = openPalette();
       const field = screen.getByRole("combobox", { name: COMMAND_LABEL });
       fireEvent.change(field, { target: { value: "mcp server" } });
@@ -242,10 +229,8 @@ describe("GlobalSearch", () => {
   });
 
   /**
-   * rank2/18 (design council batch B1) — the overlay a11y backbone. Radix Dialog
-   * provides ESC and trigger focus return by default, but GlobalSearch is controlled
-   * (open/onOpenChange managed externally), so this has to be pinned as actually
-   * working at component level.
+   * GlobalSearch is controlled, so Escape and trigger focus return are pinned here rather than
+   * trusted to Radix.
    */
   function Harness() {
     const [open, setOpen] = useState(false);
@@ -280,16 +265,8 @@ describe("GlobalSearch", () => {
   });
 
   /**
-   * The Esc contract (measured regression, 2026-07-26) — the footer promises
-   * "ESC Close", so **the first** Esc closes it and clears the input and filters.
-   *
-   * The real defect: Radix sets `aria-hidden` on siblings rather than adding
-   * `aria-modal`, while this app's global Esc discipline (the first-run card's
-   * window-capture handler, the auto-tour firing guard) decides "is a modal open"
-   * with `[role="dialog"][aria-modal="true"]`. With no declaration those handlers
-   * could not see the search window and intercepted Esc with preventDefault, so the
-   * first press left both the dialog and the input untouched (only the second
-   * closed it). The two tests below pin both axes.
+   * The first Escape closes and clears. The app's global Escape handlers look for
+   * `[role="dialog"][aria-modal="true"]`, which Radix does not set.
    */
   it('declares itself modal with aria-modal while open', () => {
     render(
@@ -309,8 +286,7 @@ describe("GlobalSearch", () => {
   });
 
   it('closes and clears the input on the first Escape even with a global capture handler that yields to modals', () => {
-    // Imitates the first-run card's (`use-first-run-starter`) real contract exactly:
-    // window capture plus preventDefault, yielding while a modal is open.
+    // Imitates the first-run card's window-capture handler that yields while a modal is open.
     const guardFired = vi.fn();
     const guard = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
@@ -371,17 +347,8 @@ describe("GlobalSearch", () => {
   });
 });
 
-// Owner report (2026-07-25): "When clicking the search button ... clicking outside should close it
-// but it doesn't — don't most close on x or an outside click?" (clicking outside should close
-// it and doesn't — don't most close on x or an outside click?). Right — that is the
-// de facto standard for command palettes (Linear · VS Code · Raycast · Spotlight),
-// and this app's other overlays (the settings sheet, the docs drawer, the trail
-// panel) already close on a scrim click. Only the search palette was out of step.
-//
-// Why it did not close: `Dialog.Content` itself is a `fixed inset-0` flex wrapper
-// covering the whole screen, so the area that looks like a scrim is actually
-// **inside** Content. As far as Radix's `onPointerDownOutside` was concerned, no
-// "outside" existed.
+// A scrim click closes. Dialog.Content is itself a full-screen wrapper, so Radix sees no outside to
+// click.
 describe('GlobalSearch scrim click closes', () => {
   const nodes: KnowledgeGraphNode[] = [
     node({ id: "capability:mcp-server", title: "MCP Server", kind: "capability" }),
@@ -417,14 +384,7 @@ describe('GlobalSearch scrim click closes', () => {
   });
 });
 
-/**
- * Footer scope contract (owner report, 2026-09-04).
- *
- * The dialog title is visually hidden for Radix, so before this the scope was named
- * only inside the zero-result sentence; "0 MATCHES" on a sample that simply lacks
- * the word read as a broken search. The footer is the one line present in every
- * state, so the corpus name rides along with the count there.
- */
+/** The footer names the searched scope beside the count in every state. */
 describe("GlobalSearch — footer names the searched scope", () => {
   const nodes: KnowledgeGraphNode[] = [
     node({ id: "capability:mcp-server", title: "MCP Server", kind: "capability" }),
@@ -432,8 +392,7 @@ describe("GlobalSearch — footer names the searched scope", () => {
   ];
 
   function footerText(): string {
-    // The count, the separator, and the scope are three spans with a CSS gap;
-    // join them the way the eye reads them.
+    // Three spans with a CSS gap, joined the way the eye reads them.
     return Array.from(screen.getByTestId("global-search-footer-count").children)
       .map((child) => child.textContent?.trim() ?? "")
       .join(" ");
@@ -465,9 +424,7 @@ describe("GlobalSearch — footer names the searched scope", () => {
         onSelectProject={() => {}}
       />,
     );
-    // Measured 2026-09-04: "172.9px + 186.9px of hints" in a 346px footer wrapped
-    // the proper noun mid-phrase on every phone width. The count keeps its width,
-    // the hints keep theirs, the name is the one thing that yields.
+    // Only the scope name yields in a narrow footer; the count and hints keep their width.
     const count = screen.getByTestId("global-search-footer-count");
     expect(count.className).toContain("min-w-0");
     expect(count.children[0]?.className).toContain("shrink-0");
@@ -532,11 +489,7 @@ describe("GlobalSearch — footer names the searched scope", () => {
     expect(footerText()).toBe("1 matches · Online Store");
   });
 
-  /*
-   * The same double-count the indexed total already subtracts, now on the matches. A project
-   * card and its `kind:project` node are one thing, so a query equal to the project's name
-   * matched both and the footer said "2 matches" about one project.
-   */
+  /* A project card and its `kind:project` node are one thing and count once in matches. */
   it("counts a project that also matched as a node once", () => {
     render(
       <GlobalSearch
@@ -594,14 +547,8 @@ describe("GlobalSearch — footer names the searched scope", () => {
 });
 
 /**
- * **The map's words stay on the map** (2026-09-26).
- *
- * The shell opens this dialog on Library, Git, Automations, Agents, the harness and Insights, and
- * a reviewer read `No matches for "…" in this map.` on the Library, under a dialog named "Search
- * this map". Every string that speaks of the map lives under `onMap`; here each of them is swapped
- * for a marker, and the dialog is driven through the states that show them. Off the map no marker
- * may render — in text or in an accessible name — and on the map every one of them must, so the
- * check cannot pass by rendering nothing.
+ * Map wording renders only on the map: each `onMap` string is swapped for a marker, and the test
+ * drives every state that shows them, both on and off the map.
  */
 describe("GlobalSearch — says \"map\" only on the map", () => {
   const MARK = "MAP-ONLY:";
@@ -662,16 +609,8 @@ describe("GlobalSearch — says \"map\" only on the map", () => {
 });
 
 /**
- * **Focus leaves with the dialog, not after its exit motion** (2026-09-26).
- *
- * Measured against a real folder: after Esc the search stayed mounted for its exit animation with
- * focus still in its field, so `?` pressed at once was taken as typing and opened nothing; and
- * when focus came back at unmount it was pulled to the opener even if another sheet had opened.
- *
- * jsdom plays no CSS, so Radix would unmount at once and there would be no exit to observe. The
- * dialog content is given the animation names the browser reports (`overlaySpringOut` while
- * closed), so Radix keeps it mounted with `data-state="closed"` until `animationend`, as it does
- * on screen.
+ * Focus leaves when the dialog closes, not after its exit motion. The content is given the
+ * browser's animation names so Radix keeps it mounted until `animationend`, as on screen.
  */
 describe("GlobalSearch — focus leaves with the dialog", () => {
   const nodes = [node({ id: "capability:checkout", title: "Checkout" })];
@@ -748,8 +687,7 @@ describe("GlobalSearch — focus leaves with the dialog", () => {
     const sheet = screen.getByRole("button", { name: "another sheet", hidden: true });
     sheet.focus();
     finishExit(document.querySelector('[role="dialog"]')!);
-    // `onCloseAutoFocus` decides synchronously as the content unmounts, so once the dialog is
-    // gone the verdict is in; no extra wait is needed.
+    // `onCloseAutoFocus` decides synchronously on unmount, so no extra wait is needed.
     await waitFor(() => expect(document.querySelector('[role="dialog"]')).toBeNull());
     expect(document.activeElement, "the closing search pulled focus back to its opener").toBe(sheet);
   });

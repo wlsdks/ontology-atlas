@@ -84,12 +84,8 @@ describe("DocsVaultViewer", () => {
   });
 
   /**
-   * A document under `docs/` is read here and on GitHub, and the two rules for a
-   * heading id disagree on half of this repository's headings — an em dash
-   * between spaces leaves GitHub two hyphens and this viewer one. Measured
-   * consequence before this: the generated contents list in
-   * `docs/DESIGN-SYSTEM.md` resolved on exactly one of the two surfaces,
-   * whichever rule wrote it.
+   * A `docs/` document is read here and on GitHub, whose heading-id rules differ (an em dash
+   * between spaces), so `docs/DESIGN-SYSTEM.md` contents links must work on both.
    */
   it("answers to GitHub's heading id as well as its own, so a link written for either surface lands", async () => {
     const { container } = renderViewer("## Library index — readable page titles\n\nBody.");
@@ -120,8 +116,8 @@ describe("DocsVaultViewer", () => {
   });
 
   it("routes a vault-external relative .md link to GitHub blob instead of a dead app 404", async () => {
-    // `../mcp/README.md` in docs/README.md — outside the vault (docs/). It used to be
-    // handed to app routing and died as a /mcp/README.md 404.
+    // `../mcp/README.md` in docs/README.md leaves the vault (docs/) and must not route into the
+    // app.
     renderViewer("See [MCP docs](../mcp/README.md) for setup.", {
       repoBlobBase: "https://github.com/wlsdks/ontology-atlas/blob/main",
       vaultRepoRoot: "docs",
@@ -136,8 +132,7 @@ describe("DocsVaultViewer", () => {
   });
 
   it("renders a vault-external link as non-routing text when repo location is unknown (local vault)", async () => {
-    // Without repoBlobBase (a local vault) no GitHub URL can be built. Rendered as
-    // non-routing text (no href) rather than a dead 404.
+    // Without repoBlobBase (a local vault) the link renders as non-routing text, not a dead 404.
     renderViewer("See [MCP docs](../mcp/README.md) for setup.");
 
     const label = await screen.findByText("MCP docs");
@@ -238,9 +233,8 @@ describe("DocsVaultViewer", () => {
   });
 
   /*
-   * **A compiled page's citations read as places, not addresses** (2026-09-25). The compile
-   * path writes `[[src:<file>#l<n>]]` with no label, and the page printed the target itself —
-   * `src:sources/budget.md#l5` on every fact — while the Source pane said "line 5".
+   * A compiled page's unlabelled citations read as places ("line 5"), not
+   * `src:sources/budget.md#l5` addresses.
    */
   it("says where an unlabelled citation points, in words, and names the file only when the header does not", async () => {
     const onSourceNavigate = vi.fn();
@@ -296,10 +290,8 @@ describe("DocsVaultViewer", () => {
     expect(onNavigate).toHaveBeenCalledWith("README");
   });
 
-  // Landing defect (P1 review) — the contract that a highlightQuery arriving from the
-  // palette produces exactly one mark plus scrollIntoView *after* the body content
-  // loads asynchronously. No mark can exist before the content arrives, so this test
-  // uses an async fetcher (awaiting findByText for load completion) to measure that timing.
+  // A highlightQuery from the palette yields one mark and scrollIntoView after the body loads
+  // asynchronously.
   describe('highlightQuery landing marks and scrolls after the body loads', () => {
     it('wraps the match in mark and scrolls after the body loads', async () => {
       const scrollSpy = vi.fn();
@@ -329,9 +321,8 @@ describe("DocsVaultViewer", () => {
       expect(scrollSpy).toHaveBeenLastCalledWith({ behavior: 'auto', block: 'center' });
     });
 
-    // Reproducing a measured regression: it must land even in a real vault document
-    // whose body wraps at ~80 characters so a newline falls inside the matched phrase
-    // (the AGENTS.md convention).
+    // A body wrapped at about 80 characters (the AGENTS.md convention) still lands when a newline
+    // falls inside the phrase.
     it('marks and scrolls a phrase split by a line wrap', async () => {
       const scrollSpy = vi.fn();
       Element.prototype.scrollIntoView = scrollSpy;
@@ -362,14 +353,8 @@ describe("DocsVaultViewer", () => {
 
 
 /**
- * ⚠️ **A wikilink means the same thing here as everywhere else in the vault.**
- *
- * This lookup used to match the typed slug straight against the vault's slug set, making
- * it a third answer to "what does `[[x]]` mean in this document" — disagreeing with
- * `extractOutLinksWithContext` (backlinks, the Library graph) and with
- * `validateWikiFolder` (the folder check). Measured 2026-09-09: `[[budget]]` inside
- * `wiki/handover.md` rendered as plain text with no anchor, while the folder check
- * reported the very same link as perfectly resolved.
+ * A wikilink resolves here as everywhere else in the vault (`extractOutLinksWithContext`,
+ * `validateWikiFolder`).
  */
 describe("DocsVaultViewer — a wikilink resolves against the document that wrote it", () => {
   const wikiDoc: VaultDoc = { ...doc, slug: "wiki/handover", path: "wiki/handover.md" };

@@ -66,7 +66,6 @@ describe('GitStatusTile on the web without a bridge', () => {
     expect(onActivate).toHaveBeenCalledTimes(1);
   });
 
-  // Owner report 2026-07-23 — the utility tier's icon size order (the same token as the activity tile).
   it("keeps the History icon on the utility ladder (--app-nav-rail-utility-icon-size)", () => {
     renderTile(<GitStatusTile onActivate={() => {}} />);
     const icon = screen.getByTestId("app-nav-rail-git-tile").querySelector("svg");
@@ -133,10 +132,7 @@ describe('GitStatusTile on desktop (Tauri)', () => {
 
     renderTile(<GitStatusTile onActivate={() => {}} vaultPath="/repo/vault" sessionDirty />);
     await waitFor(() => expect(tauriApiMock.invoke).toHaveBeenCalledTimes(1));
-    // A git_status result (clean) wins over the sessionDirty fallback. The call being made
-    // is not the result being rendered: the dot drawn for `sessionDirty` stays until the
-    // resolved status lands, so this waits for the absence rather than asserting it once
-    // (CI shard 2/3 caught the dot still there on 2026-09-23).
+    // Waits for the dot to disappear: the sessionDirty dot stays until the resolved status lands.
     await waitFor(() =>
       expect(screen.queryByTestId("app-nav-rail-git-dot")).not.toBeInTheDocument(),
     );
@@ -168,8 +164,7 @@ describe('GitStatusTile follows the open folder', () => {
   });
 
   it('does not carry the previous folder\'s dot over after a folder switch', async () => {
-    // The dot says "this folder has unrecorded changes". Carried across a folder switch it
-    // says it about a folder it was never read from — and a clean folder wears it.
+    // A dot carried across a folder switch would describe a folder it was never read from.
     tauriApiMock.runtimeAvailable = true;
     let finishCleanRead = (_: unknown) => {};
     const cleanRead = new Promise((resolve) => {
@@ -187,8 +182,6 @@ describe('GitStatusTile follows the open folder', () => {
             stagedOutsideVault: [],
           };
         }
-        // The new folder's read is still in flight — which is the whole window in which the
-        // previous folder's answer could be shown as this one's.
         return cleanRead;
       },
     );
@@ -198,8 +191,7 @@ describe('GitStatusTile follows the open folder', () => {
     );
     expect(await screen.findByTestId("app-nav-rail-git-dot")).toBeInTheDocument();
 
-    // The clean folder's own read has not landed yet at this point — the dot must already
-    // be gone, because the count on screen is not this folder's.
+    // The dot must be gone before the new folder's own read lands.
     await act(async () => {
       rerender(
         <NextIntlClientProvider locale="ko" messages={koMessages}>

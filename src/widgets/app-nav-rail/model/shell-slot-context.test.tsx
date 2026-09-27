@@ -7,18 +7,7 @@ import {
   useNavRailShellValue,
 } from "./shell-slot-context";
 
-/**
- * Carrying LNB context forward. `useNavRailContextHrefs` shares the same reverse
- * Context contract (leaf page → rail) as `useNavRailSettingsSlot`: registering makes
- * the rail read that value, and unmounting clears it automatically so another page
- * does not inherit leftover context.
- *
- * `hrefs` is stabilised with `useMemo` — the same contract as `HomePage`'s real usage
- * (the caller stabilises the reference). Passing a fresh object literal every render
- * would loop endlessly: effect re-runs → context value changes → re-render → a new
- * object … so that stabilisation is itself part of the
- * `useNavRailContextHrefs`/`useNavRailSettingsSlot` contract.
- */
+/** Callers must stabilise `hrefs` with useMemo; a fresh literal every render loops the effect. */
 function Registrar({ docsHref }: { docsHref?: string }) {
   const hrefs = useMemo(() => (docsHref ? { docs: docsHref } : null), [docsHref]);
   useNavRailContextHrefs(hrefs);
@@ -53,9 +42,7 @@ describe("NavRailShellProvider contextHrefs", () => {
   });
 
   it("clears the contextHrefs when the registering page unmounts, without unmounting the rail itself", () => {
-    // Reproduces the real contract, where the rail (RailValueProbe) lives in the layout
-    // and only the page (Registrar) unmounts on a route change — `showRegistrar=false`
-    // simulates "navigated to another route".
+    // The rail lives in the layout and only the page unmounts on a route change.
     function Tree({ showRegistrar }: { showRegistrar: boolean }): ReactNode {
       return (
         <NavRailShellProvider>

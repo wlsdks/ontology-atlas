@@ -3,14 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { clampMenuToBox } from './caret-position';
 
 /**
- * `caretPoint` itself relies on the browser's line-breaking, so it cannot be
- * measured in jsdom (which does no layout, leaving `offsetTop` always 0). So only
- * the **placement rule** is measured here — that rule is pure arithmetic, and it
- * is also where the accidents happen: a menu leaving the editor gets clipped, or
- * creates a scroll that shifts the text being edited.
- *
- * The caret coordinates themselves are confirmed on a real device (a layer that
- * cannot be proven without a browser).
+ * jsdom has no layout, so only the pure placement rule is tested here; caret coordinates need a
+ * real browser.
  */
 describe('clampMenuToBox keeps the menu inside the editor', () => {
   const box = { width: 800, height: 600 };

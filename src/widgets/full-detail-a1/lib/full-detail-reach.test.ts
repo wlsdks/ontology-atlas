@@ -41,8 +41,8 @@ describe("buildFullDetailReachModel", () => {
   const edges = [
     edge("e1", "domain:a", "capability:a1", "contains"),
     edge("e2", "domain:b", "capability:b1", "contains"),
-    // a1 contains a2 (so a2's nearest domain ancestor walks a1 → domain:a) —
-    // both edges are containment, keeping BFS distances predictable.
+    // a1 contains a2, so a2's nearest domain is found through a1; containment-only edges keep BFS
+    // distances predictable.
     edge("e3", "capability:a1", "capability:a2", "contains"),
     edge("e4", "capability:a1", "capability:b1", "depends_on"),
   ];

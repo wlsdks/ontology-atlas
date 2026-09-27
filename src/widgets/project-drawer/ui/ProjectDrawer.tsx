@@ -61,9 +61,8 @@ interface Props {
   /** The active container's name. Shown as a "Project · {label}" badge in the header. */
   containerLabel?: string | null;
   /**
-   * Callback for the "open topology" CTA when a Layer 0 container's synthetic project
-   * is selected, performing the real `?pj=` zoom-in. It is an explicit step so entry
-   * happens in two steps inside the drawer rather than immediately on click.
+   * "Open topology" for a Layer 0 container's synthetic project, performing the `?pj=` zoom-in as
+   * an explicit second step.
    */
   onEnterContainer?: (slug: string) => void;
 }
@@ -83,8 +82,7 @@ export function ProjectDrawer({
   // Freshness grade → human language (the model returns only the grade).
   const tFreshness = useTranslations("projectFreshness");
   const isContainerNode = project?.category === "__container__";
-  // The Layer 1 drawer title also drops the container-name prefix: "Demo Reactor ·
-  // Router" → "Router" (the breadcrumb chip already carries the container context).
+  // The Layer 1 title drops the container prefix; the breadcrumb chip carries it.
   const locale = useLocale();
   const displayName = (() => {
     if (!project) return "";
@@ -106,8 +104,8 @@ export function ProjectDrawer({
   const router = useRouter();
   const reducedMotion = useReducedMotion();
   const { categories, statuses, categoryLabel, statusLabel } = useTaxonomy();
-  // Mobile bottom-sheet style: swiping down closes only from the drag handle bar. It is
-  // controlled with dragListener=false so it does not fight the content area's vertical scroll.
+  // Swipe down closes only from the handle (dragListener=false) so it does not fight the content's
+  // vertical scroll.
   const dragControls = useDragControls();
 
   useBodyScrollLock(Boolean(project));
@@ -121,9 +119,7 @@ export function ProjectDrawer({
     return () => window.removeEventListener("keydown", handler);
   }, [project, onClose]);
 
-  // Move focus to the close button when the drawer opens, so screen-reader and keyboard
-  // users enter the new context directly. On close it returns to the browser's default
-  // focus flow (the canvas pane can take focus).
+  // Focus the close button on open so keyboard and screen-reader users enter the new context.
   const previousFocusRef = useRef<HTMLElement | null>(null);
   useEffect(() => {
     if (!project) return;
@@ -250,25 +246,12 @@ export function ProjectDrawer({
         : null,
     [allProjects, impactMode, project],
   );
-  // rank16 (design council B6) — the 4 impact-mode pills are each a different graph
-  // operation, so the help text has to differ per mode. The active mode's help key is
-  // looked up here, in one place, and used for both the helper span and the crossfade
-  // animation key.
+  // The active mode's help key, looked up once for the helper span and the crossfade key.
   const impactModeHelpKey =
     IMPACT_MODE_COPY_KEYS.find((item) => item.mode === impactMode)?.helpKey ??
     "impactHelpNone";
 
-  /*
-   * Impact mode is an **exclusive single selection** (`none` is inside the options as
-   * the «off» value, making it a textbook radiogroup, and re-clicking does not clear
-   * it). Siblings previously carried `aria-pressed` side by side, which left **the
-   * exclusivity out of the accessibility tree**.
-   *
-   * The container stays as it is — `shape:'pill'` plus an uppercase mono caption is not
-   * a value-layer chip-ramp combination (the decision rule from 2026-08-15 (8): drawn
-   * as a stock chip means a variant; carrying its own tone/pill geometry means the hook
-   * directly).
-   */
+  /* Impact mode is an exclusive choice with `none` as off, so it is a radiogroup. */
   const impactGroup = useRovingRadioGroup({
     value: impactMode,
     values: IMPACT_MODE_COPY_KEYS.map((item) => item.mode),
@@ -307,12 +290,8 @@ export function ProjectDrawer({
       }))
     : [];
 
-  // Related documents — the top 5 md files in the source vault citing this project.
-  // Without permission the section is hidden entirely (so admin document links do not
-  // leak to guests or signed-out users).
-  // Importing the manifest directly would always surface dogfood documents regardless
-  // of the "view the example business" choice, pointing at a different vault from the
-  // rest of the screen.
+  // Top 5 related vault documents, hidden without permission. Reads the chosen sample rather than
+  // the bundled manifest so it matches the rest of the screen.
   const { manifest: staticManifest } = useStaticVaultSource();
   const relatedDocs = useMemo(() => {
     if (!project) return [];
@@ -361,21 +340,15 @@ export function ProjectDrawer({
         )
         .slice(0, 3)
     : [];
-  // The detail page URL — it keeps the container context (`?pj=`) so a user who arrived
-  // from a zoom-in returns to the same container view on going back.
+  // The detail URL keeps `?pj=` so going back returns to the same container view.
   const detailHref = project
     ? getProjectRuntimeDetailHref(project.slug)
     : "#";
-  // The top related document's slug — with one, the source vault deep-links straight to
-  // that document; without one, the vault home ('/docs/'). The URL format is delegated
-  // to buildDocsVaultHref.
+  // Deep-link to the top related document, or the vault home without one (buildDocsVaultHref).
   const primaryRelatedDocSlug = relatedDocs[0]?.doc.slug ?? null;
   const docsVaultHref = buildDocsVaultHref({ slug: primaryRelatedDocSlug });
-  // `<Link>`'s default click was reported to race with framer-motion's drag properties
-  // and the drawer unmount, occasionally losing the navigation. onClick pushes through
-  // the router explicitly so navigation kicks off before the drawer closes. The Link's
-  // href is kept identical as a backup, preserving hover prefetch and middle-click
-  // (new tab).
+  // onClick pushes through the router before the drawer unmounts, since Link's default click raced
+  // framer-motion's drag; the href stays for prefetch and middle-click.
   const handleDetailClick = useCallback(
     (event: React.MouseEvent<HTMLAnchorElement>) => {
       if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
@@ -400,11 +373,7 @@ export function ProjectDrawer({
           initial={{ x: "100%", opacity: 0 }}
           animate={{ x: 0, opacity: 1, y: 0 }}
           exit={{ x: "100%", opacity: 0, transition: EXIT_TRANSITION }}
-          // Migrated to the critically damped overlay spring (2026-07-28). The old
-          // `SPRING.sheet` (stiffness 280 / damping 30) was underdamped and overshot, and
-          // it was an **unregistered exception** with this as its only consumer — this
-          // surface alone bounced, with no registration and no gate. In an app whose
-          // identity is restraint, overshoot is something to approve explicitly.
+          // The critically damped overlay spring; overshoot needs explicit approval.
           transition={OVERLAY_SPRING}
           drag="y"
           dragControls={dragControls}
@@ -419,11 +388,7 @@ export function ProjectDrawer({
           className="fixed inset-x-0 bottom-0 top-[38%] z-30 flex w-full flex-col overflow-y-auto overscroll-y-contain rounded-t-sheet border-t border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-3)] lg:inset-y-0 lg:right-0 lg:left-auto lg:top-0 lg:max-w-md lg:rounded-none lg:border-t-0 lg:border-l"
         >
           <header className="sticky top-0 border-b border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] px-4 py-3 md:px-6 md:py-4">
-            {/*
-              The area you swipe down to close. The padding around the handle bar is
-              included in the touch target. On desktop (md+) the drag target itself is
-              hidden, so no swipe is attached.
-            */}
+            {/* The swipe area includes the handle's padding; on md+ no swipe is attached. */}
             <div
               onPointerDown={(event) => dragControls.start(event)}
               aria-hidden="true"
@@ -481,10 +446,10 @@ export function ProjectDrawer({
                 initial={OVERLAY_RISE}
                 animate={OVERLAY_SETTLED}
                 transition={MOTION.base}
-                /* The hero is an in-flow content card scrolling inside the drawer — the
-                 * sheet step (rounded-sheet) belongs to a floating surface and cannot be
-                 * used here. At 20px the container was rounder than its child icon tiles
-                 * (12px), which also inverted the nesting grammar. */
+                /*
+                 * An in-flow card, so it uses the card radius, not the sheet step, keeping the
+                 * nesting grammar.
+                 */
                 className="overflow-hidden rounded-panel border border-[color:var(--color-divider)] bg-[linear-gradient(180deg,var(--color-overlay-1)_0%,transparent_100%)]"
               >
               <div className="relative px-5 py-5">
@@ -510,10 +475,10 @@ export function ProjectDrawer({
                   )}
 
                   <div className="min-w-0 flex-1">
-                    {/* A container synthetic has no meaningful lifecycle status (in
-                        development and so on), and progress carries an arbitrary 0–100
-                        value that invites misreading. For a container the eyebrow line is
-                        hidden entirely. */}
+                    {/*
+                     * A container has no meaningful status or progress, so the eyebrow line is
+                     * hidden.
+                     */}
                     {!isContainerNode && (
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                         <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
@@ -558,8 +523,8 @@ export function ProjectDrawer({
 
                 <div className="mt-5">
                   {isContainerNode ? (
-                    // Layer 0 container: enter the hub/node map inside this project. No
-                    // navigation to a detail page (a container has no separate detail route).
+                    // Layer 0 container: enter the map inside this project; containers have no
+                    // detail route.
                     <button
                       type="button"
                       onClick={() => {
@@ -578,8 +543,7 @@ export function ProjectDrawer({
                       {t("openContainerTopology")}
                     </button>
                   ) : onEnterContainer && project.isHub && !activeProjectId ? (
-                    // Layer 0 hub — the container has not been entered yet. The primary
-                    // action is "zoom in to the container this hub belongs to".
+                    // Layer 0 hub: the primary action zooms into its container.
                     <button
                       type="button"
                       onClick={() => {
@@ -598,11 +562,7 @@ export function ProjectDrawer({
                       {t("openHubTopology")}
                     </button>
                   ) : project.isHub && activeProjectId ? (
-                    // Layer 1 hub — already focused on this hub inside that container.
-                    // "Open topology" would contradict itself (it is already open). The
-                    // drawer body (description · connected projects · basic info) already
-                    // plays the "detail" role, so the primary CTA is omitted; the canvas
-                    // focus state carries the visual detail.
+                    // Layer 1 hub: already open, so no primary CTA.
                     null
                   ) : (
                     <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
@@ -632,13 +592,10 @@ export function ProjectDrawer({
                         <BookOpen size={ICON_SIZE.sm} />
                         {t("openDocsVault")}
                       </Link>
-                      {/* The drawer mounts only inside the topology view, so openTopology
-                          was a self-link no-op. First principle: ontology, topology and
-                          docs are three projections of the same vault document → the
-                          cross-link missing here is the ontology tree. A
-                          `project:<slug>` deep link opens the full detail (FullDetailA1)
-                          automatically (and where fm.slug differs from the filename, a
-                          failed match still loads the page gracefully). */}
+                      {/*
+                       * Links to the ontology full detail through a `project:<slug>` deep link;
+                       * opening the topology here would be a self-link.
+                       */}
                       <Link
                         href={buildOntologyNodeHref(`project:${project.slug}`)}
                         className={controlClass({ shape: "chip", size: "lg", tone: "secondary", className: "h-10 justify-center border-[color:var(--color-divider)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]" })}
@@ -652,11 +609,7 @@ export function ProjectDrawer({
               </motion.section>
 
 
-              {/* The "what is this connected to" section is a meaning mismatch for a
-                  container: a container is a set of hubs, not an entity with edges to
-                  other projects. The primary CTA "open topology" already provides the
-                  internal exploration route, so this section is shown for hubs and nodes
-                  only. */}
+              {/* Connections are for hubs and nodes; a container is a set of hubs. */}
               {!isContainerNode && (
                 <motion.section
                   initial={OVERLAY_RISE}
@@ -699,9 +652,7 @@ export function ProjectDrawer({
                 </motion.section>
               )}
 
-              {/* For a container, tags, links and status are all empty, so the "show more
-                  basic info" expander would open onto blank cells. Shown for hubs and
-                  nodes only. */}
+              {/* Basic info is for hubs and nodes; a container's cells would be blank. */}
               {!isContainerNode && (
               <details className="mt-5 overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]">
                 <summary
@@ -747,16 +698,11 @@ export function ProjectDrawer({
                           data-testid="project-drawer-impact-help"
                           className="text-body text-[color:var(--color-text-tertiary)]"
                         >
-                          {/* rank16 — only the helper text crossfades over 120ms on a mode
-                              switch (on a confirmed click, not on hover). It is a pure text
-                              swap unrelated to node selection or drag physics, so the
-                              per-mode wording has to register immediately. */}
+                          {/* Only the helper text crossfades, on a confirmed click. */}
                           <AnimatePresence mode="wait" initial={false}>
-                            {/* Give it time even under reduced motion (2026-07-28). This is
-                                an **opacity-only** text swap with no movement axis touching
-                                the vestibular system at all — turning it off loses only the
-                                information "the wording changed" and gains nothing (the same
-                                shape as the tour card fixed the same day). */}
+                            {/*
+                             * Kept under reduced motion: an opacity-only swap with no movement.
+                             */}
                             <motion.span
                               key={impactModeHelpKey}
                               ref={impactModeHelpLockoutRef}
@@ -809,14 +755,11 @@ export function ProjectDrawer({
                         aria-label={t("impactModeGroupAria")}
                         className="mt-3 flex flex-wrap gap-2"
                       >
-                        {/* rank16 (design council B6) — the 4 pills trigger different graph
-                            operations (no emphasis / dependency closure / dependent closure
-                            / bidirectional closure) while previously having no title or
-                            aria-label at all, so even hover could not distinguish the
-                            direction. title (the mouse tooltip) carries the per-mode help,
-                            and aria-label leads with the visual label (Label-in-Name) so
-                            screen readers and touch get the same information — never depend
-                            on title alone. */}
+                        {/*
+                         * title carries the per-mode help for mouse users, and aria-label leads
+                         * with the visible label (Label-in-Name) so touch and screen readers get
+                         * the same information.
+                         */}
                         {IMPACT_MODE_COPY_KEYS.map((item, index) => {
                           const active = impactMode === item.mode;
                           const label = t(item.labelKey);

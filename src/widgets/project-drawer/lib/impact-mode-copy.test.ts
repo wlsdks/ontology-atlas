@@ -3,13 +3,7 @@ import koMessages from "../../../../messages/ko.json";
 import enMessages from "../../../../messages/en.json";
 import { IMPACT_MODE_COPY_KEYS } from "./impact-mode-copy";
 
-/**
- * design-council B6 rank16 regression guard — the 4 impact-mode pills trigger
- * different graph operations, so their help text has to differ too. Previously the
- * three modes other than none (upstream/downstream/network) all shared one line
- * ("Show connections only" — show connections only), leaving the user no way to tell which
- * operation was running. This test blocks that regression from returning.
- */
+/** The four impact modes run different graph operations, so their help text must differ. */
 describe("IMPACT_MODE_COPY_KEYS (rank16)", () => {
   it('registers all four modes', () => {
     expect(IMPACT_MODE_COPY_KEYS.map((item) => item.mode)).toEqual([

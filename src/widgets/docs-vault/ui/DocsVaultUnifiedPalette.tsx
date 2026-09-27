@@ -25,10 +25,8 @@ import { githubBlobUrl } from '../lib/resolve-doc-link';
 import type { VaultCommand } from '../model/command';
 import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
 
-// Canonical document shortcuts offered when title, tag, excerpt and body all return
-// zero. These gateway documents live outside the vault (in the repo), so they open as
-// GitHub blob external links — reusing the same handling as DocsVaultViewer's
-// vault-external links (resolve-doc-link.githubBlobUrl).
+// Canonical document shortcuts offered on zero results; they live in the repo, so they open as
+// GitHub blob links (resolve-doc-link.githubBlobUrl).
 const CANONICAL_DOC_LINKS: Array<{ labelKey: string; repoPath: string }> = [
   { labelKey: 'canonicalMcp', repoPath: 'mcp/README.md' },
   { labelKey: 'canonicalCli', repoPath: 'cli/README.md' },
@@ -55,9 +53,7 @@ interface Props {
   bodyIndexing?: boolean;
 }
 
-// The option id a combobox's aria-activedescendant points at — the listbox option li
-// and the input's active descendant are bound by the same rule so a screen reader
-// reads the active item on arrow-key movement (the WAI-ARIA combobox pattern).
+// One id rule for the listbox option and the input's aria-activedescendant (WAI-ARIA combobox).
 const PALETTE_LISTBOX_ID = 'docs-vault-palette-listbox';
 const paletteOptionId = (idx: number) => `docs-vault-palette-option-${idx}`;
 
@@ -102,16 +98,8 @@ function Highlight({
 }
 
 /**
- * The unified palette — VSCode/Spotlight convention plus Obsidian's multi-section.
- *
- *  - empty query: three sections, pinned → recent → suggested commands
- *  - starts with `>`: fuzzy command matching
- *  - starts with `#`: tag matching
- *  - a plain query: mixed search over document title/slug/tags/excerpt (plus
- *    well-matching commands)
- *
- * This one palette replaced the previous three (SearchPalette for full text,
- * QuickSwitcher for titles, CommandPalette for commands).
+ * Unified palette: empty query shows pinned, recent and suggested commands; `>` matches commands,
+ * `#` tags, and plain text searches documents plus matching commands.
  */
 export function DocsVaultUnifiedPalette({
   onClose,
@@ -143,10 +131,8 @@ export function DocsVaultUnifiedPalette({
     return m;
   }, [docs]);
 
-  // On mount, focus the input, put the caret after the prefix, and restore focus to
-  // the trigger on unmount. The same a11y pattern as the other modals (SearchPalette /
-  // ProjectDrawer / DocsQuickDrawer / ShortcutSheet) — a keyboard user opening with ⌘K
-  // and closing with Esc returns to the element they were working in.
+  // Focus the input with the caret after the prefix, and restore focus to the trigger on unmount
+  // like the other modals.
   useEffect(() => {
     previousFocusRef.current = document.activeElement as HTMLElement | null;
     const handle = requestAnimationFrame(() => {
@@ -169,7 +155,6 @@ export function DocsVaultUnifiedPalette({
     el?.scrollIntoView({ block: 'nearest' });
   }, [activeIdx]);
 
-  // ─ Build results ─────────────────────────────────────────────────────
   const { rows, sections } = useMemo(() => {
     const trimmed = query.trim();
     const mode: 'commands' | 'tags' | 'mixed' | 'empty' =
@@ -185,7 +170,6 @@ export function DocsVaultUnifiedPalette({
     const sections: Array<{ title: string; icon: React.ReactNode; size: number }> = [];
 
     if (mode === 'empty') {
-      // Pinned
       const pinnedRows: PaletteRow[] = [];
       for (const slug of pinnedSlugs) {
         const d = bySlug.get(slug);
@@ -210,7 +194,6 @@ export function DocsVaultUnifiedPalette({
         sections.push({ title: t('secPinned'), icon: <Pin size={ICON_SIZE.sm} aria-hidden />, size: pinnedRows.length });
         out.push(...pinnedRows);
       }
-      // Recent
       const recentRows: PaletteRow[] = [];
       for (const slug of recentSlugs) {
         if (pinnedSlugs.includes(slug)) continue;
@@ -335,13 +318,12 @@ export function DocsVaultUnifiedPalette({
       return { rows: out, sections };
     }
 
-    // Mixed mode — documents first, commands as support. With a bodyIndex, search the
-    // body tier too (a title hit is always above it — the lowest-tier score contract in search.ts).
+    // Mixed mode: documents first, commands as support; the body tier stays below any title hit
+    // (search.ts).
     const docMatches: DocsSearchMatch[] = searchDocs(trimmed, docs, 15, bodyIndex);
     const docRows: PaletteRow[] = docMatches.map((m) => {
-      // Draw the name in the screen's language — the same rule as the map popover. If
-      // the display name differs from the canonical title the highlight offsets are
-      // wrong, so that row alone drops the emphasis: the right name matters more.
+      // Draw the screen-language name like the map popover; when it differs from the canonical
+      // title, the offsets are wrong, so that row drops the emphasis.
       const displayTitle = resolveLocaleDisplayName(m.doc.frontmatter, locale, m.doc.title);
       const sameAsTitle = displayTitle === m.doc.title;
       return {
@@ -433,10 +415,8 @@ export function DocsVaultUnifiedPalette({
     return offsets;
   }, [sections]);
 
-  // Announce the result count to screen readers only while a query is present
-  // (standard combobox practice). aria-activedescendant alone does not convey "how
-  // many results", so a polite live region announces the 0/N change while typing. The
-  // empty query (the default recent/pinned view) stays silent to avoid noise on first open.
+  // A polite live region announces the count only while a query is present; the empty default view
+  // stays silent on first open.
   const resultAnnouncement =
     query.trim() === ''
       ? ''
@@ -444,10 +424,8 @@ export function DocsVaultUnifiedPalette({
         ? t('noMatches')
         : t('resultsAnnounce', { count: rows.length });
 
-  // The extended notice (how far the search reached, plus canonical document
-  // shortcuts) appears only on zero results in document (mixed) mode. While the body
-  // index is still building, a "may be filled in shortly" hint is added. Zero results
-  // in command (`>`) and tag (`#`) modes are served well enough by the existing noMatches.
+  // The extended notice (search reach and canonical shortcuts) appears only on zero results in
+  // document mode, with an indexing hint while the body index builds.
   const trimmedQuery = query.trim();
   const isDocSearchZero =
     trimmedQuery !== '' &&
@@ -461,8 +439,8 @@ export function DocsVaultUnifiedPalette({
   };
 
   const handleKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Mid-composition keystrokes belong to the IME — the commit-Enter of a
-    // Korean syllable must not run the active row (bug sweep 2026-09-01).
+    // Mid-composition keystrokes belong to the IME; a Korean syllable's commit Enter must not run
+    // the active row.
     if (e.nativeEvent.isComposing) return;
     if (e.key === 'ArrowDown') {
       e.preventDefault();
@@ -517,7 +495,7 @@ export function DocsVaultUnifiedPalette({
         initial={{ opacity: 0, y: -8, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: -8, scale: 0.98, transition: EXIT_TRANSITION }}
-      // 0.14 with an unnamed easing curve → the ramp's "movement" step (2026-07-28).
+      // The ramp's movement step.
         transition={MOTION.base}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
@@ -684,8 +662,7 @@ function ResultRow({
   onClose: () => void;
   getDocHref: (slug: string) => string;
 }) {
-  // The same row renders as <Link> for a document and <button> otherwise — both must
-  // pass through the same value layer so row heights do not diverge inside the palette.
+  // Links and buttons share one value layer so row heights stay equal.
   const base = controlClass({
     shape: 'row',
     active,
@@ -728,8 +705,8 @@ function ResultRow({
         className={base}
         onMouseEnter={onHover}
         onClick={(e) => {
-  // Modifier clicks (⌘ click and friends) keep Link's default behaviour (new tab);
-  // only a plain click runs the internal handler and closes the palette.
+  // Modifier clicks keep Link's default (new tab); only a plain click runs the handler and closes
+  // the palette.
           if (e.metaKey || e.ctrlKey || e.shiftKey) return;
           e.preventDefault();
           row.onRun();

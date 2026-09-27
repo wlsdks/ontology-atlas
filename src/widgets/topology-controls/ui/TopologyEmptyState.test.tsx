@@ -22,10 +22,8 @@ vi.mock("@/i18n/navigation", () => ({
 }));
 
 /*
- * ⚠️ Read from the catalogue, not pinned as literals. These tests guard **which** string the screen
- * chooses, not how it is worded — and `documentation.md` is explicit that checks derive facts rather
- * than pin human prose. Pinning it meant a copy repair (owner, 2026-08-25: the empty state was
- * leaking the `project` kind at a newcomer) broke four tests that had no opinion about wording.
+ * Read from the catalogue, not pinned as literals: these tests guard which string is chosen
+ * (`documentation.md`).
  */
 const EMPTY = koMessages.topology.empty;
 
@@ -51,11 +49,8 @@ describe("TopologyEmptyState", () => {
   });
 
   /*
-   * ⚠️ `/ontology/` is not a destination — it redirects to `/topology/` with INDEX expanded, which
-   * is the screen this panel is drawn on. With concepts that round trip is worth taking: it opens
-   * the list. With none it ends where it started, showing an empty index, so the offer is a dead
-   * end rather than a slow route. Asserting the *count* alone would pass with the row present and
-   * some other row gone, so the link itself is named.
+   * `/ontology/` redirects back to this screen with INDEX expanded, so with no concepts the offer
+   * is a dead end; the link itself is asserted, not only the count.
    */
   it('does not suggest browsing when there are no concepts', () => {
     renderEmpty(0);
@@ -95,13 +90,8 @@ describe("TopologyEmptyState", () => {
     );
   });
 
-  // For a user who just opened a local vault, download copy saying "install the macOS
-  // app…" is misdirection.
-  //
-  // 2026-08-08 council — the decision was widened to **capability**. The old condition
-  // (`isTauriVaultRuntime() || hasOpenVault`) answered someone who is neither — a
-  // **first-time web visitor on an FSA-capable browser** — with 「install the app」,
-  // when that browser can open a folder right now.
+  // Capability decides: a browser that can open a folder gets picker copy, not an app-install
+  // prompt.
   it('uses picker copy instead of a download prompt when a folder can be opened', () => {
     render(
       <NextIntlClientProvider locale="ko" messages={koMessages}>
@@ -115,9 +105,7 @@ describe("TopologyEmptyState", () => {
     expect(links).not.toContain("/download/");
   });
 
-  // The negative control — without the capability (Firefox and the like) it **still**
-  // degrades to the download. Without this, the test above stays green even if the
-  // picker copy were used unconditionally.
+  // Negative control: without the capability the copy still degrades to download.
   it('falls back to download when a folder cannot be opened', () => {
     renderEmpty(0, "no-projects");
     const links = screen.getAllByRole("link").map((a) => a.getAttribute("href"));
@@ -138,13 +126,8 @@ describe("TopologyEmptyState", () => {
     expect(panel).not.toHaveTextContent("TOPOLOGY");
     expect(panel).not.toHaveTextContent("토폴로지");
     /*
-     * ⚠️ The hole this very test was written to close, and did not (owner, 2026-08-25: *"what is 'a
-     * project to draw'? it just means there are no ontology concepts, right?"*).
-     *
-     * It banned the renderer's name and then asserted a count phrased as projects in the same breath — so the
-     * screen's first sentence to a newcomer was built from `project`, a schema kind, and the guard
-     * against internal vocabulary held the door open for it. The count is the graph's **node** count,
-     * which makes the word wrong about the data as well as unreadable.
+     * The first sentence must not use the schema kind `project`; the count is the graph's node
+     * count.
      */
     expect(panel).not.toHaveTextContent("프로젝트");
     expect(panel).toHaveTextContent("개념");
@@ -153,20 +136,14 @@ describe("TopologyEmptyState", () => {
   it('renders as a small status panel rather than a large card', () => {
     renderEmpty(0);
     const panel = screen.getByRole("status");
-    // The radius is decided by a **ramp token**. It used to pin `rounded-lg`
-    // (Tailwind's default), a value outside this repository's radius ramp — so it
-    // looked like conformance while actually fixing a position off the ramp.
+    // The radius comes from a ramp token.
     expect(panel.className).toContain("rounded-[var(--radius-panel)]");
     expect(panel.className).not.toContain("rounded-2xl");
     expect(panel.className).not.toContain("p-8");
   });
 
   it('gives every recovery action the same width', () => {
-    /*
-     * It used to be `flex-wrap justify-center`, so a button's width was set by its
-     * character count and so was the wrap point (four buttons stepping 1·2·1). That
-     * violates dimension regularity, and reverting it breaks here.
-     */
+    /* Actions are one equal-width vertical set, not width-by-copy wrapping. */
     renderEmpty(0);
     const actions = [...screen.queryAllByRole("link"), ...screen.queryAllByRole("button")];
     expect(actions.length).toBeGreaterThan(1);

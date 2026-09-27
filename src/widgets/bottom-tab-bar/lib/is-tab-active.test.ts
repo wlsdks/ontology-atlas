@@ -41,16 +41,12 @@ describe("isBottomTabActive", () => {
   });
 
   it('falls back to an exact href match when no prefix rule applies', () => {
-    // A tab with no prefixes
     expect(isBottomTabActive("/projects/", "/projects/", [])).toBe(true);
-    // Trailing-slash variants match
     expect(isBottomTabActive("/projects", "/projects/", [])).toBe(true);
-    // Any other path is false
     expect(isBottomTabActive("/docs", "/projects/", [])).toBe(false);
   });
 
   it('keeps the home tab inactive on other paths', () => {
-    // A home tab with no matchPrefixes
     expect(isBottomTabActive("/docs", "/", [])).toBe(false);
   });
 });

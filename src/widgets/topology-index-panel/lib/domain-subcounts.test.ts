@@ -65,10 +65,7 @@ describe("computeDomainSubcounts", () => {
   });
 
   it("counts an element reached through a capability once, in the domain that holds it", () => {
-    // The dogfood shape: `element:shared` is declared by `capability:c1` (domain A)
-    // and by domain B. The spine gives it one owner, so domain A states it and
-    // domain B does not — the two numbers stay openable, and the sum over the
-    // domains stays equal to what the project holds.
+    // A shared element has one owner through the spine, so domain sums equal the project's total.
     const nodes = [
       makeNode("project:root", "project"),
       makeNode("domain:a", "domain"),

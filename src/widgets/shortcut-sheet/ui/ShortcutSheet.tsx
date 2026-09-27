@@ -39,18 +39,9 @@ interface Props {
   open: boolean;
   onClose: () => void;
   /**
-   * A selector for the control to hand the keyboard back to.
-   *
-   * The sheet records `document.activeElement` when it opens, but the button
-   * that opened it usually unmounts in that same moment — raising the sheet
-   * turns off that button's render condition — so the record is empty and the
-   * close falls back to the start of the content. Measured 2026-09-20 on the
-   * map: open with the `?` button, press Escape, and focus lands on `main`
-   * while the button itself is back in the page.
-   *
-   * Naming the control instead of holding a reference survives that unmount,
-   * which is how `AnalysisWorkbench` and `ArchitectureAgentDock` already solve
-   * it. Omitted, the old fallback stands.
+   * Selector for the control to hand the keyboard back to; the opening button usually unmounts as
+   * the sheet rises, so a name survives where a reference would not. Omitted, focus falls back to
+   * the start of the content.
    */
   returnFocusSelector?: string;
 }
@@ -67,10 +58,8 @@ interface ShortcutSection {
   /** The surface this section applies to — the source of truth for contextual tab classification (#67). */
   surface: ShortcutSurface;
   /**
-   * A CSS selector for the control these keys drive. The "current screen" tab
-   * promises what can actually be pressed now, so a section whose control is
-   * not on the screen when the sheet opens is dropped from that tab. The `All`
-   * tab still documents it. Sections without a selector are always listed.
+   * CSS selector for the control these keys drive; the current-screen tab drops a section whose
+   * control is not on screen. The All tab still lists it.
    */
   requiresOnScreen?: string;
   rows: ShortcutRow[];
@@ -78,10 +67,7 @@ interface ShortcutSection {
 
 const k = (i18nKey: string): ShortcutKey => ({ i18nKey });
 
-/**
- * Which `requiresOnScreen` controls are drawn right now. Called on the open
- * transition, so it reads the screen the person was looking at.
- */
+/** Which `requiresOnScreen` controls are drawn now, read on the open transition. */
 function sectionsOnScreen(): readonly string[] {
   if (typeof document === "undefined") return [];
   const needed = new Set(
@@ -91,22 +77,11 @@ function sectionsOnScreen(): readonly string[] {
 }
 
 /**
- * P1a-2 (persona measurement N8 — the definitions of domain/capability/element
- * appeared in 0 working UIs): the map's "?" help is the only permanent help surface
- * that already exists, so a one-line definition is appended to its footer rather than
- * creating a new surface. The kind order matches the map's hierarchy
- * (domain → capability → element).
- *
- * `ontology` comes first because it is baked into the product's name while being
- * defined nowhere in the app — once the tour names it, there has to be somewhere to
- * recover "what was that again", and that place is the pull-only help that already
- * exists, not a new button. It uses the same row format as the other three, so it
- * adds nothing to the IA.
+ * The kind glossary lives in the map's pull-only help footer rather than a new surface, ontology
+ * first, then domain, capability, element in the map's order.
  */
-// This sheet and step 1 of the tour are the only two homes for word definitions — we
-// do not teach by building a new surface. `nodeNumber` explains once, here only, why
-// the map's engraved count (285) differs from the total concept count above it (296):
-// the two count different scopes.
+// `nodeNumber` explains once why the map's engraved count differs from the total concept count:
+// they count different scopes.
 const GLOSSARY_TERMS = [
   "ontology",
   "domain",
@@ -133,14 +108,9 @@ function ShortcutRelationGuide({ title }: { title: string }) {
         </span>
         <span className="flex items-center gap-2">
           {/*
-            ⚠️ The wedge has to be **big enough to read** (2026-08-24). This swatch
-            and the symmetric one below were 3px and 2px tall over 32px wide: both
-            faithful to the canvas (depends tapers source→target, related_to keeps
-            uniform width) and both, at that size, just "a dashed line". Measured on
-            the shipped build, the two rows were indistinguishable, so the legend
-            claimed to teach a distinction it did not show. Widened and deepened
-            here only — the canvas encoding is unchanged.
-          */}
+           * The swatches are enlarged so depends (tapered) and related_to (uniform) are
+           * distinguishable; the canvas encoding is unchanged.
+           */}
           <span
             aria-hidden
             className="h-1.5 w-10 shrink-0"
@@ -169,17 +139,8 @@ function ShortcutRelationGuide({ title }: { title: string }) {
 }
 
 /**
- * The destination-navigation rows — **generated from the table**, not written by hand.
- *
- * The rest of this sheet's rows are a hand-written list with no check aligning them to
- * the real handlers. What that approach already cost is recorded in a comment further
- * down this file — *"the previous rows described interactions the v2 canvas never
- * implemented"*. In other words the sheet was **advertising features that did not
- * exist.**
- *
- * The navigation shortcuts are derived from `DESTINATION_KEY` so the same mistake
- * cannot happen: add a key and it appears in the sheet on its own; remove it and it
- * disappears on its own.
+ * Navigation rows generated from `DESTINATION_KEY`, so the sheet cannot advertise keys that do not
+ * exist.
  */
 const DESTINATION_ROWS: ShortcutRow[] = DESTINATION_IDS.map((id) => ({
   keys: [NAV_LEADER_KEY.toUpperCase(), DESTINATION_KEY[id].toUpperCase()],
@@ -189,17 +150,9 @@ const DESTINATION_ROWS: ShortcutRow[] = DESTINATION_IDS.map((id) => ({
 const SECTIONS: ShortcutSection[] = [
   {
     /*
-     * **Every row here works on every screen that can open this sheet** (2026-09-26), because
-     * this section is shown on every tab of every screen. Three rows broke that:
-     *
-     * - ⇧⌘K had a row of its own, "search concepts, docs and projects together", beside ⌘K's
-     *   "open the search palette" — two rows, two descriptions, one dialog (measured on the map:
-     *   both keys opened the same search with the same placeholder). ⌘K is the row; Shift is
-     *   accepted wherever ⌘K is, and it is not a second search.
-     * - `D` (the quick document preview) is bound by the map alone, so on a project page it
-     *   listed a dead key. It moved to the map's own section below.
-     * - ⌘K and `?` themselves were wired only where a screen drew its own dialog; the shell now
-     *   answers both elsewhere (`shared/lib/shell-key-claims.ts`).
+     * Every row here works on every screen that opens this sheet: Cmd+K is one row (Shift
+     * accepted), `D` lives in the map section, and the shell answers Cmd+K and `?` elsewhere
+     * (`shared/lib/shell-key-claims.ts`).
      */
     titleKey: "navigation",
     surface: "global",
@@ -211,25 +164,15 @@ const SECTIONS: ShortcutSection[] = [
     ],
   },
   {
-    // W2-C — rewritten against ACTUAL ontology-map canvas behavior
-    // (`use-topology-loop.ts` / `topology-pointer-handlers.ts`). The previous rows
-    // (double-click local · Shift+click path · Tab neighbours · / search · 0 depth)
-    // described interactions the v2 canvas never implemented — stale carryover from an
-    // earlier design that never shipped. Kept: click to select · drag (pan/move node) ·
-    // wheel zoom · right-click menu (W2-B, now real). ⌘K and the Esc order are the
-    // Navigation section's rows, which every tab that shows this section shows too, so they are
-    // not listed a second time here; `D` is here because only the map binds it.
+    // Lists only what the canvas implements (`use-topology-loop.ts`,
+    // `topology-pointer-handlers.ts`): click, drag, wheel zoom and right-click menu. Cmd+K and
+    // Escape belong to the Navigation section; `D` is here because only the map binds it.
     titleKey: "topology",
     surface: "topology",
     rows: [
       /*
-       * Arrow-key walking — **its absence is what a usability review caught**
-       * (2026-08-10). Walking to neighbours with the arrow keys shipped on
-       * 2026-08-09~10, and this sheet — the only place that teaches the keyboard —
-       * did not know about it and taught only click, drag and scroll.
-       * 「A feature nobody can discover is not a feature」. Gate:
-       * `tests/e2e/map-keyboard-walk.spec.ts`, 「The sheet teaches arrow-key walking」 (the
-       * sheet teaches arrow-key walking).
+       * Arrow-key walking, taught here because this sheet is the only keyboard teacher
+       * (`tests/e2e/map-keyboard-walk.spec.ts`).
        */
       { keys: ["↑", "↓", "←", "→"], labelKey: "walkNeighbors" },
       { keys: [k("click")], labelKey: "clickSelect" },
@@ -253,8 +196,8 @@ const SECTIONS: ShortcutSection[] = [
   {
     titleKey: "hubRail",
     surface: "topology",
-    // The rail draws only when the map has hub projects and the left panel is
-    // collapsed or the drawer is open, and it is hidden below `md` entirely.
+    // The rail draws only with hub projects and the left panel collapsed or the drawer open, never
+    // below `md`.
     requiresOnScreen: '[data-testid="topology-hub-rail"]',
     rows: [
       { keys: ["↑", "↓"], labelKey: "prevHub" },
@@ -310,9 +253,6 @@ const SECTIONS: ShortcutSection[] = [
       { keys: [k("modeToggle")], labelKey: "modeToggle" },
     ],
   },
-  // The 'tour' and 'portfolio' sections lost their shortcuts when those overlays were
-  // removed in the R10 cleanup, but the ShortcutSheet entries and i18n keys were left
-  // stale and were cleaned up in cycle 22.
 ];
 
 export function ShortcutSheet({ open, onClose, returnFocusSelector }: Props) {
@@ -320,15 +260,12 @@ export function ShortcutSheet({ open, onClose, returnFocusSelector }: Props) {
   const pathname = usePathname() ?? "/";
   const searchParams = useSearchParams();
   const currentSurface = surfaceForPathname(pathname, searchParams?.get('tab') ?? null);
-  // #67 — the contextual tabs. The default is "current screen": rather than pouring
-  // out some 40 rows at once, it starts with what can actually be pressed now. The
-  // `All` (all) tab keeps the previous list, so this is not hiding shortcuts to avoid
-  // crowding.
+  // Defaults to the current screen: what can be pressed now comes first, and the All tab keeps the
+  // full list.
   const [scope, setScope] = useState<ShortcutScope>("current");
   const [wasOpen, setWasOpen] = useState(open);
-  // Read once as the sheet opens, in the same transition that resets the tab: a
-  // section is listed on the current-screen tab only when the control its keys
-  // drive is really on the screen behind the sheet.
+  // Read once as the sheet opens: a section is on the current-screen tab only when its control is
+  // on screen behind the sheet.
   const [onScreen, setOnScreen] = useState<readonly string[]>([]);
   if (open !== wasOpen) {
     setWasOpen(open);
@@ -352,10 +289,8 @@ export function ShortcutSheet({ open, onClose, returnFocusSelector }: Props) {
     [scope, currentSurface, onScreen],
   );
   /*
-   * **One answer is offered under one name.** On the map, "This screen" and "Map" listed the
-   * same sections (inspection, 2026-09-25: NAVIGATION and MAP under both, scrollHeight 672/673),
-   * so the tab named after the surface the person is already on is dropped - "This screen"
-   * already is it. On a screen with no surface of its own every tab stays.
+   * The tab named after the current surface is dropped when "This screen" already shows the same
+   * sections.
    */
   const scopes = SHORTCUT_SCOPES.filter((key) => key !== currentSurface);
   const showRelationGuide =
@@ -375,23 +310,12 @@ export function ShortcutSheet({ open, onClose, returnFocusSelector }: Props) {
     return () => window.removeEventListener("keydown", handler);
   }, [open, onClose]);
 
-  // Focus trap — on open, move to the first focusable element inside the dialog and
-  // cycle so Tab cannot escape. Restore the previously active element on close.
+  // Focus trap: focus the first element on open and cycle Tab; restore on close.
   useEffect(() => {
     if (!open) return;
     /**
-     * **Do not record `<body>` as the restore target** (measured 2026-07-29).
-     *
-     * The button that opens this sheet unmounts the moment the sheet appears — the
-     * `topologyBlockingOverlayActive` the sheet raises turns off that button's render
-     * condition. So by the time this effect runs, `document.activeElement === body`
-     * already, and the old code recorded that as "the previous focus".
-     *
-     * `body.isConnected` is always `true`, so the restore branch looks successful while
-     * actually **planting focus back on body**. The probe log said exactly that:
-     * `[SHEET-CLEANUP] true BODY`. The visible symptom ("closing sends focus to body")
-     * and the cause ("it was already body on open") are on opposite sides, so every
-     * attempt to fix only the closing path missed.
+     * Do not record `<body>` as the restore target: the opener unmounts as the sheet appears, so
+     * activeElement is already body here.
      */
     const active = document.activeElement;
     previousFocusRef.current =
@@ -430,20 +354,8 @@ export function ShortcutSheet({ open, onClose, returnFocusSelector }: Props) {
     return () => {
       window.removeEventListener("keydown", trapHandler);
       /**
-       * **Do not drop to `body` just because the opening control is gone**
-       * (keyboard measurement, 2026-07-29).
-       *
-       * The button that opens this sheet **unmounts** once the sheet appears, because
-       * the `topologyBlockingOverlayActive` the sheet raises turns off that button's
-       * render condition. So on close there was no element to return to and focus went
-       * to `body`. The next Tab then restarts from the top of the document (the skip
-       * link) — measured at 29 stops away from where the user had been.
-       *
-       * Opening the same sheet with `?` from **an element that survives** (the
-       * auto-layout tile) restored correctly. So this is not a trap defect but an
-       * unhandled case of "the place to return to disappeared". `<main>` already
-       * receives focus since the skip-link fix, so focus returns to **the start of the
-       * content** rather than the start of the page.
+       * When the opener is gone, focus the start of the content (`<main>`) instead of `body`, which
+       * would restart Tab from the page top.
        */
       const previous = previousFocusRef.current;
       const named = returnFocusSelector ? document.querySelector<HTMLElement>(returnFocusSelector) : null;
@@ -453,16 +365,10 @@ export function ShortcutSheet({ open, onClose, returnFocusSelector }: Props) {
         // The opener came back after its unmount; hand the keyboard to it.
         named.focus({ preventScroll: true });
       } else {
-        // With no control to return to, go to **the start of the content**. `<main>`
-        // already receives focus since the skip-link fix — better than walking from the
-        // top of the page again.
+        // No control to return to: go to the start of the content.
         document.querySelector<HTMLElement>("main#main")?.focus({ preventScroll: true });
       }
-      /**
-       * Re-check one frame later — there is still a race where the restored element
-       * unmounts immediately (measured timeline: 0ms BUTTON · 50ms BUTTON · **150ms
-       * BODY**). A restore that only looks at the moment of closing cannot win it.
-       */
+      /** Re-check one frame later; the restored element can still unmount right after closing. */
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           if (document.activeElement && document.activeElement !== document.body) return;
@@ -473,17 +379,8 @@ export function ShortcutSheet({ open, onClose, returnFocusSelector }: Props) {
   }, [open, returnFocusSelector]);
 
   /*
-   * The reduced-motion equivalent (frame measurement, 2026-07-28). This was swapped
-   * **only halfway**: the global kill rule cuts CSS animations, but this sheet is drawn
-   * by framer, so the opacity easing (200ms) survived while only
-   * `scale(.985) translateY(12px) → none` in the same span was cut to **one frame**,
-   * teleporting `y 96.2 → 79` and `h 684.6 → 695`. The axis to keep (brightness) and
-   * the axis to remove (geometry) were exactly inverted.
-   *
-   * Unified onto **the same** equivalent the search palette and the new-document dialog
-   * use (`OVERLAY_SPRING_REDUCED`, 120ms opacity only), with the shaking axis starting
-   * at 0 — it is not a teleport when the **travel distance** is 0, not the time. Zero
-   * new values.
+   * Reduced motion: the shared OVERLAY_SPRING_REDUCED, 120ms opacity only, with zero travel so
+   * nothing teleports.
    */
   const reducedMotion = useReducedMotion();
   const surfaceMotion = reducedMotion
@@ -559,8 +456,7 @@ export function ShortcutSheet({ open, onClose, returnFocusSelector }: Props) {
               </button>
             </header>
 
-            {/* #67 — the contextual tabs. Pinned with the header (shrink-0) so they stay
-                visible while scrolling: which scope you are in and where you can go. */}
+            {/* Tabs pinned with the header so scope stays visible while scrolling. */}
             <div
               role="tablist"
               aria-label={t("scope.ariaLabel")}
@@ -575,16 +471,7 @@ export function ShortcutSheet({ open, onClose, returnFocusSelector }: Props) {
                   aria-selected={scope === key}
                   data-testid={`shortcut-sheet-scope-${key}`}
                   onClick={() => setScope(key)}
-                  /**
-                   * **This position was the one unabsorbed consumer of the 2026-08-03
-                   * convergence.** The deleted `fixedHeight: "sm"` produced 28px only
-                   * here, and 28 exists on the ramp (`--control-h-sm`) but **not on the
-                   * segment step** — the other 8 segment tabs are all 24px (`md`).
-                   * Keeping 28 alone would need that axis back, and that axis is exactly
-                   * what this cleanup removed. So it dropped to 24 like the majority
-                   * (−4px). 24 is the WCAG 2.5.8 (AA) minimum target, so it did not go
-                   * below the floor.
-                   */
+                  /** 24px like the other segment tabs; the WCAG 2.5.8 minimum target. */
                   className={controlClass({
                     shape: "segment",
                     active: scope === key,
@@ -600,40 +487,18 @@ export function ShortcutSheet({ open, onClose, returnFocusSelector }: Props) {
               ))}
             </div>
 
-            {/* #67 — the list area. With scroll remaining, a one-step fade at the bottom
-                makes it read as "there is more" rather than "this is the end". */}
-            {/* #67 follow-up — the scroll area's height contract.
-                This dialog is **content-height** from sm upward (`sm:h-auto` plus
-                `sm:max-h-[...]`). So:
-                  · `h-full` (=height:100%) resolves against the content height rather
-                    than the wrapper's, making `scrollHeight === clientHeight`, killing
-                    the scroll and cutting the last section outside the viewport
-                    (measured at 1112px on the English `all` tab).
-                  · `absolute inset-0` takes the scrolling child out of flow, so the
-                    wrapper becomes 0 height and the dialog collapses to 232px.
-                Both were confirmed by measurement. The answer is **constraining with
-                flex inside the flow**: the wrapper is a flex column too, and the
-                scrolling child takes only the remaining space with `min-h-0 flex-1`.
-                The fade is anchored at the wrapper's bottom (relative). */}
+            {/* A bottom fade while scroll remains signals more content. */}
+            {/*
+             * Scroll area height contract: `h-full` resolves against content height and `absolute
+             * inset-0` collapses the wrapper, so the wrapper is a relative flex column and the
+             * scroller takes `min-h-0 flex-1`.
+             */}
             <div className="relative flex min-h-0 flex-1 flex-col">
               {/*
-                ⚠️ **A scrollable region has to be scrollable from the keyboard too**
-                (2026-08-20, surfaced when the destinations reached eight).
-
-                This area caused no trouble while the content was short enough not to
-                scroll. When the 「Agent」 (agents) destination made the navigation
-                section one row longer, a scroll actually appeared, and at that moment it
-                became **impossible to see the bottom without a mouse wheel or trackpad**
-                (axe `scrollable-region-focusable`).
-
-                So the defect was not new but **lying dormant until its condition was
-                met.** Accessibility that depends on content length is not accessibility.
-
-                `tabIndex={0}` puts the region into tab order so arrow keys and
-                PageUp/Down scroll it. What receives focus has to say what it is, so
-                `role="group"` plus a name come with it — an unnamed focus stop sounds
-                like 「an empty group」 to a screen reader.
-              */}
+               * Focusable (`tabIndex={0}`) so the region scrolls from the keyboard, with
+               * `role="group"` and a name so the stop announces itself (axe
+               * `scrollable-region-focusable`).
+               */}
               <div
                 className="min-h-0 flex-1 overflow-y-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]"
                 data-testid="shortcut-sheet-scroll"
@@ -647,9 +512,7 @@ export function ShortcutSheet({ open, onClose, returnFocusSelector }: Props) {
                 {visibleSections.map((section) => (
                   <section
                     key={section.titleKey}
-                    // No column-local top hairline: the tab row's full-width border already
-                    // closes the header, and a second line over the right column alone read as
-                    // a tab underline that stopped halfway (inspection, 2026-09-25).
+                    // No column-local top hairline; the tab row's border already closes the header.
                     className="px-5 py-4"
                   >
                     <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
@@ -658,9 +521,8 @@ export function ShortcutSheet({ open, onClose, returnFocusSelector }: Props) {
                     <dl className="mt-3 space-y-2.5">
                       {section.rows.map((row, rowIdx) => (
                         <div
-                          // Aliased shortcuts sharing a label can appear several times in
-                          // one section (e.g. "Open Palette (alias)" ⌘P / ⌘O), so the index is
-                          // part of the key to avoid a React duplicate key.
+                          // Aliased shortcuts can share a label within a section, so the index is
+                          // part of the key.
                           key={`${section.titleKey}-${rowIdx}-${row.labelKey}`}
                           className="flex items-center justify-between gap-4"
                         >
@@ -692,12 +554,9 @@ export function ShortcutSheet({ open, onClose, returnFocusSelector }: Props) {
                   </p>
                 ) : null}
                 {/*
-                  **The words live under the keys, inside the scroll** (2026-09-25). They sat in
-                  the fixed footer, which took about 330px of a 672px sheet at 1040x720 and left
-                  the shortcut list 233px - five rows and a fade (inspection, `i-1040-sheet.png`).
-                  Reference text that is read once belongs after the list it explains, not
-                  pinned over it.
-                */}
+                 * The glossary sits under the keys inside the scroll, not in the fixed footer where
+                 * it crowded out the list.
+                 */}
                 <div
                   data-testid="shortcut-sheet-words"
                   className="border-t border-[color:var(--color-overlay-2)] px-5 py-4"

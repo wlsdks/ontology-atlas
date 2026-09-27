@@ -83,17 +83,14 @@ describe("AppNavRail", () => {
     expect(screen.getByTestId("app-nav-rail-item-insights")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-projects")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-agents")).toBeInTheDocument();
-    // MCP is the second tab of Agents since 2026-09-17, not a rail item.
     expect(screen.queryByTestId("app-nav-rail-item-mcp")).not.toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-git")).toBeInTheDocument();
-    // The retired ERD builder (2026-07-24) — removed from the rail.
     expect(screen.queryByTestId("app-nav-rail-item-builder")).not.toBeInTheDocument();
     expect(screen.queryByTestId("app-nav-rail-agent-status")).not.toBeInTheDocument();
   });
 
   it("draws only the destinations the folder's shape earns", () => {
-    // A wiki without a map (owner direction 2026-09-06): no empty map, reading, analysis
-    // or project doors; the wiki, the agent, MCP and history stay.
+    // A wiki without a map keeps only the wiki, agent, MCP and history doors.
     renderRail(<AppNavRail visibleDestinations={new Set(["library", "automations", "agents", "git"])} />);
     expect(screen.getByTestId("app-nav-rail-item-library")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-automations")).toBeInTheDocument();
@@ -126,16 +123,8 @@ describe("AppNavRail", () => {
   });
 
   /**
-   * **The navigation-signal wiring** (measured 2026-08-19).
-   *
-   * A surface with a permanent rAF loop, like the map, competes for frame budget with
-   * the new screen's first render if it keeps drawing «the screen you decided to
-   * leave» — at 4× CPU throttling, departing a 3D 2,000-node map took 529ms and 3,000
-   * nodes 745ms (2D at the same scale was 194ms). The prescription is one shared-layer
-   * event, and **how the map reacts to that signal is measured by
-   * `tests/e2e/nav-yield-map-frames.spec.ts`.** This check holds the other half —
-   * «does the rail actually fire the signal». Both are needed to close the circuit;
-   * with only one, a broken wire leaves both green.
+   * How the map reacts to this signal is measured by `tests/e2e/nav-yield-map-frames.spec.ts`; this
+   * checks the rail fires it.
    */
   it('emits the navigation signal only on clicks that actually navigate', () => {
     renderRail();
@@ -169,8 +158,7 @@ describe("AppNavRail", () => {
     expect(screen.getByRole("button", { name: "설정 슬롯" })).toBeInTheDocument();
   });
 
-  // Task ⑪ — LNB context carryover. If you select a node on the map and then
-  // navigate to a document-vault item, that node's document should open immediately (no unrelated default screen).
+  // A node selected on the map carries its document deep link to the docs item.
   it("carries the selected ontology document into Library with contextHrefs.docs when provided", () => {
     renderRail(
       <AppNavRail contextHrefs={{ docs: "/docs/?slug=capabilities/mcp-server" }} />,

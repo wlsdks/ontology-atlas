@@ -33,27 +33,10 @@ import {
 } from '../model/import-flow';
 
 /**
- * **"Bring documents from a service" — the door in the Library, in the person's words.**
- *
- * Owner, 2026-09-07: *"it has to be really easy to use, or nobody will. Connecting a service is
- * mostly for the Library anyway."* So this surface never says MCP, stdio, npx or environment
- * variable. It says Notion, and it says what will happen next.
- *
- * The technical dialog on `/mcp` is unchanged and is reachable from here as the last tile, for a
- * service this list does not know. Two doors onto one mechanism, because two different people
- * arrive: one who came to configure, and one who came to fetch their own notes.
- *
- * ## What is proven here and what is not
- *
- * Step one is complete: the descriptor is written into the folder and switched on, and the screen
- * says what will open next and who holds what comes back.
- *
- * Steps two and three hand a **bounded brief** to the Library's existing agent turn, which is
- * where the fetching and the picking actually happen, because Atlas is not the MCP client and has
- * no way to call the service's tools or receive their result as data. Every file the agent writes
- * lands through the permission card that already exists. What has **not** been observed end to
- * end is a real service answering — nothing here could reach Notion — so the copy says where the
- * choosing happens rather than promising a list this dialog will draw.
+ * The Library's door for bringing documents from a service, in the person's words, never MCP,
+ * stdio, npx or environment variable; the technical `/mcp` dialog is the last tile. Step one writes
+ * the connector and switches it on; steps two and three hand a bounded brief to the Library's agent
+ * turn, where fetching and picking happen because Atlas is not the MCP client.
  */
 export function LibraryImportDialog({
   open,
@@ -65,23 +48,13 @@ export function LibraryImportDialog({
   /** Opens the technical dialog for a service this list does not know. */
   onOpenAdvanced,
   /**
-   * Whether an in-app conversation can actually start here.
-   *
-   * ⚠️ **Measured in a cold walkthrough, 2026-09-07.** On the web there is no agent to hand the
-   * brief to, so the last press closed the dialog and produced nothing at all: no window, no
-   * message, no change on the screen behind. The walker wrote *"if I hadn't been told this was
-   * expected, I would assume the feature was broken"* — which is the dead-end CTA this
-   * repository refuses by name. A button that cannot act is worse than an absent one, because a
-   * person spends a press finding that out.
+   * Whether an in-app conversation can start here; when it cannot, the last press is not offered
+   * rather than doing nothing.
    */
   canRunAgent,
   /**
-   * Why it cannot, when it cannot.
-   *
-   * ⚠️ **Two different absences, and one sentence cannot carry both.** A browser has no way to
-   * start any program; the installed app can, and simply has no coding tool it has verified yet.
-   * Saying "a browser cannot start one" inside the app would be false, and the remedy differs —
-   * one is `/download/`, the other is the runtimes screen.
+   * Why it cannot: a browser starts no program, while the app may simply have no verified coding
+   * tool yet; the remedies differ (`/download/` versus the runtimes screen).
    */
   agentGap,
   testIdPrefix = 'library-import',
@@ -128,8 +101,8 @@ export function LibraryImportDialog({
   const pick = useCallback(
     (next: ImportService) => {
       if (next.connect === 'manual') {
-        // The escape hatch is not a step of this flow; it is the other door. Closing first means
-        // two blocking surfaces never stand at once, which `.claude/rules/design.md` forbids.
+        // The escape hatch is the other door. Closing first means two blocking surfaces never stand
+        // at once, which `.claude/rules/design.md` forbids.
         close();
         onOpenAdvanced();
         return;
@@ -162,9 +135,8 @@ export function LibraryImportDialog({
       return;
     }
     /*
-     * The token goes in **after** the row is on disk, for the same reason the connector dialog
-     * does it in that order: a value stored against a row that then failed to write is a value on
-     * this machine that nothing on screen points at.
+     * The token is stored only after the row is on disk, or a failed write leaves a stored value
+     * nothing on screen points at.
      */
     if (ask?.kind === 'token' && token.trim()) {
       await connectorSecretSet(connectorSecretRef(id, ask.name), token.trim()).catch(() => null);
@@ -224,16 +196,12 @@ export function LibraryImportDialog({
           <ul
             data-testid={`${testIdPrefix}-services`}
             /*
-             * Equal-height tiles in one grid: `.claude/rules/forbidden.md` refuses repeated cards
-             * whose heights differ only because their copy lengths do, and these sentences differ
-             * by a line.
+             * Equal-height tiles: `.claude/rules/forbidden.md` refuses cards whose heights differ
+             * only by copy length.
              */
             /*
-             * `auto-rows-fr` measured, 2026-09-07: without it the last tile stood alone on its
-             * row at 83px against the 65px of the four above it, because its sentence wraps to a
-             * second line. `.claude/rules/forbidden.md` only forbids unequal heights *within* a
-             * row, so this passed the letter of the rule and still looked like a mistake. One
-             * track height for every tile costs nothing and removes the question.
+             * `auto-rows-fr`: one track height for every tile, including a last tile alone on its
+             * row (`.claude/rules/forbidden.md`).
              */
             className="mt-3 grid auto-rows-fr grid-cols-1 gap-2 sm:grid-cols-2"
           >
@@ -269,11 +237,8 @@ export function LibraryImportDialog({
             ))}
           </ul>
           {/*
-           * The one service people name that is not a tile, and why, in the tile's own
-           * place (2026-09-07 decision). Every Google Drive MCP a person can run today asks
-           * them to create their own OAuth client in the Google Cloud console first; a tile
-           * would be a door onto that console. Saying so here, with the fastest path that
-           * does work, beats a disabled tile (a dead-end control) and beats silence.
+           * Google Drive is not a tile: every Drive MCP needs a self-made OAuth client, so this
+           * says why and names the path that works.
            */}
           <p
             data-testid={`${testIdPrefix}-absent-note`}
@@ -303,20 +268,12 @@ export function LibraryImportDialog({
                 })}
           </p>
           {/*
-            **Who holds what comes back, said before the press.** The sign-in window belongs to the
-            coding agent; Atlas neither opens it nor keeps the result, and removing the row later
-            does not revoke anything. Leaving that unsaid would be Atlas taking credit for custody
-            it does not have (PO steward, 2026-09-07).
-          */}
+           * Says before the press who holds what comes back: the sign-in belongs to the coding
+           * agent, and removing the row revokes nothing.
+           */}
           <p className="mt-2 max-w-prose break-keep border-l border-[color:var(--color-border-strong)] pl-2.5 text-label leading-prose text-[color:var(--color-text-quaternary)]">
             {ask.kind === 'browser' ? t('connectBrowserWho') : t('connectTokenWho')}
-            {/*
-              ⚠️ **Where the real lock is** (cold walkthrough, 2026-09-07). The sentence above
-              says removing this row revokes nothing, and the walker's reply was that they were
-              *"told the door doesn't lock behind me, but not where the real lock is"*. A
-              disclosure with no address is half a disclosure, so the service's own page follows
-              it — the same page the catalogue already records for this entry.
-            */}
+            {/* Links the service's own page, where access is actually revoked. */}
             {entry ? (
               <>
                 {' '}
@@ -432,33 +389,19 @@ export function LibraryImportDialog({
             className="mt-3 w-full"
           />
           {/*
-            ⚠️ **Where the picking happens, said plainly.** Atlas cannot draw the list: it is not
-            the MCP client, so it can neither call the service's tools nor receive their result as
-            data. The choosing happens in the conversation that opens next, where the results
-            actually are — and saying that is better than a screen implying a list will appear
-            here and then not producing one.
-          */}
-          {/*
-            ⚠️ **Both of these describe the conversation, so neither is drawn where there cannot
-            be one.** Left unconditional, the web read "a conversation opens next" directly above
-            a card saying a browser cannot start one — two sentences contradicting each other in
-            the same box (rendered capture, 2026-09-07).
-          */}
+           * Atlas cannot draw the result list (it is not the MCP client), so this says the choosing
+           * happens in the conversation.
+           */}
+          {/* Both describe the conversation, so neither is drawn where one cannot start. */}
           {canRunAgent ? (
             <p className="mt-2 max-w-prose break-keep text-label leading-prose text-[color:var(--color-text-quaternary)]">
               {t('whatNext', { limit: DEFAULT_IMPORT_LIMIT, folder: service.folder })}
             </p>
           ) : null}
           {/*
-            ⚠️ **Which conversation can actually reach it** (2026-09-07, caught while reading the
-            handshake rather than the screen). `connectorAcpServers` hands connectors only to a
-            runtime whose permission path was measured, which today is Claude alone; a Codex
-            session gets the folder's own server and nothing else. Without this line somebody on
-            Codex presses Connect, opens the conversation, and the agent has no Notion tools —
-            the silently-absent failure this whole feature is built to avoid, arrived at through
-            the friendliest door in the product. The MCP screen has said this since 2026-09-05;
-            saying it only there would mean the easy path is the one that lies.
-          */}
+           * `connectorAcpServers` hands connectors only to runtimes with a measured permission path
+           * (Claude today); without this line a Codex user's agent silently has no service tools.
+           */}
           {canRunAgent ? (
             <p
               data-testid={`${testIdPrefix}-runtime`}
@@ -469,10 +412,8 @@ export function LibraryImportDialog({
           ) : null}
           {canRunAgent ? null : (
             /*
-             * Why it cannot happen here and what still worked — the degradation contract, not a
-             * dead button. What *did* happen is worth saying: the connection is written into the
-             * folder and switched on, so any coding tool pointed at this folder can use it, and
-             * the person can come back to this screen in the app and finish the errand.
+             * The degradation contract: why it cannot happen here, and that the connection is saved
+             * and on for any coding tool on this folder.
              */
             <div
               role="status"

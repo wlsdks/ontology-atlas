@@ -32,11 +32,7 @@ function rowsOf(title: string): string[] {
   });
 }
 
-/**
- * The Navigation section is shown on every tab of every screen the sheet opens on, so each of its
- * rows has to work everywhere (2026-09-26). Measured before: ⌘K and ⇧⌘K were two rows with two
- * descriptions for one dialog, and `D` was listed on a project page where only the map binds it.
- */
+/** Every Navigation row must work on every screen the sheet opens on. */
 describe("ShortcutSheet — the rows every screen shows", () => {
   it("teaches one search key, not two searches", () => {
     renderSheet();
@@ -66,13 +62,7 @@ describe("ShortcutSheet — the rows every screen shows", () => {
   });
 });
 
-/**
- * W2-C — the "Terrain Map"/"Relief" (topology) section used to list interactions the v2
- * canvas never implemented (double-click local · Shift+click path · Tab neighbours ·
- * / search · 0 depth). This test locks the corrected section to the canvas's ACTUAL
- * behavior so a future stale-key regression fails loudly (the exact failure mode that
- * motivated this rewrite in the first place).
- */
+/** The topology section lists only interactions the canvas actually implements. */
 function renderSheet() {
   render(
     <NextIntlClientProvider locale="en" messages={enMessages}>
@@ -113,17 +103,9 @@ describe("ShortcutSheet — topology section (W2-C)", () => {
   });
 });
 
-/**
- * P1a-2 (persona measurement N8 — the definitions of domain/capability/element
- * appeared in 0 working UIs). Locks the one-line kind glossary added to this sheet's
- * footer instead of a new surface.
- */
+/** The one-line kind glossary in the footer. */
 describe("ShortcutSheet — kind glossary (P1a-2)", () => {
-  /**
-   * A word baked into the product's name that was defined in 0 places inside the app.
-   * Once the tour names it, this is where it is recovered, so it comes before the
-   * three kinds.
-   */
+  /** Ontology is defined here before the three kinds. */
   it("defines ontology first, before the three kinds", () => {
     renderSheet();
     expect(screen.getByText("Ontology")).toBeInTheDocument();
@@ -155,9 +137,7 @@ describe("ShortcutSheet — relation guide", () => {
 });
 
 
-// #67 — pouring some 40 rows into two columns at once made the dialog eat 95% of the
-// viewport (852px) at 1512×900 with the bottom cut off. The answer is **classification,
-// not hiding** — the `All` (all) tab keeps the previous list, so discoverability is not lost.
+// Classification, not hiding: the All tab keeps the full list.
 describe('ShortcutSheet context tabs', () => {
   it('defaults to the current screen so the map hides the docs section', () => {
     renderSheet();
@@ -210,26 +190,19 @@ describe('ShortcutSheet context tabs', () => {
   });
 });
 
-// #67 follow-up — the scroll area has to be genuinely **constrained**.
-//
-// Measured regression (English `All` tab, 1512×806): adding the fade wrapper used
-// `h-full` on the scrolling div, and inside a wrapper whose height came from flex
-// (526px) that percentage resolved against the content height (1112px), making
-// `scrollHeight === clientHeight`. The result: the scroll died and the last section
-// was cut outside the viewport (1256px). jsdom does not compute layout, so this
-// cannot be caught by height — the **deterministic anchoring method** is pinned as a
-// contract instead.
+// The scroll area must be genuinely constrained; jsdom has no layout, so the anchoring method is
+// pinned.
 describe('ShortcutSheet scroll area height contract', () => {
   it('pins the scroll area absolutely to the wrapper instead of relying on h-full', () => {
     renderSheet();
     const scroll = screen.getByTestId("shortcut-sheet-scroll");
 
-    // Constrained with flex inside the flow — it takes only the remaining space and scrolls the rest.
+    // Flex-constrained in flow: it takes the remaining space and scrolls the rest.
     expect(scroll.className).toContain("min-h-0");
     expect(scroll.className).toContain("flex-1");
     expect(scroll.className).toContain("overflow-y-auto");
-    // `h-full` resolved against the content height and killed the scroll (1112px), and
-    // `absolute` dropped out of flow and collapsed the dialog to 232px. Both forbidden.
+    // `h-full` resolved against content height and killed the scroll; `absolute` collapsed the
+    // dialog. Both forbidden.
     expect(scroll.className).not.toContain("h-full");
     expect(scroll.className).not.toContain("absolute");
   });

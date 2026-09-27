@@ -29,10 +29,8 @@ describe("DomainCapacityBar", () => {
   });
 
   it('draws both segments in the shared bar grammar of indigo and neutral, not kind tones', () => {
-    // The kind tones (amber/eucalyptus) measure 1.14:1 against each other on the
-    // track, so they never separated by brightness — only by hue, and that hue pair
-    // is the axis red-green colour blindness separates worst. Identity is already
-    // carried by order, unit words and numbers, so colour was demoted.
+    // Kind tones separate only by hue, the axis red-green colour blindness separates worst;
+    // identity is already in order, unit words and numbers.
     render(
       <DomainCapacityBar
         row={{ id: "domain:auth", title: "Auth", capabilityCount: 3, elementCount: 1, total: 4 }}
@@ -52,9 +50,7 @@ describe("DomainCapacityBar", () => {
   });
 
   it('separates two nonzero values with a 1px seam', () => {
-    // Indigo and neutral measure 1.12:1 against each other, so an adjacent boundary is
-    // invisible by colour alone. The seam is a colour-independent separator that
-    // guarantees "a bar of two values" even in colour blindness or greyscale.
+    // Indigo and neutral are 1.12:1, so the seam separates two values without colour.
     render(
       <DomainCapacityBar
         row={{ id: "domain:auth", title: "Auth", capabilityCount: 3, elementCount: 1, total: 4 }}
@@ -103,11 +99,8 @@ describe("DomainCapacityBar", () => {
   });
 
   it('keeps the tail column the same width regardless of content', () => {
-    // `Capacity 4 · Element 110` and `Capacity 2 · Element 5` have different text widths. If that
-    // difference leaks into the length of the `flex-1` track beside it, the axis
-    // diverges row by row (measured 929.8/935.5/941.2px) and a domain with smaller
-    // values gets a longer bar axis. jsdom does not compute layout, so what is
-    // asserted is **the contract that sets the width** (the fixed-width class).
+    // Different tail text widths must not change the track length; jsdom has no layout, so the
+    // fixed-width class is asserted.
     const tailOf = (row: { capabilityCount: number; elementCount: number; total: number }) => {
       const { unmount } = render(
         <DomainCapacityBar
@@ -198,16 +191,8 @@ describe("DomainCapacityLegend", () => {
 });
 
 /**
- * **Length does not state size** (2026-08-09, the owner chose 「Let the bar state composition」 — let the bar state composition).
- *
- * The denominator used to be the list's maximum, so length was size. But the number
- * right beside it was already answering that, and measured, the fill ratios were
- * 100/94/88/82/76/65/53/47% — clustered in the top half, so the differences in length
- * taught almost nothing new.
- *
- * The property this test pins: *however different two rows' sums are, the track fills
- * identically and the only thing that differs is where the boundary sits.* Break that
- * and the bar quietly reverts to its old meaning.
+ * Length does not state size: however different two rows' sums are, the track fills identically and
+ * only the boundary moves.
  */
 describe('the bar shows composition, not size', () => {
   it('fills the track fully even when totals differ threefold', () => {

@@ -42,11 +42,7 @@ function render(ui: React.ReactElement) {
   );
 }
 
-/**
- * rank2/18 (design council batch B1) — the overlay a11y backbone. SearchPalette
- * already implemented ESC, the Tab trap and trigger focus return itself (with 0 test
- * coverage); this pins that the rank2 spring unification did not break that contract.
- */
+/** SearchPalette implements Escape, the Tab trap and trigger focus return itself; pinned here. */
 function Harness() {
   const [open, setOpen] = useState(false);
   return (
@@ -79,9 +75,7 @@ describe("SearchPalette", () => {
 
     fireEvent.keyDown(window, { key: "Escape" });
 
-    // rank2 — the exit unmounts only after the opacity/translateY spring has played
-    // through (AnimatePresence). The "only the closing properties change and it
-    // vanishes instantly" regression is caught here too.
+    // The exit unmounts only after the spring plays through (AnimatePresence).
     await waitForElementToBeRemoved(() => screen.queryByRole("dialog"));
   });
 
@@ -94,9 +88,8 @@ describe("SearchPalette", () => {
 
     await waitForElementToBeRemoved(() => screen.queryByRole("dialog"));
 
-    // AnimatePresence removes the dialog before React finishes every effect
-    // cleanup. Under a loaded full-suite worker, the mutation observer can
-    // therefore resolve one tick before the cleanup restores focus.
+    // AnimatePresence removes the dialog before every effect cleanup finishes, so under load focus
+    // returns one tick later.
     await waitFor(() => expect(document.activeElement).toBe(trigger));
   });
 

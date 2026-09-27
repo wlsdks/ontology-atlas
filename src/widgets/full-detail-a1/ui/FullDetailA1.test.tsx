@@ -232,13 +232,8 @@ describe("FullDetailA1", () => {
 
   it('renders reach steps as a named radio group with the selection exposed', () => {
     /*
-     * ⚠️ These were three chips with transparent borders, so at rest they read as grey
-     * numerals inside a sentence; the owner reported not realising they could be pressed
-     * (2026-09-14). They are also a genuine exclusive choice, which makes them a radiogroup.
-     *
-     * So what is measured is **role and selected state** rather than a `data-active`
-     * attribute after a click: is it a control a person can see, and does assistive tech
-     * know which one is chosen.
+     * An exclusive choice, so the steps are a radiogroup; the test measures role and selected
+     * state.
      */
     renderFullDetail();
     const group = screen.getByRole("radiogroup", { name: koMessages.fullDetailA1.reach.stepsAria });
@@ -376,9 +371,7 @@ describe("FullDetailA1 — project source receipt parity", () => {
   });
 });
 
-// R+ "Code location" (code location) — the REAL code evidence (raw file paths),
-// distinct from the `node.slug` already shown top-right (a vault-doc
-// reference, not code).
+// Code location shows real file paths, distinct from `node.slug`.
 describe('FullDetailA1 code location section', () => {
   it("renders a heading + row for each code path when codeLocations is non-empty", () => {
     renderFullDetail({ codeLocations: ["mcp/src/index.js", "mcp/src/verify.mjs"] });
@@ -403,7 +396,7 @@ describe('FullDetailA1 code location section', () => {
   });
 });
 
-// rank7 (design-council B5) — last-edit provenance + expected_mtime conflict.
+// Last-edit provenance and the expected_mtime conflict badge.
 describe("FullDetailA1 — last-edit provenance", () => {
   it("renders no subject row when the node carries no lastEditSubject fact", () => {
     renderFullDetail();
