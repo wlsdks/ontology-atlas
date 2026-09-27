@@ -706,6 +706,7 @@ pub(crate) fn launch_from_npx_cache(
         return None;
     }
     let package = npx_launch_package(launch)?;
+    let adapter_args = launch.args.iter().position(|arg| arg.as_str() == package)? + 1;
     let (name, pinned) = package
         .rsplit_once('@')
         .filter(|(name, _)| !name.is_empty())?;
@@ -728,7 +729,7 @@ pub(crate) fn launch_from_npx_cache(
         .to_string();
     Some(AcpLaunch {
         program,
-        args: launch.args.get(2..)?.to_vec(),
+        args: launch.args[adapter_args..].to_vec(),
         path_env,
     })
 }
