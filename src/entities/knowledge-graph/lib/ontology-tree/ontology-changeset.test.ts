@@ -49,8 +49,7 @@ describe("ontology-changeset", () => {
 
   it("keeps the baseline kind of a removed node", () => {
     const snap = snapshotOntology(baseNodes, baseEdges, 1);
-    // `c` (element) is deleted. It is gone from the current graph, so the baseline must
-    // remember its kind — that is what makes "an agent deleted a domain" triageable.
+    // A removed node keeps its baseline kind, so "an agent deleted a domain" is triageable.
     const cs = computeOntologyChangeset(snap, [node("a", "domain"), node("b", "capability")], baseEdges);
     expect(cs.removedNodeKinds.get("c")).toBe("element");
   });
@@ -94,10 +93,7 @@ describe("ontology-changeset", () => {
     expect(cs.total).toBe(0);
   });
 
-  // If edge and node signatures concatenated their fields *without a separator*, two
-  // different inputs whose field boundary moved would collide on the same string and the
-  // change would be missed. The next two cases reproduce that collision; only a safe
-  // separator passes them.
+  // Joined fields need a separator, or a moved field boundary collides and a change is missed.
   it("distinguishes edge swaps whose concatenations collide", () => {
     const nodes = [
       node("a", "domain"),
@@ -105,7 +101,7 @@ describe("ontology-changeset", () => {
       node("bc", "element"),
       node("c", "element"),
     ];
-    // baseline a→bc vs current ab→c: with an empty separator both keys become "abcd".
+    // With an empty separator both keys become "abcd".
     const baseline = snapshotOntology(nodes, [edge("a", "bc", "d")], 1);
     const cs = computeOntologyChangeset(baseline, nodes, [edge("ab", "c", "d")]);
     expect(cs.removedEdges).toHaveLength(1); // Remove a→bc
@@ -113,18 +109,14 @@ describe("ontology-changeset", () => {
   });
 
   it("detects a shifted kind and title boundary", () => {
-    // The same id 'x' goes from kind="a"/title="b" to kind="ab"/title="". With an empty
-    // separator both signatures are "ab" and the change is missed.
+    // With an empty separator both signatures are "ab".
     const baseline = snapshotOntology([node("x", "a", "b")], [], 1);
     const cs = computeOntologyChangeset(baseline, [node("x", "ab", "")], []);
     expect(cs.changedNodes).toContain("x");
   });
 });
 
-// Per-node "mark reviewed" advances the baseline for that one node. Non-destructive: the
-// vault .md is untouched, only the in-memory baseline snapshot moves. The acknowledged node
-// drops out of the changeset, and a *subsequent* edit re-flags it, so no change is missed.
-// Reuses the shipped changeset machinery rather than a separate reviewed-set.
+// Acknowledging advances the baseline for one node in memory; a later edit flags it again.
 describe("acknowledgeNodeChange", () => {
   it("drops an approved changed node and keeps other changes", () => {
     const snap = snapshotOntology(baseNodes, baseEdges, 1);
@@ -133,7 +125,7 @@ describe("acknowledgeNodeChange", () => {
     expect(computeOntologyChangeset(snap, current, baseEdges).changedNodes.sort()).toEqual(["a", "b"]);
     const acked = acknowledgeNodeChange(snap, "a", current, baseEdges);
     const cs = computeOntologyChangeset(acked, current, baseEdges);
-    expect(cs.changedNodes).toEqual(["b"]); // a is reviewed → omitted, b remains
+    expect(cs.changedNodes).toEqual(["b"]); // a is reviewed and omitted; b remains.
   });
 
   it("flags a node again when it is edited after approval", () => {
@@ -163,14 +155,14 @@ describe("acknowledgeNodeChange", () => {
 
   it("syncs an approved node's outgoing edges", () => {
     const snap = snapshotOntology(baseNodes, baseEdges, 1);
-    // Add the a→c edge, which changes `a`'s outgoing set.
+    // The a→c edge changes `a`'s outgoing set.
     const newEdges = [edge("a", "b"), edge("b", "c"), edge("a", "c")];
     const before = computeOntologyChangeset(snap, baseNodes, newEdges);
     expect(before.addedEdges.length).toBe(1);
     const acked = acknowledgeNodeChange(snap, "a", baseNodes, newEdges);
     const cs = computeOntologyChangeset(acked, baseNodes, newEdges);
-    expect(cs.addedEdges).toEqual([]); // a's new outgoing edge incorporated into baseline
-    expect(cs.changedNodes).toEqual([]); // a is no longer changed
+    expect(cs.addedEdges).toEqual([]); // a's new outgoing edge is in the baseline.
+    expect(cs.changedNodes).toEqual([]);
   });
 
   it("returns a new snapshot and leaves the original unchanged", () => {
@@ -179,7 +171,7 @@ describe("acknowledgeNodeChange", () => {
     const acked = acknowledgeNodeChange(snap, "a", current, baseEdges);
     expect(acked).not.toBe(snap);
     expect(acked?.nodeSigs).not.toBe(snap.nodeSigs);
-    // The original baseline's signature for `a` is unchanged.
+    // The original snapshot is not mutated.
     expect(snap.nodeSigs.get("a")).toBe(snapshotOntology(baseNodes, baseEdges, 1).nodeSigs.get("a"));
   });
 
@@ -191,7 +183,7 @@ describe("acknowledgeNodeChange", () => {
     const nodes = [node("a", "domain"), node("ab", "domain"), node("c", "element")];
     const snap = snapshotOntology(nodes, [edge("a", "c"), edge("ab", "c")], 1);
     const acked = acknowledgeNodeChange(snap, "a", nodes, [edge("a", "c"), edge("ab", "c")]);
-    // The ab→c edge must stay in the baseline — acknowledging `a` must not touch it.
+    // Acknowledging `a` must not touch the ab→c edge.
     const cs = computeOntologyChangeset(acked, nodes, [edge("a", "c"), edge("ab", "c")]);
     expect(cs.removedEdges).toEqual([]);
   });

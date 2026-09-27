@@ -84,12 +84,7 @@ describe('local-fs-handle store', () => {
       lastAccessedAt: 100,
     });
     const before = (await getLocalFsHandle())!;
-    /*
-     * `touch` writes `Date.now()`, so the assertion below needs the clock to have moved.
-     * A 2 ms sleep assumed it would; a coarse clock can tie and the test then fails on
-     * the timer, not on the store. Waiting for the condition itself — a different
-     * millisecond — is instant on a fast clock and correct on a slow one.
-     */
+    /* Waits for the clock to move rather than sleeping, so a coarse clock cannot tie. */
     await vi.waitFor(() => {
       if (Date.now() === before.lastAccessedAt) throw new Error('clock has not advanced yet');
     });
@@ -110,9 +105,7 @@ describe('local-fs-handle store', () => {
     const restored = await getLocalFsHandle();
     expect(restored?.name).toBe('OldVault');
     expect(restored?.id).toBe(CURRENT_LOCAL_FS_HANDLE_ID);
-    // The legacy key is deleted.
     expect(memory.get('docs-vault:current-handle')).toBeUndefined();
-    // The new key survives.
     expect(
       memory.get('docs-vault:fs-handle:current'),
     ).toBeDefined();
@@ -228,9 +221,7 @@ describe('local-fs-handle store', () => {
   });
 
   it('web FSA records with different folders both stay in the recent list', async () => {
-    // Bug sweep 2026-09-01: every web record's id is 'current', so the
-    // identity fallback deduped all vaults to one entry — opening folder B
-    // silently evicted folder A.
+    // Web records all share id 'current', so identity must come from the folder, not the id.
     await putLocalFsHandle({
       id: CURRENT_LOCAL_FS_HANDLE_ID,
       handle: fakeHandle('vault-a'),
@@ -291,8 +282,7 @@ describe('recordLocalFsHandleContents', () => {
 
       await recordLocalFsHandleContents({ docCount: 232, conceptCount: 41 });
 
-      // Both copies, because the chooser reads the recent list while the settings row reads
-      // the `current` record. Writing one would let two surfaces disagree about one folder.
+      // The chooser reads the recent list while settings read the `current` record.
       const current = await getLocalFsHandle();
       expect(current?.docCount).toBe(232);
       expect(current?.conceptCount).toBe(41);
@@ -304,9 +294,7 @@ describe('recordLocalFsHandleContents', () => {
   });
 
   it('does nothing when there is no such record', async () => {
-      // The same contract as `touchLocalFsHandle`: a count for a folder that is not stored
-      // has nothing to attach to, and inventing a record for it would put a folder in the
-      // chooser that nobody opened.
+      // A count for an unstored folder would invent a chooser entry nobody opened.
       await recordLocalFsHandleContents({ docCount: 5, conceptCount: 2 });
 
     expect(await getLocalFsHandle()).toBeUndefined();
@@ -315,18 +303,9 @@ describe('recordLocalFsHandleContents', () => {
 });
 
 describe('the recent list survives concurrent writers', () => {
-  /*
-   * **The launch rule is decided by how many folders this list holds**, so a dropped entry
-   * silently turns the chooser off and the app resumes a folder it should have asked about.
-   *
-   * A vault load fires `touchLocalFsHandle` and then, once the walk finishes,
-   * `recordLocalFsHandleContents`; both read this one key, modify it and write it back, and
-   * neither is awaited by its caller - awaiting them broke a rename and a map deeplink, once
-   * each, on 2026-09-13. So the store serialises the writes itself, and this is the case that
-   * says so.
-   */
+  /* Two unawaited writes must both land: the entry count decides whether the chooser opens. */
   it('keeps both folders when two writes are started without awaiting the first', async () => {
-    // Start both without awaiting, which is exactly how the vault-load path calls them.
+    // Neither awaited, as the vault-load path calls them.
     const first = putLocalFsHandle({
       id: 'a',
       handle: fakeHandle('atlas'),
@@ -345,14 +324,8 @@ describe('the recent list survives concurrent writers', () => {
 
     const recent = await listRecentLocalFsHandles();
     expect(recent.map((r) => r.name).sort()).toEqual(['atlas', 'atlas-old']);
-    // And two is what arms the chooser, which is the whole reason this matters.
     expect(recent).toHaveLength(2);
   });
 
-  /*
-   * There is deliberately no second case for "a forget racing a vault load". One was
-   * written and removed: the in-memory `idb-kv` mock settles too synchronously to
-   * interleave, so it passed with the queue disabled and guarded nothing. The case above
-   * is the probe - it fails when `queueRecentListWrite` stops queueing.
-   */
+  /* No forget-race case: the in-memory mock cannot interleave, so it would pass with the queue off. */
 });

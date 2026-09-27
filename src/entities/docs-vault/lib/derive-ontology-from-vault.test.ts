@@ -31,10 +31,7 @@ function makeManifest(docs: VaultDoc[]): VaultManifest {
 
 describe('deriveOntologyFromVault', () => {
   it('same-kind docs sharing a filename tail both survive as nodes', () => {
-    // Bug sweep 2026-09-01: non-project ids are kind + tail, so
-    // capabilities/auth.md and archive/auth.md (both kind: capability)
-    // collided and nodes.set silently overwrote the first — the map drew one
-    // node fewer than every count surface reported.
+    // Two same-kind docs with the same tail must not overwrite each other.
     const result = deriveOntologyFromVault(
       makeManifest([
         makeDoc({
@@ -128,8 +125,7 @@ describe('deriveOntologyFromVault', () => {
     expect(result.nodes.find((n) => n.id === 'unknown:legacy-checkout')?.kind).toBe('unknown');
     const relatedEdges = result.edges.filter((e) => e.type === 'related_to');
     expect(relatedEdges).toHaveLength(1);
-    // A domain edge must run domain (parent) → docNode (child) for the workflow to
-    // hang under the domain in the tree (`contains` is from=parent, to=child).
+    // `contains` runs parent → child, so a `domain:` edge runs domain → doc.
     const domainContainsEdge = result.edges.find(
       (e) =>
         e.type === 'contains' &&
@@ -188,11 +184,11 @@ describe('deriveOntologyFromVault', () => {
         }),
       ]),
     );
-    // No mangled stub such as `unknown:capabilitiesmcp-server` may be minted.
+    // No mangled stub such as `unknown:capabilitiesmcp-server`.
     expect(
       result.nodes.find((n) => n.id.startsWith('unknown:capabilities')),
     ).toBeUndefined();
-    // Instead there must be a related_to edge onto the existing capability node.
+    // A related_to edge onto the existing capability node instead.
     const resolvedEdge = result.edges.find(
       (e) =>
         e.type === 'related_to' &&
@@ -306,9 +302,7 @@ describe('deriveOntologyFromVault', () => {
   });
 
   it('derives depends_on edges from the canonical depends_on key', () => {
-    // mcp/src/schema.mjs makes `depends_on` canonical for capability/element and MCP
-    // vault.mjs reads both as aliases. If the web derivation reads only
-    // `dependencies`, a dependency written under the canonical key vanishes from the map.
+    // `depends_on` is canonical for capability/element (`mcp/src/schema.mjs`), so the web reads it too.
     const result = deriveOntologyFromVault(
       makeManifest([
         makeDoc({
@@ -360,12 +354,8 @@ describe('deriveOntologyFromVault', () => {
   });
 
   it('dedupes a contains edge declared from both sides', () => {
-    // The same contains relation appears from two entry points:
-    //   domains/auth.md       → capabilities: ['login']
-    //   capabilities/login.md → domain: auth
-    // Both produce `domain:auth --contains--> capability:login`, which is one edge to
-    // the graph. A duplicate id causes React duplicate-key warnings and makes the ego
-    // graph silently drop edges. One (from, to, type) is one edge.
+    // `domains/auth.md` lists `login` and `capabilities/login.md` names `domain: auth`; both mean one
+    // edge, and a duplicate id breaks React keys and the ego graph.
     const result = deriveOntologyFromVault(
       makeManifest([
         makeDoc({
@@ -385,7 +375,7 @@ describe('deriveOntologyFromVault', () => {
         e.to === 'capability:login',
     );
     expect(containsEdges).toHaveLength(1);
-    // Every edge id must be unique too.
+    // Edge ids are unique.
     const ids = result.edges.map((e) => e.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
@@ -410,7 +400,7 @@ describe('deriveOntologyFromVault', () => {
     expect(containsEdges).toHaveLength(2);
   });
 });
-/** `relation_notes` is promoted to the matching edge's label (the "why"). */
+/** `relation_notes` becomes the matching edge's label. */
 describe("relation_notes → edge label", () => {
   it.each([false, true])('keeps the declared reason when containment is stated at both ends (parent first: %s)', (parentFirst) => {
     const child = makeDoc({ slug: 'capabilities/review', frontmatter: { kind: 'capability', title: 'Review', domain: 'domains/agents' } });
@@ -516,8 +506,7 @@ describe("element display names from code paths", () => {
     expect(cap?.title).toBe("src/tools/exporter.ts");
     expect(cap?.display).toBe("src/tools/exporter.ts");
   });
-  // Regression: a surface rendering "this node's document" mistook a derived node's
-  // sourceSlug (the other document that cited it) for its own and opened the wrong text.
+  // A derived node's sourceSlug is the citing document, not its own.
   it("sets hasOwnDocument only for nodes with their own document", () => {
     const manifest = makeManifest([
       makeDoc({
@@ -538,7 +527,7 @@ describe("element display names from code paths", () => {
     expect(authored?.hasOwnDocument).toBe(true);
     expect(authored?.sourceSlug).toBe("capabilities/frontmatter-to-ontology");
 
-    // A node named only by a relation — its sourceSlug is the document that *cited* it.
+    // Relation-only node: its sourceSlug is the citing document.
     const derived = result.nodes.find(
       (n) => n.id === "element:derive-ontology-from-vault",
     );
@@ -581,7 +570,7 @@ describe("element display names from code paths", () => {
         own: authoredIds.has(n.id),
       });
     }
-    // Each of the eight relation keys derives one node (singular `domain` included).
+    // One derived node per relation key, singular `domain` included.
     expect(result.nodes.filter((n) => !n.hasOwnDocument)).toHaveLength(8);
   });
 });

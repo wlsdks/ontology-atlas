@@ -42,9 +42,9 @@ describe("isWithinRecentWindow", () => {
   });
 
   it("excludes only timestamps beyond the 24h future window", () => {
-    // NOW = 2026-07-21T12:00Z. +12h counts as created during the session.
+    // NOW = 2026-07-21T12:00Z; +12h is session-created.
     expect(isWithinRecentWindow("2026-07-22T00:00:00.000Z", NOW, 7)).toBe(true);
-    // +25h is real clock skew, so it is excluded.
+    // +25h is clock skew.
     expect(isWithinRecentWindow("2026-07-22T13:00:00.000Z", NOW, 7)).toBe(false);
   });
 
@@ -119,7 +119,7 @@ describe("computeRecentChanges", () => {
 
   it("respects a custom windowDays", () => {
     const nodes = [node("capability:a", { evidenceIds: ["docs/a"] })];
-    const freshness = new Map([["docs/a", "2026-07-10T00:00:00.000Z"]]); // 11 days ago
+    const freshness = new Map([["docs/a", "2026-07-10T00:00:00.000Z"]]); // 11 days ago.
 
     expect(computeRecentChanges(nodes, freshness, NOW, 7).rows).toHaveLength(0);
     expect(computeRecentChanges(nodes, freshness, NOW, 14).rows).toHaveLength(1);
@@ -150,7 +150,7 @@ describe("selectRecentVaultDocs", () => {
     expect(selectRecentVaultDocs([doc("old", "2025-01-01T00:00:00.000Z")], NOW)).toEqual([]);
   });
 });
-/** A document created during the session — mtime later than the snapshot — is "today". */
+/** A document created after the session snapshot counts as today. */
 describe("future-tolerance (session-created docs)", () => {
   const NOW = Date.parse("2026-07-21T12:00:00Z");
   it("includes a document created an hour after the snapshot", () => {
@@ -186,7 +186,7 @@ describe("computeAdaptiveRecentChanges", () => {
   });
 
   it("narrows to 3 then 1 day when most pass 7 days", () => {
-    // Mostly 6 days old: 100% pass at 7d, 25% at 3d.
+    // Mostly 6 days old: all pass at 7d, a quarter at 3d.
     const nodes = [node("a", "a"), node("b", "b"), node("c", "c"), node("d", "d")];
     const fresh = new Map([
       ["a", iso(0.5)],
@@ -217,12 +217,7 @@ describe("computeAdaptiveRecentChanges", () => {
   });
 });
 
-/**
- * The starter-vault miscount (owner report, 2026-09-04): straight after the five
- * starter files were written, the INDEX segment said "Last 1d · 5" while the census
- * said 4 concepts and the segment drew 4 rows. The fifth was the starter's own
- * README.md — `kind: vault-readme`, changed like the rest, never drawn as a node.
- */
+/** A starter vault's `vault-readme` changes too but is never drawn, so it is not counted. */
 describe("computeRecentChanges — counts only the kinds that are drawn", () => {
   const STARTER_FRESHNESS = new Map([
     ["README", "2026-07-21T11:00:00.000Z"],

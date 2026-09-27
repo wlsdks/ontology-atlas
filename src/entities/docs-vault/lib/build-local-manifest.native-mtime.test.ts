@@ -3,34 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { VaultManifest } from '../model/types';
 
 /**
- * **An incremental rebuild must not open a file just to learn its mtime.**
- *
- * Measured 2026-08-09 in the installed app. `rebuildLocalManifestIncremental`
- * exists to re-read only changed files, yet it called `getFile()` per file to find
- * out *what* changed. Under Tauri that is a `read_vault_text_file` IPC round trip
- * returning **the whole body**, so body re-parsing was saved while transfer and
- * round trips were not.
- *
- * Time from editing one file to the app's map catching up:
- *
- * | Vault | Time to reflect |
- * |---|---|
- * | 71 files | 2.0 s (not yet at 1.6 s) |
- * | 5 files | 0.7 s |
- *
- * Linear in file count at ≈20 ms each, matching an IPC round trip. Reading those
- * same 71 files from disk costs **1.8 ms** — the time went to the bridge, not the work.
- *
- * The fix was not a new native command: `vault_fingerprint` returns paths and
- * mtimes in one call and was already used in the same file.
- *
- * **What this gate locks:** when native stamps are available, an unchanged file is
- * never opened.
- *
- * ⚠️ **It does not measure milliseconds** — those vary by machine and fail
- * intermittently. Per `.claude/rules/architecture.md`, lock the *number of calls*,
- * not the duration. So this counts `getFile()` invocations, which are the same
- * everywhere.
+ * With native stamps, an incremental rebuild opens only changed files. Counts `getFile()` calls,
+ * not milliseconds, which vary by machine (`.claude/rules/architecture.md`).
  */
 
 const nativeVaultFingerprint = vi.fn();
@@ -46,7 +20,6 @@ interface FakeFile {
   lastModified: number;
 }
 
-/** Mock root that counts `getFile()` calls per path. */
 function makeRoot(
   files: Record<string, FakeFile>,
   opens: Map<string, number>,
@@ -138,7 +111,7 @@ beforeEach(() => {
 
 describe('incremental rebuild with native stamps skips unchanged files', () => {
   it('opens only the one changed file', async () => {
-    // Pass 1: a full build produces the previous entries (opening everything is correct here).
+    // Pass 1: a full build seeds the previous entries.
     const seedOpens = new Map<string, number>();
     const seed = await buildLocalManifestWithEntries(makeRoot(FILES, seedOpens, '/vault'));
     expect(seedOpens.size, 'the first build opened no file, so this test proves nothing').toBe(5);
@@ -162,7 +135,7 @@ describe('incremental rebuild with native stamps skips unchanged files', () => {
       'only the changed file is opened; the rest are reused by mtime',
     ).toEqual(['capabilities/b.md']);
 
-    // And the result must equal a full build — the incremental path's safety contract.
+    // The result must still equal a full build.
     const fullOpens = new Map<string, number>();
     const full = await buildLocalManifest(makeRoot(changed, fullOpens, '/vault'));
     expect(stripGenerated(result.build.manifest)).toEqual(stripGenerated(full.manifest));
@@ -192,11 +165,7 @@ describe('incremental rebuild with native stamps skips unchanged files', () => {
     expect([...opens.keys()]).toEqual(['capabilities/e.md']);
   });
 
-  /**
-   * Fallback — the web has no batch API (`null`), so it drops to the previous path
-   * and opens **each file** to read its mtime. The contract is that behaviour does
-   * not change.
-   */
+  /** The web has no batch API, so it opens each file to read its mtime. */
   it('checks each file when no native stamps exist (web)', async () => {
     const seedOpens = new Map<string, number>();
     const seed = await buildLocalManifestWithEntries(makeRoot(FILES, seedOpens));

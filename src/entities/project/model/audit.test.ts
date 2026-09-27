@@ -32,17 +32,17 @@ const NOW = new Date("2026-04-20T00:00:00Z");
 describe("detectStaleProjects", () => {
   it("returns only projects unmodified for longer than the given days", () => {
     const projects: Project[] = [
-      // 25 days ago — under the 30-day threshold, so excluded
+      // 25 days: under the 30-day threshold.
       makeProject({
         slug: "fresh",
         updatedAt: new Date("2026-03-26T00:00:00Z"),
       }),
-      // 60 days ago — included
+      // 60 days.
       makeProject({
         slug: "stale-60",
         updatedAt: new Date("2026-02-19T00:00:00Z"),
       }),
-      // 100 days ago — included
+      // 100 days.
       makeProject({
         slug: "stale-100",
         updatedAt: new Date("2026-01-10T00:00:00Z"),
@@ -76,7 +76,7 @@ describe("detectStaleProjects", () => {
 
   it("does not treat a project exactly at the threshold as stale", () => {
     const projects: Project[] = [
-      // Exactly 30 days ago — NOT stale (strictly greater than 30 only)
+      // Exactly 30 days is not stale (strictly greater).
       makeProject({
         slug: "exact-30",
         updatedAt: new Date("2026-03-21T00:00:00Z"),
@@ -101,7 +101,7 @@ describe("detectStaleProjects", () => {
       limit: 2,
     });
     expect(stale).toHaveLength(2);
-    // The two oldest (s0, s1) must come first
+    // Oldest first.
     expect(stale[0].slug).toBe("s0");
     expect(stale[1].slug).toBe("s1");
   });
@@ -151,8 +151,8 @@ describe("detectPromotionCandidates", () => {
       makeProject({ slug: "b", dependencies: ["center"] }),
       makeProject({ slug: "c", dependencies: ["center"] }),
       makeProject({ slug: "d", dependencies: ["center"] }),
-      makeProject({ slug: "quiet" }), // Non-hub, fan-in 0
-      makeProject({ slug: "hub", isHub: true }), // Excluded because it is a hub
+      makeProject({ slug: "quiet" }),
+      makeProject({ slug: "hub", isHub: true }), // Excluded: a hub.
     ];
 
     const candidates = detectPromotionCandidates(projects, { minFanIn: 4 });

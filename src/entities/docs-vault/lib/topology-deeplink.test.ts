@@ -34,7 +34,7 @@ describe("buildTopologyDeeplinkForDoc", () => {
   });
 
   it("links domain, capability and element to focus mode", () => {
-    // The topology renders the whole ontology now, so non-project nodes can be focused too.
+    // Non-project nodes are focusable too.
     expect(
       buildTopologyDeeplinkForDoc(
         makeDoc({ slug: "domains/views", frontmatter: { kind: "domain" } }),

@@ -26,9 +26,7 @@ const node = (
   lastApprovedAt: APPROVED_AT,
   lastApprovedBy: "test",
 });
-// Tree shape comes from `contains` edges — `buildOntologyTree` infers the parent
-// from their from/to. This helper only clones; it exists so call sites read as
-// "this node has a parent".
+// `buildOntologyTree` infers parents from `contains` edges; this clone only names the intent.
 function withParent(n: KnowledgeGraphNode): KnowledgeGraphNode {
   return { ...n };
 }
@@ -85,8 +83,8 @@ describe("filterTreeByQuery", () => {
 
   it("keeps matches and their ancestors and drops siblings", () => {
     const r = filterTreeByQuery(tree.roots, "로그인");
-    expect(r).toHaveLength(1); // root management
-    expect(r[0]?.children).toHaveLength(1); // Only child-1, excluding child-2 (logout)
+    expect(r).toHaveLength(1);
+    expect(r[0]?.children).toHaveLength(1); // Only child-1; child-2 (logout) is excluded.
     expect(r[0]?.children[0]?.node.id).toBe("child-1");
   });
 
@@ -111,9 +109,7 @@ describe("filterTreeByQuery", () => {
   });
 
   it("matches a slug such as 'mcp-server'", () => {
-    // Developers see slugs (`kind:tail`) constantly in frontmatter and code.
-    // Matching titles only returns nothing for a slug search, which reads as
-    // "not in this tree" rather than "not searchable that way".
+    // A slug search must not come back empty, or it reads as "not in this tree".
     const slugNodes = [
       node("root", "프로젝트", "project"),
       withParent(node("capability:mcp-server", "MCP Server (32 tools)")),
@@ -169,15 +165,12 @@ describe("knowledgeNodeMatchesQuery", () => {
   });
 
   it("does not match the kind prefix of an id", () => {
-    // It used to, so the word pulled every node of that kind into the tree; the
-    // kind filter already selects them, properly. A pasted whole id still answers.
+    // Matching the kind prefix would pull in every node of that kind; a pasted whole id still matches.
     expect(knowledgeNodeMatchesQuery(n, "capability")).toBe(false);
     expect(knowledgeNodeMatchesQuery(n, "capability:mcp")).toBe(true);
   });
 
   it("matches initial-consonant and half-typed Hangul queries like the palette", () => {
-    // Measured 2026-09-19: INDEX said "no matching concept" to both of these while
-    // the palette on the same screen resolved them against the same vault.
     const cart = node("capability:cart", "장바구니");
     expect(knowledgeNodeMatchesQuery(cart, "ㅈㅂㄱㄴ")).toBe(true);
     expect(knowledgeNodeMatchesQuery(cart, "장바ㄱ")).toBe(true);
@@ -239,7 +232,7 @@ describe("countMatchingTreeNodes", () => {
   });
 
   it("counts only matching nodes, not ancestors", () => {
-    // Ancestors kept for structure are not counted as matches.
+    // Ancestors kept for structure are not matches.
     expect(countMatchingTreeNodes(tree.roots, "로그")).toBe(2);
     expect(countMatchingTreeNodes(tree.roots, "세션")).toBe(1);
   });
@@ -321,8 +314,7 @@ describe("filterTreeByNodeIds", () => {
   });
 
   it("keeps only the changed descendants of a changed node", () => {
-    // Unlike the query filter, an unchanged descendant is hidden even when its
-    // parent changed.
+    // Unlike the query filter, an unchanged descendant is hidden even under a changed parent.
     const r = filterTreeByNodeIds(tree.roots, new Set(["child-1"]));
     expect(r[0]?.children[0]?.children).toHaveLength(0);
   });
@@ -348,8 +340,7 @@ describe("filterTreeByNodeIds", () => {
   });
 });
 
-// Prunes the tree view only; the data is untouched and the counts do not read
-// this function's output.
+// Prunes the view only; counts never read this output.
 describe("filterTreeExcludeKind", () => {
   // root (project)
   // ├─ child-1 (capability)
@@ -388,7 +379,7 @@ describe("filterTreeExcludeKind", () => {
     filterTreeExcludeKind(tree.roots, "element");
     expect(tree.roots.map((r) => r.node.id)).toEqual(beforeIds);
     expect(tree.roots.map((r) => r.children.length)).toEqual(beforeChildCounts);
-    // The excluded node is still present in the source tree.
+    // The source tree still holds the excluded node.
     const child1 = tree.roots[0]?.children.find((c) => c.node.id === "child-1");
     expect(child1?.children).toHaveLength(1);
     expect(child1?.children[0]?.node.id).toBe("grand-1");

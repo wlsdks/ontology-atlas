@@ -122,8 +122,7 @@ describe("findProjectVaultDoc", () => {
   });
 
   it("ignores a non-project doc with a matching slug", () => {
-    // Even when frontmatter.slug happens to match, a doc is not a project doc unless
-    // kind === project or the path starts with projects/.
+    // A matching slug alone does not make a doc a project.
     const manifest = makeManifest([
       makeDoc({ slug: "domains/foo", frontmatter: { kind: "domain", slug: "foo" } }),
     ]);
@@ -134,10 +133,7 @@ describe("findProjectVaultDoc", () => {
 
 describe("findProjectDocInList", () => {
   it("finds a project doc whose file path differs from its frontmatter slug", () => {
-    // The dogfood manifest's real shape: the file is `ontology/project` while the
-    // project name comes from frontmatter `slug: ontology-atlas`. A surface comparing
-    // the two directly (the /projects cards) failed to find the document and lied
-    // with "no description".
+    // The dogfood shape: file `ontology/project`, frontmatter `slug: ontology-atlas`.
     const docs = [
       makeDoc({
         slug: "ontology/project",

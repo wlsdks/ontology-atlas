@@ -51,14 +51,14 @@ describe("buildRadialEgoLayout", () => {
       ],
     );
     const layout = buildRadialEgoLayout(ego, 200, 200, { radius: 50, padding: 0 });
-    // index 0 = 12 o'clock (top) — y is smaller than center
+    // Index 0 is 12 o'clock.
     expect(layout.neighbors[0]?.y).toBeLessThan(layout.center.y);
     expect(Math.abs(layout.neighbors[0]!.x - layout.center.x)).toBeLessThan(0.001);
-    // index 1 = 3 o'clock (right)
+    // 3 o'clock.
     expect(layout.neighbors[1]?.x).toBeGreaterThan(layout.center.x);
-    // index 2 = 6 o'clock (bottom)
+    // 6 o'clock.
     expect(layout.neighbors[2]?.y).toBeGreaterThan(layout.center.y);
-    // index 3 = 9 o'clock (left)
+    // 9 o'clock.
     expect(layout.neighbors[3]?.x).toBeLessThan(layout.center.x);
   });
 
@@ -92,7 +92,7 @@ describe("buildRadialEgoLayout", () => {
   it("derives the radius from padding", () => {
     const ego = buildOntologyEgoSubgraph("a", [node("a"), node("b")], [edge("e", "a", "b")]);
     const layout = buildRadialEgoLayout(ego, 200, 200, { padding: 30 });
-    // radius = min(200,200)/2 - 30 = 70
+    // radius = min(200, 200) / 2 - 30 = 70
     const dx = layout.neighbors[0]!.x - layout.center.x;
     const dy = layout.neighbors[0]!.y - layout.center.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
@@ -154,7 +154,7 @@ describe("buildRadialEgoLayout two-hop rings", () => {
     const ego = buildOntologyEgoSubgraph(
       "c",
       [node("c"), node("a"), node("b")],
-      [edge("e1", "c", "a"), edge("e2", "b", "a")], // b → a, so b is the 2-hop incoming node
+      [edge("e1", "c", "a"), edge("e2", "b", "a")], // b → a: b is the hop-2 incoming node.
       { hops: 2 },
     );
     const layout = buildRadialEgoLayout(ego, 200, 200);
@@ -162,7 +162,7 @@ describe("buildRadialEgoLayout two-hop rings", () => {
     const pivot = layout.neighbors.find((n) => n.id === "a")!;
     const far = layout.neighbors.find((n) => n.id === "b")!;
     expect(hop2Edge.direction).toBe("incoming");
-    // incoming: from = far (b), to = pivot (a)
+    // Incoming: from the far node (b) to the pivot (a).
     expect(hop2Edge.from.x).toBeCloseTo(far.x, 5);
     expect(hop2Edge.to.x).toBeCloseTo(pivot.x, 5);
   });

@@ -3,10 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { buildChatNodeIndex } from './chat-node-index';
 import type { KnowledgeGraphNode } from '../model/types';
 
-/**
- * The two names exactly as measured in the installed app (2026-08-17): the lower one
- * is what codex used in its answer, the upper one is what the map calls the node.
- */
+/** The map's name and the agent's name for one node, as seen in the installed app. */
 const CANVAS_ID = 'domain:example-domain';
 const AGENT_SLUG = 'domains/example-domain';
 
@@ -23,10 +20,7 @@ const node = (over: Partial<KnowledgeGraphNode> = {}): KnowledgeGraphNode =>
   }) as KnowledgeGraphNode;
 
 describe('chat names to map nodes', () => {
-  /*
-   * ⚠️ **This check comes first.** If the two names ever coincide, every test below
-   * passes while measuring nothing — a check that is always green is not a check.
-   */
+  /* First: if the names ever coincide, every test below passes while measuring nothing. */
   it('uses fixtures whose agent name and map id differ', () => {
     expect(AGENT_SLUG).not.toBe(CANVAS_ID);
   });
@@ -40,10 +34,10 @@ describe('chat names to map nodes', () => {
   });
 
   it('misses agent names when indexed by map id alone', () => {
-    // This is exactly what the code did before 2026-08-17: `new Set(nodes.map(n => n.id))`.
+    // The broken index: map ids only.
     const brokenIndex = new Set([node().id]);
     expect(brokenIndex.has(AGENT_SLUG)).toBe(false);
-    // The fixed version matches.
+    // The agent name matches.
     expect(buildChatNodeIndex([node()]).has(AGENT_SLUG)).toBe(true);
   });
 

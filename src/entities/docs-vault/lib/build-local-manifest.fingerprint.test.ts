@@ -22,7 +22,7 @@ function makeFileHandle(name: string, file: FakeFile): FileSystemFileHandle {
 }
 
 function makeRoot(files: Record<string, FakeFile>): FileSystemDirectoryHandle {
-  // The simplest shape — a flat directory. Keys are 'foo.md' or 'sub/bar.md'.
+  // Flat directory; keys are 'foo.md' or 'sub/bar.md'.
   const groups: Record<string, Record<string, FakeFile>> = {};
   for (const [path, file] of Object.entries(files)) {
     const parts = path.split('/');

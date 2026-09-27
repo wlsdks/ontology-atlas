@@ -37,7 +37,7 @@ describe("change-baseline-persist — serialization", () => {
 });
 
 describe("change-baseline-persist — snapshotMatchesGraph (overlap scope guard)", () => {
-  const snap = snapshotOntology(nodes, edges, 1); // a, b, c
+  const snap = snapshotOntology(nodes, edges, 1); // a, b, c.
 
   it("returns true for the same vault", () => {
     expect(snapshotMatchesGraph(snap, nodes)).toBe(true);

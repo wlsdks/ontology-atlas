@@ -135,7 +135,7 @@ describe("buildOntologyEgoSubgraph — hops=2", () => {
       [edge("e1", "c", "a"), edge("e2", "a", "c")],
       { hops: 2 },
     );
-    // hop1 outgoing (c→a) + hop1 incoming (a→c). Nothing added at 2-hop: a→c is the center.
+    // hop 1 both ways; nothing at hop 2 since a→c returns to the center.
     expect(result.neighbors).toHaveLength(2);
     expect(result.neighbors.every((n) => n.hop === 1)).toBe(true);
   });
@@ -149,8 +149,8 @@ describe("buildOntologyEgoSubgraph — hops=2", () => {
       [center, a, b],
       [
         edge("e1", "c", "a"),
-        edge("e2", "c", "b"), // b is 1-hop
-        edge("e3", "a", "b"), // a→b is a 2-hop candidate but b is 1-hop, so skip
+        edge("e2", "c", "b"), // b is hop 1.
+        edge("e3", "a", "b"), // Skipped: b is already hop 1.
       ],
       { hops: 2 },
     );
@@ -165,7 +165,7 @@ describe("buildOntologyEgoSubgraph — hops=2", () => {
     const result = buildOntologyEgoSubgraph(
       "c",
       [center, a, b],
-      [edge("e1", "c", "a"), edge("e2", "b", "a")], // b→a, a is 1-hop, b is 2-hop incoming
+      [edge("e1", "c", "a"), edge("e2", "b", "a")], // b→a: a is hop 1, b is a hop-2 incoming neighbor.
       { hops: 2 },
     );
     const hop2 = result.neighbors.filter((n) => n.hop === 2);
@@ -198,7 +198,7 @@ describe("buildOntologyEgoSubgraph — hops=2", () => {
       [edge("e1", "c", "ghost"), edge("e2", "ghost", "far")],
       { hops: 2 },
     );
-    // One ghost entry at hop1; 2-hop does not traverse it because the node does not exist.
+    // The missing node is not traversed at hop 2.
     expect(result.neighbors).toHaveLength(1);
     expect(result.neighbors[0]?.hop).toBe(1);
     expect(result.neighbors[0]?.neighborId).toBe("ghost");

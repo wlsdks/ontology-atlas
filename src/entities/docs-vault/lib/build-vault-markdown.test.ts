@@ -92,9 +92,7 @@ describe("buildNewNodeDoc", () => {
 
 describe("quoteYamlScalar prevents type reinterpretation", () => {
   it("quotes a boolean- or number-shaped title so it stays a string", () => {
-    // The other three frontmatter writers gained this guard when top-level
-    // scalars became typed; without it here a web-created '2026' read back as
-    // a number and dropped out of every typeof === 'string' consumer.
+    // Four frontmatter writers quote number-shaped strings, or '2026' reads back as a number.
     const md2026 = buildVaultMarkdown({ kind: "domain", title: "2026", slug: "domains/y2026" });
     expect(md2026).toContain('title: "2026"');
     const mdTrue = buildVaultMarkdown({ kind: "domain", title: "true", slug: "domains/t" });

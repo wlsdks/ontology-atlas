@@ -328,8 +328,7 @@ export function createMeaningTransitionCoordinator(dependencies: MeaningTransiti
       } catch (_cause) {
         assertCurrent(isCurrent);
         first = second = { status: 'missing' };
-        // Keep adapter details out of the persisted record; the UI already labels this as
-        // unavailable and diagnostics remain in the local console boundary.
+        // Adapter details stay out of the persisted record; diagnostics stay in the local console.
         error = 'Fresh writer readback failed.';
       }
       if (!sameReadback(first, second)) {

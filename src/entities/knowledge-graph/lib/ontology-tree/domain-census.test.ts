@@ -30,10 +30,8 @@ describe("computeDomainCensusRows", () => {
   });
 
   it("counts a shared concept once, in the domain that claims it", () => {
-    // `e1` is contained by both `c1` (in domain A) and domain B. The map can draw
-    // it in only one place, so counting it for both made a domain state a number
-    // its own chip could never open. The first containment parent wins, the same
-    // tie-break `buildOntologyTree` uses, so A holds it and B does not.
+    // `e1` sits under `c1` (domain A) and domain B; the first containment parent wins, as in
+    // `buildOntologyTree`, so only A counts it.
     const nodes = [
       node("a", "domain"),
       node("b", "domain"),
@@ -52,9 +50,7 @@ describe("computeDomainCensusRows", () => {
   });
 
   it("keeps domain totals within the containing project total", () => {
-    // The arithmetic that exposed the double count: eight dogfood domains summed
-    // to 103 inside a project of 99. Every concept has one owner, so the domains
-    // can only partition what the project holds.
+    // Every concept has one owner, so domains can only partition the project's total.
     const nodes = [
       node("p", "project"),
       node("a", "domain"),

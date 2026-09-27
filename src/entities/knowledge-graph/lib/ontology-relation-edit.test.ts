@@ -81,9 +81,7 @@ describe('contextual relation edit plan', () => {
   });
 
   it('keeps a ref in another folder with the same tail', () => {
-    // Bug sweep 2026-09-01: the slugified-tail fallback matched
-    // capabilities/search against elements/search, so removing one relation
-    // silently lost a second, different one.
+    // Removing one relation must not lose a different ref with the same tail.
     const plan = buildOntologyRelationRemovalPlan({
       sourceSlug: 'capabilities/contextual-editing',
       targetSlug: 'elements/search',
@@ -127,13 +125,7 @@ describe('contextual relation edit plan', () => {
   });
 });
 
-/**
- * Owner inspection, 2026-09-26: removing the only `relates` entry of `capabilities/wiki-pages`
- * from the map's edge panel left `relates: []` behind, and removing a relation that carried the
- * only reason left `relation_notes: {  }`. `null` is how `applyFrontmatterUpdates` deletes a key,
- * so an emptied list or map has to be planned as `null` — the review keeps showing what the list
- * held and that nothing is left.
- */
+/** An emptied list or map is planned as `null`, which deletes the key, never written empty. */
 describe('an emptied relation key is deleted, not written empty', () => {
   it('deletes the key when the last entry of a list is removed', () => {
     const plan = buildOntologyRelationRemovalPlan({

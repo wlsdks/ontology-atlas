@@ -3,12 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { guideCitation, UNCITED_TOOLS } from './guide-citations';
 import { scanHarness, type HarnessScanPort } from './repo-scan';
 
-/**
- * A fixture repository, written as the paths it contains. It deliberately includes the shapes that
- * have caused wrong numbers before: a dot directory (invisible to the browser's file API), a nested
- * `AGENTS.md` one level down and another three levels down, a Codex config that repeats one script
- * across matchers, and a hook whose script is named but absent.
- */
+/** A fixture repository with the shapes that have miscounted before: dot dirs, nested and deep AGENTS.md, repeated hook scripts, a missing hook. */
 function fixturePort(files: Record<string, string>): HarnessScanPort {
   const paths = Object.keys(files);
   return {
@@ -121,7 +116,7 @@ describe('scanHarness — the size cap', () => {
       fixturePort({ ...REPO, 'AGENTS.md': big, 'src/AGENTS.md': 'y'.repeat(15_000) }),
     );
     const cap = report.analysis.checks.codexSizeCap;
-    // Each file alone clears 32 KiB; merged they do not. Measuring one file would print a pass.
+    // Each file alone is under 32 KiB; merged they are not.
     expect(cap.agentsMdBytes).toBe(20_000);
     expect(cap.worstCaseBytes).toBe(35_000);
     expect(cap.capBytes).toBe(32 * 1024);
@@ -137,9 +132,7 @@ describe('scanHarness — declared mirror pairs', () => {
   });
 
   it('does not call the adapted Claude/Codex hook scripts a mirror pair', async () => {
-    // `.claude/hooks/*.sh` and `.codex/hooks/*.sh` are adapted, not copied — Codex delivers an
-    // edit as an apply_patch envelope. Treating them as a byte-identical pair would print drift
-    // on a repository that is behaving exactly as its own contract requires.
+    // Hook scripts are adapted per tool, not copied, so they are not a byte-identical pair.
     const report = await scanHarness(
       fixturePort({ ...REPO, '.codex/hooks/guard.sh': '#!/bin/sh\n# adapted for apply_patch\n' }),
     );
@@ -166,8 +159,7 @@ describe('scanHarness — hooks', () => {
 describe('scanHarness — the two numbers in the sentence', () => {
   it('counts guide documents and leaves out the wiring layer', async () => {
     const report = await scanHarness(fixturePort(REPO));
-    // AGENTS.md, CLAUDE.md, src/AGENTS.md, 2 rules, 2 skill copies, 2 agent copies = 9.
-    // `.claude/settings.json`, `.codex/*` and the hook scripts are enforcement, not prose.
+    // AGENTS.md, CLAUDE.md, src/AGENTS.md, 2 rules, 2 skill copies, 2 agent copies = 9; config is not prose.
     expect(report.guideDocumentCount).toBe(9);
   });
 

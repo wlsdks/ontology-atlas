@@ -84,7 +84,7 @@ describe("buildAgentBriefingPacket", () => {
   });
 
   it("includes the handoff body", () => {
-    // Composed by buildAgentHandoffPrompt — these must all land in one briefing.
+    // From buildAgentHandoffPrompt.
     expect(packet.briefing).toContain("query_ontology");
     expect(packet.briefing.toLowerCase()).toContain("guardrail");
     expect(packet.briefing).toContain("CLI fallback");

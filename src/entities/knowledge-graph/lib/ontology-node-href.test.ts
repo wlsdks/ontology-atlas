@@ -47,7 +47,7 @@ describe("buildOntologyNodeHref", () => {
     ).toBe(
       `/ontology/?node=${encodeURIComponent("domain:views")}&via=${encodeURIComponent("insights:structure")}`,
     );
-    // Without `via` the link form is unchanged — the seven-plus other call sites are untouched.
+    // Without `via` the link is unchanged.
     expect(buildOntologyNodeHref("domain:views")).toBe(
       `/ontology/?node=${encodeURIComponent("domain:views")}`,
     );
@@ -186,7 +186,7 @@ describe("resolveOntologyBuilderNodeSlug", () => {
 });
 
 describe("buildTopologyMeaningEditorNodeHref", () => {
-  // URL contract: links sent from the map editor always use canonical `<kind>:<slug>`.
+  // Map-editor links always use canonical `<kind>:<slug>`.
   it("passes a canonical graph id through", () => {
     expect(resolveOntologyBuilderNodeSlugFromGraphId("domain:views")).toBe(
       "domains/views",
@@ -358,12 +358,7 @@ describe("buildOntologyInsightsNodeHref", () => {
 });
 
 describe("map return marker", () => {
-  /*
-   * ⚠️ Leaving the map used to be one-way. Full detail's "Open document" sent the reader
-   * to `/docs/`, whose crumb pointed at a bare `/topology` with nothing selected, so the
-   * node they had open was simply gone (owner, 2026-09-14). The marker carries the node
-   * they left from.
-   */
+  /* The marker returns the reader from `/docs/` to the node they left, not a bare map. */
   it("round-trips a marker to the same node", () => {
     const marker = buildTopologyReturnMarker("capability:mcp-server");
     expect(marker).toBe("topology:capability:mcp-server");

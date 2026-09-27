@@ -47,7 +47,7 @@ describe("buildEdgeTypeRows", () => {
 
   it("omits canonical types with no count", () => {
     const rows = buildEdgeTypeRows(new Map([["uses", 2]]));
-    // Every entry of KNOWLEDGE_EDGE_TYPES with count 0 is skipped, leaving only `uses`.
+    // Zero counts are skipped, leaving `uses`.
     expect(rows).toEqual([{ type: "uses", count: 2 }]);
   });
 });

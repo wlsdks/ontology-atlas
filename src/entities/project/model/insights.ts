@@ -24,13 +24,7 @@ export interface ProjectCompletenessInsight {
 
 type ProjectFreshnessLevel = "fresh" | "active" | "stale";
 
-/**
- * The freshness verdict returns **a grade only** — the screen decides the label.
- *
- * Before 2026-07-28 it returned the Korean string (`"updated this week"`) with the
- * grade, and that string rendered verbatim on English screens (the card preview on
- * `/en/project/new`). A pure model does not hold human words.
- */
+/** A grade only; the screen supplies the words. */
 export interface ProjectFreshnessInsight {
   level: ProjectFreshnessLevel;
   ageDays: number;

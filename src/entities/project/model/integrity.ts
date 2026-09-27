@@ -6,10 +6,7 @@ export type ProjectIntegrityIssue =
   | { code: "missing-dependency"; dependencySlug: string }
   | { code: "duplicate-dependency"; dependencySlug: string };
 
-// Silent fallback values from `deriveProjectsFromVault`, filled in automatically when
-// frontmatter is missing. Flagging them as an integrity problem would show the user a
-// contradiction ("no category: uncategorized"), since these mean "unclassified" and
-// "active" — normal states.
+// Derivation fallbacks mean "unclassified" and "active", so they are not integrity problems.
 const SILENT_CATEGORY_FALLBACKS = new Set(["uncategorized"]);
 const SILENT_STATUS_FALLBACKS = new Set(["active"]);
 
@@ -26,9 +23,7 @@ export function getProjectIntegrityIssues(
   const projectSlugs = new Set(options.allProjects.map((item) => item.slug));
   const issues: ProjectIntegrityIssue[] = [];
 
-  // Frontmatter that does not state category/status yields undefined, and that is
-  // *not* an integrity issue — the user chose to leave it out. It becomes an issue
-  // only when a value is stated but is not in the taxonomy (a typo, or a removed term).
+  // An omitted category or status is a choice; only a stated value outside the taxonomy is an issue.
   if (
     project.category &&
     !categoryIds.has(project.category) &&

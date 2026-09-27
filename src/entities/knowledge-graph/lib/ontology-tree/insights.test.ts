@@ -97,7 +97,7 @@ describe("rankAllByDegree", () => {
 
   it("excludes document and project and sorts by degree by default", () => {
     const all = rankAllByDegree(nodes, edges);
-    expect(all).toHaveLength(3); // hub + leaf-1 + leaf-2 (excluding doc / proj)
+    expect(all).toHaveLength(3); // hub, leaf-1, leaf-2; doc and project excluded.
     expect(all[0]?.node.id).toBe("hub");
     expect(all[0]?.degree).toBeGreaterThanOrEqual(all[1]?.degree ?? 0);
   });
@@ -116,7 +116,7 @@ describe("rankAllByDegree", () => {
   it("returns every candidate without a limit", () => {
     const all = rankAllByDegree(nodes, edges);
     expect(all).toHaveLength(3);
-    // The caller takes the top N with all.slice(0, N) and reports "top N of M".
+    // Callers slice the top N and report "top N of M".
     expect(all.slice(0, 1)).toHaveLength(1);
     expect(all.length).toBeGreaterThan(1);
   });
@@ -152,7 +152,7 @@ describe("computeDomainCouplingMatrix", () => {
     expect(matrix.crossDomainEdgeCount).toBe(2);
     expect(matrix.selfDomainEdgeCount).toBe(1);
     expect(matrix.connections).toHaveLength(2);
-    // When nothing is truncated, total === shown — the condition for hiding the caption.
+    // Untruncated: total equals shown, so the caption hides.
     expect(matrix.totalConnectionCount).toBe(2);
     expect(matrix.connections[0]?.from.id).toBe("domain:auth");
     expect(matrix.connections[0]?.to.id).toBe("domain:billing");
@@ -169,8 +169,7 @@ describe("computeDomainCouplingMatrix", () => {
       node("capability:invoice", "capability"),
       node("capability:engine", "capability"),
     ];
-    // Build 3 distinct directed cross-domain pairs (auth→billing, billing→core,
-    // core→auth) and truncate at limit 2.
+    // Three cross-domain pairs, truncated at 2.
     const edges: KnowledgeGraphEdge[] = [
       { ...edge("c1", "domain:auth", "capability:login"), type: "contains" },
       { ...edge("c2", "domain:billing", "capability:invoice"), type: "contains" },

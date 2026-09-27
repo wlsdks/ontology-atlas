@@ -48,8 +48,8 @@ describe("buildOntologyTree — happy path", () => {
     makeNode("c2", "capability", "검수"),
     makeNode("e1", "element", "LoginAction"),
     makeNode("e2", "element", "ReviewWorkspace"),
-    makeNode("doc1", "document", "spec.md"), // should be excluded
-    makeNode("readme", "vault-readme", "Vault guide"), // reader sentinel, not a graph row
+    makeNode("doc1", "document", "spec.md"), // Excluded.
+    makeNode("readme", "vault-readme", "Vault guide"), // Reader sentinel, not a graph row.
   ];
   const edges = [
     makeEdge("e-p1-d1", "p1", "d1", "contains"),
@@ -58,7 +58,7 @@ describe("buildOntologyTree — happy path", () => {
     makeEdge("e-d2-c2", "d2", "c2", "contains"),
     makeEdge("e-c1-e1", "c1", "e1", "contains"),
     makeEdge("e-c2-e2", "c2", "e2", "contains"),
-    makeEdge("e-doc1-c1", "doc1", "c1", "describes"), // should be ignored
+    makeEdge("e-doc1-c1", "doc1", "c1", "describes"), // Ignored.
   ];
 
   it("excludes document-kind nodes from tree", () => {
@@ -78,9 +78,7 @@ describe("buildOntologyTree — happy path", () => {
   it("nests domain → capability → element", () => {
     const result = buildOntologyTree(nodes, edges);
     const root = result.roots[0]!;
-    // Project has 2 domains
     expect(root.children).toHaveLength(2);
-    // Alphabetical order by id.
     expect(root.children.map((c) => c.node.id).sort()).toEqual(["d1", "d2"]);
     const d1 = root.children.find((c) => c.node.id === "d1")!;
     expect(d1.children).toHaveLength(1);
@@ -113,7 +111,7 @@ describe("buildOntologyTree — happy path", () => {
 
 describe("buildOntologyTree — siblings sort by the name the row shows", () => {
   it("orders by display when present, even where the canonical titles would order the other way", () => {
-    // English titles: Members < Payments. Korean names: the Payments name sorts first.
+    // English titles: Members < Payments; Korean names put Payments first.
     const members: KnowledgeGraphNode = { ...makeNode("d-members", "domain", "Members"), display: "회원" };
     const payments: KnowledgeGraphNode = { ...makeNode("d-payments", "domain", "Payments"), display: "결제" };
     const result = buildOntologyTree(
@@ -168,16 +166,13 @@ describe("buildOntologyTree — error handling", () => {
     ];
     const result = buildOntologyTree(nodes, edges);
     expect(result.warnings.some((w) => w.includes("multiple parents"))).toBe(true);
-    // d1 should be under either p1 or p2 (first wins by edge order — p1)
+    // First parent by edge order wins: p1.
     const p1 = result.roots.find((r) => r.node.id === "p1")!;
     expect(p1.children.find((c) => c.node.id === "d1")).toBeTruthy();
   });
 
   it("stays silent on a duplicate contains edge to the same parent", () => {
-    // Only genuine multi-parent cases (different parents) should reach the user.
-    // The same (parent, child) arriving twice is just the vault's bidirectional
-    // frontmatter duplicating itself and carries no information. derive-ontology
-    // already dedupes; this is defence in depth for absorbed external manifests.
+    // Only different parents warn; the same pair twice is bidirectional frontmatter.
     const nodes = [makeNode("p1", "project"), makeNode("d1", "domain")];
     const edges = [
       makeEdge("e1", "p1", "d1", "contains"),
@@ -198,11 +193,10 @@ describe("buildOntologyTree — error handling", () => {
     const edges = [
       makeEdge("e1", "a", "b", "contains"),
       makeEdge("e2", "b", "c", "contains"),
-      makeEdge("e3", "c", "a", "contains"), // cycle!
+      makeEdge("e3", "c", "a", "contains"), // Cycle.
     ];
     const result = buildOntologyTree(nodes, edges);
     expect(result.warnings.some((w) => w.includes("cycle"))).toBe(true);
-    // Some node should be promoted to root.
     expect(result.roots.length).toBeGreaterThanOrEqual(1);
   });
 

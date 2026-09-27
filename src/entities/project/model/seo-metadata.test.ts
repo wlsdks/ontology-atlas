@@ -7,22 +7,11 @@ import {
   type VaultManifest,
 } from "@/entities/docs-vault";
 
-// This used to iterate `SEO_PROJECTS`, 15 demo entries describing removed features
-// as fact. The routes actually built are the ones `generateStaticParams` derives
-// from the vault, so this reads the same source — otherwise the guard is not
-// checking the real output.
+// Reads the same vault source `generateStaticParams` builds from, so the guard checks real output.
 const SEO_PROJECTS = deriveProjectsFromVault(staticVaultManifestRaw as VaultManifest);
 
-// SEO metadata consistency for public detail pages.
-//
-// Every out/project/{slug}/index.html must have all of:
-//   - <title> starting with the project name (the "name · Demo" convention)
-//   - og:title == project.name
-//   - og:description == project.description (from the seed)
-//   - canonical and og:url both ending in https://host/project/{slug}/
-//
-// Any mismatch makes SEO, LinkedIn, and Twitter cards publish the wrong values.
-// Skips silently when out/ is absent; strict when it exists.
+// Each out/project/{slug}/index.html needs a title starting with the name, og:title, og:description,
+// and canonical and og:url ending in /project/{slug}/. Skipped without out/.
 
 function pickContent(html: string, pattern: RegExp): string | null {
   const m = html.match(pattern);
@@ -49,7 +38,7 @@ describe("public detail SEO metadata", () => {
     for (const project of SEO_PROJECTS) {
       const html = await loadHtml(project.slug, outDir);
       if (html === null) {
-        // A seed with no built HTML is a separate regression that its own test catches.
+        // A seed without built HTML is caught by its own test.
         continue;
       }
 

@@ -29,8 +29,7 @@ describe('review queue — the two lists Docs shows, and the third it refuses to
       ],
       readBody,
     );
-    // The manifest keeps no bodies on purpose. A queue that read one per node
-    // would put a second full pass over the vault behind opening a panel.
+    // The manifest keeps no bodies, so reading one per node would cost a second full pass.
     expect(readBody).not.toHaveBeenCalled();
     expect(rows).toEqual([
       { slug: 'capabilities/b', title: 'b', reason: 'raised', note: 'Two readings.' },
@@ -63,8 +62,7 @@ describe('review queue — the two lists Docs shows, and the third it refuses to
       [doc('capabilities/bound', { ...FRONTMATTER, review_state: 'confirmed', reviewed_by: 'jinan' })],
       readBody,
     );
-    // Unknown currentness is not an accusation. Reading the body could not change
-    // that answer, so it is not read.
+    // Unknown currentness cannot change by reading the body.
     expect(readBody).not.toHaveBeenCalled();
     expect(rows).toEqual([]);
   });
@@ -75,8 +73,7 @@ describe('review queue — the two lists Docs shows, and the third it refuses to
       [doc('capabilities/bound', { ...FRONTMATTER, review_state: 'confirmed', reviewed_digest: digest })],
       async () => null,
     );
-    // Dropping it let "nothing waiting" conceal an approval that may well have
-    // drifted; calling it drift would accuse someone of a change nobody saw.
+    // Listed as unverifiable: hiding it conceals possible drift, calling it drift accuses.
     expect(rows).toEqual([
       { slug: 'capabilities/bound', title: 'bound', reason: 'unverifiable' },
     ]);
@@ -97,8 +94,7 @@ describe('review queue — the two lists Docs shows, and the third it refuses to
       Array.from({ length: 80 }, (_, index) => doc(`capabilities/n${index}`, { ...FRONTMATTER })),
       async () => BODY,
     );
-    // 80 of this repository's own 94 nodes carry `created_by: agent:unknown`. A
-    // queue that counted every unmarked node opens on a wall and is closed once.
+    // Unmarked nodes are unknown, not queued, or the queue opens on a wall.
     expect(rows).toEqual([]);
   });
 });

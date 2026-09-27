@@ -18,11 +18,7 @@ function node(id: string): KnowledgeGraphNode {
 const nodes = [node("a"), node("b")];
 const edges: KnowledgeGraphEdge[] = [];
 
-/**
- * A baseline is stored and restored **only when the vault it belongs to is known**
- * (fail closed), so every spec announces the vault first — otherwise
- * `markChangeBaseline` stays in memory and writes no key at all.
- */
+/** Storage happens only once the vault is known, so every spec sets a scope first. */
 const VAULT_A = "local:alpha";
 const VAULT_B = "local:bravo";
 const keyFor = (scope: string) => `demo:change-baseline:v1:${scope}`;
@@ -74,12 +70,12 @@ describe("change-baseline-store", () => {
 });
 
 describe("change-baseline-store persistence", () => {
-  const more = [node("a"), node("b"), node("c")]; // Overlaps with a,b (target for restoration)
+  const more = [node("a"), node("b"), node("c")]; // Overlaps a,b, so it restores.
 
   it("persists to a vault-scoped localStorage key on mark", () => {
     markChangeBaseline(nodes, edges, 77);
     expect(window.localStorage.getItem(keyFor(VAULT_A))).not.toBeNull();
-    // The global key from before vault scoping is no longer written.
+    // The pre-scope global key is no longer written.
     expect(window.localStorage.getItem("demo:change-baseline:v1")).toBeNull();
   });
 
@@ -90,10 +86,10 @@ describe("change-baseline-store persistence", () => {
   });
 
   it("restores a persisted baseline for an overlapping vault", () => {
-    markChangeBaseline(nodes, edges, 42); // a,b persistent
+    markChangeBaseline(nodes, edges, 42); // a,b persisted.
     clearChangeBaseline_inMemoryOnly();
     expect(getChangeBaseline()).toBeNull();
-    const ok = restorePersistedBaseline(more); // a,b exist → 100% overlap
+    const ok = restorePersistedBaseline(more); // a,b exist: full overlap.
     expect(ok).toBe(true);
     expect(getChangeBaseline()?.takenAt).toBe(42);
   });
@@ -101,7 +97,7 @@ describe("change-baseline-store persistence", () => {
   it("does not restore for a different vault", () => {
     markChangeBaseline(nodes, edges, 42); // a,b
     clearChangeBaseline_inMemoryOnly();
-    const ok = restorePersistedBaseline([node("x"), node("y")]); // No overlap
+    const ok = restorePersistedBaseline([node("x"), node("y")]); // No overlap.
     expect(ok).toBe(false);
     expect(getChangeBaseline()).toBeNull();
   });
@@ -116,27 +112,16 @@ describe("change-baseline-store persistence", () => {
   });
 });
 
-// Test helper: clear the in-memory baseline while keeping localStorage, to
-// simulate a reload. `clearChangeBaseline` also wipes the persisted copy, which
-// makes it unusable for restore specs.
+// Clears memory but keeps localStorage, simulating a reload; `clearChangeBaseline` wipes both.
 function clearChangeBaseline_inMemoryOnly() {
-  // The store exposes no in-memory-only reset, so back localStorage up, clear,
-  // and restore it.
+  // No in-memory-only reset exists, so back up, clear and restore the stored value.
   const scope = getChangeBaselineScope() ?? VAULT_A;
   const saved = window.localStorage.getItem(keyFor(scope));
-  clearChangeBaseline(); // in-mem null + persistent removal
-  if (saved !== null) window.localStorage.setItem(keyFor(scope), saved); // Persistent restoration (state after reload)
+  clearChangeBaseline();
+  if (saved !== null) window.localStorage.setItem(keyFor(scope), saved);
 }
 
-/**
- * **Switching vaults must not let the previous vault's baseline decide this one**
- * (added 2026-08-01). Without it, the N in "N changed while you were away" becomes
- * **the entire new vault**, and the screen reports a mass change in a folder where
- * nothing happened.
- *
- * The overlap guard (`snapshotMatchesGraph`) cannot catch this: it runs **only at
- * restore time**, and an in-session switch never passes through restore.
- */
+/** A vault switch must drop the previous baseline; the overlap guard runs only on restore. */
 describe("change-baseline-store vault switching", () => {
   const bravoNodes = [node("x"), node("y")];
 
@@ -157,16 +142,14 @@ describe("change-baseline-store vault switching", () => {
     expect(window.localStorage.getItem(keyFor(VAULT_A))).not.toBeNull();
     expect(window.localStorage.getItem(keyFor(VAULT_B))).not.toBeNull();
 
-    // Coming back to A restores A's own baseline.
+    // Returning to A restores A's own baseline.
     setChangeBaselineScope(VAULT_A);
     expect(restorePersistedBaseline(nodes)).toBe(true);
     expect(getChangeBaseline()?.takenAt).toBe(42);
   });
 
   it("stores nothing when the vault is unknown", () => {
-    // The unscoped state cannot be constructed directly (module singleton), so
-    // the fail-closed contract is checked from the restore side: nothing stored,
-    // false.
+    // The unscoped singleton cannot be rebuilt, so fail-closed is checked from the restore side.
     setChangeBaselineScope(VAULT_B);
     expect(restorePersistedBaseline(bravoNodes)).toBe(false);
   });

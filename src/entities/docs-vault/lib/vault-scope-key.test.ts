@@ -16,8 +16,7 @@ describe('vaultScopeKey', () => {
     expect(vaultScopeKey({ isLocalLoaded: true, handleName: 'my-vault' })).toBe('local:my-vault');
   });
 
-  // Using the local key mid-load (a handle exists but the manifest does not yet)
-  // would freeze an empty list as that vault's truth — stay in bundled scope until loaded.
+  // Mid-load, the local key would freeze an empty list as the vault's truth.
   it('falls back to the bundled scope before the folder name is known', () => {
     expect(vaultScopeKey({ isLocalLoaded: true, handleName: null })).toBe('server');
   });
@@ -35,12 +34,7 @@ describe('vaultIdentityScope', () => {
     ).toBe('local:alpha');
   });
 
-  /**
-   * **The most important test in this file.** `vaultScopeKey` collapses both samples
-   * into a single `'server'`, so using it to decide "did the vault change?" makes a
-   * sample↔sample switch **invisible as a change**. That defect kills cleanup logic
-   * silently on that one axis, so this pins that the two values really do differ.
-   */
+  /** A sample-to-sample switch must be visible as a change, which `vaultScopeKey` cannot show. */
   it('separates the two samples that `vaultScopeKey` merges', () => {
     const dogfood = vaultIdentityScope({ isLocalLoaded: false, sampleSource: 'dogfood' });
     const storefront = vaultIdentityScope({ isLocalLoaded: false, sampleSource: 'storefront' });
@@ -49,8 +43,7 @@ describe('vaultIdentityScope', () => {
     expect(storefront).toBe('sample:storefront');
     expect(dogfood).not.toBe(storefront);
 
-    // The same two states are indistinguishable under the storage namespace key —
-    // which is why this second function exists.
+    // The storage key cannot tell these apart, which is why this function exists.
     expect(vaultScopeKey({ isLocalLoaded: false, handleName: null })).toBe(
       vaultScopeKey({ isLocalLoaded: false, handleName: null }),
     );

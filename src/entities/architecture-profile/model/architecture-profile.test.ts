@@ -35,13 +35,7 @@ describe('architecture profile read model', () => {
     expect(profiles[0]?.documentSlug).toBe('architecture/atlas-web');
   });
 
-  /*
-   * ⚠️ **One unreadable document used to take the route down with it.** `/architecture` derives
-   * profiles inside a render-phase `useMemo`, so before 2026-09-03 a single unknown key in a
-   * single file threw for the whole vault and replaced every profile with an error boundary — the
-   * person who added one line lost the screen that would have named it. The parse is unchanged per
-   * document; only the failure is now a named report beside what did load.
-   */
+  /* One unreadable profile must become a named report, not replace every profile with an error. */
   it('keeps the readable profiles and names the document it could not read', () => {
     const report = deriveArchitectureProfilesReport([
       {
@@ -88,13 +82,8 @@ describe('architecture profile read model', () => {
   });
 
   /*
-   * **The person reads line 1; the machine reads line 2.**
-   *
-   * `splitAppRequest` folds an app-composed turn at the first known marker and folds nothing
-   * when that marker is line 0, because then no readable half is left standing. The packet used
-   * to be line 0, so the chat panel drew the whole handoff — the JSON object first, unwrapped
-   * (the bubble is break-keep), then ten English sentences. Measured on the installed app
-   * 2026-09-09 at /ko/architecture.
+   * `splitAppRequest` folds at the first marker and folds nothing when it is line 0, so the
+   * readable sentence must come before the packet.
    */
   it('opens on a sentence a person can read, with the packet behind it', () => {
     const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
@@ -167,12 +156,7 @@ describe('architecture profile read model', () => {
     expect(prompt).toContain('visible receipt may be stale');
   });
 
-  /*
-   * ⚠️ One table over every task kind, so the next kind cannot fall through to a sentence written
-   * for another one (review, 2026-09-03: a two-way branch would have labelled `improve` "a
-   * verification task"). Every task states the profile, the receipt or its absence, the selected
-   * role, and refuses to write before the person has seen the result.
-   */
+  /* One table over every task kind, so a new kind cannot inherit another kind's sentence. */
   it.each(['change', 'verify', 'improve'] as const)(
     'binds the profile, the receipt state, and the selected role for a %s task',
     (kind) => {
@@ -244,18 +228,11 @@ describe('architecture profile read model', () => {
   });
 });
 
-/**
- * ⚠️ These are not style checks. Each one pins a constraint that was measured, and two of them
- * would silently turn this feature into the thing the standing record forbids.
- */
+/** Each case pins a constraint behind the standing architecture-profile record (`docs/DECISIONS.md`). */
 describe('buildArchitectureDraftPrompt', () => {
   const prompt = () => buildArchitectureDraftPrompt(null);
 
-  /*
-   * Observed edges can prove what the source currently does, but cannot declare whether a
-   * direction or import usage is allowed. Deriving any of those rules from the same observation
-   * would make the status quo self-approving.
-   */
+  /* Observed edges show what the code does, not what is allowed; deriving rules would self-approve the status quo. */
   it('never asks for rules to be derived from what the code happens to do', () => {
     expect(prompt()).toMatch(
       /no `allow_\*` keys, no `dependency_policy`, and no `dependency_usages`/,
@@ -263,10 +240,7 @@ describe('buildArchitectureDraftPrompt', () => {
     expect(prompt()).toMatch(/unknown/);
   });
 
-  /*
-   * "A pattern label is never inferred from folders." A role id is that claim in miniature, so the
-   * sentence has to refuse both and hand both back to the person.
-   */
+  /* "A pattern label is never inferred from folders", and a role id is that claim in miniature. */
   it('asks the person to name the architecture and the groups, and refuses to guess either', () => {
     const text = prompt();
     expect(text).toMatch(/Do not name a pattern/);
@@ -274,10 +248,7 @@ describe('buildArchitectureDraftPrompt', () => {
     expect(text).toMatch(/you do not guess them/);
   });
 
-  /*
-   * The other falsifier: "if a profile becomes a second source of observed imports." Evidence
-   * points at the authorities a human already wrote.
-   */
+  /* Evidence points at human-written authorities, never a second source of observed imports. */
   it('keeps observed edges out of the evidence field', () => {
     expect(prompt()).toMatch(/never a list of the edges you just observed/);
   });
@@ -286,10 +257,7 @@ describe('buildArchitectureDraftPrompt', () => {
     expect(prompt()).toMatch(/no `kind:` and no `uid:`/);
   });
 
-  /*
-   * A drafted record must say a machine drafted it. `created_by` is a contract-tested vocabulary,
-   * and an unstamped file would wear the person's authorship.
-   */
+  /* An unstamped draft would wear the person's authorship. */
   it('stamps the draft as machine-written', () => {
     expect(prompt()).toMatch(/created_by: agent:/);
   });

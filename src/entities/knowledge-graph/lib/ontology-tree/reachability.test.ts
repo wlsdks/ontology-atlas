@@ -104,9 +104,7 @@ describe("buildOntologyReachability", () => {
   });
 
   it("skips relation types listed in excludeTypes", () => {
-    // start → a (depends_on), start → b (related_to). Impact must exclude
-    // related_to: a soft association is not a dependency, so it is outside the
-    // blast radius.
+    // start → a (depends_on), start → b (related_to): impact excludes related_to.
     const nodes = [node("start"), node("a"), node("b")];
     const edges = [
       edge("e1", "start", "a", "depends_on"),
@@ -120,13 +118,13 @@ describe("buildOntologyReachability", () => {
     expect(excluded.layers[0]?.nodes.map((n) => n.id)).toEqual(["a"]);
     expect(excluded.byRelation).toEqual({ depends_on: 1 });
 
-    // Without the exclusion both are reachable — the baseline to compare against.
+    // Without the exclusion both are reachable.
     const all = buildOntologyReachability("start", nodes, edges, {});
     expect(all.summary.reachableNodes).toBe(2);
   });
 
   it("cuts a transitive path at an excluded type", () => {
-    // start →(depends_on) a →(related_to) b. Excluding related_to makes b unreachable.
+    // start →(depends_on) a →(related_to) b: excluding related_to makes b unreachable.
     const nodes = [node("start"), node("a"), node("b")];
     const edges = [
       edge("e1", "start", "a", "depends_on"),
@@ -140,9 +138,7 @@ describe("buildOntologyReachability", () => {
   });
 
   it("keeps BFS distance order on a deep chain", () => {
-    // A straight chain start → n1 → n2 → n3 → n4. Checks that the head-pointer
-    // BFS still dequeues FIFO, so every node lands in the layer at its exact hop
-    // distance.
+    // A straight chain: the head-pointer BFS must still dequeue FIFO, so each node lands at its hop.
     const nodes = ["start", "n1", "n2", "n3", "n4"].map((id) => node(id));
     const edges = [
       edge("e1", "start", "n1"),
@@ -162,32 +158,30 @@ describe("buildOntologyReachability", () => {
   });
 });
 
-// Blast radius = how many nodes depend on this one, directly or transitively =
-// the incoming transitive closure with soft associations (related_to, describes)
-// excluded. The drawer and the change diff call the *same* function so their
-// numbers cannot drift apart.
+// Dependents: the incoming transitive closure without soft associations; the drawer and change
+// diff share it so their numbers agree.
 describe("computeOntologyDependents", () => {
-  // a depends_on b depends_on c: changing c affects b and a, so c has 2 dependents.
+  // a depends_on b depends_on c, so c has 2 dependents.
   const chain = [node("a"), node("b"), node("c")];
   const chainEdges = [edge("e1", "a", "b"), edge("e2", "b", "c")];
 
   it("counts the transitive incoming closure", () => {
-    expect(computeOntologyDependents("c", chain, chainEdges)).toBe(2); // b, a
-    expect(computeOntologyDependents("b", chain, chainEdges)).toBe(1); // a
-    expect(computeOntologyDependents("a", chain, chainEdges)).toBe(0); // No one depends on a
+    expect(computeOntologyDependents("c", chain, chainEdges)).toBe(2);
+    expect(computeOntologyDependents("b", chain, chainEdges)).toBe(1);
+    expect(computeOntologyDependents("a", chain, chainEdges)).toBe(0); // Nobody depends on a.
   });
 
   it("excludes related_to associations", () => {
     const nodes = [node("x"), node("y")];
-    // y related_to x — related_to is outside the blast radius, so x has 0 dependents.
+    // y related_to x is outside the blast radius.
     const edges = [edge("r", "y", "x", "related_to")];
     expect(computeOntologyDependents("x", nodes, edges)).toBe(0);
   });
 
   it("counts depends_on edges", () => {
     const nodes = [node("x"), node("y")];
-    const edges = [edge("d", "y", "x", "depends_on")]; // y depends_on x
-    expect(computeOntologyDependents("x", nodes, edges)).toBe(1); // y
+    const edges = [edge("d", "y", "x", "depends_on")];
+    expect(computeOntologyDependents("x", nodes, edges)).toBe(1);
   });
 
   it("does not count structural edges as dependency impact", () => {
@@ -205,8 +199,7 @@ describe("computeOntologyDependents", () => {
   });
 
   it("matches the drawer count", () => {
-    // Must equal the drawer's reach.dependents exactly — i.e. what
-    // buildOntologyReachability computes with incoming/fullDepth/exclude.
+    // Must equal the drawer's reach.dependents from `buildOntologyReachability`.
     const direct = buildOntologyReachability("c", chain, chainEdges, {
       direction: "incoming",
       depth: chain.length,

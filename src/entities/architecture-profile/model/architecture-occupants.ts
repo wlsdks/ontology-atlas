@@ -1,16 +1,6 @@
 /**
- * The architecture glob dialect, shared with the MCP.
- *
- * ⚠️ **Pattern semantics are the MCP's, verbatim.** `matchesArchitecturePath` mirrors
- * `matchesPathPattern` in `mcp/src/architecture-profile.mjs`; the cross-surface contract test runs
- * one fixture table through both. A web-only dialect would make the same profile treat a path
- * differently in the app and in an agent's brief.
- *
- * History: this module once also joined role globs to ontology concept `path` frontmatter and fed
- * the blueprint's bands with concepts. The owner corrected that model on 2026-08-27 — the ontology
- * is the meaning map, architecture is about the project source — so the bands now list source
- * modules (`src/views/architecture/model/source-modules.ts`), which consume this matcher for the
- * profile's `exclude_paths`.
+ * The architecture glob dialect: `matchesArchitecturePath` mirrors `matchesPathPattern` in
+ * `mcp/src/architecture-profile.mjs`, or a profile would treat a path differently in app and brief.
  */
 
 function normalizePath(value: unknown): string {

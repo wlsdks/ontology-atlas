@@ -7,17 +7,8 @@ import {
 import type { VaultManifest } from '../model/types';
 
 /**
- * Incremental rebuild consistency.
- *
- * A live vault runs `load` → a full `buildLocalManifest` on every change, re-reading
- * and re-parsing every `.md`. On a large vault an agent editing one file re-reads
- * hundreds, which is the lag. The incremental path re-reads **only changed files**
- * and reuses the previous build for the rest.
- *
- * Safety contract: for the same vault state, `rebuildLocalManifestIncremental` must
- * produce a manifest **byte-identical** to a full `buildLocalManifest` (except
- * `generatedAt`), across add / change / remove / no-op. That equivalence is what
- * makes the incremental path structurally correct.
+ * `rebuildLocalManifestIncremental` must equal a full `buildLocalManifest` except `generatedAt`
+ * across add, change, remove, no-op and rename, while rereading only changed files.
  */
 
 interface FakeFile {
@@ -45,10 +36,7 @@ function makeFileHandle(
   } as unknown as FileSystemFileHandle;
 }
 
-/**
- * Mock root that understands nested directories. Passing `reads` tallies `.text()`
- * calls per path, which is how "only changed files are re-read" is verified.
- */
+/** Nested-directory mock root; `reads` tallies `.text()` calls per path. */
 function makeRoot(
   files: Record<string, FakeFile>,
   reads?: Map<string, number>,
@@ -94,7 +82,7 @@ function makeRoot(
   return buildHandle('');
 }
 
-/** `generatedAt` is non-deterministic (new Date) — excluded from the equality check. */
+/** `generatedAt` is non-deterministic, so it is left out of equality. */
 function stripGenerated(manifest: VaultManifest) {
   const { generatedAt: _ignored, ...rest } = manifest;
   void _ignored;
@@ -125,19 +113,7 @@ const BASE: Record<string, FakeFile> = {
 };
 
 describe('rebuildLocalManifestIncremental equivalence', () => {
-  /**
-   * **The counters have to cross this path too.**
-   *
-   * `sourceFileCount` is what tells the first-run card the folder holds code. The
-   * incremental rebuild used the entries-only walk and passed no walk info, so the
-   * count vanished on the first refresh and the card silently reordered from
-   * "draft the map from your code" to "start from the documents in this folder"
-   * while it was still on screen — triggered by this feature's own happy path, an
-   * agent writing an approved document into the folder.
-   *
-   * The equivalence rule above would have caught it on its own; it did not,
-   * because no fixture here contained a file that was not Markdown.
-   */
+  /** Walk counters must survive the incremental path; the first-run card reads `sourceFileCount`. */
   it('matches a full rebuild in a folder with source files', async () => {
     const withCode = {
       ...BASE,
@@ -265,7 +241,7 @@ describe('rebuildLocalManifestIncremental equivalence', () => {
 
     expect(stripGenerated(incremental.build.manifest)).toEqual(stripGenerated(full.manifest));
     expect(incremental.build.fingerprint).toBe(full.fingerprint);
-    // Deleting caps/x must remove domains/a's backlink.
+    // Deleting caps/x removes domains/a's backlink.
     expect(incremental.build.manifest.backlinksDetail).toEqual(full.manifest.backlinksDetail);
   });
 
@@ -307,7 +283,7 @@ describe('rebuildLocalManifestIncremental rereads only changed files', () => {
     const reads = new Map<string, number>();
     await rebuildLocalManifestIncremental(makeRoot(next, reads), before.entries);
 
-    // Only the changed file calls `.text()`; the rest are zero — the point of the I/O saving.
+    // Only the changed file calls `.text()`.
     expect(reads.get('domains/a.md')).toBe(1);
     expect(reads.get('project.md') ?? 0).toBe(0);
     expect(reads.get('caps/x.md') ?? 0).toBe(0);

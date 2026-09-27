@@ -13,11 +13,7 @@ const node = (id: string, kind: string): KnowledgeGraphNode => ({
   lastApprovedBy: "",
 });
 
-/**
- * Regression guard for surfaces disagreeing on the node count — measured at map 294, insights
- * 293, projects 288. The canonical figure is the whole derivation; the moment a surface adds
- * `project` back in or filters by kind, the numbers split apart again.
- */
+/** Surfaces agree only while every count is the whole derivation, without re-adding `project` or filtering kinds. */
 describe("computeCanonicalCensus", () => {
   const nodes = [
     node("p", "project"),
