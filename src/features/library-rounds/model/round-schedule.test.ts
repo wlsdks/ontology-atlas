@@ -18,10 +18,24 @@ function round(overrides: Partial<RoundRecord> = {}): RoundRecord {
 }
 
 const at = (iso: string) => new Date(iso);
+const allowedEverywhere = () => true;
 
 describe('plan tick', () => {
+  it('never runs a due round this Mac has not allowed, whatever the folder says', () => {
+    const shared = round({ id: 'shared', nextDueAt: '2026-09-17T08:00:00.000Z' });
+    const own = round({ id: 'own', nextDueAt: '2026-09-17T08:00:00.000Z' });
+    const plan = planTick({
+      rounds: [shared, own],
+      now: at('2026-09-17T09:00:30Z'),
+      lastTickAt: null,
+      running: false,
+      allowedHere: (candidate) => candidate.id === 'own',
+    });
+    expect(plan.due.map((r) => r.id)).toEqual(['own']);
+  });
+
   it('runs nothing while a pass is running, even when rounds are due', () => {
-    const plan = planTick({ rounds: [round()], now: at('2026-09-17T09:00:30Z'), lastTickAt: at('2026-09-17T08:59:30Z'), running: true });
+    const plan = planTick({ rounds: [round()], now: at('2026-09-17T09:00:30Z'), lastTickAt: at('2026-09-17T08:59:30Z'), running: true, allowedHere: allowedEverywhere });
     expect(plan.due).toEqual([]);
     expect(plan.asleep).toBeNull();
   });
@@ -29,7 +43,7 @@ describe('plan tick', () => {
   it('puts a consistency round before a service round when both are due', () => {
     const service = round({ id: 's', kind: 'service', connectorId: 'c', nextDueAt: '2026-09-17T08:00:00.000Z' });
     const local = round({ id: 'l', nextDueAt: '2026-09-17T09:00:00.000Z' });
-    const plan = planTick({ rounds: [service, local], now: at('2026-09-17T09:00:30Z'), lastTickAt: at('2026-09-17T08:59:30Z'), running: false });
+    const plan = planTick({ rounds: [service, local], now: at('2026-09-17T09:00:30Z'), lastTickAt: at('2026-09-17T08:59:30Z'), running: false, allowedHere: allowedEverywhere });
     expect(plan.due.map((r) => r.id)).toEqual(['l', 's']);
   });
 
@@ -37,27 +51,27 @@ describe('plan tick', () => {
     const service = round({ id: 's', kind: 'service', connectorId: 'c', nextDueAt: '2026-09-17T08:00:00.000Z' });
     const ontology = round({ id: 'o', kind: 'ontology', query: 'source gaps', nextDueAt: '2026-09-17T08:00:00.000Z' });
     const local = round({ id: 'l', nextDueAt: '2026-09-17T08:00:00.000Z' });
-    const plan = planTick({ rounds: [service, ontology, local], now: at('2026-09-17T09:00:30Z'), lastTickAt: at('2026-09-17T08:59:30Z'), running: false });
+    const plan = planTick({ rounds: [service, ontology, local], now: at('2026-09-17T09:00:30Z'), lastTickAt: at('2026-09-17T08:59:30Z'), running: false, allowedHere: allowedEverywhere });
     expect(plan.due.map((r) => r.id)).toEqual(['l', 'o', 's']);
   });
 
   it('skips a paused round and one not yet due', () => {
     const paused = round({ id: 'p', enabled: false });
     const later = round({ id: 'x', nextDueAt: '2026-09-17T10:00:00.000Z' });
-    const plan = planTick({ rounds: [paused, later, round()], now: at('2026-09-17T09:00:30Z'), lastTickAt: null, running: false });
+    const plan = planTick({ rounds: [paused, later, round()], now: at('2026-09-17T09:00:30Z'), lastTickAt: null, running: false, allowedHere: allowedEverywhere });
     expect(plan.due.map((r) => r.id)).toEqual(['r1']);
   });
 
   it('records one asleep gap when the clock jumped, and still runs what is due', () => {
-    const plan = planTick({ rounds: [round()], now: at('2026-09-17T08:55:00Z'), lastTickAt: at('2026-09-17T01:12:00Z'), running: false });
+    const plan = planTick({ rounds: [round()], now: at('2026-09-17T08:55:00Z'), lastTickAt: at('2026-09-17T01:12:00Z'), running: false, allowedHere: allowedEverywhere });
     expect(plan.asleep).toEqual({ from: at('2026-09-17T01:12:00Z'), to: at('2026-09-17T08:55:00Z') });
     expect(plan.due).toEqual([]);
-    const late = planTick({ rounds: [round({ nextDueAt: '2026-09-17T02:00:00.000Z' })], now: at('2026-09-17T08:55:00Z'), lastTickAt: at('2026-09-17T01:12:00Z'), running: false });
+    const late = planTick({ rounds: [round({ nextDueAt: '2026-09-17T02:00:00.000Z' })], now: at('2026-09-17T08:55:00Z'), lastTickAt: at('2026-09-17T01:12:00Z'), running: false, allowedHere: allowedEverywhere });
     expect(late.due).toHaveLength(1);
   });
 
   it('a gap shorter than three ticks is not sleep', () => {
-    const plan = planTick({ rounds: [], now: at('2026-09-17T09:02:59Z'), lastTickAt: at('2026-09-17T09:00:00Z'), running: false });
+    const plan = planTick({ rounds: [], now: at('2026-09-17T09:02:59Z'), lastTickAt: at('2026-09-17T09:00:00Z'), running: false, allowedHere: allowedEverywhere });
     expect(plan.asleep).toBeNull();
   });
 });

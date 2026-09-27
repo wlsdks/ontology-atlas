@@ -44,6 +44,8 @@ export const rules = [
       /^\.github\/(?:workflows|actions)\/.+\.ya?ml$/,
       /^\.bun-version$/,
       /^(?:mcp\/)?pnpm-lock\.yaml$/,
+      /^src\/shared\/lib\/(?:machine-approvals(?:-format)?|connector-record)\.ts$/,
+      /^src\/features\/library-rounds\/model\/round-schedule\.ts$/,
       /^\.claude\/settings\.json$/,
       /^(?:\.mcp\.json|\.codex\/(?:config\.toml|hooks\.json))$/,
       /^\.(?:claude|codex)\/hooks\/.+\.sh$/,

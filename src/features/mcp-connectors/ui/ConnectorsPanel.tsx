@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
-import { MoreHorizontal, Plus, X } from 'lucide-react';
+import { MoreHorizontal, Plus, ShieldCheck, X } from 'lucide-react';
 
 import { Link } from '@/i18n/navigation';
 import { DESTINATION_HREF } from '@/shared/config/destinations';
@@ -26,6 +26,7 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 import {
   connectorProblems,
   looksLikeSecretKey,
+  ownsSecretRef,
   type ConnectorProblem,
   type ConnectorRecord,
   type ConnectorValueEntry,
@@ -71,18 +72,22 @@ import type { VaultConnectorsState } from '../model/use-vault-connectors';
  * do not, and the screen says so where they are missing.
  */
 
+function ownRefs(connectorId: string, entries: readonly ConnectorValueEntry[]): string[] {
+  return entries
+    .filter((entry) => ownsSecretRef(connectorId, entry))
+    .map((entry) => entry.secretRef!);
+}
+
 /**
  * Forgets the keychain tokens a connector's variables pointed at, or an orphaned token stays on
  * the machine. Best effort and before the file is written: a refusing keychain must not stop
  * the removal, and the file never claims a reference the keychain still answers to. Absence
- * counts as success in `connector_secret_delete`.
+ * counts as success in `connector_secret_delete`. Only its own entries: a shared row naming
+ * another connector's reference must not delete that token.
  */
-async function forgetSecrets(entries: readonly ConnectorValueEntry[]): Promise<void> {
+async function forgetSecrets(connectorId: string, entries: readonly ConnectorValueEntry[]): Promise<void> {
   await Promise.all(
-    entries
-      .map((entry) => entry.secretRef)
-      .filter((reference): reference is string => typeof reference === 'string')
-      .map((reference) => connectorSecretDelete(reference).catch(() => null)),
+    ownRefs(connectorId, entries).map((reference) => connectorSecretDelete(reference).catch(() => null)),
   );
 }
 
@@ -462,7 +467,11 @@ export function ConnectorsPanel({
         countStatedAbove={countInHeading}
         registeredNames={registeredNames}
         storedRefs={storedRefs}
+        isOnHere={store.isOnHere}
+        waitingHere={store.waitingHere}
+        changedSinceAllowed={store.changedSinceAllowed}
         onToggle={(id, enabled) => void store.setEnabled(id, enabled)}
+        onAllow={(id) => void store.allowHere(id)}
         onOpenDetail={setDetailId}
         testIdPrefix={testIdPrefix}
       />
@@ -517,6 +526,7 @@ export function ConnectorsPanel({
        */}
       <ConnectorDetailDialog
         connector={detail}
+        on={detail ? store.isOnHere(detail) : false}
         canStoreSecrets={canStoreSecrets}
         storedRefs={storedRefs}
         onClose={() => setDetailId(null)}
@@ -544,7 +554,7 @@ export function ConnectorsPanel({
            */
           setRemovedTick((tick) => tick + 1);
           setRemovalAnnouncement(t('removedAnnouncement', { name: connector.name }));
-          void forgetSecrets([...connector.env, ...connector.headers]).then(() =>
+          void forgetSecrets(connector.id, [...connector.env, ...connector.headers]).then(() =>
             store.remove(connector.id),
           );
         }}
@@ -573,7 +583,11 @@ function AttachedList({
   status,
   registeredNames,
   storedRefs,
+  isOnHere,
+  waitingHere,
+  changedSinceAllowed,
   onToggle,
+  onAllow,
   onOpenDetail,
   testIdPrefix,
   countStatedAbove,
@@ -584,7 +598,11 @@ function AttachedList({
   registeredNames: Set<string>;
   /** `null` where no keychain could be read: "not asked", not "none". */
   storedRefs: ReadonlySet<string> | null;
+  isOnHere: (connector: ConnectorRecord) => boolean;
+  waitingHere: ReadonlySet<string>;
+  changedSinceAllowed: ReadonlySet<string>;
   onToggle: (id: string, enabled: boolean) => void;
+  onAllow: (id: string) => void;
   onOpenDetail: (id: string) => void;
   testIdPrefix: string;
   /** The group heading above states the count; see `countInHeading`. */
@@ -609,7 +627,7 @@ function AttachedList({
    * Emptiness belongs to the panel's card, so the list does not repeat the claim.
    */
   if (connectors.length === 0) return null;
-  const enabled = connectors.filter((connector) => connector.enabled).length;
+  const enabled = connectors.filter(isOnHere).length;
   return (
     <>
       {/*
@@ -636,12 +654,15 @@ function AttachedList({
         const problems = connectorProblems(connector, connectors, storedRefs ?? undefined);
         const collides = registeredNames.has(connector.name.trim());
         const runs = whatRuns(connector);
+        const on = isOnHere(connector);
+        const waiting = waitingHere.has(connector.id);
         return (
           <li
             key={connector.id}
             data-testid={`${testIdPrefix}-item`}
             data-connector-name={connector.name}
-            data-connector-enabled={connector.enabled ? 'true' : 'false'}
+            data-connector-enabled={on ? 'true' : 'false'}
+            data-connector-waiting={waiting ? 'true' : undefined}
             className="rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 py-2.5"
           >
             <div className="flex items-center gap-3">
@@ -675,8 +696,8 @@ function AttachedList({
               <div className="flex shrink-0 items-center gap-3">
                 <Checkbox
                   data-testid={`${testIdPrefix}-item-toggle`}
-                  label={connector.enabled ? t('on') : t('off')}
-                  checked={connector.enabled}
+                  label={on ? t('on') : t('off')}
+                  checked={on}
                   disabled={problems.length > 0}
                   onChange={(event) => onToggle(connector.id, event.target.checked)}
                   /*
@@ -717,11 +738,74 @@ function AttachedList({
                 {t('collision', { name: connector.name })}
               </p>
             ) : null}
+
+            {waiting ? (
+              <WaitingHere
+                connector={connector}
+                changed={changedSinceAllowed.has(connector.id)}
+                onAllow={() => onAllow(connector.id)}
+                testIdPrefix={testIdPrefix}
+              />
+            ) : null}
           </li>
         );
       })}
     </ul>
     </>
+  );
+}
+
+/**
+ * The row already shows what runs, whole; this adds what it would pass, the rest of what the
+ * press allows.
+ */
+function WaitingHere({
+  connector,
+  changed,
+  onAllow,
+  testIdPrefix,
+}: {
+  connector: ConnectorRecord;
+  changed: boolean;
+  onAllow: () => void;
+  testIdPrefix: string;
+}) {
+  const t = useTranslations('connectors');
+  const passes = [...connector.env, ...connector.headers].map((entry) =>
+    typeof entry.secretRef === 'string'
+      ? t('waitingFromKeychain', { name: entry.name })
+      : typeof entry.value === 'string'
+        ? `${entry.name}=${entry.value}`
+        : entry.name,
+  );
+  return (
+    <div
+      data-testid={`${testIdPrefix}-item-waiting`}
+      data-waiting-changed={changed ? 'true' : 'false'}
+      className="mt-2 border-t border-[color:var(--color-border-soft)] pt-2"
+    >
+      <p role="status" className="text-label leading-prose text-[color:var(--color-status-warning)]">
+        {changed ? t('waitingChanged') : t('waitingHere')}
+      </p>
+      {passes.length > 0 ? (
+        <p
+          data-testid={`${testIdPrefix}-item-waiting-passes`}
+          className="mt-1 break-all text-label leading-label text-[color:var(--color-text-tertiary)]"
+        >
+          {t('waitingPasses')}{' '}
+          <code className="font-mono text-[color:var(--color-text-secondary)]">{passes.join(', ')}</code>
+        </p>
+      ) : null}
+      <Chip
+        data-testid={`${testIdPrefix}-item-allow`}
+        hoverSurface="lift"
+        className="mt-2"
+        onClick={onAllow}
+      >
+        <ShieldCheck size={ICON_SIZE.sm} aria-hidden />
+        {t('allowHere')}
+      </Chip>
+    </div>
   );
 }
 
@@ -732,6 +816,7 @@ function AttachedList({
  */
 function ConnectorDetailDialog({
   connector,
+  on,
   canStoreSecrets,
   storedRefs,
   onClose,
@@ -740,6 +825,7 @@ function ConnectorDetailDialog({
   testIdPrefix,
 }: {
   connector: ConnectorRecord | null;
+  on: boolean;
   canStoreSecrets: boolean;
   storedRefs: ReadonlySet<string> | null;
   onClose: () => void;
@@ -781,15 +867,15 @@ function ConnectorDetailDialog({
               </h2>
               <span
                 data-testid={`${testIdPrefix}-detail-state`}
-                data-enabled={connector.enabled ? 'true' : 'false'}
+                data-enabled={on ? 'true' : 'false'}
                 className={badgeClass({
                   shape: 'micro',
-                  className: connector.enabled
+                  className: on
                     ? 'border border-[color:var(--color-indigo-a46)] text-[color:var(--color-text-secondary)]'
                     : 'border border-[color:var(--color-border-soft)] text-[color:var(--color-text-quaternary)]',
                 })}
               >
-                {connector.enabled ? t('on') : t('off')}
+                {on ? t('on') : t('off')}
               </span>
             </div>
             <IconButton
@@ -885,7 +971,7 @@ function RemoveConfirmDialog({
   const t = useTranslations('connectors');
   const keys = connector
     ? [...connector.env, ...connector.headers]
-        .filter((entry) => typeof entry.secretRef === 'string')
+        .filter((entry) => ownsSecretRef(connector.id, entry))
         .map((entry) => entry.name)
     : [];
   return (
@@ -944,11 +1030,7 @@ function useConnectorSecretPresence(
   canStoreSecrets: boolean,
 ): ReadonlySet<string> | null {
   const refs = useMemo(
-    () =>
-      connectors
-        .flatMap((connector) => [...connector.env, ...connector.headers])
-        .map((entry) => entry.secretRef)
-        .filter((reference): reference is string => typeof reference === 'string'),
+    () => connectors.flatMap((connector) => ownRefs(connector.id, [...connector.env, ...connector.headers])),
     [connectors],
   );
   const key = refs.join('\u0000');
@@ -1059,7 +1141,7 @@ function VariableFields({
                   }
                   // Turning the choice off means the value should not be on this machine; dropping only the
                   // reference would orphan it.
-                  void forgetSecrets([entry]).then(() =>
+                  void forgetSecrets(connector.id, [entry]).then(() =>
                     rewriteVariable(slot, entry.name, (current) => ({ name: current.name })),
                   );
                 }}

@@ -7,6 +7,7 @@ import {
   cadenceKey,
   cadenceMinutes,
   deriveRoundKind,
+  roundFingerprint,
   roundPlaceLabels,
   roundPlaces,
   turnsPerDay,
@@ -34,6 +35,36 @@ function round(overrides: Partial<RoundRecord> = {}): RoundRecord {
     ...overrides,
   };
 }
+
+describe("what this Mac's allowance covers", () => {
+  it('changes with anything an unattended pass does, and not with its name, switch or clock', () => {
+    const base = round({
+      kind: 'service',
+      connectorId: 'c1',
+      connectorName: 'slack',
+      query: 'release notes',
+      limit: 20,
+      places: [
+        { kind: 'vault', paths: ['wiki/releases'] },
+        { kind: 'service', connectorId: 'c1', connectorName: 'slack', location: '#release-room' },
+      ],
+    });
+    const allowed = roundFingerprint(base);
+    expect(
+      roundFingerprint({ ...base, name: 'Renamed', enabled: false, lastPassAt: '2026-09-18T00:00:00.000Z', nextDueAt: '2026-09-19T00:00:00.000Z' }),
+    ).toBe(allowed);
+    const changes: RoundRecord[] = [
+      { ...base, kind: 'ontology' },
+      { ...base, cadence: { everyMinutes: 1 } },
+      { ...base, onStale: 'mark' },
+      { ...base, query: 'a different question' },
+      { ...base, limit: 100 },
+      { ...base, places: [{ kind: 'vault', paths: [] }] },
+      { ...base, places: [...base.places!, { kind: 'service', connectorId: 'c2', connectorName: 'github' }] },
+    ];
+    for (const changed of changes) expect(roundFingerprint(changed)).not.toBe(allowed);
+  });
+});
 
 describe('cadence', () => {
   it('an hourly round runs on the hour, strictly after the moment it is asked from', () => {
