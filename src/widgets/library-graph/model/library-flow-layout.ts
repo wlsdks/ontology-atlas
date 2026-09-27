@@ -130,6 +130,9 @@ export function flowLayout(graph: LibraryGraph, world: FlowWorld): FlowLayout {
   const worldWidth = Math.max(1, world.width);
   const worldHeight = Math.max(1, world.height);
   const ceiling = world.ceiling ?? 1;
+  if (ordered.length === 0) {
+    return { positions: new Map(), columns: [], rowGap: FLOW_ROW_MAX, extent: { width: worldWidth, height: worldHeight }, scale: ceiling };
+  }
   const innerHeight = Math.max(0, worldHeight - FLOW_TOP_PAD * 2);
 
   /**

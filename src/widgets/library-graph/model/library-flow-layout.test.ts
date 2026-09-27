@@ -197,4 +197,12 @@ describe("flow layout", () => {
     const layout = flowLayout(graph({ pages: ["only"] }), BOX);
     expect(layout.positions.get("page:only")).toEqual({ x: 500, y: 300 });
   });
+
+  it("lays an empty folder as an empty picture in the world box", () => {
+    const layout = flowLayout(graph({}), BOX);
+    expect(layout.positions.size).toBe(0);
+    expect(layout.columns).toEqual([]);
+    expect(layout.extent).toEqual({ width: 1000, height: 600 });
+    expect(layout.scale).toBe(1);
+  });
 });
