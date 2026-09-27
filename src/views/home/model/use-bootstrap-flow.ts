@@ -11,9 +11,8 @@ import {
 
 /**
  * The "start an ontology from my documents" flow: plan derivation, dialog state and execution
- * through the
- * features-level batch write. The caller handles completion through `onCompleted`; this hook knows
- * no map or toast.
+ * through the features-level batch write. The caller handles completion through `onCompleted`; this
+ * hook knows no map or toast.
  */
 export interface UseBootstrapFlowArgs {
   vault: BootstrapVaultWriter & { handle?: { name: string } | null };

@@ -2,13 +2,11 @@ import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledg
 
 /**
  * Deterministic synthetic graph for the hidden `?synth=N` parameter, to see layout at sizes the
- * sample never reaches.
- * No `Math.random`: the same N derives the same graph, and it never touches the user's vault.
- * The shape mirrors a measured vault (median 3 children per parent, one hub near 92), or
- * performance numbers
- * measure a vault that does not exist: capabilities scale with n (`CAPABILITY_SHARE`) and elements
- * follow a
- * power law. `round(sqrt(n) / 3)` domains, 20% domain-direct, 5% orphans, class by `index % 20`.
+ * sample never reaches. No `Math.random`: the same N derives the same graph, and it never touches
+ * the user's vault. The shape mirrors a measured vault (median 3 children per parent, one hub near
+ * 92), or performance numbers measure a vault that does not exist: capabilities scale with n
+ * (`CAPABILITY_SHARE`) and elements follow a power law. `round(sqrt(n) / 3)` domains, 20%
+ * domain-direct, 5% orphans, class by `index % 20`.
  */
 
 /**

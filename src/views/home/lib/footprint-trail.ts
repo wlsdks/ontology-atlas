@@ -8,9 +8,8 @@ export const FOOTPRINT_TRAIL_MAX = 30;
 
 /**
  * A revisit is a new step, because the trail is a route: collapsing A->B->A erases that the user
- * came back.
- * Consecutive duplicates are ignored, or reclicking a node advances the count while the user sits
- * still.
+ * came back. Consecutive duplicates are ignored, or reclicking a node advances the count while the
+ * user sits still.
  */
 export function appendFootprintVisit(
   trail: readonly string[],
@@ -25,8 +24,7 @@ export function appendFootprintVisit(
 
 /**
  * Only each node's last visit survives, in order: the handoff packet and timeline would repeat
- * themselves otherwise.
- * Only the map uses the raw trail, where repetition reads as shape.
+ * themselves otherwise. Only the map uses the raw trail, where repetition reads as shape.
  */
 export function collapseFootprintTrail(trail: readonly string[]): string[] {
   const out: string[] = [];
@@ -56,8 +54,8 @@ function pairKey(a: string, b: string): string {
 
 /**
  * Entry `i` links `trail[i]` to `trail[i - 1]`; index 0 is always null (no predecessor, not
- * "unrelated").
- * O(E + T) with a pair-key map. When several edges join a pair, the one carrying a reason wins.
+ * "unrelated"). O(E + T) with a pair-key map. When several edges join a pair, the one carrying a
+ * reason wins.
  */
 export function buildTrailStepLinks(
   trail: readonly string[],
@@ -97,8 +95,8 @@ export interface FootprintTrailEntry {
   title: string;
   kind: string;
   /**
-   * The vault-known name (`resolveNodeAgentTarget`); deriving it from the id tail invents names
-   * for flattened derived slugs.
+   * The vault-known name (`resolveNodeAgentTarget`); deriving it from the id tail invents names for
+   * flattened derived slugs.
    */
   agentRef?: string | null;
   /** Without a document the packet suggests creating one instead of `get_concept`. */
@@ -121,8 +119,7 @@ export interface FootprintTrailPacketLabels {
 }
 
 /**
- * MCP calls stay English regardless of UI locale so the packet pastes straight into a coding
- * agent.
+ * MCP calls stay English regardless of UI locale so the packet pastes straight into a coding agent.
  */
 export function formatFootprintTrailAgentPacket(
   entries: readonly FootprintTrailEntry[],

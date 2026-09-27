@@ -331,8 +331,7 @@ export function TopologyCanvasSurface({
                 canCreateNode={canCreateNode}
                 onCreateNode={openCreateNode}
                 // Decided by capability, from the same source as `OpenVaultCta`: a web browser
-                // with File System Access
-                // can pick a folder too.
+                // with File System Access can pick a folder too.
                 canPickFolder={vault.status !== 'unsupported'}
                 docsFoundCount={bootstrapPlan?.elements.length ?? 0}
                 onStartFromDocs={
@@ -420,8 +419,7 @@ export function TopologyCanvasSurface({
                 relationCaptions={mapRelationCaptions}
                 reviewQuestionIds={mapReviewQuestionIds}
                 // Silence cannot tell "broken" from "nothing that way". The page owns the words;
-                // the widget only emits,
-                // since it is tested without a provider.
+                // the widget only emits, since it is tested without a provider.
                 walkNoticeLabel={tTopologyKeyboardWalk("deadEnd")}
                 focus={{ selectedSlug: canvasSelectedSlug }}
                 // The same vault identity signal as the deep-link cleanup, so a vault switch
@@ -443,7 +441,8 @@ export function TopologyCanvasSurface({
                   setFullDetailSlug(null);
                   setHoverEdge(null);
                   // An edge selection replaces a node's ego focus, mirroring `onSelect`
-                  // clearing `selectedEdge`, so the node focus is released to open the edge panel's gate.
+                  // clearing `selectedEdge`, so the node focus is released to open the edge
+                  // panel's gate.
                   if (selectedOntologyNode) handleClose();
                   setSelectedEdge(edge);
                 }}
@@ -550,9 +549,8 @@ export function TopologyCanvasSurface({
                 }
               `}</style>
         {/* Fixed square tiles whose tooltip carries the name. They step aside
-           on `selectedEdgeOwnsRightRail`,
-           like the other right-rail tiles, or they stay visible under the relation card and cannot
-           be pressed. */}
+           on `selectedEdgeOwnsRightRail`, like the other right-rail tiles, or they stay
+           visible under the relation card and cannot be pressed. */}
         <div className="contents" data-testid="topology-utility-rail">
           {createNodeOpen ||
             topologyBlockingOverlayActive ||
@@ -649,9 +647,9 @@ export function TopologyCanvasSurface({
               data-agent-dock-adjacent-rail="true"
               data-map-fit-obstacle="right"
             >
-              {/* A toggle: one token bump starts the replay and the next stops it, and the loop
-                 reports the live state back
-                 (`use-topology-loop.ts`). The indigo border is the state; the glyph stays play. */}
+              {/* A toggle: one token bump starts the replay and the next stops it, and the
+                 loop reports the live state back (`use-topology-loop.ts`). The indigo border
+                 is the state; the glyph stays play. */}
               <Tooltip content={t('controls.replayGrowthTooltip')} side="left">
                 <ChromeTile
                   icon={<Play />}
@@ -768,8 +766,8 @@ export function TopologyCanvasSurface({
         </div>
 
         {/* Pointer-transparent; the first selection that exists dismisses it for good
-           (`features/first-run-starter`),
-           so a ghost slug cannot (see `resolvedSelectionSlug`). */}
+           (`features/first-run-starter`), so a ghost slug cannot
+           (see `resolvedSelectionSlug`). */}
         <SampleNodeHint hasSelection={resolvedSelectionSlug !== null} hidden={tour.open} />
 
         {/* Only on an unsupported browser, so the direct tile-to-picker path is unchanged

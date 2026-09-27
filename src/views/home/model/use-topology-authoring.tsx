@@ -127,8 +127,8 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
       if (cancelled) return;
       if (!meaningEditorIntent || !meaningEditorSource) {
         if (!meaningEditorIntent) setMeaningEditorState(null);
-        // A URL edit intent on the sample has no document to write: say why, offer the folder,
-        // and drop the intent from the address so it does not repeat.
+        // A URL edit intent on the sample has no document to write: say why, offer the folder, and
+        // drop the intent from the address so it does not repeat.
         if (
           meaningEditorIntent &&
           selectedOntologyNode &&
@@ -269,8 +269,7 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
   // Only asks whether an agent is attached now (`docs/DECISIONS.md`, entry 90).
   const agentConnect = useAgentConnectModel({ agentActivityStatus });
   // The AI connection sheet never opens by itself after a folder opens: a modal over the first map
-  // makes the
-  // first interaction "close". Connection intent comes only from a click.
+  // makes the first interaction "close". Connection intent comes only from a click.
   const { bootstrapOpen, setBootstrapOpen, bootstrapPlan, runBootstrap } = useBootstrapFlow({
     vault,
     onCompleted: ({ addedToExisting, elementCount }) => {
@@ -340,8 +339,8 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
     }
   }, [closeCreateNode, createNodeConfirming, createNodeProposal, setRouteState, t, toast, vault]);
   // `value` is the domain document's address (`domains/agent-access`), the spelling
-  // agent-written `domain:`
-  // uses; `buildNewNodeDoc` keeps the folder through `canonicalizeDomainRef`.
+  // agent-written `domain:` uses; `buildNewNodeDoc` keeps the folder
+  // through `canonicalizeDomainRef`.
   const createNodeDomainOptions = useMemo(
     () =>
       (ontologyInsight?.nodes ?? [])

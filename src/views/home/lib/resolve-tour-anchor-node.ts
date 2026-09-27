@@ -1,11 +1,9 @@
 /**
  * Resolves the guided tour's canvas anchor to a graph node id here, since features must not import
- * widget types.
- * `project` takes the first project, else a domain; `domain` the first domain, else a project.
- * Never an `isHub` node: hubs fold into a "+N" cluster chip whose click relayouts instead of
- * selecting,
- * which stalls the tour's `hasSelection` auto-advance. `null` when neither exists; the caller
- * skips the step.
+ * widget types. `project` takes the first project, else a domain; `domain` the first domain, else a
+ * project. Never an `isHub` node: hubs fold into a "+N" cluster chip whose click relayouts instead
+ * of selecting, which stalls the tour's `hasSelection` auto-advance. `null` when neither exists;
+ * the caller skips the step.
  */
 export interface TourAnchorCandidateNode {
   id: string;

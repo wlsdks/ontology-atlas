@@ -100,8 +100,7 @@ export function useTopologyAgentOrchestration({
 
   /**
    * Injected every turn, so the model never needs a tool for it. Names match the screen
-   * (`resolveNodeAgentTarget`),
-   * since a pasted handoff works only if human and agent use one name.
+   * (`resolveNodeAgentTarget`), since a pasted handoff works only if human and agent use one name.
    */
   const vaultAgentScreenContext = useMemo<ScreenContextSnapshot>(() => {
     const target = resolveNodeAgentTarget(selectedOntologyNode);
@@ -117,8 +116,7 @@ export function useTopologyAgentOrchestration({
 
   /**
    * One chat panel, one door: the detected coding agent (ACP, with this folder's MCP tools), else
-   * the API-key
-   * branch; never both at once.
+   * the API-key branch; never both at once.
    */
   const agentChatUsesRuntime = Boolean(acpRuntime && gitVaultPath);
 
@@ -175,16 +173,14 @@ export function useTopologyAgentOrchestration({
     openVaultAgent();
   }, [selectedOntologyNode, vaultConceptFacts, setVaultAgentPrefill, firstWordsLabels, openVaultAgent]);
 
-  /**
-   * `?ask=`: the URL is the state and carries only the intent kind; the sentence is written here.
-   * A constant URL must not re-seat on every render.
-   */
+  /** A constant URL must not re-seat on every render. */
   const BUSINESS_FLOW_PREFILL_NONCE = 0;
   const businessFlowRequest = useMemo(
     () => buildBusinessFlowRequest({ request: businessFlowRequestText }),
     [businessFlowRequestText],
   );
 
+  /** `?ask=`: the URL is the state and carries only the intent kind; the sentence is written here. */
   const askPrefill = useMemo(() => {
     // Rebuilt from the app's localized string, so no sentence rides a shared URL and old links get
     // today's request.
@@ -214,11 +210,9 @@ export function useTopologyAgentOrchestration({
 
   /**
    * A route request must open the physical dock (`acpDockFrameOpen`), or it owns a zero-width
-   * panel.
-   * Remembering request and branch keeps keystrokes from reopening it; a late-discovered runtime
-   * may replace the key
-   * branch once. Closing marks the dock touched before clearing the URL, so the next render cannot
-   * reopen it.
+   * panel. Remembering request and branch keeps keystrokes from reopening it; a late-discovered
+   * runtime may replace the key branch once. Closing marks the dock touched before clearing the
+   * URL, so the next render cannot reopen it.
    */
   const routeAskDockRequestRef = useRef<RouteAskDockRequest | null>(null);
   useEffect(() => {
@@ -301,10 +295,8 @@ export function useTopologyAgentOrchestration({
   }, [analyzePrompt, openVaultAgent, setVaultAgentPrefill]);
 
   // Publishes the dock width for floating map cards (`right-dock-reserve.ts`) and the top-centred
-  // toaster
-  // (`app/globals.css`). It reads `chatWidth`, the state the dock draws from, because a
-  // ResizeObserver missed
-  // the replacement node and left the variable unset.
+  // toaster (`app/globals.css`). It reads `chatWidth`, the state the dock draws from, because a
+  // ResizeObserver missed the replacement node and left the variable unset.
   useEffect(() => {
     const root = document.documentElement;
     if (!agentDockOpen || reviewUsesSheet) {

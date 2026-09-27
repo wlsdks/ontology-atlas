@@ -19,8 +19,7 @@ interface TopologyNodeFocusConnection {
 
 /**
  * A zero-recompute projection of `TopologyOntologyDrawerModel`, so counts cannot drift from the
- * drawer.
- * Rationale: `docs/design/topology-focus-and-scale.md`.
+ * drawer. Rationale: `docs/design/topology-focus-and-scale.md`.
  */
 export interface TopologyNodeFocusModel {
   id: string;

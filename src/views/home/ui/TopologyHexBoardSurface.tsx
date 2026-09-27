@@ -12,8 +12,7 @@ const HEX_SWATCH = "15,7 11.5,13 4.5,13 1,7 4.5,1 11.5,1";
 
 /**
  * Keeps placement per vault so placed tiles never move, composes the canvas words, and names what
- * the
- * evidence ring stands on; unknown is never shown as current.
+ * the evidence ring stands on; unknown is never shown as current.
  */
 export function TopologyHexBoardSurface({
   nodes,

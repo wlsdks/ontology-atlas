@@ -43,8 +43,7 @@ export function useTopologyVaultReadModel({
   const vault = useLocalVault();
   /**
    * A folder of pages with no map opens on the Library. Read from the manifest, since the derived
-   * graph
-   * is briefly empty on every open, and once per manifest, so walking back to the map is not
+   * graph is briefly empty on every open, and once per manifest, so walking back to the map is not
    * redirected again.
    */
   const landedManifestRef = useRef<object | null>(null);
@@ -71,9 +70,8 @@ export function useTopologyVaultReadModel({
   // share this hook.
   const spotlightOn = recentWindow !== null;
   // Fits the camera only when the lens turns on or its window changes: the map
-  // reads `spotlightIds` every frame,
-  // so an event token is needed, or every frame steals the view. A counter, not `Date.now()`,
-  // keeps render pure.
+  // reads `spotlightIds` every frame, so an event token is needed, or every frame steals the view.
+  // A counter, not `Date.now()`, keeps render pure.
   const spotlightFitToken = useSpotlightFitTransition(
     buildSpotlightFitSignature({
       recentWindow,
@@ -87,14 +85,12 @@ export function useTopologyVaultReadModel({
     spotlightOn && recentWindow !== "auto" ? recentWindow : undefined,
   );
   // On the sample the zero-change chip opens a folder dialog, since waiting never makes the
-  // fixture's count
-  // non-zero; in a user's folder zero means nothing to show, so the chip stays disabled with its
-  // tooltip.
+  // fixture's count non-zero; in a user's folder zero means nothing to show, so the chip stays
+  // disabled with its tooltip.
   const [recentNeedsVaultOpen, setRecentNeedsVaultOpen] = useState(false);
   /**
    * Which "open your folder" sentence a write on the sample shows: creating and editing are
-   * different promises.
-   * `null` keeps it closed.
+   * different promises. `null` keeps it closed.
    */
   const [needsVaultReason, setNeedsVaultReason] = useState<"createNeedsVault" | "editNeedsVault" | null>(null);
   const spotlightNeedsVault = vault.status !== 'loaded';
@@ -151,16 +147,15 @@ export function useTopologyVaultReadModel({
     if (!ontologyInsight) return null;
     return resolveTopologySelectedOntologyNode(selectedSlug, ontologyInsight.nodes);
   }, [selectedSlug, selectedProject, ontologyInsight]);
-  // The one place `?p=` resolves, so the one place that reports a miss, once per distinct slug.
-  // `resolveDeeplinkMissDecision` decides when: a bare slug waits for projects, but
+  // The one place `?p=` resolves, so the one place that reports a miss, once per distinct
+  // slug. `resolveDeeplinkMissDecision` decides when: a bare slug waits for projects, but
   // only `DEEPLINK_MISS_GRACE_MS`.
   const deeplinkMissNotifiedRef = useRef<string | null>(null);
   /**
-   * Clears vault-scoped URL state when the vault changes, or `?p=` and `?pathFrom=` name nodes
-   * that are not here.
-   * First mount is skipped: a `?p=` then was handed over and the miss toast reports it honestly.
-   * The toast's once-only memory clears too, or returning A->B->A stays silent for a truly missing
-   * slug.
+   * Clears vault-scoped URL state when the vault changes, or `?p=` and `?pathFrom=` name nodes that
+   * are not here. First mount is skipped: a `?p=` then was handed over and the miss toast reports
+   * it honestly. The toast's once-only memory clears too, or returning A->B->A stays silent for a
+   * truly missing slug.
    */
   const vaultIdentity = useVaultSessionIdentityScope();
   const vaultIdentityRef = useRef<string | null>(null);
@@ -174,10 +169,9 @@ export function useTopologyVaultReadModel({
       vault.status === "loaded" ||
       vault.status === "unsupported");
   /**
-   * The first render reads a `sample:` identity before restore; recording it would make the
-   * restore look like
-   * a vault switch and erase the arrival deep link. Only values seen after `deeplinkSourceReady`
-   * count.
+   * The first render reads a `sample:` identity before restore; recording it would make the restore
+   * look like a vault switch and erase the arrival deep link. Only values seen
+   * after `deeplinkSourceReady` count.
    */
   useEffect(() => {
     if (!deeplinkSourceReady) return;
@@ -235,8 +229,7 @@ export function useTopologyVaultReadModel({
     () =>
       (ontologyInsight?.nodes ?? [])
         // `agentSlug` is the vault-root address `vault_node_revisions` resolves; `evidenceIds[0]`
-        // can carry the
-        // sample's extra segment or another node's file.
+        // can carry the sample's extra segment or another node's file.
         .filter((node) => node.hasOwnDocument !== false && Boolean(node.agentSlug))
         .map((node) => ({ slug: node.agentSlug as string, kind: node.kind })),
     [ontologyInsight],

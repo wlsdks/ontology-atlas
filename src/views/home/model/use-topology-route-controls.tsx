@@ -24,8 +24,7 @@ export function useTopologyRouteControls({
   const { expand } = topologyPreferences;
 
   // Memoised on the joined string for a stable dependency. Deep links obey the user's cap too,
-  // since parsing
-  // knows only the default; the tail is kept, like `toggleExpandedParent`'s LRU.
+  // since parsing knows only the default; the tail is kept, like `toggleExpandedParent`'s LRU.
   const expandedParentsKey = limitExpandedParents(expandedParentSlugs, expand.maxOpenParents).join(",");
   const expandedParentSet = useMemo(
     () => new Set(expandedParentsKey ? expandedParentsKey.split(",") : []),
@@ -78,10 +77,8 @@ export function useTopologyRouteControls({
     indexPreference,
   );
   // Session-only demotions that never touch the stored preference: the left stack collapses while
-  // a
-  // datasheet shows (a manual expand wins until the selection ends), and on a map with zero
-  // concepts,
-  // where INDEX holds nothing and pushes the start checklist aside.
+  // a datasheet shows (a manual expand wins until the selection ends), and on a map with zero
+  // concepts, where INDEX holds nothing and pushes the start checklist aside.
   const [indexManualExpandWhileEmpty, setIndexManualExpandWhileEmpty] = useState(false);
   const setIndexPreference = useCallback(
     (next: IndexPanelState) => {
@@ -108,10 +105,8 @@ export function useTopologyRouteControls({
     [setIndexPreference],
   );
   // `--map-safe-inset-left` assumes INDEX's width, so collapsing flips the
-  // attribute `app/globals.css` keys on,
-  // invalidates the cached token read (`read-map-tokens.ts`) and re-fits the camera. The effects
-  // live
-  // below `renderedIndexState`.
+  // attribute `app/globals.css` keys on, invalidates the cached token read (`read-map-tokens.ts`)
+  // and re-fits the camera. The effects live below `renderedIndexState`.
   const selectedProject = useMemo(
     () =>
       selectedSlug

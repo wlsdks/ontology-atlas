@@ -13,8 +13,8 @@ export function useTopologySourceReadiness({ topologyVaultReadModel, topologyPre
   const { selectedOntologyNode, vault, ontologyInsight } = topologyVaultReadModel;
   const { t, activeLocale } = topologyPreferences;
 
-  // Only the selected project reaches `useProjectSourceModel`, so one sidecar read lifts
-  // "no code folder is linked" into a quiet INDEX row.
+  // Only the selected project reaches `useProjectSourceModel`, so one sidecar read lifts "no code
+  // folder is linked" into a quiet INDEX row.
   const sourceProjectSlug = projectSlugForSource(selectedOntologyNode);
   const usableVaultHandle =
     vault.status === "loaded" || vault.isReloadingSameVault ? vault.handle : null;
@@ -47,8 +47,7 @@ export function useTopologySourceReadiness({ topologyVaultReadModel, topologyPre
     vaultHandle: usableVaultHandle,
     nodes: ontologyInsight?.nodes ?? [],
     // Binding and measuring do not change Markdown, so the manifest never re-parses; the project
-    // model and the latest
-    // ACP binding receipt invalidate this sidecar read instead.
+    // model and the latest ACP binding receipt invalidate this sidecar read instead.
     refreshToken: projectSourceReadinessRefreshToken,
   });
   const unboundProjectSource = projectSourceReadiness.unbound;

@@ -8,8 +8,7 @@ import { useMapEvidenceStates, type MapEvidenceAvailability } from "../model/use
 
 /**
  * Composes the canvas words and names what the evidence ring stands on (Git, still reading, or
- * unreadable);
- * unknown is never shown as current.
+ * unreadable); unknown is never shown as current.
  */
 export function TopologyTerritoriesSurface({
   nodes,

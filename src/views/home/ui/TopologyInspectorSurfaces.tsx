@@ -206,15 +206,12 @@ export function TopologyInspectorSurfaces({
         data-selected-inspector-gutter-contract="no-phantom-utility-rail"
         data-position-top-token="--topology-node-popover-top"
         data-position-right-inset-token="--topology-node-popover-right-inset"
-        // `topology-ui-scale` scales with the brand pill, or the `--topology-index-top` clearance
-        // breaks at wide widths.
-        // Below `lg` this is a bottom sheet above `--map-panel-bottom-reserve`: top-anchored it
-        // grew over the ego graph
-        // and past the tab bar. `--map-inspector-max-height` caps the inspector only; the meaning
-        // editor
-        // keeps `--map-panel-max-height` for its submit row. The wrapper ignores pointers so its
-        // unpainted width does not
-        // eat map taps; `computeFreeArea` reads the measured width of the obstacle marker.
+        // `topology-ui-scale`: the same wide-screen zoom as INDEX and the toolbar. Below `lg` this
+        // is a bottom sheet above `--map-panel-bottom-reserve`: top-anchored it grew over the ego
+        // graph and past the tab bar. `--map-inspector-max-height` caps the inspector only; the
+        // meaning editor keeps `--map-panel-max-height` for its submit row. The wrapper ignores
+        // pointers so its unpainted width does not eat map taps; `computeFreeArea` reads the
+        // measured width of the obstacle marker.
         className="topology-ui-scale pointer-events-none fixed inset-x-3 bottom-[var(--map-panel-bottom-reserve)] z-30 flex justify-center lg:inset-x-auto lg:bottom-auto lg:right-[var(--topology-node-popover-right-inset)] lg:top-[var(--topology-node-popover-top)] lg:block"
       >
         <div className="pointer-events-none grid">
@@ -342,10 +339,9 @@ export function TopologyInspectorSurfaces({
                 }
               }
               // Only on a domain node: domain -> capability is one `domain:` key, while other
-              // pairs edit the parent's
-              // document, a different act. It shows on the sample too and leads to connecting a
-              // folder,
-              // since a locked feature that vanishes reads as never having existed.
+              // pairs edit the parent's document, a different act. It shows on the sample too and
+              // leads to connecting a folder, since a locked feature that vanishes reads as never
+              // having existed.
               onCreateLinked={
                 canvasSelectedGraphNode?.kind === "domain" && !canCreateNode
                   ? () => setNeedsVaultReason("createNeedsVault")
@@ -492,9 +488,8 @@ export function TopologyInspectorSurfaces({
         />
       </Surface>
     ) : null}
-    {/* A held model keeps the slot and `Surface`'s `open` decides visibility; a separate mount flag
-       would need
-       setState in an effect. */}
+    {/* A held model keeps the slot and `Surface`'s `open` decides visibility; a separate mount
+       flag would need setState in an effect. */}
     {heldContextMenu ? (
       <OntologyMapContextMenu
         open={Boolean(contextMenuNode && contextMenuModel)}

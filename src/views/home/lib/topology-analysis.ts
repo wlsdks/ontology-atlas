@@ -57,8 +57,8 @@ export interface TopologyAnalysisSummary {
 
 /**
  * Re-exported from `entities/knowledge-graph/lib/ontology-health-signals.ts`, shared
- * with `/ontology/insights`,
- * so both "next repair target" choices call one function without a cross-view import.
+ * with `/ontology/insights`, so both "next repair target" choices call one function without a
+ * cross-view import.
  */
 export type TopologyHealthActionTarget = OntologyHealthActionTarget;
 
@@ -474,11 +474,9 @@ interface PathCandidate {
 
 /**
  * Shortest path over visible nodes, walking relations in either direction but keeping their
- * declared direction.
- * BFS over an adjacency map, O(V + E log E) with sorted neighbours: ties break by next node,
- * relation type and
- * edge id so the output is deterministic. `nodes` needs only `{id}`, so callers exclude hidden
- * reader nodes.
+ * declared direction. BFS over an adjacency map, O(V + E log E) with sorted neighbours: ties break
+ * by next node, relation type and edge id so the output is deterministic. `nodes` needs
+ * only `{id}`, so callers exclude hidden reader nodes.
  */
 export function computeTopologyShortestPath(
   sourceId: string,
@@ -607,8 +605,7 @@ export function formatTopologyPathAgentPacket({
   labels: TopologyPathAgentPacketLabels;
 }): string {
   // The source arrives as a vault slug and the target as a node id; both normalise to the vault
-  // slug,
-  // so one packet names both ends in one grammar.
+  // slug, so one packet names both ends in one grammar.
   const source = resolveOntologyBuilderNodeSlugFromGraphId(sourceSlug);
   const target = resolveOntologyBuilderNodeSlugFromGraphId(targetSlug);
   const localized = (href: string) => (locale ? `/${locale}${href}` : href);

@@ -86,11 +86,9 @@ export function TopologyIndexSlot({
       ? indexSlotFrames.map((frame) => (
         <div
           // Keyed so collapse and expand take turns in the slot with the shared `.map-overlay-in`
-          // fade,
-          // on the same clock as other map overlays.
+          // fade, on the same clock as other map overlays.
           key={`${frame.state}-${frame.exiting ? "out" : "in"}`}
-          // `topology-ui-scale` matches the top-left chrome zoom, or the two overlap at wide
-          // widths.
+          // `topology-ui-scale` gives INDEX the same wide-screen zoom as the toolbar and inspector.
           // The slot ignores pointer input, since INDEX ends under its last row; only the held
           // surface is live.
           className={`${frame.exiting ? "map-overlay-out" : "map-overlay-in"} pointer-events-none topology-ui-scale absolute z-20 ${
@@ -105,9 +103,7 @@ export function TopologyIndexSlot({
           inert={frame.exiting || indexDemotedByNodeSheet || undefined}
           style={{
             left: frame.state === "expanded" ? "var(--topology-index-inset)" : 0,
-            // Expanded rises to the chrome inset (24px); the brand pill only shows while the stack
-            // is demoted,
-            // and the collapsed tab keeps 84px to sit under it.
+            // Expanded rises to the chrome inset (24px); collapsed keeps `--topology-index-top`.
             top:
               frame.state === "expanded"
                 ? "var(--topology-index-inset)"

@@ -3,11 +3,10 @@ import { pickLastEditSubject, type LastEditSubjectFact } from "@/shared/lib/last
 import { hasUnaccountedMtimeChange } from "@/shared/lib/mtime-conflict";
 
 /**
- * The graph-node twin of `resolveDocLastEditSubject`: the same two sources keyed by graph id.
- * The agent side takes the resolved focus id as a param so the "agent just now" badge agrees on
- * the node;
- * the human side reads `selfEditTimestamps` by vault slug, shared through `LocalVaultProvider`
- * with `/docs`.
+ * The graph-node twin of `resolveDocLastEditSubject`: the same two sources keyed by graph id. The
+ * agent side takes the resolved focus id as a param so the "agent just now" badge agrees on the
+ * node; the human side reads `selfEditTimestamps` by vault slug, shared
+ * through `LocalVaultProvider` with `/docs`.
  */
 export function resolveNodeLastEditSubject(params: {
   nodeId: string;
@@ -32,9 +31,8 @@ export function resolveNodeLastEditSubject(params: {
 }
 
 /**
- * True only when the document's freshness moved from the panel-open baseline and our own write
- * does not explain it.
- * Same rule as docs-vault (`hasUnaccountedMtimeChange`).
+ * True only when the document's freshness moved from the panel-open baseline and our own write does
+ * not explain it. Same rule as docs-vault (`hasUnaccountedMtimeChange`).
  */
 export function hasNodeMtimeConflict(params: {
   sourceSlug: string | null;

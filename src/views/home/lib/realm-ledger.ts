@@ -1,7 +1,6 @@
 /**
  * What the left panel needs while `?realm=` shows one node's world: its subtree, counts and
- * boundary edges,
- * each outside node paired with its domain-level container as the jump target.
+ * boundary edges, each outside node paired with its domain-level container as the jump target.
  */
 
 import type { KnowledgeGraphEdge, KnowledgeGraphNode, OntologyTreeNode } from "@/entities/knowledge-graph";

@@ -32,11 +32,10 @@ function applyMapView(view: HomeMapView): void {
 }
 
 /**
- * `arrival`: an address naming a view wins and is adopted, else the stored view is written once.
- * `stored-changed`: the address follows the reader's pick, the only steady-state write.
- * `address-changed`: a named view is adopted; no view leaves the address alone, or it ping-pongs
- * with other
- * writers until WebKit refuses `history.replaceState`.
+ * `arrival`: an address naming a view wins and is adopted, else the stored view is written
+ * once. `stored-changed`: the address follows the reader's pick, the only steady-state
+ * write. `address-changed`: a named view is adopted; no view leaves the address alone, or it
+ * ping-pongs with other writers until WebKit refuses `history.replaceState`.
  */
 export function decideMapViewSync(
   cause: 'arrival' | 'stored-changed' | 'address-changed',
@@ -53,8 +52,7 @@ export function decideMapViewSync(
 
 /**
  * Keeps `?view=` and the picker's stored choice equal, writing the address only on a pick or
- * arrival.
- * Every picker view is addressable; the flat map is the parameter's absence.
+ * arrival. Every picker view is addressable; the flat map is the parameter's absence.
  */
 export function useMapViewSync(
   routeMapView: HomeRouteState['mapView'],

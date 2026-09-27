@@ -94,8 +94,8 @@ describe("formatFootprintTrailAgentPacket", () => {
   });
 
   /**
-   * The reason is what the vault holds and the source does not, so the packet carries it under
-   * each step.
+   * The reason is what the vault holds and the source does not, so the packet carries it under each
+   * step.
    */
   it("carries the connection under each step — relation word plus the recorded reason", () => {
     const text = formatFootprintTrailAgentPacket(entries, { ...LABELS, unrelated: "직접 연결 없음" }, [], [

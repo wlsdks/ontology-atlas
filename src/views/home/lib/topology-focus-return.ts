@@ -7,8 +7,8 @@ function focusIfPossible(element: HTMLElement | null): boolean {
 }
 
 /**
- * The selected row wins while INDEX still shows it; else focus falls to the search field,
- * and to the INDEX tab when a canvas selection collapsed INDEX.
+ * The selected row wins while INDEX still shows it; else focus falls to the search field, and to
+ * the INDEX tab when a canvas selection collapsed INDEX.
  */
 export function restoreTopologyFocusAfterDatasheetClose(
   selectedNodeId: string | null,
@@ -74,9 +74,8 @@ function focusIsStranded(doc: Document, leaving: Element | null): boolean {
 }
 
 /**
- * Hands focus to the first of `testIds` once it mounts, waiting up to `frames` frames.
- * Only a stranded focus moves (on `<body>`, in an inert frame, or still on `leaving`), so a person
- * who
+ * Hands focus to the first of `testIds` once it mounts, waiting up to `frames` frames. Only a
+ * stranded focus moves (on `<body>`, in an inert frame, or still on `leaving`), so a person who
  * moved on keeps their place. Returns a cancel function.
  */
 export function focusWhenReady(

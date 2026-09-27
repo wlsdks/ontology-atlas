@@ -46,18 +46,16 @@ export interface HomeRouteState {
   indexState: IndexPanelState | null;
   /**
    * `?via=insights:<tab>`: renders the "back to insights" chip. It survives other map interactions
-   * and
-   * Back navigation, and clears only on the chip's dismiss or a new URL without it; not part of
+   * and Back navigation, and clears only on the chip's dismiss or a new URL without it; not part of
    * the Esc ladder.
    */
   insightsReturnTab: string | null;
   /** `?review=`, read only with a valid insights `via` marker and preserved with it. */
   insightsReturnReviewId: string | null;
   /**
-   * `?ask=`: only the intent kind, since the map composes the sentence and prose does not belong
-   * in an address.
-   * Never copied into React state; closing the agent panel clears it. Unknown values parse to
-   * null.
+   * `?ask=`: only the intent kind, since the map composes the sentence and prose does not belong in
+   * an address. Never copied into React state; closing the agent panel clears it. Unknown values
+   * parse to null.
    */
   askIntent: FirstWordsNodeIntentKind | null;
   // The whole-graph `ask` value, parsed apart from `askIntent` because that type means an intent
@@ -66,23 +64,19 @@ export interface HomeRouteState {
   // folder text.
   askBusinessFlow: boolean;
   /**
-   * `?open=`: parents expanded out of their cluster chips; in the URL so a shared link or agent
-   * can reproduce it.
+   * `?open=`: parents expanded out of their cluster chips; in the URL so a shared link or agent can
+   * reproduce it.
    */
   expandedParents: string[];
   /**
-   * `?realm=`: only one node's containment subtree, relaid out as a root.
-   * Entering clears `p` and `open` (`enterRealmRouteState`), since a realm is a new coordinate
-   * system.
+   * `?realm=`: only one node's containment subtree, relaid out as a root. Entering clears `p`
+   * and `open` (`enterRealmRouteState`), since a realm is a new coordinate system.
    */
   realmSlug: string | null;
   /**
-   * `?recent=auto
-   * 1
-   * 7
-   * 30`: lights nodes changed in the last N days; "auto" uses `useAdaptiveRecentChanges`.
-   * One URL value drives both the INDEX lens and the map, so their windows cannot disagree. null =
-   * off.
+   * `?recent=auto|1|7|30` lights nodes changed in the last N days ("auto" is the adaptive window
+   * of `useAdaptiveRecentChanges`). One URL value drives both the INDEX lens and the map, so their
+   * windows cannot disagree; null is off.
    */
   recentWindow: RecentSpotlightWindow | null;
   /** Saved constellation id, or `new` to open its editor; vault-scoped. */
@@ -134,12 +128,10 @@ export const HOME_QUERY_KEYS = {
 } as const;
 
 /**
- * Keys whose value is a name from one vault (node, project or category slug).
- * Surviving a vault switch leaves them pointing at nothing, which the screen reads as fact: a
- * ghost `p`
- * dims the whole map, and absent `pathFrom`/`pathTo` claim "no path". `hub` has no consumer yet
- * but
- * rides round-trips. `from`/`to` are legacy aliases of `pathFrom`/`pathTo`. Enum keys stay.
+ * Keys whose value is a name from one vault (node, project or category slug). Surviving a vault
+ * switch leaves them pointing at nothing, which the screen reads as fact: a ghost `p` dims the
+ * whole map, and absent `pathFrom`/`pathTo` claim "no path". `hub` has no consumer yet but rides
+ * round-trips. `from`/`to` are legacy aliases of `pathFrom`/`pathTo`. Enum keys stay.
  */
 export const VAULT_SCOPED_HOME_QUERY_KEYS = [
   "p",
@@ -157,10 +149,9 @@ export const VAULT_SCOPED_HOME_QUERY_KEYS = [
 
 /**
  * Clears vault-scoped state the moment vault identity changes, so a stale name never crosses the
- * boundary.
- * Path mode falls back to overview, since a path without endpoints claims nothing.
- * Never called on first mount: a `?p=` there was handed over (deep link, handoff, bookmark),
- * and a broken external link is reported honestly, not erased.
+ * boundary. Path mode falls back to overview, since a path without endpoints claims nothing. Never
+ * called on first mount: a `?p=` there was handed over (deep link, handoff, bookmark), and a broken
+ * external link is reported honestly, not erased.
  */
 export function clearVaultScopedRouteState(current: HomeRouteState): HomeRouteState {
   return {
@@ -254,16 +245,15 @@ export function parseExpandedParentsParam(
 
 /**
  * Caps expanded parents because the multiplier is there: five open parents left ~150 unlabelled
- * nodes.
- * 3 fits a comparison (this, that, where I came from). The user can change it in Settings (1-6);
- * `DEFAULT_EXPAND.maxOpenParents` is the one source.
+ * nodes. 3 fits a comparison (this, that, where I came from). The user can change it in Settings
+ * (1-6); `DEFAULT_EXPAND.maxOpenParents` is the one source.
  */
 export const MAX_EXPANDED_PARENTS = DEFAULT_EXPAND.maxOpenParents;
 
 /**
  * Keeps the tail, like `toggleExpandedParent`'s LRU. Separate from parsing
- * because `parseHomeRouteState` knows only the default cap, so the screen applies the user's cap once
- * more.
+ * because `parseHomeRouteState` knows only the default cap, so the screen applies the user's cap
+ * once more.
  */
 export function limitExpandedParents(slugs: readonly string[], max: number): string[] {
   const cap = Math.max(1, Math.floor(max));
@@ -271,8 +261,8 @@ export function limitExpandedParents(slugs: readonly string[], max: number): str
 }
 
 /**
- * Collapsing always works; expanding past the cap closes the longest-open parent (LRU),
- * because an ignored click reads as broken with nowhere to explain why.
+ * Collapsing always works; expanding past the cap closes the longest-open parent (LRU), because an
+ * ignored click reads as broken with nowhere to explain why.
  */
 export function toggleExpandedParent(
   current: readonly string[],
@@ -290,8 +280,7 @@ export function toggleExpandedParent(
 
 /**
  * Child id to parent id over `contains` edges, so a deep-link focus can walk the ancestors a
- * density gate folded.
- * The first of several parents wins: one valid chain reveals the target. O(E).
+ * density gate folded. The first of several parents wins: one valid chain reveals the target. O(E).
  */
 export function buildContainmentParentMap(
   edges: readonly { source: string; target: string; kind: string }[],
@@ -306,8 +295,7 @@ export function buildContainmentParentMap(
 
 /**
  * Appends every `contains` ancestor of `targetId` nearest-first, skipping expanded ones; a visited
- * set blocks
- * cycles. O(depth). HomePage applies it once on load and round-trips the URL.
+ * set blocks cycles. O(depth). HomePage applies it once on load and round-trips the URL.
  */
 export function deriveDeeplinkAncestorExpansion(
   targetId: string | null,
@@ -333,8 +321,7 @@ export function deriveDeeplinkAncestorExpansion(
 }
 
 /**
- * A realm is a new coordinate system, so selection (`p`), expansion (`open`) and path source
- * clear.
+ * A realm is a new coordinate system, so selection (`p`), expansion (`open`) and path source clear.
  */
 export function enterRealmRouteState(
   current: HomeRouteState,
@@ -461,8 +448,7 @@ export function selectTopologyNodeRouteState(
     meaningEditorIntent: false,
     meaningEditParam: null,
     // A click only selects and never changes mode: auto-promotion stacked select, expand, relayout
-    // and fit
-    // on one click. Focus comes only from a card badge, double click or deep link.
+    // and fit on one click. Focus comes only from a card badge, double click or deep link.
     analysisMode: current.analysisMode,
   };
 }
@@ -488,12 +474,10 @@ export function selectTopologyPathRouteState(
 }
 
 /**
- * The one entry for a canvas node click. In path mode without a source the node becomes the
- * source;
+ * The one entry for a canvas node click. In path mode without a source the node becomes the source;
  * with a source a different node becomes (or replaces) the target; anything else is ordinary
- * selection.
- * Routing path clicks through ordinary selection left `pathTargetSlug` empty and the copy button
- * hidden.
+ * selection. Routing path clicks through ordinary selection left `pathTargetSlug` empty and the
+ * copy button hidden.
  */
 export function resolveTopologyNodeClickRouteState(
   current: HomeRouteState,

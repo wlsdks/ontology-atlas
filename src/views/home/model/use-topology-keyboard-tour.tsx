@@ -127,8 +127,7 @@ export function useTopologyKeyboardTour({
   // local-vault users.
   const autoTourFiredRef = useRef(false);
   // `openGuidedTour` changes every render, so a ref keeps this effect's deps
-  // to `tourAutoStartReady` alone,
-  // or the timer resets every render and never fires.
+  // to `tourAutoStartReady` alone, or the timer resets every render and never fires.
   const openGuidedTourRef = useRef(openGuidedTour);
   useEffect(() => {
     openGuidedTourRef.current = openGuidedTour;
@@ -140,10 +139,9 @@ export function useTopologyKeyboardTour({
     // it.
     if (readGuidedTourStatus() !== null) return undefined;
     // Fires at the first moment nothing covers it (no modal open, document focused), starting 900
-    // ms in.
-    // No retry cap: a cap let a long folder-picker visit lose the tour for good. The first real
-    // interaction while
-    // waiting cancels it, so a card never cuts across a panel the person just opened.
+    // ms in. No retry cap: a cap let a long folder-picker visit lose the tour for good. The first
+    // real interaction while waiting cancels it, so a card never cuts across a panel the person
+    // just opened.
     let timerId = 0;
     const tick = () => {
       if (autoTourFiredRef.current) return;
@@ -166,18 +164,16 @@ export function useTopologyKeyboardTour({
     };
   }, [tourAutoStartReady]);
 
-  // One Escape closes one surface in `resolveTopologyEscLadderAction` order.
-  // `defaultPrevented` is checked first because Radix closes on a capture-phase document listener
-  // before this
-  // bubble-phase window listener runs; `searchOpen` stays as a testable input for surfaces that do
-  // not prevent.
-  // Bubble phase keeps it from reordering local Escape handlers.
+  // One Escape closes one surface in `resolveTopologyEscLadderAction` order, the shortcut sheet's
+  // promise (`docs/features/keyboard.md`). `defaultPrevented` is checked first because Radix closes
+  // on a capture-phase document listener before this bubble-phase window listener runs; `searchOpen`
+  // stays a testable input for surfaces that do not prevent. The bubble phase keeps it from
+  // reordering local Escape handlers.
   const handleTopologyEscape = useEffectEvent((event: globalThis.KeyboardEvent) => {
     if (event.key !== "Escape") return;
     if (event.defaultPrevented) return;
     // An Escape inside the chat panel is not the map's: cancelling an IME composition there must
-    // not clear
-    // the map selection behind it. The panel closes its own things.
+    // not clear the map selection behind it. The panel closes its own things.
     const target = event.target;
     if (
       target instanceof Element &&

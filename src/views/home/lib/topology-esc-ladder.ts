@@ -1,14 +1,13 @@
 /**
- * The order one Escape dismisses the canvas selection layer; overlays with their own Escape
- * handler are not here.
- * Pure decision table: `HomePage.tsx`'s `keydown` effect dispatches it, and one rung per keypress
- * keeps
- * the shortcut sheet's "one step at a time" promise.
+ * The order one Escape dismisses the canvas selection layer; overlays with their own Escape handler
+ * are not here. A pure decision table: `handleTopologyEscape` in the keyboard-tour hook
+ * (`model/use-topology-keyboard-tour.tsx`) dispatches one rung per keypress, which keeps the
+ * shortcut sheet's "one step at a time" promise.
  */
 export interface TopologyEscLadderInput {
   /** Leaving a realm outranks any overlay inside it, since it changes the whole view. */
   realmActive?: boolean;
-  /** Lives here, not inline in `HomePage`, so the ladder tests can see this rung. */
+  /** Lives here, not inline in the keydown handler, so the ladder tests can see this rung. */
   selectedEdgeActive?: boolean;
   /** The newest, most transient overlay closes first, or it reads as stuck chrome. */
   contextMenuOpen: boolean;
@@ -20,8 +19,8 @@ export interface TopologyEscLadderInput {
   /** Defense in depth: focus may have left the composer while it still blocks the page. */
   createNodeOpen: boolean;
   /**
-   * An `aria-modal` blocking surface answers before the rungs below, or Escape releases a
-   * selection under it.
+   * An `aria-modal` blocking surface answers before the rungs below, or Escape releases a selection
+   * under it.
    */
   bootstrapOpen: boolean;
   /**
@@ -56,8 +55,8 @@ export type TopologyEscLadderAction =
 
 /**
  * One thing per keypress, in this priority order: realm, edge popover, context menu, tour,
- * composer,
- * search (deferred), full detail, relation lens, node popover, deselect, local-graph pop, nothing.
+ * composer, search (deferred), full detail, relation lens, node popover, deselect, local-graph pop,
+ * nothing.
  */
 export function resolveTopologyEscLadderAction(
   input: TopologyEscLadderInput,

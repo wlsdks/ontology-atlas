@@ -30,8 +30,7 @@ const CHIP_ACTION_CLASS = controlClass({
 
 /**
  * Top-centre path status chip beside `SearchHint`; path no longer claims the left slot
- * (`slot-ownership.ts`).
- * Chrome only: canvas highlighting is untouched.
+ * (`slot-ownership.ts`). Chrome only: canvas highlighting is untouched.
  */
 export function TopologyPathChip({
   label,
@@ -47,8 +46,8 @@ export function TopologyPathChip({
 }: TopologyPathChipProps) {
   const fullLabel = outcome ? `${label} · ${outcome}` : label;
   // Below a 44rem toolbar the outcome speaks alone and the names move to accessible and hover
-  // text,
-  // since one or two letters say less than the outcome. Without an outcome the label always shows.
+  // text, since one or two letters say less than the outcome. Without an outcome the label always
+  // shows.
   const foldable = Boolean(outcome);
   return (
     <div

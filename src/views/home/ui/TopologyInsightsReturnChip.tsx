@@ -17,10 +17,9 @@ export interface TopologyInsightsReturnChipProps {
 }
 
 /**
- * Shown only after an insights deep link (`?via=insights:<tab>`), since Back costs many steps
- * after map
- * interactions. It survives exploration, following the link keeps the marker, and it sits out the
- * Esc ladder.
+ * Shown only after an insights deep link (`?via=insights:<tab>`), since Back costs many steps after
+ * map interactions. It survives exploration, following the link keeps the marker, and it sits out
+ * the Esc ladder.
  */
 export function TopologyInsightsReturnChip({
   href,

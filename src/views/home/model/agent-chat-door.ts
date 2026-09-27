@@ -1,9 +1,8 @@
 /**
  * One door to the chat window, so the coding agent (ACP) and the API-key branch can never both be
- * open.
- * The coding agent owns it when available (folder tools, the user's subscription); otherwise the
- * key branch.
- * A URL "ask about this" follows the same rules, or a chip and a node open different windows.
+ * open. The coding agent owns it when available (folder tools, the user's subscription); otherwise
+ * the key branch. A URL "ask about this" follows the same rules, or a chip and a node open
+ * different windows.
  */
 
 export interface AgentChatDoorInput {

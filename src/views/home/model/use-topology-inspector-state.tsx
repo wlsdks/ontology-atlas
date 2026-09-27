@@ -64,7 +64,6 @@ export function useTopologyInspectorState({
   const { meaningWorkbenchOpen, acpDockFrameOpen, reviewUsesSheet } = homeWorkbenchController;
   const { agentDockRequestedOpen, renderedIndexState } = topologyIndexPresentation;
 
-  // Sets this node as the path source and enters path mode through `selectTopologyPathRouteState`.
   const handleSetPathSource = useCallback(
     (slug: string) => {
       setExpandAllActive(false);
@@ -154,7 +153,6 @@ export function useTopologyInspectorState({
     datasheet: v2DatasheetModel,
   });
   // The model turns null on close, so the exit window holds it. Keyed by slug: an unkeyed
-  //
   // per-render `useMemo` value crashes the map with React #301.
   const heldFullDetailA1Model = useHeldValue(fullDetailA1Model, fullDetailSlug);
   const selectedNodeFocusActive =
@@ -183,9 +181,8 @@ export function useTopologyInspectorState({
     !createNodeOpen &&
     !nodePopoverDismissed;
   // The panel owns its exit window (`<Surface>` in `OntologyMapDetailPanel`); this only takes the
-  // positioner
-  // down on its `onExited`. The helper holds the last snapshot while `v2DatasheetModel` is null;
-  // another node never inherits it.
+  // positioner down on its `onExited`. The helper holds the last snapshot while `v2DatasheetModel`
+  // is null; another node never inherits it.
   const panelOpen = nodePopoverVisible && Boolean(v2DatasheetModel) && !meaningEditorOpen;
   const [nodePanelMounted, setNodePanelMounted] = useState(false);
   // Set during render: an effect would drop the positioner on the first open frame.
@@ -226,15 +223,12 @@ export function useTopologyInspectorState({
     indexExpanded: renderedIndexState === "expanded",
   });
   // Below `lg` the node sheet covers the expanded INDEX, whose controls stay tabbable but
-  // unpressable,
-  // so INDEX is demoted there; at `lg` and above both coexist. `inert` removes rows from focus and
-  // the a11y
-  // tree, `pointer-events-none` stops stray taps.
+  // unpressable, so INDEX is demoted there; at `lg` and above both coexist. `inert` removes rows
+  // from focus and the a11y tree, `pointer-events-none` stops stray taps.
   const indexDemotedByNodeSheet =
     useViewportBelow(LG_BREAKPOINT_PX) && nodePanelMounted && Boolean(panelDatasheetModel);
   // Raised only while the activity inbox is open: the lane's `z-20` context traps the inbox under
-  // later tiles,
-  // and a permanent raise pokes through the scrim (`--z-map-scrim`, 25).
+  // later tiles, and a permanent raise pokes through the scrim (`--z-map-scrim`, 25).
   // Gate: `tests/e2e/agent-activity-placement.spec.ts`.
   const [activityInboxOpen, setActivityInboxOpen] = useState(false);
   const topologyUtilityLaneSuppressionContract = selectedRelationActive

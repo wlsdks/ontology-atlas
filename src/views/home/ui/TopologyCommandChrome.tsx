@@ -169,9 +169,8 @@ export function TopologyCommandChrome({
         />
         <div
           className="min-w-0 overflow-hidden"
-          // The utility lane and this label are separate absolute overlays that `flex-wrap` cannot
-          // separate,
-          // so a vw-based cap keeps them apart below 390px.
+          // The utility lane (about 236px of content at `right-4`) and this label are separate
+          // absolute overlays that `flex-wrap` cannot separate, so a vw-based cap keeps them apart.
           style={{ maxWidth: "max(0px, calc(100vw - 310px))" }}
         >
           <span
@@ -241,27 +240,24 @@ export function TopologyCommandChrome({
           ) : null}
           <div
             // One flex box holds both lanes, so neither paints over the other when a panel narrows
-            // the map.
-            // Below `xl` they stack at the right; from `xl` they share a row
-            // and `flex-wrap-reverse` drops the search
-            // lane under the utility lane when both do not fit. The box owns every horizontal
-            // reserve (expanded INDEX,
-            // the node inspector from `xl` in `app/globals.css`, the agent dock seam) and the
+            // the map. Below `xl` they stack at the right; from `xl` they share a row
+            // and `flex-wrap-reverse` drops the search lane under the utility lane when both do
+            // not fit. The box owns every horizontal reserve (expanded INDEX, the node inspector
+            // from `xl` in `app/globals.css`, the agent dock seam) and the
             // one `topology-ui-scale`.
             className={cn(
               // `items-end` everywhere: from `xl` the wrap-reverse cross axis makes `end` the
-              // line's top, and `items-start`
-              // would sink the utility lane onto the fit tile. From `md` it stands on the chrome
-              // inset, level with INDEX.
+              // line's top, and `items-start` would sink the utility lane onto the fit tile.
+              // From `md` it stands on the chrome inset, level with INDEX.
               "@container/map-toolbar topology-ui-scale pointer-events-none absolute right-4 top-4 flex flex-col-reverse items-end gap-4 transition-[left,right] duration-[var(--agent-panel-reflow-duration)] ease-[var(--topology-motion-ease-out)] motion-reduce:transition-none md:right-[var(--chrome-inset)] md:top-[var(--chrome-inset)] xl:flex-row xl:flex-wrap-reverse",
               // The free map starts one inset past INDEX, open or folded, or the first search tile
               // slides under the tab.
               renderedIndexState === "expanded"
                 ? "left-4 md:left-[calc(var(--topology-index-width)+var(--topology-index-inset)*2)]"
                 : "left-4 md:left-[calc(var(--topology-index-tab-width)+var(--topology-index-inset))]",
-              // The activity status is a bell segment inside the row and wraps with it. While a
-              // lane popover shows,
-              // the box rises above INDEX (z-20, later in the DOM).
+              // The activity status wraps with the row; hiding it on overflow refit the lane and
+              // showed it again, endlessly. A lane popover lives in this stacking context, so
+              // while one shows the box rises above INDEX (z-20, later in the DOM).
               activityInboxOpen ? "z-30" : "z-20 has-[[data-lane-popover=open]]:z-30",
             )}
             ref={setToolbarElement}
@@ -281,9 +277,8 @@ export function TopologyCommandChrome({
           >
           <SearchHint
             // No auto margin: from `xl` this lane holds the free map's left edge and the utility
-            // lane's `ml-auto` the right,
-            // and it stays put while the inspector owns the right rail. Gate:
-            // tests/e2e/map-toolbar-balance.spec.ts
+            // lane's `ml-auto` the right, and it stays put while the inspector owns the right
+            // rail. Gate: tests/e2e/map-toolbar-balance.spec.ts
             density={topologyUtilityChromeCompact || searchLaneCrowded ? "compact-focus" : "default"}
             phoneFocusSuppressed={selectedNodeFocusActive}
             constellationControl={(
@@ -446,8 +441,8 @@ export function TopologyCommandChrome({
           {inspectorOwnsRightRail ? null : (
               <div
                 // Below `md` the lane retreats under the INDEX sheet; `[data-chip-label]` steps
-                // shrink labels
-                // at `max-xl` / `max-2xl`. `topology-top-toolbar` owns position and scale.
+                // shrink labels at `max-xl` / `max-2xl`. `topology-top-toolbar` owns position and
+                // scale.
                 className={`pointer-events-auto shrink-0 flex-col items-end gap-2 xl:ml-auto ${renderedIndexState === "expanded" ? "hidden md:flex" : "flex"}`}
                 data-phone-sheet-utility-contract={
                   renderedIndexState === "expanded"
@@ -582,8 +577,8 @@ export function TopologyCommandChrome({
                       icon={<HistoryIcon />}
                       active={spotlightOn}
                       // Always named, as the only top-chrome place that speaks about change.
-                      // Window and count ride a badge that
-                      // survives every shrink step; aria-label and title keep the window.
+                      // Window and count ride a badge that survives every shrink step;
+                      // aria-label and title keep the window.
                       badge={
                         spotlightOn ? (
                           <span
@@ -656,7 +651,8 @@ export function TopologyCommandChrome({
                      click and Escape. */}
                   <CompanionHome compact />
                   <AgentActivityChip
-                    // Recedes for a datasheet, but not from under an open notification panel.
+                    // Recedes for a datasheet, but not from under an open notification panel:
+                    // pressing a row there focuses its node, which raises the datasheet.
                     suppressed={
                       (Boolean(v2DatasheetModel) || selectedEdgeOwnsRightRail) && !activityInboxOpen
                     }

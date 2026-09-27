@@ -6,9 +6,8 @@ import {
 
 /**
  * A map-written relation names a node by its document slug, the spelling MCP writes
- * (`domains/agent-access`).
- * Both map writers call this, or one relation reaches disk in two spellings.
- * `ontology/` is the bundled manifest's root segment, not part of any vault address.
+ * (`domains/agent-access`). Both map writers call this, or one relation reaches disk in two
+ * spellings. `ontology/` is the bundled manifest's root segment, not part of any vault address.
  */
 export function resolveNodeVaultRef(node: KnowledgeGraphNode): string {
   const target = resolveNodeAgentTarget(node);

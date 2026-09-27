@@ -3,9 +3,9 @@ import { projectDisplayName, type Project } from "@/entities/project";
 import { resolveTopologySelectedOntologyNode } from "./resolve-topology-selected-node";
 
 /**
- * A slug's readable name, only when it resolves in this vault.
- * null is the information: falling back to the slug makes absent nodes look present,
- * and the path chip then claims "no path" over a pair that is not here.
+ * A slug's readable name, only when it resolves in this vault. null is the information: falling
+ * back to the slug makes absent nodes look present, and the path chip then claims "no path" over a
+ * pair that is not here.
  */
 export function resolveTopologyNodeTitle({
   slug,

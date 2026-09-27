@@ -318,8 +318,7 @@ describe("project source model", () => {
 
   /**
    * The contract: one measurement of the vault root and no folder walk; confirming skips the
-   * picker;
-   * the evidence is measured; without a measurement only the plain picker shows.
+   * picker; the evidence is measured; without a measurement only the plain picker shows.
    */
   const vaultRootPath = "/private/work/music/docs/ontology";
 

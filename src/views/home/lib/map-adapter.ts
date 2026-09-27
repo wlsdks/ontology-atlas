@@ -28,14 +28,11 @@ export interface OntologyMapGraph {
 }
 
 /**
- * Adapts `ontologyInsight` nodes and edges into the `OntologyMap` contract.
- * `x`/`y` are passed as 0 and ignored: `topology-world.ts` recomputes the layout from `contains`
- * edges.
- * `isHub` marks exactly one node, the highest fan-in (slug ascending breaks ties), per the single
- * amber ring
+ * Adapts `ontologyInsight` nodes and edges into the `OntologyMap` contract. `x`/`y` are passed as 0
+ * and ignored: `topology-world.ts` recomputes the layout from `contains` edges. `isHub` marks
+ * exactly one node, the highest fan-in (slug ascending breaks ties), per the single amber ring
  * in `docs/prototypes/topology-b2plus.html`. `ownerKey` is always null (no ownership overlay),
- * and `size`
- * reuses `subtreeWeightBySlug`.
+ * and `size` reuses `subtreeWeightBySlug`.
  */
 export function buildOntologyMapGraph(
   nodes: readonly KnowledgeGraphNode[],

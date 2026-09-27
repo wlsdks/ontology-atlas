@@ -49,8 +49,8 @@ export interface ProjectSourceRuntime {
 }
 
 /**
- * Null for `low` confidence or no candidate, so the screen falls back to the plain picker
- * and never draws a greyed-out proposal.
+ * Null for `low` confidence or no candidate, so the screen falls back to the plain picker and never
+ * draws a greyed-out proposal.
  */
 export interface ProjectSourceProposedRoot {
   rootPath: string;
@@ -245,12 +245,11 @@ export function useProjectSourceModel(input: {
   }, [store, input.projectSlug, graphHash, runtime, runtimeAvailable]);
 
   /**
-   * One `inspect_project_source` call already climbs to the enclosing git repo, so the app never
-   * scans folders.
-   * Runs only when the proposal is drawn (`connect_source` next), or one click pays for two
-   * measurements.
-   * "M of N declared paths" is measured from real witnesses; the receipt is built in memory and
-   * never written.
+   * One `inspect_project_source` call already climbs to the enclosing git repository
+   * (`src-tauri/src/lib.rs`), so the app never scans folders itself, which local-first forbids. It
+   * runs only while the proposal is drawn (`connect_source` next), per the render-condition rule
+   * in `.claude/rules/architecture.md`, or one click pays for two measurements. "M of N declared
+   * paths" is measured from real witnesses; the receipt is built in memory, never written.
    */
   const vaultRootPath = useMemo(
     () => runtimeAvailable && input.vaultHandle ? runtime.rootPathOf(input.vaultHandle) : null,
@@ -323,8 +322,7 @@ export function useProjectSourceModel(input: {
 
   /**
    * `options.rootPath` skips the picker to confirm an inference; measuring and storing stay one
-   * copy
-   * shared with the picked-folder path.
+   * copy shared with the picked-folder path.
    */
   const runNextAction = useCallback(async (options?: { rootPath?: string }) => {
     if (

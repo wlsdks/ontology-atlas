@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 import { filterOntologyConnectedOrphans } from "./topology-health";
 
 /**
- * A project root owning domains through `contains` is not an orphan, under both spellings
- * (bare slug and `project:` prefix), or the health chip's first item is a false positive.
+ * A project root owning domains through `contains` is not an orphan, under both spellings (bare
+ * slug and `project:` prefix), or the health chip's first item is a false positive.
  */
 const project = (slug: string) => ({ slug }) as { slug: string };
 

@@ -1,8 +1,7 @@
 /**
- * What the path chip may claim. If either endpoint does not resolve in this vault, say only that:
- * a hop count, "no path" or the copy button all presuppose both nodes exist, and a copied packet
- * would hand an
- * agent two absent slugs as fact.
+ * What the path chip may claim. If either endpoint does not resolve in this vault, say only that: a
+ * hop count, "no path" or the copy button all presuppose both nodes exist, and a copied packet
+ * would hand an agent two absent slugs as fact.
  */
 export type TopologyPathChipState =
   | { kind: "awaiting-target"; sourceTitle: string }

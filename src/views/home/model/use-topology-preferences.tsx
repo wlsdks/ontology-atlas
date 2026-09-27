@@ -33,9 +33,8 @@ export function useTopologyPreferences() {
   const tAtlasGit = useTranslations('atlasGit');
   const relationVocabulary = useRelationVocabulary();
   // Plain mode is a display lens only: it hides the element tier (except a clicked node's ego),
-  // uses plain
-  // vocabulary and hides developer chrome. A shared store, because the shell's history tile reads
-  // it too.
+  // uses plain vocabulary and hides developer chrome. A shared store, because the shell's history
+  // tile reads it too.
   const [audiencePlain, setAudiencePlain] = useAudiencePlain();
   // App-wide stores the DOM glyphs also subscribe to, so canvas and DOM swap in lockstep.
   const canvasBackground = useCanvasBackground();

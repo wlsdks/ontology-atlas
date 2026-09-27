@@ -82,20 +82,17 @@ export function useTopologyExplorationLenses({ routeState, setRouteState, topolo
   }, [spotlightIds, ontologyMapGraph, expandedParentSet]);
 
   // The canvas wants a node id; project deep links send a bare slug, so projects resolve through
-  // the same rule.
-  // Without a node the bare slug is kept and the canvas drops it to "nothing selected".
-  // A selection confirmed to exist (`../lib/resolve-canvas-selection.ts`): `canvasSelectedSlug`
-  // holds the raw
-  // slug while undecided, so anything that writes a permanent record, like the first-visit hint,
-  // reads this.
+  // the same rule. Without a node the bare slug is kept and the canvas drops it to "nothing
+  // selected". A selection confirmed to exist
+  // (`../lib/resolve-canvas-selection.ts`): `canvasSelectedSlug` holds the raw slug while
+  // undecided, so anything that writes a permanent record, like the first-visit hint, reads this.
   const drawerProject = selectedProject;
 
   // A hand-typed bare `?realm=` slug is promoted to its canonical id; null hides the chip.
 
   // Derives the collapsed ancestors of a `?p=` target into `open=`, at most once per slug (ref
-  // guard),
-  // so a parent the user collapses later stays collapsed. With zero edges the ref stays unset to
-  // retry.
+  // guard), so a parent the user collapses later stays collapsed. With zero edges the ref stays
+  // unset to retry.
   const deeplinkExpandedForRef = useRef<string | null>(null);
   useEffect(() => {
     if (!canvasSelectedSlug) return;

@@ -1,18 +1,15 @@
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 
-/**
- * Derives long-untouched "dusty" nodes and wires them to `topology-world`'s existing `stale` flag
- * (no new draw code).
- * Dusty is strictly below the median mtime and older than `max(30 days, 2 x median age)`; ties are
- * fresh,
- * so a bulk import or fresh clone marks nothing rather than inventing dates. The multiplier and
- * the 25%
- * cap keep a healthy, slowly maintained vault from reading mostly dusty. Dates come
- * from `useVaultDocFreshnessIndex` keyed by `evidenceIds[0]`; a node without a date is fresh. O(n log
- * n) for the sort.
- */
 export const DUSTY_MIN_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
+/**
+ * Derives long-untouched "dusty" nodes and wires them to `topology-world`'s existing `stale` flag.
+ * Dusty is strictly below the median mtime and older than `max(30 days, 2 x median age)`; ties are
+ * fresh, so a bulk import or fresh clone marks nothing rather than inventing dates. The multiplier
+ * and the 25% cap keep a healthy, slowly maintained vault from reading mostly dusty. Dates come
+ * from `useVaultDocFreshnessIndex`, keyed by `evidenceIds[0]`; a node without one is fresh. O(n log
+ * n) for the median sort.
+ */
 export function deriveDustySlugs(
   nodes: readonly Pick<KnowledgeGraphNode, "id" | "evidenceIds">[],
   freshnessIndex: ReadonlyMap<string, string>,

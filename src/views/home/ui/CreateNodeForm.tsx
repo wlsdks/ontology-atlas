@@ -79,8 +79,7 @@ export function CreateNodeForm({
   domainOptions?: readonly { value: string; label: string }[];
   /**
    * The screen language (`primaryLocale`) is required, or the raw title shows on the person's own
-   * screen.
-   * Omit for the single-name form.
+   * screen. Omit for the single-name form.
    */
   localeNames?: {
     primaryLocale: string;

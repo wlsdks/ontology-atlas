@@ -1,8 +1,7 @@
 /**
- * The slug the map may focus: only one this vault holds, or a stale `?p=` dims the whole map
- * (ego focus checks only non-null) and marks the first-visit hint learned.
- * Returns null only once the miss is certain, like `deeplink-miss-notice.ts`: a bare slug waits
- * for projects.
+ * The slug the map may focus: only one this vault holds, or a stale `?p=` dims the whole map (ego
+ * focus checks only non-null) and marks the first-visit hint learned. Returns null only once the
+ * miss is certain, like `deeplink-miss-notice.ts`: a bare slug waits for projects.
  */
 export interface CanvasSelectionInput {
   selectedSlug: string | null;

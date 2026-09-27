@@ -15,8 +15,7 @@ import type { NodeDatasheetDerivation } from "./use-node-datasheet-model";
 /**
  * Assembles the full-detail card model only while `open`: a closed card never traverses the graph,
  * since the depth-3 reach BFS and per-row containment scans (neighbours × edges) otherwise run on
- * every
- * node click. The open result is unchanged and built in the same render. Guard: the colocated
+ * every node click. The open result is unchanged and built in the same render. Guard: the colocated
  * test.
  */
 export interface UseFullDetailA1ModelArgs {
@@ -102,8 +101,7 @@ export function useFullDetailA1Model({
           return { agentSlug: target.ref, documented: target.documented };
         })(),
         // Freshness has one source (`use-node-datasheet-model`): the datasheet's verdict for this
-        // node,
-        // else the session baseline, or the two surfaces contradict each other.
+        // node, else the session baseline, or the two surfaces contradict each other.
         fresh:
           datasheet?.nodeId === selectedOntologyNode.id
             ? datasheet.powered

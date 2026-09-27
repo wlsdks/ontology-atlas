@@ -69,8 +69,7 @@ type TrailPopoverAlign = "start" | "end";
 
 /**
  * Grows from the chip's right corner while the popover starts inside the free map, else from its
- * left.
- * The free map is the closest `[data-popover-boundary]` (the toolbar), or the window.
+ * left. The free map is the closest `[data-popover-boundary]` (the toolbar), or the window.
  */
 function resolveTrailPopoverAlign(root: HTMLElement | null): TrailPopoverAlign {
   if (!root) return "end";
@@ -91,13 +90,12 @@ export interface TopologyTrailChipProps {
   compactLabel?: string;
   /**
    * Oldest to newest; the popover reverses it so recent targets land on the first screen, like
-   * every
-   * time-ordered list in the app.
+   * every time-ordered list in the app.
    */
   entries: readonly FootprintTrailEntry[];
   /**
-   * Aligned with `entries`; index 0 is null, and null elsewhere means no shared edge, which the
-   * row states.
+   * Aligned with `entries`; index 0 is null, and null elsewhere means no shared edge, which the row
+   * states.
    */
   stepCaptions: readonly (TrailStepCaption | null)[];
   /** The indigo dot on the timeline. */
@@ -121,8 +119,7 @@ export interface TopologyTrailChipProps {
   pastNotice: string | null;
   /**
    * The caller archives the trail in progress, refines and loads this one, and focuses its last
-   * step;
-   * the chip only returns to level 1.
+   * step; the chip only returns to level 1.
    */
   onReplayPastWalk: (id: string) => void;
   onDeletePastWalk: (id: string) => void;
@@ -131,12 +128,10 @@ export interface TopologyTrailChipProps {
 }
 
 /**
- * The walked-trail chip: a mini timeline popover, newest on top with relative-step captions,
- * like every time-ordered list in the app. A self-closing anchored popover owning its own Escape,
- * so the
+ * The walked-trail chip: a mini timeline popover, newest on top with relative-step captions, like
+ * every time-ordered list in the app. A self-closing anchored popover owning its own Escape, so the
  * global Esc ladder does not fire twice. Level 2 in the same shell holds archived trails without
- * indigo,
- * since no row there is "you are here"; replaying archives the current trail first.
+ * indigo, since no row there is "you are here"; replaying archives the current trail first.
  */
 export function TopologyTrailChip({
   label,
@@ -162,8 +157,7 @@ export function TopologyTrailChip({
   // Destructive and unrecoverable, so an inline two-step confirm.
   const [clearAllArmed, setClearAllArmed] = useState(false);
   // A session trail is not in the URL and cannot be rebuilt, so both clear controls arm first and
-  // the second
-  // press discards, matching clear-all.
+  // the second press discards, matching clear-all.
   const [clearArmed, setClearArmed] = useState(false);
   // Chosen on open against the toolbar box, or a right-hung popover lands under INDEX.
   const [align, setAlign] = useState<TrailPopoverAlign>("end");
@@ -353,7 +347,7 @@ export function TopologyTrailChip({
             ) : (
               <>
                 <span className="min-w-0 flex-1 truncate">{labels.heading}</span>
-                {/* Appears only with something to show. */}
+                {/* Only with something to show: a link to an empty past is only ink. */}
                 {pastWalks.length > 0 || pastNotice !== null ? (
                   <button
                     ref={pastLinkRef}
@@ -488,17 +482,16 @@ export function TopologyTrailChip({
             </>
           ) : (
           <>
-          {/* Newest on top, so `i` is steps back from the latest visit. */}
           <ol className="flex max-h-[280px] flex-col overflow-y-auto px-3 py-2.5">
-            {recentFirstEntries.map(({ entry, caption, oldest }, i) => {
+            {recentFirstEntries.map(({ entry, caption, oldest }, stepsBack) => {
               const isCurrent = entry.id === currentId;
               // "you are here" with focus, else "just now" without an indigo dot.
               const stepLabel =
-                i === 0
+                stepsBack === 0
                   ? isCurrent
                     ? labels.currentLabel
                     : labels.justNowLabel
-                  : labels.stepsAgoLabel(i);
+                  : labels.stepsAgoLabel(stepsBack);
               return (
                 <li
                   key={entry.id}
@@ -515,7 +508,7 @@ export function TopologyTrailChip({
                   <span className="relative flex w-4 shrink-0 flex-col items-center">
                     <span
                       aria-hidden
-                      className={`w-px flex-1 ${i === 0 ? "bg-transparent" : "bg-[color:var(--color-divider)]"}`}
+                      className={`w-px flex-1 ${stepsBack === 0 ? "bg-transparent" : "bg-[color:var(--color-divider)]"}`}
                     />
                     {isCurrent ? (
                       <span
@@ -528,7 +521,7 @@ export function TopologyTrailChip({
                     )}
                     <span
                       aria-hidden
-                      className={`w-px flex-1 ${i === recentFirstEntries.length - 1 ? "bg-transparent" : "bg-[color:var(--color-divider)]"}`}
+                      className={`w-px flex-1 ${stepsBack === recentFirstEntries.length - 1 ? "bg-transparent" : "bg-[color:var(--color-divider)]"}`}
                     />
                   </span>
                   <span className="flex min-w-0 flex-1 flex-col justify-center">
@@ -547,12 +540,12 @@ export function TopologyTrailChip({
                     >
                       {entry.title}
                     </button>
-                    {/* Outside the button so its aria-label keeps the distance for screen readers;
-                       only the current row is indigo. */}
+                    {/* Outside the button, whose aria-label would swallow it, so screen readers
+                       still read the distance; only the current row is indigo. */}
                     <span
                       data-testid="topology-trail-step-label"
                       className={`shrink-0 font-mono text-caption tabular-nums ${
-                        i === 0 && isCurrent
+                        stepsBack === 0 && isCurrent
                           ? "text-[color:var(--color-indigo-accent)]"
                           : "text-[color:var(--color-text-quaternary)]"
                       }`}
@@ -560,9 +553,9 @@ export function TopologyTrailChip({
                       {stepLabel}
                     </span>
                     </span>
-                    {/* How this step follows the last: relation word plus `relation_notes`. Outside
-                       the button so the aria-label
-                       stays the destination; the oldest row keeps the empty slot for equal height. */}
+                    {/* How this step follows the last: relation word plus `relation_notes`.
+                       Outside the button so the aria-label stays the destination; the oldest
+                       row keeps the empty slot for equal height. */}
                     {(() => {
                       const text = oldest
                         ? ""

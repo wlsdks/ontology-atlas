@@ -23,8 +23,7 @@ export function buildSpotlightFitSignature({
 
 /**
  * Token 0 is a one-shot fit, so a deep-linked spotlight frames on mount. Later changes adjust
- * during render,
- * giving exactly one new token without an effect cascade.
+ * during render, giving exactly one new token without an effect cascade.
  */
 export function useSpotlightFitTransition(signature: string): number {
   const [transition, setTransition] = useState(() => ({ signature, token: 0 }));

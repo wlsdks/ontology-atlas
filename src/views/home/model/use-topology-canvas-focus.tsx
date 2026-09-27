@@ -12,11 +12,9 @@ export function useTopologyCanvasFocus({ topologyVaultReadModel }: Options) {
   const { ontologyInsight, selectedOntologyNode } = topologyVaultReadModel;
 
 
-  // The one channel for side-panel name hover to point at a map node: chat names and datasheet
-  // rows.
-  // It reuses the node's pointer-hover mark (blink and glow are
-  // forbidden, `.claude/rules/forbidden.md`).
-  // A ref, so hover costs no render and never competes with canvas hover.
+  // The one channel for side-panel name hover (chat names, datasheet rows) to point at a map node.
+  // It reuses the node's own pointer-hover mark, so there is no second highlight to learn. A ref,
+  // so hover costs no render and never competes with canvas hover.
   const panelHoverNodeIdRef = useRef<string | null>(null);
   // Only names that exist become links, or one dead link teaches people to stop pressing.
   // Agents name `domains/x` while map ids are `domain:x`; `chat-node-index.ts` maps between them.
@@ -98,8 +96,7 @@ export function useTopologyCanvasFocus({ topologyVaultReadModel }: Options) {
     fullDetailSlug != null && fullDetailSlug === selectedOntologyNode?.id;
   /**
    * Full detail is a lazy chunk: the map stays until it loads, then background and content land in
-   * one
-   * crossfade instead of a blank window. Prewarmed when a node is selected.
+   * one crossfade instead of a blank window. Prewarmed when a node is selected.
    */
   const [FullDetailCard, setFullDetailCard] = useState<FullDetailA1Component | null>(null);
   useEffect(() => {

@@ -28,12 +28,9 @@ import {
 
 /**
  * Assembles the node datasheet model. `metric` counts come from the same `groups` the panel draws,
- * or
- * parallel edges make them diverge. Containment is counted apart from "what it leans on".
- * Freshness has one
- * source (`docFreshnessIndex`), never the session baseline. `nodeId` is the canvas id; `slug`
- * prefers the
- * vault slug for deep links and handoff text.
+ * or parallel edges make them diverge. Containment is counted apart from "what it leans on".
+ * Freshness has one source (`docFreshnessIndex`), never the session baseline. `nodeId` is the
+ * canvas id; `slug` prefers the vault slug for deep links and handoff text.
  */
 export interface UseNodeDatasheetModelArgs {
   selectedOntologyNode: KnowledgeGraphNode | null;
@@ -44,9 +41,8 @@ export interface UseNodeDatasheetModelArgs {
   authoredSignificance: string | null;
   docFreshnessIndex: ReadonlyMap<string, string>;
   /**
-   * File dates for the conflict badge alone: a commit moves `docFreshnessIndex` without writing
-   * the file.
-   * Defaults to `docFreshnessIndex`.
+   * File dates for the conflict badge alone: a commit moves `docFreshnessIndex` without writing the
+   * file. Defaults to `docFreshnessIndex`.
    */
   docFileDateIndex?: ReadonlyMap<string, string>;
   /**
@@ -96,8 +92,7 @@ export interface NodeDatasheetDerivation {
     evidence: { rows: ReturnType<typeof buildV2EvidenceRows>; total: number };
     /**
      * Real code paths from frontmatter `elements:`, kept apart from `evidence` (the source-doc
-     * slug);
-     * see `deriveCodeLocations`.
+     * slug); see `deriveCodeLocations`.
      */
     codeLocations: string[];
     handoffText: string;
@@ -107,8 +102,8 @@ export interface NodeDatasheetDerivation {
      */
     documentHref: string | null;
     /**
-     * The popover omits it because its evidence group already names the link; only surfaces
-     * without one use it.
+     * The popover omits it because its evidence group already names the link; only surfaces without
+     * one use it.
      */
     mentionDocumentHref: string | null;
     meaningEditHref: string;
@@ -146,10 +141,8 @@ export function useNodeDatasheetModel({
   const nodeFocus = nodeFocusData?.focus ?? null;
 
   // Keyed by settled source scope, node id and source slug: the same graph id in the sample and a
-  // local vault
-  // is not the same document. A null scope captures nothing. The self-write time is snapshotted
-  // with freshness,
-  // so only a later write explains a later change.
+  // local vault is not the same document. A null scope captures nothing. The self-write time is
+  // snapshotted with freshness, so only a later write explains a later change.
   type EditBaseline = {
     scopeKey: string;
     nodeId: string;

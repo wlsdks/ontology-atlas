@@ -12,8 +12,7 @@ export interface ContextualIndexStateInputs {
 
 /**
  * The INDEX state for this moment, leaving the persisted preference alone: a contextual work
- * surface borrows
- * the map's width and `baseState` returns when it leaves.
+ * surface borrows the map's width and `baseState` returns when it leaves.
  */
 export function resolveContextualIndexState({
   baseState,

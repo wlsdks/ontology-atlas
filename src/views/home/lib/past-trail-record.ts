@@ -1,8 +1,7 @@
 /**
- * Past-trail format rules independent of the storage medium; only `past-trail-store.ts` knows
- * where records land.
- * One timestamp per trail and no per-step times, dwell or counts: that line separates a trail from
- * analytics.
+ * Past-trail format rules independent of the storage medium; only `past-trail-store.ts` knows where
+ * records land. One timestamp per trail and no per-step times, dwell or counts: that line separates
+ * a trail from analytics.
  */
 
 /** Ring buffer; the UI caption states the cap so nobody expects accumulation. */
@@ -90,8 +89,7 @@ export interface UpsertPastWalkOptions {
 
 /**
  * Overwrites the walk in progress on every step, since an async write started at `pagehide` is
- * lost.
- * Skipped under the threshold or when its route equals any stored trail (not just the first),
+ * lost. Skipped under the threshold or when its route equals any stored trail (not just the first),
  * or a reopened past trail is saved again under today's date.
  */
 export function upsertPastWalk(

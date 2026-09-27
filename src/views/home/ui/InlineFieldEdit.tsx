@@ -7,8 +7,8 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { controlClass, fieldClass } from "@/shared/ui/control-class";
 
 /**
- * One frontmatter field switching between read, edit and save/cancel; labels arrive as props,
- * so it stays independent of `useTranslations`.
+ * One frontmatter field switching between read, edit and save/cancel; labels arrive as props, so it
+ * stays independent of `useTranslations`.
  */
 export interface InlineFieldEditLabels {
   field: string;

@@ -16,8 +16,7 @@ import { TopologyPathChip } from "./TopologyPathChip";
 
 /**
  * The top-centre chips share `ChromeChip`'s spec and must not re-apply `topology-ui-scale`:
- * the `SearchHint`
- * wrapper already does, and nested zoom makes a chip outgrow its siblings.
+ * the `SearchHint` wrapper already does, and nested zoom makes a chip outgrow its siblings.
  */
 describe("top chrome status chip geometry", () => {
   it("the shared geometry class carries chrome-tile-size height, chrome-radius and chrome-border tokens", () => {

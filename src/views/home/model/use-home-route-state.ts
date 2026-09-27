@@ -18,12 +18,6 @@ function readHomeSearch() {
   return window.location.search;
 }
 
-/**
- * Serialises route state to query parameters and back. Subscribes to popstate plus the in-app push
- * event
- * and to `useSearchParams`, or a Next `<Link>` changes the URL without refreshing state;
- * `window.location` is always read fresh.
- */
 export interface HomeRouteStateUpdateOptions {
   /**
    * For normalising the arrival URL rather than navigation, so Back does not walk unvisited
@@ -32,6 +26,11 @@ export interface HomeRouteStateUpdateOptions {
   replace?: boolean;
 }
 
+/**
+ * Serialises route state to query parameters and back. It subscribes to popstate, the in-app push
+ * event and `useSearchParams`, or a Next `<Link>` changes the URL without refreshing state; the
+ * value always reads `window.location` fresh.
+ */
 export function useHomeRouteState(): [
   HomeRouteState,
   (
@@ -95,8 +94,7 @@ export function useHomeRouteState(): [
       );
       const query = params.toString();
       // The actual browser path: next-intl's `usePathname` drops the locale, and reloading that
-      // breaks the static
-      // export's [locale] route.
+      // breaks the static export's [locale] route.
       const browserPath = window.location.pathname;
       const nextUrl = query ? `${browserPath}?${query}` : browserPath;
       // An identical URL pushes nothing, or Back changes nothing on screen and reads as broken.

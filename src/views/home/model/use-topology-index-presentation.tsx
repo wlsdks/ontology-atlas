@@ -42,10 +42,8 @@ export function useTopologyIndexPresentation({
   const { canCreateNode, selectedEdge } = topologyAuthoring;
 
   // Bound to the datasheet being shown, so after the first Esc (popover closed, selection kept)
-  // INDEX returns.
-  // An open edge panel docks in the same slot, so INDEX yields to it too. The realm ledger is
-  // exempt as
-  // a realm's only exit.
+  // INDEX returns. An open edge panel docks in the same slot, so INDEX yields to it too. The realm
+  // ledger is exempt as a realm's only exit.
   const topologySelectionActive = (Boolean(v2DatasheetModel) && !nodePopoverDismissed) || selectedEdge !== null;
   const {
     manualExpand: indexManualExpandDuringSelection,
@@ -68,9 +66,8 @@ export function useTopologyIndexPresentation({
   // plants no offset.
   const readoutStackRef = useRef<HTMLDivElement | null>(null);
   // Aligns the popover's growth origin with the clicked node: the panel remounts per slug, so the
-  // origin is
-  // injected as a CSS variable before paint. Without a canvas pointer in the last 600 ms it falls
-  // back to `center top`.
+  // origin is injected as a CSS variable before paint. Without a canvas pointer in the last 600 ms
+  // it falls back to `center top`.
   const nodePopoverSlug = v2DatasheetModel?.slug ?? null;
   useLayoutEffect(() => {
     const positioner = nodePopoverPositionerRef.current;

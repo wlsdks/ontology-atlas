@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 
 /**
- * Locks the traversal count, not milliseconds: "closed means zero" holds on every machine,
- * and removing the `open` gate fails it.
+ * Locks the traversal count, not milliseconds: "closed means zero" holds on every machine, and
+ * removing the `open` gate fails it.
  */
 
 const groupsSpy = vi.fn(() => ({

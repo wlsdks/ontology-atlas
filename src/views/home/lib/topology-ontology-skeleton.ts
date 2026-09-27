@@ -6,8 +6,7 @@ import type {
 
 /**
  * `anchor`: every project and domain, never thresholded. `landmark`: each domain's capabilities
- * governing the
- * largest subtree, plus one evidence element. `hidden`: the rest, revealed on demand.
+ * governing the largest subtree, plus one evidence element. `hidden`: the rest, revealed on demand.
  */
 type SkeletonLevel = "anchor" | "landmark" | "hidden";
 
@@ -55,27 +54,21 @@ function buildContainmentIndex(
   return { childrenByParent };
 }
 
-/** One DFS per node with a visited set: cycle-safe, O(V × (V + E)) overall, not memoized. */
+/**
+ * One DFS per node with its own visited set, each level re-copying its child's elements:
+ * O(V × (V + E) + V² × h) for containment depth h, cubic on a deep chain. Not memoised.
+ */
 function computeSubtreeWeights(
   nodes: readonly KnowledgeGraphNode[],
   index: ContainmentIndex,
 ): Map<string, number> {
   const kindBySlug = new Map(nodes.map((node) => [node.id, node.kind]));
   const weightBySlug = new Map<string, number>();
-
-  const elementDescendantsOf = (slug: string, seen: Set<string>): Set<string> => {
-    const elements = new Set<string>();
-    for (const child of index.childrenByParent.get(slug) ?? []) {
-      if (seen.has(child)) continue;
-      seen.add(child);
-      if (kindBySlug.get(child) === "element") elements.add(child);
-      for (const deep of elementDescendantsOf(child, seen)) elements.add(deep);
-    }
-    return elements;
-  };
-
   for (const node of nodes) {
-    weightBySlug.set(node.id, elementDescendantsOf(node.id, new Set([node.id])).size);
+    weightBySlug.set(
+      node.id,
+      collectElementDescendants(node.id, index, kindBySlug, new Set([node.id])).length,
+    );
   }
   return weightBySlug;
 }
@@ -110,7 +103,8 @@ function collectElementDescendants(
 
 /**
  * Landmarks rank by subtree weight, then describes fan-in, depends_on fan-in, slug ascending:
- * stable across renders.
+ * stable across renders. Each comparison rescans every edge (`countIncomingOfType`), so the ranking
+ * is O(C log C × E) for C capabilities, most of the build at 10,000 nodes.
  */
 export function buildOntologySkeleton(
   nodes: readonly KnowledgeGraphNode[],

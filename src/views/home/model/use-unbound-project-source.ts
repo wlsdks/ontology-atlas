@@ -10,9 +10,8 @@ import {
 } from "@/shared/lib/project-source-store";
 
 /**
- * Lifts "no code folder connected" out of a single node click into the INDEX beside the map.
- * Never mount a second `useProjectSourceModel` here: its folder walk would run regardless of
- * selection
+ * Lifts "no code folder connected" out of a single node click into the INDEX beside the map. Never
+ * mount a second `useProjectSourceModel` here: its folder walk would run regardless of selection
  * (`.claude/rules/architecture.md`). One sidecar read answers whether any project has zero bound
  * folders.
  */
@@ -41,8 +40,8 @@ const SOURCE_BINDING_TOOLS = new Set([
 ]);
 
 /**
- * ACP binding writes only a sidecar, so its receipt belongs in this key, or the screen recommends
- * a done action.
+ * ACP binding writes only a sidecar, so its receipt belongs in this key, or the screen recommends a
+ * done action.
  */
 export function buildProjectSourceReadinessRefreshToken(input: {
   projectSlug: string | null;

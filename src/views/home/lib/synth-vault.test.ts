@@ -10,8 +10,8 @@ import {
 
 describe("clampSynthSize", () => {
   /**
-   * Pins the shape of the measured vault (median 3, max 92, one hub), not the formula,
-   * so nobody reverts to a distribution with many hubs that no real vault has.
+   * Pins the shape of the measured vault (median 3, max 92, one hub), not the formula, so nobody
+   * reverts to a distribution with many hubs that no real vault has.
    */
   it("children per parent match a measured vault: single-digit median plus one hub", () => {
     const g = synthesizeVaultGraph(3000);
@@ -37,8 +37,7 @@ describe("clampSynthSize", () => {
     expect(capacityCounts.filter((n) => n > 40).length).toBeLessThanOrEqual(3);
 
     // Domains are outside this contract: whether a healthy ontology attaches elements straight to
-    // a domain
-    // is unsettled, so pinning it would freeze a guess.
+    // a domain is unsettled, so pinning it would freeze a guess.
   });
 
   it("clamps to [SYNTH_MIN, SYNTH_MAX] and rounds to an integer", () => {

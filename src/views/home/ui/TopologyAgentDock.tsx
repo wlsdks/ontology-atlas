@@ -211,9 +211,8 @@ export function TopologyAgentDock({
             as="aside"
             motion="overlay"
             // Mount and open are separate so the exit animation runs. While a turn runs the panel
-            // stays mounted
-            // behind the closed dock, since unmounting ends the ACP session; an idle panel
-            // unmounts on exit.
+            // stays mounted behind the closed dock, since unmounting ends the ACP session; an idle
+            // panel unmounts on exit.
             onExited={() => { if (acpTurnStartedAtRef.current === null) setChatMounted(false); }}
             // The user drags the width; `panel-width.ts` enforces only the map's share.
             data-agent-dock-surface="inset"

@@ -1,8 +1,7 @@
 /**
- * Decides whether an unresolved `?p=` deep link shows the "not found" toast.
- * A kind-prefixed slug can never be a project slug (no `:`), so it notifies at once;
- * a bare slug waits for the project list, but only for a grace window, or a stuck load keeps the
- * miss silent forever.
+ * Decides whether an unresolved `?p=` deep link shows the "not found" toast. A kind-prefixed slug
+ * can never be a project slug (no `:`), so it notifies at once; a bare slug waits for the project
+ * list, but only for a grace window, or a stuck load keeps the miss silent forever.
  */
 
 export type DeeplinkMissDecision =

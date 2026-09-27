@@ -64,23 +64,18 @@ import { TopologyBlockingOverlays } from "./TopologyBlockingOverlays";
 const LEFT_PANEL_COLLAPSED_KEY = "demo:left-panel-collapsed:v2";
 /**
  * Boot render gate: the first client commit renders only the server fallback's shared loading
- * visual,
- * and the body renders in a following `startTransition`, whose lane yields about every 5 ms and
- * splits the
- * largest boot long task. Server and client share `MapEntryLoadingVisual`, so markup cannot drift.
- * SSG goes
- * straight to the body (no `window`), which suspends on `useSearchParams`, keeping the export
- * byte-identical.
+ * visual, and the body renders in a following `startTransition`, whose lane yields about every 5 ms
+ * and splits the largest boot long task. Server and client share `MapEntryLoadingVisual`, so markup
+ * cannot drift. SSG goes straight to the body (no `window`), which suspends on `useSearchParams`,
+ * keeping the export byte-identical.
  */
 export function HomePage() {
   const tMapEntry = useTranslations('mapEntry');
   const tMapError = useTranslations('topology.widgetError');
   const [mapEntryTicket] = useState(() => readMapNavigationPending()?.id ?? null);
   // Only the first load splits: later arrivals already hold the map's code and graph, and
-  // splitting them
-  // crossfades into a loading visual. `shared/lib/route-arrival-memory.ts` is empty during static
-  // render and
-  // hydration, so the exported HTML and first commit are unchanged.
+  // splitting them crossfades into a loading visual. `shared/lib/route-arrival-memory.ts` is empty
+  // during static render and hydration, so the exported HTML and first commit are unchanged.
   const [bootedOnce, rememberBooted] = useArrivalMemory("home-map-booted", false);
   const [bootRenderReady, setBootRenderReady] = useState(bootedOnce);
   useEffect(() => {
@@ -150,9 +145,8 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   const homeWorkbenchController = useHomeWorkbenchController();
   const { setAcpChatOpen, acpDockFrameOpen, meaningWorkbenchOpen, reviewUsesSheet } = homeWorkbenchController;
   /**
-   * True only in the installed app with a key present (`null` = not known yet): a locked panel on
-   * a machine
-   * without a key breaks the intent of "in view".
+   * True only in the installed app with a key present (`null` = not known yet): a locked panel on a
+   * machine without a key breaks the intent of "in view".
    */
   const agentDockDefaultOpen = useAgentDockDefaultOpen();
   /**
@@ -168,8 +162,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     nonce: number;
   } | null>(null);
   // ⌘K on a project page leaves a sessionStorage flag; the lazy initializer opens the palette on
-  // the first
-  // render. It runs only on the client, so SSR and hydration both see `false`.
+  // the first render. It runs only on the client, so SSR and hydration both see `false`.
   const [ontologySearchOpen, setOntologySearchOpen] = useState(() => {
     if (typeof window === "undefined") return false;
     try {
@@ -201,9 +194,8 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   const [topologyRelayoutToken, setTopologyRelayoutToken] = useState(0);
 
   /**
-   * An arrow key with nowhere to go gets one self-dismissing line through the existing toast, not
-   * a new surface.
-   * The widget filters repeats (`shouldAnnounceDeadEnd`).
+   * An arrow key with nowhere to go gets one self-dismissing line through the existing toast, not a
+   * new surface. The widget filters repeats (`shouldAnnounceDeadEnd`).
    */
   const toast = useToast();
   /** Scaffold failures reach a person as a sentence, not a thrown string. */
@@ -245,8 +237,8 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     updatedAgoNowMs, spotlightOn, changedSlugs, dustySlugs, deeplinkSourceReady, handoffSource, vaultIdentity
   } = topologyVaultReadModel;
   // `AppNavRail` lives in the layout, so this page registers its settings node
-  // through `useNavRailSettingsSlot`.
-  // The memo sits after `vault` and `ontologyChangeset`, which the history tile reads.
+  // through `useNavRailSettingsSlot`. The memo sits after `vault` and `ontologyChangeset`, which
+  // the history tile reads.
   const navRailSettingsSlot = useMemo(
     () => (
       <>
@@ -447,8 +439,8 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     refreshIndexDependentTokens(root);
     let cancelled = false;
     // A microtask avoids a synchronous setState (cascading-render warning). The dome and Galaxy
-    // skip this re-fit,
-    // since it runs on every selection and Galaxy keeps the reader's pan and zoom.
+    // skip this re-fit, since it runs on every selection and Galaxy keeps the reader's pan and
+    // zoom.
     if (!view3d && !galaxy && !acpDockFrameOpen) {
       window.queueMicrotask(() => {
         if (!cancelled) setFitViewToken((count) => count + 1);
@@ -505,8 +497,8 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
         // two never cover each other.
         data-agent-panel-open={agentDockOpen ? 'true' : 'false'}
         // The coding-agent panel is sized by drag and writes nothing to `--agent-panel-width`,
-        // which the reservation
-        // reads, so the right number is filled in here. The two branches never open at once.
+        // which the reservation reads, so the right number is filled in here. The two branches
+        // never open at once.
         style={
           acpDockFrameOpen || runtimeChatOpen || meaningWorkbenchOpen
             ? ({ '--agent-panel-width': `${chatWidth.width}px` } as CSSProperties)
@@ -685,9 +677,9 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
             topologyExplorationLenses={topologyExplorationLenses}
             topologyCreateIntent={topologyCreateIntent}
           />
-          {/* Node and project selections go through `handleSelect`: the default would leave the map
-             for
-             `/ontology/?node=`. Hotkeys come from `useTypingShortcuts` above. */}
+          {/* Node and project selections go through `handleSelect`, since the palette's
+             default would leave the map for `/ontology/?node=`. The hotkeys come from
+             the `useTypingShortcuts` call above. */}
           <TopologyUtilityOverlays
             ontologySearchOpen={ontologySearchOpen}
             setOntologySearchOpen={setOntologySearchOpen}

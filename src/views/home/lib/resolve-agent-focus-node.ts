@@ -4,9 +4,8 @@ import { resolveTopologySelectedOntologyNode } from "./resolve-topology-selected
 
 /**
  * Resolves a heartbeat's `focus.ontologySlug` (a vault slug) to the map node id the render engine
- * keys on,
- * through the same two steps `/ontology` deep links use. No slug, list or match returns null:
- * never guessed.
+ * keys on, through the same two steps `/ontology` deep links use. No slug, list or match returns
+ * null: never guessed.
  */
 export function resolveAgentFocusNodeId(
   ontologySlug: string | null,

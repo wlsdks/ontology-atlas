@@ -895,8 +895,7 @@ describe("expanded-parent cap", () => {
 describe("clearVaultScopedRouteState", () => {
   /**
    * A complete path fixture has `p` already nulled by the parser, which passes even with clearing
-   * removed,
-   * so selection and path use separate fixtures.
+   * removed, so selection and path use separate fixtures.
    */
   const SELECTION_SEARCH =
     "p=capability:alpha&c=cat&hub=domain:h&open=domain:x,domain:y&realm=domain:r" +
@@ -962,8 +961,7 @@ describe("clearVaultScopedRouteState", () => {
 });
 
 /**
- * Every vault-scoped key must be a real query
- * key; `tests/contract/scope-registry.contract.test.ts`
+ * Every vault-scoped key must be a real query key; `tests/contract/scope-registry.contract.test.ts`
  * checks that every key is registered.
  */
 describe("VAULT_SCOPED_HOME_QUERY_KEYS", () => {
@@ -977,8 +975,7 @@ describe("VAULT_SCOPED_HOME_QUERY_KEYS", () => {
 
 /**
  * The whole bridge from the insights flow tab to the chat. It rides `ask` without becoming
- * an `askIntent`,
- * which feeds `nodeIntent` and cannot answer a request naming no node.
+ * an `askIntent`, which feeds `nodeIntent` and cannot answer a request naming no node.
  */
 describe("business-flow ask value", () => {
   it("parses into its own field and never into askIntent", () => {

@@ -11,8 +11,7 @@ import type { TopologyOntologyDrawerModel } from "./topology-ontology-drawer";
 type NodeSignificanceLevel = "core" | "supporting" | "leaf";
 
 /**
- * A node's plain-language "so what", derived from existing graph data and kept prose-free for
- * i18n.
+ * A node's plain-language "so what", derived from existing graph data and kept prose-free for i18n.
  * An authored `significance` override wins the "why it matters" line.
  */
 export interface NodeSignificanceModel {
@@ -20,8 +19,7 @@ export interface NodeSignificanceModel {
   kind: string;
   ownerDomainTitle: string | null;
   /**
-   * Lets the datasheet's domain line focus the domain on click; null with {@link
-   * ownerDomainTitle}.
+   * Lets the datasheet's domain line focus the domain on click; null with {@link ownerDomainTitle}.
    */
   ownerDomainId: string | null;
   importance: {

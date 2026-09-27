@@ -113,9 +113,8 @@ export function useFootprintTrail({
   );
   /**
    * The reason each step follows the last (`relation_notes`), shared by the timeline and the
-   * packet.
-   * The edge scan and the naming stay in two memos because `relationLabelOf` is a new closure
-   * every render.
+   * packet. The edge scan and the naming stay in two memos because `relationLabelOf` is a new
+   * closure every render.
    */
   const footprintTrailStepLinks = useMemo(
     () => buildTrailStepLinks(footprintTrailEntries.map((entry) => entry.id), insightEdges ?? []),
@@ -156,17 +155,15 @@ export function useFootprintTrail({
     setFootprintPacketCopied(true);
   }, [footprintTrailEntries, footprintTrailStepCaptions, dustySlugs, t]);
   // Footprint lens: true while the popover is open, with no new mode or URL state. The map dims
-  // ego edges and
-  // keeps only visited nodes lit; no trail line is drawn, since a line means a relation.
-  // Refs, not state, because state re-rendered the page tree on every toggle and hover.
+  // ego edges and keeps only visited nodes lit; no trail line is drawn, since a line means a
+  // relation. Refs, not state, because state re-rendered the page tree on every toggle and hover.
   const footprintLensActiveRef = useRef(false);
   const footprintBrushNodeIdRef = useRef<string | null>(null);
   const handleFootprintLens = useCallback((active: boolean) => {
     footprintLensActiveRef.current = active;
     // The lens also dims the DOM panel that declares `data-attention-role="supporting-detail"`,
-    // which otherwise
-    // takes the eye from the map. A dataset attribute costs no render; hover or focus brings the
-    // panel back.
+    // which otherwise takes the eye from the map. A dataset attribute costs no render; hover or
+    // focus brings the panel back.
     if (typeof document !== "undefined") {
       if (active) document.documentElement.dataset.trailLens = "on";
       else delete document.documentElement.dataset.trailLens;

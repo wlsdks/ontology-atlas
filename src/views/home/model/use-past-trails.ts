@@ -50,10 +50,8 @@ export interface UsePastTrailsResult {
 
 /**
  * Keeps the walk that `?p=` loses on reload, in a vault file so web and app (different origins)
- * share it.
- * Nothing expires it; clearing discards without a copy. Sample browsing writes nothing, since
- * browser storage
- * would recreate the web/app split.
+ * share it. Nothing expires it; clearing discards without a copy. Sample browsing writes nothing,
+ * since browser storage would recreate the web/app split.
  */
 export function usePastTrails({
   vaultHandle,
@@ -165,8 +163,8 @@ export function usePastTrails({
   }, [pastWalks, footprintNodeLookup]);
   /**
    * Order matters: flush the current walk; switch to a new id (an unchanged route keeps the
-   * original row's date);
-   * load the refined steps as the session trail; the caller ego-focuses the returned last step.
+   * original row's date); load the refined steps as the session trail; the caller ego-focuses the
+   * returned last step.
    */
   const replayPastWalk = useCallback(
     (walkId: string): string | null => {

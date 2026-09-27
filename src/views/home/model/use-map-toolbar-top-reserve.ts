@@ -7,10 +7,8 @@ const TOP_RESERVE_VAR = "--map-safe-inset-top";
 
 /**
  * `--map-safe-inset-top` in `app/globals.css` is fixed, but the toolbar grows when its lanes wrap,
- * and fit,
- * culling and free-area reads trust the token. When the toolbar reaches past it, the larger value
- * is written on
- * the root. Width-only resizes cost one comparison.
+ * and fit, culling and free-area reads trust the token. When the toolbar reaches past it, the
+ * larger value is written on the root. Width-only resizes cost one comparison.
  */
 export function useMapToolbarTopReserve(toolbar: HTMLElement | null): void {
   useEffect(() => {

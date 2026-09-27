@@ -1,12 +1,9 @@
 /**
  * Registers the in-app agent's runtime name in the vault so `created_by` reads `agent:<name>`,
- * not `agent:unknown`.
- * Choosing the runtime is the person's deliberate registration; the field is permanent, so no
- * automatic guess.
- * Written when a turn starts and cleared when it ends, so the rail's "agent working" light never
- * claims an idle session.
- * `focus.ontologySlug` is set only when a tool input matches a vault slug; otherwise it stays
- * null.
+ * not `agent:unknown`. Choosing the runtime is the person's deliberate registration; the field is
+ * permanent, so no automatic guess. Written when a turn starts and cleared when it ends, so the
+ * rail's "agent working" light never claims an idle session. `focus.ontologySlug` is set only when
+ * a tool input matches a vault slug; otherwise it stays null.
  */
 
 import type { AgentActivityHeartbeat } from "@/entities/vault-session";
@@ -17,8 +14,7 @@ const AGENT_HEARTBEAT_VAULT_FILE = "agent-activity.json";
 
 /**
  * One turn's heartbeat: ACP tool kind and permission wait narrowed to
- * planning/editing/verifying/blocked.
- * Plan and files stay empty because ACP does not disclose them.
+ * planning/editing/verifying/blocked. Plan and files stay empty because ACP does not disclose them.
  */
 export function buildAcpTurnHeartbeat({
   agent,

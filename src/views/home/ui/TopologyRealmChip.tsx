@@ -11,8 +11,7 @@ export interface TopologyRealmChipProps {
   /** HomePage substitutes the slug when absent. */
   title: string;
   /**
-   * en "Viewing only"; not rendered when empty. HomePage splits `realm.chipViewing` around
-   * {title}.
+   * en "Viewing only"; not rendered when empty. HomePage splits `realm.chipViewing` around {title}.
    */
   beforeLabel: string;
   /** ko "Viewing only", flush against the title. */
@@ -42,9 +41,9 @@ export function TopologyRealmChip({
       {beforeLabel.trim().length > 0 ? (
         <span className="shrink-0 text-[color:var(--color-text-tertiary)]">{beforeLabel.trim()}</span>
       ) : null}
-      {/* Capped at 7rem, or on a 14-inch screen a long title clips the search tile; the full name
-         shows in the ledger
-         header, the map label and the hover title. The suffix stays via shrink-0. */}
+      {/* Capped at 7rem, or on a 14-inch screen a long title clips the search tile; the full
+         name shows in the ledger header, the map label and the hover title. The suffix stays
+         via shrink-0. */}
       <span className="flex min-w-0 items-baseline" title={`${beforeLabel}${title}${afterLabel}`.trim()}>
         <span
           data-testid="topology-realm-chip-title"

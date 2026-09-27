@@ -1,9 +1,7 @@
 /**
- * The only path that reads, writes or erases past trails.
- * A vault file, not browser storage, because the web and the app (different origins) must show the
- * same trails.
- * `.ontology-atlas/` is gitignored and skipped by the indexer, so writes never trigger a manifest
- * rebuild.
+ * The only path that reads, writes or erases past trails. A vault file, not browser storage,
+ * because the web and the app (different origins) must show the same trails. `.ontology-atlas/` is
+ * gitignored and skipped by the indexer, so writes never trigger a manifest rebuild.
  */
 
 import {
@@ -27,8 +25,8 @@ export interface PastTrailStore {
   /** A read failure degrades to an empty list. */
   list(): Promise<PastWalk[]>;
   /**
-   * Below the threshold it does nothing; a failed write returns the list, since saving never
-   * blocks the session.
+   * Below the threshold it does nothing; a failed write returns the list, since saving never blocks
+   * the session.
    */
   save(
     walkId: string,
@@ -117,9 +115,8 @@ export function createMemoryPastTrailStore(seed: string | null = null): PastTrai
 }
 
 /**
- * The only place that touches vault files. It never asks for write permission: prompting a browser
- * is friction.
- * Sessions without readwrite record nothing (the caller decides).
+ * The only place that touches vault files. It never asks for write permission, since prompting
+ * someone who only came to browse is friction; sessions without readwrite record nothing.
  */
 export function createVaultFilePastTrailStore(
   handle: FileSystemDirectoryHandle,

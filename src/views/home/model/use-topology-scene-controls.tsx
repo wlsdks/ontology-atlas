@@ -156,8 +156,8 @@ export function useTopologySceneControls({
   });
   /**
    * The canvas composes no strings. `{count}` passes through verbatim because only the renderer
-   * knows the number
-   * per frame; a contract test enforces the placeholder since next-intl cannot interpolate it.
+   * knows the number per frame; a contract test enforces the placeholder since next-intl cannot
+   * interpolate it.
    */
   const clusterBarLabels = useMemo(
     () => ({
@@ -178,8 +178,7 @@ export function useTopologySceneControls({
     [tKinds],
   );
   // `drawnConceptCount` comes from the map's last frame and the total from the
-  // same `ontologyInsight`,
-  // so the two cannot drift.
+  // same `ontologyInsight`, so the two cannot drift.
   const [drawnConceptCount, setDrawnConceptCount] = useState(0);
   const handleMapFrameDrawn = useCallback((count: number) => {
     setDrawnConceptCount(count);
@@ -207,8 +206,7 @@ export function useTopologySceneControls({
     topologyGraphStats?.key === visibleTopologyStatsKey ? topologyGraphStats : null;
   /**
    * Deferring the map mount by one rAF splits the boot long task (page commit vs map mount)
-   * without changing
-   * the first paint, which is an empty canvas either way.
+   * without changing the first paint, which is an empty canvas either way.
    */
   const [mapMountTaskReady, setMapMountTaskReady] = useState(false);
   useEffect(() => {

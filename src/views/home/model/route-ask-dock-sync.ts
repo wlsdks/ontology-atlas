@@ -20,10 +20,8 @@ type RouteAskDockSyncPlan = {
 
 /**
  * A new request outranks an older manual close; re-rendering the same request is inert, and late
- * runtime
- * discovery may move it from the key branch to the runtime once. A close blocks the same request
- * until
- * the URL drops it.
+ * runtime discovery may move it from the key branch to the runtime once. A close blocks the same
+ * request until the URL drops it.
  */
 export function planRouteAskDockSync({
   requestKey,

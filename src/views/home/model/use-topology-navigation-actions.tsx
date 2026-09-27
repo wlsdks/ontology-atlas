@@ -55,8 +55,7 @@ export function useTopologyNavigationActions({
         preserveImpact?: boolean;
         /**
          * A row picked in the INDEX tree keeps the panel open, since the reader is reading the
-         * list;
-         * a map selection still collapses it.
+         * list; a map selection still collapses it.
          */
         keepIndexOpen?: boolean;
       },

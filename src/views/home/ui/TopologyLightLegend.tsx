@@ -8,11 +8,9 @@ type Kind = (typeof KINDS)[number];
 
 /**
  * The lit 3D map's key: hue is the node's kind, brightness its evidence (stale dims with an amber
- * ring,
- * unknown emits nothing with a dashed ring). Counts are over the concepts on the map; with nothing
- * measured
- * the note says why. A bottom strip marked `data-map-fit-obstacle="bottom"`, so the 3D fit stays
- * above it.
+ * ring, unknown emits nothing with a dashed ring). Counts are over the concepts on the map; with
+ * nothing measured the note says why. A bottom strip marked `data-map-fit-obstacle="bottom"`, so
+ * the 3D fit stays above it.
  */
 export function TopologyLightLegend({
   evidence,
@@ -53,9 +51,8 @@ export function TopologyLightLegend({
       aria-label={t("legendLabel")}
       className="pointer-events-none absolute bottom-4 left-[calc(var(--map-safe-inset-left)*1px+16px)] right-[max(calc(var(--map-safe-inset-right)*1px),calc(var(--map-live-inset-right,0px)+16px))] z-20 hidden justify-center md:flex"
     >
-      {/* One row below `xl`: every wrapped row is canvas the fit gives up. The availability note
-         goes to assistive
-         technology there; the "Unknown" count still shows it. */}
+      {/* One row below `xl`: every wrapped row is canvas the fit gives up. The availability
+         note goes to assistive technology there; the "Unknown" count still shows it. */}
       <div className="flex max-w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-chip bg-[color:var(--chrome-surface)] px-3 py-1 text-caption text-[color:var(--map-panel-text-secondary)] xl:gap-x-3 xl:px-3.5 xl:py-1.5 xl:text-label">
         {kindLabels ? (
           <>

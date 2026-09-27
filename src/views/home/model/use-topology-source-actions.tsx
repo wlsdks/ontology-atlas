@@ -97,8 +97,7 @@ export function useTopologySourceActions({ toast, v2DatasheetModel, topologyPref
   ]);
   /**
    * Only where this surface cannot act: the folder actions need an absolute path a browser cannot
-   * know
-   * (`.claude/rules/surfaces.md`). It says why, where, and what still works here.
+   * know (`.claude/rules/surfaces.md`). It says why, where, and what still works here.
    */
   const projectSourceDegraded = useMemo(
     () => !projectSource.runtimeAvailable && projectSourceNeedsNativeRuntime
@@ -121,10 +120,8 @@ export function useTopologySourceActions({ toast, v2DatasheetModel, topologyPref
     : null;
   /**
    * Measuring the vault root once finds the enclosing git repository, so "link a code folder" can
-   * propose it.
-   * The evidence line states only what was measured; with no proposal or low confidence this
-   * is `null`
-   * and only the folder picker draws.
+   * propose it. The evidence line states only what was measured; with no proposal or low confidence
+   * this is `null` and only the folder picker draws.
    */
   const projectSourceProposal = useMemo(() => {
     const proposed = projectSource.proposedRoot;

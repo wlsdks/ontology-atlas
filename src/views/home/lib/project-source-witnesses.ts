@@ -45,8 +45,7 @@ export function deriveProjectSourceWitnesses(input: {
     relevantNodes.map((node) => node.agentSlug).filter((slug): slug is string => Boolean(slug)),
   );
   // Hand-authored project roots can predate `agentSlug`; use the graph hash's frontmatter/filename
-  // fallback,
-  // or a project-level README can never satisfy the scope evidence contract.
+  // fallback, or a project-level README can never satisfy the scope evidence contract.
   for (const doc of input.docs) {
     if (
       doc.frontmatter.kind === "project"
