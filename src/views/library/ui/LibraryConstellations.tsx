@@ -15,7 +15,7 @@ import { useRouter } from '@/i18n/navigation';
 import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
 import { badgeClass } from '@/shared/ui/badge-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
-import { PAGE_FRAME_FORM } from '@/shared/ui/page-frame';
+import { PAGE_COLUMN_FORM, PAGE_FRAME_FORM } from '@/shared/ui/page-frame';
 import { Button, EmptyState, RowButton, Surface } from '@/shared/ui';
 import { ConstellationsStartingPoint } from './parts/ConstellationsStartingPoint';
 
@@ -339,9 +339,10 @@ export function LibraryConstellations({
     );
   }
 
+  const empty = saved.status === 'ready' && saved.constellations.length === 0;
   return (
-    <main id="main" tabIndex={-1} data-testid="library-collections" className="min-h-0 flex-1 overflow-y-auto bg-[color:var(--color-canvas)]">
-      <div className={`${PAGE_FRAME_FORM} flex flex-col gap-6 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]`}>
+    <main id="main" tabIndex={-1} data-testid="library-collections" className={`flex min-h-0 flex-1 flex-col overflow-y-auto bg-[color:var(--color-canvas)] max-lg:mb-[var(--topology-mobile-bottom-tab-reserve)] ${empty ? 'py-6 md:py-12' : ''}`}>
+      <div data-testid="library-collections-content" className={`flex shrink-0 flex-col gap-6 ${empty ? `${PAGE_COLUMN_FORM} my-auto px-5 md:px-10` : `${PAGE_FRAME_FORM} pb-[var(--page-bottom-breath)]`}`}>
         {pageHeader}
         <div data-error-detail={saved.error ?? undefined}>{content}</div>
       </div>

@@ -284,9 +284,10 @@ samples/storefront` prints its current census.
 **Library → Ontology** opens only the folder's explicitly typed `project`, `domain`,
 `capability`, `element`, and `document` nodes without the canvas: preview or edit Markdown,
 inspect the frontmatter that becomes the graph, follow backlinks, and jump back to the map.
-There is no imported copy to synchronize. Sources, Wiki, Ontology, and Work scopes share one
-Library destination. Work scopes lists saved Galaxy constellations, their purpose, and resolved
-ontology members; each member opens its actual Ontology document and each constellation returns
+There is no imported copy to synchronize. Sources, Wiki, Ontology, and Check history share one
+Library destination. Ontology contains Concept documents and Concept sets. Concept sets lists saved
+map selections, their purpose, and resolved ontology members; each member opens its actual
+Ontology document and each set returns
 to the whole saved set on the map. An existing `/docs/?slug=…` link to ordinary Markdown opens that exact file in a
 single-document compatibility reader with a return to Library. The Ontology tree's name-and-path
 search matches localized display names as well as canonical paths.
@@ -408,7 +409,7 @@ available. Local Compile has its own read and approval path. See
 Galaxy can also save the current ontology-node selection as a named constellation
 with a purpose. Atlas stores that compatible `v1` task scope in the selected vault,
 uses immutable node UIDs for membership, and keeps the manifest's exact
-`document.path` only as display context. Library → Work scopes shows resolved and
+`document.path` only as display context. Library → Ontology → Concept sets shows resolved and
 unresolved members without turning membership into an ontology relation. Use
 `ontology-atlas constellations [vault]` or
 `ontology-atlas constellation <id> [vault]` when an agent session cannot attach

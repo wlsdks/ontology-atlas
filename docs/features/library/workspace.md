@@ -11,9 +11,9 @@ routes: [/library]
 ### `/library` — Library (2026-09-06, its own destination)
 
 A vault holds three kinds of file and **only one is the graph**. Library keeps their distinct
-meaning across Sources, Wiki, Ontology, Work scopes, and Check history. Ontology
-draws the explicitly typed graph nodes; Sources and Wiki draw the other two file
-kinds, while Work scopes lists saved Galaxy constellations.
+meaning across Sources, Wiki, Ontology, and Check history. Ontology contains
+Concept documents (the explicitly typed graph nodes) and Concept sets (saved map
+selections). Sources and Wiki draw the other two file kinds.
 
 The Library supports general knowledge as well as documents associated with code.
 Sources remain original files; write-ups and filed answers remain wiki pages.
@@ -21,7 +21,11 @@ Documents-only folders need no code nodes or separate mode switch. The ontology
 retains its codebase scope.
 
 **Question desk (2026-09-27).** With nothing selected in Wiki, the reader pane
-asks a question and searches locally only after a press. It separates matching
+asks a question and searches locally only after a press. The complete inquiry group
+centers horizontally and vertically inside the reader pane, including its original-file
+rows; safe auto margins collapse when content exceeds the viewport. Short no-match
+results retain that balance, while matching leads and long reports read from the top.
+Position-only motion connects those states without scaling text. It separates matching
 Wiki fact and decision sentences from original source units, with exact anchors;
 a compact summary opens read coverage, skipped files and hidden match counts.
 A matching hash
@@ -76,7 +80,7 @@ legacy addresses and malformed quoted remainders. Original bytes and existing
 wiki citations are not rewritten, and a matching source hash does not prove that
 an old ambiguous citation identifies the intended passage.
 
-Library has five tabs — Sources, Wiki, Ontology, Work scopes and Check history
+Library has four tabs — Sources, Wiki, Ontology and Check history
 (`LibraryTab` in `src/app/library-workspace/index.tsx`; labels in
 `messages/en/library.json` `workspace.*`) — and each tab keeps its own reader and
 file meaning. The mobile Library tab
@@ -88,9 +92,13 @@ draft state, and five required section headings before creation. The current loc
 receipt remains primary while earlier receipts are available from History; an app write's
 matching folder-watch event is consumed instead of producing a second notification.
 
-**Saved constellation task scope (2026-09-15).** Work scopes (named Collections until
-2026-09-25, when the English name followed the Korean one) lists each saved
-constellation's name, purpose, and ontology concept count. Expanding a row resolves
+**Concept sets (2026-09-28; stored as saved constellations since 2026-09-15).**
+Ontology → Concept sets lists each saved selection's name, purpose, and ontology
+concept count. The earlier Work scopes tab is a compatible URL alias:
+`tab=collections` becomes `tab=ontology&ontologyView=sets`, preserving all other
+parameters and the fragment. `ontologyView` is independent of the document
+reader's legacy `view` parameter; drafts survive switching between documents and sets.
+The set view stays available even when the folder currently has no ontology nodes. Expanding a row resolves
 members by immutable UID against the current manifest; resolved names open the actual
 Ontology document, unresolved members stay visible, and the whole set opens in Galaxy.
 The Galaxy candidate keeps a separate `mapId` for map focus; the compatible `v1`
@@ -98,6 +106,8 @@ sidecar stores immutable UID identity and the manifest's exact `document.path` a
 display-only `lastKnownPath`. Source and Wiki attachments stay
 distinguishable from ontology members. Empty, loading, corrupt, and read-only states remain
 explicit, and creation routes to Galaxy instead of writing a second Library collection.
+The empty state centers its complete explanation and next action inside the available
+pane; saved lists retain a top origin for scanning.
 
 **Two panes.** The index on the left carries the active Sources or Wiki tab with that
 list's own doors. The right

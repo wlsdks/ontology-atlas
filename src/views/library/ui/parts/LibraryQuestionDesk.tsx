@@ -540,8 +540,11 @@ export function LibraryQuestionDesk({
     {fileReportNote ? <p role="alert" className="mt-2 text-label leading-label text-[color:var(--color-danger-text)]">{fileReportNote}</p> : null}
   </div> : null;
   return (
-    <div data-testid="library-question-desk" className="atlas-scroll-quiet min-h-0 flex-1 overflow-y-auto px-5 py-6 sm:px-6 lg:py-8 max-lg:mb-[var(--topology-mobile-bottom-tab-reserve)] max-lg:pb-3">
-      <div data-question-desk-container="true" className="mx-auto w-full max-w-[calc(var(--measure-note-column)+var(--measure-note-column))]">
+    <div data-testid="library-question-desk" className="atlas-scroll-quiet flex min-h-0 flex-1 flex-col overflow-y-auto px-5 py-6 sm:px-6 lg:py-8 max-lg:mb-[var(--topology-mobile-bottom-tab-reserve)]">
+      <motion.div layout={reducedMotion ? false : 'position'} transition={{ layout: MOTION.settle }}
+        data-question-desk-container="true" className={activeReport || hasLocalMatches
+          ? 'mx-auto w-full shrink-0 max-w-[calc(var(--measure-note-column)+var(--measure-note-column))]'
+          : 'm-auto w-full shrink-0 max-w-[var(--measure-doc-column)]'}>
         {!activeReport ? <header className="mb-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-label leading-label text-[color:var(--color-indigo-text-soft)]">{t('eyebrow')}</p>
@@ -713,7 +716,7 @@ export function LibraryQuestionDesk({
             {jevNote ? <p role="status" className="text-label leading-label text-[color:var(--color-text-tertiary)]" data-testid="question-desk-jev-note">{jevNote}</p> : null}
           </motion.section>
         ) : null}
-      </div>
+      </motion.div>
       <Dialog open={jevSelection !== null} onClose={() => { if (!jevSending) setJevSelection(null); }} size="md" labelledBy="question-desk-jev-title" testId="question-desk-jev-consent" className="max-h-[calc(100vh-var(--chrome-inset)*2)] overflow-y-auto">
         {jevSelection ? <div className="space-y-3">
           <h3 id="question-desk-jev-title" className="text-title font-[var(--font-weight-strong)] leading-title">{t('jev.consentTitle')}</h3>
