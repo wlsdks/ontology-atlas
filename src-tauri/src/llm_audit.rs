@@ -1,30 +1,7 @@
-// LLM call audit log — `.ontology-atlas/llm-audit.jsonl` inside the vault (#80 S2).
-//
-// ## Why Rust owns the log
-//
-// Trust Charter ② states "silent collection 0 · transmission is opt-in + local audit log." To make this
-// a **code path** rather than a discipline (a promise humans keep), the party holding the key
-// must also hold the record. If we entrust logs to the WebView, a front-end bug or bypass call
-// alone can create "transmission without recording."
-//
-// Thus, there is one contract: **log-before-send — if an audit line cannot be left, do not send.**
-// If `reserve()` fails, the caller does not invoke the sender and fails immediately.
-//
-// ## Why reserve + finalize two-step?
-//
-// Before transmission, we do not know the result (status code · duration), and writing for the first time after
-// transmission opens a window for "transmission without recording." Therefore, just before transmission, we
-// commit (sync) a line containing **only pre-transmission facts** to disk, and when the response arrives,
-// we cut that line and rewrite it as a completed single line. On Unix, we hold file locks during this entire
-// interval so two requests in the same vault cannot truncate each other's reservations. Past lines are untouched
-// (Charter ⑤ prohibition on retroactive changes). If the process dies before receiving a response, a line without
-// an outcome remains, and the reader interprets it as `unknown`.
-//
-// ## What is not recorded
-//
-// **Response bodies are not recorded.** This file is an audit of "what went out and how much," not
-// a conversation store — starting to accumulate conversations creates a second source of truth outside the vault
-// (Charter ④). We only keep the length (`responseChars`).
+// LLM call audit log in the vault's `.ontology-atlas/llm-audit.jsonl`. Log before
+// send: if `reserve()` cannot sync a line, the caller sends nothing. `finalize`
+// rewrites only that tail line under a lock; response bodies are never recorded.
+// Rust writes it because Rust sends, or a front-end bug could send without a record.
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -37,21 +14,16 @@ use std::time::Duration;
 
 use crate::errors::coded;
 
-/// The sidecar directory inside the vault — where `activity.jsonl` already resides.
 const SIDECAR_DIR: &str = ".ontology-atlas";
 const AUDIT_FILE: &str = "llm-audit.jsonl";
 
-/// The same two names as NUL-terminated literals, for the `openat`/`mkdirat` calls below.
-///
-/// They exist so that opening the audit file has no fallible `CString::new(...).expect(...)`
-/// step at all. That `expect` could never fire on a constant, but `llm_chat` reaches this code
-/// and a panic anywhere in the crate is a process abort once it unwinds through an
-/// Objective-C frame — so the impossibility is made structural instead of asserted.
-/// `names_stay_in_step` pins each literal to its `&str` twin.
+/// NUL-terminated twins for `openat`/`mkdirat`, so no `CString::new(..).expect(..)`
+/// exists: a panic unwinding through an Objective-C frame aborts the process. `names_stay_in_step`
+/// pins each literal to its `&str` twin.
 const SIDECAR_DIR_C: &std::ffi::CStr = c".ontology-atlas";
 const AUDIT_FILE_C: &std::ffi::CStr = c"llm-audit.jsonl";
 
-/// Transmission scope — "what and how much went out from the vault." Connection checks are all 0.
+/// What left the vault and how much; connection checks are all 0.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AuditScope {
@@ -60,58 +32,48 @@ pub struct AuditScope {
     pub vault_chars: usize,
 }
 
-/// One tool call sent in this round trip — name and target only. We do not keep full arguments
-/// (the vault body may mix with arguments, and this file is not a conversation store).
-///
-/// **Additive field** — it does not even exist on connection check lines (`Option::is_none` skip),
-/// so the shape of lines already sitting on user disks does not change (Charter ⑤).
+/// Name and target only: arguments may carry vault text. Additive and absent on
+/// connection-check lines, so lines already on disk keep their shape.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AuditToolRef {
     pub name: String,
-    /// The target stated by the screen row (node slug, etc.). Empty string if absent.
     pub target: String,
 }
 
-/// Facts committed **before** transmission. This struct is all that constitutes the reservation line.
+/// Committed before transmission; this is the whole reservation line.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AuditDraft {
     pub v: u8,
     pub at: String,
     pub provider: String,
-    /// The host the request actually targeted — the answer to "where did vault content go?"
-    ///
-    /// **Additive extension so `v` remains 1.** Old lines lacking this field must still be
-    /// read (reader downgrades to `null`), and already written lines are untouched —
-    /// this is how we uphold Charter ⑤ (prohibition on retroactive changes) in the schema. Raising `v`
-    /// would turn existing records remaining on user disks into "unreadable lines" overnight.
+    /// Where vault content went. Additive so `v` stays 1: raising it would make lines
+    /// already on user disks unreadable.
     pub host: String,
     pub model: Option<String>,
-    /// `"verify" | "agent"` — extensions add values (schema `v` is not raised).
+    /// Extensions add values without raising `v`.
     pub purpose: String,
-    /// Only the user's own words. Connection checks are `null`.
+    /// Only the user's own words; `null` for connection checks.
     pub question: Option<String>,
     pub scope: AuditScope,
-    /// Tool calls sent in this round trip. The field itself is absent on connection check lines.
+    /// Absent on connection-check lines.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tools: Option<Vec<AuditToolRef>>,
-    /// SHA256 of the transmission payload — a post-hoc anchor for "is this the payload I saw in preview?"
+    /// Lets a person check the payload matches the preview.
     pub payload_sha256: String,
 }
 
-/// Facts that can only be known after the response arrives.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AuditOutcome {
-    /// `"ok" | "denied" | "error"`. The field itself is absent on reservation lines.
+    /// Absent on reservation lines.
     pub outcome: String,
     pub http_status: Option<u16>,
     pub response_chars: usize,
     pub duration_ms: u64,
 }
 
-/// Position of the committed reservation line on disk. `offset` is the byte where that line begins.
 #[derive(Debug)]
 pub struct AuditReservation {
     path: PathBuf,
@@ -119,15 +81,12 @@ pub struct AuditReservation {
     offset: u64,
     reserved_line: Vec<u8>,
     draft: AuditDraft,
-    /// Declared last deliberately: fields drop in declaration order, so `file` —
-    /// and with it this process's own `flock` — is closed before the path is
-    /// handed back to the next reservation.
+    /// Declared last: fields drop in order, so the `flock` closes before the path is
+    /// handed to the next reservation.
     _claim: ReservedPath,
 }
 
-/// Completed line = pre-send facts + response facts. `flatten` writes the two structs
-/// **in their declaration order** flatly — since this is a log for human reading, key order
-/// determines readability.
+/// `flatten` keeps declaration order, which is the human reading order.
 #[derive(Debug, Serialize)]
 struct AuditLine<'a> {
     #[serde(flatten)]
@@ -140,9 +99,7 @@ pub fn audit_log_path(vault_dir: &Path) -> PathBuf {
     vault_dir.join(SIDECAR_DIR).join(AUDIT_FILE)
 }
 
-/// sha256 (lowercase hex) of the full transmitted payload. A connection check has no
-/// body, so it becomes the hash of the empty string — and even that is the verifiable
-/// fact "0 bytes were sent".
+/// A connection check hashes the empty string: proof that 0 bytes were sent.
 pub fn sha256_hex(payload: &str) -> String {
     let digest = Sha256::digest(payload.as_bytes());
     let mut out = String::with_capacity(64);
@@ -152,46 +109,32 @@ pub fn sha256_hex(payload: &str) -> String {
     out
 }
 
-/// The current time (UTC, milliseconds) — the same ISO-8601 syntax as `activity.jsonl`.
+/// Same ISO-8601 shape as `activity.jsonl`.
 pub fn now_iso() -> String {
     chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true)
 }
 
-/// Canonical audit-log paths with a reservation outstanding in **this** process.
-///
-/// "A second `reserve` while one is outstanding fails closed, and fails now" used
-/// to be answered by `flock` alone. It cannot be: the same `EWOULDBLOCK` also
-/// arrives from a child of ours that inherited the lock (see the retry budget
-/// below), and absorbing that one with a retry would turn a deliberate second
-/// reservation into a slow success. So the in-process half of the promise is kept
-/// in process, ahead of the syscalls, so `flock` is left answering only what this
-/// process cannot see for itself — another Atlas process on the same vault.
-/// `the_budget_is_spent_and_then_the_lock_still_fails_closed` keeps that half
-/// covered, because the registry now answers before the second-reservation test can
-/// reach `flock` at all.
+/// Refuses a second in-process reservation before any syscall, because `flock`
+/// cannot tell it from a child holding an inherited lock; `flock` then answers
+/// only for another Atlas process.
 static RESERVED_AUDIT_PATHS: LazyLock<Mutex<HashSet<PathBuf>>> =
     LazyLock::new(|| Mutex::new(HashSet::new()));
 
 fn reserved_audit_paths() -> MutexGuard<'static, HashSet<PathBuf>> {
-    // Nothing inside the guarded section can panic, so a poisoned lock would be a
-    // set that is still correct — and a panic here would abort the process anyway
-    // (see the note on the NUL-terminated names above).
+    // Nothing guarded can panic, so a poisoned set is still correct.
     RESERVED_AUDIT_PATHS
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner())
 }
 
-/// The claim on one canonical audit path, released by `Drop` so that every exit
-/// hands the path back — a finalized reservation, a `finalize` that refused a
-/// tampered file, and a `reserve` that failed after the claim alike.
+/// Released by `Drop`, so every exit path hands the path back.
 #[derive(Debug)]
 struct ReservedPath {
     path: PathBuf,
 }
 
 impl ReservedPath {
-    /// Keyed on the canonicalized path, not on the caller's argument: two spellings
-    /// of one vault are one audit log.
+    /// Two spellings of one vault are one audit log.
     fn claim(path: &Path) -> Result<Self, String> {
         if !reserved_audit_paths().insert(path.to_path_buf()) {
             return Err(coded("audit-log-busy", ""));
@@ -208,50 +151,22 @@ impl Drop for ReservedPath {
     }
 }
 
-/// Bounded retry budget for a `flock` that answers `EWOULDBLOCK`.
-///
-/// With the registry above answering the in-process case, a remaining
-/// `EWOULDBLOCK` is either a genuine second Atlas process or a transient copy of
-/// the lock held by one of **our own** children: `flock` belongs to the open file
-/// description, `fork` duplicates the description, and `O_CLOEXEC` closes the
-/// descriptor at `exec` rather than at `fork`. The two cannot be told apart from
-/// here, so the transient one is absorbed and then we still fail closed. CI proved
-/// the cost of not absorbing it: release run 34723050267 refused a reservation on
-/// a healthy vault twice, at `reserve`-after-`finalize` both times.
-///
-/// The budget is the measured hold, not a round number. A C probe running this
-/// function's exact open/lock/write/fsync/close/open/lock sequence while threads
-/// spawn `/usr/bin/true`, on aarch64 macOS 26.5.1, 20 000 sequences per cell:
-/// the hold always cleared, and its length was p50 54 µs · p99 221 µs · max
-/// 539 µs via `posix_spawn` (what `std::process::Command` uses here) and p50
-/// 637 µs · p99 1 184 µs · max 12 658 µs via `fork`+`exec`, with four spawning
-/// threads. 52 pauses of 250 µs is the smallest whole budget covering that
-/// 12 658 µs worst case, so the ceiling is 13 ms, and it is spent only when a busy
-/// answer is seen at all. Both callers are `#[tauri::command(async)]`, the spelling
-/// `no_command_here_hands_the_key_back_to_the_webview` pins, so those milliseconds
-/// sit on a Tauri async-runtime worker that is about to block on `curl` for the
-/// length of a network round trip — not on the macOS main thread.
-/// `the_inherited_lock_retry_budget_stays_bounded` pins the ceiling and
-/// `the_budget_is_spent_and_then_the_lock_still_fails_closed` proves it is really
-/// spent, so a later edit cannot quietly grow it or skip it.
+/// A busy `flock` may be our own child between `fork` and `exec` holding an
+/// inherited copy, so it is retried within a measured budget, then fails closed
+/// (`docs/records/decisions/2026-09-13-audit-log-inherited-lock-59f33326-5629-4cb7-8601-33c3b2f005fd.md`).
 const AUDIT_LOCK_RETRY_PAUSE: Duration = Duration::from_micros(250);
 const AUDIT_LOCK_RETRIES: u32 = 52;
 
-/// Counts the busy answers the budget absorbed, so the positive control can tell a
-/// working fix from an overlap that never happened. A regression test that passes
-/// because it reproduced nothing is the way this defect would come back.
+/// Lets the positive control prove the overlap really happened.
 #[cfg(test)]
 static ABSORBED_INHERITED_BUSY: std::sync::atomic::AtomicUsize =
     std::sync::atomic::AtomicUsize::new(0);
 
-/// Held by the only two tests that can make that counter move. Nothing else in this
-/// process can contend for the lock — the registry answers first — so with these two
-/// serialized, growth seen during a round is that round's own.
+/// Serializes the two tests that can move the counter.
 #[cfg(test)]
 static CONTENDING_TESTS: Mutex<()> = Mutex::new(());
 
-/// The vault directory as one canonical path — the identity both the registry and
-/// the `openat` walk below are keyed on.
+/// The identity both the registry and the `openat` walk key on.
 fn canonical_vault_dir(vault_dir: &Path) -> Result<PathBuf, String> {
     let canonical_vault =
         fs::canonicalize(vault_dir).map_err(|err| coded("audit-vault-unreadable", err))?;
@@ -292,8 +207,7 @@ fn open_audit_file(canonical_vault: &Path) -> Result<(PathBuf, fs::File), String
         }
     }
 
-    // Open the direct child of the root FD with O_NOFOLLOW. The race window where the
-    // directory is swapped for a link after the pre-check is closed here too.
+    // O_NOFOLLOW closes the race where the directory is swapped for a link after the check.
     let sidecar_fd = unsafe {
         libc::openat(
             root.as_raw_fd(),
@@ -356,11 +270,8 @@ fn open_audit_file(canonical_vault: &Path) -> Result<(PathBuf, fs::File), String
         ));
     }
 
-    // From reserve to finalize, only one request owns the file's tail. LOCK_NB keeps a
-    // conflict from becoming a wait as long as the network timeout, and a second request
-    // fails before sending. A busy answer is retried within AUDIT_LOCK_RETRIES because
-    // one of our own mid-spawn children can be holding an inherited copy of the lock;
-    // when the budget runs out we fail closed, as a genuine second process requires.
+    // LOCK_NB keeps a conflict from waiting as long as the network timeout; a busy
+    // answer retries within the budget, then fails closed.
     let mut retries = 0;
     loop {
         if unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } == 0 {
@@ -383,9 +294,8 @@ fn open_audit_file(canonical_vault: &Path) -> Result<(PathBuf, fs::File), String
 
 #[cfg(not(unix))]
 fn open_audit_file(_canonical_vault: &Path) -> Result<(PathBuf, fs::File), String> {
-    // Pre-checking the path and then reopening it does not close the Windows
-    // reparse-point race. Until native-handle-based no-follow + file-ID verification
-    // exists, this feature fails closed rather than allowing transmission without a record.
+    // Windows reparse-point races are not closed yet, so this fails closed rather
+    // than sending without a record.
     Err(coded("audit-log-unsupported", ""))
 }
 
@@ -421,13 +331,10 @@ fn ensure_reservation_path(path: &Path, file: &fs::File) -> Result<(), String> {
     Ok(())
 }
 
-/// Called **just before transmission**. Commits (syncs) the audit line to disk and
-/// returns its position. On failure the caller **must send nothing** — that is this
-/// function's reason to exist.
+/// On failure the caller must send nothing.
+/// Call only from `(async)` commands: the fsync and 13 ms lock budget must stay off the macOS main thread.
 pub fn reserve(vault_dir: &Path, draft: AuditDraft) -> Result<AuditReservation, String> {
-    // The claim comes before anything touches the file, so a second reservation on
-    // one vault is refused here rather than by `flock` — which can no longer tell a
-    // second reservation from a child of ours holding an inherited lock.
+    // Claim first, so a second reservation is refused here rather than by `flock`.
     let canonical_vault = canonical_vault_dir(vault_dir)?;
     let claim = ReservedPath::claim(&audit_log_path(&canonical_vault))?;
     let (path, mut file) = open_audit_file(&canonical_vault)?;
@@ -442,7 +349,7 @@ pub fn reserve(vault_dir: &Path, draft: AuditDraft) -> Result<AuditReservation, 
         .len();
     file.write_all(&reserved_line)
         .map_err(|err| coded("audit-log-write-failed", err))?;
-    // Only with the sync does "it was recorded before sending" stay true even in the face of a crash.
+    // The sync keeps "recorded before sending" true across a crash.
     file.sync_all()
         .map_err(|err| coded("audit-log-write-failed", err))?;
     ensure_reservation_path(&path, &file)?;
@@ -457,10 +364,8 @@ pub fn reserve(vault_dir: &Path, draft: AuditDraft) -> Result<AuditReservation, 
     })
 }
 
-/// Called after the response arrives. Cuts only the reserved line (the one at the end of
-/// the file) and rewrites it as a completed single line — past lines are neither read nor
-/// touched. The reservation's exclusive lock and the re-verification of the tail bytes
-/// keep another request or an outside change from being mistaken for someone else's line.
+/// Rewrites only the reserved tail line; the lock and a tail-byte recheck keep
+/// another writer's line from being truncated.
 pub fn finalize(mut reservation: AuditReservation, outcome: &AuditOutcome) -> Result<(), String> {
     let line = serde_json::to_string(&AuditLine {
         draft: &reservation.draft,
@@ -522,8 +427,6 @@ mod tests {
     use super::*;
     use serde_json::Value;
 
-    /// The `&str` and `&CStr` spellings of the sidecar names must never drift apart; the path
-    /// builder uses one pair and the `openat` calls use the other.
     #[test]
     fn names_stay_in_step() {
         assert_eq!(SIDECAR_DIR_C.to_str(), Ok(SIDECAR_DIR));
@@ -563,9 +466,7 @@ mod tests {
 
     #[test]
     fn a_verify_line_still_has_no_tools_key_at_all() {
-        // `tools` is additive — connection-check lines do not get even an empty array.
-        // Adding one would split the shape from lines already sitting on disk (Charter ⑤)
-        // and make the record assert "0 tools were used", a claim it never made.
+        // An empty array would claim "0 tools were used" and change the on-disk shape.
         let line = serde_json::to_string(&verify_draft()).unwrap();
         assert!(!line.contains("\"tools\""), "{line}");
     }
@@ -597,7 +498,6 @@ mod tests {
         assert_eq!(line["purpose"], "agent");
         assert_eq!(line["tools"][0]["name"], "get_concept");
         assert_eq!(line["tools"][0]["target"], "capabilities/payment");
-        // The response body is not recorded — only its length.
         assert_eq!(line["responseChars"], 812);
         assert!(line.get("responseBody").is_none());
         fs::remove_dir_all(&vault).ok();
@@ -605,7 +505,6 @@ mod tests {
 
     #[test]
     fn sha256_matches_the_published_test_vectors() {
-        // The payload anchor must be a real sha256 for post-hoc comparison to mean anything.
         assert_eq!(
             sha256_hex(""),
             "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
@@ -624,7 +523,6 @@ mod tests {
         let raw = fs::read_to_string(audit_log_path(&vault)).unwrap();
         let parsed: Value = serde_json::from_str(raw.trim()).unwrap();
         assert_eq!(parsed["purpose"], "verify");
-        // Before transmission the result is unknown — we do not fabricate facts that do not exist.
         assert!(parsed.get("outcome").is_none());
         assert_eq!(reservation.offset, 0);
         fs::remove_dir_all(&vault).ok();
@@ -662,7 +560,7 @@ mod tests {
         assert_eq!(
             lines.len(),
             2,
-            "확정은 줄을 늘리지 않는다 (한 호출 = 한 줄)"
+            "finalizing adds no line (one call, one line)"
         );
         let first_line: Value = serde_json::from_str(lines[0]).unwrap();
         let second_line: Value = serde_json::from_str(lines[1]).unwrap();
@@ -674,9 +572,7 @@ mod tests {
 
     #[test]
     fn reserve_fails_loudly_when_the_vault_cannot_hold_the_log() {
-        // A file sitting where the sidecar goes means the folder cannot be created — the
-        // reservation must fail here so the caller abandons the transmission
-        // (the front end of log-before-send).
+        // A file where the sidecar goes must fail the reservation, so nothing is sent.
         let vault = temp_vault("blocked");
         fs::write(vault.join(SIDECAR_DIR), b"not a directory").unwrap();
         assert!(reserve(&vault, verify_draft()).is_err());
@@ -692,7 +588,7 @@ mod tests {
         assert!(result.is_err());
         assert!(
             !vault.join(SIDECAR_DIR).exists(),
-            "검증되지 않은 플랫폼에서 감사 경로를 만들면 안 된다"
+            "an unverified platform must not create the audit path"
         );
         fs::remove_dir_all(&vault).ok();
     }
@@ -714,7 +610,7 @@ mod tests {
         fs::remove_file(vault.join(SIDECAR_DIR)).ok();
         fs::remove_dir_all(&vault).ok();
         fs::remove_dir_all(&outside).ok();
-        assert!(result.is_err(), "사이드카 링크를 따라가면 안 된다");
+        assert!(result.is_err(), "must not follow a sidecar link");
         assert_eq!(outside_after, b"outside-sentinel\n");
     }
 
@@ -736,7 +632,7 @@ mod tests {
         fs::remove_file(audit_log_path(&vault)).ok();
         fs::remove_dir_all(&vault).ok();
         fs::remove_dir_all(&outside).ok();
-        assert!(result.is_err(), "로그 링크를 따라가면 안 된다");
+        assert!(result.is_err(), "must not follow a log link");
         assert_eq!(outside_after, b"outside-sentinel\n");
     }
 
@@ -756,7 +652,10 @@ mod tests {
         fs::remove_file(audit_log_path(&vault)).ok();
         fs::remove_dir_all(&vault).ok();
         fs::remove_dir_all(&outside).ok();
-        assert!(result.is_err(), "하드링크를 감사 파일로 쓰면 안 된다");
+        assert!(
+            result.is_err(),
+            "must not write a hard link as the audit file"
+        );
         assert_eq!(outside_after, b"outside-sentinel\n");
     }
 
@@ -776,7 +675,10 @@ mod tests {
         drop(reservation);
 
         fs::remove_dir_all(&vault).ok();
-        assert_eq!(mode, 0o600, "감사 질문을 다른 계정이 읽게 두면 안 된다");
+        assert_eq!(
+            mode, 0o600,
+            "audit questions must not be readable by other accounts"
+        );
     }
 
     #[cfg(unix)]
@@ -808,7 +710,7 @@ mod tests {
         fs::remove_dir_all(&outside).ok();
         assert!(
             result.is_err(),
-            "예약 후 교체된 로그 경로를 따라가면 안 된다"
+            "must not follow a log path replaced after reservation"
         );
         assert_eq!(outside_after, b"outside-sentinel\n");
     }
@@ -835,11 +737,11 @@ mod tests {
         });
         let result = rx
             .recv_timeout(Duration::from_secs(1))
-            .expect("FIFO를 감사 파일로 열 때 독자를 기다리면 안 된다");
+            .expect("opening a FIFO as the audit file must not wait for a reader");
 
         fs::remove_file(&path).ok();
         fs::remove_dir_all(&vault).ok();
-        assert!(result.is_err(), "FIFO는 감사 파일이 될 수 없다");
+        assert!(result.is_err(), "a FIFO cannot be the audit file");
     }
 
     #[cfg(unix)]
@@ -869,20 +771,15 @@ mod tests {
 
         fs::remove_file(&path).ok();
         fs::remove_dir_all(&vault).ok();
-        assert!(result.is_err(), "FIFO는 감사 파일이 될 수 없다");
+        assert!(result.is_err(), "a FIFO cannot be the audit file");
         assert!(
             leaked.is_empty(),
-            "정규 파일 검증 전에 감사 데이터를 쓰면 안 된다"
+            "must not write audit data before the regular-file check"
         );
     }
 
-    /// The retry budget exists to absorb a lock one of our own children inherited
-    /// for a few hundred microseconds. It must never grow into "wait for whoever
-    /// holds it": that would stall the UI thread and blur requirement 2 (a second
-    /// reservation fails closed, now) into a slow success. The ceiling is the
-    /// measured worst hold — 12 658 µs over 80 000 probe sequences — rounded up to
-    /// a whole number of pauses, and this test is what stops a later edit from
-    /// quietly raising it.
+    /// The ceiling is the measured worst hold (12 658 µs) rounded up to whole pauses;
+    /// it must not grow into waiting for any holder.
     #[test]
     fn the_inherited_lock_retry_budget_stays_bounded() {
         let ceiling = AUDIT_LOCK_RETRY_PAUSE * AUDIT_LOCK_RETRIES;
@@ -898,10 +795,7 @@ mod tests {
         );
     }
 
-    /// Requirement 2 is answered in process, ahead of the file. The proof is that
-    /// the second claim is refused for a path that does not exist at all — no
-    /// directory, no log — so nothing but the registry can have answered, and the
-    /// retry budget was never reachable.
+    /// Refused for a path that does not exist, so only the registry can have answered.
     #[test]
     fn a_second_claim_on_one_path_is_refused_without_touching_the_file() {
         let path = std::env::temp_dir()
@@ -927,14 +821,8 @@ mod tests {
         assert!(!path.exists(), "claiming a path must not create anything");
     }
 
-    /// The registry answers a second reservation before `flock` is ever called, which
-    /// means `a_second_reservation_fails_closed_until_the_first_is_finalized` no longer
-    /// reaches the `EWOULDBLOCK` branch at all. Something still has to prove the half of
-    /// the promise `flock` keeps: a lock this process cannot account for — another Atlas
-    /// process on the same vault — is waited out for the whole budget and then still
-    /// refused. `open_audit_file` is called directly because that is what a second
-    /// process does: a second open file description on one inode, with no registry entry
-    /// in the way.
+    /// A lock this process cannot account for is waited out for the whole budget and
+    /// then refused; `open_audit_file` is called directly as a second process would.
     #[cfg(unix)]
     #[test]
     fn the_budget_is_spent_and_then_the_lock_still_fails_closed() {
@@ -962,68 +850,23 @@ mod tests {
             "the whole budget has to be spent before giving up, not short-circuited; \
              waited {waited:?}"
         );
-        // The point is boundedness, not a stopwatch: what is ruled out is waiting as
-        // long as a network timeout. A tight ceiling here would measure how loaded the
-        // runner is, and `the_inherited_lock_retry_budget_stays_bounded` already pins
-        // the nominal figure.
+        // Boundedness, not a stopwatch: a tight ceiling would measure runner load.
         assert!(
             waited < Duration::from_secs(1),
             "the wait has to stay bounded; waited {waited:?}"
         );
     }
 
-    /// Positive control for the inherited-lock defect (CI release run 34723050267,
-    /// macOS x64, twice: `llm_audit.rs:526`, then `:779` on the re-run — both a
-    /// `reserve` that immediately follows a `finalize`, both `Err("audit-log-busy")`).
-    ///
-    /// ## What the defect is
-    ///
-    /// `flock` belongs to the **open file description**, not to the descriptor. A child
-    /// duplicates the description at `fork`, and `O_CLOEXEC` closes the descriptor at
-    /// `exec`, not before it — so a child caught between the two owns a copy of the lock
-    /// this process is releasing, and the next `reserve` is told a healthy audit log is
-    /// busy by our own child. `llm.rs` spawns `curl` inside the reserved window on every
-    /// send, and the test suite spawns `git`, `acp` and agent-setup children from
-    /// parallel threads, which is how CI met it twice.
-    ///
-    /// That the fork produces such a holder is measured, not assumed: a C probe running
-    /// this module's exact open/lock/write/fsync/close/open/lock sequence saw 0 spurious
-    /// `EWOULDBLOCK` in 20 000 rounds with nothing spawning, 2 894 of 4 000 with four
-    /// `fork`+`exec` threads, and 880 of 4 000 with `posix_spawn`. The same probe timed
-    /// the hold: p50 54 µs, worst 12 658 µs over 80 000 sequences, always clearing.
-    ///
-    /// ## What this test does with that
-    ///
-    /// It holds the lock the way a mid-spawn child holds it — a **second open file
-    /// description on the same audit log** — and then asks `reserve` to survive it.
-    /// `flock` cannot tell that holder from a child's copy: both are descriptions this
-    /// process does not own, and absorbing them is exactly what the fix does.
-    ///
-    /// The holder is in this process on purpose, and it is the fifth shape of this test.
-    /// The first four handed the description to a real child and each failed on timing
-    /// rather than on the defect, every count measured against a clean 40/40 baseline:
-    ///
-    /// * spawning children in a loop and hoping to collide — green on unfixed code;
-    /// * a child sleeping a fixed time from its own `fork` — a slow `fsync` in
-    ///   `finalize` outlived the hold, two of eight rounds passed unfixed;
-    /// * the copy held open through `pre_exec` — the child also held every descriptor the
-    ///   other 300 tests had open, costing a sibling test a flake in 40 runs;
-    /// * a `dup` handed to `/bin/sleep` as its stdin, released by killing it — 13 of 50,
-    ///   then 18 of 60 runs red, because spawn latency, exec, kill and process teardown
-    ///   each add milliseconds that a saturated suite stretches past the retry budget.
-    ///
-    /// A holder that is a `File` cannot be late, cannot be descheduled, and cannot exit
-    /// early: it is released by one `close`, on the thread that watched the retry loop
-    /// absorb its first busy answer. What that costs is fidelity about *where* the
-    /// foreign description came from — and that is what the probe above, and CI, already
-    /// establish.
+    /// Positive control for the inherited-lock defect: a second open file description
+    /// held in process stands in for a mid-spawn child, because real children failed on
+    /// timing (`docs/records/decisions/2026-09-13-audit-log-inherited-lock-59f33326-5629-4cb7-8601-33c3b2f005fd.md`).
     #[cfg(unix)]
     #[test]
     fn a_reserve_right_after_a_finalize_survives_a_foreign_hold_on_the_log() {
         use std::sync::atomic::{AtomicBool, Ordering};
         use std::sync::Arc;
 
-        /// Only reached when something is wrong; a healthy round releases in microseconds.
+        /// A healthy round releases in microseconds.
         const WATCH_LIMIT: Duration = Duration::from_secs(5);
 
         let _serialized = CONTENDING_TESTS
@@ -1050,8 +893,6 @@ mod tests {
             )
             .unwrap();
 
-            // A second description on the audit log — the state a child of ours produces
-            // between `fork` and `exec`, held deliberately instead of by luck.
             let holder = open_audit_file(&canonical).expect("the foreign hold takes the lock");
 
             let before = ABSORBED_INHERITED_BUSY.load(Ordering::Relaxed);
@@ -1069,8 +910,7 @@ mod tests {
                 })
             };
 
-            // Spinning, not sleeping: the hold has to be let go inside the retry budget,
-            // and a thread waking from a sleep under a saturated suite does not make it.
+            // Spinning, not sleeping: a woken thread under load misses the retry budget.
             let watching = std::time::Instant::now();
             while ABSORBED_INHERITED_BUSY.load(Ordering::Relaxed) == before
                 && !answered.load(Ordering::Acquire)
@@ -1113,9 +953,7 @@ mod tests {
             rounds * 2,
             "one reserved-then-finalized call is one line"
         );
-        // Without this the test cannot tell a working fix from a hold that was never
-        // met, and a regression test that passes without reproducing anything is how
-        // this defect would come back.
+        // Without this the test could pass without reproducing anything.
         assert!(
             absorbed.iter().all(|count| *count > 0),
             "every round had to actually meet the hold; absorbed per round: {absorbed:?}"
@@ -1131,7 +969,7 @@ mod tests {
         let second = reserve(&vault, verify_draft());
         assert!(
             second.is_err(),
-            "두 예약이 같은 파일 꼬리를 소유하면 안 된다"
+            "two reservations must not own the same file tail"
         );
 
         finalize(
@@ -1189,8 +1027,8 @@ mod tests {
         let after = fs::read(audit_log_path(&vault)).unwrap();
 
         fs::remove_dir_all(&vault).ok();
-        assert!(result.is_err(), "바뀐 예약 줄을 잘라내면 안 된다");
-        assert_eq!(after, before, "실패할 때 기존 바이트를 보존해야 한다");
+        assert!(result.is_err(), "must not truncate a changed reserved line");
+        assert_eq!(after, before, "a failure must preserve existing bytes");
     }
 
     #[cfg(unix)]
@@ -1218,20 +1056,15 @@ mod tests {
         let after = fs::read(audit_log_path(&vault)).unwrap();
 
         fs::remove_dir_all(&vault).ok();
-        assert!(result.is_err(), "예상 밖 꼬리를 잘라내면 안 된다");
-        assert_eq!(after, before, "실패할 때 기존 바이트를 보존해야 한다");
+        assert!(result.is_err(), "must not truncate an unexpected tail");
+        assert_eq!(after, before, "a failure must preserve existing bytes");
     }
 
     #[cfg(unix)]
     #[test]
     fn writer_matches_the_shared_reader_fixture() {
-        // Blocks drift between writer (Rust) ↔ reader (web `llm-audit-log.ts`). Both sides
-        // look at the same fixture — if this assert breaks, the TS contract test must be
-        // updated with it.
-        //
-        // Only the first two lines are what the writer produces. The later lines are the
-        // shape of real files the reader has to handle (old lines, other vendors), so they
-        // are not written here.
+        // Writer and reader (`llm-audit-log.ts`) share this fixture; update the TS
+        // contract with it. Only the first two lines are writer output.
         let fixture = include_str!("../../tests/fixtures/llm-audit-log.sample.jsonl");
         let lines: Vec<&str> = fixture.lines().filter(|l| !l.trim().is_empty()).collect();
         let expected_final: Value = serde_json::from_str(lines[0]).unwrap();
@@ -1263,17 +1096,15 @@ mod tests {
 
     #[test]
     fn the_fixture_keeps_a_line_from_before_host_existed() {
-        // Charter ⑤ — `host` is additive, so lines already sitting on user disks are not
-        // fixed up. The fixture must hold the proof that such a line keeps being read, so
-        // that the reader's absence-handling code cannot be deleted.
+        // `host` is additive; the fixture proves a legacy line keeps being read.
         let fixture = include_str!("../../tests/fixtures/llm-audit-log.sample.jsonl");
         let legacy = fixture
             .lines()
             .filter(|line| !line.trim().is_empty())
             .map(|line| serde_json::from_str::<Value>(line).unwrap())
             .find(|line| line.get("host").is_none());
-        let legacy = legacy.expect("host 없는 옛 줄이 픽스처에 있어야 한다");
-        assert_eq!(legacy["v"], 1, "옛 줄도 같은 스키마 버전이다");
+        let legacy = legacy.expect("fixture must contain a legacy line without host");
+        assert_eq!(legacy["v"], 1, "legacy lines share the schema version");
         assert_eq!(legacy["outcome"], "ok");
     }
 }

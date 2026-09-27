@@ -1,53 +1,24 @@
-//! Integration check — **The screen discovers why it fails on its own, and fixes it if possible.**
-//!
-//! ## Why this exists (2026-08-20 owner directive)
-//!
-//! *"If integration doesn't work, it's practically unusable."* True. In this product, agent connectivity is
-//! not a side feature but the core, yet until now when connections broke, the screen could only
-//! respond with **one sentence per symptom**. Users had to open the terminal trusting that sentence,
-//! unaware of which step had failed.
-//!
-//! We paid the price of that approach today through real measurement. The login guidance was actually a **trap**
-//! (`claude-login-repair.ts`), and because we were only looking at one symptom, no one
-//! realized it was the cause for 3 days. If we had retried step by step, the contradiction "credential link is active but
-//! login fails" would have appeared on the first screen.
-//!
-//! ## Three design disciplines
-//!
-//! 1. **Do not construct sentences here.** What we return is only the check id and machine-measured
-//!    facts (path · name · reason); the screen constructs human-readable sentences via i18n.
-//!    Embedding Korean sentences in Rust forces English screens to lie.
-//! 2. **"Unknown" is not "no problem."** If there is no way to verify, it is `unknown`.
-//!    This aligns with the discipline already set by this repository in executor mode — do not speak as if
-//!    you have done something you haven't.
-//! 3. **To claim something is fixable, there must be actual fixing code.** For checks where `fixable` is
-//!    true, `repair()` must handle that id. Contract tests bind these two together.
+//! Agent connection diagnosis in dependency order. Returns check ids and measured
+//! facts, never sentences (the screen localizes); unverifiable is `unknown`, and `fixable`
+//! requires a `repair()` arm, which contract tests bind.
 
 use std::path::{Path, PathBuf};
 
 use crate::acp;
 
-/// One line of check. **It is a fact, not a sentence.**
+/// A fact, not a sentence.
 #[derive(Debug, Clone, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct AcpCheck {
-    /// The key the screen uses to choose text. 1:1 with i18n keys.
+    /// The i18n key, 1:1.
     pub id: &'static str,
     /// `ok` · `problem` · `unknown`
     pub state: &'static str,
-    /// Can the app fix this problem itself? Meaningful only when `problem` is true.
+    /// Meaningful only for `problem`.
     pub fixable: bool,
-    /// **This step is futile because the preceding step failed.**
-    ///
-    /// Caught in the 2026-08-20 walkthrough: The tool was recommending
-    /// 「App quota settings ready — fix」 to users who had no tools at all.
-    /// Pressing it does nothing — there is no tool to launch. This file
-    /// states that inspection order follows dependency order, yet the UI
-    /// ignored it.
-    ///
-    /// Pattern name: **Fix button built on a collapsed prerequisite.**
+    /// A failed prerequisite makes this step futile, so no fix button is offered.
     pub blocked: bool,
-    /// One fact measured by the machine (path · reason). `None` if absent — never fabricate.
+    /// `None` when absent; never fabricated.
     pub detail: Option<String>,
 }
 
@@ -81,14 +52,10 @@ impl AcpCheck {
     }
 }
 
-/// If these two are blocked, **everything after them is futile.** When the tool
-/// is missing or cannot be launched, no amount of fixing the config folder will
-/// open a conversation.
+/// When these fail, every later check is futile.
 const PREREQUISITE_IDS: &[&str] = &["cli", "launcher"];
 
-/// Every check this file knows. **The order is the dependency order** — when an
-/// earlier one collapses, measuring a later one is meaningless, so the screen
-/// can simply read from the top.
+/// Dependency order: the screen reads from the top.
 pub(crate) const CHECK_IDS: &[&str] = &[
     "cli",
     "launcher",
@@ -100,7 +67,7 @@ pub(crate) const CHECK_IDS: &[&str] = &[
     "login",
 ];
 
-/// The checks `repair()` actually handles. Only entries here may be `fixable: true`.
+/// Only these may be `fixable: true`.
 pub(crate) const REPAIRABLE_IDS: &[&str] = &[
     "npx-cache",
     "config-dir",
@@ -108,42 +75,26 @@ pub(crate) const REPAIRABLE_IDS: &[&str] = &[
     "shadow-keychain",
 ];
 
-/// **Executors whose measured launch contract requires a specific session mode.**
-///
-/// This is a copy of the screen-side `GATED_SESSION_MODE`
-/// (`src/features/acp-session/model/runtime-gate.ts`). There are two copies
-/// because there are two places that judge — the screen opens the session, and
-/// this file diagnoses. If they diverge,
-/// `tests/contract/agent-doctor-checks.contract.test.ts` blocks it.
-///
-/// Codex was listed because the exact 1.6.2 adapter, forced `read-only`
-/// mode, isolated config, and server-owned Atlas MCP checkpoint passed the
-/// installed reject/allow/re-ask matrix together. Since 2026-09-07 the app
-/// launches the newest upstream adapter (owner direction); its `read-only`
-/// mode is a workspace-write sandbox, so a direct write inside the vault may
-/// land without a card and the vault's Git history is the undo. The forced
-/// mode still narrows the sandbox to the vault folder; `CHAT_ELIGIBLE`
-/// remains the stronger launch boundary.
+/// Copy of `GATED_SESSION_MODE` in `src/features/acp-session/model/runtime-gate.ts`, held
+/// by `tests/contract/agent-doctor-checks.contract.test.ts` against drift. Codex's `read-only`
+/// is a vault-scoped write sandbox, so Git history is the undo.
 pub(crate) const SESSION_MODE_GATE: &[(&str, &str)] = &[("codex-acp", "read-only")];
 
-/// The outside world the diagnosis needs. Taken as values so tests can swap them out.
+/// Values so tests can swap them.
 pub(crate) struct DoctorContext<'a> {
     pub runtime_id: &'a str,
     pub home: Option<&'a Path>,
     pub app_data_dir: &'a Path,
-    /// Absolute path of that executor's real CLI (only when found).
     pub cli: Option<&'a Path>,
-    /// Absolute path of the program launching the adapter (only when found).
     pub launcher: Option<&'a Path>,
-    /// The PATH to hand the child process.
     pub path_env: &'a str,
-    /// Is the app quota settings folder in a logged-out state. `None` if it could not be queried.
+    /// `None` if it could not be queried.
     pub isolated_logged_out: Option<bool>,
-    /// Is there a keychain item leading to that folder? `None` if the OS is unverifiable.
+    /// `None` if the OS cannot verify it.
     pub shadow_present: Option<bool>,
 }
 
-/// Converts the current state into an inspection list. **Does not fix anything.**
+/// Does not fix anything.
 pub(crate) fn diagnose(ctx: &DoctorContext<'_>) -> Vec<AcpCheck> {
     let mut out = Vec::new();
 
@@ -157,22 +108,9 @@ pub(crate) fn diagnose(ctx: &DoctorContext<'_>) -> Vec<AcpCheck> {
         None => AcpCheck::problem("launcher", false, None),
     });
 
-    /*
-     * **Is there a gate — and of which kind.**
-     *
-     * Without this line, the basis on which the screen offers "Open a
-     * conversation with this tool" appears nowhere in the diagnosis. The fact
-     * that there are two gate mechanisms stays invisible too, so someone
-     * looking at codex reads the absence of isolation checks as "is it less
-     * safe?".
-     *
-     * Having neither mechanism is a **problem**. It means the screen is making
-     * a promise the app cannot keep, and that is ours to fix, not the user's,
-     * so no fix button is attached.
-     */
-    // Measured eligibility, not mere isolation: the app can control codex's config directory and
-    // still not hold its write gate, which is exactly what decision (111) recorded. Report the
-    // compound Codex boundary instead of calling configuration isolation sufficient by itself.
+    // With neither mechanism the gate is a `problem`, ours to fix rather than the user's, so no fix button.
+    // Controlling codex's config directory is not holding its write gate (decision
+    // (111)); report the compound boundary instead.
     out.push(
         if acp::chat_eligible(ctx.runtime_id) && acp::config_env_for(ctx.runtime_id).is_some() {
             let detail = SESSION_MODE_GATE
@@ -191,14 +129,12 @@ pub(crate) fn diagnose(ctx: &DoctorContext<'_>) -> Vec<AcpCheck> {
         },
     );
 
-    // Outside the npx branch there is no cache at all. That is "not applicable",
-    // not "no problem", so it is left off the list — painting the absent thing
-    // green makes the screen pretend to have measured what it never did.
+    // No cache outside npx is not applicable, so it is left off rather than shown green.
     if let Some(entry) = npx_entry_path(ctx) {
         out.push(
             match acp::npx_entry_health(&entry, npx_package(ctx).as_deref().unwrap_or("")) {
                 acp::NpxEntryHealth::Usable => AcpCheck::ok("npx-cache", None),
-                // Not yet downloaded is not a defect — it downloads on first launch.
+                // Not yet downloaded is fine: it downloads on first launch.
                 acp::NpxEntryHealth::Missing => {
                     AcpCheck::ok("npx-cache", Some("not-downloaded".into()))
                 }
@@ -209,20 +145,8 @@ pub(crate) fn diagnose(ctx: &DoctorContext<'_>) -> Vec<AcpCheck> {
         );
     }
 
-    /*
-     * ⚠️ **How a gate is stood differs per executor** (2026-08-20 correction).
-     *
-     * The four below are the story of executors that stand their gate through
-     * **config isolation**. Codex also uses this setup for credentials and a
-     * sandbox floor, but its full write boundary is the measured combination
-     * of exact adapter pin, forced session mode, and server-owned MCP checkpoint.
-     *
-     * So for executors that do not use isolation, these four are **not emitted
-     * at all.** The first cut emitted them as `unknown`, and the screen showed
-     * "Is the app-side config ready — could not verify", which read as **a
-     * perfectly fine tool being half broken.** Saying "don't know" about
-     * something that does not apply is also a lie.
-     */
+    // The four isolation checks are emitted only for isolating executors; `unknown`
+    // for something that does not apply would read as a half-broken tool.
     let isolated = isolated_dir(ctx);
     let Some(dir) = isolated.clone() else {
         return finish(out);
@@ -238,8 +162,7 @@ pub(crate) fn diagnose(ctx: &DoctorContext<'_>) -> Vec<AcpCheck> {
         let source = spec_user_dir.join(".credentials.json");
         let link = dir.join(".credentials.json");
         out.push(if !source.exists() {
-            // The user has never logged in from the terminal. The source to
-            // link is missing; the link is not broken.
+            // Never logged in from the terminal: nothing to link, not a broken link.
             AcpCheck::unknown("credentials-link", None)
         } else if std::fs::read_link(&link).ok().as_deref() == Some(source.as_path()) {
             AcpCheck::ok("credentials-link", Some(link.display().to_string()))
@@ -263,18 +186,15 @@ pub(crate) fn diagnose(ctx: &DoctorContext<'_>) -> Vec<AcpCheck> {
     finish(out)
 }
 
-/// **Proof this is not idle.** Returning an unlisted id leaves the screen unable
-/// to find any wording for that row, so it draws a blank. The list and the
-/// actual output are bound together here.
+/// An unlisted id would leave the screen with no wording, so output is bound to the list.
 fn finish(mut out: Vec<AcpCheck>) -> Vec<AcpCheck> {
     debug_assert!(
         out.iter().all(|check| CHECK_IDS.contains(&check.id)),
         "returned a check id that is not on the list"
     );
 
-    // When a prerequisite is blocked, the later ones **are not claimed fixable.**
-    // Their state is left as measured — the point is not to hide what was
-    // measured, but not to recommend a futile action.
+    // Behind a blocked prerequisite, later checks keep their measured state but are
+    // not claimed fixable.
     let blocked_upstream = out
         .iter()
         .any(|check| PREREQUISITE_IDS.contains(&check.id) && check.state == "problem");
@@ -290,8 +210,7 @@ fn finish(mut out: Vec<AcpCheck>) -> Vec<AcpCheck> {
     out
 }
 
-/// This executor's app-side config folder. Only executors whose isolation has
-/// been measured have a value.
+/// Only executors with measured isolation have one.
 fn isolated_dir(ctx: &DoctorContext<'_>) -> Option<PathBuf> {
     acp::config_env_for(ctx.runtime_id)?;
     Some(ctx.app_data_dir.join("agent-config").join(ctx.runtime_id))
@@ -310,15 +229,12 @@ fn npx_entry_path(ctx: &DoctorContext<'_>) -> Option<PathBuf> {
     Some(acp::npx_cache_entry_dir(&root, &package))
 }
 
-/// Only items where `fixable` returned true arrive here. **Actually performs what was promised.**
 pub(crate) fn repair(ctx: &DoctorContext<'_>, check_id: &str) -> Result<(), String> {
     if !REPAIRABLE_IDS.contains(&check_id) {
         return Err(format!("not-repairable:{check_id}"));
     }
     match check_id {
-        // The same preparation path fixes all three: rewrite the config folder,
-        // relink the credentials, and clear the shadow entry. Keeping a separate
-        // path that fixes just one would let that path drift from the main one.
+        // One preparation path fixes all three, so a separate fix cannot drift from it.
         "config-dir" | "credentials-link" | "shadow-keychain" => acp::prepare_isolated_config(
             ctx.runtime_id,
             ctx.app_data_dir,
@@ -337,36 +253,15 @@ pub(crate) fn repair(ctx: &DoctorContext<'_>, check_id: &str) -> Result<(), Stri
     }
 }
 
-/// **Re-establishes the connection from scratch.**
-///
-/// Owner request (2026-08-20): *"Either leave a logout button, or let pressing
-/// re-login make the integration link up again."*
-///
-/// ## Why this is "re-establish", not "logout"
-///
-/// This app has **no app-side login** — it links the very login the user uses
-/// in the terminal and uses it as-is. So offering "logout" here becomes one of
-/// two things, and both are bad: deleting the user's real login (not ours to
-/// touch), or doing nothing while pretending to.
-///
-/// Instead, only **what the app created** is deleted: the config folder, the
-/// link, and the keychain item addressed to that folder. Then everything is
-/// built again from scratch. In this structure, that is the exact meaning of
-/// "reconnect when the integration got tangled".
-///
-/// After deleting, it **must rebuild.** Deleting alone means the next session
-/// either comes up without a gate or dies on startup failure — and the user
-/// only pressed "re-establish".
+/// There is no app-side login, so this deletes only what the app created (config
+/// folder, link, keychain item) and rebuilds, or the next session starts without
+/// a gate or fails.
 pub(crate) fn reset_connection(ctx: &DoctorContext<'_>) -> Result<(), String> {
     let Some(dir) = isolated_dir(ctx) else {
-        // Executors that do not use isolation have no app-created artifacts. No need to delete, so success
-        // — saying "cannot do it" makes users think something is wrong.
+        // Nothing app-created to delete, so success.
         return Ok(());
     };
 
-    // Remove the keychain item **first**. Deleting the folder first leaves the basis (folder path) for
-    // naming that item, but there is no reason to reverse the order, and leaving a half-deleted
-    // state on failure is worse.
     acp::remove_shadow_credentials(&dir);
 
     match std::fs::remove_dir_all(&dir) {
@@ -392,7 +287,7 @@ mod tests {
 
     fn prepare_for_test(c: &DoctorContext<'_>) {
         acp::prepare_isolated_config(c.runtime_id, c.app_data_dir, c.home, c.cli, c.path_env)
-            .expect("준비가 실패하면 이 시험의 전제가 무너진다");
+            .expect("setup must succeed for this test to hold");
     }
 
     fn ctx<'a>(app_data: &'a Path, home: Option<&'a Path>) -> DoctorContext<'a> {
@@ -408,10 +303,7 @@ mod tests {
         }
     }
 
-    /// **Do not build a fix button on a collapsed prerequisite** (2026-08-20 walkthrough).
-    ///
-    /// We were recommending "App quota settings ready — fix" to someone with
-    /// no tool at all. Pressing it is futile — there is no tool to launch.
+    /// No fix button on a collapsed prerequisite.
     #[test]
     fn nothing_downstream_is_offered_as_fixable_when_the_tool_is_missing() {
         let base = std::env::temp_dir().join(format!("atlas-doctor-l-{}", std::process::id()));
@@ -419,12 +311,11 @@ mod tests {
         let home = base.join("home");
         std::fs::create_dir_all(&home).unwrap();
 
-        // Someone with neither cli nor launcher = the person from the walkthrough.
         let app_data = base.join("appdata");
         let c = ctx(&app_data, Some(&home));
         assert!(
             c.cli.is_none() && c.launcher.is_none(),
-            "이 시험의 전제가 깨졌다"
+            "the test precondition does not hold"
         );
 
         let checks = diagnose(&c);
@@ -432,21 +323,16 @@ mod tests {
         assert_eq!(missing_tool.state, "problem");
         assert!(
             !missing_tool.blocked,
-            "선행 조건 자신이 막혔다고 표시되면 안 된다"
+            "a prerequisite must not mark itself blocked"
         );
 
         for check in checks.iter().filter(|x| !PREREQUISITE_IDS.contains(&x.id)) {
-            assert!(check.blocked, "{} 가 막힌 표시가 없다", check.id);
-            assert!(
-                !check.fixable,
-                "{} 에 고치기를 권하고 있다 — 눌러도 소용없다",
-                check.id
-            );
+            assert!(check.blocked, "{} is not marked blocked", check.id);
+            assert!(!check.fixable, "{} offers a fix that cannot work", check.id);
         }
         let _ = std::fs::remove_dir_all(&base);
     }
 
-    /// The opposite direction: when the prerequisites are fine, downstream repairs must stay alive.
     #[test]
     fn downstream_repairs_survive_when_prerequisites_are_fine() {
         let base = std::env::temp_dir().join(format!("atlas-doctor-m-{}", std::process::id()));
@@ -468,30 +354,22 @@ mod tests {
             .unwrap();
         assert_eq!(cfg.state, "problem");
         assert!(!cfg.blocked);
-        assert!(cfg.fixable, "선행 조건이 멀쩡한데 수리를 막았다");
+        assert!(cfg.fixable, "repair is blocked although prerequisites hold");
         let _ = std::fs::remove_dir_all(&base);
     }
 
     #[test]
-    /// ⚠️ **What survives from `codex_read_only_is_not_reported_as_a_permission_gate`.**
-    ///
-    /// That test held decision (111)'s finding: codex's `read-only` session mode blocked direct file
-    /// writes while an Atlas MCP write landed unasked, so codex had **no** gate and the screen must
-    /// not claim one. The 2026-08-24 acceptance retired the conclusion, not the lesson — codex is
-    /// gated now because the app owns the whole measured combination: exact adapter pin, isolated
-    /// config, forced session mode, and server-side consent in `mcp/src/write-consent.mjs`.
-    ///
-    /// So the assertion moves from "codex has no gate" to the compound boundary that actually held.
+    /// Codex is gated only by the measured combination the app owns: adapter pin,
+    /// isolated config, forced session mode and consent in `mcp/src/write-consent.mjs`.
     fn a_gate_is_the_measured_combination_the_app_owns() {
         let base = std::env::temp_dir().join(format!("atlas-doctor-h-{}", std::process::id()));
 
-        // The runtime gated by isolation.
         let claude = diagnose(&ctx(&base, None));
         let gate = claude.iter().find(|c| c.id == "gate").unwrap();
         assert_eq!(gate.state, "ok");
         assert_eq!(gate.detail.as_deref(), Some("isolation"));
 
-        // Codex needs every measured layer; isolation alone would repeat decision (111).
+        // Isolation alone would repeat decision (111).
         let mut c = ctx(&base, None);
         c.runtime_id = "codex-acp";
         let codex = diagnose(&c);
@@ -507,7 +385,6 @@ mod tests {
             "the doctor must mirror the mode the screen forces before the session is usable"
         );
 
-        // A runtime the app neither isolates nor measured still gets nothing green.
         let mut c = ctx(&base, None);
         c.runtime_id = "amp-acp";
         let gate = diagnose(&c).into_iter().find(|c| c.id == "gate").unwrap();
@@ -522,9 +399,6 @@ mod tests {
         let mut c = ctx(&base, None);
         c.runtime_id = "gemini-acp";
         let gate = diagnose(&c).into_iter().find(|c| c.id == "gate").unwrap();
-        // It is a problem because it means the screen is making a promise the
-        // app cannot keep, and it is ours to fix, not the user's, so no fix
-        // button is attached.
         assert_eq!(gate.state, "problem");
         assert!(!gate.fixable);
     }
@@ -541,7 +415,6 @@ mod tests {
         let c = ctx(&app_data, Some(&home));
         prepare_for_test(&c);
 
-        // Plant a trace of user tampering — re-establishing must remove it.
         let dir = app_data.join("agent-config").join("claude-acp");
         std::fs::write(dir.join("junk.json"), "{}").unwrap();
 
@@ -549,13 +422,16 @@ mod tests {
 
         assert!(
             !dir.join("junk.json").exists(),
-            "다시 맺었는데 옛 파일이 남았다"
+            "the old file survived relinking"
         );
-        // **Deleting alone is not enough.** The next session comes up without a gate or dies.
-        assert!(dir.join("settings.json").is_file(), "다시 만들지 않았다");
+        // Deleting alone leaves the next session without a gate.
+        assert!(
+            dir.join("settings.json").is_file(),
+            "settings.json was not recreated"
+        );
         assert!(
             dir.join(".credentials.json").exists(),
-            "링크를 다시 안 걸었다"
+            "the link was not recreated"
         );
         let _ = std::fs::remove_dir_all(&base);
     }
@@ -565,20 +441,15 @@ mod tests {
         let base = std::env::temp_dir().join(format!("atlas-doctor-k-{}", std::process::id()));
         let mut c = ctx(&base, None);
         c.runtime_id = "codex-acp";
-        // Nothing to delete, so it is success — saying "cannot do it" makes the
-        // user think something is wrong.
         assert!(reset_connection(&c).is_ok());
     }
 
     #[test]
     fn every_fixable_check_has_a_repair_that_handles_it() {
-        // Saying "this can be fixed" and then having nothing happen on press is
-        // the worst defect in this spot. The screen is led to believe it told
-        // the truth.
         for id in REPAIRABLE_IDS {
             assert!(
                 CHECK_IDS.contains(id),
-                "고칠 수 있다고 등재했는데 검사 목록에 없다: {id}"
+                "listed as fixable but missing from checks: {id}"
             );
         }
     }
@@ -601,18 +472,12 @@ mod tests {
         let base = std::env::temp_dir().join(format!("atlas-doctor-b-{}", std::process::id()));
         let checks = diagnose(&ctx(&base, None));
         let by_id = |id: &str| checks.iter().find(|c| c.id == id).map(|c| c.state);
-        // The two we could not ask about must be unknown — not "no problem".
         assert_eq!(by_id("login"), Some("unknown"));
         assert_eq!(by_id("shadow-keychain"), Some("unknown"));
     }
 
-    /// **Eligibility is a subset of isolation, and never the reverse.**
-    ///
-    /// The two lists hold the same two ids today, which is exactly when this invariant is easiest to
-    /// lose: someone adds a runtime to `ISOLATION` and assumes chat follows. It must not. Isolation
-    /// says the app can control a config directory; eligibility is the measured claim that the
-    /// resulting configuration stops a write until a person answers, and only an installed-app run
-    /// showing reject-without-write **and** allow-with-write earns it (decisions (111), (113)).
+    /// Eligibility is a subset of isolation: only an installed-app run showing
+    /// reject-without-write and allow-with-write earns it (decisions (111), (113)).
     #[test]
     fn an_isolated_runtime_is_not_automatically_chat_eligible() {
         for id in acp::CHAT_ELIGIBLE {
@@ -635,15 +500,10 @@ mod tests {
         assert_eq!(gate.state, "problem");
     }
 
-    /// **Do not say "don't know" about what does not apply** (2026-08-20 correction).
-    ///
-    /// A runtime that does not use config isolation gets none of the four isolation checks, rather
-    /// than four rows of `unknown` beside whatever its gate verdict is.
+    /// A runtime without isolation gets none of the four isolation checks.
     #[test]
     fn a_runtime_without_isolation_gets_no_isolation_checks() {
-        // The example used to be codex. It stopped being one when the app started controlling
-        // codex's config directory — which is not the same as trusting its gate, and the next
-        // test holds that line. `amp-acp` is a runtime the app genuinely does not isolate.
+        // `amp-acp` is a runtime the app does not isolate.
         let base = std::env::temp_dir().join(format!("atlas-doctor-g-{}", std::process::id()));
         let mut c = ctx(&base, None);
         c.runtime_id = "amp-acp";
@@ -652,11 +512,10 @@ mod tests {
         for absent in ["config-dir", "credentials-link", "shadow-keychain", "login"] {
             assert!(
                 !ids.contains(&absent),
-                "격리를 안 쓰는 실행기에 {absent} 를 냈다"
+                "emitted {absent} for a runner without isolation"
             );
         }
-        // That said, an empty list is not acceptable — the common checks must still come out.
-        assert!(ids.contains(&"cli"), "공통 검사까지 사라졌다");
+        assert!(ids.contains(&"cli"), "the shared checks disappeared");
         assert!(ids.contains(&"launcher"));
     }
 
@@ -667,10 +526,8 @@ mod tests {
         for id in ["cli", "launcher"] {
             let check = checks.iter().find(|c| c.id == id).unwrap();
             assert_eq!(check.state, "problem");
-            // The app does not download and install someone else's tool on
-            // their behalf — a line this repository has already drawn. So it
-            // must not claim it can fix this either.
-            assert!(!check.fixable, "{id} 를 앱이 고칠 수 있다고 말하고 있다");
+            // The app never installs someone else's tool for them.
+            assert!(!check.fixable, "{id} claims the app can fix it");
         }
     }
 
@@ -682,9 +539,7 @@ mod tests {
         let home = base.join("home");
         std::fs::create_dir_all(&home).unwrap();
 
-        // Stand up the prerequisites (tool and launcher) — without them the
-        // downstream repair is now blocked as "futile", and that is not what
-        // this test is measuring.
+        // Prerequisites stand so the downstream repair is not blocked.
         let tool = base.join("fake-cli");
         std::fs::write(&tool, "").unwrap();
         let mut c = ctx(&app_data, Some(&home));
@@ -693,7 +548,10 @@ mod tests {
 
         let before = diagnose(&c);
         let cfg = before.iter().find(|c| c.id == "config-dir").unwrap();
-        assert_eq!(cfg.state, "problem", "설정 폴더가 없는데 문제로 안 봤다");
+        assert_eq!(
+            cfg.state, "problem",
+            "a missing config folder is not reported as a problem"
+        );
         assert!(cfg.fixable);
 
         repair(&c, "config-dir").unwrap();
@@ -702,7 +560,7 @@ mod tests {
         assert_eq!(
             after.iter().find(|c| c.id == "config-dir").unwrap().state,
             "ok",
-            "고쳤다고 했는데 다시 재 보니 그대로다"
+            "the fix reported success but a recheck shows no change"
         );
         let _ = std::fs::remove_dir_all(&base);
     }
@@ -715,8 +573,6 @@ mod tests {
         std::fs::create_dir_all(&home).unwrap();
         let app_data = base.join("appdata");
         let checks = diagnose(&ctx(&app_data, Some(&home)));
-        // Telling someone who has never logged in from the terminal that "the
-        // link is broken" pins a fault on them that does not exist.
         assert_eq!(
             checks
                 .iter()

@@ -1,29 +1,6 @@
-//! The library half of a vault — raw sources under `sources/`, and the documents a
-//! person may choose to bring in.
-//!
-//! `docs/DECISIONS.md`, 2026-09-05: *a vault holds three kinds of file and only one is
-//! the graph.* A raw source lives verbatim under `sources/` in whatever format it
-//! arrived in; a wiki page is Markdown with no `kind:`; an ontology node is Markdown
-//! with `kind:` and is the only graph truth. Nothing in this module parses, converts or
-//! interprets a source. It copies bytes, measures them, and hashes them.
-//!
-//! Three boundaries this module is responsible for, and the reason each exists:
-//!
-//! 1. **Discovery proposes; it never copies.** `discover_source_candidates` returns
-//!    metadata only — name, extension, size, mtime — for a bounded set of roots the
-//!    person already granted (the open folder, and project roots they bound
-//!    themselves). No file is opened. A candidate list is a proposal a person approves,
-//!    which is the shape decision 2026-08-21 (92) requires of every change proposal.
-//! 2. **The walk never leaves the granted roots**, and inside them it refuses
-//!    dotfiles, dependency and build directories, and anything whose name reads as a
-//!    credential. `.claude/rules/local-first.md` forbids scanning password, credential
-//!    or key files; an allow-list of document extensions is the primary lock and the
-//!    name deny-list is the second. Mirrored in
-//!    `src/entities/docs-vault/lib/source-discovery.ts` and held there by
-//!    `tests/contract/source-discovery-rules.contract.test.ts`.
-//! 3. **Hashing happens here, not in the WebView.** `read_vault_binary_file` returns a
-//!    JSON array of bytes; hashing a 20 MB PDF that way would move 20 million numbers
-//!    across IPC to produce 64 characters. Same reasoning as `vault_fingerprint`.
+//! Raw sources are copied, measured and hashed, never parsed (`docs/DECISIONS.md`).
+//! Discovery returns metadata for granted roots only, so no credential is scanned
+//! (`.claude/rules/local-first.md`); mirrored in `source-discovery.ts`, or they drift.
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -32,27 +9,18 @@ use sha2::{Digest, Sha256};
 
 use crate::{canonical_root, resolve_existing_inside};
 
-/// Same value as TS `VAULT_SOURCES_DIR` and the `VAULT_SOURCES_DIR` constant the vault
-/// walk uses.
+/// Same value as TS `VAULT_SOURCES_DIR`.
 const SOURCES_DIR: &str = "sources";
 
-/// Document formats a person is offered when Atlas proposes candidates.
-///
-/// **Must equal** TS `DISCOVERY_DOCUMENT_EXTENSIONS`. Deliberately an allow-list: a
-/// deny-list decides what to hide and is wrong the first time it meets a name nobody
-/// thought of, while an allow-list decides what to show and is merely incomplete. `md`
-/// is absent on purpose — Markdown is already a vault file kind, and copying a project's
-/// Markdown into `sources/` would put the same text in two places with no way to say
-/// which one is the source.
+/// Must equal TS `DISCOVERY_DOCUMENT_EXTENSIONS`. An allow-list, because a
+/// deny-list fails on the first unforeseen name; `md` is absent so vault Markdown
+/// is never copied into two places.
 const DISCOVERY_DOCUMENT_EXTENSIONS: &[&str] = &[
     "pdf", "docx", "doc", "xlsx", "xls", "csv", "pptx", "ppt", "txt", "rtf", "odt", "ods", "odp",
     "epub",
 ];
 
-/// Directory names the discovery walk never descends into.
-///
-/// **Must equal** TS `DISCOVERY_PRUNE_DIR_NAMES`. Dot-prefixed directories are skipped
-/// by a separate rule, so `.git` and `.next` need no entry here.
+/// Must equal TS `DISCOVERY_PRUNE_DIR_NAMES`; dot directories are skipped separately.
 const DISCOVERY_PRUNE_DIR_NAMES: &[&str] = &[
     "node_modules",
     "target",
@@ -67,11 +35,8 @@ const DISCOVERY_PRUNE_DIR_NAMES: &[&str] = &[
     "venv",
 ];
 
-/// Lowercased fragments that disqualify a file name whatever its extension.
-///
-/// **Must equal** TS `DISCOVERY_DENIED_NAME_FRAGMENTS`. The extension allow-list already
-/// refuses `.env`, `id_rsa` and `.pem`, so this list exists for the case the allow-list
-/// cannot see: `credentials.csv` is a spreadsheet by extension and a secret by content.
+/// Must equal TS `DISCOVERY_DENIED_NAME_FRAGMENTS`; catches secrets the extension
+/// allow-list cannot, such as `credentials.csv`.
 const DISCOVERY_DENIED_NAME_FRAGMENTS: &[&str] = &[
     "credential",
     "secret",
@@ -95,9 +60,7 @@ const DISCOVERY_DENIED_NAME_FRAGMENTS: &[&str] = &[
     ".htpasswd",
 ];
 
-/// How deep the discovery walk descends inside one granted root.
 const DISCOVERY_MAX_DEPTH: usize = 8;
-/// How many candidates one call returns before it stops and says so.
 const DISCOVERY_MAX_CANDIDATES: usize = 500;
 
 fn lower_extension(name: &str) -> String {
@@ -107,8 +70,7 @@ fn lower_extension(name: &str) -> String {
     }
 }
 
-/// The one judgement both surfaces make about a file name. Kept as a free function so
-/// the Rust unit test below and the TS mirror test measure the same rule.
+/// A free function so this test and the TS mirror test measure the same rule.
 pub(crate) fn discovery_accepts_file(name: &str) -> bool {
     if name.starts_with('.') {
         return false;
@@ -128,8 +90,7 @@ fn hash_path(path: &Path) -> Result<String, String> {
 
     let mut file = fs::File::open(path).map_err(|err| err.to_string())?;
     let mut hasher = Sha256::new();
-    // 64 KiB at a time: a source may be a 200 MB scan, and reading it whole to hash it
-    // would trade the IPC cost this command removes for a resident-memory one.
+    // 64 KiB chunks keep a 200 MB scan out of resident memory.
     let mut buffer = [0_u8; 64 * 1024];
     loop {
         let read = file.read(&mut buffer).map_err(|err| err.to_string())?;
@@ -145,16 +106,12 @@ fn hash_path(path: &Path) -> Result<String, String> {
 #[serde(rename_all = "camelCase")]
 pub struct VaultFileHash {
     pub relative_path: String,
-    /// `None` when the file could not be read. A missing hash is reported as missing;
-    /// an unreadable source must not be allowed to read as "compiled".
+    /// `None` when unreadable, so an unreadable source never reads as compiled.
     pub sha256: Option<String>,
 }
 
-/// sha256 of vault files, computed on the native side.
-///
-/// The screen calls this only for sources a wiki page already cites: a file nobody has
-/// compiled needs no hash to be known as not compiled, and hashing every source on every
-/// load would spend a person's disk on a question nobody asked.
+/// Hashed natively because a byte array over IPC would cost millions of numbers;
+/// the screen asks only for sources a wiki page cites.
 #[tauri::command]
 pub fn hash_vault_files(
     root_path: String,
@@ -173,9 +130,7 @@ pub fn hash_vault_files(
     Ok(out)
 }
 
-/// Deliberately **not** `async`, for the same reason as `pick_vault_directory`:
-/// `rfd::FileDialog` opens an `NSOpenPanel`, which macOS requires on the main thread and
-/// which runs its own modal event loop.
+/// Not `async`: `NSOpenPanel` must run on the macOS main thread.
 #[tauri::command]
 pub fn pick_source_files(dialog_title: Option<String>) -> Result<Vec<String>, String> {
     let title = dialog_title.as_deref().unwrap_or("Add documents");
@@ -191,19 +146,16 @@ pub fn pick_source_files(dialog_title: Option<String>) -> Result<Vec<String>, St
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SourceImportResult {
-    /// The name the person chose, as it appeared on their disk.
     pub picked_name: String,
     /// `added` · `duplicate` · `renamed` · `failed`.
     pub status: String,
-    /// Vault-relative path of the file that now holds these bytes. For `duplicate` this
-    /// is the file that already held them, which is what makes the refusal explainable.
+    /// For `duplicate`, the file that already held these bytes.
     pub relative_path: Option<String>,
     pub sha256: Option<String>,
     pub size: Option<u64>,
     pub reason: Option<String>,
 }
 
-/// A file name that cannot escape `sources/` or collide with a shell.
 fn safe_source_file_name(name: &str) -> Option<String> {
     let trimmed = name.trim();
     if trimmed.is_empty() || trimmed == "." || trimmed == ".." {
@@ -212,8 +164,7 @@ fn safe_source_file_name(name: &str) -> Option<String> {
     if trimmed.contains('/') || trimmed.contains('\\') || trimmed.contains('\0') {
         return None;
     }
-    // A leading dot would make the imported file invisible to the vault walk, so the
-    // person would see the import succeed and the row never appear.
+    // A leading dot would hide the imported file from the vault walk.
     Some(trimmed.trim_start_matches('.').to_string()).filter(|value| !value.is_empty())
 }
 
@@ -224,8 +175,7 @@ fn split_name(name: &str) -> (String, String) {
     }
 }
 
-/// Existing `sources/` files indexed by content hash, so a second copy of the same bytes
-/// under another name is still recognised as the same document.
+/// Indexed by content hash so the same bytes under another name are recognised.
 fn index_existing_sources(root: &Path) -> Result<Vec<(String, String)>, String> {
     let sources = root.join(SOURCES_DIR);
     if !sources.is_dir() {
@@ -267,26 +217,17 @@ fn write_source_bytes(root_path: &str, relative_path: &str, bytes: &[u8]) -> Res
     crate::agent_setup::write_entry_bytes_atomically(&parent, &file_name, bytes, 0o666)
 }
 
-/// The same write on a target without POSIX descriptor operations.
-///
-/// Windows has no `openat`/`O_NOFOLLOW`/`renameat`, so the escape check happens on the
-/// path instead: `resolve_write_target_inside` canonicalises the nearest existing
-/// ancestor and refuses anything that resolves outside the folder. That is the same
-/// helper `write_vault_text_file` already uses on this target, so imported bytes and
-/// written Markdown are bounded by one rule rather than two.
+/// Windows lacks `openat`/`O_NOFOLLOW`, so `resolve_write_target_inside` checks the
+/// path instead, the same rule `write_vault_text_file` uses, or bytes could escape.
 #[cfg(not(unix))]
 fn write_source_bytes(root_path: &str, relative_path: &str, bytes: &[u8]) -> Result<(), String> {
     let target = crate::resolve_write_target_inside(root_path, relative_path)?;
     fs::write(&target, bytes).map_err(|err| err.to_string())
 }
 
-/// Copy chosen files into `<vault>/sources/`, refusing a second copy of bytes already
-/// there and never overwriting a file that exists under the same name.
-///
-/// The copy **is** the artifact. Nothing is written beside it — no sidecar index, no
-/// `sources.jsonl` — because a second store of what the folder already says is a second
-/// canonical store, which `.claude/rules/forbidden.md` refuses. Where a source came from
-/// is recorded later, in the wiki page's frontmatter, where Git can show it.
+/// Never overwrites and refuses a second copy of the same bytes. Nothing is written
+/// beside the copy, since a sidecar index would be a second canonical store
+/// (`.claude/rules/forbidden.md`).
 #[tauri::command]
 pub fn import_source_files(
     root_path: String,
@@ -376,11 +317,8 @@ pub fn import_source_files(
 #[serde(rename_all = "camelCase")]
 pub struct SourceDiscoveryRoot {
     pub root_path: String,
-    /// How the screen names this root to the person. Carried through untouched so the
-    /// candidate list can say which folder proposed a file.
     pub label: String,
-    /// Vault-relative prefixes the walk skips. The open folder passes `sources` so files
-    /// already imported are not proposed a second time.
+    /// The open folder passes `sources` so imported files are not proposed again.
     #[serde(default)]
     pub skip_relative: Vec<String>,
 }
@@ -401,11 +339,8 @@ pub struct SourceCandidate {
 #[serde(rename_all = "camelCase")]
 pub struct SourceDiscoveryReport {
     pub candidates: Vec<SourceCandidate>,
-    /// Whether the walk stopped at `DISCOVERY_MAX_CANDIDATES`. Silent truncation reads
-    /// as "this is everything", so the screen is told.
+    /// Silent truncation would read as the complete list.
     pub truncated: bool,
-    /// Roots that could not be read at all, by label. A root that vanished is a fact the
-    /// person needs, not an empty list.
     pub unreadable_roots: Vec<String>,
 }
 
@@ -446,8 +381,7 @@ fn walk_candidates(
         let Ok(file_type) = entry.file_type() else {
             continue;
         };
-        // Symlinks are not followed: a link inside a granted root can point anywhere on
-        // the disk, and "we only walk what you granted" has to survive one.
+        // Symlinks are not followed, or a link could lead the walk outside granted roots.
         if file_type.is_symlink() {
             continue;
         }
@@ -479,8 +413,7 @@ fn walk_candidates(
     }
 }
 
-/// Propose documents from the roots a person already granted. **Metadata only** — no
-/// file is opened, and nothing is copied until they say which ones.
+/// Metadata only: no file is opened and nothing is copied until the person chooses.
 #[tauri::command]
 pub fn discover_source_candidates(
     roots: Vec<SourceDiscoveryRoot>,
@@ -507,8 +440,7 @@ pub fn discover_source_candidates(
     Ok(report)
 }
 
-/// Show one vault file in Finder. Reveal, not open: the app never launches a program on
-/// a person's behalf, and `-R` selects the file in its folder instead.
+/// Reveal, not open: the app never launches a program on the person's behalf.
 #[tauri::command]
 pub fn reveal_vault_file(root_path: String, relative_path: String) -> Result<(), String> {
     let path = resolve_existing_inside(&root_path, &relative_path)?;
@@ -532,19 +464,14 @@ pub fn reveal_vault_file(root_path: String, relative_path: String) -> Result<(),
 
     #[cfg(not(target_os = "macos"))]
     {
-        // A **code**, not a sentence, for the same reason `vault-root-rejected:` is one:
-        // composing human-readable copy here traps the translation in Rust, and the
-        // screen already turns a rejected reveal into its own toast. Windows and Linux
-        // reach this arm; nothing is launched on either.
+        // A code, not a sentence, so the translation stays on the screen; nothing is
+        // launched on Windows or Linux.
         let _ = path;
         Err(REVEAL_UNSUPPORTED.into())
     }
 }
 
-/// Returned when this platform has no reveal-in-file-manager path Atlas will use.
-///
-/// `#[cfg]`-scoped to the arm that returns it: on macOS nothing reads this, and an
-/// unconditional constant would be dead code there rather than a boundary.
+/// Scoped to the arm that returns it, or it is dead code on macOS.
 #[cfg(not(target_os = "macos"))]
 pub(crate) const REVEAL_UNSUPPORTED: &str = "reveal-unsupported-on-this-platform";
 
@@ -592,13 +519,8 @@ mod tests {
         }
     }
 
-    /**
-     * The cfg split is a build-time fact, so the test asserts what this build actually
-     * compiled rather than what the source says. On unix the descriptor writer exists and
-     * is what `write_source_bytes` reaches; elsewhere the path-checked writer is. Either
-     * way the same bytes land inside `sources/` and nowhere else, which is the property
-     * the two halves share.
-     */
+    // Asserts what this build compiled: either writer must land bytes inside the
+    // sources folder and nowhere else.
     #[test]
     fn the_platform_writer_lands_inside_sources_and_nowhere_else() {
         let root = std::env::temp_dir().join(format!("atlas-lib-{}", std::process::id()));
@@ -615,7 +537,6 @@ mod tests {
             b"%PDF-1.7\n".to_vec()
         );
 
-        // An escape is refused on both halves, by different means and with one outcome.
         assert!(write_source_bytes(&root_path, "../escaped.pdf", b"x").is_err());
 
         let _ = fs::remove_dir_all(&root);

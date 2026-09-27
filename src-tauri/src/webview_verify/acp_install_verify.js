@@ -30,8 +30,7 @@
   const find = (testId) =>
     Array.from(document.querySelectorAll('[data-testid="' + testId + '"]')).find(visible) || null;
 
-  // Sweep the progress row actually drawn on screen on every tick — an entry
-  // accumulates here only when an event has arrived **and made it to render**.
+  // Records only progress rows that reached render, not events that merely arrived.
   const sample = () => {
     const row = document.querySelector('[data-testid="agent-doctor-progress"]');
     if (!row) return;
@@ -58,17 +57,8 @@
       return;
     }
 
-    /*
-     * ⚠️ **2026-08-21: do not go through the settings sheet** (ledger 90). The
-     * runtime list moved out to the "Agents" destination and the sheet no longer
-     * has that slot — the previous driver kept looking for
-     * `app-settings-nav-runtimes`, accomplished nothing, and ended
-     * (measured: it passed with `progressStages` empty. The check had gone
-     * quietly inert, and that itself was residue this migration left behind).
-     *
-     * Now we measure right at the destination, and if we are not there we say
-     * so — launch with `ONTOLOGY_ATLAS_VERIFY_ROUTE=/ko/agents/`.
-     */
+    // The runtime list lives on the Agents destination, not the settings sheet;
+    // launch with `ONTOLOGY_ATLAS_VERIFY_ROUTE=/ko/agents/` or this reports the miss.
     result.sheetOpen = !!find("app-settings-popover");
 
     if (!find("app-settings-runtimes")) {
@@ -97,7 +87,6 @@
     result.doctorRendered = true;
 
     if (!result.installClicked) {
-      // Node comes first — without it the CLI install cannot run either.
       const node = find("agent-doctor-install-node");
       const cli = find("agent-doctor-install");
       const target = node || cli;
@@ -113,13 +102,8 @@
       return;
     }
 
-    /*
-     * **Close it and open it again** — this defect reproduces only through that
-     * motion (2026-08-20). When the sheet unmounts, the progress state
-     * disappears, and completion (`done`) is a one-shot, so if it passes in
-     * that gap it is never seen. Here we actually measure whether Rust holds
-     * the last state and hands it back on mount.
-     */
+    // Close and reopen: `done` is one-shot, so this checks that Rust hands the
+    // last progress state back on mount.
     result.step = "watching-progress";
     result.reason = "sampling the progress row";
     again(500);

@@ -13,44 +13,25 @@ use std::time::{Duration, Instant, UNIX_EPOCH};
 use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Emitter, Manager, RunEvent, State};
 
-/// ACP harness — finds coding agents already installed by the user and invokes them within the app.
 mod acp;
 mod acp_doctor;
-/// "Agent Connection" — interprets bundled MCP server paths · plans/writes config files · self-validates.
 mod agent_setup;
-/// Immutable, vault-local ACP analysis and diagnostic-review Markdown.
 mod analysis_archive;
-/// Keychain entries behind an external connector's tokens, resolved into the outgoing ACP line so
-/// the WebView never holds one.
 mod connector_secrets;
-/// Read-only discovery of MCP servers the person already registered elsewhere — names and key
-/// names, never secret values.
 mod connectors;
-/// The one inbound address this app answers — `ontology-atlas://mcp?install=` — and the rejection
-/// rules that keep it from becoming a router.
 mod deep_link;
-/// One shape for every failure a command hands to the WebView (`<code>: <detail>`).
 mod errors;
-/// Atlas Git — native layer for versioning vaults with git (invoked by the web GUI).
 mod git;
-/// Optional, experimental Jev evidence check: Keychain key, previewed fixed-endpoint transfer,
-/// audit line reserved before sending, advisory answer only.
 mod jev;
-/// The library half of a vault — raw sources under `sources/`, the documents a person may
-/// choose to bring in, and the hashes that say whether a wiki page still matches one.
 mod library;
-/// BYOK connection check — verifies authentication using the keychain key and logs to the Bolt audit log.
 mod llm;
-/// LLM call audit log — implementation of "do not send if logging fails."
 mod llm_audit;
 mod managed_node;
 mod map_entry_diagnostic;
-/// Immutable task-bound code/meaning transition records and retained review artifacts.
 mod meaning_transition_archive;
 mod secrets;
 
-/// How long a deep link keeps trying to reach the form: 20 attempts, 250 ms apart, so a cold
-/// start has five seconds to produce a document and a warm window answers on the first try.
+/// 20 attempts 250 ms apart: five seconds for a cold start to produce a document.
 #[cfg(desktop)]
 const DEEP_LINK_ROUTE_ATTEMPTS: usize = 20;
 #[cfg(desktop)]
@@ -62,16 +43,10 @@ const WEBVIEW_VERIFY_VAULT_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_VAULT";
 const WEBVIEW_VERIFY_AI_SETTINGS_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_AI_SETTINGS";
 const WEBVIEW_VERIFY_AI_BASE_URL_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_AI_BASE_URL";
 const WEBVIEW_VERIFY_WINDOW_SIZE_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_WINDOW_SIZE";
-/// Switch to measure whether **"Check for Updates" actually triggers** in the installed app.
-///
-/// Per this repository's discipline, the updater only recognizes updates measured **from the installed app**
-/// (`.claude/rules/testing.md`) — the browser has no self to update.
+/// Updater checks can only be measured from the installed app (`.claude/rules/testing.md`).
 const WEBVIEW_VERIFY_APP_UPDATE_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_APP_UPDATE";
-/// Switch to measure whether **installation progress actually reaches the screen** in the installed app.
-///
-/// Unit tests mock `listenInstallProgress` entirely, so whether Rust's
-/// `app.emit` reaches React's `listen` can only be known **within the app**.
-/// It is meaningful only when launched in an environment with no tools (`env -i HOME=<empty>`).
+/// Unit tests mock `listenInstallProgress`, so only the app shows whether `app.emit`
+/// reaches React. Meaningful only when launched with no tools (`env -i HOME=<empty>`).
 const WEBVIEW_VERIFY_ACP_INSTALL_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_ACP_INSTALL";
 const MAIN_WINDOW_LABEL: &str = "main";
 #[cfg(target_os = "macos")]
@@ -80,48 +55,33 @@ const NATIVE_TRAY_ID: &str = "ontology-atlas-tray";
 const NATIVE_TRAY_OPEN_ID: &str = "ontology-atlas-tray-open";
 #[cfg(target_os = "macos")]
 const NATIVE_TRAY_QUIT_ID: &str = "ontology-atlas-tray-quit";
-/// One rotation of the app log, kept small on purpose: this file exists so a bug report can carry
-/// evidence, not so the app accumulates a history of the owner's machine.
+/// Small on purpose: enough evidence for a bug report, not a history of the machine.
 const APP_LOG_MAX_FILE_BYTES: u128 = 5 * 1024 * 1024;
 
-/// Where a recentred window is *placed* below the top of a display. 37 is the notched 14"/16"
-/// figure — the conservative choice, because placing a window slightly low costs nothing while
-/// placing it under a notch costs the title bar.
+/// The notched 14"/16" figure: placing a window low costs nothing, under a notch
+/// costs the title bar.
 const MACOS_MENU_BAR_RESERVE_PT: f64 = 37.0;
-/// The shortest menu bar macOS presents: every non-notched panel, including all external displays.
-///
-/// This is the *acceptance* floor, and it must not be the notched 37. Reserving generously when
-/// choosing a position is safe; rejecting a position a non-notched display legitimately allows is
-/// not. A window snapped to the top of an external monitor sits at y = 24, and judging it against
-/// 37 would call it unreachable and recentre it **on every launch** — the plugin restores the
-/// owner's window and this would immediately take it away again. The same conflation shrank a
-/// maximised window that fit its display exactly, so the height ceiling below uses this figure too.
+/// The acceptance floor for non-notched and external displays. Judging against 37
+/// would recentre a window at y = 24 on every launch.
 const MACOS_MENU_BAR_MIN_PT: f64 = 24.0;
-/// The title bar sits outside the inner size Tauri's `width`/`height` describe, so a window's real
-/// vertical footprint is content + this.
+/// The title bar sits outside the inner size.
 const MACOS_TITLE_BAR_PT: f64 = 28.0;
 /// Must equal `minWidth`/`minHeight` in `tauri.conf.json`; `check-desktop-readiness.mjs` asserts it.
 const MAIN_WINDOW_MIN_LOGICAL: (f64, f64) = (1040.0, 720.0);
-/// How much grabbable title bar has to remain inside a display. A window whose title bar is off
-/// screen cannot be moved back by the person using it.
+/// A window whose title bar is off screen cannot be moved back.
 const MIN_ONSCREEN_TITLE_BAR_PT: f64 = 120.0;
-/// `tauri-plugin-window-state`'s own `DEFAULT_FILENAME`, inside `app_config_dir()`. Named here so
-/// the launch diagnostic can tell a restored window from a default one, and so the harness's
-/// `--reset-window-state` and this agree on one path.
+/// The plugin's `DEFAULT_FILENAME`, shared with the harness's `--reset-window-state`.
 const WINDOW_STATE_FILENAME: &str = ".window-state.json";
-/// Restoring `FULLSCREEN` performs a Space transition before first paint and gives macOS's own
-/// restoration a second owner; `VISIBLE` can produce a launch with no window at all, which nobody
-/// can tell apart from the app failing to start; and nothing here ever changes `DECORATIONS`, so
-/// saving them only adds a route to a window that cannot be moved or closed.
+/// Restoring `FULLSCREEN` adds a Space transition, `VISIBLE` can launch with no
+/// window, and `DECORATIONS` never changes here.
 #[cfg(desktop)]
 const WINDOW_STATE_FLAGS: tauri_plugin_window_state::StateFlags =
     tauri_plugin_window_state::StateFlags::SIZE
         .union(tauri_plugin_window_state::StateFlags::POSITION)
         .union(tauri_plugin_window_state::StateFlags::MAXIMIZED);
 
-/// A window rectangle in logical points. `x`/`y` are the **outer** frame origin — the top-left of
-/// the title bar, which is what `set_position` accepts — while `width`/`height` are the **inner**
-/// content size, which is what `set_size` accepts and what `tauri.conf.json` declares.
+/// `x`/`y` are the outer frame origin (`set_position`); `width`/`height` the inner
+/// content size (`set_size`, `tauri.conf.json`).
 #[derive(Debug, Clone, Copy, PartialEq)]
 struct WindowGeometry {
     x: f64,
@@ -130,7 +90,6 @@ struct WindowGeometry {
     height: f64,
 }
 
-/// A display's usable rectangle in logical points.
 #[derive(Debug, Clone, Copy, PartialEq)]
 struct MonitorRect {
     x: f64,
@@ -146,17 +105,9 @@ struct SanitizedGeometry {
     repositioned: bool,
 }
 
-/// Decides where the main window may actually sit on a given display.
-///
-/// This runs on **every** launch, not only after a restore, because the smallest display this
-/// product promises (1440×900) cannot hold the default content height either — a restore-only clamp
-/// would leave the plain first launch unguarded on that machine.
-///
-/// It exists because `tauri-plugin-window-state` restores size unconditionally, in *physical*
-/// pixels, and its own off-screen test only guards position and passes when any single corner
-/// intersects a display. Quitting at 1512×900 on a 2× Retina panel saves 3024×1800; relaunching
-/// with that display gone would otherwise ask a 1× monitor for a window larger than itself. Working
-/// in logical points and clamping here is what makes that case survivable.
+/// Runs on every launch: the plugin restores size in physical pixels and passes any
+/// intersecting corner, so a window saved on a Retina panel could exceed a 1x monitor,
+/// and even the default height overflows the smallest promised display (1440x900).
 fn sanitize_window_geometry(
     saved: WindowGeometry,
     monitor: MonitorRect,
@@ -169,16 +120,13 @@ fn sanitize_window_geometry(
     let height = saved.height.clamp(min.1, usable_height);
     let resized = width != saved.width || height != saved.height;
 
-    // `saved.y` is already the title bar's top edge, and the title bar is the only part of a window
-    // a person can grab. `intersects`-style corner tests pass for a window whose title bar sits
-    // above the menu bar while its bottom corners are still on screen — that window is unreachable.
+    // Only the title bar can be grabbed, so reachability is judged on it, not on corners.
     let onscreen_width = (saved.x + width).min(monitor.x + monitor.width) - saved.x.max(monitor.x);
     let reachable = onscreen_width >= MIN_ONSCREEN_TITLE_BAR_PT
         && saved.y >= monitor.y + MACOS_MENU_BAR_MIN_PT
         && saved.y <= monitor.y + monitor.height - MACOS_TITLE_BAR_PT;
 
-    // A clamped window that keeps its old origin drifts off the right or bottom edge, so a resize
-    // implies a reposition.
+    // A resize implies a reposition, or the old origin drifts off an edge.
     let repositioned = resized || !reachable;
     let (x, y) = if repositioned {
         (
@@ -206,23 +154,18 @@ const WEBVIEW_VERIFY_FIXTURE_SETTLE_MS: u64 = 1200;
 const WEBVIEW_VERIFY_MARKER_ATTEMPTS: usize = 12;
 const WEBVIEW_VERIFY_MARKER_INTERVAL_MS: u64 = 500;
 
-/// Type alias for the default watcher type of notify-debouncer-full — for State storage.
 type VaultDebouncer = Debouncer<RecommendedWatcher, FileIdMap>;
 
-/// The live watcher plus the canonical root it was built for. Keeping the root beside the debouncer
-/// is what lets a repeated call for the same folder be answered without building a second FSEvents
-/// stream — the frontend effect re-runs often, and each rebuild used to tear one down on the main
-/// thread.
+/// Keeping the root lets a repeat call for the same folder skip rebuilding the
+/// FSEvents stream.
 struct VaultWatch {
     root: PathBuf,
-    // Never read after it is stored: holding it *is* the behaviour, because dropping a debouncer
-    // stops the watcher.
+    // Holding it is the behaviour: dropping the debouncer stops the watcher.
     #[allow(dead_code)]
     debouncer: VaultDebouncer,
 }
 
-/// live-tauri — State keeping the vault file watcher alive for the app's lifetime. start_vault_watch
-/// must place the debouncer here so it does not drop and continues monitoring.
+/// Keeps the watcher alive for the app's lifetime.
 #[derive(Default)]
 struct VaultWatcherState {
     watch: Mutex<Option<VaultWatch>>,
@@ -278,24 +221,9 @@ pub(crate) fn canonical_root(root_path: &str) -> Result<PathBuf, String> {
     Ok(root)
 }
 
-/// Is this a position where **it is not allowed** to accept as the vault root — if not, provide a stable reason code.
-///
-/// ## Why this check exists (2026-08-16)
-///
-/// When selecting `/` (Macintosh HD) in the folder picker, the app **accepted it as the vault
-/// without hesitation.** Then it proposed "Map 34 documents in this folder," but those
-/// 34 were Markdown files within the installed app bundle. macOS directly displayed the warning *"Another app is trying to access your data"* and stopped it; we did not block it.
-///
-/// During the read-only era, this was a mistake, not an incident. **The vault root becomes the agent's
-/// working folder**, so the consequence of the same mistake changes from "read the wrong folder" to "the agent modified files in the wrong folder." Thus, this function is a gate that must be closed **before** attaching ACP, and later session working folder checks also use this function — if two checks exist, the looser one becomes the default.
-///
-/// ## What it blocks and what it does not
-///
-/// It blocks only **named positions**: filesystem root (paths with no parent — Windows drive roots like `C:\` are included here) · home directory **itself** · user container (`/Users`) · OS/app directories. Home **inside** (`~/notes`) is a valid vault, so it does not block it — blocking it would prevent the most common use case.
-///
-/// Heuristic checks like "folder is too large" are intentionally omitted. Legitimate vaults exceeding thresholds will inevitably appear, and users would encounter unexplained rejections. It judges based on name alone: "this is an app bundle."
-///
-/// Reason for splitting by extension: to accurately determine if it is a bundle, one must read `Info.plist`, but by then you have already looked inside. The name is visible before opening. This list contains items that macOS **executes or treats specially**.
+/// Blocks only named positions: filesystem root, the home directory itself, `/Users`,
+/// OS and app directories, and bundles. The vault root becomes the agent's working
+/// folder, so session checks reuse this one gate; size heuristics are omitted.
 fn is_bundle_directory(root: &Path) -> bool {
     const BUNDLE_EXTENSIONS: &[&str] = &[
         "app",
@@ -319,20 +247,13 @@ fn is_bundle_directory(root: &Path) -> bool {
 }
 
 fn vault_root_rejection(root: &Path) -> Option<&'static str> {
-    // No parent means the filesystem root (`/`, `C:\`). The caller passes a
-    // canonicalized path so a symlink cannot route around this check.
+    // No parent means a filesystem root; callers canonicalize so a symlink cannot route around it.
     if root.parent().is_none() {
         return Some("filesystem-root");
     }
 
-    // On macOS, **a `.app` is a directory** (2026-08-17). Checking only
-    // `is_dir()` lets it through, and `open <path>` does not open the folder —
-    // it **launches that program**, the one thing "Reveal in Finder" must
-    // never do.
-    //
-    // It is rejected as a vault root for the same reason: the inside of a
-    // bundle is the app's internal structure, not a place where a person keeps
-    // documents — and even less a place to become an agent's working folder.
+    // A macOS `.app` is a directory; `open` on it launches the program, and its inside
+    // is never a documents or agent working folder.
     if is_bundle_directory(root) {
         return Some("bundle-directory");
     }
@@ -373,9 +294,7 @@ fn vault_root_rejection(root: &Path) -> Option<&'static str> {
     const SYSTEM_DIRS: &[&str] = &[];
 
     for dir in SYSTEM_DIRS {
-        // Block only when it is exactly that directory. **Inside** it there
-        // are places a user may legitimately pick (e.g. `/home/<user>` on
-        // Linux, `/Volumes/<disk>` on macOS).
+        // Only that exact directory; places inside it can be valid.
         if root == Path::new(dir) {
             return Some("system-directory");
         }
@@ -450,7 +369,7 @@ fn is_safe_webview_verify_route(route: &str) -> bool {
             .any(|ch| matches!(ch, ' ' | '"' | '\'' | '<' | '>' | '\\'))
 }
 
-/// Value for the verifier to place in the [AI Connection] address field — characters breaking literals are blocked by **rejection**, not escaping. This value is used only in verification builds, but even in verification paths, do not leak injectable strings to the WebView.
+/// Unsafe characters are rejected, not escaped, even in verification builds.
 fn is_safe_verify_base_url(value: &str) -> bool {
     let url = value.trim();
     (url.starts_with("http://") || url.starts_with("https://"))
@@ -489,11 +408,8 @@ fn isolate_verify_webview_storage(config: &mut tauri::Config, enabled: bool) -> 
         .iter_mut()
         .filter(|window| window.create)
         .map(|window| {
-            // The verifier must never inherit or delete the user's persisted
-            // vault handle. Tauri maps `incognito` to WKWebView's
-            // nonPersistent data store on macOS, so the bundled dogfood graph
-            // becomes the deterministic fixture while normal launches keep
-            // their existing IndexedDB untouched.
+            // Never inherit or delete the user's vault handle: `incognito` maps to WKWebView's
+            // nonPersistent store, so the dogfood graph is a deterministic fixture.
             window.incognito = true;
         })
         .count()
@@ -526,19 +442,9 @@ fn build_webview_verify_route_reset_script(route: &str) -> String {
     )
 }
 
-/// Builds the JS that plants a fixture vault in the verifier's own key-value store.
-///
-/// `ONTOLOGY_ATLAS_VERIFY_VAULT` may name **several** folders, separated by `::`. The
-/// first is the one the session opens (`…fs-handle:current`); every one of them is also
-/// written to the recent list (`…fs-handle:recent`).
-///
-/// ⚠️ **Why the recent list has to be planted rather than accumulated.** The launch
-/// chooser is armed by how many folders that list holds, and the verifier's WebView runs
-/// on a `nonPersistent` data store (see `isolate_verify_webview_storage`) precisely so it
-/// can never inherit or delete the person's real vault handle. So the list starts empty on
-/// every launch and cannot be grown by launching twice — which left the chooser
-/// unreachable by any desktop check, and a surface no check can reach has no gate at all
-/// (2026-09-13).
+/// `ONTOLOGY_ATLAS_VERIFY_VAULT` may list several folders separated by `::`; the first
+/// opens and all are planted in the recent list, because the nonPersistent store starts
+/// empty every launch and the launch chooser would otherwise be unreachable.
 fn build_webview_verify_vault_bootstrap_script(root_path: &str) -> String {
     let mut roots = root_path
         .split("::")
@@ -615,56 +521,28 @@ fn build_webview_verify_vault_bootstrap_script(root_path: &str) -> String {
     )
 }
 
-/// Verification script walking the [Settings → AI Connection → Connect via Address] flow inside the WebView.
-///
-/// Same structure as the map-only verifiers: a single state machine leaves a result
-/// object on the `window` global, and a subsequent marker collection script loads it as payload.
-///
-/// # Two disciplines
-///
-/// - **If not found, log that it was not found.** Each step logs what it waited for and stopped at (`step`/`reason`), and the judgment is made by the Node-side contract. There is only one place where the script declares "success" itself.
-/// - **Clicks are toggles.** Controls like [Key Registration] or gears that close when pressed again will toggle open and closed if clicked every time in a polling loop. Therefore, click the same control only once within its cooldown.
-///
-/// Insert the address via substitution instead of `format!` — since the body is full of curly braces in JS, `{{`
-/// escaping would make the script unreadable.
+/// One state machine leaves a result on `window` for the marker probe. Every step
+/// logs what it waited for; toggling controls are clicked once per cooldown. The address
+/// is substituted rather than `format!`-ed, since the JS is full of braces.
 fn build_webview_verify_ai_settings_script(base_url: &str) -> String {
     AI_SETTINGS_VERIFY_SCRIPT.replace("__ATLAS_AI_BASE_URL__", &js_string_literal(base_url))
 }
 
-/// From the settings sheet → Agents → Check → (if blocked) actually click the installation offered by the app.
-///
-/// **What is measured is not installation success, but "does progress reach the screen"**. So
-/// accumulate the step list in the result as-is — if nothing accumulates, no event arrived,
-/// which is the same "quiet waiting" as before for the user.
+/// Measures whether progress reaches the screen, not install success.
 const ACP_INSTALL_VERIFY_SCRIPT: &str = include_str!("webview_verify/acp_install_verify.js");
 
-/// Open the settings sheet → go to the "App" section → actually click "Check for Updates".
-///
-/// **Why even click** — unit tests only prove that the button calls `checkNow`. What follows (plugin dynamic import · network round-trip · `getVersion()`) exists only within the installed app, and this repository's wiring was dead exactly in that layer.
+/// Clicks for real: the plugin import, network round trip and `getVersion()` exist
+/// only in the installed app.
 const APP_UPDATE_VERIFY_SCRIPT: &str = include_str!("webview_verify/app_update_verify.js");
 
 const AI_SETTINGS_VERIFY_SCRIPT: &str = include_str!("webview_verify/ai_settings_verify.js");
 
-/// The DOM marker collection probe injected with `eval_with_callback` during
-/// webview verification. Extracted verbatim from the former inline raw string in
-/// `run()`; the file bytes are the behaviour, so edits there are edits to the probe.
+/// The file bytes are the probe.
 const DOM_MARKER_PROBE_SCRIPT: &str = include_str!("webview_verify/dom_marker_probe.js");
 
-/// Verification route navigation — **expect the app's client router to follow as we swap only the address.**
-/// This is not actual navigation (`location.assign`).
-///
-/// # ⚠️ Only some routes can be verified this way
-///
-/// `history.replaceState` + `popstate`/`app:urlchange` change the screen **only on surfaces that listen to soft navigation themselves**. In this repository, the map (`app:urlchange`) and workshop (self URL events) are such cases. Other standard Next routes **only change the address while the mounted component remains.**
-///
-/// Thus, even if `--require-webview-route` passes, **the screen may be on a different route.** 2026-07-29 measurement: requesting `/ko/download/` kept the address but showed the root (map) on screen. Reading this as "the app did not open the download page" led to fabricating causes twice — only by reproducing the same mechanism in a web browser was it revealed that **this is a tool limitation** (normal rendering works with actual navigation).
-///
-/// ## So what do we do
-///
-/// - **Require route-specific markers together.** URL matching is evidence of arrival, not presence. Adding text or `data-testid` unique to that screen via `--require-webview-content` bypasses this trap.
-/// - If you need to verify a route that does not listen to soft navigation, first consider **launching that route as the start URL** before modifying this script. The app already goes to the locale root once (`build_webview_verify_route_reset_script`) before receiving `ONTOLOGY_ATLAS_VERIFY_ROUTE`, so in the current structure, the reset and destination must be the same value.
-///
-/// Why built this way originally: actual navigation wipes the app state after seeding the vault fixture in IndexedDB bootstrap. Changing only the address preserves that state, so this method is correct for map/workshop verification. **The error was not the method, but failing to document its limitations.**
+/// Swaps the address for the client router. Only soft-navigating surfaces (map,
+/// workshop) change screen, so pair `--require-webview-route` with the route's own
+/// markers via `--require-webview-content`; real navigation would wipe the seeded vault.
 fn build_webview_verify_route_script(route: &str) -> String {
     let route = js_string_literal(route);
     format!(
@@ -767,8 +645,7 @@ fn metadata_mtime_ms(path: &Path) -> Result<u128, String> {
         .as_millis())
 }
 
-/// Modification time **and** byte length in one `stat`. Two separate calls would read the
-/// same inode twice for every file in the walk.
+/// One `stat` instead of two per file.
 fn metadata_stamp(path: &Path) -> Result<(u128, u64), String> {
     let metadata = fs::metadata(path).map_err(|err| err.to_string())?;
     let modified = metadata.modified().map_err(|err| err.to_string())?;
@@ -779,13 +656,13 @@ fn metadata_stamp(path: &Path) -> Result<(u128, u64), String> {
     Ok((millis, metadata.len()))
 }
 
-/// Live ACP sessions. Terminate all remaining here when the app shuts down.
+/// Every remaining session ends at app shutdown.
 #[derive(Default)]
 struct AcpSessions(Mutex<std::collections::HashMap<String, Arc<AcpSessionHandle>>>);
 
 struct AcpSessionHandle {
     pid: u32,
-    /// Permission boundary checked and normalized by `acp_start`. The screen cannot reselect.
+    /// Normalized by `acp_start`; the screen cannot reselect it.
     vault_root: PathBuf,
     stdin: Mutex<Box<dyn Write + Send>>,
 }
@@ -823,10 +700,8 @@ impl AcpSessions {
     }
 
     fn send_line(&self, session_id: &str, line: &str) -> Result<(), String> {
-        // Never hold the registry lock and the writer lock at the same time.
-        // Even when one child's stdin is blocked, other sessions' send/stop,
-        // child-exit cleanup, and the app-shutdown drain must keep moving —
-        // that is what makes it possible to kill the blocked process itself.
+        // Never hold the registry and writer locks together, so a blocked stdin cannot stop
+        // other sessions, exit cleanup or the shutdown drain.
         let handle = {
             let map = self
                 .0
@@ -845,8 +720,7 @@ impl AcpSessions {
             .map_err(|err| format!("write-failed:{err}"))
     }
 
-    /// Is this session still alive — this is how the download progress
-    /// reporting thread knows when to stop.
+    /// Tells the progress thread when to stop.
     fn contains(&self, session_id: &str) -> bool {
         self.0
             .lock()
@@ -882,12 +756,9 @@ impl AcpSessions {
     }
 }
 
-/// Session names come from a monotonically increasing counter. Using the pid
-/// as the name would give a just-ended session and a new session the same name
-/// whenever the OS reuses a pid.
+/// A counter, not the pid, which the OS reuses.
 static ACP_SESSION_SEQ: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
 
-/// One line produced by one session.
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct AcpLineEvent {
@@ -909,21 +780,9 @@ struct AcpNoticeEvent {
     message: String,
 }
 
-/// Launch the ACP harness. The only thing returned is a session name; every
-/// exchange after this uses that name.
-///
-/// ## What this command guarantees
-///
-/// 1. **The working folder must pass the vault-root check unchanged.** We call
-///    the very function the folder picker uses — if two copies of the check
-///    exist, the looser one becomes the default. Handing an agent `/` is not a
-///    mistake, it is an incident.
-/// 2. **The child gets its own process group.** That is the only way to end
-///    the grandchildren the adapter spawns in one stroke; without it,
-///    processes survive quitting the app.
-/// 3. **The child's PATH is rebuilt from the locations we actually found.**
-///    The adapter resolves the real CLI by name, so handing it the sparse PATH
-///    a GUI app inherits makes the adapter fail at exactly the same spot.
+/// The working folder must pass the picker's vault-root check, the child gets its
+/// own process group so grandchildren end with it, and PATH is rebuilt from the
+/// locations found, or the adapter cannot resolve the real CLI.
 #[tauri::command]
 fn acp_start(
     app: AppHandle,
@@ -948,11 +807,10 @@ fn acp_start(
     };
     let home =
         std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).map(PathBuf::from);
-    // Must also find what the app installed on our behalf — otherwise, even after installing,
-    // the screen keeps saying "Installation required."
+    // Include app installs, or the screen keeps asking for installation.
     let app_data_for_paths = app.path().app_data_dir().ok();
     let managed_bin = app_data_for_paths.as_deref().map(acp::managed_cli_bin_dir);
-    // Include Node accepted by the app as a candidate — otherwise, even after accepting, it says "Node required."
+    // Include the app's Node for the same reason.
     let managed_node_bin = app_data_for_paths
         .as_deref()
         .and_then(managed_node::managed_node_bin_dir);
@@ -965,25 +823,16 @@ fn acp_start(
         managed_node_bin.as_deref(),
     )?;
 
-    /*
-     * Check cache entries **just before** launching if using npx (owner's physical machine 2026-08-19). If the first download is interrupted halfway, a half-formed entry remains, and npx tries to reuse it, dying every time with `Could not read package.json` —
-     * a state that does not heal itself. If broken, **delete only that entry** so npx downloads from scratch. Judgment basis and hash derivation are in the
-     * npx cache self-healing block in `acp.rs`.
-     */
+    // Heal a half-downloaded npx entry just before launch (see the npx cache block in `acp.rs`).
     let npx_preflight = acp::preflight_npx_cache(&launch, home.as_deref());
 
-    // **Do not inherit the user's global settings** (Decision log 2026-08-16 (2)).
-    // Measurement: the owner's `~/.claude/settings.json` pre-allowed `Bash(*)`·`Write(*)`, so a session inheriting that setting wrote files outside the working folder
-    // without asking once. The gateway is not the protocol but this setting.
+    // Never inherit the user's global settings: pre-allowed entries bypass the gate.
     let app_data = app
         .path()
         .app_data_dir()
         .map_err(|err| format!("app-data-dir-unavailable:{err}"))?;
-    // Starting without a verified app-owned boundary is never allowed. A launcher that lacks
-    // isolation or fails its preparation is a start failure; launching in that state can inherit
-    // the user's global allow list while the screen has no enforceable gateway.
-    // Shadow walking requires asking "is this item still valid," which needs the CLI's **absolute
-    // path**. Launching by name depends on the PATH visible to children, but a GUI app's default PATH differs from the user's shell (measurement at the top of this file).
+    // No start without a verified app-owned boundary. Shadow checks need the CLI's
+    // absolute path because a GUI app's PATH differs from the shell's.
     let isolation_cli = acp::registry_agent(&runtime_id)
         .and_then(|agent| agent.cli.as_deref())
         .and_then(|name| {
@@ -1021,8 +870,7 @@ fn acp_start(
     }
     #[cfg(windows)]
     {
-        // Prevent the child from opening a console window. The app itself has windows_subsystem
-        // set, but the child does not inherit it.
+        // The child does not inherit `windows_subsystem`, so suppress its console window.
         use std::os::windows::process::CommandExt;
         const CREATE_NO_WINDOW: u32 = 0x0800_0000;
         command.creation_flags(CREATE_NO_WINDOW);
@@ -1039,18 +887,9 @@ fn acp_start(
     let stdout = child.stdout.take().ok_or("stdout-unavailable")?;
     let stderr = child.stderr.take().ok_or("stderr-unavailable")?;
 
-    /*
-     * **A session that dies on arrival must say what it printed** (measured 2026-09-20 on the
-     * installed app: every press logged `exited with code Some(0)` within a second, the screen
-     * guessed at a stale login, and the child's own words existed only in the webview of a
-     * conversation nobody could read any more). The child's first stderr lines are kept here
-     * and written to the log when the session ends, at most three of them and none longer than
-     * `DEAD_SESSION_LOG_CHARS`; a child that printed nothing and left inside
-     * `DEAD_SESSION_WINDOW` gets that said instead, because "it said nothing" is itself the
-     * clue when a press does nothing. The first measurement was written for a ten-second
-     * window and missed the real case: the session lived forty-five seconds, printed, and only
-     * then exited with code 0.
-     */
+    // Keeps the child's first stderr lines (at most three, `DEAD_SESSION_LOG_CHARS`
+    // each) for the exit log; an early exit with no output is logged as such, since
+    // silence is itself the clue.
     let early_stderr: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
     let started_at = Instant::now();
     spawn_acp_line_pump(
@@ -1068,16 +907,11 @@ fn acp_start(
         Some(early_stderr.clone()),
     );
 
-    // ⚠️ **Registration must come first** (caught in 2026-08-16 review).
-    //
-    // The thread below removes the child from the registry after it ends. Previously, we launched that thread first
-    // and registered later, but for a **child that dies immediately** (wrong adapter · npx
-    // failure), removal happens before registration. Then the dead pid remains in the registry forever, and `terminate_all_acp_sessions` kills that pid when the app shuts down —
-    // at that time, that number could belong to **another program** (and sends signals to the process group).
+    // Register before the exit thread starts, or a child that dies at once is removed
+    // first and its reused pid could be killed at shutdown.
     sessions.insert(session_id.clone(), pid, root, stdin)?;
 
-    // The thread waiting for the child announces termination and removes it from the registry. If not removed here,
-    // it continues writing to already dead sessions, and that failure appears to the user as "sent but no reply."
+    // The exit thread announces termination and unregisters, or sends go to a dead session.
     {
         let app = app.clone();
         let session_id = session_id.clone();
@@ -1104,23 +938,15 @@ fn acp_start(
         });
     }
 
-    /*
-     * The first download (tens of MB) takes minutes, but the screen only showed "Starting" —
-     * the user thought it was stuck and closed the app, which was the very trigger that created the broken cache above (2026-08-19). So we notify the screen only when the download actually starts, and measure progress **without fabricating**: total size is not fixed anywhere,
-    // so percentage cannot be made honest, but the growing size of the cache entry directory
-    // (how many MB so far) is measurable.
-     */
-    /*
-     * ⚠️ Notifications must be sent **after this command returns**. The screen only subscribes to `acp://notice` after receiving the answer (session name) from `acp_start`, so emitting here would make the first notification vanish into the void. So we move everything to a thread and wait briefly before sending — if we still miss it, the progress notifications arriving every second allow the screen side to refresh the display (`use-acp-session.ts`).
-     */
+    // Emit after this command returns: the screen subscribes to `acp://notice` only once
+    // it has the session name. Progress every second covers a missed first notice.
     let first_run_message = match &npx_preflight {
-        // Include the fact of healing in the message for diagnostics — a clue if it breaks again next time.
+        // Mention the healing for diagnostics.
         acp::NpxCachePreflight::HealedBrokenEntry { reason } => {
             Some(format!("npx-first-run-download:healed:{reason}"))
         }
         acp::NpxCachePreflight::FirstDownload => Some("npx-first-run-download".to_string()),
-        // If deletion fails, it will fail as before — raise the reason so the screen's "Details" can
-        // at least explain why.
+        // Report the reason so the screen can explain the repeat failure.
         acp::NpxCachePreflight::HealFailed { reason, error } => {
             Some(format!("npx-cache-heal-failed:{reason}:{error}"))
         }
@@ -1140,7 +966,7 @@ fn acp_start(
         let app = app.clone();
         let session_id = session_id.clone();
         std::thread::spawn(move || {
-            // Time for the screen to attach subscription. If missed, the progress notification below covers it.
+            // Time for the screen to subscribe.
             std::thread::sleep(std::time::Duration::from_millis(250));
             let _ = app.emit(
                 "acp://notice",
@@ -1150,13 +976,12 @@ fn acp_start(
                 },
             );
             let (Some(entry), Some(package)) = (entry, package) else {
-                return; // Only healing failure notification — no download to measure.
+                return; // Only the healing failure; nothing to measure.
             };
             let started = std::time::Instant::now();
             loop {
                 std::thread::sleep(std::time::Duration::from_millis(1000));
-                // If the download takes longer than this, the progress indicator is not the whole problem
-                // — do not leave the thread forever.
+                // Do not leave the thread forever.
                 if started.elapsed() > std::time::Duration::from_secs(20 * 60) {
                     break;
                 }
@@ -1165,7 +990,7 @@ fn acp_start(
                     .map(|sessions| sessions.contains(&session_id))
                     .unwrap_or(false);
                 if !alive {
-                    break; // The child has ended — success or failure, this marker is done.
+                    break;
                 }
                 if acp::npx_entry_health(&entry, &package) == acp::NpxEntryHealth::Usable {
                     let _ = app.emit(
@@ -1192,19 +1017,11 @@ fn acp_start(
     Ok(session_id)
 }
 
-/// How soon an exit with nothing printed is worth saying so about.
 const DEAD_SESSION_WINDOW: Duration = Duration::from_secs(10);
-/// How many of the child's first stderr lines are kept for the log it leaves on exit.
 const DEAD_SESSION_LOG_LINES: usize = 3;
-/// The most of one line that reaches the log.
 const DEAD_SESSION_LOG_CHARS: usize = 200;
 
-/// One stderr line, trimmed and shortened for the log.
-///
-/// The cap is the whole discipline: a child may print a token-bearing URL or a stack that runs
-/// for pages, and neither belongs in a log a person may paste into an issue. Three lines of two
-/// hundred characters are enough to name a cause — "command not found", "invalid API key",
-/// "ENOENT" — and short enough to read.
+/// Bounds a child's stderr in a log people paste into issues (three lines, 200 chars); it does not redact.
 fn clip_for_log(line: &str) -> String {
     let trimmed = line.trim();
     if trimmed.chars().count() <= DEAD_SESSION_LOG_CHARS {
@@ -1214,17 +1031,13 @@ fn clip_for_log(line: &str) -> String {
     format!("{kept}…")
 }
 
-/// Stream a child's single stream to the screen line by line.
-///
-/// Lines exceeding the upper limit are **dropped and reported**. If we truncate them, half-JSON enters the parser,
-/// causing harder-to-understand failures; killing the entire session ends the conversation for large files.
+/// Oversized lines are dropped and reported: truncation feeds half-JSON to the parser.
 fn spawn_acp_line_pump<R: std::io::Read + Send + 'static>(
     app: AppHandle,
     session_id: String,
     stream: R,
     event: &'static str,
-    // The screen is the only reader of these lines, and a child that dies on arrival leaves
-    // nothing behind: `early_lines` keeps its first few words so the exit can quote them.
+    // A child that dies at once leaves nothing else to quote.
     early_lines: Option<Arc<Mutex<Vec<String>>>>,
 ) {
     std::thread::spawn(move || {
@@ -1258,7 +1071,7 @@ fn spawn_acp_line_pump<R: std::io::Read + Send + 'static>(
                         },
                     );
                     if err.kind() != std::io::ErrorKind::InvalidData {
-                        break; // If the I/O itself is disconnected, there is nothing more to read.
+                        break;
                     }
                 }
             }
@@ -1266,13 +1079,8 @@ fn spawn_acp_line_pump<R: std::io::Read + Send + 'static>(
     });
 }
 
-/// Evaluate a single permission request against our policy — `allow-inside-vault` or `ask`.
-///
-/// **Do not reimplement the evaluation logic on the screen side.** If the two diverge, the looser one becomes
-/// the default, and that one happens to be visible to the user. Moreover, this
-/// evaluation must resolve symbolic links and normalize ancestors of non-existent paths, which the browser
-/// side cannot do accurately from the start. More importantly, the vault root does not trust strings sent by the screen;
-/// it verifies them at `acp_start` and uses only values bound to the session.
+/// Never reimplemented on the screen: the looser copy would win, and only Rust can
+/// resolve links. The root is the one bound to the session at `acp_start`.
 fn permission_verdict_for_session(
     sessions: &AcpSessions,
     session_id: &str,
@@ -1297,46 +1105,31 @@ fn acp_permission_verdict(
     }
 }
 
-/// Send one line to the session. The newline is appended here — if the caller
-/// forgets it, the peer waits forever, and the only visible symptom is "it
-/// froze."
+/// The newline is appended here, or the peer waits forever.
 #[tauri::command]
 fn acp_send(
     sessions: State<'_, AcpSessions>,
     session_id: String,
     line: String,
 ) -> Result<(), String> {
-    // A connector's token reaches the agent as a **reference** from the WebView and becomes a
-    // value only here, one line before it leaves the process. `resolve_secret_refs` returns an
-    // ordinary line untouched after a single substring check, so this costs nothing on the
-    // per-turn path; only the once-per-conversation `session/new` carries markers.
+    // Connector tokens become values only here, one line before leaving the process;
+    // ordinary lines pass after one substring check.
     let line = connector_secrets::resolve_secret_refs(&line)?;
     sessions.send_line(&session_id, &line)
 }
 
-/// End the session and everything it spawned.
 #[tauri::command]
 fn acp_stop(sessions: State<'_, AcpSessions>, session_id: String) -> Result<(), String> {
-    /*
-     * **Who ended it, and when.** A session whose stdin closes takes its adapter with it: the
-     * child prints nothing and exits 0 (measured by hand 2026-09-20 — the adapter exits the
-     * moment stdin closes and never idles out). The log said only that the session had ended,
-     * so an end the screen asked for and an end the child chose read the same. This line
-     * separates them.
-     */
+    // Distinguishes a stop the screen asked for from the child exiting on its own after stdin closes.
     log::info!("acp session {session_id} stop requested by the screen");
     let pid = sessions.take_pid(&session_id)?;
     match pid {
         Some(pid) => acp::terminate_tree(pid),
-        // Being asked to stop a session that already ended is not a failure.
         None => Ok(()),
     }
 }
 
-/// End every remaining session when the app shuts down.
-///
-/// Without this, closing the window leaves the adapter and its grandchildren
-/// running. The user believes the app is off while the machine keeps working.
+/// Otherwise closing the window leaves adapters and grandchildren running.
 fn terminate_all_acp_sessions(app: &AppHandle) {
     log::info!("acp sessions ending because the app is shutting down");
     let Some(state) = app.try_state::<AcpSessions>() else {
@@ -1351,34 +1144,8 @@ fn terminate_all_acp_sessions(app: &AppHandle) {
     }
 }
 
-/// Determine which ACP runtimes actually exist on this machine and return them.
-///
-/// **PATH alone is not trusted** — an app launched from Finder skips shell
-/// initialization, so the paths a version manager (nvm and the like) planted
-/// are missing wholesale. What gets searched is written out in full in
-/// `acp.rs`, and that list is itself the test subject.
-///
-/// **Nothing is written.** However, when `probe_login` is true, the CLI is
-/// briefly launched to confirm login (only the exit code is inspected — the
-/// output is discarded).
-///
-/// The runtime state of this machine.
-///
-/// Only when `probe_login` is true does this **launch each CLI to check
-/// whether it is logged in.** That is the only slow part of this call
-/// (measured: claude 300ms · codex 45ms); everything else scans the disk and
-/// is near-instant.
-///
-/// ## Why the split (2026-08-16 owner remark)
-///
-/// *"When I click the Agents tab, loading takes about a second — shouldn't we
-/// load it first and update afterwards?"* — a correct observation. When the
-/// login check was added, **its cost was stacked directly onto the time the
-/// screen takes to appear.** The list could have been drawn first, yet nothing
-/// was shown until the check finished.
-///
-/// So the screen calls twice: first draw without the check, then check and
-/// correct.
+/// Reads only. With `probe_login` it briefly launches each CLI and reads the exit code;
+/// the screen calls once without it to draw fast, then again to correct.
 #[tauri::command(async)]
 fn acp_detect_runtimes(
     app: tauri::AppHandle,
@@ -1399,8 +1166,7 @@ fn acp_detect_runtimes(
     let home =
         std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).map(PathBuf::from);
     let path = std::env::var_os("PATH");
-    // Also find what the app installed on the user's behalf — otherwise it
-    // still reads "installation required" after installing.
+    // Include app installs, or the screen still says installation is required.
     let app_data_for_paths = app.path().app_data_dir().ok();
     let managed_bin = app_data_for_paths.as_deref().map(acp::managed_cli_bin_dir);
     let managed_node_bin = app_data_for_paths
@@ -1415,85 +1181,32 @@ fn acp_detect_runtimes(
     )
 }
 
-/// One line telling the screen how far the installation has come.
-///
-/// ## Why an event (2026-08-20 owner remark)
-///
-/// *"If I just press the buttons, does it show the installation happening on
-/// its own and check off completion too?"* — it did not. Previously the
-/// command returned only **after finishing**, so while 52MB downloaded and npm
-/// ran, all the screen could do was disable the chip and display the words
-/// "Installing…" — exactly the pattern this repository's walkthrough named
-/// **"the silent wait."**
-///
-/// ## What it does not do
-///
-/// **It does not invent progress it does not know.** `received`/`total` are
-/// populated only where they are known (the Node download); npm has no
-/// denominator, so instead **the last line it actually emitted** is carried
-/// as `note`. This app's update toast already follows the same discipline —
-/// when the total is unknown, it draws no percentage and says so.
+/// Only known values are sent: `received`/`total` for the Node download, npm's last
+/// actual line as `note`, never an invented percentage.
 #[derive(Clone, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 struct AcpInstallProgress {
     runtime_id: String,
-    /// Which job this is — `"node"` · `"cli"`. The screen owns the wording.
+    /// The screen owns the wording.
     job: &'static str,
-    /// Which phase is this — the screen holds the message (we do not generate human language here).
     stage: &'static str,
     received: Option<u64>,
     total: Option<u64>,
-    /// The line the tool actually emitted. Not a sentence we made up.
+    /// The tool's own line.
     note: Option<String>,
-    /// When this state was produced (epoch ms).
-    ///
-    /// **Without it, an installation that finished yesterday shows up today as
-    /// "installed it."** The screen uses this value to avoid drawing stale
-    /// state — holding the last state and deciding how long to keep showing it
-    /// are different questions.
+    /// Epoch ms, so an old completion is not shown as fresh.
     at: u64,
 }
 
-/// The name the screen listens for. Named in the same grain as `acp://exit`.
-///
-/// ⚠️ **This name and the payload keys are a contract with the TS side.** The
-/// screen filters out other runtimes' progress by `payload.runtimeId`, so if
-/// even one key name is off, the events arrive but are **all discarded** — no
-/// error, the progress just never appears. That is why the test below pins the
-/// serialized keys exactly.
+/// Contract with the TS side: a wrong payload key discards every event silently,
+/// so the test pins the serialized keys.
 const ACP_INSTALL_PROGRESS_EVENT: &str = "acp-install://progress";
 
-/// **Where the last progress state is held, per tool.**
-///
-/// ## Why it is needed (2026-08-20, found under council pressure)
-///
-/// The settings sheet **unmounts wholesale** when closed
-/// (the `(open || settingsMounted) && …` conditional portal in
-/// `AppSettingsMenu.tsx`). So all of `useAgentDoctor`'s state on the screen
-/// side vanishes and the event subscription is severed too.
-///
-/// There are three branches, and **the last one is the real defect**:
-///
-/// | While the sheet was closed | On reopening |
-/// |---|---|
-/// | Node downloading | 250ms cadence, so it **self-heals within 0.25s** |
-/// | npm installing | if npm is quiet, nothing shows until its next line |
-/// | **`done` went by** | `done` is **one-shot** → **completion is never seen** |
-///
-/// That completion indicator is what the owner explicitly demanded this round
-/// (*"does it check off completion too?"*). Events alone cannot honor that
-/// demand.
-///
-/// ## Why here and not the screen
-///
-/// Lifting the state into the shell (React) still **dies with a route change
-/// or a reload** — moving it to the destination changes nothing. The process
-/// that actually owns the installation is this one, so keeping the last state
-/// here is where the source of truth becomes singular.
+/// The settings sheet unmounts when closed and one-shot `done` would be missed, so the
+/// process that owns the install keeps the last state per tool.
 #[derive(Default)]
 struct AcpInstallProgressState {
-    /// `runtime_id` → that tool's last progress. Kept per tool — with a single
-    /// slot, a Codex install would overwrite Claude's completion indicator.
+    /// Per tool, or one install overwrites another's completion.
     last: Mutex<HashMap<String, AcpInstallProgress>>,
 }
 
@@ -1518,9 +1231,7 @@ fn emit_install_progress(
             .map(|d| d.as_millis() as u64)
             .unwrap_or(0),
     };
-    // **Record first, send after.** In the reverse order, a screen that
-    // received the event and asked right away could read a value not yet
-    // recorded.
+    // Record first, or a screen asking right after the event reads a stale value.
     if let Some(state) = app.try_state::<AcpInstallProgressState>() {
         if let Ok(mut last) = state.last.lock() {
             last.insert(runtime_id.to_string(), payload.clone());
@@ -1529,10 +1240,7 @@ fn emit_install_progress(
     let _ = app.emit(ACP_INSTALL_PROGRESS_EVENT, payload);
 }
 
-/// This tool's **last progress state**. `None` when there is none.
-///
-/// The screen asks once when it remounts — that is how a completion that went
-/// by while the sheet was closed is not missed.
+/// The screen asks once on remount so a completion is not missed.
 #[tauri::command]
 fn acp_install_progress(app: tauri::AppHandle, runtime_id: String) -> Option<AcpInstallProgress> {
     let state = app.try_state::<AcpInstallProgressState>()?;
@@ -1540,12 +1248,7 @@ fn acp_install_progress(app: tauri::AppHandle, runtime_id: String) -> Option<Acp
     last.get(&runtime_id).cloned()
 }
 
-/// Starting a fresh check **forgets the previous installation result.**
-///
-/// Without clearing it, closing and reopening the sheet after a re-check would
-/// resurrect "installed it," presenting something that was not just done as if
-/// it were. The screen side clears its own state at the same moment, so both
-/// places follow the same rule.
+/// Otherwise a stale "installed" resurfaces after a re-check; the screen clears its state too.
 fn forget_install_progress(app: &tauri::AppHandle, runtime_id: &str) {
     if let Some(state) = app.try_state::<AcpInstallProgressState>() {
         if let Ok(mut last) = state.last.lock() {
@@ -1554,22 +1257,14 @@ fn forget_install_progress(app: &tauri::AppHandle, runtime_id: &str) {
     }
 }
 
-/// **Can the app download Node for the user — and if so, what from where.**
-///
-/// The screen takes this and shows the **URL and hash prefix** before the
-/// click. `None` means an unlisted platform, and the screen sends the user to
-/// the official instructions as before.
+/// `None` means an unlisted platform.
 #[tauri::command]
 fn acp_node_plan() -> Option<String> {
     managed_node::managed_node_plan()
 }
 
-/// Download Node into the app-owned location and **verify the hash.**
-///
-/// The four conditions (ledger (88)(89)) are honored here: only when the user
-/// clicks · show first what is downloaded from where · only inside
-/// `<app-data>/runtimes/node` · pin the version and **verify the hash after
-/// download** (on mismatch, delete and fail).
+/// Only on a click, after showing the source, inside `<app-data>/runtimes/node`, with a
+/// pinned version and a verified hash.
 #[tauri::command(async)]
 fn acp_install_node(
     app: tauri::AppHandle,
@@ -1599,26 +1294,16 @@ fn acp_install_node(
     Ok(acp_doctor::diagnose(&after.borrow()))
 }
 
-/// **Can the app install this tool on behalf of the user — and if so, with what command.**
-///
-/// The screen receives this and **shows the raw command before pressing it** (condition ②). If absent,
-/// `None` — the screen continues to show only the installation guide link.
+/// The screen shows the raw command before the press; `None` leaves only the guide link.
 #[tauri::command]
 fn acp_install_plan(app: tauri::AppHandle, runtime_id: String) -> Option<String> {
     let app_data = app.path().app_data_dir().ok()?;
     acp::managed_install_command(&runtime_id, &app_data)
 }
 
-/// Install the tool in the app-specific location.
-///
-/// Condition four (ledger 2026-08-20 (88)) is upheld here:
-/// ① This command is **only invoked when the user presses it** — the app receives nothing on startup.
-/// ② The raw command is pre-shown to the screen by `acp_install_plan`.
-/// ③ `--prefix <app-data>/managed-node` — does not touch global npm or system PATH.
-/// ④ Package version is pinned to `INSTALLABLE_CLI`.
-///
-/// After installation, **re-verify and return the value** — saying "installed" when it actually wasn't
-/// is the worst defect at this location.
+/// Only on a user press, after `acp_install_plan` showed the command, under `--prefix
+/// <app-data>/managed-node`, pinned by `INSTALLABLE_CLI`; the result is
+/// re-verified before claiming success.
 #[tauri::command(async)]
 fn acp_install_cli(
     app: tauri::AppHandle,
@@ -1642,8 +1327,7 @@ fn acp_install_cli(
     };
     let home =
         std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).map(PathBuf::from);
-    // The app's bundled npm is a fallback — if someone reached here without npm on their system,
-    // that is the only way forward.
+    // The bundled npm is the fallback when the system has none.
     let managed_node_bin = managed_node::managed_node_bin_dir(&app_data);
     let dirs = acp::candidate_bin_dirs(
         home.as_deref(),
@@ -1652,8 +1336,7 @@ fn acp_install_cli(
         None,
         managed_node_bin.as_deref(),
     );
-    // Do not launch npm by **name** — the PATH of a GUI app differs from the user's shell
-    // (the measurement at the top of this file confirms why).
+    // Never by name: a GUI app's PATH differs from the shell's.
     let npm =
         acp::resolve_command("npm", &dirs, &probe).ok_or_else(|| "npm-missing".to_string())?;
     let child_path = std::env::join_paths(dirs.iter())
@@ -1673,17 +1356,8 @@ fn acp_install_cli(
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
-    /*
-     * ⚠️ **Do not use `.output()`** (owner's note 2026-08-20).
-     *
-     * That function returns only after the process ends. npm runs for 30–90 seconds, during which the screen
-    // remains unaware, displaying only the four characters "Installing...", which is the defect this repo calls
-     * "quiet waiting".
-     *
-     * Instead, **stream stderr line by line.** npm writes progress there.
-     * Do not fabricate percentages; **push the exact lines the tool actually emitted** —
-     * since they are not sentences we created, they do not become outdated.
-     */
+    // Stream stderr instead of `.output()`, which returns only at exit; the tool's own
+    // lines are pushed, never invented percentages.
     let mut child = command
         .spawn()
         .map_err(|err| format!("install-failed:{err}"))?;
@@ -1700,8 +1374,6 @@ fn acp_install_cli(
                 if trimmed.is_empty() {
                     continue;
                 }
-                // The last line to show on failure is continuously updated here —
-                // no need to collect everything and search later as before.
                 if let Ok(mut slot) = tail.lock() {
                     slot.clear();
                     slot.push_str(trimmed);
@@ -1725,14 +1397,13 @@ fn acp_install_cli(
         let _ = handle.join();
     }
     if !status.success() {
-        // Push only the **last line** of the failure reason — npm emits hundreds of lines; dumping them
-        // directly to the screen is not guidance.
+        // Only the last line; hundreds of npm lines are not guidance.
         let last = tail.lock().map(|slot| slot.clone()).unwrap_or_default();
         emit_install_progress(&app, &runtime_id, "cli", "failed", None, None, None);
         return Err(format!("install-failed:{last}"));
     }
 
-    // Do not end with "Installed" — **say "Re-verifying..."** and provide the re-verified value.
+    // Report re-verifying, then the verified value.
     emit_install_progress(
         &app,
         &runtime_id,
@@ -1747,27 +1418,8 @@ fn acp_install_cli(
     Ok(acp_doctor::diagnose(&after.borrow()))
 }
 
-/// Open an address going **outside** the app in the default browser.
-///
-/// ## Why needed (discovered during walkthrough 2026-08-20)
-///
-/// `<a target="_blank">` inside the app **does nothing**. Tauri WebView
-/// does not open new windows, and this app had no plugin to handle it. Thus,
-/// pressing "↗ Installation Method" in settings silently did nothing — for users with no tools,
-/// that was the **only next step** we provided.
-///
-/// Measurement: When launching the app as a new user without tools and clicking that link, the foreground process count
-/// remained unchanged and the app stayed in front. Outbound links exist in **10 files**.
-///
-/// ## Why not use a plugin
-///
-/// New dependencies must be justified in this repo; opening is just one OS command.
-/// Since code to spawn a process already exists in this file, the supply chain surface becomes 0.
-///
-/// ## What it blocks
-///
-/// **Only opens `http`/`https`.** This location passes the address given by the screen directly to the OS;
-/// allowing other schemes would allow opening arbitrary things via a single link.
+/// Only `http`/`https`: the screen's address goes straight to the OS, so any other
+/// scheme could open arbitrary things. Uses one OS command instead of a plugin.
 #[tauri::command]
 fn open_external_url(url: String) -> Result<(), String> {
     if !is_openable_url(&url) {
@@ -1798,43 +1450,34 @@ fn open_external_url(url: String) -> Result<(), String> {
         .spawn()
         .map_err(|err| format!("open-failed:{err}"))?;
 
-    // Dropping a `Child` does not reap it. `open` exits almost immediately, so every clicked link
-    // used to leave a zombie in the process table for the rest of the session — unbounded by
-    // anything but how many links someone follows. Waiting on a detached thread keeps this command
-    // instant while still collecting the exit status. (`reveal_in_finder` below already uses
-    // `.status()` for the same reason; it can afford to wait because it is a one-shot action.)
+    // Dropping a `Child` does not reap it; a detached wait keeps the command instant
+    // without leaving a zombie per clicked link.
     std::thread::spawn(move || {
         let _ = child.wait();
     });
     Ok(())
 }
 
-/// Is this an address that may be opened. **It is an allowlist, not a denylist** — denylists
-/// are quietly bypassed whenever new schemes appear.
+/// An allowlist, because denylists miss new schemes.
 pub(crate) fn is_openable_url(url: &str) -> bool {
     let lowered = url.trim().to_ascii_lowercase();
     (lowered.starts_with("https://") || lowered.starts_with("http://"))
         && !url.chars().any(|c| c.is_whitespace())
 }
 
-/// Integration check — **verify step-by-step, marking fixable items as such.**
-///
-/// The previous approach of answering one symptom with one sentence sent users to the wrong place
-/// when the cause lay in a different phase (as seen in the 2026-08-20 login incident). Here we
-/// return only facts; the screen generates the sentences.
+/// Returns facts per step; the screen writes the sentences.
 #[tauri::command(async)]
 fn acp_diagnose(
     app: tauri::AppHandle,
     runtime_id: String,
 ) -> Result<Vec<acp_doctor::AcpCheck>, String> {
-    // If re-verifying starts, forget previous installation results — the screen also clears its
-    // state at the same moment, so both locations follow the same rule.
+    // The screen clears its state at the same moment.
     forget_install_progress(&app, &runtime_id);
     let ctx = doctor_context(&app, &runtime_id)?;
     Ok(acp_doctor::diagnose(&ctx.borrow()))
 }
 
-/// When the screen presses "Fix". **Only `fixable` items arrive.**
+/// Only `fixable` items arrive.
 #[tauri::command(async)]
 fn acp_repair(
     app: tauri::AppHandle,
@@ -1843,16 +1486,12 @@ fn acp_repair(
 ) -> Result<Vec<acp_doctor::AcpCheck>, String> {
     let ctx = doctor_context(&app, &runtime_id)?;
     acp_doctor::repair(&ctx.borrow(), &check_id)?;
-    // Return the state **re-verified after fixing**. Saying "fixed" when it actually wasn't
-    // is the worst defect at this location, so make the screen show the re-verified value instead of just saying it.
+    // Return the re-verified state, never a bare claim of success.
     let after = doctor_context(&app, &runtime_id)?;
     Ok(acp_doctor::diagnose(&after.borrow()))
 }
 
-/// Re-establish the connection from scratch — "Re-integrate" per owner request.
-///
-/// Return the **re-verified value** after deletion. The worst defect here is saying "re-established"
-/// while leaving it unchanged.
+/// Returns the re-verified value, never a bare claim.
 #[tauri::command(async)]
 fn acp_reset_connection(
     app: tauri::AppHandle,
@@ -1864,8 +1503,7 @@ fn acp_reset_connection(
     Ok(acp_doctor::diagnose(&after.borrow()))
 }
 
-/// Diagnostics collect the outside world in one go. Due to ownership, values are carried as data,
-/// and `borrow()` converts them into borrowed forms.
+/// Owned values; `borrow()` converts them.
 struct OwnedDoctorContext {
     runtime_id: String,
     home: Option<PathBuf>,
@@ -1941,9 +1579,7 @@ fn doctor_context(app: &tauri::AppHandle, runtime_id: &str) -> Result<OwnedDocto
         .app_data_dir()
         .map_err(|err| format!("app-data-dir-unavailable:{err}"))?;
 
-    // Ask against the app-owned folder — **the screen saying "ready" while it
-    // was actually logged out** was half of this defect. Asking the user's
-    // folder measures a place the app does not even use.
+    // Ask against the app-owned folder the session actually uses.
     let isolated = app_data_dir.join("agent-config").join(runtime_id);
     let isolated_logged_out = cli
         .as_deref()
@@ -1963,26 +1599,19 @@ fn doctor_context(app: &tauri::AppHandle, runtime_id: &str) -> Result<OwnedDocto
     })
 }
 
-/// Deliberately **not** `(async)`, unlike the other slow commands in this file.
-///
-/// `rfd::FileDialog::pick_folder` opens an `NSOpenPanel`, which macOS requires on the main thread
-/// and which runs its own modal event loop — so the UI stays responsive *because* this blocks here.
-/// Moving it to a worker is the one change in this file that would break the thing the others fix.
+/// Not `async`: `NSOpenPanel` must run on the macOS main thread with its own modal
+/// loop, so moving it to a worker would break it.
 #[tauri::command]
 fn pick_vault_directory(dialog_title: Option<String>) -> Result<Option<String>, String> {
     let title = dialog_title.as_deref().unwrap_or("Open ontology vault");
     let Some(picked) = rfd::FileDialog::new().set_title(title).pick_folder() else {
         return Ok(None);
     };
-    // Judge the **actual** location after following symlinks — so that the
-    // same place under a different name, like `/tmp` → `/private/tmp`, is not
-    // missed. When canonicalize fails (permissions and the like), judge the
-    // path the user just picked as-is.
+    // Judge the real location after symlinks (`/tmp` vs `/private/tmp`); fall back to
+    // the picked path when canonicalize fails.
     let resolved = fs::canonicalize(&picked).unwrap_or_else(|_| picked.clone());
     if let Some(reason) = vault_root_rejection(&resolved) {
-        // Return a **stable code** so the screen can pick per-reason wording.
-        // Composing the human-readable sentence here would trap translation
-        // inside Rust.
+        // A stable code, so translation stays on the screen.
         return Err(format!("vault-root-rejected:{reason}"));
     }
     Ok(Some(picked.to_string_lossy().to_string()))
@@ -2015,21 +1644,17 @@ fn list_vault_directory(
     Ok(out)
 }
 
-/// One vault fingerprint entry — path and mtime **only**. No body content.
+/// Path and mtime only, never content.
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 struct VaultStamp {
     relative_path: String,
-    /// Same representation as `TauriTextFile::last_modified` — this vault has one type for mtime.
     last_modified: u128,
-    /// Byte length from the directory entry's metadata. Still no content: a raw source's
-    /// size is the one fact the library list shows that an mtime cannot supply, and
-    /// reading the file to learn it would undo the reason this command exists.
+    /// From directory metadata; reading the file would undo this command's purpose.
     size: u64,
 }
 
-/// The result of `vault_fingerprint`. Truncation and pruning are returned
-/// alongside, **not hidden**.
+/// Truncation and pruning are returned, not hidden.
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 struct VaultFingerprint {
@@ -2074,10 +1699,9 @@ struct SourceInventory {
     truncated: bool,
 }
 
-// Keep these values byte-for-byte aligned with mcp/src/project-source-inspection.mjs.
-// The app mints the receipt; a fresh MCP process must reproduce the same bounded probe
-// before it can call that receipt current.
-// tests/contract/source-inventory-bound.contract.test.ts fails when the two drift.
+// Byte-for-byte aligned with mcp/src/project-source-inspection.mjs so a fresh MCP
+// process reproduces the receipt; tests/contract/source-inventory-bound.contract.test.ts
+// fails on drift.
 const SOURCE_INVENTORY_VERSION: &str = "inventory-v2";
 const SOURCE_INVENTORY_MAX_DEPTH: usize = 20;
 const SOURCE_INVENTORY_MAX_FILES: usize = 8000;
@@ -2129,8 +1753,7 @@ fn hash_source_file(
     }
 
     if file_type.is_symlink() {
-        // A tracked symlink is evidence of the repository entry, not
-        // permission to read whatever happens to live outside the root.
+        // A tracked symlink is evidence, not permission to read outside the root.
         let target = fs::read_link(path).map_err(|err| err.to_string())?;
         let target = target.to_string_lossy();
         let bytes = target.as_bytes();
@@ -2294,8 +1917,7 @@ fn inspect_git_source_inventory(root: &Path) -> Result<(String, bool, Vec<String
             dirty_paths.remove(relative),
         )?;
     }
-    // Deleted tracked paths are absent from the visible inventory, but still
-    // need to perturb the worktree fingerprint deterministically.
+    // Deleted paths still perturb the worktree fingerprint.
     let mut deleted: Vec<String> = dirty_paths.into_iter().collect();
     deleted.sort();
     for relative in deleted {
@@ -2489,9 +2111,7 @@ fn inspect_project_source(root_path: String) -> Result<ProjectSourceInspection, 
     let selected_root = canonical_root(&root_path)?;
     match git::find_repo_root(&selected_root)? {
         Some(repo_root) => {
-            // Git already owns the source inclusion boundary. Respect its
-            // tracked + unignored-untracked set so build caches and private
-            // ignored artifacts cannot consume the bounded evidence budget.
+            // Git's tracked plus unignored set keeps caches and ignored artifacts out of the budget.
             let (inventory_fingerprint, truncated, files) =
                 inspect_git_source_inventory(&repo_root)?;
             let head = run_source_git(&repo_root, &["rev-parse", "HEAD"])?;
@@ -2534,7 +2154,7 @@ fn inspect_project_source(root_path: String) -> Result<ProjectSourceInspection, 
     }
 }
 
-/// **Must equal** TS `VAULT_WALK_MAX_DEPTH` (a contract test watches it).
+/// Must equal TS `VAULT_WALK_MAX_DEPTH`; a contract test watches it.
 const VAULT_WALK_MAX_DEPTH: usize = 12;
 /// Same value as TS `VAULT_WALK_MAX_ENTRIES`.
 const VAULT_WALK_MAX_ENTRIES: usize = 50000;
@@ -2544,21 +2164,11 @@ const VAULT_PRUNE_DIR_NAMES: &[&str] = &["node_modules"];
 const VAULT_CACHE_DIR_TAG: &str = "CACHEDIR.TAG";
 /// Same extension set as TS `IMAGE_EXT` (lowercase comparison).
 const VAULT_IMAGE_EXTS: &[&str] = &["png", "jpg", "jpeg", "gif", "webp", "svg", "avif", "bmp"];
-/// Same value as TS `VAULT_SOURCES_DIR`.
-///
-/// A vault holds three kinds of file and only one is the graph (`docs/DECISIONS.md`,
-/// 2026-09-05). This top-level folder holds the raw project documents verbatim, in
-/// whatever format they arrived in. The walk keeps their **name, size and mtime** so the
-/// library list updates when one is dropped in; nothing here is ever opened by the
-/// parser, which reads `.md` and nothing else. That is why an arbitrary format can sit in
-/// the vault without a single node appearing in the graph.
+/// Same value as TS `VAULT_SOURCES_DIR`. Raw sources are listed by name, size and
+/// mtime but never parsed, so any format can sit in the vault (`docs/DECISIONS.md`).
 const VAULT_SOURCES_DIR: &str = "sources";
 
-/// Whether a vault-relative path lies inside the top-level `sources/` folder.
-///
-/// The prefix is anchored: `sources/a.pdf` is a raw source and `notes/sources/a.pdf` is
-/// not, because one library per folder is what makes "everything under this name is raw"
-/// a rule a person can hold.
+/// Anchored at the top level: `notes/sources/a.pdf` is not a raw source.
 fn vault_relative_is_source(relative: &str) -> bool {
     relative
         .strip_prefix(VAULT_SOURCES_DIR)
@@ -2589,8 +2199,7 @@ fn walk_vault_stamps(
         return Ok(());
     }
 
-    // Collect the listing first — the cache-tag judgment completes within
-    // this list.
+    // The cache-tag judgment needs the whole listing.
     let mut children: Vec<(String, bool)> = Vec::new();
     for entry in fs::read_dir(dir).map_err(|err| err.to_string())? {
         let entry = entry.map_err(|err| err.to_string())?;
@@ -2644,25 +2253,9 @@ fn walk_vault_stamps(
     Ok(())
 }
 
-/// Walk the vault and return **paths and mtimes only**.
-///
-/// ## Why this command is needed (2026-07-31)
-///
-/// The fingerprint computation called `read_vault_text_file` per file — that
-/// command returns the **entire body + mtime**, so the whole vault crossed IPC
-/// when all that was used was one number. Opening this repository itself as a
-/// vault makes `docs/` **261 files · 17.7MB**, and that path runs every time
-/// focus returns to the window.
-///
-/// Round-trips were also one per file (plus one `list_vault_directory` per
-/// directory). Now it is **one call**, and the payload is paths + numbers only.
-///
-/// ⚠️ **The walk rules must not differ from the TS side by a single
-/// character.** If they differ, the fingerprints differ, and the app either
-/// "rebuilds every time though nothing changed" or "doesn't notice what did."
-/// The constants are gathered above and
-/// `tests/contract/vault-walk-rules.contract.test.ts` holds the two sources
-/// against each other.
+/// Paths and mtimes only, in one call instead of reading every body across IPC. The
+/// walk rules must match TS exactly or fingerprints diverge; the contract
+/// test `tests/contract/vault-walk-rules.contract.test.ts` holds both.
 #[tauri::command]
 fn vault_fingerprint(root_path: String) -> Result<VaultFingerprint, String> {
     let root = resolve_existing_inside(&root_path, "")?;
@@ -2700,20 +2293,8 @@ fn read_vault_binary_file(
     })
 }
 
-/// Write one file **without tearing** — write to a temporary file, commit it
-/// to disk, then rename.
-///
-/// ## Why (2026-08-16 review)
-///
-/// Previously this was a single `fs::write`. That **truncates the original
-/// first** and then writes. If the app dies or the disk fills in between, the
-/// user's Markdown is left **cut short** — and that file belongs to the very
-/// folder we just opened for them. This product's promise is "your files stay
-/// on your disk as they are," and that promise includes "intact."
-///
-/// A rename is atomic within the same filesystem. So no matter when the crash
-/// comes, the file is **either the old content or the new content**, never
-/// half of one.
+/// Temporary file, sync, then rename, so a crash leaves old or new content, never a
+/// truncated file.
 #[cfg(any(not(unix), test))]
 fn write_text_atomically(path: &std::path::Path, content: &str) -> Result<(), String> {
     use std::io::Write;
@@ -2756,15 +2337,13 @@ fn write_text_atomically(path: &std::path::Path, content: &str) -> Result<(), St
     })?;
     let result = (|| -> std::io::Result<()> {
         file.write_all(content.as_bytes())?;
-        // Commit to disk before renaming — otherwise power can be lost with
-        // the name already new while the content still sits in cache.
+        // Sync first, or power loss can leave the new name with cached content.
         file.sync_all()?;
         drop(file);
         fs::rename(&temporary, path)
     })();
     if result.is_err() {
-        // On failure, clean up only the temporary file. The original was
-        // never touched.
+        // Only the temporary file; the original was never touched.
         let _ = fs::remove_file(&temporary);
     }
     result.map_err(|err| err.to_string())
@@ -2857,9 +2436,7 @@ fn read_library_collections(root_path: String) -> Result<Option<String>, String>
     }
     #[cfg(not(unix))]
     {
-        // A read must not create the sidecar folder: the write-target resolver
-        // runs `create_dir_all`, so an untouched vault would gain an empty
-        // `.ontology-atlas` just by being looked at.
+        // A read must not create the sidecar folder via the write-target resolver.
         let path = resolve_inside(&root_path, &format!("{DIRECTORY}/{FILE_NAME}"))?;
         if !path.exists() {
             return Ok(None);
@@ -2869,11 +2446,8 @@ fn read_library_collections(root_path: String) -> Result<Option<String>, String>
     }
 }
 
-/// Compare-before-save for the one vault-local collection preferences file.
-///
-/// The comparison and atomic publication are serialized inside this process. An external editor
-/// does not share this lock, so the command deliberately returns the observed current bytes on a
-/// conflict and callers re-read before retrying rather than claiming filesystem-wide CAS.
+/// Serialized only within this process; external editors do not share the lock, so a
+/// conflict returns the current bytes and callers re-read.
 #[tauri::command]
 fn write_library_collections(
     root_path: String,
@@ -2944,8 +2518,7 @@ mod library_collections_write_tests {
         path
     }
 
-    /// A vault that never saved a constellation is the empty state, not a read failure:
-    /// neither a missing `.ontology-atlas` folder nor a folder without the file may error.
+    /// A vault without saved constellations is empty, not an error.
     #[test]
     fn read_answers_absent_for_a_vault_that_never_saved_collections() {
         let root = vault("absent");
@@ -3017,7 +2590,7 @@ mod library_collections_write_tests {
     }
 }
 
-/// Native create-only publication. Existing entries are preserved byte for byte.
+/// Create-only: existing entries are preserved byte for byte.
 #[tauri::command]
 fn create_vault_text_file(
     root_path: String,
@@ -3061,7 +2634,7 @@ fn create_vault_text_file_after_validation(
     }
 }
 
-/// Portable create-only path: unsupported hard-link publication fails closed.
+/// Unsupported hard-link publication fails closed.
 #[cfg(any(not(unix), test))]
 fn create_text_exclusively(path: &Path, content: &str) -> Result<bool, String> {
     create_text_exclusively_with(path, content, |from, to| fs::hard_link(from, to))
@@ -3250,20 +2823,15 @@ fn open_vault_in_finder(root_path: String) -> Result<(), String> {
     if !metadata.is_dir() {
         return Err("vault root must be a directory".into());
     }
-    // ⚠️ **`is_dir()` is not enough** (2026-08-17). On macOS a `.app` is a
-    // directory, so it passes the check above, and then the `open` below does
-    // not open the folder — it **launches that program.** The judgment is made
-    // with the same function the vault-root gate uses — if two copies of the
-    // check exist, the looser one becomes the default.
+    // A `.app` passes `is_dir()` and `open` would launch it; the same gate as the vault
+    // root, so the looser copy cannot win.
     if let Some(reason) = vault_root_rejection(&root) {
         return Err(format!("refusing to open this path: {reason}"));
     }
 
     #[cfg(target_os = "macos")]
     {
-        // `-a Finder` **pins which program opens it.** This alone keeps a
-        // bundle from launching, but both it and the rejection above stay —
-        // if one comes loose, the other remains.
+        // `-a Finder` also stops a bundle launching; both guards stay in case one comes loose.
         let status = Command::new("open")
             .arg("-a")
             .arg("Finder")
@@ -3284,21 +2852,9 @@ fn open_vault_in_finder(root_path: String) -> Result<(), String> {
     }
 }
 
-/// Exclusive to the "just start" desktop first-run action — the container folder
-/// that gathers vaults created with no project in mind. Only the Rust side can
-/// know $HOME (JS cannot reach it without the fs plugin), so path assembly is a
-/// pure function for testing and the command adds only create_dir_all.
-///
-/// ⚠️ **Deliberately not inside Documents** (2026-08-25). It used to be
-/// `~/Documents/Ontology Atlas`, and Documents is one of the folders macOS
-/// protects with TCC. So the button whose entire promise is "no decisions, just
-/// begin" made a system permission dialog the very first thing a new person saw,
-/// before any map existed to justify it. `$HOME` itself carries no such gate, so
-/// "just start" now starts.
-///
-/// This is the no-project path only. When somebody points Atlas at a codebase,
-/// the map goes inside that project as `<project>/atlas` — see
-/// `src/shared/lib/project-vault-dir.ts`.
+/// The "just start" container under `$HOME`, not Documents, which TCC protects with a
+/// permission dialog. Pure for testing. Project vaults go to `<project>/atlas`
+/// (`src/shared/lib/project-vault-dir.ts`).
 fn default_vault_parent_dir(home: &str) -> PathBuf {
     PathBuf::from(home).join("Ontology Atlas")
 }
@@ -3313,19 +2869,14 @@ fn ensure_default_vault_parent_dir() -> Result<String, String> {
     Ok(canonical.to_string_lossy().to_string())
 }
 
-/// One arriving `ontology-atlas://` URL, answered or logged and dropped.
-///
-/// The URL itself is never logged. A refused link may be an address somebody was tricked into
-/// pressing, and its payload is a server config: the reason is what a bug report needs, the
-/// content is not. Nothing here writes, attaches or enables anything — the whole effect is that
-/// the MCP screen opens with the add-connector form filled in, and the person still presses Add.
+/// The URL is never logged: it may be a trick link and its payload a server config.
+/// The only effect is a pre-filled form the person still confirms.
 #[cfg(desktop)]
 fn answer_deep_link(app: &AppHandle, url: &str) {
     let payload = match deep_link::parse_install_deep_link(url) {
         Ok(payload) => payload,
         Err(refusal) => {
-            // Dropped, not redirected. A URL that fails the parser must not be able to move the
-            // window at all; that is the difference between a doorman and an open redirect.
+            // Dropped, not redirected, so a refused URL cannot move the window.
             log::warn!("deep link refused: {refusal}");
             return;
         }
@@ -3338,8 +2889,7 @@ fn answer_deep_link(app: &AppHandle, url: &str) {
     let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) else {
         return;
     };
-    // A link pressed while Atlas was closed arrives before the first document exists, so one
-    // blind `eval` would silently do nothing. The script reports arrival and this stops on it.
+    // A cold-start link arrives before the document exists; the script reports arrival.
     let script = deep_link::build_install_route_script(&payload);
     tauri::async_runtime::spawn(async move {
         let arrived = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
@@ -3410,9 +2960,8 @@ fn macos_language_hint() -> String {
     hint
 }
 
-/// Installs one static, state-free macOS status item. It restores the existing
-/// window; it never creates a second window, keeps the app alive after quit, or
-/// exposes Tauri tray/menu permissions to the webview.
+/// Restores the existing window only; never a second window, never keeps the app
+/// alive after quit, and exposes no tray or menu permission to the webview.
 #[cfg(target_os = "macos")]
 fn install_native_tray(app: &mut tauri::App) -> tauri::Result<()> {
     let labels = native_tray_labels(&macos_language_hint());
@@ -3438,11 +2987,7 @@ fn install_native_tray(app: &mut tauri::App) -> tauri::Result<()> {
     Ok(())
 }
 
-/// The subset of `tauri-plugin-window-state`'s file this app reads back itself.
-///
-/// The plugin writes **physical** pixels, which is the whole reason the geometry cannot be trusted
-/// unexamined: quitting at 1512x900 on a 2x panel stores 3024x1800, and restoring that on a 1x
-/// display asks for a window larger than the display. Measured on this machine 2026-08-24.
+/// The plugin writes physical pixels, so a 2x-panel size would exceed a 1x display.
 #[derive(serde::Deserialize)]
 struct SavedWindowState {
     width: f64,
@@ -3453,7 +2998,6 @@ struct SavedWindowState {
     maximized: bool,
 }
 
-/// Reads the geometry the plugin saved, or `None` when there is nothing to restore.
 fn read_saved_window_state(app: &AppHandle) -> Option<SavedWindowState> {
     let path = app
         .path()
@@ -3465,23 +3009,14 @@ fn read_saved_window_state(app: &AppHandle) -> Option<SavedWindowState> {
     serde_json::from_value(parsed.get(MAIN_WINDOW_LABEL)?.clone()).ok()
 }
 
-/// Runs `sanitize_window_geometry` against the live window and leaves one provable line behind.
-///
-/// `source` records whether the geometry came from a restored state file, from the config default,
-/// or from the verification harness, because "the window opened somewhere I did not leave it" is
-/// only diagnosable if the record says which of the three produced the rectangle.
-///
-/// It is written twice on purpose. `log::info!` reaches the file an owner can actually send from an
-/// installed build; `write_verify_line` reaches the harness, which parses stdout. Emitting only the
-/// latter would put this diagnostic exactly where the decision that added logging says nobody can
-/// read it.
+/// Records whether the geometry came from a restored file, the config default or the
+/// harness. Written to `log::info!` for installed builds and to the harness line.
 fn fit_main_window_to_display(
     window: &tauri::WebviewWindow,
     saved: Option<SavedWindowState>,
     source: &str,
 ) {
-    // A restored window is measured on the display it was saved on, not the one the app happens to
-    // open on. `monitor_from_point` takes physical coordinates, which is what the file stores.
+    // Measured on the display it was saved on; `monitor_from_point` takes physical coordinates.
     let monitor = match saved
         .as_ref()
         .and_then(|state| window.monitor_from_point(state.x, state.y).ok().flatten())
@@ -3500,8 +3035,7 @@ fn fit_main_window_to_display(
     let monitor_size = monitor.size().to_logical::<f64>(scale);
     let monitor_position = monitor.position().to_logical::<f64>(scale);
 
-    // A maximised window is on-screen and correctly sized by definition, and macOS owns what zoom
-    // means on each display. Reproducing it from stored numbers would fight the window manager.
+    // macOS owns zoom; reproducing it from stored numbers would fight the window manager.
     if saved.as_ref().is_some_and(|state| state.maximized) {
         let _ = window.maximize();
         let line = format!("[ontology-atlas-window-verify] fit source={source} maximized=true");
@@ -3523,12 +3057,8 @@ fn fit_main_window_to_display(
         }
     };
 
-    // The saved rectangle is sanitised **before** it is applied, never read back afterwards.
-    // `set_size` is dispatched through the event loop, so a read taken straight after a restore
-    // still reports the pre-restore geometry — measured 2026-08-24, when a planted 3000x2000 state
-    // produced a 3000pt window while this line reported 1512x900 and `recentered=false`. Letting the
-    // plugin restore and then inspecting the result made the clamp a no-op in the one case it
-    // exists for, so the plugin no longer performs the initial restore at all.
+    // Sanitized before applying: `set_size` goes through the event loop, so a read right
+    // after restore still shows the old geometry and the clamp would be a no-op.
     let requested = match saved.as_ref() {
         Some(state) => WindowGeometry {
             x: state.x / scale,
@@ -3550,8 +3080,7 @@ fn fit_main_window_to_display(
         MAIN_WINDOW_MIN_LOGICAL,
     );
 
-    // When restoring, the window is not yet where the file says, so size and position are applied
-    // unconditionally. On a plain launch only an actual correction is written.
+    // Restoring applies size and position unconditionally; a plain launch writes only corrections.
     let restoring = saved.is_some();
     if restoring || sanitized.resized {
         let _ = window.set_size(tauri::LogicalSize::new(
@@ -3615,20 +3144,10 @@ fn schedule_show_main_window(app: AppHandle) {
     });
 }
 
-/// Watches the vault directory recursively and emits `vault-changed` to the webview when a `.md`
-/// file changes, debounced by 500ms so one editor's burst of writes arrives as a single event.
-///
-/// The screen listens and refreshes immediately, which is what the app has over the web surface:
-/// no five-second polling gap. The debouncer is held in `State` so it lives as long as the app.
-///
-/// Two properties matter more than they look. The command is idempotent per canonical root: the
-/// frontend effect re-runs whenever its dependencies change, and rebuilding the watcher each time
-/// meant a fresh FSEvents stream several times a minute for one unchanged folder. And when a
-/// different root does replace the previous watcher, the old debouncer is dropped on a background
-/// thread — FSEvents teardown joins the watcher's own run loop, and doing that on the main thread
-/// is exactly the kind of blocking a UI thread must not do. The command is `async` so Tauri runs
-/// it on the async runtime rather than the main thread; the state lock is never held across an
-/// await because there is none.
+/// Emits `vault-changed` for `.md` changes, debounced 500ms. Idempotent per canonical
+/// root, and a replaced debouncer drops on a background thread because FSEvents
+/// teardown joins its run loop.
+/// Deliberately `async` with no await: Tauri then runs it off the macOS main thread.
 #[tauri::command]
 async fn start_vault_watch(
     app: AppHandle,
@@ -3663,14 +3182,10 @@ async fn start_vault_watch(
                     let _ = app_handle.emit("vault-changed", ());
                 }
             }
-            // This arm was previously dropped in silence. When the watcher fails, the vault simply
-            // stops appearing to change — the screen looks fine and nothing anywhere says why.
+            // A silent failure would make the vault stop changing with no clue why.
             Err(errors) => {
                 for error in errors {
-                    // `error.kind` only. A `notify` error's full `Display` embeds the paths it was
-                    // watching, which for a vault means the owner's own note filenames — and a
-                    // filename is already meaning in this product. The kind is what makes a watcher
-                    // failure diagnosable; the file list is not.
+                    // `error.kind` only: the full error embeds note file names, which are meaning.
                     log::warn!("vault watcher error: {:?}", error.kind);
                 }
             }
@@ -3688,22 +3203,15 @@ async fn start_vault_watch(
     });
     drop(watch);
     if let Some(previous) = previous {
-        // Off the calling thread on purpose: dropping a debouncer stops the FSEvents stream and
-        // joins the watcher thread, and neither has a bounded cost the UI thread can afford.
+        // Dropping joins the watcher thread at an unbounded cost the UI thread cannot pay.
         std::thread::spawn(move || drop(previous));
     }
     Ok(())
 }
 
-/// WKWebView rAF 60fps cap release — ProMotion (120Hz) display support.
-///
-/// WKWebView on macOS 13–15 bundles requestAnimationFrame to 60fps regardless of display
-/// refresh rate due to the WebKit internal feature
-/// `PreferPageRenderingUpdatesNear60FPSEnabled` (default true). A measurement on this machine
-/// (frame-profile probe) also confirmed 17ms fixation on a 120Hz display.
-/// Use private `_features` /
-/// `_setEnabled:forFeature:` APIs that Safari uses internally to disable this feature. Since we check selector existence first,
-/// if the API disappears in future macOS, it will quietly remain at 60fps without crashing.
+/// WKWebView caps rAF at 60fps via `PreferPageRenderingUpdatesNear60FPSEnabled`;
+/// the private `_features` API lifts it for ProMotion. Selectors are checked first,
+/// so a removed API leaves 60fps rather than crashing.
 #[cfg(target_os = "macos")]
 fn disable_webview_frame_rate_cap(window: &tauri::WebviewWindow) {
     let _ = window.with_webview(|platform_webview| {
@@ -3777,17 +3285,12 @@ fn disable_webview_frame_rate_cap(window: &tauri::WebviewWindow) {
     });
 }
 
-/// One line naming where the process died. The release binary is stripped, so a macOS crash report
-/// carries nothing but addresses; this is written before the panic unwinds and is the only record
-/// that survives.
+/// The release binary is stripped, so this line is the only record of where it died.
 fn format_panic_report(thread_name: &str, location: &str, message: &str) -> String {
     format!("panic in thread '{thread_name}' at {location}: {message}")
 }
 
-/// Installs a panic hook that records the panic in `panic.log` beside the app log and on stderr,
-/// then defers to the hook that was already installed so Rust's own default output is not lost.
-///
-/// Registered before the Tauri builder runs. It deliberately never touches the `log` facade.
+/// Writes `panic.log` and stderr, then defers to the previous hook. Never touches `log`.
 fn install_panic_logger() {
     let previous = std::panic::take_hook();
     std::panic::set_hook(Box::new(move |info| {
@@ -3804,25 +3307,16 @@ fn install_panic_logger() {
         let thread = std::thread::current();
         let thread_name = thread.name().unwrap_or("unnamed").to_string();
         let report = format_panic_report(&thread_name, &location, &message);
-        // No `log::error!` here. The logger is one of the things that can panic (fern aborts
-        // when its stderr retry fails), and a panic raised while the hook runs is a double
-        // panic, which aborts at once. On 2026-08-31 that turned a recoverable panic on a
-        // background thread into a dead app. The report goes to its own file in the log
-        // directory and to stderr, both through calls that cannot panic.
+        // No `log::error!`: the logger can itself panic, and a panic inside the hook aborts.
         append_panic_report_file(&report);
-        // `writeln!`, not `eprintln!`. `eprintln!` panics when the write fails, and a panic
-        // raised inside a panic hook is a double panic, which aborts immediately — losing both
-        // the report this hook exists to leave behind and the original panic's own unwinding.
-        // A packaged `.app` launched from Finder inherits a stderr pipe it does not own, so a
-        // closed pipe is a real state, not a hypothetical one.
+        // `writeln!`, not `eprintln!`, which panics on a closed pipe, a real state for a
+        // Finder-launched app; a double panic would lose both reports.
         let _ = writeln!(std::io::stderr(), "{report}");
         previous(info);
     }));
 }
 
-/// A stderr writer that never reports an error. fern turns a failed stderr write into a panic,
-/// and the process that spawned this app may close its end of the pipe at any time; a log line
-/// nobody is reading is not worth the app.
+/// fern panics on a failed stderr write, and the parent may close the pipe any time.
 struct QuietStderr;
 
 impl Write for QuietStderr {
@@ -3837,8 +3331,7 @@ impl Write for QuietStderr {
     }
 }
 
-/// The file the panic hook appends to before the log plugin exists. Same directory the log
-/// plugin uses on macOS, so a person collecting evidence opens one folder.
+/// Same directory as the log plugin on macOS.
 #[cfg(target_os = "macos")]
 fn panic_report_path() -> Option<PathBuf> {
     let home = std::env::var_os("HOME")?;
@@ -3876,10 +3369,8 @@ fn append_panic_report_file(report: &str) {
     }
 }
 
-/// A WebView failure the page could not recover from, forwarded by the root layout's error
-/// listener so it lands in the same log file as native failures. Without this a React render
-/// crash or an unhandled promise rejection left no trace outside the WebView console, which a
-/// shipped `.app` never shows. Bounded so a runaway page cannot fill the log.
+/// Puts WebView crashes in the native log, which a shipped app otherwise never shows.
+/// Bounded so a runaway page cannot fill it.
 #[tauri::command]
 async fn log_webview_error(
     message: String,
@@ -3951,92 +3442,60 @@ pub fn run() {
 
     let mut builder = tauri::Builder::default();
 
-    // Registered before every other plugin, as the plugin's own guidance requires, so it runs before
-    // anything else can claim state. A second launch does not open a rival window: it hands focus back
-    // to the window that already exists. Without this, two instances would watch, harness and write the
-    // same vault at once — and the updater's restart makes a second launch routine.
+    // First plugin, as it requires: a second launch focuses the existing window, or two
+    // instances would write the same vault.
     #[cfg(desktop)]
     {
         builder = builder.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             show_main_window(app);
         }));
-        // Registered right after single-instance, which is what makes a second press of an
-        // `ontology-atlas://` link route the window that already exists instead of starting a
-        // rival one. `tauri-plugin-single-instance`'s `deep-link` feature hands the second
-        // process's URL back through `on_open_url`; macOS delivers it to the running app itself.
+        // Right after single-instance, so a second link press routes the existing window.
         builder = builder.plugin(tauri_plugin_deep_link::init());
     }
 
-    // A fixed, read-only document-start observer for one owner-run native entry diagnosis. It is
-    // independent of the WebView verifier and does not change storage, route or window state.
+    // Read-only diagnostic, independent of the verifier.
     if map_entry_diagnostic::enabled_from_env() {
         builder = builder.plugin(map_entry_diagnostic::init());
     }
 
-    // Registered after single-instance, and **not at all** under the verification harness. Skipping
-    // only the initial restore would not be enough: the plugin also writes on exit, so a harness run
-    // that resizes the window would overwrite the owner's real geometry, and the next verification
-    // would adjudicate `--min-window-size` against whatever a developer last dragged. A gate whose
-    // verdict depends on the last window drag is not evidence.
+    // Not under the harness: the plugin writes on exit, so a harness resize would
+    // overwrite the owner's geometry and make `--min-window-size` verdicts depend on it.
     if !verify_webview {
         builder = builder.plugin(
             tauri_plugin_window_state::Builder::new()
-                // FULLSCREEN, VISIBLE and DECORATIONS are deliberately absent. Restoring fullscreen
-                // performs a Space transition before first paint and gives macOS's own restoration a
-                // second owner; restoring `visible` can launch with no window at all, which is
-                // indistinguishable from the app failing to start; and nothing in this app ever
-                // changes decorations, so saving them only adds a route to an undecorated window
-                // that cannot be moved or closed.
+                // See `WINDOW_STATE_FLAGS`.
                 .with_state_flags(WINDOW_STATE_FLAGS)
-                // The plugin restores from `on_window_ready`, which fires *after* `setup`. Leaving
-                // it to do the initial restore meant `fit_main_window_to_display` measured the
-                // config default, found it fine, and did nothing — and the restored geometry then
-                // landed unchecked. Measured on 2026-08-24: a planted 3000x2000 state produced a
-                // 3000pt window hanging off the display while the fit line reported 1512x900 and
-                // `recentered=false`. The clamp was a no-op in exactly the case it exists for. So
-                // the initial restore is skipped here and performed explicitly below, in an order
-                // this file controls.
+                // The plugin restores after `setup`, so the fit would check the default and let the
+                // restored geometry land unchecked; the restore is done explicitly below.
                 .skip_initial_state(MAIN_WINDOW_LABEL)
                 .build(),
         );
     }
 
     builder
-        // A rotating log file in the OS log directory, because a packaged bundle's stdout reaches
-        // nobody. Written outside the vault so it never becomes a second store of meaning, and kept at
-        // `Info` so it records what the app *did* — never vault content, prompts, or secrets.
+        // Outside the vault, at `Info`: what the app did, never vault content, prompts or secrets.
         .plugin(
             tauri_plugin_log::Builder::new()
                 .targets([
                     tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::LogDir {
                         file_name: Some("ontology-atlas".to_string()),
                     }),
-                    // Not `TargetKind::Stderr`. fern's stderr output panics when a write fails
-                    // (`backup_logging`: it retries the error on stderr and panics if that fails
-                    // too), and a harness that spawns the app with a piped stderr and then exits
-                    // leaves exactly that: every later log line hits EPIPE and the panic aborts
-                    // the app. Symbolicated on 2026-08-31 against the retained dSYM; it was the
-                    // shape of all five SIGABRT reports since rc.16. This writer drops what it
-                    // cannot deliver.
+                    // Not `TargetKind::Stderr`: fern panics on a failed stderr write, and a harness that
+                    // exits with a piped stderr makes every later line abort the app.
                     tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Dispatch(
                         tauri_plugin_log::fern::Dispatch::new()
                             .chain(Box::new(QuietStderr) as Box<dyn Write + Send>),
                     )),
                 ])
                 .level(log::LevelFilter::Info)
-                // A crash report is named in local time and the log was written in UTC, so matching
-                // one to the other meant converting timestamps by hand before reading a single line.
+                // Local time, matching crash report names.
                 .timezone_strategy(tauri_plugin_log::TimezoneStrategy::UseLocal)
                 .max_file_size(APP_LOG_MAX_FILE_BYTES)
                 .rotation_strategy(tauri_plugin_log::RotationStrategy::KeepOne)
                 .build(),
         )
-        // The updater replaces the bundle only after verifying the minisign signature. The public key is
-        // embedded in `tauri.conf.json` and the private key is only in CI secrets, so
-        // packages we did not sign are not installed by this app.
-        //
-        // The process plugin exists solely because of one restart after update — if users must manually
-        // close and reopen the app, it is not "one button press".
+        // Updates install only with a valid minisign signature (public key in `tauri.conf.json`).
+        // The process plugin exists for the one post-update restart.
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .manage(VaultWatcherState::default())
@@ -4049,9 +3508,7 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             install_native_tray(app)?;
 
-            // Registered before anything slow in this closure: on macOS a link pressed while
-            // Atlas was closed is delivered as the app comes up, and the plugin holds it only
-            // until a handler exists.
+            // Before anything slow: the plugin holds a cold-start link only until a handler exists.
             #[cfg(desktop)]
             {
                 use tauri_plugin_deep_link::DeepLinkExt;
@@ -4063,8 +3520,7 @@ pub fn run() {
                 });
             }
 
-            // The first line of every log file: without a version, a bug report's log cannot be
-            // matched to the build that produced it.
+            // Without the version a log cannot be matched to its build.
             log::info!(
                 "ontology atlas {} started",
                 app.handle().package_info().version
@@ -4073,16 +3529,13 @@ pub fn run() {
             show_main_window(app.handle());
             apply_verify_window_size(app.handle());
 
-            // Claiming the harness is isolated in a comment is not proof; this line is what the
-            // payload contract asserts.
+            // The payload contract asserts this line.
             write_verify_line(format!(
                 "[ontology-atlas-window-verify] state_plugin={}",
                 if verify_webview { "disabled" } else { "enabled" }
             ));
             if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
-                // The plugin reads this file at window creation and leaves it in place, so its
-                // presence at setup time is what separates "the owner's window came back" from
-                // "this is the config default", and this app — not the plugin — is what applies it.
+                // Its presence at setup separates a restored window from the config default.
                 let saved = if verify_webview {
                     None
                 } else {
@@ -4140,11 +3593,7 @@ pub fn run() {
                                 WEBVIEW_VERIFY_ROUTE_INTERVAL_MS,
                             ));
                             let script = build_webview_verify_route_script(&route);
-                            // This loop used to run all 20 attempts unconditionally and never learn
-                            // the outcome: 8 seconds burned even on an immediate arrival, and a
-                            // route that never resolved looked exactly like one that did. The
-                            // script now reports whether the route is live, so the harness stops on
-                            // arrival and says so when it never arrives.
+                            // The script reports arrival, so the harness stops on it and says when it never arrives.
                             let arrived = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(
                                 false,
                             ));
@@ -4176,15 +3625,12 @@ pub fn run() {
                         }
                         if verify_acp_install {
                             let _ = verify_window.eval(ACP_INSTALL_VERIFY_SCRIPT);
-                            // It involves receiving 52MB, so we provide ample time. Verification is about whether
-                            // «progress arrives», not completion, so even if interrupted midway,
-                            // the accumulated step list provides the answer.
+                            // Ample time for a 52MB download; the accumulated steps are the answer even if cut off.
                             std::thread::sleep(Duration::from_millis(90000));
                         }
                         if verify_app_update {
                             let _ = verify_window.eval(APP_UPDATE_VERIFY_SCRIPT);
-                            // Two click steps + one actual network round-trip must complete within this
-                            // window for marker collection to see the final state.
+                            // Two clicks and one network round trip must finish before marker collection.
                             std::thread::sleep(Duration::from_millis(12000));
                         }
                         if verify_ai_settings {
@@ -4192,13 +3638,11 @@ pub fn run() {
                                 Some(base_url) => {
                                     let _ = verify_window
                                         .eval(build_webview_verify_ai_settings_script(base_url));
-                                    // Five click steps + one actual HTTP round-trip must complete within this
-                                    // window for marker collection to see the final state.
+                                    // Five clicks and one HTTP round trip must finish before marker collection.
                                     std::thread::sleep(Duration::from_millis(12000));
                                 }
                                 None => {
-                                    // If the address is missing or unsafe, **do not silently skip** — leave that fact as a marker so the verifier
-                                    // turns red.
+                                    // A missing or unsafe address is left as a marker so the verifier turns red.
                                     let _ = verify_window.eval(
                                         r#"(() => {
                                           window.__ontologyAtlasAiSettingsVerify = {
@@ -4316,7 +3760,7 @@ pub fn run() {
                 apply_verify_window_size(app_handle);
                 schedule_show_main_window(app_handle.clone());
             }
-            // Do not create a state where the adapter and its children continue running even after the window is closed.
+            // Adapters and their children must not outlive the window.
             RunEvent::ExitRequested { .. } | RunEvent::Exit => {
                 terminate_all_acp_sessions(app_handle);
             }
@@ -4356,8 +3800,7 @@ mod tests {
         );
     }
 
-    /// **It is an allowlist, not a denylist** — denylists are quietly bypassed whenever new schemes appear. This location passes the address given by the screen directly to the OS,
-    /// so if bypassed, a single link could open arbitrary things.
+    /// The screen's address goes straight to the OS, so a bypass could open anything.
     #[test]
     fn only_http_urls_are_handed_to_the_os() {
         for good in [
@@ -4365,7 +3808,7 @@ mod tests {
             "http://example.com/a?b=c",
             "HTTPS://EXAMPLE.COM",
         ] {
-            assert!(crate::is_openable_url(good), "{good} 를 막았다");
+            assert!(crate::is_openable_url(good), "{good} was blocked");
         }
         for bad in [
             "file:///etc/passwd",
@@ -4377,7 +3820,7 @@ mod tests {
             "https://exa mple.com",
             "https://example.com\nfile:///etc/passwd",
         ] {
-            assert!(!crate::is_openable_url(bad), "{bad:?} 를 열려고 한다");
+            assert!(!crate::is_openable_url(bad), "{bad:?} would be opened");
         }
     }
 
@@ -4554,7 +3997,7 @@ mod tests {
         assert_eq!(
             permission_verdict_for_session(&sessions, "caller-invented-session", outside.to_str()),
             acp::PermissionVerdict::Ask,
-            "등록되지 않은 세션은 화면이 어떤 경로를 보내도 자동 허용하면 안 된다"
+            "an unregistered session must not auto-allow any path"
         );
 
         let _ = std::fs::remove_dir_all(&base);
@@ -4599,14 +4042,8 @@ mod tests {
         assert!(!error.is_empty());
     }
 
-    /// 2026-08-16 — The folder picker accepted `/` (Macintosh HD) as the vault root, and what blocked it was
-    /// not us but macOS's warning dialog. Since the vault root will soon become the agent's working
-    /// folder, we close that door first.
-    /// 2026-08-17 — On macOS, **`.app` is a directory.** Checking only `is_dir()`
-    /// allows it through, and `open <path>` does not open the folder but **executes that program**. "View in Finder" must never be done.
-    ///
-    /// We also block the vault root for the same reason: the bundle interior is the app's internal structure, not a place for users
-    /// to store documents, and even less so when it becomes the agent's working folder.
+    /// `/` and app bundles must never become a vault root, which is the agent's working
+    /// folder; `open` on a `.app` launches it.
     #[test]
     fn vault_root_rejection_blocks_macos_bundles() {
         for path in [
@@ -4618,14 +4055,14 @@ mod tests {
             assert_eq!(
                 vault_root_rejection(Path::new(path)),
                 Some("bundle-directory"),
-                "{path} 이 통과하면 폴더를 여는 대신 프로그램이 실행된다"
+                "{path} passing would run a program instead of opening a folder"
             );
         }
     }
 
     #[test]
     fn vault_root_rejection_allows_ordinary_folders_with_dots() {
-        // If you always reject, that's not a validator. A normal folder with dots passes through.
+        // A validator that always rejects is no validator.
         for path in ["/tmp/my.notes", "/tmp/v1.2.3", "/tmp/plain"] {
             assert_eq!(vault_root_rejection(Path::new(path)), None, "{path}");
         }
@@ -4641,8 +4078,7 @@ mod tests {
 
     #[test]
     fn vault_root_rejection_blocks_named_system_directories() {
-        // When this list is empty, the check passes and blocks nothing —
-        // a gate looping over an empty set isn't a gate, so assert that first.
+        // An empty list would make the gate pass idle.
         let blocked: Vec<&str> = if cfg!(target_os = "macos") {
             vec!["/Applications", "/System", "/Library", "/Users", "/Volumes"]
         } else if cfg!(target_os = "linux") {
@@ -4654,13 +4090,13 @@ mod tests {
         };
         assert!(
             !blocked.is_empty(),
-            "이 플랫폼에는 막을 자리가 하나도 등록돼 있지 않다"
+            "no blocked roots are registered for this platform"
         );
         for dir in blocked {
             assert_eq!(
                 vault_root_rejection(Path::new(dir)),
                 Some("system-directory"),
-                "{dir} 는 볼트 루트로 받으면 안 된다"
+                "{dir} must not be accepted as a vault root"
             );
         }
     }
@@ -4669,7 +4105,7 @@ mod tests {
     fn vault_root_rejection_blocks_the_home_directory_itself() {
         let key = if cfg!(windows) { "USERPROFILE" } else { "HOME" };
         let Some(home) = std::env::var_os(key).map(PathBuf::from) else {
-            return; // In environments without a home directory (some CI), there's nothing to judge
+            return; // no home directory in some CI
         };
         let Ok(home) = fs::canonicalize(home) else {
             return;
@@ -4677,29 +4113,25 @@ mod tests {
         assert_eq!(
             vault_root_rejection(&home),
             Some("home-directory"),
-            "홈 디렉터리 자체는 볼트가 아니다"
+            "the home directory itself is not a vault"
         );
     }
 
     #[test]
     fn vault_root_rejection_allows_ordinary_folders_inside_home() {
-        // Blocking the most common legitimate bolt breaks this product.
-        // The **inside** of the home must pass.
+        // The inside of home must pass.
         let key = if cfg!(windows) { "USERPROFILE" } else { "HOME" };
         let Some(home) = std::env::var_os(key).map(PathBuf::from) else {
             return;
         };
         assert_eq!(vault_root_rejection(&home.join("notes")), None);
         assert_eq!(vault_root_rejection(&home.join("code/atlas/docs")), None);
-        // The inside of system directories is also justified depending on location (e.g., external drives).
         if cfg!(target_os = "macos") {
             assert_eq!(vault_root_rejection(Path::new("/Volumes/Work/vault")), None);
         }
     }
 
-    /// ⚠️ The container must stay **out of** the folders macOS protects with TCC. "Just start"
-    /// promises no decisions, and putting it under Documents made a system permission dialog the
-    /// first thing a new person saw, before any map existed to justify it.
+    /// The container stays outside TCC-protected folders.
     #[test]
     fn just_start_container_sits_outside_the_protected_folders() {
         assert_eq!(
@@ -4751,9 +4183,9 @@ mod tests {
         ] {
             assert!(script.contains(test_id), "{test_id}");
         }
-        // Toggling the control every poll causes it to open and close repeatedly.
+        // Clicking every poll toggles the control open and shut.
         assert!(script.contains("CLICK_COOLDOWN"));
-        // There is only one place left to declare success.
+        // Only one place declares success.
         assert_eq!(script.matches("\"done\"").count(), 1);
     }
 
@@ -4777,28 +4209,16 @@ mod tests {
 
     #[test]
     fn webview_verify_payload_marks_korean_path_mode_as_topology_relief() {
-        // 2026-08-24 extraction: the marker probe moved verbatim from an inline raw
-        // string in `run()` to `webview_verify/dom_marker_probe.js`, so this test now
-        // reads the probe file directly. Every assertion below is unchanged.
         let source = include_str!("webview_verify/dom_marker_probe.js");
 
         assert!(source.contains("온톨로지 지형도"));
         assert!(source.contains("후보 \\d+\\/\\d+개 표시"));
-        // v2 canvas copy — the original census message must be included in the relief marker.
         assert!(source.contains("개념 \\d+개 · 관계 \\d+개"));
-        // Draw evidence to prevent false positives where only the v2 canvas exists.
+        // Guards against a canvas that exists but draws nothing.
         assert!(source.contains("ontologyMapCanvasInkPixels"));
         assert!(source.contains("getImageData"));
-        // The `data-focus-cluster-size` assertion was removed (cleaned up markers on 2026-08-12) — that
-        // attribute doesn't exist anywhere in the UI ("retired marker"); this line was a reverse gate forcing
-        // dead queries to remain in the probe.
         assert!(source.contains("dragHandleSlug"));
-        // `data-drag-physics-sync-contract` and `data-drag-physics-release-policy` were removed on
-        // 2026-08-24 for the same reason `data-focus-cluster-size` was removed above: neither
-        // attribute is rendered anywhere in `src/` or `app/`, so pinning them here was a reverse
-        // gate forcing dead queries to stay in the probe. The drag contracts they belonged to are
-        // still measured — from `window.__ontologyAtlasTopologyDragVerify`, which is the live
-        // source; the DOM lookups were an unreachable fallback.
+        // The drag contracts are read from `window.__ontologyAtlasTopologyDragVerify`.
         assert!(source.contains("topologyDragPhysicsSyncActiveDuring"));
         assert!(source.contains("topologyDragWorkerAppliedFrameDelta"));
         assert!(source.contains("topologyDragWorkerAppliedFrameChangeCount"));
@@ -4813,7 +4233,6 @@ mod tests {
         assert!(source.contains("__ontologyAtlasTopologyZoomVerify"));
         assert!(source.contains("topologyZoomVerifyReason"));
         assert!(source.contains("topologyCameraDepthContract"));
-        // `data-camera-depth-contract` removed 2026-08-24 — not rendered anywhere in the UI.
         assert!(source.contains("topologyZoomLensPresentationSource"));
         assert!(source.contains("topologySupportChromeZoomLensActive"));
         assert!(source.contains("topologyMinimapState"));
@@ -4857,30 +4276,23 @@ mod tests {
         assert!(script.contains("window.localStorage.setItem(\"guided-tour:v1\", \"skipped\")"));
         assert!(script.contains("location.reload()"));
         assert!(!script.contains("indexedDB.deleteDatabase"));
-        // A single folder still plants a one-entry recent list, so the launch resumes it
-        // rather than asking: the count is what decides, and one is not a question.
+        // One folder resumes rather than asking.
         assert!(script.contains("\"docs-vault:fs-handle:recent\""));
     }
 
-    /// The launch chooser is armed by how many folders the recent list holds, and the
-    /// verifier's WebView runs on a non-persistent store, so that list cannot be grown by
-    /// launching twice. Naming several folders is therefore the only way a desktop check can
-    /// reach the chooser at all.
+    /// Several folders are the only way a desktop check reaches the chooser.
     #[test]
     fn webview_verify_vault_bootstrap_plants_every_named_folder_in_the_recent_list() {
         let script = build_webview_verify_vault_bootstrap_script(
             "/tmp/Atlas Fixture/atlas-map::/tmp/Atlas Fixture/atlas-wiki",
         );
 
-        // The first folder is the one the session opens.
         assert!(script.contains("const rootPath = \"/tmp/Atlas Fixture/atlas-map\""));
         assert!(script.contains("const fixtureName = \"atlas-map\""));
-        // Both reach the recent list, which is what makes the count two.
         assert!(script.contains("\"docs-vault:fs-handle:recent\""));
         assert!(script.contains("desktopRootPath: \"/tmp/Atlas Fixture/atlas-map\""));
         assert!(script.contains("desktopRootPath: \"/tmp/Atlas Fixture/atlas-wiki\""));
-        // No counts are planted: the harness never read those folders, and a row that
-        // printed numbers it did not measure would be the dishonesty the row type forbids.
+        // No counts: the harness never read those folders.
         assert!(!script.contains("docCount"));
         assert!(!script.contains("conceptCount"));
     }
@@ -4974,7 +4386,7 @@ mod tests {
         )
         .unwrap();
 
-        assert!(!alias.exists(), "링크 엔트리가 남았다");
+        assert!(!alias.exists(), "the link entry remains");
         assert_eq!(fs::read_to_string(&target).unwrap(), "keep me");
         fs::remove_dir_all(root).ok();
     }
@@ -5589,12 +5001,12 @@ mod atomic_write_tests {
 
         assert!(
             result.is_ok(),
-            "안정된 원래 부모 쓰기는 성공해야 한다: {result:?}"
+            "a write under the stable original parent must succeed: {result:?}"
         );
         assert_eq!(
             std::fs::read_to_string(outside.join("project-sources.json")).unwrap(),
             "outside",
-            "검증 뒤 생긴 부모 symlink를 따라 볼트 밖 파일을 바꿨다"
+            "followed a parent symlink created after validation and wrote outside the vault"
         );
         assert_eq!(
             std::fs::read_to_string(original_sidecar.join("project-sources.json")).unwrap(),
@@ -5634,11 +5046,11 @@ mod atomic_write_tests {
 
         assert!(
             result.is_ok(),
-            "안정된 원래 부모 mkdir은 성공해야 한다: {result:?}"
+            "mkdir under the stable original parent must succeed: {result:?}"
         );
         assert!(
             !outside.join("new-dir").exists(),
-            "검증 뒤 생긴 부모 symlink를 따라 볼트 밖 디렉터리를 만들었다"
+            "followed a parent symlink created after validation and created a directory outside the vault"
         );
         assert!(original_sidecar.join("new-dir").is_dir());
         std::fs::remove_dir_all(&base).ok();
@@ -5677,17 +5089,13 @@ mod atomic_write_tests {
         assert_ne!(
             std::fs::metadata(&outside).unwrap().ino(),
             std::fs::metadata(&target).unwrap().ino(),
-            "vault entry가 기존 외부 inode와의 링크를 끊지 않았다"
+            "the vault entry kept its link to the outside inode"
         );
         std::fs::remove_dir_all(&base).ok();
     }
 
-    /// **Do not clear the original first.**
-    ///
-    /// 2026-08-16 review: Previous `fs::write` uses O_TRUNC — if it dies while writing,
-    /// the user's markdown remains truncated. This check doesn't catch "did new content
-    /// enter?" but rather **「did it go through a temporary file?」**: that nature
-    /// produces atomicity, and looking at the result, the two implementations are indistinguishable.
+    /// Checks the write went through a temporary file, since results alone cannot tell
+    /// the implementations apart.
     #[test]
     fn replaces_through_a_temporary_file_and_leaves_none_behind() {
         let dir = std::env::temp_dir().join(format!("oatlas-atomic-{}", std::process::id()));
@@ -5698,14 +5106,17 @@ mod atomic_write_tests {
         write_text_atomically(&target, "new").unwrap();
 
         assert_eq!(std::fs::read_to_string(&target).unwrap(), "new");
-        // If temporary files remain, the next write will fail on `create` or the user folder gets messy.
+        // A leftover temporary file breaks the next write.
         let leftovers: Vec<_> = std::fs::read_dir(&dir)
             .unwrap()
             .filter_map(|e| e.ok())
             .map(|e| e.file_name().to_string_lossy().to_string())
             .filter(|name| name.contains("oatlas-tmp"))
             .collect();
-        assert!(leftovers.is_empty(), "임시 파일이 남았다: {leftovers:?}");
+        assert!(
+            leftovers.is_empty(),
+            "temporary files remain: {leftovers:?}"
+        );
         std::fs::remove_dir_all(&dir).ok();
     }
 
@@ -5713,14 +5124,14 @@ mod atomic_write_tests {
     fn a_failed_write_leaves_the_original_untouched() {
         let dir = std::env::temp_dir().join(format!("oatlas-atomic-fail-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
-        // Giving a directory as the target causes rename to fail — the fallback for when the original is missing.
+        // A directory target makes rename fail.
         let target = dir.join("as-dir");
         std::fs::create_dir_all(&target).unwrap();
 
         let result = write_text_atomically(&target, "new");
 
-        assert!(result.is_err(), "디렉터리를 파일로 덮어썼다");
-        assert!(target.is_dir(), "대상이 파일로 바뀌었다");
+        assert!(result.is_err(), "overwrote a directory with a file");
+        assert!(target.is_dir(), "the target became a file");
         std::fs::remove_dir_all(&dir).ok();
     }
 
@@ -5762,15 +5173,9 @@ mod atomic_write_tests {
 mod acp_install_progress_tests {
     use super::*;
 
-    /**
-     * **The key name is the contract with TS.**
-     *
-     * The screen (`AcpInstallProgress` in `src/features/acp-doctor/model/acp-doctor.ts`)
-     * filters out other tools' progress using `payload.runtimeId`. So if serde
-     * outputs `runtime_id` as-is, the event **arrives but is all discarded** —
-     * no errors appear in the console and progress never shows. That silent failure
-     * is prevented by that single line `rename_all = "camelCase"`, so lock it down here.
-     */
+    // `rename_all = "camelCase"` is the contract: the screen
+    // (`src/features/acp-doctor/model/acp-doctor.ts`) filters by `payload.runtimeId`, and a
+    // wrong key discards every event silently.
     #[test]
     fn progress_payload_uses_the_keys_the_screen_reads() {
         let json = serde_json::to_value(AcpInstallProgress {
@@ -5798,16 +5203,14 @@ mod acp_install_progress_tests {
                 "stage",
                 "total"
             ],
-            "화면이 읽는 키와 다르다 — 이러면 진행률이 조용히 사라진다"
+            "key differs from the one the UI reads, so progress would vanish"
         );
         assert_eq!(object["runtimeId"], "claude-acp");
         assert_eq!(object["received"], 26_043_779u64);
-        // Unknown values are **null, not absent**. The screen decides whether to render
-        // the percentage based on that.
+        // Unknown is null, not absent; the screen decides on percentages from it.
         assert!(object["note"].is_null());
     }
 
-    /// The event name is also a contract — the screen listens for this string.
     #[test]
     fn progress_event_name_matches_the_listener() {
         assert_eq!(ACP_INSTALL_PROGRESS_EVENT, "acp-install://progress");
@@ -5821,7 +5224,6 @@ mod window_geometry_tests {
         MACOS_MENU_BAR_RESERVE_PT, MACOS_TITLE_BAR_PT, MAIN_WINDOW_MIN_LOGICAL,
     };
 
-    /// The 14-inch MacBook Pro reference panel in logical points.
     const REFERENCE_14_INCH: MonitorRect = MonitorRect {
         x: 0.0,
         y: 0.0,
@@ -5840,8 +5242,7 @@ mod window_geometry_tests {
 
     #[test]
     fn a_window_that_already_fits_is_returned_untouched() {
-        // The identity case. Without it, an over-eager clamp would move a window every launch and
-        // every other test here would still pass.
+        // The identity case: an over-eager clamp would move a window every launch.
         let saved = at(0.0, MACOS_MENU_BAR_RESERVE_PT, 1512.0, 900.0);
         let result = sanitize_window_geometry(saved, REFERENCE_14_INCH, MAIN_WINDOW_MIN_LOGICAL);
         assert_eq!(result.geometry, saved);
@@ -5851,9 +5252,7 @@ mod window_geometry_tests {
 
     #[test]
     fn the_shipped_default_fits_the_reference_panel() {
-        // 1512x982 was the shipped default and is the *entire* display: 982 content + 28 title bar
-        // against a 945-point visible frame. 900 is what actually fits, and is the number the
-        // measurement scripts already sweep.
+        // 982 content plus 28 title bar exceeds the 945pt visible frame; 900 fits.
         let usable = REFERENCE_14_INCH.height - MACOS_MENU_BAR_RESERVE_PT - MACOS_TITLE_BAR_PT;
         assert!(900.0 <= usable, "900 must fit inside {usable}");
         assert!(
@@ -5883,9 +5282,6 @@ mod window_geometry_tests {
 
     #[test]
     fn geometry_saved_in_physical_pixels_survives_losing_the_retina_display() {
-        // The plugin saves `inner_size()`, which is physical. Quitting at 1512x900 on a 2x panel
-        // writes 3024x1800; relaunching on a 1x 1440x900 display must not ask for a window larger
-        // than the display itself.
         let one_x = MonitorRect {
             x: 0.0,
             y: 0.0,
@@ -5908,8 +5304,7 @@ mod window_geometry_tests {
 
     #[test]
     fn a_title_bar_above_the_menu_bar_is_brought_back() {
-        // A corner-intersection test passes for this window: its bottom corners are on screen. Its
-        // title bar is not, so nobody can move it.
+        // Bottom corners on screen but title bar not: unreachable.
         let result = sanitize_window_geometry(
             at(0.0, -200.0, 1200.0, 800.0),
             REFERENCE_14_INCH,
@@ -5945,8 +5340,7 @@ mod window_geometry_tests {
 
     #[test]
     fn a_second_display_left_of_the_primary_keeps_its_negative_origin() {
-        // Monitor rects are not anchored at zero. A sanitizer that assumed they were would drag
-        // every window on a left-hand external display back onto the built-in panel.
+        // Monitor rects are not anchored at zero.
         let left_monitor = MonitorRect {
             x: -1920.0,
             y: 0.0,
@@ -5959,7 +5353,6 @@ mod window_geometry_tests {
         assert!(!result.repositioned);
     }
 
-    /// A 1080p external display: no notch, so its menu bar is the 24pt minimum.
     const EXTERNAL_1080P: MonitorRect = MonitorRect {
         x: 0.0,
         y: 0.0,
@@ -5969,9 +5362,7 @@ mod window_geometry_tests {
 
     #[test]
     fn a_window_snapped_to_the_top_of_a_non_notched_display_is_left_alone() {
-        // Every external monitor spends 24pt on its menu bar, not the notched 37. Judging this
-        // window against 37 called it unreachable and recentred it — on every single launch, which
-        // took away the very position the state plugin had just restored.
+        // External monitors use 24pt, not the notched 37.
         let saved = at(0.0, MACOS_MENU_BAR_MIN_PT, 1400.0, 900.0);
         let result = sanitize_window_geometry(saved, EXTERNAL_1080P, MAIN_WINDOW_MIN_LOGICAL);
         assert_eq!(result.geometry, saved);
@@ -5984,9 +5375,7 @@ mod window_geometry_tests {
 
     #[test]
     fn a_maximized_window_that_exactly_fills_a_non_notched_display_is_not_shrunk() {
-        // The zoomed shape macOS itself produces on a 1080p panel. Reserving the notched 37 here
-        // clamped a window that fits exactly, so a restored maximised window was resized *and*
-        // recentred immediately after the plugin restored it.
+        // The zoomed shape macOS produces must not be clamped.
         let zoomed_height = EXTERNAL_1080P.height - MACOS_MENU_BAR_MIN_PT - MACOS_TITLE_BAR_PT;
         let saved = at(0.0, MACOS_MENU_BAR_MIN_PT, 1920.0, zoomed_height);
         let result = sanitize_window_geometry(saved, EXTERNAL_1080P, MAIN_WINDOW_MIN_LOGICAL);
@@ -6000,8 +5389,7 @@ mod window_geometry_tests {
 
     #[test]
     fn a_title_bar_genuinely_under_the_menu_bar_is_still_recovered() {
-        // The acceptance floor was loosened, not removed: above the shortest menu bar is still
-        // unreachable, so relaxing 37 to 24 must not turn this case green.
+        // Above the shortest menu bar is still unreachable.
         let result = sanitize_window_geometry(
             at(0.0, MACOS_MENU_BAR_MIN_PT - 8.0, 1400.0, 900.0),
             EXTERNAL_1080P,
@@ -6013,8 +5401,7 @@ mod window_geometry_tests {
 
     #[test]
     fn a_recentred_window_is_placed_clear_of_a_notch_and_still_fits() {
-        // Placement stays conservative even though acceptance is permissive: a recentred window
-        // clears the notched menu bar, and its bottom edge must still land on the display.
+        // Placement stays conservative while acceptance is permissive.
         let result = sanitize_window_geometry(
             at(0.0, -400.0, 3024.0, 1800.0),
             REFERENCE_14_INCH,
