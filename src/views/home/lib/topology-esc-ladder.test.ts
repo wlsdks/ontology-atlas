@@ -280,15 +280,15 @@ describe("resolveTopologyEscLadderAction", () => {
  * dialog behaves that way, so this one exception reads as the app ignoring the
  * key.
  */
-describe("부트스트랩 패널 — 블로킹 표면이 먼저 답한다", () => {
-  it("열려 있으면 Escape 가 그것을 닫는다", () => {
+describe("bootstrap panel answers first as a blocking surface", () => {
+  it("Escape closes it while open", () => {
     expect(
       resolveTopologyEscLadderAction({ ...BASE, bootstrapOpen: true }),
     ).toBe("close-bootstrap");
   });
 
   // Releasing a selection underneath something that covers it is not what the user asked for.
-  it("아래에 선택이 있어도 패널이 먼저다", () => {
+  it("the panel wins even over a selection below", () => {
     expect(
       resolveTopologyEscLadderAction({
         ...BASE,
@@ -299,7 +299,7 @@ describe("부트스트랩 패널 — 블로킹 표면이 먼저 답한다", () =
     ).toBe("close-bootstrap");
   });
 
-  it("닫혀 있으면 아래 칸이 정상적으로 답한다", () => {
+  it("lower rungs answer normally while it is closed", () => {
     expect(
       resolveTopologyEscLadderAction({ ...BASE, bootstrapOpen: false, hasSelection: true }),
     ).toBe("deselect");

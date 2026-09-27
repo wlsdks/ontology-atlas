@@ -62,8 +62,8 @@ function renderModel(
   ).result.current;
 }
 
-describe("useNodeDatasheetModel — 문서 링크 정직성", () => {
-  it("자기 문서가 있는 노드는 자기 문서 링크를 낸다", () => {
+describe("useNodeDatasheetModel document link honesty", () => {
+  it("a node with its own document links to it", () => {
     const selected = node("capability:frontmatter-to-ontology", [
       "ontology/capabilities/frontmatter-to-ontology",
     ]);
@@ -79,7 +79,7 @@ describe("useNodeDatasheetModel — 문서 링크 정직성", () => {
     expect(model.v2DatasheetModel?.mentionDocumentHref).toBeNull();
   });
 
-  it("자기 문서가 없는 노드는 남의 문서 href 를 '문서' 링크로 내지 않는다", () => {
+  it("a node without its own document does not present another document's href as its document link", () => {
     // Reproduces the QA finding: this element node is only cited as evidence by
     // the `frontmatter-to-ontology` capability document and has no `.md` of its own.
     const citedBy = "ontology/capabilities/frontmatter-to-ontology";
@@ -102,7 +102,7 @@ describe("useNodeDatasheetModel — 문서 링크 정직성", () => {
   // Scope correction (2026-07-26): without counting the parent bucket, a node
   // that has only a parent showed "0 connections" in both the popover and the
   // handoff. This locks that the model carries that bucket all the way through.
-  it("부모만 있는 노드도 속한 곳을 세고 핸드오프에 싣는다", () => {
+  it("a node with only a parent counts where it belongs and carries it in the handoff", () => {
     const parent = node("capability:frontmatter-to-ontology", [], { kind: "capability" });
     const selected = node("element:derive-ontology-from-vault", []);
     const model = renderModel(
@@ -130,7 +130,7 @@ describe("useNodeDatasheetModel — 문서 링크 정직성", () => {
     );
   });
 
-  it("`hasOwnDocument` 미지정 노드는 종전대로 자기 문서로 읽는다 (하위 호환)", () => {
+  it("a node without `hasOwnDocument` reads as having its own document for backward compatibility", () => {
     const selected = node("capability:legacy", ["capabilities/legacy"]);
     const model = renderModel(selected, [selected]);
 

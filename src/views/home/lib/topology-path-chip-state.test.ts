@@ -5,7 +5,7 @@ import {
 } from "./topology-path-chip-state";
 
 describe("resolveTopologyPathChipState", () => {
-  it("소스만 있으면 대상을 기다린다", () => {
+  it("waits for the target when only the source is set", () => {
     expect(
       resolveTopologyPathChipState({
         sourceSlug: "capability:a",
@@ -17,7 +17,7 @@ describe("resolveTopologyPathChipState", () => {
     ).toEqual({ kind: "awaiting-target", sourceTitle: "결제" });
   });
 
-  it("둘 다 실재하고 이어지면 홉 수를 말한다", () => {
+  it("states the hop count when both exist and connect", () => {
     expect(
       resolveTopologyPathChipState({
         sourceSlug: "capability:a",
@@ -29,7 +29,7 @@ describe("resolveTopologyPathChipState", () => {
     ).toEqual({ kind: "resolved", sourceTitle: "결제", targetTitle: "주문", hops: 2 });
   });
 
-  it("둘 다 실재하는데 길이 없으면 「경로 없음」 — 이건 참인 단언이다", () => {
+  it("says no path when both exist without a path, which is a true claim", () => {
     expect(
       resolveTopologyPathChipState({
         sourceSlug: "capability:a",
@@ -46,7 +46,7 @@ describe("resolveTopologyPathChipState", () => {
    * chip drew two names and then asserted "no path". The truth is that neither
    * is here.
    */
-  it("끝점이 이 볼트에 없으면 「경로 없음」이라고 말하지 않는다", () => {
+  it("does not claim no path when an endpoint is missing from this vault", () => {
     const state = resolveTopologyPathChipState({
       sourceSlug: "capability:ghost-a",
       targetSlug: "domain:ghost-b",
@@ -61,7 +61,7 @@ describe("resolveTopologyPathChipState", () => {
     });
   });
 
-  it("한쪽만 없어도 없는 쪽만 말한다", () => {
+  it("names only the missing side when one side is missing", () => {
     expect(
       resolveTopologyPathChipState({
         sourceSlug: "capability:a",
@@ -73,7 +73,7 @@ describe("resolveTopologyPathChipState", () => {
     ).toEqual({ kind: "missing-endpoints", missing: ["domain:ghost"] });
   });
 
-  it("소스가 없으면 칩 자체가 없다", () => {
+  it("renders no chip without a source", () => {
     expect(
       resolveTopologyPathChipState({
         sourceSlug: null,
@@ -92,19 +92,19 @@ describe("resolveTopologyPathChipState", () => {
  * fact.
  */
 describe("canCopyTopologyPathPacket", () => {
-  it("끝점이 없는 상태에서는 넘길 수 없다", () => {
+  it("cannot hand off while an endpoint is missing", () => {
     expect(
       canCopyTopologyPathPacket({ kind: "missing-endpoints", missing: ["x"] }),
     ).toBe(false);
   });
 
-  it("대상 선택 전에도 넘길 수 없다", () => {
+  it("cannot hand off before a target is chosen", () => {
     expect(canCopyTopologyPathPacket({ kind: "awaiting-target", sourceTitle: "결제" })).toBe(
       false,
     );
   });
 
-  it("둘 다 실재하면 — 길이 없어도 — 넘길 수 있다", () => {
+  it("can hand off when both exist, even without a path", () => {
     expect(
       canCopyTopologyPathPacket({ kind: "no-path", sourceTitle: "a", targetTitle: "b" }),
     ).toBe(true);
@@ -118,7 +118,7 @@ describe("canCopyTopologyPathPacket", () => {
     ).toBe(true);
   });
 
-  it("칩이 없으면 넘길 것도 없다", () => {
+  it("has nothing to hand off without a chip", () => {
     expect(canCopyTopologyPathPacket(null)).toBe(false);
   });
 });

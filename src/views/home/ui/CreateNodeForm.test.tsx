@@ -31,12 +31,12 @@ const domainOptions = [
 ];
 
 describe("CreateNodeForm", () => {
-  it("title 비면 만들기 버튼 disabled", () => {
+  it("the create button is disabled while the title is empty", () => {
     render(<CreateNodeForm onCreate={() => {}} labels={labels} />);
     expect(screen.getByTestId("create-node-submit")).toBeDisabled();
   });
 
-  it("blocking edit surface contract 를 노출한다", () => {
+  it("exposes the blocking edit surface contract", () => {
     render(
       <CreateNodeForm
         onCreate={() => {}}
@@ -52,7 +52,7 @@ describe("CreateNodeForm", () => {
     expect(screen.getByText("노드 추가")).toHaveAttribute("id", "create-node-heading");
   });
 
-  it("title 입력 + 도메인 선택 → onCreate 가 title·kind·domain(slug) 으로 호출", async () => {
+  it("a title and a domain call onCreate with title, kind and the domain slug", async () => {
     const onCreate = vi.fn();
     render(
       <CreateNodeForm
@@ -74,7 +74,7 @@ describe("CreateNodeForm", () => {
     );
   });
 
-  it("도메인 없음(기본) 이면 undefined 로 전달", async () => {
+  it("passes undefined when no domain is chosen", async () => {
     const onCreate = vi.fn();
     render(<CreateNodeForm onCreate={onCreate} labels={labels} domainOptions={domainOptions} />);
     fireEvent.change(screen.getByTestId("create-node-title"), { target: { value: "Auth" } });
@@ -84,7 +84,7 @@ describe("CreateNodeForm", () => {
     );
   });
 
-  it("kind 변경 반영", async () => {
+  it("reflects a kind change", async () => {
     const onCreate = vi.fn();
     render(<CreateNodeForm onCreate={onCreate} labels={labels} />);
     fireEvent.change(screen.getByTestId("create-node-title"), { target: { value: "Auth" } });
@@ -96,7 +96,7 @@ describe("CreateNodeForm", () => {
     await waitFor(() => expect(onCreate).toHaveBeenCalledWith(expect.objectContaining({ kind: "domain" })));
   });
 
-  it("Enter 로 제출", async () => {
+  it("submits on Enter", async () => {
     const onCreate = vi.fn();
     render(<CreateNodeForm onCreate={onCreate} labels={labels} />);
     const titleInput = screen.getByTestId("create-node-title");
@@ -105,7 +105,7 @@ describe("CreateNodeForm", () => {
     await waitFor(() => expect(onCreate).toHaveBeenCalled());
   });
 
-  it("검토 단계로 넘어가면 입력을 지우지 않는다", async () => {
+  it("keeps the input when moving to the review step", async () => {
     const onCreate = vi.fn().mockResolvedValue(false);
     render(<CreateNodeForm onCreate={onCreate} labels={labels} />);
     const titleInput = screen.getByTestId("create-node-title");
@@ -115,7 +115,7 @@ describe("CreateNodeForm", () => {
     expect(titleInput).toHaveValue("Contextual Editing");
   });
 
-  it("변경안에서는 확인 전까지 쓰기 콜백만 제공한다", () => {
+  it("a proposal offers only the write callback until confirmed", () => {
     const onConfirm = vi.fn();
     const onBack = vi.fn();
     render(
@@ -156,7 +156,7 @@ describe("CreateNodeForm", () => {
     expect(onBack).toHaveBeenCalledTimes(1);
   });
 
-  it("onCancel 제공 시 취소 버튼 노출 + 호출", () => {
+  it("shows a cancel button that calls onCancel when provided", () => {
     const onCancel = vi.fn();
     render(<CreateNodeForm onCreate={() => {}} onCancel={onCancel} labels={labels} />);
     fireEvent.click(screen.getByTestId("create-node-cancel"));
@@ -167,15 +167,15 @@ describe("CreateNodeForm", () => {
 // Per-locale names (owner instruction, 2026-07-24): passing localeNames adds a
 // second field, and filling only the other language blocks the save and says why
 // in place.
-describe("CreateNodeForm — 어권별 이름", () => {
+describe("CreateNodeForm per-locale names", () => {
   const localeNames = { primaryLocale: "ko", secondaryLocale: "en" };
 
-  it("localeNames 미전달 시 두 번째 이름 칸을 렌더하지 않는다(하위호환)", () => {
+  it("renders no second name field without localeNames for backward compatibility", () => {
     render(<CreateNodeForm onCreate={() => {}} labels={labels} />);
     expect(screen.queryByTestId("create-node-title-secondary")).not.toBeInTheDocument();
   });
 
-  it("다른 언어만 채우면 저장이 막히고 이유가 인라인으로 뜬다", () => {
+  it("blocks saving with an inline reason when only the other locale is filled", () => {
     const onCreate = vi.fn();
     render(<CreateNodeForm onCreate={onCreate} labels={labels} localeNames={localeNames} />);
 
@@ -188,7 +188,7 @@ describe("CreateNodeForm — 어권별 이름", () => {
     expect(onCreate).not.toHaveBeenCalled();
   });
 
-  it("두 언어를 모두 채우면 localeLabels 로 전달한다", async () => {
+  it("passes localeLabels when both locales are filled", async () => {
     const onCreate = vi.fn();
     render(<CreateNodeForm onCreate={onCreate} labels={labels} localeNames={localeNames} />);
 

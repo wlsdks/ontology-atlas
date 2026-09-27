@@ -527,7 +527,7 @@ describe("resolveTopologyNodeClickRouteState", () => {
   // chip stayed pinned to "pick a target" and the path packet copy button never
   // appeared. Cause: `HomePage.tsx`'s click handler ignored analysisMode and
   // always took the ordinary-selection route.
-  it("일반 모드에서는 selectTopologyNodeRouteState 와 동일하게 동작한다", () => {
+  it("behaves like selectTopologyNodeRouteState outside path mode", () => {
     for (const mode of ["overview", "focus", "health"] as const) {
       const state = { ...DEFAULT_HOME_ROUTE_STATE, analysisMode: mode };
       expect(resolveTopologyNodeClickRouteState(state, "domain:views")).toEqual(
@@ -536,7 +536,7 @@ describe("resolveTopologyNodeClickRouteState", () => {
     }
   });
 
-  it("path 모드 + 소스 미확정 상태에서 첫 클릭은 소스를 확정한다", () => {
+  it("in path mode the first click without a source sets the source", () => {
     const state = { ...DEFAULT_HOME_ROUTE_STATE, analysisMode: "path" as const };
     expect(
       resolveTopologyNodeClickRouteState(state, "project:ontology-atlas"),
@@ -547,7 +547,7 @@ describe("resolveTopologyNodeClickRouteState", () => {
     });
   });
 
-  it("path 모드 + 소스 확정 상태에서 두 번째 클릭은 대상을 확정한다 (회귀 fix)", () => {
+  it("in path mode the second click with a source sets the target", () => {
     const state = {
       ...DEFAULT_HOME_ROUTE_STATE,
       analysisMode: "path" as const,
@@ -563,7 +563,7 @@ describe("resolveTopologyNodeClickRouteState", () => {
     });
   });
 
-  it("path 모드에서 이미 확정된 대상과 다른 세 번째 노드를 클릭하면 대상을 갈아끼운다", () => {
+  it("in path mode a third node replaces the chosen target", () => {
     const state = {
       ...DEFAULT_HOME_ROUTE_STATE,
       analysisMode: "path" as const,
@@ -578,7 +578,7 @@ describe("resolveTopologyNodeClickRouteState", () => {
     });
   });
 
-  it("path 모드에서 소스 노드 자체를 다시 클릭해도 상태를 그대로 둔다", () => {
+  it("in path mode reclicking the source node leaves the state unchanged", () => {
     const state = {
       ...DEFAULT_HOME_ROUTE_STATE,
       analysisMode: "path" as const,
@@ -655,8 +655,8 @@ describe("insights return marker (?via=insights:<tab>)", () => {
   });
 });
 
-describe("밀도 게이트 확장 상태 (?open=)", () => {
-  it("파싱: 콤마 구분 부모 목록을 순서대로 읽는다", () => {
+describe("density-gate expansion state (?open=)", () => {
+  it("parses a comma-separated parent list in order", () => {
     const state = parseHomeRouteState(
       new URLSearchParams("open=domain:onboarding,capability:huge"),
     );
@@ -666,7 +666,7 @@ describe("밀도 게이트 확장 상태 (?open=)", () => {
     ]);
   });
 
-  it("무효 무시: 빈 항목·중복·공백은 걸러지고, 다른 파라미터 탐색은 유지된다", () => {
+  it("drops empty, duplicate and blank entries and keeps other navigation params", () => {
     const state = parseHomeRouteState(
       new URLSearchParams("p=pick&open=,a,,a, b ,&mode=health"),
     );
@@ -679,7 +679,7 @@ describe("밀도 게이트 확장 상태 (?open=)", () => {
     expect(parseHomeRouteState(new URLSearchParams("p=pick")).expandedParents).toEqual([]);
   });
 
-  it("왕복: 지도 탐색(노드 선택/토글) 후에도 open 이 URL 에 보존된다", () => {
+  it("keeps open in the URL after map navigation such as node select and toggle", () => {
     const params = new URLSearchParams("open=domain:onboarding");
     const state = parseHomeRouteState(params);
 
@@ -708,7 +708,7 @@ describe("밀도 게이트 확장 상태 (?open=)", () => {
   });
 });
 
-describe("영역 전개 (?realm=)", () => {
+describe("realm expansion (?realm=)", () => {
   it("round-trips the realm slug through parse ← → apply", () => {
     const state = parseHomeRouteState(new URLSearchParams("realm=capability%3Atopology"));
     expect(state.realmSlug).toBe("capability:topology");
@@ -749,16 +749,16 @@ describe("영역 전개 (?realm=)", () => {
   });
 });
 
-describe("resolveRealmNodeId (패널3-S7 slug alias)", () => {
+describe("resolveRealmNodeId slug alias", () => {
   const nodeIds = ["project:atlas", "domain:views", "capability:ai-agent-partner", "element:parser"];
 
-  it("정확히 일치하는 canonical id 는 그대로 통과한다", () => {
+  it("passes an exact canonical id through", () => {
     expect(resolveRealmNodeId("capability:ai-agent-partner", nodeIds)).toBe(
       "capability:ai-agent-partner",
     );
   });
 
-  it("kind prefix 없는 bare slug 를 <kind>:<slug> canonical id 로 승격한다", () => {
+  it("promotes a bare slug without a kind prefix to a <kind>:<slug> canonical id", () => {
     // A hand-typed `?realm=ai-agent-partner` used to render a raw chip over the whole map.
     expect(resolveRealmNodeId("ai-agent-partner", nodeIds)).toBe(
       "capability:ai-agent-partner",
@@ -766,18 +766,18 @@ describe("resolveRealmNodeId (패널3-S7 slug alias)", () => {
     expect(resolveRealmNodeId("views", nodeIds)).toBe("domain:views");
   });
 
-  it("어떤 노드와도 안 맞으면 null — 칩 미표시 계약", () => {
+  it("returns null when no node matches, so the chip hides", () => {
     expect(resolveRealmNodeId("does-not-exist", nodeIds)).toBeNull();
     // A wrong kind prefix stays unresolved too — only an exact match counts.
     expect(resolveRealmNodeId("domain:ai-agent-partner", nodeIds)).toBeNull();
   });
 
-  it("빈 값/공백 realm 은 null", () => {
+  it("returns null for an empty or blank realm", () => {
     expect(resolveRealmNodeId(null, nodeIds)).toBeNull();
     expect(resolveRealmNodeId("", nodeIds)).toBeNull();
   });
 
-  it("정확 일치가 bare 별칭보다 우선한다", () => {
+  it("an exact match wins over a bare alias", () => {
     // With two nodes sharing a tail slug, an exact id match still wins.
     const ids = ["capability:parser", "element:parser"];
     expect(resolveRealmNodeId("element:parser", ids)).toBe("element:parser");
@@ -867,15 +867,15 @@ describe("deriveDeeplinkAncestorExpansion", () => {
  * (2) collapsing always works, (3) a deep link gets the same cap — bypassing
  * it by link would give the recipient a worse screen.
  */
-describe("펼침 부모 상한", () => {
-  it("상한 안에서는 그냥 쌓인다", () => {
+describe("expanded-parent cap", () => {
+  it("stacks freely under the cap", () => {
     let open: string[] = [];
     open = toggleExpandedParent(open, "a");
     open = toggleExpandedParent(open, "b");
     expect(open).toEqual(["a", "b"]);
   });
 
-  it("**상한을 넘으면 가장 오래 펼쳐 둔 것이 닫힌다** — 클릭이 무시되지 않는다", () => {
+  it("past the cap the longest-open parent closes, so the click is not ignored", () => {
     let open: string[] = [];
     for (const id of ["a", "b", "c", "d"]) open = toggleExpandedParent(open, id);
     expect(open).toHaveLength(MAX_EXPANDED_PARENTS);
@@ -885,26 +885,26 @@ describe("펼침 부모 상한", () => {
     expect(open).not.toContain("a");
   });
 
-  it("계속 눌러도 상한을 넘지 않는다", () => {
+  it("repeated presses never exceed the cap", () => {
     let open: string[] = [];
     for (let i = 0; i < 20; i += 1) open = toggleExpandedParent(open, `p${i}`);
     expect(open).toHaveLength(MAX_EXPANDED_PARENTS);
     expect(open).toContain("p19");
   });
 
-  it("접기는 상한과 무관하게 언제나 된다", () => {
+  it("collapsing always works regardless of the cap", () => {
     let open = ["a", "b", "c"];
     open = toggleExpandedParent(open, "b");
     expect(open).toEqual(["a", "c"]);
   });
 
-  it("이미 열린 것을 다시 눌러도 다른 것이 닫히지 않는다", () => {
+  it("reopening an already open parent closes no other", () => {
     // The toggle reads as "close", so there is no place for an eviction.
     const open = toggleExpandedParent(["a", "b", "c"], "a");
     expect(open).toEqual(["b", "c"]);
   });
 
-  it("딥링크도 같은 상한을 받는다 — 링크로 우회할 수 없다", () => {
+  it("deep links get the same cap and cannot bypass it", () => {
     const parsed = parseExpandedParentsParam("a,b,c,d,e");
     expect(parsed).toHaveLength(MAX_EXPANDED_PARENTS);
     // The tail is kept — what was written later is the more recent intent
@@ -912,7 +912,7 @@ describe("펼침 부모 상한", () => {
     expect(parsed).toEqual(["c", "d", "e"]);
   });
 
-  it("딥링크의 중복 제거가 상한보다 먼저 일어난다", () => {
+  it("deep-link deduplication happens before the cap", () => {
     // "a,a,a,b" is really 2 entries — duplicates must not cut a valid one.
     expect(parseExpandedParentsParam("a,a,a,b")).toEqual(["a", "b"]);
   });
@@ -937,7 +937,7 @@ describe("clearVaultScopedRouteState", () => {
     "&impact=upstream&pulse=7d&recent=7";
   const PATH_SEARCH = "mode=path&pathFrom=capability:a&pathTo=domain:b&from=capability:a&to=domain:b";
 
-  it("볼트 이름을 담은 선택 상태를 걷어내고 열거값 키는 지킨다", () => {
+  it("clears selection state that carries vault names and keeps enum keys", () => {
     const current = parseHomeRouteState(new URLSearchParams(SELECTION_SEARCH));
     expect(current.selectedSlug).toBe("capability:alpha"); // the fixture itself must be valid first
 
@@ -954,7 +954,7 @@ describe("clearVaultScopedRouteState", () => {
     expect(next.recentWindow).toBe(7);
   });
 
-  it("경로 끝점을 걷어내고 개요로 되돌린다 — 끝점 없는 「경로」 모드는 빈 주장이다", () => {
+  it("clears path endpoints and returns to overview, since a path mode without endpoints claims nothing", () => {
     const current = parseHomeRouteState(new URLSearchParams(PATH_SEARCH));
     expect(current.pathSourceSlug).toBe("capability:a");
     expect(current.pathTargetSlug).toBe("domain:b");
@@ -966,7 +966,7 @@ describe("clearVaultScopedRouteState", () => {
     expect(next.analysisMode).toBe("overview");
   });
 
-  it("주소에서도 실제로 사라진다 — 걷어낸 상태를 URL 로 되쓰면 그 키가 없다", () => {
+  it("the keys leave the address too: writing the cleared state back to the URL omits them", () => {
     for (const search of [SELECTION_SEARCH, PATH_SEARCH]) {
       const cleared = clearVaultScopedRouteState(
         parseHomeRouteState(new URLSearchParams(search)),
@@ -974,12 +974,12 @@ describe("clearVaultScopedRouteState", () => {
       const params = applyHomeRouteState(new URLSearchParams(search), cleared);
 
       for (const key of VAULT_SCOPED_HOME_QUERY_KEYS) {
-        expect(params.has(key), `${key} 가 주소에 남았다 (${search})`).toBe(false);
+        expect(params.has(key), `${key} stayed in the address (${search})`).toBe(false);
       }
     }
   });
 
-  it("열거값 키는 주소에도 남는다", () => {
+  it("enum keys stay in the address", () => {
     const cleared = clearVaultScopedRouteState(
       parseHomeRouteState(new URLSearchParams(SELECTION_SEARCH)),
     );
@@ -989,7 +989,7 @@ describe("clearVaultScopedRouteState", () => {
     expect(params.get("recent")).toBe("7");
   });
 
-  it("건드리지 않은 모드는 유지된다 (path 가 아니면 그대로)", () => {
+  it("an untouched mode stays unless it is path", () => {
     const current = parseHomeRouteState(new URLSearchParams("mode=health&p=x"));
     expect(clearVaultScopedRouteState(current).analysisMode).toBe("health");
   });
@@ -1001,10 +1001,10 @@ describe("clearVaultScopedRouteState", () => {
  * `tests/contract/scope-registry.contract.test.ts`.
  */
 describe("VAULT_SCOPED_HOME_QUERY_KEYS", () => {
-  it("모두 실제 쿼리 키다", () => {
+  it("every key is a real query key", () => {
     const known = new Set<string>(Object.values(HOME_QUERY_KEYS));
     for (const key of VAULT_SCOPED_HOME_QUERY_KEYS) {
-      expect(known.has(key), `${key} 는 HOME_QUERY_KEYS 에 없다`).toBe(true);
+      expect(known.has(key), `${key} is missing from HOME_QUERY_KEYS`).toBe(true);
     }
   });
 });

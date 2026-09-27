@@ -13,7 +13,7 @@ function daysAgoIso(days: number): string {
 }
 
 describe("deriveDustySlugs", () => {
-  it("중앙값 strict 미만 && 30일 초과인 노드만 dusty", () => {
+  it("dusty only when strictly older than the median and older than 30 days", () => {
     const nodes = [node("a", "doc-a"), node("b", "doc-b"), node("c", "doc-c")];
     const index = new Map([
       ["doc-a", daysAgoIso(120)], // older than the median (10d) and over 30d -> dusty
@@ -23,7 +23,7 @@ describe("deriveDustySlugs", () => {
     expect([...deriveDustySlugs(nodes, index, NOW)]).toEqual(["a"]);
   });
 
-  it("중앙값보다 오래여도 30일 이내면 fresh (절대 조건)", () => {
+  it("fresh within 30 days even when older than the median", () => {
     const nodes = [node("a", "doc-a"), node("b", "doc-b"), node("c", "doc-c")];
     const index = new Map([
       ["doc-a", daysAgoIso(20)],
@@ -33,7 +33,7 @@ describe("deriveDustySlugs", () => {
     expect(deriveDustySlugs(nodes, index, NOW).size).toBe(0);
   });
 
-  it("전원 동일 mtime(벌크 import/clone 직후) → 전원 fresh (strict 미만 동률 규칙)", () => {
+  it("all nodes sharing one mtime after a bulk import or clone stay fresh under the strict tie rule", () => {
     const nodes = [node("a", "doc-a"), node("b", "doc-b")];
     const index = new Map([
       ["doc-a", daysAgoIso(300)],
@@ -42,7 +42,7 @@ describe("deriveDustySlugs", () => {
     expect(deriveDustySlugs(nodes, index, NOW).size).toBe(0);
   });
 
-  it("중앙값 age 의 2배 이내로 뒤처진 노드는 fresh — 진짜 꼬리만 dusty (배수 조건)", () => {
+  it("a node trailing the median age by under twice stays fresh, only the real tail is dusty", () => {
     // median = (100d+5d)/2 = 52.5d, so the threshold is max(30d, 105d) = 105d.
     // Only a (200d) passes it; b (100d) is older than the median but within 2x,
     // so it stays fresh. A plain "below median plus 30 days" test marked the
@@ -57,11 +57,11 @@ describe("deriveDustySlugs", () => {
     expect([...deriveDustySlugs(nodes, index, NOW)]).toEqual(["a"]);
   });
 
-  it("날짜 데이터가 전혀 없으면 빈 집합 (기능이 조용히 꺼짐)", () => {
+  it("returns an empty set without any date data, so the feature turns off quietly", () => {
     expect(deriveDustySlugs([node("a", "doc-a"), node("b", null)], new Map(), NOW).size).toBe(0);
   });
 
-  it("날짜 없는/파싱 불가 노드는 판정 모수에서 제외되고 fresh", () => {
+  it("nodes with a missing or unparseable date leave the sample and stay fresh", () => {
     const nodes = [
       node("a", "doc-a"),
       node("b", "doc-b"),
@@ -79,7 +79,7 @@ describe("deriveDustySlugs", () => {
     expect([...deriveDustySlugs(nodes, index, NOW)]).toEqual(["a"]);
   });
 
-  it("최하위 사분위 캡 — 조건 통과 노드가 많아도 가장 오래된 25%만 dusty", () => {
+  it("caps at the oldest quartile, so only the oldest 25% are dusty even when many pass", () => {
     // 8 nodes (median 1d, threshold 30d) gives a cap of 2. a, b and c all pass
     // the threshold, but only the two oldest are marked.
     const ids = ["a", "b", "c", "d", "e", "f", "g", "h"];
@@ -89,13 +89,13 @@ describe("deriveDustySlugs", () => {
     expect([...deriveDustySlugs(nodes, index, NOW)].sort()).toEqual(["a", "b"]);
   });
 
-  it("단일 노드 vault 는 자기 자신이 중앙값(동률) → fresh", () => {
+  it("a single-node vault is its own median and stays fresh", () => {
     const nodes = [node("a", "doc-a")];
     const index = new Map([["doc-a", daysAgoIso(365)]]);
     expect(deriveDustySlugs(nodes, index, NOW).size).toBe(0);
   });
 
-  it("경계값: 최근 vault(중앙값 1일)에서 정확히 30일은 fresh, 31일은 dusty", () => {
+  it("boundary: in a recent vault with a one-day median, exactly 30 days is fresh and 31 is dusty", () => {
     // Median 1d makes the threshold max(30d, 2d), so the 30-day floor dominates.
     const nodes = ["a", "b", "c", "d", "e"].map((id) => node(id, `doc-${id}`));
     const index = new Map([

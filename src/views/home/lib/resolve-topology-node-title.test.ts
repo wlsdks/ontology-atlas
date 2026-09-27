@@ -26,7 +26,7 @@ const nodes = [
 const noProjects: ReadonlyMap<string, Project> = new Map();
 
 describe("resolveTopologyNodeTitle", () => {
-  it("해석되면 괄호를 뗀 이름", () => {
+  it("a resolved node gives its name without parentheses", () => {
     expect(
       resolveTopologyNodeTitle({
         slug: "capability:checkout",
@@ -36,7 +36,7 @@ describe("resolveTopologyNodeTitle", () => {
     ).toBe("결제");
   });
 
-  it("지도가 부르는 이름(display)을 정본 제목보다 먼저 쓴다", () => {
+  it("prefers the map display name over the canonical title", () => {
     expect(
       resolveTopologyNodeTitle({
         slug: "domain:fulfillment",
@@ -52,7 +52,7 @@ describe("resolveTopologyNodeTitle", () => {
    * and the path chip then asserts "no path" over it. null is the information
    * that the node is not here.
    */
-  it("이 볼트에 없으면 null — 슬러그를 제목으로 위장하지 않는다", () => {
+  it("returns null when missing from this vault instead of dressing the slug as a title", () => {
     expect(
       resolveTopologyNodeTitle({
         slug: "capability:from-another-vault",
@@ -62,7 +62,7 @@ describe("resolveTopologyNodeTitle", () => {
     ).toBeNull();
   });
 
-  it("그래프가 아직 없으면 null", () => {
+  it("returns null before the graph exists", () => {
     expect(
       resolveTopologyNodeTitle({
         slug: "capability:checkout",
@@ -72,7 +72,7 @@ describe("resolveTopologyNodeTitle", () => {
     ).toBeNull();
   });
 
-  it("슬러그가 없으면 null", () => {
+  it("returns null without a slug", () => {
     expect(
       resolveTopologyNodeTitle({
         slug: null,
@@ -84,11 +84,11 @@ describe("resolveTopologyNodeTitle", () => {
 });
 
 describe("compactTopologyPanelTitle", () => {
-  it("괄호 부연을 뗀다", () => {
+  it("strips a parenthetical aside", () => {
     expect(compactTopologyPanelTitle("결제 (주문 도메인)")).toBe("결제");
   });
 
-  it("괄호만 남으면 원문을 지킨다", () => {
+  it("keeps the original when only a parenthetical remains", () => {
     expect(compactTopologyPanelTitle("(주문)")).toBe("(주문)");
   });
 });

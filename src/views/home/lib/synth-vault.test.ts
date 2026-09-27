@@ -22,7 +22,7 @@ describe("clampSynthSize", () => {
    * assertions pin the two numbers the measurement demands, not the formula,
    * which is what stops the next person reverting it for convenience.
    */
-  it("부모당 자식 분포가 실측 볼트의 모양이다 — 중앙값 한 자릿수 + 허브 하나", () => {
+  it("children per parent match a measured vault: single-digit median plus one hub", () => {
     const g = synthesizeVaultGraph(3000);
     const childCount = new Map<string, number>();
     for (const edge of g.edges) {
@@ -58,21 +58,21 @@ describe("clampSynthSize", () => {
     // wrong shape into a contract.
   });
 
-  it("범위를 [SYNTH_MIN, SYNTH_MAX] 로 clamp 하고 정수로 반올림한다", () => {
+  it("clamps to [SYNTH_MIN, SYNTH_MAX] and rounds to an integer", () => {
     expect(clampSynthSize(50)).toBe(SYNTH_MIN);
     expect(clampSynthSize(999999)).toBe(SYNTH_MAX);
     expect(clampSynthSize(2000)).toBe(2000);
     expect(clampSynthSize(1999.6)).toBe(2000);
   });
 
-  it("비수치 입력은 null", () => {
+  it("returns null for non-numeric input", () => {
     expect(clampSynthSize(Number.NaN)).toBeNull();
     expect(clampSynthSize(Number.POSITIVE_INFINITY)).toBeNull();
   });
 });
 
-describe("synthesizeVaultGraph — 결정론", () => {
-  it("같은 N 은 바이트 동일한 nodes/edges 를 낸다", () => {
+describe("synthesizeVaultGraph determinism", () => {
+  it("the same N yields byte-identical nodes and edges", () => {
     const a = synthesizeVaultGraph(2000);
     const b = synthesizeVaultGraph(2000);
     expect(b.nodes).toEqual(a.nodes);
@@ -84,8 +84,8 @@ describe("synthesizeVaultGraph — 결정론", () => {
   });
 });
 
-describe("synthesizeVaultGraph — 분포 계약", () => {
-  it("도메인 √n/3 · 역량 n×0.15 · element 나머지, 20% 도메인 직속 · 5% 고아", () => {
+describe("synthesizeVaultGraph distribution contract", () => {
+  it("domains sqrt(n)/3, capabilities n*0.15, elements the rest, 20% direct under a domain, 5% orphans", () => {
     for (const n of [100, 2000, 5000, SYNTH_MAX]) {
       const g = synthesizeVaultGraph(n);
       const counts = computeSynthCounts(n);

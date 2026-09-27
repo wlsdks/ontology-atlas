@@ -62,18 +62,18 @@ describe("TopologyChangeAnnouncement", () => {
  * **derivation**: the position must come from the chrome tile height, and must
  * not reuse the chrome row's own constant.
  */
-describe("토스트 자리 — 상단 크롬과 겹치지 않는다", () => {
-  it("크롬 띠 아래로 파생된 top 을 쓴다 — 고정 top-4 가 아니다", () => {
+describe("toast position does not overlap the top chrome", () => {
+  it("uses a top derived below the chrome band instead of a fixed top-4", () => {
     const { rerender } = render(
       <TopologyChangeAnnouncement touchedCount={0} message={(n) => `${n}개`} />,
     );
     rerender(<TopologyChangeAnnouncement touchedCount={2} message={(n) => `${n}개`} />);
 
     const node = screen.getByTestId("topology-change-announcement");
-    expect(node.className, "크롬 띠와 같은 자리(top-4)로 되돌아갔다").not.toMatch(
+    expect(node.className, "returned to the chrome band position (top-4)").not.toMatch(
       /(^|\s)top-4(\s|$)/,
     );
-    expect(node.className, "top 이 크롬 타일 높이에서 파생되지 않았다").toContain(
+    expect(node.className, "top is not derived from the chrome tile height").toContain(
       "--chrome-tile-size",
     );
   });

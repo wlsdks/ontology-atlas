@@ -74,7 +74,7 @@ describe("buildOntologyMapGraph — regression: OntologyMap must not be mounted 
     });
   });
 
-  it("과제 ⑩ — 캔버스 label 은 node.display 가 있으면 그것, 없으면 title 그대로", () => {
+  it("canvas label uses node.display when present and the title otherwise", () => {
     const nodes = [
       node({
         id: "capability:cli-developer-entry",

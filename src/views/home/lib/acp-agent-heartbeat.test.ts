@@ -13,7 +13,7 @@ import {
  * registered, and there was no way to register one. The app now registers on
  * their behalf (owner instruction).
  */
-describe("앱 안 에이전트의 볼트 등록", () => {
+describe("registers an in-app agent in the vault", () => {
   const at = new Date("2026-08-17T01:23:45.000Z");
   const activity = {
     state: "verifying" as const,
@@ -22,37 +22,37 @@ describe("앱 안 에이전트의 볼트 등록", () => {
     toolName: "validate_vault",
   };
 
-  it("이름과 시각을 그대로 싣는다", () => {
+  it("carries the name and time unchanged", () => {
     const beat = buildAcpTurnHeartbeat({ agent: "codex-acp", at, activity });
     expect(beat.agent).toBe("codex-acp");
     expect(beat.updatedAt).toBe("2026-08-17T01:23:45.000Z");
   });
 
-  it("ACP 도구가 실제로 밝힌 목표와 대상을 싣는다", () => {
+  it("carries the goal and target the ACP tool actually stated", () => {
     const beat = buildAcpTurnHeartbeat({ agent: "codex-acp", at, activity });
     expect(beat.focus.ontologySlug).toBe("capabilities/reviewed-ontology-writing");
     expect(beat.focus.summary).toBe("관계 편집 흐름을 확인해줘");
     expect(beat.focus.files).toEqual([]);
   });
 
-  it("관측한 도구만 증거로 싣고 계획은 지어내지 않는다", () => {
+  it("carries only observed tools as evidence and invents no plan", () => {
     const beat = buildAcpTurnHeartbeat({ agent: "codex-acp", at, activity });
     expect(beat.plan).toEqual([]);
     expect(beat.evidence).toEqual({ mcp: ["validate_vault"], source: [], codegraph: [], verification: [] });
   });
 
-  it("ACP가 관측한 현재 단계를 상태로 적는다", () => {
+  it("records the current ACP-observed step as the status", () => {
     expect(buildAcpTurnHeartbeat({ agent: "codex-acp", at, activity }).state).toBe("verifying");
   });
 });
 
-describe("볼트에 적을 이름", () => {
-  it("실행기 id 를 그대로 쓴다 — 새 이름 체계를 만들지 않는다", () => {
+describe("vault name for the agent", () => {
+  it("uses the runner id as-is instead of inventing a naming scheme", () => {
     expect(acpHeartbeatAgentName("codex-acp")).toBe("codex-acp");
     expect(acpHeartbeatAgentName("claude-acp")).toBe("claude-acp");
   });
 
-  it("앞뒤 공백은 다듬는다", () => {
+  it("trims surrounding whitespace", () => {
     expect(acpHeartbeatAgentName("  codex-acp  ")).toBe("codex-acp");
   });
 
@@ -60,20 +60,20 @@ describe("볼트에 적을 이름", () => {
    * A malformed name registers nothing. `created_by` is permanent in the vault,
    * so falling back to `agent:unknown` beats writing a broken value.
    */
-  it("모양이 깨진 것은 등록하지 않는다 — 모름이 낫다", () => {
+  it("does not register a malformed name, since unknown beats wrong", () => {
     for (const bad of ["", "   ", "a/b", "a b", "../x", "a\nb", "\u0000x", null, undefined, 7]) {
       expect(acpHeartbeatAgentName(bad), String(bad)).toBeNull();
     }
   });
 
-  it("지나치게 긴 이름도 거절한다", () => {
+  it("rejects an overly long name", () => {
     expect(acpHeartbeatAgentName("a".repeat(101))).toBeNull();
     expect(acpHeartbeatAgentName("a".repeat(100))).toBe("a".repeat(100));
   });
 });
 
-describe("하트비트 파일 쓰기 순서", () => {
-  it("마지막 clear가 느린 write를 추월하지 않는다", async () => {
+describe("heartbeat file write order", () => {
+  it("a final clear does not overtake a slow write", async () => {
     const calls: string[] = [];
     let releaseWrite: () => void = () => {};
     const writeGate = new Promise<void>((resolve) => {

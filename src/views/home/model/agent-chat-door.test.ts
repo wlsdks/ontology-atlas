@@ -49,8 +49,8 @@ for (const hasRuntime of [false, true]) {
   }
 }
 
-describe('대화창은 하나 — 어느 갈래가 그 창을 갖나', () => {
-  it('어떤 조합에서도 두 갈래가 동시에 창을 갖지 않는다', () => {
+describe('one chat window: which branch owns it', () => {
+  it('no input combination gives both branches the window', () => {
     /*
      * This one line is why the file exists. On the old screen the two open
      * states did not know about each other, so two similar chat windows could
@@ -60,19 +60,19 @@ describe('대화창은 하나 — 어느 갈래가 그 창을 갖나', () => {
       const door = agentChatDoor(input);
       expect(
         door.runtime && door.key,
-        `두 대화창이 같이 떴다: ${JSON.stringify(input)}`,
+        `both chat windows opened: ${JSON.stringify(input)}`,
       ).toBe(false);
     }
   });
 
-  it('열려 있다는 것은 둘 중 하나가 창을 가졌다는 뜻이다 — 칩이 거짓말하지 않는다', () => {
+  it('open means one of the two owns the window, so the chip does not lie', () => {
     for (const input of ALL) {
       const door = agentChatDoor(input);
       expect(door.open, JSON.stringify(input)).toBe(door.runtime || door.key);
     }
   });
 
-  it('코딩 에이전트가 있으면 그쪽이 창을 갖는다', () => {
+  it('the coding agent owns the window when one exists', () => {
     const door = agentChatDoor({
       hasRuntime: true,
       runtimeOpen: true,
@@ -82,7 +82,7 @@ describe('대화창은 하나 — 어느 갈래가 그 창을 갖나', () => {
     expect(door).toEqual({ runtime: true, key: false, open: true });
   });
 
-  it('코딩 에이전트가 없으면 키 갈래가 창을 갖는다', () => {
+  it('the key branch owns the window without a coding agent', () => {
     const door = agentChatDoor({
       hasRuntime: false,
       runtimeOpen: true,
@@ -92,7 +92,7 @@ describe('대화창은 하나 — 어느 갈래가 그 창을 갖나', () => {
     expect(door).toEqual({ runtime: false, key: true, open: true });
   });
 
-  it('노드에서 건너온 「이거 물어봐」도 같은 창으로 간다', () => {
+  it('an ask-about-this from a node goes to the same window', () => {
     // With a coding agent present the sentence lands in its composer.
     expect(
       agentChatDoor({
@@ -113,7 +113,7 @@ describe('대화창은 하나 — 어느 갈래가 그 창을 갖나', () => {
     ).toEqual({ runtime: false, key: true, open: true });
   });
 
-  it('전체 그래프 흐름 요청도 설치된 코딩 에이전트의 같은 창으로 간다', () => {
+  it('a whole-graph flow request goes to the same window of the installed coding agent', () => {
     const route = parseHomeRouteState(new URLSearchParams('ask=business-flow'));
 
     expect(route.askBusinessFlow).toBe(true);
@@ -148,7 +148,7 @@ describe('대화창은 하나 — 어느 갈래가 그 창을 갖나', () => {
     expect(frameWidthOwners(missingRuntime)).not.toEqual(['acpDockFrameOpen', 'meaningWorkbenchOpen']);
   });
 
-  it('흐름 요청은 두 대화 갈래 모두 입력칸에만 앉고 자동 전송 경로에는 들어가지 않는다', () => {
+  it('a flow request only fills the composer in both branches and never auto-sends', () => {
     expect(
       dockSource.match(
         /prefillRequest=\{vaultAgentPrefill \?\? askPrefill\}/g,
@@ -159,7 +159,7 @@ describe('대화창은 하나 — 어느 갈래가 그 창을 갖나', () => {
     );
   });
 
-  it('아무도 안 열었으면 아무것도 안 뜬다', () => {
+  it('nothing opens when nobody opened it', () => {
     expect(
       agentChatDoor({
         hasRuntime: true,

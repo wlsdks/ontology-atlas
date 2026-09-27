@@ -16,7 +16,7 @@ describe("normalizeEdgeSentenceKey", () => {
 });
 
 describe("edgeSentenceValues — Korean particles follow the final consonant", () => {
-  it("contains: 온라인 쇼핑몰이 배송을", () => {
+  it("contains: final consonant takes the subject and object particles", () => {
     expect(edgeSentenceValues("contains", "온라인 쇼핑몰", "배송")).toEqual({
       from: "온라인 쇼핑몰",
       to: "배송",

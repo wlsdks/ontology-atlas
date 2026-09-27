@@ -88,14 +88,14 @@ function renderChip(overrides: Partial<React.ComponentProps<typeof TopologyTrail
   };
 }
 
-describe("TopologyTrailChip — 걸어온 길 트레일 칩", () => {
-  it("칩 라벨을 노출하고 기본은 팝오버가 닫혀 있다", () => {
+describe("TopologyTrailChip walked-trail chip", () => {
+  it("shows the chip label with the popover closed by default", () => {
     renderChip();
     expect(screen.getByTestId("topology-trail-chip-trigger")).toHaveTextContent("걸어온 길 · 3");
     expect(screen.queryByTestId("topology-trail-chip-popover")).toBeNull();
   });
 
-  it("트리거 클릭 → 미니 타임라인이 최근 방문을 맨 위로 그린다", () => {
+  it("clicking the trigger draws a mini timeline newest first", () => {
     renderChip();
     fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
     const rows = screen.getAllByTestId("topology-trail-row");
@@ -103,14 +103,14 @@ describe("TopologyTrailChip — 걸어온 길 트레일 칩", () => {
     expect(rows.map((r) => r.textContent)).toEqual(["El Y", "Cap X", "Core"]);
   });
 
-  it("행마다 상대 걸음 캡션이 보인다 — 첫 행 '지금 여기', 아래로 n걸음 전", () => {
+  it("each row shows a relative step caption: here now on top, n steps ago below", () => {
     renderChip();
     fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
     const steps = screen.getAllByTestId("topology-trail-step-label");
     expect(steps.map((s) => s.textContent)).toEqual(["지금 여기", "1걸음 전", "2걸음 전"]);
   });
 
-  it("현재 포커스가 없으면 최상단은 '방금 전'이고 인디고 점도 없다", () => {
+  it("without a current focus the top row reads just now and has no indigo dot", () => {
     renderChip({ currentId: null });
     fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
     const steps = screen.getAllByTestId("topology-trail-step-label");
@@ -153,14 +153,14 @@ describe("TopologyTrailChip — 걸어온 길 트레일 칩", () => {
     expect(rows[0].className).toContain("h-[42px]");
   });
 
-  it("현재 위치는 인디고 점으로 표시(kind 글리프 아님)", () => {
+  it("marks the current position with an indigo dot instead of a kind glyph", () => {
     renderChip();
     fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
     // Of the three visits only the current one gets the indigo dot.
     expect(screen.getAllByTestId("topology-trail-current-dot")).toHaveLength(1);
   });
 
-  it("행 클릭 → 그 노드 포커스", () => {
+  it("clicking a row focuses that node", () => {
     const props = renderChip();
     fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
     // Newest-first, so the top row is the most recent visit.
@@ -171,7 +171,7 @@ describe("TopologyTrailChip — 걸어온 길 트레일 칩", () => {
     expect(props.onFocusEntry).toHaveBeenCalledWith("domain:core");
   });
 
-  it("복사는 한 번에, 지우기는 두 번에 — 걸음을 한 번의 실수로 잃지 않는다", () => {
+  it("copy takes one press and clear takes two, so one slip does not lose the walk", () => {
     const props = renderChip();
     fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
     fireEvent.click(screen.getByTestId("topology-trail-copy-packet"));
@@ -179,13 +179,13 @@ describe("TopologyTrailChip — 걸어온 길 트레일 칩", () => {
 
     const footer = screen.getByTestId("topology-trail-clear-footer");
     fireEvent.click(footer);
-    expect(props.onClear, "첫 press 가 바로 지웠다").not.toHaveBeenCalled();
+    expect(props.onClear, "the first press cleared immediately").not.toHaveBeenCalled();
     expect(footer).toHaveTextContent("한 번 더 누르면 지워요");
     fireEvent.click(footer);
     expect(props.onClear).toHaveBeenCalledTimes(1);
   });
 
-  it("칩 ✕ 도 같은 두 단계를 쓰고, 두 컨트롤이 한 상태를 공유한다", () => {
+  it("the chip close uses the same two steps and both controls share one state", () => {
     const props = renderChip();
     const x = screen.getByTestId("topology-trail-chip-clear");
     fireEvent.click(x);
@@ -203,18 +203,18 @@ describe("TopologyTrailChip — 걸어온 길 트레일 칩", () => {
    * nothing move — the popover it arms may not even be open — and pressed again, which is the
    * discard the two-press design exists to prevent.
    */
-  it("칩 ✕ 는 장전된 것을 눈으로도 말한다 — aria-label 만이 아니라", () => {
+  it("the armed chip close shows it visually, not only in aria-label", () => {
     renderChip();
     const x = screen.getByTestId("topology-trail-chip-clear");
     const resting = x.className;
     const restingGlyph = x.querySelector("svg")?.getAttribute("class");
     fireEvent.click(x);
     expect(x.dataset.armed).toBe("true");
-    expect(x.className, "장전 전후 클래스가 같다").not.toBe(resting);
-    expect(x.querySelector("svg")?.getAttribute("class"), "글리프가 그대로다").not.toBe(restingGlyph);
+    expect(x.className, "class is unchanged after arming").not.toBe(resting);
+    expect(x.querySelector("svg")?.getAttribute("class"), "glyph is unchanged after arming").not.toBe(restingGlyph);
   });
 
-  it("세션 트레일의 2단 확인도 4초 뒤 스스로 풀린다", () => {
+  it("the session trail two-step confirm resets itself after 4 seconds", () => {
     vi.useFakeTimers();
     try {
       const props = renderChip();
@@ -232,8 +232,8 @@ describe("TopologyTrailChip — 걸어온 길 트레일 칩", () => {
     }
   });
 
-  describe("걸어온 길 렌즈 — 팝오버 열림이 곧 렌즈", () => {
-    it("열면 렌즈 on, 닫으면 off (새 모드·토글 없음)", () => {
+  describe("walked-trail lens: an open popover is the lens", () => {
+    it("opening turns the lens on and closing turns it off, with no new mode or toggle", () => {
       const onLensChange = vi.fn();
       renderChip({ onLensChange });
       expect(onLensChange).toHaveBeenLastCalledWith(false);
@@ -243,7 +243,7 @@ describe("TopologyTrailChip — 걸어온 길 트레일 칩", () => {
       expect(onLensChange).toHaveBeenLastCalledWith(false);
     });
 
-    it("Escape 로 닫아도 렌즈가 꺼진다", () => {
+    it("closing with Escape turns the lens off", () => {
       const onLensChange = vi.fn();
       renderChip({ onLensChange });
       fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
@@ -251,7 +251,7 @@ describe("TopologyTrailChip — 걸어온 길 트레일 칩", () => {
       expect(onLensChange).toHaveBeenLastCalledWith(false);
     });
 
-    it("열린 채 언마운트돼도 렌즈를 끈다 — 지도가 dim 인 채로 굳지 않게", () => {
+    it("unmounting while open turns the lens off so the map does not stay dimmed", () => {
       const onLensChange = vi.fn();
       const { unmount } = renderChip({ onLensChange });
       fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
@@ -260,7 +260,7 @@ describe("TopologyTrailChip — 걸어온 길 트레일 칩", () => {
       expect(onLensChange).toHaveBeenLastCalledWith(false);
     });
 
-    it("행 hover ↔ 지도 노드 브러싱 — 떼면 해제", () => {
+    it("row hover brushes the map node and releases on leave", () => {
       const onHoverEntry = vi.fn();
       renderChip({ onHoverEntry });
       fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
@@ -272,7 +272,7 @@ describe("TopologyTrailChip — 걸어온 길 트레일 칩", () => {
       expect(onHoverEntry).toHaveBeenLastCalledWith(null);
     });
 
-    it("키보드 포커스도 같은 브러싱 채널을 쓴다", () => {
+    it("keyboard focus uses the same brushing channel", () => {
       const onHoverEntry = vi.fn();
       renderChip({ onHoverEntry });
       fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
@@ -280,7 +280,7 @@ describe("TopologyTrailChip — 걸어온 길 트레일 칩", () => {
       expect(onHoverEntry).toHaveBeenLastCalledWith("element:y");
     });
 
-    it("팝오버가 닫히면 브러싱도 해제된다", () => {
+    it("closing the popover releases the brushing", () => {
       const onHoverEntry = vi.fn();
       renderChip({ onHoverEntry });
       fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
@@ -293,19 +293,19 @@ describe("TopologyTrailChip — 걸어온 길 트레일 칩", () => {
   });
 });
 
-describe("TopologyTrailChip — 지난 길 2층", () => {
+describe("TopologyTrailChip past trails second layer", () => {
   function openPast() {
     fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
     fireEvent.click(screen.getByTestId("topology-trail-past-link"));
   }
 
-  it("보관도 없고 알릴 것도 없으면 1층 헤더에 진입 링크가 없다", () => {
+  it("no entry link in the first-layer header without saved trails or notices", () => {
     renderChip({ pastWalks: [] });
     fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
     expect(screen.queryByTestId("topology-trail-past-link")).toBeNull();
   });
 
-  it("읽기 전용 볼트면 보관이 0이어도 진입 링크가 있고 이유를 말한다", () => {
+  it("a read-only vault shows the entry link with a reason even with zero saved trails", () => {
     renderChip({ pastWalks: [], pastNotice: "읽기 전용으로 열어서 길이 남지 않아요." });
     openPast();
     expect(screen.getByTestId("topology-trail-past-notice")).toHaveTextContent(
@@ -314,13 +314,13 @@ describe("TopologyTrailChip — 지난 길 2층", () => {
     expect(screen.getByTestId("topology-trail-past-empty")).toBeTruthy();
   });
 
-  it("정상 보관 중에는 안내 줄이 없다 — 무소음이 기본", () => {
+  it("normal saving shows no notice line, silence is the default", () => {
     renderChip();
     openPast();
     expect(screen.queryByTestId("topology-trail-past-notice")).toBeNull();
   });
 
-  it("헤더 링크 → 2층 목록(최근이 앞), 1층 타임라인은 사라진다", () => {
+  it("the header link opens the second-layer list newest first and hides the first-layer timeline", () => {
     renderChip();
     openPast();
     const rows = screen.getAllByTestId("topology-trail-past-row");
@@ -332,7 +332,7 @@ describe("TopologyTrailChip — 지난 길 2층", () => {
     expect(screen.getByTestId("topology-trail-chip-popover")).toHaveTextContent("최근 10개까지");
   });
 
-  it("‹ 뒤로 → 1층 타임라인 복귀", () => {
+  it("back returns to the first-layer timeline", () => {
     renderChip();
     openPast();
     fireEvent.click(screen.getByTestId("topology-trail-past-back"));
@@ -340,7 +340,7 @@ describe("TopologyTrailChip — 지난 길 2층", () => {
     expect(screen.queryByTestId("topology-trail-past-row")).toBeNull();
   });
 
-  it("팝오버를 닫았다 열면 항상 1층부터", () => {
+  it("reopening the popover always starts at the first layer", () => {
     renderChip();
     openPast();
     fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
@@ -349,14 +349,14 @@ describe("TopologyTrailChip — 지난 길 2층", () => {
     expect(screen.getAllByTestId("topology-trail-row")).toHaveLength(3);
   });
 
-  it("행 ✕ → 그 길만 삭제 콜백", () => {
+  it("a row close deletes only that trail", () => {
     const props = renderChip();
     openPast();
     fireEvent.click(screen.getAllByTestId("topology-trail-past-delete")[1]);
     expect(props.onDeletePastWalk).toHaveBeenCalledWith("w2");
   });
 
-  it("모두 지우기는 2단 확인을 거친다", () => {
+  it("clear all goes through a two-step confirm", () => {
     const props = renderChip();
     openPast();
     const button = screen.getByTestId("topology-trail-past-clear-all");
@@ -367,7 +367,7 @@ describe("TopologyTrailChip — 지난 길 2층", () => {
     expect(props.onClearPastWalks).toHaveBeenCalledTimes(1);
   });
 
-  it("2단 확인은 4초 뒤 스스로 풀린다", () => {
+  it("the two-step confirm resets itself after 4 seconds", () => {
     vi.useFakeTimers();
     try {
       const props = renderChip();
@@ -385,7 +385,7 @@ describe("TopologyTrailChip — 지난 길 2층", () => {
     }
   });
 
-  it("2층에서 다 지우면 빈 상태 문구가 남고 모두 지우기 버튼은 사라진다", () => {
+  it("clearing everything in the second layer leaves the empty-state copy and removes clear all", () => {
     const props = renderChip();
     openPast();
     props.rerenderWith({ pastWalks: [] });
@@ -398,7 +398,7 @@ describe("TopologyTrailChip — 지난 길 2층", () => {
     expect(screen.getByTestId("topology-trail-chip-popover")).toHaveTextContent("최근 10개까지");
   });
 
-  it("행을 누르면 그 길을 다시 펴고 1층으로 돌아온다", () => {
+  it("pressing a row reopens that trail and returns to the first layer", () => {
     const props = renderChip();
     openPast();
     fireEvent.click(screen.getAllByTestId("topology-trail-past-replay")[1]);
@@ -409,7 +409,7 @@ describe("TopologyTrailChip — 지난 길 2층", () => {
     expect(screen.getAllByTestId("topology-trail-row")).toHaveLength(3);
   });
 
-  it("행 aria 는 날짜와 곳 수로 무엇이 열리는지 말한다", () => {
+  it("row aria states the date and place count of what opens", () => {
     renderChip();
     openPast();
     expect(screen.getAllByTestId("topology-trail-past-replay")[0]).toHaveAttribute(
@@ -418,7 +418,7 @@ describe("TopologyTrailChip — 지난 길 2층", () => {
     );
   });
 
-  it("지도에서 사라진 길은 버튼이 아니다 — 지우기만 남는다", () => {
+  it("a trail gone from the map is not a button, only delete remains", () => {
     const props = renderChip({
       pastWalks: [
         {
@@ -439,7 +439,7 @@ describe("TopologyTrailChip — 지난 길 2층", () => {
     expect(props.onReplayPastWalk).not.toHaveBeenCalled();
   });
 
-  it("2층을 오갈 때 브러싱이 남지 않는다 — 렌즈는 켜진 채로", () => {
+  it("moving between layers leaves no brushing and keeps the lens on", () => {
     const onHoverEntry = vi.fn();
     const onLensChange = vi.fn();
     renderChip({ onHoverEntry, onLensChange });

@@ -90,14 +90,14 @@ function render(open: boolean) {
   );
 }
 
-describe("useFullDetailA1Model — 닫힌 표면은 그래프를 순회하지 않는다", () => {
+describe("useFullDetailA1Model: a closed surface does not traverse the graph", () => {
   beforeEach(() => {
     groupsSpy.mockClear();
     reachSpy.mockClear();
     codeLocationsSpy.mockClear();
   });
 
-  it("open=false 면 모델은 null 이고 그래프 순회는 0회다", () => {
+  it("open=false gives a null model and zero graph traversals", () => {
     const { result } = render(false);
     expect(result.current).toBeNull();
     expect(groupsSpy).toHaveBeenCalledTimes(0);
@@ -105,7 +105,7 @@ describe("useFullDetailA1Model — 닫힌 표면은 그래프를 순회하지 �
     expect(codeLocationsSpy).toHaveBeenCalledTimes(0);
   });
 
-  it("open=true 면 같은 입력으로 모델을 조립하고 순회는 각 1회다", () => {
+  it("open=true assembles the model from the same input with one traversal each", () => {
     const { result } = render(true);
     expect(result.current).not.toBeNull();
     expect(result.current?.node.id).toBe("capability:alpha");
@@ -115,7 +115,7 @@ describe("useFullDetailA1Model — 닫힌 표면은 그래프를 순회하지 �
     expect(codeLocationsSpy).toHaveBeenCalledTimes(1);
   });
 
-  it("같은 선택을 다시 렌더해도 순회가 늘지 않는다 (memo 계약)", () => {
+  it("rerendering the same selection adds no traversal (memo contract)", () => {
     const { result, rerender } = render(true);
     rerender();
     rerender();

@@ -40,8 +40,8 @@ function changeset(over: Partial<OntologyChangeset> = {}): OntologyChangeset {
 const label = (n: number) => `변경점 ${n}개`;
 const ariaLabel = (n: number) => `기준 이후 변경점 ${n}개 — 온톨로지 변경점 패널에서 리뷰`;
 
-describe("TopologyReviewLink — 재진입 훅 (Self-Drawing Diff #5)", () => {
-  it("변경(노드)이 있으면 /ontology 로 가는 리뷰 pill 렌더 + 카운트", () => {
+describe("TopologyReviewLink re-entry hook", () => {
+  it("renders a review pill to /ontology with a count when nodes changed", () => {
     render(
       <TopologyReviewLink
         changeset={changeset({ addedNodes: ["a"], changedNodes: ["b", "c"] })}
@@ -59,7 +59,7 @@ describe("TopologyReviewLink — 재진입 훅 (Self-Drawing Diff #5)", () => {
     );
   });
 
-  it("removed 노드도 카운트에 포함", () => {
+  it("counts removed nodes too", () => {
     render(
       <TopologyReviewLink
         changeset={changeset({ addedNodes: ["a"], removedNodes: ["x", "y"] })}
@@ -70,7 +70,7 @@ describe("TopologyReviewLink — 재진입 훅 (Self-Drawing Diff #5)", () => {
     expect(screen.getByTestId("topology-review-link")).toHaveTextContent("3");
   });
 
-  it("변경 0 이면 렌더 안 함 (노이즈 0)", () => {
+  it("renders nothing with zero changes", () => {
     const { container } = render(
       <TopologyReviewLink changeset={changeset()} label={label} ariaLabel={ariaLabel} />,
     );
@@ -78,7 +78,7 @@ describe("TopologyReviewLink — 재진입 훅 (Self-Drawing Diff #5)", () => {
     expect(screen.queryByTestId("topology-review-link")).not.toBeInTheDocument();
   });
 
-  it("엣지만 바뀌어도 노드 변경 0 이면 렌더 안 함 (패널 칩과 같은 셈법)", () => {
+  it("renders nothing when only edges changed, counting like the panel chip", () => {
     // In practice an edge change marks its from-node changed; this synthetic
     // changeset with zero node changes exercises the guard clause directly.
     render(

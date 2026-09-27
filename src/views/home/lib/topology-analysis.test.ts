@@ -356,7 +356,7 @@ describe("formatTopologyHealthBrief", () => {
     );
   });
 
-  it("maps graph ids to canonical builder repair URLs (H5 발신 문법 통일)", () => {
+  it("maps graph ids to canonical builder repair URLs with one outbound grammar", () => {
     expect(buildTopologyHealthRepairHref("domain:views")).toBe(
       "/topology/?p=domain%3Aviews&workbench=edit",
     );
