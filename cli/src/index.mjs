@@ -138,7 +138,7 @@ ${COLORS.bold}Bootstrap${COLORS.reset} ${COLORS.dim}(R16/R17: autonomous ingest 
   ontology-atlas bootstrap [rootPath]         ${COLORS.green}full bootstrap in one line${COLORS.reset}: analyzer write + import review
        --threshold N --skip-imports --json    ${COLORS.dim}review filter · imports skip · machine output${COLORS.reset}
   ontology-atlas analyze [rootPath]           Walk a repo, propose ontology node candidates (side effect 0)
-       --apply --max-depth N --json           ${COLORS.dim}or land via batch · folder walk depth · machine output${COLORS.reset}
+       --apply --max-depth N --json           ${COLORS.dim}or land via batch · accepted, no effect · machine output${COLORS.reset}
   ontology-atlas architecture [rootPath]      Compare reviewed architecture intent with current source imports
        --profile slug --max-files N --json    ${COLORS.dim}roles · rules · violations · agent plan contract${COLORS.reset}
   ontology-atlas infer-imports [rootPath] TS/JS/Python/Rust file + Go package evidence (side effect 0)
