@@ -598,7 +598,9 @@ for (const vp of VAULT_VIEWPORTS) {
     await routeSettled(page);
     await page.getByTestId("library-workspace-wiki").click({ timeout: 15_000 });
     const firstPage = page.locator('[data-testid^="library-wiki-wiki/"]').first();
-    expect(await firstPage.count(), "/ko/library/: the fixture's wiki page is not listed — nothing below is measured").toBeGreaterThan(0);
+    await expect(firstPage, "/ko/library/: the fixture's wiki page is not listed — nothing below is measured").toBeAttached({
+      timeout: 15_000,
+    });
     {
       await firstPage.click();
       await page.getByTestId("library-reading-pane").waitFor({ timeout: 15_000 });
