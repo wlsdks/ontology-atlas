@@ -203,7 +203,10 @@ describe('pr:land refusals', () => {
   });
 
   it('leaves a fork pull request to a person', () => {
-    assert.match(refuseLanding({ ...readyPr(), isCrossRepository: true }), /fork/);
+    const refusal = refuseLanding({ ...readyPr(), isCrossRepository: true });
+    assert.match(refusal, /fork/);
+    assert.match(refusal, /gh pr diff/);
+    assert.match(refusal, /core\.hooksPath=\/dev\/null/);
   });
 });
 
