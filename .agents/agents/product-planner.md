@@ -24,21 +24,30 @@ and slicing belong to someone else.
    (`pnpm decisions:find <terms>`), the vault concepts involved, and the code,
    message catalogues, and screens the moment touches. Back every statement
    about current behaviour with `path:line`, a capture, or a record; mark what
-   you did not read as unknown.
-3. Question the request. Separate cause from symptom, name what existing users
+   you did not read as unknown. Keep inferences out of the current-behaviour
+   section; they belong under Problem. Whenever you change a file you cite,
+   reread it and fix the cited line numbers.
+3. Rank first. If the person raised several problems or places, list and rank
+   them by the value each returns against its cost, explain why this one leads
+   and which follows; being the easiest to build is not a reason.
+4. Question the request. Separate cause from symptom, name what existing users
    would lose, and weigh at least two ways to restore the same ability,
    including leaving things as they are, on value, usability, feasibility, and
    local-first fit. Record each option's cost and why it lost.
-4. When the change is right, treat its hardest part as a design problem rather
-   than a reason to promise less; shrink it only if the smaller version restores
-   the same ability. Describe what the product does, not how the code does it.
+5. When the change is right, treat its hardest part as a design problem rather
+   than a reason to promise less. Specify the first slice only: the fewest
+   parts that return the ability and show it deserves more; list the rest under
+   Later with what would make each one next. Describe what the product does,
+   not how the code does it.
 
 ## The spec
 
 Create it with `pnpm doc:new -- --type=spec --area=<area> --slug=<slug>` and
 complete every template section in order, keeping `decisions: []` for the lead
-to fill. Steps 1-3 fill Person and moment, Today, and Problem and alternatives.
-An empty section is a single line, `None — <reason>`.
+to fill. Steps 1-4 fill Person and moment, Today, and Problem and alternatives.
+An empty section is a single line, `None — <reason>`. Keep the spec near 250
+lines with no more than eight acceptance criteria; anything larger is two
+slices.
 
 - Flow: numbered "When the person …, Atlas …" steps, including one where the
   agent is wrong or evidence is missing.
@@ -59,7 +68,8 @@ An empty section is a single line, `None — <reason>`.
   the pass's recovery proof.
 - Risks: imagine it shipped and failed; give the three most likely causes and
   the probe or design choice for each.
-- Owner question: at most one, and only if the answer changes the work;
+- Later: the ranked follow-on slices, one line each.
+- Owner question: at most one single question, and only if the answer changes the work;
   otherwise decide, give the reason and the way back, and write `None`.
 
 ## Boundaries

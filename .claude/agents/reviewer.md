@@ -68,8 +68,14 @@ before any build and add `spec: pass` or `spec: revise` to the report.
     alternatives omit the status quo;
   - scope creep: behaviour beyond the ability the pass restores, or an Out of
     scope item that returns in the flow;
-  - padding: a section that repeats another, or an owner question whose answer
-    would not change the work.
+  - an unranked choice: the person named several problems and the spec picks
+    one without ranking them by value, or picks the one the code makes easiest;
+  - an oversized slice: more than about 250 lines or eight acceptance criteria,
+    or parts that are not needed to prove the ability, without a Later split;
+  - a stale or missing citation: a `path:line` that no longer points at what the
+    sentence says, or an inference written as Today;
+  - padding: a section that repeats another, or an owner question that is more
+    than one question or whose answer would not change the work.
 
 UI lenses, chosen by the design change facts. Judge from the `/design-build`
 §0-B captures (tree and screenshot paths) in the brief; a missing capture is a

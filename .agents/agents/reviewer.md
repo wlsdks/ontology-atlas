@@ -65,8 +65,14 @@ it before anything is built and add `spec: pass` or `spec: revise` to the report
     missing from the alternatives;
   - scope creep: behaviour past the restored ability, or an out-of-scope item
     reappearing in the flow;
-  - padding: repeated sections, or an owner question whose answer would not
-    change the work.
+  - a choice made without ranking: several problems were named and the spec
+    takes one without weighing value, or takes the easiest to build;
+  - a slice too big: beyond roughly 250 lines or eight acceptance criteria, or
+    parts the ability does not need, with no Later split;
+  - a citation that drifted or is absent: a `path:line` that no longer shows
+    the claim, or an inference presented as current behaviour;
+  - padding: repeated sections, or an owner question that bundles more than
+    one question or whose answer would not change the work.
 
 UI lenses by design change fact, judged from the `/design-build` §0-B captures
 in the brief; a missing capture is itself a finding.

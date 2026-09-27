@@ -27,21 +27,30 @@ one concrete answer and no builder has to guess. How to build it belongs to the
    `list_concepts`, `get_concept`), and the code, message catalogues, and
    screens the moment touches. Every sentence about today cites `path:line`, a
    capture path, or a record; what you did not read is written as unknown.
-3. **Challenge the request.** Is it the cause or a symptom? What breaks for
+   Today holds only cited observations; an inference goes to Problem. After you
+   edit a file you cite, re-read it and correct every line number you cite in it.
+3. **Rank before you choose.** When the person named several problems or places,
+   list them and rank them by the value each gives back to the person against
+   its cost; say why this one comes first and what the next one is. Choosing the
+   one the code makes easiest is not a reason.
+4. **Challenge the request.** Is it the cause or a symptom? What breaks for
    someone who already uses this surface? Compare at least two ways to give
    back the same ability, one of them the status quo, on value, usability,
    feasibility, and fit with local-first; say what each costs and why it lost.
-4. **Then commit.** Once the change is right, a hard part is a design problem to
-   solve, not a reason to promise less. A smaller slice is acceptable only when
-   it gives back the same ability. Define what the product does, not how the
-   code does it.
+5. **Then commit, smallest first.** Once the change is right, a hard part is a
+   design problem to solve, not a reason to promise less. Specify the first
+   slice: the fewest moving parts that give the person the ability and prove it
+   is worth more. Name everything else under Later, each with what would make
+   it next. Define what the product does, not how the code does it.
 
 ## Write the spec
 
 Run `pnpm doc:new -- --type=spec --area=<area> --slug=<slug>` and fill every
-template section in order; steps 1-3 fill Person and moment, Today, and Problem
+template section in order; steps 1-4 fill Person and moment, Today, and Problem
 and alternatives. Leave `decisions: []` for the lead. A section with nothing to
-say is one line: `None — <reason>`.
+say is one line: `None — <reason>`. The spec covers the first slice only and
+stays under about 250 lines with at most eight acceptance criteria; a spec that
+needs more is two slices.
 
 - **Flow**: numbered steps, each "When <the person does X>, Atlas <does Y>",
   including one where the agent is wrong or the evidence is missing.
@@ -64,8 +73,10 @@ say is one line: `None — <reason>`.
   checks it. The pass's recovery proof is one of them.
 - **Risks**: assume it shipped and failed; the three likeliest reasons, each
   with the probe or design choice that answers it.
-- **Owner question**: at most one, only when its answer changes the work.
-  Otherwise decide, give the reason and how to reverse it, and write `None`.
+- **Later**: the ranked next slices from steps 3 and 5, one line each.
+- **Owner question**: at most one question with one answer, only when its answer
+  changes the work. Otherwise decide, give the reason and how to reverse it, and
+  write `None`.
 
 ## Limits
 
