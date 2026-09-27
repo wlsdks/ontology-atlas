@@ -56,6 +56,9 @@ interface LocatedJevFinding {
   pageSlug: string;
   claimText: string;
   citation: DeskCitation;
+  pageRaw: string;
+  sourceMtime: number;
+  sourceHash: string;
 }
 
 async function digestHex(bytes: ArrayBuffer): Promise<string | null> {
@@ -130,6 +133,7 @@ export function LibraryQuestionDesk({
     if (!asked || reading || jevSending) return;
     const id = ++searchId.current;
     jevRequestId.current += 1;
+    setJevPreparing(false);
     setReading(true);
     setReadCount(0);
     setResult(null);
@@ -204,23 +208,30 @@ export function LibraryQuestionDesk({
   };
 
   const prepareJev = async (claim: DeskClaim, citation: DeskCitation) => {
-    if (jevPreparing) return;
+    if (jevPreparing || jevSending) return;
+    const requestId = ++jevRequestId.current;
     setJevPreparing(true);
     setJevNote(null);
-    setJevFinding(null);
     const handle = sourceHandles.get(citation.path);
     const listed = sources.find((source) => source.path === citation.path);
     const pageRaw = pageTexts.get(claim.pageSlug);
+    const stillCurrent = () => requestId === jevRequestId.current
+      && liveScope.current === vaultScope
+      && livePageTexts.current.get(claim.pageSlug) === pageRaw;
     try {
       if (!handle || !listed || !vaultRoot || !pageRaw) { setJevNote(t('jev.missing')); return; }
       let status: Awaited<ReturnType<typeof jevSecretStatus>>;
       try { status = await jevSecretStatus(); }
-      catch { setJevNote(t('jev.unavailable')); return; }
+      catch { if (stillCurrent()) setJevNote(t('jev.unavailable')); return; }
+      if (!stillCurrent()) return;
       if (!status?.stored) { setJevNote(t('jev.noKey')); return; }
       const file = await handle.getFile();
+      if (!stillCurrent()) return;
       const bytes = await file.arrayBuffer();
+      if (!stillCurrent()) return;
       const passage = citedPassage(new Uint8Array(bytes), citation.path, citation.anchor);
       const hash = await digestHex(bytes);
+      if (!stillCurrent()) return;
       const eligibility = jevClaimEligibility(claim, citation, passage, hash, file.lastModified !== listed.mtime);
       if (eligibility !== 'ready') { setJevNote(t(`jev.${eligibility}`)); return; }
       const claimText = claim.text.replace(INLINE_CITATION, '').trim();
@@ -228,10 +239,10 @@ export function LibraryQuestionDesk({
       const payload = buildJevPayload(claimText, evidence);
       const payloadState = jevPayloadEligibility(claimText, evidence, payload);
       if (payloadState !== 'ready') { setJevNote(t(`jev.${payloadState}`)); return; }
-      if (!hash || liveScope.current !== vaultScope || livePageTexts.current.get(claim.pageSlug) !== pageRaw) { setJevNote(t('jev.obsolete')); return; }
+      if (!hash) { setJevNote(t('jev.obsolete')); return; }
       setJevSelection({ claim, citation, payload, pageRaw, sourceMtime: file.lastModified, sourceHash: hash, vaultScope });
-    } catch { setJevNote(t('jev.missing')); }
-    finally { setJevPreparing(false); }
+    } catch { if (stillCurrent()) setJevNote(t('jev.missing')); }
+    finally { if (requestId === jevRequestId.current) setJevPreparing(false); }
   };
 
   const sendJev = async () => {
@@ -253,7 +264,11 @@ export function LibraryQuestionDesk({
       const after = await sourceHandles.get(selected.citation.path)?.getFile();
       const afterHash = after ? await digestHex(await after.arrayBuffer()) : null;
       if (after?.lastModified !== selected.sourceMtime || afterHash !== selected.sourceHash) { setJevNote(t('jev.obsolete')); setJevSelection(null); return; }
-      if (judgment) setJevFinding({ judgment, pageSlug: selected.claim.pageSlug, claimText: selected.claim.text, citation: selected.citation });
+      if (judgment) setJevFinding({
+        judgment, pageSlug: selected.claim.pageSlug, claimText: selected.claim.text,
+        citation: selected.citation, pageRaw: selected.pageRaw,
+        sourceMtime: selected.sourceMtime, sourceHash: selected.sourceHash,
+      });
       setJevSelection(null);
     } catch { setJevNote(t('jev.failed')); }
     finally { if (jevRequestId.current === requestId) setJevSending(false); }
@@ -283,9 +298,11 @@ export function LibraryQuestionDesk({
         <form onSubmit={(event) => { event.preventDefault(); void search(); }} className="flex flex-wrap items-end gap-2 max-sm:flex-col max-sm:items-stretch">
           <Input label={t('questionLabel')} value={question} readOnly={jevSending} onChange={(event) => {
             searchId.current += 1;
+            jevRequestId.current += 1;
             setQuestion(event.target.value);
             setReading(false);
             setReadCount(0);
+            setJevPreparing(false);
             setResult(null);
             setJevSelection(null);
             setJevFinding(null);
@@ -319,8 +336,11 @@ export function LibraryQuestionDesk({
                     <div key={`${citation.path}#${citation.anchor}`} className="flex flex-wrap items-center gap-2">
                       <button type="button" className={controlClass({ shape: 'link', size: 'md', tone: 'accent', hoverInk: 'strong', className: 'underline' })} onClick={() => onOpenSource(citation.path, citation.anchor)}>{citation.path}#{citation.anchor}</button>
                       <span className="text-caption leading-caption text-[color:var(--color-text-tertiary)]">{t(`sourceState.${citationState(claim, citation)}`)}</span>
-                      {vaultRoot ? <Chip disabled={jevPreparing} onClick={() => void prepareJev(claim, citation)}>{jevPreparing ? t('jev.checking') : t('jev.check')}</Chip> : null}
-                      {jevFinding?.pageSlug === claim.pageSlug && jevFinding.claimText === claim.text && jevFinding.citation.path === citation.path && jevFinding.citation.anchor === citation.anchor ? (
+                      {vaultRoot ? <Chip aria-disabled={jevPreparing || jevSending} onClick={() => void prepareJev(claim, citation)}>{jevPreparing ? t('jev.checking') : t('jev.check')}</Chip> : null}
+                      {jevFinding?.pageSlug === claim.pageSlug && jevFinding.claimText === claim.text && jevFinding.citation.path === citation.path && jevFinding.citation.anchor === citation.anchor
+                        && jevFinding.pageRaw === pageTexts.get(claim.pageSlug)
+                        && jevFinding.sourceMtime === sources.find((source) => source.path === citation.path)?.mtime
+                        && (!hashes.has(citation.path) || hashes.get(citation.path) === jevFinding.sourceHash) ? (
                         <div role="status" className="w-full rounded-card border border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] p-[var(--card-pad)] text-label leading-label text-[color:var(--color-text-secondary)]" data-testid="question-desk-jev-result">
                           <p>{t(`jev.choice.${jevFinding.judgment.choice}`)}</p>
                           <p className="mt-1">{claim.text.replace(INLINE_CITATION, '').trim()}</p>

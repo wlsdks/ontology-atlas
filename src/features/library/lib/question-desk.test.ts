@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
 import type { VaultDoc } from '@/entities/docs-vault';
 import { countDeskReadablePages, findDeskClaims, findDeskSourceHits, jevClaimEligibility, jevPayloadEligibility, planDeskSourceReads, questionTerms } from './question-desk';
-import { buildQuestionDeskBrief } from './question-desk-brief';
+import { buildQuestionDeskBrief, QUESTION_DESK_BRIEF_MAX_CHARS } from './question-desk-brief';
 
 const raw = `---
 title: Refund overview
@@ -121,6 +121,29 @@ describe('question desk evidence', () => {
     expect(brief).toContain('[lead clipped; re-read the original]');
     expect(brief).not.toContain('x'.repeat(401));
     expect(brief).toContain('Read the Wiki pages and then re-read the cited originals.');
+  });
+
+  it('bounds eight huge Wiki claims and the whole handoff while preserving included addresses', () => {
+    const longPath = `sources/${'a'.repeat(160)}.md`;
+    const claims = Array.from({ length: 8 }, (_, index) => ({
+      pageSlug: `wiki/long-${index}`, pageTitle: `Long ${index}`,
+      text: `${'x'.repeat(70_028)} [[src:${longPath}#l2]]`, score: 1,
+      citations: Array.from({ length: 4 }, (_, offset) => ({ path: longPath, anchor: `l${offset + 2}` })),
+      recordedHashes: {},
+    }));
+    const brief = buildQuestionDeskBrief({
+      question: 'Q'.repeat(30_000), vaultRoot: '/folder', locale: 'en', claims,
+      sourceHits: Array.from({ length: 8 }, (_, index) => ({ path: longPath, anchor: `l${index + 2}`, text: 'z'.repeat(2_000), score: 1 })),
+      coverage: 'c'.repeat(30_000),
+    });
+    expect(brief.length).toBeLessThanOrEqual(QUESTION_DESK_BRIEF_MAX_CHARS);
+    expect(brief).toContain('wiki/long-0.md');
+    expect(brief).toContain(`[[src:${longPath}#l2]]`);
+    expect(brief).toContain('[Wiki lead clipped; re-read the page]');
+    expect(brief).toContain('citations omitted; re-read the page');
+    expect(brief).toContain('leads omitted by the brief limit');
+    expect(brief).toContain('[question clipped; ask for the full question before answering]');
+    expect(brief).toContain('Write nothing in this turn.');
   });
 
   it('refuses Jev lengths before opening a consent preview', () => {

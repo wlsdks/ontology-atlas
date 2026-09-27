@@ -233,6 +233,20 @@ export function restoreFiledAnswer(current: RetainedLibraryAnswer | null, filed:
   return generation === filed.generation && current === null ? filed : current;
 }
 
+/** After mobile Browse → page → Back, focus the visible Browse exit, never its hidden reader. */
+export function librarySelectionFocusTarget({
+  selected, mobileBrowseOpen, narrow, browseBack, reader,
+}: {
+  selected: object | null;
+  mobileBrowseOpen: boolean;
+  narrow: boolean;
+  browseBack: HTMLElement | null;
+  reader: HTMLElement | null;
+}): HTMLElement | null {
+  if (selected === null && mobileBrowseOpen && narrow && browseBack?.isConnected) return browseBack;
+  return reader?.isConnected ? reader : null;
+}
+
 export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   segment?: LibraryIndexSegment;
   onSegmentChange?: (segment: LibraryIndexSegment) => void;
@@ -1822,8 +1836,14 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
       skipReaderFocusRef.current = false;
       return;
     }
-    readerRef.current?.focus({ preventScroll: true });
-  }, [selected]);
+    librarySelectionFocusTarget({
+      selected,
+      mobileBrowseOpen,
+      narrow: window.matchMedia('(max-width: 1023px)').matches,
+      browseBack: mobileBrowseBackRef.current,
+      reader: readerRef.current,
+    })?.focus({ preventScroll: true });
+  }, [mobileBrowseOpen, selected]);
 
   /**
    * Escape returns to the shelf, the same as the back control.

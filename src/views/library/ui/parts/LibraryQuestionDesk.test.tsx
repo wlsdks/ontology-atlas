@@ -172,6 +172,22 @@ describe('Library question desk transfer boundary', () => {
     expect(mocks.judge).not.toHaveBeenCalled();
   });
 
+  it('discards a pending key-status result after the question changes', async () => {
+    let finish!: (status: { stored: boolean; last4: string }) => void;
+    mocks.status.mockImplementation(() => new Promise((resolve) => { finish = resolve; }));
+    render(<Desk />);
+    await search();
+    fireEvent.click(screen.getByText('Check claim with Jev'));
+    await waitFor(() => expect(mocks.status).toHaveBeenCalledTimes(1));
+    fireEvent.change(screen.getByTestId('question-desk-input'), { target: { value: 'Who owns the lunar migration?' } });
+    expect(screen.getByTestId('question-desk-search')).toBeEnabled();
+    await act(async () => { finish({ stored: true, last4: '1234' }); });
+    expect(screen.queryByTestId('question-desk-jev-consent')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('question-desk-jev-note')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('question-desk-search'));
+    expect(await screen.findByTestId('question-desk-unknown')).toHaveTextContent('unknown');
+  });
+
   it('shows the exact outgoing payload in a blocking consent dialog and sends only after Send', async () => {
     mocks.status.mockResolvedValue({ stored: true, last4: '1234' });
     render(<Desk />);
@@ -193,6 +209,44 @@ describe('Library question desk transfer boundary', () => {
     await waitFor(() => expect(mocks.judge).toHaveBeenCalledWith('/fixture', payload));
     expect(await screen.findByTestId('question-desk-jev-result')).toHaveTextContent('Jev advice only');
     expect(screen.getByTestId('question-desk-jev-result')).toHaveTextContent('wiki/refund.md · sources/refund.md#l2');
+  });
+
+  it('keeps prior advice when a repeat check is canceled, then hides it when source version changes', async () => {
+    mocks.status.mockResolvedValue({ stored: true, last4: '1234' });
+    const rendered = render(<Desk />);
+    await search();
+    fireEvent.click(screen.getByText('Check claim with Jev'));
+    await screen.findByTestId('question-desk-jev-payload');
+    fireEvent.click(screen.getByTestId('question-desk-jev-send'));
+    await screen.findByTestId('question-desk-jev-result');
+    await waitFor(() => expect(screen.queryByTestId('question-desk-jev-consent')).not.toBeInTheDocument());
+    fireEvent.click(screen.getByText('Check claim with Jev'));
+    await screen.findByTestId('question-desk-jev-payload');
+    fireEvent.click(screen.getByText('Cancel'));
+    await waitFor(() => expect(screen.queryByTestId('question-desk-jev-consent')).not.toBeInTheDocument());
+    expect(screen.getByTestId('question-desk-jev-result')).toHaveTextContent('contradicted');
+    expect(mocks.judge).toHaveBeenCalledTimes(1);
+    rendered.rerender(<Desk listedMtime={11} />);
+    expect(screen.queryByTestId('question-desk-jev-result')).not.toBeInTheDocument();
+  });
+
+  it('returns focus to the Jev claim button after Escape and Cancel close consent', async () => {
+    mocks.status.mockResolvedValue({ stored: true, last4: '1234' });
+    render(<Desk />);
+    await search();
+    const opener = screen.getByText('Check claim with Jev');
+    opener.focus();
+    fireEvent.click(opener);
+    expect(await screen.findByTestId('question-desk-jev-consent')).toBeInTheDocument();
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByText('Cancel')));
+    fireEvent.keyDown(window, { key: 'Escape' });
+    await waitFor(() => expect(screen.queryByTestId('question-desk-jev-consent')).not.toBeInTheDocument());
+    expect(document.activeElement).toBe(opener);
+    fireEvent.click(opener);
+    await screen.findByTestId('question-desk-jev-consent');
+    fireEvent.click(screen.getByText('Cancel'));
+    await waitFor(() => expect(screen.queryByTestId('question-desk-jev-consent')).not.toBeInTheDocument());
+    expect(document.activeElement).toBe(opener);
   });
 
   it('invalidates the preview if the exact source changes before Send', async () => {
