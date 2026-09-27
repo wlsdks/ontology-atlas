@@ -145,16 +145,55 @@ export interface QuestionDeskReportContent {
   generatedAt: string;
 }
 
+interface ExportNode {
+  type: string;
+  value?: string;
+  alt?: string | null;
+  children?: readonly ExportNode[];
+  position?: { start: { offset?: number }; end: { offset?: number } };
+}
+
+function exportCodeDelimiter(text: string, minimum: number): string {
+  let length = minimum;
+  for (const [run] of text.matchAll(/`+/g)) length = Math.max(length, run.length + 1);
+  return '`'.repeat(length);
+}
+
+function inlineExportLiteral(text: string): string {
+  const delimiter = exportCodeDelimiter(text, 1);
+  return `${delimiter} ${text.replace(/\r?\n/g, ' ')} ${delimiter}`;
+}
+
+function exportNodeText(node: ExportNode): string {
+  return node.alt ?? node.value ?? node.children?.map(exportNodeText).join('') ?? '';
+}
+
 function inertExportMarkdown(text: string, ko: boolean): string {
   const imageNote = ko ? '[외부 이미지 생략]' : '[external image omitted]';
   const linkNote = ko ? '[외부 링크 사용 불가]' : '[external link unavailable]';
-  return text
-    .replace(/!\[([^\]]*)\](?:\([^)]+\)|\[[^\]]*\])/g, (_whole, alt: string) => `${alt} ${imageNote}`)
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, (_whole, label: string) => `${label} ${linkNote}`)
-    .replace(/\[([^\]]+)\]\[[^\]]*\]/g, (_whole, label: string) => `${label} ${linkNote}`)
-    .replace(/^\s*\[[^\]]+\]:\s*\S+.*$/gm, linkNote)
-    .replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/https?:\/\/[^\s<>)`]+/gi, (url) => `\`${url}\``);
+  const replacements: Array<{ start: number; end: number; text: string }> = [];
+  let missingPosition = false;
+  const visit = (node: ExportNode) => {
+    if (!UNSAFE_REPORT_NODES.has(node.type)) { node.children?.forEach(visit); return; }
+    const start = node.position?.start.offset;
+    const end = node.position?.end.offset;
+    if (start === undefined || end === undefined) { missingPosition = true; return; }
+    const note = node.type === 'image' || node.type === 'imageReference' ? imageNote : linkNote;
+    replacements.push({ start, end, text: node.type === 'definition' ? exportPlainText(note) : `${inlineExportLiteral(exportNodeText(node))} ${exportPlainText(note)}` });
+  };
+  visit(markdownParser.parse(text));
+  let cursor = 0;
+  const parts: string[] = [];
+  for (const replacement of replacements) {
+    parts.push(text.slice(cursor, replacement.start), replacement.text);
+    cursor = replacement.end;
+  }
+  const sanitized = parts.join('') + text.slice(cursor);
+  if (!missingPosition && !hasUnsafeMarkdownNode(markdownParser.parse(sanitized))) return sanitized;
+  // GFM can synthesize links without positions. Keep every byte inspectable in
+  // a literal document if a safe edit cannot be located or reparsing finds a reach.
+  const fence = exportCodeDelimiter(text, 3);
+  return `${fence}text\n${text}\n${fence}\n`;
 }
 
 function exportPlainText(text: string): string {
@@ -169,7 +208,7 @@ export function serializeQuestionDeskReport(report: QuestionDeskReportContent, l
   const status = ko ? '에이전트 초안 · 미검토' : 'Agent draft · Unreviewed';
   const known = normalizeOriginalPaths(knownSources);
   const anchorPattern = new RegExp(`^(?:${WIKI_CITATION_ANCHOR_PATTERN})$`);
-  const annotatedAnswer = inertExportMarkdown(report.text, ko).replace(/\[\[src:([^\]|]+)(?:\|([^\]]+))?\]\]/g, (whole, address: string, label?: string) => {
+  const annotatedAnswer = report.text.replace(/\[\[src:([^\]|]+)(?:\|([^\]]+))?\]\]/g, (whole, address: string, label?: string) => {
     const hash = address.lastIndexOf('#');
     const rawPath = hash < 0 ? address : address.slice(0, hash);
     const rawAnchor = hash < 0 ? undefined : address.slice(hash + 1);
@@ -179,7 +218,7 @@ export function serializeQuestionDeskReport(report: QuestionDeskReportContent, l
       ? label ? `${label} ${portable}` : whole
       : `${label ? `${label} ` : ''}${portable} **${ko ? '[이 폴더에서 인용을 확인할 수 없음]' : '[citation unavailable in this folder]'}**`;
   });
-  return [
+  return inertExportMarkdown([
     `# ${title}`,
     '',
     `> ${ko ? '상태' : 'Status'}: ${status}`,
@@ -205,7 +244,7 @@ export function serializeQuestionDeskReport(report: QuestionDeskReportContent, l
       ? '원문 인용은 이동 가능한 텍스트 주소입니다. 검색 당시 파일 목록을 기준으로 표시되며, 이 내보내기에서 원문을 다시 읽어 검증하지 않았습니다. 외부 링크와 이미지는 비활성화했습니다.'
       : 'Source citations are portable text addresses. Availability reflects the search-time file inventory; this export did not re-read the originals. External links and images are inert.',
     '',
-  ].join('\n');
+  ].join('\n'), ko);
 }
 
 export function questionDeskReportFilename(report: QuestionDeskReportContent): string {

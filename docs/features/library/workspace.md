@@ -46,7 +46,9 @@ search or external folder change clears it. Filing remains an explicit Wiki
 review/write action. One editorial document template preserves the question,
 response, cited addresses, search coverage and omissions in a local Markdown
 download or the app's Print/Save as PDF flow. Jev judgment is not exported as
-accepted meaning. Search completion, report arrival and evidence expansion use
+accepted meaning. External links and images stay inert in Markdown exports;
+unusual syntax that cannot be safely rewritten is preserved as a literal text
+document. Search completion, report arrival and evidence expansion use
 brief, interruptible motion; reduced-motion settings preserve every fact.
 
 **Retained questions and explicit revisions.** The Library landing lists saved

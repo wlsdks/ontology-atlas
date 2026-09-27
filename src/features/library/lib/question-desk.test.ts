@@ -5,6 +5,9 @@ import { countDeskReadablePages, findDeskClaims, findDeskSourceHits, jevClaimEli
 import { buildQuestionDeskBrief, buildQuestionDeskReportBrief, questionDeskReportFilename, serializeQuestionDeskReport, splitQuestionDeskReportSections, QUESTION_DESK_BRIEF_MAX_CHARS } from './question-desk-brief';
 import { planQuestionDeskReportFile } from './question-desk-brief';
 import { buildAnswerPage } from './answer-page';
+import { unified } from 'unified';
+import remarkParse from 'remark-parse';
+import remarkGfm from 'remark-gfm';
 
 const raw = `---
 title: Refund overview
@@ -269,11 +272,35 @@ describe('question desk evidence', () => {
       question: 'Can this be shared?', generatedAt: '2026-09-27T17:00:00Z', coverage: 'one source', limits: 'none',
       text: 'Read [outside](https://example.com/path) and https://example.com/bare. ![remote](https://example.com/image.png) <img src="https://example.com/raw.png"> [[src:sources/refund.md#l2]]',
     }, 'en', new Set(['sources/refund.md']));
-    expect(markdown).toContain('outside [external link unavailable]');
-    expect(markdown).toContain('remote [external image omitted]');
+    expect(markdown).toContain('` outside ` &#91;external link unavailable&#93;');
+    expect(markdown).toContain('` remote ` &#91;external image omitted&#93;');
     expect(markdown).not.toContain('](https://');
-    expect(markdown).not.toContain('<img');
-    expect(markdown).toContain('`https://example.com/bare.`');
+    expect(markdown).toContain('` <img src="https://example.com/raw.png"> `');
+    expect(markdown).toContain('` https://example.com/bare `');
+    expect(markdown).toContain('[[src:sources/refund.md#l2]]');
+  });
+
+  it.each([
+    '![a [b]](//example.invalid/embedded-request.png)',
+    '[![nested](//example.invalid/nested.png)](https://example.invalid)',
+    '![reference][remote]\n\n[remote]: //example.invalid/reference.png',
+    '[www.example.invalid](https://example.invalid) and <agent@example.invalid>',
+    '![a `quoted` label](https://example.invalid/image.png)',
+    '<picture>\n<img src="//example.invalid/raw.png">\n</picture>',
+    '<https://example.invalid>(//example.invalid/adjacent)',
+    'www&#46;example.invalid\n\n```\nkeep the fence inert\n```',
+  ])('exports hostile Markdown as text without an active resource: %s', (hostile) => {
+    const markdown = serializeQuestionDeskReport({
+      question: 'What did the original say?', generatedAt: '2026-09-27T17:00:00Z', coverage: 'one source', limits: 'none',
+      text: `${hostile}\n\nOriginal [[src:sources/refund.md#l2]].`,
+    }, 'en', new Set(['sources/refund.md']));
+    const types: string[] = [];
+    const visit = (node: { type: string; children?: readonly { type: string }[] }) => {
+      types.push(node.type);
+      node.children?.forEach(visit);
+    };
+    visit(unified().use(remarkParse).use(remarkGfm).parse(markdown));
+    expect(types.filter((type) => ['image', 'link', 'imageReference', 'linkReference', 'definition', 'html'].includes(type))).toEqual([]);
     expect(markdown).toContain('[[src:sources/refund.md#l2]]');
   });
 
