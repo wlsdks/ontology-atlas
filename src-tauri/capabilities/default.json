@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Default permissions for the main ontology workbench window, narrowed to what the webview is measured to call. `core:default` expands to nine sets; this window needs two of them. Everything else the frontend does goes through app-defined commands, which capabilities do not gate, so granting core sets for them protects nothing. Capabilities gate JS-to-Rust IPC only: the window sizing this app does from Rust needs no `core:window` grant, which is why removing it changes nothing.",
+  "description": "Permissions for the main ontology workbench window: event listening, app version, and explicit Question Desk printing. Printing uses only core:webview:allow-print, not the broader core:webview:default grant. Other frontend work goes through app-defined commands, which capabilities do not gate; Rust window sizing needs no core:window grant.",
   "windows": [
     "main"
   ],
