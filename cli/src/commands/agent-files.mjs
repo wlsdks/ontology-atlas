@@ -6,8 +6,8 @@
 // a workbench readout, not a rulesync-style converter (strategy-audit no-go).
 
 import { COLORS } from '../lib/colors.mjs';
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { existsSync, readFileSync, readdirSync, realpathSync, statSync } from 'node:fs';
+import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { cwd } from 'node:process';
 
 import { formatUnknownFlagError, parseRequiredFlagValue } from '../lib/cli-args.mjs';
@@ -86,12 +86,15 @@ function buildAgentFilesReport(parsed) {
     existingPaths,
     requireEnglish: parsed.englishOnly === true,
   });
+  const outsideByPath = new Map(files.filter((file) => file.outside).map((file) => [file.path, file.outside]));
   return {
     operation: 'agent_files',
     sideEffect: false,
     root,
     summary: analysis.summary,
-    files: analysis.records,
+    files: analysis.records.map((record) =>
+      outsideByPath.has(record.path) ? { ...record, outside: outsideByPath.get(record.path) } : record,
+    ),
     checks: analysis.checks,
     drift: analysis.drift,
   };
@@ -99,11 +102,12 @@ function buildAgentFilesReport(parsed) {
 
 /** Scan only the known agent-file patterns: never the whole disk (local-first). */
 function scanAgentFiles(root) {
+  const realRoot = realpathSync(root);
   const entries = [];
   for (const candidate of ROOT_FILE_CANDIDATES) {
     const abs = join(root, candidate);
     if (existsSync(abs) && statSync(abs).isFile()) {
-      entries.push(readEntry(abs, candidate));
+      entries.push(readEntry(abs, candidate, realRoot));
     }
   }
   // Codex merges AGENTS.md root-down along the working directory, so a nested
@@ -114,7 +118,7 @@ function scanAgentFiles(root) {
     const relative = `${entry.name}/AGENTS.md`;
     const abs = join(root, relative);
     if (existsSync(abs) && statSync(abs).isFile() && classifyAgentFilePath(relative)) {
-      entries.push(readEntry(abs, relative));
+      entries.push(readEntry(abs, relative, realRoot));
     }
   }
   for (const dir of SCAN_DIRS) {
@@ -122,29 +126,48 @@ function scanAgentFiles(root) {
     if (!existsSync(abs) || !statSync(abs).isDirectory()) continue;
     for (const relative of walkFiles(abs, dir)) {
       if (classifyAgentFilePath(relative)) {
-        entries.push(readEntry(join(root, relative), relative));
+        entries.push(readEntry(join(root, relative), relative, realRoot));
       }
     }
   }
   return entries;
 }
 
-function walkFiles(absDir, relDir) {
+function walkFiles(absDir, relDir, visitedDirectories = new Set()) {
   const out = [];
-  for (const name of readdirSync(absDir)) {
+  let names;
+  try {
+    const realDirectory = realpathSync(absDir);
+    if (visitedDirectories.has(realDirectory)) return out;
+    visitedDirectories.add(realDirectory);
+    names = readdirSync(absDir);
+  } catch {
+    return out;
+  }
+  for (const name of names) {
     const absChild = join(absDir, name);
     const relChild = `${relDir}/${name}`;
-    const stat = statSync(absChild);
-    if (stat.isDirectory()) out.push(...walkFiles(absChild, relChild));
+    let stat;
+    try {
+      stat = statSync(absChild);
+    } catch {
+      continue;
+    }
+    if (stat.isDirectory()) out.push(...walkFiles(absChild, relChild, visitedDirectories));
     else if (stat.isFile()) out.push(relChild);
   }
   return out;
 }
 
-function readEntry(absPath, relativePath) {
+function readEntry(absPath, relativePath, realRoot) {
   const bytes = statSync(absPath).size;
   const content = bytes <= MAX_CONTENT_BYTES ? readFileSync(absPath, 'utf-8') : null;
-  return { path: relativePath, content, bytes };
+  const realPath = realpathSync(absPath);
+  const fromRoot = relative(realRoot, realPath);
+  const outside = fromRoot === '..' || fromRoot.startsWith(`..${sep}`) || isAbsolute(fromRoot);
+  return outside
+    ? { path: relativePath, content, bytes, outside: realPath }
+    : { path: relativePath, content, bytes };
 }
 
 /**
