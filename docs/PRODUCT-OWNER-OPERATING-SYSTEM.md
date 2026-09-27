@@ -1,17 +1,14 @@
 ---
-title: ATLAS PRODUCT DECISION SYSTEM
+title: Product Owner Operating System
 doc_type: authority
 status: current
 area: process
 ---
 
-# ATLAS PRODUCT DECISION SYSTEM
+# Product Owner Operating System
 
-> Version 4, piloted from 2026-09-01, closed as `adjust` on 2026-09-03,
-> adjusted on 2026-09-26 (the routing stays, the per-run pilot records stop; see
-> "Measured pilot"), and on 2026-09-27 the reviewer pair gave way to one
-> independent `reviewer`. The builder still cannot declare their own door and
-> risk.
+> Facts route each product decision to a solo pass or one independent
+> `reviewer`; the builder never declares their own door and risk.
 
 Atlas does not need a universal product-management framework. It needs a product
 owner for one unusual failure: coding agents can change a codebase faster than
@@ -201,8 +198,7 @@ Keep this to one screen:
 ```
 
 Routine solo passes stay in the working plan or pull-request rationale, not the
-decision records. A significant decision gets a decision fragment; per-run pilot
-records are no longer created.
+decision records. A significant decision gets a decision fragment.
 
 ## Independent review protocol
 
@@ -235,12 +231,8 @@ those gates.
 ## Significant decision record
 
 A record is six fields in this order, within 24 lines and 2,000 bytes;
-`pnpm decisions:check` refuses anything else, on every record. The
-measurement behind the cut: 478 records in 38 days, median 51 lines and nine
-labels each, and a fifteen-field format that nobody could read before
-convening. On 2026-09-02 every earlier record was condensed into this shape
-with its heading, date, and number unchanged; the originals stay in Git
-history.
+`pnpm decisions:check` refuses anything else, on every record. Short
+records stay readable before a decision is convened.
 
 ```md
 ## YYYY-MM-DD — <the decision in one line>
@@ -265,39 +257,9 @@ template; it does not claim the judgment was good.
 
 ## Measured pilot and forced sunset
 
-`pnpm po:pilot` composes the frozen `docs/PO-PILOT.md` baseline with the
-fragments in `docs/records/po-runs/` and `docs/records/po-updates/`, and
-calculates:
-
-- eligible decisions and the reversible denominator;
-- review turns and material decision-delta rate;
-- reversible decisions that avoided council;
-- recovery-proof coverage and shipped proof failures;
-- owner clarity, boundary misses, reopen/reversal results; and
-- each specialist's calls and unique material contributions.
-
-The pilot reached its 20-decision target on 2026-09-03 and closed as `adjust`.
-Its standing falsifier (proof resolution under 80% after ten more decisions)
-fired by 2026-09-26: across 102 eligible runs boundary misses were 0, review
-changed the decision in 97% and reversible work avoided council in 100%, but
-recovery proof was resolved in 68% and owner clarity in 51%. The second
-adjustment keeps the router, the two-reviewer default and decision fragments,
-and stops the per-run register whose unresolved half was the failure. The
-composed register stays readable with `pnpm po:pilot`, and
-`pnpm po:pilot -- --check` still validates it in CI. On 2026-09-27 the
-two-reviewer default and its seats gave way to one independent `reviewer`; the
-register keeps the seat names it was written with.
-
-The known-control contract also replays:
-
-- unsupported OS URL-scheme authority as one-way review with the `boundaries` lens;
-- an unmeasured internal transport replacement as two-way `probe-first`;
-- first-contact positioning as one-way review with the `evidence` lens; and
-- reversible visual craft as solo with its proof delegated to design gates.
-
-The pilot measures routing and decision usefulness, not market demand. A real
-user report, field trial, or observed recovery proof remains the outcome
-authority.
+The routing pilot closed as `adjust`: the router and decision fragments stay,
+and per-run pilot records are no longer written. `pnpm po:pilot` still reads the
+frozen register, and `pnpm po:pilot -- --check` validates it in CI.
 
 ## Why this shape
 
