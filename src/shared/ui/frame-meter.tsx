@@ -6,32 +6,17 @@ import { useTranslations } from 'next-intl';
 import { useFrameMeter } from '@/shared/lib/appearance-preferences';
 
 /**
- * On-screen readout of the frames the map is actually delivering.
- *
- * **What it measures, and what it deliberately does not.** It measures frames
- * that reached the eye — the interval at which `requestAnimationFrame` was really
- * called — so stutter is caught whatever caused it: our script, GC, compositing,
- * a browser extension. It does **not** measure how many ms our code spent in a
- * frame; that needs instrumentation inside the loop, and measuring it here
- * mistakes the meter's own rAF for the app's. Measured wrong once on 2026-07-31:
- * an 8.3 ms rAF interval was read as "the app spends 8.3 ms", when it was simply
- * a 120 Hz display's refresh interval.
- *
- * **Why the worst gap matters more than fps.** Stutter is in the tail, not the
- * mean. Timestamped from an owner's screen recording: the median was a healthy
- * 16.7 ms (60 fps) while the worst gap was **150 ms**, and only 8 frames in 11
- * seconds (1.4%) exceeded 100 ms. An average would have reported "normal". So
- * this meter puts fps and the worst gap of the last second side by side.
- *
- * **Off means nothing runs** — no rAF, no render. A performance meter that costs
- * performance is a liar.
+ * On-screen readout of delivered frames: the real `requestAnimationFrame` interval, so stutter
+ * shows whatever caused it. It does not measure time spent in our code; a rAF interval is the
+ * display refresh, not app cost. It pairs fps with the worst gap of the last second because
+ * stutter lives in the tail, and when off nothing runs.
  */
 
-/** Readout refresh (ms). A setState per frame would make the meter the load. */
+/** Readout refresh (ms); a setState per frame would make the meter the load. */
 const REPORT_MS = 250;
-/** Window for the worst gap (ms), matched to how long the eye remembers a stutter. */
+/** Window for the worst gap (ms), about how long the eye remembers a stutter. */
 const WORST_WINDOW_MS = 1000;
-/** Counted as a dropped frame above this — twice one 60 Hz frame (16.7 ms). */
+/** A dropped frame is a gap above twice one 60 Hz frame. */
 const JANK_MS = 34;
 
 interface Sample {
@@ -41,13 +26,8 @@ interface Sample {
 }
 
 /**
- * Reads the preference and, when off, does not mount the measuring half at all.
- *
- * Handling on/off by clearing state inside an effect instead would keep the
- * previous session's numbers on screen for 250 ms after re-enabling — a meter
- * presenting stale values as current is the worst failure a meter has. Splitting
- * on mount removes that, and the lint complaint about resetting state in the
- * render path, for free.
+ * Does not mount the measuring half while off, so re-enabling never shows the previous
+ * session's numbers as current.
  */
 export function FrameMeter({ className }: { className?: string }) {
   const enabled = useFrameMeter();
@@ -56,12 +36,7 @@ export function FrameMeter({ className }: { className?: string }) {
 }
 
 function FrameMeterLive({ className }: { className?: string }) {
-  /*
-   * The readout's words come from the catalogue, like the switch that turns it on. It printed
-   * "worst" and "dropped" as two Korean literals beside an English "fps", so every screen showed
-   * a mix of two languages (inspection, 2026-09-25, D2). The numbers stay inside the message: word
-   * order is the language's to decide.
-   */
+  /* The numbers sit inside catalogue messages: word order is the language's. */
   const t = useTranslations('nav.settingsMenu');
   const [sample, setSample] = useState<Sample | null>(null);
 
@@ -69,7 +44,6 @@ function FrameMeterLive({ className }: { className?: string }) {
     let raf = 0;
     let last = performance.now();
     let reportedAt = last;
-    // Only the window's worth of [timestamp, gap] pairs, so this cannot grow.
     const gaps: Array<[number, number]> = [];
 
     const tick = (now: number) => {
@@ -97,19 +71,14 @@ function FrameMeterLive({ className }: { className?: string }) {
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  // No gap exists before the second sample; draw nothing rather than a
-  // plausible lie like 0 fps.
+  // No gap exists before the second sample; draw nothing rather than 0 fps.
   if (sample === null) return null;
 
-  // The numbers carry the state; colour only reinforces them, so the readout is
-  // still decidable without colour (WCAG 1.4.1).
+  // The numbers carry the state and colour only reinforces it (WCAG 1.4.1).
   const bad = sample.worst >= 100 || sample.jank >= 3;
   const warn = !bad && (sample.worst >= JANK_MS * 2 || sample.jank >= 1);
-  // Only tokens actually declared in the ramp. The first draft used
-  // `--color-error-text` / `--color-warning-text`, neither of which exists: a
-  // `var()` on an undeclared token fails silently, so the meter would have said
-  // nothing at the moment it needed to say "danger". Caught by the
-  // `undeclared-token-ref` contract test.
+  // Declared tokens only: a `var()` on an undeclared token fails silently
+  // (`undeclared-token-ref` contract test).
   const tone = bad
     ? 'text-[color:var(--color-status-danger)]'
     : warn
@@ -121,7 +90,7 @@ function FrameMeterLive({ className }: { className?: string }) {
       className={className}
       // A diagnostic must not block the map or swallow clicks.
       style={{ pointerEvents: 'none' }}
-      // A number changing every 250 ms only interrupts a screen reader.
+      // A number changing every 250 ms would only interrupt a screen reader.
       aria-hidden="true"
     >
       <div className="flex items-center gap-2 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2 py-1 font-mono text-label tabular-nums">

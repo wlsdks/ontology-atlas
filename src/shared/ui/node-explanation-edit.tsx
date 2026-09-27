@@ -11,19 +11,9 @@ import { fieldClass } from '@/shared/ui/control-class';
 import { controlClass } from '@/shared/ui/control-class';
 
 /**
- * Read ↔ edit ↔ save primitive for a node's explanation, i.e. its prose body
- * (multiline).
- *
- * Ontology-first: a node's body *is* its explanation, and a person or an AI agent
- * fills it in directly from the topology full-detail widget. Saving belongs to the
- * caller, which uses `replaceVaultBody` + `saveDoc` to replace the body while
- * preserving the frontmatter. Labels are injected as props, keeping this component
- * pure. It lives in `shared/ui` because FSD forbids a widget importing from a view,
- * so the `full-detail-a1` widget could not reach its original home in
- * `views/home/ui`.
- *
- * Charter compliance: neutrals plus a single indigo, no glow or scale. Cmd/Ctrl+Enter
- * saves and Esc cancels (this is a textarea, so Enter inserts a newline).
+ * Read, edit and save for a node's prose body. Saving belongs to the caller, which keeps the
+ * frontmatter; labels are props. In `shared/ui` because a widget cannot import from a view.
+ * Cmd/Ctrl+Enter saves and Escape cancels; Enter inserts a newline.
  */
 export interface NodeExplanationEditLabels {
   heading: string;
@@ -57,10 +47,8 @@ export function NodeExplanationEdit({
     setDraft(value);
   };
   /*
-   * **A refused save keeps the draft** (2026-09-26, map-edit QA D3). The editor closed on any
-   * settled save, so a save the vault refused — the file changed elsewhere first — dropped the
-   * person's text along with the editor. A rejection now leaves the editor open with the draft
-   * intact; the caller owns the sentence that says why (this primitive has no strings of its own).
+   * A refused save keeps the editor open with the draft; the caller says why, since this
+   * primitive has no strings.
    */
   const commit = async () => {
     setSaving(true);
@@ -68,7 +56,7 @@ export function NodeExplanationEdit({
       await onSave(draft);
       setEditing(false);
     } catch {
-      // Stay in the editor: the draft is still the person's, and the caller has reported the refusal.
+      // The draft is still the person's, and the caller has reported the refusal.
     } finally {
       setSaving(false);
     }
@@ -91,14 +79,7 @@ export function NodeExplanationEdit({
             <PencilLine size={ICON_SIZE.sm} aria-hidden />
           </button>
         </div>
-        {/*
-          ⚠️ **Rendered, not transcribed.** This read state printed the raw source in a
-          `whitespace-pre-wrap` paragraph, so a body that is ordinary Markdown — and every
-          body the construction rules write is, with `## Definition`, `## Evidence` and
-          bulleted scope lists — reached the reader as literal `##`, `-` and backticks
-          (owner, 2026-09-14, on the installed app: the words were right and the screen was
-          not). The textarea below still edits the source, which is the half that stays raw.
-        */}
+        {/* Rendered, not transcribed: node bodies are Markdown. The textarea edits the source. */}
         {value ? (
           <div
             data-testid="node-explanation-rendered"

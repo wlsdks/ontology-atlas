@@ -31,8 +31,8 @@ describe('InfoHint', () => {
       </InfoHint>,
     );
     const tooltip = screen.getByRole('tooltip');
-    // Revealed purely by CSS class, through group-hover/group-focus-within.
-    // Charter rule: opacity transition only, no glow and no scale.
+    // Revealed by CSS alone, through group-hover and group-focus-within. Opacity transition
+    // only, no glow and no scale.
     expect(tooltip.className).toContain('opacity-0');
     expect(tooltip.className).toContain('pointer-events-none');
     expect(tooltip.className).toContain('group-hover:opacity-100');
@@ -60,7 +60,6 @@ describe('InfoHint', () => {
     expect(outer).toHaveBeenCalledWith('Escape');
     fireEvent.blur(button);
     expect(tooltip.className).toContain('group-focus-within:opacity-100');
-    // Focus alone never makes the panel catch the pointer.
     expect(tooltip.className).not.toContain('group-focus-within:pointer-events-auto');
   });
 
@@ -84,7 +83,6 @@ describe('InfoHint', () => {
     );
     const tooltip = screen.getByRole('tooltip');
     expect(tooltip.className).toContain('data-custom-panel');
-    // The base panel classes are kept too.
     expect(tooltip.className).toContain('absolute');
   });
 

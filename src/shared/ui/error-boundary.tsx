@@ -3,34 +3,21 @@
 import { Component, type ReactNode } from 'react';
 
 /**
- * Generic React ErrorBoundary — catches throws during render only. React does not
- * catch throws inside event handlers; the caller owns try/catch there.
- *
- * It exists for the cases where a whole surface dies at render time: WebGL context
- * loss, a GPU crash, a failed async init.
- *
- * Usage:
- *   <ErrorBoundary fallback={({ error, reset }) => (...)} >
- *     <RiskyChild />
- *   </ErrorBoundary>
- *
- * `fallback` is a function so the caller can write a domain-tuned UI (a reload CTA
- * for the canvas renderer, a retry button for the graph view). The error object is
- * passed through for debugging.
+ * Catches throws during render only; event handlers own their try/catch. `fallback` is a
+ * function so each caller writes its own recovery UI.
  */
 
 interface ErrorBoundaryProps {
   fallback: (info: { error: Error; reset: () => void }) => ReactNode;
-  /** Force a reset on mount/unmount or any other signal — the boundary resets when this key changes. */
+  /** The boundary resets when this key changes. */
   resetKey?: string | number;
-  /** componentDidCatch callback — forward to an external logger. */
+  /** Forwards the caught error, for example to a logger. */
   onError?: (error: Error) => void;
   children: ReactNode;
 }
 
 interface ErrorBoundaryState {
   error: Error | null;
-  /** Last seen `resetKey` — a change resets the boundary. */
   prevResetKey: string | number | undefined;
 }
 

@@ -95,8 +95,7 @@ describe('SimilarNodeWarning', () => {
       />,
     );
     expect(screen.getByRole('status')).toBeInTheDocument();
-    // Inline text plus links only, no solid dot (council decision) — there must be no
-    // rounded-full dot marker.
+    // Inline text plus links only: no rounded-full dot marker.
     expect(container.querySelector('[aria-hidden] + .rounded-full')).toBeNull();
     expect(container.querySelector('span.rounded-full')).toBeNull();
   });

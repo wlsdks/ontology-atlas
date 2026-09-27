@@ -7,28 +7,24 @@ import {
   listboxTopIsHidden,
 } from './select-growth';
 
-/** Measured row heights: 30px for one line, 48px for a row carrying a description. */
+/** 30px for one line, 48px for a row with a description. */
 const SINGLE = 30;
 const DOUBLE = 48;
 const CHROME = { paddingBlock: 8, borderBlock: 2 };
 
-/** The configuration a real runner produced: 3 chat rows plus 4 embedding rows. */
+/** A measured runner: 3 chat rows plus 4 embedding rows. */
 const REAL_RUNNER = [SINGLE, SINGLE, SINGLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE];
 
 describe('listboxGrowth takes the smaller of the row cap and the space cap', () => {
   it('fits all seven rows of the measured runner without scrolling', () => {
     const growth = listboxGrowth({ ...CHROME, rowHeights: REAL_RUNNER, availableHeight: 600 });
-    // Nothing caps it, so the cap is the available space and the box sizes to
-    // its own content.
+    // Nothing caps it, so the cap is the available space.
     expect(growth).toEqual({ height: 600, rows: 7, overflowing: false, cappedBy: 'content' });
   });
 
   /**
-   * Regression measured in the installed app, 2026-08-02: capping at the
-   * *measured content height* turned the "there is more" affordance on falsely —
-   * all 7 rows were visible yet `scrollHeight > clientHeight`. Subpixel rounding
-   * or a late web font growing a row by 1px is enough to make the box scroll its
-   * own content, so the cap must never track the content.
+   * Capping at the measured content height let a 1px late-font growth scroll the box and raise
+   * a false "more" signal, so the cap never tracks the content.
    */
   it('does not overflow when uncapped rows grow by 1px', () => {
     const settled = REAL_RUNNER.map((h) => h + 1);
@@ -98,7 +94,7 @@ describe('listboxLeft keeps the list inside the viewport before under the trigge
   });
 
   it('shifts left to the right margin when the list would cross the right edge', () => {
-    // Trigger at 620 in a 1512px window, list 400 wide: 620 + 400 > 1504.
+    // List 400 wide from 620: 620 + 400 passes 1000 - 8, so it slides to 592.
     expect(listboxLeft({ triggerLeft: 620, listWidth: 400, viewportWidth: 1000, pad: 8 })).toBe(592);
   });
 

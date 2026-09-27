@@ -13,17 +13,13 @@ interface RouteFocusIntent {
   createdAt: number;
 }
 
-/**
- * Query/hash changes stay inside one surface and locale changes keep the same
- * task. Only a different semantic pathname starts a new page-reading context.
- */
+/** Only a different semantic pathname starts a new page-reading context. */
 function normalizeRouteSurfacePath(pathname: string): string {
   const withoutLocale = pathname.replace(/^\/(?:en|ko)(?=\/|$)/, '') || '/';
   if (withoutLocale === '/') return withoutLocale;
   return withoutLocale.replace(/\/+$/, '');
 }
 
-/** Add a native-navigation-safe focus marker without disturbing query or hash. */
 export function buildRouteFocusHref(href: string): string {
   const hashIndex = href.indexOf('#');
   const base = hashIndex >= 0 ? href.slice(0, hashIndex) : href;
@@ -51,8 +47,8 @@ function clearRouteFocusQueryMarker() {
 }
 
 /**
- * Persist the destination reading-start intent across a possible locale-layout
- * or WebView shell remount. Call immediately before client navigation.
+ * Persists the reading-start intent across a locale-layout or WebView remount; call right
+ * before client navigation.
  */
 export function rememberRouteFocusIntent(pathname: string) {
   const intent: RouteFocusIntent = {
@@ -94,17 +90,14 @@ function consumeRouteFocusIntent(surfacePath: string): boolean {
 }
 
 /**
- * Persistent AppShell means client navigation can remove the focused control
- * without a document reload. When that leaves focus outside the destination
- * task, hand it to the new page heading (or main landmark). A destination that
- * already focused something inside main or an aria-modal dialog keeps ownership.
+ * After client navigation, hands focus that is outside the destination to its heading or main
+ * landmark, unless the destination already focused something in main or a modal.
  */
 export function RouteFocusManager() {
   const pathname = usePathname() ?? '/';
   const surfacePath = normalizeRouteSurfacePath(pathname);
   const previousSurfaceRef = useRef<string | null>(null);
-  // Capture during render: a destination child may replace query state in its
-  // own mount effect before this passive effect runs.
+  // Captured during render: a destination may replace the query in its own mount effect.
   const hasUrlFocusIntent =
     typeof window !== 'undefined' &&
     new URLSearchParams(window.location.search).get(ROUTE_FOCUS_QUERY_KEY) ===
@@ -124,9 +117,8 @@ export function RouteFocusManager() {
 
     const focusDestination = (): boolean => {
       const main = document.querySelector<HTMLElement>('#main');
-      // The loading placeholder's `#main` is not the destination. Focusing it drops
-      // focus to body the moment the real screen replaces that node, so the observer
-      // keeps running until the real destination arrives.
+      // The loading placeholder's `#main` is not the destination: focus would drop to body when
+      // the real screen replaces it.
       if (!main || main.dataset.routeLoading === 'true') return false;
 
       const active = document.activeElement;
@@ -142,11 +134,8 @@ export function RouteFocusManager() {
       }
 
       /*
-       * A heading that is itself a control is not the page title to announce. The project page's
-       * `h1` is the project's name, edited in place (`role="button"`, `tabIndex={0}`), so arrival
-       * handed focus to what looks like a text field and the line below then rewrote its
-       * `tabIndex` to -1, taking the name out of the tab order for the rest of the visit. The
-       * landmark is the honest destination there, which is also what `?focus=main` promises.
+       * A heading that is itself a control (an in-place editor) is not the title to announce;
+       * the landmark is, as `?focus=main` promises.
        */
       const heading = document.querySelector<HTMLElement>(
         'h1:not([hidden]):not([aria-hidden="true"])',
@@ -174,9 +163,8 @@ export function RouteFocusManager() {
     const scheduleFocus = () => {
       if (!document.querySelector('#main:not([data-route-loading])')) return;
       if (settleTimer !== null) window.clearTimeout(settleTimer);
-      // The static-export destination can replace a Suspense/welcome surface
-      // with the loaded vault immediately after first paint. Focus only after
-      // the task DOM has been quiet long enough to own a stable h1.
+      // The static-export destination can swap its surface right after first paint, so focus
+      // waits until the DOM is quiet enough to own a stable h1.
       settleTimer = window.setTimeout(() => {
         if (focusDestination()) stop();
       }, 120);

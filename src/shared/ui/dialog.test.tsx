@@ -5,19 +5,9 @@ import { describe, expect, it } from "vitest";
 import { Dialog } from "./dialog";
 
 /**
- * Dialog — the modality contract test.
- *
- * This is the enforcement for the design-systems seat's ratification
- * (2026-08-15, `docs/DECISIONS.md`). The primitive exists because 26
- * `role="dialog"` sites were each assembling modality themselves — 5 different
- * scrim tokens, 8 widths, a focus trap actually present in 8 of 20 — and what is
- * asserted here is the whole of that contract: modality (trap, Escape, focus
- * return, scroll lock, `aria-modal`) and the canonical tokens (z, scrim, width
- * formula).
- *
- * Asserting on class strings is legitimate here because they are **token
- * references**, not prose a human wrote — a different layer from what
- * `.claude/rules/documentation.md` forbids.
+ * The modality contract (trap, Escape, focus return, scroll lock, `aria-modal`) and the
+ * canonical tokens (`docs/DECISIONS.md`). Class strings are asserted because they are token
+ * references, not prose (`.claude/rules/documentation.md`).
  */
 
 function Harness({ size, onCloseSpy }: { size?: "sm" | "md"; onCloseSpy?: () => void }) {
@@ -66,7 +56,7 @@ describe("Dialog modality contract", () => {
     const dialog = openDialog();
     expect(dialog.getAttribute("aria-modal")).toBe("true");
     expect(dialog.getAttribute("aria-label")).toBe("시험 대화상자");
-    // Portalled — it lives under body, not in the harness tree.
+    // Portalled under body, not in the harness tree.
     expect(dialog.closest("[data-testid='opener']")).toBeNull();
     expect(document.body.contains(dialog)).toBe(true);
   });

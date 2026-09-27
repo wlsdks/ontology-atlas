@@ -4,13 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { EXIT_WINDOW_MS, useHeldValue } from '@/shared/lib/use-presence';
 import { Surface } from './surface';
 
-/**
- * The contract for what `Surface` **remembers on every caller's behalf**.
- *
- * All four came out of measurements taken in this repo, which is why the primitive carries
- * them instead of each caller remembering to. They are pinned here because a contract that
- * lives only in the code and not in a test is one the next refactor deletes silently.
- */
+/** What `Surface` remembers for every caller, pinned so a refactor cannot drop it silently. */
 describe('Surface', () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => {
@@ -24,9 +18,7 @@ describe('Surface', () => {
   });
 
   it('stays on screen through the exit window after open=false', () => {
-    // Unmounting immediately means the surface vanishes in one frame. Measured 2026-07-28:
-    // the thing the user clicked disappeared at delta 13.25 @17ms while the map — merely the
-    // consequence — got a 217ms eased transition.
+    // Unmounting at once would make the pressed surface vanish in one frame.
     const { rerender } = render(<Surface open>내용</Surface>);
     expect(screen.getByText('내용')).toBeInTheDocument();
 
@@ -38,9 +30,7 @@ describe('Surface', () => {
   });
 
   it('exits with its own class instead of reversing the entrance class', () => {
-    // A CSS animation does **not** restart while `animation-name` is unchanged, even if the
-    // duration or direction changes. An exit built by playing the entrance in `reverse`
-    // therefore turns into a silent hard cut.
+    // An unchanged `animation-name` never restarts, so a reversed entrance is a hard cut.
     const { rerender } = render(<Surface open>내용</Surface>);
     expect(screen.getByText('내용')).toHaveClass('topology-chrome-in');
 
@@ -53,8 +43,7 @@ describe('Surface', () => {
   });
 
   it('makes the exiting frame inert and unclickable', () => {
-    // Without this the exiting surface swallows the click, and the user gets a result they
-    // did not press for.
+    // Otherwise the exiting surface swallows a click meant for what is under it.
     const { rerender } = render(<Surface open>내용</Surface>);
     const entered = screen.getByText('내용');
     expect(entered).not.toHaveAttribute('inert');
@@ -67,8 +56,6 @@ describe('Surface', () => {
   });
 
   it('exposes its state through data-surface-state', () => {
-    // A state nothing outside can distinguish is a state nothing outside can test — the same
-    // lesson the map hooks learned.
     const { rerender } = render(<Surface open>내용</Surface>);
     expect(screen.getByText('내용')).toHaveAttribute('data-surface-state', 'entered');
     act(() => rerender(<Surface open={false}>내용</Surface>));
@@ -94,8 +81,7 @@ describe('Surface', () => {
   });
 
   it('grows from the trigger side through transform-origin', () => {
-    // A popover born in the centre of the screen is a rejection by the motion seat: when what
-    // you pressed and what appears are in different places, the causal link is broken.
+    // A popover born away from its trigger breaks the causal link.
     render(
       <Surface open origin="top right">
         내용
@@ -106,10 +92,8 @@ describe('Surface', () => {
 
   it('passes data attributes through', () => {
     /*
-     * ⚠️ Without this assertion **the type system waves it through.** TypeScript does not
-     * check hyphenated JSX attributes, so if `Surface` stopped forwarding them, `tsc` would
-     * say nothing and the value would simply be dropped. That nearly happened while migrating
-     * the edge panel on 2026-08-03.
+     * TypeScript does not check hyphenated JSX attributes, so only this assertion
+     * catches `Surface` dropping them.
      */
     render(
       <Surface open data-testid="the-surface">
@@ -120,13 +104,7 @@ describe('Surface', () => {
   });
 
   it('fades a large surface without movement when motion="overlay"', () => {
-    /*
-     * The `.map-overlay-in` comment in `globals.css` states the reason: **when a surface
-     * covering a large part of the screen moves, it reads as the screen itself shaking.**
-     * Because that vocabulary was missing from the primitive, the full-detail view attached
-     * `map-overlay-in` by hand and had nothing for the exit, and the full-width drawer and
-     * scrim modal had nothing at all.
-     */
+    /* A large surface that moves reads as the screen shaking (`.map-overlay-in`). */
     const { rerender } = render(
       <Surface open motion="overlay">
         내용
@@ -182,8 +160,7 @@ describe('useHeldValue keeps content through the exit window', () => {
   }
 
   it('draws the last value through the exit window after the value goes', () => {
-    // Without this the surface exits gracefully while its contents are empty — the entrance
-    // and exit that were meant to improve things make the screen worse.
+    // Otherwise the surface exits with empty contents.
     const { rerender } = render(<Holder model="엣지 A→B" />);
     expect(screen.getByTestId('body')).toHaveTextContent('엣지 A→B');
 
@@ -199,10 +176,8 @@ describe('useHeldValue keeps content through the exit window', () => {
 
   it('holds an object whose identity changes every render by its key without looping', () => {
     /*
-     * The first version compared with `value !== held`, and the moment it was attached to the
-     * map's edge panel **React #301 (infinite re-render) took the whole map down**: the
-     * consumer's model came from `useMemo` but its identity was rebuilt on every render. This
-     * test reproduces that shape exactly, passing a fresh object each render.
+     * A consumer model rebuilt every render must not loop the holder (React #301); this passes
+     * a fresh object each render.
      */
     function Unstable({ id }: { id: string | null }) {
       const model = id ? { id, label: `모델 ${id}` } : null; // a new object every render
@@ -214,7 +189,7 @@ describe('useHeldValue keeps content through the exit window', () => {
       );
     }
     const { rerender } = render(<Unstable id="a" />);
-    // Re-rendering repeatedly with the same id must not loop — it would blow up right here.
+    // Re-rendering with the same id must not loop.
     act(() => rerender(<Unstable id="a" />));
     act(() => rerender(<Unstable id="a" />));
     expect(screen.getByTestId('body')).toHaveTextContent('모델 a');
@@ -232,8 +207,8 @@ describe('useHeldValue keeps content through the exit window', () => {
   });
 
   it('never renders an empty frame while the value changes', () => {
-    // Holding the value in an effect would be one frame late, and the child would receive null
-    // in between. Adjusting during render means that frame never exists.
+    // Holding the value in an effect would pass null for one frame; adjusting during render
+    // avoids that frame.
     const { rerender } = render(<Holder model="A" />);
     act(() => rerender(<Holder model={null} />));
     act(() => rerender(<Holder model="B" />));

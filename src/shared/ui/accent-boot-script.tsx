@@ -1,31 +1,10 @@
 /**
- * Boot script that applies the accent palette **before the first paint** (2026-08-18).
- *
- * **Why an inline script.** The app's only accents are indigo (default) and ember
- * (alternative); the choice lives in localStorage
- * (`src/shared/lib/appearance-preferences.ts`) and CSS reads it as
- * `:root[data-accent="ember"]`. Setting that attribute from a React effect paints
- * **the first frame in the default** and then snaps to ember — a colour the user did
- * not pick, flashed once. So it is planted by a synchronous script that runs before
- * the render tree. This is the standard dark-mode-toggle technique, shorter here
- * because only one attribute changes.
- *
- * **Why its own file rather than inside `layout.tsx`.**
- * `tests/contract/json-ld-script-safety.contract.test.ts` blocks re-creating raw
- * script injection in files that use the central `JsonLd` boundary. That rule is
- * right: escaping responsibility has to stay in one place so data can never close
- * the boundary with `</script>`. This script follows the same grammar and gets its
- * own name and file.
- *
- * **Why this script cannot cause that accident.** No data enters it. Every string is
- * a constant with no interpolation — the absence of `${` in the body below is the
- * contract, and a contract test asserts it. A script that needs to take a value
- * requires a new escaping boundary like `JsonLd`, not an edit to this file.
- *
- * `appearance-preferences.ts` owns the key and the default. If the strings
- * hardcoded here drift from it,
- * `tests/contract/accent-palette-switch.contract.test.ts` fails — the symptom of a
- * drift is "the colour sometimes flashes once", which nobody files as a bug.
+ * Applies the stored accent before the first paint; an effect would flash the default first.
+ * Its own file because `tests/contract/json-ld-script-safety.contract.test.ts` keeps raw script
+ * injection out of files using `JsonLd`. No data enters it: every string is a constant and the
+ * body holds no `${`, which a contract asserts; a script that takes a value needs an escaping
+ * boundary like `JsonLd`. The key and default belong to `appearance-preferences.ts`, held equal
+ * by `tests/contract/accent-palette-switch.contract.test.ts`.
  */
 const ACCENT_BOOT = [
   "try{",
@@ -35,18 +14,11 @@ const ACCENT_BOOT = [
 ].join("");
 
 /**
- * Plants `<html lang>` from the locale path segment **before the first paint** (2026-09-25).
- *
- * The root layout cannot know the locale (it sits above `[locale]`), so the static HTML ships
- * `lang="en"` and `LocaleHtmlLang` corrects it in an effect — after hydration, so after the
- * first paint. Every `:lang(ko)` rule (the Korean line rule on `body` above all) therefore
- * missed the first frame on `/ko/*` and the text reflowed once when the effect ran.
- *
- * It shares the accent script's tag, the first script in `<body>`, so `lang` is set before any
- * rendered body content is parsed. The locale is always the first path segment after an optional `basePath`
- * (`localePrefix: 'always'`), so the first segment that is a known locale is the answer. The
- * list is a constant, not interpolated — `tests/contract/hangul-word-keep.contract.test.ts`
- * holds it equal to `routing.locales`. `LocaleHtmlLang` stays for client-side locale switches.
+ * Plants `<html lang>` from the first known-locale path segment before the first paint,
+ * so `:lang(ko)` rules hold on the first frame (the root layout cannot know the locale). The
+ * list is a constant held equal to `routing.locales`
+ * by `tests/contract/hangul-word-keep.contract.test.ts`; `LocaleHtmlLang` handles client
+ * switches.
  */
 const LANG_BOOT = [
   "try{",
@@ -56,41 +28,15 @@ const LANG_BOOT = [
 ].join("");
 
 /**
- * **Where this script may live — three placements that each cost something**
- * (2026-08-18). A bare raw `<script>` in the layout tree failed in a different way
- * everywhere it was tried, and each failure arrived three hops away: a React
- * warning → the "N Issues" badge in the Next dev overlay → that badge caught by the
- * `hover-contrast` e2e spec, turning it red.
- *
- * ① Direct child of `<html>` — *"In HTML, `<script>` cannot be a child of `<html>`"*
- *    plus *"Cannot render a sync or defer `<script>` outside the main document"*.
- *    3–4 dev issues per route.
- * ② First child of `<body>` — quiet on server-rendered routes, but on a
- *    **client-rendered** route (the locale-less 404): *"Encountered a script tag
- *    while rendering React component — scripts inside React components are never
- *    executed when rendering on the client"*. It did not even run there.
- * ③ An explicit `<head>` — React's own prescription, but rendering `<head>` directly
- *    in this repo's root layout turns the not-found path into a **500** (measured on
- *    `/ko/this-route-does-not-exist/`): the price of taking a slot Next owns.
- *
- * **Generalisation**: where an inline boot script lives is a contract, not a
- * preference. And the signal for breaking it is not "the script does not run" but
- * **an unrelated gate turning red** — when an audit catches a control we never
- * built, suspect the dev overlay first.
+ * Where an inline boot script lives is a contract: as a child of `<html>`, first in `<body>` or
+ * in an explicit `<head>`, each placement raised a React warning or broke the not-found route.
+ * A dev-overlay issue badge turning an unrelated e2e gate red is the symptom.
  */
 export function AccentBootScript() {
   /*
-   * `async` here is **the marker that tells React 19 to hoist this into the
-   * document**, not an instruction to defer. Per the HTML spec the attribute has no
-   * effect on an inline script (it only means something for external ones), so this
-   * still runs synchronously where it is parsed — hence no flash. Measured in the
-   * served HTML (2026-09-25): it lands as the first script in `<body>`, after only
-   * Next's empty hidden div, so it runs before any rendered body content is parsed.
-   *
-   * Drop that one word and React says exactly this: *"Cannot render a sync or defer
-   * `<script>` outside the main document without knowing its order. Try adding
-   * async="" or moving it into the root `<head>` tag."* This follows that
-   * prescription verbatim.
+   * The `async` attribute is the marker that lets React 19 hoist this into the document; on an
+   * inline script it does not defer, so this still runs synchronously before body content is
+   * parsed.
    */
   return <script async dangerouslySetInnerHTML={{ __html: ACCENT_BOOT + LANG_BOOT }} />;
 }

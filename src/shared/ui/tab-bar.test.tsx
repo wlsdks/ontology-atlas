@@ -195,16 +195,13 @@ describe('TabBar', () => {
     );
 
     expect(screen.getByRole('tab', { name: /개요/ })).toHaveAttribute('title', '개념 수');
-    // No count means nothing to explain: a tooltip on an empty slot promises a
-    // badge that is not there.
+    // Without a count, a tooltip would promise a badge that is not there.
     expect(screen.getByRole('tab', { name: /신선도/ })).not.toHaveAttribute('title');
   });
 
   /*
-   * Measured on `/en/mcp/`, 2026-09-05: the connectors tab's accessible name was
-   * `Connectors0` — the label text node and the count span sit side by side, and the name
-   * computation runs them together. Read aloud that is one word, and someone hunting for
-   * "Connectors" hears a tab that is not it.
+   * The label and count spans would otherwise concatenate into one word (`Connectors0`) that
+   * someone hunting for "Connectors" cannot find.
    */
   it('names a badged tab as label, comma, number', () => {
     render(

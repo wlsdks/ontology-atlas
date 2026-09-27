@@ -22,12 +22,8 @@ describe("NodeExplanationEdit", () => {
 
   it("renders Markdown in read mode instead of raw markers", () => {
     /*
-     * ⚠️ This read state printed the raw source. A node body is Markdown written by the
-     * construction rules, so `## Definition`, `- Included:` and backticks reached the
-     * reader as literal characters (owner, 2026-09-14, on the installed app).
-     *
-     * So what is measured is **which elements came out**, not whether a substring is
-     * present: a test that only checks the text passes while the source is transcribed.
+     * Measures which elements came out, not whether text is present: a text-only check passes
+     * while the Markdown source is transcribed.
      */
     render(
       <NodeExplanationEdit
@@ -40,7 +36,6 @@ describe("NodeExplanationEdit", () => {
     expect(read.querySelector("h2")).toHaveTextContent("Definition");
     expect(read.querySelectorAll("li")).toHaveLength(2);
     expect(read.querySelector("code")).toHaveTextContent("mcp/");
-    // The source markers do not survive onto the screen.
     expect(read.textContent).not.toContain("##");
     expect(read.textContent).not.toContain("`");
   });
@@ -67,7 +62,6 @@ describe("NodeExplanationEdit", () => {
     await waitFor(() => expect(screen.queryByTestId("node-explanation-input")).not.toBeInTheDocument());
   });
 
-  // Map-edit QA D3 (2026-09-26): a save the vault refused closed the editor and dropped the text.
   it("a refused save keeps the editor open with the person's draft", async () => {
     const onSave = vi.fn().mockRejectedValue(new Error("refused"));
     render(<NodeExplanationEdit value="old" onSave={onSave} labels={labels} />);

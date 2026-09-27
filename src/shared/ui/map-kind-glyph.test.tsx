@@ -6,10 +6,10 @@ import type { GlyphSet } from "@/shared/lib/appearance-preferences";
 
 const KINDS = ["project", "domain", "capability", "element"] as const;
 
-/** The silhouette element each kind renders — must be identical across sets. */
+/** Must be identical across sets. */
 function silhouetteTag(container: HTMLElement): string {
   const svg = container.querySelector("svg");
-  // first shape child (polygon / rect / circle) is the silhouette
+  // The first shape child (polygon, rect or circle) is the silhouette.
   const shape = svg?.querySelector("polygon, rect, circle");
   return shape?.tagName.toLowerCase() ?? "";
 }
@@ -18,7 +18,7 @@ function silhouetteGeometry(container: HTMLElement): string {
   const svg = container.querySelector("svg");
   const shape = svg?.querySelector("polygon, rect, circle");
   if (!shape) return "";
-  // capture the geometry-defining attributes only (never fill/stroke)
+  // Geometry-defining attributes only, never fill or stroke.
   return ["points", "x", "y", "width", "height", "rx", "cx", "cy", "r"]
     .map((attr) => `${attr}=${shape.getAttribute(attr) ?? ""}`)
     .join("|");
@@ -58,8 +58,7 @@ describe("OntologyMapKindGlyph — silhouette invariance across sets (#21 hard r
   });
 
   it("draws a page, never another kind's silhouette, for a kind the map does not draw", () => {
-    // The vault README (`vault-readme`) used to wear the element's square and via-hole on the Git
-    // step chips, and "Document" looked exactly like "Element" in the new-document kind picker.
+    // A kind the map does not draw must not borrow the element's square.
     const element = render(<OntologyMapKindGlyph kind="element" glyphSet="geometric" />);
     const elementShape = element.container.querySelector("svg")?.innerHTML;
     element.unmount();

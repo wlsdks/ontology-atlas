@@ -6,22 +6,13 @@ import { describe, expect, it } from 'vitest';
 import { ServiceMark, resolveServiceMark } from './service-mark';
 
 /**
- * **The mark table is a permission ledger, not an icon set** (permissibility review, 2026-09-05).
- *
- * Simple Icons is CC0, so copyright was never what limited this. Trademark is: a mark may be
- * recoloured to `currentColor` at 20px only where its owner's published guideline permits
- * monochrome use to show an integration. One was read and permits it; the rest were removed
- * because their guidelines forbid modification or could not be verified, and **silence is not
- * permission**.
- *
- * So what this file guards is the ledger's shape rather than a count: an entry may only exist
- * beside a cited guideline, everything else falls back, and the matching that lets a re-added
- * entry work stays alive.
+ * The mark table is a permission ledger: an entry may exist only beside a cited guideline
+ * permitting monochrome integration use; everything else falls back.
  */
 describe('service marks — only what a read guideline permits', () => {
   it('ships the one mark whose guideline was read, and nothing else', () => {
     expect(resolveServiceMark('github', '/usr/local/bin/github-mcp-server stdio')).toBe('github');
-    // Removed on 2026-09-05: guidelines forbid modification, or could not be verified.
+    // Guidelines forbid modification, or could not be verified.
     for (const [name, runs] of [
       ['notion', '/opt/homebrew/bin/npx -y @notionhq/notion-mcp-server'],
       ['linear', 'https://mcp.linear.app/mcp'],
@@ -38,8 +29,7 @@ describe('service marks — only what a read guideline permits', () => {
   });
 
   it('matches on what actually runs, not only on the name a person invented', () => {
-    // The row renamed `work-repos` still points at GitHub, and the command is the part that
-    // cannot lie about it.
+    // A renamed row still points at GitHub; the command is the part that cannot lie.
     expect(resolveServiceMark('work-repos', '/usr/local/bin/github-mcp-server stdio')).toBe(
       'github',
     );
@@ -48,10 +38,8 @@ describe('service marks — only what a read guideline permits', () => {
 
   it('a fragment is specific enough that an ordinary path cannot contain it', () => {
     /*
-     * The reason the removed Chrome entry could never have been the bare word `chrome`: fragments
-     * are matched against the whole command line, so a connector run from a folder with that word
-     * in its path would have worn somebody's logo. This keeps that rule live for whatever is added
-     * next.
+     * Fragments match the whole command line, so a bare word could put a logo on a connector
+     * run from a folder whose path contains it.
      */
     expect(resolveServiceMark('internal', '/Users/me/github-notes/bin/server')).toBe('github');
     expect(resolveServiceMark('internal', '/Users/me/chrome-tools/bin/server')).toBeNull();
@@ -77,9 +65,8 @@ describe('service marks — only what a read guideline permits', () => {
 
   it('every shipped mark cites the guideline that permits it', () => {
     /*
-     * The ledger's whole contract. A path added without the citation beside it is exactly the
-     * assumption this review removed nine marks for, so the file is read rather than trusted:
-     * each key in the table must appear in a comment carrying a URL and the date it was read.
+     * Each key in the table must appear in a comment carrying a guideline URL and the date it
+     * was read.
      */
     const source = readFileSync('src/shared/ui/service-mark.tsx', 'utf8');
     const table = source.slice(

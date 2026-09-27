@@ -23,82 +23,38 @@ import {
 import { transientSurface } from "./transient-surface";
 
 /**
- * Dialog — **the centred dialog that blocks what is behind it.** Modality comes
- * as standard.
- *
- * **Why** (ratified by the design-systems seat 2026-08-15 — `docs/DECISIONS.md`).
- * 26 `role="dialog"` sites across 23 files were each assembling modality
- * themselves. Measured drift: **5 different** scrim tokens, plus 2 `aria-modal`
- * surfaces with no scrim at all (modal without modality — forbidden by
- * `.claude/rules/design.md`); **8 hardcoded widths** (360–576); hardcoded z
- * (`z-50` ×12, `z-40` ×3); and a focus trap actually present in **8 of 20**
- * sites that declared `aria-modal`. This is the slot `Surface` deliberately left
- * empty ("if you need a modal, stack that contract separately") — the same
- * disease as the inline-panel hard-cut incident, a missing **asset to copy**
- * rather than missing discipline, so it gets the same prescription: a primitive.
- *
- * **The contract — all on by default, no opt-out.** Focus trap · owns Escape ·
- * returns focus to the opening control · body scroll lock · `aria-modal` ·
- * close on scrim click. **There is no `modal={false}`**: the WAI-ARIA APG
- * requires this set as one package for the modal-dialog pattern, and an opt-out
- * switch becomes a hole through the whole contract. Non-modal surfaces are not
- * consumers of this component but of `Surface` plus
- * `transientSurface("anchored")`.
- *
- * **Canonical tokens** (exactly as the seat ruled). Scrim `--overlay-scrim`
- * (0.85 — the container doubles as the scrim, so there is a single z layer) · z
- * `--z-dialog` · surface `--color-panel` (the scrim provides the brightness
- * separation) · border `--color-divider` (one token with internal dividers) ·
- * radius `rounded-panel` · shadow `--shadow-elevation-3` (the dialog step) ·
- * width `--dialog-w-sm/md`, two steps, because the 8 hardcoded widths clustered
- * into exactly two (360–448 → 420, 480–576 → 560).
- *
- * **Motion** follows the incumbent majority overlay grammar — `SCRIM_FADE` for
- * the scrim, `OVERLAY_SPRING` for the panel (no overshoot; opacity plus an 8px
- * rise). Unifying on `Surface`'s CSS-keyframe grammar needs the motion seat's
- * co-signature and is not decided here (seat condition ⓒ).
- *
- * **Gates:** `dialog.test.tsx` (the modality contract) and
- * `tests/contract/dialog-adoption-ratchet` (a `role="dialog"` outside this file
- * cannot exceed the recorded baseline — new files start at 0). Declaring
- * `data-transient-surface="sheet"` inherits the 2026-08-11 sweep automatically.
+ * The centred modal dialog. Focus trap, Escape, focus return, scroll lock, `aria-modal` and
+ * scrim-click close are one package with no opt-out (WAI-ARIA APG, `.claude/rules/design.md`);
+ * non-modal surfaces use `Surface` with `transientSurface("anchored")`. Tokens as ratified
+ * in `docs/DECISIONS.md`; `role="dialog"` elsewhere is held
+ * by `tests/contract/dialog-adoption-ratchet`.
  */
 export interface DialogProps {
   open: boolean;
-  /** Escape, a scrim click and the consumer's close button all funnel through this one. */
+  /** Escape, a scrim click and the consumer's close button all go through this. */
   onClose: () => void;
-  /** Fixed prompt widths or a viewport work surface held inside the existing chrome inset. */
+  /** Two fixed prompt widths, or a viewport work surface inside the chrome inset. */
   size?: "sm" | "md" | "viewport";
   /**
-   * `alertdialog` for a surface that interrupts to confirm something **irreversible**, `dialog`
-   * (the default) for everything else. The WAI-ARIA APG separates the two on exactly that
-   * question, and assistive tech reads an alert dialog's body immediately instead of waiting to
-   * be walked into it — which is the whole point when the body names what is about to be
-   * destroyed.
-   *
-   * ⚠️ **It is a role, not a second contract.** Scrim, focus trap, Escape, focus restoration and
-   * scroll lock are unchanged and still not optional; this switches one attribute so a consumer
-   * does not hand-build a modal to get it (2026-09-05, design council).
+   * Use `alertdialog` for confirming something irreversible, so assistive tech reads the body
+   * at once. Only the role changes; the modal contract stays.
    */
   role?: "dialog" | "alertdialog";
-  /** Id of the title element inside the panel. Without one, pass `aria-label` — an unnamed modal is not allowed. */
+  /** Id of the title element; without one pass `aria-label`: an unnamed modal is not allowed. */
   labelledBy?: string;
   "aria-label"?: string;
   /**
-   * Where focus lands on open. Default `first` (the first focusable — the APG
-   * recommendation). Use `container` when the first control is destructive (a
-   * delete confirmation), and `none` when the consumer moves focus to a specific
-   * control from its own effect. The trap and the focus return stay owned by
-   * this component either way.
+   * Where focus lands on open. `container` when the first control is destructive, `none` when
+   * the consumer focuses a control itself; the trap and return stay here.
    */
   initialFocus?: "container" | "first" | "none";
   testId?: string;
-  /** Extra classes for the panel — layout only (flex, padding). Do not override the token contract. */
+  /** Layout only; do not override the token contract. */
   className?: string;
   children: ReactNode;
 }
 
-/** There is no `document` during the static-export build, so portal only after the client mounts. */
+/** No `document` exists during the static export build, so portal only after mount. */
 function useIsMounted(): boolean {
   return useSyncExternalStore(
     () => () => {},
@@ -166,8 +122,7 @@ export function Dialog({
             data-testid={testId}
             data-overlay-spring="true"
             {...transientSurface("sheet")}
-            // No ring on programmatically moved container focus
-            // (the verdict `dialog-focus-ring.spec.ts` enforces).
+            // No ring on programmatic container focus (`dialog-focus-ring.spec.ts`).
             className={cn(
               "rounded-panel border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] p-4 shadow-[var(--shadow-elevation-3)] focus:outline-none",
               size !== "viewport" && "w-[min(var(--dialog-w-sm),calc(100vw-2rem))]",

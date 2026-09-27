@@ -4,36 +4,20 @@ import { History } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 
 export interface SummaryFreshnessRowProps {
-  /** "Description is behind its membership" — the caller resolves it via i18n. */
+  /** Resolved by the caller via i18n. */
   prefixLabel: string;
-  /** How far behind, e.g. "21 days" — the caller resolves it via `daysBehind` plus i18n (tabular-nums). */
+  /** Resolved by the caller from `daysBehind` plus i18n (tabular-nums). */
   lagLabel: string;
-  /** What is owed, e.g. "re-judge" — the caller resolves it via i18n. */
+  /** Resolved by the caller via i18n. */
   actionLabel: string;
   className?: string;
 }
 
 /**
- * Says that a domain or project's description has fallen behind the membership it
- * describes, so someone owes it a re-judgement.
- *
- * **Not a warning, and painted so.** The underlying signal is `severity: info`,
- * `phase: review` — nothing is broken and nothing is blocked. It therefore uses the same
- * tertiary text colour and label size as `LastEditSubjectRow` and introduces no colour
- * channel of its own. A stale description that reads as an alarm teaches people to
- * ignore the mark; a plain fact does not.
- *
- * **Static, and no proposal.** No motion, and no "fix it" affordance: the body of a
- * summary node is a human judgement someone accepted, so the row asks for a judgement
- * and stops. Nothing here rewrites anything.
- *
- * The caller mounts this only when it has a real verdict from `summaryStalenessOf`. In
- * the browser there is no Git history to derive one, so nothing renders at all — which
- * is honest degradation rather than a false all-clear.
- *
- * Direction B of the 2026-08-25 `/design-directions` pass: the map's job here is
- * confirming on arrival, not discovery. Discovery belongs to `maintenance_plan` and the
- * insights Do-Next tab, which already carry it.
+ * Says a domain or project description has fallen behind its membership and is owed a
+ * re-judgement. Painted as a plain fact, not a warning, with no colour, motion or fix
+ * affordance, because the body is an accepted human judgement. Mounted only with a
+ * real `summaryStalenessOf` verdict; without Git history nothing renders.
  */
 export function SummaryFreshnessRow({
   prefixLabel,

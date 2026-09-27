@@ -15,10 +15,7 @@ function renderMeter(locale: 'en' | 'ko' = 'en') {
   );
 }
 
-/**
- * Takes the meter's clock and frame loop into the test's hands, so a reading can be produced
- * deterministically: `tick(at)` delivers the next animation frame at `at` ms.
- */
+/** Hands the clock and frame loop to the test: `tick(at)` delivers the next frame at `at` ms. */
 function takeFrameLoop() {
   const frames: FrameRequestCallback[] = [];
   vi.spyOn(performance, 'now').mockReturnValue(1000);
@@ -33,12 +30,7 @@ function takeFrameLoop() {
     });
 }
 
-/**
- * The value of this instrument is not "numbers appear when it is on" but
- * **"it does not exist while it is off"**. A diagnostic that slows down what it
- * diagnoses ends up measuring itself, which is worse than having none. That
- * promise is pinned here rather than left in a comment.
- */
+/** A diagnostic that slows what it diagnoses measures itself, so off must mean absent. */
 describe('FrameMeter', () => {
   beforeEach(() => {
     window.localStorage.clear();
@@ -81,7 +73,7 @@ describe('FrameMeter', () => {
     act(() => {
       writeFrameMeter(false);
     });
-    // Switching back to off removes the display — the stored value is the screen.
+    // The stored value is the screen.
     expect(screen.queryByText(/fps/)).toBeNull();
   });
 
@@ -89,17 +81,12 @@ describe('FrameMeter', () => {
     act(() => {
       writeFrameMeter(true);
     });
-    // rAF has not run twice yet, so no interval can be computed — and a plausible
-    // lie such as "0fps" must not be drawn in its place.
+    // No interval exists before two frames, and "0fps" must not stand in for it.
     const { container } = renderMeter();
     expect(container.textContent).not.toContain('fps');
   });
 
-  /*
-   * Inspection 2026-09-25 (D2): the readout printed "worst" and "dropped" as Korean literals
-   * beside an English "fps", so an English screen read a sentence in two languages and a Korean
-   * one did too. Every word of the reading is the screen's language.
-   */
+  /* Every word of the reading is in the screen's language. */
   it('reads entirely in English on an English screen', () => {
     act(() => {
       writeFrameMeter(true);

@@ -5,15 +5,8 @@ import { fieldClass } from "./control-class";
 import { Input, Textarea } from "./input";
 
 /**
- * Input/Textarea — the behaviour contract (ratified by the design-systems seat,
- * 2026-08-15).
- *
- * These components exist for **wiring**, not styling (the value layer has zero
- * drift): ① they require an accessible name, ② they wire error/hint through to
- * `aria-invalid` and `aria-describedby` automatically. So the contract is those
- * two plus one more — byte-identical to the value layer. A value written in two
- * places starts diverging, so every style assertion here is only an **equality**
- * against the result of calling `fieldClass`.
+ * The wiring contract: a required accessible name, error and hint wired to `aria-invalid`
+ * and `aria-describedby`, and classes equal to `fieldClass` output.
  */
 
 describe("Input behaviour contract", () => {

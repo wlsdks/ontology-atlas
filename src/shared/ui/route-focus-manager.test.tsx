@@ -109,8 +109,7 @@ describe('RouteFocusManager', () => {
     expect(window.location.search).not.toContain('focus=main');
   });
 
-  /* The rail's `?focus=main` promises the landmark. On the project page it reached the editable
-     name instead, so arriving from the rail drew a focus ring around the project's title. */
+  /* `?focus=main` promises the landmark, not the editable name. */
   it('honours ?focus=main on a page whose h1 is the editable name', async () => {
     route.pathname = '/ko/project/storefront/';
     window.history.replaceState({}, '', '/ko/project/storefront/?focus=main');
@@ -180,10 +179,8 @@ describe('RouteFocusManager', () => {
   });
 
   /*
-   * The project page's `h1` is the project's name, edited in place — `role="button"`,
-   * `tabIndex={0}`. Handing arrival focus to it armed what looks like a text field the moment the
-   * page opened, and `tabIndex = -1` then took the name out of the tab order for the rest of the
-   * visit. A heading that is itself a control is not the page title to announce; `#main` is.
+   * An `h1` edited in place (`role="button"`) is a control, not the title to announce, so
+   * arrival focus goes to `#main` and the heading keeps its tabindex.
    */
   it('lands on the landmark rather than on a heading that is itself a control', async () => {
     route.pathname = '/ko/topology/';
@@ -211,7 +208,7 @@ describe('RouteFocusManager', () => {
     });
     const name = screen.getByRole('button', { name: 'Online Store' });
     expect(name).not.toHaveFocus();
-    // Still reachable from the keyboard afterwards — the focus pass must not rewrite its tabindex.
+    // The focus pass must not rewrite its tabindex.
     expect(name).toHaveAttribute('tabindex', '0');
   });
 
@@ -311,11 +308,10 @@ describe('RouteFocusManager', () => {
     expect(screen.getByRole('heading', { name: '공방' })).not.toHaveFocus();
   });
 
-  // A loading placeholder is not a destination: focusing it drops focus to body the
-  // moment the real screen replaces that node.
+  // Focusing a loading placeholder drops focus to body when the real screen replaces it.
   it('waits past the loading placeholder and lands on the real destination', async () => {
-    // Only the settle and deadline timers are faked, so the 120 ms settle window can be
-    // run past on purpose instead of slept past.
+    // Only the settle and deadline timers are faked, so the 120 ms settle window can be run
+    // past on purpose.
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     try {
       route.pathname = '/ko/topology/';

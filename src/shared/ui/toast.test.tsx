@@ -2,16 +2,8 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 
 /*
- * The contract for a toast's **follow-up action** (2026-08-03, PO council
- * verdict ⑤).
- *
- * Why this file exists: `show()` is the app's single notification path with ~50
- * call sites and had no unit tests at all. Adding the action argument came with
- * the claim that **not one existing call site changes**, and a claim like that
- * has to be a gate rather than a sentence.
- *
- * sonner is mocked because the contract is **what we hand to sonner**, not the
- * rendered result — rendering is sonner's responsibility and not our gate.
+ * The contract is what we hand to sonner, so sonner is mocked: adding the action argument must
+ * leave every existing `show()` call unchanged.
  */
 const sonnerToast = vi.hoisted(() => ({
   success: vi.fn(),
@@ -42,10 +34,7 @@ beforeEach(() => {
 });
 
 describe('useToast follow-up action contract', () => {
-  /*
-   * With no action, the only option handed to sonner is the id (see below): the
-   * ~50 existing call sites keep their behaviour, and no `action` key appears.
-   */
+  /* With no action only the id is handed over, so existing call sites keep their behaviour. */
   it('passes only the id to sonner without an action', () => {
     show('저장됨');
     expect(sonnerToast.success).toHaveBeenCalledWith('저장됨', { id: 'success:저장됨' });
@@ -58,8 +47,7 @@ describe('useToast follow-up action contract', () => {
     expect(sonnerToast.info).toHaveBeenCalledWith('안내', { id: 'info:안내' });
   });
 
-  // The fourth tone (2026-09-24): done, with a caveat. Its own sonner type, so its
-  // glyph is the triangle and its ink the warning token.
+  // Done with a caveat: its own sonner type, so the glyph is the triangle.
   it('routes the warning tone to sonner warning', () => {
     show('붙였지만 꺼져 있어요', 'warning');
     expect(sonnerToast.warning).toHaveBeenCalledWith('붙였지만 꺼져 있어요', {
@@ -68,10 +56,8 @@ describe('useToast follow-up action contract', () => {
   });
 
   /*
-   * The id is the tone plus the message, so an identical notification raised twice
-   * while the first is visible updates it instead of stacking a twin (two edits in
-   * one agent turn produced two "capability edited" boxes, 2026-09-06). Different
-   * tones of one message stay apart.
+   * The id is tone plus message, so a repeat while the first is visible updates it instead of
+   * stacking a twin; different tones stay apart.
    */
   it('reuses the id for the same message so toasts do not stack', () => {
     show('역량 6 편집', 'info');
@@ -90,9 +76,7 @@ describe('useToast follow-up action contract', () => {
       id: 'success:만들었어요',
       action: { label: '지도에서 보기', onClick },
     });
-    // The handler is **not called**: if showing the toast were also running it,
-    // the user never gets the chance to press, and "did they press" becomes
-    // unobservable.
+    // Not called on show: the person must get the chance to press it.
     expect(onClick).not.toHaveBeenCalled();
   });
 

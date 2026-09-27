@@ -36,7 +36,7 @@ describe('ErrorBoundary', () => {
   });
 
   it('renders the fallback when a child throws', () => {
-    // Suppress JSDOM's React error logging — the throw is deliberate, so keep the output clean.
+    // The throw is deliberate, so React's error log is silenced.
     const original = console.error;
     console.error = () => {};
     try {

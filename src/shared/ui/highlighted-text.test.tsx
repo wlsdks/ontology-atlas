@@ -15,7 +15,6 @@ describe('HighlightedText', () => {
     const mark = container.querySelector('mark');
     expect(mark).not.toBeNull();
     expect(mark?.textContent).toBe('Auth');
-    // The full text survives the split.
     expect(container.textContent).toBe('Authentication');
   });
 

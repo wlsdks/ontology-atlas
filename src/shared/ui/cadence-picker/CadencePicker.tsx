@@ -17,52 +17,29 @@ import {
 } from "./detents";
 
 /**
- * **How often** — one rail you drag, not a row of four chips.
- *
- * Spec: `docs/specs/2026-09-21-round-cadence-and-scope.md` §2.2. The owner asked
- * for this on the installed app: "1, 5, 10, 30 minutes, 1 hour; pick minutes or hours at the
- * top and a different drag comes out; the motion has to be very smooth". Four chips could not
- * say ten minutes, and a number field would be a different product — a person setting a
- * cadence is choosing a feel, and a feel is dragged.
- *
- * It lives in `shared/` because the cadence of a thing that repeats is not the Library's idea;
- * the Library sheet is only its first consumer. It therefore carries **no copy of its own**:
- * every word arrives through `labels`, so the messages stay in `messages/{en,ko}.json` where
- * the locale data belongs and this file never imports a namespace it does not own.
- *
- * ## What the hand gets
- *
- * Pressing anywhere on the track moves the thumb there, and the pointer is captured, so a drag
- * that wanders off the rail keeps working. While the pointer is down the thumb follows it
- * freely and the **nearest** detent is what the value reports, so the sentence above the form
- * changes the moment the choice does rather than on release. Letting go springs the thumb onto
- * that detent with `--motion-ease-drag-release`, which overshoots about 15% and settles: the
- * feel of a notch catching. Reduced motion drops the transition and the thumb is simply there.
- *
- * The thumb is a `role="slider"` button with a 44px hit area over a 4px track, so a finger and
- * an arrow key reach the same values, and every detent label is a real button, so a person who
- * does not drag still has the chips they had.
+ * "How often" as one draggable rail with detents
+ * (`docs/specs/2026-09-21-round-cadence-and-scope.md` §2.2). Every word arrives
+ * through `labels`, so the messages stay in `messages/{en,ko}.json`. Pointer capture keeps a
+ * drag working off the rail; the nearest detent is reported while dragging, and release springs
+ * the thumb onto it (`--motion-ease-drag-release`). The thumb is a `role="slider"` with a 44px
+ * hit area, and every detent label is a button.
  */
 
 export type CadenceUnit = "minutes" | "hours" | "day";
 
 interface CadencePickerLabels {
-  /** The group's name, e.g. "How often". */
   legend: string;
   unitMinutes: string;
   unitHours: string;
   unitDay: string;
   /** The short number under a tick: "5" for five minutes, "2" for two hours. */
   detent: (minutes: number) => string;
-  /** The whole phrase a screen reader hears: "every 5 minutes". */
+  /** What a screen reader hears: "every 5 minutes". */
   valueText: (minutes: number) => string;
-  /** Accessible name of the rail itself. */
   railAria: string;
   daily: string;
   weekdays: string;
-  /** The time field's label. */
   time: string;
-  /** Accessible name of the daily / weekdays choice. */
   dayAria: string;
   /** Shown under the time field when it is not `HH:MM`. */
   timeError: string;
@@ -71,7 +48,7 @@ interface CadencePickerLabels {
 interface CadencePickerProps {
   unit: CadenceUnit;
   onUnitChange: (unit: CadenceUnit) => void;
-  /** The interval in minutes. Ignored while the unit is `day`, and `null` before one is chosen. */
+  /** Ignored while the unit is `day`; `null` before one is chosen. */
   minutes: number | null;
   onMinutesChange: (minutes: number) => void;
   daily: string;
@@ -103,7 +80,7 @@ export function CadencePicker({
 }: CadencePickerProps) {
   const legendId = useId();
   const trackRef = useRef<HTMLDivElement | null>(null);
-  /** Where the finger is, 0..1, while it is down — the thumb follows it without snapping. */
+  /** The finger position (0..1) while down; the thumb follows it without snapping. */
   const [dragRatio, setDragRatio] = useState<number | null>(null);
 
   const detents = detentsForUnit(unit);
@@ -141,8 +118,7 @@ export function CadencePicker({
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
-    // Letting go is what starts the spring: the thumb leaves the finger's position and
-    // travels to the detent the value already reports.
+    // Releasing starts the spring from the finger's position to the reported detent.
     setDragRatio(null);
   };
 
@@ -182,10 +158,7 @@ export function CadencePicker({
           {unit === "day" ? `${weekdaysOnly ? labels.weekdays : labels.daily} ${daily}` : labels.valueText(detents[index] ?? detents[0])}
         </span>
       </div>
-      {/*
-        Compact (`md`, 28px) and joined: the unit is a frame around the rail below it, not a
-        second decision competing with it. The rail is the protagonist of this group.
-      */}
+      {/* Compact and joined: the unit frames the rail rather than competing with it. */}
       <SegmentedControl<CadenceUnit>
         labelledBy={legendId}
         value={unit}
@@ -226,10 +199,7 @@ export function CadencePicker({
         </div>
       ) : (
         <div className="mt-1 px-6">
-          {/*
-            The hit region is 44px tall while the track draws 4px: a finger aiming at a hairline
-            is aiming at nothing, and the touch floor is the whole rail, not only the thumb.
-          */}
+          {/* A 44px hit region over a 4px track: the whole rail is the touch floor. */}
           <div
             ref={trackRef}
             data-testid={`${testId}-rail`}
@@ -268,10 +238,7 @@ export function CadencePicker({
               onKeyDown={onKeyDown}
               data-testid={`${testId}-thumb`}
               data-cadence-dragging={dragRatio === null ? undefined : "true"}
-              /*
-                The value layer owns the press; the geometry here is the 44px touch floor over
-                a 4px track, which is this control's own shape rather than an off-ramp size.
-              */
+              /* A 44px touch floor over a 4px track is this control's own shape. */
               className={controlClass({
                 shape: "icon",
                 size: "lg",
@@ -299,11 +266,7 @@ export function CadencePicker({
               />
             </button>
           </div>
-          {/*
-            The labels crossfade in place when the unit changes (`key`), on the ramp's base
-            step rather than a duration of their own. Reduced motion gets `motion-safe`, so
-            they simply are the new numbers.
-          */}
+          {/* Labels crossfade on a unit change (`key`); reduced motion simply swaps them. */}
           <div
             key={unit}
             data-testid={`${testId}-detents`}

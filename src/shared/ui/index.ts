@@ -1,9 +1,5 @@
 export { Button, buttonVariants, type ButtonProps } from './button';
-/**
- * Wrap any conditionally appearing surface in `Surface` — enter and exit motion
- * come with it. Inventory: 10 of 20 such surfaces were hard cuts, and all 10
- * were inline panels.
- */
+/** Wrap any conditionally appearing surface in `Surface` for its enter and exit motion. */
 export { Surface } from './surface';
 export { RowDisclosure } from './row-disclosure';
 export { AGENT_DOCK_INSET_SURFACE_CLASS } from './agent-dock-surface';
@@ -13,25 +9,11 @@ export { Disclosure } from './disclosure';
 export { Textarea } from './input';
 export { Checkbox } from './checkbox';
 /**
- * Control components — the layer that adds **behaviour** on top of
- * `controlClass`. The function below owns the values; this owns `type="button"`,
- * the required accessible name, and button semantics.
- *
- * `<Button>` covers **only the standard button**: 1 of the 419 inventoried
- * controls had that shape. The other six (chip, link-like, row, icon, pill,
- * card) are here.
+ * The behaviour layer over `controlClass`: `type="button"`, the required accessible name and
+ * button semantics. `<Button>` covers only the standard button.
  */
 export { Chip, IconButton, RowButton } from './controls';
 export { controlClass } from './control-class';
-/*
- * `Card`, `Badge` and `DetailCard` were **deleted on 2026-08-03.**
- *
- * Created 2026-04-30, they had 0 production consumers for over three months.
- * Opening them showed why: `CardTitle` used `text-lg`, **a step absent from this
- * repo's type ramp**. A primitive violating the system it is meant to encode is
- * one nobody adopts. What failed was not components but **components without a
- * gate**.
- */
 export { LiveAnnouncer } from './live-announcer';
 export { InfoHint } from './info-hint';
 export { ToastProvider, useToast, useToastAnchor } from './toast';
@@ -40,13 +22,7 @@ export { HiddenCountLine } from './hidden-count-line';
 export { EvidenceOnlyBadge } from './evidence-only-badge';
 export { Select } from './select';
 export { InlineEditable } from './inline-editable';
-/*
- * The `ChipListEditor` and `LinkListEditor` exports were removed on 2026-08-03:
- * they stood on the public surface of `shared/ui` with 0 production consumers,
- * with the same symptoms as the `Card`/`Badge`/`DetailCard` failure above.
- * Background and falsifier: `docs/DECISIONS.md` 2026-08-03 two dead primitives
- * (two dead primitives).
- */
+/* Why `Card`, `Badge` and the list editors are gone: `docs/DECISIONS.md`, two dead primitives. */
 export { Tooltip, TooltipProvider } from './tooltip';
 export { StaggeredFadeIn } from './staggered-fade-in';
 export { HighlightedText } from './highlighted-text';

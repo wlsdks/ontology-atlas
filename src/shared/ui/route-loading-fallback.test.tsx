@@ -6,10 +6,8 @@ import koMessages from '../../../messages/ko.json';
 import { RouteLoadingFallback } from './route-loading-fallback';
 
 /**
- * The placeholder keeps exactly two promises: ① it establishes the `#main` landmark
- * immediately, giving the focus manager and screen readers somewhere to land, and ② it states
- * the one fact it knows. No spinner, no progress bar, no percentage — it never pretends to
- * know progress it cannot measure.
+ * The placeholder establishes `#main` at once and states the one fact it knows, never progress
+ * it cannot measure.
  */
 function renderFallback() {
   return render(

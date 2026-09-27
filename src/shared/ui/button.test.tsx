@@ -13,7 +13,7 @@ describe('Button', () => {
   it('default variant=primary uses indigo-brand background', () => {
     render(<Button>x</Button>);
     const btn = screen.getByRole('button');
-    // Charter §11 — a primary CTA uses the single indigo brand colour only.
+    // A primary CTA uses the single indigo brand colour only.
     expect(btn.className).toContain('color-indigo-brand');
   });
 
@@ -27,7 +27,7 @@ describe('Button', () => {
   it('variant=outline has subtle border + alpha bg', () => {
     render(<Button variant="outline">x</Button>);
     const btn = screen.getByRole('button');
-    // Charter §11 — outline uses neutral alpha only.
+    // Outline uses neutral alpha only.
     expect(btn.className).toContain('var(--color-overlay-3)');
     expect(btn.className).toContain('var(--color-overlay-1)');
   });
@@ -44,10 +44,8 @@ describe('Button', () => {
   });
 
   it('every size wears the chip radius: a Button is a control, not a container', () => {
-    // A 32px Button beside a 32px controlClass chip or fieldClass field wears their radius (6px),
-    // and so do 40px and 44px ones: a 40px primary on the panel corner read as a pill beside
-    // rectangular primaries on the next screen (2026-09-26).
-    // Type stays 14px at every size, the step a 32px field sets its value in.
+    // Every size wears the chip radius of the chips and fields beside it, and type stays at the
+    // 14px step a 32px field sets its value in.
     for (const size of ['sm', 'md', 'lg'] as const) {
       const cls = buttonVariants({ size });
       expect(cls).toMatch(/\btext-body-lg\b/);
@@ -99,7 +97,7 @@ describe('Button', () => {
   it('motion-reduce variant disables transition + transform', () => {
     render(<Button>m</Button>);
     const btn = screen.getByRole('button');
-    // Charter §11 plus accessibility — protects prefers-reduced-motion users.
+    // Protects prefers-reduced-motion users.
     expect(btn.className).toContain('motion-reduce:transition-none');
     expect(btn.className).toContain('motion-reduce:transform-none');
   });
@@ -112,7 +110,6 @@ describe('Button', () => {
   });
 
   it('exports buttonVariants for use as Link className', () => {
-    // A link/anchor imitating a Button calls buttonVariants directly.
     const cls = buttonVariants({ variant: 'outline', size: 'sm' });
     expect(typeof cls).toBe('string');
     expect(cls).toContain('h-8');
