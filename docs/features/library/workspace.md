@@ -34,6 +34,17 @@ writes. Jev remains optional in the installed app: a current cited claim opens
 an exact-transfer consent dialog, and its result is advice on that pair only.
 Neither a key nor an agent is needed to search or open the originals.
 
+**Report and document (2026-09-27).** One explicit ACP action turns the current
+question into a report request: answer, cited originals, disagreements or
+changed claims, and unknowns. Its response appears above the evidence leads
+with an unreviewed draft label. Only citations to inventoried originals open
+inside Library. The draft follows the current query and file listing; a new
+search or external folder change clears it. Filing remains an explicit Wiki
+review/write action. One editorial document template preserves the question,
+response, cited addresses, search coverage and omissions in a local Markdown
+download or the app's Print/Save as PDF flow. Jev judgment is not exported as
+accepted meaning.
+
 **Retained questions and explicit revisions.** The Library landing lists saved
 questions and the tips of their answer histories. It distinguishes source-byte
 changes, missing or new originals and unmeasured evidence; observations never

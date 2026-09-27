@@ -389,7 +389,12 @@ a matching source hash is not presented as proof that a claim is true. The
 existing page browser remains one action away. An attached ACP agent can use
 the candidates as leads, re-read originals, and answer with citations; an Ask
 turn does not automatically approve Wiki writes. Search and source inspection
-work without Jev or an agent.
+work without Jev or an agent. **Summarize as report** explicitly asks ACP to
+re-read the originals and organize an answer, cited evidence, disagreements,
+and unknowns above the search leads. The result is an unreviewed draft, not a
+Wiki page until you file it. Its editorial document template can be downloaded
+as Markdown or opened in the app's Print dialog to save as PDF; both retain the
+question, citations, search coverage, and limits.
 
 Creating a Wiki page opens a centered, background-blocking dialog that previews its live `wiki/<slug>.md` path, Markdown draft state, and five required section headings before any write. The current local-work receipt stays visible while earlier receipts remain under History. A successful app write produces one actionable notification; the folder watcher suppresses its matching duplicate.
 
