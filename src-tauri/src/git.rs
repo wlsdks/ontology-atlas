@@ -58,53 +58,48 @@ fn silence_git_credential_prompts(command: &mut Command) {
 /// connection and then never answers, since git has no timeout of its own.
 const NETWORK_GIT_DEADLINE: std::time::Duration = std::time::Duration::from_secs(120);
 
-/// Spawns so the wait has a deadline and the whole attempt is killed on expiry.
 fn run_network_git(cwd: &Path, args: &[&str]) -> Result<GitRun, String> {
-    use std::io::Read;
+    let mut command = Command::new("git");
+    command.args(args).current_dir(cwd);
+    silence_git_credential_prompts(&mut command);
+    let label = args.first().copied().unwrap_or("command");
+    run_with_deadline(command, label, NETWORK_GIT_DEADLINE)
+}
+
+/// The pipes drain while waiting, or output past their 64 KiB buffer blocks the child.
+fn run_with_deadline(
+    mut command: Command,
+    label: &str,
+    deadline: std::time::Duration,
+) -> Result<GitRun, String> {
     use std::process::Stdio;
 
-    let mut command = Command::new("git");
-    command
-        .args(args)
-        .current_dir(cwd)
+    let mut child = command
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
-        .stderr(Stdio::piped());
-    silence_git_credential_prompts(&mut command);
-
-    let mut child = command
+        .stderr(Stdio::piped())
         .spawn()
         .map_err(|err| coded("git-not-runnable", err))?;
+    let stdout = drain_pipe(child.stdout.take());
+    let stderr = drain_pipe(child.stderr.take());
 
     let started = std::time::Instant::now();
     loop {
         match child.try_wait() {
             Ok(Some(status)) => {
-                let mut stdout = String::new();
-                let mut stderr = String::new();
-                if let Some(mut pipe) = child.stdout.take() {
-                    let _ = pipe.read_to_string(&mut stdout);
-                }
-                if let Some(mut pipe) = child.stderr.take() {
-                    let _ = pipe.read_to_string(&mut stderr);
-                }
                 return Ok(GitRun {
                     success: status.success(),
-                    stdout,
-                    stderr,
+                    stdout: collect_pipe(stdout),
+                    stderr: collect_pipe(stderr),
                 });
             }
             Ok(None) => {
-                if started.elapsed() >= NETWORK_GIT_DEADLINE {
+                if started.elapsed() >= deadline {
                     let _ = child.kill();
                     let _ = child.wait();
                     return Err(coded(
                         "git-network-timeout",
-                        format!(
-                            "git {} did not finish within {}s",
-                            args.first().copied().unwrap_or("command"),
-                            NETWORK_GIT_DEADLINE.as_secs()
-                        ),
+                        format!("git {label} did not finish within {}s", deadline.as_secs()),
                     ));
                 }
                 std::thread::sleep(std::time::Duration::from_millis(50));
@@ -112,6 +107,25 @@ fn run_network_git(cwd: &Path, args: &[&str]) -> Result<GitRun, String> {
             Err(err) => return Err(coded("git-not-runnable", err)),
         }
     }
+}
+
+fn drain_pipe<R: std::io::Read + Send + 'static>(
+    pipe: Option<R>,
+) -> Option<std::thread::JoinHandle<Vec<u8>>> {
+    pipe.map(|mut pipe| {
+        std::thread::spawn(move || {
+            let mut bytes = Vec::new();
+            let _ = pipe.read_to_end(&mut bytes);
+            bytes
+        })
+    })
+}
+
+fn collect_pipe(reader: Option<std::thread::JoinHandle<Vec<u8>>>) -> String {
+    let bytes = reader
+        .and_then(|reader| reader.join().ok())
+        .unwrap_or_default();
+    String::from_utf8_lossy(&bytes).into_owned()
 }
 
 /// `Ok(None)` outside a git repo.
@@ -1964,6 +1978,19 @@ mod tests {
         assert_eq!(rows[1].index, ' ');
         assert_eq!(rows[1].worktree, 'M');
         assert_eq!(rows[2].index, 'D');
+    }
+
+    #[test]
+    fn a_waited_command_drains_output_larger_than_a_pipe_buffer() {
+        let mut command = Command::new("node");
+        command.args([
+            "-e",
+            "process.stdout.write('o'.repeat(200000)); process.stderr.write('e'.repeat(100000))",
+        ]);
+        let run = run_with_deadline(command, "probe", std::time::Duration::from_secs(20)).unwrap();
+        assert!(run.success);
+        assert_eq!(run.stdout.len(), 200_000);
+        assert_eq!(run.stderr.len(), 100_000);
     }
 
     #[test]
