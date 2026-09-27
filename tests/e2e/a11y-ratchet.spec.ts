@@ -284,24 +284,24 @@ test("접근성 래칫 — 새 룰 위반 0, 기존 개수는 늘지 않는다",
   // assertions below are all green over an empty set, which is the same as no gate.
   expect(
     thinRuns,
-    `axe 가 라우트당 ${MIN_RULES_PASSED_PER_ROUTE}개 룰도 내용에 적용하지 못했다 — ` +
-      `위반이 없는 게 아니라 화면이 안 떴거나 채집이 깨진 것이다.\n${thinRuns.join("\n")}`,
+    `axe applied fewer than ${MIN_RULES_PASSED_PER_ROUTE} rules to the content of a route. ` +
+      `That is not the absence of violations: the screen did not render or collection broke.\n${thinRuns.join("\n")}`,
   ).toEqual([]);
 
   // "The shell mounted but there is no body" — a state the guard above cannot see in
   // principle. Such a route really was in this list, and both ratchets stayed green.
   expect(
     emptyBodies,
-    `\`<main>\` 안에 요소가 ${MIN_MAIN_ELEMENTS_PER_ROUTE}개도 안 그려졌다 — ` +
-      `이 라우트에서 «위반 0» 은 통과가 아니라 미측정이다. 주소가 실재하지 않는 ` +
-      `값(슬러그 등)을 가리키고 있지 않은지 먼저 확인해라.\n${emptyBodies.join("\n")}`,
+    `Fewer than ${MIN_MAIN_ELEMENTS_PER_ROUTE} elements rendered inside \`<main>\`, ` +
+      `so "0 violations" on this route is unmeasured, not a pass. First check that the address does not point at a value ` +
+      `that does not exist (a slug, say).\n${emptyBodies.join("\n")}`,
   ).toEqual([]);
 
   const unknown = [...counts.keys()].filter((id) => !(id in BASELINE)).sort();
   expect(
     unknown,
-    `기준선에 없는 접근성 룰이 떴다 — 새 결함이다. 고쳐라. 정말 등재해야 한다면 ` +
-      `BASELINE 을 올리는 커밋이 리뷰에 보여야 한다.\n` +
+    `An accessibility rule the baseline does not have was raised: a new defect. Fix it. If it really must be listed, ` +
+      `the commit that raises BASELINE has to be visible in review.\n` +
       unknown.map((id) => `  ${id}: ${samples.get(id)}`).join("\n"),
   ).toEqual([]);
 
@@ -309,8 +309,8 @@ test("접근성 래칫 — 새 룰 위반 0, 기존 개수는 늘지 않는다",
     const actual = counts.get(id) ?? 0;
     expect(
       actual,
-      `\`${id}\` 위반이 ${max} → ${actual} 로 늘었다. 래칫은 내려가기만 한다.\n` +
-        `  예: ${samples.get(id) ?? "(없음)"}`,
+      `\`${id}\` violations grew from ${max} to ${actual}. The ratchet only goes down.\n` +
+        `  e.g. ${samples.get(id) ?? "(none)"}`,
     ).toBeLessThanOrEqual(max);
   }
 
@@ -321,7 +321,7 @@ test("접근성 래칫 — 새 룰 위반 0, 기존 개수는 늘지 않는다",
     .map(([id, max]) => `  ${id}: 기준선 ${max} · 실측 ${counts.get(id) ?? 0}`);
   expect(
     slack,
-    `접근성 위반이 줄었다 — 이 파일의 BASELINE 도 같이 내려라. 안 내리면 그 차이가 ` +
-      `다시 나빠질 여유로 남는다.\n${slack.join("\n")}`,
+    `Accessibility violations fell, so lower this file's BASELINE with them; otherwise the difference ` +
+      `stays as room to get worse again.\n${slack.join("\n")}`,
   ).toEqual([]);
 });

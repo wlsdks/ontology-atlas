@@ -713,7 +713,7 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
      * Row — 28 / 36 / 44. All three already had that natural height (leading +
      * padding), so the floors move 0 pixels. `lg` is the exception: its natural
      * 42 is not in the vocabulary, so it is lifted to `min-h-11`
-     * (`--touch-target-min` = `--control-row-h` 44). With 0 consumers that move
+     * (44, `--touch-target-min`). With 0 consumers that move
      * is also 0 — the step was put on the ramp before anything could adopt 42.
      */
     { shape: 'row', size: ['xs', 'sm'], class: 'min-h-7 gap-1.5 px-2 py-1.5 text-label' },

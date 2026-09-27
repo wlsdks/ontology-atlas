@@ -199,8 +199,8 @@ describe("Dialog 채택 래칫", () => {
     }
     expect(
       over,
-      "모달을 손으로 조립하지 마라 — src/shared/ui/dialog.tsx (Dialog) 가 스크림·트랩·Esc·복귀·스크롤락을 소유한다. " +
-        "원리적으로 포털이 불가한 자리라면 REGISTERED 에 근거와 함께 등재하라.",
+      "Do not hand-assemble a modal: src/shared/ui/dialog.tsx (Dialog) owns the scrim, focus trap, Escape, focus return and scroll lock. " +
+        "If a portal is impossible at that site in principle, register it in REGISTERED with the reason.",
     ).toEqual([]);
   });
 

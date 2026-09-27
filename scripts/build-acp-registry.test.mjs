@@ -1,13 +1,76 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import {
+  cutoffProblems,
   driftedAgents,
+  hardenedRuntimeIds,
   isolatedRuntimeIds,
   launchLabel,
+  npmPackageSpec,
   runtimeLaunchPinIds,
   runtimeLaunchPinIssues,
+  withDependencyCutoff,
 } from "./build-acp-registry.mjs";
+
+const npx = (id, pkg) => ({ id, launch: { kind: "npx", package: pkg, args: [] } });
+
+test("the npm dependency cutoff moves only when the snapshot does", () => {
+  const now = new Date("2026-10-01T00:00:00.000Z");
+  const committed = {
+    source: "s",
+    registryVersion: "1",
+    npmDependencyCutoff: "2026-09-27T08:11:48.000Z",
+    agents: [npx("claude-acp", "a@1.0.0")],
+  };
+  const same = { ...committed, npmDependencyCutoff: null };
+  assert.equal(withDependencyCutoff(same, committed, now).npmDependencyCutoff, "2026-09-27T08:11:48.000Z");
+  const moved = { ...same, agents: [npx("claude-acp", "a@1.0.1")] };
+  assert.equal(withDependencyCutoff(moved, committed, now).npmDependencyCutoff, now.toISOString());
+  assert.equal(withDependencyCutoff(same, null, now).npmDependencyCutoff, now.toISOString());
+  assert.deepEqual(Object.keys(withDependencyCutoff(same, committed, now)), Object.keys(committed));
+});
+
+test("the cutoff must postdate every hardened adapter's pinned release", () => {
+  const snapshot = {
+    npmDependencyCutoff: "2026-09-27T08:11:48.000Z",
+    agents: [npx("claude-acp", "@scope/claude@1.2.3"), npx("codex-acp", "codex@4.5.6"), npx("other", "late@9.9.9")],
+  };
+  const published = {
+    "@scope/claude@1.2.3": "2026-09-24T10:18:05.741Z",
+    "codex@4.5.6": "2026-09-23T10:12:17.011Z",
+    "late@9.9.9": "2026-09-30T00:00:00.000Z",
+  };
+  const publishedAt = (name, version) => published[`${name}@${version}`] ?? null;
+  assert.deepEqual(cutoffProblems({ snapshot, hardened: ["claude-acp", "codex-acp"], publishedAt }), []);
+  assert.match(cutoffProblems({ snapshot, hardened: ["other"], publishedAt })[0], /after 2026-09-27/);
+  assert.match(cutoffProblems({ snapshot, hardened: ["missing"], publishedAt })[0], /no exact npx version/);
+  assert.match(
+    cutoffProblems({ snapshot: { ...snapshot, npmDependencyCutoff: undefined }, hardened: [], publishedAt })[0],
+    /missing or not a date/,
+  );
+  assert.match(
+    cutoffProblems({ snapshot, hardened: ["codex-acp"], publishedAt: () => null })[0],
+    /does not say when codex@4\.5\.6/,
+  );
+});
+
+test("the hardened set is read from Rust and the committed snapshot carries a cutoff", () => {
+  const hardened = hardenedRuntimeIds();
+  assert.deepEqual([...hardened].sort(), ["claude-acp", "codex-acp"]);
+  const snapshot = JSON.parse(readFileSync("src-tauri/src/acp-registry.json", "utf8"));
+  assert.ok(Number.isFinite(Date.parse(snapshot.npmDependencyCutoff)), "acp-registry.json has no npmDependencyCutoff");
+  for (const id of hardened) {
+    const launch = snapshot.agents.find((agent) => agent.id === id)?.launch;
+    assert.ok(npmPackageSpec(launch?.package), `${id} must pin one exact npx version`);
+  }
+  assert.deepEqual(npmPackageSpec("@agentclientprotocol/codex-acp@1.13.1"), {
+    name: "@agentclientprotocol/codex-acp",
+    version: "1.13.1",
+  });
+  assert.equal(npmPackageSpec("codex@^1.0.0"), null);
+});
 
 /**
  * ⚠️ **Why this gate is narrow, and what must stay wide.**
