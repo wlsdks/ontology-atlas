@@ -7,10 +7,9 @@ import { OntologyTerritoriesMap, type OntologyMapEdge, type OntologyMapNode } fr
 import { useMapEvidenceStates, type MapEvidenceAvailability } from "../model/use-map-evidence-states";
 
 /**
- * The page side of the Territories view: it reads the evidence states with the product's own
- * rule, composes every word the canvas shows, and says in the legend what the evidence ring is
- * standing on — measured from Git, still being read, or not readable here at all. An unknown
- * state is drawn as unknown and named as unknown; it is never shown as current.
+ * Composes the canvas words and names what the evidence ring stands on (Git, still reading, or
+ * unreadable);
+ * unknown is never shown as current.
  */
 export function TopologyTerritoriesSurface({
   nodes,
@@ -32,9 +31,7 @@ export function TopologyTerritoriesSurface({
   onPaneClick: () => void;
   onDrawnCountChange?: (drawn: number) => void;
   reducedMotion: boolean;
-  /** The node inspector is standing on the canvas. */
   inspectorOpen: boolean;
-  /** INDEX is unfolded over the canvas's left side. */
   indexExpanded: boolean;
 }) {
   const t = useTranslations("topology.territories");
@@ -59,16 +56,9 @@ export function TopologyTerritoriesSurface({
     "no-paths": t("evidenceNoPaths"),
   };
 
-  /*
-   * One calm line: the three ring states, the two scales, then what the ring stands on. The
-   * long meaning of each state rides on its title, so the line itself stays short.
-   *
-   * It stands between whatever panels are open: the map publishes its free edges
-   * (`--territories-free-left/right`), so the legend never reaches under INDEX or the
-   * inspector. Where that is too narrow for one line it wraps, item by item. The evidence note
-   * is the one sentence that says why every ring reads "unknown", so it wraps too and is never
-   * cut off (interaction audit, 2026-09-25: it was truncated to 75px at 1040).
-   */
+  // One calm line: ring states, scales, then the evidence note; long meanings ride on titles.
+  // It stays between the published free edges (`--territories-free-left/right`) and wraps rather
+  // than cuts.
   const swatch = "inline-block size-2.5 shrink-0 rounded-full";
   const legend = (
     <div

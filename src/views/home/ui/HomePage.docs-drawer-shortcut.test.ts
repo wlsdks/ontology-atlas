@@ -2,14 +2,9 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 /**
- * Source-level guard, in the same shape as `HomePage.accessibility.test.ts`: HomePage has no
- * render harness, and the fact under test is one line inside an inline handler.
- *
- * 2026-08-31, installed app: pressing "Ask the agent" on a node opened the chat dock, and the
- * documents drawer (a full-width overlay toggled by the unmodified `d` shortcut) painted over
- * it, so the person saw a document list where the answer should have been. The dock is not a
- * modal, so the blocking-surface predicate must not swallow every shortcut; only the drawer
- * toggle goes quiet while the dock is open.
+ * A source-level guard, since HomePage has no render harness: with the agent dock open only
+ * the `d` drawer
+ * toggle goes quiet, or the full-width drawer paints over the answer. The dock is not modal.
  */
 const keyboardSource = readFileSync("src/views/home/model/use-topology-keyboard-tour.tsx", "utf8");
 const homePageSource = readFileSync("src/views/home/ui/HomePage.tsx", "utf8");
@@ -25,7 +20,7 @@ describe("documents drawer shortcut while the agent dock is open", () => {
   });
 
   it("keeps the other global shortcuts alive while the dock is open", () => {
-    // The dock is a side panel beside the map, not a modal: ⌘K and `?` stay usable.
+    // ⌘K and `?` stay usable beside the dock.
     expect(keyboardSource).not.toContain("agentDockOpen: agentDockOpen");
     expect(keyboardSource).toContain("agentAwaitingDecision: acpTurnActivityFrame?.activity.state");
   });

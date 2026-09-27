@@ -54,13 +54,8 @@ describe("TopologyChangeAnnouncement", () => {
 });
 
 /**
- * The toast sits **below** the top chrome row (owner report, 2026-08-02).
- *
- * The former `top-4` overlapped the chrome pills (y 32–68) by 20px vertically,
- * and since both are centred, completely horizontally. **jsdom has no layout, so
- * no rect can catch this.** What is locked here is therefore not a pixel but the
- * **derivation**: the position must come from the chrome tile height, and must
- * not reuse the chrome row's own constant.
+ * jsdom has no layout, so the test pins the derivation: the top comes from the chrome tile height,
+ * not the chrome row's own constant, or the toast overlaps the chrome pills.
  */
 describe("toast position does not overlap the top chrome", () => {
   it("uses a top derived below the chrome band instead of a fixed top-4", () => {

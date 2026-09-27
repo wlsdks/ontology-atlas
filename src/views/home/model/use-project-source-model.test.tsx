@@ -144,11 +144,8 @@ describe("project source model", () => {
     expect(JSON.stringify(snapshot.view)).not.toMatch(/percent|confidence|score/i);
   });
 
-  /*
-   * 2026-09-25 sweep: every open of a bound project walked the whole repository (a git
-   * inventory plus a fingerprint per file) and threw the answer away when there was no
-   * receipt to compare it with. The folder is asked only when it can change the receipt.
-   */
+  // The folder is asked only when it can change the receipt; otherwise the probe walks the repo
+  // for nothing.
   const { rootPath: _rootPath, ...probe } = inspection;
   const binding = {
     projectSlug: "music",
@@ -217,7 +214,7 @@ describe("project source model", () => {
     expect(snapshot.view.currentness).toBe("current");
   });
 
-  // The inspector keeps the project layout while this is true (2026-09-25 sweep).
+  // The inspector keeps the project layout while this is true.
   it("says the receipt is being read until it is, and never where no receipt can exist", async () => {
     const vault = createFakeVaultHandle();
     let release: () => void = () => {};
@@ -229,7 +226,7 @@ describe("project source model", () => {
         return read(name, options);
       },
     } as unknown as FileSystemDirectoryHandle;
-    // One runtime per hook: a fresh object each render would restart the read forever.
+    // A fresh object each render would restart the read forever.
     const sourceRuntime = runtime();
     const { result } = renderHook(() => useProjectSourceModel({
       projectSlug: "music",
@@ -320,12 +317,9 @@ describe("project source model", () => {
   });
 
   /**
-   * "Is this the right folder?" — four things are this feature's contract.
-   *
-   * (1) The inference performs **no new filesystem walk** — one measurement on
-   * the vault root. (2) Confirming **skips the folder picker**. (3) The
-   * evidence is measured, not asserted. (4) When it cannot measure it stays
-   * quiet: no greyed-out button, just the plain folder picker.
+   * The contract: one measurement of the vault root and no folder walk; confirming skips the
+   * picker;
+   * the evidence is measured; without a measurement only the plain picker shows.
    */
   const vaultRootPath = "/private/work/music/docs/ontology";
 
@@ -342,14 +336,13 @@ describe("project source model", () => {
     }));
 
     await waitFor(() => expect(result.current.proposedRoot).not.toBeNull());
-    // The vault root only — no folder scan to hunt for candidates.
     expect(inspect).toHaveBeenCalledTimes(1);
     expect(inspect).toHaveBeenCalledWith(vaultRootPath);
     expect(result.current.proposedRoot).toEqual({
       rootPath: inspection.rootPath,
       marker: "enclosing_git_repository",
       confidence: "high",
-      // The evidence is a measurement, not a claim: 1 declared path was really there.
+      // Measured: 1 declared path was really there.
       witnessSummary: { total: 1, supported: 1, missing: 0 },
     });
   });
@@ -377,7 +370,7 @@ describe("project source model", () => {
       bindingCardinality: 1,
     });
     expect(vault.files.get(".ontology-atlas/project-sources.json") ?? "").toContain(proposed);
-    // Confirming removes the question — the ask and the answer never share a spot.
+    // Confirming removes the question.
     expect(result.current.proposedRoot).toBeNull();
   });
 
@@ -399,9 +392,7 @@ describe("project source model", () => {
     }));
 
     await waitFor(() => expect(inspect).toHaveBeenCalled());
-    // What to prescribe is still unknown — "pick a folder" or "is this the right
-    // folder?". Drawing now means the button in that spot swaps its label and
-    // skin 300 ms later.
+    // Unknown yet, so nothing draws, or the button swaps its label 300 ms later.
     expect(result.current.proposalSettled).toBe(false);
 
     await act(async () => { release?.(); });
@@ -440,8 +431,7 @@ describe("project source model", () => {
 
     await waitFor(() => expect(inspect).toHaveBeenCalledWith(vaultRootPath));
     await waitFor(() => expect(result.current.canRunSourceAction).toBe(true));
-    // 0 of 1 declared path → low confidence. A guess that may be wrong is never
-    // sold as a confirm button.
+    // 0 of 1 declared path is low confidence, never sold as a confirm button.
     expect(result.current.proposedRoot).toBeNull();
   });
 
@@ -461,8 +451,7 @@ describe("project source model", () => {
     expect(result.current.runtimeAvailable).toBe(false);
     expect(result.current.canRunSourceAction).toBe(false);
     expect(inspect).not.toHaveBeenCalled();
-    // A surface that cannot measure **does not even wait** — the degraded notice
-    // is there on the first frame.
+    // A surface that cannot measure does not wait: the degraded notice shows on the first frame.
     expect(result.current.proposalSettled).toBe(true);
     expect(result.current.proposedRoot).toBeNull();
   });

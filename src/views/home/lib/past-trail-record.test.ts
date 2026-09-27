@@ -113,9 +113,8 @@ describe("past-trail-record format rules independent of the medium", () => {
       expect(Object.keys(entry).sort()).toEqual(["id", "kind", "title"]);
     }
 
-    // Exhaustive audit: the only numbers anywhere in the stored tree are `v: 1`
-    // and `endedAt`. Three steps not raising that count is direct evidence that
-    // no per-step timestamp is recorded.
+    // The only numbers in the stored tree are `v: 1` and `endedAt`, so three steps prove no
+    // per-step timestamp.
     const numbers: number[] = [];
     const walkTree = (node: unknown): void => {
       if (typeof node === "number") numbers.push(node);

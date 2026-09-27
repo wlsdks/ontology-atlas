@@ -18,7 +18,7 @@ function entries(...ids: string[]): PastWalkEntry[] {
   return ids.map((id) => ({ id, title: id.toUpperCase(), kind: id.split(":")[0] ?? "element" }));
 }
 
-/** Minimal vault-folder fake: only the File System Access surface this store actually uses. */
+/** Only the File System Access surface this store uses. */
 function createFakeVaultHandle(options: { readOnly?: boolean } = {}) {
   const files = new Map<string, string>();
   const dirs = new Set<string>();
@@ -77,10 +77,7 @@ function createFakeVaultHandle(options: { readOnly?: boolean } = {}) {
   };
 }
 
-/**
- * The contract screens see must survive a change of medium, so the same matrix
- * runs against every implementation. Adding a medium is one line here.
- */
+/** Every medium runs the same contract; adding one is one line. */
 const IMPLEMENTATIONS: Array<{ name: string; create: () => PastTrailStore }> = [
   { name: "vault file", create: () => createVaultFilePastTrailStore(createFakeVaultHandle().handle) },
   { name: "memory", create: () => createMemoryPastTrailStore() },
@@ -232,8 +229,8 @@ describe("vault file store contract specific to the medium", () => {
     await store.save("w1", entries("domain:a", "capability:b"), { now: 1_000 });
     await store.clear();
     expect(vault.files.has(PAST_TRAILS_RELATIVE_PATH)).toBe(false);
-    // The sidecar's .gitignore stays: it is shared with `agent-activity.json`,
-    // so clearing trails is no reason to drop the whole folder's commit guard.
+    // The .gitignore is shared with `agent-activity.json`, so clearing trails keeps the folder's
+    // commit guard.
     expect([...vault.files.keys()]).toEqual([`${PAST_TRAILS_VAULT_DIR}/${SIDECAR_IGNORE_FILE}`]);
   });
 

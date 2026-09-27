@@ -54,43 +54,31 @@ export function useTopologyNavigationActions({
       options?: {
         preserveImpact?: boolean;
         /**
-         * Selected from the INDEX tree (owner remark, 2026-07-24): pressing a row in
-         * the list collapsed the left panel to a slim tab, so the child they had just
-         * expanded disappeared. The context "I am reading the list" is unambiguous, so
-         * the left panel stays open in that case. A selection made on the map still
-         * collapses it and widens the map.
+         * A row picked in the INDEX tree keeps the panel open, since the reader is reading the
+         * list;
+         * a map selection still collapses it.
          */
         keepIndexOpen?: boolean;
       },
     ) => {
-      // Ontology node clicks and shareable vault slugs both stay on /topology;
-      // selected-node resolution happens against `ontologyInsight`.
+      // Selection resolves against `ontologyInsight`.
       interactionSelectedSlugRef.current = slug;
-      // Galaxy is an overview the reader chose, so opening one star's datasheet
-      // must not silently replace that overview with the collapsed spine. Flat
-      // keeps the standing select = collapse behavior, and explicit Galaxy
-      // expansion/focus actions still own their own state transitions.
+      // Galaxy is a chosen overview, so selecting a star keeps it; Flat keeps select = collapse.
       if (!galaxy) setExpandAllActive(false);
       setHoverEdge(null);
-      // Selections chosen in the INDEX tree do not collapse the list (owner
-      // critique 2026-07-24: clicking a row collapsed the panel into a slim tab, hiding the child just expanded).
-      // Selections chosen on the map collapse as before, widening the map.
       setFullDetailSlug(null);
       setSelectedRelationActive(false);
       setNodePopoverDismissed(false);
       const project = projectBySlug.get(slug);
-      // The path-mode vs. ordinary-selection branch belongs to
-      // `resolveTopologyNodeClickRouteState`; its own comment in
-      // `../model/url-state.ts` carries the background.
+      // `resolveTopologyNodeClickRouteState` owns the path-mode branch (`../model/url-state.ts`).
       setRouteState((current) =>
         resolveTopologyNodeClickRouteState(current, slug, {
           isHub: Boolean(project?.isHub),
           preserveImpact: options?.preserveImpact,
         }),
       );
-      // `setRouteState` publishes through useSyncExternalStore synchronously.
-      // Start the expanded session afterwards so the selection transition cannot
-      // reset this interaction before the INDEX frame reads it.
+      // `setRouteState` publishes synchronously, so the expanded session starts after it and
+      // survives the transition.
       if (options?.keepIndexOpen) beginExpandedIndexSelection();
     },
     [interactionSelectedSlugRef, galaxy, setExpandAllActive, setHoverEdge, setFullDetailSlug, setSelectedRelationActive, setNodePopoverDismissed, projectBySlug, setRouteState, beginExpandedIndexSelection],
@@ -129,15 +117,14 @@ export function useTopologyNavigationActions({
 
   const handleChatSuggestionAction = useCallback((suggestion: ChatSuggestion): boolean => {
     if (suggestion.kind !== 'connectSource' || !unboundProjectSource) return false;
-    // Connection is not something the agent guesses; it is handled by the folder picker gateway of the installed app.
-    // First open the project datasheet to let the user select the actual code folder.
+    // The installed app's folder picker connects code, not the agent: open the project datasheet
+    // first.
     closeVaultAgent();
     handleSelect(unboundProjectSource.nodeId, { keepIndexOpen: true });
     return true;
   }, [closeVaultAgent, handleSelect, unboundProjectSource]);
 
-  // Replaying loads the stored steps as the session trail; "you are here" is then
-  // the end of that trail, so the last step is ego-focused.
+  // The last replayed step is ego-focused as "you are here".
   const handleReplayPastWalk = useCallback(
     (walkId: string) => {
       const last = replayPastWalk(walkId);
@@ -157,9 +144,8 @@ export function useTopologyNavigationActions({
       impactMode: "none",
       meaningEditorIntent: false,
       meaningEditParam: null,
-      // Closing a focus returns to the map: a background click, Esc, or the popover's
-      // ✕ all collapse the expansion. That completes the symmetry of click = select,
-      // badge = expand, close = collapse.
+      // A background click, Esc or the popover's ✕ collapse the expansion: click selects, badge
+      // expands, close collapses.
       analysisMode:
         current.analysisMode === "focus" ? "overview" : current.analysisMode,
     }));
@@ -167,15 +153,9 @@ export function useTopologyNavigationActions({
 
   const handleDatasheetClose = useCallback(() => {
     const focusReturnNodeId = panelDatasheetModel?.nodeId ?? null;
-    // On the 3D dome, ✕ folds the panel; it does not throw the selection away. Owner,
-    // 2026-08-18: *"Pressing ✕ just closes it and cancels the selection too, which makes it hard to look at."* (pressing ✕ just closes it and cancels the selection too, which makes it
-    // hard to look at). The selection and its ego highlight stay; only the panel folds,
-    // reusing the first step of the Esc dismissal order (`nodePopoverDismissed`) with no
-    // new state. Deselecting belongs to a background click or the second Esc, and
-    // reopening is another click on that node (on the dome a re-click reselects rather
-    // than deselects — `topology-pointer-handlers.ts`). 2D keeps the close = collapse
-    // symmetry from the 2026-07 ledger; the dome has no expansion or density gate, so
-    // that symmetry has no premise there.
+    // On the 3D dome ✕ only folds the panel (the first Esc step, `nodePopoverDismissed`) and keeps
+    // the selection;
+    // the dome has no expansion to collapse. Deselect is a background click or the second Esc.
     if (view3d) {
       setNodePopoverDismissed(true);
     } else {

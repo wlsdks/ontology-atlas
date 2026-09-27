@@ -128,22 +128,17 @@ export function TopologyAgentDock({
     meaningRelations, captureTaskBaseline
   } = topologyAnalysisReview;
   const { edgePanelModel, selectedEdge, setAcpRelationPreview } = topologyAuthoring;
-  // One subject for the header, the composer and the asks above it: a picked concept, or the folder.
+  // One subject for header, composer and asks: a picked concept, or the folder.
   const composerSubject = edgePanelModel ? null : selectedOntologyNode?.display ?? selectedOntologyNode?.title ?? null;
   const subjectRef = selectedOntologyNode ? resolveNodeAgentTarget(selectedOntologyNode).ref ?? selectedOntologyNode.id : null;
   const dockSuggestions = useMemo(
     () => composerSubject && subjectRef ? subjectSuggestions({ slug: subjectRef, label: composerSubject }) : chatSuggestions,
     [chatSuggestions, composerSubject, subjectRef],
   );
-  // The history tab with nothing in it asks the surface to end under its card (see AnalysisWorkbench).
+  // An empty history tab ends the surface under its card (see AnalysisWorkbench).
   const [workbenchFitsContent, setWorkbenchFitsContent] = useState(false);
   const { chatKnownSlugs, chatKnownRelations, handleChatHoverSlug } = topologyCanvasFocus;
-  /*
-   * The unsent sentence outlives the conversation panel, which this dock unmounts when it closes
-   * idle (to end its agent process). Put away by Escape or the X, a draft used to be gone when
-   * the chip opened the dock again; the Library's dock, which stays mounted, kept it. One folder's
-   * draft, in memory, for this sitting.
-   */
+  // The draft outlives the panel, which unmounts on an idle close; one folder's draft, in memory.
   const draftRef = useRef<{ folder: string | null; text: string }>({ folder: null, text: "" });
   const draftStore = useMemo(
     () => ({
@@ -170,13 +165,8 @@ export function TopologyAgentDock({
         )}
       >
         <VaultAgentPanel
-          /*
-           * A URL carrying "ask about this concept" is enough to open it.
-           *
-           * ⚠️ **It does not open while the coding-agent branch holds the panel** —
-           * there is one chat panel (2026-08-16). Without this condition a request
-           * arriving in the URL raises a second one.
-           */
+          // Never while the coding-agent branch holds the panel, or a URL request raises a second
+          // one.
           open={keyChatOpen}
           onClose={closeVaultAgent}
           vaultPath={gitVaultPath}
@@ -185,24 +175,17 @@ export function TopologyAgentDock({
           screenContext={vaultAgentScreenContext}
           vaultIsGit={false}
           canWrite={vault.status === "loaded" && Boolean(vault.handle)}
-          // A chip focusing a node goes through the **same function** as clicking a node
-          // on the map: the same action appearing with different motion is a defect.
+          // The same function as a map click, so one action has one motion.
           onFocusNode={(slug) => handleSelect(slug)}
-          // A door even with no folder open, through the **same function** as the utility
-          // lane's "switch to my data" — no second open path is created.
+          // The same function as the utility lane's "switch to my data".
           onOpenFolder={() => void vault.open()}
           downloadHref={`/${activeLocale}/download/`}
           prefillRequest={vaultAgentPrefill ?? askPrefill}
         />
       </ErrorBoundary>
     ) : null}
-    {/*
-        The in-app conversation with **the user's own coding agent**. A sibling in the
-        same slot as the panel above (the API-key branch) — no new surface.
-
-        The rule that the map comes first still holds: this panel stands beside the map
-        and never covers it.
-      */}
+    {/* The user's own coding agent, sharing the key branch's slot; it stands beside the map, never
+       over it. */}
     {gitVaultPath || meaningWorkbenchPresence.mounted ? (
       <div
         data-agent-dock-frame="true"
@@ -210,16 +193,14 @@ export function TopologyAgentDock({
         style={{
           width: acpDockFrameOpen || meaningWorkbenchOpen ? reviewUsesSheet ? '100%' : `${chatWidth.width}px` : "0px",
           transitionProperty: "width",
-          // Same role and same clock as the key branch's `VaultAgentPanel`. If the two
-          // chat panels pushed the map at different speeds, "one door" would stop being
-          // true.
+          // Same role and clock as `VaultAgentPanel`, so both branches push the map alike.
           transitionDuration: "var(--agent-panel-reflow-duration)",
           transitionTimingFunction: "var(--topology-motion-ease-out)",
         }}
         onTransitionEnd={(event) => {
           if (event.target !== event.currentTarget || event.propertyName !== "width") return;
-          // Space claims its position first, then launches the session. Even if ACP process start
-          // briefly occupies the WebKit main thread, already-finished layout motion is not interrupted.
+          // Layout claims space before the session launches, so ACP boot cannot interrupt finished
+          // motion.
           if (acpDockFrameOpen && !acpChatOpen) scheduleAcpSessionStart();
         }}
         className="absolute right-0 top-0 bottom-[var(--topology-mobile-bottom-tab-reserve)] z-30 min-h-0 shrink-0 overflow-hidden bg-[color:var(--color-canvas)] lg:relative lg:inset-auto lg:z-auto"
@@ -229,57 +210,22 @@ export function TopologyAgentDock({
             open={acpDockFrameOpen || meaningWorkbenchOpen}
             as="aside"
             motion="overlay"
-            /*
-             * ⚠️ **This used to be dead code** (caught in the 2026-08-16 review).
-             *
-             * The mount condition for this block and `open` were **the same value**, so
-             * pressing close made it disappear whole in the same frame: the exit animation
-             * never once played and this callback was never called — there was no "while
-             * it leaves".
-             *
-             * Mount and open are now separate: mount on open, unmount once it has fully
-             * left. That is this repo's per-surface rule that an exit is a two-frame job.
-             */
-            /*
-             * **Closing the dock does not stop the agent** (owner, 2026-09-06). Unmounting
-             * the panel ends its ACP session, and a person who closes the dock to look at
-             * the map while a long turn runs expects the turn to finish. While a turn is
-             * running the panel stays mounted behind the closed dock; the chip in the
-             * corner keeps saying what it is doing and for how long. An idle panel still
-             * unmounts on exit, as before.
-             */
+            // Mount and open are separate so the exit animation runs. While a turn runs the panel
+            // stays mounted
+            // behind the closed dock, since unmounting ends the ACP session; an idle panel
+            // unmounts on exit.
             onExited={() => { if (acpTurnStartedAtRef.current === null) setChatMounted(false); }}
-            /*
-             * ⚠️ The width used to be `var(--topology-agent-panel-width, 360px)`, and **that
-             * token does not exist** — the 360px fallback was always what applied, while a
-             * token name nobody used looked like a spec (`.claude/rules/design.md`: a token
-             * nobody uses is not a spec, it is wrong information).
-             *
-             * After that it was two literals, `w-[420px] xl:w-[480px]`, and neither was
-             * **anybody's answer**. Now the user drags the left edge to decide, and we only
-             * enforce the share the map must keep (`panel-width.ts`). With no
-             * viewport-width branch left, the `xl:` goes too.
-             */
+            // The user drags the width; `panel-width.ts` enforces only the map's share.
             data-agent-dock-surface="inset"
-            // The toaster centres in the map left of this panel, never over it.
+            // The toaster centres left of this panel.
             data-toast-wall="right"
             style={{
               width: reviewUsesSheet ? 'calc(100% - var(--chrome-inset) * 2)' : `calc(${chatWidth.width}px - var(--chrome-inset))`,
-              /*
-               * ⚠️ **An empty archive ends under its card** (round four, 2026-09-25, 1512 wide).
-               * The history tab with nothing saved drew a 272px card on a 920px surface — two
-               * thirds of the dock bare panel — while INDEX and the realm ledger beside the same
-               * map already end under their content (`max-h-full`). Only that quiet state lets go
-               * of the bottom inset; every other view keeps the full column, because the
-               * conversation's composer and a long meaning read belong at the floor.
-               */
+              // An empty archive ends under its card instead of leaving the dock bare; every other
+              // view keeps the full column.
               ...(workbenchFitsContent ? { bottom: 'auto', maxHeight: 'calc(100% - var(--chrome-inset))' } : null),
             }}
-            /*
-             * The fixed-width content is pinned right and only the outer frame animates
-             * from 0 to the stored width. Animating the content width every frame would
-             * re-wrap the text continuously and stutter more.
-             */
+            // Only the outer frame animates, or the pinned content re-wraps every frame.
             className={`${AGENT_DOCK_INSET_SURFACE_CLASS} flex min-h-0 shrink-0 flex-col p-4`}
           >
             <AcpChatResizeHandle
@@ -351,11 +297,7 @@ export function TopologyAgentDock({
                   }}
                 />}
                 conversation={acpRuntime && gitVaultPath ? <AcpChatPanel
-                  /*
-                   * Changing the runtime **rebuilds the panel.** A session is bound to one
-                   * process, so swapping only the tool inside the same panel blurs "what is
-                   * alive right now". Rebuilding is cheaper and unambiguous.
-                   */
+                  // A session is bound to one process, so changing the runtime rebuilds the panel.
                   key={`${gitVaultPath}:${acpRuntime.id}`}
                   runtimeId={acpRuntime.id}
                   runtimeLabel={acpRuntime.label}
@@ -364,14 +306,14 @@ export function TopologyAgentDock({
                   vaultRoot={gitVaultPath}
                   mcpServers={acpMcpServers}
                   sessionEnabled={acpChatOpen}
-                  // The sentence jumped from the node sits in the **here** write box — it is not sent.
+                  // Seated in the composer, not sent.
                   prefillRequest={vaultAgentPrefill ?? askPrefill}
                   openingRequest={agentOpeningRequest}
                   requestScopeKey={JSON.stringify([gitVaultPath, 'meaning'])}
                   draftStore={draftStore}
                   onOpeningRequestSent={(nonce) => setAgentOpeningRequest((current) => current?.nonce === nonce ? null : current)}
                   suggestions={dockSuggestions}
-                  // The composer names what the header names: a picked concept, not "this folder".
+                  // The composer names what the header names.
                   composerSubject={composerSubject}
                   onSuggestionAction={handleChatSuggestionAction}
                   knownSlugs={chatKnownSlugs}
@@ -386,14 +328,8 @@ export function TopologyAgentDock({
                   onWorkReceipt={handleAcpWorkReceipt}
                   captureTaskBaseline={captureTaskBaseline}
                   meaningTransitionContext={vault.handle ? { handle: vault.handle, fileHandles: vault.fileHandles, writable: vault.status === 'loaded' } : undefined}
-                  /*
-                   * ⚠️ **One close, and it belongs to the workbench** (2026-09-06). The panel drew its
-                   * own X beside the workbench's, so the dock had two identical buttons a few pixels
-                   * apart doing exactly the same thing — and the inner one closed a surface it does not
-                   * own. The chat is a tab inside this workbench; what closes it is the workbench's
-                   * close button, and `contextLabel` is likewise the workbench header's `h2`, so the
-                   * panel does not repeat it as a badge either.
-                   */
+                  // The workbench owns the one close button and the `h2` context label, so the
+                  // panel repeats neither.
                   onTurnStarted={analysisCapture.onTurnStarted}
                 /> : undefined}
               />

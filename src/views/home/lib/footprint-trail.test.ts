@@ -21,11 +21,6 @@ describe("appendFootprintVisit", () => {
     expect(appendFootprintVisit(["a", "b"], "c")).toEqual(["a", "b", "c"]);
   });
 
-  /**
-   * A revisit used to delete the earlier position and move the node to the end.
-   * With at most one step per node, several numbers on one node were impossible
-   * at the data layer.
-   */
   it("a revisit stacks as a new step instead of erasing the earlier one", () => {
     expect(appendFootprintVisit(["a", "b", "c"], "a")).toEqual(["a", "b", "c", "a"]);
   });
@@ -99,9 +94,8 @@ describe("formatFootprintTrailAgentPacket", () => {
   });
 
   /**
-   * The packet used to hand over the places walked and drop the argument between them.
-   * An agent that is told only "Core, then Cap X" has to guess the connection it was
-   * being handed; the reason is exactly what the vault holds and the source does not.
+   * The reason is what the vault holds and the source does not, so the packet carries it under
+   * each step.
    */
   it("carries the connection under each step — relation word plus the recorded reason", () => {
     const text = formatFootprintTrailAgentPacket(entries, { ...LABELS, unrelated: "직접 연결 없음" }, [], [
@@ -124,9 +118,8 @@ describe("formatFootprintTrailAgentPacket", () => {
 });
 
 /**
- * The walked pairs read back against the vault's own edges. Not every pair is an edge:
- * the trail is a **walk**, and clicking two unrelated nodes in turn is a normal thing to
- * do — so "not directly related" is an answer this function must be able to give.
+ * The trail is a walk: consecutive nodes need not share an edge, so "not directly related" is a
+ * valid answer.
  */
 describe("buildTrailStepLinks", () => {
   const edges: TrailEdge[] = [
@@ -161,7 +154,6 @@ describe("buildTrailStepLinks", () => {
     });
   });
 
-  /** A bare type is the fallback anyway, so among parallel edges the one with a reason wins. */
   it("prefers the edge that carries a reason when a pair has several", () => {
     const parallel: TrailEdge[] = [
       { from: "a", to: "b", type: "related_to" },

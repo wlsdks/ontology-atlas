@@ -35,107 +35,66 @@ export interface HomeRouteState {
   pathSourceSlug: string | null;
   pathTargetSlug: string | null;
   createNodeIntent: boolean;
-  /** URL intent that opens the in-map meaning editor (`?workbench=edit`). */
+  /** `?workbench=edit`. */
   meaningEditorIntent: boolean;
-  /** `edit=<relation>:<targetId>` — the entity parser owns the first-colon split. */
+  /** `edit=<relation>:<targetId>`; the entity parser owns the first-colon split. */
   meaningEditParam: string | null;
   /**
-   * INDEX panel expand/collapse deep-link intent
-   * (`?index=expanded|collapsed`). `null` = not specified in THIS url — the
-   * caller (HomePage) falls back to the localStorage preference, then the
-   * "expanded" default (`resolveIndexPanelState`,
-   * `@/widgets/topology-index-panel`). Kept nullable rather than defaulting
-   * here so a URL round-trip never clobbers a preference the URL didn't ask
-   * to change.
+   * `?index=`; null when this URL does not say, so the caller's stored preference survives a
+   * round-trip.
    */
   indexState: IndexPanelState | null;
   /**
-   * Deep-link return marker from insights (`?via=insights:<tab>`) — the value
-   * is the insights tab slug the user came from. Non-null makes HomePage
-   * render a "back to insights" chip in the top-centre chrome row.
-   *
-   * Lifetime: the marker lives in the URL and survives round-trips through
-   * other map interactions (node click, mode switch). The affordance exists
-   * for exactly the moment when navigating deeper has made browser Back
-   * useless. It is removed only by an explicit dismiss (the chip's X) or by
-   * entering a new URL without it. Clicking the chip to return does **not**
-   * clear it — arriving back on the map via Back is the same deep-link
-   * context, so the chip belongs there again. It does not take part in the
-   * Esc ladder.
+   * `?via=insights:<tab>`: renders the "back to insights" chip. It survives other map interactions
+   * and
+   * Back navigation, and clears only on the chip's dismiss or a new URL without it; not part of
+   * the Esc ladder.
    */
   insightsReturnTab: string | null;
-  /**
-   * The exact review row id (`?review=`) the visit started from in the to-do
-   * queue. Read only when a valid insights `via` marker is present, and
-   * preserved with it across map interactions.
-   */
+  /** `?review=`, read only with a valid insights `via` marker and preserved with it. */
   insightsReturnReviewId: string | null;
   /**
-   * Marks a jump from an insights queue row via "ask the agent in words"
-   * (`?ask=missing-definition`, …). The value is the **kind of intent** only;
-   * the sentence is composed by the map's first-words generator, because a
-   * human-readable sentence does not belong in an address.
-   *
-   * The URL is the state. It is never copied into React state, so "is it open"
-   * and "what will it ask" live in one place, and closing the agent panel
-   * clears this too (re-opening after a close would be a defect). Unknown
-   * values are demoted to null at parse time.
+   * `?ask=`: only the intent kind, since the map composes the sentence and prose does not belong
+   * in an address.
+   * Never copied into React state; closing the agent panel clears it. Unknown values parse to
+   * null.
    */
   askIntent: FirstWordsNodeIntentKind | null;
-  /*
-   * The whole-graph request, which is the one `ask` value that names no node.
-   * It rides the same key rather than a new one, and is parsed into its own field
-   * instead of into `askIntent`, because that type means "an intent about a single
-   * node" and widening it would make `nodeIntent` accept a call it cannot answer.
-   *
-   * Only the name travels. The sentence is rebuilt at the destination, so a link
-   * that is copied, logged, or shared carries no folder text, and a stale link
-   * still opens the current request rather than the one it was made from.
-   */
+  // The whole-graph `ask` value, parsed apart from `askIntent` because that type means an intent
+  // about one node.
+  // Only the name travels; the sentence is rebuilt at the destination, so a shared link carries no
+  // folder text.
   askBusinessFlow: boolean;
   /**
-   * Density gate — the parent slugs the user expanded out of the cluster chips
-   * they were folded into (`?open=slug1,slug2`). A parent with more children
-   * than the threshold (12) is collapsed by default on the map; only parents
-   * listed here reveal their children. It lives in the URL so a shared link or
-   * an agent can reproduce and read what is expanded (matching `design.md`
-    ["the rest expands on click"] — the rest expands on click). HomePage converts
-   * it to a Set on the way down to the map.
+   * `?open=`: parents expanded out of their cluster chips; in the URL so a shared link or agent
+   * can reproduce it.
    */
   expandedParents: string[];
   /**
-   * Realm view (`?realm=slug`) — the map switched into the world of one node:
-   * only that node's containment subtree remains, with the node relaid out as
-   * a temporary root. It lives in the URL so a shared link or an agent can
-   * reproduce and read which realm is open. Entering clears the existing `p`
-   * (selection) and `open` (density-gate expansion) via
-   * `enterRealmRouteState` — a realm is a new coordinate system, so the
-   * previous expansion means nothing.
+   * `?realm=`: only one node's containment subtree, relaid out as a root.
+   * Entering clears `p` and `open` (`enterRealmRouteState`), since a realm is a new coordinate
+   * system.
    */
   realmSlug: string | null;
   /**
-   * Recent-change spotlight (`?recent=auto|1|7|30`, council design
-   * 2026-07-23) — non-null puts the map in a lens mode that lights nodes whose
-   * disk file changed in the last N days on the fresh channel and sinks the
-   * rest. `"auto"` lets the existing adaptive window pick
-   * (`useAdaptiveRecentChanges`, 7→3→1 days); a number pins it. It lives in the
-   * URL so a shared link or an agent reproduces the same window a person saw,
-   * and so the INDEX lens and the map's sinking are driven from a **single
-   * source** (this one value) — that makes a window mismatch between the two
-   * surfaces structurally impossible. null = off (parameter absent).
+   * `?recent=auto
+   * 1
+   * 7
+   * 30`: lights nodes changed in the last N days; "auto" uses `useAdaptiveRecentChanges`.
+   * One URL value drives both the INDEX lens and the map, so their windows cannot disagree. null =
+   * off.
    */
   recentWindow: RecentSpotlightWindow | null;
-  /** Saved constellation id, or `new` to open its editor. This value belongs to one vault. */
+  /** Saved constellation id, or `new` to open its editor; vault-scoped. */
   constellationIntent: string | null;
   /**
-   * The map view (`?view=territories|galaxy|strata|coupling`). The view picker's stored choice
-   * is mirrored here so a link opens the same view and a reload keeps it; any other value is
-   * dropped at parse time. `null` = the flat map, or on arrival the stored choice decides.
+   * `?view=`; other values drop at parse time. null is the flat map, or on arrival the stored
+   * choice decides.
    */
   mapView: HomeMapView | null;
 }
 
-/** The map views an address can name: every view the picker offers but the flat map, which is the parameter's absence. */
+/** Every picker view except the flat map, which is the parameter's absence. */
 const HOME_MAP_VIEWS = ["territories", "hex", "galaxy", "strata", "coupling"] as const;
 export type HomeMapView = (typeof HOME_MAP_VIEWS)[number];
 
@@ -143,17 +102,11 @@ function parseHomeMapView(value: string | null): HomeMapView | null {
   return value !== null && (HOME_MAP_VIEWS as readonly string[]).includes(value) ? (value as HomeMapView) : null;
 }
 
-/** Spotlight window — "auto" (adaptive) or an explicit day preset. */
 type RecentSpotlightWindow = "auto" | 1 | 7 | 30;
 
 /**
- * The map's address vocabulary — **this object is the registry's source of
- * truth.**
- *
- * `tests/contract/scope-registry.contract.test.ts` requires a `global` /
- * `vault-scoped` tag for every key here, so adding a key fails that test
- * first. Without the tag nobody asks "must this be cleared when the vault
- * changes?", and that unasked question is where out-of-scope state is born.
+ * The registry's source of truth: `tests/contract/scope-registry.contract.test.ts` requires
+ * a `global` or `vault-scoped` tag for every key, so each new key answers "clear on vault change?".
  */
 export const HOME_QUERY_KEYS = {
   project: "p",
@@ -181,31 +134,12 @@ export const HOME_QUERY_KEYS = {
 } as const;
 
 /**
- * **Address keys that only mean something inside one vault** — their value is
- * a *name* from that vault (node slug, project slug, category), so the moment
- * the vault changes the name points at nothing.
- *
- * ## Why a separate list is needed (repaired 2026-08-01)
- *
- * The other keys (`mode` · `impact` · `pulse` · `index` · `recent` · `create` ·
- * `via` · `review` · `ask`) are **fixed enumerations** and mean the same thing
- * in any vault, so surviving a vault switch is right for them. Only the keys
- * in this list differ — surviving leaves them **pointing at something that
- * does not exist**, and the screen reads that as fact:
- *
- * - `p` — judged as a selected ghost node, so the whole map dimmed (ego focus
- *   only looked at `focusedNodeId !== null`, never at existence). The same
- *   slug also killed the first-visit hint permanently.
- * - `pathFrom`/`pathTo` — with two nodes absent from this vault, the screen
- *   asserted **"no path"**. The truth was "neither is here"; the screen said
- *   "both are here and unconnected".
- * - `hub` — zero consumers today, but the parser reads it and it rides URL
- *   round-trips. Registered now because it becomes the same defect the day a
- *   consumer appears.
- * - `c` · `open` · `realm` — same axis (slug values).
- *
- * `from`/`to` are legacy aliases of `pathFrom`/`pathTo` and get the same
- * treatment.
+ * Keys whose value is a name from one vault (node, project or category slug).
+ * Surviving a vault switch leaves them pointing at nothing, which the screen reads as fact: a
+ * ghost `p`
+ * dims the whole map, and absent `pathFrom`/`pathTo` claim "no path". `hub` has no consumer yet
+ * but
+ * rides round-trips. `from`/`to` are legacy aliases of `pathFrom`/`pathTo`. Enum keys stay.
  */
 export const VAULT_SCOPED_HOME_QUERY_KEYS = [
   "p",
@@ -222,19 +156,11 @@ export const VAULT_SCOPED_HOME_QUERY_KEYS = [
 ] as const;
 
 /**
- * Clears vault-scoped address state **at the moment** vault identity changes.
- *
- * This is the cause fix, not the symptom fix. Defending on every screen ("does
- * this slug exist?") leaves the stale slug alive; clearing it the moment the
- * name loses meaning stops it crossing the vault boundary at all, so every
- * false judgement downstream disappears **structurally**.
- *
- * Path mode falls back to overview because both endpoints are gone — a "path"
- * mode with no endpoints is an empty claim in itself.
- *
- * ⚠️ Never called on first mount. The `?p=` there is not a leftover, it is
- * **something someone handed over** (deep link, agent handoff, bookmark). A
- * broken link from outside is something to say honestly, not erase silently.
+ * Clears vault-scoped state the moment vault identity changes, so a stale name never crosses the
+ * boundary.
+ * Path mode falls back to overview, since a path without endpoints claims nothing.
+ * Never called on first mount: a `?p=` there was handed over (deep link, handoff, bookmark),
+ * and a broken external link is reported honestly, not erased.
  */
 export function clearVaultScopedRouteState(current: HomeRouteState): HomeRouteState {
   return {
@@ -291,11 +217,7 @@ export const DEFAULT_HOME_ROUTE_STATE: HomeRouteState = {
   mapView: null,
 };
 
-/**
- * Spotlight — parses `?recent=`. Only `auto`/`1`/`7`/`30` are valid; anything
- * else, or absence, is null (off). A bad value is demoted to off rather than
- * polluting state with something no legend can explain.
- */
+/** Only `auto`/`1`/`7`/`30`; anything else is null (off), so no legend has to explain a bad value. */
 function parseRecentWindowParam(raw: string | null): RecentSpotlightWindow | null {
   if (raw === "auto") return "auto";
   if (raw === "1") return 1;
@@ -304,16 +226,13 @@ function parseRecentWindowParam(raw: string | null): RecentSpotlightWindow | nul
   return null;
 }
 
-/** Spotlight window → URL value (null removes the parameter). */
+/** Null removes the parameter. */
 function serializeRecentWindowParam(window: RecentSpotlightWindow | null): string | null {
   if (window === null) return null;
   return window === "auto" ? "auto" : String(window);
 }
 
-/**
- * Density gate — parses `?open=`: comma split, trimmed, empty entries ignored,
- * duplicates removed. Appearance order is preserved so round-trips are stable.
- */
+/** Comma split, trimmed, empty and duplicate entries dropped, order kept so round-trips are stable. */
 export function parseExpandedParentsParam(
   raw: string | null,
   max: number = MAX_EXPANDED_PARENTS,
@@ -327,52 +246,24 @@ export function parseExpandedParentsParam(
     seen.add(slug);
     result.push(slug);
   }
-  // A deep link gets the same cap — otherwise one link bypasses it and the
-  // recipient sees a worse screen than the sender. **The tail is kept** (same
-  // direction as the toggle's LRU eviction: what was written later is the more
-  // recent intent).
+  // A deep link gets the same cap, or one link bypasses it; the tail is kept, like the toggle's
+  // LRU eviction.
   const cap = Math.max(1, Math.floor(max));
   return result.length > cap ? result.slice(result.length - cap) : result;
 }
 
 /**
- * How many parents may stay expanded at once.
- *
- * **Why a cap exists** — the child count of **one** parent is already limited
- * (a batch of 24 plus `+N more`). The number of *expanded parents* had no
- * limit at all, so nodes on screen multiplied with every parent piled into
- * `?open=`. Owner measurement (2026-07-31 screenshot): expanding 5 parents
- * left ~150 nodes carrying **2 labels** — the rest were identical,
- * unidentifiable rectangles. The map's only job is "what is where", and there
- * it could not answer.
- *
- * The limit is on **parent count** because that is where the multiplier is.
- * Shrinking the batch size would make looking at a single parent worse, while
- * what actually broke the screen was the **sum across parents**, not any one
- * of them.
- *
- * 3 is a human number, not a pixel one — a comparison is usually two (this vs
- * that) plus one "where did I come from". From the fourth on it is
- * accumulation, not comparison.
- *
- * **The user can now move this value** (Settings → [expansion → parents open at once] (expansion → parents open at once), 1–6). The paragraphs above remain
- * the rationale for the **default**, and the single source is the settings
- * side (`DEFAULT_EXPAND.maxOpenParents`) — the same number is not written in
- * two places.
+ * Caps expanded parents because the multiplier is there: five open parents left ~150 unlabelled
+ * nodes.
+ * 3 fits a comparison (this, that, where I came from). The user can change it in Settings (1-6);
+ * `DEFAULT_EXPAND.maxOpenParents` is the one source.
  */
 export const MAX_EXPANDED_PARENTS = DEFAULT_EXPAND.maxOpenParents;
 
 /**
- * Caps an already-resolved list — **keeping the tail** (same direction as
- * `toggleExpandedParent`'s LRU eviction: what was written later is the more
- * recent intent).
- *
- * Why this is separate from parsing: `parseHomeRouteState` is a pure function
- * that knows nothing about settings and can only apply the default cap, so a
- * deep-linked list got through **without passing the cap the user had set**
- * (measured 2026-08-02: a screen with "parents open at once" set to 1 expanded
- * three parents from a single link). The place that knows the cap — the screen
- * — filters once more.
+ * Keeps the tail, like `toggleExpandedParent`'s LRU. Separate from parsing
+ * because `parseHomeRouteState` knows only the default cap, so the screen applies the user's cap once
+ * more.
  */
 export function limitExpandedParents(slugs: readonly string[], max: number): string[] {
   const cap = Math.max(1, Math.floor(max));
@@ -380,13 +271,8 @@ export function limitExpandedParents(slugs: readonly string[], max: number): str
 }
 
 /**
- * Cluster expansion toggle — collapsing always works; expanding past the cap
- * **closes the parent that has been open longest** (LRU).
- *
- * The point is that an overflowing click is **not ignored**. A press that does
- * nothing reads as broken, and there is nowhere to explain why. Closing the
- * oldest is what a person actually does on a crowded workbench, so it is easy
- * to learn.
+ * Collapsing always works; expanding past the cap closes the longest-open parent (LRU),
+ * because an ignored click reads as broken with nowhere to explain why.
  */
 export function toggleExpandedParent(
   current: readonly string[],
@@ -397,19 +283,15 @@ export function toggleExpandedParent(
     return current.filter((id) => id !== parentId);
   }
   const next = [...current, parentId];
-  // Drop from the front — array order is expansion order (it is append-only).
+  // Array order is expansion order (append-only).
   const cap = Math.max(1, Math.floor(max));
   return next.length > cap ? next.slice(next.length - cap) : next;
 }
 
 /**
- * Builds a child id → parent id lookup from one-directional contains edges, so
- * a deep-link focus dive can walk an ancestor chain: when the density gate
- * (`model/density-gate.ts`) has folded a parent past its threshold and the
- * `?p=slug` target sits inside that folded subtree, the ancestors must be
- * expanded to reveal it. If a child has more than one contains parent (rare)
- * the first one wins — one valid chain is enough to reveal the target. Pure
- * and deterministic.
+ * Child id to parent id over `contains` edges, so a deep-link focus can walk the ancestors a
+ * density gate folded.
+ * The first of several parents wins: one valid chain reveals the target. O(E).
  */
 export function buildContainmentParentMap(
   edges: readonly { source: string; target: string; kind: string }[],
@@ -423,14 +305,9 @@ export function buildContainmentParentMap(
 }
 
 /**
- * Returns `currentExpanded` plus every contains ancestor of `targetId`. The
- * target itself is not a parent, so it is not added; its parent, grandparent, …
- * are appended nearest-first, which keeps the `?open=` round-trip stable.
- * Already-expanded ancestors are not re-added and cycles are blocked by a
- * visited set. With nothing to add (no target / top level / all already
- * expanded) it returns an equal new array. Pure — HomePage applies it once on
- * load and round-trips the URL, after which the existing focus dive fires once
- * with the same easing grammar as a click.
+ * Appends every `contains` ancestor of `targetId` nearest-first, skipping expanded ones; a visited
+ * set blocks
+ * cycles. O(depth). HomePage applies it once on load and round-trips the URL.
  */
 export function deriveDeeplinkAncestorExpansion(
   targetId: string | null,
@@ -456,10 +333,8 @@ export function deriveDeeplinkAncestorExpansion(
 }
 
 /**
- * Enters the realm view — switches the map into the world of the `slug` node.
- * A realm is a new coordinate system, so the previous selection (`p`),
- * density-gate expansion (`open`) and path source are cleared. Pure —
- * HomePage round-trips the URL.
+ * A realm is a new coordinate system, so selection (`p`), expansion (`open`) and path source
+ * clear.
  */
 export function enterRealmRouteState(
   current: HomeRouteState,
@@ -474,20 +349,15 @@ export function enterRealmRouteState(
   };
 }
 
-/** Leaves the realm view — back to the whole map (`?realm=` removed), clearing the selection too. */
+/** Also clears the selection. */
 export function exitRealmRouteState(current: HomeRouteState): HomeRouteState {
   return { ...current, realmSlug: null, selectedSlug: null, focusedHubSlug: null };
 }
 
 /**
- * Resolves a `?realm=` value to a real node id. Node ids live in a `kind:slug`
- * space (e.g. `capability:mcp-server`), so a bare slug typed by hand
- * (`?realm=ai-agent-partner`, no kind prefix) matched no node and the screen
- * silently rendered a raw chip over the whole map. Returns (1) the exact id if
- * one matches, (2) the canonical `<kind>:<slug>` id for a bare slug, (3) null
- * otherwise. On null the caller hides the chip and does not activate the realm
- * — explicit non-resolution rather than a silent fallback. Pure; `nodeIds` is
- * the list of canonical node ids.
+ * Node ids are `kind:slug`, so a hand-typed bare slug matched nothing and showed a raw chip.
+ * Returns the exact id, else the canonical id for a bare slug, else null (the caller hides the
+ * chip).
  */
 export function resolveRealmNodeId(
   realmSlug: string | null,
@@ -497,7 +367,7 @@ export function resolveRealmNodeId(
   const hasKindPrefix = realmSlug.includes(":");
   let bareMatch: string | null = null;
   for (const id of nodeIds) {
-    if (id === realmSlug) return id; // Exact match wins.
+    if (id === realmSlug) return id;
     if (!hasKindPrefix && bareMatch === null) {
       const colon = id.indexOf(":");
       if (colon >= 0 && id.slice(colon + 1) === realmSlug) bareMatch = id;
@@ -513,9 +383,7 @@ export function parseHomeRouteState(
   const pulseParam = searchParams.get(HOME_QUERY_KEYS.pulse);
   const modeParam = searchParams.get(HOME_QUERY_KEYS.mode);
   const rawSelectedSlug = searchParams.get(HOME_QUERY_KEYS.project);
-  // A deep link honours the mode it states: selectedSlug alone never promotes
-  // to focus at parse time. Click selection promotes only in
-  // selectTopologyNodeRouteState below, keeping load and interaction separate.
+  // A deep link honours its stated mode: selectedSlug never promotes to focus at parse time.
   const analysisMode = VALID_ANALYSIS_MODE.includes(modeParam as TopologyAnalysisMode)
     ? (modeParam as TopologyAnalysisMode)
     : DEFAULT_HOME_ROUTE_STATE.analysisMode;
@@ -592,12 +460,9 @@ export function selectTopologyNodeRouteState(
     impactMode: options?.preserveImpact ? current.impactMode : "none",
     meaningEditorIntent: false,
     meaningEditParam: null,
-    // Click = selection (safe navigation) only — mode never changes, in any
-    // mode. The old overview→focus auto-promotion stacked
-    // [select + expand + relayout + camera fit] onto one click and erased
-    // causality. Owner: "clicking just changes things and it is confusing" (clicking just
-    // changes things and it is confusing). Expansion (focus) happens only on
-    // explicit intent: card badge, double click, or deep link.
+    // A click only selects and never changes mode: auto-promotion stacked select, expand, relayout
+    // and fit
+    // on one click. Focus comes only from a card badge, double click or deep link.
     analysisMode: current.analysisMode,
   };
 }
@@ -623,22 +488,12 @@ export function selectTopologyPathRouteState(
 }
 
 /**
- * The single entry point for a canvas node click — branches on path mode
- * between `selectTopologyNodeRouteState` (ordinary selection) and
- * `selectTopologyPathRouteState` (fixing the path source/target).
- *
- * Persona QA finding: `HomePage.tsx`'s `handleSelect` used to ignore
- * analysisMode and always take the ordinary-selection route, so in path mode a
- * second click never filled `pathTargetSlug`. The canvas drew the newly
- * selected node's ego neighbourhood, which looked like a confirmed path, while
- * `TopologyPathChip` strictly requires `pathTargetSlug` and stayed pinned to
- * "pick a target" — the path packet copy button never appeared.
- *
- * Rule: path mode + no source → the clicked node becomes the source. Path mode
- * + source fixed + a different node clicked → that node becomes the target
- * (clicking again swaps the target, keeping the reselection flow). Anything
- * else (overview/focus/health, or clicking the source node again) → ordinary
+ * The one entry for a canvas node click. In path mode without a source the node becomes the
+ * source;
+ * with a source a different node becomes (or replaces) the target; anything else is ordinary
  * selection.
+ * Routing path clicks through ordinary selection left `pathTargetSlug` empty and the copy button
+ * hidden.
  */
 export function resolveTopologyNodeClickRouteState(
   current: HomeRouteState,

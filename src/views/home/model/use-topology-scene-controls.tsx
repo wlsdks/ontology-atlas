@@ -124,20 +124,15 @@ export function useTopologySceneControls({
       meaningEditParam: null,
     }));
   }, [expandAllActive, setExpandAllActive, setFitViewToken, setFullDetailSlug, setMeaningEditorState, setRouteState, setSelectedEdge, setSelectedRelationActive]);
-  // Starter scaffold for an empty folder: the checklist button runs the same
-  // `scaffoldOntology()` as "start fresh in an empty folder". It is an explicit click
-  // rather than an automatic run, which is what keeps the local-first promise never to
-  // write into someone's folder unasked.
+  // An explicit click, never automatic, keeps the promise not to write into a folder unasked.
   const [starterScaffolding, setStarterScaffolding] = useState(false);
   const handleScaffoldStarter = useCallback(async () => {
     setStarterScaffolding(true);
     try {
-      // A vault created in the screen's language reads in that language.
       const result = await vault.scaffoldOntology(activeLocale);
       toast.show(
-        // Concepts and config files are counted separately: summed it says 8, but there
-        // are 5 actual ontology concepts, which contradicted the settings panel's
-        // "5 documents".
+        // Concepts and config files are counted apart, or the toast disagrees with the settings
+        // panel.
         t("startChecklist.scaffoldToast", {
           concepts: result.markdownCreated,
           configs: result.agentConfigCreated,
@@ -145,8 +140,8 @@ export function useTopologySceneControls({
         "success",
       );
     } catch (err) {
-      // The sentence a reader gets is written here or in `messages/*.json`, never thrown from a
-      // module that cannot know their language (B2, installed-app inspection before v1.2.2).
+      // Reader-facing sentences come from here or `messages/*.json`, never from a module that
+      // cannot know the locale.
       toast.show(failureSentence(err, t("createNode.toastError")).sentence, "error");
     } finally {
       setStarterScaffolding(false);
@@ -160,12 +155,9 @@ export function useTopologySceneControls({
     insight: ontologyInsight, resolvedRealmSlug, relationVocabulary, t,
   });
   /**
-   * Wording for the bar above a cluster; the canvas never composes strings itself.
-   *
-   * The `{count}` placeholder is passed through **verbatim**: the real number is known
-   * to the renderer per frame (a function of the "open at once" setting and how many
-   * remain) and not here. next-intl's interpolation cannot be used, so a contract test
-   * enforces the placeholder convention instead.
+   * The canvas composes no strings. `{count}` passes through verbatim because only the renderer
+   * knows the number
+   * per frame; a contract test enforces the placeholder since next-intl cannot interpolate it.
    */
   const clusterBarLabels = useMemo(
     () => ({
@@ -175,12 +167,7 @@ export function useTopologySceneControls({
     }),
     [t],
   );
-  /*
-   * The tier names the 3D Strata arrangement writes at each plane's rim. They are
-   * the canonical kind names (`kinds.*`), not a second vocabulary invented for the
-   * map — the plane a node sits on *is* its kind, so naming it anything else would
-   * be two words for one thing.
-   */
+  // Canonical kind names (`kinds.*`): a plane's tier is its kind, so no second vocabulary.
   const domeTierLabels = useMemo(
     () => ({
       project: tKinds("project"),
@@ -190,13 +177,9 @@ export function useTopologySceneControls({
     }),
     [tKinds],
   );
-  /*
-   * The bottom-right readout's own numbers (`FirstRunReadout`). `drawnConceptCount`
-   * is reported by the map for the frame it just painted, and the total comes from
-   * the same `ontologyInsight` as `indexDomainCount`, so the two cannot drift. The
-   * readout used to open with the project count — 1 in every vault anyone has
-   * opened — and then describe the zoom rule rather than the screen.
-   */
+  // `drawnConceptCount` comes from the map's last frame and the total from the
+  // same `ontologyInsight`,
+  // so the two cannot drift.
   const [drawnConceptCount, setDrawnConceptCount] = useState(0);
   const handleMapFrameDrawn = useCallback((count: number) => {
     setDrawnConceptCount(count);
@@ -223,15 +206,9 @@ export function useTopologySceneControls({
   const currentTopologyGraphStats =
     topologyGraphStats?.key === visibleTopologyStatsKey ? topologyGraphStats : null;
   /**
-   * Splitting the boot long task (measured 2026-08-19). This page's first client
-   * commit bundled the page chrome, the map widget's mount, and the map's mount effect
-   * (forced layout included) into **one task**, holding 324–335 ms under 4× CPU
-   * throttling — the single largest long task on a `/ko/topology/` load, and a stall
-   * visible on real hardware. The canvas draws nothing before its own first rAF frame
-   * anyway, so deferring the mount by **one rAF** splits that task into "page commit"
-   * and "map mount" while what appears on screen is unchanged (either way the first
-   * paint is an empty canvas). The reveal still starts on the map's first rAF frame,
-   * as its contract says.
+   * Deferring the map mount by one rAF splits the boot long task (page commit vs map mount)
+   * without changing
+   * the first paint, which is an empty canvas either way.
    */
   const [mapMountTaskReady, setMapMountTaskReady] = useState(false);
   useEffect(() => {
@@ -243,8 +220,7 @@ export function useTopologySceneControls({
     totalNodes: currentTopologyGraphStats?.nodes ?? visibleTopologyNodeCount,
     totalRelations: currentTopologyGraphStats?.relations ?? visibleTopologyRelationCount,
   });
-  // Since the controls panel was removed, the only remaining filter source is
-  // `activeCategory` in the URL route state (`?category=`).
+  // `?category=` is the only filter source left.
   const topologyFiltersActive = activeCategory !== null;
   const topologyOverlayState = resolveTopologyOverlayState({
     dataReady: projectsQuery.loaded,
@@ -266,7 +242,7 @@ export function useTopologySceneControls({
       activeCategory: null,
     }));
   }, [setRouteState]);
-  // Explicit "expand" for card badge/double-click — performs selection and focus entry in one go.
+  // Card badge or double-click: selection and focus in one go.
   const handleExpandRequest = useCallback(
     (slug: string) => {
       interactionSelectedSlugRef.current = slug;

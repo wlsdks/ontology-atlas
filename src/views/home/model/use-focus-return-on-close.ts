@@ -2,14 +2,9 @@ import { useEffect, useRef } from "react";
 import { focusWhenReady } from "../lib/topology-focus-return";
 
 /**
- * **When `open` turns false, focus goes back to where the surface came from** — the first of
- * `testIds` that exists — if closing left it stranded on `<body>`.
- *
- * One rule for the map's canvas surfaces (interaction audit, 2026-09-25): the add-to-map and
- * create dialogs, full detail and the tour each closed by their own path (Escape, a cancel
- * button, a finish button, the backdrop), and most of those paths dropped focus on `<body>`,
- * so the next Tab started from the top of the page. Watching the open flag covers every path
- * at once; a close that already placed focus (a surface that returns it itself) is left alone.
+ * When `open` turns false, focus returns to the first existing `testIds` element if it was
+ * stranded on `<body>`.
+ * Watching the flag covers every close path; a close that placed focus itself is left alone.
  */
 export function useFocusReturnOnClose(open: boolean, testIds: readonly string[]): void {
   const wasOpen = useRef(open);

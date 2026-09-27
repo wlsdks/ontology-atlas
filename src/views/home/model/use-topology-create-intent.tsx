@@ -39,15 +39,9 @@ export function useTopologyCreateIntent({
             ? "shortcuts"
             : "none";
   const topologyBlockingOverlayActive = topologyBlockingOverlayState !== "none";
-  // Onboarding QA, 2026-07-24: the composer's initial kind is state so the start
-  // checklist can carry a "create your first project/domain" intent into it. Ordinary
-  // entry points keep the previous default.
+  // State, so the start checklist can carry a "create your first project/domain" intent.
   const [createNodeDefaultKind, setCreateNodeDefaultKind] = useState<CreateNodeKind>("capability");
-  /**
-   * The domain "create one from here" preselects: opening it from a domain node on
-   * the map arrives with that domain already chosen. An empty string means no domain,
-   * as before.
-   */
+  /** Opened from a domain node, it preselects that domain; empty means none. */
   const [createNodeSeedDomain, setCreateNodeSeedDomain] = useState("");
   const openCreateNode = useCallback(() => {
     setCreateNodeDefaultKind("capability");

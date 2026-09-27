@@ -14,83 +14,63 @@ import {
 import type { FootprintTrailEntry, TrailStepCaption } from "../lib/footprint-trail";
 
 export interface TopologyTrailChipLabels {
-  /** Popover heading — "the trail you walked". */
   heading: string;
-  /** Trigger aria — "open the trail you walked". */
   triggerAriaLabel: string;
-  /** Current-position caption — "you are here". The only tinted text in the popover. */
+  /** "you are here"; the only tinted text in the popover. */
   currentLabel: string;
-  /** Top-row caption when nothing is focused — "just now". */
+  /** Top row with nothing focused: "just now". */
   justNowLabel: string;
-  /** Relative-step caption — "{count} steps back". */
+  /** "{count} steps back". */
   stepsAgoLabel: (count: number) => string;
-  /** Row click aria prefix — "go to {title}". */
+  /** "go to {title}". */
   rowAriaLabel: (title: string) => string;
-  /** Step caption when this node shares no edge with the step before it. */
+  /** When this node shares no edge with the previous step. */
   stepUnrelatedLabel: string;
   /** "hand this over to the AI". */
   copyLabel: string;
   copyAriaLabel: string;
   copyCopiedAriaLabel: string;
-  /** Footer "clear". */
   clearLabel: string;
-  /** What the clear control says once armed — the second press is the one that discards. */
+  /** Once armed; the second press discards. */
   clearConfirmLabel: string;
-  /** Chip ✕ aria — "clear the trail you walked". */
   clearAriaLabel: string;
-  /** Level-1 header link — "past trails {count}". Shown only when something is archived. */
+  /** Shown only when something is archived. */
   pastLinkLabel: string;
-  /** Level-2 heading — "past trails". */
   pastHeading: string;
-  /** Level-2 ‹ aria — "back to the trail you walked". */
   pastBackAriaLabel: string;
-  /** Row ✕ aria — "delete this trail". */
   pastDeleteAriaLabel: string;
-  /** Level-2 footer "clear all". */
   pastClearAllLabel: string;
-  /** Two-step confirm label — "press once more to delete". */
+  /** "press once more to delete". */
   pastClearAllConfirmLabel: string;
-  /** Cap notice caption — "the last 10 only". */
+  /** "the last 10 only". */
   pastCapCaption: string;
-  /** Empty-state body. */
   pastEmptyBody: string;
 }
 
-/** One row of the level-2 list — HomePage owns i18n and sends the strings already formatted. */
+/** HomePage owns i18n and sends the strings formatted. */
 export interface TopologyPastWalkRow {
   id: string;
-  /** Line 1 — "first → last". The middle arrow carries the trail's direction, so it is data. */
+  /** "first → last"; the arrow carries direction, so it is data. */
   routeLabel: string;
-  /** Line 2 — "today · 12 places", or "not on the map right now" when the trail cannot be replayed. */
+  /** "today · 12 places", or "not on the map right now" when it cannot replay. */
   metaLabel: string;
-  /**
-   * Whether this trail can be replayed on the current map. When false the row
-   * becomes text rather than a button — looking unpressable is more honest than
-   * a control that does nothing. Delete (✕) stays either way.
-   */
+  /** When false the row is text, not a button that does nothing; delete (✕) stays. */
   replayable: boolean;
-  /**
-   * Row button aria — "replay this trail — today, 12 places". A trail that cannot
-   * be replayed has no button and therefore no label (null); computing a string
-   * nothing uses is how a lie like "replay 0 places" leaks quietly into another
-   * surface.
-   */
+  /** Null without a button, so no unused "replay 0 places" string leaks elsewhere. */
   ariaLabel: string | null;
 }
 
-/** How long the `clear all` two-step confirm stays armed before reverting. */
 const CLEAR_ALL_CONFIRM_RESET_MS = 4000;
 
-/** The popover's width (`w-[248px]` below); the side choice measures against it. */
+/** `w-[248px]` below; the side choice measures against it. */
 const TRAIL_POPOVER_WIDTH = 248;
 
 type TrailPopoverAlign = "start" | "end";
 
 /**
- * Grow from the chip's right corner (`end`, the historical side) while the popover
- * still starts inside the free map; otherwise from its left corner (`start`). The free
- * map is the closest `[data-popover-boundary]` box — the toolbar, whose left edge is
- * INDEX's right edge plus one inset — or the window when there is none.
+ * Grows from the chip's right corner while the popover starts inside the free map, else from its
+ * left.
+ * The free map is the closest `[data-popover-boundary]` (the toolbar), or the window.
  */
 function resolveTrailPopoverAlign(root: HTMLElement | null): TrailPopoverAlign {
   if (!root) return "end";
@@ -99,100 +79,64 @@ function resolveTrailPopoverAlign(root: HTMLElement | null): TrailPopoverAlign {
   const left = boundary ? boundary.left : 0;
   const right = boundary ? boundary.right : window.innerWidth;
   if (chip.right - TRAIL_POPOVER_WIDTH >= left) return "end";
-  // Leftward would cross the boundary; rightward is taken when it fits, and is still
-  // the lesser overlap when neither does (the boundary's right edge is the window's).
+  // Rightward when it fits, and otherwise when it overlaps less (the boundary's right edge is the
+  // window's).
   return chip.left + TRAIL_POPOVER_WIDTH <= right || chip.left - left < right - chip.right ? "start" : "end";
 }
 
 export interface TopologyTrailChipProps {
-  /** Pre-formatted chip label — "trail · {count}" (HomePage owns i18n; the chip is pure chrome). */
+  /** HomePage owns i18n; the chip is pure chrome. */
   label: string;
-  /**
-   * What the chip shows when the map's top toolbar is narrower than 35rem (an agent
-   * dock or review panel on a small window): the visit count alone. `label` stays
-   * the tooltip, so the words are one hover away, and the trigger keeps its
-   * accessible name.
-   */
+  /** Below a 35rem toolbar only the count shows; `label` stays the tooltip and accessible name. */
   compactLabel?: string;
   /**
-   * Visit order (oldest → newest), exactly as the model gives it. The popover
-   * **reverses** it so the newest is on top: every time-ordered list in the app
-   * is newest-first, and the target you want to go back to is usually 1–3 steps
-   * ago, so it lands on the first screen without scrolling.
+   * Oldest to newest; the popover reverses it so recent targets land on the first screen, like
+   * every
+   * time-ordered list in the app.
    */
   entries: readonly FootprintTrailEntry[];
   /**
-   * How each entry connects to the entry **before** it, aligned index-for-index with
-   * `entries` (index 0 is null — the oldest step has no predecessor). `null` at any other
-   * index means the two nodes share no edge, which the row states rather than hides.
+   * Aligned with `entries`; index 0 is null, and null elsewhere means no shared edge, which the
+   * row states.
    */
   stepCaptions: readonly (TrailStepCaption | null)[];
-  /** Currently focused node id — drawn as the indigo dot on the timeline. */
+  /** The indigo dot on the timeline. */
   currentId: string | null;
   labels: TopologyTrailChipLabels;
   onFocusEntry: (id: string) => void;
-  /** Copies the visit-chain handoff packet to the clipboard. */
   onCopyPacket: () => void;
   copied: boolean;
-  /** Clears the session trail (chip ✕ and the footer share it). Discards without archiving. */
+  /** Shared by the chip ✕ and the footer; discards without archiving. */
   onClear: () => void;
   /**
-   * Popover open = the **trail lens** on/off. On this one signal the map sets
-   * relation reading aside and yields to trajectory reading (visited nodes keep
-   * their values and labels; everything else, edges included, dims). Not a new
-   * mode, toggle, or URL state — its lifetime is exactly the popover's.
+   * The trail lens: the map dims relations and everything unvisited while the popover is open.
+   * Its lifetime is exactly the popover's, with no mode or URL state.
    */
   onLensChange?: (active: boolean) => void;
-  /**
-   * Row hover/focus ↔ node brushing on the map. Answers "which node is two steps
-   * back" by **pointing at it** rather than by numbering nodes.
-   */
+  /** Brushes the map node, answering "which node is two steps back" by pointing, not numbering. */
   onHoverEntry?: (id: string | null) => void;
-  /** Archived past trails — newest first. */
+  /** Newest first. */
   pastWalks: readonly TopologyPastWalkRow[];
-  /**
-   * Why the current trail is not being kept (read-only vault, …); null while
-   * archiving normally. With no archive and nothing to report, the level-1
-   * header link does not appear at all.
-   */
+  /** Null while archiving normally; with no archive and no notice the level-1 link does not appear. */
   pastNotice: string | null;
   /**
-   * **Replays** one past trail as the trail being walked now. The caller archives
-   * the trail in progress first, refines the chosen one against the live map,
-   * loads it, then focuses its last step. The chip only returns to level 1 — the
-   * trail it just replayed is there.
+   * The caller archives the trail in progress, refines and loads this one, and focuses its last
+   * step;
+   * the chip only returns to level 1.
    */
   onReplayPastWalk: (id: string) => void;
   onDeletePastWalk: (id: string) => void;
-  /** Deletes every past trail (called after the two-step confirm). */
+  /** After the two-step confirm. */
   onClearPastWalks: () => void;
 }
 
 /**
- * The "trail you walked" chip — a status chip in the top-centre chrome row, same
- * grammar as `TopologyPathChip` / `TopologyRealmChip`. Clicking opens a **mini
- * timeline** popover: visit order on a vertical dot-and-line rail with the newest
- * on top, each dot a kind glyph (indigo for where you are now), row click =
- * focus that node.
- *
- * Why newest-first — owner: "It's hard to tell whether the top or the bottom is step 1"
- * (it is hard to tell whether the top or the bottom is step 1). Direction is not
- * left to the metaphor of the line. It matches every other time-ordered list in
- * the app (git history, freshness, the INDEX recent filter), and each row carries
- * its own relative-step caption ("you are here" / "n steps back"), so distance is
- * answered from whichever row you read first and the "is the top 1?" question
- * that absolute numbering left behind disappears. No directional decoration
- * (arrows, gradients) — it only adds ink and does not read at this contrast.
- *
- * transient-surface contract (same as the settings gear): a self-closing anchored
- * popover with no dim or backdrop, owning its own Escape so it does not fire
- * twice with the global Esc ladder.
- *
- * **Level 2** of the same shell is the archived past trails. No new route and no
- * second popup: a feature's past is seen where the feature lives. Level 2 has no
- * indigo — in a list with no "you are here", having no attention winner is the
- * honest state. Pressing a row replays that trail and returns to level 1 (the
- * trail in progress is archived first, so nothing is lost).
+ * The walked-trail chip: a mini timeline popover, newest on top with relative-step captions,
+ * like every time-ordered list in the app. A self-closing anchored popover owning its own Escape,
+ * so the
+ * global Esc ladder does not fire twice. Level 2 in the same shell holds archived trails without
+ * indigo,
+ * since no row there is "you are here"; replaying archives the current trail first.
  */
 export function TopologyTrailChip({
   label,
@@ -215,35 +159,19 @@ export function TopologyTrailChip({
 }: TopologyTrailChipProps) {
   const [open, setOpen] = useState(false);
   const [showPast, setShowPast] = useState(false);
-  // Destructive and unrecoverable, so it goes through an inline two-step confirm
-  // (a dialog is overkill at this size).
+  // Destructive and unrecoverable, so an inline two-step confirm.
   const [clearAllArmed, setClearAllArmed] = useState(false);
-  /*
-   * The session trail is discarded, not archived (`onClear`), and a walk cannot
-   * be rebuilt — it is not in the URL. Measured 2026-09-20: one press on the
-   * 45px footer button erased a three-step walk with no confirm, no undo and no
-   * notice, while the more destructive control beside it (clear every past
-   * walk) already asked twice. Both clear controls now arm the popover and the
-   * second press discards, so the two destructive acts in one surface behave
-   * the same way.
-   */
+  // A session trail is not in the URL and cannot be rebuilt, so both clear controls arm first and
+  // the second
+  // press discards, matching clear-all.
   const [clearArmed, setClearArmed] = useState(false);
-  /*
-   * Which of the chip's two bottom corners the popover grows from. It used to hang from
-   * the right corner always, so with the trail chip first in the lane (the lane starts
-   * at INDEX's right edge plus one inset) its left 92px landed under the INDEX panel,
-   * which paints above the toolbar (measured 2026-09-25 at 1280 and 1512:
-   * `elementFromPoint` along its left edge returned the INDEX rows). The side is chosen
-   * when it opens, against the toolbar's box, which is the free map.
-   */
+  // Chosen on open against the toolbar box, or a right-hung popover lands under INDEX.
   const [align, setAlign] = useState<TrailPopoverAlign>("end");
   const rootRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const pastLinkRef = useRef<HTMLButtonElement | null>(null);
 
-  // Only the render is reversed — the model (`appendFootprintVisit`) and the
-  // handoff packet stay oldest → newest (the packet is replayed by a machine,
-  // where chronological order is the correct one).
+  // Only the render is reversed; model and packet stay chronological for machine replay.
   const recentFirstEntries = useMemo(
     () =>
       entries
@@ -254,18 +182,14 @@ export function TopologyTrailChip({
 
   const close = useCallback((returnFocus: boolean) => {
     setOpen(false);
-    // Closing always returns to level 1 — remembering which level was open would
-    // make one trigger open a different screen each time.
+    // Always level 1, so one trigger opens one screen.
     setShowPast(false);
     setClearAllArmed(false);
     setClearArmed(false);
     if (returnFocus) triggerRef.current?.focus();
   }, []);
 
-  // Lens lifetime = popover lifetime. It must turn off on unmount too (including
-  // when clearing the trail removes the chip), or the map freezes dimmed. It stays
-  // on while level 2 is showing — as long as the popover is open the map is still
-  // a screen for reading trajectories.
+  // Off on unmount too, or the map freezes dimmed; stays on at level 2.
   useEffect(() => {
     onLensChange?.(open);
     if (!open) {
@@ -278,17 +202,13 @@ export function TopologyTrailChip({
     };
   }, [open, onLensChange, onHoverEntry]);
 
-  // Switching levels unmounts the other side's rows wholesale, with no pointer
-  // leave event, so brushing is released explicitly here in **both** directions.
-  // Returning to level 1 (including right after a replay) swaps the entire list,
-  // and a row drawn under a stationary pointer fires no mouseenter — the old
-  // brushing would stay on the map.
+  // Switching levels unmounts rows without a pointer leave, so brushing is released here in both
+  // directions.
   useEffect(() => {
     onHoverEntry?.(null);
   }, [showPast, onHoverEntry]);
 
-  // The confirm disarms itself — holding the armed state turns one careless click
-  // later into a deletion.
+  // Disarms itself, or a careless click later deletes.
   useEffect(() => {
     if (!clearAllArmed) return;
     const timer = window.setTimeout(() => setClearAllArmed(false), CLEAR_ALL_CONFIRM_RESET_MS);
@@ -301,7 +221,7 @@ export function TopologyTrailChip({
     return () => window.clearTimeout(timer);
   }, [clearArmed]);
 
-  /** First press arms the popover, second discards. Shared by the header ✕ and the footer. */
+  /** Shared by the header ✕ and the footer. */
   const handleClearPress = useCallback(() => {
     if (!clearArmed) {
       setClearArmed(true);
@@ -317,9 +237,8 @@ export function TopologyTrailChip({
       if (rootRef.current?.contains(event.target as Node)) return;
       close(false);
     };
-    // Same contract as the settings gear — a WINDOW capture Escape closes even when
-    // focus is outside, and stopPropagation keeps the global Esc ladder from
-    // consuming the same key again.
+    // A window capture Escape closes even with focus outside; stopPropagation keeps the Esc ladder
+    // out.
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       event.preventDefault();
@@ -339,8 +258,7 @@ export function TopologyTrailChip({
       ref={rootRef}
       className="relative shrink-0"
       data-testid="topology-trail-chip"
-      // The toolbar reads this (`has-[[data-lane-popover=open]]`) to lift itself above
-      // INDEX while something it opened is showing.
+      // The toolbar reads this (`has-[[data-lane-popover=open]]`) to rise above INDEX.
       data-lane-popover={open ? "open" : undefined}
     >
       <div className={CHROME_STATUS_CHIP_CLASS}>
@@ -365,15 +283,13 @@ export function TopologyTrailChip({
             shape: "link",
             tone: "strong",
             truncate: true,
-            // Under 12px of clearance from the clear button beside it — touch-hit-expand
-            // would steal the tap.
+            // Under 12px from the clear button, touch-hit-expand would steal the tap.
             className: "min-w-0 font-[var(--font-weight-signature)]",
           })}
         >
           {compactLabel ? (
-            // Keyed to the width of the map's top toolbar (`@container/map-toolbar`),
-            // not to a density flag: a node selection also sets that flag at 1512,
-            // where there is room for the words.
+            // Keyed to the toolbar width (`@container/map-toolbar`), not the density flag, which a
+            // selection also sets.
             <>
               <span className="hidden @min-[35rem]/map-toolbar:inline">{label}</span>
               <span className="@min-[35rem]/map-toolbar:hidden">{compactLabel}</span>
@@ -382,11 +298,9 @@ export function TopologyTrailChip({
             label
           )}
         </button>
-        {/* The armed state wears the same two changes as the footer sibling: the tone steps up
-            and the glyph swaps. It carried only the `aria-label` before, so a sighted person's
-            first press moved nothing on screen — the popover that says so may be shut — and the
-            second press was the discard the two-step design exists to prevent. The ✕ becomes a
-            bin because the shape, not the tone, is what says "this press deletes". */}
+        {/* Armed: the tone steps up and the ✕ becomes a bin, since the shape says "this press
+           deletes".
+           aria-label alone let a sighted person discard with a second press. */}
         <button
           type="button"
           onClick={handleClearPress}
@@ -397,7 +311,7 @@ export function TopologyTrailChip({
             shape: "icon",
             size: "sm",
             tone: clearArmed ? "strong" : "muted",
-            // Hover belongs to the consumer — the ink wakes only before arming.
+            // Hover wakes the ink only before arming.
             className: clearArmed ? "-mr-1" : "-mr-1 hover:text-[color:var(--color-text-primary)]",
           })}
         >
@@ -408,7 +322,7 @@ export function TopologyTrailChip({
           )}
         </button>
       </div>
-      {/* Hangs off one of the chip's bottom corners, and grows out of that corner. */}
+      {/* Grows out of the chip corner it hangs from. */}
       <Surface
         open={open}
         origin={align === "end" ? "top right" : "top left"}
@@ -439,8 +353,7 @@ export function TopologyTrailChip({
             ) : (
               <>
                 <span className="min-w-0 flex-1 truncate">{labels.heading}</span>
-                {/* A quiet entry point that appears only when there is something to
-                    show — a link pointing at an absent past is only ink. */}
+                {/* Appears only with something to show. */}
                 {pastWalks.length > 0 || pastNotice !== null ? (
                   <button
                     ref={pastLinkRef}
@@ -457,8 +370,7 @@ export function TopologyTrailChip({
           </div>
           {showPast ? (
             <>
-              {/* Say why nothing is being kept — a silent failure is the worst kind.
-                  While archiving normally this line does not exist at all. */}
+              {/* Why nothing is kept; absent while archiving normally. */}
               {pastNotice !== null ? (
                 <p
                   data-testid="topology-trail-past-notice"
@@ -467,9 +379,7 @@ export function TopologyTrailChip({
                   {pastNotice}
                 </p>
               ) : null}
-              {/* Past trails — row height is decided by the anatomy (two lines), not
-                  by the content, so the grid reads at one rhythm whatever the
-                  title length. */}
+              {/* Two-line anatomy decides row height, not content length. */}
               {pastWalks.length > 0 ? (
                 <ul
                   data-testid="topology-trail-past-list"
@@ -482,32 +392,23 @@ export function TopologyTrailChip({
                       data-replayable={walk.replayable ? "true" : "false"}
                       className="flex h-[47px] shrink-0 items-center gap-1"
                     >
-                      {/* Only a replayable trail is a button. A trail gone from the map
-                          keeps the same anatomy as text, and its second line answers
-                          why it cannot be pressed — we do not build controls that do
-                          nothing when pressed. */}
+                      {/* Only a replayable trail is a button; otherwise its second line says why. */}
                       {walk.replayable ? (
                         <button
                           type="button"
                           onClick={() => {
                             onReplayPastWalk(walk.id);
-                            // The trail just replayed is on level 1 — go back there.
+                            // The replayed trail is on level 1.
                             setShowPast(false);
                             setClearAllArmed(false);
                           }}
                           aria-label={walk.ariaLabel ?? undefined}
                           data-testid="topology-trail-past-replay"
-                          // The affordance is carried by a **text lift**, not by the
-                          // background — overlay-1 hover measures 1.03:1 on this
-                          // surface, i.e. effectively invisible. Level-1 rows already
-                          // say "pressable" with the same secondary→primary lift.
-                          // The text is a child span, so the cascade is blocked and it
-                          // has to go through group.
+                          // A text lift, not a background (overlay-1 hover is 1.03:1 here);
+                          // through `group` since the text is a child.
                           className={controlClass({ shape: "row", size: "sm", className: "group min-w-0 flex-1 flex-col justify-center gap-0.5 self-stretch px-1.5 hover:bg-[color:var(--color-overlay-1)]" })}
                         >
-                          {/* Lift line 1 only — lifting both collapses the two-line
-                              hierarchy and gives level 2 an attention winner it
-                              deliberately lacks. */}
+                          {/* Lifting only line 1 keeps level 2 without an attention winner. */}
                           <span className="w-full truncate text-body text-[color:var(--color-text-secondary)] transition-colors group-hover:text-[color:var(--color-text-primary)]">
                             {walk.routeLabel}
                           </span>
@@ -517,12 +418,8 @@ export function TopologyTrailChip({
                         </button>
                       ) : (
                         <span className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 px-1.5">
-                          {/* Demote, but not to the floor — the only thing to do in
-                              this row is read which trail to delete, so putting that
-                              text at the bottom of the ramp inverts it. Clearly below
-                              a live row (secondary) and above the caption
-                              (quaternary): three steps are what make line 2 read as
-                              explaining line 1. */}
+                          {/* Tertiary, between a live row and the caption, so line 2 reads as
+                             explaining line 1. */}
                           <span className="truncate text-body text-[color:var(--color-text-tertiary)]">
                             {walk.routeLabel}
                           </span>
@@ -572,7 +469,7 @@ export function TopologyTrailChip({
                     className={controlClass({
                       shape: "segment",
                       tone: clearAllArmed ? "strong" : "muted",
-                      // Hover belongs to the consumer — the ink wakes only before arming.
+                      // Hover wakes the ink only before arming.
                       className: clearAllArmed
                         ? undefined
                         : "hover:text-[color:var(--color-text-primary)]",
@@ -583,8 +480,7 @@ export function TopologyTrailChip({
                 ) : (
                   <span />
                 )}
-                {/* Do not hide the cap — say up front that this is a rotating buffer,
-                    not an accumulation. */}
+                {/* Say up front that this is a rotating buffer. */}
                 <span className="shrink-0 font-mono text-caption text-[color:var(--color-text-quaternary)]">
                   {labels.pastCapCaption}
                 </span>
@@ -592,15 +488,11 @@ export function TopologyTrailChip({
             </>
           ) : (
           <>
-          {/* Mini timeline — a vertical dot-and-line rail, newest on top (top = latest
-              → bottom = oldest). i is therefore "how many steps back from the latest
-              visit", so the caption costs one index. */}
+          {/* Newest on top, so `i` is steps back from the latest visit. */}
           <ol className="flex max-h-[280px] flex-col overflow-y-auto px-3 py-2.5">
             {recentFirstEntries.map(({ entry, caption, oldest }, i) => {
               const isCurrent = entry.id === currentId;
-              // The top row alone gets "you are here" (when something is focused) or
-              // "just now" (when nothing is selected — e.g. after an empty-canvas
-              // click; the honest state, with no indigo dot).
+              // "you are here" with focus, else "just now" without an indigo dot.
               const stepLabel =
                 i === 0
                   ? isCurrent
@@ -610,20 +502,16 @@ export function TopologyTrailChip({
               return (
                 <li
                   key={entry.id}
-                  // Brushing targets the whole row (rail glyph + title + step caption)
-                  // — the unit the user reads is the row, not the button.
+                  // The row is the unit the user reads.
                   onMouseEnter={() => onHoverEntry?.(entry.id)}
                   onMouseLeave={() => onHoverEntry?.(null)}
                   onFocus={() => onHoverEntry?.(entry.id)}
                   onBlur={() => onHoverEntry?.(null)}
-                  /* Two lines, one fixed height for every row (28px title + 14px
-                     caption): a row whose height depends on whether a reason exists
-                     turns the list into a ragged column and makes the rows with a
-                     caption look like a different kind of thing. */
+                  // One fixed height (28px title + 14px caption), or rows with a reason read as a
+                  // different kind.
                   className="flex h-[42px] shrink-0 items-stretch gap-2"
                 >
-                  {/* Left rail — the dot plus the connecting segments above and below
-                      (half only on the first and last row). */}
+                  {/* The dot with half segments on the first and last row. */}
                   <span className="relative flex w-4 shrink-0 flex-col items-center">
                     <span
                       aria-hidden
@@ -644,10 +532,7 @@ export function TopologyTrailChip({
                     />
                   </span>
                   <span className="flex min-w-0 flex-1 flex-col justify-center">
-                    {/* Title and distance share one line so the caption below explains
-                        both. Measured with the distance self-centred on the two-line row,
-                        it hung 13px under its own title and read as belonging to neither
-                        line. */}
+                    {/* Title and distance share a line so the caption explains both. */}
                     <span className="flex min-w-0 items-center gap-2">
                     <button
                       type="button"
@@ -662,9 +547,8 @@ export function TopologyTrailChip({
                     >
                       {entry.title}
                     </button>
-                    {/* The relative-step caption sits **outside** the button so the row's
-                        aria-label does not swallow it and screen readers still get the
-                        distance. Only the current row is indigo (the attention winner). */}
+                    {/* Outside the button so its aria-label keeps the distance for screen readers;
+                       only the current row is indigo. */}
                     <span
                       data-testid="topology-trail-step-label"
                       className={`shrink-0 font-mono text-caption tabular-nums ${
@@ -676,14 +560,9 @@ export function TopologyTrailChip({
                       {stepLabel}
                     </span>
                     </span>
-                    {/* **How this step follows the one before it** — the relation word
-                        plus the reason recorded on that edge (`relation_notes`). A trail
-                        of names alone says where the reader went and drops why they could
-                        go there, and the why is the durable thing this vault keeps. It
-                        sits **outside** the button so the row's aria-label stays the
-                        destination, and it stays at the bottom of the ramp: the row is
-                        still a door, not a paragraph. The oldest row keeps the empty slot
-                        so every row is the same height. */}
+                    {/* How this step follows the last: relation word plus `relation_notes`. Outside
+                       the button so the aria-label
+                       stays the destination; the oldest row keeps the empty slot for equal height. */}
                     {(() => {
                       const text = oldest
                         ? ""
@@ -695,13 +574,9 @@ export function TopologyTrailChip({
                       return (
                         <span
                           data-testid="topology-trail-step-link"
-                          // A recorded reason is a whole sentence and this popover is 248px
-                          // wide, so the line truncates. The native tooltip is the cheapest
-                          // honest way to keep the rest reachable without a second surface.
+                          // The native tooltip keeps a truncated reason reachable.
                           title={text || undefined}
-                          // The empty slot must still occupy its line box. Measured without
-                          // it, the oldest row's title sat 7px lower than the rows above,
-                          // because a zero-height caption let the column re-centre itself.
+                          // The empty slot keeps its line box, or the oldest title drops 7px.
                           className="min-h-[var(--leading-caption)] truncate px-2 text-caption leading-caption text-[color:var(--color-text-quaternary)]"
                         >
                           {text}
@@ -729,7 +604,7 @@ export function TopologyTrailChip({
               className={controlClass({
                 shape: "segment",
                 tone: clearArmed ? "strong" : "muted",
-                // Hover belongs to the consumer — the ink wakes only before arming.
+                // Hover wakes the ink only before arming.
                 className: clearArmed ? undefined : "hover:text-[color:var(--color-text-primary)]",
               })}
             >

@@ -41,10 +41,7 @@ describe("resolveTopologyEscLadderAction", () => {
   });
 
   it("R-1: closes the edge popover right after the realm, above the context menu and every other tier", () => {
-    // Regression from the accessibility audit: the edge popover (role=dialog) did not
-    // close on Escape and focus fell to <body>. This rung, promoted out of
-    // HomePage's inline check, is the single decision point the popover close
-    // now routes through.
+    // The edge popover (role=dialog) must close on Escape, or focus falls to <body>.
     expect(
       resolveTopologyEscLadderAction({
         ...BASE,
@@ -128,10 +125,8 @@ describe("resolveTopologyEscLadderAction", () => {
   });
 
   it("returns none when the search/ontology palette is open, even with a selection and every other tier open — the palette's own Escape handler (Radix Dialog) owns this keypress, not the window ladder", () => {
-    // Regression: the palette is a Radix Dialog that already closes itself on
-    // Escape. Before this input existed, the window-level ladder had no idea
-    // the palette was open, so it ALSO deselected the node on the same
-    // keypress — one Escape closed both the palette AND the selection.
+    // Without this input the ladder also deselects on the keypress the palette handles, closing
+    // two things.
     expect(
       resolveTopologyEscLadderAction({
         ...BASE,
@@ -274,11 +269,8 @@ describe("resolveTopologyEscLadderAction", () => {
 });
 
 /**
- * The bootstrap panel had no rung in the dismissal order at all, so Escape did
- * nothing (reproduced 2026-07-28 with a connected vault). The app's own shortcut
- * sheet promises Escape closes open surfaces one step at a time and every other
- * dialog behaves that way, so this one exception reads as the app ignoring the
- * key.
+ * The bootstrap panel is a dialog too; the shortcut sheet promises Escape closes one surface at a
+ * time.
  */
 describe("bootstrap panel answers first as a blocking surface", () => {
   it("Escape closes it while open", () => {
@@ -287,7 +279,6 @@ describe("bootstrap panel answers first as a blocking surface", () => {
     ).toBe("close-bootstrap");
   });
 
-  // Releasing a selection underneath something that covers it is not what the user asked for.
   it("the panel wins even over a selection below", () => {
     expect(
       resolveTopologyEscLadderAction({

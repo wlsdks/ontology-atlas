@@ -41,11 +41,6 @@ describe("resolveTopologyPathChipState", () => {
     ).toEqual({ kind: "no-path", sourceTitle: "결제", targetTitle: "주문" });
   });
 
-  /**
-   * The lie the screen used to tell: with two nodes absent from this vault the
-   * chip drew two names and then asserted "no path". The truth is that neither
-   * is here.
-   */
   it("does not claim no path when an endpoint is missing from this vault", () => {
     const state = resolveTopologyPathChipState({
       sourceSlug: "capability:ghost-a",
@@ -86,11 +81,7 @@ describe("resolveTopologyPathChipState", () => {
   });
 });
 
-/**
- * The copy button is the door to the agent. Handing it two non-existent slugs
- * and a "no path" conclusion passes a fooled human's belief on to a machine as
- * fact.
- */
+/** The copy button hands the packet to an agent; two absent slugs and "no path" would pass as fact. */
 describe("canCopyTopologyPathPacket", () => {
   it("cannot hand off while an endpoint is missing", () => {
     expect(

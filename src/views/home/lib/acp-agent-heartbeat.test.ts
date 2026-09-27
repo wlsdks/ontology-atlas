@@ -7,11 +7,8 @@ import {
 } from "./acp-agent-heartbeat";
 
 /**
- * Measured 2026-08-17: every node the in-app agent created read
- * `agent:unknown`, even though the same write logged `codex-mcp-client` to
- * `activity.jsonl`. `created_by` accepts only a name a person deliberately
- * registered, and there was no way to register one. The app now registers on
- * their behalf (owner instruction).
+ * `created_by` accepts only a deliberately registered name; choosing the runtime is that
+ * registration.
  */
 describe("registers an in-app agent in the vault", () => {
   const at = new Date("2026-08-17T01:23:45.000Z");
@@ -56,10 +53,7 @@ describe("vault name for the agent", () => {
     expect(acpHeartbeatAgentName("  codex-acp  ")).toBe("codex-acp");
   });
 
-  /*
-   * A malformed name registers nothing. `created_by` is permanent in the vault,
-   * so falling back to `agent:unknown` beats writing a broken value.
-   */
+  // `created_by` is permanent, so `agent:unknown` beats writing a broken value.
   it("does not register a malformed name, since unknown beats wrong", () => {
     for (const bad of ["", "   ", "a/b", "a b", "../x", "a\nb", "\u0000x", null, undefined, 7]) {
       expect(acpHeartbeatAgentName(bad), String(bad)).toBeNull();

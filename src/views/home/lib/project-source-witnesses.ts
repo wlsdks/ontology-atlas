@@ -44,10 +44,9 @@ export function deriveProjectSourceWitnesses(input: {
   const relevantDocSlugs = new Set(
     relevantNodes.map((node) => node.agentSlug).filter((slug): slug is string => Boolean(slug)),
   );
-  // Hand-authored project roots can predate `agentSlug` derivation. The graph
-  // hash already keeps the same exact frontmatter/filename fallback; source
-  // witnesses must use that identical containment boundary or a project-level
-  // README can never satisfy the scope competency evidence contract.
+  // Hand-authored project roots can predate `agentSlug`; use the graph hash's frontmatter/filename
+  // fallback,
+  // or a project-level README can never satisfy the scope evidence contract.
   for (const doc of input.docs) {
     if (
       doc.frontmatter.kind === "project"
@@ -61,12 +60,10 @@ export function deriveProjectSourceWitnesses(input: {
   const add = (candidate: ProjectSourceWitnessInput) => {
     if (!looksLikeSourceWitnessPath(candidate.path)) return;
     const path = normalizedPath(candidate.path);
-    // The same path can support more than one ontology role. Keep each node's
-    // claim while collapsing duplicate declarations on that same node.
+    // One path may support several roles; dedupe only per node.
     const claim = `${candidate.nodeSlug}\0${path}`;
-    // An explicit frontmatter `path:` can legitimately be a repository-root
-    // artifact such as README.md or package.json. It is still checked against
-    // the inspected source inventory before becoming supported evidence.
+    // A repository-root `path:` such as README.md is allowed but still checked against the
+    // inspected inventory.
     if (seenClaims.has(claim)) return;
     seenClaims.add(claim);
     candidates.push({ ...candidate, path });

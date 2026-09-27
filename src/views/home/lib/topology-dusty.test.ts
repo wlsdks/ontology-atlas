@@ -43,10 +43,8 @@ describe("deriveDustySlugs", () => {
   });
 
   it("a node trailing the median age by under twice stays fresh, only the real tail is dusty", () => {
-    // median = (100d+5d)/2 = 52.5d, so the threshold is max(30d, 105d) = 105d.
-    // Only a (200d) passes it; b (100d) is older than the median but within 2x,
-    // so it stays fresh. A plain "below median plus 30 days" test marked the
-    // majority of the dogfood vault (guardian's prescription).
+    // Median 52.5d gives a threshold of max(30d, 105d): only a (200d) passes; b is older than the
+    // median but within 2x.
     const nodes = [node("a", "doc-a"), node("b", "doc-b"), node("c", "doc-c"), node("d", "doc-d")];
     const index = new Map([
       ["doc-a", daysAgoIso(200)],

@@ -47,10 +47,8 @@ describe("resolveTopologyNodeTitle", () => {
   });
 
   /**
-   * This one line was the source of the screen stating an outright falsehood: a
-   * fallback that passes the slug off as a title gives an absent node a name,
-   * and the path chip then asserts "no path" over it. null is the information
-   * that the node is not here.
+   * A slug dressed as a title names an absent node, and the path chip then claims "no path" over
+   * it.
    */
   it("returns null when missing from this vault instead of dressing the slug as a title", () => {
     expect(

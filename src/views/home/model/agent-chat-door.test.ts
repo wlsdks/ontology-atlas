@@ -36,8 +36,7 @@ function frameWidthOwners(source: string): string[] {
   return owners.sort();
 }
 
-/** **Every combination** of the four inputs — 16. The invariant is held
- *  exhaustively, not by sampling. */
+/** All 16 combinations of the four inputs, so the invariant holds exhaustively. */
 const ALL: AgentChatDoorInput[] = [];
 for (const hasRuntime of [false, true]) {
   for (const runtimeOpen of [false, true]) {
@@ -51,11 +50,7 @@ for (const hasRuntime of [false, true]) {
 
 describe('one chat window: which branch owns it', () => {
   it('no input combination gives both branches the window', () => {
-    /*
-     * This one line is why the file exists. On the old screen the two open
-     * states did not know about each other, so two similar chat windows could
-     * stand to the right of the map.
-     */
+    // The two open states must never both be true.
     for (const input of ALL) {
       const door = agentChatDoor(input);
       expect(
@@ -93,7 +88,6 @@ describe('one chat window: which branch owns it', () => {
   });
 
   it('an ask-about-this from a node goes to the same window', () => {
-    // With a coding agent present the sentence lands in its composer.
     expect(
       agentChatDoor({
         hasRuntime: true,
@@ -102,7 +96,6 @@ describe('one chat window: which branch owns it', () => {
         hasAskIntent: true,
       }),
     ).toEqual({ runtime: true, key: false, open: true });
-    // Without one the key branch takes it — unchanged from before.
     expect(
       agentChatDoor({
         hasRuntime: false,
@@ -125,16 +118,15 @@ describe('one chat window: which branch owns it', () => {
         hasAskIntent: route.askBusinessFlow,
       }),
     ).toEqual({ runtime: true, key: false, open: true });
-    // INDEX and the first-run card must yield on the arrival frame too; otherwise
-    // the correct door opens into a squeezed map before its derived prefill exists.
+    // INDEX and the first-run card yield on the arrival frame, or the door opens into a squeezed
+    // map.
     expect(homePageSource).toContain("<TopologyAgentDock");
     expect(homePageSource).toContain("useTopologyAgentOrchestration({");
     expect(indexSource).toMatch(
       /const agentDockRequestedOpen\s*=\s*[\s\S]{0,260}routeState\.askBusinessFlow/,
     );
-    // Ownership is not visibility: the ACP frame itself is stateful so it can animate
-    // its width. The route handoff must enter the same open function as a button, and
-    // that function must drive both the width and Surface `open` bindings.
+    // The route handoff enters the same open function as a button, which drives both width
+    // and `Surface` open.
     expect(agentSource).toMatch(
       /const routeAskDockRequestRef[\s\S]{0,1800}openVaultAgent\(\);/,
     );
@@ -142,8 +134,7 @@ describe('one chat window: which branch owns it', () => {
       /if \(agentChatUsesRuntime\)[\s\S]{0,220}setAcpDockFrameOpen\(true\)/,
     );
     expect(frameWidthOwners(dockSource)).toEqual(['acpDockFrameOpen', 'meaningWorkbenchOpen']);
-    // The shared inset-surface contract checks its open binding; the route must
-    // also claim actual frame width when the meaning section is closed.
+    // The route must also claim the frame width when the meaning section is closed.
     const missingRuntime = dockSource.replace('width: acpDockFrameOpen || meaningWorkbenchOpen', 'width: meaningWorkbenchOpen');
     expect(frameWidthOwners(missingRuntime)).not.toEqual(['acpDockFrameOpen', 'meaningWorkbenchOpen']);
   });

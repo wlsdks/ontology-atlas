@@ -5,20 +5,11 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { CHROME_STATUS_CHIP_CLASS, Tooltip, controlClass } from "@/shared/ui";
 
 export interface TopologyPathChipProps {
-  /** Pre-formatted status line — "Path: {source} → choose a target" before a target
-   *  is picked, "{source} → {target}" once both endpoints resolve. The view composes
-   *  this (i18n interpolation lives in the path lens, not here) so this component
-   *  stays a pure "chrome grammar" chip. */
+  /** Composed by the path lens, so this chip stays pure chrome. */
   label: string;
-  /**
-   * What the path came to — "N hops" or "no path" — once both endpoints resolve. It is
-   * drawn after the label and never truncates: the endpoint names give way first,
-   * because the outcome is the one fact this chip adds to the map.
-   */
+  /** "N hops" or "no path"; never truncates, since the endpoint names give way first. */
   outcome?: string | null;
-  /** Only rendered once both endpoints resolve — the one agent-facing copy
-   *  action that replaced the old path panel's CLI/MCP 2-button split and its
-   *  5-button proof-check row. */
+  /** Only then does the single agent copy action render. */
   resolved: boolean;
   copyPacketLabel: string;
   copyPacketCopied: boolean;
@@ -29,13 +20,7 @@ export interface TopologyPathChipProps {
   onClear: () => void;
 }
 
-/**
- * The chip's two actions share one shape: the 24px icon button (`controlClass` icon
- * `sm`), each named by a tooltip. The copy action used to be a `CompactCopyButton`
- * whose own `min-h-9` was overridden away, leaving a 30x14 target with a border its
- * clear sibling did not have (measured 2026-09-25) — under the 24px floor, and two
- * button grammars inside one chip.
- */
+/** One 24px icon-button grammar for both actions, each named by a tooltip. */
 const CHIP_ACTION_CLASS = controlClass({
   hoverInk: "strong",
   shape: "icon",
@@ -44,12 +29,9 @@ const CHIP_ACTION_CLASS = controlClass({
 });
 
 /**
- * Top-centre "chrome grammar" status chip for path mode — replaces the old
- * left-slot path panel (route card + MCP/CLI chips + collapsed proof
- * disclosure). Mounted next to `SearchHint` in the same top-centre row, not in
- * the INDEX/analysis-rail left slot: path no longer reclaims that slot
- * (`slot-ownership.ts`). Canvas path highlighting is untouched — this chip is
- * chrome only, no map-rendering logic.
+ * Top-centre path status chip beside `SearchHint`; path no longer claims the left slot
+ * (`slot-ownership.ts`).
+ * Chrome only: canvas highlighting is untouched.
  */
 export function TopologyPathChip({
   label,
@@ -64,15 +46,9 @@ export function TopologyPathChip({
   onClear,
 }: TopologyPathChipProps) {
   const fullLabel = outcome ? `${label} · ${outcome}` : label;
-  /*
-   * **In a narrow toolbar the outcome speaks alone** (2026-09-25). Below a 44rem
-   * toolbar (the free map beside an open INDEX under 1130px, or the review panel
-   * narrowing it) the endpoint names had what the tools and the trail chip left:
-   * one or two letters and an ellipsis (at 900 and 1040), which says less than
-   * the outcome by itself. There the names leave the face and stay in the chip's
-   * accessible text and its hover text; wider, they read whole. Before a target is
-   * picked there is no outcome, and the label (the instruction) always shows.
-   */
+  // Below a 44rem toolbar the outcome speaks alone and the names move to accessible and hover
+  // text,
+  // since one or two letters say less than the outcome. Without an outcome the label always shows.
   const foldable = Boolean(outcome);
   return (
     <div

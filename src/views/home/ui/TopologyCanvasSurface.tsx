@@ -234,16 +234,12 @@ export function TopologyCanvasSurface({
     vault, deeplinkSourceReady, vaultIdentity, spotlightFitToken, selectedOntologyNode, changedSlugs,
     recentNeedsVaultOpen, setRecentNeedsVaultOpen, needsVaultReason, setNeedsVaultReason, ontologyInsight
   } = topologyVaultReadModel;
-  /*
-   * Lit 3D (2026-09-25): the evidence states the light is drawn from — the same rule and the
-   * same Git walk the insights brief uses. Walked only while 3D is on; no other view here
-   * reads it.
-   */
+  // The insights brief's rule and Git walk, run only while 3D is on.
   const view3dOn = topologyPreferences.view3d;
   const mapEvidence = useMapEvidenceStates({ nodes: ontologyInsight?.nodes, enabled: view3dOn });
   const { analyzePrompt, agentChatUsesRuntime, sendAnalyzeToAgent } = topologyAgentOrchestration;
   const { t, tTopologyKeyboardWalk, galaxy, territories, hexBoard, reducedMotion, audiencePlain, glyphSet, canvasBackground, view3d, mapArrangement, footprint, expand } = topologyPreferences;
-  /** The hex board threw: this session falls back to the flat map and says so in one line. */
+  /** After a hex board throw this session falls back to the flat map with one line. */
   const [hexFailed, setHexFailed] = useState(false);
   const { ontologyMapGraph, canvasSelectedSlug, resolvedRealmSlug, localGraphProjects, resolvedSelectionSlug } = topologyGraphProjection;
   const { mapRelationCaptions, mapReviewQuestionIds } = topologyAnalysisReview;
@@ -283,41 +279,13 @@ export function TopologyCanvasSurface({
           key={localGraphRoot ?? '__root__'}
           className="absolute inset-0 animate-[topologyFade_var(--motion-base)_var(--motion-ease)]"
         >
-          {/* Empty-state overlay when the visible graph has 0–1 nodes: a lone dot
-                    otherwise reads as a broken canvas. An empty vault never mounts the
-                    engine at all and shows only the empty state, which prevents the
-                    regression where a map shape flashed first. */}
+          {/* With 0-1 visible nodes a lone dot reads as broken; an empty vault never mounts the
+             engine at all. */}
           {topologyOverlayState.kind === "structural-empty" && !createNodeOpen ? (
-            /*
-             * Onboarding round, 2026-07-24: someone who opened a writable local
-             * vault gets a progressive start checklist instead of a dead-end
-             * sentence.
-             *
-             * ⚠️ **The gate was widened 2026-08-03** (five PO seats plus four
-             * design seats). The condition used to include
-             * `&& (bootstrapPlan?.elements.length ?? 0) === 0`, so **only a truly
-             * empty folder** ever saw the checklist. That one clause shut the door
-             * to connecting an agent and copying the instruction for it for anyone
-             * whose folder had even one document — that is, **anyone who opened a
-             * development repository**, exactly the person this flow exists for.
-             * `TopologyEmptyState`'s docs-found branch offers only "build a map from
-             * my documents" and says nothing about agents at all.
-             *
-             * So the decision narrowed to one question, "is this a writable vault",
-             * and when documents exist **the checklist's first step becomes
-             * bootstrap** (`docsFoundCount` below). Nothing new was built; an
-             * existing screen simply became reachable, with no popup added.
-             */
-            /*
-             * ⚠️ Not while a conversation is open (measured in the installed app,
-             * 2026-08-25). Pressing 「make a map from my code」 opens the agent panel and
-             * sends the first turn — and this checklist stayed on the map beside it, still
-             * offering 「connect an AI agent · 1/3」 to somebody already mid-conversation
-             * with one. Two surfaces claiming the same next step, one of them stale.
-             *
-             * It is guidance for a person who has not started. Someone talking to an agent
-             * has started. Dismissal is untouched: closing the panel brings it back.
-             */
+            // A writable vault gets the progressive start checklist; with documents present its
+            // first step is bootstrap.
+            // Hidden while a conversation is open, which already started; closing the panel brings
+            // it back.
             startStepsVisible ? (
               <VaultStartSteps
                 agentConnected={agentConnect.status.kind === "connected"}
@@ -325,20 +293,15 @@ export function TopologyCanvasSurface({
                 acpRuntimeIcon={acpRuntime?.icon ?? null}
                 acpRuntimeInk={acpRuntime?.brandInk ?? null}
                 onCreateNode={openCreateNodeWithKind}
-                // Someone who opened an empty folder through "choose an existing
-                // folder" gets the same starter as "start fresh in an empty folder",
-                // as a button. Not passed when documents already exist.
+                // The same starter as "start fresh in an empty folder"; not passed when documents
+                // exist.
                 onScaffoldStarter={
                   (vault.manifest?.docs.length ?? 0) === 0
                     ? handleScaffoldStarter
                     : null
                 }
                 scaffolding={starterScaffolding}
-                /*
-                 * With documents in the folder, they are the first step. Connecting
-                 * an agent is first in the empty-folder ordering; for someone who
-                 * already has something, the first step is that something.
-                 */
+                // With documents present, they are the first step.
                 docsFoundCount={bootstrapPlan?.elements.length ?? 0}
                 sourceFileCount={vault.manifest?.sourceFileCount ?? 0}
                 onStartFromDocs={
@@ -347,35 +310,18 @@ export function TopologyCanvasSurface({
                     : undefined
                 }
                 analyzePrompt={analyzePrompt}
-                /*
-                 * When there is somewhere **inside this app** to paste it, do not
-                 * make the user copy. Owner, 2026-08-16: *"I don't even know what the second one is."*
-                 * (I have no idea what the second one even is). The instruction is
-                 * seated in the chat composer; a person still sends it.
-                 */
+                // Seats the instruction in the chat composer instead of making the user copy; a
+                // person still sends it.
                 onSendAnalyzeToAgent={
                   agentChatUsesRuntime ? sendAnalyzeToAgent : null
                 }
-                // Owner report, 2026-08-16: the card appeared to overlap INDEX's
-                // right edge. INDEX floats **over** the map column rather than
-                // narrowing it (the right-hand agent panel is a flex sibling and
-                // genuinely does narrow it), so it alone is missing from the card's
-                // centring calculation. This tells the card its width.
+                // INDEX floats over the map column instead of narrowing it, so the card needs its
+                // width to centre.
                 indexExpanded={renderedIndexState === "expanded"}
                 onFinish={dismissStartSteps}
-                /*
-                 * This step is named **connect**, and connecting lives at the agents
-                 * destination — where you see what was detected and choose what to
-                 * use (owner remark, 2026-08-16).
-                 *
-                 * ⚠️ It used to open the **chat** when something was detected, so a
-                 * button labelled "connect" did something other than its name. The
-                 * doors to chat are separate (the utility lane's agent chip, and the
-                 * next step's "ask the agent"). Since 2026-08-21 the runtime list
-                 * moved out to the agents destination (`docs/DECISIONS.md`, entry
-                 * 90), so signalling "open the sheet" would now do nothing at all —
-                 * there is no sheet. It navigates instead.
-                 */
+                // "Connect" lives at the agents destination, so it navigates there
+                // (`docs/DECISIONS.md`, entry 90);
+                // chat has its own doors.
                 onOpenAgentConnect={() => router.push(DESTINATION_HREF.agents)}
               />
             ) : (
@@ -384,11 +330,9 @@ export function TopologyCanvasSurface({
                 reason={topologyOverlayState.emptyReason}
                 canCreateNode={canCreateNode}
                 onCreateNode={openCreateNode}
-                // Decided by capability, from the same single source as
-                // `OpenVaultCta`. The widget used to ask
-                // `isTauriVaultRuntime() || vault is open` itself and answered "install
-                // the app" to a **web visitor whose browser supports the File System
-                // Access API** (council measurement, 2026-08-08).
+                // Decided by capability, from the same source as `OpenVaultCta`: a web browser
+                // with File System Access
+                // can pick a folder too.
                 canPickFolder={vault.status !== 'unsupported'}
                 docsFoundCount={bootstrapPlan?.elements.length ?? 0}
                 onStartFromDocs={
@@ -405,18 +349,10 @@ export function TopologyCanvasSurface({
             />
           ) : null}
           {topologyRenderState.renderCanvas && mapMountTaskReady ? (
-            // `ontology-map` (`docs/design/ontology-map.md`) unifies the map tab,
-            // the graph tab, and the project-detail neighbour map into one engine;
-            // this call site is wired once for all three. `nodes`/`edges` come from
-            // `ontologyMapGraph` (`map-adapter.ts`), derived from
-            // `ontologyInsight`. The older engine branches this ternary used to
-            // hold were deleted outright once v2 became the default — owner
-            // directive: *"Delete all the old canvas code."* (delete all the old
-            // canvas code).
-            // One dead widget must not take the page with it. A canvas throw — a lost
-            // WebGL/2D context, a graph shape the renderer cannot lay out — used to blank
-            // the whole route; now the rail, the panels and the chrome stay usable and the
-            // map alone offers a retry.
+            // `ontology-map` (`docs/design/ontology-map.md`) is the one engine for map, graph and
+            // project-neighbour views.
+            // A canvas throw keeps the rail, panels and chrome usable, and only the map offers a
+            // retry.
             <ErrorBoundary
               onError={() => cancelMapNavigation(mapEntryTicket)}
               fallback={({ error, reset }) => (
@@ -431,9 +367,8 @@ export function TopologyCanvasSurface({
               )}
             >
               {territories ? (
-                /* Territories (owner decision, 2026-09-24): the flat plane with nothing
-                   folded. It shares the selection contract — a click selects through the
-                   same handler, so the same inspector opens — and owns its own canvas. */
+                // Shares the selection contract: a click selects through the same handler and
+                // opens the same inspector.
                 <TopologyTerritoriesSurface
                   nodes={ontologyMapGraph.nodes}
                   edges={ontologyMapGraph.edges}
@@ -455,10 +390,8 @@ export function TopologyCanvasSurface({
                   indexExpanded={renderedIndexState === "expanded"}
                 />
               ) : hexBoard && !hexFailed ? (
-                /* Hex board (owner decision, 2026-09-25): one tile per capability. The same
-                   selection contract as Territories — a click selects, the inspector opens.
-                   Its own boundary: a throw in the board falls back to the flat map with a
-                   one-line note, never the whole route or the map-level retry screen. */
+                // Same selection contract. A board throw falls back to the flat map with a
+                // one-line note.
                 <ErrorBoundary onError={() => setHexFailed(true)} fallback={() => null}>
                 <TopologyHexBoardSurface
                   nodes={ontologyMapGraph.nodes}
@@ -486,31 +419,18 @@ export function TopologyCanvasSurface({
                 edges={ontologyMapGraph.edges}
                 relationCaptions={mapRelationCaptions}
                 reviewQuestionIds={mapReviewQuestionIds}
-                /* Say so when an arrow key has nowhere to walk (owner, 2026-08-10).
-                                                   With no response at all the user cannot tell "broken" from "nothing
-                                                   that way". The wording and the surface belong to the page; the
-                                                   widget only emits the event, because it is tested with no provider
-                                                   around it. */
+                // Silence cannot tell "broken" from "nothing that way". The page owns the words;
+                // the widget only emits,
+                // since it is tested without a provider.
                 walkNoticeLabel={tTopologyKeyboardWalk("deadEnd")}
                 focus={{ selectedSlug: canvasSelectedSlug }}
-                /* Closes the defect where switching vaults mid-session (sample →
-                                                   local) drew the new graph with the previous graph's camera. The
-                                                   single source is `useVaultSessionIdentityScope()` above — the **same
-                                                   signal** the deep-link cleanup uses, because "which vault am I
-                                                   looking at" must not be answered differently per surface.
-                                                   `deeplinkSourceReady` wraps it for the same reason as its neighbour
-                                                   (see "a scope before it settles is not a scope"): a live refresh
-                                                   returns status to `'loading'`, and the identity computed then is
-                                                   `sample:…`. Passing that straight down makes the camera jump every
-                                                   time one file is saved into the vault (measured dy −10.66). */
+                // The same vault identity signal as the deep-link cleanup, so a vault switch
+                // resets the camera.
+                // Gated on `deeplinkSourceReady`, or a live refresh's transient `sample:` identity
+                // jumps the camera on save.
                 dataSourceKey={deeplinkSourceReady ? vaultIdentity : null}
-                /*
-                                                 * "Full" only under expand-all. `expandedParentSet` is not a
-                                                 * person's choice alone: selecting any node opens its parents
-                                                 * (`open=project:…`) and that survives closing the panel, so
-                                                 * keying on it made every fit after a first click a full-bounds
-                                                 * fit (measured 2026-09-03: fit x 41 against the return's -45).
-                                                 */
+                // "Full" only under expand-all: `expandedParentSet` also grows from selections,
+                // which would make every fit full.
                 overviewFit={expandAllActive ? "full" : "spine"}
                 fitViewToken={combinedFitToken}
                 growthReplayToken={growthReplayToken}
@@ -521,14 +441,9 @@ export function TopologyCanvasSurface({
                 revealToken={mapRevealToken}
                 onSelectEdge={(edge) => {
                   setFullDetailSlug(null);
-                  setHoverEdge(null); // The popover demotes the hover micro-card.
-                  // Fixes edge clicks being swallowed while a node had focus, because
-                  // the edge panel is gated on `!selectedOntologyNode`. Selecting an
-                  // edge (pair focus) is by definition a **replacement** for a node's
-                  // ego focus — two transient surfaces may not coexist — so, mirroring
-                  // `onSelect` clearing `selectedEdge`, the node focus is released
-                  // here to open that gate. The camera path is the same as
-                  // overview → edge.
+                  setHoverEdge(null);
+                  // An edge selection replaces a node's ego focus, mirroring `onSelect`
+                  // clearing `selectedEdge`, so the node focus is released to open the edge panel's gate.
                   if (selectedOntologyNode) handleClose();
                   setSelectedEdge(edge);
                 }}
@@ -551,12 +466,7 @@ export function TopologyCanvasSurface({
                 onGraphStatsChange={handleTopologyGraphStatsChange}
                 onZoomTierChange={setMapZoomTier}
                 onContextMenuNode={handleContextMenuNode}
-                /*
-                                                 * Right-clicking empty canvas means "create a concept here" and takes
-                                                 * the place of the chrome pill removed from the top. Wired only for a
-                                                 * writable vault: a menu on a vault that cannot be written to is a
-                                                 * dead door.
-                                                 */
+                // Right-click on empty canvas creates a concept; only on a writable vault.
                 onContextMenuPane={canCreateNode ? () => openCreateNode() : undefined}
                 minimal={localGraphRoot !== null}
                 agentFocusNodeId={agentFocusNodeId}
@@ -571,8 +481,8 @@ export function TopologyCanvasSurface({
                 }
                 onToggleCluster={handleToggleCluster}
                 onHoverCluster={handleHoverCluster}
-                // Galaxy exposes every real concept directly, so the Flat
-                // density-gate hint would announce controls that do not exist.
+                // Galaxy shows every concept, so the density-gate hint would name controls that do
+                // not exist.
                 clusterHint={galaxy ? undefined : t('cluster.hint')}
                 realmRootId={resolvedRealmSlug}
                 onEnterRealm={handleEnterRealm}
@@ -587,18 +497,14 @@ export function TopologyCanvasSurface({
                 trailLensActiveRef={footprintLensActiveRef}
                 trailHoverNodeIdRef={footprintBrushNodeIdRef}
                 panelHoverNodeIdRef={panelHoverNodeIdRef}
-                // Plain mode pushes the element tier into an unreachable band so it
-                // stays hidden; the ego exception still applies.
+                // Pushes the element tier out of reach; the ego exception still applies.
                 tierReveal={audiencePlain ? PLAIN_TIER_REVEAL : undefined}
-                // Projection for the guided tour's canvas-node anchors.
                 tourAnchorNodeId={tourAnchorNodeId}
                 tourAnchorRef={tourAnchorRef}
-                // While the global search palette is genuinely open (the same
-                // condition as `MountedGlobalSearch`'s `open` prop), the canvas leaves
-                // the accessibility tree via aria-hidden + inert.
+                // Leaves the accessibility tree while the search palette is open
+                // (the `MountedGlobalSearch` condition).
                 overlayOpen={!createNodeOpen && ontologySearchOpen}
-                // Appearance preferences from the settings sheet. The DOM glyphs read
-                // the same store themselves and swap in lockstep.
+                // The DOM glyphs read the same store and swap in lockstep.
                 glyphSet={glyphSet}
                 canvasBackground={canvasBackground}
                 view3d={view3d}
@@ -612,10 +518,8 @@ export function TopologyCanvasSurface({
                     kindLabels={domeTierLabels}
                   />
                 }
-                // The "the viewport changed" event for the 3D selection reframe: true
-                // while the detail panel actually covers the screen, false once its
-                // exit animation ends. On each flip the dome reframes smoothly against
-                // the visible area; 2D ignores it (see `use-topology-loop`).
+                // Flips when the detail panel covers the screen and when its exit ends; the dome
+                // reframes, 2D ignores it.
                 detailPanelVisible={nodePanelMounted}
                 footprint={footprint}
                 expand={expand}
@@ -645,19 +549,10 @@ export function TopologyCanvasSurface({
                   to { opacity: 1; transform: scale(1); }
                 }
               `}</style>
-        {/* The four utilities stay fixed square controls. Their shared tooltip
-                  carries the full name on pointer hover and keyboard focus without
-                  changing the rail's width or taking canvas drag space.
-
-                  They step aside on `selectedEdgeOwnsRightRail`, the state the relation
-                  card itself opens under. They used to read `selectedRelationActive`,
-                  which nothing ever sets to `true`, so with a relation card up all four
-                  kept drawing under it: measured at 1512x982 with the card at
-                  [1180, 32, 300, 335], `elementFromPoint` returned the card at the
-                  centre of 4 of 4 tiles while each one still had opacity 1 and
-                  `pointer-events: auto`. A tile a person can see and cannot press is
-                  worse than one that stepped aside, which is what the neighbouring
-                  right-rail tiles already do (`inspectorOwnsRightRail`). */}
+        {/* Fixed square tiles whose tooltip carries the name. They step aside
+           on `selectedEdgeOwnsRightRail`,
+           like the other right-rail tiles, or they stay visible under the relation card and cannot
+           be pressed. */}
         <div className="contents" data-testid="topology-utility-rail">
           {createNodeOpen ||
             topologyBlockingOverlayActive ||
@@ -672,10 +567,7 @@ export function TopologyCanvasSurface({
               }}
             />
           )}
-          {/* Guided tour entry point: the sibling directly above the "?" tile, same
-                  chrome-tile token family. It does not copy the "?" tile's phone
-                  visibility branch — the tour is `md`+ only by design
-                  (`hidden md:flex`). */}
+          {/* Directly above the "?" tile; the tour is `md`+ only. */}
           {createNodeOpen ||
             selectedEdgeOwnsRightRail ||
             topologyBlockingOverlayActive ||
@@ -693,9 +585,8 @@ export function TopologyCanvasSurface({
               />
             </Tooltip>
           )}
-          {/* Shortcut and gesture help entry point: two slots below the fit tile, after
-                  the tour tile. On phones it appears only in overview and focus, where it
-                  cannot collide with the primary read rail (path/health). */}
+          {/* Two slots below the fit tile; on phones only in overview and focus, clear of the
+             path/health rail. */}
           {createNodeOpen ||
             selectedEdgeOwnsRightRail ||
             topologyBlockingOverlayActive ||
@@ -738,10 +629,8 @@ export function TopologyCanvasSurface({
                   ? "top-[var(--topology-shortcuts-help-focus-phone-top)]"
                   : "top-[var(--topology-shortcuts-help-phone-top)]"
                   } z-20 md:right-[var(--chrome-inset)] md:top-[var(--topology-shortcuts-help-desktop-top)] md:inline-flex ${
-                  // Below `md`, while the expanded INDEX is a full-bleed sheet, the "?"
-                  // tile floated on top of it and overlapped (measured at 600×900,
-                  // y188). The sheet is the primary surface, so the chrome demotes. At
-                  // `md`+ the `md:inline-flex` keeps it.
+                  // Below `md` the expanded INDEX sheet is the primary surface, so the tile
+                  // demotes.
                   topologyShortcutHelpPhoneVisible && renderedIndexState !== "expanded"
                     ? "inline-flex"
                     : "hidden"
@@ -749,10 +638,8 @@ export function TopologyCanvasSurface({
               />
             </Tooltip>
           )}
-          {/* Growth replay (2026-09-02): the fourth slot of the right rail rhythm, one row
-                  below the "?" tile. Replays the ontology appearing in containment order
-                  (`ontology-map/model/growth-replay.ts`); desktop only like the tour. A
-                  `ChromeTile`, not a hand-written button — the control ratchet only falls. */}
+          {/* Replays the ontology appearing in containment order
+             (`ontology-map/model/growth-replay.ts`); desktop only. */}
           {createNodeOpen ||
             selectedEdgeOwnsRightRail ||
             topologyBlockingOverlayActive ||
@@ -762,13 +649,9 @@ export function TopologyCanvasSurface({
               data-agent-dock-adjacent-rail="true"
               data-map-fit-obstacle="right"
             >
-              {/* A toggle, not a hold. One bump of the token starts the replay and
-                      the next stops it; the loop reports the live state back, so the
-                      active border and `aria-pressed` also fall away when the replay
-                      simply reaches its end. Exits and the reason movement no longer
-                      counts as one: `use-topology-loop.ts`, the token effect.
-                      The icon stays the play glyph while it runs; the indigo active
-                      border is the state, the same one every other chrome toggle wears. */}
+              {/* A toggle: one token bump starts the replay and the next stops it, and the loop
+                 reports the live state back
+                 (`use-topology-loop.ts`). The indigo border is the state; the glyph stays play. */}
               <Tooltip content={t('controls.replayGrowthTooltip')} side="left">
                 <ChromeTile
                   icon={<Play />}
@@ -783,18 +666,14 @@ export function TopologyCanvasSurface({
             </div>
           )}
         </div>
-        {/* The settings gear moved to the bottom of the left nav rail. */}
         <HubRail
           projects={renderProjects}
           selectedSlug={canvasSelectedSlug}
           onSelect={(slug) => handleSelect(slug)}
-          // Prevents overlap while the hero panel is expanded; with the hero
-          // collapsed to a pill, or in the drawer state, the hub rail shows
-          // normally.
+          // Suppressed while the hero panel is expanded.
           suppressed={!leftPanelCollapsed && !drawerOpen}
         />
-        {/* The breadcrumb settles down from the top centre of the map, so its
-                  entrance origin is its own top edge. */}
+        {/* It settles from the top centre, so it grows from its own top edge. */}
         <Surface
           open={localGraphStack.length > 0}
           origin="top center"
@@ -850,37 +729,25 @@ export function TopologyCanvasSurface({
           </button>
         </Surface>
 
-        {/* Filter context: shown when fewer nodes are visible than exist, so the
-                  local graph or a category filter having reduced them is explained. */}
+        {/* Explains a local graph or category filter that reduced the visible nodes. */}
         {topologyVisibleCount !== null && topologyVisibleCount < localGraphProjects.length ? (
           <div data-toast-wall="bottom" className="pointer-events-none absolute bottom-6 left-[220px] z-10 rounded-chip border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-panel)] px-3 py-1.5 font-mono text-label uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-indigo-line-a90)] md:left-[228px] xl:left-[236px]">
             filter · {topologyVisibleCount} / {localGraphProjects.length}
           </div>
         ) : null}
 
-        {/* Zero-match empty state. */}
         {topologyOverlayState.kind === "filter-empty" ? (
           <TopologyNoMatchesState onClearFilters={clearTopologyFilters} />
         ) : null}
 
-        {/* Bottom-right instrument stack — root-first-open v3 reading (FirstRunReadout).
-                  The corner inset is `--topology-relation-legend-inset`, the chrome inset,
-                  so the stack's right edge stays on the utility rail's column above it. */}
-        {/* Inspection round 1 defect 2 (2026-07-23) — when the right datasheet opened, this
-                  corner reading appeared fragmented behind and to the left of the panel
-                  (reproduced across all 4 locales × resolutions). Since it is ambient info and unnecessary during investigation,
-                  it quietly disappears while the panel is open.
-
-                  The same rule covers the right dock (measured 2026-09-07 at 1512 with the
-                  meaning workbench open): the map keeps 1246px, the sample hint sits centred
-                  in it, and this row's zoom hint ran 22px under the hint's right edge. A
-                  person with a dock open is reviewing, not orienting, so the reading steps
-                  aside exactly as it does for the datasheet rather than the two chrome pieces
-                  sharing one baseline. */}
+        {/* The corner stack uses `--topology-relation-legend-inset` so its right edge lines up with
+           the utility rail. */}
+        {/* Ambient, so it steps aside while the datasheet or a right dock is open instead of
+           sharing a baseline. */}
         <div
           ref={readoutStackRef}
           data-testid="topology-readout-stack"
-          // A toast stands above this reading, not on it (`src/shared/ui/toast-walls.ts`).
+          // A toast stands above this reading (`src/shared/ui/toast-walls.ts`).
           data-toast-wall="bottom"
           className={cn(
             "pointer-events-none absolute bottom-[var(--topology-relation-legend-bottom-inset)] right-[var(--topology-relation-legend-inset)] z-20 flex flex-col items-end gap-3 whitespace-nowrap transition-opacity duration-[var(--motion-base)] ease-[var(--motion-ease)] motion-reduce:transition-none",
@@ -893,62 +760,34 @@ export function TopologyCanvasSurface({
             totalConceptCount={totalConceptCount}
             domainCount={indexDomainCount}
             tier={mapZoomTier}
-            // Plain mode can never reach the element tier (`PLAIN_TIER_REVEAL`), so
-            // the tier-based hint-drop logic always stated something false there.
-            // It uses the plain wording instead.
+            // Plain mode never reaches the element tier, so it uses the plain wording.
             audiencePlain={audiencePlain}
           />
-          {/* Frame meter: off by default, switched on in settings. It joins the
-                    stack where instrument readouts **already live** as its last line
-                    rather than claiming a new corner — putting readings of the same kind
-                    somewhere else makes the eye sweep twice, which is the "new chrome that
-                    makes no task clearer" this repo guards against. */}
-          {/* The activity row does not live here (moved by owner instruction,
-                    2026-08-17).
-
-                    **What changed about the old reasoning.** The measurement that chose
-                    this spot compared it with the top **centre** status row: at 1024 that
-                    row had only 69px to INDEX's right edge while the chip was 194px, so
-                    they overlapped by 32px, and the top-right utility lane had only 28px
-                    left **on the same line**. The current position is neither of those —
-                    it is the **line below** the utility lane, so there is nothing to
-                    compete with horizontally (right-aligned, it grows leftwards into empty
-                    map). The old measurement therefore does not refute this spot.
-
-                    Toasts live at the top centre since 2026-09-06, so nothing here has to
-                    step aside for them. */}
+          {/* The frame meter joins the instrument stack instead of claiming a new corner. */}
           <FrameMeter />
         </div>
 
-        {/* One-time first-visit map hint in sample mode, bottom centre. It is
-                  `pointer-events-none`, so it never blocks a node click — a click passing
-                  through it dismisses it, and the first node selection dismisses it for
-                  good (localStorage). Source: `features/first-run-starter`.
-                  Only a selection confirmed to exist counts as learned — a ghost slug used
-                  to dismiss this hint permanently (see `resolvedSelectionSlug`). */}
+        {/* Pointer-transparent; the first selection that exists dismisses it for good
+           (`features/first-run-starter`),
+           so a ghost slug cannot (see `resolvedSelectionSlug`). */}
         <SampleNodeHint hasSelection={resolvedSelectionSlug !== null} hidden={tour.open} />
 
-        {/* The honest notice the chrome tile and ⌘O raise on an unsupported
-                  browser. It never opens on a supported one, so an experienced user's
-                  direct path (tile → OS picker) is unchanged. */}
+        {/* Only on an unsupported browser, so the direct tile-to-picker path is unchanged
+           elsewhere. */}
         <VaultOpenGuideSheet
           open={unsupportedGuideOpen}
           unsupported
           onClose={() => setUnsupportedGuideOpen(false)}
         />
 
-        {/* Pressing recent changes on the sample: a route to a folder instead of a
-                  dead end. It reuses `requestVaultOpen` — the **same handler** as the
-                  first-run card's open-folder action — so the unsupported-browser branch
-                  exists in exactly one place. */}
+        {/* Reuses `requestVaultOpen`, so the unsupported-browser branch exists once. */}
         <RecentChangesNeedsVaultDialog
           open={recentNeedsVaultOpen}
           onClose={() => setRecentNeedsVaultOpen(false)}
           onOpenVault={requestVaultOpen}
         />
 
-        {/* Same skeleton, different reason: "this is a sample and cannot be edited"
-                  has to be a different sentence from "these dates are not yours". */}
+        {/* A sample edit needs a different sentence from "these dates are not yours". */}
         <RecentChangesNeedsVaultDialog
           open={needsVaultReason !== null}
           copyKey={needsVaultReason ?? "createNeedsVault"}

@@ -39,37 +39,25 @@ export type ProjectSourceModelError =
 
 export interface ProjectSourceRuntime {
   available(): boolean;
-  /**
-   * `title` is **the OS folder picker's window title**, so pass it in the
-   * screen's language. Measured in the installed app 2026-08-04: on a Korean
-   * screen only that window's title stayed English (`Connect project code
-   * folder`) — the one place where the app suddenly speaks in someone else's
-   * voice.
-   */
+  /** The OS picker's window title, so pass it in the screen's language. */
   pickRoot(title?: string): Promise<string | null>;
   inspect(rootPath: string): Promise<ProjectSourceInspection | null>;
-  /**
-   * The vault folder's **absolute path**. It is the only input the inference
-   * has, so on a surface without it (the web) there is no inference at all — a
-   * browser does not know where on disk the chosen folder lives.
-   */
+  /** The only input to inference; the web has none, so it infers nothing there. */
   rootPathOf(handle: FileSystemDirectoryHandle): string | null;
   now(): string;
   restoreFocus(element: HTMLElement): void;
 }
 
 /**
- * The data behind "is this the right folder?". Only a proposal the screen has
- * earned the right to draw lands here: with `low` confidence or no candidate
- * it is `null`, and the screen falls back to the plain folder picker. This is
- * where the "no greyed-out buttons" contract is kept.
+ * Null for `low` confidence or no candidate, so the screen falls back to the plain picker
+ * and never draws a greyed-out proposal.
  */
 export interface ProjectSourceProposedRoot {
   rootPath: string;
-  /** The only evidence the app can offer today — the git repository enclosing the vault. */
+  /** The only evidence the app offers today. */
   marker: "enclosing_git_repository";
   confidence: "high" | "medium";
-  /** Produced by **actually measuring** the candidate. With no declared paths it is null: no ratio is claimed. */
+  /** Measured against the candidate; null with no declared paths. */
   witnessSummary: { total: number; supported: number; missing: number } | null;
 }
 
@@ -141,16 +129,9 @@ export async function loadProjectSourceSnapshot(input: {
     graphHash: input.graphHash,
     probe: null,
   });
-  /*
-   * **The folder is asked only when its answer can change the receipt.** Currentness is
-   * the one thing a probe decides, and only a stored receipt whose currentness is still
-   * open has anything to compare: with no folder, no receipt, or a receipt the ontology
-   * has already outdated, the view is final without it. Probing anyway walked the whole
-   * repository (a git inventory plus a fingerprint of every file) and threw the answer
-   * away, every time the project was opened: measured 2026-09-26 on a bound folder with
-   * no receipt, two walks of 156–474 ms each before the panel could say "measure the
-   * code", and longer on a larger repository.
-   */
+  // Probe only when the folder can change the receipt: a stored receipt whose currentness is open.
+  // Otherwise the probe walks the whole repository (hundreds of ms per walk) and discards the
+  // answer.
   const probeCanDecide =
     bindings.length === 1
     && unprobed.receipt !== null
@@ -163,8 +144,7 @@ export async function loadProjectSourceSnapshot(input: {
     const inspection = await input.inspect(bindings[0].rootPath);
     probe = inspection ? probeFromInspection(inspection) : null;
   } catch {
-    // Passive refresh must not erase a valid receipt. Currentness becomes
-    // unavailable until an explicit remeasure can explain the failure.
+    // A passive refresh keeps a valid receipt; currentness waits for an explicit remeasure.
   }
   return {
     view: probe
@@ -200,7 +180,6 @@ export function useProjectSourceModel(input: {
   vaultHandle: FileSystemDirectoryHandle | null;
   nodes: readonly KnowledgeGraphNode[];
   docs: readonly VaultDoc[];
-  /** OS folder picker title — the caller passes it in the screen's language. */
   pickerTitle?: string;
   runtime?: ProjectSourceRuntime;
 }) {
@@ -266,23 +245,12 @@ export function useProjectSourceModel(input: {
   }, [store, input.projectSlug, graphHash, runtime, runtimeAvailable]);
 
   /**
-   * ["Is this the right folder?", the on-screen prompt] ("Is this the right folder?", the on-screen prompt) — with no new filesystem walk.
-   *
-   * One `inspect_project_source` call on the vault root already climbs to the
-   * enclosing git repository (`src-tauri/src/lib.rs`), so its result *is* the
-   * candidate. The app has no reason to scan folders itself, and must not
-   * (local-first contract).
-   *
-   * ⚠️ **The condition must match the screen's** (`.claude/rules/architecture.md`).
-   * This measurement runs only at the moment the proposal is actually drawn —
-   * that is, when the next action is `connect_source`. An already-connected
-   * project has the snapshot measuring its own folder, so measuring again here
-   * would make one click pay for two measurements.
-   *
-   * "M of N declared paths" is **a measurement, not a claim** — it comes from
-   * matching real witnesses against the candidate's file list. So a receipt is
-   * built in memory purely to read its summary; nothing is written to disk,
-   * because committing happens when a person presses the button.
+   * One `inspect_project_source` call already climbs to the enclosing git repo, so the app never
+   * scans folders.
+   * Runs only when the proposal is drawn (`connect_source` next), or one click pays for two
+   * measurements.
+   * "M of N declared paths" is measured from real witnesses; the receipt is built in memory and
+   * never written.
    */
   const vaultRootPath = useMemo(
     () => runtimeAvailable && input.vaultHandle ? runtime.rootPathOf(input.vaultHandle) : null,
@@ -298,12 +266,8 @@ export function useProjectSourceModel(input: {
   );
   const proposalKey = `${input.projectSlug ?? ""}::${proposalWanted ? "want" : "skip"}`;
   useEffect(() => {
-    /*
-     * When it cannot measure, **no state changes at all.** The read value
-     * carries the `key` of what it was read from, so "not read yet" and "read,
-     * found nothing" are told apart by `proposalSettled` alone — separating
-     * them with an immediate setState inside the effect costs an extra render.
-     */
+    // Without a measurement no state changes: the stored `key` tells "not read yet" from "read,
+    // nothing found".
     if (!proposalWanted || !vaultRootPath || !input.projectSlug || !graphHash) return;
     const projectSlug = input.projectSlug;
     let cancelled = false;
@@ -312,8 +276,7 @@ export function useProjectSourceModel(input: {
       try {
         inspection = await runtime.inspect(vaultRootPath);
       } catch {
-        // A failed inference is not a diagnosis — with no proposal the screen
-        // simply falls back to the folder picker.
+        // With no proposal the screen falls back to the folder picker.
         inspection = null;
       }
       if (cancelled) return;
@@ -359,10 +322,9 @@ export function useProjectSourceModel(input: {
   const proposalSettled = !proposalWanted || proposal?.key === proposalKey;
 
   /**
-   * @param options passing `rootPath` **skips the folder picker** — the branch
-   *   that confirms an inference. The measuring and storing code stays **one
-   *   copy** shared with the picked-folder case: the moment receipt-writing
-   *   forks by where the path came from, one of the two branches starts lying.
+   * `options.rootPath` skips the picker to confirm an inference; measuring and storing stay one
+   * copy
+   * shared with the picked-folder path.
    */
   const runNextAction = useCallback(async (options?: { rootPath?: string }) => {
     if (
@@ -468,15 +430,8 @@ export function useProjectSourceModel(input: {
   const snapshotMatchesProject = Boolean(
     snapshot && snapshot.view.projectSlug === input.projectSlug,
   );
-  /*
-   * **"Not read yet" is its own state, not the absence of a receipt.** `view` is null both
-   * while this project's receipt is being read and where no receipt can exist (no folder
-   * open, not a project), and the inspector could not tell the two apart: it drew a
-   * non-project layout first and rebuilt itself when the receipt arrived — a new block, a
-   * new meta line, the relations folding and every button pushed down, with nothing on
-   * screen saying anything was still coming (2026-09-25 sweep, 710 ms after the panel
-   * looked finished). With this the panel keeps the receipt's place from its first frame.
-   */
+  // "Not read yet" is its own state, so the panel keeps the receipt's place from the first frame
+  // instead of rebuilding once it lands.
   const loading = Boolean(store && input.projectSlug && graphHash) && !snapshotMatchesProject;
   const canRunSourceAction = Boolean(
     runtimeAvailable
@@ -489,7 +444,7 @@ export function useProjectSourceModel(input: {
 
   return {
     view: snapshotMatchesProject ? snapshot?.view ?? null : null,
-    /** This project's receipt is being read; `view` is null until it lands. */
+    /** `view` stays null until this project's receipt lands. */
     loading,
     busy,
     error: snapshotMatchesProject ? error : null,
@@ -497,23 +452,16 @@ export function useProjectSourceModel(input: {
     canRunSourceAction,
     runNextAction,
     /**
-     * The "is this the right folder?" proposal; without one the screen is
-     * unchanged (just the folder picker). The value carries **what it was read
-     * from**, so that for one frame after switching projects another project's
-     * inference is not drawn.
+     * Carries what it was read from, so another project's inference never draws for a frame after
+     * switching.
      */
     proposedRoot:
       proposal && proposal.key === proposalKey && canRunSourceAction
         ? proposal.value
         : null,
     /**
-     * **The signal that keeps the prescription from being drawn twice.**
-     *
-     * The inference is async, so without this the user sees one "connect code
-     * folder" button, then 300 ms later watches it turn into "pick a different
-     * folder" and shift upward — right where the pointer already was. While it
-     * is unknown what to prescribe, **nothing is prescribed**; the diagnosis
-     * stays visible.
+     * Until the async inference settles nothing is prescribed, or the button changes and shifts
+     * under the pointer.
      */
     proposalSettled,
   };

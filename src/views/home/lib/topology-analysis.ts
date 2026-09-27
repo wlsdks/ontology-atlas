@@ -56,13 +56,9 @@ export interface TopologyAnalysisSummary {
 }
 
 /**
- * Re-exported under this file's historical name — the picking rule itself
- * now lives at `entities/knowledge-graph/lib/ontology-health-signals.ts` so
- * the repair queue on `/ontology/insights` can reuse the SAME
- * function without a cross-view import
- * (`views/home` → `views/ontology-insights` would violate FSD's "avoid
- * same-layer cross-import" guidance). Both surfaces' "next repair target"
- * can't drift because they call the one entities-level function.
+ * Re-exported from `entities/knowledge-graph/lib/ontology-health-signals.ts`, shared
+ * with `/ontology/insights`,
+ * so both "next repair target" choices call one function without a cross-view import.
  */
 export type TopologyHealthActionTarget = OntologyHealthActionTarget;
 
@@ -335,10 +331,10 @@ function formatTopologyRelationProvenanceSummary(
   ].join(" · ");
 }
 
-/** Re-exports the entities-level classifier under this file's historical
- *  name — `entities/knowledge-graph/lib/relation-quality.ts` is the single
- *  source of truth, shared with the agent-readiness gauge in
- *  `views/ontology-insights`. */
+/**
+ * Re-exported from `entities/knowledge-graph/lib/relation-quality.ts`, shared with the insights
+ * gauge.
+ */
 export function classifyTopologyRelationQuality(
   edge: Pick<KnowledgeGraphEdge, "type" | "evidenceIds" | "lastApprovedBy">,
 ): keyof TopologyRelationQualityBreakdown {
@@ -454,10 +450,10 @@ export function formatTopologyPathMcpCheck(from: string, to: string): string {
 interface TopologyPathStep {
   edgeId: string;
   relationType: string;
-  /** The actual direction declared by frontmatter. */
+  /** The direction declared by frontmatter. */
   authoredFrom: string;
   authoredTo: string;
-  /** The order of walking along this path. */
+  /** The walking order along this path. */
   from: string;
   to: string;
   reversed: boolean;
@@ -477,12 +473,12 @@ interface PathCandidate {
 }
 
 /**
- * The shortest connection path actually drawn on the map. Preserves the direction of relations,
- * but solves exploration queries regardless of direction. If multiple paths have the same length,
- * selects by next node, relation type, and edge id to ensure deterministic output order.
- *
- * `nodes` intentionally requires only `{id}`. Home passes the list of nodes rendered on the canvas
- * to structurally exclude invisible paths that pass through document/reader nodes.
+ * Shortest path over visible nodes, walking relations in either direction but keeping their
+ * declared direction.
+ * BFS over an adjacency map, O(V + E log E) with sorted neighbours: ties break by next node,
+ * relation type and
+ * edge id so the output is deterministic. `nodes` needs only `{id}`, so callers exclude hidden
+ * reader nodes.
  */
 export function computeTopologyShortestPath(
   sourceId: string,
@@ -566,7 +562,6 @@ export function computeTopologyShortestPath(
   };
 }
 
-/** Backward-compatible hop-only view of `computeTopologyShortestPath`. */
 export function computeTopologyPathHopCount(
   sourceId: string,
   targetId: string,
@@ -590,11 +585,8 @@ export interface TopologyPathAgentPacketLabels {
 }
 
 /**
- * The path chip's single copy button. The old path panel offered a CLI/MCP
- * split plus five copy buttons (relation-preflight, explain_relation,
- * all_paths); this compresses all of it into one agent-facing `find_path` call.
- * An agent that needs more can chain `relation_check`/`explain_relation` from
- * this result itself, so there is no reason to lay out five buttons per click.
+ * The path chip's single copy button: one `find_path` call; an agent chains `relation_check`
+ * or `explain_relation` from its result itself.
  */
 export function formatTopologyPathAgentPacket({
   sourceSlug,
@@ -610,19 +602,13 @@ export function formatTopologyPathAgentPacket({
   sourceTitle: string;
   targetTitle: string;
   hopCount: number | null;
-  /** The route locale; every link carries it, so a pasted link lands on a live page. */
+  /** Every link carries it, so a pasted link lands on a live page. */
   locale?: string;
   labels: TopologyPathAgentPacketLabels;
 }): string {
-  /*
-   * One identifier grammar and live destinations (2026-09-25). The two ends arrive in
-   * whatever form the route held — the source from `pathFrom=` (a vault slug,
-   * `capabilities/checkout`) and the target from a map pick (a node id,
-   * `capability:invoice`) — so one packet said two different things about the same
-   * kind of reference. Both are normalised to the vault slug. The links used to point
-   * at `/ontology/?node=`, a redirect route, with no locale; they now name the map
-   * itself under the locale.
-   */
+  // The source arrives as a vault slug and the target as a node id; both normalise to the vault
+  // slug,
+  // so one packet names both ends in one grammar.
   const source = resolveOntologyBuilderNodeSlugFromGraphId(sourceSlug);
   const target = resolveOntologyBuilderNodeSlugFromGraphId(targetSlug);
   const localized = (href: string) => (locale ? `/${locale}${href}` : href);

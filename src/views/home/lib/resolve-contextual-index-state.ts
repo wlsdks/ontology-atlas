@@ -11,9 +11,9 @@ export interface ContextualIndexStateInputs {
 }
 
 /**
- * Resolves the INDEX state that is rendered for this moment without changing
- * the user's persisted preference. Contextual work surfaces temporarily own
- * the map's horizontal room; when they leave, `baseState` is restored.
+ * The INDEX state for this moment, leaving the persisted preference alone: a contextual work
+ * surface borrows
+ * the map's width and `baseState` returns when it leaves.
  */
 export function resolveContextualIndexState({
   baseState,

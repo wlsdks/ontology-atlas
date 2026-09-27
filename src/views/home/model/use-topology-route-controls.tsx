@@ -23,23 +23,15 @@ export function useTopologyRouteControls({
 }: Options) {
   const { expand } = topologyPreferences;
 
-  // Density gate: turn the parent-slug list from `?open=` into a Set for the map,
-  // memoised on the joined string so the dependency is stable.
-  //
-  // **Deep links obey the user's cap too** (defect measured 2026-08-02). Parsing
-  // `?open=` is a pure function that knows nothing about settings and falls back to
-  // 3, so someone who had lowered "parents open at once" to 1 got three from a
-  // single link (measured: maxOpen=1, three parents expanded, 82 nodes). A cap the
-  // click path alone honours is not a cap. Keeping the tail matches
-  // `toggleExpandedParent`'s LRU eviction — what is written later is the more
-  // recent intent.
+  // Memoised on the joined string for a stable dependency. Deep links obey the user's cap too,
+  // since parsing
+  // knows only the default; the tail is kept, like `toggleExpandedParent`'s LRU.
   const expandedParentsKey = limitExpandedParents(expandedParentSlugs, expand.maxOpenParents).join(",");
   const expandedParentSet = useMemo(
     () => new Set(expandedParentsKey ? expandedParentsKey.split(",") : []),
     [expandedParentsKey],
   );
-  // Cluster chip click toggles that parent's expansion through the URL. Node
-  // selection and focus are untouched — the chip only collapses and expands.
+  // Only toggles expansion; selection and focus are untouched.
   const handleToggleCluster = useCallback(
     (parentId: string) => {
       if (expandAllActive) {
@@ -50,9 +42,7 @@ export function useTopologyRouteControls({
       }
       setRouteState((current) => ({
         ...current,
-        // The cap comes from settings. Past it, the least recently expanded parent
-        // closes here rather than the click doing nothing — see
-        // `toggleExpandedParent`.
+        // Past the settings cap the longest-open parent closes instead of the click doing nothing.
         expandedParents: toggleExpandedParent(
           current.expandedParents,
           parentId,
@@ -62,8 +52,6 @@ export function useTopologyRouteControls({
     },
     [expandAllActive, setRouteState, setExpandAllActive, setFitViewToken, expand.maxOpenParents],
   );
-  // Enter a realm: the orbit button or a datasheet action switches the map into
-  // this node's world, through the URL.
   const handleEnterRealm = useCallback(
     (slug: string) => {
       setExpandAllActive(false);
@@ -71,16 +59,11 @@ export function useTopologyRouteControls({
     },
     [setExpandAllActive, setRouteState],
   );
-  // Leave the realm (chip ✕ or Esc) and return to the whole map.
   const handleExitRealm = useCallback(() => {
     setRouteState((current) => exitRealmRouteState(current));
   }, [setRouteState]);
-  // INDEX panel — the default left occupant. Preference
-  // persists in localStorage; `?index=` (parsed into `routeState.indexState`)
-  // wins for deep-linking (`resolveIndexPanelState` precedence). The analysis
-  // rail ("reader lens") and INDEX are exclusive left-slot occupants —
-  // `resolveLeftSlotOwner` decides which owns it, per analysis mode +
-  // whether the user opted to reveal the overview analysis chrome.
+  // INDEX is the default left occupant: localStorage holds the preference and `?index=` wins
+  // (`resolveIndexPanelState`). `resolveLeftSlotOwner` decides between it and the analysis rail.
   const indexPanelCollapsedStored = useLocalStorageBoolean(
     INDEX_PANEL_COLLAPSED_KEY,
     false,
@@ -94,23 +77,11 @@ export function useTopologyRouteControls({
     leftSlotOwner,
     indexPreference,
   );
-  // Owner, 2026-07-23: *"It's dizzying — all panels are open at once"* (it is dizzying
-  // because every panel is open at once). While a node is selected and the
-  // datasheet is up, the left stack retreats to a collapsed tab; clicking empty
-  // canvas restores the stored preference. If the user expands it manually during
-  // a selection, that expansion wins until the selection ends. This is a
-  // session-only demotion — the persisted preference is never touched.
-  /*
-   * On a map with nothing in it yet, INDEX starts collapsed. Owner, 2026-08-16:
-   * *"On first start, the left index should be closed."*
-   *
-   * INDEX is a concept list, so with zero concepts it has nothing to hold — the
-   * panel showed one "no matching concepts" line while owning the left third of
-   * the screen, pushing the start checklist (the only thing there is to do at that
-   * moment) to the right. Same shape as the during-selection demotion above: a
-   * session-only demotion that never touches the stored preference, so it comes
-   * back as soon as a concept exists, and expanding it by hand wins.
-   */
+  // Session-only demotions that never touch the stored preference: the left stack collapses while
+  // a
+  // datasheet shows (a manual expand wins until the selection ends), and on a map with zero
+  // concepts,
+  // where INDEX holds nothing and pushes the start checklist aside.
   const [indexManualExpandWhileEmpty, setIndexManualExpandWhileEmpty] = useState(false);
   const setIndexPreference = useCallback(
     (next: IndexPanelState) => {
@@ -120,7 +91,7 @@ export function useTopologyRouteControls({
           next === "collapsed" ? "1" : "0",
         );
       } catch {
-        /* private mode — URL param still carries the preference */
+        // Private mode: the URL param still carries the preference.
       }
       setRouteState((current) => ({ ...current, indexState: next }));
     },
@@ -130,22 +101,17 @@ export function useTopologyRouteControls({
     () => setIndexPreference("collapsed"),
     [setIndexPreference],
   );
-  // The settings gear's INDEX default row writes through the SAME
-  // `setIndexPreference` that the INDEX panel's own fold/expand controls use, so it
-  // persists to `INDEX_PANEL_COLLAPSED_KEY` and applies immediately rather than
-  // "on next reload".
+  // Uses the same `setIndexPreference` as the panel's own controls, so it persists and applies
+  // now.
   const handleChangeIndexDefaultCollapsed = useCallback(
     (next: boolean) => setIndexPreference(next ? "collapsed" : "expanded"),
     [setIndexPreference],
   );
-  // The map's safe-inset-left assumes INDEX's width by default
-  // (`--map-safe-inset-left: 376` = 24 inset + 300 width + 52 air).
-  // Collapsing INDEX narrows that reserved space — flip the DOM attribute
-  // `app/globals.css` keys off of, invalidate the cached token read (canvas
-  // reads CSS vars once per `read-map-tokens.ts`'s own contract),
-  // then force a re-fit via the existing fit-view token so the camera actually
-  // re-centres against the new width instead of only changing CSS. The dataset and
-  // fit effects live below the selection-aware `renderedIndexState` derivation.
+  // `--map-safe-inset-left` assumes INDEX's width, so collapsing flips the
+  // attribute `app/globals.css` keys on,
+  // invalidates the cached token read (`read-map-tokens.ts`) and re-fits the camera. The effects
+  // live
+  // below `renderedIndexState`.
   const selectedProject = useMemo(
     () =>
       selectedSlug

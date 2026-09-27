@@ -1,27 +1,21 @@
 /**
- * Past-trail records — everything that does not depend on the
- * storage medium. Schema, caps, duplicate detection, and serialization are pure
- * functions here; only `past-trail-store.ts` knows where records land, so the
- * same record can ride any medium unchanged.
- *
- * **What is deliberately not recorded:** per-step timestamps, dwell time, visit
- * counts. There is exactly one timestamp per trail, used only for day grouping
- * and sort order. That line is what separates a browsing trail from behavioural
+ * Past-trail format rules independent of the storage medium; only `past-trail-store.ts` knows
+ * where records land.
+ * One timestamp per trail and no per-step times, dwell or counts: that line separates a trail from
  * analytics.
  */
 
-/** Ring buffer, oldest trail dropped first. The UI caption states the cap so nobody expects accumulation. */
+/** Ring buffer; the UI caption states the cap so nobody expects accumulation. */
 export const PAST_WALKS_MAX = 10;
 
-/** Steps per trail — the same cap as the live session trail (`FOOTPRINT_TRAIL_MAX`). */
+/** Same cap as the live session trail (`FOOTPRINT_TRAIL_MAX`). */
 const PAST_WALK_ENTRIES_MAX = 30;
 
-/** Save threshold, matching the chip's own (2+ visits): only what looked like a trail is stored as one. */
+/** Matches the chip's own 2+ visit threshold. */
 export const PAST_WALK_MIN_ENTRIES = 2;
 
-/** A step snapshot. Title and kind are frozen in so the list still draws after a node is deleted. */
+/** Title and kind are frozen in so the list still draws after a node is deleted. */
 export interface PastWalkEntry {
-  /** Graph node id (`<kind>:<slug>`). */
   id: string;
   title: string;
   kind: string;
@@ -29,15 +23,14 @@ export interface PastWalkEntry {
 
 export interface PastWalk {
   id: string;
-  /** When the trail ended (epoch ms) — one per trail, for day grouping and sort only. */
+  /** Epoch ms, for day grouping and sort only. */
   endedAt: number;
-  /** Visit order, oldest to newest — same direction as the live trail, so a handoff packet replays as-is. */
+  /** Oldest to newest, like the live trail, so a handoff packet replays as-is. */
   entries: PastWalkEntry[];
 }
 
 interface PastTrailDocumentV1 {
   v: 1;
-  /** Most recent first. */
   walks: PastWalk[];
 }
 
@@ -47,12 +40,7 @@ function isEntry(value: unknown): value is PastWalkEntry {
   return typeof e.id === "string" && typeof e.title === "string" && typeof e.kind === "string";
 }
 
-/**
- * Parses stored text back into the schema. Corrupt, old-version, or hand-edited
- * content is dropped silently — this is convenience state with no source of
- * truth to recover from. Unapproved fields such as per-step timestamps are
- * stripped here too.
- */
+/** Corrupt, old or hand-edited content drops silently, including unapproved per-step timestamps. */
 export function deserializePastTrails(raw: string | null): PastWalk[] {
   if (!raw) return [];
   let parsed: unknown;
@@ -90,7 +78,6 @@ function sameRoute(a: readonly PastWalkEntry[], b: readonly PastWalkEntry[]): bo
   return a.every((entry, i) => entry.id === b[i].id);
 }
 
-/** One id per session; every save in that session overwrites under it. */
 export function newPastWalkId(): string {
   const c = typeof globalThis !== "undefined" ? globalThis.crypto : undefined;
   if (c && typeof c.randomUUID === "function") return c.randomUUID();
@@ -98,27 +85,14 @@ export function newPastWalkId(): string {
 }
 
 export interface UpsertPastWalkOptions {
-  /** Timestamp to record; defaults to call time. */
   now?: number;
 }
 
 /**
- * Overwrites the walk in progress under the same id. Pure — the input list is
- * not mutated.
- *
- * **Why it overwrites as you walk instead of saving once at the end.** Storage
- * is a file in the vault, so writes are async: starting one at `pagehide` loses
- * the document before it completes — failing at exactly the moment worth
- * recording. Overwriting in place means a force-quit or a browser crash still
- * leaves the last state on disk. The visible contract is unchanged: one session
- * is one row, with one timestamp on it.
- *
- * Skipped when the walk is under the threshold, or when its route equals **any
- * other** stored trail. The comparison is against all trails, not just the first
- * row, because reopening a past trail makes its steps this session's steps: with
- * a first-row-only check the reopened trail would be saved again under today's
- * date and the same route would appear twice. Comparing all of them keeps the
- * original at its own date, and a new row appears only once the route diverges.
+ * Overwrites the walk in progress on every step, since an async write started at `pagehide` is
+ * lost.
+ * Skipped under the threshold or when its route equals any stored trail (not just the first),
+ * or a reopened past trail is saved again under today's date.
  */
 export function upsertPastWalk(
   walks: readonly PastWalk[],
@@ -141,14 +115,8 @@ export function upsertPastWalk(
 }
 
 /**
- * Rebases stored steps onto the live map: drops nodes that no longer exist and
- * replaces surviving titles with current ones.
- *
- * Records freeze the title and kind of the moment so the list still draws after
- * a deletion — but the map is the source of truth the moment a trail is
- * reopened, and yesterday's names would point at nothing. The live session trail
- * is already refined by this rule, so a reopened trail must pass through it too
- * for the two to be the same thing.
+ * Drops nodes gone from the live map and takes current titles, matching the live trail's
+ * refinement.
  */
 export function refinePastWalkEntries(
   entries: readonly PastWalkEntry[],
@@ -163,11 +131,7 @@ export function refinePastWalkEntries(
   return refined;
 }
 
-/**
- * Reduces the end timestamp to a day bucket. Hours and minutes are never shown:
- * the date is needed to tell trails apart, but a clock time makes the list read
- * as a behavioural timeline.
- */
+/** Day bucket only: a clock time would make the list read as a behavioural timeline. */
 export type PastTrailDay =
   | { kind: "today" }
   | { kind: "yesterday" }

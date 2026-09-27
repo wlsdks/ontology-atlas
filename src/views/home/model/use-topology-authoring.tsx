@@ -67,7 +67,7 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
   const [acpTurnActivityFrame, setAcpTurnActivityFrame] = useState<{
     activity: AcpTurnActivity;
     at: number;
-    /** When this turn began; kept across the turn's frames so the chip can count from it. */
+    /** Kept across the turn's frames so the chip can count from it. */
     startedAt: number;
   } | null>(null);
   const meaningEditorSource = useMemo(() => {
@@ -127,13 +127,8 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
       if (cancelled) return;
       if (!meaningEditorIntent || !meaningEditorSource) {
         if (!meaningEditorIntent) setMeaningEditorState(null);
-        /*
-         * An edit intent that arrived by URL (`?workbench=edit`, e.g. from the
-         * insights to-do list) has no document to write in the sample. It used to
-         * be dropped in silence: the address named an edit while the screen showed
-         * the ordinary read panel (walkthrough finding, 2026-09-03). Say why, offer
-         * the folder, and drop the intent from the address so it does not repeat.
-         */
+        // A URL edit intent on the sample has no document to write: say why, offer the folder,
+        // and drop the intent from the address so it does not repeat.
         if (
           meaningEditorIntent &&
           selectedOntologyNode &&
@@ -196,20 +191,15 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
     },
     [closeMeaningEditor, meaningEditorState, nodeEditTarget, reducedMotion, tMeaningEditor, toast, vault],
   );
-  // W6 agent visibility — the fresh heartbeat's declared current target,
-  // shown on the map itself (not just a rail dot).
-  // Only while the heartbeat is FRESH (same `hasFreshHeartbeat` bar the rail
-  // dot/popover already use) — a stale heartbeat's stale focus would mislead
-  // more than help. Real heartbeat data only: no slug, no match, or no fresh
-  // heartbeat all resolve to `null`, which draws nothing extra on the map.
+  // The fresh heartbeat's declared target, drawn on the map. Fresh only (`hasFreshHeartbeat`),
+  // since a stale focus misleads; no slug, match or fresh heartbeat draws nothing.
   const agentActivityStatus = vault.agentActivityStatus;
   const hasFreshAgentHeartbeat = Boolean(
     agentActivityStatus?.heartbeat && agentActivityStatus.valid && !agentActivityStatus.stale,
   );
   const agentFocusNodeId = useMemo(() => {
-    // An in-app ACP turn in progress is the current one. Its `null` target is
-    // honoured as-is: falling back to the previous sidecar target would draw a
-    // focus that is not real.
+    // A running ACP turn wins, and its `null` target is honoured: the previous sidecar target is
+    // not real now.
     if (acpTurnActivityFrame) {
       return resolveAgentFocusNodeId(
         acpTurnActivityFrame.activity.ontologySlug,
@@ -227,19 +217,16 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
     () => resolveOntologyRelationPreview(acpRelationPreview, ontologyInsight?.nodes),
     [acpRelationPreview, ontologyInsight],
   );
-  // While a permission card is up, that decision is the most urgent thing; once it
-  // is done the manual editor's own preview resumes. The canvas never draws more
-  // than one relation at a time.
+  // A pending permission decision outranks the manual editor's preview; the canvas draws one
+  // relation at a time.
   const mapRelationPreview = resolvedAcpRelationPreview ?? meaningPreview;
-  // The "an agent just touched this" INDEX badge fires only when the already
-  // fresh-gated `agentFocusNodeId` (the same source as the map ring) is also inside
-  // the recent-changes lens — reusing both existing signals rather than inventing a
-  // second matching heuristic.
+  // Fires only when the fresh `agentFocusNodeId` is also inside the recent-changes lens, reusing
+  // both signals.
   const agentAttributedRecentNodeId = useMemo(
     () => (agentFocusNodeId && recentChanges.recentNodeIds.has(agentFocusNodeId) ? agentFocusNodeId : null),
     [agentFocusNodeId, recentChanges],
   );
-  // Create a node from the map itself; only with a writable local vault.
+  // Only with a writable local vault.
   const [createNodeOpen, setCreateNodeOpen] = useState(false);
   const [createNodeProposal, setCreateNodeProposal] = useState<{
     input: {
@@ -268,7 +255,6 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
     });
   }, [setRouteState, setCreateNodeProposal, setCreateNodeOpen]);
   const canCreateNode = vault.manifest !== null;
-  // Triggers the map's reveal once bootstrap finishes.
   const [mapRevealToken, setMapRevealToken] = useState(0);
   const {
     selectedEdge, setSelectedEdge, edgePanelModel, edgePanelOpen, heldEdgePanelModel,
@@ -278,25 +264,17 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
     docFreshnessIndex, updatedAgoNowMs, t, relationVocabulary, relationRegister,
     manifest: vault.manifest,
   });
-  // Whether the bundled MCP server is present — the config snippet, deep links, and
-  // connect button all branch on it.
+  // The config snippet, deep links and connect button all branch on it.
   const agentServer = useAgentServer();
-  // Asks one question only: is an agent attached right now. The registration snippet
-  // and domain names left this model when the connect sheet was retired
-  // (`docs/DECISIONS.md`, entry 90).
+  // Only asks whether an agent is attached now (`docs/DECISIONS.md`, entry 90).
   const agentConnect = useAgentConnectModel({ agentActivityStatus });
-  // Do not **automatically open** the AI connection sheet immediately after opening a folder. There was once
-  // a one-time auto-speech 1200ms later, but a modal covering the first encounter with the self-map just created
-  // made the first interaction 'close' (measured 2026-07-26). Guidance is already in the
-  // start checklist and the "Agent" destination.
-  // Auto-speech adds no value, and contradicts this app's discipline of "not hiding what it introduces."
-  // Connection intent is established only when the user clicks.
-  // HomePage modularization phase 1 — bootstrap flow owned by use-bootstrap-flow hook.
-  // Only completion effects (toast · E1 rebuild) remain here.
+  // The AI connection sheet never opens by itself after a folder opens: a modal over the first map
+  // makes the
+  // first interaction "close". Connection intent comes only from a click.
   const { bootstrapOpen, setBootstrapOpen, bootstrapPlan, runBootstrap } = useBootstrapFlow({
     vault,
     onCompleted: ({ addedToExisting, elementCount }) => {
-      // The reloaded graph arrives as a reveal — "my documents gathering".
+      // The reloaded graph arrives as a reveal.
       setMapRevealToken((n) => n + 1);
       toast.show(
         t(addedToExisting ? "bootstrap.toastAdded" : "bootstrap.toastDone", { count: elementCount }),
@@ -312,13 +290,9 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
       localeLabels?: Record<string, string>;
     }): Promise<false> => {
       try {
-        /*
-         * Stamp the node as human-authored. This path is reachable only from the
-         * on-screen "create concept" control, so the call path itself proves the
-         * actor — the condition the ledger puts on a write-time stamp. Without this
-         * line a freshly created node gets no review-pending ring on the map
-         * (measured 2026-08-03).
-         */
+        // Only the on-screen "create concept" control reaches this path, so it proves a human
+        // actor;
+        // without the stamp a new node gets no review-pending ring.
         const { slug, markdown } = buildNewNodeDoc({ ...input, createdBy: "human" });
         if (vault.fileHandles.has(slug)) {
           toast.show(t("createNode.toastExists"), "error");
@@ -365,13 +339,9 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
       setCreateNodeConfirming(false);
     }
   }, [closeCreateNode, createNodeConfirming, createNodeProposal, setRouteState, t, toast, vault]);
-  // Domain picker options for "add concept": pick an existing domain node by name
-  // rather than typing a slug. `value` is **the domain document's own address**
-  // (`domains/agent-access`), resolved the way the meaning editor resolves a relation
-  // target — the spelling every agent-written `domain:` in the vault already uses.
-  // It used to be the node id's bare tail (`agent-access`), the one writer in the
-  // vault that dropped the folder (map-edit QA D10, 2026-09-26). `buildNewNodeDoc`
-  // passes it through `canonicalizeDomainRef` on save, which keeps the folder.
+  // `value` is the domain document's address (`domains/agent-access`), the spelling
+  // agent-written `domain:`
+  // uses; `buildNewNodeDoc` keeps the folder through `canonicalizeDomainRef`.
   const createNodeDomainOptions = useMemo(
     () =>
       (ontologyInsight?.nodes ?? [])
@@ -422,10 +392,9 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
     },
     [closeCreateNode],
   );
-  // Editing a node's body. The manifest's excerpt is truncated, so editing from it
-  // would silently drop text — the body is seeded from the *whole raw file* through
-  // the file handle instead, and the explanation editor stays hidden until that read
-  // finishes.
+  // Seeded from the whole raw file, since the manifest excerpt is truncated and editing it would
+  // drop text;
+  // the editor stays hidden until the read finishes.
   const [nodeBody, setNodeBody] = useState<{ slug: string; raw: string; body: string } | null>(null);
   useEffect(() => {
     let cancelled = false;
@@ -433,8 +402,7 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
     const fh =
       target && vault.manifest !== null ? vault.fileHandles.get(target.vaultSlug) : null;
     if (!target || !fh) {
-      // Deferred to a microtask to avoid a synchronous setState (cascading-render
-      // warning).
+      // A microtask avoids a synchronous setState (cascading-render warning).
       window.queueMicrotask(() => {
         if (!cancelled) setNodeBody(null);
       });
@@ -466,16 +434,9 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
         });
         toast.show(t("explanationEdit.saved"), "success");
       } catch (error) {
-        /*
-         * **A conflict says what happened and what the next save does** (2026-09-26, map-edit
-         * QA D3). Every failure here used to read «Could not save the explanation», so the one
-         * refusal that is working as designed — the file changed elsewhere first, and writing
-         * over it would have lost that change — was indistinguishable from a broken disk. The
-         * docs page's quick patch already told the two apart; this is the same split.
-         *
-         * Rethrown so the editor keeps the person's draft (`NodeExplanationEdit` stays open on
-         * a rejection): the sentence promises the text is still there.
-         */
+        // A conflict says the file changed elsewhere and what the next save does, unlike a broken
+        // disk.
+        // Rethrown so `NodeExplanationEdit` stays open with the person's draft.
         toast.show(
           t(error instanceof VaultConflictError ? "explanationEdit.conflict" : "explanationEdit.error"),
           "error",

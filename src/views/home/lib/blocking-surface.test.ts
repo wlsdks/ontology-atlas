@@ -11,16 +11,12 @@ describe("shouldSuppressGlobalShortcuts", () => {
     expect(shouldSuppressGlobalShortcuts({ createNodeOpen: true, tourOpen: false, agentAwaitingDecision: false })).toBe(true);
   });
 
-  // Measured regression: pressing `?` during the tour stacked the shortcut modal
-  // over the tour card — two live role="dialog" surfaces. The tour is a blocking
-  // surface with its own blocker and focus trap, so it takes the same rule.
+  // The tour has its own blocker and focus trap, so `?` must not stack the shortcut modal on it.
   it("swallows shortcuts while the guided tour is open so two overlays never open together", () => {
     expect(shouldSuppressGlobalShortcuts({ createNodeOpen: false, tourOpen: true, agentAwaitingDecision: false })).toBe(true);
   });
 
-  // Measured 2026-08-24 on the installed app: with a permission card waiting for an answer, a bare
-  // `d` opened the documents drawer over it, and Escape then reached the card rather than the
-  // drawer — the person could neither decide nor clear what was covering the decision.
+  // Otherwise a bare `d` opens the documents drawer over the pending permission card.
   it("swallows shortcuts while an agent awaits approval so nothing covers the decision", () => {
     expect(
       shouldSuppressGlobalShortcuts({

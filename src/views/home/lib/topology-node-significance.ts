@@ -5,61 +5,50 @@ import {
 import type { TopologyOntologyDrawerModel } from "./topology-ontology-drawer";
 
 /**
- * How load-bearing a node is, in plain terms a non-developer can read:
- * - `core`: many places depend on it (fan-in >= {@link PROMOTION_MIN_FAN_IN}).
- * - `leaf`: barely connected (total degree <= 1).
- * - `supporting`: everything in between.
+ * `core`: fan-in >= {@link PROMOTION_MIN_FAN_IN}; `leaf`: total degree <= 1; `supporting`: in
+ * between.
  */
 type NodeSignificanceLevel = "core" | "supporting" | "leaf";
 
 /**
- * Plain-language "so what" of a single node, *derived* from graph data that
- * already exists (degree, transitive reach, owning domain, neighbours). No new
- * authoring required — works on any bootstrapped vault. The UI turns this
- * structured model into i18n sentences; this module stays prose-free so it is
- * locale-agnostic and unit-testable on structure alone.
- *
- * An authored `significance` frontmatter override, when present, wins for the
- * "why it matters" line via {@link buildNodeSignificance} options.
+ * A node's plain-language "so what", derived from existing graph data and kept prose-free for
+ * i18n.
+ * An authored `significance` override wins the "why it matters" line.
  */
 export interface NodeSignificanceModel {
-  /** Raw kind token — UI resolves via `t("kinds.{key}")`; see {@link normalizeKindLabelKey}. */
+  /** The UI resolves it via `t("kinds.{key}")`; see {@link normalizeKindLabelKey}. */
   kind: string;
-  /** Owning domain title for the "what is this" line, or null when none. */
   ownerDomainTitle: string | null;
-  /** Owning domain's graph node id, so the datasheet's domain line can focus
-   *  the domain on click (reusing `onSelectConnection`) rather than only naming
-   *  it. Null in lockstep with {@link ownerDomainTitle}. */
+  /**
+   * Lets the datasheet's domain line focus the domain on click; null with {@link
+   * ownerDomainTitle}.
+   */
   ownerDomainId: string | null;
   importance: {
     level: NodeSignificanceLevel;
-    /** Direct incoming = how many places depend on it. */
     usedByCount: number;
-    /** Authored override prose (trimmed) for the "why it matters" line; null when derived. */
+    /** Null when derived. */
     authored: string | null;
   };
   dependsOn: {
-    /** Direct outgoing count (authoritative). */
     count: number;
-    /** Up to `nameLimit` outgoing neighbour titles, for the inline list. */
     names: string[];
   };
   impact: {
-    /** Transitive dependents = blast radius if this node changes. */
+    /** Blast radius if this node changes. */
     reachCount: number;
   };
 }
 
 export interface BuildNodeSignificanceOptions {
-  /** Authored frontmatter `significance` override; trimmed-empty is ignored. */
+  /** Trimmed-empty is ignored. */
   authoredSignificance?: string | null;
-  /** Max neighbour names listed inline (default 3). */
+  /** Default 3. */
   nameLimit?: number;
 }
 
 const DEFAULT_NAME_LIMIT = 3;
 
-/** Kind keys that exist under the `kinds.*` i18n namespace. */
 const KNOWN_KIND_LABEL_KEYS = new Set([
   "project",
   "domain",
@@ -69,10 +58,7 @@ const KNOWN_KIND_LABEL_KEYS = new Set([
   "vault-readme",
 ]);
 
-/**
- * Map a raw kind token to a key guaranteed present under `kinds.*`, so the UI
- * never asks next-intl for a missing key. Unknown kinds fall back to `unknown`.
- */
+/** Unknown kinds fall back to `unknown`, so the UI never asks next-intl for a missing key. */
 export function normalizeKindLabelKey(kind: string): string {
   return KNOWN_KIND_LABEL_KEYS.has(kind) ? kind : "unknown";
 }
@@ -86,10 +72,7 @@ function resolveLevel(
   return "supporting";
 }
 
-/**
- * Synthesize a node's plain-language significance from the same drawer model
- * the popover/drawer already build — zero recompute, so counts can't drift.
- */
+/** Built from the drawer model, so counts cannot drift. */
 export function buildNodeSignificance(
   node: KnowledgeGraphNode,
   model: TopologyOntologyDrawerModel,

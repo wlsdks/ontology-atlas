@@ -3,16 +3,9 @@ import { projectDisplayName, type Project } from "@/entities/project";
 import { resolveTopologySelectedOntologyNode } from "./resolve-topology-selected-node";
 
 /**
- * A slug's human-readable name — only when it actually resolves in this vault.
- *
- * **null is the information (fixed 2026-08-01).** This used to end in `?? slug`,
- * passing the slug off as a title. Nodes absent from the vault then drew with
- * plausible names, and the path chip asserted "no path" over the pair: the truth
- * was "neither is here", the screen said "both are here and unconnected".
- *
- * The fallback looks kind but erases the fact of absence, and once that is gone
- * every claim built on top is quietly false. Returning null lets the caller say
- * so.
+ * A slug's readable name, only when it resolves in this vault.
+ * null is the information: falling back to the slug makes absent nodes look present,
+ * and the path chip then claims "no path" over a pair that is not here.
  */
 export function resolveTopologyNodeTitle({
   slug,
@@ -23,7 +16,7 @@ export function resolveTopologyNodeTitle({
   slug: string | null;
   projectBySlug: ReadonlyMap<string, Project>;
   ontologyNodes: readonly KnowledgeGraphNode[] | null | undefined;
-  /** The screen's locale; with it a project reads by its `display_<locale>`, like every node. */
+  /** With it a project reads by its `display_<locale>`, like every node. */
   locale?: string;
 }): string | null {
   if (!slug) return null;
@@ -33,9 +26,8 @@ export function resolveTopologyNodeTitle({
 
   const node = resolveTopologySelectedOntologyNode(slug, ontologyNodes);
   if (!node) return null;
-  // The name a person reads on the map (`display_<locale>`), not the canonical
-  // search title: the path chip once said "Fulfillment → Payments" over a map
-  // whose labels were Korean (measured 2026-09-03).
+  // The map label (`display_<locale>`), not the canonical search title, so chips match the map's
+  // language.
   return compactTopologyPanelTitle(node.display ?? node.title);
 }
 

@@ -79,8 +79,7 @@ describe("TopologyReviewLink re-entry hook", () => {
   });
 
   it("renders nothing when only edges changed, counting like the panel chip", () => {
-    // In practice an edge change marks its from-node changed; this synthetic
-    // changeset with zero node changes exercises the guard clause directly.
+    // An edge change normally marks its from-node; zero node changes exercise the guard directly.
     render(
       <TopologyReviewLink
         changeset={changeset({ addedEdges: ["abx"], total: 1 })}

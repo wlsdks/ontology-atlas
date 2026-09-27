@@ -18,10 +18,7 @@ describe("resolveCanvasSelectedSlug", () => {
     ).toBe("capability:checkout");
   });
 
-  /**
-   * The ghost-node fix. The raw slug used to reach the canvas and switch on ego
-   * focus; with zero neighbours, every node on the map dimmed.
-   */
+  /** With zero neighbours, ego focus on a ghost slug dims every node. */
   it("does not focus a slug missing from this vault, which would dim the whole map", () => {
     expect(
       resolveCanvasSelectedSlug({
@@ -54,9 +51,8 @@ describe("resolveCanvasSelectedSlug", () => {
     ).toBe("capability:checkout");
   });
 
-  // A bare slug may be a project slug, so absence cannot be certain until the
-  // project list arrives. A kind prefix can never collide with a project, so
-  // there is nothing to wait for (same grammar as the miss notice).
+  // A bare slug may be a project, so absence is certain only once projects arrive; a kind prefix
+  // never collides.
   it("a bare slug waits for the project list", () => {
     expect(
       resolveCanvasSelectedSlug({

@@ -2,8 +2,7 @@ import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useHomeRouteState } from "./use-home-route-state";
 
-// The hook uses `useSearchParams` only as a re-render trigger; window.location
-// is the source of truth, so a minimal stub echoing the URL is enough.
+// `useSearchParams` is only a re-render trigger, so a stub echoing the URL is enough.
 vi.mock("next/navigation", async (importOriginal) => ({
   ...(await importOriginal<typeof import("next/navigation")>()),
   useSearchParams: () => new URLSearchParams(window.location.search),
@@ -19,10 +18,8 @@ describe("useHomeRouteState history contract", () => {
   });
 
   /**
-   * Regression: landing from the project detail's "view on the map" stacked
-   * two history entries (measured 2→4), so the first Back changed nothing on
-   * screen. Cause: normalisation effects running right after landing called
-   * pushState **even though they resolved to the same URL**.
+   * Normalisation effects resolving to the same URL must not push, or the first Back changes
+   * nothing.
    */
   it("adds no history entry when the resulting URL is unchanged", () => {
     const { result } = renderHook(() => useHomeRouteState());

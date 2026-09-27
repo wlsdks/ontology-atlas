@@ -15,11 +15,9 @@ import { TopologyInsightsReturnChip } from "./TopologyInsightsReturnChip";
 import { TopologyPathChip } from "./TopologyPathChip";
 
 /**
- * Regression pin for the top-centre status chips (realm, return, path): they must
- * share `ChromeChip`'s spec (`--chrome-tile-size` height, `--chrome-radius`) and
- * must not re-apply `topology-ui-scale` to themselves — the `SearchHint` wrapper
- * already applies it, and nesting the zoom is what made a chip grow past its
- * siblings.
+ * The top-centre chips share `ChromeChip`'s spec and must not re-apply `topology-ui-scale`:
+ * the `SearchHint`
+ * wrapper already does, and nested zoom makes a chip outgrow its siblings.
  */
 describe("top chrome status chip geometry", () => {
   it("the shared geometry class carries chrome-tile-size height, chrome-radius and chrome-border tokens", () => {

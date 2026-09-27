@@ -54,7 +54,7 @@ const ENTRIES: FootprintTrailEntry[] = [
   { id: "element:y", title: "El Y", kind: "element" },
 ];
 
-/** Aligned with ENTRIES: the oldest has no predecessor, then a reason, then a bare type. */
+/** The oldest has no predecessor, then a reason, then a bare type. */
 const STEP_CAPTIONS: (TrailStepCaption | null)[] = [
   null,
   { relationLabel: "포함", reason: "Core 는 이 능력을 품는다" },
@@ -99,7 +99,7 @@ describe("TopologyTrailChip walked-trail chip", () => {
     renderChip();
     fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
     const rows = screen.getAllByTestId("topology-trail-row");
-    // The model order (oldest → newest) is reversed in the render only.
+    // Model order is reversed in the render only.
     expect(rows.map((r) => r.textContent)).toEqual(["El Y", "Cap X", "Core"]);
   });
 
@@ -118,11 +118,7 @@ describe("TopologyTrailChip walked-trail chip", () => {
     expect(screen.queryByTestId("topology-trail-current-dot")).toBeNull();
   });
 
-  /**
-   * The trail listed names and distances only, which records where the reader went and
-   * loses why they could go there — while the reason (`relation_notes`) is the durable
-   * thing this vault keeps. Newest-first, so the captions come back in reverse too.
-   */
+  /** Each row carries why it followed the last (`relation_notes`); captions come back newest-first. */
   it("each row says how it connects to the step before it", () => {
     renderChip();
     fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
@@ -144,7 +140,7 @@ describe("TopologyTrailChip walked-trail chip", () => {
     expect(links.map((l) => l.textContent)).toEqual(["직접 연결 없음", "직접 연결 없음", ""]);
   });
 
-  /** Equal-height rule: a row without a caption keeps the slot, or the list goes ragged. */
+  /** A row without a caption keeps the slot, or the list goes ragged. */
   it("keeps one row height whether or not a caption exists", () => {
     renderChip({ stepCaptions: [null, { relationLabel: "포함", reason: "이유" }, null] });
     fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
@@ -190,19 +186,15 @@ describe("TopologyTrailChip walked-trail chip", () => {
     const x = screen.getByTestId("topology-trail-chip-clear");
     fireEvent.click(x);
     expect(props.onClear).not.toHaveBeenCalled();
-    // Arming the popover, not the button: the footer says it too.
+    // The popover footer arms it too.
     fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
     expect(screen.getByTestId("topology-trail-clear-footer")).toHaveTextContent("한 번 더 누르면 지워요");
     fireEvent.click(screen.getByTestId("topology-trail-chip-clear"));
     expect(props.onClear).toHaveBeenCalledTimes(1);
   });
 
-  /*
-   * The armed state is a real state of the control, so it has to be visible on the control a
-   * reader is looking at. The ✕ changed only its `aria-label`: a sighted person pressed it, saw
-   * nothing move — the popover it arms may not even be open — and pressed again, which is the
-   * discard the two-press design exists to prevent.
-   */
+  // The ✕ once changed only its `aria-label`, so a sighted person pressed twice and discarded the
+  // trail.
   it("the armed chip close shows it visually, not only in aria-label", () => {
     renderChip();
     const x = screen.getByTestId("topology-trail-chip-clear");
@@ -403,8 +395,7 @@ describe("TopologyTrailChip past trails second layer", () => {
     openPast();
     fireEvent.click(screen.getAllByTestId("topology-trail-past-replay")[1]);
     expect(props.onReplayPastWalk).toHaveBeenCalledWith("w2");
-    // The replayed trail lives on level 1 — staying on level 2 after replaying
-    // would hide the result.
+    // Staying on level 2 after replaying would hide the result.
     expect(screen.queryByTestId("topology-trail-past-row")).toBeNull();
     expect(screen.getAllByTestId("topology-trail-row")).toHaveLength(3);
   });
@@ -450,7 +441,7 @@ describe("TopologyTrailChip past trails second layer", () => {
     expect(onHoverEntry).toHaveBeenLastCalledWith("element:y");
     fireEvent.click(screen.getByTestId("topology-trail-past-link"));
     expect(onHoverEntry).toHaveBeenLastCalledWith(null);
-    // Switching levels keeps the popover open, so the lens stays on.
+    // Switching levels keeps the popover open.
     expect(onLensChange).toHaveBeenLastCalledWith(true);
     fireEvent.click(screen.getByTestId("topology-trail-past-back"));
     expect(onHoverEntry).toHaveBeenLastCalledWith(null);

@@ -12,65 +12,50 @@ export function useTopologyPreferences() {
   const tMeaningEditor = useTranslations('meaningEditor');
   const reducedMotion = usePrefersReducedMotion();
   const siteT = useTranslations('metadata');
-  /*
-   * The same key insights shows in its flow tab. Reading it here rather than
-   * receiving the text keeps one sentence in one place; two copies would drift
-   * the first time a rule in it changed.
-   */
+  // The same key the insights flow tab shows, so the sentence lives in one place.
   const businessFlowRequestText = useTranslations('ontologyPages.insights.flow')('request');
-  // "The language on screen right now" for the create composer's per-locale
-  // name-input contract.
+  // For the create composer's per-locale name inputs.
   const activeLocale = useLocale();
   const tKinds = useTranslations('kinds');
-  /* The help glossary owns these definitions; reading them here keeps one source (see
-     `TopologyIndexTreeRowLabels.subcountsTitle`). */
+  // The help glossary owns these definitions (see `TopologyIndexTreeRowLabels.subcountsTitle`).
   const tGlossary = useTranslations('searchWidgets.shortcuts.glossary');
   const kindCountsTitle = useMemo(
     () =>
       `${tGlossary('capabilityTerm')}: ${tGlossary('capabilityDefinition')} · ` +
       `${tGlossary('elementTerm')}: ${tGlossary('elementDefinition')} · ` +
-      // The subcounts follow the containment spine, which holds a concept in one
-      // place, so the caption has to say where a concept two domains reference
-      // was counted — otherwise the two rows look like they disagree.
+      // A concept referenced by two domains is counted once on the containment spine, so the
+      // caption says where.
       `${tGlossary('sharedConceptNote')}`,
     [tGlossary],
   );
   const tTopologyKeyboardWalk = useTranslations('topologyWidgets.keyboardWalk');
-  // aria-label/title for the history chrome-tile entry point below `lg`. Reuses
-  // the same `atlasGit` keys `GitStatusTile` already uses.
+  // Reuses the `atlasGit` keys `GitStatusTile` uses.
   const tAtlasGit = useTranslations('atlasGit');
   const relationVocabulary = useRelationVocabulary();
-  // Plain (non-developer) mode: a display lens only, never a data change. When on
-  // it hides the element tier by default (a clicked node's ego is the exception),
-  // switches to plain vocabulary, and hides path sub-info and developer chrome.
-  // It reads a shared store rather than localStorage directly, because the shell's
-  // history tile reads the same value — changing it in settings has to move the map
-  // and the rail together.
+  // Plain mode is a display lens only: it hides the element tier (except a clicked node's ego),
+  // uses plain
+  // vocabulary and hides developer chrome. A shared store, because the shell's history tile reads
+  // it too.
   const [audiencePlain, setAudiencePlain] = useAudiencePlain();
-  // Appearance preferences, all changed from the settings sheet. Each is read from
-  // an app-wide store and handed down to the map canvas; the DOM glyphs subscribe
-  // to the same store themselves, so both surfaces swap in lockstep.
+  // App-wide stores the DOM glyphs also subscribe to, so canvas and DOM swap in lockstep.
   const canvasBackground = useCanvasBackground();
-  // 3D view (2026-08-18, opt-in): either the ownership Cone tree or the relation-driven Cloud.
+  // Opt-in: the ownership Cone tree or the relation-driven Cloud.
   const view3d = useView3d();
   const galaxy = useGalaxy();
-  /** Territories — every capability named around its domain (`OntologyTerritoriesMap`). */
+  /** `OntologyTerritoriesMap`. */
   const territories = useTerritories();
-  /** Hex board — one tile per capability, regions per domain (`OntologyHexBoardMap`). */
+  /** `OntologyHexBoardMap`. */
   const hexBoard = useHexBoard();
-  /** Which structural question places nodes in 3D — see the `MapArrangement` doc-block. */
+  /** See the `MapArrangement` doc-block. */
   const mapArrangement = useMapArrangement();
   const footprint = useFootprint();
   const glyphSet = useGlyphSet();
   const expand = useExpand();
-  // The map surface's relation-vocabulary register. Plain mode uses the same
-  // register as the datasheet.
+  // Plain mode uses the datasheet's register.
   const relationRegister: "formal" | "plain" = audiencePlain ? "plain" : "formal";
   /**
-   * One-argument relation naming for a consumer that only knows a type — the trail's step
-   * captions. `relationVocabulary` is a fresh closure on every render (next-intl), so this
-   * is not stable; the trail keeps the expensive half (scanning every edge) in its own
-   * memo, and only the naming pass, at most one line per walked step, repeats.
+   * For trail step captions. Unstable, since `relationVocabulary` is a new closure every render;
+   * the trail memoises its edge scan separately.
    */
   const relationLabelInRegister = useCallback(
     (type: string) => relationVocabulary(type, relationRegister),

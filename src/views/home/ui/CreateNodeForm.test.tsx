@@ -63,8 +63,7 @@ describe("CreateNodeForm", () => {
       />,
     );
     fireEvent.change(screen.getByTestId("create-node-title"), { target: { value: "  Token Issue  " } });
-    // Not a free-text field: the user picks an existing domain by name and the
-    // slug is what gets passed on.
+    // The user picks an existing domain by name; its slug is passed on.
     fireEvent.click(screen.getByTestId("create-node-domain"));
     fireEvent.click(screen.getByRole("option", { name: "인증" }));
     expect(screen.getByTestId("create-node-submit")).not.toBeDisabled();
@@ -88,8 +87,7 @@ describe("CreateNodeForm", () => {
     const onCreate = vi.fn();
     render(<CreateNodeForm onCreate={onCreate} labels={labels} />);
     fireEvent.change(screen.getByTestId("create-node-title"), { target: { value: "Auth" } });
-    // The canonical Select needs the trigger opened and an option clicked, not a
-    // native change event.
+    // The canonical Select needs the trigger opened and an option clicked.
     fireEvent.click(screen.getByTestId("create-node-kind"));
     fireEvent.click(screen.getByRole("option", { name: "도메인" }));
     fireEvent.click(screen.getByTestId("create-node-submit"));
@@ -164,9 +162,8 @@ describe("CreateNodeForm", () => {
   });
 });
 
-// Per-locale names (owner instruction, 2026-07-24): passing localeNames adds a
-// second field, and filling only the other language blocks the save and says why
-// in place.
+// localeNames adds a second field; filling only the other language blocks the save with an inline
+// reason.
 describe("CreateNodeForm per-locale names", () => {
   const localeNames = { primaryLocale: "ko", secondaryLocale: "en" };
 

@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 
-/** The primitive inputs that change which map meaning needs a camera fit. */
 export interface SpotlightFitSignatureInput {
   recentWindow: string | number | null;
   spotlightOn: boolean;
@@ -11,11 +10,7 @@ export interface SpotlightFitSignatureInput {
   expandAllActive: boolean;
 }
 
-/**
- * Stable primitive identity for the map meanings that warrant one spotlight fit.
- * Arrays are encoded rather than concatenated so null, booleans, and slugs cannot
- * collide through a delimiter in a user-controlled slug.
- */
+/** Encoded, not concatenated, so a user slug cannot collide through a delimiter. */
 export function buildSpotlightFitSignature({
   recentWindow,
   spotlightOn,
@@ -27,12 +22,9 @@ export function buildSpotlightFitSignature({
 }
 
 /**
- * A monotonic camera-fit trigger for a primitive map-meaning signature.
- *
- * Initial token 0 is a one-shot fit request, so a deep-linked spotlight is framed
- * on mount. Every later signature transition is adjusted during render, so React
- * retries before paint and the map receives exactly one new token without an
- * effect-driven cascade.
+ * Token 0 is a one-shot fit, so a deep-linked spotlight frames on mount. Later changes adjust
+ * during render,
+ * giving exactly one new token without an effect cascade.
  */
 export function useSpotlightFitTransition(signature: string): number {
   const [transition, setTransition] = useState(() => ({ signature, token: 0 }));

@@ -18,9 +18,8 @@ export const INITIAL_INDEX_SELECTION_OVERRIDE: IndexSelectionOverrideState = {
 };
 
 /**
- * A selection-local override: expanding INDEX is an interaction within one
- * active selection, never a persisted preference. Both ending and beginning a
- * session clear it so a later selection cannot inherit the previous one.
+ * Expanding INDEX belongs to one selection, never a preference; session start and end both clear
+ * it.
  */
 export function indexSelectionOverrideReducer(
   state: IndexSelectionOverrideState,
@@ -38,9 +37,8 @@ export function indexSelectionOverrideReducer(
 }
 
 /**
- * Mirrors an external selection lifecycle into the reducer before paint. The
- * guarded render update is intentionally not an effect: an effect would leave
- * the first frame of a new selection carrying the previous session's override.
+ * Updated during render, not in an effect, or a new selection's first frame inherits the old
+ * override.
  */
 export function useIndexSelectionOverride(selectionActive: boolean): {
   manualExpand: boolean;

@@ -9,9 +9,8 @@ import { OntologyChangeReview } from "@/features/ontology-change-review";
 import type { OntologyChangeSet } from "@/entities/knowledge-graph";
 
 /**
- * Presentational form for creating a node from the map itself, rather than
- * assembling one in a separate builder. It only reports title + kind + optional
- * domain through `onCreate`; the vault write lives in the HomePage glue.
+ * Creates a node from the map; reports title, kind and optional domain through `onCreate`.
+ * The vault write lives in the HomePage glue.
  */
 
 export type CreateNodeKind = "project" | "domain" | "capability" | "element";
@@ -23,11 +22,10 @@ export interface CreateNodeFormLabels {
   kind: string;
   /** aria label for the domain picker. */
   domain: string;
-  /** The picker's visible question — plain words, not the word "domain" alone. */
+  /** The picker's visible question, in plain words. */
   domainQuestion: string;
-  /** Option label for "no domain" (unassigned). */
   domainNone: string;
-  /** One line explaining what a domain is, for a non-developer. */
+  /** For a non-developer. */
   domainHelper: string;
   create: string;
   cancel: string;
@@ -36,17 +34,14 @@ export interface CreateNodeFormLabels {
   reviewConfirm: string;
   reviewConfirming: string;
   kindLabels: Record<CreateNodeKind, string>;
-  /** Per-locale name UI — used only when `localeNames` is passed. */
+  /** Used only when `localeNames` is passed. */
   primaryNamePlaceholder: string;
   secondaryNamePlaceholder: string;
   localeNamesHint: string;
   primaryLocaleRequired: string;
 }
 
-// Onboarding QA 2026-07-24: the checklist's first step ("create your first
-// project") asked for something this form could not create. The write path
-// (`vaultFolderForKind`) already supported `project`, so it joins the options.
-// Ordered by containment: project → domain → capability → element.
+// Ordered by containment; `vaultFolderForKind` supports every kind here.
 const KINDS: readonly CreateNodeKind[] = ["project", "domain", "capability", "element"];
 
 export function CreateNodeForm({
@@ -63,7 +58,7 @@ export function CreateNodeForm({
     title: string;
     kind: CreateNodeKind;
     domain?: string;
-    /** Per-locale display names — `{ ko, en }` → `display_ko` / `display_en`. */
+    /** `{ ko, en }` becomes `display_ko` / `display_en`. */
     localeLabels?: Record<string, string>;
   }) => boolean | void | Promise<boolean | void>;
   onCancel?: () => void;
@@ -75,26 +70,17 @@ export function CreateNodeForm({
     onConfirm: () => void | Promise<void>;
   } | null;
   defaultKind?: CreateNodeKind;
-  /**
-   * Pre-picked domain (2026-08-03) — opening this from a domain node on the map
-   * arrives with that domain already selected. Making someone re-pick the node
-   * they just clicked is asking a question that has no need to be asked.
-   */
+  /** Preselected when opened from a domain node, so the person is not asked what they just clicked. */
   defaultDomain?: string;
   /**
-   * Existing domains (value = the domain document's address, label = display name). The user
-   * picks from this list plus "no domain" instead of typing a slug freehand, so
-   * a non-developer never has to know what a slug is. An empty list leaves only
-   * "no domain" — a fresh vault, where a domain is created first and assigned
-   * afterwards.
+   * value = the domain document's address, label = display name, so nobody types a slug.
+   * An empty list leaves only "no domain", as in a fresh vault.
    */
   domainOptions?: readonly { value: string; label: string }[];
   /**
-   * Per-locale name contract (owner instruction, 2026-07-24). The current screen
-   * language is `primaryLocale`, the other is `secondaryLocale`. **The user's own
-   * screen language is required**: filling only the other one leaves the raw
-   * title showing on their own screen. Omit this prop for the older single-name
-   * form.
+   * The screen language (`primaryLocale`) is required, or the raw title shows on the person's own
+   * screen.
+   * Omit for the single-name form.
    */
   localeNames?: {
     primaryLocale: string;
@@ -108,8 +94,7 @@ export function CreateNodeForm({
   const [creating, setCreating] = useState(false);
 
   const primaryEmpty = title.trim().length === 0;
-  // "Only the other language is filled" — block the save and say why in place.
-  // Inline rather than a modal: the rule is learned without breaking the typing.
+  // Inline, not a modal, so the rule is learned without breaking the typing.
   const secondaryOnly = Boolean(localeNames) && primaryEmpty && secondaryName.trim().length > 0;
   const canCreate = !primaryEmpty && !creating;
 
@@ -196,8 +181,7 @@ export function CreateNodeForm({
         />
         {localeNames ? (
           <>
-            {/* The field above is the current screen language (required); this one
-                is the other language (optional). */}
+            {/* Above is the screen language (required); this is the other (optional). */}
             <input
               type="text"
               value={secondaryName}
@@ -240,8 +224,8 @@ export function CreateNodeForm({
             options={KINDS.map((k) => ({ value: k, label: labels.kindLabels[k] }))}
           />
         </label>
-        {/* Each option's value is the domain document's own address
-            (`domains/agent-access`); `canonicalizeDomainRef` keeps it on save. */}
+        {/* Values are domain document addresses (`domains/agent-access`); `canonicalizeDomainRef`
+           keeps them on save. */}
         <div className="flex flex-col gap-1.5">
           <span className="font-mono text-label uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]">
             {labels.domainQuestion}

@@ -3,16 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 
 /**
- * Regression guard for "a closed full-detail card traversed the graph on every
- * click".
- *
- * Measured 2026-07-28 (isolated Chromium, dogfood vault): one node click ran
- * `buildConnections` 11 times, 9 of them for a full-detail card **not on
- * screen** — including a depth-3 BFS and a full edge scan per neighbour row.
- *
- * This test locks the **count**, not milliseconds: absolute ms differ per
- * machine and flake, while "closed means zero" is true on every machine.
- * Removing the `open` gate fails it immediately.
+ * Locks the traversal count, not milliseconds: "closed means zero" holds on every machine,
+ * and removing the `open` gate fails it.
  */
 
 const groupsSpy = vi.fn(() => ({
@@ -67,8 +59,7 @@ const nodeFocus = {
   mentionedInSlug: null,
 } as never;
 
-// Stable references: the hook's memo contract holds only when input identity is
-// stable, and HomePage's real inputs are all useMemo/useCallback derivations.
+// Stable references, as HomePage's real inputs are memoised.
 const insight = { nodes, edges };
 const changedSlugs: ReadonlySet<string> = new Set<string>();
 const onSaveExplanation = () => undefined;

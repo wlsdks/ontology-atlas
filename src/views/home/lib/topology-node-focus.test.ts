@@ -187,9 +187,8 @@ describe("buildTopologyNodeFocus", () => {
     expect(focus.summary).toBeNull();
   });
 
-  // Regression: for a node with no `.md` of its own, `sourceSlug` is the
-  // document that cites it. Emitting the two slugs separately is what keeps a
-  // surface drawing "this node's document" from lying.
+  // Without its own `.md`, `sourceSlug` is the citing document; separate slugs keep "this node's
+  // document" honest.
   it("a node without its own document gives mentionedInSlug instead of ownDocumentSlug", () => {
     const citedBy = "ontology/capabilities/frontmatter-to-ontology";
     const selected = node(
