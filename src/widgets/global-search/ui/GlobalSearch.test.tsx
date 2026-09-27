@@ -748,8 +748,9 @@ describe("GlobalSearch — focus leaves with the dialog", () => {
     const sheet = screen.getByRole("button", { name: "another sheet", hidden: true });
     sheet.focus();
     finishExit(document.querySelector('[role="dialog"]')!);
+    // `onCloseAutoFocus` decides synchronously as the content unmounts, so once the dialog is
+    // gone the verdict is in; no extra wait is needed.
     await waitFor(() => expect(document.querySelector('[role="dialog"]')).toBeNull());
-    await new Promise((resolve) => setTimeout(resolve, 10));
     expect(document.activeElement, "the closing search pulled focus back to its opener").toBe(sheet);
   });
 });

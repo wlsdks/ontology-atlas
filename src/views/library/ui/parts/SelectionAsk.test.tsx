@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider, useTranslations } from "next-intl";
 import { useRef } from "react";
 import { describe, expect, it, vi } from "vitest";
@@ -36,10 +36,9 @@ async function selectPassage() {
   const selection = window.getSelection()!;
   selection.removeAllRanges();
   selection.addRange(range);
-  await act(async () => {
-    fireEvent.mouseUp(screen.getByTestId("body"));
-    await new Promise((resolve) => setTimeout(resolve, 5));
-  });
+  fireEvent.mouseUp(screen.getByTestId("body"));
+  // The component reads the selection on the next task; wait for the bar it draws.
+  await screen.findByRole("complementary");
 }
 
 describe("select a passage, ask the agent about it", () => {
@@ -58,7 +57,8 @@ describe("select a passage, ask the agent about it", () => {
     const body = screen.getByTestId("body");
     expect(body.dataset.selecting).toBeUndefined();
     await selectPassage();
-    expect(body.dataset.selecting).toBe("true");
+    // The dimming is set by an effect after the bar draws; wait for that state, not a clock.
+    await waitFor(() => expect(body.dataset.selecting).toBe("true"));
     fireEvent.click(screen.getByTestId("library-ask-evidence"));
     await waitFor(() => expect(body.dataset.selecting).toBeUndefined());
   });

@@ -196,9 +196,11 @@ test('남이 그 사이에 고쳤으면 한 글자도 안 쓴다', async () => {
 
   // Carry the mtime from the moment the plan was built.
   const staleMtime = statSync(stale).mtimeMs;
-  // The user edited it in between — open a gap of more than 1ms.
-  await new Promise((resolve) => setTimeout(resolve, 20));
+  // The user edited it in between. The edit's mtime is set explicitly, one minute later,
+  // so the gap does not depend on the filesystem's timestamp resolution or on a sleep.
   writeFileSync(stale, 'edited by the human', 'utf-8');
+  const edited = new Date(staleMtime + 60_000);
+  utimesSync(stale, edited, edited);
 
   assert.throws(
     () =>

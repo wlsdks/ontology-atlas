@@ -1523,9 +1523,8 @@ describe("AtlasGitPanel — 열려 있는 동안 폴더를 따라간다", () => 
     await waitFor(() => expect(tauriEventMock.listen).toHaveBeenCalledWith("vault-changed", expect.any(Function)));
 
     const before = tauriApiMock.invoke.mock.calls.filter(([c]) => c === "git_status").length;
-    await act(async () => {
+    act(() => {
       for (const handler of tauriEventMock.handlers) handler({ payload: null });
-      await new Promise((resolve) => setTimeout(resolve, 700));
     });
     await waitFor(() =>
       expect(tauriApiMock.invoke.mock.calls.filter(([c]) => c === "git_status").length).toBeGreaterThan(before),
@@ -1558,12 +1557,17 @@ describe("AtlasGitPanel — 열려 있는 동안 폴더를 따라간다", () => 
     const statusCalls = () =>
       tauriApiMock.invoke.mock.calls.filter(([c]) => c === "git_status").length;
     const before = statusCalls();
-    await act(async () => {
-      for (const handler of tauriEventMock.handlers) handler({ payload: null });
-      // The debounce window itself (FOLLOW_DEBOUNCE_MS), measured rather than waited on:
-      // the point is that it elapses *while the commit is still running*.
-      await new Promise((resolve) => setTimeout(resolve, 700));
-    });
+    // The debounce window (FOLLOW_DEBOUNCE_MS) elapses *while the commit is still running*:
+    // fake only the timer the notice schedules and run it, instead of sleeping past it.
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      await act(async () => {
+        for (const handler of tauriEventMock.handlers) handler({ payload: null });
+        await vi.runOnlyPendingTimersAsync();
+      });
+    } finally {
+      vi.useRealTimers();
+    }
     expect(statusCalls(), "쓰는 중에는 읽지 않는다").toBe(before);
 
     await act(async () => {
