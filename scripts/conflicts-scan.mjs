@@ -4,7 +4,7 @@
  * conflict with, while there is still time to change the plan.
  *
  * **Why this exists** (2026-09-26). Parallel rounds found their conflicts at
- * landing: the train or `/land-bundle` hit them after every branch was done, and
+ * landing: the train or an integration branch hit them after every branch was done, and
  * the fix was a hand merge at the most expensive moment. Research on multi-agent
  * development reports cross-agent pull request pairs conflicting at roughly 42%
  * and recommends surfacing overlap during development. This script answers two
