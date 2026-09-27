@@ -45,6 +45,7 @@
     "matchFieldTags": "태그",
     "matchFieldStack": "스택",
     "matchFieldDescription": "설명",
+    "matchFieldCategory": "카테고리",
     "layerAll": "전체",
     "layerHub": "허브",
     "layerNode": "노드",

@@ -170,6 +170,16 @@ describe('한글 자판 질의 하이라이트', () => {
       { text: '장바구니', match: false },
     ]);
   });
+
+  it('marks a two-set keystroke state only while Hangul reading is on', () => {
+    expect(splitHighlightSegments('보상 규칙', '봇')).toEqual([
+      { text: '보상', match: true },
+      { text: ' 규칙', match: false },
+    ]);
+    expect(splitHighlightSegments('보상 규칙', '봇', false)).toEqual([
+      { text: '보상 규칙', match: false },
+    ]);
+  });
 });
 
 describe('snippetAroundFirstMatch', () => {

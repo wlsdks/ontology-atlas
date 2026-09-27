@@ -45,6 +45,7 @@
     "matchFieldTags": "Tags",
     "matchFieldStack": "Stack",
     "matchFieldDescription": "Description",
+    "matchFieldCategory": "Category",
     "layerAll": "All",
     "layerHub": "Hub",
     "layerNode": "Node",
