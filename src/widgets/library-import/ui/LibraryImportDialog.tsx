@@ -200,7 +200,8 @@ export function LibraryImportDialog({
              * only by copy length.
              */
             /*
-             * `auto-rows-fr`: one track height for every tile, including a last tile alone on its
+             * The grid uses `auto-rows-fr`: one track height for every tile, including a last tile
+             * alone on its
              * row (`.claude/rules/forbidden.md`).
              */
             className="mt-3 grid auto-rows-fr grid-cols-1 gap-2 sm:grid-cols-2"
@@ -399,7 +400,8 @@ export function LibraryImportDialog({
             </p>
           ) : null}
           {/*
-           * `connectorAcpServers` hands connectors only to runtimes with a measured permission path
+           * The helper `connectorAcpServers` hands connectors only to runtimes with a measured
+           * permission path
            * (Claude today); without this line a Codex user's agent silently has no service tools.
            */}
           {canRunAgent ? (

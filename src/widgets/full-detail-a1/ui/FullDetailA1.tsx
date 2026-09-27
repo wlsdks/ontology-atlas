@@ -36,8 +36,8 @@ import { FullDetailA1ReachPanel } from "./full-detail-a1-reach-panel";
 /**
  * The full-detail surface (`docs/prototypes/detail-a1-datasheet.html`): header, metric strip, four
  * direction groups, reach sentence, agent handoff and body. Shared by the topology datasheet's full
- * detail and the `/ontology` node detail, both fed by `buildFullDetailGroups` and
- * `buildFullDetailReachModel` so numbers cannot drift.
+ * detail and the `/ontology` node detail, both fed by `buildFullDetailGroups`
+ * and `buildFullDetailReachModel` so numbers cannot drift.
  */
 
 export interface FullDetailA1Node {
@@ -152,7 +152,8 @@ export function FullDetailA1({
   className,
 }: FullDetailA1Props) {
   const t = useTranslations("fullDetailA1");
-  // The same `editProvenance` namespace as DocFrontmatterBlock and
+  // Same editProvenance namespace as DocFrontmatterBlock and OntologyMapDetailPanel, so the
+  // three cannot drift.
   const tProvenance = useTranslations("editProvenance");
   const getKindLabel = useOntologyKindLabel();
   const { show } = useToast();

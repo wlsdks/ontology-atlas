@@ -200,8 +200,8 @@ export interface TopologyIndexPanelProps {
   /** Markdown documents read out of that folder. `null` while the manifest is not built yet. */
   sourceDocumentCount?: number | null;
   /**
-   * Whether the walk stopped early (`VaultManifest.walkTruncated`);
-   * `entities/docs-vault/model/types.ts` requires the count to say so in place, as `N+`.
+   * Whether the walk stopped early
+   * (`VaultManifest.walkTruncated`); `entities/docs-vault/model/types.ts` requires the count to say so in place, as `N+`.
    */
   sourceDocumentCountPartial?: boolean;
 }
@@ -350,7 +350,7 @@ export function TopologyIndexPanel({
   const isOpen = (nodeId: string) => isFiltering || lensActive || openIds.has(nodeId);
 
   // Roving tabindex over the visible rows (the same `isOpen` as the auto-expansion); arrow keys are
-  // handled on the nav below.
+  // handled on the tree container.
   const treeRef = useRef<HTMLDivElement>(null);
   // A revealed row is scrolled into the tree's own view, also when a search ends.
   useEffect(() => {
@@ -443,8 +443,8 @@ export function TopologyIndexPanel({
   return (
     /*
      * The panel takes its content's height up to the slot (`max-h-full`) and scrolls longer trees;
-     * the first-run card keeps it full height. It declares itself a side panel because
-     * `computeFreeArea` can no longer infer that from height.
+     * the first-run card keeps it full height. It declares itself a side panel
+     * because `computeFreeArea` can no longer infer that from height.
      */
     <aside
       aria-label={labels.label}
@@ -460,8 +460,8 @@ export function TopologyIndexPanel({
       <FirstRunStarterModule
         concepts={totalConcepts}
         /*
-         * Pass the lens state itself: pressing the lens must collapse the card even with zero
-         * highlights.
+         * Pass lens, not lensActive (which also needs an empty search and computed changes):
+         * pressing the lens must collapse the card even with zero highlights.
          */
         lensActive={lens === "recent"}
         /* Selecting any node means the guidance card has done its job —
@@ -475,8 +475,8 @@ export function TopologyIndexPanel({
          */
         mapUnbuilt={
           /*
-           * `noProjectsYet` separates "no projects" from "every project bound", since
-           * `unboundProjectNodeId` is null for both.
+           * `noProjectsYet` separates "no projects" from "every project bound",
+           * since `unboundProjectNodeId` is null for both.
            */
           vaultLoaded &&
           (unboundProjectNodeId !== null || noProjectsYet) &&
@@ -773,7 +773,6 @@ export function TopologyIndexPanel({
       ) : null}
 
 
-      {/* Block import moved to settings, workspace; it is used once or twice in a lifetime. */}
 
       </FirstRunStarterModule>
     </aside>

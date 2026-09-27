@@ -71,7 +71,7 @@ function renderSheet() {
   );
 }
 
-describe("ShortcutSheet — topology section (W2-C)", () => {
+describe("ShortcutSheet — topology section", () => {
   it("describes Enter for every search result type, not projects only", () => {
     renderSheet();
     expect(screen.getByText("Open the selected result")).toBeInTheDocument();
@@ -104,7 +104,7 @@ describe("ShortcutSheet — topology section (W2-C)", () => {
 });
 
 /** The one-line kind glossary in the footer. */
-describe("ShortcutSheet — kind glossary (P1a-2)", () => {
+describe("ShortcutSheet — kind glossary", () => {
   /** Ontology is defined here before the three kinds. */
   it("defines ontology first, before the three kinds", () => {
     renderSheet();

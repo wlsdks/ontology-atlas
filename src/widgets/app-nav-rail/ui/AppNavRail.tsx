@@ -63,7 +63,6 @@ export interface AppNavRailProps {
   gitDirtyCount?: number;
   /** Tools that finished installing while the user was elsewhere; terminal states only. */
   agentsNoticeCount?: number;
-  /** Whether the connection sheet is currently open — the truth source for the tile's `aria-expanded` (global launcher `wantOpen`). */
   /** Destinations this folder earns (`destinationsForVaultShape`); `null` draws all. */
   visibleDestinations?: ReadonlySet<AppNavRailItemId> | null;
   className?: string;
@@ -116,7 +115,7 @@ export function AppNavRail({
   const t = useTranslations("navRail");
   const pathname = usePathname() ?? "/";
   const router = useRouter();
-  /** The web-only download tile; the decision lives in `../lib/show-get-app-tile`. */
+  /** The web-only download tile; the decision lives in `@/shared/lib/show-get-app-tile`. */
   // The server snapshot is `null` (unknown), so prerendered HTML never asserts web and the tile
   // does not flicker at hydration.
   const desktopRuntime = useSyncExternalStore(
@@ -223,8 +222,8 @@ export function AppNavRail({
       )}
     >
       {/*
-       * Only the destinations pane scrolls; the utility tier never shrinks (cap:
-       * `destination-shortcuts.contract.test.ts`).
+       * Only the destinations pane scrolls; the utility tier never shrinks
+       * (cap: `destination-shortcuts.contract.test.ts`).
        */}
       {/*
        * The vault tile sits outside the scrolling pane so it never scrolls away at the 1040x720
@@ -350,8 +349,8 @@ export function AppNavRail({
         className="mt-auto flex w-full shrink-0 flex-col items-center gap-1 pt-2"
       >
         {/*
-         * Web-only download tile; the visitor's OS is not guessed here
-         * (`../lib/show-get-app-tile`).
+         * Web-only download tile; the OS is not guessed because a wrong guess is a dead-end
+         * CTA (@/shared/lib/show-get-app-tile).
          */}
         {showGetApp ? (
           <Link

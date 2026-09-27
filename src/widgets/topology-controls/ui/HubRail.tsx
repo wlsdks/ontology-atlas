@@ -134,7 +134,7 @@ export function HubRail({
             aria-label={t('collapseAriaLabel')}
             /*
              * The tooltip already names this control, so the value layer is used instead of
-             * `IconButton`, which would add a second title.
+             * the `IconButton` primitive, which would add a second title.
              */
             className={controlClass({
               shape: 'icon',

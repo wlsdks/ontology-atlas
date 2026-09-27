@@ -49,7 +49,8 @@ describe("TopologyEmptyState", () => {
   });
 
   /*
-   * `/ontology/` redirects back to this screen with INDEX expanded, so with no concepts the offer
+   * The `/ontology/` route redirects back to this screen with INDEX expanded, so with no concepts
+   * the offer
    * is a dead end; the link itself is asserted, not only the count.
    */
   it('does not suggest browsing when there are no concepts', () => {

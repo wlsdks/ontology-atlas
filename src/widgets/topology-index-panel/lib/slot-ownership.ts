@@ -9,8 +9,8 @@ type LeftSlotAnalysisMode = "overview" | "focus" | "path" | "health";
 
 /**
  * INDEX owns the topology's left slot unconditionally since the analysis rail was retired.
- * `resolveLeftSlotOwner` stays a named seam because `resolveRenderedIndexPanelState` reads it and a
- * future mode would change the rule here.
+ * The function `resolveLeftSlotOwner` stays a named seam
+ * because `resolveRenderedIndexPanelState` reads it and a future mode would change the rule here.
  */
 export type LeftSlotOwner = "index" | "analysis-rail";
 
@@ -25,7 +25,7 @@ export function resolveLeftSlotOwner(inputs: LeftSlotInputs): LeftSlotOwner {
 
 /**
  * The rendered INDEX state, distinct from the persisted preference; currently always
- * `preferredState`, kept as a function for the same seam.
+ * the preferred state, kept as a function for the same seam.
  */
 export function resolveRenderedIndexPanelState(
   owner: LeftSlotOwner,

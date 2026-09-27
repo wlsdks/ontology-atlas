@@ -50,8 +50,8 @@ export interface GlobalSearchProps {
   /** Ontology node selection callback. */
   onSelectNode: (node: KnowledgeGraphNode) => void;
   /**
-   * Optional projects, searched together with ontology by one Cmd+K; must arrive with
-   * `onSelectProject`.
+   * Optional projects, searched together with ontology by one Cmd+K; must arrive
+   * with `onSelectProject`.
    */
   projects?: readonly Project[];
   onSelectProject?: (project: Project) => void;
@@ -484,7 +484,7 @@ export function GlobalSearch({
               }
             >
               {ontologyResults.map(({ node, matched }) => {
-                // File-path element titles are demoted to mono quaternary, never hidden, because
+                // File-path element titles are demoted to mono tertiary, never hidden, because
                 // the path is the row's only label.
                 // Results use the name the map and INDEX draw.
                 const label = node.display ?? node.title;
@@ -565,7 +565,7 @@ export function GlobalSearch({
                   <span className="inline-flex shrink-0 items-center rounded-full border border-[color:var(--color-indigo-a20)] bg-[color:var(--color-indigo-a06)] px-1.5 py-[1px] font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-indigo-text-strong)]">
                     {project.isHub ? t('hub') : t('project')}
                   </span>
-                  {/* Marked like the concept rows. */}
+                  {/* Highlighted like the concept rows: the same project is also listed as a concept, so each row shows why it is there. */}
                   {/* The reason: the slug until another field earned the row. */}
                   <div className="flex min-w-0 flex-1 flex-col md:flex-row md:items-center md:gap-2">
                     <span className="min-w-0 truncate text-[color:var(--color-text-primary)] md:flex-1">

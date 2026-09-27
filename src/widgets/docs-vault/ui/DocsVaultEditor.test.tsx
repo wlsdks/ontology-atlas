@@ -450,8 +450,8 @@ describe('DocsVaultEditor', () => {
     window.localStorage.clear();
 
     /*
-     * Order matters: type first, then switch only the vault, so an armed debounce without
-     * `vaultScope` in its deps writes to the old key. Typing after the switch would mask it.
+     * Order matters: type first, then switch only the vault, so an armed debounce
+     * without `vaultScope` in its deps writes to the old key. Typing after the switch would mask it.
      */
     fireEvent.change(area, { target: { value: '# 고친 것' } });
 

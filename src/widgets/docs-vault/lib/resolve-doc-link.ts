@@ -1,6 +1,6 @@
 /**
- * Resolves a relative `.md` link in the /docs viewer, or a vault-escaping link like
- * `../mcp/README.md` resolves against the route and 404s. Absolute URLs, anchors and non-md paths
+ * Resolves a relative `.md` link in the /docs viewer, or a vault-escaping link
+ * like `../mcp/README.md` resolves against the route and 404s. Absolute URLs, anchors and non-md paths
  * pass through; known slugs route internally; others go to a GitHub blob with repoBlobBase, else
  * stay unresolved.
  */

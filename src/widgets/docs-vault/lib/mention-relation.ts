@@ -5,8 +5,8 @@ import { buildDocLinkMarkdown } from './relative-doc-path';
 /**
  * The editor's `@` mention: choosing writes a relation to frontmatter (the fact the graph reads)
  * and leaves a standard markdown link in the body for readers (`[name](../path.md)`). A pure buffer
- * transform, so the canonical array rule is testable without a browser; link format reasons are in
- * `lib/relative-doc-path.ts`.
+ * transform, so the canonical array rule is testable without a browser; link format reasons are
+ * in `lib/relative-doc-path.ts`.
  */
 
 /** What an `@` trigger caught — the query before the caret and where it started. */

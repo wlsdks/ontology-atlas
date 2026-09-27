@@ -99,7 +99,7 @@ function Highlight({
 
 /**
  * Unified palette: empty query shows pinned, recent and suggested commands; `>` matches commands,
- * `#` tags, and plain text searches documents plus matching commands.
+ * a `#` prefix tags, and plain text searches documents plus matching commands.
  */
 export function DocsVaultUnifiedPalette({
   onClose,

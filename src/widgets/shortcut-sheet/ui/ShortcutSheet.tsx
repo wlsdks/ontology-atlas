@@ -55,7 +55,7 @@ interface ShortcutRow {
 
 interface ShortcutSection {
   titleKey: string;
-  /** The surface this section applies to — the source of truth for contextual tab classification (#67). */
+  /** The surface this section applies to — the source of truth for contextual tab classification. */
   surface: ShortcutSurface;
   /**
    * CSS selector for the control these keys drive; the current-screen tab drops a section whose
@@ -77,8 +77,8 @@ function sectionsOnScreen(): readonly string[] {
 }
 
 /**
- * The kind glossary lives in the map's pull-only help footer rather than a new surface, ontology
- * first, then domain, capability, element in the map's order.
+ * Glossary terms shown under the shortcut list rather than on a new surface: ontology first, then
+ * the map's kind order.
  */
 // `nodeNumber` explains once why the map's engraved count differs from the total concept count:
 // they count different scopes.
@@ -495,9 +495,9 @@ export function ShortcutSheet({ open, onClose, returnFocusSelector }: Props) {
              */}
             <div className="relative flex min-h-0 flex-1 flex-col">
               {/*
-               * Focusable (`tabIndex={0}`) so the region scrolls from the keyboard, with
-               * `role="group"` and a name so the stop announces itself (axe
-               * `scrollable-region-focusable`).
+               * Focusable (`tabIndex={0}`) so the region scrolls from the keyboard,
+               * with `role="group"` and a name so the stop announces itself
+               * (axe `scrollable-region-focusable`).
                */}
               <div
                 className="min-h-0 flex-1 overflow-y-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]"

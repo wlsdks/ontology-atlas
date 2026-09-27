@@ -22,8 +22,8 @@ function nameSource(doc: DocsTreeQueryDoc): NodeNameSource {
 }
 
 /**
- * Matches the tree's name and address fields with the palette's rule (`findNameMatch`);
- * `shared/lib/hangul-match` bounds the Hangul keyboard states.
+ * Matches the tree's name and address fields with the palette's rule
+ * (`findNameMatch`); `shared/lib/hangul-match` bounds the Hangul keyboard states.
  */
 export function matchesDocsTreeQuery(doc: DocsTreeQueryDoc, normalizedQuery: string): boolean {
   if (!normalizedQuery) return true;

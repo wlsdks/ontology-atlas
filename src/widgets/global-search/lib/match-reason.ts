@@ -3,8 +3,8 @@ import { snippetAroundFirstMatch } from "@/shared/lib/highlight-match";
 import type { SearchMatchEvidence } from "./match";
 
 /**
- * What a result row puts in its trailing column; `kind` is also written as
- * `data-search-result-reason` so the contract is measurable on the rendered row.
+ * What a result row puts in its trailing column; `kind` is also written
+ * as `data-search-result-reason` so the contract is measurable on the rendered row.
  */
 export interface MatchReason {
   kind: "summary" | "name" | "id";

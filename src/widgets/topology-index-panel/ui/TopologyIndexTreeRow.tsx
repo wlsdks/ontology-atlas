@@ -20,8 +20,8 @@ interface TopologyIndexTreeRowLabels {
   /** Hover explanation for the domain badge (multi-membership is counted more than once). */
   domainCountTitle: string;
   /**
-   * What capability and element mean, where their counts are read. The kind names are fixed by
-   * `docs/ONTOLOGY-ATLAS-SPEC.md` §2, `AGENTS.md` forbids a competing glossary and `design.md` a
+   * What capability and element mean, where their counts are read. The kind names are fixed
+   * by `docs/ONTOLOGY-ATLAS-SPEC.md` §2, `AGENTS.md` forbids a competing glossary and `design.md` a
    * second teaching screen, so the definition is composed from the existing glossary strings.
    */
   subcountsTitle?: string;
@@ -238,7 +238,8 @@ export function TopologyIndexTreeRow({
                 ? labels.subtotalTitle
                   ? `${labels.subtotalTitle} ${count} · ${labels.domainCountTitle}`
                   : labels.domainCountTitle
-                : // The multi-membership caveat belongs to domain badges, which can
+                : // Only domain badges carry the multi-membership caveat (they can sum past the
+                  // census); the scope word applies to every badge.
                   censusRow && labels.subtotalTitle
                   ? `${labels.subtotalTitle} ${count}`
                   : undefined

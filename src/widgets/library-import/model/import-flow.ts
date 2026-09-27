@@ -35,8 +35,8 @@ export interface ImportService {
 }
 
 /**
- * The tiles. Google Drive is absent: every Drive server needs a self-made OAuth client; add it to
- * `scripts/build-mcp-catalogue.mjs` with sources when a sign-in-only endpoint exists.
+ * The tiles. Google Drive is absent: every Drive server needs a self-made OAuth client; add it
+ * to `scripts/build-mcp-catalogue.mjs` with sources when a sign-in-only endpoint exists.
  */
 /*
  * Confluence and Jira wait for an adapter that can sign in: a hosted OAuth address given to the

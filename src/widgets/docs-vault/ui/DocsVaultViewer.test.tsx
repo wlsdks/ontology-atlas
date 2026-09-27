@@ -233,8 +233,8 @@ describe("DocsVaultViewer", () => {
   });
 
   /*
-   * A compiled page's unlabelled citations read as places ("line 5"), not
-   * `src:sources/budget.md#l5` addresses.
+   * A compiled page's unlabelled citations read as places ("line 5"),
+   * not `src:sources/budget.md#l5` addresses.
    */
   it("says where an unlabelled citation points, in words, and names the file only when the header does not", async () => {
     const onSourceNavigate = vi.fn();
@@ -353,8 +353,8 @@ describe("DocsVaultViewer", () => {
 
 
 /**
- * A wikilink resolves here as everywhere else in the vault (`extractOutLinksWithContext`,
- * `validateWikiFolder`).
+ * A wikilink resolves here as everywhere else in the vault
+ * (`extractOutLinksWithContext`, `validateWikiFolder`).
  */
 describe("DocsVaultViewer — a wikilink resolves against the document that wrote it", () => {
   const wikiDoc: VaultDoc = { ...doc, slug: "wiki/handover", path: "wiki/handover.md" };

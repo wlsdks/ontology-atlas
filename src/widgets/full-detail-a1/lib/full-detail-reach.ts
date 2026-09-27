@@ -1,7 +1,7 @@
 /**
  * Outward reach at a selectable step (1-3) with a per-domain breakdown. One BFS to the max depth
- * through `buildOntologyReachability`, per-depth counts from its layers; domain ownership via
- * `nearestDomainId` and `buildContainmentParents`, shared with `computeDomainCouplingMatrix`.
+ * through `buildOntologyReachability`, per-depth counts from its layers; domain ownership
+ * via `nearestDomainId` and `buildContainmentParents`, shared with `computeDomainCouplingMatrix`.
  */
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import {

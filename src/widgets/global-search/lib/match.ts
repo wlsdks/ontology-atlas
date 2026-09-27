@@ -17,8 +17,8 @@ export function isPathLikeTitle(title: string): boolean {
 }
 
 /**
- * What carried the match, so a row can say why it is listed; one shape for concepts and projects.
- * `name` is a specific name (often not the drawn one), `summary` the descriptive prose, `id` the
+ * What carried the match, so a row can say why it is listed; one shape for concepts and
+ * projects. `name` is a specific name (often not the drawn one), `summary` the descriptive prose, `id` the
  * identifier.
  */
 export interface SearchMatchEvidence {
@@ -159,7 +159,7 @@ export interface ProjectSearchPage {
 }
 
 /**
- * One search result — a project source. S4 closure.
+ * One search result — a project source.
  */
 export interface ProjectSearchResult {
   project: Project;

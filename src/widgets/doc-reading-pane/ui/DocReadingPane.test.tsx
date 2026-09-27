@@ -8,7 +8,8 @@ import { DocReadingPane } from "./DocReadingPane";
 
 /**
  * The scroll-end reserve owed to the back-to-top pill; the pixel proof is
- * `tests/e2e/scroll-end-gap.spec.ts`, and this covers the check-results page e2e cannot open.
+ * the e2e spec `tests/e2e/scroll-end-gap.spec.ts`, and this covers the check-results page e2e cannot
+ * open.
  */
 function renderPane(withBackToTop: boolean) {
   return render(

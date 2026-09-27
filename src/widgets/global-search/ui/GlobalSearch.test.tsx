@@ -265,8 +265,8 @@ describe("GlobalSearch", () => {
   });
 
   /**
-   * The first Escape closes and clears. The app's global Escape handlers look for
-   * `[role="dialog"][aria-modal="true"]`, which Radix does not set.
+   * The first Escape closes and clears. The app's global Escape handlers look
+   * for `[role="dialog"][aria-modal="true"]`, which Radix does not set.
    */
   it('declares itself modal with aria-modal while open', () => {
     render(

@@ -90,8 +90,8 @@ export interface TopologyRealmLedgerProps {
 /**
  * The realm ledger shown instead of the global INDEX while a realm is expanded (`?realm=slug`):
  * header, the realm tree with search, and boundary relations collapsed behind one summary line. No
- * box in a box, no chip soup, one-line empty states; it reuses INDEX's tokens, shell and
- * `TopologyIndexTreeRow`.
+ * box in a box, no chip soup, one-line empty states; it reuses INDEX's tokens, shell
+ * and `TopologyIndexTreeRow`.
  */
 export function TopologyRealmLedger({
   rootKind,

@@ -120,7 +120,7 @@ export function DocsVaultViewer({
   const { content: preferredBundledContent } = useStaticVaultSource();
   const bundledContent = bundledContentOverride ?? preferredBundledContent;
 
-  // Once the body loads with a highlightQuery, scroll to the first `md-highlight` mark.
+  // Once the body loads with a highlightQuery, scroll to the first `mark.docs-match`.
   useEffect(() => {
     if (!raw || !highlightQuery) return;
     const handle = requestAnimationFrame(() => {
@@ -291,7 +291,8 @@ export function DocsVaultViewer({
                 </button>
               );
             }
-            // The helper distinguishes an unavailable allow-list from an allow-listed
+            // Missing and unavailable citations both render as a visibly non-navigable span; only
+            // the title differs.
             return (
               <span
                 className="border-b border-dashed border-[color:var(--color-amber-source-a50)] text-[color:var(--color-amber-source-text-a85)]"
@@ -308,8 +309,8 @@ export function DocsVaultViewer({
             );
           }
           /*
-           * Resolve against the linking document, as `extractOutLinksWithContext` and
-           * `validateWikiFolder` do, so `[[budget]]` in `wiki/handover.md` means `wiki/budget`.
+           * Resolve against the linking document, as `extractOutLinksWithContext`
+           * and `validateWikiFolder` do, so `[[budget]]` in `wiki/handover.md` means `wiki/budget`.
            */
           // A `project:` prefix routes to the public topology route, e.g. [[project:reactor]].
           if (wikiSlug && wikiSlug.startsWith('project:')) {
@@ -740,8 +741,8 @@ const CALLOUT_STYLES: Record<
 };
 
 /**
- * Extracts a leading `[!kind] title` from blockquote children; returns null or the remainder as
- * `rest`.
+ * Extracts a leading `[!kind] title` from blockquote children; returns null or the remainder
+ * as `rest`.
  */
 function detectCallout(
   children: React.ReactNode,

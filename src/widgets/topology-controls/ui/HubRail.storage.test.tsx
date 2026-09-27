@@ -55,7 +55,8 @@ function render(ui: React.ReactElement) {
 const HUBS = [project({ slug: 'hub-a', name: 'Hub A', isHub: true, dependencies: ['x'] })];
 
 /**
- * `localStorage` throws when storage is disabled (WKWebView privacy settings); unreadable storage
+ * The `localStorage` API throws when storage is disabled (WKWebView privacy settings); unreadable
+ * storage
  * means closed, and the map still renders.
  */
 describe('HubRail — storage that throws', () => {

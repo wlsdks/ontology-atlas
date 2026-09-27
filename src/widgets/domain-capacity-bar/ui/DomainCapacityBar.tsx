@@ -35,8 +35,8 @@ export interface DomainCapacityBarProps {
  * One domain's composition, capabilities against elements; the track always fills and only the
  * boundary moves (size is the number column's job). Shared by `/ontology/insights` and `/projects`,
  * so fixes land here. Indigo plus neutral with a 1px seam, since kind tones separate only by hue.
- * No minimum width, which would inflate small values. Record:
- * `.qa-scratch/domain-bar-color-2026-07-26.md`; charter: `docs/DESIGN-SYSTEM.md` "Three ambers,
+ * No minimum width, which would inflate small values.
+ * Record: `.qa-scratch/domain-bar-color-2026-07-26.md`; charter: `docs/DESIGN-SYSTEM.md` "Three ambers,
  * three rules".
  */
 export function DomainCapacityBar({
@@ -95,8 +95,8 @@ export function DomainCapacityBar({
         ) : null}
       </span>
       {/*
-       * Fixed-width tail so text width cannot change the track length and split the shared axis;
-       * `w-48` fits every current English tail. `tabular-nums` keeps digits aligned.
+       * Fixed-width tail so text width cannot change the track length and split the shared
+       * axis; `w-48` fits every current English tail. `tabular-nums` keeps digits aligned.
        */}
       {tail === "inline" ? (
         <span

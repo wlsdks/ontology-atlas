@@ -465,7 +465,8 @@ describe("TopologyIndexPanel", () => {
     expect(tabbableRows()).toEqual([project]);
     expect(domain).toHaveAttribute("tabindex", "-1");
 
-    // ArrowDown rolls the single tabindex=0 onto the next visible sibling and
+    // ArrowDown moves the single tabindex=0 to the next visible sibling and moves DOM focus
+    // with it.
     fireEvent.keyDown(project, { key: "ArrowDown" });
     expect(document.activeElement).toBe(domain);
     expect(tabbableRows()).toEqual([domain]);
@@ -476,7 +477,8 @@ describe("TopologyIndexPanel", () => {
     expect(rowFor("capability:cli-entry")).toBeInTheDocument();
     expect(tabbableRows()).toEqual([domain]);
 
-    // ArrowDown from the domain lands on its first child (whatever the tree's
+    // ArrowDown from the domain lands on its first child whatever the sort; +N rows are
+    // reachable by arrow, never by Tab.
     const order = rowsInDomOrder();
     const firstChild = order[1 + 1]; // [project, domain, firstChild, ...]
     fireEvent.keyDown(domain, { key: "ArrowDown" });
@@ -563,14 +565,14 @@ describe("TopologyIndexPanel", () => {
       target: { value: "agent brief" },
     });
 
-    // matched leaf + its ancestor chain (capability, domain) stay visible —
+    // The matched leaf and its ancestors stay visible: filterTreeByQuery keeps ancestors.
     expect(screen.getByText("Agent Brief")).toBeInTheDocument();
     expect(screen.getByText("MCP Server")).toBeInTheDocument();
     // sibling capability with no matching descendant is pruned out.
     expect(screen.queryByText("CLI Developer Entry")).not.toBeInTheDocument();
   });
 
-  it("M-10: Escape in the search field with a query clears it and stops the keypress (search-scoped, not a canvas deselect)", () => {
+  it("Escape in the search field with a query clears it and stops the keypress (search-scoped, not a canvas deselect)", () => {
     const treeResult = buildFixtureTree();
     render(
       <TopologyIndexPanel
@@ -605,7 +607,7 @@ describe("TopologyIndexPanel", () => {
     expect(notPrevented).toBe(false);
   });
 
-  it("M-10: Escape in an EMPTY search field is not consumed — it bubbles to the window ladder", () => {
+  it("Escape in an EMPTY search field is not consumed — it bubbles to the window ladder", () => {
     const treeResult = buildFixtureTree();
     render(
       <TopologyIndexPanel
@@ -680,7 +682,7 @@ describe("TopologyIndexPanel", () => {
     });
   });
 
-  it("P4a: omitting recentChanges skips the segment control entirely", () => {
+  it("omitting recentChanges skips the segment control entirely", () => {
     render(
       <TopologyIndexPanel
         treeResult={buildFixtureTree()}
@@ -697,7 +699,7 @@ describe("TopologyIndexPanel", () => {
     expect(screen.queryByTestId("topology-index-segment-recent")).not.toBeInTheDocument();
   });
 
-  it("P4a: the recent-changes segment filters the tree to the given ids and keeps ancestor chains", () => {
+  it("the recent-changes segment filters the tree to the given ids and keeps ancestor chains", () => {
     const treeResult = buildFixtureTree();
     render(
       <TopologyIndexPanel
@@ -721,7 +723,7 @@ describe("TopologyIndexPanel", () => {
     expect(screen.queryByText("CLI Developer Entry")).not.toBeInTheDocument(); // unrelated sibling pruned
   });
 
-  it("P4a: switching back to 'all' restores the full tree", async () => {
+  it("switching back to 'all' restores the full tree", async () => {
     const treeResult = buildFixtureTree();
     render(
       <TopologyIndexPanel
@@ -748,7 +750,7 @@ describe("TopologyIndexPanel", () => {
     expect(screen.getByText("CLI Developer Entry")).toBeInTheDocument();
   });
 
-  it("P4a: an empty recent-changes lens shows the dedicated empty hint, not the search one", () => {
+  it("an empty recent-changes lens shows the dedicated empty hint, not the search one", () => {
     render(
       <TopologyIndexPanel
         treeResult={buildFixtureTree()}

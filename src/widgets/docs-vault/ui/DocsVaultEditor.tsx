@@ -147,8 +147,8 @@ export function DocsVaultEditor({
   const [savedContent, setSavedContent] = useState<string | null>(null);
   const [loadedSlug, setLoadedSlug] = useState<string | null>(null);
   /*
-   * A failure has two halves: `sentence` is rendered; `detail` is the machine half and only reaches
-   * `data-failure-detail`.
+   * A failure has two halves: `sentence` is rendered; `detail` is the machine half and only
+   * reaches `data-failure-detail`.
    */
   const [error, setError] = useState<FailureCopy | null>(null);
   const [saving, setSaving] = useState(false);
@@ -164,7 +164,7 @@ export function DocsVaultEditor({
   const savedFlashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingDraftRef = useRef<{ vaultScope: string; draft: EditorDraft } | null>(null);
 
-  // Wikilink autocomplete state. The popover shows while open is not null.
+  // `@` mention menu state; the menu shows while this is not null.
   const [autocomplete, setAutocomplete] = useState<{
     query: string;
     start: number;
@@ -265,8 +265,6 @@ export function DocsVaultEditor({
       ta.setSelectionRange(p, p);
     });
   }, [content]);
-  // Replace exactly `autocomplete.start + 2 + query.length`, so the range holds even after arrow
-  // keys moved the caret.
   /**
    * The chosen concept before its relation is decided; stopping at the name would add nothing to
    * the graph.
@@ -324,8 +322,8 @@ export function DocsVaultEditor({
       const ta = taRef.current;
       if (!ta || content === null || !pendingMention) return;
       /*
-       * Do not destructure this as `doc`: it shadows the edited document and the link comes out as
-       * `./same-folder.md`.
+       * Do not destructure this as `doc`: it shadows the edited document and the link comes out
+       * as `./same-folder.md`.
        */
       const { doc: targetDoc, trigger } = pendingMention;
       const result = insertMentionRelation({
@@ -362,7 +360,7 @@ export function DocsVaultEditor({
     setContent(next);
     requestAnimationFrame(() => {
       ta.focus();
-  // Put the caret at the url, computed back from the text part (`url` is 4 characters).
+      // Select the `url` placeholder (3 characters) after the text part.
       const urlStart = start + body.indexOf('(url)') + 1;
       ta.setSelectionRange(urlStart, urlStart + 3);
     });
@@ -943,8 +941,7 @@ export function DocsVaultEditor({
               open={acOpen}
               origin="bottom left"
               /*
-               * This repository's menu dialect: `--chrome-radius-inner`, `border-soft`, `elevated`,
-               * `--chrome-shadow`.
+               * Same menu dialect as the vault chip and sort menu.
                */
               className="pointer-events-auto absolute z-10 overflow-hidden rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] shadow-[var(--chrome-shadow)]"
               style={{
@@ -1033,8 +1030,7 @@ export function DocsVaultEditor({
                 ),
               })}
               /*
-               * This repository's menu dialect: `--chrome-radius-inner`, `border-soft`, `elevated`,
-               * `--chrome-shadow`.
+               * Same menu dialect as the vault chip and sort menu.
                */
               className="pointer-events-auto absolute z-10 overflow-hidden rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] shadow-[var(--chrome-shadow)]"
               style={{
