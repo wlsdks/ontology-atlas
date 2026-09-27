@@ -4,30 +4,10 @@ import { buildImpactRanking } from './impact-ranking';
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from '@/entities/knowledge-graph';
 
 /**
- * **The insights screen does not stall on a large vault.**
- *
- * **Why this check exists** (review 2026-08-16, measured). Impact ranking walks the
- * graph twice per node, and each of those two walks rebuilt the `nodeById` map and the
- * adjacency list **from scratch**, making the cost O(N×E). Measured on the same
- * synthetic graph:
- *
- * | Nodes | Before | After |
- * |---:|---:|---:|
- * | 500 | 116ms | 3ms |
- * | 1,000 | 427ms | 8ms |
- * | 2,000 | **1,760ms** | **17ms** |
- *
- * This screen is one click away in the shell. A 2,000-node vault is the size this
- * product targets ("a meaning map of a whole codebase"), and a 1.8 s stall there reads
- * as frozen.
- *
- * **Why the ceiling is this loose.** CI machines are slow and erratic. What this check
- * catches is not "how many ms slower" but **"has it regressed to rebuilding the index"**
- * — a 100× difference, which a 20× margin still catches reliably. Tighter than that and
- * it goes red at random with machine conditions, and then nobody looks at it.
- *
- * It lives in the `perf` project (moved from `tests/contract/`, 2026-09-27) so the clock is
- * read one file at a time on a runner of its own, not beside a third of the sweep.
+ * The insights screen does not stall on a large vault: rebuilding the reachability index per node made the
+ * ranking O(N x E), measured at 1,760ms for 2,000 nodes against 17ms with one index (review 2026-08-16). The
+ * ceiling is loose on purpose: it catches the 100x regression without going red on slow CI machines. It runs in
+ * the `perf` project, one file at a time on its own runner.
  */
 
 const CEILING_MS = 400;
@@ -47,7 +27,7 @@ function makeGraph(n: number): {
       kind: 'capability',
     } as KnowledgeGraphNode);
   }
-  // Wire close to the measured ratio (2.16 edges/node), and **so transitive paths actually exist**.
+  // Close to the measured 2.16 edges per node, with real transitive paths.
   let e = 0;
   for (let i = 1; i < n; i += 1) {
     edges.push({
@@ -71,19 +51,13 @@ function makeGraph(n: number): {
 describe('impact ranking at analysis-screen scale', () => {
   it(`ranks ${NODE_COUNT} nodes within ${CEILING_MS}ms without rebuilding the index`, () => {
     const { nodes, edges } = makeGraph(NODE_COUNT);
-    // The first run pays for JIT warm-up — measure twice and take the faster.
+    // The first run pays for JIT warm-up; measure twice and take the faster.
     buildImpactRanking(nodes, edges, 12);
     const started = performance.now();
     const ranking = buildImpactRanking(nodes, edges, 12);
     const elapsed = performance.now() - started;
 
-    /*
-     * The measurement only means something if there is really something being counted
-     * (idling guard). It reads **the counted total** (`rankedCount`), not the rows visible
-     * on screen (`rows`) — the latter is already truncated to the top 12 and is independent
-     * of scale. Two tiers are summed because which side a synthetic node falls on is not
-     * this check's concern.
-     */
+    // Idling guard on the counted totals (`rankedCount` plus the evidence tier), not the truncated rows.
     expect(
       ranking.rankedCount + ranking.evidenceRankedCount,
       'the measurement counts nothing',

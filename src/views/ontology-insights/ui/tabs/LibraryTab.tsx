@@ -13,20 +13,11 @@ import type { InsightsBrief } from '../../lib/brief/use-insights-brief';
 const ROWS = 6;
 
 /**
- * **The library, answered where the reader is standing.**
- *
- * The Library screen owns writing pages and running checks; this panel owns none of that. It
- * re-reads the same model (`useLibraryModel`, the rounds ledger) to answer the questions a
- * person arrives at Analysis with — which pages stand on a source that moved, which sources
- * nobody wrote up, what the last check found, what the unattended rounds did — and every row
- * opens the Library to act. Nothing here writes, and no list is a second copy of a store.
- */
-/*
- * `nowMs` is passed in rather than read from the clock here. `useFormatter().relativeTime`
- * without an explicit reference point falls back to the environment's own `Date.now()`, which
- * next-intl reports as an ENVIRONMENT_FALLBACK error and which makes the server and client
- * markup disagree. The brief already captures one instant for the whole screen; every relative
- * time on it is measured from that same instant.
+ * The library answered from Analysis: which pages stand on a moved source, which sources nobody wrote up, what the
+ * last check and the unattended rounds found. It re-reads the Library's model (`useLibraryModel`, the rounds
+ * ledger), writes nothing, and every row opens the Library to act. The caller passes `nowMs`,
+ * because `relativeTime` without a reference falls back to the environment clock (next-intl ENVIRONMENT_FALLBACK) and
+ * server and client markup would disagree.
  */
 export function LibraryTab({ detail, nowMs }: { detail: InsightsBrief['library']; nowMs: number }) {
   const t = useTranslations('ontologyPages.insights.libraryTab');
@@ -55,11 +46,7 @@ export function LibraryTab({ detail, nowMs }: { detail: InsightsBrief['library']
     />
   );
 
-  /*
-   * Ordered by what a reader has to act on first. A card with nothing in it used to get the same
-   * panel as the one with findings, so four equal boxes had no winner and two of them held one
-   * quiet sentence each; now the empty ones fold into one strip beneath the cards that carry rows.
-   */
+  // Ordered by what a reader acts on first; empty cards fold into one strip under the cards with rows.
   const cards: LibraryCard[] = [
     {
       key: 'check',
@@ -68,11 +55,7 @@ export function LibraryTab({ detail, nowMs }: { detail: InsightsBrief['library']
       none: t('check.none'),
       caption: t('check.caption', { pages: detail.pageCount, unmeasured: detail.unmeasured }),
       href: '/library/?tab=wiki',
-      /*
-       * Findings to fix and advisory findings are two groups, each under its own heading. From
-       * 1280 they stand side by side, so the card's width holds two short lists instead of one
-       * list whose rows stop a third of the way across.
-       */
+      // Blocking and advisory findings are two groups under their own headings, side by side from 1280.
       body: shownBlocking.length > 0 && shownAdvisory.length > 0 ? (
         <div className="grid grid-cols-1 gap-x-10 gap-y-5 xl:grid-cols-2">
           <FindingGroup marker="blocking" label={t('check.blocking', { count: blockingTotal })}>{shownBlocking.map(findingRow)}</FindingGroup>
@@ -111,7 +94,7 @@ export function LibraryTab({ detail, nowMs }: { detail: InsightsBrief['library']
       none: t('rounds.none'),
       caption: t('rounds.caption'),
       href: '/library/?tab=rounds',
-      // The ledger lists every pass it kept; nothing is cut, so there is no remainder line.
+      // The ledger lists every pass it kept, so there is no remainder line.
       shownOverride: detail.passes.length,
       body: <RowList>{detail.passes.map((pass) => (
         <Row
@@ -125,17 +108,11 @@ export function LibraryTab({ detail, nowMs }: { detail: InsightsBrief['library']
   const filled = cards.filter((card) => card.size > 0);
   const clear = cards.filter((card) => card.size === 0);
   const beside = filled.length > 0 && clear.length > 0;
-  // The end line only claims "this is everything" when no card cut rows behind a "N more" line.
+  // Claims "this is everything" only when no card cut rows behind a "N more" line.
   const complete = cards.every((card) => (card.shownOverride ?? Math.min(ROWS, card.size)) >= card.size);
-  /*
-   * From 1280 the quiet statuses stand beside the cards instead of under them: the lead card keeps
-   * a bounded row length (a count used to sit ~1450px from its name) and the tab reads as one
-   * block, what to act on and what is clear, with both columns starting on the same line. The
-   * clear panel keeps its own height (it used to stretch to the lead card and hold 60% empty
-   * surface), and the tab ends on a line saying so: a small folder leaves canvas below, and the
-   * page states that this is everything rather than leaving the reader to wonder what failed to
-   * load.
-   */
+  // From 1280 the clear statuses stand beside the cards, both columns starting on one line, and the clear panel keeps
+  // its own height. The tab ends on a line saying this is everything, so a small folder's empty canvas is not
+  // read as a load failure.
   return (
     <section
       data-testid="library-tab"
@@ -149,7 +126,7 @@ export function LibraryTab({ detail, nowMs }: { detail: InsightsBrief['library']
               key={card.key}
               card={card}
               lead={index === 0}
-              // An odd count lets the lead card take the whole row, so no card sits beside a hole.
+              // With an odd count the lead card takes the whole row, so no card sits beside a hole.
               wide={index === 0 && filled.length % 2 === 1}
               footer={<CardFooter card={card} label={t('view')} more={(hidden) => t('more', { count: hidden })} />}
             />
@@ -253,7 +230,7 @@ function Card({ card, lead, wide, footer }: { card: LibraryCard; lead: boolean; 
   );
 }
 
-/** One way out per card, and it names the Library tab the rows live on. */
+/** One way out per card, naming the Library tab the rows live on. */
 function CardFooter({ card, label, more }: { card: LibraryCard; label: string; more: (hidden: number) => string }) {
   const link = (
     <Link href={card.href} className={controlClass({ shape: 'link', size: 'md', className: 'text-[color:var(--color-indigo-text-strong)]' })}>
@@ -266,10 +243,7 @@ function CardFooter({ card, label, more }: { card: LibraryCard; label: string; m
     : link;
 }
 
-/*
- * A group's heading is its own element above its own list; as a list item it took the list's
- * dividers and read as an empty row.
- */
+// A group's heading sits above its list; as a list item it took the dividers and read as an empty row.
 function FindingGroup({ marker, label, children }: { marker: 'blocking' | 'advisory'; label: string; children: React.ReactNode }) {
   return (
     <div data-library-finding-group={marker} className="min-w-0">

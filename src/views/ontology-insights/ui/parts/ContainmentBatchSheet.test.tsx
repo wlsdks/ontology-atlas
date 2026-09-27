@@ -70,12 +70,8 @@ const renderSheet = (
   );
 
 /**
- * **Nothing is written until a person says so, and only what they left ticked.**
- *
- * This is the board's first control that changes more than one of the person's files, so the
- * properties under test are the promises the sheet makes on screen: every write is a row, the row
- * says which document changes, unticking one removes it from what Apply sends, and no write leaves
- * before Apply is pressed.
+ * Nothing is written until a person says so, and only what they left ticked: every write is a row naming the
+ * document, unticking removes it from what Apply sends, and nothing leaves before Apply.
  */
 describe("ContainmentBatchSheet", () => {
   it("shows one row per write naming the document it changes", () => {
@@ -143,12 +139,8 @@ describe("ContainmentBatchSheet", () => {
 });
 
 /**
- * **The row names the file the write lands in, and a run says on each row what happened to it.**
- *
- * Two documents in one folder can carry the same title (the dogfood vault does), so a sentence
- * built from titles cannot say which file changes. These cases take the plan and the run the page
- * uses — no imitation of them — and check that what a person reads is what the write addresses,
- * and that a refused guard on one file leaves the next one written.
+ * With the page's real plan and run: the row names the file the write addresses (titles can repeat), and a
+ * refused guard on one file leaves the next one written.
  */
 describe("ContainmentBatchSheet with the real plan", () => {
   const DOCS: ContainmentPlanDoc[] = [
@@ -162,7 +154,7 @@ describe("ContainmentBatchSheet with the real plan", () => {
     {
       slug: "domains/shop",
       path: "domains/shop.md",
-      // The same title on another file — the reason a row must name the path.
+      // The same title on another file, which is why a row names the path.
       title: "Billing",
       frontmatter: { kind: "domain" },
       mtime: 222,

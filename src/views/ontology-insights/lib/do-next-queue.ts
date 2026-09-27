@@ -7,17 +7,15 @@ import {
 } from "@/entities/knowledge-graph";
 
 /**
- * The "to do" tab — insights moving from listing inventory to "so what should I do?". It combines
- * only derivations already loaded by this page (health signals, `rankAllByDegree`,
- * `docFreshnessIndex`). A client reimplementation of `maintenance_plan`-grade precise ranking is
- * deliberately avoided: one source of truth is kept, and precise judgement is delegated to the
- * per-row agent handoff.
+ * The to-do queue, combined only from derivations this page already loads (health signals, degree ranking and
+ * the `docFreshnessIndex`); precise ranking stays with the agent's `maintenance_plan` through the per-row handoff.
+ * The degree ranking sorts once (O(N log N)) and references are indexed in one pass over the edges.
  */
 
 type DoNextRowKind = "neglected-hub" | "orphan" | "promotion";
 
 export interface DoNextRow {
-  /** The row's unique id — `${kind}:${nodeId}`. */
+  /** Unique row id, `${kind}:${nodeId}`. */
   id: string;
   rowKind: DoNextRowKind;
   nodeId: string;
@@ -27,35 +25,26 @@ export interface DoNextRow {
   degree?: number;
   /** Days since the last update (neglected-hub). */
   agoDays?: number;
-  /**
-   * Is this a name written only as evidence (no document of its own)? This row's first step differs
-   * from the others — there is no document to fix yet, so it is "create the document first"
-   * (`handoffPayload` already read that way while the screen did not say so).
-   */
+  /** A name written only as evidence (no document of its own); its first step is creating the document. */
   evidenceOnly: boolean;
   /**
-   * The concepts that point at this one, by name, for a row whose claim is "N places reference
-   * this" (promotion).
-   *
-   * ⚠️ **A count is not evidence a person can judge.** The row said "5 places reference this, worth
-   * promoting" and named none of them, so the reader had to open the map to see what the
-   * recommendation rested on — the product held the facts and the row handed over a summary
-   * instead (walkthrough, 2026-09-20). `degree` stays the true total; this names the first few.
+   * The concepts pointing at this one, by name, for a promotion row, so the claim can be judged; the
+   * count `degree` stays the true total and this names the first few.
    */
   referencedBy?: string[];
-  /** The per-row agent handoff — a suggested order of MCP calls, for copying. */
+  /** The per-row agent handoff: a suggested order of MCP calls, for copying. */
   handoffPayload: string;
 }
 
 export interface DoNextQueue {
   rows: DoNextRow[];
-  /** Every current signal id, independent of the display cap. The source of truth for deciding a review has ended. */
+  /** Every current signal id regardless of the display cap; decides when a review has ended. */
   activeRowIds: string[];
   counts: { neglectedHub: number; orphan: number; promotion: number };
 }
 
 export interface BuildDoNextQueueOptions {
-  /** Locale-resolved handoff prose (from the insights messages, via `t.raw`). */
+  /** Handoff prose from the insights messages (via `t.raw`). */
   prose: DoNextHandoffProse;
   /** The minimum degree to count as a hub. Defaults to 4. */
   hubMinDegree?: number;
@@ -66,18 +55,14 @@ export interface BuildDoNextQueueOptions {
   now?: Date;
 }
 
-/** How many referencing names a row prints before the count carries the rest. */
+/** Referencing names a row prints before the count carries the rest. */
 const REFERENCED_BY_NAMES = 3;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
- * The locale-resolved prose the handoff builders interleave between MCP calls.
- * These are user-facing clipboard strings, so they come from the messages files
- * (via `t.raw`, ICU-free — the MCP-call braces must survive verbatim) rather
- * than hardcoded Korean: an English-locale user used to copy Korean operating
- * instructions from every insights handoff (bug sweep 2026-09-01). `%ref%`,
- * `%kind%` and friends are plain tokens filled by `fillHandoffTemplate`.
+ * User-facing clipboard strings from the messages files via `t.raw`, which leaves the MCP-call braces verbatim.
+ * Tokens such as `%ref%` and `%kind%` are filled by `fillHandoffTemplate`.
  */
 export interface DoNextHandoffProse {
   verificationGate: string;
@@ -102,10 +87,7 @@ export function fillHandoffTemplate(
   );
 }
 
-/**
- * A per-row handoff does not end at "what to change" — it closes with a health re-query on the same
- * graph, matching the UI's "verify with an agent" label to the contract actually copied.
- */
+/** Closes each handoff with a health re-query on the same graph, matching the "verify with an agent" label. */
 export function withDoNextVerification(
   instruction: string,
   resultProof: string,
@@ -115,11 +97,8 @@ export function withDoNextVerification(
 }
 
 /**
- * A per-row handoff must **work when pasted**. So the name is written not as the screen's graph id
- * but as the name the vault knows (`resolveNodeAgentTarget`), and a concept with no document yet is
- * given **a call that creates the document first** rather than read or edit calls —
- * `patch_concept` / `get_concept` require an existing document, so giving those to a concept
- * without one turns a handoff into homework.
+ * A handoff must work when pasted: it names the concept as the vault knows it (`resolveNodeAgentTarget`), and a
+ * concept without a document gets a create call first, since `patch_concept` and `get_concept` need a document.
  */
 function agentNameOf(node: KnowledgeGraphNode | undefined, fallbackId: string): {
   ref: string;
@@ -192,7 +171,7 @@ function buildPromotionHandoff(
   );
 }
 
-/** The document slug used to look up the update date — a manifest-relative value, so the prefix is left on. */
+/** The manifest-relative slug used to look up the update date, prefix kept. */
 function nodeSlug(node: KnowledgeGraphNode): string | null {
   return node.evidenceIds[0] ?? null;
 }
@@ -211,24 +190,21 @@ export function buildDoNextQueue(
 
   const nodeById = new Map(nodes.map((node) => [node.id, node]));
 
-  // ① Neglected hubs — high degree × long since updated. Both are products of signals already on
-  // the page, so the computation costs one ranking.
+  // Neglected hubs: high degree and long since updated, both from signals already on the page.
   const neglectedHubs: DoNextRow[] = [];
   for (const { node, degree } of rankAllByDegree(nodes, edges)) {
-    if (degree < hubMinDegree) break; // descending — stop below the threshold
-    // For a node with no document, `evidenceIds[0]` is *someone else's document that cited it*, so
-    // reading that date as this node's update date blames this concept for another's neglect.
+    if (degree < hubMinDegree) break; // descending, so stop below the threshold
+    // A node without a document carries another document's date in `evidenceIds[0]`; its neglect is not asserted.
     if (resolveNodeAgentTarget(node).documented === false) continue;
     const slug = nodeSlug(node);
     const iso = slug ? freshnessIndex.get(slug) : undefined;
-    if (!iso) continue; // with no known update time, "neglected" is not asserted
+    if (!iso) continue; // Without a known update time, "neglected" is not asserted.
     const agoDays = Math.floor((nowMs - Date.parse(iso)) / DAY_MS);
     if (!Number.isFinite(agoDays) || agoDays < neglectMinDays) continue;
     neglectedHubs.push({
       id: `neglected-hub:${node.id}`,
       rowKind: "neglected-hub",
       nodeId: node.id,
-    // Queue rows use the short display title too.
       title: node.display ?? node.title,
       nodeKind: node.kind,
       degree,
@@ -239,8 +215,7 @@ export function buildDoNextQueue(
   }
   neglectedHubs.sort((a, b) => (b.degree ?? 0) * (b.agoDays ?? 0) - (a.degree ?? 0) * (a.agoDays ?? 0));
 
-  // ②③ Orphans and promotion candidates — reusing the same entities function as the map's health
-  // chip (one source of truth, so the map chip and this queue cannot diverge).
+  // Orphans and promotion candidates reuse the map health chip's function, so chip and queue cannot diverge.
   const signals = buildOntologyHealthSignals(nodes, edges, { now: options.now });
 
   const orphans: DoNextRow[] = signals.orphan.map(({ slug, name }) => ({
@@ -253,10 +228,7 @@ export function buildDoNextQueue(
     handoffPayload: buildOrphanHandoff(prose, nodeById.get(slug), slug),
   }));
 
-  /*
-   * Who points at whom, built once. The rows below name at most `REFERENCED_BY_NAMES` of them, so
-   * the pass is bounded by the edge list rather than by the queue's own limit.
-   */
+  // Who points at whom, built once in one pass over the edges.
   const referencedBy = new Map<string, string[]>();
   for (const edge of edges) {
     const source = nodeById.get(edge.from);
@@ -273,7 +245,7 @@ export function buildDoNextQueue(
     nodeId: slug,
     title: name,
     nodeKind: nodeById.get(slug)?.kind ?? "unknown",
-    // The evidence for "why was this picked" — the incoming reference count, exposed verbatim as the row metric ("N references").
+    // The incoming reference count, shown verbatim as the row metric.
     degree: fanIn,
     referencedBy: referencedBy.get(slug) ?? [],
     evidenceOnly: isEvidenceOnlyConcept(nodeById.get(slug)),

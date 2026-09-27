@@ -76,12 +76,8 @@ describe("InsightsCensusStrip accessibility", () => {
 });
 
 /**
- * **The strip is four tiles, and the health tile never prints a total.**
- *
- * The single number a person acts on lives in exactly two agreeing places — the Do-next tab badge
- * and its list title (`insights-badge-agreement`). A third place printing it is the accident of
- * 2026-08-07 (3), "one screen does not count the same thing two ways". What this strip adds is the
- * verdict *word*, which is the fact the number never carried.
+ * Four tiles, and the health tile never prints a total: the number a person acts on lives in the Do-next badge and
+ * list title (`insights-badge-agreement`); the strip adds the verdict word.
  */
 describe("InsightsCensusStrip four tiles without a third total", () => {
   it("renders four tiles with a verdict word on the health tile instead of a total", () => {
@@ -111,8 +107,7 @@ describe("InsightsCensusStrip four tiles without a third total", () => {
     const bars = screen.getAllByTestId("insights-weekly-bar");
     expect(bars).toHaveLength(12);
     expect(bars[11].style.backgroundColor).toBe("var(--color-indigo-brand)");
-    // A week with no update is a 2px baseline tick, never a short bar — a quiet week and a busy
-    // week must not be drawn the same size.
+    // A week with no update is a 2px baseline tick, never a short bar.
     expect(bars[0].style.height).toBe("2px");
     expect(bars[0].style.backgroundColor).toBe("var(--color-text-quaternary)");
     expect(bars[1].style.height).not.toBe("2px");

@@ -19,17 +19,16 @@ export interface ImpactRankingLabels {
   transitiveLabel: string;
   empty: string;
   emptyHint: string;
-  /** The one door out of the empty card — the screen where a relation is written. */
+  /** The empty card's one door: the screen where a relation is written. */
   emptyAction: string;
   truncated: (shown: number, total: number) => string;
-  /** Opens the evidence layer — collapsed state. The count is in the label so the scale is not hidden. */
+  /** Opens the evidence layer; the count is in the label so the scale is not hidden. */
   evidenceShow: (count: number) => string;
-  /** Closes the evidence layer — expanded state. */
   evidenceHide: string;
-  /** The evidence layer's caption — what the same number means here. */
+  /** What the same number means in the evidence layer. */
   evidenceCaption: string;
   evidenceTruncated: (shown: number, total: number) => string;
-  /** The row badge label plus a one-line hover title (including the promotion path). */
+  /** The row badge label, with a one-line hover title naming the promotion path. */
   evidenceBadge: string;
   evidenceBadgeHint: string;
   unknownTitle: string;
@@ -40,7 +39,7 @@ export interface ImpactRankingLabels {
 export interface ImpactRankingLink {
   href: (nodeId: string) => string;
   ariaLabel: (row: { title: string; direct: number; total: number }) => string;
-  /** The accessible name of an evidence-layer row — it reads the citation count, not a risk level. */
+  /** An evidence row's accessible name reads the citation count, not risk. */
   evidenceAriaLabel: (row: { title: string; total: number }) => string;
 }
 
@@ -54,36 +53,16 @@ export interface ImpactRankingCardProps {
   kindLabel: (kind: string) => string;
   nodeLink: ImpactRankingLink;
   labels: ImpactRankingLabels;
-  /** Its place in the consumer's grid (e.g. the full width of the second line of a two-column grid). */
+  /** Its place in the consumer's grid. */
   className?: string;
 }
 
 /**
- * "Concepts whose change spreads furthest" — the card answering the number-one question a
- * developer or an agent actually asks ("if I change this, what breaks?"). Every value comes from
- * `buildImpactRanking` → `computeOntologyDependents`, and that function shares its semantics with
- * MCP `blast_radius`, so the screen's answer and the agent's cannot diverge.
- *
- * The bar is two segments of value variation within a single indigo — the darker part is what is
- * directly connected, the lighter what is reached indirectly. "Direct/indirect" reads without
- * introducing a new hue. It shares its anatomy (head → rows → one footnote) with the other cards
- * in the same grid.
- *
- * ## Two layers (2026-07-26)
- *
- * Above are **concepts with their own document**; the folded area below holds **evidence, names
- * another document merely wrote down**. Measured against the dogfood vault (289 concepts): before
- * the split, 11 of the top 12 rows were derived code paths such as `Check Package Contracts Test`
- * and `Integration Test` (twice) — put on a meeting screen, the most visible slot held test file names.
- *
- * The point of this card is that the two layers put **different captions on the same number**. In
- * the concept layer 15 means "15 places to re-read if you change this"; in the evidence layer it
- * means "15 concepts cited this file as evidence" — and if that is a test file, it is a signal of
- * protection rather than risk. The computation was right and the words were wrong, so the words
- * were fixed, not the computation.
- *
- * Why the evidence is not deleted: dense traceability is valuable to a developer, and the "create
- * a document" promotion path is visible only here. Hiding is not layering.
+ * "Concepts whose change spreads furthest", from `buildImpactRanking` and `computeOntologyDependents`, which share
+ * MCP `blast_radius` semantics. The bar is two indigo values: darker direct, lighter indirect. Concepts with their
+ * own document rank above; the folded layer holds names other documents merely cited, where the same number means
+ * citations (a test file cited widely is protection, not risk). The evidence stays because the "create a document"
+ * promotion path is visible only here.
  */
 export function ImpactRankingCard({
   rows,
@@ -98,10 +77,7 @@ export function ImpactRankingCard({
   className,
 }: ImpactRankingCardProps) {
   const [evidenceOpen, setEvidenceOpen] = useState(false);
-  // The first row fills 100% and the rest are relative to it — the same reading rule as the hub
-  // card. **Both layers use one ruler**: layering is a display-priority distinction and the
-  // numbers come from one computation, so separate rulers would draw the same 15 at different
-  // lengths in the two lists and make the bar lie.
+  // One ruler for both layers, so the same total draws the same length; the first row fills 100%.
   const max = [...rows, ...evidenceRows].reduce((m, row) => Math.max(m, row.total), 0);
 
   return (
@@ -117,8 +93,7 @@ export function ImpactRankingCard({
         <InsightsSectionTitle level={2} className="text-body-lg font-[var(--font-weight-signature)] tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
           {labels.title}
         </InsightsSectionTitle>
-        {/* What the two segments mean is stated once, in the head — repeating it per row adds ink
-            and is not read. */}
+        {/* What the two segments mean is stated once, in the head. */}
         <span className="ml-auto flex items-center gap-3 text-label text-[color:var(--color-text-quaternary)]">
           <SegmentKey color="var(--color-indigo-a66)" label={labels.directLabel} />
           <SegmentKey color="var(--color-indigo-a32)" label={labels.transitiveLabel} />
@@ -137,22 +112,16 @@ export function ImpactRankingCard({
         </span>
         <Link
           href="/topology/"
-          /*
-           * A standalone action in a wrapping row, not an inline prose link, so the 2.5.5 inline
-           * exception does not cover it: measured 82x24 under a coarse pointer at 390 *and* at
-           * 1040 (design-responsive, 2026-09-20). `atlas-touch-floor` lands only under coarse,
-           * and `ml-auto` in a flex-wrap row means growing it pushes nothing.
-           */
+          // A standalone action in a wrapping row, so the WCAG 2.5.5 inline exception does not apply: `atlas-touch-floor`
+          // gives a coarse pointer the floor, and `ml-auto` means growing it pushes nothing.
           className={controlClass({ shape: "link", tone: "secondary", className: "atlas-touch-floor ml-auto underline decoration-[color:var(--color-border-soft)] underline-offset-4 hover:text-[color:var(--color-text-primary)]" })}
         >
           {labels.structureLink}
         </Link>
       </div>
 
-      {/* A two-column grid — this card lives at the combined width of the two cards beside it.
-          Stretched to one column the row measure doubles and the gap between name and bar widens,
-          so the width is folded to keep the same measure as the hub card next to it. Ranks read in
-          DOM order, left→right then top→bottom (reading order). */}
+      {/* Two columns, because the card spans two cards' width: folding keeps the hub card's row measure. Ranks read in
+         DOM order, left to right then top to bottom. */}
       <div className={`mt-2 flex-1 ${INSIGHTS_LIST_TWO_COLUMN}`}>
         {rows.length === 0 ? (
           <div className="@min-[960px]/insights:col-span-2">
@@ -162,9 +131,7 @@ export function ImpactRankingCard({
               skeleton
               title={labels.empty}
               description={labels.emptyHint}
-              /* The hint already named the remedy — "add a leans-on relation on
-                 the map" — and then left the reader to find that screen. One
-                 door, the same address the sibling empty states use. */
+              // The hint names the remedy, so the door goes to it, the address the sibling empty states use.
               action={
                 <Link
                   href="/topology/?workbench=create"
@@ -199,16 +166,13 @@ export function ImpactRankingCard({
 
       {evidenceRankedCount > 0 ? (
         <div className="mt-2 border-t border-[color:var(--color-divider)] pt-1">
-          {/* A quiet toggle — a neutral text button. Opening and closing leaves the rows above in
-              place, and the content grows downward only (zero layout shift). */}
+          {/* A quiet toggle; the content grows downward only, leaving the rows above in place. */}
           <button
             type="button"
             aria-expanded={evidenceOpen}
             data-testid="insights-impact-evidence-toggle"
             onClick={() => setEvidenceOpen((open) => !open)}
-            // A hit area only as wide as 25px of text is narrow, and this is the card's only
-            // control — the ramp's `row`/`sm` emits the same 28px while widening the inset from 6
-            // to 8. It is the same call as the quiet toggles on the "to do" and "freshness" tabs.
+            // The card's only control, so the ramp's `row`/`sm` widens the inset to 8 at the same 28px, like the other tabs' quiet toggles.
             className={controlClass({
               shape: "row",
               size: "sm",
@@ -226,9 +190,7 @@ export function ImpactRankingCard({
             </span>
           </button>
           {evidenceOpen ? (
-            // The entrance uses the insights surface's existing crossfade grammar (120ms opacity,
-            // `--motion-fast`). Under prefers-reduced-motion the base layer disables it globally,
-            // so it degrades to an instant swap.
+            // The insights crossfade (`--motion-fast`); reduced motion disables it globally.
             <div className="insights-disclosure-in">
               <div className={INSIGHTS_LIST_TWO_COLUMN}>
                 {evidenceRows.map((row, i) => (
@@ -265,11 +227,7 @@ export function ImpactRankingCard({
   );
 }
 
-/**
- * Both layers use **the same row parts** — glyph · name · (badge) · secondary label · bar · number.
- * Adding the badge and the path leaves the slot count and each slot's line height unchanged, so
- * the row height does not differ by layer (dimensional regularity).
- */
+/** Both layers use the same row parts and line heights, so row height does not differ by layer. */
 function ImpactRow({
   row,
   index,
@@ -291,15 +249,13 @@ function ImpactRow({
   badge?: { label: string; hint: string };
   testId: string;
 }) {
-  // The bar's full length is the relative size within this list (the same reading rule as the hub
-  // card). Over it, "what is directly connected" is drawn in a darker value measured with the same
-  // ruler, so the two numbers can be compared in one bar.
+  // The full bar is the total relative to this list; the darker direct part uses the same ruler, so both compare in one bar.
   const totalPct = max > 0 ? Math.max(6, Math.round((row.total / max) * 100)) : 0;
   const directPct =
     max > 0 && row.direct > 0 ? Math.max(3, Math.round((row.direct / max) * 100)) : 0;
   return (
-    // The divider sits on the cell, on the card's padding line; the row inside bleeds 6px for
-    // its hover surface only (`insights-list.ts`). The first row of each column drops it.
+    // The divider sits on the cell, on the card's padding line; the row bleeds 6px for hover only (`insights-list.ts`).
+    // Each column's first row drops it.
     <div className={insightsTwoColumnCell(index)}>
     <Link
       href={href}

@@ -150,70 +150,32 @@ const EMPTY_NODES: KnowledgeGraphNode[] = [];
 const EMPTY_EDGES: KnowledgeGraphEdge[] = [];
 const HUB_DISPLAY_LIMIT = 6;
 /**
- * How many impact-ranking rows to show — the ceiling that still reads inside the
- * scroll contract (a tab is at most 1.3× the viewport).
- *
- * 12 because this card spans the combined width of the two cards beside it. Six
- * rows stretched across double width puts 1,100px between the name (left) and the
- * bar (right), so reading one row drags the eye across the screen. Folding the
- * width into two columns gives a row the same measure as the neighbouring hub
- * card, and the space left over is filled by the next six ranks rather than by
- * blank area — a wide column is earned with data, not with whitespace.
+ * Impact rows shown. Twelve fold into two columns of six, so a row keeps the hub card's measure;
+ * measured against the scroll contract (a tab is at most 1.3x the viewport).
  */
 const IMPACT_DISPLAY_LIMIT = 12;
 /**
- * How many suspected-duplicate rows to show. Pairs beyond the limit are carried by
- * the handoff payload rather than the screen — the section heading's total states
- * the pre-truncation scale verbatim.
- *
- * Three rows is measured (1512×862, dogfood vault, 294 concepts): with five rows
- * the "to do" tab reached 1,309px, exceeding the scroll contract (1.3× viewport =
- * 1,120px) by 189px. Cutting every section to three rows per type brings the tab
- * back into the 1,1xx range — enough to say "there are duplicates" and show the
- * three most suspicious pairs, with the rest answered by `similar_nodes`.
+ * Duplicate rows shown; the section total states the pre-truncation count and the handoff carries the rest.
+ * Measured at 1512x862 (dogfood, 294 concepts): five rows pushed the tab 189px past the scroll contract.
  */
 const DUPLICATE_DISPLAY_LIMIT = 3;
 /**
- * How many remaining duplicate pairs the collapsed disclosure layer carries.
- *
- * Measured 2026-07-27: the badge said "similar names 10" while the screen showed
- * three rows with no "show more". The other seven had **no way to be discovered**
- * on this screen. Printing a large total while quietly hiding the rest makes the
- * badge itself untrustworthy.
- *
- * The limit is a generous 24 because the expanded layer is **a fixed-height scroll
- * box** — the tab height does not grow with the row count (measured 1512×950,
- * dogfood: collapsed 982px, expanded 1,190px, both inside the scroll contract).
- * Screen space is not bought with rows here, so there is nothing to save; scale
- * beyond 24 is not something to skim on screen and is handed to the agent, as the
- * caption states.
+ * Rows the collapsed duplicate layer carries, so every pair the badge counts is reachable.
+ * The layer is a fixed-height scroll box, so the tab height does not grow with this limit.
  */
 const DUPLICATE_DISCLOSURE_LIMIT = 24;
 /**
- * How many rows of one kind the "to do" list holds.
- *
- * Three was the ceiling that kept a **flat** list inside the scroll contract (at most 1.3× the
- * viewport) whatever the folder's size. Since 2026-09-06 each kind is a collapsed group, so the
- * viewport is bounded by the group heads rather than by the rows, and five rows is what an opened
- * group can show before its own remainder line takes over.
+ * Rows per kind in the to-do list. Each kind is a collapsed group, so the viewport is bounded by
+ * group heads; five rows is what an opened group shows before its remainder line.
  */
 const DO_NEXT_PER_KIND_LIMIT = 5;
 
 /**
- * What a group's own "show all" raises that limit to.
- *
- * ⚠️ **The rows have to exist before a control can reveal them.** The remainder line used to be a
- * sentence with no control, naming rows a person could not reach; a button inside the group could
- * not have produced them either, because the queue itself is built five per kind and the sixth row
- * was never made (measured 2026-09-20). Raising the supply is what makes the control honest. It is
- * a bound rather than "all": the group head keeps stating the true count, and the remainder line
- * still appears for anything past this.
+ * What a group's "show all" raises the limit to. The queue is built to this limit, so the rows the
+ * control reveals exist; the group head keeps the true count and the remainder line covers the rest.
  */
 const DO_NEXT_SHOW_ALL_LIMIT = 50;
-/**
- * The validation codes that have a plain sentence of their own. An unlisted code falls back to
- * `blockedReason.other`, so a blocked row always says something rather than nothing.
- */
+/** Codes with their own sentence; any other code falls back to `blockedReason.other`, so a blocked row always says why. */
 const BLOCKED_REASON_KEYS: ReadonlySet<VaultDocumentIssue["code"]> = new Set([
   "unclosed-frontmatter",
   "malformed-frontmatter-line",
@@ -226,29 +188,17 @@ const BLOCKED_REASON_KEYS: ReadonlySet<VaultDocumentIssue["code"]> = new Set([
 ]);
 const RECENT_UPDATES_LIMIT = 8;
 /**
- * How many rows the "recently updated" evidence layer expands to.
- *
- * Three is measured (1512×950, dogfood). Impact ranking puts four rows in the same
- * layer, but that card is a two-column grid so four rows fold into two lines. This
- * list is a single column, and at four rows the expanded "growth" tab reaches
- * 1,102px in `en` — 18px short of the scroll contract (1,120px), so one longer
- * translation overflows it. Three rows returns to the 1,0xx range. The scale is
- * already stated by the toggle label and the truncation copy; what is needed here
- * is a sample of *what got demoted*.
+ * Rows the recent-updates evidence layer expands to. Measured at 1512x950 (dogfood): four rows left the `en`
+ * growth tab 18px short of the scroll contract, so a longer translation would overflow it.
  */
 const RECENT_UPDATES_EVIDENCE_LIMIT = 3;
 
 /**
- * Each tab's question, transposed into an execution plan for the agent — the
- * prose key per tab. The strings live in `../lib/handoff-prose` as typed
- * locale data (their MCP-call braces cannot enter the ICU message catalog).
- * They used to be hardcoded Korean, so an English-locale user copied Korean
- * operating instructions (bug sweep 2026-09-01).
+ * Each tab's agent handoff prose key. The strings live in `../lib/handoff-prose` as typed locale data
+ * because their MCP-call braces cannot enter the ICU message catalog.
  */
 const HANDOFF_PAYLOAD_KEY: Record<InsightsTab, keyof InsightsHandoffProse> = {
-  // The brief draws no handoff row (see the row's condition); the key only satisfies the record.
-  // The brief, the library and the harness seat their own requests or none at all; these keys
-  // are the fallback for the generic tab handoff row, which those three do not draw.
+  // The brief, library and harness draw no generic handoff row; these keys only complete the record.
   brief: "tabDoNext",
   library: "tabDoNext",
   harness: "tabDoNext",
@@ -258,8 +208,6 @@ const HANDOFF_PAYLOAD_KEY: Record<InsightsTab, keyof InsightsHandoffProse> = {
   connections: "tabConnections",
   boundaries: "tabBoundaries",
   growth: "tabGrowth",
-  // The only payload whose output is prose. It reads bodies rather than running an
-  // operation, because a narrative rests on what the nodes say, not on a count.
   flow: "tabFlow",
 };
 
@@ -268,26 +216,19 @@ interface InsightsBadgeInput {
   totalNodes: number;
   totalEdges: number;
   crossDomainEdges: number;
-  /**
-   * What the vault says, not what this viewer left unhidden. A badge that shrank when
-   * someone dismissed a row would report a preference as a measurement.
-   */
+  /** What the vault says, not what this viewer hid: a badge that shrank on dismissal would report a preference. */
   unmatchedTotal: number;
 }
 
 /**
- * What a tab badge counts. This is a repeating slot, so every populated badge must
- * use the same unit. Freshness used to put a window length ("12 weeks") here; that slot
- * is now left empty, because a length is not a count and the tab body already says
- * how many weeks its window is. Leaving a slot empty and filling it with a
- * different unit are not the same thing — only the latter breaks the slot's meaning.
+ * A tab badge is a repeating slot, so every populated badge counts in the same unit;
+ * a tab without a count leaves the slot empty rather than filling it with another unit.
  */
 const INSIGHTS_TAB_BADGE: Record<
   InsightsTab,
   (input: InsightsBadgeInput) => string | number | undefined
 > = {
-  // The brief is sentences across three cores; no single count is its scale. The library and
-  // the harness carry their own counts inside their panels.
+  // The brief, library and harness have no single count; their panels carry their own.
   brief: () => undefined,
   library: () => undefined,
   harness: () => undefined,
@@ -296,31 +237,16 @@ const INSIGHTS_TAB_BADGE: Record<
   composition: (i) => i.totalNodes,
   connections: (i) => i.totalEdges,
   boundaries: (i) => i.crossDomainEdges,
-  // Prose, not a measurement — the same empty slot freshness uses, for the same
-  // reason: a badge here would have to invent a unit the tab does not have.
+  // Flow is prose; a badge would have to invent a unit the tab does not have.
   flow: () => undefined,
   growth: () => undefined,
 };
 
-/**
- * `/ontology/insights` — the graph maintenance board, with one agent-handoff row
- * at the bottom.
- *
- * **One question per tab**: to do (what needs work now) · composition (what exists,
- * how much) · connections (what is central) · boundaries (how entangled the domains
- * are) · freshness (what moved) · flow (what this product is and how it moves). The former `structure` tab stacked the first three
- * questions into one column and grew to 2.2× the viewport — answering one question
- * meant scrolling past two unrelated screens.
- *
- * Every number derives from the data sources this page already used
- * (`useOntologyInsight`, `entities/knowledge-graph/lib/ontology-tree`); the census formula (total
- * nodes, edges, domains) is identical to the topology chrome's.
- */
+/** `/ontology/insights`: the graph maintenance board, one question per tab, with one agent-handoff row at the bottom. */
 export function OntologyInsightsPage() {
   const t = useTranslations("ontologyPages.insights");
   const toast = useToast();
-  // Locale-resolved handoff prose — typed locale data in code, not messages:
-  // the templates embed literal MCP-call braces the ICU catalog gate rejects.
+  // Handoff prose is typed locale data, not messages: its MCP-call braces fail the ICU catalog gate.
   const locale = useLocale();
   const handoffProse = useMemo(() => insightsHandoffProse(locale), [locale]);
   const kindLabel = useOntologyKindLabel();
@@ -352,17 +278,9 @@ export function OntologyInsightsPage() {
     return () => window.removeEventListener("popstate", syncTabFromHistory);
   }, []);
 
-  // Settings moved from a top-right header pill to the same nav-rail gear the map
-  // uses (see `useNavRailSettingsSlot` below). `AppSettingsMenu` closes its own
-  // sheet on ⌘K ("one overlay owns one Escape"), so the search palette (a modal
-  // with a scrim) and settings can never be open at once. The palette itself is the
-  // shell's since 2026-09-26 (`ShellKeyboardSurfaces`): the same search this page drew,
-  // now drawn once for every screen that has none of its own.
+  // Settings use the nav-rail gear (`useNavRailSettingsSlot`); the search palette is the shell's (`ShellKeyboardSurfaces`).
 
-  // Stamp the origin marker (`via=insights:<tab>`) onto map deeplinks. The map
-  // (HomePage) reads it to render a "back to insights" chip that returns to this
-  // tab. Every map-bound link on this page (hub, dependency, and freshness rows,
-  // the to-do queue, the repair queue) goes through this one builder.
+  // Every map-bound link here stamps `via=insights:<tab>`, which the map reads to draw a "back to insights" chip.
   const mapNodeHref = useCallback(
     (nodeId: string, exactReviewId?: string) =>
       buildOntologyNodeHref(nodeId, {
@@ -379,23 +297,10 @@ export function OntologyInsightsPage() {
   const dataSourceMode = useDataSourceMode();
   const staticVaultSource = useStaticVaultSource();
   const gitVaultPath = vault.handle ? getTauriVaultRootPath(vault.handle) ?? null : null;
-  // Runtime and vault MCP server are read the one way every dock reads them; this page
-  // never handed the session its connectors, and the refactor keeps that.
+  // Connectors stay off: this page never handed the session its connectors.
   const vaultAgent = useVaultAgentRuntime(gitVaultPath, { connectors: false });
-  /*
-   * The counts the chart ends on come from the same manifest every other tile reads, and
-   * are classified by the same path rule the history is — the commonest way a series like
-   * this goes quietly wrong is a present counted one way and a past another.
-   */
-  /*
-   * ⚠️ **The manifest the board is actually drawing, not only the local one.** The first
-   * build read `vault.manifest`, which is the folder a person opened from disk — so on the
-   * built-in sample, which is what a visitor and the owner's own browser meet first, every
-   * count came out zero and the surface said nothing at all. That is the same source
-   * selection `useVaultDocFreshnessIndex` already makes for this page's freshness numbers;
-   * two hooks on one screen answering "which folder is this" differently is how a board
-   * ends up counting two things and calling them one.
-   */
+  // Counted from the manifest the board draws, not only the local one, and classified by the history's path rule,
+  // so the present and the past are counted the same way; the local manifest is empty on the bundled sample.
   const historyManifest =
     dataSourceMode === "static" ? staticVaultSource.manifest : vault.manifest;
   const vaultHistory = useVaultHistory(
@@ -423,29 +328,19 @@ export function OntologyInsightsPage() {
 
   const acpRuntime = vaultAgent.runtime;
   const acpMcpServers = vaultAgent.mcpServers;
-  // The shared hook says `unavailable`; this page has always called that `clipboard`.
+  // The shared hook says `unavailable`; this page calls it `clipboard`.
   const agentRoute: InsightsAgentRoute = vaultAgent.route === 'unavailable' ? 'clipboard' : vaultAgent.route;
 
-  // At lg+ the nav rail's bottom gear opens settings, matching the map. Below lg
-  // the chrome tile in the top utility lane takes over (the width where the rail is
-  // hidden). Both uncontrolled, so only the visible trigger is clickable and no
-  // double portal appears.
+  // At lg+ the nav-rail gear opens settings; below lg the top utility tile does. Both are uncontrolled,
+  // so only the visible trigger is clickable and no double portal appears.
   const navRailSettingsSlot = useMemo(
     () => <AppSettingsMenu mode={dataSourceMode} triggerVariant="rail-tile" />,
     [dataSourceMode],
   );
   useNavRailSettingsSlot(navRailSettingsSlot);
 
-  /*
-   * **The board must not call a bundled sample the person's folder** (2026-09-04).
-   *
-   * On the Online Store sample the tab read "My folder analysis · Ontology Atlas"
-   * and the heading and lede said the same in both locales, while the map's INDEX
-   * two clicks away said the sample is read-only and not theirs. Every number here
-   * is the sample's, so the name is the sample's; the folder wording is untouched
-   * for someone who actually opened a folder. Static export bakes one <title> per
-   * route, so the sample tab title can only be applied on the client.
-   */
+  // A bundled sample is not the person's folder, so the scope title names the sample. Static export
+  // bakes one <title> per route, so the sample title can only be applied on the client.
   const scopeTitle = selectInsightsScopeTitle(dataSourceMode, {
     sample: t("titleSample"),
     folder: t("title"),
@@ -466,7 +361,7 @@ export function OntologyInsightsPage() {
     () => computeInsightsCensus(nodes, edges),
     [nodes, edges],
   );
-  /** Is the tab body drawn at all? If it falls through to an empty state, the badge must not state a number either. */
+  /** When the tab body falls through to an empty state, the badge must not state a number either. */
   const hasConcepts = totalNodes > 0;
   const agentSlugByNodeId = useMemo(
     () => new Map(nodes.map((node) => [
@@ -543,12 +438,7 @@ export function OntologyInsightsPage() {
     t,
     toast,
   ]);
-  /*
-   * **The product's explanation is kept, not thrown away.** Every completed analysis turn is
-   * already recorded beside the vault; the flow tab reads those back as versions so a person
-   * sees what an agent wrote, when, and what changed since — rather than the request that
-   * produced it (owner, 2026-09-19).
-   */
+  // The flow tab reads completed analysis turns recorded beside the vault back as versions.
   const [flowArchive, setFlowArchive] = useState<{
     handle: FileSystemDirectoryHandle | null;
     records: readonly AnalysisRecord[];
@@ -606,14 +496,8 @@ export function OntologyInsightsPage() {
 
   const edgeTypeDist = useMemo(() => computeEdgeTypeDistribution(edges), [edges]);
   const edgeTypeRows = useMemo(() => buildEdgeTypeRows(edgeTypeDist), [edgeTypeDist]);
-  /*
-   * Frontmatter validation, read through the **same** `summarizeVaultValidation` the settings
-   * sheet uses. It used to feed a readiness meter that said "5 blocked" and named none of them;
-   * with the one-list "to do" tab each blocked document is a row that names itself and links to
-   * the file. A document that fails validation either never becomes a node or collides on
-   * identity, so an agent cannot use it at all — which is why it counts on the blocking side of
-   * the single verdict.
-   */
+  // Validated by the same `summarizeVaultValidation` the settings sheet uses. A document that fails validation
+  // is unusable to an agent, so it counts on the blocking side of the verdict.
   const vaultValidation = useVaultValidationSummary();
 
   /** Raised once, by a group asking for its whole list. Kinds share one supply, so all groups gain. */
@@ -632,40 +516,22 @@ export function OntologyInsightsPage() {
     () => edgeTypeRows.slice(0, 4).map((r) => ({ key: r.type, label: edgeTypeLabel(r.type), count: r.count })),
     [edgeTypeRows, edgeTypeLabel],
   );
-  // CLI-parity health verdict (disconnected islands · missing domain containment) read from the
-  // raw frontmatter, so the screen agrees with `node $ATLAS/cli/src/index.mjs health` instead of
-  // falsely claiming there is nothing to repair. These used to be two counters in a band; they are
-  // rows in the one list now, and the counts still feed the single verdict.
+  // CLI-parity health (islands, missing containment) from raw frontmatter, so the screen agrees with the CLI `health` command.
   const vaultHealth = useVaultHealth();
   const healthRepair = useMemo(
     () => buildVaultHealthRepair(vaultHealth, nodes),
     [vaultHealth, nodes],
   );
 
-  /*
-   * **The one batch repair on this board.** The documents come from the same manifest the health
-   * verdict was computed from (`useVaultHealthDocs`), so the repair can only touch the folder the
-   * verdict measured — reading the manifest a second way would be two canonical stores one hook
-   * apart. `buildContainmentProposals` decides nothing: both halves of each write are already on
-   * disk (the concept named its domain, the domain exists and does not list it back).
-   */
+  // Documents from the manifest the health verdict used (`useVaultHealthDocs`), so the repair touches only the folder
+  // the verdict measured. `buildContainmentProposals` decides nothing: both halves of each write are already on disk.
   const healthDocs = useVaultHealthDocs();
   const containmentProposals = useMemo(
     () => buildContainmentProposals(vaultHealth.missingContainment, healthDocs),
     [vaultHealth.missingContainment, healthDocs],
   );
-  /*
-   * **What the sheet shows, and what it will write, are both frozen when it opens.**
-   *
-   * The rows must be frozen because after a successful write the folder is re-read, the repaired
-   * concept stops being a proposal, and a live list would delete the very row that says "written".
-   *
-   * The write plan must be frozen for a stronger reason: `expectedMtime` is the promise that a
-   * write never lands on a file changed since the proposal. Reading it at Apply reads the mtime of
-   * a file that may already have been changed and re-ingested, so the guard would compare that
-   * state against itself and pass. `buildContainmentPlan` takes the members and the mtime here,
-   * once, and Apply may only carry that plan out.
-   */
+  // Rows and write plan freeze when the sheet opens. A live list would drop the "written" row after the re-read,
+  // and an mtime read at Apply would compare a changed file against itself and pass.
   const [containmentPlan, setContainmentPlan] = useState<ContainmentPlan | null>(null);
   const [containmentSheetOpen, setContainmentSheetOpen] = useState(false);
   const [containmentRunning, setContainmentRunning] = useState(false);
@@ -674,18 +540,8 @@ export function OntologyInsightsPage() {
     ReadonlyMap<string, ContainmentRowStatus>
   >(() => new Map());
 
-  /*
-   * **What agents asked this folder for and did not get.** `vaultHealth` already walked
-   * these references and kept only `summary.unresolvedEdges`, a number; the board needs
-   * the names behind it. Both readings take the same manifest (`useHealthManifest`), so
-   * the count and the list cannot describe different folders — and the list carries only
-   * that one fact, because missing containment and unplaced concepts already raise the
-   * Do-next badge and must not be counted twice on one screen (2026-08-07 (3)).
-   *
-   * Dismissals are this viewer's, in this browser, scoped to this vault
-   * (`unmatched-dismissals.ts`). They never reach the folder, and they never move
-   * `totalCount` or the tab badge — hiding a row is not fixing one.
-   */
+  // References agents asked for and did not get, from the same manifest as `vaultHealth` (`useHealthManifest`), so count
+  // and list describe one folder. Dismissals are per viewer and vault (`unmatched-dismissals.ts`).
   const unmatchedAsks = useVaultUnmatchedAsks();
   const vaultScope = useVaultIdentityScope();
   const [unmatchedDismissed, setUnmatchedDismissed] = useUnmatchedDismissals(vaultScope);
@@ -713,9 +569,6 @@ export function OntologyInsightsPage() {
     [t],
   );
 
-  // `computeDomainCouplingMatrix` existed with unit tests but had no UI consumer —
-  // it could only be inspected through a CLI/MCP round trip. This card is its first
-  // surface.
   const domainCoupling = useMemo(() => buildDomainCouplingSummary(nodes, edges), [nodes, edges]);
 
   const hubRanking = useMemo(() => rankAllByDegree(nodes, edges), [nodes, edges]);
@@ -723,7 +576,6 @@ export function OntologyInsightsPage() {
     () =>
       hubRanking.slice(0, HUB_DISPLAY_LIMIT).map(({ node, degree }) => ({
         id: node.id,
-        // The short display title, for the hub ranking.
         title: node.display ?? node.title,
         kind: node.kind,
         degree,
@@ -732,9 +584,7 @@ export function OntologyInsightsPage() {
     [hubRanking],
   );
 
-  // Suspected duplicate pairs — how much the names, parents, and neighbours overlap.
-  // A faithful mirror of MCP `similar_nodes`, so the pairs the screen names are the
-  // pairs the agent answers with.
+  // Mirrors MCP `similar_nodes`, so the pairs the screen names are the pairs the agent answers with.
   const duplicates = useMemo(
     () =>
       buildDuplicatePairs(
@@ -765,14 +615,7 @@ export function OntologyInsightsPage() {
     [nodes, edges, docFreshnessIndex],
   );
 
-  // The "to do" queue is a combination of already-loaded derivations (health signals,
-  // degree, freshness).
-  //
-  // Three rows per type is the ceiling that stops the card pushing the viewport out
-  // each time a type is added (suspected duplicates did exactly that). Each section
-  // still states its top three rows, the total, and "N more", so the scale is not
-  // lost; the full list is carried by the handoff payload rather than the screen
-  // (the tab ≤ 1.3× viewport contract).
+  // Each section states its top rows, total and "N more"; the handoff payload carries the full list (tab <= 1.3x viewport).
   const doNextQueue = useMemo(
     () =>
       buildDoNextQueue(nodes, edges, docFreshnessIndex, {
@@ -782,9 +625,7 @@ export function OntologyInsightsPage() {
     [nodes, edges, docFreshnessIndex, handoffProse, doNextPerKindLimit],
   );
 
-  // What this session can actually do right now — the only input to the "mine first"
-  // ordering and to the action labels. It invents no roles or accounts and uses only
-  // facts the app already knows.
+  // What this session can do now: the only input to "mine first" ordering and the action labels.
   const abilities = useMemo(
     () =>
       resolveSessionAbilities({
@@ -801,9 +642,7 @@ export function OntologyInsightsPage() {
     ],
   );
 
-  // Work that ends in one sentence comes only from frontmatter facts in vault
-  // documents (the source text, not a graph derivation). A derived concept with no
-  // document never appears here.
+  // Only frontmatter facts in vault documents; a derived concept with no document never appears here.
   const conceptFacts = useVaultConceptFacts();
   const meaningGapResult = useMemo(
     () =>
@@ -816,14 +655,8 @@ export function OntologyInsightsPage() {
   const domainChoices = useMemo(() => buildDomainChoices(nodes), [nodes]);
 
   /**
-   * Inline save of **one frontmatter field**. The file to write is only the `ownSlug`
-   * the row carried in (decided by `resolveNodeDocument`); the path is never
-   * re-inferred here — inferring it reopens the accident of writing into someone
-   * else's document.
-   *
-   * `expectedMtime` is passed along so the save is refused if a person or an agent
-   * edited the same file in between (no silent overwrite). A refusal is reported
-   * inside the row, and the file is re-read so the next save works from current state.
+   * Saves one frontmatter field to the row's `ownSlug` only; re-inferring the path could write someone else's document.
+   * The expected mtime refuses the save if the file changed in between; the row reports it and the file is re-read.
    */
   const writeMeaningGap = useCallback(
     async (row: MeaningGapRow, value: string) => {
@@ -836,8 +669,7 @@ export function OntologyInsightsPage() {
           row.mtime === null ? {} : { expectedMtime: row.mtime },
         );
       } catch (error) {
-        // On a conflict, re-read the current state so the next save is not blocked
-        // again by a stale baseline. The error is rethrown so the row can say so honestly.
+        // Re-read so the next save does not hit the stale baseline; rethrow so the row can say so.
         if (error instanceof Error && error.name === "VaultConflictError") {
           await vault.refresh();
         }
@@ -848,18 +680,8 @@ export function OntologyInsightsPage() {
   );
 
   /**
-   * Applies the accepted containment repairs, **one document at a time**.
-   *
-   * Grouping (in the plan) is not an optimisation: two writes to one file inside one run would
-   * make the second fail its own `expected_mtime` guard, and the person would read a conflict the
-   * app itself caused. Every write carries the mtime read **when the sheet opened**, so a file a
-   * person or an agent touched in the meantime is refused rather than overwritten — and the run
-   * continues, because the remaining documents are independent and abandoning them would leave the
-   * folder in a state nobody chose.
-   *
-   * `selectContainmentWrites` gets the current documents for one purpose only: to check that each
-   * ticked concept still names this domain. That is the fact the proposal was made from, and a
-   * back-link written after it changed would state a containment nobody approved.
+   * Applies repairs one document at a time; the plan groups writes per file, or the second write
+   * to a file fails its own `expected_mtime` guard. A conflict is refused, not overwritten, and the run continues over independent documents.
    */
   const applyContainmentBatch = useCallback(
     async (accepted: ReadonlySet<string>) => {
@@ -880,9 +702,7 @@ export function OntologyInsightsPage() {
             : t("doNext.containmentBatch.statusSkippedDomainChanged", { domain: skip.domainPath }),
         onStatuses: (statuses) => setContainmentStatuses(statuses),
       });
-      // One reload at the end — `skipRefresh` held it off so the list did not jump under the
-      // sheet after every file. It runs after a conflict too, so a next attempt starts from what
-      // is actually on disk rather than from the stale baseline that refused this one.
+      // One reload at the end (`skipRefresh` held it off), also after a conflict, so a retry starts from disk.
       await vault.refresh();
       setContainmentRunning(false);
       setContainmentFinished(true);
@@ -890,12 +710,11 @@ export function OntologyInsightsPage() {
     [containmentPlan, healthDocs, t, vault],
   );
 
-  // Dependency cycles — loops in the directed `depends_on` graph, computed on the
-  // client from the already-loaded nodes/edges (the same semantics as MCP `cycles`).
+  // Same semantics as MCP `cycles`.
   const dependencyCycles = useMemo(() => findDependencyCycles(nodes, edges), [nodes, edges]);
   const nodeById = useMemo(() => new Map(nodes.map((node) => [node.id, node])), [nodes]);
   const cycleNodeTitle = (nodeId: string): string => nodeById.get(nodeId)?.title ?? nodeId;
-  // graph id → vault slug (evidenceIds[0]) — an MCP handoff uses the vault slug.
+  // MCP handoffs use the vault slug (`evidenceIds[0]`), not the graph id.
   const cycleMcpRef = (nodeId: string): string =>
     nodeById.get(nodeId)?.evidenceIds[0] ?? nodeId.split(":").pop() ?? nodeId;
   const sourceHref = (nodeId: string, exactReviewId?: string): string | null => {
@@ -922,14 +741,10 @@ export function OntologyInsightsPage() {
     );
   };
 
-  // Wrapped because a brief destination now composes on top of it; an identity that changed every
-  // render would rebuild that callback, and the panel-focus effect keyed off it, on every render.
+  // Stable identity: a brief destination composes on it, and the panel-focus effect is keyed off it.
   const setTab = useCallback((next: string) => {
-    // Only the query view of the same document changes. A Next router navigation moves
-    // focus to the document root in the WebView, so the URL state is updated through
-    // native history integration instead. Screen state and URL are aligned in the same
-    // event, which keeps the TabBar's roving focus intact, and a re-entry or shared link
-    // reads the URL back as the initial source of truth.
+    // Only the query changes; a Next router navigation would move WebView focus to the document root and break the
+    // TabBar's roving focus, so native history updates the URL in the same event.
     const nextTab = next as InsightsTab;
     captureInsightsHeight();
     setTabState(nextTab);
@@ -941,11 +756,7 @@ export function OntologyInsightsPage() {
     );
   }, [captureInsightsHeight]);
 
-  /**
-   * Open another question from a brief line, and take focus with you.
-   *
-   * The panel is re-keyed on every switch, so this runs after the new one has mounted.
-   */
+  /** Opens another question from a brief line and moves focus to the new panel, which is re-keyed on every switch. */
   const openTabFromBrief = useCallback((next: InsightsTab) => {
     focusPanelAfterSwitch.current = true;
     setTab(next);
@@ -1021,13 +832,7 @@ export function OntologyInsightsPage() {
     (candidate: { id: string; title: string }) => {
       setReviewId(candidate.id);
       const next = new URL(window.location.href);
-      /*
-       * ⚠️ **Keep the tab.** This used to delete `tab`, which was right while the to-do question
-       * was the default and an absent `tab` meant this very screen. The board now opens on the
-       * brief, so deleting it made the address say "the brief" while a review was open on the
-       * to-do question: a reload or a shared link landed somewhere the reader had not been
-       * (walkthrough, 2026-09-20).
-       */
+      // Keep `tab`: the board opens on the brief, so dropping it would reload a review on the wrong question.
       next.searchParams.set("review", candidate.id);
       window.history.replaceState(
         window.history.state,
@@ -1038,14 +843,7 @@ export function OntologyInsightsPage() {
     [],
   );
 
-  /**
-   * Per-section totals for the "to do" queue — **the single source on this screen.**
-   *
-   * Both the verdict (the tab badge) and the group badges branch from here. They used
-   * to keep separate lists, and duplicate pairs were missing from the verdict side, so
-   * one screen showed the tab reading "to do 7" beside a group badge reading "8"
-   * (measured 2026-08-07, sample vault).
-   */
+  /** Per-section to-do totals, the single source for both the tab badge and the group badges, so they cannot disagree. */
   const queueSectionTotals = useMemo<Record<QueueSectionKey, number>>(
     () => ({
       "missing-definition": meaningGapResult.counts.missingDefinition,
@@ -1069,8 +867,7 @@ export function OntologyInsightsPage() {
     ],
   );
 
-  // The single verdict for this screen. The tab badge, the empty-state copy, and the
-  // health claim must all come from here, or they say different things about one dataset.
+  // The single verdict: tab badge, empty-state copy and health claim all come from here, or they contradict each other.
   const insightsSignalCounts = useMemo(
     () => ({
       islands: healthRepair.islandCount,
@@ -1099,23 +896,17 @@ export function OntologyInsightsPage() {
     nodes: briefNodes,
     repairCount: insightsVerdict.total,
     unmatchedCount: unmatchedBoard.totalCount,
-    // The library and harness panels read the same model, so the work runs for those tabs too.
+    // The library and harness panels read the same model.
     enabled: tab === "brief" || tab === "library" || tab === "harness",
   });
   const measuredHarness = tab === "harness" && brief.harnessDetail.availability === "measured";
-  /*
-   * ⚠️ **The handoff row follows the content; it is not the page's floor.** While the panel
-   * grew to fill the frame, a short tab left one strip at the top and the handoff pinned to the
-   * bottom with ~400px of plain background between two unrelated things (1512x949, the empty
-   * Unmatched tab). Where the row is drawn, the panel takes the height its content needs and
-   * the row sits one section gap under it; tabs without the row keep the filling panel.
-   */
+  // Where the handoff row is drawn the panel takes its content height, so the row sits under the content
+  // instead of being pinned to the bottom across empty background.
   const handoffShown = coreOfTab(tab) === "ontology" && tab !== "do-next" && !agentOpen;
   const panelFills = measuredHarness || !handoffShown;
   /**
-   * The scale of each finding group — the **same** `InsightsSignalCounts` the verdict is built
-   * from, re-keyed. One argument means the ten group counts and the one title count cannot drift
-   * apart; `tests/contract/do-next-group-sum.contract.test.ts` pins the equality.
+   * Group counts re-key the verdict's `InsightsSignalCounts`, so groups and title cannot drift; the
+   * contract `tests/contract/do-next-group-sum.contract.test.ts` pins the equality.
    */
   const doNextGroupCounts = useMemo(
     () => buildDoNextGroupCounts(insightsSignalCounts),
@@ -1237,7 +1028,7 @@ export function OntologyInsightsPage() {
     listTitle: (count: number) => t("doNext.listTitle", { count }),
     moreCount: (count: number) => t("doNext.moreCount", { count }),
     showAll: t("doNext.showAll"),
-    // One name per finding group. The sentence the rows inside repeat is said once, here.
+    // The sentence the rows inside repeat is said once, here.
     groupName: (group: DoNextGroupKey) => t(`doNext.group.${group}`),
     groupToggle: (name: string, count: number) =>
       t("doNext.groupToggle", { name, count }),
@@ -1257,14 +1048,12 @@ export function OntologyInsightsPage() {
     whyDuplicate: (percent: number) => t("doNext.whyDuplicate", { percent }),
     whyMissingDefinition: t("doNext.whyMissingDefinition"),
     whyMissingDomain: t("doNext.whyMissingDomain"),
-    // Keyed the same way `groupName` is, so a finding's name and its sentence are added
-    // together or not at all.
+    // Keyed like `groupName`, so a finding's name and sentence are added together or not at all.
     whyMeaningFinding: (group: DoNextGroupKey) => t(`doNext.whyFinding.${group}`),
     whyIsland: t("doNext.whyIsland"),
     whyContainment: t("doNext.whyContainment"),
     whyBlockedDocument: (reason: string) => t("doNext.whyBlockedDocument", { reason }),
-    // An unlisted code still gets a sentence. Silence on a row that says "your AI cannot read
-    // this" would be the one place a reader most needs a reason.
+    // An unlisted code still gets a sentence; a blocked row must always give a reason.
     blockedReason: (code: VaultDocumentIssue["code"]) =>
       BLOCKED_REASON_KEYS.has(code)
         ? t(`doNext.blockedReason.${code}` as "doNext.blockedReason.other")
@@ -1291,9 +1080,7 @@ export function OntologyInsightsPage() {
     handoffCopyIdle: t("doNext.handoffCopyIdle"),
     handoffCopiedHint: t("doNext.handoffCopiedHint"),
   };
-  // Copy for the inline write sections — the action labels (kebab, handoff) use the
-  // **same keys** as the queue. Calling one action by different names per surface makes
-  // a user read it as two features.
+  // Action labels reuse the queue's keys; one action under two names reads as two features.
   const meaningGapCommon = {
     openSource: doNextLabels.openSource,
     openBuilder: doNextLabels.openBuilder,
@@ -1323,8 +1110,7 @@ export function OntologyInsightsPage() {
     needsText: t("doNext.inlineNeedsText"),
     needsDomain: t("doNext.inlineNeedsDomain"),
   };
-  // Both gap kinds share every label: with one list there is no per-kind heading or hint left to
-  // differ, and the row's sentence is passed to the component rather than carried in `labels`.
+  // Both gap kinds share every label; the row's sentence is passed to the component.
   const meaningGapDefinitionLabels: MeaningGapLabels = meaningGapCommon;
   const meaningGapDomainLabels: MeaningGapLabels = meaningGapCommon;
   const formatDaysAgo = (days: number) => {
@@ -1352,10 +1138,7 @@ export function OntologyInsightsPage() {
     recentHidden: (hidden: number) => t("recentUpdatesHidden", { count: hidden }),
     recentHiddenRoute: t("recentUpdatesHiddenRoute"),
     staleCountLabel: t("staleCountLabel"),
-    // The toggle and badge copy of the evidence layer uses the **same strings** as the
-    // "connections" tab — naming one layer differently per tab makes a learner read it as
-    // something else. Only the caption differs per tab: there it is "what the number means",
-    // here "whose date this is".
+    // Evidence toggle and badge copy match the connections tab, so one layer has one name; only the caption differs.
     evidenceShow: (count: number) => t("evidenceShow", { count }),
     evidenceHide: t("evidenceHide"),
     evidenceCaption: t("freshnessEvidenceCaption"),
@@ -1368,27 +1151,11 @@ export function OntologyInsightsPage() {
   return (
     <VaultSourceHydrationBoundary>
     <div className="relative flex min-h-0 flex-1 overflow-hidden">
-      {/* The rail lives in the layout (AppShell) since the persistent-shell work. */}
-      {/*
-        * **The height chain** (measured 2026-08-12). The vertical flex must run unbroken down
-        * to the `main` below, or the tab panel's `flex-1` never receives the remaining height.
-        * While it was broken: the `flex-1` on the "composition" cards (designed to forbid empty
-        * bands) never once stretched, and 614px below the "boundaries" empty state was dead
-        * space (measured at 1512×900). It is a `min-h-full` chain, so long content still grows
-        * and scrolling is unchanged.
-        */}
+      {/* The vertical flex chain must reach `main` unbroken or the panel's `flex-1` never gets the remaining height.
+         It is a `min-h-full` chain, so long content still grows and scrolls. */}
       <div className="@container/insights flex min-w-0 flex-1 flex-col overflow-y-auto max-lg:scroll-pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]">
-        {/*
-         * ⚠️ **The live indicator was removed** (2026-08-03, owner report — same reason as the
-         * project list). "Live · N changed" is **the map's object**: it draws what changed onto
-         * the nodes, so there the number leads to a next action. The maintenance board already
-         * has its own numbers (to do · composition · connections · boundaries · freshness), and
-         * another change count on top of them blurs **which number to read** while taking the
-         * strongest ink in the top right.
-         *
-         * The row itself is `lg:hidden` because at the width where the rail carries settings there
-         * is nothing left in this row, and an empty row holding space is a defect, not whitespace.
-         */}
+        {/* No live change count here: that number belongs to the map, where it leads to an action.
+           The row is `lg:hidden` because at lg+ the rail carries settings and nothing else is left in it. */}
         <div className="flex items-center justify-end gap-2 px-4 pt-3 md:px-6 lg:hidden">
           <AppSettingsMenu mode={dataSourceMode} triggerVariant="chrome-tile" />
         </div>
@@ -1397,9 +1164,7 @@ export function OntologyInsightsPage() {
       tabIndex={-1}
           data-insights-surface="maintenance-board"
           data-insights-question-model="one-tab-one-question"
-          // The `lg` breath moved into `PAGE_FRAME` on 2026-09-05 — stating it here as well
-          // would be the second source the frame spec exists to remove. What stays is the
-          // below-`lg` tab-bar reserve, which is the page's to decide.
+          // The `lg` breath lives in `PAGE_FRAME`; only the below-`lg` tab-bar reserve is this page's.
           className={`${PAGE_FRAME} flex flex-col max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))] ${measuredHarness ? 'h-full min-h-0 flex-1 overflow-hidden' : 'min-h-full shrink-0'}`}
         >
         <header className={PAGE_HEADER_ROW}>
@@ -1412,14 +1177,6 @@ export function OntologyInsightsPage() {
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-3">
-            {/*
-             * **The 11px monospace census line was removed on 2026-09-06.** It stated concepts,
-             * relations and domains in the top-right corner, above the tab bar that already
-             * carried the same three numbers as badges, in the smallest ink on the page. The
-             * owner's reading of this board was that it shows work and not measurement; the
-             * answer was not a smaller number in a corner but the four-tile strip below, which
-             * states the same facts once, at the size a first glance can use.
-             */}
             {agentRoute === 'agent' && hasConcepts && tab !== 'flow' ? (
               <Button
                 variant="outline"
@@ -1435,20 +1192,9 @@ export function OntologyInsightsPage() {
             ) : null}
           </div>
         </header>
-        {/*
-          * **Two rows, because one could not say what it was about.** The first names the thing —
-          * the brief across all of them, the ontology, the library, the harness — and the second
-          * carries the ontology's own questions. A reader looking at "relations" could not tell
-          * which of the three it counted (owner, 2026-09-19).
-          */}
-        {/*
-          * **Two rows, two kinds of control.** The subject is a mode, so it wears a segmented
-          * control; the questions inside a subject are sections, so they wear tabs. Stacking two
-          * identical tab rows is a named anti-pattern — the active state becomes ambiguous and
-          * spatial memory goes (Nielsen Norman, "Tabs, Used Right"), which is what a reader hit
-          * here (owner, 2026-09-19). The question row exists only for the concepts subject; the
-          * other three are single views and draw no second row at all.
-          */}
+        {/* Two rows: the subject (brief, ontology, library, harness), then the ontology's own questions. */}
+        {/* The subject is a mode (segmented control); the questions are sections (tabs). Two identical tab rows make the
+           active state ambiguous. Only the ontology subject draws the question row. */}
         <div className="mt-[var(--section-gap)] flex flex-col gap-2">
           <div className="self-start">
           <SegmentedControl
@@ -1505,20 +1251,8 @@ export function OntologyInsightsPage() {
             items={ONTOLOGY_TABS.map((key) => ({
               key,
               label: t(`tab.${key}`),
-              // A badge is the scale of the question that tab answers, so each tab counts
-              // something different.
-              // The to-do badge comes from the single verdict model (`insights-verdict`). It used
-              // to count only the do-next statistical signals and omit the CLI-parity ones
-              // (disconnected islands, missing containment), producing the contradiction of a
-              // repair queue showing one item beside a badge reading 0.
-              // With zero concepts this page draws an empty state instead of the tab body. A badge
-              // stating a number then makes **the screen contradict itself** — reproduced on a
-              // vault connection 2026-07-28: a "to do 14" badge above a body reading "no ontology
-              // concepts yet". That is the exact inverse of the earlier accident recorded above
-              // (queue 1, badge 0).
-              //
-              // A badge is "the scale of the question that tab answers", and if the tab body that
-              // would answer it is not drawn at all, that scale is 0.
+              // Each badge is the scale of its tab's question; the to-do badge comes from the single verdict (`insights-verdict`).
+              // With zero concepts the body is an empty state, so a badge must not state a number beside it.
               count: hasConcepts
                 ? INSIGHTS_TAB_BADGE[key]({
                     verdictTotal: insightsVerdict.total,
@@ -1528,7 +1262,7 @@ export function OntologyInsightsPage() {
                     unmatchedTotal: unmatchedBoard.totalCount,
                   })
                 : 0,
-              // What an unlabelled number counts — one line, surfaced only on hover and to assistive tech.
+              // What an unlabelled number counts, surfaced only on hover and to assistive tech.
               countTitle:
                 key === "growth" || key === "flow" ? undefined : t(`tabCountTitle.${key}`),
             }))}
@@ -1570,28 +1304,16 @@ export function OntologyInsightsPage() {
             />
           </div>
         ) : (
-          // The content crossfades in while **the box jumped in one frame** (measured 878.5 →
-          // 605px, a 246px jump for the whole document). The height is set one step (base) later
-          // so the crossfade wraps the reflow.
+          // The height is set one step later than the content so the crossfade wraps the reflow instead of a one-frame jump.
           <div ref={insightsSwapHostRef} className={`flex flex-col ${panelFills ? 'flex-1' : ''} ${measuredHarness ? 'min-h-0 overflow-hidden' : ''}`}>
           <div
             key={tab}
             ref={insightsPanelRef}
-            /*
-             * ⚠️ **`tabIndex={-1}` so a switch can land here.** Pressing a brief line's destination
-             * changes the panel in place rather than navigating, and the link it was pressed on
-             * leaves the DOM with the old panel, so focus fell to `<body>`: the reader had
-             * neither the link nor the answer, and the next Tab restarted inside the new panel by
-             * luck rather than by design (design-interaction, 2026-09-20). Focus is moved only
-             * for that path; the question row keeps its own roving focus.
-             */
+            // `tabIndex={-1}` so a brief destination can move focus here: the link pressed leaves the DOM with the old panel.
+            // Only that path moves focus; the question row keeps its own roving focus.
             tabIndex={-1}
-            /*
-             * The question row draws real tabs, so its panel is a `tabpanel` named by the tab that
-             * opened it. The other three subjects have no tab — the subject row is a radiogroup —
-             * and `aria-labelledby="insights-tab-brief"` pointed at an id that does not exist,
-             * which resolves to no name at all. They are named regions instead.
-             */
+            // The question row's panel is a `tabpanel` named by its tab. The other subjects have no tab (the subject row is a
+            // radiogroup), so they are named regions; pointing at a missing tab id would give no name.
             {...(coreOfTab(tab) === "ontology"
               ? ({ role: "tabpanel", "aria-labelledby": `insights-tab-${tab}` } as const)
               : ({ role: "region", "aria-label": t(`core.${coreOfTab(tab)}`) } as const))}
@@ -1662,11 +1384,8 @@ export function OntologyInsightsPage() {
                   domainLabels: meaningGapDomainLabels,
                 }}
                 labels={doNextLabels}
-                /*
-                 * The only whole-group action on this board, and only on the group whose repair is
-                 * already fully determined by two facts on disk. It appears only where it can act:
-                 * a session that cannot write the folder is not offered a write.
-                 */
+                // The only whole-group action, on the one group whose repair two facts on disk fully determine;
+                // a session that cannot write the folder is not offered it.
                 groupAction={(group) =>
                   group === "containment" &&
                   abilities.canWriteVault &&
@@ -1676,8 +1395,7 @@ export function OntologyInsightsPage() {
                       size="sm"
                       data-testid="do-next-group-batch"
                       onClick={() => {
-                        // The plan is read here, from the documents as they are at this moment.
-                        // Everything Apply may do is decided by it.
+                        // The plan is read from the documents as they are now; it decides everything Apply may do.
                         setContainmentPlan(buildContainmentPlan(containmentProposals, healthDocs));
                         setContainmentStatuses(new Map());
                         setContainmentFinished(false);
@@ -1688,8 +1406,7 @@ export function OntologyInsightsPage() {
                     </Button>
                   ) : null
                 }
-                // The read-only line says *"open your folder and you can finish these here"*, so
-                // the control that does that sits in the same box (2026-08-07, a dead-end CTA).
+                // The read-only line promises "open your folder and finish these here", so the control sits in the same box.
                 openVaultAction={<OpenVaultCta testId="do-next-open-vault" />}
               />
             ) : null}
@@ -1712,13 +1429,7 @@ export function OntologyInsightsPage() {
                 kindLabel={kindLabel}
                 domainLink={{
                   href: mapNodeHref,
-                  // The bar is `aria-hidden`, so the row's three numbers are carried in the link
-                  // name — a fact present on screen must not vanish for a screen reader (the same
-                  // discipline as `impactRowAriaLabel` on the "connections" tab). The destination
-                  // phrasing reuses the set the hub and freshness rows already use
-                  // (`… : view on the map`); all this row adds is figures, so no new copy key is
-                  // introduced. The order follows what is visible on screen (name → total →
-                  // capabilities and elements).
+                  // The bar is `aria-hidden`, so the link name carries the row's three numbers in on-screen order.
                   ariaLabel: (row) =>
                     t("hubRowAriaLabel", {
                       title: `${row.title} ${row.total} · ${kindLabel("capability")} ${row.capabilityCount} · ${kindLabel("element")} ${row.elementCount}`,
@@ -1745,12 +1456,10 @@ export function OntologyInsightsPage() {
                 impactLimit={IMPACT_DISPLAY_LIMIT}
                 impactLink={{
                   href: mapNodeHref,
-                  // The bar is `aria-hidden`, so the two numbers are carried in the link name — a
-                  // fact present on screen must not vanish for a screen reader.
+                  // The bar is `aria-hidden`, so the link name carries both numbers.
                   ariaLabel: ({ title, direct, total }) =>
                     t("impactRowAriaLabel", { title, direct, total }),
-                  // The evidence layer reads the same number with a different meaning — not risk,
-                  // but "how many concepts cite this name as evidence".
+                  // The evidence layer reads the same number as citations, not risk.
                   evidenceAriaLabel: ({ title, total }) =>
                     t("impactEvidenceRowAriaLabel", { title, total }),
                 }}
@@ -1775,29 +1484,10 @@ export function OntologyInsightsPage() {
               />
             ) : null}
             {tab === "growth" ? (
-              /*
-                The panel itself is a gapless `flex-col`, so two blocks put in it as
-                siblings sit flush — measured on the owner's frame: this section's border
-                touching the two cards under it with no space at all. The gap is
-                `--card-gap`, the same one `FreshnessTab` already puts between its own two
-                cards, so the vertical rhythm between the blocks and inside them agree.
-              */
+              // The panel is a gapless `flex-col`, so blocks need `--card-gap` between them, as in `FreshnessTab`.
               <div className="flex min-h-0 flex-1 flex-col gap-[var(--card-gap)]">
-              {/*
-                ⚠️ **This tab has a protagonist now, and it is the folder, not its file
-                dates** (owner, 2026-09-09, choosing direction C over a new eighth tab:
-                *"I'd like the growth of the wiki shown really well in one tab"*).
-
-                It used to be "recent changes", and everything on it was derived from file
-                update dates. That answer stays, demoted to what it is — a table of when
-                files were last written — and the tab now opens with what the folder has
-                actually grown into: four layers, counted from paths, with the week-by-week
-                shape where Git can supply one.
-
-                The order is the whole of the decision. Growth is above the dated tables
-                because it is what the tab's name promises, and because it is the one claim
-                here that a clone or a checkout cannot move.
-              */}
+              {/* The growth tab opens with what the folder has grown into (layers counted from paths);
+                 file update dates follow as the table of when files were last written. */}
               <VaultHistorySection state={vaultHistory} t={t} />
               <FreshnessTab
                 labels={freshnessLabels}
@@ -1857,14 +1547,8 @@ export function OntologyInsightsPage() {
           </div>
         )}
 
-        {/*
-          * **Not on the "to do" tab or beside an open ACP conversation.** The to-do tab offers the agent
-          * per row, with the sentence already written; a second, tab-wide "hand this to an AI"
-          * band under it repeated the offer. The shared ACP dock now carries the same handoff for
-          * every other tab, so keeping this row while the dock is open duplicates the action and,
-          * at 1040×720, sits over the long Flow request. It returns when the dock closes and remains
-          * the browser/copy-only path.
-          */}
+        {/* Not on the to-do tab (rows offer the agent) or beside an open ACP dock (it carries the same handoff);
+           it returns when the dock closes as the browser/copy-only path. */}
         {!handoffShown ? null : (
         <InsightsHandoffRow
           label={t("handoffLabel")}

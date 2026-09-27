@@ -1,7 +1,7 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { computeDomainCouplingMatrix } from "@/entities/knowledge-graph";
 
-/** One real edge between a pair of domains — used by the click-to-inspect example list. */
+/** One real edge between two domains, for the click-to-inspect example list. */
 interface DomainCouplingExampleRow {
   id: string;
   fromId: string;
@@ -11,7 +11,7 @@ interface DomainCouplingExampleRow {
   type: string;
 }
 
-/** One cross connection, domain A → domain B — top N by count, descending. */
+/** One cross connection, domain A to domain B. */
 export interface DomainCouplingPairRow {
   fromId: string;
   fromTitle: string;
@@ -22,101 +22,74 @@ export interface DomainCouplingPairRow {
   examples: DomainCouplingExampleRow[];
 }
 
-/** One domain's self (inside the same domain) vs cross (out to another) share — the boundary-pressure signal. */
+/** One domain's self versus cross share: the boundary-pressure signal. */
 export interface DomainCouplingBoundaryRow {
   id: string;
   title: string;
   selfEdges: number;
   crossEdges: number;
-  /** crossEdges / (crossEdges + selfEdges). Zero when there are no edges at all. */
+  /** The formula crossEdges / (crossEdges + selfEdges), zero with no edges. */
   crossRatio: number;
 }
 
-/** A domain on one axis of the heat grid. `index` is its row/column number in `cells`. */
+/** A domain on one grid axis; `index` is its row and column in `cells`. */
 interface DomainCouplingGridDomain {
   id: string;
   title: string;
 }
 
 /**
- * The domain × domain heat grid. `cells[from][to]` is the number of connections in that
- * direction, and the diagonal (`from === to`) is the number of connections inside one domain.
- *
- * Why a grid rather than a list: standing 22 pairs up vertically requires scrolling to read
- * "which two are entangled", and combinations that are *not* entangled never appear at all, so
- * there is no way to see where the boundary broke. A grid shows empty cells as facts too.
+ * The domain x domain heat grid: `cells[from][to]` counts connections in that direction, and the diagonal counts
+ * connections inside one domain. A grid shows unentangled pairs as empty cells, which a list never shows.
  */
 export interface DomainCouplingGrid {
   domains: DomainCouplingGridDomain[];
   cells: number[][];
-  /** The largest cell value excluding the diagonal — the basis of the cross saturation ramp. Zero means no crossings. */
+  /** The largest off-diagonal cell, the basis of the cross ramp; zero means no crossings. */
   maxCross: number;
   /**
-   * The largest diagonal value (connections inside one domain) — the basis of the neutral ramp
-   * used **for the diagonal only**.
-   *
-   * Why it does not share the cross ruler: the two count different things (internal cohesion vs
-   * boundary crossing). Measured 2026-07-26 against the dogfood vault, the internal maximum was
-   * 14 and the cross maximum 5 — measured on one ruler, the whole diagonal saturates at maximum
-   * and the cross signal, which is this card's actual question, disappears. So there are two
-   * scales, and the diagonal states "a different scale" through a channel other than colour:
-   * neutral fill plus a dashed border.
+   * The largest diagonal cell, the basis of the neutral diagonal-only ramp. Internal cohesion and boundary crossing
+   * count different things, and on one ruler the diagonal would saturate and hide the cross signal.
    */
   maxSelf: number;
-  /** Total domains, beyond the ones placed on the grid — for the truncation copy. */
+  /** All domains, beyond those on the grid, for the truncation copy. */
   totalDomainCount: number;
-  /** Cross relations involving domains outside the grid. Above zero, "outside the grid" is stated. */
+  /** Cross relations involving domains off the grid; above zero, the card says so. */
   hiddenCrossEdgeCount: number;
 }
 
 export interface DomainCouplingSummary {
   domainCount: number;
   crossDomainEdgeCount: number;
-  /** Every cross domain pair — the lookup table for the detail a grid cell expands to. */
+  /** Every cross pair: the lookup a grid cell expands to. */
   pairs: DomainCouplingPairRow[];
-  /** The number of distinct domain pairs. */
   totalPairCount: number;
   grid: DomainCouplingGrid;
   boundaries: DomainCouplingBoundaryRow[];
-  /**
-   * The number of domains with at least one connection — decides whether `boundaries` was
-   * truncated at the limit, so the card can say "top N / M total" instead of quietly reducing.
-   */
+  /** Domains with at least one connection, so the card can say "top N / M total". */
   boundaryTotalCount: number;
-  /**
-   * Cold start — with fewer than two domains or zero cross-domain edges there is no basis to
-   * compute coupling at all. The signal for the card to draw an explicit empty state rather than
-   * an empty or misleading table.
-   */
+  /** Fewer than two domains or zero cross edges: nothing to compute, so the card draws an explicit empty state. */
   isColdStart: boolean;
 }
 
 /**
- * Reshapes `computeDomainCouplingMatrix` (shared/lib, already the same computation as MCP
- * `domain_matrix`) into view rows this tab can draw directly. The algorithm is untouched — this
- * layer adds only node title lookup and the self/cross ratio arithmetic ("raw matrix →
- * presentational row").
- */
-/**
- * The maximum domains placed on the grid. 6×6 is the largest size at which the number inside a
- * cell still reads within the card width on a full-screen 14-inch display — beyond that only the
- * colour remains, and with only colour left you have to ask "how many?" again.
- *
- * The truncation rule: `computeDomainCouplingMatrix` has already sorted `domains` by cross
- * connections, so it is cut from the front — the noisiest boundaries survive. Cross relations
- * involving the truncated domains are counted separately as `hiddenCrossEdgeCount` so the screen
- * does not quietly reduce anything.
+ * The most domains on the grid: past 6x6 the number in a cell no longer reads at the card width on a 14-inch
+ * display. `computeDomainCouplingMatrix` already sorts by cross connections, so cutting from the front keeps the
+ * noisiest boundaries; cut domains' crossings are counted in `hiddenCrossEdgeCount`.
  */
 const DOMAIN_GRID_LIMIT = 6;
 
+/**
+ * Reshapes `computeDomainCouplingMatrix` (the computation behind MCP `domain_matrix`) into view rows,
+ * adding only title lookup and the self/cross ratio.
+ */
 export function buildDomainCouplingSummary(
   nodes: readonly KnowledgeGraphNode[],
   edges: readonly KnowledgeGraphEdge[],
   boundaryLimit = 6,
   gridLimit = DOMAIN_GRID_LIMIT,
 ): DomainCouplingSummary {
-  // The grid needs **every** pair, not the top N (an empty cell is a fact too). `pairs` is now a
-  // cell → detail lookup table rather than a vertical list, so it is not truncated either.
+  // The grid needs every pair (an empty cell is a fact), and `pairs` is a cell lookup, so neither is truncated.
   const matrix = computeDomainCouplingMatrix(nodes, edges, Number.MAX_SAFE_INTEGER);
   const nodeById = new Map(nodes.map((n) => [n.id, n]));
   const titleOf = (node: KnowledgeGraphNode) => node.display ?? node.title;
@@ -155,16 +128,8 @@ export function buildDomainCouplingSummary(
   const connectedDomains = matrix.domains.filter(
     (row) => row.outgoing + row.incoming + row.selfEdges > 0,
   );
-  // The two stages are deliberately separate.
-  //
-  // **Selection is by cross volume** (`matrix.domains` is already in that order) — selecting by
-  // share would let a small domain with 1 crossing and 0 internal edges take the whole limit at
-  // 100%, pushing the genuinely leaking large domains out of the list.
-  //
-  // **Display is by cross share** — the share is the signal this card's caption tells you to
-  // read, and the bar draws the share. Ordered by total instead, the ranking the caption points
-  // at diverges from the ranking on screen (measured 2026-07-26: the domain at 100% share was the
-  // fifth bar). Ties break by the larger total — at equal share, the larger volume is seen first.
+  // Select by cross volume (the `matrix.domains` order), so a tiny all-cross domain cannot crowd out large leaking
+  // ones; display by cross share, the value the caption names and the bar draws. Ties go to the larger total.
   const boundaries: DomainCouplingBoundaryRow[] = connectedDomains
     .slice(0, boundaryLimit)
     .map((row) => {

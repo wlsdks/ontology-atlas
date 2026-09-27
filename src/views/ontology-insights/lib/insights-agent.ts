@@ -21,9 +21,8 @@ export type InsightsAgentPromptPlan =
   | { action: 'confirm-replace'; request: InsightsAgentPrefill };
 
 /**
- * Tab selection itself never calls this planner. An explicit agent action either
- * opens the current request, seats a new one into an empty composer, or requires
- * a second explicit choice before replacing non-empty draft bytes.
+ * Tab selection never calls this. An explicit agent action opens the current request, seats a new one into an empty
+ * composer, or asks again before replacing a non-empty draft.
  */
 export function planInsightsAgentPrompt({
   current,

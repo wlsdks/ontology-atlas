@@ -10,41 +10,12 @@ import type { CensusHealthSummary } from "../../lib/census-health";
 import type { InsightsVerdict } from "../../lib/insights-verdict";
 
 /**
- * **The board's census strip — four equal tiles above the tab bar.**
- *
- * ## Why it moved out of a tab (owner, 2026-09-06)
- *
- * The owner opened this board on the Do-next tab and said the analysis screen was showing work
- * instead of measurement: *"analysis is supposed to show indicators and flow, isn't it? To-do just
- * keeps getting longer and its content only runs sideways."* Measured on the dogfood folder at
- * 1512×949: the whole first screen was eight list rows repeating one sentence, and the only
- * measurement on it was a 11px monospace line in the top-right corner
- * (`102 concepts · 157 relations · 8 domains`) — a number nobody reads before a heading.
- *
- * Meanwhile the three census instruments (concepts, relations, health) lived **inside** the
- * composition tab, so the board's own measurements were only visible to someone who had already
- * chosen to leave the default tab. Moving them above the tab bar makes the measurement the first
- * thing on every tab, and the tabs stay what they are: one question each.
- *
- * ## What the four tiles are, and why nothing here is drawn twice
- *
- * | Tile | Value | Sub-lines |
- * |---|---|---|
- * | concepts | `totalNodes` | the kind census, and the share of concepts held in a domain |
- * | relations | `totalEdges` | the four largest types, what is hidden, and the density gloss |
- * | health | the **verdict word** — never a number | blocking/advisory split, then lone/island/cycle |
- * | last 12 weeks | the weekly bars | this week's count, and the evidence-linked share |
- *
- * The health tile deliberately carries **no total**. The single number a person acts on ("15") is
- * the Do-next tab badge and its list title, and those two already agree through one verdict
- * (`insights-badge-agreement`); a third place printing it would be the exact accident of
- * 2026-08-07 (3), "one screen does not count the same thing two ways". What the tile adds is the
- * one thing the list cannot say at a glance — **whether the folder is blocked or merely advised**,
- * which is the verdict `node $ATLAS/cli/src/index.mjs health` reports.
- *
- * The numbers use the engraved style, reusing the `--map-numeral-*` tokens the topology
- * canvas uses to engrave node counts, so "the panel and the canvas are one world" holds in the
- * engraved digits too.
+ * The board's census strip: four equal tiles above the tab bar, so the measurement is the first thing on every tab
+ * and each tab stays one question. Tiles: concepts (kind census, domain share), relations (four largest types,
+ * hidden count, density), health (a verdict word, never a number), and the freshness window's weekly bars.
+ * The health tile has no total: the Do-next badge and list title already carry it through one verdict
+ * (`insights-badge-agreement`); the tile adds only blocked versus advised, the CLI `health` verdict.
+ * Numerals reuse the map's `--map-numeral-*` tokens.
  */
 export interface InsightsCensusStripLabels {
   concepts: string;
@@ -52,33 +23,29 @@ export interface InsightsCensusStripLabels {
   health: string;
   orphan: string;
   cycle: string;
-  /** The human-readable summary beside the domain membership rate — e.g. "in a domain". */
+  /** Beside the domain membership rate, e.g. "in a domain". */
   membershipLabel: string;
-  /** The subline the density ratio was demoted to — e.g. "an average of 2.34 connections per concept" (the ratio is already injected). */
+  /** The density ratio's subline, e.g. "an average of 2.34 connections per concept". */
   densityGloss: string;
   evidenceLinked: string;
-  /** The same verdict as the "to do" tab's repair queue — the count of separated groups. */
+  /** The same count of separated groups the to-do repair queue uses. */
   islands: string;
-  /**
-   * The remainder sentence for the relation strip, which draws only the four
-   * largest types. Takes the difference the line computed, so the sentence and
-   * the number can never be written apart.
-   */
+  /** Takes the difference the line computed, so sentence and number cannot disagree. */
   relationsHidden: (hidden: number) => string;
-  /** Where every relation type is drawn in full — the connections tab of this same page. */
+  /** The connections tab of this page, where every relation type is drawn. */
   relationsHiddenRoute: string;
-  /** The health tile's value — words, never a number. Same two verdicts the CLI reports. */
+  /** Words, never a number: the same two verdicts the CLI reports. */
   statusHealthy: string;
   statusNeedsAttention: string;
-  /** The one fact the list cannot say at a glance: how much of the work blocks an agent. */
+  /** How much of the work blocks an agent. */
   statusBlocking: string;
   statusAdvisory: string;
-  /** The fourth tile — the same 12-week window as the freshness tab's heat strip. */
+  /** The fourth tile: the freshness tab's window. */
   recentTitle: string;
   recentThisWeek: (count: number) => string;
   /** What the bars are, for a reader who cannot see them. */
   recentBarsAria: (weeks: number, total: number) => string;
-  /** End labels under the weekly bars; without them four bars read as a shape, not as time. */
+  /** End labels under the bars, so they read as time rather than a shape. */
   recentBarsStart?: (weeks: number) => string;
   recentBarsEnd?: string;
 }
@@ -99,30 +66,19 @@ export function InsightsCensusStrip({
   totalNodes: number;
   totalEdges: number;
   health: CensusHealthSummary;
-  /**
-   * The **same** count of separated groups the "to do" tab's repair queue uses. Why it sits here
-   * too: some people read the large "100%" as "our map is perfectly connected" and moved on. That
-   * 100% is the *domain membership rate*, not a connection rate, and the same vault had 62
-   * separated groups. Both numbers are placed in one glance.
-   */
+  /** The to-do queue's island count, beside the membership rate so "100% in a domain" is not read as "fully connected". */
   islandCount: number;
-  /** The single verdict model — the same object the tab badge branches from. */
+  /** The single verdict, the same object the tab badge reads. */
   verdict: InsightsVerdict;
   /**
-   * The 12-week update counts, summed across domains by `computeFreshnessSummary`. They are real
-   * document dates, not a decorative wave, and this strip is now their only drawing: the freshness
-   * tab kept the per-domain heat strip and gave up its own aggregate line, so one screen does not
-   * draw one series twice.
+   * Weekly update counts summed across domains by `computeFreshnessSummary`, from real document dates;
+   * this strip is their only drawing.
    */
   weeklyTotals: number[];
-  /** The summary subline — e.g. "250 elements · 36 capabilities · 6 domains · 3 documents · 1 project". */
+  /** The kind census subline, e.g. "250 elements, 36 capabilities, 6 domains". */
   kindsSummary: Array<{ key: string; label: string; count: number }>;
   relationsSummary: Array<{ key: string; label: string; count: number }>;
-  /**
-   * How many relation types the vault actually holds. `relationsSummary` is
-   * capped at the four largest; before 2026-09-05 the rest vanished with no
-   * mark, even though the uncapped list was already in scope one component up.
-   */
+  /** How many relation types the vault holds; `relationsSummary` is capped at four, so the rest is stated as hidden. */
   relationsTotal: number;
   /** Switches this page to the connections tab, where every type is listed. */
   onSeeAllRelations: () => void;
@@ -133,29 +89,9 @@ export function InsightsCensusStrip({
   return (
     <div
       data-testid="insights-census-strip"
-      // Four tiles in one row from the width where four ~290px columns still hold their sub-lines;
-      // **two below that, never one.** Measured at 390×844: a single stacked column put all four
-      // tiles ahead of the tab bar and pushed the list itself entirely off the first screen — the
-      // census would then hide the work it exists to frame. Two columns keep the tab bar and the
-      // list title on the first screen at 390. The grid keeps every tile in a row at one height
-      // whatever its copy length (dimensional regularity).
-      /*
-       * ⚠️ **1200 measured the wrong side of the rail.** The container is the shell's scroll slot,
-       * which is 64px narrower than the window above `lg`, so four columns arrived only at
-       * viewport 1264 — and the app's own enforced minimum window is 1040. The whole 1040-1263
-       * band, which holds that floor and most default windows, paid 344px for a strip that costs
-       * 202px one step earlier, pushing the first finding to y=671 of 720 (design-responsive,
-       * 2026-09-20). 960 is this container's existing step, already used by five grids in this
-       * view. Width never removes a tile: all four numbers stay drawn, and two-by-two is the
-       * shape only below 960, where the rail is gone.
-       */
-      /*
-       * One band, the brief's shape (owner direction C, 2026-09-23): four cells share one panel
-       * and a 1px divider instead of four cards, so switching subject keeps the band in place.
-       * The rounded box is the ordinary panel; the divider colour lives on the square grid inside,
-       * because a rounded box painted in the divider colour is a surface no other screen wears
-       * (surface-vocabulary-ratchet).
-       */
+      // Four tiles in a row from 960, two below that, never one: one stacked column pushes the list off the first screen
+      // at 390. One panel with a 1px divider grid, the divider colour on the grid inside, or the surface-vocabulary
+      // ratchet fails.
       className="overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]"
     >
       <div className="grid grid-cols-2 gap-px bg-[color:var(--color-divider)] @min-[960px]/insights:grid-cols-4">
@@ -193,8 +129,7 @@ export function InsightsCensusStrip({
         </div>
       </CensusTile></BandCell>
 
-      {/* The health tile's value is the verdict **in words**. A number here would be the third
-          place counting the same work; the words are the fact the number never carried. */}
+      {/* The verdict in words: a number here would be a third place counting the same work. */}
       <BandCell><CensusTile testId="insights-census-tile" surface="bare" label={labels.health}>
         <p
           data-testid="insights-verdict-word"
@@ -239,20 +174,12 @@ export function InsightsCensusStrip({
     </div>
   );
 }
-/**
- * The 12-week update series as hairline bars.
- *
- * Why bars and not the freshness tab's polyline: this tile is 260px wide and 40px tall beside three
- * numeral tiles, and a line at that size reads as decoration. A bar per week keeps the week the
- * discrete unit it is, and the most recent week takes the one indigo so "is anything happening
- * right now" is answered without a legend. Every other week is a neutral overlay step — no colour
- * gauge, no second palette.
- */
-/** A band cell: the panel ink and padding a card used to carry, inside the shared panel. */
+/** One band cell inside the shared panel. */
 function BandCell({ children }: { children: React.ReactNode }) {
   return <div className="flex min-w-0 flex-col bg-[color:var(--color-panel)] p-[var(--card-pad)]">{children}</div>;
 }
 
+/** The weekly series as bars: the latest week in indigo, the rest neutral, so no legend is needed. */
 function WeeklyBars({ weeklyTotals, ariaLabel, startLabel, endLabel }: { weeklyTotals: number[]; ariaLabel: string; startLabel?: string; endLabel?: string }) {
   if (weeklyTotals.length === 0) return null;
   const max = Math.max(1, ...weeklyTotals);
@@ -272,13 +199,10 @@ function WeeklyBars({ weeklyTotals, ariaLabel, startLabel, endLabel }: { weeklyT
           data-weekly-count={count}
           className="flex-1 rounded-micro"
           style={{
-            // A week with no update is a **baseline tick**, not a short bar. Giving zero the same
-            // minimum height as one update would draw a quiet week and a busy week the same size,
-            // which is the one thing a 12-bar strip must never do. Non-zero weeks start at 12% so
-            // a single update is still visible beside a 40× larger neighbour.
+            // A week with no update is a 2px baseline tick, so quiet and busy weeks never draw the same size; non-zero weeks
+            // start at 12% so one update shows beside a much larger neighbour.
             height: count === 0 ? "2px" : `${Math.max(12, Math.round((count / max) * 100))}%`,
-            // Non-zero weeks in tertiary ink: overlay-3 measured 1.29:1 on the panel and the zero
-            // tick 1.15:1, both under the 3:1 a graphical mark needs (design-infoviz, 2026-09-23).
+            // Tertiary ink: overlay values fall under the 3:1 a graphical mark needs on the panel.
             backgroundColor:
               index === lastIndex && count > 0
                 ? "var(--color-indigo-brand)"

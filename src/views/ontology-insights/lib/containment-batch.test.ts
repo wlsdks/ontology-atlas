@@ -16,7 +16,7 @@ const doc = (
   mtime?: number,
 ): ContainmentPlanDoc => ({
   slug,
-  // The manifest carries the file's path, and the row shows it — every fixture keeps that shape.
+  // The manifest carries the file's path and the row shows it.
   path: `${slug}.md`,
   title: slug.split("/").pop() ?? slug,
   frontmatter: { kind, ...frontmatter },
@@ -91,13 +91,8 @@ describe("buildContainmentProposals", () => {
 
 
 /**
- * **When each fact is read is the whole guarantee.**
- *
- * The sheet promises a write never lands on a file that changed since the proposal, and that only
- * the named files are written. Neither survives if the plan is rebuilt at Apply: by then an
- * outside change has been read back in, and the guard would be comparing that new state against
- * itself. These cases pin the split — members and mtime frozen at open, justification re-read at
- * Apply.
+ * When each fact is read is the guarantee: members and mtime freeze at open, and the justification is re-read at
+ * Apply, or the guard compares a changed file against itself.
  */
 describe("buildContainmentPlan / selectContainmentWrites", () => {
   const proposals = buildContainmentProposals(
@@ -132,8 +127,7 @@ describe("buildContainmentPlan / selectContainmentWrites", () => {
       DOCS,
     );
     const shop = writes.find((w) => w.domainSlug === "domains/shop");
-    // The row shows `domainPath`; the run addresses the file by `domainSlug`. Both come from the
-    // one document, so what a person reads is the file that changes.
+    // The row shows `domainPath` and the run addresses `domainSlug`, both from one document.
     expect(shop?.domainPath).toBe("domains/shop.md");
     expect(proposals.find((p) => p.domainSlug === "domains/shop")?.domainPath).toBe(
       "domains/shop.md",
@@ -176,8 +170,8 @@ describe("buildContainmentPlan / selectContainmentWrites", () => {
 
   it("keeps the mtime measured at open as the baseline even if the file changes meanwhile", () => {
     const plan = buildContainmentPlan(proposals, DOCS);
-    // The same folder, read again after someone edited billing: a new mtime and a member the
-    // sheet never saw. Rebuilding here is exactly the defect — the guard would accept the change.
+    // The same folder re-read after an edit to billing: a new mtime and an unseen member. Rebuilding here would let the
+    // guard accept the change.
     const laterDocs = DOCS.map((entry) =>
       entry.slug === "domains/billing"
         ? {
@@ -228,8 +222,7 @@ describe("buildContainmentPlan / selectContainmentWrites", () => {
       reason: "domain-changed",
       proposalIds: ["domains/billing::capabilities/pay"],
     });
-    // The withdrawn row was the only member of that key, so nothing is written for it — while
-    // the same file's other key, whose member still names this domain, is written as planned.
+    // The withdrawn row was its key's only member, so that key is not written; the same file's other key still is.
     const billingCapabilities = run.writes.find(
       (w) => w.domainSlug === "domains/billing" && w.key === "capabilities",
     );

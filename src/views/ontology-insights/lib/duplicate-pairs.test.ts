@@ -79,7 +79,7 @@ describe("buildDuplicatePairs", () => {
     expect(rows[0].dissolveSlug).toBe("elements/node-drawer-model");
     expect(rows[0].kind).toBe("element");
     expect(rows[0].score).toBeGreaterThan(0.6);
-    // The evidence is words a person reads — the fact of sharing a folder (`elements`) is removed.
+    // The evidence is words a person reads; the shared folder word (`elements`) is removed.
     expect(rows[0].sharedTokens).toEqual(["drawer", "node"]);
   });
 
@@ -90,9 +90,8 @@ describe("buildDuplicatePairs", () => {
   });
 
   it("excludes a node without its own document, which has no file to merge", () => {
-    // A node born from a code path written in another document's `elements:` — its evidence slug
-    // belongs not to itself but to the document that named it. A source file and its test file have
-    // near-identical names, so left alone they rise to the top as the leading duplicate.
+    // Derived nodes from code paths in another document's `elements:` belong to that document; a source file and its
+    // test would otherwise top the list as a duplicate.
     const derived = [
       ...nodes,
       {
@@ -113,9 +112,7 @@ describe("buildDuplicatePairs", () => {
   });
 
   it("keeps a project node whose id tail differs from its file name", () => {
-    // A project id is built from frontmatter `slug:` (`ontology/project.md` →
-    // `project:ontology-atlas`) and differs from the filename tail. While the screen inferred its
-    // own document as "id tail == document slug tail", this node was silently missed.
+    // A project id comes from frontmatter `slug:` (`project:ontology-atlas`), not the filename tail.
     const project: KnowledgeGraphNode = {
       ...node("project:ontology-atlas", "project", "Ontology Atlas"),
       evidenceIds: ["ontology/project"],
@@ -137,8 +134,8 @@ describe("buildDuplicatePairs", () => {
   });
 
   it("falls back to comparing every pair when the threshold is reachable without a name match", () => {
-    // Kind (0.1) plus parent (0.1) gives 0.2 — at this threshold even a pair sharing no words is a
-    // candidate. Narrowing with the inverted index would miss it.
+    // Kind (0.1) plus parent (0.1) gives 0.2, so at this threshold a pair sharing no words is a candidate that an
+    // index would miss.
     const { rows } = buildDuplicatePairs(nodes, edges, 20, 0.2);
     expect(rows.some((row) => row.sharedTokens.length === 0)).toBe(true);
   });

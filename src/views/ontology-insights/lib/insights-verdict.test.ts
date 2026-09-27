@@ -2,11 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { buildInsightsVerdict, type InsightsSignalCounts } from "./insights-verdict";
 
-/**
- * Every section total is written out — being a `Record<QueueSectionKey, number>`, omitting even one
- * fails type checking. That is why this shape was chosen (2026-08-07: duplicate pairs were missing
- * from the verdict, so a tab badge of 7 and a group badge of 8 appeared on one screen).
- */
+/** Every section total written out: as a `Record<QueueSectionKey, number>`, omitting one fails type checking. */
 const NO_SECTIONS: InsightsSignalCounts["sections"] = {
   "missing-definition": 0,
   "missing-boundary": 0,
@@ -35,8 +31,7 @@ const withSections = (
 ): InsightsSignalCounts => ({ ...NONE, ...rest, sections: { ...NO_SECTIONS, ...partial } });
 
 describe("buildInsightsVerdict", () => {
-  // The "to do" tab draws one row per blocked document. A row the screen shows and the badge does
-  // not count is the contradiction this module exists to prevent.
+  // The to-do tab draws one row per blocked document, so the badge must count it.
   it("counts a document blocked by the check as a blocking signal", () => {
     const verdict = buildInsightsVerdict({ ...NONE, blockedDocuments: 2 });
     expect(verdict.blocking).toBe(2);
@@ -55,9 +50,8 @@ describe("buildInsightsVerdict", () => {
     });
   });
 
-  // The measured contradiction found in review: on a starter vault whose only signal was one
-  // missing containment, `to do 0` + "the graph is healthy" + `missing containment 1` appeared at
-  // once, while MCP health returned needs_attention for the same data.
+  // A starter vault whose only signal is one missing containment must not say "to do 0" and "healthy" while
+  // MCP `health` returns needs_attention.
   it("reports one task and needs_attention like the CLI for one missing link", () => {
     const verdict = buildInsightsVerdict({ ...NONE, missingContainment: 1 });
 
@@ -83,7 +77,7 @@ describe("buildInsightsVerdict", () => {
     expect(verdict.blocking).toBe(0);
     expect(verdict.advisory).toBe(7);
     expect(verdict.status).toBe("healthy");
-    // Saying "nothing to fix" while the queue directly below shows seven is self-contradiction.
+    // Saying "nothing to fix" above a queue of seven would contradict itself.
     expect(verdict.healthy).toBe(false);
   });
 

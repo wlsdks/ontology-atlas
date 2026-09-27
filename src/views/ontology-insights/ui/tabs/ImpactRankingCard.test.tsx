@@ -80,8 +80,7 @@ describe("ImpactRankingCard", () => {
     const links = screen.getAllByTestId("insights-impact-row-link");
     expect(links).toHaveLength(2);
     expect(links[0]).toHaveAttribute("href", "/ontology/?node=element%3Atoken");
-    // The bar is aria-hidden, so the link name is the only accessible route — dropping the numbers
-    // here leaves a screen-reader user with the card as nothing but a list of titles.
+    // The bar is `aria-hidden`, so the link name is the only accessible route to the numbers.
     expect(links[0]).toHaveAttribute("aria-label", "Token — 3 direct, 9 including indirect");
     expect(screen.getByText("9")).toBeInTheDocument();
   });
@@ -169,9 +168,8 @@ describe("ImpactRankingCard", () => {
     );
 
     const links = screen.getAllByTestId("insights-impact-row-link");
-    // Row 1 is always a column head; row 2 is the second column's head only on a wide screen —
-    // without these two resets a line appears above each column like a truncated table.
-    // The line lives on the cell around the row, never on the row that bleeds for its hover.
+    // Each column's first row is a column head, so it has no line above; the line lives on the cell, not the row that
+    // bleeds for hover.
     expect(links[0].parentElement?.className ?? "").not.toContain("border-t");
     expect(links[1].parentElement?.className).toContain("@min-[960px]/insights:border-t-0");
     expect(links[0].className).not.toContain("border-t");
@@ -194,8 +192,7 @@ describe("ImpactRankingCard", () => {
     it("lists a concept without a document only in the folded layer", () => {
       renderWithEvidence();
 
-      // The reason this card exists — the top of a slot asking about risk is not filled with test
-      // file names. The scale is stated verbatim by the toggle label, so nothing is hidden.
+      // The top of a risk slot is not filled with test file names; the toggle label states the scale.
       expect(screen.queryByText("Integration Test")).toBeNull();
       expect(
         screen.getByRole("button", { name: "Show 193 names without a document" }),
@@ -212,8 +209,7 @@ describe("ImpactRankingCard", () => {
         "aria-label",
         "Integration Test — 15 concepts wrote this name down",
       );
-      // The same 15 meant "places to re-check" in the concept layer — without per-layer captions
-      // this card calls a test a risk.
+      // The same number meant "places to re-check" in the concept layer; without per-layer captions a test reads as a risk.
       expect(screen.getByText(/The number here is not risk/)).toBeInTheDocument();
     });
 
@@ -223,11 +219,10 @@ describe("ImpactRankingCard", () => {
 
       const badge = screen.getByTestId("evidence-only-badge");
       expect(badge).toHaveTextContent("No document");
-      // No amber expansion (the charter) — dozens of these badges appear on one screen.
+      // Quiet ink, not amber: dozens of these badges appear on one screen.
       expect(badge.className).toContain("--color-text-quaternary");
       expect(badge.className).not.toContain("amber");
-      // "Integration Test" is two different files collapsing to one name — without the reference
-      // string the screen cannot answer which one it is.
+      // Two files collapse to "Integration Test", so the reference string tells them apart.
       expect(screen.getByText("mcp/src/integration.test.mjs")).toBeInTheDocument();
     });
 

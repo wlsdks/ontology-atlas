@@ -46,8 +46,7 @@ describe("buildDomainCouplingSummary", () => {
     expect(summary.isColdStart).toBe(false);
     expect(summary.domainCount).toBe(2);
     expect(summary.crossDomainEdgeCount).toBe(2);
-    // auth→billing (depends_on) and billing→auth (related_to) run in different directions and are
-    // separate pairs — both have count 1, so they sort by the `from` domain title (Auth < Billing).
+    // The two directions are separate pairs; both count 1, so they sort by the `from` domain title (Auth < Billing).
     expect(summary.pairs).toHaveLength(2);
     expect(summary.pairs[0]).toMatchObject({
       fromId: "domain:auth",
@@ -206,9 +205,8 @@ describe("buildDomainCouplingSummary", () => {
   });
 
   it("orders boundary rows by descending cross share, as the card caption reads", () => {
-    // leaky: 0 inside, 2 crossing → 100% share, total 2 (small)
-    // busy:  3 inside, 3 crossing → 50% share,  total 6 (large)
-    // Ordered by total, busy comes first — the opposite of what the caption says.
+    // The leaky domain has 0 inside and 2 crossing (100% share, total 2); busy has 3 and 3 (50%, total 6).
+    // Ordered by total, busy would come first, the opposite of what the caption says.
     const nodes = [
       node("domain:leaky", "domain", "Leaky"),
       node("domain:busy", "domain", "Busy"),
@@ -228,7 +226,7 @@ describe("buildDomainCouplingSummary", () => {
       edge("s1", "capability:b1", "capability:b2", "depends_on"),
       edge("s2", "capability:b2", "capability:b3", "depends_on"),
       edge("s3", "capability:b3", "capability:b4", "depends_on"),
-    // Two crossings (both are counted as crossings from either side).
+    // Two crossings, counted from either side.
       edge("x1", "capability:l1", "capability:b1", "depends_on"),
       edge("x2", "capability:b2", "capability:l1", "depends_on"),
     ];

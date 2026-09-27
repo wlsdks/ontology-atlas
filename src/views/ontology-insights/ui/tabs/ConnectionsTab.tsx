@@ -29,9 +29,8 @@ export interface ConnectionHubRow {
   kind: string;
   degree: number;
   /**
-   * Is this a name written only as evidence (no document of its own)? Hubs do not reorder — pushing
-   * something genuinely well connected downward makes the answer to "what is central right now?"
-   * wrong. Instead the row quietly states that it has no document yet.
+   * A name written only as evidence (no document of its own). Hubs keep their order, since demoting a genuinely
+   * connected node would make "what is central" wrong; the row states the fact instead.
    */
   evidenceOnly: boolean;
 }
@@ -44,22 +43,17 @@ export interface ConnectionsTabLabels {
   hubsTitle: string;
   noHubs: string;
   noHubsHint: string;
-  /**
-   * The one door each empty card offers. Both cards are empty for the same
-   * reason — no relation has been written yet — so both send the reader to the
-   * one screen where a relation can be written, the same address the
-   * composition and boundaries tabs already use for their own empty states.
-   */
+  /** Both empty cards send the reader to the one screen where a relation is written, as the other tabs' empty states do. */
   emptyAction: string;
   hubTruncated: (shown: number, total: number) => string;
   hubDegreeCaption: string;
-  /** The evidence-layer badge — from the **same i18n key** as the impact ranking (one set of copy). */
+  /** Same i18n key as the impact ranking's evidence badge. */
   evidenceBadge: string;
   evidenceBadgeHint: string;
 }
 
 interface ConnectionsTabHubLink {
-  /** Clicking a hub row deeplinks to that node on the map (`buildOntologyNodeHref`). */
+  /** A hub row deep-links to its node on the map (`buildOntologyNodeHref`). */
   href: (nodeId: string) => string;
   ariaLabel: (title: string) => string;
 }
@@ -84,26 +78,9 @@ export interface ConnectionsTabProps extends ConnectionsTabBaseProps {
 }
 
 /**
- * The `connections` tab — it answers "which concepts are central, and how far does a change
- * spread?". The three cards (relation types · hubs · impact ranking) stack at full width and share
- * one anatomy so they read alike: head (title + total) → chart or rows → one footnote.
- *
- * Two ink reductions are reflected here.
- * ① The "most depended upon" card was deleted — measured against the dogfood vault, all top five
- *    rows had a count of 1, so there was no ranking (dependency edges were 6% of the total). A table
- *    with no signal spends only the reader's time.
- * ② The hub ego thumbnails were deleted — all six rows were the same wheel shape, so the
- *    distinguishing information lived only in the number (Tufte: erase non-data ink). What remains
- *    is the kind glyph, title, relative bar, and number, and the row height halved.
- *
- * "Concepts whose change spreads furthest" on the second line (full width) is the hub's counterpart —
- * where hubs say "what is central right now", the impact ranking says "how far do I have to re-read
- * if I touch it". Two faces of one question, so they live in one tab.
- *
- * The two cards treat the evidence layer differently because their questions differ. The impact
- * ranking asks about risk, so it pushes document-less derived concepts into a folded layer below;
- * hubs ask "what actually has many connections", so the order is left alone and the fact is stated
- * with a badge only — reordering here would make the answer itself wrong.
+ * The connections tab: which concepts are central, and how far a change spreads. Three full-width cards (relation
+ * types, hubs, impact ranking) share one anatomy: head, chart or rows, one footnote. Hubs keep their order and only
+ * badge document-less names; the impact ranking asks about risk, so it folds those names into a layer below.
  */
 export function ConnectionsTab({
   edgeTypeRows,
@@ -120,25 +97,17 @@ export function ConnectionsTab({
   impactLink,
   impactLabels,
 }: ConnectionsTabProps) {
-  // This full-graph walk belongs to this tab alone. Keeping it below the conditional tab mount
-  // lets Brief and the other views arrive without paying the O(nodes × reachable graph) cost.
+  // The full-graph impact walk, O(nodes x reachable graph), runs only while this tab is mounted.
   const impact = useMemo(
     () => buildImpactRanking(impactNodes, impactEdges, impactLimit),
     [impactNodes, impactEdges, impactLimit],
   );
-  // `hubs` is already sorted by degree descending — `hubs[0]` is the maximum within this list.
+  // The largest hub degree; `hubs` is sorted by degree descending.
   const hubDegreeMax = hubs.reduce((m, h) => Math.max(m, h.degree), 0);
 
   return (
-    /*
-     * ⚠️ **Three full-width cards, no side-by-side pair.** Relation types (three or four rows)
-     * stood beside the hubs (six rows) and the shared row height left a 100-120px blank band
-     * above the short card's caption at 1512x949 (review, 2026-09-25). Spreading the rows was
-     * rejected once already, and so was stretching the card. The type rows also drew a second
-     * bar for the share the stacked bar above them already showed, so the card is now that one
-     * stacked bar with its key: a band, as tall as what it says. The hubs take the full width
-     * and fold into two columns, the same grammar the impact ranking under them uses.
-     */
+    // Three full-width cards, no side-by-side pair: a shared row height left a blank band above the shorter card.
+    // The relation types are one stacked bar with its key; the hubs fold into two columns like the impact ranking.
     <div className="flex min-h-0 flex-1 flex-col gap-[var(--card-gap)]">
       <section
         aria-label={labels.relationTypesTitle}
@@ -158,11 +127,8 @@ export function ConnectionsTab({
             />
           </div>
         ) : (
-          /* The key names each segment once: its swatch, the count and the share. Items sit on
-             one row and wrap on a narrow board. The map's line mark is not repeated here: the
-             map draws only two lines (solid containment, dashed everything else), so two types
-             wore the same dashed mark and the key told them apart by the label alone (review,
-             2026-09-25, round 4). The swatch is a literal sample of the segment instead. */
+          // The key names each segment once with a literal swatch of it, its count and share; items wrap on a narrow board.
+          // The map's line marks are not reused, since the map draws only solid and dashed lines.
           <ShareStack
             total={totalEdges}
             keyTestId="connections-relation-type-key"
@@ -185,8 +151,7 @@ export function ConnectionsTab({
         aria-label={labels.hubsTitle}
         className="flex min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
       >
-        {/* The hub total is already stated by the truncation copy below ("top 6 / 289 total") — the
-            same figure is not printed twice in one card. */}
+        {/* The truncation copy below already states the hub total. */}
         <CardHead label={labels.hubsTitle} />
         {hubs.length === 0 ? (
           <div className="mt-2 mb-2.5 flex flex-col">
@@ -209,11 +174,8 @@ export function ConnectionsTab({
                     href={hubLink.href(hub.id)}
                     aria-label={hubLink.ariaLabel(hub.title)}
                     data-testid="insights-hub-row-link"
-                    /*
-                     * A bare divider row, like the impact ranking's. `row` has no border, and the
-                     * -mx/px pair lets only the hover surface pass the card inset; the divider sits
-                     * on the cell around it, on the card's padding line (`insights-list.ts`).
-                     */
+                    // A bare divider row like the impact ranking's: the -mx/px pair lets only the hover surface pass the card inset,
+                    // and the divider sits on the cell around it (`insights-list.ts`).
                     className={controlClass({ shape: "row", size: "md", hoverSurface: "lift", className: `-mx-1.5 w-auto gap-3 px-1.5 ${INSIGHTS_LIST_ROW}` })}
                   >
                     <OntologyMapKindGlyph kind={hub.kind} size={16} className="flex-none" />
@@ -244,8 +206,7 @@ export function ConnectionsTab({
             })}
           </div>
         )}
-        {/* The truncation copy is appended to the footnote to keep it one line — an optional slot
-            that shifts the card height would give two cards in the same grid different anatomies. */}
+        {/* The truncation copy joins the footnote on one line, so the card's anatomy matches its grid neighbours. */}
         <p className="mt-auto border-t border-[color:var(--color-divider)] pt-2.5 text-label leading-body text-[color:var(--color-text-quaternary)]">
           {hubTotalCount > hubs.length ? `${labels.hubTruncated(hubs.length, hubTotalCount)} · ` : ""}
           {labels.hubDegreeCaption}
@@ -267,11 +228,7 @@ export function ConnectionsTab({
   );
 }
 
-/**
- * A card's name. It carries no total: the census tile above the tab bar prints the relation
- * count, and a second copy at the card's far corner was the same number twice in one viewport
- * (review, 2026-09-25, round 5).
- */
+/** A card's name without a total: the census strip already prints the relation count. */
 function CardHead({ label }: { label: string }) {
   return (
     <div className="flex items-baseline gap-2.5">
@@ -280,15 +237,7 @@ function CardHead({ label }: { label: string }) {
   );
 }
 
-/**
- * The single door out of an empty relations card.
- *
- * Both cards on this tab used to end in prose that named the remedy ("connect
- * concepts on the map") without offering it, while the composition and
- * boundaries tabs already linked to exactly that screen from their own empty
- * states. The sibling with the link was right; these two were the copies that
- * lost it.
- */
+/** The one door out of an empty relations card: the screen where relations are written. */
 function EmptyRelationAction({ label, testId }: { label: string; testId: string }) {
   return (
     <Link

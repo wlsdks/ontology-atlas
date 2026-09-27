@@ -13,12 +13,7 @@ import {
   weeklyVaultHistory,
 } from "./vault-history";
 
-/**
- * These pin the two properties the whole surface rests on: the present and the past are
- * counted by the *same* rule, and every number is recomputable from Git rather than
- * remembered. A series that drifts between those two is the failure mode that makes a
- * curve look authoritative while being wrong.
- */
+/** The present and the past are counted by the same rule, and every number is recomputable from Git. */
 
 const commit = (
   hash: string,
@@ -47,10 +42,7 @@ describe("classifyVaultPath — the three counting rules", () => {
     expect(classifyVaultPath("domains/commerce.md")).toBe("concept");
   });
 
-  /*
-   * The same rule the rest of the product uses: a `wiki/_*` file is the wiki's own
-   * scaffolding — the template and the log — not a page anybody wrote.
-   */
+  // A `wiki/_*` file is the wiki's scaffolding (template, log), not a page.
   it("leaves the wiki's own furniture out of the count", () => {
     expect(classifyVaultPath("wiki/_template.md")).toBeNull();
     expect(classifyVaultPath("wiki/_log.md")).toBeNull();
@@ -105,10 +97,7 @@ describe("replayVaultHistory — rewound from the present, not accumulated forwa
     expect(points.map((p) => p.hash)).toEqual(["c1", "c2", "c3"]);
   });
 
-  /*
-   * The newest commit's point *is* the present: nothing has been undone yet when the walk
-   * reaches it. If this ever drifts, every number behind it drifts with it.
-   */
+  // The newest commit's point is the present: nothing has been undone yet when the walk reaches it.
   it("puts the present at the newest commit", () => {
     const points = replayVaultHistory(present, [
       commit("c2", "2026-09-02T10:00:00Z", [["capabilities/new.md", "added"]]),
@@ -163,12 +152,8 @@ describe("replayVaultHistory — rewound from the present, not accumulated forwa
     expect(points[0]!.counts).toEqual(present);
   });
 
-  /*
-   * ⚠️ A rename arrives as delete + add (`--no-renames`). Split across the window's oldest
-   * edge, the add is inside and its matching earlier state is not, so the rewind can run
-   * past zero. A folder holding minus three documents is worse than a slightly short
-   * window, so it clamps.
-   */
+  // A rename arrives as delete plus add (`--no-renames`); split across the window's oldest edge the rewind can pass
+  // zero, so it clamps.
   it("never draws a folder holding a negative number of anything", () => {
     const points = replayVaultHistory({ concept: 1, writeUp: 0, module: 0, document: 0 }, [
       commit("c2", "2026-09-02T10:00:00Z", [["a.md", "added"]]),
@@ -203,10 +188,7 @@ describe("weeklyVaultHistory — what the folder held at the end of each week", 
     expect(weeks.map((w) => w.week)).toEqual(["2026-08-31", "2026-09-07"]);
   });
 
-  /*
-   * A week nobody committed in is absent, not zero. Drawn as zero it says the folder was
-   * emptied and refilled, which is a lie about the person rather than about the data.
-   */
+  // A week without commits is absent, not zero, which would claim the folder was emptied and refilled.
   it("leaves a quiet week out rather than drawing it as empty", () => {
     const weeks = weeklyVaultHistory([
       { isoTime: "2026-08-31T09:00:00Z", hash: "a", counts: { concept: 5, writeUp: 0, module: 0, document: 0 } },
@@ -238,12 +220,7 @@ describe("vaultHistoryPeak — the shared baseline the three tracks scale to", (
   });
 });
 
-/**
- * The measurement that decided this surface exists, kept as a case so the shape it is
- * built to read cannot be refactored away: on this repository's own vault the concepts
- * fell while the folder kept being worked in. A single blended score moves 157 → 132 and
- * calls that "down a little"; the three series show a third of the meaning layer going.
- */
+/** The shape a blended score would erase: on this repository's vault the concepts fell while the folder kept growing. */
 describe("the divergence a blended score would erase", () => {
   it("keeps the layers apart, so a fall in one is visible beside a rise in another", () => {
     const weeks = weeklyVaultHistory([
@@ -277,11 +254,7 @@ describe("vaultLayerMilestones", () => {
     });
   });
 
-  /*
-   * ⚠️ The condition that keeps a milestone from lying about the person. A folder older than
-   * the window opens holding things; dating that to the window's first week would say the
-   * work started the day we happened to start looking.
-   */
+  // A folder older than the window opens holding things, so the window's first week is never a beginning.
   it("never calls the window's own first week a beginning", () => {
     const series = [
       week("2026-06-01", { concept: 40 }),
@@ -324,11 +297,8 @@ describe("vaultLayerMilestones", () => {
 });
 
 describe("classifyVaultPath — a folder is a path segment, not a prefix", () => {
-  /*
-   * ⚠️ Measured on the sample board: architecture read 0 beside an architecture folder that
-   * plainly existed, because the bundled manifest carries repo-relative paths
-   * (`samples/storefront/architecture/…`) and the rule tested the string's prefix.
-   */
+  // The bundled manifest carries repo-relative paths (`samples/storefront/architecture/...`), so layer folders match
+  // by segment, not prefix.
   it("counts a layer folder that sits under a prefix", () => {
     expect(classifyVaultPath("samples/storefront/architecture/services.md")).toBe("module");
     expect(classifyVaultPath("samples/storefront/wiki/onboarding.md")).toBe("writeUp");
@@ -371,11 +341,7 @@ describe("vaultLayerMilestones — one week, one fact", () => {
 });
 
 describe("every aggregate folds over every layer", () => {
-  /*
-   * ⚠️ Three council seats found the same defect independently on 2026-09-09: the fourth
-   * layer reached the type and both renderers and none of the aggregates. These pin the
-   * property rather than the four names, so a fifth layer fails here instead of shipping.
-   */
+  // These pin the property over all layers rather than four names, so a new layer missed by an aggregate fails here.
   const week = (counts: Partial<VaultLayerCounts>): VaultHistoryWeek => ({
     week: "2026-06-01",
     hash: "aaaaaaaa",
@@ -398,7 +364,7 @@ describe("every aggregate folds over every layer", () => {
   });
 
   it("clamps a negative count in every layer, not only the first three", () => {
-    // One deletion inside the window for a file added before it — the rename-pair case.
+    // One deletion inside the window of a file added before it: the rename-pair case.
     const commits = [
       {
         hash: "c1",

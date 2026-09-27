@@ -1,30 +1,17 @@
 /**
- * The analysis brief — "what in your understanding has to change" — across the three cores
- * (ontology, wiki, harness) plus what agents did meanwhile.
- *
- * Every line is a count with a sentence id; the sentence lives in the message catalogue so
- * the number and its wording are never written apart. A count is never a score: the brief
- * lists named facts (pages whose source moved, areas no rule reaches), and the person decides.
- *
- * The three states are the product-wide vocabulary from the cognitive-diff work
- * (2026-09-12): `current` (checked and still true), `stale` (checked and moved),
- * `unknown` (could not be checked here). A browser cannot read the code beside a vault, so
- * ontology evidence is `unknown` there rather than silently `current`.
+ * The analysis brief, "what in your understanding has to change", across the ontology, wiki and harness cores plus
+ * agent activity. Every line is a count with a message id, so number and wording are never written apart, and a
+ * count is never a score. States: `current` (checked, still true), `stale` (checked and moved), `unknown` (could not
+ * be checked here); a browser cannot read code beside a vault, so ontology evidence is `unknown` there.
  */
 export type BriefState = 'current' | 'stale' | 'unknown';
 
 export type BriefCoreKey = 'ontology' | 'wiki' | 'harness' | 'agent';
 
 /**
- * Why a core's numbers are what they are. `measured` means the counts are real; `app-only`
- * means the browser cannot reach the input (dot folders, Git, code beside the vault) and
- * the installed app can; `no-data` means the input exists but is empty (no wiki, no agent
- * log yet), which is a different sentence from "cannot look"; `reading` means the app is
- * still walking the folder, `unreadable` means it tried and could not, and `no-source` means
- * nothing is bound to read: the harness lives in a code repository this vault has not been
- * connected to. Inside the app
- * those last two used to read "measured in the app only", which told a person standing in
- * the app to go and get the app (measured on this repository's own vault, 2026-09-19).
+ * Why a core's numbers are what they are: `measured` (real counts), `app-only` (only the installed app reaches the
+ * input), `no-data` (the input exists but is empty), `reading` (still walking), `unreadable` (tried and failed), and
+ * the last, `no-source` (the harness's code repository is not connected to this vault).
  */
 export type BriefAvailability = 'measured' | 'app-only' | 'no-data' | 'reading' | 'unreadable' | 'no-source';
 
@@ -33,9 +20,8 @@ export interface BriefLine {
   id: string;
   count: number;
   /**
-   * What the line means for the reader. `stale`: something they believed is now wrong.
-   * `unknown`: something nobody has checked or that nothing reaches. `current`: something
-   * that happened, worth knowing, contradicting nothing. The headline sums the first two.
+   * The value `stale`: something the reader believed is now wrong. `unknown`: nobody checked it or nothing reaches it.
+   * And `current`: worth knowing, contradicting nothing. The headline sums the first two.
    */
   state: BriefState;
 }
@@ -43,10 +29,7 @@ export interface BriefLine {
 export interface BriefCore {
   core: BriefCoreKey;
   availability: BriefAvailability;
-  /**
-   * The core's magnitude — concepts, pages, guide files, calls since the anchor — so the card
-   * says how big the thing is before it says what moved. `null` when this session cannot count it.
-   */
+  /** The core's magnitude (concepts, pages, guide files, calls since the anchor); `null` when this session cannot count it. */
   headline: number | null;
   /** Items in each state. `null` when this core cannot state that column here. */
   current: number | null;
@@ -55,14 +38,8 @@ export interface BriefCore {
   /** Lines with a count of zero are kept: the screen decides whether a zero is worth ink. */
   lines: readonly BriefLine[];
   /**
-   * What this core adds to the headline, when adding its own lines would count one subject
-   * twice. Omitted means the lines already are a sum of separate things: the harness card's
-   * three "areas" lines count three different empty cells of the coverage table, and the agent
-   * card's waiting and failed receipts are different receipts.
-   *
-   * The ontology card is the one that needed it. Its folder-only concepts sit **inside** its
-   * unchecked count and an agent-written concept can be in any evidence state, so three lines
-   * describe overlapping sets of the same concepts.
+   * The core's headline contribution when its lines overlap: the ontology's lines describe overlapping sets of the
+   * same concepts. Omitted means the lines already count separate things.
    */
   headlineTotals?: { stale: number; unknown: number };
 }
@@ -74,31 +51,17 @@ export interface BriefTotals {
 }
 
 /**
- * The cores whose numbers are still arriving: the harness scan or the ontology's Git walk is in
- * flight. A core in this state contributes nothing yet, which is not the same as contributing
- * zero, so no sum that includes it is a number a reader may take as final.
+ * Cores still arriving (harness scan, ontology Git walk). Such a core contributes nothing yet, not zero, so no sum
+ * including it is final.
  */
 export function briefCounting(cores: readonly BriefCore[]): BriefCoreKey[] {
   return cores.filter((core) => core.availability === 'reading').map((core) => core.core);
 }
 
 /**
- * The one line above the cards: what a reader now has to learn (items in the stale state)
- * and what could not be checked (items in the unknown state). Two sums of named things,
- * never combined into one, and never a score.
- *
- * **Named things, counted once.** Each core contributes its own `headlineTotals` when its lines
- * describe overlapping sets, and the sum of its lines otherwise. Adding the lines
- * unconditionally put 205 unchecked items over a folder holding 108 concepts, because the
- * ontology card names some of the same concepts on three lines (measured on this repository's
- * own vault, 2026-09-21). A reader cannot place a count larger than the thing it counts.
- *
- * ⚠️ **No sum while a core is still reading.** `null` until every core has reported. The harness
- * scan finishes seconds after the rest, and a reading core has no lines, so the sum painted
- * "98 to learn · 99 not checked" with full confidence and turned into 142 · 101 two seconds later
- * with no mark in between: the 44 mirror findings and 2 unguarded areas the scan then found were
- * missing, not zero (real bridge, 2026-09-25). A partial sum is not even a lower bound — the
- * ontology's unchecked count falls when its walk lands — so the screen waits instead of guessing.
+ * The line above the cards: stale and unknown items, two sums of named things, never one score. Each core adds its
+ * own `headlineTotals` when its lines overlap, else their sum, so a count never exceeds what it counts. It is `null`
+ * while a core reads: a partial sum is not even a lower bound, since the ontology's unchecked count falls when its walk lands.
  */
 export function briefTotals(cores: readonly BriefCore[]): BriefTotals | null {
   if (briefCounting(cores).length > 0) return null;
@@ -118,14 +81,10 @@ export function briefTotals(cores: readonly BriefCore[]): BriefTotals | null {
   return { stale, unknown };
 }
 
-/**
- * One named thing under a line: which concept, which path, when it moved, and when the
- * concept's own document last moved. The screen renders these instead of sending a reader
- * to another screen that counts something else.
- */
+/** One named thing under a line: concept, path, when it moved and when the concept's document last moved. */
 export interface BriefLineDetail {
   name: string;
-  /** The concept's vault document slug — what `get_concept` takes. `null` when it owns no document. */
+  /** The concept's vault document slug, what `get_concept` takes; `null` when it owns no document. */
   slug: string | null;
   path: string;
   /** When the path moved. `null` for a path that is simply gone. */
@@ -135,12 +94,12 @@ export interface BriefLineDetail {
   href: string;
 }
 
-/** Lines worth showing: nonzero counts, in the order the builder ranked them. */
+/** Nonzero lines in the builder's order. */
 export function visibleLines(core: BriefCore): readonly BriefLine[] {
   return core.lines.filter((line) => line.count > 0);
 }
 
-/** ISO/epoch → ms, or null for anything unparseable. Ledger and log stamps are ISO-8601. */
+/** ISO or epoch to ms, or null when unparseable. */
 export function toMs(value: string | number | null | undefined): number | null {
   if (value == null) return null;
   const ms = typeof value === 'number' ? value : Date.parse(value);

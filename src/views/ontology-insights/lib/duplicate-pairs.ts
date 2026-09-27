@@ -8,22 +8,13 @@ import {
 } from "@/entities/knowledge-graph";
 
 /**
- * The computation behind the "similar names — are these the same thing?" card.
- *
- * Duplicate concepts are the number-one failure of a growing folder. If the screen defined that
- * verdict afresh, a person would see one set of pairs on screen and an agent a different set
- * from `query_ontology({operation:"similar_nodes"})` — and at that moment this card becomes
- * noise rather than grounds for maintenance. So the three functions below are a **verbatim
- * mirror** of the MCP engine (`textTokens`, `setJaccard`, `similarityScore` in
- * `mcp/src/ontology-engine.mjs`), and `tests/contract/duplicate-pairs.contract.test.ts` catches
- * any divergence.
- *
- * The weights match the engine too: slug 0.35 · title 0.35 · kind 0.1 · domain 0.1 ·
- * neighbours 0.1. That distribution exists to separate pairs sharing only a name (capped at
- * 0.7) from pairs that also share a parent and neighbours, so it is not retuned arbitrarily.
+ * Similar-name pairs for the "are these the same thing?" card. The scoring functions mirror the MCP engine
+ * (`textTokens`, `setJaccard`, `similarityScore` in `mcp/src/ontology-engine.mjs`), so the screen and `similar_nodes`
+ * name the same pairs; `tests/contract/duplicate-pairs.contract.test.ts` catches divergence.
+ * Weights match the engine (slug 0.35, title 0.35, kind 0.1, domain 0.1, neighbours 0.1), capping a name-only match at 0.7.
  */
 
-/** Mirror of the engine's `textTokens` — lowercase, alphanumeric runs only, dropping anything under 2 characters. */
+/** Mirror of the engine's `textTokens`: lowercase alphanumeric runs, dropping runs under 2 characters. */
 export function similarityTokens(value: string | null | undefined): string[] {
   return String(value ?? "")
     .toLowerCase()
@@ -31,7 +22,7 @@ export function similarityTokens(value: string | null | undefined): string[] {
     .filter((token) => token.length >= 2);
 }
 
-/** Mirror of the engine's `setJaccard` — intersection over union. Zero if either side is empty. */
+/** Mirror of the engine's `setJaccard`: intersection over union, 0 if either side is empty. */
 export function tokenSetJaccard(
   left: ReadonlySet<string>,
   right: ReadonlySet<string>,
@@ -41,26 +32,23 @@ export function tokenSetJaccard(
   for (const value of left) {
     if (right.has(value)) intersection += 1;
   }
-  // The union size is |L| + |R| − |intersection| — exactly equal to the previous implementation
-  // that built a new Set (integer arithmetic), and it removes an allocation from the inner loop
-  // of an n² pair comparison.
+  // size(L) + size(R) - size(intersection) avoids allocating a union Set in the pair loop.
   const union = left.size + right.size - intersection;
   return union === 0 ? 0 : intersection / union;
 }
 
-/** Mirror of the engine's `roundScore` — stops the two engines diverging on a floating-point tail. */
+/** Mirror of the engine's `roundScore`, so the two engines do not diverge on a floating-point tail. */
 function roundScore(value: number): number {
   return Number(value.toFixed(6));
 }
 
-/** One node as it enters the similarity computation — the same fields as the engine's node summary. */
+/** One node as it enters the similarity computation, with the engine's node-summary fields. */
 export interface SimilarityCandidate {
   slug: string;
   title: string;
   kind: string | null;
-  /** The parent domain's identifier. A domain node itself has no parent (as in the engine). */
+  /** The parent domain's id; a domain node has none, as in the engine. */
   domain: string | null;
-  /** The set of undirected neighbour identifiers. */
   neighbors: ReadonlySet<string>;
 }
 
@@ -97,7 +85,7 @@ export function scoreNodeSimilarity(
   };
 }
 
-/** One suspected duplicate pair. `keep` is the side to keep, `dissolve` the side to fold (the less connected one). */
+/** One suspected pair: `keep` is the better-connected side, `dissolve` the side to fold. */
 export interface DuplicatePairRow {
   id: string;
   keepId: string;
@@ -108,95 +96,57 @@ export interface DuplicatePairRow {
   dissolveTitle: string;
   /** The kind if both nodes share one, otherwise null. */
   kind: string | null;
-  /** Similarity from 0 to 1 — the same number as MCP `similar_nodes`'s score. */
+  /** Similarity 0 to 1, the same number as MCP `similar_nodes`'s score. */
   score: number;
-  /** Human-readable evidence — the words appearing in both names. */
+  /** Evidence for a person: the words both names share. */
   sharedTokens: string[];
 }
 
 export interface DuplicatePairs {
   rows: DuplicatePairRow[];
-  /**
-   * The remaining folded pairs — the layer drawn by the "show more" disclosure.
-   *
-   * Measured 2026-07-27: the badge said 10 while the screen showed three rows with no "show
-   * more". The other seven had **no way to be discovered** on this screen — printing a large
-   * total while quietly hiding the rest is concealment, not truncation.
-   */
+  /** The remaining pairs, drawn by the "show more" disclosure so every counted pair is reachable. */
   restRows: DuplicatePairRow[];
-  /** Total pairs above the threshold — the M in the "top N / M total" truncation copy. */
+  /** Total pairs above the threshold: the M in "top N / M total". */
   suspectCount: number;
 }
 
 /**
- * The minimum similarity for suspecting a duplicate. Measured against the dogfood vault (96
- * concepts), below 0.6 is mostly genuinely different concepts sharing only a name prefix (such
- * as contract documents using one prefix), so this is the floor of the range worth a person's
- * confirmation.
+ * Minimum score for a suspected duplicate. Measured on the dogfood vault (96 concepts): below 0.6 pairs mostly
+ * share only a name prefix.
  */
 const DUPLICATE_SUSPECT_MIN_SCORE = 0.6;
 
-/**
- * A pair sharing no name words at all has slug and title signals of 0, capping it at 0.3 — it
- * can never reach the threshold. So candidates are narrowed with a word inverted index (the
- * semantics are unchanged; only the n² comparison is avoided).
- */
+/** A pair sharing no name word scores at most 0.3, so a word inverted index narrows candidates without changing results. */
 const MAX_SCORE_WITHOUT_SHARED_TOKEN = 0.3;
 
-/**
- * Folder names excluded from the evidence words — `elements/foo` and `elements/bar` share only
- * the fact of being in the same folder. They stay in the score computation (the engine mirror)
- * and are removed only from the evidence shown to a person.
- */
+/** Folder names are dropped from the evidence words only; they stay in the score (the engine mirror). */
 function slugFolders(slug: string): string[] {
   const segments = slug.split("/");
   return segments.slice(0, -1).flatMap((segment) => similarityTokens(segment));
 }
 
-/** One graph node converted into the same fields the engine uses. */
 export type GraphSimilarityCandidate = SimilarityCandidate & { node: KnowledgeGraphNode };
 
 /**
- * The name to point an agent at for this node. For the `merge_concepts` / `get_concept` the
- * screen offers to copy to run as pasted, it must be relative to the vault root — while
- * `evidenceIds[0]` was used directly, the bundled sample's extra `ontology/` segment made the
- * copied call fail immediately (measured 2026-07-26). The similarity score uses the same value:
- * the agent-side `similar_nodes` tokenizes a vault-root-relative slug, so measuring with a
- * prefixed value splits the two rankings.
+ * The vault-root-relative slug an agent is pointed at, so a copied `merge_concepts` or `get_concept` call runs
+ * as pasted; the score uses it too, matching how `similar_nodes` tokenizes.
  */
 function slugOf(node: KnowledgeGraphNode): string {
   return resolveNodeAgentTarget(node).ref ?? node.id;
 }
 
 /**
- * Does this node have **its own document**?
- *
- * The derived graph contains nodes born from references with no document — code paths written
- * into another document's `elements:`, for instance. Such a node's evidence slug belongs not to
- * itself but to the document that named it, so proposing a merge points at the wrong file. In
- * the dogfood vault this really surfaced «Test Name Pattern ↔ Test Name Pattern Test» (a source
- * file and its test file) at 100% overlap — not a duplicate, just two files with similar names.
- *
- * The verdict is made in exactly one place, `resolveNodeDocument` — it reads the fact derivation
- * recorded when creating the node (`hasOwnDocument`) rather than having the screen re-infer it.
- * The old inference ("does the id tail match the document slug tail?") **missed project nodes**:
- * a project id is built from frontmatter `slug:` (`ontology/project.md` →
- * `project:ontology-atlas`) and differs from the filename tail. Two places deciding one concept
- * will always diverge.
+ * Only nodes with their own document are candidates: a derived node's evidence slug is the document that named it,
+ * so a merge would point at the wrong file. `resolveNodeDocument` is the single verdict.
  */
 function hasOwnDocument(node: KnowledgeGraphNode): boolean {
   return resolveNodeDocument(node).ownSlug !== null;
 }
 
 /**
- * Converts a graph node into the engine's similarity input — built in one place so the screen
- * and the contract test use the same conversion. A node with no document of its own drops out of
- * both the candidates and the neighbour sets (only what the compiler's graph sees is considered).
- *
- * `domain` is the document slug of the nearest domain found by walking containment upwards. The
- * compiler reads the same value straight from frontmatter `domain:` — the schema writes that key
- * on the child side, so both paths reach the same value. A domain node itself has no parent (the
- * engine's `domain` is empty too).
+ * Converts graph nodes into the engine's similarity input, in one place for the screen and the contract test. Nodes
+ * without their own document leave both candidates and neighbour sets. `domain` is the nearest domain up the
+ * containment chain, the value the compiler reads from frontmatter `domain:`; a domain node has none.
  */
 export function buildSimilarityCandidates(
   nodes: readonly KnowledgeGraphNode[],
@@ -208,8 +158,7 @@ export function buildSimilarityCandidates(
     nodes.filter(hasOwnDocument).map((node) => [node.id, node] as const),
   );
 
-  // The neighbour set means the same as the engine's `traversalEdges(slug,'undirected')` — the
-  // set of adjacent document slugs regardless of relation direction.
+  // Neighbours as the engine's `traversalEdges(slug,'undirected')`: adjacent document slugs in either direction.
   const neighborsOf = new Map<string, Set<string>>();
   const addNeighbor = (fromId: string, toId: string) => {
     const from = documented.get(fromId);
@@ -229,14 +178,13 @@ export function buildSimilarityCandidates(
 
   const candidates = new Map<string, GraphSimilarityCandidate>();
   for (const node of documented.values()) {
-  // The domain-ancestor walk runs over the whole graph, so membership still reaches the domain
-  // even with a document-less node in between.
+  // The domain walk runs over the whole graph, so membership reaches the domain through a document-less node.
     const domainId = node.kind === "domain" ? null : nearestDomainId(node, parentOf, nodeById);
     const domainNode = domainId ? nodeById.get(domainId) : null;
     candidates.set(node.id, {
       node,
       slug: slugOf(node),
-  // The score uses `title`, the source of truth for search and matching — `display` is render-only.
+  // `title` is the search and matching source; `display` is render-only.
       title: node.title,
       kind: node.kind || null,
       domain: domainNode ? slugOf(domainNode) : null,
@@ -251,11 +199,7 @@ export function buildDuplicatePairs(
   edges: readonly KnowledgeGraphEdge[],
   limit: number,
   minScore = DUPLICATE_SUSPECT_MIN_SCORE,
-  /**
-   * How many remaining rows the disclosure carries. 0 means no folded layer (preserving the old
-   * caller's behaviour). The basis for the value is decided by the consumer from measurement;
-   * this function only truncates.
-   */
+  /** Rows the disclosure carries; 0 means no folded layer. The consumer picks the value; this only truncates. */
   restLimit = 0,
 ): DuplicatePairs {
   const empty: DuplicatePairs = { rows: [], restRows: [], suspectCount: 0 };
@@ -265,13 +209,9 @@ export function buildDuplicatePairs(
   if (candidates.size < 2) return empty;
 
   /**
-   * Tokenize each node's word set **once**. Previously `scoreNodeSimilarity` re-tokenized slug
-   * and title per pair, building four new Sets each time — and in the large buckets created by
-   * shared folder words (`capabilities` and the like) this one function consumed 74% of the
-   * insights entry memo time (34.8ms measured under 4× throttling). The scoring formula is
-   * reproduced by `scorePair` below, matching `scoreNodeSimilarity` down to the position of each
-   * term (rounding order included) — divergence is caught by the engine comparison in
-   * `duplicate-pairs.contract.test.ts`.
+   * Each node is tokenized once. `scorePair` reproduces `scoreNodeSimilarity` term by term, rounding order included,
+   * and the engine comparison in `duplicate-pairs.contract.test.ts` catches divergence. Candidate pairs come from a
+   * word inverted index: O(sum of bucket sizes squared), O(n^2) when one shared word buckets every node.
    */
   interface PairTokens {
     slug: Set<string>;
@@ -298,8 +238,7 @@ export function buildDuplicatePairs(
     return roundScore(slug + title + kind + domain + neighbors);
   };
 
-  // Word → node inverted index. If the threshold is at or below the ceiling reachable with no
-  // shared word, narrowing could change the result, so it falls back to exhaustive comparison.
+  // At or below the no-shared-word ceiling, narrowing could change the result, so compare every pair.
   const useTokenIndex = minScore > MAX_SCORE_WITHOUT_SHARED_TOKEN;
   interface IndexedCandidate {
     id: string;
@@ -343,9 +282,7 @@ export function buildDuplicatePairs(
     }
     let worst = 0;
     for (let index = 1; index < scored.length; index += 1) {
-      // On an exact comparator tie, choose the later row as the eviction candidate. Array#sort is
-      // stable, so keeping the earlier row preserves the old full-sort-then-slice prefix even if a
-      // malformed graph gives two document pairs the same printable row id.
+      // On an exact tie evict the later row, so the kept prefix matches a stable full sort even with duplicate row ids.
       if (compareRows(scored[worst], scored[index]) <= 0) worst = index;
     }
     if (compareRows(row, scored[worst]) < 0) scored[worst] = row;
@@ -357,8 +294,7 @@ export function buildDuplicatePairs(
     const total = scorePair(left, right, leftEntry.tokens, rightEntry.tokens);
     if (total < minScore) return;
 
-  // The side to keep is the more connected one — merging gathers backlinks there, so the fewest
-  // relations have to be reconnected. Ties break by name, so the same suggestion is given every time.
+  // Keep the better-connected side, so fewer relations need reconnecting; ties break by name for a stable suggestion.
     const leftKeeps =
       left.neighbors.size !== right.neighbors.size
         ? left.neighbors.size > right.neighbors.size
@@ -427,7 +363,7 @@ export function buildDuplicatePairs(
   };
 }
 
-/** Match Array#slice's non-negative end coercion used by the previous implementation. */
+/** Coerces like `Array#slice`'s end: negative becomes 0. */
 function sliceCount(value: number): number {
   const nonNegative = Math.max(0, value);
   if (nonNegative === Infinity) return Infinity;

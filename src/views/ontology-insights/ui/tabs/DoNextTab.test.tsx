@@ -18,9 +18,7 @@ vi.mock("@/i18n/navigation", () => ({
   ),
 }));
 
-// jsdom has no working clipboard, which makes the kebab's "hand to an agent" completion path
-// non-deterministic — `copyText` is pinned to success (true), the same convention as the
-// CopyAgentTextButton tests.
+// jsdom has no working clipboard, so `copyText` is pinned to success, as in the CopyAgentTextButton tests.
 vi.mock("@/shared/lib/copy-text", () => ({ copyText: vi.fn(async () => true) }));
 
 const GROUP_NAMES: Record<DoNextGroupKey, string> = {
@@ -161,9 +159,8 @@ const renderTab = (overrides: Partial<DoNextTabProps> = {}) =>
   render(<DoNextTab {...base} {...overrides} />);
 
 /**
- * Renders and opens every group. Since 2026-09-06 the list is one row per finding group and the
- * named rows live behind a disclosure, so a check about a *row* must open its group first — which
- * is also the check that the disclosure actually reveals what it counts.
+ * Renders and opens every group: the named rows live behind a disclosure, so a row check must open its group,
+ * which also checks the disclosure reveals what it counts.
  */
 const renderExpanded = (overrides: Partial<DoNextTabProps> = {}) => {
   const result = renderTab(overrides);
@@ -187,13 +184,7 @@ const duplicate: DuplicatePairRow = {
   sharedTokens: ["invoice"],
 };
 
-/**
- * **One list, one title count, and group counts that add up to it.** The tab used to show the same
- * work three ways (a readiness meter, a counter band and a grouped queue); the 2026-08-31 decision
- * made it one list titled by one count, and that still holds. What changed on 2026-09-06 is that
- * the rows are grouped by finding, so the eight identical sentences the owner measured are one row
- * with an "8" beside it. These checks are the barrier against a second census returning.
- */
+/** One list, one title count, and group counts that add up to it: the barrier against a second census. */
 describe("DoNextTab one list with one total", () => {
   it("states the size in one title without gauges, a figure strip or old group heads", () => {
     renderTab();
@@ -207,8 +198,7 @@ describe("DoNextTab one list with one total", () => {
       "do-next-group-meaning",
       "do-next-group-code",
       "do-next-touchups",
-      // The list-wide truncation line: each group now states its own remainder, and a second
-      // line adding them up again would be the screen counting one thing twice.
+      // Each group states its own remainder, so a list-wide line would count one thing twice.
       "do-next-list-truncated",
     ]) {
       expect(screen.queryByTestId(gone), `${gone} is still rendered`).toBeNull();
@@ -363,9 +353,8 @@ describe("DoNextTab one observed fact per kind", () => {
   });
 
   /**
-   * The readiness meter said "5 blocked" and named none of them. These rows name the document and
-   * say which check failed, and they link to the file rather than the map: a document that fails
-   * validation is not a node, so the map has nothing to show.
+   * Blocked rows name the document and the failed check and link to the file: a document failing validation is not
+   * a node, so the map has nothing to show.
    */
   it("names a document blocked by the check and links to the library", () => {
     renderExpanded({
@@ -454,11 +443,7 @@ describe("DoNextTab review loop", () => {
     expect(status).toHaveTextContent("Not detected in the current vault: Alone");
   });
 
-  /**
-   * Returning from the map must land on the row that was opened. With the list grouped, that row
-   * is behind a disclosure, so **the group holding it opens by itself** — otherwise the review
-   * loop would return a person to a closed accordion and lose their place.
-   */
+  /** Returning from the map lands on the opened row, so the group holding it opens by itself. */
   it("expands the group holding an active row and marks it as the current step", () => {
     renderTab({
       reviewState: { phase: "active", id: "orphan:element:alone", title: "Alone" },
@@ -475,13 +460,8 @@ describe("DoNextTab review loop", () => {
 });
 
 /**
- * The four advisory findings the validator already reported to the agent.
- *
- * Each is one row per node with a sentence and a way into the node — no write form,
- * because none of them closes by typing into one frontmatter key. The check that matters
- * is that the group's count and the rows it opens are about the same finding: the rows are
- * built inside the open branch of `rowsOfGroup`, so a key wired to the wrong list would
- * draw a boundary row under "records no unknown" and nothing would fail elsewhere.
+ * The four advisory findings: one row per node with a sentence and a way in, no write form. The group count and
+ * its rows must be about the same finding, since rows are built inside the open branch of `rowsOfGroup`.
  */
 describe("DoNextTab check finding groups", () => {
   const findingRow = (gap: MeaningFindingGapKind, slug: string, title: string) => ({
@@ -510,8 +490,7 @@ describe("DoNextTab check finding groups", () => {
     findingRows,
     domainChoices: [],
     onWrite: async () => {},
-    // Unused by these four sections — they draw `FixRow`s, not the write form. An empty
-    // object here is the honest statement that no label of that set is read.
+    // These sections draw `FixRow`s, not the write form, so no label of that set is read.
     definitionLabels: {} as MeaningGapLabels,
     domainLabels: {} as MeaningGapLabels,
   };
@@ -543,22 +522,17 @@ describe("DoNextTab check finding groups", () => {
       expect(rows, kind).toHaveLength(1);
       expect(rows[0]).toHaveTextContent(title);
       expect(rows[0]).toHaveTextContent(`finding:${kind}`);
-      // A way into the node, and no write form: these are read-then-write-prose rows.
+      // A way into the node and no write form: these rows are answered in prose.
       const view = rows[0].querySelector('a[href*="/topology/"]');
       expect(view, kind).not.toBeNull();
       expect(rows[0].querySelector("input"), kind).toBeNull();
-      // Leaving claims the row: the chip carries the review id like an orphan's does, and
-      // the row menu exists (the a11y audit opens it on whatever group comes first).
+      // Leaving claims the row: the chip carries the review id like an orphan's, and the row menu exists.
       expect(view?.getAttribute("href"), kind).toContain(`review=${kind}:`);
       expect(rows[0].querySelector('[data-testid="do-next-row-menu"]'), kind).not.toBeNull();
     }
   });
 
-  /**
-   * The finding rows leave through the same chips as an orphan's, so coming back has to
-   * reopen their group and mark the row: measured on the CI sample vault (2026-09-23),
-   * the first group was a finding section and Back returned to a closed accordion.
-   */
+  /** Finding rows leave through the same chips as orphans, so Back must reopen their group and mark the row. */
   it("opens the group and marks the row current when returning with a finding review", () => {
     renderTab({
       totalCount: 4,

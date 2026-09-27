@@ -1,22 +1,14 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 
 /**
- * The dependency-cycle card — it answers "has a structurally dangerous loop appeared?" and lists
- * only loops in the directed depends_on graph.
- *
- * Data: computed on the client from the nodes/edges already loaded by the page (single source of
- * truth — no separate store). The dependency-family verdict means the same as the MCP
- * `query_ontology({operation:"cycles"})` derivation: depends_on rather than containment
- * (contains/belongs_to). Both spellings are accepted because the frontmatter storage key may still
- * be `dependencies` before canonicalization.
- *
- * Algorithm: a depth-limited DFS from each node, plus a Johnson-style minimum-vertex constraint
- * (advance only to ids greater than the current start), so each simple directed cycle is found
- * exactly once at its minimum node — rotational duplicates are structurally excluded. On a sparse
- * ontology dependency graph this is milliseconds even at 300 nodes.
+ * Loops in the directed depends_on graph, from the nodes and edges the page already loaded, with the meaning of
+ * MCP `query_ontology({operation:"cycles"})`: dependency, not containment. Both `depends_on` and `dependencies`
+ * are accepted, since the storage key may precede canonicalization. A depth-limited DFS from each node with a
+ * Johnson-style minimum-vertex rule finds each simple cycle once, at its minimum node. Worst case is exponential in the
+ * depth limit `maxHops`, so `STEP_BUDGET` bounds the work and sets `limited`.
  */
 
-/** Directed dependency-family edge types — not structural (containment). Same meaning as MCP cycles. */
+/** Directed dependency edge types, not containment; the same meaning as MCP cycles. */
 const DEPENDENCY_EDGE_TYPES = new Set(["depends_on", "dependencies"]);
 
 export function isDependencyEdgeType(type: string): boolean {
@@ -24,46 +16,40 @@ export function isDependencyEdgeType(type: string): boolean {
 }
 
 export interface DependencyCycle {
-  /** A stable id — the canonical key from joining the directed path starting at the minimum node. */
+  /** Stable id: the directed path joined from its minimum node. */
   id: string;
-  /** The cycle's real (distinct) node count. An honest length, independent of the display cap. */
+  /** The cycle's distinct node count, independent of the display cap. */
   length: number;
-  /**
-   * The distinct node path for display (no repeated start), capped by `maxPathNodes`.
-   * The UI appends `nodeIds[0]` at the end to close it as "A → B → C → A".
-   */
+  /** The display path without the repeated start, capped by `maxPathNodes`; the UI appends `nodeIds[0]` to close it. */
   nodeIds: string[];
-  /** length − nodeIds.length. Above 0 the path was truncated, printed as "N more". */
+  /** The value length - nodeIds.length; above 0 the path was truncated. */
   hiddenNodeCount: number;
 }
 
 export interface DependencyCyclesResult {
-  /** Cycles capped by `maxCycles`, sorted shortest first. */
+  /** Cycles capped by `maxCycles`, shortest first. */
   cycles: DependencyCycle[];
-  /** The total number of distinct cycles detected (may exceed `maxCycles`). */
+  /** All distinct cycles detected, possibly more than `maxCycles`. */
   totalCycles: number;
-  /** totalCycles − cycles.length. Above 0 it is printed as "N more". */
+  /** The value totalCycles - cycles.length; above 0 it prints as "N more". */
   hiddenCycles: number;
-  /** Every current cycle id, independent of the display cap. Used for the exact review verdict. */
+  /** Every current cycle id regardless of the display cap, for the exact review verdict. */
   activeCycleIds: string[];
-  /** Was the search truncated by the depth limit or the work budget (longer cycles may have been missed)? */
+  /** Whether the depth limit or the work budget cut the search, so longer cycles may be missing. */
   limited: boolean;
 }
 
 export interface FindDependencyCyclesOptions {
-  /** The maximum cycles to expose. Defaults to 5. */
   maxCycles?: number;
-  /** The maximum nodes to print in a path. Defaults to 8. */
   maxPathNodes?: number;
   /**
-   * The detection depth limit (distinct nodes in a path). Defaults to 16 — deliberately larger than
-   * the display cap (8) so the "N more" truncation actually means something. MCP cycles itself
-   * defaults to maxDepth 8; here it is generous for the sake of that truncation.
+   * Detection depth in distinct nodes. Defaults to 16, above the display cap of 8 so "N more" means something;
+   * MCP cycles defaults to 8.
    */
   maxHops?: number;
 }
 
-/** A hard guard against runaway search — milliseconds even on a pathologically dense graph. */
+/** A hard guard against runaway search on a pathologically dense graph. */
 const STEP_BUDGET = 500_000;
 
 export function findDependencyCycles(
@@ -77,9 +63,8 @@ export function findDependencyCycles(
 
   const nodeIdSet = new Set(graphNodes.map((node) => node.id));
 
-  // Only dependency edges enter the adjacency list, and both endpoints must be known nodes
-  // (matching MCP's `edge.resolved` — dangling references are ignored). Self-loops are collected
-  // separately as self-referencing cycles.
+  // Only dependency edges between known nodes enter the adjacency (dangling references are ignored, like
+  // MCP's `edge.resolved`); self-loops are collected separately.
   const adjacency = new Map<string, Set<string>>();
   const selfLoops = new Set<string>();
   for (const edge of edges) {
@@ -98,19 +83,16 @@ export function findDependencyCycles(
   }
 
   const foundPaths = new Map<string, string[]>();
-  // `depthTruncated`: some branch hit the depth limit and may have missed a longer cycle (a
-  // per-branch prune, not a global stop). `budgetExhausted`: the hard work budget ran out, stopping
-  // globally. Either one makes the result's `limited` true.
+  // The flag `depthTruncated` means a branch hit the depth limit (per-branch prune); `budgetExhausted` means the
+  // work budget stopped the search globally. Either sets `limited`.
   let depthTruncated = false;
   let budgetExhausted = false;
   let steps = 0;
 
-  // ① Self-reference — A depends_on A.
   for (const id of [...selfLoops].sort()) {
     foundPaths.set(id, [id]);
   }
 
-  // ② Multi-node cycles — DFS with the minimum-vertex constraint.
   const path: string[] = [];
   const inPath = new Set<string>();
   const starts = [...adjacency.keys()].sort();
@@ -125,8 +107,7 @@ export function findDependencyCycles(
       budgetExhausted = true;
       return;
     }
-  // The depth limit is a per-branch prune. Sibling branches (shorter cycles) must keep being
-  // searched, so only this branch is folded rather than stopping globally.
+  // A per-branch prune, so sibling branches with shorter cycles keep being searched.
     if (path.length >= maxHops) {
       depthTruncated = true;
       return;
@@ -141,8 +122,7 @@ export function findDependencyCycles(
         }
         continue;
       }
-  // Johnson's minimum-vertex constraint: advance only to ids greater than the start, so each cycle
-  // is discovered only at its minimum node (excluding rotational duplicates and cutting work).
+  // Johnson's minimum-vertex rule: advance only to ids above the start, so each cycle is found once, at its minimum node.
       if (next < start) continue;
       if (inPath.has(next)) continue;
       dfs(start, next);

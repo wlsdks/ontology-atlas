@@ -31,8 +31,7 @@ function edge(from: string, to: string, type: KnowledgeGraphEdge["type"]): Knowl
 
 describe("buildImpactRanking", () => {
   it("ranks the concepts with the most dependents first and counts direct and transitive separately", () => {
-    // c → b → a  (the arrow is depends_on: the left depends on the right)
-    //     d → a
+    // Here c depends on b, b on a, and d on a.
     const nodes = [node("a"), node("b"), node("c"), node("d")];
     const edges = [
       edge("b", "a", "depends_on"),
@@ -43,11 +42,11 @@ describe("buildImpactRanking", () => {
     const { rows, rankedCount } = buildImpactRanking(nodes, edges, 6);
 
     expect(rows.map((r) => [r.id, r.direct, r.total])).toEqual([
-    // Changing `a` makes b and d direct, and c an indirect, re-check target.
+    // Changing `a` makes b and d direct and c an indirect re-check target.
       ["a", 2, 3],
       ["b", 1, 1],
     ]);
-    // c and d have zero blast radius and do not enter the ranking — a row with no signal wastes ink.
+    // Nodes with zero blast radius do not enter the ranking.
     expect(rankedCount).toBe(2);
   });
 
@@ -97,8 +96,7 @@ describe("buildImpactRanking", () => {
   });
 
   describe("evidence layer split", () => {
-    // The situation where the largest blast radius is a derived concept with no document — the
-    // arrangement that actually occurred in the dogfood vault (11 of the top 12 rows were derived code paths).
+    // The largest blast radius belongs to a derived concept without a document.
     const stub = {
       ...node("element:integration-test", "element", "cli/src/integration.test.mjs"),
       hasOwnDocument: false,
@@ -117,16 +115,14 @@ describe("buildImpactRanking", () => {
       const ranking = rank();
       expect(ranking.rows.map((row) => row.id)).not.toContain("element:integration-test");
       expect(ranking.evidenceRows.map((row) => row.id)).toEqual(["element:integration-test"]);
-    // Per-layer totals are counted separately — mixing them in the "top N / M total" copy leaves a
-    // user unable to tell the scale of the list they are looking at.
+    // Per-layer totals are counted separately, so "top N / M total" states the scale of the list shown.
       expect(ranking.rankedCount).toBe(1);
       expect(ranking.evidenceRankedCount).toBe(1);
     });
 
     it("counts over the whole graph so the split does not change impact counts", () => {
       const ranking = rank();
-    // Removing derived concepts from the graph before measuring would give one concept different
-    // numbers on screen and from the agent (violating the MCP blast_radius contract). 3 is the three that cited it.
+    // Measured over the whole graph, as MCP `blast_radius` does: 3 is the three that cited it.
       expect(ranking.evidenceRows[0].total).toBe(3);
       expect(ranking.rows[0].id).toBe("capability:login");
       expect(ranking.rows[0].total).toBe(2);

@@ -1,13 +1,9 @@
 import type { KnowledgeGraphNode, OntologyHealthActionTarget, VaultHealthResult } from "@/entities/knowledge-graph";
 
 /**
- * Adapts the CLI-parity `computeVaultHealth` verdict into the shape of the insights repair queue.
- * The vault-health lib speaks in full vault slugs (`capabilities/invoice`) while the queue links use
- * graph node ids (`capability:invoice`), so a target slug is matched to a node by its tail.
- *
- * These two signals (disconnected islands · missing domain containment) are the ones
- * `node $ATLAS/cli/src/index.mjs health` flips to `needs_attention` on — surfacing them is what
- * stops the app from falsely claiming there is nothing to repair.
+ * Adapts the CLI-parity `computeVaultHealth` verdict (islands, missing domain containment, the signals the
+ * CLI `health` command flags) into the repair queue's shape. Vault slugs (`capabilities/invoice`) are matched to graph
+ * node ids (`capability:invoice`) by their tail.
  */
 export interface VaultHealthRepair {
   islandCount: number;
@@ -15,16 +11,13 @@ export interface VaultHealthRepair {
   /** Highest-priority CLI-parity repair, or null when both are clear. */
   actionTarget: OntologyHealthActionTarget | null;
   /**
-   * Every resolvable CLI-parity repair target, ordered by urgency:
-   * missing-containment nodes first, then one representative per island.
-   * `actionTarget` remains the first item for the topology/summary contract.
+   * Every resolvable target by urgency: missing containment first, then one node per island. `actionTarget` stays
+   * the first item for the topology and summary contract.
    */
   actionTargets: OntologyHealthActionTarget[];
 }
 
-// Reduce both a vault slug (`capabilities/invoice`) and a graph node id
-// (`capability:invoice`) to their shared tail (`invoice`). Node ids separate
-// kind with ':', vault slugs use folder '/', so split on both.
+// The shared tail of a vault slug or a graph node id: node ids separate kind with ':' and slugs use '/'.
 function tailOf(slug: string): string {
   const parts = slug.split(/[/:]/);
   return parts[parts.length - 1] || slug;
@@ -41,16 +34,14 @@ export function buildVaultHealthRepair(
   health: Pick<VaultHealthResult, "missingContainment" | "islands">,
   nodes: readonly KnowledgeGraphNode[],
 ): VaultHealthRepair {
-  // Last-wins is fine — tails are unique per kind in practice, and an exact
-  // graph node id is the goal, not disambiguation.
+  // Last wins: tails are unique per kind in practice, and the goal is an exact node id, not disambiguation.
   const nodesByTail = new Map<string, KnowledgeGraphNode>();
   for (const node of nodes) nodesByTail.set(tailOf(node.id), node);
 
   const islandCount = health.islands.length;
   const missingContainmentCount = health.missingContainment.length;
 
-  // Preserve the whole actionable set. The repair queue may keep the first row
-  // compact, but its aggregate counts must not strand the remaining targets.
+  // Keep the whole actionable set, so aggregate counts never strand the targets past the first row.
   const actionTargets: OntologyHealthActionTarget[] = [];
   for (const target of health.missingContainment) {
     const node = nodeForSlug(target.slug, nodesByTail);

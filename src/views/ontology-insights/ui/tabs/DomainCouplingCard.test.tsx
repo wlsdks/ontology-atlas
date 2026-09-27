@@ -107,11 +107,11 @@ describe("DomainCouplingCard", () => {
     renderCard();
 
     expect(screen.getByTestId("domain-coupling-grid")).toBeInTheDocument();
-    // It never speaks in colour alone — the cross count is in the aria name and in the cell's digit.
+    // Never colour alone: the cross count is in the accessible name and the cell's digit.
     expect(screen.getByLabelText("3 links from Auth to Billing")).toHaveTextContent("3");
-    // The diagonal is not a crossing but a connection inside one domain.
+    // The diagonal counts connections inside one domain.
     expect(screen.getByLabelText("2 links inside Auth")).toBeInTheDocument();
-    // Boundary pressure — the self/cross ratio card renders alongside.
+    // The boundary pressure card renders alongside.
     expect(screen.getByText("Boundary pressure")).toBeInTheDocument();
     expect(screen.getByText(/self 2 · cross 3/)).toBeInTheDocument();
   });
@@ -119,7 +119,7 @@ describe("DomainCouplingCard", () => {
   it("expands a cell into map deep links for the links between its two domains", () => {
     renderCard();
 
-    // The space is held even before a selection, and it guides the next step.
+    // The selection slot is held before a selection and guides the next step.
     expect(screen.getByTestId("domain-coupling-selection")).toHaveTextContent(
       "Pick a cell to see the actual connections.",
     );
@@ -133,7 +133,7 @@ describe("DomainCouplingCard", () => {
     expect(links[0]).toHaveAttribute("href", "/ontology/?node=capability%3Alogin");
     expect(links[1]).toHaveAttribute("href", "/ontology/?node=capability%3Ainvoice");
 
-    // Pressing the same cell again collapses it — selection is a toggle.
+    // Pressing the same cell again collapses it.
     fireEvent.click(screen.getByLabelText("3 links from Auth to Billing"));
     expect(screen.queryByTestId("domain-coupling-pair")).toBeNull();
   });
@@ -155,9 +155,9 @@ describe("DomainCouplingCard", () => {
   it("draws boundary pressure bars as cross share, not totals", () => {
     renderCard({
       boundaries: [
-        // Total 4, share 100% — drawn by total this would be the shortest bar.
+        // Total 4, share 100%: by total this would be the shortest bar.
         { id: "domain:leaky", title: "Leaky", selfEdges: 0, crossEdges: 4, crossRatio: 1 },
-        // Total 20, share 25% — drawn by total this would be the longest bar.
+        // Total 20, share 25%: by total this would be the longest bar.
         { id: "domain:solid", title: "Solid", selfEdges: 15, crossEdges: 5, crossRatio: 0.25 },
       ],
       boundaryTotalCount: 2,
@@ -193,10 +193,10 @@ describe("DomainCouplingCard", () => {
 
     const big = screen.getByLabelText("8 links inside Auth");
     const small = screen.getByLabelText("1 links inside Billing");
-    // Within the neutral scale (a different channel from the cross indigo), a larger value is darker.
+    // On the neutral scale, a larger value is darker.
     expect(big.style.backgroundColor).toBe("var(--color-overlay-3)");
     expect(small.style.backgroundColor).toBe("var(--color-overlay-1)");
-    // "A different scale" is also stated through a non-colour channel — a dashed border.
+    // The different scale is also marked by a dashed border, not colour alone.
     expect(big.className).toContain("border-dashed");
     expect(screen.getByLabelText("3 links from Auth to Billing").className).not.toContain(
       "border-dashed",
@@ -224,7 +224,7 @@ describe("DomainCouplingCard", () => {
     expect(screen.getByTestId("domain-coupling-empty")).toBeInTheDocument();
     expect(screen.getByText("Not enough coupling data yet")).toBeInTheDocument();
     expect(screen.queryByTestId("domain-coupling-grid")).toBeNull();
-    // No empty rooms — the explanation comes with the next step, not alone.
+    // The explanation comes with the next step.
     expect(screen.getByTestId("domain-coupling-empty-action")).toHaveAttribute(
       "href",
       "/ontology/studio/",
@@ -233,19 +233,8 @@ describe("DomainCouplingCard", () => {
 });
 
 /**
- * **Every cell in the grid is the same size.**
- *
- * Only a clickable cell uses `controlClass({ shape: 'icon' })`, and that shape emits **hard
- * dimensions** (`w-7` = 28px). The height was overridden by `h-[var(--coupling-cell)]` but nothing
- * overrode the width, so it stayed 28 — and since clickability is **decided by the data** (only
- * when the value > 0 and a pair exists), one grid mixed 44×44 and 28×44: measured, 17 against 19 of
- * 36 cells (owner report 2026-08-09: *"Are some square and some rectangular by some rule,
- * or is it just a design error?"* — are some square and some rectangular by some rule,
- * or is it just a design error? It was the latter).
- *
- * A grid is **a promise that cells are the same size**, and once broken the reader reads size as
- * data. This test locks both branches to the same width rule at the class layer — the real pixels
- * are measured by `insights-boundary-cell.spec.ts`.
+ * Every grid cell is the same size: a clickable cell's `shape: 'icon'` emits `w-7`, so the width must be explicit
+ * or data-driven clickability mixes square and rectangular cells. This checks the class layer only.
  */
 describe("grid cell size", () => {
   it("uses one width rule for clickable and inert cells", () => {

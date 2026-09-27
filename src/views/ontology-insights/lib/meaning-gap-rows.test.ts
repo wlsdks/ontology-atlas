@@ -241,8 +241,7 @@ describe("buildMeaningGapRows check finding rows", () => {
 });
 
 describe("buildDomainChoices", () => {
-  // Values are the domain document's own address since 2026-09-26 (map-edit QA D10): the
-  // bare tail was a second spelling of the relation every agent-written node qualifies.
+  // Values are the domain document's own address, the spelling every agent-written relation uses.
   it("offers only domains with a document, by that document's address, in name order", () => {
     const choices = buildDomainChoices([
       node({
@@ -269,8 +268,7 @@ describe("buildDomainChoices", () => {
       }),
       node({ id: "capability:x", kind: "capability", evidenceIds: ["capabilities/x"] }),
     ]);
-    // By name — that latin sorts before Korean is ICU's decision; the property needed here is that
-    // opening the same folder twice gives the same order.
+    // By name; latin before Korean is ICU's choice, and what matters is the same order on every open.
     expect(choices).toEqual([
       { value: "domains/zeta", label: "Zeta" },
       { value: "ontology/domains/alpha", label: "알파" },
