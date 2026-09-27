@@ -1,4 +1,5 @@
 import type { LibraryGraph, LibraryGraphNodeKind } from "./build-library-graph";
+import { maxOf, minOf } from "./library-graph-extremes";
 import type { LayoutPoint } from "./library-graph-layout";
 
 /**
@@ -47,8 +48,8 @@ const FLOW_COLUMN_GAP_MAX = 260;
 
 const COLUMN_ORDER: readonly LibraryGraphNodeKind[] = ["source", "page", "concept"];
 
-function byLabel(a: { label: string }, b: { label: string }): number {
-  return a.label.localeCompare(b.label, undefined, { numeric: true, sensitivity: "base" });
+function byLabelThenId(a: { id: string; label: string }, b: { id: string; label: string }): number {
+  return a.label.localeCompare(b.label, undefined, { numeric: true, sensitivity: "base" }) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 }
 
 /** Mean row index of a node's neighbours in `reference`, or +Infinity when it has none. */
@@ -109,16 +110,16 @@ export function flowLayout(graph: LibraryGraph, world: FlowWorld): FlowLayout {
    * the middle column never shuffles when a file is added and pages naming one concept
    * stand together; a page naming none goes last.
    */
-  const conceptRank = new Map([...(nodesByKind.get("concept") ?? [])].sort(byLabel).map((node, row) => [node.id, row]));
+  const conceptRank = new Map([...(nodesByKind.get("concept") ?? [])].sort(byLabelThenId).map((node, row) => [node.id, row]));
   const pages = [...(nodesByKind.get("page") ?? [])]
     .map((node) => ({ node, key: barycentre(node.id, neighbours, conceptRank) }))
-    .sort((a, b) => a.key - b.key || byLabel(a.node, b.node))
+    .sort((a, b) => a.key - b.key || byLabelThenId(a.node, b.node))
     .map((entry) => entry.node);
   const pageRow = new Map(pages.map((node, row) => [node.id, row]));
   const outer = (kind: LibraryGraphNodeKind) =>
     [...(nodesByKind.get(kind) ?? [])]
       .map((node) => ({ node, key: barycentre(node.id, neighbours, pageRow) }))
-      .sort((a, b) => a.key - b.key || byLabel(a.node, b.node))
+      .sort((a, b) => a.key - b.key || byLabelThenId(a.node, b.node))
       .map((entry) => entry.node);
   const candidates: Array<{ kind: LibraryGraphNodeKind; nodes: typeof graph.nodes }> = [
     { kind: "source", nodes: outer("source") },
@@ -130,6 +131,9 @@ export function flowLayout(graph: LibraryGraph, world: FlowWorld): FlowLayout {
   const worldWidth = Math.max(1, world.width);
   const worldHeight = Math.max(1, world.height);
   const ceiling = world.ceiling ?? 1;
+  if (ordered.length === 0) {
+    return { positions: new Map(), columns: [], rowGap: FLOW_ROW_MAX, extent: { width: worldWidth, height: worldHeight }, scale: ceiling };
+  }
   const innerHeight = Math.max(0, worldHeight - FLOW_TOP_PAD * 2);
 
   /**
@@ -304,7 +308,7 @@ export function flowLayout(graph: LibraryGraph, world: FlowWorld): FlowLayout {
     const pageIndex = new Map(pageColumn.ids.map((id, index) => [id, index]));
     const stackOf = new Map<string, number>();
     for (const id of sourceColumn.ids) {
-      const first = Math.min(...(neighbours.get(id) ?? []).map((other) => pageIndex.get(other) ?? Number.POSITIVE_INFINITY));
+      const first = minOf((neighbours.get(id) ?? []).map((other) => pageIndex.get(other) ?? Number.POSITIVE_INFINITY));
       stackOf.set(id, Number.isFinite(first) ? Math.floor(first / rows) : stacks - 1);
     }
     const groups: string[][] = Array.from({ length: stacks }, () => []);
@@ -356,7 +360,7 @@ export function flowLayout(graph: LibraryGraph, world: FlowWorld): FlowLayout {
       conceptColumn.x = conceptX + shift;
     }
     sourceColumn.x = stackX.reduce((sum, at) => sum + at.files, 0) / stackX.length + shift;
-    sourceColumn.grid = Math.max(...groupGrid);
+    sourceColumn.grid = maxOf(groupGrid);
     pageColumn.x = stackX.reduce((sum, at) => sum + at.pages, 0) / stackX.length + shift;
     settleLabelRooms(columns, stackWidth);
     return { positions, columns, rowGap, extent: { width: stackWidth, height }, scale };
