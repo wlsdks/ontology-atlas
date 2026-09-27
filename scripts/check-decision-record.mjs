@@ -46,6 +46,7 @@ import {
   SPEC_RULE_DOC,
 } from "./lib/design-spec-census.mjs";
 import { parseLedger } from "./decisions-find.mjs";
+import { isCommentOnlyChange } from "./lib/comment-only-change.mjs";
 import { FIELDS, LIMITS, TEMPLATE, checkLedgerTemplate } from "./lib/decision-record-template.mjs";
 import { readLedgerSource } from "./lib/record-ledgers.mjs";
 
@@ -203,8 +204,15 @@ function entryPointMovesContract(status) {
     .some((line) => /^[+-](?![+-])/.test(line) && ENTRY_POINT_CONTRACT.test(line));
 }
 
+/** A comment-only edit to a contract file changes nothing a client can call. */
+function contractCodeChanged({ path, status }) {
+  if (status !== "M") return true;
+  return !isCommentOnlyChange(path, git(["show", `${base}:${path}`]), readFileSync(path, "utf8"));
+}
+
 const contractChanges = entries
   .filter((entry) => CONTRACT_FILES.includes(entry.path))
+  .filter(contractCodeChanged)
   .filter((entry) => entry.path !== ENTRY_POINT || entryPointMovesContract(entry.status))
   .map((entry) => `public contract changed: ${entry.path}`);
 
