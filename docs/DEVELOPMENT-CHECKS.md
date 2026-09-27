@@ -737,7 +737,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### macOS desktop readiness
 
 **Run**: `pnpm desktop:check`
-**Proves**: the macOS desktop Tauri scaffold readiness gate passes for static export, image mode, docs-vault freshness, CLI/MCP verification, and `src-tauri` shell files. README download and release links follow the configured site and repository; editable explanatory sentences are not pinned.
+**Proves**: the macOS desktop Tauri scaffold readiness gate passes for static export, image mode, docs-vault freshness, CLI/MCP verification, `src-tauri` shell files, and the main-window capability allowlist (including only the explicit print grant). README download and release links follow the configured site and repository; editable explanatory sentences are not pinned.
 **Escalate**: `pnpm desktop:doctor`, then `pnpm test:desktop:check` / `pnpm test:desktop:runtime` / `pnpm test:desktop:bridge`
 **Fix**: keep `package.json`, `src-tauri/tauri.conf.json`, and `src-tauri/Cargo.toml` versions matched so app metadata, DMG filenames, and release tags move together.
 
