@@ -824,6 +824,12 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Proves**: `maintenance_plan` cursor, filter, resume, and formatter behavior is correct.
 **Escalate**: none.
 
+### MCP memory windows
+
+**Run**: `pnpm perf:mcp:memory:check`
+**Proves**: On a generated 233-node vault with 40 revisions per summary node, the stdio server's heap after two forced collections grows at most 64 KB per call across 50 repeated calls of each of nine read tools, and at most 2 MB per moved Git HEAD across commits 2 to 10. It reads the heap through the test-only fd-3 preload `scripts/lib/mcp-memory-probe.mjs`, never resident size.
+**Escalate**: none. It starts a server and runs about 500 calls, so it stays out of pre-push; run it for changes to caches, the compiler, history reads or response assembly.
+
 ### MCP query_concepts and shared read validation
 
 **Run**: `pnpm integration:mcp:read`
