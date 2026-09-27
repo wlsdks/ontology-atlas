@@ -16,13 +16,9 @@ export interface ArchitectureAgentRequest {
 }
 
 /**
- * Only a present, verified runtime with an app-owned write checkpoint may enter.
- *
- * `login-unknown` is admitted; `login-needed` is not. The difference is what we know:
- * `login-needed` is a measured "no credentials", and letting it in ends in an
- * `Authentication required` failure once the conversation opens. `login-unknown` means the
- * sign-in probe itself failed, and refusing on that basis is how a load spike took two working
- * runtimes out of the picker on 2026-09-05 while the same commands exited 0 from a shell.
+ * Only a present, verified runtime with an app-owned write checkpoint may enter. `login-needed`
+ * is a measured sign-out and is refused; `login-unknown` means the probe itself failed (as under
+ * load), so it is admitted rather than hiding a runtime that works.
  */
 export function selectArchitectureAgentRuntimes(
   runtimes: readonly AcpRuntimeStatus[] | null | undefined,

@@ -11,33 +11,17 @@ import type { RoleConcept } from '../model/role-concepts';
 import type { RoleSourceModule } from '../model/source-modules';
 
 /**
- * Everything one role carries, beside the drawing instead of inside it.
- *
- * ⚠️ **Why this is a panel and not a band.** Traffic arcs drawn onto the old full-width bands were
- * unreadable, because a block 250px tall gives an edge nothing to attach to; the fix is a box small
- * enough to be a graph node, which leaves the role's own contents with nowhere to live. Decision
- * 2026-08-28 (3) moves them here: the graph answers what the shape is and where the traffic goes,
- * and this panel answers what is actually in this layer. The band's own preserved dissent is that a
- * reader of 88 source modules is better served by a list than by a graph — this panel is where that
- * list survives, unchanged in content.
- *
- * **Props only.** It reads no profile and no record; every fact and every user-facing string
- * arrives from the caller, so the same panel serves whichever surface composed the graph.
+ * Everything one role carries, beside the drawing instead of inside it (decision 2026-08-28 (3)):
+ * the graph answers shape and traffic, this panel what is in the layer. Props only: it reads no
+ * profile or record, so any surface that composed the graph can use it.
  */
 
-/* The occupant grids' track floor and gap — `minmax(200px, 1fr)` with `gap-2.5`. The preview row
-   is derived from these, so the two numbers live once and the class strings quote them. */
+/* The occupant grids' track floor and gap (`minmax(200px, 1fr)`, `gap-2.5`); the class strings quote them. */
 const OCCUPANT_CARD_MIN = 200;
 const OCCUPANT_CARD_GAP = 10;
-/* What the preview shows before any layout can be measured — the count this grid carried before
-   it was derived, so an unmeasurable surface loses nothing. */
+/* The preview count where layout cannot be measured, so an unmeasurable surface loses nothing. */
 const OCCUPANT_PREVIEW_FALLBACK = 3;
-/*
- * ⚠️ **One measured row is too little in a one-column dock.** At the 380px role dock the grid
- * resolves to a single column, so "one full row" meant one concept card followed by "+15 more"
- * while 524px of the dock stayed empty (measured 2026-09-03 at 1512×945). The preview still
- * ends on a whole row; it just refuses to end before this many occupants.
- */
+/* A one-column dock would preview a single card; the preview ends on a whole row but never before this many. */
 const OCCUPANT_PREVIEW_MIN = 4;
 
 export function ArchitectureRoleDetail({
@@ -91,18 +75,10 @@ export function ArchitectureRoleDetail({
   moreLabel: (count: number) => string;
   /** Collapses an expanded grid back to its preview row. */
   showFewerLabel: string;
-  /**
-   * ⚠️ Carries its own count. Rendered beside a separate count label it read "reviewed concepts in
-   * this role · 23 concepts" — the same noun twice with a middot between, which the design rules
-   * name as a stutter rather than an emphasis. The modules side never had it, because there the
-   * count stands alone with no heading above it.
-   */
+  /** Carries its own count, so the heading does not stutter the noun beside a separate count. */
   layerConceptsLabel: (count: number) => string;
 }) {
-  /*
-   * Expansion belongs to the panel, and it is keyed by the role so selecting another box starts
-   * that role at its preview row rather than inheriting the previous role's "show everything".
-   */
+  /* Keyed by role, so selecting another box starts at its preview row instead of inheriting expansion. */
   const [expansion, setExpansion] = useState<{
     role: string;
     modules: boolean;
@@ -123,12 +99,7 @@ export function ArchitectureRoleDetail({
       concepts: next,
     }));
 
-  /*
-   * Both occupant grids preview exactly one full row, and the row is measured rather than assumed.
-   * A fixed three-card preview once ended every grid with a half-width hole on the installed app,
-   * whose stage resolves to two columns (2026-08-28). Each grid's own wrapper carries the width, so
-   * neither measurement needs an inset.
-   */
+  /* Both grids preview exactly one full row, measured on each grid's own wrapper. */
   const [setModuleGridNode, modulePreview] = useGridColumns(OCCUPANT_CARD_MIN, OCCUPANT_CARD_GAP, {
     fallback: OCCUPANT_PREVIEW_FALLBACK,
   });
@@ -137,18 +108,13 @@ export function ArchitectureRoleDetail({
   });
 
   const roleModules = modules ?? [];
-  /* Whole rows only: a three-column grid previews six, never four with two empty cells. */
   const wholeRows = (columns: number) =>
     Math.ceil(OCCUPANT_PREVIEW_MIN / Math.max(1, columns)) * Math.max(1, columns);
   const modulePreviewCount = wholeRows(modulePreview);
   const visibleModules = showAllModules ? roleModules : roleModules.slice(0, modulePreviewCount);
   const hiddenModules = roleModules.length - modulePreviewCount;
 
-  /*
-   * The preview shows the connective tissue first: concepts that participate in a reviewed
-   * relation outrank isolated ones, so the strokes between placed concepts exist at rest instead of
-   * hiding behind "+N more". Stable within each half — the path order stays the tiebreak.
-   */
+  /* Concepts in a reviewed relation preview first, so strokes exist at rest; path order breaks ties. */
   const orderedConcepts = edgeParticipants.size
     ? [...concepts].sort(
         (a, b) => Number(edgeParticipants.has(b.slug)) - Number(edgeParticipants.has(a.slug)),
@@ -175,13 +141,9 @@ export function ArchitectureRoleDetail({
             ) : null}
             <span className="min-w-0">
               <span className="flex min-w-0 items-baseline gap-1.5">
-                {/*
-                  The index is how a reader decodes the order out loud: seven layer names need a
-                  stable number to talk about, and numbering the layers is what every
-                  layered-architecture drawing does.
-                */}
+                {/* A stable number lets a reader name a layer out loud. */}
                 <span className="shrink-0 font-mono text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
-                  {/* The canvas says "03"; the dock said "3" for the same role (2026-09-03). */}
+                  {/* Zero-padded like the canvas, so both name a role the same way. */}
                   {String(index).padStart(2, '0')}
                 </span>
                 <span
@@ -194,11 +156,7 @@ export function ArchitectureRoleDetail({
                   {label}
                 </span>
               </span>
-              {/*
-                The count is this role's own empty state: "0 modules" under the name says the gap
-                once and where it belongs. It exists only where a listing exists — a surface that
-                cannot list source says so once for the whole stage.
-              */}
+              {/* This role's own empty state, only where a listing exists; a surface that cannot list says so once. */}
               {modules !== null ? (
                 <span
                   className="block text-caption tabular-nums text-[color:var(--color-text-quaternary)]"
@@ -209,16 +167,7 @@ export function ArchitectureRoleDetail({
               ) : null}
             </span>
           </span>
-          {/*
-            ⚠️ **The reach is written out under both policies, because the ordering does not say
-            it.** This block used to render only under `explicit`, on the reasoning that the stage
-            subtitle plus the layer order already state the whole `lower-only` rule. A walkthrough
-            on 2026-08-28, walked by a reader who had never heard of this pattern, measured that
-            reasoning failing: on the explicit profile they answered "what may this role depend on"
-            in one glance by quoting the row, and on the lower-only profile they could not answer it
-            at all. The sentence they needed did exist — inside the `sr-only` list, measured at 1px
-            wide. A fact only the accessibility tree carries is a fact the screen does not state.
-          */}
+          {/* The reach is written out under both policies: the ordering alone does not tell a new reader what a role may depend on. */}
           <p
             className="mt-0.5 text-caption text-[color:var(--color-text-tertiary)]"
             data-testid={`architecture-reach-${roleId}`}
@@ -227,14 +176,7 @@ export function ArchitectureRoleDetail({
               ? sinkLabel
               : reachInlineLabel(reach.map(roleLabel).join(' · '))}
           </p>
-          {/*
-            ⚠️ **A role id is a folder name, and a folder name is what decision (2026-08-26) forbids
-            reading intent from.** Without this sentence the panel could only say
-            `widgets · src/widgets/**`, which answers nothing for a reader who does not already know
-            the answer — the owner's own question on the installed build was "how would someone who
-            does not know this tell what these are?". The sentence outranks the glob because the
-            glob is the address and this is the purpose.
-          */}
+          {/* A role id is a folder name, which carries no intent (decision 2026-08-26); the sentence says what the role is for. */}
           {summary ? (
             <p
               className="mt-1 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]"
@@ -251,19 +193,11 @@ export function ArchitectureRoleDetail({
           </p>
         </div>
 
-        {/*
-          The source modules the role's globs actually contain, from a read-only directory walk of
-          the bound project source — name and repo-relative path, the way the reference draws
-          components inside a layer. No edges between cards are invented, and no import is ever read
-          here.
-        */}
+        {/* Source modules from a read-only directory walk; no edges between cards are invented and no import is read. */}
         <div ref={setModuleGridNode} className="min-w-0">
           {roleModules.length > 0 ? (
             <div className="min-w-0" data-testid={`architecture-modules-${roleId}`}>
-              {/*
-                Revealed cards rise in sequence — the expand is one event, so the first card starts
-                with it and the rest follow inside the same beat.
-              */}
+              {/* Revealed cards rise in sequence within the one expand beat. */}
               <StaggeredFadeIn
                 key={`${roleId}-${showAllModules ? 'open' : 'closed'}`}
                 as="div"
@@ -296,8 +230,7 @@ export function ArchitectureRoleDetail({
                   </div>
                 ))}
               </StaggeredFadeIn>
-              {/* The chip sits under the cards it reveals: "show 10 more" above the row it grows
-                  would point at nothing. */}
+              {/* The chip sits under the cards it reveals. */}
               {hiddenModules > 0 || showAllModules ? (
                 <div className="mt-2">
                   <Chip
@@ -315,12 +248,7 @@ export function ArchitectureRoleDetail({
         </div>
       </div>
 
-      {/*
-        The labeled meaning layer. Decision (2026-08-27): the source modules answer "what does this
-        layer contain"; this section answers "which reviewed concepts live here" — two named layers,
-        never mixed. Kind is carried by the same glyph family the map draws, distinct from the
-        folder/file marks of the source layer above.
-      */}
+      {/* The meaning layer (decision 2026-08-27): reviewed concepts, never mixed with the source modules above. */}
       <div
         ref={setConceptGridNode}
         className="border-t border-[color:var(--color-divider)] px-[var(--card-pad)] pb-[var(--card-pad)] pt-3"

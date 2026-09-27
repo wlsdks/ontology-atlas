@@ -5,11 +5,6 @@ import type { HarnessReport } from '@/entities/agent-files';
 import { buildHarnessAnatomy } from './harness-anatomy';
 import { buildHarnessBrief } from './harness-brief';
 
-/**
- * The handover's job is to be **usable and un-overclaimable**. An agent handed a count with no
- * qualifier will tell its user the repository is protected, so the limits are asserted here as
- * firmly as the contents.
- */
 
 function report(partial: Partial<HarnessReport> = {}): HarnessReport {
   return {
@@ -50,8 +45,7 @@ describe('buildHarnessBrief', () => {
   it('lists an absent part with the address one lives at, and never as a task', () => {
     const text = brief(report());
     expect(text).toContain('MCP servers: none (one lives at .mcp.json)');
-    /* The body carries no imperative. The limits paragraph below it is allowed the word
-       "recommendation" precisely because it is denying one, so the check stops where it starts. */
+    /* The limits paragraph may say "recommendation" because it denies one, so only the body is checked. */
     const body = text.slice(0, text.indexOf('Limits of this report:'));
     expect(body).not.toMatch(/should|must|recommend|need to|TODO/i);
   });

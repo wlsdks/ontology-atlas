@@ -22,10 +22,7 @@ const DELTA_DOT_CLASS: Record<DeltaStatus, string> = {
   missing: 'bg-[color:var(--color-amber-source-a50)]',
 };
 
-/**
- * The always-visible evidence summary. It keeps the canvas dominant: one row states the three
- * authorities, while the full provenance plane opens in its own comparison dock when requested.
- */
+/** One row states the three authorities; the full provenance plane opens in its own dock. */
 export function ArchitectureEvidenceRail({
   ariaLabel,
   buttonRef,
@@ -71,9 +68,7 @@ export function ArchitectureEvidenceRail({
             aria-hidden
           />
           <span className="truncate font-[var(--font-weight-emphasis)]">{contractTitle}</span>
-          {/* The separator belongs to the observation title: measured 2026-09-03 with a dock open,
-              the title collapsed to 0px while the dot stayed painted, leaving the contract title
-              followed by a dangling separator. */}
+          {/* The separator belongs to the observation title, which collapses to 0px with a dock open. */}
           <span
             aria-hidden
             className={cn(

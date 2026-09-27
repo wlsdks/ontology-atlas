@@ -3,26 +3,9 @@ import type { HarnessReport } from '@/entities/agent-files';
 import type { HarnessAnatomy, AnatomySlot } from './harness-anatomy';
 
 /**
- * **The screen, as something a person can hand to an agent.**
- *
- * The owner's goal for this destination is that an empty place is visible *and addable*. The rows
- * do the first half and offer the address for the second, but the person then has to retype what
- * they just read into whatever agent they use. This is that retyping, done once and correctly.
- *
- * **English, deliberately, and in the third person.** It lands in someone else's session as
- * material rather than as the person's own words, so it reads as a report about a repository, not
- * as an instruction pretending to be theirs. The same reasoning the first-run prompt records: a
- * button that hands over a description should hand over a description.
- *
- * **It carries its own limits, because an agent will otherwise read a count as a guarantee.** Every
- * number here is a declaration found in a file: a hook that is wired exists on disk and may never
- * run; a check script is named in `package.json` and may never have caught anything. The closing
- * lines say so, and they are not decoration — an agent handed "5 gates" with no qualifier will
- * happily tell its user the repository is protected.
- *
- * **It never suggests.** No "you should add", no priority order, no score. What is absent is listed
- * as absent with the address a part like it lives at, and what the tool owns is named as
- * unreadable. The person and their agent decide what, if anything, to do about it.
+ * The screen as text a person can hand to an agent: English, third person, so it reads as a report
+ * rather than as the person's instruction. It never suggests, and it carries its own limits,
+ * because an agent reads an unqualified count as a guarantee.
  */
 
 function line(slot: AnatomySlot, label: string): string | null {

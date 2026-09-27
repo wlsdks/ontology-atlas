@@ -9,17 +9,10 @@ import {
   trimToRecentSections,
 } from './vault-doc';
 
-/**
- * The gateway's reading material **takes its content from the vault** — this test holds that contract.
- *
- * The most plausible regression is reverting to a hand-written copy ("just inline the string when in a
- * hurry"). That splits the document a visitor sees from the document the repository reviews, and nobody
- * finds out that it split.
- */
-describe('관문 읽을거리는 볼트 문서를 읽는다', () => {
-  it('가이드 첫 장과 변경 내역이 볼트에 실제로 있다', () => {
-    // The guide split from one page (`GUIDE`) into six (`guide/*`) on 2026-07-31. Verifying the full list
-    // is `tests/contract/gateway-routes.contract.test.ts`'s job.
+/** A hand-written copy would split the page a visitor sees from the document the repository reviews. */
+describe('gateway reading comes from vault documents', () => {
+  it('finds the first guide page and the changelog in the vault', () => {
+    // The full guide page list is `tests/contract/gateway-routes.contract.test.ts`'s job.
     expect(readVaultDoc('guide/what-is-atlas')).toBeTruthy();
     expect(readVaultDoc('CHANGELOG')).toBeTruthy();
   });
@@ -32,11 +25,11 @@ describe('관문 읽을거리는 볼트 문서를 읽는다', () => {
     }
   });
 
-  it('없는 슬러그는 null 이다 — 빈 문자열로 조용히 넘어가지 않는다', () => {
+  it('returns null for a missing slug instead of an empty string', () => {
     expect(readVaultDoc('NOPE-NOT-A-DOC')).toBeNull();
   });
 
-  it('가이드가 실제 안내문이다 — 자리표시자가 아니다', () => {
+  it('serves real guide prose rather than a placeholder', () => {
     const guide = readVaultDoc('guide/what-is-atlas') ?? '';
     // A command this repository registered as a dead channel must not be alive in the guidance
     // (`.claude/rules/surfaces.md`, "there are only two distribution channels").
@@ -59,11 +52,11 @@ describe('trimToRecentSections', () => {
     'ㄷ',
   ].join('\n');
 
-  it('절 수가 상한 이하면 전문 그대로다', () => {
+  it('keeps the full text when the section count is within the limit', () => {
     expect(trimToRecentSections(doc, 5)).toEqual({ body: doc, omittedSections: 0 });
   });
 
-  it('앞에서 상한만큼만 남기고 몇 개를 접었는지 센다', () => {
+  it('keeps the first sections up to the limit and counts the folded ones', () => {
     const { body, omittedSections } = trimToRecentSections(doc, 2);
     expect(body).toContain('## 하나');
     expect(body).toContain('## 둘');
@@ -71,15 +64,12 @@ describe('trimToRecentSections', () => {
     expect(omittedSections).toBe(1);
   });
 
-  it('머리말은 절이 아니므로 항상 남는다', () => {
+  it('always keeps the preamble because it is not a section', () => {
     expect(trimToRecentSections(doc, 1).body).toContain('머리말 문단.');
   });
 
-  /**
-   * Counting a `## ` inside a code fence as a section puts the cut in the middle of a document and makes
-   * the folded count false. CHANGELOG is a document full of code blocks.
-   */
-  it('코드 펜스 안의 `##` 는 절이 아니다', () => {
+  /** CHANGELOG is full of code blocks; a fenced `## ` counted as a section would cut mid-document. */
+  it('does not treat a `##` inside a code fence as a section', () => {
     const withFence = [
       '## 진짜 절',
       '',
@@ -96,13 +86,10 @@ describe('trimToRecentSections', () => {
   });
 
   /**
-   * Since 2026-08-19 `readVaultDoc('CHANGELOG')` returns the **bundled preview** (the most recent 16
-   * sections, `gateway-changelog.json`) rather than the full text — the 634KB full text pushed every
-   * route's shared chunk past the performance budget. So beyond "does the screen truncation reduce it",
-   * this test measures **the accounting of folded sections**: bundle-time folds + screen-time folds +
-   * sections shown = the original's total sections. Either truncation drifting silently fails here.
+   * `readVaultDoc('CHANGELOG')` returns the bundled preview (`gateway-changelog.json`), not the full
+   * text. Bundle folds + screen folds + shown sections must equal the original's total.
    */
-  it('실제 CHANGELOG — 번들·화면 두 절단의 접힌 수 합이 원문과 맞는다', () => {
+  it('folded counts of the bundle and screen cuts of the real CHANGELOG add up to the source', () => {
     const preview = readVaultDoc('CHANGELOG') ?? '';
     const bundledOmitted = readVaultDocOmittedSections('CHANGELOG');
     const { body, omittedSections } = trimToRecentSections(preview, 12);
@@ -111,20 +98,12 @@ describe('trimToRecentSections', () => {
     expect(bundledOmitted).toBeGreaterThan(0);
 
     const raw = readLedgerSource('docs/CHANGELOG.md')!.content;
-    // With limit 0 every section is folded — the cheapest way to count the total.
     const totalSections = trimToRecentSections(raw, 0).omittedSections;
     expect(bundledOmitted + omittedSections + 12).toBe(totalSections);
   });
 });
 
 
-/**
- * The entry list's links must point at **a place that really exists in the body**.
- *
- * ⚠️ Measured defect (2026-07-31): the list keyed on the raw heading while the body `h2` keyed on the
- * **rendered** text. Three headings containing backticks had their anchors silently broken — a failure
- * invisible until someone clicks, so it is caught here.
- */
 describe('separateCategoryLines', () => {
   it('puts a blank line between consecutive category lines so they stop folding into one paragraph', () => {
     const out = separateCategoryLines('## 2026-09-01 · v1.0.0: x\n\n**Added**: a.\n**Fixed**: b.\n');
@@ -136,11 +115,7 @@ describe('separateCategoryLines', () => {
     expect(separateCategoryLines(src)).toBe(src);
   });
 
-  /**
-   * The rendered changelog must never be one wall paragraph again (2026-09-25: 9,997
-   * characters and 99 ".;" seams in one entry). Measured on the bundled body the gateway
-   * actually draws, after the same normalisation the page applies.
-   */
+  /** The rendered changelog must never be one wall paragraph; measured on the bundled body after the page's normalisation. */
   it('keeps every bundled changelog paragraph short and free of ".;" seams', () => {
     const body = separateCategoryLines(readVaultDoc('CHANGELOG') ?? '');
     const paragraphs = body.split(/\n\s*\n/).filter((block) => !/^\s*(#|>|- |```)/.test(block));
@@ -158,36 +133,35 @@ describe('extractEntries', () => {
     expect(entry?.title).toBe('v1.2.5: the map remembers its camera');
   });
 
-  it('날짜와 제목을 갈라 낸다', () => {
+  it('splits the date from the title', () => {
     const [entry] = extractEntries('## 2026-07-31 — 무언가 바뀌었다\n본문');
     expect(entry?.date).toBe('2026-07-31');
     expect(entry?.title).toBe('무언가 바뀌었다');
   });
 
-  it('날짜가 없으면 제목 전체를 쓴다', () => {
+  it('uses the whole heading as the title when there is no date', () => {
     const [entry] = extractEntries('## 그냥 제목\n본문');
     expect(entry?.date).toBeNull();
     expect(entry?.title).toBe('그냥 제목');
   });
 
-  it('같은 제목이 겹쳐도 id 가 유일하다 — 겹치면 첫 번째로만 간다', () => {
+  it('keeps ids unique when titles repeat so links do not all land on the first', () => {
     const entries = extractEntries('## 같은 제목\n\n## 같은 제목');
     expect(new Set(entries.map((e) => e.id)).size).toBe(2);
   });
 
-  it('코드 펜스 안의 `##` 는 항목이 아니다', () => {
+  it('does not treat a `##` inside a code fence as an entry', () => {
     const entries = extractEntries(['## 진짜', '', '```md', '## 예시', '```'].join('\n'));
     expect(entries).toHaveLength(1);
   });
 
-  it('인라인 마크다운이 든 제목도 정규화하면 렌더 텍스트와 같아진다', () => {
-    // The moment this equality breaks, the anchor breaks.
+  it('normalizes a title with inline markdown to its rendered text', () => {
     const raw = '2026-07-30 — 관문에 읽을거리 둘: `/guide` · **강조**';
     const rendered = '2026-07-30 — 관문에 읽을거리 둘: /guide · 강조';
     expect(normalizeHeadingKey(raw)).toBe(normalizeHeadingKey(rendered));
   });
 
-  it('실제 CHANGELOG 의 모든 항목이 유일한 id 를 갖는다', () => {
+  it('gives every entry of the real CHANGELOG a unique id', () => {
     const entries = extractEntries(readVaultDoc('CHANGELOG') ?? '');
     expect(entries.length).toBeGreaterThan(10);
     expect(new Set(entries.map((e) => e.id)).size).toBe(entries.length);

@@ -3,7 +3,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ScanSearch } from 'lucide-react';
 
-import { listboxBottomIsHidden, listboxTopIsHidden } from '@/shared/ui/select-growth';
+import { listboxBottomIsHidden as endIsHidden, listboxTopIsHidden as startIsHidden } from '@/shared/ui/select-growth';
 
 import { cn } from '@/shared/lib/cn';
 import { badgeClass } from '@/shared/ui/badge-class';
@@ -21,85 +21,41 @@ import {
   splitSummaryLinesByWidth,
 } from '../model/summary-lines';
 
-/* Geometry. One place, so the drawing can be reasoned about without reading the JSX. */
-/**
- * ⚠️ **One value for every stroke, named once.** Measured at 1512 on the installed app,
- * translucent indigo at a hairline remained below the 3:1 adjacent-mark threshold on the solid
- * canvas. The brand step clears it, while selection keeps the brighter accent. A legend row must
- * name a mark that is on the screen, so both sides read this.
- */
+/** One stroke colour, named once: the brand step clears 3:1 on the canvas where translucent indigo did not. The legend reads it too. */
 export const EDGE_STROKE = 'var(--color-indigo-brand)';
-/**
- * ⚠️ **A violation is the one thing on this canvas that is not indigo.** The design system runs on
- * neutrals plus one indigo and a violated edge would normally be a shape, not a colour — but the
- * receipt's own verdict already owns a signal tone on this screen (`RECORD_TONE_CLASS.violated`),
- * and the pill saying "Violated · 2" while the drawing paints those two edges exactly like every
- * conforming one is the contradiction fable measured on 2026-08-30. Same tone as the pill, plus a
- * dash, so it survives without colour too.
- */
+/** A violated edge wears the receipt pill's own danger tone plus a dash, so it survives without colour and never contradicts the pill. */
 export const VIOLATED_STROKE = 'var(--color-danger-text)';
 
 const BOX_W = 148;
-/**
- * The wide-workbench face. The compact width remains the fallback at tablet/laptop boundaries and
- * for a role set that would no longer fit after expansion; spacious canvases no longer leave a
- * four-role contract occupying less than one fifth of the available plane.
- */
+/** The wide-workbench face; the compact width stays the fallback when an expanded role set would not fit. */
 const BOX_W_ROOMY = 220;
 const BOX_H_ROOMY = 84;
 const OBSERVATION_BOX_H = 44;
 const OBSERVATION_LANE_GAP = 48;
-/*
- * ⚠️ **The ledger widens the box as well as deepening it.** Measured 2026-08-30 at 1512 and 1920:
- * the receipt line renders 144–156px against 132px of usable width inside a 148px box, so the
- * sentence crossed both outlines. Widening to 180 clears the longest measured line in both
- * locales, and keeps the seven-role chain horizontal at 1920 — 1628px of drawing against 1756px of
- * canvas — which is what stops it from falling back to the vertical axis a short panel would clip.
- */
+/* 180 fits the widest measured receipt line (156px) and keeps seven roles across at 1920 (1628 of 1756px). */
 const BOX_W_LEDGER = 180;
 /** Split contract/observation faces may yield this far once their long receipt line is separate. */
 const BOX_W_LEDGER_FIT = 160;
 const BOX_W_LEDGER_ROOMY = 240;
-/**
- * ⚠️ **Two heights, because a box only grows when it has something more to say.** A role that
- * carries a measured ledger line needs the room; one with no receipt behind it must stay the size
- * it was, or a browser — where source cannot be listed at all — pays 20px per role for a blank
- * row. Direction B, 2026-08-29.
- */
+/** A box grows only when it carries a ledger line; without a receipt it keeps its size. */
 const BOX_H = 72;
 /*
- * ⚠️ **The receipt is one line; the sentence is two; the rows close up to pay for it** (Direction
- * C, 2026-08-30). The first ledger attempt gave the *receipt* two lines and an 82px box, and with
- * 26px gaps the chain ran 778px against roughly 718px of canvas: Shared foundation, the role every
- * arrow points at, was cut in half below the fold. The receipt went back to one line and the box
- * to 74. Then the one-line *sentence* cut all seven of the profile's role summaries before their
- * first clause carried meaning, which the record that put it there had named as its own falsifier.
- * So the box is 82 again, but the second line is the sentence's, and the row gap gives up 6px so
- * seven rows still clear a 1512×945 viewport with the inspector open: 7×82 + 6×12 + 2×20 = 686.
+ * The receipt is one line and the sentence two; the row gap pays for it so seven rows fit
+ * 1512x945 with the inspector open: 7×82 + 6×12 + 2×20 = 686.
  * Gate: `tests/e2e/architecture-role-ledger.spec.ts`, which fails at 90px.
  */
 const BOX_H_LEDGER = 82;
 const ROW_GAP_LEDGER = 12;
 /** How far apart two crossings of the same span sit, so a bundle reads as separate strokes. */
 const SKIP_LANE_STEP = 14;
-/**
- * How many caption lines a role's sentence may take. How many characters each line holds is not a
- * constant any more: `captionLineBudgets` reads it off the box, because a stadium's second line
- * has less room than its first (owner, 2026-08-30: the Adapters pill's caption crossed its caps).
- */
+/** Caption lines per role sentence; every face is a rectangle, so each line gets captionLineRoom's straight room. */
 const SUMMARY_LINES = 2;
-/* The across split face is narrower than the ladder's; without the per-face lane label it has
-   room for a third caption line, which is what the longest reviewed sentences need at 200px. */
+/* The across split face has room for a third caption line without the per-face lane label. */
 const SUMMARY_LINES_ACROSS = 3;
 /** One caption line to the next, in SVG units: the `--leading-caption` pair of `text-caption`. */
 const CAPTION_LEADING = 14;
 
-/**
- * ⚠️ **Shapes, not colour.** This design system runs on neutrals plus one indigo, and status
- * colour would be a second colour system — a rule change to request, never one to assume. The
- * glyphs are the achromatic ones already legible at the caption step: a tick for clean, a slashed
- * circle where a role's own edges break its rules, a hollow circle where no source matched it.
- */
+/** Shapes, not colour: tick for clean, slashed circle where a role's edges break its rules, hollow circle where no source matched. */
 const LEDGER_GLYPH: Record<RoleLedger['state'], string> = {
   clean: '✓',
   violated: '⊘',
@@ -111,167 +67,77 @@ const MIN_COL_GAP = 20;
 const ROW_GAP_PLAIN = 26;
 const PAD_X = 28;
 const PAD_Y = 26;
-/*
- * Direction C — the dual evidence ladder selected on 2026-09-02. A downward chain is no longer
- * one compressed card pretending reviewed intent and source observation are the same thing.
- * These three widths are the selected structure: contract, comparison gutter, observation.
- */
+/* The dual evidence ladder: contract face, comparison gutter, observation face. */
 const PAIRED_CONTRACT_W = 280;
 const PAIRED_GUTTER_W = 72;
 const PAIRED_OBSERVATION_W = 240;
 /*
- * ⚠️ **The contract face grows into ground the card was already wasting** (inspection 122, S8,
- * 2026-09-13). Measured at 1512×949 in the installed-app window: the three faces held their
- * 280/72/240 whatever the card's width, so the drawn band was **592px inside a 1448px card — 41%
- * of it — and every one of the seven role sentences ended in an ellipsis** while 856px of the card
- * stood empty. The tight ladder is what cut them: it buys its height by dropping the sentence's
- * second line, and one 280px line cannot hold a Korean sentence. Widening the face is the version
- * of that trade that costs nothing, because the height stays the same and the pixels were already
- * there.
- *
- * 560 is derived, not chosen: the longest sentence in the dogfood profile estimates at 472px
- * (`estimateCaptionWidth`, 8px per Korean glyph), and `captionLineRoom` spends 24 on side padding,
- * so 560 leaves 536 of room — the longest sentence plus 64px of headroom for a profile whose
- * sentences run longer. Anything past that still wraps to the roomy ladder's second line, which is
- * the behaviour that was always there. The owner's standing priority is a finished sentence over
- * box symmetry.
+ * The contract face grows into spare card width so role sentences finish instead of ellipsizing.
+ * 560 is derived: the dogfood profile's longest sentence estimates at 472px and `captionLineRoom`
+ * spends 24 on padding, leaving 64px of headroom. Longer sentences wrap as before.
  */
 const PAIRED_CONTRACT_W_MAX = 560;
 /*
- * ⚠️ **The gutter carries the observation lane's sentence, and at 72px it was cutting it**
- * (measured 2026-09-13, built export at 1512). The traffic sentence is seated in the connector
- * gap with `observationBoxW / 2 + PAIRED_GUTTER_W - GAP_BETWEEN_LANE_SENTENCES` of room, which at
- * the fixed 72 is 168px, and `placeEdgeSentences` then spends 10 on the arc gap and 12 on side
- * padding: **146px**. "Routes → Application shell: 1 import" estimates at 174px, so every
- * observation sentence on the installed app ended in an ellipsis while 226px of card stood empty
- * on each side of the drawing.
- *
- * 160 is derived the same way the contract cap is: the longest observation sentence in the
- * dogfood profile, "Entities → Shared foundation: 0 imports", estimates at 179px, and a 160px
- * gutter leaves 120 + 160 - 24 - 10 - 12 = **234px** — that sentence plus 55px of headroom for a
- * profile whose role names run longer. Past that the sentence still ellipsizes, which is the
- * behaviour that was always there.
+ * The gutter carries the observation sentence: its room is
+ * `observationBoxW / 2 + PAIRED_GUTTER_W - GAP_BETWEEN_LANE_SENTENCES`, less 22 in `placeEdgeSentences`.
+ * 160 fits the dogfood profile's longest observation sentence (179px) with 55px of headroom.
  */
 const PAIRED_GUTTER_W_MAX = 160;
-/*
- * ⚠️ **The connector gap carries a sentence now.** The adjacent rule's sentence sits beside the
- * arrow it describes (measured 2026-09-03: the left-lane sentence ended 160px from its arrow and
- * read as a floating caption). A 12px caption line with 4px of air on each side needs 20px; four
- * more keep the rectangle clear of both faces under the collision pad.
- */
+/* The connector gap seats the adjacent rule's sentence beside its arrow: a 12px line with air on each side under the collision pad. */
 const PAIRED_ROW_GAP = 24;
 /*
- * ⚠️ **The ladder yields its own spare height before it hides a role.** Measured 2026-09-03 at
- * 1280x800: the canvas column is 638px tall while the roomy rows ask for 684, so the seventh role
- * fell past the fold and the widest laptop the product ships to answered with "1 more below". The
- * faces keep their 280/72/240 widths, because the side-by-side comparison is the whole structure;
- * the row gives up its second summary line instead. 58px of face, and a 22px gap: the narrowest a
- * 12px sentence rectangle clears with the 4px collision pad on both sides. 20 leaves only 3px
- * under the words, and `placeEdgeSentences` drops the rule sentence as a collision, which is the
- * opposite of what the tighter rows are for. Seven roles: 4 + 20 + 7x58 + 6x22 + 4 = 566.
+ * Before hiding a role the ladder drops the sentence's second line, keeping 280/72/240 widths.
+ * 22 is the narrowest gap a 12px sentence clears with the 4px collision pad; at 20
+ * `placeEdgeSentences` drops it. Seven roles: 4 + 20 + 7x58 + 6x22 + 4 = 566.
  */
 const PAIRED_ROW_GAP_TIGHT = 22;
 const PAIRED_PAD_Y_TIGHT = 4;
 const BOX_H_PAIRED_TIGHT = 58;
-/*
- * ⚠️ **Receding must leave the words readable.** At 0.35 a non-selected role title measured
- * 3.02:1 and its sentence 1.7:1; at 0.18 the unrelated edge sentences measured 1.23:1 — four of
- * seven roles became unreadable the moment one was chosen (2026-09-03). The selected pair is
- * emphasised by its indigo face and stroke, so the rest only needs to step back, not vanish:
- * 0.65 keeps a receded title above 7:1 and its sentence above 3:1 on the canvas ground.
- */
-/* Re-measured 2026-09-03 after the first pass: 0.65/0.55 still left a receded index at 2.8:1 and
-   a receded sentence at 2.6:1. 0.7 keeps every receded word at or above 3:1 while the selected
-   pair still wins through its indigo face and stroke. */
+/* Receding must leave the words readable: 0.7 keeps every receded word at or above 3:1, while the selected pair wins through its indigo face and stroke. */
 const RECEDED_ROLE_OPACITY = 0.7;
 const RECEDED_STROKE_OPACITY = 0.7;
 const PAIRED_HEADER_H = 20;
 const PAIRED_PAD_Y = 8;
-/* Long edge sentences and focused skip arcs share one bounded outside lane on each side. */
-const PAIRED_SIDE_ROOM = 180;
-/*
- * ⚠️ **The ladder needs its faces, not its full side lanes.** A 1112px tablet gave the canvas
- * 984px; the ladder asked for 1008 and the drawing fell back to 148px combined boxes with every
- * summary and sentence cut (re-audit, 2026-09-03). The side lanes only hold skip arcs revealed on
- * selection and their sentences, which are stated as held when they have no room, so the ladder
- * may take a canvas as narrow as its faces plus this much lane on each side.
- */
+const PAIRED_SIDE_ROOM_MAX = 180;
+/* The ladder needs its faces plus this much side lane, not the full lanes: side lanes only hold skip arcs revealed on selection. */
 const PAIRED_SIDE_ROOM_MIN = 48;
 /** The most ground the observation lane takes for its arcs and sentences when the canvas has it. */
 const PAIRED_TRAIL_ROOM_MAX = 360;
 /** Air the narrow ladder keeps between its face and the canvas edge on each side. */
 const NARROW_LADDER_EDGE = 16;
 /*
- * ⚠️ **Import direction is the one fact the ladder stated only as row order** (Direction B,
- * 2026-09-08). `app → views → widgets → features → entities → shared` is a *depth* rule — a role
- * may reach the layer under it and never the one over it — and four stacked rows of the same
- * surface say only "these came in this sequence". The stack is drawn as what it is: one sheared
- * column of layer planes, each role's pair of faces resting on its own plane. A permitted edge
- * then visibly runs *down* onto a lower plane, and a violation is the stroke that climbs.
- *
- * The step per layer, in SVG units, which are CSS pixels here. It is also the slope generator:
- * the shear is `PLANE_STEP / rowPitch`, so plane *n*'s top edge meets plane *n-1*'s bottom edge on
- * one continuous line and the stack reads as a solid rather than as separate bands.
+ * Import direction drawn as depth: one sheared column of layer planes, each role's faces on its
+ * own plane, so a permitted edge runs down and a violation climbs. The step per layer in SVG units
+ * is also the shear, `PLANE_STEP / rowPitch`, so adjacent planes meet on one continuous line.
  */
 const PLANE_STEP = 14;
 /** How much plane stays visible beyond the outermost face, so a role sits *on* its layer. */
 const PLANE_EDGE = 16;
-/*
- * ⚠️ **The plane's ledge stops short of the sentence band.** `placeEdgeSentences` seats an
- * adjacent rule at the row-gap centre with a 12px rectangle running `centre-5 … centre+7`. The
- * roomy gap is ±12 and the tight gap ±11, so a 3px ledge leaves the sentence its own ground on
- * both ladders (measured 2026-09-08; a 4px ledge touched the tight one).
- */
+/* A 3px ledge stops short of the adjacent rule's sentence rectangle on both ladder densities. */
 const PLANE_INSET_Y = 3;
-/*
- * ⚠️ **The first plane's lit edge was reading as a rule under the lane headings.** Measured
- * 2026-09-08 at 1512: the heading baseline sits at `padY + 14` and the top plane's edge landed at
- * `padY + 25`, one pixel under the heading's descender, so the brightest line on the canvas
- * attached itself to three labels instead of to the layer it belongs to. Eight units of head room
- * put nine pixels of ground between them; the drawing pays 11px of height for it (396 → 407 on a
- * four-layer profile, 2.8%).
- */
+/* Head room so the top plane's lit edge does not read as a rule under the lane headings. */
 const PLANE_HEAD_ROOM = 8;
 /*
- * ⚠️ **A violation is the stroke going the wrong way up the stack**, so it is the one stroke that
- * carries a halo. Blur lives on the SVG filter primitive rather than in a token because
- * `stdDeviation` is an attribute, not a CSS property, and cannot read `var()`. The two opacities
- * it is painted at are tokens (`--architecture-plane-climb-halo*`); gate:
- * `ArchitectureSketch.test.tsx`, "a violation climbs the stack".
+ * The halo marks a violation, the stroke going up the stack. Blur is on the SVG filter because
+ * `stdDeviation` cannot read `var()`; its opacities are `--architecture-plane-climb-halo*` tokens.
+ * Gate: `ArchitectureSketch.test.tsx`, "a violation climbs the stack".
  */
 const VIOLATION_HALO_BLUR = 2.5;
 const VIOLATION_HALO_WIDTH = 4;
 /** Selecting the role raises its own violation off the plane; every other stroke stays put. */
 const VIOLATION_HALO_WIDTH_RAISED = 7;
 const VIOLATION_STROKE_RAISE = 1;
-/* The two lanes' adjacent sentences share the gutter row gap from opposite ends; this keeps a
-   rule sentence and a count sentence apart even when both are long. */
+/* Keeps a rule sentence and a count sentence apart in the shared gutter row gap. */
 const GAP_BETWEEN_LANE_SENTENCES = 24;
 const PAIRED_FIXED_W =
   PAD_X * 2 + PAIRED_CONTRACT_W + PAIRED_GUTTER_W + PAIRED_OBSERVATION_W;
 const PAIRED_MIN_W = PAIRED_FIXED_W + PAIRED_SIDE_ROOM_MIN * 2;
-/*
- * ⚠️ **A scrollbar for empty ground is noise.** Measured 2026-08-30 at 1440×900: the chain fit but
- * the drawing's own bottom padding did not, so the canvas scrolled 13px and showed a bar for dot
- * field nobody needs to reach. With a ledger the boxes already carry their own breathing room, so
- * the field around them gives some back.
- *
- * Measured again 2026-08-30 in the installed app at a 1512x949 window (a 917px WebView, the
- * title bar takes 32): the seven-role chain drew 686px into a 682px canvas and the same bar
- * came back for 4px of canvas ground. 12px at each end makes the drawing 670px, which with
- * the 235px of chrome above and below the canvas keeps the chain whole down to a 905px WebView,
- * every window the 14-inch display can hold with the menu bar shown.
- */
+/* With a ledger the field gives back padding, so a seven-role chain fits without a scrollbar for empty ground down to a 905px WebView. */
 const PAD_Y_LEDGER = 12;
 /** How far past the lane a skip swings, and how much deeper each further rank pushes it. */
 const SKIP_DROP = 30;
 const SKIP_STEP = 10;
-/*
- * ⚠️ **Every stroke at rest says its sentence** (Direction B, owner, 2026-08-30). The room the
- * sentences take is measured from the sentences: left of a downward column as wide as the longest
- * adjacent sentence needs (capped), above an across chain two tiers deep, and past the deepest
- * arc where skips carry theirs. The same 4.7px glyph the box captions budget with.
- */
+/* Every stroke at rest says its sentence; rooms use the 4.7px edge-sentence glyph, not the caption's 4.8. */
 const SENTENCE_LEAD_MAX = 380;
 const SENTENCE_TOP_ROOM = 44;
 const SENTENCE_TRAIL_ROOM = 260;
@@ -280,21 +146,15 @@ const SENTENCE_CHAR_PX = 4.7;
 const SENTENCE_ARROW_GAP = 10;
 
 /*
- * ⚠️ **Before any inspection the two measured columns are one empty state** (owner review,
- * 2026-09-26). With no receipt the ladder drew seven dashed observation faces and seven hollow
- * delta marks, fourteen placeholders for one fact, under two column notes that said it twice
- * more. The columns now hold one dashed panel that states the fact once and names the action that
- * fills it. The dash is the ladder's own "not measured" grammar, drawn once.
- *
- * Geometry, in SVG units (CSS pixels). The panel keeps this much air past the layer planes'
- * ledge beside the contract faces, and more when a rule sentence beside an arrow reaches further
- * into the gutter: the approved structure's planes and words are never covered.
+ * Before any inspection the measured columns are one dashed empty-state panel naming the fact and
+ * the action. The panel keeps this much air past the planes' ledge (more when a rule sentence
+ * reaches further), so planes and words are never covered. SVG units are CSS pixels.
  */
 const EMPTY_PANEL_GAP = 12;
 /** Air between the furthest rule sentence and the panel's edge. */
 const EMPTY_PANEL_SENTENCE_AIR = 12;
 const EMPTY_PANEL_PAD_X = 20;
-/** `text-body` and `text-label`, the two steps the ladder's own role name and chrome use. */
+/** `text-body` and `text-label`, the ladder's own name and chrome steps. */
 const EMPTY_TITLE_PX = 12.5;
 const EMPTY_BODY_PX = 11;
 /** The `--leading-body` and `--leading-label` line boxes of those two steps. */
@@ -307,20 +167,10 @@ const EMPTY_BAND_GAP = 12;
 const EMPTY_TITLE_MAX_LINES = 2;
 const EMPTY_BODY_MAX_LINES = 5;
 
-/**
- * ⚠️ **Which way the chain runs.** The drawing had one axis, so a seven-role profile was always a
- * 1404px row that no column could hold — which is why the canvas had to be a band, and why the
- * drawing got a fifth of the window (owner, 2026-08-28: *"it should not always be that
- * horizontal-scrolling shape — sometimes three things join into one going down, sometimes it
- * should be tall"*). The same seven roles laid out downward are 148 wide and 616 tall.
- *
- * Turning the chain is only useful once the canvas has height to turn into, which is why this
- * arrives after the frame rather than with it.
- */
+/** Which way the chain runs: a seven-role row cannot fit a column, while the same roles laid downward are 148 wide. */
 export type FlowAxis = 'across' | 'down';
 
-/** Rank runs along the axis; lane is the offset across it. */
-function place(
+function boxOrigin(
   axis: FlowAxis,
   rank: number,
   lane: number,
@@ -354,10 +204,25 @@ interface EmptyPanel {
   height: number;
 }
 
+const HIDDEN_COUNT_BADGE_CLASS = badgeClass({
+  shape: 'pill',
+  className:
+    'border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] text-[color:var(--color-text-tertiary)]',
+});
+
+/** At rest the canvas draws the spine; a skip is about one role, so it arrives when that role is selected or is violated. */
+function isEdgeDrawn(edge: { from: string; to: string; columnSpan: number }, selected: string | null, violatedPairs: ReadonlySet<string>): boolean {
+  return edge.columnSpan <= 1 || selected === edge.from || selected === edge.to || violatedPairs.has(`${edge.from}>${edge.to}`);
+}
+
+/** How far a skip swings, below an across chain or beside a downward one; a per-edge lane step keeps same-span skips apart. */
+function skipSwing(columnSpan: number, laneIndex: number, halfBox: number): number {
+  return SKIP_DROP + (columnSpan - 2) * SKIP_STEP + laneIndex * SKIP_LANE_STEP + halfBox;
+}
+
 /**
- * A port is the point where a real, currently drawn dependency meets a role face. It carries no
- * new topology: callers create one only when a visible edge actually enters or leaves that side.
- * The hollow-to-solid change mirrors focus without becoming a second selection colour.
+ * Where a currently drawn dependency meets a role face; created only when a visible edge enters or
+ * leaves that side. Hollow-to-solid mirrors focus without a second selection colour.
  */
 function ConnectionPort({
   axis,
@@ -366,7 +231,6 @@ function ConnectionPort({
   boxH,
   direction,
   active,
-  tone,
   lane,
   side,
 }: {
@@ -376,7 +240,6 @@ function ConnectionPort({
   boxH: number;
   direction: 'incoming' | 'outgoing';
   active: boolean;
-  tone: string;
   lane: 'contract' | 'observation';
   /** A ladder skip leaves and arrives at the face's side; the port sits there, mid-height. */
   side?: 'left' | 'right';
@@ -392,8 +255,8 @@ function ConnectionPort({
       cx={cx}
       cy={cy}
       r={3}
-      fill={active ? tone : 'var(--color-canvas)'}
-      stroke={tone}
+      fill={active ? EDGE_STROKE : 'var(--color-canvas)'}
+      stroke={EDGE_STROKE}
       strokeWidth={1.5}
       opacity={active ? 1 : 0.42}
       className="architecture-node-port"
@@ -407,12 +270,9 @@ function ConnectionPort({
 }
 
 /**
- * The measured lane's one empty state: a dashed panel, the fact, and the action that fills it.
- *
- * A ladder column centres an icon, the fact and the action, each wrapped and balanced; an across
- * band is one face tall, so it sets the fact and the action on one centred line, cutting the
- * action last. The words are one note for an assistive reader; the lines are only their wrapping.
- * It takes no pointer events, so a press there neither selects a role nor stops a pan.
+ * The measured lane's one empty state: a dashed panel, the fact, and the action. A ladder column
+ * stacks icon, fact and action, balanced; an across band sets fact and action on one line, cutting
+ * the action last. One note for assistive tech; no pointer events.
  */
 function ObservationEmptyState({ panel, title, body }: { panel: EmptyPanel; title: string; body: string }) {
   const innerW = Math.max(0, panel.width - EMPTY_PANEL_PAD_X * 2);
@@ -470,12 +330,10 @@ function ObservationEmptyState({ panel, title, body }: { panel: EmptyPanel; titl
     );
   }
 
-  /* Balanced, as `text-wrap: balance` would set them: a centred block whose last line is one
-     word under a full one reads as a mistake. */
+  /* Balanced like `text-wrap: balance`, so no lone word sits under a full line. */
   const titleLines = balanceLinesByWidthAt(title, innerW, EMPTY_TITLE_MAX_LINES, EMPTY_TITLE_PX);
   const bodyLines = balanceLinesByWidthAt(body, innerW, EMPTY_BODY_MAX_LINES, EMPTY_BODY_PX);
-  /* Each line sits on the middle of its own ramp line box; a glyph's visual centre is about
-     0.35em above its baseline. */
+  /* Each line sits on its line box's middle; a glyph's visual centre is about 0.35em above the baseline. */
   const blockH =
     ICON_SIZE.lg +
     EMPTY_ICON_GAP +
@@ -526,23 +384,7 @@ function ObservationEmptyState({ panel, title, body }: { panel: EmptyPanel; titl
   );
 }
 
-/**
- * The architecture, drawn.
- *
- * ⚠️ **The stroke says where the fact came from.** This screen carries two kinds of claim and has
- * always taken care not to let them read alike: a reviewed profile is what a person declared, and
- * measured traffic is what the scanner counted. Both used to be indigo strokes told apart only by
- * a legend sentence. Here the hand does it — **a declared rule is drawn with an unsteady human
- * line, an observation with an exact machine one** — so the difference survives being glanced at.
- *
- * ⚠️ **Shapes are ISO 5807's**, assigned from the declared graph in `buildArchitectureGraph`: a
- * terminator (stadium) at either end of the chain, a rectangle for a unit of work. The standard's
- * diamond and parallelogram stay unused because this drawing has no branch and no input step.
- *
- * One `<svg>` holds everything. The previous attempt put DOM boxes under an SVG overlay and spent
- * three rounds fighting the seam between them; a drawing is one artifact, and every mark here is
- * placed by the same arithmetic.
- */
+/** The architecture in one <svg>: one face per role; a declared rule is a fixed-width stroke and measured traffic's width carries its count. */
 export function ArchitectureSketch({
   graph,
   selected,
@@ -582,35 +424,15 @@ export function ArchitectureSketch({
   /** `null` where this surface cannot list source at all, so a box says nothing rather than 0. */
   moduleCounts: Readonly<Record<string, number>> | null;
   conceptCounts: Readonly<Record<string, number>>;
-  /**
-   * What each role's own outgoing edges did, or `{}` where no measurement exists. Empty is the
-   * honest state, not a zero row: a box with nothing measured behind it says nothing.
-   */
+  /** Each role's outgoing-edge ledger, or `{}` without a measurement: a box with nothing behind it says nothing. */
   ledgers: Readonly<Record<string, RoleLedger>>;
-  /**
-   * The profile's own one-line sentence for a role, or null where it declared none.
-   *
-   * ⚠️ **A box says what a role *is* before anybody clicks it** (2026-08-30, after studying an
-   * MIT-licensed reference the owner pointed at: every node there carries a summary, and that is
-   * what makes its graph read like prose instead of a wiring diagram). The sentence is the
-   * reviewed profile's own — nothing is inferred — and it takes the line the counts had, because a
-   * count of zero is the loudest thing a quiet box can say and this file already refuses to print
-   * one for modules.
-   */
+  /** The profile's own sentence for a role, or null; it takes the line counts had, since a zero count is loud. */
   roleSummary: (id: string) => string | null;
-  /**
-   * `from>to` for every crossing the receipt counted as a violation.
-   *
-   * ⚠️ **The pill said "Violated · 2" and the drawing showed no violation at all** (judged
-   * 2026-08-30). Both violating edges were skips, which the canvas holds back until a role is
-   * chosen, and even then they were painted in the same indigo as every conforming stroke. A
-   * violation is the one fact this drawing exists to surface, so it is never held back and never
-   * wears the conforming stroke.
-   */
+  /** Violated crossings as `from>to`; a violation is never held back and never wears the conforming stroke. */
   violatedPairs: ReadonlySet<string>;
   /** The sentence a stroke states, the same string the dock printed: rule, count, or violation. */
   edgeSentence: (edge: SentenceEdge) => string;
-  /** The ledger's first half, already worded by the locale — never assembled here. */
+  /** The ledger's first half, already worded by the locale. */
   ledgerStatusLabel: (ledger: RoleLedger) => string;
   ledgerImportsLabel: (count: number) => string;
   /** What the comparison mark says before any source has been observed. */
@@ -622,55 +444,25 @@ export function ArchitectureSketch({
   deltaColumnHint: string;
   /** What a role's own observation face says when only some roles carry a receipt. */
   observationMissingLabel: string;
-  /**
-   * The one empty state that stands in both measured columns before any source was inspected:
-   * the fact, and the action that fills them.
-   */
+  /** The single empty state in both measured columns before any inspection. */
   observationEmptyTitle: string;
   observationEmptyBody: string;
-  /** "N more to the right" — the count is derived, so the screen never guesses. */
   hiddenRightLabel: (count: number) => string;
-  /** The same for the side a pan pushes roles off. */
   hiddenLeftLabel: (count: number) => string;
-  /** And the same two again for a chain that is cut top and bottom rather than left and right. */
   hiddenAboveLabel: (count: number) => string;
   hiddenBelowLabel: (count: number) => string;
 }) {
-  /*
-   * ⚠️ **The axis is measured, not configured.** A profile is drawn across while it fits across and
-   * down once it does not. Derived from the measured box rather than stored, so it can never
-   * disagree with the width the drawing is actually given, and so no effect has to correct state
-   * after the fact.
-   */
+  /* The axis is derived from the measured box, never stored, so it cannot disagree with the given width. */
   const [boxWidth, setBoxWidth] = useState(0);
-  /*
-   * ⚠️ **The chain does not turn under a click** (2026-08-30). At 1920 the seven-role chain runs
-   * across; choosing a role opens the inspector beside the canvas, the canvas loses 380px, and
-   * the drawing that was measured against the narrower box turned into a column — every box,
-   * every sentence and every arc moved the moment a reader pointed at one of them. The axis is
-   * still measured, but against the width the canvas has *at rest*: a selection may narrow the
-   * canvas and cut the chain (the fade, the count and the pan say so), it may not turn it. The
-   * chosen box is scrolled into view instead.
-   */
+  /* Measured against the width at rest, so a selection opening the dock may cut the chain but never turn it; the chosen box scrolls into view. */
   const [restWidth, setRestWidth] = useState(0);
   /*
-   * ⚠️ **The comparison ladder is chosen by the height it needs, not by whether seven boxes could
-   * squeeze across.** Measured 2026-09-03 at 1920×1080: "across while it fits across" drew the
-   * chain as 151px cards, 205px of ink in a 918px canvas, every role sentence cut to "…" and the
-   * lane labels repeated fourteen times — the widest screen showed the least. The 2026-09-03
-   * comparison-workbench record decided the 280/72/240 rows; this reads the canvas height at
-   * rest (the column that holds both the canvas and its hidden-count row, so a count appearing
-   * cannot flip the axis) and prefers those rows whenever they fit. Across remains the answer for
-   * a canvas too short for the rows, and for profiles with parallel lanes.
+   * The comparison ladder is chosen by the height it needs, read at rest from the column holding
+   * the canvas and its hidden-count row (so the count cannot flip the axis). Across stays the
+   * answer for a short canvas and for parallel lanes.
    */
   const [restHeight, setRestHeight] = useState(0);
-  /*
-   * ⚠️ **One height for every box, not one per box.** A ledger exists per role, but a chain whose
-   * boxes are two different heights reads as two kinds of thing rather than as one row of roles —
-   * and the lane arithmetic below assumes a single box height everywhere. So the drawing grows when
-   * the profile has a measurement at all, and every role grows with it; a role with no receipt
-   * simply leaves its third line empty rather than shrinking out of the row.
-   */
+  /* One height for every box: mixed heights read as two kinds of thing, and the lane arithmetic assumes one. */
   const hasLedger = graph.boxes.some((box) => ledgers[box.id] !== undefined);
   const compactBoxW = hasLedger ? BOX_W_LEDGER : BOX_W;
   const roomyBoxW = hasLedger ? BOX_W_LEDGER_ROOMY : BOX_W_ROOMY;
@@ -678,11 +470,7 @@ export function ArchitectureSketch({
   const lanes = graph.boxes.reduce((most, box) => Math.max(most, box.slot + 1), 1);
   const naturalAcross = PAD_X * 2 + ranks * compactBoxW + (ranks - 1) * COL_GAP;
   const axisWidth = restWidth > 0 ? restWidth : boxWidth;
-  /*
-   * The ladder's own height includes the layer stack's head room and its bottom ledge, because
-   * the planes are part of the ladder rather than an overlay on it. Leaving them out would let a
-   * canvas 11px too short choose rows it then has to scroll.
-   */
+  /* The ladder's height includes the plane head room and ledge, or a canvas 11px short would choose rows it must scroll. */
   const planeVerticalRoom = ranks > 1 ? PLANE_HEAD_ROOM + PLANE_INSET_Y : 0;
   const pairedNaturalH =
     PAIRED_PAD_Y * 2 +
@@ -690,9 +478,7 @@ export function ArchitectureSketch({
     ranks * BOX_H +
     (ranks - 1) * PAIRED_ROW_GAP +
     planeVerticalRoom;
-  /* The same rows with one summary line each. Fixed-readable faces and connector space yield with
-     the canvas before any role is hidden, so a canvas too short for the roomy rows still gets the
-     comparison rather than a compressed across chain with a hidden-role count under it. */
+  /* One summary line per row: faces and connectors yield before any role is hidden. */
   const pairedTightH =
     PAIRED_PAD_Y_TIGHT * 2 +
     PAIRED_HEADER_H +
@@ -712,65 +498,36 @@ export function ArchitectureSketch({
   const roomyAcross = PAD_X * 2 + ranks * roomyBoxW + (ranks - 1) * COL_GAP;
   const usesRoomyBoxes = axis === 'across' && axisWidth > 0 && roomyAcross <= axisWidth;
   const preferredBoxW = usesRoomyBoxes ? roomyBoxW : compactBoxW;
-  /* An opening dock first eases each face within a bounded readable range, keeping the 52px
-     sentence handoff intact. Only after the faces reach that floor may the connector gap yield.
-     Because boxWidth follows the grid's transition, this is continuous rather than a size snap. */
+  /* An opening dock first eases each face within a readable range, keeping the 52px sentence handoff; `boxWidth` follows the transition, so it is continuous. */
   const fittedAcrossBoxW =
     ranks > 0 && boxWidth > 0
       ? (boxWidth - PAD_X * 2 - (ranks - 1) * COL_GAP) / ranks
       : preferredBoxW;
   const minimumAcrossBoxW = hasLedger ? BOX_W_LEDGER_FIT : BOX_W;
   const usesPairedDown = axis === 'down' && lanes === 1 && axisWidth >= PAIRED_MIN_W;
-  /*
-   * ⚠️ **A phone gets the ladder's face, not the tablet's fallback.** Below the paired width a
-   * single-lane chain drew 148px faces beside a 180px lane reserved for sentences that could not
-   * fit in it: every caption and every rule sentence was cut while half the canvas stayed empty
-   * (390px, 2026-09-03). The narrow ladder keeps one lane, gives the face the canvas width up to
-   * the reviewed face's 280px, and seats each rule sentence beside its arrow like the ladder does.
-   */
+  /* A phone gets the narrow ladder: one lane, the face up to 280px, rule sentences beside their arrows. */
   const usesNarrowLadder = axis === 'down' && lanes === 1 && !usesPairedDown && boxWidth > 0;
   const narrowFaceW = usesNarrowLadder
     ? Math.max(BOX_W, Math.min(PAIRED_CONTRACT_W, boxWidth - PAD_X * 2 - NARROW_LADDER_EDGE))
     : preferredBoxW;
-  /* An across chain takes the width its canvas gives it, up to the roomy face: a 1790px canvas
-     held seven 151px faces with every caption cut while 200px per face was free (1920x700,
-     2026-09-03). The roomy mode still needs the whole roomy row to fit; between the two the
-     face simply grows. */
+  /* An across chain grows its faces with the canvas up to the roomy face. */
   const boxW =
     axis === 'across'
       ? Math.max(minimumAcrossBoxW, Math.min(usesRoomyBoxes ? preferredBoxW : roomyBoxW, fittedAcrossBoxW))
       : usesNarrowLadder
         ? narrowFaceW
         : preferredBoxW;
-  /*
-   * Which of the two ladder densities this canvas can hold. Below xl `restHeight` is 0 and the
-   * roomy rows stand, exactly as before; the tight rows are the answer only where the canvas was
-   * measured, the roomy rows do not fit it, and the tight ones do. When even those do not fit,
-   * the hidden-count row and the scroller stay the honest fallback.
-   */
+  /* Below xl `restHeight` is 0 and the roomy rows stand; tight rows only where measured and needed. */
   const ladderDensity: 'roomy' | 'tight' =
     usesPairedDown && restHeight > 0 && restHeight < pairedNaturalH && restHeight >= pairedTightH
       ? 'tight'
       : 'roomy';
   const usesTightLadder = usesPairedDown && ladderDensity === 'tight';
   const splitsEvidence = (axis === 'across' && axisWidth > 0) || usesPairedDown;
-  /*
-   * Nothing measured anywhere: no role carries a receipt and no measured crossing exists. Then
-   * the measured lane is one empty state instead of a placeholder per role (owner review,
-   * 2026-09-26). A profile where only some roles carry a receipt keeps its per-role faces,
-   * because there the absence is about that role rather than about the whole column.
-   */
+  /* No receipt and no measured crossing: one empty state for the column. Partial receipts keep per-role faces. */
   const observationEmpty =
     splitsEvidence && !hasLedger && !graph.edges.some((edge) => edge.kind === 'traffic');
-  /*
-   * ⚠️ **Ground is reserved for arcs the profile declares, not for arcs it might have had.** The
-   * trail lane's 360px cap was subtracted unconditionally, so a profile with no skip on the
-   * observation side — every one the dogfood vault ships — held 360px empty beside a sentence lane
-   * that was cutting its sentences at 146px (measured 2026-09-13). The lead side already made this
-   * distinction with `contractNeedsLane`; the trailing side now makes the same one, from the same
-   * fact: a skip is an edge spanning more than one column, and an edge that does not exist needs no
-   * room. A profile that does declare one reserves exactly what it did before.
-   */
+  /* Trail ground is reserved only when the profile declares an observation-side skip, as `contractNeedsLane` does for the lead. */
   const observationNeedsLane = graph.edges.some(
     (edge) => edge.kind === 'traffic' && edge.columnSpan > 1,
   );
@@ -785,11 +542,7 @@ export function ArchitectureSketch({
         )
       : 0;
   const pairedContractW = Math.min(PAIRED_CONTRACT_W_MAX, PAIRED_CONTRACT_W + pairedGroundSpare);
-  /*
-   * The face takes its share first, then the gutter takes what the face could not use. Both are
-   * capped, so a canvas already tight for the arcs draws exactly what it drew before, and a wide
-   * one spends its ground on the two lanes that have a measured need rather than on empty margins.
-   */
+  /* The face takes its share first, then the gutter; both capped. */
   const pairedGutterW = Math.min(
     PAIRED_GUTTER_W_MAX,
     PAIRED_GUTTER_W + Math.max(0, pairedGroundSpare - (pairedContractW - PAIRED_CONTRACT_W)),
@@ -810,7 +563,7 @@ export function ArchitectureSketch({
         : hasLedger
           ? ROW_GAP_LEDGER
           : ROW_GAP_PLAIN;
-  const ladderPadY = usesPairedDown
+  const padY = usesPairedDown
     ? usesTightLadder
       ? PAIRED_PAD_Y_TIGHT
       : PAIRED_PAD_Y
@@ -819,26 +572,8 @@ export function ArchitectureSketch({
       : hasLedger
         ? PAD_Y_LEDGER
         : PAD_Y;
-  /*
-   * ⚠️ **One owner for the chrome row's vertical rhythm** (owner, 2026-09-13, translated: *"the
-   * type is overlapping the box, isn't it? design should not have this kind of issue"*). The lane
-   * headings sat at `padY + 14`, the
-   * column note at `padY + 28`, and the first observation face was placed from `padY` by a third
-   * formula. Measured on the built export at 1512, in **both** locales: heading baseline bottom
-   * 201, note top 202 — a 1px gap — and note bottom 215 against a face top of 212, so the note
-   * **overlapped the dashed face by 3px**. Three spacing sources, none of them agreeing.
-   *
-   * The rhythm now comes from one place: the headings sit on the ladder's own top padding and the
-   * faces are placed from the same `padY`.
-   *
-   * ⚠️ **The column notes are gone, and their line with them** (owner review, 2026-09-26). They
-   * said "not compared yet" and "not inspected yet" under the headings while the columns under
-   * them drew fourteen placeholders for the same fact. The empty state inside the columns says it
-   * once now, so the ladder no longer pays a `--leading-label` line above the first face for a
-   * note it does not draw.
-   */
-  const laneHeadingY = ladderPadY + 14;
-  const padY = ladderPadY;
+  /* One owner for the chrome row's vertical rhythm: headings sit on the ladder's top padding and faces are placed from the same `padY`. */
+  const laneHeadingY = padY + 14;
   const boxH = usesRoomyBoxes
     ? BOX_H_ROOMY
     : usesPairedDown
@@ -852,21 +587,16 @@ export function ArchitectureSketch({
       : hasLedger || splitsEvidence
         ? BOX_H_LEDGER
         : BOX_H;
-  /* The tight row pays for its height with the sentence's second line, not with its face width:
-     one line of summary keeps every role's first clause, which cutting the faces would not. */
-  /* The observation face is exactly its row: a 64px face in a 72px row gave the two lanes
-     different arrow lengths and put their sentences on different baselines (owner, 2026-09-03),
-     and on the tight ladder it closed the gap its count sentence needs. */
+  /* The observation face is exactly its row, so both lanes share arrow lengths and sentence baselines. */
   const observationBoxH = usesPairedDown ? boxH : OBSERVATION_BOX_H;
+  /* The tight row pays with the sentence's second line, not the face width. */
   const summaryLineCount =
     usesTightLadder || (axis === 'down' && !usesPairedDown && !usesNarrowLadder)
       ? 1
       : axis === 'across' && splitsEvidence
         ? SUMMARY_LINES_ACROSS
         : SUMMARY_LINES;
-  /* Keep the role faces fixed while a desktop dock opens, but let their empty handoff space absorb
-     the reserved width first. This follows the animated grid on every ResizeObserver frame, so the
-     chain neither turns nor loses its last role behind a 380px dock at the 1512px app width. */
+  /* Faces stay fixed while a dock opens; the handoff space absorbs the width first, per ResizeObserver frame. */
   const colGap =
     axis === 'across' && ranks > 1 && boxWidth > 0
       ? Math.max(
@@ -880,15 +610,7 @@ export function ArchitectureSketch({
       ? contractBoxW + pairedGutterW
       : 0;
 
-  /*
-   * ⚠️ **The planes are drawn on the ladder only, and the reason is measured room.** A plane has
-   * to reach past its faces on both sides or a role stops looking as though it rests on one, and
-   * that room is `PLANE_EDGE + the stack's drift + its lean` — 70px each side for four layers,
-   * 112px for seven. The comparison ladder already reserves side lanes of at least 48px and up to
-   * 360px and can give it up; the narrow ladder spends the same pixels on the face itself (a
-   * 390px phone would be left with none), and an across chain stacks its layers sideways, where
-   * this depth reading would fight the reviewed/observed split it already carries vertically.
-   */
+  /* Planes are drawn only on the comparison ladder, which has side room (`PLANE_EDGE` + drift + lean) to give; the narrow ladder and across chain do not. */
   const usesLayerPlanes = usesPairedDown && ranks > 1;
   const planeRowPitch = boxH + rowGap;
   const planeH = boxH + PLANE_INSET_Y * 2;
@@ -899,23 +621,11 @@ export function ArchitectureSketch({
   const planeRoom = usesLayerPlanes
     ? Math.ceil(PLANE_EDGE + planeDrift + planeLean)
     : 0;
-  /**
-   * What the planes need on the **trailing** side, which since 2026-09-13 is no longer what they
-   * need on the leading side.
-   *
-   * The stagger runs left: every plane now ends on one line and only its left edge steps back by
-   * rank. So the trailing side owes the common right edge its `PLANE_EDGE` and the top face's
-   * lean, and nothing for the drift — reserving the full `planeRoom` there held 84px for a
-   * staircase that is no longer drawn, and pushed the whole ladder 40px past its own canvas once
-   * the gutter took its room (`ArchitectureSketch.test.tsx`, the 1200px paired ladder).
-   */
+  /** Trailing-side room: planes share one right edge, so it owes `PLANE_EDGE` and the lean, not the drift. */
   const planeTrailRoom = usesLayerPlanes ? Math.ceil(PLANE_EDGE + planeLean) : 0;
   const planeHeadRoom = usesLayerPlanes ? PLANE_HEAD_ROOM : 0;
 
-  /*
-   * Hover answers locally; selection owns the graph-wide comparison. Letting hover dim the entire
-   * canvas made a casual pointer move look like a committed state change.
-   */
+  /* Hover answers locally; only selection dims the graph. */
   const [hovered, setHovered] = useState<string | null>(null);
   const [pressed, setPressed] = useState<string | null>(null);
   const focus = selected ?? hovered;
@@ -928,12 +638,7 @@ export function ArchitectureSketch({
       count: edge.count,
       columnSpan: edge.columnSpan,
       violated: violatedPairs.has(`${edge.from}>${edge.to}`),
-      /* The same rule `visibleEdges` draws by: the spine always, a skip on focus or when violated. */
-      drawn:
-        edge.columnSpan <= 1 ||
-        selected === edge.from ||
-        selected === edge.to ||
-        violatedPairs.has(`${edge.from}>${edge.to}`),
+      drawn: isEdgeDrawn(edge, selected, violatedPairs),
     }),
     [violatedPairs, selected],
   );
@@ -951,41 +656,21 @@ export function ArchitectureSketch({
       ? 28
       : SENTENCE_TRAIL_ROOM
     : 0;
-  /*
-   * ⚠️ **Side lanes are given where the arcs are.** Two equal 180px lanes left 188px of empty
-   * ground on the contract side while three nested observation arcs and their sentences fought
-   * for the same 188px on the other side and every sentence was cut (installed app, 1512 with the
-   * role dock open, 2026-09-03). The contract lane only needs room when the profile declares a
-   * skip; otherwise it keeps the minimum and the observation lane takes the rest, up to a cap.
-   */
+  /* Side lanes go where the arcs are: the contract lane needs room only when the profile declares a skip. */
   const contractNeedsLane = graph.edges.some(
     (edge) => edge.kind === 'permitted' && edge.columnSpan > 1,
   );
-  const pairedSlack = usesPairedDown && boxWidth > 0 ? Math.max(0, boxWidth - pairedFixedW) : PAIRED_SIDE_ROOM * 2;
-  /*
-   * ⚠️ **The stack takes its room from the sentence lane's cap, not from the canvas.** The plane
-   * floor is applied to the *lead* room first and the trail room is measured against what is
-   * left, so on every canvas with slack the drawing keeps the width it had (measured 2026-09-08:
-   * 1280 and 1512 both unchanged, because the observation lane was sitting at its 360px cap).
-   * Only a canvas already too narrow for the ladder grows, and there the scroller and the
-   * hidden-role count stay the honest answer they already were.
-   */
-  /*
-   * ⚠️ **The drawing is centred in its card** (inspection 122, S8). Asymmetric lanes — the
-   * contract side at its 48px minimum, the observation side at its 360px cap — put the band 124px
-   * left of the card's centre at 1512, which reads as a drawing that slid rather than as a lane
-   * that earned its room. Once the face has taken the spare width, whatever the two lanes still do
-   * not need is split evenly, so the leftover ground sits on both sides instead of all on one.
-   * Each lane keeps its floor, so the arcs never lose room they were using.
-   */
+  const pairedSlack = usesPairedDown && boxWidth > 0 ? Math.max(0, boxWidth - pairedFixedW) : PAIRED_SIDE_ROOM_MAX * 2;
+  /* The drawing is centred: once the face has its width, leftover lane ground is split evenly while each lane keeps its floor. */
   const pairedCentredLane = usesPairedDown && boxWidth > 0
     ? Math.max(0, boxWidth - 2 * PAD_X - pairedContractW - pairedGutterW - PAIRED_OBSERVATION_W) / 2
     : 0;
+  /* The plane floor comes out of the lead room first and the trail room is measured from what is left, so canvases with slack keep their width. */
   const pairedLeadRoom = Math.max(
     planeRoom,
     pairedCentredLane,
     contractNeedsLane
-      ? Math.max(PAIRED_SIDE_ROOM_MIN, Math.min(PAIRED_SIDE_ROOM, pairedSlack / 2))
+      ? Math.max(PAIRED_SIDE_ROOM_MIN, Math.min(PAIRED_SIDE_ROOM_MAX, pairedSlack / 2))
       : PAIRED_SIDE_ROOM_MIN,
   );
   const pairedTrailRoom = Math.max(
@@ -999,7 +684,7 @@ export function ArchitectureSketch({
   const placed = useMemo(() => {
     const map = new Map<string, Placed>();
     for (const box of graph.boxes) {
-      const at = place(axis, box.column, box.slot, boxH, contractBoxW, rowGap, padY, colGap);
+      const at = boxOrigin(axis, box.column, box.slot, boxH, contractBoxW, rowGap, padY, colGap);
       map.set(box.id, {
         id: box.id,
         x: at.x + (axis === 'down' ? layoutLeadRoom : 0),
@@ -1042,16 +727,7 @@ export function ArchitectureSketch({
     );
   }, [boxH, observationBoxH, observationOffset, placed, splitsEvidence, usesPairedDown]);
 
-  /*
-   * Where the one empty state stands, when nothing has been measured.
-   *
-   * On the ladder it is one column-tall panel over the delta gutter and the observation face,
-   * from the first role's top to the last role's bottom: the two columns an inspection fills,
-   * drawn as the one area they are until then. Its left edge yields to the rule sentences that
-   * read into the gutter beside their arrows, so the approved structure keeps every word; it
-   * never gives up the observation column itself. An across chain has a measured lane under each
-   * row of faces instead, so there the panel is one band per row.
-   */
+  /* Where the one empty state stands: on the ladder a column-tall panel over the delta gutter and observation face, yielding its left edge to rule sentences; on an across chain one band per row. */
   const emptyPanels = useMemo((): EmptyPanel[] => {
     if (!observationEmpty) return [];
     const faces = [...placed.values()];
@@ -1126,16 +802,10 @@ export function ArchitectureSketch({
   /** The first x the empty column claims, so a rule sentence beside an arrow stops short of it. */
   const emptyColumnLeft = emptyColumn?.x ?? null;
 
-  /* Where each box ends, in the SVG's own units — which are CSS pixels, because the drawing is no
-     longer scaled. Derived, never a ref written during render. */
+  /* Box ends in SVG units, which are CSS pixels since the drawing is not scaled. Derived, never a ref written during render. */
   const boxEnd = useMemo(
     () => ({
-      /*
-       * Roomy roles include a lower observation card inside the same interactive group. Counting
-       * only the upper contract card said zero hidden roles in a short 1400x400 canvas while all
-       * four observation cards were below the viewport. The group is the role; its lowest face is
-       * the boundary that the hidden-count affordance must measure.
-       */
+      /* A roomy role's lowest face (its observation card) is the boundary the hidden count measures, since the group is the role. */
       down: graph.boxes.map((box) => {
         const contract = placed.get(box.id);
         const observation = observedPlaced.get(box.id);
@@ -1166,19 +836,7 @@ export function ArchitectureSketch({
     ],
   );
 
-  /*
-   * ⚠️ **A canvas that scrolls has to say so.** Seven roles do not fit the workbench width, so the
-   * last box is simply cut off at the panel edge — and macOS keeps its overlay scrollbar invisible
-   * until something moves, so nothing on screen distinguishes "there is more to the right" from
-   * "the drawing ends here" (installed app, 2026-08-28). This is the same defect the agent packet
-   * had one panel over, on the other axis.
-   *
-   * The judgment is the repository's existing one rather than a second opinion: those helpers are
-   * plain arithmetic over a scroll offset, a client extent and a scroll extent, so the horizontal
-   * case passes width where the listbox passes height. The reading is attached to the node itself
-   * because an effect fires while the ref is still null -- the mistake this file's sibling panel
-   * made twice before a callback ref settled it.
-   */
+  /* A canvas that scrolls must say so: macOS hides its overlay scrollbar. Read on the node itself through a callback ref, since an effect fires while the ref is null. */
   const [covered, setCovered] = useState<{
     left: boolean;
     right: boolean;
@@ -1192,10 +850,7 @@ export function ArchitectureSketch({
     const element = scrollerRef.current;
     if (!element) return;
     setBoxWidth(element.clientWidth);
-    /* A right dock reserves width but must not redefine the architecture. Add the measured sibling
-       width back so a role/rules/evidence press keeps the chain's axis; a real window resize still
-       changes the sum and may reflow it. Below xl the docks are in document flow and reserve no
-       canvas width. */
+    /* At xl a right dock's measured width is added back, so opening a dock keeps the chain's axis; a real resize may reflow it. */
     const dockWidth = window.matchMedia('(min-width: 1280px)').matches
       ? Math.max(
           document.getElementById('architecture-inspector')?.getBoundingClientRect().width ?? 0,
@@ -1203,29 +858,13 @@ export function ArchitectureSketch({
         )
       : 0;
     setRestWidth(element.clientWidth + dockWidth);
-    /*
-     * The column around the scroller keeps its height whether or not a hidden-count row is shown,
-     * and no dock changes it at xl (docks open beside the canvas, never above it). Below xl the
-     * column is content-sized, so its height is the drawing's own and would only ratify whichever
-     * axis drew first (review, 2026-09-03: the same 1100px window drew two different chains
-     * depending on its history). There the width rule alone decides, deterministically.
-     */
+    /* At xl the column height is independent of the count row and the docks; below xl it is content-sized, so the width rule alone decides. */
     setRestHeight(
       window.matchMedia('(min-width: 1280px)').matches
         ? element.parentElement?.clientHeight ?? element.clientHeight
         : 0,
     );
-    /*
-     * ⚠️ **Measured along the axis the chain runs.** These readings were written when a drawing
-     * could only be cut on the right; a chain that runs down is cut at the bottom instead, and a
-     * count that only ever looks sideways is the same defect as one that only ever looked right.
-     */
-    /*
-     * ⚠️ **Whichever axis is actually cut, not whichever the chain runs.** A chain drawn across can
-     * still be cut top and bottom in a short window — measured at 1400x400: 87px hidden vertically
-     * while every reading looked sideways and reported nothing (2026-08-29). The chain's own axis
-     * wins when both overflow, because that is the one a reader is following.
-     */
+    /* Whichever axis is actually cut: an across chain can still be cut top and bottom. The chain's own axis wins when both overflow. */
     const down =
       axis === 'down' ||
       (element.scrollWidth <= element.clientWidth + 1 &&
@@ -1237,16 +876,9 @@ export function ArchitectureSketch({
     const overflowing = extent > visible + 1;
     const edge = offset + visible;
     setCovered({
-      left: listboxTopIsHidden(overflowing, offset),
-      right: listboxBottomIsHidden(overflowing, offset, visible, extent),
-      /*
-       * Counted from the boxes themselves, so the chip states a fact rather than an impression.
-       * ⚠️ Both directions. Panning was added before this count was, so dragging the drawing left
-       * pushed roles off the left edge with nothing saying so — the very defect the right-hand
-       * count exists to prevent, reintroduced on the side nobody had looked at yet (installed app,
-       * 2026-08-28).
-       */
-      /* Along the covered axis, which is not always the axis the boxes were laid out on. */
+      left: startIsHidden(overflowing, offset),
+      right: endIsHidden(overflowing, offset, visible, extent),
+      /* Counted from the boxes, in both directions, since panning can push roles off either edge. */
       coveredDown: down,
       hiddenLeft: alongCovered.filter(
         (end) => end - (down ? boxH : contractBoxW) < offset,
@@ -1254,11 +886,7 @@ export function ArchitectureSketch({
       hiddenRight: alongCovered.filter((end) => end > edge).length,
     });
   }, [axis, boxEnd, boxH, contractBoxW]);
-  /*
-   * The chosen box is brought into view when the canvas has cut it — a selection that narrows
-   * the canvas at 1920 leaves the far end of an across chain behind the fade. Nearest edge only,
-   * with time when the reader has not asked for none.
-   */
+  /* A chosen box cut by the canvas scrolls into view, nearest edge only, with no motion under reduced motion. */
   useEffect(() => {
     const element = scrollerRef.current;
     const at = selected !== null ? placed.get(selected) : undefined;
@@ -1309,37 +937,19 @@ export function ArchitectureSketch({
     [readCoveredEdges],
   );
   /*
-   * ⚠️ **Press and drag pans the canvas.** The drawing keeps its true size, so a wide profile is
-   * reachable only by scrolling — and a fresh-eyes walkthrough on 2026-08-28 found that pressing
-   * and dragging left `scrollLeft` at 0: the only thing that worked was a horizontal trackpad
-   * swipe, which nothing on screen names and a mouse cannot perform at all. Grabbing the canvas is
-   * what every node editor does with it.
-   *
-   * Mouse only. Touch already pans this box natively, and taking pointer capture there would
-   * fight the browser rather than help it.
-   *
-   * A drag must not also select whatever was under the cursor when it started. The threshold is
-   * what separates the two: below it the press is still a click, above it the click is swallowed
-   * once. This is not drag-only discovery — the count chip says what is off the edge, the wheel
-   * still works, and the sentences carry the whole answer without any of it.
+   * Mouse press-and-drag pans the canvas (touch already pans natively). Past the threshold the drag
+   * swallows the click once, so a pan does not also select the node under the cursor.
    */
   const pan = useRef<{ startX: number; startScroll: number; moved: boolean } | null>(null);
   const swallowClick = useRef(false);
   const PAN_THRESHOLD = 4;
 
   const onPanStart = (event: React.PointerEvent<HTMLDivElement>) => {
-    /*
-     * ⚠️ **The flag lives until the next press, not until it is used.** A drag that ends on empty
-     * ground produces no click to consume it, so it stayed armed and swallowed the next real one —
-     * caught by the gate below, which presses a node right after a drag. The order is fixed:
-     * pointerup, then any click, then the next pointerdown, so clearing here can never eat the
-     * click the drag is meant to suppress.
-     */
+    /* Cleared on the next press, not on use: a drag ending on empty ground produces no click and would swallow the next real one. */
     swallowClick.current = false;
     const element = scrollerRef.current;
     if (!element || event.pointerType !== 'mouse' || event.button !== 0) return;
-    /* The covered axis, not the chain's — they differ when a chain drawn across is cut by a short
-       window, and a drag that only ever moved sideways would do nothing there. */
+    /* The covered axis, not the chain's, so a drag works when an across chain is cut vertically. */
     const down = covered.coveredDown;
     if (down ? element.scrollHeight <= element.clientHeight + 1 : element.scrollWidth <= element.clientWidth + 1) {
       return;
@@ -1377,16 +987,9 @@ export function ArchitectureSketch({
   };
 
   const coveredMask = (() => {
-    /* The fade is as wide as this panel's own inset, so the covered edge and the padded edge
-       agree rather than each picking a number. */
+    /* The fade matches the panel's own inset. */
     const fade = 'var(--card-pad)';
-    /*
-     * ⚠️ **The strip that carries the count is as tall as the count.** The bottom band used to be
-     * one inset like the others, and the count pinned over it stood 28px tall on a 16px fade: a
-     * review on 2026-08-30 measured the badge over the last box's receipt line in a short window,
-     * which is the covered node the badge exists to avoid. Two insets hold the badge and its air,
-     * so nothing under it is still opaque.
-     */
+    /* Two insets at the covered bottom, so the count badge sits over faded ink, not opaque ink. */
     const endFade = covered.coveredDown ? 'calc(var(--card-pad) * 2)' : fade;
     const [from, to] = covered.coveredDown ? ['bottom', 'top'] : ['right', 'left'];
     if (covered.left && covered.right) {
@@ -1397,15 +1000,7 @@ export function ArchitectureSketch({
     return undefined;
   })();
 
-  /* At rest the canvas draws the spine. A crossing that skips a column is a fact about one role,
-     so it arrives when that role is chosen; the legend says so rather than leaving it a mystery. */
-  /**
-   * Which lane each skip takes, counted inside its own span so the offsets stay small.
-   *
-   * Deterministic by construction: the graph's edge order is stable, so the same profile always
-   * draws the same bundle in the same order.
-   */
-
+  /** Which lane each skip takes, counted within its span; deterministic because the edge order is stable. */
   const skipLane = useMemo(() => {
     const lanes = new Map<string, number>();
     const used = new Map<number, number>();
@@ -1419,7 +1014,7 @@ export function ArchitectureSketch({
   }, [graph.edges]);
 
   const sentences = useMemo(() => {
-    const place = (
+    const placeLaneSentences = (
       edges: readonly Graph['edges'][number][],
       lane: ReadonlyMap<string, Placed>,
       laneBoxW: number,
@@ -1437,31 +1032,21 @@ export function ArchitectureSketch({
         rowGap,
         colGap,
         swingOf: (edge) =>
-          SKIP_DROP +
-          (edge.columnSpan - 2) * SKIP_STEP +
-          (skipLane.get(`${edge.from}>${edge.to}`) ?? 0) * SKIP_LANE_STEP +
-          (axis === 'across' ? laneBoxH : laneBoxW) / 2,
+          skipSwing(edge.columnSpan, skipLane.get(`${edge.from}>${edge.to}`) ?? 0, (axis === 'across' ? laneBoxH : laneBoxW) / 2),
         leadRoom: layoutLeadRoom,
         trailRoom: layoutTrailRoom,
         skipSide,
-        /* On the comparison ladder an adjacent rule's sentence sits beside its own arrow, with
-           the half face, the delta gutter and the observation face as its room; the row gap
-           between the two faces is clear ground by construction. */
+        /* On the ladders an adjacent rule's sentence sits beside its arrow, in the clear row gap. */
         adjacentSeat: usesPairedDown || usesNarrowLadder ? 'connector' : 'lead',
-        /* The contract lane reads right over the gutter; the observation lane reads left into the
-           gutter, keeping its right side free for the skip arcs. */
+        /* The contract lane reads right over the gutter; the observation lane reads left, leaving its right side to the skip arcs. */
         connectorSide: usesNarrowLadder ? 'split' : lane === placed ? 'right' : 'left',
-        /* On the narrow ladder the sentence may run to the canvas edge: half the face, the edge
-           air and the canvas padding, which is what a nineteen-glyph Korean rule needs. */
+        /* On the narrow ladder the sentence may run to the canvas edge, which a nineteen-glyph Korean rule needs. */
         connectorRoom: usesNarrowLadder
           ? contractBoxW / 2 + NARROW_LADDER_EDGE + PAD_X
           : lane === placed
             ? Math.min(
                 contractBoxW / 2 + pairedGutterW + observationBoxW / 2 - GAP_BETWEEN_LANE_SENTENCES,
-                /* Before an inspection the observation half is the empty column, so a rule
-                   sentence stops short of it: `placeEdgeSentences` spends the arrow gap and 12
-                   units of padding out of this room, which puts its end one air short of it.
-                   The arrow runs down the contract faces' centre line. */
+                /* Before an inspection a rule sentence stops one air short of the empty column (`placeEdgeSentences` spends the arrow gap and 12 of padding). */
                 emptyColumnLeft === null
                   ? Number.POSITIVE_INFINITY
                   : emptyColumnLeft -
@@ -1473,20 +1058,19 @@ export function ArchitectureSketch({
         sentenceOf: edgeSentence,
         focus,
       });
-    if (!splitsEvidence) return place(graph.edges, placed, contractBoxW, boxH);
-    const rules = place(
+    if (!splitsEvidence) return placeLaneSentences(graph.edges, placed, contractBoxW, boxH);
+    const rules = placeLaneSentences(
       graph.edges.filter((edge) => edge.kind === 'permitted'),
       placed,
       contractBoxW,
       boxH,
       usesPairedDown ? 'negative' : 'positive',
     );
-    /* The rule lane places first and holds its ground; a count sentence that would touch a rule
-       sentence in the shared gutter gives way. */
+    /* The rule lane places first; a count sentence that would touch it gives way. */
     const held = rules.flatMap((placement) => (placement.rect ? [placement.rect] : []));
     return [
       ...rules,
-      ...place(
+      ...placeLaneSentences(
         graph.edges.filter((edge) => edge.kind === 'traffic'),
         observedPlaced,
         observationBoxW,
@@ -1519,40 +1103,17 @@ export function ArchitectureSketch({
     usesPairedDown,
   ]);
 
-  const visibleEdges = graph.edges.filter(
-    (edge) =>
-      edge.columnSpan <= 1 ||
-      selected === edge.from ||
-      selected === edge.to ||
-      violatedPairs.has(`${edge.from}>${edge.to}`),
-  );
-  /*
-   * ⚠️ Reserve room for the skips that are actually drawn, not for the ones that could be. The
-   * first cut always added the deepest possible swing, so at rest — where no skip is drawn at all
-   * — the canvas ended in 180px of empty ground (installed app, 2026-08-28). The drawing grows
-   * when a selection reveals a skip and shrinks back when it is let go.
-   */
-  /*
-   * ⚠️ **The room depends on the profile, not on the selection.** Reading it off the *visible*
-   * edges made the canvas grow the moment a role was chosen, and the second fresh-eyes
-   * walkthrough measured what that costs: everything below shifted down, and the right column's
-   * readable height fell from 456px to 406px, cutting a closing sentence that had fit a moment
-   * earlier. A page that moves under a click is a worse defect than a canvas with space in it —
-   * and on a dotted ground that space reads as canvas rather than as a gap, which is the whole
-   * reason node editors draw one.
-   */
+  /* Per render O(B·E + E²): per-role port filters and per-sentence edges.find / visibleEdges.includes are linear scans over tens of edges. */
+  const visibleEdges = graph.edges.filter((edge) => isEdgeDrawn(edge, selected, violatedPairs));
+  /* Skip room depends on the profile, not the selection, so the page does not move under a click. */
   const deepestSkip = graph.edges.reduce((most, edge) => Math.max(most, edge.columnSpan), 0);
   const skipRoom = deepestSkip <= 1 ? 0 : SKIP_DROP + deepestSkip * SKIP_STEP;
-  /* Ranks run along the axis and lanes across it; the skip swing widens whichever side it leaves. */
   const alongExtent =
     axis === 'across'
       ? PAD_X * 2 + ranks * boxW + (ranks - 1) * colGap
-      /* `padY + ladderPadY`, not `padY * 2`: the chrome row's extra line belongs above the first
-         face and nowhere else, and doubling it would buy 16px of ground under the last one. */
-      : padY + ladderPadY + ranks * boxH + (ranks - 1) * rowGap +
+      : padY * 2 + ranks * boxH + (ranks - 1) * rowGap +
         (usesPairedDown ? PAIRED_HEADER_H : 0) +
-        /* The head room the top plane's lit edge needs, and the ledge the bottom plane keeps
-           under the last role. Zero on every layout that draws no planes. */
+        /* Plane head room and bottom ledge; zero on layouts without planes. */
         (usesLayerPlanes ? planeHeadRoom + PLANE_INSET_Y : 0);
   const acrossExtent =
     axis === 'across'
@@ -1571,29 +1132,12 @@ export function ArchitectureSketch({
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
-      {/*
-        ⚠️ **A hidden-role count gets a row, never an overlay.** A fresh-eyes
-        walkthrough measured 180px hidden at 700 and 490px at 390 and reported "no scrollbar, no
-        fade, no arrow" — after zooming in specifically to check whether the cut edge was an
-        intentional mask. The mask is real and measurable; it has nothing to act on, because a fade
-        works by dissolving ink and this edge carries a lane surface and a hairline arrow tail. A
-        scrollbar is no better: on macOS the overlay one stays hidden until something moves, and
-        whether it does at all is the viewer's system setting rather than ours.
-
-        So the screen states a fact it can derive — how many roles end past the visible edge — which
-        is the one thing the walker could not tell: that the drawing continues rather than ends. It
-        occupies layout only while something is actually hidden. The mask stays because it still
-        softens a label clipped mid-character.
-      */}
+      {/* Left, right and above counts take a row shown only while something is hidden: a fade or a macOS overlay scrollbar alone does not say the drawing continues. */}
       {covered.hiddenLeft === 0 && covered.hiddenRight === 0 ? null : (
         <div className="flex items-center justify-end gap-2 px-[var(--card-pad)] pt-2.5">
         {covered.hiddenLeft === 0 ? null : (
           <span
-            className={badgeClass({
-              shape: 'pill',
-              className:
-                'border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] text-[color:var(--color-text-tertiary)]',
-            })}
+            className={HIDDEN_COUNT_BADGE_CLASS}
             data-testid="architecture-canvas-hidden-left"
           >
             {(covered.coveredDown ? hiddenAboveLabel : hiddenLeftLabel)(covered.hiddenLeft)}
@@ -1601,11 +1145,7 @@ export function ArchitectureSketch({
         )}
         {covered.hiddenRight === 0 || covered.coveredDown ? null : (
           <span
-            className={badgeClass({
-              shape: 'pill',
-              className:
-                'border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] text-[color:var(--color-text-tertiary)]',
-            })}
+            className={HIDDEN_COUNT_BADGE_CLASS}
             data-testid="architecture-canvas-hidden-right"
           >
             {hiddenRightLabel(covered.hiddenRight)}
@@ -1614,18 +1154,7 @@ export function ArchitectureSketch({
         </div>
       )}
 
-      {/*
-        ⚠️ **The drawing keeps its size and the canvas scrolls.** It used to be `width="100%"`,
-        which fits the viewBox to the element — and at 390 that is a 0.39 scale, so measured on the
-        built export the labels rendered at roughly 4px and the counts were a smudge, while the run
-        button (plain HTML, outside the SVG) stayed full size and became the largest thing on the
-        canvas.
-
-        Scaling an SVG scales the text inside it, which is how a transform quietly produces sizes
-        the type ramp forbids and no lint rule can see. `.claude/rules/design.md` already answers
-        this for wide content: a diagram scrolls inside its own container and the page body never
-        does. That is also what every node editor does — the canvas is a viewport, not a fit.
-      */}
+      {/* The drawing keeps its size and the canvas scrolls: scaling an SVG scales its text off the type ramp (`.claude/rules/design.md`: a diagram scrolls in its own container). */}
       <div
         ref={attachScroller}
         onScroll={readCoveredEdges}
@@ -1633,40 +1162,12 @@ export function ArchitectureSketch({
         onPointerMove={onPanMove}
         onPointerUp={onPanEnd}
         onPointerCancel={onPanEnd}
-        /*
-         * ⚠️ **A visible scrollbar, because the fade alone was not perceived.** A fresh-eyes
-         * walkthrough measured 180px hidden at 700 and 490px at 390 and reported "no scrollbar, no
-         * fade, no arrow" — having zoomed in specifically to check whether the cut edge was an
-         * intentional mask, and concluded it was not. The mask is there and measurable; it simply
-         * has nothing to act on. A fade works by dissolving ink, and this edge carries a lane field
-         * and a hairline arrow tail, where a line of text dissolving is unmistakable. An
-         * affordance nobody perceives is not an affordance.
-         *
-         * So the scrollbar itself speaks, which is what the walker looked for first. macOS keeps
-         * the overlay one hidden until something moves; `DocsQuickDrawer` already answers that by
-         * painting a thin persistent one, and this reuses those exact values rather than inventing
-         * a second answer. It also says how much is hidden and can be dragged, which the fade
-         * could never do. The mask stays: where there is ink at the edge, it still softens the cut.
-         */
+        /* A thin persistent scrollbar, with `DocsQuickDrawer`'s values, because macOS hides the overlay one and the fade alone was not perceived. The mask still softens clipped ink. */
         className={cn(
           covered.left || covered.right ? 'cursor-grab active:cursor-grabbing' : undefined,
-          /*
-           * ⚠️ **`safe center`, not `center`.** The drawing keeps one width whatever the window
-           * does — the boxes are a fixed size because scaling an SVG scales the text inside it off
-           * the type ramp, which this file already refused once. So on a wide screen the slack is
-           * real, and it was all landing on the right: measured 2026-08-29 on the built export, the
-           * drawing sat at left gap 0 with 544px spare at 1512, 952px at 1920 and 1586px at 2560,
-           * because a row flex container defaults to `flex-start`. Plain `center` would fix that and
-           * break the other end — a chain wider than its scroller would have its left edge pushed
-           * out of reach, which is the overflow trap `safe` exists for: centre while it fits, start
-           * as soon as it does not. Where the keyword is unsupported the declaration is dropped and
-           * the layout falls back to today's left edge, so the failure mode is the old behaviour.
-           */
+          /* `safe center`: centre while the drawing fits, start once it does not, so a wide chain's left edge stays reachable; unsupported, it falls back to start. */
           '[justify-content:safe_center]',
-          /* The ladder sits in the middle of the height it has, the way the across chain
-             already sat in the middle of its width: top-aligned it left every spare pixel below
-             the seventh row (owner, 2026-09-03). `safe` keeps the top reachable when it does not
-             fit. */
+          /* The ladder centres in its height as the across chain does in its width; `safe` keeps the top reachable. */
           axis === 'down'
             ? 'overflow-y-auto [align-items:safe_center]'
             : 'items-center overflow-x-auto',
@@ -1688,13 +1189,7 @@ export function ArchitectureSketch({
           data-evidence-layout={usesPairedDown ? 'paired-ladder' : splitsEvidence ? 'split' : 'combined'}
           data-ladder-density={usesPairedDown ? ladderDensity : undefined}
           data-architecture-layout-ready={axisWidth > 0 ? 'true' : 'false'}
-          /*
-           * ⚠️ `shrink-0`, because the scroller is a flex container now — it centres the drawing in
-           * a canvas taller than the drawing. A flex item shrinks by default, so without this the
-           * drawing quietly scaled itself down to whatever width it was handed, which is the
-           * defect this file already fixed once by taking `width="100%"` off. Scaling an SVG
-           * scales the text inside it, where no lint rule can see the size it produces.
-           */
+          /* `shrink-0`: in the centring flex scroller the SVG would otherwise shrink and scale its text. */
           className="block shrink-0"
         >
         <defs>
@@ -1707,13 +1202,7 @@ export function ArchitectureSketch({
             markerHeight="6"
             orient="auto"
           >
-            {/*
-              ⚠️ **An explicit stroke, not `context-stroke`.** The arrowhead was invisible in the
-              installed app while Chromium drew it correctly: WebKit does not resolve
-              `context-stroke` here, so the marker had `fill="none"` and no colour at all — and the
-              legend claimed an arrow the drawing did not have. Both stroke kinds already use the
-              same indigo, so naming it costs nothing and works in both engines.
-            */}
+            {/* An explicit stroke, not `context-stroke`, which WebKit does not resolve on markers. */}
             <path
               d="M0,0.5 L7.5,4 L0,7.5"
               fill="none"
@@ -1737,12 +1226,7 @@ export function ArchitectureSketch({
               strokeWidth={1.4}
             />
           </marker>
-          {/*
-            ⚠️ **`userSpaceOnUse`, because a violation is usually a vertical line.** The default
-            filter region is a percentage of the object's bounding box, and an adjacent ladder
-            stroke on one lane has a bounding box zero units wide — 200% of zero is zero, and the
-            halo would be clipped away exactly where it is needed. The region is the drawing.
-          */}
+          {/* `userSpaceOnUse`: a vertical stroke has a zero-width bounding box, which would clip a percentage filter region to nothing. */}
           <filter
             id="architecture-violation-halo"
             filterUnits="userSpaceOnUse"
@@ -1756,8 +1240,7 @@ export function ArchitectureSketch({
         </defs>
 
         {axis === 'across' && splitsEvidence ? (
-          /* One heading per row, not one per face: seven repeats of the same two labels read as
-             fourteen labels (1920×700, 2026-09-03). Each sits above its row's first face. */
+          /* One heading per row, above its first face, not one per face. */
           <g
             className="architecture-role-reveal"
             aria-hidden
@@ -1795,21 +1278,8 @@ export function ArchitectureSketch({
             >
               {contractTrackLabel}
             </text>
-            {/* The three lane headings are one row of chrome, so they take one ink. The delta
-                heading was the only indigo word on the stage while the column under it held
-                nothing but "unknown" markers — a hue with no fact under it, and the loudest
-                label on a screen whose winner is the climbing arc (design council,
-                2026-09-08). State colour belongs to the markers, which carry it. */}
-            {/*
-              The limit of what a delta mark asserts rides the column's heading as its hover text,
-              the way the rest of this surface carries its caveats. It used to ride a "nothing
-              compared yet" note that existed only while the column had no marks to explain.
-
-              Before any inspection there is no delta column, only the empty state standing where
-              both measured columns will be, so the delta heading waits for the marks it names and
-              the observation heading centres on the empty state it heads: one heading, one centre
-              line with the words under it (at 1512 the two sat 60px apart).
-            */}
+            {/* The lane headings are one row of chrome in one ink; state colour belongs to the markers. */}
+            {/* The delta heading carries the mark's limit as hover text and waits for its marks; before an inspection the observation heading centres on the empty state. */}
             {emptyColumn === null ? (
               <text
                 x={PAD_X + layoutLeadRoom + contractBoxW + pairedGutterW / 2}
@@ -1840,20 +1310,9 @@ export function ArchitectureSketch({
         ) : null}
 
         {/*
-          ⚠️ **The layer planes: import direction, drawn as depth** (Direction B, 2026-09-08).
-          Every plane is the same parallelogram translated by one `PLANE_STEP` per layer, so the
-          stack shears along one line and the reader sees a solid rather than four bands. The
-          nearest layer is the one nothing may import *into* from below, and it overhangs the
-          furthest. Its fill is capped under `--color-panel` so a role's own face can never be
-          darker than the plane it rests on — the reversed-depth defect the Don'ts name.
-
-          **Every plane takes the same fill.** The first build ramped it by depth; measured at
-          1512 the planes came out `rgb 13 · 12 · 11 · 10`, adjacent pairs at 1.00:1, so the ramp
-          asserted an order nobody could see and faded the deepest plane's lit edge to 1.02:1
-          against the canvas — the bottom of the stack lost its surface to say the top of it was
-          nearer (design council, 2026-09-08). Depth is the shear, the rank numeral and the
-          arrows. `data-layer-depth` still carries the normalised fact for a reader that wants
-          it; nothing paints from it.
+          Layer planes draw import direction as depth, stepping one `PLANE_STEP` per layer. One fill,
+          capped under `--color-panel` so no face is darker than its plane; depth is the shear, the
+          numeral and the arrows, with `data-layer-depth` carrying the normalised fact.
         */}
         {usesLayerPlanes ? (
           <g
@@ -1867,27 +1326,10 @@ export function ArchitectureSketch({
               if (!at) return null;
               const depth =
                 ranks === 1 ? 1 : (ranks - 1 - box.column) / (ranks - 1);
-              /*
-                ⚠️ **The stagger is the depth; the ragged right edge was not.** Every plane was the
-                same fixed-width parallelogram translated left by one `PLANE_STEP` per rank, so both
-                of its vertical edges stepped together: seven left edges across 84px **and seven
-                right edges across the same 84px** (measured 2026-09-13, built export at 1512:
-                lefts 324/310/296/282/268/254/240, rights 1336/1322/1308/1294/1280/1266/1252). A
-                staircase on the side the stack recedes from reads as depth; the same staircase on
-                the side it does not reads as a drawing that failed to line up, which is what the
-                owner measured on the installed app.
-
-                So the stagger is absorbed into the width instead of translating the shape: the
-                left edge still steps one `PLANE_STEP` per rank and every plane now **ends on one
-                line**. Depth keeps its three carriers — the stagger, the lean of the top face, and
-                the rank numeral — and loses only the raggedness (2026-09-08 council decision
-                preserved; `ArchitectureSketch.test.tsx`, "every layer plane ends on one line").
-              */
+              /* The left edge steps one `PLANE_STEP` per rank and every plane ends on one right edge, so the stagger reads as depth, not misalignment (`ArchitectureSketch.test.tsx`, "every layer plane ends on one line"). */
               const stagger = (ranks - 1 - box.column) * PLANE_STEP;
               const x = PAD_X + layoutLeadRoom - planeRoom + stagger;
-              /* A plane holds a role's faces. Before an inspection a role has one face, and the
-                 measured columns are the empty panel beside the stack, so the planes end at the
-                 contract faces instead of running under it. */
+              /* Before an inspection the planes end at the contract faces instead of running under the empty panel. */
               const planeW =
                 contractBoxW +
                 (observationEmpty ? 0 : pairedGutterW + observationBoxW) +
@@ -1926,14 +1368,7 @@ export function ArchitectureSketch({
           </g>
         ) : null}
 
-        {/*
-          ⚠️ **One empty state where the measured columns will be** (owner review, 2026-09-26).
-          Before any inspection there is nothing per role to draw on the measured side, so the
-          drawing says so once and names the action that fills it, in the same dashed outline the
-          per-role placeholders used. The words are one note for an assistive reader; the lines
-          are only their wrapping. It takes no pointer events, so a press there neither selects a
-          role nor stops a pan.
-        */}
+        {/* One empty state where the measured columns will be: one note for assistive tech, no pointer events. */}
         {emptyPanels.map((panel) => (
           <ObservationEmptyState
             key={panel.key}
@@ -1949,19 +1384,12 @@ export function ArchitectureSketch({
           const a = edgeLane.get(edge.from);
           const b = edgeLane.get(edge.to);
           if (!a || !b) return null;
-          /* A skip stays in the drawing at rest, held at zero, so revealing it on focus is a
-             fade rather than a mount: one input, one event, and the stroke is where it will be. */
+          /* A skip stays mounted at zero opacity, so revealing it on selection is a fade, not a mount. */
           const drawn = visibleEdges.includes(edge);
-          /* Leave the trailing face and arrive at the leading one, whichever way the chain runs. */
           const edgeBoxW = usesObservationLane ? observationBoxW : contractBoxW;
           const edgeBoxH = usesObservationLane ? observationBoxH : boxH;
           const trackY = (at: Placed) => at.y + edgeBoxH / 2;
-          /*
-           * On the compact downward layout, reviewed permission and measured traffic used exactly
-           * the same centre line. The traffic stroke therefore overpainted the rule 1:1 and the
-           * legend promised two facts while the canvas showed one. Six SVG units to either side
-           * keeps both attached to the same roles and makes their provenance visible as geometry.
-           */
+          /* Rule and traffic strokes sit six units apart on the compact downward layout, or traffic overpaints the rule. */
           const trackOffset = axis === 'down' && !splitsEvidence
             ? edge.kind === 'permitted'
               ? -6
@@ -1972,35 +1400,16 @@ export function ArchitectureSketch({
           const tx = axis === 'across' ? b.x : b.x + edgeBoxW / 2 + trackOffset;
           const ty = axis === 'across' ? trackY(b) : b.y;
           const receded = selected !== null && selected !== edge.from && selected !== edge.to;
-          /* Choosing either end of a violation raises it off the plane; nothing else moves, and
-             nothing moves at all while nothing is selected. */
+          /* Choosing either end of a violation raises it; nothing moves while nothing is selected. */
           const raised = selected !== null && (selected === edge.from || selected === edge.to);
 
-          /*
-           * A permitted edge is a person's declared rule, so it is drawn by hand. Measured traffic
-           * is a machine's count, so it is drawn exactly and its width carries the number.
-           */
+          /* A declared rule keeps one width; measured traffic's width carries its count. */
           const isDeclared = edge.kind === 'permitted';
           const violated = violatedPairs.has(`${edge.from}>${edge.to}`);
-          /*
-           * A skip leaves the chain and comes back to it: below the row when the chain runs
-           * across, out to the side when it runs down. The arithmetic is the same either way — the
-           * axis only decides which coordinate the swing is measured in.
-           */
-          /*
-           * ⚠️ **Two skips of the same span used to share one curve.** The swing was read off the
-           * span alone, so `features → shared` and `widgets → shared` left the chain at the same
-           * offset and came back overlapping — a bundle nobody could follow, which is what the
-           * owner asked to be able to tell apart (2026-08-30). A small per-edge step spreads them.
-           */
-          const sameSpanOffset = skipLane.get(`${edge.from}>${edge.to}`) ?? 0;
           const swing =
             edge.columnSpan <= 1
               ? 0
-              : SKIP_DROP +
-                (edge.columnSpan - 2) * SKIP_STEP +
-                sameSpanOffset * SKIP_LANE_STEP +
-                (axis === 'across' ? edgeBoxH : edgeBoxW) / 2;
+              : skipSwing(edge.columnSpan, skipLane.get(`${edge.from}>${edge.to}`) ?? 0, (axis === 'across' ? edgeBoxH : edgeBoxW) / 2);
           const lead = axis === 'across' ? colGap : rowGap;
           const d = (() => {
             if (edge.columnSpan <= 1) {
@@ -2015,12 +1424,7 @@ export function ArchitectureSketch({
               } ${midY} C ${tx - colGap} ${midY}, ${tx - colGap} ${ty}, ${tx} ${ty}`;
             }
             if (usesPairedDown) {
-              /*
-               * On the ladder a skip leaves the face's side, not its foot: a foot-launched arc
-               * swept through the row gap where the adjacent sentence now sits (installed app,
-               * 2026-09-03: three arcs crossed "views reaches widgets"). The apex stays where the
-               * sentence model expects it, one swing past the face's centre line.
-               */
+              /* On the ladder a skip leaves the face's side, not its foot, clearing the adjacent sentence's row gap. */
               const negative = isDeclared;
               const edgeX = (face: Placed) => (negative ? face.x : face.x + edgeBoxW);
               const psx = edgeX(a);
@@ -2032,9 +1436,7 @@ export function ArchitectureSketch({
                 : Math.max(a.x, b.x) + edgeBoxW + (swing - edgeBoxW / 2);
               return `M ${psx} ${psy} C ${apex} ${psy}, ${apex} ${pty}, ${ptx} ${pty}`;
             }
-            const midX = usesPairedDown && isDeclared
-              ? Math.min(sx, tx) - swing
-              : Math.max(sx, tx) + swing;
+            const midX = Math.max(sx, tx) + swing;
             return `M ${sx} ${sy} C ${sx} ${sy + rowGap}, ${midX} ${sy + rowGap}, ${midX} ${
               (sy + ty) / 2
             } C ${midX} ${ty - rowGap}, ${tx} ${ty - rowGap}, ${tx} ${ty}`;
@@ -2042,13 +1444,7 @@ export function ArchitectureSketch({
 
           return (
             <Fragment key={`${edge.kind}-${edge.from}-${edge.to}`}>
-            {/*
-              ⚠️ **The halo marks the climb, not the alarm.** With the layers drawn as planes a
-              violated import is the one stroke travelling *up* the stack, and a dashed red line a
-              third of a pixel wider than its neighbours did not read as a direction (2026-09-08).
-              It carries no data-edge-* identity so the stroke count a gate reads stays one per
-              crossing. It is static; only selection changes it, and only in intensity.
-            */}
+            {/* The halo marks the climb up the stack. It has no data-edge-* identity, so stroke counts stay one per crossing; only selection changes its intensity. */}
             {violated && drawn ? (
               <path
                 d={d}
@@ -2076,8 +1472,7 @@ export function ArchitectureSketch({
                     : 1.4 + (edge.weight ?? 0) * 3) +
                 (violated && raised ? VIOLATION_STROKE_RAISE : 0)
               }
-              /* Dashed as well as toned, so the violation survives a colour-blind reading and a
-                 greyscale print — the tone is the alarm, the dash is the fact. */
+              /* Dashed as well as toned: the tone is the alarm, the dash is the fact, and it survives greyscale. */
               strokeDasharray={violated ? '5 3' : undefined}
               strokeLinecap="round"
               markerEnd={
@@ -2101,14 +1496,7 @@ export function ArchitectureSketch({
           );
         })}
 
-        {/*
-          ⚠️ **Every stroke says its sentence, at rest** (Direction B, owner, 2026-08-30). The two
-          references the owner pointed at both put a sentence on the line; ours carried a count on
-          focus and kept its sentences in a dock that was closed by default. The strings are the
-          dock's own (a rule, a measured count, a violation) so a reader and an agent read one
-          sentence about one stroke. A sentence with no room is held, never cropped, and says why
-          in `data-edge-sentence` so the gate can count it.
-        */}
+        {/* Every stroke says its sentence at rest, in the dock's own strings; one with no room is held, never cropped, and says why in `data-edge-sentence`. */}
         {sentences.map((sentence) => {
           const edge = graph.edges.find(
             (e) => e.kind === sentence.kind && e.from === sentence.from && e.to === sentence.to,
@@ -2181,22 +1569,11 @@ export function ArchitectureSketch({
           const observationOutgoing = visibleEdges.filter(
             (edge) => edge.kind === 'traffic' && edge.from === box.id,
           );
-          const portTone = EDGE_STROKE;
-          /*
-           * Budgeted by characters rather than by CSS, because an SVG text node does not wrap or
-           * ellipsize on its own: at the caption step a 180px box holds about 34 characters, and
-           * the cut lands on a word boundary where one is near.
-           */
+          const portProps = (lane: 'contract' | 'observation', face: Placed, faceW: number, faceH: number) =>
+            ({ axis, at: face, boxW: faceW, boxH: faceH, lane, active: focus === box.id });
+          /* Budgeted by characters, because an SVG text node does not wrap or ellipsize. */
           const summary = roleSummary(box.id);
-          /*
-           * ⚠️ **The name and counts stop being centred once a ledger joins them.** Vertical
-           * centring is right for a block that ends where its text ends and wrong for one with a
-           * ruled separator: the line has to land between what the profile declares and what the
-           * scanner counted, so with a ledger every baseline is fixed from the top. Without one
-           * the block is centred: a one-line block for the counts, a two-line block for the
-           * sentence. A sentence that turns out to need one line keeps the two-line positions,
-           * because its budget was read off those positions and moving it would change the room.
-           */
+          /* With a ledger every baseline is fixed from the top so the rule lands between declared and counted; without one the block is centred, keeping two-line positions for its budget. */
           const nameY = splitsEvidence
             ? at.y + 23
             : axis === 'down'
@@ -2214,9 +1591,7 @@ export function ArchitectureSketch({
           const summaryLines =
             summary === null
               ? null
-              : /* Budgeted by estimated glyph width, so a Korean sentence wraps where it reaches
-                   (owner, 2026-09-03: the first Korean summaries ran past both outlines). Every
-                   face is a rectangle now, so each line has the same straight room. */
+              : /* Budgeted by estimated glyph width, so a Korean sentence wraps where it reaches. */
                 splitSummaryLinesByWidth(summary, captionLineRoom(contractBoxW), summaryLineCount);
 
           return (
@@ -2240,8 +1615,7 @@ export function ArchitectureSketch({
                 .filter((part): part is string => part !== null)
                 .join(' · ')}
               data-graph-box={box.id}
-              /* The drawn size, stated: the box is one filled path now, so nothing else on it
-                 carries a height a test or a probe can read. */
+              /* The drawn size, stated for tests and probes, since the box is one filled path. */
               data-box-height={boxH}
               data-box-width={contractBoxW}
               data-architecture-role-state={roleState}
@@ -2269,13 +1643,7 @@ export function ArchitectureSketch({
               style={{ opacity: receded ? RECEDED_ROLE_OPACITY : 1 }}
               className="architecture-recede architecture-role-reveal cursor-pointer outline-none [&:focus-visible_.architecture-node-face]:stroke-[color:var(--color-indigo-focus-ring)] [&:focus-visible_.architecture-node-face]:[stroke-width:2px]"
             >
-              {/*
-                The roomy role is one interactive fact split into two visual faces. Its SVG group
-                therefore has a taller bounding box than either painted card, and pointer
-                automation correctly chooses that centre — the empty delta gap. A transparent
-                first rect makes the full role footprint a real hit target while every visible
-                face and event still belongs to this one group.
-              */}
+              {/* A transparent first rect makes the whole two-face role footprint the hit target, so pointer automation aimed at the group's centre lands on it. */}
               <rect
                 x={at.x}
                 y={at.y}
@@ -2294,94 +1662,52 @@ export function ArchitectureSketch({
                 pointerEvents="all"
                 data-architecture-role-hit-area="true"
               />
-              {/*
-                The fill is a separate flat shape: the sketch passes are an outline built from
-                joined segments — several subpaths, which fill as slivers rather than as a box —
-                and giving them a fill would also double-paint the wobble into a smudge.
-
-                ⚠️ **The ghost the owner saw was the second pass, not the fill** (2026-08-30). On a
-                rectangle a repeated stroke reads as one hand-drawn line; on a stadium, whose two
-                caps are wide arcs, the echo lands several pixels outside and reads as a second box
-                behind the first. The terminators are drawn once for that reason; the boxes in
-                between keep both passes.
-              */}
-              {/* One face for every role. The chain's ends were drawn as ISO 5807 terminators
-                  (stadiums) until 2026-09-03; the owner read the two shapes as a difference the
-                  screen never explained, and position already says where a chain begins. */}
-                <rect
-                  x={at.x}
-                  y={at.y}
-                  width={contractBoxW}
-                  height={boxH}
-                  rx={12}
-                  fill={
-                    isSelected
-                      ? 'var(--color-indigo-a12)'
-                      : roleState === 'active'
-                        ? 'var(--color-indigo-a06)'
-                        : roleState === 'hover'
-                          ? 'var(--color-elevated)'
-                          : 'var(--color-panel)'
-                  }
-                  stroke={isSelected ? 'var(--color-indigo-accent)' : 'var(--color-architecture-sketch-ink)'}
-                  strokeWidth={isSelected ? 1.6 : 1}
-                  className="architecture-canvas-node architecture-node-face"
-                  data-node-selected={isSelected ? 'true' : 'false'}
-                />              {usesPairedDown && contractPortEdges.some((edge) => edge.columnSpan > 1 && (edge.from === box.id || edge.to === box.id)) ? (
-                <ConnectionPort
-                  axis={axis}
-                  at={at}
-                  boxW={contractBoxW}
-                  boxH={boxH}
-                  direction="outgoing"
-                  active={focus === box.id}
-                  tone={portTone}
-                  lane="contract"
-                  side="left"
-                />
+              {/* One face for every role; position already says where a chain begins. */}
+              <rect
+                x={at.x}
+                y={at.y}
+                width={contractBoxW}
+                height={boxH}
+                rx={12}
+                fill={
+                  isSelected
+                    ? 'var(--color-indigo-a12)'
+                    : roleState === 'active'
+                      ? 'var(--color-indigo-a06)'
+                      : roleState === 'hover'
+                        ? 'var(--color-elevated)'
+                        : 'var(--color-panel)'
+                }
+                stroke={isSelected ? 'var(--color-indigo-accent)' : 'var(--color-architecture-sketch-ink)'}
+                strokeWidth={isSelected ? 1.6 : 1}
+                className="architecture-canvas-node architecture-node-face"
+                data-node-selected={isSelected ? 'true' : 'false'}
+              />
+              {usesPairedDown && contractPortEdges.some((edge) => edge.columnSpan > 1 && (edge.from === box.id || edge.to === box.id)) ? (
+                <ConnectionPort {...portProps('contract', at, contractBoxW, boxH)} direction="outgoing" side="left" />
               ) : null}
               {contractIncoming.length > 0 ? (
-                <ConnectionPort
-                  axis={axis}
-                  at={at}
-                  boxW={contractBoxW}
-                  boxH={boxH}
-                  direction="incoming"
-                  active={focus === box.id}
-                  tone={portTone}
-                  lane="contract"
-                />
+                <ConnectionPort {...portProps('contract', at, contractBoxW, boxH)} direction="incoming" />
               ) : null}
               {contractOutgoing.length > 0 ? (
-                <ConnectionPort
-                  axis={axis}
-                  at={at}
-                  boxW={contractBoxW}
-                  boxH={boxH}
-                  direction="outgoing"
-                  active={focus === box.id}
-                  tone={portTone}
-                  lane="contract"
-                />
+                <ConnectionPort {...portProps('contract', at, contractBoxW, boxH)} direction="outgoing" />
               ) : null}
               {splitsEvidence ? (
-                <>
-                  <text
-                    x={at.x + 14}
-                    y={at.y + 17}
-                    textAnchor="start"
-                    aria-hidden
-                    data-testid={`architecture-role-index-${box.id}`}
-                    className={cn(
-                      'architecture-node-copy font-mono text-caption tabular-nums',
-                      isSelected
-                        ? 'fill-[color:var(--color-indigo-text-soft)]'
-                        : 'fill-[color:var(--color-text-quaternary)]',
-                    )}
-                  >
-                    {String(boxIndex + 1).padStart(2, '0')}
-                  </text>
-                </>
+                <text
+                  x={at.x + 14}
+                  y={at.y + 17}
+                  textAnchor="start"
+                  aria-hidden
+                  data-testid={`architecture-role-index-${box.id}`}
+                  className={cn(
+                    'architecture-node-copy font-mono text-caption tabular-nums',
+                    isSelected
+                      ? 'fill-[color:var(--color-indigo-text-soft)]'
+                      : 'fill-[color:var(--color-text-quaternary)]',
+                  )}
+                >
+                  {String(boxIndex + 1).padStart(2, '0')}
+                </text>
               ) : null}
               <text
                 x={at.x + contractBoxW / 2}
@@ -2401,8 +1727,7 @@ export function ArchitectureSketch({
                 )}
                 data-testid={`architecture-box-line-${box.id}`}
               >
-                {/* A cut caption still carries its whole sentence: the tight ladder keeps one
-                    line per role, and a hover or an assistive reader gets the rest here. */}
+                {/* A cut caption still carries its whole sentence for hover and assistive readers. */}
                 {summaryLines !== null && summary !== null && summaryLines.some((line) => line.endsWith('…')) ? (
                   <title>{summary}</title>
                 ) : null}
@@ -2420,13 +1745,7 @@ export function ArchitectureSketch({
               </text>
               {!splitsEvidence && ledger ? (
                 <>
-                  {/*
-                    ⚠️ **Ruled, and straight.** Everything above this line is what a person
-                    declared, drawn by the unsteady hand this surface uses for declarations;
-                    everything below it is what the scanner counted. The separator is a machine
-                    line for the same reason the traffic strokes are: geometry carries the
-                    rule/measurement distinction alongside ink (2026-08-28).
-                  */}
+                  {/* A ruled line between what the profile declares (above) and what the scanner counted (below). */}
                   <line
                     x1={at.x + 12}
                     x2={at.x + contractBoxW - 12}
@@ -2455,9 +1774,7 @@ export function ArchitectureSketch({
                 </>
               ) : null}
               {splitsEvidence && observedAt && !observationEmpty ? (
-                <g
-                  className="architecture-observation-reveal"
-                >
+                <g className="architecture-observation-reveal">
                   <line
                     x1={usesPairedDown ? at.x + contractBoxW + 8 : at.x + contractBoxW / 2}
                     x2={usesPairedDown ? observedAt.x - 8 : at.x + contractBoxW / 2}
@@ -2485,24 +1802,7 @@ export function ArchitectureSketch({
                       role="img"
                       aria-label={ledger ? ledgerStatusLabel(ledger) : deltaUnknownLabel}
                     >
-                      {/*
-                        ⚠️ **A tick is the loudest pass mark a screen has, and this one is scoped.**
-                        `role-ledger.ts` is explicit that a box never claims a per-role verdict: it
-                        states what its own outgoing edges did, and "the wording stays edge-shaped
-                        so the two can never be confused". That protection lived on the role face
-                        (which prints the glyph beside `ledgerStatusLabel`) and not here, where the
-                        same glyph stood alone under a lane heading, `aria-hidden`, with no wording
-                        at all.
-
-                        Measured on the installed app 2026-09-09: seven ticks down this gutter while
-                        the profile badge read "unknown" and the agent's own answer opened with 92
-                        unmapped edges. Both statements were true — the ticks are about rules these
-                        roles declare, the badge about edges no rule covers — and nothing on the
-                        mark said which was which.
-
-                        The glyph does not change. It carries the same edge-shaped sentence the role
-                        face already uses, so it can be hovered and read aloud instead of guessed at.
-                      */}
+                      {/* The tick is scoped: like the role face (`role-ledger.ts`), it carries the edge-shaped sentence, so it never reads as a per-role verdict. */}
                       <title>{ledger ? ledgerStatusLabel(ledger) : deltaUnknownLabel}</title>
                       {ledger ? LEDGER_GLYPH[ledger.state] : '○'}
                     </text>
@@ -2559,41 +1859,13 @@ export function ArchitectureSketch({
                     data-observation-state={ledger?.state ?? 'missing'}
                   />
                   {usesPairedDown && visibleEdges.some((edge) => edge.kind === 'traffic' && edge.columnSpan > 1 && (edge.from === box.id || edge.to === box.id)) ? (
-                    <ConnectionPort
-                      axis={axis}
-                      at={observedAt}
-                      boxW={observationBoxW}
-                      boxH={observationBoxH}
-                      direction="outgoing"
-                      active={focus === box.id}
-                      tone={portTone}
-                      lane="observation"
-                      side="right"
-                    />
+                    <ConnectionPort {...portProps('observation', observedAt, observationBoxW, observationBoxH)} direction="outgoing" side="right" />
                   ) : null}
                   {observationIncoming.length > 0 ? (
-                    <ConnectionPort
-                      axis={axis}
-                      at={observedAt}
-                      boxW={observationBoxW}
-                      boxH={observationBoxH}
-                      direction="incoming"
-                      active={focus === box.id}
-                      tone={portTone}
-                      lane="observation"
-                    />
+                    <ConnectionPort {...portProps('observation', observedAt, observationBoxW, observationBoxH)} direction="incoming" />
                   ) : null}
                   {observationOutgoing.length > 0 ? (
-                    <ConnectionPort
-                      axis={axis}
-                      at={observedAt}
-                      boxW={observationBoxW}
-                      boxH={observationBoxH}
-                      direction="outgoing"
-                      active={focus === box.id}
-                      tone={portTone}
-                      lane="observation"
-                    />
+                    <ConnectionPort {...portProps('observation', observedAt, observationBoxW, observationBoxH)} direction="outgoing" />
                   ) : null}
                   <text
                     x={observedAt.x + observationBoxW / 2}
@@ -2616,8 +1888,7 @@ export function ArchitectureSketch({
                     }
                     data-ledger-state={ledger?.state}
                   >
-                    {/* Only a role missing from a receipt others carry reaches here: with no
-                        receipt at all the lane is the one empty state instead. */}
+                    {/* Only a role missing from a receipt others carry reaches here. */}
                     {ledger
                       ? ledgerImportsLabel(ledger.importsOut)
                       : usesPairedDown
@@ -2631,29 +1902,11 @@ export function ArchitectureSketch({
         })}
         </svg>
       </div>
-      {/*
-        ⚠️ **The count of what is below belongs at the bottom.** It shared the run control's row at
-        the top, roughly 500px away from the cut it describes, and the box it hides is the
-        terminator every arrow points at (judged 2026-08-30).
-
-        ⚠️ **Over the fade, not in a row.** It was a flow row under the scroller first, and the
-        row was the defect: measured in the installed app 2026-08-30 at a 1512x949 window, the
-        chain fit the scroller by 13px, the first mount-time reading came in short, the pill
-        appeared, its row took about 30px from the scroller it had just measured, and the reading it
-        caused then kept it there — one role reported hidden, and hidden by the report. The count
-        cannot be allowed to change the height it counts against, so it sits on the mask's own
-        strip at the bottom, where the drawing is already faded and nothing is covered outright.
-        The strip is two insets tall for that reason (`coveredMask` above): the badge is 20px on
-        an 8px offset, and a 16px fade left 12px of it over opaque ink.
-      */}
+      {/* The below count overlays the bottom fade instead: a row there would take the height it counts against. The strip is two insets tall (coveredMask) so the badge covers no opaque ink. */}
       {covered.coveredDown && covered.hiddenRight > 0 ? (
         <div className="pointer-events-none absolute inset-x-0 bottom-2 flex items-center justify-center px-[var(--card-pad)]">
           <span
-            className={badgeClass({
-              shape: 'pill',
-              className:
-                'border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] text-[color:var(--color-text-tertiary)]',
-            })}
+            className={HIDDEN_COUNT_BADGE_CLASS}
             data-testid="architecture-canvas-hidden-below"
           >
             {hiddenBelowLabel(covered.hiddenRight)}
