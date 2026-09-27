@@ -3,7 +3,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ScanSearch } from 'lucide-react';
 
-import { listboxBottomIsHidden, listboxTopIsHidden } from '@/shared/ui/select-growth';
+import { listboxBottomIsHidden as endIsHidden, listboxTopIsHidden as startIsHidden } from '@/shared/ui/select-growth';
 
 import { cn } from '@/shared/lib/cn';
 import { badgeClass } from '@/shared/ui/badge-class';
@@ -98,7 +98,7 @@ const RECEDED_ROLE_OPACITY = 0.7;
 const RECEDED_STROKE_OPACITY = 0.7;
 const PAIRED_HEADER_H = 20;
 const PAIRED_PAD_Y = 8;
-const PAIRED_SIDE_ROOM = 180;
+const PAIRED_SIDE_ROOM_MAX = 180;
 /* The ladder needs its faces plus this much side lane, not the full lanes: side lanes only hold skip arcs revealed on selection. */
 const PAIRED_SIDE_ROOM_MIN = 48;
 /** The most ground the observation lane takes for its arcs and sentences when the canvas has it. */
@@ -170,7 +170,7 @@ const EMPTY_BODY_MAX_LINES = 5;
 /** Which way the chain runs: a seven-role row cannot fit a column, while the same roles laid downward are 148 wide. */
 export type FlowAxis = 'across' | 'down';
 
-function place(
+function boxOrigin(
   axis: FlowAxis,
   rank: number,
   lane: number,
@@ -204,6 +204,22 @@ interface EmptyPanel {
   height: number;
 }
 
+const HIDDEN_COUNT_BADGE_CLASS = badgeClass({
+  shape: 'pill',
+  className:
+    'border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] text-[color:var(--color-text-tertiary)]',
+});
+
+/** At rest the canvas draws the spine; a skip is about one role, so it arrives when that role is selected or is violated. */
+function isEdgeDrawn(edge: { from: string; to: string; columnSpan: number }, selected: string | null, violatedPairs: ReadonlySet<string>): boolean {
+  return edge.columnSpan <= 1 || selected === edge.from || selected === edge.to || violatedPairs.has(`${edge.from}>${edge.to}`);
+}
+
+/** How far a skip swings, below an across chain or beside a downward one; a per-edge lane step keeps same-span skips apart. */
+function skipSwing(columnSpan: number, laneIndex: number, halfBox: number): number {
+  return SKIP_DROP + (columnSpan - 2) * SKIP_STEP + laneIndex * SKIP_LANE_STEP + halfBox;
+}
+
 /**
  * Where a currently drawn dependency meets a role face; created only when a visible edge enters or
  * leaves that side. Hollow-to-solid mirrors focus without a second selection colour.
@@ -215,7 +231,6 @@ function ConnectionPort({
   boxH,
   direction,
   active,
-  tone,
   lane,
   side,
 }: {
@@ -225,7 +240,6 @@ function ConnectionPort({
   boxH: number;
   direction: 'incoming' | 'outgoing';
   active: boolean;
-  tone: string;
   lane: 'contract' | 'observation';
   /** A ladder skip leaves and arrives at the face's side; the port sits there, mid-height. */
   side?: 'left' | 'right';
@@ -241,8 +255,8 @@ function ConnectionPort({
       cx={cx}
       cy={cy}
       r={3}
-      fill={active ? tone : 'var(--color-canvas)'}
-      stroke={tone}
+      fill={active ? EDGE_STROKE : 'var(--color-canvas)'}
+      stroke={EDGE_STROKE}
       strokeWidth={1.5}
       opacity={active ? 1 : 0.42}
       className="architecture-node-port"
@@ -549,7 +563,7 @@ export function ArchitectureSketch({
         : hasLedger
           ? ROW_GAP_LEDGER
           : ROW_GAP_PLAIN;
-  const ladderPadY = usesPairedDown
+  const padY = usesPairedDown
     ? usesTightLadder
       ? PAIRED_PAD_Y_TIGHT
       : PAIRED_PAD_Y
@@ -559,8 +573,7 @@ export function ArchitectureSketch({
         ? PAD_Y_LEDGER
         : PAD_Y;
   /* One owner for the chrome row's vertical rhythm: headings sit on the ladder's top padding and faces are placed from the same `padY`. */
-  const laneHeadingY = ladderPadY + 14;
-  const padY = ladderPadY;
+  const laneHeadingY = padY + 14;
   const boxH = usesRoomyBoxes
     ? BOX_H_ROOMY
     : usesPairedDown
@@ -625,12 +638,7 @@ export function ArchitectureSketch({
       count: edge.count,
       columnSpan: edge.columnSpan,
       violated: violatedPairs.has(`${edge.from}>${edge.to}`),
-      /* The same rule `visibleEdges` draws by: the spine always, a skip on focus or when violated. */
-      drawn:
-        edge.columnSpan <= 1 ||
-        selected === edge.from ||
-        selected === edge.to ||
-        violatedPairs.has(`${edge.from}>${edge.to}`),
+      drawn: isEdgeDrawn(edge, selected, violatedPairs),
     }),
     [violatedPairs, selected],
   );
@@ -652,7 +660,7 @@ export function ArchitectureSketch({
   const contractNeedsLane = graph.edges.some(
     (edge) => edge.kind === 'permitted' && edge.columnSpan > 1,
   );
-  const pairedSlack = usesPairedDown && boxWidth > 0 ? Math.max(0, boxWidth - pairedFixedW) : PAIRED_SIDE_ROOM * 2;
+  const pairedSlack = usesPairedDown && boxWidth > 0 ? Math.max(0, boxWidth - pairedFixedW) : PAIRED_SIDE_ROOM_MAX * 2;
   /* The drawing is centred: once the face has its width, leftover lane ground is split evenly while each lane keeps its floor. */
   const pairedCentredLane = usesPairedDown && boxWidth > 0
     ? Math.max(0, boxWidth - 2 * PAD_X - pairedContractW - pairedGutterW - PAIRED_OBSERVATION_W) / 2
@@ -662,7 +670,7 @@ export function ArchitectureSketch({
     planeRoom,
     pairedCentredLane,
     contractNeedsLane
-      ? Math.max(PAIRED_SIDE_ROOM_MIN, Math.min(PAIRED_SIDE_ROOM, pairedSlack / 2))
+      ? Math.max(PAIRED_SIDE_ROOM_MIN, Math.min(PAIRED_SIDE_ROOM_MAX, pairedSlack / 2))
       : PAIRED_SIDE_ROOM_MIN,
   );
   const pairedTrailRoom = Math.max(
@@ -676,7 +684,7 @@ export function ArchitectureSketch({
   const placed = useMemo(() => {
     const map = new Map<string, Placed>();
     for (const box of graph.boxes) {
-      const at = place(axis, box.column, box.slot, boxH, contractBoxW, rowGap, padY, colGap);
+      const at = boxOrigin(axis, box.column, box.slot, boxH, contractBoxW, rowGap, padY, colGap);
       map.set(box.id, {
         id: box.id,
         x: at.x + (axis === 'down' ? layoutLeadRoom : 0),
@@ -868,8 +876,8 @@ export function ArchitectureSketch({
     const overflowing = extent > visible + 1;
     const edge = offset + visible;
     setCovered({
-      left: listboxTopIsHidden(overflowing, offset),
-      right: listboxBottomIsHidden(overflowing, offset, visible, extent),
+      left: startIsHidden(overflowing, offset),
+      right: endIsHidden(overflowing, offset, visible, extent),
       /* Counted from the boxes, in both directions, since panning can push roles off either edge. */
       coveredDown: down,
       hiddenLeft: alongCovered.filter(
@@ -992,9 +1000,7 @@ export function ArchitectureSketch({
     return undefined;
   })();
 
-  /* At rest the canvas draws the spine; a skip is about one role, so it arrives when that role is chosen. */
   /** Which lane each skip takes, counted within its span; deterministic because the edge order is stable. */
-
   const skipLane = useMemo(() => {
     const lanes = new Map<string, number>();
     const used = new Map<number, number>();
@@ -1008,7 +1014,7 @@ export function ArchitectureSketch({
   }, [graph.edges]);
 
   const sentences = useMemo(() => {
-    const place = (
+    const placeLaneSentences = (
       edges: readonly Graph['edges'][number][],
       lane: ReadonlyMap<string, Placed>,
       laneBoxW: number,
@@ -1026,10 +1032,7 @@ export function ArchitectureSketch({
         rowGap,
         colGap,
         swingOf: (edge) =>
-          SKIP_DROP +
-          (edge.columnSpan - 2) * SKIP_STEP +
-          (skipLane.get(`${edge.from}>${edge.to}`) ?? 0) * SKIP_LANE_STEP +
-          (axis === 'across' ? laneBoxH : laneBoxW) / 2,
+          skipSwing(edge.columnSpan, skipLane.get(`${edge.from}>${edge.to}`) ?? 0, (axis === 'across' ? laneBoxH : laneBoxW) / 2),
         leadRoom: layoutLeadRoom,
         trailRoom: layoutTrailRoom,
         skipSide,
@@ -1055,8 +1058,8 @@ export function ArchitectureSketch({
         sentenceOf: edgeSentence,
         focus,
       });
-    if (!splitsEvidence) return place(graph.edges, placed, contractBoxW, boxH);
-    const rules = place(
+    if (!splitsEvidence) return placeLaneSentences(graph.edges, placed, contractBoxW, boxH);
+    const rules = placeLaneSentences(
       graph.edges.filter((edge) => edge.kind === 'permitted'),
       placed,
       contractBoxW,
@@ -1067,7 +1070,7 @@ export function ArchitectureSketch({
     const held = rules.flatMap((placement) => (placement.rect ? [placement.rect] : []));
     return [
       ...rules,
-      ...place(
+      ...placeLaneSentences(
         graph.edges.filter((edge) => edge.kind === 'traffic'),
         observedPlaced,
         observationBoxW,
@@ -1100,21 +1103,15 @@ export function ArchitectureSketch({
     usesPairedDown,
   ]);
 
-  const visibleEdges = graph.edges.filter(
-    (edge) =>
-      edge.columnSpan <= 1 ||
-      selected === edge.from ||
-      selected === edge.to ||
-      violatedPairs.has(`${edge.from}>${edge.to}`),
-  );
+  /* Per render O(B·E + E²): per-role port filters and per-sentence edges.find / visibleEdges.includes are linear scans over tens of edges. */
+  const visibleEdges = graph.edges.filter((edge) => isEdgeDrawn(edge, selected, violatedPairs));
   /* Skip room depends on the profile, not the selection, so the page does not move under a click. */
   const deepestSkip = graph.edges.reduce((most, edge) => Math.max(most, edge.columnSpan), 0);
   const skipRoom = deepestSkip <= 1 ? 0 : SKIP_DROP + deepestSkip * SKIP_STEP;
   const alongExtent =
     axis === 'across'
       ? PAD_X * 2 + ranks * boxW + (ranks - 1) * colGap
-      /* `padY + ladderPadY`, not `padY * 2`: the extra line belongs above the first face only. */
-      : padY + ladderPadY + ranks * boxH + (ranks - 1) * rowGap +
+      : padY * 2 + ranks * boxH + (ranks - 1) * rowGap +
         (usesPairedDown ? PAIRED_HEADER_H : 0) +
         /* Plane head room and bottom ledge; zero on layouts without planes. */
         (usesLayerPlanes ? planeHeadRoom + PLANE_INSET_Y : 0);
@@ -1140,11 +1137,7 @@ export function ArchitectureSketch({
         <div className="flex items-center justify-end gap-2 px-[var(--card-pad)] pt-2.5">
         {covered.hiddenLeft === 0 ? null : (
           <span
-            className={badgeClass({
-              shape: 'pill',
-              className:
-                'border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] text-[color:var(--color-text-tertiary)]',
-            })}
+            className={HIDDEN_COUNT_BADGE_CLASS}
             data-testid="architecture-canvas-hidden-left"
           >
             {(covered.coveredDown ? hiddenAboveLabel : hiddenLeftLabel)(covered.hiddenLeft)}
@@ -1152,11 +1145,7 @@ export function ArchitectureSketch({
         )}
         {covered.hiddenRight === 0 || covered.coveredDown ? null : (
           <span
-            className={badgeClass({
-              shape: 'pill',
-              className:
-                'border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] text-[color:var(--color-text-tertiary)]',
-            })}
+            className={HIDDEN_COUNT_BADGE_CLASS}
             data-testid="architecture-canvas-hidden-right"
           >
             {hiddenRightLabel(covered.hiddenRight)}
@@ -1418,16 +1407,10 @@ export function ArchitectureSketch({
           /* A declared rule keeps one width; measured traffic's width carries its count. */
           const isDeclared = edge.kind === 'permitted';
           const violated = violatedPairs.has(`${edge.from}>${edge.to}`);
-          /* A skip swings below an across chain or out to the side of a downward one; the axis only picks the coordinate. */
-          /* A per-edge step spreads skips of the same span so they do not overlap. */
-          const sameSpanOffset = skipLane.get(`${edge.from}>${edge.to}`) ?? 0;
           const swing =
             edge.columnSpan <= 1
               ? 0
-              : SKIP_DROP +
-                (edge.columnSpan - 2) * SKIP_STEP +
-                sameSpanOffset * SKIP_LANE_STEP +
-                (axis === 'across' ? edgeBoxH : edgeBoxW) / 2;
+              : skipSwing(edge.columnSpan, skipLane.get(`${edge.from}>${edge.to}`) ?? 0, (axis === 'across' ? edgeBoxH : edgeBoxW) / 2);
           const lead = axis === 'across' ? colGap : rowGap;
           const d = (() => {
             if (edge.columnSpan <= 1) {
@@ -1454,9 +1437,7 @@ export function ArchitectureSketch({
                 : Math.max(a.x, b.x) + edgeBoxW + (swing - edgeBoxW / 2);
               return `M ${psx} ${psy} C ${apex} ${psy}, ${apex} ${pty}, ${ptx} ${pty}`;
             }
-            const midX = usesPairedDown && isDeclared
-              ? Math.min(sx, tx) - swing
-              : Math.max(sx, tx) + swing;
+            const midX = Math.max(sx, tx) + swing;
             return `M ${sx} ${sy} C ${sx} ${sy + rowGap}, ${midX} ${sy + rowGap}, ${midX} ${
               (sy + ty) / 2
             } C ${midX} ${ty - rowGap}, ${tx} ${ty - rowGap}, ${tx} ${ty}`;
@@ -1589,7 +1570,8 @@ export function ArchitectureSketch({
           const observationOutgoing = visibleEdges.filter(
             (edge) => edge.kind === 'traffic' && edge.from === box.id,
           );
-          const portTone = EDGE_STROKE;
+          const portProps = (lane: 'contract' | 'observation', face: Placed, faceW: number, faceH: number) =>
+            ({ axis, at: face, boxW: faceW, boxH: faceH, lane, active: focus === box.id });
           /* Budgeted by characters, because an SVG text node does not wrap or ellipsize. */
           const summary = roleSummary(box.id);
           /* With a ledger every baseline is fixed from the top so the rule lands between declared and counted; without one the block is centred, keeping two-line positions for its budget. */
@@ -1703,41 +1685,13 @@ export function ArchitectureSketch({
                 data-node-selected={isSelected ? 'true' : 'false'}
               />
               {usesPairedDown && contractPortEdges.some((edge) => edge.columnSpan > 1 && (edge.from === box.id || edge.to === box.id)) ? (
-                <ConnectionPort
-                  axis={axis}
-                  at={at}
-                  boxW={contractBoxW}
-                  boxH={boxH}
-                  direction="outgoing"
-                  active={focus === box.id}
-                  tone={portTone}
-                  lane="contract"
-                  side="left"
-                />
+                <ConnectionPort {...portProps('contract', at, contractBoxW, boxH)} direction="outgoing" side="left" />
               ) : null}
               {contractIncoming.length > 0 ? (
-                <ConnectionPort
-                  axis={axis}
-                  at={at}
-                  boxW={contractBoxW}
-                  boxH={boxH}
-                  direction="incoming"
-                  active={focus === box.id}
-                  tone={portTone}
-                  lane="contract"
-                />
+                <ConnectionPort {...portProps('contract', at, contractBoxW, boxH)} direction="incoming" />
               ) : null}
               {contractOutgoing.length > 0 ? (
-                <ConnectionPort
-                  axis={axis}
-                  at={at}
-                  boxW={contractBoxW}
-                  boxH={boxH}
-                  direction="outgoing"
-                  active={focus === box.id}
-                  tone={portTone}
-                  lane="contract"
-                />
+                <ConnectionPort {...portProps('contract', at, contractBoxW, boxH)} direction="outgoing" />
               ) : null}
               {splitsEvidence ? (
                 <text
@@ -1906,41 +1860,13 @@ export function ArchitectureSketch({
                     data-observation-state={ledger?.state ?? 'missing'}
                   />
                   {usesPairedDown && visibleEdges.some((edge) => edge.kind === 'traffic' && edge.columnSpan > 1 && (edge.from === box.id || edge.to === box.id)) ? (
-                    <ConnectionPort
-                      axis={axis}
-                      at={observedAt}
-                      boxW={observationBoxW}
-                      boxH={observationBoxH}
-                      direction="outgoing"
-                      active={focus === box.id}
-                      tone={portTone}
-                      lane="observation"
-                      side="right"
-                    />
+                    <ConnectionPort {...portProps('observation', observedAt, observationBoxW, observationBoxH)} direction="outgoing" side="right" />
                   ) : null}
                   {observationIncoming.length > 0 ? (
-                    <ConnectionPort
-                      axis={axis}
-                      at={observedAt}
-                      boxW={observationBoxW}
-                      boxH={observationBoxH}
-                      direction="incoming"
-                      active={focus === box.id}
-                      tone={portTone}
-                      lane="observation"
-                    />
+                    <ConnectionPort {...portProps('observation', observedAt, observationBoxW, observationBoxH)} direction="incoming" />
                   ) : null}
                   {observationOutgoing.length > 0 ? (
-                    <ConnectionPort
-                      axis={axis}
-                      at={observedAt}
-                      boxW={observationBoxW}
-                      boxH={observationBoxH}
-                      direction="outgoing"
-                      active={focus === box.id}
-                      tone={portTone}
-                      lane="observation"
-                    />
+                    <ConnectionPort {...portProps('observation', observedAt, observationBoxW, observationBoxH)} direction="outgoing" />
                   ) : null}
                   <text
                     x={observedAt.x + observationBoxW / 2}
@@ -1981,11 +1907,7 @@ export function ArchitectureSketch({
       {covered.coveredDown && covered.hiddenRight > 0 ? (
         <div className="pointer-events-none absolute inset-x-0 bottom-2 flex items-center justify-center px-[var(--card-pad)]">
           <span
-            className={badgeClass({
-              shape: 'pill',
-              className:
-                'border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] text-[color:var(--color-text-tertiary)]',
-            })}
+            className={HIDDEN_COUNT_BADGE_CLASS}
             data-testid="architecture-canvas-hidden-below"
           >
             {hiddenBelowLabel(covered.hiddenRight)}
