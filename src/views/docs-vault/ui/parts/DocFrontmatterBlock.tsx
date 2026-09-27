@@ -117,6 +117,24 @@ function collectDanglingRefs(
 const DANGLING_NAMED_MAX = 3;
 
 /**
+ * Raw code paths from `elements:`, deduplicated. They are evidence, not node references, so they
+ * are not links; a misplaced vault ref is kept out by `looksLikeCodePath`.
+ */
+function collectCodeLocations(raw: unknown): string[] {
+  const codeLocations: string[] = [];
+  const seen = new Set<string>();
+  if (!Array.isArray(raw)) return codeLocations;
+  for (const entry of raw) {
+    if (typeof entry !== "string") continue;
+    const trimmed = entry.trim();
+    if (!trimmed || seen.has(trimmed) || !looksLikeCodePath(trimmed)) continue;
+    seen.add(trimmed);
+    codeLocations.push(trimmed);
+  }
+  return codeLocations;
+}
+
+/**
  * Entries in a list named for a kind whose document is another kind; they resolve, so the
  * dangling warning misses them, but the map counts them by their list.
  */
@@ -442,27 +460,9 @@ export function DocFrontmatterBlock({
     } => f.value !== null,
   );
 
-  // Raw code paths from `elements:` are evidence, not node references, so they are not links;
-  // a misplaced vault ref is kept out by `looksLikeCodePath`.
   const hasReferenceField = fields.some((f) => REFERENCE_KEYS.has(f.key));
-
-  const codeLocations: string[] = [];
-  {
-    const raw = doc.frontmatter?.elements;
-    const seen = new Set<string>();
-    if (Array.isArray(raw)) {
-      for (const entry of raw) {
-        if (typeof entry !== "string") continue;
-        const trimmed = entry.trim();
-        if (!trimmed || seen.has(trimmed) || !looksLikeCodePath(trimmed)) continue;
-        seen.add(trimmed);
-        codeLocations.push(trimmed);
-      }
-    }
-  }
-
-  // A `definition:` key is shown as an always-visible lede.
-  const definitionValue = formatValue(doc.frontmatter?.definition);
+  const codeLocations = collectCodeLocations(doc.frontmatter?.elements);
+  const definitionLede = formatValue(doc.frontmatter?.definition);
 
   const kindValue = currentKind;
   // Only with a resolver that knows the folder; sample and server vaults are never accused.
@@ -479,7 +479,7 @@ export function DocFrontmatterBlock({
   // A wiki page has no `kind:` by contract (`validateWikiPage` flags one), so no diagnosis.
   if (isWikiPage(doc)) return null;
   if (diagnosticOnly && validationIssues.length === 0) return null;
-  if (!diagnosticOnly && fields.length === 0 && codeLocations.length === 0 && !definitionValue) {
+  if (!diagnosticOnly && fields.length === 0 && codeLocations.length === 0 && !definitionLede) {
     return null;
   }
 
@@ -843,7 +843,7 @@ export function DocFrontmatterBlock({
       data-variant="full"
       className="mx-auto mt-4 max-w-[var(--measure-doc-column)] px-6 md:px-10"
     >
-      {definitionValue ? (
+      {definitionLede ? (
         <div
           data-testid="doc-frontmatter-definition"
           className="mb-3 border-l-2 border-[color:var(--color-border-strong)] pl-3"
@@ -852,7 +852,7 @@ export function DocFrontmatterBlock({
             {t("definitionLabel")}
           </div>
           <p className="mt-0.5 text-body leading-body text-[color:var(--color-text-secondary)]">
-            {definitionValue}
+            {definitionLede}
           </p>
         </div>
       ) : null}
