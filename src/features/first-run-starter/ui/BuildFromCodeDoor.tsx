@@ -1,7 +1,5 @@
 'use client';
 
-import { Fragment } from 'react';
-
 import { Bot } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 

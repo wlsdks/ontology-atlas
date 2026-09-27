@@ -116,12 +116,6 @@
       "witness": "pkill"
     },
     {
-      "key": "mcp:runtime:dependencies:package.json:@modelcontextprotocol/core",
-      "reason": "The MCP core package is intentionally direct-pinned for the public server protocol boundary.",
-      "consumer": "mcp/README.md",
-      "witness": "@modelcontextprotocol/core"
-    },
-    {
       "key": "mcp:runtime:exports:src/architecture-profile.mjs:matchesPathPattern",
       "reason": "Path-glob semantics are a cross-surface contract: the web occupant join mirrors this function, and the contract test consumes the export from outside the mcp scope where Knip cannot see it.",
       "consumer": "tests/contract/architecture-profile.contract.test.ts",
