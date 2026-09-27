@@ -118,6 +118,7 @@ let lastLoginCheck: { startedAt: number; answer: Promise<AcpRuntimeStatus[]> } |
  * default — the screen **paints first and corrects later**.
  *
  * Login checks are shared: one in flight, reused for `LOGIN_CHECK_REUSE_MS`; `force` re-asks.
+ * An answer that asks for a sign-in is not reused, since the person may be signing in now.
  */
 export async function detectAcpRuntimes(
   options?: { probeLogin?: boolean; force?: boolean },
@@ -131,9 +132,12 @@ export async function detectAcpRuntimes(
   }
   const check = { startedAt: now, answer: invoke<AcpRuntimeStatus[]>('acp_detect_runtimes', { probeLogin: true }) };
   lastLoginCheck = check;
-  check.answer.catch(() => {
+  const forget = () => {
     if (lastLoginCheck === check) lastLoginCheck = null;
-  });
+  };
+  check.answer.then((list) => {
+    if (list.some((runtime) => runtime.state === 'login-needed' || runtime.state === 'login-unknown')) forget();
+  }, forget);
   return check.answer;
 }
 

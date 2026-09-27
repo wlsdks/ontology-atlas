@@ -90,6 +90,17 @@ describe('runtime login checks are shared between screens', () => {
     expect(loginChecks()).toBe(2);
   });
 
+  it('asks again after an answer that wants a sign-in, while still sharing the one in flight', async () => {
+    mocks.invoke.mockResolvedValue([{ id: 'claude-acp', state: 'login-needed' }]);
+    const { detectAcpRuntimes } = await freshBridge();
+
+    await Promise.all([detectAcpRuntimes({ probeLogin: true }), detectAcpRuntimes({ probeLogin: true })]);
+    expect(loginChecks()).toBe(1);
+
+    await detectAcpRuntimes({ probeLogin: true });
+    expect(loginChecks()).toBe(2);
+  });
+
   it('does not keep a failed check for the next screen', async () => {
     mocks.invoke.mockRejectedValueOnce(new Error('bridge busy')).mockResolvedValue([]);
     const { detectAcpRuntimes } = await freshBridge();
