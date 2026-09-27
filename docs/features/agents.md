@@ -8,29 +8,31 @@ routes: [/agents]
 
 # Agents
 
-### `/agents` — Agent (new 2026-08-20, catalog 90)
+### `/agents` — Agents (the default tab)
 
-Opening a conversation preserves the selected runner across the quick detection and subsequent login scan. A temporarily empty usable-runner list does not replace the requested tool with the first later result. The existing readiness and isolation checks still apply.
-
+The page has three tabs, in the order of `src/views/agents/lib/agents-tab-state.ts`:
+Agents, Models and MCP. `?tab=` selects one; a missing or unknown value opens Agents.
 
 **One sentence on what this screen does**: **Get · install · attach · fix · and start conversation with** the AI coding tool on this computer.
+
+Opening a conversation preserves the selected runner across the quick detection and subsequent login scan. A temporarily empty usable-runner list does not replace the requested tool with the first later result. The existing readiness and isolation checks still apply.
 
 - **List** — Tools actually verified on this device are shown first, others are collapsed.
 - **Connection check** — Re-evaluate eight steps (does tool exist · can it launch · does it ask outside folder · is downloaded item intact · app-side settings · credential link · old login records · login). **Fixable things are fixed right there.** For unfixable ones, write what the human needs to do.
 - **App-specific installation** — Downloads Node and tools only inside the app folder. Fixes versions, and after downloading Node, **compares hashes** (if mismatched, delete and stop). Shows the original text before executing anything. Progress and completion remain on screen — even if you close and reopen the window.
 - **Reconnection** — Deletes only what the app created and recreates it. This is not "logout": this app has no app-side login, and links to the login the user did in the terminal, using it as-is.
 
-**Why it came out of settings**: Settings is **where you choose values**, and this is **an operational task with progress state**. A modal blocks the background and owns Esc, preventing you from seeing the map while receiving 52MB. **Workspaces remain in settings** (the axis a vault answers is different). API keys stayed behind until 2026-09-25, when they followed as the models tab below.
+**Why it came out of settings**: Settings is **where you choose values**, and this is **an operational task with progress state**. A modal blocks the background and owns Esc, preventing you from seeing the map while receiving 52MB. **Workspaces remain in settings** (the axis a vault answers is different). API keys live in the Models tab below.
 
-**On the web**: The screen still appears, but states why it can't do what the browser can't (launching programs on this computer) along with the reason. It's not "Connection unavailable" — MCP is **attached to the folder**, not the screen, so web users are also connected (catalog 2026-08-01). That row names the place: since 2026-09-19 it is the MCP tab on the same strip, one press away, so the sentence no longer carries a link (the settings sheet, which has no strip, still does).
+**On the web**: The screen still appears, but states why it can't do what the browser can't (launching programs on this computer) along with the reason. It's not "Connection unavailable" — MCP is **attached to the folder**, not the screen, so web users are also connected. That row names the place: the MCP tab on the same strip, one press away, so the sentence carries no link (the settings sheet, which has no strip, still does).
 
-**2026-09-06**: the screen wears `PAGE_FRAME_FORM` (960px) like `/mcp`, and the frame carries the desktop bottom breath itself.
+The page wears `PAGE_FRAME_FORM`, and the frame carries the desktop bottom breath itself.
 
-**What left on 2026-09-05**: the folder's own MCP connection and the connectors moved to `/mcp`. This screen keeps the runner list, the connection checks, the app-only install and repair, and opening a conversation.
+The folder's own MCP connection and the connectors live in the MCP tab. This tab keeps the runner list, the connection checks, the app-only install and repair, and opening a conversation.
 
-**What changed on 2026-09-07**: only the tools Atlas confirmed on this machine are listed inline. The rest open in a dialog with a search field and a scrolling list — the same dialog primitives the connector dialog uses, so setting up a coding tool and attaching an MCP server feel like one product. Nothing left the list; a fold of 36 rows had nowhere to put a search.
+Only the tools Atlas confirmed on this machine are listed inline. The rest open in a dialog with a search field and a scrolling list — the same dialog primitives the connector dialog uses, so setting up a coding tool and attaching an MCP server feel like one product.
 
-### `/agents?tab=models` — Models (new 2026-09-25; the Agents page's second tab)
+### `/agents?tab=models` — Models
 
 **One sentence on what this screen does**: which model the conversation beside the map calls,
 and with whose key. The strip reads Agents | Models | MCP. Decision:
@@ -62,24 +64,18 @@ and with whose key. The strip reads Agents | Models | MCP. Decision:
   no-key button opens this tab. Every way a row closes returns focus to its opener, and results
   are announced once through one polite live region.
 
-### `/agents?tab=mcp` — MCP (new 2026-09-05; the Agents page's third tab since 2026-09-25)
+### `/agents?tab=mcp` — MCP
 
 **One sentence on what this screen does**: everything MCP — the folder's own server
 (share this folder with a coding tool) and the external connectors an in-app agent may
-reach — as the second tab of the Agents page, in two groups stacked under one strip.
-The owner folded the two rail destinations into one on 2026-09-17 ("merge these two,
-split them as tabs inside"), took the header tab strip away on 2026-09-18 ("this way of
-showing them at the top is very bad… it should be folded in here": it spent a 56px chrome
-band on two words), and on 2026-09-19 rejected the stack that replaced it ("I don't want
-agents and MCP on one screen with a scroll — split them into tabs"). Both objections hold
-at once when the strip is the page's own, under the title: no chrome band, one question on
-screen at a time. `?tab=mcp` selects the tab and `?mcp=connectors` scrolls to the
+reach — as the third tab of the Agents page, in two groups stacked under one strip.
+The strip is the page's own, under the title, so one question is on screen at a time.
+`?tab=mcp` selects the tab and `?mcp=connectors` scrolls to the
 connectors group; `/mcp/` and `/mcp/?tab=connectors` redirect in with every parameter
 kept, so the installed app's `ontology-atlas://mcp?install=…` deep link still opens the
-connectors dialog. The rail lost its MCP tile; `g c` still lands here.
+connectors dialog. The rail has no MCP tile; `g c` lands here.
 
-- **Share this folder** — one row per tool since 2026-09-19 ("this design is poor — make it
-  properly; a popup, say"): the tool's mark, its name, the file it writes, and on the right
+- **Share this folder** — one row per tool: the tool's mark, its name, the file it writes, and on the right
   the one control in that tool's own state (connect, copy, or ready). A row whose file exists
   but belongs to another tool says so in warning tone instead of its path. What Atlas cannot
   know on its own — did you restart it, did it attach — opens from the group heading as one
@@ -93,21 +89,15 @@ connectors dialog. The rail lost its MCP tile; `g c` still lands here.
   undone. Adding opens one blocking dialog that searches what this machine already registers and
   takes a by-hand entry.
   A row wears a service's own mark **only where that service's published brand guideline was read
-  and permits monochrome use to show an integration** — GitHub today. Simple Icons is CC0, but CC0
+  and permits monochrome use to show an integration** — GitHub. Simple Icons is CC0, but CC0
   waives copyright and not trademark, so every other service falls back to the generic connector
   glyph rather than to an assumption that nobody would mind.
-
-**Why it came out of `/agents`**: that destination had grown two jobs sharing only the
-word "agent". "Which coding tools does this computer have" needs programs on this
-machine; "what does an agent reach over MCP" is a wire that behaves identically in a
-browser, and it was the taller half of the screen. The owner asked for the split and
-approved a longer rail: the desktop rail now carries eight destinations.
 
 **On the web**: the whole screen works, because MCP attaches to **the folder**, not to
 an Atlas screen. Two halves are app-only and each says so where it is missing — reading
 what this machine already registers, and keeping a token in the OS keychain.
 
-#### Connectors — the external MCP servers a folder may reach (new 2026-09-05)
+#### Connectors — the external MCP servers a folder may reach
 
 **One sentence**: attach an outside MCP server — Notion, GitHub, Atlassian, or one
 somebody wrote themselves — so the in-app conversation's agent can use it beside the
@@ -133,13 +123,12 @@ vault server.
 - **Name collisions are called out first.** Codex silently drops an ACP-supplied server
   whose name a config layer already holds.
 
-**One list under one search (2026-09-07).** The add dialog is one scroll: *Already on this
+**One list under one search.** The add dialog is one scroll: *Already on this
 computer* (this machine's own config files), *Ready to attach* (the catalogue, its capture
 date beside the heading), and *Not in the list? Add it by hand*, a folded row at the bottom
 that unfolds the full form. One search box narrows every group at once, because somebody
 typing "notion" does not yet know which of them will answer. Close is the corner control
-and Escape. The tabs this replaced lasted one afternoon; the record is in
-`docs/DECISIONS.md` (2026-09-07, one list).
+and Escape. The record is in `docs/DECISIONS.md` (one list).
 
 - **One rule for the button.** A press attaches what asks nothing — a hosted OAuth address,
   a local program with no required variable — and the row lands in the folder switched
@@ -155,14 +144,14 @@ and Escape. The tabs this replaced lasted one afternoon; the record is in
   size, its capture date, that Atlas has audited none of it, and that *By hand* reaches
   everything it does not list.
 - **Only what the press can make work.** A hosted address that signs in with OAuth
-  (Notion's, Atlassian's, GitHub's, and the rest) is **not** offered: measured on
-  2026-09-07 against claude-agent-acp 0.75.0, such an address handed to the in-app session
+  (Notion's, Atlassian's, GitHub's, and the rest) is **not** offered: measured
+  against claude-agent-acp 0.75.0, such an address handed to the in-app session
   reports "requires authentication", the adapter says the session cannot open the sign-in
   window, and no tool registers; a token earned in the terminal for the same name and
   address did not carry over. The generator refuses that shape. What remains is a **local
   program** that asks for exactly one credential, with a link to the page that issues it,
-  and an **address that asks nothing** (Context7). Four services today: Notion, GitHub,
-  Context7, Playwright. The hosted rows return when an adapter is measured running the
+  and an **address that asks nothing** (Context7). The entries are the generated file
+  named below. The hosted rows return when an adapter is measured running the
   flow.
 - **The program is chosen, not typed.** `resolve_connector_runtimes` resolves a fixed
   allow-list — `npx`, `node`, `uvx`, `python3`, `docker` — to absolute paths on this

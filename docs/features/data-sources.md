@@ -10,7 +10,7 @@ routes: []
 
 ## 1. Mode branching (data source)
 
-`useDataSourceMode()` resolves to one of two modes (R10b: cloud / auth surface permanently removed):
+`useDataSourceMode()` resolves to one of two modes:
 
 | Mode | Condition | Behavior |
 |---|---|---|
@@ -77,18 +77,18 @@ dialog never says "ontology" (map-building framing for non-experts).
 - **Idle frame gate** — the canvas stops physics+paint after 1.2s of true
   idle (rAF stays alive; any state change resumes next frame).
 - **Canonical census** — every surface that says "N concepts" uses one
-  derivation (`computeCanonicalCensus`). Topology, Docs, Workshop, Insights,
+  derivation (`computeCanonicalCensus`). Topology, Library, the meaning editor, Insights,
   and Projects read the same file-backed scope; a surface-specific subset is
   labeled as a subset rather than silently presenting it as the vault total.
 - **Docs library on the web** — the local-vault gate is capability-based
   (File System Access), not runtime-based: the same browser session that
-  writes via Workshop or the document editor can read/edit in the docs
+  writes via the meaning editor or the document editor can read/edit in the docs
   library.
 - **Relation vocabulary** — one dictionary (formal/plain × 7 types × ko/en)
-  feeds the map legend, Insights, Workshop, and datasheet (contract-tested);
+  feeds the map legend, Insights, the meaning editor, and datasheet (contract-tested);
   the "?" sheet footer defines domain/capability/element in plain language.
 
-**Single source of truth (R8)**: `LocalVaultProvider` mounts once in `app/[locale]/layout.tsx`. Its many `useLocalVault()` consumers (`RootEntryPage` / `AppNavRail` / `HomePage` / `DocsVaultPage` / `useDataSourceMode` / `useProjects` / `useProjectMutations` / `useVaultOntology` and the persistent app shell) share one state instance, one IDB rehydrate, one filesystem walk.
+**Single source of truth**: `LocalVaultProvider` mounts once in `app/[locale]/layout.tsx`. Its many `useLocalVault()` consumers (`RootEntryPage` / `AppNavRail` / `HomePage` / `DocsVaultPage` / `useDataSourceMode` / `useProjects` / `useProjectMutations` / `useVaultOntology` and the persistent app shell) share one state instance, one IDB rehydrate, one filesystem walk.
 
 **Desktop first-run (2026-07-18)**: in the installed app (Tauri — detected via
 `isDesktopShell()`, `src/shared/lib/desktop-shell.ts`), `/` with no vault
