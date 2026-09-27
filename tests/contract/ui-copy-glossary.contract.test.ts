@@ -135,7 +135,7 @@ describe("화면 글자 용어집 계약", () => {
   });
 
   /** The glossary document must exist so that error message guidance does not become a dead link. */
-  it("정본 문서가 실재하고 표를 갖고 있다", () => {
-    expect(existsSync(path.join(ROOT, "docs/GLOSSARY.md")), "docs/GLOSSARY.md 가 없다").toBe(true);
+  it("the glossary document exists", () => {
+    expect(existsSync(path.join(ROOT, "docs/GLOSSARY.md")), "docs/GLOSSARY.md is missing").toBe(true);
   });
 });

@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -76,9 +77,20 @@ describe.each(['.claude', '.agents'])('design-build references in %s', (tree) =>
   const cited = [...recipe.matchAll(/`([^`\s]+)`/g)].map((match) => match[1]);
 
   it('every backticked repo path the recipe cites exists', () => {
-    const paths = [...new Set(cited.filter((token) => /^\.?[a-z][\w.-]*\/[\w./-]*$/i.test(token)))];
+    // Only tokens under a tracked top-level entry count as repo paths, so a gitignored
+    // folder or a word pair such as `light/dark` never reads as a citation.
+    const tracked = execFileSync('git', ['ls-files'], { cwd: ROOT, encoding: 'utf8' }).split('\n');
+    const trackedSet = new Set(tracked);
+    const topLevel = new Set(tracked.map((file) => file.split('/')[0]));
+    const paths = [
+      ...new Set(
+        cited.filter((token) => /^\.?[a-z][\w.-]*\/[\w./-]*$/i.test(token) && topLevel.has(token.split('/')[0])),
+      ),
+    ];
     expect(paths.length, 'recipe cites no repo path').toBeGreaterThanOrEqual(1);
-    const missing = paths.filter((p) => !existsSync(join(ROOT, p)));
+    const missing = paths.filter(
+      (p) => !trackedSet.has(p.replace(/\/$/, '')) && !tracked.some((file) => file.startsWith(p.endsWith('/') ? p : `${p}/`)),
+    );
     expect(missing, 'recipe cites paths that do not exist').toEqual([]);
   });
 

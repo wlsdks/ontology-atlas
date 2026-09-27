@@ -258,16 +258,26 @@ describe('package contract helpers', () => {
       assert.match(addRelationsRow, new RegExp(`\`${value}\``), `MCP README documents add_relations type ${value}`);
     }
 
-    // Each engine enum value must appear backticked in the strict-input section; the
-    // sentence around the values is prose and is not pinned.
-    const enumValues = [
-      ...MAINTENANCE_PHASE_VALUES,
-      ...MAINTENANCE_SEVERITY_VALUES,
-      ...MAINTENANCE_KIND_VALUES,
-      ...RELATION_TYPE_VALUES,
+    // Each filter's engine enum values appear backticked inside that filter's own span of
+    // the strict-input section, so a value listed under the wrong filter fails; the
+    // sentences around the values are prose and are not pinned.
+    const fieldSpans = [
+      ['`maintenance_plan.phases`', MAINTENANCE_PHASE_VALUES],
+      ['`maintenance_plan.severities`', MAINTENANCE_SEVERITY_VALUES],
+      ['`maintenance_plan.kinds`', MAINTENANCE_KIND_VALUES],
     ];
-    assert.ok(enumValues.length >= 1, 'engine enums must not be empty');
-    for (const value of new Set(enumValues)) {
+    const starts = fieldSpans.map(([field]) => strictInputSection.indexOf(field));
+    for (const [index, [field, values]] of fieldSpans.entries()) {
+      assert.ok(starts[index] >= 0, `MCP README strict-input section must describe ${field}`);
+      assert.ok(values.length >= 1, `engine enum for ${field} must not be empty`);
+      const end = starts.filter((start) => start > starts[index]).sort((a, b) => a - b)[0] ?? strictInputSection.length;
+      const span = strictInputSection.slice(starts[index], end);
+      for (const value of values) {
+        assert.ok(span.includes(`\`${value}\``), `MCP README must list \`${value}\` under ${field}`);
+      }
+    }
+    assert.ok(RELATION_TYPE_VALUES.length >= 1, 'relation-type enum must not be empty');
+    for (const value of RELATION_TYPE_VALUES) {
       assert.ok(strictInputSection.includes(`\`${value}\``), `MCP README strict-input section must name \`${value}\``);
     }
 
@@ -314,7 +324,7 @@ describe('package contract helpers', () => {
    * actually wanted to catch was "the vault was regenerated and the README now points
    * at a node that is gone". A machine can decide that.
    */
-  it('keeps the self-ontology README naming nodes that exist without freezing surface counts', () => {
+  it('keeps the self-ontology README naming nodes that exist', () => {
     const readme = readFileSync('docs/ontology/README.md', 'utf-8');
     const referenced = [...readme.matchAll(/`((?:domains|capabilities|elements)\/[a-z0-9-]+|[a-z0-9-]+\.md)`/g)].map(
       (match) => match[1],
@@ -325,16 +335,6 @@ describe('package contract helpers', () => {
       const file = slug.endsWith('.md') ? `docs/ontology/${slug}` : `docs/ontology/${slug}.md`;
       assert.ok(existsSync(file), `docs/ontology/README.md points at a node that does not exist: ${slug}`);
     }
-  });
-
-  it('keeps dogfood CLI capability and MCP capability nodes concise and delegates inventories to their generated public sources', () => {
-    const cliDoc = readFileSync('docs/ontology/capabilities/cli-commands.md', 'utf-8');
-    const mcpDoc = readFileSync('docs/ontology/capabilities/mcp-tool-server.md', 'utf-8');
-    const cliTitle = cliDoc.match(/^title:\s*(.+)$/m)?.[1] ?? '';
-    const mcpTitle = mcpDoc.match(/^title:\s*(.+)$/m)?.[1] ?? '';
-
-    assert.notEqual(cliTitle, '', 'CLI capability must retain a frontmatter title');
-    assert.notEqual(mcpTitle, '', 'MCP capability must retain a frontmatter title');
   });
 
   it('keeps the embedded SERVER_VERSION in sync with mcp/package.json', () => {

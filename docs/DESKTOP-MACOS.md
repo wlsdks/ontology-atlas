@@ -307,12 +307,6 @@ for a macOS prototype:
 - the Rust entrypoint and default Tauri capability files exist.
 - the Tauri icon set exists under `src-tauri/icons/` so a fresh checkout can
   build the `.app` instead of failing during `generate_context!()`.
-- this document keeps the desktop-grade quality bar explicit: native `.app`
-  launch, vault-folder permissions, recent vault recall, visible local data
-  location, agent setup visibility, and offline route usefulness.
-- the first prototype smoke keeps the current route contract explicit:
-  `/docs`, `/topology`, `/ontology/studio`, and `/ontology/insights`, plus the
-  `/ontology` → Topology and `/ontology/edit` → Workshop compatibility entries.
 
 `desktop:doctor` checks the local machine runtime and the local ontology handoff
 surface: Tauri CLI, Cargo, rustc, macOS Xcode command line tools, the dogfood
