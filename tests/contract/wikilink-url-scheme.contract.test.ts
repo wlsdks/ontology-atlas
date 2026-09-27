@@ -52,9 +52,9 @@ describe('위키링크 URL 은 마크다운 렌더러의 살균을 통과한다'
     const url = destination('capabilities/example')!;
     expect(
       defaultUrlTransform(url),
-      `react-markdown 이 "${url}" 를 지운다 — href 가 비면 뷰어의 a 컴포넌트가 ` +
-        '링크도 「못 찾음」 표시도 아닌 **아무 표시 없는 평문**을 돌려준다. ' +
-        '스킴 모양(`X:`)은 허용 목록 밖이면 통째로 잘린다 — 쿼리나 경로 모양을 쓰라.',
+      `react-markdown strips "${url}". With an empty href the viewer's a component returns ` +
+        'neither a link nor a not-found mark but **plain text with no mark at all**. ' +
+        'A scheme shape (`X:`) outside the allow list is cut entirely; use a query or path shape.',
     ).not.toBe('');
   });
 

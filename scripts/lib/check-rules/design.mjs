@@ -13,6 +13,13 @@ export const rules = [
     matches: [/^app\/(?:globals|styles\/[^/]+)\.css$/, /^src\/.+\.css$/, /^src\/shared\/lib\/cn\.ts$/],
   },
   {
+    order: 92,
+    command:
+      'pnpm exec vitest run tests/contract/unused-token-ratchet.contract.test.ts tests/contract/undeclared-token-ref.contract.test.ts tests/contract/design-doc-token-integrity.contract.test.ts',
+    reason: 'the global stylesheet changed — the token gates read it whole, whatever else the diff holds',
+    matches: [/^app\/(?:globals|styles\/[^/]+)\.css$/],
+  },
+  {
     order: 95,
     // Every token gate and spec census reads the split stylesheet through this
     // reader; a wrong join would blind all of them at once.

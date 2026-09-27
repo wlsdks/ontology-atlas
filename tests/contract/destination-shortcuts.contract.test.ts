@@ -233,8 +233,8 @@ describe("레일 · 시트 · 셸이 같은 표를 본다", () => {
   it("목적지는 아홉을 넘지 않는다 — 열째는 별도 결정을 요구한다", () => {
     expect(
       DESTINATION_IDS.length,
-      `레일 목적지가 ${DESTINATION_IDS.length}개다 — ` +
-        `열째를 넣으려면 별도 결정을 남기고 이 상한을 같이 고쳐라`,
+      `The rail has ${DESTINATION_IDS.length} destinations. ` +
+        `Adding a tenth needs its own decision record and an update to this cap`,
     ).toBeLessThanOrEqual(9);
   });
 

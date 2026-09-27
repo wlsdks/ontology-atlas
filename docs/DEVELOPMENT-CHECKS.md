@@ -737,7 +737,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### macOS desktop readiness
 
 **Run**: `pnpm desktop:check`
-**Proves**: the macOS desktop Tauri scaffold readiness gate passes for static export, image mode, docs-vault freshness, CLI/MCP verification, and `src-tauri` shell files. README download and release links follow the configured site and repository; editable explanatory sentences are not pinned.
+**Proves**: the macOS desktop Tauri scaffold readiness gate passes for static export, image mode, docs-vault freshness, CLI/MCP verification, `src-tauri` shell files, and the main-window capability allowlist (including only the explicit print grant). README download and release links follow the configured site and repository; editable explanatory sentences are not pinned.
 **Escalate**: `pnpm desktop:doctor`, then `pnpm test:desktop:check` / `pnpm test:desktop:runtime` / `pnpm test:desktop:bridge`
 **Fix**: keep `package.json`, `src-tauri/tauri.conf.json`, and `src-tauri/Cargo.toml` versions matched so app metadata, DMG filenames, and release tags move together.
 
@@ -1066,7 +1066,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 
 **Run**: `pnpm exec vitest run tests/contract/test-title-language.contract.test.ts tests/contract/source-comment-bytes.contract.test.ts tests/contract/source-shape.contract.test.ts`
 **Proves**: In each area the changed files touch, Hangul test titles and assertion messages, comment bytes, files over 800 lines and parent folders over 30 direct files do not grow against the merge base.
-**Escalate**: `pnpm test:contracts`
+**Escalate**: `pnpm test:source:language` when the title and message census changed, otherwise `pnpm test:contracts`
 **Fix**: Translate the title or message, delete or shorten the comment, or split the file or folder; a deliberate raise is a `tests/contract/ratchet-raises/<gate>.<slug>.json` record saying why.
 
 ### Source-checkout MCP dependency preflight

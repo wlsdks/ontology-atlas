@@ -65,9 +65,9 @@ describe("WebView 프로브 셀렉터 계약", () => {
     expect(
       unexpected,
       [
-        "Rust WebView 프로브가 존재하지 않는 data-testid 를 조회한다.",
-        "UI 를 지웠다면 프로브도 같이 고쳐라 — 안 그러면 게이트가 조용히 영구 실패한다.",
-        `죽은 셀렉터: ${unexpected.join(", ")}`,
+        "The Rust WebView probe queries a data-testid that does not exist.",
+        "If the UI was removed, fix the probe with it; otherwise the gate fails silently and permanently.",
+        `Dead selectors: ${unexpected.join(", ")}`,
       ].join("\n"),
     ).toEqual([]);
   });

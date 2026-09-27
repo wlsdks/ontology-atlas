@@ -101,7 +101,7 @@ describe('남의 제품 이름 — 그쪽이 허용한 형태로만', () => {
         walk(node, `${locale}.${path.join('.')}`);
         expect(
           found,
-          '우리 실행기 목록을 설명하는 문구는 레지스트리와 같은 이름을 쓴다 ' +
+          'Copy that describes our list of runners uses the same names as the registry ' +
             '(Anthropic Claude Agent SDK · Branding guidelines)',
         ).toEqual([]);
       }

@@ -324,7 +324,7 @@ export async function installLibraryWorkHarness(
           return;
         }
         if ((method === "session/set_mode" || method === "session/set_model") && id !== null) return result(id, {});
-        if (method === "session/prompt" && id !== null) { promptId = id; return; }
+        if (method === "session/prompt" && id !== null) { promptId = id; phase = "idle"; return; }
         if (id === permissionId && phase === "waiting") {
           const response = record(message.result);
           const outcome = record(response?.outcome);

@@ -12,15 +12,22 @@ created_by: "agent:codex-mcp-client"
 relation_notes: { elements/jev-transfer-bridge: "The visible Jev request uses the native bridge for local key storage, fixed-endpoint transfer, and the receipt." }
 ---
 
-Lets a person compare one claim they paste with a code or document passage they paste through Jev, then inspect a typed advisory answer before deciding what meaning to accept. It is an experimental row of the Agents destination's models tab.
+Lets a person request an advisory comparison of one claim and its evidence through Jev, inspect the typed result, and decide what meaning to accept. The installed app accepts pasted inputs in Agents and can prepare a selected current Wiki claim with its anchored original passage in the Library question desk.
 
 ## Includes
-- An experimental "external check" row on the installed app's Agents → Models tab, with a local key status and the exact request on screen before the send.
-- One user-triggered supported, contradicted, or insufficient judgment and visible confidence.
+- The experimental Agents Models entry with local key status and an exact request preview.
+- Library preparation from one explicit claim/citation choice: reread the selected source, require a usable current passage and matching recorded source version, and invalidate the prepared check if the page or source changes.
+- A blocking review of the exact JSON, fixed TypeSafe destination, and authentication-key transfer before explicit Send. Missing keys or unavailable native support leave local search and source reading usable.
+- One supported, contradicted, or insufficient judgment with confidence, treated as advice about that pair.
 
 ## Excludes
-- Automatic reading of vault files, accepting meaning, or writing to the vault from Jev's answer.
-- Browser-hosted Jev calls; the web models tab shows only its desktop-only card.
+- A background vault sweep, automatic transfer, search ranking, semantic acceptance, or a Wiki/ontology write from Jev's answer.
+- Browser-hosted Jev requests or browser storage of the key.
+
+## Evidence
+- `src/features/jev-judgment/ui/JevCheck.tsx` owns the pasted-input entry; `src/views/library/ui/parts/LibraryQuestionDesk.tsx` prepares current cited pairs and explicit consent.
+- `src/shared/lib/tauri-jev.ts` and `src-tauri/src/jev.rs` carry the fixed native boundary. `tests/e2e/library-question-desk.spec.ts` checks preview and usable no-key behavior; the question-desk unit suite checks stale and unavailable pairs.
 
 ## Uncertainty
-- Key save, replace and removal, the preview-equals-sent request, and the audit count were exercised through the desktop bridge stub in a browser (`tests/e2e/agents-models-tab.spec.ts`), and the Rust transfer path through a fake sender in unit tests. A real-candidate calibration and a native live HTTP call have not been completed; TypeSafe's written confirmation for open-source, independently keyed distribution is pending.
+- One owner-authorized synthetic native TypeSafe call during PR #2059 returned contradicted for an intentionally false claim. This closes the earlier absence of a native live-call observation; no project content was used and no wider accuracy claim follows.
+- Existing stub/fake-sender tests cover key operations, preview-equals-sent payload, and metadata receipts. Real-candidate calibration, cross-platform live behavior, and TypeSafe's written confirmation for independently keyed open-source distribution remain unresolved.

@@ -171,6 +171,7 @@ test.describe("the structural check is the app's own", () => {
      * sentence stands in the guide beside it.
      */
     await expect(page.getByText(/No verified coding agent is set up on this computer/)).toHaveCount(0);
+    await page.getByTestId("library-workspace-sources").click();
     await page.getByTestId("library-guide-open").click();
     const guide = page.getByTestId("library-guide-popover");
     await expect(guide.locator("[data-landing-blocked-reason]")).toHaveCount(1);
@@ -199,6 +200,7 @@ test.describe("the structural check is the app's own", () => {
       }));
 
     await page.getByTestId("library-strip-offtemplate").click();
+    await page.getByTestId("library-workspace-wiki").click();
     await expect(page.getByTestId("library-check-structural")).toBeVisible({ timeout: 25_000 });
     const afterClause = await rowState();
     expect(afterClause).toEqual({ state: null, current: "page", running: false, unseen: false });
@@ -207,7 +209,7 @@ test.describe("the structural check is the app's own", () => {
 
     // Back to the home, then in again through the row itself: the same state, both ways.
     await page.getByTestId("library-reader-back").click();
-    await expect(page.getByTestId("library-graph-canvas")).toBeVisible();
+    await expect(page.getByTestId("library-question-desk")).toBeVisible();
     const door = page.getByTestId("library-open-report");
     await expect(door).toBeVisible();
     await door.click();

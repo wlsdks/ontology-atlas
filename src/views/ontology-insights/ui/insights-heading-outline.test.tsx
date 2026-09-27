@@ -100,8 +100,8 @@ describe("insights sources render section title classes on headings, not spans",
     const offenders = files.filter((f) => readFileSync(f, "utf8").includes(`<span className="${cls}"`));
     expect(
       offenders,
-      `구획 제목은 <InsightsSectionTitle> 로 낸다 — 그래야 화면의 위계가 문서에도 남는다.\n` +
-        `위반: ${offenders.join(", ")}`,
+      `Section titles go through <InsightsSectionTitle>, so the screen's hierarchy is in the document too.\n` +
+        `Violations: ${offenders.join(", ")}`,
     ).toEqual([]);
   });
 });

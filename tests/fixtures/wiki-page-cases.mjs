@@ -416,4 +416,73 @@ export const WIKI_FOLDER_CASES = [
     ],
     expected: { 'wiki/a.md': ['dangling-wikilink'], 'wiki/b.md': ['orphan-page'] },
   },
+  {
+    name: 'three pages from one primary source: the linked pair is quiet, each unlinked pair is reported',
+    pages: [
+      folderPage('a', ['wiki/b', 'wiki/d']),
+      folderPage('b', ['wiki/a', 'wiki/d']),
+      folderPage('c', ['wiki/d']),
+      folderPage('d', ['wiki/a', 'wiki/b', 'wiki/c'], ['sources/other.csv']),
+    ],
+    expected: {
+      'wiki/a.md': ['shared-source-unlinked'],
+      'wiki/b.md': ['shared-source-unlinked'],
+      'wiki/c.md': ['shared-source-unlinked', 'shared-source-unlinked'],
+      'wiki/d.md': [],
+    },
+    partners: {'wiki/a.md': ['wiki/c.md'], 'wiki/b.md': ['wiki/c.md'], 'wiki/c.md': ['wiki/a.md', 'wiki/b.md'], 'wiki/d.md': []},
+  },
+  {
+    name: 'two primary sources in one folder pair only the pages written from the same one',
+    pages: [
+      folderPage('a', ['wiki/c', 'wiki/d'], ['sources/plan.pdf']),
+      folderPage('b', ['wiki/c'], ['sources/plan.pdf']),
+      folderPage('c', ['wiki/a', 'wiki/b'], ['sources/budget.xlsx']),
+      folderPage('d', ['wiki/a'], ['sources/budget.xlsx']),
+    ],
+    expected: {
+      'wiki/a.md': ['shared-source-unlinked'],
+      'wiki/b.md': ['shared-source-unlinked'],
+      'wiki/c.md': ['shared-source-unlinked'],
+      'wiki/d.md': ['shared-source-unlinked'],
+    },
+    partners: {'wiki/a.md': ['wiki/b.md'], 'wiki/b.md': ['wiki/a.md'], 'wiki/c.md': ['wiki/d.md'], 'wiki/d.md': ['wiki/c.md']},
+  },
+  {
+    name: 'a page listing another page\'s primary source second is paired, whichever comes first in the input',
+    pages: [
+      folderPage('b', ['wiki/c'], ['sources/b.pdf', 'sources/a.pdf']),
+      folderPage('a', ['wiki/c'], ['sources/a.pdf']),
+      folderPage('e', ['wiki/c'], ['sources/e.pdf', 'sources/a.pdf']),
+      folderPage('c', ['wiki/a', 'wiki/b', 'wiki/e'], ['sources/c.pdf']),
+    ],
+    expected: {
+      'wiki/b.md': ['shared-source-unlinked'],
+      'wiki/a.md': ['shared-source-unlinked', 'shared-source-unlinked'],
+      'wiki/e.md': ['shared-source-unlinked'],
+      'wiki/c.md': [],
+    },
+    partners: {'wiki/b.md': ['wiki/a.md'], 'wiki/a.md': ['wiki/b.md', 'wiki/e.md'], 'wiki/e.md': ['wiki/a.md'], 'wiki/c.md': []},
+  },
+  {
+    name: 'a page paired through two sources names its partners in input order',
+    pages: [
+      folderPage('p0', ['wiki/hub'], ['sources/a.pdf', 'sources/b.pdf']),
+      folderPage('p1', ['wiki/hub'], ['sources/b.pdf']),
+      folderPage('p2', ['wiki/hub'], ['sources/x.pdf', 'sources/a.pdf']),
+      folderPage('hub', ['wiki/p0', 'wiki/p1', 'wiki/p2'], ['sources/hub.pdf']),
+    ],
+    expected: {
+      'wiki/p0.md': ['shared-source-unlinked', 'shared-source-unlinked'],
+      'wiki/p1.md': ['shared-source-unlinked'],
+      'wiki/p2.md': ['shared-source-unlinked'],
+      'wiki/hub.md': [],
+    },
+    partners: {
+      'wiki/p0.md': ['wiki/p1.md', 'wiki/p2.md'],
+      'wiki/p1.md': ['wiki/p0.md'],
+      'wiki/p2.md': ['wiki/p0.md'],
+      'wiki/hub.md': [],
+    },
+  },
 ];

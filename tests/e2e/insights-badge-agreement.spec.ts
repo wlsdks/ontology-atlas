@@ -77,8 +77,8 @@ test.describe("인사이트 할 일 — 탭 배지와 목록 제목이 같은 �
     ).toEqual([]);
     expect(
       seen.heading,
-      `탭 배지(${seen.tab}) ≠ 목록 제목(${seen.heading}). 같은 일을 두 수로 세고 있다 — ` +
-        "둘 다 `insightsVerdict.total` 한 곳에서만 갈라져 나가야 한다",
+      `Tab badge (${seen.tab}) ≠ list heading (${seen.heading}). The same work is counted as two numbers; ` +
+        "both must branch from `insightsVerdict.total` alone",
     ).toBe(seen.tab);
 
     // 2026-09-06: the list is one row per finding group, each with its own count. A number beside
@@ -87,8 +87,8 @@ test.describe("인사이트 할 일 — 탭 배지와 목록 제목이 같은 �
     expect(seen.groupCounts.length, "묶음 줄이 하나도 없다 — 이 검사가 헛돈다").toBeGreaterThan(0);
     expect(
       seen.groupCounts.reduce((a, b) => a + b, 0),
-      `묶음 수의 합(${seen.groupCounts.join("+")}) ≠ 목록 제목(${seen.heading}). ` +
-        "한 화면이 같은 일을 두 수로 센다",
+      `Sum of the group counts (${seen.groupCounts.join("+")}) ≠ list heading (${seen.heading}). ` +
+        "One screen counts the same work as two numbers",
     ).toBe(seen.heading);
   });
 });

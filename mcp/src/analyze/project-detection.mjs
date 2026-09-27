@@ -15,6 +15,7 @@ import {
   STARTER_ONTOLOGY_SLUGS,
 } from './constants.mjs';
 import { cleanHeadingLabel, humanize, isHeadingAdornment, slugify } from './text.mjs';
+import { VAULT_SOURCES_DIR } from '../schema.mjs';
 import {
   packageContractPathIssue,
   pathResolvesInsideRoot,
@@ -229,6 +230,7 @@ export function detectExistingOntologyEvidence(rootPath, skipped = []) {
   const rows = [];
   const seen = new Set();
   const realOntologyRoot = realpathSync.native(ontologyRoot);
+  const realSourcesDirectory = realVaultSourcesDirectory(ontologyRoot);
   const ancestors = new Set();
   const visitedDirectories = new Set();
   let entriesSeen = 0;
@@ -238,6 +240,7 @@ export function detectExistingOntologyEvidence(rootPath, skipped = []) {
   // O(entries) under the budgets; only a link can leave a folder inside the root.
   function visit(dir) {
     const realDirectory = realpathSync.native(dir);
+    if (realDirectory === realSourcesDirectory) return;
     if (ancestors.has(realDirectory)) {
       pushSkippedOnce(skipped, {
         path: dir,
@@ -314,6 +317,15 @@ export function detectExistingOntologyEvidence(rootPath, skipped = []) {
 
   visit(ontologyRoot);
   return rows;
+}
+
+function realVaultSourcesDirectory(ontologyRoot) {
+  try {
+    const entry = readdirSync(ontologyRoot, { withFileTypes: true }).find((item) => item.name === VAULT_SOURCES_DIR);
+    return entry ? realpathSync.native(join(ontologyRoot, entry.name)) : null;
+  } catch {
+    return null;
+  }
 }
 
 function readOntologyEvidence(rootPath, ontologyRoot, path) {
