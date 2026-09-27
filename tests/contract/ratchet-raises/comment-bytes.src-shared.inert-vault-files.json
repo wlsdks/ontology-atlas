@@ -1,0 +1,1 @@
+{ "gate": "comment-bytes.src-shared", "raise": 286, "why": "The new helper that hands a granted vault file to the browser states the one reason the code cannot show: a blob URL takes the page's origin, so only inert kinds may open and an SVG image must leave as a data: URL." }

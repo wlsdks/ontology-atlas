@@ -84,8 +84,12 @@ export function LibraryRounds() {
     (slug: string) => pageTitles.get(slug.replace(/\.md$/, "")) ?? slug.replace(/^wiki\//, "").replace(/\.md$/, ""),
     [pageTitles],
   );
-  const next = nextRound(rounds);
-  const allPaused = rounds.length > 0 && rounds.every((round) => !round.enabled);
+  // A round the folder switched on is not "next" on a Mac that never allowed it.
+  const notHere = runner?.notAllowedHere;
+  const scheduled = rounds.filter((round) => round.enabled && !notHere?.has(round.id));
+  const waitingHere = rounds.some((round) => round.enabled && notHere?.has(round.id));
+  const next = nextRound(scheduled);
+  const allPaused = rounds.length > 0 && scheduled.length === 0;
 
   const openPage = (slug: string) => {
     const bare = slug.replace(/\.md$/, "");
@@ -218,7 +222,9 @@ export function LibraryRounds() {
   const headerLine = running
     ? t("header.running", { name: running.roundName })
     : allPaused
-      ? t("header.paused")
+      ? waitingHere
+        ? t("header.waitingHere")
+        : t("header.paused")
       : next
         ? t("header.next", { time: dueLabel(next.nextDueAt), name: next.name })
         : t("header.nothingYet");
@@ -314,11 +320,20 @@ export function LibraryRounds() {
                   {rounds.map((round) => {
                     const word = outcomeWord(round);
                     const isRunning = running?.roundId === round.id;
+                    const onHere = round.enabled && !notHere?.has(round.id);
+                    const stateWord = isRunning
+                      ? t("state.running")
+                      : onHere
+                        ? t("state.on")
+                        : round.enabled
+                          ? t("state.notHere")
+                          : t("state.paused");
                     return (
                       <li key={round.id}>
                         <RowButton
                           data-testid={`library-round-${round.id}`}
                           data-round-enabled={round.enabled}
+                          data-round-allowed-here={notHere?.has(round.id) ? "false" : "true"}
                           onClick={() => setSelectedId((current) => (current === round.id ? null : round.id))}
                           active={selectedId === round.id}
                           aria-pressed={selectedId === round.id}
@@ -330,16 +345,16 @@ export function LibraryRounds() {
                             The round's state as a glyph, readable without reading (spec §9.1).
                           */}
                           <span className="flex-none self-start pt-1 text-[color:var(--color-text-quaternary)]">
-                            {isRunning ? <Play size={ICON_SIZE.sm} aria-hidden /> : round.enabled ? <Clock3 size={ICON_SIZE.sm} aria-hidden /> : <Pause size={ICON_SIZE.sm} aria-hidden />}
+                            {isRunning ? <Play size={ICON_SIZE.sm} aria-hidden /> : onHere ? <Clock3 size={ICON_SIZE.sm} aria-hidden /> : <Pause size={ICON_SIZE.sm} aria-hidden />}
                           </span>
                           <span className="min-w-0 flex-1 py-0.5">
                             <span className="flex items-center gap-2">
-                              <span className={cn("truncate text-body leading-body font-[var(--font-weight-strong)]", round.enabled ? "text-[color:var(--color-text-primary)]" : "text-[color:var(--color-text-tertiary)]")}>
+                              <span className={cn("truncate text-body leading-body font-[var(--font-weight-strong)]", onHere ? "text-[color:var(--color-text-primary)]" : "text-[color:var(--color-text-tertiary)]")}>
                                 {round.name}
                               </span>
                             </span>
                             <span className="mt-0.5 block truncate text-label leading-label text-[color:var(--color-text-quaternary)]">
-                              {placeWords(round)} · {isRunning ? t("state.running") : round.enabled ? t("state.on") : t("state.paused")}
+                              {placeWords(round)} · {stateWord}
                             </span>
                           </span>
                           <span className={badgeClass({ shape: "micro", className: cn("border shrink-0", toneClass[word.tone]) })}>{word.text}</span>

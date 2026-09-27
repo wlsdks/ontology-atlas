@@ -60,15 +60,7 @@ export function isConnectorSecretBridgeAvailable(): boolean {
   return getInvoke() !== null;
 }
 
-/**
- * The keychain account for one connector variable.
- *
- * Built from the record's **id**, not its name, so renaming a connector on screen does not orphan
- * the token behind it. Rust validates the same shape before it becomes an account name.
- */
-export function connectorSecretRef(connectorId: string, variableName: string): string {
-  return `connector:${connectorId}:${variableName}`;
-}
+export { connectorSecretRef } from './connector-record';
 
 /** Store one value — only on an explicit save, and the caller clears its own field afterwards. */
 export async function connectorSecretSet(

@@ -259,6 +259,38 @@ export function deriveRoundKind(places: readonly RoundPlace[]): RoundKind {
   return servicePlaces(places).length > 0 ? 'service' : 'consistency';
 }
 
+function canonicalCadence(cadence: RoundCadence): Record<string, unknown> {
+  if ('every' in cadence) return { every: cadence.every };
+  if ('everyMinutes' in cadence) return { everyMinutes: cadence.everyMinutes };
+  return { daily: cadence.daily, weekdaysOnly: cadence.weekdaysOnly };
+}
+
+function canonicalPlace(place: RoundPlace): Record<string, unknown> {
+  return place.kind === 'vault'
+    ? { kind: 'vault', paths: place.paths, ownDocumentsOnly: place.ownDocumentsOnly === true }
+    : {
+        kind: 'service',
+        connectorId: place.connectorId,
+        connectorName: place.connectorName,
+        location: place.location ?? null,
+        query: place.query ?? null,
+      };
+}
+
+export function roundFingerprint(round: RoundRecord): string {
+  return JSON.stringify({
+    v: 1,
+    kind: round.kind,
+    cadence: canonicalCadence(round.cadence),
+    onStale: round.onStale ?? null,
+    places: roundPlaces(round).map(canonicalPlace),
+    connectorId: round.connectorId ?? null,
+    connectorName: round.connectorName ?? null,
+    query: round.query ?? null,
+    limit: round.limit ?? null,
+  });
+}
+
 /** Labels naming a pass's places. */
 export function roundPlaceLabels(places: readonly RoundPlace[]): string[] {
   const labels: string[] = [];

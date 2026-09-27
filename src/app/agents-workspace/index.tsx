@@ -22,7 +22,7 @@ export function AgentsWorkspace() {
   const connectors = useVaultConnectors(handle);
   const mcpCount =
     connectors.status === 'ready'
-      ? connectors.connectors.filter((connector) => connector.enabled).length
+      ? connectors.connectors.filter(connectors.isOnHere).length
       : undefined;
 
   // No wrapper: `AgentsPage`'s `<main>` must be the shell slot's first child, or a second
