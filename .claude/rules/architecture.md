@@ -4,6 +4,10 @@ paths:
   - "app/**"
   - "next.config.ts"
   - "eslint.config.mjs"
+  - "scripts/**"
+  - "mcp/src/**"
+  - "cli/src/**"
+  - "src-tauri/src/**"
 ---
 
 # Architecture rules
@@ -43,3 +47,32 @@ The condition that renders a surface also guards building its model:
 `{open && <Card model={model} />}` is still expensive when `model` is computed
 unconditionally. Gate this by call count, never milliseconds
 (`src/views/home/model/use-full-detail-a1-model.test.ts`).
+
+## Code explains itself
+
+Code that reads well for a person reads well for an agent. Write what the
+current need requires, so the source alone carries the meaning.
+
+- Names carry intent: a function names what it returns or does, a boolean
+  reads as a question, a unit sits in the name (`delayMs`, `widthPx`), and a
+  meaningful literal is a named constant beside its use.
+- One function, one job. When a comment explains what a block does, rename or
+  extract so the code says it, then delete the comment.
+- Add no wrapper layer, option object, parameter or defensive branch that no
+  current caller needs, and no helper that duplicates one that exists.
+- A comment states only a current constraint or reason the code cannot show,
+  in at most three lines. Do not restate code, narrate history (dates,
+  "used to", incidents, measurements), draw section banners or keep
+  commented-out code. History that still matters is a `pnpm record:new`
+  record cited by its `.md` path in one line (`pnpm docs:comment-refs`
+  resolves it). A numeric bound may keep one line naming its measurement.
+- Algorithmic code (layout, search and matching, diffing, parsing, graph
+  traversal) states its complexity in a name, type or one line, chooses its
+  data structure on purpose, and lands only after an independent `reviewer`.
+- A file stays under 800 lines and a folder under 30 direct files. Split by
+  responsibility into a cohesive subfolder within its layer; add an `index`
+  only where the layer's public API already has one. A split must not grow
+  total lines.
+- Per area, comment bytes, files over 800 lines and folders over 30 files only
+  fall against the merge base (`source-comment-bytes`, `source-shape`
+  contracts); a deliberate raise is a `tests/contract/ratchet-raises/` record.
