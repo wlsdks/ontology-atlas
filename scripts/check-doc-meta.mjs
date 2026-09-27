@@ -30,6 +30,7 @@ import {
   statusValues,
   typeFitsFolder,
 } from './lib/doc-types.mjs';
+import { collectMarkdownLinks, collectProseDocRefs, isExternalTarget } from './lib/doc-links.mjs';
 import { parseFrontmatter } from './lib/parse-frontmatter.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -218,6 +219,102 @@ export function contractBumpProblems(docs, root = ROOT) {
   return problems;
 }
 
+/** Statuses that mark a document as a record rather than guidance. */
+const RETIRED_STATUS = new Set(['historical', 'superseded']);
+/** Statuses whose document still steers work. */
+const LIVE_STATUS = new Set(['current', 'draft', 'active']);
+/** A folder whose every file is history, whether or not it carries frontmatter. */
+const HISTORY_PREFIX = 'docs/history/';
+
+/**
+ * Instruction files an agent loads as guidance. They may not cite a retired
+ * document: an agent follows what it is pointed at, and a historical record
+ * read as an instruction replays a reversed decision.
+ */
+export function isInstructionPath(repoPath) {
+  return (
+    ['AGENTS.md', 'CLAUDE.md', 'docs/README.md'].includes(repoPath) ||
+    /^\.claude\/(rules|skills|agents)\/.+\.md$/.test(repoPath) ||
+    /^\.(agents|codex)\/.+\.md$/.test(repoPath)
+  );
+}
+
+function walkMarkdown(root, dir, out) {
+  const full = path.join(root, dir);
+  if (!existsSync(full)) return out;
+  for (const entry of readdirSync(full, { withFileTypes: true })) {
+    if (entry.name === 'node_modules') continue;
+    const child = dir ? `${dir}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) walkMarkdown(root, child, out);
+    else if (entry.name.endsWith('.md')) out.push(child);
+  }
+  return out;
+}
+
+/** Repository paths a document cites, by link or by backticked path, without fragments. */
+export function citedPaths(repoPath, raw) {
+  const dir = path.posix.dirname(repoPath);
+  const cited = new Set();
+  const add = (target, relative) => {
+    const clean = target.split('#')[0].split('?')[0];
+    if (!clean || isExternalTarget(clean) || clean.startsWith('/')) return;
+    const resolved = relative ? path.posix.normalize(path.posix.join(dir, clean)) : path.posix.normalize(clean);
+    if (!resolved.startsWith('..')) cited.add(resolved);
+  };
+  for (const { target } of collectMarkdownLinks(raw)) add(target, true);
+  for (const { target, relative, ghost } of collectProseDocRefs(raw)) if (!ghost) add(target, relative);
+  return cited;
+}
+
+/**
+ * Citation rules. Instruction files cite no historical or superseded document
+ * and nothing under docs/history/. A live document that cites a superseded one
+ * also cites its successor, so a reader lands on the answer, not the record.
+ * Ledgers carry no status, so neither rule reaches them.
+ */
+export function citationProblems(root = ROOT) {
+  const statusCache = new Map();
+  const frontmatterOf = (repoPath) => {
+    if (!statusCache.has(repoPath)) {
+      const file = path.join(root, repoPath);
+      let frontmatter = {};
+      try {
+        if (statSync(file).isFile()) frontmatter = parseFrontmatter(readFileSync(file, 'utf8')).frontmatter;
+      } catch {
+        // A missing target is docs:links' finding, not this one.
+      }
+      statusCache.set(repoPath, frontmatter);
+    }
+    return statusCache.get(repoPath);
+  };
+  const sources = [
+    ...['AGENTS.md', 'CLAUDE.md'].filter((file) => existsSync(path.join(root, file))),
+    ...walkMarkdown(root, 'docs', []),
+    ...['.claude/rules', '.claude/skills', '.claude/agents', '.agents', '.codex'].flatMap((dir) => walkMarkdown(root, dir, [])),
+  ];
+  const problems = [];
+  for (const repoPath of [...new Set(sources)].sort()) {
+    const instruction = isInstructionPath(repoPath);
+    const live = LIVE_STATUS.has(frontmatterOf(repoPath).status);
+    if (!instruction && !live) continue;
+    const cited = citedPaths(repoPath, readFileSync(path.join(root, repoPath), 'utf8'));
+    for (const target of cited) {
+      const { status, superseded_by: successors } = frontmatterOf(target);
+      if (instruction && (target.startsWith(HISTORY_PREFIX) || RETIRED_STATUS.has(status))) {
+        const why = target.startsWith(HISTORY_PREFIX) ? 'is under docs/history/' : `is ${status}`;
+        problems.push({ file: repoPath, key: 'citation', message: `cites ${target}, which ${why}; instruction files cite only current documents` });
+      }
+      if (live && status === 'superseded') {
+        const missing = asList(successors).map(String).filter((successor) => !cited.has(successor));
+        if (missing.length > 0) {
+          problems.push({ file: repoPath, key: 'citation', message: `cites superseded ${target} without its successor ${missing.join(', ')}` });
+        }
+      }
+    }
+  }
+  return problems;
+}
+
 export function run(root = ROOT) {
   const files = listLivingDocs(root);
   const decisions = decisionIds(root);
@@ -231,6 +328,7 @@ export function run(root = ROOT) {
     docs.push({ repoPath, frontmatter: parseFrontmatter(raw).frontmatter });
   }
   problems.push(...contractBumpProblems(docs, root));
+  problems.push(...citationProblems(root));
   return { checked: files.length, problems };
 }
 
