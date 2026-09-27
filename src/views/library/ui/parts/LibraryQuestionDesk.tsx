@@ -171,6 +171,7 @@ function DraftReport({ text, sources, onOpenSource, actions }: {
   </div>;
   return <div data-testid="question-desk-report-sections" className="space-y-7">
     {sections.map((section, index) => <motion.section key={section.title} data-testid={`question-desk-report-section-${index}`}
+      data-report-chapter-start={index === 2 ? 'true' : undefined}
       initial={reduced ? OVERLAY_RISE_REDUCED : OVERLAY_RISE} animate={OVERLAY_SETTLED}
       transition={{ ...(reduced ? MOTION.fast : MOTION.settle), delay: reduced ? 0 : index * STAGGER }}
       className={index === 0 ? 'border-b border-[color:var(--color-border-soft)] pb-6'

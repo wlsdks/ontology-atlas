@@ -328,6 +328,9 @@ describe('Library question desk transfer boundary', () => {
       expect(printRoot?.querySelector('[data-source-path="sources/refund.md"]')).toHaveTextContent('sources/refund.md#l2');
       expect(printRoot?.querySelector('[data-report-actions]')).toBeNull();
       expect(printRoot?.querySelectorAll('[data-report-section-heading] + [data-report-markdown]')).toHaveLength(4);
+      const chapterStart = printRoot?.querySelectorAll('[data-report-chapter-start]');
+      expect(chapterStart).toHaveLength(1);
+      expect(chapterStart?.[0]).toHaveTextContent('The Wiki says immediately.');
     });
     try {
       fireEvent.click(screen.getByTestId('question-desk-print-pdf'));

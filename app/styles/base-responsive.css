@@ -721,6 +721,10 @@
       break-before: avoid-page;
       page-break-before: avoid;
     }
+    html[data-print-scope="question-desk"] [data-question-desk-print-root] [data-report-chapter-start] {
+      break-before: page;
+      page-break-before: always;
+    }
     html[data-print-scope="question-desk"] [data-question-desk-print-root] button {
       border: 0;
       padding: 0;
