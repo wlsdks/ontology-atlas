@@ -1,5 +1,4 @@
-// R15 follow-up — `ontology-atlas backlinks <slug> [vault]`
-// Lists every node referencing the target. Thin wrapper over MCP find_backlinks.
+// `ontology-atlas backlinks <slug> [vault]`: every node referencing the target, over MCP find_backlinks.
 
 import { COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
@@ -36,10 +35,8 @@ export async function runBacklinks(args) {
 
   const matches = result?.matches ?? [];
   if (matches.length === 0) {
-    // Zero backlinks and "no such node" used to print the same thing (audit
-    // 2026-09-04: a typo returned exit 0 and an empty list). Siblings such as
-    // `node` fail closed with the closest slug; so does this now. CLI-side only:
-    // MCP `find_backlinks` still answers an unresolvable slug with total 0.
+    // An unresolvable slug fails closed with the closest slug, like `node`; MCP `find_backlinks` still
+    // answers it with total 0.
     const missing = await unknownSlugMessage(vaultRoot, slug);
     if (missing) {
       process.stderr.write(`${COLORS.red}error${COLORS.reset}  ${missing.message}\n`);

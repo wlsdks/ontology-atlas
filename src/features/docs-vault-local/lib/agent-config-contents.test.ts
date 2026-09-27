@@ -36,9 +36,8 @@ describe('agentConfigContents', () => {
   };
 
   it('points .mcp.json at the vault, not at the config root', () => {
-    // Regression guard: measured in the installed app, this file alone had "." pinned, producing a
-    // config that read the repo root as the vault. Self-verification cannot catch it because it
-    // spawns the vault path directly.
+    // Regression guard: a pinned "." made this config read the repo root as the vault, and
+    // self-verification cannot catch it because it spawns the vault path directly.
     const parsed = JSON.parse(agentConfigContents({ ...base, fileName: '.mcp.json' }));
     expect(parsed.mcpServers['ontology-atlas'].env.OATLAS_VAULT).toBe('docs/ontology');
     expect(parsed.mcpServers['ontology-atlas'].command).toBe(LAUNCH.command);

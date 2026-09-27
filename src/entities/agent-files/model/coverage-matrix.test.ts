@@ -42,10 +42,7 @@ describe('buildCoverageMatrix — a declaration lands where its declared path re
   });
 
   it('holds a path-less declaration once instead of repeating it down the column', () => {
-    /*
-     * The always-loaded rules reach everything. Printing them in every row would turn one fact into
-     * eight findings and bury the rows where something is genuinely different.
-     */
+    /* Always-loaded rules go to the strip once, not into every row. */
     const matrix = buildCoverageMatrix(
       [declaration({ id: '.claude/rules/forbidden.md', declaresPath: false, scopes: [] })],
       areas,
@@ -55,11 +52,7 @@ describe('buildCoverageMatrix — a declaration lands where its declared path re
   });
 
   it('does not promote a narrow scope that reaches nothing into a universal one', () => {
-    /*
-     * The failure this separates: `testing.md` declares `tests/**`, which no capability path is
-     * under. Both it and an always-loaded rule end with no match, and calling the first universal
-     * would credit every area with a rule that never loads for it.
-     */
+    /* `tests/**` reaches no capability path, so it is not universal like an always-loaded rule. */
     const matrix = buildCoverageMatrix(
       [declaration({ id: '.claude/rules/testing.md', scopes: ['tests'] })],
       areas,
@@ -88,9 +81,7 @@ describe('buildCoverageMatrix — a declaration lands where its declared path re
       ],
       areas,
     );
-    /* The repository-wide lane does not fill the map's cell. It runs over that code, and the screen
-       says so once — but "a check names this area" and "a check happens to include it" are the two
-       statements this column exists to keep apart. */
+    /* A repository-wide lane does not fill an area's Watched cell. */
     expect(matrix.unwatchedAreas).toEqual(['domains/map']);
     expect(matrix.everywhere.watched.map((entry) => entry.id)).toEqual(['package.json#test:run']);
   });
@@ -106,8 +97,7 @@ describe('buildCoverageMatrix — a declaration lands where its declared path re
   });
 
   it('produces no rows and no counts from an empty vault', () => {
-    /* A repository with agent files and no ontology is a designed state, not a blank grid: there is
-       nothing to be unwatched when nothing has been defined as an area. */
+    /* No ontology means no areas, which is a designed empty state. */
     const matrix = buildCoverageMatrix(
       [declaration({ id: 'src/AGENTS.md', origin: 'nested-agents', scopes: ['src'] })],
       [],

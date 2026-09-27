@@ -13,13 +13,8 @@ interface TopologyFitControlProps {
 }
 
 /**
- * The Fit (fit-to-view) tile on the map's right utility rail. The former
- * `TopologyControls` panel (search, hubs-only, overlay, depth, force sliders,
- * shortcut help) was a dead control board the v2 canvas engine never consumed, so it
- * was demolished and only the Fit callback — which was genuinely live — remains.
- * Touch and keyboard users share the same explicit overview return. It keeps the
- * collapsed stack's first-tile position and token contract
- * (--topology-floating-control-*) so the right rail's "?" tile offset rhythm stays aligned.
+ * The fit-to-view tile on the map's right rail; keeps the first-tile position tokens
+ * (--topology-floating-control-*) so the rail's rhythm stays aligned.
  */
 export function TopologyFitControl({ onFitView, density = 'default', mobileObscured = false }: TopologyFitControlProps) {
   const t = useTranslations('topologyWidgets.controls');
@@ -29,16 +24,14 @@ export function TopologyFitControl({ onFitView, density = 'default', mobileObscu
       className={`topology-ui-scale pointer-events-auto absolute bottom-[var(--topology-floating-control-phone-bottom)] right-4 z-20 ${mobileObscured ? 'hidden md:flex' : 'flex'} flex-col gap-2 md:bottom-auto md:right-[var(--chrome-inset)] md:top-[var(--topology-floating-control-desktop-top)]`}
       data-testid="topology-fit-control"
       data-agent-dock-adjacent-rail="true"
-      // The rail's column is chrome standing on the map: the map's fits keep the drawing
-      // clear of it (`widgets/ontology-map/interaction/free-area.ts#measureEdgeFitObstacle`).
+      // The rail column is chrome on the map; map fits keep clear of it
+      // (`widgets/ontology-map/interaction/free-area.ts#measureEdgeFitObstacle`).
       data-map-fit-obstacle="right"
       data-controls-density={density}
       data-control-phone-bottom-token="--topology-floating-control-phone-bottom"
       data-control-desktop-top-token="--topology-floating-control-desktop-top"
     >
-      {/* A flex wrapper has no text line box. At 200% root text, the former plain
-          div grew to a 48px line box around this 36px tile and shifted it into
-          the tour control below. */}
+      {/* A flex wrapper has no line box, so 200% root text cannot grow it around the tile. */}
       <div className="flex">
         <Tooltip content={t('fitViewTooltip')} side="left">
           <ChromeTile

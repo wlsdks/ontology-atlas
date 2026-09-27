@@ -104,15 +104,13 @@ describe("computeCardPlacement", () => {
     });
     expect(placement.left).toBeGreaterThanOrEqual(16);
     expect(placement.top).toBeGreaterThanOrEqual(16);
-    expect(placement.left + 360).toBeLessThanOrEqual(400 + 1); // clamp keeps mostly on-screen
+    expect(placement.left + 360).toBeLessThanOrEqual(400 + 1); // Clamp keeps it mostly on-screen.
   });
 });
 
 /**
- * The shared viewport test both anchor paths use. The testid path always ran it;
- * the canvas-node path (the per-frame probe in `GuidedTourOverlay`) checked only
- * for zero size, so a domain projected outside the viewport still produced a
- * "resolved" rect and the cutout was drawn off-screen (round 4, 2026-09-04).
+ * The viewport test both anchor paths share; the canvas-node path once checked size only, so an
+ * off-screen domain produced a cutout drawn outside the viewport.
  */
 describe("visibleAnchorBox", () => {
   it("returns the box when it lies inside the viewport", () => {
@@ -155,17 +153,13 @@ describe("visibleAnchorBox", () => {
 });
 
 /**
- * **The card may not sit on the node the step asks the person to press.**
- *
- * Reported at 1200×863: the try-click card occupied x 420–780, y 307–555 with the lit node
- * inside it. `belowGap` (2026-09-19) had already lifted the card off the node's *name*; this is
- * the node itself, and the guarantee is now structural — `avoidTarget` accepts a side only when
- * the card, **after** the viewport clamp, clears the target plus its gap and name band.
+ * The card may not sit on the node the step asks the person to press: a side is accepted only
+ * when the card, after the viewport clamp, clears the target plus its gap and name band.
  */
 describe("computeCardPlacement · avoidTarget (the card clears the lit node)", () => {
   const CARD = { cardWidth: 360, cardHeight: 250, gap: 12, belowGap: 40 } as const;
 
-  /** The card box the placement produces, in the same coordinates as the target. */
+  /** In the same coordinates as the target. */
   const cardBox = (placement: { top: number; left: number }) => ({
     top: placement.top,
     left: placement.left,
@@ -182,7 +176,7 @@ describe("computeCardPlacement · avoidTarget (the card clears the lit node)", (
     card.top < target.top + target.height &&
     card.bottom > target.top;
 
-  /** A node disc of `size` centred in the viewport — where the tour parks the project node. */
+  /** Centred in the viewport, where the tour parks the project node. */
   const centredNode = (viewportWidth: number, viewportHeight: number, size = 80) => ({
     top: viewportHeight / 2 - size / 2,
     left: viewportWidth / 2 - size / 2,
@@ -200,12 +194,11 @@ describe("computeCardPlacement · avoidTarget (the card clears the lit node)", (
       const card = cardBox(placement);
       expect(
         intersects(card, targetRect),
-        `카드(${JSON.stringify(card)})가 켜진 노드(${JSON.stringify(targetRect)})를 덮는다`,
+        `card ${JSON.stringify(card)} covers the lit node ${JSON.stringify(targetRect)}`,
       ).toBe(false);
-      // The name band under the disc stays clear too, which is what `belowGap` bought.
+      // The name band under the disc stays clear too.
       expect(intersects(card, { ...targetRect, height: targetRect.height + CARD.belowGap })).toBe(false);
-      // Both viewports have room to either side, and a card beside the node leaves the node and
-      // its name fully readable — which is why the horizontal sides are tried first.
+      // A card beside the node leaves the node and its name readable, so horizontal sides go first.
       expect(placement.side).toBe("right");
       expect(placement.left).toBeGreaterThanOrEqual(targetRect.left + targetRect.width + CARD.gap);
       expect(placement.left + CARD.cardWidth).toBeLessThanOrEqual(viewportWidth - 16);
@@ -230,10 +223,8 @@ describe("computeCardPlacement · avoidTarget (the card clears the lit node)", (
   });
 
   it("rejects the roomiest side when the viewport clamp would push its card back onto the node", () => {
-    // Right is the roomier horizontal side (352px against 300px), so it is tried first — but 352
-    // is less than the card, and the clamp would slide it back across the node's gap. Testing the
-    // *unclamped* candidate is exactly where an "it fits" turns into an overlap, so the placement
-    // walks on: left is narrower still, and the card lands above, the roomier vertical side.
+    // Right is the roomier horizontal side but narrower than the card, and the clamp would slide
+    // it back over the node's gap; testing the placed card walks on to above.
     const targetRect = { top: 380, left: 328, width: 80, height: 80 };
     const placement = computeCardPlacement({ targetRect, viewportWidth: 788, viewportHeight: 863, avoidTarget: true, ...CARD });
     expect(placement.side).toBe("above");
@@ -248,10 +239,7 @@ describe("computeCardPlacement · avoidTarget (the card clears the lit node)", (
   });
 });
 
-/**
- * The card stands clear of the map's toolbar as well as its target (2026-09-25): at
- * 1512x949 the try-click card covered y 61–309, over the toolbar's second line.
- */
+/** The card stands clear of the map's toolbar as well as its target. */
 describe("computeCardPlacement · keepClear (the card clears the toolbar)", () => {
   const CARD = { cardWidth: 360, cardHeight: 250, gap: 12, belowGap: 40 } as const;
   const toolbar = { top: 32, left: 412, width: 1068, height: 88 };
@@ -302,7 +290,7 @@ describe("computeCardPlacement · avoidRects (the card leaves what it explains i
     r.top < p.top + card.cardHeight;
 
   it("moves a free-floating card off the centre when the centre covers a drawn domain", () => {
-    // Interaction audit, 2026-09-25: "lines are relations" centred its card on a domain.
+    // A "lines are relations" card once centred itself on a domain.
     const domain = { top: 450, left: 660, width: 80, height: 60 };
     const placed = computeCardPlacement({ targetRect: null, ...card, ...viewport, avoidRects: [domain] });
     expect(overlaps(placed, domain)).toBe(false);

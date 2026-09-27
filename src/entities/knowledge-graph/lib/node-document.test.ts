@@ -18,13 +18,13 @@ function node(extra: Partial<KnowledgeGraphNode>): KnowledgeGraphNode {
 }
 
 describe("resolveNodeDocument", () => {
-  it("문서 노드의 첫 근거는 자기 문서다", () => {
+  it("uses a node's own document as its first evidence", () => {
     expect(
       resolveNodeDocument(node({ evidenceIds: ["capabilities/mcp-server"], hasOwnDocument: true })),
     ).toEqual({ ownSlug: "capabilities/mcp-server", mentionedInSlug: null });
   });
 
-  it("관계에서만 이름이 불린 노드의 첫 근거는 남의 문서다", () => {
+  it("uses the referring document for a node named only in relations", () => {
     expect(
       resolveNodeDocument(
         node({
@@ -38,14 +38,14 @@ describe("resolveNodeDocument", () => {
     });
   });
 
-  it("플래그 미지정은 자기 문서로 읽는다 — 새 필드를 모르는 생산 경로 하위 호환", () => {
+  it("treats a missing flag as an own document", () => {
     expect(resolveNodeDocument(node({ evidenceIds: ["capabilities/legacy"] }))).toEqual({
       ownSlug: "capabilities/legacy",
       mentionedInSlug: null,
     });
   });
 
-  it("근거가 없으면 둘 다 null", () => {
+  it("returns null for both without evidence", () => {
     expect(resolveNodeDocument(node({ evidenceIds: [] }))).toEqual({
       ownSlug: null,
       mentionedInSlug: null,

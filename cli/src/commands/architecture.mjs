@@ -114,15 +114,8 @@ export async function runArchitecture(args) {
 }
 
 /**
- * Opt-in `--record` writer (2026-08-27 decision, point 4). The normal report
- * has already been printed by the time this runs; the record is a dated machine
- * receipt persisted at `.ontology-atlas/architecture/<profile-slug>.json`.
- *
- * Mechanical hard gate: a scan whose observed edges carry no usage
- * discrimination (edges exist, and none is classified `value` or `type_only`)
- * must not mint a receipt, because the 2026-08-27 measured fact was exactly
- * such a scan stamping a false red. The refusal is a clear stderr message with
- * no file written; the exit code stays 0 because the report itself is honest.
+ * Opt-in `--record` writer for `.ontology-atlas/architecture/<profile-slug>.json`. A scan with no `value`/`type_only`
+ * edge classification mints no receipt (a false red); it refuses on stderr and exits 0, since the report is honest.
  */
 function recordArchitectureBrief(result, vaultRoot, { json }) {
   const confirm = (line) => {
@@ -175,10 +168,8 @@ function recordArchitectureBrief(result, vaultRoot, { json }) {
 }
 
 /**
- * The record's profile content hash is the sha256 of the profile document's
- * file bytes. A generated mirror of the same document is tolerated only while
- * it is byte-identical; two differing documents wearing one slug fail closed,
- * naming both, the same discipline the MCP discovery applies to frontmatter.
+ * The profile content hash is the sha256 of the document's bytes. A byte-identical generated mirror is
+ * tolerated; two differing documents with one slug fail closed, naming both, as MCP discovery does.
  */
 function findProfileDocument(vaultRoot, profileSlug) {
   const matches = [];

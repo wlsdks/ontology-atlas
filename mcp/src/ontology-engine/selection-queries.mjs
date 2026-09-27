@@ -75,11 +75,9 @@ export function createSelectionQueries({
       resolvedEdges: edges.filter((edge) => edge.resolved).length,
       externalEdges: edges.filter((edge) => edge.external).length,
       unresolvedEdges: edges.filter((edge) => !edge.resolved && !edge.external).length,
-      // Count of concepts named without a document. The web map and insights
-      // count these as concepts too (screen total = nodes + referencedOnly), so
-      // reporting it here is what explains the gap between the two entrances.
-      // They are not nodes: byKind, centrality, and health below still count only
-      // concepts that have a document.
+      // Concepts named without a document. The web map and insights count them
+      // (screen total = nodes + referencedOnly); byKind, centrality and health below
+      // count only concepts that have a document.
       referencedOnly: referencedOnlyByRef.size,
       aliases: Array.isArray(artifact?.aliases) ? artifact.aliases.length : 0,
       ambiguousAliases: Array.isArray(artifact?.ambiguousAliases)

@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   restoreAttempted: true,
   mode: 'static' as 'static' | 'local',
-  /** "Has a vault ever been connected?" — empty means someone who has never opened one. */
+  /** Empty means someone who never opened a vault. */
   recentVaults: [] as unknown[],
 }));
 
@@ -19,7 +19,6 @@ vi.mock('@/entities/vault-session/model/use-data-source-mode', async (importOrig
   ...(await importOriginal<typeof import('@/entities/vault-session/model/use-data-source-mode')>()),
   useDataSourceMode: () => mocks.mode,
 }));
-
 
 import { useFirstRunSampleModeSettled } from './use-first-run-sample-mode-settled';
 
@@ -38,16 +37,8 @@ describe('useFirstRunSampleModeSettled', () => {
     expect(result.current).toBe(false);
   });
 
-  /**
-   * The sample guidance is for **someone who has never connected** (2026-08-02, owner:
-   * *"If they have connected even once, this sample should not appear?"* — if they connected even once
-   * this sample should not appear).
-   *
-   * The old verdict was only "is a vault open right now", so someone who had connected
-   * a folder previously saw the first-time visitor's screen whenever they closed the
-   * vault. This case blocks that regression.
-   */
-  it('연결 이력이 있으면 static 모드여도 샘플 안내를 띄우지 않는다', () => {
+  /** Sample guidance is only for someone who has never connected, even while no vault is open. */
+  it('does not show the sample hint in static mode when a connection history exists', () => {
     mocks.restoreAttempted = true;
     mocks.mode = 'static';
     mocks.recentVaults = [{ id: 'previously-opened' }];

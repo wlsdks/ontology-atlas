@@ -1,32 +1,9 @@
 import type { AnswerGrounding, CitedParagraph } from './types';
 
 /**
- * Citation enforcement — validates `[[slug]]` citations before the answer is rendered.
- *
- * Three rules:
- * ① **A slug not actually read this turn is not a citation.** Turning a name the
- *    model invented into a chip takes the user somewhere empty when pressed.
- * ② The evidence verdict has **two branches** — see below.
- * ③ Markdown notation the model wrote (`**bold**`, inline code) does not survive as
- *    literal characters on screen. Those characters carry no information.
- *
- * ## Why "zero citations" alone must not decide (2026-08-02)
- *
- * This file long looked only at `demoted: total === 0` — a count of citation
- * **markers**, unrelated to tool calls. In a measured turn the agent called tools
- * four times and read 1,370 characters, with "read: capabilities/checkout, 635
- * characters" printed on screen, and four lines below it said "answered with no
- * evidence read" — because the model wrote the name in backticks instead of
- * `[[…]]`. The screen contradicted its own screen.
- *
- * So the branches are split. The two have **different next actions**:
- *
- * - `unread` — nothing was read this turn. There genuinely is no evidence, so it is
- *   demoted and given a way back (read again and answer).
- * - `uncited` — it was read, only the notation is missing. That is not a problem to
- *   fix but **an accurate self-description**, so no control is attached. The screen
- *   compensates mechanically with the read list as "sources consulted" chips —
- *   never relying on the model complying.
+ * Citation enforcement before rendering: only slugs read this turn count, and model markdown
+ * never shows literally. `unread` (nothing read) is demoted; `uncited` (read, no marker) gets
+ * the read list as source chips instead.
  */
 
 const CITATION_PATTERN = /\[\[([^[\]]+)\]\]/g;
@@ -76,17 +53,7 @@ export function extractCitations(text: string, readSlugs: readonly string[]): Ci
 const BOLD_PATTERN = /\*\*([^*\n]+)\*\*/g;
 const INLINE_CODE_PATTERN = /`([^`\n]+)`/g;
 
-/**
- * **Deletes inline markdown notation the model wrote, character by character**
- * (it is not rendered).
- *
- * `**Feature without evidence(\`capability\`):**` was being printed literally on screen.
- * Asterisks and backticks carry no information on this surface — the emphasis
- * grammar of the conversation body is the citation chip, and `[[…]]` already owns that.
- *
- * Inside a code fence (```) nothing is touched: there the backticks are the
- * boundary, and deleting them collapses the content.
- */
+/** Strips inline markdown the model wrote, outside code fences, since this surface does not render it. */
 function stripInlineMarkup(text: string): string {
   let inFence = false;
   return text

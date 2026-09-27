@@ -7,161 +7,175 @@ area: analysis
 
 # Maintenance Board: Analyzing My Folders
 
-[After the folder has grown](/guide/growing-vault), you answered "what should I fix now" via CLI. There is a **screen that does the same thing**: "Analysis" in the left rail, at `/ontology/insights`.
+[After the folder has grown](/guide/growing-vault), you answered "what should I fix now" via CLI. There is a **screen that does the same thing**: "Insights" in the left rail, at `/ontology/insights`.
 
-The screen describes its own purpose like this:
+The header states what the screen is: "Your whole folder at a glance. Every
+number is computed from the documents." No number on it is entered by hand. If
+the map shows what exists, this screen shows what is still left to do.
 
-> This screen is a maintenance board for the person tending the map and the AI agent.
+## 1. Two rows of tabs
 
-If the map is "what exists now," this is **"what is less done now."**
-And the header emphasizes one thing: "All numbers are automatically calculated from documents." This means no numbers are manually entered anywhere.
+The first row names what a tab is about: "Brief" · "Concepts" · "Wiki" ·
+"Guidance". "Brief" opens first; it is one screen across "Concepts", "Wiki", "Guidance" and "Agents". "Wiki" counts the library's sources and pages, and "Guidance"
+reads the declared guidance by domain.
 
-## 1. Five measured branches plus Flow
+Choosing "Concepts" opens a second row with one question per tab. It lands on
+"To fix", and the address carries the tab (`?tab=`), so a shared link reopens it.
 
-The six tabs at the top each answer a different question. The first five are
-computed from the graph; Flow gives an agent one visible request to explain the
-product from the ontology without reading source code.
+Between the two rows, the "Concepts" questions share a strip of four tiles:
+"Concepts", "Relations", "Checks" ("Nothing blocking" or "Needs attention", with
+"Blocking", "Advisory", "Lone concepts", "Disconnected groups" and "Tangled
+loops") and "Last {weeks} weeks" (with "Evidence linked").
 
 | Tab | Question Answered |
 |---|---|
-| "To-Do" | How many things need fixing now, and what to start with today |
-| "Structure" | What exists in what quantities, which domain is heavy |
-| "Connections" | Which relationships are skewed towards which nature, where is the hub |
-| "Boundaries" | How much domains are leaking into each other |
-| "Freshness" | Where hasn't been touched for a long time |
-| "Flow" | What this product is and how its domains and capabilities form one business flow |
+| "To fix" | How many things need fixing now, and what to start with today |
+| "Missing concepts" | Which names a document points at that no concept answers to |
+| "Inventory" | What exists in what quantities, which domain is heavy |
+| "Relations" | Which relation types dominate, where the hubs are, what a change reaches |
+| "Domain boundaries" | How much domains are leaking into each other |
+| "Accumulation" | What the folder has grown into, and where it has stopped |
+| "Product flow" | What this product is and how its domains and capabilities form one business flow |
 
-The number next to a measured tab name is the size of that branch. If the number
-next to "To-Do" is not 0, that is the count of today's tasks. Freshness and Flow
-have no badge because neither has one honest count.
+The number next to a question tab is the size of that question; hover it to read
+what it counts. "Accumulation" and "Product flow" have no badge because neither
+has one honest count. The tab list lives in
+`src/views/ontology-insights/lib/insights-tab-state.ts`.
 
-## 2. "First things first today": The three items for the day
+## 2. "To fix": one list, grouped by finding
 
-The top card selects today's priority items. Each line also answers **why it was selected**. For example, "Reason · Referenced from multiple places. Worth promoting to a parent concept."
+The "To fix" tab (`src/views/ontology-insights/ui/tabs/DoNextTab.tsx`) draws one
+list titled "{count} things to fix". Rows are grouped by finding, and each group
+carries one name, such as "Concepts nothing links to", "Concepts with no domain",
+"Pairs whose names overlap" or "Tangled loops". Every row says why it is there,
+for example "Nothing links to it yet. Connect it to a related concept."
 
-The order assumed by this screen is written in one line at the head of the card.
+Every row offers its actions in the same order and leaves out any it cannot
+offer:
 
-```
-Verify on map → Verify original text → Edit in Studio → Validate with agent
-```
-
-And each of those four steps is a button on the line. Only the first step is visible outside, while the remaining three are inside the ⋯ at the end of the line.
-
-| Button | Destination |
+| Action | What it does |
 |---|---|
-| "View on Map" (above the row) | Focuses that node on the map |
-| "View Source" (⋯) | The `.md` source of that node |
-| "View in Studio" (⋯) | Puts that node on the [Studio](/guide/studio) stage |
-| "Copy Merge Command" (⋯) | Copies the **MCP command** to process this item to your clipboard |
+| "Fix it myself" | Opens the place where you can fix it on the map. On "Concepts with no meaning written" and "Concepts with no domain", in a folder you can write, it opens a one-line form in the row instead |
+| "View on map" | Focuses that concept on the map |
+| "More actions" | Opens "Open source" (when the concept has a document) and "Verify with agent" |
 
-The last one best illustrates the nature of this screen. Clicking the "Similar Name: Same Thing?" row copies something like this.
-
-```
-Preview the result of merging with merge_concepts({fromSlug:"capabilities/order-partial-cancel", intoSlug:"capabilities/order-cancel"})
-→ If they mean the same thing, add confirm:true to the same call to execute
-→ Verify the merged original text with get_concept({slug:"capabilities/order-cancel"})
-→ Re-verify the change result with query_ontology({operation:"health"})
-```
-
-**It's a procedure that includes verification, not just a command.** Preview → Execute → Verify source → Re-check. Paste this into an agent and it runs as-is.
-
-## 3. What Humans Fix vs. What Agents Fix
-
-Two panels sit side-by-side under the "To-Do" tab.
-
-**"Agent Readiness"** divides relationships into three categories: "Ready", "Needs Verification", and "Needs Review". The screen's description explains the criteria.
-
-> Based on how much evidence is attached to each relationship: it separates relationships the agent can trust and use immediately, those needing one check, and those requiring human review.
-
-The longer this bar extends to the left, the **higher the degree to which you can entrust the agent**. The rules for attaching evidence are in [What Becomes a Node](/guide/what-becomes-a-node).
-
-**"Repair Queue"** shows counts by fault type.
-
-| Item | What is counted |
-|---|---|
-| "Old Evidence" | Concepts whose evidence hasn't been verified in a long time |
-| "Unassigned Affiliation" | Concepts with no connections: "An orphan concept with no relationships" |
-| "Superconcept Candidate" | Concepts referenced by many, suitable for promotion |
-| "Disconnected Island" | Groups detached from the main body |
-| "Missing Link" | Concepts without a designated home (domain) |
-
-The last two are special. They are the two signals that flip CLI `health` to `needs_attention`, so for this screen to say "Nothing to repair", both must be 0. This is where the app and CLI are aligned to make the same judgment.
-
-From each row, you can go directly to "Edit Relationship" (Studio) and "Concept Document" (Source).
-
-## 4. Commands Appear in Read-Only Folders
-
-Looking at the example folder, the screen tells you this first.
-
-> This is currently an example folder. If you open your own folder, you can finish these tasks right here.
-> You can copy and pass the commands now.
-
-It follows the same rule as the save button in [Studio](/guide/studio). Instead of silently failing in a place where you can't write, it provides **what to pass to those who can**.
-
-## 5. What the Remaining Four Tabs Answer
-
-### "Configuration": How many of each thing
-
-Counts by type (elements · capabilities · domains · projects), counts by relationship type (includes · depends on · related to), and four health indicators: "Orphan Concepts", "Disconnected Groups", "Tangled Loops", and "Evidence Links".
-
-The "Domain Capacity" bar divides the number of capabilities and elements per domain. If one domain is unusually long, it's time to split it.
-
-> Concepts belonging to multiple domains are counted once for each domain, so the total may exceed the overall count. The screen notes this in a footnote.
-
-### "Connections": Where is the center
-
-The screen adds a judgment to the relationship type distribution.
-
-> If you are biased toward containment relations, it signals that you need to draw more 'expectation' relations.
-
-This is a place to view the story of [how relations arise](/guide/relations) in numbers: if there is only structure (containment), it is a tree; it becomes a graph only when semantic relations are attached.
-
-**We also clarify here that the counting rules differ per screen.**
-
-> Here, we count each distinct relation once (both documents list at least one reference to the same relation).
-> The CLI/MCP counts written references as-is, so its numbers will be higher.
-
-It is just counting the same graph differently; neither side is wrong.
-
-"Concepts that spread far when changed" is the same question as `blast-radius` in the CLI. How many items need re-verification if this is fixed? We count separately those that are "directly" connected and those that reach "across".
-
-### "Boundaries": Are domains leaking?
-
-The "domain coupling" grid shows which domain pairs are actually connected, and **clicking a cell** displays the connections linking those two domains. The horizontal lines go out from the source,
-and the vertical lines come into the target.
-
-"Boundary pressure" outputs the ratio of "internal" (connections within the same domain) to "cross" (connections going in/out) for each domain. A domain with an overwhelmingly high proportion of cross-connections signals that its boundary is drawn incorrectly.
-
-### "Freshness": Where has it stopped?
-
-For each domain, we draw a heatstrip of updates over the last 12 weeks and provide a list of "recently updated" items and a count of "not updated for 90+ days." The first thing to rot in a vault is **areas no one opens**, so this tab names them.
-
-## 6. Asking for the business flow
-
-Flow shows the exact prompt before anything leaves the screen. In the installed
-app, "Draw business flow" returns to the map, opens the existing agent panel,
-and prefills the composer without sending. In a browser, the page says that it
-cannot start a local process and offers "Copy request" instead. Every requested
-paragraph must cite ontology node slugs so a person can open and challenge the
-answer.
-
-## 7. Handing over the entire screen to the agent
-
-There is a line at the bottom labeled "For AI Agent · Agent Handoff," and clicking "Copy Next Action" on the right copies the next action for this entire board into a single line.
+"Verify with agent" copies a request for this row to the clipboard. For a pair
+whose names overlap, the request reads like this (from
+`src/views/ontology-insights/lib/handoff-prose.ts`):
 
 ```
-query_ontology({operation:"maintenance_plan"}) → Execute per item → Re-verify with query_ontology({operation:"health"})
+merge_concepts({fromSlug:"capabilities/order-partial-cancel", intoSlug:"capabilities/order-cancel"}) to preview the merge → if they mean the same thing, run the same call again with confirm:true → get_concept({slug:"capabilities/order-cancel"}) to confirm the merged text → query_ontology({operation:"health"}) to re-check the result
 ```
 
-**On this screen, what humans see and what the agent receives share the same queue.** The screen renders `maintenance_plan`, and the copied command also calls `maintenance_plan`. Humans scan the same list with their eyes, and the agent processes it in order.
+**It's a procedure that includes verification, not just a command.** Preview →
+execute → confirm the text → re-check. Paste it into an agent and it runs as is.
+
+In a folder you can write, the "Domains that do not point back" group carries
+"Fix these together". It opens one sheet listing each missing back-link, all
+ticked; untick any you do not want. Nothing is written until you press "Apply
+{count}". The rules for attaching evidence are in
+[What Becomes a Node](/guide/what-becomes-a-node).
+
+When nothing is left, the list says "Nothing needs attention: the graph is
+healthy."
+
+## 3. Read-only folders get copyable requests
+
+On the sample folder, the list opens with this line:
+
+> This is the sample. Open your own folder and you can finish these right here: for now you can copy the command and hand it off.
+
+In a folder you cannot write, "Fix it myself" opens the map instead of a form in
+the row, and "Fix these together" is not offered. Where no agent has been seen
+working in this folder, "Verify with agent" becomes "Copy this request to paste
+into your agent" (`src/views/ontology-insights/ui/parts/QueueRowActions.tsx`).
+Instead of
+failing silently where you cannot write, the screen gives you **what to pass to
+someone who can**.
+
+## 4. What the remaining question tabs answer
+
+### "Missing concepts": asked for, not held
+
+Each row is a name written into this folder that no concept answers to, with the
+number of times it appears.
+
+### "Inventory": how many of each thing
+
+"Kind census" counts concepts by kind. "Domain capacity" fills each domain's bar
+with capabilities from the left and elements from the right; a domain leaning
+hard one way has claims without evidence, or the reverse. A concept in several
+domains counts once in each, so the totals can exceed the whole.
+
+### "Relations": where is the center
+
+"Relation types" adds a judgment to the distribution: if containment dominates,
+draw more "leans on" links. This is [how relations arise](/guide/relations) in
+numbers: with only containment it is a tree; it becomes a graph once semantic
+relations are attached.
+
+The counting rule differs from the CLI and MCP. A relation written in both
+documents counts once here, while the CLI and MCP count every written reference,
+so their numbers are higher. Neither side is wrong.
+
+"Most connected concepts" lists the hubs. "Dependency impact" is the same
+question as `blast-radius` in the CLI: how much must be re-checked if this
+changes, split into "direct" and "indirect". It follows only human-approved
+"leans on" declarations, so it does not prove complete source dependencies.
+
+### "Domain boundaries": are domains leaking?
+
+The "Domain coupling" grid shows which domain pairs are connected; pick a cell to
+see the connections linking those two domains. "Cross-domain share" gives each
+domain's ratio of "self" to "cross" connections. A domain dominated by cross
+connections signals a boundary drawn in the wrong place.
+
+### "Accumulation": what the folder has grown into
+
+"What the folder holds" is recomputed from the folder's version history and
+stores nothing. Below it, "Recent changes by domain" draws a heatstrip of
+document updates, with "Recent updates" and a "Not updated in 90+ days" count.
+The first thing to rot in a vault is the area no one opens, so this tab names it.
+
+## 5. Asking for the product flow
+
+"Product flow" (`src/views/ontology-insights/ui/tabs/FlowTab.tsx`) keeps what an
+agent last wrote about the product: who wrote it and when, whether the folder
+has moved since, and "What changed since the last one". Until the first answer
+it says "Nothing has been written yet". "The request that goes to the agent" is
+always on the tab, with "Copy request". In the app, with your own folder open
+and a local agent available, "Explain the flow with ACP" (later "Write it
+again") puts the request in the conversation beside the board without sending
+it; you send it. Anywhere else, including a browser, which cannot start a
+process, the tab says "The app does this". Every requested paragraph must name a
+node slug whose body was read, so a person can open and challenge the answer.
+
+## 6. Handing a tab to the agent
+
+Below every question tab except "To fix", a row reading "For agents" · "Agent
+handoff" carries "Copy next action"
+(`src/views/ontology-insights/ui/parts/InsightsHandoffRow.tsx`). It copies the
+MCP request for that tab. On "Relations" it reads:
+
+```
+query_ontology({operation:"centrality"}) → query_ontology({operation:"blast_radius", slug:"«hub-slug»"})
+```
+
+In the app, when a local agent can run, "Analyze this tab with the agent" at the
+top of the board (not on "Product flow") opens a conversation beside it with this
+tab's question written in; you send it. The handoff row hides while that
+conversation is open, because the conversation already carries the same request.
 
 ## Summary
 
-- The analysis is the **maintenance board**. The map shows "what exists," while this section shows "what has been less addressed."
-- Six tabs: Todo · Composition · Connections · Boundaries · Freshness · Flow.
-  The first five are measured maintenance questions; Flow is a visible,
-  reviewable agent request and never sends on its own.
-- "What to see first today" selects that day's items **with reasons**, and each line provides links to the map, original text, studio, and agent commands.
-- What is copied is not just a single command line, but the **preview → execute → confirm → re-evaluate procedure**.
-- In read-only folders, commands to skip appear instead of fix commands.
+- The header says it: every number is computed from the documents. The map
+  shows what exists; this screen shows what is left to do.
+- Two rows: "Brief" · "Concepts" · "Wiki" · "Guidance", and under "Concepts"
+  one question per tab. "Product flow" is a visible, reviewable agent request
+  and never sends on its own.
+- "To fix" is one list grouped by finding. Every row says why it is there and
+  offers what it can of "Fix it myself", "View on map" and "More actions".
+- What is copied is not a single command but a **preview → execute → confirm →
+  re-check** procedure.
+- In read-only folders, the actions turn into requests you can copy and hand off.
 - To view the same queue via CLI, use `maintenance`, `health`, and `growth` from [CLI](/guide/cli).

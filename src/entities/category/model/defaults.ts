@@ -1,10 +1,6 @@
 import type { Category } from "./types";
 
-/**
- * Seed categories for an empty store. The IDs stay byte-compatible with the
- * literals older projects reference ('in-progress', 'planned') — changing one
- * orphans every project that points at it.
- */
+/** Seed categories; ids stay byte-compatible, or projects referencing them are orphaned. */
 export const DEFAULT_CATEGORIES: Category[] = [
   {
     id: "in-progress",

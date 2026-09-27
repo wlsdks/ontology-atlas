@@ -5,26 +5,15 @@ import {
   type MeaningfulOntologyKind,
 } from "./kind-stats";
 
-/**
- * Kind distribution of the ontology nodes under one project slug.
- *
- * `byKind` is dense — zeroes included — so a consumer can read any kind without
- * guarding.
- */
+/** `byKind` is dense, zeros included. */
 export interface OntologyCountsForProject {
   byKind: Record<MeaningfulOntologyKind, number>;
   total: number;
 }
 
 /**
- * Aggregates nodes into project slug → kind counts.
- *
- * The `project` and `document` kinds are metadata and excluded
- * (`MEANINGFUL_ONTOLOGY_KINDS`). A node belonging to several projects counts once
- * in each; a unique count would be a separate function if one is ever needed.
- *
- * Keys cover only the slugs seen in the input, so a caller wanting an all-zero
- * fallback must handle `undefined` itself.
+ * Project slug → kind counts over `MEANINGFUL_ONTOLOGY_KINDS`; a node in several projects counts in
+ * each. Only slugs seen in the input have keys.
  */
 export function buildProjectOntologyCounts(
   nodes: readonly KnowledgeGraphNode[],
@@ -59,16 +48,7 @@ function createZeroCounts(): OntologyCountsForProject {
   return { byKind, total: 0 };
 }
 
-/**
- * The dominant kind for a project, the first input to its border tone. Ties break
- * in `MEANINGFUL_ONTOLOGY_KINDS` order (domain → capability → element → unknown),
- * which is both a stable sort and the spec's natural layer order.
- *
- * A single `unknown` outranks every other kind: it means a stub needs review, and
- * the consuming surface signals that in amber.
- *
- * `null` for an empty count — the caller falls back to a neutral tone.
- */
+/** Largest kind, ties in `MEANINGFUL_ONTOLOGY_KINDS` order; any `unknown` wins as a review signal; null when empty. */
 export function pickDominantOntologyKind(
   counts: OntologyCountsForProject | undefined,
 ): MeaningfulOntologyKind | null {

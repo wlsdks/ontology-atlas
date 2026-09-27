@@ -1,17 +1,9 @@
 'use client';
 
 /**
- * The URL state replacement for `DocsVaultPage`.
- *
- * It handles only the `?slug=`, `?view=`, and `?intent=` query params: updates the URL through
- * `window.history.replaceState` and dispatches an `app:urlchange` event that callers listen to in
- * order to sync state. `doc` is the default view, so the param is removed when view is 'doc'.
- *
- * A module-level pure function — no `useCallback` wrapper is needed (it is stable by
- * construction), and it can be left out of the `useCallback` deps of every call site.
- *
- * The list order (`?sort=` · `?group=`) rides the same contract — leaving the order as hidden state
- * would drop "which order was I looking at" from shared links and agent handoffs.
+ * Replaces `DocsVaultPage` URL state through `history.replaceState` and
+ * dispatches `app:urlchange` for callers to sync. The default view is omitted. A module-level function,
+ * so it needs no `useCallback` and stays out of deps.
  */
 
 import {
@@ -21,7 +13,7 @@ import {
   type DocsTreeSort,
 } from '@/widgets/docs-vault';
 
-// folder-topology was removed. Only 'doc' remains, but the caller contract (`view?:`) is kept.
+// One view remains; the `view?:` caller contract is kept.
 export type DocsVaultView = 'doc';
 
 export function replaceDocsVaultUrlState(next: {
@@ -58,8 +50,7 @@ export function replaceDocsVaultUrlState(next: {
     if (next.intent === 'local') url.searchParams.set('intent', 'local');
     else url.searchParams.delete('intent');
   }
-  // List order — the parameter is dropped when it is the default. The judgement "a default is not
-  // written into the URL" lives in one place, the serializer in tree-order.ts.
+  // Defaults are omitted by the serializer in tree-order.ts.
   if ('sort' in next && next.sort) {
     const value = serializeDocsTreeSort(next.sort);
     if (value) url.searchParams.set('sort', value);

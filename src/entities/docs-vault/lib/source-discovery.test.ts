@@ -9,11 +9,7 @@ import {
   type SourceCandidate,
 } from './source-discovery';
 
-/**
- * A minimal File System Access directory, built from a path → contents map. Only the two
- * members the walk touches are implemented, so a test that starts reading files would
- * fail rather than quietly pass.
- */
+/** A minimal FSA directory implementing only what the walk touches, so a read would fail loudly. */
 function fakeDirectory(files: Record<string, string>, name = 'vault'): FileSystemDirectoryHandle {
   const build = (prefix: string, dirName: string): FileSystemDirectoryHandle => {
     const children = new Map<string, FileSystemHandle>();

@@ -1,12 +1,7 @@
 /**
- * The guided tour's declarative step array. The map screen's (/) surface
- * dedicated to meaning literacy — eight steps, with the non-developer persona
- * (1–7) as the default and step 8 reached by choosing "I'm a developer" at step 7.
- *
- * An anchor is either a testid string (DOM) or a canvas-node (canvas projection).
- * This file imports no widgets or views (FSD forbids feature → widgets). The
- * actual DOM and canvas resolution belongs to `resolve-anchor-rect.ts` (testid)
- * and to HomePage/OntologyMap (canvas-node).
+ * The map tour's declarative steps: eight, persona "all" for 1–7 and step 8 after choosing
+ * "I'm a developer". An anchor is a testid (resolved in `resolve-anchor-rect.ts`) or a canvas
+ * node (HomePage/OntologyMap); no widget imports (FSD).
  */
 
 export type TourPersona = "all" | "dev";
@@ -14,12 +9,8 @@ export type TourPersona = "all" | "dev";
 export type TourAnchor =
   | { type: "testid"; value: string }
   /**
-   * The canvas node anchor. `domain` is a correction from "hub" (measured
-   * 2026-07-23): an isHub node is folded into a "+N" cluster chip in the spine
-   * view, so clicking it triggered cluster expansion (a full map relayout) rather
-   * than selection. A domain is always visible at the spine tier and clicking it
-   * selects (opening the datasheet), which keeps step 4's interactive promise —
-   * "press it and a card opens" — deterministic.
+   * `domain`, not a hub: a hub folds into a "+N" cluster chip at the spine tier and clicking it
+   * relayouts, while a domain is always visible and its click opens the datasheet.
    */
   | { type: "canvas-node"; target: "project" | "domain" }
   | null;
@@ -27,10 +18,10 @@ export type TourAnchor =
 export interface TourStep {
   id: string;
   anchor: TourAnchor;
-  /** The interactive step (4) — waits for a real node click instead of [next]. */
+  /** Step 4 waits for a real node click instead of [next]. */
   interactive?: boolean;
   persona: TourPersona;
-  /** The copy key leading to `guidedTour.steps.<copyKey>` in `messages/*.json`. */
+  /** Leads to `guidedTour.steps.<copyKey>` in `messages/*.json`. */
   copyKey: string;
 }
 
@@ -44,8 +35,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
   },
   {
     id: "relations",
-    // The relationship legend moved to the permanent corner's pull-only 「?」 help. This step
-    // is the central explanation for reading line meanings while viewing the entire map, so it does not point at a specific DOM box.
+    // The central explanation of line meanings while viewing the whole map, so no DOM box.
     anchor: null,
     persona: "all",
     copyKey: "relations",
@@ -84,21 +74,10 @@ export const TOUR_STEPS: readonly TourStep[] = [
 ];
 
 /**
- * Per-destination guides (owner request 2026-07-26: "Each LNB tab should have its own guide; right now only the map does).
- *
- * **No second guidance system is built** — the tour mechanism the map already
- * used is reused as is, with only the step array differing per destination. The
- * card, scrim, cutout, progress dots, and skip/replay contracts must be identical
- * across every screen so the grammar a user learns once is reused.
- *
- * Each destination is **two pages** — ① what this screen is for (no anchor, a
- * centred card) ② the one thing to look at first here (spotlighting a real
- * element). It answers only "what can I do here", not a feature list. If ②'s
- * anchor is not on screen at that moment (the document list is collapsed, say),
- * `computeVisibleSteps` removes it automatically and the guidance folds to one page.
- *
- * The map is not here — its eight-step journey uses canvas node anchors, an
- * interactive click, and the developer branch, so `TOUR_STEPS` keeps owning it.
+ * Per-destination guides reusing the map tour mechanism, so card, scrim, cutout, dots and
+ * skip/replay behave the same everywhere. Two pages each: what the screen is for (centred),
+ * and the one element to look at first; `computeVisibleSteps` folds to one page when that
+ * anchor is absent. The map keeps its own journey in `TOUR_STEPS`.
  */
 export type DestinationTourId =
   | "architecture"
@@ -131,8 +110,7 @@ export const DESTINATION_TOURS: Record<DestinationTourId, readonly TourStep[]> =
     },
   ],
   /*
-   * Agents — a destination added 2026-08-20 (ledger 90). Two pages: what this
-   * screen does, and where to press when there is no tool.
+   * What this screen does, and where to press when there is no tool.
    */
   agents: [
     { id: "agents-what", anchor: null, persona: "all", copyKey: "agentsWhat" },
@@ -144,10 +122,8 @@ export const DESTINATION_TOURS: Record<DestinationTourId, readonly TourStep[]> =
     },
   ],
   /*
-   * MCP — a destination added 2026-09-05. Two pages: what this screen is for, and the tab strip,
-   * because the second half of the screen (the connectors) is behind a tab and a person who never
-   * presses it never learns it is there. Anchoring on the strip rather than on either panel keeps
-   * the guide correct whichever tab the URL opened.
+   * The tab strip, because the connectors sit behind a tab; anchoring on the strip is right
+   * whichever tab the URL opened.
    */
   mcp: [
     { id: "mcp-what", anchor: null, persona: "all", copyKey: "mcpWhat" },
@@ -159,10 +135,8 @@ export const DESTINATION_TOURS: Record<DestinationTourId, readonly TourStep[]> =
     },
   ],
   /*
-   * Library — a destination added 2026-09-06. The second page points at Sources
-   * rather than at Wiki: with nothing gathered there are no wiki pages to point at,
-   * and a guide whose anchor is absent folds to one page (`computeVisibleSteps`).
-   * Sources is drawn in every state a person can reach this screen in.
+   * Sources, not Wiki: Sources is drawn in every reachable state, and an absent anchor folds
+   * the guide to one page.
    */
   library: [
     { id: "library-what", anchor: null, persona: "all", copyKey: "libraryWhat" },
@@ -183,15 +157,9 @@ export const DESTINATION_TOURS: Record<DestinationTourId, readonly TourStep[]> =
     },
   ],
   /*
-   * Insights — the second page points at the headline the screen opens on. Twice now the
-   * anchor has named something that was not on the arriving screen: first `do-next-touchups`,
-   * a grouping the 2026-09-06 "one list, one total" round removed, then `do-next-list`, which
-   * moved behind a tab when #1704 made the brief the landing tab. Either way the anchor
-   * resolved nowhere and the guide silently folded to one page (`computeVisibleSteps`).
-   * `brief-headline` is what a person actually arrives at.
-   * `tests/contract/tour-anchor-testids.contract.test.ts` fails when an anchor names a testid
-   * no screen carries, but it cannot see which tab is open, so an anchor here belongs to the
-   * landing tab by hand.
+   * The headline the screen opens on. `tests/contract/tour-anchor-testids.contract.test.ts`
+   * catches a testid no screen carries but not which tab is open, so this anchor must be on
+   * the landing tab.
    */
   insights: [
     { id: "insights-what", anchor: null, persona: "all", copyKey: "insightsWhat" },
@@ -224,18 +192,15 @@ export const DESTINATION_TOURS: Record<DestinationTourId, readonly TourStep[]> =
 
 export interface VisibleStepsContext {
   persona: TourPersona;
-  /** Did a real selection occur at step 4 — false skips step 5 (datasheet). */
+  /** False skips step 5 (datasheet). */
   hasSelection: boolean;
-  /** Can the anchor resolve right now (false if the element is absent, `display:none`, or off-viewport). */
+  /** False when the element is absent, `display:none` or off-viewport. */
   canResolveAnchor: (anchor: TourAnchor) => boolean;
 }
 
 /**
- * The step skip rules: a step whose `canResolveAnchor` is false is excluded
- * automatically, and the progress denominator (`visibleSteps.length`) shrinks
- * accordingly. `datasheet` is included only when a selection actually occurred at
- * step 4 (excluded on a failed selection or a skip). `agent` is included only when
- * `persona === 'dev'`.
+ * Excludes steps whose anchor cannot resolve, so the progress denominator shrinks;
+ * `datasheet` needs a real selection at step 4 and `agent` needs `persona === 'dev'`.
  */
 export function computeVisibleSteps(
   steps: readonly TourStep[],

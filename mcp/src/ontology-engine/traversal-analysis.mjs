@@ -238,6 +238,8 @@ export function createTraversalAnalysis({
     };
   }
 
+  // Layered expansion, one relation per pattern step: O(paths x degree) per layer,
+  // with simple paths only and `limit` capping each layer.
   function patternWalk(slugOrAlias, options = {}) {
     const start = resolve(slugOrAlias, 'slug');
     const pattern = normalizePattern(options.pattern);
@@ -314,6 +316,7 @@ export function createTraversalAnalysis({
     };
   }
 
+  // Breadth-first to `depth`: O(V + E) over the reached subgraph, stopped at `limit`.
   function impact(slugOrAlias, options = {}) {
     const center = resolve(slugOrAlias, 'slug');
     const direction = normalizeDirection(options.direction, 'incoming');
@@ -529,14 +532,9 @@ export function createTraversalAnalysis({
       source: 'persisted_vault',
       focus,
       builder: {
-        // `/ontology/studio` is a retired legacy redirect, so this handed every agent an address
-        // the vault's own `ontology-edit-redirect` element declares "not a navigation destination".
-        // This is the address that redirect already resolves to (standing decision 92, 2026-08-21),
-        // so the hop disappears and the destination does not change.
-        //
-        // App-relative and locale-less on purpose: routes are locale-prefixed (`/en`, `/ko`) and a
-        // Pages deployment adds a base path, neither of which the server knows. A caller composes
-        // the absolute URL from the workbench origin plus its own locale.
+        // The address the retired `/ontology/studio` redirect resolves to (decision 92).
+        // App-relative and locale-less: the caller adds the workbench origin, its locale
+        // prefix and any base path.
         href: `/topology/?p=${encodeURIComponent(focusParam)}&workbench=edit`,
         focusParam,
         unsavedDraftsIncluded: false,

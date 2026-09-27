@@ -6,8 +6,7 @@ import { TooltipProvider } from '@/shared/ui';
 import { HubRail } from './HubRail';
 import type { Project } from '@/entities/project';
 
-// jsdom implements neither scrollIntoView nor matchMedia — stubbed so the
-// component's effects do not throw.
+// jsdom has neither scrollIntoView nor matchMedia; stubbed so effects do not throw.
 if (!Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = () => {};
 }
@@ -56,10 +55,9 @@ function render(ui: React.ReactElement) {
 const HUBS = [project({ slug: 'hub-a', name: 'Hub A', isHub: true, dependencies: ['x'] })];
 
 /**
- * ⚠️ `localStorage` **throws** rather than returning null when storage is disabled,
- * which the installed app's WKWebView does under some privacy settings. The read sat
- * in a `useState` initializer, so the throw happened during render and the map went
- * with it. Storage nobody can read means "not expanded yet": closed, and drawn.
+ * The `localStorage` API throws when storage is disabled (WKWebView privacy settings); unreadable
+ * storage
+ * means closed, and the map still renders.
  */
 describe('HubRail — storage that throws', () => {
   const original = Object.getOwnPropertyDescriptor(window, 'localStorage');

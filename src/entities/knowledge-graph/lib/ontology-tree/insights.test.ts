@@ -33,11 +33,11 @@ const edge = (id: string, from: string, to: string): KnowledgeGraphEdge => ({
 });
 
 describe("computeKindDistribution", () => {
-  it("kind 별 카운트 — 빈 배열 → 빈 Map", () => {
+  it("returns an empty Map for no nodes", () => {
     expect(computeKindDistribution([]).size).toBe(0);
   });
 
-  it("여러 kind 카운트", () => {
+  it("counts nodes per kind across several kinds", () => {
     const dist = computeKindDistribution([
       node("a", "capability"),
       node("b", "capability"),
@@ -51,14 +51,14 @@ describe("computeKindDistribution", () => {
 });
 
 describe("computeDegreeCentrality", () => {
-  it("모든 입력 노드 키 포함 (degree 0 도)", () => {
+  it("includes every input node, including degree 0", () => {
     const degrees = computeDegreeCentrality([node("a"), node("b"), node("c")], []);
     expect(degrees.get("a")).toBe(0);
     expect(degrees.get("b")).toBe(0);
     expect(degrees.get("c")).toBe(0);
   });
 
-  it("outgoing + incoming 합산", () => {
+  it("sums outgoing and incoming edges", () => {
     const degrees = computeDegreeCentrality(
       [node("a"), node("b"), node("c")],
       [edge("e1", "a", "b"), edge("e2", "c", "a")],
@@ -68,12 +68,12 @@ describe("computeDegreeCentrality", () => {
     expect(degrees.get("c")).toBe(1);
   });
 
-  it("self-loop 는 1 만 카운트 (양방향 더블 카운트 회피)", () => {
+  it("counts a self-loop once", () => {
     const degrees = computeDegreeCentrality([node("a")], [edge("loop", "a", "a")]);
     expect(degrees.get("a")).toBe(1);
   });
 
-  it("미존재 노드 가리키는 edge 는 무시", () => {
+  it("ignores edges to missing nodes", () => {
     const degrees = computeDegreeCentrality([node("a")], [edge("e", "a", "ghost")]);
     expect(degrees.get("a")).toBe(1);
     expect(degrees.has("ghost")).toBe(false);
@@ -95,35 +95,35 @@ describe("rankAllByDegree", () => {
     edge("e4", "proj", "hub"),
   ];
 
-  it("default — document / project 제외, degree desc, 전체 반환", () => {
+  it("excludes document and project and sorts by degree by default", () => {
     const all = rankAllByDegree(nodes, edges);
-    expect(all).toHaveLength(3); // hub + leaf-1 + leaf-2 (excluding doc / proj)
+    expect(all).toHaveLength(3); // hub, leaf-1, leaf-2; doc and project excluded.
     expect(all[0]?.node.id).toBe("hub");
     expect(all[0]?.degree).toBeGreaterThanOrEqual(all[1]?.degree ?? 0);
   });
 
-  it("degree 0 노드 제외", () => {
+  it("excludes degree-0 nodes", () => {
     const isolated = node("isolated", "capability");
     const all = rankAllByDegree([...nodes, isolated], edges);
     expect(all.find((r) => r.node.id === "isolated")).toBeUndefined();
   });
 
-  it("includeKinds — 명시 kind 만", () => {
+  it("keeps only includeKinds", () => {
     const all = rankAllByDegree(nodes, edges, { includeKinds: ["element"] });
     expect(all.every((r) => r.node.kind === "element")).toBe(true);
   });
 
-  it("limit 없이 전체 후보 반환 — 호출자가 slice 로 truncation 신호 계산", () => {
+  it("returns every candidate without a limit", () => {
     const all = rankAllByDegree(nodes, edges);
     expect(all).toHaveLength(3);
-    // The caller takes the top N with all.slice(0, N) and reports "top N of M".
+    // Callers slice the top N and report "top N of M".
     expect(all.slice(0, 1)).toHaveLength(1);
     expect(all.length).toBeGreaterThan(1);
   });
 });
 
 describe("computeDomainCouplingMatrix", () => {
-  it("containment tree 로 노드를 domain 에 배정하고 cross-domain connection 을 집계", () => {
+  it("assigns nodes to domains and aggregates cross-domain connections", () => {
     const nodes = [
       node("project:app", "project"),
       node("domain:auth", "domain"),
@@ -152,7 +152,7 @@ describe("computeDomainCouplingMatrix", () => {
     expect(matrix.crossDomainEdgeCount).toBe(2);
     expect(matrix.selfDomainEdgeCount).toBe(1);
     expect(matrix.connections).toHaveLength(2);
-    // When nothing is truncated, total === shown — the condition for hiding the caption.
+    // Untruncated: total equals shown, so the caption hides.
     expect(matrix.totalConnectionCount).toBe(2);
     expect(matrix.connections[0]?.from.id).toBe("domain:auth");
     expect(matrix.connections[0]?.to.id).toBe("domain:billing");
@@ -160,7 +160,7 @@ describe("computeDomainCouplingMatrix", () => {
     expect(matrix.connections[0]?.examples[0]?.id).toBe("e6");
   });
 
-  it("connections 가 limit 으로 잘리면 totalConnectionCount 로 전체 pair 수를 노출 (silent cap 회피)", () => {
+  it("reports totalConnectionCount when connections are truncated", () => {
     const nodes = [
       node("domain:auth", "domain"),
       node("domain:billing", "domain"),
@@ -169,8 +169,7 @@ describe("computeDomainCouplingMatrix", () => {
       node("capability:invoice", "capability"),
       node("capability:engine", "capability"),
     ];
-    // Build 3 distinct directed cross-domain pairs (auth→billing, billing→core,
-    // core→auth) and truncate at limit 2.
+    // Three cross-domain pairs, truncated at 2.
     const edges: KnowledgeGraphEdge[] = [
       { ...edge("c1", "domain:auth", "capability:login"), type: "contains" },
       { ...edge("c2", "domain:billing", "capability:invoice"), type: "contains" },
@@ -186,7 +185,7 @@ describe("computeDomainCouplingMatrix", () => {
     expect(matrix.totalConnectionCount).toBe(3);
   });
 
-  it("cycle 이 있는 containment parent 는 domain 배정 실패로 처리", () => {
+  it("leaves a node unassigned when its containment cycles", () => {
     const nodes = [
       node("domain:auth", "domain"),
       node("capability:login", "capability"),
@@ -205,7 +204,7 @@ describe("computeDomainCouplingMatrix", () => {
     expect(matrix.crossDomainEdgeCount).toBe(0);
   });
 
-  it("types 옵션으로 사람용 semantic coupling 을 재현 가능하게 좁힘", () => {
+  it("narrows semantic coupling with the types option", () => {
     const nodes = [
       node("domain:auth", "domain"),
       node("domain:billing", "domain"),
@@ -233,7 +232,7 @@ describe("computeDomainCouplingMatrix", () => {
 });
 
 describe("selectRecentNodes", () => {
-  it("lastApprovedAt desc 정렬 + limit", () => {
+  it("sorts by lastApprovedAt descending with a limit", () => {
     const D1 = new Date("2026-04-20T00:00:00Z");
     const D2 = new Date("2026-04-25T00:00:00Z");
     const D3 = new Date("2026-04-27T00:00:00Z");
@@ -246,7 +245,7 @@ describe("selectRecentNodes", () => {
     expect(result[1]?.id).toBe("b");
   });
 
-  it("같은 시각 — title asc", () => {
+  it("breaks timestamp ties by title ascending", () => {
     const sameDate = new Date("2026-04-27T00:00:00Z");
     const result = selectRecentNodes([
       node("zebra", "capability", sameDate),

@@ -1,17 +1,11 @@
-/**
- * Query and re-request the permission state of a File System Access API handle.
- *
- * `queryPermission` / `requestPermission` are undefined in some environments (older
- * browser polyfills). An undefined result is assumed 'granted' so the caller can
- * proceed — matching the behaviour docs-vault-local already had.
- */
+/** Permission query and request for an FSA handle; an environment without the methods counts as granted. */
 
 export type FsHandle = FileSystemDirectoryHandle | FileSystemFileHandle;
 export type FsPermissionMode = 'read' | 'readwrite';
 export type FsPermissionState = 'granted' | 'prompt' | 'denied';
 
 interface VerifyOptions {
-  /** When true, re-prompts the user if the state is not 'granted'. Defaults to false. */
+  /** Re-prompts when not granted; default false. */
   ask?: boolean;
 }
 

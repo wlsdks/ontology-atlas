@@ -37,21 +37,21 @@ function makeManifest(docs: VaultDoc[]): VaultManifest {
 }
 
 describe("computeProjectSlug", () => {
-  it("projects/ prefix 는 제거", () => {
+  it("strips the projects/ prefix", () => {
     expect(computeProjectSlug(makeDoc({ slug: "projects/foo" }))).toBe("foo");
   });
 
-  it("vault 루트 (projects/ 없는 경로) 는 마지막 segment", () => {
+  it("uses the last segment for a vault-root path", () => {
     expect(
       computeProjectSlug(makeDoc({ slug: "ontology/project" })),
     ).toBe("project");
   });
 
-  it("slug 한 segment 인 경우 그대로", () => {
+  it("keeps a single-segment slug", () => {
     expect(computeProjectSlug(makeDoc({ slug: "bar" }))).toBe("bar");
   });
 
-  it("fm.slug 가 우선 — 앞뒤 공백 제거", () => {
+  it("prefers a trimmed fm.slug", () => {
     expect(
       computeProjectSlug(
         makeDoc({
@@ -62,7 +62,7 @@ describe("computeProjectSlug", () => {
     ).toBe("custom-slug");
   });
 
-  it("fm.slug 가 빈 문자열 / 공백 only 면 무시 → fileSlug fallback", () => {
+  it("ignores a blank fm.slug and falls back to the file slug", () => {
     expect(
       computeProjectSlug(
         makeDoc({ slug: "projects/foo", frontmatter: { slug: "   " } }),
@@ -70,7 +70,7 @@ describe("computeProjectSlug", () => {
     ).toBe("foo");
   });
 
-  it("fm.slug 가 string 이 아니면 무시 (예: 숫자)", () => {
+  it("ignores a non-string fm.slug", () => {
     expect(
       computeProjectSlug(
         makeDoc({ slug: "projects/foo", frontmatter: { slug: 42 } }),
@@ -80,7 +80,7 @@ describe("computeProjectSlug", () => {
 });
 
 describe("isProjectVaultDoc", () => {
-  it("frontmatter.kind === 'project' 는 path 무관하게 인식", () => {
+  it("recognizes kind: project regardless of path", () => {
     expect(
       isProjectVaultDoc(
         makeDoc({ slug: "ontology/project", frontmatter: { kind: "project" } }),
@@ -88,11 +88,11 @@ describe("isProjectVaultDoc", () => {
     ).toBe(true);
   });
 
-  it("legacy 'projects/' prefix 는 frontmatter 없어도 인식", () => {
+  it("recognizes a legacy projects/ path without frontmatter", () => {
     expect(isProjectVaultDoc(makeDoc({ slug: "projects/legacy-app" }))).toBe(true);
   });
 
-  it("kind 도 'projects/' prefix 도 없으면 false", () => {
+  it("returns false without kind or projects/ prefix", () => {
     expect(
       isProjectVaultDoc(makeDoc({ slug: "domains/foo", frontmatter: { kind: "domain" } })),
     ).toBe(false);
@@ -100,7 +100,7 @@ describe("isProjectVaultDoc", () => {
 });
 
 describe("findProjectVaultDoc", () => {
-  it("Project.slug (fm.slug 산정값) 으로 원본 VaultDoc 을 역참조한다", () => {
+  it("finds the source VaultDoc by Project.slug", () => {
     const doc = makeDoc({
       slug: "ontology/project",
       frontmatter: { kind: "project", slug: "ontology-atlas" },
@@ -113,7 +113,7 @@ describe("findProjectVaultDoc", () => {
     expect(findProjectVaultDoc(manifest, "ontology-atlas")).toBe(doc);
   });
 
-  it("일치하는 project doc 이 없으면 null", () => {
+  it("returns null when no project doc matches", () => {
     const manifest = makeManifest([
       makeDoc({ slug: "domains/foo", frontmatter: { kind: "domain" } }),
     ]);
@@ -121,9 +121,8 @@ describe("findProjectVaultDoc", () => {
     expect(findProjectVaultDoc(manifest, "missing")).toBeNull();
   });
 
-  it("project 가 아닌 doc 의 slug 우연 일치는 무시한다", () => {
-    // Even when frontmatter.slug happens to match, a doc is not a project doc unless
-    // kind === project or the path starts with projects/.
+  it("ignores a non-project doc with a matching slug", () => {
+    // A matching slug alone does not make a doc a project.
     const manifest = makeManifest([
       makeDoc({ slug: "domains/foo", frontmatter: { kind: "domain", slug: "foo" } }),
     ]);
@@ -134,10 +133,7 @@ describe("findProjectVaultDoc", () => {
 
 describe("findProjectDocInList", () => {
   it("finds a project doc whose file path differs from its frontmatter slug", () => {
-    // The dogfood manifest's real shape: the file is `ontology/project` while the
-    // project name comes from frontmatter `slug: ontology-atlas`. A surface comparing
-    // the two directly (the /projects cards) failed to find the document and lied
-    // with "no description".
+    // The dogfood shape: file `ontology/project`, frontmatter `slug: ontology-atlas`.
     const docs = [
       makeDoc({
         slug: "ontology/project",

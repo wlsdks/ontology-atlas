@@ -7,18 +7,9 @@ import type {
 } from '../provider-adapter';
 import { PROVIDER_DEFAULT_MODELS, readVendorErrorMessage } from '../provider-adapter';
 
-/**
- * The Anthropic Messages adapter.
- *
- * One thing to watch: when sending an assistant turn back, carry **the response's
- * `content` array verbatim**. Extracting the text and reassembling drops the thinking
- * blocks and the next round trip is rejected — preserving the original is the contract.
- */
+/** Anthropic Messages adapter; the assistant `content` array goes back verbatim or thinking blocks are lost. */
 
-/**
- * The output cap. This model has thinking on by default, so `max_tokens` covers
- * thinking plus the answer together — set too tight, the answer is cut off mid-way.
- */
+/** Covers thinking plus the answer, so too tight a cap cuts the answer. */
 const MAX_TOKENS = 8_192;
 
 interface AnthropicBlock {
@@ -102,8 +93,7 @@ export const anthropicAdapter: ProviderAdapter = {
     const toolCalls: NormalizedToolCall[] = blocks
       .filter((block) => block.type === 'tool_use' && typeof block.name === 'string')
       .map((block, index) => ({
-        // There is no reason for the vendor to omit an id, but without one there is
-        // nowhere to send the result back to — synthesize one so the round trip is not broken.
+        // Synthesize a missing id so the result has somewhere to go.
         id: typeof block.id === 'string' && block.id ? block.id : `a${index}`,
         name: block.name as string,
         // Anthropic already gives an object — there is no parse-failure path.

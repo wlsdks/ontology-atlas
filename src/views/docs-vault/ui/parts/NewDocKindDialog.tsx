@@ -5,17 +5,8 @@ import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { Dialog, OntologyMapKindGlyph, controlClass } from "@/shared/ui";
 
 /**
- * "New document" asks for the kind before anything else, instead of a generic `title:` template.
- * Document creation used to mass-produce kind-less notepad documents; asking first enforces "a
- * document in this vault is a node" at the moment of creation.
- *
- * Only four kinds are offered — `project` already has its own flow at `/project/new` and is not
- * duplicated here (the same convention as `vaultFolderForKind`'s folder placement in
- * build-vault-markdown.ts).
- *
- * The modal skeleton (scrim, trap, Esc, focus restore, spring) is owned by `Dialog` — this was its
- * first consumer after the 2026-08-15 design-system ratification, which removed the hand-rolled
- * trap and the map chrome tokens (`--chrome-radius`, `--chrome-shadow`) that had crossed over here.
+ * Asks for the kind first, so every new document is a node. `project` has its own
+ * flow at `/project/new`. `Dialog` owns scrim, trap, Escape, focus restore and motion.
  */
 const KIND_OPTIONS = ["domain", "capability", "element", "document"] as const;
 export type NewDocKind = (typeof KIND_OPTIONS)[number];

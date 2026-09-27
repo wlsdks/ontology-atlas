@@ -1,14 +1,10 @@
-// Detection tables and read limits shared by every `analyze_repo_structure` topic
-// module. They sit alone in one leaf file because several of them are read from
-// more than one topic (a Cargo byte cap is needed by both the semantic-evidence
-// reader and the Rust evidence walker), and a table that lived inside one topic
-// would force that topic to be imported for a number.
+// Detection tables and read limits shared by the `analyze_repo_structure` topic
+// modules. Several topics read the same table, so they live in one leaf file
+// rather than forcing one topic to import another for a number.
 
 /**
- * The folders FSD mode **actually scans**. The detection list and the scan list
- * must be the same — when they diverge you get a state that calls a repository
- * "FSD" and then reads nothing (measured 2026-07-28: a lone `src/shared/` produced
- * exactly that).
+ * The folders FSD mode actually scans. Detection must use the same list, or a
+ * repository is called FSD and then nothing is read.
  */
 export const FSD_SCAN_ROOTS = ['features', 'entities', 'widgets', 'views'];
 
@@ -118,11 +114,9 @@ export const CARGO_PACKAGE_EVIDENCE_FIELDS = new Set([
   'rust-version',
 ]);
 
-// These are deliberately outcome-oriented clues, not a list of framework or
-// folder names. They let the deterministic analyzer connect bounded prose to
-// implementation evidence while keeping a human/agent approval step between
-// a clue and a written business concept. A rule must have both semantic prose
-// and a matching implementation witness before it can become a proposal.
+// Outcome-oriented clues, not framework or folder names. A rule needs both
+// semantic prose and a matching implementation witness before it becomes a
+// proposal, and a person or agent still approves it.
 export const BUSINESS_CAPABILITY_CLUES = [
   {
     slug: 'capabilities/decision-broadcast',

@@ -31,12 +31,9 @@ function relationRefMatches(storedRef, canonicalTo) {
 }
 
 /*
- * `depends_on:` is a legal authoring alias for `dependencies:` — the read layer
- * (collectNeighborRefs, the compiler) canonicalizes it, so the write layer must
- * see the same edges. Reading only the literal canonical key made an aliased
- * edge visible to get_concept's outgoingEdges yet "nonexistent" to
- * add/remove/replace_relation, which could then append a duplicate under a
- * second key or refuse to remove an edge the graph plainly renders.
+ * `depends_on:` is a legal alias for `dependencies:` and the read layer
+ * canonicalizes it, so the write layer must see the same edges, or it appends a
+ * duplicate under a second key or refuses to remove a rendered edge.
  */
 function aliasKeysFor(canonicalKey) {
   return Object.keys(NEIGHBOR_KEY_ALIASES)
@@ -53,14 +50,9 @@ function relationRefsFor(doc, canonicalKey) {
 }
 
 /*
- * A write to a relation key consolidates its alias spellings into the canonical
- * key in the same patch: the alias arrays fold into `nextRefs` and are deleted,
- * so one edit never leaves the same edge type split across two frontmatter keys.
- *
- * An emptied list is written the way creating the node writes it
- * (`emptiedRelationListValue`): deleted, unless it is one of the kind's scaffold
- * lists, which go back to `[]`. Writing the emptied array back is what left
- * `relates: []` in a file after its only relation was removed (2026-09-26).
+ * A write to a relation key folds its alias spellings into the canonical key in the
+ * same patch. An emptied list is written as node creation writes it
+ * (`emptiedRelationListValue`): deleted, unless it is a scaffold list, kept as `[]`.
  */
 function relationKeyPatch(doc, canonicalKey, nextRefs) {
   const patch = {

@@ -64,10 +64,7 @@ describe("buildProjectOntologyMetrics", () => {
   });
 
   it("counts a document via its relates edge even though documents never get projectIds from containment", () => {
-    // Real vault shape: document.md only ever carries `relates:` (a
-    // related_to edge) — it never has a `domain:`/contains edge, so the
-    // containment BFS in derivationToInsight never stamps it with
-    // projectIds. Without a fallback this metric would always read 0.
+    // Documents attach only through `relates:`, so containment never stamps projectIds on them.
     const nodes = [
       n("domain:views", "domain", ["ontology-atlas"]),
       n("document:audit", "document", []),

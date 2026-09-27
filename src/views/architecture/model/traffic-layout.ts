@@ -1,20 +1,12 @@
 import type { ArchitectureRoleEdge } from '@/entities/architecture-record';
 
 /**
- * One drawable crossing, with everything a renderer needs and nothing it has to compute again.
- *
- * ⚠️ **These are measurements, not rules.** The bands and the connectors between them draw what
- * the profile *permits*; an arc draws what the scanner *observed* at the moment stamped in the
- * record. A surface that lets the two read alike is lying about the status of one of them, which
- * is why the drawing carries the count in words beside every arc and why the legend names the
- * thickness as imports rather than as policy.
+ * One drawable crossing. These are measurements, not rules: the bands draw what the profile
+ * permits, an arc draws what the scanner observed, so every arc carries its count in words.
  */
 export interface TrafficArc {
-  /** Role id the imports left from. */
   from: string;
-  /** Role id they arrived at. */
   to: string;
-  /** How many imports were observed on this crossing. */
   count: number;
   /** Rows between the two ends. 1 is an adjacent floor; 0 means it never left its own. */
   rowSpan: number;
@@ -25,22 +17,9 @@ export interface TrafficArc {
 }
 
 /**
- * Turn the record's measured role edges into arcs the stage can draw.
- *
- * **Why the scale excludes same-role traffic.** On this repository the three largest counts in
- * the measurement are `widgets → widgets` (240), `features → features` (228) and `views → views`
- * (223), and none of them crosses anything: the scanner's first rule permits same-role imports
- * unconditionally. Ranking every arc against those would draw the heaviest real crossing at
- * roughly the same weight as the lightest, which is the opposite of the one thing thickness is
- * for. So the busiest *crossing* sets the scale, and same-role arcs are drawn in their own mark.
- *
- * **Why edges naming unknown roles are dropped rather than reported.** A record is a receipt from
- * a past moment; a profile edited afterwards may no longer have the role it names. That is a
- * normal state, not a defect, and the stage's honest response is to draw only what it can place.
- * The record's own `measured` stamp is what tells a reader the drawing may be behind the source.
- *
- * The result is ordered so the same data always produces the same picture, longest arcs first, so
- * a renderer painting in order lays short arcs over long ones instead of burying them.
+ * Arcs from the record's measured role edges. The busiest crossing sets the scale because
+ * same-role counts are the largest and cross nothing. Edges naming a role the profile no longer
+ * has are dropped: the record may predate a profile edit. Longest arcs first, so short ones paint on top.
  */
 export function buildTrafficArcs(
   edges: readonly ArchitectureRoleEdge[],

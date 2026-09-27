@@ -11,11 +11,7 @@ import {
   splitSummaryLinesByWidth,
 } from './summary-lines';
 
-/*
- * The seven sentences the dogfood profile declares, measured 2026-08-30: 91, 121, 79, 89, 108,
- * 87 and 111 characters, every first clause 51 or fewer. One 34-character line cut all seven
- * before the clause carried meaning; two lines of 34 carry every first clause.
- */
+/* The seven sentences the dogfood profile declares; every first clause is 51 characters or fewer. */
 const ROUTING =
   'Locale-prefixed Next entry wrappers. They name a page and hand off; no logic lives here.';
 const APP =
@@ -62,12 +58,7 @@ describe('splitSummaryLines', () => {
   });
 });
 
-/*
- * ⚠️ **The box tells the sentence how much room each line has** (owner, 2026-08-30, pointing at
- * the Adapters pill: text running past its box, which must never happen). A fixed 34-character budget was
- * measured on the 180px receipt box and never on the 148px one, and a stadium's rounded caps make
- * its second line narrower than its first. Budgets come from geometry now, per line.
- */
+/* A stadium's rounded caps make its second line narrower than its first. */
 describe('captionLineBudgets', () => {
   it('gives a rectangle the same budget on both lines, from its width', () => {
     const budgets = captionLineBudgets({ boxW: 180, boxH: 82, shape: 'process', baselines: [36, 50] });
@@ -101,8 +92,6 @@ describe('splitSummaryLines with per-line budgets', () => {
 });
 
 describe('splitSummaryLinesByWidth', () => {
-  /* Owner, 2026-09-03: the first Korean role sentences ran past both outlines of a 280px face,
-     because the character budget assumed a 4.8px Latin glyph and a Hangul glyph is about 8px. */
   it('keeps every Korean line inside the face by estimated width', () => {
     const room = captionLineRoom(280);
     const sentence = '로케일이 붙은 Next 진입 래퍼로, 페이지를 지정해 넘길 뿐 로직은 여기 두지 않습니다.';
@@ -129,8 +118,7 @@ describe('splitSummaryLinesByWidth', () => {
 });
 
 describe('splitLinesByWidthAt', () => {
-  /* The architecture canvas's empty observation column sets its sentence at the label step (11px),
-     not the caption step the estimates were measured at, so the room is read at that size. */
+  /* The empty observation column sets its sentence at the label step (11px), not the caption step. */
   it('scales the caption estimate linearly with the type size', () => {
     const text = '소스 검사 import';
     expect(estimateTextWidthAt(text, 9.5)).toBeCloseTo(estimateCaptionWidth(text));
@@ -156,8 +144,7 @@ describe('splitLinesByWidthAt', () => {
 });
 
 describe('balanceLinesByWidthAt', () => {
-  /* Measured 2026-09-26: the greedy wrap of the empty column's English sentence left "differs."
-     alone on its last line at 1512 and at 1040. */
+  /* The greedy wrap of this sentence leaves "differs." alone on its last line. */
   const SENTENCE =
     '“Inspect source” has an agent read the real imports and fill in, for each role, what it depends on and where that differs.';
 

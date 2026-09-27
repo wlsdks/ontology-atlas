@@ -37,7 +37,7 @@ describe('unmatchedGraphAsks — names an agent wrote that this vault has no nod
       'capabilities/refund',
       'domains/payment',
     ]);
-    // The frontmatter keys it was written under, so the row says what was meant by it.
+    // The keys it was written under say what was meant.
     expect(holds!.relations).toEqual(['capabilities', 'dependencies']);
   });
 
@@ -80,11 +80,7 @@ describe('unmatchedGraphAsks — names an agent wrote that this vault has no nod
 });
 
 describe('unmatchedGraphAsks — the same walk the health count already made', () => {
-  /*
-   * ⚠️ Two readings of one fact. `computeVaultHealth` counts unresolved references and
-   * keeps a number; this keeps the names behind it. If they ever disagree, one of the two
-   * screens is lying about the same folder — so the identity is asserted, not assumed.
-   */
+  /* The names must account for every unresolved edge `computeVaultHealth` counts. */
   it('accounts for every unresolved edge the health summary counted', () => {
     const total = unmatchedGraphAsks(VAULT).reduce((sum, row) => sum + row.count, 0);
     expect(total).toBe(computeVaultHealth(VAULT).summary.unresolvedEdges);
@@ -94,7 +90,7 @@ describe('unmatchedGraphAsks — the same walk the health count already made', (
   it('returns one row per distinct name, not one per reference', () => {
     const rows = unmatchedGraphAsks(VAULT);
     expect(rows).toHaveLength(new Set(rows.map((row) => row.ref)).size);
-    // Four references, two names — the grouping is what makes the count readable.
+    // Four references, two names.
     expect(rows).toHaveLength(2);
   });
 

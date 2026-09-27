@@ -4,10 +4,7 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTranslations } from "next-intl";
 import { controlClass } from "@/shared/ui";
 
-/**
- * The no-document-selected state — the Source Vault starting point after the always-visible tree
- * was removed. Rendered by the viewer area of `DocsVaultContent` when there is no `selectedSlug`.
- */
+/** Shown when no document is selected. */
 export function EmptyState({
   docCount,
   onOpenAgentWorkflow,

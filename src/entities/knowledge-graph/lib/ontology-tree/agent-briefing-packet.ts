@@ -13,18 +13,8 @@ import {
 import type { OntologyTreeBuildResult } from "./types";
 
 /**
- * The single agent onboarding briefing — one copy, pasted once into an AI coding
- * agent (Claude Code / Codex / Cursor), gives that agent this codebase's ontology
- * memory immediately.
- *
- * It folds the ~10 scattered "Copy …" packets (run order, graph-DB pack,
- * readiness, guardrails, …) into one. No new logic: it assembles the existing
- * certified composers (`buildAgentHandoffPrompt` and friends) and prepends a
- * mental-model plus readiness header so the reader learns what they are looking at
- * first.
- *
- * The briefing body is English text an agent consumes (same register as
- * `buildAgentHandoffPrompt`). Only the button label and toast go through i18n.
+ * One onboarding briefing an agent receives in a single paste, assembled from the existing handoff
+ * composers behind a mental-model and readiness header. English: an agent reads it.
  */
 const BRIEFING_INTRO = [
   "# ontology-atlas — agent onboarding brief",
@@ -100,19 +90,14 @@ function buildBusinessToCodeLens(
 }
 
 export interface AgentBriefingPacket {
-  /** The complete briefing string, copied in one go. */
   briefing: string;
-  /** Readiness summary — the status and score shown in the button's toast and caption. */
+  /** Status and score for the button's toast and caption. */
   readiness: AgentReadinessSummary;
-  /** Suggested starting nodes (hubs), exposed so the caller can preview or describe them. */
+  /** Suggested hub nodes to start from. */
   entrypoints: AgentQueryEntrypoint[];
 }
 
-/**
- * Assemble the complete agent onboarding briefing from the vault graph. Every
- * input is derived from existing pure composers, so the same graph always produces
- * the same output.
- */
+/** Deterministic: built only from pure composers. */
 export function buildAgentBriefingPacket(
   nodes: readonly KnowledgeGraphNode[],
   edges: readonly KnowledgeGraphEdge[],

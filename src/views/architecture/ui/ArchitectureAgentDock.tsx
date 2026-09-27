@@ -79,10 +79,8 @@ export function ArchitectureAgentDock({
   useEffect(() => {
     if (!open) return;
     /*
-     * Below lg the conversation is an overlay sheet: it takes no width from the canvas, so there
-     * is no canvas reflow for process startup to compete with. One frame lets the entered surface
-     * paint first. At lg the dock really does resize the workbench, and the width transition event
-     * below — not a timer that merely resembles it — owns the handoff.
+     * Below lg the sheet overlays and takes no canvas width, so one frame suffices; at lg the dock
+     * resizes the workbench and the width transition event, not a timer, owns the handoff.
      */
     const wide = typeof window === 'undefined' || typeof window.matchMedia !== 'function'
       ? true
@@ -169,14 +167,7 @@ export function ArchitectureAgentDock({
             onOpeningRequestSent={onOpeningRequestSent}
             knownSlugs={knownSlugs}
             onTurnActivityChange={onTurnActivityChange}
-            /*
-             * ⚠️ **One close, and it belongs to the workbench** (2026-09-06). The panel drew its
-             * own X beside the workbench's, so the dock had two identical buttons a few pixels
-             * apart doing exactly the same thing — and the inner one closed a surface it does not
-             * own. The chat is a tab inside this workbench; what closes it is the workbench's
-             * close button, and `contextLabel` is likewise the workbench header's `h2`, so the
-             * panel does not repeat it as a badge either.
-             */
+            /* One close, the workbench's; `contextLabel` is its header `h2`, so the panel repeats neither. */
             onTurnStarted={capture.onTurnStarted}
           /> : undefined}
           />

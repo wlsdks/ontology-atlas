@@ -5,12 +5,8 @@ import enMessages from "../../../../messages/en.json";
 import { GatewayNav } from "./GatewayNav";
 
 /**
- * The gateway chrome (elements/gateway-chrome) is the persistent nav an uninstalled
- * web visitor meets at four addresses — `/`, `/download`, `/guide`, `/changelog`.
- * Two of its rules are stated in the source and nowhere else, so they are what this
- * file holds: the brand identity travels with the chrome (it is the piece the
- * installed workbench rail deliberately omits), and a reading link is offered by the
- * chrome only where the page itself does not already carry it.
+ * The gateway chrome at `/`, `/download`, `/guide` and `/changelog`: the brand travels with it, and
+ * it offers a reading link only where the page does not already carry one.
  */
 
 let pathname = "/";

@@ -5,7 +5,7 @@ import { resolve } from 'node:path';
 import test from 'node:test';
 import { resolveVaultRoot } from './resolve-vault.mjs';
 
-test('resolveVaultRoot — explicit 인자가 1순위 (env 보다 강함)', () => {
+test('resolveVaultRoot prefers the explicit argument over env', () => {
   const tmp = realpathSync(mkdtempSync(resolve(tmpdir(), 'ontology-atlas-vault-test-')));
   const explicit = resolve(tmp, 'my-vault');
   mkdirSync(explicit, { recursive: true });
@@ -19,7 +19,7 @@ test('resolveVaultRoot — explicit 인자가 1순위 (env 보다 강함)', () =
   }
 });
 
-test("resolveVaultRoot — explicit 이 '.' 면 default 로 취급 (env 가 다음 차례)", () => {
+test("resolveVaultRoot treats an explicit '.' as default and falls to env", () => {
   const tmp = realpathSync(mkdtempSync(resolve(tmpdir(), 'ontology-atlas-vault-test-')));
   process.env.OATLAS_VAULT = tmp;
   try {
@@ -31,7 +31,7 @@ test("resolveVaultRoot — explicit 이 '.' 면 default 로 취급 (env 가 다�
   }
 });
 
-test('resolveVaultRoot — env 가 2순위', () => {
+test('resolveVaultRoot uses env second', () => {
   const tmp = realpathSync(mkdtempSync(resolve(tmpdir(), 'ontology-atlas-vault-test-')));
   delete process.env.OATLAS_VAULT;
   process.env.OATLAS_VAULT = tmp;
@@ -67,7 +67,7 @@ test('resolveVaultRoot — explicit/env vault paths must exist and be directorie
   }
 });
 
-test('resolveVaultRoot — cwd/docs/ontology 자동 감지 (3 순위)', () => {
+test('resolveVaultRoot detects cwd/docs/ontology third', () => {
   // Create docs/ontology under a temporary cwd and chdir into it. macOS tmp is a
   // symlink (`/var/folders` → `/private/var/folders`), so compare after
   // normalising with realpathSync.
@@ -86,7 +86,7 @@ test('resolveVaultRoot — cwd/docs/ontology 자동 감지 (3 순위)', () => {
   }
 });
 
-test('resolveVaultRoot — fallback 은 cwd (4 순위, 아무것도 없을 때)', () => {
+test('resolveVaultRoot falls back to cwd when nothing else applies', () => {
   // A temporary directory with no docs/ontology in cwd — normalised with realpathSync.
   const tmp = realpathSync(mkdtempSync(resolve(tmpdir(), 'ontology-atlas-vault-test-')));
   const prevCwd = process.cwd();
@@ -101,7 +101,7 @@ test('resolveVaultRoot — fallback 은 cwd (4 순위, 아무것도 없을 때)'
   }
 });
 
-test('resolveVaultRoot — 빈 문자열 explicit 은 default 로 취급', () => {
+test('resolveVaultRoot treats an empty explicit argument as default', () => {
   const tmp = realpathSync(mkdtempSync(resolve(tmpdir(), 'ontology-atlas-vault-test-')));
   process.env.OATLAS_VAULT = tmp;
   try {

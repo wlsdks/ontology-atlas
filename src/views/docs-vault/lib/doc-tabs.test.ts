@@ -19,7 +19,7 @@ function makeTab(slug: string, lastActivatedAt: number): DocTab {
 }
 
 describe("docTabsStorageKey", () => {
-  it("네임스페이스에 sourceKey 를 그대로 포함한다 (vault 별 키 분리)", () => {
+  it("includes the sourceKey in the namespace so each vault has its own key", () => {
     expect(docTabsStorageKey("server")).toBe("docsVault:openTabs:server");
     expect(docTabsStorageKey("local:my-vault")).toBe(
       "docsVault:openTabs:local:my-vault",
@@ -32,27 +32,27 @@ describe("readStoredDocTabs / storeDocTabs", () => {
     window.localStorage.clear();
   });
 
-  it("round-trip 으로 저장한 탭을 그대로 복원한다", () => {
+  it("restores saved tabs unchanged on a round trip", () => {
     const tabs = [makeTab("README", 1), makeTab("FEATURES", 2)];
     storeDocTabs("server", tabs);
     expect(readStoredDocTabs("server")).toEqual(tabs);
   });
 
-  it("키가 없으면 빈 배열을 반환한다", () => {
+  it("returns an empty array when the key is missing", () => {
     expect(readStoredDocTabs("missing-key")).toEqual([]);
   });
 
-  it("손상된 JSON 은 빈 배열로 안전하게 처리한다", () => {
+  it("returns an empty array for corrupt JSON", () => {
     window.localStorage.setItem(docTabsStorageKey("server"), "{not json");
     expect(readStoredDocTabs("server")).toEqual([]);
   });
 
-  it("배열이 아닌 값은 빈 배열로 처리한다", () => {
+  it("returns an empty array for a non-array value", () => {
     window.localStorage.setItem(docTabsStorageKey("server"), JSON.stringify({ foo: 1 }));
     expect(readStoredDocTabs("server")).toEqual([]);
   });
 
-  it("shape 이 맞지 않는 항목은 걸러낸다", () => {
+  it("drops entries with the wrong shape", () => {
     window.localStorage.setItem(
       docTabsStorageKey("server"),
       JSON.stringify([makeTab("ok", 1), { slug: "bad" }, null, "str"]),
@@ -60,7 +60,7 @@ describe("readStoredDocTabs / storeDocTabs", () => {
     expect(readStoredDocTabs("server")).toEqual([makeTab("ok", 1)]);
   });
 
-  it("vault(sourceKey) 별로 저장 공간이 분리된다", () => {
+  it("keeps storage separate per vault sourceKey", () => {
     storeDocTabs("server", [makeTab("README", 1)]);
     storeDocTabs("local:my-vault", [makeTab("project", 2)]);
     expect(readStoredDocTabs("server")).toEqual([makeTab("README", 1)]);
@@ -73,7 +73,7 @@ describe("readStoredActiveDocSlug / storeActiveDocSlug", () => {
     window.localStorage.clear();
   });
 
-  it("vault별 마지막 명시적 활성 문서를 별도 key로 round-trip 한다", () => {
+  it("round-trips each vault's last explicit active doc under its own key", () => {
     storeActiveDocSlug("local:my-vault", "capabilities/audit-sample");
     expect(activeDocTabStorageKey("local:my-vault")).toBe(
       "docsVault:activeTab:local:my-vault",
@@ -86,13 +86,13 @@ describe("readStoredActiveDocSlug / storeActiveDocSlug", () => {
 });
 
 describe("pruneMissingDocTabs", () => {
-  it("validSlugs 에 없는 탭(rename/delete 로 사라진 문서)을 조용히 제거한다", () => {
+  it("drops tabs whose slug is not in validSlugs after a rename or delete", () => {
     const tabs = [makeTab("README", 1), makeTab("GONE", 2)];
     const next = pruneMissingDocTabs(tabs, new Set(["README"]));
     expect(next).toEqual([makeTab("README", 1)]);
   });
 
-  it("제거할 것이 없으면 원본 참조를 그대로 반환한다", () => {
+  it("returns the same reference when nothing is removed", () => {
     const tabs = [makeTab("README", 1)];
     const next = pruneMissingDocTabs(tabs, new Set(["README", "FEATURES"]));
     expect(next).toBe(tabs);
@@ -106,7 +106,7 @@ describe("resolveRestoredActiveDocSlug", () => {
     makeTab("FEATURES", 20),
   ];
 
-  it("URL 딥링크가 없으면 현재 vault의 가장 최근 활성 탭을 복원한다", () => {
+  it("restores the vault's most recently active tab without a URL deep link", () => {
     expect(
       resolveRestoredActiveDocSlug({
         tabs,
@@ -116,7 +116,7 @@ describe("resolveRestoredActiveDocSlug", () => {
     ).toBe("capabilities/audit-sample");
   });
 
-  it("명시적으로 기억한 활성 문서는 시작 기본값이 갱신한 탭 시각보다 우선한다", () => {
+  it("prefers the remembered active doc over a tab touched by the startup default", () => {
     expect(
       resolveRestoredActiveDocSlug({
         tabs,
@@ -127,7 +127,7 @@ describe("resolveRestoredActiveDocSlug", () => {
     ).toBe("README");
   });
 
-  it("URL 딥링크가 있으면 저장된 활성 탭으로 덮어쓰지 않는다", () => {
+  it("keeps the URL deep link over the saved active tab", () => {
     expect(
       resolveRestoredActiveDocSlug({
         tabs,
@@ -137,7 +137,7 @@ describe("resolveRestoredActiveDocSlug", () => {
     ).toBeNull();
   });
 
-  it("현재 vault에서 사라진 탭은 복원 후보에서 제외한다", () => {
+  it("skips tabs missing from the current vault when restoring", () => {
     expect(
       resolveRestoredActiveDocSlug({
         tabs,
@@ -149,14 +149,14 @@ describe("resolveRestoredActiveDocSlug", () => {
 });
 
 describe("openOrActivateDocTab", () => {
-  it("새 슬러그는 뒤에 탭을 추가한다", () => {
+  it("appends a tab for a new slug", () => {
     const tabs = [makeTab("README", 1)];
     const next = openOrActivateDocTab(tabs, { slug: "FEATURES", title: "Features" }, 2);
     expect(next.map((t) => t.slug)).toEqual(["README", "FEATURES"]);
     expect(next[1]).toEqual({ slug: "FEATURES", title: "Features", lastActivatedAt: 2 });
   });
 
-  it("이미 열린 슬러그는 중복 추가하지 않고 activate(+title 갱신)만 한다", () => {
+  it("activates and retitles an already open slug without duplicating it", () => {
     const tabs = [makeTab("README", 1), makeTab("FEATURES", 2)];
     const next = openOrActivateDocTab(
       tabs,
@@ -165,19 +165,17 @@ describe("openOrActivateDocTab", () => {
     );
     expect(next).toHaveLength(2);
     expect(next[0]).toEqual({ slug: "README", title: "새 타이틀", lastActivatedAt: 99 });
-    // Tab order (position) is preserved — activating does not reorder.
+    // Activating does not reorder.
     expect(next.map((t) => t.slug)).toEqual(["README", "FEATURES"]);
   });
 
-  it(`상한 ${DOC_TABS_MAX}개를 넘기면 가장 오래 activate 안 된 탭을 LRU 로 축출한다`, () => {
+  it(`evicts the least recently activated tab past ${DOC_TABS_MAX} tabs`, () => {
     let tabs: DocTab[] = [];
     for (let i = 0; i < DOC_TABS_MAX; i += 1) {
       tabs = openOrActivateDocTab(tabs, { slug: `doc-${i}`, title: `doc-${i}` }, i);
     }
     expect(tabs).toHaveLength(DOC_TABS_MAX);
-    // Refresh doc-3's activation time so it is no longer the oldest candidate.
     tabs = openOrActivateDocTab(tabs, { slug: "doc-3", title: "doc-3" }, 100);
-    // Adding a new document exceeds the ceiling, so the least recently activated tab is evicted.
     tabs = openOrActivateDocTab(tabs, { slug: "doc-new", title: "doc-new" }, 101);
     expect(tabs).toHaveLength(DOC_TABS_MAX);
     expect(tabs.map((t) => t.slug)).not.toContain("doc-0");
@@ -185,7 +183,7 @@ describe("openOrActivateDocTab", () => {
     expect(tabs.map((t) => t.slug)).toContain("doc-new");
   });
 
-  it("새로 열리거나 activate 된 탭은 같은 호출로 절대 축출되지 않는다", () => {
+  it("never evicts the tab opened or activated by the same call", () => {
     let tabs: DocTab[] = [];
     for (let i = 0; i < DOC_TABS_MAX + 1; i += 1) {
       tabs = openOrActivateDocTab(tabs, { slug: `doc-${i}`, title: `doc-${i}` }, i);
@@ -198,31 +196,31 @@ describe("openOrActivateDocTab", () => {
 describe("closeDocTab", () => {
   const tabs = [makeTab("A", 1), makeTab("B", 2), makeTab("C", 3)];
 
-  it("활성 탭이 아닌 탭을 닫으면 활성 선택이 바뀌지 않는다", () => {
+  it("keeps the active tab when closing an inactive one", () => {
     const result = closeDocTab(tabs, "A", "B");
     expect(result.tabs.map((t) => t.slug)).toEqual(["B", "C"]);
     expect(result.nextActiveSlug).toBe("B");
   });
 
-  it("활성 탭을 닫으면 왼쪽 인접 탭으로 이동한다", () => {
+  it("activates the left neighbour when closing the active tab", () => {
     const result = closeDocTab(tabs, "B", "B");
     expect(result.tabs.map((t) => t.slug)).toEqual(["A", "C"]);
     expect(result.nextActiveSlug).toBe("A");
   });
 
-  it("맨 왼쪽(첫) 활성 탭을 닫으면 왼쪽이 없으므로 오른쪽 인접 탭으로 이동한다", () => {
+  it("activates the right neighbour when closing the first active tab", () => {
     const result = closeDocTab(tabs, "A", "A");
     expect(result.tabs.map((t) => t.slug)).toEqual(["B", "C"]);
     expect(result.nextActiveSlug).toBe("B");
   });
 
-  it("마지막 남은 탭을 닫으면 nextActiveSlug 는 null(호출부가 폴백)", () => {
+  it("returns a null nextActiveSlug when closing the last tab", () => {
     const result = closeDocTab([makeTab("ONLY", 1)], "ONLY", "ONLY");
     expect(result.tabs).toEqual([]);
     expect(result.nextActiveSlug).toBeNull();
   });
 
-  it("존재하지 않는 slug 를 닫으려 하면 아무 변화 없이 그대로 반환한다", () => {
+  it("returns tabs unchanged when closing an unknown slug", () => {
     const result = closeDocTab(tabs, "NOPE", "B");
     expect(result.tabs).toBe(tabs);
     expect(result.nextActiveSlug).toBe("B");

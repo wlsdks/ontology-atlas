@@ -64,9 +64,8 @@ describe("summarizeAgentReadiness", () => {
     ).toEqual({ ready: 0, preflight: 0, review: 0, blocked: 0, blockedDocuments: 0 });
   });
 
-  // These three are the unit gate for the readiness defect: that validation errors DO
-  // count toward blocked, that the relation-only `review` count stays as it was (the map
-  // counts relations only), and that zero errors gives zero risk — not permanently red.
+  // Validation errors count toward blocked, the relation-only `review` count is unchanged, and zero
+  // errors means zero risk.
   it("folds check errors into blocked without touching the relation-only review count", () => {
     expect(
       summarizeAgentReadiness({ strong: 6, supported: 0, weak: 0, review: 0 }, 5),

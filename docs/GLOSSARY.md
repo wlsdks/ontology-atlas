@@ -9,9 +9,7 @@ area: process
 
 **This file is the single source of truth for the words this repository uses.**
 English is canonical: comments, doc-blocks, and developer docs are written in
-English so contributors outside Korea can read them. Korean equivalents are
-listed for the maintainer and for the two Korean docs that stay Korean —
-`docs/DECISIONS.md` and `docs/CHANGELOG.md`, both append-only historical records.
+English so every contributor can read them.
 
 Stable path: `docs/GLOSSARY.md`. Do not move it. Code comments and docs point
 here by path, and `pnpm docs:links` plus `pnpm docs:comment-refs` verify those
@@ -21,14 +19,9 @@ pointers still resolve.
 
 ## 1. Why this file exists
 
-Two measurements, both taken 2026-08-22.
-
-**One.** The owner read a screen and an explanation of it and said: *"I can't understand a single thing you're saying!"* — "I can't understand a single thing you're saying." A sweep of the 3,130 user-facing strings found **34** written in code vocabulary (`frontmatter`, `edge`, `handle`, `parsing`, `rendering`, `query`, `contract`, `index`, `metadata`), plus an English screen instructing users to run `pnpm folder:validate` — **a script that does not exist**.
-
-**Two.** The same sweep found one thing carrying several names. Frontmatter appeared on screen as frontmatter / document top attributes / document attributes. CI checks were gate / guard / checker / validator. Value lists were lamp / ladder / scale.
-
-Renaming **drifts unless one table decides it**, because each person picks a
-different word. So the table is the source of truth, not the individual fixes.
+One thing drifts into several names when each person picks a word, and code
+vocabulary leaks onto screens meant for people who do not write code. One table
+decides each word, so fixes follow the table instead of each other.
 
 ---
 
@@ -49,19 +42,19 @@ problems and they get separate rules.
 What this product is made of. Most terms are already industry-standard; where we
 chose among several possible words, the reason is given.
 
-| Term | Meaning | Korean | Why this word |
-|---|---|---|---|
-| **vault** | The markdown folder the user picked. Its files *are* the graph | vault | Obsidian established this word for "a local folder of markdown you own", and our users come from that world |
-| **frontmatter** | The YAML block at the top of a markdown file | frontmatter | Standard across Jekyll, Hugo, Astro, Obsidian. Never transliterate it |
-| **node** | One document in the vault, drawn as one mark on the map | node | Graph-theory standard |
-| **edge** | A typed relation between two nodes | edge | Graph-theory standard. On screen say **connection** |
-| **kind** | A node's type: `project`, `domain`, `capability`, `element`, `decision` | kind | It is the literal frontmatter key. Never say "type" in prose — `type` belongs to TypeScript |
-| **slug** | A node's readable, mutable address | slug | Web standard |
-| **uid** | A node's permanent UUIDv4 identity, minted once at creation | uid | Survives rename; `slug` does not |
-| **ego graph** | A node plus its direct neighbours | ego | Standard in social-network analysis ("ego network") |
-| **spine / circuit / element** | The map's three zoom tiers, outermost to innermost | spine / circuit / element | Repo-specific. Defined in `docs/design/ontology-map.md` |
-| **dome** | The map's 3D projection mode | dome | Repo-specific |
-| **ACP** | Agent Client Protocol — how a coding agent talks to the app | ACP | Upstream protocol name |
+| Term | Meaning | Why this word |
+|---|---|---|
+| **vault** | The markdown folder the user picked. Its files *are* the graph | Obsidian established this word for "a local folder of markdown you own", and our users come from that world |
+| **frontmatter** | The YAML block at the top of a markdown file | Standard across Jekyll, Hugo, Astro, Obsidian. Never transliterate it |
+| **node** | One document in the vault, drawn as one mark on the map | Graph-theory standard |
+| **edge** | A typed relation between two nodes | Graph-theory standard. On screen say **connection** |
+| **kind** | A node's type: `project`, `domain`, `capability`, `element` or `document`, plus the reserved reader kind `vault-readme` that is never authored (`mcp/src/schema.mjs`, `mcp/src/validate.mjs`) | It is the literal frontmatter key. Never say "type" in prose — `type` belongs to TypeScript |
+| **slug** | A node's readable, mutable address | Web standard |
+| **uid** | A node's permanent UUIDv4 identity, minted once at creation | Survives rename; `slug` does not |
+| **ego graph** | A node plus its direct neighbours | Standard in social-network analysis ("ego network") |
+| **spine / circuit / element** | The map's three zoom tiers, outermost to innermost | Repo-specific. Defined in `docs/design/ontology-map.md` |
+| **dome** | The map's 3D projection mode | Repo-specific |
+| **ACP** | Agent Client Protocol — how a coding agent talks to the app | Upstream protocol name |
 
 ---
 

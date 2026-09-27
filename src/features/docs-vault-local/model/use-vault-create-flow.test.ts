@@ -16,9 +16,8 @@ describe('useVaultCreateFlow', () => {
       await result.current.handleCreate({ map: true, wiki: false });
     });
 
-    // One call: the session writes the starter into an empty folder before showing it, and
-    // leaves a folder that already holds documents untouched (2026-09-25, D1). Walkthrough
-    // 2026-07-26: an argument-less path seeded a Korean screen's vault with English bodies.
+    // One call: the session writes the starter into an empty folder before showing it and leaves a
+    // folder with documents untouched; the locale keeps the starter in the screen's language.
     expect(vault.open).toHaveBeenCalledTimes(1);
     expect(vault.open).toHaveBeenCalledWith({
       starter: { locale: 'ko', shape: { map: true, wiki: false } },

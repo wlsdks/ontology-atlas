@@ -1,18 +1,6 @@
-// Pure content builder for `ontology-atlas agent-setup --install-pre-commit-hook`.
-// The caller (agent-setup.mjs) owns the fs and child_process I/O; this module only
-// decides "given the current hook file, what should it contain next", which keeps
-// it unit-testable.
-//
-// Design rules — append to an existing hook, and respect a `--no-verify` bypass:
-//   - no file: create one (shebang + managed block).
-//   - file with our managed block already present: leave it alone (idempotent).
-//   - file without our managed block: append at the end, never overwriting the
-//     existing hook logic.
-//   - the hook body only runs `ontology-atlas preflight --staged`; it never blocks
-//     the commit through an exit code (preflight is always informational, exit 0).
-//     `git commit --no-verify` is git skipping hooks entirely, so this hook needs
-//     no handling for it — respecting the bypass is satisfied by the hook enforcing
-//     nothing.
+// Pure content builder for `agent-setup --install-pre-commit-hook`; agent-setup.mjs owns the I/O.
+// No file: create it. Our block present: leave it. Otherwise append, never overwriting existing logic.
+// The block only runs `preflight --staged`, which always exits 0, so `--no-verify` needs no handling.
 
 export const PRE_COMMIT_MARKER_START =
   '# >>> ontology-atlas preflight (managed block: safe to remove) >>>';

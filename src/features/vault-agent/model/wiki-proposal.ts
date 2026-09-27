@@ -8,37 +8,9 @@ import {
 import { anchorResolves, type SourceMeasurement } from './source-text';
 
 /**
- * A model's `propose_wiki_page` call → **a page Atlas is willing to show a person**, or a
- * list of exactly what is wrong with it.
- *
- * Nothing here writes. This module takes what was read this turn and what the writer
- * said, assembles the template shape, and judges the result; the file reaches disk only
- * through `applyProposal`, from the consent card's handler, exactly as a concept change
- * does.
- *
- * **Three things the writer is not allowed to state**, because it cannot be held to them:
- *
- * 1. `sources:` — built from the paths Atlas actually opened and the page actually cites.
- *    A model cannot list a document it never received.
- * 2. `source_hash:` — the sha256 of those same bytes, measured by the port. This is the
- *    field that lets a page report itself stale later, so a value the writer invented
- *    would silently break every freshness answer the Library gives.
- *    `sources_truncated:` rides with it, from the same reads: a hash matching every byte
- *    of a file the run only saw the first part of is true and misleading at once, and the
- *    Library reads this key to say `partial` rather than `compiled`.
- * 3. `status:` — always `draft`. `reviewed` is a person's word, and `describes:` is
- *    refused outright: a draft naming graph nodes is an unapproved claim about the graph
- *    (`wiki-page-schema.ts`).
- *
- * **Two rules the shared schema does not carry**, added here because a proposal is judged
- * before a person sees it rather than after they wrote it:
- *
- * - Every `## Decisions` bullet cites, not only `## Facts`. A recorded decision with no
- *   citation is the same unverifiable claim, and a page is cheap to fix before it lands.
- * - Every citation anchor **resolves inside the bytes read this turn**. `validateWikiPage`
- *   captures the anchor and never opens a file; Atlas holds the text here, so it is the
- *   only party that can tell `#p47` in a three-paragraph file from a real reference (PO
- *   evidence, 2026-09-06).
+ * A `propose_wiki_page` call becomes a page Atlas will show, or what is wrong with it; nothing
+ * here writes. Atlas mints `sources:`, `source_hash:` (an invented hash breaks freshness) and a
+ * draft `status:`; Decisions must cite, and anchors must resolve in the bytes read this turn.
  */
 
 /** One source this turn tried to open. */
@@ -141,13 +113,7 @@ function bullets(values: readonly string[] | undefined): string[] {
     .map((value) => value.replace(/^[-*]\s+/, ''));
 }
 
-/**
- * `Quarter Plan 2027.md` → `quarter-plan-2027`.
- *
- * A folder or an extension in the writer's answer is dropped rather than honoured: the
- * page goes under `wiki/`, and a model that answers `wiki/foo.md` must not produce
- * `wiki/wiki/foo.md.md`.
- */
+/** `Quarter Plan 2027.md` → `quarter-plan-2027`; a folder or extension in the answer is dropped. */
 export function wikiSlugFromName(name: string): string {
   const tail = String(name ?? '')
     .trim()
@@ -170,23 +136,13 @@ function sectionBlock(name: string, entries: readonly string[]): string {
   return `## ${name}\n\n${body}`;
 }
 
-/**
- * `## Summary` is prose, not a list — the template writes "two or three sentences" there,
- * and a one-item bullet list reads as a fragment of something longer. Every other section
- * is a list, because each of its entries is a separate claim a reader checks separately.
- */
+/** Summary is prose; every other section is a list of separately checked claims. */
 function proseBlock(name: string, lines: readonly string[]): string {
   const body = lines.length === 0 ? '' : `${lines.join('\n\n')}\n`;
   return `## ${name}\n\n${body}`;
 }
 
-/**
- * Build and judge one page. Pure — it reads nothing and writes nothing.
- *
- * The page string is assembled **before** validation and returned either way, so a person
- * reading a failure card is looking at the same text the validator judged rather than a
- * description of it.
- */
+/** Pure. The page is returned either way, so a failure card shows the text that was judged. */
 export function buildWikiPageProposal(
   fields: WikiPageFields,
   context: WikiProposalContext,
@@ -219,22 +175,14 @@ export function buildWikiPageProposal(
     });
   }
 
-  // ── Citations: read, resolvable, and on every claim ─────────────────────────
   const cited: string[] = [];
   let citationCount = 0;
   const unresolvable: string[] = [];
   const notRead: string[] = [];
 
   /**
-   * Every citation on the page is checked, not only the ones under Facts and Decisions.
-   *
-   * Measured 2026-09-06 against the runner on this machine: handed a PDF it could not
-   * open, qwen3:8b wrote the honest thing under `## Not in sources` — and cited the file
-   * while doing it. `sources:` is Atlas's to mint and holds only what was really read, so
-   * the page came back refused for a line the writer had no way to fix, and it re-proposed
-   * the same page until the round cap. Checking the whole body is what lets the refusal
-   * name the actual mistake ("do not cite a file you could not open") instead of pointing
-   * at frontmatter the writer does not control.
+   * Every citation on the page is checked, not only Facts and Decisions, so a refusal names the
+   * writer's actual mistake instead of frontmatter it does not control.
    */
   const noteCitations = (text: string) => {
     const found = citationsIn(text);
@@ -317,14 +265,7 @@ export function buildWikiPageProposal(
     });
   }
 
-  // ── Assemble the page in the template shape ─────────────────────────────────
-  /*
-   * The sources this page really stands on that the run only read part of.
-   *
-   * Drawn from `sourcesRead` rather than from every read, because the key is a statement
-   * about `sources:` — naming a file the page does not cite would be a record no reader
-   * can act on, and `validateWikiPage` reports exactly that (`truncated-not-in-sources`).
-   */
+  /* Only cited sources, or `validateWikiPage` reports `truncated-not-in-sources`. */
   const truncatedSources = sourcesRead.filter((path) => readByPath.get(path)!.truncated);
 
   const compiledAt = context.now.toISOString().replace(/\.\d{3}Z$/, 'Z');
@@ -337,11 +278,7 @@ export function buildWikiPageProposal(
     ...sourcesRead.map((path) => `  - ${path}`),
     sourcesRead.length === 0 ? 'source_hash: {}' : 'source_hash:',
     ...sourcesRead.map((path) => `  ${path}: ${readByPath.get(path)!.sha256}`),
-    /*
-     * Absent when nothing was cut short. An empty list would be a record of a boundary
-     * that does not exist, on every page ever compiled, and `sources_truncated: []` on a
-     * page read whole is the kind of always-present key a reader stops seeing.
-     */
+    /* Absent when nothing was cut short; an always-present empty key stops being read. */
     ...(truncatedSources.length === 0
       ? []
       : ['sources_truncated:', ...truncatedSources.map((path) => `  - ${path}`)]),
@@ -351,17 +288,12 @@ export function buildWikiPageProposal(
     '',
   ].join('\n');
 
-  /*
-   * A source that was cut short says so **on the page**, not only on the card. The card is
-   * read once, at approval; the page is what the next reader has, and "written from the
-   * first part of this file" is a boundary they need in the same place as the claims.
-   */
+  /* A cut-short source says so on the page, where the next reader has the claims. */
   const truncatedNotes = truncatedSources.map(
     (path) =>
       `Only the first part of \`${path}\` was read, so anything later in that file is not covered here.`,
   );
-  // A writer that already named the file in its own words does not get Atlas's sentence
-  // about it too; two lines saying one thing is how a section stops being read.
+  // Skip Atlas's sentence when the writer already named the file.
   const alreadyNamed = (path: string) => notInSources.some((line) => line.includes(path.slice(path.lastIndexOf('/') + 1)));
   const unreadableNotes = context.reads
     .filter((read) => !read.readable && !alreadyNamed(read.path))
@@ -381,13 +313,11 @@ export function buildWikiPageProposal(
 
   const page = `${frontmatter}${body}`;
 
-  // The shared contract has the last word on shape. Its codes are the ones every other
-  // surface branches on, so they are kept verbatim rather than restated.
+  // Shared contract codes are kept verbatim; other surfaces branch on them.
   const knownSources = context.reads.map((read) => read.path);
   const shape = validateWikiPage(page, { knownSources });
   for (const problem of shape.problems) {
-    // `uncited-fact` is already reported above with the offending bullet quoted; keeping
-    // both would show one defect twice under two wordings.
+    // `uncited-fact` is already reported above with the bullet quoted.
     if (problem.code === 'uncited-fact') continue;
     problems.push({ code: problem.code, message: problem.message });
   }

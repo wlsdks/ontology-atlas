@@ -4,28 +4,18 @@ import { useTranslations } from "next-intl";
 import { useSampleNodeHint } from "../model/use-sample-node-hint";
 
 export interface SampleNodeHintProps {
-  /** Is a node currently selected on the map — the first selection permanently retires the hint. */
+  /** The first selection permanently retires the hint. */
   hasSelection: boolean;
   /**
-   * Suppresses rendering while the guided tour is open — the tour teaches the same
-   * lesson ("press one") more explicitly in the same place, and overlapping them is
-   * double guidance. This is not a permanent dismiss: it reappears when the tour
-   * closes, if it has not been dismissed yet.
+   * Hidden while the guided tour teaches the same lesson; not a dismiss, so it returns after.
    */
   hidden?: boolean;
 }
 
 /**
- * The one-time map hint on a first visit in sample mode — "press a node on the map ·
- * every one is a real document". A single quiet label seated at the bottom centre of
- * the map (not popup soup).
- *
- * - `pointer-events-none`: the hint never blocks a node click. Clicking "through" it
- *   onto the node beneath *is* the dismiss.
- * - No entrance animation (static), keeping the charter's calm and behaving
- *   identically for `prefers-reduced-motion` users.
- * - The gate and the permanent dismiss belong to `useSampleNodeHint` (localStorage).
- *   Connecting a real vault turns the sample-settled gate off and it retires itself.
+ * The one-time sample hint, one quiet label at the bottom centre of the map.
+ * `pointer-events-none`, so clicking through it onto a node is the dismiss; no entrance
+ * animation. Gate and dismiss belong to `useSampleNodeHint`.
  */
 export function SampleNodeHint({ hasSelection, hidden = false }: SampleNodeHintProps) {
   const t = useTranslations("firstRunStarter.nodeHint");
@@ -37,19 +27,8 @@ export function SampleNodeHint({ hasSelection, hidden = false }: SampleNodeHintP
     <div
       data-testid="sample-node-hint"
       /*
-       * The bottom inset uses **`…-bottom-inset`**, not the left/right
-       * `…-legend-inset` (measured fix, 2026-08-01).
-       *
-       * The two tokens share a default (24px), so on a wide screen the difference is
-       * invisible. They diverge below `lg`, where only `bottom-inset` adds the tab-bar
-       * reserve. Using the left/right one meant that at 768, 834, and 1023 this hint
-       * had 25 of its 30px (83%) covered by the tab bar — the map's **first
-       * interaction instruction** was effectively invisible on a tablet in portrait.
-       * It was rendering, so no visibility check would call it odd.
-       *
-       * The same accident had already happened twice (2026-07-23, the INDEX footer and
-       * the readout), and this token was created then. The third time is not a new
-       * value but **failing to use one that exists.**
+       * `…-bottom-inset`, not `…-legend-inset`: below `lg` only the bottom inset reserves the tab
+       * bar, which otherwise covers the hint on a portrait tablet.
        */
       // A toast stands above this hint, not on it (`src/shared/ui/toast-walls.ts`).
       data-toast-wall="bottom"

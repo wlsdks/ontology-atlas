@@ -8,31 +8,10 @@ import { controlClass } from "@/shared/ui/control-class";
 import type { ReviewQueueRow } from "@/entities/docs-vault";
 
 /**
- * What a person still has to look at, at the top of the document list.
- *
- * **Why this is the first thing in the sidebar.** Docs used to open on whatever
- * document sorted first — measured 2026-09-01, a 51-word definition in a
- * 1168×856 canvas that was 62% empty. Everything it showed, the map already
- * showed. This section is the one question no other surface answers: *what is
- * waiting on me.*
- *
- * **Two rows, never merged into one count.** They are different work:
- *
- *   - `raised` — an agent could not settle it and handed it over. Its own
- *     sentence says what has to be decided, so the row can be triaged without
- *     opening anything.
- *   - `changed-since-review` — a person approved this node and something
- *     rewrote it afterwards. Nobody reported that; it is recomputed from the
- *     file, so it appears even when the change came through a tool Atlas never
- *     saw (`docs/benchmark/FINDINGS-2026-09-02-review-marks.md`).
- *
- * **There is no third row for unreviewed nodes.** 80 of this repository's own 94
- * carry `created_by: agent:unknown`; a queue counting them opens on a wall of
- * hundreds and gets closed once. Absence stays unknown — the same invariant
- * `created_by` holds (`docs/DECISIONS.md`, 2026-08-22 record 93 §5).
- *
- * When both lists are empty the section is not drawn at all. A permanently
- * present "0 waiting" panel spends the top of the list on nothing.
+ * What waits on a person, at the top of the document list; drawn only when non-empty.
+ * The `raised` row (an agent handed it over, with its own sentence) and `changed-since-review`
+ * (recomputed from the file, `docs/benchmark/FINDINGS-2026-09-02-review-marks.md`) stay separate rows. No row for
+ * unreviewed nodes: absence stays unknown (`docs/DECISIONS.md`, 2026-08-22 record 93 §5).
  */
 export interface ReviewQueueSectionProps {
   rows: ReviewQueueRow[];
@@ -45,8 +24,7 @@ export function ReviewQueueSection({ rows, selectedSlug, onSelect, t }: ReviewQu
   if (rows.length === 0) return null;
   const raised = rows.filter((row) => row.reason === "raised");
   const changed = rows.filter((row) => row.reason === "changed-since-review");
-  // Three reasons, three groups. An approval nobody can check is neither fine
-  // nor drifted, and folding it into either would state something untrue.
+  // An approval nobody can check is neither fine nor drifted, so it is its own group.
   const unverifiable = rows.filter((row) => row.reason === "unverifiable");
 
   return (
@@ -111,9 +89,7 @@ function ReviewGroup({
 }) {
   return (
     <div data-testid={testId}>
-      {/* Same engraved caption the sibling sections use (`SectionLabel` in
-          `DocsSidebarBody`); this one carries an icon because two groups sit
-          under one border and the label alone would read as one list. */}
+      {/* Carries an icon because two groups sit under one border. */}
       <h3 className="flex flex-none items-center gap-1.5 px-3 pb-1.5 pt-3 font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
         {icon}
         {label}
@@ -121,9 +97,7 @@ function ReviewGroup({
       <ul className="px-1 pb-1">
         {rows.map((row) => {
           const active = row.slug === selectedSlug;
-          // The agent's own sentence is the row's second line. Without it a person
-          // has to open every row to find out which one is theirs to answer —
-          // triage is the whole point of the list.
+          // The agent's own sentence makes the row triageable without opening it.
           const detail = row.note ?? describe?.(row);
           return (
             <li key={row.slug}>
@@ -131,19 +105,13 @@ function ReviewGroup({
                 type="button"
                 onClick={() => onSelect(row.slug)}
                 aria-current={active ? "true" : undefined}
-                // The shared `row` control owns the touch floor, width, and
-                // transition. Only the second line is this row's own: the
-                // agent's sentence sits under the title, so the axis flips to
-                // column and the primitive's `items-center` with it.
+                // The shared `row` control owns touch floor, width and transition; the second line flips the axis to column.
                 className={controlClass({
                   shape: "row",
                   size: "md",
                   tone: "muted",
                   active,
-                  // `lift` on a row emits exactly the hover surface this list
-                  // wants, and `active` its selected surface. Writing either by
-                  // hand would put a fourth opinion about "selected" on a screen
-                  // that already has three lists.
+                  // `lift` and `active` come from the shared row, not hand-written surfaces.
                   hoverSurface: "lift",
                   className: "flex-col items-start gap-0.5 rounded-chip px-2 py-1.5",
                 })}
@@ -159,10 +127,7 @@ function ReviewGroup({
                   {row.title}
                 </span>
                 {detail ? (
-                  // Two lines, not one truncated line. The agent's sentence is what
-                  // makes the row triageable without opening it; measured at the
-                  // 280px sidebar, one line cut "…is a legal ret…" and sent the
-                  // reader into the document to learn what the row already knew.
+                  // Two lines: one truncated line at 280px cuts the sentence that makes the row triageable.
                   <span className="line-clamp-2 w-full text-caption text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
                     {detail}
                   </span>

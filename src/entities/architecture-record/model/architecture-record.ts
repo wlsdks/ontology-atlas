@@ -7,30 +7,18 @@ const STATUSES = ['conforms', 'violated', 'unknown'] as const;
 
 export type ArchitectureRecordStatus = (typeof STATUSES)[number];
 
-/**
- * Where the measured source stood when the receipt was minted. A git source carries a real
- * commit short sha and a dirty flag; a folder source carries a `sha256:` content fingerprint.
- * The two are never conflated: a fingerprint is not a revision and must never render as one.
- */
+/** Git sources carry a short sha and dirty flag; folder sources a `sha256:` fingerprint, never shown as a revision. */
 export type ArchitectureRecordSource =
   | { kind: 'git'; revision: string; dirty: boolean }
   | { kind: 'folder'; fingerprint: string };
 
 interface ArchitectureRecordMeasured {
-  /** ISO timestamp of the measurement. */
   at: string;
   tool: { name: string; version: string };
   source: ArchitectureRecordSource;
 }
 
-/**
- * One measured crossing: how many imports actually ran from one role to another.
- *
- * This is observation, never rule. The profile says what *may* cross; this says what *did*, at
- * the moment stamped in `measured`. `fromRole === toRole` is legal and common (the scanner's
- * first rule allows same-role imports unconditionally) and is by far the largest count on this
- * repository, which is why anything ranking these must exclude it.
- */
+/** Imports observed from one role to another; same-role edges are legal and dominate, so rankings exclude them. */
 export interface ArchitectureRoleEdge {
   fromRole: string;
   toRole: string;
@@ -41,20 +29,9 @@ interface ArchitectureRecordConformance {
   status: ArchitectureRecordStatus;
   violationCount: number;
   violations: unknown[];
-  /**
-   * The measured traffic between roles. Optional because a record written before this field was
-   * declared parses unchanged and simply has nothing to draw. Rows carry an `evidence` array too;
-   * it is deliberately undeclared, because this parser validates and passes through rather than
-   * rewriting, and normalizing one field in a pass-through parser is a question for the next
-   * reader with no answer.
-   */
+  /** Optional for older records; rows' undeclared `evidence` passes through unvalidated. */
   observedRoleEdges?: ArchitectureRoleEdge[];
-  /** Type-only edges left outside the violation count as their own named class. */
-  /**
-   * ⚠️ Renamed from `typeOnlyEdgeCount` at the 2026-08-29 reconciliation. It counts what a
-   * profile's own `dependency_usages` declaration removed from the verdict, whatever the usage —
-   * the same receipt under a name that stays true if a third usage is ever classified.
-   */
+  /** Edges a profile's `dependency_usages` removed from the verdict (formerly `typeOnlyEdgeCount`). */
   excludedByUsage?: number;
   unknown?: {
     coverageIncomplete?: boolean;
@@ -66,9 +43,9 @@ interface ArchitectureRecordConformance {
 
 export interface ArchitectureRecord {
   contract: typeof RECORD_CONTRACT;
-  /** The reviewed profile this receipt was measured against — identity and hash, never the body. */
+  /** Identity and hash of the reviewed profile, never its body. */
   profile: { uid: string; slug: string; contentHash: string };
-  /** The stamped `architectureBrief:v1` the writer persisted. */
+  /** The persisted `architectureBrief:v1`. */
   brief: {
     contract: typeof BRIEF_CONTRACT;
     measured: ArchitectureRecordMeasured;
@@ -101,11 +78,7 @@ function countOf(value: unknown, name: string): number {
   return value as number;
 }
 
-/**
- * ⚠️ **No absolute machine path leaves the sidecar.** The 2026-08-27 council record strips
- * `source.rootPath` from the persisted envelope; a record that still carries one anywhere is
- * invalid, not merely untidy — accepting it would quietly re-open the hole the contract closed.
- */
+/** No absolute machine path may persist in a receipt; a rootPath anywhere makes it invalid. */
 function assertNoRootPath(value: unknown, path: string): void {
   if (Array.isArray(value)) {
     value.forEach((item, index) => assertNoRootPath(item, `${path}[${index}]`));
@@ -172,14 +145,7 @@ function parseConformance(value: unknown): ArchitectureRecordConformance {
   return conformance as unknown as ArchitectureRecordConformance;
 }
 
-/**
- * Parse one `.ontology-atlas/architecture/<profile-slug>.json` machine receipt.
- *
- * Throws on anything that is not a valid `architectureRecord:v1` envelope — including a
- * profile-shaped document. The two parsers reject each other by contract (2026-08-27 council):
- * a reviewed profile carries rules and must never be read as a measurement, and a dated
- * measurement must never be read as reviewed rules.
- */
+/** Parses an `architectureRecord:v1` receipt; a profile-shaped document is rejected, as the profile parser rejects receipts. */
 export function parseArchitectureRecord(value: unknown): ArchitectureRecord {
   const record = asObject(value, 'architecture record');
   if (
@@ -208,7 +174,6 @@ export function parseArchitectureRecord(value: unknown): ArchitectureRecord {
   parseConformance(brief.conformance);
   assertNoRootPath(record, 'record');
 
-  // Validation is structural; the receipt itself is returned unrewritten so the surface and any
-  // contract test see exactly what the writer persisted.
+  // Validated structurally and returned as persisted.
   return record as unknown as ArchitectureRecord;
 }

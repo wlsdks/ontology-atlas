@@ -8,7 +8,7 @@ export interface WikiRetrievalResult {
   /** Suggestions only: no currentness, entailment, or complete-read claim. */
   candidates: { slug: string; title: string; sameSource: boolean; matchedTerms: string[] }[];
   searchedPages: number;
-  /** Pages whose bodies were available in the Library cache; others use metadata. */
+  /** Pages with bodies in the Library cache; the rest match on metadata. */
   fullTextPages: number;
   limit: number;
   omittedMatches: number;
@@ -24,8 +24,7 @@ function terms(text: string): Map<string, number> {
   for (const word of prose.normalize('NFKC').toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []) {
     if (word.length < 2 || word.length > 64 || !/\p{L}/u.test(word) || STOP.has(word)) continue;
     found.set(word, 1);
-    // Korean particles attach to nouns. Bigrams provide a modest fallback without a
-    // language service; exact terms remain stronger. This is lexical, not semantic search.
+    // Korean particles attach to nouns, so bigrams give a lexical fallback; exact terms rank higher.
     if (/^[가-힣]{3,}$/u.test(word)) {
       for (let i = 0; i < word.length - 1; i++) {
         const gram = word.slice(i, i + 2);
@@ -36,7 +35,7 @@ function terms(text: string): Map<string, number> {
   return found;
 }
 
-/** Build only when a Compile turn starts, from already-read Library data. No I/O or idle scan. */
+/** Built when a Compile turn starts, from Library data already read; no I/O. */
 export function buildWikiRetrievalIndex(docs: readonly VaultDoc[], rawBySlug: ReadonlyMap<string, string> = new Map()) {
   const frequencies = new Map<string, number>();
   const pages = docs.filter((doc) => isWikiPage(doc) && !isWikiFurnitureSlug(doc.slug)

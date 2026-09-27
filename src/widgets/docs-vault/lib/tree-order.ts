@@ -1,37 +1,9 @@
 import type { VaultDoc, VaultTreeNode } from '@/entities/docs-vault';
 
 /**
- * The ordering contract for the document list (the docs-vault sidebar tree).
- *
- * ## Why two axes
- *
- * Owner observation: *"It would be good to have sort conditions like folders-separated
- * or documents-first."* (it would be good to have sort conditions like folders-separated
- * or documents-first).
- *
- * Measuring the dogfood vault (158 documents) shows why. The top-level `docs`
- * folder draws its 6 folders and 30 documents **mixed into one alphabetical run**,
- * so the `ontology` folder holding 96 nodes sits 23rd of 36 rows, buried between
- * "npm publish" and "Product Plan v9". Finding a folder means filtering 30 documents by
- * eye.
- *
- * So the axes are split. They answer different questions:
- *
- * - **group** — *which* to show first, folders or documents
- * - **sort** — in *what order* within the same group
- *
- * Mixed into one dropdown, a combination like "folders first + recently modified"
- * cannot be expressed, the value count grows to 4, and the user has to make two
- * decisions at once.
- *
- * ## Why the URL
- *
- * This app keeps session state in the URL (`?slug=` · `?view=` · `?tab=`), because
- * it is shareable and an agent can read and reproduce it. If sort were hidden
- * state, "what order was I looking at" would drop out of the handoff.
- *
- * Defaults **omit** the parameter — a short link is easier to paste. An unknown
- * value is not an error but the default (a shared link gets edited in other hands).
+ * Ordering contract for the docs sidebar tree: `group` (folders or documents first) and `sort`
+ * (order within a group) are separate axes so combinations stay expressible. Kept in the URL for
+ * shareable handoff; defaults are omitted and unknown values fall back to the default.
  */
 
 export const DOCS_TREE_SORTS = ['name', 'recent'] as const;
@@ -44,10 +16,7 @@ export const DOCS_TREE_GROUPS = ['folders', 'docs'] as const;
 
 export type DocsTreeGroup = (typeof DOCS_TREE_GROUPS)[number];
 
-/**
- * Folders first by default — Finder, VS Code and Obsidian all do that, and the
- * mixed drawing up to now is closer to a defect. "Mixed" is not offered as a value.
- */
+/** Folders first by default; "mixed" is not offered. */
 export const DEFAULT_DOCS_TREE_GROUP: DocsTreeGroup = 'folders';
 
 export function parseDocsTreeSort(raw: string | null | undefined): DocsTreeSort {
@@ -78,16 +47,8 @@ function parseUpdatedAt(value: string | undefined): number {
 }
 
 /**
- * Compute the whole tree's modification times in one pass.
- *
- * `VaultTreeNode` does not carry a modification time, so the manifest (`docsBySlug`)
- * has to be consulted. Looking it up inside the comparator would repeat O(n log n)
- * map lookups and date parses per sort, so the tree is walked once and folded per
- * path.
- *
- * A folder uses **the newest of the documents it holds**. The folder's own mtime is
- * not in the manifest, and even if it were, the documents say more accurately "what
- * happened in here".
+ * One pass over the tree for modification times from the manifest, instead of lookups inside the
+ * comparator. A folder uses its newest document's time.
  */
 export function buildDocsTreeRecencyIndex(
   tree: VaultTreeNode,
@@ -126,11 +87,8 @@ export interface DocsTreeOrder {
 }
 
 /**
- * Sort one folder's children. The source array is not touched — `manifest.tree` is
- * read-only data shared by several screens.
- *
- * Group always comes before sort. If choosing "recently modified + folders first"
- * dropped an old folder below a recent document, the two axes would collapse into one.
+ * Sorts one folder's children without touching `manifest.tree`, which several screens share. Group
+ * always applies before sort.
  */
 export function sortDocsTreeNodes(
   nodes: readonly VaultTreeNode[],

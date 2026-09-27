@@ -1,12 +1,6 @@
 import { WIKI_DIR } from "@/shared/lib/wiki-page-schema";
 
-/**
- * A page a person starts by hand. Owner direction 2026-09-07: the wiki is not only what
- * an agent writes. The page carries the contract's shape from the first byte — every
- * section, `created_by: human`, empty `sources:` (the contract allows it) — so the list
- * can say what it still lacks rather than calling the file foreign. The person writes
- * the body in any editor; the folder watcher brings it back.
- */
+/** A hand-started page with the full contract shape, `created_by: human` and empty `sources:`. */
 export function humanPageSlug(title: string): string {
   const words = title
     .toLowerCase()

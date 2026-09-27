@@ -1,5 +1,4 @@
-// The docs-vault manifest schema — exactly the shape `scripts/build-docs-vault.mjs`
-// emits at build time.
+// The manifest shape `scripts/build-docs-vault.mjs` emits.
 
 export interface VaultHeading {
   depth: number;
@@ -22,65 +21,31 @@ export interface VaultDoc {
   }>;
   headings: VaultHeading[];
   excerpt: string;
-  /**
-   * Exact source paths parsed from the persisted project competency block.
-   * Derived at load time; never written back to vault Markdown.
-   */
+  /** Source paths from the project competency block; derived at load, never written back. */
   meaningEvidencePaths?: string[];
   /**
-   * The meaning findings the validator reads, as their portable codes
-   * (`src/shared/lib/meaning-findings.ts`): `definition-missing`,
-   * `boundary-missing`, `uncertainty-missing`, `epistemic-exclusion`,
-   * `slug-outside-kind-folder`.
-   *
-   * Three answers, and telling them apart is the point. Absent means the document has
-   * no `kind:` and was never a node to ask about. `null` means it is a node and the rule
-   * was not available where the manifest was built (`scripts/build-docs-vault.mjs` run
-   * from a worktree with no `mcp/`), so nothing was measured. An array means the rule ran,
-   * and `[]` means it found nothing. A reader must never turn `null` into "clean".
-   *
-   * Computed where the body is already in hand (`buildMdEntry`, and the same step
-   * in `scripts/build-docs-vault.mjs`), so it costs no extra read. `boundary-missing`
-   * may appear twice, once per side, exactly as the validator reports it; a reader
-   * counting nodes rather than findings dedupes.
-   *
-   * The sixth finding, `folder-only-evidence`, is never here: it asks the
-   * filesystem whether a cited path is a directory, which neither manifest builder
-   * can answer for an arbitrary vault.
+   * Meaning finding codes (`src/shared/lib/meaning-findings.ts`). Absent: not a node. `null`: the
+   * rule was unavailable at build, so nothing was measured; never read it as clean.
    */
   meaningFindings?: string[] | null;
   wordCount: number;
   updatedAt: string;
-  /**
-   * How many commits touched this document, counted from Git at build time and
-   * carried across moves (`docs/.moved.json`). Only the bundled product manifest
-   * has it; a local folder and a composed ledger do not.
-   */
+  /** Commits touching this document, carried across moves; bundled manifest only. */
   revision?: number;
   linksOut: string[];
-  /**
-   * `file.lastModified` (ms), used for conflict detection in local mode. Undefined
-   * in static mode, where the manifest is a build artifact. The caller (`saveDoc`)
-   * passes it back as `expectedMtime` to detect an outside edit.
-   */
+  /** `file.lastModified` in local mode, passed back as `expectedMtime` to detect outside edits. */
   mtime?: number;
 }
 
 /**
- * One raw source file — a project document kept verbatim under `sources/`.
- *
- * A vault holds three kinds of file and only one is the graph (`docs/DECISIONS.md`,
- * 2026-09-05). This is the first kind: whatever format it arrived in, unconverted. The
- * walk records what a directory listing already knows — name, format, byte length,
- * mtime — and **never opens the file**, which is why a PDF can live in the folder
- * without a node appearing in the map.
+ * A raw file under `sources/`, known from its directory entry only and never opened
+ * (`docs/DECISIONS.md` 2026-09-05, "A vault holds three kinds of file and only one is the graph").
  */
 export interface VaultSourceFile {
-  /** Vault-relative path, always beginning `sources/`. */
+  /** Always begins `sources/`. */
   path: string;
-  /** File name as it sits on disk. */
   name: string;
-  /** Lowercase extension without the dot (`pdf`), or `''` when the name has none. */
+  /** Lowercase extension without the dot, or `''`. */
   format: string;
   /** Byte length from the directory entry. */
   bytes: number;
@@ -99,7 +64,7 @@ export interface VaultTreeNode {
 
 export interface VaultBacklinkEntry {
   fromSlug: string;
-  /** 120 characters of context around the link; the link text is shown **[in bold]**. */
+  /** 120 characters around the link, with the link text in bold. */
   context: string;
   linkText: string;
 }
@@ -107,41 +72,16 @@ export interface VaultBacklinkEntry {
 export interface VaultManifest {
   version: string;
   generatedAt: string;
-  /**
-   * Whether the walk hit a limit and saw **only part** of the tree. Silent truncation
-   * reads as "we saw everything", so the manifest carries the fact — a screen saying
-   * "N documents" must be able to say in the same place whether N is all of them.
-   * Optional because the build-time manifest has no such concept.
-   */
+  /** The walk hit a limit and saw only part of the tree. */
   walkTruncated?: boolean;
-  /** Directories skipped whole as cache or dependencies — the evidence for why they are missing. */
+  /** Directories skipped whole as cache or dependencies. */
   prunedDirs?: string[];
-  /**
-   * Source files the walk passed over without reading. Present only when there
-   * were any, so a documents folder's manifest is unchanged.
-   *
-   * This is the whole of what the app knows about code in the chosen folder, and
-   * it exists for one screen: the first-run card could not tell a codebase from a
-   * documents folder, so in a repository of five TypeScript files it opened by
-   * announcing it had "found 1 documents".
-   */
+  /** Source files passed over unread; present only when nonzero. */
   sourceFileCount?: number;
   docs: VaultDoc[];
-  /**
-   * `{ oldSlug: newSlug }` for documents the repository moved (`docs/.moved.json`).
-   * Only the bundled product manifest carries it; a saved `?slug=`, pin or recent
-   * entry from before a move still opens the document.
-   */
+  /** `{ oldSlug: newSlug }` from `docs/.moved.json`, so old links still open; bundled manifest only. */
   aliases?: Record<string, string>;
-  /**
-   * Raw sources under `sources/`, present only when the folder holds any.
-   *
-   * They are a **sibling of `docs`, never a member of it**: a document here has no
-   * frontmatter to parse and no slug to address, so nothing downstream — derivation,
-   * search, the tree — can mistake one for a concept. That separation is the
-   * construction that keeps arbitrary formats out of the graph, rather than a filter
-   * some later reader has to remember to apply.
-   */
+  /** Raw sources, kept beside `docs` and never in it so nothing downstream treats one as a concept. */
   sources?: VaultSourceFile[];
   backlinksDetail: Record<string, VaultBacklinkEntry[]>;
   tags: Record<string, string[]>;

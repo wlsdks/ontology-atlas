@@ -59,9 +59,7 @@ import {
   type ArchitectureAgentRuntime,
 } from '../model/architecture-agent';
 
-/* The runtime never changes inside a session, so the store is a constant read. Same shape as
-   `DocsVaultPage`; two surfaces answering "am I the installed app?" differently would be a
-   question the next reader has to resolve twice. */
+/* The runtime never changes within a session, so the store is a constant read, as in `DocsVaultPage`. */
 const subscribeDesktopRuntime = () => () => undefined;
 const readDesktopRuntime = () => isTauriVaultRuntime();
 const readServerDesktopRuntime = () => false;
@@ -79,11 +77,9 @@ function projectSlugForProfile(profile: ArchitectureProfile, docs: ReadonlyArray
 
 async function verifiedAtlasCliEntry(candidateRoots: readonly string[]): Promise<string | null> {
   /*
-   * The target repository and the Atlas tool checkout are different things. The first version
-   * searched only `sourceRoot`, which happened to work while Atlas inspected itself and made every
-   * ordinary project appear to have lost its fallback. A vault commonly lives inside an Atlas
-   * checkout (`docs/ontology`), so inspect the independently known roots and a bounded set of vault
-   * ancestors. Every candidate still has to prove the Atlas package name and real CLI entry.
+   * The target repository and the Atlas tool checkout differ; a vault often lives inside an Atlas
+   * checkout (`docs/ontology`), so inspect the known roots and a bounded set of vault ancestors. Every candidate must
+   * prove the Atlas package name and a real CLI entry.
    */
   const roots = new Set<string>();
   for (const candidate of candidateRoots) {
@@ -109,11 +105,7 @@ async function verifiedAtlasCliEntry(candidateRoots: readonly string[]): Promise
   return null;
 }
 
-/**
- * `embedded` — the Harness shell above already owns the destination's eyebrow, `h1` and explainer,
- * so the blueprint drops its own and keeps everything else. Two `h1`s on one screen is not a style
- * question: it is two answers to "what is this page", and a screen reader reads both.
- */
+/** `embedded`: the Harness shell owns the eyebrow, `h1` and explainer, so the blueprint drops its own. */
 export function ArchitecturePage({
   embedded = false,
   harnessPanelId,
@@ -140,8 +132,7 @@ export function ArchitecturePage({
     () => mode === 'static' ? staticManifest.docs : localVault.manifest?.docs ?? EMPTY_DOCS,
     [localVault.manifest, mode, staticManifest.docs],
   );
-  /* The report, not the list: a document this surface cannot read is named on the screen instead
-     of replacing every profile in the folder with an error boundary (2026-09-03). */
+  /* The report, not the list: an unreadable document is named instead of failing every profile. */
   const profileReport = useMemo(() => deriveArchitectureProfilesReport(docs), [docs]);
   const profiles = profileReport.profiles;
   const profileProblems = profileReport.problems;
@@ -190,7 +181,6 @@ export function ArchitecturePage({
   }, [acpBridgeAvailable]);
 
   const acpRuntime = acpRuntimes.find((runtime) => runtime.id === acpRuntimeId) ?? null;
-  /* Same list as the map's, read from the same file — one vault, one set of attached tools. */
   const vaultConnectors = useVaultConnectors(localVault.handle);
   const acpMcpServers = useMemo(() => {
     const registration =
@@ -200,8 +190,7 @@ export function ArchitecturePage({
             validForCurrentVault: localVault.agentConfigStatus?.codexConfigValid === true,
           }
         : null;
-    // The vault server first, then the connectors the person switched on — the order the
-    // handshake reads, and the one that keeps a same-named entry from replacing our own.
+    // The vault server first, then enabled connectors: handshake order, so a same-named entry cannot replace ours.
     return [
       ...vaultMcpServers(agentServer.launch, gitVaultPath, registration, {
         ownsWriteGate: runtimeOwnsWriteGate(acpRuntimeId),
@@ -239,7 +228,6 @@ export function ArchitecturePage({
     });
     setAgentOpen(true);
   }, [gitVaultPath]);
-  /* The click-open meaning layer: reviewed concepts joined into roles, real on every surface. */
   const conceptsByProfile = useMemo(() => {
     const out: Record<string, Record<string, RoleConcept[]>> = {};
     for (const profile of profiles) out[profile.slug] = deriveRoleConcepts(profile, docs);
@@ -269,13 +257,7 @@ export function ArchitecturePage({
   /* A browser cannot list a source folder; only the installed app's bridge can. */
   const sourceListingCapable =
     mode === 'local' && !!localVault.handle && getTauriVaultRootPath(localVault.handle) != null;
-  /*
-   * Why the surface must say *which* thing is missing (2026-08-28 inspection). The installed app
-   * opens on a sample with no folder bound, and there the old single sentence told the reader
-   * "source modules appear in the installed app" while being the installed app. Two different
-   * absences were wearing one message. The runtime answers which one this is: a browser can never
-   * list a folder, and an app without a bound folder is one open away.
-   */
+  /* Two absences need two messages: a browser can never list a folder; an app without a bound one can. */
   const desktopRuntime = useSyncExternalStore(
     subscribeDesktopRuntime,
     readDesktopRuntime,
@@ -286,10 +268,7 @@ export function ArchitecturePage({
     : desktopRuntime
       ? ('unbound' as const)
       : ('browser' as const);
-  /*
-   * Persisted conformance receipts live in the vault sidecar, so both surfaces read them through
-   * the same handle. Static/demo mode carries no sidecar and therefore never a record.
-   */
+  /* Receipts live in the vault sidecar; static and demo mode have none. */
   const recordsByProfile = useArchitectureRecords(
     mode === 'local' && localVault.status === 'loaded' ? localVault.handle : null,
     profiles.map((profile) => profile.slug),
@@ -323,8 +302,7 @@ export function ArchitecturePage({
       const distinctSourceRoots = [...new Set(bindingsByProject.values())];
       const draftSourceRoot = distinctSourceRoots.length === 1 ? distinctSourceRoots[0]! : null;
       const cliEntry = await verifiedAtlasCliEntry([...distinctSourceRoots, vaultRoot]);
-      /* The vault root is known even when no project source has been connected. Preserve that
-         truth in every task packet; `sourceRoot: null` is the honest missing half. */
+      /* `sourceRoot: null` is the honest missing half when no project source is connected. */
       const draftContext: ArchitectureHandoffContext = {
         sourceRoot: draftSourceRoot,
         vaultRoot,
@@ -339,11 +317,7 @@ export function ArchitecturePage({
           cliEntry,
         };
         if (!sourceRoot) continue;
-        /*
-         * A read-only directory walk fills the blueprint's bands with the source modules each
-         * role glob actually contains. Listing only — no file is opened, no import is read;
-         * conformance stays with the MCP and CLI.
-         */
+        /* A read-only directory listing; no file is opened, conformance stays with the MCP and CLI. */
         const listDir = async (relativePath: string): Promise<SourceDirEntry[] | null> => {
           try {
             const entries = await listTauriVaultEntries(sourceRoot, relativePath);
@@ -401,8 +375,7 @@ export function ArchitecturePage({
           sourceModulesByProfile={sourceModulesByProfile}
           sourceListingCapable={sourceListingCapable}
           sourceUnavailableReason={sourceUnavailableReason}
-          /* The installed app must never offer its own download; the browser is the only
-             runtime that can hand a person the app that lists their source folder. */
+          /* The installed app must never offer its own download. */
           offersInstalledApp={!desktopRuntime}
           recordsByProfile={recordsByProfile}
           conceptsByProfile={conceptsByProfile}

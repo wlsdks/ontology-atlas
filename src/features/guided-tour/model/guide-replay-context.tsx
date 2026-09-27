@@ -12,22 +12,12 @@ import {
 } from "react";
 
 /**
- * The wiring for "replay this screen's guidance".
- *
- * Guidance rightly does not reappear once seen (do not disturb), but with no way at
- * all to see it again it becomes information that vanishes when you pass it. The map
- * has the compass tile at its top right for that, but the other destinations have no
- * such permanent chrome — and adding a help button per screen reinvites the defect
- * where the icon count differs from screen to screen.
- *
- * So re-entry gathers into **the one settings menu that already exists on every
- * screen**. The current screen registers the function that opens its own guidance
- * here, and the settings menu reads only that function to draw a row (no
- * registration, no row). The shell owns the provider, so a page only registers, and
- * a settings menu rendered outside the provider quietly falls to "not registered".
+ * "Replay this screen's guidance" through the settings menu present on every screen, instead
+ * of a help button per screen. A screen registers its opener; no registration, no row. The
+ * shell owns the provider, and a menu outside it falls back to not registered.
  */
 interface GuideReplayValue {
-  /** The function that opens the current screen's guidance — `null` when none is registered. */
+  /** `null` when none is registered. */
   replay: (() => void) | null;
   register: (fn: (() => void) | null) => void;
 }
@@ -39,9 +29,8 @@ const GuideReplayContext = createContext<GuideReplayValue>({
 
 export function GuideReplayProvider({ children }: { children: ReactNode }) {
   const [replay, setReplay] = useState<(() => void) | null>(null);
-  // A function argument to setState is interpreted as an updater, so storing a
-  // function as a value needs one wrapping layer — otherwise the registered function
-  // runs immediately and the guidance opens by itself.
+  // setState treats a function argument as an updater, so the stored function is wrapped, or
+  // it would run immediately and open the guidance.
   const register = useCallback((fn: (() => void) | null) => {
     setReplay(() => fn);
   }, []);
@@ -49,14 +38,13 @@ export function GuideReplayProvider({ children }: { children: ReactNode }) {
   return <GuideReplayContext.Provider value={value}>{children}</GuideReplayContext.Provider>;
 }
 
-/** The side the settings menu reads. */
+/** Read by the settings menu. */
 export function useGuideReplay(): (() => void) | null {
   return useContext(GuideReplayContext).replay;
 }
 
 /**
- * The side where a screen registers its own guidance. `fn` may be recreated on every
- * render, so it is mirrored in a ref and the registered value is fixed as a single
+ * Registers a screen's guidance. `fn` may change every render, so a ref mirrors it behind a
  * wrapper that is stable until unmount.
  */
 export function useRegisterGuideReplay(fn: (() => void) | null): void {

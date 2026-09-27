@@ -1,8 +1,6 @@
 /**
- * Anchor resolution plus card placement. testid → DOMRect is DOM-dependent
- * (meaningful only in jsdom or a browser), while card placement and clamping are pure
- * functions — `resolve-anchor-rect.test.ts` unit-tests only the latter (the former is
- * integration in nature).
+ * Anchor resolution (DOM-dependent, integration in nature) plus pure card placement and
+ * clamping, which `resolve-anchor-rect.test.ts` unit-tests.
  */
 
 export interface AnchorBox {
@@ -13,20 +11,9 @@ export interface AnchorBox {
 }
 
 /**
- * Finds `[data-testid="<testId>"]` and returns its viewport-relative box. Returns
- * `null` when the element is absent, has zero size (`display:none`), or is outside
- * the viewport (fully hidden) — the signal for the caller (`computeVisibleSteps`) to
- * skip that step automatically.
- *
- * SSR guard — `useGuidedTour`'s `visibleSteps` useMemo calls this on every render
- * (even while the tour is closed), and that first render runs on the server too (a
- * Next client component's initial HTML is still produced by the server). On the
- * server, called without the `doc` argument, referencing the global `document` is
- * itself a `ReferenceError` (found 2026-07-24 — a stack trace was printed to the
- * server console on the first request to every page; it was invisible on screen
- * because the client re-run after hydration overwrote it with the correct value).
- * Checking `typeof document` first drops it quietly to `null` on the server (treated
- * as an unresolved anchor).
+ * The viewport-relative box of `[data-testid="<testId>"]`, or `null` when absent, zero-size or
+ * off-viewport, so `computeVisibleSteps` skips the step. `useGuidedTour` calls this during the
+ * server render too, where the global `document` throws, so `typeof document` is checked first.
  */
 export function resolveAnchorRect(
   testId: string,
@@ -45,23 +32,10 @@ export function resolveAnchorRect(
 }
 
 /**
- * The single viewport test both anchor kinds share: a box is usable as a spotlight
- * target only when it has real size **and** some part of it is inside the viewport.
- *
- * It exists as its own pure function because the two anchor kinds arrive by
- * different routes. The testid kind is measured here from the DOM; the canvas-node
- * kind arrives as a per-frame `worldToScreen` projection written into the probe div
- * by `use-topology-loop.ts`, which `GuidedTourOverlay` reads in its own rAF tick.
- * That second route used to check size only (round 4, 2026-09-04), so a first
- * domain panned off-screen still counted as resolved: the cutout was drawn outside
- * the viewport, every pixel on screen was scrimmed uniformly, and step 4's copy —
- * "one dot keeps a ring around it and stays lit" — described nothing the person
- * could see. Returning `null` here routes that case to the existing fallback (full
- * scrim, full blocker, and the card's "open that dot from here" button) instead of
- * an invisible hole.
- *
- * A partly-visible box is kept: part of the ring is still on screen, and clamping or
- * rejecting it would make the cutout jump while the camera spring is running.
+ * The viewport test both anchor kinds share: real size and some part inside the viewport. The
+ * canvas-node kind arrives as a per-frame projection (`use-topology-loop.ts`, read by
+ * `GuidedTourOverlay`); `null` routes an off-screen node to the full-scrim fallback instead of
+ * an invisible cutout. A partly visible box is kept so the cutout does not jump mid-spring.
  */
 export function visibleAnchorBox(
   rect: AnchorBox,
@@ -83,49 +57,32 @@ export function visibleAnchorBox(
 type CardPlacementSide = "center" | "below" | "above" | "right" | "left";
 
 export interface CardPlacementInput {
-  /** The target rect — `null` gives a centred card with no cutout (step 1, welcome). */
+  /** `null` gives a centred card with no cutout (step 1, welcome). */
   targetRect: AnchorBox | null;
   cardWidth: number;
   cardHeight: number;
   viewportWidth: number;
   viewportHeight: number;
-  /** The gap between card and target. Defaults to 12px. */
+  /** Defaults to 12px. */
   gap?: number;
-  /** The gap used for the "below" side only — room for a name the target wears under itself. Defaults to `gap`. */
+  /** Only for the "below" side, leaving room for a name under the target. Defaults to `gap`. */
   belowGap?: number;
-  /** The minimum margin from the viewport edge. Defaults to 16px. */
+  /** Defaults to 16px. */
   edgeMargin?: number;
   /**
-   * **The card must not sit on the target itself.** Set for a canvas-node anchor.
-   *
-   * A DOM anchor is a box the card stands beside; a canvas node is a thing the copy asks the
-   * person to *look at and press*, and the step that does the asking is the one that must not
-   * cover it. Measured at 1200×863: the try-click card occupied x 420–780, y 307–555 while the
-   * lit node sat inside that rectangle, so the sentence "press the lit dot" pointed underneath
-   * the card saying it.
-   *
-   * With this set the sides are tried roomiest-first — the two horizontal ones before the two
-   * vertical ones, because a card beside the node leaves the node *and* the name under it
-   * uncovered, while a card above or below has only the gap to work with — and a side is taken
-   * only when the placed card, **after** the viewport clamp, still clears the padded target. The
-   * clamp is where an unchecked "it fits" turns back into an overlap.
+   * The card must not cover the target (set for a canvas-node anchor the copy asks to press).
+   * Sides are tried roomiest-first, horizontal before vertical so the node's name stays visible,
+   * and a side counts only when the card still clears the padded target after the clamp.
    */
   avoidTarget?: boolean;
   /**
-   * Boxes the card may not cover — the map's top toolbar (2026-09-25). At 1512x949 the
-   * try-click card stood at y 61–309 over the toolbar's second line and cut the path
-   * chip mid-word, because only the target and the window were in its collision
-   * boundary. A placement that would cover one of these moves below it when the card
-   * still fits the window there (and, with `avoidTarget`, still clears the target).
+   * Boxes the card may not cover, such as the map's top toolbar. A covering placement moves
+   * below the box when the card still fits there (and clears the target with `avoidTarget`).
    */
   keepClear?: readonly AnchorBox[];
   /**
-   * **What the step is talking about, drawn on the canvas** — node names and discs the card
-   * should leave in view (interaction audit, 2026-09-25). The "lines are relations" step has no
-   * anchor and centred its card straight onto a domain and its line to the project; the
-   * datasheet step put its card on the node it had just opened. With these given, the card
-   * takes the first place, in its usual order, that covers none of them, or else the place that
-   * covers the least. A target cutout is still never covered.
+   * Node names and discs the step talks about. The card takes the first place in its usual
+   * order that covers none, else the least-covering one; a target cutout is never covered.
    */
   avoidRects?: readonly AnchorBox[];
 }
@@ -137,20 +94,14 @@ export interface CardPlacement {
 }
 
 /**
- * Placement adjacent to the cutout — the first candidate that fits the viewport is
- * chosen in the order below → above → right → left, and if none fits completely the
- * first candidate (below) is clamped into the viewport.
- *
- * With `avoidTarget` the order is roomiest-first (horizontal sides before vertical ones) and
- * a side counts only when the *placed* card clears the padded target; see that field's note.
+ * Places the card beside the cutout: the first candidate that fits, in the order below, above,
+ * right, left, else the clamped first. With `avoidTarget` the order is roomiest-first.
+ * At most 16 candidates, each against every avoid and keep-clear box: O(16 × (avoid + keepClear)).
  */
 export function computeCardPlacement(input: CardPlacementInput): CardPlacement {
   const gap = input.gap ?? 12;
-  // A canvas node wears its name under the disc, outside the anchor rect. A
-  // card placed "below" at the plain gap sat on that name: at step 4 the card's
-  // top (474) cut the hub's name (465–484) in half while the card asked the
-  // person to press that very node (measured 2026-09-19). The band is only
-  // for the side that meets the name.
+  // A canvas node wears its name under the disc, outside the anchor rect, so the "below" side
+  // needs a band or the card cuts the name the step asks the person to press.
   const belowGap = input.belowGap ?? gap;
   const edgeMargin = input.edgeMargin ?? 16;
   const { targetRect, cardWidth, cardHeight, viewportWidth, viewportHeight } = input;
@@ -172,9 +123,8 @@ export function computeCardPlacement(input: CardPlacementInput): CardPlacement {
       side: "center" as const,
     };
     if (avoid.length === 0 || covered(centred) === 0) return centred;
-    // The centre covers what the step explains: try the other resting places of a free-floating
-    // card — the middle of each edge, then the corners — and keep the clearest, the centre
-    // winning ties so nothing moves without a reason.
+    // The centre covers what the step explains: try the middle of each edge, then the corners, and
+    // keep the clearest, the centre winning ties so nothing moves without a reason.
     const top = edgeMargin;
     const bottom = Math.max(edgeMargin, viewportHeight - cardHeight - edgeMargin);
     const left = edgeMargin;
@@ -244,8 +194,8 @@ export function computeCardPlacement(input: CardPlacementInput): CardPlacement {
   const place = (candidate: { side: CardPlacementSide; top: number; left: number }): CardPlacement => {
     let top = clamp(candidate.top, edgeMargin, maxTop);
     const left = clamp(candidate.left, edgeMargin, Math.max(edgeMargin, viewportWidth - cardWidth - edgeMargin));
-    // Step below every kept-clear box the card would sit on, as long as the window
-    // still holds it there; otherwise keep the placement (the card stays readable).
+    // Step below every kept-clear box the card would sit on while the window still holds it;
+    // otherwise keep the placement.
     for (const box of keepClear) {
       if (!covers(top, left, box)) continue;
       const below = box.top + box.height + gap;
@@ -255,10 +205,9 @@ export function computeCardPlacement(input: CardPlacementInput): CardPlacement {
   };
 
   if (avoid.length > 0 && !input.avoidTarget) {
-    // Beside a DOM target (a panel cutout): the usual order, but a side that covers what the
-    // step explains yields to one that does not, and among sides that fit, the least covered.
-    // Each side may also slide along the target's edge (to its ends and to the window's), so a
-    // card beside a tall panel can move up or down past the node rather than sit on it.
+    // Beside a DOM target: the usual order, but a side covering what the step explains yields, and
+    // among fitting sides the least covered wins. Each side may slide along the target's edge so a
+    // card beside a tall panel can move past the node.
     const variants = candidates.flatMap((c) =>
       c.side === "left" || c.side === "right"
         ? [
@@ -285,15 +234,15 @@ export function computeCardPlacement(input: CardPlacementInput): CardPlacement {
   }
 
   if (input.avoidTarget) {
-    // The target plus the room it needs around it: the plain gap on three sides, and the
-    // name band under it on the fourth. This is the rectangle the card may not enter.
+    // The target plus the gap on three sides and the name band on the fourth: the card may not
+    // enter this rectangle.
     const forbidden = {
       top: targetRect.top - gap,
       left: targetRect.left - gap,
       right: targetRect.left + targetRect.width + gap,
       bottom: targetRect.top + targetRect.height + belowGap,
     };
-    // How much usable width or height each side has once the edge inset is taken off.
+    // Usable width or height per side once the edge inset is taken off.
     const room = {
       right: viewportWidth - edgeMargin - forbidden.right,
       left: forbidden.left - edgeMargin,
@@ -315,11 +264,9 @@ export function computeCardPlacement(input: CardPlacementInput): CardPlacement {
         placed.top + cardHeight > forbidden.top;
       if (!overlaps) return placed;
     }
-    // Nothing clears: the target is wider or taller than every remaining strip, which is a
-    // camera state (a node zoomed past the window) rather than a layout the card can answer.
-    // Falling through keeps the historical placement rather than inventing a worse one, and
-    // the overlay's own fallbacks — the full scrim and the card's "open that dot" button —
-    // are what carry the step there.
+    // Nothing clears: the target outgrows every strip (a camera state, not a layout). Falling
+    // through keeps the default placement; the overlay's full scrim and "open that dot" button
+    // carry the step.
   }
 
   const chosen = candidates.find((c) => c.fits) ?? candidates[0];

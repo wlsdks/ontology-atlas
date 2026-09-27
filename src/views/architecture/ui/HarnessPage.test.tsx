@@ -7,8 +7,7 @@ import type { HarnessReport } from '@/entities/agent-files';
 
 const state = {
   mode: 'local' as 'local' | 'static',
-  /* Which surface the page thinks it is on. The arrival view depends on it: only a desktop bridge
-     can read the dot directories the structure view is about. */
+  /* Only a desktop bridge can read the dot directories the structure view is about. */
   bridge: true,
   report: null as null | {
     status: string;
@@ -24,8 +23,7 @@ vi.mock('@/entities/vault-session', () => ({
   useStaticVaultSource: () => ({ manifest: { docs: [] } }),
   VaultSourceHydrationBoundary: ({ children }: { children: React.ReactNode }) => children,
 }));
-// Both sides are needed: main added the bridge-runtime mock, and this branch moved the harness
-// report behind its feature's public API, so the second mock names the slice rather than the file.
+// The report sits behind its feature's public API, so this mock names the slice, not the file.
 vi.mock('@/shared/lib/tauri-vault-fs', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/shared/lib/tauri-vault-fs')>()),
   isTauriVaultRuntime: () => state.bridge,
@@ -63,10 +61,7 @@ vi.mock('next/navigation', async (importOriginal) => ({
 
 const { HarnessPage } = await import('./HarnessPage');
 
-/**
- * Walk past the threshold that holds the wait screen back. The panel exists for a read that is
- * genuinely slow; every test that wants to see it has to make the read genuinely slow.
- */
+/** Walks past the threshold that holds the wait screen back, so the read is genuinely slow. */
 function waitPastProgressThreshold() {
   act(() => {
     vi.advanceTimersByTime(1000);
@@ -119,14 +114,13 @@ beforeEach(() => {
   state.mode = 'local';
   state.bridge = true;
   state.report = null;
-  /* Real timers by default; only the wait-screen tests fake them, and they must not leak into the
-     count-up animation the arrival runs. */
+  /* Only the wait-screen tests fake timers; they must not leak into the arrival's count-up. */
   vi.useRealTimers();
   window.history.replaceState(null, '', '/ko/architecture/');
 });
 
 describe('the destination identity', () => {
-  it('is named 하네스 on every view', () => {
+  it('names the destination with the harness heading on every view', () => {
     mount();
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('하네스');
   });
@@ -148,8 +142,6 @@ describe('the destination identity', () => {
   });
 
   it('opens on the harness structure, which is what the destination is named after', () => {
-    /* The owner's 2026-09-13 call put the layer ladder here; his 2026-09-19 call moved it, because
-       the ladder is the product's architecture and not the harness's anatomy. */
     state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
     mount();
     expect(screen.getByTestId('harness-anatomy')).toBeInTheDocument();
@@ -157,12 +149,7 @@ describe('the destination identity', () => {
   });
 
   it('arrives on the blueprint in a browser, which is the view a browser can answer', () => {
-    /*
-     * Almost the whole harness lives in dot directories and the File System Access API cannot see
-     * one, so the structure view is empty on the web. Arriving there handed a web visitor a card
-     * about what this browser cannot do — and CI caught it as a route that draws almost nothing
-     * inside `main`, which the a11y ratchet refuses to score (2026-09-20).
-     */
+    /* The File System Access API cannot see dot directories, so the structure view is empty on the web. */
     state.bridge = false;
     mount();
     expect(screen.getByTestId('architecture-page')).toBeInTheDocument();
@@ -170,14 +157,7 @@ describe('the destination identity', () => {
   });
 
   it('arrives on the blueprint when a bridge exists but no harness can be read', () => {
-    /*
-     * ⚠️ The gap CI found and the unit tests did not: a browser session that mounts a local folder
-     * through a Tauri-shaped stub **has** the bridge and no connected project source, so asking
-     * only "is there a bridge" opened the structure view and drew "this browser cannot read dot
-     * directories" over a repository whose architecture profile was right there
-     * (`local-vault-route-identity`, 2026-09-20). The question is whether a reading can be
-     * produced, not whether a bridge is present.
-     */
+    /* A Tauri-shaped stub has a bridge but no project source: the question is whether a reading exists, not a bridge. */
     state.bridge = true;
     state.report = { status: 'no-source' };
     mount();
@@ -202,27 +182,19 @@ describe('the destination identity', () => {
   });
 
   it('keeps one tab set above the panel, never inside it', () => {
-    /*
-     * Two measurements pinned this shape. A stacked header over the blueprint cost 168px at
-     * 1280x800 and took the canvas column from 612 to 444, below even the tight ladder's 573, so
-     * the seventh role went behind a fold. Pushing the tab set *into* the workbench recovered the
-     * canvas and then lost the tabs entirely on a repository with no architecture profile, where
-     * that view returns its empty state early. One instance, in the shell, above every panel.
-     */
+    /* One tab set in the shell above every panel: a stacked header cost the canvas a role, and tabs inside the workbench vanish when it returns early. */
     state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
     window.history.replaceState(null, '', '/ko/architecture/?view=architecture');
     mount();
     expect(screen.getByTestId('architecture-page')).toHaveAttribute('data-embedded', 'true');
     expect(screen.getAllByRole('tablist')).toHaveLength(1);
     expect(screen.getAllByRole('tab')).toHaveLength(4);
-    // The identity is the shell's, so the blueprint is handed none of it.
     expect(screen.getByTestId('architecture-page')).toHaveAttribute('data-has-identity', 'false');
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
   });
 
   it('offers one harness tab beside the blueprint when no reading can exist', () => {
-    // Structure, coverage and guides draw the same example before a source is connected, so three
-    // tabs there would switch nothing. A link that names coverage still lands on the one tab.
+    // Before a source is connected the three harness views draw the same example, so they share one tab.
     state.report = { status: 'no-source' };
     window.history.replaceState(null, '', '/ko/architecture/?view=coverage');
     mount();
@@ -253,18 +225,11 @@ describe('the segmented control', () => {
       fireEvent.click(document.querySelector('#harness-tab-structure')!);
     });
     expect(screen.getByTestId('harness-anatomy')).toBeInTheDocument();
-    // The default view leaves the plain address a person copies.
     expect(window.location.search).toBe('');
   });
 
-  it('writes 구조 into a browser address, where the plain one means the blueprint', () => {
-    /*
-     * ⚠️ The arrival view depends on the surface, so "the view that needs no parameter" does too.
-     * Dropping `?view=` for `structure` on the web wrote an address that reads back as
-     * `architecture`: pressing the structure tab and refreshing — or sending the link — reopened
-     * which is the contract `harness-view-state.ts` opens with, broken on the one surface that has
-     * no bridge to argue otherwise.
-     */
+  it('writes the structure view into a browser address, where the plain one means the blueprint', () => {
+    /* On the web the plain address means the blueprint, so the structure tab must write `?view=` or a refresh reopens the ladder. */
     state.bridge = false;
     const view = mount();
     act(() => {
@@ -272,12 +237,10 @@ describe('the segmented control', () => {
     });
     expect(window.location.search).toBe('?view=structure');
 
-    // A refresh is a fresh mount against that address, and it has to land back on the structure view.
     view.unmount();
     mount();
     expect(screen.queryByTestId('architecture-page')).toBeNull();
 
-    // And the browser's own arrival still copies as the plain address.
     act(() => {
       fireEvent.click(document.querySelector('#harness-tab-architecture')!);
     });
@@ -292,8 +255,7 @@ describe('the segmented control', () => {
       window.history.replaceState(null, '', '/ko/architecture/?view=coverage');
       window.dispatchEvent(new PopStateEvent('popstate'));
     });
-    // The address saying one view while the screen draws another is exactly what putting the
-    // view in the URL was for.
+    // The address and the screen must name the same view; that is what putting it in the URL is for.
     expect(screen.getByTestId('harness-coverage')).toBeInTheDocument();
   });
 
@@ -305,11 +267,7 @@ describe('the segmented control', () => {
   });
 
   it('keeps the census off the structure view, where the bands count differently', () => {
-    /*
-     * The sentence counts declarations in one bucket and a mirrored guard twice; the bands below
-     * split gates from watchers and count a mirrored guard once. Printing both put a reader in
-     * front of one screen arguing with itself.
-     */
+    /* The sentence and the bands count mirrored guards differently, so printing both argued with itself. */
     state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
     mount();
     expect(screen.queryByTestId('harness-sentence')).toBeNull();
@@ -321,9 +279,7 @@ describe('the segmented control', () => {
   });
 
   it('opens the blueprint for an address that carries a role but names no view', () => {
-    /* `?role=` is written by the blueprint's own deep links and exists on no other view. Those
-       links were meaningful with no `?view=` beside them while the blueprint was the default, and
-       moving the default must not turn every one of them into a screen with no roles on it. */
+    /* `?role=` exists only on the blueprint, so old deep links without `?view=` still open it. */
     window.history.replaceState(null, '', '/ko/architecture/?role=views');
     state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
     mount();
@@ -331,8 +287,6 @@ describe('the segmented control', () => {
   });
 
   it('sends the retired sensors address to the view that answers it', () => {
-    /* The sensors view named this exact question and said it was not built. It is built now, so the
-       old link lands on the answer rather than on the default by accident. */
     window.history.replaceState(null, '', '/ko/architecture/?view=sensors');
     state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
     mount();
@@ -340,11 +294,7 @@ describe('the segmented control', () => {
   });
 
   it('shows the passes it is actually running rather than a word on a black screen', () => {
-    /*
-     * The wait is a screen. It names each pass `scanHarness` runs and fills a bar only where the
-     * denominator was known before the pass started; the walk across the checkout, whose length
-     * nobody knows in advance, moves instead of claiming a number.
-     */
+    /* The wait names each pass and fills a bar only with a known denominator; the checkout walk sweeps. */
     window.history.replaceState(null, '', '/ko/architecture/?view=coverage');
     state.report = {
       status: 'loading',
@@ -356,8 +306,7 @@ describe('the segmented control', () => {
     waitPastProgressThreshold();
     const panel = screen.getByTestId('harness-scan-progress');
     expect(panel).toHaveTextContent('문서 사이의 인용');
-    /* `done` is what finished, not what started: counting the running unit put the last pass at its
-       own total while it was still working. */
+    /* `done` is what finished, not what started. */
     expect(panel).toHaveTextContent('401개 중 40개');
     expect(panel.querySelector('[data-harness-stage="citations"]')).toHaveAttribute(
       'data-harness-stage-state',
@@ -370,15 +319,7 @@ describe('the segmented control', () => {
   });
 
   it('shows no wait screen at all for a read that finishes inside the threshold', () => {
-    /*
-     * ⚠️ **The fix for "the loading screen is too fast to see" is not to slow the read down.** The
-     * read is 0.6s on this repository because the previous slice made it fast, and animating a wait
-     * that is not happening would be dishonest. So the panel is held back for a second: a fast read
-     * flashes nothing, and the result simply arrives.
-     *
-     * This assertion is the whole gate. Without it the threshold could be set to zero and every
-     * other test on this panel would still pass.
-     */
+    /* A fast read flashes nothing: the panel is held back for a second. This assertion is the gate on that threshold. */
     vi.useFakeTimers();
     window.history.replaceState(null, '', '/ko/architecture/?view=coverage');
     state.report = {
@@ -391,7 +332,6 @@ describe('the segmented control', () => {
       vi.advanceTimersByTime(600);
     });
     expect(screen.queryByTestId('harness-scan-progress')).toBeNull();
-    /* …and it is held back, not suppressed: the same read past the threshold still gets it. */
     act(() => {
       vi.advanceTimersByTime(400);
     });
@@ -399,13 +339,7 @@ describe('the segmented control', () => {
   });
 
   it('swaps the panel for the result in one commit when a read lands just past the threshold', () => {
-    /*
-     * The accepted residue of a threshold with no minimum display: a read finishing at ~1.05s shows
-     * a panel that never completes its 180ms entrance and is then removed. That trade is deliberate
-     * — holding the panel after the answer exists would delay the answer to display an animation —
-     * and it is written down here so a future reader cannot mistake the flash for a regression, or
-     * a regression for the flash (design-interaction, 2026-09-13).
-     */
+    /* A read finishing near the threshold shows an unfinished entrance and is removed: deliberate, since holding the panel would delay the answer. */
     vi.useFakeTimers();
     window.history.replaceState(null, '', '/ko/architecture/?view=coverage');
     state.report = {
@@ -425,7 +359,6 @@ describe('the segmented control', () => {
         </NextIntlClientProvider>,
       );
     });
-    /* One commit: the wait is gone and the answer is there. No frame shows both. */
     expect(screen.queryByTestId('harness-scan-progress')).toBeNull();
     expect(screen.getByTestId('harness-coverage')).toBeInTheDocument();
   });
@@ -455,9 +388,7 @@ describe('the sentence', () => {
     const sentence = screen.getByTestId('harness-sentence');
     expect(sentence).toHaveTextContent('문서 93개');
     expect(sentence).toHaveTextContent('검사 80개');
-    /* The number never stands bare: its three parts are printed beside it, and each part now names
-       what it counts rather than what it implies — a hook mirrored for two tools is two scripts for
-       one guard, and `.githooks/` holds helper modules beside its hooks (Evidence seat). */
+    /* The number never stands bare: each part names what it counts (a mirrored hook is two scripts for one guard). */
     expect(sentence).toHaveTextContent('훅 스크립트 20개');
     expect(sentence).toHaveTextContent('.githooks/ 파일 3개');
     expect(sentence).toHaveTextContent('스크립트 57개');
@@ -467,11 +398,7 @@ describe('the sentence', () => {
     window.history.replaceState(null, '', '/ko/architecture/?view=guides');
     state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
     mount();
-    /*
-     * The two numbers in this sentence are file counts. The coverage claim is a different kind of
-     * statement with its own denominator, and folding it into a sentence whose other slots are
-     * counts would read as a third count of the same kind.
-     */
+    /* Both numbers are file counts; the coverage claim has its own denominator and stays out. */
     const counted = within(screen.getByTestId('harness-sentence')).getByText(/문서 93개/);
     expect(counted.textContent).not.toMatch(/영역/);
   });
@@ -497,11 +424,7 @@ describe('honest degradation', () => {
 describe('the coverage matrix', () => {
   it('says what it cannot show when the ontology records no domain, and still answers the half that needs none', () => {
     window.history.replaceState(null, '', '/ko/architecture/?view=coverage');
-    /*
-     * A repository with agent files and no ontology. The grid would otherwise print three column
-     * headers over nothing, which reads as a broken screen rather than as the true statement — and
-     * the document census needs no ontology at all, so it still runs.
-     */
+    /* With agent files and no ontology the grid would print headers over nothing; the document census still runs. */
     state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
     mount();
     expect(screen.getByText('이 저장소에는 에이전트 파일은 있고 온톨로지는 아직 없어요')).toBeInTheDocument();
@@ -511,11 +434,7 @@ describe('the coverage matrix', () => {
 
   it('never renders a score, a grade or a percentage', () => {
     window.history.replaceState(null, '', '/ko/architecture/?view=coverage');
-    /*
-     * The thing every competitor ships and this screen may not. A number here would assert a
-     * judgement the files cannot support, which is exactly how a scanner rated an official
-     * reference repository the same as an abandoned toy.
-     */
+    /* No score: files cannot support a judgement of a repository. */
     state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
     mount();
     const text = screen.getByTestId('harness-coverage').textContent ?? '';

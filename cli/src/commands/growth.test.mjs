@@ -7,11 +7,8 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 
-// `ontology-atlas growth` renders one more group than it used to: the reads
-// each node's own `## Uncertainty` section asks for. The command is a thin
-// wrapper over `query_ontology({operation:'growth_plan'})`, so this runs the
-// real command against a real vault — a rendering test over a stubbed payload
-// would prove the formatter and nothing about the group arriving.
+// Runs the real command against a real vault: a stubbed payload would prove only the formatter,
+// not that the Uncertainty reads group arrives.
 
 const execFileAsync = promisify(execFile);
 const CLI_ENTRY = resolve(dirname(fileURLToPath(import.meta.url)), '../index.mjs');

@@ -4,11 +4,7 @@ import { ChevronRight } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 
 interface TopologyIndexTabLabels {
-  /**
-   * The panel's own name, from the same message as the expanded header. It was the literal
-   * `Index` here, so the Korean screen read 「INDEX」 open and 「Index」 folded. One key now
-   * names the panel in both states (a brand word in both locales).
-   */
+  /** The same message key as the expanded header, so both states use one name. */
   label?: string;
   expandAria: string;
   agentSyncTitle: string;
@@ -21,10 +17,8 @@ export interface TopologyIndexTabProps {
 }
 
 /**
- * Collapsed INDEX — a slim vertical edge tab (`--topology-index-tab-width`,
- * 26px) at the left edge. Reappears whenever the analysis rail reclaims the
- * left slot too (`slot-ownership.ts`) — clicking it always means "give the
- * slot back to INDEX" (see HomePage wiring comment at the mount site).
+ * Collapsed INDEX: a slim left edge tab (`--topology-index-tab-width`); a click gives the slot back
+ * to INDEX.
  */
 export function TopologyIndexTab({ onExpand, labels, className }: TopologyIndexTabProps) {
   return (
@@ -33,7 +27,7 @@ export function TopologyIndexTab({ onExpand, labels, className }: TopologyIndexT
       onClick={onExpand}
       aria-label={labels.expandAria}
       data-testid="topology-index-tab"
-      // Chrome standing on the map's left edge: the map's fits keep the drawing clear of it
+      // Chrome on the map's left edge; map fits keep clear of it
       // (`widgets/ontology-map/interaction/free-area.ts#measureEdgeFitObstacle`).
       data-map-fit-obstacle="left"
       className={`flex flex-col items-center gap-2.5 rounded-r-chip border border-l-0 border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] py-2.5 shadow-[var(--map-panel-shadow)] ${className ?? ""}`}

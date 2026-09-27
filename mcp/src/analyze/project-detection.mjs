@@ -85,9 +85,8 @@ export function detectProject(rootPath, skipped = []) {
       const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
       const slugRaw = String(pkg.name || basename(rootPath));
       const slug = slugRaw.replace(/^@/, '').replace(/\//g, '-');
-      // package.json `description` is explanatory prose, not an identity label.
-      // Using it as `title` produced sentence-long project names (Muse exposed
-      // this in dogfood). Prefer the README H1, then the package name.
+      // package.json `description` is prose, not an identity label, and yields
+      // sentence-long project names; prefer the README H1, then the package name.
       const title = detectReadmeH1(rootPath) || humanize(slug);
       return { slug, title };
     } catch (err) {
@@ -221,6 +220,7 @@ export function detectExistingOntologyEvidence(rootPath, skipped = []) {
   const rows = [];
   const seen = new Set();
 
+  // Recursive walk of docs/ontology, O(entries) only without directory symlinks: it follows them with no visited set or root check.
   function visit(dir) {
     for (const entry of readdirSync(dir)) {
       const path = join(dir, entry);
@@ -326,11 +326,9 @@ export function detectDomainsFromReadme(rootPath) {
         const normalizedTitle = title
           .replace(/^[^a-z0-9가-힣]+/i, '')
           .trim();
-        // README H2 is a heuristic domain source. Skip headers that are almost
-        // never real codebase domains and only add bootstrap noise: generic doc
-        // sections, narrative / question-style headers ("Why It Exists"),
-        // language-guide headers ("Korean Guide"), and sentence-like headers
-        // ("Three views plus MCP, one vault").
+        // README H2 is a heuristic domain source. Skip headers that are almost never
+        // codebase domains: generic doc sections, narrative or question headers,
+        // language-guide headers, and sentence-like headers.
         const wordCount = title.split(/\s+/).filter(Boolean).length;
         if (
           // generic doc sections (exact match)
@@ -351,9 +349,6 @@ export function detectDomainsFromReadme(rootPath) {
           /가이드|\bguide\b/i.test(normalizedTitle) ||
           // bare language-name headers ("## Korean", "## English") — a
           // translated-README section, same noise class as "## Korean Guide".
-          // Measured 2026-07-30: the repo's own "## Korean" section counted as
-          // a 6th domain candidate and drifted the verify census when the
-          // section moved.
           /^(한국어|한글|english|日本語|中文|简体中文|繁體中文|español|français|deutsch|português|русский|italiano|türkçe)$/i.test(
             normalizedTitle,
           ) ||

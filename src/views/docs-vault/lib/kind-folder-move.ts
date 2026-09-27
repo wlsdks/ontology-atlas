@@ -1,17 +1,9 @@
 import { folderForKind } from "@/shared/lib/meaning-findings";
 
 /**
- * Where a document belongs for its kind — the address `slug-outside-kind-folder` asks for.
- *
- * **Why it exists** (2026-09-26, map-edit QA D8). Changing a capability's kind to element in
- * the docs page's quick patch rewrote `kind:` and left the file in `capabilities/`. The
- * validator then said, correctly, «this document sits outside its kind folder — move it in»,
- * and nothing on the screen could move it: the person was told about a problem the button
- * they had just pressed created, with no remedy beside it.
- *
- * The folder rule is the validator's own (`folderForKind` in `meaning-findings.ts`, mirrored
- * from the MCP schema): domains, capabilities and elements each have a folder; a project and
- * a document live at the vault root, so they never move. The file keeps its name.
+ * Where a document belongs for its kind, the address `slug-outside-kind-folder` asks for.
+ * The rule is the validator's (`folderForKind` in `meaning-findings.ts`, mirrored from the MCP
+ * schema): projects and documents live at the root and never move. The file keeps its name.
  */
 const KIND_FOLDER_NAMES: ReadonlySet<string> = new Set(
   ["domain", "capability", "element"].map((kind) => folderForKind(kind).replace(/\/$/, "")),
@@ -23,9 +15,8 @@ function splitSlug(slug: string): { dir: string[]; tail: string } {
 }
 
 /**
- * The address inside `kind`'s folder, or null when the kind keeps no folder or the document
- * is already in it. A document inside another kind's folder moves beside it
- * (`nested/capabilities/a` → `nested/elements/a`), so a vault kept under a subfolder stays there.
+ * Null when the kind keeps no folder or the document is already there. A document in another
+ * kind's folder moves beside it, so a vault kept in a subfolder stays there.
  */
 export function kindFolderAddress(slug: string, kind: string): string | null {
   const folderName = folderForKind(kind).replace(/\/$/, "");
@@ -41,12 +32,8 @@ export function kindFolderAddress(slug: string, kind: string): string | null {
 }
 
 /**
- * The move a kind change implies — **only when the document sits in its old kind's folder.**
- *
- * That is the one case where the change itself would break an arrangement the vault already
- * kept: the file was filed by kind, so it follows its kind. A document the person keeps
- * elsewhere (the vault root, a folder of their own) is not relocated by a select; the
- * validator's row offers that move separately.
+ * Only when the document sits in its old kind's folder; a document kept elsewhere is not
+ * relocated by a select.
  */
 export function reclassifyMoveTarget(
   slug: string,

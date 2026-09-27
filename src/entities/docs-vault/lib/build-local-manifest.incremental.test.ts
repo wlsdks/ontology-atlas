@@ -7,17 +7,8 @@ import {
 import type { VaultManifest } from '../model/types';
 
 /**
- * Incremental rebuild consistency.
- *
- * A live vault runs `load` → a full `buildLocalManifest` on every change, re-reading
- * and re-parsing every `.md`. On a large vault an agent editing one file re-reads
- * hundreds, which is the lag. The incremental path re-reads **only changed files**
- * and reuses the previous build for the rest.
- *
- * Safety contract: for the same vault state, `rebuildLocalManifestIncremental` must
- * produce a manifest **byte-identical** to a full `buildLocalManifest` (except
- * `generatedAt`), across add / change / remove / no-op. That equivalence is what
- * makes the incremental path structurally correct.
+ * `rebuildLocalManifestIncremental` must equal a full `buildLocalManifest` except `generatedAt`
+ * across add, change, remove, no-op and rename, while rereading only changed files.
  */
 
 interface FakeFile {
@@ -45,10 +36,7 @@ function makeFileHandle(
   } as unknown as FileSystemFileHandle;
 }
 
-/**
- * Mock root that understands nested directories. Passing `reads` tallies `.text()`
- * calls per path, which is how "only changed files are re-read" is verified.
- */
+/** Nested-directory mock root; `reads` tallies `.text()` calls per path. */
 function makeRoot(
   files: Record<string, FakeFile>,
   reads?: Map<string, number>,
@@ -94,7 +82,7 @@ function makeRoot(
   return buildHandle('');
 }
 
-/** `generatedAt` is non-deterministic (new Date) — excluded from the equality check. */
+/** `generatedAt` is non-deterministic, so it is left out of equality. */
 function stripGenerated(manifest: VaultManifest) {
   const { generatedAt: _ignored, ...rest } = manifest;
   void _ignored;
@@ -124,21 +112,9 @@ const BASE: Record<string, FakeFile> = {
   },
 };
 
-describe('rebuildLocalManifestIncremental — 동치성', () => {
-  /**
-   * **The counters have to cross this path too.**
-   *
-   * `sourceFileCount` is what tells the first-run card the folder holds code. The
-   * incremental rebuild used the entries-only walk and passed no walk info, so the
-   * count vanished on the first refresh and the card silently reordered from
-   * "draft the map from your code" to "start from the documents in this folder"
-   * while it was still on screen — triggered by this feature's own happy path, an
-   * agent writing an approved document into the folder.
-   *
-   * The equivalence rule above would have caught it on its own; it did not,
-   * because no fixture here contained a file that was not Markdown.
-   */
-  it('소스 파일이 있는 폴더에서도 증분 결과가 전체 재빌드와 같다', async () => {
+describe('rebuildLocalManifestIncremental equivalence', () => {
+  /** Walk counters must survive the incremental path; the first-run card reads `sourceFileCount`. */
+  it('matches a full rebuild in a folder with source files', async () => {
     const withCode = {
       ...BASE,
       'src/editor.ts': { text: "export const editor = 'x';", lastModified: 3000 },
@@ -162,14 +138,14 @@ describe('rebuildLocalManifestIncremental — 동치성', () => {
     expect(stripGenerated(incremental.build.manifest)).toEqual(stripGenerated(full.manifest));
   });
 
-  it('소스 파일이 없으면 그 값은 아예 안 실린다 — 문서 폴더의 매니페스트는 그대로다', async () => {
+  it('omits source values when a folder has no source files', async () => {
     const built = await buildLocalManifestWithEntries(makeRoot(BASE));
     expect(built.build.manifest.sourceFileCount).toBeUndefined();
     const incremental = await rebuildLocalManifestIncremental(makeRoot(BASE), built.entries);
     expect(incremental.build.manifest.sourceFileCount).toBeUndefined();
   });
 
-  it('파일 하나 본문 변경 시 전체 재빌드와 동일', async () => {
+  it('matches a full rebuild after one body changes', async () => {
     const before = await buildLocalManifestWithEntries(makeRoot(BASE));
     const next = {
       ...BASE,
@@ -239,7 +215,7 @@ describe('rebuildLocalManifestIncremental — 동치성', () => {
     expect(afterCart?.updatedAt).toBe('2026-08-23T16:12:11.417Z');
   });
 
-  it('파일 추가 시 전체 재빌드와 동일', async () => {
+  it('matches a full rebuild after a file is added', async () => {
     const before = await buildLocalManifestWithEntries(makeRoot(BASE));
     const next = {
       ...BASE,
@@ -256,7 +232,7 @@ describe('rebuildLocalManifestIncremental — 동치성', () => {
     expect(handleKeys(incremental.build.fileHandles)).toEqual(handleKeys(full.fileHandles));
   });
 
-  it('파일 삭제 시 전체 재빌드와 동일 (backlinks 도 갱신)', async () => {
+  it('matches a full rebuild after a file is deleted, including backlinks', async () => {
     const before = await buildLocalManifestWithEntries(makeRoot(BASE));
     const next = { ...BASE };
     delete next['caps/x.md'];
@@ -265,11 +241,11 @@ describe('rebuildLocalManifestIncremental — 동치성', () => {
 
     expect(stripGenerated(incremental.build.manifest)).toEqual(stripGenerated(full.manifest));
     expect(incremental.build.fingerprint).toBe(full.fingerprint);
-    // Deleting caps/x must remove domains/a's backlink.
+    // Deleting caps/x removes domains/a's backlink.
     expect(incremental.build.manifest.backlinksDetail).toEqual(full.manifest.backlinksDetail);
   });
 
-  it('변경 없음(no-op) 시 전체 재빌드와 동일', async () => {
+  it('matches a full rebuild when nothing changed', async () => {
     const before = await buildLocalManifestWithEntries(makeRoot(BASE));
     const incremental = await rebuildLocalManifestIncremental(makeRoot(BASE), before.entries);
     const full = await buildLocalManifest(makeRoot(BASE));
@@ -278,7 +254,7 @@ describe('rebuildLocalManifestIncremental — 동치성', () => {
     expect(incremental.build.fingerprint).toBe(full.fingerprint);
   });
 
-  it('rename(삭제+추가) 복합 변경 시 전체 재빌드와 동일', async () => {
+  it('matches a full rebuild after a rename', async () => {
     const before = await buildLocalManifestWithEntries(makeRoot(BASE));
     const next = { ...BASE };
     delete next['caps/x.md'];
@@ -294,8 +270,8 @@ describe('rebuildLocalManifestIncremental — 동치성', () => {
   });
 });
 
-describe('rebuildLocalManifestIncremental — 변경 파일만 재독', () => {
-  it('파일 하나만 변경하면 그 파일의 본문만 다시 읽는다', async () => {
+describe('rebuildLocalManifestIncremental rereads only changed files', () => {
+  it('rereads only the body of the one changed file', async () => {
     const before = await buildLocalManifestWithEntries(makeRoot(BASE));
     const next = {
       ...BASE,
@@ -307,13 +283,13 @@ describe('rebuildLocalManifestIncremental — 변경 파일만 재독', () => {
     const reads = new Map<string, number>();
     await rebuildLocalManifestIncremental(makeRoot(next, reads), before.entries);
 
-    // Only the changed file calls `.text()`; the rest are zero — the point of the I/O saving.
+    // Only the changed file calls `.text()`.
     expect(reads.get('domains/a.md')).toBe(1);
     expect(reads.get('project.md') ?? 0).toBe(0);
     expect(reads.get('caps/x.md') ?? 0).toBe(0);
   });
 
-  it('전체 빌드는 모든 파일을 읽는다 (대비 — baseline)', async () => {
+  it('reads every file on a full build', async () => {
     const reads = new Map<string, number>();
     await buildLocalManifest(makeRoot(BASE, reads));
     expect(reads.get('project.md')).toBe(1);

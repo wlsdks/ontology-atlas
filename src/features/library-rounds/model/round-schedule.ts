@@ -1,23 +1,8 @@
 import { type RoundRecord, isRoundDue, nextDueAt } from '@/entities/library-round';
 
 /**
- * **One tick of the clock**, as a pure decision.
- *
- * The runner calls this every minute with what it knows and does what it is told: record a gap,
- * run the rounds that are due, in order. Keeping the decision out of the hook is what lets the
- * scheduling rules be tested with a fake clock in milliseconds rather than by waiting.
- *
- * ## The rules the spec fixes (§5)
- *
- * - **One at a time.** A tick with a pass already running does nothing.
- * - **Local first.** When several rounds are due, consistency rounds go before service rounds:
- *   they are free, and a stale page they find may be the very thing the service round would
- *   otherwise redraft twice.
- * - **Catch up once.** A round whose window passed while the Mac slept is due, runs once, and its
- *   next due time is the first boundary after *now* — `nextDueAt` is strictly-after, so the
- *   missed hours are not replayed.
- * - **Asleep is recorded.** A gap between ticks longer than `asleepAfterMs` means the machine or
- *   the app was not running; the ledger gets one gap entry so the axis can draw it honestly.
+ * One clock tick as a pure decision: one pass at a time, local rounds first, a missed window
+ * runs once (`nextDueAt` is strictly after now), and a long gap is recorded as asleep.
  */
 
 export const TICK_MS = 60_000;

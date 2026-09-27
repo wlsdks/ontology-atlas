@@ -27,10 +27,7 @@ import {
   vaultPathspec,
 } from './git-snapshot.mjs';
 
-// Temporary repository fixture driving a real git process. The partial-commit
-// pathspec behaviour (protecting other staged files) cannot be verified with a
-// mock, so it is checked end to end against a real repository. Each test creates
-// its own tmp dir and removes it afterwards.
+// A real git repository per test: only a real one proves the pathspec commit leaves other staged files alone.
 
 function sh(args, cwd) {
   return execFileSync('git', args, { cwd, encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] });
@@ -325,7 +322,6 @@ test('getPorcelainStatus / findGitRepoRoot — a vault directory with no .git an
   }
 });
 
-// ── Rename notation ───────────────────────────────────────────────────────
 
 test('classifyChange — R index is a rename', () => {
   assert.equal(classifyChange({ index: 'R', worktree: ' ' }), 'renamed');
@@ -360,10 +356,8 @@ test('buildChangeSummary + formatSnapshotSummary — rename keeps the previous p
 });
 
 test('snapshot flow — a non-ASCII (Korean) filename survives status → add → commit', () => {
-  // Bug sweep 2026-09-01, reproduced: with git's default core.quotePath the
-  // newline porcelain form C-quoted the path (`?? "\355\225\234..."`), the
-  // parser kept the quotes/octal literally, `git add` on that "path" exited 128,
-  // and the whole snapshot aborted — for a product shipping a vault-ko template.
+  // With the default core.quotePath the newline porcelain form C-quoted the path (`?? "\355\225\234..."`)
+  // and `git add` on it failed; the vault-ko template makes Korean paths ordinary.
   const repoRoot = initRepo();
   try {
     writeMd(repoRoot, 'docs/ontology/README.md', { kind: 'vault-readme' });
@@ -395,7 +389,6 @@ test('snapshot flow — a non-ASCII (Korean) filename survives status → add �
   }
 });
 
-// ── Graceful git failure classification ───────────────────────────────────
 
 test('classifyGitError — maps common git failure stderr to clean reasons + guidance', () => {
   assert.equal(
@@ -502,7 +495,6 @@ test('pushCurrentBranch — a remote that moved ahead rejects the push and class
   }
 });
 
-// ── Parity: --history / --diff / --pull ───────────────────────────────────
 
 test('getVaultLog — returns only commits touching the vault pathspec, newest first', () => {
   const repoRoot = initRepo();

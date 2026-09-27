@@ -2,25 +2,9 @@ import type { LintNodeCandidate } from "./lint-brief";
 import { WIKI_DIR } from "@/shared/lib/wiki-page-schema";
 
 /**
- * The brief that turns a name the wiki keeps mentioning into an ontology node — **the
- * one place the wiki flows up into the graph, and it flows through the person.**
- *
- * The Check-the-wiki report ends with names that appear on three or more pages and have
- * no page of their own. In this product that is not a wiki page to write: a wiki page is
- * what one document said; a node is what we mean. So the Library offers each name as a
- * node candidate, and pressing it starts one agent turn whose only write is
- * `add_concept` — which reaches the permission card as a typed ontology change the
- * person reads and allows or refuses. Nothing else is written: the wiki pages that
- * carry the name are the evidence, cited by link in the node's body, and `describes:`
- * on those pages stays the person's to add after review (spec §11.1).
- *
- * The agent is told to read before it proposes — the pages the report named, the
- * kinds and domains the vault already has — and to say why it chose a kind and a
- * parent, because a node with a wrong kind is a claim on the map nobody reviewed. And
- * it is told first what the map is: the code's ontology. A person, a contractor, a
- * date is not a node however often the wiki names it; the brief says to create none
- * and say so, which is the same boundary the Library enforces by offering the chip
- * only for domain, capability and element.
+ * Turns a name the wiki keeps mentioning into a node candidate through one `add_concept` turn
+ * the person approves. The agent reads first and explains its kind and parent; people and
+ * dates are never nodes.
  */
 
 export interface ProposeNodeBriefInput {

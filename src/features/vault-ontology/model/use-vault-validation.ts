@@ -10,19 +10,7 @@ import {
   type VaultValidationSummary,
 } from '@/shared/lib/validate-vault-document';
 
-/**
- * A mode-aware frontmatter validation summary — the hook that lets the insights screen read
- * the same `summarizeVaultValidation` the settings sheet already used.
- *
- * Why it was needed (2026-08-04): the to-do tab's readiness meter looked only at relation
- * quality, so a folder with five validation errors still showed a 0px risk segment — while
- * the settings sheet in the same app said "5 are blocking" at that very moment. When two
- * screens call one folder by different numbers, neither is believed. So rather than
- * duplicating the calculation it calls **the same function**.
- *
- * Mode selection follows the same rule as `useVaultHealth` — the numbers match the screen
- * only if the vault being checked is the vault being drawn.
- */
+/** The settings sheet's `summarizeVaultValidation`, with `useVaultHealth`'s mode selection, so both screens agree. */
 const staticManifest = resolveStaticVaultSource('dogfood').manifest;
 const storefrontManifest = resolveStaticVaultSource('storefront').manifest;
 
@@ -34,9 +22,7 @@ function manifestValidation(manifest: VaultManifest): VaultValidationSummary {
     manifest.docs.map((doc) => ({
       slug: doc.slug,
       frontmatter: doc.frontmatter ?? {},
-      // The single choke point where every document the map draws is checked. The parser's own
-      // complaints ride along from the manifest, so a file whose frontmatter has an unreadable
-      // line is counted as broken instead of counted as fine (census state 3, 2026-08-31).
+      // Parser diagnostics ride along, so an unreadable frontmatter line counts as broken.
       diagnostics: doc.diagnostics,
     })),
   );

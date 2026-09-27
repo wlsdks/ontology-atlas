@@ -1,7 +1,6 @@
-// What the analyzer is allowed to read, and what it records when it refuses.
-// Option validation for `analyzeRepoStructure`, symlink-escape containment against
-// the requested root, manifest size/existence checks, and the deduplicated
-// `skipped` rows every walker appends to.
+// What the analyzer may read and what it records when it refuses: option
+// validation, symlink-escape containment against the requested root, manifest
+// size and existence checks, and the deduplicated `skipped` rows walkers append.
 
 import { readdirSync, statSync, realpathSync } from 'node:fs';
 import { join, relative, isAbsolute, sep } from 'node:path';

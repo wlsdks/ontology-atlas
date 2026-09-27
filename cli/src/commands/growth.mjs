@@ -122,11 +122,8 @@ function renderGrowth(result) {
 }
 
 /**
- * One unread file per line.
- *
- * The author's own sentence is the evidence and is printed next to the address,
- * truncated rather than summarised: a shortened quote is still the author
- * speaking, while a paraphrase would be this command inventing a reason.
+ * One unread file per line, with the author's sentence truncated rather than summarised: a paraphrase
+ * would be this command inventing a reason.
  */
 function renderNextReadRow(row) {
   const path = Array.isArray(row.paths) && row.paths.length > 0 ? row.paths[0] : '(no path named)';

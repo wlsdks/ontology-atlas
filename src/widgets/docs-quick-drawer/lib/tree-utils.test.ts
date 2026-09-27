@@ -115,7 +115,7 @@ describe("filterTree", () => {
     const result = filterTree(fixture, "fsd", null);
     expect(result?.type).toBe("dir");
     expect(result?.children).toHaveLength(1);
-    expect(result?.children?.[0].type).toBe("dir"); // rules/
+    expect(result?.children?.[0].type).toBe("dir");
     expect(result?.children?.[0].children?.[0].slug).toBe("rules/fsd");
   });
 

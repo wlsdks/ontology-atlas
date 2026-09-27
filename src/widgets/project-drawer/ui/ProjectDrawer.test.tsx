@@ -6,22 +6,14 @@ import { TaxonomyProvider } from "@/features/taxonomy";
 import type { Project } from "@/entities/project";
 import { ProjectDrawer } from "./ProjectDrawer";
 
-// jsdom does not implement Element.scrollTo — the mode-switch and details-open paths
-// call it from the aside ref, so it is stubbed as a no-op (an environment gap, not an
-// implementation defect).
+// jsdom has no Element.scrollTo; the mode-switch and details paths call it, so it is a no-op stub.
 if (!Element.prototype.scrollTo) {
   Element.prototype.scrollTo = function scrollTo() {};
 }
 
-/**
- * design-council B6 rank16 regression guard — ProjectDrawer's 4 impact-mode pills
- * trigger different graph operations while the help text was always the same line.
- * This pins (1) that the per-mode help renders differently and (2) that each pill's
- * title/aria-label is individualised (reaching touch and VoiceOver).
- */
+/** Per-mode help renders differently and each pill's title and aria-label are individual. */
 
-// jsdom does not implement matchMedia — framer-motion's useReducedMotion() calls
-// window.matchMedia internally and throws (the same stub as HubRail.a11y.test.tsx).
+// jsdom has no matchMedia, which framer-motion's useReducedMotion calls.
 if (typeof window.matchMedia !== "function") {
   window.matchMedia = ((query: string) => ({
     matches: false,
@@ -89,15 +81,14 @@ function renderDrawer(
       </TaxonomyProvider>
     </NextIntlClientProvider>,
   );
-  // The impact-mode pills sit inside the "Show more basic info" (show more basic info)
-  // <details>. A native <details> hides its content from the accessibility tree while
-  // closed, so it is expanded explicitly before any role query.
+  // The pills sit in a closed <details>, hidden from the accessibility tree, so it is opened before
+  // role queries.
   fireEvent.click(screen.getByTestId("project-drawer-more-info-summary"));
   return result;
 }
 
-describe("ProjectDrawer 임팩트 모드 도움말 (rank16)", () => {
-  it("4개 모드 필이 서로 다른 title(도움말)을 갖는다", () => {
+describe('ProjectDrawer impact mode help', () => {
+  it('gives the four mode pills distinct help titles', () => {
     renderDrawer();
 
     const none = screen.getByRole("radio", { name: /^기본 —/ });
@@ -113,7 +104,7 @@ describe("ProjectDrawer 임팩트 모드 도움말 (rank16)", () => {
     expect(new Set(titles).size).toBe(4);
   });
 
-  it("의존/영향 필의 aria-label 이 rank13 방향 어휘를 그대로 쓴다", () => {
+  it('uses the direction vocabulary in the depends-on and impact pill aria-labels', () => {
     renderDrawer();
 
     const upstream = screen.getByRole("radio", { name: /^의존 —/ });
@@ -123,11 +114,9 @@ describe("ProjectDrawer 임팩트 모드 도움말 (rank16)", () => {
     expect(downstream.getAttribute("aria-label")).toContain("필요로 하는 대상");
   });
 
-  it("모드 필 클릭은 콜백을 부르고, 각 모드는 자기 도움말 문구를 보인다", () => {
-    // A controlled component (impactMode=prop) plus an AnimatePresence swap is
-    // non-deterministic in jsdom, so each help text is pinned deterministically with a
-    // fresh mount per mode rather than re-rendering one instance (the click → callback
-    // wiring is verified separately).
+  it('calls back on a mode pill click and shows each mode\'s own help', () => {
+    // A controlled prop plus AnimatePresence is non-deterministic in jsdom, so each mode gets a
+    // fresh mount.
     const onChangeImpactMode = vi.fn();
     const first = renderDrawer({ impactMode: "none", onChangeImpactMode });
     expect(

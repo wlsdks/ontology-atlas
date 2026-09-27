@@ -1,24 +1,6 @@
-// `ontology-atlas bootstrap [rootPath]`
-//
-// A one-line review plan. Returns the analyzer's proposed nodes and containment as
-// review candidates. Writing a meaning node uses only the MCP path, which unlocks
-// on constructionQualification:v1 plus human acceptance — a CLI cold start must
-// not build a semantic graph without approval.
-//
-// Flow:
-//   1. analyze_repo_structure → review-only candidates
-//   2. infer_imports → exact evidence + rationale review required (zero writes)
-//   3. combined review summary (landed 0, explicit approval required)
-//
-// Options:
-//   --vault path             vault location (default cwd)
-//   --max-depth N            analyze folder depth
-//   --max-files N            infer-imports file cap
-//   --threshold N            blocks weak infer-imports edges (no default)
-//   --skip-imports           stage 1 (analyze) only — the import graph is untouched
-//   --json                   machine-readable output (every stage in one JSON)
-//
-// exit: 3 if semantic approval is required, 1 on input errors, 2 on MCP failure.
+// `ontology-atlas bootstrap [rootPath]`: analyzer nodes, containment and import evidence as review candidates
+// only. Meaning writes go through MCP with constructionQualification:v1 and human acceptance, never this CLI.
+// Exit 3 when approval is required, 1 on input errors, 2 on MCP failure.
 
 import { COLORS } from '../lib/colors.mjs';
 import { resolve } from 'node:path';
@@ -79,11 +61,8 @@ export async function runBootstrap(args) {
     : domainSplit.corroborated;
   const concepts = collectConcepts(analyzeResult, domainsToLand);
 
-  // This command is deliberately a preview-only ingress. There is no CLI
-  // switch, environment variable, or hidden parser state that can manufacture
-  // the independent constructionQualification:v1 + human acceptance required
-  // by the lifecycle. Keep the return unconditional so a future option cannot
-  // accidentally resurrect the former batch-writer branch.
+  // Preview-only by design: no switch, variable or parser state can manufacture constructionQualification:v1
+  // and human acceptance. Keep the return unconditional so no future option revives a batch writer.
   return printApprovalRequiredPlan({
     parsed,
     target,
@@ -131,8 +110,8 @@ async function printApprovalRequiredPlan({
         );
         return 2;
       }
-      // The review plan is still valid without the import graph; say what was
-      // left out instead of exiting 2 with an empty stdout (audit 2026-09-04).
+      // The review plan is valid without the import graph; say what was left out rather than exit 2
+      // with an empty stdout.
       importsResult = omitted;
       process.stderr.write(
         `${COLORS.yellow}warn${COLORS.reset}   infer_imports omitted: ${omitted.reason}\n`
@@ -201,12 +180,8 @@ async function printApprovalRequiredPlan({
 const LARGE_IMPORT_RESPONSE_RE = /exceeds the automatic 128 KiB delivery limit/u;
 
 /**
- * Turns the MCP "response too large without a loadable vault" refusal into a
- * review-only envelope instead of a crash. Without `--vault`, `bootstrap` runs
- * against a scratch vault the server cannot reconcile against, so a large
- * repository's import graph cannot be compacted. The plan totals from the
- * structure stage are still valid; the import stage reports itself omitted
- * and names both ways to get it back.
+ * Turns the MCP "response too large without a loadable vault" refusal into a review-only envelope: the
+ * structure-stage totals stay valid, and the import stage reports itself omitted with both ways back.
  */
 export function omittedLargeImports(err, { target, vaultRoot } = {}) {
   const message = err instanceof Error ? err.message : String(err ?? '');
@@ -223,25 +198,8 @@ export function omittedLargeImports(err, { target, vaultRoot } = {}) {
 }
 
 /**
- * Separates domains that appeared only in a README heading from domains the code
- * structure corroborates.
- *
- * **Why** (field review 2026-08-08 — attunegraph, 113 TS files, a flat `src`):
- * analyze's README H2 heuristic carried a hand-sewn stopword sieve, and a sieve
- * loses structurally — every new README invents a heading the list does not know.
- * Measured: 「Quick start **from source**」 (evading the exact match), 「Current
- * measured baseline」, and 「Benchmarks and verification」 all passed, so **11
- * document sections landed as domains**, and the result was a star graph with a
- * single relation type. In that star the hub amber reached a test fixture and
- * contaminated the workbench's first recommendation — garbage flows downstream
- * with confidence.
- *
- * So instead of sewing the sieve wider, **corroboration decides**: a candidate is
- * corroborated when it came from the code (directory evidence), or when another
- * code-derived candidate names it as a parent. A domain that exists only in the
- * README is **left as a review candidate rather than planted automatically** —
- * the same principle bootstrap already applies at the import stage. The old
- * behaviour remains available via `--apply-readme-domains`.
+ * Separates README-only domains from code-corroborated ones (directory evidence, or a code-derived parent).
+ * A stopword sieve cannot keep up with new headings, so README-only domains stay candidates (`--apply-readme-domains`).
  */
 export function partitionReadmeOnlyDomains(analyzeResult) {
   const domains = analyzeResult.domains ?? [];

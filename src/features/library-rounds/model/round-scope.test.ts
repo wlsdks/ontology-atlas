@@ -62,8 +62,7 @@ describe('round scope', () => {
   });
 
   it('matches the connector by its whole name, separators and all', () => {
-    // A connector attached as `notion__staging` owns `mcp__notion__staging__…`; reading the
-    // server name up to the first `__` called it `notion` and refused its every tool.
+    // A server name may contain `__`, so the whole prefix must match.
     const staging = { kind: 'service' as const, connectorName: 'notion__staging' };
     const search = request({ toolName: 'mcp__notion__staging__search', toolKind: 'other' });
     expect(judge({ request: search, round: staging })).toEqual({ decision: 'allow', note: 'call mcp__notion__staging__search' });
@@ -141,10 +140,7 @@ describe('round scope', () => {
   });
 
   it('allows every connector the round\'s places name, and no other', () => {
-    /*
-     * Spec §3.2: one round may watch a Slack room and a Confluence space in one pass, so the
-     * allow-list is the union of its places. A third connector is still "other connector".
-     */
+    /* One round's allow-list is the union of its places. */
     const both = { kind: 'service' as const, connectorNames: ['slack', 'confluence'] };
     expect(judge({ request: request({ toolName: 'mcp__slack__search' }), round: both }))
       .toEqual({ decision: 'allow', note: 'call mcp__slack__search' });

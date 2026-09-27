@@ -27,141 +27,79 @@ import {
 } from "../model/vault-guide-auto-open";
 
 /**
- * The only plain-language definitions of domain / capability / element
- * (`searchWidgets.shortcuts.glossary.*`) used to live in the "?" shortcut modal's
- * footer, where a non-developer never saw them on first contact. Rather than
- * writing new copy, this card reads the same i18n keys so they are always
- * visible — the card and `src/widgets/shortcut-sheet` share the keys, so drift
- * breaks both surfaces at once and shows up immediately.
- *
- * The order matches the map's hierarchy (domain → capability → element) and is
- * redeclared locally because `features` cannot import from `widgets` (FSD
- * forbids the reverse direction).
+ * The glossary reads the same i18n keys as `src/widgets/shortcut-sheet`, so drift breaks both
+ * surfaces at once. Order follows the map hierarchy; redeclared here because `features` cannot
+ * import from `widgets`.
  */
 const GLOSSARY_TERMS = ["domain", "capability", "element"] as const;
 
 export interface FirstRunStarterModuleProps {
-  /** Real census — passed straight through from what TopologyIndexPanel already receives. */
+  /** Real census, passed through from TopologyIndexPanel. */
   concepts: number;
   relations: number;
   domains: number;
   /**
-   * The "take a two-minute tour" CTA. The tour state machine is owned by
-   * HomePage (a view), so this only takes a callback — a feature does not know
-   * about views. Omitted, the CTA is not rendered.
+   * The tour CTA. HomePage owns the tour state, so this takes a callback; omitted, no CTA.
    */
   onStartTour?: () => void;
   /**
-   * Turns on plain-language mode in one click. It used to live only inside the
-   * gear menu. With a callback present this renders a toggle button instead of
-   * the hint sentence; when plain mode is already on it renders nothing.
+   * With a callback, a plain-mode toggle replaces the hint sentence; nothing when plain mode is on.
    */
   onEnablePlainMode?: () => void;
   audiencePlain?: boolean;
   /**
-   * The INDEX body, drawn **exclusively** with the guide card. While the card is
-   * expanded, children are not rendered, so the panel always has exactly one
-   * scroller (owner report: "Separate scrollbars top and bottom). Once the user chooses, the card collapses and
-   * the INDEX opens.
+   * The INDEX body, drawn exclusively with the guide card so the panel has one scroller.
    */
   /**
-   * Is the "recent changes" lens on? (2026-08-02, owner report: "Pressing the recent-changes button while the starter panel is open leaves
-   * the left panel unchanged.)
-   *
-   * The card and the INDEX are **two exclusive states**, so while the card is
-   * expanded the INDEX's segment and period chips are not rendered at all.
-   * Turning the lens on changed the URL and the map while the left side stayed
-   * put — not a bug so much as a design that had not seen this case.
-   *
-   * Turning on the lens is another form of "the user chose what to look at" (see
-   * the `collapsed` comment below), so it takes the same collapse path rather
-   * than introducing a new state.
+   * While the card is expanded the INDEX chips are not rendered, so turning the lens on takes
+   * the same collapse path as choosing a sample (see `collapsed`).
    */
   lensActive?: boolean;
   /**
-   * Has the user selected any node on the map? If so this card has **done its job**.
-   *
-   * Why it collapses (owner, 2026-08-19: "It looks bad with this stuck on the left the whole time): the
-   * card says «what to do first», but someone who has selected a node is already
-   * using the map. From then on it is not guidance, it is a blind covering a
-   * third of the screen. Switching samples and turning on the lens already
-   * collapse it on the same signal, and node selection is the clearest of the three.
-   *
-   * It collapses rather than disappearing, and the "back to the guide" row
-   * reopens it at any time.
+   * A selected node means the map is in use, so the card collapses; the "back to the guide" row
+   * reopens it.
    */
   nodeSelected?: boolean;
   /**
-   * The guided tour is pointing at the INDEX. The tour's INDEX step lit this
-   * card instead of the list it was describing — a first-run person starts the
-   * tour from this very card, so the card was always still open at that step
-   * (2026-09-19). The card folds for that step and returns when it is left.
+   * The tour's INDEX step points at the list, so the card folds for that step and returns after.
    */
   indexSpotlit?: boolean;
   /**
-   * The guided tour's developer step is pointing at this card's one-line
-   * command. The step says "the one line in the start card" while that line
-   * sat behind a closed disclosure, so the person saw a folded row (2026-09-19).
-   * The disclosure stands open for that step and follows the person's own
-   * toggle again after.
+   * The tour's developer step points at the one-line command, so the disclosure stands open for
+   * that step and follows the person's toggle after.
    */
   agentSpotlit?: boolean;
   /**
-   * **This vault has no map built from code yet** — nothing in it points at a real repository.
-   *
-   * ⚠️ Deliberately *not* "has never opened a folder" (owner correction, 2026-08-24). That is the
-   * card's rule, and it is right for browsing guidance: someone who has not looked around yet needs
-   * the sample and the tour, and pushing those at a returning person is noise. It is the wrong rule
-   * for unfinished work. Somebody who opened a folder, saw an empty map and gave up has opened
-   * folders *more* than a first-timer, and the card's rule hid the 「make a map from my code」 door
-   * from exactly that person. The caller decides this from the project's source binding.
+   * No map built from code yet; not "never opened a folder", which hides the door from someone
+   * who opened folders and gave up. The caller decides from the project's source binding.
    */
   mapUnbuilt?: boolean;
   /**
-   * **Is there an agent to hand the work to.**
-   *
-   * ⚠️ Without this the door was a dead end (found while walking the flow, 2026-08-25). The handoff
-   * ends at `if (!target) return;` when no ACP runtime exists, so on a Mac with no agent installed
-   * the button created a folder, opened a vault, and then silently did nothing — having promised a
-   * map. The card's own rule already says a door that cannot open is worse than no door; it was
-   * being applied to the web and not to this.
+   * Without an ACP runtime the handoff returns early, so the door would create a folder and then
+   * silently do nothing.
    */
   agentAvailable?: boolean;
   children?: ReactNode;
 }
 
 /**
- * Automatic codebase bootstrap (`node $ATLAS/cli/src/index.mjs bootstrap` =
- * analyze_repo_structure + infer_imports in one line, no agent) exists and is
- * exactly what the tech-lead persona wanted, but the web's first screen carried
- * no route to it — hidden behind CLI/agent use only, it got deferred and
- * revisits stopped. Rather than adding a surface, this card gains one copyable
- * command line.
+ * One copyable command for codebase bootstrap (`node $ATLAS/cli/src/index.mjs bootstrap` =
+ * analyze_repo_structure + infer_imports, no agent), the web's only route to it.
  */
-// The CLI is not published to npm (docs/DECISIONS.md 2026-07-27) — this command
-// runs inside an ontology-atlas source checkout. Leaving a "someday npx will
-// work" branch would be a future tense that never arrives, and a lie to whoever
-// reads it.
+// The CLI is not published to npm (docs/DECISIONS.md 2026-07-27), so this runs inside an
+// ontology-atlas source checkout.
 const CLI_BOOTSTRAP_COMMAND =
   "node cli/src/index.mjs init && node cli/src/index.mjs bootstrap";
 
-/** The platform does not change during a session — nothing to subscribe to. */
 const subscribeNever = () => () => {};
 const readApplePlatform = () =>
   /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent);
 const readApplePlatformOnServer = () => false;
 
 /**
- * The "get started" module that sits at the top of the INDEX panel
- * (TopologyIndexPanel). Approved contract:
- * `docs/prototypes/first-run-v3-flagship.html` (2026-07-18). Zero floating
- * surfaces — both the centre card (rejected) and the bottom command dock
- * (rejected mid-review) were dropped in favour of a place inside the existing
- * INDEX panel.
- *
- * Rendered only when no vault is selected, the mode is static, and it has not
- * been dismissed this session (`visible`, `useFirstRunStarter`). Otherwise null,
- * and the INDEX keeps its usual shape (search plus tree).
+ * The "get started" module at the top of the INDEX panel; approved contract
+ * `docs/prototypes/first-run-v3-flagship.html`. Null unless no vault is selected, the mode is
+ * static and it was not dismissed this session (`useFirstRunStarter`).
  */
 export function FirstRunStarterModule({
   concepts,
@@ -179,8 +117,7 @@ export function FirstRunStarterModule({
   children,
 }: FirstRunStarterModuleProps) {
   const t = useTranslations("firstRunStarter");
-  // Reuses ShortcutSheet's i18n namespace verbatim
-  // (`searchWidgets.shortcuts.glossary.*`). Zero new copy, one source.
+  // Reuses ShortcutSheet's namespace (`searchWidgets.shortcuts.glossary.*`): one source.
   const glossary = useTranslations("searchWidgets.shortcuts.glossary");
   const {
     visible,
@@ -199,58 +136,32 @@ export function FirstRunStarterModule({
     fsaUnsupported,
   } = useFirstRunStarter();
   const { state: cliCopyState, copy: copyCliCommand } = useCopyFeedback();
-  // "First Run" · "Currently Sample" · "Map Terminology" rendered with doubled
-  // spaces. The i18n strings had single spaces — what widened was the space
-  // glyph under latin-only decoration (mono + uppercase + wide tracking) applied
-  // to Korean (measured tracking 1.36–2.09px).
-  const eyebrowWide = useLatinEyebrow("tracking-[var(--tracking-caps-16)]");
+  // Latin-only eyebrow decoration widens Korean space glyphs, so it is per locale.
   const eyebrow = useLatinEyebrow("tracking-[var(--tracking-caps-16)]");
-  const eyebrowTight = useLatinEyebrow("tracking-[var(--tracking-caps-16)]");
-  // The empathetic sample vault: the dogfood vault (this tool describing itself)
-  // does not land with a non-developer, so first run offers an instantly
-  // recognizable example business instead. Consumed only in static mode — in
-  // local mode `useOntologyInsight` ignores this value.
+  // The storefront sample lands with non-developers where the dogfood vault does not. Only
+  // static mode consumes it; `useOntologyInsight` ignores it in local mode.
   const [sampleSource, setSampleSource] = useSampleSource();
-  // The npx command block sat permanently on a non-developer's first screen
-  // (planning, marketing, leadership) and stole attention. It moves behind a
-  // disclosure that is collapsed by default, so only developers expand it.
-  // Session state until the card remounts.
+  // The command is collapsed by default so it does not take a non-developer's first attention.
   const [cliOpen, setCliOpen] = useState(false);
-  // Derived, not stored: open while the tour points at the command, the
-  // person's own toggle otherwise.
+  // Derived: open while the tour points at the command, the person's toggle otherwise.
   const cliShown = cliOpen || agentSpotlit;
-  // The command sits at the foot of a card that scrolls; opened by the tour it
-  // ended 32 px below the card's edge, half a line showing (measured
-  // 2026-09-19). Bring it into the visible part of the card for that step.
+  // The command sits at the foot of a scrolling card, so the tour step scrolls it into view.
   const cliBridgeRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (!agentSpotlit) return;
-    // Optional call: the test DOM has no scrollIntoView.
+    // Optional call: jsdom has no scrollIntoView.
     cliBridgeRef.current?.scrollIntoView?.({ block: "nearest" });
   }, [agentSpotlit]);
-  // The folder CTA used to go straight to the OS picker with zero explanation,
-  // so a first-time user did not know what to choose. Both CTAs now pass through
-  // a guidance sheet first (this card renders only for a new user with no vault,
-  // so no experienced user is forced through the sheet).
+  // Both folder CTAs pass through a guidance sheet first; the card renders only for a new user.
   const [guideOpen, setGuideOpen] = useState(false);
-  // Whether the card occupies the panel or collapses and hands the space to the
-  // INDEX. The moment the user chooses "what to look at" (switching samples), it
-  // collapses and hands over to data. `dismiss` lasts the session; this is a
-  // within-session toggle.
+  // Collapses and hands the space to the INDEX once the user chooses what to look at. `dismiss`
+  // lasts the session; this is a within-session toggle.
   const [collapsed, setCollapsed] = useState(false);
 
   /*
-   * The sample source is an **exclusive single selection**. A 2026-08-02 PO
-   * council pass gave back `role="tab"` for `aria-pressed`, but **the
-   * alternative considered then was tablist, not radiogroup.** Putting
-   * `pressed` on siblings side by side never puts the exclusivity into the
-   * accessibility tree. The contract from that pass — "re-clicking the current
-   * selection does nothing" — is kept by the hook: `onChange` fires only when
-   * the value actually changes.
-   *
-   * ⚠️ The container stays in place — an inactive segment carries hover ink
+   * An exclusive single selection, so a radiogroup; `onChange` fires only on a real change, so
+   * re-clicking does nothing. The container stays because an inactive segment carries hover ink
    * (`--map-panel-text-primary`) that is not in the value layer.
-   * Migrating away loses that feedback.
    */
   const sampleSourceGroup = useRovingRadioGroup<"storefront" | "dogfood">({
     value: sampleSource,
@@ -261,17 +172,8 @@ export function FirstRunStarterModule({
     },
   });
   /*
-   * Turning the lens on collapses the card and hands the space to the INDEX (see
-   * the `lensActive` comment above).
-   *
-   * **Turning it off does not restore it.** Collapsing records that «the user
-   * has already chosen what to look at», and switching the lens off does not
-   * cancel that fact — restoring would make the tree they were just reading
-   * vanish. The "back to the guide" row reopens the card at any time.
-   *
-   * A ref triggers this **once** rather than setState during render: retrying on
-   * every render while the lens is on would re-collapse the card the instant the
-   * user reopened it.
+   * Turning the lens on collapses the card; turning it off does not restore it, or the tree the
+   * person was reading would vanish. A ref fires this once, or reopening would re-collapse.
    */
   const lensCollapsedRef = useRef(false);
   useEffect(() => {
@@ -284,10 +186,8 @@ export function FirstRunStarterModule({
     setCollapsed(true);
   }, [lensActive]);
   /*
-   * Collapses on the first node selection — the same **once only** grammar as
-   * the lens, locked by a ref. Retrying every render would re-collapse the card
-   * the instant the user reopened it. Deselecting does not restore it: "I have
-   * already used the map" is not cancelled by clearing a selection.
+   * The first node selection collapses the card once, locked by a ref like the lens; deselecting
+   * does not restore it.
    */
   const selectionCollapsedRef = useRef(false);
   useEffect(() => {
@@ -295,32 +195,18 @@ export function FirstRunStarterModule({
     selectionCollapsedRef.current = true;
     setCollapsed(true);
   }, [nodeSelected]);
-  // The `⌘O` badge is true **only on Mac**. This app's open-folder shortcut is
-  // `{ key: "o", meta: true }` alone (the HomePage shortcut table) with no
-  // matching Ctrl+O binding. The web gateway's core audience is on
-  // Windows/Linux, and advertising a key that does not exist is a false glyph,
-  // not a hint.
-  //
-  // Static export does not know the platform on the server, so the server
-  // snapshot is always `false` (no badge) — which is why this uses
-  // `useSyncExternalStore` rather than `useEffect` + `setState`. The read never
-  // changes, so the subscription is a no-op, and the first client render is
-  // correct with no hydration mismatch.
+  // The `⌘O` badge only on Mac: the shortcut is `{ key: "o", meta: true }` with no Ctrl+O, and
+  // advertising a missing key is a false glyph. `useSyncExternalStore` with a `false` server
+  // snapshot keeps static export free of hydration mismatch.
   const applePlatform = useSyncExternalStore(
     subscribeNever,
     readApplePlatform,
     readApplePlatformOnServer,
   );
 
-  // Folder-first first visit (owner instruction 2026-07-24) — opening the first
-  // screen makes choosing a folder the first action. Skipping with "later" hands
-  // over to the automatic tour (the tour guard defers while the sheet is open).
-  // Once only.
-  // Not auto-opened in browsers without File System Access. The sheet exists to
-  // "explain before the OS picker appears", and that picker never comes, so it
-  // would be a modal recommending something impossible the moment the first
-  // screen opens. Guidance for that state is the inline notice inside the card
-  // (unsupportedNotice plus the macOS app).
+  // First visit opens the folder sheet once; skipping hands over to the tour, which waits for
+  // the sheet. Not in browsers without File System Access: the picker never comes, and the card's
+  // inline notice covers that state.
   useEffect(() => {
     if (!visible || fsaUnsupported || readVaultGuideAutoOpened()) return undefined;
     const id = window.setTimeout(() => {
@@ -330,25 +216,11 @@ export function FirstRunStarterModule({
     return () => window.clearTimeout(id);
   }, [visible, fsaUnsupported]);
 
-  // Back to the guide (owner report from real use, 2026-07-24) — closing the
-  // card with "I'll look around here" and browsing the example business left no
-  // way back to the start within the session. A quiet single row stays where the
-  // card was.
+  // A quiet row stays where the closed card was, as the way back within the session.
   /*
-   * **The status signal lives with the connection state, not with the card**
-   * (PO council verdict ③, 2026-08-03). "Currently Sample" used to live **inside** the
-   * card only, so pressing a sample source tab (`setCollapsed(true)`) removed it
-   * along with the card. At that moment the screen became **structurally
-   * indistinguishable in layout, labels, and counts** from having a real vault
-   * open, and the owner read the "This App's Code" tab as evidence of a connection.
-   *
-   * This module renders only while `sampleModeSettled`, so putting the signal on
-   * this row makes the signal's lifetime **the lifetime of sample mode** — it
-   * survives collapsing and dismissing, and disappears with the module when a
-   * folder is opened.
-   *
-   * Zero new strings — it reuses the same amber dot cluster and `sampleLabel`
-   * the card used. One screen does not state one fact in two grammars.
+   * The sample signal lives on this row, whose lifetime is sample mode, so it survives collapse
+   * and dismiss; inside the card only, a sample screen looked like a connected vault. Reuses the
+   * card's amber dot and `sampleLabel`.
    */
   const reopenRow = (
     <div className="flex shrink-0 items-center gap-2 border-b border-[color:var(--map-panel-divider)] px-4 py-2">
@@ -383,18 +255,8 @@ export function FirstRunStarterModule({
   );
 
   /*
-   * ⚠️ **Person B's only door** (owner correction, 2026-08-24).
-   *
-   * Everything above this line belongs to the first-run card, and that card is gated on
-   * `recentVaults.length === 0` — "this computer has never opened a folder". The owner named the
-   * mistake exactly: *"shouldn't it be person B who has opened folders many times and still hasn't
-   * made one?"* Someone who opened a folder, saw an empty map and gave up has opened folders **more**
-   * than a first-timer, so the card's rule hid this door from the very person it was built for.
-   *
-   * The rule that replaces it is about unfinished work, not about newness: a vault is open, and
-   * nothing in it points at real code yet (`mapUnbuilt`, decided by the caller from the project's
-   * source binding). It stays a single quiet line because it sits above somebody's own tree and must
-   * not out-shout it, and it disappears the moment a map exists.
+   * The door for someone with an open vault and no map from code yet (`mapUnbuilt`, from the
+   * caller's source binding): one quiet line above their tree, gone once a map exists.
    */
   const standaloneDoor =
     !visible && mapUnbuilt && canBuildFromCode && agentAvailable && !fsaUnsupported ? (
@@ -406,7 +268,7 @@ export function FirstRunStarterModule({
       </div>
     ) : null;
 
-  // No guide available (a local vault, say) — INDEX only, plus the door when a map is still missing.
+  // No guide available (a local vault, say): INDEX only, plus the door while a map is missing.
   if (!visible && !(sampleModeSettled && dismissed))
     return (
       <>
@@ -414,13 +276,9 @@ export function FirstRunStarterModule({
         {children}
       </>
     );
-  // The guide was closed or collapsed — the single "back" row plus the INDEX.
-  // The tour's INDEX step shows the list, not this card — derived, not stored:
-  // the card folds while the tour points at the list and is back the moment
-  // the step is left, because the dev persona's last step points at this very
-  // card (`first-run-starter`) and a card that stayed folded made that step
-  // unresolvable, ending the tour a page early (measured 2026-09-19). A card
-  // the person had already folded stays folded.
+  // The guide was closed or collapsed: the "back" row plus the INDEX. Derived, not stored: the
+  // card folds while the tour points at the list and returns when the step is left, because the
+  // next step points at this card. A card the person folded stays folded.
   if (!visible || collapsed || indexSpotlit) {
     return (
       <>
@@ -434,46 +292,34 @@ export function FirstRunStarterModule({
   return (
     <div
       data-testid="first-run-starter"
-      // min-h-0 + overflow-y-auto (owner report 2026-07-24) — the card is a
-      // fixed block inside the INDEX panel (flex-col h-full), so on a short
-      // window it ate all the space and there was no way to reach search and the
-      // tree below. When space runs short the card shrinks and switches to an
-      // internal scroll (unchanged when there is room).
+      // min-h-0 + overflow-y-auto: on a short window the card shrinks and scrolls internally so
+      // search and the tree stay reachable.
       className="relative flex-1 min-h-0 overflow-y-auto overscroll-contain bg-gradient-to-b from-[color:var(--color-indigo-a08)] via-[color:var(--color-indigo-a06)] to-transparent px-4 pb-3.5 pt-4"
     >
-      {/* Measured bottom whitespace was 25.4% in an 806px window (≈38% scaled to
-          a 982px fullscreen). The top was dense and the bottom empty. With this
-          wrapper filling the panel height (`min-h-full`) and the reference block
-          (glossary plus developer disclosure) standing at the bottom via
-          `mt-auto`, that whitespace becomes **a designed gap between the action
-          layer and the reference layer** rather than the card's tail.
-          Why a wrapper: the root is the scroll container (`overflow-y-auto`), so
-          putting flex on it squashes the children in a short window. An inner
-          wrapper with automatic height plus `min-h-full` grows normally when the
-          content is long and bottom-aligns only when it is short. */}
+      {/*
+       * `min-h-full` with the reference block at `mt-auto` turns bottom whitespace into a gap
+       * between the action and reference layers. A wrapper, because flex on the scroll root
+       * squashes children in a short window.
+       */}
       <div className="flex min-h-full flex-col">
-      {/* The first-run card said only "what this screen does" and never "what
-          this product is" (its name), leaving a complete beginner with an
-          identity gap. One text wordmark line is added, with no logo mark — the
-          existing mission sentence (contextBold) already explains the concept of
-          a map, so a separate half-sentence of mission would be redundant. */}
+      {/*
+       * The product name as a text wordmark line, with no logo mark.
+       */}
       <p
         data-testid="first-run-starter-brand"
         className="mb-1 text-caption font-[var(--font-weight-signature)] tracking-[var(--tracking-label)] text-[color:var(--map-panel-text-quaternary)]"
       >
         {t("brand")}
       </p>
-      {/* There are two status signals — "First Run" (when) and "Currently Sample"
-          (whose data). The amber dot used to sit beside "First Run" on the left,
-          where the colour read as a lone third signal. Moving the dot next to
-          its own sentence binds them into **one cluster** — the colour and the
-          words point at the same thing. */}
+      {/*
+       * The amber dot sits beside its own sentence so colour and words form one cluster.
+       */}
       <p
-        className={`mb-3 flex items-center gap-2 text-caption text-[color:var(--map-panel-text-secondary)] ${eyebrowWide}`}
+        className={`mb-3 flex items-center gap-2 text-caption text-[color:var(--map-panel-text-secondary)] ${eyebrow}`}
       >
         {t("caption")}
         <span
-          className={`ml-auto inline-flex items-center gap-1.5 text-caption text-[color:var(--color-status-warning)] ${eyebrowTight}`}
+          className={`ml-auto inline-flex items-center gap-1.5 text-caption text-[color:var(--color-status-warning)] ${eyebrow}`}
         >
           <span className="relative h-2 w-2 shrink-0" aria-hidden>
             <span className="absolute inset-0 rounded-full bg-[color:var(--color-status-warning)]" />
@@ -487,54 +333,36 @@ export function FirstRunStarterModule({
         data-testid="first-run-starter-context"
         className="mb-4 text-body leading-body text-[color:var(--map-panel-text-tertiary)]"
       >
-        {/* Demoting the instrument block leaves the card's largest type **tied**
-            between the lead and the CTA labels (both 12.5px semibold). There
-            must be one attention winner, so only the lead moves one step up the
-            ramp (`text-body-lg`, 14px) — and its paired line-height must be
-            stated explicitly or the 20px leading of the 12.5px step remains
-            (`.claude/rules/design.md`, "a size step carries its own leading").
-            Zero new tokens.
-
-            `block` is there because of a measured defect: left inline, the size
-            change happened **mid-sentence**, dropping the lead's last syllable
-            onto the next line with the smaller type running straight on after it
-            ("…map you see / o. Open my markdown folder..."). That is a spot where two
-            sizes and two line-heights overlap within one line. A size change may
-            happen only at a line boundary. */}
+        {/*
+         * The lead is one step up (`text-body-lg`) with its paired leading stated
+         * (`.claude/rules/design.md`, "a size step carries its own leading"). `block`, because a
+         * size change may happen only at a line boundary.
+         */}
         <b className="mb-1.5 block text-body-lg font-[var(--font-weight-strong)] leading-body-lg text-[color:var(--map-panel-text-primary)]">
           {t(sampleSource === "storefront" ? "contextStorefrontBold" : "contextBold")}
         </b>
         {t(sampleSource === "storefront" ? "contextStorefrontRest" : "contextRest")}{" "}
-        {/* This card's 33 strings contained 「Agent」, 「MCP」, and 「AI」 zero
-            times, while the rest of the app used them in 179 places — so the
-            first point of contact alone had no identity statement, and the bold
-            lead did not distinguish this from any other markdown map tool. One
-            sentence, using vocabulary tour step 4 already uses; no new concept. */}
+        {/*
+         * The one sentence that names the agent audience, in tour step 4's vocabulary.
+         */}
         <span data-testid="first-run-starter-agent-clause">{t("agentClause")}</span>
       </p>
 
-      {/* The empathetic sample vault. The dogfood vault (this tool describing
-          itself) does not land with a non-developer, so one click switches to an
-          instantly recognizable example business ("Online Shopping Mall"). Reuses the
-          same tokens and structure as the existing "All | Recently Changed" segment in
-          TopologyIndexPanel.
-
-          Semantics correction (PO council 2026-08-02): it was `role="tab"`, but
-          clicking did not change a tab panel — it **collapsed the card**, even
-          when pressing the already-selected tab. A tab removing its own screen
-          is not the tablist contract. The collapse-on-switch behaviour is kept
-          while the semantics become a selection control (`aria-pressed`), and
-          re-clicking the current selection does nothing. */}
+      {/*
+       * The storefront sample, one click away; same tokens as the "All | Recently Changed"
+       * segment in TopologyIndexPanel. A selection control: switching collapses the card, and
+       * re-clicking the current selection does nothing.
+       */}
       <div
         {...sampleSourceGroup.groupProps}
         aria-label={t("sampleSourceAria")}
         data-testid="first-run-starter-sample-source"
         className="mb-2 grid shrink-0 grid-cols-2 gap-1 rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-1"
       >
-        {/* Order is the default — a newcomer reads the left one first. Hence the
-            example business first and this app's own code second. The two
-            buttons differ only in their text, so they are driven from data
-            (which prevents fixing only one of them). */}
+        {/*
+         * A newcomer reads the left one first, so the example business leads. Driven from
+         * data so both buttons change together.
+         */}
         {(
           [
             { source: "storefront", label: "sampleSourceStorefront", tip: "sampleSourceStorefrontTip" },
@@ -547,9 +375,10 @@ export function FirstRunStarterModule({
             type="button"
             title={t(tip)}
             data-testid={`first-run-starter-sample-source-${source}`}
-            /* Borderless inset plus panel ink plus ellipsis — the three axes line
-               up exactly for this one slot. `--chrome-radius-inner` is an alias
-               of `--radius-chip`, so the radius is unchanged (zero pixel change). */
+            /*
+             * Borderless inset, panel ink and ellipsis match this slot;
+             * `--chrome-radius-inner` aliases `--radius-chip`.
+             */
             className={controlClass({
               shape: "segment",
               scope: "panel",
@@ -567,25 +396,19 @@ export function FirstRunStarterModule({
         ))}
       </div>
 
-      {/* Instrument demotion (PO council 2026-08-02) — the concept, relation, and
-          domain counts were a three-way inset instrument block (19px mono
-          semibold), measured as **the largest type and highest luminance in the
-          card**. Instrument treatment belongs to the moment the user's **own**
-          vault is open. This card renders only before that, so the strongest ink
-          here being someone else's sample size contradicts a screen that says
-          "Sample Now" four times. The numbers' source is unchanged — a
-          `topologyCanonicalCensus` derivation arrives as props, and the ban on
-          hardcoded numbers (2026-08-01 ledger) still holds. */}
+      {/*
+       * The counts are a caption, not an instrument block: instrument treatment belongs to
+       * the person's own vault. The numbers still come from `topologyCanonicalCensus` props.
+       */}
       <p
         data-testid="first-run-starter-sample-scale"
         className="mb-4 text-label leading-label text-[color:var(--map-panel-text-tertiary)]"
       >
         {t("sampleScale", { concepts, relations, domains })}
-        {/* One real edge teaches "relation" better than three aggregates. It does
-            not pretend to be a queried fact, though — zero wiring, a static
-            sentence in the grammar of an example. The storefront sample really
-            does have `domains/order` relates `domains/fulfillment`. The dogfood
-            vault is left empty rather than forcing a symmetry. */}
+        {/*
+         * One real storefront edge teaches "relation" in the grammar of an example, not a
+         * queried fact; the dogfood vault gets none rather than a forced symmetry.
+         */}
         {sampleSource === "storefront" ? (
           <span className="block text-[color:var(--map-panel-text-quaternary)]">
             {t("sampleRelationExample")}
@@ -594,11 +417,10 @@ export function FirstRunStarterModule({
       </p>
 
       {fsaUnsupported ? (
-        /* Safari and Firefox have no File System Access API, so both "open
-           folder" and "create a new vault" failed only after being pressed (the
-           most prominent indigo button ending in one line of error as a first
-           impression). Degrade honestly up front: one line of unsupported notice
-           plus a link to the macOS app (/download). */
+        /*
+         * Without File System Access both CTAs would fail after pressing, so one notice and
+         * the macOS app link (/download) replace them up front.
+         */
         <div
           data-testid="first-run-starter-unsupported"
           className="rounded-card border border-[color:var(--map-panel-divider)] bg-[color:var(--map-panel-recess-a45)] px-3 py-2.5"
@@ -626,13 +448,8 @@ export function FirstRunStarterModule({
           {busy && !scaffolding ? t("openBusy") : t("openLabel")}
           {applePlatform ? (
             /*
-             * No `opacity`. The ink here is inherited `--color-text-on-accent` (#ffffff,
-             * 4.70:1 on `--color-indigo-brand` — `globals.css`, the token's own note),
-             * and `opacity-80` composited it down to **3.63:1** at 9.5px (measured
-             * 2026-09-05). Opacity never touches the computed `color`, so this read as a
-             * licensed pairing everywhere the licence is checked while failing on screen.
-             * The keycap is already the quieter half through its border and its box; it
-             * does not need to spend the contrast too.
+             * No `opacity`: it would drop the inherited `--color-text-on-accent` below contrast
+             * while the computed `color` still passes the licence checks.
              */
             <span className="rounded-micro border border-b-2 border-[color:var(--color-keycap-edge-on-accent)] px-1.5 py-px font-mono text-caption font-[var(--font-weight-signature)]">
               ⌘O
@@ -642,30 +459,16 @@ export function FirstRunStarterModule({
       )}
 
       {/*
-        ⚠️ **The door for someone who already has code** (decision, 2026-08-24; it overturns that
-        record's own no-go on this card's affordance count, on the owner's instruction).
-
-        Measured on the shipped card: of its four actions **none makes an ontology from a
-        repository that already exists**. Opening a folder with no Markdown gives an empty map,
-        creating one gives five seeded examples, and the only real path was the folded terminal
-        row whose own copy tells app users it excludes them.
-
-        It stays **secondary**, outlined rather than filled. The 2026-08-02 record set this card's
-        attention hierarchy deliberately and a second filled indigo would give it two winners; the
-        addition is a route, not a re-ranking.
-
-        Drawn only in the installed app. The web has no agent to hand the work to, and a door that
-        cannot open is worse than no door — the same rule that keeps 「coming soon」 out of this
-        product.
-      */}
+       * The door for someone who already has code; outlined, not filled, so the card keeps
+       * one attention winner. Installed app only: the web has no agent to hand work to.
+       */}
       {canBuildFromCode && agentAvailable && !fsaUnsupported ? (
         <BuildFromCodeDoor build={build} variant="card" disabled={busy} />
       ) : null}
 
-      {/* The tour's only entry point was a single icon in the right rail, and
-          non-developers did not find it (measured in a live walkthrough).
-          Promoted to a secondary CTA directly beneath the folder CTA — the "look
-          around before opening" path. */}
+      {/*
+       * The tour CTA beneath the folder CTA, the look-around-first path.
+       */}
       {onStartTour ? (
         <button
           type="button"
@@ -711,19 +514,20 @@ export function FirstRunStarterModule({
         </button>
       </p>
 
-      {/* A non-developer had no way to discover the "view mode" toggle inside the
-          gear menu. When the callback is supplied, the hint sentence is promoted
-          to a one-click toggle button — telling someone to "turn it on in the
-          gear menu" was itself the friction. Without the callback the old hint stays. */}
+      {/*
+       * With the callback the plain-mode hint is a one-click toggle; without it the hint
+       * sentence stays.
+       */}
       {onEnablePlainMode ? (
         audiencePlain ? null : (
           <button
             type="button"
             data-testid="first-run-plain-toggle"
             onClick={onEnablePlainMode}
-            /* Ramp floor 24 (`min-h-6`) with the coarse hit area from
-               `touch-hit-expand` — putting 44 in the box height would open this
-               card up by 44px vertically. */
+            /*
+             * Ramp floor 24 (`min-h-6`) with `touch-hit-expand` for the coarse hit area, so
+             * the card does not grow 44px.
+             */
             className={controlClass({
               shape: "link",
               tone: "accent",
@@ -742,18 +546,10 @@ export function FirstRunStarterModule({
         </p>
       )}
 
-      {/* The raw browser string used to occupy the whole user-facing slot.
-          `window.showDirectoryPicker is not a function` is not a sentence a person can
-          read and choose a next action from.
-          2026-08-02 — when the reference block moved to the bottom, this warning
-          was pushed to the end of the card, far from the button it explains. It
-          stays inside the action layer.
-          ⚠️ v1.2.2 — the "quiet clue beneath the sentence" that this block used to render was
-          `vault.errorMessage`, i.e. the cause string in English on a Korean card
-          (re-inspection, S20). The hook now hands over a sentence for the slot and the English on
-          `errorDetail`, which goes to `data-failure-detail` — read by a developer, not a reader.
-          The visible line is also no longer the generic fallback for every failure: when the code
-          is recognised it is the sentence written for that exact failure. */}
+      {/*
+       * The failure line stays in the action layer. It shows the sentence for a recognised
+       * code or the fallback; the English cause goes to `data-failure-detail`.
+       */}
       {errorText !== null ? (
         <div
           role="alert"
@@ -765,17 +561,14 @@ export function FirstRunStarterModule({
         </div>
       ) : null}
 
-      {/* The reference layer (PO council 2026-08-02) — the glossary and the
-          developer disclosure are "look at when needed", not "do now". `mt-auto`
-          stands them at the bottom, creating a gap from the action layer. The
-          empty space is left as is — the prescription is to separate the layers,
-          not to fill it. */}
+      {/*
+       * The reference layer (glossary and developer disclosure) stands at the bottom via
+       * `mt-auto`, separated from the action layer.
+       */}
       <div className="mt-auto">
-      {/* The three-term definitions (domain / capability / element) were promoted
-          from the "?" shortcut modal to this first-run card. They are three
-          always-visible lines rather than hidden behind a disclosure — this is
-          the surface where a complete beginner must learn what the three words
-          mean the moment they first open the map, so it is not something to fold. */}
+      {/*
+       * Always visible, not folded: this is where a beginner learns the three words.
+       */}
       <div className="mt-4 border-t border-[color:var(--map-panel-divider)] pt-3">
         <p
           className={`mb-1.5 text-caption text-[color:var(--map-panel-text-quaternary)] ${eyebrow}`}
@@ -783,41 +576,12 @@ export function FirstRunStarterModule({
           {glossary("title")}
         </p>
         {/**
-         * **The term column's width is a design decision, not a by-product of
-         * word length** (dogfooding 2026-07-29, measured on the English screen).
-         *
-         * The draft used `flex flex-wrap`, so each definition sat directly after
-         * its term. Korean terms are a uniform two or three characters, so the
-         * `=` lined up by coincidence; in English the terms differ (Domain 38px,
-         * Capability 50px, Element 41px) and the `=` scattered across
-         * 173.9 / 186 / …, and **the third row's definition dropped entirely to
-         * the next line**, restarting at the left edge of the term column:
-         *
-         *     Element =
-         *     A piece of code or a doc that implements it
-         *
-         * Two rows read as `term = definition` while one row reads as different
-         * grammar.
-         *
-         * A two-column grid fixes it — the term column is sized once against the
-         * longest term (`auto`) and the definition column takes the rest. A long
-         * definition wraps within its own column instead of under the term. The
-         * `=` stands on one line in every language.
+         * A two-column grid sizes the term column once against the longest term, so the `=`
+         * lines up and long definitions wrap in their own column in every language.
          */}
         {/**
-         * The columns are declared **as an inline style.** Written first as
-         * `grid-cols-[auto_auto_1fr]`, Tailwind **did not generate** that
-         * utility: the class stayed as a string, `grid-template-columns` became
-         * `none`, and the three cells stacked into one column — the screen got
-         * quietly worse while types, lint, and contract tests all passed. This is
-         * the same failure `.claude/rules/design.md` records for the type ramp
-         * (*"an undefined step is silent — something that does not exist leaves no
-         * literal, so it is outside the reach of hardcoding checks"*), reproduced
-         * on a different utility family.
-         *
-         * An inline value cannot fail to exist. `minmax(0, 1fr)` stops the
-         * definition column from refusing to shrink below its own minimum on a
-         * long sentence (grid's default `min-width: auto` causes overflow).
+         * Inline style, because Tailwind did not generate `grid-cols-[auto_auto_1fr]` and the
+         * cells silently stacked. `minmax(0, 1fr)` lets the definition column shrink.
          */}
         <dl
           data-testid="first-run-starter-glossary"
@@ -843,19 +607,10 @@ export function FirstRunStarterModule({
         </dl>
       </div>
 
-      {/* The bridge to automatic codebase bootstrap (CLI/agent only). The two
-          buttons above (open folder / create a new vault) only open an empty
-          vault; they do not answer "analyze my repo and fill it in" — that answer
-          is `node $ATLAS/cli/src/index.mjs bootstrap`, and the web's first screen
-          had no pointer to it at all. It is hidden behind a collapsed disclosure
-          so it is out of a non-developer's line of sight and only whoever expands
-          it sees the command.
-          Copy correction (PO council 2026-08-02): the label said "Start automatically from codebase" (= my repo), but the command takes a relative path
-          and therefore scans **the folder it runs in** — inside a source checkout
-          it bootstraps atlas itself. The command is the CLI's public contract and
-          out of scope here, so the copy is narrowed to what the command actually
-          does (consistent with `cliBridgeSourceOnly`'s honest notice). The toggle
-          also moves from addressing a role ("If you are a developer") to addressing an action. */}
+      {/*
+       * The bridge to codebase bootstrap, behind a collapsed disclosure. The command scans the
+       * folder it runs in, so the copy says what it does (`cliBridgeSourceOnly`).
+       */}
       <div className="mt-3">
         <button
           type="button"
@@ -881,11 +636,10 @@ export function FirstRunStarterModule({
           {t("cliBridgeToggle")}
         </button>
         {cliShown ? (
-          /* Owner report 2026-07-23 — the label, command, and copy button split
-             one row three ways, truncating the command mid-word
-             ("npx ontology-atlas i…"). Split into a header row (label plus copy)
-             and a full-width code line that wraps at word boundaries, so the full
-             command is always visible. */
+          /*
+           * A header row (label and copy) plus a full-width code line that wraps at word
+           * boundaries, so the whole command is visible.
+           */
           <div
             ref={cliBridgeRef}
             id="first-run-starter-cli-bridge"

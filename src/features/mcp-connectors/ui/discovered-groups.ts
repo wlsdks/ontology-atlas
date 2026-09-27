@@ -1,19 +1,8 @@
 /**
- * **One discovered row per thing that actually runs.**
- *
- * The same server is normally registered in several places at once — anyone who set up two coding
- * tools has byte-identical entries in `~/.claude.json` and `~/.codex/config.toml` — and the first
- * list drew one row per file. That is the same command offered two or three times, and choosing
- * between identical rows teaches a person nothing.
- *
- * **What makes two entries the same thing** is the transport plus the command line, if any,
- * or the URL. Not the name: somebody who wrote `notion` in one file and `notion-mcp` in another
- * still registered one server, and the name is the part they were free to invent. The first
- * spelling seen wins the row, and every file it appeared in becomes a chip.
- *
- * Lifted out of `ConnectorsPanel.tsx` on 2026-09-07 when the add dialog became its own file:
- * both need this and a feature file importing a sibling's UI module for two pure functions is
- * how a 1,600-line component starts.
+ * One discovered row per server that actually runs. The same server is often registered in
+ * several files; identity is the transport plus command line if any, else the URL, not the
+ * invented name. The first spelling wins the row and every source becomes a chip.
+ * One pass over a Map keyed by that identity: O(n × sources per group).
  */
 import type { DiscoveredConnector } from '@/shared/lib/tauri-connectors';
 
@@ -43,10 +32,8 @@ export function groupDiscovered(servers: readonly DiscoveredConnector[]): Discov
 }
 
 /**
- * A source id, reduced to the one word a person recognises. `claude-user` and `claude-project` are
- * the same tool asked twice, so both read "claude"; naming the file instead would put
- * `~/.claude.json` on a chip, which says where the entry lives rather than which tool put it
- * there.
+ * A source id reduced to the tool a person recognises: `claude-user` and `claude-project` both
+ * read "claude", rather than naming the file.
  */
 export function shortSourceKey(
   source: string,

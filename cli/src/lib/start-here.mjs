@@ -1,18 +1,6 @@
 /**
- * What to show when somebody types `atlas` with nothing after it.
- *
- * ⚠️ **Why** (owner, 2026-08-25: *"if we are doing this, make it much better than it is now"*). Bare
- * `ontology-atlas` printed all 56 commands. That is a reference, and a reference is the right answer
- * to *"what else can this do"* — it is the wrong answer to *"I just installed this, now what."* The
- * person who types the bare command has told you they do not know the next word, and answering with
- * fifty-six of them puts the work back on them.
- *
- * So the bare command reads the situation and names **the few things that make sense from here**.
- * The full list stays one flag away, because the reference is genuinely useful once you know what
- * you are looking for.
- *
- * This module is pure: it takes facts and returns rows. The caller does the filesystem work, so the
- * decision of *what to suggest* can be tested without a disk.
+ * What to show when somebody types bare `atlas`: the few next steps that fit their situation, since typing
+ * the bare word says they do not know the next one. The full list stays behind `--help`. Pure: facts in, rows out.
  */
 
 /**
@@ -25,12 +13,8 @@
  */
 
 /**
- * Ordered next steps. First row is the one most likely to be right.
- *
- * The ordering rule is *what is missing*, not *what is impressive*: somebody standing in a codebase
- * with no ontology needs one, somebody standing in an empty ontology needs content, and somebody
- * with a full one needs to look at it. Suggesting `query` to a person with zero nodes is the CLI
- * equivalent of the empty map offering "browse concepts".
+ * Ordered next steps, most likely first, ranked by what is missing: a codebase with no ontology needs
+ * one, an empty ontology needs content, a full one needs looking at.
  */
 export function startHereRows(situation) {
   const {

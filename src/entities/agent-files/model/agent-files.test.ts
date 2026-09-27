@@ -7,9 +7,8 @@ import {
   WEB_SCAN_ANALYZE_OPTIONS,
 } from './agent-files';
 
-// The pure analysis logic itself is verified against the CLI implementation over a fixture matrix
-// by tests/contract/agent-files.contract.test.ts. Only the web-only adapter is covered here: the
-// repo-root gate, manifest → entry selection, and the UI model join.
+// The classifier is checked against the CLI in `tests/contract/agent-files.contract.test.ts`; this
+// covers the web adapter: repo-root gate, entry selection and the UI join.
 
 describe('manifestIncludesRepoRoot — honest repo-root gate', () => {
   it('is true when CLAUDE.md or AGENTS.md sits at the manifest root', () => {
@@ -23,7 +22,7 @@ describe('manifestIncludesRepoRoot — honest repo-root gate', () => {
       manifestIncludesRepoRoot([
         { path: 'README.md' },
         { path: 'capabilities/mcp-server.md' },
-        // nested copies do not make the vault the repo root
+        // Nested copies do not make the vault the repo root.
         { path: 'sub/CLAUDE.md' },
       ]),
     ).toBe(false);

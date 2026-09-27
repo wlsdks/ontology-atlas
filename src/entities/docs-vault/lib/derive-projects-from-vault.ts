@@ -2,20 +2,7 @@ import { readDisplayNames, type Project } from '@/entities/project';
 import type { VaultDoc, VaultManifest } from '../model/types';
 import { computeProjectSlug, isProjectVaultDoc } from './project-slug';
 
-/**
- * Maps *project nodes* in a vault manifest onto the Project domain model.
- *
- * A doc counts as a project when:
- *   1. `frontmatter.kind === 'project'` (primary, regardless of path), or
- *   2. its path starts with `projects/` (legacy compatibility, when frontmatter is missing)
- *
- * The manifest's VaultDoc already has frontmatter and excerpt parsed, so React
- * hooks can call this synchronously.
- *
- * Used by the mode-aware `useProjects` hook for both local and static (dogfood)
- * reads — `/projects` and `/topology` stay alive on the vault alone, with no login
- * and no backend.
- */
+/** Project docs (`kind: project`, or a legacy `projects/` path) as `Project`s; synchronous. */
 export function deriveProjectsFromVault(manifest: VaultManifest): Project[] {
   const projects: Project[] = [];
   for (const doc of manifest.docs) {
@@ -28,20 +15,15 @@ export function deriveProjectsFromVault(manifest: VaultManifest): Project[] {
 
 function mapVaultDocToProject(doc: VaultDoc): Project | null {
   const fm = doc.frontmatter;
-  // The slug comes only from `computeProjectSlug`; `buildTopologyDeeplinkForDoc`
-  // shares the same helper, and they must agree or the topology `?p=<slug>` deeplink
-  // opens the wrong drawer.
+  // `computeProjectSlug` is shared with the topology deeplink, so `?p=<slug>` opens the right drawer.
   const slug = computeProjectSlug(doc);
   if (!slug) return null;
-  // The name falls back to the human-readable filename even when it differs from
-  // `fm.slug`, which is why `fileSlug` is computed separately.
+  // The name falls back to the filename even when `fm.slug` differs.
   const fileSlug = doc.slug.startsWith('projects/')
     ? doc.slug.replace(/^projects\//, '')
     : doc.slug.split('/').pop() || doc.slug;
   const name = (fm.name as string) || (fm.title as string) || doc.title || fileSlug;
-  // Honest derivation: undefined unless the frontmatter states it. Fabricated
-  // defaults ('uncategorized', 'active', `{ x:0, y:0 }`) made the web display
-  // information the vault does not have.
+  // Undefined unless the frontmatter states it; no fabricated defaults.
   const category =
     typeof fm.category === 'string' && fm.category.trim()
       ? fm.category.trim()
@@ -53,15 +35,14 @@ function mapVaultDocToProject(doc: VaultDoc): Project | null {
   const isHub =
     fm.isHub === true || String(fm.isHub).toLowerCase() === 'true'
       ? true
-      : undefined; // `false` would be fabrication too — undefined unless stated
+      : undefined; // `false` would be fabricated too.
   const description =
     typeof fm.description === 'string' && fm.description.trim()
       ? fm.description.trim()
       : doc.excerpt;
-  // Only an explicit frontmatter position. Absent stays undefined, and the web's
-  // placement hook decides layout rather than the vault fabricating coordinates.
+  // Only an explicit position; layout is otherwise the placement hook's.
   const position = parseSplitPosition(fm) ?? parseInlinePositionOpt(fm.position);
-  // Only explicit startedAt / launchedAt. No empty object is fabricated.
+  // Only explicit startedAt / launchedAt.
   const timeline = deriveTimeline(fm);
   const updatedAt = parseDateFlexible(fm.updatedAt) ?? parseDateFlexible(doc.updatedAt) ?? new Date();
   const createdAt = parseDateFlexible(fm.createdAt) ?? updatedAt;

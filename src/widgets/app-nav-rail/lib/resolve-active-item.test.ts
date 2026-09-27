@@ -38,9 +38,7 @@ describe("resolveActiveNavRailItem", () => {
   });
 
   it("does not treat the bare /ontology redirect page as any rail item (it thin-redirects to /topology)", () => {
-    // /ontology/ itself (no /edit or /insights suffix) isn't one of the 5
-    // rail destinations — it immediately redirects, so highlighting nothing
-    // is more honest than guessing.
+    // /ontology/ redirects immediately, so no rail item is highlighted.
     expect(resolveActiveNavRailItem("/ontology/")).toBeNull();
   });
 

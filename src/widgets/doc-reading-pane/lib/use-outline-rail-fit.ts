@@ -8,20 +8,9 @@ import { rootFontPx } from "@/shared/ui/root-font-size";
 import { resolveOutlineRailFit, type OutlineRailFit } from "./outline-rail";
 
 /**
- * How much room the reading pane can spare for the outline rail, measured on the pane
- * itself.
- *
- * **Why a `ResizeObserver` and not a media query.** The quantity that decides whether a
- * rail drawn in the right-hand margin touches the text is the width of the box that
- * holds the text. A media query can only see the window, and the two stop agreeing the
- * moment anything else in the row changes width — which is exactly what a docked agent
- * conversation does. `lib/outline-rail.ts` records the measurement that caught it.
- *
- * **Why the state only ever holds one of three words.** The observer fires on every
- * frame of the dock's width transition; storing the pixel width would re-render the
- * whole reading pane a hundred times for a question with three answers. The verdict is
- * computed on each callback and written only when it changes, so the transition costs
- * at most two renders.
+ * Room the pane can spare for the outline rail, observed on the pane itself because a docked
+ * conversation changes the pane without changing the window. State holds only the verdict, so a
+ * dock transition costs at most two renders.
  */
 export function useOutlineRailFit(): {
   /** Attach to the box the body actually lives in. */
@@ -39,9 +28,8 @@ export function useOutlineRailFit(): {
     rootProbeRef.current = null;
     if (!node) return;
     const apply = () => {
-      // The column is `rem`-derived, so a browser text-only zoom moves it while the pane
-      // stands still. Both sides of the comparison are therefore read at the same moment:
-      // the pane from its own rect, the column from the live root size.
+      // The column is rem-derived and moves with text-only zoom, so the pane and the column are
+      // read at the same moment.
       const next = resolveOutlineRailFit(
         node.getBoundingClientRect().width,
         docColumnPxAtRoot(rootFontPx()),
@@ -52,13 +40,8 @@ export function useOutlineRailFit(): {
     if (typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(apply);
     observer.observe(node);
-    // Second observed box: a `1rem` square. The pane's width does not change when a reader
-    // raises the browser's font size, but the column's does — so without this the verdict
-    // would keep describing the column as it was until something else happened to resize the
-    // pane, which is the overlap this file's arithmetic exists to prevent. It hangs off
-    // `document.body` rather than the pane so that nothing is appended inside a box React
-    // reconciles, and it is `visibility: hidden` and `aria-hidden`, so it is in no
-    // accessibility tree and paints nothing.
+    // A hidden 1rem probe on `document.body` catches font-size changes the pane width cannot show;
+    // outside React's tree and the accessibility tree.
     const rootProbe = document.createElement("span");
     rootProbe.setAttribute("aria-hidden", "true");
     rootProbe.dataset.atlasRootSizeProbe = "";

@@ -27,8 +27,8 @@ function bodyIndexOf(entries: Record<string, string>): DocsBodyIndex {
   return m;
 }
 
-describe('searchDocs — 기존 메타데이터 티어 (회귀 가드)', () => {
-  it('title 매치가 excerpt 매치보다 높은 점수', () => {
+describe('searchDocs metadata tiers', () => {
+  it('scores a title match above an excerpt match', () => {
     const docs = [
       doc('a', 'other', { excerpt: 'graph engine here' }),
       doc('b', 'graph engine'),
@@ -38,7 +38,7 @@ describe('searchDocs — 기존 메타데이터 티어 (회귀 가드)', () => {
     expect(out[0].titleHit).toEqual({ start: 0, end: 5 });
   });
 
-  it('멀티 토큰은 AND — 모든 토큰이 어딘가에 매치해야 포함', () => {
+  it('requires every token of a multi-token query to match somewhere', () => {
     const docs = [
       doc('a', 'graph engine'),
       doc('b', 'graph only'),
@@ -47,7 +47,7 @@ describe('searchDocs — 기존 메타데이터 티어 (회귀 가드)', () => {
     expect(out.map((m) => m.doc.slug)).toEqual(['a']);
   });
 
-  it('tag / slug 매치도 점수에 반영', () => {
+  it('counts tag and slug matches in the score', () => {
     const docs = [doc('mcp-server', 'Server', { tags: ['mcp'] })];
     const out = searchDocs('mcp', docs);
     expect(out).toHaveLength(1);
@@ -56,13 +56,13 @@ describe('searchDocs — 기존 메타데이터 티어 (회귀 가드)', () => {
   });
 });
 
-describe('searchDocs — 본문(body) 최하위 티어', () => {
-  it('bodyIndex 없으면 기존과 동일 (본문 무시)', () => {
+describe('searchDocs body tier ranks lowest', () => {
+  it('ignores the body when there is no bodyIndex', () => {
     const docs = [doc('a', 'other')];
     expect(searchDocs('phrase', docs)).toEqual([]);
   });
 
-  it('본문에만 매치되는 문서도 결과에 포함되고 bodyHit 스니펫을 갖는다', () => {
+  it('includes body-only matches with a bodyHit snippet', () => {
     const docs = [doc('a', 'unrelated title')];
     const bodyIndex = bodyIndexOf({
       a: 'Intro line.\n\nThe deterministic compile phrase lives here.\n',
@@ -72,16 +72,14 @@ describe('searchDocs — 본문(body) 최하위 티어', () => {
     expect(out[0].titleHit).toBeNull();
     expect(out[0].bodyHit).not.toBeNull();
     const hit = out[0].bodyHit!;
-    // Exact-phrase boost — the snippet highlights the whole matched phrase rather
-    // than the first token (P1 review #2: a clicked result's snippet must contain
-    // the actual match).
+    // The exact-phrase boost highlights the whole matched phrase, not the first token.
     expect(
       hit.text.slice(hit.hit.start, hit.hit.end).toLowerCase(),
     ).toBe('deterministic compile');
     expect(hit.text).toContain('deterministic compile phrase');
   });
 
-  it('제목 히트는 항상 본문-단독 히트보다 위 (최하위 티어 보장)', () => {
+  it('ranks a title hit above any body-only hit', () => {
     const docs = [
       doc('body-only', 'zzz totally different'),
       doc('title-hit', 'needle at end of a very long title indeed truly'),
@@ -97,7 +95,7 @@ describe('searchDocs — 본문(body) 최하위 티어', () => {
     expect(out.map((m) => m.doc.slug)).toEqual(['title-hit', 'body-only']);
   });
 
-  it('excerpt 최저점(2)보다도 본문 점수가 낮다', () => {
+  it('scores a body hit below the lowest excerpt score', () => {
     const docs = [
       doc('excerpt-late', 'zzz', {
         excerpt: `${'y'.repeat(30)}needle far into the excerpt`,
@@ -109,7 +107,7 @@ describe('searchDocs — 본문(body) 최하위 티어', () => {
     expect(out.map((m) => m.doc.slug)).toEqual(['excerpt-late', 'body-first']);
   });
 
-  it('본문끼리는 먼저 나오는 매치가 근소하게 위', () => {
+  it('ranks an earlier body match slightly higher', () => {
     const docs = [doc('late', 'aaa'), doc('early', 'bbb')];
     const bodyIndex = bodyIndexOf({
       late: `${'filler '.repeat(400)}needle`,
@@ -119,21 +117,18 @@ describe('searchDocs — 본문(body) 최하위 티어', () => {
     expect(out.map((m) => m.doc.slug)).toEqual(['early', 'late']);
   });
 
-  it('멀티 토큰 AND 가 메타데이터+본문에 걸쳐도 성립', () => {
+  it('satisfies a multi-token AND across metadata and body', () => {
     const docs = [doc('a', 'graph doc'), doc('b', 'graph doc two')];
     const bodyIndex = bodyIndexOf({ a: 'compile is discussed here' });
     const out = searchDocs('graph compile', docs, 30, bodyIndex);
     expect(out.map((m) => m.doc.slug)).toEqual(['a']);
   });
 
-  // Landing defect (P1 review) #2 — a document with an exact phrase match must rank
-  // above one with scattered token AND matches, for trust to hold. Only then does the
-  // clicked top result's snippet actually contain a highlightable match (the
-  // precondition for landing in the viewer).
-  it('정확 구절 매치 문서가 흩어진 토큰 매치 문서보다 위 (본문 정확-구절 부스트)', () => {
+  // An exact phrase match must outrank scattered token matches, so the top result's snippet holds a
+  // markable match.
+  it('ranks an exact-phrase body match above scattered tokens', () => {
     const docs = [
-      // The tokens are each present but do not form a phrase (a scattered match) — at
-      // idx 0, the old logic would have ranked this document higher instead.
+      // Each token is present but not as a phrase (a scattered match).
       doc('scattered', 'zzz'),
     // "deterministic compile" as one contiguous exact phrase.
       doc('exact', 'yyy'),
@@ -152,7 +147,7 @@ describe('searchDocs — 본문(body) 최하위 티어', () => {
     );
   });
 
-  it('정확 구절 매치는 줄바꿈으로 쪼개져도(줄-랩) 찾아 부스트한다', () => {
+  it('boosts an exact phrase even when split by a line wrap', () => {
     const docs = [doc('wrapped', 'zzz')];
     const bodyIndex = bodyIndexOf({
       wrapped: 'Give it a local, git-backed\nmental model it can read.',
@@ -161,16 +156,13 @@ describe('searchDocs — 본문(body) 최하위 티어', () => {
     expect(out).toHaveLength(1);
     expect(out[0].bodyHit).not.toBeNull();
     const hit = out[0].bodyHit!;
-    // Even when extractBodySnippet flattens newlines into display spaces (a one-line
-    // snippet), the hit range must preserve the matched phrase's real length (measured
-    // against the raw text, newlines included) — evidence that the boost found the
-    // right position and length.
+    // The hit range keeps the phrase's raw length even when the snippet flattens newlines.
     expect(hit.text.slice(hit.hit.start, hit.hit.end)).toBe(
       'git-backed mental model',
     );
   });
 
-  it('정확-구절 부스트 최댓값(idx 0)도 제목 최저점(20) 은 절대 못 이긴다', () => {
+  it('keeps the largest exact-phrase boost below the lowest title score', () => {
     const docs = [
     // Worst case: a title match clipped past idx 80, scoring only the title minimum (20).
       doc('title-hit', `${'x'.repeat(90)}needle phrase`),
@@ -184,7 +176,7 @@ describe('searchDocs — 본문(body) 최하위 티어', () => {
     expect(out.map((m) => m.doc.slug)).toEqual(['title-hit', 'body-exact']);
   });
 
-  it('메타데이터에도 매치된 문서는 bodyHit 스니펫을 같이 들 수 있다', () => {
+  it('lets a metadata match also carry a bodyHit snippet', () => {
     const docs = [doc('a', 'needle title')];
     const bodyIndex = bodyIndexOf({ a: 'body also mentions needle here' });
     const out = searchDocs('needle', docs, 30, bodyIndex);
@@ -193,15 +185,15 @@ describe('searchDocs — 본문(body) 최하위 티어', () => {
   });
 });
 
-describe('extractBodySnippet — ±60자 문맥 + 하이라이트 범위', () => {
-  it('문서 앞부분 매치 — 앞 생략부호 없음', () => {
+describe('extractBodySnippet returns 60 characters of context and a highlight range', () => {
+  it('adds no leading ellipsis for a match near the start', () => {
     const body = 'needle then a tail that keeps going for a while afterwards';
     const s = extractBodySnippet(body, 0, 6);
     expect(s.text.startsWith('needle')).toBe(true);
     expect(s.text.slice(s.hit.start, s.hit.end)).toBe('needle');
   });
 
-  it('중간 매치 — 앞뒤 60자 창 + 생략부호, hit 범위 보존', () => {
+  it('windows 60 characters each side with ellipses around a middle match', () => {
     const before = 'a'.repeat(100);
     const after = 'b'.repeat(100);
     const body = `${before}NEEDLE${after}`;
@@ -213,7 +205,7 @@ describe('extractBodySnippet — ±60자 문맥 + 하이라이트 범위', () =>
     expect(s.text.length).toBe(60 + 6 + 60 + 2);
   });
 
-  it('개행/탭은 공백으로 눌러 한 줄 스니펫으로', () => {
+  it('collapses newlines and tabs into a one-line snippet', () => {
     const body = 'line one\nline two needle line\tthree';
     const idx = body.indexOf('needle');
     const s = extractBodySnippet(body, idx, 6);

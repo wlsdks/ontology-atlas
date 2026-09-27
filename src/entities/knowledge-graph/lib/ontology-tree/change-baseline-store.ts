@@ -10,36 +10,13 @@ import {
   snapshotMatchesGraph,
 } from "./change-baseline-persist";
 
-// Persists the change baseline across reloads. Non-destructive: it stores review
-// state only and never touches the vault's `.md` files.
-//
-// **Why the vault is part of the key** (repaired 2026-08-01). There used to be a
-// single global key, so per-vault content shared one slot and collided twice:
-//
-// 1. Marking a baseline in vault A and then opening B let B's first mark
-//    **overwrite** A's, so returning to A had lost the reference point for "what
-//    changed while I was away".
-// 2. The content-overlap guard (`snapshotMatchesGraph`) runs **only on restore**.
-//    Switching folders mid-session asks nobody, so A's in-memory baseline was
-//    compared against B's graph and **all of B counted as newly added**.
-//
-// Hence a per-vault key, plus dropping the in-memory baseline the moment the
-// active scope changes (`setChangeBaselineScope`). The overlap guard stays as a
-// second net for opening a completely different vault under the same folder name.
+// Review state only, keyed per vault so one vault's baseline never overwrites another's or
+// counts a different vault as all added. The overlap guard still catches a same-named vault.
 const PERSIST_KEY_PREFIX = "demo:change-baseline:v1:";
-/**
- * The global key from before vaults were scoped. **Never read back** — there is
- * no way to tell which vault the value belongs to, and reading it is precisely
- * the defect above. Cleared once, when a scope is first set (otherwise a value
- * nobody reads stays forever).
- */
+/** The pre-scope global key; never read, cleared once when a scope is first set. */
 const LEGACY_UNSCOPED_KEY = "demo:change-baseline:v1";
 
-/**
- * The vault currently on screen. `null` means nobody has said yet, and until
- * then **nothing is stored or restored** — a baseline whose vault is unknown is
- * itself an input to a false verdict, so this fails closed.
- */
+/** The active vault; while null nothing is stored or restored. */
 let baselineScope: string | null = null;
 
 function persistBaseline(snap: OntologySnapshot | null): void {
@@ -54,17 +31,8 @@ function persistBaseline(snap: OntologySnapshot | null): void {
 }
 
 /**
- * The shared change-baseline store — a module-level singleton.
- *
- * Marking a baseline in the change panel makes every other screen see the same
- * value. A module store plus `useSyncExternalStore` rather than React context,
- * so the state survives App Router client-side navigation (moving between
- * screens during a meeting while looking at the same changes). It also survives
- * a full reload: the baseline is persisted to localStorage and
- * `restorePersistedBaseline` brings it back behind the content-overlap guard.
- *
- * Safe for SSR and static export: no browser API is touched at module load, the
- * baseline starts `null`, and the server snapshot is `null` too.
+ * Module singleton read through `useSyncExternalStore`, so it survives client navigation and,
+ * via localStorage, reloads. SSR-safe: starts null with no browser access at load.
  */
 let baseline: OntologySnapshot | null = null;
 const listeners = new Set<() => void>();
@@ -73,17 +41,7 @@ function emit(): void {
   for (const listener of listeners) listener();
 }
 
-/**
- * **Declares which vault is active** — changing it drops the previous vault's
- * baseline on the spot.
- *
- * Without this call nothing is stored or restored (fail closed): having no
- * baseline at all is more honest than some screen quietly deciding one exists.
- *
- * The single consumer is `OntologyLiveBaselineInit`, which lives in the layout,
- * feeds the vault scope into this store, and redoes restore/auto-mark when the
- * scope changes.
- */
+/** Declares the active vault and drops the previous vault's baseline. */
 export function setChangeBaselineScope(scope: string): void {
   if (baselineScope === scope) return;
   const first = baselineScope === null;
@@ -101,7 +59,7 @@ export function setChangeBaselineScope(scope: string): void {
   }
 }
 
-/** The vault scope this store currently knows (for tests and diagnostics). */
+/** For tests and diagnostics. */
 export function getChangeBaselineScope(): string | null {
   return baselineScope;
 }
@@ -122,12 +80,7 @@ export function clearChangeBaseline(): void {
   emit();
 }
 
-/**
- * Restores the persisted baseline after a reload, *only when it overlaps the
- * current graph enough* (a different vault is discarded). Skips restoring when a
- * baseline already exists, so nothing is overwritten. Returning true tells the
- * caller (`OntologyLiveBaselineInit`) to skip auto-marking. Non-destructive.
- */
+/** Restores only a baseline that overlaps the graph and never overwrites one; true skips auto-mark. */
 export function restorePersistedBaseline(
   nodes: readonly KnowledgeGraphNode[],
 ): boolean {
@@ -162,14 +115,7 @@ export function useChangeBaseline(): OntologySnapshot | null {
   return useSyncExternalStore(subscribe, getChangeBaseline, () => null);
 }
 
-/**
- * Live mode: decides whether to mark a baseline automatically once a local vault
- * has loaded with nodes and none exists yet, so later agent edits pulse without
- * a click. Static/dogfood mode never changes, so it gets no automatic baseline.
- *
- * The caller (`OntologyLiveBaselineInit`) auto-marks **once per mount** — that is
- * what stops an explicit Clear from being undone immediately.
- */
+/** Auto-mark once a local vault loads with nodes; the caller does it once per mount so Clear sticks. */
 export function shouldAutoMarkBaseline(input: {
   mode: "static" | "local";
   hasBaseline: boolean;

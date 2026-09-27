@@ -21,12 +21,6 @@ function record(conformance: Record<string, unknown>) {
 describe('buildRoleLedgers', () => {
   const roles = ['views', 'widgets', 'shared'];
 
-  /*
-   * ⚠️ **A box with nothing measured behind it says nothing.** A row of zeros would read as "no
-   * violations", which is a claim about source nobody has listed — the exact "unknown shown as
-   * green" this whole surface exists to refuse. In a browser, where source cannot be listed at all,
-   * this is the normal case rather than an edge one.
-   */
   it('returns no ledgers at all when there is no record', () => {
     expect(buildRoleLedgers(roles, null)).toEqual({});
     expect(buildRoleLedgers(roles, undefined)).toEqual({});
@@ -39,8 +33,7 @@ describe('buildRoleLedgers', () => {
         observedRoleEdges: [
           { fromRole: 'widgets', toRole: 'shared', count: 314 },
           { fromRole: 'widgets', toRole: 'entities', count: 20 },
-          // The scanner's first rule allows same-role imports unconditionally, and they are the
-          // largest count on this repository. A role's own internals are not traffic out.
+          // Same-role imports are always legal and are not traffic out.
           { fromRole: 'widgets', toRole: 'widgets', count: 240 },
         ],
       }),
@@ -67,11 +60,6 @@ describe('buildRoleLedgers', () => {
     expect(ledgers.views).toMatchObject({ state: 'clean', violated: 0 });
   });
 
-  /*
-   * ⚠️ The receipt keeps the first 50 violations and sets `violationsLimited`
-   * (`mcp/src/architecture-profile.mjs`). Counting a role's violations out of a truncated list
-   * understates it, so the flag has to reach the box — the label says "at least N" there.
-   */
   it('carries the sample-limited flag so a truncated count is never stated as a total', () => {
     const ledgers = buildRoleLedgers(
       roles,
@@ -86,11 +74,6 @@ describe('buildRoleLedgers', () => {
     expect(ledgers.views.sampleLimited).toBe(true);
   });
 
-  /*
-   * ⚠️ `emptyRoles` is the only absence the receipt attributes to a role. `unmappedEdges` and
-   * `unruledEdges` are profile-wide totals with no role attached, so a box must never say
-   * "unmeasured" — that sentence belongs to the evidence summary, which already carries it.
-   */
   it('states no-source only for the roles the receipt names, and outranks a clean count', () => {
     const ledgers = buildRoleLedgers(
       roles,

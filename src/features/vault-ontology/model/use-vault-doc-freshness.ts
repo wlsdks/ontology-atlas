@@ -29,16 +29,9 @@ export interface VaultDocGitState {
 }
 
 /**
- * When each document last changed — by the rule the bundled manifest is already built with
- * (`scripts/build-docs-vault.mjs`, `latestInputDay`): a document Git shows untouched since its
- * last commit changed when that commit was made; one Git shows changed since, or one no commit
- * in the walk reached, changed when its file was last written.
- *
- * A file's own date is not a change date by itself. A clone, a checkout, a restored backup or a
- * folder carried to another computer stamps every file with the moment it landed, and the
- * "recent changes" lens then called the whole vault changed today (measured 2026-09-25 through
- * the app's own bridge: 98 of 98 concepts inside the last day, against commits one to four days
- * old and one uncommitted edit).
+ * Change dates by the manifest's rule (`scripts/build-docs-vault.mjs`, `latestInputDay`): Git's
+ * last commit unless Git shows the file changed since. A file date alone is not a change date,
+ * since a clone or checkout stamps every file.
  */
 export function resolveDocChangeDates(
   docs: readonly Pick<VaultDoc, 'slug' | 'path' | 'updatedAt'>[],
@@ -91,12 +84,7 @@ interface GitWalk {
   fileDates: ReadonlyMap<string, string>;
 }
 
-/*
- * One Git walk per folder read, shared by every reader on the screen — the map's read model and
- * the recent-changes lens each ask, and asking twice would run Git twice for one answer — and kept
- * after it settles, so a reader mounting later (back to the map, on to Analysis) starts from the
- * answer instead of from nothing.
- */
+/* One Git walk per folder read, shared by every reader and kept after it settles. */
 let settledWalk: GitWalk | null = null;
 let pendingWalk: { root: string; manifest: VaultManifest } | null = null;
 const walkListeners = new Set<() => void>();
@@ -141,35 +129,19 @@ function requestDocGitState(root: string, manifest: VaultManifest): void {
 export interface VaultDocDates {
   /** Document slug → when that document last changed (ISO). */
   index: ReadonlyMap<string, string>;
-  /**
-   * Git is being asked about this folder for the first time. Nothing is dated meanwhile: the
-   * files' own dates are the very answer Git is there to correct, and showing them first would
-   * flash the whole folder as changed today before the true dates replace it.
-   */
+  /** Git is being asked for the first time; nothing is dated, or file dates flash everything as changed today. */
   reading: boolean;
 }
 
 /**
- * When each vault document last changed — the one answer the "recent changes" lens, the
- * datasheet's "changed … ago", the dusty rows and the freshness tab on `/ontology/insights`
- * share, keyed by the slug `node.evidenceIds[0]` carries (`derivationToInsight`).
- * `KnowledgeGraphNode.lastApprovedAt` is the same sentinel (epoch 0) on every node, so it cannot
- * serve.
- *
- * In the app, with the folder inside a Git repository, Git dates each node document in one walk
- * (`git_paths_last_change`) and names the ones changed since their last commit (`git_diff`), by
- * `resolveDocChangeDates`. Elsewhere the manifest's dates stand: the web build reads no Git, a
- * folder outside a repository has none, and a bundled sample was dated by Git when it was built.
- * A re-read of the same folder keeps the last walk's answer for every document whose file has not
- * been written since — one written since has changed by definition — so a rebuild never drops
- * back to file dates or to nothing while Git answers again.
+ * When each vault document last changed, keyed by slug, for every recency surface. In the app
+ * inside Git this uses `resolveDocChangeDates`; elsewhere the manifest dates stand. A re-read
+ * keeps the last walk's answer for unwritten files.
  */
 export function useVaultDocDates(): VaultDocDates {
   const mode = useDataSourceMode();
   const vault = useLocalVault();
-  // With two bundled vaults (dogfood and storefront) the index cannot be frozen at module
-  // load. It receives the module-constant manifest instead, so the reference is stable and
-  // the memo only re-runs when the sample changes.
+  // With two bundled vaults the manifest arrives as a module constant, so the memo re-runs only per sample.
   const staticSource = useStaticVaultSource();
   const manifest = mode === 'local' && vault.status === 'loaded' ? vault.manifest : null;
   const handle = mode === 'local' ? selectOpenVaultHandle(vault.status, vault.handle) : null;
@@ -200,11 +172,7 @@ export function useVaultDocFreshnessIndex(): ReadonlyMap<string, string> {
   return useVaultDocDates().index;
 }
 
-/**
- * The manifest's own dates, untouched by Git: `file.lastModified` locally. Only a question
- * about the file itself belongs here — "was this file written since I opened it" — which a
- * commit must not answer (a snapshot of the very document on screen moves its change date).
- */
+/** The manifest's own file dates, for "was this file written since I opened it", which a commit must not answer. */
 export function useVaultDocFileDates(): ReadonlyMap<string, string> {
   const mode = useDataSourceMode();
   const vault = useLocalVault();

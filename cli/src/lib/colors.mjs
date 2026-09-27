@@ -1,8 +1,4 @@
-// **The single ANSI palette every CLI command shares.** 44 command and entry files
-// each inlined an identical `const COLORS = {...}` (~300 duplicated lines) with the
-// same values and keys, so they were folded into one source: adding a colour or
-// changing a tone is one edit. The helpers in diagnosis-colors.mjs already take a
-// `colors` parameter, so this object is passed straight through.
+// The single ANSI palette every CLI command shares; diagnosis-colors.mjs helpers take it as `colors`.
 export const COLORS = {
   reset: '\x1b[0m',
   bold: '\x1b[1m',
@@ -15,14 +11,8 @@ export const COLORS = {
   cyan: '\x1b[36m',
 };
 
-// Node kind (plus edge-endpoint state) → display colour, so every CLI command
-// draws a kind in the *same* colour and the visual language stays consistent.
-// 16 commands each defined their own KIND_COLORS and drifted: pattern-walk painted
-// element cyan (colliding with capability), and find/orphans/list painted document
-// white — the same kind looked different per command. `external` and `unresolved`
-// are edge-endpoint states rather than node kinds, but some graph commands colour
-// them from this map, so they live here; commands that do not use them simply
-// ignore the keys.
+// Node kind (plus the edge-endpoint states `external` and `unresolved`) → display colour, so every
+// command draws a kind in the same colour.
 export const KIND_COLORS = {
   project: COLORS.magenta,
   domain: COLORS.blue,

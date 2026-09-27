@@ -3,8 +3,7 @@ import { deriveOntologyFromVault } from '@/entities/docs-vault';
 import type { VaultManifest } from '@/entities/docs-vault';
 import { derivationToInsight } from './use-ontology-insight';
 
-// Per-locale display names (owner instruction, 2026-07-24) — pins that frontmatter
-// `display_<locale>` is collected onto the stub and resolved to the screen locale at the insight boundary.
+// `display_<locale>` is collected onto the stub and resolved at the insight boundary.
 const manifest = {
   docs: [
     {
@@ -15,7 +14,7 @@ const manifest = {
   ],
 } as unknown as VaultManifest;
 
-describe('display_<locale> 수집·해석', () => {
+describe('display_<locale> collection and resolution', () => {
   it('collects display_<locale> keys onto the stub (non-string values ignored)', () => {
     const d = deriveOntologyFromVault(manifest);
     const node = d.nodes.find((n) => n.id === 'domain:payment');

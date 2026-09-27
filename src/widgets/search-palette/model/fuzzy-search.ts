@@ -7,19 +7,9 @@ export interface SearchResult {
 }
 
 /**
- * Simple multi-field search — enough for 20–200 projects without adding a dependency.
- *
- * Scoring:
- * - exact name match 100
- * - name prefix match 80
- * - name contains 60
- * - nameEn contains 55
- * - slug contains 50
- * - tag contains 40
- * - stack contains 35
- * - description contains 20
- *
- * With several fields matching, the highest score applies.
+ * Multi-field project search: O(n · fields) substring checks per query, no index.
+ * Scores: exact name 100, name prefix 80, name contains 60, nameEn 55, slug 50, tag 40, stack 35,
+ * description 20; the highest matching field wins.
  */
 export function searchProjects(projects: Project[], rawQuery: string): SearchResult[] {
   const query = rawQuery.trim().toLowerCase();
@@ -40,33 +30,23 @@ export function searchProjects(projects: Project[], rawQuery: string): SearchRes
     let bestScore = 0;
     let bestField: SearchResult['matchedField'] = 'name';
 
-    const considered = (score: number, field: SearchResult['matchedField']) => {
+    const consider = (score: number, field: SearchResult['matchedField']) => {
       if (score > bestScore) {
         bestScore = score;
         bestField = field;
       }
     };
 
-    if (name === query || displays.includes(query)) considered(100, 'name');
-    else if (name.startsWith(query) || displays.some((value) => value.startsWith(query))) considered(80, 'name');
-    else if (name.includes(query) || displays.some((value) => value.includes(query))) considered(60, 'name');
+    if (name === query || displays.includes(query)) consider(100, 'name');
+    else if (name.startsWith(query) || displays.some((value) => value.startsWith(query))) consider(80, 'name');
+    else if (name.includes(query) || displays.some((value) => value.includes(query))) consider(60, 'name');
 
-    if (nameEn && nameEn.includes(query)) considered(55, 'nameEn');
-    if (slug.includes(query)) considered(50, 'slug');
+    if (nameEn && nameEn.includes(query)) consider(55, 'nameEn');
+    if (slug.includes(query)) consider(50, 'slug');
 
-    for (const t of tags) {
-      if (t.includes(query)) {
-        considered(40, 'tags');
-        break;
-      }
-    }
-    for (const s of stack) {
-      if (s.includes(query)) {
-        considered(35, 'stack');
-        break;
-      }
-    }
-    if (description.includes(query)) considered(20, 'description');
+    if (tags.some((t) => t.includes(query))) consider(40, 'tags');
+    if (stack.some((s) => s.includes(query))) consider(35, 'stack');
+    if (description.includes(query)) consider(20, 'description');
 
     if (bestScore > 0) {
       results.push({ project, score: bestScore, matchedField: bestField });

@@ -32,13 +32,7 @@ describe("the Lint brief reports and never writes", () => {
     });
   }
 
-  /**
-   * ⚠️ The dock opened on the whole brief — schema, fenced blocks, taxonomy rules — for
-   * somebody who had pressed a Korean button (installed app, 2026-09-13). The fold in
-   * `splitAppRequest` cuts at the folder anchor line, so the one line in front of it
-   * is the only line a person is handed, and it has to say what was asked and what comes
-   * back. Nothing after it is removed; it is one disclosure away.
-   */
+  /* The line before the folder anchor is the only one a person sees unfolded. */
   for (const locale of ["en", "ko"]) {
     it(`${locale}: opens on one readable line saying what was asked and what comes back`, () => {
       const lines = buildLintBrief({ pages: PAGES, locale, vaultRoot: VAULT_ROOT }).split("\n");

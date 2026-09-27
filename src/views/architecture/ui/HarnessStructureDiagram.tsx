@@ -37,8 +37,7 @@ export function HarnessStructureDiagram({ slots, sourceRoot, selectedId, detailI
   const t = useTranslations('harness');
   const stacked = useSyncExternalStore(subscribeToLayout, getStackedLayout, getServerLayout);
   const name = sourceRoot.split(/[\\/]/).filter(Boolean).at(-1) ?? sourceRoot;
-  /* The path is printed once: its parent quietly, the folder's own name in the stronger ink. It
-     used to be the name and then the whole path beside it, so the folder was named twice. */
+  /* The parent in the quiet ink, the folder's own name in the stronger one, printed once. */
   const parent = sourceRoot.endsWith(name) ? sourceRoot.slice(0, sourceRoot.length - name.length) : '';
   const selected = slots.find(slot => slot.id === selectedId);
   const loopSlot = slots.find(slot => slot.band === 'tool');
@@ -85,14 +84,10 @@ export function HarnessStructureDiagram({ slots, sourceRoot, selectedId, detailI
         {band('tells')}
         <span className={styles.connector} aria-hidden><ArrowRight size={ICON_SIZE.md} /></span>
         <div className={styles.center}>
-          {/* The one place the agent loop is named. Its explanation used to be repeated in a
-              dashed band under the whole panel, title and all; it lives behind this card's own
-              hint now, so the diagram says it once, where the loop sits. */}
           <div className={styles.core} data-testid="harness-anatomy-band-tool">
             <CircleHelp size={ICON_SIZE.lg} aria-hidden />
             <span data-testid="harness-anatomy-slot-loop" data-status={loopSlot?.status ?? 'tool-owned'}><strong className="font-[var(--font-weight-emphasis)]">{t('anatomySlots.loop.title')}</strong><small>{t('anatomyToolBand')}</small></span>
-            {/* No `max-w-full`: on a panel hung from the 24px button it capped the explanation at the
-                button's width, one syllable per line (34×332px at 1512, 2026-09-25). */}
+            {/* No `max-w-full`: on a panel hung from the 24px button it wraps one syllable per line. */}
             <PlacedInfoHint preferred="right" className="ml-auto" label={t('anatomyToolBand')}>
               <span className="flex flex-col gap-2">
                 <span>{t('anatomyToolCaption')}</span>
@@ -106,8 +101,6 @@ export function HarnessStructureDiagram({ slots, sourceRoot, selectedId, detailI
         {band('watches')}
       </div>
       <section className={styles.inspector} aria-label={t('diagramEvidence')} data-selected={selectedId !== null}>
-        {/* One name for the selection: the header carries it with its count, and the evidence
-            below starts at the row's sentence instead of printing the same title a second time. */}
         <div className={styles.inspectorHeading}><span>{t('diagramEvidence')}</span><div className={styles.inspectorTitle}><strong className="font-[var(--font-weight-emphasis)]">{selected ? t(`anatomySlots.${selected.id}.title`) : t('diagramSelectPart')}</strong>{selected ? <span data-status={selected.status}>{selected.status === 'absent' ? t('anatomyAbsent') : t(`anatomyUnits.${selected.id}`, { count: selected.count })}</span> : null}</div></div>
         <RowDisclosure open={!stacked && selectedId !== null} id={detailId}>{!stacked && selectedId ? <div key={selectedId} data-harness-detail className={styles.detailEnter}>{selectedContent}</div> : null}</RowDisclosure>
       </section>

@@ -8,22 +8,17 @@ import {
 import { generateNodeUid } from '@/entities/docs-vault';
 
 /**
- * Orchestrates writing the approved part of a bootstrap ("start an ontology from my documents") into
- * the vault.
- *
- * Contracts (every one has a regression history; the tests pin them):
- * - every write uses skipRefresh, with exactly one refresh() at the end (batched, so the result lands
- *   even when the last write is a no-op)
- * - elements: frontmatter is added only (the body is untouched)
- * - domains: a real `.md` is created, skipped when a domain document of the same path or name exists
- * - project: with an existing `kind: project`, the approved domains are merged into that document's
- *   `domains` instead of creating a second file
+ * Writes the approved part of a bootstrap plan into the vault.
+ * - every write uses skipRefresh and one refresh() runs at the end, so the result lands even when
+ *   the last write is a no-op
+ * - elements: frontmatter only, the body is untouched
+ * - domains: a real `.md`, skipped when a domain document of the same path or name exists
+ * - project: an existing `kind: project` receives the approved domains instead of a second file
  */
 
 /**
- * The minimal contract of the vault write surface — a subset of what use-local-vault returns, so a
- * fake can satisfy it in tests. Written in method shorthand so use-local-vault's wider
- * `FrontmatterUpdateValue` signature assigns directly.
+ * The subset of use-local-vault a test fake can satisfy. Method shorthand lets use-local-vault's
+ * wider `FrontmatterUpdateValue` signature assign directly.
  */
 export interface BootstrapVaultWriter {
   manifest: {
@@ -39,9 +34,8 @@ export interface BootstrapVaultWriter {
 }
 
 export interface ExecuteBootstrapResult {
-  /** Whether it was appended to an existing project (used to branch the toast). */
+  /** Branches the toast. */
   addedToExisting: boolean;
-  /** How many elements were promoted. */
   elementCount: number;
 }
 

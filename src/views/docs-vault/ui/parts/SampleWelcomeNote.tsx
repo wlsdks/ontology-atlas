@@ -4,17 +4,14 @@ import { useLocale } from "next-intl";
 import { IconButton, controlClass } from "@/shared/ui";
 
 export interface SampleWelcomeNoteProps {
-  /** With FSA support a folder can be opened on the web too (the same capability contract as `SampleNotice`). */
+  /** With FSA a folder can be opened on the web too, as in `SampleNotice`. */
   canOpenLocalVault: boolean;
   onOpenFolder: () => void;
   onDismiss: () => void;
 }
 
-// This copy could not be registered in the shared `messages/ko.json` / `messages/en.json`
-// catalogues because of file-ownership constraints on `src/views/docs-vault/` (avoiding a
-// simultaneous-edit conflict with another worktree). Per-locale literals are switched inside this
-// component instead — a deliberate exception to the next-intl convention that should be promoted to
-// real message keys in a follow-up.
+// Per-locale literals instead of `messages/*.json` keys: a deliberate next-intl exception to
+// promote to real message keys later.
 const COPY = {
   ko: {
     title: "이 문서함은 무엇인가요?",
@@ -31,14 +28,8 @@ const COPY = {
 } as const;
 
 /**
- * The introduction note shown on the first screen when landing in sample mode (no vault chosen)
- * without an explicit deeplink — "what is this docs surface and how do I use it", in plain language.
- *
- * The existing default selection logic (`README`/`FEATURES`/…) still picks a 100% English developer
- * document, so this note gives context above it first and keeps a non-developer visitor from
- * bouncing on the first screen. The visibility condition is decided by the caller
- * (`shouldShowSampleWelcomeNote`); this component is a pure display assuming it was rendered. It
- * stays a separate surface from `SampleNotice` (why it is read-only), which is a different concern.
+ * Plain-language context in sample mode above the English default document; the caller
+ * decides visibility (`shouldShowSampleWelcomeNote`).
  */
 export function SampleWelcomeNote({
   canOpenLocalVault,

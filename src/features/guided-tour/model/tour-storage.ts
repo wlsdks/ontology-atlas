@@ -1,21 +1,15 @@
 /**
- * The guided tour's completed/aborted state — pure localStorage read/write helpers,
- * mirroring the `first-run-starter/model/sample-node-hint.ts` pattern (injectable
- * key, private-mode try/catch fallback).
- *
- * No intermediate step is saved — it is a two-minute tour, so re-entry always starts
- * from the beginning. The completion flag does not block a rerun: the entry tile
- * always works.
+ * localStorage helpers for the tour's completed/aborted state, like
+ * `first-run-starter/model/sample-node-hint.ts`. No intermediate step is saved, and completion
+ * never blocks a rerun from the entry tile.
  */
 export const GUIDED_TOUR_STATUS_KEY = "guided-tour:v1";
 
 export type GuidedTourStatus = "done" | "skipped";
 
 /**
- * The per-destination "seen" key. It must be separate from the map's
- * (`guided-tour:v1`) so someone who has seen the docs guidance still gets the
- * workshop's — bundling them lets whichever screen was entered first swallow the
- * guidance of the other five.
+ * Separate from the map's `guided-tour:v1`, so seeing one screen's guide does not swallow the
+ * others.
  */
 export function destinationTourStatusKey(destination: string): string {
   return `guided-tour:${destination}:v1`;
@@ -29,14 +23,12 @@ export function writeGuidedTourStatus(
   try {
     window.localStorage.setItem(key, status);
   } catch {
-    /* private mode — skip */
+    /* Private mode: skip. */
   }
 }
 
 /**
- * Reads the stored completed/aborted state — `null` when absent or unrecognized. The
- * first-visit auto-start verdict (HomePage) uses it for "if done or skipped was ever
- * recorded, do not auto-raise again".
+ * `null` when absent or unrecognized; HomePage does not auto-raise again once done or skipped.
  */
 export function readGuidedTourStatus(
   key: string = GUIDED_TOUR_STATUS_KEY,

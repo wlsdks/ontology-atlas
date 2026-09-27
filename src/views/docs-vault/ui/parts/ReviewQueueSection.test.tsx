@@ -5,14 +5,13 @@ import { ReviewQueueSection } from './ReviewQueueSection';
 
 type T = Parameters<typeof ReviewQueueSection>[0]['t'];
 
-/** The real catalogue is exercised by the i18n contract; here only the shape matters. */
+/** The i18n contract covers the real catalogue; only the shape matters here. */
 const t = ((key: string, values?: Record<string, unknown>) =>
   values ? `${key}:${Object.values(values).join(',')}` : key) as unknown as T;
 
 describe('ReviewQueueSection', () => {
   it('draws nothing at all when nothing is waiting', () => {
-    // Not an empty-state card. A permanently present "0 waiting" panel spends the
-    // top of the document list on a fact nobody needs to act on.
+    // No "0 waiting" card at the top of the list.
     const { container } = render(
       <ReviewQueueSection rows={[]} selectedSlug={null} onSelect={vi.fn()} t={t} />,
     );
@@ -31,9 +30,7 @@ describe('ReviewQueueSection', () => {
         t={t}
       />,
     );
-    // Merging them into one number would hide that they are different work: one
-    // is a question waiting for an answer, the other is an approval that stopped
-    // describing its node.
+    // Two kinds of work stay two rows.
     expect(screen.getByText('review.raisedHeader:1')).toBeInTheDocument();
     expect(screen.getByText('review.changedHeader:1')).toBeInTheDocument();
   });
@@ -74,9 +71,7 @@ describe('ReviewQueueSection', () => {
         t={t}
       />,
     );
-    // "Could not be checked" is neither fine nor drifted. Folding it into the
-    // drift group would accuse someone of a change nobody saw; dropping it would
-    // let "nothing waiting" hide an approval that may well be stale.
+    // "Could not be checked" is neither fine nor drifted.
     expect(screen.getByText('review.unverifiableHeader:1')).toBeInTheDocument();
     expect(screen.getByText('review.changedHeader:1')).toBeInTheDocument();
     expect(screen.getByText('review.unverifiablePlain')).toBeInTheDocument();

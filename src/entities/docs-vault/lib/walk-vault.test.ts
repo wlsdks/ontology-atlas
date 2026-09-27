@@ -7,14 +7,8 @@ import {
 } from './build-local-manifest';
 
 /**
- * The vault walk's **boundary** — regression measured 2026-07-29.
- *
- * Choosing the repository root as the vault killed the WebView in the installed app.
- * With no bound the walk descended into `src-tauri/target` and carried 984
- * directories / 965 markdown files (9.4 MB) across IPC — 16× a normal vault (23 / 97).
- *
- * **Locked by count, not milliseconds.** A performance budget varies by machine and
- * becomes a flake; "a cache directory is never entered" is true everywhere.
+ * The walk's boundary: a repository root picked as a vault must not drag build trees across IPC.
+ * Locked by what is entered, not by milliseconds, which vary by machine.
  */
 
 type Entry = readonly [string, FakeFile | FakeDir];
@@ -26,7 +20,7 @@ class FakeFile {
 
 class FakeDir {
   readonly kind = 'directory' as const;
-  /** Did the walk actually descend into this directory — the proof that pruning works. */
+  /** Whether the walk entered this directory. */
   visited = false;
   constructor(
     readonly name: string,
@@ -53,7 +47,7 @@ const file = (name: string) => new FakeFile(name);
 
 const run = (root: FakeDir) => walkVault(root as unknown as FileSystemDirectoryHandle);
 
-describe('walkVault — 경계', () => {
+describe('walkVault boundaries', () => {
   it('collects markdown and images from an ordinary vault', async () => {
     const result = await run(
       dir('vault', [file('a.md'), file('cover.png'), file('notes.txt'), dir('sub', [file('b.md')])]),
@@ -68,8 +62,7 @@ describe('walkVault — 경계', () => {
   });
 
   it('keeps a Markdown file under sources/ as a raw source, not a page', async () => {
-    // A Notion or Obsidian export arrives as `.md`; an import from a service is written
-    // as `.md`. Both belong to the Library verbatim, and neither is a node or a page.
+    // Markdown exports and imports under `sources/` belong to the Library verbatim, not the graph.
     const result = await run(
       dir('vault', [
         file('a.md'),
@@ -88,9 +81,7 @@ describe('walkVault — 경계', () => {
   });
 
   it('normalizes NFD filesystem names to NFC so Hangul slugs match NFC refs', async () => {
-    // macOS hands back NFD names; frontmatter refs are NFC. Caught in the
-    // 2026-09-01 review: the unnormalized slug matched no ref, the containment
-    // edge dangled, and derivation minted a phantom duplicate node.
+    // macOS returns NFD names while refs are NFC; an unnormalized slug would dangle.
     const nfdName = '결제.md'.normalize('NFD');
     const nfdDir = '도메인'.normalize('NFD');
     const result = await run(dir('vault', [file(nfdName), dir(nfdDir, [file(nfdName)])]));
@@ -100,17 +91,12 @@ describe('walkVault — 경계', () => {
     ]);
   });
 
-  /**
-   * `CACHEDIR.TAG` is the **public convention** for cache directories: the directory
-   * declares itself (Cargo writes one into `target/`). Unlike a name list there is
-   * nothing to maintain and no false positive is possible.
-   */
+  /** `CACHEDIR.TAG` is the public cache-directory convention (Cargo writes one into `target/`). */
   it('never descends into a directory that declares itself a cache', async () => {
     const target = dir('target', [file('CACHEDIR.TAG'), file('vendored.md')]);
     const result = await run(dir('repo', [file('README.md'), target]));
 
-    // The tag lives **inside that directory's listing**, so the listing is fetched once —
-    // but nothing in it is collected and nothing below it is entered.
+    // The tag is in the listing, so the directory is listed once and nothing in it is collected.
     expect(result.entries.map((e) => e.relativePath)).toEqual(['README.md']);
     expect(result.prunedDirs).toEqual(['target']);
   });
@@ -123,11 +109,7 @@ describe('walkVault — 경계', () => {
     expect(result.prunedDirs).toEqual(['node_modules']);
   });
 
-  /**
-   * **Do not extend the prune-by-name list.** `build`, `dist`, `out` are legitimate
-   * names inside a document folder, and pruning by name silently drops someone's
-   * documents — losing data to fix a crash is the worse trade.
-   */
+  /** Prune-by-name stays narrow: `build`, `dist`, `out` can hold documents. */
   it('keeps ordinary folders whose names merely look like build output', async () => {
     const build = dir('build', [file('process.md')]);
     const result = await run(dir('vault', [build]));
@@ -142,7 +124,7 @@ describe('walkVault — 경계', () => {
     const result = await run(dir('vault', many));
 
     expect(result.entries.length).toBeLessThanOrEqual(VAULT_WALK_MAX_ENTRIES);
-    // **Silent truncation reads as "we saw everything".**
+    // Truncation must be reported, never silent.
     expect(result.truncated).toBe(true);
   });
 

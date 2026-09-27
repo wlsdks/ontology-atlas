@@ -57,8 +57,7 @@ describe("buildOntologyHealthSignals", () => {
     );
 
     expect(signals.orphan).toEqual([{ slug: "elements/orphan", name: "Orphan" }]);
-    // `fanIn` is the evidence behind a promotion candidate (incoming reference count),
-    // shown by the to-do queue as "N references". In this fixture Shared has 4.
+    // `fanIn` is the "N references" evidence; Shared has 4 here.
     expect(signals.promotion).toEqual([
       { slug: "capabilities/shared", name: "Shared", fanIn: 4 },
     ]);

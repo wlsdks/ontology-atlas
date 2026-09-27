@@ -91,7 +91,7 @@ describe('round ledger', () => {
   });
 
   it("reads the old builds' English filler on an ontology pass as no summary, and keeps the agent's own words", () => {
-    // Written through 2026-09-25 for a pass that never had an agent: "Failed" above a sentence claiming completion.
+    // Filler older builds wrote for a pass with no agent.
     const filler = 'Read-only refinement review completed.';
     const legacy = parseRoundPassEntry(JSON.stringify(pass({ kind: 'ontology', outcome: 'failed', note: 'no-agent', summary: filler })));
     expect(legacy?.summary).toBe('');

@@ -1,4 +1,4 @@
-// The screen context block's contract: it never states what is absent, and it is capped because it rides every round trip.
+// The block never states what is absent, and it is capped because it rides every round trip.
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -8,13 +8,13 @@ import {
   formatScreenContextBlock,
 } from './screen-context';
 
-describe('formatScreenContextBlock — 최근 적용 변경', () => {
-  it('이력이 없으면 줄 자체를 넣지 않는다 — 빈 목록은 "변경 없음"이라는 거짓이 된다', () => {
+describe('formatScreenContextBlock recent applied changes', () => {
+  it('omits the line entirely when there is no history', () => {
     const block = formatScreenContextBlock(EMPTY_SCREEN_CONTEXT);
     expect(block).not.toContain('recent_changes_in_this_folder');
   });
 
-  it('git 이 아닌 폴더(undefined)도 마찬가지다', () => {
+  it('omits the line for a folder outside git', () => {
     const block = formatScreenContextBlock({
       ...EMPTY_SCREEN_CONTEXT,
       recentChanges: undefined,
@@ -22,7 +22,7 @@ describe('formatScreenContextBlock — 최근 적용 변경', () => {
     expect(block).not.toContain('recent_changes_in_this_folder');
   });
 
-  it('있으면 최신 순으로 싣는다 — 대화를 저장하지 않고도 이어지는 근거', () => {
+  it('lists changes newest first when present', () => {
     const block = formatScreenContextBlock({
       ...EMPTY_SCREEN_CONTEXT,
       recentChanges: ['환불 정의 추가 (2시간 전)', '결제 → 환불 연결 (어제)'],
@@ -32,7 +32,7 @@ describe('formatScreenContextBlock — 최근 적용 변경', () => {
     expect(block.indexOf('환불 정의 추가')).toBeLessThan(block.indexOf('결제 → 환불 연결'));
   });
 
-  it('줄 수와 줄 길이에 상한이 있다 — 매 왕복에 실리는 비용이다', () => {
+  it('caps the number and length of lines', () => {
     const block = formatScreenContextBlock({
       ...EMPTY_SCREEN_CONTEXT,
       recentChanges: Array.from({ length: 20 }, (_, index) => `${'긴'.repeat(400)}${index}`),

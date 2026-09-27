@@ -7,7 +7,7 @@ import type { useTranslations } from "next-intl";
 import { DocsVaultTabStrip } from "./DocsVaultTabStrip";
 import type { DocTab } from "../../lib/doc-tabs";
 
-// jsdom has no ResizeObserver — a minimal stub.
+// jsdom has no ResizeObserver.
 beforeAll(() => {
   if (!(globalThis as { ResizeObserver?: unknown }).ResizeObserver) {
     class ResizeObserverStub {
@@ -46,7 +46,7 @@ function renderStrip(tabs: DocTab[], activeSlug: string) {
   );
 }
 
-// Sets the nav's scroll metrics — jsdom reports all zeros, so they are mocked directly.
+// jsdom reports zero scroll metrics.
 function mockScrollMetrics(
   nav: HTMLElement,
   { scrollLeft, clientWidth, scrollWidth }: { scrollLeft: number; clientWidth: number; scrollWidth: number },
@@ -56,8 +56,8 @@ function mockScrollMetrics(
   Object.defineProperty(nav, "scrollLeft", { configurable: true, writable: true, value: scrollLeft });
 }
 
-describe("DocsVaultTabStrip — 오버플로 엣지 페이드 신호", () => {
-  it("탭이 안 넘치면 페이드 마스크가 없다", () => {
+describe("DocsVaultTabStrip overflow edge fades", () => {
+  it("shows no fade without overflow", () => {
     const { container } = renderStrip(makeTabs(2), "doc-0");
     const nav = container.querySelector("nav")!;
     mockScrollMetrics(nav, { scrollLeft: 0, clientWidth: 800, scrollWidth: 300 });
@@ -65,7 +65,7 @@ describe("DocsVaultTabStrip — 오버플로 엣지 페이드 신호", () => {
     expect(nav.getAttribute("data-edge-overflow")).toBeNull();
   });
 
-  it("오른쪽에 숨은 탭이 있으면 오른쪽 페이드만 켠다", () => {
+  it("shows only the right fade when tabs hide on the right", () => {
     const { container } = renderStrip(makeTabs(20), "doc-0");
     const nav = container.querySelector("nav")!;
     mockScrollMetrics(nav, { scrollLeft: 0, clientWidth: 300, scrollWidth: 2000 });
@@ -74,7 +74,7 @@ describe("DocsVaultTabStrip — 오버플로 엣지 페이드 신호", () => {
     expect(nav.style.maskImage).toContain("transparent 100%");
   });
 
-  it("가운데로 스크롤하면 양쪽 페이드를 켠다", () => {
+  it("shows both fades when scrolled to the middle", () => {
     const { container } = renderStrip(makeTabs(20), "doc-10");
     const nav = container.querySelector("nav")!;
     mockScrollMetrics(nav, { scrollLeft: 500, clientWidth: 300, scrollWidth: 2000 });
@@ -82,7 +82,7 @@ describe("DocsVaultTabStrip — 오버플로 엣지 페이드 신호", () => {
     expect(nav.getAttribute("data-edge-overflow")).toBe("both");
   });
 
-  it("끝까지 스크롤하면 왼쪽 페이드만 켠다", () => {
+  it("shows only the left fade when scrolled to the end", () => {
     const { container } = renderStrip(makeTabs(20), "doc-19");
     const nav = container.querySelector("nav")!;
     mockScrollMetrics(nav, { scrollLeft: 1700, clientWidth: 300, scrollWidth: 2000 });
@@ -91,8 +91,8 @@ describe("DocsVaultTabStrip — 오버플로 엣지 페이드 신호", () => {
   });
 });
 
-describe("DocsVaultTabStrip — 키보드 닫기 포커스", () => {
-  it("활성 탭의 닫기 버튼이 사라지면 새 활성 이웃 탭으로 포커스를 넘긴다", () => {
+describe("DocsVaultTabStrip keyboard close focus", () => {
+  it("moves focus to the new active neighbour when the active tab closes", () => {
     const t = ((key: string, values?: Record<string, unknown>) => {
       if (key === "tabs.closeAria") return `${values?.title} 닫기`;
       if (key === "tabs.stripAriaLabel") return "열린 문서";

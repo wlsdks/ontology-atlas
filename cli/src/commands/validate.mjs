@@ -22,12 +22,8 @@ import {
 const ALLOWED_FLAGS = ['--vault', '--json', '--strict', '--list-codes', '--fail-on'];
 
 
-// The canonical list of issue codes `validateVaultDocument` can surface. Used for
-// `--list-codes` output and for detecting an unknown code in `--fail-on`. Kept in
-// step with the codes in cli/src/lib/validate.mjs (the 3-way contract);
-// tests/contract/known-codes-drift.contract.test.ts blocks drift immediately.
-//
-// Exported so the contract test can import the canonical list.
+// Every issue code `validateVaultDocument` can surface, for `--list-codes` and unknown `--fail-on`
+// codes. Kept in step with cli/src/lib/validate.mjs by tests/contract/known-codes-drift.contract.test.ts.
 export const KNOWN_CODES = [
   {
     code: 'unclosed-frontmatter',
@@ -101,11 +97,8 @@ export const KNOWN_CODES = [
     description: 'a graph reference resolves to no node in the vault.',
   },
   /*
-   * The meaning findings. Warnings, every one — the document is valid Markdown
-   * that the graph reads correctly, and what is missing is the half a reader
-   * needs and code cannot supply. `--strict` and `--fail-on` can still hard-gate
-   * any of them; the default exit stays on errors, so a folder does not turn red
-   * the day this list grew.
+   * The meaning findings are warnings: the Markdown is valid and the graph reads it. `--strict` and
+   * `--fail-on` can hard-gate them; the default exit stays on errors.
    */
   {
     code: 'definition-missing',
@@ -165,20 +158,8 @@ export const KNOWN_CODES = [
 ];
 
 /**
- * `ontology-atlas validate [vault]`
- *
- * Verifies the vault's frontmatter integrity. Exits 1 on one or more error issues.
- *
- * `--json` gives machine-readable output, so CI, scripts, and agents parse issue
- * rows without stripping ANSI.
- *
- * `--strict` makes warnings exit 1 as well, for CI that also wants to block
- * missing-expected-field (a capability or element without its domain). The
- * default fails on errors only.
- *
- * `--fail-on=<code1,code2,...>` fails on the listed issue codes only and takes
- * precedence over `--strict`: one or more matching issues exit 1, everything else
- * is ignored. This is how CI hard-gates specific violations incrementally.
+ * `ontology-atlas validate [vault]`: frontmatter integrity; exits 1 on any error issue. `--strict`
+ * also fails on warnings; `--fail-on=<codes>` fails on the listed codes only and overrides `--strict`.
  */
 export function runValidate(args) {
   const parsed = parseArgs(args);
@@ -191,7 +172,6 @@ export function runValidate(args) {
     return 1;
   }
 
-  // --list-codes prints immediately without looking at the vault, ignoring any other option.
   if (parsed.listCodes) {
     return printKnownCodes(parsed.json);
   }
@@ -223,12 +203,7 @@ export function runValidate(args) {
     try {
       raw = readFileSync(file, 'utf-8');
     } catch (error) {
-      // **A file we could not read is not counted as "scanned"** (measured 2026-07-29).
-      //
-      // It used to `continue` silently while still counting the file in `scanned`.
-      // With one unreadable `.md`, this answered `6 files scanned — 0 issues. vault
-      // clean ✓` while `compile` on the same vault exited 2 with EACCES. It was
-      // **certifying a file it never managed to open**.
+      // A file we could not read is not counted as scanned, or the run would certify a file it never opened.
       unreadable.push({
         file,
         message: error instanceof Error ? error.message : String(error),
@@ -252,9 +227,8 @@ export function runValidate(args) {
   }
 
   /*
-   * Never tell a node that already has a parent that it has none (2026-08-11) —
-   * the same narrowing as `validate_vault` on the MCP side. A check that sees one
-   * file cannot know.
+   * Never tell a node that already has a parent that it has none; a check that sees one file cannot
+   * know, so this narrows like `validate_vault` on the MCP side.
    */
   const issuesBySlugForParents = new Map();
   const fileBySlug = new Map();
@@ -272,46 +246,15 @@ export function runValidate(args) {
     if (report) report.issues = issues;
   }
 
-  for (const { file, issue } of findDuplicateSlugIssues(entries)) {
-    const report = reportByFile.get(file);
-    if (!report) continue;
-    report.issues.push(issue);
-    report.ok = !report.issues.some((i) => i.severity === 'error');
-  }
-
-  for (const { file, issue } of findDuplicateUidIssues(entries)) {
-    const report = reportByFile.get(file);
-    if (!report) continue;
-    report.issues.push(issue);
-    report.ok = false;
-  }
-
-  for (const { file, issue } of findDanglingGraphReferenceIssues(entries)) {
-    const report = reportByFile.get(file);
-    if (!report) continue;
-    report.issues.push(issue);
-    report.ok = !report.issues.some((i) => i.severity === 'error');
-  }
-
-  for (const { file, issue } of findFolderOnlyEvidenceIssues(entries)) {
-    const report = reportByFile.get(file);
-    if (!report) continue;
-    report.issues.push(issue);
-    report.ok = !report.issues.some((i) => i.severity === 'error');
-  }
-
-  for (const { file, issue } of findDependencyWitnessIssues(entries)) {
-    const report = reportByFile.get(file);
-    if (!report) continue;
-    report.issues.push(issue);
-    report.ok = !report.issues.some((i) => i.severity === 'error');
-  }
-
-  for (const { file, issue } of findStarterExampleIssues(entries)) {
-    const report = reportByFile.get(file);
-    if (!report) continue;
-    report.issues.push(issue);
-    report.ok = !report.issues.some((i) => i.severity === 'error');
+  for (const findVaultIssues of [
+    findDuplicateSlugIssues,
+    findDuplicateUidIssues,
+    findDanglingGraphReferenceIssues,
+    findFolderOnlyEvidenceIssues,
+    findDependencyWitnessIssues,
+    findStarterExampleIssues,
+  ]) {
+    attachVaultIssues(reportByFile, findVaultIssues(entries));
   }
 
   for (const file of files) {
@@ -325,19 +268,8 @@ export function runValidate(args) {
     else warningFiles += 1;
   }
 
-  // **An issue count and a file count are different things** (correction measured
-  // 2026-08-04).
-  //
-  // The final summary line printed `reports.length` (the number of **files** with
-  // a problem) as "problems", and `errorFiles`/`warningFiles` (file counts) as
-  // "error/warning". So a vault with 5 errors and 4 warnings was called
-  // `9 files / 8 problems (error 5 · warning 3)` — one warning **vanished entirely
-  // because it sat inside a file that also had an error** (files count only into
-  // errorFiles). The same command's `--json` counted per issue and answered 5/4.
-  // When two outputs give one folder two different numbers, neither is believable.
-  //
-  // The exit code stays on file counts — only zero vs non-zero matters, so the
-  // value is the same.
+  // Count issues, not files: counting files with a problem hid a warning inside a file that also had
+  // an error, and disagreed with `--json`. The exit code stays on file counts; only zero matters there.
   const allIssues = reports.flatMap(({ report }) => report.issues);
   const errorIssues = allIssues.filter((i) => i.severity === 'error').length;
   const warningIssues = allIssues.length - errorIssues;
@@ -401,14 +333,8 @@ export function runValidate(args) {
   }
 
   if (reports.length === 0) {
-    // **Do not say only "vault clean ✓"** (measured 2026-08-01).
-    //
-    // This command looks at frontmatter and graph references only — it **does not
-    // check whether the code files `elements:` / `path:` point at exist**. The
-    // wording did not say so, so on one vault `validate` answered "clean" while
-    // `health` answered "needs_attention", with no way to tell which was right.
-    // Once the sentence states the scope, the two answers stop contradicting each
-    // other and become two different checks.
+    // Say the scope, not only "vault clean": this checks frontmatter and graph references, not whether
+    // `elements:` / `path:` files exist, which is what `health` checks.
     console.log(
       `${COLORS.green}[validate] Scanned ${files.length - unreadable.length} files: 0 frontmatter or graph-reference issues ✓${COLORS.reset}`,
     );
@@ -418,7 +344,6 @@ export function runValidate(args) {
     return unreadable.length > 0 ? 1 : 0;
   }
 
-  // The strict-mode notice is handled by the final summary line.
 
   for (const { file, report } of reports) {
     console.log(`\n${file}`);
@@ -430,11 +355,8 @@ export function runValidate(args) {
     }
   }
 
-  // Per-issue-code group summary: on a large vault where 30+ lines of the same
-  // warning scroll past, this shows *which code and how many* at a glance. Only
-  // codes appearing 2+ times are listed — a single occurrence is already covered
-  // by the per-file output above.
-  // (`groups` was built once above and is shared by JSON, fail-on, and text.)
+  // Per-code summary for large vaults; only codes seen twice or more, since one occurrence is already
+  // in the per-file output.
   const repeatedCodes = groups.filter((g) => g.count >= 2);
   if (repeatedCodes.length > 0) {
     console.log(`\n${COLORS.dim}── grouped by code ──${COLORS.reset}`);
@@ -470,13 +392,9 @@ export function runValidate(args) {
   return decideExit(errorFiles, warningFiles, strict, failOn, groups, unreadable.length);
 }
 
-// Precedence: unreadable files (always fatal) > --fail-on (then it alone) >
-// --strict > default (errors only).
 function decideExit(errorFiles, warningFiles, strict, failOn, groups, unreadableCount = 0) {
-  // A file that could not be opened was never validated, so no mode may
-  // certify the vault. Text mode's clean branch already exited 1 for this
-  // while --json — exactly the mode CI consumes — exited 0 (bug sweep
-  // 2026-09-01), and text mode with coexisting warnings had the same gap.
+  // A file that could not be opened was never validated, so no mode may certify the vault, --json
+  // included, which is what CI consumes.
   if (unreadableCount > 0) return 1;
   if (failOn && failOn.length > 0) {
     return groups.some((g) => failOn.includes(g.code)) ? 1 : 0;
@@ -529,8 +447,6 @@ function printUsage(stream = process.stderr) {
   );
 }
 
-// --list-codes output: a human-readable table in text mode, machine-readable in
-// --json mode so CI can discover the codes dynamically.
 function printKnownCodes(asJson) {
   if (asJson) {
     process.stdout.write(JSON.stringify({ codes: KNOWN_CODES }, null, 2) + '\n');
@@ -551,10 +467,8 @@ function printKnownCodes(asJson) {
 }
 
 /**
- * Groups reports by issue code. Severity within a code is the max (error >
- * warning), so a code appearing as both shows the higher one. `files` is deduped
- * in order of appearance. `count` counts one per file even when the same code
- * recurs in it — "how many files are affected" is the more useful number.
+ * Groups reports by issue code. Severity is the max within a code; `files` is deduped in order;
+ * `count` is files affected, not occurrences.
  */
 function groupIssuesByCode(reports) {
   const map = new Map();
@@ -574,7 +488,6 @@ function groupIssuesByCode(reports) {
     }
   }
   return Array.from(map.values()).sort((a, b) => {
-    // Errors first, then by descending count
     if (a.severity !== b.severity) return a.severity === 'error' ? -1 : 1;
     return b.count - a.count;
   });
@@ -605,23 +518,18 @@ function collectGraphRefs(frontmatter) {
   return refs;
 }
 
+function attachVaultIssues(reportByFile, findings) {
+  for (const { file, issue } of findings) {
+    const report = reportByFile.get(file);
+    if (!report) continue;
+    report.issues.push(issue);
+    report.ok = !report.issues.some((i) => i.severity === 'error');
+  }
+}
+
 /**
- * Two documents claiming the same canonical slug (measured 2026-07-29).
- *
- * **A per-file check cannot catch this in principle** — either file alone looks
- * perfectly fine, which is why this lives in the same place as the dangling check
- * (the whole-vault pass).
- *
- * How it arises: `patch_concept` does not stop `frontmatter.slug` being overwritten
- * with a value another node already holds (`add_concept` blocks it and
- * `rename_concept` demands `overwrite:true`; only this path is open). Two files
- * then claim one name, and every relation naming it becomes **impossible to
- * resolve to one side** — the compiler saw `ambiguous-alias` while `validate`
- * stayed silent.
- *
- * Raised as an error. A dangling reference may be "not built yet", hence a
- * warning; a duplicate slug is a **contradiction between two documents that both
- * already exist**, and the graph does not hold.
+ * Two documents claiming one canonical slug: invisible per file, so checked over the whole vault. An error,
+ * since `patch_concept` can still write a taken slug and every relation naming it becomes unresolvable.
  */
 function findDuplicateSlugIssues(entries) {
   const byDeclared = new Map();
@@ -687,30 +595,8 @@ function findDuplicateUidIssues(entries) {
 }
 
 /**
- * ⚠️ **A graph reference must resolve to a «node»** (measured 2026-08-08).
- *
- * Resolution used to target «every .md file in the vault». Markdown that is not a
- * node (meeting notes, memos, drafts) legitimately lives in a vault — that is by
- * design — and counting those as «an existing slug» let node → loose-document
- * relations pass.
- *
- * That was worse than silence: in that state this command printed, in green,
- * *"frontmatter · graph reference issues 0 ✓"* while `compile` on the same vault
- * reported `unresolved 1`. **Two tools said opposite things about one vault, and
- * the one a person reads first was the wrong one.** Claiming to have run a check
- * that did not happen is the worst kind.
- */
-/**
- * Evidence that names a folder instead of the one file to open.
- *
- * **Why this one is not inside `validateVaultDocument`.** The question is
- * whether a cited `path:` is a directory on disk, and a path only means
- * something against a repository root. This command validates a *vault*, which
- * may sit anywhere, so the root has to be stated: `OATLAS_REPO_ROOT` is the same
- * variable the MCP server reads, and with it unset the check stays silent rather
- * than measuring the vault against whatever directory the shell happened to be
- * in. Silence here means "not looked at", which is why `--list-codes` calls it a
- * vault-scope code beside the dangling-reference one.
+ * Evidence naming a folder instead of one file. Needs a repository root (`OATLAS_REPO_ROOT`, as the MCP
+ * server reads it); unset, it stays silent (not looked at), hence a vault-scope code in `--list-codes`.
  */
 function findFolderOnlyEvidenceIssues(entries) {
   const repoRoot = typeof process.env.OATLAS_REPO_ROOT === 'string'
@@ -737,9 +623,8 @@ function findFolderOnlyEvidenceIssues(entries) {
 }
 
 /**
- * Which implementation file does each node cite? Full slug, then the tail an
- * author actually types — and only when that tail names exactly one node, since
- * a guess here becomes an accusation about the wrong file.
+ * Which implementation file each node cites: full slug, then a typed tail only when it names exactly one
+ * node, since a guess would accuse the wrong file.
  */
 function evidencePathIndex(entries) {
   const bySlug = new Map();
@@ -760,19 +645,8 @@ function evidencePathIndex(entries) {
 }
 
 /**
- * A declared dependency the citing file never mentions.
- *
- * **Why this one is not inside `validateVaultDocument` either.** It opens the
- * source file the node cites, which needs a repository root — `OATLAS_REPO_ROOT`,
- * the same variable the MCP server reads — and it needs the `path:` of the node
- * at the far end of the edge, which no single document carries. With the
- * variable unset it stays silent, and silence means "not looked at": that is why
- * `--list-codes` marks it vault scope beside the folder-only one.
- *
- * Every declared edge is judged here, not only a new one. The write door limits
- * itself to what a write just added because repeating an old accusation on every
- * patch makes the channel furniture; a validator somebody chose to run is the
- * opposite situation, and being asked about the whole vault is the point of it.
+ * A declared dependency the citing file never mentions. Needs `OATLAS_REPO_ROOT` and the far node's `path:`,
+ * so it is vault scope and silent when unset; every declared edge is judged, not only new ones.
  */
 function findDependencyWitnessIssues(entries) {
   const repoRoot = typeof process.env.OATLAS_REPO_ROOT === 'string'
@@ -800,13 +674,8 @@ function findDependencyWitnessIssues(entries) {
 }
 
 /**
- * Starter examples the vault has outgrown.
- *
- * The one whole-vault meaning pass with no environment condition attached: no
- * `OATLAS_REPO_ROOT`, no file on disk, no body. So it is never silent, and a
- * person who ran `init`, built a real map and then ran `validate` is told about
- * the three files the scaffold left behind — which is the moment measured on two
- * trial repositories where nothing said anything at all.
+ * Starter examples the vault has outgrown. The one whole-vault meaning pass with no environment
+ * condition, so it always speaks after `init` and a real map.
  */
 function findStarterExampleIssues(entries) {
   const fileBySlug = new Map(entries.map((entry) => [entry.slug, entry.file]));
@@ -825,6 +694,10 @@ function findStarterExampleIssues(entries) {
     }));
 }
 
+/**
+ * A graph reference must resolve to a node, not to any `.md` in the vault: loose notes are allowed
+ * in a vault, and counting them would contradict `compile`, which reports them unresolved.
+ */
 function findDanglingGraphReferenceIssues(entries) {
   const isNodeEntry = (entry) =>
     typeof entry.frontmatter?.kind === 'string' && entry.frontmatter.kind.trim() !== '';
@@ -869,10 +742,8 @@ function findDanglingGraphReferenceIssues(entries) {
       if (typeof ref !== 'string' || ref.trim() === '') continue;
       if (key === 'elements' && isPathLikeGraphRef(ref)) continue;
       if (resolveRef(ref)) continue;
-      // «The file is missing» and «the file exists but is not a node» are different
-      // tasks: the first means creating it or fixing a typo, the second means giving
-      // that document a `kind:` (promoting it) or deleting the relation. Saying both
-      // in one sentence sends a person hunting for a file that is right in front of them.
+      // A missing file and a file that is not a node are different tasks (create or fix a typo, versus
+      // add a `kind:` or drop the relation); one sentence for both sends a person hunting.
       const normalized = ref.normalize('NFC');
       const isNonNodeDoc = nonNodeSlugs.has(normalized) || nonNodeTails.has(normalized);
       issues.push({

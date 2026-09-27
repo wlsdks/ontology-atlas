@@ -26,7 +26,7 @@ const projectWithoutTaxonomy: Project = {
 };
 
 describe("ProjectForm missing taxonomy preservation", () => {
-  it("없는 category/status/position을 미지정으로 열고 다른 필드 저장에도 보존한다", async () => {
+  it("opens missing category, status and position as unset and preserves them when saving other fields", async () => {
     const onSubmit = vi.fn(async () => {});
     await act(async () => {
       render(

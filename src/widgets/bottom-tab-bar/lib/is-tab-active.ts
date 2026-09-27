@@ -1,12 +1,6 @@
 /**
- * Active-tab matching for one mobile BottomTabBar tab — a pure helper.
- *
- * 1. `matchPrefixes` wins, matched with `startsWith`. The root tab ('/') also
- *    lights up under the `['/ontology']` prefix; without that, entering a
- *    Concept-map sub-surface left no tab lit at all.
- * 2. With no prefix hit, fall back to exact match — `pathname` equal to `href`
- *    or its trailing-slash variant. That keeps '/' lighting only the home tab
- *    and '/projects' only the projects tab.
+ * Active-tab matching: `matchPrefixes` with startsWith first, then an exact match with or without a
+ * trailing slash.
  */
 export function isBottomTabActive(
   pathname: string,

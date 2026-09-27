@@ -43,18 +43,8 @@ import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
 import { normalizeForMatch } from "@/shared/lib/node-name-match";
 
 /**
- * The docs sidebar body — the machined file tree.
- *
- * Three sections are always visible: **Pinned** → **Vault** (the full tree, kind
- * glyphs plus an engraved per-folder count) → **Recent**. An earlier round hid
- * Pinned and Recent inside a collapsible "filters and saved" details block; in an
- * Obsidian-style vault workspace those two are used as often as the tree itself,
- * so they stay open. Only the tag filter is still collapsible — it is not this
- * screen's primary purpose.
- *
- * Mobile renders it inside a drawer, desktop as the left rail. The caller wraps
- * `onSelect` with `setMobileTreeOpen(false)`, so this component depends on no
- * mobile visibility state of its own.
+ * The docs file tree: Pinned, the Vault tree and Recent stay open; recently changed and tags collapse.
+ * The caller wraps `onSelect` to close the mobile drawer.
  */
 export interface DocsSidebarBodyProps {
   reviewQueue: ReviewQueueRow[];
@@ -76,52 +66,29 @@ export interface DocsSidebarBodyProps {
   onTogglePin: (slug: string) => void;
   onTagSelect: (tag: string | null) => void;
   /**
-   * List order — `?sort=` / `?group=` is the source of truth and the caller passes
-   * it down. Why there are two axes, and the default-omission rule, are in
-   * `widgets/docs-vault/lib/tree-order.ts`.
+   * `?sort=` / `?group=` is the source of truth; the two axes and default omission are
+   * explained in `widgets/docs-vault/lib/tree-order.ts`.
    */
   sort: DocsTreeSort;
   group: DocsTreeGroup;
   onSortChange: (sort: DocsTreeSort) => void;
   onGroupChange: (group: DocsTreeGroup) => void;
-  /** Opens the same kind-first dialog the map uses to create a node. */
   onCreateNewDoc: () => void;
   canCreateNewDoc: boolean;
   /**
-   * The "agent files" group — non-null only when the vault includes the repo root
-   * (CLAUDE.md / AGENTS.md present, gated inside `useAgentFilesModel`). Shows a
-   * per-file "which tool reads this" badge plus a drift badge (warning tone —
-   * an unresolved state). Detection is read-only: a click only opens the file in
-   * the existing editor; nothing is converted or repaired.
+   * Non-null only when the vault includes the repo root. Read-only: a click opens the file,
+   * nothing is converted or repaired.
    */
   agentFiles?: AgentFilesUiModel | null;
 }
 
-// Maximum rows in the "recently changed" strip. The 7-day window lets a bulk-commit
-// day through by the dozen (27 in the dogfood sample), which turned the strip into a
-// second full listing with its own scrollbar overlapping the tree below — two or three
-// scroll areas in one sidebar leaves "which do I drag?" unanswered. Keeping five as a
-// preview and dropping the scroll leaves the tree as the single scroller; the rest is
-// already in the tree.
+// A preview, not a second listing: more rows would add a scroller beside the tree.
 const RECENTLY_CHANGED_STRIP_MAX = 5;
 
 /**
- * **The head row's width at which the active collection may state its name** (2026-09-07).
- *
- * Not taste — arithmetic, measured on the static export at
- * `.claude/shots-2026-09-07/docshead-before-measurements.json`. In its widest state the row
- * needs 16px of its own padding, 174.3px for the well (two bare glyph chips at 36px plus the
- * longest active chip in either locale — 92.3px for the Korean guides label — plus its border,
- * inset and gaps), an 8px gap, and 103px for the trailing cluster: **301.3px**. 320 is that
- * number with the next gap step of slack, so a label never appears with nowhere to go.
- *
- * It is compared against **the row**, not the window: this same pane is 280px on desktop
- * (`--docs-list-width`), 300px in the drawer below `md` and 340px in the drawer at `md`, all
- * reachable inside one viewport width. Only 340 clears 320, which is the honest answer —
- * 280px cannot draw a Korean collection name and six controls at once.
- *
- * The value is written literally in the className below because Tailwind extracts class names
- * statically and cannot follow a template literal. `DocsSidebarBody.test.tsx` compares the two.
+ * The row's widest state needs 301.3px (`.claude/shots-2026-09-07/docshead-before-measurements.json`);
+ * 320 adds the next gap step so a label never appears with nowhere to go.
+ * The className writes it out as `@min-[320px]`: Tailwind cannot read a template, and the test compares them.
  */
 export const DOCS_HEAD_LABEL_MIN_PX = 320;
 
@@ -134,31 +101,9 @@ function SectionLabel({ children }: { children: ReactNode }) {
 }
 
 /**
- * **Which state this rail button reports — the consumer must choose** (2026-08-15).
- *
- * It used to attach `{...railStateAria(state)}` unconditionally. `Chip` in
- * `controls.tsx` already forbids that automatic pairing in its own header:
- * *"`active` is the **visible** state and `aria-pressed` is the **spoken** state,
- * so binding them automatically makes a non-toggle read as a toggle to a screen
- * reader."* The rule was written down and this wrapper was breaking it.
- *
- * A full sweep on 2026-08-15 found the three consumers are **three different things**:
- *
- * | Consumer | What it is | Honest attribute |
- * |---|---|---|
- * | filter | a toggle | `aria-pressed` |
- * | order | **a button that opens a menu** | `aria-expanded` + `aria-haspopup` |
- * | new document | **an action** (opens a dialog, or sends you to open a folder) | none |
- *
- * The new-document button has no pressed state yet kept announcing
- * `aria-pressed="false"`. The order button used `orderMenuOpen || !orderIsDefault`,
- * **mixing two facts into one attribute** — closing the menu left pressed true
- * whenever the order was not the default. Those really are different facts and are
- * now separated: the visible indigo says "the order is not the default", the
- * accessibility tree says "the menu is open".
- *
- * So `state` is **required, not optional** — omitting it is a type error. Filling it
- * in automatically brings the defect straight back.
+ * The consumer must choose which state a rail button reports; `Chip` forbids pairing the
+ * visible `active` with `aria-pressed`, or a non-toggle reads as a toggle. Filter is a toggle,
+ * order a menu button (`aria-expanded`), new document an action (none). Required, not optional.
  */
 type RailButtonState =
   | { kind: "toggle"; pressed: boolean }
@@ -176,11 +121,7 @@ function railStateAria(state: RailButtonState) {
   }
 }
 
-/**
- * A single button in the top icon row: plain-text hover tooltip plus an active
- * indigo. a11y: title (the tooltip), aria-label, and whatever state attribute
- * `state` decides.
- */
+/** Plain-text tooltip, active indigo, and the aria state `state` decides. */
 function RailIconButton({
   icon,
   label,
@@ -192,7 +133,7 @@ function RailIconButton({
 }: {
   icon: ReactNode;
   label: string;
-  /** The **visible** state (indigo). The spoken state is carried separately by `state`. */
+  /** The visible state; the spoken state comes from `state`. */
   active: boolean;
   state: RailButtonState;
   disabled?: boolean;
@@ -217,11 +158,7 @@ function RailIconButton({
   );
 }
 
-/**
- * One row of the list-order menu. Only one option per axis can be chosen, hence
- * `menuitemradio`. The check-mark column stays reserved on unselected rows so the
- * text does not shift horizontally.
- */
+/** `menuitemradio` row; the check column stays reserved so text does not shift. */
 function OrderOption({
   label,
   checked,
@@ -283,14 +220,10 @@ export function DocsSidebarBody({
   const tAgentFiles = useTranslations("agentFiles");
   const recentOthers = recentSlugs.filter((slug) => slug !== selectedSlug && docsBySlug.has(slug));
   const [treeQuery, setTreeQuery] = useState("");
-  // The search input is opened and closed by a toggle in the top icon row. A
-  // surviving query forces it open, so a filter that is still applied is never invisible.
+  // A surviving query forces search open, so an applied filter is never invisible.
   const [searchOpen, setSearchOpen] = useState(false);
-  // Sort and group fold into one icon-row menu rather than two always-on dropdowns —
-  // the sidebar is narrow, and controls larger than the list they control is itself a defect.
-  // The hook result is destructured immediately: holding the object and reading `.open`
-  // during render makes lint see the same object's `ref` field and falsely report a
-  // ref access during render.
+  // Destructure at once: reading `.open` from the held object makes lint report a ref access
+  // during render.
   const {
     open: orderMenuOpen,
     setOpen: setOrderMenuOpen,
@@ -298,25 +231,17 @@ export function DocsSidebarBody({
   } = useAdvancedMenu();
   const orderIsDefault =
     sort === DEFAULT_DOCS_TREE_SORT && group === DEFAULT_DOCS_TREE_GROUP;
-  // The hover tooltip reads the current order out, so it is knowable without opening the menu.
   const orderSummary = `${t("orderMenuLabel")} · ${t(`orderSort.${sort}`)} · ${t(`orderGroup.${group}`)}`;
-  // The "recently changed" entry point. `selectRecentVaultDocs` shares the same 7-day
-  // mtime window arithmetic (`recent-changes.ts`) as the INDEX map lens
-  // (`useRecentChanges`) — the docs surface has `VaultDoc.updatedAt` directly and needs
-  // no indirect evidenceIds lookup. The session snapshot time is taken once at mount,
-  // for the same render-purity reason as `updatedAgoNowMs`.
+  // Same 7-day mtime window as the map's `useRecentChanges` (`recent-changes.ts`); the snapshot
+  // time is taken once at mount to keep render pure.
   const [recentNowMs] = useState(() => Date.now());
   const recentlyChangedDocs = useMemo(
     () => selectRecentVaultDocs(manifest.docs, recentNowMs),
     [manifest.docs, recentNowMs],
   );
-  // Recently changed is a quiet section inside the list, collapsed by default.
   const [recentlyChangedOpen, setRecentlyChangedOpen] = useState(false);
   const normalizedTreeQuery = normalizeForMatch(treeQuery);
-  // The set of slugs matching the active tag — `DocsVaultTree` calls `.has()` on it at
-  // every node during recursion. A fresh Set per render would invalidate the tree's
-  // internal `useMemo`s whether or not the filter changed, so it is stabilized here.
-  // A null `activeTag` yields undefined, and the tree skips filtering entirely.
+  // Stable Set: the tree calls `.has()` per node, and a fresh Set would invalidate its memos.
   const activeTagSlugs = useMemo(
     () =>
       activeTag ? new Set(manifest.tags[activeTag] ?? []) : undefined,
@@ -350,43 +275,15 @@ export function DocsSidebarBody({
   }, [manifest.docs, normalizedTreeQuery]);
   const collectionOptions: DocsVaultCollection[] = ["all", "guides", "ontology"];
 
-  /*
-   * The collection chips are an **exclusive single selection** (`collection` holds one
-   * value, and pressing the selected chip again does not clear it). They used to be
-   * `role="group"` with sibling `aria-pressed`.
-   *
-   * That choice had a recorded basis — the comment directly below records why `tablist`
-   * was given up. **That judgement still holds.** But the alternative considered then was
-   * `tablist`, not `radiogroup`, and carrying exclusivity into the accessibility tree is
-   * `radiogroup`'s job (2026-08-15 (3)).
-   *
-   * The container stays here: five things — the `bg-canvas` well, `p-0.5`/`gap-0.5`, items
-   * being `Chip`, the `Tooltip` wrapper, and "only the active chip shows its label" — fit
-   * neither of the primitive's two canonical containers (2026-08-15 (8)).
-   */
+  // Exclusive single selection, so `radiogroup` rather than `tablist` (see below). The container
+  // stays local: its well, spacing, `Chip` items and tooltip fit neither primitive container.
   const collectionGroup = useRovingRadioGroup({
     value: collection,
     values: collectionOptions,
     onChange: onCollectionChange,
   });
-  /*
-   * **Each glyph's job, in words** (2026-09-07 — the owner read this row as "the icons look
-   * odd", so every one of the six was re-checked against what it actually does).
-   *
-   * The three below name a *collection*; the three at the row's trailing edge name a *view
-   * control* or an *action*. None of them changed in this round: the review found the
-   * oddness was the arrangement (an orphaned, clipped `+` at the far right) rather than the
-   * symbols. `flex-none` keeps the glyph at its ramp size while the label beside it truncates.
-   *
-   * | Glyph | Job |
-   * |---|---|
-   * | `Files` | **all** — a stack of documents: every file in this folder |
-   * | `BookOpen` | **guides** — prose a person reads |
-   * | `Waypoints` | **ontology** — the nodes that appear on the map, drawn as the map draws them |
-   * | `ListFilter` | narrow the list (a funnel, not a magnifier — see the button's own note) |
-   * | `ArrowDownUp` | list order: sort and grouping |
-   * | `Plus` | make a new document |
-   */
+  // Collection glyphs: `Files` all, `BookOpen` guides, `Waypoints` ontology. `flex-none` keeps
+  // the glyph at ramp size while the label truncates.
   const collectionIcons: Record<DocsVaultCollection, ReactNode> = {
     all: <Files size={ICON_SIZE.md} className="flex-none" aria-hidden />,
     guides: <BookOpen size={ICON_SIZE.md} className="flex-none" aria-hidden />,
@@ -395,73 +292,22 @@ export function DocsSidebarBody({
   const searchExpanded = searchOpen || Boolean(treeQuery);
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {/* One row holds **a set of filters plus three actions**. The larger header and the
-          always-on search box stay removed for density, but the three are now bound by a
-          border and the active one is labelled, so «state» and «action» separate visually
-          (2026-08-08 — the owner named this row as "complexity"). */}
-      {/*
-        a11y: this row is **not** `role="tablist"`. A full axe sweep on 2026-08-03 found one
-        `aria-required-children` (WCAG 4.1.2) violation here — besides the three collections
-        the row also holds the search toggle, the order menu, and new-document, so `tablist`
-        was carrying a child it does not allow (`button[aria-label]`).
-
-        The fix is **giving up the role, not turning the children into `role="tab"`.** Its
-        sibling `DocsVaultTabStrip` already records the same reasoning: borrowing the role
-        without `tabpanel`, `aria-controls`, and roving tabindex makes AT promise "tab n of N"
-        and arrow-key movement, and nothing happens. These three buttons are **toggles that
-        filter** the tree below and the source of truth is the `collection` state — the
-        honest contract is `group` + `aria-pressed`. `toolbar` is out for the same reason:
-        it is another arrow-key promise.
-      */}
-      {/*
-        **Why this row is a container, and why the labels can disappear** (2026-09-07, owner
-        report on the installed app at `/ko/docs`).
-
-        Measured before the fix, at the only width this pane has on desktop
-        (`--docs-list-width`, 280px → a 279px row): `scrollWidth` 285 against
-        `clientWidth` 279 in Korean, and the new-document button's right edge sat **13.8px
-        past the row's content box** — the `+` was cut in half by the pane border. English
-        was 283/279. The active chip's own label is what spends it: 92.3px for
-        the Korean guides label against 36px for a bare glyph, and the row's other five controls
-        already need 242px.
-
-        280px cannot hold both. So the label is **width-conditional**, and the width it
-        reads is **this row's, not the window's** — the same pane renders at 280 (desktop),
-        300 (drawer under `md`) and 340 (drawer at `md`) inside identical viewports, so a
-        `md:` breakpoint would answer the wrong question. `@container/docs-head` plus
-        `@min-[…px]/docs-head:` is the grammar `AcpChatPanel`'s composer footer already
-        uses for exactly this reason.
-
-        Below the threshold every chip is its glyph alone and the name is carried by the
-        `Tooltip` and `aria-label` it already had (both include the count), with the indigo
-        `active` tint still saying which one is chosen. That is a real loss against the
-        2026-08-08 round's "what is active has a name" — but a clipped control is a worse
-        one, and no arrangement of these six controls names the collection at 280px.
-      */}
+      {/* Filters plus three actions; a border binds the filters and the active one is labelled,
+         so state and action separate. */}
+      {/* Not `role="tablist"`: the row also holds non-tab buttons, which axe
+         reports as an `aria-required-children` violation (WCAG 4.1.2). Same reasoning as `DocsVaultTabStrip`. */}
+      {/* A container: labels appear only when the row reaches `DOCS_HEAD_LABEL_MIN_PX`, since at the
+         280px pane width a label pushes the `+` past the pane border. */}
       <div
         data-testid="docs-sidebar-head-row"
         className="@container/docs-head flex flex-none items-center gap-2 border-b border-[color:var(--color-overlay-2)] px-2 py-2"
       >
-        {/*
-          ⚠️ **What is active has a name** (2026-08-08, owner reported "complexity").
-          All three used to be unlabelled 32px icons, so «which filter is this list under»
-          could not be read from the icons alone — that answer lived only in the grey caption
-          line below. Information outside the control makes a person look in two places. Now
-          **the active chip states its own name and count**, and the caption row is left only
-          for states a control cannot speak, such as search and tags.
-
-          And these three are **mutually exclusive filters** that looked identical to the
-          search, order, and new-document buttons beside them. One border binds them and says
-          «this much is one set» — state and action mixed in one row was half the complexity.
-        */}
+        {/* The active chip states its own name and count; the three chips are mutually exclusive filters. */}
         {showCollectionChooser ? (
           <div
             {...collectionGroup.groupProps}
             aria-label={t("collectionAriaLabel")}
-            // `min-w-0` plus a shrinkable active chip is the **belt** behind the container
-            // query's braces: if some future locale's label is longer than the threshold was
-            // measured for, the name truncates inside the chip instead of pushing the trailing
-            // controls out of the row.
+            // `min-w-0` lets a longer future label truncate inside the chip instead of pushing controls out.
             className="flex min-w-0 items-center gap-0.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] p-0.5"
           >
             {collectionOptions.map((option, index) => {
@@ -484,11 +330,7 @@ export function DocsSidebarBody({
                     }
                   >
                     {collectionIcons[option]}
-                    {/*
-                      The label is drawn only where the row can hold it — see the container
-                      note above the row. `hidden` is the base and the container query turns it
-                      back on, so the narrow case needs no override and cannot be forgotten.
-                    */}
+                    {/* `hidden` is the base and the container query turns it on, so the narrow case needs no override. */}
                     {isActive ? (
                       <span className="hidden min-w-0 truncate @min-[320px]/docs-head:inline">
                         {t(`collection.${option}.label`)}
@@ -500,25 +342,12 @@ export function DocsSidebarBody({
             })}
           </div>
         ) : null}
-        {/*
-          **The three trailing controls are one cluster** (2026-09-07).
-
-          They used to be two pieces: filter and order sat against the collection well, and a
-          `flex-1` spacer threw the `+` alone against the pane's right edge — which is exactly
-          where the pane clipped it. The spacer is gone; the cluster is `flex-none` and holds
-          the row's trailing edge, so **it is the collection well, never a control, that gives
-          way** when the row narrows.
-
-          Inside the cluster a hairline keeps the distinction the spacer used to carry badly:
-          the first two are **view state** (is the list filtered, in what order), the last is
-          an **action** (make a document). Same 32px tile, same height, one gap.
-        */}
+        {/* The three trailing controls are one `flex-none` cluster, so the collection well gives way
+           when the row narrows; a hairline separates state from action. */}
         <div className="ml-auto flex flex-none items-center gap-0.5">
           <RailIconButton
             testId="docs-sidebar-search-toggle"
-            // There were two magnifiers on screen — this button (narrow the list) and the
-            // header's ⌘K global search. The same symbol doing different jobs makes both
-            // untrustworthy. This one filters, so a funnel is the honest icon (2026-08-08).
+            // A funnel, not a magnifier: ⌘K global search already uses the magnifier.
             icon={<ListFilter size={ICON_SIZE.md} aria-hidden />}
             label={t("searchLabel")}
             active={searchExpanded}
@@ -537,24 +366,18 @@ export function DocsSidebarBody({
               testId="docs-sidebar-order-toggle"
               icon={<ArrowDownUp size={ICON_SIZE.md} aria-hidden />}
               label={orderSummary}
-              // The visible indigo says "the order is not the default"; the accessibility tree
-              // says "the menu is open" — different facts, so different values.
+              // Indigo says "not the default order"; the aria state says "menu open".
               active={orderMenuOpen || !orderIsDefault}
               state={{ kind: "disclosure", expanded: orderMenuOpen }}
               onClick={() => setOrderMenuOpen((open) => !open)}
             />
             <Surface
                 open={orderMenuOpen}
-              // The anchor is the top right, so it grows from there — the comment below about
-              // growing from the nearest edge applies to the motion, not just the placement.
                 origin="top right"
                 role="menu"
                 aria-label={t("orderMenuLabel")}
                 data-testid="docs-sidebar-order-menu"
-              // Anchored to the right edge. This button sits at the sidebar's right edge, so
-              // opening with `left-0` pushes the 192px menu outside the sidebar (measured: 73px
-              // of overflow, owner report 2026-07-28). A menu near a container edge grows from
-              // that edge.
+              // Anchored right: at the sidebar edge a `left-0` menu overflows. Grows from the nearest edge.
                 className="absolute right-0 top-[calc(100%+6px)] z-50 w-48 rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-2 shadow-[var(--chrome-shadow)]"
               >
                 <p className="px-1.5 pb-1 font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
@@ -589,23 +412,13 @@ export function DocsSidebarBody({
                 ))}
             </Surface>
           </div>
-          {/* State on the left of the hairline, action on its right — see the cluster note. */}
           {showCreateDocument ? (
             <span
               aria-hidden
               className="mx-0.5 h-4 w-px flex-none bg-[color:var(--color-border-soft)]"
             />
           ) : null}
-          {/* The "new document" entry point — the same kind-first dialog the map uses. */}
-          {/*
-            It is **pressable even in the read-only sample**. It used to be disabled with a
-            hover tooltip, but a hover-only explanation on a 40%-opacity icon never arrived —
-            in the owner's own use it read as "Why is there no 'create document'?"
-
-            Pressing it now goes to what makes it possible: open my folder. The label says so in
-            advance, so nothing is surprising — the charter's degradation grammar ("why it is
-            unavailable **and where to go**") applied to one button.
-          */}
+          {/* Pressable in the read-only sample: it leads to opening a folder, and its label says so. */}
           {showCreateDocument ? (
             <RailIconButton
               testId="docs-sidebar-new-doc"
@@ -618,16 +431,7 @@ export function DocsSidebarBody({
           ) : null}
         </div>
       </div>
-      {/* This row states **only what a control cannot say** (2026-08-08).
-          It used to carry the active collection's name and count as well, because the icons
-          in the row above kept their labels in tooltips only — deleting this row removed both
-          from the screen entirely. Now **the active chip states its own name and count**, so
-          that job has no reason to remain here: one fact said in two places makes the eye work
-          twice.
-
-          Search text and tags are different — they are not a control's «state» but a «value»
-          the user just typed, which no chip carries. So this row is drawn only for those two,
-          and when there is neither, the row does not exist. */}
+      {/* Only what a control cannot say: typed search text and tags. Collection name and count are on the active chip. */}
       {normalizedTreeQuery || activeTag ? (
         <p className="flex-none px-3 pt-1.5 text-caption text-[color:var(--color-text-quaternary)]">
           {normalizedTreeQuery
@@ -672,8 +476,6 @@ export function DocsSidebarBody({
               setTreeQuery("");
               onTagSelect(null);
             }}
-            // This filter bar is `py-1` (28px), and `link`'s 44px minimum height would inflate
-            // it by that much. That shape does not yet fit a control inside a sentence or a bar.
             className={controlClass({ shape: "link", className: "flex-none rounded-chip px-1.5 py-0.5 hover:text-[color:var(--color-text-primary)]" })}
           >
             {t("clearFilter")}
@@ -681,21 +483,16 @@ export function DocsSidebarBody({
         </div>
       ) : null}
 
-      {/* Always-visible sections: recently changed (quiet, collapsed by default), agent files,
-          Pinned, the Vault tree, Recent. Only the tree fills the remaining space and scrolls
-          (flex-1 min-h-0). */}
+      {/* Only the tree fills the remaining space and scrolls. */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        {/* What is waiting on a person comes before anything the map can already
-            answer. It draws nothing when both lists are empty. */}
+        {/* What waits on a person comes first; draws nothing when the queue is empty. */}
         <ReviewQueueSection
           rows={reviewQueue}
           selectedSlug={selectedSlug}
           onSelect={onSelect}
           t={t}
         />
-        {/* Recently changed is a quiet section inside the list, collapsed by default, rather
-            than its own stack taking the top. Unlike `recentSlugs` (visited this session),
-            these are documents inside a real 7-day mtime window. */}
+        {/* A real 7-day mtime window, unlike `recentSlugs` (visited this session). */}
         {recentlyChangedDocs.length > 0 ? (
           <section className="flex-none border-b border-[color:var(--color-overlay-2)] pb-1">
             <button
@@ -733,7 +530,6 @@ export function DocsSidebarBody({
                             className="group relative hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
                           >
                             <FileText size={ICON_SIZE.sm} className="flex-none opacity-60" aria-hidden />
-                            {/* Same naming rule as the tree, search, and map. */}
                             <span className="min-w-0 flex-1 truncate">
                               {resolveLocaleDisplayName(doc.frontmatter, locale, doc.title)}
                             </span>
@@ -754,11 +550,8 @@ export function DocsSidebarBody({
           </section>
         ) : null}
 
-        {/* The "agent files" group, pinned to the top of the tree. It appears only when the
-            vault is the repo root (gated by `useAgentFilesModel`). FSA cannot reach a parent
-            folder, so for a nested vault such as docs/ontology not rendering the group at all
-            is the honest answer. The drift badge uses the warning (amber) signal tone — an
-            unresolved state. Read-only: a click opens the file in the existing editor. */}
+        {/* Only when the vault is the repo root: FSA cannot reach a parent folder, so a nested vault such as docs/ontology
+           shows no group. Read-only. */}
         {agentFiles && agentFiles.records.length > 0 ? (
           <section
             data-testid="docs-sidebar-agent-files"
@@ -877,9 +670,7 @@ export function DocsSidebarBody({
           />
         </section>
 
-        {/* **Recent is the way back to the others** (2026-09-25, library polish round four). The
-            open document is already the tab, the selected tree row and the H1; listing it here
-            as well made "Recent · 1" a fifth copy of the name on a first visit. */}
+        {/* Recent lists the other documents; the open one is already the tab, row and H1. */}
         {recentOthers.length > 0 ? (
           <section className="flex-none border-t border-[color:var(--color-overlay-2)] pb-2">
             <SectionLabel>{t("recentHeader", { count: recentOthers.length })}</SectionLabel>

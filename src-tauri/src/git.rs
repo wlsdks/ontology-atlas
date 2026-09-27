@@ -1,18 +1,6 @@
-// Atlas Git — Tauri native git layer (IPC for making desktop apps version-control vaults via git). The web GUI
-// invokes these `#[tauri::command]`s in the next step. Shell out to system git via `std::process::Command`, with safety
-// rules ported directly from JS `git-snapshot.mjs` (cli/ · mcp/ mirror).
-//
-// ── Atlas Git Trust Charter (invariants this file must uphold) ─────────────────────
-//  1. Local commits only — transmission (push/pull) only via explicit arguments/calls (opt-in).
-//  2. Never auto-`git init` on uninitialized repos — report state only.
-//  3. Zero token/login/credential handling — local git processes only.
-//  4. Never touch files outside the vault — `git commit -m <msg> -- <pathspec>`
-//     isolates "partial commits" so changes already staged outside the vault remain untouched,
-//     and only untracked new files within the vault scope are `git add`ed.
-//  5. No forced auto-execution or auto-backup — all via explicit calls only.
-//
-// Graceful failure: Expected failures (not a repo · non-fast-forward · hook rejection · conflict)
-// return clean single-line `Result<_, String>` instead of panics/stack traces.
+// Native git commands for the vault, with the safety rules of `git-snapshot.mjs`
+// (cli/ and mcp/ mirror): local commits only, push or pull only on request, no
+// auto-init, no credentials, nothing outside the vault pathspec.
 
 use serde::Serialize;
 use std::fs;
@@ -21,11 +9,8 @@ use std::process::Command;
 
 use crate::errors::coded;
 
-// ── Vault path validation (absolute path injection defense) ─────────────────────────────────
-// vault_path comes from JS (web GUI). Confirm existence + directory,
-// canonicalize to resolve symbolic links/relative pieces into real paths, then use as git's
-// cwd. Since pathspecs are calculated relative to repo_root, add/commit leaks outside the vault
-// are fundamentally impossible.
+// The path comes from the WebView; canonicalized as git's cwd so relative
+// pathspecs cannot reach outside the vault.
 pub(crate) fn validate_vault_dir(vault_path: &str) -> Result<PathBuf, String> {
     if vault_path.trim().is_empty() {
         return Err(coded("vault-path-empty", ""));
@@ -38,15 +23,13 @@ pub(crate) fn validate_vault_dir(vault_path: &str) -> Result<PathBuf, String> {
     fs::canonicalize(&path).map_err(|err| coded("vault-path-unresolvable", err))
 }
 
-// ── Low-level git shell-out ──────────────────────────────────────────────────────
 struct GitRun {
     success: bool,
     stdout: String,
     stderr: String,
 }
 
-/// Runs git in `cwd` and captures stdout/stderr. Returns `Err` only if spawn itself fails
-/// (e.g., git not installed). Non-zero exits are captured as `success:false` for the caller to decide — stderr is piped so it does not clutter the user's terminal.
+/// `Err` only when spawn fails; stderr is piped so it stays off the user's terminal.
 fn run_git(cwd: &Path, args: &[&str]) -> Result<GitRun, String> {
     let mut command = Command::new("git");
     command.args(args).current_dir(cwd);
@@ -61,24 +44,9 @@ fn run_git(cwd: &Path, args: &[&str]) -> Result<GitRun, String> {
     })
 }
 
-/// Keeps git from waiting on a human this app cannot show a prompt to.
-///
-/// **Measured 2026-08-24, and it is less than it sounds.** With stdin closed the way this app
-/// spawns git, a fetch needing a password already fails in 0.3s with "unable to get password from
-/// user" — with or without these variables. git notices there is no terminal on its own, so setting
-/// them changed nothing on this machine.
-///
-/// They are kept for the configuration where they *do* differ: a credential helper or `SSH_ASKPASS`
-/// that opens a window, which would leave the operation waiting on a dialog nobody expects to see.
-/// Cheap insurance, not the defence.
-///
-/// **The defence is the deadline**, because the failure that actually never ends has nothing to do
-/// with credentials: a remote that accepts the connection and then says nothing. Measured in the
-/// same session against a non-routable address, git was still running after 20 seconds with no
-/// timeout of its own. That is what `run_network_git` bounds.
-///
-/// `GIT_SSH_COMMAND` is deliberately not set: it would override a user's own `core.sshCommand`, and
-/// this app has no business rewriting how someone reaches their own remote.
+/// Guards against a credential helper or `SSH_ASKPASS` opening a window nobody
+/// expects; the deadline is the real defence. `GIT_SSH_COMMAND` is left alone so a
+/// user's `core.sshCommand` still applies.
 fn silence_git_credential_prompts(command: &mut Command) {
     command
         .env("GIT_TERMINAL_PROMPT", "0")
@@ -86,21 +54,11 @@ fn silence_git_credential_prompts(command: &mut Command) {
         .env("SSH_ASKPASS", "");
 }
 
-/// How long a git operation that reaches the network may take before the app stops waiting.
-///
-/// Generous on purpose: a first `pull` on a large repository over a slow link is legitimately slow,
-/// and cutting off real work is worse than waiting. What this bounds is the case that never ends —
-/// a remote that accepts the connection and then says nothing. Measured 2026-08-24 against a
-/// non-routable address: git was still running after 20 seconds and has no timeout of its own, so
-/// before this the screen kept a spinner up for as long as the app stayed open. A credential prompt
-/// is *not* that case — git fails on its own in a third of a second when there is no terminal.
+/// Generous so a slow first pull finishes; it bounds a remote that accepts the
+/// connection and then never answers, since git has no timeout of its own.
 const NETWORK_GIT_DEADLINE: std::time::Duration = std::time::Duration::from_secs(120);
 
-/// `run_git` for the three commands that leave this machine.
-///
-/// Spawns rather than `.output()` so the wait can be given a deadline, and kills the whole attempt
-/// when it expires. The error names the elapsed limit, because "it is taking a while" is not
-/// something a person can act on and "it gave up after two minutes" is.
+/// Spawns so the wait has a deadline and the whole attempt is killed on expiry.
 fn run_network_git(cwd: &Path, args: &[&str]) -> Result<GitRun, String> {
     use std::io::Read;
     use std::process::Stdio;
@@ -156,8 +114,7 @@ fn run_network_git(cwd: &Path, args: &[&str]) -> Result<GitRun, String> {
     }
 }
 
-// ── Repo discovery (no auto init — state only) ──────────────────────────────────
-/// Top-level git repo containing the vault. `Ok(None)` if outside a git repo.
+/// `Ok(None)` outside a git repo.
 pub(crate) fn find_repo_root(vault_dir: &Path) -> Result<Option<PathBuf>, String> {
     let out = run_git(vault_dir, &["rev-parse", "--show-toplevel"])?;
     if !out.success {
@@ -167,16 +124,13 @@ pub(crate) fn find_repo_root(vault_dir: &Path) -> Result<Option<PathBuf>, String
     if trimmed.is_empty() {
         return Ok(None);
     }
-    // Canonicalize the toplevel returned by git — to use the same real path baseline as vault_dir
-    // for pathspec calculation (preventing mismatches like /var → /private/var).
+    // Canonicalized to match vault_dir's pathspec base (for example /var vs /private/var).
     let root = PathBuf::from(trimmed);
     Ok(Some(fs::canonicalize(&root).unwrap_or(root)))
 }
 
-/// For commands requiring a repo, such as commit/history/diff/pull. Returns `Err` with
-/// "auto init disabled" guidance if outside a repo — Trust Charter ②.
-///
-/// Note that this statement does *not* auto-init: the `git_init` button users press on screen is a different path (owner decision 2026-07-25). The charter forbids silent execution, but users pressing a button in a folder they chose is not in that category. This function still does not auto-init.
+/// `Err` outside a repo; this never auto-inits. The `git_init` button is a separate,
+/// explicit path.
 fn require_repo_root(vault_dir: &Path) -> Result<PathBuf, String> {
     match find_repo_root(vault_dir)? {
         Some(root) => Ok(root),
@@ -184,7 +138,7 @@ fn require_repo_root(vault_dir: &Path) -> Result<PathBuf, String> {
     }
 }
 
-/// Vault's pathspec relative to repo_root — "." if vault is the repo root itself.
+/// "." when the vault is the repo root.
 fn vault_pathspec(repo_root: &Path, vault_dir: &Path) -> String {
     match vault_dir.strip_prefix(repo_root) {
         Ok(rel) => {
@@ -204,7 +158,6 @@ fn vault_pathspec(repo_root: &Path, vault_dir: &Path) -> String {
     }
 }
 
-// ── porcelain parsing ─────────────────────────────────────────────────────────
 struct PorcelainRow {
     index: char,
     worktree: char,
@@ -215,11 +168,8 @@ struct PorcelainRow {
 fn parse_porcelain(out: &str) -> Vec<PorcelainRow> {
     out.lines()
         .filter_map(|line| {
-            // `git status --porcelain` writes `XY <path>`, so byte 3 *should* be a character
-            // boundary. It is read through `get` rather than sliced anyway, because the caller
-            // is a synchronous Tauri command and Tauri runs those on the macOS main thread: a
-            // panic there unwinds through an Objective-C frame and takes the whole app down
-            // with SIGABRT. A line this parser does not recognise must be skipped, never fatal.
+            // Read with `get`, not sliced: callers are sync commands on the macOS main thread,
+            // where a panic aborts the app. An unrecognized line is skipped.
             let bytes = line.as_bytes();
             let index = *bytes.first()? as char;
             let worktree = *bytes.get(1)? as char;
@@ -242,17 +192,13 @@ fn parse_porcelain(out: &str) -> Vec<PorcelainRow> {
         .collect()
 }
 
-/// `git status --porcelain -- <pathspec>` → array of lines. Returns `Err` on git failure.
 fn get_porcelain_status(repo_root: &Path, pathspec: &str) -> Result<Vec<PorcelainRow>, String> {
     let out = run_git(
         repo_root,
         &[
-            // Raw UTF-8 paths — git's default core.quotePath C-quotes any
-            // non-ASCII path (`"\355\225\234..."`), which this parser would
-            // keep literally and every consumer downstream would mangle: the
-            // same defect class the CLI fixed by moving to `-z`
-            // (bug sweep 2026-09-01). The newline+arrow form stays because the
-            // Rust mirror's tests pin it.
+            // Raw UTF-8 paths; the default core.quotePath C-quotes non-ASCII names and every
+            // consumer would mangle them. The newline+arrow form stays because the Rust
+            // mirror's tests pin it.
             "-c",
             "core.quotepath=false",
             "status",
@@ -271,7 +217,7 @@ fn get_porcelain_status(repo_root: &Path, pathspec: &str) -> Result<Vec<Porcelai
     Ok(parse_porcelain(&out.stdout))
 }
 
-/// Full repo porcelain without pathspec — guard for staged-outside-vault. Returns empty list on failure.
+/// Whole-repo status for the staged-outside-vault guard; empty on failure.
 fn get_full_porcelain_status(repo_root: &Path) -> Vec<PorcelainRow> {
     match run_git(
         repo_root,
@@ -301,10 +247,8 @@ fn classify_change(row: &PorcelainRow) -> &'static str {
     "modified"
 }
 
-// ── frontmatter kind/slug (lightweight parser) ─────────────────────────────
-// Minimal extraction for semantic info — reads only top-level `kind:`/`slug:` from
-// the file's leading `---` block. Best-effort that never blocks a commit (on failure,
-// proceeds with the path-based slug).
+// Best-effort top-level `kind:`/`slug:` from the leading `---` block; never
+// blocks a commit.
 fn read_kind_slug(abs_path: &Path) -> (Option<String>, Option<String>) {
     let Ok(raw) = fs::read_to_string(abs_path) else {
         return (None, None);
@@ -335,11 +279,8 @@ fn read_kind_slug(abs_path: &Path) -> (Option<String>, Option<String>) {
     (kind, slug)
 }
 
-/// Strips one matching pair of surrounding quotes from a frontmatter scalar.
-///
-/// Written with `strip_prefix`/`strip_suffix` rather than byte indexing: this runs inside
-/// synchronous Tauri commands, which Tauri executes on the macOS main thread, where a panic
-/// aborts the process instead of failing one call. These combinators cannot land mid-character.
+/// `strip_prefix`/`strip_suffix`, not byte indexing, so a panic cannot abort the
+/// app from the macOS main thread.
 fn unquote(value: &str) -> String {
     for quote in ['"', '\''] {
         if let Some(inner) = value
@@ -352,7 +293,6 @@ fn unquote(value: &str) -> String {
     value.to_string()
 }
 
-// ── Change summary ──────────────────────────────────────────────────────────────
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct ChangeEntry {
@@ -408,7 +348,7 @@ fn path_based_slug(vault_dir: &Path, abs_path: &Path) -> String {
     rel.strip_suffix(".md").unwrap_or(&rel).to_string()
 }
 
-/// One-line semantic commit summary — kind counts + up to 3 representative slugs.
+/// Kind counts plus up to three representative slugs.
 fn format_snapshot_summary(changes: &[ChangeEntry]) -> String {
     let added = changes.iter().filter(|c| c.status == "added").count();
     let modified = changes.iter().filter(|c| c.status == "modified").count();
@@ -463,7 +403,7 @@ fn status_mark(status: &str) -> char {
     }
 }
 
-/// If a custom message is provided, the auto summary is embedded in the body to preserve semantic context.
+/// A custom message keeps the auto summary in the body.
 fn build_commit_message(
     subject: &str,
     auto_summary: &str,
@@ -481,7 +421,7 @@ fn build_commit_message(
     format!("{subject}\n\n{}", body.join("\n"))
 }
 
-/// Paths already staged outside the vault pathspec — for protection warnings (not mixed into commits).
+/// Reported as a warning, never mixed into the commit.
 fn find_staged_outside_vault(rows: &[PorcelainRow], pathspec: &str) -> Vec<String> {
     rows.iter()
         .filter(|row| {
@@ -506,22 +446,14 @@ fn first_nonempty_line(text: &str) -> Option<String> {
         .map(|l| l.to_string())
 }
 
-// ── Graceful failure classification (mirror of git-snapshot.mjs classifyGitError) ──────────────
-/// What went wrong, in the only two pieces that survive a language boundary: a
-/// **code** the screen looks up in `messages/<locale>.json` under `nativeErrors`,
-/// and git's own words as the machine detail behind it.
-///
-/// The finished sentence used to live here. It could only ever be written in one
-/// language, so an English-locale reader met Korean; `errors.rs` explains the whole
-/// contract. What could not move to the screen is `note` — git's own first line —
-/// because only git knows it, and a failure without "what went wrong" cannot be fixed.
+/// A code the screen localizes through `nativeErrors`, plus git's own first line
+/// as detail, because only git knows what went wrong (see `errors.rs`).
 struct GitErrorInfo {
-    /// Looked up in `nativeErrors`, and the prefix of the `Err(String)` payload.
+    /// Also the prefix of the `Err(String)` payload.
     code: &'static str,
-    /// git's first stderr line. Machine detail, never prose.
+    /// Machine detail, never prose.
     note: Option<String>,
-    /// The command that gets the person unstuck. Deliberately untranslated: it is
-    /// typed verbatim into a shell. The localized sentence names it too.
+    /// Untranslated: it is typed verbatim into a shell.
     guidance: Option<String>,
 }
 
@@ -625,8 +557,7 @@ fn classify_git_error(raw: &str, operation: &str) -> GitErrorInfo {
     }
     GitErrorInfo {
         code: "git-command-failed",
-        // Which git command failed is a fact only this side knows, so it rides with
-        // the note rather than being written into eleven translated sentences.
+        // Which command failed rides with the note instead of eleven translated sentences.
         note: Some(match first_line {
             Some(line) => format!("git {operation}: {line}"),
             None => format!("git {operation}"),
@@ -635,7 +566,7 @@ fn classify_git_error(raw: &str, operation: &str) -> GitErrorInfo {
     }
 }
 
-/// The classification as the `Err` payload of `Result<_, String>` — `<code>: <git's words>`.
+/// `<code>: <git's words>`.
 fn classified_error_string(info: &GitErrorInfo) -> String {
     coded(info.code, info.note.clone().unwrap_or_default())
 }
@@ -651,7 +582,6 @@ fn git_error_text(run: &GitRun) -> String {
     parts.join("\n")
 }
 
-// ── upstream / branch lookup ───────────────────────────────────────────────
 fn get_current_branch(repo_root: &Path) -> Option<String> {
     let out = run_git(repo_root, &["rev-parse", "--abbrev-ref", "HEAD"]).ok()?;
     if !out.success {
@@ -708,9 +638,7 @@ fn get_remote_url(repo_root: &Path, remote_name: &str) -> Option<String> {
     }
 }
 
-/// HEAD names a commit rather than a branch. `git symbolic-ref -q HEAD` fails exactly then; a
-/// branch with no commit yet is still a branch. A git that cannot run answers "not detached",
-/// the state that offers nothing new.
+/// `git symbolic-ref -q HEAD` fails exactly then; if git cannot run, report not detached.
 fn is_head_detached(repo_root: &Path) -> bool {
     run_git(repo_root, &["symbolic-ref", "-q", "HEAD"])
         .map(|out| !out.success)
@@ -730,41 +658,27 @@ fn get_head_short_hash(repo_root: &Path) -> Option<String> {
     }
 }
 
-// ── Result types (consumed by the web GUI) ─────────────────────────────────
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GitStatusResult {
-    /// Whether the vault is inside a git repo — the primary signal for the web GUI's button-state decisions.
     initialized: bool,
-    /// Absolute path of the repo toplevel (only when initialized).
     repo_root: Option<String>,
-    /// Current branch name.
     branch: Option<String>,
-    /// upstream ref (e.g. origin/main) — null when absent (signals push is unavailable).
+    /// `None` means push is unavailable.
     upstream: Option<String>,
-    /// Number of uncommitted changes within the vault scope.
     changed_count: usize,
-    /// Paths already staged outside the vault (the snapshot does not touch them — informational).
+    /// The snapshot never touches them.
     staged_outside_vault: Vec<String>,
-    /// Number of my steps not yet on the upstream. `None` when there is no upstream.
-    ///
-    /// Without these two, the screen cannot say "is there anything to send", so the
-    /// Push button is either always on or always off — both are lies.
+    /// `None` without an upstream. Without these the Push button could only lie.
     ahead: Option<usize>,
-    /// Number of steps on the upstream that I don't have. `None` when there is no upstream.
+    /// `None` without an upstream.
     behind: Option<usize>,
-    /// Whether a remote named `origin` exists, read locally (`git remote get-url origin`) —
-    /// this never contacts it.
-    ///
-    /// With no upstream the screen used to say "no remote yet" and offer to connect one, whether
-    /// or not `origin` existed; in a repository whose branch had simply never been pushed, that
-    /// button ran `git remote set-url origin` over the real remote (2026-09-25). "No remote",
-    /// "a remote this branch was never sent to" and "no branch at all" have different next steps.
+    /// Read locally, never contacting the remote. "No remote", "never pushed" and
+    /// "no branch" need different next steps, or connecting a remote overwrites origin.
     has_origin: bool,
-    /// HEAD names a commit, not a branch. Nothing can be sent until a branch is checked out, and
-    /// `branch` then reads `HEAD`.
+    /// Nothing can be sent until a branch is checked out.
     detached: bool,
-    /// Short hash of the commit HEAD names; `None` before the first commit.
+    /// `None` before the first commit.
     head_short_hash: Option<String>,
 }
 
@@ -773,7 +687,6 @@ pub struct GitStatusResult {
 pub struct PushOutcome {
     pushed: bool,
     remote_url: Option<String>,
-    /// One user-facing line on failure.
     message: Option<String>,
     guidance: Option<String>,
 }
@@ -782,16 +695,15 @@ pub struct PushOutcome {
 #[serde(rename_all = "camelCase")]
 pub struct GitSnapshotResult {
     committed: bool,
-    /// "no-changes" | null (committed).
+    /// "no-changes" or null (committed).
     reason: Option<String>,
     commit_hash: Option<String>,
     subject: Option<String>,
-    /// One-line semantic-unit auto summary.
     summary: Option<String>,
     counts: SnapshotCounts,
     files: Vec<ChangeEntry>,
     staged_outside_vault: Vec<String>,
-    /// Populated only when push was requested (opt-in).
+    /// Only when push was requested.
     push: Option<PushOutcome>,
 }
 
@@ -813,9 +725,7 @@ pub struct GitCommitInfo {
     subject: String,
     relative_time: String,
     iso_time: String,
-    /// Vault files this step touched — carries `kind`/`slug` so the screen can read a
-    /// commit as "how did the concepts change". Without this, history is nothing but
-    /// commit subject strings, with no way at all to view it at the concept level.
+    /// Carries `kind`/`slug` so history reads at the concept level.
     files: Vec<ChangeEntry>,
 }
 
@@ -824,7 +734,7 @@ pub struct GitCommitInfo {
 pub struct GitDiffResult {
     count: usize,
     files: Vec<ChangeEntry>,
-    /// Text diff of tracked files (new files appear in the list only).
+    /// New files appear only in the list.
     diff: String,
 }
 
@@ -832,9 +742,9 @@ pub struct GitDiffResult {
 #[serde(rename_all = "camelCase")]
 pub struct GitFetchResult {
     ok: bool,
-    /// upstream ref (e.g. origin/main). Empty string + `ok:false` when absent.
+    /// Empty string with `ok:false` when absent.
     upstream: String,
-    /// Divergence re-measured **right after** the fetch — the screen enables Pull/Push from this value.
+    /// Re-measured after the fetch; the screen enables Pull/Push from it.
     ahead: Option<usize>,
     behind: Option<usize>,
     summary: String,
@@ -845,15 +755,10 @@ pub struct GitFetchResult {
 pub struct GitPullResult {
     ok: bool,
     upstream: String,
-    /// Last line of the pull result summary (e.g. "Already up to date.").
     summary: String,
 }
 
-// ── The #[tauri::command] set ──────────────────────────────────────────────
-
-/// Summary of the vault's git state — initialized or not + branch/upstream + uncommitted
-/// change count. The web GUI uses it to decide whether to enable the "snapshot/push/pull"
-/// buttons. Outside a repo it reports `initialized:false` instead of an error (auto init forbidden).
+/// Reports `initialized:false` outside a repo instead of an error, since auto-init is forbidden.
 #[tauri::command]
 pub fn git_status(vault_path: String) -> Result<GitStatusResult, String> {
     let vault_dir = validate_vault_dir(&vault_path)?;
@@ -897,18 +802,14 @@ pub fn git_status(vault_path: String) -> Result<GitStatusResult, String> {
     })
 }
 
-/// How far we have diverged from upstream — `(ahead, behind)`.
-///
-/// This value is **as of the last fetch**. That is simply how git works: the local
-/// side answers with the last state it knows until it asks the remote again. That is
-/// why the screen needs a separate `Fetch` for these numbers to refresh.
+/// As of the last fetch, so the screen needs a separate Fetch to refresh them.
 fn divergence_counts(repo_root: &Path) -> (Option<usize>, Option<usize>) {
     let out = match run_git(
         repo_root,
         &["rev-list", "--left-right", "--count", "HEAD...@{upstream}"],
     ) {
         Ok(o) if o.success => o,
-        // If the upstream vanished or the ref is broken, the answer is "unknown" — not 0.
+        // A vanished upstream or broken ref is unknown, not 0.
         _ => return (None, None),
     };
     let mut parts = out.stdout.split_whitespace();
@@ -917,10 +818,7 @@ fn divergence_counts(repo_root: &Path) -> (Option<usize>, Option<usize>) {
     (ahead, behind)
 }
 
-/// **Only receives** the remote's latest state — does not touch the working tree.
-///
-/// Trust charter: same discipline as the only other commands that go over the network
-/// (`git_snapshot(push)` · `git_pull`) — runs only when the user presses it. No automatic calls.
+/// Receives only; the working tree is untouched. Runs only when the user presses it.
 #[tauri::command(async)]
 pub fn git_fetch(vault_path: String) -> Result<GitFetchResult, String> {
     let vault_dir = validate_vault_dir(&vault_path)?;
@@ -931,15 +829,13 @@ pub fn git_fetch(vault_path: String) -> Result<GitFetchResult, String> {
             upstream: String::new(),
             ahead: None,
             behind: None,
-            // A code, not a sentence: `nativeErrors` holds the wording, and the
-            // panel already has `ahead`/`behind` to fill the diverged one in.
+            // A code, not a sentence: `nativeErrors` holds the wording.
             summary: "remote-no-upstream".to_string(),
         });
     };
     let out = run_network_git(&repo_root, &["fetch", "--prune"])?;
     if !out.success {
-        // Returning only `message` would mean we erase the reason git told us (`note`)
-        // and the next move (`guidance`) — a failure without "what went wrong" cannot be fixed.
+        // Keep git's reason and the next step; a failure without them cannot be fixed.
         let info = classify_git_error(&out.stderr, "fetch");
         return Err(classified_error_string(&info));
     }
@@ -956,14 +852,9 @@ pub fn git_fetch(vault_path: String) -> Result<GitFetchResult, String> {
     })
 }
 
-/// Semantic-unit snapshot that adds + commits only the vault scope. Without `message`,
-/// the auto summary is used as the subject. Sends to upstream only when `push` is true (opt-in).
-/// No changes to commit is not an error but `committed:false, reason:"no-changes"` — and a push
-/// asked for still goes, because steps already recorded are exactly what Push exists to send.
-///
-/// `set_upstream` is the press on "send this branch" for a branch `origin` has never seen: the
-/// push then names `origin` and records it as this branch's upstream. It is never implied by
-/// `push` alone (charter ①).
+/// Adds and commits only the vault scope. No changes is `reason:"no-changes"` and
+/// a requested push still goes. `set_upstream` is the explicit "send this branch"
+/// press and is never implied by `push`.
 #[tauri::command(async)]
 pub fn git_snapshot(
     vault_path: String,
@@ -978,8 +869,7 @@ pub fn git_snapshot(
 
     let rows = get_porcelain_status(&repo_root, &pathspec)?;
     if rows.is_empty() {
-        // This used to return before the push, so Push with nothing left to record sent
-        // nothing and said nothing, while the button promised the steps already piled up.
+        // A requested push still sends already recorded steps when nothing is new.
         let push_outcome = if push.unwrap_or(false) {
             Some(run_push(&repo_root, set_upstream))
         } else {
@@ -1013,9 +903,8 @@ pub fn git_snapshot(
     let full_rows = get_full_porcelain_status(&repo_root);
     let staged_outside = find_staged_outside_vault(&full_rows, &pathspec);
 
-    // Trust charter ④ — first add only untracked new files within the vault scope.
-    // Changes/deletions of tracked files are captured by the subsequent pathspec
-    // partial-commit without touching the index.
+    // Only untracked files inside the vault are added; tracked changes go through the
+    // pathspec partial commit without touching the index.
     let untracked: Vec<&str> = rows
         .iter()
         .filter(|r| r.index == '?' && r.worktree == '?')
@@ -1050,8 +939,7 @@ pub fn git_snapshot(
         total: changes.len(),
     };
 
-    // push only on explicit opt-in — and `-u` only when the person pressed the button that says
-    // it sets this branch's destination, never because an upstream happens to be missing (charter ①).
+    // `-u` only on the explicit send-this-branch press, never because an upstream is missing.
     let push_outcome = if push.unwrap_or(false) {
         Some(run_push(&repo_root, set_upstream))
     } else {
@@ -1071,12 +959,8 @@ pub fn git_snapshot(
     })
 }
 
-/// The commit already exists locally, so a push failure does not crash as Err;
-/// it is delivered as `PushOutcome{pushed:false, ...}` guidance instead.
-///
-/// With no upstream, `set_upstream` sends the checked-out branch to `origin` under the same name
-/// and records `origin/<branch>` as its upstream (`git push --set-upstream origin HEAD`). Without
-/// it, or with no `origin`, or on a detached HEAD, nothing is sent.
+/// The commit already exists, so a push failure returns guidance, not `Err`.
+/// Without `set_upstream`, `origin` or a branch, nothing is sent.
 fn run_push(repo_root: &Path, set_upstream: bool) -> PushOutcome {
     let upstream = get_upstream_ref(repo_root);
     let first_send = upstream.is_none();
@@ -1088,7 +972,7 @@ fn run_push(repo_root: &Path, set_upstream: bool) -> PushOutcome {
                 format!("git push -u origin {branch}"),
             ))
         } else if is_head_detached(repo_root) {
-            // `origin HEAD` from a detached HEAD has no branch name to send under.
+            // A detached HEAD has no branch name to send under.
             Some((
                 coded("push-detached-head", ""),
                 "git switch <branch>".to_string(),
@@ -1141,8 +1025,7 @@ fn run_push(repo_root: &Path, set_upstream: bool) -> PushOutcome {
     }
 }
 
-/// Summary of recent commits touching the vault path (hash/message/time) — Obsidian
-/// Git history parity. Empty list when there are no commits at all.
+/// Empty list when there are no commits.
 #[tauri::command]
 pub fn git_history(
     vault_path: String,
@@ -1152,18 +1035,15 @@ pub fn git_history(
     let vault_dir = validate_vault_dir(&vault_path)?;
     let repo_root = require_repo_root(&vault_dir)?;
     let vault_spec = vault_pathspec(&repo_root, &vault_dir);
-    // One document's history: the log is scoped to that path, which must lie inside the
-    // vault like every other path the screen hands back (`vault_document_path`).
+    // The single-document path must lie inside the vault (`vault_document_path`).
     let pathspec = match path.as_deref().map(str::trim).filter(|p| !p.is_empty()) {
         Some(document) => vault_document_path(document, &vault_spec)?,
         None => vault_spec,
     };
     let max_count = limit.unwrap_or(10).max(1).to_string();
     const SEP: char = '\x1f';
-    /*
-     * Put the record separator at the **head**. Placed at the tail, the `--name-status`
-     * lines get pushed past the separator and attach to the next commit.
-     */
+    // The separator leads each record; at the tail, `--name-status` lines would attach
+    // to the next commit.
     const REC: char = '\x1e';
     let format = format!("--pretty=format:{REC}%h{SEP}%H{SEP}%s{SEP}%cr{SEP}%cI");
 
@@ -1180,7 +1060,7 @@ pub fn git_history(
         ],
     )?;
     if !out.success {
-        // Zero commits (no history yet) and the like — degrade gracefully to an empty list.
+        // Zero commits and the like degrade to an empty list.
         return Ok(Vec::new());
     }
     let trimmed = out.stdout.trim();
@@ -1216,12 +1096,8 @@ pub fn git_history(
     Ok(commits)
 }
 
-/// One `--name-status` line (`M\tpath`) into a `ChangeEntry`.
-///
-/// `kind` is read from **the file on disk right now** — not the blob at that commit.
-/// Treating a concept's identity as the same thing over time is more useful for the
-/// screen, and running `git show` per commit is not worth the cost. For deleted files,
-/// only the slug is derived from the path and `kind` stays empty.
+/// One `M\tpath` line. `kind` comes from the file on disk now, not the blob at that
+/// commit, to avoid a `git show` per commit; deleted files get only a path slug.
 fn history_change_entry(line: &str, repo_root: &Path, vault_dir: &Path) -> Option<ChangeEntry> {
     let mut cols = line.split('\t');
     let code = cols.next()?.trim();
@@ -1256,7 +1132,6 @@ fn history_change_entry(line: &str, repo_root: &Path, vault_dir: &Path) -> Optio
     })
 }
 
-/// File list + text diff of not-yet-committed changes within the vault scope.
 #[tauri::command]
 pub fn git_diff(vault_path: String) -> Result<GitDiffResult, String> {
     let vault_dir = validate_vault_dir(&vault_path)?;
@@ -1266,7 +1141,7 @@ pub fn git_diff(vault_path: String) -> Result<GitDiffResult, String> {
     let rows = get_porcelain_status(&repo_root, &pathspec)?;
     let changes = build_change_summary(&rows, &repo_root, &vault_dir);
 
-    // Against HEAD when it exists; falls back to the index when it doesn't (zero commits).
+    // Falls back to the index when there is no HEAD.
     let diff = match run_git(&repo_root, &["diff", "HEAD", "--", &pathspec]) {
         Ok(out) if out.success => out.stdout,
         _ => match run_git(&repo_root, &["diff", "--", &pathspec]) {
@@ -1282,22 +1157,15 @@ pub fn git_diff(vault_path: String) -> Result<GitDiffResult, String> {
     })
 }
 
-/// **What one commit actually wrote** — that commit's vault-scope patch.
-///
-/// Why this is kept separate from `git_diff`: that one looks at the «not yet committed»
-/// working tree, while this one looks at one «already named» step. Both the arguments
-/// and the results differ, so hanging an `Option` on a single command to make it carry
-/// both meanings would leave the call site unable to read from the signature what it
-/// is asking.
+/// One commit's vault-scope patch; separate from `git_diff`, which reads the
+/// uncommitted tree, so each signature says what it asks.
 #[tauri::command]
 pub fn git_commit_diff(vault_path: String, hash: String) -> Result<GitDiffResult, String> {
     let vault_dir = validate_vault_dir(&vault_path)?;
     let repo_root = require_repo_root(&vault_dir)?;
     let pathspec = vault_pathspec(&repo_root, &vault_dir);
 
-    // The hash is not user input but a value we just read via `git log`; still, since
-    // it arrives as an argument, filter out strings that could be mistaken for options
-    // (the `--upload-pack=…` kind).
+    // Arrives as an argument, so strings that look like options (`--upload-pack=…`) are refused.
     let rev = hash.trim();
     if rev.is_empty() || !rev.chars().all(|c| c.is_ascii_hexdigit()) {
         return Err("commit hash must be hexadecimal".to_string());
@@ -1328,8 +1196,7 @@ pub fn git_commit_diff(vault_path: String, hash: String) -> Result<GitDiffResult
     })
 }
 
-/// git pull from upstream (opt-in transmission). Reports missing upstream / conflict /
-/// non-fast-forward as a clean Err without crashing.
+/// Opt-in. Missing upstream, conflict and non-fast-forward return a clean `Err`.
 #[tauri::command(async)]
 pub fn git_pull(vault_path: String) -> Result<GitPullResult, String> {
     let vault_dir = validate_vault_dir(&vault_path)?;
@@ -1360,10 +1227,8 @@ pub fn git_pull(vault_path: String) -> Result<GitPullResult, String> {
     })
 }
 
-/// Minimal check that the remote address has a shape git will accept — the gate before
-/// user input is handed to the shell. Shell injection itself is impossible because
-/// `run_git` uses an argument array, but strings that are not address-shaped (empty
-/// value · containing whitespace · flag lookalike) are filtered out here.
+/// Argument arrays already prevent shell injection; this refuses empty,
+/// whitespace-bearing and flag-like values.
 fn validate_remote_url(url: &str) -> Result<String, String> {
     let trimmed = url.trim();
     if trimmed.is_empty() {
@@ -1375,15 +1240,13 @@ fn validate_remote_url(url: &str) -> Result<String, String> {
     if trimmed.chars().any(char::is_whitespace) {
         return Err(coded("remote-url-has-whitespace", ""));
     }
-    // Allow only the four common shapes: scp-like (git@host:path) · https · ssh · file path.
+    // Only scp-like, https, ssh and file paths.
     let looks_scp = trimmed.contains('@') && trimmed.contains(':');
     let looks_url = trimmed.starts_with("https://")
         || trimmed.starts_with("http://")
         || trimmed.starts_with("ssh://")
         || trimmed.starts_with("git://");
-    // A Windows folder is a path too (`D:\backup\repo.git`, `D:/backup/repo.git`): the
-    // Windows build and its tests hand git exactly that, and refusing it left a first send
-    // to a local backup impossible there.
+    // A Windows drive path is a path too, or a first send to a local backup fails there.
     let bytes = trimmed.as_bytes();
     let looks_drive_path = bytes.len() > 2
         && bytes[0].is_ascii_alphabetic()
@@ -1399,35 +1262,23 @@ fn validate_remote_url(url: &str) -> Result<String, String> {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GitInitResult {
-    /// Whether a record was started by this call. If it was already a repository, returns false + reason.
+    /// False with a reason if it was already a repository.
     initialized: bool,
-    /// "already" (already a repository) | null (just started)
+    /// "already" or null (just started).
     reason: Option<String>,
-    /// Absolute path to the top-level of the created (or existing) repo.
     repo_root: String,
-    /// Branch name immediately after start — read via `git symbolic-ref` even before the first commit.
+    /// Read via `git symbolic-ref`, which works before the first commit.
     branch: Option<String>,
-    /// Number of changes in the vault scope to be recorded (= changes not yet committed).
     changed_count: usize,
 }
 
-/// `git init` called **only when the user presses it directly on screen**.
-///
-/// Trust charter boundary: what the charter prohibits is *automatic* execution and silent collection. A user
-/// pressing a button in a vault folder they chose themselves does not fall into that category (2026-07-25
-/// owner decision + Design Guardian ruling). The line this command adheres to:
-///
-/// - **It only performs init.** It does not chain add/commit/push — it creates an empty repository and
-///   leaves the caller in a state of "N changes remaining". Automatic commits are the true
-///   charter violation.
-/// - **If it is already a repository, it does nothing** (`reason: "already"`). Nested init could
-///   interfere with existing history.
-/// - No side tasks like remote configuration or user name setup.
+/// Only on a direct user press. It only inits: no add, commit, push, remote or
+/// user setup, and an existing repository is left alone (`reason: "already"`).
 #[tauri::command]
 pub fn git_init(vault_path: String) -> Result<GitInitResult, String> {
     let vault_dir = validate_vault_dir(&vault_path)?;
 
-    // If already inside a repo, just inform — do not silently create a nested repository.
+    // Inside a repo already: never create a nested one.
     if let Some(root) = find_repo_root(&vault_dir)? {
         let pathspec = vault_pathspec(&root, &vault_dir);
         let changed = get_porcelain_status(&root, &pathspec)?.len();
@@ -1446,7 +1297,7 @@ pub fn git_init(vault_path: String) -> Result<GitInitResult, String> {
         return Err(classified_error_string(&info));
     }
 
-    // Re-read toplevel immediately after init to obtain the canonical path (differences in symlinks, /var, etc.).
+    // Re-read for the canonical path (symlinks, /var).
     let root = find_repo_root(&vault_dir)?.ok_or_else(|| coded("git-init-repo-missing", ""))?;
     let pathspec = vault_pathspec(&root, &vault_dir);
     let changed = get_porcelain_status(&root, &pathspec)?.len();
@@ -1460,39 +1311,23 @@ pub fn git_init(vault_path: String) -> Result<GitInitResult, String> {
     })
 }
 
-// ── one document, whole, with its changes ───────────────────────────────────
-
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GitDocumentDiffResult {
-    /// Repository-relative path, as given.
     path: String,
-    /// A unified diff with the **whole document as context**, so the reader can draw the
-    /// document and mark what changed, rather than hunks with three lines around them.
+    /// The whole document as context, so the reader can draw it and mark changes.
     diff: String,
-    /// `true` when git has never seen the document: the diff then lists every line as added.
+    /// Git never saw it; every line reads as added.
     untracked: bool,
-    /// `true` when the document is past `MAX_DOCUMENT_DIFF_LINES`; `diff` is then empty.
+    /// `diff` is then empty.
     too_large: bool,
 }
 
-/// One document's changes with the whole document around them.
-///
-/// `source` absent: the working file against `HEAD` (what the person has not committed).
-/// `source` a hash: what that commit did to the document, against its parent.
-/// The reader on the Record screen draws the document as prose and marks the changed lines;
-/// it needs every line, so the context is the file length (`-U` with a large count).
-/// How many diff lines one document may send across IPC.
-///
-/// The reader draws one element per line with no windowing, and a whole-document read is
-/// unbounded by nature: a 6,009-line document measured on 2026-09-19 produced a 6,014-line
-/// diff (~600 KB) whose hunks were ten lines. Past this ceiling the command sends nothing and
-/// says so, and the screen draws the hunks it already has — they always hold the changed
-/// lines, while the first 3,000 lines of a long document may hold none of them.
+/// The reader draws one element per line without windowing; past this ceiling
+/// nothing is sent and the screen keeps its hunks, which always hold the changes.
 const MAX_DOCUMENT_DIFF_LINES: usize = 3_000;
 
-/// Applies the ceiling. A capped answer carries no diff at all rather than a prefix: half a
-/// document read as the whole one is a lie the screen cannot see through.
+/// A capped answer carries no diff, since a prefix would read as the whole document.
 fn cap_document_diff(path: String, diff: String, untracked: bool) -> GitDocumentDiffResult {
     if diff.lines().count() > MAX_DOCUMENT_DIFF_LINES {
         return GitDocumentDiffResult {
@@ -1521,12 +1356,8 @@ pub fn git_document_diff(
     let repo_root = require_repo_root(&vault_dir)?;
     let vault_spec = vault_pathspec(&repo_root, &vault_dir);
     let repo_rel = vault_document_path(&relative_path, &vault_spec)?;
-    /*
-     * The name the document had, when it has just been renamed. Both names go into the
-     * pathspec so git can pair them: with only the new one, git sees a path that did not
-     * exist and reports **every line as added** — a rename drawn as a brand-new document
-     * (measured 2026-09-19: 45 lines "added" for a file whose bytes never changed).
-     */
+    // Both names go into the pathspec so git pairs a rename; with only the new name
+    // every line reads as added.
     let previous_rel = match previous_path
         .as_deref()
         .map(str::trim)
@@ -1562,7 +1393,6 @@ pub fn git_document_diff(
         .iter()
         .any(|r| r.path == repo_rel && r.index == '?' && r.worktree == '?');
     if untracked {
-        // git has nothing to diff against; the whole file is the addition.
         let raw = fs::read_to_string(repo_root.join(&repo_rel)).unwrap_or_default();
         let mut diff = format!("diff --git a/{repo_rel} b/{repo_rel}\n--- /dev/null\n+++ b/{repo_rel}\n@@ -0,0 +1 @@\n");
         for line in raw.lines() {
@@ -1588,13 +1418,8 @@ pub fn git_document_diff(
             .map(|o| o.stdout)
             .unwrap_or_default()
     };
-    /*
-     * A pure rename has no content lines at all (`similarity index 100%`), so there would be
-     * nothing for the reader to draw and the screen would fall back to "no earlier content to
-     * compare" — which is the sentence for a new document, not a renamed one. The document
-     * itself is the answer here: its lines, unmarked, under a header that already says the
-     * name changed.
-     */
+    // A pure rename has no content lines, so the document itself is returned under a
+    // header that already says the name changed.
     if previous_rel.is_some()
         && !diff
             .lines()
@@ -1612,24 +1437,19 @@ pub fn git_document_diff(
     Ok(cap_document_diff(repo_rel, diff, false))
 }
 
-// ── restore one document ────────────────────────────────────────────────────
-
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GitRestoreResult {
-    /// Whether the working file was rewritten by this call.
     restored: bool,
-    /// Vault-relative path of the one document touched.
     path: String,
-    /// `HEAD` or the commit hash the content came from.
+    /// `HEAD` or the source commit hash.
     source: String,
-    /// What the document was before (`added` / `modified` / `deleted` / `renamed`), `None` when clean.
+    /// `None` when clean.
     previous_status: Option<String>,
 }
 
-/// The three frontmatter lines that make a document *the same document* to the rest of the
-/// vault. `mcp/src/schema.mjs` owns them: `uid` is immutable and writer-minted, `slug` is what
-/// neighbours link to, and `merged_uids` records which documents were folded into this one.
+/// The identity fields owned by `mcp/src/schema.mjs`: immutable `uid`, linked `slug`,
+/// and `merged_uids`.
 #[derive(Debug, Default, PartialEq, Eq)]
 struct DocumentIdentity {
     uid: Option<String>,
@@ -1637,8 +1457,7 @@ struct DocumentIdentity {
     merged_uids: bool,
 }
 
-/// Reads identity from a document's leading `---` block. Best-effort like `read_kind_slug`:
-/// a file without frontmatter has no identity, and two such files compare equal.
+/// Best-effort: no frontmatter means no identity, and two such files compare equal.
 fn read_identity(raw: &str) -> DocumentIdentity {
     let mut identity = DocumentIdentity::default();
     let mut lines = raw.lines();
@@ -1667,7 +1486,6 @@ fn read_identity(raw: &str) -> DocumentIdentity {
     identity
 }
 
-/// Names the first identity field that would change, in the words the error line carries.
 fn identity_difference(current: &DocumentIdentity, source: &DocumentIdentity) -> Option<String> {
     if current.uid != source.uid {
         return Some(format!(
@@ -1689,10 +1507,8 @@ fn identity_difference(current: &DocumentIdentity, source: &DocumentIdentity) ->
     None
 }
 
-/// The document path the command may touch, **as the screen holds it**: repository-relative
-/// like every `ChangeEntry.path` from `git_status` and `git_history`. Relative, forward slashes,
-/// no `..`, no empty or dot segments, no backslashes, and inside the vault's pathspec.
-/// Anything else is refused before git sees it. Returns the normalized repo-relative path.
+/// Repository-relative as the screen holds it: forward slashes, no `..`, empty or
+/// dot segments, and inside the vault pathspec. Anything else is refused.
 fn vault_document_path(relative_path: &str, vault_spec: &str) -> Result<String, String> {
     let trimmed = relative_path.trim();
     if trimmed.is_empty()
@@ -1717,7 +1533,7 @@ fn vault_document_path(relative_path: &str, vault_spec: &str) -> Result<String, 
     Ok(normalized)
 }
 
-/// `HEAD`, or an abbreviated-to-full hex hash. Refs, ranges and options never reach git.
+/// Refs, ranges and options never reach git.
 fn validate_restore_source(source: &str) -> Result<String, String> {
     let trimmed = source.trim();
     if trimmed == "HEAD" {
@@ -1732,24 +1548,9 @@ fn validate_restore_source(source: &str) -> Result<String, String> {
     }
 }
 
-/// Put **one** document back to the content it had at `source` — `HEAD` discards its
-/// uncommitted changes, a hash brings that commit's version back as an uncommitted change.
-///
-/// This is the app's first write to a document's *content*, so it is narrower than git:
-/// - the path must resolve inside the vault (`vault_document_path`), and only that path is
-///   named to git;
-/// - a document git has never committed is not "restored" to `HEAD`, because that would
-///   delete it (`restore-untracked`);
-/// - a source that does not hold the document is refused (`restore-source-missing`);
-/// - a source whose `uid`, `slug` or `merged_uids` differs from the file on disk is refused
-///   (`restore-identity-mismatch`), because the rest of the vault links to the current identity
-///   and `git restore` is identity-blind (steward review, 2026-09-19);
-/// - a document on disk that cannot be read at all is refused too
-///   (`restore-identity-check-failed`), because a guard that could not run is not a guard
-///   that passed.
-///
-/// Nothing is committed. **Called only from a confirm button** — the trust charter's zero
-/// automatic execution is the caller's to hold, and this command chains into nothing.
+/// Restores one document to `source`, uncommitted. Refuses an untracked path
+/// (restoring would delete it), a missing source, a changed `uid`/`slug`/`merged_uids`
+/// or an unreadable file, since `git restore` is identity-blind. Confirm-button only.
 #[tauri::command]
 pub fn git_restore_file(
     vault_path: String,
@@ -1785,15 +1586,9 @@ pub fn git_restore_file(
                 return Err(coded("restore-identity-mismatch", difference));
             }
         }
-        // A deleted document has no identity on disk to disagree with, and bringing it back
-        // is exactly what this call is for.
+        // A deleted document has no identity to disagree with.
         Err(err) if err.kind() == std::io::ErrorKind::NotFound => {}
-        /*
-         * Any other read failure — non-UTF-8 bytes, a permission refusal — means the identity
-         * guard **did not run**. Restoring anyway would overwrite a document whose `uid` and
-         * `slug` were never read, which is the one thing the guard exists to prevent, so an
-         * unreadable file stops the write instead of skipping the check.
-         */
+        // Any other read failure means the identity guard did not run, so the write stops.
         Err(err) => return Err(coded("restore-identity-check-failed", err)),
     }
 
@@ -1826,21 +1621,15 @@ pub fn git_restore_file(
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GitSetRemoteResult {
-    /// Whether the remote was set by this call.
     ok: bool,
-    /// Remote name (always "origin").
+    /// Always "origin".
     remote: String,
-    /// Final remote URL.
     url: String,
-    /// If the existing origin was replaced, inform the user of what changed.
+    /// Tells the user what changed.
     replaced: Option<String>,
 }
 
-/// Configure where to push (`origin`) — **only uses addresses entered by the user**. We do not
-/// suggest, guess, or auto-detect addresses (Trust charter: zero silent transmission).
-///
-/// No push is performed — only the address is registered, and the caller sends it via separate actions. This ensures
-/// the "sends only when pressed" promise is upheld at the command boundary.
+/// Only addresses the user entered; nothing is guessed. No push happens here.
 #[tauri::command]
 pub fn git_set_remote(vault_path: String, url: String) -> Result<GitSetRemoteResult, String> {
     let vault_dir = validate_vault_dir(&vault_path)?;
@@ -1848,7 +1637,7 @@ pub fn git_set_remote(vault_path: String, url: String) -> Result<GitSetRemoteRes
     let clean = validate_remote_url(&url)?;
 
     let existing = get_remote_url(&repo_root, "origin");
-    // If origin already exists, add will fail, so replace with set-url.
+    // `add` fails when origin exists.
     let subcommand = if existing.is_some() { "set-url" } else { "add" };
     let out = run_git(
         &repo_root,
@@ -1859,7 +1648,6 @@ pub fn git_set_remote(vault_path: String, url: String) -> Result<GitSetRemoteRes
         return Err(classified_error_string(&info));
     }
 
-    // Only return the previous address if it was replaced — the user needs to know what changed.
     let replaced = existing.filter(|prev| prev != &clean);
 
     Ok(GitSetRemoteResult {
@@ -1873,11 +1661,10 @@ pub fn git_set_remote(vault_path: String, url: String) -> Result<GitSetRemoteRes
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GitProbe {
-    /// Is git installed on this computer?
     installed: bool,
-    /// `git --version` original text (only when installed) — shows the user the facts as they are.
+    /// Shown to the user as is.
     version: Option<String>,
-    /// "macos" | "windows" | "linux" — To select installation instructions by platform.
+    /// Selects platform install guidance.
     platform: String,
 }
 
@@ -1891,17 +1678,6 @@ fn host_platform() -> &'static str {
     }
 }
 
-/// Checks **read-only** whether git exists on this computer.
-///
-/// Why a separate command: until now a missing git surfaced only as the generic
-/// error string `run_git`'s spawn failure produces ("cannot run git (check
-/// installation)"). From that string the screen **cannot know what guidance to
-/// give** — it cannot tell whether the installation or the folder is the problem.
-/// Turning it into a typed signal lets the UI pick platform-appropriate install
-/// guidance (owner request 2026-07-26).
-///
-/// **Installs nothing.** We only detect and report; the user installs it in their
-/// own terminal — the trust charter's "zero silent execution" holds here too.
 /// One historical version of one vault file: when it landed and what it said.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -1911,19 +1687,9 @@ pub struct NodeRevision {
     content: String,
 }
 
-/// Revisions of named vault nodes, newest first, for the summary-freshness check.
-///
-/// The screen needs to know whether a domain's **description** or its **membership**
-/// moved last. Both live in one file, so a timestamp is not enough — the caller has to
-/// compare content across versions. This command stays deliberately ignorant of what
-/// that content means: it does no frontmatter parsing and knows nothing about
-/// containment. Git plumbing lives here; the ontology judgement lives in one TypeScript
-/// module that the web build shares, so there is no second copy of the rule to drift.
-///
-/// Bounded twice over. The caller passes only summary nodes (8 of 83 in the dogfood
-/// vault), and `max_revisions` caps the walk per node. A slug with no history is simply
-/// absent from the result rather than reported as an error, because a file written but
-/// not yet committed is a normal state, not a failure.
+/// Revisions newest first for the summary-freshness check. Git plumbing only; the
+/// ontology judgement lives in one shared TypeScript module. A slug without history
+/// is absent, not an error.
 #[tauri::command]
 pub fn vault_node_revisions(
     vault_path: String,
@@ -1942,9 +1708,7 @@ pub fn vault_node_revisions(
 
     let mut revisions = Vec::new();
     for slug in slugs.iter().take(MAX_FRESHNESS_SLUGS) {
-        // A slug is an address inside the vault, never a way out of it. Anything that
-        // could climb the tree or reach an absolute path is dropped rather than escaped,
-        // because this value reaches a `git show` argument.
+        // Dropped rather than escaped, since the slug reaches a `git show` argument.
         if slug.is_empty() || slug.contains("..") || slug.starts_with('/') || slug.contains('\\') {
             continue;
         }
@@ -1982,35 +1746,25 @@ pub fn vault_node_revisions(
     Ok(revisions)
 }
 
-/// When one repository path last changed, for the analysis brief's evidence check.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PathLastChange {
-    /// The key the caller passed, unchanged, so it can be matched back without guessing.
     path: String,
-    /// Whether the path exists on disk now — a file or a folder that moved reads `false`.
+    /// A moved file or folder reads `false`.
     exists: bool,
-    /// Whether the path is a folder. A folder changes whenever anything under it does, so a
-    /// caller treats its change time as weaker evidence than a file's.
+    /// A folder's change time is weaker evidence than a file's.
     is_dir: bool,
-    /// ISO time of the newest commit in the walk window touching the path or anything under
-    /// it. `None` when no commit in the window did: uncommitted, or older than the window.
+    /// `None` when uncommitted or older than the window.
     last_changed_at: Option<String>,
 }
 
-/// One screen paint must not spawn one process per concept. The whole answer is one
-/// `git log --name-only` walk over a bounded window, matched in memory.
+/// One `git log --name-only` walk matched in memory, not one process per concept.
 const MAX_EVIDENCE_PATHS: usize = 512;
 const EVIDENCE_WALK_COMMITS: &str = "--max-count=3000";
 
-/// Last change per path. `repo_paths` are relative to the repository root — the `path:`
-/// values the ontology records for its concepts. `vault_paths` are relative to the vault
-/// folder — the concept documents themselves — and are resolved through the vault's own
-/// pathspec so the caller never needs to know where the vault sits inside the repository.
-///
-/// A path is an address, never a way out: anything that could climb the tree, reach an
-/// absolute path, or look like an option is dropped rather than escaped, because every
-/// value here reaches a `git log` argument.
+/// `repo_paths` are repository-relative; `vault_paths` resolve through the vault
+/// pathspec. Anything that could climb, be absolute or look like an option is
+/// dropped, since every value reaches a `git log` argument.
 #[tauri::command]
 pub fn git_paths_last_change(
     vault_path: String,
@@ -2026,7 +1780,7 @@ pub fn git_paths_last_change(
         format!("{pathspec}/")
     };
 
-    // (key as the caller wrote it, repository-relative path git is asked about)
+    // (key as the caller wrote it, repository-relative path)
     let mut wanted: Vec<(String, String)> = Vec::new();
     let mut push = |key: &str, resolved: String| {
         if wanted.len() >= MAX_EVIDENCE_PATHS {
@@ -2037,9 +1791,8 @@ pub fn git_paths_last_change(
         }
         wanted.push((key.to_string(), resolved));
     };
-    // Documents first: the cap is shared, and a vault citing more implementation paths than it
-    // allows used to consume the whole walk, leaving no concept document dated — which reads as
-    // "no commit in the window" rather than "the walk ran out of room".
+    // Documents first: the cap is shared, and implementation paths must not starve
+    // concept documents.
     for raw in &vault_paths {
         if let Some(clean) = safe_relative_path(raw) {
             push(raw, format!("{prefix}{clean}"));
@@ -2057,8 +1810,7 @@ pub fn git_paths_last_change(
     const REC: char = '\x1e';
     let format = format!("--pretty=format:{REC}%cI");
     let mut args: Vec<&str> = vec![
-        // Without this Git C-quotes any non-ASCII path, so a Korean file or folder name never
-        // matches the path we asked about and every concept under it degrades to `unknown`.
+        // Otherwise git C-quotes non-ASCII paths and Korean names never match.
         "-c",
         "core.quotepath=false",
         "log",
@@ -2117,7 +1869,6 @@ pub fn git_paths_last_change(
         .collect())
 }
 
-/// A repository- or vault-relative path the caller may ask git about, or `None`.
 fn safe_relative_path(raw: &str) -> Option<String> {
     let trimmed = raw.trim().trim_end_matches('/');
     if trimmed.is_empty()
@@ -2132,11 +1883,11 @@ fn safe_relative_path(raw: &str) -> Option<String> {
     Some(trimmed.to_string())
 }
 
-/// Summary nodes are a small, bounded set by construction (`project` and `domain` only).
-/// The cap exists so a malformed caller cannot turn one screen paint into an unbounded
-/// number of `git show` processes.
+/// Bounds `git show` processes per paint.
 const MAX_FRESHNESS_SLUGS: usize = 64;
 
+/// Read-only detection so the UI can pick platform install guidance; it installs
+/// nothing.
 #[tauri::command]
 pub fn git_probe() -> GitProbe {
     let platform = host_platform().to_string();
@@ -2153,13 +1904,12 @@ pub fn git_probe() -> GitProbe {
                 platform,
             }
         }
-        // A non-zero exit still means "it did run", so treat git as installed.
+        // A non-zero exit still ran, so git is installed.
         Ok(_) => GitProbe {
             installed: true,
             version: None,
             platform,
         },
-        // Spawn failure = the executable is absent.
         Err(_) => GitProbe {
             installed: false,
             version: None,
@@ -2208,11 +1958,7 @@ mod tests {
         assert_eq!(rows[0].path, "docs/new.md");
     }
 
-    /// Does one `--name-status` line become a `ChangeEntry`?
-    ///
-    /// This parsing is what creates the "concepts" of history — if it quietly yields
-    /// an empty list here, the screen draws every step as "outside the concepts",
-    /// and no error appears anywhere.
+    /// An empty result here would draw every step as outside the concepts, silently.
     #[test]
     fn history_change_entry_reads_status_code_and_path() {
         let repo = PathBuf::from("/repo");
@@ -2220,7 +1966,6 @@ mod tests {
         let added = history_change_entry("A\tdocs/elements/foo.md", &repo, &vault).unwrap();
         assert_eq!(added.status, "added");
         assert_eq!(added.path, "docs/elements/foo.md");
-        // The file is not on disk so the frontmatter cannot be read → path-based slug.
         assert_eq!(added.slug, "elements/foo");
         assert_eq!(added.kind, None);
 
@@ -2236,7 +1981,6 @@ mod tests {
                 .status,
             "modified"
         );
-        // Even with a score attached, as in `R100`, judge by the first character.
         assert_eq!(
             history_change_entry("R100\tdocs/y.md", &repo, &vault)
                 .unwrap()
@@ -2245,7 +1989,6 @@ mod tests {
         );
     }
 
-    /// Commit subject lines and file lines must not mix — drop empty/broken lines.
     #[test]
     fn history_change_entry_rejects_lines_without_a_tab() {
         let repo = PathBuf::from("/repo");
@@ -2378,7 +2121,6 @@ mod tests {
         assert_eq!(safe_relative_path("/etc/passwd"), None);
         assert_eq!(safe_relative_path("--output=x"), None);
         assert_eq!(safe_relative_path(""), None);
-        // A dotted segment that is not `..` is an ordinary name.
         assert_eq!(
             safe_relative_path("docs/..hidden/a.md"),
             Some("docs/..hidden/a.md".into())
@@ -2432,7 +2174,6 @@ mod tests {
             let err = vault_document_path(bad, ".").unwrap_err();
             assert!(err.starts_with("restore-path-invalid"), "{bad}: {err}");
         }
-        // A repository path outside the vault's folder is refused even though git could touch it.
         for outside in ["README.md", "docs/other/x.md", "docs/ontologyx/a.md"] {
             let err = vault_document_path(outside, "docs/ontology").unwrap_err();
             assert!(err.starts_with("restore-path-invalid"), "{outside}: {err}");
@@ -2481,7 +2222,6 @@ mod tests {
             identity_difference(&read_identity(now), &read_identity(pre_merge)).as_deref(),
             Some("merged_uids would be dropped")
         );
-        // A body-only file on both sides has no identity to disagree about.
         assert_eq!(
             identity_difference(&read_identity("# a"), &read_identity("# b")),
             None
@@ -2490,15 +2230,11 @@ mod tests {
 
     #[test]
     fn host_platform_is_one_of_the_three_we_guide() {
-        // Install guidance differs per platform — an unknown value leaves the UI
-        // unable to pick guidance. Pin the value to one of the three.
         assert!(matches!(host_platform(), "macos" | "windows" | "linux"));
     }
 
     #[test]
     fn git_probe_reports_this_machine_truthfully() {
-        // Any environment where this repository's tests run has git — check that the
-        // probe states that fact as-is (does not guess).
         let probe = git_probe();
         assert!(probe.installed);
         assert!(probe.version.as_deref().unwrap_or("").contains("git"));
@@ -2520,7 +2256,6 @@ mod tests {
                 "should accept {url}"
             );
         }
-        // Leading/trailing whitespace is trimmed — pasting is the normal path.
         assert_eq!(
             validate_remote_url("  git@github.com:me/repo.git \n").unwrap(),
             "git@github.com:me/repo.git"
@@ -2529,7 +2264,6 @@ mod tests {
 
     #[test]
     fn validate_remote_url_rejects_non_addresses() {
-        // Empty value · flag lookalike · internal whitespace · unrecognizable shape.
         for bad in [
             "",
             "   ",
@@ -2561,10 +2295,7 @@ mod tests {
 
     #[test]
     fn a_document_that_cannot_be_read_stops_the_restore() {
-        // The identity guard compares the uid and slug on disk with the ones in the commit.
-        // When that read fails for any reason other than "not there", the comparison never
-        // happened, and restoring anyway is the identity-blind overwrite the guard exists
-        // to refuse.
+        // A read failing for any reason but absence means the guard never ran.
         let dir = std::env::temp_dir().join(format!("atlas-restore-test-{}", std::process::id()));
         let _ = fs::remove_dir_all(&dir);
         fs::create_dir_all(&dir).unwrap();
@@ -2584,9 +2315,7 @@ mod tests {
         git(&["config", "user.email", "test@example.invalid"]);
         git(&["config", "user.name", "atlas test"]);
         git(&["config", "commit.gpgsign", "false"]);
-        // The last assertion compares restored bytes with the committed ones; a Windows git
-        // with autocrlf on would hand back CRLF and fail a test that is about identity, not
-        // line endings.
+        // autocrlf would return CRLF and fail a test about identity.
         git(&["config", "core.autocrlf", "false"]);
         let file = dir.join("orders.md");
         let committed = "---\nuid: 11111111\nslug: domains/orders\n---\n# Orders\n";
@@ -2594,7 +2323,7 @@ mod tests {
         git(&["add", "orders.md"]);
         git(&["commit", "-qm", "seed"]);
 
-        // 0xff never appears in valid UTF-8, so the working file is unreadable as text.
+        // 0xff never appears in valid UTF-8.
         let unreadable = [0xffu8, 0xfe, 0xff];
         fs::write(&file, unreadable).unwrap();
         let vault = dir.to_string_lossy().into_owned();
@@ -2606,7 +2335,6 @@ mod tests {
             "a refusal must leave the document alone"
         );
 
-        // Readable again, the same call restores as before.
         fs::write(
             &file,
             "---\nuid: 11111111\nslug: domains/orders\n---\n# Changed\n",
@@ -2618,8 +2346,7 @@ mod tests {
         let _ = fs::remove_dir_all(&dir);
     }
 
-    /// A scratch repository with one commit on `main`, and a bare repository beside it that can
-    /// stand in for `origin` — a local path, so nothing here touches the network.
+    /// The bare repository stands in for `origin` locally; nothing touches the network.
     struct Scratch {
         dir: PathBuf,
         work: PathBuf,
@@ -2675,7 +2402,6 @@ mod tests {
             self.git(&["remote", "add", "origin", &origin]);
         }
 
-        /// What `origin` holds for `main`, read from the bare repository itself.
         fn origin_main(&self) -> Option<String> {
             let out = Command::new("git")
                 .args(["rev-parse", "--verify", "-q", "refs/heads/main"])
@@ -2700,7 +2426,6 @@ mod tests {
 
     #[test]
     fn status_tells_no_remote_from_a_branch_never_sent_from_a_detached_head() {
-        // No remote at all: the one state where "connect a remote" is the next step.
         let scratch = Scratch::new("status");
         let status = git_status(scratch.vault()).unwrap();
         assert!(status.upstream.is_none());
@@ -2708,15 +2433,13 @@ mod tests {
         assert!(!status.detached);
         assert_eq!(status.branch.as_deref(), Some("main"));
 
-        // `origin` exists and this branch was never pushed: still no upstream, but a remote
-        // that "connect a remote" would have rewritten.
+        // `origin` exists but the branch was never pushed.
         scratch.add_origin();
         let status = git_status(scratch.vault()).unwrap();
         assert!(status.upstream.is_none());
         assert!(status.has_origin);
         assert!(!status.detached);
 
-        // A commit checked out directly: no branch to send from.
         let head = scratch.git(&["rev-parse", "--short", "HEAD"]);
         scratch.git(&["checkout", "-q", "--detach"]);
         let status = git_status(scratch.vault()).unwrap();
@@ -2730,7 +2453,7 @@ mod tests {
         let scratch = Scratch::new("first-send");
         scratch.add_origin();
 
-        // Push alone does not invent a destination (charter ①): nothing leaves.
+        // Push alone does not invent a destination.
         let refused = git_snapshot(scratch.vault(), None, Some(true), None).unwrap();
         let outcome = refused
             .push
@@ -2739,8 +2462,7 @@ mod tests {
         assert_eq!(outcome.message.as_deref(), Some("push-no-upstream"));
         assert_eq!(scratch.origin_main(), None);
 
-        // The press on "send this branch": nothing to record, so only the steps already made
-        // go — and `origin/main` becomes the upstream the next Push, Pull and Fetch follow.
+        // `origin/main` becomes the upstream that Push, Pull and Fetch follow.
         let sent = git_snapshot(scratch.vault(), None, Some(true), Some(true)).unwrap();
         assert!(!sent.committed);
         assert!(sent.push.expect("answered").pushed);
@@ -2786,9 +2508,8 @@ mod tests {
 
     #[test]
     fn a_registered_remote_is_told_apart_and_the_first_send_sets_the_upstream() {
-        // Registering a remote stores an address; only a first push creates the tracking ref that
-        // Fetch, Pull and Push work from. The screen needs to tell the two states apart, and a
-        // way to make that first push, or "Connect a remote" is a dead end (2026-09-25).
+        // Registering a remote only stores an address; the screen needs a first push or
+        // "Connect a remote" is a dead end.
         let base = std::env::temp_dir().join(format!("atlas-publish-test-{}", std::process::id()));
         let _ = fs::remove_dir_all(&base);
         let dir = base.join("vault");
@@ -2829,13 +2550,11 @@ mod tests {
             "registering an address sends nothing"
         );
 
-        // A plain push still refuses and names the command: the upstream is set only when asked.
         let plain = git_snapshot(vault.clone(), None, Some(true), None).unwrap();
         let refused = plain.push.expect("a push was asked for");
         assert!(!refused.pushed);
         assert!(refused.message.unwrap().starts_with("push-no-upstream"));
 
-        // Nothing to record, and the first send still goes.
         let first = git_snapshot(vault.clone(), None, Some(true), Some(true)).unwrap();
         assert!(!first.committed);
         let sent = first.push.expect("a push was asked for");
@@ -2853,7 +2572,6 @@ mod tests {
             "the remote holds the step that was sent"
         );
 
-        // A detached HEAD has no branch to send, so the first send is refused by name.
         git(&dir, &["checkout", "-q", "--detach"]);
         let detached = git_snapshot(vault, None, Some(true), Some(true)).unwrap();
         let refused = detached.push.expect("a push was asked for");

@@ -1,29 +1,6 @@
 /**
- * **Where a harness file says it applies — and nothing beyond that.**
- *
- * The Harness tab's coverage matrix puts the repository's own areas on the rows, which means every
- * guide, gate and check has to be attached to an area. There is exactly one honest way to do that
- * and one tempting way that does not work:
- *
- * - **Does not work: an agent file's own location.** All 122 of this repository's agent files sit
- *   at the root, under `.claude/`, `.agents/`, `.codex/`, plus `AGENTS.md` and `CLAUDE.md`. Their
- *   location says which tool reads them and nothing at all about which code they govern. A matrix
- *   built that way would put every row's answer in one cell (measured on this repository,
- *   2026-09-13).
- * - **Works: the path scope the file itself declares.** A nested `AGENTS.md` governs its own
- *   subtree because Codex merges root-down along the working path. A `.claude/rules/*.md` carries a
- *   frontmatter `paths:` glob list and loads only for a matching file. A hook script names the path
- *   prefixes it guards. A `package.json` check script names the files it runs over. Each of those is
- *   a declaration written in the repository, quotable back to the reader.
- *
- * So this module reads declarations, never intentions. Every scope it returns can be shown beside
- * the claim it supports, which is the same contract the guides table's per-tool citation already
- * keeps: a reader who disagrees can open the file and see the line.
- *
- * **What is deliberately not inferred.** A hook that declares no path is not given one. A workflow
- * with no `paths:` filter is not assigned areas by reading what its jobs happen to run. Those reach
- * everything by declaration, and the matrix says so once instead of printing the same row eight
- * times.
+ * Path scopes harness files declare about themselves (nested `AGENTS.md`, rule `paths:`, hook
+ * filters, check-script arguments); an agent file's location is never read as its scope.
  */
 
 import type { AgentTool } from './agent-files';
@@ -31,7 +8,7 @@ import type { AgentTool } from './agent-files';
 /** The three questions the matrix asks of every area. */
 export type CoverageColumn = 'told' | 'gated' | 'watched';
 
-/** What kind of file made the claim. The cell's wording differs per origin. */
+/** The file kind making the claim; cell wording differs per origin. */
 type CoverageOrigin =
   | 'nested-agents'
   | 'rule'
@@ -43,52 +20,26 @@ type CoverageOrigin =
 /** One file, or one `package.json` script, and the path scope it declares. */
 export interface ScopeDeclaration {
   column: CoverageColumn;
-  /** Repo-relative path, or `package.json#<script>` for a check script. */
+  /** Repo-relative path, or `package.json#<script>`. */
   id: string;
-  /** What to print in a cell — short, and the same string the reader can find on disk. */
+  /** The cell text, as it appears on disk. */
   label: string;
   origin: CoverageOrigin;
-  /**
-   * The exact text that declares the scope, quoted from the file. This is the citation: it is what
-   * lets a reader judge an attribution instead of trusting it.
-   */
+  /** The declaring text quoted from the file, so a reader can judge the attribution. */
   declaration: string;
-  /**
-   * Whether the file declares a path scope **at all**, decided before the disk was consulted.
-   *
-   * This is the difference between two empty scope lists that mean opposite things. A rule with no
-   * `paths:` is loaded for every file in the repository; a rule whose `paths:` reach none of the
-   * areas the vault records is loaded for none of them. Both end with nothing matched, and printing
-   * them the same way would call an always-loaded rule absent or a narrow one universal.
-   */
+  /** Whether any path scope is declared: no `paths:` means every file, unmatched paths mean none. */
   declaresPath: boolean;
-  /** Repo-relative path prefixes this file declares, after unresolvable ones are dropped. */
+  /** Declared prefixes that resolve on disk. */
   scopes: readonly string[];
   /** For a hook: the config file that names the script. */
   namedBy?: string;
-  /**
-   * Which agent tools read this file, from the same rule table the guides table cites.
-   *
-   * Nine of this repository's hook scripts exist in **both** `.claude/hooks/` and `.codex/hooks/`
-   * as real mirrored files, and `label` is the bare script name for both. A list keyed by `label`
-   * therefore printed each of those names twice, which reads as a rendering fault rather than as
-   * the fact it is. The tool is the distinction the bare name threw away. Empty for a file no agent
-   * tool reads — a Git hook, a `package.json` script, a CI workflow — which is an absence of
-   * agent-tool ownership rather than a missing lookup.
-   */
+  /** Agent tools reading this file, so mirrored `.claude` and `.codex` hooks are told apart. */
   tools: readonly AgentTool[];
 }
 
 /**
- * The part of a glob before its first wildcard segment — `src/**` → `src`, `scripts/check-*.mjs` →
- * `scripts`, `**` + `/*.test.ts` → `` (empty: it reaches every folder).
- *
- * Everything downstream compares directory prefixes rather than running a glob matcher, and the
- * reason is a difference that matters here. A vault capability's `path` is one canonical
- * *entrypoint* — often a directory (`src/features/vault-agent`), sometimes a file. A rule scoped to
- * `src/**` + `/*.tsx` does not "match" that directory as a string, but it is loaded for every `.tsx`
- * inside it, which is what a reader asking "is this area governed" means. Prefix containment answers
- * that question; strict glob matching answers a narrower one nobody asked.
+ * The glob before its first wildcard segment (`src/**` → `src`). Prefix containment answers
+ * whether an area is governed, which strict glob matching does not.
  */
 export function literalPrefix(glob: string): string {
   const segments = String(glob).trim().replace(/^\.\//, '').split('/');
@@ -101,25 +52,14 @@ export function literalPrefix(glob: string): string {
   return out.join('/');
 }
 
-/**
- * Whether a declared scope and a capability's implementation path touch each other — either
- * contains the other. Containment runs both ways on purpose: `src` reaches
- * `src/features/vault-agent`, and `cli/src/lib/architecture-results.test.mjs` reaches `cli/src`.
- */
+/** Either path contains the other: `src` reaches `src/features/x` and a file reaches its folder. */
 export function scopeReaches(scope: string, capabilityPath: string): boolean {
   if (!scope || !capabilityPath) return false;
   if (scope === capabilityPath) return true;
   return capabilityPath.startsWith(`${scope}/`) || scope.startsWith(`${capabilityPath}/`);
 }
 
-// ── declarations, per source shape ─────────────────────────────────────────
-
-/**
- * The frontmatter `paths:` list of a `.claude/rules/*.md`, in the order written.
- *
- * A rule with no list is not given an empty scope by mistake — the caller distinguishes "declares
- * no path" (always loaded, reaches everything) from "declares paths that reach nothing here".
- */
+/** A rule's `paths:` globs in order; no list means always loaded. */
 export function ruleGlobs(text: string): string[] {
   const frontmatter = /^---\n([\s\S]*?)\n---/.exec(String(text ?? ''));
   if (!frontmatter) return [];
@@ -135,21 +75,8 @@ export function ruleGlobs(text: string): string[] {
 }
 
 /**
- * Path prefixes a hook or Git-hook **script** declares about itself.
- *
- * Two forms, both of them literal text in the file rather than a reading of what the script does:
- *
- * 1. **An anchored path filter** — `^src/`, `^(src|app)/`, `^docs/ontology/`. Every path-scoped
- *    lane in a `.githooks` file is written this way, because that is what `grep -E` over a list of
- *    changed files needs. The anchor is the signal: a command invocation never writes one.
- * 2. **A quoted path prefix** — `"src/entities/docs-vault/data/"`, `".claude/skills/"`. This is how
- *    a guard script lists the paths it refuses edits to.
- *
- * Both over-collect: `^em-dash/` is a regex over finding names, not a path, and a script's own
- * dependencies (`scripts/run-focused-node-test.mjs`) get picked up beside its subjects. That is why
- * the caller keeps only scopes that **resolve on disk** and prints the declaration beside the
- * claim. An extractor that tried to be clever instead would be guessing, which is the one thing
- * this screen may not do.
+ * Anchored filters (`^src/`) and quoted prefixes a script writes; this over-collects, so callers
+ * keep only scopes that resolve on disk and show the declaration.
  */
 export function scriptPathScopes(text: string): string[] {
   const body = String(text ?? '');
@@ -170,14 +97,7 @@ export function scriptPathScopes(text: string): string[] {
   return [...out];
 }
 
-/**
- * Path prefixes a `package.json` check command names — the files it runs over.
- *
- * `pnpm exec vitest run src/views/architecture/ui/ArchitectureWorkbench.test.tsx` names one; `eslint
- * --max-warnings 0` and `vitest` name none, and a script that names none is not given one. That
- * distinction is the whole point of the Watched column: a repository-wide lane reaching an area is a
- * different fact from a check written for it.
- */
+/** Paths a check command names; a repository-wide command names none. */
 export function commandPathScopes(command: string): string[] {
   const out = new Set<string>();
   const pathish = /(?:^|[\s'"=(])((?:[A-Za-z0-9_.-]+\/)+[A-Za-z0-9_.*{}-]*)/g;
@@ -189,13 +109,7 @@ export function commandPathScopes(command: string): string[] {
   return [...out];
 }
 
-/**
- * The `paths:` / `paths-ignore:` filter a GitHub workflow declares on its triggers, if any.
- *
- * Read from the trigger block only — the text above `jobs:`. What a job *runs* is not a path filter
- * and is not read as one: a workflow that declares no filter runs for every change, which the matrix
- * states once rather than crediting to each area in turn.
- */
+/** Trigger `paths:` filters above `jobs:`; job commands are never read as filters. */
 export function workflowPathFilters(yaml: string): string[] {
   const head = String(yaml ?? '').split(/\njobs:/)[0];
   const out: string[] = [];

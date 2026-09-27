@@ -13,9 +13,7 @@ interface Props {
   cellClassName?: string;
 }
 
-/**
- * One shared grid so the drawer and the detail page keep the same meta-summary rhythm.
- */
+/** Shared by the drawer and detail page so both keep one meta rhythm. */
 export function ProjectMetaGrid({
   items,
   columns = 2,

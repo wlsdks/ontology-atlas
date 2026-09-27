@@ -1,7 +1,6 @@
-// Static package-manifest readers: `setup.py`, `pyproject.toml`, `package.json` and
-// `Cargo.toml`. Everything here is pure text analysis with no file access — the
-// caller reads the bytes, these functions decide which declared facts are safe to
-// quote as evidence — plus the TOML and Python lexing helpers they share.
+// Static readers for `setup.py`, `pyproject.toml`, `package.json` and `Cargo.toml`,
+// plus their TOML and Python lexing helpers. Pure text analysis: the caller reads
+// the bytes, these decide which declared facts are safe to quote as evidence.
 
 import {
   CARGO_MANIFEST_MAX_DESCRIPTION_LENGTH,

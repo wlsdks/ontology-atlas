@@ -33,13 +33,7 @@ export interface ConstructionPostWriteMaintenance {
   readonly boundary: string | null;
 }
 
-/**
- * Read-only projection of existing MCP artifacts.
- *
- * This is not a second qualification result and it is never persisted. The UI
- * keeps the original packet and analyzer rows so an expert can inspect exactly
- * what the existing validators returned.
- */
+/** Read-only view of existing MCP artifacts, never persisted; keeps the original rows for inspection. */
 export interface ConstructionReviewProjection {
   readonly envelopeState: "ready";
   readonly projectSlug: string;

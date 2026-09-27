@@ -56,7 +56,7 @@ const MEANING_REPAIR_PACKET_MAX_BYTES = 5 * 1024;
 const AGENT_BRIEF_COMPACT_MAX_BYTES = 12_000;
 const AGENT_BRIEF_EVIDENCE_SOURCE_STATUSES = new Set([
   'supported_current',
-  // Verified against the live source while the person's receipt is stale (2026-09-04).
+  // Verified against the live source while the person's receipt is stale.
   'supported_live',
   'stale_or_unavailable',
   'missing_or_changed',
@@ -277,14 +277,8 @@ export function assertGrowthPlanShape(result) {
 }
 
 /**
- * The next-reads group keeps its own contract.
- *
- * Every other growth group is a proposed vault write and carries `kind`,
- * `reason`, `score` and an executable `proposedAction`. A next read is not a
- * write: its evidence is the author's own sentence, its address is a path and
- * an optional line range, and its action is one sentence a person or an agent
- * performs by reading. Forcing it through the write-shaped check would mean
- * inventing a score nothing measured.
+ * Next reads keep their own contract: they are reads, not proposed writes, so they carry the author's
+ * sentence and a path instead of a score and an executable `proposedAction`.
  */
 function assertNextReadsGroup(group, expectedTotal) {
   if (!isPlainObject(group)) {
@@ -639,8 +633,7 @@ export function assertAgentBriefShape(result) {
   if (!validAgentHandoffPrompt(result.handoffPrompt)) {
     throw new Error('agent_brief handoffPrompt must be a non-empty agent handoff string');
   }
-  // Stop a brief that contradicts itself here: the reader is an agent, and it can
-  // trust the headline number without counting the rest (measured 2026-08-17).
+  // Stop a brief that contradicts itself: an agent trusts the headline number without counting the rest.
   assertBriefCountsAgree(result);
   if (!validAgentCliFallbackCommands(result.cliFallbackCommands)) {
     throw new Error('agent_brief cliFallbackCommands must include non-empty runnable CLI fallback commands');
@@ -1067,6 +1060,7 @@ function validProjectSourceAction(value) {
   return isPlainObject(value) && hasNonEmptyString(value.id);
 }
 
+// Depth-first over the parsed response, O(values); parsed JSON cannot be cyclic.
 function containsPrivateSourceField(value) {
   if (!value || typeof value !== 'object') return false;
   if (Array.isArray(value)) return value.some(containsPrivateSourceField);
@@ -2173,16 +2167,8 @@ function validAgentModeComparison(value) {
 }
 
 /**
- * Is the "use this when MCP is unavailable" line **in a runnable shape**?
- *
- * ⚠️ The old check **required** `^ontology-atlas\s` — but no global command by
- * that name exists (registry publishing was abandoned; decision ledger
- * 2026-07-27), so the check was not preventing a lie, it was **enforcing** one.
- * Pasted verbatim it gives `command not found` (measured 2026-08-17).
- *
- * What is accepted now is the shape that actually runs
- * (`node <…>/cli/src/index.mjs <sub> …`). The old shape is **rejected** —
- * accepting it would let the lie back in.
+ * Is the "use this when MCP is unavailable" line in a runnable shape (`node <…>/cli/src/index.mjs <sub> …`)?
+ * The bare `ontology-atlas` form is rejected: no global command by that name exists.
  */
 function validAgentCliFallbackCommands(commands) {
   return Array.isArray(commands)
@@ -2563,27 +2549,8 @@ function validAllPathsSuggestedQuery(query) {
 }
 
 /**
- * One backlink row — **either kind of evidence is enough.**
- *
- * `matchedKeys` used to be required unconditionally. But for a row matched only
- * through a body link (`[[slug]]`, `(slug.md)`, `/slug.md`) the server does
- * **not** send `matchedKeys`; it sends `matchedInBody: true` (see
- * `mcp/src/vault.mjs`, and the outputSchema's `required` is only
- * `slug·kind·title·mtime`). So the CLI validator was **stricter than the server**
- * and rejected a valid response.
- *
- * The symptom was not quiet: exit code 2 on the third command after `init`, with
- * the internal contract phrase "invalid backlink shape". And since the starter
- * document (`domains/example-domain.md`) points at `domains/auth.md` itself,
- * anyone following the instructions walks exactly this path.
- *
- * **Why the dogfood vault did not catch it**: every reference in this
- * repository's vault is wired through frontmatter, so `matchedKeys` is always
- * populated. No fixture under `cli/` had a row matched by a body link alone.
- *
- * The rule's authority is `mcp/scripts/verify.mjs`; this is a copy of it. A row with
- * **no** evidence at all is still rejected — a backlink that cannot say why it
- * matched is not a backlink.
+ * One backlink row: `matchedKeys` or `matchedInBody: true` (`mcp/src/vault.mjs`) is enough, and a row with
+ * neither is rejected. `mcp/scripts/verify.mjs` is the authority; a stricter copy rejects valid server rows.
  */
 function validBacklinkRow(row) {
   if (!validNodeSummary(row)) return false;
@@ -3158,17 +3125,8 @@ function validCount(value) {
 }
 
 /**
- * Does the brief state **the same number it is carrying**?
- *
- * **Why** (measured 2026-08-17): in one `agent-brief` response
- * `readiness.healthChecks` was 7 while `health.checks` held 8. The headline said
- * "7 health checks" and the same payload carried eight, because the eighth
- * (`meaning_assessment`) is attached **after** the count is taken.
- *
- * The reader here is an agent, and it can trust the headline without counting the
- * rest. This repository already has the same discipline elsewhere — the check that
- * makes the gateway caption state the same number as the graph it draws. **Pin
- * nothing; only assert the two values agree**, so it does not rot as the vault changes.
+ * Does the brief state the same number it carries? `meaning_assessment` is attached after the count is
+ * taken, so the two can disagree. Pin nothing; assert they agree.
  */
 export function assertBriefCountsAgree(result) {
   const stated = result?.readiness?.healthChecks;

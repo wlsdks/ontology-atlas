@@ -1,33 +1,6 @@
-//! **Read-only** discovery of the MCP servers this person already registered elsewhere.
-//!
-//! ## Why it exists
-//!
-//! Attaching an external MCP server (Notion, GitHub, Atlassian, a custom one) to an in-app ACP
-//! session means naming a command, its arguments and its environment — and almost everyone who
-//! wants that has already typed it once, into `claude mcp add`, a project `.mcp.json`, or
-//! `~/.codex/config.toml`. Asking them to type it a second time, by hand, into a form is how a
-//! connector ends up pointing at a path that does not exist.
-//!
-//! So this module reads those files and reports **what is registered**. It writes nothing, and it
-//! is the person who decides, per server, whether Atlas passes any of it into a session.
-//!
-//! ## The one hard rule: key names leave, values do not
-//!
-//! `env` and `headers` in those files hold API tokens in plain text. This module returns their
-//! **key names only** (`GITHUB_TOKEN`, `Authorization`) and never a value — not to the WebView, not
-//! into a log. `no_env_value_survives_serialization` pins that against the serialized payload
-//! rather than against the struct, because the field a future refactor adds is the one nobody
-//! remembers to check. The value a connector actually needs is typed once by the person and lives
-//! in the OS keychain (`connector_secrets.rs`); this file exists to fill in everything *around* it.
-//!
-//! ## Honest partial reads
-//!
-//! The Codex config is TOML and this crate has no TOML parser. Rather than take a dependency to
-//! read four keys, the scanner here understands **the shape Atlas and Codex themselves write**
-//! (`[mcp_servers.<name>]` with `command` / `args` / `url`, and a nested `.env` table). Anything it
-//! cannot classify is **counted, not guessed** — `DiscoverySource::unreadable` is what lets the
-//! screen say "two entries in this file could not be read; open it yourself" instead of quietly
-//! showing a short list. A silent short list is the failure mode; a stated one is not.
+//! Read-only discovery of MCP servers registered in Claude, project and Codex
+//! configs. Only env and header key names leave, never values, which are tokens.
+//! Unclassifiable Codex TOML entries are counted, not guessed, so no list is silently short.
 
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
@@ -35,40 +8,32 @@ use std::path::{Path, PathBuf};
 use serde::Serialize;
 use serde_json::Value;
 
-/// How to look at the filesystem — injected so tests judge without a real disk, the same
-/// contract as `acp::FsProbe`. A check that asks "what is on this machine" in a
-/// machine-dependent way only goes green on the developer's machine.
+/// Injected so tests judge without a real disk, as `acp::FsProbe` does.
 pub(crate) struct ConfigFs<'a> {
-    /// Read a small text file. `None` when it is absent or unreadable.
     pub read_text: &'a dyn Fn(&Path) -> Option<String>,
 }
 
-/// One MCP server somebody already registered. Nothing here is attached to a session until the
-/// person turns it on: this is a reading of their disk, not a decision about it.
+/// A reading of the disk; nothing attaches until the person turns it on.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DiscoveredConnector {
-    /// Which file it came from — matches a `DiscoverySource::id`.
+    /// Matches a `DiscoverySource::id`.
     pub source: String,
-    /// The name under which it is registered there. **Collisions matter**: Codex silently drops an
-    /// ACP-supplied server whose name a config layer already holds, so the screen warns on it.
+    /// Codex silently drops an ACP server whose name a config layer holds, so the
+    /// screen warns on collisions.
     pub name: String,
-    /// `stdio`, `http`, `sse`, or `unknown`. Reported verbatim; which of those Atlas can actually
-    /// pass into a session is decided once, on the TypeScript side.
+    /// Reported verbatim; the TypeScript side decides what can attach.
     pub transport: String,
-    /// The program, for a stdio server.
     pub command: Option<String>,
     pub args: Vec<String>,
-    /// The address, for an HTTP server.
     pub url: Option<String>,
-    /// Environment variable **names**. Never values.
+    /// Names only, never values.
     pub env_keys: Vec<String>,
-    /// HTTP header **names**. Never values.
+    /// Names only, never values.
     pub header_keys: Vec<String>,
 }
 
-/// A file we looked at, and how that went. Present even when nothing was found, so the screen can
-/// distinguish "you have registered nothing" from "we did not look".
+/// Present even when empty, so "registered nothing" differs from "did not look".
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DiscoverySource {
@@ -76,7 +41,6 @@ pub struct DiscoverySource {
     pub path: String,
     /// `read` · `missing` · `malformed`.
     pub status: String,
-    /// Entries that are present in the file but whose shape this reader did not understand.
     pub unreadable: usize,
 }
 
@@ -87,14 +51,13 @@ pub struct ConnectorDiscovery {
     pub sources: Vec<DiscoverySource>,
 }
 
-/// The files that are read, in the order their results are reported.
+/// Reported in this order.
 const CLAUDE_USER: &str = "claude-user";
 const CLAUDE_PROJECT: &str = "claude-project";
 const VAULT_MCP_JSON: &str = "vault-mcp-json";
 const CODEX_USER: &str = "codex-user";
 const CURSOR_USER: &str = "cursor-user";
 
-/// Discover from a given home and vault. Pure apart from the injected reader.
 pub(crate) fn discover_with(
     home: Option<&Path>,
     vault: Option<&Path>,
@@ -114,9 +77,7 @@ pub(crate) fn discover_with(
                     sources.push(read(CLAUDE_USER, &claude_json, user.unreadable));
                     connectors.extend(user.connectors);
 
-                    // `~/.claude.json` also keeps a per-project block. Only the block for the
-                    // folder that is actually open is read — walking every project the person
-                    // has ever opened would put unrelated workplaces on this screen.
+                    // Only the open folder's project block is read, or unrelated workplaces appear.
                     let project = vault
                         .and_then(|vault| project_servers(&root, vault))
                         .map(|node| collect_json_servers(Some(node), CLAUDE_PROJECT));
@@ -201,8 +162,7 @@ struct Found {
     unreadable: usize,
 }
 
-/// The `projects` block for the open folder. Trailing separators are tolerated because the vault
-/// path arrives from a picker and the config was written by a shell.
+/// Trailing separators are tolerated: picker paths and shell-written config differ.
 fn project_servers<'a>(root: &'a Value, vault: &Path) -> Option<&'a Value> {
     let wanted = normalize_path(&vault.to_string_lossy());
     let projects = root.get("projects")?.as_object()?;
@@ -221,7 +181,7 @@ fn normalize_path(raw: &str) -> String {
     }
 }
 
-/// `{ "<name>": { … } }` — the shape Claude Code, Cursor and `.mcp.json` all share.
+/// The shape Claude Code, Cursor and `.mcp.json` share.
 fn collect_json_servers(node: Option<&Value>, source_id: &str) -> Found {
     let mut connectors = Vec::new();
     let mut unreadable = 0usize;
@@ -240,8 +200,7 @@ fn collect_json_servers(node: Option<&Value>, source_id: &str) -> Found {
         let url = entry.get("url").and_then(Value::as_str);
         let declared = entry.get("type").and_then(Value::as_str);
         let transport = match (declared, command, url) {
-            // A declared type wins — `sse` is reported as `sse` so the screen can say why it
-            // cannot be attached rather than presenting it as an HTTP server that will not work.
+            // A declared `sse` stays `sse` so the screen can say why it cannot attach.
             (Some("sse"), _, _) => "sse",
             (Some("http"), _, _) | (Some("streamable-http"), _, _) => "http",
             (Some("stdio"), _, _) => "stdio",
@@ -273,8 +232,7 @@ fn collect_json_servers(node: Option<&Value>, source_id: &str) -> Found {
             header_keys: object_keys(entry.get("headers")),
         });
     }
-    // Serde's map iteration order is the file's order; sorting makes the screen stable across
-    // rereads of a file somebody edited by hand.
+    // Sorted so the screen is stable across hand edits.
     connectors.sort_by(|a, b| a.name.cmp(&b.name));
     Found {
         connectors,
@@ -282,7 +240,7 @@ fn collect_json_servers(node: Option<&Value>, source_id: &str) -> Found {
     }
 }
 
-/// **Key names only.** The values in here are API tokens.
+/// Names only: the values are API tokens.
 fn object_keys(node: Option<&Value>) -> Vec<String> {
     node.and_then(Value::as_object)
         .map(|map| map.keys().cloned().collect::<BTreeSet<_>>())
@@ -290,12 +248,8 @@ fn object_keys(node: Option<&Value>) -> Vec<String> {
         .unwrap_or_default()
 }
 
-/// The `[mcp_servers.*]` tables of `~/.codex/config.toml`.
-///
-/// A narrow scanner, not a TOML parser (see the module header). It understands the shape this
-/// repository's own `agent-setup` writes and the shape Codex documents: a table header, then
-/// `key = value` lines, plus a nested `.env` table whose **keys** are collected. Any table whose
-/// shape it cannot classify is counted into `unreadable` so the screen can say so.
+/// A narrow scanner, not a TOML parser: header then `key = value` lines, plus
+/// nested env keys; any unclassified table counts into `unreadable`.
 fn collect_codex_servers(text: &str) -> Found {
     struct Draft {
         name: String,
@@ -307,8 +261,6 @@ fn collect_codex_servers(text: &str) -> Found {
     }
 
     let mut drafts: Vec<Draft> = Vec::new();
-    // Which table the lines currently belong to: the server's own table, its `env`/`headers`
-    // child, or somewhere else in the file entirely.
     enum Cursor {
         Server(usize),
         Env(usize),
@@ -327,7 +279,6 @@ fn collect_codex_servers(text: &str) -> Found {
             .and_then(|rest| rest.strip_suffix(']'))
         {
             let header = header.trim();
-            // `[[array.of.tables]]` is not a shape any MCP config uses; treat it as elsewhere.
             let Some(rest) = header.strip_prefix("mcp_servers.") else {
                 cursor = Cursor::Elsewhere;
                 continue;
@@ -355,8 +306,7 @@ fn collect_codex_servers(text: &str) -> Found {
                 None => Cursor::Server(index),
                 Some("env") => Cursor::Env(index),
                 Some("headers") => Cursor::Headers(index),
-                // A child table we do not model (`startup_timeout_sec` groupings and the like)
-                // must not have its keys read as env names.
+                // An unmodelled child table's keys must not be read as env names.
                 Some(_) => Cursor::Elsewhere,
             };
             continue;
@@ -371,7 +321,7 @@ fn collect_codex_servers(text: &str) -> Found {
                 "command" => drafts[index].command = toml_string(value),
                 "url" => drafts[index].url = toml_string(value),
                 "args" => drafts[index].args = toml_string_array(value),
-                // An inline `env = { A = "…" }` still yields **names only**.
+                // Names only.
                 "env" => drafts[index].env_keys.extend(inline_table_keys(value)),
                 "headers" => drafts[index].header_keys.extend(inline_table_keys(value)),
                 _ => {}
@@ -415,8 +365,7 @@ fn collect_codex_servers(text: &str) -> Found {
     }
 }
 
-/// Drop a trailing `#` comment, but not a `#` that sits inside a quoted value — a Windows path or
-/// a URL fragment would otherwise be truncated mid-value.
+/// A `#` inside quotes is kept, or a Windows path or URL fragment is truncated.
 fn strip_comment(line: &str) -> &str {
     let bytes = line.as_bytes();
     let mut quoted = false;
@@ -430,7 +379,7 @@ fn strip_comment(line: &str) -> &str {
     line.trim()
 }
 
-/// `notion.env` → (`notion`, Some("env")). A quoted segment (`"my server".env`) keeps its spaces.
+/// A quoted segment keeps its spaces.
 fn split_table_name(rest: &str) -> (String, Option<String>) {
     if let Some(tail) = rest.strip_prefix('"') {
         if let Some((name, remainder)) = tail.split_once('"') {
@@ -481,8 +430,7 @@ fn toml_string_array(value: &str) -> Vec<String> {
         .collect()
 }
 
-/// `{ A = "1", B = "2" }` → `["A", "B"]`. **Names only** — the values are exactly what must not
-/// leave this process.
+/// Names only: the values must not leave this process.
 fn inline_table_keys(value: &str) -> Vec<String> {
     let trimmed = value.trim();
     let Some(inner) = trimmed
@@ -498,7 +446,6 @@ fn inline_table_keys(value: &str) -> Vec<String> {
         .collect()
 }
 
-/// Split on commas that are not inside a quoted string.
 fn split_top_level(inner: &str) -> Vec<String> {
     let mut out = Vec::new();
     let mut current = String::new();
@@ -523,10 +470,7 @@ fn split_top_level(inner: &str) -> Vec<String> {
     out.into_iter().filter(|item| !item.is_empty()).collect()
 }
 
-/// Read the MCP servers this machine already has registered. **Reads only.**
-///
-/// `vault_path` narrows the per-project blocks to the folder that is actually open; pass `None`
-/// and only the user-level files are read.
+/// Reads only; `None` reads only user-level files.
 #[tauri::command]
 pub fn discover_mcp_connectors(vault_path: Option<String>) -> Result<ConnectorDiscovery, String> {
     let home = home_dir();
@@ -541,45 +485,22 @@ pub fn discover_mcp_connectors(vault_path: Option<String>) -> Result<ConnectorDi
     Ok(discover_with(home.as_deref(), vault.as_deref(), &fs))
 }
 
-/// The runtimes a connector can be started by, and where each one is on this machine.
-///
-/// ## Why this is here rather than in a form field
-///
-/// The by-hand form used to ask a person to type an **absolute path** to a program, because a
-/// connector the agent spawns inherits a sanitized environment with no `PATH`
-/// (`SHARED_RUNTIME_ENV` in `acp.rs`), so a bare `npx` resolves to nothing and the session comes
-/// up with the connector's tools silently absent. That is the worst failure this feature has:
-/// it looks exactly like success. The form's own hint said so, and the owner's reply on
-/// 2026-09-07 was that they still did not know what to write.
-///
-/// Nobody knows where their `npx` is. The app already does — `acp.rs` reconstructs the search
-/// path for exactly this reason, walking the inherited `PATH` first and then the well-known
-/// version-manager locations a GUI process never inherits. This hands that same answer to the
-/// form, so the path is chosen from a list instead of typed.
-///
-/// ## The boundary, deliberately narrow
-///
-/// A **fixed five-name allow-list**, resolved to a path. It enumerates no directory, returns no
-/// listing of what a person has installed, reads no file's contents, and — the line that matters
-/// most — **executes nothing**. Running `npx --version` to prettify a row would be Atlas starting
-/// somebody else's program on its own initiative, which is a different act from the person
-/// pressing a button (PO steward, 2026-09-07). Absence is reported as absence; a guessed path
-/// would defer the failure to the moment somebody asks a question.
+/// Resolves a fixed allow-list of runtimes to paths because the agent's spawned
+/// connector gets no `PATH`. It enumerates nothing and executes nothing: starting a
+/// program unasked differs from the person pressing a button.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ResolvedRuntime {
-    /// The name as the catalogue and the form spell it: `npx`, `node`, `uvx`, `python3`, `docker`.
     pub name: String,
-    /// The absolute path on this machine, or `None` when it is not installed.
+    /// `None` when not installed.
     pub path: Option<String>,
 }
 
-/// The names this command will answer for. Adding a sixth is a deliberate edit, not a parameter —
-/// taking the name from the caller would turn a fixed allow-list into "resolve anything for me",
-/// which is a different capability with a different review.
+/// A sixth name is a deliberate edit; taking names from the caller would make this
+/// "resolve anything", a different capability.
 pub(crate) const CONNECTOR_RUNTIMES: &[&str] = &["npx", "node", "uvx", "python3", "docker"];
 
-/// Resolve the allow-listed runtimes. **Reads only, executes nothing.**
+/// Reads only, executes nothing.
 #[tauri::command]
 pub fn resolve_connector_runtimes() -> Result<Vec<ResolvedRuntime>, String> {
     let home = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" })
@@ -592,9 +513,8 @@ pub fn resolve_connector_runtimes() -> Result<Vec<ResolvedRuntime>, String> {
         read_text: &read_text,
         login_ok: &login_ok,
     };
-    // No managed directories here on purpose. Those hold what Atlas installed for the person's
-    // *agent*; a connector runtime is the person's own, and offering an app-managed copy would
-    // write a path into their folder's file that only this app knows how to reach.
+    // No managed directories: those hold the agent's runtime, and a connector path
+    // only this app can reach would break the person's config.
     let dirs = crate::acp::candidate_bin_dirs(
         home.as_deref(),
         std::env::var_os("PATH").as_deref(),
@@ -699,8 +619,7 @@ mod tests {
 
     #[test]
     fn no_env_value_survives_serialization() {
-        // The rule this module exists for. Pinned against the serialized payload, not the struct:
-        // the field a later refactor adds is the one nobody remembers to check by eye.
+        // Pinned against the serialized payload, not the struct, so a new field is covered.
         let found = discover(
             &[
                 ("/home/me/.claude.json", CLAUDE_JSON),
@@ -723,7 +642,6 @@ mod tests {
                 "a secret value reached the WebView: {secret}"
             );
         }
-        // …while the names are all there, which is the whole point of reading the file.
         assert!(payload.contains("NOTION_TOKEN"));
         assert!(payload.contains("GITHUB_TOKEN"));
         assert!(payload.contains("Authorization"));
@@ -731,8 +649,6 @@ mod tests {
 
     #[test]
     fn only_the_open_folders_project_block_is_read() {
-        // Walking every project in `~/.claude.json` would put an unrelated workplace's servers on
-        // this screen. Only the folder that is actually open is read.
         let found = discover(
             &[("/home/me/.claude.json", CLAUDE_JSON)],
             Some("/work/atlas/"),
@@ -807,7 +723,6 @@ url = "https://example.test/mcp"
 
     #[test]
     fn a_codex_table_we_cannot_classify_is_counted_rather_than_dropped() {
-        // A silently short list is the failure mode this counter exists to prevent.
         let found = discover(
             &[(
                 "/home/me/.codex/config.toml",
@@ -827,8 +742,6 @@ url = "https://example.test/mcp"
 
     #[test]
     fn a_deprecated_sse_entry_is_reported_as_sse_not_as_http() {
-        // Presenting it as HTTP would offer the person a connector that cannot work. The screen
-        // needs the real transport to say why.
         let found = discover(
             &[(
                 "/home/me/.cursor/mcp.json",
@@ -848,8 +761,6 @@ url = "https://example.test/mcp"
             .sources
             .iter()
             .all(|source| source.status == "missing"));
-        // Every user-level file is still reported, so the screen distinguishes "nothing is
-        // registered" from "we did not look".
         let ids: Vec<&str> = found.sources.iter().map(|s| s.id.as_str()).collect();
         assert!(ids.contains(&"claude-user"));
         assert!(ids.contains(&"codex-user"));
@@ -869,8 +780,7 @@ url = "https://example.test/mcp"
 
     #[test]
     fn discovery_never_writes_anything() {
-        // Read-only by construction: the injected filesystem has no writer at all, so a future
-        // edit that wanted to write here would not compile.
+        // The injected filesystem has no writer, so a write here would not compile.
         let source = include_str!("connectors.rs");
         let body = source.split("#[cfg(test)]").next().unwrap();
         for writer in ["fs::write", "create_dir", "OpenOptions", "File::create"] {
@@ -879,8 +789,7 @@ url = "https://example.test/mcp"
                 "discovery must not write: found {writer}"
             );
         }
-        // `resolve_connector_runtimes` lives in this module and must stay read-only in the second
-        // sense too: it says where a program is, it never starts one.
+        // It says where a program is and never starts one.
         for runner in ["Command::new", "process::Command", "spawn("] {
             assert!(
                 !body.contains(runner),
@@ -891,9 +800,6 @@ url = "https://example.test/mcp"
 
     #[test]
     fn the_runtime_allow_list_is_fixed_and_small() {
-        // The caller cannot ask for an arbitrary name. If this list ever takes a parameter the
-        // capability has changed from "where is npx" to "resolve anything", which is a different
-        // review (PO steward, 2026-09-07).
         assert_eq!(
             CONNECTOR_RUNTIMES,
             &["npx", "node", "uvx", "python3", "docker"]

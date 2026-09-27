@@ -4,17 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { projectFormSchema, type ProjectFormValues } from "./schema";
 
-/**
- * Baseline test for the react-hook-form + zod integration.
- *
- * Verifies that RHF's `zodResolver` integrates correctly with `projectFormSchema`, pinning
- * schema↔resolver compatibility before ProjectForm migrated onto it.
- *
- * What it checks:
- * 1. valid input → `errors` empty and `values` pass through
- * 2. invalid input (a missing required field) → `errors` populated
- * 3. the resolver is compatible with the same human-friendly defaults as `projectToFormValues`
- */
+/** `zodResolver` stays compatible with `projectFormSchema` and its form defaults. */
 describe("rhf zodResolver × projectFormSchema", () => {
   const resolver = zodResolver(projectFormSchema);
 
@@ -45,17 +35,16 @@ describe("rhf zodResolver × projectFormSchema", () => {
     } as ProjectFormValues;
   }
 
-  it("필수 누락 입력 — errors 에 slug / name / category / status 표시", async () => {
+  it("reports slug, name, category and status errors for missing required input", async () => {
     const result = await resolver(emptyValues(), undefined, {
       criteriaMode: "firstError",
       shouldUseNativeValidation: false,
       fields: {},
     });
-    // resolver returns { values, errors } — errors should NOT be empty
     expect(Object.keys(result.errors).length).toBeGreaterThan(0);
   });
 
-  it("최소 valid 입력 (description + progress 포함) — errors 비고 values 통과", async () => {
+  it("passes minimal valid input with description and progress without errors", async () => {
     const valid: ProjectFormValues = {
       ...emptyValues(),
       slug: "test-project",
@@ -77,7 +66,7 @@ describe("rhf zodResolver × projectFormSchema", () => {
     });
   });
 
-  it("dirty tracking — setValue 후 isDirty=true, reset(parsed) 후 false", async () => {
+  it("tracks dirtiness through setValue and clears it on reset", async () => {
     const initial: ProjectFormValues = {
       ...emptyValues(),
       slug: "init",
@@ -94,13 +83,11 @@ describe("rhf zodResolver × projectFormSchema", () => {
     );
     expect(result.current.formState.isDirty).toBe(false);
 
-    // Change via setValue — isDirty becomes true.
     act(() => {
       result.current.setValue("name", "수정된 이름", { shouldDirty: true });
     });
     expect(result.current.formState.isDirty).toBe(true);
 
-    // Simulate a successful submit — after `reset(parsed)`, isDirty is false.
     const parsed: ProjectFormValues = {
       ...initial,
       name: "수정된 이름",
@@ -111,7 +98,7 @@ describe("rhf zodResolver × projectFormSchema", () => {
     expect(result.current.formState.isDirty).toBe(false);
   });
 
-  it("description 누락 — 검증 에러 메시지 노출 ('validation.descriptionRequired')", async () => {
+  it("reports validation.descriptionRequired when the description is missing", async () => {
     const v: ProjectFormValues = {
       ...emptyValues(),
       slug: "x",

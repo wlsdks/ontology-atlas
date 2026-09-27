@@ -1,16 +1,6 @@
-// `ontology-atlas preflight [vault] [--staged] [--depth N] [--json]`
-//
-// Commit preflight — reverse-matches the git staged file list onto vault
-// capability and element nodes, then summarises each node's blast radius (reusing
-// query_ontology) to show which ontology nodes a commit touches *before* it lands.
-// Designed to be called from a pre-commit hook: `agent-setup --install-pre-commit-hook`.
-//
-// Informational and non-blocking: if any stage comes up empty (not a git
-// repository, no vault, no staged file touching a vault node) it exits 0 quietly —
-// avoiding disable fatigue is a pre-commit hook's first requirement. A failed
-// individual blast-radius call marks that row as an error and carries on. A
-// `kind: decision` node inside the blast radius is only flagged with ⚠; it never
-// blocks the commit, for the same reason — a commit hook is a guide, not a gate.
+// `ontology-atlas preflight [vault] [--staged] [--depth N] [--json]`: maps staged files onto capability and element
+// nodes and summarises each node's blast radius before the commit lands. Non-blocking by design: empty stages exit 0
+// quietly, a failed row is marked and skipped, and a decision node is only flagged, because a hook people disable guards nothing.
 
 import { readFileSync } from 'node:fs';
 import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
@@ -138,10 +128,8 @@ async function buildRow(vaultRoot, match, depth) {
   }
 }
 
-// No vault, zero staged files, zero matched nodes — all mean "this hook has
-// nothing to do". With --json only the machine-readable skip reason remains, and
-// the human output is left completely empty: no noise is the only thing that
-// prevents disable fatigue.
+// No vault, staged file or matched node means nothing to do: --json prints only the skip reason and
+// human output stays empty, because noise is what makes people disable the hook.
 function emitSkip(json, reason, extra = {}) {
   if (json) {
     process.stdout.write(JSON.stringify({ skipped: true, reason, ...extra }, null, 2) + '\n');

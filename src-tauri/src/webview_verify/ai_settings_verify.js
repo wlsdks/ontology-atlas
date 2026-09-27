@@ -63,10 +63,8 @@
       return;
     }
 
-    // 2026-09-25: model connections left the settings sheet for the Agents destination's
-    // models tab (`/agents/?tab=models`). The probe walks there the way a person does: the
-    // rail's Agents tile, then the models tab. `sheetOpen` keeps its name in the payload and
-    // now means "reached the Agents destination".
+    // Model connections live on the Agents destination's models tab; `sheetOpen`
+    // keeps its payload name and means the destination was reached.
     const aiView = find("ai-connection-view");
     if (!aiView) {
       const modelsTab = find("agents-tab-models");
@@ -102,7 +100,6 @@
       return;
     }
 
-    // The typed-address row: this probe points at whatever runner it was handed.
     const localRow = document.querySelector('[data-testid="ai-provider-local-custom"]');
     if (!localRow) {
       result.step = "find-local-provider-row";
@@ -195,12 +192,8 @@
       return;
     }
 
-    // Is the list **actually on screen.** Measured 2026-08-02: the seven
-    // models the runner supplied were all correct to aria (activedescendant
-    // walked all seven), yet only one was visible on screen — because an
-    // ancestor two levels up had `overflow: hidden` and clipped the 264px list
-    // to 39px (14.8% visible). That state passes every role/aria/text marker.
-    // Which is why what this probe measures is **clipping and clickability**.
+    // Measures clipping and clickability: an ancestor with `overflow: hidden` can
+    // clip the list while every role, aria and text marker still passes.
     const listRect = listbox.getBoundingClientRect();
     let clipTop = listRect.top;
     let clipBottom = listRect.bottom;
@@ -215,15 +208,11 @@
     clipBottom = Math.min(clipBottom, window.innerHeight);
     result.modelListHeight = Math.round(listRect.height);
     result.modelListVisibleHeight = Math.round(Math.max(0, clipBottom - clipTop));
-    // Did the list overflow **inside itself** — a different fact from ancestor
-    // clipping. If the cap rule (`select-growth.ts`) holds, this must be false
-    // while the item count is below the row cap: a scrollbar when everything
-    // is already visible makes "there is more" a lie.
+    // Overflow inside the list itself; below the row cap (`select-growth.ts`) a
+    // scrollbar would falsely say there is more.
     result.modelListOverflowing = listbox.scrollHeight > listbox.clientHeight + 1;
     result.modelListCappedBy = listbox.getAttribute("data-capped-by") || "";
-    // Count only the options inside the list's own scroll window — a long
-    // list scrolling within itself is not a defect; "something that claims to
-    // be visible cannot be clicked" is the defect.
+    // Only options inside the list's own scroll window count.
     const inView = options.filter((option) => {
       const rect = option.getBoundingClientRect();
       const centerY = rect.top + rect.height / 2;

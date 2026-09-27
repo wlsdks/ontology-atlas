@@ -1,6 +1,5 @@
-// R15 follow-up — `ontology-atlas query "<filter>" [vault]`
-// Typed filter DSL: kind=X AND has(elements) AND NOT domain=auth.
-// Thin wrapper over MCP query_concepts.
+// `ontology-atlas query "<filter>" [vault]`: typed filter DSL (kind=X AND has(elements) AND NOT domain=auth)
+// over MCP query_concepts.
 
 import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
