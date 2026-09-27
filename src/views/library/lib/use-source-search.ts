@@ -47,12 +47,9 @@ import { passageLabelFor, sourceUnits, type PassageLabel, type SourceUnit } from
  * ## The two caps, and the one they are not
  *
  * 200 files and 20 MB, whichever binds first, counted from the **directory listing's**
- * sizes — so the cap is decided before a single byte is read, not after. It exists
- * because of what a read costs in the installed app: `read_vault_binary_file` hands the
- * WebView a JSON array of bytes (one number per byte), which is the waste
- * `vault_fingerprint` and `hash_vault_files` were built to remove; measured, 7.83 MB of
- * non-Markdown files crossed as a 27.8 MB JSON wire. Markdown takes the cheap string
- * path.
+ * sizes — so the cap is decided before a single byte is read, not after. Every byte read
+ * crosses into the WebView (`read_vault_binary_file` in the app), so a search must not
+ * pull a whole folder of scans into memory.
  *
  * This is **not** the folder walk's own cap (`VAULT_WALK_MAX_ENTRIES`, 50,000 entries),
  * which decides what the folder is; this one decides what a search read. Both say so on

@@ -35,6 +35,7 @@ fn run_git(cwd: &Path, args: &[&str]) -> Result<GitRun, String> {
     command.args(args).current_dir(cwd);
     silence_git_credential_prompts(&mut command);
     let output = command
+        .env("GIT_OPTIONAL_LOCKS", "0")
         .output()
         .map_err(|err| coded("git-not-runnable", err))?;
     Ok(GitRun {
@@ -60,7 +61,6 @@ const NETWORK_GIT_DEADLINE: std::time::Duration = std::time::Duration::from_secs
 
 /// Spawns so the wait has a deadline and the whole attempt is killed on expiry.
 fn run_network_git(cwd: &Path, args: &[&str]) -> Result<GitRun, String> {
-    use std::io::Read;
     use std::process::Stdio;
 
     let mut command = Command::new("git");
@@ -75,36 +75,35 @@ fn run_network_git(cwd: &Path, args: &[&str]) -> Result<GitRun, String> {
     let mut child = command
         .spawn()
         .map_err(|err| coded("git-not-runnable", err))?;
+    let label = args.first().copied().unwrap_or("command");
+    wait_with_deadline(&mut child, label, NETWORK_GIT_DEADLINE)
+}
 
+/// The pipes drain while waiting, or output past their 64 KiB buffer blocks the child.
+fn wait_with_deadline(
+    child: &mut std::process::Child,
+    label: &str,
+    deadline: std::time::Duration,
+) -> Result<GitRun, String> {
+    let stdout = drain_pipe(child.stdout.take());
+    let stderr = drain_pipe(child.stderr.take());
     let started = std::time::Instant::now();
     loop {
         match child.try_wait() {
             Ok(Some(status)) => {
-                let mut stdout = String::new();
-                let mut stderr = String::new();
-                if let Some(mut pipe) = child.stdout.take() {
-                    let _ = pipe.read_to_string(&mut stdout);
-                }
-                if let Some(mut pipe) = child.stderr.take() {
-                    let _ = pipe.read_to_string(&mut stderr);
-                }
                 return Ok(GitRun {
                     success: status.success(),
-                    stdout,
-                    stderr,
+                    stdout: collect_pipe(stdout),
+                    stderr: collect_pipe(stderr),
                 });
             }
             Ok(None) => {
-                if started.elapsed() >= NETWORK_GIT_DEADLINE {
+                if started.elapsed() >= deadline {
                     let _ = child.kill();
                     let _ = child.wait();
                     return Err(coded(
                         "git-network-timeout",
-                        format!(
-                            "git {} did not finish within {}s",
-                            args.first().copied().unwrap_or("command"),
-                            NETWORK_GIT_DEADLINE.as_secs()
-                        ),
+                        format!("git {label} did not finish within {}s", deadline.as_secs()),
                     ));
                 }
                 std::thread::sleep(std::time::Duration::from_millis(50));
@@ -112,6 +111,25 @@ fn run_network_git(cwd: &Path, args: &[&str]) -> Result<GitRun, String> {
             Err(err) => return Err(coded("git-not-runnable", err)),
         }
     }
+}
+
+fn drain_pipe<R: std::io::Read + Send + 'static>(
+    pipe: Option<R>,
+) -> Option<std::thread::JoinHandle<Vec<u8>>> {
+    pipe.map(|mut pipe| {
+        std::thread::spawn(move || {
+            let mut bytes = Vec::new();
+            let _ = pipe.read_to_end(&mut bytes);
+            bytes
+        })
+    })
+}
+
+fn collect_pipe(reader: Option<std::thread::JoinHandle<Vec<u8>>>) -> String {
+    let bytes = reader
+        .and_then(|reader| reader.join().ok())
+        .unwrap_or_default();
+    String::from_utf8_lossy(&bytes).into_owned()
 }
 
 /// `Ok(None)` outside a git repo.
@@ -168,8 +186,7 @@ struct PorcelainRow {
 fn parse_porcelain(out: &str) -> Vec<PorcelainRow> {
     out.lines()
         .filter_map(|line| {
-            // Read with `get`, not sliced: callers are sync commands on the macOS main thread,
-            // where a panic aborts the app. An unrecognized line is skipped.
+            // Read with `get`, not sliced, so an unrecognized line is skipped, not a panic.
             let bytes = line.as_bytes();
             let index = *bytes.first()? as char;
             let worktree = *bytes.get(1)? as char;
@@ -247,19 +264,26 @@ fn classify_change(row: &PorcelainRow) -> &'static str {
     "modified"
 }
 
+type KindSlug = (Option<String>, Option<String>);
+
 // Best-effort top-level `kind:`/`slug:` from the leading `---` block; never
 // blocks a commit.
-fn read_kind_slug(abs_path: &Path) -> (Option<String>, Option<String>) {
-    let Ok(raw) = fs::read_to_string(abs_path) else {
+fn read_kind_slug(abs_path: &Path) -> KindSlug {
+    use std::io::BufRead;
+
+    let Ok(file) = fs::File::open(abs_path) else {
         return (None, None);
     };
-    let mut lines = raw.lines();
-    if lines.next().map(|l| l.trim_end()) != Some("---") {
+    let mut lines = std::io::BufReader::new(file).lines();
+    if !matches!(lines.next(), Some(Ok(first)) if first.trim_end() == "---") {
         return (None, None);
     }
     let mut kind = None;
     let mut slug = None;
     for line in lines {
+        let Ok(line) = line else {
+            return (None, None);
+        };
         let trimmed = line.trim_end();
         if trimmed == "---" {
             break;
@@ -736,6 +760,20 @@ pub struct GitDiffResult {
     files: Vec<ChangeEntry>,
     /// New files appear only in the list.
     diff: String,
+    too_large: bool,
+}
+
+/// The largest of this repository's 1,500 vault commits is 565 KB.
+const MAX_TREE_DIFF_BYTES: usize = 2 * 1024 * 1024;
+
+fn diff_result(files: Vec<ChangeEntry>, diff: String) -> GitDiffResult {
+    let too_large = diff.len() > MAX_TREE_DIFF_BYTES;
+    GitDiffResult {
+        count: files.len(),
+        files,
+        diff: if too_large { String::new() } else { diff },
+        too_large,
+    }
 }
 
 #[derive(Debug, Serialize)]
@@ -759,7 +797,7 @@ pub struct GitPullResult {
 }
 
 /// Reports `initialized:false` outside a repo instead of an error, since auto-init is forbidden.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn git_status(vault_path: String) -> Result<GitStatusResult, String> {
     let vault_dir = validate_vault_dir(&vault_path)?;
     let Some(repo_root) = find_repo_root(&vault_dir)? else {
@@ -1026,7 +1064,7 @@ fn run_push(repo_root: &Path, set_upstream: bool) -> PushOutcome {
 }
 
 /// Empty list when there are no commits.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn git_history(
     vault_path: String,
     limit: Option<u32>,
@@ -1067,6 +1105,7 @@ pub fn git_history(
     if trimmed.is_empty() {
         return Ok(Vec::new());
     }
+    let mut kinds = std::collections::HashMap::new();
     let commits = trimmed
         .split(REC)
         .filter(|block| !block.trim().is_empty())
@@ -1081,7 +1120,7 @@ pub fn git_history(
                 fields.next().unwrap_or("").to_string(),
             );
             let files = lines
-                .filter_map(|line| history_change_entry(line, &repo_root, &vault_dir))
+                .filter_map(|line| history_change_entry(line, &repo_root, &vault_dir, &mut kinds))
                 .collect();
             Some(GitCommitInfo {
                 short_hash: info.0,
@@ -1098,7 +1137,12 @@ pub fn git_history(
 
 /// One `M\tpath` line. `kind` comes from the file on disk now, not the blob at that
 /// commit, to avoid a `git show` per commit; deleted files get only a path slug.
-fn history_change_entry(line: &str, repo_root: &Path, vault_dir: &Path) -> Option<ChangeEntry> {
+fn history_change_entry(
+    line: &str,
+    repo_root: &Path,
+    vault_dir: &Path,
+    kinds: &mut std::collections::HashMap<String, KindSlug>,
+) -> Option<ChangeEntry> {
     let mut cols = line.split('\t');
     let code = cols.next()?.trim();
     let path = cols.next()?.trim();
@@ -1115,7 +1159,10 @@ fn history_change_entry(line: &str, repo_root: &Path, vault_dir: &Path) -> Optio
     let mut kind = None;
     let mut slug = path_based_slug(vault_dir, &abs_path);
     if path.ends_with(".md") && status != "deleted" {
-        let (k, s) = read_kind_slug(&abs_path);
+        let (k, s) = kinds
+            .entry(path.to_string())
+            .or_insert_with(|| read_kind_slug(&abs_path))
+            .clone();
         if k.is_some() {
             kind = k;
         }
@@ -1132,8 +1179,8 @@ fn history_change_entry(line: &str, repo_root: &Path, vault_dir: &Path) -> Optio
     })
 }
 
-#[tauri::command]
-pub fn git_diff(vault_path: String) -> Result<GitDiffResult, String> {
+#[tauri::command(async)]
+pub fn git_diff(vault_path: String, include_patch: Option<bool>) -> Result<GitDiffResult, String> {
     let vault_dir = validate_vault_dir(&vault_path)?;
     let repo_root = require_repo_root(&vault_dir)?;
     let pathspec = vault_pathspec(&repo_root, &vault_dir);
@@ -1141,25 +1188,25 @@ pub fn git_diff(vault_path: String) -> Result<GitDiffResult, String> {
     let rows = get_porcelain_status(&repo_root, &pathspec)?;
     let changes = build_change_summary(&rows, &repo_root, &vault_dir);
 
-    // Falls back to the index when there is no HEAD.
-    let diff = match run_git(&repo_root, &["diff", "HEAD", "--", &pathspec]) {
-        Ok(out) if out.success => out.stdout,
-        _ => match run_git(&repo_root, &["diff", "--", &pathspec]) {
+    let diff = if include_patch == Some(false) {
+        String::new()
+    } else {
+        // Falls back to the index when there is no HEAD.
+        match run_git(&repo_root, &["diff", "HEAD", "--", &pathspec]) {
             Ok(out) if out.success => out.stdout,
-            _ => String::new(),
-        },
+            _ => match run_git(&repo_root, &["diff", "--", &pathspec]) {
+                Ok(out) if out.success => out.stdout,
+                _ => String::new(),
+            },
+        }
     };
 
-    Ok(GitDiffResult {
-        count: changes.len(),
-        files: changes,
-        diff,
-    })
+    Ok(diff_result(changes, diff))
 }
 
 /// One commit's vault-scope patch; separate from `git_diff`, which reads the
 /// uncommitted tree, so each signature says what it asks.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn git_commit_diff(vault_path: String, hash: String) -> Result<GitDiffResult, String> {
     let vault_dir = validate_vault_dir(&vault_path)?;
     let repo_root = require_repo_root(&vault_dir)?;
@@ -1189,11 +1236,7 @@ pub fn git_commit_diff(vault_path: String, hash: String) -> Result<GitDiffResult
         String::new()
     };
 
-    Ok(GitDiffResult {
-        count: 0,
-        files: Vec::new(),
-        diff,
-    })
+    Ok(diff_result(Vec::new(), diff))
 }
 
 /// Opt-in. Missing upstream, conflict and non-fast-forward return a clean `Err`.
@@ -1274,7 +1317,7 @@ pub struct GitInitResult {
 
 /// Only on a direct user press. It only inits: no add, commit, push, remote or
 /// user setup, and an existing repository is left alone (`reason: "already"`).
-#[tauri::command]
+#[tauri::command(async)]
 pub fn git_init(vault_path: String) -> Result<GitInitResult, String> {
     let vault_dir = validate_vault_dir(&vault_path)?;
 
@@ -1345,7 +1388,7 @@ fn cap_document_diff(path: String, diff: String, untracked: bool) -> GitDocument
     }
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn git_document_diff(
     vault_path: String,
     relative_path: String,
@@ -1551,7 +1594,7 @@ fn validate_restore_source(source: &str) -> Result<String, String> {
 /// Restores one document to `source`, uncommitted. Refuses an untracked path
 /// (restoring would delete it), a missing source, a changed `uid`/`slug`/`merged_uids`
 /// or an unreadable file, since `git restore` is identity-blind. Confirm-button only.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn git_restore_file(
     vault_path: String,
     relative_path: String,
@@ -1630,7 +1673,7 @@ pub struct GitSetRemoteResult {
 }
 
 /// Only addresses the user entered; nothing is guessed. No push happens here.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn git_set_remote(vault_path: String, url: String) -> Result<GitSetRemoteResult, String> {
     let vault_dir = validate_vault_dir(&vault_path)?;
     let repo_root = require_repo_root(&vault_dir)?;
@@ -1690,7 +1733,7 @@ pub struct NodeRevision {
 /// Revisions newest first for the summary-freshness check. Git plumbing only; the
 /// ontology judgement lives in one shared TypeScript module. A slug without history
 /// is absent, not an error.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn vault_node_revisions(
     vault_path: String,
     slugs: Vec<String>,
@@ -1765,7 +1808,7 @@ const EVIDENCE_WALK_COMMITS: &str = "--max-count=3000";
 /// `repo_paths` are repository-relative; `vault_paths` resolve through the vault
 /// pathspec. Anything that could climb, be absolute or look like an option is
 /// dropped, since every value reaches a `git log` argument.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn git_paths_last_change(
     vault_path: String,
     repo_paths: Vec<String>,
@@ -1888,7 +1931,7 @@ const MAX_FRESHNESS_SLUGS: usize = 64;
 
 /// Read-only detection so the UI can pick platform install guidance; it installs
 /// nothing.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn git_probe() -> GitProbe {
     let platform = host_platform().to_string();
     match Command::new("git").arg("--version").output() {
@@ -1921,6 +1964,7 @@ pub fn git_probe() -> GitProbe {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashMap;
 
     #[test]
     fn vault_pathspec_returns_dot_when_vault_is_repo_root() {
@@ -1950,6 +1994,26 @@ mod tests {
     }
 
     #[test]
+    fn a_waited_command_drains_output_larger_than_a_pipe_buffer() {
+        use std::process::Stdio;
+        let mut child = Command::new("node")
+            .args([
+                "-e",
+                "process.stdout.write('o'.repeat(200000)); process.stderr.write('e'.repeat(100000))",
+            ])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .unwrap();
+        let run =
+            wait_with_deadline(&mut child, "probe", std::time::Duration::from_secs(20)).unwrap();
+        assert!(run.success);
+        assert_eq!(run.stdout.len(), 200_000);
+        assert_eq!(run.stderr.len(), 100_000);
+    }
+
+    #[test]
     fn parse_porcelain_reads_rename_source() {
         let rows = parse_porcelain("R  docs/old.md -> docs/new.md\n");
         assert_eq!(rows.len(), 1);
@@ -1963,26 +2027,32 @@ mod tests {
     fn history_change_entry_reads_status_code_and_path() {
         let repo = PathBuf::from("/repo");
         let vault = PathBuf::from("/repo/docs");
-        let added = history_change_entry("A\tdocs/elements/foo.md", &repo, &vault).unwrap();
+        let added = history_change_entry(
+            "A\tdocs/elements/foo.md",
+            &repo,
+            &vault,
+            &mut HashMap::new(),
+        )
+        .unwrap();
         assert_eq!(added.status, "added");
         assert_eq!(added.path, "docs/elements/foo.md");
         assert_eq!(added.slug, "elements/foo");
         assert_eq!(added.kind, None);
 
         assert_eq!(
-            history_change_entry("D\tdocs/gone.md", &repo, &vault)
+            history_change_entry("D\tdocs/gone.md", &repo, &vault, &mut HashMap::new())
                 .unwrap()
                 .status,
             "deleted"
         );
         assert_eq!(
-            history_change_entry("M\tdocs/x.md", &repo, &vault)
+            history_change_entry("M\tdocs/x.md", &repo, &vault, &mut HashMap::new())
                 .unwrap()
                 .status,
             "modified"
         );
         assert_eq!(
-            history_change_entry("R100\tdocs/y.md", &repo, &vault)
+            history_change_entry("R100\tdocs/y.md", &repo, &vault, &mut HashMap::new())
                 .unwrap()
                 .status,
             "renamed"
@@ -1993,9 +2063,9 @@ mod tests {
     fn history_change_entry_rejects_lines_without_a_tab() {
         let repo = PathBuf::from("/repo");
         let vault = PathBuf::from("/repo/docs");
-        assert!(history_change_entry("", &repo, &vault).is_none());
-        assert!(history_change_entry("no tab here", &repo, &vault).is_none());
-        assert!(history_change_entry("M\t", &repo, &vault).is_none());
+        assert!(history_change_entry("", &repo, &vault, &mut HashMap::new()).is_none());
+        assert!(history_change_entry("no tab here", &repo, &vault, &mut HashMap::new()).is_none());
+        assert!(history_change_entry("M\t", &repo, &vault, &mut HashMap::new()).is_none());
     }
 
     #[test]
@@ -2294,6 +2364,38 @@ mod tests {
     }
 
     #[test]
+    fn read_kind_slug_reads_no_further_than_the_frontmatter() {
+        let dir = std::env::temp_dir().join(format!("atlas-git-front-{}", std::process::id()));
+        let _ = fs::create_dir_all(&dir);
+        let file = dir.join("node.md");
+        let mut bytes = b"---\nkind: element\nslug: reader\n---\n".to_vec();
+        bytes.extend_from_slice(&[0xff, 0xfe, b'\n']);
+        fs::write(&file, bytes).unwrap();
+        let (kind, slug) = read_kind_slug(&file);
+        assert_eq!(kind.as_deref(), Some("element"));
+        assert_eq!(slug.as_deref(), Some("reader"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn history_rows_of_one_path_reuse_the_first_read() {
+        let dir = std::env::temp_dir().join(format!("atlas-git-rows-{}", std::process::id()));
+        let _ = fs::create_dir_all(dir.join("docs"));
+        fs::write(dir.join("docs/a.md"), "---\nkind: capability\n---\n").unwrap();
+        let vault = dir.join("docs");
+        let mut kinds = HashMap::new();
+        let first = history_change_entry("M\tdocs/a.md", &dir, &vault, &mut kinds).unwrap();
+        fs::write(dir.join("docs/a.md"), "---\nkind: element\n---\n").unwrap();
+        let second = history_change_entry("A\tdocs/a.md", &dir, &vault, &mut kinds).unwrap();
+        assert_eq!(first.kind.as_deref(), Some("capability"));
+        assert_eq!(
+            second.kind, first.kind,
+            "the second row must not open the file again"
+        );
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
     fn a_document_that_cannot_be_read_stops_the_restore() {
         // A read failing for any reason but absence means the guard never ran.
         let dir = std::env::temp_dir().join(format!("atlas-restore-test-{}", std::process::id()));
@@ -2422,6 +2524,49 @@ mod tests {
         fn drop(&mut self) {
             let _ = fs::remove_dir_all(&self.dir);
         }
+    }
+
+    #[test]
+    fn a_status_read_leaves_the_index_to_writers() {
+        let scratch = Scratch::new("optional-locks");
+        let later = std::time::SystemTime::now() + std::time::Duration::from_secs(5);
+        fs::File::options()
+            .write(true)
+            .open(scratch.work.join("one.md"))
+            .unwrap()
+            .set_modified(later)
+            .unwrap();
+        let index = scratch.work.join(".git").join("index");
+        let before = fs::read(&index).unwrap();
+
+        git_status(scratch.vault()).unwrap();
+
+        assert_eq!(
+            fs::read(&index).unwrap(),
+            before,
+            "a status read refreshed the index, so it held index.lock"
+        );
+    }
+
+    #[test]
+    fn the_file_list_alone_carries_no_patch() {
+        let scratch = Scratch::new("diff-list");
+        fs::write(scratch.work.join("one.md"), "changed\n").unwrap();
+
+        let list = git_diff(scratch.vault(), Some(false)).unwrap();
+        assert_eq!(list.files.len(), 1);
+        assert!(list.diff.is_empty());
+
+        let full = git_diff(scratch.vault(), None).unwrap();
+        assert!(full.diff.contains("+changed"));
+    }
+
+    #[test]
+    fn a_tree_diff_past_the_cap_is_dropped_whole_and_says_so() {
+        let small = diff_result(Vec::new(), "+small\n".to_string());
+        assert_eq!((small.diff.as_str(), small.too_large), ("+small\n", false));
+        let huge = diff_result(Vec::new(), "+line\n".repeat(MAX_TREE_DIFF_BYTES / 6 + 1));
+        assert_eq!((huge.diff.as_str(), huge.too_large), ("", true));
     }
 
     #[test]

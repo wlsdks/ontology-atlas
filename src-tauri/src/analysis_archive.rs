@@ -110,7 +110,7 @@ pub(crate) fn append_analysis_record(
     append_after_open(root_path, file_name, content, || {})
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub(crate) fn read_analysis_record_text(
     root_path: String,
     file_name: String,

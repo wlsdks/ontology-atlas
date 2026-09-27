@@ -1,5 +1,7 @@
 use notify_debouncer_full::notify::{RecommendedWatcher, RecursiveMode, Watcher};
-use notify_debouncer_full::{new_debouncer, DebounceEventResult, Debouncer, FileIdMap};
+use notify_debouncer_full::{
+    new_debouncer_opt, DebounceEventResult, DebouncedEvent, Debouncer, NoCache,
+};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
@@ -154,7 +156,7 @@ const WEBVIEW_VERIFY_FIXTURE_SETTLE_MS: u64 = 1200;
 const WEBVIEW_VERIFY_MARKER_ATTEMPTS: usize = 12;
 const WEBVIEW_VERIFY_MARKER_INTERVAL_MS: u64 = 500;
 
-type VaultDebouncer = Debouncer<RecommendedWatcher, FileIdMap>;
+type VaultDebouncer = Debouncer<RecommendedWatcher, NoCache>;
 
 /// Keeping the root lets a repeat call for the same folder skip rebuilding the
 /// FSEvents stream.
@@ -182,13 +184,6 @@ struct TauriVaultEntry {
 #[serde(rename_all = "camelCase")]
 struct TauriTextFile {
     text: String,
-    last_modified: u128,
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct TauriBinaryFile {
-    bytes: Vec<u8>,
     last_modified: u128,
 }
 
@@ -759,36 +754,28 @@ impl AcpSessions {
 /// A counter, not the pid, which the OS reuses.
 static ACP_SESSION_SEQ: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
 
+/// A channel fetches payloads of 8 KB or more; `app.emit` evaluates them as script.
 #[derive(Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct AcpLineEvent {
-    session_id: String,
-    line: String,
+#[serde(tag = "kind", rename_all = "camelCase")]
+enum AcpStreamEvent {
+    Message { line: String },
+    Stderr { line: String },
+    Notice { message: String },
+    Exit { code: Option<i32> },
 }
 
-#[derive(Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct AcpExitEvent {
-    session_id: String,
-    code: Option<i32>,
-}
-
-#[derive(Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct AcpNoticeEvent {
-    session_id: String,
-    message: String,
-}
+type AcpStream = tauri::ipc::Channel<AcpStreamEvent>;
 
 /// The working folder must pass the picker's vault-root check, the child gets its
 /// own process group so grandchildren end with it, and PATH is rebuilt from the
 /// locations found, or the adapter cannot resolve the real CLI.
-#[tauri::command]
+#[tauri::command(async)]
 fn acp_start(
     app: AppHandle,
     sessions: State<'_, AcpSessions>,
     runtime_id: String,
     cwd: String,
+    on_event: AcpStream,
 ) -> Result<String, String> {
     let root = fs::canonicalize(&cwd).map_err(|err| format!("cwd-unreadable:{err}"))?;
     if !root.is_dir() {
@@ -853,14 +840,26 @@ fn acp_start(
         &launch.path_env,
     )?;
 
-    let mut command = Command::new(&launch.program);
+    let spawned = matches!(npx_preflight, acp::NpxCachePreflight::CacheReady)
+        .then(|| acp::launch_from_npx_cache(&launch, home.as_deref(), &is_executable))
+        .flatten();
+    log::info!(
+        "acp start {runtime_id}: {}",
+        if spawned.is_some() {
+            "cached adapter bin"
+        } else {
+            "resolved launcher"
+        }
+    );
+    let spawned = spawned.unwrap_or_else(|| launch.clone());
+    let mut command = Command::new(&spawned.program);
     command
-        .args(&launch.args)
+        .args(&spawned.args)
         .current_dir(&root)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
-    acp::apply_runtime_environment(&mut command, &runtime_id, &launch.path_env);
+    acp::apply_runtime_environment(&mut command, &runtime_id, &spawned.path_env);
     command.env(isolation_env, isolation_dir);
 
     #[cfg(unix)]
@@ -887,23 +886,19 @@ fn acp_start(
     let stdout = child.stdout.take().ok_or("stdout-unavailable")?;
     let stderr = child.stderr.take().ok_or("stderr-unavailable")?;
 
-    // Keeps the child's first stderr lines (at most three, `DEAD_SESSION_LOG_CHARS`
-    // each) for the exit log; an early exit with no output is logged as such, since
-    // silence is itself the clue.
+    // The first stderr lines go to the exit log; silence is itself the clue.
     let early_stderr: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
     let started_at = Instant::now();
     spawn_acp_line_pump(
-        app.clone(),
-        session_id.clone(),
+        on_event.clone(),
         stdout,
-        "acp://message",
+        |line| AcpStreamEvent::Message { line },
         None,
     );
     spawn_acp_line_pump(
-        app.clone(),
-        session_id.clone(),
+        on_event.clone(),
         stderr,
-        "acp://stderr",
+        |line| AcpStreamEvent::Stderr { line },
         Some(early_stderr.clone()),
     );
 
@@ -915,6 +910,7 @@ fn acp_start(
     {
         let app = app.clone();
         let session_id = session_id.clone();
+        let on_event = on_event.clone();
         std::thread::spawn(move || {
             let code = child.wait().ok().and_then(|status| status.code());
             log::info!("acp session {session_id} exited with code {code:?}");
@@ -934,12 +930,10 @@ fn acp_start(
             if let Some(state) = app.try_state::<AcpSessions>() {
                 let _ = state.remove(&session_id);
             }
-            let _ = app.emit("acp://exit", AcpExitEvent { session_id, code });
+            let _ = on_event.send(AcpStreamEvent::Exit { code });
         });
     }
 
-    // Emit after this command returns: the screen subscribes to `acp://notice` only once
-    // it has the session name. Progress every second covers a missed first notice.
     let first_run_message = match &npx_preflight {
         // Mention the healing for diagnostics.
         acp::NpxCachePreflight::HealedBrokenEntry { reason } => {
@@ -966,15 +960,7 @@ fn acp_start(
         let app = app.clone();
         let session_id = session_id.clone();
         std::thread::spawn(move || {
-            // Time for the screen to subscribe.
-            std::thread::sleep(std::time::Duration::from_millis(250));
-            let _ = app.emit(
-                "acp://notice",
-                AcpNoticeEvent {
-                    session_id: session_id.clone(),
-                    message,
-                },
-            );
+            let _ = on_event.send(AcpStreamEvent::Notice { message });
             let (Some(entry), Some(package)) = (entry, package) else {
                 return; // Only the healing failure; nothing to measure.
             };
@@ -993,23 +979,15 @@ fn acp_start(
                     break;
                 }
                 if acp::npx_entry_health(&entry, &package) == acp::NpxEntryHealth::Usable {
-                    let _ = app.emit(
-                        "acp://notice",
-                        AcpNoticeEvent {
-                            session_id: session_id.clone(),
-                            message: "npx-download-done".to_string(),
-                        },
-                    );
+                    let _ = on_event.send(AcpStreamEvent::Notice {
+                        message: "npx-download-done".to_string(),
+                    });
                     break;
                 }
                 let mb = acp::dir_size_bytes(&entry) / (1024 * 1024);
-                let _ = app.emit(
-                    "acp://notice",
-                    AcpNoticeEvent {
-                        session_id: session_id.clone(),
-                        message: format!("npx-download-progress:{mb}"),
-                    },
-                );
+                let _ = on_event.send(AcpStreamEvent::Notice {
+                    message: format!("npx-download-progress:{mb}"),
+                });
             }
         });
     }
@@ -1031,12 +1009,10 @@ fn clip_for_log(line: &str) -> String {
     format!("{kept}…")
 }
 
-/// Oversized lines are dropped and reported: truncation feeds half-JSON to the parser.
 fn spawn_acp_line_pump<R: std::io::Read + Send + 'static>(
-    app: AppHandle,
-    session_id: String,
+    on_event: AcpStream,
     stream: R,
-    event: &'static str,
+    event: fn(String) -> AcpStreamEvent,
     // A child that dies at once leaves nothing else to quote.
     early_lines: Option<Arc<Mutex<Vec<String>>>>,
 ) {
@@ -1045,7 +1021,7 @@ fn spawn_acp_line_pump<R: std::io::Read + Send + 'static>(
         loop {
             match acp::read_bounded_line(&mut reader, acp::MAX_LINE_BYTES) {
                 Ok(Some(bytes)) => {
-                    let line = String::from_utf8_lossy(&bytes).to_string();
+                    let line = acp_line_text(bytes);
                     if let Some(sink) = early_lines.as_ref() {
                         if let Ok(mut held) = sink.lock() {
                             if held.len() < DEAD_SESSION_LOG_LINES {
@@ -1053,23 +1029,13 @@ fn spawn_acp_line_pump<R: std::io::Read + Send + 'static>(
                             }
                         }
                     }
-                    let _ = app.emit(
-                        event,
-                        AcpLineEvent {
-                            session_id: session_id.clone(),
-                            line,
-                        },
-                    );
+                    let _ = on_event.send(event(line));
                 }
                 Ok(None) => break,
                 Err(err) => {
-                    let _ = app.emit(
-                        "acp://notice",
-                        AcpNoticeEvent {
-                            session_id: session_id.clone(),
-                            message: format!("dropped-line:{err}"),
-                        },
-                    );
+                    let _ = on_event.send(AcpStreamEvent::Notice {
+                        message: format!("dropped-line:{err}"),
+                    });
                     if err.kind() != std::io::ErrorKind::InvalidData {
                         break;
                     }
@@ -1077,6 +1043,11 @@ fn spawn_acp_line_pump<R: std::io::Read + Send + 'static>(
             }
         }
     });
+}
+
+fn acp_line_text(bytes: Vec<u8>) -> String {
+    String::from_utf8(bytes)
+        .unwrap_or_else(|invalid| String::from_utf8_lossy(invalid.as_bytes()).into_owned())
 }
 
 /// Never reimplemented on the screen: the looser copy would win, and only Rust can
@@ -1118,7 +1089,7 @@ fn acp_send(
     sessions.send_line(&session_id, &line)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn acp_stop(sessions: State<'_, AcpSessions>, session_id: String) -> Result<(), String> {
     // Distinguishes a stop the screen asked for from the child exiting on its own after stdin closes.
     log::info!("acp session {session_id} stop requested by the screen");
@@ -1617,7 +1588,7 @@ fn pick_vault_directory(dialog_title: Option<String>) -> Result<Option<String>, 
     Ok(Some(picked.to_string_lossy().to_string()))
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn list_vault_directory(
     root_path: String,
     relative_path: String,
@@ -2185,6 +2156,44 @@ fn vault_entry_is_tracked(name: &str) -> bool {
     }
 }
 
+const VAULT_AGENT_CONFIG_FILES: &[&str] = &[".mcp.json", ".mcp.json.example", ".codex/config.toml"];
+
+/// macOS reports a folder moved in, out or renamed only on the folder's own path, so a walked
+/// path that is no longer a regular file counts too.
+fn vault_change_is_visible(root: &Path, path: &Path) -> bool {
+    if path.extension().is_some_and(|ext| ext == "md") {
+        return true;
+    }
+    let Ok(relative) = path.strip_prefix(root) else {
+        return false;
+    };
+    let relative = relative.to_string_lossy().replace('\\', "/");
+    if relative.starts_with(".ontology-atlas/")
+        || VAULT_AGENT_CONFIG_FILES.contains(&relative.as_str())
+    {
+        return true;
+    }
+    let mut parts = relative.split('/');
+    let name = parts.next_back().unwrap_or_default();
+    let walked = parts.all(|part| !part.starts_with('.') && !VAULT_PRUNE_DIR_NAMES.contains(&part));
+    if !walked || name.starts_with('.') || VAULT_PRUNE_DIR_NAMES.contains(&name) {
+        return false;
+    }
+    vault_entry_is_tracked(name)
+        || vault_relative_is_source(&relative)
+        || !fs::symlink_metadata(path).is_ok_and(|metadata| metadata.is_file())
+}
+
+fn vault_batch_is_visible(root: &Path, events: &[DebouncedEvent]) -> bool {
+    events.iter().any(|event| {
+        event.need_rescan()
+            || event
+                .paths
+                .iter()
+                .any(|path| vault_change_is_visible(root, path))
+    })
+}
+
 fn walk_vault_stamps(
     dir: &Path,
     prefix: &str,
@@ -2256,7 +2265,7 @@ fn walk_vault_stamps(
 /// Paths and mtimes only, in one call instead of reading every body across IPC. The
 /// walk rules must match TS exactly or fingerprints diverge; the contract
 /// test `tests/contract/vault-walk-rules.contract.test.ts` holds both.
-#[tauri::command]
+#[tauri::command(async)]
 fn vault_fingerprint(root_path: String) -> Result<VaultFingerprint, String> {
     let root = resolve_existing_inside(&root_path, "")?;
     let mut acc = VaultFingerprint {
@@ -2268,7 +2277,7 @@ fn vault_fingerprint(root_path: String) -> Result<VaultFingerprint, String> {
     Ok(acc)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn read_vault_text_file(root_path: String, relative_path: String) -> Result<TauriTextFile, String> {
     let path = resolve_existing_inside(&root_path, &relative_path)?;
     let text = fs::read_to_string(&path).map_err(|err| err.to_string())?;
@@ -2279,18 +2288,70 @@ fn read_vault_text_file(root_path: String, relative_path: String) -> Result<Taur
     })
 }
 
-#[tauri::command]
+#[tauri::command(async)]
+fn read_vault_text_tail(
+    root_path: String,
+    relative_path: String,
+    max_lines: usize,
+) -> Result<String, String> {
+    let path = resolve_existing_inside(&root_path, &relative_path)?;
+    read_text_tail(&path, max_lines, MAX_TEXT_TAIL_BYTES).map_err(|err| err.to_string())
+}
+
+const MAX_TEXT_TAIL_BYTES: u64 = 1024 * 1024;
+
+fn read_text_tail(path: &Path, max_lines: usize, max_bytes: u64) -> std::io::Result<String> {
+    use std::io::{Seek, SeekFrom};
+    const CHUNK_BYTES: u64 = 16 * 1024;
+
+    let mut file = fs::File::open(path)?;
+    let end = file.metadata()?.len();
+    let floor = end.saturating_sub(max_bytes);
+    let mut start = end;
+    let mut newlines = 0;
+    let mut chunks: Vec<Vec<u8>> = Vec::new();
+    while start > floor && newlines <= max_lines {
+        let from = start.saturating_sub(CHUNK_BYTES).max(floor);
+        let mut chunk = vec![0_u8; (start - from) as usize];
+        file.seek(SeekFrom::Start(from))?;
+        file.read_exact(&mut chunk)?;
+        newlines += chunk.iter().filter(|byte| **byte == b'\n').count();
+        chunks.push(chunk);
+        start = from;
+    }
+    let tail: Vec<u8> = chunks.into_iter().rev().flatten().collect();
+    let text = String::from_utf8_lossy(&tail);
+    let mut lines: Vec<&str> = text.lines().collect();
+    if start > 0 && !lines.is_empty() {
+        lines.remove(0);
+    }
+    let keep = lines.len().saturating_sub(max_lines);
+    Ok(lines[keep..].join("\n"))
+}
+
+/// A u64 LE mtime, then raw bytes: a serde `Vec<u8>` is one JSON number per byte.
+#[tauri::command(async)]
 fn read_vault_binary_file(
     root_path: String,
     relative_path: String,
-) -> Result<TauriBinaryFile, String> {
+) -> Result<tauri::ipc::Response, String> {
     let path = resolve_existing_inside(&root_path, &relative_path)?;
-    let bytes = fs::read(&path).map_err(|err| err.to_string())?;
-    let last_modified = metadata_mtime_ms(&path)?;
-    Ok(TauriBinaryFile {
-        bytes,
-        last_modified,
-    })
+    read_stamped_bytes(&path).map(tauri::ipc::Response::new)
+}
+
+fn read_stamped_bytes(path: &Path) -> Result<Vec<u8>, String> {
+    let mut file = fs::File::open(path).map_err(|err| err.to_string())?;
+    let metadata = file.metadata().map_err(|err| err.to_string())?;
+    let modified = metadata.modified().map_err(|err| err.to_string())?;
+    let last_modified = modified
+        .duration_since(UNIX_EPOCH)
+        .map_err(|err| err.to_string())?
+        .as_millis() as u64;
+    let mut stamped = Vec::with_capacity(8 + metadata.len() as usize);
+    stamped.extend_from_slice(&last_modified.to_le_bytes());
+    file.read_to_end(&mut stamped)
+        .map_err(|err| err.to_string())?;
+    Ok(stamped)
 }
 
 /// Temporary file, sync, then rename, so a crash leaves old or new content, never a
@@ -2418,7 +2479,7 @@ fn read_library_collections_file(path: &Path) -> Result<Option<String>, String> 
     Ok(Some(text))
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn read_library_collections(root_path: String) -> Result<Option<String>, String> {
     const DIRECTORY: &str = ".ontology-atlas";
     const FILE_NAME: &str = "library-collections.json";
@@ -3144,7 +3205,7 @@ fn schedule_show_main_window(app: AppHandle) {
     });
 }
 
-/// Emits `vault-changed` for `.md` changes, debounced 500ms. Idempotent per canonical
+/// Emits `vault-changed` for what a refresh reads, debounced 500ms. Idempotent per canonical
 /// root, and a replaced debouncer drops on a background thread because FSEvents
 /// teardown joins its run loop.
 /// Deliberately `async` with no await: Tauri then runs it off the macOS main thread.
@@ -3167,18 +3228,13 @@ async fn start_vault_watch(
         return Ok(());
     }
     let app_handle = app.clone();
-    let mut debouncer = new_debouncer(
+    let watched_root = canonical.clone();
+    let mut debouncer = new_debouncer_opt::<_, RecommendedWatcher, NoCache>(
         Duration::from_millis(500),
         None,
         move |result: DebounceEventResult| match result {
             Ok(events) => {
-                let md_changed = events.iter().any(|event| {
-                    event
-                        .paths
-                        .iter()
-                        .any(|path| path.extension().is_some_and(|ext| ext == "md"))
-                });
-                if md_changed {
+                if vault_batch_is_visible(&watched_root, &events) {
                     let _ = app_handle.emit("vault-changed", ());
                 }
             }
@@ -3190,6 +3246,8 @@ async fn start_vault_watch(
                 }
             }
         },
+        NoCache,
+        notify_debouncer_full::notify::Config::default(),
     )
     .map_err(|err| err.to_string())?;
     debouncer
@@ -3691,6 +3749,7 @@ pub fn run() {
             list_vault_directory,
             vault_fingerprint,
             read_vault_text_file,
+            read_vault_text_tail,
             read_vault_binary_file,
             write_vault_text_file,
             read_library_collections,
@@ -3770,6 +3829,148 @@ pub fn run() {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn a_binary_read_is_the_mtime_then_the_raw_bytes() {
+        let dir = std::env::temp_dir().join(format!("atlas-binary-read-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let file = dir.join("figure.png");
+        let body: Vec<u8> = (0..=255).collect();
+        std::fs::write(&file, &body).unwrap();
+
+        let stamped = super::read_stamped_bytes(&file).unwrap();
+
+        let (stamp, bytes) = stamped.split_at(8);
+        assert_eq!(bytes, body.as_slice());
+        let expected = super::metadata_mtime_ms(&file).unwrap() as u64;
+        assert_eq!(u64::from_le_bytes(stamp.try_into().unwrap()), expected);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn an_agent_line_keeps_its_buffer_and_repairs_only_broken_utf8() {
+        let bytes = b"{\"jsonrpc\":\"2.0\"}".to_vec();
+        let buffer = bytes.as_ptr();
+        let line = super::acp_line_text(bytes);
+        assert_eq!(line, "{\"jsonrpc\":\"2.0\"}");
+        assert_eq!(line.as_ptr(), buffer, "a valid line must not be copied");
+        assert_eq!(super::acp_line_text(vec![b'a', 0xff, b'b']), "a\u{fffd}b");
+    }
+
+    #[test]
+    fn an_agent_event_names_its_kind_for_the_screen() {
+        let json = |event: &super::AcpStreamEvent| serde_json::to_value(event).unwrap();
+        assert_eq!(
+            json(&super::AcpStreamEvent::Message { line: "{}".into() }),
+            serde_json::json!({ "kind": "message", "line": "{}" })
+        );
+        assert_eq!(
+            json(&super::AcpStreamEvent::Exit { code: Some(1) }),
+            serde_json::json!({ "kind": "exit", "code": 1 })
+        );
+        assert_eq!(
+            json(&super::AcpStreamEvent::Notice {
+                message: "npx-download-done".into()
+            }),
+            serde_json::json!({ "kind": "notice", "message": "npx-download-done" })
+        );
+    }
+
+    #[test]
+    fn a_tail_read_returns_only_the_last_whole_lines() {
+        let dir = std::env::temp_dir().join(format!("atlas-tail-read-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let log = dir.join("activity.jsonl");
+        let lines: Vec<String> = (0..1000)
+            .map(|i| format!("{{\"v\":1,\"summary\":\"entry {i:04}\"}}"))
+            .collect();
+        std::fs::write(&log, format!("{}\n", lines.join("\n"))).unwrap();
+
+        let tail = super::read_text_tail(&log, 50, super::MAX_TEXT_TAIL_BYTES).unwrap();
+        assert_eq!(tail, lines[950..].join("\n"));
+
+        let short = super::read_text_tail(&log, 50, 100).unwrap();
+        assert!(!short.is_empty() && short.lines().count() < 50);
+        assert!(
+            lines[950..].join("\n").ends_with(&short),
+            "a capped read keeps whole lines only"
+        );
+
+        std::fs::write(&log, "one\ntwo").unwrap();
+        assert_eq!(
+            super::read_text_tail(&log, 50, super::MAX_TEXT_TAIL_BYTES).unwrap(),
+            "one\ntwo"
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn the_watcher_reports_what_a_refresh_reads_and_nothing_under_git() {
+        let root = std::env::temp_dir().join(format!("atlas-watch-filter-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        for dir in [
+            "notes/sources",
+            "features",
+            ".git/objects/ab",
+            "node_modules/pkg",
+            "capabilities",
+        ] {
+            std::fs::create_dir_all(root.join(dir)).unwrap();
+        }
+        for file in [
+            "notes/sources/a.pdf",
+            "notes/todo.txt",
+            ".git/index",
+            ".git/objects/ab/cdef.png",
+            "node_modules/pkg/logo.png",
+            ".DS_Store",
+            "capabilities/.draft.png",
+        ] {
+            std::fs::write(root.join(file), b"x").unwrap();
+        }
+        let visible = |relative: &str| super::vault_change_is_visible(&root, &root.join(relative));
+        for path in [
+            "capabilities/a.md",
+            ".claude/skills/x.md",
+            "assets/diagram.PNG",
+            "sources/scan.pdf",
+            ".ontology-atlas/activity.jsonl",
+            ".ontology-atlas/agent-activity.json",
+            ".mcp.json",
+            ".codex/config.toml",
+            "features",
+            "drafts",
+        ] {
+            assert!(visible(path), "{path} changes what the screen shows");
+        }
+        for path in [
+            ".git",
+            ".git/index",
+            ".git/objects/ab/cdef.png",
+            "node_modules",
+            "node_modules/pkg/logo.png",
+            "notes/sources/a.pdf",
+            "notes/todo.txt",
+            ".DS_Store",
+            "capabilities/.draft.png",
+        ] {
+            assert!(!visible(path), "{path} changes nothing on screen");
+        }
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_rescan_after_dropped_events_is_always_reported() {
+        use notify_debouncer_full::notify::{event::Flag, Event, EventKind};
+        let root = std::path::Path::new("/vault");
+        let batch = |event: Event| [super::DebouncedEvent::new(event, std::time::Instant::now())];
+        let rescan = Event::new(EventKind::Other)
+            .set_flag(Flag::Rescan)
+            .add_path(root.join(".git"));
+        assert!(super::vault_batch_is_visible(root, &batch(rescan)));
+        let unseen = Event::new(EventKind::Any).add_path(root.join(".git/index"));
+        assert!(!super::vault_batch_is_visible(root, &batch(unseen)));
+    }
+
     #[test]
     fn a_logged_line_is_trimmed_and_capped() {
         assert_eq!(
