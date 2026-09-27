@@ -122,10 +122,10 @@ Parents with **more than 12 direct children** collapse the rest into a single `+
 | `?` | List of shortcuts |
 | `Esc` | Close the topmost open item |
 
-**View only this area**: Selecting a node reveals an "View Only This Area" button outside the ring (tooltip: "See only inside this node"). Clicking it changes the map to **that node's world**. Only its containment subtree remains; everything else disappears behind a 1px indigo circle. Relationships crossing the boundary remain as short segments on the circle, listed under "N External Connections" which you can expand.
-From there, you can jump to the other side's world via "View That Area Only".
+**View only this area**: Selecting a node reveals a "View only this" button outside the ring (tooltip: "See only this node and what’s inside"). Clicking it changes the map to **that node's world**. Only its containment subtree remains; everything else disappears behind a 1px indigo circle. Relationships crossing the boundary remain as short segments on the circle, listed under "Reaches outside · {count}" which you can expand.
+From there, you can jump to the other side's world via "View only that area".
 
-While inside, a chip at the top reads "<Name> Only". Click "Full Map" or press `Esc` to return. This also persists in the URL.
+While inside, a chip at the top reads "Viewing only {title}". Click "Full map" or press `Esc` to return. This also persists in the URL.
 
 ## 8. What Do the Numbers in the Summary Count?
 
