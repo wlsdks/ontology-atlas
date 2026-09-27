@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
 import type { VaultDoc } from '@/entities/docs-vault';
-import { countDeskReadablePages, findDeskClaims, findDeskSourceHits, jevClaimEligibility, planDeskSourceReads, questionTerms } from './question-desk';
+import { countDeskReadablePages, findDeskClaims, findDeskSourceHits, jevClaimEligibility, jevPayloadEligibility, planDeskSourceReads, questionTerms } from './question-desk';
 import { buildQuestionDeskBrief } from './question-desk-brief';
 
 const raw = `---
@@ -109,5 +109,24 @@ describe('question desk evidence', () => {
     expect(brief).toContain('[[src:sources/refund.md#l2]]');
     expect(brief).toContain('1/2 Wiki pages; 1/3 originals');
     expect(brief).toContain('Write nothing in this turn.');
+  });
+
+  it('clips a very long source lead while retaining its exact address and re-read direction', () => {
+    const brief = buildQuestionDeskBrief({
+      question: 'Refund?', vaultRoot: '/folder', locale: 'en', claims: [],
+      sourceHits: [{ path: 'sources/refund.md', anchor: 'l2', text: 'x'.repeat(10_000), score: 2 }],
+      coverage: '1/1 original',
+    });
+    expect(brief).toContain('[[src:sources/refund.md#l2]]');
+    expect(brief).toContain('[lead clipped; re-read the original]');
+    expect(brief).not.toContain('x'.repeat(401));
+    expect(brief).toContain('Read the Wiki pages and then re-read the cited originals.');
+  });
+
+  it('refuses Jev lengths before opening a consent preview', () => {
+    expect(jevPayloadEligibility('a'.repeat(2_001), 'evidence', '{}')).toBe('too-long');
+    expect(jevPayloadEligibility('claim', 'e'.repeat(8_001), '{}')).toBe('too-long');
+    expect(jevPayloadEligibility('claim', '한'.repeat(6_000), JSON.stringify({ claim: 'claim', evidence: '한'.repeat(6_000) }))).toBe('too-long');
+    expect(jevPayloadEligibility('claim', 'evidence', '{}')).toBe('ready');
   });
 });

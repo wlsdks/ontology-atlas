@@ -35,6 +35,7 @@
       "missing": "The exact cited original is missing or cannot be resolved; Jev check unavailable.",
       "stale": "The source changed since this Wiki claim was recorded; Jev check unavailable.",
       "unmeasured": "The source version cannot be verified against this Wiki claim; Jev check unavailable.",
+      "too-long": "This exact claim or original passage is too long for Jev. Read the original here or select a shorter cited claim; nothing was sent.",
       "obsolete": "The page, source, or folder changed. Review the current evidence and select the claim again.",
       "failed": "The Jev request failed. No advice was applied.",
       "consentTitle": "Send this claim and passage to Jev?",

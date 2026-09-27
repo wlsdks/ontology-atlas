@@ -10,6 +10,7 @@ import {
   findDeskClaims,
   findDeskSourceHits,
   jevClaimEligibility,
+  jevPayloadEligibility,
   planDeskSourceReads,
   questionTerms,
   type DeskCitation,
@@ -125,7 +126,7 @@ export function LibraryQuestionDesk({
     docs.filter((doc) => doc.slug.startsWith('wiki/')).map((doc) => [doc.slug, doc.mtime ?? null]),
     sources.map((source) => [source.path, source.mtime, source.bytes]),
   ]);
-  const displayResult = result && result.listingVersion === listingVersion && result.readPages === countDeskReadablePages(docs, pageTexts)
+  const displayResult = result && result.question === question.trim() && result.listingVersion === listingVersion && result.readPages === countDeskReadablePages(docs, pageTexts)
     ? result : null;
   const outdated = result !== null && displayResult === null;
 
@@ -223,8 +224,11 @@ export function LibraryQuestionDesk({
       if (eligibility !== 'ready') { setJevNote(t(`jev.${eligibility}`)); return; }
       const claimText = claim.text.replace(INLINE_CITATION, '').trim();
       const evidence = passage.cited.map((unit) => unit.text).join('\n');
+      const payload = buildJevPayload(claimText, evidence);
+      const payloadState = jevPayloadEligibility(claimText, evidence, payload);
+      if (payloadState !== 'ready') { setJevNote(t(`jev.${payloadState}`)); return; }
       if (!hash || liveScope.current !== vaultScope || livePageTexts.current.get(claim.pageSlug) !== pageRaw) { setJevNote(t('jev.obsolete')); return; }
-      setJevSelection({ claim, citation, payload: buildJevPayload(claimText, evidence), pageRaw, sourceMtime: file.lastModified, sourceHash: hash, vaultScope });
+      setJevSelection({ claim, citation, payload, pageRaw, sourceMtime: file.lastModified, sourceHash: hash, vaultScope });
     } catch { setJevNote(t('jev.missing')); }
   };
 
@@ -276,7 +280,10 @@ export function LibraryQuestionDesk({
         </header>
         <form onSubmit={(event) => { event.preventDefault(); void search(); }} className="flex flex-wrap items-end gap-2 max-sm:flex-col max-sm:items-stretch">
           <Input label={t('questionLabel')} value={question} readOnly={jevSending} onChange={(event) => {
+            searchId.current += 1;
             setQuestion(event.target.value);
+            setReading(false);
+            setReadCount(0);
             setResult(null);
             setJevSelection(null);
             setJevFinding(null);

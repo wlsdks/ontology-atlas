@@ -114,3 +114,10 @@ export function jevClaimEligibility(claim: DeskClaim, citation: DeskCitation, pa
   if (!recorded || !measuredHash) return 'unmeasured';
   return recorded.toLowerCase() === measuredHash.toLowerCase() ? 'ready' : 'stale';
 }
+
+/** Mirror the native bridge's length limits before offering the exact preview. */
+export function jevPayloadEligibility(claim: string, evidence: string, payload: string): 'ready' | 'missing' | 'too-long' {
+  if (!claim.trim() || !evidence.trim()) return 'missing';
+  if (Array.from(claim).length > 2_000 || Array.from(evidence).length > 8_000 || new TextEncoder().encode(payload).length > 16_384) return 'too-long';
+  return 'ready';
+}

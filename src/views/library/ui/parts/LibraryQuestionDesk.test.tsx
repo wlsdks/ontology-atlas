@@ -17,12 +17,12 @@ vi.mock('@/shared/lib/tauri-jev', async (importOriginal) => {
 import { LibraryQuestionDesk } from './LibraryQuestionDesk';
 
 const original = '# Refund handling\nRefund approval queues a stock restoration job.\n';
-const originalBytes = new TextEncoder().encode(original);
 const currentHash = createHash('sha256').update(original).digest('hex');
 const path = 'sources/refund.md';
 let sourceText = original;
 let sourceMtime = 10;
 let fileReads = 0;
+let fileGate: Promise<void> | null = null;
 
 function fixture(hash = currentHash, listedMtime = 10) {
   const raw = `---\ntitle: Refund overview\nsource_hash:\n  ${path}: ${hash}\n---\n## Facts\n- Refund approval immediately restores stock. [[src:${path}#l2]]`;
@@ -32,24 +32,26 @@ function fixture(hash = currentHash, listedMtime = 10) {
     wordCount: 0, updatedAt: '', linksOut: [],
   };
   const source: LibrarySourceRow = {
-    path, name: 'refund.md', format: 'md', bytes: originalBytes.length, mtime: listedMtime,
+    path, name: 'refund.md', format: 'md', bytes: new TextEncoder().encode(sourceText).length, mtime: listedMtime,
     state: 'compiled', citedBy: ['wiki/refund'],
   };
   const handle = { getFile: vi.fn(async () => {
     fileReads += 1;
+    const gate = fileGate;
+    if (gate) await gate;
     const bytes = new TextEncoder().encode(sourceText);
     return { lastModified: sourceMtime, arrayBuffer: async () => bytes.buffer.slice(0) };
   }) } as unknown as FileSystemFileHandle;
   return { doc, raw, source, handle };
 }
 
-function Desk({ hash = currentHash, scope = 'folder-a', listedMtime = 10 }: { hash?: string; scope?: string; listedMtime?: number }) {
+function Desk({ hash = currentHash, scope = 'folder-a', listedMtime = 10, onAsk = () => {} }: { hash?: string; scope?: string; listedMtime?: number; onAsk?: (brief: string, question: string) => void }) {
   const { doc, raw, source, handle } = fixture(hash, listedMtime);
   return <NextIntlClientProvider locale="en" messages={en}>
     <LibraryQuestionDesk docs={[doc]} pageTexts={new Map([[doc.slug, raw]])}
       sources={[source]} sourceHandles={new Map([[path, handle]])} hashes={new Map([[path, currentHash]])}
       vaultRoot="/fixture" vaultScope={scope} agentReady={true}
-      onBrowse={() => {}} onAsk={() => {}} onOpenWiki={() => {}} onOpenSource={() => {}} />
+      onBrowse={() => {}} onAsk={onAsk} onOpenWiki={() => {}} onOpenSource={() => {}} />
   </NextIntlClientProvider>;
 }
 
@@ -57,6 +59,7 @@ beforeEach(() => {
   sourceText = original;
   sourceMtime = 10;
   fileReads = 0;
+  fileGate = null;
   mocks.status.mockReset();
   mocks.judge.mockReset();
   mocks.status.mockResolvedValue({ stored: false, last4: null });
@@ -100,6 +103,27 @@ describe('Library question desk transfer boundary', () => {
     expect(fileReads).toBe(1);
   });
 
+  it('cancels an in-flight search when the question changes and lets the new question run', async () => {
+    let release!: () => void;
+    fileGate = new Promise<void>((resolve) => { release = resolve; });
+    const onAsk = vi.fn();
+    render(<Desk onAsk={onAsk} />);
+    fireEvent.change(screen.getByTestId('question-desk-input'), { target: { value: 'Does refund approval restore stock?' } });
+    fireEvent.click(screen.getByTestId('question-desk-search'));
+    await waitFor(() => expect(fileReads).toBe(1));
+    fireEvent.change(screen.getByTestId('question-desk-input'), { target: { value: 'Who owns the lunar migration?' } });
+    expect(screen.queryByTestId('question-desk-results')).not.toBeInTheDocument();
+    expect(screen.getByTestId('question-desk-search')).toBeEnabled();
+    fileGate = null;
+    fireEvent.click(screen.getByTestId('question-desk-search'));
+    expect(await screen.findByTestId('question-desk-unknown')).toHaveTextContent('unknown');
+    await act(async () => { release(); });
+    expect(screen.getByTestId('question-desk-unknown')).toBeInTheDocument();
+    expect(screen.queryByText('Refund approval immediately restores stock.')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('question-desk-ask'));
+    expect(onAsk).toHaveBeenCalledWith(expect.any(String), 'Who owns the lunar migration?');
+  });
+
   it('invalidates cached source units when the inventoried file version changes', async () => {
     const rendered = render(<Desk />);
     await search();
@@ -119,6 +143,18 @@ describe('Library question desk transfer boundary', () => {
     await search();
     fireEvent.click(await screen.findByText('Check claim with Jev'));
     await screen.findByTestId('question-desk-jev-note');
+    expect(screen.queryByTestId('question-desk-jev-consent')).not.toBeInTheDocument();
+    expect(mocks.judge).not.toHaveBeenCalled();
+  });
+
+  it('withholds Jev consent when the exact original passage exceeds the bridge limit', async () => {
+    sourceText = '# Refund handling\nRefund approval queues a stock restoration job. ' + 'x'.repeat(8_001) + '\n';
+    const hash = createHash('sha256').update(sourceText).digest('hex');
+    mocks.status.mockResolvedValue({ stored: true, last4: '1234' });
+    render(<Desk hash={hash} />);
+    await search();
+    fireEvent.click(await screen.findByText('Check claim with Jev'));
+    expect(await screen.findByTestId('question-desk-jev-note')).toHaveTextContent('too long for Jev');
     expect(screen.queryByTestId('question-desk-jev-consent')).not.toBeInTheDocument();
     expect(mocks.judge).not.toHaveBeenCalled();
   });

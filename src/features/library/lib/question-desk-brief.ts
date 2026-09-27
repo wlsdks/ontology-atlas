@@ -1,5 +1,13 @@
 import type { DeskClaim, DeskSourceHit } from './question-desk';
 
+const SOURCE_LEAD_LIMIT = 400;
+
+function sourceLead(text: string, ko: boolean): string {
+  const chars = Array.from(text);
+  if (chars.length <= SOURCE_LEAD_LIMIT) return text;
+  return `${chars.slice(0, SOURCE_LEAD_LIMIT).join('').trimEnd()}… ${ko ? '[후보 일부만 표시됨; 원문 다시 읽기]' : '[lead clipped; re-read the original]'}`;
+}
+
 /** A read-only ACP handoff: retrieved snippets are leads, originals remain authority. */
 export function buildQuestionDeskBrief(input: {
   question: string;
@@ -11,7 +19,7 @@ export function buildQuestionDeskBrief(input: {
 }): string {
   const ko = input.locale === 'ko';
   const leads = input.claims.map((claim) => `- ${claim.pageSlug}.md: ${claim.text}`);
-  const originals = input.sourceHits.map((hit) => `- [[src:${hit.path}#${hit.anchor}]]: ${hit.text}`);
+  const originals = input.sourceHits.map((hit) => `- [[src:${hit.path}#${hit.anchor}]]: ${sourceLead(hit.text, ko)}`);
   return [
     ko ? `폴더: ${input.vaultRoot}` : `Folder: ${input.vaultRoot}`,
     ko ? `질문: ${input.question}` : `Question: ${input.question}`,
