@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { waitForAnimationsDone, waitForBoxStill } from "./settle";
+import { waitForAnimationsDone } from "./settle";
 
 /**
  * Responsive overflow sweep (final review 2026-07-25).
@@ -18,16 +18,14 @@ import { waitForAnimationsDone, waitForBoxStill } from "./settle";
  *  2. No interactive or text element leaves the viewport.
  *  3. No two `role="dialog"` are open at once (#62, overlay exclusivity).
  *
- * Widths: 1512 (the 14-inch contract) · 1024 (the lg boundary) · 834 (tablet
- * portrait) · 390 (mobile). At each width it sweeps the 4 live surfaces plus
- * download.
+ * Widths: 1512 (the installed app's opening window) · 1040×720 (the app's
+ * window floor). Phone and tablet widths are not a target (owner direction,
+ * 2026-09-27). At each width it sweeps the live surfaces plus download.
  */
 
 const WIDTHS = [
   { label: "14in", width: 1512, height: 900 },
-  { label: "lg-edge", width: 1024, height: 800 },
-  { label: "tablet", width: 834, height: 1112 },
-  { label: "mobile", width: 390, height: 844 },
+  { label: "app-floor", width: 1040, height: 720 },
 ] as const;
 
 const ROUTES = [
@@ -109,7 +107,10 @@ for (const vp of WIDTHS) {
           }
         }
         return {
-          docScrollWidth: document.documentElement.scrollWidth,
+          // `html` and `body` are `overflow-x: hidden`, so `documentElement.scrollWidth`
+          // never grows; only `body.scrollWidth` reports content pushed past the edge
+          // (the instrument probe in `overflow-sweep.spec.ts` pins that fact).
+          docScrollWidth: document.body.scrollWidth,
           docClientWidth: vw,
           offenders: offenders.slice(0, 6),
           offenderCount: offenders.length,
@@ -135,204 +136,3 @@ for (const vp of WIDTHS) {
     });
   }
 }
-/**
- * **The vertical axis — what the bottom tab bar is covering** (added 2026-08-01).
- *
- * The sweep above looks at **the horizontal axis only**, so it could not in
- * principle catch two defects found at the rc.5 review — both occurred while
- * `scrollWidth == clientWidth` held:
- *
- * 1. The docs bottom bar ("open in map", backlink chips) sank 20–30px behind the tab
- *    bar across the whole `<lg` range. Beyond being covered, **input was stolen**:
- *    pressing it navigated to `/download/`, so someone trying to open a document in
- *    the map landed on the download page.
- * 2. The map's first-interaction instruction (`sample-node-hint`) was 83% covered by
- *    height between 768–1023. It used the horizontal inset token and therefore never
- *    received the bottom reserve.
- *
- * So two things are measured. **A rect intersection is not enough** — the essence of
- * this defect is not overlap but **unreachability**, and only `elementFromPoint`
- * answers that.
- *
- * 1024 is the control: the tab bar is `display:none` there, so overlap must be 0,
- * and a non-zero result means this test is failing to find the tab bar (detecting a
- * silent disablement).
- */
-const TAB_BAR = 'nav[data-tabbar="primary"]';
-
-for (const width of [375, 768, 1023, 1024] as const) {
-  for (const route of ["/ko/docs/", "/ko/topology/"] as const) {
-    test(`${width}px ${route} — 하단 탭바가 아무것도 덮지 않는다`, async ({ page }) => {
-      await page.setViewportSize({ width, height: 1024 });
-      await page.goto(route === "/ko/docs/" ? "/ko/library/?tab=ontology" : route);
-      if (route === "/ko/docs/") {
-        await expect(page).toHaveURL(
-          (url) => url.pathname === "/ko/library/" && url.searchParams.get("tab") === "ontology",
-        );
-        await expect(
-          page.locator('#library-workspace-tabpanel-ontology [data-docs-viewer]'),
-        ).toBeVisible();
-      }
-      await page.waitForLoadState("networkidle");
-      await page.evaluate(() => document.fonts.ready);
-      await waitForAnimationsDone(page.locator("body"));
-
-      const report = await page.evaluate(
-        ({ tabBarSelector, selector }) => {
-          const bar = document.querySelector(tabBarSelector);
-          const barRect = bar ? bar.getBoundingClientRect() : null;
-          const barVisible = Boolean(
-            barRect && barRect.height > 2 && getComputedStyle(bar!).display !== "none",
-          );
-          if (!barVisible) return { barVisible, covered: [], stolen: [] };
-
-          const covered: { tag: string; text: string; overlap: number }[] = [];
-          const stolen: { tag: string; text: string; hit: string }[] = [];
-          for (const el of Array.from(document.querySelectorAll(selector))) {
-            if (el === bar || bar!.contains(el)) continue;
-            const r = el.getBoundingClientRect();
-            if (r.width < 2 || r.height < 2) continue;
-            const cs = getComputedStyle(el);
-            if (cs.visibility === "hidden" || cs.display === "none") continue;
-            // Anything outside the viewport (only visible after scrolling) is out of scope.
-            if (r.bottom <= 0 || r.top >= window.innerHeight) continue;
-
-            const overlap = Math.min(r.bottom, barRect!.bottom) - Math.max(r.top, barRect!.top);
-            if (overlap <= 1) continue;
-            const label = (el.textContent ?? "").trim().slice(0, 40);
-            covered.push({ tag: el.tagName, text: label, overlap: Math.round(overlap) });
-
-            // Reachability — does the centre point return itself (or a descendant/ancestor)?
-            const hit = document.elementFromPoint(
-              Math.round(r.left + r.width / 2),
-              Math.round(r.top + r.height / 2),
-            );
-            if (!hit || !(el.contains(hit) || hit.contains(el))) {
-              stolen.push({
-                tag: el.tagName,
-                text: label,
-                hit: hit
-                  ? `${hit.tagName}${hit.getAttribute("data-testid") ? `[${hit.getAttribute("data-testid")}]` : ""}`
-                  : "null",
-              });
-            }
-          }
-          /**
-           * Second pass — **small surfaces anchored to the bottom**. The selector above is
-           * `button/a/p/…`, so it cannot see hints, chips, or readouts built from `div`.
-           * `sample-node-hint` fell into exactly that blind spot and passed while 83%
-           * covered.
-           *
-           * Containers are excluded: the tab bar floating over a screen-filling element such
-           * as the map canvas is **by design**, not a defect. The discriminator is size —
-           * what the tab bar *must not* cover is a small surface sitting near the bottom,
-           * and what it *may* float above is the large surface beneath it.
-           */
-          for (const el of Array.from(document.querySelectorAll("[data-testid]"))) {
-            if (el === bar || bar!.contains(el) || el.contains(bar!)) continue;
-            const cs = getComputedStyle(el);
-            if (cs.position !== "absolute" && cs.position !== "fixed") continue;
-            if (cs.visibility === "hidden" || cs.display === "none") continue;
-            const r = el.getBoundingClientRect();
-            if (r.width < 2 || r.height < 2) continue;
-            if (r.height > 200 || r.width > window.innerWidth * 0.9) continue; // A container
-            const overlap = Math.min(r.bottom, barRect!.bottom) - Math.max(r.top, barRect!.top);
-            if (overlap <= 1) continue;
-            const id = el.getAttribute("data-testid") ?? el.tagName;
-            if (covered.some((c) => c.text === id)) continue;
-            covered.push({ tag: el.tagName, text: id, overlap: Math.round(overlap) });
-          }
-
-          return { barVisible, covered: covered.slice(0, 8), stolen: stolen.slice(0, 8) };
-        },
-        { tabBarSelector: TAB_BAR, selector: SELECTOR },
-      );
-
-      if (width >= 1024) {
-        // Control — a visible tab bar here breaks the premise that it is `<lg` only.
-        expect(report.barVisible, "1024px 에서 하단 탭바가 아직 떠 있다").toBe(false);
-        return;
-      }
-
-      expect(
-        report.barVisible,
-        `${width}px 에서 하단 탭바를 못 찾았다 — 이 시험이 지금 아무것도 지키지 않는다`,
-      ).toBe(true);
-
-      // Theft comes first: being covered but still pressable is a different grade; being unpressable is the defect.
-      expect(
-        report.stolen,
-        `하단 탭바가 다른 컨트롤의 클릭을 가로챈다: ${JSON.stringify(report.stolen, null, 2)}`,
-      ).toEqual([]);
-      expect(
-        report.covered,
-        `하단 탭바가 요소를 덮는다: ${JSON.stringify(report.covered, null, 2)}`,
-      ).toEqual([]);
-    });
-  }
-}
-
-/**
- * **The two right-hand chrome lanes at 390 with INDEX folded away.**
- *
- * Reported by the 2026-09-05 audit as a live defect — the search chip's centre said
- * to be unreachable. It **did not reproduce**: measured at 390×844 with a coarse
- * pointer, the utility lane occupies y 16–60 and the search lane y 76–120, and
- * `elementFromPoint` at the chip's centre and at all four of its corners returns the
- * chip itself. The rects in the report (88×44 at 286,76) match this measurement
- * exactly, so what was wrong was the verdict, not the geometry.
- *
- * The case is kept because the shape that produced the report is real: the two lanes
- * are **separately absolutely positioned** against the same right edge with 16px
- * between them, and the upper one grows downward with state (the agent activity chip
- * mounts under its row). Nothing today holds that gap open, and the sweep above never
- * visits this state because INDEX is expanded by default at this width — which is
- * also why it could not have caught the defect had it been real.
- *
- * Reachability, not intersection: two lanes may overlap harmlessly, and a chip may be
- * clear of every rect and still be unpressable. Only hit-testing answers the
- * question that was asked.
- */
-test("390px /topology — INDEX 를 접어도 검색 칩이 자기 중심을 돌려준다", async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  // The starter card takes the whole INDEX panel until it is answered, and the fold
-  // control lives underneath it — without this the click times out on the card, not
-  // on the defect this case is about.
-  await page.addInitScript(() => {
-    window.sessionStorage.setItem("demo:first-run-starter-dismissed:v1", "1");
-  });
-  await page.goto("/ko/topology/?guides=off&e2e=1");
-  await expect(page.getByTestId("topology-index-fold")).toBeVisible({ timeout: 30_000 });
-  await page.getByTestId("topology-index-fold").click();
-  // The fold has finished and the search chip has come to rest where it is measured.
-  await waitForAnimationsDone(page.locator("body"));
-  await waitForBoxStill(page.getByTestId("topology-concept-search").first());
-
-  const report = await page.evaluate(() => {
-    const search = document.querySelector<HTMLElement>('[data-testid="topology-concept-search"]');
-    const utility = document.querySelector<HTMLElement>('[data-testid="topology-utility-action-lane"]');
-    const searchLane = document.querySelector<HTMLElement>('[data-testid="topology-search-action-lane"]');
-    if (!search || !utility || !searchLane) return null;
-    const box = search.getBoundingClientRect();
-    const at = (dx: number, dy: number) => {
-      const hit = document.elementFromPoint(box.x + box.width * dx, box.y + box.height * dy);
-      return hit && (search.contains(hit) || hit.contains(search))
-        ? "self"
-        : (hit?.closest("[data-testid]")?.getAttribute("data-testid") ?? hit?.tagName ?? "null");
-    };
-    const a = utility.getBoundingClientRect();
-    const b = searchLane.getBoundingClientRect();
-    return {
-      chip: [Math.round(box.width), Math.round(box.height)],
-      hits: [at(0.5, 0.5), at(0.1, 0.1), at(0.9, 0.1), at(0.1, 0.9), at(0.9, 0.9)],
-      laneGap: Math.round(b.top - a.bottom),
-    };
-  });
-
-  expect(report, "두 레인이나 검색 칩을 못 찾았다 — 이 시험이 아무것도 지키지 않는다").not.toBeNull();
-  expect(report!.chip[1], "검색 칩 높이").toBeGreaterThanOrEqual(36);
-  expect(report!.hits, "검색 칩의 중심과 네 모서리").toEqual(["self", "self", "self", "self", "self"]);
-  // Measured 16px. The lanes are independent absolute boxes, so this number is the
-  // only thing keeping the upper one off the lower one as its contents change.
-  expect(report!.laneGap, "두 레인 사이 간격").toBeGreaterThan(0);
-});
