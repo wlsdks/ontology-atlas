@@ -81,3 +81,24 @@ test('a page that fits lands without a card, and the transcript says so', async 
   // No card stood: this is the path where the screen already knew the answer.
   await expect(page.getByTestId('acp-permission-card')).toHaveCount(0);
 });
+
+test('an explicit question report still asks before a write when the folder allows automatic Wiki writes', async ({ page }) => {
+  await seedFirstRunSeen(page);
+  const harness = await installLibraryWorkHarness(page, {
+    writeMode: 'auto', filePermission: true, permissionText: FITTING_PAGE,
+  });
+  await openFolderFromFirstRun(page, 'en');
+  await page.goto('/en/library/?tab=wiki&guides=off&e2e=1');
+  await page.getByTestId('question-desk-input').fill('What does the architecture build?');
+  await page.getByTestId('question-desk-search').click();
+  await page.getByTestId('question-desk-summarize').click();
+  await expect(page.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'thinking');
+  await harness.read(page);
+  await harness.wait(page);
+  const permission = page.getByTestId('acp-permission-card');
+  await expect(permission).toBeVisible();
+  expect((await harness.snapshot(page)).writes).toEqual([]);
+  await permission.getByRole('button', { name: 'No thanks', exact: true }).click();
+  await expect(permission).toHaveCount(0);
+  expect((await harness.snapshot(page)).writes).toEqual([]);
+});

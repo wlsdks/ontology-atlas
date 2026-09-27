@@ -38,7 +38,12 @@ the agent to re-read originals and cite its answer; that turn disables automatic
 Wiki approval, while the existing permission path still governs unexpected
 writes. Jev remains optional in the installed app: a current cited claim opens
 an exact-transfer consent dialog, and its result is advice on that pair only.
-Neither a key nor an agent is needed to search or open the originals.
+Neither a key nor an agent is needed to search or open the originals. The existing
+Conversation control remains available on the inquiry and report surfaces, so a
+person can choose a runtime or return to the transcript before starting another
+report request. Saved questions retain their direct entry there too. Opening a
+conversation does not submit a question or change permissions; only an explicit
+Ask brief suppresses the folder's ordinary automatic-write policy.
 
 **Report and document (2026-09-27).** One explicit ACP action turns the current
 question into a report request: answer, cited originals, disagreements or

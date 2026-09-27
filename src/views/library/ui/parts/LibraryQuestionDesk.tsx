@@ -239,6 +239,7 @@ export function LibraryQuestionDesk({
   onOpenWiki,
   onOpenSource,
   workActivity = null,
+  navigationActions = null,
 }: {
   docs: readonly VaultDoc[];
   pageTexts: ReadonlyMap<string, string>;
@@ -261,6 +262,7 @@ export function LibraryQuestionDesk({
   onOpenWiki: (slug: string) => void;
   onOpenSource: (path: string, anchor?: string) => void;
   workActivity?: ReactNode;
+  navigationActions?: ReactNode;
 }) {
   const t = useTranslations('library.questionDesk');
   const locale = useLocale();
@@ -535,6 +537,7 @@ export function LibraryQuestionDesk({
       <Chip tone="accentOnTint" disabled={!onFileReport || filingReport} onClick={onFileReport ?? undefined} data-testid="question-desk-file-report">
         {filingReport ? t('report.filing') : t('report.file')}
       </Chip>
+      {navigationActions}
     </div>
     {printError ? <p role="alert" className="mt-2 text-label leading-label text-[color:var(--color-danger-text)]" data-testid="question-desk-print-error">{printError}</p> : null}
     {fileReportNote ? <p role="alert" className="mt-2 text-label leading-label text-[color:var(--color-danger-text)]">{fileReportNote}</p> : null}
@@ -548,7 +551,10 @@ export function LibraryQuestionDesk({
         {!activeReport ? <header className="mb-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-label leading-label text-[color:var(--color-indigo-text-soft)]">{t('eyebrow')}</p>
-            <Chip className="lg:hidden" tone="muted" onClick={onBrowse} data-testid="question-desk-browse">{t('browse')}</Chip>
+            <div className="flex max-w-full flex-wrap items-center gap-2">
+              {navigationActions}
+              <Chip className="lg:hidden" tone="muted" onClick={onBrowse} data-testid="question-desk-browse">{t('browse')}</Chip>
+            </div>
           </div>
           <RowDisclosure open={!displayResult} id="question-desk-introduction">
             <h2 className="mt-4 max-w-[var(--measure-doc-column)] text-hero font-[var(--font-weight-signature)] leading-hero tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]">{t('title')}</h2>

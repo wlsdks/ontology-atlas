@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { createPortal } from "react-dom";
-import { Info, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { BookOpen, Info, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
 import { useLocalVault, useVaultIdentityScope, useVaultSessionIdentityScope } from "@/entities/vault-session";
 import { isWikiPage } from "@/entities/docs-vault";
@@ -1477,10 +1477,9 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
       const generation = ++answerGenerationRef.current;
       const opening = matchLibraryOpeningRequest(start.text, agent.openingRequest, consumedOpeningNonceRef.current);
       if (opening) consumedOpeningNonceRef.current = opening.nonce;
-      // Unmatched prompts are ordinary conversation, not another run of the last
-      // Compile/Check action. This classification never changes judgeWrite/autoDecide.
+      // Only explicit Ask briefs impose read-only; ordinary conversation keeps its write policy.
       const kind = opening?.kind ?? "ask";
-      activeReadOnlyTurnRef.current = kind === 'ask';
+      activeReadOnlyTurnRef.current = opening?.kind === 'ask';
       const refreshTurn = kind === 'refresh' ? captureAnswerRefresh() : null;
       const selectionAtStart = latestSelectedRef.current;
       const asked: { question: string; askedOn: string | null; report?: Pick<QuestionDeskReportRequest, 'searchId' | 'listingVersion' | 'vaultScope' | 'coverage' | 'limits'> & { epoch: number } } | null = kind === "ask"
@@ -2947,6 +2946,16 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
               dockOpen={dockOpen}
               visible={homeVisible && indexSegment === 'wiki'}
               turnRunning={turnRunning}
+              navigationActions={questionDeskVisible ? <>
+                {retainedAnswers.length > 0 ? <Chip ref={questionsDoorRef} tone="muted"
+                  active={homeDoors[1]!.open === true} aria-expanded={homeDoors[1]!.open}
+                  title={homeDoors[1]!.label} data-testid="library-questions-open"
+                  onClick={homeDoors[1]!.onPress}>
+                  <BookOpen size={ICON_SIZE.sm} aria-hidden />
+                  <span className="max-w-[12rem] truncate">{homeDoors[1]!.label}</span>
+                </Chip> : null}
+                {conversationDoor}
+              </> : null}
               workActivity={questionDeskVisible && showLibraryWorkStrip(deskWorkActivity, true) ? <LibraryWorkActivityStrip
                 compact activity={deskWorkActivity}
                 onOpenConversation={agent.runtime && nativeVaultRootPath ? () => agent.setOpen(true) : undefined}
@@ -3550,7 +3559,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
           onTerminalToolObservation={handleTerminalToolObservation}
           onFileAnswer={lastAnswer ? deskReport?.answer === lastAnswer
             ? deskReport.vaultScope === workVaultScope ? handleFileReport : null
-            : handleFileAnswer : null}
+            : () => void handleFileAnswer() : null}
           filingAnswer={lastAnswer !== null && filingAnswer === lastAnswer}
           fileAnswerNote={fileAnswerNote}
           noticeActions={{
