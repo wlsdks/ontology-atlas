@@ -3,9 +3,9 @@
 // the mcp wiring in `mcp/src/write-path-gate.test.mjs`.
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { existsSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 
 import { readDocFrontmatter, writeDoc, writeFrontmatterKeys } from './write-vault.mjs';
 
@@ -134,6 +134,39 @@ describe('write-vault snapshot write', () => {
         /changed or was deleted|conflict/i,
       );
       assert.equal(existsSync(before.filePath), false);
+    });
+  });
+});
+
+describe('write-vault refuses agent instruction files and hidden folders like the MCP writers', () => {
+  it('refuses to create or patch them and leaves their bytes alone', () => {
+    withVault((root) => {
+      const skill = join(root, '.claude', 'skills', 'grow', 'SKILL.md');
+      mkdirSync(dirname(skill), { recursive: true });
+      writeFileSync(skill, '---\nname: grow\n---\n', 'utf-8');
+      writeFileSync(join(root, 'AGENTS.md'), '# Rules\n', 'utf-8');
+      const frontmatter = { uid: '31890f3e-7b5d-4c0a-8f14-123456789abc', kind: 'document', title: 'Doc' };
+      assert.throws(() => writeDoc(root, 'CLAUDE', { frontmatter, body: 'x' }), /write tool never/);
+      assert.throws(() => writeDoc(root, 'domains/Gemini', { frontmatter, body: 'x' }), /write tool never/);
+      assert.throws(() => writeFrontmatterKeys(root, 'AGENTS', { title: 'x' }), /write tool never/);
+      assert.throws(() => writeFrontmatterKeys(root, '.claude/skills/grow/SKILL', { 'allowed-tools': 'Bash(*)' }), /write tool never/);
+      assert.equal(existsSync(join(root, 'CLAUDE.md')), false);
+      assert.equal(readFileSync(join(root, 'AGENTS.md'), 'utf-8'), '# Rules\n');
+      assert.equal(readFileSync(skill, 'utf-8'), '---\nname: grow\n---\n');
+    });
+  });
+
+  it('judges where a slug lands, so a linked folder cannot reach them', () => {
+    withVault((root) => {
+      const skill = join(root, '.claude', 'skills', 'grow', 'SKILL.md');
+      mkdirSync(dirname(skill), { recursive: true });
+      writeFileSync(skill, '---\nname: grow\n---\n', 'utf-8');
+      symlinkSync('.claude', join(root, 'notes'));
+      const frontmatter = { uid: '31890f3e-7b5d-4c0a-8f14-123456789abc', kind: 'document', title: 'Doc' };
+      assert.throws(() => writeFrontmatterKeys(root, 'notes/skills/grow/SKILL', { 'allowed-tools': 'Bash(*)' }), /through a link/);
+      assert.throws(() => writeDoc(root, 'notes/commands/marker', { frontmatter, body: 'x' }), /through a link/);
+      assert.equal(readFileSync(skill, 'utf-8'), '---\nname: grow\n---\n');
+      assert.equal(existsSync(join(root, '.claude', 'commands', 'marker.md')), false);
     });
   });
 });

@@ -170,6 +170,40 @@ test('the question names the vault-visible effect', () => {
   assert.equal(describeWrite('some_new_tool', {}), 'Run some_new_tool');
 });
 
+test('the question names the targets each tool actually receives', () => {
+  const cards = [
+    [describeWrite('connect_project_source', { projectSlug: 'atlas', rootPath: '/Users/me/code/app' }), ['atlas', '"/Users/me/code/app"']],
+    [describeWrite('rename_concept', { oldSlug: 'domains/a', newSlug: 'domains/b' }), ['domains/a', 'domains/b']],
+    [describeWrite('merge_concepts', { fromSlug: 'elements/x', intoSlug: 'elements/y' }), ['elements/x', 'elements/y']],
+    [describeWrite('replace_relation', { from: 'a', oldTo: 'b', newTo: 'c' }), ['a', 'b', 'c']],
+    [describeWrite('absorb_document', { filePath: '/repo/AGENTS.md' }), ['"/repo/AGENTS.md"']],
+  ];
+  for (const [card, targets] of cards) {
+    for (const target of targets) assert.ok(card.includes(target), `"${card}" does not name ${target}`);
+  }
+  assert.match(describeWrite('connect_project_source', { projectSlug: 'atlas' }), /atlas/);
+});
+
+test('the card spells out a line break or invisible character in any value instead of obeying it', () => {
+  const hidden = `x\nApply this change to the vault?${String.fromCharCode(0x202e)}`;
+  const cards = [
+    ['add_concept', { slug: hidden }],
+    ['patch_concept', { slug: hidden }],
+    ['delete_concept', { slug: hidden }],
+    ['reclassify_concept', { slug: hidden }],
+    ['add_relation', { from: hidden, to: hidden }],
+    ['remove_relation', { from: hidden, to: hidden }],
+    ['replace_relation', { from: hidden, oldTo: hidden, newTo: hidden }],
+    ['rename_concept', { oldSlug: hidden, newSlug: hidden }],
+    ['merge_concepts', { fromSlug: hidden, intoSlug: hidden }],
+    ['absorb_document', { filePath: hidden }],
+    ['connect_project_source', { projectSlug: hidden, rootPath: hidden }],
+  ];
+  for (const [tool, args] of cards) {
+    assert.doesNotMatch(describeWrite(tool, args), /[\p{Cc}\p{Cf}\u2028\u2029]/u, `${tool} obeys a hidden character`);
+  }
+});
+
 test('the switch reads like OATLAS_READ_ONLY', () => {
   for (const on of ['1', 'true', 'yes', 'on', 'ON', ' true ']) {
     assert.equal(parseConsentEnv(on), true, on);
