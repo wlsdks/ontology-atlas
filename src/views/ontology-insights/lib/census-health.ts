@@ -7,11 +7,11 @@ import {
   type CanonicalCensus,
 } from "@/entities/knowledge-graph";
 
-/** The overview tab's hero "health" gauge — all four stats derived from real data. */
+/** The overview tab's health gauge, all four stats from real data. */
 export interface CensusHealthSummary {
-  /** Relations per concept — `edges / nodes` to two decimal places. Zero when `nodes` is 0. */
+  /** The ratio `edges / nodes` to two decimals; zero when `nodes` is 0. */
   edgesPerConcept: number;
-  /** `buildOntologyTree`'s orphans — nodes whose containment chain is broken. */
+  /** Orphans from `buildOntologyTree`: nodes whose containment chain is broken. */
   orphanCount: number;
   /** Cycle detections among the `warnings` of the same tree build. */
   cycleCount: number;
@@ -24,16 +24,13 @@ export interface CensusHealthSummary {
 const CONTENT_KINDS = new Set(["domain", "capability", "element"]);
 
 export interface InsightsCensus extends CanonicalCensus {
-  /** Concept-only kind rows. The reserved reader guide stays in Docs and never
-   *  appears as a concept category beside this total. */
+  /** Concept-only kind rows; the reserved reader guide stays in Docs and never appears as a concept category. */
   kindDistribution: ReadonlyMap<string, number>;
 }
 
 /**
- * One derivation for the Insights headline and its kind breakdown. Decision 93
- * keeps `vault-readme` as a Docs reader guide but excludes it from concept census;
- * deriving the total and rows together prevents the rows from summing above the
- * number they explain.
+ * One derivation for the headline total and its kind rows, so the rows never sum above the total. Decision 93
+ * keeps `vault-readme` as a Docs reader guide outside the concept census.
  */
 export function computeInsightsCensus(
   nodes: readonly KnowledgeGraphNode[],
@@ -51,10 +48,8 @@ function pct(numerator: number, denominator: number): number {
 }
 
 /**
- * Derives the hero "health" segment's four statistics from `insight.nodes`/`insight.edges` plus the
- * already-built `treeResult` (orphans and warnings). It takes the caller's `treeResult` rather than
- * rebuilding the tree — the page already calls `buildOntologyTree` once, so this avoids duplicating
- * that computation.
+ * The health gauge's four statistics from the nodes, edges and the caller's `treeResult`, so the tree is not
+ * rebuilt.
  */
 export function computeCensusHealth(
   nodes: readonly KnowledgeGraphNode[],

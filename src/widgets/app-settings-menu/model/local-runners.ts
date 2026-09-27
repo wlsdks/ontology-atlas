@@ -1,16 +1,8 @@
 /**
- * The local runners the models tab names (2026-09-25, owner preview: "Ollama http://localhost:11434
- * ● connected · N models [Check] / LM Studio ○ [Connect]").
- *
- * **Names for doors, not a second store.** There is still exactly one saved runner
- * (`local-endpoint.ts`: one address and one model in this machine's preferences), because the
- * conversation calls one runner. These rows only say which well-known default address a person
- * is most likely to want, so nobody has to remember that LM Studio listens on 1234. Which row is
- * "connected" is derived from the saved address, never stored beside it.
- *
- * **No row claims a runner is off without asking it.** A row that was not checked in this visit
- * says "not connected", not "off": the only way to know is a request, and every request is a
- * line in the vault's sent log, so the screen does not probe on its own.
+ * The local runners the models tab names, as default addresses rather than a second store;
+ * the one saved runner lives in `local-endpoint.ts` and the connected row is derived from it.
+ * An unchecked row says "not connected", never "off"; every probe is a sent-log line, so the
+ * screen never probes on its own.
  */
 export type LocalRunnerId = 'ollama' | 'lmstudio' | 'llamacpp' | 'custom';
 
@@ -36,9 +28,8 @@ export const LOCAL_RUNNERS: readonly LocalRunner[] = [
 ];
 
 /**
- * One spelling per address: trailing slashes and a trailing `/v1` do not make a different runner
- * (`http://localhost:1234/v1/` is LM Studio's own documented form), and the scheme and host are
- * case-insensitive.
+ * One spelling per address: trailing slashes and a trailing v1 segment are dropped (LM Studio
+ * documents the `/v1/` form), and the scheme and host are case-insensitive.
  */
 export function normalizeRunnerBaseUrl(raw: string): string {
   let url = raw.trim().replace(/\/+$/, '');

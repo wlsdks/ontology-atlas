@@ -7,12 +7,8 @@ function focusIfPossible(element: HTMLElement | null): boolean {
 }
 
 /**
- * Restores the keyboard navigation context after the node datasheet closes.
- *
- * The selected row wins when it is still visible under the current INDEX filter.
- * If following a connection pushed the row out of the filter, focus falls to the
- * search field; if a canvas selection collapsed INDEX, it falls further to the
- * INDEX tab, which can reopen it.
+ * The selected row wins while INDEX still shows it; else focus falls to the search field, and to
+ * the INDEX tab when a canvas selection collapsed INDEX.
  */
 export function restoreTopologyFocusAfterDatasheetClose(
   selectedNodeId: string | null,
@@ -43,27 +39,22 @@ export function restoreTopologyFocusAfterDatasheetClose(
   return null;
 }
 
-/**
- * Whether the keyboard has nowhere to stand: focus is on `<body>` (or nothing),
- * which is where the browser drops it when the focused element unmounts.
- */
+/** Where the browser drops focus when the focused element unmounts. */
 function focusWasDropped(doc: Document = document): boolean {
   const active = doc.activeElement;
   return active === null || active === doc.body;
 }
 
 /**
- * Hands focus to `testId` when a closing surface dropped it on `<body>`.
- *
- * Only a dropped focus is moved: a person who clicked somewhere else while the
- * surface closed keeps what they clicked. Returns whether focus landed.
+ * Only a dropped focus moves, so a person who clicked elsewhere keeps it. Returns whether focus
+ * landed.
  */
 export function returnFocusIfDropped(testId: string, doc: Document = document): boolean {
   if (!focusWasDropped(doc)) return false;
   return focusIfPossible(doc.querySelector<HTMLElement>(`[data-testid="${testId}"]`));
 }
 
-/** The first live, reachable element among `testIds`: not inside an exiting (inert) frame. */
+/** Not inside an exiting (inert) frame. */
 function findReachable(testIds: readonly string[], doc: Document): HTMLElement | null {
   for (const testId of testIds) {
     for (const el of doc.querySelectorAll<HTMLElement>(`[data-testid="${testId}"]`)) {
@@ -75,7 +66,6 @@ function findReachable(testIds: readonly string[], doc: Document): HTMLElement |
   return null;
 }
 
-/** Focus is nowhere a keyboard can continue from: `<body>`, or inside a frame on its way out. */
 function focusIsStranded(doc: Document, leaving: Element | null): boolean {
   const active = doc.activeElement;
   if (active === null || active === doc.body) return true;
@@ -84,15 +74,9 @@ function focusIsStranded(doc: Document, leaving: Element | null): boolean {
 }
 
 /**
- * **Hands focus to the first of `testIds` once it exists**, for a surface that just closed or
- * swapped (interaction audit, 2026-09-25: closing the add-to-map and create dialogs, full
- * detail, the tour, and folding INDEX all left focus on `<body>`).
- *
- * The target often mounts a few frames later (INDEX swaps frames on a transition; a panel
- * mounts after the selection settles), so this waits frame by frame, up to `frames`. It only
- * moves a focus that is stranded — on `<body>`, inside an inert frame, or still on `leaving`
- * (the control that started it) — so a person who has already moved on keeps where they went.
- * Returns a cancel function.
+ * Hands focus to the first of `testIds` once it mounts, waiting up to `frames` frames. Only a
+ * stranded focus moves (on `<body>`, in an inert frame, or still on `leaving`), so a person who
+ * moved on keeps their place. Returns a cancel function.
  */
 export function focusWhenReady(
   testIds: readonly string[],

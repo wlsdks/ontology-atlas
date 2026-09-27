@@ -63,48 +63,19 @@ import { TopologyBlockingOverlays } from "./TopologyBlockingOverlays";
 
 const LEFT_PANEL_COLLAPSED_KEY = "demo:left-panel-collapsed:v2";
 /**
- * Boot render gate. Measured 2026-08-19: the single largest long task on a first
- * visit to `/ko/topology/` was **this view's first client render + commit**, at
- * 324–335 ms under 4× CPU throttling. The initial render at a lazy boundary runs
- * in the synchronous lane, so the whole 6,000-line tree lands in one task.
- *
- * The fix: the first client commit clones the DOM of the server fallback
- * (`MapEntryFallback`) that is already on screen, so it finishes in a few ms with
- * no pixel change, and the real tree renders in the following `startTransition`.
- * The transition lane yields roughly every 5 ms, splitting the big render into
- * many small tasks; what the user sees is unchanged — fallback, the same fallback
- * again, then the finished page.
- *
- * Prescription: the first client commit renders only the shared loading visual of the server fallback,
- * and the main body renders in the subsequent `startTransition`. The transition lane yields every ~5ms,
-* splitting the large render into many small tasks; the screen sequence is
- * fallback → same central loading state → completed map. Since server and client share
- * the same `MapEntryLoadingVisual`, there is no separate HTML cloning or markup drift.
- *
- * SSG goes straight to the main body because `window` is unavailable, and the main body suspends on `useSearchParams`
- * as before, so the fallback bakes into the HTML — the exported document remains byte-identical.
+ * Boot render gate: the first client commit renders only the server fallback's shared loading
+ * visual, and the body renders in a following `startTransition`, whose lane yields about every 5 ms
+ * and splits the largest boot long task. Server and client share `MapEntryLoadingVisual`, so markup
+ * cannot drift. SSG goes straight to the body (no `window`), which suspends on `useSearchParams`,
+ * keeping the export byte-identical.
  */
 export function HomePage() {
   const tMapEntry = useTranslations('mapEntry');
   const tMapError = useTranslations('topology.widgetError');
   const [mapEntryTicket] = useState(() => readMapNavigationPending()?.id ?? null);
-  /*
-   * **The split is for the first load, and only the first load** (2026-09-12).
-   *
-   * The two-commit boot above exists so the very first paint of this route is not the 6,800-line
-   * tree rendered in one blocking commit. It was doing that on **every** arrival, including a
-   * rail click from a screen the person was already looking at: measured at 1512×901 on the
-   * static export, `map-entry-fallback` mounted 34 ms after the click and was gone by 57 ms, so
-   * the route crossfade was fading the old screen into a *loading* visual which the real map
-   * then replaced. 23 ms is about a frame and a half — short, and still the wrong picture in the
-   * one frame the browser captured.
-   *
-   * Remembering that this route has already booted (`shared/lib/route-arrival-memory.ts`) keeps
-   * the split exactly where it earns its keep. The memory is empty during the static render and
-   * during hydration, so the exported HTML and the first client commit are unchanged and there
-   * is no mismatch; it is only true from the second arrival onwards, when the person is already
-   * inside the app and the map's code, tokens and derived graph are all in memory.
-   */
+  // Only the first load splits: later arrivals already hold the map's code and graph, and
+  // splitting them crossfades into a loading visual. `shared/lib/route-arrival-memory.ts` is empty
+  // during static render and hydration, so the exported HTML and first commit are unchanged.
   const [bootedOnce, rememberBooted] = useArrivalMemory("home-map-booted", false);
   const [bootRenderReady, setBootRenderReady] = useState(bootedOnce);
   useEffect(() => {
@@ -134,12 +105,8 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   const topologyPreferences = useTopologyPreferences();
   const { t, audiencePlain, setAudiencePlain, siteT, relationLabelInRegister, activeLocale, view3d, galaxy } = topologyPreferences;
   const [localGraphStack, setLocalGraphStack] = useState<string[]>([]);
-  /*
-   * Hold the breadcrumb's contents so it still draws during its exit window.
-   * Without this, the moment the stack empties the pill remains but its inside
-   * goes blank as it leaves. The hold key is the stack itself, flattened to a
-   * primitive because the array's identity changes every render.
-   */
+  // Held through the exit window, or the pill empties as it leaves. Keyed by the flattened stack,
+  // since the array identity changes every render.
   const heldLocalGraphStack =
     useHeldValue(localGraphStack.length > 0 ? localGraphStack : null, localGraphStack.join('>')) ??
     [];
@@ -148,16 +115,12 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   const [fitViewToken, setFitViewToken] = useState(0);
   const [growthReplayToken, setGrowthReplayToken] = useState(0);
   /**
-   * Whether a growth replay is on screen right now, reported by the map loop so the
-   * control can wear the active tone and `aria-pressed` for exactly as long as the
-   * motion lasts — including when the replay finishes by itself and the button
-   * returns to rest on its own (owner, 2026-09-07).
+   * Reported by the map loop, so the control's active tone and `aria-pressed` last exactly as long
+   * as the motion.
    */
   const [growthReplaying, setGrowthReplaying] = useState(false);
   const [topologyVisibleCount, setTopologyVisibleCount] = useState<number | null>(null);
-  // M-5 — semantic-zoom altitude tier reported by the map engine, for the
-  // corner readout's orientation label. "spine" at the overview entry; drops
-  // the "zoom in to see elements" hint once it reaches "element".
+  // The corner readout's orientation label; the "zoom in to see elements" hint drops at "element".
   const [mapZoomTier, setMapZoomTier] = useState<"spine" | "circuit" | "element">(
     "spine",
   );
@@ -167,59 +130,39 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     relations: number;
   } | null>(null);
   const router = useRouter();
-  // Mode-aware read: local mode syncs from the vault manifest, static mode from
-  // the build-time dogfood manifest. Either way a `.md` in the vault reaches the
-  // list and the map immediately.
+  // Local mode syncs from the vault manifest, static mode from the build-time manifest.
   const projectsQuery = useProjects();
   const projects = projectsQuery.projects;
   const projectsError = projectsQuery.error;
-  /* The alert text is held across its exit window too; a primitive needs no key. */
+  // Held across its exit window; a primitive needs no key.
   const heldProjectsError = useHeldValue(projectsError);
   const [routeState, setRouteState] = useHomeRouteState();
   useMapViewSync(routeState.mapView, setRouteState);
   /**
-   * The agent panel — a vertical dock the map makes room for on its right.
-   *
-   * One at a time: opening it retires the search palette and the concept composer.
-   * All three demand attention over the map, and overlapping them destroys which
-   * one is the primary surface.
+   * One attention surface at a time: opening the agent dock retires the search palette and the
+   * composer.
    */
   const homeWorkbenchController = useHomeWorkbenchController();
   const { setAcpChatOpen, acpDockFrameOpen, meaningWorkbenchOpen, reviewUsesSheet } = homeWorkbenchController;
   /**
-   * Whether the dock starts open — true only in the installed app with a key
-   * present (`null` means not known yet). The owner asked for it to be "in view",
-   * but parking a locked panel on a machine with no key keeps the letter of that
-   * and breaks its intent.
+   * True only in the installed app with a key present (`null` = not known yet): a locked panel on a
+   * machine without a key breaks the intent of "in view".
    */
   const agentDockDefaultOpen = useAgentDockDefaultOpen();
   /**
-   * Once the user has opened or closed the dock themselves, their intent beats the
-   * default. Otherwise a dock they closed reopens as soon as the key lookup
-   * resolves, which reads as "close does not work".
+   * The user's own open or close beats the default, or a closed dock reopens when the key lookup
+   * resolves.
    */
   const agentDockTouchedRef = useRef(false);
-  /*
-   * ⚠️ Opening by ourselves goes through the one door (`openAgentChat`), because
-   * that door decides coding-agent vs. API key. Choosing the branch again here
-   * puts two chat panels on screen at once. Owner, 2026-08-16: *"one chat panel only"* (one chat panel only). That function reads runtime state, so it and
-   * this effect both live further down.
-   */
-  /**
-   * A first line handed in from outside. Only a sentence lands here and nothing is
-   * sent — it sits in the panel's input so the user can edit, send, or clear it.
-   * `nonce` makes the same sentence land again when it is picked a second time.
-   */
+  // Opening goes through the one door (`openAgentChat`), which picks the branch, or two panels
+  // open.
+  // A first line handed in lands in the input unsent; `nonce` lets the same sentence land again.
   const [vaultAgentPrefill, setVaultAgentPrefill] = useState<{
     text: string;
     nonce: number;
   } | null>(null);
-  // The header search button, ⌘K and ⇧⌘K all open this one palette
-  // (`MountedGlobalSearch`, ontology nodes + projects). ⌘K on a project detail
-  // page navigates home and leaves a sessionStorage flag; reading it in the lazy
-  // initializer opens the palette on the first render instead of a frame later.
-  // Lazy initializers only run on the client, so SSR and hydration both see
-  // `false` and there is no mismatch.
+  // ⌘K on a project page leaves a sessionStorage flag; the lazy initializer opens the palette on
+  // the first render. It runs only on the client, so SSR and hydration both see `false`.
   const [ontologySearchOpen, setOntologySearchOpen] = useState(() => {
     if (typeof window === "undefined") return false;
     try {
@@ -228,7 +171,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
         return true;
       }
     } catch {
-      /* private mode — skip */
+      // Private mode: skip.
     }
     return false;
   });
@@ -240,29 +183,22 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
         return true;
       }
     } catch {
-      /* private mode */
+      // Private mode.
     }
     return false;
   });
   const [docsDrawerOpen, setDocsDrawerOpen] = useState(false);
-  // SSR and the first client render must match, so the stored preference cannot be
-  // read in a `useState` initializer — that produces a hydration mismatch on the
-  // className. `useSyncExternalStore`'s server snapshot keeps the SSR default and
-  // the client snapshot applies the stored value after mount.
+  // Not read in a `useState` initializer, which mismatches hydration on the className;
+  // `useSyncExternalStore` applies the stored value after mount.
   const leftPanelCollapsed = useLocalStorageBoolean(LEFT_PANEL_COLLAPSED_KEY, true);
   const [topologyRelayoutToken, setTopologyRelayoutToken] = useState(0);
 
   /**
-   * When an arrow key has nowhere to go, one self-dismissing line.
-   *
-   * Owner: *"No related node to move to … Show it briefly and let it disappear automatically."*
-   * (show it briefly, then let it disappear on its own). This reuses the existing
-   * toast rather than adding a surface: a new notice box over the map would need
-   * its own position, tokens, and motion, and that is not a spec one author sets
-   * alone. The widget filters repeats (`shouldAnnounceDeadEnd`).
+   * An arrow key with nowhere to go gets one self-dismissing line through the existing toast, not a
+   * new surface. The widget filters repeats (`shouldAnnounceDeadEnd`).
    */
   const toast = useToast();
-  /** The starter scaffold's failures reach a person as a sentence, not as a thrown string (B2). */
+  /** Scaffold failures reach a person as a sentence, not a thrown string. */
   const failureSentence = useFailureSentence();
 
   const prefetchedProjectHrefsRef = useRef(new Set<string>());
@@ -284,7 +220,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     realmSlug,
     recentWindow,
   } = routeState;
-  /** Overview of the previous node explicitly called by the user. A session view that does not persist to URL/settings. */
+  /** A session view that does not persist to URL or settings. */
   const [expandAllActive, setExpandAllActive] = useState(false);
   const renderProjects = projects;
   const topologyRouteControls = useTopologyRouteControls({
@@ -303,21 +239,13 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   // Callbacks read these, never `vault`, which carries the manifest.
   const vaultStatus = vault.status;
   const openVault = vault.open;
-  // `AppNavRail` lives in the layout, so this page cannot mount it. It registers the
-  // node the rail should render through context instead (`useNavRailSettingsSlot`),
-  // and effect cleanup clears it on navigation. Only this page overrides the shell's
-  // default settings slot, because only this page has the map's screen controls to
-  // put in it. The memo sits here, after `vault` and `ontologyChangeset`, because the
-  // history tile reads the vault path and the session changeset.
+  // `AppNavRail` lives in the layout, so this page registers its settings node
+  // through `useNavRailSettingsSlot`. The memo sits after `vault` and `ontologyChangeset`, which
+  // the history tile reads.
   const navRailSettingsSlot = useMemo(
     () => (
       <>
-        {/* Settings were consolidated 2026-07-24: the old map-settings popover was
-            retired and the gear now opens the single settings sheet. Map-only
-            screen state is injected through `screenControls`, so pages that do not
-            inject it simply have no such row. The sheet is a scrim-backed modal and
-            handles its own ⌘K demotion, so the old gear's mutual-exclusion signal
-            is no longer needed. */}
+        {/* Map-only screen state enters the single settings sheet through `screenControls`. */}
         <AppSettingsMenu
           mode={vaultStatus === 'loaded' ? 'local' : 'static'}
           triggerVariant="rail-tile"
@@ -339,17 +267,11 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     ],
   );
   useNavRailSettingsSlot(navRailSettingsSlot);
-  // Dismissing the first-run card used to hide the "open a folder" entry point
-  // behind the settings gear. While in static sample mode — independent of whether
-  // the card was dismissed — a quiet "switch to my data ⌘O" pill stays in the top
-  // utility row, and it disappears on its own once a real vault is connected.
+  // In sample mode a quiet "switch to my data ⌘O" pill stays in the top row until a real vault
+  // connects.
   const sampleModeSettled = useFirstRunSampleModeSettled();
-  // On unsupported browsers (Safari, Firefox) that pill and ⌘O called
-  // `vault.open()` and nothing happened: the status flipped quietly to
-  // `unsupported`, and anyone who had already dismissed the first-run card got no
-  // response at all — the kind of silence that makes people press the same button
-  // again. When something cannot be done, say why and give somewhere to go: open
-  // the same sheet the card uses, in its unsupported mode.
+  // Without File System Access the pill and ⌘O open the same sheet in its unsupported mode,
+  // instead of silently doing nothing.
   const fsaUnsupported = vaultStatus === "unsupported";
   const [unsupportedGuideOpen, setUnsupportedGuideOpen] = useState(false);
   const requestVaultOpen = useCallback(() => {
@@ -359,9 +281,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     }
     void openVault();
   }, [fsaUnsupported, openVault, setUnsupportedGuideOpen]);
-  // Auto-start accepts **both** the sample and a real folder settling. The earlier
-  // condition only watched the sample, so anyone who picked a folder never got the
-  // tour (`use-auto-start-ready.ts`).
+  // Accepts both the sample and a real folder settling (`use-auto-start-ready.ts`).
   const tourAutoStartReady = useGuidedTourAutoStartReady();
   const topologyAuthoring = useTopologyAuthoring({ setRouteState, meaningEditorIntent, meaningEditParam, toast, topologyVaultReadModel, topologyPreferences });
   const {
@@ -371,14 +291,12 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     createNodeConfirming, setCreateNodeProposal, confirmCreateNode
   } = topologyAuthoring;
   const combinedFitToken = fitViewToken;
-  // Client-side dynamic title: static export cannot vary page metadata, so the
-  // selected context reaches the browser tab from here.
+  // Static export cannot vary page metadata, so the selected context reaches the tab title here.
   useDocumentTitle(
     Array.from(
       new Set(
         [
           selectedProject?.name,
-          // The tab title uses the short display title too.
           selectedOntologyNode?.display ?? selectedOntologyNode?.title,
           t('documentTitle'),
           siteT('siteName'),
@@ -386,8 +304,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
       ),
     ).join(" · ") || null,
   );
-  // Relative time of past steps in the session, based on Date.now(). Capture
-  // once at mount to prevent relative time for the same record from shifting on every re-render.
+  // Captured once so relative times do not shift on re-render.
   const [mountNowMs] = useState<number>(() => Date.now());
   const topologyGraphProjection = useTopologyGraphProjection({
     projects: renderProjects,
@@ -425,8 +342,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     graphNodes: ontologyMapGraph.nodes,
     insightNodes: ontologyInsight?.nodes,
     dustySlugs,
-    // The walked pairs are read back against the vault's own edges, so the trail can
-    // say *why* one step follows another instead of only which places were opened.
+    // Read so the trail can say why one step follows another.
     insightEdges: ontologyInsight?.edges,
     relationLabelOf: relationLabelInRegister,
   });
@@ -452,9 +368,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     setShortcutsOpen, setDocsDrawerOpen, setRouteState, topologyAuthoring, topologyCanvasFocus
   });
   const { createNodePending, createNodeDefaultKind, createNodeSeedDomain } = topologyCreateIntent;
-  // An authored `significance` in the frontmatter overrides the derived "why this
-  // matters" line. Unspecified keys are preserved by the parser, so this needs no
-  // schema change.
+  // The parser preserves unknown keys, so this needs no schema change.
   const authoredSignificance = useMemo(() => {
     const value = nodeEditTarget?.frontmatter?.significance;
     return typeof value === "string" ? value : null;
@@ -463,9 +377,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     (key: string, count: number) => t(`nodeDatasheet.updated_${key}`, { count }),
     [t],
   );
-  // Copy for the last-editor and conflict badges. Reuses the same `editProvenance`
-  // namespace as `DocFrontmatterBlock` rather than copying it, so the two cannot
-  // drift.
+  // Same `editProvenance` namespace as `DocFrontmatterBlock`, so the two cannot drift.
   const tEditProvenance = useTranslations("editProvenance");
   const tSummaryFreshness = useTranslations("summaryFreshness");
   const formatEditAgeLabel = useCallback(
@@ -490,18 +402,13 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   });
   const topologySourceReadiness = useTopologySourceReadiness({ topologyVaultReadModel, topologyPreferences });
   const { projectSourceReadiness } = topologySourceReadiness;
-  // Carries the selection into the nav rail. Going to the rail's documents entry with
-  // a node selected used to land on the default `/docs/` screen, unrelated to what
-  // was selected. The datasheet has already derived `documentHref` (a `?slug=` deep
-  // link to the vault file), so it is registered with the rail as-is — no new
-  // parameter and no new transform. With nothing selected `documentHref` is null and
-  // the rail keeps its default href.
+  // Reuses the datasheet's `documentHref` so the rail's documents entry opens the selection; null
+  // keeps the default.
   const navRailContextHrefs = useMemo(
     () => buildNavRailContextHrefs(v2DatasheetModel?.documentHref ?? null),
     [v2DatasheetModel?.documentHref],
   );
-  /* Ambient chrome that yields to a surface a person is reading: the datasheet and either
-     right dock. Shared by the bottom-right readout so the rule has one name. */
+  // Ambient chrome yields to a surface being read: the datasheet or either right dock.
   const readoutStepsAside = Boolean(v2DatasheetModel) || acpDockFrameOpen || meaningWorkbenchOpen;
   useNavRailContextHrefs(navRailContextHrefs);
   const topologyIndexPresentation = useTopologyIndexPresentation({
@@ -510,27 +417,12 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     topologyAuthoring
   });
   const { indexSlotSwap, renderedIndexState } = topologyIndexPresentation;
-  /*
-   * Detects which agent runtimes are available, so the screen **right after a folder
-   * is opened** can say what can be used (owner remark, 2026-08-16). Kept only inside
-   * settings, that fact exists solely for people who go looking for it.
-   *
-   * **Only verified runtimes** are named. Recommending something we have not actually
-   * measured, on the first screen, reads as a guarantee.
-   *
-   * The decision lives in one place, `isGuardedRuntime`. A session mode once made
-   * Codex qualify here, but installed acceptance proved that mode does not stop an
-   * Atlas MCP write. Removing it from the shared predicate removes it from both
-   * this selector and the Agents destination instead of leaving one unsafe door.
-   */
+  // Names only verified runtimes right after a folder opens; unmeasured ones would read as a
+  // guarantee.
+  // `isGuardedRuntime` is the one decision, shared with the Agents destination.
   const acpRuntimeController = useAcpRuntimeController(setAcpChatOpen);
   const { chatWidth, acpRuntime } = acpRuntimeController;
-  /*
-    The answer to "what should I ask?" is derived from **this folder's current state**
-    (2026-08-17). Reading the vault is the view's job and the chat panel receives only
-    the result: were the panel to read the vault itself it could not stand without a
-    `LocalVaultProvider`, and that is not a property that widget has ever had.
-  */
+  // Derived from this folder's state here, so the chat panel needs no `LocalVaultProvider`.
   const chatSuggestions = useChatSuggestions(projectSourceReadiness.state);
   const acpRuntimeLabel = acpRuntime?.label ?? null;
   const topologyAgentActivity = useTopologyAgentActivity({ topologyVaultReadModel, acpRuntimeController, topologyAuthoring });
@@ -545,22 +437,13 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   useEffect(() => {
     const root = document.documentElement;
     root.dataset.topologyIndex = renderedIndexState;
-    // **No blanket invalidation** (performance trace, 2026-07-28). This effect also
-    // runs when a node is selected, because INDEX demotes to the rail. Discarding the
-    // whole token cache forces a style recalculation on the next frame — 115
-    // `getPropertyValue` calls, 58 ms burnt on every click. The only token
-    // `data-topology-index` actually changes is `--map-safe-inset-left`, so
-    // only that one is refreshed.
+    // Refreshes only `--map-safe-inset-left`: a blanket cache drop on every selection forces a
+    // costly style recalc.
     refreshIndexDependentTokens(root);
     let cancelled = false;
-    // Deferred to a microtask to avoid a synchronous setState (cascading-render
-    // warning).
-    //
-    // The 3D dome and Galaxy do not get this re-fit. This effect runs on **every
-    // selection and deselection** because the INDEX demotes to the rail. Flat needs
-    // the fit before its focus dive; Galaxy instead keeps the reader's current pan
-    // and zoom while the inspector opens. Sending the shared fit token there would
-    // silently replace that reading context with a full overview.
+    // A microtask avoids a synchronous setState (cascading-render warning). The dome and Galaxy
+    // skip this re-fit, since it runs on every selection and Galaxy keeps the reader's pan and
+    // zoom.
     if (!view3d && !galaxy && !acpDockFrameOpen) {
       window.queueMicrotask(() => {
         if (!cancelled) setFitViewToken((count) => count + 1);
@@ -613,26 +496,12 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
       <main
         id="main"
         tabIndex={-1}
-        // When the agent panel takes space, the fixed surface pinned to the right (the
-        // selected-node inspector) stands that much further in. If the evidence (the
-        // node) and the counterpart (the agent) cover each other, "looking at the map
-        // together" does not hold. The rule itself is in `app/globals.css`.
+        // The right-pinned inspector stands in by the panel's width (`app/globals.css`), so the
+        // two never cover each other.
         data-agent-panel-open={agentDockOpen ? 'true' : 'false'}
-        /*
-         * ⚠️ **That rule was reserving the wrong width** (2026-08-16 review).
-         *
-         * The reservation in `globals.css` reads `var(--agent-panel-width)`, which is the
-         * `clamp(320px, 26vw, 420px)` the key-branch panel uses. But the coding-agent
-         * branch is sized **by the user's drag** (320–968px) and writes nothing to that
-         * token. Both set `data-agent-panel-open='true'`, so the rule reserved the wrong
-         * number: at 1512 wide, 26vw is 393 while the panel is 420, leaving the inspector
-         * overlapping by 27px **on top of the resize handle** — and widened further, the
-         * inspector ended up entirely inside the panel.
-         *
-         * Rather than change the rule, **the value it reads is filled with the right
-         * number**. The two branches never open at once, so this override cannot affect
-         * the key branch.
-         */
+        // The coding-agent panel is sized by drag and writes nothing to `--agent-panel-width`,
+        // which the reservation reads, so the right number is filled in here. The two branches
+        // never open at once.
         style={
           acpDockFrameOpen || runtimeChatOpen || meaningWorkbenchOpen
             ? ({ '--agent-panel-width': `${chatWidth.width}px` } as CSSProperties)
@@ -640,14 +509,8 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
         }
         className="relative flex h-full w-full overflow-hidden bg-[color:var(--color-canvas)]"
       >
-        {/* The left nav rail lives in `app/[locale]/layout.tsx` (AppShell); this page no
-          longer mounts it. Its settings gear is registered through context by
-          `useNavRailSettingsSlot(navRailSettingsSlot)` above. */}
         <div className="relative h-full flex-1 overflow-hidden" inert={reviewUsesSheet && (meaningWorkbenchOpen || acpDockFrameOpen)}>
-          {/*
-        Screen-reader landmark and SEO h1. The visual design is canvas-first with
-        nowhere to put a visible h1, so it exists in the document structure only.
-      */}
+          {/* Landmark and SEO h1; the canvas-first design has nowhere to show one. */}
           <h1 className="sr-only">
             {t('srHeading')}
           </h1>
@@ -658,8 +521,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
             message={(() => {
               if (!selectedProject) return "";
               const deps = selectedProject.dependencies.length;
-              // `reverseDeps` is the memo above, so this is an O(1) lookup instead of
-              // re-filtering every project on every render.
+              // `reverseDeps` is memoised, so this is an O(1) lookup.
               const referenced = reverseDeps.get(selectedProject.slug)?.length ?? 0;
               return t('selectionAnnouncement', {
                 name: selectedProject.name,
@@ -669,7 +531,6 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
             })()}
           />
           <>
-            {/* Mobile-only mini brand label. */}
             <TopologyCommandChrome
               routeState={routeState}
               setRouteState={setRouteState}
@@ -724,10 +585,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
               clearCreateNodeProposal={() => setCreateNodeProposal(null)} confirmCreateNode={confirmCreateNode}
               createNodePending={Boolean(createNodePending)} openDocsDrawer={() => setDocsDrawerOpen(true)}
             />
-            {/* INDEX — the left instrument replacing the old `/ontology` tree page.
-                Persists alongside the selected-node datasheet (unlike the analysis rail
-                below, which the node-focus popover suppresses); the approved spec shows
-                both coexisting over the map. */}
+            {/* INDEX stays beside the selected-node datasheet, as the approved spec shows. */}
             <TopologyIndexSlot
               indexSlotFrames={indexSlotFrames}
               setRouteState={setRouteState}
@@ -747,10 +605,6 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
               topologyAgentOrchestration={topologyAgentOrchestration}
               topologyCreateIntent={topologyCreateIntent}
             />
-            {/* Complete deletion of TopologyAnalysisBar (Phase 2 of complete disappearance of analysis panel §d) —
-                after focus(§a)/path(§b)/health(§c) were all removed, the remaining map/graph
-                2-tab lane was migrated to the graph toggle chip in the top-right utility lane. The previous analysis-rail content
-                in overview mode has already been retired as a relationship line sample in the shortcut help (W3). */}
           </>
           <TopologyCanvasSurface
             localGraphRoot={localGraphRoot}
@@ -801,8 +655,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
             topologyIndexPresentation={topologyIndexPresentation}
             topologyExplorationLenses={topologyExplorationLenses}
           />
-          {/* The alert band settles down from the top. Its text must be held through the
-            exit window or it becomes an empty band while leaving. */}
+          {/* The alert text is held through the exit window. */}
           <TopologyInspectorSurfaces
             projectsError={projectsError}
             heldProjectsError={heldProjectsError}
@@ -827,12 +680,9 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
             topologyExplorationLenses={topologyExplorationLenses}
             topologyCreateIntent={topologyCreateIntent}
           />
-          {/* The one palette shared by the header search button, ⌘K, and ⇧⌘K (ontology
-            nodes + projects). Both node and project selections go through `handleSelect`
-            so only the map's selection changes; the default (pushing to `/ontology/?node=`
-            when `onSelectNode` is absent) would leave the map, so the override is
-            mandatory. Controlled through `open`/`onOpenChange`; the hotkeys are managed by
-            `useTypingShortcuts` above. */}
+          {/* Node and project selections go through `handleSelect`, since the palette's
+             default would leave the map for `/ontology/?node=`. The hotkeys come from
+             the `useTypingShortcuts` call above. */}
           <TopologyUtilityOverlays
             ontologySearchOpen={ontologySearchOpen}
             setOntologySearchOpen={setOntologySearchOpen}
@@ -846,9 +696,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
             topologyKeyboardTour={topologyKeyboardTour}
           />
         </div>
-        {/* A sibling in the **same flex row** as the map column, so one width animation
-          moves both: the map narrowing and the panel arriving share a frame and a curve.
-          Not two animations tuned to match — physically one. */}
+        {/* In the same flex row as the map column, so one width animation moves both. */}
         <TopologyAgentDock
           vaultAgentPrefill={vaultAgentPrefill}
           chatSuggestions={chatSuggestions}

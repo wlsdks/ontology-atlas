@@ -10,9 +10,8 @@ const Analysis = dynamic(
 );
 
 /**
- * Commit the lightweight destination before importing or mounting synchronous
- * graph analysis. Suspense alone cannot yield inside a component's useMemo.
- * Two animation frames cross a paint boundary, not an artificial minimum delay.
+ * Commits the light destination before importing and mounting the graph analysis, which blocks in `useMemo` where
+ * Suspense cannot yield. Two animation frames cross a paint boundary; they are not a minimum delay.
  */
 export function InsightsPageEntry() {
   const [painted, setPainted] = useState(false);

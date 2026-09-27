@@ -54,20 +54,16 @@ export interface InsightsBrief {
   /** Whole days between the anchor and the last read, for the heading. */
   sinceDays: number;
   /**
-   * The instant the counts were read. Every relative time on the screen is measured against
-   * this one value: `relativeTime` without it falls back to the render clock, which differs
-   * between the server render and the first client frame and makes the same row say two
-   * things (next-intl ENVIRONMENT_FALLBACK, observed 2026-09-19).
+   * The instant the counts were read; every relative time is measured against it, because the render clock differs
+   * between the server render and the first client frame (next-intl ENVIRONMENT_FALLBACK).
    */
   nowMs: number;
   markSeen: () => void;
-  /** Puts the anchor back where the last mark found it. Local to this browser, so no dialog. */
+  /** Puts the anchor back where the last mark found it; local to this browser, so no dialog. */
   undoSeen: () => void;
   /**
-   * Whether a mark made in this session can still be taken back for this folder. It is a fact
-   * about the folder, not about one mount, so the tab reads it rather than remembering its own
-   * press — leaving the tab and coming back used to lose the way back while the anchor was
-   * still recoverable.
+   * Whether this session's mark can still be taken back for this folder: a fact about the folder, not one mount,
+   * so leaving the tab keeps the way back.
    */
   canUndoSeen: boolean;
   ontology: BriefCore;
@@ -75,33 +71,27 @@ export interface InsightsBrief {
   harness: BriefCore;
   agent: BriefCore;
   /**
-   * The cores whose numbers are still arriving (the harness scan, the ontology's Git walk). While
-   * this is not empty, `totals` and the since list are either absent or the last settled ones,
-   * and the screen says they are being counted.
+   * Cores whose numbers are still arriving (harness scan, Git walk); meanwhile `totals` and the since list are absent
+   * or the last settled ones.
    */
   counting: readonly BriefCoreKey[];
   /**
-   * The headline's two sums. `null` until every core has reported for this folder and visit:
-   * the first read never shows a partial sum. After that, a recount (a reload restarting the Git
-   * walk, a rescan) keeps the last settled pair rather than blanking the line; see
-   * `useLastSettled`.
+   * The headline's two sums, `null` until every core has reported for this folder and visit, so no partial sum shows.
+   * A recount keeps the last settled pair (`useLastSettled`).
    */
   totals: BriefTotals | null;
   /** What happened after the anchor, newest first, bounded; `sinceTotal` is the whole count. */
   since: readonly SinceRow[];
   /**
-   * `null` until the list is final: guide files come from the harness scan, concept dates from
-   * the Git walk, wiki entries from the folder's log. Held like `totals` during a recount.
+   * `null` until final: guide files come from the harness scan, concept dates from the Git walk, wiki entries from
+   * the folder's log. Held like `totals` during a recount.
    */
   sinceTotal: number | null;
   /** The one kind every row after the anchor shares, or null when they differ or there are none. */
   sinceKind: SinceRow['kind'] | null;
-  /**
-   * What a line counts, by name: concept, the exact path that moved, and when. Keyed by the
-   * line id, so a count and the rows under it can never come from different calculations.
-   */
+  /** Keyed by line id, so a count and the rows under it come from one calculation. */
   details: ReadonlyMap<string, readonly BriefLineDetail[]>;
-  /** What the library panel lists: the same model the Library screen renders from. */
+  /** The same model the Library screen renders from. */
   library: {
     availability: BriefCore['availability'];
     pageCount: number;
@@ -112,7 +102,7 @@ export interface InsightsBrief {
     unmeasured: number;
     passes: { endedAt: string; outcome: string; checked: number; written: number; summary: string }[];
   };
-  /** What the harness panel lists: the coverage table's own rows and the mirror findings. */
+  /** The coverage table's rows and the mirror findings. */
   harnessDetail: HarnessDetail;
 }
 
@@ -140,7 +130,7 @@ function isWikiRoundPass(entry: RoundPassEntry): entry is WikiRoundPass {
 const EMPTY_LOG: readonly WikiLogEntry[] = [];
 const EMPTY_SINCE: readonly SinceRow[] = [];
 
-/** `disagreement 3 · superseded 1 · …` — the log line `describeLintTurn` writes, in every locale. */
+/** Parses `disagreement 3 · superseded 1 · ...`, the log line `describeLintTurn` writes in every locale. */
 function lintCountsFromSummary(summary: string | undefined): { disagreement: number; superseded: number } | null {
   if (!summary) return null;
   const pick = (name: string) => {
@@ -154,13 +144,9 @@ function lintCountsFromSummary(summary: string | undefined): { disagreement: num
 }
 
 /**
- * Everything the brief tab draws, gathered from the readers the other screens already use:
- * the Library's source states and folder report, the rounds ledger, the harness scan, the
- * agent activity log. Nothing is computed twice — each number here is the same number its
- * home screen shows, re-read for one question: what changed since this reader last looked.
- *
- * `enabled` is the tab being drawn. The library model hashes every source and the harness
- * scan walks dot folders; neither runs for a tab nobody opened.
+ * Everything the brief tab draws, re-read from the readers the other screens use, so each number matches its home
+ * screen. `enabled` is the tab being drawn: the library model hashes every source and the harness scan walks dot
+ * folders, so neither runs for a tab nobody opened.
  */
 export function useInsightsBrief({
   nodes,
@@ -184,32 +170,23 @@ export function useInsightsBrief({
   const nativeRootPath = handle ? (getTauriVaultRootPath(handle) ?? null) : null;
 
   const [seenAt, writeSeenAt, undoSeenAt] = useBriefSeenAt(identityScope);
-  // Read once per load, inside the loader below, so no render calls the clock.
+  // Read once per load, inside the loader, so no render calls the clock.
   const [nowMs, setNowMs] = useState(() => Date.now());
   const anchor = useMemo(() => resolveBriefAnchor(seenAt, nowMs), [seenAt, nowMs]);
-  /*
-   * Marking the visit moves the read instant with it. Without that, the new anchor is not yet
-   * in the past by the clock this render captured, `resolveBriefAnchor` falls back to the
-   * default window, and the one state-changing control on the tab leaves every sentence
-   * exactly as it was — the reader cannot tell it worked (design-interaction, 2026-09-19).
-   */
+  // Marking the visit moves the read instant too, or the new anchor is not yet past by this render's
+  // clock, `resolveBriefAnchor` falls back to the default window and nothing visibly changes.
   const markSeen = useCallback(() => {
     const at = Date.now();
     writeSeenAt(at);
     setNowMs(at + 1);
   }, [writeSeenAt]);
-  /*
-   * The same press, taken back. The read instant moves with it for the same reason it moves
-   * forward above: the restored anchor has to be in the past by the clock this render holds, or
-   * the sentences stay where the mark left them.
-   */
+  // Undo moves the read instant for the same reason, so the restored anchor is in the past by this render's clock.
   const undoSeen = useCallback(() => {
     undoSeenAt();
     setNowMs(Date.now());
   }, [undoSeenAt]);
-  /* Read straight through on every render. Both presses write through `useBriefSeenAt`, whose
-     `useSyncExternalStore` subscription re-renders this hook, so the answer is never one press
-     behind — and memoising it would only add a dependency list that has to repeat that fact. */
+  // Read on every render: both presses write through `useBriefSeenAt`, whose `useSyncExternalStore` subscription
+  // re-renders this hook, so the answer is never one press behind.
   const canUndoSeen = canUndoBriefSeenAt(identityScope);
   const sinceDays = Math.max(0, Math.floor((nowMs - anchor.anchorMs) / 86_400_000));
 
@@ -260,11 +237,8 @@ export function useInsightsBrief({
   const harnessState = useHarnessReport(handle, projectSlugs, enabled, coverage.capabilityPaths);
   const harnessReport = harnessState.status === 'ready' ? harnessState.report : null;
 
-  /*
-   * Where each concept's evidence lives, from the vault alone: its own `path:` and the
-   * `path:` of every element it lists. The Git bridge then answers, in one walk, when each of
-   * those and the concept's own document last changed.
-   */
+  // Each concept's evidence from the vault alone: its own `path:` and those of the elements it lists. The Git bridge
+  // answers in one walk when each, and the concept's document, last changed.
   const evidenceConcepts = useMemo<EvidenceConceptInput[]>(
     () => buildEvidenceConcepts(docs, nodes),
     [docs, nodes],
@@ -301,7 +275,7 @@ export function useInsightsBrief({
     if (!evidenceChanges?.changes || evidenceChanges.key !== evidenceKey) return null;
     return resolveEvidenceStates(evidenceConcepts, evidenceChanges.changes);
   }, [evidenceChanges, evidenceKey, evidenceConcepts, nativeRootPath]);
-  // The walk above runs under exactly these conditions; until it answers for this load, it is in flight.
+  // Pending until the walk answers for this load, under the same conditions it runs.
   const evidenceWalkPending =
     enabled &&
     nativeRootPath !== null &&
@@ -316,12 +290,8 @@ export function useInsightsBrief({
     noSource: harnessState.status === 'no-source',
   });
 
-  /*
-   * When this concept document last changed — from Git where the walk reached it, from the
-   * file otherwise. A checkout stamps every file with the moment it landed, so in a fresh
-   * worktree the file answer said all 106 concepts had changed this week (measured in the
-   * installed app, 2026-09-19). Git knows better and the walk already asked it.
-   */
+  // When the concept document last changed: from Git where the walk reached it, else from the file. A checkout stamps
+  // every file with its landing time, so the file answer alone would call every concept changed.
   const docChangedAt = useCallback(
     (slug: string, fallback: string | null) => {
       const fromGit = evidenceChanges?.key === evidenceKey
@@ -385,7 +355,7 @@ export function useInsightsBrief({
       })),
       unmeasured: library.structural.unmeasured.length,
       passes: ledger
-        // Ontology reviews share the sidecar ledger but do not belong to the Documents lane.
+        // Ontology reviews share the sidecar ledger but are not in the Documents lane.
         .filter((entry) => entry.kind !== 'ontology' && entry.outcome !== 'asleep')
         .slice(-6)
         .reverse()
@@ -407,8 +377,8 @@ export function useInsightsBrief({
       pages: library.wikiPages,
       folderProblems: { orphanPages: orphan?.count ?? 0, danglingLinks: dangling?.count ?? 0 },
       lint: lintCountsFromSummary(library.log.lastLint?.summary),
-      // `reviewed` is the ontology lane's read-only outcome; the wiki brief only accepts
-      // document-round outcomes. Old entries have no kind and remain valid wiki passes.
+      // `reviewed` is the ontology lane's outcome; the wiki brief accepts only document-round outcomes. Entries without
+      // a kind remain valid wiki passes.
       passes: ledger.filter(isWikiRoundPass),
       log,
       anchorMs: anchor.anchorMs,
@@ -489,11 +459,7 @@ export function useInsightsBrief({
     [mode, vault.agentActivityLog, vault.acpWorkReceipts, anchor.anchorMs],
   );
 
-  /*
-   * The evidence lines name what they count. A count with no way to reach the file and the
-   * date sends a reader back to the agent's summary — the failure this tab exists to end
-   * (PO evidence seat, 2026-09-19).
-   */
+  // The evidence lines name what they count, so a reader reaches the file and date without the agent's summary.
   const details = useMemo(
     () =>
       evidence
@@ -522,25 +488,16 @@ export function useInsightsBrief({
     [docs, docChangedAt, log, harnessReport, locale, mode, vault.agentActivityLog, anchor.anchorMs],
   );
 
-  /*
-   * ⚠️ **Nothing is summed until every core has reported.** The harness scan lands seconds after
-   * the rest, and the headline and the since card used to paint the other cores' sum as final and
-   * change it silently when the scan arrived (98 · 99 became 142 · 101, and 98 changed documents
-   * became 228 changes, on the real bridge, 2026-09-25). `briefTotals` refuses to sum while a core
-   * reads; the since list waits for the same reads plus the folder's own log.
-   *
-   * A disabled brief is not a settled one: with no tab drawing it, the harness hook stands down
-   * and reports "unsupported", so a sum taken then would be a partial sum held as settled.
-   */
+  // Nothing is summed until every core has reported: the harness scan lands seconds after the rest,
+  // and `briefTotals` refuses to sum while a core reads; the since list also waits for the folder's log.
+  // A disabled brief is not settled: its harness hook reports "unsupported", so a sum then would be partial.
   const cores = useMemo(() => [ontology, wiki, harness, agent] as const, [ontology, wiki, harness, agent]);
   const counting = useMemo(() => briefCounting(cores), [cores]);
   const settledTotals = useMemo(() => (enabled ? briefTotals(cores) : null), [enabled, cores]);
   const sidecarPending = enabled && handle !== null && sidecar.handle !== handle;
   const settledSince = enabled && counting.length === 0 && !sidecarPending ? sinceList : null;
-  /*
-   * What a held value answers: this folder and this recorded visit. Not `anchorMs`: in the default
-   * window it moves with every read of the clock, which happens on every reload.
-   */
+  // A held value answers for this folder and recorded visit. Not `anchorMs`: in the default window it moves with
+  // every read of the clock.
   const settleScope = `${sessionScope}\0${seenAt ?? ''}`;
   const totals = useLastSettled(settledTotals, settleScope);
   const since = useLastSettled(settledSince, settleScope);

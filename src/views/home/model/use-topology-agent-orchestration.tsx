@@ -104,11 +104,8 @@ export function useTopologyAgentOrchestration({
 
 
   /**
-   * Screen context — this agent's single biggest advantage. It is injected from the
-   * system side every turn, so the model never has to ask for it with a tool and it is
-   * always fresh. Names are passed as the screen names them (the handoff slug decided
-   * by `resolveNodeAgentTarget`): a handoff only works the moment it is pasted if the
-   * human and the agent use the same name.
+   * Injected every turn, so the model never needs a tool for it. Names match the screen
+   * (`resolveNodeAgentTarget`), since a pasted handoff works only if human and agent use one name.
    */
   const vaultAgentScreenContext = useMemo<ScreenContextSnapshot>(() => {
     const target = resolveNodeAgentTarget(selectedOntologyNode);
@@ -123,23 +120,8 @@ export function useTopologyAgentOrchestration({
   }, [selectedOntologyNode, spotlightOn, realmTitle, visibleNodeCount]);
 
   /**
-   * **One chat panel** (owner decision, 2026-08-16).
-   *
-   * There are two ways to hold a conversation here: through a coding agent installed
-   * on this machine (ACP), or through an API key the user supplied. Each used to have
-   * **its own door and its own panel**, and neither knew whether the other was open —
-   * so two similar-looking chat panels could appear to the right of the map at once.
-   * Owner: *"Is this chat a different thing from that agent? It's confusing."* (this chat is a
-   * different thing from that agent, isn't it? it's confusing).
-   *
-   * Two branches is a fact and not itself the problem; **two doors and two panels**
-   * was. So there is one door:
-   *
-   * - a coding agent, if one is detected (it can do more — it uses this folder's MCP
-   *   tools directly and rides the subscription and settings the user already has)
-   * - otherwise the key branch, which is what remains for people who use no coding
-   *   agent
-   * - **never both at once**
+   * One chat panel, one door: the detected coding agent (ACP, with this folder's MCP tools), else
+   * the API-key branch; never both at once.
    */
   const agentChatUsesRuntime = Boolean(acpRuntime && gitVaultPath);
 
@@ -159,8 +141,7 @@ export function useTopologyAgentOrchestration({
       setVaultAgentOpen(true);
       setAcpChatOpen(false);
     }
-    // The surfaces that retreat take their own close paths, so nothing simply blinks
-    // out.
+    // Retreating surfaces take their own close paths, so nothing blinks out.
     setOntologySearchOpen(false);
     setCreateNodeOpen(false);
   }, [workbenchOpenRef, requestWorkbenchSection, cancelAcpSessionStart, agentChatUsesRuntime, setOntologySearchOpen, setCreateNodeOpen, setChatMounted, setAcpChatOpen, setAcpDockFrameOpen, setVaultAgentOpen, setMeaningWorkbenchOpen]);
@@ -171,11 +152,7 @@ export function useTopologyAgentOrchestration({
     }
   }, [agentChatUsesRuntime, setAcpChatOpen, setAcpDockFrameOpen, setChatMounted, workbenchOpenRef, workbenchSectionRef]);
 
-  /**
-   * On-screen wording for the first line, read from **the same keys** as the panel's
-   * empty-chat chips. If each entry point picked its own phrasing, the same idea would
-   * be said two different ways.
-   */
+  /** The same keys as the empty-chat chips, so one idea is not phrased two ways. */
   const firstWordsLabels = useMemo<FirstWordsLabels>(
     () => ({
       missingDefinition: (title) => tAgent("firstWords.missingDefinition", { title }),
@@ -188,10 +165,8 @@ export function useTopologyAgentOrchestration({
   );
 
   /**
-   * "Ask about this" on the node detail. The sentence is written by the first-line
-   * generator (`screenIntentFor`), so it is character-for-character the empty chat's
-   * first chip and the two entry points cannot diverge. Pressing it opens the panel and
-   * seats the sentence in the input; sending is still the send button.
+   * The sentence comes from `screenIntentFor`, matching the empty chat's first chip; opening seats
+   * it, sending stays manual.
    */
   const askAgentAboutSelectedNode = useCallback(() => {
     const intent = screenIntentFor(selectedOntologyNode, vaultConceptFactsRef.current);
@@ -203,33 +178,21 @@ export function useTopologyAgentOrchestration({
     openVaultAgent();
   }, [selectedOntologyNode, vaultConceptFactsRef, setVaultAgentPrefill, firstWordsLabels, openVaultAgent]);
 
-  /**
-   * Arriving from the insight queue with `?ask=` in the URL.
-   *
-   * **The URL is the state.** Nothing is copied into React state, so "is the panel
-   * open" and "what is being asked" live in one place, and going Back to that URL
-   * restores the same context. The URL carries only the **kind of intent**; the
-   * sentence is written here, by the same generator as the empty-chat chips.
-   */
-  /** Constant: the URL is constant, so the seat must not re-fire on every render. */
+  /** A constant URL must not re-seat on every render. */
   const BUSINESS_FLOW_PREFILL_NONCE = 0;
   const businessFlowRequest = useMemo(
     () => buildBusinessFlowRequest({ request: businessFlowRequestText }),
     [businessFlowRequestText],
   );
 
+  /** `?ask=`: the URL is the state and carries only the intent kind; the sentence is written here. */
   const askPrefill = useMemo(() => {
-    /*
-     * The whole-graph request arrives named, not carried, so it is rebuilt here
-     * from the app's own localized string. That keeps the sentence out of a URL
-     * that gets copied and shared, and means a link made last week still opens
-     * this week's request rather than a frozen copy of it.
-     */
+    // Rebuilt from the app's localized string, so no sentence rides a shared URL and old links get
+    // today's request.
     if (llmBridgeAvailable && routeState.askBusinessFlow) {
       return {
         text: businessFlowRequest,
-        // Constant for a constant URL, so a re-render never overwrites a draft
-        // the person has started editing.
+        // Constant for a constant URL, so a re-render never overwrites a draft.
         nonce: BUSINESS_FLOW_PREFILL_NONCE,
       };
     }
@@ -251,16 +214,10 @@ export function useTopologyAgentOrchestration({
   ]);
 
   /**
-   * A route-carried request must open the **physical** dock, not only select which
-   * branch owns it. `agentChatDoor` can derive `runtimeChatOpen`, but the ACP panel's
-   * width and `Surface.open` are intentionally animated from `acpDockFrameOpen`; without
-   * going through the one door here, a runtime request owns an invisible zero-width
-   * panel.
-   *
-   * Remember request + resolved branch. Ordinary renders (including every keystroke in
-   * the draft) must not call `openVaultAgent` again, while an asynchronously discovered
-   * coding runtime may replace the fallback key branch exactly once. Closing marks the
-   * dock touched before clearing the URL, so the intermediate render cannot reopen it.
+   * A route request must open the physical dock (`acpDockFrameOpen`), or it owns a zero-width
+   * panel. Remembering request and branch keeps keystrokes from reopening it; a late-discovered
+   * runtime may replace the key branch once. Closing marks the dock touched before clearing the
+   * URL, so the next render cannot reopen it.
    */
   const routeAskDockRequestRef = useRef<RouteAskDockRequest | null>(null);
   useEffect(() => {
@@ -281,21 +238,15 @@ export function useTopologyAgentOrchestration({
     if (plan.shouldOpen) openVaultAgent();
   }, [agentChatUsesRuntime, agentDockTouchedRef, askPrefill, openVaultAgent]);
 
-  /**
-   * Closing also withdraws the request in the URL. Otherwise the derived state reopens
-   * the panel after every close and it reads as "close does not work".
-   */
+  /** Closing also withdraws the URL request, or the derived state reopens the panel. */
   const closeVaultAgent = useCallback(() => {
     agentDockTouchedRef.current = true;
     cancelAcpSessionStart();
-    /*
-     * It **stays drawn** through the close, so the exit animation has somewhere to
-     * run; `Surface` reports `onExited` when it is finished and it unmounts then.
-     * (Set again here because some paths — a request arriving in the URL — never go
-     * through this function.)
-     */
+    // Stays drawn through the close so the exit animation can run; `Surface` reports `onExited` to
+    // unmount.
+    // Set here too because a URL request never goes through this function.
     setChatMounted(true);
-    // Since there is only one window, there is only one way to close it — this single action closes whichever branch was open.
+    // One window, one close for whichever branch is open.
     setAcpDockFrameOpen(false);
     setVaultAgentOpen(false);
     setAcpChatOpen(false);
@@ -310,19 +261,11 @@ export function useTopologyAgentOrchestration({
     );
   }, [agentDockTouchedRef, cancelAcpSessionStart, setChatMounted, setAcpDockFrameOpen, setVaultAgentOpen, setAcpChatOpen, setVaultAgentPrefill, setMeaningWorkbenchOpen, setAgentOpeningRequest, setAnalysisParentRunId, setAnalysisParentRequestText, setRouteState]);
 
-  /**
-   * Which branch currently owns **the one panel**.
-   *
-   * An "ask this" arriving in the URL follows the same rule: with a coding agent
-   * present, that sentence lands in its composer. Previously only this request opened
-   * the key branch separately, so the panel a chip opened and the panel a node opened
-   * were **different panels**.
-   */
+  /** Which branch owns the one panel; a URL "ask this" follows the same rule. */
   const {
     runtime: runtimeChatOpen,
     key: keyChatOpen,
-    /** Is a chat panel up right now, on either branch? The chip's pressed state reads
-     * this. */
+    /** The chip's pressed state reads this. */
     open: agentChatOpen,
   } = agentChatDoor({
     hasRuntime: agentChatUsesRuntime,
@@ -332,22 +275,13 @@ export function useTopologyAgentOrchestration({
   });
   const agentDockOpen = agentChatOpen || acpDockFrameOpen || meaningWorkbenchOpen;
 
-  /**
-   * Pressing the collapsed INDEX tab is an explicit choice to go back to the left
-   * workbench. Expanding it while the agent is open would squeeze the map between two
-   * panels again, so the same input retires the agent as INDEX arrives. Both surfaces
-   * use the motion they already have.
-   */
+  /** Expanding INDEX retires the agent, or the map squeezes between two panels. */
   const handleIndexTabExpandFromAgent = useCallback(() => {
     if (agentDockOpen) closeVaultAgent();
     handleIndexTabExpand();
   }, [agentDockOpen, closeVaultAgent, handleIndexTabExpand]);
 
-  /**
-   * The instruction to analyse this folder, built by something that **knows the vault
-   * path**. Left as an i18n string it would carry no path, and the sentence alone
-   * would not tell the agent which folder to look at.
-   */
+  /** Built here because it must carry the vault path; an i18n string alone names no folder. */
   const analyzePrompt = useMemo(
     () =>
       buildAgentAnalyzePrompt({
@@ -359,28 +293,15 @@ export function useTopologyAgentOrchestration({
     [vaultHandle],
   );
 
-  /**
-   * Seats that instruction **in the chat composer**. A person still does the sending —
-   * the same contract, and the same state, as "ask about this" on a node.
-   */
+  /** Seats it in the composer; a person still sends, like "ask about this". */
   const sendAnalyzeToAgent = useCallback(() => {
     setVaultAgentPrefill({ text: analyzePrompt, nonce: Date.now() });
     openVaultAgent();
   }, [analyzePrompt, openVaultAgent, setVaultAgentPrefill]);
 
-  /*
-   * The dock's width is published for the surfaces that must stay clear of it: the
-   * cards floating over the map (`right-dock-reserve.ts`) and the top-centred toaster,
-   * which shifts by half of it to stay centred over the map area (`app/globals.css`).
-   * A corner toast used to land on the composer (2026-08-16); the toaster moved to the
-   * top centre on 2026-09-06.
-   *
-   * The width is the same state the dock is drawn from (`chatWidth`, dragged and
-   * remembered), so no rect is measured: the previous ResizeObserver watched the node
-   * that existed when the dock opened and missed the one that replaced it, leaving the
-   * variable unset while a 460px dock stood open (measured in the export, 2026-09-06).
-   * A sheet-wide review reserves nothing, as before.
-   */
+  // Publishes the dock width for floating map cards (`right-dock-reserve.ts`) and the top-centred
+  // toaster (`app/globals.css`). It reads `chatWidth`, the state the dock draws from, because a
+  // ResizeObserver missed the replacement node and left the variable unset.
   useEffect(() => {
     const root = document.documentElement;
     if (!agentDockOpen || reviewUsesSheet) {
@@ -393,19 +314,14 @@ export function useTopologyAgentOrchestration({
     };
   }, [agentDockOpen, reviewUsesSheet, chatWidth.width]);
 
-  /*
-   * "Open a chat with this tool" in the settings sheet's Agents section arrives here
-   * (2026-08-16 review: the screen people went to in order to connect had no door
-   * through to connecting). There is still one door — this only names the runtime and
-   * the same function does the opening.
-   */
+  // The settings Agents section's "open a chat with this tool" names the runtime; the same door
+  // opens it.
   useEffect(() => {
     const accept = (runtimeId: string | null, prompt: string | null) => {
       const target = runtimeId ?? acpRuntime?.id ?? null;
       requestedAcpRuntimeRef.current = target;
       setAcpRuntimeId(target);
-      // Held rather than set now: the panel only exists once the dock opens below, and a request
-      // handed to a panel that is not mounted is a request nobody receives.
+      // Held until the dock mounts, or the panel never receives it.
       pendingAgentChatPromptRef.current = prompt;
       setPendingAgentChatRuntimeId(target);
       return true;
@@ -442,11 +358,7 @@ export function useTopologyAgentOrchestration({
     };
   }, [pendingAgentChatRuntimeId, acpRuntime?.id, agentChatUsesRuntime, openVaultAgent, gitVaultPath, pendingAgentChatPromptRef, requestedAcpRuntimeRef, setAgentOpeningRequest, setPendingAgentChatRuntimeId, agentDockTouchedRef]);
 
-  /*
-   * Opening by itself goes through **the same door**. It lives here because
-   * `openVaultAgent` above has to read runtime state — the moment this effect picks a
-   * branch of its own, there are two chat panels.
-   */
+  // Opens through the same door, since a branch picked here would make two chat panels.
   useEffect(() => {
     if (agentDockDefaultOpen !== true || agentDockTouchedRef.current) return;
     openVaultAgent();

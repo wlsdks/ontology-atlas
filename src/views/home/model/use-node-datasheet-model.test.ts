@@ -4,13 +4,7 @@ import type { AgentActivityStatus } from "@/entities/vault-session";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { useNodeDatasheetModel } from "./use-node-datasheet-model";
 
-/**
- * Regression guard: for a concept with no `.md` of its own — one merely named
- * in another document's relation key — the popover's document button opened
- * **somebody else's document citing it**. The user believed they were reading
- * about the concept they just opened, another concept's write-up appeared, and
- * the button was neither disabled nor explained.
- */
+/** A concept without its own `.md` must not open another concept's document from its button. */
 
 const stamp = new Date(0);
 
@@ -62,16 +56,14 @@ function renderModel(
   ).result.current;
 }
 
-describe("useNodeDatasheetModel — 문서 링크 정직성", () => {
-  it("자기 문서가 있는 노드는 자기 문서 링크를 낸다", () => {
+describe("useNodeDatasheetModel document link honesty", () => {
+  it("a node with its own document links to it", () => {
     const selected = node("capability:frontmatter-to-ontology", [
       "ontology/capabilities/frontmatter-to-ontology",
     ]);
     const model = renderModel(selected, [selected]);
 
-    // What this suite protects is **which document the link points at**. Since 2026-09-14
-    // the address also carries `via=topology:<node>`, the way back from the document to the
-    // map; `ontology-node-href.test.ts` is where that marker itself is measured.
+    // Pins which document the link targets; `ontology-node-href.test.ts` covers the `via` marker.
     expect(model.v2DatasheetModel?.documentHref).toBe(
       "/docs/?slug=ontology%2Fcapabilities%2Ffrontmatter-to-ontology" +
         "&via=topology%3Acapability%3Afrontmatter-to-ontology",
@@ -79,9 +71,9 @@ describe("useNodeDatasheetModel — 문서 링크 정직성", () => {
     expect(model.v2DatasheetModel?.mentionDocumentHref).toBeNull();
   });
 
-  it("자기 문서가 없는 노드는 남의 문서 href 를 '문서' 링크로 내지 않는다", () => {
-    // Reproduces the QA finding: this element node is only cited as evidence by
-    // the `frontmatter-to-ontology` capability document and has no `.md` of its own.
+  it("a node without its own document does not present another document's href as its document link", () => {
+    // An element cited only by the `frontmatter-to-ontology` capability document, with no `.md` of
+    // its own.
     const citedBy = "ontology/capabilities/frontmatter-to-ontology";
     const selected = node("element:derive-ontology-from-vault", [citedBy], {
       hasOwnDocument: false,
@@ -89,20 +81,17 @@ describe("useNodeDatasheetModel — 문서 링크 정직성", () => {
     const model = renderModel(selected, [selected]);
 
     expect(model.v2DatasheetModel?.documentHref).toBeNull();
-    // The information is not discarded: it stays in a separate field for the
-    // surfaces that label the destination (context menu, full detail).
+    // Kept for the surfaces that label the destination (context menu, full detail).
     expect(model.v2DatasheetModel?.mentionDocumentHref).toBe(
       `/docs/?slug=${encodeURIComponent(citedBy)}` +
         "&via=topology%3Aelement%3Aderive-ontology-from-vault",
     );
-    // The evidence row remains — the popover already shows that document by name.
+    // The popover already names that document in its evidence row.
     expect(model.v2DatasheetModel?.evidence.total).toBe(1);
   });
 
-  // Scope correction (2026-07-26): without counting the parent bucket, a node
-  // that has only a parent showed "0 connections" in both the popover and the
-  // handoff. This locks that the model carries that bucket all the way through.
-  it("부모만 있는 노드도 속한 곳을 세고 핸드오프에 싣는다", () => {
+  // Without the parent bucket a parent-only node showed "0 connections".
+  it("a node with only a parent counts where it belongs and carries it in the handoff", () => {
     const parent = node("capability:frontmatter-to-ontology", [], { kind: "capability" });
     const selected = node("element:derive-ontology-from-vault", []);
     const model = renderModel(
@@ -130,7 +119,7 @@ describe("useNodeDatasheetModel — 문서 링크 정직성", () => {
     );
   });
 
-  it("`hasOwnDocument` 미지정 노드는 종전대로 자기 문서로 읽는다 (하위 호환)", () => {
+  it("a node without `hasOwnDocument` reads as having its own document for backward compatibility", () => {
     const selected = node("capability:legacy", ["capabilities/legacy"]);
     const model = renderModel(selected, [selected]);
 

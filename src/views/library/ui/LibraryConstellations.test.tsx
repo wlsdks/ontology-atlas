@@ -131,7 +131,7 @@ describe('LibraryConstellations', () => {
     expect(mocks.push).toHaveBeenCalledWith('/topology/?constellation=new');
   });
 
-  it('with no concept to pick, the primary door adds concepts on the map instead', () => {
+  it('with no concept to pick, opens the ontology starter without entering the redirecting map', () => {
     mocks.useSavedConstellations.mockReturnValue({
       status: 'ready',
       constellations: [],
@@ -143,8 +143,8 @@ describe('LibraryConstellations', () => {
 
     renderView([]);
     expect(screen.queryByRole('button', { name: 'Pick on the map' })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Add concepts on the map' }));
+    fireEvent.click(screen.getByRole('button', { name: enMessages.library.collections.addConcepts }));
 
-    expect(mocks.push).toHaveBeenCalledWith('/topology/');
+    expect(mocks.push).toHaveBeenCalledWith('/library/?tab=ontology&ontologyView=documents');
   });
 });

@@ -10,26 +10,15 @@ import {
 } from "@/shared/lib/project-source-store";
 
 /**
- * The minimum verdict needed to lift "no code folder connected" out of a
- * single node click and into the INDEX beside the map.
- *
- * Measured 2026-08-04: that sentence appeared 0 times on the first screen and
- * showed up only after clicking **exactly the one** project node (one of 15
- * fixture nodes, one of 100+ in the dogfood vault). An invisible diagnosis
- * never reaches anyone, however good the prescription.
- *
- * ⚠️ **Do not mount a second `useProjectSourceModel`.** That hook builds the
- * graph hash and the witness list, and in the installed app it also calls
- * `inspect`, which walks the whole folder — putting that in a place that runs
- * constantly, regardless of selection, is exactly the pattern where the most
- * frequent interaction pays for a screen nobody has opened
- * (`.claude/rules/architecture.md`). Only one fact is needed here: **does this
- * project have zero bound folders?** One sidecar read answers it.
+ * Lifts "no code folder connected" out of a single node click into the INDEX beside the map. Never
+ * mount a second `useProjectSourceModel` here: its folder walk would run regardless of selection
+ * (`.claude/rules/architecture.md`). One sidecar read answers whether any project has zero bound
+ * folders.
  */
 export interface UnboundProjectSource {
-  /** Graph id of a project node with no bound folder — clicking opens that node. */
+  /** Clicking the row opens that node. */
   nodeId: string;
-  /** How many such projects there are; the row's wording picks singular or plural. */
+  /** The row picks singular or plural from it. */
   count: number;
 }
 
@@ -51,9 +40,8 @@ const SOURCE_BINDING_TOOLS = new Set([
 ]);
 
 /**
- * One stable revision for the inputs that can change project-source readiness without changing
- * ontology Markdown. In particular, ACP source binding writes only a sidecar; without its terminal
- * receipt in this key the screen can keep recommending an action the agent already completed.
+ * ACP binding writes only a sidecar, so its receipt belongs in this key, or the screen recommends a
+ * done action.
  */
 export function buildProjectSourceReadinessRefreshToken(input: {
   projectSlug: string | null;
@@ -81,9 +69,9 @@ export function buildProjectSourceReadinessRefreshToken(input: {
 export function useProjectSourceReadiness(input: {
   vaultHandle: FileSystemDirectoryHandle | null;
   nodes: readonly KnowledgeGraphNode[];
-  /** Injection point for tests. Unset, it reads the vault file sidecar. */
+  /** Test injection point; unset, it reads the vault sidecar. */
   createStore?: (handle: FileSystemDirectoryHandle) => ProjectSourceStore;
-  /** A completed bind/measure transition invalidates the sidecar read in this mounted view. */
+  /** A completed bind or measure invalidates the sidecar read. */
   refreshToken?: string | number | null;
 }): ProjectSourceReadiness {
   const projects = useMemo(
@@ -97,12 +85,7 @@ export function useProjectSourceReadiness(input: {
     [input.nodes],
   );
   const projectKey = projects.map((p) => p.slug).join(" ");
-  /*
-   * The read value carries the `key` of **what it was read from**. That keeps
-   * another vault's answer off screen for the frame right after switching
-   * vaults, and removes the need to setState inside the effect just to clear a
-   * "not read yet" state.
-   */
+  // Keyed by what it was read from, so another vault's answer never shows after a switch.
   const [read, setRead] = useState<{
     handle: FileSystemDirectoryHandle;
     key: string;
@@ -121,13 +104,8 @@ export function useProjectSourceReadiness(input: {
     };
     const store = (input.createStore ?? createVaultFileProjectSourceStore)(handle);
     void store.read().then((result) => {
-      /*
-       * Unreadable states (`malformed`/`unavailable`) are **passed over
-       * silently.** This is one quiet line beside the map, not the place to
-       * diagnose a broken file — the panel says that in its own name when the
-       * project is opened. Drawing a failed read as "no folder" would make this
-       * row start lying.
-       */
+      // Unreadable states pass silently: drawing them as "no folder" would make the row lie; the
+      // panel reports them.
       if (result.status === "malformed" || result.status === "unavailable") {
         settle({ state: "unavailable", unbound: null });
         return;
@@ -142,8 +120,7 @@ export function useProjectSourceReadiness(input: {
         : { state: "bound", unbound: null });
     }, () => settle({ state: "unavailable", unbound: null }));
     return () => { cancelled = true; };
-    // `projects` is a new array every render, so depending on it directly would
-    // read the sidecar every render. The slug list decides what actually changed.
+    // `projects` is a new array every render; the slug list decides what changed.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [input.vaultHandle, input.createStore, input.refreshToken, projectKey]);
 
@@ -157,7 +134,7 @@ export function useProjectSourceReadiness(input: {
     : { state: "loading", unbound: null };
 }
 
-/** Existing INDEX consumer: only the actionable missing-project summary. */
+/** Only the actionable missing-project summary. */
 export function useUnboundProjectSource(input: {
   vaultHandle: FileSystemDirectoryHandle | null;
   nodes: readonly KnowledgeGraphNode[];

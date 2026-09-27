@@ -74,7 +74,7 @@ describe("buildOntologyMapGraph — regression: OntologyMap must not be mounted 
     });
   });
 
-  it("과제 ⑩ — 캔버스 label 은 node.display 가 있으면 그것, 없으면 title 그대로", () => {
+  it("canvas label uses node.display when present and the title otherwise", () => {
     const nodes = [
       node({
         id: "capability:cli-developer-entry",
@@ -126,13 +126,8 @@ describe("buildOntologyMapGraph — regression: OntologyMap must not be mounted 
   });
 
   it("engraves on a domain exactly what the map holds under it, across a shared concept", () => {
-    /*
-     * The regression this pins (2026-09-21): `element:shared` is declared by a capability
-     * in domain A and by domain B's own frontmatter. The census counted it for A while the
-     * map drew it under B, so A's node said 2 and opening it produced 1. The number and the
-     * subtree are computed here by two different modules, which is the point — a test that
-     * asked one of them twice would have passed throughout.
-     */
+    // `element:shared` is declared under domain A and by domain B; the census and the subtree come
+    // from two modules, so asking one of them twice would not catch the disagreement.
     const nodes = [
       node({ id: "proj", kind: "project" }),
       node({ id: "domain:a", kind: "domain" }),
@@ -185,10 +180,8 @@ describe("buildOntologyMapGraph — regression: OntologyMap must not be mounted 
     const graph = buildOntologyMapGraph(nodes, edges);
     const countById = new Map(graph.nodes.map((n) => [n.id, n.descendantCount]));
 
-    // The engraved numeral on project/domain nodes is the capability + element
-    // total from the BFS census, the same number the INDEX tree and /projects
-    // cards show. `size` (visual magnitude) keeps the element weight, so the two
-    // are no longer always equal.
+    // Census total (capability + element), as INDEX and /projects show; `size` keeps the element
+    // weight.
     expect(countById.get("proj")).toBe(2); // cap + el
     expect(countById.get("dom")).toBe(2);
     expect(countById.get("el")).toBe(0);
@@ -196,13 +189,8 @@ describe("buildOntologyMapGraph — regression: OntologyMap must not be mounted 
     expect(sizeById.get("proj")).toBe(1); // element weight, unchanged
   });
 
-  // Regression (owner live-test, blocker 3): "amber on multiple nodes" —
-  // the charter (`docs/prototypes/topology-b2plus.html`'s own fixture data
-  // marks exactly one node `hub: true`) is a SINGLE amber-ring hub, the
-  // highest-degree node in the graph — not every node past a threshold.
-  // `isHub` used to be `incoming >= PROMOTION_MIN_FAN_IN`, which marks every
-  // sufficiently-connected node as a hub; fixed to rank all nodes by
-  // incoming (fan-in) count and mark only the single top one.
+  // The charter (`docs/prototypes/topology-b2plus.html`) is a single amber-ring hub, not every node
+  // past a fan-in threshold.
   it("marks isHub true for only the single highest fan-in node in the whole graph", () => {
     const nodes = [
       node({ id: "core", kind: "capability" }),

@@ -20,9 +20,11 @@ const INK = {
 };
 
 /** Ephemeral observations, not an audit log or a claim that an agent is idle. */
-export function LibraryWorkActivityStrip({ activity, onSelect, reserved = false }: {
+export function LibraryWorkActivityStrip({ activity, onSelect, reserved = false, compact = false, onOpenConversation }: {
   activity: LibraryWorkActivity;
   onSelect: (target: LibraryWorkTarget) => void;
+  compact?: boolean;
+  onOpenConversation?: () => void;
   /**
    * Whether a session is open to report on; the lane reserves its height only then, so an idle
    * Library does not lose canvas space.
@@ -65,25 +67,26 @@ export function LibraryWorkActivityStrip({ activity, onSelect, reserved = false 
      * structural check itself"): at 390px one line pushed the receipt chip past the right edge.
      * 64px fits the 44px coarse-pointer chip plus inset.
      */
-    <div className="h-28 flex-none min-[601px]:h-16" data-testid="library-work-lane">
+    <div className={compact ? "flex-none" : "h-28 flex-none min-[601px]:h-16"} data-testid="library-work-lane">
     <Surface open={headline !== null} motion="overlay" as="section"
       aria-label={t("title")} data-testid="library-work-activity"
-      className="relative mx-5 flex h-full min-w-0 flex-col justify-center gap-2 border-b border-[color:var(--color-border-soft)] sm:mx-6 md:mx-10 min-[601px]:flex-row min-[601px]:items-center min-[601px]:gap-4">
+      className={"relative flex min-w-0 flex-col justify-center gap-2 border-b border-[color:var(--color-border-soft)] min-[601px]:flex-row min-[601px]:items-center min-[601px]:gap-4 " + (compact ? "py-3" : "mx-5 h-full sm:mx-6 md:mx-10")}>
       {headline ? <>
         <div className="flex min-w-0 items-start gap-2 min-[601px]:flex-1" data-testid="library-work-current" data-work-kind={headline.kind} data-work-phase={headline.phase}>
           <span className={"flex-none " + INK[headline.kind]}><Icon size={20} aria-hidden="true" /></span>
           <div className="min-w-0">
             <div className="flex min-w-0 items-baseline gap-2">
-              <span className="flex-none text-label leading-body text-[color:var(--color-text-tertiary)]">{current ? t("now") : t("latest")}</span>
-              <p role="status" aria-atomic="true" className="truncate text-body-lg leading-body-lg font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
+              <span className="flex-none text-label leading-body text-[color:var(--color-text-tertiary)]">{current ? t("now") : compact ? t("compactLatest") : t("latest")}</span>
+              <p role="status" aria-atomic="true" className={"truncate font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)] " + (compact ? "text-body leading-body" : "text-body-lg leading-body-lg")}>
                 {label(headline)}
               </p>
             </div>
-            <p title={headline.target?.ref ?? t("unbound")} className="truncate font-mono text-caption leading-body text-[color:var(--color-text-secondary)]">
+            {!compact || headline.target ? <p title={headline.target?.ref ?? t("unbound")} className="truncate font-mono text-caption leading-body text-[color:var(--color-text-secondary)]">
               {headline.target?.ref ?? t("unbound")}
-            </p>
+            </p> : null}
           </div>
         </div>
+        {compact && onOpenConversation ? <Chip size="sm" tone="muted" onClick={onOpenConversation}>{t("openConversation")}</Chip> : null}
         <div
           ref={historyRef}
           className="relative flex-none"

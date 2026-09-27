@@ -170,11 +170,7 @@ describe("UnmatchedTab — a folder with nothing missing", () => {
 });
 
 describe("UnmatchedTab — a folder that has not been read yet", () => {
-  /*
-   * ⚠️ **"Nothing is missing" and "nothing has been read" are opposite facts.** While the
-   * manifest is still null the list has no answer, and the empty state asserts one — the
-   * most reassuring sentence on the tab, shown at the one moment it cannot be true.
-   */
+  // While the manifest is null the list has no answer, so it must not claim every name resolves.
   it("says it is still reading rather than claiming every name resolves", () => {
     render(
       <UnmatchedTab

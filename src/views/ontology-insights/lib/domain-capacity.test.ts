@@ -53,7 +53,7 @@ describe("computeDomainCapacityRows", () => {
     expect(computeDomainCapacityRows([node("project:atlas", "project")], [])).toEqual([]);
   });
 
-  it("여러 도메인이 함께 쓰는 개념은 붙잡은 도메인 한 쪽에서만 집계된다", () => {
+  it("counts a concept shared by several domains only under the domain that claims it", () => {
     // The containment spine hangs a concept in one place, so the bars have to add up
     // to what the project holds rather than counting a shared element twice
     // (`domain-census.ts`, "One owner per concept").

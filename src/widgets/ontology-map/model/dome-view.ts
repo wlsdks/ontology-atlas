@@ -1,68 +1,22 @@
 import { findCouplingGroups } from './coupling-groups';
 
 /**
- * 3D view — an opt-in mode with two truthful arrangements: the **Dome** lays
- * ownership onto concentric kind rings; the **Cloud** lets relations place nodes
- * freely across all three axes. The top toolbar's 3D picker chooses between them.
- *
- * **3D here is a different layout, not a projection tweak.** The first
- * implementation (2026-08-18, morning) kept the 2D placement and only added a
- * per-kind z-lift; the owner turned it on and judged "I can't tell what changed" (I can't tell what changed). What the owner pointed at was the hero engine's
- * object (`hero-engine.js`): **the containment spine unrolled into rings** —
- * project at the apex, then a domain ring, a capability ring, an element ring. A
- * node's angle on its ring comes from its containment parent (children fan out
- * inside the parent's sector), so both z and angle carry **typed facts**: height
- * = the kind's containment tier, angle = ownership. Cloud has a separate
- * relation-force derivation documented beside `buildCouplingCloudTargets` below.
- *
- * **Why opt-in rather than default.** Turning the same data into a dome
- * multiplies edge crossings (hero measurement 58.0 → 190.7, 3.29×; crossing
- * minimisation dominates graph readability, Purchase 1997). So the default map
- * stays 2D; 3D is for asking either the ownership or coupling question as shape.
- * The measured cost is in `docs/DECISIONS.md`, entry 2026-08-18.
- *
- * **Camera and rotation grammar.** Dome coordinates are projected **into world 2D**
- * and then ride the existing camera (pan clamp, wheel zoom, fit) — no second
- * renderer and no 3D library, only weak perspective `s = f/(f+z)`, same as the
- * hero. Render handoff follows the offset grammar S5 parallax established: world
- * coordinates stay untouched, and draw, hit-test and instrumentation share **one
- * frame map** (`DomeRuntime.frame`) so a click during rotation lands where the
- * node was drawn.
- *
- * - Idle spin: `DOME_PERIOD_MS` (48 s/turn). Stops while the pointer is over the
- *   canvas (so an aimed-at node does not slide out from under the cursor), and is
- *   0 under `prefers-reduced-motion`.
- * - Orbit: dragging empty space is yaw/pitch. Release coasts to a stop with the
- *   same decay constant as `--map-camera-momentum-decay`. It is
- *   user-initiated, so reduced-motion keeps 1:1 tracking and zeroes only the
- *   momentum (WCAG 2.3.3's direct-manipulation exception — the same contract as
- *   pan/pinch).
- * - Node drag: moves **only within its own kind plane** (`solveDomePlanePoint`).
- *   One screen point maps to infinitely many depths, so allowing free movement
- *   would fling a node to an arbitrary z and break the typed fact z carries.
- *
- * **Scale and alpha.** The perspective factor `s` is geometry, so it always
- * applies (node radius × s — draw, hit and instrumentation use the identical
- * expression). Depth fog adds no new ramp: it calls the S5 clarity ramp
- * (`realmDepthClarityAlpha`) by kind tier. Continuous rotation-driven fog is not
- * available, because the darkest ink (`--map-ink-depth-leaf`) needs a
- * minimum alpha of 0.955 to hold WCAG 1.4.11's 3:1 floor (composite measurement,
- * `topology-ink-contrast.contract.test.ts`). Depth is carried by scale, position
- * and motion parallax instead.
- *
- * **Why these constants are not tokens** — the `camera-easing.ts` /
- * `realm-transition.ts` precedent: the values govern feel (geometry, timing), not
- * a theme surface.
+ * The opt-in 3D view: arrangements where height and bearing carry typed facts (height is
+ * the kind's containment tier, bearing is ownership) or where relations place nodes
+ * (`createCouplingCloudRelaxer`). Opt-in because 3D multiplies edge crossings, which dominate
+ * readability (`docs/DECISIONS.md`, 2026-08-18). Coordinates project into world 2D through
+ * weak perspective `s = f/(f+z)` and ride the existing camera; draw, hit test and
+ * instrumentation share one frame map (`DomeRuntime.frame`), so a click during rotation
+ * lands where the node was drawn. Idle spin stops under the pointer and under reduced
+ * motion; orbit release coasts on the camera's momentum decay, and reduced motion keeps 1:1
+ * tracking without momentum. A node drags only within its kind plane, or it would take an
+ * arbitrary z. Constants are feel values, not theme tokens.
  */
 export type DomeViewKind = "project" | "domain" | "capability" | "element";
 
 const TAU = Math.PI * 2;
 
-/**
- * kind → containment tier (the project root at the apex, element leaves on the
- * bottom ring). The spine order from `docs/ONTOLOGY-ATLAS-SPEC.md` §2 — this
- * table is the typed fact that height carries.
- */
+/** The spine order of `docs/ONTOLOGY-ATLAS-SPEC.md` §2: the fact height carries. */
 export const KIND_DEPTH: Readonly<Record<DomeViewKind, number>> = {
   project: 0,
   domain: 1,
@@ -70,199 +24,77 @@ export const KIND_DEPTH: Readonly<Record<DomeViewKind, number>> = {
   element: 3,
 };
 
-/** Idle spin period — the hero engine's 48 s/turn, unchanged. */
+/** Idle spin: one turn per 48 s. */
 export const DOME_PERIOD_MS = 48000;
-/**
- * Default look-down angle (rad). The hero engine's 0.34 (19°) was tuned for a
- * single dome whose only rings were wide latitude circles; on the cone tree the
- * bases are small circles under each parent, and at 19° they squash into lines.
- * 0.5 (29°) opens them enough to read as circles while the tree still reads as
- * standing rather than as a plan view.
- */
+/** Steep enough that the small base circles under each parent read as circles, not lines. */
 export const DOME_PITCH_DEFAULT = 0.5;
 /**
- * How far orbit drag may pitch — **0.15 to 0.95 rad (8.6°–54.4°), always looking
- * down on the planes** (2026-09-25, the lit-strata direction).
- *
- * From 2026-08-18 the range ran to just short of both poles, because the owner
- * wanted to look up from below. The lit planes changed what an angle costs. A
- * translucent tier disc is a **floor** you read the level off; seen from below
- * it is the same disc in the reverse order, so the project sits under the
- * elements and the fill, the sector bands and the grid all lie. Seen edge-on
- * (below 0.15) the four discs collapse into one line and the level is gone; above
- * 0.95 the planes stack into concentric circles and the height that carries the
- * tier is gone. The clamp keeps the two facts the picture exists for — level and
- * owning domain — true at every angle a drag can reach.
- *
- * Both walls sit well inside the poles, so the screen's up can no longer flip;
- * the rubber band (`resistDomePitch`) and its overshoot cap give them the same
- * pressed-and-rebounding feel the pole had. Dissent kept in the decision fragment
- * "The 3D map drops the Cone": looking from underneath was a real request, and a
- * reader who wants it has lost it.
+ * Pitch stays between 0.15 and 0.95 rad, always looking down: from below a tier disc reverses
+ * the level order, edge-on the discs collapse into one line, and near the top the height
+ * that carries the tier is lost. `resistDomePitch` gives the walls a rubber band. Dissent is
+ * in the decision fragment "The 3D map drops the Cone".
  */
 export const DOME_PITCH_MAX = 0.95;
 export const DOME_PITCH_MIN = 0.15;
 /**
- * Rubber-band overshoot cap (rad) — the quarter resistance is linear, so a hard
- * pull could run far past a wall; this caps the squash itself. Below 0.15 − 0.09
- * the planes would still be seen from above, so even a pressed wall never shows
- * them from underneath.
+ * The quarter resistance is linear, so this caps the squash; 0.15 − 0.09 still looks from
+ * above, so a pressed wall never shows the planes from underneath.
  */
 const DOME_PITCH_OVERSHOOT_CAP = 0.09;
 /**
- * Perspective focal distance (dome units) — smaller is a wider lens, i.e. a bigger
- * front-to-back scale difference.
- *
- * The value inherited from the hero engine was 1050. The hero is **one screen's
- * decorative object**, where strong perspective would rightly be distracting. The
- * map, though, is opened to read *this is in front, that is behind*, and at 1050
- * that difference barely exists: the bottom ring's radius is 224, so the nearest
- * point is 1050/(1050−224) = **1.27** and the farthest 1050/(1050+224) = **0.82**,
- * a ratio of 1.55. A few px of diameter difference on one disc does not read as
- * depth, and fog ended up carrying depth alone.
- *
- * Narrowing to 760 gives 1.42 / 0.77 = **1.84**. Front-to-back size difference
- * opens up 19% more in the same scene, and a node rotating to the front now
- * arrives **growing** — that size change is itself part of motion parallax, so
- * depth strengthens both in a still frame and during rotation (Ware & Franck 1996
- * — structured 3D motion contributes more than stereo).
- *
- * Why not narrower: below 500 the bottom ring's near arc is pushed off screen
- * (projection factor above 2), and a clipped ring stops working as a latitude
- * depth cue.
+ * Smaller is a wider lens. 760 gives a near/far scale ratio of 1.42/0.77 = 1.84 on the
+ * bottom ring, enough to read front from back and to grow a node rotating forward; below
+ * 500 the ring's near arc leaves the screen.
  */
 export const DOME_FOCAL = 760;
 /**
- * Longest programmatic pose move (ms) — 「Home」 (the re-fit / home action) and
- * selection reframe. Half a turn (π, the worst case of the nearest-equivalent-
- * angle rule) gets this long. The 2D camera tween cap (420 ms) belongs to pan and
- * zoom and is far too abrupt for half a turn, which then reads as a whip (measured:
- * 2.3 rad in 93 ms). This promotes the 750 ms 「Home」 was already using into the
- * name for the pose-move cap.
+ * Longest programmatic pose move (Home, selection reframe) for up to half a turn; the
+ * 420 ms 2D camera cap reads as a whip over that angle.
  */
 export const DOME_POSE_MS = 750;
 /**
- * Orbit drag sensitivity — screen px → yaw (rad).
- *
- * The hero used 0.006, sized for its small canvas, and the owner judged rotation
- * on the map canvas "Rotation feels stiff" (rotation feels stiff, 2026-08-18). three.js
- * OrbitControls' standard mapping is `2π × dx / clientHeight`, which for our map
- * canvas height (~900 px) works out to ≈0.007/px; raised to 0.0075 to match (one
- * full turn = 838 px of drag). A constant rather than the formula because binding
- * it to canvas height would let a window resize change the sensitivity and leave
- * tests unreproducible.
+ * Matches three.js OrbitControls' `2π × dx / clientHeight` at a ~900 px canvas (838 px per
+ * turn); a constant, so a window resize never changes sensitivity or test results.
  */
 export const ORBIT_YAW_PER_PX = 0.0075;
-/** Orbit drag sensitivity — screen px → pitch (rad). Lower than yaw so horizontal stays the primary axis. */
+/** Lower than yaw so horizontal stays the primary axis. */
 export const ORBIT_PITCH_PER_PX = 0.005;
 /**
- * Time constant for orbit input smoothing (ms) — during a drag, yaw/pitch chase
- * the **target** the pointer set (`yawTarget`) by `1−exp(−dt/τ)` each frame.
- *
- * Why chase a target (measured 2026-08-18): yaw used to be added directly on every
- * pointermove, so whenever the event period exceeded the frame period (120 Hz
- * ProMotion display + 60 Hz pointer, or a 25 ms event interval in the harness)
- * rotation drew as a staircase — 23 px of jump in one frame, then two frames still.
- * The total is 1:1, but the delivery judders and that reads as "stiff". Smoothing
- * spreads the gap across frames. reduced-motion snaps to the target with no
- * smoothing (1:1 direct manipulation preserved).
- *
- * Same principle as three.js OrbitControls' dampingFactor (≈τ 90 ms at 60 Hz) and
- * yomotsu camera-controls' smoothTime, only tighter — technique only, no code
- * ported.
+ * During a drag yaw and pitch chase the pointer's target by `1−exp(−dt/τ)`, so the empty
+ * 8.3 ms frame a 60 Hz pointer leaves on a 120 Hz display spreads over two with about a
+ * frame of lag; a wider τ trails the hand, and below the frame interval the staircase
+ * returns. Reduced motion snaps to the target.
  */
 export const ORBIT_SMOOTH_TAU_MS = 14;
 
-/*
- * ⚠️ **45 → 14 (2026-08-19, owner: *"The mouse moves in stutters"* — the mouse
- * moves in stutters).**
- *
- * 45 ms was chosen to remove the staircase, but it was **five times wider than the
- * staircase it had to remove.** In exponential chasing τ is the time to reach 63%
- * of the target, so 45 ms means ~135 ms to 95% — **16 frames** at 120 Hz. For all
- * of that the dome trails where the hand has already been. The staircase went and
- * "it doesn't follow my hand" arrived in its place, which in direct manipulation is
- * the worse illness (1:1 is the contract).
- *
- * Actual size of the hole being filled: a 60 Hz pointer with a 120 Hz display
- * leaves **one frame (8.3 ms)** empty. τ=14 ms spreads that one frame over two
- * while keeping the lag to about a frame — the staircase still goes and the lag
- * does not arrive.
- *
- * Why not lower: once τ drops below the frame interval, smoothing is effectively
- * off and the original staircase returns.
- */
-/**
- * Geometric decay per ms for release momentum — the same value as
- * `--map-camera-momentum-decay` (0.998). Coasts to a stop with the same
- * feel as a camera flick (the R4 motion charter's iOS deceleration constant — we do
- * not invent a new easing).
- */
+/** The `--map-camera-momentum-decay` value, so an orbit coasts like a camera flick. */
 const ORBIT_VEL_DECAY_PER_MS = 0.998;
 /**
- * **Release projection and "a landing that means something".**
- *
- * With momentum alone the dome stops at **any** angle. Physically honest, but as a
- * product it is an accident: where the screen ends up after release means nothing.
- *
- * Apple's *Designing Fluid Interfaces* (WWDC18 803) prescribes two steps: ①
- * compute the **natural landing point** from the release velocity first, then ② if
- * that landing point is near a meaningful position, **re-aim** the deceleration at
- * it. That is what UIScrollView paging does, and why scrolling stops at "the next
- * page" rather than at an arbitrary offset.
- *
- * On this dome the meaningful positions are **domain meridians**: stopping there
- * puts one domain squarely at the front with its containment fan spread across the
- * centre of the screen — where someone rotating in order to read was actually
- * headed.
- *
- * **Why the window is narrow (this is the feature's safety catch).** Re-aim only
- * when the natural landing point is **already close**. A wide window turns into
- * "the app moved the position I set", which breaks the direct-manipulation
- * contract. Outside the window nothing happens and momentum stops as before.
+ * Release projection (Designing Fluid Interfaces, WWDC18 803): compute the natural landing
+ * from the release velocity, and only if it is already near a domain meridian re-aim the
+ * deceleration there. The window stays narrow, or the app moves the place the person set.
  */
 export const ORBIT_SNAP_WINDOW_RAD = 0.14;
 
-/**
- * **Total-travel coefficient** of the geometric decay (ms) — `Σ v·d^t dt = v /
- * (−ln d)`. Multiply the release velocity by this for the angle it will still turn
- * if left alone.
- */
+/** `Σ v·d^t dt = v / (−ln d)`: release velocity × this is the angle still to turn. */
 export const ORBIT_DECAY_TRAVEL_MS = 1 / -Math.log(ORBIT_VEL_DECAY_PER_MS);
 
-/** Release velocity (rad/ms) → the yaw it stops at if left alone. */
 export function projectOrbitLanding(yaw: number, yawVel: number): number {
   return yaw + yawVel * ORBIT_DECAY_TRAVEL_MS;
 }
 
 /**
- * **Longest coast a flick may buy (rad) — half a turn.**
- *
- * Measured 2026-09-02: a moderate flick (200 px in ~150 ms) released at
- * 0.01 rad/ms and, with the shared 0.998/ms decay, coasted 1.8 turns. Past half
- * a turn the person has lost which face was in front, so the extra travel
- * carries no information, and the landing re-aim (`ORBIT_SNAP_WINDOW_RAD`)
- * rarely engages because the natural landing point lands anywhere. The
- * decay constant stays shared with the camera flick; only the release velocity
- * is capped so the total travel never exceeds π. A drag itself is never capped
- * (1:1 direct manipulation).
+ * Past half a turn the person loses which face was in front, so the release velocity is
+ * capped to keep the coast within π. The decay stays shared; a drag is never capped.
  */
 export const ORBIT_COAST_MAX_RAD = Math.PI;
 
-/** Clamp a release velocity (rad/ms) so the coast it buys stays within `ORBIT_COAST_MAX_RAD`. */
 export function clampOrbitReleaseVelocity(velRadPerMs: number): number {
   const max = ORBIT_COAST_MAX_RAD / ORBIT_DECAY_TRAVEL_MS;
   return Math.max(-max, Math.min(max, velRadPerMs));
 }
 
-/**
- * The yaws that put a domain **at the front** — this dome's meaningful positions.
- *
- * Derivation: in `projectWithTrig` the post-rotation depth term is
- * `zr = r·sin(θ + yaw)` (θ being that node's bearing on its ring), and the point
- * nearest the camera is where `zr` is minimal. So `θ + yaw = −π/2`, i.e.
- * **yaw = −π/2 − θ**.
- */
+/** Depth after rotation is `r·sin(θ + yaw)`, minimal at θ + yaw = −π/2, so yaw = −π/2 − θ. */
 export function domeFacingYaws(model: DomeModel, kind: DomeViewKind = "domain"): number[] {
   const out: number[] = [];
   const planeR = DOME_PLANE[kind].r;
@@ -275,11 +107,7 @@ export function domeFacingYaws(model: DomeModel, kind: DomeViewKind = "domain"):
   return out.sort((a, b) => a - b);
 }
 
-/**
- * The meaningful position near the natural landing point, or null (momentum as
- * before). Candidates are 2π-periodic, so each is folded to the **equivalent angle
- * nearest the landing point** before comparing.
- */
+/** Candidates are 2π-periodic, so each folds to the equivalent angle nearest the landing. */
 export function snapOrbitLanding(
   landing: number,
   candidates: readonly number[],
@@ -288,7 +116,6 @@ export function snapOrbitLanding(
   let best: number | null = null;
   let bestDist = Infinity;
   for (const c of candidates) {
-    // The c + 2πk nearest to landing.
     const turns = Math.round((landing - c) / TAU);
     const near = c + turns * TAU;
     const dist = Math.abs(near - landing);
@@ -301,31 +128,16 @@ export function snapOrbitLanding(
 }
 
 /**
- * Time constant of the exponential approach that carries the dome to its landing
- * (ms) — **derived so it continues the release velocity**: `d/dt = (target −
- * yaw)/τ` must equal `yawVel` at the moment of release, hence
- * `τ = (target − yaw)/yawVel`.
- *
- * That one line is what makes velocity continuous; a fixed τ makes speed jump on
- * the frame the hand lifts. The range is clamped: too short teleports, too long
- * never stops.
+ * Derived as `τ = (target − yaw)/yawVel`, so the approach starts at the release velocity; a fixed τ
+ * makes speed jump when the hand lifts. Clamped: too short teleports, too long never stops.
  */
 export const ORBIT_SNAP_TAU_MIN_MS = 90;
-/**
- * The 320 ms cap is about **tail length** (measured 2026-08-18). At 600 ms a big
- * flick was still 0.033 rad from target 2.6 s later — invisible (under 1 px on the
- * outer ring), but the rAF loop stays awake the whole time. At 320 ms even the
- * worst case is inside the arrival threshold (`ORBIT_SNAP_ARRIVE_RAD`) within 2 s.
- */
+/** Short enough that the worst case falls inside `ORBIT_SNAP_ARRIVE_RAD` within 2 s. */
 export const ORBIT_SNAP_TAU_MAX_MS = 320;
 
 /**
- * Residual counted as arrived (rad) — must be **smaller than 1 px**.
- *
- * Measured on the outer ring: `224 (dome units) × unit (≈1.8) × factor (≈0.315) ≈
- * 127 px/rad`, so 1 px ≈ 0.008 rad; we use half of that. An exponential approach
- * never reaches its target in principle, so without this threshold the loop would
- * stay awake forever.
+ * On the outer ring 1 px ≈ 0.008 rad; this is half. Exponential approach never arrives, so
+ * without it the loop stays awake forever.
  */
 export const ORBIT_SNAP_ARRIVE_RAD = 0.004;
 
@@ -336,33 +148,16 @@ export function orbitSnapTauMs(delta: number, yawVel: number): number {
   return Math.min(ORBIT_SNAP_TAU_MAX_MS, Math.max(ORBIT_SNAP_TAU_MIN_MS, tau));
 }
 
-/** Below this |yawVel| (rad/ms), snap to 0 — prevents an infinite tail. */
+/** Below this |yawVel| (rad/ms) the coast snaps to 0, or its tail never ends. */
 const ORBIT_VEL_EPS = 0.000005;
 
 /**
- * **Cone height : width proportion** — the hero's tier heights multiplied by this.
- *
- * The hero's plane table was drawn for a square stage. On the workbench the free
- * canvas is about 1.4 : 1 (measured 2026-09-05 at 1920x1080: 1532 x 1080 once the
- * index panel is subtracted), and the cone's own outline measured 602 x 620 px —
- * taller than wide. A shape that square cannot fill a landscape rectangle: even
- * fitted with no padding at all it reaches 70% of the free area only by spending
- * 100% of the height, which leaves the apex under the floating tool lane.
- *
- * Scaling the tier heights (the radii are normalised by `DOME_FIT_RADIUS`, so
- * scaling them instead would cancel out) brings the outline to roughly 1.2 : 1,
- * which fits the landscape frame with air left at top and bottom. What the height
- * carries is unchanged: the four kind planes stay in order and stay separated by
- * five to ten node diameters, so "project on top, element at the bottom" reads
- * exactly as before — the cone is simply not as tall as it is wide any more.
+ * Scales the tier heights so the outline fits a landscape canvas (about 1.2 : 1) with air
+ * above and below; the four planes keep their order and separation.
  */
 export const CONE_HEIGHT_SCALE = 0.8;
 
-/**
- * kind → ring height (y, up is positive) and radius — the hero engine's PLANE
- * table, its heights scaled by `CONE_HEIGHT_SCALE`, in its 620-unit world.
- * `DomeModel.unit` scales it to actual world units.
- */
+/** Heights scaled by `CONE_HEIGHT_SCALE` in a 620-unit world; `DomeModel.unit` maps to world. */
 export const DOME_PLANE: Readonly<Record<DomeViewKind, { y: number; r: number }>> = {
   project: { y: 148 * CONE_HEIGHT_SCALE, r: 0 },
   domain: { y: 56 * CONE_HEIGHT_SCALE, r: 148 },
@@ -370,28 +165,22 @@ export const DOME_PLANE: Readonly<Record<DomeViewKind, { y: number; r: number }>
   element: { y: -150 * CONE_HEIGHT_SCALE, r: 224 },
 };
 
-/** The dome's nominal bottom radius (dome units) — the element ring. Denominator of the world scale. */
+/** The denominator of the world scale. */
 export const DOME_FIT_RADIUS = DOME_PLANE.element.r;
 
-/** Radius cap for in-plane drag (dome units) — 1.5× the bottom ring. Beyond it, direction is kept and length clamped. */
+/** Beyond it direction is kept and length clamped. */
 const DOME_DRAG_MAX_RADIUS = DOME_FIT_RADIUS * 1.5;
 
 /**
- * Positive floor for the plane back-projection denominator (dome units) — keeps the
- * solution from flipping behind the camera when the pointer crosses the plane's
- * horizon (see `solveDomePlanePoint`). It is comfortably below `F·sin(pitch)` ≈ 125
- * at the old pitch floor (0.12), so solutions in the normal region are untouched.
+ * Keeps the solution from flipping behind the camera as the pointer crosses the plane's
+ * horizon (`solveDomePlanePoint`); far below `F·sin(pitch)`, so normal solutions are untouched.
  */
 const DOME_PLANE_SOLVE_DENOM_MIN = 30;
 
 /**
- * Depth fog — the hero engine's fog ramp unchanged: near nodes 1.0, far nodes 0.09,
- * quadratic falloff. «This contrast is the 3D itself» (this contrast *is* the 3D — hero
- * comment). Far deeper than the 2D map's 3:1 ink contrast floor, which is a
- * dispensation the owner granted for 3D mode alone (`docs/DECISIONS.md`
- * «3D exemption list», the 3D dispensation list). In exchange, whenever something must
- * actually be read (hover, focus, ego, trail) the draw exempts it from fog and
- * brings it back up. `u` is depth normalised within this frame (0 near → 1 far).
+ * Near 1.0, far 0.09, falling as (1 − u)^1.8. Deeper than the 2D 3:1 ink floor by a 3D-only dispensation
+ * (`docs/DECISIONS.md`, 3D exemption list); anything that must be read (hover, focus, ego,
+ * trail) is exempted. `u` is depth normalised in this frame, 0 near.
  */
 export function domeFogAlpha(u: number): number {
   const c = u <= 0 ? 0 : u >= 1 ? 1 : u;
@@ -399,185 +188,68 @@ export function domeFogAlpha(u: number): number {
 }
 
 /**
- * Depth halo — the device that makes **near things actually occlude far things** on
- * a 2D canvas. Just before stroking a line, the same curve is stroked once slightly
- * thicker **in the canvas background colour**. Whatever was already drawn behind is
- * cut away by that width, and the eye reads the cut as front-versus-back.
- *
- * Source: Everts et al., *Depth-Dependent Halos: Illustrative Rendering of Dense
- * Line Data*, IEEE TVCG 15(6), 2009 (IEEE Vis 2009 Best Paper) — making halo width
- * **depth-dependent** keeps bundle structure readable in dense line data. The same
- * paper prescribes pairing halos with **line-width attenuation**, which this file
- * already has (`domeLineWidthFactor`). The lineage is Appel et al.'s haloed line
- * (1979).
- *
- * **Why this is not "making things glow".** A halo is **background colour** — it
- * removes ink rather than adding it. The glow the charter forbids spreads colour
- * outwards and **adds** ink. Opposite directions.
- *
- * **Why the width varies with depth.** A halo asserts "I am in front". A far line
- * wearing a thick halo claims to occlude what it could never occlude, which inverts
- * the depth cue. So it is widest near and converges to 0 far away.
- *
- * The unit is **screen px**, not world — a halo is a property of ink, not a size of
- * the object, so the cut must be the same width at any zoom.
+ * A depth-dependent halo (Everts et al., IEEE TVCG 15(6), 2009): each line is first stroked
+ * slightly wider in the background colour, cutting what lies behind so near reads over far.
+ * It removes ink rather than adding it, so it is not a glow. Widest near and 0 far, since a
+ * far halo would claim occlusion it cannot have; in screen px so the cut is zoom-independent.
  */
 export const DOME_HALO_MAX_PX = 3.4;
 
-/** Depth → halo half-width (screen px). u=0 near → max, u=1 far → 0. */
 export function domeHaloPx(u: number): number {
   const c = u <= 0 ? 0 : u >= 1 ? 1 : u;
   return DOME_HALO_MAX_PX * Math.pow(1 - c, 1.35);
 }
 
 /**
- * Opacity multiplier for the halo — multiplied into the alpha that line is being
- * drawn at.
- *
- * To cut, the halo must be **denser than what it cuts**. But fog has already
- * dropped far lines to 0.09, so using the alpha as-is would thin the near lines'
- * halos too and cut nothing. Hence a gain, with a cap: pinning it at 1.0 would let
- * a barely-visible far line leave a solid mark on the background.
+ * Fog has already thinned far lines, so the halo needs a gain to be denser than what it
+ * cuts; capped so a barely visible far line leaves no solid mark.
  */
 export const DOME_HALO_ALPHA_GAIN = 2.4;
 export const DOME_HALO_ALPHA_CAP = 0.96;
 
-/** Depth → line-width multiplier — the hero's lw attenuation (0.45→1.60) expressed as a multiplier. */
+/** The hero's width attenuation (0.45→1.60) as a multiplier. */
 export function domeLineWidthFactor(u: number): number {
   const c = u <= 0 ? 0 : u >= 1 ? 1 : u;
   return 0.35 + 0.55 * (1 - c);
 }
 
 /**
- * **The floor under a resting relation line's depth ink** — the product
- * `fog alpha × line-width factor`, as a share of the 0.90 a fully lit near line
- * draws at.
- *
- * ## What was wrong, in numbers
- *
- * Depth attenuates a line twice: fog multiplies its alpha (1.0 → 0.09,
- * `domeFogAlpha`) and the width factor thins the stroke (0.90 → 0.35,
- * `domeLineWidthFactor`). Each is defensible alone; stacked, the far end draws at
- * **3.5% of the near end's ink** (0.09 × 0.35 = 0.0315). Measured on the sample
- * vault at 1512×982, DPR 2, nothing selected or hovered, reading each drawn line's
- * own pixels against the ground beside it (2026-09-06):
- *
- * | at rest | contains median | depends median | contains under 1.5 : 1 |
- * |---|---|---|---|
- * | 2D map | 5.80 : 1 | 3.58 : 1 | 1 of 10 |
- * | Cone | 1.26 : 1 | 1.25 : 1 | 109 of 160 |
- * | Strata | 1.33 : 1 | 1.14 : 1 | 58 of 95 |
- * | Cloud | 1.14 : 1 | 1.11 : 1 | 96 of 102 |
- *
- * Owner report, 2026-09-06, on the installed app in Cloud: the lines are so faint
- * that the relations are all but invisible and only the selected pair reads. The
- * same stacking is what made the Strata plane rings disappear at 0.12
- * (`DOME_STRATA_RING_ALPHA`), and the answer is the same shape as the one the node
- * rim already carries (`DOME_RIM_FOG_FLOOR`).
- *
- * ## Why the floor is on the product
- *
- * The eye is handed the product, not either factor, so that is what is held. Past
- * the crossover (u ≈ 0.17) the resting line's ink is **constant** rather than
- * falling, which is why the alpha rises there as the width keeps falling — the two
- * trade against each other at a fixed total. Flooring either factor alone was
- * tried and rejected: the alpha alone cannot reach this product against a 0.35
- * width without going to 1 (no fog at all), and the two independent floors that do
- * stay monotone can only reach 0.45 together, which measured 1.47–1.51 : 1 and is
- * still not a line you can follow.
- *
- * What still carries depth: the width factor down to `DOME_EDGE_WIDTH_FLOOR`, the
- * halo (`domeHaloPx`), the node fog, perspective size, and the draw order. And
- * nothing at all changes on the near side — below the crossover the raw product is
- * already above the floor.
- *
- * After, at the same viewport and sample (contains / depends median): Cone
- * 1.89 / 1.75, Strata 1.75 / 1.78, Cloud 1.78 / 1.78. The direction's bar was
- * ≥ 1.8 : 1 for containment and ≥ 1.5 : 1 for dependency at rest; dependency
- * clears it everywhere and containment lands on it, the two readings just under
- * being inside the ±0.1 the sample moves by between loads (the entry pose and the
- * device pixel ratio both wobble). Ego, hover and selected lines were already
- * exempt from fog and are untouched, as is the dim state of non-ego lines while
- * something is selected, and as is the whole 2D map.
- * Browser gate: `tests/e2e/map-3d-relation-ink.spec.ts`.
+ * Floor under a resting relation line's `fog alpha × width factor` product (a lit near line
+ * has 0.90); stacked, fog and width would draw the far end at 3.5% of the near ink. Past the
+ * crossover (u ≈ 0.17) alpha rises as width falls. The near side is unchanged; width, halo,
+ * node fog, perspective and draw order still carry depth. The browser gate is
+ * the spec `tests/e2e/map-3d-relation-ink.spec.ts`.
  */
 const DOME_EDGE_INK_FLOOR = 0.62;
 
 /**
- * The floor under a resting relation line's **width factor**. Without it the far
- * end would meet the ink floor as a 0.35-wide hairline at alpha 1 — a crisp bright
- * thread behind a soft grey one, which reads as nearer than the line in front of
- * it. Holding the width up keeps the alpha's share of the trade inside
- * 1.00 → 0.72 → 0.86 instead of running to 1.
+ * Without it the far end meets the ink floor as a bright hairline at alpha 1, reading as
+ * nearer than the line in front.
  */
 const DOME_EDGE_WIDTH_FLOOR = 0.72;
 
-/**
- * Line-width multiplier for a **resting relation line** — the raw attenuation,
- * held at `DOME_EDGE_WIDTH_FLOOR`. A sub-pixel hairline loses coverage to
- * antialiasing before it loses alpha, which is why the width is part of the ink
- * floor rather than something beside it.
- */
+/** A sub-pixel hairline loses coverage to antialiasing before alpha, so width is part of the floor. */
 export function domeEdgeWidthFactor(u: number): number {
   return Math.max(domeLineWidthFactor(u), DOME_EDGE_WIDTH_FLOOR);
 }
 
 /**
- * Fog alpha for a **resting relation line** — the raw fog, lifted only as far as
- * the ink floor needs against this depth's floored width, and never past
- * the near-end value of 1. Nodes, plane rings and interaction-exempt lines keep
- * `domeFogAlpha` unchanged.
+ * Raw fog lifted only as far as the ink floor needs against the floored width, never past 1.
+ * Nodes, plane rings and exempt lines keep `domeFogAlpha`.
  */
 export function domeEdgeFogAlpha(u: number): number {
   return Math.min(1, Math.max(domeFogAlpha(u), DOME_EDGE_INK_FLOOR / domeEdgeWidthFactor(u)));
 }
 
 /**
- * **The floor under a resting relation line's stroke width, in _device_ pixels.**
- *
- * `DOME_EDGE_INK_FLOOR` holds the product `alpha × width factor`, and that product
- * is only what reaches the eye while the stroke is at least one device pixel wide.
- * Below that the rasteriser cannot give any pixel the line's full alpha: it spreads
- * the same total ink across the two pixel rows the sub-pixel stroke straddles, so
- * the **peak** contrast — what a reader follows a line by, and what the browser gate
- * samples — falls even though the ink budget is intact.
- *
- * Line width is a CSS quantity, so the same frame that draws a 0.5 px stroke covers
- * one device pixel at DPR 2 and half of one at DPR 1. Measured on the sample vault,
- * nothing selected or hovered, at 1512×982 (2026-09-06), the identical frames read:
- *
- * | at rest, contains / depends median | DPR 2 | DPR 1 before |
- * |---|---|---|
- * | Cone | 1.89 / 1.75 : 1 | 1.29 / 1.26 : 1 |
- * | Strata | 1.72 / 1.55 : 1 | 1.25 / 1.19 : 1 |
- * | Cloud | 1.83 / 1.78 : 1 | 1.27 / 1.25 : 1 |
- *
- * That is the whole distance the ink floor bought, given back on every non-Retina
- * screen. The answer is to stop the resting stroke from going sub-pixel **on the
- * device**: the caller converts this to CSS px with the ratio it is actually
- * rasterising at (`domeEdgeMinWidthPx`), so nothing changes where the stroke was
- * already a pixel wide and the correction is exactly as large as the ratio makes it.
- *
- * 1.0 device px was measured and rejected: a stroke of exactly one device pixel
- * still straddles two rows wherever its centre is not on a half-pixel, so the peak
- * only reached 1.45 : 1. 1.4 device px is what puts a full-alpha row inside the
- * stroke at any sub-pixel offset, and it measured 1.72–1.90 : 1 at DPR 1 — the DPR 2
- * numbers, which is the point.
- *
- * What still carries depth at DPR 1: the width factor above the floor, the alpha,
- * the halo, node fog, perspective size and draw order. Nothing here touches the 2D
- * map, nodes, plane rings, or the interaction-exempt lines, and at DPR 2 the floor
- * lands under the width every resting line already had.
- * Browser gate: `tests/e2e/map-3d-relation-ink.spec.ts`.
+ * The ink floor reaches the eye only while the stroke covers a device pixel; thinner, the
+ * rasteriser splits it across two rows and the peak contrast falls, which on a DPR 1 screen
+ * gave back the whole gain. The caller converts this at its rasterising ratio
+ * (`domeEdgeMinWidthPx`). Browser gate: `tests/e2e/map-3d-relation-ink.spec.ts`.
  */
 export const DOME_EDGE_DEVICE_WIDTH_FLOOR = 1.0;
 
-/**
- * `DOME_EDGE_DEVICE_WIDTH_FLOOR` expressed in the CSS pixels `lineWidth` takes,
- * for the ratio the canvas is currently rasterising at. A missing or nonsense
- * ratio falls back to 1, which is the conservative side: it asks for the widest
- * floor rather than silently for none.
- */
+/** A missing or nonsense ratio falls back to 1, the widest floor rather than none. */
 export function domeEdgeMinWidthPx(devicePixelRatio: number): number {
   const dpr = Number.isFinite(devicePixelRatio) && devicePixelRatio > 0 ? devicePixelRatio : 1;
   return DOME_EDGE_DEVICE_WIDTH_FLOOR / dpr;
@@ -585,41 +257,15 @@ export function domeEdgeMinWidthPx(devicePixelRatio: number): number {
 
 
 /*
- * ── Far-side detail ramp — folds the back hemisphere's secondary strokes away
- * continuously with depth ─────────────────────────────────────────────────────
- *
- * Owner decision (2026-08-19): the remaining cost of 3D rotation was **stroke count
- * itself** (profile: ~24% of draw time in node fill/stroke/translate, ~22% in edge
- * stroke, much of it **secondary strokes** — halos, dimensional shading, seams,
- * outlines). Reducing node count (LOD, culling) was rejected; instead a
- * dispensation opened to omit secondary strokes on the **far side that fog has
- * already flattened to 0.09**, where they contribute almost nothing visually. The
- * marks themselves (discs, relation lines) are unchanged at every depth — the
- * contract that the count is the output is untouched.
- *
- * **Why this shape — three constraints decide the curve.**
- *
- * 1. **Front unchanged**: exactly 1 for u ≤ START. START (0.55) > 0.5, so marks on
- *    the observer's hemisphere multiply by 1 — not one pixel can differ.
- * 2. **No popping**: smoothstep (C¹ continuous, zero slope at both ends), so a node
- *    crossing the boundary as the dome turns cannot lose a stroke with a snap — the
- *    same continuous-depth grammar as fog (`domeFogAlpha`). The draw's skip
- *    conditions (halo 0.05 px, shading 0.01) only fire after this ramp has already
- *    taken them below the visibility limit.
- * 3. **Depth reading preserved**: a halo is the cue that near occludes far (Everts
- *    et al. 2009 — see the `domeHaloPx` doc-block), and that paper itself
- *    prescribes converging far halos to 0 (something that cannot occlude must not
- *    claim to, or the cue inverts). This ramp only brings that convergence forward,
- *    and only on the back hemisphere — front halo widths are unchanged.
- *
- * Why END (0.75) < 1: from u≈0.96 halos already failed the 0.05 px skip condition
- * and went undrawn, so omission is not new grammar — only where the fold starts has
- * moved into the depth fog had already darkened (fog alpha at u=0.75 is 0.16).
+ * Far-side detail ramp: secondary strokes (halo, shading, seam, outline, pin tick) fold away
+ * on the back hemisphere, where fog has already flattened them; the marks themselves never
+ * change. Exactly 1 up to START (> 0.5), so no front pixel differs; smoothstep, so nothing
+ * pops as the dome turns; and converging far halos to 0 is what Everts et al. prescribe.
  */
 export const DOME_DETAIL_FADE_START = 0.55;
 export const DOME_DETAIL_FADE_END = 0.75;
 
-/** Depth → multiplier for secondary strokes (halo, shading, seam, outline, pin tick). u≤0.55 → 1, u≥0.75 → 0, C¹ continuous. */
+/** u ≤ 0.55 → 1, u ≥ 0.75 → 0, C¹ continuous. */
 export function domeDetailFactor(u: number): number {
   if (u <= DOME_DETAIL_FADE_START) return 1;
   if (u >= DOME_DETAIL_FADE_END) return 0;
@@ -628,10 +274,8 @@ export function domeDetailFactor(u: number): number {
 }
 
 /**
- * kind → dot radius (dome units) — the hero's NODE_R unchanged. Since 2026-09-05
- * this table no longer decides what a node measures on screen (`DOME_NODE_PX`
- * does); it survives as the **collision radius** the coupling cloud relaxes
- * against, which is a dome-unit quantity and always was.
+ * Dome-unit radii, now only the collision radius the coupling cloud relaxes
+ * against; `DOME_NODE_PX` decides screen size.
  */
 const DOME_NODE_R: Readonly<Record<DomeViewKind, number>> = {
   project: 10.5,
@@ -641,24 +285,9 @@ const DOME_NODE_R: Readonly<Record<DomeViewKind, number>> = {
 };
 
 /**
- * **kind → dot radius in SCREEN pixels** — what a node measures on the cone,
- * whatever the camera is doing.
- *
- * `DOME_NODE_R` above is a dome-unit table, so a node's screen radius used to be
- * `DOME_NODE_R × 2.1 × unit × perspective × cameraScale`: **the camera zoom was a
- * factor**. Fitting the cone larger therefore grew the dots by exactly the amount
- * it grew the gaps, and the picture came back with the same 27 overlapping pairs
- * at every size (measured 2026-09-05 at 1920, 1440, 1024 and 834 — identical count
- * at all four, which is the signature of a purely proportional zoom).
- *
- * Making the radius a screen quantity separates the two: fitting the cone to the
- * canvas now buys **spacing only**. Perspective still scales a dot (`p.s`), because
- * that is depth rather than zoom, and the assembly ramp still interpolates from the
- * 2D radius, because that is the morph.
- *
- * The values are the ones the 1920 entry frame already drew (measured: project 18.7,
- * domain 13.0, capability 8.8, element 5.8 px), taken down a step so the extra room
- * the new fit buys is spent on air rather than on ink.
+ * Screen-pixel radii, so fitting the cone larger buys spacing, not ink: with a dome-unit
+ * radius the camera zoom grew dots and gaps alike and every size kept the same overlaps.
+ * Perspective (`p.s`) still scales a dot, since that is depth, not zoom.
  */
 export const DOME_NODE_PX: Readonly<Record<DomeViewKind, number>> = {
   project: 13,
@@ -668,38 +297,19 @@ export const DOME_NODE_PX: Readonly<Record<DomeViewKind, number>> = {
 };
 
 /**
- * The disc allowance the fit reserves around the cone's centre bounds, screen px.
- *
- * The fit is solved from the node **centres** (`domeWorldBounds`), so it has to
- * reserve the discs itself, and the drawn frame it would need to measure them
- * exactly does not exist yet at the moment of the fit. One symmetric number is
- * used instead, sized to the silhouette's actual edges rather than to its largest
- * node: the extreme points left and right are ring-edge capability and element
- * discs (6.8 and 4.6 px), the top point is the apex (15 px) and the bottom points
- * are elements again. Reserving the apex on all four sides instead cost about 5%
- * of the free width on a narrow canvas (measured 2026-09-05 at 834: outline 472
- * where 491 fits).
+ * The fit solves from node centres (`domeWorldBounds`) before a drawn frame exists, so it
+ * reserves one symmetric allowance sized to the silhouette's edge discs, not its apex.
  */
 export const DOME_NODE_FIT_ALLOWANCE_PX = 12;
 
 /**
- * **The floor depth fog may darken a node's rim to.**
- *
- * `domeFogAlpha` bottoms out at 0.09, and it multiplies the whole node — rim
- * included. Measured on the sample vault at 1920 (2026-09-05): the median node rim
- * stood at **1.15 : 1** against the background beside it and 117 of 125 nodes were
- * under 3 : 1, so most of what is on screen is a shape you cannot see the edge of.
- *
- * The fill, the halo, the line-width attenuation, the perspective size and the
- * draw order still carry depth. Only the rim gets a floor, and 0.75 is the number
- * that keeps the dimmest rim token (`--map-node-stroke-element`, #7a7a86)
- * at 3 : 1 or better once composited over the canvas ground — the same 3 : 1 ink
- * floor the flat map holds itself to. `dome-rim-contrast.contract.test.ts` derives
- * that number from the tokens rather than trusting this sentence.
+ * The floor fog may darken a node's rim to, so the dimmest rim token
+ * (`--map-node-stroke-element`) keeps 3 : 1 over the canvas ground, the flat map's ink
+ * floor. `dome-rim-contrast.contract.test.ts` derives it from the tokens.
  */
 export const DOME_RIM_FOG_FLOOR = 0.75;
 
-/** Deterministic hash → [0,1) — the hero engine's FNV-1a jitter, unchanged (angle stability). */
+/** FNV-1a jitter, unchanged so angles stay stable. */
 function domeHash01(str: string): number {
   let h = 2166136261;
   for (let i = 0; i < str.length; i++) {
@@ -717,7 +327,7 @@ export interface DomeInputNode {
   parentId: string | null;
 }
 
-/** One node's dome coordinates (dome units) — px/pz on the ring plane, py the kind height. */
+/** px/pz on the ring plane, py the kind height. */
 export interface DomeCoord {
   px: number;
   py: number;
@@ -725,58 +335,41 @@ export interface DomeCoord {
 }
 
 /**
- * One **cone base** — the circle a parent's children rest on (dome units). The
- * project's base is the domain ring; every parent with two or more children gets
- * its own, centred directly under that parent on the children's kind plane. These
- * are the coordinate system the draw shows as rings (`DOME_RING_KINDS` doc-block).
+ * The circle a parent's children rest on, centred under it on their kind plane; the
+ * project's is the domain ring. The draw shows these as rings.
  */
 interface DomeCircle {
-  /** The tier of the children resting on this circle — its assembly ramp and yaw torsion follow that tier. */
+  /** Its assembly ramp and yaw torsion follow this tier. */
   kind: DomeViewKind;
   cx: number;
   cz: number;
   y: number;
   r: number;
   /**
-   * Whether this circle carries the tier's **name** at its rim. Strata's four
-   * plane rings do; the cone's per-parent bases do not, because there are dozens
-   * of them and they mark ownership rather than a level. See
-   * `buildStrataTargets`.
+   * Strata's four plane rings carry the tier name; the cone's per-parent bases do not, since
+   * they mark ownership rather than a level.
    */
   named?: boolean;
 }
 
 export interface DomeModel {
-  /**
-   * Which arrangement produced these coordinates — the draw decides whether to draw
-   * rings from this. A coupling cloud has no kind planes, so latitude rings would
-   * be a lie rather than a coordinate system.
-   */
+  /** A coupling cloud has no kind planes, so drawing latitude rings would be a lie. */
   arrangement: DomeArrangement;
-  /** 2D layout centre (world) — the dome sits on it (camera continuity). */
+  /** The dome sits on it, for camera continuity. */
   centerX: number;
   centerY: number;
-  /** Dome units → world units — sized so the element ring overlaps the 2D layout radius. */
+  /** Sized so the element ring overlaps the 2D layout radius. */
   unit: number;
   coords: Map<string, DomeCoord>;
-  /** Cone bases (ownership only; empty for the cloud) — see `DomeCircle`. */
+  /** Ownership only; empty for the cloud. */
   circles: DomeCircle[];
-  /**
-   * Strata only: the bearing sector every domain and capability owns on the planes
-   * under it (`DomeSector`). Empty for every other arrangement.
-   */
+  /** Strata only, else empty. */
   sectors: DomeSector[];
 }
 
 /**
- * **One node's sector on the Strata planes** — the arc of bearing `[from, to)`
- * (radians, the model's own frame) its whole subtree is dealt into.
- *
- * `buildStrataTargets` already guarantees that a descendant's bearing never
- * leaves its ancestor's sector, and that sibling sectors are disjoint. Drawing
- * the sector is therefore not a decoration laid over the data; it is the one fact
- * the placement proved, made visible, so "which domain owns this capability"
- * reads off the floor it stands on (2026-09-25, lit strata).
+ * The bearing arc `[from, to)` a node's whole subtree is dealt into. `buildStrataTargets`
+ * keeps descendants inside and siblings disjoint, so drawing it shows a proven fact.
  */
 export interface DomeSector {
   id: string;
@@ -785,78 +378,38 @@ export interface DomeSector {
   to: number;
 }
 
-/**
- * **Ownership layout — a cone tree, not a dome of rings (2026-09-02).**
- *
- * The first ownership layout (2026-08-18, ledger (76)) was the hero engine's dome:
- * every kind on one latitude ring, a node's bearing taken from its parent's
- * sector. Measured against the dogfood vault and a 1,000-node synthetic vault it
- * failed on distribution rather than on shape: 70% of the nodes (the elements) sat
- * on the single lowest, widest ring, which at the default pitch flattens into a
- * band, so the crowd overlapped in exactly the place the eye lands, while the top
- * half of the silhouette stayed empty. Ownership was carried only by *sector*, a
- * fact the 2D map already shows by proximity.
- *
- * A cone tree (Robertson, Mackinlay & Card, "Cone Trees: animated 3D
- * visualizations of hierarchical information", CHI 1991) keeps both typed facts
- * and strengthens the second:
- *
- * - **height = containment tier** — unchanged, the kind planes of `DOME_PLANE`;
- * - **position = ownership** — a parent is the apex of its own cone and its
- *   children rest on that cone's base circle, **directly under it**, not merely
- *   inside its sector. A subtree is a physical bump you can point at and rotate to
- *   the front.
- *
- * Geometry, all deterministic (sorted by id, no randomness):
- * - the project sits at the apex and the domains rest on the project's base, the
- *   ring of radius `DOME_PLANE.domain.r`; each domain owns an angular sector
- *   proportional to its subtree size (a floor of 1 keeps an empty domain a slot);
- * - a domain's children (capabilities, and elements it contains directly) rest on
- *   a circle centred under the domain, radius from the child count (`CONE_SPACING`)
- *   capped by the room to the next domain's sector (`coneRoom`), so sibling cones
- *   do not intersect;
- * - a capability's elements rest on a circle centred under the capability, radius
- *   capped by the gap to its sibling capabilities;
- * - a parent with one child gets radius 0 (the child hangs straight down: a stalk
- *   is the honest one-child cone) and no base circle;
- * - crowded bases (more than `CONE_STAGGER_FROM` children) alternate two radii so
- *   labels and discs interleave rather than fuse;
- * - a node whose parent is not in the model falls back to a deterministic hash
- *   bearing on its own kind plane, as the dome did.
- *
- * Cones nest three deep at most, so the footprint stays inside the old bottom
- * ring (`DOME_FIT_RADIUS`) and the camera, fog, grip and in-plane drag contracts
- * are untouched: y is still one value per kind, which is what `solveDomePlanePoint`
- * relies on.
- */
 const CONE_SPACING: Readonly<Record<DomeViewKind, number>> = {
   project: 0,
   domain: 0,
-  // Capability disc ≈ 6.5 dome units radius → 13 diameter; 24 leaves a gap of one
-  // more disc between neighbours on the same base.
+  // Capability disc ≈ 13 dome units across; 24 leaves one more disc of gap between neighbours.
   capability: 24,
-  // Element disc ≈ 4.3 radius → 8.6 diameter.
+  // Element disc ≈ 8.6 across.
   element: 15,
 };
-/** Smallest base radius that still reads as a circle rather than a smear (dome units). */
+/** Below this a base reads as a smear, not a circle. */
 const CONE_MIN_R: Readonly<Record<DomeViewKind, number>> = { project: 0, domain: 0, capability: 10, element: 6 };
 /**
- * Largest base radius per tier — a giant domain must not swallow its neighbours' room.
- *
- * Raised from 64/26 on 2026-09-05. The caps were what packed a crowded base into a
- * clump while the space between sibling cones stayed empty: at 1024 the fitted cone
- * still carried 10 overlapping node pairs where a domain cone had room to spare
- * beside it. The `coneRoom` cap, not these numbers, is what keeps siblings apart,
- * so raising the ceiling spends interior space rather than the silhouette.
+ * Keeps a giant domain from swallowing its neighbours' room; the room cap in `baseRadius`,
+ * not this, keeps siblings apart, so a high ceiling spends interior space, not the silhouette.
  */
 const CONE_MAX_R: Readonly<Record<DomeViewKind, number>> = { project: 0, domain: 0, capability: 96, element: 40 };
-/** Fraction of the available room a cone base may take — the rest is the gap between sibling cones. */
+/** A base takes this share of its room; the rest is the gap between sibling cones. */
 const CONE_ROOM_FILL = 0.82;
-/** Above this many children on one base, alternate two radii. */
 const CONE_STAGGER_FROM = 8;
 const CONE_STAGGER_OUT = 1.12;
 const CONE_STAGGER_IN = 0.9;
 
+/**
+ * Ownership as a cone tree (Robertson, Mackinlay & Card, CHI 1991): height is the tier and
+ * a parent's children rest on a base circle directly under it, so a subtree is a bump you
+ * can rotate to the front. Deterministic (sorted by id). Domains take sectors of the
+ * project's ring in proportion to subtree size; each base radius comes from the child count
+ * capped by the room to its siblings (the cap in `baseRadius`), so sibling cones never
+ * intersect. One child hangs straight down with no base; crowded bases alternate two radii;
+ * a node whose parent is missing gets a hash bearing on its plane. The footprint stays
+ * inside `DOME_FIT_RADIUS` and y stays one value per kind for `solveDomePlanePoint`.
+ * O(N log N): id sorts plus memoised subtree weights in Maps.
+ */
 function layoutConeTree(nodes: readonly DomeInputNode[]): { coords: Map<string, DomeCoord>; circles: DomeCircle[] } {
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const coords = new Map<string, DomeCoord>();
@@ -872,7 +425,7 @@ function layoutConeTree(nodes: readonly DomeInputNode[]): { coords: Map<string, 
   }
   for (const list of kids.values()) list.sort(byIdAsc);
 
-  /** Subtree size including the node itself; cycles (a bad vault) are cut at the first repeat. */
+  /** Cycles in a bad vault are cut at the first repeat. */
   const weightMemo = new Map<string, number>();
   const weightOf = (id: string, trail: Set<string>): number => {
     const memo = weightMemo.get(id);
@@ -896,7 +449,6 @@ function layoutConeTree(nodes: readonly DomeInputNode[]): { coords: Map<string, 
     }
   });
 
-  // Domains on the project's base ring, sectors proportional to subtree weight.
   const domains = nodes.filter((n) => n.kind === "domain").sort(byIdAsc);
   const ringR = DOME_PLANE.domain.r;
   const weights = domains.map((d) => weightOf(d.id, new Set()));
@@ -915,15 +467,8 @@ function layoutConeTree(nodes: readonly DomeInputNode[]): { coords: Map<string, 
   if (domains.length > 0) circles.push({ kind: "domain", cx: 0, cz: 0, y: DOME_PLANE.domain.y, r: ringR });
 
   /**
-   * Rest `children` on a circle of radius `r` around `parent`.
-   *
-   * **The heaviest child faces outward.** Children are ordered by subtree size
-   * (then id) and dealt symmetrically about the parent's outward bearing: the
-   * largest sub-cone on the bearing itself, the next two one slot to either
-   * side, and so on, so the lightest children end up on the inside, toward the
-   * axis — the only place where sibling domains' cones can meet. Heavy subtrees
-   * therefore grow away from each other and a rotation that brings a domain to
-   * the front brings its biggest capability with it.
+   * The heaviest child faces outward and the rest alternate to either side, so the lightest
+   * sit toward the axis, the only place sibling domains' cones can meet.
    */
   const rest = (parent: DomeCoord, outward: number, children: readonly DomeInputNode[], r: number): void => {
     const n = children.length;
@@ -932,14 +477,14 @@ function layoutConeTree(nodes: readonly DomeInputNode[]): { coords: Map<string, 
       return dw !== 0 ? dw : byIdAsc(a, b);
     });
     ordered.forEach((k, i) => {
-      // 0, +1, −1, +2, −2, … slots of TAU/n around the outward bearing.
+      // 0, +1, −1, +2, −2, … slots of TAU/n round the outward bearing.
       const slot = i === 0 ? 0 : i % 2 ? (i + 1) / 2 : -(i / 2);
       const a = outward + (slot / n) * TAU;
       const ri = n > CONE_STAGGER_FROM ? r * (i % 2 ? CONE_STAGGER_OUT : CONE_STAGGER_IN) : r;
       coords.set(k.id, { px: parent.px + Math.cos(a) * ri, py: DOME_PLANE[k.kind].y, pz: parent.pz + Math.sin(a) * ri });
     });
   };
-  /** Base radius for `count` children of tier `tier` inside `room` — 0 for a single child (a stalk). */
+  /** 0 for a single child, a stalk. */
   const baseRadius = (count: number, tier: DomeViewKind, room: number): number => {
     if (count <= 1) return 0;
     const cap = Math.min(CONE_MAX_R[tier], room * CONE_ROOM_FILL);
@@ -956,8 +501,7 @@ function layoutConeTree(nodes: readonly DomeInputNode[]): { coords: Map<string, 
     const outward = bearingOf.get(d.id) ?? 0;
     rest(at, outward, children, r);
     if (r > 0) circles.push({ kind: "capability", cx: at.px, cz: at.pz, y: DOME_PLANE.capability.y, r });
-    // Room for each child's own cone: the gap to its sibling on this base, or the
-    // domain's whole room when it hangs alone.
+    // The gap to its sibling on this base, or the whole room when it hangs alone.
     const childRoom = children.length <= 1 ? room * CONE_ROOM_FILL : r * Math.sin(Math.PI / children.length);
     for (const c of children) capRoom.set(c.id, childRoom);
   }
@@ -975,9 +519,7 @@ function layoutConeTree(nodes: readonly DomeInputNode[]): { coords: Map<string, 
     if (r > 0) circles.push({ kind: "element", cx: at.px, cz: at.pz, y: DOME_PLANE.element.y, r });
   }
 
-  // Whatever is still unplaced — no parent, a parent outside the model, or a
-  // parent that was itself unplaced — takes a deterministic hash bearing on its
-  // own kind plane, as the dome did.
+  // Anything still unplaced takes a hash bearing on its own kind plane.
   for (const n of nodes) {
     if (coords.has(n.id)) continue;
     const a = domeHash01(n.id) * TAU;
@@ -988,120 +530,44 @@ function layoutConeTree(nodes: readonly DomeInputNode[]): { coords: Map<string, 
 }
 
 /**
- * **Strata — the containment tiers as four stacked planes (2026-09-06).**
- *
- * Where the cone answers *what owns this* by making a subtree a bump you can
- * point at, Strata answers *what level is this on* by making the level a place.
- * Its four planes sit at the same `DOME_PLANE` heights the cone uses, so the two
- * arrangements are read at one vertical scale and the morph between them moves
- * nodes sideways rather than up and down.
- *
- * It came from the three.js structure probe of 2026-09-06
- * (`the three.js probe branch `feat/three-probe`, summarised in docs/benchmark/STRATA-2026-09-06.md`), which compared four structures in
- * a WebGL twin and found this one best at tier legibility "by a distance" while
- * the renderer itself bought nothing: equal frame time at 125 and at 1,000 nodes,
- * +137 kB gzip. The structure was the find, and a structure is renderer-independent,
- * so it is ported here as pure geometry with no new dependency.
- *
- * Two rules, and everything else follows from them:
- *
- * 1. **Height is the tier, and nothing else.** A node's y is `DOME_PLANE[kind].y`,
- *    full stop — no nesting, no per-parent base. Four hairline plane rings, each
- *    named once at its rim, turn "which level am I looking at" into a glance.
- * 2. **A node keeps its parent's bearing.** Children divide their parent's angular
- *    sector in proportion to subtree size and sit at their own sector's midpoint.
- *    A single child inherits the whole sector, so its drop is exactly vertical.
- *
- * Rule 2 is what makes this a **layered radial DAG** rather than four rings of
- * unrelated dots, and it buys the non-crossing property outright: every node's
- * bearing lies inside its parent's sector, sibling sectors are disjoint, so two
- * containment drops descending from different parents live in disjoint angular
- * wedges and cannot cross. That is a proof, not a measurement, and
- * `dome-view.test.ts` asserts it on the shape rather than on a screenshot.
- *
- * Two further passes finish the picture, and both are named techniques rather
- * than inventions — see their own doc-blocks for what was measured:
- * `STRATA_BARYCENTER_SWEEPS` orders siblings *within* their sector by the
- * circular barycenter of their relations (the Sugiyama crossing-reduction phase,
- * radially adapted after Bachmaier, IEEE TVCG 13(3), 2007), and `applyLanes`
- * alternates two radii along each plane so neighbours from different parents
- * cannot fuse.
- *
- * What it trades away is compactness. A plane fills its whole disc instead of
- * clustering under its parent, so the silhouette is wider than the cone's and a
- * dependency line between two distant domains runs long and shallow. That is the
- * honest cost of putting the level first, and it is why Strata joins the cone
- * rather than replacing it.
+ * Strata: the tiers as four stacked planes at the cone's `DOME_PLANE` heights, answering
+ * "what level is this on" (`docs/benchmark/STRATA-2026-09-06.md`). Height is the tier and
+ * nothing else; children split their parent's sector by subtree size and sit at their own
+ * sector's midpoint. Every bearing stays inside its parent's sector and sibling sectors are
+ * disjoint, so containment drops from different parents cannot cross; `dome-view.test.ts`
+ * asserts it on the shape. `STRATA_BARYCENTER_SWEEPS` orders siblings within a sector
+ * and `applyLanes` alternates two radii. The cost is a wider silhouette than the cone.
  */
 
 /**
- * Radius a **placed** node takes on its plane, as a fraction of that plane's
- * radius. The remaining fifth of the disc is the rim, and the rim is where an
- * unparented node lands (below), so "nothing above this holds it" is a position
- * a reader can see instead of a line they have to notice is missing.
+ * The outer fifth is the rim, where an unparented node lands, so "nothing above holds this"
+ * is a visible position.
  */
 const STRATA_PLACED_FILL = 0.82;
 
 /**
- * The project plane's ring radius (dome units).
- *
- * `DOME_PLANE.project.r` is 0 because the cone's top is an apex — a point needs no
- * radius. Strata draws and names a ring on every plane, so the top plane needs a
- * rim of its own. 34 clears the project disc (`DOME_NODE_R.project` 10.5) by more
- * than two of its own radii, which is enough for the ring to read as a disc the
- * project sits in the middle of rather than as a collar around it.
+ * The cone's apex needs no radius, but Strata rings every plane; 34 clears the project disc
+ * by more than two of its radii, so the ring reads as a disc it stands in.
  */
 const STRATA_PROJECT_RING_R = 34;
 
 /**
- * How many crossing-reduction sweeps to run. Sugiyama's own prescription is
- * "sweep until convergence or a cutoff", and this is the cutoff — the loop also
- * stops the first sweep that changes no order.
- *
- * **A cutoff and not a target, because more sweeps are not monotonically
- * better.** The barycenter heuristic oscillates; that is why `dot` keeps the best
- * ordering it has seen rather than the last one (Gansner, Koutsofios, North & Vo,
- * "A Technique for Drawing Directed Graphs", 1993), and so does the loop below.
- * Measured before the best-of guard existed, on the sample vault at 1512 (drawn
- * crossing pairs among 258 relations, 2026-09-06): id order 2,520 · 4 sweeps
- * 2,415 · **16 sweeps 2,600** — sixteen sweeps were worse than none.
- *
- * **What the sweep is worth here, stated honestly.** With the two-lane pass in
- * place, the same vault draws 2,561 crossing pairs with the sweeps off and 2,606
- * with them on — total crossings move within noise. What clearly moves is the
- * arrangement's own subject: crossings **between two containment drops** fall
- * from 585 to 521, 10.9%. The key pulls a node toward the things it relates to,
- * which lines the containment fan up and lengthens some dependency arcs, and the
- * containment fan is what Strata exists to make readable. The scorer also reads
- * straight chords seen from above while the screen draws bowed curves in
- * perspective, so its optimum and the screen's are near each other rather than
- * the same point.
+ * A cutoff, not a target: the loop also stops on a sweep that changes nothing. Barycenter
+ * oscillates, so the best ordering seen is kept, as `dot` does (Gansner et al., 1993). The
+ * sweeps chiefly cut crossings between containment drops, the fan Strata exists to show.
  */
 const STRATA_BARYCENTER_SWEEPS = 6;
 
 /**
- * Above this many relations the sweeps stop being scored and simply run.
- *
- * Scoring a candidate order means counting crossings, which is quadratic in the
- * relation count. At the vault sizes a person actually opens — 258 relations in
- * the sample, 181 in this repository's own — that is 33k segment tests per
- * candidate and costs under a millisecond in the one model build. At 2,000
- * relations it would be 2M per candidate inside a build that must not hitch, and
- * the ordering is worth less there anyway because the picture is dense. Past the
- * budget the loop takes the sweeps on faith, which is the ordinary barycenter
- * behaviour and still better than id order.
+ * Scoring counts crossings, O(E²) per sweep: cheap at the few hundred relations a real
+ * vault has, too slow in a build that must not hitch beyond this. Past it the sweeps run
+ * unscored.
  */
 const STRATA_SCORED_EDGE_BUDGET = 800;
 
 /**
- * Crossing pairs among the **containment and dependency chords, seen from
- * directly above** — the plane the sibling ordering actually decides.
- *
- * Chords rather than the bowed curves the screen draws, and top-down rather than
- * the current camera: both of those are presentation, and a placement that
- * scored itself against one camera pose would be optimising for an angle the
- * reader is free to leave. Two relations meeting at a shared node meet there by
- * construction and are not counted.
+ * Containment and dependency chords seen from above, independent of the camera pose the
+ * reader may leave. Relations sharing a node are not counted. O(E²).
  */
 function strataCrossings(
   coords: ReadonlyMap<string, DomeCoord>,
@@ -1133,15 +599,10 @@ function strataCrossings(
 }
 
 /**
- * Place `nodes` on four stacked planes. Pure, deterministic (siblings sorted by
- * id before any reordering, no randomness, no clock) and independent of the 2D
- * layout, exactly like `layoutConeTree` — the same vault always draws the same
- * picture, which is what the fixed-scale contract and the frame-time comparison
- * both rely on.
- *
- * `edges` are the relations. They do not move a node between planes or out of its
- * parent's sector; they only decide the **order of siblings inside that sector**
- * (`STRATA_BARYCENTER_SWEEPS`).
+ * Pure and deterministic (siblings sorted by id first, no randomness or clock). `edges` only
+ * order siblings inside a sector; they never move a node between planes or sectors.
+ * At most `STRATA_BARYCENTER_SWEEPS` sweeps, each O(N log N + E) plus O(E²) crossing
+ * scoring while E stays within `STRATA_SCORED_EDGE_BUDGET`.
  */
 export function buildStrataTargets(
   nodes: readonly DomeInputNode[],
@@ -1164,7 +625,7 @@ export function buildStrataTargets(
   }
   for (const list of kids.values()) list.sort(byIdAsc);
 
-  /** Subtree size including the node itself — the angular weight it claims. Cycles are cut at the first repeat. */
+  /** The angular weight it claims; cycles are cut at the first repeat. */
   const weightMemo = new Map<string, number>();
   const weightOf = (id: string, trail: Set<string>): number => {
     const memo = weightMemo.get(id);
@@ -1179,25 +640,22 @@ export function buildStrataTargets(
   };
 
   const projects = nodes.filter((n) => n.kind === "project").sort(byIdAsc);
-  /** Sibling order per parent — id order to begin with, then reordered by the sweeps below. */
+  /** Id order first, then reordered by the sweeps. */
   const orderOf = new Map<string, DomeInputNode[]>();
   for (const [parentId, list] of kids) orderOf.set(parentId, [...list]);
   const bearingOf = new Map<string, number>();
 
-  /**
-   * Seat one node at the middle of `[from, to)` and deal that sector out to its
-   * children. `index`/`siblings` only choose between the two staggered radii —
-   * **the bearing never leaves the sector**, because leaving it is what would let
-   * a drop cross a neighbour's.
-   */
-  /** Each node's own sector and slot, so one subtree can be re-dealt without redoing the walk. */
+  /** So one subtree can be re-dealt without redoing the walk. */
   const sectorOf = new Map<string, readonly [number, number, number, number]>();
+  /**
+   * Seat a node mid-sector and deal the sector to its children; `index`/`siblings` choose only
+   * the lane radius, and the bearing never leaves the sector, or a drop could cross.
+   */
   const place = (node: DomeInputNode, from: number, to: number, index: number, siblings: number): void => {
     sectorOf.set(node.id, [from, to, index, siblings]);
     const mid = (from + to) / 2;
     const planeR = node.kind === "project" ? STRATA_PROJECT_RING_R : DOME_PLANE[node.kind].r;
-    // A lone project is the axis the whole structure stands on; two or more share
-    // the top plane's ring like any other tier.
+    // A lone project is the axis; two or more share the top plane's ring.
     const onAxis = node.kind === "project" && projects.length <= 1;
     const r = onAxis ? 0 : planeR * STRATA_PLACED_FILL;
     bearingOf.set(node.id, mid);
@@ -1216,24 +674,10 @@ export function buildStrataTargets(
   };
 
   /*
-   * **Two lanes per plane.** Bearing is decided by the sector; radius is still
-   * free, and a plane that puts every node on one circle fuses whichever two
-   * happen to land side by side — which the crossing sweep makes *more* likely,
-   * because it deliberately pulls related nodes together. Measured at 1040 on the
-   * sample vault (2026-09-06): three same-tier overlapping pairs on one circle,
-   * zero once the plane alternates two.
-   *
-   * The device is the cone's own stagger (`CONE_STAGGER_IN`/`OUT`), moved from
-   * "one crowded parent's base" to "the whole plane", because on a plane the two
-   * neighbours that touch usually belong to different parents and a per-parent
-   * rule never sees them. It is the same answer the Helix Cone Tree gave the
-   * original cone — stretch the ring the children sit on so discs and labels stop
-   * occluding each other — in the one dimension a stratum has left.
-   *
-   * **Radius only.** Bearing is untouched, so the sector containment and the
-   * non-crossing property proved in this function's header survive it unchanged.
-   * It runs inside `layout`, so the crossing score below reads the geometry that
-   * is actually drawn rather than the pre-lane one.
+   * Two lanes per plane: bearing comes from the sector, so neighbours from different parents
+   * can fuse on one circle, and the sweep pulls related nodes together. The cone's stagger
+   * applied to the whole plane, radius only, so sector containment survives. It runs
+   * inside `layout`, so the crossing score reads the drawn geometry.
    */
   const applyLanes = (): void => {
     for (const kind of STRATA_PLANE_ORDER) {
@@ -1255,8 +699,7 @@ export function buildStrataTargets(
     coords.clear();
     bearingOf.clear();
     sectorOf.clear();
-    // The walk starts at the projects, each taking a share of the full turn. −π/2
-    // starts the first sector at the top of the disc, the same zero the cone uses.
+    // Projects share the full turn; −π/2 starts at the top of the disc, the cone's zero.
     let projectTotal = 0;
     for (const p of projects) projectTotal += weightOf(p.id, new Set());
     let cursor = -Math.PI / 2;
@@ -1270,41 +713,12 @@ export function buildStrataTargets(
   layout();
 
   /*
-   * ── Crossing reduction: the barycenter heuristic, constrained to the sector ──
-   *
-   * Sector inheritance already guarantees that no two **containment** drops cross
-   * (`buildStrataTargets`'s header). It says nothing about the dependency arcs,
-   * and those are most of the ink: 258 of the sample vault's relations against 124
-   * containment edges. Ordering siblings by id leaves that count to chance.
-   *
-   * So the layer order is decided the way layered drawing has decided it since
-   * Sugiyama, Tagawa and Toda (1981): put each vertex at the **barycenter of its
-   * neighbours' positions in the adjacent layer**, re-sort the layer by that key,
-   * and sweep until the order stops changing. One-sided crossing minimisation is
-   * NP-hard, which is why this is a heuristic and not a solve.
-   *
-   * Two adaptations, both taken from Bachmaier's radial adaptation of the
-   * framework (IEEE TVCG 13(3), 2007), because our layers are circles and not
-   * lines:
-   *
-   * - **The key is a circular mean**, not an arithmetic one. Averaging angles
-   *   directly puts a node whose neighbours sit at 10° and 350° at 180°, the exact
-   *   opposite of where it belongs. Summing unit vectors and taking `atan2` gives
-   *   the answer a circle has.
-   * - **The order is read as a cut of the circle**: a child's key is compared as
-   *   its nearest-equivalent offset from the parent's own bearing, which turns the
-   *   sector into a line the sort can work on.
-   *
-   * The third thing is ours, and it is the constraint the arrangement exists for:
-   * **a node may only be permuted among its own siblings.** A free layer
-   * permutation would find fewer crossings and would break the reading "this
-   * capability sits under that domain", which is the fact the picture is for. That
-   * is the same trade a constrained Sugiyama makes for grouped or clustered
-   * layers, and it is why the crossing count below improves rather than minimises.
-   *
-   * Containment edges are excluded from the key: they are already encoded by the
-   * sector, so counting them again would only pull every child toward its parent
-   * and undo the spread.
+   * Barycenter crossing reduction (Sugiyama, Tagawa & Toda, 1981) for the dependency arcs,
+   * which sector inheritance leaves to chance. Radial adaptations after Bachmaier (IEEE TVCG
+   * 13(3), 2007): the key is a circular mean, since averaging 10° and 350° gives 180°, and
+   * is read as an offset from the parent's bearing. A node permutes only among its siblings,
+   * or "this capability sits under that domain" breaks. Containment edges stay out of the
+   * key, since the sector already encodes them.
    */
   const neighbours = new Map<string, string[]>();
   for (const edge of edges) {
@@ -1316,7 +730,6 @@ export function buildStrataTargets(
     (neighbours.get(b.id) ?? neighbours.set(b.id, []).get(b.id)!).push(a.id);
   }
   if (neighbours.size > 0) {
-    /** Nearest equivalent angle of `angle` measured from `origin`, in (−π, π]. */
     const offsetFrom = (angle: number, origin: number): number => {
       let d = angle - origin;
       while (d > Math.PI) d -= TAU;
@@ -1327,17 +740,9 @@ export function buildStrataTargets(
     let bestOrder = scored ? new Map([...orderOf].map(([k, v]) => [k, [...v]])) : null;
     let bestCount = scored ? strataCrossings(coords, edges) : 0;
     /*
-     * Parents are visited in a fixed id order and **each subtree is re-dealt the
-     * moment its order changes**, so the next parent sees where the previous one
-     * actually put its children (Gauss-Seidel rather than Jacobi).
-     *
-     * This is not a refinement, it is the difference between working and not. A
-     * relation between two capabilities is an edge *inside* a layer, which the
-     * textbook framework never has — it splits every long edge over dummy
-     * vertices so each one spans adjacent layers. Update both ends of a same-layer
-     * edge from the same stale positions and they swap past each other in the same
-     * step: measured on the two-domain fixture in `dome-view.test.ts`, both sides
-     * reversed simultaneously and the single crossing survived untouched.
+     * Each subtree is re-dealt the moment its order changes (Gauss-Seidel), so the next parent
+     * sees current positions; with stale positions both ends of a same-layer edge swap past
+     * each other and the crossing survives.
      */
     const parentIds = [...orderOf.keys()].sort();
     for (let sweep = 0; sweep < STRATA_BARYCENTER_SWEEPS; sweep += 1) {
@@ -1357,8 +762,7 @@ export function buildStrataTargets(
             sz += Math.sin(a);
             seen += 1;
           }
-          // No relation of its own, or neighbours that cancel out exactly: keep
-          // where it is, so an unrelated node never shuffles for nothing.
+          // No relation, or neighbours that cancel exactly: stay put rather than shuffle for nothing.
           const key =
             seen === 0 || Math.hypot(sx, sz) < 1e-9
               ? offsetFrom(bearingOf.get(child.id) ?? parentBearing, parentBearing)
@@ -1386,8 +790,7 @@ export function buildStrataTargets(
         if (sector && parent) place(parent, sector[0], sector[1], sector[2], sector[3]);
       }
       if (!changed) break;
-      // The Gauss-Seidel re-deals above wrote base radii; put the lanes back so
-      // the score reads the drawn geometry.
+      // Re-deals wrote base radii; restore the lanes so the score reads the drawn geometry.
       applyLanes();
       if (!scored) continue;
       const count = strataCrossings(coords, edges);
@@ -1396,7 +799,7 @@ export function buildStrataTargets(
         bestOrder = new Map([...orderOf].map(([k, v]) => [k, [...v]]));
       }
     }
-    // Keep the best ordering seen, not the last one — the oscillation guard.
+    // Keep the best ordering seen, not the last: the barycenter oscillates.
     if (bestOrder !== null) {
       for (const [k, v] of bestOrder) orderOf.set(k, v);
       layout();
@@ -1404,11 +807,8 @@ export function buildStrataTargets(
   }
 
   /*
-   * **The rim.** Anything the walk never reached — no parent, a parent filtered out
-   * of this world, a parent inside a containment cycle — sits on the outer edge of
-   * its own plane at a deterministic hash bearing. It is still on the right level,
-   * which is the fact this arrangement carries, and being outside the placed
-   * annulus says the second fact: the tier above does not hold it.
+   * Anything the walk never reached sits on its own plane's rim at a hash bearing: on the
+   * right level, and visibly not held by the tier above.
    */
   for (const n of nodes) {
     if (coords.has(n.id)) continue;
@@ -1417,11 +817,7 @@ export function buildStrataTargets(
     coords.set(n.id, { px: Math.cos(a) * rimR, py: DOME_PLANE[n.kind].y, pz: Math.sin(a) * rimR });
   }
 
-  /*
-   * One ring per plane that actually has something on it. Drawing an empty plane
-   * would assert a level this vault does not have, which is the same lie the cloud
-   * would tell if it drew rings.
-   */
+  /* Only planes with something on them, or the ring asserts a level this vault lacks. */
   const circles: DomeCircle[] = [];
   for (const kind of STRATA_PLANE_ORDER) {
     if (!nodes.some((n) => n.kind === kind)) continue;
@@ -1430,9 +826,8 @@ export function buildStrataTargets(
   }
 
   /*
-   * The sectors the final walk dealt. Only domains and capabilities carry one:
-   * a project's sector is the whole turn, which says nothing, and an element
-   * has no plane under it to own a band on.
+   * Domains and capabilities only: a project's sector is the whole turn, and an element has
+   * no plane under it.
    */
   const sectors: DomeSector[] = [];
   for (const [id, [from, to]] of sectorOf) {
@@ -1444,168 +839,86 @@ export function buildStrataTargets(
   return { coords, circles, sectors };
 }
 
-/** Plane order, top to bottom — the containment spine of `docs/ONTOLOGY-ATLAS-SPEC.md` §2. */
+/** The containment spine of `docs/ONTOLOGY-ATLAS-SPEC.md` §2. */
 const STRATA_PLANE_ORDER: readonly DomeViewKind[] = ["project", "domain", "capability", "element"];
 
 /**
- * Base opacity of a **Strata plane ring**, replacing `DOME_RING_ALPHA` for that
- * arrangement.
- *
- * **Why it is higher than the cone's 0.34, and why the probe's 0.12 was wrong
- * here.** The three.js probe drew its boundaries at ≤ 0.12 and that is the right
- * *idea* — a boundary is a line you see through — but 0.12 is an opacity against
- * that renderer's own bright line colour. This engine multiplies the base by the
- * depth fog **and** by the depth line-width falloff before it reaches a pixel, and
- * its ring ink (`--map-dome-ring`, #43434f) is already nearly the canvas
- * ground. Measured at 1512 on the sample vault (2026-09-06), on the near arc of
- * the element plane:
- *
- * | base | brightest pixel on the arc | against the ground beside it |
- * |---|---|---|
- * | 0.12 | indistinguishable from the ground | — |
- * | 0.28 | still indistinguishable | — |
- * | 0.55 | 29 / 255 | **1.21 : 1** |
- * | 1.0 | 67 / 255 | 1.9 : 1 — the ellipses start reading as the subject |
- *
- * So 0.55 is the value at which a plane ring is a hairline you can see and not a
- * shape you look at. The cone's 0.34 is not a ceiling this has to respect: a cone
- * base is a small circle close to the camera, where fog barely touches it, while a
- * plane ring spends most of its circumference at depth. The number that matters is
- * the one on screen, and on screen this one is dimmer than the cone's bases are.
+ * Higher than the cone's 0.34 because a plane ring spends most of its circumference at
+ * depth, where fog and width falloff multiply it and the ring ink is near the ground: 0.55
+ * is where the ring is a visible hairline without reading as the subject.
  */
 export const DOME_STRATA_RING_ALPHA = 0.55;
 
-/** Base ring opacity for an arrangement — the cone's bases, or Strata's fainter planes. */
 export function domeRingAlphaFor(arrangement: DomeArrangement): number {
   return arrangement === "strata" ? DOME_STRATA_RING_ALPHA : DOME_RING_ALPHA;
 }
 
 /**
- * **The arrangement axis — 「Ownership」 (ownership) and 「Coupling」 (coupling).**
- *
- * `ownership` (default) is the Dome: height carries kind tier and bearing comes
- * from containment. `coupling` is the Cloud: a deterministic force layout lets
- * all relations decide all three coordinates, so it answers a genuinely
- * different question. The first tier-constrained coupling prototype was reverted
- * because it merely twisted the Dome. The detailed physical and determinism
- * contract follows below.
+ * Arrangement `ownership` (default) is the cone: height is the tier and bearing comes from
+ * containment. `coupling` is the cloud: a deterministic force layout lets relations decide all three
+ * coordinates, a genuinely different question.
  */
 /**
- * `strata` joins them on 2026-09-06. It is **not** a third question: it answers the
- * same containment question `ownership` does, and draws it as stacked labelled
- * planes rather than as nested cones. That is why its key is the shape's name
- * rather than a question — see `buildStrataTargets` for what it buys and what it
- * costs, and `docs/DECISIONS.md` for why the three.js probe it came from was
- * declined while its structure was kept.
+ * Arrangement `strata` answers the same containment question as `ownership`, drawn as stacked labelled
+ * planes (`buildStrataTargets`; `docs/DECISIONS.md` for the declined three.js probe).
  */
 export type DomeArrangement = "ownership" | "coupling" | "strata";
 
 /**
- * **The coupling cloud's physical character.**
- *
- * If the ownership arrangement **writes the rules into geometry** (height = tier,
- * bearing = parent), the coupling arrangement **writes no rules at all** and lets
- * relations decide position. So its shape is a cloud, not a dome — and that is the
- * point: if the two arrangements looked alike, one of them would have no reason to
- * exist.
- *
- * **Why the tier is not held (it was built that way once and reverted).** The first
- * build fixed height and relaxed only bearing, a "tier-constrained hybrid". The
- * owner's judgment was *"What I wanted was the existing one, plus a completely different shape"* (what I
- * wanted was the existing one, plus a completely different shape). That is right:
- * something still bound to rings with only its angle twisted is a variation on the
- * dome, not a different reading. Height has to be decided by relations too before
- * it answers "what clusters regardless of the declared hierarchy".
- *
- * **Determinism — no randomness at all.** The seed is **the ownership arrangement's
- * coordinates**. The iteration count is fixed and there is no random jitter. So the
- * same vault draws the same cloud whenever it is opened, and nodes start roughly
- * where they were when you switch arrangements. A force layout that reshuffles the
- * map on every reload destroys spatial memory — the property this repo's
- * fixed-scale contract protects.
+ * The coupling cloud writes no rules into geometry: height is decided by relations too, or
+ * it is only a twisted dome. No randomness: it seeds from the ownership coordinates with a
+ * fixed iteration count, so a vault always draws the same cloud and switching arrangement
+ * keeps spatial memory.
  */
 /**
- * Iteration ceiling. **Relaxation stops before this when it converges**
- * (`settleEpsilon`) — a ceiling, not a target. Lowering it from 420 to 260 came
- * from measurement: the transition held the main thread for 143 ms; merging the
- * pair loops brought that to 100 ms, and lowering the ceiling took it under. 100 ms
- * is the limit at which people perceive "instant" (Nielsen 1993).
+ * A ceiling, not a target: relaxation stops earlier on convergence (`settleEpsilon`). Low
+ * enough to keep the transition near the 100 ms "instant" limit (Nielsen 1993).
  */
 export const CLOUD_ITERATIONS = 260;
-/** Strength of the all-pairs repulsion. Inverse-square in distance (Coulomb-like). */
+/** Inverse-square in distance. */
 const CLOUD_REPULSION = 16000;
-/** Strength of the pull along a relation — a Hooke spring. */
+/** A Hooke spring along each relation. */
 const CLOUD_SPRING = 0.02;
-/** Local adjacency groups cohere while cross-group repulsion preserves breathing room. */
 const CLOUD_COHESION = 0.07;
 const CLOUD_LOCAL_REPULSION = 0.25;
-/** Rest length of one relation (dome units). */
 const CLOUD_REST_LENGTH = 92;
 /**
- * Domain cluster centres (2026-09-25). Anchors sit on a sphere of this radius,
- * about two relation rest lengths out, so neighbouring clusters keep a gap a
- * relation has to visibly cross; the pulls are weak beside the springs (0.02) and
- * the repulsion, so they place clusters without flattening what is inside one.
+ * Domain anchors sit about two rest lengths out, so neighbouring clusters keep a gap a
+ * relation must visibly cross; the pulls are weak beside springs and repulsion.
  */
 const CLOUD_DOMAIN_ANCHOR_RADIUS = 190;
 const CLOUD_DOMAIN_ANCHOR_PULL = 0.08;
 const CLOUD_DOMAIN_MEMBER_PULL = 0.03;
 
 /**
- * **No overlap.**
- *
- * Repulsion alone **guarantees nothing**. An inverse-square force grows as distance
- * shrinks, but it is integrated in finite steps, so a node with many relations gets
- * pressed onto its neighbours by the springs. Owner judgment (2026-08-18):
- * *"They're too close together, it doesn't look great"* (they're too close together, it doesn't look great).
- *
- * So at the end of every iteration a separate pass **pushes discs apart until they
- * genuinely do not overlap**. It is a position correction rather than a force, so it
- * holds regardless of step size (the same grammar as d3-force's `forceCollide`).
- *
- * The radius comes from the per-kind collision radius (`DOME_NODE_R`) — the size drawn on
- * screen has to be the size that occupies space, or it will not *look*
- * non-overlapping. The multiplier is the clearance on top: 1.0 makes discs touch,
- * 2.4 leaves room for another disc between them.
+ * Finite-step repulsion guarantees nothing, so each iteration ends with a position
+ * correction that pushes discs until they do not overlap (as d3-force `forceCollide`). The
+ * base is the per-kind `DOME_NODE_R`; 2.4 leaves room for another disc between two.
  */
 const CLOUD_COLLIDE_RADIUS_SCALE = 2.4;
-/** What fraction of an overlap one correction resolves. 1.0 oscillates, so resolve half at a time. */
+/** 1.0 oscillates, so resolve half at a time. */
 const CLOUD_COLLIDE_RELAX = 0.5;
 
-/**
- * Cloud keeps the shared, readable kind radii. Depth fog and perspective convey
- * front/back position; adjacency-derived cohesion separates local groups.
- */
+/** Depth fog and perspective carry front and back; the kind radii stay readable. */
 const CLOUD_DEPTH_GAMMA = 0.62;
-/** A very weak pull back to the origin — keeps the cloud from inflating without bound. */
+/** Keeps the cloud from inflating without bound. */
 const CLOUD_CENTERING = 0.0016;
-/** Farthest a node may move in one iteration — runaway guard. */
+/** Runaway guard. */
 const CLOUD_MAX_STEP = 9;
 /**
- * Node count up to which the O(n²) all-pairs repulsion runs in full. This vault
- * (82–125 nodes) is far below it; above it, iterations are reduced so time stays
- * closer to linear. An octree (Barnes-Hut) gets built once a genuinely large vault
- * is observed — building it now would leave nothing to validate against.
+ * Up to this node count the O(n²) repulsion runs in full; above it iterations drop so time
+ * stays nearer linear. Barnes-Hut waits for a genuinely large vault to validate against.
  */
 const CLOUD_FULL_ITERATION_NODE_CAP = 400;
 
 /**
- * **Resumable handle** for the coupling-cloud relaxation — call `step(budgetMs)`
- * repeatedly to advance by budget; it returns true on the frame it completes.
- *
- * **Why a stepper (measured 2026-08-19).** Relaxation is O(n²)×iterations, so at
- * 2,000 nodes it is **~350 ms in one go**. Opening the map with the cloud
- * arrangement on put all of that into **a single first rAF frame**, and boot started
- * with a 346–368 ms single-frame hitch (measured, headless:false). Iterations are
- * purely sequential, so holding the state (coordinate arrays plus an iteration
- * counter) lets it be cut and resumed anywhere, and **splitting it keeps
- * floating-point operation order identical, so the result is bit-identical** — the
- * determinism contract that the same vault always draws the same cloud survives
- * intact. The caller (use-topology-loop) advances it by budget each frame and does
- * not create the dome runtime until it completes.
+ * Relaxation is O(n²) × iterations, so it is sliced across frames: `step(budgetMs)` returns
+ * true on the frame it completes. Iterations are sequential, so cutting and resuming keeps
+ * the operation order and the result bit-identical. The loop creates the dome runtime only
+ * after completion.
  */
 interface CouplingCloudRelaxer {
-  /** Advance iterations for budgetMs. True once finished, convergence included. */
+  /** True once finished, convergence included. */
   step(budgetMs: number): boolean;
 }
 
@@ -1637,10 +950,7 @@ function createCouplingCloudRelaxer(
     links.push([a, b]);
   }
 
-  /*
-   * Collision radius — from the per-kind dot radius (`CLOUD_COLLIDE_RADIUS_SCALE`).
-   * `DOME_NODE_R × 2.1` is the dome-unit radius the draw uses, so that is the base.
-   */
+  /* `DOME_NODE_R × 2.1` is the dome-unit radius the draw uses. */
   const kindOf = new Map(nodes.map((node) => [node.id, node.kind]));
   const collideR = new Float64Array(n);
   for (let i = 0; i < n; i += 1) {
@@ -1649,14 +959,9 @@ function createCouplingCloudRelaxer(
   }
 
   /*
-   * **Domains as cluster centres** (2026-09-25, lit Neural). Relations alone
-   * scattered a domain's capabilities across the cloud, so "whose is this" had no
-   * place to be read from; the approved look puts each domain at the heart of its
-   * own cluster. Each domain is drawn toward a fixed anchor on a sphere (a
-   * Fibonacci lattice, deterministic, in id order), and every node it contains is
-   * drawn gently toward wherever its domain currently is. The pull is an inferred
-   * layout aid over the declared `contains` chain — no edge is invented — and the
-   * relation springs still decide everything inside a cluster.
+   * Each domain is drawn toward a fixed anchor (a deterministic Fibonacci lattice in id order)
+   * and its members toward the domain, so "whose is this" has a place. A layout aid over the
+   * declared `contains` chain; no edge is invented and springs decide inside a cluster.
    */
   const parentOf = new Map(nodes.map((node) => [node.id, node.parentId]));
   const domainIndexOf = new Int32Array(n).fill(-1);
@@ -1678,7 +983,7 @@ function createCouplingCloudRelaxer(
   const anchorY = new Float64Array(domainIds.length);
   const anchorZ = new Float64Array(domainIds.length);
   for (let k = 0; k < domainIds.length; k += 1) {
-    // Fibonacci sphere — evenly spread directions for any count, no randomness.
+    // Evenly spread directions for any count, no randomness.
     const y = domainIds.length === 1 ? 0 : 1 - (2 * (k + 0.5)) / domainIds.length;
     const ring = Math.sqrt(Math.max(0, 1 - y * y));
     const theta = k * Math.PI * (3 - Math.sqrt(5));
@@ -1704,12 +1009,8 @@ function createCouplingCloudRelaxer(
       : Math.max(60, Math.round((CLOUD_ITERATIONS * CLOUD_FULL_ITERATION_NODE_CAP) / n));
 
   /**
-   * Stop on convergence — when the node that moved **the most** in an iteration
-   * moved less than this (dome units), the remaining iterations do not change the
-   * screen. A fixed iteration count spends full compute even on an already settled
-   * layout (measured: the transition held the main thread for 143 ms). The threshold
-   * is a constant, so identical input stops at the identical iteration —
-   * determinism preserved.
+   * Stop once the largest move in an iteration falls below this; a constant, so identical
+   * input stops at the identical iteration.
    */
   const settleEpsilon = 0.05;
 
@@ -1717,16 +1018,10 @@ function createCouplingCloudRelaxer(
   let settled = false;
   let done = false;
 
-  /** One pass of the original for-loop — cooling factor and convergence test included. */
   /*
-   * An iteration is resumable **inside the pair loop** (2026-09-02). One
-   * iteration at 3,000 nodes is 4.5 million pairs — about 40 ms on the owner's
-   * machine — so an iteration-sized budget check could not hold a 28 ms slice
-   * and the arrangement switch stuttered at p95 52 ms for ~30 frames. The outer
-   * row `i` is the cursor: pausing between rows changes no operation order (row
-   * `i` only ever reads rows ≥ i after earlier rows have finished pushing), so
-   * the result stays bit-identical to the unsliced run. Springs, centering, and
-   * cooling always run to completion in the call that finishes the rows.
+   * Resumable inside the pair loop: one iteration can exceed a frame slice on a large vault.
+   * Row `i` is the cursor, and pausing between rows keeps the operation order, so the result
+   * stays bit-identical. Springs, centering and cooling finish in the call that ends the rows.
    */
   let pairRow = 0;
   let inPairLoop = false;
@@ -1737,22 +1032,9 @@ function createCouplingCloudRelaxer(
     pairRow = 0;
     inPairLoop = true;
   };
-  /** Runs pair rows until the deadline; true once every row of this iteration is done. */
   const runPairRows = (deadlineMs: number): boolean => {
 
-    /*
-     * ①+② repulsion and collision are handled in **one pair loop**.
-     *
-     * Both need the same (dx, dy, dz, d), and running them separately computes every
-     * pair twice (2×n²/2 per iteration). Merging deletes that half outright — for
-     * this vault, at 420 iterations × 7,750 pairs, **3.25 million pair computations
-     * saved**.
-     *
-     * Collision is a **position correction** rather than a force, a different kind
-     * of thing from force accumulation, but within a relaxation algorithm only the
-     * order inside an iteration matters (here the position correction is applied
-     * first and the forces are integrated once, below).
-     */
+    /* Repulsion and collision share one pair loop, since both need the same deltas. */
     while (pairRow < n) {
       const i = pairRow;
       for (let j = i + 1; j < n; j += 1) {
@@ -1761,8 +1043,7 @@ function createCouplingCloudRelaxer(
         let dz = pz[i] - pz[j];
         let d2 = dx * dx + dy * dy + dz * dz;
         if (d2 < 1e-6) {
-          // Exactly coincident pair — to stay deterministic, separate by **index**
-          // rather than by a random number.
+          // Coincident pairs separate by index, not a random number, to stay deterministic.
           dx = (i - j) * 1e-3;
           dy = 1e-3;
           dz = (j - i) * 1e-3;
@@ -1770,7 +1051,6 @@ function createCouplingCloudRelaxer(
         }
         const d = Math.sqrt(d2);
 
-        // Repulsion — inverse-square (Coulomb-like).
         const affinity = groups[i] === groups[j] ? CLOUD_LOCAL_REPULSION : 1;
         const inv = CLOUD_REPULSION * affinity / d2 / d;
         const ux = dx * inv;
@@ -1783,7 +1063,7 @@ function createCouplingCloudRelaxer(
         fy[j] -= uy;
         fz[j] -= uz;
 
-        // Collision — push positions directly until the discs really do not overlap.
+        // Collision pushes positions directly until the discs do not overlap.
         const want = collideR[i] + collideR[j];
         if (d < want) {
           const push = ((want - d) / d) * CLOUD_COLLIDE_RELAX * 0.5;
@@ -1796,15 +1076,13 @@ function createCouplingCloudRelaxer(
         }
       }
       pairRow += 1;
-      // A row costs up to n pair evaluations; checking the clock every 16 rows
-      // keeps the overshoot past the deadline under a millisecond at any size.
+      // Checking the clock every 16 rows keeps the overshoot under a millisecond at any size.
       if ((pairRow & 15) === 0 && performance.now() >= deadlineMs) return false;
     }
     inPairLoop = false;
     return true;
   };
   const finishIteration = (): void => {
-    // ③ Relation springs — pull or push toward the rest length.
     for (const [a, b] of links) {
       const dx = px[b] - px[a];
       const dy = py[b] - py[a];
@@ -1822,8 +1100,7 @@ function createCouplingCloudRelaxer(
       fz[b] -= uz;
     }
 
-    // Cohesion is an inferred layout aid, not a new graph edge. Compute each
-    // neighbourhood's current centre once; singleton groups exert no pull.
+    // Cohesion is a layout aid, not an edge; singleton groups exert no pull.
     groupX.fill(0); groupY.fill(0); groupZ.fill(0);
     for (let i = 0; i < n; i += 1) {
       const group = groups[i];
@@ -1854,7 +1131,6 @@ function createCouplingCloudRelaxer(
       fz[i] += (pz[d] - pz[i]) * CLOUD_DOMAIN_MEMBER_PULL;
     }
 
-    // ④ Pull back to the origin, then apply cooling.
     const cool = 1 - iter / iterations;
     let maxStep = 0;
     for (let i = 0; i < n; i += 1) {
@@ -1877,15 +1153,8 @@ function createCouplingCloudRelaxer(
   };
 
   /*
-   * **Move the centre of mass to the origin** — the rotation axis must not sit
-   * outside the cloud.
-   *
-   * The projection always rotates about the origin. If the cloud's centre of mass is
-   * off the origin, orbit drag does not *rotate the cloud*, it *swings the cloud
-   * around the origin*, so even a small turn sweeps it off screen (measured: a
-   * 12-step drag threw the cloud out the bottom-right). The dome is origin-symmetric
-   * to begin with and never had this problem, which is why it first surfaced with
-   * the cloud.
+   * Centre the mass on the origin: rotation turns about the origin, so an off-centre cloud
+   * swings off screen under a small drag.
    */
   const finalize = (): void => {
     let mx = 0;
@@ -1900,8 +1169,7 @@ function createCouplingCloudRelaxer(
     my /= n;
     mz /= n;
 
-    // Normalise the radius so camera fit and fog normalisation see the same scale
-    // as the dome.
+    // Normalised so camera fit and fog see the dome's scale.
     let maxR = 0;
     for (let i = 0; i < n; i += 1) {
       const r = Math.hypot(px[i] - mx, py[i] - my, pz[i] - mz);
@@ -1919,9 +1187,7 @@ function createCouplingCloudRelaxer(
   return {
     step(budgetMs: number): boolean {
       if (done) return true;
-      // Budget clock — the pair loop yields between rows, so a slice ends within a
-      // millisecond of its budget at any vault size and the next call resumes the
-      // same iteration where it paused.
+      // The next call resumes the same iteration where it paused.
       const deadline = performance.now() + budgetMs;
       while (iter < iterations && !settled) {
         if (!inPairLoop) beginIteration();
@@ -1939,36 +1205,28 @@ function createCouplingCloudRelaxer(
 }
 
 /**
- * Budget one frame spends on a slice of coupling-cloud relaxation (ms).
- *
- * Why 28: it leaves headroom under the long-task threshold (50 ms) while keeping
- * total elapsed time close to the old synchronous hitch (~350 ms at 2,000 nodes) —
- * 12 slices × 28 ms ≈ 340 ms of compute, plus a few ms per frame-boundary yield,
- * puts the moment assembly starts within tens of ms of before (staging timing
- * preserved). Lower and relaxation spreads over dozens of frames, visibly delaying
- * the start of assembly; higher and it becomes a hitch again.
+ * Headroom under the 50 ms long-task threshold while keeping total time near a single
+ * synchronous build; lower delays the start of assembly visibly, higher hitches again.
  */
 export const DOME_BUILD_SLICE_MS = 28;
 
 export interface DomeModelBuild {
-  /** Not safe to use before completion — valid only after `step` has returned true. */
+  /** Valid only after `step` has returned true. */
   model: DomeModel;
-  /** null means already complete. Otherwise call it by budget until the frame it completes. */
+  /** null means already complete. */
   step: ((budgetMs: number) => boolean) | null;
 }
 
 /**
- * The **staged** entry point to `buildDomeModel` — the geometric seed (the ownership
- * arrangement) is built immediately and only the coupling cloud's O(n²) relaxation
- * is handed to `step`. Why: see the `CouplingCloudRelaxer` doc-block (measured
- * 346–368 ms single-frame boot hitch). Slicing yields a bit-identical result.
+ * Builds the ownership seed at once and hands only the coupling cloud's O(n²) relaxation
+ * to `step` (see `CouplingCloudRelaxer`).
  */
 export function beginDomeModelBuild(
   nodes: readonly DomeInputNode[],
   options?: {
-    /** What decides bearing — see the `DomeArrangement` doc-block above. Defaults to `ownership`. */
+    /** Defaults to `ownership`. */
     arrangement?: DomeArrangement;
-    /** The relations that decide angles when `coupling`. Omitted, it matches the ownership arrangement. */
+    /** Omitted, the coupling arrangement matches ownership. */
     edges?: readonly { sourceId: string; targetId: string }[];
   },
 ): DomeModelBuild {
@@ -1986,33 +1244,24 @@ export function beginDomeModelBuild(
     const d = Math.hypot(n.x - cx, n.y - cy);
     if (d > radius) radius = d;
   }
-  // Floor so the dome does not collapse to a point even in a tiny vault (the 5
-  // starter nodes).
+  // Floor so a tiny vault does not collapse to a point.
   const unit = Math.max(radius, 220) / DOME_FIT_RADIUS;
 
   const arrangement = options?.arrangement ?? "ownership";
-  /*
-   * Strata is its own placement (`buildStrataTargets`); the cone tree is the seed
-   * for both the cone itself and the coupling cloud's warm start.
-   */
+  /* The cone tree seeds both the cone and the coupling cloud's warm start. */
   const { coords, circles, sectors } =
     arrangement === "strata"
       ? buildStrataTargets(nodes, options?.edges ?? [])
       : { ...layoutConeTree(nodes), sectors: [] as DomeSector[] };
 
-  /*
-   * "Coupling" (coupling) arrangement — relaxes from a **warm start** at the angles the
-   * ownership arrangement produced. Not starting from arbitrary angles is what buys
-   * determinism and spatial memory (`DomeArrangement` doc-block).
-   */
   const model: DomeModel = {
     centerX: cx,
     centerY: cy,
     unit,
     coords,
     arrangement,
-    // The cloud has no cone bases — drawing them would assert a coordinate system
-    // relations did not produce. Strata's circles are its four labelled planes.
+    // The cloud has no cone bases, which would assert a coordinate system relations did not
+    // produce; Strata's circles are its four planes.
     circles: arrangement === "coupling" ? [] : circles,
     sectors,
   };
@@ -2026,54 +1275,32 @@ export function beginDomeModelBuild(
 export function buildDomeModel(
   nodes: readonly DomeInputNode[],
   options?: {
-    /** What decides bearing — see the `DomeArrangement` doc-block above. Defaults to `ownership`. */
+    /** Defaults to `ownership`. */
     arrangement?: DomeArrangement;
-    /** The relations that decide angles when `coupling`. Omitted, it matches the ownership arrangement. */
+    /** Omitted, the coupling arrangement matches ownership. */
     edges?: readonly { sourceId: string; targetId: string }[];
   },
 ): DomeModel {
   const build = beginDomeModelBuild(nodes, options);
   if (build.step !== null) {
     while (!build.step(Number.POSITIVE_INFINITY)) {
-      // step(∞) finishes in one call — the same form as relaxCouplingCloud above.
+      // step(∞) finishes in one call.
     }
   }
   return build.model;
 }
 
 /**
- * **The dome's "grip" — where dragging rotates and where it pans.**
- *
- * In 3D, dragging empty space was **all orbit rotation** from the start, which left
- * no way at all to move the map (owner report 2026-08-18: *"There's no way to move the canvas itself?"* — there's no way to move the canvas
- * itself). The 2D behaviour of "drag empty space and the map follows" had simply
- * been covered over in 3D, so this is not a new 3D rule but **an existing rule being
- * restored**.
- *
- * The dividing line is exactly what the owner described: **on the object it rotates,
- * off the object it pans.** No mode toggle, no modifier key, no right button — what
- * the hand is over is what it has grabbed (direct manipulation).
- *
- * **Why an ellipse and not the bbox.** A drawn node's bbox is a rectangle and the
- * dome is round. Testing against the rectangle makes **the four corners** count as
- * "on the object" — black, empty screen that rotates when dragged, which is exactly
- * the «this black area» (this black area) the owner pointed at. The ellipse inscribed
- * in the bbox nearly coincides with the dome's silhouette, so what is seen and what
- * is tested agree.
- *
- * **Why a margin.** The outermost node's centre is not the silhouette (its disc
- * radius, label and selection ring lie outside it). Cutting with no margin gives "I
- * clearly grabbed the dome's edge and the map panned". Too generous and dragging
- * black space rotates. 1.08 is the minimum that covers the outermost node's disc (a
- * few px of radius) and its selection ring.
+ * On the object a drag rotates, off it the map pans, as in 2D; no mode or modifier. The
+ * test is the ellipse inscribed in the drawn bbox, since the bbox corners are empty screen
+ * that would rotate. 1.08 is the least margin covering the outermost disc and its
+ * selection ring.
  */
 export const DOME_GRIP_MARGIN = 1.08;
 
 /**
- * Is this world point inside the dome's grip — true orbits, false pans the camera.
- * `bounds` is `DomeRuntime.drawnBounds` (the world bbox of the nodes actually drawn
- * this frame). With no bbox (2D, or before assembly) it is false: with no object to
- * test against, the default — pan — wins.
+ * The `bounds` argument is `DomeRuntime.drawnBounds`. With none (2D, or before assembly) it is false,
+ * so the default pan wins.
  */
 export function isInsideDomeGrip(
   bounds: { minX: number; minY: number; maxX: number; maxY: number } | null,
@@ -2093,16 +1320,15 @@ export function isInsideDomeGrip(
 }
 
 export interface DomeProjection {
-  /** Projected world 2D coordinates — the existing camera looks at these. */
+  /** The existing camera looks at these. */
   wx: number;
   wy: number;
-  /** Weak perspective factor s = f/(f+z) — radii and hit discs multiply by it too. */
+  /** Weak perspective factor f/(f+z); radii and hit discs multiply by it too. */
   s: number;
-  /** Camera-space depth z2 — input to the per-frame fog normalisation (`updateDomeFrame`). */
+  /** Camera-space depth, input to per-frame fog normalisation (`updateDomeFrame`). */
   z: number;
 }
 
-/** Project one dome coordinate to world 2D at yaw/pitch — a port of the hero's `project()`. */
 export function projectDomeCoord(model: DomeModel, coord: DomeCoord, yaw: number, pitch: number): DomeProjection {
   return projectWithTrig(model, coord, Math.cos(yaw), Math.sin(yaw), Math.cos(pitch), Math.sin(pitch));
 }
@@ -2128,20 +1354,14 @@ function projectWithTrig(
   };
 }
 
-/* ── 3D-only feel constants — these never leak outside this module ─────────── *
- *
- * Owner dispensation (2026-08-18): 3D mode is not bound to the app's motion
- * conventions (the three-step duration ramp and the rest). In exchange the values
- * all live inside this module — standardising them later will be decided by reading
- * this one file (`docs/DECISIONS.md` «3D Dispensation List», the 3D dispensation list).  */
+/*
+ * 3D-only feel constants stay inside this module by dispensation (`docs/DECISIONS.md`, 3D
+ * Dispensation List), so standardising them later means reading one file.
+ */
 
 /**
- * Tier torsion — during an orbit drag the deeper tiers lag slightly, then spring
- * back. The hero engine's elastic torsion (LAGW) unchanged: classical animation's
- * follow-through (secondary motion) applied to the yaw axis. Per-tier yaw differs
- * within a frame, so an edge joining two tiers passes through geometry that exists
- * in no single projection — but torsion only lives during the drag and for a few
- * hundred ms after, decaying to 0.
+ * Deeper tiers lag an orbit slightly, then spring back (follow-through). Only during a
+ * drag and briefly after, decaying to 0.
  */
 export const DOME_TIER_LAG: Readonly<Record<DomeViewKind, number>> = {
   project: 0,
@@ -2149,42 +1369,19 @@ export const DOME_TIER_LAG: Readonly<Record<DomeViewKind, number>> = {
   capability: -0.2,
   element: -0.3,
 };
-/** Geometric decay of torsion per ms — the hero's 0.90 per frame @60fps, made dt-invariant. */
+/** The hero's 0.90 per frame at 60 fps, made dt-invariant. */
 export const DOME_TIER_LAG_DECAY_PER_MS = 0.9937;
 
 /**
- * **Programmatic pose moves get torsion too** — scaled by this.
- *
- * **Why (2026-08-18, third round).** Torsion (follow-through) was charged only by
- * hand drags, so the same rotation **moved like a different object depending on who
- * turned it**: turned by hand the deep rings lagged and sprang back, but when a node
- * click flew the camera all four rings turned rigidly as one lump. The latter is
- * exactly the impression of "a JS animation" — an object not reacting to its own
- * motion.
- *
- * In classical animation follow-through arises from **mass**, whatever the cause. A
- * camera-driven rotation is the same rotation from the object's point of view. So
- * the same constants are charged the same way, with one multiplier: a programmatic
- * move is far faster than a hand (half a turn in 750 ms), and at 1.0 the leaf ring
- * lags by nearly 12° and feels **broken**.
- *
- * One side effect is settle motion for free: when the move ends, charging stops and
- * the existing decay rewinds the rings into place, so **a short settling wobble
- * after arrival** costs nothing. No new easing, no new timer, no permanent rotation.
+ * Programmatic pose moves charge torsion too, or a camera-driven turn rotates the rings as
+ * one rigid lump. Scaled down because such moves are far faster than a hand; the existing
+ * decay supplies the settle.
  */
 export const DOME_POSE_LAG_SCALE = 0.55;
 
 /**
- * Charge tier torsion by this frame's yaw movement — **hand drag and programmatic
- * move call the same function.**
- *
- * Split them and they diverge: because torsion existed only on the drag path, the
- * same rotation moved like a different object depending on who turned it (see
- * `DOME_POSE_LAG_SCALE`). With both call sites in one function that divergence is
- * structurally impossible.
- *
- * `scale` is the per-cause push strength: 1 for the hand (1:1 direct manipulation),
- * `DOME_POSE_LAG_SCALE` for the much faster programmatic move.
+ * Hand drag and programmatic moves call this one function, so they cannot diverge. `scale`
+ * is 1 for the hand and `DOME_POSE_LAG_SCALE` for programmatic moves.
  */
 export function chargeTierLag(lag: Record<DomeViewKind, number>, deltaYaw: number, scale = 1): void {
   const d = deltaYaw * scale;
@@ -2194,85 +1391,37 @@ export function chargeTierLag(lag: Record<DomeViewKind, number>, deltaYaw: numbe
   lag.element += d * DOME_TIER_LAG.element;
 }
 
-/**
- * Assembly stagger — on switching on, the rings rise in order starting from the
- * project spine (the hero's tierDelay unchanged). Switching off replays the same
- * clock backwards, settling from the leaves down.
- */
+/** Rings rise from the project spine when switching on; switching off replays backwards. */
 const DOME_TIER_DELAY_MS: Readonly<Record<DomeViewKind, number>> = {
   project: 0,
   domain: 180,
   capability: 380,
   element: 600,
 };
-/** How long one tier takes to rise (ms) — the hero's 520 ms ease-out cubic. */
+/** The hero's 520 ms ease-out cubic. */
 const DOME_TIER_RISE_MS = 520;
 
 /**
- * **Entry sweep — the dome takes its place by rising *and turning*.**
- *
- * The assembly stagger (`DOME_TIER_DELAY_MS`) choreographs only the rings *rising*.
- * Camera pose was at its final value from the first frame, so switching on looked
- * like **a finished angle being filled with objects**. In motion graphics that cut
- * is an arrangement, not an entrance.
- *
- * So one more pose is tied to the assembly clock.
- *
- * - **Pitch starts from above** (nearly a plan view). The rings are first seen
- *   spread as concentric circles, so **structure reads first**, and then the dome
- *   rises and that structure becomes dimensional. Information order matches form
- *   order.
- * - **Yaw enters slightly turned.** Rotation is the only axis that produces motion
- *   parallax, and that parallax is what says "this is 3D" (Ware & Franck 1996 —
- *   structured 3D motion contributes more to comprehension than stereo. Permanent
- *   rotation fights reading, though, so it is used **on entry only** and reaches 0
- *   on arrival).
- *
- * The values are multiplied by the assembly ramp's remainder (`1 − ease`), so when
- * the ramp finishes they are exactly 0 — after entry this section might as well not
- * exist.
- *
- * **0.45, down from 0.62 (2026-09-25).** The lift is added to the default pitch
- * (0.5), and the pitch wall is now 0.95 (`DOME_PITCH_MAX`); 0.62 opened on an
- * angle no drag can reach, which a person then cannot return to. 0.45 starts the
- * entry exactly on the wall — still the steepest view the planes allow.
+ * The entry sweep: pitch starts from nearly above, so structure reads first, and yaw
+ * enters slightly turned, since rotation's motion parallax says "3D" (Ware & Franck 1996).
+ * Both scale by the ramp remainder and reach exactly 0 on arrival. 0.45 on the 0.5 default
+ * starts on the pitch wall, the steepest angle a drag can return to.
  */
 const DOME_ENTRY_PITCH_LIFT = 0.45;
 const DOME_ENTRY_YAW_SWEEP = 0.45;
 
 /**
- * The entry sweep's **own clock** (ms) — it does not use the assembly clock.
- *
- * It was tied to the assembly clock (`rampClock`) first, and was nearly invisible on
- * screen. The reason is geometric: a node's offset during assembly is
- * `(projected position − 2D position) × tier ramp`, so while the ramp is low
- * **turning the pose barely moves any node.** The interval where the sweep is
- * strongest and the interval where it is visible were misaligned.
- *
- * Hence a separate clock. The sweep **outlives** assembly (1500 ms vs 1120 ms) and
- * puts down the remaining angle after the rings are all up — that final stretch is
- * in fact the only stretch where motion parallax reads.
- *
- * During the leading `HOLD` it stays at 1.0: only the spine is up then, so moving
- * the pose has no information to carry. Hold it, and put it down once there are
- * objects to carry.
+ * Its own clock, not assembly's: offsets scale by the tier ramp, so turning the pose while
+ * the ramp is low barely moves any node. It outlives assembly and holds at 1 while only the
+ * spine is up.
  */
 export const DOME_ENTRY_SWEEP_MS = 1500;
 const DOME_ENTRY_SWEEP_HOLD_MS = 220;
 
 /**
- * **Fold the entry sweep into the pose** and disarm it — call this the moment a hand
- * touches the map.
- *
- * Simply setting `entryArmed = false` makes the drawn pose **jump** by the sweep
- * offset in one frame. The screen jumping on the very frame the user grabs it breaks
- * precisely the contract this repo keeps consistently across camera tweens, orbit
- * momentum and pose moves: **a gesture inherits the position exactly as it is right
- * now**.
- *
- * So the offset moves into the real yaw/pitch: the drawn pose stays byte-identical
- * and from the next frame on the concept of a sweep is gone. Pitch is clamped back
- * into range (the sweep is presentation-layer and did not know about the limits).
+ * Call when a hand touches the map: the sweep offset moves into the real yaw and pitch, so
+ * the drawn pose stays identical instead of jumping as the gesture starts. Pitch is clamped
+ * back into range.
  */
 export function commitDomeEntrySweep(runtime: DomeRuntime): void {
   if (!runtime.entryArmed) return;
@@ -2290,64 +1439,51 @@ function domeEntrySweep(entryClockMs: number): number {
   const c = t <= 0 ? 0 : t >= 1 ? 1 : t;
   return 1 - domeEaseOutCubic(c);
 }
-/** Full length of the assembly clock (ms) = last tier delay + rise. */
+/** Last tier delay + rise. */
 export const DOME_ASSEMBLE_TOTAL_MS = DOME_TIER_DELAY_MS.element + DOME_TIER_RISE_MS;
 
-/** ease-out cubic — the hero's tierAlpha curve. */
+/** The hero's tierAlpha curve. */
 function domeEaseOutCubic(t: number): number {
   const c = t <= 0 ? 0 : t >= 1 ? 1 : t;
   return 1 - Math.pow(1 - c, 3);
 }
 
-/** Assembly clock (0..TOTAL) → one kind's eased ramp, 0..1. */
 export function domeTierRamp(clockMs: number, kind: DomeViewKind): number {
   return domeEaseOutCubic((clockMs - DOME_TIER_DELAY_MS[kind]) / DOME_TIER_RISE_MS);
 }
 
 /**
- * This frame's render handoff for one node — world offset plus perspective factor.
- * Draw, hit-test, popover anchor and the `__atlasMap` instrumentation must all read
- * **the same map** so clicks and measurements follow where a node was drawn during
- * rotation. Entries are updated in place (allocations per frame converge to 0 — the
- * Map and its entries are reused while the node set is stable).
+ * Draw, hit test, popover anchor and `__atlasMap` instrumentation read this one map, so
+ * clicks follow where a node was drawn. Updated in place; no per-frame allocation once the
+ * node set is stable.
  */
 export interface DomeNodeFrame {
   dx: number;
   dy: number;
   /**
-   * Radius multiplier — computed **by inversion**, so that multiplying the 2D base
-   * radius (radiusForKind × magnitudeScale) by it yields the dome's dot radius
-   * (`DOME_NODE_PX` × perspective ÷ zoom). Draw, hit and instrumentation all use
-   * base × s, so all three agree structurally.
+   * Inverted so base radius (radiusForKind × magnitudeScale) × s gives `DOME_NODE_PX` ×
+   * perspective ÷ zoom; draw, hit and instrumentation all use base × s, so they agree.
    */
   s: number;
-  /** This node kind's assembly ramp 0..1 — the interpolator for presentation-layer crossfades (label, fog, width). */
+  /** This kind's assembly ramp, 0..1, the interpolator for crossfades (label, fog, width). */
   a: number;
-  /** This frame's normalised depth, 0 (near)..1 (far) — input to fog and line width. */
+  /** Normalised depth this frame, 0 near to 1 far; input to fog and line width. */
   u: number;
 }
 
-/**
- * Update the runtime's frame map in place from the current pose (yaw + per-kind
- * torsion, pitch) and the assembly clock. Trig is computed once per kind (four
- * pairs) and node entries are reused.
- */
+/** In place, with trig computed once per kind and node entries reused. */
 export function updateDomeFrame(
   runtime: DomeRuntime,
   nodes: ReadonlyArray<{ id: string; kind: DomeViewKind; x: number; y: number }>,
-  /** A node's 2D base radius (world) — radiusForKind × magnitudeScale. Denominator of the `s` inversion. */
+  /** Denominator of the `s` inversion. */
   baseRadiusFor: (node: { id: string; kind: DomeViewKind }) => number,
-  /** Frame clock (`performance.now()`), only read while a morph is in flight. */
+  /** Read only while a morph is in flight. */
   nowMs = 0,
-  /**
-   * The live camera zoom. `s` is inverted through it so the drawn radius lands on
-   * `DOME_NODE_PX` **screen** pixels — see that table's doc-block for why the zoom
-   * must not be a factor in a node's size.
-   */
+  /** Inverted through, so the drawn radius lands on `DOME_NODE_PX` screen pixels. */
   cameraScale = 1,
 ): void {
   const { model, frame } = runtime;
-  // Morph progress — see `DomeMorph`. Ends itself the frame it reaches 1.
+  // Ends itself the frame it reaches 1.
   let morphE = 1;
   const morph = runtime.morph;
   if (morph !== null) {
@@ -2360,7 +1496,7 @@ export function updateDomeFrame(
   }
   const morphing = runtime.morph !== null;
   const morphCoord: DomeCoord = { px: 0, py: 0, pz: 0 };
-  /** The coordinate to draw this frame — the target, or the eased blend from the previous model. */
+  /** The target, or the eased blend from the previous model. */
   const coordFor = (id: string, target: DomeCoord): DomeCoord => {
     if (!morphing) return target;
     const from = morph!.fromCoords.get(id);
@@ -2371,11 +1507,8 @@ export function updateDomeFrame(
     return morphCoord;
   };
   /*
-   * Entry sweep — added to the drawn pose only (`DOME_ENTRY_PITCH_LIFT` doc-block).
-   * Why not push `runtime.yaw/pitch` directly: that would make the entry animation
-   * compete for the same variables as idle spin, the orbit target and the pose
-   * tween, and nothing in the code says which wins on a frame where all three
-   * overlap. An offset is presentation-layer and has nothing to compete with.
+   * The entry sweep is an offset on the drawn pose only; writing `runtime.yaw/pitch` would
+   * compete with idle spin, the orbit target and the pose tween with no rule for who wins.
    */
   const sweep = runtime.entryArmed ? domeEntrySweep(runtime.entryClock) : 0;
   const drawPitch = runtime.pitch + DOME_ENTRY_PITCH_LIFT * sweep;
@@ -2399,17 +1532,13 @@ export function updateDomeFrame(
     const yawK = runtime.yaw + runtime.lag[kind] + drawYawOffset;
     trig[kind] = [Math.cos(yawK), Math.sin(yawK)];
     ramp[kind] = domeTierRamp(runtime.rampClock, kind);
-    // Kept for `projectDomePlanePoint`, so the lit stage is drawn at exactly the
-    // pose (torsion included) its tier's nodes were.
+    // Kept for `projectDomePlanePoint`, so the lit stage draws at its tier's exact pose.
     runtime.kindTrig[kind][0] = trig[kind][0];
     runtime.kindTrig[kind][1] = trig[kind][1];
     runtime.kindRamp[kind] = ramp[kind];
   }
-  // Pass 1 — project, plus this frame's depth range (per-frame fog normalisation is
-  // the honest one: the hero's rule), plus **the drawn world bbox** (the anchor for
-  // the camera pan leash — it must be where the dome actually sits rather than the
-  // 2D layout bbox, or the elastic clamp drags the dome toward the 2D centre during
-  // zoom and orbit).
+  // Pass 1 projects and collects this frame's depth range and the drawn bbox, which anchors
+  // the pan leash where the dome sits, or the elastic clamp drags it toward the 2D centre.
   let zMin = Infinity;
   let zMax = -Infinity;
   let bMinX = Infinity;
@@ -2424,19 +1553,14 @@ export function updateDomeFrame(
     }
     const [cy, sy] = trig[node.kind];
     const r = ramp[node.kind];
-    // A tier at r=0 skips projection — offset 0 (not −0), factor 1, identical to 2D.
+    // A tier at r=0 skips projection: offset 0 (not −0), factor 1, identical to 2D.
     const p = r > 0 ? projectWithTrig(model, coordFor(node.id, coord), cy, sy, cp, sp) : null;
     const dx = p === null ? 0 : (p.wx - node.x) * r;
     const dy = p === null ? 0 : (p.wy - node.y) * r;
     let s = 1;
     if (p !== null) {
       const baseR = baseRadiusFor(node);
-      /*
-       * Screen px → world → the multiplier the draw applies to the 2D base radius.
-       * The apex clamp the dome-unit formula needed (its cross could span the
-       * screen at a large `unit`) is gone with the formula: `DOME_NODE_PX.project`
-       * IS the cap now, and it cannot grow with zoom or vault size.
-       */
+      /* Screen px → world → multiplier on the 2D base radius; `DOME_NODE_PX.project` is the cap. */
       const domeR = (DOME_NODE_PX[node.kind] * p.s) / (cameraScale > 0 ? cameraScale : 1);
       const target = baseR > 0 ? domeR / baseR : 1;
       s = 1 + (target - 1) * r;
@@ -2463,19 +1587,12 @@ export function updateDomeFrame(
     }
   }
   /*
-   * Latitude ring samples — projected at the **same pose** as the nodes (per-kind yaw
-   * torsion included). Without the torsion, the rings alone stay put during a drag
-   * and slide relative to their own tier.
-   *
-   * Ring z is **not** fed into the normalisation range (zMin/zMax). A ring goes all
-   * the way round, including angles where there are no nodes, so its z span is always
-   * wider than the nodes', and including it would flatten the fog contrast between
-   * nodes by that much — the coordinate system would be changing the data's
-   * presentation. The rings read their own u by clamping to the same range below.
+   * Rings project at the same pose as the nodes, torsion included, or they slide against
+   * their tier during a drag. Ring z stays out of the normalisation range: a ring spans
+   * angles with no nodes and would flatten the nodes' fog contrast.
    */
-  // Cone bases — the model's own circles (the cloud carries none: drawing rings
-  // there would assert a coordinate system that does not exist). During a morph
-  // the previous model's bases fade out behind the new ones fading in.
+  // Cone bases from the model (the cloud has none); during a morph the old bases fade out
+  // behind the new ones.
   let ringCount = 0;
   const sampleCircle = (circle: DomeCircle, alpha: number): void => {
     const { kind } = circle;
@@ -2513,12 +1630,11 @@ export function updateDomeFrame(
   if (morphing) for (const circle of morph!.fromCircles) sampleCircle(circle, 1 - morphE);
   runtime.rings.length = ringCount;
 
-  // Pass 2 — normalise z into 0..1 (u). If every tier is r=0 there is no span → u 0.
+  // Pass 2 normalises z to u; with no span, u is 0.
   const span = zMax - zMin;
   runtime.zMin = Number.isFinite(zMin) ? zMin : 0;
   runtime.zSpan = Number.isFinite(span) && span > 1e-9 ? span : 0;
-  // The cloud reads depth more steeply (`CLOUD_DEPTH_GAMMA` doc-block) — the back
-  // has to recede into atmosphere faster for the front cluster to read.
+  // The cloud reads depth more steeply so the front cluster reads.
   const cloud = model.arrangement === "coupling";
   if (Number.isFinite(span) && span > 1e-9) {
     for (const entry of frame.values()) {
@@ -2530,7 +1646,7 @@ export function updateDomeFrame(
   } else {
     for (const entry of frame.values()) entry.u = 0;
   }
-  // Rings read the same scale but clamped (doc-block above — not in the range, read only).
+  // Rings read the same scale, clamped.
   if (Number.isFinite(span) && span > 1e-9) {
     for (const ring of runtime.rings) {
       for (const point of ring.points) {
@@ -2549,23 +1665,19 @@ export function updateDomeFrame(
 
 const DOME_KINDS: readonly DomeViewKind[] = ["project", "domain", "capability", "element"];
 
-/** Scratch coordinate for ring sampling — one object per module, never per sample. */
+/** One per module, never per sample. */
 const ringCoord: DomeCoord = { px: 0, py: 0, pz: 0 };
 
-/** A point on a kind's plane, projected this frame — world 2D plus normalised depth. */
 export interface DomePlaneSample {
   wx: number;
   wy: number;
-  /** 0 near … 1 far, on the same scale the nodes' `u` used this frame (clamped). */
+  /** The nodes' scale this frame, clamped. */
   u: number;
 }
 
 /**
- * Projects a point **on a kind's plane** at the pose the last `updateDomeFrame`
- * drew that tier with — its own yaw torsion, the entry sweep, and the same depth
- * normalisation — and writes it into `out`. The lit Strata stage (tier discs,
- * polar grid, sector bands) is sampled through this, so the floor a node stands on
- * can never drift from the node while the structure turns.
+ * Projects a plane point at the pose `updateDomeFrame` drew that tier with (torsion, sweep
+ * and normalisation included), so the lit stage never drifts from its nodes.
  */
 export function projectDomePlanePoint(
   runtime: DomeRuntime,
@@ -2589,25 +1701,20 @@ export function projectDomePlanePoint(
   }
 }
 
-/**
- * Samples for a base of radius `r` — `DOME_RING_SAMPLES` on the domain ring
- * (r=148), proportionally fewer on the small bases so a 12-unit circle is not
- * drawn with 96 segments. The floor keeps the smallest base round.
- */
+/** Fewer samples on small bases; the floor keeps the smallest round. */
 export function domeRingSampleCount(r: number): number {
   return Math.max(12, Math.min(DOME_RING_SAMPLES, Math.round(r * 0.65)));
 }
 
-/** ease-in-out cubic — the camera tween's curve, shared by the morph. */
+/** The camera tween's curve, shared by the morph. */
 function domeEaseInOutCubic(t: number): number {
   const c = t <= 0 ? 0 : t >= 1 ? 1 : t;
   return c < 0.5 ? 4 * c * c * c : 1 - Math.pow(-2 * c + 2, 3) / 2;
 }
 
 /**
- * Swap the model in and start a morph from the one being replaced — see
- * `DomeMorph`. Call it from the loop when a rebuild (arrangement or world change)
- * completes while the dome is on screen. `durationMs` 0 is a cut (reduced-motion).
+ * Call when a rebuild completes while the dome is on screen; `durationMs` 0 is a cut
+ * (reduced motion).
  */
 export function beginDomeMorph(runtime: DomeRuntime, next: DomeModel, nowMs: number, durationMs: number): void {
   const prev = runtime.model;
@@ -2619,15 +1726,9 @@ export function beginDomeMorph(runtime: DomeRuntime, next: DomeModel, nowMs: num
 }
 
 /**
- * Put a dome that has fully left the screen to rest (2026-09-02).
- *
- * The loop's dome step runs only while 3D is on or the teardown ramp is still
- * above 0, so anything that was in flight at the moment 2D took over — a pose
- * tween, tier torsion, momentum, the landing target — stayed frozen at its last
- * value. The idle gate names every one of those as "motion", so the map never
- * slept again after a single visit to 3D (measured: 120 frames/s, 32 s after the
- * last input, cause `domeMotion`). Nothing here is visible — the frame map is
- * already empty — so settling is a pure bookkeeping reset.
+ * The dome step runs only while 3D is on or tearing down, so anything in flight when 2D took
+ * over stays frozen and the idle gate counts it as motion forever. Nothing is visible, so
+ * this is a pure bookkeeping reset.
  */
 export function settleDomeRuntimeOffscreen(runtime: DomeRuntime): void {
   runtime.yawVel = 0;
@@ -2638,7 +1739,7 @@ export function settleDomeRuntimeOffscreen(runtime: DomeRuntime): void {
   runtime.orbiting = false;
   runtime.drag = null;
   runtime.entryArmed = false;
-  // A fly-to belongs to the 3D view it moved; the flat map has nothing to fly back to.
+  // A fly-to belongs to the 3D view it moved.
   runtime.flyRequest = null;
   runtime.nudgeReturn = null;
   runtime.flight = null;
@@ -2652,11 +1753,8 @@ export function settleDomeRuntimeOffscreen(runtime: DomeRuntime): void {
 }
 
 /**
- * Back-projection — solve one world 2D point into dome coordinates **on the plane at
- * height py** (closed form). The core of 3D node drag: one screen point maps to
- * infinitely many depths, so a node moves only within its own kind plane, preserving
- * the typed fact z carries. A near-zero denominator (a horizontal line of sight)
- * returns null and the caller discards that frame's movement.
+ * Closed-form back-projection onto the plane at height py, so a dragged node stays on its
+ * kind plane.
  */
 export function solveDomePlanePoint(
   model: DomeModel,
@@ -2670,25 +1768,10 @@ export function solveDomePlanePoint(
   const uy = (wy - model.centerY) / model.unit;
   const cp = Math.cos(pitch);
   const sp = Math.sin(pitch);
-  // Solve uy = −(py·cp + zr·sp)·s, s = F/(F + (−py·sp + zr·cp)) for zr.
-  //
-  // Degenerate handling (2026-08-18, owner: "some nodes don't move properly when clicked"
-  // — some of them don't move properly when clicked). As the pointer approaches this
-  // plane's **horizon** (the line where the plane vanishes on screen) denom → 0, and
-  // past it the sign flips and the solution jumps behind the camera. This used to
-  // return null, and since the caller discards that frame's movement, dragging a node
-  // upward at low pitch (a near-edge-on viewpoint) produced **no response at all**.
-  // Clamping denom to a positive floor instead pushes the solution continuously out
-  // to "a far point toward the horizon", and the radius cap below catches it at the
-  // ring's edge — it slides to the edge instead of freezing.
-  //
-  // Follow-up to opening the full pitch range (2026-08-18, second round): from below
-  // (sp<0) the denominator's sign in the normal region is **negative**. Clamping
-  // unconditionally to a positive floor, as before, would pin every drag from an
-  // underside viewpoint to the floor constant. The viewpoint (whether the camera is
-  // above or below = the sign of sp) decides the expected sign, and only the
-  // magnitude is clamped on that side — continuity across the horizon (no sign flip)
-  // holds identically for both viewpoints.
+  // Solve uy = −(py·cp + zr·sp)·s, s = F/(F + (−py·sp + zr·cp)) for zr. Near the plane's
+  // horizon denom → 0 and past it the solution flips behind the camera, so the magnitude is
+  // floored on the side the viewpoint expects (the sign of sp): the node slides out to the
+  // radius cap instead of freezing, from above or below.
   const rawDenom = DOME_FOCAL * sp + uy * cp;
   const denom =
     sp >= 0
@@ -2712,16 +1795,14 @@ export function solveDomePlanePoint(
   return { px, pz };
 }
 
-/** Clamp pitch into range — keeps it from collapsing to edge-on or plan view. */
+/** Keeps it from collapsing to edge-on or plan view. */
 export function clampDomePitch(pitch: number): number {
   return Math.min(DOME_PITCH_MAX, Math.max(DOME_PITCH_MIN, pitch));
 }
 
 /**
- * Pitch rubber-banding during a drag — the part beyond the limit is taken at a
- * quarter resistance (the same grammar as iOS scroll boundaries). On release the loop
- * returns exponentially to the `clampDomePitch` target: pressed and rebounding rather
- * than stuck against the wall.
+ * Past the limit at quarter resistance, like iOS scroll bounds; on release the loop returns
+ * exponentially to `clampDomePitch`.
  */
 export function resistDomePitch(pitch: number): number {
   if (pitch > DOME_PITCH_MAX)
@@ -2731,19 +1812,15 @@ export function resistDomePitch(pitch: number): number {
   return pitch;
 }
 
-/** Per-frame decay of release momentum — the same feel regardless of dt (geometric decay per ms). */
+/** Geometric decay per ms, so the feel is dt-independent. */
 export function decayOrbitVelocity(velRadPerMs: number, dtMs: number): number {
   const v = velRadPerMs * Math.pow(ORBIT_VEL_DECAY_PER_MS, dtMs);
   return Math.abs(v) < ORBIT_VEL_EPS ? 0 : v;
 }
 
 /**
- * One step of the critically damped spring for in-plane node drag (semi-implicit
- * Euler). Makes a node follow the pointer **as if it had mass** rather than instantly
- * — the velocity at the moment of grabbing carries over, and on release it settles
- * into the target (the last pointer position). `angFreq` is taken straight from
- * `--map-camera-spring-angfreq-interactive` (the crisp tier): no new easing
- * invented, the existing value layer extended to the 3D axis.
+ * Semi-implicit critically damped spring, so a dragged node follows as if it had mass and
+ * settles on the last pointer target. `angFreq` is `--map-camera-spring-angfreq-interactive`.
  */
 export interface DomeDragSpring {
   px: number;
@@ -2768,7 +1845,7 @@ export function stepDomeDragSpring(
   spring.pz += spring.vz * dt;
 }
 
-/** The world bbox the dome occupies at the current yaw/pitch — input to 3D's "fit view". */
+/** Input to 3D fit view. */
 export function domeWorldBounds(
   model: DomeModel,
   yaw: number,
@@ -2790,9 +1867,8 @@ export function domeWorldBounds(
 }
 
 /**
- * Would any node of `model` at this pose, framed by `target`, land in `rect` (canvas px)?
- * `allowancePx` pads each node centre by its disc. The 3D fit asks it of the chrome that
- * stands on the canvas's right edge before it lets the drawing use that column.
+ * The `allowancePx` argument pads each centre by its disc. The 3D fit asks it of the right-edge chrome
+ * before the drawing uses that column.
  */
 export function domeReachesRect(
   model: DomeModel,
@@ -2820,42 +1896,24 @@ export function domeReachesRect(
   return false;
 }
 
-/**
- * Among the angles equivalent to `target` (mod 2π), the one nearest `current` — keeps
- * a programmatic rotation ("fit view", selection reframe) from taking the long way
- * round.
- */
+/** Keeps a programmatic rotation from taking the long way round. */
 export function domeNearestYawTurn(target: number, current: number): number {
   return target + Math.round((current - target) / TAU) * TAU;
 }
 
 /**
- * Yaw target for a selection reframe — the angle that brings this node to the dome's
- * **front** (nearest the camera, minimal z2). In the projection depth is
- * `zr = r·sin(yaw + θ)` (θ = atan2(pz, px)), so `yaw + θ = −π/2` is the minimum. The
- * return value is the equivalent angle nearest the current yaw, so rotation always
- * takes the short way.
- *
- * Why the front (2026-08-18, second round; owner: *"a proper camera move motion seems needed when clicking"
- * — clicking should get a proper camera move too): in a dome a node
- * can be on the structure's **far side**, and zooming alone would grow it while it
- * stays hidden behind other rings. If 2D's focus dive is "bring the target to the
- * centre of the screen", the dome's equivalent is "bring the target to the front of
- * the structure" — yaw is the camera's third axis, so rotating *is* moving the camera.
+ * Brings the node to the front, where depth `r·sin(yaw + θ)` is minimal (yaw + θ = −π/2),
+ * the short way. A far-side node would otherwise grow under zoom yet stay hidden.
  */
 export function domeFocusYaw(coord: DomeCoord, currentYaw: number): number {
   const r = Math.hypot(coord.px, coord.pz);
-  // On the axis (the project apex, say) there is no bearing — and no reason to rotate.
+  // On the axis there is no bearing and no reason to rotate.
   if (r < 1e-6) return currentYaw;
   const theta = Math.atan2(coord.pz, coord.px);
   return domeNearestYawTurn(-Math.PI / 2 - theta, currentYaw);
 }
 
-/**
- * The world bbox a node set (ego: the selected node + 1-hop) projects to at a given
- * pose — the camera target input for a selection reframe. Ids missing from the model
- * are skipped.
- */
+/** Ids missing from the model are skipped. */
 export function domeEgoWorldBounds(
   model: DomeModel,
   ids: Iterable<string>,
@@ -2880,37 +1938,28 @@ export function domeEgoWorldBounds(
 }
 
 /**
- * A programmatic pose move ("fit view", selection reframe) — puts yaw/pitch on the
- * same cubic ease-in-out clock as the camera tween. The loop interpolates it every
- * frame, and it is dropped the instant an orbit drag, wheel or pointerdown begins so
- * the gesture takes over (the same interruption contract as the 2D camera tween).
+ * Shares the camera tween's ease-in-out clock and is dropped the instant a gesture begins,
+ * so the gesture takes over from the current pose.
  */
 interface DomePoseTween {
   startYaw: number;
   startPitch: number;
   targetYaw: number;
   targetPitch: number;
-  /** `performance.now()` clock — the same reference as the camera tween. */
+  /** The camera tween's clock. */
   startMs: number;
   durationMs: number;
-  /** `"out"` for the fly-to, so pose and camera decelerate on one curve. Omitted is ease-in-out. */
+  /** So pose and camera decelerate on one curve. */
   ease?: "out";
 }
 
 /**
- * **Fly-to** (2026-09-25, lit 3D) — how long a double-click (or Enter) takes to carry a node
- * to the front and frame its family, and back again on Esc / Home.
- *
- * A single click only selects: the reader's viewpoint is theirs, and a selection that
- * swung the whole structure every time made clicking an act with side effects. Flying is
- * the explicit second gesture. 800 ms with an ease-out: it moves the instant the gesture
- * lands and settles onto the node, and it is a touch longer than the 750 ms pose cap
- * (`DOME_POSE_MS`) because it always pairs a turn with a zoom. The turn takes the short way
- * (`domeFocusYaw`), so it never exceeds a half-turn. Reduced motion arrives in one frame.
+ * A double-click or Enter flies a node to the front and frames its family; Esc or Home
+ * flies back. A single click only selects, so the viewpoint stays the reader's. Longer
+ * than `DOME_POSE_MS` because it pairs a turn with a zoom; reduced motion arrives at once.
  */
 export const DOME_FLY_MS = 800;
 
-/** Where a fly-to left from, so Esc / Home can fly back to exactly that view. */
 interface DomeFlight {
   slug: string;
   returnYaw: number;
@@ -2918,98 +1967,46 @@ interface DomeFlight {
   returnCamera: { tx: number; ty: number; tscale: number };
 }
 
-/**
- * Dome runtime — the single state box the loop (`use-topology-loop.ts`) owns and
- * updates every frame. Pointer handlers (orbit drag, in-plane node drag, hit-testing)
- * and instrumentation share this frame's coordinates and pose through **this one
- * box**. The gesture decision (node vs orbit) is made by the same `hitTestWorld` as
- * 2D — we do not create a second source of truth.
- */
-/**
- * One sample point on a latitude ring — world 2D coordinates plus this frame's
- * normalised depth. It uses the **same normalisation** as the node frame
- * (`DomeNodeFrame`): if fog used different scales for nodes and lines, two things at
- * the same depth would draw at different brightness.
- */
+/** Normalised like `DomeNodeFrame`, or equal depths would draw at different brightness. */
 interface DomeRingSample {
   wx: number;
   wy: number;
   u: number;
 }
 
-/** One kind plane's latitude ring — a sampled polyline plus that tier's assembly ramp. */
 interface DomeRing {
   kind: DomeViewKind;
-  /** Assembly ramp 0..1 — rings rise and fall with their tier across the 2D↔3D transition. */
+  /** Rings rise and fall with their tier across the 2D↔3D transition. */
   a: number;
   points: DomeRingSample[];
   /**
-   * Where this ring's **tier name** hangs, or null when the ring carries none
-   * (every cone base). It is the ring's screen-rightmost sample, which is a stable
-   * point under rotation — the right extreme of an ellipse stays the right extreme
-   * — and the side of the canvas the index panel never covers, so the name sits in
-   * clear space beside the plane rather than on top of it.
+   * The screen-rightmost sample, stable under rotation and on the side the index panel never
+   * covers; null for cone bases, which carry no name.
    */
   label: DomeRingSample | null;
 }
 
 /**
- * Cone-base rings — **the device that makes the tree read as a tree of cones**.
- *
- * The dome drew one latitude ring per kind plane; those rings were what made it
- * read as a dome rather than as spokes (ledger 2026-08-18 (78)). The cone tree
- * keeps the same device with a different membership: the ring is now **each
- * parent's base circle** (`DomeModel.circles`), so the three things a ring did
- * still happen, and one more:
- *
- * 1. **Height being a typed fact becomes visible** — bases sit on the kind
- *    planes, so "project on top, element at the bottom" reads without explanation.
- * 2. **Rotation gains a reference** — how flat an ellipse is *is* the pitch, and
- *    which arc is in front *is* the yaw.
- * 3. **Depth becomes a continuous signal** — a ring's brightness runs all the way
- *    round and makes the fog ramp itself visible.
- * 4. **Ownership becomes a shape** — a base under a parent, with its children
- *    on it, is the cone; a person can point at "that domain's cone".
- *
- * A ring is **a coordinate system, not data** — so it plays the same role as the
- * background dot grid ("it only says a coordinate system exists"), and its ink is the
- * lowest tier to match.
+ * Each parent's base circle drawn as a ring, which makes the tree read as cones: bases on
+ * the kind planes show height as a fact, an ellipse's flatness and front arc show pitch and
+ * yaw, brightness round the ring shows depth, and a base under a parent makes ownership a
+ * shape. A coordinate system, not data, so its ink is the lowest tier.
  */
 
-/**
- * Samples on the largest ring. At 96, the domain ring (r=148) has a per-segment chord-arc
- * error under 0.1 dome units, so it does not look faceted. 3 rings × 96 = 288
- * projections per frame — 2.3× the 125 node projections, but both are below the
- * decimal point of the frame budget.
- */
+/** At 96 the domain ring's chord-arc error stays under 0.1 dome units, so it never looks faceted. */
 export const DOME_RING_SAMPLES = 96;
 
-/**
- * Base opacity of ring ink — before fog and the assembly ramp are multiplied in.
- *
- * Raise it and the coordinate system competes with the data for attention. Kept low
- * so it stays the same tier as the background dot grid ("it only says it exists").
- * Near arcs draw at this value; on far arcs fog multiplies in 0.09 and they
- * effectively disappear.
- */
+/** Kept low so the coordinate system never competes with the data. */
 export const DOME_RING_ALPHA = 0.34;
 
-/** Base hairline width of a ring (screen px) — the depth width attenuation multiplies straight into it. */
+/** The depth width attenuation multiplies straight into it. */
 export const DOME_RING_WIDTH_PX = 1;
 
 /**
- * A **coordinate morph** — the frames between one model and the next when the
- * arrangement (or the world) changes while the dome is on screen (2026-09-02).
- *
- * Before this, an arrangement switch swapped `model` and the next frame drew the
- * new coordinates: a hard cut. The offset the frame map carries is
- * `(projected − 2D) × ramp`, and the ramp is already 1 mid-session, so nothing
- * interpolated. Now the previous model's coordinates are kept and each node is
- * drawn at `lerp(from, to, ease(t))`; a node with no previous coordinate takes its
- * target directly. The previous cone bases fade out while the new ones fade in on
- * the same clock, so a dome→cloud switch dissolves its rings rather than dropping
- * them. Duration is the pose-move cap (`DOME_POSE_MS`) so a simultaneous camera
- * refit runs on the same clock. Reduced-motion passes 0 and gets the cut.
+ * Frames between one model and the next when the arrangement or world changes on screen:
+ * each node draws at `lerp(from, to, ease(t))`, one without a previous coordinate takes its
+ * target, and old bases fade out as new ones fade in. `DOME_POSE_MS` long, so a refit runs
+ * on the same clock; reduced motion passes 0 and gets the cut.
  */
 interface DomeMorph {
   fromCoords: ReadonlyMap<string, DomeCoord>;
@@ -3018,158 +2015,108 @@ interface DomeMorph {
   durationMs: number;
 }
 
+/**
+ * The one state box the loop (`use-topology-loop.ts`) updates each frame; pointer handlers
+ * and instrumentation read this frame's coordinates and pose from it, and gestures decide
+ * through the same `hitTestWorld` as 2D.
+ */
 export interface DomeRuntime {
   model: DomeModel;
-  /** In-flight coordinate morph, or null. Registered with the idle gate — a morph is motion. */
+  /** The idle gate counts a morph as motion. */
   morph: DomeMorph | null;
-  /**
-   * This frame's cone-base rings (world coordinates) — `updateDomeFrame` updates them
-   * in place. Entries and arrays are reused, so allocations per frame converge to 0.
-   */
+  /** Updated in place by `updateDomeFrame`; entries and arrays are reused. */
   rings: DomeRing[];
   /**
-   * A pending fly-to (`DOME_FLY_MS`): a slug flies to that node, null flies back. Written by
-   * the gesture (double-click, Enter, Esc, Home), consumed by the next dome frame, which
-   * holds the live world and projection.
-   *
-   * `nudge` is the one camera move a click is allowed: when the inspector the click opened
-   * would cover the selected node, the view slides sideways just far enough to clear it —
-   * no zoom, no turn, no flight to return from. A selected node hidden behind its own
-   * inspector would make the click unsafe in a different way.
+   * A pending fly-to: a slug flies to that node, null flies back; consumed by the next dome
+   * frame. `nudge` is the one camera move a click may make: slide sideways just enough that
+   * the inspector it opened does not cover the selected node.
    */
   flyRequest: { slug: string | null; nudge?: true; unnudge?: true } | null;
   /**
-   * The camera before a click's nudge, and where the nudge left it. A deselect (`unnudge`)
-   * slides back to `before` — but only while the camera target still equals `landed`, so a
-   * view the reader moved since is never taken from them. Measured 2026-09-25 at 1040×720 on
-   * the sample vault: without the return, one nudge left the next concept under the INDEX
-   * panel after the selection had cleared, and a click aimed at it pressed the panel.
+   * A deselect slides back to `before` only while the target still equals `landed`, so a
+   * view the reader moved since is never taken; without the return a nudge could leave the
+   * next concept under the INDEX panel.
    */
   nudgeReturn: { before: { tx: number; ty: number; tscale: number }; landed: { tx: number; ty: number; tscale: number } } | null;
-  /** The fly-to in effect and the view it left from; null when no fly-to has moved the view. */
+  /** null when no fly-to has moved the view. */
   flight: DomeFlight | null;
-  /** Per-kind yaw trig of the last drawn frame (torsion included) — read by `projectDomePlanePoint`. */
+  /** Read by `projectDomePlanePoint`. */
   kindTrig: Record<DomeViewKind, [number, number]>;
-  /** Per-kind assembly ramp of the last drawn frame — the lit stage rises with its tier. */
+  /** The lit stage rises with its tier. */
   kindRamp: Record<DomeViewKind, number>;
-  /** The last frame's depth normalisation (`u = (z − zMin) / zSpan`); zSpan 0 means no depth. */
+  /** `u = (z − zMin) / zSpan`; zSpan 0 means no depth. */
   zMin: number;
   zSpan: number;
-  /** Per-node handoff map from the last drawn frame — the reference hit-testing and instrumentation judge against. */
+  /** Hit testing and instrumentation judge against it. */
   frame: Map<string, DomeNodeFrame>;
   /**
-   * World bbox of the nodes drawn in the last frame — the anchor for the camera pan
-   * leash (elastic clamp). Using 2D `world.bounds` as-is left the leash anchor
-   * misaligned with the camera centre the dome fit had set, so the first wheel-zoom
-   * tick dragged the camera toward the 2D centre (measured 2026-08-18 — the world
-   * point under the cursor moved 175 units). `updateDomeFrame` refreshes it every
-   * frame; null when the frame is empty (the 2D path unchanged).
+   * Anchors the pan leash where the dome is drawn; the 2D bounds sat off the fit's centre and
+   * dragged the camera on the first wheel tick. null when the frame is empty.
    */
   drawnBounds: { minX: number; minY: number; maxX: number; maxY: number } | null;
   /**
-   * The camera factor at which the whole dome sits on screen with 15% margin — the
-   * dome fit computes and stores it. While the dome is on, the camera factor's
-   * **floor** drops to this value (the min of it and the 2D floor).
-   *
-   * Why (measured 2026-08-18): the dome's projected bbox is wider than the 2D spine
-   * bbox, so the fit factor (0.391) was **below** the 2D anchor-derived floor
-   * (0.574). Previously the fit wrote only the target as 0.391 while the spring stuck
-   * at the floor, 0.574 — with target ≠ value, the first wheel tick computed its
-   * anchor from the target factor (0.391) and the screen jumped sideways (175 world
-   * units), and zooming out right after a fit was a permanent no-op (the target was
-   * already below the floor). Dropping the floor to the fit factor makes the target
-   * reachable so target = value holds, and zoom-out can return to "the whole dome in
-   * frame". null = dome off (2D unchanged).
+   * The factor that frames the whole dome with 15% margin. While the dome is on, the camera
+   * floor drops to it, so a fit target below the 2D floor stays reachable and zoom-out can
+   * return to the whole dome. null = dome off.
    */
   fitScale: number | null;
-  /** Frame generation — invalidation key for the edge candidate cache (needed because entries are updated in place). */
+  /** Invalidates the edge candidate cache, since entries update in place. */
   frameEpoch: number;
   yaw: number;
   pitch: number;
   /**
-   * Orbit drag's target pose — pointer events fill it immediately and the loop relaxes
-   * yaw/pitch toward it each frame at `ORBIT_SMOOTH_TAU_MS` (removing the staircase
-   * when the event period exceeds the frame period). Outside a drag it is always kept
-   * in sync with yaw/pitch.
+   * Pointer events set it and the loop relaxes yaw and pitch toward it
+   * at `ORBIT_SMOOTH_TAU_MS`; outside a drag it tracks yaw.
    */
   yawTarget: number;
   pitchTarget: number;
-  /** Orbit release momentum (rad/ms) — `decayOrbitVelocity` reduces it every frame. */
+  /** Release momentum in rad/ms, reduced every frame by `decayOrbitVelocity`. */
   yawVel: number;
-  /** Pitch release momentum (rad/ms) — the same decay. */
+  /** Pitch release momentum in rad/ms, the same decay. */
   pitchVel: number;
   /**
-   * The meaningful-landing yaw the release momentum is aimed at, or null (pure
-   * momentum). Pointer-up projects the natural landing point and fills it, and the
-   * loop carries it there by a velocity-continuous exponential approach. Any new input
-   * clears it immediately (input always wins). Rationale: the
-   * `ORBIT_SNAP_WINDOW_RAD` doc-block.
+   * The meaningful landing the release momentum is aimed at (see `ORBIT_SNAP_WINDOW_RAD`), or
+   * null; any new input clears it.
    */
   yawSnap: number | null;
   /**
-   * Whether idle spin is armed — the attract loop belongs to **a screen nobody has
-   * touched yet** (2026-08-18, second round; owner: *"stop it spinning after I click"
-   * — stop it spinning after I click). Any user intervention (orbit, zoom,
-   * pinch, node drag, selection) drops it to false and it does not come back, so
-   * rotation never fights the pose being worked on. Only explicit returns re-arm it:
-   * the "auto-align" chip, which eases the pose home, and re-entering 3D.
+   * Idle spin belongs to a screen nobody has touched: any intervention disarms it for good,
+   * so rotation never fights the pose being worked on. Only the auto-align chip and
+   * re-entering 3D re-arm it.
    */
   spinArmed: boolean;
-  /**
-   * The programmatic pose move in progress — "fit view" and selection reframe fill it
-   * and the loop interpolates it cubically each frame. Any gesture clears it
-   * immediately (the gesture inherits the current pose — the same contract as the 2D
-   * tween).
-   */
+  /** Any gesture clears it and inherits the current pose. */
   poseTween: DomePoseTween | null;
-  /** Per-kind yaw torsion (rad) — orbit drag charges it and every frame decays it. */
+  /** Per-kind yaw torsion in rad, charged by orbit drag and decayed every frame. */
   lag: Record<DomeViewKind, number>;
-  /** Assembly clock, ms, 0..`DOME_ASSEMBLE_TOTAL_MS` — forward when switching on, backward when switching off. */
+  /** Assembly clock in ms, 0 to `DOME_ASSEMBLE_TOTAL_MS`: forward on, backward off. */
   rampClock: number;
   /**
-   * Is the entry sweep still alive — it switches off the moment a hand touches the map
-   * (the same contract as `spinArmed`). The sweep is an offset added to the drawn pose
-   * only, so grabbing a node while it is on makes **the plane back-projection solve a
-   * different pose than the one drawn** and the node jumps out of the hand. "Touch it
-   * and it turns off" is the cheapest way not to define the pose in two places.
+   * Off the moment a hand touches the map: the sweep offsets only the drawn pose, so a grab
+   * would back-project against a different pose and the node would jump.
    */
   entryArmed: boolean;
-  /** The entry sweep's own clock (ms) — from 0 on every re-entry. See `DOME_ENTRY_SWEEP_MS`. */
+  /** Entry sweep clock in ms, from 0 on every re-entry. */
   entryClock: number;
   /**
-   * The pose this frame **actually drew** — `yaw/pitch` plus the entry sweep offset.
-   * `updateDomeFrame` writes it every frame, and consumers that must recompute that
-   * frame's geometry (relation-line meridian control points) read it. Reading
-   * `yaw/pitch` instead would leave **only the control point at the final pose**
-   * during entry, so the curve would pass through a different world than its
-   * endpoints.
+   * Holds `yaw/pitch` plus the sweep offset, written every frame; relation control points read it,
+   * or during entry a curve would pass through a different world than its endpoints.
    */
   drawYaw: number;
   drawPitch: number;
-  /**
-   * Trig of the drawn pose — computed **once per frame**.
-   *
-   * Meridian control points are computed per edge (258 times in this vault), so
-   * recomputing `cos/sin` inside would exceed a thousand calls per frame. The pose is
-   * constant within a frame, so computing it once is enough; this is that cache.
-   */
+  /** Computed once per frame, since control points are computed per edge. */
   drawCosYaw: number;
   drawSinYaw: number;
   drawCosPitch: number;
   drawSinPitch: number;
-  /** The target is on (3D) and no realm is active — the branch condition for orbit vs in-plane drag. */
+  /** 3D is on and no realm is active: the branch between orbit and in-plane drag. */
   active: boolean;
-  /** An orbit drag is in progress (empty-space drag) — the stop condition for idle spin and momentum. */
+  /** Stops idle spin and momentum. */
   orbiting: boolean;
-  /**
-   * In-plane node drag — the grabbed node's spring state. It survives `released` until
-   * the spring settles into its last target (velocity continuity — the loop watches
-   * for the settle and clears it).
-   */
+  /** Survives `released` until the spring settles, keeping velocity continuous. */
   drag: { nodeId: string; spring: DomeDragSpring; targetPx: number; targetPz: number; released?: boolean } | null;
 }
 
-/** A fresh dome runtime — default pose, assembly clock at 0 (2D). */
 export function createDomeRuntime(model: DomeModel): DomeRuntime {
   return {
     model,

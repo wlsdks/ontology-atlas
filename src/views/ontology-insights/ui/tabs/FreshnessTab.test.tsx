@@ -84,7 +84,7 @@ describe("FreshnessTab", () => {
     expect(link).not.toHaveTextContent("2026.07.20");
   });
 
-  it("renders each recent-update row as a map-focus deeplink (N4 — 신선도 행 비클릭 해소)", () => {
+  it("renders each recent-update row as a map-focus deeplink", () => {
     render(
       <FreshnessTab
         domainRows={[]}
@@ -113,7 +113,7 @@ describe("FreshnessTab", () => {
     expect(link).toHaveTextContent("Auth");
   });
 
-  it("히트스트립 셀마다 주차·실건수 툴팁을 단다 — 이번 주 셀은 전용 문구", () => {
+  it("gives each heat strip cell a week and count tooltip with its own copy for this week", () => {
     const weeks = Array.from({ length: 12 }, (_, i) => ({
       level: (i === 11 ? 2 : i === 9 ? 1 : 0) as 0 | 1 | 2 | 3,
       isCurrentWeek: i === 11,
@@ -169,7 +169,7 @@ describe("FreshnessTab", () => {
     expect(screen.getByText("No recent updates")).toBeInTheDocument();
     expect(screen.queryByTestId("insights-freshness-row-link")).toBeNull();
   });
-  it("근거 계층은 접혀 있고, 열면 배지·참조 원문으로 같은 제목의 두 행을 가른다 (A1)", () => {
+  it("folds the evidence layer and, when opened, tells same-titled rows apart by badge and raw reference", () => {
     render(
       <FreshnessTab
         domainRows={[]}
@@ -229,7 +229,7 @@ describe("FreshnessTab", () => {
     expect(screen.getByText(/Top 2 \/ 193/)).toBeInTheDocument();
   });
 
-  it("근거 계층이 0건이면 토글 자체를 그리지 않는다", () => {
+  it("renders no evidence toggle when the layer is empty", () => {
     render(
       <FreshnessTab
         domainRows={[]}

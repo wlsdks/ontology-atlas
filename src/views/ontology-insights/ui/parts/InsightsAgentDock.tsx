@@ -17,9 +17,8 @@ import {
 import type { InsightsAgentPrefill, InsightsAgentRuntime } from '../../lib/insights-agent';
 
 /**
- * One ACP conversation owned by Analysis rather than by any individual tab.
- * The dock sits outside the keyed tab panel, so tab changes cannot remount the
- * session or replace draft text. Only a new explicit prefill nonce changes it.
+ * One ACP conversation owned by Analysis, outside the keyed tab panel, so tab changes cannot remount the session
+ * or replace the draft; only a new explicit prefill nonce changes it.
  */
 export function InsightsAgentDock({
   open,
@@ -70,9 +69,8 @@ export function InsightsAgentDock({
 
   useEffect(() => {
     if (!open || !prefillRequest) return;
-    // A different tab request can be seated while the dock is already open. There
-    // is no second width transition in that case, so keep the existing session
-    // enabled and let the panel consume the new prefill on the next frame.
+    // A new tab request can arrive while the dock is open. There is no width transition then, so keep the session
+    // enabled and let the panel take the prefill on the next frame.
     if (enabledRequestNonce !== null) {
       const nonce = prefillRequest.nonce;
       const frame = window.requestAnimationFrame(() => setEnabledRequestNonce(nonce));
@@ -164,14 +162,7 @@ export function InsightsAgentDock({
             onDraftPresenceChange={onDraftPresenceChange}
             onPresentationOpenMap={onPresentationOpenMap}
             onTurnActivityChange={onTurnActivityChange}
-            /*
-             * ⚠️ **One close, and it belongs to the workbench** (2026-09-06). The panel drew its
-             * own X beside the workbench's, so the dock had two identical buttons a few pixels
-             * apart doing exactly the same thing — and the inner one closed a surface it does not
-             * own. The chat is a tab inside this workbench; what closes it is the workbench's
-             * close button, and `contextLabel` is likewise the workbench header's `h2`, so the
-             * panel does not repeat it as a badge either.
-             */
+            // The workbench owns the one close button and the header `h2` (`contextLabel`), so the panel draws neither.
             onTurnStarted={capture.onTurnStarted}
           />}
           />

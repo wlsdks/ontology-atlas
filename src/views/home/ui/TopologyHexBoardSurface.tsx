@@ -7,14 +7,12 @@ import { OntologyHexBoardMap, type HexBoardLabels, type HexPlacementRecord, type
 import { readHexPlacement, writeHexPlacement } from "../model/hex-board-placement-store";
 import { useMapEvidenceStates, type MapEvidenceAvailability } from "../model/use-map-evidence-states";
 
-/** A flat-top hexagon for the legend swatches (16 × 14). */
+/** Flat-top hexagon, 16 × 14. */
 const HEX_SWATCH = "15,7 11.5,13 4.5,13 1,7 4.5,1 11.5,1";
 
 /**
- * The page side of the hex board: it reads the evidence states with the product's own rule,
- * keeps the placement per vault so nothing already placed ever moves, composes every word the
- * canvas shows, and says in the legend what the evidence ring is standing on. An unknown
- * state is drawn as unknown and named as unknown; it is never shown as current.
+ * Keeps placement per vault so placed tiles never move, composes the canvas words, and names what
+ * the evidence ring stands on; unknown is never shown as current.
  */
 export function TopologyHexBoardSurface({
   nodes,

@@ -1,32 +1,20 @@
 /**
- * Realm ledger derivations — what the left panel needs while a realm is expanded
- * (`?realm=slug`) and it shows one node's world instead of global content:
- * the realm root's subtree, its element/capability/domain/depth counts, and the
- * boundary edges leaving the realm together with a jump target for each outside
- * node (its domain-level container).
- *
- * All pure over graph input, so they test without render logic. This is the one
- * source for realm data inside views/home, derived without touching
- * ontology-map.
+ * What the left panel needs while `?realm=` shows one node's world: its subtree, counts and
+ * boundary edges, each outside node paired with its domain-level container as the jump target.
  */
 
 import type { KnowledgeGraphEdge, KnowledgeGraphNode, OntologyTreeNode } from "@/entities/knowledge-graph";
 import { buildContainmentParents, nearestDomainId } from "@/entities/knowledge-graph";
 
 export interface RealmCensus {
-  /** Element nodes in the subtree, root excluded. */
   elementCount: number;
-  /** Capability nodes in the subtree, root excluded. */
   capabilityCount: number;
-  /** Domain nodes in the subtree, root excluded. */
   domainCount: number;
-  /** All descendants, root excluded. */
   descendantCount: number;
-  /** Depth to the deepest descendant, relative to the root at 0; children only gives 1. */
+  /** Root at 0; children only gives 1. */
   depth: number;
 }
 
-/** One boundary relation — an edge joining inside the realm to outside it. */
 interface RealmBoundaryCrossing {
   edgeId: string;
   fromId: string;
@@ -34,9 +22,8 @@ interface RealmBoundaryCrossing {
   toId: string;
   toTitle: string;
   relationType: string;
-  /** The endpoint of this edge that lies outside the realm. */
   outsideId: string;
-  /** Jump target: the outside node's domain-level container, or the node itself when it has none. */
+  /** The outside node's domain-level container, or the node itself without one. */
   jumpRealmId: string;
 }
 
@@ -45,11 +32,7 @@ export interface RealmBoundary {
   crossings: RealmBoundaryCrossing[];
 }
 
-/**
- * Structural edges excluded from the boundary. `contains`/`belongs_to` define
- * the tree shape itself, so they are not a signal of reaching outside; only
- * lateral relations (depends on, uses, implements, evidences) count.
- */
+/** `contains`/`belongs_to` shape the tree itself; only lateral relations count as reaching outside. */
 const REALM_BOUNDARY_EXCLUDED_TYPES: ReadonlySet<string> = new Set([
   "contains",
   "belongs_to",
@@ -64,7 +47,6 @@ function findInNode(node: OntologyTreeNode, id: string): OntologyTreeNode | null
   return null;
 }
 
-/** Finds the `realmSlug` node's subtree among the tree roots; null when absent. */
 export function findRealmSubtree(
   roots: readonly OntologyTreeNode[],
   realmSlug: string,
@@ -76,7 +58,6 @@ export function findRealmSubtree(
   return null;
 }
 
-/** Element/capability/domain/depth counts for a realm subtree; the root itself is not counted. */
 export function computeRealmCensus(subtree: OntologyTreeNode): RealmCensus {
   let elementCount = 0;
   let capabilityCount = 0;
@@ -99,7 +80,7 @@ export function computeRealmCensus(subtree: OntologyTreeNode): RealmCensus {
   return { elementCount, capabilityCount, domainCount, descendantCount, depth };
 }
 
-/** Every node id in the subtree, root included — the membership set boundary detection uses. */
+/** Root included. */
 export function collectRealmMemberIds(subtree: OntologyTreeNode): Set<string> {
   const ids = new Set<string>();
   const walk = (node: OntologyTreeNode): void => {
@@ -111,9 +92,8 @@ export function collectRealmMemberIds(subtree: OntologyTreeNode): Set<string> {
 }
 
 /**
- * Derives the relations leaving the realm: an edge is a boundary when exactly
- * one endpoint is in the membership set. Structural edges and unresolved
- * endpoints are excluded, and the result is deterministically sorted.
+ * An edge is a boundary when exactly one endpoint is inside. O(E × depth): Set membership per edge,
+ * a parent walk per crossing for its jump target, then a deterministic sort.
  */
 export function computeRealmBoundary(input: {
   edges: readonly KnowledgeGraphEdge[];
@@ -129,7 +109,6 @@ export function computeRealmBoundary(input: {
     if (REALM_BOUNDARY_EXCLUDED_TYPES.has(edge.type)) continue;
     const fromInside = memberIds.has(edge.from);
     const toInside = memberIds.has(edge.to);
-    // Both inside or both outside is not a boundary.
     if (fromInside === toInside) continue;
     const from = nodeById.get(edge.from);
     const to = nodeById.get(edge.to);

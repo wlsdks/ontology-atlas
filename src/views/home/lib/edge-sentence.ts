@@ -1,19 +1,10 @@
 import { josa, type JosaKind } from "@/shared/lib/ko-josa";
 
 /**
- * The relation popover's one sentence — key and the values it interpolates.
- *
- * Relation types fold onto five sentence keys (synonyms such as `elements`,
- * `capabilities` and `domains` all read as "contains"). The endpoint names are
- * whatever the map labels them (`display_<locale>` before the canonical title),
- * so the sentence and the two nodes under it say the same word.
- *
- * Korean particles (2026-09-03). The Korean messages used to carry fixed
- * particles with a space in front of them, which reads as broken Korean after a
- * name ending in a final consonant (the sample's project name does). Each
- * sentence names which particle follows each endpoint here, and
- * `@/shared/lib/ko-josa` picks the form from the name. The English messages
- * simply ignore the two extra values.
+ * The relation popover's one sentence: its key and interpolated values. Relation types fold onto
+ * five keys; endpoint names match the map labels, so sentence and nodes say the same word. Korean
+ * particles are picked from each name by `@/shared/lib/ko-josa`, since a fixed particle breaks
+ * after a final consonant.
  */
 export type EdgeSentenceKey = "contains" | "depends" | "describes" | "belongsTo" | "related";
 
@@ -25,7 +16,7 @@ export function normalizeEdgeSentenceKey(type: string): EdgeSentenceKey {
   return "related";
 }
 
-/** Which particle follows each endpoint, per sentence: [after `from`, after `to`]. */
+/** [particle after `from`, particle after `to`]. */
 const PARTICLES: Record<EdgeSentenceKey, [JosaKind, JosaKind | null]> = {
   contains: ["subject", "object"],
   depends: ["subject", null],

@@ -122,10 +122,7 @@ beforeEach(() => {
   window.localStorage.clear();
 });
 
-/**
- * Web degradation — a browser has nowhere safe to keep a key. The tab exists and says why, where
- * it works, and shows no example rows: a sample key or runner would be fake data.
- */
+/** A browser has nowhere safe to keep a key, so the tab explains and shows no sample rows. */
 describe('models tab on the web', () => {
   it('renders no key input, no runner row and no example data without the desktop bridge', () => {
     renderPanel(makeConnection({ bridgeAvailable: false }));
@@ -177,10 +174,7 @@ describe('models tab layout', () => {
   });
 });
 
-/**
- * Collapsing unregistered rows — three permanently visible password inputs would make the tab a
- * form gate. A collapsed row still states its status.
- */
+/** Unregistered rows stay collapsed but still state their status. */
 describe('API key rows', () => {
   it('lists every named vendor without opening three key fields at once', () => {
     renderPanel(makeConnection());
@@ -222,8 +216,7 @@ describe('API key rows', () => {
     fireEvent.click(screen.getByTestId('ai-save-openai'));
     await waitFor(() => expect(applyStatus).toHaveBeenCalledWith('openai', { provider: 'openai', stored: true, last4: 'wxyz' }));
     expect(mocks.secretSet).toHaveBeenCalledWith('openai', 'sk-openai-real');
-    // Said by the row and read out by the announcer — not by a toast over the page
-    // (2026-09-26: on this tall tab the toast stood over the sent-log caption).
+    // Said by the row and read out by the announcer, not by a toast over the page.
     await waitFor(() =>
       expect(screen.getByTestId('models-announcer')).toHaveTextContent(`${NS}.providerOpenai · ${NS}.saved`),
     );
