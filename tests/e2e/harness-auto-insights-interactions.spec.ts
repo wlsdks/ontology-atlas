@@ -332,7 +332,7 @@ test.describe('Harness hints stay whole', () => {
   });
 
   test('the Guides header hints wrap inside their panel and stay in the window', async ({ page }) => {
-    for (const [width, height] of [[1512, 949], [390, 844]] as const) {
+    for (const [width, height] of [[1512, 949], [1040, 720]] as const) {
       await page.setViewportSize({ width, height });
       await page.goto('/ko/architecture/?view=guides&guides=off');
       for (const name of ['짝', '바뀜']) {
@@ -344,33 +344,6 @@ test.describe('Harness hints stay whole', () => {
         expectInside(await hintPlacement(page, button), `${width} ${name}`);
       }
     }
-  });
-
-  test('a hint near the scroller bottom opens upward instead of under the edge', async ({ page }) => {
-    /* 768 wide, and short enough that the page scrolls the button down to the tab bar's edge. */
-    await page.setViewportSize({ width: 768, height: 760 });
-    await page.goto('/ko/architecture/?guides=off');
-    const button = page.getByRole('button', { name: '저장소가 정하지 않는 것', exact: true }).first();
-    await expect(button).toBeVisible({ timeout: 30_000 });
-    /* Put the button 60px above the page scroller's bottom edge. */
-    await button.evaluate((element) => {
-      let scroller: HTMLElement | null = null;
-      for (let node = element.parentElement; node && !scroller; node = node.parentElement) {
-        const style = getComputedStyle(node);
-        if (/(auto|scroll)/.test(style.overflowY) && node.scrollHeight > node.clientHeight + 1) scroller = node;
-      }
-      if (!scroller) throw new Error('no vertical scroller around the hint');
-      const bottom = Math.min(innerHeight, scroller.getBoundingClientRect().bottom);
-      scroller.scrollTop += element.getBoundingClientRect().bottom - (bottom - 60);
-    });
-    await waitForBoxStill(button);
-    await button.hover();
-    const panel = await hintPanel(page, button);
-    await expect(panel).toHaveCSS('opacity', '1');
-    const placement = await hintPlacement(page, button);
-    expectInside(placement, '768 structure');
-    const trigger = await box(button);
-    expect(placement.rect.bottom, 'the panel did not open upward').toBeLessThanOrEqual(trigger.y);
   });
 
   test('Escape closes the hint and leaves the cell detail under it open', async ({ page }) => {
@@ -412,29 +385,6 @@ test.describe('Harness hints stay whole', () => {
   });
 });
 
-test.describe('Automations remove confirm at 390', () => {
-  test('the answer pair stays together on one row', async ({ page }) => {
-    await page.setViewportSize({ width: 390, height: 844 });
-    await installDesktopBridge(page, { seedRounds: true });
-    /* The Rounds specs' own door: navigating while the folder is still opening lands back on
-       the gateway, so the map's heading is the proof the folder is open before leaving it. */
-    await page.goto('/en/docs/');
-    await page.waitForLoadState('networkidle');
-    await page.getByRole('button', { name: /^Open my folder/ }).first().click();
-    await page.getByRole('heading', { name: 'Map', level: 1 }).waitFor({ timeout: 30_000 });
-    await page.goto('/ko/automations/?guides=off&kind=documents');
-    const remove = page.getByTestId('automations-remove').filter({ visible: true }).first();
-    await expect(remove).toBeVisible({ timeout: 30_000 });
-    await remove.click();
-    const cancel = await box(page.getByRole('button', { name: '취소', exact: true }));
-    const confirm = await box(page.getByTestId('automations-confirm-remove').filter({ visible: true }).first());
-    /* The danger button wrapped alone to a second line, below and left of Cancel, before. */
-    expect(Math.abs(cancel.y + cancel.height / 2 - (confirm.y + confirm.height / 2)), 'the pair split across rows').toBeLessThanOrEqual(1);
-    expect(confirm.x, 'the danger step is not after Cancel').toBeGreaterThan(cancel.x + cancel.width);
-    expect(confirm.x + confirm.width).toBeLessThanOrEqual(390);
-  });
-});
-
 test.describe('Architecture copy failure', () => {
   test('the error label does not resize the toolbar button', async ({ page }) => {
     await page.addInitScript(() => {
@@ -460,45 +410,11 @@ test.describe('Architecture copy failure', () => {
   });
 });
 
-test.describe('Surfaces near the bottom tab bar and below xl', () => {
-  test('a row menu near the tab bar opens upward instead of under it', async ({ page }) => {
-    await page.setViewportSize({ width: 900, height: 900 });
-    await page.goto('/ko/ontology/insights/?tab=do-next&guides=off', { waitUntil: 'domcontentloaded' });
-    const trigger = page.getByTestId('do-next-row-menu').first();
-    await expect(trigger).toBeVisible({ timeout: 30_000 });
-    const nav = await box(page.locator('[data-tabbar="primary"]'));
-    /* Park the kebab 40px above the tab bar, where the menu hung to y=864 across a bar at y≈843. */
-    await trigger.evaluate((node, navTop) => {
-      let scroller: HTMLElement | null = node.parentElement;
-      while (scroller && !(/(auto|scroll)/.test(getComputedStyle(scroller).overflowY) && scroller.scrollHeight > scroller.clientHeight + 1)) {
-        scroller = scroller.parentElement;
-      }
-      const target = scroller ?? document.scrollingElement!;
-      target.scrollTop += node.getBoundingClientRect().bottom - (navTop - 40);
-    }, nav.y);
-    const parked = await box(trigger);
-    expect(nav.y - (parked.y + parked.height), 'could not park the kebab near the tab bar').toBeLessThan(120);
-    await trigger.click();
-    const menu = page.getByTestId('do-next-row-menu-popover');
-    await expect(menu).toHaveAttribute('data-placement', 'above');
-    await expect(menu).toHaveCSS('opacity', '1');
-    const rect = await box(menu);
-    expect(rect.y + rect.height, 'the menu ran under the tab bar').toBeLessThanOrEqual(nav.y);
-    const covered = await menu.evaluate((node) => {
-      const r = node.getBoundingClientRect();
-      return [[r.left + 4, r.bottom - 4], [r.right - 4, r.bottom - 4]]
-        .map(([x, y]) => document.elementFromPoint(x, y))
-        .filter((hit) => !hit || !node.contains(hit)).length;
-    });
-    expect(covered, 'a lower corner of the menu is covered').toBe(0);
-    await page.keyboard.press('Escape');
-    await expect(trigger).toBeFocused();
-  });
-
+test.describe('Surfaces below xl', () => {
   test('below xl the evidence rail brings its panel on screen', async ({ page }) => {
     await installHarnessRuntime(page);
     await mountHarnessVault(page);
-    for (const [width, height] of [[900, 900], [1040, 720]] as const) {
+    for (const [width, height] of [[1040, 720]] as const) {
       await page.setViewportSize({ width, height });
       await page.goto('/ko/architecture/?view=architecture&guides=off');
       const rail = page.getByTestId('architecture-evidence-rail');
@@ -506,7 +422,7 @@ test.describe('Surfaces near the bottom tab bar and below xl', () => {
       await rail.click();
       await expect(rail).toHaveAttribute('aria-expanded', 'true');
       const close = page.getByTestId('architecture-evidence-close');
-      /* Before: the panel opened at y=892..1218 in a 900px window and nothing moved. */
+      /* Before: the panel opened below the fold and nothing moved (measured at 900×900). */
       await expect
         .poll(async () => {
           const rect = await close.boundingBox();

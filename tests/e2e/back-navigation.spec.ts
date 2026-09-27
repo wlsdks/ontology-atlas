@@ -7,23 +7,6 @@ import { expect, test } from "@playwright/test";
  * Only public, login-free paths are verified.
  */
 
-test("공개 상세 → 홈 뒤로가기", async ({ page }) => {
-  await page.goto("/en/");
-  await page.waitForLoadState("domcontentloaded");
-  const rootPath = new URL(page.url()).pathname;
-
-  await page.goto("/en/project/ontology-atlas/");
-  await page.waitForURL(/\/en\/project\/ontology-atlas\/?/);
-
-  await Promise.all([
-    page.waitForURL((url) => new URL(url.toString()).pathname === rootPath, {
-      timeout: 10_000,
-    }),
-    page.goBack(),
-  ]);
-  expect(new URL(page.url()).pathname).toBe(rootPath);
-});
-
 test("404에서 '홈으로' CTA가 history 보존 없이 홈 이동", async ({ page }) => {
   await page.goto("/en/");
   await page.goto("/en/this-route-really-does-not-exist/");

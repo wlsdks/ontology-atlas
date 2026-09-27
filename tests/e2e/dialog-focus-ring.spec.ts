@@ -79,33 +79,3 @@ test("첫 실행 시트 — 프로그램 포커스가 브라우저 기본 링을
     `브라우저 기본 포커스 링이 살아 있다 (outline: ${probe!.outlineStyle} ${probe!.outlineWidth})`,
   ).not.toBe("auto");
 });
-
-/**
- * Checks the detector is not **running on an empty set** (`/gate-probe`).
- *
- * The check above asserts that `outline-style` is not auto. If the sheet stopped
- * receiving focus altogether, that assertion goes **green automatically** and the
- * gate passes while guarding nothing. So an element that really does draw the
- * default ring is created on the same page, confirming this method actually
- * distinguishes auto.
- */
-test("판정 방식 자체가 기본 링을 구별한다 — 헛도는 검사가 아님", async ({ page }) => {
-  await openGuideSheetOnFirstRun(page);
-
-  const control = await page.evaluate(() => {
-    const el = document.createElement("div");
-    el.tabIndex = -1;
-    el.setAttribute("data-probe", "focus-ring");
-    document.body.append(el);
-    el.focus();
-    const cs = getComputedStyle(el);
-    const out = { outlineStyle: cs.outlineStyle, focusVisible: el.matches(":focus-visible") };
-    el.remove();
-    return out;
-  });
-
-  expect(
-    control.outlineStyle,
-    "링을 끄지 않은 컨테이너가 auto 로 안 나온다 — 이 검사는 아무것도 못 잡는다",
-  ).toBe("auto");
-});

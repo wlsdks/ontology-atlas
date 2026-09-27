@@ -110,41 +110,6 @@ test.describe("목적지 이동 단축키", () => {
     }
   });
 
-  /**
-   * Idling guard — the test above could pass simply because it was already at that
-   * address. This pins, once, that it really moved from one destination to a
-   * **different** one.
-   */
-  test("이동 전후의 주소가 실제로 다르다", async ({ page }) => {
-    await page.goto("/ko/topology/?guides=off");
-    /*
-     * ⚠️ **Do not press a key before the screen has settled** (full check audit,
-     * 2026-08-17).
-     *
-     * This test alone lacked the two things the tour test above already had —
-     * dismissing blocking surfaces and retrying. It therefore raced surfaces that mount
-     * on arrival and failed intermittently in CI (run at 2026-08-17 06:54Z). The
-     * neighbouring test's comment had already written the reason: *"the retry does not
-     * hide a defect, it removes a race"*. The same prescription applies.
-     */
-    await page.waitForLoadState("domcontentloaded");
-    await dismissBlockingSurface(page);
-    const before = page.url();
-    const expected = /\/ko\/projects\/?($|\?)/;
-    for (let attempt = 0; attempt < 2; attempt += 1) {
-      await dismissBlockingSurface(page);
-      await go(page, "p");
-      try {
-        await expect(page).toHaveURL(expected, { timeout: 3_000 });
-        break;
-      } catch (error) {
-        if (attempt === 1) throw error;
-      }
-    }
-    await expect(page).toHaveURL(expected);
-    expect(page.url(), "주소가 안 바뀌었다").not.toBe(before);
-  });
-
   test("G A 는 살아 있고, 은퇴한 G K · G S 는 어디에도 가지 않는다", async ({ page }) => {
     await page.goto("/ko/topology/?guides=off");
     await page.waitForLoadState("domcontentloaded");

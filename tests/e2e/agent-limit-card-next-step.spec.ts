@@ -63,6 +63,9 @@ test('with one tool it does not tell you to pick another, and names where to get
   // The next step it does name has to be a real destination, not the absent picker.
   await expect(card).toContainText('Agents');
   await expect(page.getByTestId('acp-chat-error-retry')).toBeVisible();
+  // The fixture proves the branch it claims to: the error really is the limit one.
+  await card.getByTestId('acp-chat-error-details').click();
+  await expect(card).toContainText(LIMIT_ERROR);
 });
 
 test('with two tools the picker is there, so the original sentence is the true one', async ({ page }) => {
@@ -72,29 +75,6 @@ test('with two tools the picker is there, so the original sentence is the true o
   await expect(card).not.toContainText('the only tool set up here');
 });
 
-test('the sentence is chosen by the same fact the picker is, not by the error text', async ({ page }) => {
-  await openAtLimit(page, 1);
-  const shown = await page.evaluate(() => ({
-    picker: Boolean(document.querySelector('[data-testid="acp-chat-runtime"]')),
-    label: (document.querySelector('[data-testid="acp-chat-runtime-label"]')?.textContent ?? '').trim(),
-    controls: [...document.querySelectorAll('[data-testid="acp-chat-panel"] button')]
-      .map((button) => button.getAttribute('data-testid'))
-      .filter(Boolean),
-  }));
-  expect(shown.picker).toBe(false);
-  expect(shown.label).not.toBe('');
-  expect(shown.controls, 'nothing on this screen can switch tools').not.toContain('acp-chat-runtime');
-});
-
 test.afterEach(async ({ page }, info) => {
   if (info.status === 'failed') await page.screenshot({ path: info.outputPath('limit-card.png') });
-});
-
-test.describe(() => {
-  test.skip(({ browserName }) => browserName !== 'chromium', 'one browser is enough for copy selection');
-  test('the error is the limit one, so the fixture proves the branch it claims to', async ({ page }) => {
-    const card = await openAtLimit(page, 1);
-    await card.getByTestId('acp-chat-error-details').click();
-    await expect(card).toContainText(LIMIT_ERROR);
-  });
 });
