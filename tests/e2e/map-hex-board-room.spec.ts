@@ -18,10 +18,11 @@ import { waitForAnimationsDone, waitForBoxStill, waitForCanvasStill } from "./se
  *   a panel by shape), and the board took it for chrome in the tool lane, pushing the room's top
  *   edge down to the panel's bottom. Nothing made it read again once INDEX had arrived.
  *
- * Claims at 1512x949 and 1280x800: opened by its address the room starts right of the open INDEX
+ * Claims at 1512x949: opened by its address the room starts right of the open INDEX
  * and keeps most of the window's height; entered with a node selected, every tile is drawn, the
  * canvas is inked and no tile stands under the inspector; closing the inspector reads the room at
- * rest again. (At 1280 INDEX is tall enough to read as a panel by shape, so only 1512 failed.)
+ * rest again. Only 1512 is measured: at 1280 INDEX is tall enough to read as a panel by shape,
+ * so that width never failed, and running it too tripled the cost of the same claim.
  */
 
 const NODE = "capability:vault-git-history";
@@ -110,7 +111,6 @@ function expectRestRoom(board: BoardState, label: string) {
  */
 for (const viewport of [
   { width: 1512, height: 949 },
-  { width: 1280, height: 800 },
 ]) {
   test(`hex board opened by its address fits the map right of the open INDEX at ${viewport.width}`, async ({ page }) => {
     test.setTimeout(180_000);
@@ -144,7 +144,6 @@ for (const viewport of [
 
 for (const viewport of [
   { width: 1512, height: 949 },
-  { width: 1280, height: 800 },
 ]) {
   test(`hex board entered with a node selected draws every tile beside the inspector at ${viewport.width}`, async ({ page }) => {
     test.setTimeout(180_000);
