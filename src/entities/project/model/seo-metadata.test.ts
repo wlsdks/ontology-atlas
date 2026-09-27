@@ -36,8 +36,8 @@ async function loadHtml(slug: string, outDir: string): Promise<string | null> {
   return readFile(p, "utf8");
 }
 
-describe("공개 상세 SEO metadata", () => {
-  it("모든 seed 프로젝트의 빌드 HTML 이 title · canonical · og 를 올바르게 채운다", async () => {
+describe("public detail SEO metadata", () => {
+  it("fills title, canonical and og tags in every seed project's built HTML", async () => {
     const root = path.resolve(__dirname, "../../../..");
     const outDir = path.join(root, "out");
 
@@ -84,7 +84,7 @@ describe("공개 상세 SEO metadata", () => {
 
     expect(
       findings,
-      `SEO metadata 정합성 findings ${findings.length}건:\n${findings.slice(0, 20).join("\n")}`,
+      `${findings.length} SEO metadata findings:\n${findings.slice(0, 20).join("\n")}`,
     ).toEqual([]);
   });
 });

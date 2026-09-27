@@ -16,8 +16,8 @@ const fsd = () => buildArchitectureLayout(parseArchitectureProfile(FSD_PROFILE_F
  * so on the hexagonal profile `domain` — which allows nothing — had an arrow leaving it, and
  * `port → domain` was drawn with domain above port, pointing the wrong way.
  */
-describe('architecture layout — 그림이 규칙과 어긋나지 않는다', () => {
-  it('아무것도 의존하지 않는 역할이 맨 아래에 있고, 나가는 화살표가 없다', () => {
+describe('architecture layout agrees with the rules', () => {
+  it('places a role with no dependencies at the bottom with no outgoing arrows', () => {
     const layout = hexagonal();
     const domain = layout.nodes.find((node) => node.id === 'domain');
     expect(domain?.isSink, 'domain allows nothing').toBe(true);
@@ -29,7 +29,7 @@ describe('architecture layout — 그림이 규칙과 어긋나지 않는다', (
    * ⚠️ The precise defect. `port → domain` exists in the rules; in declaration order port comes
    * last, so a stack drew the arrow upward. Every arrow must now go strictly downward.
    */
-  it('모든 화살표가 아래로만 간다 — 옆으로도 위로도 가지 않는다', () => {
+  it('points every arrow downward, never sideways or up', () => {
     const layout = hexagonal();
     const rowOf = new Map(layout.nodes.map((node) => [node.id, node.depth]));
     expect(layout.edges.length).toBeGreaterThan(0);
@@ -40,7 +40,7 @@ describe('architecture layout — 그림이 규칙과 어긋나지 않는다', (
     }
   });
 
-  it('헥사고날은 바깥에서 안쪽으로 읽힌다', () => {
+  it('reads a hexagonal profile from the outside in', () => {
     const layout = hexagonal();
     const row = (id: string) => layout.nodes.find((node) => node.id === id)!.depth;
     expect(row('adapter')).toBeLessThan(row('application'));
@@ -53,7 +53,7 @@ describe('architecture layout — 그림이 규칙과 어긋나지 않는다', (
    * `domain` directly as well as through `application` — would land one row above domain, beside
    * the roles it depends on, and its arrows would run sideways.
    */
-  it('건너뛰는 의존이 있어도 층이 무너지지 않는다', () => {
+  it('keeps layers intact when a dependency skips a layer', () => {
     const layout = hexagonal();
     expect(layout.rows.length, 'adapter · application · port · domain').toBe(4);
     const skipping = layout.edges.filter((edge) => edge.skips);
@@ -65,7 +65,7 @@ describe('architecture layout — 그림이 규칙과 어긋나지 않는다', (
    * Seven roles would draw 21 arrows, which is noise rather than information — the renderer says
    * the rule once instead. The layout still reports the policy so it can make that choice.
    */
-  it('lower-only 는 선언 순서가 곧 층이고, 정책을 그대로 알려 준다', () => {
+  it('uses declaration order as layers for lower-only and reports the policy', () => {
     const layout = fsd();
     expect(layout.policy).toBe('lower-only');
     expect(layout.rows.map((row) => row[0])).toEqual([
@@ -84,7 +84,7 @@ describe('architecture layout — 그림이 규칙과 어긋나지 않는다', (
    * ⚠️ `explicit` lets somebody write a cycle. A screen that hangs on bad input is worse than one
    * that draws it, so this only asks that the function returns and keeps every role.
    */
-  it('순환이 있어도 멈추지 않고 모든 역할을 돌려준다', () => {
+  it('returns every role without hanging when dependencies cycle', () => {
     const cyclic = parseArchitectureProfile({
       ...HEXAGONAL_PROFILE_FRONTMATTER,
       allow_domain: ['adapter'],

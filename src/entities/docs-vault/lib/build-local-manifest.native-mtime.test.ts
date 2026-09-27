@@ -136,12 +136,12 @@ beforeEach(() => {
   nativeVaultFingerprint.mockReset();
 });
 
-describe('증분 재빌드 — 네이티브 스탬프가 있으면 안 바뀐 파일을 열지 않는다', () => {
-  it('한 파일만 바뀌면 그 파일만 연다', async () => {
+describe('incremental rebuild with native stamps skips unchanged files', () => {
+  it('opens only the one changed file', async () => {
     // Pass 1: a full build produces the previous entries (opening everything is correct here).
     const seedOpens = new Map<string, number>();
     const seed = await buildLocalManifestWithEntries(makeRoot(FILES, seedOpens, '/vault'));
-    expect(seedOpens.size, '1차 빌드가 파일을 하나도 안 열었다 — 이 시험이 헛돈다').toBe(5);
+    expect(seedOpens.size, 'the first build opened no file, so this test proves nothing').toBe(5);
 
     // Pass 2: only b.md changes mtime.
     const changed: Record<string, FakeFile> = {
@@ -156,10 +156,10 @@ describe('증분 재빌드 — 네이티브 스탬프가 있으면 안 바뀐 �
       seed.entries,
     );
 
-    expect(nativeVaultFingerprint, '네이티브 스탬프를 한 번만 물어야 한다').toHaveBeenCalledTimes(1);
+    expect(nativeVaultFingerprint, 'native stamps are requested once').toHaveBeenCalledTimes(1);
     expect(
       [...opens.keys()],
-      '바뀐 파일 하나만 열려야 한다 — 나머지는 mtime 만 보고 재사용',
+      'only the changed file is opened; the rest are reused by mtime',
     ).toEqual(['capabilities/b.md']);
 
     // And the result must equal a full build — the incremental path's safety contract.
@@ -168,17 +168,17 @@ describe('증분 재빌드 — 네이티브 스탬프가 있으면 안 바뀐 �
     expect(stripGenerated(result.build.manifest)).toEqual(stripGenerated(full.manifest));
   });
 
-  it('아무것도 안 바뀌면 파일을 하나도 열지 않는다', async () => {
+  it('opens no file when nothing changed', async () => {
     const seedOpens = new Map<string, number>();
     const seed = await buildLocalManifestWithEntries(makeRoot(FILES, seedOpens, '/vault'));
     nativeVaultFingerprint.mockResolvedValue(stampsFor(FILES));
 
     const opens = new Map<string, number>();
     await rebuildLocalManifestIncremental(makeRoot(FILES, opens, '/vault'), seed.entries);
-    expect([...opens.keys()], '변경이 없는데 파일을 열었다').toEqual([]);
+    expect([...opens.keys()], 'a file was opened although nothing changed').toEqual([]);
   });
 
-  it('새로 생긴 파일은 스탬프가 알려 줘도 읽어야 한다 — 직전 결과가 없으니까', async () => {
+  it('reads a new file even when a stamp exists, since no previous result exists', async () => {
     const seedOpens = new Map<string, number>();
     const seed = await buildLocalManifestWithEntries(makeRoot(FILES, seedOpens, '/vault'));
     const added: Record<string, FakeFile> = {
@@ -197,7 +197,7 @@ describe('증분 재빌드 — 네이티브 스탬프가 있으면 안 바뀐 �
    * and opens **each file** to read its mtime. The contract is that behaviour does
    * not change.
    */
-  it('네이티브가 없으면(웹) 종전대로 파일별로 확인한다', async () => {
+  it('checks each file when no native stamps exist (web)', async () => {
     const seedOpens = new Map<string, number>();
     const seed = await buildLocalManifestWithEntries(makeRoot(FILES, seedOpens));
     nativeVaultFingerprint.mockResolvedValue(null);
@@ -206,11 +206,11 @@ describe('증분 재빌드 — 네이티브 스탬프가 있으면 안 바뀐 �
     await rebuildLocalManifestIncremental(makeRoot(FILES, opens), seed.entries);
     expect(
       opens.size,
-      '웹 경로에서는 파일마다 열어 mtime 을 봐야 한다(그것이 종전 동작)',
+      'the web path opens each file to read its mtime',
     ).toBe(5);
   });
 
-  it('네이티브가 던져도 폴백한다 — 조용히 멈추지 않는다', async () => {
+  it('falls back to per-file checks when the native call throws', async () => {
     const seedOpens = new Map<string, number>();
     const seed = await buildLocalManifestWithEntries(makeRoot(FILES, seedOpens, '/vault'));
     nativeVaultFingerprint.mockRejectedValue(new Error('bridge down'));
@@ -220,7 +220,7 @@ describe('증분 재빌드 — 네이티브 스탬프가 있으면 안 바뀐 �
       makeRoot(FILES, opens, '/vault'),
       seed.entries,
     );
-    expect(opens.size, '네이티브 실패 시 파일별 경로로 떨어져야 한다').toBe(5);
+    expect(opens.size, 'a native failure falls back to the per-file path').toBe(5);
     expect(result.build.manifest.docs.length).toBe(5);
   });
 });

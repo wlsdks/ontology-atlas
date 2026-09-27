@@ -82,7 +82,7 @@ function buildLargeManifest(domainCount: number, capPerDomain: number, elemPerCa
 }
 
 describe('deriveOntologyFromVault — live-update perf baseline', () => {
-  it('대형 vault(~600 노드) derive 가 2500ms 안에 (회귀 sanity)', () => {
+  it('derives a ~600-node vault within 2500ms', () => {
     const { manifest, docCount } = buildLargeManifest(10, 10, 5);
     expect(docCount).toBeGreaterThan(600);
 

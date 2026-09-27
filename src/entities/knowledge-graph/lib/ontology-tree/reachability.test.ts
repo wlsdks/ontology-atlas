@@ -103,7 +103,7 @@ describe("buildOntologyReachability", () => {
     expect(filtered.limited).toBe(false);
   });
 
-  it("excludeTypes 로 특정 관계 타입을 traversal 에서 제외 (impact blast-radius 용)", () => {
+  it("skips relation types listed in excludeTypes", () => {
     // start → a (depends_on), start → b (related_to). Impact must exclude
     // related_to: a soft association is not a dependency, so it is outside the
     // blast radius.
@@ -125,7 +125,7 @@ describe("buildOntologyReachability", () => {
     expect(all.summary.reachableNodes).toBe(2);
   });
 
-  it("excludeTypes 가 transitive 경로를 끊는다 (체인 중간 related_to)", () => {
+  it("cuts a transitive path at an excluded type", () => {
     // start →(depends_on) a →(related_to) b. Excluding related_to makes b unreachable.
     const nodes = [node("start"), node("a"), node("b")];
     const edges = [
@@ -139,7 +139,7 @@ describe("buildOntologyReachability", () => {
     expect(excluded.layers.flatMap((l) => l.nodes.map((n) => n.id))).toEqual(["a"]);
   });
 
-  it("깊은 체인에서 BFS distance 순서 보존 (head-pointer dequeue 회귀 가드)", () => {
+  it("keeps BFS distance order on a deep chain", () => {
     // A straight chain start → n1 → n2 → n3 → n4. Checks that the head-pointer
     // BFS still dequeues FIFO, so every node lands in the layer at its exact hop
     // distance.
@@ -171,26 +171,26 @@ describe("computeOntologyDependents", () => {
   const chain = [node("a"), node("b"), node("c")];
   const chainEdges = [edge("e1", "a", "b"), edge("e2", "b", "c")];
 
-  it("전이 incoming closure 를 센다 (체인 끝 = 모든 상류)", () => {
+  it("counts the transitive incoming closure", () => {
     expect(computeOntologyDependents("c", chain, chainEdges)).toBe(2); // b, a
     expect(computeOntologyDependents("b", chain, chainEdges)).toBe(1); // a
     expect(computeOntologyDependents("a", chain, chainEdges)).toBe(0); // No one depends on a
   });
 
-  it("soft association(related_to)은 의존이 아니라 제외", () => {
+  it("excludes related_to associations", () => {
     const nodes = [node("x"), node("y")];
     // y related_to x — related_to is outside the blast radius, so x has 0 dependents.
     const edges = [edge("r", "y", "x", "related_to")];
     expect(computeOntologyDependents("x", nodes, edges)).toBe(0);
   });
 
-  it("의존 엣지는 센다 (depends_on)", () => {
+  it("counts depends_on edges", () => {
     const nodes = [node("x"), node("y")];
     const edges = [edge("d", "y", "x", "depends_on")]; // y depends_on x
     expect(computeOntologyDependents("x", nodes, edges)).toBe(1); // y
   });
 
-  it("contains/domain/elements 구조 엣지는 의존 영향으로 세지 않는다", () => {
+  it("does not count structural edges as dependency impact", () => {
     const nodes = [node("project", "project"), node("domain", "domain"), node("target")];
     const edges = [
       edge("c1", "project", "domain", "contains"),
@@ -200,11 +200,11 @@ describe("computeOntologyDependents", () => {
     expect(computeOntologyDependents("domain", nodes, edges)).toBe(0);
   });
 
-  it("고립 노드 = 0", () => {
+  it("counts 0 for an isolated node", () => {
     expect(computeOntologyDependents("solo", [node("solo")], [])).toBe(0);
   });
 
-  it("drawer 와 동일 수 — 같은 함수 source (can't drift)", () => {
+  it("matches the drawer count", () => {
     // Must equal the drawer's reach.dependents exactly — i.e. what
     // buildOntologyReachability computes with incoming/fullDepth/exclude.
     const direct = buildOntologyReachability("c", chain, chainEdges, {

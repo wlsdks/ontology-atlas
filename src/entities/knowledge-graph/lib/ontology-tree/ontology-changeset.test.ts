@@ -20,19 +20,19 @@ const baseNodes = [node("a", "domain"), node("b", "capability"), node("c", "elem
 const baseEdges = [edge("a", "b"), edge("b", "c")];
 
 describe("ontology-changeset", () => {
-  it("baseline null → 빈 changeset(변경 없음)", () => {
+  it("returns an empty changeset for a null baseline", () => {
     const cs = computeOntologyChangeset(null, baseNodes, baseEdges);
     expect(cs.total).toBe(0);
     expect(cs.touchedNodeIds.size).toBe(0);
   });
 
-  it("동일 그래프 → 변경 0", () => {
+  it("reports no change for an identical graph", () => {
     const snap = snapshotOntology(baseNodes, baseEdges, 1);
     const cs = computeOntologyChangeset(snap, baseNodes, baseEdges);
     expect(cs.total).toBe(0);
   });
 
-  it("노드 추가 → addedNodes + touched", () => {
+  it("reports an added node as added and touched", () => {
     const snap = snapshotOntology(baseNodes, baseEdges, 1);
     const cs = computeOntologyChangeset(snap, [...baseNodes, node("d", "element")], baseEdges);
     expect(cs.addedNodes).toEqual(["d"]);
@@ -40,14 +40,14 @@ describe("ontology-changeset", () => {
     expect(cs.removedNodes).toEqual([]);
   });
 
-  it("노드 삭제 → removedNodes (touched 아님)", () => {
+  it("reports a removed node as removed, not touched", () => {
     const snap = snapshotOntology(baseNodes, baseEdges, 1);
     const cs = computeOntologyChangeset(snap, [node("a", "domain"), node("b", "capability")], baseEdges);
     expect(cs.removedNodes).toEqual(["c"]);
     expect(cs.touchedNodeIds.has("c")).toBe(false);
   });
 
-  it("removedNodeKinds 가 baseline 의 kind 를 보존 — 노드가 그래프에서 사라져도 kind 표시 가능", () => {
+  it("keeps the baseline kind of a removed node", () => {
     const snap = snapshotOntology(baseNodes, baseEdges, 1);
     // `c` (element) is deleted. It is gone from the current graph, so the baseline must
     // remember its kind — that is what makes "an agent deleted a domain" triageable.
@@ -55,18 +55,18 @@ describe("ontology-changeset", () => {
     expect(cs.removedNodeKinds.get("c")).toBe("element");
   });
 
-  it("removed 없으면 removedNodeKinds 빈 맵", () => {
+  it("returns empty removedNodeKinds without removals", () => {
     const snap = snapshotOntology(baseNodes, baseEdges, 1);
     const cs = computeOntologyChangeset(snap, [...baseNodes, node("d", "element")], baseEdges);
     expect(cs.removedNodeKinds.size).toBe(0);
   });
 
-  it("baseline null → removedNodeKinds 빈 맵", () => {
+  it("returns empty removedNodeKinds for a null baseline", () => {
     const cs = computeOntologyChangeset(null, baseNodes, baseEdges);
     expect(cs.removedNodeKinds.size).toBe(0);
   });
 
-  it("노드 내용(title/summary) 변경 → changedNodes", () => {
+  it("reports a title or summary change as changed", () => {
     const snap = snapshotOntology(baseNodes, baseEdges, 1);
     const changed = [node("a", "domain"), node("b", "capability", "B renamed"), node("c", "element")];
     const cs = computeOntologyChangeset(snap, changed, baseEdges);
@@ -74,7 +74,7 @@ describe("ontology-changeset", () => {
     expect(cs.touchedNodeIds.has("b")).toBe(true);
   });
 
-  it("관계 추가/삭제 → addedEdges/removedEdges + 양끝 노드 sig 변경 감지", () => {
+  it("reports added and removed edges and their endpoints", () => {
     const snap = snapshotOntology(baseNodes, baseEdges, 1);
     // a→c added, b→c removed.
     const newEdges = [edge("a", "b"), edge("a", "c")];
@@ -86,7 +86,7 @@ describe("ontology-changeset", () => {
     expect(cs.changedNodes).toContain("b");
   });
 
-  it("좌표/타임스탬프 noise 는 무시 (kind/title/summary/edges 만 시그니처)", () => {
+  it("ignores coordinate and timestamp changes", () => {
     const snap = snapshotOntology(baseNodes, baseEdges, 1);
     // Identical content, only `lastApprovedAt` differs.
     const sameContent = baseNodes.map((n) => ({ ...n, lastApprovedAt: new Date(999) }));
@@ -98,7 +98,7 @@ describe("ontology-changeset", () => {
   // different inputs whose field boundary moved would collide on the same string and the
   // change would be missed. The next two cases reproduce that collision; only a safe
   // separator passes them.
-  it("엣지 swap 을 구분한다 — a→bc 와 ab→c(같은 type)가 충돌하지 않음", () => {
+  it("distinguishes edge swaps whose concatenations collide", () => {
     const nodes = [
       node("a", "domain"),
       node("ab", "domain"),
@@ -112,7 +112,7 @@ describe("ontology-changeset", () => {
     expect(cs.addedEdges).toHaveLength(1); // Add ab→c
   });
 
-  it("노드 kind/title 경계 이동 변경을 감지한다 — (a,b) → (ab,'') 충돌하지 않음", () => {
+  it("detects a shifted kind and title boundary", () => {
     // The same id 'x' goes from kind="a"/title="b" to kind="ab"/title="". With an empty
     // separator both signatures are "ab" and the change is missed.
     const baseline = snapshotOntology([node("x", "a", "b")], [], 1);
@@ -126,7 +126,7 @@ describe("ontology-changeset", () => {
 // drops out of the changeset, and a *subsequent* edit re-flags it, so no change is missed.
 // Reuses the shipped changeset machinery rather than a separate reviewed-set.
 describe("acknowledgeNodeChange", () => {
-  it("changed 노드 승인 → changeset 에서 빠지고, 다른 변경은 남는다", () => {
+  it("drops an approved changed node and keeps other changes", () => {
     const snap = snapshotOntology(baseNodes, baseEdges, 1);
     const current = [node("a", "domain", "A renamed"), node("b", "capability", "B renamed"), node("c", "element")];
     // Both `a` and `b` are changed.
@@ -136,7 +136,7 @@ describe("acknowledgeNodeChange", () => {
     expect(cs.changedNodes).toEqual(["b"]); // a is reviewed → omitted, b remains
   });
 
-  it("승인 후 그 노드를 *다시* 편집하면 재-flag 된다(놓친 변경 없음)", () => {
+  it("flags a node again when it is edited after approval", () => {
     const snap = snapshotOntology(baseNodes, baseEdges, 1);
     const v1 = [node("a", "domain", "A v1"), node("b", "capability"), node("c", "element")];
     const acked = acknowledgeNodeChange(snap, "a", v1, baseEdges);
@@ -145,7 +145,7 @@ describe("acknowledgeNodeChange", () => {
     expect(computeOntologyChangeset(acked, v2, baseEdges).changedNodes).toEqual(["a"]); // Re-edit → re-flag
   });
 
-  it("added 노드 승인 → 더 이상 added 아님(baseline 에 편입)", () => {
+  it("stops reporting an approved added node", () => {
     const snap = snapshotOntology(baseNodes, baseEdges, 1);
     const current = [...baseNodes, node("d", "element")];
     expect(computeOntologyChangeset(snap, current, baseEdges).addedNodes).toEqual(["d"]);
@@ -153,7 +153,7 @@ describe("acknowledgeNodeChange", () => {
     expect(computeOntologyChangeset(acked, current, baseEdges).addedNodes).toEqual([]);
   });
 
-  it("removed 노드 승인 → 더 이상 removed 아님(삭제 승인)", () => {
+  it("stops reporting an approved removed node", () => {
     const snap = snapshotOntology(baseNodes, baseEdges, 1);
     const current = [node("a", "domain"), node("b", "capability")]; // c deleted
     expect(computeOntologyChangeset(snap, current, baseEdges).removedNodes).toEqual(["c"]);
@@ -161,7 +161,7 @@ describe("acknowledgeNodeChange", () => {
     expect(computeOntologyChangeset(acked, current, baseEdges).removedNodes).toEqual([]);
   });
 
-  it("노드 승인이 그 노드의 outgoing edge 도 동기화 — added edge 가 정리된다", () => {
+  it("syncs an approved node's outgoing edges", () => {
     const snap = snapshotOntology(baseNodes, baseEdges, 1);
     // Add the a→c edge, which changes `a`'s outgoing set.
     const newEdges = [edge("a", "b"), edge("b", "c"), edge("a", "c")];
@@ -173,7 +173,7 @@ describe("acknowledgeNodeChange", () => {
     expect(cs.changedNodes).toEqual([]); // a is no longer changed
   });
 
-  it("새 스냅샷 객체를 반환(useSyncExternalStore 리렌더용) — 원본 불변", () => {
+  it("returns a new snapshot and leaves the original unchanged", () => {
     const snap = snapshotOntology(baseNodes, baseEdges, 1);
     const current = [node("a", "domain", "A renamed"), node("b", "capability"), node("c", "element")];
     const acked = acknowledgeNodeChange(snap, "a", current, baseEdges);
@@ -187,7 +187,7 @@ describe("acknowledgeNodeChange", () => {
     expect(acknowledgeNodeChange(null, "a", baseNodes, baseEdges)).toBeNull();
   });
 
-  it("prefix 충돌 없음 — 'a' 승인이 'ab' 의 outgoing edge 를 건드리지 않는다", () => {
+  it("does not touch 'ab' edges when approving 'a'", () => {
     const nodes = [node("a", "domain"), node("ab", "domain"), node("c", "element")];
     const snap = snapshotOntology(nodes, [edge("a", "c"), edge("ab", "c")], 1);
     const acked = acknowledgeNodeChange(snap, "a", nodes, [edge("a", "c"), edge("ab", "c")]);

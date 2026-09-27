@@ -173,7 +173,7 @@ describe("buildOntologyTree — error handling", () => {
     expect(p1.children.find((c) => c.node.id === "d1")).toBeTruthy();
   });
 
-  it("same-parent 중복 contains edge 는 silent (양방향 frontmatter 자기 중복 방어)", () => {
+  it("stays silent on a duplicate contains edge to the same parent", () => {
     // Only genuine multi-parent cases (different parents) should reach the user.
     // The same (parent, child) arriving twice is just the vault's bidirectional
     // frontmatter duplicating itself and carries no information. derive-ontology

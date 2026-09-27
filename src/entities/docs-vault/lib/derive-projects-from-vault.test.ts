@@ -29,8 +29,8 @@ function makeManifest(docs: VaultDoc[]): VaultManifest {
   };
 }
 
-describe("deriveProjectsFromVault — 인식 기준", () => {
-  it("frontmatter.kind === 'project' 를 인식 (path 무관)", () => {
+describe("deriveProjectsFromVault recognition", () => {
+  it("recognizes kind: project regardless of path", () => {
     const projects = deriveProjectsFromVault(
       makeManifest([
         makeDoc({
@@ -43,7 +43,7 @@ describe("deriveProjectsFromVault — 인식 기준", () => {
     expect(projects[0]!.slug).toBe("project");
   });
 
-  it("legacy: 'projects/' prefix 면 frontmatter 누락이라도 인식", () => {
+  it("recognizes a legacy projects/ path without frontmatter", () => {
     const projects = deriveProjectsFromVault(
       makeManifest([makeDoc({ slug: "projects/legacy-app" })]),
     );
@@ -51,7 +51,7 @@ describe("deriveProjectsFromVault — 인식 기준", () => {
     expect(projects[0]!.slug).toBe("legacy-app");
   });
 
-  it("kind 도 'projects/' prefix 도 없는 doc 은 제외", () => {
+  it("excludes a doc with neither kind nor projects/ prefix", () => {
     const projects = deriveProjectsFromVault(
       makeManifest([
         makeDoc({ slug: "domains/foo", frontmatter: { kind: "domain" } }),
@@ -63,7 +63,7 @@ describe("deriveProjectsFromVault — 인식 기준", () => {
 });
 
 describe("deriveProjectsFromVault — slug & name", () => {
-  it("fm.slug 가 있으면 우선, 없으면 computeProjectSlug fallback", () => {
+  it("prefers fm.slug and falls back to computeProjectSlug", () => {
     const projects = deriveProjectsFromVault(
       makeManifest([
         makeDoc({
@@ -120,7 +120,7 @@ describe("deriveProjectsFromVault — slug & name", () => {
 });
 
 describe("deriveProjectsFromVault — array coerce", () => {
-  it("tags / stack / dependencies — array 입력 그대로", () => {
+  it("keeps tags, stack and dependencies arrays", () => {
     const projects = deriveProjectsFromVault(
       makeManifest([
         makeDoc({
@@ -151,7 +151,7 @@ describe("deriveProjectsFromVault — array coerce", () => {
     expect(projects[0]!.tags).toEqual(["a", "b", "c"]);
   });
 
-  it("array 안 빈 / 비-string 항목 제외", () => {
+  it("drops empty and non-string array items", () => {
     const projects = deriveProjectsFromVault(
       makeManifest([
         makeDoc({
@@ -177,7 +177,7 @@ describe("deriveProjectsFromVault — isHub", () => {
     expect(projects[0]!.isHub).toBe(true);
   });
 
-  it("isHub: 'true' 문자열도 true (frontmatter YAML stringify 케이스)", () => {
+  it("reads the string 'true' as isHub true", () => {
     const projects = deriveProjectsFromVault(
       makeManifest([
         makeDoc({
@@ -189,7 +189,7 @@ describe("deriveProjectsFromVault — isHub", () => {
     expect(projects[0]!.isHub).toBe(true);
   });
 
-  it("isHub 없으면 undefined (R15 honest derive — fabricated false 차단)", () => {
+  it("leaves isHub undefined when absent", () => {
     const projects = deriveProjectsFromVault(
       makeManifest([
         makeDoc({ slug: "projects/foo", frontmatter: { kind: "project" } }),

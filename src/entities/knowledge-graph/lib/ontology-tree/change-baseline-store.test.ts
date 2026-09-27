@@ -41,11 +41,11 @@ afterEach(() => {
 });
 
 describe("change-baseline-store", () => {
-  it("초기 baseline 은 null", () => {
+  it("starts with a null baseline", () => {
     expect(getChangeBaseline()).toBeNull();
   });
 
-  it("mark → 스냅샷 저장, clear → null", () => {
+  it("stores a snapshot on mark and clears it on clear", () => {
     markChangeBaseline(nodes, edges, 123);
     const b = getChangeBaseline();
     expect(b).not.toBeNull();
@@ -55,7 +55,7 @@ describe("change-baseline-store", () => {
     expect(getChangeBaseline()).toBeNull();
   });
 
-  it("useChangeBaseline 이 mark/clear 에 반응해 리렌더", () => {
+  it("rerenders useChangeBaseline on mark and clear", () => {
     const { result } = renderHook(() => useChangeBaseline());
     expect(result.current).toBeNull();
     act(() => markChangeBaseline(nodes, edges, 5));
@@ -64,7 +64,7 @@ describe("change-baseline-store", () => {
     expect(result.current).toBeNull();
   });
 
-  it("여러 구독자가 같은 baseline 을 공유한다 (cross-surface)", () => {
+  it("shares one baseline across subscribers", () => {
     const a = renderHook(() => useChangeBaseline());
     const b = renderHook(() => useChangeBaseline());
     act(() => markChangeBaseline(nodes, edges, 9));
@@ -73,23 +73,23 @@ describe("change-baseline-store", () => {
   });
 });
 
-describe("change-baseline-store — 영속/복원 (reload 생존, Self-Drawing Diff #5)", () => {
+describe("change-baseline-store persistence", () => {
   const more = [node("a"), node("b"), node("c")]; // Overlaps with a,b (target for restoration)
 
-  it("mark → localStorage 에 영속 (키에 볼트가 들어간다)", () => {
+  it("persists to a vault-scoped localStorage key on mark", () => {
     markChangeBaseline(nodes, edges, 77);
     expect(window.localStorage.getItem(keyFor(VAULT_A))).not.toBeNull();
     // The global key from before vault scoping is no longer written.
     expect(window.localStorage.getItem("demo:change-baseline:v1")).toBeNull();
   });
 
-  it("clear → 영속 제거", () => {
+  it("removes the persisted baseline on clear", () => {
     markChangeBaseline(nodes, edges, 1);
     clearChangeBaseline();
     expect(window.localStorage.getItem(keyFor(VAULT_A))).toBeNull();
   });
 
-  it("restore — 같은(겹치는) vault 면 영속 baseline 복원 + true", () => {
+  it("restores a persisted baseline for an overlapping vault", () => {
     markChangeBaseline(nodes, edges, 42); // a,b persistent
     clearChangeBaseline_inMemoryOnly();
     expect(getChangeBaseline()).toBeNull();
@@ -98,7 +98,7 @@ describe("change-baseline-store — 영속/복원 (reload 생존, Self-Drawing D
     expect(getChangeBaseline()?.takenAt).toBe(42);
   });
 
-  it("restore — 다른 vault(안 겹침)면 복원 안 함 + false (garbage 방지)", () => {
+  it("does not restore for a different vault", () => {
     markChangeBaseline(nodes, edges, 42); // a,b
     clearChangeBaseline_inMemoryOnly();
     const ok = restorePersistedBaseline([node("x"), node("y")]); // No overlap
@@ -106,12 +106,12 @@ describe("change-baseline-store — 영속/복원 (reload 생존, Self-Drawing D
     expect(getChangeBaseline()).toBeNull();
   });
 
-  it("restore — 이미 baseline 있으면 복원 안 함(덮어쓰기 방지)", () => {
+  it("does not overwrite an existing baseline on restore", () => {
     markChangeBaseline(nodes, edges, 1);
     expect(restorePersistedBaseline(nodes)).toBe(false);
   });
 
-  it("restore — 영속된 게 없으면 false", () => {
+  it("returns false on restore when nothing is persisted", () => {
     expect(restorePersistedBaseline(nodes)).toBe(false);
   });
 });
@@ -137,10 +137,10 @@ function clearChangeBaseline_inMemoryOnly() {
  * The overlap guard (`snapshotMatchesGraph`) cannot catch this: it runs **only at
  * restore time**, and an in-session switch never passes through restore.
  */
-describe("change-baseline-store — 볼트 전환 (범위를 넘긴 상태)", () => {
+describe("change-baseline-store vault switching", () => {
   const bravoNodes = [node("x"), node("y")];
 
-  it("범위가 바뀌면 앞 볼트의 기준을 즉시 버린다", () => {
+  it("drops the previous vault's baseline when the scope changes", () => {
     markChangeBaseline(nodes, edges, 42);
     expect(getChangeBaseline()?.takenAt).toBe(42);
 
@@ -149,7 +149,7 @@ describe("change-baseline-store — 볼트 전환 (범위를 넘긴 상태)", ()
     expect(getChangeBaseline()).toBeNull();
   });
 
-  it("볼트마다 자기 자리에 저장된다 — 새 볼트가 앞 볼트의 기준을 덮지 않는다", () => {
+  it("stores each vault's baseline under its own key", () => {
     markChangeBaseline(nodes, edges, 42);
     setChangeBaselineScope(VAULT_B);
     markChangeBaseline(bravoNodes, edges, 99);
@@ -163,7 +163,7 @@ describe("change-baseline-store — 볼트 전환 (범위를 넘긴 상태)", ()
     expect(getChangeBaseline()?.takenAt).toBe(42);
   });
 
-  it("볼트를 모르면 아무것도 저장하지 않는다 — 어느 볼트 것인지 모르는 기준은 거짓 판정의 입력", () => {
+  it("stores nothing when the vault is unknown", () => {
     // The unscoped state cannot be constructed directly (module singleton), so
     // the fail-closed contract is checked from the restore side: nothing stored,
     // false.
@@ -172,17 +172,17 @@ describe("change-baseline-store — 볼트 전환 (범위를 넘긴 상태)", ()
   });
 });
 
-describe("shouldAutoMarkBaseline (live-web 자동 baseline)", () => {
-  it("local + baseline 없음 + 노드>0 → true", () => {
+describe("shouldAutoMarkBaseline", () => {
+  it("returns true for a local vault with nodes and no baseline", () => {
     expect(shouldAutoMarkBaseline({ mode: "local", hasBaseline: false, nodeCount: 5 })).toBe(true);
   });
-  it("static 모드 → false (dogfood 는 안 변함)", () => {
+  it("returns false in static mode", () => {
     expect(shouldAutoMarkBaseline({ mode: "static", hasBaseline: false, nodeCount: 5 })).toBe(false);
   });
-  it("이미 baseline 있음 → false (재설정 안 함)", () => {
+  it("returns false when a baseline exists", () => {
     expect(shouldAutoMarkBaseline({ mode: "local", hasBaseline: true, nodeCount: 5 })).toBe(false);
   });
-  it("노드 0 → false (빈 vault 에 의미 없음)", () => {
+  it("returns false with no nodes", () => {
     expect(shouldAutoMarkBaseline({ mode: "local", hasBaseline: false, nodeCount: 0 })).toBe(false);
   });
 });

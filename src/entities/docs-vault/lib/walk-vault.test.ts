@@ -53,7 +53,7 @@ const file = (name: string) => new FakeFile(name);
 
 const run = (root: FakeDir) => walkVault(root as unknown as FileSystemDirectoryHandle);
 
-describe('walkVault — 경계', () => {
+describe('walkVault boundaries', () => {
   it('collects markdown and images from an ordinary vault', async () => {
     const result = await run(
       dir('vault', [file('a.md'), file('cover.png'), file('notes.txt'), dir('sub', [file('b.md')])]),

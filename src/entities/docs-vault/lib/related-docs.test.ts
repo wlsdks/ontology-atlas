@@ -20,7 +20,7 @@ function doc(overrides: Partial<VaultDoc> = {}): VaultDoc {
 }
 
 describe('findRelatedDocs', () => {
-  it('매칭 없는 문서는 걸러낸다', () => {
+  it('filters out docs with no match', () => {
     const docs = [
       doc({ slug: 'a', title: '전혀 다른 문서' }),
       doc({ slug: 'b', title: '마찬가지' }),
@@ -29,7 +29,7 @@ describe('findRelatedDocs', () => {
     expect(result).toEqual([]);
   });
 
-  it('frontmatter projects 배열 매치는 최고 점수', () => {
+  it('scores a frontmatter projects match highest', () => {
     const docs = [
       doc({ slug: 'a', frontmatter: { projects: ['reactor'] } }),
       doc({ slug: 'b', excerpt: 'reactor 를 한 번 언급' }),
@@ -43,14 +43,14 @@ describe('findRelatedDocs', () => {
     expect(result[0]?.reasons).toContain('frontmatter.projects');
   });
 
-  it('wikilink 도 잡는다', () => {
+  it('matches a wikilink', () => {
     const docs = [doc({ slug: 'a', linksOut: ['project:reactor'] })];
     const result = findRelatedDocs(docs, { projectSlug: 'reactor' });
     expect(result).toHaveLength(1);
     expect(result[0].reasons).toContain('wikilink');
   });
 
-  it('본문 /project/{slug} 언급도 신호', () => {
+  it('counts a /project/{slug} mention in the body', () => {
     const docs = [
       doc({
         slug: 'a',
@@ -62,7 +62,7 @@ describe('findRelatedDocs', () => {
     expect(result[0].reasons).toContain('project-url');
   });
 
-  it('제목/excerpt 에 projectName 포함 시 가중치', () => {
+  it('weights a project name in the title or excerpt', () => {
     const docs = [
       doc({
         slug: 'a',
@@ -83,7 +83,7 @@ describe('findRelatedDocs', () => {
     expect(result[1].reasons).toContain('excerpt');
   });
 
-  it('aliases — hub 와 컨테이너 slug 가 다를 때', () => {
+  it('matches aliases when hub and container slugs differ', () => {
     const docs = [
       doc({ slug: 'a', frontmatter: { projects: ['arc'] } }),
     ];
@@ -95,7 +95,7 @@ describe('findRelatedDocs', () => {
     expect(result[0].reasons).toContain('frontmatter.projects');
   });
 
-  it('limit 을 존중', () => {
+  it('respects limit', () => {
     const docs = Array.from({ length: 10 }, (_, i) =>
       doc({ slug: `d${i}`, frontmatter: { projects: ['reactor'] } }),
     );

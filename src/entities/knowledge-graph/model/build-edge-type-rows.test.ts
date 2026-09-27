@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import { buildEdgeTypeRows } from "./build-edge-type-rows";
 
 describe("buildEdgeTypeRows", () => {
-  it("빈 Map → 빈 배열", () => {
+  it("returns no rows for an empty Map", () => {
     expect(buildEdgeTypeRows(new Map())).toEqual([]);
   });
 
-  it("canonical type 만 있을 때 KNOWLEDGE_EDGE_TYPES 순서대로", () => {
+  it("orders canonical types by KNOWLEDGE_EDGE_TYPES", () => {
     const rows = buildEdgeTypeRows(
       new Map([
         ["depends_on", 3],
@@ -18,7 +18,7 @@ describe("buildEdgeTypeRows", () => {
     expect(rows.map((r) => r.count)).toEqual([5, 3]);
   });
 
-  it("외래 type 은 canonical 뒤에 입력 순서대로", () => {
+  it("appends foreign types after canonical ones in input order", () => {
     const rows = buildEdgeTypeRows(
       new Map([
         ["custom_a", 2],
@@ -33,7 +33,7 @@ describe("buildEdgeTypeRows", () => {
     ]);
   });
 
-  it("count 0 / 음수 행 제외", () => {
+  it("drops zero and negative counts", () => {
     const rows = buildEdgeTypeRows(
       new Map([
         ["contains", 0],
@@ -45,7 +45,7 @@ describe("buildEdgeTypeRows", () => {
     expect(rows.map((r) => r.type)).toEqual(["depends_on"]);
   });
 
-  it("canonical 미포함 type → 0 카운트로 표시 안 함", () => {
+  it("omits canonical types with no count", () => {
     const rows = buildEdgeTypeRows(new Map([["uses", 2]]));
     // Every entry of KNOWLEDGE_EDGE_TYPES with count 0 is skipped, leaving only `uses`.
     expect(rows).toEqual([{ type: "uses", count: 2 }]);

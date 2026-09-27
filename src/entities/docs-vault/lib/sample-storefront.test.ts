@@ -54,7 +54,7 @@ describe('sample storefront vault — connected business graph', () => {
   const derivation = deriveOntologyFromVault(sampleStorefrontManifest);
   const docs = sampleStorefrontManifest.docs.filter((doc) => !isArchitectureProfile(doc));
 
-  it('vault 문서 전원이 kind 노드로 유도된다 (기대 분포는 매니페스트에서 유도)', () => {
+  it('derives every vault document as a kind node', () => {
     const expectedKindCounts: Record<string, number> = {};
     for (const doc of docs) {
       const kind = kindOf(doc);
@@ -66,12 +66,12 @@ describe('sample storefront vault — connected business graph', () => {
     expect(derivation.sourceKindCounts).toEqual(expectedKindCounts);
   });
 
-  it('unknown kind 노드가 없다 (모든 relates/dependencies ref 가 folder-prefixed 로 정확히 resolve)', () => {
+  it('has no unknown-kind nodes', () => {
     const unknownNodes = derivation.nodes.filter((n) => n.kind === 'unknown');
     expect(unknownNodes.map((n) => n.id)).toEqual([]);
   });
 
-  it('project → domain → capability → element 체인이 끊기지 않는다 (orphan 0)', () => {
+  it('keeps the project, domain, capability, element chain unbroken', () => {
     const nodeIds = new Set(derivation.nodes.map((n) => n.id));
     // Undirected adjacency — regardless of type (contains/depends_on/related_to),
     // this only asks whether a node is connected to the rest of the graph.
@@ -105,7 +105,7 @@ describe('sample storefront vault — connected business graph', () => {
   // The default sample is the **only** vault a newcomer sees. If the key a card or
   // row reads is empty, their first sentence is "this project has no description
   // yet", and one click later the detail page shows one — two answers to one fact.
-  it('모든 문서가 frontmatter description 을 갖는다 (카드·최근 활동·행이 읽는 키)', () => {
+  it('gives every document a frontmatter description', () => {
     const missing = docs
       .filter((doc) => {
         const value = doc.frontmatter?.description;
@@ -121,7 +121,7 @@ describe('sample storefront vault — connected business graph', () => {
   // the map rendered the translated name — **one node, a different language per
   // screen**. Per AGENTS.md: fill every locale the vault uses; filling one leaves
   // the raw title exposed to speakers of the other.
-  it.each(['display_ko', 'display_en'])('모든 문서가 %s 를 갖는다 (로케일 전수)', (key) => {
+  it.each(['display_ko', 'display_en'])('gives every document %s', (key) => {
     const missing = docs
       .filter((doc) => {
         const value = doc.frontmatter?.[key];
@@ -134,7 +134,7 @@ describe('sample storefront vault — connected business graph', () => {
 
   // No path-shaped slugs (2026-08-01 decision, "a slug is a flat identifier") —
   // everything under a kind folder is flat, and location is carried by `path:`.
-  it('슬러그가 종류 폴더 아래에서 평평하다 (경로형 슬러그 0)', () => {
+  it('keeps slugs flat under their kind folder', () => {
     const nested = docs
       .map((doc) => ({ doc, kind: kindOf(doc) }))
       .filter(({ doc, kind }) => {
@@ -151,7 +151,7 @@ describe('sample storefront vault — connected business graph', () => {
   // An ontology is a **graph**, not a tree. Teaching that requires real semantic
   // relations (relates) and dependencies — the dogfood vault has zero `relates`, so
   // it cannot serve as the example.
-  it('dependencies[] 가 depends_on 엣지로, relates[] 가 related_to 엣지로 유도된다', () => {
+  it('derives depends_on from dependencies[] and related_to from relates[]', () => {
     const dependsOn = derivation.edges.filter((e) => e.type === 'depends_on');
     const relatedTo = derivation.edges.filter((e) => e.type === 'related_to');
     expect(dependsOn.length).toBeGreaterThan(0);
@@ -161,7 +161,7 @@ describe('sample storefront vault — connected business graph', () => {
   // Every relation ref the manifest states must point at a real node. Checking all
   // of them rather than pinning a pair catches the regression where a node is
   // deleted and its backlinks are not.
-  it('모든 dependencies/relates ref 가 실재 노드를 가리킨다', () => {
+  it('points every dependencies and relates ref at a real node', () => {
     const knownSlugs = new Set<string>();
     for (const doc of docs) {
       const fmSlug = doc.frontmatter?.slug;

@@ -29,11 +29,11 @@ describe("computeCanonicalCensus", () => {
   ];
   const edges = [{ id: "1", from: "p", to: "d", type: "contains" }] as KnowledgeGraphEdge[];
 
-  it("project/document 는 개념이지만 reader sentinel 은 화면 census 에서 제외한다", () => {
+  it("counts project and document but excludes the reader sentinel", () => {
     expect(computeCanonicalCensus(nodes, edges)).toEqual({ conceptCount: 5, relationCount: 1 });
   });
 
-  it("빈 그래프는 0/0", () => {
+  it("returns zeros for an empty graph", () => {
     expect(computeCanonicalCensus([], [])).toEqual({ conceptCount: 0, relationCount: 0 });
   });
 });

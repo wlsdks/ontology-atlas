@@ -19,7 +19,7 @@ function makeDoc(partial: Partial<VaultDoc>): VaultDoc {
 }
 
 describe("buildTopologyDeeplinkForDoc", () => {
-  it("graph 노드 아닌 kind(document/vault-readme)·kind 없음 → null", () => {
+  it("returns null for non-graph kinds and missing kind", () => {
     expect(
       buildTopologyDeeplinkForDoc(
         makeDoc({ slug: "docs/x", frontmatter: { kind: "document" } }),
@@ -33,7 +33,7 @@ describe("buildTopologyDeeplinkForDoc", () => {
     expect(buildTopologyDeeplinkForDoc(makeDoc({ slug: "y" }))).toBeNull();
   });
 
-  it("domain/capability/element 도 토폴로지 노드 — ?mode=focus&p=<slug> 로 focus 직링크", () => {
+  it("links domain, capability and element to focus mode", () => {
     // The topology renders the whole ontology now, so non-project nodes can be focused too.
     expect(
       buildTopologyDeeplinkForDoc(
@@ -57,7 +57,7 @@ describe("buildTopologyDeeplinkForDoc", () => {
     ).toBe(`/topology/?mode=focus&p=${encodeURIComponent("elements/foo")}`);
   });
 
-  it("projects/ prefix 는 제거하고 ?p= 로 직링크", () => {
+  it("strips the projects/ prefix into ?p=", () => {
     expect(
       buildTopologyDeeplinkForDoc(
         makeDoc({
@@ -68,7 +68,7 @@ describe("buildTopologyDeeplinkForDoc", () => {
     ).toBe(`/topology/?p=${encodeURIComponent("my-app")}`);
   });
 
-  it("fm.slug 가 있으면 우선", () => {
+  it("prefers fm.slug", () => {
     expect(
       buildTopologyDeeplinkForDoc(
         makeDoc({
@@ -79,7 +79,7 @@ describe("buildTopologyDeeplinkForDoc", () => {
     ).toBe(`/topology/?p=${encodeURIComponent("custom-slug")}`);
   });
 
-  it("vault 루트 doc (예: ontology/project) 은 마지막 segment", () => {
+  it("uses the last segment for a vault-root doc", () => {
     expect(
       buildTopologyDeeplinkForDoc(
         makeDoc({

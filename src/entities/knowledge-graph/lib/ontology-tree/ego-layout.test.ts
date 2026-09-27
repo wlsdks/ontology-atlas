@@ -25,21 +25,21 @@ const edge = (id: string, from: string, to: string): KnowledgeGraphEdge => ({
 });
 
 describe("buildRadialEgoLayout", () => {
-  it("center = viewBox 중앙", () => {
+  it("places the center in the middle of the viewBox", () => {
     const ego = buildOntologyEgoSubgraph("a", [node("a")], []);
     const layout = buildRadialEgoLayout(ego, 200, 100);
     expect(layout.center.x).toBe(100);
     expect(layout.center.y).toBe(50);
   });
 
-  it("neighbors 비어 있으면 edges 도 비어 있음", () => {
+  it("returns no edges without neighbors", () => {
     const ego = buildOntologyEgoSubgraph("a", [node("a")], []);
     const layout = buildRadialEgoLayout(ego, 100, 100);
     expect(layout.neighbors).toHaveLength(0);
     expect(layout.edges).toHaveLength(0);
   });
 
-  it("4 neighbors → 12·3·6·9시 위치 (시계 방향)", () => {
+  it("places 4 neighbors clockwise at 12, 3, 6 and 9 o'clock", () => {
     const ego = buildOntologyEgoSubgraph(
       "a",
       [node("a"), node("n1"), node("n2"), node("n3"), node("n4")],
@@ -62,7 +62,7 @@ describe("buildRadialEgoLayout", () => {
     expect(layout.neighbors[3]?.x).toBeLessThan(layout.center.x);
   });
 
-  it("outgoing edge: from = center, to = neighbor (화살표 방향)", () => {
+  it("draws an outgoing edge from center to neighbor", () => {
     const ego = buildOntologyEgoSubgraph(
       "a",
       [node("a"), node("b")],
@@ -89,7 +89,7 @@ describe("buildRadialEgoLayout", () => {
     expect(ed.to.x).toBe(layout.center.x);
   });
 
-  it("padding 으로 inferred radius 결정 — 라벨 안전 마진", () => {
+  it("derives the radius from padding", () => {
     const ego = buildOntologyEgoSubgraph("a", [node("a"), node("b")], [edge("e", "a", "b")]);
     const layout = buildRadialEgoLayout(ego, 200, 200, { padding: 30 });
     // radius = min(200,200)/2 - 30 = 70
@@ -100,8 +100,8 @@ describe("buildRadialEgoLayout", () => {
   });
 });
 
-describe("buildRadialEgoLayout — 2-hop 동심원", () => {
-  it("hop=1 inner ring, hop=2 outer ring (radius 분리)", () => {
+describe("buildRadialEgoLayout two-hop rings", () => {
+  it("places hop 1 on the inner ring and hop 2 on the outer ring", () => {
     const ego = buildOntologyEgoSubgraph(
       "c",
       [node("c"), node("a"), node("b")],
@@ -132,7 +132,7 @@ describe("buildRadialEgoLayout — 2-hop 동심원", () => {
     expect(hop2Point.hop).toBe(2);
   });
 
-  it("hop=2 edge 는 pivot (1-hop 위치) → far (2-hop 위치) 로 그림", () => {
+  it("draws a hop-2 edge from pivot to far node", () => {
     const ego = buildOntologyEgoSubgraph(
       "c",
       [node("c"), node("a"), node("b")],
@@ -150,7 +150,7 @@ describe("buildRadialEgoLayout — 2-hop 동심원", () => {
     expect(hop2Edge.to.y).toBeCloseTo(hop2Point.y, 5);
   });
 
-  it("hop=2 incoming edge — far → pivot 방향 (2-hop 노드가 source)", () => {
+  it("draws a hop-2 incoming edge from far node to pivot", () => {
     const ego = buildOntologyEgoSubgraph(
       "c",
       [node("c"), node("a"), node("b")],
@@ -167,7 +167,7 @@ describe("buildRadialEgoLayout — 2-hop 동심원", () => {
     expect(hop2Edge.to.x).toBeCloseTo(pivot.x, 5);
   });
 
-  it("1-hop 만 있을 때는 단일 ring (회귀 호환 — inner = outer)", () => {
+  it("uses a single ring with only 1-hop neighbors", () => {
     const ego = buildOntologyEgoSubgraph(
       "a",
       [node("a"), node("b")],

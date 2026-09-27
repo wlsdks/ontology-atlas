@@ -63,7 +63,7 @@ describe('local-fs-handle store', () => {
     expect(restored?.handle.name).toBe('Notes');
   });
 
-  it('delete 후 get 은 undefined', async () => {
+  it('returns undefined after delete', async () => {
     await putLocalFsHandle({
       id: CURRENT_LOCAL_FS_HANDLE_ID,
       handle: fakeHandle('Tmp'),
@@ -75,7 +75,7 @@ describe('local-fs-handle store', () => {
     expect(await getLocalFsHandle()).toBeUndefined();
   });
 
-  it('touch 는 lastAccessedAt 만 갱신', async () => {
+  it('updates only lastAccessedAt on touch', async () => {
     await putLocalFsHandle({
       id: CURRENT_LOCAL_FS_HANDLE_ID,
       handle: fakeHandle('A'),
@@ -100,12 +100,12 @@ describe('local-fs-handle store', () => {
     expect((await listRecentLocalFsHandles())[0].lastAccessedAt).toBe(after.lastAccessedAt);
   });
 
-  it('touch 는 record 가 없으면 no-op', async () => {
+  it('does nothing on touch without a record', async () => {
     await touchLocalFsHandle();
     expect(await getLocalFsHandle()).toBeUndefined();
   });
 
-  it('legacy 키 자동 마이그레이션', async () => {
+  it('migrates the legacy key', async () => {
     memory.set('docs-vault:current-handle', fakeHandle('OldVault'));
     const restored = await getLocalFsHandle();
     expect(restored?.name).toBe('OldVault');
@@ -121,7 +121,7 @@ describe('local-fs-handle store', () => {
     ]);
   });
 
-  it('마이그레이션은 한 번만 — 이후 read 는 record 직접', async () => {
+  it('migrates once and reads the record afterwards', async () => {
     memory.set('docs-vault:current-handle', fakeHandle('OldVault'));
     const first = await getLocalFsHandle();
     const second = await getLocalFsHandle();
@@ -129,7 +129,7 @@ describe('local-fs-handle store', () => {
     expect(memory.get('docs-vault:current-handle')).toBeUndefined();
   });
 
-  it('multi-id 분리 저장', async () => {
+  it('stores several ids separately', async () => {
     await putLocalFsHandle({
       id: 'current',
       handle: fakeHandle('A'),
@@ -148,7 +148,7 @@ describe('local-fs-handle store', () => {
     expect((await getLocalFsHandle('archive'))?.name).toBe('B');
   });
 
-  it('최근 vault 목록은 lastAccessedAt 순서로 dedupe 하고 5개로 제한', async () => {
+  it('dedupes recent vaults by lastAccessedAt and keeps five', async () => {
     for (let i = 0; i < 6; i += 1) {
       await putLocalFsHandle({
         id: `vault-${i}`,
@@ -175,7 +175,7 @@ describe('local-fs-handle store', () => {
     ]);
   });
 
-  it('최근 vault 항목을 identity 기준으로 제거한다', async () => {
+  it('removes a recent vault by identity', async () => {
     const first: LocalFsHandleRecord = {
       id: 'current',
       handle: fakeHandle('Current'),
@@ -204,7 +204,7 @@ describe('local-fs-handle store', () => {
     expect((await getLocalFsHandle('current'))?.name).toBe('Current');
   });
 
-  it('브라우저 런타임에서는 Tauri desktop path record 를 복원하지 않는다', async () => {
+  it('does not restore a desktop path record in the browser', async () => {
     await putLocalFsHandle({
       id: CURRENT_LOCAL_FS_HANDLE_ID,
       handle: fakeHandle('Desktop Vault'),
@@ -258,7 +258,7 @@ describe('local-fs-handle store', () => {
     expect(recent.map((record) => record.name)).toEqual(['Vault A', 'Vault B']);
   });
 
-  it('Tauri 런타임에서는 저장된 desktop path record 를 handle shim 으로 복원한다', async () => {
+  it('restores a desktop path record as a handle shim in Tauri', async () => {
     tauriApiMock.runtimeAvailable = true;
     await putLocalFsHandle({
       id: CURRENT_LOCAL_FS_HANDLE_ID,

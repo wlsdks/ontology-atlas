@@ -6,7 +6,7 @@ import {
 } from './ontology-relation-edit';
 
 describe('contextual relation edit plan', () => {
-  it('새 관계와 why를 같은 frontmatter write로 계획한다', () => {
+  it('plans a new relation and its why in one frontmatter write', () => {
     const plan = buildOntologyRelationEditPlan({
       sourceSlug: 'capabilities/contextual-editing',
       targetSlug: 'capabilities/mcp-server',
@@ -30,7 +30,7 @@ describe('contextual relation edit plan', () => {
     });
   });
 
-  it('기존 관계 타입을 바꾸면 원래 배열에서 빼고 새 배열에 한 번만 더한다', () => {
+  it('moves a retyped relation to the new array exactly once', () => {
     const frontmatter = {
       relates: ['mcp-server', 'capabilities/other'],
       dependencies: ['capabilities/docs-vault-local'],
@@ -53,7 +53,7 @@ describe('contextual relation edit plan', () => {
     expect(frontmatter.relates).toEqual(['mcp-server', 'capabilities/other']);
   });
 
-  it('기존 관계의 대상을 바꾸면 원래 관계와 이유를 남기지 않는다', () => {
+  it('drops the old relation and reason when the target changes', () => {
     const plan = buildOntologyRelationEditPlan({
       sourceSlug: 'capabilities/contextual-editing',
       targetSlug: 'capabilities/new-target',
@@ -80,7 +80,7 @@ describe('contextual relation edit plan', () => {
     });
   });
 
-  it('같은 tail 의 다른 폴더 참조는 제거에 휩쓸리지 않는다', () => {
+  it('keeps a ref in another folder with the same tail', () => {
     // Bug sweep 2026-09-01: the slugified-tail fallback matched
     // capabilities/search against elements/search, so removing one relation
     // silently lost a second, different one.
@@ -97,7 +97,7 @@ describe('contextual relation edit plan', () => {
     });
   });
 
-  it('관계를 끊으면 마지막 연결의 이유도 같은 쓰기에서 걷는다', () => {
+  it('removes the reason of the last link in the same write', () => {
     const plan = buildOntologyRelationRemovalPlan({
       sourceSlug: 'capabilities/contextual-editing',
       targetSlug: 'capabilities/old-target',

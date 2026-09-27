@@ -30,7 +30,7 @@ function makeProject(overrides: Partial<Project> = {}): Project {
 const NOW = new Date("2026-04-20T00:00:00Z");
 
 describe("detectStaleProjects", () => {
-  it("지정한 일수 초과 미수정 프로젝트만 반환한다", () => {
+  it("returns only projects unmodified for longer than the given days", () => {
     const projects: Project[] = [
       // 25 days ago — under the 30-day threshold, so excluded
       makeProject({
@@ -54,7 +54,7 @@ describe("detectStaleProjects", () => {
     expect(stale.map((p) => p.slug)).toEqual(["stale-100", "stale-60"]);
   });
 
-  it("가장 오래된 것부터 정렬한다 (수리 우선순위)", () => {
+  it("sorts the oldest first", () => {
     const projects: Project[] = [
       makeProject({
         slug: "older",
@@ -74,7 +74,7 @@ describe("detectStaleProjects", () => {
     expect(stale.map((p) => p.slug)).toEqual(["oldest", "older", "old"]);
   });
 
-  it("threshold 경계 정확: threshold 와 정확히 일치하면 stale 아님", () => {
+  it("does not treat a project exactly at the threshold as stale", () => {
     const projects: Project[] = [
       // Exactly 30 days ago — NOT stale (strictly greater than 30 only)
       makeProject({
@@ -87,7 +87,7 @@ describe("detectStaleProjects", () => {
     ).toEqual([]);
   });
 
-  it("limit 옵션으로 상위 N개만 반환", () => {
+  it("returns the top N with limit", () => {
     const projects: Project[] = Array.from({ length: 5 }, (_, i) =>
       makeProject({
         slug: `s${i}`,
@@ -108,7 +108,7 @@ describe("detectStaleProjects", () => {
 });
 
 describe("detectOrphanProjects", () => {
-  it("들어오는 참조도 나가는 의존도 없는 프로젝트만 반환한다", () => {
+  it("returns only projects with no incoming or outgoing links", () => {
     const projects: Project[] = [
       makeProject({ slug: "truly-alone" }),
       makeProject({ slug: "has-out", dependencies: ["other"] }),
@@ -121,7 +121,7 @@ describe("detectOrphanProjects", () => {
     expect(orphans.map((p) => p.slug)).toEqual(["truly-alone"]);
   });
 
-  it("허브 노드는 orphan 에서 제외한다 (허브가 고립이라도 구조상 의도된 경우 많음)", () => {
+  it("excludes hubs from orphans", () => {
     const projects: Project[] = [
       makeProject({ slug: "hub-alone", isHub: true }),
       makeProject({ slug: "non-hub-alone" }),
@@ -131,7 +131,7 @@ describe("detectOrphanProjects", () => {
     expect(orphans.map((p) => p.slug)).toEqual(["non-hub-alone"]);
   });
 
-  it("이름 가나다 순 정렬", () => {
+  it("sorts by name", () => {
     const projects: Project[] = [
       makeProject({ slug: "b", name: "나 프로젝트" }),
       makeProject({ slug: "a", name: "가 프로젝트" }),
@@ -144,7 +144,7 @@ describe("detectOrphanProjects", () => {
 });
 
 describe("detectPromotionCandidates", () => {
-  it("isHub=false 이면서 fan-in 이 임계값 이상인 프로젝트를 반환한다", () => {
+  it("returns non-hub projects with fan-in at or above the threshold", () => {
     const projects: Project[] = [
       makeProject({ slug: "center" }), // Non-hub, fan-in 4
       makeProject({ slug: "a", dependencies: ["center"] }),
@@ -159,7 +159,7 @@ describe("detectPromotionCandidates", () => {
     expect(candidates.map((p) => p.slug)).toEqual(["center"]);
   });
 
-  it("허브는 이미 승격된 상태이므로 후보에서 제외한다", () => {
+  it("excludes existing hubs from candidates", () => {
     const projects: Project[] = [
       makeProject({ slug: "hub", isHub: true }),
       makeProject({ slug: "a", dependencies: ["hub"] }),
@@ -171,7 +171,7 @@ describe("detectPromotionCandidates", () => {
     expect(detectPromotionCandidates(projects, { minFanIn: 4 })).toEqual([]);
   });
 
-  it("fan-in 이 큰 순서로 정렬한다", () => {
+  it("sorts by fan-in descending", () => {
     const projects: Project[] = [
       makeProject({ slug: "two-in" }),
       makeProject({ slug: "five-in" }),
@@ -191,7 +191,7 @@ describe("detectPromotionCandidates", () => {
     ]);
   });
 
-  it("limit 으로 상위 N개만 반환", () => {
+  it("returns the top N candidates with limit", () => {
     const projects: Project[] = [
       makeProject({ slug: "target" }),
       ...Array.from({ length: 5 }, (_, i) =>

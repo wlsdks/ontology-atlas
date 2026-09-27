@@ -67,7 +67,7 @@ describe('projectToFrontmatter', () => {
     description: '인증 흐름의 단일 진입',
   };
 
-  it('필수 필드 직렬화', () => {
+  it('serializes required fields', () => {
     const fm = projectToFrontmatter(minimal);
     expect(fm.kind).toBe('project');
     expect(fm.slug).toBe('auth-hub');
@@ -77,7 +77,7 @@ describe('projectToFrontmatter', () => {
     expect(fm.description).toBe('인증 흐름의 단일 진입');
   });
 
-  it('빈 옵셔널은 omit', () => {
+  it('omits empty optional fields', () => {
     const fm = projectToFrontmatter({
       ...minimal,
       tags: [],
@@ -93,7 +93,7 @@ describe('projectToFrontmatter', () => {
     expect(fm.isHub).toBeUndefined();
   });
 
-  it('position 은 split 필드 (positionX/Y)', () => {
+  it('splits position into positionX and positionY', () => {
     const fm = projectToFrontmatter({
       ...minimal,
       position: { x: 120.5, y: -40 },
@@ -102,14 +102,14 @@ describe('projectToFrontmatter', () => {
     expect(fm.positionY).toBe(-40);
   });
 
-  it('isHub true 는 직렬화', () => {
+  it('serializes isHub true', () => {
     const fm = projectToFrontmatter({ ...minimal, isHub: true });
     expect(fm.isHub).toBe(true);
   });
 });
 
 describe('buildProjectMarkdown', () => {
-  it('새 project 노드마다 서로 다른 lowercase UUIDv4 uid를 발급한다', () => {
+  it('mints a distinct lowercase UUIDv4 uid per project', () => {
     const input = {
       slug: 'iam',
       name: 'IAM',
@@ -126,7 +126,7 @@ describe('buildProjectMarkdown', () => {
     expect(first.match(uidPattern)?.[1]).not.toBe(second.match(uidPattern)?.[1]);
   });
 
-  it('frontmatter + 기본 body 생성', () => {
+  it('writes frontmatter and a default body', () => {
     const md = buildProjectMarkdown({
       slug: 'iam',
       name: 'IAM',
@@ -142,7 +142,7 @@ describe('buildProjectMarkdown', () => {
     expect(md).toContain('# IAM');
   });
 
-  it('사용자 body 가 주어지면 그것 사용', () => {
+  it('uses a supplied body', () => {
     const md = buildProjectMarkdown(
       {
         slug: 'iam',
@@ -158,7 +158,7 @@ describe('buildProjectMarkdown', () => {
     expect(md).not.toContain('description: ');
   });
 
-  it('배열 필드 inline 직렬화', () => {
+  it('serializes array fields inline', () => {
     const md = buildProjectMarkdown({
       slug: 'iam',
       name: 'IAM',

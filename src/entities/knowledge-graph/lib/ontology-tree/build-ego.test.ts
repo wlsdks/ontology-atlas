@@ -30,7 +30,7 @@ function edge(id: string, from: string, to: string, type = "depends_on"): Knowle
 }
 
 describe("buildOntologyEgoSubgraph", () => {
-  it("outgoing 먼저, 그 다음 incoming — 같은 그룹 안은 입력 순서 유지", () => {
+  it("lists outgoing before incoming, keeping input order within each", () => {
     const center = node("auth-login");
     const a = node("iam");
     const b = node("session");
@@ -52,7 +52,7 @@ describe("buildOntologyEgoSubgraph", () => {
     expect(result.neighbors[2]?.neighborId).toBe("session");
   });
 
-  it("self-loop (from === to === centerId) 제외", () => {
+  it("excludes self-loops", () => {
     const center = node("self");
     const result = buildOntologyEgoSubgraph(
       "self",
@@ -62,7 +62,7 @@ describe("buildOntologyEgoSubgraph", () => {
     expect(result.neighbors).toHaveLength(0);
   });
 
-  it("같은 노드가 양방향이면 두 entry — 두 관계는 다른 사실", () => {
+  it("keeps two entries for a neighbor linked both ways", () => {
     const center = node("a");
     const b = node("b");
     const nodes = [center, b];
@@ -75,7 +75,7 @@ describe("buildOntologyEgoSubgraph", () => {
     expect(result.neighbors[1]?.edge.type).toBe("describes");
   });
 
-  it("이웃 노드가 nodes 인덱스에 없으면 node=null, neighborId 보존 (stub / 데이터 갭 방어)", () => {
+  it("keeps neighborId with node null for a missing neighbor", () => {
     const center = node("a");
     const result = buildOntologyEgoSubgraph(
       "a",
@@ -87,12 +87,12 @@ describe("buildOntologyEgoSubgraph", () => {
     expect(result.neighbors[0]?.neighborId).toBe("ghost");
   });
 
-  it("미존재 centerId — 빈 neighbors", () => {
+  it("returns no neighbors for a missing centerId", () => {
     const result = buildOntologyEgoSubgraph("nope", [node("a")], [edge("e", "a", "a")]);
     expect(result.neighbors).toHaveLength(0);
   });
 
-  it("기본 hops=1 — 1-hop 결과만 (회귀 호환)", () => {
+  it("returns only 1-hop results by default", () => {
     const center = node("c");
     const a = node("a");
     const b = node("b");
@@ -108,7 +108,7 @@ describe("buildOntologyEgoSubgraph", () => {
 });
 
 describe("buildOntologyEgoSubgraph — hops=2", () => {
-  it("1-hop + 2-hop 모두 포함, hop 필드 표시", () => {
+  it("includes 1-hop and 2-hop neighbors with a hop field", () => {
     const center = node("c");
     const a = node("a");
     const b = node("b");
@@ -126,7 +126,7 @@ describe("buildOntologyEgoSubgraph — hops=2", () => {
     expect(result.neighbors[1]?.viaNeighborId).toBe("a");
   });
 
-  it("center 자신을 가리키는 2-hop edge 는 cycle, 제외", () => {
+  it("excludes a 2-hop edge back to the center", () => {
     const center = node("c");
     const a = node("a");
     const result = buildOntologyEgoSubgraph(
@@ -140,7 +140,7 @@ describe("buildOntologyEgoSubgraph — hops=2", () => {
     expect(result.neighbors.every((n) => n.hop === 1)).toBe(true);
   });
 
-  it("1-hop 에 이미 등장한 노드는 2-hop 으로 다시 추가 안 함", () => {
+  it("does not repeat a 1-hop neighbor at 2 hops", () => {
     const center = node("c");
     const a = node("a");
     const b = node("b");
@@ -158,7 +158,7 @@ describe("buildOntologyEgoSubgraph — hops=2", () => {
     expect(result.neighbors.every((n) => n.hop === 1)).toBe(true);
   });
 
-  it("incoming edge 도 2-hop 탐색 — 양방향 BFS", () => {
+  it("follows incoming edges at 2 hops", () => {
     const center = node("c");
     const a = node("a");
     const b = node("b");
@@ -175,7 +175,7 @@ describe("buildOntologyEgoSubgraph — hops=2", () => {
     expect(hop2[0]?.viaNeighborId).toBe("a");
   });
 
-  it("2-hop 의 미존재 노드 (데이터 갭) — node=null, neighborId 보존", () => {
+  it("keeps neighborId with node null for a missing 2-hop node", () => {
     const center = node("c");
     const a = node("a");
     const result = buildOntologyEgoSubgraph(
@@ -190,7 +190,7 @@ describe("buildOntologyEgoSubgraph — hops=2", () => {
     expect(hop2[0]?.neighborId).toBe("ghost");
   });
 
-  it("1-hop 의 stub (node=null) 는 2-hop pivot 으로 쓰지 않음", () => {
+  it("does not pivot through a 1-hop stub", () => {
     const center = node("c");
     const result = buildOntologyEgoSubgraph(
       "c",
