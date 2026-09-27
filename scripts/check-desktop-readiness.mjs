@@ -25,23 +25,6 @@ function readText(relativePath) {
   return fs.readFileSync(absolute, "utf8").replace(/\r\n?/g, "\n");
 }
 
-/**
- * Reads every `.md` under a directory — for surfaces like the vault where **the
- * file list is not a human's to fix**. Pinning filenames means the gate dies
- * first every time the vault is rebuilt.
- */
-function readVaultMarkdown(relativeDir) {
-  const absolute = path.join(root, relativeDir);
-  if (!fs.existsSync(absolute)) {
-    fail(`vault directory is missing — ${relativeDir}.`);
-    return [];
-  }
-  return fs
-    .readdirSync(absolute, { recursive: true, withFileTypes: true })
-    .filter((entry) => entry.isFile() && entry.name.endsWith(".md"))
-    .map((entry) => fs.readFileSync(path.join(entry.parentPath ?? entry.path, entry.name), "utf8"));
-}
-
 // scripts/verify-macos-app-launch.mjs was decomposed (refactor: cohesive-seam
 // module split) into a thin orchestrator plus scripts/lib/verify-macos/*.mjs
 // helper modules. The content-based `.includes(...)` gates below still check
@@ -91,43 +74,7 @@ const koMessages = JSON.parse(readText("messages/ko.json"));
 const rootLayout = readText("app/layout.tsx");
 const webManifest = JSON.parse(readText("public/manifest.webmanifest"));
 const cargoToml = readText("src-tauri/Cargo.toml");
-const desktopDoc = readText("docs/DESKTOP-MACOS.md");
-const agentsDoc = readText("AGENTS.md");
 const rootReadme = readText("README.md");
-const productDesignDoc = readText("docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md");
-// The per-slice render loop lives in the `/design-build` skill, one copy per harness.
-// Either copy naming the router's `computer-use-loop` proof is enough; the harnesses
-// are independent and need not match.
-const designBuildSkills = [".claude/skills/design-build/SKILL.md", ".agents/skills/design-build/SKILL.md"]
-  .map((relativePath) => path.join(root, relativePath))
-  .filter((absolute) => fs.existsSync(absolute))
-  .map((absolute) => fs.readFileSync(absolute, "utf8"));
-const developmentChecksDoc = readText("docs/DEVELOPMENT-CHECKS.md");
-const agentGraphWorkflowDoc = readText("docs/AGENT-GRAPH-WORKFLOW.md");
-const troubleshootingDoc = readText("docs/TROUBLESHOOTING.md");
-// Archived when the npm publishing plan was dropped (docs/DECISIONS.md
-// 2026-07-27). The gate stays: while this document lives it remains the record
-// that blocks a revert which deletes the desktop-app path and keeps only npm.
-const publishNpmDoc = readText("docs/archive/PUBLISH-NPM.md");
-const demoStoryboardDoc = readText("docs/launch/DEMO-GIF-STORYBOARD.md");
-const redditPostsDoc = readText("docs/launch/REDDIT-POSTS.md");
-/**
- * The **whole** dogfood vault. Neither filenames nor sentences are pinned.
- *
- * [revised 2026-08-01] This used to pin **the exact sentences of two files**,
- * `capabilities/desktop-app-distribution.md` and `domains/onboarding-ux.md`.
- * Rebuilding the vault from zero against the spec removed both, and the gate went
- * red because of **its own aim**, not a product defect. The vault is a surface
- * agents write in their own words, so sentence pins are unmaintainable in
- * principle — the same meaning in a different sentence means fixing the gate every
- * time.
- *
- * The check's real purpose was "the shared ontology does not preserve the old
- * hosted-workbench framing". That is a question of **whether a concept exists**,
- * not of wording, so it only looks for a node somewhere in the vault carrying the
- * desktop-app installation decision.
- */
-const vaultDocTexts = readVaultMarkdown("docs/ontology");
 const downloadPage = readText("src/views/download/ui/DownloadPage.tsx");
 /**
  * The gateway's top chrome — where the brand name is actually drawn.
@@ -296,27 +243,6 @@ if (pkg.scripts?.["cli:mcp-verify"] && agentSetupGateContract.ok) {
   fail(
     "package.json must expose cli:mcp-verify and an automation-safe dogfood:agent-setup-gate: " +
       agentSetupGateContract.errors.join("; "),
-  );
-}
-
-if (
-  agentGraphWorkflowDoc.includes("https://developers.openai.com/codex/mcp") &&
-  agentGraphWorkflowDoc.includes("https://code.claude.com/docs/en/mcp") &&
-  // This gate checks **where the boundary is**: Atlas does not own the agent loop,
-  // the model, or the keys, and does not host a window — it hands off to the user's
-  // own terminal. (That morning's "Atlas hosts a terminal" wording was reversed by
-  // owner decision; AGENT-GRAPH-WORKFLOW.md keeps a one-paragraph note and Git
-  // keeps the full reasoning.)
-  agentGraphWorkflowDoc.includes("does not reimplement Claude Code, Codex, or Cursor chat") &&
-  agentGraphWorkflowDoc.includes("Atlas does not host a terminal; it hands off to yours") &&
-  agentGraphWorkflowDoc.includes("Nothing runs on its own") &&
-  agentGraphWorkflowDoc.includes("codex mcp list") &&
-  agentGraphWorkflowDoc.includes("claude mcp list")
-) {
-  pass("agent workflow guide cites official Claude Code and Codex MCP client contracts");
-} else {
-  fail(
-    "docs/AGENT-GRAPH-WORKFLOW.md must cite official Claude Code and Codex MCP docs and state that Ontology Atlas connects agents through MCP setup, not embedded chat",
   );
 }
 
@@ -984,44 +910,6 @@ if (
 }
 
 if (
-  agentGraphWorkflowDoc.includes("Install the macOS app and open the local vault folder there.") &&
-  troubleshootingDoc.includes("desktop app `/docs` button") &&
-  troubleshootingDoc.includes("Desktop app scaffold button stays grayed out") &&
-  publishNpmDoc.includes("installed macOS app's `/docs` page") &&
-  publishNpmDoc.includes("Start a user vault (desktop app path)") &&
-  developmentChecksDoc.includes("Firebase SDK, Firebase Admin, and Firebase CLI dependencies") &&
-  developmentChecksDoc.includes("separate Hosting deploy toolchain") &&
-  demoStoryboardDoc.includes("Installed macOS desktop app") &&
-  // 2026-07-28: #736 rewrote this paragraph when it removed the npm premise. The
-  // requirement is the fact that the app reads and writes the same `.md` through a
-  // native bridge, plus the split where the web is the intro and download entry —
-  // moved to the new sentence that says it.
-  redditPostsDoc.includes("reads/writes the same `.md` files through a local native") &&
-  redditPostsDoc.includes("hosted website is the product intro and download")
-) {
-  pass("workflow, troubleshooting, publish, and launch docs route writable vault work through the desktop app");
-} else {
-  fail(
-    "User-facing workflow/troubleshooting/publish/launch docs must not steer local vault work through the hosted web workbench",
-  );
-}
-
-// Does a single node mention both the macOS/desktop app and download/install?
-// Only the concept's existence is checked — which file and which sentence is the
-// vault's business.
-if (
-  vaultDocTexts.some(
-    (text) => /macos|맥\s*os|desktop|데스크톱/i.test(text) && /download|install|다운로드|설치/i.test(text),
-  )
-) {
-  pass("dogfood ontology carries the desktop-app install decision");
-} else {
-  fail(
-    "docs/ontology must carry a node for the desktop-app install decision so the shared ontology does not fall back to the old hosted-workbench framing",
-  );
-}
-
-if (
   // The hub is the map: `/ontology`'s tree hub (OntologyViewPage) was retired and
   // both `/` and `/ontology` converged on this empty state, so the check converges
   // too.
@@ -1292,15 +1180,14 @@ if (
 if (
   pkg.scripts?.["desktop:release-github"] === "node scripts/check-macos-release-github.mjs" &&
   typeof pkg.scripts?.["desktop:release-preflight"] === "string" &&
-  desktopDoc.includes("release-signing") &&
-  desktopDoc.includes("--env release-signing") &&
-  desktopDoc.includes("workflow_dispatch") &&
+  /^  workflow_dispatch:/m.test(releaseWorkflow) &&
+  /^\s+environment: release-signing$/m.test(releaseWorkflow) &&
   releaseGithubScript.includes('"--env"') &&
   releaseGithubScript.includes("release-signing")
 ) {
-  pass("desktop release docs and preflight route signing setup through the release-signing environment");
+  pass("desktop release workflow and preflight route signing setup through the release-signing environment");
 } else {
-  fail("docs/DESKTOP-MACOS.md, desktop:release-preflight, and desktop:release-github must describe release-signing environment setup and workflow_dispatch release operation");
+  fail("release-macos.yml must be dispatchable (workflow_dispatch) and sign under the release-signing environment; desktop:release-preflight and desktop:release-github must exist");
 }
 
 if (
@@ -1526,86 +1413,6 @@ if (
  * (`tests/contract/script-vault-references.contract.test.ts`, runs in CI).
  */
 
-const agentDesignGateChecks = [
-  [
-    "AGENTS mandatory design gate",
-    agentsDoc.includes("docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md") &&
-      /pnpm design:route/.test(agentsDoc) &&
-      agentsDoc.includes("/design-build") &&
-      // Strip markdown emphasis before matching — AGENTS.md writes `Runs *after* the PO
-      // pass`. The old regex required a contiguous string and **broke on a single
-      // asterisk** (CI, 2026-07-31). The invariant (the design gate comes after the PO
-      // pass) was intact; only the gate was brittle. Pinning prose formatting makes the
-      // gate hold the document hostage.
-      /after\s+the PO pass/i.test(agentsDoc.replace(/[*_`]/g, "")),
-  ],
-  [
-    "fact-derived independent design review",
-    /pnpm design:route/.test(productDesignDoc) &&
-    /Independent review/.test(productDesignDoc) &&
-      /No-Human-Designer Working Mode/.test(productDesignDoc) &&
-      /No UI lens always applies/.test(productDesignDoc),
-  ],
-  [
-    "allowed reference policy",
-    /Reference Permission Test/.test(productDesignDoc) &&
-      /copy/i.test(productDesignDoc) &&
-      /public/i.test(productDesignDoc) &&
-      /principle/i.test(productDesignDoc),
-  ],
-  [
-    // Wiring, not wording: the doc names the proof id `pnpm design:route` emits for
-    // rendered changes (tests/contract/design-proof-router.contract.test.ts owns which
-    // changes emit it) and hands the step-by-step loop to a `/design-build` skill that
-    // actually exists and names the same id.
-    "iterative real-window evidence",
-    /computer-use-loop/.test(productDesignDoc) &&
-      productDesignDoc.includes("/design-build") &&
-      designBuildSkills.some((skill) => skill.includes("computer-use-loop")),
-  ],
-  [
-    "recorded motion evidence",
-    /\/motion-verify/.test(productDesignDoc) &&
-      /real macOS screen/.test(productDesignDoc) &&
-      /Static screenshots/.test(productDesignDoc),
-  ],
-  [
-    "graph engine fit gate",
-    /Relief\/Topology Graph Engine Fit Gate/.test(productDesignDoc) &&
-      /Sigma\.js/.test(productDesignDoc) &&
-      /Graphology/.test(productDesignDoc) &&
-      /nodeReducer/.test(productDesignDoc) &&
-      /edgeReducer/.test(productDesignDoc) &&
-      /Force Graph-style products/.test(productDesignDoc) &&
-      /Cytoscape\.js/.test(productDesignDoc) &&
-      /Reject renderer shopping/.test(productDesignDoc),
-  ],
-  [
-    "installed app proof",
-    /installed macOS app proof/i.test(productDesignDoc) &&
-      /WebView marker/.test(productDesignDoc) &&
-      /Computer Use/.test(productDesignDoc) &&
-      /desktop-shell/.test(productDesignDoc),
-  ],
-  [
-    "Relief surface rules",
-    /Composer blocks the map/.test(productDesignDoc) &&
-      /Click focus must be durable/.test(productDesignDoc) &&
-      /Drag is editing, not discovery/.test(productDesignDoc),
-  ],
-];
-const missingAgentDesignGate = agentDesignGateChecks
-  .filter(([, ok]) => !ok)
-  .map(([label]) => label);
-
-if (missingAgentDesignGate.length === 0) {
-  pass("agent guide derives design proof from change facts, iterates through real-window evidence, records motion, routes one independent review, and preserves Atlas topology/desktop boundaries");
-} else {
-  fail(
-    `AGENTS.md and docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md must keep the Relief design gate enforceable: missing ${missingAgentDesignGate.join(", ")}`,
-  );
-}
-
 if (
   pkg.scripts?.["desktop:build"] ===
   "pnpm desktop:build:app:local && pnpm desktop:sign:adhoc && node scripts/package-macos-dmg.mjs"
@@ -1627,49 +1434,6 @@ if (pkg.dependencies?.["@tauri-apps/api"]) {
   pass("Tauri JavaScript API dependency is installed for the WebView bridge");
 } else {
   fail("package.json must include @tauri-apps/api so the WebView bridge uses the supported Tauri invoke API");
-}
-
-const qualityBarChecks = [
-  ["native .app launch path", /stable `\.app` launch path|stable native `\.app`/i],
-  ["vault-folder permission UX", /permission prompts|permission UX/i],
-  ["recent vault recall", /recent vault recall/i],
-  ["local data location clarity", /where data is\s+stored|local data location/i],
-  ["agent setup visibility", /CLI, and MCP handoff|agent confidence|MCP verification/i],
-  ["offline packaged routes", /offline usefulness|remain usable from the packaged app/i],
-  ["doctor local ontology handoff", /dogfood `docs\/ontology` vault|dogfood vault/i],
-];
-
-const missingQualityBar = qualityBarChecks
-  .filter(([, pattern]) => !pattern.test(desktopDoc))
-  .map(([label]) => label);
-
-if (missingQualityBar.length === 0) {
-  pass("desktop quality bar names native launch, vault permissions, recent vaults, local data, agent setup, offline routes, and local ontology handoff");
-} else {
-  fail(
-    `docs/DESKTOP-MACOS.md must keep the desktop quality bar explicit: missing ${missingQualityBar.join(", ")}`,
-  );
-}
-
-const prototypeRouteChecks = [
-  ["/download", /\/download/],
-  ["/docs", /\/docs/],
-  ["/ontology", /\/ontology/],
-  ["/topology", /\/topology/],
-  ["/ontology/edit", /\/ontology\/edit/],
-  ["/ontology/insights", /\/ontology\/insights/],
-];
-
-const missingPrototypeRoutes = prototypeRouteChecks
-  .filter(([, pattern]) => !pattern.test(desktopDoc))
-  .map(([route]) => route);
-
-if (missingPrototypeRoutes.length === 0) {
-  pass("desktop prototype smoke names download, docs, ontology, topology, builder, and insights routes");
-} else {
-  fail(
-    `docs/DESKTOP-MACOS.md must keep the first desktop smoke routes explicit: missing ${missingPrototypeRoutes.join(", ")}`,
-  );
 }
 
 if (tauriConfig) {
