@@ -72,13 +72,13 @@ describe('the wiki page contract — both implementations agree', () => {
 
       it('reports a citation naming a file that is not in the folder', () => {
         const complete = WIKI_PAGE_CASES.find((c) => c.expectedOk)!;
-        const result = validate(complete.input, { knownSources: [] });
+        const result = validate(complete.input, { knownSources: new Set<string>() });
         expect(result.problems.map((p) => p.code)).toContain('citation-target-missing');
       });
 
       it('accepts the same page once the cited files exist', () => {
         const complete = WIKI_PAGE_CASES.find((c) => c.expectedOk)!;
-        expect(validate(complete.input, { knownSources: WIKI_PAGE_KNOWN_SOURCES }).ok).toBe(true);
+        expect(validate(complete.input, { knownSources: new Set(WIKI_PAGE_KNOWN_SOURCES) }).ok).toBe(true);
       });
 
       it('accepts its own template, which is what every writer is handed', () => {
@@ -163,6 +163,16 @@ describe('the wiki folder contract — both implementations agree', () => {
             Object.entries(testCase.expected).map(([path, codes]) => [path, [...codes].sort()]),
           );
           expect(got).toEqual(want);
+          if (!testCase.partners) return;
+          const partners = Object.fromEntries(
+            result.map((entry) => [
+              entry.path,
+              entry.problems
+                .filter((p) => p.code === 'shared-source-unlinked')
+                .map((p) => p.detail?.values?.other),
+            ]),
+          );
+          expect(partners).toEqual(testCase.partners);
         });
       }
     });

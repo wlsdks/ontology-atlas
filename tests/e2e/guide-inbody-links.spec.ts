@@ -77,8 +77,8 @@ test.describe("가이드 본문 링크", () => {
 
       expect(
         missingLocale,
-        "본문 링크에 로케일이 안 붙었다 — 렌더러가 내부 링크를 Link 로 안 보낸다. " +
-          "그대로 누르면 404 다.",
+        "The body link has no locale: the renderer does not send internal links through Link. " +
+          "Pressing it as it is gives a 404.",
       ).toEqual([]);
       expect(dead, "본문 링크가 열리지 않는다").toEqual([]);
     });

@@ -32,7 +32,7 @@ import {
   uncertaintyFinding,
 } from "../mcp/src/meaning-findings.mjs";
 import { parseFrontmatter as parseMcpFrontmatter } from "../mcp/src/parser.mjs";
-import { folderForKind } from "../cli/src/lib/schema.mjs";
+import { VAULT_SOURCES_DIR, folderForKind } from "../cli/src/lib/schema.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
@@ -131,14 +131,15 @@ async function validateVaultDir(vaultDir) {
   }
 }
 
-async function walk(dir) {
+async function walk(dir, root = dir) {
   const out = [];
   const entries = await readdir(dir, { withFileTypes: true });
   for (const entry of entries) {
     if (entry.name.startsWith(".")) continue;
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      out.push(...(await walk(full)));
+      if (dir === root && entry.name === VAULT_SOURCES_DIR) continue;
+      out.push(...(await walk(full, root)));
     } else if (entry.isFile() && entry.name.endsWith(".md")) {
       out.push(full);
     }

@@ -79,8 +79,8 @@ describe("관문 무대 폭 — --gateway-stage-max 의 불변식", () => {
     const floorPx = clamp.floorRem * 16;
     expect(
       slopeAt1920,
-      `기울기 ${clamp.slopeVw}vw 는 1920 에서 ${slopeAt1920}px — 바닥(${floorPx}px)을 넘으면 ` +
-        "게이트가 지키는 1440–1920 폭의 렌더가 움직인다",
+      `The slope ${clamp.slopeVw}vw is ${slopeAt1920}px at 1920; once it passes the floor (${floorPx}px), ` +
+        "the render at the 1440–1920 widths this gate protects moves",
     ).toBeLessThanOrEqual(floorPx);
   });
 

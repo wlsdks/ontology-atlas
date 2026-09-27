@@ -119,9 +119,9 @@ describe("uppercase 원소 안의 경로성 값 — 주소는 대문자 변형�
       offences,
       offences.length === 0
         ? ""
-        : `slug · 경로 · 폴더명은 주소다 — uppercase 로 변형하면 다른 주소가 된다.\n` +
-            `원소 전체가 값이면 uppercase 를 빼고, 라벨+값 혼합이면 값을\n` +
-            `normal-case tracking-normal span(또는 <value> 태그 + t.rich)으로 감싸라.\n${report}`,
+        : `A slug, path or folder name is an address, and transforming it with uppercase makes a different address.\n` +
+            `If the whole element is a value, drop uppercase; if it mixes a label and a value, wrap the value\n` +
+            `in a normal-case tracking-normal span (or a <value> tag with t.rich).\n${report}`,
     ).toEqual([]);
   });
 });

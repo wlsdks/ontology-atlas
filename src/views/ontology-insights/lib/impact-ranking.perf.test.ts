@@ -64,9 +64,9 @@ describe('impact ranking at analysis-screen scale', () => {
     ).toBeGreaterThan(100);
     expect(
       elapsed,
-      `영향도 순위가 ${elapsed.toFixed(0)}ms 걸렸다. 고치기 전 값이 1,760ms 였으니, ` +
-        '노드마다 색인을 다시 만드는 구조로 되돌아갔는지 본다 ' +
-        '(`buildReachabilityIndex` 를 한 번만 만들어 `index` 로 넘기는가).',
+      `The impact ranking took ${elapsed.toFixed(0)}ms. Before the fix it took 1,760ms, so check ` +
+        'whether it went back to rebuilding the index per node ' +
+        '(is `buildReachabilityIndex` built once and passed in as `index`?).',
     ).toBeLessThan(CEILING_MS);
   }, 120_000);
 });

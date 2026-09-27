@@ -97,19 +97,6 @@ export function VaultPresentStack({
       data-testid="vault-present-stack"
       className="flex flex-col gap-3"
     >
-      {/*
-        ⚠️ **A layer's column is shared out by what it holds.** Four equal shares gave the
-        layer holding 125 files the same 175px as the three holding nothing — measured, 525
-        of 760px, 69% of the figure, carrying one block and two rules — so the wall that had
-        something to show grew downward as a chimney while most of the row stood empty
-        (design-lead, design-infoviz and design-responsive, independently, 2026-09-09).
-        `flex-grow` is the block count, floored at `--vault-layer-col-min` so a name always
-        fits under its column.
-
-        Below the same width where four labelled columns stop fitting at all (4 x 72 + gaps
-        exceeds the room at 390), the figure turns: one layer per row, its name and count on
-        the left, its wall taking the rest. Measured there at 390 the card falls 503 -> 359.
-      */}
       {/* From 640 the layers are a four-column grid, each pile and count on the column's start line. */}
       <div className="flex flex-col gap-3 @min-[640px]/insights:grid @min-[640px]/insights:grid-cols-4 @min-[640px]/insights:items-end @min-[640px]/insights:gap-5">
         {LAYER_ORDER.map((layer, index) => {

@@ -223,9 +223,9 @@ describe("브랜드 면 × 잉크 페어링 — 소스 전수", () => {
     const { offenders } = scan();
     expect(
       offenders,
-      "꽉 찬 인디고 면 위의 글자가 AA(4.5:1)에 못 미친다.\n" +
-        "처방은 `--color-text-on-accent`(#ffffff, 4.70:1) 다 — 이미 이 저장소의 버튼\n" +
-        "프리미티브와 값 층이 쓰는 그 토큰이다.\n" +
+      "Text on a solid indigo fill falls short of AA (4.5:1).\n" +
+        "The fix is `--color-text-on-accent` (#ffffff, 4.70:1), the token this repository's button\n" +
+        "primitive and value layer already use.\n" +
         offenders.join("\n"),
     ).toEqual([]);
   });

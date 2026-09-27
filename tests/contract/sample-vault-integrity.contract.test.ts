@@ -111,8 +111,8 @@ describe("예시 볼트 무결성", () => {
     const spread = Math.max(...ratios) - Math.min(...ratios);
     expect(
       Number(spread.toFixed(2)),
-      `구성비가 ${(Math.min(...ratios) * 100).toFixed(0)}%~${(Math.max(...ratios) * 100).toFixed(0)}% 로 뭉쳐 있다. ` +
-        "예시가 고르면 도메인 막대가 데모에서 아무 말도 못 한다.",
+      `The shares are bunched between ${(Math.min(...ratios) * 100).toFixed(0)}% and ${(Math.max(...ratios) * 100).toFixed(0)}%. ` +
+        "When the sample is this even, the domain bars say nothing in the demo.",
     ).toBeGreaterThanOrEqual(0.4);
   });
 });

@@ -11,7 +11,9 @@ import {
   PAGE_FRAME_FORM,
   PAGE_TOP_PAD,
 } from "@/shared/ui/page-frame";
+import * as pageFrame from "@/shared/ui/page-frame";
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
+import { blankComments } from '../../scripts/quality/source-language/inventory.mjs';
 
 /**
  * **The page frame is defined in one place.**
@@ -258,10 +260,12 @@ describe("읽기 컬럼은 문서함이 소유한다 (2026-08-11 판정)", () =>
    * **leaking outside the spec**.
    */
   const DOCS_PAGE = "src/views/docs-vault/ui/DocsVaultPage.tsx";
+  const DOCS_BODY = "src/widgets/docs-vault/ui/DocsVaultViewer.tsx";
 
-  it("문서함 본문은 이름 있는 읽기 폭을 쓴다", () => {
-    const source = read(DOCS_PAGE).replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
-    expect(source, `${DOCS_PAGE} 가 읽기 폭을 안 쓴다`).toMatch(/max-w-(?:2xl|3xl|4xl|prose)/);
+  it("the docs body wears the named reading column", () => {
+    expect(blankComments(DOCS_BODY, read(DOCS_BODY)), `${DOCS_BODY} no longer sizes its body with --measure-doc-column`).toContain(
+      "max-w-[var(--measure-doc-column)]",
+    );
   });
 
   it("문서함이 페이지 틀을 입지 않는다 — 세 칸 작업대라 상단 48px 이 틀리다", () => {
@@ -271,19 +275,12 @@ describe("읽기 컬럼은 문서함이 소유한다 (2026-08-11 판정)", () =>
     );
   });
 
-  /*
-   * ⚠️ This used to pin the literal `max-w-3xl`, which was the reading column's owner
-   * when the verdict was written in 2026-08-11. On 2026-09-11 the reading column became
-   * `--measure-doc-column`, derived from `--measure-prose`, and the pin failed on a spec
-   * file that had been *corrected* — exactly the failure mode `.claude/rules/documentation.md`
-   * warns about. What the verdict actually says is "the third column is not this file's",
-   * so the assertion now names the token that owns it instead of a width that can move.
-   */
-  it("판정이 규격 파일에 적혀 있다 — 다음 감사가 다시 논쟁하지 않게", () => {
-    const spec = read("src/shared/ui/page-frame.ts");
-    expect(spec, "읽기 컬럼 판정이 규격에 없다").toContain("--measure-doc-column");
-    // Who owns each column is the durable half of the record — the table names the
-    // two frame constants and hands the reading column to docs itself.
-    expect(spec, "컬럼 소유자 표가 규격에 없다").toContain("PAGE_FRAME_FORM");
+  // The verdict is "the third column is not the frame's"; its record is the table in page-frame.ts.
+  it("no page-frame constant claims the reading column", () => {
+    const frames = Object.entries(pageFrame).filter(([, value]) => typeof value === "string");
+    expect(frames.length, "no frame constants were read").toBeGreaterThan(3);
+    for (const [name, value] of frames) {
+      expect(value, `${name} claims the docs reading column`).not.toContain("--measure-doc-column");
+    }
   });
 });
