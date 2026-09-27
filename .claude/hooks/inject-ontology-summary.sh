@@ -33,11 +33,13 @@
 
 set -e
 
+# The checkout's own CLI first: both npm names are unclaimed, so an `ontology-atlas`
+# on PATH may be anyone's.
 CLI_ARGS=()
-if command -v ontology-atlas >/dev/null 2>&1; then
-  CLI_ARGS=(ontology-atlas)
-elif [ -f "$(pwd)/cli/src/index.mjs" ]; then
+if [ -f "$(pwd)/cli/src/index.mjs" ]; then
   CLI_ARGS=(node "$(pwd)/cli/src/index.mjs")
+elif command -v ontology-atlas >/dev/null 2>&1; then
+  CLI_ARGS=(ontology-atlas)
 fi
 
 if [ "${#CLI_ARGS[@]}" -eq 0 ]; then
