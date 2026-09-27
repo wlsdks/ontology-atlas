@@ -22,7 +22,6 @@ const FONT_PX: Record<TerritoryTextRole, number> = {
   chip: TERRITORY_GEOMETRY.chipFontPx,
 };
 
-/** A conservative width model: Hangul full-width, Latin a little over half an em. */
 function measure(text: string, role: TerritoryTextRole): number {
   const px = FONT_PX[role];
   let w = 0;
@@ -73,7 +72,6 @@ function synthetic(capabilityCount: number, domainCount: number): { nodes: Terri
     edges.push({ source: "project:p", target: `domain:d${d}`, kind: "contains", relationType: "contains" });
   }
   for (let c = 0; c < capabilityCount; c++) {
-    // Uneven territories: the first domain takes a larger share.
     const d = c % (domainCount + 1) === domainCount ? 0 : c % domainCount;
     const id = `capability:c${c}`;
     nodes.push({ id, label: `${words[c % words.length]} ${c}`, kind: "capability" });
@@ -89,7 +87,6 @@ function synthetic(capabilityCount: number, domainCount: number): { nodes: Terri
   return { nodes, edges };
 }
 
-/** Every pair of placed boxes that overlap. The layout promises none. */
 function overlaps(layout: TerritoryLayout): string[] {
   const out: string[] = [];
   const all = layout.boxes;
@@ -135,7 +132,7 @@ describe("computeTerritoryLayout", () => {
     const { nodes, edges } = synthetic(capabilityCount, domainCount);
     const layout = computeTerritoryLayout(nodes, edges, options);
     expect(layout.capabilities).toHaveLength(capabilityCount);
-    // At this scale every name is reserved; past it the overview draws discs and names on hover.
+    // Past this scale the overview draws discs and names on hover.
     expect(layout.dense).toBe(dense);
     expect(layout.capabilities.every((c) => c.labelReserved === !dense)).toBe(true);
     expect(overlaps(layout)).toEqual([]);
@@ -164,9 +161,8 @@ describe("computeTerritoryLayout", () => {
     ["1280x800 with INDEX open", { x: -407, y: -330, w: 834, h: 640 }],
     ["1040x720 with INDEX open", { x: -287, y: -290, w: 594, h: 560 }],
   ])("keeps every disc and every name it draws at rest inside a %s room", (_label, room) => {
-    // Interaction audit, 2026-09-25: past the room the drawing went under INDEX, the tiles and
-    // the bottom of the window. Inside a smaller room the rings draw in first; names that still
-    // do not fit wait for hover — but nothing drawn at rest may leave the room.
+    // Nothing drawn at rest may leave the room: in a smaller room the rings draw in first
+    // and names that still do not fit wait for hover.
     const { nodes, edges } = dogfoodGraph();
     const layout = computeTerritoryLayout(nodes, edges, { ...options, room });
     const inRoom = (b: { x: number; y: number; w: number; h: number }) =>
@@ -187,7 +183,6 @@ describe("computeTerritoryLayout", () => {
     for (const cap of layout.capabilities.filter((c) => c.elementIds.length > 0)) {
       const avoid = territoryClusterAvoid(layout, cap);
       const { plate } = placeTerritoryCluster(cap, 120, avoid);
-      // Any place the list may take — beside the disc, one end still level with it.
       const n = cap.elementIds.length;
       const row = TERRITORY_GEOMETRY.satelliteRow;
       const reach = ((n - 1) / 2) * row + row;
@@ -271,10 +266,10 @@ describe("computeTerritoryLayout", () => {
     ];
     const layout = computeTerritoryLayout(nodes, edges, options);
     const rollups = Object.fromEntries(layout.rollups.map((r) => [`${r.fromDomain}>${r.toDomain}`, r.count]));
-    // Distinct capability edges: a1→b1 is authored twice (once through elements) and counts once.
+    // a1→b1 is authored twice (once through elements) and counts once.
     expect(rollups).toEqual({ "domain:a>domain:b": 2, "domain:b>domain:a": 1 });
     expect(layout.dependencies.filter((dep) => dep.from === "capability:a1" && dep.to === "capability:b1")).toHaveLength(2);
-    // The two directions bow to opposite sides, so their strokes and chips do not coincide.
+    // The two directions bow to opposite sides, so strokes and chips do not coincide.
     const [ab, ba] = [layout.rollups.find((r) => r.fromDomain === "domain:a")!, layout.rollups.find((r) => r.fromDomain === "domain:b")!];
     expect(Math.hypot(ab.cx - ba.cx, ab.cy - ba.cy)).toBeGreaterThan(10);
   });

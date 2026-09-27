@@ -2,32 +2,19 @@ import type { LibraryGraph, LibraryGraphNodeKind } from "./build-library-graph";
 import type { LayoutPoint } from "./library-graph-layout";
 
 /**
- * **The flow layout** — sources on the left, the pages written from them in the middle,
- * the concepts those pages name on the right. Evidence flows left to right.
+ * The flow layout: sources left, the pages written from them in the middle, the concepts
+ * they name right. The Library's fact is direction, not nearness, so columns replace a
+ * force layout: they fill the canvas at any count and are the same on every machine.
  *
- * The owner, 2026-09-17, on the live force picture with two pages: *"looks half-made;
- * can we restructure it altogether?"* A force layout answers "what is near what" and needs
- * a crowd to say it; a folder of two or twenty documents got two or twenty dots floating
- * in a black field, at positions that changed with every visit. The Library's own fact is
- * not nearness, it is **direction**: a source is read, a page is written from it, a concept
- * is named by it. Columns say that without a legend, fill the canvas at any count, and
- * put every node at the same place on every machine — the same reason the Architecture
- * canvas reads left to right (owner direction 2026-08-28: "workflows are mostly horizontal").
- *
- * Deterministic and pure: the same graph and box give the same picture. Ordering inside
- * a column is by barycentre of the neighbours in the column before it (a one-sweep crossing
- * reduction), with the page column ordered first by title so the middle is stable and the
- * outer columns follow it. Rows are spread over the height with a floor that keeps a label
- * under every mark and a ceiling that keeps a short column from stretching into a ladder.
+ * Pure and deterministic. Pages are ordered by concept barycentre then title, the outer
+ * columns by page barycentre (one crossing-reduction sweep): O(n log n + E) with Map
+ * lookups, plus a width fixed point of at most six turns.
  */
 
 /**
- * World units. The engine hands this layout a **world** box, the pixel box seen through the
- * zoom ceiling (`libraryZoomMax`), so that the fit lands on the ceiling for a small folder
- * and every mark draws at the size the ceiling was chosen for (`LIBRARY_MAX_MARK_PX`). A
- * folder with more rows than the box holds lays out taller than the world, keeping the
- * box's aspect, and the fit scales the whole picture down — a long list, not a smaller box —
- * but never below the row pitch a name needs, past which a column folds instead.
+ * World units. The world box is the pixel box seen through the zoom ceiling
+ * (`libraryZoomMax`), so a small folder fits at the ceiling; a longer one lays out taller,
+ * keeping the box's aspect, down to the row pitch a name needs, past which a column folds.
  */
 export const FLOW_SIDE_PAD = 24;
 export const FLOW_TOP_PAD = 16;
@@ -35,9 +22,8 @@ export const FLOW_TOP_PAD = 16;
 export const FLOW_ROW_MIN = 22;
 export const FLOW_ROW_MAX = 36;
 /**
- * The least a row may be on screen, in px: a page's name is an 11px face on a 15px line
- * (`draw-library-graph`), and a row under 18px puts two names on one line. The picture
- * may shrink until a row is this, and then a named column folds rather than shrinks.
+ * The least on-screen row, in px: a name is an 11px face on a 15px line
+ * (`draw-library-graph`), so a smaller row puts two names on one line.
  */
 export const FLOW_ROW_MIN_PX = 18;
 /** Sub-columns inside a folded file band: 24px at the ceiling for a 14px square. */
@@ -79,16 +65,8 @@ interface FlowColumn {
   /** How many sub-columns the band was folded into; 1 means every mark has a row of its own. */
   grid: number;
   /**
-   * World units a name standing beside this column may run to before it is cut.
-   *
-   * Normally the shared room every name place is budgeted (`FLOW_LABEL_ROOM_PX` at the
-   * scale the picture settled at). **A column whose right neighbour holds no rows takes
-   * that neighbour's room as well**: on a folder whose pages cite no concept, the concept
-   * column is not laid at all, and page names were still cut at the page column's own
-   * width while a third of the canvas stood empty beside them (2026-09-21,
-   * "Engineering onboarding…"). Nothing is placed in that space, so nothing is crossed by
-   * running into it; the renderer's collision pass still shortens a name that would meet
-   * a mark or another name on its line.
+   * World units a name beside this column may run to before it is cut: the shared budget,
+   * or out to the picture's edge when the kind to its right holds no rows.
    */
   labelRoom: number;
 }
@@ -127,13 +105,9 @@ export function flowLayout(graph: LibraryGraph, world: FlowWorld): FlowLayout {
   }
 
   /**
-   * **Pages are ordered by topic, then by title.** The middle column is the one a person
-   * reads names in, so it must not shuffle when a file is added — and it should read as
-   * the wiki's own structure. Concepts are ranked by title first; a page's rank is the
-   * mean rank of the concepts it names, so pages that name the same concept stand together
-   * and the concept beside them lands level with its group (one crossing-reduction sweep,
-   * both ways). A page naming no concept goes last, by title. A folder with no concepts is
-   * plain title order.
+   * Pages are ordered by the mean title rank of the concepts they name, then by title, so
+   * the middle column never shuffles when a file is added and pages naming one concept
+   * stand together; a page naming none goes last.
    */
   const conceptRank = new Map([...(nodesByKind.get("concept") ?? [])].sort(byLabel).map((node, row) => [node.id, row]));
   const pages = [...(nodesByKind.get("page") ?? [])]
@@ -159,14 +133,9 @@ export function flowLayout(graph: LibraryGraph, world: FlowWorld): FlowLayout {
   const innerHeight = Math.max(0, worldHeight - FLOW_TOP_PAD * 2);
 
   /**
-   * **Rows.** A page and a concept carry a name, so each keeps a row of its own while the
-   * picture can still afford one: the column grows past the box and the camera fits it, the
-   * way a long list scrolls rather than shrinks its type — down to the row pitch a name
-   * needs (`FLOW_ROW_MIN_PX`). Past that the named column **folds** into sub-columns, each
-   * with room for its names, the way an index runs in two columns. A file is a square with
-   * its name only on request in a crowd, so the file band folds to the row count the named
-   * columns settled on — 300 files are thirty rows of ten squares beside two columns of
-   * pages, not a ladder the camera shrinks to nothing to show.
+   * Rows. A named mark keeps its own row while the picture can afford `FLOW_ROW_MIN_PX`;
+   * past that its column folds into sub-columns, like an index in two columns. The unnamed
+   * file band folds the same way rather than becoming a ladder the camera shrinks away.
    */
   const rowsFit = Math.max(1, Math.floor(innerHeight / FLOW_ROW_MIN) + 1);
   const leastScale = FLOW_ROW_MIN_PX / FLOW_ROW_MIN;
@@ -174,28 +143,20 @@ export function flowLayout(graph: LibraryGraph, world: FlowWorld): FlowLayout {
   const named = ordered.filter((column) => column.kind !== "source");
   const namedGrid = new Map(named.map((column) => [column.kind, Math.max(1, Math.ceil(column.nodes.length / rowsAffordable))]));
   const rowsOf = (count: number, grid: number): number => Math.ceil(count / grid);
-  // A file band folds on the same terms as a named column: only past the rows the picture
-  // can afford at the 18px floor. Measured 2026-09-18 in a real window (648px canvas): folding
-  // at the rows that fit *at the ceiling* folded twelve files into two unnamed sub-columns
-  // beside ten named pages, when a twelve-row list at 1.7× named every one of them.
+  // A file band folds only past the rows affordable at the 18px floor, not the rows that
+  // fit at the ceiling, or a short band folds while a plain list would name every file.
   const gridOf = (kind: LibraryGraphNodeKind, count: number): number =>
     kind === "source" ? Math.max(1, Math.ceil(count / rowsAffordable)) : (namedGrid.get(kind) ?? 1);
   const longestRows = Math.max(1, ...ordered.map((column) => rowsOf(column.nodes.length, gridOf(column.kind, column.nodes.length))));
-  // One gap for every column, so rows line up across the picture and an edge between two
-  // columns is a straight-ish S rather than a fan.
+  // One gap for every column, so rows line up and an edge is a straight-ish S, not a fan.
   const rowGap =
     longestRows > rowsFit ? FLOW_ROW_MIN : Math.min(FLOW_ROW_MAX, Math.max(FLOW_ROW_MIN, longestRows > 1 ? innerHeight / (longestRows - 1) : FLOW_ROW_MAX));
   const height = Math.max(worldHeight, rowGap * (longestRows - 1) + FLOW_TOP_PAD * 2);
 
   /**
-   * **Width.** The picture keeps the box's aspect when it grows taller than it, so the
-   * fitted camera fills the width as well as the height instead of leaving a strip down
-   * the middle. The room a name needs is a screen budget: `FLOW_LABEL_ROOM_PX` where the
-   * canvas affords it, and at a narrow canvas what is left once the bands and a breath
-   * per gap are paid, shared equally by every place a name stands — the renderer
-   * truncates a name to the room it has. In world units the room is as much wider as the
-   * picture is smaller, so the scale is settled in a few turns because they depend on
-   * each other.
+   * Width keeps the box's aspect, so the fitted camera fills both axes. Name room is a
+   * screen budget (`FLOW_LABEL_ROOM_PX`, or an equal share of what a narrow canvas leaves);
+   * room and scale depend on each other, so they settle over a few turns.
    */
   const grids = ordered.map((column) => gridOf(column.kind, column.nodes.length));
   const namedLanes = ordered.reduce((sum, column, index) => sum + (column.kind === "source" ? 0 : grids[index] - 1), 0);
@@ -210,7 +171,6 @@ export function flowLayout(graph: LibraryGraph, world: FlowWorld): FlowLayout {
   for (let turn = 0; turn < 6; turn += 1) {
     const breath = BREATH_PX / scale;
     const sourceBands = ordered.reduce((sum, column, index) => sum + (column.kind === "source" ? (grids[index] - 1) * FLOW_GRID_STEP : 0), 0);
-    // Everything but the name rooms, in world units at this scale.
     const fixed = FLOW_SIDE_PAD * 2 + sourceBands + namedLanes * (WIDEST_MARK * 2 + NAME_GAP + breath) + Math.max(0, ordered.length - 1) * breath;
     const budget = roomPlaces > 0 ? Math.max(FLOW_LABEL_ROOM_MIN_PX / scale, (worldWidth * (ceiling / scale) - fixed) / roomPlaces) : 0;
     labelRoom = roomPlaces > 0 ? Math.min(FLOW_LABEL_ROOM_PX / scale, budget) : 0;
@@ -225,11 +185,8 @@ export function flowLayout(graph: LibraryGraph, world: FlowWorld): FlowLayout {
   }
   const bandsTotal = bandWidths.reduce((sum, w) => sum + w, 0);
   /*
-   * **A column stands no further from the next than a line can carry.** Spreading the
-   * columns to the box's edges filled a wide canvas, and on an opened island of 28 pages
-   * and 113 files drew every citation as a thousand-pixel harp string with nothing along
-   * it (owner screenshot, 2026-09-18: "is this the best expression?"). The gap is capped
-   * at `FLOW_COLUMN_GAP_MAX` and the picture is centred in what is left.
+   * The column gap is capped at `FLOW_COLUMN_GAP_MAX` and the picture centred in the rest,
+   * or a wide canvas draws every citation as a long line with nothing along it.
    */
   const spread = ordered.length > 1 ? (width - FLOW_SIDE_PAD * 2 - labelRoom * (leftRoom + 1) - bandsTotal) / (ordered.length - 1) : 0;
   const gap = Math.min(spread, FLOW_COLUMN_GAP_MAX / scale);
@@ -244,12 +201,9 @@ export function flowLayout(graph: LibraryGraph, world: FlowWorld): FlowLayout {
     kind === "source" ? FLOW_GRID_STEP : WIDEST_MARK * 2 + NAME_GAP + labelRoom + BREATH_PX / scale;
 
   /**
-   * The column with the most rows is spread evenly about the middle. Every other column
-   * takes, for each of its marks, the mean row of the neighbours it has in the column
-   * placed before it — a page sits level with the sources it was written from, a concept
-   * level with the pages that name it — then marks are pushed apart to the row gap in
-   * order, and the whole column is re-centred so the push does not drift it downward.
-   * Inside a folded band, sub-columns share rows and only the x steps.
+   * The anchor column and any folded band are spread evenly; every other mark takes the mean
+   * y of its neighbours in the column placed before it, is pushed apart to the row gap in
+   * order, and the column is re-centred so the push does not drift it downward.
    */
   const positions = new Map<string, LayoutPoint>();
   const yOf = new Map<string, number>();
@@ -281,21 +235,14 @@ export function flowLayout(graph: LibraryGraph, world: FlowWorld): FlowLayout {
     labelRoom,
   }));
   /**
-   * The room each column's names may take, settled once the columns stand where they
-   * stand.
-   *
-   * A column keeps the shared budget while the kind that belongs to its right holds
-   * rows — a name that ran into that gap would lie across the citations crossing it.
-   * When that kind has **no** rows the column beside it was never laid, nothing crosses
-   * the space, and the column takes it out to the picture's edge. Never less than the
-   * shared budget, so this can only widen a name's room. A folded column is left alone:
-   * its names stand beside sub-columns this single `x` cannot speak for.
+   * Widens a column's name room to the picture's edge when the kind to its right has no
+   * rows; otherwise a name would lie across the citations crossing that gap. A folded
+   * column is left alone: its single `x` cannot speak for its sub-columns.
    */
   const settleLabelRooms = (laid: FlowColumn[], pictureWidth: number): void => {
     const rowsOfKind = new Map(laid.map((column) => [column.kind, column.ids.length]));
     for (const column of laid) {
-      // A file's name stands to the left of its square, inside the room the picture
-      // already reserved there; only the named columns run rightward.
+      // A file's name stands left of its square, in room already reserved there.
       if (column.kind === "source" || column.grid > 1) continue;
       const nextKind = COLUMN_ORDER[COLUMN_ORDER.indexOf(column.kind) + 1];
       if (nextKind === undefined || (rowsOfKind.get(nextKind) ?? 0) > 0) continue;
@@ -304,12 +251,8 @@ export function flowLayout(graph: LibraryGraph, world: FlowWorld): FlowLayout {
     }
   };
   /*
-   * The anchor is the column spread evenly; the others follow it by barycentre. It is the
-   * column with the most rows — except when the file band is folded: a grid is even by
-   * construction and carries no names, and a page column placed *after* it clumped where
-   * the files happened to tile (an opened island of 18 pages: five spread across the top
-   * half, thirteen packed at the bottom — owner screenshot, 2026-09-18). So a folded file
-   * band never anchors; the pages do, evenly, and the files tile beside them.
+   * The anchor is the column with the most rows, except a folded file band: a page column
+   * placed after that grid clumps where the files happen to tile.
    */
   const anchorIndex = columns.reduce((best, column, index) => {
     if (column.kind === "source" && column.grid > 1) return best;
@@ -323,9 +266,8 @@ export function flowLayout(graph: LibraryGraph, world: FlowWorld): FlowLayout {
     const count = rowsOf(column.ids.length, column.grid);
     const step = stepOf(column.kind);
     const left = column.x - (step * (column.grid - 1)) / 2;
-    // A folded file band tiles row by row: the files one page read stand side by side on
-    // one row, so their lines leave as one sheaf rather than from three scattered rows. A
-    // folded page column stays column by column — a stack is a run of consecutive pages.
+    // A folded file band tiles row by row, so one page's files leave as one sheaf; a
+    // folded page column fills column by column, a stack being a run of consecutive pages.
     const rowMajor = column.kind === "source" && column.grid > 1;
     column.ids.forEach((id, i) => {
       const sub = column.grid === 1 ? 0 : rowMajor ? i % column.grid : Math.floor(i / count);
@@ -350,15 +292,9 @@ export function flowLayout(graph: LibraryGraph, world: FlowWorld): FlowLayout {
   }
 
   /**
-   * **Folded pages stand in stacks, each with its own files** (2026-09-18). With the page
-   * column folded into sub-columns, every citation from the one file grid to the second
-   * or third sub-column ran straight across the names of the first — measured on an
-   * opened island of 53 pages and 209 files, three sub-columns, most lines crossing two
-   * columns of names. So the picture becomes a newspaper: for each page sub-column, the
-   * files those pages read stand as their own small grid directly to its left, and the
-   * concepts keep the right edge. A file read by pages in two stacks goes to the first,
-   * and its second line is the one long line the picture still allows. Files no page read
-   * stand in the last stack. The world widens to hold the stacks; the camera fits it.
+   * Folded pages stand in stacks, each with its own files as a grid to its left, or every
+   * citation to a later sub-column crosses the names of the first. A file read from two
+   * stacks goes to the first; files no page read go to the last. The world widens to fit.
    */
   const pageColumn = columns.find((column) => column.kind === "page");
   const sourceColumn = columns.find((column) => column.kind === "source");
@@ -385,7 +321,6 @@ export function flowLayout(graph: LibraryGraph, world: FlowWorld): FlowLayout {
       const filesRight = x;
       x += group.length > 0 ? breath + ISLAND_STACK_GAP : 0;
       const pagesX = x;
-      // The mark, its gap, the name's room, a breath.
       x += WIDEST_MARK * 2 + NAME_GAP + labelRoom + breath;
       stackX.push({ files: (filesLeft + filesRight) / 2, pages: pagesX });
     });
@@ -393,7 +328,6 @@ export function flowLayout(graph: LibraryGraph, world: FlowWorld): FlowLayout {
     const conceptX = conceptColumn ? x + breath : null;
     x += conceptColumn ? breath + labelRoom : 0;
     const needed = x + FLOW_SIDE_PAD;
-    // Re-centre what was laid on the wider world; the fit takes the new extent.
     const stackWidth = Math.max(width, needed);
     const shift = (stackWidth - needed) / 2;
     const rowYs = placeEven(rows);
@@ -404,8 +338,7 @@ export function flowLayout(graph: LibraryGraph, world: FlowWorld): FlowLayout {
     });
     groups.forEach((group, k) => {
       const left = stackX[k].files - ((groupGrid[k] - 1) * FLOW_GRID_STEP) / 2 + shift;
-      // A group with fewer rows than its stack sits level with the stack's middle, so the
-      // files stand beside the pages that read them rather than hanging from the top.
+      // A short group sits level with its stack's middle rather than hanging from the top.
       const groupRows = Math.ceil(group.length / groupGrid[k]);
       const firstRow = Math.max(0, Math.floor((rows - groupRows) / 2));
       group.forEach((id, i) => {
