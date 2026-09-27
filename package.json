@@ -2,6 +2,7 @@
   "name": "ontology-atlas",
   "version": "1.3.0",
   "private": true,
+  "packageManager": "pnpm@10.18.0",
   "license": "MIT",
   "engines": {
     "node": ">=24 <25"
@@ -297,9 +298,14 @@
     "tailwindcss": "^4.3.3",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vite": "8.1.5",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.11"
   },
   "pnpm": {
+    "ignoredBuiltDependencies": [
+      "@parcel/watcher",
+      "@swc/core",
+      "unrs-resolver"
+    ],
     "overrides": {
       "brace-expansion@<1.1.18": "1.1.18",
       "brace-expansion@>=4.0.0 <5.0.9": "5.0.9",
@@ -307,7 +313,7 @@
       "postcss@<8.5.23": "8.5.23",
       "sharp@<0.35.4": "0.35.4",
       "undici@>=7.0.0 <7.29.0": "7.29.0",
-      "js-yaml@>=4.0.0 <4.3.1": "4.3.1",
+      "js-yaml@>=4.0.0 <4.3.2": "4.3.2",
       "vite@<8.0.16": "8.1.5"
     }
   }
