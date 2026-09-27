@@ -72,7 +72,7 @@ export function DependencyPicker({
     [availableSlugSet, value],
   );
 
-  const filtered = useMemo(() => {
+  const unselectedMatches = useMemo(() => {
     const selectedSet = new Set(value);
     const q = query.trim().toLowerCase();
     return available
@@ -268,10 +268,10 @@ export function DependencyPicker({
       </div>
 
       <div className="flex max-h-48 flex-wrap gap-1.5 overflow-y-auto">
-        {filtered.length === 0 ? (
+        {unselectedMatches.length === 0 ? (
           <p className="text-body text-[color:var(--color-text-quaternary)]">{t('noMatch')}</p>
         ) : (
-          filtered.map((p) => (
+          unselectedMatches.map((p) => (
             <button
               key={p.slug}
               type="button"

@@ -19,6 +19,11 @@ import {
   type OntologyChangeSentence,
 } from '../lib/change-summary';
 
+/** Fold ids shared by `longValueIds` and `trackExpanded`, or full scope never turns available. */
+const sentenceTextId = (itemKey: string, fieldKey: string, target: string) =>
+  `ontology-change-review-sentence-${itemKey}-${fieldKey}-${target}`;
+const valueTextId = (itemKey: string, fieldKey: string) => `ontology-change-review-value-${itemKey}-${fieldKey}`;
+
 /* `none` for an empty list or a deleted key: `[]` and `null` are serialization, not the change. */
 function formatValue(value: unknown, none: string): string {
   if (value === null || value === undefined) return none;
@@ -180,10 +185,10 @@ function ChangeDetails({
   const longValueIds = item.fields.flatMap((field) => {
     const sentences = sentenceMapChange(field.after, field.before);
     if (sentences) return sentences.flatMap((entry) => {
-      const id = `ontology-change-review-sentence-${item.key}-${field.key}-${entry.target}`;
+      const id = sentenceTextId(item.key, field.key, entry.target);
       return isLongValue(entry.text) ? [id] : [];
     });
-    const id = `ontology-change-review-value-${item.key}-${field.key}`;
+    const id = valueTextId(item.key, field.key);
     return isLongValue(formatValue(field.after, t('noValue'))) ? [id] : [];
   });
   const fullScopeAvailable = (!hasFieldOverflow || showAllFields)
@@ -242,9 +247,9 @@ function ChangeDetails({
                       {sentences.map((entry) => (
                         <SentenceRow
                           key={entry.target}
-                          id={`ontology-change-review-sentence-${item.key}-${field.key}-${entry.target}`}
+                          id={sentenceTextId(item.key, field.key, entry.target)}
                           entry={entry}
-                          onExpandedChange={(expanded) => trackExpanded(`ontology-change-review-sentence-${item.key}-${field.key}-${entry.target}`, expanded)}
+                          onExpandedChange={(expanded) => trackExpanded(sentenceTextId(item.key, field.key, entry.target), expanded)}
                         />
                       ))}
                     </ul>
@@ -280,10 +285,10 @@ function ChangeDetails({
                     </>
                   )}
                   <FoldedText
-                    id={`ontology-change-review-value-${item.key}-${field.key}`}
+                    id={valueTextId(item.key, field.key)}
                     text={afterText}
                     tone="value"
-                    onExpandedChange={(expanded) => trackExpanded(`ontology-change-review-value-${item.key}-${field.key}`, expanded)}
+                    onExpandedChange={(expanded) => trackExpanded(valueTextId(item.key, field.key), expanded)}
                   />
                 </dd>
               </div>

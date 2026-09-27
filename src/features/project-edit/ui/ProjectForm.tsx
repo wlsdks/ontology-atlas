@@ -181,6 +181,29 @@ function buildInitialValues({
   };
 }
 
+function initialSectionOpen(mode: "create" | "edit"): Record<string, boolean> {
+  const edit = mode === "edit";
+  return {
+    "project-form-basics": true,
+    "project-form-story": true,
+    "project-form-network": edit,
+    "project-form-operations": edit,
+  };
+}
+
+/** Keeps a preserved-missing or unknown taxonomy value selectable in front of the known options. */
+function withKeptTaxonomyOption(
+  options: { value: string; label: string }[],
+  value: string,
+  known: boolean,
+  unspecifiedLabel: string,
+  missingLabel: string,
+): { value: string; label: string }[] {
+  if (value === PRESERVE_MISSING_TAXONOMY_VALUE) return [{ value, label: unspecifiedLabel }, ...options];
+  if (value && !known) return [{ value, label: missingLabel }, ...options];
+  return options;
+}
+
 export function ProjectForm({
   mode,
   initialProject,
@@ -258,57 +281,29 @@ export function ProjectForm({
   const rhfIsDirty = rhfMethods.formState.isDirty;
   const rhfReset = rhfMethods.reset;
   const rhfSetValue = rhfMethods.setValue;
-  const categoryOptions = useMemo(() => {
-    // The provider picks labels for the screen locale; `category.label` itself is Korean.
-    const options = categories.map((category) => ({
-      value: category.id,
-      label: categoryLabel(category.id),
-    }));
-    if (values.category === PRESERVE_MISSING_TAXONOMY_VALUE) {
-      return [
-        {
-          value: PRESERVE_MISSING_TAXONOMY_VALUE,
-          label: t("fields.categoryUnspecified"),
-        },
-        ...options,
-      ];
-    }
-    if (values.category && !getCategory(values.category)) {
-      return [
-        {
-          value: values.category,
-          label: t("fields.categoryMissingOption", { id: values.category }),
-        },
-        ...options,
-      ];
-    }
-    return options;
-  }, [categories, categoryLabel, getCategory, t, values.category]);
-  const statusOptions = useMemo(() => {
-    const options = statuses.map((status) => ({
-      value: status.id,
-      label: statusLabel(status.id),
-    }));
-    if (values.status === PRESERVE_MISSING_TAXONOMY_VALUE) {
-      return [
-        {
-          value: PRESERVE_MISSING_TAXONOMY_VALUE,
-          label: t("fields.statusUnspecified"),
-        },
-        ...options,
-      ];
-    }
-    if (values.status && !getStatus(values.status)) {
-      return [
-        {
-          value: values.status,
-          label: t("fields.statusMissingOption", { id: values.status }),
-        },
-        ...options,
-      ];
-    }
-    return options;
-  }, [getStatus, statusLabel, statuses, t, values.status]);
+  const categoryOptions = useMemo(
+    () =>
+      withKeptTaxonomyOption(
+        // The provider picks labels for the screen locale; `category.label` itself is Korean.
+        categories.map((category) => ({ value: category.id, label: categoryLabel(category.id) })),
+        values.category,
+        !!getCategory(values.category),
+        t("fields.categoryUnspecified"),
+        t("fields.categoryMissingOption", { id: values.category }),
+      ),
+    [categories, categoryLabel, getCategory, t, values.category],
+  );
+  const statusOptions = useMemo(
+    () =>
+      withKeptTaxonomyOption(
+        statuses.map((status) => ({ value: status.id, label: statusLabel(status.id) })),
+        values.status,
+        !!getStatus(values.status),
+        t("fields.statusUnspecified"),
+        t("fields.statusMissingOption", { id: values.status }),
+      ),
+    [getStatus, statusLabel, statuses, t, values.status],
+  );
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(mode === "edit");
   const [slugFieldOpen, setSlugFieldOpen] = useState(false);
   const [createExtrasOpen, setCreateExtrasOpen] = useState(false);
@@ -323,20 +318,10 @@ export function ProjectForm({
   const [saveNotice, setSaveNotice] = useState<string | null>(null);
   const submitBehaviorRef = useRef<"stay" | "return">("stay");
   const [sectionOpen, setSectionOpen] = useState<Record<string, boolean>>(() =>
-    mode === "create"
-      ? {
-          "project-form-basics": true,
-          "project-form-story": true,
-          "project-form-network": false,
-          "project-form-operations": false,
-        }
-      : {
-          "project-form-basics": true,
-          "project-form-story": true,
-          "project-form-network": true,
-          "project-form-operations": true,
-        },
+    initialSectionOpen(mode),
   );
+  const toggleSection = (id: string) =>
+    setSectionOpen((current) => ({ ...current, [id]: !current[id] }));
   const existingSlugSet = useMemo(
     () =>
       new Set(
@@ -398,21 +383,7 @@ export function ProjectForm({
 
   useEffect(() => {
     queueMicrotask(() => {
-      setSectionOpen(
-        mode === "create"
-          ? {
-              "project-form-basics": true,
-              "project-form-story": true,
-              "project-form-network": false,
-              "project-form-operations": false,
-            }
-          : {
-              "project-form-basics": true,
-              "project-form-story": true,
-              "project-form-network": true,
-              "project-form-operations": true,
-            },
-      );
+      setSectionOpen(initialSectionOpen(mode));
     });
   }, [mode]);
 
@@ -621,7 +592,6 @@ export function ProjectForm({
 
     setSubmitting(true);
     try {
-      const latestProjects = allProjects;
       // Position is computed only on create, or when the user actually changed the
       // category. Edit must not silently fill in a category or position the original lacked.
       const initialPos = initialProject?.position;
@@ -635,13 +605,13 @@ export function ProjectForm({
         ? categoryChanged && nextCategory
           ? findProjectPlacement(
               nextCategory,
-              latestProjects.filter(
+              allProjects.filter(
                 (project) => project.slug !== initialProject.slug,
               ),
             )
           : initialPos
         : nextCategory
-          ? findProjectPlacement(nextCategory, latestProjects)
+          ? findProjectPlacement(nextCategory, allProjects)
           : undefined;
       const input = formValuesToProjectInput(parsed.data, position);
       await onSubmit(input, { behavior: submitBehavior });
@@ -1390,12 +1360,7 @@ export function ProjectForm({
         label={t("sections.storyLabel")}
         description={t("sections.storyDetailedDescription")}
         isOpen={sectionOpen["project-form-story"]}
-        onToggle={() =>
-          setSectionOpen((current) => ({
-            ...current,
-            "project-form-story": !current["project-form-story"],
-          }))
-        }
+        onToggle={() => toggleSection("project-form-story")}
         helperBadge={t("sections.helperBadgeDescriptionRequired")}
         collapseLabel={t("sections.collapseLabel")}
         expandLabel={t("sections.expandLabel")}
@@ -1411,12 +1376,7 @@ export function ProjectForm({
         label={t("sections.networkLabel")}
         description={t("sections.networkDetailedDescription")}
         isOpen={sectionOpen["project-form-network"]}
-        onToggle={() =>
-          setSectionOpen((current) => ({
-            ...current,
-            "project-form-network": !current["project-form-network"],
-          }))
-        }
+        onToggle={() => toggleSection("project-form-network")}
         helperBadge={t("sections.helperBadgeAfterSave")}
         collapseLabel={t("sections.collapseLabel")}
         expandLabel={t("sections.expandLabel")}
@@ -1430,12 +1390,7 @@ export function ProjectForm({
         label={t("sections.operationsLabel")}
         description={t("sections.operationsDetailedDescription")}
         isOpen={sectionOpen["project-form-operations"]}
-        onToggle={() =>
-          setSectionOpen((current) => ({
-            ...current,
-            "project-form-operations": !current["project-form-operations"],
-          }))
-        }
+        onToggle={() => toggleSection("project-form-operations")}
         helperBadge={t("sections.helperBadgeOptional")}
         collapseLabel={t("sections.collapseLabel")}
         expandLabel={t("sections.expandLabel")}

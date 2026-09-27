@@ -149,6 +149,22 @@ export async function runTurn(
   const emit = () => options.onProgress?.(snapshot());
   emit();
 
+  const assemble = (tools: AgentLoopDeps['tools']) => ({
+    model: deps.model,
+    system: deps.system,
+    userText: question,
+    screenContextBlock,
+    exchanges,
+    tools,
+  });
+  const sendScope = (body: string) => ({
+    nodes: [...new Set(readSlugs)],
+    // Measured: the UTF-16 length actually sent in this round trip.
+    promptChars: body.length,
+    vaultChars,
+    tools: [...toolRefs],
+  });
+
   while (rounds < roundCap) {
     if (options.signal.aborted) {
       status = 'aborted';
@@ -157,14 +173,7 @@ export async function runTurn(
       return { turn: snapshot(), readSlugs, writeIntents };
     }
 
-    const assembly = {
-      model: deps.model,
-      system: deps.system,
-      userText: question,
-      screenContextBlock,
-      exchanges,
-      tools: deps.tools,
-    };
+    const assembly = assemble(deps.tools);
     const payload = deps.adapter.buildBody(assembly);
 
     let echo: LlmChatEcho;
@@ -173,13 +182,7 @@ export async function runTurn(
         body: payload,
         model: deps.model,
         question,
-        scope: {
-          nodes: [...new Set(readSlugs)],
-          // Measured: the UTF-16 length actually sent in this round trip.
-          promptChars: payload.length,
-          vaultChars,
-          tools: [...toolRefs],
-        },
+        scope: sendScope(payload),
       });
     } catch (error) {
       if (options.signal.aborted) {
@@ -310,25 +313,13 @@ export async function runTurn(
   // Cap reached — ask once more to wrap up (with no tools).
   if (!options.signal.aborted) {
     try {
-      const closingAssembly = {
-        model: deps.model,
-        system: deps.system,
-        userText: question,
-        screenContextBlock,
-        exchanges,
-        tools: [],
-      };
+      const closingAssembly = assemble([]);
       const closingBody = deps.adapter.buildBody(closingAssembly);
       const echo = await deps.send({
         body: closingBody,
         model: deps.model,
         question,
-        scope: {
-          nodes: [...new Set(readSlugs)],
-          promptChars: closingBody.length,
-          vaultChars,
-          tools: [...toolRefs],
-        },
+        scope: sendScope(closingBody),
       });
       sentChars += closingBody.length;
       auditCount += 1;

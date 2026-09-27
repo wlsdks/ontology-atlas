@@ -229,34 +229,22 @@ export function planBlockImport(
       }
     }
 
+    const pushDraft = (finalSlug: string | null, status: BlockImportEntryStatus) =>
+      drafts.push({ entry: { originalSlug: baseSlug, finalSlug, kind, title, status }, raw: f.raw });
+
     if (!kind) {
-      drafts.push({
-        entry: { originalSlug: baseSlug, finalSlug: null, kind: null, title, status: 'kindless' },
-        raw: f.raw,
-      });
+      pushDraft(null, 'kindless');
       continue;
     }
 
     if (!taken(baseSlug)) {
       claimed.add(baseSlug);
-      drafts.push({
-        entry: { originalSlug: baseSlug, finalSlug: baseSlug, kind, title, status: 'new' },
-        raw: f.raw,
-      });
+      pushDraft(baseSlug, 'new');
       continue;
     }
 
     if (opts.resolution === 'skip') {
-      drafts.push({
-        entry: {
-          originalSlug: baseSlug,
-          finalSlug: null,
-          kind,
-          title,
-          status: 'conflict-skipped',
-        },
-        raw: f.raw,
-      });
+      pushDraft(null, 'conflict-skipped');
       continue;
     }
 
@@ -265,16 +253,7 @@ export function planBlockImport(
     if (taken(renamedSlug)) renamedSlug = nextFreeSlug(renamedSlug, taken);
     claimed.add(renamedSlug);
     renames.set(baseSlug, renamedSlug);
-    drafts.push({
-      entry: {
-        originalSlug: baseSlug,
-        finalSlug: renamedSlug,
-        kind,
-        title,
-        status: 'conflict-renamed',
-      },
-      raw: f.raw,
-    });
+    pushDraft(renamedSlug, 'conflict-renamed');
   }
 
   if (opts.manifest) {
