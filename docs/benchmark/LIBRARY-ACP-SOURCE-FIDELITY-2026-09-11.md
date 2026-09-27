@@ -1,3 +1,11 @@
+---
+title: "Library source fidelity and ACP handoff — 2026-09-11"
+doc_type: finding
+status: historical
+area: library
+date: 2026-09-11
+---
+
 # Library source fidelity and ACP handoff — 2026-09-11
 
 This is a bounded synthetic experiment for the [Library quality program](../plans/LIBRARY-QUALITY-PROGRAM.md), not a provider ranking or a standalone-usefulness verdict. Both real ACP adapters compiled three source-specific wiki pages. Original bytes remained unchanged. A separate source-reader repair makes multiline table qualifiers recoverable from one record and distinguishes repeated DOCX headings.

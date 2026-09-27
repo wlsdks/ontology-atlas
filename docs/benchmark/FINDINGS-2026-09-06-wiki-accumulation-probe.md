@@ -1,3 +1,11 @@
+---
+title: "Findings 2026-09-06 · does the Library wiki accumulate, or only summarise?"
+doc_type: finding
+status: historical
+area: library
+date: 2026-09-06
+---
+
 # Findings 2026-09-06 · does the Library wiki accumulate, or only summarise?
 
 **Question**: the LLM Wiki pattern (Karpathy, 2026-04-04) claims its value is

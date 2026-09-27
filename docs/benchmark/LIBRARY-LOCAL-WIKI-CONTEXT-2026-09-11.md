@@ -1,3 +1,11 @@
+---
+title: "Local Compile and existing human context — 2026-09-11"
+doc_type: finding
+status: historical
+area: library
+date: 2026-09-11
+---
+
 # Local Compile and existing human context — 2026-09-11
 
 Local Compile previously assembled a replacement from raw sources without giving

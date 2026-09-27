@@ -1,3 +1,11 @@
+---
+title: "Reading the 24 answers — 2026-08-31"
+doc_type: finding
+status: historical
+area: agents
+date: 2026-08-31
+---
+
 # Reading the 24 answers — 2026-08-31
 
 > A screening pass, not a verdict. Read
