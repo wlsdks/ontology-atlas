@@ -143,6 +143,7 @@ export function useFootprintTrail({
           title: t("footprint.packetTitle"),
           order: t("footprint.packetOrder"),
           reviewHint: t("footprint.packetReviewHint"),
+          undocumented: t("footprint.packetUndocumented"),
           pathHint: t("footprint.packetPathHint"),
           dustyHint: t("footprint.packetDustyHint", { count: dustySlugs.size }),
           unrelated: t("footprint.stepUnrelated"),

@@ -2465,6 +2465,28 @@ describe('query-result-contract', () => {
     );
   });
 
+  it('accepts a backlink from a file with no kind, in wiki/ or elsewhere, and rejects an empty kind or title', () => {
+    const kindless = {
+      target: 'capabilities/foo',
+      total: 2,
+      matches: [
+        { slug: 'wiki/notes', title: 'Notes', mtime: 1, matchedInBody: true },
+        { slug: 'notes/loose', title: 'Loose', mtime: 1, matchedInBody: true },
+      ],
+    };
+    assert.equal(assertBacklinksShape(kindless), kindless);
+    for (const row of [
+      { slug: 'wiki/notes', kind: '', title: 'Notes', mtime: 1, matchedInBody: true },
+      { slug: 'notes/loose', kind: null, title: 'Loose', mtime: 1, matchedInBody: true },
+      { slug: 'wiki/notes', mtime: 1, matchedInBody: true },
+    ]) {
+      assert.throws(
+        () => assertBacklinksShape({ target: 'capabilities/foo', matches: [row] }),
+        /find_backlinks matches\[0\] has an invalid backlink shape/,
+      );
+    }
+  });
+
   it('rejects malformed query_concepts payloads before CLI output', () => {
     const result = {
       filter: 'kind=capability',

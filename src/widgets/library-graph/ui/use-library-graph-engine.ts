@@ -13,6 +13,7 @@ import {
   LIBRARY_CARD_MAX_WIDTH,
   type LibraryGraphCardSide,
 } from "../model/library-graph-card";
+import { maxOf } from "../model/library-graph-extremes";
 import { easeMotion, type LayoutPoint } from "../model/library-graph-layout";
 import type { FlowLayout, FlowWorld } from "../model/library-flow-layout";
 import { ISLANDS_MIN_MARKS, type IslandsLayout } from "../model/library-islands-layout";
@@ -924,7 +925,7 @@ export function useLibraryGraphEngine({
               };
             })
           : undefined;
-      const widestPagePx = pictureRef.current === "islands" ? 2 * view.scale * Math.max(0, ...nodes.filter((node) => node.kind === "page").map((node) => radiiRef.current.get(node.id) ?? 0)) : Infinity;
+      const widestPagePx = pictureRef.current === "islands" ? 2 * view.scale * maxOf(nodes.filter((node) => node.kind === "page").map((node) => radiiRef.current.get(node.id) ?? 0), 0) : Infinity;
       /*
        * Zooming into an island opens it as columns, as a press would: a packed island has no
        * room for names however far the camera closes in. The chip and Escape lead back.
@@ -1230,7 +1231,7 @@ export function useLibraryGraphEngine({
         islandsRef.current = applyLibraryIslandsLayout(sim, graph, islandsWorld(box), islandLabelsRef.current);
         // The ceiling follows the overview's own dot sizes.
         radiiRef.current = islandsRef.current.radii;
-        zoomMaxRef.current = radiiRef.current.size === 0 ? LIBRARY_ZOOM_MAX : libraryZoomMax(Math.max(...radiiRef.current.values()));
+        zoomMaxRef.current = radiiRef.current.size === 0 ? LIBRARY_ZOOM_MAX : libraryZoomMax(maxOf(radiiRef.current.values()));
         setIslandsList(islandsRef.current.islands.map(pick));
         // Dots belong to their island: each keeps its offset from the island's centre.
         const offsets = new Map<string, { island: string; dx: number; dy: number }>();
