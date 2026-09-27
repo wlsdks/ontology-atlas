@@ -73,9 +73,9 @@ describe("소스는 텍스트다 — git 과 grep 이 볼 수 있어야 한다",
     const offenders = files.filter((file) => readFileSync(file).includes(0x00));
     expect(
       offenders,
-      "NUL 이 하나라도 있으면 git 이 그 파일을 바이너리로 본다 — PR 에서 diff 가 " +
-        "안 보이고(리뷰 불가) grep 이 조용히 0건을 답한다. 합성 키는 " +
-        "JSON.stringify([...]) 로, 정렬은 이어 붙이지 말고 필드 순서대로 비교하라.",
+      "A single NUL makes git treat the file as binary: the pull request shows no diff " +
+        "(it cannot be reviewed) and grep silently answers zero matches. Build composite keys with " +
+        "JSON.stringify([...]), and sort by comparing fields in order instead of concatenating them.",
     ).toEqual([]);
   });
 });

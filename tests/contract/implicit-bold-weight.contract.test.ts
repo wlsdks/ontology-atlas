@@ -119,9 +119,9 @@ describe('<b>/<strong> 은 무게를 명시한다', () => {
   it('무게 선언이 없는 <b>/<strong> 이 0 이다 — 브라우저 기본 700 은 램프 밖이다', () => {
     expect(
       scan.implicit,
-      '`<b>`/`<strong>` 에 무게를 안 적으면 브라우저 기본 700 으로 그려진다 — 램프는 510/560/650 이다.\n' +
-        '음각 숫자·수치 강조는 `font-[var(--font-weight-strong)]`, 강조를 끄는 자리는 `font-normal`.\n' +
-        `위반: ${scan.implicit.join(', ')}`,
+      'A `<b>`/`<strong>` without a weight renders at the browser default 700; the ramp is 510/560/650.\n' +
+        'Emphasised numbers and figures take `font-[var(--font-weight-strong)]`; where emphasis is switched off, use `font-normal`.\n' +
+        `Violations: ${scan.implicit.join(', ')}`,
     ).toEqual([]);
   });
 

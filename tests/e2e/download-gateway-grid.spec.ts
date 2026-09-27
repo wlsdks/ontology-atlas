@@ -311,8 +311,8 @@ function assertGrid(m: Awaited<ReturnType<typeof measure>>, label: string) {
   expect(stage.headInkLeft, `${label}: 절 제목의 글자를 못 읽었다 — 이 시험이 헛돈다`).not.toBeNull();
   expect(
     Math.abs(stage.headInkLeft! - stage.colLeft),
-    `${label}: 시연 절 제목(${stage.headInkLeft})이 원점(${stage.colLeft})에서 시작하지 않는다 — ` +
-      "한 페이지에 정렬 문법이 둘이면 눈에는 기둥이 끊겨 보인다",
+    `${label}: the demo section title (${stage.headInkLeft}) does not start at the origin (${stage.colLeft}). ` +
+      "With two alignment grammars on one page, the eye sees the column break",
   ).toBeLessThanOrEqual(1);
   expect(
     Math.abs(stage.demoRight - stage.colRight),

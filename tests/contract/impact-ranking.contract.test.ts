@@ -110,8 +110,8 @@ describe('impact-ranking contract — 화면의 파급 수 == MCP blast_radius',
 
         expect(
           web,
-          `${testCase.name} / ${doc.slug} — 화면은 ${web}, 에이전트는 ${agent} 라고 말합니다. ` +
-            '한쪽 의미론이 바뀌었다면 다른 쪽도 같이 바꾸세요.',
+          `${testCase.name} / ${doc.slug}: the screen says ${web}, the agent says ${agent}. ` +
+            'If one side changed its semantics, change the other side too.',
         ).toBe(agent);
       }
     });

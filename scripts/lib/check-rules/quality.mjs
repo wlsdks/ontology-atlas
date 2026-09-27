@@ -8,6 +8,13 @@ export const rules = [
     matches: [/^scripts\/quality\/source-language\//],
   },
   {
+    order: 205,
+    command:
+      'pnpm exec vitest run tests/contract/test-title-language.contract.test.ts tests/contract/source-comment-bytes.contract.test.ts',
+    reason: 'a test source changed — its titles, assertion messages and comment bytes are judged against the merge base',
+    matches: [/\.(?:test|spec)\.[cm]?[jt]sx?$/],
+  },
+  {
     order: 210,
     command: 'pnpm knip',
     reason: 'dead-code analyzer scope, configuration, package, or implementation changed',

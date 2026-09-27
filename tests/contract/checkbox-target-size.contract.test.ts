@@ -237,9 +237,9 @@ describe('네이티브 체크박스·라디오의 타깃 크기 (WCAG 2.5.8 AA)'
       const labelOk = site.labelFloorPx !== null && site.labelFloorPx >= AA_MIN_PX;
       expect(
         ownOk || labelOk,
-        `자기 크기 ${site.ownPx ?? '미지정'}px · 라벨 바닥 ${site.labelFloorPx ?? '없음'}px. ` +
-          '체크박스를 24px 로 키우거나, 감싸는 <label> 에 `min-h-6` 을 얹어라 ' +
-          '(라벨 클릭이 곧 토글이라 라벨 전체가 하나의 타깃이다).',
+        `Own size ${site.ownPx ?? 'unset'}px · label floor ${site.labelFloorPx ?? 'none'}px. ` +
+          'Grow the checkbox to 24px, or put `min-h-6` on the wrapping <label> ' +
+          '(clicking the label toggles it, so the whole label is one target).',
       ).toBe(true);
     },
   );

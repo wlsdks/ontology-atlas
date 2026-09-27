@@ -236,9 +236,9 @@ describe("radiogroup 행동 래칫 — role 이 약속한 키보드가 실재하
     }
     expect(
       over,
-      "`role=\"radiogroup\"` 을 손으로 걸지 마라 — `SegmentedControl`(variant well|chips)이 " +
-        "그릇과 행동을 함께 준다. 그릇이 정말 다르면 `useRovingRadioGroup` 을 입고 " +
-        "이 파일의 REGISTERED 에 근거와 함께 등재하라.",
+      "Do not set `role=\"radiogroup\"` by hand: `SegmentedControl` (variant well|chips) " +
+        "supplies the container and the behaviour together. If the container really differs, wear `useRovingRadioGroup` and " +
+        "register it in this file's REGISTERED with the reason.",
     ).toEqual([]);
   });
 

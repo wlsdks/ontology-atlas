@@ -147,6 +147,12 @@ function importOne(srcPath, vaultPath, opts, claimedSlugs, claimedUids) {
       ? `${folder}${baseSlug}`
       : baseSlug;
 
+  try {
+    slugToPath(vaultPath, candidateSlug);
+  } catch (err) {
+    return { status: 'error', error: err instanceof Error ? err.message : String(err) };
+  }
+
   // Conflict, on disk or within this batch — --rename sidesteps it as -2, -3, ….
   if (slugTaken(vaultPath, candidateSlug, claimedSlugs)) {
     if (opts.rename) {
