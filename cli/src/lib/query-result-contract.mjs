@@ -2452,6 +2452,17 @@ function validNodeSummary(row) {
   );
 }
 
+function validWikiPageSummary(row) {
+  return Boolean(
+    isPlainObject(row)
+    && typeof row.slug === 'string'
+    && row.slug.startsWith('wiki/')
+    && row.kind === undefined
+    && hasNonEmptyString(row.title)
+    && (row.mtime === undefined || Number.isFinite(row.mtime))
+  );
+}
+
 function validPathNode(row, expectedSlug) {
   return Boolean(
     isPlainObject(row)
@@ -2553,7 +2564,7 @@ function validAllPathsSuggestedQuery(query) {
  * neither is rejected. `mcp/scripts/verify.mjs` is the authority; a stricter copy rejects valid server rows.
  */
 function validBacklinkRow(row) {
-  if (!validNodeSummary(row)) return false;
+  if (!validNodeSummary(row) && !validWikiPageSummary(row)) return false;
   if (row.matchedKeys !== undefined) {
     if (!Array.isArray(row.matchedKeys)) return false;
     if (!row.matchedKeys.every((key) => hasNonEmptyString(key))) return false;

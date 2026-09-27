@@ -4259,6 +4259,30 @@ await test('backlinks — a slug that names no node fails closed with the closes
   }
 });
 
+await test('backlinks — a wiki page that links the target is listed as a wiki page', async () => {
+  const root = await buildGraphFixture();
+  mkdirSync(join(root, 'wiki'), { recursive: true });
+  writeFileSync(
+    join(root, 'wiki', 'notes.md'),
+    '---\ntitle: Notes\ncreated_by: human\ncompiled_at: 2026-09-05T10:00:00Z\nsources: []\nsource_hash: {}\n' +
+      'status: draft\nsummary: Notes about Foo.\n---\n\n## Summary\n\nSee [[capabilities/foo]].\n',
+    'utf-8',
+  );
+  try {
+    const human = await run(['backlinks', 'capabilities/foo', root]);
+    assert.equal(human.code, 0, `stdout: ${human.stdout}\nstderr: ${human.stderr}`);
+    assert.match(stripAnsi(human.stdout), /wiki page {2}wiki\/notes · Notes/);
+    assert.match(stripAnsi(human.stdout), /domains\/auth\s+· Auth/);
+    const json = await run(['backlinks', 'capabilities/foo', root, '--json']);
+    assert.equal(json.code, 0, json.stderr);
+    const page = JSON.parse(json.stdout).matches.find((row) => row.slug === 'wiki/notes');
+    assert.equal(page.kind, undefined);
+    assert.equal(page.matchedInBody, true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('backlinks --json — parses the JSON response', async () => {
   const root = await buildGraphFixture();
   try {

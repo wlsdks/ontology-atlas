@@ -2465,6 +2465,25 @@ describe('query-result-contract', () => {
     );
   });
 
+  it('accepts a wiki page backlink, which has no kind, and still requires a kind outside wiki/', () => {
+    const wikiPage = {
+      target: 'capabilities/foo',
+      total: 1,
+      matches: [{ slug: 'wiki/notes', title: 'Notes', mtime: 1, matchedInBody: true }],
+    };
+    assert.equal(assertBacklinksShape(wikiPage), wikiPage);
+    for (const row of [
+      { slug: 'notes/loose', title: 'Loose', mtime: 1, matchedInBody: true },
+      { slug: 'wiki/notes', kind: '', title: 'Notes', mtime: 1, matchedInBody: true },
+      { slug: 'wiki/notes', mtime: 1, matchedInBody: true },
+    ]) {
+      assert.throws(
+        () => assertBacklinksShape({ target: 'capabilities/foo', matches: [row] }),
+        /find_backlinks matches\[0\] has an invalid backlink shape/,
+      );
+    }
+  });
+
   it('rejects malformed query_concepts payloads before CLI output', () => {
     const result = {
       filter: 'kind=capability',
