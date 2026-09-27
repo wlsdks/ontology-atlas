@@ -55,9 +55,7 @@ export function MarkdownField({ id, value, onChange, placeholder, rows = 8 }: Pr
         <div
           className={cn(
             'min-h-[160px] rounded-chip px-2 py-1.5 text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]',
-            // The element styling this preview grew is now `shared/ui/markdown-prose`,
-            // so a node body and a project description read the same way. This call site
-            // keeps only its own container: minimum height, padding, base ink.
+            // Element styling lives in `shared/ui/markdown-prose`; this keeps only its container.
             MARKDOWN_PROSE_CLASS,
           )}
         >
@@ -85,14 +83,7 @@ function TabButton({
     <button
       type="button"
       onClick={onClick}
-      /*
-       * A borderless inset segment. `text-[10px]` is not a step on the ramp, so **it had no
-       * paired line-height and fell to an inherited 1.5 (15px)** — the quiet failure mode of
-       * an off-ramp size (see `.claude/rules/design.md`, "a size step carries its own
-       * line-height"). Raising it to `text-label` (11px/16px) attaches the pair.
-       * The pressed treatment is aligned to the ramp's majority (a16 plus primary ink) —
-       * the same dialect normalization already done for the footprint presets.
-       */
+      /* `text-label` carries its own line-height (`.claude/rules/design.md`). */
       className={controlClass({
         shape: 'segment',
         active,

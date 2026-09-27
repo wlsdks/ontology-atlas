@@ -28,7 +28,7 @@ describe('resolveUniqueVaultDirName', () => {
   });
 
   it('does not get confused by a gap in the numbered sequence', () => {
-    // With -2 free and only -3 taken, -2 is reused — the lowest number wins.
+    // With -2 free and only -3 taken, the lowest free number wins.
     expect(
       resolveUniqueVaultDirName([DEFAULT_VAULT_BASE_NAME, `${DEFAULT_VAULT_BASE_NAME}-3`]),
     ).toBe(`${DEFAULT_VAULT_BASE_NAME}-2`);

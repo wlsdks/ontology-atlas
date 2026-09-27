@@ -10,7 +10,7 @@ import { isWikiPage } from "@/entities/docs-vault";
 import type { LibraryWorkActivity, LibraryWorkEvent, LintFinding, LintNodeCandidate } from "@/features/library";
 import type { LibraryOriginalLink, LibrarySourceRow, SourceCandidate } from "@/entities/docs-vault";
 import { useRouter } from "@/i18n/navigation";
-import { DESTINATION_HREF } from "@/shared/config/destinations";
+import { MCP_CONNECTORS_HREF } from "@/shared/config/destinations";
 import { OpenVaultCta } from "@/features/docs-vault-local";
 import { useVaultConnectors } from "@/features/mcp-connectors";
 import { isAcpBridgeAvailable } from "@/shared/lib/tauri-acp";
@@ -2251,12 +2251,8 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
        * the other is the runtimes screen — so the card is told which it is meeting.
        */
       agentGap={isAcpBridgeAvailable() ? "runtime" : "browser"}
-      /*
-       * A service this list does not know goes to the technical dialog, which lives on `/mcp`
-       * and is unchanged. `?tab=connectors` opens it on the half that adds one, so nobody
-       * arrives on the share tab wondering where the connectors went.
-       */
-      onOpenAdvanced={() => importRouter.push(`${DESTINATION_HREF.mcp}?tab=connectors`)}
+      /* A service this list does not know is added by hand in the connectors group of Agents' MCP tab. */
+      onOpenAdvanced={() => importRouter.push(MCP_CONNECTORS_HREF)}
     />
     </>
   );

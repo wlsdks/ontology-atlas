@@ -96,8 +96,6 @@ import {
   paginationOutputSchema,
 } from './tool-schemas.mjs';
 
-// ── Tool definitions ──────────────────────────────────────────────────────
-
 const CONSTELLATION_SOURCE_OUTPUT_SCHEMA = {
   type: 'object',
   properties: {
@@ -717,8 +715,8 @@ const TOOLS = [
           items: VAULT_WARNING_OUTPUT_SCHEMA,
         },
       },
-      // `excerpt` is no longer required: with `body: "full"` the body arrives in
-      // `body` and no excerpt is sent at all (never ship the same text twice).
+      // `excerpt` is optional: with `body: "full"` only `body` is sent, never the same
+      // text twice.
       required: ['uid', 'slug', 'isNode', 'frontmatter', 'bodyInfo', 'neighbors', 'outgoingEdges', 'review', 'mtime'],
       additionalProperties: false,
     },
@@ -1238,10 +1236,8 @@ const TOOLS = [
           ...ADD_RELATION_TYPE_SCHEMA,
           description: 'Relation type.',
         },
-        // Restores a regression where only the schema block vanished in a merge
-        // (the handler already accepted `why`). strict-args derives its argument
-        // allowlist from the schema, so without this `why` is rejected as
-        // `unknown_argument`.
+        // strict-args derives its argument allowlist from this schema, so without this
+        // block `why` is rejected as `unknown_argument`.
         why: {
           type: 'string',
           maxLength: 300,
@@ -3811,7 +3807,7 @@ const TOOLS = [
           type: 'integer',
           minimum: 0,
           maximum: 10,
-          description: 'Folder walk depth forwarded to analyze_repo_structure (default 2, max 10).',
+          description: 'Forwarded to analyze_repo_structure, which ignores it, so no value changes the analysis. When given, it must be an integer from 0 to 10.',
         },
         maxFiles: {
           type: 'integer',
@@ -4112,7 +4108,7 @@ const TOOLS = [
           type: 'integer',
           minimum: 0,
           maximum: 10,
-          description: 'Non-negative integer folder walk depth (default 2, max 10). Higher → more elements.',
+          description: 'Accepted but ignored: no value changes the analysis. When given, it must be an integer from 0 to 10.',
         },
         ignore: {
           type: 'array',
@@ -4818,22 +4814,17 @@ function toolTitle(name) {
     .join(' ');
 }
 
-// OATLAS_READ_ONLY — when set, the server advertises and accepts only the read
-// tools. Trust-charter aligned surface for third-party / untrusted registration
-// (Fable interop memo): a consumer that only needs to *read* the vault (Neo4j
-// loaders, dashboards, review bots) can register the server with zero risk of a
-// write reaching the user's disk. Every write tool disappears from tools/list
-// AND is rejected if called directly (defense in depth against cached lists).
-// Recommended whenever the registrant is not the vault owner.
+// OATLAS_READ_ONLY: advertise and accept only read tools, for registrants that are
+// not the vault owner, so no write can reach the user's disk. Write tools vanish
+// from tools/list and are also rejected if called directly (cached lists).
 function parseReadOnlyEnv(value) {
   if (typeof value !== 'string') return false;
   return ['1', 'true', 'yes', 'on'].includes(value.trim().toLowerCase());
 }
 const READ_ONLY_MODE = parseReadOnlyEnv(process.env.OATLAS_READ_ONLY);
 
-// The app-owned write checkpoint. Rationale, and the measurement that forced it,
-// live in `write-consent.mjs`. Off unless the launcher asks for it, so a vault
-// whose client already owns the gate is unchanged.
+// The app-owned write checkpoint (rationale in `write-consent.mjs`). Off unless the
+// launcher asks for it, so a vault whose client already owns the gate is unchanged.
 const WRITE_CONSENT_MODE = parseConsentEnv(process.env.OATLAS_WRITE_CONSENT);
 
 const TOOLS_FOR_LIST_ALL = TOOLS.map((tool) => ({

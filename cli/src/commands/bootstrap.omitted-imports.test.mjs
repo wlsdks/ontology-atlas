@@ -4,10 +4,8 @@ import { describe, it } from 'node:test';
 import { omittedLargeImports } from './bootstrap.mjs';
 
 /**
- * `bootstrap <repo>` without `--vault` used to exit 2 with an empty stdout when
- * the import graph was too large to deliver without a loadable vault, and the
- * error never named the fix (audit 2026-09-04). The structure stage is still a
- * valid review plan, so the import stage reports itself omitted instead.
+ * Without `--vault`, an import graph too large to deliver is reported as omitted while the
+ * structure-stage review plan still prints.
  */
 describe('omittedLargeImports', () => {
   it('turns the oversize delivery refusal into an omitted envelope with both retries', () => {

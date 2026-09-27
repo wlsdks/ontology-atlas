@@ -8,24 +8,9 @@ import { createVaultFileProjectSourceStore } from "@/shared/lib/project-source-s
 import { discoverTauriSourceCandidates } from "@/shared/lib/tauri-vault-fs";
 
 /**
- * "Find documents" — **propose, never copy.**
- *
- * The whole point of the button is that it does not take anything. It walks a bounded
- * set of roots and returns what a directory listing already knows: name, extension,
- * size, mtime. No file is opened; content enters Atlas only after a person ticks a box.
- * That is the same shape decision 2026-08-21 (92) requires of every change proposal, and
- * it is what makes a walk over somebody's project folder something they can agree to.
- *
- * **Which roots, and why only these two:**
- *
- * 1. **The folder they opened**, minus `sources/` — a document already imported is not a
- *    candidate. Both surfaces can do this; the browser has the handle.
- * 2. **Project roots they bound themselves**, read from `.ontology-atlas/project-sources.json`.
- *    App only, and not by choice: a binding is an absolute path, and a browser has none.
- *    The dialog says so rather than pretending the list is complete.
- *
- * Nothing else is ever walked. `.claude/rules/local-first.md` forbids scanning arbitrary
- * files from a person's disk, and "arbitrary" means anything they did not hand over.
+ * Proposes documents, never copies: listing metadata only, from the open folder (minus
+ * its sources folder) and project roots the person bound. Nothing else is walked
+ * (see .claude/rules/local-first.md).
  */
 
 interface DiscoveryRootPlan {
@@ -35,21 +20,13 @@ interface DiscoveryRootPlan {
 }
 
 export interface DiscoveryOutcome extends SourceDiscoveryReport {
-  /**
-   * Whether project roots could be walked at all. False in a browser, where the absence
-   * is stated on screen instead of being left as a shorter list with no explanation.
-   */
+  /** False in a browser, where the missing project roots are stated on screen. */
   projectRootsReachable: boolean;
   /** Bound project roots that were walked, by label. */
   walkedRoots: string[];
 }
 
-/**
- * Bound project roots for this folder, newest binding per project.
- *
- * Read through the same store the Architecture surface uses, so there is one answer to
- * "which folders has this person bound" rather than two that can disagree.
- */
+/** Newest binding per project, from the store the Architecture surface uses. */
 async function readBoundProjectRoots(
   handle: FileSystemDirectoryHandle,
 ): Promise<DiscoveryRootPlan[]> {
@@ -64,8 +41,7 @@ async function readBoundProjectRoots(
       seen.add(binding.rootPath);
       plans.push({
         rootPath: binding.rootPath,
-        // The last path segment, which is what a person calls the folder. The absolute
-        // path stays in `.ontology-atlas/` where it belongs and never reaches a label.
+        // The folder's last segment; the absolute path never reaches a label.
         label: binding.rootPath.replace(/\/+$/, "").split("/").pop() || binding.projectSlug,
         skipRelative: [],
       });
@@ -76,9 +52,7 @@ async function readBoundProjectRoots(
   }
 }
 
-/**
- * Walk the granted roots and return candidates. Metadata only, on both surfaces.
- */
+/** Candidates from the granted roots, metadata only. */
 export async function discoverSources({
   handle,
   vaultRootPath,
@@ -113,13 +87,7 @@ export async function discoverSources({
   return { ...report, projectRootsReachable: false, walkedRoots: [] };
 }
 
-/**
- * Candidates whose name already exists in `sources/` are dropped before the dialog draws.
- *
- * A name match is not proof of sameness — the import refuses by sha256, which is the real
- * test — but proposing a file a person already has, only to refuse it one click later, is
- * a list that wastes their attention.
- */
+/** Drops names already in `sources/`; the import still refuses by sha256. */
 export function withoutImportedNames(
   candidates: readonly SourceCandidate[],
   importedNames: ReadonlySet<string>,

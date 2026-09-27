@@ -9,20 +9,8 @@ import type { ScopeDeclaration } from './coverage-scopes';
 import { buildDocumentReach, type DocumentReach } from './document-reach';
 
 /**
- * **Reading one repository's harness through a file port.**
- *
- * The classifier (`analyzeAgentFiles`) is pure and already canonical; this module's only job is to
- * put the right bytes in front of it. It matters because the surface that already shows agent files
- * — the docs sidebar — reads them through the File System Access API, which cannot see a dot
- * directory at all. `.claude/rules`, `.claude/skills`, `.agents/`, `.codex/` are therefore invisible
- * there, which is most of the harness. The installed app's bridge can list them, so this module
- * reads the same set the CLI's `agent-files` command reads and hands the classifier a complete
- * picture instead of the visible corner of one.
- *
- * The scanned set is deliberately identical to `cli/src/lib`'s: the same root candidates, the same
- * directories, the same one-level nesting rule for `AGENTS.md`. Two scanners that disagree about
- * what counts would produce two different answers to one question, which is the defect this whole
- * slice exists to expose.
+ * Feeds `analyzeAgentFiles` through a file port that can see dot directories, which the File
+ * System Access API cannot. The scanned set must stay identical to `cli/src/lib`'s.
  */
 
 export interface HarnessScanPort {
@@ -30,13 +18,7 @@ export interface HarnessScanPort {
   listDir(relativePath: string): Promise<readonly { name: string; kind: 'file' | 'directory' }[] | null>;
   /** File text plus its modification time, or `null` when the file does not exist. */
   readText(relativePath: string): Promise<{ text: string; lastModified: number | null } | null>;
-  /**
-   * Whether anything — file or directory — sits at this path.
-   *
-   * Optional, because the coverage join is the only caller and a port without it can still produce
-   * the rest of the report. The fallback below asks `listDir` then `readText`, which is two round
-   * trips where a bridge that knows the answer needs one.
-   */
+  /** Optional; without it the fallback costs two round trips (`listDir`, then `readText`). */
   pathExists?(relativePath: string): Promise<boolean>;
 }
 
@@ -49,12 +31,7 @@ const ROOT_FILES = Object.freeze([
   '.mcp.json',
   '.github/copilot-instructions.md',
   '.claude/settings.json',
-  /*
-   * ⚠️ **A rule that matches a path this list never asks for is a rule that never fires.** The
-   * classifier decides what a file *is*; this decides what gets looked for. The exclusion rules
-   * were written first and every repository would have shown an empty row until these five lines
-   * followed them (caught before writing the row, 2026-09-20).
-   */
+  /* A classifier rule only fires on paths this list asks for. */
   '.cursorignore',
   '.cursorindexingignore',
   '.codeiumignore',
@@ -63,7 +40,7 @@ const ROOT_FILES = Object.freeze([
   '.geminiignore',
 ]);
 
-/** Directories walked recursively — the only dot directories this scan touches. */
+/** The only dot directories this scan walks. */
 const SCAN_DIRS = Object.freeze([
   '.claude/rules',
   '.claude/hooks',
@@ -83,18 +60,10 @@ const SKIPPED_DIRS = new Set([
 /** Depth bound inside a scanned directory — skills nest `guides/` and `scripts/` one or two deep. */
 const SCAN_MAX_DEPTH = 4;
 
-/**
- * Bounds on the Markdown census walk, which is the only part of this scan that crosses the whole
- * repository rather than a known list of directories.
- *
- * A bound that is hit is reported (`DocumentReach.truncated`) rather than silently trimming the
- * answer: a count that stopped early is a floor, and a screen that printed it as a total would be
- * making the flattering mistake in the one place this feature exists to prevent.
- */
+/** Markdown census bounds; a hit bound is reported as `DocumentReach.truncated`, never trimmed silently. */
 const MARKDOWN_MAX_DEPTH = 8;
 const MARKDOWN_MAX_DIRECTORIES = 3000;
-/** Citation reads beyond held guides. The September 2026 record census exceeds 600;
- * retain a bounded walk with room for those authored records and explicit truncation above it. */
+/** Room above the ~600 authored records; past it the walk reports truncation. */
 const MARKDOWN_MAX_READS = 800;
 
 /** The hook configs this scan knows how to read, and whether the tool gates execution on approval. */
@@ -104,12 +73,8 @@ const HOOK_CONFIGS: ReadonlyArray<{ path: string; approvalGate: boolean }> = Obj
 ]);
 
 /**
- * **The rule ids the repository's own parity check compares byte for byte**, and nothing else.
- *
- * `.claude/hooks/*.sh` and `.codex/hooks/*.sh` are deliberately **not** here. They look like a
- * mirrored pair and are not one: Codex delivers an edit as an `apply_patch` envelope, so those
- * scripts are adapted rather than copied, and every one of them differs by design. Listing them
- * would print drift on a repository that is behaving exactly as its own contract requires.
+ * Rule ids the repository's parity check compares byte for byte. Hook scripts are left out:
+ * Codex hooks are adapted from Claude's, so they differ by design.
  */
 const DECLARED_PAIR_RULES: Readonly<Record<string, string>> = Object.freeze({
   'claude-skills': '.agents/skills',
@@ -118,7 +83,6 @@ const DECLARED_PAIR_RULES: Readonly<Record<string, string>> = Object.freeze({
   'agents-agents': '.claude/agents',
 });
 
-/** Drift codes that belong to the pair column. Any other finding is about something else. */
 const PAIR_DRIFT_CODES = new Set([
   'skill-copy-diverged',
   'skill-copy-file-missing',
@@ -126,39 +90,21 @@ const PAIR_DRIFT_CODES = new Set([
   'agent-copy-file-missing',
 ]);
 
-/** The twin a rule is declared byte-identical to, or `null` when it has no declared pair. */
 export function declaredPairFor(ruleId: string): string | null {
   return DECLARED_PAIR_RULES[ruleId] ?? null;
 }
 
-/** Whether a drift code is a byte difference inside a declared pair. */
 export function isPairDrift(code: string): boolean {
   return PAIR_DRIFT_CODES.has(code);
 }
 
-/**
- * **What counts as a guide**, used by both the sentence's first number and the guides table so
- * the two cannot disagree. A reader who sees "8 documents" above a table of ten rows learns only
- * that one of the two is wrong. `config` records — `settings.json`, the hook scripts, `.codex/` — are the
- * enforcement layer and belong to the second number and the hooks section.
- */
+/** One definition of a guide for both the sentence's count and the guides table. */
 export function isGuideRecord(record: { kind: string }): boolean {
-  /* `exclusion` is not a guide either, and the reason is the sentence this number feeds: "this
-     repository speaks to agents through N documents". A file that says what an agent may not see
-     is the opposite of a thing the repository says, and counting it would move that number
-     without changing what anybody was told. */
+  /* An exclusion says what an agent may not see, so it is not something the repository tells agents. */
   return record.kind !== 'config' && record.kind !== 'exclusion';
 }
 
-/**
- * A file a test runner finds by its own discovery glob rather than by being named in a command.
- *
- * This exists because of the one reading an empty Watched cell must not invite. On this repository
- * `src/widgets/ontology-map` — the Topology domain's whole recorded entrypoint — holds 76 colocated
- * test files and is named by no `package.json` script, because `vitest run` discovers it. A cell
- * that said only "no check names this domain" beside an amber mark was read as "this is not
- * tested", which is false and is the decision's own falsifier (Evidence seat, 2026-09-13).
- */
+/** Test files a runner discovers by glob, so an unnamed domain is not read as untested. */
 const TEST_FILE_NAME = /\.(test|spec)\.[cm]?[jt]sx?$/;
 
 /** `package.json` script names that run a linter, a type check, or a test suite. */
@@ -176,63 +122,31 @@ interface HarnessCheckCensus {
   gitHooks: number;
   /** `package.json` scripts matching `CHECK_SCRIPT_NAME`, listed so the number can be audited. */
   scripts: readonly string[];
-  /** The sum the screen prints. Its three parts are shown beside it; the number is never bare. */
+  /** The sum the screen prints beside its three parts. */
   total: number;
 }
 
 export interface HarnessReport {
   analysis: AgentFilesAnalysis;
   hookGroups: readonly HookConfigFacts[];
-  /** Modification times by path, for the change column. See `HarnessReport.timesAreFileMtime`. */
+  /** Modification times by path; see `HarnessReport.timesAreFileMtime`. */
   times: readonly HarnessFileTime[];
-  /**
-   * Every scanned file's text, keyed by path. The drift door shows two complete files side by side,
-   * and the scan already holds both — re-reading them through the bridge on click would be a second
-   * round trip for bytes we have.
-   */
+  /** Every scanned file's text, so the drift view needs no second read. */
   contents: ReadonlyMap<string, string>;
   checks: HarnessCheckCensus;
-  /** Guide documents found — the sentence's first number. Hook configs and scripts excluded. */
+  /** Guide documents found, excluding hook configs and scripts. */
   guideDocumentCount: number;
-  /**
-   * Every file that declares where it applies, with the text that declares it.
-   *
-   * Empty when the caller passed no capability paths: the coverage join is the only consumer, and
-   * resolving scopes against the disk for a vault that records no implementation path would be
-   * round trips spent on an answer nobody can read.
-   */
+  /** Scope declarations; empty when the caller passed no capability paths. */
   coverage: readonly ScopeDeclaration[];
   /** Authored Markdown split by whether a guide sends an agent to it. */
   documentReach: DocumentReach;
-  /**
-   * Every file a test runner discovers by name rather than by being named in a command.
-   *
-   * The second operand an empty Watched cell needs: "no check names this domain" and "no test file
-   * sits under it" are different statements, and only the pair of them is safe to read.
-   */
+  /** Files a test runner discovers by name, read together with the Watched cell's check list. */
   testFiles: readonly string[];
-  /**
-   * Files under `.githooks/`, independent of the coverage pass.
-   *
-   * Same reason as `workflowFiles`: the census has always carried the *number*, but the names came
-   * only from the coverage join, so a repository whose vault records no implementation path got a
-   * bare count with nothing a reader could open (measured on this repository, 2026-09-20).
-   */
+  /** Files under `.githooks/`, listed even when the coverage pass does not run. */
   gitHookFiles: readonly string[];
-  /**
-   * `.github/workflows/*` paths, independent of the coverage pass.
-   *
-   * The scan has always read these files; until 2026-09-19 they reached the screen only through
-   * `coverage`, which runs when the vault records implementation paths and not otherwise. The
-   * structure view needs them unconditionally, because a repository whose only gate is a pipeline
-   * would otherwise be drawn with nothing watching it at all.
-   */
+  /** `.github/workflows/*` paths, listed even when the coverage pass does not run. */
   workflowFiles: readonly string[];
-  /**
-   * `true` always, and stated on screen: these timestamps are filesystem modification times, not
-   * commit dates. A fresh clone or a new worktree stamps every file with the checkout time, so the
-   * column answers "when did this file change **on this disk**" and nothing more.
-   */
+  /** Filesystem mtimes, not commit dates: a fresh checkout stamps every file. */
   timesAreFileMtime: true;
 }
 
@@ -261,11 +175,8 @@ async function walk(
 }
 
 /**
- * One-level nested `AGENTS.md` — `app/AGENTS.md`, `src/AGENTS.md` and their siblings.
- *
- * One level, because that is what the classifier's `nested-agents-md` rule matches, and it matches
- * one level on purpose: `cli/templates/vault/AGENTS.md` sits three segments deep and is product
- * data shipped inside a starter vault, not an instruction to an agent working on this repository.
+ * One level deep, matching the classifier's `nested-agents-md` rule; deeper files such as
+ * `cli/templates/vault/AGENTS.md` are shipped product data.
  */
 async function nestedAgentsFiles(
   port: HarnessScanPort,
@@ -285,7 +196,7 @@ async function nestedAgentsFiles(
   }
 }
 
-/** `.githooks/<name>` → its text. The count the sentence prints is this map's size. */
+/** `.githooks/<name>` → its text. */
 async function readGitHooks(port: HarnessScanPort): Promise<Map<string, string>> {
   const out = new Map<string, string>();
   const entries = await port.listDir('.githooks');
@@ -298,12 +209,7 @@ async function readGitHooks(port: HarnessScanPort): Promise<Map<string, string>>
   return out;
 }
 
-/**
- * `.github/workflows/*.yml` → its text.
- *
- * Read for one reason only: whether the workflow declares a `paths:` trigger filter. What its jobs
- * run is not a path filter and is not read as one.
- */
+/** Workflow texts, read only for a `paths:` trigger filter. */
 async function readWorkflows(port: HarnessScanPort): Promise<Map<string, string>> {
   const out = new Map<string, string>();
   const entries = await port.listDir('.github/workflows');
@@ -316,7 +222,7 @@ async function readWorkflows(port: HarnessScanPort): Promise<Map<string, string>
   return out;
 }
 
-/** Check-script names → the command each one runs. Sorted, so the census reads the same every run. */
+/** Check-script names → their commands, sorted for a stable census. */
 function checkScripts(packageJsonText: string | null): Map<string, string> {
   const out = new Map<string, string>();
   if (!packageJsonText) return out;
@@ -333,18 +239,8 @@ function checkScripts(packageJsonText: string | null): Map<string, string> {
   return out;
 }
 
-/**
- * **What the reader is waiting on, reported as it happens.**
- *
- * This read is genuinely long — it opens every root guide, walks eight dot directories, crosses the
- * whole checkout for authored Markdown, follows citations to a fixpoint and probes declared scopes
- * against the disk. A bare "Reading" on a black screen tells none of that, and a percentage
- * invented over an unknown denominator would be the lie this whole surface exists not to tell. So
- * each pass reports its own name, and a count only where the denominator is actually known before
- * the pass starts.
- */
+/** Per-pass progress; a count appears only when its denominator is known before the pass. */
 export interface HarnessScanProgress {
-  /** Which pass is running. The screen turns this into one word. */
   stage:
     | 'roots'
     | 'nested'
@@ -354,9 +250,8 @@ export interface HarnessScanProgress {
     | 'citations'
     | 'citation-hops'
     | 'coverage';
-  /** Units finished in this pass. */
   done: number;
-  /** Units this pass will do, when that is known before it starts. `null` means it is not. */
+  /** Known before the pass starts, or `null`. */
   total: number | null;
 }
 
@@ -364,27 +259,12 @@ export interface HarnessScanProgress {
 export interface HarnessScanOptions {
   /** Canonical implementation paths the vault records, one per capability. */
   capabilityPaths?: readonly string[];
-  /**
-   * Repo-relative folders left out of the Markdown census, named on screen.
-   *
-   * The ontology folder belongs here whenever it sits inside the checkout, as Atlas's own does: its
-   * files are the graph an agent reads over MCP, not documentation somebody forgot to link. Nothing
-   * else is excluded by default — a fixture folder that should be unreferenced is a judgement for
-   * the reader, and hiding it would make the census agree with itself.
-   */
+  /** Repo-relative folders left out of the Markdown census and named on screen, such as an in-checkout ontology folder. */
   excludedFolders?: readonly string[];
-  /** Called as each pass advances. Never called with a fabricated denominator. */
   onProgress?: (progress: HarnessScanProgress) => void;
 }
 
-/**
- * Every authored Markdown file outside the scanned dot directories.
- *
- * The dot directories are not walked again — the main scan already read them, and their files are
- * taken from `contents`, which is also where the citation search gets its text. What this adds is
- * the rest of the checkout: `docs/`, `samples/`, a `README.md`, everything a person wrote and may
- * or may not have pointed an agent at.
- */
+/** Authored Markdown outside the scanned dot directories, whose files come from `contents`. */
 async function walkMarkdown(
   port: HarnessScanPort,
   root: string,
@@ -410,20 +290,14 @@ async function walkMarkdown(
       continue;
     }
     if (/\.mdc?$/.test(entry.name)) out.push(path);
-    /* Collected on the same walk, for the one thing an empty Watched cell must not be read as. */
     if (TEST_FILE_NAME.test(entry.name)) testFiles.push(path);
   }
   return truncated;
 }
 
 /**
- * Directory patterns a repository's own `.gitignore` marks as not-authored.
- *
- * Only the unambiguous shape is read: a plain directory line, no wildcard and no negation. That is
- * enough for the case that matters — a generated mirror such as `/public/docs-vault/` holding
- * copies of documents that already exist upstream — and a partial gitignore parser that guessed at
- * wildcards and re-inclusions would drop authored files without saying so, which is the one
- * direction this census may not fail in.
+ * Plain directory lines from `.gitignore` only; guessing at wildcards or negation could drop
+ * authored files silently.
  */
 function ignoredDirectories(gitignoreText: string | null): string[] {
   const out: string[] = [];
@@ -437,7 +311,6 @@ function ignoredDirectories(gitignoreText: string | null): string[] {
   return out;
 }
 
-/** Reads the whole harness report for one repository root. */
 export async function scanHarness(
   port: HarnessScanPort,
   options: HarnessScanOptions = {},
@@ -448,8 +321,7 @@ export async function scanHarness(
 
   for (const [index, path] of ROOT_FILES.entries()) {
     const file = await port.readText(path);
-    /* Reported after the unit, not before it: `done` is what is finished. Counting the unit that is
-       still running put the last pass at its own total while it was still working. */
+    /* Reported after the unit: `done` counts finished units. */
     report({ stage: 'roots', done: index + 1, total: ROOT_FILES.length });
     if (!file) continue;
     files.push({ path, content: file.text });
@@ -489,12 +361,7 @@ export async function scanHarness(
   const guideDocumentCount = analysis.records.filter(isGuideRecord).length;
 
   const capabilityPaths = options.capabilityPaths ?? [];
-  /*
-   * One report, and deliberately no denominator. `resolveScopeDeclarations` probes its scopes in
-   * one `Promise.all` and reports nothing from inside, so a total here would draw a determinate bar
-   * frozen at one unit for the whole pass — a bar that asserts a scale and then does not move,
-   * which is a worse claim than saying the length is not known (design-motion, 2026-09-13).
-   */
+  /* No denominator: `resolveScopeDeclarations` reports nothing from inside its `Promise.all`. */
   report({ stage: 'coverage', done: 0, total: null });
   const coverage = capabilityPaths.length
     ? await resolveScopeDeclarations(
@@ -520,8 +387,7 @@ export async function scanHarness(
     ...ignoredDirectories(gitignore?.text ?? null),
   ];
   const markdownPaths = [...contentByPath.keys()].filter((path) => /\.mdc?$/.test(path));
-  /* The checkout's directory count is not known before the walk, so this pass reports its name and
-     its running count and no denominator. An indeterminate bar is the honest drawing of that. */
+  /* The directory count is unknown before the walk, so no denominator. */
   report({ stage: 'documents', done: 0, total: null });
   const budget = { directories: MARKDOWN_MAX_DIRECTORIES };
   const testFiles: string[] = [];
@@ -534,24 +400,15 @@ export async function scanHarness(
     testFiles,
     budget,
   );
-  /* The walk skips dot directories because the main scan already read the ones that hold agent
-     files. `.github` is the exception it does not cover: only `copilot-instructions.md` is on the
-     root list, so an issue template or a contributing note there would be missing from a census
-     that claims to count every authored document. */
+  /* The walk skips dot directories; `.github` beyond `copilot-instructions.md` would otherwise go uncounted. */
   truncated =
     (await walkMarkdown(port, '.github', 1, excludedFolders, markdownPaths, testFiles, budget)) ||
     truncated;
-  /*
-   * The citation walk is transitive, so it needs the text of the documents the guides reach, not
-   * only the guides'. Reading every authored Markdown file would be hundreds of round trips for a
-   * census; this reads the ones outside the already-scanned set up to a bound and reports the walk
-   * as truncated if it hits it, because a count that stopped early is a floor.
-   */
+  /* Reads authored Markdown for the transitive citation walk up to a bound, then reports truncation. */
   const uniqueMarkdown = [...new Set(markdownPaths)].sort();
   const reachContents = new Map(contentByPath);
   let budgetLeft = MARKDOWN_MAX_READS;
   for (const [index, path] of uniqueMarkdown.entries()) {
-    /* Here the denominator IS known — the walk just produced it — so this pass counts. */
     report({ stage: 'citations', done: index + 1, total: uniqueMarkdown.length });
     if (reachContents.has(path)) continue;
     if (budgetLeft <= 0) {
@@ -569,7 +426,7 @@ export async function scanHarness(
     truncated,
     onHop: async (hop) => {
       report({ stage: 'citation-hops', done: hop, total: null });
-      /* Hand the main thread back so the frame this report asks for can actually paint. */
+      /* Yield so the progress frame can paint. */
       await new Promise((resolve) => setTimeout(resolve, 0));
     },
   });

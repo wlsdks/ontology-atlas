@@ -1,26 +1,8 @@
 import { WIKI_SOURCES_DIR } from '@/shared/lib/wiki-page-schema';
 
 /**
- * **What Atlas can honestly read out of a raw source, with the parsers it already has.**
- *
- * Compile through a coding agent works because the agent brings its own PDF reader. A
- * local model brings nothing: it reaches the folder only through the tools handed to it,
- * so the question "can this file be opened" has to be answered here, once, in a way the
- * screen can repeat to a person.
- *
- * Three outcomes, never two:
- *
- * - `readable` — text this bundle can decode with no dependency at all: Markdown, plain
- *   text, CSV, JSON, and HTML with its tags stripped.
- * - `needs-a-parser` — PDF, Word, PowerPoint, Excel and their older siblings. Atlas
- *   refuses them **by name**, because "could not read it" and "cannot read this format"
- *   are different facts to a person deciding whether to install a coding agent.
- * - `unknown-format` — an image, an archive, a binary nobody named. Guessing UTF-8 on it
- *   would hand a model mojibake and let it write a page about noise.
- *
- * No parser is added here. That is deferred deliberately: shipping a PDF extractor is a
- * dependency, a licence, and a new class of wrong text, and none of it is needed to prove
- * that a local model can compile the formats a folder already holds in plain bytes.
+ * What Atlas can honestly read without a parser dependency: a source is `readable`,
+ * needs a parser (refused by name), or is an unknown format (never guessed as UTF-8).
  */
 
 /** Formats decoded as text. `htm` is `html` under a shorter name, not a second format. */
@@ -54,15 +36,7 @@ export const PARSER_SOURCE_FORMATS: readonly string[] = [
   'odp',
 ];
 
-/**
- * The character cap on one `read_source_text` result.
- *
- * Every character read is a character that leaves this computer on the next round trip,
- * counted into the turn's measured `vaultChars` and written to the audit line. Five
- * sources at this cap is 40,000 characters, exactly `AGENT_TURN_VAULT_CHAR_CAP` — so the
- * bound a person reads on the card and the bound the loop actually enforces are the same
- * number, rather than two that drift.
- */
+/** Characters per read, each leaving the machine on the next round trip; five reads equal `AGENT_TURN_VAULT_CHAR_CAP`, so the card and the loop state one bound. */
 export const SOURCE_TEXT_CHAR_CAP = 8_000;
 
 export type SourceFormatVerdict = 'readable' | 'needs-a-parser' | 'unknown-format';
@@ -75,12 +49,7 @@ export function classifySourceFormat(format: string): SourceFormatVerdict {
   return 'unknown-format';
 }
 
-/**
- * Why a path may not be used to name a source, or null when its shape is acceptable.
- *
- * Shape only. Membership of the folder's own inventory is the second gate and lives in
- * the reader — a well-shaped path to a file this folder does not hold is still refused.
- */
+/** Why a path may not name a source, by shape only; folder membership is the reader's second gate. */
 export type SourcePathProblem =
   | 'empty-path'
   | 'absolute-path'
@@ -108,14 +77,7 @@ export function sourcePathProblem(path: unknown): SourcePathProblem | null {
   return null;
 }
 
-/**
- * HTML with its markup taken out.
- *
- * `<script>` and `<style>` bodies are dropped whole rather than untagged: their contents
- * are code, and a model handed a minified bundle as "what the document says" will write
- * facts about it. Entities are decoded only for the five that change meaning; a numeric
- * entity left alone is legible, and a half-written decoder is not.
- */
+/** HTML without markup; script and style bodies drop whole, and only meaning-changing entities decode. */
 export function stripHtml(html: string): string {
   const withoutCode = html
     .replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, ' ')
@@ -148,14 +110,7 @@ export interface DecodedSourceText {
   truncated: boolean;
 }
 
-/**
- * Bytes → the text a model is allowed to see, capped.
- *
- * The cap is applied **after** stripping, so an HTML file's budget is spent on its prose
- * rather than on its markup. `truncated` is reported rather than hidden: a page written
- * from the first 8,000 characters of a 90,000-character file must be able to say so, and
- * the proposal validator refuses to call such a page complete.
- */
+/** Bytes to capped model text, capped after stripping; `truncated` lets the page say it was partial. */
 export function decodeSourceText(bytes: ArrayBuffer, format: string): DecodedSourceText {
   const decoded = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
   const lowered = format.trim().toLowerCase().replace(/^\./, '');
@@ -168,17 +123,7 @@ export function decodeSourceText(bytes: ArrayBuffer, format: string): DecodedSou
   };
 }
 
-/**
- * What Atlas measured in the text it handed over — the material a citation is checked
- * against.
- *
- * `validateWikiPage` captures a citation's anchor and never resolves it (its own header
- * says nothing there reads the filesystem), so `[[src:sources/notes.md#p47]]` passes on a
- * three-paragraph file. On this route Atlas is the one holding the bytes, so it is the
- * only party that can tell the difference, and the proposal validator does (PO evidence,
- * 2026-09-06). A page whose citations open nothing is the exact failure the citation
- * format exists to prevent.
- */
+/** What the handed-over text holds, so citation anchors are checked; `validateWikiPage` never resolves them. */
 export interface SourceMeasurement {
   paragraphs: number;
   lines: number;
@@ -218,26 +163,14 @@ export function measureSourceText(text: string): SourceMeasurement {
   };
 }
 
-/**
- * The text as the model sees it: every paragraph carries the number a citation must use.
- *
- * Without the markers a writer guesses an anchor, and a guessed anchor is what a reader
- * finds broken when they press it. With them the number is in front of the sentence it
- * belongs to, and Atlas can check the answer afterwards.
- */
+/** Each paragraph carries the number a citation must use, so the writer never guesses an anchor. */
 export function numberParagraphs(text: string): string {
   return splitParagraphs(text)
     .map((block, index) => `[p${index + 1}] ${block}`)
     .join('\n\n');
 }
 
-/**
- * Whether one citation anchor resolves inside what was actually read.
- *
- * `s<n>` and `s<n>r<n>` name a spreadsheet sheet. No format this reader can open has
- * sheets, so an anchor claiming one is refused rather than waved through — it can only
- * have come from the template.
- */
+/** Whether an anchor resolves in what was read; sheet anchors are refused because no readable format has sheets. */
 export function anchorResolves(anchor: string, measure: SourceMeasurement): boolean {
   const paragraph = /^p(\d+)$/.exec(anchor);
   if (paragraph) {

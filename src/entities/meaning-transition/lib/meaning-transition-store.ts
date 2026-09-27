@@ -108,7 +108,7 @@ async function verifyV2Chain(
   if (next.phase !== 'decision') throw new Error('Meaning transition v2 chain has no decision origin.');
 }
 
-/** Archive integrity verifies immutable bytes. It does not authenticate supplied decision or receipt facts. */
+/** Verifies immutable archive bytes; supplied decision and receipt facts are not authenticated. */
 export async function appendMeaningTransition(input: {
   capturedHandle: FileSystemDirectoryHandle;
   preparation: MeaningTransitionPreparation;
@@ -125,8 +125,7 @@ export async function appendMeaningTransition(input: {
   if (!writableAtEntry) throw new Error('A writable ontology folder is required.');
   assertCurrent(isCurrent);
   const capturedRoot = captureRoot(rootPathAtEntry, isCurrent);
-  // Observation starts before validation; attach a handler now so an early native refusal cannot
-  // become an unhandled rejection while local digest validation is still running.
+  // Attach a handler now so an early native refusal is not an unhandled rejection during validation.
   void capturedRoot.catch(() => undefined);
   const record = preparation.record;
   if (!await verifyMeaningTransitionDigest(record)) throw new Error('Meaning transition digest verification failed.');

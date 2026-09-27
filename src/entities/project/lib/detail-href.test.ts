@@ -9,11 +9,11 @@ import {
 } from "./detail-href";
 
 describe("getProjectDetailHref", () => {
-  it("/project/<encoded-slug>/ 형식", () => {
+  it("builds /project/<encoded-slug>/", () => {
     expect(getProjectDetailHref("foo")).toBe("/project/foo/");
   });
 
-  it("URL-unsafe 문자 → encodeURIComponent escape", () => {
+  it("escapes URL-unsafe characters", () => {
     expect(getProjectDetailHref("a/b")).toBe("/project/a%2Fb/");
     expect(getProjectDetailHref("foo bar")).toBe("/project/foo%20bar/");
     expect(getProjectDetailHref("한글")).toBe(
@@ -21,7 +21,7 @@ describe("getProjectDetailHref", () => {
     );
   });
 
-  it("빈 slug 도 그대로 (caller contract)", () => {
+  it("keeps an empty slug", () => {
     expect(getProjectDetailHref("")).toBe("/project//");
   });
 });
@@ -33,13 +33,13 @@ describe("getProjectDetailUrl", () => {
     );
   });
 
-  it("origin trailing slash 정규화 (URL constructor)", () => {
+  it("normalizes a trailing slash on origin", () => {
     expect(getProjectDetailUrl("https://example.com/", "foo")).toBe(
       "https://example.com/project/foo/",
     );
   });
 
-  it("encodeURIComponent 가 path 에 적용", () => {
+  it("encodes the path segment", () => {
     expect(getProjectDetailUrl("https://example.com", "한글")).toBe(
       `https://example.com/project/${encodeURIComponent("한글")}/`,
     );
@@ -47,7 +47,7 @@ describe("getProjectDetailUrl", () => {
 });
 
 describe("static-export-safe project routes", () => {
-  it("runtime 상세는 임의 slug 를 정적 fallback query 로 보낸다", () => {
+  it("sends an arbitrary runtime slug through the static fallback query", () => {
     expect(getProjectRuntimeDetailHref("foo")).toBe(
       "/project/fallback/?slug=foo",
     );
@@ -61,7 +61,7 @@ describe("static-export-safe project routes", () => {
     );
   });
 
-  it("runtime 상세 URL은 locale·basePath를 포함해 정적 export 파일을 가리킨다", () => {
+  it("includes locale and basePath in the runtime detail URL", () => {
     expect(
       getProjectRuntimeDetailUrl("https://example.com/", "foo", {
         locale: "ko",
@@ -72,7 +72,7 @@ describe("static-export-safe project routes", () => {
     );
   });
 
-  it("전체 편집은 slug·복귀 경로·저장 알림을 같은 fallback에 보존한다", () => {
+  it("keeps slug, return path and save notice in the full-edit fallback", () => {
     expect(
       getProjectEditHref("foo", {
         returnTo: "/project/fallback/?slug=foo",
@@ -85,7 +85,7 @@ describe("static-export-safe project routes", () => {
 });
 
 describe("resolveProjectFallbackRoute", () => {
-  it("query 상세 경로를 해석한다", () => {
+  it("parses the query detail path", () => {
     expect(
       resolveProjectFallbackRoute(
         "/ko/project/fallback/",
@@ -99,7 +99,7 @@ describe("resolveProjectFallbackRoute", () => {
     });
   });
 
-  it("query 전체 편집 상태를 해석한다", () => {
+  it("parses the query full-edit state", () => {
     expect(
       resolveProjectFallbackRoute(
         "/en/project/fallback/",
@@ -113,7 +113,7 @@ describe("resolveProjectFallbackRoute", () => {
     });
   });
 
-  it("과거 CDN rewrite pathname 상세·편집 경로를 계속 해석한다", () => {
+  it("still parses legacy rewritten detail and edit pathnames", () => {
     expect(resolveProjectFallbackRoute("/ko/project/foo/", "")).toEqual({
       mode: "detail",
       slug: "foo",
@@ -133,7 +133,7 @@ describe("resolveProjectFallbackRoute", () => {
     });
   });
 
-  it("직접 fallback·빈 slug·깨진 escape는 목록 복귀 대상으로 거부한다", () => {
+  it("rejects a direct fallback, empty slug or broken escape", () => {
     expect(resolveProjectFallbackRoute("/ko/project/fallback/", "")).toBeNull();
     expect(
       resolveProjectFallbackRoute("/ko/project/fallback/", "?slug="),

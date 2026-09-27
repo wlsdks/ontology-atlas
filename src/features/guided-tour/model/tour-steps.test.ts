@@ -93,9 +93,8 @@ describe("computeVisibleSteps", () => {
 
 describe("DESTINATION_TOURS — insights", () => {
   it("anchors its second page on the headline the screen opens on", () => {
-    // Since #1704 /ontology/insights lands on the brief tab, so an anchor on any
-    // other tab is absent on arrival and `computeVisibleSteps` drops the page,
-    // leaving a one-page guide. `brief-headline` is on the landing tab.
+    // /ontology/insights lands on the brief tab, and an anchor on another tab would drop the page;
+    // `brief-headline` is on the landing tab.
     const steps = DESTINATION_TOURS.insights;
     expect(steps).toHaveLength(2);
     expect(steps[1].anchor).toEqual({ type: "testid", value: "brief-headline" });

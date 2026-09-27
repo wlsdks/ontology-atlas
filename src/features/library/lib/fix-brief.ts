@@ -1,12 +1,6 @@
 import type { LintFinding } from "./lint-brief";
 
-/**
- * One turn that repairs one finding of the last check. Owner direction 2026-09-07: a
- * check that only reports leaves the work to the person; each finding now carries a door.
- * The brief names the pages and the finding, and holds the writer to the page contract
- * and to the rule the compile brief already carries for a disagreement: both pages, both
- * citations, the later document named — never a silent choice of one value.
- */
+/** One turn that repairs one check finding under the page contract; a disagreement keeps both pages and citations. */
 export function buildFixBrief({ finding, locale, vaultRoot }: { finding: LintFinding; locale: string; vaultRoot: string }): string {
   const pages = finding.pages.map((slug) => `${slug}.md`).join(", ");
   if (locale === "ko") {

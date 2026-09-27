@@ -29,9 +29,7 @@ import { searchProjects } from '../model/fuzzy-search';
 import { fieldClass } from '@/shared/ui/control-class';
 import { transientSurface } from "@/shared/ui/transient-surface";
 
-// Source vault matching — a light title/excerpt/slug includes. The ⌘K palette is
-// primarily project search with documents as a supporting section, so it shows the
-// top 3 plain matches with no score sorting.
+// Vault documents are a supporting section: the top 3 plain includes matches, unsorted.
 function matchVaultDocs(query: string, docs: VaultDoc[]): VaultDoc[] {
   const q = query.trim().toLowerCase();
   if (!q) return [];
@@ -115,11 +113,7 @@ function highlightMatch(text: string, query: string): React.ReactNode {
   );
 }
 
-/**
- * A wrapper whose open state is toggled externally. The dialog itself mounts only
- * while open=true, so the internal state (query, activeIndex) resets automatically on
- * every open.
- */
+/** Mounts the dialog only while open, so query and activeIndex reset on every open. */
 export function SearchPalette({
   open,
   onClose,
@@ -187,8 +181,7 @@ function SearchPaletteDialog({
   const { ref: scrimLockoutRef, onAnimationStart: scrimLockoutOnAnimationStart } = useExitLockout<HTMLDivElement>();
   const { ref: panelLockoutRef, onAnimationStart: panelLockoutOnAnimationStart } = useExitLockout<HTMLDivElement>();
   const { categoryLabel, statusLabel } = useTaxonomy();
-  // rank2 — one critically damped overlay spring (zero overshoot) throughout. A
-  // reduced-motion user gets a 120ms opacity crossfade with no translate.
+  // One critically damped overlay spring; reduced motion gets a 120ms opacity crossfade.
   const reducedMotion = useReducedMotion();
   const panelTransition = reducedMotion ? OVERLAY_SPRING_REDUCED : OVERLAY_SPRING;
   const [recentSlugs] = useState<string[]>(() => readRecentSlugs());
@@ -202,8 +195,7 @@ function SearchPaletteDialog({
 
   useBodyScrollLock(true);
 
-  // Narrow the search set by the layer filter first, then match the query. With
-  // filter='all', every project; container/hub/node restricts to that layer.
+  // Filter by layer first, then match the query.
   const filteredProjects = useMemo(
     () => projects.filter((p) => matchesLayerFilter(p, layerFilter)),
     [projects, layerFilter],
@@ -219,10 +211,8 @@ function SearchPaletteDialog({
     return searchProjects(filteredProjects, query).slice(0, 20);
   }, [filteredProjects, query]);
 
-  // Vault document matching — the top 3 when there is a query. Importing the manifest
-  // directly would ignore the "view the example business" choice and always search the
-  // dogfood — the palette searching a vault that is not on screen. Hook rules mean the
-  // hook is called outside useMemo and only its value passed as a dependency.
+  // Search the vault on screen, not the bundled manifest; the hook runs outside useMemo and passes
+  // only its value.
   const { manifest: staticManifest } = useStaticVaultSource();
   const docResults = useMemo(() => {
     if (!query.trim()) return [];
@@ -237,8 +227,7 @@ function SearchPaletteDialog({
   );
   const activeRow = rows[activeIndex] ?? null;
 
-  // Focus right after mount (the frame after the input ref connects). rank18 —
-  // preventScroll avoids a background scroll jump.
+  // Focus on the frame after the input ref connects, with preventScroll.
   useEffect(() => {
     const id = requestAnimationFrame(() =>
       inputRef.current?.focus({ preventScroll: true }),
@@ -279,15 +268,10 @@ function SearchPaletteDialog({
     };
   }, []);
 
-  // Keyboard handling
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       /*
-       * Mid-composition keystrokes belong to the IME (same rule as
-       * use-typing-shortcut). Without this, the Enter a Korean/Japanese/Chinese
-       * user presses to COMMIT the syllable selected a row and closed the
-       * palette, navigating to whatever happened to be active (bug sweep
-       * 2026-09-01).
+       * Mid-composition keystrokes belong to the IME, or a syllable's commit Enter selects a row.
        */
       if (e.isComposing) return;
       if (e.key === 'Escape') {
@@ -343,8 +327,8 @@ function SearchPaletteDialog({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, transition: EXIT_TRANSITION }}
-  // rank2 — the scrim is an opacity crossfade matched to
-  // --topology-motion-panel-duration (180ms). reduced-motion uses 120ms (OVERLAY_SPRING_REDUCED).
+  // The scrim crossfades over --topology-motion-panel-duration; reduced motion uses
+  // OVERLAY_SPRING_REDUCED.
       transition={reducedMotion ? SCRIM_FADE_REDUCED : SCRIM_FADE}
       data-interactive-overlay="true"
       data-overlay-spring="true"
@@ -356,14 +340,11 @@ function SearchPaletteDialog({
         onClick={onClose}
       />
 
-      {/* Mobile is a full-screen sheet (inset-0, filling with no radius); md+ keeps the
-          floating card (max-w-xl, rounded-sheet, sliding from above).
-          rank2 — the shared critically damped spring across all three overlays
-          (OVERLAY_SPRING, zero overshoot). Entry is opacity 0→1 plus translateY 8px→0
-          only — no scale (avoiding confusion with hover:scale-*). Tuned separately from
-          the canvas's 2-parameter physics model (see the conversion formula in the
-          `--overlay-spring-*` token comments in app/globals.css) — not "inheriting the
-          same spring". */}
+      {/*
+       * Full-screen sheet on mobile, floating card from md. The shared critically damped spring
+       * (OVERLAY_SPRING) moves opacity and translateY only, tuned apart from the canvas physics
+       * (`--overlay-spring-*` in app/globals.css).
+       */}
       <motion.div
         ref={mergeRefs(dialogRef, panelLockoutRef)}
         onAnimationStart={panelLockoutOnAnimationStart}
@@ -405,10 +386,7 @@ function SearchPaletteDialog({
                   ? `search-result-project-${activeRow.result.project.slug}`
                   : undefined
             }
-            // The type is decided by the value layer (bare = text-body) — the old
-            // `text-title` (16px) override violated the lookup specification (a lookup's
-            // input must not beat its results, 2026-08-06 field specification). It is now
-            // the same field as the docs palette.
+            // The value layer sets the type; a lookup's input must not outweigh its results.
             className={fieldClass({ frame: "bare", className: "flex-1" })}
           />
           <kbd className="hidden rounded-micro border border-[color:var(--color-divider)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-wider text-[color:var(--color-text-quaternary)] sm:inline-block">
@@ -445,8 +423,7 @@ function SearchPaletteDialog({
             {t('rowsCount', { count: rows.length })}
           </span>
         </div>
-        {/* Layer filter chip row — pick between all, container, hub and node. A
-            selection restricts results to that layer. Defaults to 'All' (all). */}
+        {/* Layer filter chips: all, container, hub or node. */}
         <div
           role="tablist"
           aria-label={t('layerFilterAriaLabel')}
@@ -596,7 +573,7 @@ function SearchPaletteDialog({
                 </button>
               </div>
             ) : filteredProjects.length === 0 && layerFilter !== 'all' ? (
-              // Even with no query, the layer filter is narrow enough for 0 results. A filter-reset CTA.
+              // A layer filter can leave no results even without a query, so offer a reset.
               <div className="flex flex-col items-center px-4 py-8 text-center">
                 <p className="text-body-lg text-[color:var(--color-text-secondary)]">
                   {t('emptyLayerTitle')}

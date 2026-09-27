@@ -20,27 +20,14 @@ interface TopologyIndexTreeRowLabels {
   /** Hover explanation for the domain badge (multi-membership is counted more than once). */
   domainCountTitle: string;
   /**
-   * What 「capability」 and 「element」 mean, at the one place their counts are read.
-   *
-   * ⚠️ Owner, 2026-08-24: *"more people than not will not know what a capability or an element even is —
-   * something is needed so that a person who does not know what an ontology is can understand."*
-   * The words themselves cannot change: they are the meta-model's kind names, owned by
-   * `docs/ONTOLOGY-ATLAS-SPEC.md` §2, and `AGENTS.md` forbids a competing glossary. A second
-   * teaching screen is forbidden too (`design.md`: the tour and the help glossary own the two
-   * definitions).
-   *
-   * So the definition travels to the confusion instead of the reader travelling to the
-   * definition — composed from the **existing** glossary strings, so there is one source and it
-   * cannot drift. This row already explains its own numbers this way (`freshTitle`,
-   * `domainCountTitle`); this is the same move for the one label that names a kind.
+   * What capability and element mean, where their counts are read. The kind names are fixed
+   * by `docs/ONTOLOGY-ATLAS-SPEC.md` §2, `AGENTS.md` forbids a competing glossary and `design.md` a
+   * second teaching screen, so the definition is composed from the existing glossary strings.
    */
   subcountsTitle?: string;
   /**
-   * The number-scope contract — the scope word for the large number at the right of
-   * a domain row ("everything below"). When present, the large number's title reads
-   * "{subtotalTitle} {count} · {domainCountTitle}", making explicit that this number
-   * is the whole subtree's total rather than direct children. Unset keeps just
-   * `domainCountTitle`, as before.
+   * The scope word for a domain's large number ("everything below"), making clear it is the subtree
+   * total.
    */
   subtotalTitle?: string;
   /** The "an agent just now" attribution badge. */
@@ -51,14 +38,8 @@ export interface TopologyIndexTreeRowProps {
   entry: OntologyTreeNode;
   depth: number;
   /**
-   * Where this row sits among its siblings, one-based, and how many there are.
-   *
-   * The tree is flat in the DOM — no nested `role="group"` — and its shape is
-   * drawn with `marginLeft: depth * 16`. A reader cannot see a margin, so the
-   * shape has to be spoken: WAI-ARIA asks a `treeitem` outside a `group` for
-   * `aria-level`, and for its place among the siblings it is announced with.
-   * Measured 2026-09-20 before this existed: ten rows, no groups and no levels,
-   * so a project and its nine domains were announced as ten peers.
+   * Position among siblings, one-based, and their count. The tree is flat in the DOM, so aria-level
+   * and position must be spoken.
    */
   position: number;
   setSize: number;
@@ -66,54 +47,27 @@ export interface TopologyIndexTreeRowProps {
   onToggleOpen: (nodeId: string) => void;
   onSelect: (nodeId: string) => void;
   selectedId: string | null;
-  /**
-   * The roving tabindex's single entry point. Only the row matching this id is
-   * `tabIndex=0` and the rest are `-1`, so the whole tree collapses into one Tab
-   * stop (WAI-ARIA tree). Sibling movement is handled by the panel container's
-   * ArrowUp/Down handler.
-   */
+  /** The roving tabindex entry point; only this row is tabIndex=0. */
   activeRowId: string | null;
   changedSlugs: ReadonlySet<string>;
   /** The one node (if any) matching a fresh heartbeat's focus. */
   agentAttributedNodeId?: string | null;
   maxDomainDescendantCount: number;
   /**
-   * A lookup map for the single source of truth on domain size (graph BFS). When
-   * present it is used instead of the tree walk — the tree lost multi-parent nodes,
-   * so its numbers diverged from /projects and insights. null keeps the previous
-   * tree walk.
+   * Domain size from the graph BFS census, used instead of the tree walk, which loses multi-parent
+   * nodes.
    */
   domainCensus?: ReadonlyMap<string, DomainCensusRow> | null;
   labels: TopologyIndexTreeRowLabels;
-  /**
-   * What the panel's own search field holds, when it holds anything.
-   *
-   * The row is what the filter left behind, so it has to show **where** the query
-   * landed. Measured 2026-09-19: INDEX filtered 125 concepts down to two and marked
-   * nothing in either — the reader was left to find the word themselves, on an 11px
-   * label. The palette beside it on the same screen has marked its rows for months.
-   */
+  /** The panel's search text, so the row can mark where the query landed. */
   query?: string;
 }
 
 /**
- * One INDEX tree row + its (conditionally rendered) children — recursive,
- * so a capability's element children are just this component called again
- * one depth deeper. Kept as its own file (vs. inlined in the panel) per the
- * repo's 300-line module budget and because the recursion is easier to
- * reason about in isolation.
- *
- * Row click = select (the `?p=` camera-fly + datasheet mechanic via
- * `onSelect`); the caret is a separate click target so selecting a node
- * never accidentally collapses/expands it (`docs/prototypes/hub-b3-immersive.html`
- * IMPLEMENTATION NOTES — "Row click = handleSelect(node.id)").
- *
- * v2.1 (feat/chrome-system §9, docs/prototypes/index-panel-v2-full.html) —
- * fixed 4-column grid (caret 14px · glyph 15px · label 1fr · count auto)
- * replaces the old flex-wrap row. The domain capacity meter now lives
- * INSIDE the label cell as a recessed inline track under the name (the old
- * basis-full full-width second line + flat grey track is retired) and the
- * caret is a Lucide chevron that rotates on expand instead of a text "▶".
+ * One INDEX tree row and its children, recursive by depth. Row click selects
+ * (`docs/prototypes/hub-b3-immersive.html`); the caret is a separate target. Four-column grid
+ * (caret, glyph, label, count) with the capacity meter inside the label cell
+ * (`docs/prototypes/index-panel-v2-full.html`).
  */
 export function TopologyIndexTreeRow({
   entry,
@@ -140,10 +94,7 @@ export function TopologyIndexTreeRow({
   const agentAttributed = agentAttributedNodeId !== null && agentAttributedNodeId === node.id;
   const eyebrow = useLatinEyebrow("tracking-[var(--tracking-caps-08)]");
   const isDomain = node.kind === "domain";
-  // Every kind reads its own census row, not domains alone: the badge is the same
-  // mark the map draws inside a node, and the map counts every kind from this
-  // census. While only domains were counted, a project row fell through to its
-  // direct children and stated 3 where its own node stated 16.
+  // Every kind reads its own census row: the badge is the mark the map draws inside the node.
   const censusRow = domainCensus?.get(node.id) ?? null;
   const subcounts = isDomain
     ? censusRow
@@ -158,7 +109,7 @@ export function TopologyIndexTreeRow({
     ? computeCapacityRatio(subcounts.descendantCount, maxDomainDescendantCount)
     : 0;
   const count = censusRow ? censusRow.total : isDomain && subcounts ? subcounts.descendantCount : hasChildren ? children.length : null;
-  // The lifetime of a child branch's expansion — the same hook as the app's shared list-row grammar.
+  // The expansion lifetime uses the shared list-row disclosure hook.
   const {
     mounted: branchMounted,
     open: branchOpen,
@@ -192,31 +143,20 @@ export function TopologyIndexTreeRow({
         aria-setsize={setSize}
         aria-selected={selected}
         aria-expanded={hasChildren ? open : undefined}
-        // Roving tabindex: only the active row is a Tab entry point, the rest are -1
-        // (reachable by arrow keys alone). `focus()` still works programmatically at
-        // tabIndex=-1, so the panel's arrow handler can move focus to any row.
+        // Only the active row is a Tab stop; `focus()` still works at tabIndex=-1 for the arrow
+        // handler.
         tabIndex={node.id === activeRowId ? 0 : -1}
         data-index-row={node.id}
         data-testid="topology-index-row"
-        // Owner report from real use (2026-07-24) — a row expanded only when the
-        // chevron icon was hit exactly, and missing it by a little opened just the
-        // detail on the right, which felt "far too sensitive". A row with children now
-        // does **select and expand** in one click (collapsing is handled by the
-        // widened chevron hit area) — there is nothing left to guess about where a
-        // click will go.
+        // A row with children selects and expands in one click; collapsing is the chevron's job.
         onClick={() => {
           onSelect(node.id);
           if (hasChildren && !open) onToggleOpen(node.id);
         }}
         onKeyDown={handleRowKeyDown}
         style={{ marginLeft: depth * 16 }}
-        // `min-h-9` (36) rather than the old `34px`: 34 is not a step of the control
-        // ladder (24/28/32/36/40/44 — `control-height-ladder-scope.contract.test.ts`
-        // derives it), and a single-line row already renders at exactly 36 from its own
-        // padding, so the floor now names the height the row actually has instead of a
-        // number two pixels under it. Rows with a subcount line stay taller: two
-        // vertical axes mean content decides, the same exemption the nav rail's 62px
-        // outer height takes.
+        // `min-h-9` (36), a step of the control ladder
+        // (`control-height-ladder-scope.contract.test.ts`); rows with a subcount line are taller.
         className={`atlas-touch-floor grid min-h-9 grid-cols-[24px_15px_1fr_auto] items-center gap-x-2 rounded-chip border py-1 pl-1 pr-2 text-body transition-colors ${
           selected
             ? "border-[color:var(--color-indigo-a55)] bg-[color:var(--map-panel-metric-surface)] text-[color:var(--map-panel-text-primary)]"
@@ -229,21 +169,11 @@ export function TopologyIndexTreeRow({
             event.stopPropagation();
             if (hasChildren) onToggleOpen(node.id);
           }}
-          // The chevron is a mouse affordance only and is redundant to assistive
-          // technology — the expansion state and its operation are already exposed by
-          // the outer role="treeitem" row through aria-expanded plus
-          // ArrowRight/Left (the WAI-ARIA tree pattern). Left in the a11y tree as an
-          // unnamed button, a screen reader reads out 21 unidentifiable buttons (a real
-          // defect caught by the aria-audit e2e). With tabIndex=-1 it is not in the
-          // focus order either, so hiding it as presentational is right.
+          // The chevron is presentational: the treeitem already exposes aria-expanded and
+          // ArrowRight/Left, and it is out of the focus order.
           aria-hidden="true"
           tabIndex={-1}
-          // The hit area is the full row height × a 24px column (the fine-pointer target
-          // floor; it measured 22 wide before 2026-09-25) — the icon stays 11px.
-          // `self-stretch` rather than the old fixed `34px`: the row is 36 on one line
-          // and 47.5 with a subcount, so a fixed number was the full row height in
-          // neither case (measured 22×34 in both, 2026-09-05) and it was off the height
-          // ladder besides. Stretching says what the comment above already promised.
+          // The hit area is the full row height by a 24px column; the icon stays 11px.
           className={`-my-1 flex w-full items-center justify-center self-stretch text-[color:var(--map-panel-text-quaternary)] transition-transform ${
             hasChildren ? "" : "invisible"
           } ${open ? "rotate-90" : ""}`}
@@ -277,9 +207,8 @@ export function TopologyIndexTreeRow({
               <span
                 title={labels.subcountsTitle}
                 data-testid="topology-index-subcounts"
-                // Label step, sans with tabular figures (2026-09-25): at the 9.5px caption in
-                // mono it measured 4.69:1 and the fixed-advance face pushed the Hangul kind
-                // names apart — a count line a person reads, not a micro legend.
+                // Label step, sans with tabular figures: a count line people read, and mono pushes
+                // Hangul apart.
                 className="shrink-0 text-label leading-label tabular-nums text-[color:var(--map-panel-text-tertiary)]"
               >
                 {labels.capabilitiesShort} {subcounts.capabilityCount} · {labels.elementsShort}{" "}
@@ -302,17 +231,15 @@ export function TopologyIndexTreeRow({
         {count !== null ? (
           <span
             data-testid="topology-index-row-count"
-            // Explain on the spot, to a user counting them up, why the domain badges
-            // sum past the census total (multi-membership is counted more than once).
-            // The scope word ("everything below N") leads, making explicit that this
-            // number is the whole subtree's total rather than direct children (only when present).
+            // Explains why domain badges sum past the census (multi-membership counts more than
+            // once); the scope word leads when present.
             title={
               isDomain
                 ? labels.subtotalTitle
                   ? `${labels.subtotalTitle} ${count} · ${labels.domainCountTitle}`
                   : labels.domainCountTitle
-                : // The multi-membership caveat belongs to domain badges, which can
-                  // sum past the census; the scope word applies to every badge.
+                : // Only domain badges carry the multi-membership caveat (they can sum past the
+                  // census); the scope word applies to every badge.
                   censusRow && labels.subtotalTitle
                   ? `${labels.subtotalTitle} ${count}`
                   : undefined
@@ -323,18 +250,13 @@ export function TopologyIndexTreeRow({
           </span>
         ) : null}
       </div>
-      {/* Frame measurement 2026-07-27 — this was a **33ms hard cut** (2 frames, zero
-          height transition). The camera on the same click spends 200ms while the list
-          alone flipped between existing and not, so children read as "a different
-          screen" rather than "expanded". It uses the list-row disclosure grammar the
-          app already has (`.ai-row-disclosure`) — zero new curves, zero new durations,
-          and it leaves by the same path when collapsing. */}
+      {/*
+       * Children use the list-row disclosure grammar (`.ai-row-disclosure`) instead of a hard cut,
+       * leaving the same way.
+       */}
       {hasChildren ? (
-        // The box is always drawn — mounting it on open leaves the transition no
-        // starting height and produces a hard cut (`useRowDisclosure` distinguishes "a
-        // row that appeared already open" from "a row opening now" by the previous
-        // commit). Only the content drops out of the collapsed state, so it does not
-        // remain in the screen reader or the tab order.
+        // The box is always drawn so the transition has a starting height; only the content drops
+        // out when collapsed, leaving the accessibility tree and tab order.
         <div
           ref={branchBoxRef}
           data-state={branchOpen ? "open" : "closed"}

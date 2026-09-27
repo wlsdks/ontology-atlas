@@ -1,7 +1,4 @@
-// Bug sweep 2026-09-01: the web rename rewrote only body wikilink/md-link
-// forms, so every frontmatter relation to the renamed node was orphaned —
-// backlinks vanished and the graph minted a phantom stub under the old name.
-// These tests pin the parity with MCP `redirectBacklinks` semantics.
+// Parity with MCP `redirectBacklinks`: frontmatter relations to a renamed node are rewritten.
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -91,8 +88,7 @@ describe('rewriteRenamedDocRefs — body links', () => {
   });
 
   it('rewrites a same-directory relative markdown link', () => {
-    // The old regex demanded the full slug inside the parentheses, so this
-    // exact form was detected as a referrer but left dangling.
+    // A same-directory relative link must be rewritten, not left dangling.
     const raw = '---\nkind: capability\n---\n\nSee [auth](auth.md) and [auth](./auth.md#h).\n';
     const next = rewriteRenamedDocRefs(raw, args);
     expect(next).toContain('[auth](authn.md)');
@@ -132,10 +128,8 @@ describe('rewriteRenamedDocRefs — 2026-09-01 review regressions', () => {
   });
 
   it('resolves nested-vault wikilinks before rewriting, both directions', () => {
-    // Inside the nested ontology/ vault, [[capabilities/y]] means
-    // ontology/capabilities/y — the raw form must be rewritten when the NESTED
-    // doc is renamed, and left alone when a root-level doc of the same written
-    // name is renamed.
+    // In the nested ontology/ vault `[[capabilities/y]]` means ontology/capabilities/y: rewrite it
+    // for the nested doc and leave it for a same-named root-level doc.
     const nestedBody = '---\nkind: document\n---\n\nsee [[capabilities/y]] and [[capabilities/y|the y]].\n';
     const nestedRename = rewriteRenamedDocRefs(nestedBody, {
       oldSlug: 'ontology/capabilities/y',
@@ -156,12 +150,7 @@ describe('rewriteRenamedDocRefs — 2026-09-01 review regressions', () => {
   });
 });
 
-/*
- * The moved document's own bytes (2026-09-26, map-edit QA D6). A rename moved the file and
- * rewrote every referrer, then wrote the old bytes verbatim at the new path — so the moved
- * file still declared `slug: <old path>` while it lived at the new one. The rule is MCP
- * `rename_concept`'s: `slug:` follows the move only when it mirrors the old file slug.
- */
+/* `slug:` follows a move only when it mirrored the old file slug, as in MCP `rename_concept`. */
 describe('rewriteMovedDocSelf', () => {
   const moved = { oldSlug: 'capabilities/mcp-tool-server', newSlug: 'capabilities/mcp-tool-host' };
 
@@ -199,15 +188,8 @@ describe('rewriteMovedDocSelf', () => {
 });
 
 /*
- * A kind change moves an entry between the lists named for kinds (2026-09-26, map-edit review).
- *
- * Reclassifying `capabilities/companion-memories` into an element moved the file and rewrote
- * every referrer to the new address, but kept each entry under its OLD list: the domain then read
- * `capabilities: [..., elements/companion-memories, ...]`. It still resolved, so no warning fired
- * and the map drew nothing wrong, while `vault.mjs` counted an element among the domain's
- * capabilities. The lists named for a kind (`domains`, `capabilities`, `elements`; spec §5) say
- * what their entries are, so the entry follows its document's new kind — when the referrer's kind
- * may hold that list. When it may not, nothing is guessed: the entry stays and is reported.
+ * On a kind change an entry moves to the list for the new kind when the referrer may hold that
+ * list (spec §5); otherwise it stays and is reported.
  */
 describe('planReferrerRewrite — a kind change moves the entry to the new kind list', () => {
   const reclassify = {
@@ -282,8 +264,7 @@ describe('planReferrerRewrite — a kind change moves the entry to the new kind 
   });
 
   it('leaves the entry in place and reports it when the referrer kind has no list for the new kind', () => {
-    // A capability keeps elements, not capabilities: an element that becomes a capability is
-    // not guessed into a list its holder may not have (that would invent a same-kind bridge).
+    // A capability holds elements, not capabilities; guessing a list would invent a same-kind bridge.
     const raw = '---\nkind: capability\ntitle: Recall\nelements: [elements/recall-index, elements/x]\n---\n';
     const plan = planReferrerRewrite(raw, {
       oldSlug: 'elements/x',
@@ -299,7 +280,7 @@ describe('planReferrerRewrite — a kind change moves the entry to the new kind 
   });
 
   it('reports an in-place kind change that no list of the referrer can hold', () => {
-    // A document keeps no folder, so the file stays where it is; no kind keeps a list of documents.
+    // No kind keeps a list of documents, so the entry stays.
     const raw = '---\nkind: domain\ncapabilities: [capabilities/a, capabilities/x]\n---\n';
     const plan = planReferrerRewrite(raw, {
       oldSlug: 'capabilities/x',

@@ -60,11 +60,7 @@ function otherDialog({ leaving }: { leaving: boolean }) {
   document.body.append(el);
 }
 
-/**
- * 2026-09-25, against a real folder: `?` and ⌘K did nothing on Library, Git, Automations, Agents
- * and the harness (0 of 5 each), though the shortcut sheet lists both under Navigation, the
- * section it shows on every screen. The shell answers them now wherever the rail stands.
- */
+/** The sheet lists `?` and ⌘K on every screen, so the shell answers them wherever the rail stands. */
 describe("ShellKeyboardSurfaces", () => {
   it("opens the shortcut sheet on ? and closes it on ? again", async () => {
     render(<ShellKeyboardSurfaces disabled={false} />);
@@ -83,10 +79,7 @@ describe("ShellKeyboardSurfaces", () => {
     expect(screen.queryByTestId("shell-sheet")).toBeNull();
   });
 
-  /*
-   * 2026-09-26, real folder: `?` right after Esc closed the Automations sheet opened nothing,
-   * because the guard still counted that sheet during its exit motion.
-   */
+  // A dialog in its exit motion does not block `?`.
   it("opens the sheet at once while another dialog is only leaving", async () => {
     mocks.realGuard = true;
     otherDialog({ leaving: true });

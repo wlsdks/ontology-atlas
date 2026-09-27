@@ -1,15 +1,8 @@
 /**
- * Node identity and the gates every write passes: resolving a slug or uid to the
- * document actually on disk, the not-found messages that name the next call, the
- * human-reserved and review-field checks, the authorship stamp, and the shared
- * destructive dry-run preview fields.
- *
- * It also holds the whole-vault issue finders — dangling graph refs, duplicate
- * slugs and uids — because they answer the same question (does this reference
- * resolve to a node?) and both `get_concept` and `validate_vault` ask it.
- *
- * Read and write workflows both sit on this, which is why it is its own module
- * rather than living with either side. Nothing here imports a handler.
+ * Node identity and the gates every write passes: slug/uid resolution, not-found
+ * messages naming the next call, human-reserved and review-field checks, the
+ * authorship stamp, and the whole-vault finders for dangling refs and duplicate
+ * slugs and uids. Nothing here imports a handler.
  */
 
 import { resolveAgentName } from '../activity-log.mjs';
@@ -64,10 +57,8 @@ import { join } from 'node:path';
 function docNotFoundError(slug, docs) {
   const err = new Error(`Doc not found: ${slug}`);
   const candidateSlugs = suggestSimilarSlugs(VAULT_ROOT, slug);
-  // Check first whether the vault names this in a relation key: most of what the
-  // screens (map, insights) count as concepts are reference-only concepts with no
-  // document, so a flat "not found" turns every name a user copies off the screen
-  // into a dead end.
+  // A name the vault references without a document is a reference-only concept;
+  // saying so keeps names copied off the map or insights from being a dead end.
   let referencedBy = [];
   try {
     referencedBy = findGraphReferences(docs ?? loadVaultDocs(VAULT_ROOT), slug);
@@ -127,10 +118,8 @@ function requireValidFrontmatterPatch(frontmatter) {
     if (value === null || value === undefined) continue;
     requireNonBlankString(value, `frontmatter.${key}`);
   }
-  // A patch is not authorship (decision ledger, 2026-07-31). `created_by` is a
-  // fact the call path proved at write time, so it cannot be rewritten later — if
-  // it could, an agent could relabel its own node `human`, and the field would
-  // stop being a fact and become a claim. Existing values survive a patch intact.
+  // A patch is not authorship: `created_by` is proved by the call path at write time,
+  // so existing values survive a patch, or an agent could relabel its node `human`.
   if (Object.prototype.hasOwnProperty.call(frontmatter, CREATED_BY_KEY)) {
     throw new Error(
       `frontmatter.${CREATED_BY_KEY} cannot be patched — authorship is stamped once, at write time, by the path that proves it. ` +
@@ -141,38 +130,12 @@ function requireValidFrontmatterPatch(frontmatter) {
 }
 
 /**
- * The human-judgment half of a patch, on the one call path that is provably an
- * agent (`docs/benchmark/FINDINGS-2026-09-02-review-marks.md`).
- *
- * Measured, with the rule written in the vault's own `AGENTS.md`: one of three
- * model tiers deleted a live `review_state: human_decides` and replaced it with
- * `review_state: confirmed` plus a `reviewed_by` name it had never been given.
- * A documented convention is honoured in proportion to model capability, so the
- * refusal has to live here, where the call path — not the prompt — decides.
- *
- * ⚠️ **What this is not.** It is a lane guard, not authentication. It decides
- * who may write *through this server*; an agent with ordinary file tools edits
- * the Markdown directly and never meets it, and the binding is an unkeyed hash
- * anyone can recompute. So a stamp here means "no Atlas write tool produced
- * this", never "a person did" — and nothing in this product may say otherwise
- * (Codex review, 2026-09-02). What survives regardless is the Git diff: every
- * such edit is visible, attributable, and revertable, which is the same trust
- * model `forbidden.md` already uses for declarative extensions.
- *
- * The asymmetry is deliberate and is the whole mechanism:
- *
- *   - **Raising is allowed.** An agent that cannot settle a question may write
- *     `review_state: human_decides` and a `review_note`. That is the behaviour
- *     the product wants, and refusing it would leave an agent with no way to
- *     hand work back.
- *   - **Clearing and confirming are refused.** Both assert that a person acted.
- *     Nothing in the file afterwards distinguishes an agent-typed `confirmed`
- *     from a person-typed one, which is exactly why this cannot be a default an
- *     instruction can override.
- *
- * This gate covers writes that come through this server. It cannot reach a
- * direct file edit, and it is not described anywhere as if it could — the
- * durable half of the design is `reviewDigest`, which needs no cooperation.
+ * The human-judgment half of a patch
+ * (`docs/benchmark/FINDINGS-2026-09-02-review-marks.md`). Raising
+ * `review_state: human_decides` is allowed; clearing or confirming is refused,
+ * because both assert a person acted and the file cannot tell who typed it.
+ * A lane guard for writes through this server, not authentication: direct file
+ * edits never meet it, and the Git diff stays the trust record.
  */
 function requireAgentWritableReviewFields(frontmatter) {
   for (const key of HUMAN_ONLY_REVIEW_KEYS) {
@@ -204,20 +167,8 @@ function requireAgentWritableReviewFields(frontmatter) {
 }
 
 /**
- * The node itself is reserved — refuse the whole write, not just its review keys.
- *
- * A reservation that only protected its own frontmatter would be worthless: the
- * meaning a person reserved lives in the body and the relations, and an agent
- * rewriting those while leaving the marker intact is the failure this exists to
- * stop. Every write tool that names an existing node runs this before touching
- * disk, so the refusal cannot be reached by choosing a different tool.
- */
-/**
- * The node as it is on disk, or `null` when it is not there yet.
- *
- * A missing file is not an error here: the reservation guard asks "is this node
- * reserved", and a node that does not exist cannot be. Its own write path
- * reports the missing file with the message that fits that operation.
+ * The node as it is on disk, or `null` when it does not exist yet; a node that
+ * does not exist cannot be reserved.
  */
 function readDocIfPresent(slug) {
   try {
@@ -228,20 +179,9 @@ function readDocIfPresent(slug) {
 }
 
 /**
- * What a person has ruled on this node — the half a following agent has to be
- * able to retrieve, or the reservation is only a screen decoration.
- *
- * `currentness` is the answer the call-path gate cannot give, because a direct
- * file edit never passes through this server. It is recomputed from the file on
- * every read, so an approval that no longer describes its node says so without
- * anyone having noticed the change or cooperated in reporting it.
- *
- * **`digestNow` was here and was removed** (Codex review, 2026-09-02). It was
- * returned so a human-proving path could bind an approval with the same function
- * this server checks it with. But this server's caller *is* the agent, and the
- * binding is an unkeyed hash: handing over the value that makes a stamp look
- * current is handing over the forgery. The app computes its own through the
- * contract-tested twin, and nothing else needs it.
+ * What a person has ruled on this node, recomputed from the file on every read so
+ * `currentness` reveals an approval that no longer describes its node. No digest is
+ * returned: the caller is the agent, and the value would let it forge a stamp.
  */
 function describeReview(doc) {
   const frontmatter = doc?.frontmatter ?? {};
@@ -269,6 +209,11 @@ function describeReview(doc) {
   };
 }
 
+/**
+ * Refuses the whole write when the node itself is reserved, since the reserved
+ * meaning lives in the body and relations too. Every write tool naming an existing
+ * node runs this before touching disk.
+ */
 function requireNodeNotReservedForHuman(doc, operation) {
   const state = doc?.frontmatter?.[REVIEW_STATE_KEY];
   if (state !== REVIEW_STATE_HUMAN_DECIDES) return;
@@ -281,17 +226,9 @@ function requireNodeNotReservedForHuman(doc, operation) {
 }
 
 /**
- * Authorship stamp — a write that came through this server was made by **an
- * agent**. The call path itself proves that, so it cannot be forged, and this is
- * the only place it is stamped.
- *
- * The name reuses the identity the activity log (`activity.jsonl`) already
- * writes, resolved the same way — heartbeat > the connect greeting's
- * clientInfo.name > unknown (2026-09-07; the activity log made that move on
- * 2026-08-13 and the stamp lagged, so a node written from the app's own agent
- * conversation said `agent:unknown` while the log beside it said `claude-code`).
- * No second identity scheme. With neither only the name is unknown — a human
- * still did not write it — so it is `agent:unknown` (decision ledger, 2026-07-31).
+ * Authorship stamp: a write through this server was made by an agent, which the
+ * call path proves. The name resolves like the activity log's (heartbeat > the
+ * connect greeting's clientInfo.name), else `agent:unknown`.
  */
 function agentProvenance() {
   return agentCreatedBy(resolveAgentName(VAULT_ROOT, server.getClientVersion?.()));
@@ -308,12 +245,8 @@ function destructivePreviewState({ dryRun, wouldChange, blockedReasons = [] }) {
 }
 
 /**
- * Checks that the endpoints of a relation **write** are graph nodes.
- *
- * The read tools (`get_concept`, `find_neighbors`) legitimately handle documents
- * that are not nodes, so `resolveExistingVaultSlug` itself stays permissive —
- * only the write path narrows. A rejection follows this repository's refusal
- * grammar: **why it cannot happen, and where to go instead.**
+ * Checks that a relation write's endpoints are graph nodes. Reads stay permissive
+ * about non-node documents; only the write path narrows, naming why and where to go.
  */
 function assertGraphNodeEndpoint(canonicalSlug, role) {
   const doc = loadVaultDocs(VAULT_ROOT).find((d) => d.slug === canonicalSlug);
@@ -329,10 +262,8 @@ function assertGraphNodeEndpoint(canonicalSlug, role) {
 
 function resolveExistingVaultSlug(slug, docs = null) {
   if (typeof slug !== 'string' || slug.trim() === '') return null;
-  // Canonicalize letter case to the on-disk spelling before returning. On macOS
-  // and Windows `existsSync` accepts a wrong-case slug, but every backlink and
-  // relation match downstream is a case-sensitive string comparison — returning
-  // the caller's spelling here made writes target refs that no document uses.
+  // Return the on-disk letter case: `existsSync` accepts a wrong-case slug on macOS
+  // and Windows, but every backlink and relation match downstream is case-sensitive.
   const canonicalCase = canonicalDiskSlug(VAULT_ROOT, slug);
   if (canonicalCase) return canonicalCase;
   const vaultDocs = docs ?? loadVaultDocs(VAULT_ROOT);
@@ -397,25 +328,10 @@ function missingSlugMessage(prefix, slug, { createHint = false } = {}) {
   return lines.join(' ');
 }
 
-// validate_vault — one call gives an agent the whole vault's health, in the same
-// shape as CLI `ontology-atlas validate --json`. It fills the gap between per-doc
-// `warnings` (get_concept) and the vault aggregate (`vaultWarnings` in
-// list_concepts): a detailed report combining both.
 /**
- * Builds the summary-freshness section of `validate_vault`.
- *
- * Reports domains and projects whose containment list changed after their
- * description was last written — the update path nothing else in this tool checks.
- * `pathDrift` asks whether a node still points at real code; this asks whether a
- * node still describes what it holds.
- *
- * Advisory only. A stale description blocks nothing and is never rewritten here:
- * the body is a human judgement, so the tool asks for a re-judgement and stops.
- *
- * Degrades to `checked: false` outside a repository rather than reporting a clean
- * bill, because not looking is not the same as finding nothing. History reading is
- * bounded to summary nodes (8 of 83 in the dogfood vault), so a vault of ordinary
- * size pays well under a second.
+ * The summary-freshness section of `validate_vault`: domains and projects whose
+ * containment changed after their description was written. Advisory only, and
+ * `checked: false` outside a repository, since not looking is not finding nothing.
  */
 function buildSummaryFreshness(docs) {
   const summarySlugs = docs
@@ -559,14 +475,8 @@ function groupDanglingIssuesBySlug(docs) {
 }
 
 /**
- * Two documents claiming the same canonical slug (measured 2026-07-29).
- *
- * **A per-file check cannot catch this in principle** — either file alone looks
- * fine. It arises because `patch_concept` did not stop `frontmatter.slug` being
- * overwritten with a value another node already uses (add_concept blocks it and
- * rename_concept demands `overwrite`; only this path was open). Once it happens,
- * no relation naming that slug can be resolved to one side. The compiler saw
- * `ambiguous-alias` while `validate_vault` quietly returned clean.
+ * Two documents claiming the same canonical slug. Either file alone looks fine, so
+ * only a whole-vault pass sees it; no relation naming that slug resolves to one side.
  */
 function findDuplicateSlugIssues(docs) {
   const byDeclared = new Map();

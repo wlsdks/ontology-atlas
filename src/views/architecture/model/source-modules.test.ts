@@ -29,7 +29,7 @@ describe('listPatternModules', () => {
     const modules = await listPatternModules('services/*/domain/**', lister({
       services: [dir('checkout'), dir('billing'), file('README.md')],
       'services/checkout/domain': [file('order.ts')],
-      // billing has no domain directory: listing it returns null, so it is absent, not empty.
+      // billing has no domain directory, so it is absent, not empty.
     }));
     expect(modules).toEqual([
       { name: 'checkout/domain', path: 'services/checkout/domain', kind: 'dir' },
@@ -60,7 +60,6 @@ describe('deriveRoleSourceModules', () => {
       'src/app': [], 'src/widgets': [], 'src/features': [], 'src/entities': [], 'src/shared': [],
     }));
     expect(byRole.routing!.map((m) => m.name)).toEqual(['[locale]', 'globals.css']);
-    // The excluded module is filtered with the shared glob dialect, not shown as occupied.
     expect(byRole.views!.map((m) => m.name)).toEqual(['home']);
     expect(byRole.widgets).toEqual([]);
   });
@@ -81,13 +80,7 @@ describe('deriveRoleSourceModules', () => {
 
 describe('dot-prefixed entries', () => {
   it('are not modules, on any of the three walks', async () => {
-    /*
-     * ⚠️ Found in the installed app on 2026-08-28: the widgets role led with `.gitkeep` and
-     * counted it among its 23 modules, so the screen stated a number wrong by one. On somebody
-     * else's project the same walk would show `.DS_Store`, `.eslintrc.js` and `.env.local` — the
-     * last named by `.claude/rules/local-first.md` when it says to skip dotfiles while reading the
-     * user's disk.
-     */
+    /* `.claude/rules/local-first.md` says to skip dotfiles while reading the user's disk. */
     const tree: Record<string, { name: string; kind: 'dir' | 'file' }[]> = {
       'src/widgets': [
         { name: '.gitkeep', kind: 'file' },
@@ -107,23 +100,19 @@ describe('dot-prefixed entries', () => {
     };
     const listDir = async (path: string) => tree[path] ?? null;
 
-    /* A concrete base with `**`: children are the modules. */
     expect((await listPatternModules('src/widgets/**', listDir)).map((m) => m.name)).toEqual([
       'acp-chat-panel',
     ]);
-    /* A wildcard leaf: matching entries are the modules. */
     expect((await listPatternModules('src/shared/lib/*', listDir)).map((m) => m.name)).toEqual([
       'cn.ts',
     ]);
-    /* A branched base: a dot-named branch is not walked into at all. */
     expect((await listPatternModules('services/*/domain/**', listDir)).map((m) => m.path)).toEqual([
       'services/checkout/domain',
     ]);
   });
 
   it('still tells a missing directory from an empty one', async () => {
-    /* The filter must not turn "no such directory" into "a directory with nothing in it" — the
-       surface says something different for each. */
+    /* "No such directory" and "nothing worth showing" read differently on the surface. */
     const listDir = async (path: string) =>
       path === 'src/hidden-only' ? [{ name: '.gitkeep', kind: 'file' as const }] : null;
     expect(await listPatternModules('src/hidden-only/**', listDir)).toEqual([]);

@@ -2,22 +2,8 @@ import type { AgentProposal, ProposalChange } from './types';
 import type { CompileSourceRefusal, WikiPageProposal } from './wiki-proposal';
 
 /**
- * **The one card a Compile turn ends at.**
- *
- * The concept card answers "which nodes change"; this one answers a different question,
- * and it is the question `docs/DECISIONS.md` (2026-09-06) named as the price of the local
- * route: *which page, written from what, and what could not be read.* A person who cannot
- * open the sources themselves in the time it takes to approve — that is the whole point of
- * compiling — needs those three facts in front of the button, not behind it.
- *
- * **A page that fails validation has no write action at all.** Not a disabled one, not one
- * behind a warning: `proposal` is null for it and it contributes nothing writable, so the
- * only thing the screen can do with a bad page is show what is wrong with it. That is the
- * structural version of "the card shows the exact failure and offers nothing to write".
- *
- * Everything here is pure. The `AgentProposal` it returns is the ordinary shape
- * `applyProposal` already takes, so the write path, the mtime guard, and the "zero files
- * changed on any refusal" contract are the existing ones rather than a second copy.
+ * The card a Compile turn ends at: which page, written from what, and what could not be read
+ * (docs/DECISIONS.md 2026-09-06). A page that fails validation has no write action at all.
  */
 
 export interface CompileCardRow {
@@ -49,12 +35,7 @@ export interface CompileConsentCard {
   writableCount: number;
   /** How many were refused before the person saw them. */
   refusedCount: number;
-  /**
-   * The proposal `applyProposal` takes, or **null when nothing may be written.**
-   *
-   * Null is the card's whole safety statement: with no proposal there is no argument to
-   * pass to the applier, so "Allow" has nothing to call.
-   */
+  /** Null when nothing may be written, so "Allow" has nothing to call. */
   proposal: AgentProposal | null;
 }
 
@@ -120,12 +101,7 @@ export function buildCompileConsentCard(
             status: 'pending',
             changes,
             snapshotRequested: options.vaultIsGit,
-            /*
-             * A wiki page is not a graph node, so no node was read to author it and the
-             * concept card's "this edits a file you did not read" warning has no subject
-             * here. The sources it was written from are on the card's own rows, which is
-             * the fact that matters for this kind of page.
-             */
+            /* A wiki page reads no graph node; its sources are on the card's rows. */
             readNodesThisTurn: [],
           },
   };

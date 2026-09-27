@@ -39,7 +39,7 @@ export interface OntologyChangeSet {
   relation: OntologyRelationChange | null;
   fields: OntologyChangeField[];
   itemCount: number;
-  /** Every requested row, in protocol order. `relation`/`fields` above mirror item 0. */
+  /** Every requested row in protocol order; `relation`/`fields` mirror item 0. */
   items: OntologyChangeItem[];
 }
 
@@ -100,11 +100,7 @@ function withItems(
   };
 }
 
-/**
- * Turns the ACP tool input into the same typed unit the manual editor reviews.
- * Exact means the requested after-values are shown without inference. Existing
- * values are only populated by manual editors that already hold a vault doc.
- */
+/** ACP tool input as the typed unit the manual editor reviews; after-values shown without inference. */
 export function buildOntologyChangeSet(
   permissionToolName: string,
   rawInput: Record<string, unknown>,
@@ -218,13 +214,7 @@ export function buildOntologyChangeSet(
         : destructive
           ? 'remove'
           : 'write';
-  /*
-   * ⚠️ **The key that named the target is not one of the changed fields** (measured on the
-   * installed shape, 2026-09-19). `rename_concept({ slug, new_slug })` read as 「2 requested
-   * fields」 with `slug` counted among them, and `slug` is the document being changed, not a
-   * change to it. The two named branches above already omit their own target key; this one
-   * listed everything, so every generic tool over-reported by exactly one.
-   */
+  /* The key naming the target (`slug`, `from`, `projectSlug`) is not a changed field. */
   const targetKey = (['slug', 'from', 'projectSlug'] as const).find((key) => text(rawInput[key]));
   const target = targetKey ? text(rawInput[targetKey]) : null;
   const fields = fieldsFrom(

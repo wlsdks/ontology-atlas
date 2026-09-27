@@ -1,5 +1,4 @@
-// R17 — `ontology-atlas infer-imports [rootPath]`
-// MCP infer_imports wrapper. moduleEdges (capability A → B) are source-backed
+// `ontology-atlas infer-imports [rootPath]` wraps MCP infer_imports. moduleEdges are source-backed
 // review candidates, never self-approving semantic depends_on relations.
 
 import { COLORS } from '../lib/colors.mjs';
@@ -72,10 +71,8 @@ export async function runInferImports(args) {
     return 2;
   }
 
-  // --threshold N filter (count >= N). Stops a large codebase's weak imports
-  // (count=1, accidental) becoming noise in the ontology. Applied to moduleEdges
-  // only — file-level edges, external, and unresolved stay as they are, for agent
-  // diagnostics.
+  // --threshold N keeps moduleEdges with count >= N, so accidental single imports do not become noise;
+  // file-level, external and unresolved edges stay for agent diagnostics.
   let filteredOut = 0;
   if (threshold && threshold > 1 && Array.isArray(result.moduleEdges)) {
     const before = result.moduleEdges.length;

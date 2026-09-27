@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
-  SEVERITIES,
   collectFindings,
   diffFindings,
   findingId,
@@ -137,11 +136,6 @@ test('the record states what it cannot tell you', () => {
   assert.doesNotMatch(markdown, /^kind:/m, 'the record must never carry a kind, or the compiler counts it as a concept');
   assert.match(markdown, /commit: abc1234/);
   assert.match(markdown, /graph_hash: hash/);
-});
-
-test('severity order is worst first and unknown is not ok', () => {
-  assert.deepEqual(SEVERITIES, ['violation', 'unknown', 'review', 'info']);
-  assert.ok(SEVERITIES.indexOf('unknown') < SEVERITIES.indexOf('info'));
 });
 
 test('a validation problem becomes one finding per issue, keyed by file and code', () => {

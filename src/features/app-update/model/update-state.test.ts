@@ -36,8 +36,7 @@ describe('shouldCheckForUpdate', () => {
   });
 
   it('recovers when the clock moves backwards', () => {
-    // If a timezone change or manual adjustment makes the elapsed time negative, leaving it means the
-    // next check never comes. A failure that stops quietly and is hard to notice.
+    // A negative elapsed time must still be due, or the next check never comes.
     expect(shouldCheckForUpdate({ isDesktop: true, now: 500, lastCheckedAt: 1_000_000 })).toBe(true);
   });
 });

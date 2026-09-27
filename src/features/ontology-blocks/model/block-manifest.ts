@@ -1,11 +1,8 @@
 import { nodeUrn } from '@/shared/lib/interop-format';
 
 /**
- * The ontology block's sidecar manifest — the only non-markdown file left at the export
- * folder's root. A block is just a folder of `.md` (the trust charter in AGENTS.md forbids
- * new file formats), and this JSON is only a calling card saying where the bundle came from.
- * Node identity reuses the permanent UID URN convention from `interop-format.ts`
- * (`urn:uuid:<uid>`); the slug is the readable current address.
+ * The block's one non-Markdown file, a calling card of where it came from; node identity uses
+ * the `urn:uuid:<uid>` convention of `interop-format.ts`.
  */
 export const BLOCK_MANIFEST_FILENAME = 'block-manifest.json';
 export const BLOCK_MANIFEST_SCHEMA_VERSION = 2;

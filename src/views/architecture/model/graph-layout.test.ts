@@ -23,15 +23,7 @@ describe('buildArchitectureGraph', () => {
   });
 
   it('draws the spine and nothing else under lower-only, so seven boxes are one chain', () => {
-    /*
-     * ⚠️ **The 21 stayed refused; the 6 came back** (measured 2026-08-30, dogfood profile through
-     * the picker stub at 1512x945). Drawing all 21 restates the column order twenty-one times, and
-     * that is still the reason they are not drawn. Drawing *none* was the overcorrection: the
-     * measured screen put seven equal boxes in one column with three strokes among them, three of
-     * them touching nothing at all, and five boxes stating an outgoing import count whose stroke
-     * the canvas never drew. The adjacent pair is the one permitted edge the order cannot restate,
-     * because it is what makes the order a chain instead of a stack.
-     */
+    /* Drawing all 21 permitted edges restates the column order; the six adjacent ones make it a chain. */
     const graph = buildArchitectureGraph(fsd(), []);
     expect(graph.edgeSource).toBe('permitted');
     expect(graph.edges.every((edge) => edge.kind === 'permitted')).toBe(true);
@@ -44,7 +36,6 @@ describe('buildArchitectureGraph', () => {
       'views>widgets',
       'widgets>features',
     ]);
-    /* Every box the profile declares is on the chain: nothing floats at rest. */
     const touched = new Set(graph.edges.flatMap((edge) => [edge.from, edge.to]));
     expect(graph.boxes.filter((box) => !touched.has(box.id))).toEqual([]);
   });
@@ -119,11 +110,6 @@ describe('buildArchitectureGraph', () => {
   });
 
   it("gives the chain's two ends the standard's terminator shape, and the rest a process", () => {
-    /*
-     * ISO 5807: a terminator is the start or the end of a process, a rectangle is a unit of work.
-     * Derived from the declared graph, so a profile that names its entry layer anything at all
-     * still gets the right shape.
-     */
     const shapeOf = new Map(buildArchitectureGraph(fsd(), []).boxes.map((b) => [b.id, b.shape]));
     expect(shapeOf.get('routing')).toBe('terminator');
     expect(shapeOf.get('shared')).toBe('terminator');
@@ -133,11 +119,8 @@ describe('buildArchitectureGraph', () => {
 
   it('reads the shape from the declared graph, not from the strokes it happens to draw', () => {
     /*
-     * Under lower-only the drawn set is the spine, six of the twenty-one the profile declares, so
-     * the strokes on screen are never the whole graph. The discriminator is a measured violation
-     * running back up the chain: it puts an outgoing stroke on `shared`, which the profile declares
-     * as the role nothing may leave. Reading the shape off the strokes would turn that box into a
-     * process, and the sink would stop looking like a sink.
+     * A measured violation back up the chain gives `shared` an outgoing stroke; shape from the
+     * drawn strokes would stop the sink looking like a sink.
      */
     const drawn = buildArchitectureGraph(fsd(), [{ fromRole: 'shared', toRole: 'routing', count: 3 }]);
     expect(drawn.edges.filter((edge) => edge.kind === 'permitted')).toHaveLength(6);
@@ -157,14 +140,8 @@ describe('buildArchitectureGraph', () => {
 describe('a fan cannot be saved by turning', () => {
   it('is as wide drawn down as drawn across, so the covered-edge affordances stay necessary', () => {
     /*
-     * ⚠️ **This is the shape that keeps `the drawing is never cut` from being a general claim.**
-     * A chain is one role per rank, so laying it out downward trades a long axis for a short one
-     * and it always fits. A fan does not: three roles at one rank are three lanes wide whichever
-     * way the chain runs, and no rotation makes 604px fit a 314px canvas.
-     *
-     * The geometry is asserted here rather than in the browser because neither sample vault has
-     * this shape, so no end-to-end fixture can produce it — which is exactly why the claim was
-     * written too broadly in the first place.
+     * A fan is three lanes wide whichever way the chain runs, so `the drawing is never cut` holds for
+     * chains only. Asserted here because neither sample vault has this shape.
      */
     const graph = buildArchitectureGraph(
       buildArchitectureLayout(parseArchitectureProfile(FAN_PROFILE_FRONTMATTER as never)),

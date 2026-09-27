@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { AGENTS_MODELS_HREF, DESTINATION_HREF } from '@/shared/config/destinations';
+import { AGENTS_MODELS_HREF, DESTINATION_HREF, MCP_CONNECTORS_HREF } from '@/shared/config/destinations';
 
-import { buildAgentsTabHref, parseAgentsTab } from './agents-tab-state';
+import { AGENTS_TAB_PARAM, buildAgentsTabHref, parseAgentsTab } from './agents-tab-state';
 
 describe('agents tab state', () => {
   it('parses the three tabs and falls back to agents', () => {
@@ -35,5 +35,11 @@ describe('agents tab state', () => {
     const models = new URL(AGENTS_MODELS_HREF, 'https://x');
     expect(parseAgentsTab(models.searchParams.get('tab'))).toBe('models');
     expect(models.pathname).toBe(DESTINATION_HREF.agents);
+  });
+
+  it('the MCP connectors address every door uses opens the MCP tab', () => {
+    const connectors = new URL(MCP_CONNECTORS_HREF, 'https://x');
+    expect(parseAgentsTab(connectors.searchParams.get(AGENTS_TAB_PARAM))).toBe('mcp');
+    expect(connectors.pathname).toBe(DESTINATION_HREF.agents);
   });
 });

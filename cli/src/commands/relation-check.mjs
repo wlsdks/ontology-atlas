@@ -1,7 +1,5 @@
-// `ontology-atlas relation-check <from> <to> <type> [vault]`
-// Schema-aware preflight before add_relation. Thin wrapper over MCP
-// query_ontology({ operation: 'relation_check' }) so developer CLI and AI
-// agents see the same proposedAction / semantic approval-gate contract.
+// `ontology-atlas relation-check <from> <to> <type> [vault]`: schema-aware preflight before add_relation
+// over MCP relation_check, so CLI users and agents see the same proposedAction and approval gate.
 
 import { COLORS } from '../lib/colors.mjs';
 import { runRelationCheckQuery, renderRelationCheckResult } from '../lib/relation-preflight.mjs';

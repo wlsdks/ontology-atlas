@@ -59,8 +59,8 @@ function fakeVault(seed?: string) {
 
 describe('useVaultConnectors', () => {
   it('reports no folder rather than an empty list', async () => {
-    // "Nothing attached" and "no vault open" are different sentences, and a screen that shows
-    // an empty list for the second one invites somebody to add to a file that has no home.
+    // "No vault open" is not "nothing attached": an empty list would invite adding to a file with
+    // no home.
     const { result } = renderHook(() => useVaultConnectors(null));
     await waitFor(() => expect(result.current.status).toBe('unavailable'));
     expect(result.current.connectors).toEqual([]);

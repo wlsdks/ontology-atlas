@@ -1,13 +1,6 @@
-// `ontology-atlas wiki-index [vault] [--json] [--write]`
-//
-// The wiki's index, computed. The LLM Wiki pattern keeps an `index.md` the model
-// maintains; a maintained list drifts, and a page renamed by a person leaves a stale
-// row. This one is read from the pages every time it is asked for: title, summary,
-// status, writer, the sources a page was compiled from, the pages it links and the
-// pages that link it, and any problem `wiki-validate` would report. Markdown to stdout
-// for a person or an agent at the terminal; `--json` for a program; `--write` to leave
-// `wiki/_index.md` in the folder for an editor that shows files — generated, marked so,
-// and furniture by the underscore rule, never a page and never a second truth.
+// `ontology-atlas wiki-index [vault] [--json] [--write]`: the wiki index computed from the pages every time, so
+// it cannot drift like a maintained `index.md`. `--write` leaves a generated `wiki/_index.md`, furniture by the
+// underscore rule, never a page and never a second truth.
 
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';

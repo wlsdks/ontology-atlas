@@ -19,32 +19,18 @@ import { useBuildFromCode } from './use-build-from-code';
 import { useFirstRunSampleModeSettled } from './use-first-run-sample-mode-settled';
 
 /**
- * All the logic behind the INDEX panel's "get started" module
- * (`FirstRunStarterModule`) — dismiss policy, the open-folder and create-vault
- * actions, and Escape consumption — encapsulated away from the markup, so the
- * module only consumes this hook and needs to know nothing about JSX.
- *
- * **Revisit contract**: `visible` requires both
- * `useFirstRunSampleModeSettled()` (static mode plus a completed restore
- * attempt) and `!dismissed`. When an existing vault restores, the mode becomes
- * 'local' and `visible` turns false automatically, with no extra handling.
- *
- * **Escape priority**: registered on `window` in the CAPTURE phase. Capture
- * always runs before bubble in the DOM event flow (regardless of registration
- * order), so this keydown always arrives before `HomePage.tsx`'s
- * `topology-esc-ladder` (bubble phase, `window`). Calling
- * `event.preventDefault()` makes the ladder's handler stop immediately at
- * `if (event.defaultPrevented) return;` — the same trick Radix
- * `DismissableLayer` uses to compete with the map's popovers and search (see the
- * header comment in `topology-esc-ladder.ts`).
+ * Logic behind the INDEX "get started" module: dismiss policy, open-folder and create-vault
+ * actions, and Escape consumption. `visible` needs `useFirstRunSampleModeSettled()` and
+ * `!dismissed`, so a restored vault hides it without extra handling. Escape is registered in the
+ * capture phase so `preventDefault()` stops the bubble-phase `topology-esc-ladder` in
+ * `HomePage.tsx` (see `topology-esc-ladder.ts`).
  */
 export function useFirstRunStarter() {
   const vault = useLocalVault();
   const locale = useLocale();
   const sampleModeSettled = useFirstRunSampleModeSettled();
   const [dismissed, setDismissed] = useState(() => readFirstRunStarterDismissed());
-  // A vault created from a screen in one language must read in that language —
-  // the same contract as the checklist and docs CTAs (walkthrough 2026-07-26).
+  // A vault created from a screen in one language reads in that language.
   const { handleCreate, scaffolding, actionError, setActionError } =
     useVaultCreateFlow(vault, locale);
 
@@ -55,15 +41,12 @@ export function useFirstRunStarter() {
     setDismissed(true);
   }, []);
 
-  // Back to the guide (owner report from real use, 2026-07-24) — closing the card
-  // with "I'll look around here" and browsing the sample left no way back to the
-  // start of that session (the starter guide, the sample switch, the folder CTA).
-  // This is the explicit path that reverses a dismiss within the session.
+  // Reverses a dismiss within the session, so the guide, sample switch and folder CTA come back.
   const undismiss = useCallback(() => {
     try {
       window.sessionStorage.removeItem(FIRST_RUN_STARTER_DISMISSED_KEY);
     } catch {
-      /* Private mode — revert the state only. */
+      /* Private mode: revert the state only. */
     }
     setDismissed(false);
   }, []);
@@ -74,29 +57,15 @@ export function useFirstRunStarter() {
   }, [vault, setActionError]);
 
   /**
-   * **The door for someone who already has code** (decision, 2026-08-24; location revised the
-   * same day).
-   *
-   * ⚠️ Measured on the shipped card: of its four actions, none makes an ontology from a repository
-   * that already exists. Opening a folder with no Markdown gives an empty map; creating one gives
-   * five seeded examples. The only real path was the folded terminal row, whose own copy tells app
-   * users it excludes them.
-   *
-   * The app cannot do the analysis itself — it never calls MCP, that being the agents' surface —
-   * so this hands the work to the agent, which is the shape this product argues for anyway: the
-   * agent works through MCP and the person approves every write.
-   *
-   * **What changed on 2026-08-24**: the door used to ask for a *vault* folder and hand it over. It
-   * now asks for the *project* and puts the map inside it, at `<project>/atlas`, so the code and its
-   * meaning travel together in one repository — see `project-vault-location.ts` for why that is the
-   * only version that keeps the product's central claim. Because that writes into somebody's source
-   * tree, the flow gained a middle step that shows the exact path and waits.
+   * The door for someone who already has code. The app never calls MCP, so it hands the analysis
+   * to the agent; the map goes inside the project at `<project>/atlas` (see
+   * `project-vault-location.ts`), so the flow shows the exact path and waits before writing.
    */
   const build = useBuildFromCode({
     openRecord: vault.openRecent,
     handoff: useCallback((location: ProjectVaultLocation) => {
-      // A second guard, not the only one: the door is not drawn on the web at all, but a request
-      // that arrived some other way still must not promise a conversation that cannot open.
+      // A second guard: the door is not drawn on the web, but a request arriving another way still
+      // must not promise a conversation that cannot open.
       if (!isDesktopShell()) return;
       requestAgentChat(null, buildFromCodePrompt(location.projectRoot, null));
     }, []),
@@ -105,22 +74,13 @@ export function useFirstRunStarter() {
   const busy =
     vault.status === 'opening' || vault.status === 'loading' || scaffolding;
   /**
-   * **Say whatever can be said about what went wrong.**
-   *
-   * ⚠️ This used to read `vault.errorMessage` alone. But "not a valid root" and
-   * "folder is gone" leave that value `null` so no raw string reaches the
-   * screen, and "no permission" leaves an errno. So all three became states
-   * where this card **said nothing useful at all** (review 2026-08-16). Silence
-   * on screen while the code knows the meaning is worse than leaking the raw string.
-   *
-   * The neighbouring screen (`FirstRunPage`) already handled these branches — two
-   * screens were answering the same fact differently.
+   * Says what can be said about a failure: codes that leave `errorMessage` null or carry only an
+   * errno still map to a sentence, as `FirstRunPage` does.
    */
   const t = useTranslations('firstRunStarter');
   const failureSentence = useFailureSentence();
   /*
-   * ⚠️ `actionError` is a **failure code**, not a sentence — see `use-vault-create-flow.ts`. It
-   * used to be the thrown English, which this card then showed to a Korean reader (B2).
+   * `actionError` is a failure code, not a sentence; see `use-vault-create-flow.ts`.
    */
   const failure: FailureCopy | null =
     actionError !== null
@@ -142,12 +102,8 @@ export function useFirstRunStarter() {
                   detail: vault.errorMessage,
                 }
               /*
-               * ⚠️ `access-failed` is the one code that **does** carry a cause string, and this
-               * branch used to hand it straight to the card, which printed it beneath the
-               * Korean line as a "quiet clue" — raw English on the first-run screen
-               * (re-inspection before v1.2.2, S20). The same lookup the coded branches use
-               * recognises the OS signatures in that string; anything else falls back to this
-               * card's own sentence and keeps the English on `detail`.
+               * `access-failed` carries a cause string: the shared lookup recognises OS signatures,
+               * and anything else falls back to this card's sentence with the English on `detail`.
                */
               : failureSentence(vault.errorMessage, t('errorFallback'))
         : null;
@@ -158,18 +114,10 @@ export function useFirstRunStarter() {
     if (!visible) return;
     const handler = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
-      // Yield while the guided tour (`src/features/guided-tour`) is open (measured
-      // correction 2026-07-23) — the tour's Escape contract is "close only the tour"
-      // (the `close-tour` rung of `topology-esc-ladder.ts`), but this capture handler
-      // ran before the bubble ladder, swallowed Escape, and permanently dismissed a
-      // first-run card that was **not even visible** (beneath the tour scrim). The
-      // tour overlay's presence in the DOM is the signal — while the card is covered
-      // by the scrim it is not the topmost surface and has no claim on Escape.
+      // Yield while the guided tour (`src/features/guided-tour`) is open: its Escape closes only the
+      // tour (`close-tour` in `topology-esc-ladder.ts`), and this card is beneath the scrim.
       if (document.querySelector('[data-testid="guided-tour-overlay"]') !== null) return;
-      // Yield the same way while a modal is open (the guidance sheet, the agent
-      // connect sheet, and so on). Measured in QA 2026-07-24: pressing Escape in a
-      // sheet should close only the sheet, but this capture handler ran first and
-      // permanently dismissed a first-run card that was not even visible.
+      // Yield while a modal is open too, so Escape closes only the sheet.
       if (document.querySelector('[role="dialog"][aria-modal="true"]') !== null) return;
       event.preventDefault();
       dismiss();
@@ -185,23 +133,20 @@ export function useFirstRunStarter() {
     dismiss,
     undismiss,
     openFolder,
-    /** The choose → see the path → create flow. The screen must render `build.location` before `confirm`. */
+    /** The screen must render `build.location` before `confirm`. */
     build,
-    /** Only the installed app can hand work to an agent; the web has none to hand it to. */
+    /** Only the installed app has an agent to hand work to. */
     canBuildFromCode: isDesktopShell(),
     createVault: handleCreate,
     busy,
     scaffolding,
-    /** The sentence the card renders. Always the reader's language, never a thrown message. */
+    /** Always the reader's language, never a thrown message. */
     errorText,
-    /** The machine half of the same failure. Only ever for `data-failure-detail` or the console. */
+    /** The machine half of the failure, only for `data-failure-detail` or the console. */
     errorDetail,
     /**
-     * Detects a browser without File System Access (Safari, Firefox). Both open-folder
-     * and create-vault use FSA, so when unsupported the primary CTA is degraded
-     * honestly **up front** rather than "failing only once pressed" (the module
-     * consumes this). It only reads the existing state `use-local-vault` switches to
-     * 'unsupported' after hydration for SSR consistency.
+     * Browsers without File System Access (Safari, Firefox) degrade the primary CTA before it is
+     * pressed; `use-local-vault` sets 'unsupported' after hydration.
      */
     fsaUnsupported: vault.status === 'unsupported',
   };

@@ -34,19 +34,10 @@ import { FullDetailA1GroupsPanel } from "./full-detail-a1-groups-panel";
 import { FullDetailA1ReachPanel } from "./full-detail-a1-reach-panel";
 
 /**
- * The A1 "expanded datasheet" (expanded datasheet) full-detail surface —
- * owner-approved mockup `docs/prototypes/detail-a1-datasheet.html`. Replaces BOTH
- * rejected surfaces (`TopologyOntologyDrawer`'s badge-soup FROM THIS/CONTAINS rows +
- * rich collaborator brief, and `OntologyViewPage`'s `NodeDetailPanel`
- * query-builder reach explorer + Meaning/Connections/checks sidebar) with a
- * single flat page: header → ONE engraved metric strip → four full
- * direction groups → reach sentence instrument → agent handoff row → body.
- *
- * Shared between two entry points: the topology datasheet's "full detail" (full detail)
- * opt-in (`HomePage.tsx`) and the `/ontology` page's node detail
- * (`OntologyViewPage.tsx`) — both feed the SAME `groups`/`reach` facts built
- * by `buildFullDetailGroups`/`buildFullDetailReachModel` (lib/), so the
- * numbers can't drift between entry points.
+ * The full-detail surface (`docs/prototypes/detail-a1-datasheet.html`): header, metric strip, four
+ * direction groups, reach sentence, agent handoff and body. Shared by the topology datasheet's full
+ * detail and the `/ontology` node detail, both fed by `buildFullDetailGroups`
+ * and `buildFullDetailReachModel` so numbers cannot drift.
  */
 
 export interface FullDetailA1Node {
@@ -61,36 +52,24 @@ export interface FullDetailA1Node {
   /** Vault slug / evidence path shown mono top-right. */
   slug: string;
   /**
-   * The name handed to an agent — the document slug relative to the vault root, or,
-   * for a concept with no document, the raw reference text the vault recorded
-   * (`resolveNodeAgentTarget`). The handoff chain uses this value rather than `slug`:
-   * passing the manifest slug the screen holds gives a name absent from the agent's
-   * vault. Unset, it falls back to `slug`.
+   * The name handed to an agent: the vault-relative slug, or the raw reference text for a concept
+   * without a document (`resolveNodeAgentTarget`). Falls back to `slug`.
    */
   agentSlug?: string | null;
   /** Does it have its own document? Without one, the handoff chain starts by creating it. */
   documented?: boolean;
   fresh: boolean;
   /**
-   * Entry review E-5 — the same node's freshness contradicted itself one click apart.
-   * The datasheet panel said "changed 2 days ago" (changed 2 days ago; the document mtime
-   * ramp) while this screen said "unchanged for a while" (unchanged for a while; the session
-   * changeset baseline). That is precisely the split `use-node-datasheet-model`'s M-3
-   * contract forbids — freshness has one source of truth, mtime. The caller passes
-   * **the very sentence the datasheet uses**. When present it replaces the binary
-   * (recently updated / unchanged for a while) — the same precedence the panel applies
-   * in the same position.
+   * The datasheet's freshness sentence; when present it replaces the binary label so freshness has
+   * one source (mtime).
    */
   updatedAtLabel?: string | null;
   /**
-   * rank7 (design-council B5) — last-edit provenance, pre-resolved by the
-   * caller (reuses the SAME fact `OntologyMapDetailPanel` shows for this
-   * node, `resolveNodeLastEditSubject`) from real data only. `null`/omitted
-   * when neither an agent heartbeat nor a same-session self-write names
-   * this node — the row is not rendered.
+   * Last-edit provenance resolved by the caller from real data (`resolveNodeLastEditSubject`); null
+   * hides the row.
    */
   lastEditSubject?: { kind: "agent" | "human"; ageLabel: string } | null;
-  /** rank7 — expected_mtime conflict badge, `true` only on a real mismatch. */
+  /** expected_mtime conflict badge, true only on a real mismatch. */
   mtimeConflict?: boolean;
 }
 
@@ -119,9 +98,7 @@ export interface FullDetailA1Props {
   /** The node's own markdown body (the node IS a markdown doc — A1 must not
    * drop it, per the design gate). `null` renders the empty-body message. */
   bodyMarkdown: string | null;
-  /** When the vault is writable, lets the body be edited in place (S4.1b) —
-   * same read↔edit primitive the old drawer used. `null`/omitted keeps the
-   * body read-only (deep-linked / read-only vault). */
+  /** Makes the body editable in place when the vault is writable; null keeps it read-only. */
   explanationEdit?: {
     onSave: (next: string) => void | Promise<void>;
   } | null;
@@ -131,16 +108,13 @@ export interface FullDetailA1Props {
   /** **This node's own** document. null or omitted when it has no `.md` of its own. */
   documentHref?: string | null;
   /**
-   * When it has no document of its own, another document that records this node. This
-   * surface has no "evidence" (evidence) list, so removing the link would lose "where is
-   * this written down" — it is kept, relabelled to name its destination.
+   * Another document that records this node when it has none of its own, relabelled to name its
+   * destination.
    */
   mentionDocumentHref?: string | null;
   /**
-   * "code location" (code location) — the node's REAL code evidence: raw file
-   * paths (`deriveCodeLocations`), not the self-referential vault-doc slug
-   * `node.slug` already shows above. Omitted/empty hides the section —
-   * never fabricated.
+   * The node's real code evidence (`deriveCodeLocations`); empty hides the section, never
+   * fabricated.
    */
   codeLocations?: readonly string[];
   /** Same public, versioned receipt the compact project inspector and agent
@@ -178,8 +152,8 @@ export function FullDetailA1({
   className,
 }: FullDetailA1Props) {
   const t = useTranslations("fullDetailA1");
-  // The same `editProvenance` namespace as DocFrontmatterBlock and
-  // OntologyMapDetailPanel (single source, drift prevention).
+  // Same editProvenance namespace as DocFrontmatterBlock and OntologyMapDetailPanel, so the
+  // three cannot drift.
   const tProvenance = useTranslations("editProvenance");
   const getKindLabel = useOntologyKindLabel();
   const { show } = useToast();
@@ -298,9 +272,7 @@ export function FullDetailA1({
           <h1 className="text-display font-[var(--font-weight-strong)] tracking-[var(--tracking-card)] text-[color:var(--map-panel-text-primary)]">
             {node.title}
           </h1>
-          {/* When the display name abbreviates the original title, the full title is
-              preserved as secondary text (layering, not hiding). Identical, it is
-              omitted to avoid rendering it twice. */}
+          {/* The full title as secondary text when the display name abbreviates it. */}
           {node.fullTitle && node.fullTitle !== node.title ? (
             <p
               data-testid="full-detail-a1-full-title"
@@ -325,9 +297,9 @@ export function FullDetailA1({
               {node.updatedAtLabel ?? (node.fresh ? t("freshOn") : t("freshOff"))}
             </span>
           </div>
-          {/* rank7 (design-council B5) — last-edit provenance + expected_mtime
-              conflict, gated on real data by the caller (reuses the SAME
-              fact as the compact topology panel — no separate judgment). */}
+          {/*
+           * Last-edit provenance and expected_mtime conflict, gated on real data by the caller.
+           */}
           {node.lastEditSubject ? (
             <div className="mt-1">
               <LastEditSubjectRow
@@ -384,9 +356,9 @@ export function FullDetailA1({
         </div>
       </header>
 
-      {/* Body type with tabular figures, not mono (interaction audit, 2026-09-25): in JetBrains
-          Mono the Korean words of this line spread to monospace width. The counts keep a fixed
-          width. */}
+      {/*
+       * Body type with tabular figures, not mono, which spreads Korean words to monospace width.
+       */}
       <div
         data-fulldetail-metric="engraved"
         className="mt-4.5 flex flex-wrap items-baseline gap-x-4.5 gap-y-1 rounded-chip border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-metric-surface)] px-3.5 py-2.5 text-body tabular-nums tracking-[var(--tracking-label)] text-[color:var(--map-panel-metric-text)]"
@@ -534,16 +506,9 @@ export function FullDetailA1({
           {t("handoff.copy")}
         </button>
         {/*
-          ⚠️ **Both of these leave this surface, and neither used to admit it.** This card is
-          a `fixed inset-0` opaque overlay, so a link that opens something *on the map*
-          opened it underneath and the reader saw nothing happen; and a link that leaves for
-          the document left the node behind with no way back (owner, 2026-09-14: opening the
-          document gave no way to return, and pressing edit-relations showed nothing).
-
-          So every link here closes the card first. The destination is then the thing the
-          reader actually asked for: the relation editor on a visible map, or the document
-          with a crumb that returns to this node selected.
-        */}
+         * This card is an opaque overlay, so every link here closes it first; otherwise the map
+         * action happens unseen underneath.
+         */}
         {documentHref ? (
           <Link
             href={documentHref}
@@ -605,13 +570,9 @@ export function FullDetailA1({
               {t("body.title")}
             </h2>
             {/*
-              ⚠️ **`prose prose-invert` was a dead class here.** `@tailwindcss/typography`
-              is not installed in this project, so those two names emitted nothing: the
-              Markdown parsed into real `h2` and `ul` elements and Preflight then flattened
-              every one of them into body-sized text with no bullets. A dead class reads
-              exactly like a live one in a diff, which is why the shared constant now owns
-              this and both body surfaces name it (2026-09-14).
-            */}
+             * Shared prose constant: `@tailwindcss/typography` is not installed, so `prose` classes
+             * emit nothing.
+             */}
             {bodyMarkdown && bodyMarkdown.trim().length > 0 ? (
               <div
                 className={cn(
@@ -634,12 +595,8 @@ export function FullDetailA1({
 }
 
 /**
- * One "Code Location" row for the full-detail surface — same shape as the
- * topology datasheet's `CodeLocationRow` (truncated-middle mono path + a
- * per-row copy button with its own `useCopyFeedback` state), duplicated here
- * rather than shared across widgets: FSD forbids widget→widget imports, and
- * promoting a two-line JSX row to `shared/ui` for one reuse wasn't worth a
- * new cross-widget dependency.
+ * One code location row, duplicated from the datasheet's `CodeLocationRow` because FSD forbids
+ * widget-to-widget imports.
  */
 function FullDetailCodeLocationRow({
   path,
@@ -668,10 +625,10 @@ function FullDetailCodeLocationRow({
         aria-label={state === "copied" ? copiedLabel : copyLabel}
         title={state === "copied" ? copiedLabel : copyLabel}
         data-testid="full-detail-a1-code-location-copy"
-        /* The ink comes from `tone: 'muted'` (#82828a — after the 2026-08-03 quaternary
-           convergence the global value is the panel value, with no panel remapping).
-           The box is the square ramp's `sm` (24px) rather than `p-1` (20px) — this row
-           is already `min-h-[32px]`, so growing it does not push the row height. */
+        /*
+         * The box uses the square ramp's `sm` (24px); the row is already `min-h-[32px]`, so height
+         * is unchanged.
+         */
         className={controlClass({
           shape: "icon",
           size: "sm",

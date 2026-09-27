@@ -6,9 +6,7 @@ export type {
   VaultTreeNode,
 } from './model/types';
 export { default as vaultManifest } from './data/manifest.json';
-// The empathetic sample vault: an example business a non-developer recognizes
-// immediately (an online storefront). A separate source of truth from the dogfood
-// manifest — `scripts/build-docs-vault.mjs` builds it from `samples/storefront/`.
+// The storefront sample, built by `scripts/build-docs-vault.mjs` from `samples/storefront/`.
 export {
   resolveStaticVaultSource,
   type StaticVaultSource,

@@ -1,29 +1,9 @@
 import { candidateKey, type SourceCandidate } from "@/entities/docs-vault";
 
 /**
- * Candidates a person already said no to.
- *
- * **This is a per-machine convenience and nothing else.** It lives in `localStorage`,
- * never in the folder, and it is the one piece of library state that is *not* in the
- * vault — deliberately, and the rule it obeys is the one that made that choice
- * necessary:
- *
- * - Vault Markdown is the only canonical store (`.claude/rules/forbidden.md`). A
- *   `declined.json` in the folder would be a second one, and it would be a store of
- *   *absences* — the worst kind, because nothing in the folder could ever contradict it.
- * - So the memory is allowed to be wrong and allowed to be lost. Clearing site data, a
- *   second machine, or a different browser all re-propose the same files, and that is a
- *   person seeing a list again — not data loss.
- *
- * The key is `(root, relative path)` rather than a content hash, because discovery never
- * opens a file: at proposal time there is no hash to key on, and "you already said no to
- * this file in this folder" is the fact a person expects to be remembered anyway.
- *
- * **Scoped to the vault**, for the reason `unmatched-dismissals.ts` records: one global
- * key means a refusal in one folder hides a row in another. The caller passes the same
- * `useVaultIdentityScope` value every other per-vault slot uses; an empty scope is
- * refused outright rather than falling back to a shared slot, because a fallback is how
- * the global key comes back.
+ * Refused candidates, remembered per browser only: a declined list in the vault would be a
+ * second canonical store of absences (`.claude/rules/forbidden.md`). Keyed by root and path
+ * within one vault scope; an empty scope is refused, or refusals leak across folders.
  */
 
 export const DECLINED_KEY_PREFIX = "atlas.library.declined:";
@@ -42,8 +22,7 @@ function read(vaultScope: string): Set<string> {
       ? new Set(parsed.filter((entry): entry is string => typeof entry === "string"))
       : new Set();
   } catch {
-    // A browser with storage blocked, or a value somebody hand-edited. Both mean the
-    // same thing here: no memory, so propose everything.
+    // Blocked storage or a hand-edited value both mean no memory: propose everything.
     return new Set();
   }
 }
@@ -64,7 +43,7 @@ export function rememberDeclinedCandidates(
     try {
       window.localStorage.setItem(storageKey(vaultScope), JSON.stringify([...next]));
     } catch {
-      /* Storage full or blocked. The list is a convenience; losing it costs one dialog. */
+      /* Storage full or blocked; losing the list costs one dialog. */
     }
   }
   return next;

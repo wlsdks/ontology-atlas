@@ -27,14 +27,6 @@ describe("shouldShowOutlineRail", () => {
 });
 
 describe("resolveOutlineRailFit", () => {
-  /*
-   * Until 2026-09-11 the floors were the two widths the retired media queries encoded (1440
-   * and 1536 of viewport, minus 344px of chrome) — 1096 and 1192 — because the rail was
-   * pinned to the pane's right edge and had to *clear* a centred 760px column's glyphs. The
-   * rail now starts one gutter past the column, so clearance is constructed and the floors
-   * only ask whether it fits. They are derived, and the derivation is asserted below rather
-   * than the number, so changing the measure moves them without anyone editing this file.
-   */
   it("hides the rail below the width where it would not fit beside the column", () => {
     expect(resolveOutlineRailFit(0)).toBe("hidden");
     expect(resolveOutlineRailFit(OUTLINE_RAIL_NARROW_PANE_MIN - 1)).toBe("hidden");
@@ -48,9 +40,8 @@ describe("resolveOutlineRailFit", () => {
   });
 
   /*
-   * The floors are the derivation, not two remembered numbers: the pane reserves the rail's
-   * lane on the rail's own side (one gap plus the rail), the column centres in what is left,
-   * and the leftover splits into two equal gutters.
+   * The floors are derived: the pane reserves the rail's lane on its side and the column centres in
+   * the rest.
    */
   it("derives both floors from the reading measure, the gap and the rail's own width", () => {
     expect(OUTLINE_RAIL_NARROW_PANE_MIN).toBe(outlineRailPaneFloor(OUTLINE_RAIL_NARROW_WIDTH));
@@ -64,14 +55,7 @@ describe("resolveOutlineRailFit", () => {
     }
   });
 
-  /*
-   * ⚠️ **The lane is paid for once.** The 2026-09-11 form asked the pane to be wide enough for
-   * the rail *and* for its mirror image on the other side of a fully centred column, which is
-   * why a wider reading measure would have deleted the rail from a 1512 window with no dock
-   * (1174 / 1238 against a 1168px pane). Reserving the lane on the side the rail is actually on
-   * keeps that pane in the `wide` tier at the new measure, and the number is pinned here so the
-   * next change to the measure cannot move it silently.
-   */
+  /* The lane is reserved once; this pins that a 1168px pane stays `wide` at the current measure. */
   it("keeps the undocked 1512 pane in the wide tier at the 2026-09-12 measure", () => {
     expect(resolveOutlineRailFit(1168)).toBe("wide");
     // The form this replaced, for the record: it would have hidden the rail on that pane.
@@ -79,9 +63,8 @@ describe("resolveOutlineRailFit", () => {
   });
 
   /*
-   * The lane class and the `left` offset are literals because Tailwind only emits a utility for
-   * a class name written out in source. They are the same arithmetic as the constants above, so
-   * they are asserted against them rather than trusted.
+   * The class literals are asserted against the constants because Tailwind needs literal class
+   * names.
    */
   it("writes the lane and the left offset from the same gap and rail widths", () => {
     expect(OUTLINE_RAIL_LANE_CLASS.narrow).toBe(
@@ -101,10 +84,7 @@ describe("resolveOutlineRailFit", () => {
     }
   });
 
-  /*
-   * The whole point of the move. A dock that takes 420px out of a 1512px window leaves a
-   * 748px pane, which the window-based gate called wide enough and this one does not.
-   */
+  /* A 420px dock in a 1512px window leaves a 748px pane, which must not count as wide. */
   it("says hidden for the pane a docked conversation leaves behind at 1512", () => {
     expect(resolveOutlineRailFit(748)).toBe("hidden");
   });

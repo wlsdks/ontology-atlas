@@ -74,12 +74,7 @@ export function repairCodexConfigText(text, expectedText) {
 }
 
 /**
- * Writes a config file without a torn window.
- *
- * There is one implementation, `atomic-write.mjs`. As the 2026-08-16 review found,
- * this repository was writing **only config files** safely and not the user's
- * markdown; keeping two copies of the same implementation guarantees that next
- * time only one of them gets fixed.
+ * Writes a config file without a torn window, through the one implementation in `atomic-write.mjs`.
  */
 export function writeTextAtomically(path, text) {
   writeFileAtomically(path, text);

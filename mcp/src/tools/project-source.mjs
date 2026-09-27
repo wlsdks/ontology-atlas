@@ -333,10 +333,8 @@ function finalizeProjectMeaningTool({ projectSlug, expected_mtime } = {}) {
     throw new Error('finalize_project_meaning blocked: a valid project source receipt is required first.');
   }
 
-  // The parser accepts one exact shape and names only what it tripped on, which
-  // left a caller reading this server's source to learn the layout. Say the
-  // layout here, and point at the guide that carries it in full, because a host
-  // may have truncated the `instructions` that would otherwise have explained it.
+  // The parser accepts one exact shape, so say the layout here and point at the guide
+  // that carries it in full: a host may have truncated the `instructions`.
   let competency;
   try {
     competency = parseProjectCompetencyMarkdown(context.projectDoc.body);

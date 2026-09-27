@@ -1,10 +1,6 @@
-// `ontology-atlas connect-source <projectSlug> [vault]` — bind a project node
-// to the local code folder it describes, measure it, write the receipt.
-//
-// The CLI mirror of MCP `connect_project_source`. It exists so the prescription
-// the app has always printed (`nextAction: connect_source`) is reachable
-// without the macOS app: the same inference, the same receipt, the same
-// gitignored sidecar. Thin wrapper — the server owns the logic.
+// `ontology-atlas connect-source <projectSlug> [vault]`: CLI mirror of MCP `connect_project_source`, so
+// `nextAction: connect_source` is reachable without the app. Binds a project node to its local code
+// folder and writes the gitignored receipt; the server owns the logic.
 
 import { COLORS } from '../lib/colors.mjs';
 import { resolve } from 'node:path';
@@ -32,10 +28,8 @@ export async function runConnectSource(args) {
     return 1;
   }
 
-  // The shared resolution order (explicit → OATLAS_VAULT → docs/ontology
-  // auto-detect), like every other vault command. The bare cwd resolve this
-  // used meant a destructive write could target a different vault than the
-  // read/write siblings in the same shell (bug sweep 2026-09-01).
+  // Shared resolution order (explicit → OATLAS_VAULT → docs/ontology), so a destructive write
+  // targets the same vault as its read and write siblings.
   const vaultRoot = resolveVaultRoot(vault);
   let result;
   try {

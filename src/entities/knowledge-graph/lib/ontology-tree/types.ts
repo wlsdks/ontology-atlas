@@ -7,11 +7,7 @@ export interface OntologyEgoNeighbor {
   /** Kept even when `node` is null, so the dangling reference stays visible. */
   neighborId: string;
   edge: KnowledgeGraphEdge;
-  /**
-   * `outgoing` means centre → neighbour. For a 2-hop neighbour this is the
-   * direction of the edge between the intermediate node and it, not from the
-   * centre.
-   */
+  /** Centre → neighbour; at hop 2, the direction of the edge from the intermediate node. */
   direction: "outgoing" | "incoming";
   hop: 1 | 2;
   /** The intermediate node for `hop: 2`; undefined at hop 1. */
@@ -20,10 +16,7 @@ export interface OntologyEgoNeighbor {
 
 export interface OntologyEgoSubgraph {
   centerId: string;
-  /**
-   * Ordered hop 1 (outgoing then incoming) before hop 2; within a group, input
-   * edge order.
-   */
+  /** Hop 1 (outgoing, then incoming) before hop 2, in input edge order. */
   neighbors: OntologyEgoNeighbor[];
 }
 
@@ -32,19 +25,13 @@ export interface OntologyTreeNode {
   /** 0 at a root. */
   depth: number;
   children: OntologyTreeNode[];
-  /**
-   * A node appearing twice in a `contains` chain is a data error: the repeat is
-   * skipped and recorded in `warnings`.
-   */
+  /** A node repeated in a `contains` chain is skipped and recorded in `warnings`. */
 }
 
 export interface OntologyTreeBuildResult {
   /** Tree roots, typically `kind: project`. */
   roots: OntologyTreeNode[];
-  /**
-   * Nodes no tree reached — usually `kind: document`, or a broken
-   * contains/belongs_to chain. A surface can show these as their own section.
-   */
+  /** Nodes no tree reached, usually documents or a broken containment chain. */
   orphans: KnowledgeGraphNode[];
   /** Data problems found while building: cycles, multiple parents, disconnects. */
   warnings: string[];

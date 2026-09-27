@@ -10,17 +10,7 @@ import { applyProposal, type VaultWritePort } from './proposal-applier';
 import type { SourceReadPort } from './source-read-port';
 import type { ScreenContextSnapshot } from './types';
 
-/**
- * The whole local Compile path, end to end, against a **mocked OpenAI-compatible runner**.
- *
- * A real runner answers this way too — measured on this machine, 2026-09-06, with Ollama:
- * `qwen3:8b` and `gemma4:12b` both called `read_source_text` then `propose_wiki_page` with
- * every bullet cited and every anchor resolvable. But a test that needs a model installed
- * is a test nobody runs, so the round trips are scripted here and the assertions are about
- * what Atlas does with them: nothing is written before the card, the card carries the page
- * path, the sections, the citation count and both source lists, and only the applier
- * writes.
- */
+/** The local Compile path end to end against a scripted OpenAI-compatible runner; only the applier writes. */
 
 const PLAN = '# Quarter plan\n\nWe ship the Library in Q3.\n\nSources stay verbatim.';
 
@@ -235,9 +225,7 @@ describe('one Compile turn on a mocked OpenAI-compatible runner', () => {
       textBody('Done.'),
     ]);
 
-    // The first round trip carried no source; the second carries the file that was read,
-    // and the audit line for it says so. `.claude/rules/local-first.md` is why the number
-    // is measured rather than estimated.
+    // Transfers are measured, not estimated (`.claude/rules/local-first.md`).
     expect(sent[0].vaultChars).toBe(0);
     expect(sent[1].vaultChars).toBeGreaterThan(PLAN.length);
     expect(sent[1].tools).toEqual([

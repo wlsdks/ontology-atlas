@@ -1,16 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { watchGuidedTourAutoStartCancel } from "./auto-start-interaction";
 
-/**
- * Regression — the automatic tour waits for the screen to settle and can fire two to
- * six seconds later, and in that window a user who clicked a node and opened the
- * detail panel had a 1/7 card cut in over it. The first substantive interaction while
- * waiting cancels the firing.
- */
+/** The first substantive interaction while the tour waits cancels the firing. */
 describe("watchGuidedTourAutoStartCancel", () => {
   beforeEach(() => {
-    // jsdom's `document.hasFocus()` defaults to false — imitate a foreground tab so the
-    // guard does not block on that alone (the same idiom as auto-start-guard.test).
+    // jsdom's `document.hasFocus()` defaults to false; imitate a foreground tab.
     vi.spyOn(document, "hasFocus").mockReturnValue(true);
   });
 
@@ -27,7 +21,7 @@ describe("watchGuidedTourAutoStartCancel", () => {
     return modal;
   }
 
-  it("지도 위 포인터 입력이면 자동 발화를 취소한다", () => {
+  it("cancels auto start on pointer input over the map", () => {
     const onCancel = vi.fn();
     const stop = watchGuidedTourAutoStartCancel(onCancel);
 
@@ -37,7 +31,7 @@ describe("watchGuidedTourAutoStartCancel", () => {
     stop();
   });
 
-  it("모달이 떠 있는 동안의 입력은 취소로 세지 않는다 — 시트의 [다음에] 클릭이 곧 투어 차례다", () => {
+  it("does not count input while a modal is open as cancellation", () => {
     const onCancel = vi.fn();
     const stop = watchGuidedTourAutoStartCancel(onCancel);
     const modal = openModal();
@@ -45,7 +39,7 @@ describe("watchGuidedTourAutoStartCancel", () => {
     window.dispatchEvent(new Event("pointerdown"));
     expect(onCancel).not.toHaveBeenCalled();
 
-    // The watch stays alive after the sheet closes — the next interaction cancels.
+    // The watch stays alive after the sheet closes; the next interaction cancels.
     modal.remove();
     window.dispatchEvent(new Event("pointerdown"));
     expect(onCancel).toHaveBeenCalledTimes(1);
@@ -53,7 +47,7 @@ describe("watchGuidedTourAutoStartCancel", () => {
     stop();
   });
 
-  it("수정자 키만 눌린 것은 탐색 시작이 아니다", () => {
+  it("does not count a modifier-only key press", () => {
     const onCancel = vi.fn();
     const stop = watchGuidedTourAutoStartCancel(onCancel);
 
@@ -66,7 +60,7 @@ describe("watchGuidedTourAutoStartCancel", () => {
     stop();
   });
 
-  it("한 번만 알리고 스스로 떨어진다", () => {
+  it("notifies once and detaches itself", () => {
     const onCancel = vi.fn();
     const stop = watchGuidedTourAutoStartCancel(onCancel);
 
@@ -77,7 +71,7 @@ describe("watchGuidedTourAutoStartCancel", () => {
     stop();
   });
 
-  it("해제하면 더 이상 감지하지 않는다", () => {
+  it("stops detecting after dispose", () => {
     const onCancel = vi.fn();
     const stop = watchGuidedTourAutoStartCancel(onCancel);
     stop();

@@ -2,18 +2,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 
-/**
- * **A stored folder's condition is read before the row is pressed, and a rejection is not
- * good news.**
- *
- * The case that matters most is the desktop's: `vault_path_exists` calls `canonical_root`
- * before its own NotFound branch (`src-tauri/src/lib.rs:2702`), and `canonical_root` maps
- * every `canonicalize` failure to `Err` (`src-tauri/src/lib.rs:267`). So a renamed, moved or
- * unmounted folder - the most common stale handle there is, and the one the reachability
- * type exists for - arrives as a **thrown string**, not as `false`. Reported as `unknown`
- * that row stayed pressable and failed on press, which is exactly the outcome the type was
- * built to prevent (workbench seat, 2026-09-13).
- */
+/** A stored folder's condition is read before the press; on the desktop a gone folder rejects rather than answering false. */
 
 const tauri = vi.hoisted(() => ({
   isTauriVaultRuntime: vi.fn(() => true),
@@ -66,9 +55,7 @@ describe('useRecentVaultReachability on the desktop', () => {
   });
 
   it('reads a not-found rejection as missing rather than unknown', async () => {
-    // The real shape from Tauri: a `#[command]` returning `Err(String)` rejects with a
-    // plain string, not an Error. `isMissingFolderError` recognises both this signature and
-    // the browser's `NotFoundError`, so one classifier answers for both runtimes.
+    // Tauri rejects with a plain string; `isMissingFolderError` also recognises the browser's `NotFoundError`.
     tauri.tauriVaultPathExists.mockRejectedValue(
       'No such file or directory (os error 2)',
     );
@@ -81,8 +68,7 @@ describe('useRecentVaultReachability on the desktop', () => {
   });
 
   it('still reports an unrecognised rejection as unknown, never as ready', async () => {
-    // Absence of a recognised signature is not proof the folder is fine. `unknown` keeps the
-    // row pressable and makes it say the condition could not be read.
+    // An unrecognised rejection is `unknown`, not proof the folder is fine.
     tauri.tauriVaultPathExists.mockRejectedValue('permission denied by the operating system');
     const records = [record('walled')];
     const hook = renderHook(() => useRecentVaultReachability(records));
@@ -93,11 +79,7 @@ describe('useRecentVaultReachability on the desktop', () => {
   });
 });
 
-/**
- * **The list is drawn once, from answers** (2026-09-26). Before the probe answered, every row
- * was drawn `unknown` and redrawn a frame later; once missing folders fold into one line, that
- * first frame would be a different shape as well — five rows collapsing to two and a line.
- */
+/** The list is drawn once, from answers. */
 describe('useRecentVaultReachability draws from the first answer', () => {
   it('is null until the probe answers', async () => {
     let answer: (exists: boolean) => void = () => undefined;

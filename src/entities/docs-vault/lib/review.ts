@@ -1,23 +1,7 @@
 /**
- * Human judgment on a vault node — the app-side half.
- *
- * The MCP server owns the same two functions (`mcp/src/schema.mjs`) because the
- * two packages share no module by design. `tests/contract/review-mark.contract.test.ts`
- * runs one fixture table through both, so "unchanged" cannot come to mean two
- * different things depending on who asked.
- *
- * Why the app needs its own copy at all: the MCP path is the one that is
- * provably an agent, so it is where confirming is *refused*. Confirming happens
- * here, in a surface a person opened.
- *
- * ⚠️ That is a lane, not proof of a person. Atlas has no login, and an agent with
- * file tools can write the same keys directly without meeting either path. The
- * mark means "no Atlas write tool produced this" and the digest says whether the
- * node changed afterwards; neither authenticates who typed it. What makes it
- * worth having anyway is that every such edit lands in a Git diff
- * (Codex review, 2026-09-02).
- *
- * Measured background: `docs/benchmark/FINDINGS-2026-09-02-review-marks.md`.
+ * The app-side review mark and digest, mirroring `mcp/src/schema.mjs` (`review-mark.contract.test.ts`).
+ * The mark means no Atlas write tool produced this, not that a person was authenticated.
+ * Background: `docs/benchmark/FINDINGS-2026-09-02-review-marks.md`; queue scope: decision (93).
  */
 
 import type { VaultDoc } from '../model/types';
@@ -39,19 +23,13 @@ const REVIEW_KEYS = [
   REVIEWED_DIGEST_KEY,
 ];
 
-/** Mirrors `DIGEST_IGNORED_KEY_PREFIXES` in `mcp/src/schema.mjs` — presentation, not meaning. */
+/** Mirrors `DIGEST_IGNORED_KEY_PREFIXES` in `mcp/src/schema.mjs`. */
 const DIGEST_IGNORED_KEY_PREFIXES = ['display', 'canvasPosition'];
 
 /** Mirrors `REVIEWED_DIGEST_PATTERN`: a binding this code could have written. */
 const REVIEWED_DIGEST_PATTERN = /^[0-9a-f]{32}$/;
 
-/**
- * Approval currentness, as three answers.
- *
- * `unknown` is not a softer `current`: it means the file carries an approval
- * with no binding, which happens whenever a person wrote one by hand. Drawing it
- * as "still good" would invent a fact; drawing it as "changed" would accuse one.
- */
+/** `unknown`: an approval without a binding, e.g. written by hand; neither current nor changed. */
 export type ReviewCurrentness = 'not-confirmed' | 'current' | 'changed-since-review' | 'unknown';
 
 function digestPayload(frontmatter: Record<string, unknown>, body: string): string {
@@ -69,13 +47,7 @@ function digestPayload(frontmatter: Record<string, unknown>, body: string): stri
   return JSON.stringify([ordered, String(body ?? '').trim()]);
 }
 
-/**
- * What a person approved, as one value.
- *
- * Async because the browser's only hash is `crypto.subtle`. The MCP twin is
- * synchronous over `node:crypto`; the contract test compares the values, not the
- * calling convention.
- */
+/** Async because the browser's only hash is `crypto.subtle`; the MCP twin is sync. */
 export async function reviewDigest(
   frontmatter: Record<string, unknown>,
   body: string,
@@ -102,34 +74,17 @@ export async function reviewCurrentness(
 export interface ReviewQueueRow {
   slug: string;
   title: string;
-  /** Why it is here — the two reasons are different work, so they are never merged into one count. */
+  /** The two reasons are different work and never merged. */
   reason: 'raised' | 'changed-since-review' | 'unverifiable';
-  /** The agent's own sentence about what has to be decided, when it left one. */
+  /** The agent's note on what needs deciding. */
   note?: string;
   reviewedBy?: string;
 }
 
-/**
- * The two lists the Docs surface exists to show, and the deliberate absence of a
- * third.
- *
- * There is no "not yet reviewed" row. 80 of this repository's own 94 nodes carry
- * `created_by: agent:unknown`; a queue that counted every unmarked node would
- * open on a wall of hundreds and be closed once. Absence stays unknown — the
- * same invariant `created_by` already holds (`docs/DECISIONS.md`, 2026-08-22
- * record 93 §5).
- */
+/** Raised and drifted approvals only; unmarked nodes stay unknown, not queued. */
 export async function buildReviewQueue(
   docs: Array<Pick<VaultDoc, 'slug' | 'title' | 'frontmatter'>>,
-  /**
-   * Reads one document's body. Called **only** for nodes that carry an approval,
-   * which is why the queue does not cost a second full pass over the vault: the
-   * manifest deliberately keeps no bodies, a raised node needs none, and the
-   * approved set is bounded by how much a person actually reviewed.
-   *
-   * A body that cannot be read yields `null`, and the row says so rather than
-   * claiming drift — an unreadable file is not evidence of a change.
-   */
+  /** Called only for approved nodes; an unreadable body yields `null`, which is not drift. */
   readBody: (slug: string) => Promise<string | null>,
 ): Promise<ReviewQueueRow[]> {
   const rows: ReviewQueueRow[] = [];
@@ -147,14 +102,11 @@ export async function buildReviewQueue(
       continue;
     }
     if (state !== REVIEW_STATE_CONFIRMED) continue;
-    // A malformed binding is `unknown`, not drift, so it must not reach the
-    // queue as a row accusing someone of a change they did not make.
+    // A malformed binding is `unknown`, not drift.
     if (!REVIEWED_DIGEST_PATTERN.test(String(frontmatter[REVIEWED_DIGEST_KEY] ?? ''))) continue;
     const body = await readBody(doc.slug);
     if (body === null) {
-      // Silence here would let "nothing waiting" conceal an approval that could
-      // not be checked and may well have drifted (Codex review, 2026-09-02).
-      // Saying so is not an accusation; it is the honest third answer.
+      // An unverifiable approval is listed rather than hidden behind "nothing waiting".
       rows.push({ slug: doc.slug, title: doc.title, reason: 'unverifiable' });
       continue;
     }

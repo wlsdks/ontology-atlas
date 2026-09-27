@@ -11,16 +11,10 @@ import {
 } from '@/entities/knowledge-graph';
 
 /**
- * Mode-aware vault health verdict — the browser-side twin of
- * `node $ATLAS/cli/src/index.mjs health` (`query_ontology({operation:'health'})`). The
- * insights surface must agree with the CLI, so it reads the SAME rule outcomes
- * from the raw frontmatter (`computeVaultHealth`) instead of the auto-healed
- * derived graph. Mirrors the mode selection of `useOntologyInsight` so the
- * verdict is computed against whatever vault the rest of the page shows.
+ * Browser twin of the CLI `health` verdict: reads the same rule outcomes from raw frontmatter
+ * (`computeVaultHealth`) with `useOntologyInsight`'s mode selection, so it agrees with the CLI.
  */
-// The manifest is only ever taken through the resolver — importing the JSON directly becomes
-// a second entry point that can bypass the sample choice
-// (tests/contract/static-vault-source.contract.test.ts).
+// The manifest only through the resolver (tests/contract/static-vault-source.contract.test.ts).
 const staticManifest = resolveStaticVaultSource('dogfood').manifest;
 const storefrontManifest = resolveStaticVaultSource('storefront').manifest;
 
@@ -33,19 +27,13 @@ function manifestHealth(manifest: VaultManifest): VaultHealthResult {
   return result;
 }
 
-/**
- * The manifest the health verdict and its siblings are computed from — one mode
- * selection, so two readings of the same vault can never disagree about which vault
- * they read. `null` means there is nothing to read yet.
- */
+/** One mode selection for every health reading, so they never read different vaults. */
 function useHealthManifest(): VaultManifest | null {
   const mode = useDataSourceMode();
   const [sampleSource] = useSampleSource();
   const vault = useLocalVault();
-  // A refresh of the same folder keeps its previous manifest until the replacement is ready.
-  // Treating that interval as an empty vault makes ACP recommend bootstrap again immediately after
-  // a successful write. The flag is false while switching folders, so another vault's health can
-  // never leak across the boundary.
+  // A same-folder refresh keeps its manifest, or ACP would recommend bootstrap after a write;
+  // the flag is false while switching folders, so another vault's health never leaks.
   const localManifestUsable = vault.status === 'loaded' || vault.isReloadingSameVault;
 
   return useMemo(() => {
@@ -57,14 +45,7 @@ function useHealthManifest(): VaultManifest | null {
   }, [mode, sampleSource, localManifestUsable, vault.manifest]);
 }
 
-/**
- * The documents the health verdict was computed from.
- *
- * Exposed because a repair the board offers must change **the same folder the verdict measured**.
- * Reading the manifest a second way (through `useLocalVault` directly, say) would let a batch
- * repair run against a folder the verdict never looked at — the "two canonical stores" mistake,
- * one hook apart. Callers get the documents read-only and decide nothing about mode here.
- */
+/** The documents the verdict measured, so a repair changes the same folder. */
 export function useVaultHealthDocs(): readonly VaultManifest['docs'][number][] {
   const manifest = useHealthManifest();
   return useMemo(() => manifest?.docs ?? [], [manifest]);
@@ -78,23 +59,10 @@ export function useVaultHealth(): VaultHealthResult {
   );
 }
 
-/**
- * **The names this vault was asked for and does not hold.**
- *
- * `computeVaultHealth` already walks these references and stops at
- * `summary.unresolvedEdges`, a number. The insights board needs the names behind that
- * number, so the same manifest is read again through `unmatchedGraphAsks`. Both readings
- * take the same mode selection, which is the whole reason `useHealthManifest` exists —
- * a count and a list that disagree about which vault they describe is the defect this
- * file's header already records once.
- */
+/** Names this vault was asked for and does not hold, from the same manifest as the count. */
 export interface VaultUnmatchedAsks {
   asks: readonly UnmatchedGraphAsk[];
-  /**
-   * Has a manifest actually been read? Without this, an empty list is indistinguishable
-   * from an unread folder, and the screen shows "every name resolves" — the most
-   * reassuring sentence it has — at the one moment it cannot know that.
-   */
+  /** Whether a manifest was read, so an empty list is not mistaken for "every name resolves". */
   manifestRead: boolean;
 }
 

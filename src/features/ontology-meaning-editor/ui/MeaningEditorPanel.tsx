@@ -91,28 +91,10 @@ export function MeaningEditorPanel({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  /*
-   * ⚠️ **Reopening reuses this instance** (2026-08-24). The panel stays mounted
-   * after `onClose` so its exit animation can run (`Surface` + `onExited`), and
-   * `HomePage` keys it by node id — so opening "relation edit" again on the same
-   * node hands back the *same* component with all of its step state intact.
-   *
-   * Paired with `apply` leaving `saving` true on the success path, that was a
-   * dead end a person could not get out of: the panel came back showing the
-   * review of a change already written to Markdown, its confirm button frozen in
-   * the busy state, and -- because every control is `disabled={saving}` -- the
-   * "edit again" and close buttons were dead too. The only way out was dismissing the whole
-   * node panel. Measured on the installed rc.10 build: still frozen after 90s,
-   * with no second write and no error.
-   *
-   * Opening is the one moment the step is unambiguously "start over", so the
-   * transient state is cleared here rather than guessing on the way out.
-   */
+  /* Reopening reuses this mounted instance, so opening clears the step state. */
   const [openedWith, setOpenedWith] = useState(open);
   if (open !== openedWith) {
-    // React's documented "adjust state when a prop changes" pattern rather than an
-    // effect: the reset has to land in the same render the panel reopens in, so the
-    // stale review never paints even for a frame.
+    // Adjusted during render so the stale review never paints.
     setOpenedWith(open);
     if (open) {
       setPlan(null);
@@ -191,9 +173,7 @@ export function MeaningEditorPanel({
     } catch {
       setError(t('saveError'));
     } finally {
-      // Also on the success path: the caller closes the panel, but the instance
-      // outlives that close (see the reopen note above), so leaving `saving` true
-      // is what froze the reopened panel in its busy state.
+      // Also on success: the instance outlives the close, and a lingering `saving` freezes it.
       setSaving(false);
     }
   };
@@ -248,15 +228,7 @@ export function MeaningEditorPanel({
             />
           ) : (
             <>
-              {/*
-                Both selects used to carry an `ariaLabel` and nothing visible.
-                A person reading the panel saw two unnamed dropdowns and no
-                statement of what either value goes on to do. The label says
-                what the field is; the help line says which program reads it
-                and what that program does with it — derived from the code, not
-                from intention (`tests/contract/field-help-consumers.contract.test.ts`
-                pins each named consumer to the file that performs it).
-              */}
+              {/* Each help line names the program that reads the value (tests/contract/field-help-consumers.contract.test.ts). */}
               <FieldWithHelp
                 id="meaning-editor-relation-field"
                 label={t('relation')}
@@ -372,14 +344,7 @@ export function MeaningEditorPanel({
   );
 }
 
-/**
- * A labelled field whose help line names the program that reads the value.
- *
- * `Select` carries no label or hint of its own (unlike `Input`/`Textarea`), so
- * this wraps it in the same three-part shape the field primitives use — label,
- * control, quaternary help — and hands the control both ids so the help reaches
- * a screen reader as the field's description rather than as loose text beside it.
- */
+/** `Select` has no label or hint, so this wraps it in the field primitives' label, control and help shape. */
 function FieldWithHelp({
   id,
   label,

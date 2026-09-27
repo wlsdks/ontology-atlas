@@ -13,16 +13,8 @@ import {
 } from '../provider-adapter';
 
 /**
- * The Gemini generateContent adapter.
- *
- * Three things differ:
- * ① A tool call **has no id** — `g{n}` is synthesized so the executor can send the
- *    result back. Results are paired by **name**, not by id.
- * ② Safety blocks arrive inside the response as `promptFeedback.blockReason` /
- *    `finishReason` (with HTTP 200). Leaving that as a quiet empty answer makes the
- *    screen lie, so it is demoted.
- * ③ The schema is an OpenAPI subset, so leaving an unknown key gives a 400 —
- *    `toGeminiSchema` keeps only allowed keys.
+ * Gemini adapter: tool calls have no id (`g{n}` is synthesized, results pair by name), safety
+ * blocks in a 200 response are demoted, and schemas keep only allowed keys.
  */
 
 interface GeminiPart {

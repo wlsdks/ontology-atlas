@@ -1,35 +1,16 @@
 /**
- * Turns evidence Atlas already computes into findings that survive being
- * re-run.
- *
- * It lives in the CLI because the CLI is its only consumer. Every other command
- * reaches MCP through `callMcpTool`, never by importing its internals, and the
- * package contract enforces that — the first draft of this module sat in
- * `mcp/src/` and the gate caught the import across the boundary. If a second
- * surface ever needs these findings, that is the moment to decide where they
- * belong, with the parity obligation that comes with two copies.
- *
- * The screen this feeds does not need another count. It needs to answer "what
- * is worse than last time, and what should I look at first" — and that question
- * is unanswerable unless two runs can be compared. Comparing prose cannot do it:
- * the same problem, described twice, is two different paragraphs. So every
- * finding carries an id derived from what it is *about* — the check that raised
- * it and the thing it points at — and never from how it is worded. Two runs
- * agree on an id or they do not; that is the whole comparison.
- *
- * Nothing here calls a model or reads a file. It takes evidence in and returns
- * findings, a diff, and Markdown.
+ * Turns evidence Atlas already computes into findings comparable across runs, with ids derived from the check
+ * and its target, never the wording. Lives in the CLI, its only consumer: the package contract forbids MCP imports.
  */
 
 /** Severity order, worst first. `unknown` is deliberately not `ok`. */
-export const SEVERITIES = Object.freeze(['violation', 'unknown', 'review', 'info']);
+const SEVERITIES = Object.freeze(['violation', 'unknown', 'review', 'info']);
 
 const SEVERITY_RANK = Object.freeze(Object.fromEntries(SEVERITIES.map((value, index) => [value, index])));
 
 /**
- * An id is `source/check/target`. The target is a slug, a path, or an edge — a
- * thing that exists in the repository, so the same problem raised by two runs
- * lands on the same id even when the wording moves.
+ * An id is `source/check/target`, where the target is a slug, path or edge, so one problem keeps one id
+ * across runs even when its wording moves.
  */
 export function findingId({ source, check, target }) {
   const clean = (value) => String(value ?? '').trim().replace(/\s+/g, ' ');
@@ -53,19 +34,8 @@ function finding({ source, check, target, severity, title, detail, evidence = []
 }
 
 /**
- * Health checks already carry a status and a count. Only the ones that are not
- * passing become findings: a green check is not a finding, it is the absence of
- * one, and listing it would rebuild the census this replaces.
- *
- * **The app cannot raise every finding this does.** The CLI's health emits eight
- * checks; the browser computes six. The two it lacks — `vault_validation` and
- * `meaning_assessment` — are the ones that need the vault read from disk, and
- * `meaning_assessment` is the only finding open on this repository today. So an
- * in-app view of this record would, right now, show nothing while the record
- * shows something. That gap is the reason a screen for this is not built yet;
- * it is not a detail to paper over when one is.
- *
- * (The CLI's own `--help` still says "6 checks". It emits eight.)
+ * Only failing health checks become findings. The app computes six of the CLI's eight checks and lacks
+ * `vault_validation` and `meaning_assessment`, which need the disk, so an in-app view would show less.
  */
 export function findingsFromHealth(health) {
   const found = [];
@@ -101,11 +71,8 @@ export function findingsFromValidation(validation) {
 }
 
 /**
- * Architecture contributes two different things, and collapsing them would be
- * the product's own documented mistake: a declared violation is a fact, while an
- * unmapped edge is an absence of evidence. The profile contract says unknown
- * import usage never means compliant, so unmapped coverage is reported as its
- * own finding rather than rounded to green.
+ * A declared violation is a fact; an unmapped edge is an absence of evidence. Unknown import usage never
+ * means compliant, so unmapped coverage is its own finding rather than rounded to green.
  */
 export function findingsFromArchitecture(architecture) {
   const conformance = architecture?.conformance;
@@ -172,9 +139,8 @@ export function collectFindings({ health, validation, architecture }) {
 }
 
 /**
- * What changed since the last run. `changed` is deliberately narrow: a finding
- * whose severity moved. Re-wording is not a change, which is the entire reason
- * ids exist.
+ * What changed since the last run. `changed` means only a severity move; re-wording is not a change,
+ * which is why ids exist.
  */
 export function diffFindings(previous, current) {
   const before = new Map((previous ?? []).map((item) => [item.id, item]));
@@ -199,13 +165,8 @@ function line(item) {
 }
 
 /**
- * Reads the findings back out of a record this module wrote.
- *
- * One artifact, not two. The record has to be readable by a person, and the next
- * run has to know what the last one found; embedding a JSON block beside the
- * prose would satisfy the second at the cost of the first. So the prose is the
- * format: an id in backticks under a severity heading. `renderAnalysis` and this
- * function are a round trip, and a test holds them to it.
+ * Reads the findings back out of a record this module wrote. The prose is the format (an id in
+ * backticks under a severity heading), so `renderAnalysis` and this are a tested round trip.
  */
 export function parseFindings(markdown) {
   const findings = [];
@@ -238,9 +199,8 @@ export function parseFindings(markdown) {
 }
 
 /**
- * The record is Markdown with no `kind:` in its frontmatter, so the compiler
- * does not count it as an ontology node. It is committed, and therefore
- * versioned and readable in a diff, without becoming reviewed meaning.
+ * The record is Markdown with no `kind:`, so the compiler does not count it as a node; committed, it is
+ * versioned and diffable without becoming reviewed meaning.
  */
 export function renderAnalysis({ findings, diff, basis, previousLabel = null }) {
   const counts = severityCounts(findings);

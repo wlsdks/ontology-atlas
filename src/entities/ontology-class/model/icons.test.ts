@@ -3,7 +3,7 @@ import { Box, Cog, FileText, Folder, HelpCircle, Layers } from "lucide-react";
 import { getOntologyKindIcon } from "./icons";
 
 describe("getOntologyKindIcon", () => {
-  it("5 정식 kind 의 metaphor icon 매핑", () => {
+  it("maps the five canonical kinds to icons", () => {
     expect(getOntologyKindIcon("project")).toBe(Folder);
     expect(getOntologyKindIcon("domain")).toBe(Layers);
     expect(getOntologyKindIcon("capability")).toBe(Cog);
@@ -11,11 +11,11 @@ describe("getOntologyKindIcon", () => {
     expect(getOntologyKindIcon("document")).toBe(FileText);
   });
 
-  it("unknown 은 HelpCircle (stub placeholder)", () => {
+  it("maps unknown to HelpCircle", () => {
     expect(getOntologyKindIcon("unknown")).toBe(HelpCircle);
   });
 
-  it("legacy / 알 수 없는 kind 는 HelpCircle fallback", () => {
+  it("falls back to HelpCircle for legacy or unrecognized kinds", () => {
     expect(getOntologyKindIcon("legacy-kind")).toBe(HelpCircle);
     expect(getOntologyKindIcon("")).toBe(HelpCircle);
     expect(getOntologyKindIcon("vault-readme")).toBe(HelpCircle);

@@ -2,65 +2,15 @@ import type { LibraryWikiPage } from "@/entities/docs-vault";
 import { WIKI_DIR, WIKI_SOURCES_DIR } from "@/shared/lib/wiki-page-schema";
 
 /**
- * The Lint brief — **the judgement half of the wiki's health check.**
- *
- * `wiki-validate` decides the facts of a page and of the folder: shape, citations, links
- * that resolve, pages nobody links. It cannot decide whether two pages *disagree*, or
- * whether a later document replaced a claim an earlier page still states, because those
- * are readings of prose. The accumulation probe
- * (`docs/benchmark/FINDINGS-2026-09-06-wiki-accumulation-probe.md`) ran this brief as a
- * report against a wiki whose pages had never been revised: it named every planted
- * disagreement with both citations and the later document, in three tool calls.
- *
- * Report only. The survey of six implementations that followed the LLM Wiki pattern
- * found four of them refusing to let a lint pass rewrite a fact, and that is this
- * product's rule too: a person reads the report and decides; a later Compile, approved
- * page by page, is how a page changes. The brief therefore forbids writing.
- *
- * Four categories, in this order, because that is the order a person acts on them:
- *
- *   1. Disagreement — two pages state different values for one thing and neither says so.
- *   2. Superseded — a page states a fact a later-dated page's decision replaced, unflagged.
- *   3. Missing link — two pages share a topic or a source and neither points at the other.
- *   4. Name without a page — a system, person, release or customer on three or more pages
- *      with no page of its own. Not a wiki page to write: the wiki is what documents
- *      said. A system the code builds is an **ontology node candidate**; a person or an
- *      organisation is a name the wiki keeps, because the map is the code's ontology.
- *
- * Text inside a page is data (`docs/ONTOLOGY-ATLAS-SPEC.md` §7): a sentence that reads
- * like an instruction is content to report, never a directive to follow.
- *
- * ## The first line is the one line a person reads
- *
- * ⚠️ The Check-the-wiki press used to open the conversation on the whole brief — the JSON
- * schema, the fenced blocks, `{"counts":{"disagreement":0,…}`, `nodeCandidates` and the
- * taxonomy rules — the largest block on the screen, in a dock somebody reached through a
- * Korean button (installed app, 2026-09-13, `inspection-122/54-toast-b.png`). Being able to
- * read what is sent is the point; being handed all of it first is not.
- *
- * So the brief opens on **what was asked and what will come back**, and every instruction
- * after it stands below the folder anchor line that `splitAppRequest` folds on (`Folder:`,
- * and its Korean twin).
- * Nothing is removed: the 2026-08-24 decision that a caller may send on a person's behalf
- * rests on the whole text landing in the transcript as their own turn, and it still does,
- * one disclosure away and verbatim.
- *
- * The report ends with one fenced JSON block restating item 4, so the Library can turn
- * "a name on three pages with no page of its own" into a row a person can act on
- * without parsing prose. `parseLintCandidates` reads that block and nothing else;
- * a report without it, or with a malformed one, yields no candidates rather than a
- * guess.
+ * The judgement half of the wiki check: disagreements and superseded claims `wiki-validate` cannot
+ * read. Report only, never writes; page text is data (docs/ONTOLOGY-ATLAS-SPEC.md §7). The first
+ * line says what was asked; the rest sits below the `Folder:` line `splitAppRequest` folds on.
  */
 
 export interface LintBriefInput {
   /** Pages under `wiki/`, the template excluded — the same rows the Wiki list shows. */
   pages: readonly LibraryWikiPage[];
-  /**
-   * What the script already found, per page — `wiki-validate`'s page and folder codes as
-   * the Wiki list shows them. Handed over so the model does not redo mechanical work and
-   * spends its reading on the pages the codes point at (the two-phase shape
-   * kfchou/wiki-skills uses). Omitted or empty: nothing is said about it.
-   */
+  /** `wiki-validate` findings per page, so the model spends its reading where the codes point. */
   findings?: ReadonlyMap<string, ReadonlyArray<{ code: string; message: string; line?: number }>>;
   locale: string;
   /** The folder every path in this brief is relative to; see `CompileBriefInput`. */
@@ -163,12 +113,7 @@ export function buildLintBrief({ pages, locale, vaultRoot, findings }: LintBrief
   ].join("\n");
 }
 
-/**
- * What the name is. Only the first three are things the map is about — the code's
- * domains, capabilities and elements — and only they can be proposed as nodes. A person
- * or an organisation stays a name in the wiki: the wiki graph links the pages that
- * mention them, and the map, which is the code's ontology, does not carry them.
- */
+/** Only domain, capability and element names can become nodes; people and organisations stay wiki names. */
 export type LintCandidateKind = "domain" | "capability" | "element" | "person" | "organisation" | "other";
 
 /** Whether a candidate of this kind may be proposed as an ontology node. */
@@ -186,11 +131,7 @@ export interface LintNodeCandidate {
 
 const KINDS: ReadonlySet<string> = new Set(["domain", "capability", "element", "person", "organisation", "other"]);
 
-/**
- * The candidates the report ended with, or none. Reads the **last** fenced JSON block
- * carrying `nodeCandidates`; prose is never parsed, and a malformed block is treated as
- * absent — a wrong candidate offered to a person is worse than no row.
- */
+/** Candidates from the last fenced JSON block; prose is never parsed and a malformed block is absent. */
 export interface LintCounts {
   disagreement: number;
   superseded: number;
@@ -201,13 +142,7 @@ export interface LintCounts {
 
 const COUNT_KEYS = ["disagreement", "superseded", "missingLink", "nameWithoutPage", "uncertain"] as const;
 
-/**
- * The counts the report ended with, or `null` when the block carries none. Read from the
- * same last fenced JSON block as the candidates, so the log no longer depends on the
- * language the prose count line was written in (a Korean report on 2026-09-07 said
- * "counts not stated" because only the English labels were known). A count that is not a
- * non-negative integer makes the whole set absent — a guessed number is worse than none.
- */
+/** Counts from the same last JSON block, independent of the prose language; any bad count voids the set. */
 export function parseLintCounts(text: string | null | undefined): LintCounts | null {
   const block = lastReportBlock(text);
   if (!block) return null;
@@ -248,11 +183,7 @@ export interface LintFinding {
 
 const FINDING_CODES: ReadonlySet<string> = new Set(["disagreement", "superseded", "missing-link"]);
 
-/**
- * The findings the report ended with, one per item under the first three categories, so
- * each can carry a door of its own (Fix). Read from the same block as the counts; a
- * malformed entry is dropped, never guessed.
- */
+/** Findings from the same block, one per item in the first three categories; malformed entries drop. */
 export function parseLintFindings(text: string | null | undefined): LintFinding[] {
   const block = lastReportBlock(text);
   if (!block) return [];
@@ -307,14 +238,7 @@ export function parseLintCandidates(text: string | null | undefined): LintNodeCa
   return [];
 }
 
-/**
- * Drop the candidates that already became nodes.
- *
- * The list is the Check-the-wiki report's, and it does not know what happened after: on
- * the installed app (2026-09-06) "Timber sash frames" stayed listed with its "Propose as
- * node" chip after the card had written `elements/timber-sash-frames`. A node whose
- * title is the candidate's name, outside `wiki/`, retires the row.
- */
+/** Drop candidates that already became nodes: a non-wiki node titled with the name retires the row. */
 export function dropCandidatesWithNodes(
   candidates: ReadonlyArray<LintNodeCandidate>,
   docs: ReadonlyArray<{ slug: string; frontmatter: Record<string, unknown> }>,

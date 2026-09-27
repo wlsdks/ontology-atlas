@@ -39,9 +39,7 @@ interface Props {
   /** The slugs within the current document scope. Without it, the whole tree renders. */
   visibleDocSlugs?: Set<string>;
   /**
-   * slug → VaultDoc lookup. `frontmatter.kind` selects the machined kind glyph
-   * (project hex · domain chip · capability circle · element via-pad); without it,
-   * fall back to the generic FileText icon (the previous behaviour).
+   * slug to VaultDoc; `frontmatter.kind` picks the kind glyph, otherwise the generic FileText icon.
    */
   docsBySlug?: Map<string, VaultDoc>;
 }
@@ -151,8 +149,7 @@ function TreeNode({
   order: DocsTreeOrder;
 }) {
   const locale = useLocale();
-  // With a tag or search filter active, matching paths auto-expand — a filtered
-  // document hidden inside a collapsed folder defeats the source list's purpose.
+  // Filters auto-expand matching paths so a match is never hidden in a collapsed folder.
   const [open, setOpen] = useState(() =>
     containsSelectedSlug(node, selectedSlug, visibleDocSlugs),
   );
@@ -178,9 +175,7 @@ function TreeNode({
           />
         ) : null}
         <DocKindGlyph slug={node.slug} docsBySlug={docsBySlug} />
-        {/* The list, search and map call one document by the same name — if only the
-            tree drew the canonical title, the sidebar and the popover would state
-            different names. */}
+        {/* Same display name as the list, search and map. */}
         <span className="min-w-0 flex-1 truncate">
           {resolveLocaleDisplayName(
             docsBySlug?.get(node.slug)?.frontmatter,
@@ -192,7 +187,6 @@ function TreeNode({
     );
   }
 
-  // directory
   const docCount = countDocs(node, visibleDocSlugs);
   return (
     <div>
@@ -261,8 +255,7 @@ export function DocsVaultTree({
   const children = useMemo(() => tree.children ?? [], [tree]);
   const tagSlugs = activeTag ? activeTagSlugs : undefined;
   const normalizedQuery = normalizeForMatch(query ?? '');
-  // Modification times live in the manifest, not the tree. In name order they are not
-  // computed at all — there is no reason to build an unused index across 158 documents.
+  // Modification times come from the manifest and are computed only for recency order.
   const order = useMemo<DocsTreeOrder>(
     () => ({
       sort,

@@ -176,21 +176,13 @@ function compactConceptEvidenceRow(
   };
 }
 
-/**
- * The shape returned when the pack cannot be read at all: the JSON string is still
- * handed back verbatim (the model may still make sense of it) while nothing is
- * claimed about what it delivered. Identical to a pack whose `concepts` array is
- * missing, which is what an unreadable pack effectively is.
- */
+/** An unreadable pack: the JSON is handed back verbatim while nothing is claimed about it. */
 function unreadableConceptEvidence(content: string): PackedConceptEvidence {
   return { content, deliveredSlugs: [], vaultChars: 0, omittedCount: 0 };
 }
 
 function packedConceptEvidence(content: string): PackedConceptEvidence {
-  // ⚠️ This parses a string this module just serialised, so a throw here means the
-  // budget loop produced something malformed — a defect, but never one worth
-  // throwing into the ACP tool pipeline, where it surfaces as the whole turn dying
-  // instead of one tool result being thin.
+  // A throw here would kill the whole ACP turn instead of thinning one result.
   let payload: Record<string, unknown>;
   try {
     payload = JSON.parse(content) as Record<string, unknown>;
@@ -219,11 +211,7 @@ function packedConceptEvidence(content: string): PackedConceptEvidence {
   };
 }
 
-/**
- * `get_concepts` is a comparison tool. A long first row must not erase all other
- * candidates. Compact every row to the same evidence shape first; omit trailing
- * rows only when even the smallest honest form cannot fit the 6,000-char cap.
- */
+/** Compacts every row to one shape first, dropping trailing rows only when even that cannot fit the 6,000-char cap. */
 export function packConceptEvidence(inputs: ConceptEvidenceInput[]): PackedConceptEvidence {
   const fullContent = JSON.stringify({ concepts: inputs.map((input) => input.payload) });
   if (fullContent.length <= AGENT_TOOL_RESULT_CHAR_CAP) {

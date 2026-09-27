@@ -3,12 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DocsQuickDrawer } from "./DocsQuickDrawer";
 
-/**
- * #61 — this drawer is quick access to **the active vault**. It used to read the
- * build-time bundled `vaultManifest` directly, so selecting a 5-document local
- * vault still produced Atlas bundle documents (review 2026-07-25 · codex audit P1).
- * Pinned and recent were fixed at `:server` too, mixing in another vault's lists.
- */
+/** The drawer lists the active vault, and pinned and recent are scoped to it. */
 
 const mocks = vi.hoisted(() => ({
   mode: "server" as "server" | "local",
@@ -64,7 +59,7 @@ function renderDrawer() {
   render(<DocsQuickDrawer open onClose={vi.fn()} />);
 }
 
-describe("DocsQuickDrawer — 활성 볼트 범위 (#61)", () => {
+describe('DocsQuickDrawer scopes to the active vault', () => {
   beforeEach(() => {
     window.localStorage.clear();
     mocks.mode = "server";
@@ -73,14 +68,14 @@ describe("DocsQuickDrawer — 활성 볼트 범위 (#61)", () => {
     mocks.localManifest = null;
   });
 
-  it("로컬 볼트가 없으면 번들(도그푸드) 문서를 보여준다 — 기존 fallback 유지", () => {
+  it('shows the bundled docs when no local vault is loaded', () => {
     renderDrawer();
 
     // A document that really is in the bundled manifest. Local vault documents must not appear.
     expect(screen.queryByText("정산 규칙")).not.toBeInTheDocument();
   });
 
-  it("로컬 볼트가 로드되면 그 볼트의 문서만 보여준다 — 번들 문서가 새지 않는다", () => {
+  it('shows only the loaded local vault\'s docs without leaking bundled docs', () => {
     mocks.mode = "local";
     mocks.vaultStatus = "loaded";
     mocks.handleName = "my-vault";
@@ -91,12 +86,10 @@ describe("DocsQuickDrawer — 활성 볼트 범위 (#61)", () => {
     // It appears in both the tree and the list, so only existence is checked, not the count.
     expect(screen.getAllByText("정산 규칙").length).toBeGreaterThan(0);
     expect(screen.getAllByText("환불").length).toBeGreaterThan(0);
-    // The bundled dogfood documents (ARCHITECTURE and so on) are not in this vault.
     expect(screen.queryByText("ARCHITECTURE")).not.toBeInTheDocument();
   });
 
-  it("고정/최근은 볼트 범위로 나뉜다 — 샘플에서 고정한 게 로컬 볼트에 섞이지 않는다", () => {
-    // Plant a pin in the bundle scope.
+  it('scopes pinned and recent docs per vault so sample pins stay out of a local vault', () => {
     window.localStorage.setItem(
       "demo:docs-vault:pinned:v1:server",
       JSON.stringify(["ARCHITECTURE"]),

@@ -1,16 +1,14 @@
-// `buildProposalAssessment` — the second export of the analyze surface. It judges a
-// proposed meaning set against the analysis that produced it and returns the
-// questions, quality findings, and lifecycle verdict an agent must answer before
-// writing anything to the vault.
+// `buildProposalAssessment` judges a proposed meaning set against the analysis
+// that produced it, returning the questions, quality findings and lifecycle verdict
+// an agent must answer before writing to the vault.
 
 import { createHash } from 'node:crypto';
 import { uniqueStrings } from './text.mjs';
 
 /**
- * Turn the candidate-only result into an independently reviewable, but never
- * self-qualifying, competency packet. The statuses here describe how much of
- * the proposal can be inspected from this bounded result; they are deliberately
- * not the qualification contract's `answered` status.
+ * Turns the candidate-only result into an independently reviewable competency
+ * packet. Its statuses say how much is inspectable here; they are never the
+ * qualification contract's `answered` status.
  */
 export function buildProposalAssessment(result) {
   const {

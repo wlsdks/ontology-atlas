@@ -1,16 +1,8 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from '@/entities/knowledge-graph';
 
 /**
- * The executor's **only window onto the vault.**
- *
- * **The absence of a write method on this type** is the structural proof of "a
- * model's write call never reaches the disk". The executor is injected with this
- * port alone, so even trying to call a write by mistake finds no such function.
- * Applying belongs to a separate module (`proposal-applier`), called only from the
- * consent card's handler.
- *
- * When adding a method, do not put a write here — the moment you do, that proof is
- * gone and the type-level assertion in `tool-executor.test.ts` breaks.
+ * The executor's only window onto the vault. It has no write method, so a model's write cannot
+ * reach disk; adding one breaks the type assertion in `tool-executor.test.ts`.
  */
 export interface VaultReadDoc {
   slug: string;

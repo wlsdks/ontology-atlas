@@ -30,8 +30,8 @@ const doc = (slug: string, fm: Record<string, unknown> = {}, title = slug) => ({
   frontmatter: fm,
 });
 
-describe('executeBootstrapPlan (HomePage 모듈화 1차 — batch 쓰기 계약)', () => {
-  it('kind를 처음 부여하는 기존 문서에는 UID를 발급하고 기존 UID는 보존한다', async () => {
+describe('executeBootstrapPlan batch write contract', () => {
+  it('mints a UID for a document receiving kind for the first time and keeps an existing UID', async () => {
     const preservedUid = '01890f3e-7b5d-4c0a-8f14-123456789abc';
     const docs = [
       doc('guides/missing'),
@@ -55,7 +55,7 @@ describe('executeBootstrapPlan (HomePage 모듈화 1차 — batch 쓰기 계약)
     );
   });
 
-  it('모든 쓰기 skipRefresh + 마지막 refresh 정확히 1회 (batch 회귀 고정)', async () => {
+  it('skips refresh on every write and refreshes exactly once at the end', async () => {
     const docs = [doc('guides/a'), doc('guides/b')];
     const { vault, calls } = fakeVault(docs);
     const plan = deriveBootstrapPlan(docs, 'my-vault');
@@ -74,7 +74,7 @@ describe('executeBootstrapPlan (HomePage 모듈화 1차 — batch 쓰기 계약)
     }
   });
 
-  it('승인 도메인은 실제 .md 로 생성, 동명 domain 문서가 있으면 생략 (마찰 D)', async () => {
+  it('creates an approved domain as a .md file unless a same-named domain document exists', async () => {
     const docs = [doc('guides/a'), doc('guides/guides', { kind: 'domain' })];
     const { vault, calls } = fakeVault(docs);
     const plan = deriveBootstrapPlan(docs, 'x');
@@ -84,7 +84,7 @@ describe('executeBootstrapPlan (HomePage 모듈화 1차 — batch 쓰기 계약)
     expect(calls.filter((c) => c.op === 'createDoc' && c.slug === 'guides/guides')).toHaveLength(0);
   });
 
-  it('기존 kind:project 가 있으면 파일 생성 대신 domains 병합 (마찰 A)', async () => {
+  it('merges domains into an existing kind project instead of creating a file', async () => {
     const docs = [
       doc('project', { kind: 'project', title: 'P', domains: ['old'] }),
       doc('guides/a'),
@@ -109,7 +109,7 @@ describe('executeBootstrapPlan (HomePage 모듈화 1차 — batch 쓰기 계약)
     expect(calls.filter((c) => c.op === 'createDoc' && c.slug === plan.projectSlug)).toHaveLength(0);
   });
 
-  it('manifest 없으면 아무것도 쓰지 않고 null', async () => {
+  it('writes nothing and returns null without a manifest', async () => {
     const { vault, calls } = fakeVault([]);
     vault.manifest = null;
     const plan = deriveBootstrapPlan([], 'x');

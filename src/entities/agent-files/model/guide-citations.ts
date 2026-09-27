@@ -1,26 +1,11 @@
 import type { AgentTool } from './agent-files';
 
 /**
- * **Where each "this tool reads this file" claim came from.**
- *
- * `analyzeAgentFiles` already answers *which* tool reads *which* file — that classifier is the
- * repository's one canonical answer and this module does not repeat it. What it adds is the half
- * the classifier never carried: the document each claim was read from.
- *
- * The distinction matters because every other column on the Harness screen is measured from the
- * repository itself, and this one is not. Presence, bytes, byte-drift and wiring are facts about
- * files on disk; "Codex merges nested `AGENTS.md` root-down" is a claim about somebody else's
- * product, true only until they change it. A wrong row here looks exactly like a right one, so the
- * screen prints the source beside the claim, and says so where we have none — a
- * correction the Evidence seat required on 2026-09-13 after finding `antigravity` resolved in the
- * classifier with nothing behind it.
- *
- * Sources were fetched and read on `CITATIONS_REVIEWED`; the digest behind them is
- * `harness-research.md` §2. Re-reading them is the standing maintenance cost of this file, and the
- * screen prints the date so a reader can weigh the row's age without asking anyone.
+ * The source document behind each "this tool reads this file" claim, reviewed on
+ * `CITATIONS_REVIEWED` (digest: `harness-research.md` §2). An uncited pair is shown as uncited.
  */
 
-/** The day a person last opened every URL below and confirmed the claim still stands. */
+/** The day every URL below was last reopened and confirmed. */
 export const CITATIONS_REVIEWED = '2026-09-12';
 
 const CODEX_CUSTOMIZATION = 'https://developers.openai.com/codex/concepts/customization';
@@ -35,30 +20,17 @@ const COPILOT_INSTRUCTIONS =
   'https://docs.github.com/en/copilot/reference/custom-instructions-support';
 const GEMINI_MD = 'https://google-gemini.github.io/gemini-cli/docs/cli/gemini-md.html';
 const CURSOR_IGNORE = 'https://cursor.com/help/customization/ignore-files';
-/*
- * The same Google page answers two different products, which is why one URL appears once here and
- * not twice: it says Gemini Code Assist excludes context through `.aiexclude`, and in the same
- * breath that "Gemini CLI users can exclude files by using a `.geminiignore` file". `.aiexclude`
- * therefore carries no tool in our list at all — Code Assist is not an `AgentTool` — and only the
- * CLI's file is a cited pair (read 2026-09-20).
- */
+/* One page covers both: `.aiexclude` is Gemini Code Assist (not an `AgentTool`), `.geminiignore` is Gemini CLI. */
 const GEMINI_EXCLUDE = 'https://docs.cloud.google.com/gemini/docs/codeassist/create-aiexclude-file';
 
 interface GuideCitation {
   /** The document the claim was read from. */
   source: string;
-  /**
-   * A condition the repository itself cannot see. Copilot reads `AGENTS.md` only in its coding
-   * agent; Gemini CLI reads it only when a `context` block in `.gemini/settings.json` wires it.
-   * Printing "reads it" flat would overstate both.
-   */
+  /** A condition the repository cannot see: Copilot's coding agent only, or Gemini's `context` setting. */
   condition?: 'coding-agent' | 'settings-context';
 }
 
-/**
- * `${ruleId}:${tool}` → the document behind that claim. A pair absent from this map is **uncited**,
- * which the screen states; it is never silently rendered as though it were sourced.
- */
+/** `${ruleId}:${tool}` → source; an absent pair is stated as uncited. */
 const CITATIONS: Readonly<Record<string, GuideCitation>> = Object.freeze({
   'claude-md:claude-code': { source: CLAUDE_STEERING },
 
@@ -96,15 +68,10 @@ const CITATIONS: Readonly<Record<string, GuideCitation>> = Object.freeze({
   'copilot-instructions:copilot': { source: COPILOT_INSTRUCTIONS },
 });
 
-/** The document behind one claim, or `null` when we have none and the screen must say so. */
+/** `null` when uncited. */
 export function guideCitation(ruleId: string, tool: AgentTool): GuideCitation | null {
   return CITATIONS[`${ruleId}:${tool}`] ?? null;
 }
 
-/**
- * Tools the classifier resolves but this module cannot cite from anything fetched. Antigravity CLI
- * is the live case: the classifier lists it beside Gemini CLI as its successor, and the research
- * digest's §2 covers neither its `AGENTS.md` handling nor its hooks. Naming it here is how the gap
- * stays visible instead of becoming a claim.
- */
+/** Tools the classifier resolves but no fetched source covers. */
 export const UNCITED_TOOLS: readonly AgentTool[] = Object.freeze(['antigravity']);

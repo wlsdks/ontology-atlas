@@ -12,11 +12,7 @@ import {
 } from './mcp-catalogue';
 import { serializeConnectorState } from '@/shared/lib/connector-record';
 
-/**
- * The catalogue is committed data a person can change by hand between generator runs, and it
- * feeds a form whose output goes into somebody's folder. So these check the **shape of the data**
- * as hard as they check the code that reads it.
- */
+/** The catalogue is hand-editable data feeding a folder write, so its shape is checked as hard as the code. */
 
 const entryOf = (id: string): CatalogueEntry => {
   const entry = MCP_CATALOGUE.find((candidate) => candidate.id === id);
@@ -33,10 +29,8 @@ describe('the committed catalogue', () => {
 
   it('carries provenance on every entry and every variant', () => {
     /*
-     * A curated row is one person's transcription of a vendor page; a registry row is the
-     * publisher's own metadata. Drawing them the same would borrow the registry's authority for
-     * a line one of us typed (PO steward, 2026-09-07), so the distinction has to exist in the
-     * data before it can exist on screen.
+     * A curated row is a person's transcription of a vendor page, a registry row the publisher's
+     * own metadata; the screen can only draw them differently if the data tells them apart.
      */
     for (const entry of MCP_CATALOGUE) {
       expect(entry.docsUrl).toMatch(/^https:\/\//);
@@ -49,11 +43,7 @@ describe('the committed catalogue', () => {
   });
 
   it('holds no popularity, ranking or endorsement field', () => {
-    /*
-     * A list with a count beside each row is a marketplace, which `.claude/rules/forbidden.md`
-     * refuses. This is cheap to check and expensive to notice by eye once somebody adds one
-     * "helpful" field.
-     */
+    // A count beside each row is a marketplace, which `.claude/rules/forbidden.md` refuses.
     const text = JSON.stringify(MCP_CATALOGUE).toLowerCase();
     for (const forbidden of ['downloads', 'stars', 'popularity', 'rating', 'recommended', 'rank']) {
       expect(text).not.toContain(`"${forbidden}"`);
@@ -74,11 +64,9 @@ describe('the committed catalogue', () => {
 
   it('holds only what the in-app press can make work, and no hosted OAuth address', () => {
     /*
-     * 2026-09-07, evening: a hosted OAuth address handed to the in-app session reports "requires
-     * authentication" and the adapter cannot open the sign-in window (measured against
-     * claude-agent-acp 0.75.0, `scripts/build-mcp-catalogue.mjs` records it). So every row here
-     * is a local program with a token, or an address that asks nothing. The generator refuses
-     * the other shape; this pins the committed file to the same rule.
+     * The in-app session cannot open an OAuth sign-in window (`scripts/build-mcp-catalogue.mjs`
+     * records it), so every row is a local program with a token or an address that asks nothing.
+     * The generator refuses the other shape; this pins the committed file to the same rule.
      */
     for (const entry of MCP_CATALOGUE) {
       for (const variant of entry.variants) {
@@ -129,12 +117,7 @@ describe('choosing an entry', () => {
   });
 
   it('records which entry and which capture produced the row', () => {
-    /*
-     * Without this, `connectors.json` cannot tell a catalogue suggestion apart from something
-     * the person typed, and the next agent reading the folder has no way to ask where a row came
-     * from (PO steward, 2026-09-07 — the condition that made this a stored field rather than a
-     * screen-only label).
-     */
+    // Without it, `connectors.json` cannot tell a catalogue suggestion from something typed.
     const notion = entryOf('notion');
     const draft = catalogueDraft(notion, notion.variants[0], {
       id: 'c1',

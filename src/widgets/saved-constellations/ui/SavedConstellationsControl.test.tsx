@@ -102,17 +102,8 @@ async function openEditedDraft() {
 }
 
 /**
- * **The chip expands a named region, and says which one** (map round,
- * 2026-09-20).
- *
- * It used to claim `aria-haspopup="dialog"` while what opened was an unnamed
- * `div`: measured on the live map, zero elements with `role="dialog"`, no
- * `aria-controls` on the trigger, and no accessible name on the panel — a
- * reader heard "expanded" and had nothing to move to. Giving it the dialog role
- * would have been a hand-assembled modal, which `dialog.tsx` owns and the
- * adoption ratchet refuses, and a lie besides: no scrim, no focus trap, focus
- * stays on the chip and the map behind stays live. So it is what it always
- * behaved as — a disclosure pointing at a named region.
+ * The chip is a disclosure expanding a named region, not a dialog: there is no scrim or focus trap,
+ * and a hand-built modal belongs to `dialog.tsx`.
  */
 describe('SavedConstellationsControl — the chip expands a named region', () => {
   it('names the region, ties it to the chip, and claims no dialog', () => {

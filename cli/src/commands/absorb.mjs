@@ -1,29 +1,6 @@
-// Slice 0 — `ontology-atlas absorb <file...> [--vault X] [--write]`
-//
-// The "absorption tool" — the single spine (docs/plans/PRODUCT-PLAN-2026-07.md §4/§9).
-// Converts a CLAUDE.md/AGENTS.md-style markdown file into typed vault nodes
-// so a tech lead's existing agent-instruction file stops needing dual
-// maintenance: the original stays authoritative for what the tool could not
-// confidently absorb, and the vault becomes the source of truth for the
-// sections it could.
-//
-// Default = dry-run: prints the conversion plan only, touches no files.
-// `--write` actually lands the plan:
-//   1. rule/policy/decision sections → `kind: document` nodes (`role: policy`)
-//      via the same schema + write-vault path `add`/`import` use.
-//   2. architecture/component sections are reported as SUGGESTIONS only —
-//      never auto-written (they need a human decision on capability vs
-//      element vs domain placement).
-//   3. injection-suspect sections (Tier 1, see absorb.mjs) are excluded from
-//      absorption regardless of category.
-//   4. the source file is backed up to `<file>.pre-absorb.bak`, then
-//      rewritten into a slim pointer that preserves every unabsorbed section
-//      verbatim — content is never destroyed.
-//
-// Core logic (splitting/classification/injection/plan) lives in
-// `../lib/absorb.mjs` — mirrored at `mcp/src/absorb.mjs` for the
-// `absorb_document` MCP tool, kept in lock-step by
-// `tests/contract/absorb.contract.test.ts`.
+// `ontology-atlas absorb <file...> [--vault X] [--write]` (docs/plans/PRODUCT-PLAN-2026-07.md §4/§9). Dry-run by default;
+// `--write` lands policy sections as documents, only suggests architecture sections, skips injection suspects, and
+// backs up the source before slimming it to a pointer. Logic: `../lib/absorb.mjs`, twin of `mcp/src/absorb.mjs` (tests/contract/absorb.contract.test.ts).
 
 import { COLORS } from '../lib/colors.mjs';
 import { resolve, basename, relative } from 'node:path';
@@ -133,14 +110,8 @@ function runAbsorbWithRuntime(args, runtime) {
     }
 
     /*
-     * All sections of one source file land or none do. A mid-loop failure
-     * (disk full, permission) used to leave the earlier document nodes on disk
-     * while the source/backup step below never ran — and on the promised
-     * "re-run safely", buildAbsorptionPlan saw the landed slugs as taken and
-     * re-absorbed those sections under `-2` suffixes, duplicating every node
-     * that succeeded the first time (bug sweep 2026-09-01). The files written
-     * here are new by construction (writeDoc refuses an existing slug), so the
-     * rollback is a plain unlink of exactly what this loop created.
+     * All sections of one source land or none do, or a re-run re-absorbs the landed ones under -2 suffixes.
+     * writeDoc refuses an existing slug, so rollback unlinks exactly what this loop created.
      */
     const landedPaths = [];
     try {
@@ -207,8 +178,7 @@ function runAbsorbWithRuntime(args, runtime) {
       throw error;
     }
 
-    // Slice 0 magic-moment instrumentation (PRODUCT-PLAN-2026-07.md §4/§9) —
-    // local-only baseline for "vault worth asking" (see lib/telemetry.mjs).
+    // Local-only telemetry baseline (docs/plans/PRODUCT-PLAN-2026-07.md §4/§9, lib/telemetry.mjs).
     stampAbsorbWriteCompleted(vaultPath);
 
     process.stdout.write(

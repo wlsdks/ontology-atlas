@@ -1,7 +1,5 @@
-// R15 follow-up — `ontology-atlas delete <slug> [vault]`
-// Permanent delete. Default refuses if backlinks remain (--force overrides).
-// Default dry-run with backlinks preview (--confirm applies).
-// Thin wrapper over MCP delete_concept.
+// `ontology-atlas delete <slug> [vault]`: permanent delete over MCP delete_concept. Dry-run with a
+// backlinks preview by default (--confirm applies); refuses while backlinks remain (--force overrides).
 
 import { COLORS } from '../lib/colors.mjs';
 import { formatCapturedSummary } from '../lib/captured-summary.mjs';
@@ -24,10 +22,8 @@ export async function runDelete(args) {
     return 1;
   }
 
-  // The shared resolution order (explicit → OATLAS_VAULT → docs/ontology
-  // auto-detect), like every other vault command. The bare cwd resolve this
-  // used meant a destructive write could target a different vault than the
-  // read/write siblings in the same shell (bug sweep 2026-09-01).
+  // Shared resolution order (explicit → OATLAS_VAULT → docs/ontology), so a destructive write
+  // targets the same vault as its read and write siblings.
   const vaultRoot = resolveVaultRoot(vault);
 
   if (!confirm) {

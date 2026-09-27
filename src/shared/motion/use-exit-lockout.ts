@@ -7,36 +7,21 @@ import type { TargetAndTransition, VariantLabels } from 'framer-motion';
 import { EXIT_TRANSITION } from './tokens';
 
 /**
- * **The input lockout lives outside framer's value system.**
+ * Stops a framer `exit` target taking pointer input from its first exit frame
+ * (`framer-exit-asymmetry.contract.test.ts`), outside framer's value system: a string value
+ * such as `pointerEvents` in an exit set keeps `AnimatePresence` from ever completing
+ * under jsdom on the Linux CI runner, while passing locally, even with a zero-duration
+ * transition.
  *
- * Every framer `exit` target needs to stop taking pointer input from its first exit
- * frame (`framer-exit-asymmetry.contract.test.ts`). The first attempt put that inside
- * the animated value set itself — `pointerEvents: "none"` in the `exit` object, tweened
- * with a per-value `{ duration: 0 }` transition so it snaps instead of interpolating.
+ * The `onAnimationStart` handler receives the animated definition itself, so an exit is
+ * recognized by its `transition` being the `EXIT_TRANSITION` object (identity, not a
+ * clone) and `pointerEvents` is set on the node directly.
  *
- * **That broke CI.** Measured 2026-09-05: two
- * `FirstRunStarterModule.test.tsx` cases that wait for the `Dialog` (a portal +
- * `AnimatePresence`) to leave the DOM hung for 5 s on GitHub's Linux runner (jsdom,
- * vitest) — passing locally every time. Bisection showed removing `pointerEvents` from
- * the two Dialog exits made the job pass; giving it its own zero-duration transition did
- * not. A **string value** in the framer exit set — even one whose own transition is
- * zero-duration — stops the exit's completion promise from ever resolving under jsdom.
- *
- * **The fix moves the lockout to an imperative side effect.** `onAnimationStart` fires
- * with the literal definition object being animated — for a leave, that is the `exit`
- * object itself, transition included, identity intact (confirmed empirically: the
- * `transition` field received here is `===` the `EXIT_TRANSITION` constant, not a
- * clone). So this hook does not need a new prop or a new name at every call site: it
- * recognizes an exit by that identity and sets `pointerEvents` on the DOM node directly
- * — the same synchronous instant a zero-duration tween would have applied it — without
- * asking framer's animation engine to carry a string value through jsdom's WAAPI shim.
- *
- * **Usage.** Attach `ref` to the `motion.*` element (through
- * {@link import('@/shared/lib/merge-refs').mergeRefs} when the element already owns a
- * ref) and spread `onAnimationStart` onto it. The `exit` object keeps
- * `transition: EXIT_TRANSITION` — that is the only thing this hook keys on — and drops
- * `pointerEvents` entirely. If entry reverses an unfinished exit on the same node,
- * restore the pointer policy that was present before the lockout.
+ * Usage: attach `ref` to the `motion.*` element (through
+ * {@link import('@/shared/lib/merge-refs').mergeRefs} when it already owns a ref), spread
+ * the returned `onAnimationStart` onto it, and keep `transition: EXIT_TRANSITION` in the
+ * exit set without `pointerEvents`. An entry reversing an unfinished exit restores the
+ * previous pointer policy.
  *
  * ```tsx
  * const { ref, onAnimationStart } = useExitLockout<HTMLDivElement>();

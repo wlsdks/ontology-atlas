@@ -1,18 +1,9 @@
 /**
- * The vault agent's data shapes — the contract shared by the screen, the runner,
- * and the disk.
- *
- * One contract matters most: `ProposedFileChange.before/after` is **the shared
- * source of truth for the diff card and the applier**. The string the card drew
- * and the string written to disk must be the same for "what you saw is what gets
- * written" to be true.
+ * The vault agent's data shapes. `ProposedFileChange.before/after` is shared by the diff card
+ * and the applier, or what the person saw is not what gets written.
  */
 
-/**
- * What this answer rests on. The screen's copy and controls branch on it. The
- * verdict is made by `citation.ts`, and the meaning of each variant is in that
- * file's header comment.
- */
+/** What this answer rests on; `citation.ts` decides it and documents each variant. */
 export type AnswerGrounding =
   /** At least one `[[slug]]` citation — the sentence points at its own evidence. */
   | 'grounded'
@@ -58,12 +49,7 @@ export type ProposalToolName =
   | 'add_relation'
   | 'add_relations'
   | 'patch_concept'
-  /**
-   * A Compile turn's wiki page. Not an MCP tool and deliberately not in `AGENT_TOOLS` —
-   * see `compile-tool-catalog.ts` for why the Compile catalogue is separate. It rides the
-   * same `ProposalChange` so `applyProposal`'s mtime guard, its "zero files changed on any
-   * refusal" contract, and the consent card's diff are the existing ones.
-   */
+  /** A Compile turn's wiki page; not in `AGENT_TOOLS` (see `compile-tool-catalog.ts`), but it rides `ProposalChange`. */
   | 'propose_wiki_page';
 
 export interface ProposalChange {
@@ -79,24 +65,10 @@ export interface ProposalChange {
 
 type ProposalStatus =
   | 'pending'
-  /**
-   * The write is **in flight**. The draft had no such value, so the state stayed
-   * `pending` during the `await` and pressing [apply] twice sent **two concurrent
-   * vault writes**. Cancel could be pressed in between too. And the screen drew
-   * zero distinction for "applying" (the interaction seat's rejection reason,
-   * 2026-07-29).
-   *
-   * With this value, the reentrancy guard and the button lock look at **the same
-   * fact** — the same grammar as the finish dialog's `busy`.
-   */
+  /** The write is in flight; the reentrancy guard and the button lock both read it, or a double press writes twice. */
   | 'applying'
   | 'applied'
-  /**
-   * The write itself failed (an I/O error, or a same-file selection that cannot
-   * be honored). Distinct from 'pending' on purpose: mapping a failure back to
-   * 'pending' made a failed write indistinguishable from "not yet applied"
-   * while files may already have changed (bug sweep 2026-09-01).
-   */
+  /** The write itself failed; distinct from 'pending' because files may already have changed. */
   | 'failed'
   | 'cancelled'
   | 'conflict'
@@ -111,11 +83,7 @@ export interface AgentProposal {
   appliedSnapshotSha?: string;
   /** Why the apply failed — shown on the card while status is 'failed'. */
   applyErrorMessage?: string;
-  /**
-   * The node slugs actually read this turn. A proposal editing a file that is not
-   * here gets a warning row on the card — narrowing the path by which an injection
-   * launders consent.
-   */
+  /** Nodes read this turn; a proposal editing another file gets a warning row, narrowing injection-laundered consent. */
   readNodesThisTurn: string[];
 }
 
@@ -132,15 +100,8 @@ export interface ScreenContextSnapshot {
   /** How many concepts are drawn on the map right now. */
   visibleNodeCount: number;
   /**
-   * This folder's **recently applied changes** (commit subjects from git history,
-   * newest first).
-   *
-   * This is what lets work continue without storing the conversation — the
-   * previous session's writes stayed in frontmatter and in git, and a new
-   * conversation reads them to construct "we got this far last time, so next…"
-   * for itself. That is why no second source of truth outside the vault (a
-   * conversation store) is needed. Empty when this is not a git repository or has
-   * no history, and then the block is not sent at all.
+   * Recently applied changes (git commit subjects, newest first), so work continues without a
+   * conversation store. Empty outside git, and then the block is not sent.
    */
   recentChanges?: readonly string[];
 }
@@ -151,15 +112,7 @@ type NoticeCode =
   | 'rate-limited'
   | 'rejected'
   | 'round-cap'
-  /**
-   * **A turn that stopped without calling a single tool** (2026-08-02).
-   *
-   * The round-cap branch raises `round-cap` explicitly, but the early-exit branch
-   * was accepted as `status: 'done'` with no notice at all — the screen returned
-   * the input box exactly as it does on a normal completion, and the user could
-   * not distinguish an answer that never looked at the vault from one that read
-   * it. This code exists so the two branches are symmetric.
-   */
+  /** A turn that stopped without calling a tool; symmetric with `round-cap`. */
   | 'no-tool-call'
   | 'aborted'
   | 'audit-blocked'
@@ -173,24 +126,11 @@ export type AgentEvent =
   | {
       kind: 'assistant';
       paragraphs: CitedParagraph[];
-      /**
-       * What this answer rests on — `citation.ts`'s two-way verdict. The old
-       * `demoted: boolean` counted only citation **markers**, so a turn that read
-       * the vault and answered from it still showed "answered with no evidence read".
-       */
+      /** What this answer rests on, from `citation.ts`. */
       grounding: AnswerGrounding;
-      /**
-       * The nodes actually read this turn. The material with which the screen
-       * **mechanically compensates** in the `uncited` case, showing them as
-       * "sources consulted" chips — it does not rely on the model honouring the
-       * citation notation.
-       */
+      /** Nodes read this turn, shown as source chips when the model wrote no citation. */
       sources?: string[];
-      /**
-       * The **next single step**, taken from the last line of the same response.
-       * It was not obtained by an extra call; this turn already said it. It becomes
-       * one chip, and a chip is a prefill — not a send, and not a pending card.
-       */
+      /** The next single step from the response's last line; a chip is a prefill, not a send. */
       nextStep?: string | null;
     }
   | { kind: 'proposal'; proposal: AgentProposal }
@@ -206,7 +146,7 @@ type AgentTurnStatus =
 export interface AgentTurn {
   id: string;
   events: AgentEvent[];
-  /** ≤ ROUND_CAP */
+  /** At most `AGENT_ROUND_CAP`. */
   roundsUsed: number;
   /** The footer running total — measured character counts only. */
   sentChars: number;
@@ -218,11 +158,7 @@ export interface AgentTurn {
   /** The tool round-trip cap. The structural ceiling on autonomous runaway. */
 export const AGENT_ROUND_CAP = 6;
 
-/**
- * The character cap on tool results carried in one round trip. Beyond it the
- * result is truncated and the model is told to "narrow it and ask again" —
- * blocking the path by which the user's cost (BYOK billing) grows quietly.
- */
+/** Result characters per round trip; beyond it the result is truncated so BYOK cost cannot grow quietly. */
 export const AGENT_TOOL_RESULT_CHAR_CAP = 6_000;
 
 /** The cap on total vault excerpt volume carried in one turn. */

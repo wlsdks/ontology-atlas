@@ -15,14 +15,7 @@ function encode(text: string): ArrayBuffer {
   return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
 }
 
-/**
- * A folder that holds exactly what its walk found.
- *
- * A symlink is not representable here on purpose: neither the File System Access
- * traversal nor Rust's `list_vault_directory` reports one as a file, so it never enters
- * the inventory — and a path naming one is refused by the same branch that refuses a file
- * that is simply not there.
- */
+/** A folder holding exactly what its walk found; symlinks never enter the inventory. */
 function port(
   files: Record<string, { text: string; format?: string }>,
   options: { hash?: (path: string, bytes: ArrayBuffer) => string | null } = {},
@@ -66,9 +59,7 @@ function executorFor(
 
 describe('the Compile catalogue stays out of AGENT_TOOLS', () => {
   it('the compile tools do not join the MCP-mirrored list', () => {
-    // `tests/contract/agent-tool-catalog.contract.test.ts` reads `mcp/src/index.js` and
-    // demands an exact match for every member of AGENT_TOOLS. Merging these two lists is
-    // how that contract would gain its first exception.
+    // tests/contract/agent-tool-catalog.contract.test.ts demands AGENT_TOOLS match MCP exactly.
     const names = AGENT_TOOLS.map((tool) => tool.name);
     expect(names).not.toContain('read_source_text');
     expect(names).not.toContain('read_wiki_page');

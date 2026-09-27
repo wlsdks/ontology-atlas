@@ -63,7 +63,7 @@ describe('local-fs-handle store', () => {
     expect(restored?.handle.name).toBe('Notes');
   });
 
-  it('delete 후 get 은 undefined', async () => {
+  it('returns undefined after delete', async () => {
     await putLocalFsHandle({
       id: CURRENT_LOCAL_FS_HANDLE_ID,
       handle: fakeHandle('Tmp'),
@@ -75,7 +75,7 @@ describe('local-fs-handle store', () => {
     expect(await getLocalFsHandle()).toBeUndefined();
   });
 
-  it('touch 는 lastAccessedAt 만 갱신', async () => {
+  it('updates only lastAccessedAt on touch', async () => {
     await putLocalFsHandle({
       id: CURRENT_LOCAL_FS_HANDLE_ID,
       handle: fakeHandle('A'),
@@ -84,12 +84,7 @@ describe('local-fs-handle store', () => {
       lastAccessedAt: 100,
     });
     const before = (await getLocalFsHandle())!;
-    /*
-     * `touch` writes `Date.now()`, so the assertion below needs the clock to have moved.
-     * A 2 ms sleep assumed it would; a coarse clock can tie and the test then fails on
-     * the timer, not on the store. Waiting for the condition itself — a different
-     * millisecond — is instant on a fast clock and correct on a slow one.
-     */
+    /* Waits for the clock to move rather than sleeping, so a coarse clock cannot tie. */
     await vi.waitFor(() => {
       if (Date.now() === before.lastAccessedAt) throw new Error('clock has not advanced yet');
     });
@@ -100,19 +95,17 @@ describe('local-fs-handle store', () => {
     expect((await listRecentLocalFsHandles())[0].lastAccessedAt).toBe(after.lastAccessedAt);
   });
 
-  it('touch 는 record 가 없으면 no-op', async () => {
+  it('does nothing on touch without a record', async () => {
     await touchLocalFsHandle();
     expect(await getLocalFsHandle()).toBeUndefined();
   });
 
-  it('legacy 키 자동 마이그레이션', async () => {
+  it('migrates the legacy key', async () => {
     memory.set('docs-vault:current-handle', fakeHandle('OldVault'));
     const restored = await getLocalFsHandle();
     expect(restored?.name).toBe('OldVault');
     expect(restored?.id).toBe(CURRENT_LOCAL_FS_HANDLE_ID);
-    // The legacy key is deleted.
     expect(memory.get('docs-vault:current-handle')).toBeUndefined();
-    // The new key survives.
     expect(
       memory.get('docs-vault:fs-handle:current'),
     ).toBeDefined();
@@ -121,7 +114,7 @@ describe('local-fs-handle store', () => {
     ]);
   });
 
-  it('마이그레이션은 한 번만 — 이후 read 는 record 직접', async () => {
+  it('migrates once and reads the record afterwards', async () => {
     memory.set('docs-vault:current-handle', fakeHandle('OldVault'));
     const first = await getLocalFsHandle();
     const second = await getLocalFsHandle();
@@ -129,7 +122,7 @@ describe('local-fs-handle store', () => {
     expect(memory.get('docs-vault:current-handle')).toBeUndefined();
   });
 
-  it('multi-id 분리 저장', async () => {
+  it('stores several ids separately', async () => {
     await putLocalFsHandle({
       id: 'current',
       handle: fakeHandle('A'),
@@ -148,7 +141,7 @@ describe('local-fs-handle store', () => {
     expect((await getLocalFsHandle('archive'))?.name).toBe('B');
   });
 
-  it('최근 vault 목록은 lastAccessedAt 순서로 dedupe 하고 5개로 제한', async () => {
+  it('dedupes recent vaults by lastAccessedAt and keeps five', async () => {
     for (let i = 0; i < 6; i += 1) {
       await putLocalFsHandle({
         id: `vault-${i}`,
@@ -175,7 +168,7 @@ describe('local-fs-handle store', () => {
     ]);
   });
 
-  it('최근 vault 항목을 identity 기준으로 제거한다', async () => {
+  it('removes a recent vault by identity', async () => {
     const first: LocalFsHandleRecord = {
       id: 'current',
       handle: fakeHandle('Current'),
@@ -204,7 +197,7 @@ describe('local-fs-handle store', () => {
     expect((await getLocalFsHandle('current'))?.name).toBe('Current');
   });
 
-  it('브라우저 런타임에서는 Tauri desktop path record 를 복원하지 않는다', async () => {
+  it('does not restore a desktop path record in the browser', async () => {
     await putLocalFsHandle({
       id: CURRENT_LOCAL_FS_HANDLE_ID,
       handle: fakeHandle('Desktop Vault'),
@@ -228,9 +221,7 @@ describe('local-fs-handle store', () => {
   });
 
   it('web FSA records with different folders both stay in the recent list', async () => {
-    // Bug sweep 2026-09-01: every web record's id is 'current', so the
-    // identity fallback deduped all vaults to one entry — opening folder B
-    // silently evicted folder A.
+    // Web records all share id 'current', so identity must come from the folder, not the id.
     await putLocalFsHandle({
       id: CURRENT_LOCAL_FS_HANDLE_ID,
       handle: fakeHandle('vault-a'),
@@ -258,7 +249,7 @@ describe('local-fs-handle store', () => {
     expect(recent.map((record) => record.name)).toEqual(['Vault A', 'Vault B']);
   });
 
-  it('Tauri 런타임에서는 저장된 desktop path record 를 handle shim 으로 복원한다', async () => {
+  it('restores a desktop path record as a handle shim in Tauri', async () => {
     tauriApiMock.runtimeAvailable = true;
     await putLocalFsHandle({
       id: CURRENT_LOCAL_FS_HANDLE_ID,
@@ -291,8 +282,7 @@ describe('recordLocalFsHandleContents', () => {
 
       await recordLocalFsHandleContents({ docCount: 232, conceptCount: 41 });
 
-      // Both copies, because the chooser reads the recent list while the settings row reads
-      // the `current` record. Writing one would let two surfaces disagree about one folder.
+      // The chooser reads the recent list while settings read the `current` record.
       const current = await getLocalFsHandle();
       expect(current?.docCount).toBe(232);
       expect(current?.conceptCount).toBe(41);
@@ -304,9 +294,7 @@ describe('recordLocalFsHandleContents', () => {
   });
 
   it('does nothing when there is no such record', async () => {
-      // The same contract as `touchLocalFsHandle`: a count for a folder that is not stored
-      // has nothing to attach to, and inventing a record for it would put a folder in the
-      // chooser that nobody opened.
+      // A count for an unstored folder would invent a chooser entry nobody opened.
       await recordLocalFsHandleContents({ docCount: 5, conceptCount: 2 });
 
     expect(await getLocalFsHandle()).toBeUndefined();
@@ -315,18 +303,9 @@ describe('recordLocalFsHandleContents', () => {
 });
 
 describe('the recent list survives concurrent writers', () => {
-  /*
-   * **The launch rule is decided by how many folders this list holds**, so a dropped entry
-   * silently turns the chooser off and the app resumes a folder it should have asked about.
-   *
-   * A vault load fires `touchLocalFsHandle` and then, once the walk finishes,
-   * `recordLocalFsHandleContents`; both read this one key, modify it and write it back, and
-   * neither is awaited by its caller - awaiting them broke a rename and a map deeplink, once
-   * each, on 2026-09-13. So the store serialises the writes itself, and this is the case that
-   * says so.
-   */
+  /* Two unawaited writes must both land: the entry count decides whether the chooser opens. */
   it('keeps both folders when two writes are started without awaiting the first', async () => {
-    // Start both without awaiting, which is exactly how the vault-load path calls them.
+    // Neither awaited, as the vault-load path calls them.
     const first = putLocalFsHandle({
       id: 'a',
       handle: fakeHandle('atlas'),
@@ -345,14 +324,8 @@ describe('the recent list survives concurrent writers', () => {
 
     const recent = await listRecentLocalFsHandles();
     expect(recent.map((r) => r.name).sort()).toEqual(['atlas', 'atlas-old']);
-    // And two is what arms the chooser, which is the whole reason this matters.
     expect(recent).toHaveLength(2);
   });
 
-  /*
-   * There is deliberately no second case for "a forget racing a vault load". One was
-   * written and removed: the in-memory `idb-kv` mock settles too synchronously to
-   * interleave, so it passed with the queue disabled and guarded nothing. The case above
-   * is the probe - it fails when `queueRecentListWrite` stops queueing.
-   */
+  /* No forget-race case: the in-memory mock cannot interleave, so it would pass with the queue off. */
 });

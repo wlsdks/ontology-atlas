@@ -9,18 +9,8 @@ export interface ProjectChip {
 const PROJECT_ID_PREFIX = "project:";
 
 /**
- * The project filter chips of the search palette: registered projects first,
- * ordered by how many concepts each one carries, then by name.
- *
- * **The chip wears the name the map wears.** A project's registered name is
- * its canonical title ("Online Store"), while its node on the map shows the
- * screen-language display name. The palette footer and every
- * result row already read the display, so the chip was the one place the same
- * project answered to a different name (2026-09-19). A project without a node
- * on the map keeps its registered name.
- *
- * Without registered projects, the chips are the project ids the concepts
- * name, most-carried first.
+ * Project filter chips: registered projects by concept count, then name, wearing the map's display
+ * name; without registered projects, the ids concepts name, most-carried first.
  */
 export function buildProjectChips(
   projects: readonly Project[] | undefined,

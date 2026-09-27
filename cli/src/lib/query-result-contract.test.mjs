@@ -328,7 +328,7 @@ describe('query-result-contract', () => {
         ...valid,
         followUp: {
           ...valid.followUp,
-          // 2026-08-17: the contract inverted — the **bare name** is now rejected (it cannot run).
+          // The bare name is rejected because it cannot run.
           cliFallbackCommands: ['ontology-atlas node capabilities/login'],
         },
       }),
@@ -1227,9 +1227,7 @@ describe('query-result-contract', () => {
       /agent_brief cliFallbackCommands must include non-empty runnable CLI fallback commands/,
     );
     /*
-     * 2026-08-17: the contract inverted. It used to reject the **runnable** form
-     * and require a bare `ontology-atlas` — and since no global command by that
-     * name exists, the check was enforcing a lie rather than preventing one.
+     * The runnable form is accepted and a bare `ontology-atlas` is rejected: no global command by that name exists.
      */
     assert.throws(
       () => assertAgentBriefShape({ ...valid, cliFallbackCommands: ['ontology-atlas health'] }),
@@ -2405,13 +2403,8 @@ describe('query-result-contract', () => {
     assert.equal(assertBacklinksShape({ target: 'capabilities/foo', matches: [] }).total, undefined);
 
     /**
-     * **A row matched by a body link alone** — the second shape the server really
-     * emits (`mcp/src/vault.mjs`: `matchedKeys` is `undefined`, `matchedInBody: true`).
-     *
-     * The regression passed because this fixture did not exist. Every reference in
-     * the dogfood vault is wired through frontmatter, so this shape never appeared;
-     * it appears only in the starter vault right after `init`, whose body points at
-     * `domains/auth.md`. It broke **only on the path we do not walk ourselves**.
+     * A row matched by a body link alone, the second shape the server emits (`mcp/src/vault.mjs`: `matchedKeys`
+     * undefined, `matchedInBody: true`); it appears in the starter vault right after `init`.
      */
     const bodyOnly = {
       target: 'domains/auth',

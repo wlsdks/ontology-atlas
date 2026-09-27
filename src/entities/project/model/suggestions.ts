@@ -3,7 +3,7 @@ import type { Project } from "./types";
 export interface SuggestedDependency {
   slug: string;
   name: string;
-  /** A short excerpt showing why the match fired. */
+  /** Why the match fired. */
   excerpt: string;
 }
 
@@ -21,7 +21,7 @@ function isAsciiAlphaNumeric(value: string): boolean {
 function findMatchIndex(haystack: string, needle: string): number {
   const trimmed = needle.trim();
   if (trimmed.length < MIN_NAME_LENGTH) return -1;
-  // ASCII-only names match on word boundaries; Korean or mixed names match by containment.
+  // ASCII names match on word boundaries; Korean or mixed names by containment.
   if (isAsciiAlphaNumeric(trimmed)) {
     const regex = new RegExp(`\\b${escapeRegExp(trimmed)}\\b`, "i");
     const match = regex.exec(haystack);
@@ -39,15 +39,8 @@ function extractExcerpt(corpus: string, index: number, needleLength: number): st
 }
 
 /**
- * Finds other projects whose name (or English name) is mentioned verbatim in this
- * project's description/detail, and returns them as dependency suggestions.
- *
- * Rules:
- * - excludes itself and any slug already in `dependencies`
- * - skips names shorter than three characters, which produce false hits (AI, UI)
- * - ASCII names match on word boundaries so they do not match inside a longer word;
- *   names containing Korean match by containment
- * - deduplicates by slug, returning only the first match
+ * Other projects named verbatim in this description or detail, as dependency suggestions. Skips
+ * itself, existing dependencies and names under three characters; one match per slug.
  */
 export function computeSuggestedDependencies(
   current: Pick<Project, "slug" | "dependencies" | "description" | "detail">,

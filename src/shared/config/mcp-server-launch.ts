@@ -1,29 +1,13 @@
 /**
- * **How an agent launches the MCP server** — this repo's distribution contract.
- *
- * Before 2026-07-27 an npm-publishing gate stood here
- * (`agent-package-distribution.ts`). It locked every piece of guidance behind the
- * premise that "once this is on npm, `npx -y ontology-atlas-mcp` becomes true", and
- * the decision not to publish removed that premise. A gate that waits for something
- * that will never arrive is a permanently closed door, and the guidance behind it is
- * a false promise.
- *
- * There is one distribution channel today: **the app carries the server.** The macOS
- * app ships the compiled MCP binary inside its own bundle, and the connect-agent
- * button writes the client config with that absolute path. The contract survives
- * quitting the app — the binary is on disk and the agent client spawns it per
- * session.
- *
- * Environments with no app (web browser, Linux CI, a server) fall back to a **source
- * checkout**. Those two are all of it; there is no third.
+ * How an agent launches the MCP server. There are two channels and no third: the macOS app
+ * ships the compiled binary in its bundle and the connect button writes its absolute path into
+ * the client config (it survives quitting the app), and environments without the app use a
+ * source checkout. There is no npm package.
  */
 
 type McpServerLaunchKind = "app-bundled" | "source-checkout";
 
-/**
- * The launch contract, written verbatim into the client config.
- * `command` + `args` is the standard shape for stdio MCP.
- */
+/** The launch contract, written verbatim into the client config as stdio `command` + `args`. */
 export interface McpServerLaunch {
   kind: McpServerLaunchKind;
   /** The executable: the binary's absolute path when bundled, `node` from source. */
@@ -46,10 +30,9 @@ function normalizedLaunchPath(value: string): string {
 }
 
 /**
- * Judges whether the config matches one of the two stdio launch shapes Atlas
- * actually distributes — not whether the product name appears somewhere in its
- * strings. File existence and a real startup belong to the stronger `mcp-verify`
- * step: a browser cannot stat an absolute path outside the vault.
+ * Judges whether the config matches one of the two stdio launch shapes Atlas distributes, not
+ * whether the product name appears in it. File existence and a real startup belong to
+ * the `mcp-verify` step: a browser cannot stat a path outside the vault.
  */
 export function inspectMcpServerLaunch(
   command: unknown,
@@ -88,29 +71,19 @@ export function inspectMcpServerLaunch(
 /** The name this server carries in an MCP client's config. */
 export const MCP_SERVER_NAME = "ontology-atlas";
 
-/**
- * Launching from the binary inside the app bundle — the user installs nothing.
- * The native side (`mcp_bundled_server`) reports the path.
- */
+/** Launching from the binary inside the app bundle; `mcp_bundled_server` reports the path. */
 export function bundledServerLaunch(binaryPath: string): McpServerLaunch {
   return { kind: "app-bundled", command: binaryPath, args: [] };
 }
 
-/**
- * Launching from a source checkout — the fallback where no app exists.
- * `repoRoot` is the absolute path of the ontology-atlas repository root.
- */
+/** Launching from a source checkout where no app exists; `repoRoot` is absolute. */
 export function sourceCheckoutLaunch(repoRoot: string): McpServerLaunch {
   return { kind: "source-checkout", command: "node", args: [`${repoRoot}/mcp/src/index.js`] };
 }
 
 /**
- * Whether an agent can be connected from this surface — the whole UI branches on it.
- *
- * Replaces the old `AgentPackageDistribution`, which asked "is this on npm?" and
- * would have answered no forever. This model asks **"do we know how to launch the
- * server from here?"** — the installed app does (its bundled binary), a browser does
- * not (it has no absolute path).
+ * Whether this surface knows how to launch the server; the whole UI branches on it. The
+ * installed app does (its bundled binary); a browser does not (it has no absolute path).
  */
 export interface AgentServerAvailability {
   kind: McpServerLaunchKind | "unavailable";
@@ -121,14 +94,8 @@ export interface AgentServerAvailability {
   /** Why not. This becomes a sentence the user reads, so it must carry a diagnosis. */
   reason: string | null;
   /**
-   * **The probe has not answered yet**, as distinct from having answered "no".
-   *
-   * The two used to be one value, and a screen cannot tell them apart from `launch: null`:
-   * the installed app therefore opened on the browser's degradation card — "only saving the
-   * config for you is what this screen cannot do", with a link to download the app it is
-   * already running — until the bundled-server lookup came back. A false sentence for a few
-   * frames is still a false sentence, and this is the flag that lets a caller say nothing
-   * instead of saying that.
+   * The probe has not answered yet, as distinct from answering "no". Without it the installed
+   * app shows the browser's degradation card until the lookup returns; while it is set, callers draw nothing.
    */
   pending?: boolean;
 }

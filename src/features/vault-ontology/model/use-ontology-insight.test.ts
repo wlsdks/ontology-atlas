@@ -46,9 +46,8 @@ describe('derivationToInsight', () => {
     ]);
   });
 
-  // Regression: both kinds of node share the single `evidenceIds[0]` slot, so unless the
-  // distinguishing flag follows through to the graph node, the screen opens someone else's document again.
-  it('자기 문서 보유 여부를 그래프 노드로 그대로 옮긴다', () => {
+  // Both node kinds share `evidenceIds[0]`, so the own-document flag must reach the node.
+  it('carries whether a concept has its own document onto the graph node', () => {
     const insight = derivationToInsight({
       nodes: [
         {

@@ -1,10 +1,4 @@
-/**
- * The vault agent — a vault-scoped tool loop with screen context.
- *
- * **This barrel exports no write function.** The only write is `proposal-applier`,
- * called by the consent card's handler, and even that reaches the disk only through a
- * write port injected by the widget.
- */
+/** The vault agent. This barrel exports no write function; writes go only through `proposal-applier`. */
 export { runTurn, startTurn } from './model/agent-loop';
 export {
   buildFirstWords,
@@ -20,11 +14,7 @@ export type {
 } from './model/first-words';
 export { buildSystemPrompt } from './model/system-prompt';
 export { AGENT_TOOLS } from './model/tool-catalog';
-/*
- * The Compile catalogue's public surface is deliberately small. The tools, the executor,
- * the proposal builder and the adapter are the feature's own internals — the screen needs
- * the hook, the rows it draws, and the two questions it asks about a folder's formats.
- */
+/* Compile's public surface is deliberately small. */
 export { selectLocalCompileTargets, useLocalCompile } from './model/use-local-compile';
 export type { LocalCompileSession } from './model/use-local-compile';
 export type { CompileCardRow } from './model/compile-consent-card';

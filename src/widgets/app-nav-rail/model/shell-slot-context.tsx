@@ -10,25 +10,8 @@ import {
 } from "react";
 
 /**
- * perf/persistent-shell — when AppNavRail was promoted into
- * `app/[locale]/layout.tsx` (keeping the rail's DOM identity across every route
- * change, replacing only the content area), two per-page things could no longer be
- * passed as props: (1) the `settingsSlot` gear that only the topology (HomePage)
- * plugged in, and (2) hiding the rail on an immersive fullscreen surface.
- *
- * Both are a reverse data flow — leaf page state → a rail that lives in the layout —
- * so Context solves them: a page only registers a value through a hook, and the rail
- * renders it as is. The rail component itself never mounts or unmounts (hidden is
- * handled in CSS only — see `AppNavRail`'s `hidden` prop).
- *
- * `contextHrefs` (carrying LNB context forward) is the same reverse flow. Moving from
- * the topology with a node selected to the rail's "docs vault" item used to open the
- * default `/docs/` screen, unrelated to that selection. When the topology registers
- * the selected node's document deep link here (`buildDocsVaultHref`, a value the
- * datasheet already derives), the rail swaps the "docs vault" item's href for that
- * deep link. With no selection — or on navigating to another page, where effect
- * cleanup empties it — it returns to the default `/docs/` href, with zero visual or
- * default-behaviour change.
+ * Reverse data flow from a leaf page to the rail in the layout: pages register values through
+ * hooks, and the rail renders them without remounting.
  */
 interface NavRailShellState {
   settingsSlot: ReactNode | null;
@@ -36,14 +19,10 @@ interface NavRailShellState {
   contextHrefs: NavRailContextHrefs | null;
 }
 
-/** Rail item id → context href. The docs vault only for now — whether insights needs
- *  context is unclear, so it was left out of this slice (per instruction). */
+/** Rail item id to context href (docs vault only). */
 export interface NavRailContextHrefs {
   docs?: string;
-  /**
-   * Where the Projects door leads when the folder holds exactly one project: that project, rather
-   * than a list with one row and nothing to choose (2026-09-19). Absent for none or several.
-   */
+  /** The Projects door target when the folder holds exactly one project; absent otherwise. */
   projects?: string;
 }
 
@@ -89,11 +68,8 @@ export function useNavRailShellValue(): NavRailShellState {
 }
 
 /**
- * Used when a page plugs its own settings UI into the rail's bottom (the topology's
- * settings sheet trigger, `AppSettingsMenu` rail-tile, for instance). `slot` may be a
- * new object on every re-render; there is no guarantee the effect re-runs only when
- * the content really changes, so stabilising the slot with `useMemo` at the call site
- * reduces needless re-registration. It clears itself on unmount.
+ * Registers a page's settings UI in the rail's bottom slot; stabilise `slot` with useMemo. Clears
+ * on unmount.
  */
 export function useNavRailSettingsSlot(slot: ReactNode | null): void {
   const { setSettingsSlot } = useNavRailShellContext();
@@ -105,12 +81,8 @@ export function useNavRailSettingsSlot(slot: ReactNode | null): void {
 }
 
 /**
- * Used when a page swaps a rail item's href for one based on "what you were just
- * looking at" (for instance, the topology pointing the "docs vault" item at the
- * selected node's document deep link while a node is selected). Where `hrefs` is
- * `null` or a particular key is empty, that item keeps the rail's default href —
- * effect cleanup empties it automatically on deselection or navigation (the same
- * pattern as `useNavRailSettingsSlot`).
+ * Swaps rail item hrefs for context deep links; null or empty keys keep the default. Clears on
+ * unmount.
  */
 export function useNavRailContextHrefs(hrefs: NavRailContextHrefs | null): void {
   const { setContextHrefs } = useNavRailShellContext();

@@ -19,7 +19,7 @@ function makeDoc(partial: Partial<VaultDoc>): VaultDoc {
 }
 
 describe("buildOntologyDeeplinkForDoc", () => {
-  it("kind 가 없으면 null", () => {
+  it("returns null without kind", () => {
     expect(buildOntologyDeeplinkForDoc(makeDoc({ slug: "foo" }))).toBeNull();
     expect(
       buildOntologyDeeplinkForDoc(
@@ -28,7 +28,7 @@ describe("buildOntologyDeeplinkForDoc", () => {
     ).toBeNull();
   });
 
-  it("kind + slug-tail 로 ontology id 조립", () => {
+  it("builds the ontology id from kind and slug tail", () => {
     expect(
       buildOntologyDeeplinkForDoc(
         makeDoc({
@@ -39,7 +39,7 @@ describe("buildOntologyDeeplinkForDoc", () => {
     ).toBe(`/ontology/?node=${encodeURIComponent("domain:ontology-core")}`);
   });
 
-  it("vault 루트 doc 도 slug 그대로", () => {
+  it("keeps the slug of a vault-root doc", () => {
     expect(
       buildOntologyDeeplinkForDoc(
         makeDoc({

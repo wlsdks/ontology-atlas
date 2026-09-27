@@ -22,17 +22,8 @@ export interface RecentNodeRowProps {
 }
 
 /**
- * One row of "a concept changed recently" — the shared grammar for
- * `/ontology/insights` freshness tab's recent-updates list and `/projects`'
- * recent-activity strip. Both surfaces show the same fact (title, kind,
- * domain, when) but used to disagree on layout: insights stacked title over
- * kind·domain (two lines, easy to scan top-to-bottom), `/projects` ran
- * everything into one line (title + inline gray description + domain + slug
- * + date), which reads as five competing columns rather than one row per
- * Apple HIG's consistency guidance — the same fact should look the same
- * wherever it appears. The two-line stack wins because it's the version
- * that's actually easy to scan a list of; unifying on it here means both
- * surfaces get row-hover/link chrome fixes for free going forward.
+ * One row of "a concept changed recently", shared by `/ontology/insights` and `/projects` so the
+ * same fact looks the same: title over kind and domain.
  */
 export function RecentNodeRow({
   kind,
@@ -51,10 +42,7 @@ export function RecentNodeRow({
         <span className="block truncate text-body text-[color:var(--color-text-primary)]">{title}</span>
         <span className="block truncate text-label text-[color:var(--color-text-quaternary)]">{subtitle}</span>
       </span>
-      {/* Prevents horizontal overflow on a narrow screen (360px, the 2026-07-24
-          overflow sweep) — a long slug (trailingSecondary) was flex-none and would not
-          shrink, so it pushed the body out. A max-width plus truncate keeps it inside
-          (the title column grows first and the tail ellipsises within its own cap). */}
+      {/* max-w plus truncate keeps a long slug inside a 360px screen. */}
       <span className="flex-none max-w-[45%] text-right">
         <span className="block font-mono text-label tabular-nums text-[color:var(--color-text-tertiary)]">
           {trailing}
@@ -68,8 +56,8 @@ export function RecentNodeRow({
     </>
   );
 
-  // A row with no click target (a dangling doc with no matching map node) gets no hover
-  // background — looking interactive while being unpressable is itself the defect.
+  // No hover background without a click target; looking interactive while unpressable is the
+  // defect.
   const className = `flex items-center gap-2.5 rounded-chip border-t border-[color:var(--color-divider)] px-1.5 py-2.5 transition-colors first:border-t-0 ${
     href ? "-mx-1.5 hover:bg-[color:var(--color-overlay-1)]" : ""
   }`;

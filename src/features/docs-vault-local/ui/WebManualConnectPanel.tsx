@@ -22,30 +22,14 @@ import {
 } from '../lib/manual-connect';
 
 /**
- * **Connecting from the web, finished in place.**
- *
- * This slot used to hold one card saying "you cannot connect from this screen" plus a link dropping
- * the reader into the middle of a long document. Both were wrong — the sentence was untrue (a web
- * user can connect; only automatic configuration is impossible) and the alternative made them lose
- * the sheet.
- *
- * Here the user supplies two paths and **a runnable config is built on the spot**. Why that is
- * legitimate, and what is and is not validated, is in the `lib/manual-connect.ts` preamble.
- *
- * Four contracts on the screen side:
- *
- * 1. **What to do is visible before anything is filled in.** A real config with placeholders is
- *    drawn first — not an empty screen with input boxes.
- * 2. **A partially filled config is not copyable.** Handing someone a config that will not connect
- *    is a trap, not help.
- * 3. **It says it checks shape only.** A browser cannot confirm the folder exists, and the moment it
- *    claims to have, this screen starts lying too.
- * 4. **Paths never leave the screen.** Nothing transmitted, nothing stored — pure functions and
- *    local state only.
+ * Connecting from the web, finished in place: two paths build a runnable config (validation
+ * scope in `lib/manual-connect.ts`). A config with placeholders shows before anything is filled;
+ * a partial config is not copyable; the screen says it checks shape only; paths never leave
+ * the screen (nothing sent or stored).
  */
 
 export interface WebManualConnectPanelProps {
-  /** Decided in one place so the sheet and the settings panel do not use different testid prefixes. */
+  /** One place, so the sheet and the settings panel share testid prefixes. */
   testIdPrefix?: string;
 }
 
@@ -103,9 +87,7 @@ function PathField({
 }
 
 /**
- * The copy chip's **hover**. The value layer deliberately emits no hover colour (hover frequency
- * eats the motion budget, so the consumer decides). The three slots in this file share the string,
- * so it is kept as one.
+ * The copy chip's hover; the value layer emits none because hover frequency eats the motion budget.
  */
 const COPY_CHIP_SKIN =
   'font-[var(--font-weight-signature)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]';
@@ -169,9 +151,8 @@ export function WebManualConnectPanel({
   const checkout = useMemo(() => normalizeManualPath(checkoutRaw), [checkoutRaw]);
   const ready = vault.ok && checkout.ok && pathConfirmed;
 
-  // A field not yet filled is drawn as **a real config carrying a placeholder**. `<…>` is not used:
-  // next-intl parses angle brackets as rich-text tags and the whole thing disappears from the screen
-  // (measured, recorded in `shared/config/cli-invocation.ts`).
+  // An unfilled field is drawn as a real config with a placeholder. Not `<…>`: next-intl parses
+  // angle brackets as rich-text tags and the text disappears (`shared/config/cli-invocation.ts`).
   const input = {
     vaultAbsolute: vault.ok ? vault.value : t('manualVaultPlaceholderPath'),
     checkoutAbsolute: checkout.ok ? checkout.value : t('manualCheckoutPlaceholderPath'),
@@ -219,7 +200,7 @@ export function WebManualConnectPanel({
           issueMessage={issueMessage(checkout)}
           testId={`${testIdPrefix}-checkout-input`}
         />
-        {/* For someone with no checkout yet — stuck here, they can never fill the field above. */}
+        {/* Without a checkout they can never fill the field above. */}
         <button
           type="button"
           data-testid={`${testIdPrefix}-clone`}
@@ -242,7 +223,7 @@ export function WebManualConnectPanel({
         </button>
       </div>
 
-      {/* The one line separating what the browser confirmed from what it could not. */}
+      {/* Separates what the browser confirmed from what it could not. */}
       <p
         data-testid={`${testIdPrefix}-shape-only`}
         className="text-label leading-label text-[color:var(--color-text-quaternary)]"
@@ -258,20 +239,9 @@ export function WebManualConnectPanel({
       />
 
       {/*
-        Tool selection — the config file location differs per tool.
-
-        ⚠️ **Not a second tab set** (design-lead finding, 2026-09-05). This row was
-        `role="tablist"` while `/mcp` already carries the page's own tab bar directly above it, so
-        one screen announced two tab lists: assistive technology heard two section switchers where
-        there is one, and the outer tabs' meaning — *which half of this screen am I in* — was
-        borrowed by a control that only parameterises a config block inside one half.
-
-        It is a radiogroup, which is what an exclusive choice inside a panel is, and going through
-        `SegmentedControl` brings the roving tabindex with it: measured before the change, the four
-        chips had `role="tab"` and no key handler at all, so the role promised arrow-key movement
-        that never happened (`use-roving-radio-group.ts` records that exact failure across 18
-        groups). `variant="chips"` is the container this row already had.
-      */}
+         The config file location differs per tool. A radiogroup, not a second tablist below the
+         page tabs of `/mcp`; `SegmentedControl` brings the roving tabindex.
+        */}
       <div className="flex flex-col gap-2">
         <SegmentedControl
           ariaLabel={t('scopeGlobalToolLabel')}
@@ -325,8 +295,7 @@ export function WebManualConnectPanel({
                 ? t('copyFailed')
                 : t('manualCopyConfig')}
           </button>
-          {/* With nothing to do after saving, the user waits without knowing whether it connected.
-              The installed app's step ② (restart) is not drawn on the web, so it is said here. */}
+          {/* The web has no restart step, so what to do after saving is said here. */}
           <p
             data-testid={ready ? `${testIdPrefix}-restart` : `${testIdPrefix}-not-ready`}
             className="mt-1.5 text-label leading-label text-[color:var(--color-text-quaternary)]"
@@ -336,7 +305,7 @@ export function WebManualConnectPanel({
         </div>
       </div>
 
-      {/* For someone who does not want to create files by hand — the same result in one CLI line. */}
+      {/* The same result in one CLI line, for someone who does not want to create files by hand. */}
       <div className="flex flex-col gap-2 border-t border-[color:var(--color-border-soft)] pt-3">
         <CommandRow
           label={t('manualCliLabel')}

@@ -8,12 +8,8 @@ function defaultRun(args, cwd) {
 }
 
 /**
- * Staged files (repository-relative, `/` separated). `--diff-filter=ACMR` keeps
- * added/copied/modified/renamed only — a deleted file is code that is already
- * gone, so it is not a vault-path match candidate.
- *
- * `null` outside a git repository or when the command fails, so the caller can
- * skip silently.
+ * Staged files, repository-relative. `--diff-filter=ACMR` drops deletions, which are no longer code to match;
+ * `null` outside a repository or on failure, so the caller skips silently.
  *
  * @param {object} [options]
  * @param {string} [options.cwd]

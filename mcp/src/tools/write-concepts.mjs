@@ -38,12 +38,9 @@ import {
 /** Creating and patching nodes: `add_concept`, `add_concepts`, `patch_concept`. */
 
 /*
- * These three are the only writes that can set a `path:`, so this is where the
- * write gate learns which repository a cited path resolves against. It cannot
- * import the root itself — `server/runtime.mjs` imports `vault.mjs` — and an
- * ungrounded root is passed as nothing rather than as a guess, because
- * measuring this vault against whichever directory the process started in
- * reports drift that is not there.
+ * These three are the only writes that can set a `path:`, so the write gate learns
+ * the repository root here (it cannot import `server/runtime.mjs`). An ungrounded
+ * root is passed as nothing, or drift is measured against an unrelated directory.
  */
 configureNodeEligibilityRepoRoot(REPO_ROOT_IS_GROUNDED ? REPO_ROOT : null);
 
@@ -66,14 +63,9 @@ function addConcept({ slug, kind, title, domain, capabilities, elements, path, b
   if (!ADD_CONCEPT_KINDS.has(kind)) {
     throw new Error(formatAllowedValueError('kind', kind, [...ADD_CONCEPT_KINDS]));
   }
-  // The schema fills the per-kind shape (project: empty domains/capabilities/
-  // elements arrays, capability: empty elements array, …) so partial input still
-  // leaves consistent frontmatter on disk. The CLI `add` shares this schema
-  // module and a contract test blocks drift.
-  // Per-locale display names (owner decision, 2026-07-24) — `labels: { ko, en }`
-  // is normalised to `display_<locale>` so one node reads correctly on Korean and
-  // English screens. `title` is untouched: it stays the single source of truth for
-  // search, matching, and file identity.
+  // The schema fills the per-kind shape so partial input still leaves consistent
+  // frontmatter; the CLI `add` shares it under a contract test. `labels` become
+  // `display_<locale>`; `title` stays the single source for search and identity.
   const localeLabels = normalizeLocaleLabels(labels);
   const fm = buildFrontmatter({
     slug,
@@ -87,11 +79,8 @@ function addConcept({ slug, kind, title, domain, capabilities, elements, path, b
     // Authorship — passing through MCP is itself the proof that an agent wrote it.
     [CREATED_BY_KEY]: agentProvenance(),
   });
-  // Safety net for the #1 failure mode of a growing vault (duplicate nodes):
-  // before the write, scan existing nodes and warn (advisory only) on a title
-  // collision. It never blocks the write. Batches skip it — in flows where the
-  // user already reviewed the candidates (/ontology-bootstrap) a per-node full
-  // vault load is not worth its cost.
+  // Advisory title-collision warning before the write; it never blocks. Batches skip
+  // it: their candidates were already reviewed and a per-node vault load costs.
   const duplicateWarning =
     options.includePostWriteMaintenance === false
       ? null
@@ -100,10 +89,8 @@ function addConcept({ slug, kind, title, domain, capabilities, elements, path, b
     frontmatter: fm,
     body: body === undefined ? defaultBody(kind, title) : body,
   });
-  // Missing `requiredExtras` from the schema become advisories in the response
-  // rather than a throw, so the agent's flow continues and the user can fill the
-  // gap with a follow-up patch_concept (a capability or element missing its
-  // domain is the common case).
+  // Missing `requiredExtras` become advisories rather than a throw, so the flow
+  // continues and a follow-up patch_concept fills the gap.
   const missing = missingExpectedFields(kind, fm);
   // Guards the mistake of filling one locale and moving on: the author only ever
   // sees their own screen language, while other-locale users get the raw title.
@@ -129,11 +116,9 @@ function addConcept({ slug, kind, title, domain, capabilities, elements, path, b
   };
 }
 
-// Batch variant of add_concept. Turns K round trips into one when a
-// /ontology-bootstrap flow lands 5–15 nodes at once. Input order is preserved and
-// each row is independent, so one row failing (existing slug, invalid kind,
-// missing required field) does not abort the rest — that row alone surfaces as
-// ok:false. There is no atomic rollback; use serial add_concept calls if you need one.
+// Batch add_concept: input order preserved, each row independent, so one failing
+// row surfaces as ok:false without aborting the rest. No atomic rollback; use
+// serial add_concept calls for that.
 function addConceptsBatch({ concepts }) {
   if (!Array.isArray(concepts)) {
     throw new Error('concepts must be an array of concept specs');
@@ -167,7 +152,7 @@ function addConceptsBatch({ concepts }) {
         'elements',
         'path',
         'body',
-        // Per-locale display names — same contract as single add_concept (2026-07-24).
+        // Per-locale display names — same contract as single add_concept.
         'labels',
       ]);
       if (slug && seenInBatch.has(slug)) {
@@ -185,10 +170,8 @@ function addConceptsBatch({ concepts }) {
       }
       if (slug) seenInBatch.set(slug, index);
       const result = addConcept(spec, { includePostWriteMaintenance: false });
-      // When a node already landed in this batch has the same normalised title,
-      // warn (advisory — it may be legitimate). This blocks bootstrap's #1 failure
-      // mode (splitting one concept into two nodes) by in-batch comparison, with no
-      // vault load, reusing the same helper as single add_concept's dup check.
+      // Advisory warning when a node already landed in this batch has the same
+      // normalised title, catching one concept split into two nodes without a vault load.
       if (result.ok) {
         const dupWarning = detectDuplicateTitle(spec.title, result.slug ?? slug, landed);
         if (dupWarning) result.warnings = [...(result.warnings ?? []), dupWarning];
@@ -227,10 +210,8 @@ function patchConcept({ slug, frontmatter, body, expected_mtime }) {
   if (body !== undefined && typeof body !== 'string') {
     throw new Error('body must be a string.');
   }
-  // A patch that includes `title` forces a non-empty string. The UI's
-  // renameVaultDoc rejects blanks; leaving MCP open lets an agent's slip create an
-  // untitled node and drift the ontology. `null` is separate — it means "delete
-  // the key" — and deleting `title` itself breaks the frontmatter.
+  // A patch with `title` must be non-empty, matching the UI's renameVaultDoc. `null`
+  // means "delete the key", and deleting `title` breaks the frontmatter.
   if (frontmatter !== undefined && Object.prototype.hasOwnProperty.call(frontmatter, 'title')) {
     const t = frontmatter.title;
     if (t === null) {
@@ -251,10 +232,8 @@ function patchConcept({ slug, frontmatter, body, expected_mtime }) {
     slug,
     filePath,
     changed: true,
-    // If this write gave identity to a hand-authored node (one created in an
-    // editor with no `uid:`), say so. Identity appearing is an event a person
-    // should know about; passing over it silently leaves nobody able to explain
-    // why it was needed next time.
+    // Say when this write gave identity (`uid:`) to a hand-authored node, so a person
+    // knows why it appeared.
     ...(mintedUid
       ? {
           mintedUid,

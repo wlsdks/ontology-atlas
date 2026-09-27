@@ -12,17 +12,12 @@ export interface RoundsRunnerValue {
   /** A guarded coding agent is ready to take a turn; without it a redraft or a service pass cannot run. */
   agentReady: boolean;
   agentLabel: string | null;
-  /** Names of connectors switched on for this folder, so the sheet can offer them. */
+  /** Every connector for this folder with its `enabled` flag, so the sheet can offer the enabled ones. */
   connectors: { id: string; name: string; enabled: boolean }[];
   lastTickAt: string | null;
   /** Bumps on every ledger or state write, so a screen can re-read without a folder watcher. */
   revision: number;
-  /**
-   * `startedNow` is the promise the sheet made coming true: a consistency round saved while
-   * nothing else is running takes its first pass immediately. A pass already in flight means
-   * this one waits for its own due time, and the screen has to say so rather than repeat the
-   * promise — one runner runs one pass at a time (`runPass` refuses a second).
-   */
+  /** `startedNow` is false when another pass is running, so the screen must not promise an immediate pass. */
   save(round: RoundRecord): Promise<{ ok: boolean; startedNow: boolean }>;
   remove(id: string): Promise<boolean>;
   setEnabled(id: string, enabled: boolean): Promise<boolean>;

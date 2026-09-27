@@ -115,12 +115,11 @@ describe("GuidedTourOverlay", () => {
   });
 
   it("keeps a FULL blocking blocker on the interactive step while the canvas anchor hole is unresolved", () => {
-    // jsdom's anchor probe is zero-size → the hole cannot resolve → the full-block
-    // fallback stays (2026-07-23 correction — the old contract's blanket
-    // `pointer-events-none` allowed other transient surfaces to stack over the tour).
+    // jsdom's anchor probe is zero-size, so the hole cannot resolve and the full-block fallback
+    // stays, keeping other transient surfaces from stacking over the tour.
     render(<Harness />);
     act(() => screen.getByTestId("test-start").click());
-    // advance welcome -> nodes -> relations -> try-click
+    // Advance welcome -> nodes -> relations -> try-click.
     act(() => screen.getByTestId("guided-tour-next").click());
     act(() => screen.getByTestId("guided-tour-next").click());
     act(() => screen.getByTestId("guided-tour-next").click());
@@ -155,7 +154,7 @@ describe("GuidedTourOverlay", () => {
     act(() => screen.getByTestId("guided-tour-next").click());
     expect(screen.getByTestId("guided-tour-overlay")).toHaveAttribute("data-tour-step", "try-click");
 
-    // Stub the anchor probe with a real circle rect → the next frame's tick reads it.
+    // Stub the anchor probe with a real circle rect; the next frame's tick reads it.
     const probe = screen.getByTestId("test-canvas-anchor");
     probe.getBoundingClientRect = () =>
       ({ top: 400, left: 700, width: 48, height: 48, right: 748, bottom: 448, x: 700, y: 400, toJSON: () => ({}) }) as DOMRect;
@@ -169,17 +168,14 @@ describe("GuidedTourOverlay", () => {
     expect(screen.queryByTestId("guided-tour-blocker")).not.toBeInTheDocument();
     const cutout = screen.getByTestId("guided-tour-cutout");
     expect(cutout).toHaveAttribute("data-cutout-shape", "circle");
-    // The strip height above the hole = cutout top − 16px padding (hardening
-    // 2026-07-24 — the funnel hole is opened 16px wider on every side than the probe
-    // rect to absorb momentary error against the visual node during the camera spring).
+    // Cutout top minus 16px: the hole is 16px wider on every side than the probe rect, absorbing
+    // error against the node during the camera spring.
     expect(strips[0].style.height).toBe("384px");
   });
 
   it("keeps the full scrim and the button fallback when the canvas anchor projects outside the viewport", () => {
-    // Round 4, 2026-09-04. The probe has a real size but the domain it tracks is
-    // panned off-screen, so a cutout drawn at that rect is invisible and the copy
-    // ("one dot keeps a ring around it and stays lit") describes nothing on screen.
-    // An off-viewport anchor must read as unresolved, exactly as the testid path
+    // A real-size probe over an off-screen domain must read as unresolved, like the testid path,
+    // so the full-block fallback and the card button stay.
     // already reads it, so the full-block fallback and the card button stay.
     vi.useFakeTimers();
     const onActivateAnchor = vi.fn();
@@ -212,16 +208,10 @@ describe("GuidedTourOverlay", () => {
   });
 
   /**
-   * The **return** axis of modality — "traps Tab" above measures the wrap inside the
-   * card, while this measures whether focus that is already **outside** comes back.
-   *
-   * Why it is needed separately: the scrim blocks the pointer but cannot block a
-   * programmatic `focus()` (no trap can, and none needs to). So focus can end up
-   * outside the tour through a route change, an autofocus, or browser restoration,
-   * and if Tab then kept walking outside, a control unreachable by pointer could be
-   * activated by keyboard alone. Checking only the wrap lets that route pass.
+   * The return axis of modality: the scrim cannot block a programmatic `focus()`, so focus that
+   * is already outside must come back on Tab, or keyboard alone could reach blocked controls.
    */
-  it("포커스가 이미 투어 밖에 있어도 Tab 이 투어 안으로 되돌린다", () => {
+  it("returns Tab focus into the tour when focus is already outside it", () => {
     render(<Harness />);
     act(() => screen.getByTestId("test-start").click());
 
@@ -235,24 +225,16 @@ describe("GuidedTourOverlay", () => {
       ),
     );
 
-    // The trap's scope is **the overlay**, not the card (GuidedTourOverlay owns it).
+    // The trap's scope is the overlay, not the card.
     expect(
       screen.getByTestId("guided-tour-overlay").contains(document.activeElement),
     ).toBe(true);
   });
   /**
-   * **[back] does not disappear per step** (regression guard from dogfooding 2026-07-29).
-   *
-   * The draft wrapped the whole back/next row in `!isInteractive`, so "Previous" —
-   * present at the bottom left for five steps — **vanished silently** on 4/7 ("try
-   * pressing it yourself"), and the user had to relearn on the spot whether this
-   * tour can go back. How to go forward may differ per step (next, try it, choose a
-   * branch), but **there is no reason for how to go back to differ.**
-   *
-   * This check walks into steps that cannot be passed with `next`, so if the
-   * interactive step's forward path (activating the anchor) dies, it breaks here too.
+   * [back] stays on every step. The walk passes steps `next` cannot, so a broken interactive
+   * forward path fails here too.
    */
-  it("모든 단계에서 「이전」이 자리를 지킨다 — 대화형 단계 포함", () => {
+  it("keeps the previous button on every step including interactive ones", () => {
     const onActivateAnchor = vi.fn();
     const { rerender } = render(<Harness onActivateAnchor={onActivateAnchor} />);
     act(() => screen.getByTestId("test-start").click());
@@ -266,14 +248,13 @@ describe("GuidedTourOverlay", () => {
       const stepId = overlay.getAttribute("data-tour-step") ?? "?";
       seen.push(stepId);
 
-    // The first step has nowhere to go back to, so it holds [back]'s slot empty; after that
-    // [back] must exist on every step.
+    // The first step holds [back]'s slot empty; after that [back] exists on every step.
       const back = screen.queryByTestId("guided-tour-back");
       if (seen.length === 1) {
         expect(back, "the first step shows a dead [back]").not.toBeInTheDocument();
         expect(screen.getByTestId("guided-tour-back-slot")).toBeInTheDocument();
       } else {
-        expect(back, `단계 "${stepId}" 에 「이전」이 없다`).toBeInTheDocument();
+        expect(back, `step "${stepId}" has no previous button`).toBeInTheDocument();
       }
 
       const next = screen.queryByTestId("guided-tour-next");
@@ -283,7 +264,7 @@ describe("GuidedTourOverlay", () => {
       }
       const action = screen.queryByTestId("guided-tour-activate-target");
       if (action) {
-    // Redraw with a selection created by pressing the anchor — the real user's path.
+    // Redraw with a selection created by pressing the anchor, as a user would.
         rerender(<Harness hasSelection onActivateAnchor={onActivateAnchor} />);
         const advanced = screen.queryByTestId("guided-tour-next");
         if (advanced) {
@@ -295,24 +276,15 @@ describe("GuidedTourOverlay", () => {
       break;
     }
 
-    // A probe against the detector being silently defeated — confirms it really walked
-    // into the interactive step. Had it stopped at the first step, the assertion above
+    // Proves the walk reached the interactive step; stopping at the first step would pass above.
     // would have run once and passed.
-    expect(seen.length, `걸은 단계: ${seen.join(" → ")}`).toBeGreaterThanOrEqual(4);
+    expect(seen.length, `steps walked: ${seen.join(" → ")}`).toBeGreaterThanOrEqual(4);
   });
 });
 
 /**
- * **The card must not open on top of the node it lights.**
- *
- * Measured at 1200×863: entering the interactive step painted the card at x 420–780,
- * y 307–555 — the placement function's "no target" case, a card centred on the window — with
- * the lit node inside that rectangle, and it moved aside only on the next animation frame.
- * The rAF tick that follows the node is an effect, so the step's *first* paint had no rect at
- * all; the probe already carried the map's last frame, so there was one to read.
- *
- * Two properties are locked here, and they are the same defect from both ends: the opening
- * paint reads the probe, and the placement it produces clears the node.
+ * The interactive card must not open on the node it lights: the opening paint reads the
+ * probe (already projected by the map) and its placement clears the node.
  */
 describe("GuidedTourOverlay · the interactive card opens clear of the lit node", () => {
   /** The map's probe div, projected onto a node at the centre of a 1200×863 window. */
@@ -339,8 +311,7 @@ describe("GuidedTourOverlay · the interactive card opens clear of the lit node"
     Object.defineProperty(window, "innerHeight", { writable: true, configurable: true, value: 863 });
     render(<Harness />);
     act(() => screen.getByTestId("test-start").click());
-    // The map writes the probe from the moment the first canvas-node step lights a node, so it
-    // is already projected when the interactive step opens. Stub it before walking in.
+    // The map writes the probe from the first lit canvas-node step, so stub it before walking in.
     stubProbe();
     act(() => screen.getByTestId("guided-tour-next").click());
     act(() => screen.getByTestId("guided-tour-next").click());
@@ -360,9 +331,9 @@ describe("GuidedTourOverlay · the interactive card opens clear of the lit node"
       top + height > LIT_NODE.top;
     expect(
       overlaps,
-      `첫 프레임 카드(${left},${top})가 켜진 노드(${JSON.stringify(LIT_NODE)})를 덮는다`,
+      `first-frame card (${left},${top}) covers the lit node ${JSON.stringify(LIT_NODE)}`,
     ).toBe(false);
-    // The centred fallback is the exact rectangle that was reported; it must not be what opens.
+    // The centred fallback must not be what opens.
     expect(left).not.toBeCloseTo((1200 - width) / 2, 0);
   });
 });

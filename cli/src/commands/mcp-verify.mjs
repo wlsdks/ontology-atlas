@@ -15,16 +15,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const require_ = createRequire(import.meta.url);
 const ALLOWED_FLAGS = ['--vault', '--timeout-ms'];
 /*
- * ⚠️ **Headroom, not a guess.** Measured 2026-08-25: a bare `mcp-verify docs/ontology` takes
- * 12.6s on an Apple Silicon laptop, because verify's `infer_imports`/`index_project` steps scan
- * the whole source tree (1,419 files here), not the 84-node vault. The old 8s default could not
- * survive this project's own vault at all, and the 15s every caller passed to compensate left
- * 2.4s of margin: the v1.0.0-rc.11 release blocked when the x64 macOS runner, slower than the
- * arm64 one, crossed it while the arm64 build of the same commit was still going.
- *
- * A verify timeout exists to catch a server that is **hung**, not one that is slow. Ten seconds
- * of extra patience costs nothing when things work; a release blocked by a machine's speed costs
- * a whole build. So the budget is roughly 2.5x the measured time on fast hardware.
+ * About 2.5x the 12.6s a bare `mcp-verify docs/ontology` took on an Apple Silicon laptop: the timeout
+ * catches a hung server, not a slow one, and a tighter budget blocked a release on the x64 runner.
  */
 const DEFAULT_VERIFY_TIMEOUT_MS = 30_000;
 const DEFAULT_VERIFY_KILL_GRACE_MS = 1_000;
@@ -156,9 +148,8 @@ function runVerifyScript(verifyScript, vaultRoot, timeoutMs, vaultArg) {
 }
 
 /*
- * ⚠️ The suggested value is derived from the one that was actually used, never written as a literal.
- * This string is printed *after* a run timed out, so naming the same number the run just failed at
- * is a dead end -- and that is exactly what a literal becomes the moment a default moves to it.
+ * Derived from the value actually used, never a literal: this prints after a timeout, and a literal
+ * would name the number that just failed as soon as a default moves to it.
  */
 function mcpVerifyRetryExample(vaultArg, effectiveTimeoutMs = DEFAULT_VERIFY_TIMEOUT_MS) {
   const vaultPart = vaultArg && vaultArg !== '.' ? ` --vault ${shellArg(vaultArg)}` : '';

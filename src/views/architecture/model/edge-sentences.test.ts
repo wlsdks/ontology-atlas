@@ -39,14 +39,10 @@ describe('placeEdgeSentences', () => {
       expect(s.x).toBe(400 - 20);
       expect(s.rect!.x + s.rect!.width).toBeLessThanOrEqual(380);
     }
-    /* One sentence per gap, no two sharing a baseline. */
     expect(new Set(out.map((s) => s.y)).size).toBe(6);
   });
 
   it('seats an adjacent rule beside its own arrow on the comparison ladder', () => {
-    /* 2026-09-03: the lead-lane sentence ended 160px from the arrow it described. On the ladder
-       the words start just right of the arrow (the lower face's centre line) and run over the row
-       gap, with the half face, the gutter and the observation face as their room. */
     /* The ladder's own pitch: the fixture chain is 12px apart, the ladder leaves 24. */
     const placed = new Map(IDS.map((id, i) => [id, { x: 400, y: 20 + i * (BOX.boxH + 24) }]));
     const out = placeEdgeSentences({
@@ -72,8 +68,6 @@ describe('placeEdgeSentences', () => {
   });
 
   it('seats a measured count beside its own observation arrow on the ladder', () => {
-    /* Installed app, 2026-09-03: the count sentence sat 40px right of the observation column and
-       was cut to "import…"; on the ladder both lanes seat their sentence beside the arrow. */
     const placed = new Map(IDS.map((id, i) => [id, { x: 600, y: 20 + i * (BOX.boxH + 24) }]));
     const traffic: SentenceEdge = { from: 'routing', to: 'app', kind: 'traffic', count: 75, columnSpan: 1, violated: false };
     const [s] = placeEdgeSentences({
@@ -92,7 +86,7 @@ describe('placeEdgeSentences', () => {
       sentenceOf: sentence,
     });
     expect(s.hidden).toBeUndefined();
-    /* Reads to the left, into the gutter: the right side is the skip arcs' lane. */
+    /* Reads left, into the gutter: the right side is the skip arcs' lane. */
     expect(s.anchor).toBe('end');
     expect(s.x).toBe(600 + BOX.boxW / 2 - 10);
     expect(s.text).toBe('routing reaches app in 75 imports');
@@ -101,8 +95,7 @@ describe('placeEdgeSentences', () => {
   it('gives a skip its sentence beside its own arc, right of the column', () => {
     const placed = chainDown(400);
     const skip: SentenceEdge = { from: 'entities', to: 'widgets', kind: 'traffic', count: 2, columnSpan: 2, violated: true };
-    /* The canvas measures a skip's swing from the box's centre line to the arc's apex, and the
-       apex is always past the box's far side (SKIP_DROP + boxW / 2 at the shallowest). */
+    /* The canvas measures a skip's swing from the box's centre line; the apex is always past the far side. */
     const [s] = placeEdgeSentences({
       axis: 'down', edges: [skip], placed, ...BOX, swingOf: () => 30 + 90, leadRoom: 400, trailRoom: 300, sentenceOf: sentence,
     });
@@ -177,8 +170,6 @@ describe('placeEdgeSentences', () => {
   });
 
   it('gives a rule and a count on one pair two placements that are not one identity', () => {
-    /* Keyed on the pair alone they shared one identity; a re-render on selection left the rule
-       drawn twice on top of itself and the count's sentence coloured as a rule (2026-08-30). */
     const placed = chainDown(400);
     const rule: SentenceEdge = { from: 'views', to: 'widgets', kind: 'permitted', columnSpan: 1, violated: false };
     const traffic: SentenceEdge = { from: 'views', to: 'widgets', kind: 'traffic', count: 314, columnSpan: 1, violated: false };
@@ -208,8 +199,6 @@ describe('placeEdgeSentences', () => {
   });
 
   it('seats a skip\'s sentence past every drawn arc that runs by it, not only its own', () => {
-    /* Review 2026-08-30 at 1920, Entities hovered: the sentence beside the shorter of two nested
-       arcs sat at its own apex and the longer arc ran through the words. */
     const inner: SentenceEdge = { from: 'widgets', to: 'entities', kind: 'traffic', count: 20, columnSpan: 2, violated: false };
     const outer: SentenceEdge = { from: 'views', to: 'shared', kind: 'traffic', count: 260, columnSpan: 4, violated: false };
     const swing = (e: SentenceEdge) => 30 + (e.columnSpan - 2) * 10 + 41;
@@ -219,7 +208,6 @@ describe('placeEdgeSentences', () => {
     const innerAcross = across.find((s) => s.key === 'widgets>entities')!;
     const outerAcross = across.find((s) => s.key === 'views>shared')!;
     expect(innerAcross.hidden).toBeUndefined();
-    /* The inner sentence is pushed to the outer arc's depth: same baseline as the outer's. */
     expect(innerAcross.y).toBe(outerAcross.y);
     const down = placeEdgeSentences({
       axis: 'down', edges: [inner, outer], placed: chainDown(400), ...BOX, swingOf: swing, leadRoom: 400, trailRoom: 300, sentenceOf: sentence,
@@ -242,8 +230,6 @@ describe('placeEdgeSentences', () => {
   });
 
   it('lets an invisible sentence hold no ground against a visible one', () => {
-    /* Two sentences that would share one place: the one whose stroke is not drawn used to be
-       placed first by order and to silence the drawn one with a rectangle nobody could see. */
     const placed = chainDown(400);
     const drawn: SentenceEdge = { from: 'views', to: 'widgets', kind: 'traffic', count: 314, columnSpan: 1, violated: false, drawn: true };
     const ghost: SentenceEdge = { from: 'views', to: 'widgets', kind: 'permitted', columnSpan: 1, violated: false, drawn: false };
@@ -254,9 +240,6 @@ describe('placeEdgeSentences', () => {
   });
 
   it('lets the focused role\'s skip sentence take a place a resting sentence held', () => {
-    /* Measured on the seven-role profile, 2026-08-30: two violation sentences drawn at rest sat where
-       the views → shared skip's sentence would go, so the profile's largest number (26,000 imports)
-       never got a sentence even when Views was hovered. With focus, its strokes place first. */
     const placed = chainDown(400);
     const violated: SentenceEdge = { from: 'entities', to: 'views', kind: 'traffic', count: 1, columnSpan: 3, violated: true };
     const skip: SentenceEdge = { from: 'views', to: 'shared', kind: 'traffic', count: 26_000, columnSpan: 4, violated: false };
@@ -264,7 +247,6 @@ describe('placeEdgeSentences', () => {
     const atRest = placeEdgeSentences({ axis: 'down', edges: [violated, skip], placed, ...BOX, swingOf: swing, leadRoom: 400, trailRoom: 300, sentenceOf: sentence });
     const focused = placeEdgeSentences({ axis: 'down', edges: [violated, skip], placed, ...BOX, swingOf: swing, leadRoom: 400, trailRoom: 300, sentenceOf: sentence, focus: 'views' });
     const drawn = (out: ReturnType<typeof placeEdgeSentences>, key: string) => out.find((s) => s.key === key)?.hidden === undefined;
-    /* Both sit on the same gap band; at rest the violation wins, with Views focused the skip wins. */
     expect(drawn(atRest, 'entities>views') || drawn(atRest, 'views>shared')).toBe(true);
     expect(drawn(focused, 'views>shared')).toBe(true);
   });
@@ -321,8 +303,6 @@ describe('placeEdgeSentences', () => {
 
 describe('placeEdgeSentences across lanes', () => {
   it('lets a count sentence give way to a rule sentence another lane already holds', () => {
-    /* e2e, 2026-09-03: the rule read right from the contract arrow and the count read left from
-       the observation arrow into the same gutter row gap, and the two touched. */
     const placed = new Map(IDS.map((id, i) => [id, { x: 600, y: 20 + i * (BOX.boxH + 24) }]));
     const traffic: SentenceEdge = { from: 'routing', to: 'app', kind: 'traffic', count: 75, columnSpan: 1, violated: false };
     const settings = { axis: 'down' as const, placed, ...BOX, rowGap: 24, swingOf: () => 0, leadRoom: 180, trailRoom: 180, adjacentSeat: 'connector' as const, connectorSide: 'left' as const, connectorRoom: BOX.boxW / 2 + 150, sentenceOf: sentence };

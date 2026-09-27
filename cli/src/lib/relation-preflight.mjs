@@ -1,19 +1,13 @@
-// Shared MCP `query_ontology({operation:'relation_check'})` preflight call +
-// human-readable render — single source for the `relation-check` (read-only)
-// and `relate` (writer, R+ agent-persona-2026-07 QA wishlist #1) commands so
-// both show the identical verdict/schema/recommendation plus executable-action
-// or non-writing semantic-approval view
-// before `relate` decides whether to touch the vault.
+// Shared relation_check preflight call and render for `relation-check` (read-only) and `relate` (writer),
+// so both show the identical verdict before `relate` decides whether to touch the vault.
 
 import { COLORS } from './colors.mjs';
 import { callMcpTool } from './mcp-call.mjs';
 import { assertRelationCheckShape } from './query-result-contract.mjs';
 
 /**
- * Runs the relation_check preflight and asserts its shape. Throws (same as
- * the underlying MCP call) when `from`/`to` do not resolve to vault nodes or
- * `type` is invalid — callers should treat a thrown error as a hard reject,
- * not just an advisory.
+ * Runs the relation_check preflight and asserts its shape. It throws when `from`/`to` do not resolve or
+ * `type` is invalid; treat that as a hard reject, not an advisory.
  */
 export async function runRelationCheckQuery(vaultRoot, from, to, type) {
   const result = await callMcpTool(vaultRoot, 'query_ontology', {

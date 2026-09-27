@@ -276,8 +276,7 @@ function DocRow({
         </IconButton>
       </div>
       {hasExcerpt && (
-        // A preview of the body's first paragraph, rendered on hover only. Gated
-        // behind a hover: hover media query so it never appears on touch devices.
+        // Body preview on hover only, gated by a hover media query so touch devices never show it.
         <p className="hidden line-clamp-2 px-2 pb-1.5 text-label leading-label text-[color:var(--color-text-quaternary)] [@media(hover:hover)]:group-hover:block">
           {doc.excerpt}
         </p>
@@ -297,25 +296,14 @@ export function DocsQuickDrawer({
   contextProject,
 }: Props) {
   const t = useTranslations("vaultWidgets.docsDrawer");
-  // Entry review E-10 — a Latin eyebrow laid over the Korean section labels of the
-  // docs-vault and workspace drawers. It only widened the spaces, as in
-  // "by folder  ·  31". The folder name rows (TreeBranch) keep mono because they are
-  // machine strings — what is forbidden is laying it over a Korean sentence.
+  // Sans for Korean section labels; folder rows keep mono because they are machine strings.
   const eyebrow14 = useLatinEyebrow("tracking-[var(--tracking-caps-14)]");
   const eyebrow08 = useLatinEyebrow("tracking-[var(--tracking-caps-08)]");
   const locale = useLocale();
   const router = useRouter();
 
-  // #61 — this drawer is quick access to **the active vault** (the label says so
-  // too, and 'all' goes to /docs). It used to read the build-time bundled
-  // `vaultManifest` directly, so selecting a 5-document local vault still produced
-  // Atlas bundle documents, and pinned/recent were fixed at `:server`, mixing in
-  // another vault's lists (review 2026-07-25).
-  //
-  // It now follows the same rule as /docs: with a local vault loaded, that
-  // manifest and that vault's scoped pinned/recent; otherwise the bundled sample
-  // the user chose (dogfood or the example shop) — reading the bundle directly
-  // would make the sample choice ignored here alone.
+  // Same rule as /docs: a loaded local vault's manifest and scoped pins, otherwise the chosen
+  // bundled sample.
   const mode = useDataSourceMode();
   const localVault = useLocalVault();
   const staticVault = useStaticVaultSource();
@@ -389,9 +377,7 @@ export function DocsQuickDrawer({
         const canonical = n.title ?? n.name;
         return {
           slug: n.slug as string,
-          // Pick the name by the same rule as the map popover — this was the only
-          // place drawing the canonical title, so a document just read as
-          // "my project" on a Korean screen appeared as `My project` in the search list.
+          // The same display-name rule as the map popover.
           title: resolveLocaleDisplayName(meta?.frontmatter, locale, canonical),
           path: n.path,
           updatedAt: meta?.updatedAt ?? "",
@@ -402,9 +388,7 @@ export function DocsQuickDrawer({
     return all;
   }, [activeManifest, locale]);
 
-  // Document slug sets per tag. `manifest.tags` is already an inverted index but is
-  // treated as readonly when loaded from JSON — rebuilt from FlatDoc.tags into a Set
-  // for O(1) lookup.
+  // Tag to slug sets rebuilt from FlatDoc.tags for O(1) lookup; `manifest.tags` is readonly JSON.
   const tagIndex = useMemo(() => {
     const map = new Map<string, Set<string>>();
     for (const d of docs) {
@@ -457,9 +441,7 @@ export function DocsQuickDrawer({
     [recentSlugs, docBySlug],
   );
 
-  // With a project selected on the map, compute the top N related documents.
-  // findRelatedDocs returns a score combining the frontmatter projects, wikilink,
-  // url, title and tag signals — the same logic as ProjectDrawer.
+  // Top related documents for the project selected on the map (same scoring as ProjectDrawer).
   const relatedDocs = useMemo(() => {
     if (!contextProject) return [];
     const manifest = activeManifest;
@@ -489,16 +471,14 @@ export function DocsQuickDrawer({
     [trimmedQuery, activeTagSlugs, activeManifest],
   );
 
-  // The flat list of slugs ↑/↓ cycles through in search and tag mode. Inactive when
-  // there is neither a trimmedQuery nor an activeTag (normal mode is split into
-  // sections, so a flat order would be ambiguous).
+  // Flat slug order for arrow keys in search and tag mode; off in normal mode, whose sections make
+  // a flat order ambiguous.
   const flatTreeSlugs = useMemo(() => {
     if (!trimmedQuery && !activeTag) return [];
     return flattenTreeSlugs(filteredTree);
   }, [filteredTree, trimmedQuery, activeTag]);
 
-  // Reset focus to the first item when the filter results change — what the user
-  // expects while typing.
+  // Focus returns to the first item when the filter results change.
   useEffect(() => {
     queueMicrotask(() => setFocusedSlug(flatTreeSlugs[0] ?? null));
   }, [flatTreeSlugs]);
@@ -535,24 +515,15 @@ export function DocsQuickDrawer({
             dragElastic={{ left: 0, right: 0.4 }}
             dragMomentum={false}
             onDragEnd={(_, info) => {
-              // Close on 120px+ to the right, or a fast flick (velocity 450+).
-              // Supports natural swipe-to-dismiss on mobile instead of an overlay tap.
+              // Swipe to dismiss: 120px right or a flick faster than 450.
               if (info.offset.x > 120 || info.velocity.x > 450) {
                 onClose();
               }
             }}
             onClick={(e) => e.stopPropagation()}
             /*
-             * ⚠️ **Inset like the agent dock, not glued to the window** (owner, 2026-08-25: *"can
-             * this be composed like the agent panel? the panel is stuck to the top and bottom and
-             * looks bad"*).
-             *
-             * It used to be `fixed right-0 top-0 h-full`, so it met the window edge on three sides
-             * and its top and bottom simply ended — a panel with no visible boundary reads as a
-             * broken frame rather than a surface. `AGENT_DOCK_INSET_SURFACE_CLASS` is the contract
-             * the agent dock already uses for exactly this: 12px insets so all four sides are seen,
-             * with the panel radius, border and shadow tokens. Sharing it also means the two right-
-             * hand surfaces cannot drift apart.
+             * Inset like the agent dock (`AGENT_DOCK_INSET_SURFACE_CLASS`) so all four edges show
+             * and the two right-hand surfaces cannot drift apart.
              */
             className={`${AGENT_DOCK_INSET_SURFACE_CLASS} fixed right-3 flex w-full max-w-[380px] flex-col touch-pan-y`}
           >
@@ -673,12 +644,8 @@ export function DocsQuickDrawer({
                           size: "sm",
                           active: selected,
                           /*
-                           * The hover border is given **only to unselected chips**
-                           * (2026-08-15). It used to apply unconditionally, so
-                           * hovering a selected chip let hover cover the selection
-                           * border — weakening the selection signal (measured:
-                           * `indigo-pale-a28` 2.09 → `a34` 1.48). `CommitDetail` in
-                           * the same family already had this guard, with a comment.
+                           * Hover border only on unselected chips, so hover never weakens the
+                           * selection border.
                            */
                           className: selected
                             ? "shrink-0 gap-1"

@@ -13,27 +13,11 @@ import { History as HistoryIcon, RotateCcw, X } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { MeaningTransitionHistory, type MeaningTransitionArchiveState } from './MeaningTransitionHistory';
 
-/**
- * Hairline between groups (owner, 2026-09-06) — **now only where a label does not already
- * separate the group.** A rule above a group that announces itself in words is a second
- * separator doing the first one's job; the history view carried four of them around three
- * labelled sections, which is what the panel read as when the owner called it odd.
- */
+/** Hairline between groups, only where no label already separates them. */
 const DIVIDED = 'border-t border-[color:var(--color-divider)] pt-4';
 /**
- * The section label.
- *
- * ⚠️ **It was mono uppercase with caps tracking, and Korean has no case** (owner,
- * 2026-09-06: the workbench eyebrow *"spaces the syllables apart and reads broken"*).
- * `:lang(ko)` already zeroes the caps steps (`docs/DESIGN-SYSTEM.md`, "Caps tracking is a
- * Latin device"), so the letter-spacing was gone — but the **mono metrics were not**, and a
- * fixed-advance face pushes Hangul blocks apart on its own. `uppercase` was a no-op on
- * Hangul from the start, so what remained of the eyebrow specification was only its
- * destructive half.
- *
- * Sans at the caption step, emphasis weight, tertiary ink: the label separates by weight and
- * ink rather than by a typeface the body text never uses. Tertiary rather than quaternary
- * because this line names the group a person is about to read.
+ * Sans, not mono caps: mono metrics push Hangul syllables apart (`docs/DESIGN-SYSTEM.md`, "Caps
+ * tracking is a Latin device").
  */
 const SECTION_LABEL = 'text-caption font-[var(--font-weight-emphasis)] text-[color:var(--color-text-tertiary)]';
 
@@ -43,18 +27,11 @@ const EMPTY_RECORDS: AnalysisRecord[] = [];
 
 /** One context slot beside the canvas. Hiding conversation never unmounts its ACP session. */
 /**
- * Ids of saved analyses already announced as a toast. Module-level on purpose: the
- * workbench unmounts whenever its dock closes (opening the index closes it), and a
- * ref inside the component forgot the announcement on every remount, so one saved
- * record raised the same toast on each reopen (installed app, 2026-09-06). The save
- * state itself outlives the component, so its memory must too.
+ * Module-level on purpose: the workbench unmounts when its dock closes, and a saved record must not
+ * toast again on reopen.
  */
 const announcedSaveIds = new Set<string>();
 
-/**
- * An error in this panel, drawn as the app's inline alert box (the danger hairline over a faint
- * danger wash) rather than bare red caption text, which read as a stray line of copy.
- */
 function InlineAlert({ children }: { children: ReactNode }) {
   return <p role="alert" className="rounded-card border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-3 py-2 text-label leading-label text-[color:var(--color-danger-text)]">{children}</p>;
 }
@@ -62,17 +39,14 @@ function InlineAlert({ children }: { children: ReactNode }) {
 export function AnalysisWorkbench({ context, contextLabel, contextKind = null, open, requestNonce, sectionRequest, onSectionChange, onFitContentChange, initialTab = 'meaning', facts, conversation, onRequest, relationNoteGaps = 0, onClose, onEvidence, onFinding, onFindingsChange, capture, returnFocusSelector }: {
   context: AnalysisCaptureContext;
   contextLabel: string;
-  /**
-   * The picked node's kind, shown in the header's eyebrow line beside the view name. The body
-   * used to repeat the kind and the name as a second headline; the header now carries both.
-   */
+  /** The picked node's kind, shown in the header eyebrow beside the view name. */
   contextKind?: string | null;
   open: boolean;
   requestNonce?: number;
   sectionRequest?: { tab: Tab; nonce: number };
   /**
-   * True while the open view is only a short designed state — today the empty history archive —
-   * so the host surface can end under it instead of leaving a bare column below.
+   * True while the open view is a short designed state (the empty history archive), so the host can
+   * end under it.
    */
   onFitContentChange?: (fits: boolean) => void;
   onSectionChange?: (tab: Tab) => void;
@@ -82,9 +56,8 @@ export function AnalysisWorkbench({ context, contextLabel, contextKind = null, o
   capture?: { state: AnalysisSaveState | null; setState: (state: AnalysisSaveState) => void };
   onRequest?: (text: string, parentRunId: string | null) => void;
   /**
-   * Relations in scope whose `relation_notes` sentence is empty. Above zero, the Meaning view
-   * offers to have the agent write them: one sentence per edge, on the source document, under
-   * the permission gate. Zero hides the offer rather than showing a dead control.
+   * Relations in scope with an empty `relation_notes`; above zero the Meaning view offers to have
+   * the agent write them.
    */
   relationNoteGaps?: number;
   onClose: () => void;
@@ -102,32 +75,16 @@ export function AnalysisWorkbench({ context, contextLabel, contextKind = null, o
   useEffect(() => {
     if (!open) return;
     const panel = panelRef.current;
-    /*
-     * ⚠️ **The opener, and never something inside this panel** (measured 2026-09-06). This effect
-     * runs more than once per opening, and each run read `document.activeElement` — which the
-     * previous run had just pointed at the close button. The second run therefore recorded the
-     * close button as the place to return to, and closing "restored" focus to an element that was
-     * being unmounted, dropping the keyboard on `<body>` with no way back to what had just closed.
-     */
+    /* Record the opener once: later runs of this effect already see focus on the close button. */
     const active = document.activeElement;
     const origin = active instanceof HTMLElement && active !== document.body && !panel?.contains(active)
       ? active : null;
     closeRef.current?.focus({ preventScroll: true });
     return () => {
       /*
-       * Let the parent remove its sheet's inert state before returning to the opener.
-       *
-       * ⚠️ **One frame was not enough, and one frame was also too early** (same measurement). At
-       * 744x900 with a coarse pointer the opener sits inside the parent's `[inert]` sheet for
-       * about three frames after Escape, and the panel itself stays mounted for its exit — around
-       * 220ms. A single `requestAnimationFrame` landed inside both windows, found an inert target,
-       * and gave up silently.
-       *
-       * So the restore waits for the panel to actually be gone, then for the target to actually be
-       * focusable, and gives up after roughly two thirds of a second — long enough for the exit,
-       * short enough that focus never moves under a person who has already moved on. It also
-       * stands down the moment focus lands anywhere outside this panel: that is somebody's
-       * deliberate choice, not a gap to fill.
+       * Restore waits until the panel is gone and the target is focusable (inert for about three
+       * frames, exit about 220ms), gives up after about 0.66s, and stands down once focus moves
+       * elsewhere.
        */
       let frames = 0;
       const restore = () => {
@@ -158,13 +115,7 @@ export function AnalysisWorkbench({ context, contextLabel, contextKind = null, o
   const [busy, setBusy] = useState(false);
   const [readPending, setReadPending] = useState(false);
   const [decisionArchive, setDecisionArchive] = useState<MeaningTransitionArchiveState>('pending');
-  /*
-   * ⚠️ **A failure is one sentence a person reads, and the exception text folded under it**
-   * (measured 2026-09-25 on /ko). The raw `message` was the whole line — "Could not save the
-   * analysis  no stub for append_analysis_record" — so any real write failure printed an English
-   * exception into the Korean screen. The sentence says what did not happen; the detail stays one
-   * press away for whoever has to diagnose it, as the conversation's own error card does.
-   */
+  /* A failure is one readable sentence; the raw exception stays folded under it. */
   const [error, setError] = useState<{ sentence: string; detail: string | null } | null>(null);
   const failWith = (sentence: string, failure: unknown) =>
     setError({ sentence, detail: failure instanceof Error ? failure.message : String(failure) });
@@ -189,11 +140,8 @@ export function AnalysisWorkbench({ context, contextLabel, contextKind = null, o
   useEffect(() => { onFitContentChange?.(fitsContent); }, [fitsContent, onFitContentChange]);
   useEffect(() => () => onFitContentChange?.(false), [onFitContentChange]);
   /*
-   * **A saved analysis is news, not furniture** (owner, 2026-09-06). The report used to
-   * stand at the foot of the panel for as long as the record stayed selected, taking a
-   * row from the conversation on every tab. Success now arrives as a toast with the one
-   * action a person might want (open it); the foot keeps only what needs to stay —
-   * saving in progress, or an error with its retry.
+   * A saved analysis arrives as a toast; the foot keeps only saving in progress or an error with
+   * retry.
    */
   const toast = useToast();
   useEffect(() => {
@@ -254,11 +202,8 @@ export function AnalysisWorkbench({ context, contextLabel, contextKind = null, o
   }, [onFindingsChange, open, overlayReady, records, selected, showIssues]);
 
   /*
-   * The map's hover card read the same templated sentence on every containment edge because
-   * 87% of the dogfood graph's edges carried no `relation_notes` (2026-09-06, 211 of 242).
-   * This turn asks the agent to write the missing reasons, bounded, through patch_concept —
-   * every write still stops at a permission card. It carries no findings instruction: the
-   * result is frontmatter, not an analysis record.
+   * Asks the agent to write missing relation reasons through patch_concept; each write still stops
+   * at a permission card.
    */
   function requestNotes() {
     onRequest?.(`${t('relationNotesPrompt', { limit: 12 })}\nScope: ${JSON.stringify(context.scope)}.`, null);
@@ -292,26 +237,15 @@ export function AnalysisWorkbench({ context, contextLabel, contextKind = null, o
     if (event.key === 'Escape' && !event.defaultPrevented) { event.stopPropagation(); onClose(); }
   }} className="flex min-h-0 flex-1 flex-col gap-3 break-keep text-body text-[color:var(--color-text-primary)] [&_summary]:content-center [@media(pointer:coarse)]:[&_summary]:min-h-[var(--touch-target-min)]">
     {/*
-      ⚠️ **One band, not four** (2026-09-06; measured in the installed app at 187px of chrome
-      above a 371px well). The name, the subject, the sections and the close button were four
-      stacked rows in a panel whose whole job is the content underneath them. The eyebrow and the
-      subject stay stacked — they are one address read top to bottom — and the sections and the
-      close move onto that block's line.
-
-      `flex-wrap` rather than a promise the width cannot keep: below roughly 330px of usable
-      panel the tab strip drops to its own line and the header is two bands again, which is what
-      it was before. It never truncates the subject to keep the tabs beside it.
-    */}
+     * flex-wrap: below about 330px the tab strip drops to its own line instead of truncating the
+     * subject.
+     */}
     <header className="relative flex shrink-0 flex-wrap items-end justify-between gap-x-4 gap-y-2 pr-8">
       <div className="min-w-0 flex-1 basis-36"><p data-testid="analysis-workbench-eyebrow" className="flex min-w-0 flex-wrap items-center gap-x-1.5 text-label leading-label text-[color:var(--color-text-secondary)]"><span>{t(tab === 'conversation' ? 'conversationTitle' : context.mode === 'meaning' ? 'meaningTitle' : 'architectureTitle')}</span>{contextKind ? <><span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span><span className="inline-flex items-center gap-1 text-[color:var(--color-text-tertiary)]"><OntologyMapKindGlyph kind={contextKind} size={11} />{kindLabel(KNOWN_KINDS.includes(contextKind) ? contextKind : 'unknown')}</span></> : null}</p><h2 className="break-words text-title font-[var(--font-weight-strong)]">{contextLabel}</h2></div>
       {/*
-        ⚠️ **The tab bar, not a segmented control** (2026-09-06). A `SegmentedControl` is an
-        exclusive *value* picker and reaches the accessibility tree as a radiogroup — these are
-        views of one surface, and a screen reader was told they were settings. `TabBar` is this
-        repository's one tab pattern (`shared/ui/tab-bar.tsx`); the panels below carry the
-        matching `workbench-tabpanel-*` id, which is the half of its contract a consumer can skip
-        and silently break.
-      */}
+       * TabBar, not SegmentedControl: these are views, not a value; panels carry the matching
+       * workbench-tabpanel-* id.
+       */}
       <div data-testid="analysis-workbench-tabs" className="flex min-w-0 shrink-0 items-end">
         <TabBar idPrefix="workbench" ariaLabel={t('section')} activeKey={tab} onSelect={(key) => setTab(key as Tab)} items={[
           { key: 'meaning', label: t('meaning') }, { key: 'history', label: t('history') }, ...(conversation ? [{ key: 'conversation', label: t('conversation') }] : []),
@@ -319,65 +253,31 @@ export function AnalysisWorkbench({ context, contextLabel, contextKind = null, o
       </div>
       <IconButton ref={closeRef} data-testid="analysis-workbench-close" className="absolute right-0 top-0 size-[var(--overlay-close-size)]" label={t(tab === 'conversation' ? 'closeConversation' : 'close')} onClick={onClose}><X size={ICON_SIZE.lg} /></IconButton>
     </header>
-    {/* The sentence in the alert box; the exception text folded under it, outside the box. */}
     {error ? <div data-testid="analysis-workbench-error" className="flex flex-col gap-1">
       <InlineAlert>{error.sentence}</InlineAlert>
       {error.detail ? <FailureDetail summary={t('errorDetails')} detail={error.detail} /> : null}
     </div> : null}
     {notice ? <p role="status" className="text-label leading-label text-[color:var(--color-text-secondary)]">{notice}</p> : null}
-    {/*
-      **Action first, reference last** (owner, 2026-09-06: "messy" / "nothing is set apart"). The
-      view opened on the glossary and put the one thing a person can do here — ask the agent —
-      under a wall of same-grey prose. The ask now leads with its one-line caveat; what is picked
-      on the map follows; groups are set apart by a hairline, not by more sentences.
-    */}
     {tab === 'meaning' ? <div role="tabpanel" id="workbench-tabpanel-meaning" aria-labelledby="workbench-tab-meaning" className="atlas-scroll-quiet flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1">
       <div className="flex flex-col gap-2">
         {/*
-          ⚠️ **One row, one step, one corner** (measured 2026-09-06 at a 460px panel). Analyze was
-          a `Button` — `rounded-panel` (12px) and `text-body-lg` (14px) — standing beside a chip at
-          `rounded-chip` (6px) and `text-label` (11px). Same 32px height, two corners and two type
-          steps, which is what read as "a large pill beside a smaller chip of a different shape".
-
-          The primary is now the same chip box wearing the value layer's filled-indigo tone, so
-          what separates it from the action next to it is the fill alone — the one thing that is
-          supposed to say "this is the primary".
-        */}
+         * The primary is the same chip box in filled indigo, so only the fill separates it from its
+         * neighbour.
+         */}
         {onRequest ? <div className="flex flex-wrap items-center gap-2">
           <Chip size="lg" tone="onAccent" onClick={() => request(false)}>{t('analyze')}</Chip>
           {relationNoteGaps > 0 && context.mode === 'meaning' ? <Chip size="lg" data-testid="workbench-fill-notes" onClick={requestNotes}>{t('fillNotes', { count: relationNoteGaps })}</Chip> : null}
         </div> : <p className="text-label leading-label text-[color:var(--color-text-secondary)]">{t('agentUnavailable')}</p>}
-        {/* A full sentence a person reads before pressing Analyze: the label step, not the
-            9.5px caption the token file reserves for micro labels and timestamps. */}
         <p className="text-label leading-label text-[color:var(--color-text-secondary)]">{t('diagnosticOnly')}</p>
       </div>
       <div className={DIVIDED}>{facts ?? <p>{context.mode === 'architecture' ? t('architectureCriteria') : glossary('ontologyDefinition')}</p>}</div>
     </div> : null}
     {tab === 'history' ? <div role="tabpanel" id="workbench-tabpanel-history" aria-labelledby="workbench-tab-history" className="atlas-scroll-quiet flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1" aria-busy={busy || readPending}>
       <MeaningTransitionHistory handle={context.handle} open={open && tab === 'history'} foldWhenQuiet={!runs.length} onStateChange={setDecisionArchive} />
-      {/* One control row: which version, reread, ask again. The two chips that led the tab
-          looked like every other chip below them; the version picker is the row's subject. */}
       {/*
-        ⚠️ **Three controls, three heights, and a label that could not fit** (measured 2026-09-06
-        at a 460px panel): the picker stood at 40px, reread at 28px and re-analyze at 32px, and the
-        picker's own value — the word for "latest", a full date and time down to the second, and an
-        eight-character id — measured 41 characters and ran out of its 274px trigger, ending in an
-        ellipsis. A picker whose current value is cut off cannot say which version is on screen,
-        which is the one thing it exists to say.
-
-        All three now stand at 32px, and the trigger keeps only what identifies the version to a
-        person: latest, then the date and time at `dateStyle: 'short'`. The eight-character id is
-        machine identity — it moves into the option's description line, in front of the request it
-        answered, where the list has room to print it whole.
-      */}
-      {/*
-        ⚠️ **An empty archive is a designed state, not a bare sentence** (measured 2026-09-25, 1512
-        wide). With no analysis yet the tab was an unlabeled refresh icon, the primary action and
-        one grey line, over roughly 670px of empty panel — and the refresh stood in front of the
-        primary. The empty archive now uses the shared empty-state card: what is missing, what an
-        analysis leaves behind, and Analyze as its one action. The version row appears only when
-        there are versions to pick, primary first, and the reread control says what it does.
-      */}
+       * The trigger shows only latest plus a short date and time; the id moves to the option
+       * description so the value never truncates.
+       */}
       {runs.length ? <div className="agent-panel-stage-swap flex flex-wrap items-center gap-2">
         <Select size="md" ariaLabel={t('version')} value={selected?.id ?? ''} onChange={setSelectedId} className="min-w-0 flex-1 basis-48" options={runs.map((run, index) => ({ value: run.id, label: `${index === 0 ? `${t('latest')} · ` : ''}${new Date(run.createdAt).toLocaleString(locale, { dateStyle: 'short', timeStyle: 'short' })}`, description: `${run.id.slice(0, 8)} · ${run.request.text.slice(0, 80)}` }))} />
         {onRequest ? <Chip size="lg" tone="onAccent" onClick={() => request(false)}>{t('reanalyze')}</Chip> : null}
@@ -385,15 +285,6 @@ export function AnalysisWorkbench({ context, contextLabel, contextKind = null, o
       </div> : null}
       {!context.handle ? <p>{t('openFolder')}</p> : null}
       {context.handle && readPending ? <p role="status">{t('loadingHistory')}</p> : null}
-      {/*
-        ⚠️ **One empty state, at the top** (round three, 2026-09-25, 1512 wide). The tab said
-        "nothing here" twice: a solid meaning-decision card ("no decision records in this folder"),
-        then about 200px lower a dashed card centred in a 699px well ("nothing analyzed yet") — two
-        messages, two surfaces and a dead band between them. The decision archive now folds away
-        while it is quiet and its fact joins this card: the title names both archives when both
-        are empty, and a line says where decisions can be read when this build cannot read them.
-        The card starts where the free space starts instead of floating in its middle.
-      */}
       {emptyArchive ? <div data-testid="analysis-history-empty" className="agent-panel-stage-swap"><EmptyState
         size="compact"
         align="center"
@@ -411,20 +302,12 @@ export function AnalysisWorkbench({ context, contextLabel, contextKind = null, o
           {onRequest ? <p className="basis-full text-balance pt-1 text-label leading-label text-[color:var(--color-text-secondary)]">{t('diagnosticOnly')}</p> : null}
         </>}
       /></div> : null}
-      {/* The caveat stands once, beside the action it qualifies — it used to close the tab as a
-          footer, repeating the meaning tab's copy at the far end of the scroll. */}
       {runs.length ? <p className="text-label leading-label text-[color:var(--color-text-secondary)]">{t('diagnosticOnly')}</p> : null}
       {selected ? <>
         {selected === runs[0] && earlierQuestions.length ? <Disclosure summary={t('earlierQuestions', { count: earlierQuestions.length })}>
           <p className="mt-2 text-caption text-[color:var(--color-text-secondary)]">{t('earlierQuestionsNote')}</p>
           <div className="mt-2 flex flex-col items-start gap-2">{earlierQuestions.map(({ run, finding }) => <Chip key={`${run.id}:${finding.id}`} size="lg" onClick={() => setSelectedId(run.id)}>{finding.title} · {run.id.slice(0, 8)}</Chip>)}</div>
         </Disclosure> : null}
-        {/*
-          The scope is the heading (the picker already says the date and id); the outcome, the
-          basis and the evidence count are one caption line under it, not three sentences of
-          equal weight. The "AI findings are questions" caveat moved to the foot of the tab,
-          once, because it applies to everything above it and not to the version in particular.
-        */}
         <div className={cn('space-y-1', DIVIDED)}>
           <h3 className="break-words text-body-lg font-[var(--font-weight-strong)]">{selected.scope.targetSlugs.join(', ') || t('wholeProject')}</h3>
           <p className="text-caption text-[color:var(--color-text-secondary)]">{t(`outcome.${selected.origin.outcome}`)} · {t(`basis.${compatibility?.status ?? 'checking'}`)} · {t(selected.qualification.status === 'grounded' ? 'grounded' : 'unverified')}</p>
@@ -465,14 +348,6 @@ export function AnalysisWorkbench({ context, contextLabel, contextKind = null, o
       {loaded?.handle === context.handle && loaded?.problems.length ? <Disclosure summary={t('recordProblems', { count: loaded.problems.length })}><pre className="mt-2 whitespace-pre-wrap break-words text-caption">{loaded.problems.join('\n')}</pre></Disclosure> : null}
     </div> : null}
     {conversation ? <div role="tabpanel" id="workbench-tabpanel-conversation" aria-labelledby="workbench-tab-conversation" className={cn('min-h-0 flex-1 flex-col', tab === 'conversation' ? 'flex' : 'hidden')} inert={tab !== 'conversation'}>{conversation}</div> : null}
-    {/*
-      ⚠️ **The save report is a footer, not a fifth header band** (2026-09-06). It used to sit
-      between the tabs and the view, pushing the content down on every tab whether or not an
-      answer had just been saved — and its retry/export chips were laid out after an inline
-      sentence with no wrapping container, so at a narrow panel the chip and the sentence
-      measured 0px apart. It now stands at the foot of the panel, beside the composer the turn
-      was sent from, and lays out as one wrapping row.
-    */}
     {saved && saved.status !== 'saved' ? <div role="status" data-testid="analysis-workbench-save" className="flex shrink-0 flex-wrap items-center gap-2 text-caption text-[color:var(--color-text-secondary)]">
       <span className="min-w-0 break-keep">{t(`save.${saved.status}`)}</span>
       {saved.status === 'error' ? <>

@@ -14,10 +14,6 @@ import {
 import { server } from './instance.mjs';
 import { VAULT_ROOT } from './runtime.mjs';
 
-// ── Activity log — one local audit line per successful write (best-effort) ──
-// Schema and rationale: mcp/src/activity-log.mjs. Dry runs (no change) and
-// invalid-only batches are not recorded — the audit log carries what happened,
-// nothing else. A failed append never affects the write result.
 function summarizeWrite(name, args, result) {
   switch (name) {
     case 'add_concept':
@@ -36,21 +32,8 @@ function summarizeWrite(name, args, result) {
       const rows = result?.relations ?? [];
       const okRows = rows.filter((row) => row?.ok).length;
       if (okRows === 0) return null;
-      /*
-       * ⚠️ **Do not drop the reason** (caught by the steward seat, 2026-08-16).
-       *
-       * Batch rows carry `why` too, and the runtime *requires* it for
-       * `depends_on`. This branch returned only `{ target, summary }`, so the
-       * reason reached the frontmatter but disappeared from the activity record.
-       *
-       * The consequence was observed: all 15 activity lines in a live vault read
-       * `why: null`, two of them from exactly this path — and "the record has no
-       * reasons" nearly became evidence for an unrelated conclusion.
-       *
-       * Rows can carry different reasons, so collect **only the reasons of rows
-       * that succeeded**. Repeats collapse to one entry: ten rows sharing a
-       * reason would otherwise print it ten times and become unreadable.
-       */
+      // Keep each batch row's `why` in the activity record, from successful rows only
+      // and with repeats collapsed, or the reason reaches frontmatter but not the log.
       // ⚠️ Numbering **after** filtering desynchronises rows from the input.
       // Keep the original order and read the reason only off successful rows.
       const reasons = [
@@ -103,9 +86,8 @@ function logWrite(name, args, result) {
           target: summarized.target,
           summary: summarized.summary,
           why: summarized.why ?? null,
-          // Heartbeat (deliberate registration) > the connect greeting's
-          // clientInfo.name (automatic) > null. Claude Code and Codex sessions
-          // that connect without registering now leave a name behind too.
+          // Heartbeat (deliberate registration) > the connect greeting's clientInfo.name
+          // (automatic) > null, so sessions that never register still leave a name.
           agent: resolveAgentName(VAULT_ROOT, server.getClientVersion?.()),
         }),
       );

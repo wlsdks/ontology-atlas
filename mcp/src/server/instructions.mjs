@@ -2,12 +2,9 @@
  * The MCP `instructions` string carried in the `initialize` response, with the
  * live tool inventory left as a placeholder `registry.mjs` fills in.
  *
- * Section order is load-bearing. A host may keep only the first 2,048 characters
- * of this string — measured in a live Claude Code session, where these
- * instructions were cut mid-sentence inside the tool inventory and every rule
- * after it never arrived. So one short identity line and the construction card
- * come first, and everything a truncating host drops stays reachable through
- * `connection_info({guide})`, because per-tool descriptions are delivered whole.
+ * Section order is load-bearing: a host may keep only the first 2,048 characters,
+ * so the identity line and construction card come first, and everything a
+ * truncating host drops stays reachable through `connection_info({guide})`.
  */
 
 import { CONSTRUCTION_CARD_EN } from '../construction-card.mjs';
@@ -22,13 +19,9 @@ import {
   RELATION_TYPE_UNION,
 } from './tool-schemas.mjs';
 
-// MCP `instructions` field — carried in the `initialize` response. The host
-// decides whether and how to include it in model context; delivery does not
-// guarantee system-message placement or model compliance. Tool descriptions alone never
-// convey call order, what the kind hierarchy means, the dry-run/confirm pattern
-// of the write tools, the mtime conflict gate, the bootstrap workflow, or the
-// fact that an error message names the next tool to call. Without this, agents
-// relearn all of it by trial and error on every session.
+// Tool descriptions alone never convey call order, the kind hierarchy, the
+// dry-run/confirm pattern, the mtime gate or the bootstrap workflow. The host
+// decides whether this reaches model context; delivery guarantees no placement.
 const TOOL_INVENTORY_PLACEHOLDER = '__ONTOLOGY_ATLAS_ACTIVE_TOOL_INVENTORY__';
 
 // The two sections below are named so `connection_info({guide})` can hand them

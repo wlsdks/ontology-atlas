@@ -1,6 +1,4 @@
-// R+ — `ontology-atlas orphans [vault]`
-// Lists isolated nodes — docs that no other node references in their
-// frontmatter. Thin wrapper over MCP find_orphans.
+// `ontology-atlas orphans [vault]`: nodes no other node references in frontmatter, over MCP find_orphans.
 
 import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';

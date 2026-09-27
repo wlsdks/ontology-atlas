@@ -1,18 +1,7 @@
 /**
- * The Compile turn's **only window onto the raw sources.**
- *
- * The same structural proof `vault-read-port.ts` makes for the graph, made again for
- * `sources/`: there is no write method here, so a model that decides to edit its own
- * evidence finds no function to call. Compile rule (e) — *never modify anything under
- * `sources/`* — is a code path rather than a sentence in a prompt.
- *
- * `sources` is the folder's **own inventory**, handed over by the same walk the Library
- * list is drawn from. That is what bounds the reader: a path the walk did not produce is
- * refused, so nothing outside `sources/` and nothing the walk skipped — a symlink, which
- * neither the File System Access traversal nor Rust's `list_vault_directory` reports as a
- * file — can be reached by naming it.
- *
- * When adding a method, do not put a write here.
+ * The Compile turn's only window onto raw sources: no write method, so a model cannot edit its
+ * evidence. Inventory membership, not a path prefix: a path the walk skipped (a symlink) or
+ * outside `sources/` is refused. Do not add a write here.
  */
 
 /** One raw source, as the folder's walk found it. */
@@ -37,15 +26,8 @@ export interface SourceReadPort {
    */
   readSourceBytes(path: string): Promise<ArrayBuffer | null>;
   /**
-   * The sha256 of one inventoried source's bytes, lowercase hex, or null when this
-   * runtime cannot measure it.
-   *
-   * Measure the supplied complete read snapshot, never reopen the path: an edit between
-   * reading and hashing must not attribute newer bytes to older text. The Library's
-   * passive source checks may hash current paths; a Compile receipt has this stricter
-   * identity. Null is a real answer (a browser without a secure context has no digest),
-   * and a proposal that cannot record what it read is refused rather than written with an
-   * empty `source_hash`, which every reader would go on to call stale.
+   * sha256 of the supplied read snapshot, never a reopened path, so newer bytes are never
+   * attributed to older text. Null when this runtime cannot hash; that proposal is refused.
    */
   hashSource(path: string, bytes: ArrayBuffer): Promise<string | null>;
 }

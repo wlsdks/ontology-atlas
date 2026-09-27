@@ -1,62 +1,32 @@
 /**
- * **What a repository's hook configuration says, and the exact limit of what that proves.**
- *
- * A hook is the only part of a harness that can *stop* an agent rather than advise it, which is
- * why a person reads a hook row as a guarantee. Almost nothing about that guarantee is readable
- * from files:
- *
- * - **Wired** — the script the config names exists on disk. This is the whole claim. It is worth
- *   making because the opposite is a real, measured failure: a `settings.json` entry whose path
- *   does not resolve produces no block and no error, just a non-blocking status code, and the
- *   guard disappears in silence.
- * - **Not readable** — whether the hook fires, whether it blocks, and, for Codex, whether a person
- *   has approved it in `/hooks`. Codex hashes each entry and refuses to run a new or changed one
- *   until it is trusted; that approval is session state, in no file. This repository measured the
- *   consequence on 2026-09-02: its Codex `PostToolUse` and `Stop` mirrors were silent for that
- *   reason alone while every file on disk looked correct.
- *
- * So `wired` never renders as a green check, and the Codex row carries the approval fact as text.
+ * `wired` only means the configured script exists; whether a hook fires or blocks, and Codex's
+ * `/hooks` approval, are session state no file shows. So `wired` is never drawn as a pass.
  */
 
-/** Where a hook command's script lives, and whether we could resolve a path at all. */
 interface HookScriptRef {
-  /** The repo-relative script path, or `null` when the command runs something we cannot resolve. */
+  /** Repo-relative script path, or `null` when unresolvable. */
   path: string | null;
-  /** The command as written, kept so the screen can show what it actually tried. */
+  /** As written, so the screen shows what it tried. */
   command: string;
 }
 
 interface HookFact {
-  /** Lifecycle events this script answers, joined with ` · `. The tool's own word, untranslated. */
+  /** Events joined with ` · `, untranslated. */
   events: string;
   ref: HookScriptRef;
-  /**
-   * `wired` — the script exists. `missing` — it does not, and the guard is silently absent.
-   * `unresolved` — the command is not a script path we can test, so we say that instead of
-   * guessing either way.
-   */
+  /** `missing`: the guard is silently absent; `unresolved`: not a testable script path. */
   status: 'wired' | 'missing' | 'unresolved';
 }
 
 export interface HookConfigFacts {
-  /** The config file read, e.g. `.claude/settings.json`. */
+  /** e.g. `.claude/settings.json`. */
   configPath: string;
   hooks: readonly HookFact[];
-  /**
-   * The tool gates execution behind an approval this app cannot read. Present for Codex; the
-   * screen prints it as a standing fact beside every hook in the group.
-   */
+  /** The tool gates execution on an approval this app cannot read (Codex). */
   approvalGate: boolean;
 }
 
-/**
- * The repo-relative script a hook command runs.
- *
- * `${CLAUDE_PROJECT_DIR:-.}/` is the documented way to write a project-absolute path in Claude's
- * settings, so it is stripped to get back to something the filesystem can be asked about. When the
- * command is not a script invocation at all, the answer is `null` — "we could not resolve this",
- * which the screen prints rather than dropping the row.
- */
+/** Strips `${CLAUDE_PROJECT_DIR:-.}/`; `null` when the command is not a script invocation. */
 export function hookScriptPath(command: string): string | null {
   const match = command.match(/[\w./${}:@-]*\.(?:sh|mjs|cjs|js|py)\b/);
   if (!match) return null;
@@ -64,17 +34,11 @@ export function hookScriptPath(command: string): string | null {
     .replace(/^\$\{CLAUDE_PROJECT_DIR:-\.\}\//, '')
     .replace(/^\$CLAUDE_PROJECT_DIR\//, '')
     .replace(/^\.\//, '');
-  // A path still carrying an unexpanded variable cannot be tested against the filesystem.
+  // An unexpanded variable cannot be tested against the filesystem.
   return raw.includes('$') || raw.length === 0 ? null : raw;
 }
 
-/**
- * `{ event, command }` pairs out of a Claude `settings.json` or a Codex `hooks.json`.
- *
- * Both formats nest the same way: `hooks` → event → matchers → commands. Codex repeats one script
- * across three matchers for a single Bash call, so the caller de-duplicates by script; counting
- * config entries would report thirty hooks where ten scripts exist.
- */
+/** Claude `settings.json` and Codex `hooks.json` nest alike; callers dedupe by script. */
 export function parseHookConfig(text: string): Array<{ event: string; command: string }> {
   let parsed: unknown;
   try {
@@ -99,10 +63,7 @@ export function parseHookConfig(text: string): Array<{ event: string; command: s
   return out;
 }
 
-/**
- * Turns one hook config into per-script facts. `scriptExists` is the only outside question asked,
- * and it is asked once per distinct script.
- */
+/** Per-script facts; `scriptExists` is asked once per distinct script. */
 export async function collectHookFacts(
   configPath: string,
   configText: string,
@@ -133,7 +94,7 @@ export async function collectHookFacts(
   return { configPath, hooks, approvalGate: options.approvalGate };
 }
 
-/** Scripts actually found on disk across every config — the sentence's hook half. */
+/** Scripts found on disk across every config. */
 export function wiredHookCount(groups: readonly HookConfigFacts[]): number {
   return groups.reduce(
     (sum, group) => sum + group.hooks.filter((hook) => hook.status === 'wired').length,

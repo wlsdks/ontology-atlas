@@ -26,11 +26,6 @@ function draw() {
 
 describe('the rule sentences', () => {
   it('no longer live here: every stroke states its own sentence on the canvas', () => {
-    /*
-     * The 2026-08-28 walkthrough found the sentences in an `sr-only` box one pixel wide; on
-     * 2026-08-30 they moved into this panel, painted; the same day (Direction B) they moved onto
-     * the strokes themselves. This panel keeps the key for every mark, which is still painted.
-     */
     const { container } = draw();
     expect(container.querySelector('[data-testid="architecture-edge-sentences"]')).toBeNull();
     const legend = container.querySelector('p');
@@ -38,14 +33,10 @@ describe('the rule sentences', () => {
     expect(legend?.className).not.toContain('sr-only');
   });
 
-  /*
-   * ⚠️ A legend row for a mark nobody drew is noise, and this component is now the only place the
-   * key exists — nothing else on the screen says what a shape or a stroke means.
-   */
+  /* This component is the only key on the screen, so a row for an undrawn mark is noise. */
   it('keys every mark the drawing actually uses, and no others', () => {
     const { container } = draw();
     const legend = container.querySelector('p')?.textContent ?? '';
-    /* Every role is one rounded face since 2026-09-03; no shape row remains to explain. */
     expect(legend).not.toContain('a role at either end');
     expect(legend).toContain('a reviewed dependency');
     /* This fixture has no measured traffic, so the measured-imports row must not appear. */
