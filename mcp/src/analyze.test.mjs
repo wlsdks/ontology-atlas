@@ -1,6 +1,7 @@
 // R16 (b3) — analyzeRepoStructure unit tests.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import {
   mkdtempSync,
   mkdirSync,
@@ -4494,6 +4495,158 @@ test('Meaning gate maps code folders through existing ontology capability elemen
         source: 'docs/ontology/capabilities/mode-aware-adapter.md',
       },
     ]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+const ontologyDomainDoc = (title) => `---\nkind: domain\ntitle: ${title}\n---\n`;
+
+test('existing ontology evidence stops two self-loop symlinks without duplicate evidence', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'workbench' }));
+    mkdirSync(join(r, 'docs/ontology/domains'), { recursive: true });
+    writeFileSync(join(r, 'docs/ontology/domains/operations.md'), ontologyDomainDoc('Operations'));
+    symlinkSync('.', join(r, 'docs/ontology/loop-a'));
+    symlinkSync('.', join(r, 'docs/ontology/loop-b'));
+  });
+  try {
+    const program = `
+      import { analyzeRepoStructure } from ${JSON.stringify(new URL('./analyze.mjs', import.meta.url).href)};
+      const result = analyzeRepoStructure(process.argv[1]);
+      process.stdout.write(JSON.stringify({ meaningGate: result.meaningGate, skipped: result.skipped }));
+    `;
+    const child = spawnSync(process.execPath, ['--input-type=module', '-e', program, root], {
+      encoding: 'utf8',
+      timeout: 30_000,
+    });
+    assert.equal(
+      child.signal,
+      null,
+      'two self-loop links hung the synchronous walk until the 30 s hang detector stopped its child process',
+    );
+    assert.equal(child.status, 0, child.stderr);
+    const result = JSON.parse(child.stdout);
+    assert.deepEqual(result.meaningGate.businessOntology.domains, ['domains/operations']);
+    assert.deepEqual(result.meaningGate.businessOntology.evidence, [
+      { slug: 'domains/operations', kind: 'domain', source: 'docs/ontology/domains/operations.md' },
+    ]);
+    for (const link of ['loop-a', 'loop-b']) {
+      assert.ok(
+        result.skipped.some(
+          (row) =>
+            row.path === join(root, 'docs', 'ontology', link) &&
+            row.reason === `ontology-evidence-skip: docs/ontology/${link} repeats a visited directory`,
+        ),
+        `missing the repeat row for ${link}`,
+      );
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('existing ontology evidence skips a link that leaves the repository', () => {
+  const outside = mkdtempSync(join(tmpdir(), 'ontology-atlas-ontology-outside-'));
+  mkdirSync(join(outside, 'deep'), { recursive: true });
+  writeFileSync(join(outside, 'deep', 'secret.md'), ontologyDomainDoc('Secret'));
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'workbench' }));
+    mkdirSync(join(r, 'docs/ontology/domains'), { recursive: true });
+    writeFileSync(join(r, 'docs/ontology/domains/operations.md'), ontologyDomainDoc('Operations'));
+    symlinkSync(outside, join(r, 'docs/ontology/ext'));
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+
+    assert.deepEqual(result.meaningGate.businessOntology.domains, ['domains/operations']);
+    assert.equal(JSON.stringify(result).includes('ext/deep'), false);
+    assert.ok(
+      result.skipped.some(
+        (row) =>
+          row.path === join(root, 'docs', 'ontology', 'ext') &&
+          row.reason === 'ontology-evidence-skip: docs/ontology/ext resolves outside repository root',
+      ),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+    rmSync(outside, { recursive: true, force: true });
+  }
+});
+
+test('existing ontology evidence skips a docs/ontology folder that leaves the repository', () => {
+  const outside = mkdtempSync(join(tmpdir(), 'ontology-atlas-ontology-outside-'));
+  mkdirSync(join(outside, 'domains'), { recursive: true });
+  writeFileSync(join(outside, 'domains', 'secret.md'), ontologyDomainDoc('Secret'));
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'workbench' }));
+    mkdirSync(join(r, 'docs'), { recursive: true });
+    symlinkSync(outside, join(r, 'docs/ontology'));
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+
+    assert.deepEqual(result.meaningGate.businessOntology.domains, []);
+    assert.equal(result.extractionContract.qualityGates.sharedBusinessConceptsAvailable, false);
+    assert.ok(
+      result.skipped.some(
+        (row) =>
+          row.path === join(root, 'docs', 'ontology') &&
+          row.reason === 'ontology-evidence-skip: docs/ontology resolves outside repository root',
+      ),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+    rmSync(outside, { recursive: true, force: true });
+  }
+});
+
+test('existing ontology evidence reads a normal nested vault unchanged', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'workbench' }));
+    mkdirSync(join(r, 'docs/ontology/domains/billing'), { recursive: true });
+    writeFileSync(join(r, 'docs/ontology/domains/operations.md'), ontologyDomainDoc('Operations'));
+    writeFileSync(join(r, 'docs/ontology/domains/billing/ledger.md'), ontologyDomainDoc('Ledger'));
+    writeFileSync(join(r, 'docs/ontology/domains/billing/notes.txt'), 'Not an ontology node.\n');
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+
+    assert.deepEqual(result.meaningGate.businessOntology.domains, [
+      'domains/billing/ledger',
+      'domains/operations',
+    ]);
+    assert.deepEqual(result.meaningGate.businessOntology.evidence, [
+      { slug: 'domains/billing/ledger', kind: 'domain', source: 'docs/ontology/domains/billing/ledger.md' },
+      { slug: 'domains/operations', kind: 'domain', source: 'docs/ontology/domains/operations.md' },
+    ]);
+    assert.deepEqual(result.skipped.filter((row) => row.reason.startsWith('ontology-')), []);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('existing ontology evidence stops at the Markdown file walk budget and records it', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'workbench' }));
+    mkdirSync(join(r, 'docs/ontology/notes'), { recursive: true });
+    mkdirSync(join(r, 'docs/ontology/zz-domains'), { recursive: true });
+    for (let index = 0; index < 8000; index += 1) {
+      writeFileSync(join(r, 'docs/ontology/notes', `note-${String(index).padStart(4, '0')}.md`), '');
+    }
+    writeFileSync(join(r, 'docs/ontology/zz-domains/late.md'), ontologyDomainDoc('Late'));
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+
+    assert.deepEqual(result.meaningGate.businessOntology.domains, []);
+    assert.ok(
+      result.skipped.some(
+        (row) =>
+          row.path === join(root, 'docs', 'ontology') &&
+          row.reason === 'ontology-evidence-skip: docs/ontology reached 8000 Markdown file walk budget',
+      ),
+    );
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
