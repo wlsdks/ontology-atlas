@@ -40,3 +40,71 @@ describe('tauri ACP 권한 판정 브리지', () => {
     });
   });
 });
+
+describe('runtime login checks are shared between screens', () => {
+  async function freshBridge() {
+    vi.resetModules();
+    mocks.isTauri.mockReturnValue(true);
+    return import('./tauri-acp');
+  }
+  const loginChecks = () =>
+    mocks.invoke.mock.calls.filter(([command, args]) => command === 'acp_detect_runtimes' && args?.probeLogin).length;
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('sends one login check for any number of screens asking at once', async () => {
+    mocks.invoke.mockResolvedValue([]);
+    const { detectAcpRuntimes } = await freshBridge();
+
+    await Promise.all(Array.from({ length: 5 }, () => detectAcpRuntimes({ probeLogin: true })));
+
+    expect(loginChecks()).toBe(1);
+  });
+
+  it('reuses the answer for a minute and then asks again', async () => {
+    vi.useFakeTimers();
+    mocks.invoke.mockResolvedValue([]);
+    const { detectAcpRuntimes } = await freshBridge();
+
+    await detectAcpRuntimes({ probeLogin: true });
+    vi.advanceTimersByTime(59_000);
+    await detectAcpRuntimes({ probeLogin: true });
+    expect(loginChecks()).toBe(1);
+
+    vi.advanceTimersByTime(2_000);
+    await detectAcpRuntimes({ probeLogin: true });
+    expect(loginChecks()).toBe(2);
+  });
+
+  it('asks again at once when a person presses re-check', async () => {
+    mocks.invoke.mockResolvedValue([]);
+    const { detectAcpRuntimes } = await freshBridge();
+
+    await detectAcpRuntimes({ probeLogin: true });
+    await detectAcpRuntimes({ probeLogin: true, force: true });
+
+    expect(loginChecks()).toBe(2);
+  });
+
+  it('does not keep a failed check for the next screen', async () => {
+    mocks.invoke.mockRejectedValueOnce(new Error('bridge busy')).mockResolvedValue([]);
+    const { detectAcpRuntimes } = await freshBridge();
+
+    await expect(detectAcpRuntimes({ probeLogin: true })).rejects.toThrow('bridge busy');
+    await detectAcpRuntimes({ probeLogin: true });
+
+    expect(loginChecks()).toBe(2);
+  });
+
+  it('leaves the disk-only pass unshared, since it launches nothing', async () => {
+    mocks.invoke.mockResolvedValue([]);
+    const { detectAcpRuntimes } = await freshBridge();
+
+    await Promise.all([detectAcpRuntimes(), detectAcpRuntimes()]);
+
+    expect(mocks.invoke).toHaveBeenCalledTimes(2);
+    expect(loginChecks()).toBe(0);
+  });
+});

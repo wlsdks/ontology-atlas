@@ -108,22 +108,35 @@ export interface AcpRuntimeStatus {
   isolated: boolean;
 }
 
+/** One `claude auth status` launch measured 88 MB; answers are reused this long. */
+const LOGIN_CHECK_REUSE_MS = 60_000;
+let lastLoginCheck: { startedAt: number; answer: Promise<AcpRuntimeStatus[]> } | null = null;
+
 /**
  * Runtime status on this machine.
  *
  * With `probeLogin` on, each CLI is actually launched to check login state. That is the
  * only slow part of this call (measured: claude 300ms, codex 45ms), so it is off by
- * default — the screen **paints first and corrects later** (owner, 2026-08-16:
- * *"Let it load first and update after."*, let it load first and update after).
+ * default — the screen **paints first and corrects later**.
+ *
+ * Login checks are shared: one in flight, reused for `LOGIN_CHECK_REUSE_MS`; `force` re-asks.
  */
 export async function detectAcpRuntimes(
-  options?: { probeLogin?: boolean },
+  options?: { probeLogin?: boolean; force?: boolean },
 ): Promise<AcpRuntimeStatus[] | null> {
   const invoke = getInvoke();
   if (!invoke) return null;
-  return invoke<AcpRuntimeStatus[]>('acp_detect_runtimes', {
-    probeLogin: options?.probeLogin ?? false,
+  if (!options?.probeLogin) return invoke<AcpRuntimeStatus[]>('acp_detect_runtimes', { probeLogin: false });
+  const now = Date.now();
+  if (!options.force && lastLoginCheck && now - lastLoginCheck.startedAt < LOGIN_CHECK_REUSE_MS) {
+    return lastLoginCheck.answer;
+  }
+  const check = { startedAt: now, answer: invoke<AcpRuntimeStatus[]>('acp_detect_runtimes', { probeLogin: true }) };
+  lastLoginCheck = check;
+  check.answer.catch(() => {
+    if (lastLoginCheck === check) lastLoginCheck = null;
   });
+  return check.answer;
 }
 
 export async function startAcpSession(

@@ -620,7 +620,7 @@ describe('실행기 목록 — 먼저 그리고 나중에 고친다', () => {
 
     fireEvent.click(screen.getByTestId('app-settings-runtimes-recheck'));
     await waitFor(() => expect(bridge.detect).toHaveBeenCalled());
-    expect(bridge.detect.mock.calls[0][0]?.probeLogin).toBe(true);
+    expect(bridge.detect.mock.calls[0][0]).toEqual({ probeLogin: true, force: true });
   });
 
   /*

@@ -160,7 +160,7 @@ export function AcpRuntimeSettings({
   const refresh = useCallback(async () => {
     setChecking(true);
     try {
-      setRuntimes(await detectAcpRuntimes({ probeLogin: true }));
+      setRuntimes(await detectAcpRuntimes({ probeLogin: true, force: true }));
     } finally {
       setChecking(false);
     }
