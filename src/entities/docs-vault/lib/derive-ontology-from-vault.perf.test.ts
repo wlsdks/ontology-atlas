@@ -3,17 +3,8 @@ import { deriveOntologyFromVault } from './derive-ontology-from-vault';
 import type { VaultDoc, VaultManifest } from '../model/types';
 
 /**
- * Performance regression guard for the live-update hot path.
- *
- * `deriveOntologyFromVault` re-runs in **full** every time the vault changes
- * (agent edit → watcher → refresh) so the topology can be redrawn. How long it
- * takes on a large vault decides whether watching the map live stutters.
- *
- * This pins the baseline for the *full rebuild* cost. Making it incremental is the
- * work this measurement exists to judge.
- *
- * jsdom absolute numbers differ from a real browser but are adequate for detecting
- * regression; the threshold is lenient to absorb environment noise.
+ * Guards the full-derive cost on the live-update path (every vault change reruns it). jsdom
+ * numbers differ from a browser, so the threshold is lenient.
  */
 
 function makeDoc(slug: string, frontmatter: Record<string, unknown>): VaultDoc {
@@ -32,11 +23,7 @@ function makeDoc(slug: string, frontmatter: Record<string, unknown>): VaultDoc {
   };
 }
 
-/**
- * project 1 + D domains + C capabilities per domain + E elements per capability.
- * Capabilities carry domain / elements / dependencies / relates frontmatter so the
- * edge build (and stub creation) is realistically exercised.
- */
+/** One project, D domains, C capabilities per domain and E elements per capability, with cross edges. */
 function buildLargeManifest(domainCount: number, capPerDomain: number, elemPerCap: number): {
   manifest: VaultManifest;
   docCount: number;
@@ -55,7 +42,7 @@ function buildLargeManifest(domainCount: number, capPerDomain: number, elemPerCa
         elements.push(elemSlug);
         docs.push(makeDoc(elemSlug, { kind: 'element', domain }));
       }
-      // Dependency and relates onto the neighbouring capability — exercises cross edges.
+      // Dependencies and relates onto the neighbouring capability.
       const nextCap = `capabilities/${domain}-c${(c + 1) % capPerDomain}`;
       docs.push(
         makeDoc(`capabilities/${capName}`, {
@@ -82,7 +69,7 @@ function buildLargeManifest(domainCount: number, capPerDomain: number, elemPerCa
 }
 
 describe('deriveOntologyFromVault — live-update perf baseline', () => {
-  it('대형 vault(~600 노드) derive 가 2500ms 안에 (회귀 sanity)', () => {
+  it('derives a ~600-node vault within 2500ms', () => {
     const { manifest, docCount } = buildLargeManifest(10, 10, 5);
     expect(docCount).toBeGreaterThan(600);
 
@@ -90,8 +77,7 @@ describe('deriveOntologyFromVault — live-update perf baseline', () => {
     const result = deriveOntologyFromVault(manifest);
     const elapsed = performance.now() - t0;
 
-    // Sanity that derivation actually built a graph. With every ref resolving to a real
-    // doc, node count equals doc count (no extra stubs); a missing ref makes it larger.
+    // Every ref resolves, so nodes ≥ docs; a missing ref only adds stubs.
     expect(result.nodes.length).toBeGreaterThanOrEqual(docCount);
     expect(result.edges.length).toBeGreaterThan(0);
 
@@ -100,10 +86,8 @@ describe('deriveOntologyFromVault — live-update perf baseline', () => {
     );
 
     /*
-     * A product budget with headroom, printed above so it stays auditable. Measured
-     * 2026-09-12: **7.6 ms** for 611 docs, so 2,500 ms is roughly 300x headroom. Nothing
-     * a slow or loaded runner does reaches that; what reaches it is the derive hot path
-     * going quadratic (`.claude/rules/testing.md`, "The timing rule").
+     * measurement window: 7.6 ms for 611 docs (2026-09-12), so 2,500 ms is ~300x headroom; only a
+     * quadratic regression reaches it (`.claude/rules/testing.md`, "The timing rule").
      */
     expect(elapsed).toBeLessThan(2500);
   });

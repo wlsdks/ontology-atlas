@@ -4,16 +4,7 @@ import {
   restoreVaultSourceShape,
 } from '@/shared/lib/parse-frontmatter';
 
-/**
- * Patches frontmatter keys in place, preserving everything else — body, comments,
- * and key order.
- *
- * **Why this lives in `entities`**: two paths write to the vault — a person
- * editing a local vault (`docs-vault-local`) and applying an agent's proposal
- * (`vault-agent`). Two rules writing one file means two formats in the git diff
- * and bugs that only manifest on one of the paths. FSD forbids feature→feature
- * imports, so the shared rule moves one layer down.
- */
+/** Patches frontmatter keys in place, keeping body, comments and key order; shared by local edits and agent proposals. */
 
 export type FrontmatterUpdateValue =
   | string
@@ -27,11 +18,7 @@ export function applyFrontmatterUpdates(
   source: string,
   updates: Record<string, FrontmatterUpdateValue>,
 ): string {
-  // BOM and CRLF sources are read by the same rule and restored to their original
-  // shape on save (same contract as `replaceVaultBody`). Without CRLF
-  // normalization a `\r` stays at the end of the key line, `key in updates` misses,
-  // and **a duplicate key is appended** instead of updated. With a BOM the
-  // frontmatter block is not found at all and everything is rewritten.
+  // BOM and CRLF are normalized and restored, or a `\r` key would be appended as a duplicate.
   const shape = readVaultSourceShape(source);
   const raw = normalizeVaultSource(source);
   let fmLines: string[] = [];
@@ -40,28 +27,17 @@ export function applyFrontmatterUpdates(
     const end = raw.indexOf('\n---', 3);
     if (end !== -1) {
       fmLines = raw.slice(4, end).split('\n');
-      // Strip every leading newline: the serializer re-adds `---\n...\n---\n\n`,
-      // so the body must start without one or the separator doubles.
+      // The serializer re-adds the separator, so leading newlines are stripped.
       body = raw.slice(end + 4).replace(/^(\r?\n)+/, '');
     }
   }
   const updatedKeys = new Set<string>();
   const nextLines: string[] = [];
-  // Are we swallowing the leftover block-style lines (`  - item`) of a key we just
-  // replaced or deleted? YAML writes the same array inline (`key: [a, b]`) or as a
-  // block (`key:` + `  - a`), and this function replaces only the key line — so a
-  // block-style key left its old item lines sitting under the new inline value.
-  // Our parser ignores them, so the screen looked fine while the file on disk no
-  // longer read as standard YAML and the git diff carried ghost lines. In a product
-  // where the vault is the source of truth that is a defect. The starter writes
-  // block style (`capabilities:` + `  - …`), so this reproduces on the first-user
-  // path (confirmed by walkthrough, 2026-07-26).
+  // A replaced or deleted key's block-style item lines (`  - a`) are dropped with it.
   let swallowingBlock = false;
   for (const line of fmLines) {
-    // An indented line belongs to the preceding key's block value — drop it with the key.
     if (/^\s+\S/.test(line)) {
-      // A retained key keeps its block value. This also stops `  child: 1` being
-      // mistaken for a top-level key and replaced.
+      // A retained key keeps its block, and `  child: 1` is never taken for a top-level key.
       if (!swallowingBlock) nextLines.push(line);
       continue;
     }
@@ -87,7 +63,7 @@ export function applyFrontmatterUpdates(
     if (value === null) continue;
     nextLines.push(`${key}: ${serializeFrontmatterValue(value)}`);
   }
-  // No keys left — omit the frontmatter section entirely.
+  // No keys left: omit the frontmatter block.
   if (nextLines.every((l) => l.trim() === '')) {
     return restoreVaultSourceShape(body, shape);
   }
@@ -106,8 +82,7 @@ function serializeFrontmatterValue(
   if (typeof v === 'boolean') return v ? 'true' : 'false';
   if (typeof v === 'number') return String(v);
   if (typeof v === 'object') {
-    // Inline one-level object — `{ x: 100, y: 200 }`. `parseFrontmatter` round-trips
-    // this same form (parser.test.mjs 'inline object' case).
+    // Inline one-level object, the form `parseFrontmatter` round-trips.
     const entries = Object.entries(v).map(([k, val]) => {
       let serialized: string;
       if (typeof val === 'boolean') serialized = val ? 'true' : 'false';
@@ -121,29 +96,16 @@ function serializeFrontmatterValue(
 }
 
 /*
- * Does this value need quoting — **four places must agree on the answer.**
- *
- * Reviewed and reproduced 2026-08-16: newline was missing from the rule. That one
- * character destroys the whole frontmatter block — `note\nkind: element` **changes
- * the node's kind**, and `note\n---\nx: 1` ends the frontmatter there, dropping the
- * remaining keys into the body. Silently, with no warning.
- *
- * Quoting alone does not help once the line is already broken, so the writer
- * escapes to `\n` and the reader restores it (`unquote`).
- *
- * The single quote joined the rule too: `unquote` strips unmatched quotes from both
- * ends, so an unquoted value like `'map'` reads back as `map`.
+ * Newline and quote characters force quoting, and newlines are escaped (`unquote` restores
+ * them), or a value could inject keys. Four writers must agree on this rule.
  */
 function needsQuote(s: string): boolean {
   if (/[:,#\[\]"'{}&|*!%@`\n\t]|^\s|\s$/.test(s)) return true;
-  // A string the reader would re-type — 'true', 'false', or a number-like
-  // value ('2026') — must be quoted, or it comes back as a boolean/number and
-  // every consumer gating on typeof string silently drops it after one round
-  // trip (bug sweep 2026-09-01). Quoting is how an author forces text.
+  // Boolean- and number-shaped strings are quoted, or they read back retyped.
   return s === 'true' || s === 'false' || (s !== '' && !Number.isNaN(Number(s)));
 }
 
-/** Makes a value safe inside quotes — newlines fold to `\n`. */
+/** Folds newlines to the two-character `\n` escape. */
 function escapeQuoted(s: string): string {
   return s
     .replace(/\\/g, '\\\\')

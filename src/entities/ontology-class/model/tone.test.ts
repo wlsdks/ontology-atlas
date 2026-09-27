@@ -76,8 +76,7 @@ describe("ontology kind visual tone contract", () => {
   });
 
   it("keeps UI chips quiet enough to avoid decorative color blocks", () => {
-    // The DOM table references tokens; the alpha behind each step is read off the paint copy
-    // here and off `app/globals.css` in `kind-tone-mirror.contract.test.ts`.
+    // Alphas are read off the paint copy here and off `app/globals.css` in `kind-tone-mirror.contract.test.ts`.
     for (const kind of ONTOLOGY_VISUAL_KINDS) {
       expect(rgbaAlpha(ONTOLOGY_KIND_PAINT[kind].chipBg)).toBeLessThanOrEqual(0.12);
       expect(getOntologyKindTone(kind).chipBorder).toBe(`var(--color-kind-${kind}-chip-border)`);

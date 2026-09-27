@@ -4,13 +4,7 @@ const ARCHITECTURE_PROFILE_CONTRACT = 'architecture-profile/v1' as const;
 
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const ROLE_ID = /^[a-z][a-z0-9-]*$/;
-/*
- * A locale is recognised by shape, never by the application's list of locales. A profile is a
- * vault file that outlives whichever locales this build happens to ship, so `summary_views_fr`
- * has to parse the same way in a build that has no French screen: as a French sentence nobody
- * asks for yet, not as a role called `views_fr`. Two letters is the whole rule, which is why
- * `summary_views_kor` falls back to the role-id reading and is refused as an unknown role.
- */
+/* Locales are recognised by shape, not this build's locale list: profiles outlive the build. */
 const SUMMARY_LOCALE = /^[a-z]{2}$/;
 const DEPENDENCY_USAGE_VALUES = ['value', 'type_only'] as const;
 
@@ -22,25 +16,11 @@ interface ArchitecturePattern {
 interface ArchitectureRole {
   id: string;
   paths: string[];
-  /**
-   * One sentence saying what this role is for, written by the person who reviewed the profile.
-   *
-   * **Why the contract carries it instead of the screen.** A role id is a folder name, and a folder
-   * name is exactly what decision (2026-08-26) forbids reading intent from: `role_widgets` does not
-   * say what a widget is any more than the directory does. Without this field the blueprint could
-   * only ever show `widgets · src/widgets/**`, which asks the reader to already know the answer —
-   * and the agent handoff packet passed the same bare id along. Optional, because a profile written
-   * before this field existed stays valid and simply says nothing.
-   */
+  /** What this role is for, in a reviewer's sentence; a role id is a folder name and states no intent. */
   summary?: string;
   /**
-   * The same sentence in other languages, keyed by the locale in `summary_<id>_<locale>`.
-   *
-   * Separate from `summary` on purpose. `summary` stays the canonical sentence a person reviewed
-   * and the only one an agent brief, a prompt, or the CLI ever prints, so a translation can never
-   * become the fact a machine reasons from. Only the web workbench reads this map, and only to
-   * choose what the reader in front of it can read; where the map has no entry for the active
-   * locale the canonical sentence is shown, never a blank.
+   * Translations of `summary` by locale, read only by the web workbench; agents, prompts and the
+   * CLI print only the canonical `summary`.
    */
   summaries: Record<string, string>;
 }
@@ -80,13 +60,7 @@ interface ArchitectureAgentReceiptContext {
   unruledEdges: number | null;
 }
 
-/**
- * The tasks a workbench may hand an agent about an existing profile. `improve` finds where the
- * reviewed intent and the observed source disagree and asks the person for the rule; it may not
- * propose one (the 2026-08-26 refusal that `buildArchitectureDraftPrompt` documents applies to a
- * proposal exactly as it applies to a draft — a rule derived from today's imports approves the
- * status quo, whichever button it arrives through).
- */
+/** `improve` asks the person for a rule where intent and source disagree; it never proposes one. */
 export type ArchitectureAgentTaskKind = 'change' | 'verify' | 'improve';
 
 interface ArchitectureAgentTaskContext {
@@ -156,14 +130,7 @@ export function parseArchitectureProfile(frontmatter: Record<string, unknown>): 
   if (!UUID_V4.test(uid)) throw new Error('profile_uid must be a lowercase UUIDv4.');
   if (!UUID_V4.test(projectUid)) throw new Error('project_uid must be a lowercase UUIDv4.');
 
-  /*
-   * ⚠️ **The retired key is refused by name, not aliased and not ignored.** Two councils
-   * independently cured the same false red — 18 type-only edges an eslint config already permitted
-   * — one with `type_only_dependencies: ruled|free` and one with `dependency_usages`, and the
-   * 2026-08-29 reconciliation kept the shipped encoding. An alias would carry two spellings of one
-   * policy through two parsers forever, for a key no profile ever wrote; ignoring it would flip
-   * that profile's verdict without a word, which is the silent change this ledger forbids.
-   */
+  /* The retired key is refused by name: an alias would keep two spellings forever, and ignoring it would flip a verdict silently. */
   if (frontmatter.type_only_dependencies !== undefined) {
     throw new Error(
       'type_only_dependencies was replaced by dependency_usages: write dependency_usages: [value] for the old free, or omit the key for the old ruled.',
@@ -171,12 +138,9 @@ export function parseArchitectureProfile(frontmatter: Record<string, unknown>): 
   }
 
   const rolePaths = new Map<string, string[]>();
-  /* `summary_<id>`, not `role_summary_<id>`: every `role_*` key is a path group, so the second
-     prefix would parse as a role called `summary_views`. Aspect first, role id last — the same
-     shape `allow_<id>` already uses. */
+  /* `summary_<id>`: a `role_summary_*` key would parse as a role path group. */
   const roleSummaries = new Map<string, string>();
-  /* Role id to locale to sentence, in the order the file wrote them, so both parsers report the
-     same first problem when a file carries several. */
+  /* In file order, so both parsers report the same first problem. */
   const localizedSummaries = new Map<string, Map<string, string>>();
   for (const [key, value] of Object.entries(frontmatter)) {
     if (key.startsWith('summary_')) {
@@ -206,18 +170,13 @@ export function parseArchitectureProfile(frontmatter: Record<string, unknown>): 
   if (roleOrder.length !== rolePaths.size || roleOrder.some((id) => !rolePaths.has(id))) {
     throw new Error('role_order must name every role exactly once.');
   }
-  /* Mirrors the MCP parser: a summary for a role nobody declared is a typo, not a comment. */
+  /* Mirrors the MCP parser: a summary for an undeclared role is a typo. */
   for (const summaryId of roleSummaries.keys()) {
     if (!rolePaths.has(summaryId)) {
       throw new Error(`summary_${summaryId} describes a role that does not exist.`);
     }
   }
-  /*
-   * A translation of nothing is refused too. `summary_views_ko` without `summary_views` would put
-   * a sentence on the Korean screen that the English screen, every agent brief and the CLI cannot
-   * show, so the same role would be explained on one surface and silent on the others. The
-   * canonical sentence is the one a person reviewed; a locale line may only restate it.
-   */
+  /* A translation needs its canonical `summary`, or one surface would explain a role the others cannot. */
   for (const [summaryId, byLocale] of localizedSummaries) {
     for (const locale of byLocale.keys()) {
       const key = `summary_${summaryId}_${locale}`;
@@ -272,24 +231,11 @@ export function parseArchitectureProfile(frontmatter: Record<string, unknown>): 
 }
 
 /**
- * ⚠️ **A collision has to say which two documents collided.**
- *
- * Measured 2026-08-26: `atlas architecture .` at this repository's root died with
- * `Duplicate architecture profile slug: atlas-web.` and nothing else. The cause was the
- * repository's own generated mirror — `pnpm docs-vault:build` copies the vault into
- * `public/docs-vault/`, so one profile was found twice. The message named neither document, so
- * the only way to learn that was to grep for the slug.
- *
- * Two collisions are not the same thing, and conflating them is what made the message useless:
- * identical `profile_uid` with identical frontmatter is **one record reached twice** and there is
- * nothing for a person to resolve, while a disagreement is a real conflict that must still fail
- * closed — now naming both documents, because "which two?" is the whole question.
- *
- * `mcp/src/architecture-profile.mjs` carries the same behaviour; the parity contract keeps them
- * from drifting.
+ * Identical `profile_uid` and frontmatter is one record reached twice (e.g. a generated mirror);
+ * any other collision fails naming both documents. Mirrored in `mcp/src/architecture-profile.mjs`.
  */
 function profileFingerprint(frontmatter: Record<string, unknown>): string {
-  // Key order must not decide identity: two mirrors of one file can serialise differently.
+  // Key order must not decide identity.
   return JSON.stringify(
     Object.fromEntries(Object.entries(frontmatter).sort(([left], [right]) => (left < right ? -1 : 1))),
   );
@@ -302,19 +248,8 @@ export interface ArchitectureProfileProblem {
 }
 
 /**
- * ⚠️ **One unreadable document must not take the route down with it.**
- *
- * Measured 2026-09-03: `deriveArchitectureProfiles` threw for the whole vault as soon as any one
- * document failed to parse, and `/architecture` calls it from a render-phase `useMemo`, so a
- * single unknown key in a single profile replaced every profile in the folder with an error
- * boundary. A person who added one line to one file lost the screen that would have told them
- * which line. The parse stays exactly as strict per document — a bad profile is still not shown —
- * but the failure is now a named report beside the profiles that did load.
- *
- * The duplicate-slug collision reports the same way and carries the wording `mcp` throws, because
- * the question a person has ("which two documents?") is the same on both surfaces. The MCP and
- * CLI keep throwing: an agent reading a half-scanned vault must not mistake it for a whole one,
- * while a person looking at the screen can see both the notice and what did load.
+ * An unreadable profile becomes a named problem beside the ones that loaded instead of failing
+ * the route. MCP and CLI keep throwing so an agent never mistakes a partial scan for a whole one.
  */
 export function deriveArchitectureProfilesReport(
   docs: ReadonlyArray<{ slug: string; frontmatter: Record<string, unknown> }>,
@@ -382,13 +317,7 @@ export function buildArchitectureAgentPrompt(
     ? `CLI fallback: node ${shellArg(cliEntry)} architecture ${shellArg(sourceRoot)} --vault ${shellArg(vaultRoot)} --profile ${shellArg(profile.slug)} --json`
     : 'CLI fallback unavailable from this surface: Atlas could not verify absolute source, vault, and Atlas CLI entry paths. Use the connected MCP tool or open the source checkout that carries cli/src/index.mjs.';
 
-  /*
-   * The visible workbench state is part of the task, not decoration around it. Before this packet
-   * existed, pressing Verify while a role was selected produced the same generic change prompt as
-   * pressing Change with nothing selected. The agent then had to rediscover the exact state the
-   * person had already judged, and a stale sidecar receipt was mentioned only as prose. A small,
-   * typed packet makes the handoff inspectable without turning the receipt into current truth.
-   */
+  /* The typed packet carries the visible workbench state so the agent need not rediscover it. */
   const packet = {
     contract: 'architectureAgentTask:v1',
     kind: task.kind,
@@ -429,21 +358,8 @@ export function buildArchitectureAgentPrompt(
           'No persisted receipt is bound to this screen. Do not search the filesystem for one. Treat it as absent, report the fresh inspection, and state that `atlas architecture --record` would create the optional local receipt.',
         ];
 
-  /*
-   * ⚠️ **The readable sentence goes first, and the packet is not it.**
-   *
-   * `splitAppRequest` folds an app-composed request at the first line that opens with a known
-   * marker, and returns everything as lead when that line is index 0 — there is no readable half
-   * to stand on. The packet used to be line 1, so the panel drew the whole thing: a Korean
-   * interface got a bubble opening `{"contract":"architectureAgentTask:v1","kind":"verify"` with
-   * no wrap (the bubble is `break-keep`, which will not break a token that long) and ten English
-   * instruction sentences under it, with a "full request" disclosure below that folded almost
-   * nothing. Measured on the installed app 2026-09-09.
-   *
-   * Nothing is removed and nothing is reworded — the 2026-08-24 decision that a caller may send
-   * on somebody's behalf rests on the exact text landing in the transcript as their own turn.
-   * Only the order changes, so that the one line meant for a person is the one standing.
-   */
+  /* The readable sentence goes first: `splitAppRequest` folds at the first marker line, and text
+   * is only reordered, never changed, since it lands as the person's own turn. */
   return [
     `Start from the reviewed architecture profile ${profile.slug}.`,
     `Architecture task context: ${JSON.stringify(packet)}`,
@@ -458,40 +374,19 @@ export function buildArchitectureAgentPrompt(
 }
 
 /**
- * The sentence the architecture tab's empty state hands a connected agent.
- *
- * ⚠️ **Why a sentence and not a function call.** The standing 2026-08-24 decision behind
- * `first-run-starter`'s "make a map from my code" door settles this: the app never calls MCP —
- * that is the agents' surface — so a door that analysed the repository itself would create a
- * second canonical implementation of `analyze_repo_structure`, which `AGENTS.md` forbids. Handing
- * the work to the agent is not a workaround; it is the shape this product argues for.
- *
- * ⚠️ **What this sentence must refuse to ask for, and why each refusal was measured.**
- *
- * - **It may not ask for `allow_*`, `dependency_policy`, or `dependency_usages`.** Deriving rules
- *   from observed imports makes the status quo the rule. The source can prove that an edge exists
- *   and whether it is value or type-only usage; it cannot decide whether the reviewed policy
- *   permits that usage or direction. Omitting all three keys leaves every edge unruled, which the
- *   evaluator reports as `unknown` — and unknown is never compliant.
- * - **It may not ask the agent to name the pattern, or to name the roles.** The record's clause is
- *   "a pattern label is never inferred from folders". A role id is that claim in miniature:
- *   emitting `role_entities` or `role_adapters` from folder names is inferring Feature-Sliced
- *   Design or Hexagonal one identifier at a time, the ban routed around. Path-derived literal ids
- *   are an observation and carry no claim.
- * - **`patterns` cannot be left empty for the human to fill in later.** Both parsers require it
- *   non-empty, so a profile without it does not load at all. That constraint is the feature: the
- *   record cannot exist until a person has named the pattern, which makes approval structural
- *   rather than a dialog they click through.
- * - **`evidence` may not receive a generated edge list.** The same record's falsifier includes
- *   "if a profile becomes a second source of observed imports". Evidence points at the human
- *   authorities that already govern the boundary — a rules file, an architecture document.
+ * The empty state's request to a connected agent; the app never calls MCP itself, since analysing the
+ * repository here would be a second canonical `analyze_repo_structure`, which `AGENTS.md` forbids. It must not ask for
+ * `allow_*`, `dependency_policy`, `dependency_usages`, pattern or role names, or generated evidence:
+ * rules derived from imports approve the status quo, and `patterns` stays a person's decision.
+ * Why: `docs/DECISIONS.md` 2026-08-26, "The first architecture draft is proposed by an agent and named by a
+ * person"; role names: 2026-08-28, "A role may say what it is for, and the pattern axis is the stage's subject".
  */
 export function buildArchitectureDraftPrompt(
   context: ArchitectureHandoffContext | null = null,
 ): string {
   const sourceRoot = context?.sourceRoot ?? null;
   const vaultRoot = context?.vaultRoot ?? null;
-  // The absolute path when the desktop bridge knows it, and never an invented one.
+  // The desktop bridge's absolute path, or a description; never an invented path.
   const target = sourceRoot ?? 'the codebase this ontology folder describes';
   return [
     `Architecture task context: ${JSON.stringify({

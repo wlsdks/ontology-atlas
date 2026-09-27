@@ -399,8 +399,7 @@ export function formatAgentRunOrderPrompt(recipes: readonly AgentQueryRecipe[]):
       ? [
           "",
           "CLI fallback commands when the MCP connector is unavailable:",
-          // A visible placeholder nobody knows how to fill is honest and
-          // useless. Anywhere that emits the command carries this line with it.
+          // Every emitted `$ATLAS` command carries the hint for filling the placeholder.
           ATLAS_CLI_HINT_EN,
           ...cliCommands.map((command, index) => `${index + 1}. ${command}`),
         ]
@@ -690,8 +689,7 @@ export function formatAgentPlaybookPrompt(playbook: AgentInvestigationPlaybook):
       ? [
           "",
           "CLI fallback commands when the MCP connector is unavailable:",
-          // A visible placeholder nobody knows how to fill is honest and
-          // useless. Anywhere that emits the command carries this line with it.
+          // Every emitted `$ATLAS` command carries the hint for filling the placeholder.
           ATLAS_CLI_HINT_EN,
           ...cliCommands.map((command, index) => `${index + 1}. ${command}`),
         ]
@@ -776,8 +774,7 @@ export function formatAgentTraversalPacket(
       ? [
           "",
           "CLI fallback commands when the MCP connector is unavailable:",
-          // A visible placeholder nobody knows how to fill is honest and
-          // useless. Anywhere that emits the command carries this line with it.
+          // Every emitted `$ATLAS` command carries the hint for filling the placeholder.
           ATLAS_CLI_HINT_EN,
           ...cliCommands.map((command, index) => `${index + 1}. ${command}`),
         ]
@@ -813,8 +810,7 @@ export function formatAgentGraphDbQueryPackItemPrompt(
       ? [
           "",
           "CLI fallback commands when the MCP connector is unavailable:",
-          // A visible placeholder nobody knows how to fill is honest and
-          // useless. Anywhere that emits the command carries this line with it.
+          // Every emitted `$ATLAS` command carries the hint for filling the placeholder.
           ATLAS_CLI_HINT_EN,
           ...cliCommands.map((command, index) => `${index + 1}. ${command}`),
         ]
@@ -1567,12 +1563,7 @@ export function buildAgentWriteGuardrails(
   ];
 }
 
-/**
- * Pick concrete graph entrypoints an agent can use instead of stopping at
- * `<slug>` placeholders. Hubs are better first targets for `blast_radius`,
- * `path`, and `node_profile` because they usually expose real coupling faster
- * than leaf nodes.
- */
+/** Concrete hub entrypoints, which expose coupling faster than leaf nodes, instead of `<slug>` placeholders. */
 export function selectAgentQueryEntrypoints(
   nodes: readonly KnowledgeGraphNode[],
   edges: readonly KnowledgeGraphEdge[],
@@ -1634,13 +1625,7 @@ export function selectAgentProjectEntrypoint(
   return project ?? null;
 }
 
-/**
- * Curated graph-query entry points for AI agents.
- *
- * The MCP surface is intentionally broad; this keeps the first visible UI
- * bridge narrow and status-aware so users do not need to discover the 30+
- * `query_ontology` operations before getting useful graph answers.
- */
+/** A narrow, status-aware set of `query_ontology` recipes, so users need not learn 30+ operations first. */
 export function buildAgentQueryRecipes(
   status: AgentReadinessStatus,
   entrypoints: readonly AgentQueryEntrypoint[] = [],

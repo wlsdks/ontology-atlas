@@ -25,8 +25,7 @@ export type {
 export type {
   ProjectImpactMode,
 } from "./model";
-// The cloud entity api was removed permanently, consistent with the vault frontmatter
-// being the source of truth. A future cloud-collaboration stage would add a new api/ folder.
+// No api/ folder: vault frontmatter is the source of truth.
 export {
   getProjectEditHref,
   getProjectRuntimeDetailHref,

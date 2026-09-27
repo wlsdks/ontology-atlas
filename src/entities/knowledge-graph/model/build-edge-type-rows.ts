@@ -7,14 +7,7 @@ export interface EdgeTypeRow {
 
 const KNOWN_EDGE_TYPE_SET: ReadonlySet<string> = new Set(KNOWLEDGE_EDGE_TYPES);
 
-/**
- * Edge-type distribution → bar rows. Canonical types (`KNOWLEDGE_EDGE_TYPES`) come
- * first in their declared order, foreign types after in input order. Zero-count rows
- * are dropped.
- *
- * Feeds the edge-type panel on /ontology/insights; any new surface reuses this helper
- * so the shape stays single-sourced.
- */
+/** Bar rows: canonical types in declared order, then foreign types in input order; zero counts dropped. */
 export function buildEdgeTypeRows(
   typeDist: ReadonlyMap<string, number>,
 ): EdgeTypeRow[] {

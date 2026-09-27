@@ -1,17 +1,8 @@
 import { isNotFoundError, VAULT_SIDECAR_DIR } from '@/shared/lib/vault-sidecar';
 
 /**
- * `.ontology-atlas/rounds-ledger.jsonl` — one line per pass, and one per gap.
- *
- * The ledger is what the morning card and the time axis draw. It records what the app itself
- * witnessed: which round ran, when, what it checked, what went stale, what it wrote, and what it
- * refused. It holds no page text and no tool output, the same rule `acp-work.jsonl` keeps.
- * Page writes still reach `wiki/_log.md` through the Compile path; this file is the process, that
- * file is the wiki.
- *
- * `asleep` is an entry, not an absence: a person reading a gap in the axis must be able to tell
- * "the Mac was asleep" from "the round was paused" from "the app was not open", and only the
- * first two are things the app can know at the next tick.
+ * `.ontology-atlas/rounds-ledger.jsonl`: one line per pass or gap, with no page text or tool
+ * output. `asleep` is an entry so a sleeping Mac is told apart from a paused round.
  */
 
 const ROUNDS_LEDGER_FILE = 'rounds-ledger.jsonl';
@@ -36,47 +27,28 @@ export interface RoundPassEntry {
   startedAt: string;
   endedAt: string;
   outcome: RoundPassOutcome;
-  /** How many pages the pass looked at. */
   checked: number;
-  /** Page slugs whose source changed under them. */
+  /** Pages whose source changed under them. */
   stale: string[];
-  /** Vault-relative paths written by the pass (sources and pages). */
+  /** Paths written by the pass. */
   written: string[];
   /** Tool names or paths the standing scope refused. */
   refused: string[];
-  /** Connector and vault tools the pass called, so a person sees exactly what it reached. */
+  /** Tools the pass called. */
   called: string[];
-  /**
-   * The short labels of the places this pass looked at ("slack · #release-room",
-   * "sources/planning"), so the morning card says *where* and not only *what*. Absent on
-   * entries written before 2026-09-21, which read as they always did.
-   */
+  /** Place labels, absent on older entries. */
   places?: string[];
   agentTurns: 0 | 1;
-  /** One sentence for the axis, in the locale the pass ran under. */
+  /** In the locale the pass ran under. */
   summary: string;
-  /** Manual "Run now" versus the clock. */
   trigger: 'clock' | 'manual' | 'catch-up';
-  /**
-   * Why the pass did less than the round asked. `no-agent`: a redraft or a service pass
-   * was due but no guarded coding agent was ready on this Mac, so nothing was written.
-   * Measured 2026-09-17: without this the ledger said "stale" and the person could not
-   * tell a skipped redraft from a round that never asked for one. `stopped`: the round was
-   * removed or paused while its pass was in flight, so the pass was cut short on purpose —
-   * without it a person reads "did not finish" and goes looking for a fault that is their own
-   * press.
-   */
+  /** `no-agent`: no guarded agent was ready, so nothing was written; `stopped`: removed or paused mid-pass. */
   note?: 'no-agent' | 'stopped';
 }
 
 const OUTCOMES: readonly RoundPassOutcome[] = ['held', 'reviewed', 'stale', 'redrafted', 'refused', 'failed', 'asleep'];
 
-/**
- * Builds through 2026-09-25 stored this sentence as the summary of every ontology pass that came
- * back without answer text — failed and no-agent passes included, in English on every locale.
- * It is Atlas's own filler, never the agent's words, so it reads as no summary and the screen
- * says what happened from `outcome` and `note` instead. The file keeps the line as written.
- */
+/** Filler older builds stored as a summary; read as no summary. */
 const LEGACY_ONTOLOGY_FILLER = 'Read-only refinement review completed.';
 
 function stringList(value: unknown): string[] {
@@ -121,7 +93,7 @@ export function parseRoundPassEntry(line: string): RoundPassEntry | null {
   return entry;
 }
 
-/** Oldest first, as the file holds them. Unreadable lines are skipped, never fatal. */
+/** Oldest first; unreadable lines are skipped. */
 export function parseRoundLedger(text: string | null): RoundPassEntry[] {
   if (!text) return [];
   const entries: RoundPassEntry[] = [];

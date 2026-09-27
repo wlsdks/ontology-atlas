@@ -10,9 +10,9 @@ export interface LibraryCollectionFolder {
   name: string;
   parentId: string | null;
   order: number;
-  /** Optional presentation metadata keeps existing generic collection folders compatible. */
+  /** Optional, so generic collection folders stay compatible. */
   presentation?: 'constellation';
-  /** A person's stated reason for collecting this scope. Absence remains unknown. */
+  /** The person's reason for collecting; absence means unknown. */
   purpose?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -107,11 +107,8 @@ function validate(value: unknown): LibraryCollections {
 }
 
 export function parseLibraryCollections(raw: string | null): LibraryCollectionsParseResult {
-  // A zero-byte or whitespace-only file holds no collection to lose: it is what an interrupted
-  // first save or a `create: true` file handle leaves behind. Reading it as corrupt locked the
-  // person out of saving anything (the create action waits for a readable file), so it is the
-  // same empty state as an absent file. The exact bytes still travel in the snapshot, so the
-  // next save compares against them and cannot overwrite a concurrent writer.
+  // An empty file (an interrupted first save) is the missing state, or the person could never save;
+  // its exact bytes still travel so the next save cannot overwrite a concurrent writer.
   if (raw === null || raw.trim() === '') return { status: 'missing', value: emptyLibraryCollections() };
   if (new TextEncoder().encode(raw).byteLength > LIBRARY_COLLECTIONS_MAX_BYTES) return { status: 'corrupt', raw, reason: 'The collection file exceeds the 1 MiB limit.' };
   let parsed: unknown;

@@ -4,43 +4,16 @@ import { humanizeCodePathTitle } from '@/shared/lib/humanize-code-path-title';
 import type { VaultDoc, VaultManifest } from '../model/types';
 
 /**
- * Turns the frontmatter of a local vault into ontology stubs directly — no AI
- * extraction step. The vault's frontmatter is the source of truth, so there is
- * no promote/approve stage: what this returns surfaces as the graph.
- *
- * Frontmatter keys read here:
- * - `kind` — project / domain / capability / element / document
- * - `title` — falls back to the first heading, then the last slug segment
- * - `domain` (string) — the doc hangs under that domain
- * - `domains` (string[]) — the doc is the parent; typically a project listing
- *   the domains it contains. Note the direction is the reverse of `domain`
- * - `capabilities`, `elements` (string[]) — child nodes
- * - `relates` (string[]) — related_to
- * - `dependencies` / `depends_on` (string[]) — depends_on
- * - `contains` (string[]) — contains, the key CLI/MCP `add_relation` writes
- * - `describes` (string[]) — describes
- * - `broader` (string[]) — is_a (SKOS skos:broader)
+ * Derives ontology stubs straight from vault frontmatter, which is the source of truth. Relation
+ * keys: `domain`, `domains` (reverse direction), `capabilities`, `elements`, `relates`,
+ * `dependencies`/`depends_on`, `contains`, `describes`, `broader` (is_a).
  */
 
 type OntologyStubSource = 'frontmatter';
 
 /**
- * Index from a frontmatter reference string to an already-registered document
- * node id.
- *
- * Measured 2026-07-26: the compiler (`mcp/src/ontology-compiler.mjs`) registers
- * each document under three aliases (full doc slug, last segment, frontmatter
- * `slug:`) and matches references against them. The web derivation had no alias
- * table and slugified every reference instead, so **seven documents that
- * declared a code path via `slug:` failed to match their own references and
- * spawned ghost twins** — the map drew one concept as a node with a document
- * and a second node without one, and the copy a user was more likely to click
- * (the one born from the reference) had no document behind it.
- *
- * Two places answering "is this reference an existing document?" will always
- * diverge, so the web uses the compiler's alias rules verbatim. When one alias
- * claims two documents (the compiler's `ambiguous-alias`) it is dropped rather
- * than guessed.
+ * Reference → document node id by the compiler's aliases (`mcp/src/ontology-compiler.mjs`):
+ * full slug, last segment, frontmatter `slug:`. An alias claimed twice is dropped, never guessed.
  */
 type DocAliasIndex = ReadonlyMap<string, string>;
 
@@ -48,54 +21,23 @@ interface OntologyStubNode {
   /** `<kind>:<slug>`, or `unknown:<slug>` as a fallback. */
   id: string;
   title: string;
-  /**
-   * Short title for display, from `deriveDisplayTitle` (frontmatter `display:`
-   * wins, otherwise the parenthetical tail of `title` is cut). Search and
-   * matching still run against the full `title` — this field is render-only and
-   * must never narrow what can be found.
-   */
+  /** Render-only short title from `deriveDisplayTitle`; search still matches the full `title`. */
   display: string;
-  /**
-   * Per-locale display names (owner instruction, 2026-07-24) — every
-   * `display_<locale>` frontmatter key, collected verbatim. Choosing which one
-   * to show belongs to the render boundary (`derivationToInsight`): derivation
-   * itself is locale-blind, because it is cached at module load.
-   */
+  /** Every `display_<locale>` key verbatim; the render boundary picks one, since derivation is cached. */
   displayLocales?: Readonly<Record<string, string>>;
   kind: string;
-  /** The vault document (slug) this came from — the start of the evidence chain. */
+  /** The vault document this came from. */
   sourceSlug: string;
   /**
-   * Whether this node has **its own `.md` document**. `sourceSlug` cannot answer
-   * that: a document node (pass 1) carries its own slug, while a node that was
-   * only named by a relation (pass 2) carries the slug of *whichever other
-   * document cited it*. A surface that renders "open this node's document" from
-   * `sourceSlug` alone therefore opens someone else's document.
-   *
-   * `true` = a real document with `kind:` in its frontmatter. `false` = named
-   * only from a relation key and not written yet.
+   * Whether the node has its own `.md`. A relation-only node's `sourceSlug` is the citing
+   * document's, so it cannot answer this.
    */
   hasOwnDocument: boolean;
-  /**
-   * Who wrote this node — `human` or `agent:<name>`, the value convention from
-   * the 2026-07-31 ledger entry (`mcp/src/schema.mjs`).
-   *
-   * **Absence is unknown, not a defect.** No path defaults a missing value to
-   * `human`: inferring "no record, therefore a person" would invent a provenance
-   * that does not exist. Hence optional, and screens draw the reviewed marker
-   * only when the value is exactly `human`.
-   */
+  /** `human` or `agent:<name>`; absence means unknown, never `human`. */
   createdBy?: string;
   /**
-   * For a node with no document of its own, the reference string **as actually
-   * written in the vault** — e.g. `src/entities/docs-vault/lib/derive-ontology-from-vault.ts`.
-   *
-   * The id slugifies that string (`element:srcentitiesdocs-...`) and cannot be
-   * reversed, so a user copying the id into the CLI or MCP would be naming
-   * something the vault has never heard of. Always hand an agent this string
-   * instead — it is the same value the compiler carries as the edge's `ref`.
-   * Empty for nodes that have their own document, where the doc slug plays this
-   * role.
+   * For a node without its own document, the reference as written in the vault. The slugified id
+   * cannot be reversed, so agents are handed this string (the compiler's edge `ref`).
    */
   ref?: string;
   source: OntologyStubSource;
@@ -111,7 +53,7 @@ interface OntologyStubEdge {
   type: 'contains' | 'depends_on' | 'describes' | 'related_to' | 'is_a';
   source: OntologyStubSource;
   sourceSlug: string;
-  /** Why this relation exists, from `relation_notes: {ref: why}`. Shown under the edge popover. */
+  /** Why this relation exists, from `relation_notes: {ref: why}`. */
   label?: string;
 }
 
@@ -122,7 +64,7 @@ export interface VaultOntologyDerivation {
   sourceConceptCount: number;
   /** Frontmatter `kind:` docs by kind before relation-derived stubs are added. */
   sourceKindCounts: Record<string, number>;
-  /** Diagnostics when no doc in the vault produced a candidate — rendered in the empty state. */
+  /** Diagnostics for the empty state when no doc produced a candidate. */
   warnings: string[];
 }
 
@@ -134,9 +76,7 @@ const VALID_RELATION_TYPES = new Set([
   'is_a',
 ]);
 
-// Exported because bootstrap (writing domains out as files) must build file
-// tails by the same rule, or derivation's `domain:slugifyName(name)` resolution
-// will not meet the graph.
+// Exported so bootstrap names domain files by the same rule derivation resolves.
 export function slugifyName(input: string): string {
   return input
     .toLowerCase()
@@ -151,14 +91,11 @@ function asStringArray(value: unknown): string[] {
   if (Array.isArray(value)) {
     return value.filter((v): v is string => typeof v === 'string' && v.trim() !== '');
   }
-  // Relation keys are arrays in the public schema. Coercing a scalar into an
-  // array for convenience would make the web map draw phantom edges the MCP
-  // compiler rejects.
+  // Relation keys are arrays; coercing a scalar would draw edges the MCP compiler rejects.
   return [];
 }
 
-// Vault folder name → kind. Converts a folder-prefixed slug such as
-// `relates: [capabilities/mcp-server]` to the singular kind.
+// Vault folder name → singular kind, for folder-prefixed refs.
 const FOLDER_TO_KIND: Record<string, string> = {
   projects: 'project',
   domains: 'domain',
@@ -184,11 +121,7 @@ function resolveFolderPrefixedRef(ref: string): { id: string; kind: string; titl
   };
 }
 
-/**
- * Resolves a ref such as `capabilities/mcp-server` or `auth-platform` to an
- * existing node id: `folder/slug` → `<kind>:<slug>` when the folder is known,
- * anything else → `unknown:<slugified>`.
- */
+/** `folder/slug` → `<kind>:<slug>` for a known folder; anything else → `unknown:<slugified>`. */
 function resolveRelatesRef(rel: string): string | null {
   const trimmed = rel.trim();
   if (!trimmed) return null;
@@ -206,10 +139,8 @@ function deriveDocNode(doc: VaultDoc): OntologyStubNode | null {
   const rawKind = typeof fm.kind === 'string' ? fm.kind.trim() : '';
   if (!rawKind) return null;
   const title = doc.title?.trim() || doc.slug.split('/').pop() || doc.slug;
-  // A project's id uses the *user-facing slug* (frontmatter `slug:` wins), which
-  // keeps it equal to `computeProjectSlug` and therefore to the `projectIds` the
-  // containment BFS attaches. Every other kind keeps the file slug, so external
-  // refs in `relates`/`depends_on` still resolve.
+  // A project id uses the frontmatter slug so it equals `computeProjectSlug` and the containment
+  // `projectIds`; other kinds keep the file slug so external refs still resolve.
   let idSlug: string;
   const fmSlug = typeof fm.slug === 'string' ? fm.slug.trim() : '';
   if (rawKind === 'project' && fmSlug) {
@@ -219,17 +150,12 @@ function deriveDocNode(doc: VaultDoc): OntologyStubNode | null {
   }
   const id = `${rawKind}:${idSlug}`;
   const baseDisplay = deriveDisplayTitle(fm, title);
-  // Element titles are often a raw code path (`src/foo/bar-baz.ts`), unreadable
-  // for a non-developer. Only when neither an explicit `display:` nor a
-  // parenthetical cut applied — i.e. the display is still the title verbatim —
-  // is the path rewritten into a human name.
+  // Only an element whose display is still its raw title gets a readable name from the path.
   const display =
     rawKind === 'element' && baseDisplay === title
       ? humanizeCodePathTitle(title) ?? baseDisplay
       : baseDisplay;
-  // Per-locale display names come from one place, `shared/lib/locale-display-name`.
-  // The doc list and quick search must call the same function, or the map says
-  // "My project" while search says "My project".
+  // One source for locale display names (`shared/lib/locale-display-name`), shared with list and search.
   const displayLocales = readDisplayLocales(fm);
   return {
     id,
@@ -245,6 +171,20 @@ function deriveDocNode(doc: VaultDoc): OntologyStubNode | null {
   };
 }
 
+/** Adds a relation-named node without its own document, unless the id already exists. */
+function ensureStubNode(
+  nodes: Map<string, OntologyStubNode>,
+  sourceSlug: string,
+  id: string,
+  kind: string,
+  title: string,
+  ref: string,
+  display = deriveDisplayTitle(undefined, title),
+): void {
+  if (nodes.has(id)) return;
+  nodes.set(id, { id, title, display, kind, sourceSlug, hasOwnDocument: false, ref: ref.trim(), source: 'frontmatter' });
+}
+
 function deriveOntologyFromVaultUncached(
   manifest: VaultManifest,
 ): VaultOntologyDerivation {
@@ -252,13 +192,10 @@ function deriveOntologyFromVaultUncached(
   const edges: OntologyStubEdge[] = [];
   const warnings: string[] = [];
 
-  // Pass 1 registers every document node first, so pass 2 can resolve a
-  // reference like `relates: [capabilities/mcp-server]` to the real
-  // `capability:mcp-server` instead of minting a duplicate.
+  // Pass 1 registers every document node so pass 2 resolves refs instead of minting duplicates.
   let sourceConceptCount = 0;
   const sourceKindCounts: Record<string, number> = {};
-  // The compiler's three aliases. An alias claimed by two documents is marked
-  // null and left unresolved — a guessed link is a wrong link.
+  // The compiler's three aliases; one claimed by two documents becomes null.
   const aliasClaims = new Map<string, string | null>();
   const claimAlias = (alias: string | undefined, nodeId: string) => {
     const key = alias?.trim();
@@ -271,14 +208,8 @@ function deriveOntologyFromVaultUncached(
     const derived = deriveDocNode(doc);
     if (derived) {
       let docNode = derived;
-      // Non-project ids are `kind:` + slug tail, so two same-kind docs whose
-      // filenames match (capabilities/auth.md and archive/auth.md) collided
-      // and `nodes.set` silently overwrote the first — the map drew one node
-      // fewer than every count surface reported and one document became
-      // unreachable (bug sweep 2026-09-01). The later doc keeps its full-path
-      // id (slugs are unique) and the collision is surfaced as a warning; the
-      // shared tail alias resolves to neither, which the alias rule below
-      // already treats as "a guessed link is a wrong link".
+      // Two same-kind docs with the same tail would collide: the later keeps its full-path id, a
+      // warning is raised, and the shared tail alias resolves to neither.
       if (nodes.has(docNode.id)) {
         const disambiguated = `${docNode.kind}:${doc.slug}`;
         warnings.push(
@@ -298,7 +229,6 @@ function deriveOntologyFromVaultUncached(
   const docAliases: DocAliasIndex = new Map(
     [...aliasClaims].filter((entry): entry is [string, string] => entry[1] !== null),
   );
-  /** Does this reference point at an existing document? If so, its node id. */
   const existingNodeIdFor = (ref: string): string | null =>
     docAliases.get(ref.trim()) ?? null;
 
@@ -308,9 +238,7 @@ function deriveOntologyFromVaultUncached(
 
     const fm = doc.frontmatter;
 
-    // `domain: X` means "this document belongs to domain X". A `contains` edge
-    // runs parent → child, so the edge must point domain → docNode for
-    // capabilities and elements to hang under the domain in the tree.
+    // `domain: X` puts this doc under X, so the contains edge runs domain → doc.
     if (typeof fm.domain === 'string' && fm.domain.trim() !== '') {
       const folderRef = resolveFolderPrefixedRef(fm.domain);
       const domainSlug = folderRef?.kind === 'domain'
@@ -318,18 +246,14 @@ function deriveOntologyFromVaultUncached(
         : slugifyName(fm.domain);
       if (domainSlug) {
         const domainId = existingNodeIdFor(fm.domain) ?? `domain:${domainSlug}`;
-        if (!nodes.has(domainId)) {
-          nodes.set(domainId, {
-            id: domainId,
-            title: folderRef?.kind === 'domain' ? folderRef.title : fm.domain.trim(),
-            display: deriveDisplayTitle(undefined, folderRef?.kind === 'domain' ? folderRef.title : fm.domain.trim()),
-            kind: 'domain',
-            sourceSlug: doc.slug,
-            hasOwnDocument: false,
-            ref: fm.domain.trim(),
-            source: 'frontmatter',
-          });
-        }
+        ensureStubNode(
+          nodes,
+          doc.slug,
+          domainId,
+          'domain',
+          folderRef?.kind === 'domain' ? folderRef.title : fm.domain.trim(),
+          fm.domain,
+        );
         edges.push({
           id: `${domainId}--contains-->${docNode.id}`,
           from: domainId,
@@ -341,32 +265,22 @@ function deriveOntologyFromVaultUncached(
       }
     }
 
-    // `domains: [...]` is the reverse direction of singular `domain:` — here the
-    // document (usually a project) is the parent listing what it contains, so
-    // the `contains` edge runs docNode → domain.
+    // `domains:` is the reverse: this doc contains the listed domains.
     for (const dom of asStringArray(fm.domains)) {
-      // A folder-prefixed ref (`domains/tasks`, the format the init starter
-      // writes) went unresolved in this branch only, and slugify flattened the
-      // slash into a phantom `domain:domainstasks` that never merged with the
-      // real `domain:tasks` — skewing counts for every new vault. Apply the same
-      // resolveFolderPrefixedRef precedence the singular branch uses.
+      // Folder-prefixed refs (`domains/tasks`) resolve like the singular branch, or slugify mints a phantom.
       const folderRef = resolveFolderPrefixedRef(dom);
       const domId =
         existingNodeIdFor(dom) ??
         (folderRef?.kind === 'domain' ? folderRef.id : `domain:${slugifyName(dom)}`);
       if (domId === 'domain:') continue;
-      if (!nodes.has(domId)) {
-        nodes.set(domId, {
-          id: domId,
-          title: folderRef?.kind === 'domain' ? folderRef.title : dom,
-          display: deriveDisplayTitle(undefined, folderRef?.kind === 'domain' ? folderRef.title : dom),
-          kind: 'domain',
-          sourceSlug: doc.slug,
-          hasOwnDocument: false,
-          ref: dom.trim(),
-          source: 'frontmatter',
-        });
-      }
+      ensureStubNode(
+        nodes,
+        doc.slug,
+        domId,
+        'domain',
+        folderRef?.kind === 'domain' ? folderRef.title : dom,
+        dom,
+      );
       edges.push({
         id: `${docNode.id}--contains-->${domId}`,
         from: docNode.id,
@@ -377,7 +291,6 @@ function deriveOntologyFromVaultUncached(
       });
     }
 
-    // capabilities[]
     for (const cap of asStringArray(fm.capabilities)) {
       const folderRef = resolveFolderPrefixedRef(cap);
       const capSlug = folderRef?.kind === 'capability'
@@ -385,18 +298,14 @@ function deriveOntologyFromVaultUncached(
         : slugifyName(cap);
       if (!capSlug) continue;
       const capId = existingNodeIdFor(cap) ?? `capability:${capSlug}`;
-      if (!nodes.has(capId)) {
-        nodes.set(capId, {
-          id: capId,
-          title: folderRef?.kind === 'capability' ? folderRef.title : cap,
-          display: deriveDisplayTitle(undefined, folderRef?.kind === 'capability' ? folderRef.title : cap),
-          kind: 'capability',
-          sourceSlug: doc.slug,
-          hasOwnDocument: false,
-          ref: cap.trim(),
-          source: 'frontmatter',
-        });
-      }
+      ensureStubNode(
+        nodes,
+        doc.slug,
+        capId,
+        'capability',
+        folderRef?.kind === 'capability' ? folderRef.title : cap,
+        cap,
+      );
       edges.push({
         id: `${docNode.id}--contains-->${capId}`,
         from: docNode.id,
@@ -407,7 +316,6 @@ function deriveOntologyFromVaultUncached(
       });
     }
 
-    // elements[]
     for (const el of asStringArray(fm.elements)) {
       const folderRef = resolveFolderPrefixedRef(el);
       const elSlug = folderRef?.kind === 'element'
@@ -415,20 +323,15 @@ function deriveOntologyFromVaultUncached(
         : slugifyName(el);
       if (!elSlug) continue;
       const elId = existingNodeIdFor(el) ?? `element:${elSlug}`;
-      if (!nodes.has(elId)) {
-        nodes.set(elId, {
-          id: elId,
-          title: folderRef?.kind === 'element' ? folderRef.title : el,
-          display:
-            humanizeCodePathTitle(el) ??
-            deriveDisplayTitle(undefined, folderRef?.kind === 'element' ? folderRef.title : el),
-          kind: 'element',
-          sourceSlug: doc.slug,
-          hasOwnDocument: false,
-          ref: el.trim(),
-          source: 'frontmatter',
-        });
-      }
+      ensureStubNode(
+        nodes,
+        doc.slug,
+        elId,
+        'element',
+        folderRef?.kind === 'element' ? folderRef.title : el,
+        el,
+        humanizeCodePathTitle(el) ?? deriveDisplayTitle(undefined, folderRef?.kind === 'element' ? folderRef.title : el),
+      );
       edges.push({
         id: `${docNode.id}--contains-->${elId}`,
         from: docNode.id,
@@ -439,10 +342,7 @@ function deriveOntologyFromVaultUncached(
       });
     }
 
-    // `contains[]` is the direct parent→child relation written by CLI/MCP
-    // `add_relation({type:'contains'})`. A folder-prefixed ref such as
-    // `capabilities/foo` must resolve to its real kind or the web mints a
-    // duplicate `unknown:` node.
+    // `contains[]` as written by `add_relation`; folder-prefixed refs keep their real kind.
     for (const contained of asStringArray(fm.contains)) {
       const folderRef = resolveFolderPrefixedRef(contained);
       const containedSlug = folderRef
@@ -450,18 +350,14 @@ function deriveOntologyFromVaultUncached(
         : slugifyName(contained);
       if (!containedSlug) continue;
       const containedId = existingNodeIdFor(contained) ?? folderRef?.id ?? `unknown:${containedSlug}`;
-      if (!nodes.has(containedId)) {
-        nodes.set(containedId, {
-          id: containedId,
-          title: folderRef?.title ?? contained,
-          display: deriveDisplayTitle(undefined, folderRef?.title ?? contained),
-          kind: folderRef?.kind ?? 'unknown',
-          sourceSlug: doc.slug,
-          hasOwnDocument: false,
-          ref: contained.trim(),
-          source: 'frontmatter',
-        });
-      }
+      ensureStubNode(
+        nodes,
+        doc.slug,
+        containedId,
+        folderRef?.kind ?? 'unknown',
+        folderRef?.title ?? contained,
+        contained,
+      );
       edges.push({
         id: `${docNode.id}--contains-->${containedId}`,
         from: docNode.id,
@@ -472,25 +368,11 @@ function deriveOntologyFromVaultUncached(
       });
     }
 
-    // `relates[]` → related_to. A `folder/slug` form (`capabilities/mcp-server`)
-    // is matched against the existing doc node first, falling back to an
-    // `unknown:` stub. Plain slugify would drop the `/` and produce mangled ids
-    // like `capabilitiesmcp-server`.
+    // `relates[]` → related_to; a `folder/slug` ref matches the existing doc node before an `unknown:` stub.
     for (const rel of asStringArray(fm.relates)) {
       const relId = existingNodeIdFor(rel) ?? resolveRelatesRef(rel);
       if (!relId) continue;
-      if (!nodes.has(relId)) {
-        nodes.set(relId, {
-          id: relId,
-          title: rel,
-          display: deriveDisplayTitle(undefined, rel),
-          kind: 'unknown',
-          sourceSlug: doc.slug,
-          hasOwnDocument: false,
-          ref: rel.trim(),
-          source: 'frontmatter',
-        });
-      }
+      ensureStubNode(nodes, doc.slug, relId, 'unknown', rel, rel);
       edges.push({
         id: `${docNode.id}--related_to-->${relId}`,
         from: docNode.id,
@@ -501,31 +383,19 @@ function deriveOntologyFromVaultUncached(
       });
     }
 
-    // `describes[]` → describes (document → the concept it explains).
-    //
-    // Measured 2026-07-27: the CLI/MCP compiler had always read this key and put
-    // edges like `documents/agent-practice-research → capabilities/mcp-server`
-    // into the graph, while the web derivation skipped it entirely. The three
-    // entry points therefore disagreed on relation count (web 448 vs 542; 10 of
-    // the difference was this key) and `document` nodes sat unconnected to what
-    // they describe. The relation type itself already existed in the web's union,
-    // labels, and health checks — the only thing missing was the read.
+    // `describes[]` → describes (document → the concept it explains), as the compiler reads it.
     for (const described of asStringArray(fm.describes)) {
       const folderRef = resolveFolderPrefixedRef(described);
       const describedId = existingNodeIdFor(described) ?? folderRef?.id ?? resolveRelatesRef(described);
       if (!describedId) continue;
-      if (!nodes.has(describedId)) {
-        nodes.set(describedId, {
-          id: describedId,
-          title: folderRef?.title ?? described,
-          display: deriveDisplayTitle(undefined, folderRef?.title ?? described),
-          kind: folderRef?.kind ?? 'unknown',
-          sourceSlug: doc.slug,
-          hasOwnDocument: false,
-          ref: described.trim(),
-          source: 'frontmatter',
-        });
-      }
+      ensureStubNode(
+        nodes,
+        doc.slug,
+        describedId,
+        folderRef?.kind ?? 'unknown',
+        folderRef?.title ?? described,
+        described,
+      );
       edges.push({
         id: `${docNode.id}--describes-->${describedId}`,
         from: docNode.id,
@@ -536,14 +406,8 @@ function deriveOntologyFromVaultUncached(
       });
     }
 
-    // `dependencies[]` + `depends_on[]` → depends_on. The schema (`mcp/src/schema.mjs`)
-    // makes `depends_on` canonical for capability/element and `dependencies`
-    // canonical for project, and MCP reads both as aliases (vault.mjs
-    // NEIGHBOR_KEY_ALIASES). The web derivation read only `dependencies`, so a
-    // dependency an agent wrote under the canonical key vanished from the map and
-    // the captions (2026-08-12) — the same shape of hole as `describes` above.
-    // The same target under both keys counts once, by resolved depId.
-    // Gate: tests/contract/derive-relation-keys.contract.test.ts.
+    // `dependencies[]` and `depends_on[]` are aliases (`mcp/src/vault.mjs` NEIGHBOR_KEY_ALIASES); one
+    // target counts once. Gate: tests/contract/derive-relation-keys.contract.test.ts.
     const seenDepIds = new Set<string>();
     for (const dep of [...asStringArray(fm.dependencies), ...asStringArray(fm.depends_on)]) {
       const folderRef = resolveFolderPrefixedRef(dep);
@@ -555,18 +419,14 @@ function deriveOntologyFromVaultUncached(
       const depId = existingNodeIdFor(dep) ?? folderRef?.id ?? `${docNode.kind}:${depSlug}`;
       if (seenDepIds.has(depId)) continue;
       seenDepIds.add(depId);
-      if (!nodes.has(depId)) {
-        nodes.set(depId, {
-          id: depId,
-          title: folderRef?.title ?? dep,
-          display: deriveDisplayTitle(undefined, folderRef?.title ?? dep),
-          kind: folderRef?.kind ?? docNode.kind,
-          sourceSlug: doc.slug,
-          hasOwnDocument: false,
-          ref: dep.trim(),
-          source: 'frontmatter',
-        });
-      }
+      ensureStubNode(
+        nodes,
+        doc.slug,
+        depId,
+        folderRef?.kind ?? docNode.kind,
+        folderRef?.title ?? dep,
+        dep,
+      );
       edges.push({
         id: `${docNode.id}--depends_on-->${depId}`,
         from: docNode.id,
@@ -577,9 +437,7 @@ function deriveOntologyFromVaultUncached(
       });
     }
 
-    // `broader[]` → is_a (SKOS skos:broader). The node IS-A the broader concept,
-    // so from = docNode, to = the broader one. A folder-prefixed ref
-    // (`capabilities/foo`) resolves to its real kind.
+    // `broader[]` → is_a from this doc to the broader concept.
     for (const broaderRef of asStringArray(fm.broader)) {
       const folderRef = resolveFolderPrefixedRef(broaderRef);
       const broaderSlug = folderRef
@@ -588,18 +446,14 @@ function deriveOntologyFromVaultUncached(
       if (!broaderSlug) continue;
       const broaderId =
         existingNodeIdFor(broaderRef) ?? folderRef?.id ?? `${docNode.kind}:${broaderSlug}`;
-      if (!nodes.has(broaderId)) {
-        nodes.set(broaderId, {
-          id: broaderId,
-          title: folderRef?.title ?? broaderRef,
-          display: deriveDisplayTitle(undefined, folderRef?.title ?? broaderRef),
-          kind: folderRef?.kind ?? docNode.kind,
-          sourceSlug: doc.slug,
-          hasOwnDocument: false,
-          ref: broaderRef.trim(),
-          source: 'frontmatter',
-        });
-      }
+      ensureStubNode(
+        nodes,
+        doc.slug,
+        broaderId,
+        folderRef?.kind ?? docNode.kind,
+        folderRef?.title ?? broaderRef,
+        broaderRef,
+      );
       edges.push({
         id: `${docNode.id}--is_a-->${broaderId}`,
         from: docNode.id,
@@ -617,8 +471,7 @@ function deriveOntologyFromVaultUncached(
     );
   }
 
-  // Promote `relation_notes: {ref: why}` onto the matching edge's label. The key is
-  // matched against both the declaring document's canonical ref and its tail.
+  // `relation_notes` keys match the declaring doc's canonical ref or its tail.
   {
     const noteByDoc = new Map<string, Record<string, string>>();
     for (const doc of manifest.docs) {
@@ -645,9 +498,7 @@ function deriveOntologyFromVaultUncached(
     }
   }
 
-  // Both endpoints may declare the same containment. Promote notes before deduping,
-  // then keep the declaration carrying the recorded reason and its source document.
-  // Otherwise a child's domain field can hide its parent's explicit rationale.
+  // Notes are promoted before containment dedup, which keeps the declaration carrying a reason.
   const dedupedById = new Map<string, OntologyStubEdge>();
   for (const edge of edges) {
     if (!VALID_RELATION_TYPES.has(edge.type)) continue;
@@ -664,19 +515,7 @@ function deriveOntologyFromVaultUncached(
   };
 }
 
-// Module-level memoization keyed by `manifest` object identity (perf sweep,
-// 2026-07). `useVaultOntology`/`useOntologyInsight` used to wrap this call in
-// a component-scoped `useMemo` only — every route that mounts a fresh
-// component tree (`/`, `/topology`, `/projects`, `/ontology/insights`, …)
-// lost that cache on unmount and re-ran the full doc scan/BFS from scratch
-// even when navigating back to the SAME loaded vault (`vault.manifest`
-// reference unchanged). A `WeakMap` keyed by the manifest reference survives
-// across mounts while staying leak-free (entry drops once the manifest
-// itself is GC'd) and preserves the freshness contract for free — a new
-// vault load / file edit produces a NEW manifest object, so the cache misses
-// and recomputes exactly when the data actually changed. Static dogfood mode
-// keeps its own already-eager `STATIC_DERIVATION` (see
-// `use-ontology-insight.ts`) which naturally hits this same cache too.
+// Keyed by manifest identity so the derivation survives remounts; any vault change is a new manifest.
 const derivationCache = new WeakMap<VaultManifest, VaultOntologyDerivation>();
 
 export function deriveOntologyFromVault(

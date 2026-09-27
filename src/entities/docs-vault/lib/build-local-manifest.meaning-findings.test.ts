@@ -1,16 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildLocalManifest } from './build-local-manifest';
 
-/**
- * The manifest records what the validator hears about each body.
- *
- * Until 2026-09-22 the six meaning findings reached `validate_vault`, the CLI and the
- * app's document validator, and nothing else: the person's own queue judged "has a
- * definition" from whether an excerpt existed. So an agent could read
- * `definition-missing` on a file while every surface the person could check agreed the
- * folder was clean. These tests pin that the local builder now asks the same question,
- * in the one place that already holds the whole body.
- */
+/** The local builder records the same meaning findings `validate_vault` reports for each body. */
 
 interface FakeFile {
   text: string;
@@ -67,7 +58,7 @@ function file(text: string): FakeFile {
   return { text, lastModified: 1000 };
 }
 
-/** A capability body that answers every question — the negative baseline. */
+/** Answers every question: the negative baseline. */
 const COMPLETE_CAPABILITY = [
   '---',
   'title: Vault Compiler',
@@ -120,8 +111,7 @@ describe('build-local-manifest — meaning findings', () => {
     const findings = await findingsFor({
       'capabilities/vault-compiler.md': BARE_CAPABILITY,
     });
-    // Both boundary sides are reported, exactly as the validator reports them; a reader
-    // counting nodes rather than findings dedupes.
+    // Both boundary sides are reported, as the validator does.
     expect(findings.get('capabilities/vault-compiler')).toEqual([
       'definition-missing',
       'boundary-missing',

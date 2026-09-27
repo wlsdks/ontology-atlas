@@ -1,28 +1,15 @@
 import type { ArchitectureProfile } from './architecture-profile';
 
 /**
- * Where each role sits, and which arrows are real.
- *
- * ⚠️ **The old drawing was wrong, not merely plain** (owner, on the installed build: *"this is
- * poor — 'roles and dependency direction' is neither good-looking nor a flow you can read at a
- * glance"*). It stacked the roles in declaration order and put a down-arrow between every
- * consecutive pair, whatever the rules said. On the storefront profile that produced a picture
- * contradicting its own data: `domain` allows nothing yet had an arrow leaving it, and
- * `port → domain` was drawn as domain-above-port, pointing the wrong way.
- *
- * So the layout is derived from the rules instead of from array order.
- *
- * **The two policies are genuinely different pictures, and flattening them into one is what broke.**
- * Under `lower-only` the rule is a single sentence — every role may reach every role beneath it —
- * so drawing all 21 edges of a seven-role profile is noise, and an ordered spine says it exactly.
- * Under `explicit` the rule *is* a graph, and only the declared edges exist.
+ * Role positions and arrows derived from the rules, not array order. `lower-only` draws an
+ * ordered spine; `explicit` draws only the declared edges.
  */
 
 interface ArchitectureLayoutNode {
   id: string;
-  /** Row index. 0 is the deepest layer — the one nothing may depend upon. */
+  /** 0 is the deepest layer, which nothing may depend on. */
   depth: number;
-  /** Position within the row, left to right, stable across renders. */
+  /** Left to right, stable across renders. */
   column: number;
   /** Nothing is allowed to leave this role. */
   isSink: boolean;
@@ -31,7 +18,7 @@ interface ArchitectureLayoutNode {
 interface ArchitectureLayoutEdge {
   from: string;
   to: string;
-  /** True when the arrow skips at least one layer — drawn lighter so the spine stays legible. */
+  /** Skips at least one layer; drawn lighter. */
   skips: boolean;
 }
 
@@ -39,7 +26,7 @@ export interface ArchitectureLayout {
   policy: 'explicit' | 'lower-only';
   nodes: ArchitectureLayoutNode[];
   edges: ArchitectureLayoutEdge[];
-  /** Rows, deepest last, so a renderer can lay out top-to-bottom without recomputing. */
+  /** Deepest last. */
   rows: string[][];
 }
 
@@ -50,14 +37,7 @@ function allowedFor(profile: ArchitectureProfile, roleId: string, index: number)
   return profile.allows[roleId] ?? [];
 }
 
-/**
- * Depth is the **longest** path to a sink, not the shortest.
- *
- * ⚠️ With shortest-path depth, a role that both reaches its neighbour and skips past it would land
- * on the same row as the thing it depends on, and the arrow between them would run sideways. The
- * longest path guarantees every arrow points down at least one row, which is the property that
- * makes the picture readable at all.
- */
+/** Longest path to a sink, so every arrow points down at least one row. */
 function computeDepths(
   profile: ArchitectureProfile,
   allows: Map<string, string[]>,
@@ -68,11 +48,7 @@ function computeDepths(
   const walk = (id: string): number => {
     const cached = depth.get(id);
     if (cached !== undefined) return cached;
-    /*
-     * ⚠️ A cycle is a broken profile, not an impossible one: `explicit` lets somebody write
-     * `allow_a: [b]` and `allow_b: [a]`. Returning 0 keeps the screen drawable instead of hanging,
-     * and the cycle stays visible as two roles on the same row with arrows both ways.
-     */
+    /* A cycle returns 0 so a broken `explicit` profile still draws, as two roles on one row. */
     if (visiting.has(id)) return 0;
     visiting.add(id);
     let deepest = 0;
@@ -98,11 +74,7 @@ export function buildArchitectureLayout(profile: ArchitectureProfile): Architect
   const depth = computeDepths(profile, allows);
   const maxDepth = Math.max(0, ...[...depth.values()]);
 
-  /*
-   * Rows read top-to-bottom as "reaches the most" → "reaches nothing", so the deepest role is drawn
-   * last. Inside a row, declaration order is preserved: the profile's author chose it, and a
-   * renderer reshuffling equals every render would make the picture move for no reason.
-   */
+  /* Deepest row last; declaration order within a row, so renders never reshuffle. */
   const rows: string[][] = Array.from({ length: maxDepth + 1 }, () => []);
   for (const role of profile.roles) {
     rows[maxDepth - (depth.get(role.id) ?? 0)]!.push(role.id);

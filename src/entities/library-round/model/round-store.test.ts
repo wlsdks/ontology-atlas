@@ -69,7 +69,7 @@ describe('round store', () => {
     const away = await store.markAway('2026-09-16T18:30:00.000Z');
     expect(away.state.awayFrom).toBe('2026-09-16T18:30:00.000Z');
     expect(away.state.rounds).toHaveLength(1);
-    // A second hide while already away keeps the first moment: the span starts when they left.
+    // A second hide while away keeps the first moment.
     const again = await store.markAway('2026-09-16T19:00:00.000Z');
     expect(again.state.awayFrom).toBe('2026-09-16T18:30:00.000Z');
     const back = await store.markBack('2026-09-17T09:02:00.000Z');
@@ -82,8 +82,7 @@ describe('round store', () => {
   });
 
   it('does not believe an absence left behind by a crash: the span starts at the last pass', async () => {
-    // Written by a process that went hidden and never came back; the pass that ran afterwards
-    // is the folder's own proof the app was awake long after that moment.
+    // A stale absence from a crashed process; the later pass proves the app was awake after it.
     const store = createMemoryRoundStore(
       serializeRoundState({
         v: 1,

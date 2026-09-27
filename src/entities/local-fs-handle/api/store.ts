@@ -1,10 +1,4 @@
-/**
- * IndexedDB-backed store for `LocalFsHandleRecord`.
- *
- * Single-record mode (id = 'current') is the default. The legacy key
- * `docs-vault:current-handle`, which held a raw `FileSystemDirectoryHandle`, is
- * migrated into the new record shape on first read and then dropped.
- */
+/** IndexedDB store for `LocalFsHandleRecord`; the legacy raw-handle key migrates on first read. */
 
 import { idbDel, idbGet, idbSet } from '@/shared/lib/idb-kv';
 import {
@@ -41,12 +35,7 @@ function normalizeStoredRecord(record: LocalFsHandleRecord): LocalFsHandleRecord
 }
 
 function recordIdentity(record: LocalFsHandleRecord): string {
-  // On the web every record's id is 'current' (single-vault mode), so falling
-  // back to it deduped every vault to one identity — the recent list could
-  // never hold more than one entry and opening folder B silently evicted
-  // folder A (bug sweep 2026-09-01). The FSA handle's folder name is the best
-  // durable web identity available (isSameEntry is async and pairwise); two
-  // different folders sharing a name still collapse, which loses far less.
+  // Web records all use id 'current', so the folder name is the identity; same-named folders still collapse.
   if (record.desktopRootPath) return record.desktopRootPath;
   const folderName = record.handle?.name;
   return folderName ? `fsa:${folderName}` : record.id;
@@ -65,24 +54,8 @@ function toStoredRecord(record: LocalFsHandleRecord): LocalFsHandleRecord {
 }
 
 /**
- * Every write to the recent list runs one at a time.
- *
- * ⚠️ **The list is read, modified and written back, and more than one caller does it.**
- * A vault load fires `touchLocalFsHandle` and, once the walk finishes,
- * `recordLocalFsHandleContents`; both land on this single key. Interleaved, the second
- * read can start before the first write commits, and the folder the first one added is
- * dropped. That is not a cosmetic loss: **the launch rule is decided by how many entries
- * this list holds**, so losing one silently turns the chooser off and the app resumes a
- * folder it should have asked about (workbench seat, 2026-09-13).
- *
- * The serialisation lives here rather than at the call sites on purpose. Awaiting these
- * writes from the callers was tried and reverted twice in one day, because both call sites
- * sit in paths whose timing other code depends on: awaiting inside `load` held open the
- * promise a rename needs before it can silence the missing-document verdict, and awaiting
- * in the cold restore pushed the vault past the map's consumption of a `?edit=` deeplink,
- * so a contextual editor never opened at all (`tests/e2e/docs-rename-address.spec.ts` and
- * `tests/e2e/a11y-vault-backed.spec.ts`). A queue owned by the store fixes the hazard
- * without asking any caller to wait, which is what a cache write should cost.
+ * Serializes recent-list read-modify-writes: a lost entry changes the launch rule. The queue lives
+ * here because awaiting at the call sites broke rename and `?edit=` timing.
  */
 let recentListWrites: Promise<unknown> = Promise.resolve();
 
@@ -112,12 +85,7 @@ async function rememberRecentLocalFsHandle(record: LocalFsHandleRecord): Promise
   });
 }
 
-/**
- * Reads the record for an id, or undefined.
- *
- * Only for id 'current': a raw handle left under the legacy key is wrapped into a
- * record and migrated, and the legacy key deleted.
- */
+/** For id 'current', a legacy raw handle is migrated and its key deleted. */
 export async function getLocalFsHandle(
   id: string = CURRENT_LOCAL_FS_HANDLE_ID,
 ): Promise<LocalFsHandleRecord | undefined> {
@@ -156,13 +124,12 @@ export async function deleteLocalFsHandle(
   await idbDel(recordKey(id));
 }
 
-/** Removes one record from the recent-vault list. The currently open vault record is untouched. */
+/** The open vault's record is untouched. */
 export async function forgetRecentLocalFsHandle(
   record: LocalFsHandleRecord,
 ): Promise<void> {
   const identity = recordIdentity(toStoredRecord(record));
-  // Queued with the others: this reads and writes the same key, so a forget racing a
-  // vault load could otherwise resurrect the folder it just removed.
+  // Queued too, or a racing load could resurrect the removed folder.
   return queueRecentListWrite(async () => {
     const existing = (await idbGet<LocalFsHandleRecord[]>(RECENT_KEY)) ?? [];
     await idbSet(
@@ -172,7 +139,7 @@ export async function forgetRecentLocalFsHandle(
   });
 }
 
-/** Updates the last-accessed time only. A no-op when the record does not exist. */
+/** No-op without a record. */
 export async function touchLocalFsHandle(
   id: string = CURRENT_LOCAL_FS_HANDLE_ID,
 ): Promise<void> {
@@ -183,16 +150,7 @@ export async function touchLocalFsHandle(
   await rememberRecentLocalFsHandle(next);
 }
 
-/**
- * Records what a folder held, on the record for `id` **and** on its recent-list entry.
- *
- * Called by the one code path that has already walked the folder, so the numbers cost
- * nothing extra. Both copies are written because the chooser reads the recent list while
- * the settings row reads the `current` record; writing one would let them disagree about
- * the same folder.
- *
- * A no-op when the record does not exist — the same contract as `touchLocalFsHandle`.
- */
+/** Writes folder contents to both the record and its recent entry, which different screens read; no-op without a record. */
 export async function recordLocalFsHandleContents(
   contents: { docCount: number; conceptCount: number },
   id: string = CURRENT_LOCAL_FS_HANDLE_ID,
@@ -209,7 +167,7 @@ export async function recordLocalFsHandleContents(
   await rememberRecentLocalFsHandle(next);
 }
 
-/** Recently opened vaults. On Tauri desktop the handle shim is rebuilt from the stored path. */
+/** On Tauri the handle shim is rebuilt from the stored path. */
 export async function listRecentLocalFsHandles(): Promise<LocalFsHandleRecord[]> {
   const records = (await idbGet<LocalFsHandleRecord[]>(RECENT_KEY)) ?? [];
   return records

@@ -31,10 +31,7 @@ function makeManifest(docs: VaultDoc[]): VaultManifest {
 
 describe('deriveOntologyFromVault', () => {
   it('same-kind docs sharing a filename tail both survive as nodes', () => {
-    // Bug sweep 2026-09-01: non-project ids are kind + tail, so
-    // capabilities/auth.md and archive/auth.md (both kind: capability)
-    // collided and nodes.set silently overwrote the first — the map drew one
-    // node fewer than every count surface reported.
+    // Two same-kind docs with the same tail must not overwrite each other.
     const result = deriveOntologyFromVault(
       makeManifest([
         makeDoc({
@@ -52,7 +49,7 @@ describe('deriveOntologyFromVault', () => {
     expect(result.warnings.some((warning) => warning.includes('capability:auth'))).toBe(true);
   });
 
-  it('vault-readme 는 reader/agent 파생에 남고 topology 표면이 별도로 제외한다', () => {
+  it('keeps vault-readme in the derived graph for the topology surface to exclude', () => {
     const result = deriveOntologyFromVault(
       makeManifest([
         makeDoc({
@@ -73,7 +70,7 @@ describe('deriveOntologyFromVault', () => {
     expect(result.sourceKindCounts).toEqual({ 'vault-readme': 1, project: 1 });
   });
 
-  it('frontmatter 가 빈 vault → 빈 결과 + warning', () => {
+  it('returns an empty result and a warning for a vault without frontmatter', () => {
     const result = deriveOntologyFromVault(makeManifest([]));
     expect(result.nodes).toHaveLength(0);
     expect(result.edges).toHaveLength(0);
@@ -106,7 +103,7 @@ describe('deriveOntologyFromVault', () => {
     expect(containsEdges.every((e) => e.from === 'project:checkout')).toBe(true);
   });
 
-  it('domain + elements + relates 모두 분기', () => {
+  it('derives edges from domain, elements and relates', () => {
     const result = deriveOntologyFromVault(
       makeManifest([
         makeDoc({
@@ -128,8 +125,7 @@ describe('deriveOntologyFromVault', () => {
     expect(result.nodes.find((n) => n.id === 'unknown:legacy-checkout')?.kind).toBe('unknown');
     const relatedEdges = result.edges.filter((e) => e.type === 'related_to');
     expect(relatedEdges).toHaveLength(1);
-    // A domain edge must run domain (parent) → docNode (child) for the workflow to
-    // hang under the domain in the tree (`contains` is from=parent, to=child).
+    // `contains` runs parent → child, so a `domain:` edge runs domain → doc.
     const domainContainsEdge = result.edges.find(
       (e) =>
         e.type === 'contains' &&
@@ -171,7 +167,7 @@ describe('deriveOntologyFromVault', () => {
     });
   });
 
-  it('relates[] — `capabilities/foo` 형식 ref 가 기존 capability 노드로 resolve', () => {
+  it('resolves a `capabilities/foo` relates ref to the existing capability node', () => {
     const result = deriveOntologyFromVault(
       makeManifest([
         makeDoc({
@@ -188,11 +184,11 @@ describe('deriveOntologyFromVault', () => {
         }),
       ]),
     );
-    // No mangled stub such as `unknown:capabilitiesmcp-server` may be minted.
+    // No mangled stub such as `unknown:capabilitiesmcp-server`.
     expect(
       result.nodes.find((n) => n.id.startsWith('unknown:capabilities')),
     ).toBeUndefined();
-    // Instead there must be a related_to edge onto the existing capability node.
+    // A related_to edge onto the existing capability node instead.
     const resolvedEdge = result.edges.find(
       (e) =>
         e.type === 'related_to' &&
@@ -202,7 +198,7 @@ describe('deriveOntologyFromVault', () => {
     expect(resolvedEdge).toBeDefined();
   });
 
-  it('folder-prefixed refs — domain / dependencies / contains 가 중복 unknown 노드를 만들지 않는다', () => {
+  it('creates no duplicate unknown nodes for folder-prefixed domain, dependencies and contains refs', () => {
     const result = deriveOntologyFromVault(
       makeManifest([
         makeDoc({
@@ -264,7 +260,7 @@ describe('deriveOntologyFromVault', () => {
     ).toBeDefined();
   });
 
-  it('domains[] (plural) — project → 자식 도메인 contains edge', () => {
+  it('derives project-to-domain contains edges from domains[]', () => {
     const result = deriveOntologyFromVault(
       makeManifest([
         makeDoc({
@@ -288,7 +284,7 @@ describe('deriveOntologyFromVault', () => {
     expect(containsToAuth).toBeDefined();
   });
 
-  it('dependencies → depends_on 같은 kind 에', () => {
+  it('derives depends_on edges from dependencies', () => {
     const result = deriveOntologyFromVault(
       makeManifest([
         makeDoc({
@@ -305,10 +301,8 @@ describe('deriveOntologyFromVault', () => {
     expect(depEdges.find((e) => e.to === 'project:user-store')).toBeDefined();
   });
 
-  it('depends_on (스키마 정본 키) → dependencies 와 같은 자리에서 depends_on edge', () => {
-    // mcp/src/schema.mjs makes `depends_on` canonical for capability/element and MCP
-    // vault.mjs reads both as aliases. If the web derivation reads only
-    // `dependencies`, a dependency written under the canonical key vanishes from the map.
+  it('derives depends_on edges from the canonical depends_on key', () => {
+    // `depends_on` is canonical for capability/element (`mcp/src/schema.mjs`), so the web reads it too.
     const result = deriveOntologyFromVault(
       makeManifest([
         makeDoc({
@@ -326,7 +320,7 @@ describe('deriveOntologyFromVault', () => {
     expect(depEdges.find((e) => e.to === 'capability:key-store')).toBeDefined();
   });
 
-  it('dependencies + depends_on 합집합 — 같은 대상은 한 번만', () => {
+  it('unions dependencies and depends_on without duplicating a target', () => {
     const result = deriveOntologyFromVault(
       makeManifest([
         makeDoc({
@@ -347,7 +341,7 @@ describe('deriveOntologyFromVault', () => {
     ]);
   });
 
-  it('kind 없는 doc 은 무시', () => {
+  it('ignores a doc without kind', () => {
     const result = deriveOntologyFromVault(
       makeManifest([
         makeDoc({
@@ -359,13 +353,9 @@ describe('deriveOntologyFromVault', () => {
     expect(result.nodes).toHaveLength(0);
   });
 
-  it('양방향 frontmatter (domain.capabilities[] + capability.domain:) → contains edge dedup', () => {
-    // The same contains relation appears from two entry points:
-    //   domains/auth.md       → capabilities: ['login']
-    //   capabilities/login.md → domain: auth
-    // Both produce `domain:auth --contains--> capability:login`, which is one edge to
-    // the graph. A duplicate id causes React duplicate-key warnings and makes the ego
-    // graph silently drop edges. One (from, to, type) is one edge.
+  it('dedupes a contains edge declared from both sides', () => {
+    // `domains/auth.md` lists `login` and `capabilities/login.md` names `domain: auth`; both mean one
+    // edge, and a duplicate id breaks React keys and the ego graph.
     const result = deriveOntologyFromVault(
       makeManifest([
         makeDoc({
@@ -385,12 +375,12 @@ describe('deriveOntologyFromVault', () => {
         e.to === 'capability:login',
     );
     expect(containsEdges).toHaveLength(1);
-    // Every edge id must be unique too.
+    // Edge ids are unique.
     const ids = result.edges.map((e) => e.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it('동일 capability 가 여러 doc 에 등장 → 단일 node 로 dedup', () => {
+  it('dedupes a capability referenced by several docs into one node', () => {
     const result = deriveOntologyFromVault(
       makeManifest([
         makeDoc({
@@ -410,7 +400,7 @@ describe('deriveOntologyFromVault', () => {
     expect(containsEdges).toHaveLength(2);
   });
 });
-/** `relation_notes` is promoted to the matching edge's label (the "why"). */
+/** `relation_notes` becomes the matching edge's label. */
 describe("relation_notes → edge label", () => {
   it.each([false, true])('keeps the declared reason when containment is stated at both ends (parent first: %s)', (parentFirst) => {
     const child = makeDoc({ slug: 'capabilities/review', frontmatter: { kind: 'capability', title: 'Review', domain: 'domains/agents' } });
@@ -421,7 +411,7 @@ describe("relation_notes → edge label", () => {
     expect(edges[0].label).toBe('Agents owns review because it preserves the evidence used for judgment.');
     expect(edges[0].sourceSlug).toBe('domains/agents');
   });
-  it("dependencies ref 의 노트가 그 엣지에 실린다", () => {
+  it("carries a dependencies ref note on its edge", () => {
     const manifest = makeManifest([
       makeDoc({
         slug: "capabilities/writer",
@@ -441,8 +431,8 @@ describe("relation_notes → edge label", () => {
 });
 
 
-describe("domains[] folder-prefixed ref (리텐션 P4-① 팬텀 도메인 회귀)", () => {
-  it("'domains/tasks' 참조가 실 도메인 노드와 병합된다 — 팬텀 민팅 금지", () => {
+describe("domains[] folder-prefixed refs", () => {
+  it("merges a 'domains/tasks' ref into the real domain node", () => {
     const manifest = makeManifest([
       makeDoc({ slug: "project", frontmatter: { kind: "project", title: "P", domains: ["domains/tasks"] } }),
       makeDoc({ slug: "domains/tasks", title: "Tasks", frontmatter: { kind: "domain", title: "Tasks" } }),
@@ -457,7 +447,7 @@ describe("domains[] folder-prefixed ref (리텐션 P4-① 팬텀 도메인 회�
     ).toBe(true);
   });
 
-  it("평문 이름('auth')은 종전대로 slugify 스텁", () => {
+  it("slugifies a plain name ('auth') into a stub", () => {
     const manifest = makeManifest([
       makeDoc({ slug: "project", frontmatter: { kind: "project", title: "P", domains: ["auth"] } }),
     ]);
@@ -466,8 +456,8 @@ describe("domains[] folder-prefixed ref (리텐션 P4-① 팬텀 도메인 회�
   });
 });
 
-describe("element display 인간화 — 슬라이스 B (코드 경로 → 사람 이름)", () => {
-  it("elements[] 로 합성되는 element 노드 — title 은 원문 경로, display 는 인간화", () => {
+describe("element display names from code paths", () => {
+  it("keeps the raw path as title and a readable display for elements[] nodes", () => {
     const manifest = makeManifest([
       makeDoc({
         slug: "capabilities/writer",
@@ -485,7 +475,7 @@ describe("element display 인간화 — 슬라이스 B (코드 경로 → 사람
     expect(el?.display).toBe("Bar Baz");
   });
 
-  it("element doc 에 display: 가 명시되면 인간화가 지지 않는다", () => {
+  it("prefers an explicit display over the derived one", () => {
     const manifest = makeManifest([
       makeDoc({
         slug: "elements/bar-baz",
@@ -503,7 +493,7 @@ describe("element display 인간화 — 슬라이스 B (코드 경로 → 사람
     expect(el?.display).toBe("커스텀 이름");
   });
 
-  it("element 가 아닌 kind 는 경로처럼 보여도 인간화되지 않는다", () => {
+  it("does not derive display names for non-element kinds", () => {
     const manifest = makeManifest([
       makeDoc({
         slug: "capabilities/src-tool",
@@ -516,9 +506,8 @@ describe("element display 인간화 — 슬라이스 B (코드 경로 → 사람
     expect(cap?.title).toBe("src/tools/exporter.ts");
     expect(cap?.display).toBe("src/tools/exporter.ts");
   });
-  // Regression: a surface rendering "this node's document" mistook a derived node's
-  // sourceSlug (the other document that cited it) for its own and opened the wrong text.
-  it("문서가 있는 노드는 hasOwnDocument=true, 참조만 된 노드는 false 다", () => {
+  // A derived node's sourceSlug is the citing document, not its own.
+  it("sets hasOwnDocument only for nodes with their own document", () => {
     const manifest = makeManifest([
       makeDoc({
         slug: "capabilities/frontmatter-to-ontology",
@@ -538,7 +527,7 @@ describe("element display 인간화 — 슬라이스 B (코드 경로 → 사람
     expect(authored?.hasOwnDocument).toBe(true);
     expect(authored?.sourceSlug).toBe("capabilities/frontmatter-to-ontology");
 
-    // A node named only by a relation — its sourceSlug is the document that *cited* it.
+    // Relation-only node: its sourceSlug is the citing document.
     const derived = result.nodes.find(
       (n) => n.id === "element:derive-ontology-from-vault",
     );
@@ -551,7 +540,7 @@ describe("element display 인간화 — 슬라이스 B (코드 경로 → 사람
     expect(relatedOnly?.hasOwnDocument).toBe(false);
   });
 
-  it("모든 관계 키가 만든 파생 노드는 예외 없이 hasOwnDocument=false 다", () => {
+  it("sets hasOwnDocument=false on nodes derived from every relation key", () => {
     const manifest = makeManifest([
       makeDoc({
         slug: "projects/atlas",
@@ -581,7 +570,7 @@ describe("element display 인간화 — 슬라이스 B (코드 경로 → 사람
         own: authoredIds.has(n.id),
       });
     }
-    // Each of the eight relation keys derives one node (singular `domain` included).
+    // One derived node per relation key, singular `domain` included.
     expect(result.nodes.filter((n) => !n.hasOwnDocument)).toHaveLength(8);
   });
 });

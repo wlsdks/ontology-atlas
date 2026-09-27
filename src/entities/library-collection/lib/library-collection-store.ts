@@ -19,14 +19,7 @@ export class LibraryCollectionsStaleCompletionError extends Error {
 
 const queues = new WeakMap<FileSystemDirectoryHandle, Promise<void>>();
 
-/**
- * Whether a read failure only means "nothing was saved here yet".
- *
- * The installed app rejects with the native command's **string**, never an `Error`, so a
- * check that only looked at `Error#message` classified every native not-found as a read
- * failure and the map answered a vault that never saved a constellation with "could not
- * read your saved constellations".
- */
+/** A not-found read means nothing saved yet; the app rejects with a string, not an `Error`. */
 export function isMissingLibraryCollectionsError(error: unknown): boolean {
   if (error instanceof DOMException) return error.name === 'NotFoundError';
   const message = typeof error === 'string' ? error : error instanceof Error ? error.message : null;
@@ -68,11 +61,8 @@ async function writeBrowser(handle: FileSystemDirectoryHandle, content: string):
 }
 
 /**
- * Saves against the handle captured by the caller. `isCurrent` rejects stale work before initiating
- * the write and again before returning, so UI state cannot accept a completion from a vault that is
- * no longer selected. A started filesystem operation cannot be cancelled and may still finish in
- * its captured vault. Browser FSA has no atomic CAS; this serializes Atlas writes for the handle and
- * compares immediately before its best-effort write.
+ * Saves against the caller's captured handle; `isCurrent` rejects stale work before and after the
+ * write. FSA has no atomic CAS, so writes are serialized and compared just before saving.
  */
 export async function saveLibraryCollections(
   capturedHandle: FileSystemDirectoryHandle,

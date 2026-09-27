@@ -28,7 +28,7 @@ function makeProject(partial: Partial<Project> = {}): Project {
 }
 
 describe("projectToInput", () => {
-  it("값이 동일하게 매핑", () => {
+  it("maps values unchanged", () => {
     const project = makeProject();
     const input = projectToInput(project);
     expect(input.slug).toBe(project.slug);
@@ -48,7 +48,7 @@ describe("projectToInput", () => {
     expect(input.links).toEqual(project.links);
   });
 
-  it("arrays 는 새 참조 (immutable copy) — 원본 mutation 회피", () => {
+  it("copies arrays", () => {
     const project = makeProject();
     const input = projectToInput(project);
     expect(input.tags).not.toBe(project.tags);
@@ -58,7 +58,7 @@ describe("projectToInput", () => {
     expect(input.links).not.toBe(project.links);
   });
 
-  it("nested object (timeline / position / link entry) 도 새 참조", () => {
+  it("copies nested objects", () => {
     const project = makeProject();
     const input = projectToInput(project);
     expect(input.timeline).not.toBe(project.timeline);
@@ -66,14 +66,14 @@ describe("projectToInput", () => {
     expect(input.links![0]).not.toBe(project.links[0]);
   });
 
-  it("input 의 array mutation 이 원본 Project 에 안 새어 들어감", () => {
+  it("does not leak input array mutations into the source Project", () => {
     const project = makeProject();
     const input = projectToInput(project);
     input.tags!.push("c");
     expect(project.tags).toEqual(["a", "b"]);
   });
 
-  it("vault에 없는 category/status를 변환 단계에서 주입하지 않음", () => {
+  it("does not inject a category or status absent from the vault", () => {
     const project = makeProject({ category: undefined, status: undefined });
     const input = projectToInput(project);
 

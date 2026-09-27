@@ -83,8 +83,7 @@ describe("AGENT_PRACTITIONER_CONCERNS", () => {
 
     const checklist = formatAgentPractitionerConcernsChecklist();
 
-    // Every concern reaches the checklist with its gate and its sources; the wording is
-    // the data's, so only the structure is asserted here.
+    // Wording belongs to the data, so only the structure is asserted.
     for (const concern of AGENT_PRACTITIONER_CONCERNS) {
       expect(checklist).toContain(concern.title);
       expect(checklist).toContain(concern.gate);
