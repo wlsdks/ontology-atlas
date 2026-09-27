@@ -74,6 +74,21 @@ finding, never a reason to judge code by eye.
 - `agent-action` — the visible state gives a real next MCP or CLI action an
   agent can run, bound to the fact on screen, with a CLI fallback.
 
+Source lenses, for hygiene, refactor and structural slices:
+
+- `self-explaining` — read five sampled changed files without the diff and
+  state each exported symbol's purpose in one sentence; then read the diff. A
+  deleted comment whose reason the code no longer shows is a finding, as is a
+  rename or extraction that crosses a file, changes an exported name, or
+  changes behaviour.
+- `lean` — compare lines before and after per file. Growth from a split,
+  extraction or rename, or a wrapper, option, branch or helper no caller
+  needs, is a finding.
+- `algorithm` — for layout, search and matching, diffing, parsing and graph
+  traversal: name the complexity and data structure, and check empty, single,
+  duplicate, cyclic, Hangul and largest-measured inputs against the tests.
+  Never waived for a low-effort implementer's slice.
+
 ## Report
 
 Verdict first. Then each finding, most severe first: the lens, file:line or
