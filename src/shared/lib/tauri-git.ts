@@ -153,7 +153,7 @@ export interface GitFetchResult {
 export interface GitDiffResult {
   count: number;
   files: GitChangeEntry[];
-  /** Text diff of tracked files; untracked new files appear only in `files`. Empty past 2 MiB. */
+  /** Text diff of tracked files; untracked new files appear only in `files`. */
   diff: string;
 }
 
@@ -347,7 +347,7 @@ export async function gitHistory(
   return invoke<GitCommitInfo[]>('git_history', { vaultPath, limit, path: path ?? null });
 }
 
-/** Uncommitted vault changes: the file list, and the patch unless `includePatch` is false. */
+/** File list plus text diff for uncommitted changes within the vault. */
 export async function gitDiff(
   vaultPath: string,
   options?: { includePatch?: boolean },

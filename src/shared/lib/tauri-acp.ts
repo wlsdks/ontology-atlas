@@ -118,7 +118,7 @@ let lastLoginCheck: { startedAt: number; answer: Promise<AcpRuntimeStatus[]> } |
  * default — the screen **paints first and corrects later**.
  *
  * Login checks are shared: one in flight, reused for `LOGIN_CHECK_REUSE_MS`; `force` re-asks.
- * An answer that asks for a sign-in is not reused, since the person may be signing in now.
+ * An answer asking for a sign-in is not reused.
  */
 export async function detectAcpRuntimes(
   options?: { probeLogin?: boolean; force?: boolean },
