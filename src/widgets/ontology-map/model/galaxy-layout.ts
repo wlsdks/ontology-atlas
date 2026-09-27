@@ -27,7 +27,7 @@ export interface GalaxyLayout {
 
 const clamp01 = (value: number): number => Math.min(1, Math.max(0, value));
 
-const compareIds = (left: string, right: string): number => (left < right ? -1 : left > right ? 1 : 0);
+const compareIds = new Intl.Collator("en").compare;
 
 export function galaxySpiralPoint(
   t: number,

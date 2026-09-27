@@ -67,6 +67,25 @@ describe("Galaxy layout", () => {
     expect(layoutWhereCollationIs("ko")).toEqual(layoutWhereCollationIs("en"));
   });
 
+  it("keeps the English order for ids with capitals and underscores", () => {
+    const nodes = [
+      { id: "project:Zeta", kind: "project" as const, parentId: null },
+      { id: "project:alpha", kind: "project" as const, parentId: null },
+      { id: "domain:Billing", kind: "domain" as const, parentId: "project:alpha" },
+      { id: "domain:_shared", kind: "domain" as const, parentId: "project:alpha" },
+      { id: "domain:auth", kind: "domain" as const, parentId: "project:alpha" },
+      { id: "domain:card_payments", kind: "domain" as const, parentId: "project:alpha" },
+    ];
+    const layout = computeGalaxyLayout(nodes, RINGS);
+    const fromCore = (id: string) => {
+      const point = layout.points.get(id)!;
+      return Math.hypot(point.x, point.y / GALAXY_VERTICAL_FLATTEN);
+    };
+    expect(layout.points.get("project:alpha")).toEqual({ id: "project:alpha", x: 0, y: 0 });
+    expect(nodes.filter((node) => node.kind === "domain").map((node) => node.id).sort((a, b) => fromCore(a) - fromCore(b)))
+      .toEqual(["domain:_shared", "domain:auth", "domain:Billing", "domain:card_payments"]);
+  });
+
   it("does not place every domain on one ring", () => {
     const layout = computeGalaxyLayout(NODES, RINGS);
     const distances = NODES.filter((node) => node.kind === "domain").map((node) => {
