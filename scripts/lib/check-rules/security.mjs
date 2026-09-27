@@ -1,0 +1,66 @@
+/** Where untrusted input meets a capability. Every match runs the security contracts; the first rule also asks for the reviewer's `security` lens. */
+
+const SECURITY_CONTRACTS = [
+  'tests/contract/security-surfaces.contract.test.ts',
+  'tests/contract/url-scheme-one-door.contract.test.ts',
+  'tests/contract/wikilink-url-scheme.contract.test.ts',
+  'tests/contract/json-ld-script-safety.contract.test.ts',
+  'tests/contract/desktop-route-payload-csp.contract.test.ts',
+  'tests/contract/github-action-pins.contract.test.ts',
+  'tests/contract/workflow-security.contract.test.ts',
+  'tests/contract/vault-freshness-workflow-security.contract.test.ts',
+  'tests/contract/secret-read-guard.contract.test.ts',
+  'tests/contract/connector-secrets-off-disk.contract.test.ts',
+  'tests/contract/connector-secret-ref-parity.contract.test.ts',
+  'tests/contract/mcp-vault-safety.contract.test.ts',
+  'tests/contract/updater-feed.contract.test.ts',
+  'tests/contract/llm-audit-log.contract.test.ts',
+  'tests/contract/acp-gate-safe-modes.contract.test.ts',
+  'tests/contract/acp-runtime-gate.contract.test.ts',
+  'tests/contract/acp-permission-option-choice.contract.test.ts',
+  'tests/contract/acp-session-scope.contract.test.ts',
+  'tests/contract/acp-disk-disclosure.contract.test.ts',
+];
+
+const command = `pnpm exec vitest run ${SECURITY_CONTRACTS.join(' ')}`;
+
+export const rules = [
+  {
+    order: 1350,
+    command,
+    reason: 'a security surface changed: the security contracts run, and it lands only after one `reviewer` applies the `security` lens',
+    matches: [
+      /^mcp\/src\/(?!.*\.test\.mjs$).+\.(?:mjs|js)$/,
+      /^src-tauri\/src\/.+\.rs$/,
+      /^src-tauri\/capabilities\/.+\.json$/,
+      /^src-tauri\/tauri(?:\.[a-z0-9-]+)?\.conf\.json$/,
+      /^src-tauri\/Cargo\.lock$/,
+      /^src\/shared\/lib\/tauri-[a-z0-9-]+\.ts$/,
+      /^src\/shared\/lib\/source-citation\.ts$/,
+      /^src\/features\/(?:acp-session|mcp-connectors)\/model\/(?!.*\.test\.tsx?$).+\.tsx?$/,
+      /^\.github\/(?:workflows|actions)\/.+\.ya?ml$/,
+      /^(?:mcp\/)?pnpm-lock\.yaml$/,
+      /^\.claude\/settings\.json$/,
+      /^\.(?:claude|codex)\/hooks\/.+\.sh$/,
+      /^scripts\/(?:build-updater-manifest|repack-macos-updater-archive|stage-hosted-updater-manifest|sign-macos-app)\.mjs$/,
+    ],
+  },
+  {
+    order: 1351,
+    command,
+    reason: 'a file that renders vault or agent text changed: the security contracts run, including the raw-sink ratchet',
+    matches: [
+      /^src\/features\/mcp-connectors\/ui\/(?!.*\.test\.tsx?$).+\.tsx?$/,
+      /^src\/widgets\/acp-chat-panel\/(?!.*\.test\.tsx?$).+\.tsx?$/,
+      /^src\/shared\/ui\/(?:accent-boot-script|json-ld|node-explanation-edit)\.tsx$/,
+      /^src\/widgets\/docs-vault\/ui\/(?:DocsVaultBacklinks|DocsVaultEditor|DocsVaultViewer)\.tsx$/,
+      /^src\/features\/project-edit\/ui\/MarkdownField\.tsx$/,
+      /^src\/views\/gateway-doc\/ui\/GatewayDocPage\.tsx$/,
+      /^src\/views\/library\/ui\/(?:LibraryPage|parts\/AnswerRevisionComparison)\.tsx$/,
+      /^src\/views\/project-detail\/ui\/ProjectBriefSummary\.tsx$/,
+      /^src\/widgets\/(?:analysis-workbench\/ui\/AnalysisWorkbench|full-detail-a1\/ui\/FullDetailA1)\.tsx$/,
+      /^scripts\/lib\/check-rules\/security\.mjs$/,
+      /^tests\/contract\/security-surfaces\.contract\.test\.ts$/,
+    ],
+  },
+];

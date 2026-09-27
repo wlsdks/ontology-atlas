@@ -5,6 +5,8 @@ import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { pathToFileURL } from 'node:url';
 
+import { rules as SECURITY_RULES } from './check-rules/security.mjs';
+
 import {
   CHECK_RULES_DIRECTORY,
   composeCheckRules,
@@ -28,9 +30,11 @@ function commandNames(result) {
 // source-language scan, so domain assertions leave it out; its own test pins it.
 const isScriptLint = (command) => command.startsWith('pnpm exec eslint --max-warnings 0 --no-warn-ignored ');
 
+const SECURITY_COMMAND = SECURITY_RULES[0].command;
+
 function domainCommands(result) {
   return commandNames(result).filter(
-    (command) => command !== SOURCE_LANGUAGE_COMMAND && command !== DEAD_CODE_COMMAND && !isScriptLint(command),
+    (command) => command !== SOURCE_LANGUAGE_COMMAND && command !== DEAD_CODE_COMMAND && command !== SECURITY_COMMAND && !isScriptLint(command),
   );
 }
 
@@ -1879,5 +1883,38 @@ describe('rule files under scripts/lib/check-rules are the registry', () => {
     const commands = commandNames(suggestFocusedChecks(['scripts/lib/check-rules/mcp.mjs']));
     assert.ok(commands.includes('pnpm test:checks:changed'), commands.join('\n'));
     assert.ok(commands.includes('pnpm test:ci:impact'), commands.join('\n'));
+  });
+});
+
+describe('security surfaces', () => {
+  const securityRow = (path) =>
+    suggestFocusedChecks([path]).commands.find((row) => row.command === SECURITY_COMMAND);
+
+  it('asks for the security lens where untrusted input meets a capability', () => {
+    for (const path of [
+      'mcp/src/vault.mjs',
+      'src-tauri/src/lib.rs',
+      '.github/workflows/checks.yml',
+      'pnpm-lock.yaml',
+      'mcp/pnpm-lock.yaml',
+      'src/shared/lib/tauri-external-link.ts',
+      'src/features/acp-session/model/acp-client.ts',
+    ]) {
+      assert.match(securityRow(path)?.reason ?? '', /`security` lens/, path);
+    }
+  });
+
+  it('runs the security contracts without the lens where vault or agent text is rendered', () => {
+    for (const path of ['src/widgets/docs-vault/ui/DocsVaultViewer.tsx', 'src/widgets/acp-chat-panel/ui/AcpChatPanel.tsx']) {
+      const row = securityRow(path);
+      assert.ok(row, path);
+      assert.doesNotMatch(row.reason, /`security` lens/, path);
+    }
+  });
+
+  it('stays silent outside every security surface', () => {
+    for (const path of ['src/shared/lib/cn.ts', 'mcp/src/vault.test.mjs', 'docs/README.md', 'cli/src/index.mjs']) {
+      assert.equal(securityRow(path), undefined, path);
+    }
   });
 });
