@@ -32,8 +32,7 @@ describe('buildEvidenceDetails', () => {
   });
 
   it('counts a concept once, under the verdict its line counted', () => {
-    // A concept can have a vanished path *and* a moved one. The line counts it as missing, so
-    // it must not also appear under the moved line.
+    // A concept with a vanished path and a moved one counts as missing, so it is not listed under moved.
     const details = buildEvidenceDetails({
       rows: [
         row({
@@ -61,11 +60,8 @@ describe('buildEvidenceDetails', () => {
   });
 
   it('discloses exactly as many rows as the lines counted', () => {
-    /*
-     * The invariant the split broke: the sentence counts concepts and the disclosure lists
-     * them, so the two numbers are the same number. Run the real resolver so a change to either
-     * side has to keep them equal.
-     */
+    // The sentence counts concepts and the disclosure lists them, so the numbers match; the real resolver runs so
+    // neither side can drift alone.
     const changes = new Map([
       ['capabilities/pay.md', { exists: true, lastChangedAt: '2026-09-10T00:00:00Z' }],
       ['src/pay.ts', { exists: true, lastChangedAt: '2026-09-12T00:00:00Z' }],

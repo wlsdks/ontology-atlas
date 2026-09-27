@@ -37,12 +37,8 @@ function hrefs(): string[] {
 }
 
 /**
- * **A panel that cannot count still has somewhere to send you.**
- *
- * In a browser this offered the app and nothing else, so a reader who wanted to know what guidance
- * coverage even is had one door and it left the product (walkthrough, 2026-09-20). The Harness
- * screen renders its approved structure, roles and rules in a browser perfectly well; only the
- * counts need the app.
+ * A panel that cannot count still links to the Harness screen, which renders structure, roles and rules in a
+ * browser; only the counts need the app.
  */
 describe("the guidance panel's unmeasured states", () => {
   for (const availability of ["app-only", "no-source", "reading", "unreadable"] as const) {

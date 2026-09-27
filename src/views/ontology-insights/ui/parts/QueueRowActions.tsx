@@ -9,46 +9,26 @@ import { controlClass } from "@/shared/ui/control-class";
 import { Surface } from "@/shared/ui/surface";
 
 /**
- * The overflow actions on a "to do" row — the three named actions stay on the row and the rest fold
- * into the kebab.
- *
- * It lives here because both the queue rows and the meaning-gap rows use the same set. Two copies
- * would give one kebab different items per surface.
- *
- * The standalone copy button that used to live beside this menu was deleted on 2026-08-31 with the
- * one-list "to do" tab: the row now carries three named actions plus this kebab, and a fourth
- * always-visible control offering what the kebab already offers was the redundancy the owner asked
- * to remove.
- *
- * ## Labels are **translated** by session ability (never hidden or greyed out)
- *
- * This screen knows nothing about accounts, so it does not distinguish people. Instead it states
- * honestly only what the session can do right now — in a read-only folder "edit in the workshop" is
- * a door that cannot be walked through and becomes "view in the workshop", and in a folder where no
- * agent was observed "verify with an agent" becomes "copy the command to hand over" (passing it to
- * a colleague is this product's original verb, a handoff). Removing the item loses the very fact
- * that the product has such a feature, and a greyed-out disabled button states no reason.
+ * The overflow actions on a to-do row, shared by queue and meaning-gap rows so one kebab has one item set.
+ * Labels change with session ability, never hidden or greyed: a read-only folder offers "view in the workshop",
+ * and a folder with no observed agent offers "copy the command to hand over".
  */
 
 export interface QueueRowActionLabels {
   openSource: string;
   openBuilder: string;
-  /** The same slot in a read-only session — view rather than write. */
+  /** The same slot in a read-only session: view rather than write. */
   openBuilderReadOnly: string;
   handoffCopy: string;
-  /** The same slot in a session where no agent was observed — handoff rather than verification. */
+  /** The same slot when no agent was observed: handoff rather than verification. */
   handoffCopyIdle: string;
   handoffCopied: string;
-  /** When the clipboard is blocked — silence reads as success. */
+  /** When the clipboard is blocked; silence would read as success. */
   handoffCopyFailed: string;
-  /** What to do after copying — the same sentence goes to a screen reader. */
+  /** What to do after copying; the same sentence goes to a screen reader. */
   handoffCopiedHint: string;
   rowMenuTrigger: string;
-  /**
-   * The slot that hands this row to the map's agent in words. Optional: where there is no agent
-   * surface, neither the label nor the address arrives and the item does not appear (a door that
-   * will not open is not drawn).
-   */
+  /** Hands the row to the map's agent. Absent where there is no agent surface, and the item is then not drawn. */
   askAgent?: string;
 }
 
@@ -85,20 +65,11 @@ export function RowActionMenu({
 }: {
   sourceHref: string | null;
   builderHref: string;
-  /**
-   * Drop the builder item because the row itself already carries it.
-   *
-   * The one-list "to do" tab promotes "fix it myself" out of the kebab and onto the row, so
-   * leaving the item here too would offer one action twice in one row. Every other caller keeps
-   * the default and keeps the item.
-   */
+  /** Drop the builder item when the row already carries "fix it myself", so one action is not offered twice. */
   hideBuilder?: boolean;
   /**
-   * Crosses to the map and opens the agent panel with a sentence carrying this row's context.
-   * **The address carries only the kind of intent**; the sentence is composed by the destination's
-   * opening-line generator (both entry points must pass through one function or they diverge).
-   * That surface exists only in the desktop app, so this only offers a link, and where there is no
-   * bridge the caller does not supply this value and the item does not appear at all.
+   * Opens the map's agent panel with this row's context. The address carries only the intent kind; the destination's
+   * opening-line generator writes the sentence. Desktop only, so absent elsewhere and the item is not drawn.
    */
   askAgentHref?: string | null;
   handoffPayload: string;
@@ -107,7 +78,7 @@ export function RowActionMenu({
   abilities: QueueRowAbilities;
   labels: QueueRowActionLabels;
 }) {
-  // This menu rides the same contract — a failure must be stated.
+  // A copy failure must be stated here too.
   const { state: menuCopyState, copy: copyHandoff } = useCopyFeedback();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -116,11 +87,8 @@ export function RowActionMenu({
   const [placeAbove, setPlaceAbove] = useState(false);
 
   /**
-   * ⚠️ **The usable bottom is the tab bar's top, not the window's.** At 900×900 the menu hung
-   * under a low row to y=864 and the bottom tab bar (from y≈843) cut its last item in half —
-   * `elementFromPoint` at both lower corners returned a tab link (2026-09-25). The menu now
-   * measures its own height against the room between the trigger and that edge and opens
-   * upward when it would not fit below and there is more room above.
+   * The usable bottom is the tab bar's top, not the window's: the menu measures its height against the room below
+   * the trigger and opens upward when it would not fit and there is more room above.
    */
   useLayoutEffect(() => {
     if (!open) return;
@@ -166,16 +134,8 @@ export function RowActionMenu({
   }, [open]);
 
   /**
-   * One menu item is one line of a list → `row`. `<Link>` and `<button>` use the same string, so it
-   * is bound to one constant (letting them diverge gives items different heights inside the menu).
-   * Only the hover ink the ramp does not emit remains here.
-   *
-   * `row` carries `w-full`, but this menu is already `flex-col` (i.e. stretch), so the width is
-   * unchanged.
-   *
-   * ⚠️ **One line per item, one height.** In a 160px menu the handoff item wrapped to two lines,
-   * so the two items stood 28 and 44px tall (2026-09-25). The menu now sizes to its longest item
-   * (`w-max`, at least 16rem) and every item is one 32px line.
+   * One menu item is one list line (`row`), bound to one constant for `<Link>` and `<button>` so heights match.
+   * The menu sizes to its longest item (`w-max`, at least 16rem), so every item is one 32px line.
    */
   const menuItemClass = controlClass({
     shape: "row",
@@ -199,8 +159,7 @@ export function RowActionMenu({
       >
         <MoreHorizontal size={ICON_SIZE.md} aria-hidden />
       </button>
-      {/* Right-aligned under (or, near the bottom edge, over) the «⋯» at the end of the row — its
-          entrance origin is that corner too. */}
+      {/* Right-aligned under the row's end (over it near the bottom edge); the entrance origin is that corner too. */}
       <Surface
         ref={setMenuNode}
         open={open}

@@ -19,50 +19,16 @@ import { RowDisclosure } from '@/shared/ui/row-disclosure';
 import { Choice, DETAIL_TOGGLE_CHIP, RESET_LINK_INK, Slider } from './settings-primitives';
 
 /**
- * Expand settings — **how** a collapsed group opens.
- *
- * ## Where it came from
- *
- * It is the left panel of the mockup `.qa-scratch/proto-expand.html` ported over.
- * That mockup was an **instrument** built to measure 3 affordance options, 3
- * structure options and 3 numbers side by side, and its controls and explanatory
- * copy were transplanted here (the copy is the mockup's words, not newly written).
- * 「Scale Size」 (small/real/large), which existed only in the mockup, was **a test
- * load** and was not brought over — it was the mockup's handle for measuring
- * itself, not a product setting.
- *
- * ## Why all three ship — and what the default is
- *
- * Shipping "the thing built for choosing between" as a setting leaves «we did not
- * choose» in the product. So the owner **chose**: the default affordance is
- * 「Bar Above」 (the bar above the head), 2026-08-01. The other two remain options,
- * because which of the three wins genuinely varies with density and screen size,
- * and the options shrink once those observations accumulate. The judgement and its
- * falsifier are in `docs/DECISIONS.md`.
- *
- * ## The three numbers are not new values
- *
- * They were already constants in the code (`EGO_NEIGHBOR_LIMIT` 24 ·
- * `DISC_LABEL_TOP_K` 8 · `MAX_EXPANDED_PARENTS` 3). The mockup pulled them out as
- * sliders to measure, and now those constants **take** this setting's defaults —
- * so the value is not written in two places.
+ * Expand settings: how a collapsed group opens. The default affordance is the bar above;
+ * the other two stay because the winner varies with density and screen size (judgement and
+ * falsifier in `docs/DECISIONS.md`). The three sliders' defaults are the values the
+ * constants `EGO_NEIGHBOR_LIMIT`, `DISC_LABEL_TOP_K` and `MAX_EXPANDED_PARENTS` take.
  */
 export function ExpandSettings() {
   const t = useTranslations('nav.settingsMenu.expand');
   const pref = useExpand();
   const set = (patch: Partial<ExpandPreference>) => writeExpand({ ...pref, ...patch });
-  /**
-   * The three numbers **start collapsed** (design audit, 2026-08-02).
-   *
-   * Six items standing as three equally weighted boxes make this section read as a
-   * **list** rather than «a place to choose» (measured: three sibling boxes with
-   * identical border, radius and 12px gap — the screen does not say what comes
-   * first). There are two decisions ("what do I press", "how is it laid out"). The
-   * three numbers are constants that were already in the code, so most people never
-   * touch them and only tinkerers need them. The immediate neighbour 「Footprint」 already
-   * solved the same problem with the same grammar (presets first, 「Adjust Manually」
-   * second), so that is used rather than inventing a new one.
-   */
+  /** The three numbers start collapsed behind the two decisions, as in Footprint. */
   const [detailOpen, setDetailOpen] = useState(false);
   const detailId = useId();
 
@@ -80,9 +46,6 @@ export function ExpandSettings() {
 
   return (
     <div className="grid min-w-0 gap-3" data-testid="app-settings-expand">
-      {/* What this pane does is said once, by the pane head (`SettingsPaneHead`). The two
-          decision boxes wear the settings group surface (`overlay-1`) so they layer like
-          every other pane's cards instead of standing as bare outlines. */}
       <div className="grid min-w-0 gap-0.5 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2">
         <Choice
           label={t('affordanceLabel')}
@@ -92,9 +55,7 @@ export function ExpandSettings() {
           options={AFFORDANCES}
           onChange={(affordance) => set({ affordance })}
         />
-        {/* One line on what the current choice does — the mockup's hint, verbatim.
-            With three side by side the names alone do not separate them (which is why
-            the mockup had hints). */}
+        {/* The names alone do not separate three side-by-side choices, so the current one is described. */}
         <p
           data-testid="app-settings-expand-affordance-hint"
           className="px-1 pb-1 break-keep text-label text-[color:var(--color-text-tertiary)]"
@@ -121,9 +82,6 @@ export function ExpandSettings() {
       </div>
 
       <div className="min-w-0">
-      {/* The detail toggle and the reset share one row: open-more on the start line, the
-          escape hatch on the cards' right edge, both the sheet's `lg` chip (2026-09-25). The
-          reset used to be bare 11px text on a line of its own with no control affordance. */}
       <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
       <Chip
         size="lg"

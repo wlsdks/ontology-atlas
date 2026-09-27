@@ -64,10 +64,6 @@ export function useTopologyInspectorState({
   const { meaningWorkbenchOpen, acpDockFrameOpen, reviewUsesSheet } = homeWorkbenchController;
   const { agentDockRequestedOpen, renderedIndexState } = topologyIndexPresentation;
 
-  // The "path" action tile sets this node as the path-analysis source and
-  // enters path mode. Reuses `selectTopologyPathRouteState` (already defined
-  // in `model/url-state.ts` for the URL-driven path deep link, but never
-  // wired to an in-app interaction until now) — no new path-mode entry logic.
   const handleSetPathSource = useCallback(
     (slug: string) => {
       setExpandAllActive(false);
@@ -83,25 +79,16 @@ export function useTopologyInspectorState({
     },
     [setExpandAllActive, interactionSelectedSlugRef, setFullDetailSlug, setSelectedRelationActive, setRouteState],
   );
-  // Context-menu quick-action model — same construction as
-  // `v2DatasheetModel` (documentHref/meaningEditHref/handoffText), but keyed
-  // off whichever node was right-clicked rather than the current selection,
-  // since the context menu is reachable without selecting the node first.
-  // `domainTitle: null` in the handoff payload is a deliberate simplification
-  // (the owner-domain lookup lives in `buildNodeSignificance`, which needs the
-  // full drawer model this quick lookup intentionally skips) — the payload
-  // still degrades to `domain: -`, never throws or omits the field.
+  // Built like `v2DatasheetModel` but for the right-clicked node, which need not be selected.
+  // `domainTitle: null` skips the drawer model; the payload degrades to `domain: -`.
   const contextMenuModel = useMemo(() => {
     if (!contextMenuNode || !ontologyInsight) return null;
     const node = ontologyInsight.nodes.find((n) => n.id === contextMenuNode.slug);
     if (!node) return null;
     const sourceSlug = node.evidenceIds[0] ?? null;
-    // Own document vs. a document that merely mentions it. The context menu has no
-    // evidence list, so simply dropping the link for a node with no document of its
-    // own would lose the information; the label changes instead and stays honest.
+    // Without an evidence list the label changes instead of dropping the link.
     const { ownSlug, mentionedInSlug } = resolveNodeDocument(node);
-    // The handoff text carries the name the vault knows: the document slug, or the
-    // reference as written.
+    // The document slug, or the reference as written.
     const agentTarget = resolveNodeAgentTarget(node);
     const slug = agentTarget.ref ?? sourceSlug ?? node.id;
     const connections = buildV2Connections(node.id, ontologyInsight.nodes, ontologyInsight.edges);
@@ -127,8 +114,7 @@ export function useTopologyInspectorState({
       nodeId: node.id,
       title: node.display ?? node.title,
       slug,
-      // Same return marker as the datasheet model: a document opened from the map keeps a
-      // crumb back to the node it was opened from.
+      // A document opened from the map keeps a crumb back to its node.
       documentHref: ownSlug
         ? buildDocsVaultHref({ slug: ownSlug, via: buildTopologyReturnMarker(node.id) })
         : null,
@@ -138,16 +124,11 @@ export function useTopologyInspectorState({
           via: buildTopologyReturnMarker(node.id),
         })
         : null,
-      // Editor deep links always use the canonical `<kind>:<slug>` graph node id.
       meaningEditHref: buildTopologyMeaningEditorNodeHref(node.id),
       handoffText,
     };
   }, [contextMenuNode, handoffSource, ontologyInsight]);
-  /*
-   * The context menu has an exit window too, and its anchor and model must be held
-   * through it or it becomes an empty menu while closing. The key is slug + position:
-   * right-clicking the same node somewhere else is a new value.
-   */
+  // Held through the exit window, or it closes as an empty menu. Keyed by slug and position.
   const contextMenuKey = contextMenuNode
     ? `${contextMenuNode.slug}@${contextMenuNode.x},${contextMenuNode.y}`
     : null;
@@ -158,9 +139,7 @@ export function useTopologyInspectorState({
     contextMenuKey,
   );
 
-  // Full detail is the datasheet expanded. Its groups and reach come from the same
-  // source as the compact datasheet (derived from `buildV2Connections`, reusing
-  // `buildOntologyReachability`), so the two surfaces' numbers cannot drift.
+  // Same source as the compact datasheet, so the two surfaces' numbers cannot drift.
   const fullDetailA1Model = useFullDetailA1Model({
     open: fullDetailOpen,
     nodeFocus,
@@ -173,13 +152,8 @@ export function useTopologyInspectorState({
     onSaveExplanation: saveNodeExplanation,
     datasheet: v2DatasheetModel,
   });
-  /*
-   * Full detail's model **becomes null the instant it closes** — that is exactly the
-   * gate against deriving a model for a surface that is not on screen — so opening an
-   * exit window means holding the value too. The key is the slug: this model comes
-   * from a `useMemo` whose identity changes every render, and passing it with no key
-   * kills the whole map with React #301 (measured on the edge panel).
-   */
+  // The model turns null on close, so the exit window holds it. Keyed by slug: an unkeyed
+  // per-render `useMemo` value crashes the map with React #301.
   const heldFullDetailA1Model = useHeldValue(fullDetailA1Model, fullDetailSlug);
   const selectedNodeFocusActive =
     Boolean(
@@ -198,10 +172,7 @@ export function useTopologyInspectorState({
     !createNodeOpen &&
     !nodePopoverDismissed,
   );
-  // Whether the compact node popover is actually on screen (the same condition the
-  // popover JSX renders under). Drives both the Esc dismissal order's
-  // `nodePopoverOpen` step and the popover's own render guard, so the two can never
-  // disagree about whether the first Esc should close it.
+  // Drives both the Esc ladder's `nodePopoverOpen` and the popover's render guard, so they agree.
   const nodePopoverVisible =
     selectedNodeFocusActive &&
     !meaningWorkbenchOpen &&
@@ -209,24 +180,12 @@ export function useTopologyInspectorState({
     !selectedRelationActive &&
     !createNodeOpen &&
     !nodePopoverDismissed;
-  // Popover entrance/exit symmetry. When `panelOpen` drops to false the panel is not
-  // unmounted immediately but kept for the exit animation (~120 ms). During the exit
-  // the selection-derived `v2DatasheetModel` goes null, so the helper holds its latest
-  // immutable snapshot. A different selected node gets no old snapshot while its own
-  // model is still unavailable.
-  //
-  // 2026-08-03: **the exit window now belongs to the panel** (the `<Surface>` inside
-  // `OntologyMapDetailPanel`). The old `usePanelPresence` + `presence` prop pairing kept
-  // the window in the parent and only told the child which class to wear, which made
-  // "does this surface have a way out" a fact living outside the panel's own file —
-  // somewhere the hard-cut ratchet's detector cannot see. All that remains here is
-  // **when to take the positioner down**, and the answer is the panel's own `onExited`
-  // notification: two exit timers on one surface means neither is the truth.
+  // The panel owns its exit window (`<Surface>` in `OntologyMapDetailPanel`); this only takes the
+  // positioner down on its `onExited`. The helper holds the last snapshot while `v2DatasheetModel`
+  // is null; another node never inherits it.
   const panelOpen = nodePopoverVisible && Boolean(v2DatasheetModel) && !meaningEditorOpen;
   const [nodePanelMounted, setNodePanelMounted] = useState(false);
-  // Adjusted during render. Raising this in an effect leaves the positioner missing on
-  // the first open frame and delays the entrance by one frame (`useHeldValue` holds
-  // during render for the same reason).
+  // Set during render: an effect would drop the positioner on the first open frame.
   if ((panelOpen || meaningEditorOpen) && !nodePanelMounted) setNodePanelMounted(true);
   const panelDatasheetModel = useRetainedDatasheetModel(
     v2DatasheetModel,
@@ -234,8 +193,7 @@ export function useTopologyInspectorState({
   );
   useLayoutEffect(() => {
     if (!panelOpen || detailKeyboardTargetRef.current !== panelDatasheetModel?.nodeId) return;
-    // Related-node navigation replaces the inspector and its focused row. Keep
-    // keyboard focus on the new inspector's stable, visible close control.
+    // Related-node navigation replaces the inspector; keep focus on its stable close control.
     const close = detailCloseButtonRef.current;
     if (close) {
       close.focus({ preventScroll: true });
@@ -243,13 +201,8 @@ export function useTopologyInspectorState({
     }
   }, [detailCloseButtonRef, detailKeyboardTargetRef, panelDatasheetModel?.nodeId, panelOpen]);
   const selectedNodeOwnsRightRail = selectedNodeFocusActive && !meaningWorkbenchOpen && !acpDockFrameOpen;
-  /*
-   * The connection card stands where the node inspector stands (same right inset, same
-   * top), so it owns the right rail on the same terms: the help, agent and recent tiles
-   * and the activity chip step aside while it is up. Owner's screen, 2026-09-06: with a
-   * relation card open the tiles and the "Claude Agent, last worked" chip sat under
-   * its header, half covered.
-   */
+  // The connection card stands where the node inspector does, so the right-rail tiles and activity
+  // chip step aside.
   const selectedEdgeOwnsRightRail = edgePanelOpen && !meaningWorkbenchOpen && !acpDockFrameOpen;
   const inspectorOwnsRightRail = selectedNodeOwnsRightRail || selectedEdgeOwnsRightRail;
   const topologyUtilityChromeState = selectedRelationActive
@@ -264,37 +217,19 @@ export function useTopologyInspectorState({
     topologyUtilityChromeState === "compact-focus" ||
     topologyUtilityChromeState === "selected-node-inspector" ||
     agentDockRequestedOpen;
-  // Width-driven compaction of the search lane alone — see `search-lane-density.ts`
-  // for the measured band. The utility group keeps its own state-driven rule.
+  // See `search-lane-density.ts` for the measured band.
   const searchLaneCrowded = isSearchLaneCrowded({
     viewportBelowCrowdedWidth: useViewportBelow(SEARCH_LANE_CROWDED_BELOW_PX),
     indexExpanded: renderedIndexState === "expanded",
   });
-  /*
-   * `<lg` the selected-node sheet and the expanded INDEX are **not two surfaces
-   * sharing a screen** — the sheet is drawn over the INDEX. Measured 2026-09-05
-   * (390×844 and 834×1112, node picked from the INDEX tree): 24 of the INDEX's 25
-   * controls hit-tested to the sheet, so every one of them was a control the user
-   * could see, could reach with Tab, and could not press. At `lg` and above the two
-   * genuinely coexist — the approved chrome spec draws both over the map — so this
-   * is a width-bound demotion, not a new exclusivity rule.
-   *
-   * `inert` and `pointer-events-none` are one pair: `inert` removes the rows from the
-   * a11y tree and the focus order, `pointer-events-none` keeps a stray tap from
-   * landing on a row the sheet is painting over. The wrapper already uses exactly
-   * this pair for its exit frame.
-   */
+  // Below `lg` the node sheet covers the expanded INDEX, whose controls stay tabbable but
+  // unpressable, so INDEX is demoted there; at `lg` and above both coexist. `inert` removes rows
+  // from focus and the a11y tree, `pointer-events-none` stops stray taps.
   const indexDemotedByNodeSheet =
     useViewportBelow(LG_BREAKPOINT_PX) && nodePanelMounted && Boolean(panelDatasheetModel);
-  /*
-   * The utility lane is raised one step **only while the activity inbox is open**.
-   * Owner, 2026-08-17: *"Should the notification cover what is above?"* (the notification should cover what is
-   * above). The lane's `z-20` creates a stacking context the inbox inside it cannot
-   * escape, so the right-hand tool tiles — also `z-20` but later in the DOM — painted
-   * over it. It is not raised permanently because the lane would then poke through the
-   * scrim (`--z-map-scrim`, 25) whenever the scrim is meant to cover it.
-   * Gate: `tests/e2e/agent-activity-placement.spec.ts`.
-   */
+  // Raised only while the activity inbox is open: the lane's `z-20` context traps the inbox under
+  // later tiles, and a permanent raise pokes through the scrim (`--z-map-scrim`, 25).
+  // Gate: `tests/e2e/agent-activity-placement.spec.ts`.
   const [activityInboxOpen, setActivityInboxOpen] = useState(false);
   const topologyUtilityLaneSuppressionContract = selectedRelationActive
     ? "selected-relation-inspector-owns-right-rail"

@@ -38,22 +38,18 @@ describe("computeSelectionPulse", () => {
     expect(pulse?.scaleFactor).toBeCloseTo(1.28, 2);
   });
 
-  /**
-   * A3 — a commit gesture must DECELERATE to read as "received" (Apple HIG).
-   * Linear channels cut off with non-zero slope: the ring vanished instead of
-   * completing. Both channels now end with ~zero slope.
-   */
+  /** A commit gesture decelerates to read as received; a linear end would cut off the ring. */
   it("decelerates: more than half the ring growth happens in the first half", () => {
     const mid = computeSelectionPulse(90, 180, 0.28);
     const growthAtMid = (mid!.scaleFactor - 1) / 0.28;
-    expect(growthAtMid).toBeGreaterThan(0.8); // easeOutCubic(0.5) = 0.875
+    expect(growthAtMid).toBeGreaterThan(0.8);
   });
 
   it("alpha dies smoothly — quadratic, near-zero slope at the end", () => {
     const nearEnd = computeSelectionPulse(178, 180, 0.28);
     expect(nearEnd!.alpha).toBeLessThan(0.001);
     const mid = computeSelectionPulse(90, 180, 0.28);
-    expect(mid!.alpha).toBeCloseTo(0.25, 6); // (1-0.5)^2
+    expect(mid!.alpha).toBeCloseTo(0.25, 6);
   });
 
   it("threads the token scale delta through (default 0.28 when omitted)", () => {

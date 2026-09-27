@@ -47,10 +47,7 @@ describe('briefRows — one list across the four cores', () => {
     ]);
   });
 
-  /*
-   * The hosted sample printed "measured in the app" twice and "Get the app" three times on
-   * one screen (2026-09-23), against a decision that says nothing is listed twice.
-   */
+  // Nothing is listed twice: the app-only reason appears once, naming every core it covers.
   it('says the app-only reason once, straight after the lines, naming every core it covers', () => {
     const rows = briefRows([
       core({ core: 'ontology', availability: 'app-only', lines: [{ id: 'ontology-evidence-unchecked', count: 125, state: 'unknown' }] }),

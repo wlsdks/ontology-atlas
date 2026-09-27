@@ -10,11 +10,9 @@ import {
 } from "@/features/docs-vault-local";
 
 /**
- * State for the "start an ontology from my documents" flow. It owns only the
- * plan derivation (`deriveBootstrapPlan`), the dialog's open state, and
- * execution (`executeBootstrapPlan`, the features-level batch write contract).
- * What happens after completion — toast, reveal — is left to the caller via
- * `onCompleted`: this hook knows nothing about the map or toasts.
+ * The "start an ontology from my documents" flow: plan derivation, dialog state and execution
+ * through the features-level batch write. The caller handles completion through `onCompleted`; this
+ * hook knows no map or toast.
  */
 export interface UseBootstrapFlowArgs {
   vault: BootstrapVaultWriter & { handle?: { name: string } | null };

@@ -10,8 +10,7 @@ const nodes = [
   { id: 'domains/orders', kind: 'domain', createdBy: 'human', docSlug: 'domains/orders' },
   { id: 'elements/cart', kind: 'element', docSlug: null },
   { id: 'projects/shop', kind: 'project', docSlug: 'projects/shop' },
-  // The vault readme is the one node the canonical census leaves out, so it must not be counted
-  // here either — that is the whole point of sharing the membership rule.
+  // The vault readme is the one node the canonical census leaves out, so it is not counted here either.
   { id: 'README', kind: 'vault-readme', docSlug: null },
 ];
 const docs = new Map([
@@ -25,11 +24,7 @@ describe('buildOntologyBrief', () => {
   it('is app-only without evidence states: every concept is unknown, none quietly current', () => {
     const brief = buildOntologyBrief({ nodes, docs, evidence: null, repairCount: 8, unmatchedCount: 0, anchorMs });
     expect(brief.availability).toBe('app-only');
-    /*
-     * Five nodes carry the word "concept" on this screen: the census counts every node that is
-     * not the vault readme, and this card has to count the same ones or the two numbers disagree one
-     * click apart (walkthrough, 2026-09-20).
-     */
+    // This card counts the same nodes as the census strip, so the two "concept" numbers agree.
     expect(brief.headline).toBe(5);
     expect({ current: brief.current, stale: brief.stale, unknown: brief.unknown }).toEqual({
       current: null,
@@ -71,8 +66,7 @@ describe('buildOntologyBrief', () => {
     expect(brief.lines.find((line) => line.id === 'ontology-evidence-moved')?.count).toBe(1);
     expect(brief.lines.find((line) => line.id === 'ontology-evidence-missing')?.count).toBe(1);
     expect(brief.lines.find((line) => line.id === 'ontology-evidence-folder-only')?.count).toBe(1);
-    // The project has no evidence state of its own, so it stays honestly unknown rather than
-    // dropping out of the total the card printed above.
+    // The project has no evidence state of its own, so it stays unknown rather than dropping out of the total.
     expect(brief.lines.find((line) => line.id === 'ontology-evidence-unchecked')?.count).toBe(2);
     expect(brief.lines.find((line) => line.id === 'ontology-unmatched')?.count).toBe(3);
   });
@@ -80,28 +74,19 @@ describe('buildOntologyBrief', () => {
 
 describe('the card and the strip count the same thing', () => {
   it('matches the canonical census for the same nodes', () => {
-    /*
-     * The rule lives in `canonical-census.ts`: every count that uses the word "concept" goes
-     * through it. Both numbers are drawn on this one screen, a hundred pixels apart, so this
-     * compares them instead of restating either.
-     */
+    // Every "concept" count goes through `canonical-census.ts`; both numbers show on one screen, so this compares them.
     const brief = buildOntologyBrief({ nodes, docs, evidence: null, repairCount: 0, unmatchedCount: 0, anchorMs });
     const census = computeCanonicalCensus(
       nodes.map((node) => ({ ...node, title: node.id })) as never,
       [],
     );
     expect(brief.headline).toBe(census.conceptCount);
-    // Idling guard: a fixture with no readme would make the two agree for the wrong reason.
+    // Idling guard: without a readme the two would agree for the wrong reason.
     expect(nodes.some((node) => node.kind === 'vault-readme')).toBe(true);
     expect(census.conceptCount).toBeLessThan(nodes.length);
   });
 
-  /*
-   * The headline sentence counts concepts, so it cannot name more of them than the folder holds.
-   * Three of this fixture's lines describe overlapping sets of the same five concepts — added,
-   * they came to more than five (the 205-over-108 reading on this repository's own vault,
-   * 2026-09-21).
-   */
+  // The headline cannot name more unknown concepts than the folder holds, although three lines overlap.
   it('never offers the headline more unknown concepts than the folder holds', () => {
     const brief = buildOntologyBrief({ nodes, docs, evidence: null, repairCount: 8, unmatchedCount: 0, anchorMs });
     const lineSum = brief.lines
@@ -113,11 +98,7 @@ describe('the card and the strip count the same thing', () => {
   });
 });
 
-/*
- * A folder with Git and no bound project said "no repository" while its Git walk was still running,
- * then turned into measured lines and a different headline when the walk landed, with nothing in
- * between (real bridge, 2026-09-25). A walk in flight is reading, whatever else is known.
- */
+// A walk in flight is reading, whatever else is known.
 describe('evidenceAvailability', () => {
   const base = { bridge: true, walkable: true, walkPending: false, walkFailed: false, noSource: false };
 

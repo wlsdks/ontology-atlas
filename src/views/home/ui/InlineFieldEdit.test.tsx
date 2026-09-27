@@ -13,19 +13,19 @@ const labels: InlineFieldEditLabels = {
 };
 
 describe("InlineFieldEdit", () => {
-  it("읽기 모드 — 값 + 편집 버튼, 입력은 없음", () => {
+  it("read mode shows the value and an edit button without an input", () => {
     render(<InlineFieldEdit value="auth" onSave={() => {}} labels={labels} />);
     expect(screen.getByTestId("inline-field-read")).toHaveTextContent("auth");
     expect(screen.getByTestId("inline-field-edit-button")).toBeInTheDocument();
     expect(screen.queryByTestId("inline-field-input")).not.toBeInTheDocument();
   });
 
-  it("빈 값 — empty 라벨 표시", () => {
+  it("an empty value shows the empty label", () => {
     render(<InlineFieldEdit value="" onSave={() => {}} labels={labels} />);
     expect(screen.getByTestId("inline-field-read")).toHaveTextContent("없음");
   });
 
-  it("편집 진입 → 현재 값이 든 input + 저장/취소", () => {
+  it("entering edit shows an input with the current value plus save and cancel", () => {
     render(<InlineFieldEdit value="auth" onSave={() => {}} labels={labels} />);
     fireEvent.click(screen.getByTestId("inline-field-edit-button"));
     expect(screen.getByTestId("inline-field-input")).toHaveValue("auth");
@@ -33,7 +33,7 @@ describe("InlineFieldEdit", () => {
     expect(screen.getByTestId("inline-field-cancel")).toBeInTheDocument();
   });
 
-  it("수정 + 저장 → onSave 가 trim 된 값으로 호출, 읽기 모드 복귀", async () => {
+  it("editing and saving calls onSave with the trimmed value and returns to read mode", async () => {
     const onSave = vi.fn();
     render(<InlineFieldEdit value="auth" onSave={onSave} labels={labels} />);
     fireEvent.click(screen.getByTestId("inline-field-edit-button"));
@@ -43,7 +43,7 @@ describe("InlineFieldEdit", () => {
     await waitFor(() => expect(screen.queryByTestId("inline-field-input")).not.toBeInTheDocument());
   });
 
-  it("취소 → onSave 미호출, 읽기 모드 복귀(원래 값)", () => {
+  it("cancel skips onSave and returns to read mode with the original value", () => {
     const onSave = vi.fn();
     render(<InlineFieldEdit value="auth" onSave={onSave} labels={labels} />);
     fireEvent.click(screen.getByTestId("inline-field-edit-button"));
@@ -53,7 +53,7 @@ describe("InlineFieldEdit", () => {
     expect(screen.getByTestId("inline-field-read")).toHaveTextContent("auth");
   });
 
-  it("Enter → 저장, Escape → 취소", async () => {
+  it("Enter saves and Escape cancels", async () => {
     const onSave = vi.fn();
     render(<InlineFieldEdit value="auth" onSave={onSave} labels={labels} />);
     fireEvent.click(screen.getByTestId("inline-field-edit-button"));

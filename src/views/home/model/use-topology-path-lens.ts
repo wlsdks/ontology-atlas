@@ -79,11 +79,7 @@ export function useTopologyPathLens({
         return t("analysis.pathChipEndpoints", { source: chipState.sourceTitle, target: chipState.targetTitle });
     }
   }, [chipState, t]);
-  /*
-   * The outcome is drawn apart from the endpoints so truncation never takes it: at 1040
-   * the chip read "{source} → {target} · ..." and the part cut off was "no path", the
-   * one fact the chip adds (measured 2026-09-25 on the Korean copy).
-   */
+  // Drawn apart from the endpoints so truncation never cuts "no path", the one fact the chip adds.
   const chipOutcome = useMemo(() => {
     if (chipState?.kind === "no-path") return t("analysis.pathChipNoPath");
     if (chipState?.kind === "resolved") return t("analysis.pathChipResolved", { hops: chipState.hops });

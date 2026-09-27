@@ -64,11 +64,9 @@ describe("computeFarT", () => {
     }
     for (let i = 1; i < samples.length; i += 1) {
       const jump = Math.abs(samples[i] - samples[i - 1]);
-      // With 60 even steps across the band, any single-step jump larger than
-      // ~0.1 would indicate a discrete branch rather than a continuous curve.
+      // One step of a 60-step band jumping more than ~0.1 would mean a discrete branch.
       expect(jump).toBeLessThan(0.1);
     }
-    // and it should be monotonically non-increasing as scale rises
     for (let i = 1; i < samples.length; i += 1) {
       expect(samples[i]).toBeLessThanOrEqual(samples[i - 1] + 1e-9);
     }

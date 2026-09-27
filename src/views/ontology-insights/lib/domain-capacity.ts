@@ -1,7 +1,7 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { computeDomainCensusRows } from "@/entities/knowledge-graph";
 
-/** One domain's capacity — capability/element counts reachable through containment (single-source BFS). */
+/** One domain's capability and element counts reachable through containment. */
 export interface DomainCapacityRow {
   id: string;
   title: string;
@@ -11,12 +11,9 @@ export interface DomainCapacityRow {
 }
 
 /**
- * The source of truth for the "domain capacity" card on the insights overview tab. It uses
- * `computeDomainCensusRows` (the shared graph BFS). The earlier `buildOntologyTree` subtree walk
- * assigned each node exactly one parent and so lost multi-parent nodes — the cause of the INDEX 96
- * vs /projects 106 divergence.
- *
- * The result is sorted by total descending, with ties broken by title ascending for determinism.
+ * Rows for the domain capacity card via `computeDomainCensusRows` (shared graph BFS), which counts multi-parent
+ * nodes under every domain that holds them; a single-parent tree walk dropped them. Sorted by total descending,
+ * then title.
  */
 export function computeDomainCapacityRows(
   nodes: readonly KnowledgeGraphNode[],

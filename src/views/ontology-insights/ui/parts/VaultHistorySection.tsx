@@ -9,19 +9,9 @@ import { VaultPresentStack } from "./VaultPresentStack";
 import { InsightsSectionTitle } from "./InsightsSectionTitle";
 
 /**
- * **The weekly counts, or the honest reason there are none.**
- *
- * Four states and three of them draw no chart. That ratio is the point: the series is
- * recomputed from the folder's Git history and Atlas keeps no record of its own, so there
- * are ordinary, blameless situations in which there is nothing to show — the web, where
- * the bridge cannot reach a repository, and a folder nobody has committed in.
- *
- * ⚠️ **"No history" is never drawn as zeroes.** A flat line along the bottom is a claim
- * about the person ("you did nothing") where the truth is a claim about the data ("nothing
- * was recorded"). The PO steward made this a condition of the surface existing at all, and
- * the probe that justified it found the same shape in the data: this repository's own
- * folder shows `wiki` at 0 for its whole history, because the Library shipped three days
- * ago. A zero that means zero and a zero that means "no data" have to look different.
+ * The weekly counts, or the honest reason there are none. The series is recomputed from Git and Atlas keeps no
+ * record of its own, so the web and a folder without commits show no chart. No history is never drawn as zeroes:
+ * a flat line claims "you did nothing" where the truth is "nothing was recorded".
  */
 export function VaultHistorySection({
   state,
@@ -37,28 +27,13 @@ export function VaultHistorySection({
       aria-label={t("vaultHistory.title")}
       className="flex min-h-0 min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
     >
-      {/*
-        One column for the header and the figure together. Eighteen weekly columns stretched
-        across a full-width band merged into an area; capped, they read as the countable
-        stacks they are — and a header spanning the whole card above a narrower figure reads
-        as two unrelated things, so the title and the caption take the figure's own edges.
-      */}
-      {/*
-        ⚠️ **Left-aligned on the card's padding line, not centred** (2026-09-25). Centred, the
-        whole composition started 304px (1512) and 380px (1920) inside the panel's edge while
-        every other panel on the board starts its text at the padding, so this was the one card
-        whose title stood on its own vertical line. The weekly tracks keep their width cap (the
-        reason above still holds for them); the present piles take the card's full width.
-      */}
+      {/* One column for header and figure: capped weekly columns read as countable stacks, and the header takes the
+         figure's edges. */}
+      {/* Left-aligned on the card's padding line like every other panel. The weekly tracks keep their width cap; the
+         present piles take the full width. */}
       <div
         className={`flex w-full flex-col ${state.status === "ready" ? "max-w-[var(--vault-history-width)]" : ""}`}
       >
-      {/*
-        The caption shares the title's line only where there is a line to share. Measured at
-        390x844 the two fought for one row and the caption broke into two lines pressed
-        against the heading, which put a mono aside at the heading's own optical weight. It
-        takes its own row below that width instead.
-      */}
       <div className="flex flex-col gap-1 @min-[640px]/insights:flex-row @min-[640px]/insights:items-baseline @min-[640px]/insights:gap-2">
         <InsightsSectionTitle
           level={2}
@@ -66,14 +41,7 @@ export function VaultHistorySection({
         >
           {t("vaultHistory.title")}
         </InsightsSectionTitle>
-        {/*
-          ⚠️ **The source line only appears over the figure it describes.** "Recomputed from
-          Git history" sat above the present walls in every state, including the one whose
-          own body says the history cannot be read here — so on the web it was a claim about
-          something not on screen, directly above a sentence contradicting it (design-lead,
-          2026-09-09). The present is counted from paths; only the weekly tracks come from
-          Git, and only they carry the line.
-        */}
+        {/* The Git source line appears only over the weekly tracks it describes; the present is counted from paths. */}
         {state.status === "ready" ? (
           <span className="font-mono text-label text-[color:var(--color-text-quaternary)] @min-[640px]/insights:ml-auto">
             {t("vaultHistory.caption")}
@@ -85,14 +53,8 @@ export function VaultHistorySection({
     </section>
   );
 
-  /*
-   * The present, drawn wherever the past cannot be. It is a different claim, not a weaker
-   * one: how much the folder holds, counted from paths this instant, asserting nothing
-   * about when. The sentence saying why there is no time axis sits **under** it, because
-   * the folder is the subject and the missing history is the footnote — the first build had
-   * that the other way round and a browser reader met an explanation of an absence with
-   * nothing above it.
-   */
+  // The present, drawn wherever the past cannot be: how much the folder holds, counted from paths now. The sentence
+  // about the missing time axis sits under it, since the folder is the subject.
   const stack = (
     <VaultPresentStack
       present={state.present}
@@ -120,9 +82,8 @@ export function VaultHistorySection({
     );
   }
 
-  // Narrowed to `unavailable | none` by the branch above. Both draw the folder as it stands
-  // and then say, in their own words, why the weeks are missing — and the difference between
-  // them is whose limitation that is.
+  // Narrowed to `unavailable | none` by the branch above; both draw the folder as it stands and then say whose
+  // limitation hides the weeks.
   if (state.status !== "ready") {
     const key =
       state.status === "unavailable"
@@ -145,13 +106,8 @@ export function VaultHistorySection({
     );
   }
 
-  /*
-   * ⚠️ **A curve says the direction; it cannot say the date.** Nobody reads a week off a
-   * column forty pixels wide, so the two facts the series can state exactly are stated in
-   * words beside it: the week a layer first existed, and the week it grew the most. Both are
-   * read off the same points the chart draws, so a milestone can never disagree with the
-   * shape above it, and a layer with nothing to report says nothing rather than a dash.
-   */
+  // Milestones in words beside the chart: the week a layer first existed and the week it grew most, from the same
+  // points the chart draws. A layer with nothing to report says nothing.
   const milestones = (["concept", "module", "writeUp", "document"] as VaultLayer[])
     .map((layer) => vaultLayerMilestones(state.weeks, layer))
     .filter((m) => m.began || m.grew);

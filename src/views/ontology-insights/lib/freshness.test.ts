@@ -38,12 +38,12 @@ describe("computeFreshnessSummary", () => {
     const row = summary.domainRows[0];
     expect(row.domainId).toBe("domain:views");
     expect(row.weeks).toHaveLength(FRESHNESS_WINDOW_WEEKS);
-    // Indices are read from the end, so the window's length is stated in one place only.
+    // Indices are read from the end, so the window length is stated in one place.
     expect(row.weeks.at(-1)?.isCurrentWeek).toBe(true);
     expect(row.weeks.at(-1)?.level).toBeGreaterThanOrEqual(1);
-    // The source of truth for the cell tooltip — `level` saturates at 3, so the raw count is exposed too.
+    // The raw count behind the tooltip; `level` saturates at 3.
     expect(row.weeks.at(-1)?.count).toBe(1);
-    // domain-views' own update lands in the window's oldest bucket; the weeks between are 0.
+    // The oldest bucket holds domain-views' own update; the weeks between are 0.
     expect(row.weeks[0]?.count).toBe(1);
     expect(row.weeks[1]?.count).toBe(0);
     expect(row.daysAgo).toBe(1);
@@ -107,7 +107,7 @@ describe("computeFreshnessSummary", () => {
     });
   });
 
-  it("sums real per-domain update counts into a single weekly trend series (신선도 탭 스파크라인 진실원)", () => {
+  it("sums real per-domain update counts into the weekly totals the census strip draws", () => {
     const nodes = [
       node("domain:views", "domain", { evidenceIds: ["domain-views"] }),
       node("domain:core", "domain", { evidenceIds: ["domain-core"] }),
@@ -126,14 +126,13 @@ describe("computeFreshnessSummary", () => {
     const summary = computeFreshnessSummary(nodes, edges, docs, NOW);
 
     expect(summary.weeklyTotals).toHaveLength(FRESHNESS_WINDOW_WEEKS);
-    // both updates land in the current (last) week bucket, summed across domains
+    // Both updates land in the current week, summed across domains.
     expect(summary.weeklyTotals.at(-1)).toBe(2);
     expect(summary.weeklyTotals.slice(0, -1).every((n) => n === 0)).toBe(true);
   });
-  it("최근 갱신은 자기 문서를 가진 개념만 세운다 — 파생 이름은 접힌 근거 계층으로", () => {
-    // A derived node's "update date" is not its own but the mtime of the document that cited it.
-    // The two derived nodes (`.claude/` and `.codex/`) share a title and are indistinguishable
-    // without the reference string — carrying that value on the row is what makes the two lines state different facts.
+  it("lists only concepts with their own document as recent updates and folds derived names into the evidence layer", () => {
+    // A derived node's date is the citing document's mtime. The two derived nodes (`.claude/`, `.codex/`) share a
+    // title, so only the reference string makes the rows state different facts.
     const nodes = [
       node("capability:written", "capability", {
         title: "Written by hand",

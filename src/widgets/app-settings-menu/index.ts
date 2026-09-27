@@ -1,22 +1,15 @@
 export { AppSettingsMenu } from './ui/AppSettingsMenu';
 
 /**
- * The 「Agents」 (agents) destination reuses this pane as is (2026-08-20, ledger 90).
- *
- * ⚠️ **A part that leaves the sheet must not take the sheet's dimensions with
- * it.** This pane stands on `SettingsGroup`/`SettingsRow`, and neither decides its
- * own width (they fill what the parent gives), so it stands correctly under the
- * destination's `PAGE_FRAME` too.
+ * The Agents destination reuses this pane as is; its `SettingsGroup`/`SettingsRow` parts
+ * fill their parent, so it must not carry the sheet's dimensions with it.
  */
 export { AcpRuntimeSettings } from './ui/AcpRuntimeSettings';
 
-/**
- * The Agents destination's models tab (2026-09-25) — API keys, local runners, the experimental
- * external check and the sent log. It left the settings sheet whole; the sheet keeps a signpost.
- */
+/** The Agents destination's models tab: API keys, local runners, the external check and the sent log. */
 export { ModelConnections } from './ui/ModelConnectionsPanel';
 
-/** The 「MCP Connection」 (MCP connection) pane — shared by the destination and the settings sheet, for the reason above. */
+/** The MCP connection pane, shared by the destination and the settings sheet. */
 export { AgentSetupSection } from './ui/AgentSetupSection';
 
 /** A group's heading row, for a group whose body draws its own frame (the MCP tab's connectors card). */

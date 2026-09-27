@@ -11,11 +11,7 @@ vi.mock("next-intl", () => ({
     values ? `${key}:${JSON.stringify(values)}` : key,
 }));
 
-/**
- * A minimal in-memory stand-in for the vault folder: the past-trail sidecar lives
- * in `<vault>/<dir>/<file>` and the hook only ever touches it through the File
- * System Access surface used by `createVaultFilePastTrailStore`.
- */
+/** Only the File System Access surface `createVaultFilePastTrailStore` uses. */
 function fakeVaultHandle(permission: "granted" | "denied"): FileSystemDirectoryHandle {
   const files = new Map<string, string>();
   const fileHandle = (name: string) => ({
@@ -118,10 +114,8 @@ describe("usePastTrails", () => {
       await act(async () => {
         await vi.runAllTimersAsync();
       });
-      // The row being walked is excluded from the list.
       expect(result.current.pastWalkRows).toEqual([]);
 
-      // Clearing forgets the session row too, so a later list stays empty.
       act(() => {
         result.current.clearFootprintTrail();
       });

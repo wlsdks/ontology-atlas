@@ -1,12 +1,6 @@
 /**
- * How a step names itself to a person.
- *
- * A commit subject written for `git log` opens with a conventional-commit type
- * (`feat:`, `docs(api):`). That prefix is a filing code for tooling; read as the
- * headline of a step it put `feat: record the settlement boundary` where a person
- * looks for what changed (review 2026-09-25). The screen drops the code and keeps
- * the sentence. Only the known types are stripped, so a subject that merely starts
- * with a word and a colon ("Note: …") stays as its author wrote it.
+ * A step's headline drops a conventional-commit type (`feat:`, `docs(api):`), a filing code
+ * for tooling. Only known types are stripped, so "Note: …" stays as its author wrote it.
  */
 const CONVENTIONAL_PREFIX =
   /^(?:feat|fix|docs|refactor|chore|test|style|perf|design|build|ci|revert)(?:\([^)]*\))?!?:\s+(\S.*)$/i;
@@ -17,11 +11,8 @@ export function stripConventionalPrefix(subject: string): string {
 }
 
 /**
- * The convention writes the sentence after the code in lower case (`feat: record …`), because
- * the code opened the line. With the code gone the sentence opens the headline and the row,
- * and a lower-case start read as a clipped string rather than a title (review 2026-09-25).
- * Only a subject whose prefix was stripped is touched; a sentence written without the code
- * keeps its author's casing. Scripts without case (Hangul, Han) are left as they are.
+ * Only called on a stripped subject, whose lower-case start would read as a clipped string;
+ * a subject written without the code keeps its casing. Caseless scripts pass through.
  */
 function capitalizeFirst(sentence: string): string {
   const first = sentence.charAt(0);
