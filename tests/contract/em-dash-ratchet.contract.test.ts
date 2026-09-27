@@ -98,10 +98,10 @@ describe("작대기 래칫 — 사용자 문구", () => {
       );
       expect(
         withDash,
-        `${locale} 문구에 작대기가 ${withDash}개 들어왔다.\n` +
-          "「짧은 앞말 — 긴 설명」은 모델의 기본 문장 모양이다. 문장이 끝났으면 마침표, " +
-          "이어지면 콜론, 삽입구는 괄호를 쓴다.\n" +
-          "값이 없다는 뜻의 «—» 하나만 있는 문자열은 기호라서 안 센다.",
+        `${locale} copy gained ${withDash} strings with a dash.\n` +
+          "\"Short lead — long explanation\" is a model's default sentence shape. End a finished sentence with a period, " +
+          "join a continuation with a colon, and put an aside in parentheses.\n" +
+          "A string that is only \"—\" (meaning no value) is a symbol and is not counted.",
       ).toBeLessThanOrEqual(BASELINE[locale]);
       // At 0 the "lower the cap when it falls" clause is unnecessary — there is nowhere lower.
     });
@@ -200,8 +200,8 @@ describe("작대기 — 화면에 그려지는 문서", () => {
       .map((file) => file.slice(REPO_ROOT.length + 1));
     expect(
       offenders,
-      "화면에 그려지는 문서의 **산문**에 작대기가 들어왔다. 문장이 끝났으면 마침표, " +
-        "이어지면 콜론, 삽입구는 괄호. (코드 블록은 프로그램 출력 전사라 면제다.)\n" +
+      "A dash entered the **prose** of a document the screen renders. End a finished sentence with a period, " +
+        "join a continuation with a colon, put an aside in parentheses. (Code blocks transcribe program output and are exempt.)\n" +
         offenders.join("\n"),
     ).toEqual([]);
   });

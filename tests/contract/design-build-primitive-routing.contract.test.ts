@@ -97,8 +97,8 @@ describe("design-build 안내판 — 비준한 부품은 라우팅된다", () =>
       .map(([rel, name]) => `${name} (${rel})`);
     expect(
       missing,
-      "비준한 부품이 안내판에 없다 — 지시를 따르는 에이전트는 그 부품에 도달할 수 없다. " +
-        "`/design-build` 1절 표에 행을 더하고 **두 사본 모두** 고쳐라.",
+      "A ratified primitive is missing from the routing table, so an agent following the instructions cannot reach it. " +
+        "Add a row to the section 1 table of `/design-build` and fix **both copies**.",
     ).toEqual([]);
   });
 

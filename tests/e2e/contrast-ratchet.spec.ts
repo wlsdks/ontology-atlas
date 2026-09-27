@@ -229,21 +229,21 @@ test('대비 래칫 — WCAG 1.4.3 미달 조합이 늘지 않는다', async ({ 
   // to stand **per route**.
   expect(
     thinRuns,
-    `라우트당 조합 ${MIN_COMBINATIONS_PER_ROUTE}개도 못 쟀다 — 미달이 없는 게 아니라 ` +
-      `화면이 안 떴거나 채집이 깨진 것이다.\n${thinRuns.join('\n')}`,
+    `Fewer than ${MIN_COMBINATIONS_PER_ROUTE} combinations were measured on a route. That is not the absence of failures: ` +
+      `the screen did not render or collection broke.\n${thinRuns.join('\n')}`,
   ).toEqual([]);
   expect(measured, '조합을 한 개도 못 쟀다면 채집이 깨진 것이다').toBeGreaterThan(50);
 
   expect(
     failures.length,
-    `WCAG 1.4.3 미달 조합이 ${BASELINE_FAILING_COMBINATIONS} → ${failures.length} 로 늘었다.\n` +
-      `토큰을 바꿨다면 그 변경이 대비를 떨어뜨린 것이다.\n${failures.join('\n')}`,
+    `Combinations failing WCAG 1.4.3 grew from ${BASELINE_FAILING_COMBINATIONS} to ${failures.length}.\n` +
+      `If you changed a token, that change lowered the contrast.\n${failures.join('\n')}`,
   ).toBeLessThanOrEqual(BASELINE_FAILING_COMBINATIONS);
 
   expect(
     failures.length,
-    `미달이 ${BASELINE_FAILING_COMBINATIONS} → ${failures.length} 로 줄었다. ` +
-      `BASELINE_FAILING_COMBINATIONS 도 ${failures.length} 로 내려라 — 여유를 무료로 두지 않는다.`,
+    `Failures fell from ${BASELINE_FAILING_COMBINATIONS} to ${failures.length}. ` +
+      `Lower BASELINE_FAILING_COMBINATIONS to ${failures.length} too; slack is not left lying around for free.`,
   ).toBeGreaterThanOrEqual(BASELINE_FAILING_COMBINATIONS);
 
   /**
@@ -263,8 +263,8 @@ test('대비 래칫 — WCAG 1.4.3 미달 조합이 늘지 않는다', async ({ 
 
   expect(
     adjacentFailures.length,
-    `WCAG 1.4.11 미달 인접 쌍이 ${BASELINE_FAILING_ADJACENT_PAIRS} → ${adjacentFailures.length} 로 늘었다.\n` +
-      `맞닿은 두 마크의 대비가 3:1 미만이면 색-무관 구분자(1px 틈 · 라벨 · 패턴)가 있어야 한다.\n` +
+    `Adjacent pairs failing WCAG 1.4.11 grew from ${BASELINE_FAILING_ADJACENT_PAIRS} to ${adjacentFailures.length}.\n` +
+      `When two touching marks contrast below 3:1, they need a colour-independent separator (a 1px gap, a label or a pattern).\n` +
       `${adjacentFailures.join('\n')}`,
   ).toBeLessThanOrEqual(BASELINE_FAILING_ADJACENT_PAIRS);
 });

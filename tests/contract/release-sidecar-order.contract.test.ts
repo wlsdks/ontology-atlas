@@ -91,8 +91,8 @@ describe("release workflow — the sidecar is built before the first cargo call"
       for (const match of workflow.matchAll(global)) {
         expect(
           match.index,
-          `"${match[0].trim()}" 가 사이드카 빌드보다 먼저 나온다 — 깨끗한 ` +
-            `체크아웃에서 resource path 가 없어 cargo 가 죽는다`,
+          `"${match[0].trim()}" comes before the sidecar build: in a clean ` +
+            `checkout the resource path is missing and cargo dies`,
         ).toBeGreaterThan(sidecarAt);
       }
     }

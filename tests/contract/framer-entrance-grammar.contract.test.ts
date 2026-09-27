@@ -128,7 +128,7 @@ describe("framer 등장 문법 — 시작 위치는 이름으로만 온다", () 
     const hits = offenders();
     expect(
       hits,
-      `이미 이름이 있는 시작 위치를 손으로 다시 적었다. @/shared/motion 의 그 이름을 쓰라:\n` +
+      `A start position that already has a name was written out by hand. Use that name from @/shared/motion:\n` +
         hits.map((h) => `  ${h.file}:${h.line}  ${h.name} ← ${h.text}`).join("\n"),
     ).toEqual([]);
   });

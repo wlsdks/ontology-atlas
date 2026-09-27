@@ -118,11 +118,11 @@ describe("타입 램프 × 행간 짝 — 조건부 크기 어긋남 차단", ()
     const bad = scan();
     expect(
       bad,
-      `조건부로 글자 크기만 갈아끼워 행간 짝이 어긋난다. arbitrary 크기에는\n` +
-        `companion 행간이 없으므로, 원래 단의 행간이 그 브레이크포인트에서도\n` +
-        `그대로 남는다(아무도 고른 적 없는 비율).\n` +
-        `① 조건부 크기도 램프 유틸리티로 쓰거나 ② 명시 leading 을 달아 두 크기\n` +
-        `모두에서 행간을 직접 정해라.\n${bad.join("\n")}`,
+      `Only the font size is swapped conditionally, so the line-height pair breaks. An arbitrary size\n` +
+        `has no companion line-height, so the original step's line-height stays at that breakpoint\n` +
+        `(a ratio nobody chose).\n` +
+        `Either (1) write the conditional size as a ramp utility too, or (2) add an explicit leading and\n` +
+        `set the line-height yourself for both sizes.\n${bad.join("\n")}`,
     ).toEqual([]);
   });
 

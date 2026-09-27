@@ -79,7 +79,7 @@ test("첫 화면이 노드를 거의 다 보여 준다", async ({ page }) => {
   expect(total, "노드를 하나도 못 읽었다 — 이 시험은 아무것도 못 잰다").toBeGreaterThan(3);
   expect(
     inside / total,
-    `첫 화면이 노드의 ${Math.round((inside / total) * 100)}% 만 보여 준다 ` +
-      `(화면 밖 ${outside}개). 첫 화면 맞춤이 어긋났거나 배치가 흩어졌다.`,
+    `The first screen shows only ${Math.round((inside / total) * 100)}% of the nodes ` +
+      `(${outside} off screen). The first-screen fit is off or the layout scattered.`,
   ).toBeGreaterThanOrEqual(MIN_ON_SCREEN_RATIO);
 });

@@ -253,9 +253,9 @@ describe("호버 틴트 면 위의 잉크 — 계산이 판정한다", () => {
     );
     expect(
       lines,
-      "호버 틴트 면 위 잉크가 **어느 호스트 표면에서도** AA 에 못 미친다.\n" +
-        "값이 아니라 짝이 틀린 것이다 — 면을 한 단 내리거나(같은 색 가족의 낮은 알파)\n" +
-        "잉크를 올려라. 알파 토큰의 역할(보더용/면용)을 실사용으로 확인할 것.\n" +
+      "Ink on a hover tint falls short of AA **on every host surface**.\n" +
+        "The pairing is wrong, not the value: lower the fill one step (a lower alpha of the same colour family)\n" +
+        "or raise the ink. Confirm the alpha token's role (border or fill) from its real uses.\n" +
         lines.join("\n"),
     ).toEqual([]);
   });

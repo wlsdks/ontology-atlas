@@ -91,11 +91,11 @@ describe('static 볼트 단일 진입점 계약', () => {
     expect(
       offenders,
       [
-        '번들 볼트 원본(dogfood / storefront 매니페스트·본문)을 직접 import 하면',
-        '사용자의 "예시 비즈니스 보기" 선택이 그 표면에서만 조용히 무시된다.',
-        '대신 화면 코드는 useStaticVaultSource() 를, 훅이 아닌 코드는',
-        'resolveStaticVaultSource(source) 를 써서 매니페스트와 본문을 짝으로 받는다.',
-        '위반 파일:',
+        'Importing the bundled vault sources (the dogfood or storefront manifest and bodies) directly',
+        'makes that one surface silently ignore the choice to view the sample business.',
+        'Screen code uses useStaticVaultSource() instead, and code outside hooks uses',
+        'resolveStaticVaultSource(source), so the manifest and bodies arrive as a pair.',
+        'Offending files:',
         ...offenders,
       ].join('\n'),
     ).toEqual([]);

@@ -127,8 +127,8 @@ test.describe("공개 화면 건강 — 가로 넘침과 콘솔", () => {
        */
       expect(
         width.scroll,
-        `${route} 가 ${viewport.width}px 에서 가로로 넘친다 (${width.scroll} > ${width.client}). ` +
-          "표·코드블록·도해처럼 넓은 것은 자기 상자 안에서 스크롤해야 한다.",
+        `${route} overflows horizontally at ${viewport.width}px (${width.scroll} > ${width.client}). ` +
+          "Wide content such as tables, code blocks and diagrams must scroll inside its own box.",
       ).toBeLessThanOrEqual(width.client + 1);
 
       expect(problems, `${route} 에서 콘솔 오류가 났다:\n  ${problems.join("\n  ")}`).toEqual([]);
