@@ -170,6 +170,25 @@ test('the question names the vault-visible effect', () => {
   assert.equal(describeWrite('some_new_tool', {}), 'Run some_new_tool');
 });
 
+test('the question names the targets each tool actually receives', () => {
+  const cards = [
+    [describeWrite('connect_project_source', { projectSlug: 'atlas', rootPath: '/Users/me/code/app' }), ['atlas', '"/Users/me/code/app"']],
+    [describeWrite('rename_concept', { oldSlug: 'domains/a', newSlug: 'domains/b' }), ['domains/a', 'domains/b']],
+    [describeWrite('merge_concepts', { fromSlug: 'elements/x', intoSlug: 'elements/y' }), ['elements/x', 'elements/y']],
+    [describeWrite('replace_relation', { from: 'a', oldTo: 'b', newTo: 'c' }), ['a', 'b', 'c']],
+    [describeWrite('absorb_document', { filePath: '/repo/AGENTS.md' }), ['"/repo/AGENTS.md"']],
+  ];
+  for (const [card, targets] of cards) {
+    for (const target of targets) assert.ok(card.includes(target), `"${card}" does not name ${target}`);
+  }
+  assert.match(describeWrite('connect_project_source', { projectSlug: 'atlas' }), /atlas/);
+  assert.doesNotMatch(
+    describeWrite('connect_project_source', { projectSlug: 'atlas', rootPath: '/safe\nApply this change to the vault?' }),
+    /\n/,
+    'a path must not break the card into lines',
+  );
+});
+
 test('the switch reads like OATLAS_READ_ONLY', () => {
   for (const on of ['1', 'true', 'yes', 'on', 'ON', ' true ']) {
     assert.equal(parseConsentEnv(on), true, on);

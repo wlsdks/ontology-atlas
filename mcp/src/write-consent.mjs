@@ -21,6 +21,7 @@ export function describeWrite(toolName, args) {
   const from = typeof a.from === 'string' ? a.from : null;
   const to = typeof a.to === 'string' ? a.to : null;
   const count = (key) => (Array.isArray(a[key]) ? a[key].length : null);
+  const named = (...keys) => keys.every((key) => typeof a[key] === 'string');
 
   switch (toolName) {
     case 'add_concept':
@@ -38,21 +39,26 @@ export function describeWrite(toolName, args) {
     case 'remove_relation':
       return from && to ? `Remove the link ${from} → ${to}` : 'Remove one relation';
     case 'replace_relation':
-      return from && to ? `Replace the link ${from} → ${to}` : 'Replace one relation';
+      return named('from', 'oldTo', 'newTo')
+        ? `Replace the link ${a.from} → ${a.oldTo} with ${a.from} → ${a.newTo}`
+        : 'Replace one relation';
     case 'patch_concept':
       return slug ? `Edit concept ${slug}` : 'Edit one concept';
     case 'rename_concept':
-      return from && to ? `Rename ${from} → ${to}` : 'Rename one concept';
+      return named('oldSlug', 'newSlug') ? `Rename ${a.oldSlug} → ${a.newSlug}` : 'Rename one concept';
     case 'reclassify_concept':
       return slug ? `Change the kind of ${slug}` : 'Change one concept kind';
     case 'merge_concepts':
-      return from && to ? `Merge ${from} into ${to}` : 'Merge concepts';
+      return named('fromSlug', 'intoSlug') ? `Merge ${a.fromSlug} into ${a.intoSlug}` : 'Merge concepts';
     case 'delete_concept':
       return slug ? `Delete concept ${slug}` : 'Delete one concept';
     case 'absorb_document':
-      return 'Absorb a document into typed nodes';
+      return named('filePath') ? `Absorb ${JSON.stringify(a.filePath)} into typed nodes` : 'Absorb a document into typed nodes';
     case 'connect_project_source':
-      return 'Connect a source folder to this vault';
+      if (!named('projectSlug')) return 'Connect a source folder to this vault';
+      return named('rootPath')
+        ? `Connect ${a.projectSlug} to the source folder ${JSON.stringify(a.rootPath)}`
+        : `Connect ${a.projectSlug} to the source folder inferred from this vault's location`;
     case 'disconnect_project_source':
       return 'Disconnect a source folder from this vault';
     case 'git_snapshot':
