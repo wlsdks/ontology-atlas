@@ -2556,7 +2556,7 @@ function validAllPathsSuggestedQuery(query) {
 /**
  * One backlink row: either kind of evidence is enough. A row matched only by a body link carries
  * `matchedInBody: true` and no `matchedKeys` (`mcp/src/vault.mjs`). The authority is `mcp/scripts/verify.mjs`;
- * a row with no evidence at all is still rejected.
+ * a row with no evidence at all is still rejected; a copy stricter than that authority rejects valid server rows.
  */
 function validBacklinkRow(row) {
   if (!validNodeSummary(row)) return false;

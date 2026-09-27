@@ -1,5 +1,5 @@
 // Read-only agent-file detection, pure logic: classifies known agent-file paths (one data table) and runs
-// drift checks; never converts, syncs or repairs. Web twin `src/views/docs-vault/lib/agent-files.ts`, held
+// drift checks; never converts, syncs or repairs. Web twin `src/entities/agent-files/model/agent-files.ts`, held
 // equal by `tests/contract/agent-files.contract.test.ts` over `tests/fixtures/agent-files-cases.mjs`.
 
 export const CODEX_PROJECT_DOC_CAP_BYTES = 32 * 1024;
@@ -382,16 +382,16 @@ function checkAtRefs(records, options, drift) {
   };
 }
 
-/**
- * An agent reads every agent file whole, so its string literals steer too; this repository is
- * English-only. Localized product data (`cli/templates/vault-ko/**`, `display_<locale>`) never matches
- * AGENT_FILE_RULES, so it is out of scope by construction.
- */
 // Kept in sync with .githooks/commit-msg-language.mjs: Jamo blocks and
 // halfwidth Kana/Hangul included, so jamo-only Korean cannot slip either gate.
 const NON_ENGLISH_SCRIPT_RE =
   /[\u1100-\u11ff\u3040-\u30ff\u3130-\u318f\u3400-\u4dbf\u4e00-\u9fff\ua960-\ua97f\uac00-\ud7ff\uf900-\ufaff\uff65-\uffdc]/gu;
 
+/**
+ * An agent reads every agent file whole, so its string literals steer too; this repository is
+ * English-only. Localized product data (`cli/templates/vault-ko/**`, `display_<locale>`) never matches
+ * AGENT_FILE_RULES, so it is out of scope by construction.
+ */
 function checkAgentLanguage(records, drift, requireEnglish) {
   // Opt-in: one repository's policy, not a truth about agent files. The web docs workbench reads a user's
   // vault with this analyzer, where `cli/templates/vault-ko` is a supported starter.
@@ -431,14 +431,6 @@ function checkAgentLanguage(records, drift, requireEnglish) {
   };
 }
 
-/**
- * Codex concatenates AGENTS.md root-down along the working directory and stops
- * adding files once the combined size reaches `project_doc_max_bytes`, then
- * truncates silently. Measuring the root file alone therefore understates the
- * budget the moment a nested AGENTS.md exists: what a session actually loads is
- * root plus the nested files on its path. Nested files here are one level deep,
- * so the worst case any path can reach is root plus the largest of them.
- */
 /**
  * `absent` and `unparseable` must not collapse: no config has nothing to contradict, but a config that
  * declares nothing makes every grant undeclared, and passing it would fail open.
@@ -572,6 +564,10 @@ function checkMcpGrants(recordByPath, records, drift) {
   };
 }
 
+/**
+ * Codex concatenates AGENTS.md root-down and silently truncates past `project_doc_max_bytes`, so the
+ * budget is root plus the largest nested file (nested files are one level deep).
+ */
 function checkCodexSizeCap(recordByPath, records, drift) {
   const agents = recordByPath.get('AGENTS.md');
   const nested = records.filter((r) => r.ruleId === 'nested-agents-md');

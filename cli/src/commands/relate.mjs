@@ -1,6 +1,6 @@
 // `ontology-atlas relate <from> <to> <type> [vault]`: the CLI writer for `relation-check`, with the same argument
 // shape. Validates through relation-check's MCP call (../lib/relation-preflight.mjs), then writes the `from` doc's
-// frontmatter directly like `add`/`import`, mirroring mcp/src/vault.mjs addRelation (canonical, sorted, deduped; domain is a scalar).
+// frontmatter directly like `add`/`import`, mirroring mcp/src/tools/write-relations.mjs addRelation (canonical, sorted, deduped; domain is a scalar).
 
 import { COLORS } from '../lib/colors.mjs';
 import { runRelationCheckQuery, renderRelationCheckResult } from '../lib/relation-preflight.mjs';
@@ -17,7 +17,7 @@ import { recordCliWrite } from '../lib/activity-log.mjs';
 
 const ALLOWED_FLAGS = ['--vault', '--json', '--dry-run', '--why'];
 
-// Public relation type → frontmatter array key. Mirrors mcp/src/index.js RELATION_KEY; the CLI keeps
+// Public relation type → frontmatter array key. Mirrors mcp/src/tools/relation-keys.mjs RELATION_KEY; the CLI keeps
 // its own copy rather than import across the mcp/cli package boundary.
 const RELATION_KEY = Object.freeze({
   depends_on: 'dependencies',
@@ -162,11 +162,6 @@ export async function runRelate(args, runtimeOverrides = {}) {
 }
 
 /**
- * relation_check already returned canonical slugs. Same two branches as mcp/src/index.js addRelation:
- * `domain` replaces a scalar and refuses a different existing value; anything else appends and then
- * normalizeRelationRefs sorts and dedupes.
- */
-/**
  * The sentence explaining why this relation cannot be written, or `null`. Pure so that dry-run and
  * the real write call the same rule (`cli/src/commands/relate.dry-run-parity.test.mjs`).
  */
@@ -188,6 +183,11 @@ export function relationWriteRefusal({ frontmatter, relation, to, why = null }) 
   return null;
 }
 
+/**
+ * relation_check already returned canonical slugs. Same two branches as mcp/src/tools/write-relations.mjs addRelation:
+ * `domain` replaces a scalar and refuses a different existing value; anything else appends and then
+ * normalizeRelationRefs sorts and dedupes.
+ */
 function writeRelation(rootPath, { from, to, relation, why = null }, runtime) {
   // preflight sometimes returns the frontmatter key ('dependencies' and friends) as
   // the relation, so both the type and the key spelling are accepted.

@@ -622,15 +622,6 @@ await test('init --quick-start — bootstrap failure reports written configs as 
   }
 });
 
-/**
- * A freshly created vault must pass its own checks: the next command must never report the state the
- * first one created as a failure. Missing domains are still reported; a node with a parent is never
- * told it has none.
- */
-/**
- * When agent-brief exits 1 for readiness, the screen says it is not a failure and names `--exit-zero`,
- * since people and agents do not reread --help.
- */
 await test('agent-brief — exit 1 for readiness says on screen that it is not a failure', async () => {
   const repo = makeQuickStartRepoFixture();
   try {
@@ -651,6 +642,11 @@ await test('agent-brief — exit 1 for readiness says on screen that it is not a
   }
 });
 
+/**
+ * A freshly created vault must pass its own checks: the next command must never report the state the
+ * first one created as a failure. Missing domains are still reported; a node with a parent is never
+ * told it has none.
+ */
 await test('init --quick-start — fresh starter validates and reports health attention honestly', async () => {
   const repo = makeQuickStartRepoFixture();
   try {

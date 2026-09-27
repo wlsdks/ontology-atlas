@@ -624,10 +624,6 @@ function findDuplicateUidIssues(entries) {
 }
 
 /**
- * A graph reference must resolve to a node, not to any `.md` in the vault: loose notes are allowed
- * in a vault, and counting them made this report 0 issues while `compile` reported one unresolved.
- */
-/**
  * Evidence that names a folder instead of one file. Outside `validateVaultDocument` because a path
  * needs a repository root: `OATLAS_REPO_ROOT`, as the MCP server reads it. Unset, the check stays
  * silent (not looked at), which is why `--list-codes` calls it a vault-scope code.
@@ -730,6 +726,10 @@ function findStarterExampleIssues(entries) {
     }));
 }
 
+/**
+ * A graph reference must resolve to a node, not to any `.md` in the vault: loose notes are allowed
+ * in a vault, and counting them would contradict `compile`, which reports them unresolved.
+ */
 function findDanglingGraphReferenceIssues(entries) {
   const isNodeEntry = (entry) =>
     typeof entry.frontmatter?.kind === 'string' && entry.frontmatter.kind.trim() !== '';
