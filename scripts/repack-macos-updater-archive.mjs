@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
- * **Rebuilds and re-signs** the updater archive from the signed `.app`.
+ * **Builds and signs** the only updater archive, from the signed `.app`
+ * (`createUpdaterArtifacts: false` keeps `tauri build` from making one).
  *
- * **Why this step exists.** `tauri build` emits the `.app` and the `.app.tar.gz`
- * (plus `.sig`) **together**, but this repository code-signs separately afterwards
- * (`desktop:sign` / `desktop:sign:adhoc`). So the archive contains **the unsigned
- * app**. Measured on a clean checkout, 2026-07-28:
+ * **Why this step exists.** An archive packed before `desktop:sign` /
+ * `desktop:sign:adhoc` holds **the unsigned app**. Measured on a clean checkout,
+ * 2026-07-28:
  *
  *   tar xzf "Ontology Atlas.app.tar.gz"
  *   codesign --verify --deep --strict "Ontology Atlas.app"
