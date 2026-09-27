@@ -36,6 +36,27 @@ export type TranscriptItem =
  */
 const REPEAT_THRESHOLD = 3;
 
+const KEY_PREFIX_CHARS = 256;
+
+/** Length, FNV-1a hash and opening: tells two values apart without holding either. */
+function fingerprint(value: unknown): string {
+  if (value === undefined || value === null) return '-';
+  let text: string;
+  try {
+    text = JSON.stringify(value) ?? '';
+  } catch {
+    text = String(value);
+  }
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < text.length; index += 1) {
+    hash = Math.imul(hash ^ text.charCodeAt(index), 0x01000193);
+  }
+  return `${text.length}:${(hash >>> 0).toString(36)}:${text.slice(0, KEY_PREFIX_CHARS)}`;
+}
+
+/** An event is replaced whenever its call changes, so a key cached per event never goes stale. */
+const repeatKeys = new WeakMap<AcpToolEvent, string>();
+
 /**
  * **Two calls are the same call only when nothing a reader could act on differs.**
  *
@@ -49,13 +70,17 @@ const REPEAT_THRESHOLD = 3;
  * and the fold unreachable.
  */
 function repeatKey(event: AcpToolEvent): string {
-  return JSON.stringify([
+  const cached = repeatKeys.get(event);
+  if (cached !== undefined) return cached;
+  const key = JSON.stringify([
     event.title,
     event.toolKind,
     event.status,
-    event.rawInput ?? null,
-    event.rawOutput ?? null,
+    fingerprint(event.rawInput),
+    fingerprint(event.rawOutput),
   ]);
+  repeatKeys.set(event, key);
+  return key;
 }
 
 /**
