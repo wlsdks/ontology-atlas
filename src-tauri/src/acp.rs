@@ -48,20 +48,23 @@ pub(crate) enum RegistryLaunch {
     },
 }
 
-#[derive(Debug, Clone, serde::Deserialize)]
+#[derive(Debug, Clone, Default, serde::Deserialize)]
 struct RegistrySnapshot {
     agents: Vec<RegistryAgent>,
+    #[serde(default, rename = "npmDependencyCutoff")]
+    npm_dependency_cutoff: Option<String>,
 }
 
 /// Parsed once; a corrupt snapshot yields an empty list, so the UI says "nothing
 /// found" rather than launching something invalid.
+fn snapshot() -> &'static RegistrySnapshot {
+    static SNAPSHOT: std::sync::OnceLock<RegistrySnapshot> = std::sync::OnceLock::new();
+    SNAPSHOT
+        .get_or_init(|| serde_json::from_str(include_str!("acp-registry.json")).unwrap_or_default())
+}
+
 fn registry() -> &'static [RegistryAgent] {
-    static REGISTRY: std::sync::OnceLock<Vec<RegistryAgent>> = std::sync::OnceLock::new();
-    REGISTRY.get_or_init(|| {
-        serde_json::from_str::<RegistrySnapshot>(include_str!("acp-registry.json"))
-            .map(|s| s.agents)
-            .unwrap_or_default()
-    })
+    &snapshot().agents
 }
 
 pub(crate) fn registry_agent(id: &str) -> Option<&'static RegistryAgent> {
@@ -499,7 +502,9 @@ pub(crate) fn resolve_launch(
             }
             let npx = resolve_command("npx", &dirs, probe).ok_or("node-missing")?;
             // `-y` skips the install prompt nobody can answer, which would hang the process.
-            let mut full = vec!["-y".to_string(), package.clone()];
+            let mut full = vec!["-y".to_string()];
+            full.extend(npx_hardening_flags(runtime_id));
+            full.push(package.clone());
             full.extend(args.iter().cloned());
             Ok(AcpLaunch {
                 program: npx,
@@ -635,14 +640,17 @@ pub(crate) fn npx_entry_health(entry: &Path, package: &str) -> NpxEntryHealth {
     NpxEntryHealth::Usable
 }
 
-/// Matches exactly the `npx -y <spec> …` shape `resolve_launch` builds.
+/// Matches exactly the `npx -y [flags] <spec> …` shape `resolve_launch` builds.
 pub(crate) fn npx_launch_package(launch: &AcpLaunch) -> Option<&str> {
     let stem = launch.program.file_stem()?.to_str()?;
     if !stem.eq_ignore_ascii_case("npx") {
         return None;
     }
     match launch.args.as_slice() {
-        [flag, package, ..] if flag == "-y" => Some(package),
+        [flag, rest @ ..] if flag == "-y" => rest
+            .iter()
+            .find(|arg| !arg.starts_with('-'))
+            .map(String::as_str),
         _ => None,
     }
 }
@@ -776,6 +784,19 @@ pub(crate) fn sanitized_runtime_environment(
             .filter(|(key, _)| runtime_environment_key_allowed(runtime_id, key))
             .collect(),
     )
+}
+
+/// Measured 2026-09-27: both adapters start through npx under the snapshot's cutoff.
+const NPM_HARDENED_RUNTIMES: &[&str] = &["claude-acp", "codex-acp"];
+
+/// A flag npm does not hand on (measured): what the adapter runs keeps its own npm settings.
+pub(crate) fn npx_hardening_flags(runtime_id: &str) -> Vec<String> {
+    match snapshot().npm_dependency_cutoff.as_deref() {
+        Some(cutoff) if NPM_HARDENED_RUNTIMES.contains(&runtime_id) => {
+            vec![format!("--before={cutoff}")]
+        }
+        _ => Vec::new(),
+    }
 }
 
 /// Session start and the login probe share one environment policy.
@@ -1902,6 +1923,64 @@ mod tests {
     }
 
     #[test]
+    fn hardened_npx_launches_resolve_only_up_to_the_snapshot() {
+        let cutoff = snapshot()
+            .npm_dependency_cutoff
+            .as_deref()
+            .expect("the registry snapshot records its npm dependency cutoff");
+        chrono::DateTime::parse_from_rfc3339(cutoff).expect("the cutoff is an RFC 3339 instant");
+        for runtime in NPM_HARDENED_RUNTIMES {
+            assert_eq!(
+                npx_hardening_flags(runtime),
+                [format!("--before={cutoff}")],
+                "{runtime}"
+            );
+
+            let mut command = std::process::Command::new(std::env::current_exe().unwrap());
+            command
+                .args([
+                    "--exact",
+                    "acp::tests::runtime_environment_probe_child",
+                    "--nocapture",
+                ])
+                .stdout(std::process::Stdio::piped())
+                .stderr(std::process::Stdio::piped());
+            apply_runtime_environment(&mut command, runtime, "/atlas/verified/bin");
+            command.env("ATLAS_ENV_PROBE_CHILD", "1");
+
+            let output = command.output().unwrap();
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            assert!(output.status.success(), "stdout={stdout}\nstderr={stderr}");
+            assert!(
+                !stdout.to_ascii_lowercase().contains("npm_config_"),
+                "{runtime}: the commands the adapter runs keep the user's npm settings: {stdout}"
+            );
+        }
+    }
+
+    #[test]
+    fn unmeasured_runtimes_keep_their_own_npm_settings() {
+        assert!(npx_hardening_flags("gemini").is_empty());
+        let mut command = std::process::Command::new("npx");
+        apply_runtime_environment(&mut command, "gemini", "/atlas/verified/bin");
+        assert!(command
+            .get_envs()
+            .all(|(key, _)| !key.to_string_lossy().starts_with("npm_config_")));
+        let flagged = AcpLaunch {
+            program: PathBuf::from("/usr/local/bin/npx"),
+            args: vec![
+                "-y".into(),
+                "--before=2026-01-01T00:00:00.000Z".into(),
+                "pkg@1.0.0".into(),
+                "--acp".into(),
+            ],
+            path_env: String::new(),
+        };
+        assert_eq!(npx_launch_package(&flagged), Some("pkg@1.0.0"));
+    }
+
+    #[test]
     fn runtime_environment_probe_child() {
         if std::env::var_os("ATLAS_ENV_PROBE_CHILD").is_none() {
             return;
@@ -2475,11 +2554,17 @@ mod tests {
             )
             .unwrap();
             assert_eq!(launch.program, test_bin("npx"));
+            let cutoff = snapshot().npm_dependency_cutoff.as_deref().unwrap();
             assert_eq!(
                 launch.args,
-                vec!["-y".to_string(), npx_package("claude-acp").to_string()],
-                "without an install, launch through version-pinned npx"
+                vec![
+                    "-y".to_string(),
+                    format!("--before={cutoff}"),
+                    npx_package("claude-acp").to_string()
+                ],
+                "without an install, launch through version-pinned npx under the dependency cutoff"
             );
+            assert_eq!(npx_launch_package(&launch), Some(npx_package("claude-acp")));
         }
 
         files.insert(test_bin("claude-agent-acp"));
