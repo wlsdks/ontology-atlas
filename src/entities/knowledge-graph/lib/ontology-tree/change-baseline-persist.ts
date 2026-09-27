@@ -10,7 +10,6 @@ import {
 
 interface SerializedSnapshot {
   v: 2;
-  scope: string;
   takenAt: number;
   ids: string[];
   sigs: number[];
@@ -28,11 +27,6 @@ interface SerializedSnapshotV1 {
   takenAt: number;
 }
 
-export interface PersistedBaseline {
-  scope: string | null;
-  snapshot: OntologySnapshot;
-}
-
 function indexer<T>(table: T[]): (value: T) => number {
   const indexOf = new Map<T, number>();
   return (value) => {
@@ -46,7 +40,7 @@ function indexer<T>(table: T[]): (value: T) => number {
   };
 }
 
-export function serializeSnapshot(snap: OntologySnapshot, scope: string): string {
+export function serializeSnapshot(snap: OntologySnapshot): string {
   const ids: string[] = [];
   const kinds: string[] = [];
   const types: string[] = [];
@@ -67,7 +61,7 @@ export function serializeSnapshot(snap: OntologySnapshot, scope: string): string
     if (!parts) continue;
     edges.push(idIndex(parts[0]), idIndex(parts[1]), typeIndex(parts[2]));
   }
-  const payload: SerializedSnapshot = { v: 2, scope, takenAt: snap.takenAt, ids, sigs, kinds, kindOf, types, edges };
+  const payload: SerializedSnapshot = { v: 2, takenAt: snap.takenAt, ids, sigs, kinds, kindOf, types, edges };
   return JSON.stringify(payload);
 }
 
@@ -77,8 +71,8 @@ const isIndexArray = (value: unknown, below: number, allowMissing = false): valu
   Array.isArray(value) &&
   value.every((item) => Number.isInteger(item) && item < below && (item >= 0 || (allowMissing && item === -1)));
 
-function fromV2(p: Partial<SerializedSnapshot>): PersistedBaseline | null {
-  if (typeof p.scope !== "string" || typeof p.takenAt !== "number") return null;
+function fromV2(p: Partial<SerializedSnapshot>): OntologySnapshot | null {
+  if (typeof p.takenAt !== "number") return null;
   if (!isStringArray(p.ids) || !isStringArray(p.kinds) || !isStringArray(p.types)) return null;
   if (!Array.isArray(p.sigs) || !p.sigs.every((sig) => Number.isSafeInteger(sig) && sig >= 0)) return null;
   if (p.sigs.length > p.ids.length || !isIndexArray(p.kindOf, p.kinds.length, true)) return null;
@@ -96,26 +90,23 @@ function fromV2(p: Partial<SerializedSnapshot>): PersistedBaseline | null {
     if (type === undefined) return null;
     edgeKeys.add(joinEdgeKey(ids[edges[i]], ids[edges[i + 1]], type));
   }
-  return { scope: p.scope, snapshot: { nodeSigs, nodeKinds, edgeKeys, takenAt: p.takenAt } };
+  return { nodeSigs, nodeKinds, edgeKeys, takenAt: p.takenAt };
 }
 
 const isStringPairArray = (value: unknown): value is [string, string][] =>
   Array.isArray(value) &&
   value.every((pair) => Array.isArray(pair) && typeof pair[0] === "string" && typeof pair[1] === "string");
 
-function fromV1(p: Partial<SerializedSnapshotV1>): PersistedBaseline | null {
+function fromV1(p: Partial<SerializedSnapshotV1>): OntologySnapshot | null {
   if (!isStringPairArray(p.nodeSigs) || !isStringPairArray(p.nodeKinds) || !isStringArray(p.edgeKeys)) return null;
   if (typeof p.takenAt !== "number") return null;
   const nodeSigs = new Map<string, number>();
   for (const [id, signature] of p.nodeSigs) nodeSigs.set(id, hashNodeSignature(signature));
-  return {
-    scope: null,
-    snapshot: { nodeSigs, nodeKinds: new Map(p.nodeKinds), edgeKeys: new Set(p.edgeKeys), takenAt: p.takenAt },
-  };
+  return { nodeSigs, nodeKinds: new Map(p.nodeKinds), edgeKeys: new Set(p.edgeKeys), takenAt: p.takenAt };
 }
 
 /** Null on any shape mismatch, so corrupt or unknown payloads are ignored. */
-export function deserializeSnapshot(raw: string | null): PersistedBaseline | null {
+export function deserializeSnapshot(raw: string | null): OntologySnapshot | null {
   if (!raw) return null;
   let parsed: unknown;
   try {

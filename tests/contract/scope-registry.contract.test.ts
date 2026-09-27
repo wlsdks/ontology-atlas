@@ -216,13 +216,22 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
 
   // ── Per-vault content — protected by an exact scope ──────────────────────
   {
+    key: "demo:change-baseline:v2:",
+    kind: "storage",
+    scope: "vault-scoped",
+    scopedBy: "setChangeBaselineScope",
+    file: "src/entities/knowledge-graph/lib/ontology-tree/change-baseline-store.ts",
+    provenBy: "src/entities/knowledge-graph/lib/ontology-tree/change-baseline-store.test.ts",
+    note: "Change baseline, hashed per node; saving one vault's removes every other vault's",
+  },
+  {
     key: "demo:change-baseline:v1:",
     kind: "storage",
     scope: "vault-scoped",
     scopedBy: "setChangeBaselineScope",
     file: "src/entities/knowledge-graph/lib/ontology-tree/change-baseline-store.ts",
     provenBy: "src/entities/knowledge-graph/lib/ontology-tree/change-baseline-store.test.ts",
-    note: "변경 baseline — 볼트별 그래프 스냅숏",
+    note: "The first form: the open vault's entry is read once into v2, then removed with the rest",
   },
   {
     // Which proposed documents this person passed on. Per vault for the same reason as

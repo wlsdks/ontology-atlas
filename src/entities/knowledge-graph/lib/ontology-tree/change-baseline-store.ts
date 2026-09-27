@@ -8,12 +8,11 @@ import {
   deserializeSnapshot,
   serializeSnapshot,
   snapshotMatchesGraph,
-  type PersistedBaseline,
 } from "./change-baseline-persist";
 
-const PERSIST_KEY = "demo:change-baseline:v2";
-const LEGACY_KEY_PREFIX = "demo:change-baseline:v1";
-const legacyKeyFor = (scope: string) => `${LEGACY_KEY_PREFIX}:${scope}`;
+const PERSIST_KEY_PREFIX = "demo:change-baseline:v2:";
+const FIRST_FORM_KEY_PREFIX = "demo:change-baseline:v1:";
+const UNSCOPED_FIRST_FORM_KEY = "demo:change-baseline:v1";
 
 /** The active vault; while null nothing is stored or restored. */
 let baselineScope: string | null = null;
@@ -26,28 +25,31 @@ function storage(): Storage | null {
   }
 }
 
-function removeLegacyBaselines(store: Storage, keep: string): void {
-  const legacy: string[] = [];
+function isBaselineKey(key: string): boolean {
+  return key.startsWith(PERSIST_KEY_PREFIX) || key.startsWith(FIRST_FORM_KEY_PREFIX) || key === UNSCOPED_FIRST_FORM_KEY;
+}
+
+function removeBaselinesExcept(store: Storage, keep: string | null): void {
+  const stale: string[] = [];
   for (let i = 0; i < store.length; i += 1) {
     const key = store.key(i);
-    if (key !== null && key !== keep && key.startsWith(LEGACY_KEY_PREFIX)) legacy.push(key);
+    if (key !== null && key !== keep && isBaselineKey(key)) stale.push(key);
   }
-  for (const key of legacy) store.removeItem(key);
+  for (const key of stale) store.removeItem(key);
 }
 
 function persistBaseline(snap: OntologySnapshot | null): void {
   const store = storage();
   if (!store || baselineScope === null) return;
-  if (!snap) {
-    store.removeItem(PERSIST_KEY);
-    return;
-  }
-  const payload = serializeSnapshot(snap, baselineScope);
+  const key = `${PERSIST_KEY_PREFIX}${baselineScope}`;
+  removeBaselinesExcept(store, snap ? key : null);
+  if (!snap) return;
+  const payload = serializeSnapshot(snap);
   try {
-    store.setItem(PERSIST_KEY, payload);
+    store.setItem(key, payload);
   } catch (error) {
     // The previous save would otherwise come back after a reload as if it were this one.
-    store.removeItem(PERSIST_KEY);
+    store.removeItem(key);
     console.warn(
       `[change-baseline] The review baseline (${payload.length} characters) was not saved, so it lasts until this page reloads.`,
       error,
@@ -69,12 +71,7 @@ function emit(): void {
 /** Declares the active vault and drops the previous vault's baseline. */
 export function setChangeBaselineScope(scope: string): void {
   if (baselineScope === scope) return;
-  const first = baselineScope === null;
   baselineScope = scope;
-  if (first) {
-    const store = storage();
-    if (store) removeLegacyBaselines(store, legacyKeyFor(scope));
-  }
   if (baseline !== null) {
     baseline = null;
     emit();
@@ -103,18 +100,11 @@ export function restorePersistedBaseline(
 ): boolean {
   const store = storage();
   if (!store || baseline !== null || baselineScope === null) return false;
-  const legacyKey = legacyKeyFor(baselineScope);
-  const legacy = store.getItem(legacyKey);
-  store.removeItem(legacyKey);
-  let stored: PersistedBaseline | null = deserializeSnapshot(store.getItem(PERSIST_KEY));
-  let carriedOver = false;
-  if (stored?.scope !== baselineScope) {
-    stored = deserializeSnapshot(legacy);
-    carriedOver = stored !== null;
-  }
-  if (!stored || !snapshotMatchesGraph(stored.snapshot, nodes)) return false;
-  baseline = stored.snapshot;
-  if (carriedOver) persistBaseline(baseline);
+  const stored = deserializeSnapshot(store.getItem(`${PERSIST_KEY_PREFIX}${baselineScope}`));
+  const snap = stored ?? deserializeSnapshot(store.getItem(`${FIRST_FORM_KEY_PREFIX}${baselineScope}`));
+  if (!snap || !snapshotMatchesGraph(snap, nodes)) return false;
+  baseline = snap;
+  if (!stored) persistBaseline(snap);
   emit();
   return true;
 }
