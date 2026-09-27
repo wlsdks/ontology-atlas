@@ -57,10 +57,10 @@ describe("i18n 메시지 — `<` 를 글자로 쓰지 않는다", () => {
 
     expect(
       offenders.map(([path, value]) => `${path}: ${value.slice(0, 80)}`),
-      `next-intl 은 메시지 안의 \`<name>\` 을 rich-text 태그로 읽는다. 짝이 없으면\n` +
-        `그 문장은 렌더에 실패하고 화면에 **키 경로**가 그려진다 — 콘솔에만 남아서\n` +
-        `타입·lint·단위 테스트를 전부 통과한다.\n` +
-        `부등호를 글자로 쓰려면 따옴표("…")·괄호·「」 를 쓴다.`,
+      `next-intl reads \`<name>\` inside a message as a rich-text tag. Without its pair\n` +
+        `the sentence fails to render and the screen shows the **key path**; the error stays in the console,\n` +
+        `so types, lint and unit tests all pass.\n` +
+        `To show an angle bracket as text, use quotation marks ("…"), parentheses or 「」.`,
     ).toEqual([]);
   });
 

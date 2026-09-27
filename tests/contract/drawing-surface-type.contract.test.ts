@@ -102,9 +102,9 @@ describe('그리기 표면의 타입 값 — 캔버스 · 인라인 SVG', () => 
   it('캔버스 ctx.font 에 무게 리터럴이 없다 — FONT_WEIGHT 를 참조한다', () => {
     expect(
       scan.canvasFontLiteral,
-      '캔버스는 `var()` 를 못 읽으므로 값을 옮겨 적을 수밖에 없고, 옮겨 적은 값은\n' +
-        '게이트가 없으면 드리프트한다 — 실제로 `600` 4곳과 `650` 1곳으로 갈려 있었다.\n' +
-        '`FONT_WEIGHT.strong` 처럼 거울을 참조하라.\n' +
+      'A canvas cannot read `var()`, so the value has to be copied, and a copied value\n' +
+        'drifts without a gate: it had split into `600` at four sites and `650` at one.\n' +
+        'Read the mirror instead, as in `FONT_WEIGHT.strong`.\n' +
         scan.canvasFontLiteral.join('\n'),
     ).toEqual([]);
   });
@@ -112,9 +112,9 @@ describe('그리기 표면의 타입 값 — 캔버스 · 인라인 SVG', () => 
   it('인라인 SVG 에 fontSize/fontWeight 속성이 없다 — className 으로 준다', () => {
     expect(
       scan.svgTypeAttr,
-      'SVG `<text>` 에도 CSS font-size/weight 가 그대로 먹는다. 속성으로 주면\n' +
-        '클래스 문자열이 없어 lint 셀렉터도 램프 래칫도 한 글자도 못 본다.\n' +
-        '`className="text-caption font-[var(--font-weight-strong)]"` 처럼 준다.\n' +
+      'CSS font-size and font-weight apply to SVG `<text>` as well. Given as attributes,\n' +
+        'there is no class string, so neither the lint selectors nor the ramp ratchet see a thing.\n' +
+        'Use a class, as in `className="text-caption font-[var(--font-weight-strong)]"`.\n' +
         scan.svgTypeAttr.join('\n'),
     ).toEqual([]);
   });
