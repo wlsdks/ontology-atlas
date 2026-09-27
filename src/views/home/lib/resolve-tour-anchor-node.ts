@@ -1,20 +1,9 @@
 /**
- * Resolves the guided tour's canvas-node anchor to a real graph node id. The
- * feature layer must not know the widget's graph types (FSD forbids
- * feature -> widgets), so the view layer resolves it and passes only the id down
- * as `OntologyMapProps.tourAnchorNodeId`.
- *
- * - `target: "project"` — the first project node, else the first domain node.
- * - `target: "domain"` — the first domain node, falling back to a project.
- *   **It must not aim at an `isHub` node** (corrected against measurement,
- *   2026-07-23): hubs sit in the capability tier, so in the spine view they are
- *   folded into a "+N" cluster chip, and clicking those coordinates expands the
- *   cluster (a full relayout into element view) instead of selecting — which
- *   stalled the tour permanently at the interactive step. A domain always
- *   renders in the spine tier and a click there is a selection, which makes the
- *   step's auto-advance (`hasSelection` false -> true) deterministic.
- *
- * `null` when neither is found; the caller then skips that step.
+ * Resolves the guided tour's canvas anchor to a graph node id here, since features must not import
+ * widget types. `project` takes the first project, else a domain; `domain` the first domain, else a
+ * project. Never an `isHub` node: hubs fold into a "+N" cluster chip whose click relayouts instead
+ * of selecting, which stalls the tour's `hasSelection` auto-advance. `null` when neither exists;
+ * the caller skips the step.
  */
 export interface TourAnchorCandidateNode {
   id: string;

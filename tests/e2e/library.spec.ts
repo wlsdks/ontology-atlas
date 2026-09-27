@@ -637,7 +637,7 @@ test.describe("the Library pane", () => {
     ).toBe("on");
   });
 
-  test("a page replaces the canvas, and closing it brings the canvas back", async ({ page }) => {
+  test("a Wiki page returns to its question desk while Sources retains the canvas", async ({ page }) => {
     await openLibrary(page);
     await expect(page.getByTestId("library-graph-canvas")).toBeVisible();
     await page.getByTestId("library-workspace-wiki").click();
@@ -648,6 +648,9 @@ test.describe("the Library pane", () => {
     await expect(page.getByTestId("library-status-strip")).toBeVisible();
     await expect(page.getByTestId("library-graph-canvas")).toHaveCount(0);
     await page.getByTestId("library-reader-back").click();
+    await expect(page.getByTestId("library-question-desk")).toBeVisible();
+    await expect(page.getByTestId("library-graph-canvas")).toHaveCount(0);
+    await page.getByTestId("library-workspace-sources").click();
     await expect(page.getByTestId("library-reader-landing")).toBeVisible();
     await expect(page.getByTestId("library-graph-canvas")).toBeVisible();
   });

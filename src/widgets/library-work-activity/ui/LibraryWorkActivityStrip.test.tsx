@@ -5,6 +5,20 @@ import messages from "../../../../messages/en.json";
 import { LibraryWorkActivityStrip } from "./LibraryWorkActivityStrip";
 
 describe("Library work receipts", () => {
+  it("keeps a compact failed receipt actionable without inventing a file target", () => {
+    const onOpenConversation = vi.fn();
+    render(<NextIntlClientProvider locale="en" messages={messages}>
+      <LibraryWorkActivityStrip compact onOpenConversation={onOpenConversation} onSelect={vi.fn()}
+        activity={{ isActive: false, current: null,
+          recent: [{ id: "e", kind: "error", phase: "complete", target: null, at: 0 }],
+        }} />
+    </NextIntlClientProvider>);
+    expect(screen.getByTestId("library-work-activity")).toHaveTextContent("Failed");
+    expect(screen.getByTestId("library-work-current")).not.toHaveTextContent("No confirmed file target");
+    fireEvent.click(screen.getByRole("button", { name: "Open conversation" }));
+    expect(onOpenConversation).toHaveBeenCalledOnce();
+  });
+
   it("keeps a pending proposal distinct from a persisted change and opens the exact target", () => {
     const onSelect = vi.fn();
     render(<NextIntlClientProvider locale="en" messages={messages}>

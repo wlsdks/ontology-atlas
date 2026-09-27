@@ -26,8 +26,8 @@ const core = (partial: Partial<BriefCore> & Pick<BriefCore, "core">): BriefCore 
 });
 
 /**
- * The hook's shape. `counting` and `totals` follow the cores unless a test states them, so a
- * fixture whose cores changed cannot keep a headline computed for other cores.
+ * The hook's shape. `counting` and `totals` follow the cores unless a test states them, so a fixture cannot keep
+ * a headline computed for other cores.
  */
 function brief(overrides: Partial<InsightsBrief> = {}): InsightsBrief {
   const value = briefFixture(overrides);
@@ -110,7 +110,7 @@ const mount = (value: InsightsBrief) =>
 describe("BriefTab", () => {
   it("heads with the two sums of stale and unknown lines, never a score", () => {
     mount(brief());
-    // stale: evidence-moved 69; unknown: agent-unreviewed 3. The repair queue (current) and agent calls do not join either sum.
+    // Stale is evidence-moved 69; unknown is agent-unreviewed 3. The repair queue and agent calls join neither sum.
     expect(screen.getByTestId("brief-headline")).toHaveTextContent("새로 알아야 할 것 69개 · 확인 못 한 것 3개");
     expect(screen.getByText("2 일 전 본 뒤로")).toBeInTheDocument();
   });
@@ -119,8 +119,7 @@ describe("BriefTab", () => {
     mount(brief());
     const list = screen.getByTestId("brief-lines");
     const lines = list.querySelectorAll("[data-brief-line]");
-    // "agent-calls-since" is not here: the since card under the list names those calls one by
-    // one, so counting them in the list too said one fact twice (review, 2026-09-25, round 4).
+    // No "agent-calls-since" line: the since card names those calls one by one.
     expect([...lines].map((line) => line.getAttribute("data-brief-line"))).toEqual([
       "ontology-evidence-moved",
       "ontology-agent-unreviewed",
@@ -132,7 +131,7 @@ describe("BriefTab", () => {
     for (const line of lines) expect(line).toHaveTextContent("개념");
     expect(list.querySelector('a[href="/ontology/insights/?tab=do-next"]')).not.toBeNull();
     fireEvent.click(screen.getByTestId("brief-line-open-ontology-evidence-moved"));
-    // The stale line names what it counts: concept, the file, and both dates — never a bare number.
+    // The stale line names concept, file and both dates, never a bare number.
     const rows = list.querySelectorAll('[data-testid="brief-line-rows-ontology-evidence-moved"] li');
     expect(rows).toHaveLength(2);
     expect(rows[0]).toHaveTextContent("Payments");
@@ -143,8 +142,7 @@ describe("BriefTab", () => {
 
   it("ends each sentence with its door, and makes each changed name its own door", () => {
     mount(brief());
-    // The door is in the sentence's flow, so it follows the last word at every width instead
-    // of standing in a column hundreds of pixels away (review, 2026-09-25, round 4).
+    // The door sits in the sentence's flow, right after the last word.
     const repair = screen.getByTestId("brief-lines").querySelector('[data-brief-line="ontology-repair"] a[href="/ontology/insights/?tab=do-next"]');
     expect(repair?.parentElement).toHaveTextContent(/58|\d+개/);
     expect(repair?.parentElement?.tagName).toBe("SPAN");
@@ -179,8 +177,7 @@ describe("BriefTab", () => {
 
   it("says where a core cannot be measured instead of showing zeros as fine", () => {
     mount(brief());
-    // The band shows the ring where no magnitude exists, never three dashes; the reason is the
-    // list's to say, once.
+    // The band shows the ring where no magnitude exists, never dashes; the list gives the reason once.
     expect(screen.getByTestId("brief-core-state-harness")).toHaveTextContent("모름");
     expect(screen.getByTestId("brief-band")).not.toHaveTextContent("앱에서 재요");
     expect(screen.getByTestId("brief-core-wiki")).not.toHaveTextContent("아직 없음");
@@ -194,10 +191,7 @@ describe("BriefTab", () => {
     expect(appOnly.querySelector('a[href="/download/"]')).not.toBeNull();
   });
 
-  /*
-   * The hosted sample drew eight dashes, the app-only sentence twice and "Get the app" three
-   * times on one screen (2026-09-23), against a decision that says nothing is listed twice.
-   */
+  // Nothing is listed twice: no placeholder dash in the band and one "Get the app".
   it("prints no placeholder dash in the band and offers the app exactly once", () => {
     const unchecked = { id: "ontology-evidence-unchecked", count: 125, state: "unknown" } as const;
     mount(brief({ ontology: core({ core: "ontology", availability: "app-only", headline: 125, current: null, stale: null, unknown: 125, lines: [unchecked] }) }));
@@ -272,12 +266,7 @@ describe("BriefTab", () => {
 });
 
 describe("a line that opens another question on this same board", () => {
-  /*
-   * The board keeps its tab in component state and writes the address itself, so a plain link to
-   * `?tab=do-next` changed the address and left the reader on the brief: the landing's only "go
-   * fix it" action did nothing (walkthrough, 2026-09-20). The link stays a link — the address is
-   * right, middle-click still opens a tab — and the plain click is answered in place.
-   */
+  // The board keeps its tab in component state, so the link stays a real link and the plain click is answered in place.
   it("answers the click in place instead of navigating", () => {
     const onOpenTab = vi.fn();
     render(
@@ -326,11 +315,8 @@ describe("a line that opens another question on this same board", () => {
 });
 
 describe("a marked visit folds what it cleared", () => {
-  /*
-   * Direction C (owner, 2026-09-23): pressing "Seen up to here" re-anchors the list, and the lines
-   * counting what happened since leave it. They fold instead of vanishing, so the press has an
-   * answer a reader can see; the folding copy is out of the accessibility tree.
-   */
+  // Pressing "Seen up to here" re-anchors the list; departing lines fold visibly, with the folding copy out of the
+  // accessibility tree.
   it("keeps a departing line for one fold, hidden from assistive technology, then drops it", async () => {
     vi.useFakeTimers();
     try {
@@ -370,15 +356,15 @@ describe("marking the visit", () => {
       </NextIntlClientProvider>,
     );
     const status = screen.getByTestId("brief-mark-seen-done");
-    // Before the press the region exists and is empty, so the announcement is a change.
+    // Empty before the press, so the announcement is a change.
     expect(status.textContent).toBe("");
     expect(status.getAttribute("role")).toBe("status");
 
     fireEvent.click(screen.getByTestId("brief-mark-seen"));
     expect(markSeen).toHaveBeenCalledTimes(1);
-    expect(status.textContent?.trim().length, "누른 뒤에도 화면이 아무 말을 하지 않는다").toBeGreaterThan(0);
+    expect(status.textContent?.trim().length, "the status stays silent after the press").toBeGreaterThan(0);
 
-    // Pressing again re-anchors to now; the control must not become a dead end.
+    // Pressing again re-anchors to now, so the control is never a dead end.
     fireEvent.click(screen.getByTestId("brief-mark-seen"));
     expect(markSeen).toHaveBeenCalledTimes(2);
   });
@@ -397,7 +383,7 @@ describe("taking the visit mark back", () => {
 
     fireEvent.click(screen.getByTestId("brief-mark-seen"));
     const undo = screen.getByTestId("brief-mark-seen-undo");
-    // It lives inside the live region, so the reversal is announced with the thing it reverses.
+    // Inside the live region, so the reversal is announced with what it reverses.
     expect(screen.getByTestId("brief-mark-seen-done").contains(undo)).toBe(true);
 
     fireEvent.click(undo);
@@ -406,12 +392,7 @@ describe("taking the visit mark back", () => {
     expect(screen.queryByTestId("brief-mark-seen-undo")).toBeNull();
   });
 
-  /*
-   * The offer used to live only in this component's own state, so switching to another tab and
-   * back unmounted it and the way back vanished although the anchor was still recoverable —
-   * `canUndoBriefSeenAt` said so the whole time. What can be undone is a fact about the folder,
-   * not about this mount.
-   */
+  // Whether the mark can be undone is a fact about the folder (`canUndoBriefSeenAt`), not about this mount.
   it("still offers the way back after the tab is left and reopened", () => {
     render(
       <NextIntlClientProvider locale="ko" messages={ko}>
@@ -424,11 +405,7 @@ describe("taking the visit mark back", () => {
 
 describe("a line that cannot be checked", () => {
   it.each(["measured", "reading", "unreadable"] as const)("offers the app in a browser and never inside it: %s", (availability) => {
-    /*
-     * Measured in the installed app at 1040x720 on this repository's own vault: "50 concepts
-     * whose code could not be checked · Get the app", inside the app. In a browser the same line
-     * is honest, and since 2026-09-23 its door is the one app row at the foot of the list.
-     */
+    // Inside the app the unchecked line must not offer the app; in a browser its door is the one app row at the foot.
     const line = { id: "ontology-evidence-unchecked", count: 4, state: "unknown" } as const;
 
     const browser = render(
@@ -446,16 +423,13 @@ describe("a line that cannot be checked", () => {
       </NextIntlClientProvider>,
     );
     const inApp = app.container.querySelector('[data-brief-line="ontology-evidence-unchecked"] a');
-    expect(app.container.querySelector('a[href="/download/"]'), "앱 안에서 앱을 받으라고 한다").toBeNull();
+    expect(app.container.querySelector('a[href="/download/"]'), "the app links to its own download").toBeNull();
     expect(inApp?.getAttribute("href")).toContain("/topology/");
   });
 });
 
 describe("no repository", () => {
-  /*
-   * Round 4 review, 2026-09-25: with no repository every concept is unchecked, and the unchecked
-   * line and the connect row stood one above the other with two doors to the same map.
-   */
+  // With no repository every concept is unchecked, so one row stands in the unchecked line's place with one door.
   it("is one row in the unchecked line's place, with its ring and the one connect door", () => {
     const { container } = render(
       <NextIntlClientProvider locale="ko" messages={ko}>
@@ -474,8 +448,7 @@ describe("no repository", () => {
     expect(connect).toHaveTextContent("개념 · 지침");
     expect(connect.querySelector('a[href="/topology/"]')).not.toBeNull();
     expect(container.querySelectorAll('[data-testid="brief-lines"] a[href="/topology/"]')).toHaveLength(1);
-    // The band states no reason at all: the one row above says it once (round 5 review found
-    // "no repository" three times, twice in the band and once in this row).
+    // The band states no reason; the row above says it once.
     expect(screen.getByTestId("brief-band")).not.toHaveTextContent("저장소 연결 전");
     expect(screen.getByTestId("brief-core-state-harness")).toHaveTextContent("모름");
     expect(screen.getAllByText(/저장소를 연결하면/)).toHaveLength(1);
@@ -483,12 +456,8 @@ describe("no repository", () => {
 });
 
 describe("a count that has not landed", () => {
-  /*
-   * Real bridge, 2026-09-25: the harness scan lands seconds after the other cores, and the headline
-   * painted their sum — "98 to learn · 99 not checked" — as final, then silently became 142 · 101
-   * when the scan arrived; the since card said "98 concept documents" and then "228 changes". The
-   * line now says it is counting, and the card waits.
-   */
+  // The harness scan lands seconds after the other cores, so the headline says it is counting instead of painting
+  // a partial sum, and the since card waits.
   const reading = core({ core: "harness", availability: "reading", headline: null, current: null, stale: null, unknown: null });
 
   it("says what it is counting, with no number, until every core has reported", () => {
@@ -522,7 +491,7 @@ describe("a count that has not landed", () => {
   it("keeps the happened lines for the since card while it is still counted", () => {
     const withCalls = core({ core: "agent", headline: 12, lines: [{ id: "agent-calls-since", count: 12, state: "current" }] });
     const { container } = mount(brief({ harness: reading, agent: withCalls, sinceTotal: null, since: [], sinceKind: null }));
-    // Drawn here now, it would fold away a moment later when the card lands and names the calls.
+    // Drawn now, it would fold away when the card lands and names the calls.
     expect(container.querySelector('[data-brief-line="agent-calls-since"]')).toBeNull();
   });
 

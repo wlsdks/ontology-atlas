@@ -12,11 +12,8 @@ import { jevSecretStatus, type JevSecretStatus } from '@/shared/lib/tauri-jev';
 import { readLlmAuditLog, type LlmAuditEntry } from '@/shared/lib/llm-audit-log';
 
 /**
- * State for the Agents destination's models tab. The rows and the sent-log footer must see the
- * **same value**, so the panel owns it and passes it down; querying separately leaves one of
- * them holding the old value right after a save.
- *
- * No key lives here — the screen knows only `stored` and `last4`.
+ * State for the Agents destination's models tab, owned by the panel so the rows and the sent-log
+ * footer see one value after a save. No key lives here, only `stored` and `last4`.
  */
 export interface AiConnectionState {
   /** Whether this is the desktop runtime — at false the screen renders no input field at all. */
@@ -26,16 +23,12 @@ export interface AiConnectionState {
   applyStatus: (provider: SecretProvider, next: SecretStatus) => void;
   /** The experimental Jev key (a separate Keychain account, never one of the three model vendors). */
   jevStatus: JevSecretStatus | null;
-  /**
-   * Whether the Keychain has answered at all. Until it has, a key row draws no status: "no key"
-   * followed a moment later by "····4f2a" is a change nobody made, and a screen reader announces
-   * it as one.
-   */
+  /** Whether the Keychain has answered; until then a key row draws no status, so none flips. */
   keysRead: boolean;
   applyJevStatus: (next: JevSecretStatus) => void;
   /** The newest lines of the vault's sent log, oldest first. */
   auditEntries: LlmAuditEntry[];
-  /** How many transfers the log holds in all — the number the footer states. `null` until the file has been read, so the screen never flashes "nothing sent" over a log it has not opened yet. */
+  /** How many transfers the log holds in all; `null` until read, so "nothing sent" never flashes. */
   auditTotal: number | null;
   refreshAudit: () => void;
 }
@@ -56,8 +49,7 @@ export function useAiConnection({
   enabled: boolean;
   vaultHandle: FileSystemDirectoryHandle | null;
 }): AiConnectionState {
-  // The runtime is detected once at mount. Under static export (the server) there is no
-  // window, so it is false — and the tab that draws from it mounts only on the client.
+  // Detected once at mount; false during static export, where there is no window.
   const [bridgeAvailable] = useState(() => isSecretBridgeAvailable());
   const [statuses, setStatuses] =
     useState<Record<SecretProvider, SecretStatus | null>>(EMPTY_STATUSES);
@@ -76,8 +68,7 @@ export function useAiConnection({
           try {
             return [provider, await secretStatus(provider)] as const;
           } catch {
-            // A failed keychain lookup can show the same screen as "none" — the
-            // user's next action (enter a key) is the same either way.
+            // A failed lookup shows as "none": the next action, entering a key, is the same.
             return [provider, null] as const;
           }
         }),
@@ -102,14 +93,12 @@ export function useAiConnection({
     };
   }, [enabled, bridgeAvailable]);
 
-  // Using the handle **object** as a dependency re-runs the read endlessly when the
-  // caller builds a new object each render. Identity is held in a ref and the
-  // re-run condition narrows to the folder name.
+  // Keyed by folder name with the handle in a ref: a caller's new handle object each
+  // render would otherwise re-run the read endlessly.
   const vaultHandleRef = useRef(vaultHandle);
   const vaultKey = vaultHandle?.name ?? null;
 
-  // Declared **before** the read effect below — effects run in declaration order,
-  // so the latest handle is always in place by read time.
+  // Must precede the read effect: effects run in declaration order.
   useEffect(() => {
     vaultHandleRef.current = vaultHandle;
   }, [vaultHandle]);

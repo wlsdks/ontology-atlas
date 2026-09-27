@@ -6,17 +6,15 @@ import { describe, expect, it, vi } from "vitest";
 import en from "../../../../../messages/en.json";
 import { FlowTab, type FlowTabLabels } from "./FlowTab";
 
-/* The request's copy button is the page's shared `CopyAgentTextButton`, which reads its failure
-   line from the message catalogue. */
+// The copy button is the shared `CopyAgentTextButton`, which reads its failure line from the message catalogue.
 function Messages({ children }: { children: ReactNode }) {
   return <NextIntlClientProvider locale="en" messages={en}>{children}</NextIntlClientProvider>;
 }
 const render = (ui: ReactElement) => baseRender(ui, { wrapper: Messages });
 
 /**
- * The tab's whole job is to hand over a request a person can check, so these
- * cover the two ways that fails: drawing a control that cannot finish, and
- * hiding the text the reader needs in order to disagree with the answer.
+ * The tab hands over a request a person can check, so these cover the two failures: a control that cannot finish,
+ * and hiding the text a reader needs to disagree with the answer.
  */
 
 const labels: FlowTabLabels = {
@@ -178,11 +176,7 @@ describe("FlowTab", () => {
   });
 });
 
-/*
- * The sample graph case. Refusing to draw the tab while the five sibling tabs
- * are full of counts from that same graph reads as a broken screen, so the tab
- * appears and only the launch waits for a folder of the person's own.
- */
+// On the sample graph the tab still draws, as its siblings do; only the launch waits for the person's own folder.
 describe("FlowTab on the built-in sample", () => {
   it("shows the request but not the launch", () => {
     render(

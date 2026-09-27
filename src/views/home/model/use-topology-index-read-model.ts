@@ -17,8 +17,8 @@ import {
 type Translate = (key: string, values?: Record<string, string | number>) => string;
 
 /**
- * Projects already live in `insight.nodes`; the canonical census must never add the
- * rendered project list again or the map and INDEX totals diverge.
+ * Projects are already in `insight.nodes`; adding the rendered list again makes map and INDEX
+ * totals diverge.
  */
 export function useTopologyIndexReadModel({
   insight,
@@ -41,8 +41,7 @@ export function useTopologyIndexReadModel({
     [insight],
   );
 
-  // Project rows are included because the INDEX badge and map node use the same
-  // transitive BFS count. Restricting this to domains made project counts disagree.
+  // Includes projects so the INDEX badge and map node share one transitive count.
   const indexDomainCensus = useMemo(
     () =>
       insight
@@ -59,8 +58,8 @@ export function useTopologyIndexReadModel({
   const indexMaxDomainDescendantCount = useMemo(() => {
     if (!indexDomainCensus || indexDomainCensus.size === 0) return 0;
     let max = 0;
-    // A project's total spans all its domains. The capacity denominator compares
-    // sibling domains, so project rows must stay out of this maximum.
+    // The capacity denominator compares sibling domains, so project totals stay out of this
+    // maximum.
     for (const row of indexDomainCensus.values()) {
       if (indexDomainIds.has(row.id) && row.total > max) max = row.total;
     }
@@ -83,7 +82,7 @@ export function useTopologyIndexReadModel({
     });
     return {
       rootKind: subtree.node.kind,
-      // Use the same localized display name as the canvas and realm chip.
+      // The same localized name as the canvas and realm chip.
       rootTitle: subtree.node.display ?? subtree.node.title,
       census,
       subtree,
@@ -102,7 +101,7 @@ export function useTopologyIndexReadModel({
     if (!realmLedgerModel) return null;
     const { census, rootTitle } = realmLedgerModel;
     const parts: string[] = [];
-    // Caption and ledger intentionally share this census and these unit keys.
+    // Caption and ledger share this census and these unit keys.
     if (census.elementCount > 0) parts.push(`${t("index.elementsShort")} ${census.elementCount}`);
     if (census.capabilityCount > 0) parts.push(`${t("index.capabilitiesShort")} ${census.capabilityCount}`);
     return parts.length > 0 ? `${rootTitle} · ${parts.join(" · ")}` : rootTitle;

@@ -27,62 +27,43 @@ import {
 } from "@/widgets/ontology-map";
 
 /**
- * Assembles the node datasheet (popover / panel) model.
- *
- * Four constraints, each with a regression behind it:
- * - `metric`'s contains/usedBy/dependsOn come from the SAME `groups` the panel
- *   draws its headers from. Two independent counts diverged on parallel edges
- *   (persona bug).
- * - Containment ("what it holds") is a typed count, kept apart from the
- *   direction-only "what it leans on".
- * - `powered` (freshness) has one source, the change-date ramp
- *   (`docFreshnessIndex`: Git where Git knows). Never also derive it from the
- *   changedSlugs session baseline.
- * - `nodeId` is always the canvas graph id (in sync with path-mode route
- *   state); `slug` prefers the vault slug and is what document / editor deep
- *   links and handoff text use.
+ * Assembles the node datasheet model. `metric` counts come from the same `groups` the panel draws,
+ * or parallel edges make them diverge. Containment is counted apart from "what it leans on".
+ * Freshness has one source (`docFreshnessIndex`), never the session baseline. `nodeId` is the
+ * canvas id; `slug` prefers the vault slug for deep links and handoff text.
  */
 export interface UseNodeDatasheetModelArgs {
   selectedOntologyNode: KnowledgeGraphNode | null;
   insight: { nodes: readonly KnowledgeGraphNode[]; edges: readonly KnowledgeGraphEdge[] } | null;
   /** Static samples are facts to inspect, never an MCP write target. */
   handoffSource: "loaded-vault" | "read-only-sample";
-  /** frontmatter `significance` — overrides the derived value when present. */
+  /** Overrides the derived value when present. */
   authoredSignificance: string | null;
   docFreshnessIndex: ReadonlyMap<string, string>;
   /**
-   * The files' own dates (`useVaultDocFileDates`), for the conflict badge alone. Whether the
-   * document was written since the panel opened is a question about the file; a commit moves
-   * `docFreshnessIndex` without writing it and must not raise the badge. Defaults to
-   * `docFreshnessIndex`.
+   * File dates for the conflict badge alone: a commit moves `docFreshnessIndex` without writing the
+   * file. Defaults to `docFreshnessIndex`.
    */
   docFileDateIndex?: ReadonlyMap<string, string>;
   /**
-   * Git is still dating the documents (`VaultDocDates.reading`). A node with no date yet then
-   * gets an empty `updatedAtLabel` rather than none: the slot stays, and neither a date nor
-   * "idle" is claimed until the answer lands.
+   * While Git is dating documents, a node without a date gets an empty `updatedAtLabel`, claiming
+   * nothing yet.
    */
   docDatesReading?: boolean;
-  /** Settled identity of the vault/source supplying `docFreshnessIndex`.
-   *  Null means the source is still restoring; no edit baseline is captured
-   *  or compared until the identity is authoritative. */
+  /** Null while the source restores; no edit baseline is captured or compared until then. */
   editBaselineScopeKey: string | null;
-  /** Snapshot of "now" for the relative-time labels, so rendering stays pure. */
+  /** Keeps rendering pure. */
   updatedAgoNowMs: number;
-  /** i18n — resolves `nodeDatasheet.updated_<key>`. */
   formatUpdatedLabel: (key: string, count: number) => string;
-  /** The real-data source behind the "last edit" subject and conflict badges.
-   *  Always defined via `emptyAgentActivityStatus()` — with no heartbeat the
-   *  agent candidate is treated as having no evidence. */
+  /** Always defined; with no heartbeat the agent candidate has no evidence. */
   agentActivityStatus: AgentActivityStatus;
-  /** Reuses the `resolveAgentFocusNodeId` result so the badge and this fact
-   *  always name the same node — no second matching path is written. */
+  /** The `resolveAgentFocusNodeId` result, so the badge and this fact name the same node. */
   agentFocusNodeId: string | null;
-  /** `useLocalVault().selfEditTimestamps` — the slugs this session actually
-   *  wrote. The only human evidence behind both "last edit · me" and the
-   *  conflict badge. */
+  /**
+   * The slugs this session wrote: the only human evidence for "last edit · me" and the conflict
+   * badge.
+   */
   selfEditTimestamps: ReadonlyMap<string, number>;
-  /** i18n — resolves `editProvenance.age.<key>`. */
   formatEditAgeLabel: (key: string, count: number) => string;
 }
 
@@ -93,16 +74,12 @@ export interface NodeDatasheetDerivation {
     slug: string;
     nodeId: string;
     title: string;
-    /**
-     * The original title, carried only when the displayed one differs from it
-     * (label humanisation, e.g. of a path). The datasheet preserves it as a
-     * mono subline; identical titles give null and no subline.
-     */
+    /** Only when the displayed title differs (humanised label); shown as a mono subline. */
     sourceTitle: string | null;
     kind: string;
     domain: { id: string; title: string } | null;
     powered: boolean;
-    /** "changed … ago"; `""` while Git is still dating the documents; null with no date. */
+    /** `""` while Git is still dating documents; null with no date. */
     updatedAtLabel: string | null;
     metric: {
       contains: number;
@@ -114,32 +91,24 @@ export interface NodeDatasheetDerivation {
     groups: ReturnType<typeof buildV2ConnectionGroups>;
     evidence: { rows: ReturnType<typeof buildV2EvidenceRows>; total: number };
     /**
-     * [Code locations] (Code locations) — the node's REAL code evidence (raw file paths from vault
-     * frontmatter `elements: [...]`), distinct from `evidence` above
-     * (which is the self-referential source-doc slug, `evidenceIds`). See
-     * `deriveCodeLocations`'s doc comment for why the two must stay separate.
+     * Real code paths from frontmatter `elements:`, kept apart from `evidence` (the source-doc
+     * slug); see `deriveCodeLocations`.
      */
     codeLocations: string[];
     handoffText: string;
     /**
-     * Deep link to **this node's own** document. Null for a node that is only
-     * named by a relation and has no `.md` of its own — this used to hold the
-     * link of somebody else's document citing it, so the "document" button
-     * opened the write-up of a different concept.
+     * Null for a node named only by a relation, or the "document" button opens another concept's
+     * write-up.
      */
     documentHref: string | null;
     /**
-     * Deep link to the other document that mentions a node with no document of
-     * its own. The popover does not surface it as an action because its
-     * evidence group already shows the link by name; only surfaces without an
-     * evidence list (context menu, full detail) use this.
+     * The popover omits it because its evidence group already names the link; only surfaces without
+     * one use it.
      */
     mentionDocumentHref: string | null;
     meaningEditHref: string;
-    /** Non-null only with real evidence (a heartbeat match or a self-write
-     *  record). Human vs AI is carried by `kind` alone, never by hue. */
+    /** Non-null only with real evidence. Human vs AI is carried by `kind`, never by hue. */
     lastEditSubject: { kind: LastEditSubjectKind; ageLabel: string } | null;
-    /** True only on a real mtime mismatch. */
     mtimeConflict: boolean;
   } | null;
 }
@@ -160,9 +129,7 @@ export function useNodeDatasheetModel({
   selfEditTimestamps,
   formatEditAgeLabel,
 }: UseNodeDatasheetModelArgs): NodeDatasheetDerivation {
-  // One drawer-model build derives both focus (popover connections) and
-  // significance (the plain-language so-what): no recomputation, and the two
-  // counts cannot drift.
+  // One drawer-model build feeds focus and significance, so their counts cannot drift.
   const nodeFocusData = useMemo(() => {
     if (!selectedOntologyNode || !insight) return null;
     const model = buildTopologyOntologyDrawerModel(selectedOntologyNode, insight.nodes, insight.edges);
@@ -173,12 +140,9 @@ export function useNodeDatasheetModel({
   }, [selectedOntologyNode, insight, authoredSignificance]);
   const nodeFocus = nodeFocusData?.focus ?? null;
 
-  // Freshness baseline from the moment this node was opened. The identity is
-  // the settled source scope + node id + source slug: the same graph id in a
-  // bundled sample and a local vault is not the same editable document. A null
-  // scope means restoration is still in flight, so it neither captures nor
-  // replaces a trusted baseline. The self-write timestamp is snapshotted with
-  // freshness; only a later record can explain a later freshness change.
+  // Keyed by settled source scope, node id and source slug: the same graph id in the sample and a
+  // local vault is not the same document. A null scope captures nothing. The self-write time is
+  // snapshotted with freshness, so only a later write explains a later change.
   type EditBaseline = {
     scopeKey: string;
     nodeId: string;
@@ -219,14 +183,11 @@ export function useNodeDatasheetModel({
 
   const v2DatasheetModel = useMemo(() => {
     if (!nodeFocus || !selectedOntologyNode || !insight) return null;
-    // The name handed to an agent must be a name the vault knows: a
-    // vault-root-relative slug for a document node, and the reference text the
-    // vault wrote down for a derived node with no document.
+    // A vault-root slug for a document node; the written reference for a derived node without one.
     const agentTarget = resolveNodeAgentTarget(selectedOntologyNode);
     const slug = agentTarget.ref ?? nodeFocus.sourceSlug ?? selectedOntologyNode.id;
-    // Group from the FULL connection set. Folding it into a 5-item preview
-    // collapses a hub's dependsOn total into a generic overflow, and the
-    // handoff names then contradict the counts.
+    // Groups from the full connection set, or a hub's total folds into overflow and the handoff
+    // contradicts the counts.
     const connections = buildV2Connections(selectedOntologyNode.id, insight.nodes, insight.edges);
     const groups = buildV2ConnectionGroups(connections);
     const evidenceRows = buildV2EvidenceRows(selectedOntologyNode.evidenceIds);
@@ -235,8 +196,7 @@ export function useNodeDatasheetModel({
       contains: groups.contains.total,
       usedBy: groups.usedBy.total,
       dependsOn: groups.dependsOn.total,
-      // All four buckets including the parent. While this one was missing, a
-      // node with only a parent shipped a handoff saying "0 connections".
+      // Includes the parent, or a node with only a parent hands off "0 connections".
       belongsTo: groups.belongsTo.total,
       evidence: evidenceRows.length,
     };
@@ -259,8 +219,7 @@ export function useNodeDatasheetModel({
     const freshnessIso = nodeFocus.sourceSlug ? docFreshnessIndex.get(nodeFocus.sourceSlug) : undefined;
     const ago = freshnessIso ? computeUpdatedAgo(freshnessIso, updatedAgoNowMs) : null;
 
-    // Only two kinds of real evidence are candidates: a heartbeat match and a
-    // self-write record. With neither, lastEditSubject is null.
+    // Only a heartbeat match or a self-write record count as evidence.
     const lastEditSubjectFact = resolveNodeLastEditSubject({
       nodeId: selectedOntologyNode.id,
       sourceSlug: nodeFocus.sourceSlug,
@@ -289,7 +248,6 @@ export function useNodeDatasheetModel({
     return {
       slug,
       nodeId: selectedOntologyNode.id,
-      // The compact popover header takes the short display title.
       title: nodeFocus.displayTitle,
       sourceTitle:
         selectedOntologyNode.title !== nodeFocus.displayTitle ? selectedOntologyNode.title : null,
@@ -307,15 +265,9 @@ export function useNodeDatasheetModel({
       evidence: { rows: evidenceRows, total: evidenceRows.length },
       codeLocations,
       handoffText,
-      // The document deep link uses the vault file path (`?slug=`), and node
-      // id → document slug conversion happens in exactly one place: the focus
-      // model's pure derivation. `ownDocumentSlug` rather than `sourceSlug`,
-      // because for a node only named by a relation the sourceSlug is
-      // *somebody else's* document citing it — using it makes the "document"
-      // button open a different concept's write-up.
-      // `via` carries where the reader came from, so the document's crumb returns to this
-      // node on the map instead of a bare `/topology` with nothing selected. Leaving the
-      // map used to be one-way (owner, 2026-09-14).
+      // `ownDocumentSlug`, not `sourceSlug`, which for a relation-named node is another concept's
+      // document.
+      // `via` lets the document's crumb return to this node on the map.
       documentHref: nodeFocus.ownDocumentSlug
         ? buildDocsVaultHref({
             slug: nodeFocus.ownDocumentSlug,
@@ -328,9 +280,7 @@ export function useNodeDatasheetModel({
             via: buildTopologyReturnMarker(selectedOntologyNode.id),
           })
         : null,
-      // The editor deep link passes the canonical `<kind>:<slug>` graph node
-      // id unchanged, replacing the old inline `?node=<vault slug>` form so
-      // every outgoing link shares one grammar.
+      // The canonical `<kind>:<slug>` id, so every outgoing link shares one grammar.
       meaningEditHref: buildTopologyMeaningEditorNodeHref(selectedOntologyNode.id),
       lastEditSubject,
       mtimeConflict,

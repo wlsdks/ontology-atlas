@@ -53,6 +53,7 @@ The criterion for separation is not the topic, but **"when it is read."** All fo
 - [Workbench composition and motion](#workbench-composition-and-motion)
 - [Architecture canvas — the flow surface (new, 2026-08-28)](#architecture-canvas--the-flow-surface-new-2026-08-28)
 - [Library index — readable page titles](#library-index--readable-page-titles)
+- [Wiki question report — editorial evidence grammar (2026-09-27)](#wiki-question-report--editorial-evidence-grammar-2026-09-27)
 - [Absolute rules (Don'ts)](#absolute-rules-donts)
 - [Arrows carry information or they don't ship](#arrows-carry-information-or-they-dont-ship)
 - [Dimensional regularity — when content length varies](#dimensional-regularity--when-content-length-varies)
@@ -1851,6 +1852,72 @@ derived from the prose measure) and that measure. Its graph opens through one la
 so it retains the same focus trap, Escape, scrim, exit lockout and scroll lock
 as other dialogs. Closing returns to the originating page and scroll position.
 A closed graph must not keep a drawing loop running. The Dialog reads system motion preference through the live shared subscription. Reduced entry and exit use `OVERLAY_RISE_REDUCED` with zero travel, retaining the opacity fade; changing the preference while the workbench is open takes effect without remounting it.
+
+## Wiki question report — editorial evidence grammar (2026-09-27)
+
+The Wiki question desk uses the same Atlas shell as other workbenches. Its entry
+is a bounded question composer followed by actual inventoried originals. Source
+rows open the file without inventing a citation or reading it in the background.
+The entry headline uses the existing hero type/leading step, and the search
+button uses the small control step inside the input's shared frame. Counts name
+the folder inventory until an actual search can report coverage. A large bare
+field uses the existing body-lg type and leading pair; the parent still owns its
+box and dimensions. Source rows carry directory size/format and the observed
+Wiki citation count, without interpreting those facts as evidence quality. Entry,
+no-match,
+activity, and report states share one outer content edge. A failed or active
+agent receipt stays visible in that grid with a conversation action; completed
+reading receipts do not reserve a separate banner above the question. Starting a
+new question request scopes its visible receipts from that request's start;
+older failures remain in the underlying trace instead of preceding a new report.
+Below the desktop band, the question scroll viewport ends above the fixed bottom
+navigation using its existing reserve token. End padding alone does not make
+keyboard-focused citations visible above an overlapping navigation bar.
+Once a
+report arrives, its question is the sole visible headline; the search form becomes
+an explicit Edit question control. Answer prose stays within the document measure.
+The report may span 1120px by combining two existing `--measure-note-column` widths:
+when its actual container is at least 1024px wide and the ACP dock is closed,
+original evidence sits beside a column containing disagreements and unknowns,
+with a 28px gap. Smaller containers read in one column. Search coverage and raw
+leads remain named disclosures. A zero local word match is a retrieval
+limit, not a claim that the originals have no answer. The exact source address
+stays visible beside an actionable citation, and an unreviewed draft never looks
+like accepted Wiki meaning.
+
+| Role | Existing Atlas type and measure | Treatment |
+|---|---|---|
+| Question | `--text-display` + `--leading-display` | One aligned headline above the report; no repeated card title. |
+| Answer lead | `--text-display` + `--leading-display` | The actual first paragraph stays at 23/28 even when long; later explanation uses the reading step. No truncation or fabricated summary. |
+| Explanation and source excerpts | `--text-reading` + `--leading-prose`, within `--measure-doc-column` | Paragraph rhythm and line length carry the reading hierarchy. |
+| Section and source labels | `--text-title` for sections; `--text-body-lg` with `--leading-body` for answer citation blocks; `--text-label` for metadata | Exact source addresses move below their answer paragraph, remain one press away, and break anywhere. Korean sentences keep word boundaries and never inherit Latin mono decoration. |
+
+The report is an open document surface with thin rules, not a stack of cards.
+Markdown, PDF, and filing controls sit in a quiet top-right toolbar; the report
+body has no export row. The PDF reuses the rendered report, keeps all source
+addresses, and requests A4 margins of 18mm vertically and 16mm horizontally.
+Violet marks the selected question and citation path; amber is reserved for a
+confirmed conflict status, not for an agent's unreviewed disagreement heading.
+An unknown remains neutral. Status and source limits use words as well as
+colour. The actual response and visible source addresses survive Markdown and print; print hides controls
+and motion, not uncertainty. No new numeric type or motion token is needed:
+the existing scale already covers 23px question and answer, 14px citations, and 16px
+reading body. A new value needs a measured role and more than one real consumer.
+
+Search completion uses the shared base arrival; report arrival uses settle.
+The shared animated disclosure handles coverage and lead expansion while
+keeping its open state and focus through ACP completion. Reduced motion removes
+travel without removing any content or feedback. Motion starts from the action
+that caused it and never delays the answer or blocks another press.
+
+Reference calibration for the entry redesign uses the composable label, input,
+action, and empty-state patterns in [shadcn/ui](https://ui.shadcn.com/docs/components/empty)
+and [Radix Themes](https://www.radix-ui.com/themes/docs/components/text-area).
+Their repository licenses were checked on 2026-09-27: [shadcn MIT](https://github.com/shadcn-ui/ui/blob/main/LICENSE.md)
+and [Radix MIT](https://github.com/radix-ui/themes/blob/main/LICENSE). The selected
+mock uses only Atlas screenshots as visual input. Its composition is authored
+for Atlas and implemented with existing Atlas primitives and tokens; no external
+code, screenshots, logos, fonts, or assets are copied into this surface.
 
 ## Absolute rules (Don'ts)
 

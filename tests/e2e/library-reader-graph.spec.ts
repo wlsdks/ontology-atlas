@@ -41,11 +41,11 @@ test("a home popup returns its door on every close, and the canvas stands still"
   await page.getByRole("button", { name: /Open my folder/i }).click();
   await expect(page.getByTestId("library-page")).toBeVisible();
 
-  // 1 — a page replaces the picture and gives it back; the index row keeps its edge.
+  // Wiki returns to the inquiry; Sources owns the graph whose popup is measured below.
   await page.getByTestId("library-workspace-wiki").click();
   const selectedRow = page.getByTestId("library-wiki-wiki/workshop");
   const canvas = page.getByTestId("library-graph-canvas");
-  await expect(canvas).toBeVisible();
+  await expect(page.getByTestId("library-question-desk")).toBeVisible();
   await selectedRow.click();
   await expect(selectedRow).toHaveAttribute("aria-current", "true");
   // A border colour alone does not draw a selected edge on the row primitive.
@@ -53,6 +53,8 @@ test("a home popup returns its door on every close, and the canvas stands still"
   await expect(page.getByTestId("library-reading-pane")).toBeVisible();
   await expect(canvas).toHaveCount(0);
   await page.getByTestId("library-reader-back").click();
+  await expect(page.getByTestId("library-question-desk")).toBeVisible();
+  await page.getByTestId("library-workspace-sources").click();
   await expect(canvas).toBeVisible();
 
   // 2 — the anchored contract, three ways out and one immediate reopen.

@@ -8,46 +8,23 @@ import { Dialog } from "@/shared/ui/dialog";
 import type { ContainmentProposal, ContainmentRowStatus } from "../../lib/containment-batch";
 
 /**
- * **The review sheet for the one batch repair on this board.**
- *
- * ## Why a blocking sheet and not a button that just runs
- *
- * This is the first control on the insights board that writes to more than one of the person's
- * files. The local-first promise is that the answer lives on their disk in ordinary Markdown, and
- * the rule that keeps it true is that a person sees each change before it happens — the same shape
- * as the map's change review and the ACP write gate, which wait for an explicit `allow_once`.
- *
- * So: every proposed write is a row, every row states **which document changes and what is added
- * to it**, every row can be unticked, and nothing happens until Apply. Ticked-by-default is the
- * one convenience taken, and it is honest because the sheet shows the complete list on screen
- * before the button is reachable.
- *
- * ## What a row can end as
- *
- * `done` · `conflict` (the file changed since the sheet was opened — its `expected_mtime` refused
- * the write, which is the guard working, not a failure to hide) · `skipped` (never attempted, with
- * the reason on the row) · `failed` with the message the write threw. A run does not stop at the
- * first refusal: the remaining documents are independent files, and abandoning them would leave
- * the vault in a state nobody chose.
- *
- * The status type itself lives with the plan (`lib/containment-batch`), because the run that
- * produces these phases is decided there; it is re-exported here for the callers that already
- * import it from the sheet.
+ * The review sheet for the board's one batch repair. It writes several of the person's files, so each change is
+ * seen first, like the map's change review and the ACP `allow_once` gate: every write is a row naming the
+ * document and what is added, rows can be unticked, and nothing happens until Apply. Rows end as `done`, then
+ * the `conflict` case (the `expected_mtime` guard refused a changed file), `skipped` (with its reason) or `failed`;
+ * a refusal does not stop the run, since the documents are independent. The status type lives with the plan
+ * (`lib/containment-batch`) and is re-exported here.
  */
 export type { ContainmentRowStatus };
 
 export interface ContainmentBatchLabels {
-  /** The sheet's own title, carrying the scale of what is proposed. */
+  /** The sheet's title, carrying the scale of what is proposed. */
   title: (count: number) => string;
   /** One sentence naming exactly what will be written, before any of it happens. */
   lede: string;
   /** One row: this concept is added to that domain document's list. */
   row: (concept: string, domain: string, key: string) => string;
-  /**
-   * The same row, said in the names on disk: which file changes and which line is added. Titles
-   * repeat inside one folder, so without this a person cannot tell which of two documents the
-   * write lands in.
-   */
+  /** The same row in the names on disk, so a person can tell which of two same-titled documents is written. */
   rowTarget: (domainPath: string, conceptSlug: string) => string;
   apply: (count: number) => string;
   applying: string;
@@ -56,7 +33,7 @@ export interface ContainmentBatchLabels {
   statusDone: string;
   statusConflict: string;
   statusFailed: (message: string) => string;
-  /** The closing line after a run — what landed and what did not. */
+  /** The closing line after a run: what landed and what did not. */
   outcome: (done: number, failed: number) => string;
 }
 
@@ -72,7 +49,7 @@ export function ContainmentBatchSheet({
 }: {
   open: boolean;
   proposals: readonly ContainmentProposal[];
-  /** Proposal id → what happened to it. Absent means pending. */
+  /** Proposal id to its status; absent means pending. */
   statuses: ReadonlyMap<string, ContainmentRowStatus>;
   running: boolean;
   /** True once a run has completed, so the sheet stops offering to run it again. */
@@ -89,14 +66,8 @@ export function ContainmentBatchSheet({
       labelledBy="containment-batch-title"
       testId="containment-batch-sheet"
     >
-      {/*
-       * The body is its own component because **the tick state must not outlive the sheet.**
-       * `Dialog` mounts its children only while open, so a fresh `useState` here starts every
-       * opening from "everything ticked" — carrying a previous run's selection forward would hide
-       * a row a person unticked for a reason they have since forgotten. Resetting it from an
-       * effect instead would be state written during render's shadow, which this repository's
-       * lint refuses on principle.
-       */}
+      {/* A separate component so the tick state starts fresh on every opening (`Dialog` mounts children only while open);
+         carrying a previous selection forward could hide a row someone unticked for a reason. */}
       <ContainmentBatchBody
         proposals={proposals}
         statuses={statuses}
@@ -140,8 +111,7 @@ function ContainmentBatchBody({
     });
 
   const done = [...statuses.values()].filter((status) => status.phase === "done").length;
-  // Everything that did not land counts the same to a person: the file is as it was. A refused
-  // guard, a row never attempted, and a thrown write all belong on that side of the sentence.
+  // Everything that did not land counts the same to a person, since the file is as it was: refused, skipped or thrown.
   const failed = [...statuses.values()].filter(
     (status) =>
       status.phase === "conflict" || status.phase === "failed" || status.phase === "skipped",
@@ -182,11 +152,7 @@ function ContainmentBatchBody({
                     <span className="min-w-0 break-keep text-body text-[color:var(--color-text-secondary)]">
                       {labels.row(proposal.conceptTitle, proposal.domainTitle, proposal.key)}
                     </span>
-                    {/*
-                     * The names on disk, under the sentence. Titles repeat in one folder, so this
-                     * line is what tells a person which of two "Billing" documents the write
-                     * lands in — and it is the same string the run addresses the file by.
-                     */}
+                    {/* The names on disk under the sentence, the same string the run addresses the file by. */}
                     <span
                       data-testid="containment-batch-row-target"
                       className="min-w-0 break-all text-label text-[color:var(--color-text-tertiary)]"

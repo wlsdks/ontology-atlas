@@ -38,7 +38,7 @@ function sameScope(left: readonly string[], right: readonly string[]): boolean {
   return left.length === right.length && left.every((slug, index) => slug === right[index]);
 }
 
-/** Capture one immutable pre-turn basis while rejecting any vault, graph, or source drift. */
+/** One immutable pre-turn basis; rejects vault, graph or source drift. */
 export async function captureTaskReviewBaseline(
   captured: TaskReviewBaselineState,
   current: () => TaskReviewBaselineState,

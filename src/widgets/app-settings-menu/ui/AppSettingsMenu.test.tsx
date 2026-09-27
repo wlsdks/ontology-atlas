@@ -53,10 +53,8 @@ vi.mock('@/features/locale-switch', () => ({
   ),
 }));
 
-// Settings consolidation 2026-07-24 — AppSettingsMenu reads the app-wide
-// LocalVaultProvider through useLocalVault. This test renders without a provider,
-// so an idle vault is mocked (the agent detail panel appears only with a loaded
-// vault, and VaultAgentSetupPanel.test.tsx covers that separately).
+// Rendered without a LocalVaultProvider, so an idle vault is mocked; VaultAgentSetupPanel.test.tsx
+// covers the loaded case.
 vi.mock('@/entities/vault-session/model/use-agent-server', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/entities/vault-session/model/use-agent-server')>()),
   useAgentServer: () => ({
@@ -119,11 +117,7 @@ vi.mock('next-intl', () => ({
   useLocale: () => mocks.locale,
 }));
 
-/**
- * Open the sheet. When settings became a **two-column LNB** on 2026-07-29,
- * anything outside the screen section required clicking the left list — hence the
- * section argument. It defaults to the first screen (the screen section).
- */
+/** Open the sheet on a section, by clicking the LNB; defaults to the Screen section. */
 function openSheet(
   ui?: ReactNode,
   section?: 'screen' | 'background' | 'expand' | 'footprint' | 'workspace',
@@ -135,11 +129,8 @@ function openSheet(
 }
 
 /**
- * `OperationsNav`'s standalone `ModeBadge` demo-link owned this hosted-vs-
- * installed routing decision — its exact
- * `isDesktopRuntime ? '/docs/?intent=local' : '/download/'` branch lives in this
- * widget's [workspace] docs-vault link row (`vaultHref`). `test:desktop:runtime`
- * still needs a direct test guarding that branch.
+ * The workspace docs-vault link (`vaultHref`) routes desktop to `/docs/?intent=local` and the
+ * web to `/download/`; `test:desktop:runtime` needs this direct guard.
  */
 describe('AppSettingsMenu desktop acquisition boundary', () => {
   beforeEach(() => {
@@ -179,12 +170,7 @@ describe('AppSettingsMenu desktop acquisition boundary', () => {
   });
 });
 
-/**
- * Settings consolidation 2026-07-24 (owner instruction) — the five-tab modal was
- * retired. A single-column sheet holds the [screen] [workspace] [AI agent] groups
- * on one screen, and the MCP detail moves behind a drill-in subview. Guards that
- * the default screen has zero tabs, zero empty panels and no long MCP proof text.
- */
+/** The default screen has no tabs, no empty panels and no long MCP proof text. */
 describe('AppSettingsMenu single-sheet recomposition', () => {
   beforeEach(() => {
     mocks.isDesktopRuntime = false;
@@ -234,13 +220,7 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
     expect(panel.className).toContain('app-settings-panel-in');
   });
 
-  /*
-   * ⚠️ Census state 1c, 2026-08-31. This caption read `errorMessage ?? fallback`, so a browser's
-   * own English `NotFoundError` sentence — written for a developer — landed in a Korean settings
-   * row, while `path-missing` (which deliberately carries no message) fell through to a sentence
-   * that never said why. `FirstRunPage` already branches on the code; this row now does the same.
-   */
-  it('폴더 실패의 까닭을 코드로 갈라 말하고, 날 것 그대로의 예외 문장은 쓰지 않는다', () => {
+  it('explains a folder failure by its code, never with the raw exception text', () => {
     const raw =
       'A requested file or directory could not be found at the time an operation was processed.';
     for (const [code, key] of [
@@ -274,16 +254,7 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
     );
   });
 
-  /**
-   * ⚠️ **This section left the sheet on 2026-08-21** (ledger 90). The old check was
-   * "one click reaches the agent section inside this sheet", and that place is now
-   * the "Agent" destination.
-   *
-   * So what is pinned here changes: **a signpost stands where it left, and it sends
-   * you to the destination.** `surfaces.md`'s "Blocking only half is the worst option" is the basis — removed from the nav, the way in
-   * still has to answer.
-   */
-  it('빠져나간 자리에 이정표가 서서 목적지로 보낸다', () => {
+  it('leaves a signpost that sends a moved section to its destination', () => {
     openSheet();
     // The section itself is no longer in the sheet.
     expect(screen.queryByTestId('app-settings-nav-runtimes')).toBeNull();
@@ -292,23 +263,12 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
     expect(screen.queryByText('nav.settingsMenu.mcpProofTitle')).not.toBeInTheDocument();
 
     routerPush.mockClear();
-    /*
-     * ⚠️ **Re-aimed to `/mcp` on 2026-09-05** (PO council). Two panes left this group, and one
-     * row can only point at one place; it points at the half the group is still about — what
-     * remains here is the folder and the key, and MCP is the folder's connection. The runner list
-     * is one named hop further (`/mcp` → "see your runtimes"), not lost.
-     */
     fireEvent.click(screen.getByTestId('app-settings-nav-mcp'));
     expect(routerPush).toHaveBeenCalledTimes(1);
     expect(String(routerPush.mock.calls[0][0])).toContain('/agents/?tab=mcp');
   });
 
-  /**
-   * The hierarchy seat's prescription: **this row is not this sheet's
-   * protagonist.** The winner is "Open Conversation" inside the destination, and the
-   * signpost must not compete with it.
-   */
-  it('이정표 행은 인디고를 쓰지 않는다', () => {
+  it('does not paint the signpost row indigo', () => {
     openSheet();
     const row = screen.getByTestId('app-settings-nav-mcp');
     // The focus ring's indigo is an app-wide specification and is not measured — what is measured is **surface and text**.
@@ -322,18 +282,7 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
     );
   });
 
-  /*
-   * ⚠️ The "No Vault Notice" and "Open Folder Here" checks **moved to**
-   * `AgentSetupSection.test.tsx` on 2026-08-21, because that screen left the sheet
-   * (ledger 90). They were not deleted but followed — left here they would go on
-   * measuring something this sheet does not draw.
-   */
 
-  /**
-   * The API Key pane left for Agents → Models on 2026-09-25 (owner). The sheet keeps one pointer
-   * row in the Connection group — the same grammar as the MCP row — and no pane: saying the keys'
-   * facts in both places is what the move was meant to end.
-   */
   it('points at Agents → Models instead of drawing a key pane', () => {
     openSheet();
     expect(screen.queryByTestId('app-settings-nav-ai')).toBeNull();
@@ -348,11 +297,7 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
     expect(String(routerPush.mock.calls[0][0])).toContain('/agents/?tab=models');
   });
 
-  /**
-   * The Esc order became one rung — with no subview there is no intermediate layer
-   * to back out of. (The contract that an expanded key input card collapses first
-   * is owned by `ModelConnectionsPanel`.)
-   */
+  // An expanded key card collapsing first is `ModelConnectionsPanel`'s contract.
   it('Escape closes the sheet — there is no subview left to back out of', () => {
     openSheet(undefined, 'workspace');
     fireEvent.keyDown(screen.getByTestId('app-settings-popover'), {
@@ -366,28 +311,8 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
     );
   });
 
-  /**
-   * ## This surface changed position and nature four times — the test pins **the current one**
-   *
-   * ① centre modal → ② right non-modal dock → ③ centre non-modal →
-   * ④ **centre modal plus dim** (owner, 2026-07-30, referencing Claude desktop's
-   * settings).
-   *
-   * The reason for ② was "The settings window covers the map" — the "Map Background" and "Footprint" sections promise "change it and the map
-   * updates immediately" while covering that map.
-   *
-   * **In ④ that reason disappeared.** Both sections already carry a **live preview
-   * inside the panel** (`FootprintPreview` uses the same renderer as the map, and
-   * the background swatches use the real `--canvas-bg-*` tokens). Seeing the result
-   * while changing a value was being solved by the preview, not the map, and the
-   * dock was sacrificing position for a problem already solved.
-   *
-   * So what the check below holds is that **the dim actually exists and that fact
-   * agrees with `aria-modal`**. That agreement is where this surface went wrong
-   * repeatedly — setting `aria-modal` while non-modal is a lie, and not setting it
-   * while modal leaves assistive technology unaware of the blocking.
-   */
-  it('딤이 있고, 그 사실과 aria-modal 이 일치한다', () => {
+  // A scrim and `aria-modal` must agree: either one without the other misleads assistive technology.
+  it('has a scrim that agrees with aria-modal', () => {
     openSheet();
     const overlay = screen.getByTestId('app-settings-overlay');
     const panel = screen.getByTestId('app-settings-popover');
@@ -403,7 +328,7 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
   });
 
   /** Modal means focus stays inside — Tab escaping behind the dim makes the blocking half-real. */
-  it('모달이므로 Tab 이 창 안에 머문다', async () => {
+  it('traps Tab inside the modal', async () => {
     openSheet(undefined, 'workspace');
     const panel = screen.getByTestId('app-settings-popover');
     // The last focusable differs per section, so **the end of DOM order** is picked
@@ -422,9 +347,8 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
   });
 
   /*
-   * The installed app is WebKit, where a mouse click does not focus the `<summary>` (2026-09-25).
-   * The sheet has to take focus itself, or its Escape — which listens where focus is — and
-   * Tab's trap start from `<body>`.
+   * WebKit does not focus the clicked `<summary>`, so the sheet must take focus itself or
+   * Escape and the Tab trap start from `<body>`.
    */
   it('opened by the mouse, focus lands in the panel; Escape there closes and returns it to the gear', async () => {
     openSheet();
@@ -437,11 +361,7 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
     await waitFor(() => expect(trigger).toHaveFocus());
   });
 
-  /*
-   * A closed sheet owns no Escape (2026-09-26). The gear keeps focus after a press and after
-   * the sheet hands focus back; while it swallowed the key, the page's own dismissal order
-   * (on the map: close the node card, then clear the selection) never heard it.
-   */
+  // A closed sheet owns no Escape, so the page's own dismissal order still hears it.
   it('with the sheet closed, Escape on the gear reaches the page', async () => {
     const pageEscape = vi.fn();
     render(
@@ -496,12 +416,8 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });
 
-  /**
-   * The guide's autostart guard used `aria-modal` to decide "already in conversation
-   * with another surface". The settings window lost that attribute, so without a
-   * marker to carry it, a guide would appear over settings.
-   */
-  it('설정 창에 안내 가드용 마커가 있다', () => {
+  // The guide's autostart guard reads this marker, or a guide would open over settings.
+  it('marks the settings dialog for the guide guard', () => {
     openSheet();
     expect(screen.getByTestId('app-settings-popover')).toHaveAttribute(
       'data-surface-role',
@@ -510,12 +426,8 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
   });
 
   /*
-   * A language switch remounts the `[locale]` layout. The person changed one value inside
-   * settings, so the sheet reopens on the pane they were in rather than closing under them
-   * (inspection, 2026-09-25: the sheet closed and focus fell to <body>).
-   *
-   * jsdom lays nothing out, so `offsetParent` - the "is this instance on screen" test - is null
-   * for every element; these cases stand the triggers up as rendered.
+   * A language switch reopens the sheet on the same pane. jsdom lays nothing out, so every
+   * element's offsetParent is null; these cases mark the triggers as rendered.
    */
   const renderedTriggers = () =>
     vi.spyOn(HTMLElement.prototype, 'offsetParent', 'get').mockImplementation(() => document.body);
@@ -624,13 +536,8 @@ describe('AppSettingsMenu screenControls injection', () => {
   });
 });
 
-/**
- * P3 defect ⑥ (full usability review, 2026-07-23) — the prescription for the search
- * palette (⌘K) stacking over this dialog. Passing `open`/`onOpenChange` makes it
- * controlled; omitting them keeps the previous self-managed behaviour (backwards
- * compatible).
- */
-describe('AppSettingsMenu controlled open (P3 결함⑥)', () => {
+/** `open`/`onOpenChange` make the sheet controlled, so ⌘K never stacks over it; omitted, it manages itself. */
+describe('AppSettingsMenu controlled open', () => {
   beforeEach(() => {
     mocks.isDesktopRuntime = false;
   });
@@ -677,11 +584,6 @@ describe('AppSettingsMenu controlled open (P3 결함⑥)', () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  /**
-   * Since A-3 this sheet's Esc order is **one rung**. There used to be a drill-in
-   * subview, so the first Esc retreated to the root and the second closed — that
-   * intermediate layer is gone, so the first Esc closes.
-   */
   it('Escape from an agent section closes at once — no intermediate step remains', () => {
     const onOpenChange = vi.fn();
     render(<AppSettingsMenu mode="static" open onOpenChange={onOpenChange} />);
@@ -707,37 +609,23 @@ describe('AppSettingsMenu controlled open (P3 결함⑥)', () => {
   });
 });
 
-// Phase 5 #20/#21 — whether the personalisation pickers (3 canvas backgrounds, 2
-// node icon sets) appear in the [screen] group, persist locally, and are reflected
-// in aria-checked.
-describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
+describe('AppSettingsMenu appearance pickers', () => {
   beforeEach(() => {
     mocks.isDesktopRuntime = false;
     window.localStorage.clear();
   });
 
-  /**
-   * Settings became a **two-column LNB** on 2026-07-29 (owner re-instruction). With
-   * five sections, drill-in did not suit comparing a handful of values before
-   * choosing — it meant going back out and in every time. This helper clicks the
-   * left list, so a broken wiring breaks the tests below first.
-   */
+  /** Clicks the LNB item, so broken wiring fails the tests below first. */
   const openSection = (section: string) => {
     openSheet();
     fireEvent.click(screen.getByTestId(`app-settings-nav-${section}`));
   };
 
   /**
-   * Owner call: *"It needs sensible
-   * width and height and a fixed size."*
-   *
-   * The height used to follow the content, so the window grew and shrank with every
-   * section change. jsdom does not compute layout, so this cannot be measured by
-   * rect; it is pinned by **whether the size-deciding classes are the same
-   * regardless of section** — the only way this property breaks is "a different class
-   * appears in one section", which is exactly what this aims at.
+   * jsdom computes no layout, so the fixed size is pinned by the size classes being identical
+   * in every section.
    */
-  it('창 크기는 절을 바꿔도 고정이다', () => {
+  it('keeps the dialog size fixed across sections', () => {
     openSheet();
     const panel = screen.getByTestId('app-settings-popover');
     const sizeClasses = () =>
@@ -747,58 +635,38 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
         .sort()
         .join(' ');
     const baseline = sizeClasses();
-    expect(baseline, '고정 높이가 없다 — 내용이 창 크기를 정하고 있다').toMatch(/h-\[\d+px\]/);
-    expect(baseline, '고정 폭이 없다').toMatch(/w-\[\d+px\]/);
+    expect(baseline, 'the dialog needs a fixed height so content does not size it').toMatch(/h-\[\d+px\]/);
+    expect(baseline, 'the dialog needs a fixed width').toMatch(/w-\[\d+px\]/);
     for (const item of ['background', 'expand', 'footprint', 'notify', 'workspace']) {
       fireEvent.click(screen.getByTestId(`app-settings-nav-${item}`));
-      expect(sizeClasses(), `${item} 절에서 창 크기가 바뀐다`).toBe(baseline);
+      expect(sizeClasses(), `the dialog size changes in the ${item} section`).toBe(baseline);
     }
   });
 
-  /**
-   * The LNB has **groups**. A group's job is to say why five items are in that
-   * order, and without it the list is just five rows.
-   */
-  it('LNB 는 세 묶음으로 나뉘고 5·2·1 로 갈린다 (이정표 행 별도)', () => {
+  it('splits the LNB into three titled groups', () => {
     mocks.isDesktopRuntime = true;
     openSheet();
     const nav = screen.getByTestId('app-settings-nav');
     // Pinned by **structure**, not copy — it must not break every time a label is refined.
     const groups = [...nav.children];
-    expect(groups.length, '묶음이 셋이 아니다').toBe(3);
-    // 「Connected」 went from 3 to 4 on 2026-08-16 (the runners section was added), and
-    // a third group 「App」 appeared on 2026-08-20 (the update-check section). What this
-    // check holds is not the counts but the structure that **every group has a
-    // title** — the counts are a by-product of that structure, updated when a section
-    // is added. The 「Connection」 group is 2 items + **1 signpost row** = 3 buttons; the
-    // signpost sends you to a destination rather than opening a pane, so the item
-    // count and the button count differ. Since 2026-09-25 the group is 1 item + 2 signposts
-    // (MCP, and Models where the API Key pane was).
+    expect(groups.length, 'the LNB needs three groups').toBe(3);
+    // The counts follow the sections: the Connection group is one item plus two signpost rows.
     expect(groups.map((g) => g.querySelectorAll('button').length)).toEqual([5, 3, 1]);
     for (const g of groups) {
-      expect(g.querySelector('p'), '묶음에 제목이 없다 — 그러면 그냥 열 줄이다').not.toBeNull();
+      expect(g.querySelector('p'), 'every LNB group needs a title').not.toBeNull();
     }
   });
 
-  /**
-   * Icons are a scanning channel. If even one is missing, that item alone has to be
-   * found by reading, which makes the channel worthless — hence "all five" is the
-   * contract.
-   */
-  it('LNB 항목마다 아이콘이 하나씩 있다', () => {
+  it('gives every LNB item one icon', () => {
     mocks.isDesktopRuntime = true;
     openSheet();
     for (const item of ['screen', 'background', 'expand', 'footprint', 'notify', 'workspace', 'update']) {
       const svgs = screen.getByTestId(`app-settings-nav-${item}`).querySelectorAll('svg');
-      expect(svgs.length, `${item} 항목에 아이콘이 없다`).toBe(1);
+      expect(svgs.length, `the ${item} item needs one icon`).toBe(1);
     }
   });
 
-  /*
-   * On the web the 「App」 group's one pane (Updates) can draw nothing, so neither the group nor
-   * the item is listed (inspection, 2026-09-25: a heading, one promise and a 470px empty pane).
-   */
-  it('웹에서는 앱 전용 「업데이트」 묶음이 없다', () => {
+  it('omits the app-only Updates group on the web', () => {
     mocks.isDesktopRuntime = false;
     openSheet();
     expect(screen.queryByTestId('app-settings-nav-update')).toBeNull();
@@ -806,7 +674,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
   });
 
   // The desktop shell lists all seven panes; the web drops Updates (above).
-  it('LNB 일곱 절을 모두 싣는다', () => {
+  it('lists all seven LNB sections', () => {
     mocks.isDesktopRuntime = true;
     openSheet();
     for (const item of ['screen', 'background', 'expand', 'footprint', 'notify', 'workspace', 'update']) {
@@ -814,20 +682,8 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     }
   });
 
-  /**
-   * The three 「Notifications」 rows **do not go back to 「Screen」** (2026-08-02, owner report).
-   *
-   * They originally sat at the bottom of the 「Screen」 section, with a comment
-   * justifying that position — meaning they were **deliberately there**. So the way
-   * back is wide: the next person adding a notification row who attaches it to
-   * 「Screen」 trips no check at all (both are legitimate component placements, so there
-   * is no literal for lint to see).
-   *
-   * So **both directions** are pinned: the notification controls must be in the
-   * 「Notifications」 section, and must not be in the 「Screen」 section. Pinning only one side lets
-   * duplication (present in both) through.
-   */
-  it('알림 컨트롤은 「알림」 절에 있고 「화면」 절에는 없다', () => {
+  // Pinned both ways, so a control in both sections fails too.
+  it('places notification controls in Notifications, not Screen', () => {
     const NOTIFY_CONTROLS = [
       'app-settings-agent-status',
       'app-settings-agent-notifications',
@@ -840,18 +696,18 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     for (const testId of NOTIFY_CONTROLS) {
       expect(
         screen.queryByTestId(testId),
-        `${testId} 가 「화면」 절에 남아 있다 — 알림은 자기 절로 빠졌다`,
+        `${testId} must not stay in the Screen section`,
       ).toBeNull();
     }
 
     fireEvent.click(screen.getByTestId('app-settings-nav-notify'));
     expect(screen.getByTestId('app-settings-pane-notify')).toBeInTheDocument();
     for (const testId of NOTIFY_CONTROLS) {
-      expect(screen.getByTestId(testId), `${testId} 가 「알림」 절에 없다`).toBeInTheDocument();
+      expect(screen.getByTestId(testId), `${testId} must be in the Notifications section`).toBeInTheDocument();
     }
   });
 
-  it('첫 화면은 화면 절이고, 다른 절 내용은 아직 없다', () => {
+  it('opens on the Screen section without rendering other sections', () => {
     openSheet();
     expect(screen.getByTestId('app-settings-pane-screen')).toBeInTheDocument();
     expect(screen.queryByTestId('app-settings-canvas-background')).toBeNull();
@@ -859,7 +715,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     expect(screen.queryByTestId('app-settings-footprint')).toBeNull();
   });
 
-  it('배경 절이 3택을 싣는다', () => {
+  it('offers three choices in the Background section', () => {
     openSection('background');
     expect(screen.getByTestId('app-settings-canvas-background')).toBeInTheDocument();
     for (const variant of ['dot', 'web', 'depth']) {
@@ -868,7 +724,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
   });
 
   /** The icon set applies outside the map too, so it stays in the screen section — it must not follow the background section. */
-  it('노드 아이콘은 화면 절에 있다', () => {
+  it('places node icons in the Screen section', () => {
     openSheet();
     expect(screen.getByTestId('app-settings-glyph-set')).toBeInTheDocument();
   });
@@ -888,7 +744,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     expect(window.localStorage.getItem('ontology-atlas:canvas-background:v1')).toBe('web');
   });
 
-  it('발자국 절은 프리셋이 먼저고 슬라이더는 접혀 있다', () => {
+  it('shows footprint presets first with sliders collapsed', () => {
     openSection('footprint');
     expect(screen.getByTestId('app-settings-footprint')).toBeInTheDocument();
     expect(screen.getByTestId('app-settings-footprint-preset-default')).toBeInTheDocument();
@@ -920,9 +776,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     await waitFor(() => expect(screen.queryByTestId(controlId)).not.toBeInTheDocument());
   });
 
-  /* ── Expand section (2026-08-01, ported from the mockup `.qa-scratch/proto-expand.html`) ──── */
-
-  it('확장 절은 어포던스 3안 · 구조 4안 · 슬라이더 3개를 싣는다', () => {
+  it('offers three affordances, four structures and three sliders in the Expand section', () => {
     openSection('expand');
     expect(screen.getByTestId('app-settings-expand')).toBeInTheDocument();
     for (const value of ['pill', 'bar', 'badge']) {
@@ -931,10 +785,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     for (const value of ['disc', 'fan', 'ring', 'column']) {
       expect(screen.getByTestId(`app-settings-expand-structure-${value}`)).toBeInTheDocument();
     }
-    // The three numbers **start collapsed** (design audit, 2026-08-02) — six items
-    // standing at equal weight make this section read as a list rather than «a place
-    // to choose». It reuses the grammar the neighbouring 「Footprints」 already uses
-    // (「Manual Adjustment」).
+    // The three numbers start collapsed behind the two decisions, as in Footprints.
     for (const id of [
       'app-settings-expand-batch',
       'app-settings-expand-label-attempts',
@@ -952,24 +803,14 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     }
   });
 
-  /**
-   * **The mockup's test load does not come across.** 「Scale」 (small/real/large)
-   * was a handle the mockup built to measure itself, not a product setting — landing
-   * it here would show users a control for «choosing» the size of their own data.
-   */
-  it('시안의 「볼트 규모」는 제품 설정에 없다', () => {
+  it("omits the mockup's vault size setting", () => {
     openSection('expand');
     for (const value of ['small', 'real', 'huge']) {
       expect(screen.queryByTestId(`app-settings-expand-scale-${value}`)).toBeNull();
     }
   });
 
-  /**
-   * The sliders' bounds are **the mockup's values verbatim**. Narrowing them here
-   * would ship screens outside the range the mockup actually measured across its 27
-   * combinations.
-   */
-  it('슬라이더 범위가 시안 값과 같다', () => {
+  it("uses the mockup's slider ranges", () => {
     openSection('expand');
     fireEvent.click(screen.getByTestId('app-settings-expand-detail-toggle'));
     const range = (id: string) => {
@@ -981,14 +822,8 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     expect(range('app-settings-expand-max-open')).toEqual(['1', '6']);
   });
 
-  /**
-   * **The default affordance is 「Top Bar」** (owner decision, 2026-08-01). This
-   * is a value that deliberately changes today's screen, so the contract is whether
-   * someone who never touched settings actually receives it — the screen-side
-   * contract is measured by rendering in
-   * `tests/contract/expand-affordance.contract.test.ts`.
-   */
-  it('설정을 안 건드리면 어포던스는 「머리 위 막대」다', () => {
+  // The default value itself is pinned in tests/contract/expand-settings.contract.test.ts.
+  it('defaults the affordance to the overhead bar', () => {
     openSection('expand');
     expect(screen.getByTestId('app-settings-expand-affordance-bar')).toHaveAttribute(
       'aria-checked',
@@ -1000,7 +835,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     );
   });
 
-  it('어포던스를 고르면 저장되고 aria-checked 가 따라간다', () => {
+  it('saves a chosen affordance and updates aria-checked', () => {
     openSection('expand');
     fireEvent.click(screen.getByTestId('app-settings-expand-affordance-badge'));
     expect(screen.getByTestId('app-settings-expand-affordance-badge')).toHaveAttribute(
@@ -1013,7 +848,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
   });
 
   /** One line on what the chosen value does — the names alone do not separate the three. */
-  it('고른 어포던스·구조의 설명이 바뀐다', () => {
+  it('updates the description for the chosen affordance and structure', () => {
     openSection('expand');
     const hint = () => screen.getByTestId('app-settings-expand-affordance-hint').textContent;
     const before = hint();
@@ -1026,21 +861,13 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     expect(structureHint()).not.toBe(structureBefore);
   });
 
-  /**
-   * ⚠️ This replaces a test that hid the outline-weight slider while the print was *filled*.
-   * Its principle — "a control that does nothing when you touch it is a control telling a lie"
-   * — is the reason the slider it guarded no longer exists at all: fill, outline weight, bloom,
-   * along-the-line repetition, its density and its side all shaped a glyph the map stopped
-   * drawing when the walked mark became the node's own light (2026-09-10). The same principle,
-   * applied to the whole set, deletes them rather than hiding one conditionally.
-   */
-  it('걸어온 길 설정에는 사라진 자국을 다루는 손잡이가 남아 있지 않다', () => {
+  it('offers no footprint control for a retired mark', () => {
     openSection('footprint');
     fireEvent.click(screen.getByTestId('app-settings-footprint-detail-toggle'));
     for (const retired of ['fill', 'stroke', 'bloom', 'on-edges', 'density', 'placement']) {
       expect(
         screen.queryByTestId(`app-settings-footprint-${retired}`),
-        `app-settings-footprint-${retired} 는 그리지 않는 마크를 조절한다`,
+        `app-settings-footprint-${retired} controls a mark that is no longer drawn`,
       ).toBeNull();
     }
     // The four that still reach the canvas stay reachable.
@@ -1058,12 +885,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
 });
 
 
-// #72 — seeing, copying and revealing the selected vault's absolute path. The B2
-// merge deleted `VaultToolsMenu`, orphaning the `LocalVaultPicker` that owned this
-// surface so that nothing mounted it, and desktop users lost any way to see where
-// the vault sits on disk (review 2026-07-25). That component was rendering directly
-// in its own test and passing — a false green.
-describe('AppSettingsMenu — vault 절대 경로 (#72)', () => {
+describe('AppSettingsMenu vault absolute path', () => {
   beforeEach(() => {
     mocks.vaultRootPath = null;
     mocks.vaultStatus = 'idle';
@@ -1072,7 +894,7 @@ describe('AppSettingsMenu — vault 절대 경로 (#72)', () => {
     mocks.copyPath.mockClear();
   });
 
-  it('웹(경로 없음)에서는 경로 행이 없다 — 없는 값을 있는 척하지 않는다', () => {
+  it('omits the path row on the web, where there is no path', () => {
     mocks.vaultStatus = 'loaded';
     mocks.vaultHandleName = 'my-vault';
     openSheet();
@@ -1080,7 +902,7 @@ describe('AppSettingsMenu — vault 절대 경로 (#72)', () => {
     expect(screen.queryByTestId('app-settings-vault-path')).not.toBeInTheDocument();
   });
 
-  it('데스크톱에서 절대 경로를 보여주고 복사/Finder 열기를 제공한다', () => {
+  it('shows the absolute path with copy and reveal-in-Finder on desktop', () => {
     mocks.vaultStatus = 'loaded';
     mocks.vaultHandleName = 'my-vault';
     mocks.vaultRootPath = '/Users/me/Team Vault/docs/ontology';
@@ -1096,7 +918,7 @@ describe('AppSettingsMenu — vault 절대 경로 (#72)', () => {
     expect(mocks.revealInFinder).toHaveBeenCalledWith('/Users/me/Team Vault/docs/ontology');
   });
 
-  it('vault 가 안 열려 있으면 경로 행도 없다', () => {
+  it('omits the path row when no vault is open', () => {
     mocks.vaultRootPath = '/Users/me/stale';
     openSheet();
 
@@ -1105,16 +927,11 @@ describe('AppSettingsMenu — vault 절대 경로 (#72)', () => {
 });
 
 /**
- * 「Import nodes from another folder」 lives in
- * **settings → workspace** (moved from the bottom of INDEX, 2026-08-02).
- *
- * It is pinned in both directions — `TopologyIndexPanel.test.tsx` checks "it is not
- * in INDEX" and this case checks "it is in settings". Pinning only one side lets
- * **absent from everywhere** through (the module is self-contained, so deleting one
- * call line makes it vanish silently).
+ * Import lives in Workspace; `TopologyIndexPanel.test.tsx` pins that it is not in INDEX, so
+ * together they catch it vanishing from both.
  */
-describe('AppSettingsMenu — 가져오기 모듈의 자리', () => {
-  it('작업 공간 절이 가져오기 모듈을 싣는다', () => {
+describe('AppSettingsMenu import module placement', () => {
+  it('renders the import module in the Workspace section', () => {
     // The module is self-contained and renders itself **only with a loaded vault**,
     // so this test's idle vault mock leaves nothing in the DOM. So it inspects **the
     // wiring itself** rather than the render result — the way this repository handles
@@ -1127,10 +944,10 @@ describe('AppSettingsMenu — 가져오기 모듈의 자리', () => {
       source.indexOf("shownSection === 'workspace' ?"),
       source.indexOf("shownSection === 'update' ?"),
     );
-    expect(workspaceBranch, '작업 공간 절이 없다').not.toBe('');
+    expect(workspaceBranch, 'the Workspace section branch is missing').not.toBe('');
     expect(
       workspaceBranch,
-      '가져오기 모듈이 작업 공간 절에서 사라졌다 — INDEX 로 되돌아갔거나 통째로 없어졌다',
+      'the import module must render in the Workspace section',
     ).toContain('<BlockImportModule');
   });
 });

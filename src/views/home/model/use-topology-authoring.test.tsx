@@ -3,12 +3,9 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 
-/*
- * The authoring hook's two writes that the map-edit QA pass (2026-09-26) found saying the
- * wrong thing: the body editor's refusal (D3) and the domain a "create under this domain"
- * node is filed under (D10). The heavy collaborators are stubbed; what is asserted is the
- * sentence a refusal raises and the value a new node's `domain:` is built from.
- */
+// Pins the sentence the body editor's conflict raises and the `domain:` a "create under this
+// domain" node gets.
+// Heavy collaborators are stubbed.
 vi.mock("./use-agent-connect-model", () => ({ useAgentConnectModel: () => ({}) }));
 vi.mock("./use-bootstrap-flow", () => ({
   useBootstrapFlow: () => ({
@@ -72,7 +69,7 @@ function renderAuthoring(saveDoc: (...args: unknown[]) => Promise<void>) {
     title: "Agent access",
     evidenceIds: ["domains/agent-access"],
   });
-  // Built once: the hook's effects key on these identities, as the real read model's are stable.
+  // Built once, since the hook's effects key on these identities.
   const options = {
     setRouteState: vi.fn(),
     meaningEditorIntent: false,
