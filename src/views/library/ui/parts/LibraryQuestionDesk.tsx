@@ -99,7 +99,7 @@ export function LibraryQuestionDesk({
   const [result, setResult] = useState<DeskResult | null>(null);
   const [reading, setReading] = useState(false);
   const [readCount, setReadCount] = useState(0);
-  const [jevStored, setJevStored] = useState(false);
+  const [jevPreparing, setJevPreparing] = useState(false);
   const [jevSelection, setJevSelection] = useState<JevSelection | null>(null);
   const [jevFinding, setJevFinding] = useState<LocatedJevFinding | null>(null);
   const [jevNote, setJevNote] = useState<string | null>(null);
@@ -115,11 +115,6 @@ export function LibraryQuestionDesk({
     livePageTexts.current = pageTexts;
   }, [pageTexts, vaultScope]);
 
-  useEffect(() => {
-    let live = true;
-    void jevSecretStatus().then((status) => { if (live) setJevStored(Boolean(status?.stored)); }).catch(() => { if (live) setJevStored(false); });
-    return () => { live = false; };
-  }, [vaultScope]);
   useEffect(() => () => { searchId.current += 1; jevRequestId.current += 1; }, []);
 
   const listingVersion = JSON.stringify([
@@ -209,13 +204,19 @@ export function LibraryQuestionDesk({
   };
 
   const prepareJev = async (claim: DeskClaim, citation: DeskCitation) => {
+    if (jevPreparing) return;
+    setJevPreparing(true);
     setJevNote(null);
     setJevFinding(null);
     const handle = sourceHandles.get(citation.path);
     const listed = sources.find((source) => source.path === citation.path);
     const pageRaw = pageTexts.get(claim.pageSlug);
-    if (!handle || !listed || !vaultRoot || !pageRaw) { setJevNote(t('jev.missing')); return; }
     try {
+      if (!handle || !listed || !vaultRoot || !pageRaw) { setJevNote(t('jev.missing')); return; }
+      let status: Awaited<ReturnType<typeof jevSecretStatus>>;
+      try { status = await jevSecretStatus(); }
+      catch { setJevNote(t('jev.unavailable')); return; }
+      if (!status?.stored) { setJevNote(t('jev.noKey')); return; }
       const file = await handle.getFile();
       const bytes = await file.arrayBuffer();
       const passage = citedPassage(new Uint8Array(bytes), citation.path, citation.anchor);
@@ -230,6 +231,7 @@ export function LibraryQuestionDesk({
       if (!hash || liveScope.current !== vaultScope || livePageTexts.current.get(claim.pageSlug) !== pageRaw) { setJevNote(t('jev.obsolete')); return; }
       setJevSelection({ claim, citation, payload, pageRaw, sourceMtime: file.lastModified, sourceHash: hash, vaultScope });
     } catch { setJevNote(t('jev.missing')); }
+    finally { setJevPreparing(false); }
   };
 
   const sendJev = async () => {
@@ -317,7 +319,7 @@ export function LibraryQuestionDesk({
                     <div key={`${citation.path}#${citation.anchor}`} className="flex flex-wrap items-center gap-2">
                       <button type="button" className={controlClass({ shape: 'link', size: 'md', tone: 'accent', hoverInk: 'strong', className: 'underline' })} onClick={() => onOpenSource(citation.path, citation.anchor)}>{citation.path}#{citation.anchor}</button>
                       <span className="text-caption leading-caption text-[color:var(--color-text-tertiary)]">{t(`sourceState.${citationState(claim, citation)}`)}</span>
-                      {jevStored && vaultRoot ? <Chip onClick={() => void prepareJev(claim, citation)}>{t('jev.check')}</Chip> : null}
+                      {vaultRoot ? <Chip disabled={jevPreparing} onClick={() => void prepareJev(claim, citation)}>{jevPreparing ? t('jev.checking') : t('jev.check')}</Chip> : null}
                       {jevFinding?.pageSlug === claim.pageSlug && jevFinding.claimText === claim.text && jevFinding.citation.path === citation.path && jevFinding.citation.anchor === citation.anchor ? (
                         <div role="status" className="w-full rounded-card border border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] p-[var(--card-pad)] text-label leading-label text-[color:var(--color-text-secondary)]" data-testid="question-desk-jev-result">
                           <p>{t(`jev.choice.${jevFinding.judgment.choice}`)}</p>

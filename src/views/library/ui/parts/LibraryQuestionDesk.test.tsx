@@ -45,10 +45,10 @@ function fixture(hash = currentHash, listedMtime = 10) {
   return { doc, raw, source, handle };
 }
 
-function Desk({ hash = currentHash, scope = 'folder-a', listedMtime = 10, onAsk = () => {} }: { hash?: string; scope?: string; listedMtime?: number; onAsk?: (brief: string, question: string) => void }) {
+function Desk({ hash = currentHash, scope = 'folder-a', listedMtime = 10, includeWiki = true, onAsk = () => {} }: { hash?: string; scope?: string; listedMtime?: number; includeWiki?: boolean; onAsk?: (brief: string, question: string) => void }) {
   const { doc, raw, source, handle } = fixture(hash, listedMtime);
   return <NextIntlClientProvider locale="en" messages={en}>
-    <LibraryQuestionDesk docs={[doc]} pageTexts={new Map([[doc.slug, raw]])}
+    <LibraryQuestionDesk docs={includeWiki ? [doc] : []} pageTexts={includeWiki ? new Map([[doc.slug, raw]]) : new Map()}
       sources={[source]} sourceHandles={new Map([[path, handle]])} hashes={new Map([[path, currentHash]])}
       vaultRoot="/fixture" vaultScope={scope} agentReady={true}
       onBrowse={() => {}} onAsk={onAsk} onOpenWiki={() => {}} onOpenSource={() => {}} />
@@ -80,8 +80,21 @@ describe('Library question desk transfer boundary', () => {
     expect(screen.getByText(/immediately restores stock/)).toBeInTheDocument();
     expect(screen.getAllByText('sources/refund.md#l2')).toHaveLength(2);
     expect(screen.getByTestId('question-desk-ask')).toBeEnabled();
-    expect(screen.queryByText('Check claim with Jev')).not.toBeInTheDocument();
+    expect(mocks.status).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByText('Check claim with Jev'));
+    expect(await screen.findByTestId('question-desk-jev-note')).toHaveTextContent('No Jev key');
     expect(mocks.judge).not.toHaveBeenCalled();
+  });
+
+  it('renders a source-only folder and searches it without touching Keychain', async () => {
+    mocks.status.mockReturnValue(new Promise(() => {}));
+    render(<Desk includeWiki={false} />);
+    expect(screen.getByTestId('library-question-desk')).toBeInTheDocument();
+    expect(mocks.status).not.toHaveBeenCalled();
+    await search();
+    expect(screen.getByTestId('question-desk-results')).toHaveTextContent('Searched 0 of 0 Wiki pages and 1 of 1 original files.');
+    expect(screen.getByText('Refund approval queues a stock restoration job.')).toBeInTheDocument();
+    expect(mocks.status).not.toHaveBeenCalled();
   });
 
   it('reports an unknown answer from the searched coverage instead of inventing one', async () => {

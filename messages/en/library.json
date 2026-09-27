@@ -32,6 +32,9 @@
     "askUnavailable": "Connect an agent in the installed app to ask. The local evidence and source links above remain usable.",
     "jev": {
       "check": "Check claim with Jev",
+      "checking": "Checking Jev access…",
+      "noKey": "No Jev key is stored on this Mac. The local evidence remains available; add a key under Agents → Models if you want this optional check.",
+      "unavailable": "Could not check Jev key status. The local evidence remains available; nothing was sent.",
       "missing": "The exact cited original is missing or cannot be resolved; Jev check unavailable.",
       "stale": "The source changed since this Wiki claim was recorded; Jev check unavailable.",
       "unmeasured": "The source version cannot be verified against this Wiki claim; Jev check unavailable.",
