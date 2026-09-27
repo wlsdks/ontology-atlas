@@ -88,6 +88,25 @@ test('prepare configures Git when present, propagates config failure, and builds
   assert.equal(prepareWorktree({ root: '/tmp/archive', spawn: failing }), 3, 'a failed materializer was hidden');
 });
 
+test('prepare installs the separate mcp package outside CI and survives its failure', () => {
+  const calls = [];
+  const spawn = (command, args) => {
+    calls.push([command, args]);
+    if (command === 'git') return { status: 128 };
+    return { status: command === 'pnpm' ? 1 : 0 };
+  };
+  const written = [];
+  const stderr = { write: (text) => written.push(text) };
+  const exists = () => true;
+  assert.equal(prepareWorktree({ root: '/tmp/repo', spawn, stderr, env: {}, exists }), 0, 'an mcp failure broke the root install');
+  assert.deepEqual(calls.find(([command]) => command === 'pnpm'), ['pnpm', ['--dir', 'mcp', 'install', '--frozen-lockfile', '--prefer-offline']]);
+  assert.match(written.join(''), /mcp install failed/);
+
+  calls.length = 0;
+  prepareWorktree({ root: '/tmp/repo', spawn, stderr, env: { CI: 'true' }, exists });
+  assert.equal(calls.some(([command]) => command === 'pnpm'), false, 'CI installs mcp in its own step');
+});
+
 test('parallel worktrees merge immutable records and every checkout materializes ignored outputs', () => {
   const scratch = mkdtempSync(join(tmpdir(), 'atlas-worktree-materialization-'));
   const repo = join(scratch, 'repo');

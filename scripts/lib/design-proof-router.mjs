@@ -2,21 +2,25 @@
  * Atlas design-proof routing policy.
  *
  * The caller supplies observable change classes. The policy derives divergent
- * design work, council use, specialist seats, and runtime proof. A builder may
+ * design work, whether one independent review is needed and with which
+ * lenses, and runtime proof. A builder may
  * not replace those facts with "small", "meaningful", or "looks safe".
  */
 
-const DESIGN_POLICY_VERSION = 2;
+const DESIGN_POLICY_VERSION = 3;
 
-const DESIGN_SEAT_ORDER = Object.freeze([
-  'design-lead',
-  'design-system',
-  'design-interaction',
-  'design-motion',
-  'design-infoviz',
-  'design-workbench',
-  'design-responsive',
-  'design-handoff',
+/** Lenses every design review applies before the UI lenses; same as PO. */
+export const DESIGN_BASE_LENSES = Object.freeze(['moment', 'evidence']);
+
+const DESIGN_LENS_ORDER = Object.freeze([
+  'attention',
+  'tokens',
+  'reversibility',
+  'motion',
+  'map-marks',
+  'installed-app',
+  'responsive-bands',
+  'agent-action',
 ]);
 
 const proof = (name, scope) => Object.freeze({ name, scope });
@@ -25,8 +29,8 @@ export const DESIGN_CHANGE_SIGNALS = Object.freeze({
   copy: Object.freeze({
     reason: 'only visible words changed; add responsive when length or wrapping can change geometry',
     directions: false,
-    council: false,
-    seats: [],
+    review: false,
+    lenses: [],
     // Words do not need the build-look-correct loop: one fresh capture of the
     // state that shows them, after the change (policy v2, 2026-09-26).
     proofs: [proof('final-capture', 'affected-state')],
@@ -34,8 +38,8 @@ export const DESIGN_CHANGE_SIGNALS = Object.freeze({
   'local-visual': Object.freeze({
     reason: 'rendered colour, type, spacing, radius, shadow, or local hierarchy changed inside the existing system',
     directions: false,
-    council: false,
-    seats: ['design-lead'],
+    review: false,
+    lenses: ['attention'],
     proofs: [
       proof('design-audit', 'affected-state'),
       proof('computer-use-loop', 'affected-state'),
@@ -44,8 +48,8 @@ export const DESIGN_CHANGE_SIGNALS = Object.freeze({
   layout: Object.freeze({
     reason: 'rendered geometry changed without creating a new information architecture',
     directions: false,
-    council: false,
-    seats: ['design-lead'],
+    review: false,
+    lenses: ['attention'],
     proofs: [
       proof('design-audit', 'affected-state'),
       proof('computer-use-loop', 'affected-state'),
@@ -54,8 +58,8 @@ export const DESIGN_CHANGE_SIGNALS = Object.freeze({
   responsive: Object.freeze({
     reason: 'breakpoint, reflow, touch target, safe area, or scroll reserve changed',
     directions: false,
-    council: false,
-    seats: ['design-responsive'],
+    review: false,
+    lenses: ['responsive-bands'],
     proofs: [
       proof('design-audit', 'affected-state'),
       proof('responsive-sweep', 'affected-bands'),
@@ -65,8 +69,8 @@ export const DESIGN_CHANGE_SIGNALS = Object.freeze({
   interaction: Object.freeze({
     reason: 'visible state, keyboard path, modality, discoverability, or reversibility changed',
     directions: false,
-    council: false,
-    seats: ['design-interaction'],
+    review: false,
+    lenses: ['reversibility'],
     proofs: [
       proof('design-audit', 'affected-state'),
       proof('computer-use-loop', 'affected-state'),
@@ -75,8 +79,8 @@ export const DESIGN_CHANGE_SIGNALS = Object.freeze({
   motion: Object.freeze({
     reason: 'timing, easing, animation, camera travel, or reduced-motion output changed',
     directions: false,
-    council: false,
-    seats: ['design-motion'],
+    review: false,
+    lenses: ['motion'],
     proofs: [
       proof('motion-verify', 'changed-sequence'),
       proof('computer-use-loop', 'changed-sequence'),
@@ -85,8 +89,8 @@ export const DESIGN_CHANGE_SIGNALS = Object.freeze({
   'topology-encoding': Object.freeze({
     reason: 'a topology mark, relation channel, density rule, or graph-readable fact changed',
     directions: false,
-    council: false,
-    seats: ['design-infoviz'],
+    review: false,
+    lenses: ['map-marks'],
     proofs: [
       proof('design-audit', 'affected-map-state'),
       proof('graph-readability', 'changed-map-state'),
@@ -97,8 +101,8 @@ export const DESIGN_CHANGE_SIGNALS = Object.freeze({
   'topology-gesture': Object.freeze({
     reason: 'node drag, pan, zoom, hit testing, layout work, or the map frame loop changed',
     directions: false,
-    council: false,
-    seats: ['design-interaction'],
+    review: false,
+    lenses: ['reversibility'],
     proofs: [
       proof('map-perf', 'changed-gesture'),
       proof('computer-use-loop', 'changed-gesture'),
@@ -107,8 +111,8 @@ export const DESIGN_CHANGE_SIGNALS = Object.freeze({
   journey: Object.freeze({
     reason: 'the order, destination, next step, or completion signal of a user journey changed',
     directions: false,
-    council: false,
-    seats: ['design-interaction'],
+    review: false,
+    lenses: ['reversibility'],
     proofs: [
       proof('user-walkthrough', 'changed-path'),
       proof('computer-use-loop', 'changed-path'),
@@ -117,8 +121,8 @@ export const DESIGN_CHANGE_SIGNALS = Object.freeze({
   'desktop-shell': Object.freeze({
     reason: 'window, menu, AppKit/Tauri bridge, WKWebView, restoration, or desktop lifecycle changed',
     directions: false,
-    council: false,
-    seats: ['design-workbench'],
+    review: false,
+    lenses: ['installed-app'],
     proofs: [
       proof('installed-app', 'touched-state'),
       proof('computer-use-loop', 'touched-state'),
@@ -127,8 +131,8 @@ export const DESIGN_CHANGE_SIGNALS = Object.freeze({
   'agent-handoff': Object.freeze({
     reason: 'the visible MCP/CLI next action or state-bound handoff changed',
     directions: false,
-    council: false,
-    seats: ['design-handoff'],
+    review: false,
+    lenses: ['agent-action'],
     proofs: [
       proof('user-walkthrough', 'agent-handoff-path'),
       proof('computer-use-loop', 'agent-handoff-path'),
@@ -137,8 +141,8 @@ export const DESIGN_CHANGE_SIGNALS = Object.freeze({
   'design-contract': Object.freeze({
     reason: 'a canonical token, ramp, primitive, design rule, or enforcement contract changed',
     directions: false,
-    council: true,
-    seats: ['design-system', 'design-lead'],
+    review: true,
+    lenses: ['tokens', 'attention'],
     proofs: [
       proof('design-system-audit', 'changed-contract'),
       proof('gate-probe', 'changed-gate'),
@@ -147,8 +151,8 @@ export const DESIGN_CHANGE_SIGNALS = Object.freeze({
   'new-surface': Object.freeze({
     reason: 'a primary user-facing surface is added or removed',
     directions: true,
-    council: true,
-    seats: ['design-lead', 'design-interaction', 'design-responsive'],
+    review: true,
+    lenses: ['attention', 'reversibility', 'responsive-bands'],
     proofs: [
       proof('design-audit', 'full-surface'),
       proof('responsive-sweep', 'full-matrix'),
@@ -159,8 +163,8 @@ export const DESIGN_CHANGE_SIGNALS = Object.freeze({
   'information-architecture': Object.freeze({
     reason: 'navigation, primary hierarchy, or the grouping of product information changed',
     directions: true,
-    council: true,
-    seats: ['design-lead', 'design-interaction', 'design-responsive'],
+    review: true,
+    lenses: ['attention', 'reversibility', 'responsive-bands'],
     proofs: [
       proof('design-audit', 'full-surface'),
       proof('responsive-sweep', 'full-matrix'),
@@ -171,8 +175,8 @@ export const DESIGN_CHANGE_SIGNALS = Object.freeze({
   'interaction-model': Object.freeze({
     reason: 'the primary way a person selects, edits, confirms, or reverses work changed',
     directions: true,
-    council: true,
-    seats: ['design-lead', 'design-interaction'],
+    review: true,
+    lenses: ['attention', 'reversibility'],
     proofs: [
       proof('design-audit', 'full-interaction-state'),
       proof('user-walkthrough', 'changed-journey'),
@@ -182,8 +186,8 @@ export const DESIGN_CHANGE_SIGNALS = Object.freeze({
   'attention-model': Object.freeze({
     reason: 'which Atlas fact or action wins attention changed across a primary workbench state',
     directions: true,
-    council: true,
-    seats: ['design-lead', 'design-infoviz'],
+    review: true,
+    lenses: ['attention', 'map-marks'],
     proofs: [
       proof('design-audit', 'full-surface'),
       proof('computer-use-loop', 'full-surface'),
@@ -265,29 +269,30 @@ export function routeDesignProof(input = {}) {
   const changes = uniqueSignals(input.changes);
   const contracts = changes.map((change) => DESIGN_CHANGE_SIGNALS[change]);
   const directions = contracts.some((contract) => contract.directions);
-  const councilRequired = contracts.some((contract) => contract.council);
-  const touchedSeats = new Set(contracts.flatMap((contract) => contract.seats));
-  const seats = councilRequired
-    ? DESIGN_SEAT_ORDER.filter((seat) => touchedSeats.has(seat))
+  const reviewRequired = contracts.some((contract) => contract.review);
+  const touchedLenses = new Set(contracts.flatMap((contract) => contract.lenses));
+  const uiLenses = reviewRequired
+    ? DESIGN_LENS_ORDER.filter((lens) => touchedLenses.has(lens))
     : [];
-  if (councilRequired && seats.length < 2) {
-    throw new Error('a council route must derive at least two contrasting seats');
+  if (reviewRequired && uiLenses.length < 2) {
+    throw new Error('a review route must derive at least two lenses from its change facts');
   }
+  const lenses = reviewRequired ? [...DESIGN_BASE_LENSES, ...uiLenses] : [];
 
   const proofs = mergeProofs(contracts);
   const sequence = directions
-    ? ['directions', 'build', 'proof', ...(councilRequired ? ['council'] : []), 'remeasure-changed-proof']
-    : ['build', 'proof', ...(councilRequired ? ['council', 'remeasure-changed-proof'] : [])];
+    ? ['directions', 'build', 'proof', ...(reviewRequired ? ['review'] : []), 'remeasure-changed-proof']
+    : ['build', 'proof', ...(reviewRequired ? ['review', 'remeasure-changed-proof'] : [])];
 
   return Object.freeze({
     policyVersion: DESIGN_POLICY_VERSION,
     changes: Object.freeze(changes),
     directions,
-    council: Object.freeze({
-      required: councilRequired,
-      seats: Object.freeze(seats),
-      crossCritique: councilRequired ? 'only-on-material-conflict' : 'none',
-      record: councilRequired,
+    review: Object.freeze({
+      required: reviewRequired,
+      lenses: Object.freeze(lenses),
+      rebuttal: reviewRequired ? 'only-on-material-conflict' : 'none',
+      record: reviewRequired,
     }),
     proofs,
     sequence: Object.freeze(sequence),

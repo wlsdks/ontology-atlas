@@ -179,7 +179,7 @@ export function parseTriggerFiles(designMdText) {
     );
   }
   // ⚠️ Do not scrape backticked paths from the **whole** section. Its last
-  // paragraph cites a gate file (`…design-council.contract.test.ts`), and the first
+  // paragraph cites a gate file (`…design-spec-ledger.contract.test.ts`), and the first
   // implementation swallowed that as a trigger — making the file that watches this
   // one a watched file. So only **list rows** (`- \`path\` — description`) are read.
   // The format is the contract.

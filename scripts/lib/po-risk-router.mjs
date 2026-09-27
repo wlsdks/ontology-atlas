@@ -8,7 +8,13 @@
 
 import { FIELDS } from './decision-record-template.mjs';
 
-const PO_POLICY_VERSION = 3;
+const PO_POLICY_VERSION = 4;
+
+/** The one independent agent that judges a review route. */
+export const PO_REVIEWER = 'reviewer';
+
+/** Lenses every review applies before the risk-specific lens. */
+export const PO_BASE_LENSES = Object.freeze(['moment', 'evidence']);
 
 export const PO_EVIDENCE_STATES = Object.freeze(['observed', 'inferred', 'unknown']);
 
@@ -59,15 +65,15 @@ export const PO_CHANGE_SIGNALS = Object.freeze({
 
 export const PO_RISK_ROUTES = Object.freeze({
   meaning: Object.freeze({
-    reviewer: 'po-steward',
+    lens: 'boundaries',
     protects: 'durable meaning, evidence truth, local-first sovereignty, or human-agent authority',
   }),
   positioning: Object.freeze({
-    reviewer: 'po-wedge',
+    lens: 'evidence',
     protects: 'category, product direction, first-contact claims, or one-shot reputation',
   }),
   scope: Object.freeze({
-    reviewer: 'po-leverage',
+    lens: 'smallest-slice',
     protects: 'a new or removed surface, expensive scope, or a difficult rollback boundary',
   }),
 });
@@ -85,8 +91,8 @@ export const PO_SOLO_FIELDS = Object.freeze([
 
 // The ledger record is the six-field template `pnpm decisions:check` enforces
 // on every record; route, evidence state, footprint, and delta are typed per
-// run in docs/PO-PILOT.md instead of repeated here. One source, so the council
-// skill, the operating system, and the gate cannot drift apart.
+// run in docs/PO-PILOT.md instead of repeated here. One source, so the review
+// protocol, the operating system, and the gate cannot drift apart.
 export const PO_REVIEW_RECORD_FIELDS = Object.freeze([...FIELDS]);
 
 const RISK_PRIORITY = Object.freeze(['meaning', 'positioning', 'scope']);
@@ -158,6 +164,7 @@ export function routePoDecision(input = {}) {
       route: 'skip',
       record: false,
       reviewers: frozen([]),
+      lenses: frozen([]),
       nextAction: 'maintenance-checks',
       rebuttal: 'none',
       outcome: null,
@@ -212,17 +219,22 @@ export function routePoDecision(input = {}) {
       route: 'solo',
       record: false,
       reviewers: frozen([]),
+      lenses: frozen([]),
       nextAction: input.evidence === 'unknown' ? 'probe-first' : 'build-and-verify',
       rebuttal: 'none',
     });
   }
 
-  const specialist = PO_RISK_ROUTES[primaryRisk].reviewer;
+  const lenses = [
+    ...PO_BASE_LENSES,
+    ...RISK_PRIORITY.filter((risk) => detectedRisks.has(risk)).map((risk) => PO_RISK_ROUTES[risk].lens),
+  ];
   return Object.freeze({
     ...common,
     route: 'review',
     record: true,
-    reviewers: frozen(['po-evidence', specialist]),
+    reviewers: frozen([PO_REVIEWER]),
+    lenses: frozen(new Set(lenses)),
     nextAction: input.evidence === 'observed' ? 'independent-review' : 'evidence-first-review',
     rebuttal: 'only-on-material-conflict',
   });

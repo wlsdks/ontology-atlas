@@ -30,14 +30,14 @@ export const rules = [
   {
     order: 670,
     command: 'pnpm test:design-gates',
-    reason: 'Atlas design proof routing, iterative Computer Use contract, motion evidence, or selected-seat council policy changed',
+    reason: 'Atlas design proof routing, iterative Computer Use contract, motion evidence, or independent-review lens policy changed',
     matches: [
       /^scripts\/(?:lib\/design-proof-router|design-proof-router)\.mjs$/,
       /^scripts\/(?:lib\/design-spec-census|check-decision-record)\.mjs$/,
-      /^tests\/contract\/design-(?:proof-router|council|spec-ledger)\.contract\.test\.ts$/,
+      /^tests\/contract\/(?:design-(?:proof-router|spec-ledger)|reviewer-wiring)\.contract\.test\.ts$/,
       /^docs\/PRODUCT-DESIGN-OPERATING-SYSTEM\.md$/,
-      /^\.(?:claude|agents)\/skills\/(?:design-(?:audit|build|council|directions|system-audit)|motion-verify|responsive-sweep|map-perf|user-walkthrough)\/SKILL\.md$/,
-      /^\.(?:claude|agents)\/agents\/(?:chief|design-(?:lead|system|interaction|motion|infoviz|workbench|responsive|handoff|guardian))\.md$/,
+      /^\.(?:claude|agents)\/skills\/(?:design-(?:audit|build|directions|system-audit)|motion-verify|responsive-sweep|map-perf|user-walkthrough)\/SKILL\.md$/,
+      /^\.(?:claude|agents)\/agents\/(?:reviewer|design-guardian)\.md$/,
       /^\.claude\/rules\/design\.md$/,
       /^AGENTS\.md$/,
       /^package\.json$/,

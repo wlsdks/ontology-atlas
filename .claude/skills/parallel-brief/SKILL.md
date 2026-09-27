@@ -50,12 +50,13 @@ exact checkout used.
 
 | Role | Owns | Everything else |
 |---|---|---|
-| `design-system` | `control-class.ts`, ramps in `globals.css`, the canonical Design System section | read-only |
+| spec slice (declared `design-contract`) | `control-class.ts`, ramps in `globals.css`, the canonical Design System section | read-only |
 | `design-guardian` | visual and interaction implementation | — |
 | implementation agent | explicitly assigned consumer files | specification files read-only |
 | audit agent | inventory and report | edit only an obvious, reversible defect when authorized |
 
-The design-system seat owns new value vocabulary. An implementation agent that
+The spec slice owns new value vocabulary, reviewed through the `reviewer`'s
+`tokens` lens. An implementation agent that
 cannot express a needed value reports and measures the gap; it does not create a
 parallel system. The author of a change does not independently approve it.
 

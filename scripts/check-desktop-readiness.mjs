@@ -1540,12 +1540,11 @@ const agentDesignGateChecks = [
       /after\s+the PO pass/i.test(agentsDoc.replace(/[*_`]/g, "")),
   ],
   [
-    "fact-derived selected-seat design council",
+    "fact-derived independent design review",
     /pnpm design:route/.test(productDesignDoc) &&
-    /Design Council/.test(productDesignDoc) &&
+    /Independent review/.test(productDesignDoc) &&
       /No-Human-Designer Working Mode/.test(productDesignDoc) &&
-      /No seat always attends/.test(productDesignDoc) &&
-      /Five consecutive no-delta councils/.test(productDesignDoc),
+      /No UI lens always applies/.test(productDesignDoc),
   ],
   [
     "allowed reference policy",
@@ -1600,7 +1599,7 @@ const missingAgentDesignGate = agentDesignGateChecks
   .map(([label]) => label);
 
 if (missingAgentDesignGate.length === 0) {
-  pass("agent guide derives design proof from change facts, iterates through real-window evidence, records motion, limits council, and preserves Atlas topology/desktop boundaries");
+  pass("agent guide derives design proof from change facts, iterates through real-window evidence, records motion, routes one independent review, and preserves Atlas topology/desktop boundaries");
 } else {
   fail(
     `AGENTS.md and docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md must keep the Relief design gate enforceable: missing ${missingAgentDesignGate.join(", ")}`,

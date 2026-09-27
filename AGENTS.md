@@ -31,8 +31,6 @@ decisions and approval while their content and conditions still hold.
 
 Check `git status`; preserve unrelated changes and active processes. An existing
 `.codegraph/` index may help with cross-file impact; never create one.
-Root `pnpm install` does not update `mcp/node_modules`; run
-`pnpm --dir mcp install --frozen-lockfile` when its manifest changed.
 
 Finish with `pnpm checks:changed -- --run` and complete every recommendation.
 Stop after success unless a new edit, failure, or named risk requires more; do
@@ -46,9 +44,9 @@ record a mistake, wasted CI round, or costly tool pattern with `/harness-retro`.
 | Task | Entry and required scope |
 |---|---|
 | Mechanical maintenance | Technical checks only; `pnpm po:route -- --mechanical` confirms it |
-| Product, UX, graph, MCP, CLI, workflow, or macOS change | `/po-pass`; `/po-council` only for the review it returns or an owner request |
+| Product, UX, graph, MCP, CLI, workflow, or macOS change | `/po-pass`; one `reviewer` only when it returns review or the owner asks |
 | UI, interaction, topology, responsive, motion, or macOS workbench | After the PO pass, `pnpm design:route`; `/design-build` implements the selected shape |
-| New structural design choice | `/design-directions` only when routed without a valid owner selection; `/design-council` only for routed structural commitments |
+| New structural design choice | `/design-directions` only when routed without a valid owner selection; one `reviewer` when the route says review |
 | Rendered proof | `/design-audit`, `/responsive-sweep`, `/motion-verify`, `/map-perf`, `/user-walkthrough` only at the requested or routed scope |
 | Design-system enforcement | `/design-system-audit` |
 | Any automated gate change | `/gate-probe` |
@@ -69,8 +67,9 @@ delete worktrees, or run `git add -A`.
 Task status: `pnpm backlog -- --task=ID`; `docs/BACKLOG.md` owns the append-only
 record format. Before reversing an existing product or architecture choice, find
 it with `pnpm decisions:find <terms>` and cite or explicitly overturn it, keeping
-dissent and a falsifier. `pnpm record:new` creates immutable fragments; routine
-work needs none.
+dissent and a falsifier. A record is context from its date, not proof it still
+holds: recheck its conditions and figures against the present before relying on
+it. `pnpm record:new` creates immutable fragments; routine work needs none.
 
 ## Rendered work and source authorities
 
