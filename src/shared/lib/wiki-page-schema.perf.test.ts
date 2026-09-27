@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import { WIKI_PAGE_CASES } from '../../../tests/fixtures/wiki-page-cases.mjs';
-import { validateWikiPage as validateTs } from './wiki-page-schema';
+import { validateWikiFolder as validateFolderMcp } from '../../../mcp/src/wiki-schema.mjs';
+import { validateWikiFolder as validateFolderTs, validateWikiPage as validateTs } from './wiki-page-schema';
 
 /*
  * Moved from `tests/contract/wiki-page-schema.contract.test.ts` (2026-09-27): a clock read
@@ -35,5 +36,65 @@ describe('validation stays linear as a folder grows', () => {
     }
     const median = runs.sort((a, b) => a - b)[1]!;
     expect(median).toBeLessThan(1500);
+  });
+
+  /**
+   * Four pages per source: quadratic is 16×, near-linear about 4×. Measured 2026-09-27,
+   * load averages 38–81 on 12 cores: fixed 3.0–5.0; the all-pairs loop 8.6–15.7.
+   */
+  it('folder check grows near-linearly', () => {
+    const folder = (size: number) =>
+      Array.from({ length: size }, (_, index) => {
+        const name = `page-${index}`;
+        const source = `sources/doc-${Math.floor(index / 4)}.pdf`;
+        const next = `wiki/page-${(index + 1) % size}`;
+        const raw = [
+          '---',
+          `title: ${name}`,
+          'created_by: agent:claude',
+          'compiled_at: 2026-09-06T10:00:00Z',
+          'sources:',
+          `  - ${source}`,
+          'source_hash:',
+          `  ${source}: 3b1f0a00000000000000000000000000000000000000000000000000000000ab`,
+          'status: draft',
+          `summary: About ${name}.`,
+          '---',
+          '',
+          '## Summary',
+          '',
+          `${name}. See [[${next}]].`,
+          '',
+          '## Facts',
+          '',
+          `- A fact. [[src:${source}#p2]]`,
+          '',
+          '## Decisions',
+          '',
+          '## Open questions',
+          '',
+          '## Not in sources',
+          '',
+        ].join('\n');
+        return { path: `wiki/${name}.md`, raw };
+      });
+    const small = folder(1000);
+    const large = folder(4000);
+    for (const validate of [validateFolderTs, validateFolderMcp]) {
+      const time = (pages: Array<{ path: string; raw: string }>, calls: number) => {
+        const started = performance.now();
+        for (let call = 0; call < calls; call += 1) validate(pages);
+        return (performance.now() - started) / calls;
+      };
+      time(small, 8);
+      time(large, 2);
+      let smallBest = Infinity;
+      let largeBest = Infinity;
+      for (let round = 0; round < 5; round += 1) {
+        smallBest = Math.min(smallBest, time(small, 8));
+        largeBest = Math.min(largeBest, time(large, 2));
+      }
+      expect(largeBest / smallBest).toBeLessThan(8);
+    }
   });
 });
