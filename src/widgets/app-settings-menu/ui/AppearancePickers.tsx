@@ -21,14 +21,9 @@ import { controlClass } from '@/shared/ui/control-class';
 import { OntologyMapKindGlyph } from '@/shared/ui/map-kind-glyph';
 
 /**
- * The **selection ink** for both pickers — this is a radio group, so it does not
- * use the value layer's `active`.
- *
- * `active` expresses **pressed**, so its border is a pale
- * `--color-indigo-pale-a28`. What is needed here is not pressed but **selected**,
- * and in a grid where you pick one of four a pale border weakens "which one is the
- * current value". No new value is minted; the present ink stays as it is — when
- * the value layer gains a «selected» axis, this is what gets deleted.
+ * The selection ink for both radio-group pickers. The value layer's `active` means pressed,
+ * with a pale border too weak to mark the selected tile; delete this when the value layer
+ * gains a selected axis.
  */
 const PICKER_TILE_INK = (active: boolean) =>
   active
@@ -40,52 +35,29 @@ const PICKER_TILE_FRAME =
   'w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]';
 
 /*
- * **Why `size: 'md'` — a measurement caught it.**
- *
- * `sm` was chosen at first, as the closest match to the previous inset
- * (`p-1.5`/`p-2`). But measuring the build showed the tile's computed `font-size`
- * had dropped from 12.5 to **9.5px** — `tile/sm` carries `text-caption`.
- *
- * The text on screen does not change (the label `<span>` has its own `text-label`).
- * It was reverted anyway because **this file is the root sheet**:
- * `settings-sheet-type-dialect.contract.test.ts` forbids 9.5px here, and that gate
- * only sees a literal `text-caption` in the source. Bringing it in through the
- * value layer would **break the specification while passing the gate**. That is
- * evasion, not compliance.
+ * Size `md`, not `sm`: `tile/sm` carries `text-caption` (9.5px), which the gate in
+ * settings-sheet-type-dialect.contract.test.ts forbids here but only sees as a literal, so the
+ * smaller size would break the rule while passing the gate.
  */
 
 /**
- * Personalisation pickers (Phase 5 #20/#21,
- * `docs/plans/DESIGN-OVERHAUL-2026-07-25.md`) — the canvas background (3 options)
- * and node icon (2 options) rows in the settings sheet's [screen] group.
- *
- * The previews are live mini swatches, not screenshots: the background is a small
- * SVG drawn with the real `--canvas-bg-*` and grid tokens, and the icon set is a
- * mini glyph row rendering the real `OntologyMapKindGlyph` per set. The current
- * choice carries an indigo ring. Choosing writes to the app-wide store and the map
- * canvas and every DOM glyph swap immediately with it.
+ * Personalisation pickers (`docs/plans/DESIGN-OVERHAUL-2026-07-25.md`): canvas background and
+ * node icon set. Previews render the real `--canvas-bg-*` tokens and `OntologyMapKindGlyph`,
+ * and a choice writes the app-wide store, which the map and every glyph follow at once.
  */
 
 const PREVIEW_KINDS = ['project', 'domain', 'capability', 'element'] as const;
 
 /**
- * Background preview — a static miniature drawn with the real background ink tokens.
- *
- * **It does not move.** All three are moving backgrounds, but the swatch is a still
- * image: four particle loops running at once in the settings sheet means the
- * swatches, not the person choosing, take the attention. The preview says only
- * "what texture is this", and the movement is seen on the map after choosing.
+ * Background preview, a still miniature in the real background ink tokens; animated
+ * swatches would pull attention from the choice.
  */
 function CanvasBgSwatch({ variant }: { variant: CanvasBackground }) {
   const ink = 'rgba(var(--canvas-bg-particle-rgb), 0.5)';
   const inkFaint = 'rgba(var(--canvas-bg-particle-rgb), 0.24)';
   return (
-    /*
-     * The viewBox is **the card's real ratio** (240×56). Stretching a small viewBox
-     * magnifies the pattern wholesale so it reads as fragments rather than texture
-     * (measured: filling 256px of width from 48×30 is a 5.3× blow-up). Density is
-     * set directly here to match the visible size.
-     */
+    // The viewBox is the card's real ratio (240×56); a small stretched viewBox magnifies the
+    // pattern into fragments, so density is set for the visible size.
     <svg
       viewBox="0 0 240 56"
       preserveAspectRatio="xMidYMid slice"
@@ -121,9 +93,7 @@ function CanvasBgSwatch({ variant }: { variant: CanvasBackground }) {
           </g>
         </g>
       ) : (
-        /* Depth dots — the same point in three layers. Size and brightness differ per
-           layer so depth reads even in a still frame, and the layers offset against
-           each other when the map moves. */
+        /* Three dot layers differing in size and brightness, so depth reads in a still frame. */
         <g fill={ink}>
           {[
             { r: 0.9, o: 0.5, step: 33, offset: 8 },
@@ -152,24 +122,15 @@ function CanvasBgSwatch({ variant }: { variant: CanvasBackground }) {
 export function CanvasBackgroundPicker() {
   const t = useTranslations('nav.settingsMenu');
   const value = useCanvasBackground();
-  /*
-   * The container does not converge onto either of the primitive's two canonical
-   * shapes (well, chip row) — it is a grid tile holding a preview swatch, and the
-   * active ink is split across parent and child (see the gate comment below), so
-   * `shape:'tile'` has to stay. So the container stays where it is and **only the
-   * behaviour** comes from the hook (2026-08-15 (8)).
-   */
+  // A grid tile with its active ink split across parent and child (see the gate comment
+  // below) fits neither canonical radio shape, so only the behaviour comes from the hook.
   const group = useRovingRadioGroup({
     value,
     values: CANVAS_BACKGROUNDS,
     onChange: writeCanvasBackground,
   });
   return (
-    /*
-     * It has no margin of its own — this picker fills the LNB's "Map Background" pane
-     * entirely, so the pane owns the margin. If both had one, the left starting line
-     * would differ per section (measured: 20px in other sections, 32px only here).
-     */
+    // No margin of its own: the pane owns it, or this section's start line would differ.
     <div data-testid="app-settings-canvas-background">
       <p className="text-body text-[color:var(--color-text-primary)]">{t('canvasBgLabel')}</p>
       <p className="mt-0.5 break-keep text-label text-[color:var(--color-text-tertiary)]">
@@ -271,12 +232,8 @@ export function GlyphSetPicker() {
 }
 
 /**
- * Accent swatch — a still preview drawn with the real tokens.
- *
- * `data-accent` is set **on the swatch itself**, so the indigo tile is drawn with
- * indigo values (the real colour is visible without selecting it). The name matches
- * the app-wide attribute, so one CSS block feeds both places — no separate
- * preview-only colours are written.
+ * Accent swatch. `data-accent` on the swatch itself shows each accent's real colour
+ * unselected, from the same CSS block as the app-wide attribute.
  */
 function AccentSwatch({ variant }: { variant: Accent }) {
   return (
@@ -293,14 +250,8 @@ function AccentSwatch({ variant }: { variant: Accent }) {
 }
 
 /**
- * Accent picker (2026-08-18) — choose the app's only colour between ember and
- * indigo.
- *
- * The values, and the explanation of **what this setting cannot change** (the baked
- * icon), live in the `Accent` comment in
- * `src/shared/lib/appearance-preferences.ts`. Here a one-line caption puts that
- * limit on screen too — without it, a Dock icon that does not change reads as a
- * defect.
+ * Accent picker: ember or indigo. What it cannot change (the baked icon) is explained on
+ * the `Accent` type in src/shared/lib/appearance-preferences.ts, and a caption says so on screen.
  */
 export function AccentPicker() {
   const t = useTranslations('nav.settingsMenu');

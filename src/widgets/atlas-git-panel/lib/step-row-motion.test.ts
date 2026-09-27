@@ -6,8 +6,6 @@ describe("step row motion", () => {
     expect(stepRowMotionClass("abc123", "abc123")).toBe("git-commit-settle");
   });
 
-  // Why this function exists — giving every row the settle re-births history
-  // that was already there and blurs what just happened.
   it("leaves the other history rows unchanged", () => {
     expect(stepRowMotionClass("older", "abc123")).toBe("git-fade-in");
   });

@@ -19,41 +19,15 @@ import { McpProofPacket } from './McpProofPacket';
 import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
 
 /**
- * The "MCP Connection" pane, bundled so it **stands on its own**.
- *
- * ## Why it exists (2026-08-20, ledger 90)
- *
- * While this pane lived only inside the settings sheet, the sheet called the hooks
- * and passed values down. When the "Agent" destination appeared there were two
- * consumers, and copying the derivation logic (the validation summary) into both
- * would make the two screens state different warning counts from that moment on.
- *
- * ## Why it is drawn on the web too (this is the pane's reason to exist)
- *
- * MCP attaches to **the folder**, not to an Atlas screen — the agent starts the
- * server on its own side and that server reads and writes the vault on disk
- * directly. So web users connect too (ledger 2026-08-01, "The web's 'cannot connect' was a lie" — the web's "cannot connect" was a lie). The one thing a browser
- * cannot do is **save the config file for you, because it does not know the
- * absolute path**, and that is answered by building the config on screen for the
- * person to paste.
- *
- * The runners pane on `/agents`, when it says on the web that it cannot launch a
- * program, still has to name a place a person can actually reach. Since 2026-09-05 that
- * place is **another destination**, so the sentence carries a link to `/mcp` rather than
- * a section name — a name is only guidance while the thing named is on the same screen.
+ * The MCP connection pane, self-contained so the settings sheet and the Agents destination
+ * share one derivation and state the same warning counts. It is drawn on the web too: MCP
+ * attaches to the folder, and a browser only lacks the absolute path, so the config is
+ * built on screen to paste.
  */
 /**
- * **The terminal path, for someone who will not hand the browser a folder.**
- *
- * Measured 2026-09-04: `/en/agents/` with no folder open showed exactly two things — "No
- * workspace connected" and "Open my folder". A person who does not want to grant a browser
- * File System Access, which is most of the people this destination is written for, had no way
- * to see how an agent connects at all. The whole point of this pane is that MCP attaches to the
- * folder rather than to an Atlas screen, and that is precisely what the terminal can do without
- * the browser being involved.
- *
- * Two lines, copied as one block so the order survives the paste: `init` makes the vault,
- * `agent-setup --write` writes the config files that point the coding tools at it.
+ * The terminal path, for someone who will not hand the browser a folder. Two lines copied as
+ * one block so the order survives the paste: `init` makes the vault, `agent-setup --write`
+ * points the coding tools at it.
  */
 const CLI_TERMINAL_SETUP = [
   'node $ATLAS/cli/src/index.mjs init my-vault',
@@ -69,8 +43,6 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
 
   if (!isLoaded) {
     return (
-      /* The section box's inset comes from the ramp — 16px is not written again by
-         hand (`static-card-adoption-ratchet`: a new file is at 0 from day one). */
       <div className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)]">
         <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
           {t('agentStatusNoVault')}
@@ -78,18 +50,7 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
         <p className="mt-1 break-keep text-label leading-label text-[color:var(--color-text-tertiary)]">
           {t('agentNoVaultHint')}
         </p>
-        {/*
-          ⚠️ **The way to open it has to sit where it is mentioned** (2026-08-20,
-          caught by e2e). The first version moved only the sentence "open the
-          folder and …" and **did not bring the button** — exactly the "dead-end
-          CTA" this repository forbids by name. The action being asked for happens
-          right there.
-        */}
-        {/*
-          ⚠️ **The ask is the indigo one** (design council, 2026-09-05). This card asks for a
-          folder, and it asked in neutral ink while "Get the macOS app" below it was the only
-          indigo on the screen — one emphasis per region, and it was on the wrong control.
-        */}
+        {/* The card asks for a folder, so the open button sits here and carries the region's one emphasis. */}
         <div className="mt-3">
           <OpenVaultCta
             testId="agents-open-vault"
@@ -114,15 +75,7 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
             {t('cliPlaceholderHint')}
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            {/* Neutral on purpose: the card's own ask is "Open my folder" above, and
-                measured on 2026-09-04 an indigo-tinted chip here was the only chromatic
-                control in the card and outranked it. One emphasis per region. */}
-            {/*
-              ⚠️ **No `font-mono` on the label** (2026-09-05). The block above is a command and
-              wears monospace correctly; the word on this button is prose, and in Korean a
-              monospace face only makes prose harder to read - there are no Hangul metrics for it
-              to align.
-            */}
+            {/* Neutral so "Open my folder" keeps the one emphasis; prose label, so no `font-mono`. */}
             <Chip
               tone="secondary"
               hoverInk="strong"
@@ -136,19 +89,13 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
               )}
               {copyState === 'copied' ? t('agentTerminalCopied') : t('agentTerminalCopy')}
             </Chip>
-            {/* The app path stays in the same place as the terminal path — someone who
-                does not want either the browser folder or the terminal still has one.
-                Only where there is no bundled server: the installed app must never
-                offer its own download (AGENTS.md), and `launch` is non-null exactly there. */}
+            {/* Only without a bundled server: the installed app must never offer its own
+                download (AGENTS.md), and `launch` is non-null exactly there. */}
             {serverAvailability.launch === null ? (
               <Link
                 href="/download/"
                 onClick={onBeforeNavigate}
                 data-testid="agents-terminal-setup-download"
-                /* Secondary now: the folder above is what this card is asking for. */
-                /* A bordered chip like the copy chip beside it (2026-09-25): a bare 11px link
-                   next to a boxed button read as two kinds of control on one row. Still neutral —
-                   the folder above is what this card asks for. */
                 className={controlClass({
                   shape: 'chip',
                   tone: 'secondary',
@@ -167,12 +114,8 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
   return (
     <>
     {/*
-      `agent-setup-section` wraps **the config panel only**. On this surface the proof packet
-      stays outside it, because the subject of the e2e inventory that measures this name
-      (`agent-connect-panel-census`) is 「the first screen of the pane you attach from」. Putting
-      the packet inside took the copy buttons from 4 to 5 and blew the ratchet — and **the ratchet
-      was right**: what that check counts is "how many copy buttons someone attaching meets on the
-      first screen", not the whole page.
+      The `agent-setup-section` wrapper holds the config panel only: `agent-connect-panel-census`
+      counts the copy buttons on the attach pane's first screen, which excludes the proof packet.
     */}
     <div data-testid="agent-setup-section" className="min-w-0">
     <VaultAgentSetupPanel
@@ -180,18 +123,13 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
       localVault={localVault}
       serverAvailability={serverAvailability}
       validationSummary={deriveValidationSummary(localVault)}
-      // On the destination there is no sheet to close. The prop is still required,
-      // so a no-op is passed explicitly — leaking `undefined` makes the caller
-      // re-decide «is it fine to omit this» every time.
+      // No sheet to close here; the prop stays required, so a no-op is explicit.
       onOpenWorkflowGuide={onBeforeNavigate ?? (() => undefined)}
     />
     </div>
     {/*
-      **The proof packet, on the surface that has no step 3.** With a runnable server the packet
-      lives inside step 3, where confirming the connection is the step's whole job. Here there is
-      no step 3 to live in — `launch === null` is the exact condition the panel calls
-      `publicPackagesReady`, and without it steps 2 and 3 are not drawn at all — and the handoff
-      still has to be reachable, so the same component stands on its own.
+      Without a runnable server (`launch === null`) the panel draws no step 3, so the proof
+      packet that otherwise lives there stands on its own.
     */}
     {serverAvailability.launch === null ? (
       <div className="mt-4">
@@ -210,10 +148,8 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
 }
 
 /**
- * Vault validation summary — **it only has a value when something is wrong.**
- *
- * Both consumers must state the same number, so it is written once here (with two
- * copies, one day one of them starts counting warnings differently — Carbon).
+ * Vault validation summary, with a value only when something is wrong; written once so both
+ * consumers state the same number.
  */
 function deriveValidationSummary(
   localVault: ReturnType<typeof useLocalVault>,

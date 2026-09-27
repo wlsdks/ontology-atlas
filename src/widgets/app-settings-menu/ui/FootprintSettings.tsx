@@ -26,31 +26,16 @@ import { drawFootprintSteps } from '@/shared/lib/footprint-glyph';
 import { drawStarEmission } from '@/shared/lib/star-emission';
 
 /**
- * Footprint settings — the 「Map」 subview's second segment.
- *
- * ## Why the first screen is presets
- *
- * There are 8 values but **one decision**: "how loudly should it speak". Pouring 8
- * sliders onto the first screen lets the controls, not the person choosing, take
- * the attention. Three presets take that one decision first, and the details sit
- * behind 「Adjust Manually」 (adjust manually).
- *
- * ## The preview uses the same renderer as the map
- *
- * It calls the same functions from `@/shared/lib/footprint-glyph`. A separate
- * preview implementation would silently diverge, and at that moment the preview
- * stops being a preview.
+ * Footprint settings: presets take the one decision (how loud) first, and the sliders sit
+ * behind Adjust Manually. The preview calls `@/shared/lib/footprint-glyph` like the map,
+ * so it cannot diverge.
  */
 
 const PRESET_ORDER: readonly FootprintPresetName[] = ['subtle', 'default', 'bold'];
 
 /**
- * Preview height in px — **fixed**. The width fills the pane.
- *
- * The width used to be fixed at 260px too, leaving a small box floating inside a
- * wide pane (owner: *"It's just ugly."* — that's just ugly). The preview is this
- * section's protagonist, so it must fill the pane, and the height must be fixed so
- * the window does not wobble when sections change.
+ * Fixed preview height, so the window does not change size between sections; the width
+ * fills the pane.
  */
 const PREVIEW_H = 176;
 
@@ -74,12 +59,7 @@ function FootprintPreview({ pref }: { pref: FootprintPreference }) {
       const raw = root.getPropertyValue(name).trim();
       return raw === '' ? fallback : raw;
     };
-    /*
-     * ⚠️ **The same map the canvas reads.** This branched two ways after a third tone landed,
-     * so picking starlight painted the preview amber while the map painted white — and this
-     * module's own header says a preview that drifts stops being a preview. There is one
-     * table now (`FOOTPRINT_TONE_TOKEN`), and its fallback carries the same three values.
-     */
+    // The same `FOOTPRINT_TONE_TOKEN` table the canvas reads, or the preview's tone drifts.
     const fallback = FOOTPRINT_TONE_FALLBACK[pref.tone];
     const hex = read(FOOTPRINT_TONE_TOKEN[pref.tone], '');
     const parsed = /^#?([0-9a-f]{6})$/i.exec(hex);
@@ -94,15 +74,8 @@ function FootprintPreview({ pref }: { pref: FootprintPreference }) {
     ctx.fillStyle = read('--map-canvas-bg-near', '#0a0a0d');
     ctx.fillRect(0, 0, PREVIEW_W, PREVIEW_H);
 
-    /*
-     * ⚠️ **This preview used to draw a different mark from the map**, and the caption three
-     * lines above it described the map. It stamped the star *glyph* — a sparkle beside each
-     * node and a row of them along the relation — while the topology canvas lit the node
-     * itself, so the panel's words and its picture disagreed and the picture showed the
-     * notation the owner had already turned down (design-infoviz, 2026-09-10). It now paints
-     * two walked stops: the same emission the map paints (`shared/lib/star-emission.ts`), the
-     * same walked line, the same ordinals, the same chevron.
-     */
+    // Two walked stops painted like the map: the same emission (`shared/lib/star-emission.ts`),
+    // walked line, ordinals and chevron.
     const r = 15;
     const inset = 76;
     const a = { x: inset, y: PREVIEW_H / 2 };
@@ -193,15 +166,8 @@ export function FootprintSettings() {
 
   return (
     <div className="grid min-w-0 gap-3" data-testid="app-settings-footprint">
-      {/* What this pane does is said once, by the pane head (`SettingsPaneHead`). */}
       <FootprintPreview pref={pref} />
 
-      {/*
-        The presets are **one segmented row**. They used to be large buttons splitting
-        the pane into thirds, so all three dominated the panel — but this is a small
-        decision, "pick one intensity". A control's visual weight should follow the
-        weight of its decision.
-      */}
       {/* "Is this the current preset" compares only the values the preset sets — a
           preset is still that preset even if colour or layout, which it does not
           touch, differ. Matching no preset leaves the value matching no option → zero
@@ -283,14 +249,7 @@ export function FootprintSettings() {
             format={(v) => `${v}px`}
             onChange={(gap) => set({ gap })}
           />
-          {/*
-            ⚠️ Six controls stood here until 2026-09-10: fill, outline weight, bloom, whether
-            the mark repeated along the relation, how densely, and on which side. Every one of
-            them shaped a *glyph* the map no longer draws — the owner asked for the footprint to
-            go and for the node itself to light — so each was a control a person could spend
-            attention on and get nothing back from. `FootprintPreference` records what happens
-            to a preference saved while they existed.
-          */}
+          {/* `FootprintPreference` records what happens to a saved setting for a retired glyph control. */}
           <button
             type="button"
             data-testid="app-settings-footprint-reset"

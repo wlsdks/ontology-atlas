@@ -3,15 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { ConceptEgo, EgoBearing } from "../model/build-concept-ego";
 import { EGO_VIEW_H, EGO_VIEW_W, layoutConceptEgo, rectsIntersect, type Rect } from "./ego-layout";
 
-/**
- * **No neighbour's name is drawn through another's.**
- *
- * Measured 2026-09-25 at 1512x949 on a twelve-neighbour concept: the Korean labels "Issue invoice" and
- * "Payment gateway adapter" sat on adjacent slots and their labels overlapped by
- * 33x19px, because each label took a fixed side of its node without looking at the
- * labels already placed. The layout now tries the four sides; this pins the outcome
- * (no two label boxes intersect) across the densities the drawing actually meets.
- */
+/** No two label boxes intersect across the densities the drawing meets. */
 const NAMES = [
   "청구서 발행",
   "결제 게이트웨이 어댑터",
@@ -94,11 +86,7 @@ describe("layoutConceptEgo — label placement", () => {
     });
   }
 
-  /*
-   * The drawing is laid out in its cell's own pixels (round three, 2026-09-25): a fixed view
-   * scaled into a 740x410 cell used about 40% of it and drew 11px labels at 9-10px. These are
-   * the cells measured at 1280 (stacked under the table), 1512 and 1920.
-   */
+  // The cells measured at 1280 (stacked under the table), 1512 and 1920 wide.
   const VIEWS = [
     { w: 609, h: 280 },
     { w: 468, h: 358 },
@@ -120,8 +108,7 @@ describe("layoutConceptEgo — label placement", () => {
         for (let i = 0; i < rects.length; i += 1) {
           for (let j = i + 1; j < rects.length; j += 1) expect(rectsIntersect(rects[i], rects[j])).toBe(false);
         }
-        // The fan reaches well into the cell on at least one axis rather than huddling in its
-        // middle (the old fixed view reached about 0.3 of a 737px cell).
+        // The fan reaches well into the cell on at least one axis.
         expect(reach).toBeGreaterThan(0.55);
       }
     });

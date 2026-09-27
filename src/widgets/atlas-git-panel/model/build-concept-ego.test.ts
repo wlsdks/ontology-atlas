@@ -47,11 +47,6 @@ const EDGES = [
 ];
 
 describe("buildConceptEgo relation direction", () => {
-  /*
-   * The mockup wiring filed an incoming `contains` under "what I contain", which
-   * made a domain node's ↑17 and ↓16 nearly the same set. This catches that
-   * regression.
-   */
   it("files an incoming contains under containers, not contents", () => {
     const ego = buildConceptEgo("element:rail", NODES, EDGES);
     expect(ego).not.toBeNull();
@@ -94,11 +89,6 @@ describe("buildConceptEgo relation direction", () => {
 });
 
 describe("matchNodeId maps a committed file to a graph node", () => {
-  /*
-   * Rust uses the frontmatter slug (#842); the derivation uses `<kind>:<tail>`.
-   * The strings do not match outright, so without this bridge **every step looks
-   * like it touched nothing in the graph** — and nothing errors.
-   */
   it("matches by frontmatter slug", () => {
     expect(matchNodeId({ slug: "capabilities/mcp-server", kind: "capability" }, NODES)).toBe(
       "capability:mcp",

@@ -2,17 +2,9 @@ import { EGO_BEARINGS, type ConceptEgo, type EgoBearing } from "../model/build-c
 
 /**
  * Where every mark of a concept's ego drawing sits, computed without a DOM.
- *
- * The drawing used to place each neighbour's label on a fixed side of its node
- * (right, left, or centred for near-vertical slots) and never looked at the labels
- * already placed. Measured 2026-09-25 at 1512x949: two neighbours on adjacent slots
- * drew the labels "Issue invoice" and "Payment gateway adapter" through each other (a 33x19px
- * overlap). A label nobody can read is not a label, so every label now tries the
- * four sides of its node in order and takes the first that collides with nothing
- * already on the drawing, falling back to the least-overlapping side.
- *
- * Pure so the placement can be tested: `ego-layout.test.ts` asserts that no two
- * labels intersect for dense egos.
+ * Each label tries the four sides of its node and takes the first that collides
+ * with nothing already placed, else the least-overlapping side, so adjacent
+ * labels never draw through each other.
  */
 
 export const EGO_VIEW_W = 660;
@@ -107,8 +99,7 @@ function radiusOf(map: Record<string, number>, kind: string): number {
   return map[kind] ?? map.element;
 }
 
-/** More neighbours means more labels — truncate in step with density. */
-function labelCap(slots: number): number {
+function labelCapForSlots(slots: number): number {
   if (slots > 12) return 9;
   if (slots > 8) return 12;
   return 16;
@@ -119,9 +110,8 @@ function truncate(label: string, cap: number): string {
 }
 
 /**
- * A conservative width estimate at 11px. Hangul and CJK glyphs are near square;
- * Latin is about half that. Overestimating only costs air, underestimating
- * reintroduces the overlap, so the numbers lean wide.
+ * A conservative width estimate. Hangul and CJK glyphs are near square, Latin about
+ * half; overestimating only costs air while underestimating reintroduces overlap.
  */
 function estimateLabelWidth(text: string, fontSize = 11): number {
   let width = 0;
@@ -160,9 +150,8 @@ function outOfBounds(rect: Rect, view: EgoView): number {
 }
 
 /**
- * A label that crosses the box's side edge by less than the node gap is slid back inside.
- * In a narrow cell (1280, beside the reading table) the best of the four sides can still
- * lean a fraction of a pixel past the edge, where the SVG would clip its last glyph.
+ * Slides a label back inside when it crosses a side edge by less than the node gap;
+ * in a narrow cell the best side can still lean past the edge, where the SVG clips it.
  */
 function nudgeInside(label: EgoLabel, view: EgoView): EgoLabel {
   const over = label.rect.x + label.rect.w - view.w;
@@ -191,10 +180,7 @@ export function layoutConceptEgo(
   ego: ConceptEgo,
   geometry: EgoGeometry = DEFAULT_EGO_GEOMETRY,
   view: EgoView = DEFAULT_EGO_VIEW,
-  /**
-   * The words an "and N more" pill carries. The pill used to be sized for its digits alone
-   * (26px plus 6 per digit), so "and 1 more" ran out of both ends of a 32px pill (round four).
-   */
+  /** The words an "and N more" pill carries; the pill is sized to them. */
   moreText?: (rest: number) => string,
 ): EgoLayout | null {
   const groups = EGO_BEARINGS.map((bearing) => {
@@ -213,13 +199,8 @@ export function layoutConceptEgo(
 
   const slotTotal = groups.reduce((sum, g) => sum + g.slots, 0);
   const maxSlots = Math.max(...groups.map((g) => g.slots), 1);
-  /*
-   * Fixed bearings leave three quarters of the frame empty for a concept whose
-   * neighbours are all one kind (measured: contains 17, everything else 0). So
-   * the circle is **divided by share** — each relation gets a fan proportional
-   * to its own count and the fans sum to the full circle. The order is fixed,
-   * so switching concepts never shifts a direction.
-   */
+  // Each relation's fan is proportional to its count so one-kind egos fill the circle;
+  // the bearing order is fixed so switching concepts never shifts a direction.
   const gap = groups.length > 1 ? 10 : 0;
   const usable = 360 - gap * groups.length;
   const ring = Math.max(geometry.ringMin, Math.min(geometry.ringMax, 58 + (slotTotal <= 2 ? 26 : 0) + maxSlots * 11));
@@ -227,15 +208,9 @@ export function layoutConceptEgo(
   const cx = view.w / 2;
   const cy = view.h / 2;
   const selfRadius = radiusOf(geometry.self, ego.kind);
-  /*
-   * **The drawing fills the box it is given** (round three, 2026-09-25). The fan was sized
-   * for a fixed 660x345 view and the SVG was scaled to fit its cell, so at 1512 the
-   * drawing used about 40% of its box and every 11px label was scaled down to 9-10px. Now
-   * the view is the cell's own pixel size, labels are drawn 1:1, and the rings stretch
-   * on each axis until the outermost node, plus room for its label, meets the box's edge.
-   * The stretch is capped so a two-neighbour concept does not draw spokes across a
-   * 1920 screen, and floored so a narrow cell still keeps its labels apart.
-   */
+  // Labels are drawn 1:1 in the cell's own pixels, so the rings stretch per axis until the
+  // outermost node plus its label room meets the edge; capped so few neighbours do not draw
+  // screen-wide spokes, floored so a narrow cell keeps labels apart.
   const outer = ring + stagger + (groups.some((g) => g.rest > 0) ? 34 : 0);
   const fit = (room: number, reach: number) =>
     Math.min(EGO_FILL_MAX, Math.max(EGO_FILL_MIN, room / Math.max(1, reach)));
@@ -250,14 +225,9 @@ export function layoutConceptEgo(
   let cursor = -90 - ((groups[0].slots / slotTotal) * usable + gap) / 2;
   for (const group of groups) {
     const span = (group.slots / slotTotal) * usable;
-    const cap = labelCap(group.slots);
-    /*
-     * When a fan spans the **whole circle** (only one relation kind), its two
-     * ends are the same angle. Dividing by `i/(slots-1)` puts the first and last
-     * slot at exactly the same place, so one neighbour hides under another — the
-     * screen said "contains 3" and drew two (measured 2026-08-02). A closed
-     * circle divides by `slots`.
-     */
+    const cap = labelCapForSlots(group.slots);
+    // A fan spanning the whole circle has equal end angles, so it divides by `slots`;
+    // `slots - 1` would put the first and last neighbour on the same spot.
     const closed = groups.length === 1;
     for (let i = 0; i < group.slots; i += 1) {
       const ratio = group.slots === 1 ? 0.5 : closed ? i / group.slots : i / (group.slots - 1);
@@ -300,6 +270,8 @@ export function layoutConceptEgo(
   };
   const placed: Rect[] = [selfLabel.rect];
 
+  // Greedy placement: n labels × ≤2 texts × 4 sides, each scored against the placed and
+  // obstacle rect arrays, so O(n²) with n ≤ 4 fans × 8 slots.
   const placedNodes = new Map<string, EgoLabel>();
   for (const node of nodes) {
     const { x, y, r } = node.slot;

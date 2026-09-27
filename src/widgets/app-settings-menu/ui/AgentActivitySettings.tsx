@@ -15,17 +15,9 @@ import { SegmentSwitch, SettingsGroup, SettingsRow } from './settings-primitives
 import { controlClass } from '@/shared/ui/control-class';
 
 /**
- * "Show Work-in-Progress" (work-in-progress indicator) and "Notifications" settings.
- *
- * **On by default**, for a different reason than the frame meter — the meter is a
- * diagnostic tool and therefore opt-in, while this is the **fact** that *"something
- * is happening in my folder right now"*. Hiding a fact behind an opt-in means
- * someone who never switched it on sees nothing while their folder is being edited.
- * So this pane is only ever used to **turn things off**.
- *
- * Why the kind picker is indented under "Notifications": to someone who turned notifications
- * off entirely, six rows of kinds are noise, not a decision. It appears only while
- * they are on.
+ * "Show Work-in-Progress" and "Notifications" settings, on by default because they report
+ * that the folder is being edited; this pane only turns them off. The kind picker appears
+ * only while notifications are on.
  */
 export function AgentActivitySettings() {
   const t = useTranslations('nav.settingsMenu');
@@ -109,7 +101,7 @@ export function AgentActivitySettings() {
   );
 }
 
-/** Kind → copy key. It uses the **same vocabulary** as the notification inbox — two sets of names do not read as the same thing. */
+/** Kind → copy key, in the notification inbox's vocabulary. */
 const EVENT_LABEL_KEY: Readonly<Record<(typeof AGENT_NOTIFICATION_KINDS)[number], string>> = {
   'task-start': 'event.taskStart',
   'task-end': 'event.taskEnd',

@@ -4,15 +4,6 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { AgentSetupSection } from './AgentSetupSection';
 
-/**
- * The 「MCP Connection」 pane — **moved out of the settings sheet on 2026-08-21**
- * (ledger 90).
- *
- * The two checks here **came along** from `AppSettingsMenu.test.tsx`. The screen
- * left the sheet, so the checks have to follow — left in the old place they would go
- * on measuring something the sheet no longer draws, which is a check that stays
- * green while enforcing nothing.
- */
 
 const vaultStatus = { current: 'idle' as 'idle' | 'loaded' };
 const serverState = { launch: null as null | { command: string; args: string[] } };
@@ -54,11 +45,8 @@ describe('AgentSetupSection', () => {
     expect(screen.queryByTestId('vault-agent-setup-panel')).toBeNull();
   });
 
-  /**
-   * **The installed app must not offer its own download** (AGENTS.md). The
-   * terminal block's app link is for the browser, where no server is bundled;
-   * `launch` is non-null exactly when one is (design audit 2026-09-04).
-   */
+  // The installed app must not offer its own download (AGENTS.md); `launch` is non-null
+  // exactly when a server is bundled.
   it('shows the app link only where no server is bundled', () => {
     vaultStatus.current = 'idle';
     serverState.launch = null;
@@ -74,15 +62,7 @@ describe('AgentSetupSection', () => {
     serverState.launch = null;
   });
 
-  /**
-   * **The action being asked for has to be possible right there** (north-star
-   * walkthrough 2026-08-11; the e2e `open-vault-cta` caught the same defect again
-   * right after the move, 2026-08-21).
-   *
-   * This card says 「Once you open the folder …」. Without the way to
-   * open it in the same place, it is the **dead-end CTA** this repository forbids by
-   * name.
-   */
+  // The card asks for a folder, so opening one must be possible in place.
   it('opens a folder from the no-folder notice', () => {
     vaultStatus.current = 'idle';
     renderSection();
@@ -93,7 +73,6 @@ describe('AgentSetupSection', () => {
     vaultStatus.current = 'loaded';
     renderSection();
     expect(screen.getByTestId('vault-agent-setup-panel')).toBeInTheDocument();
-    // The surface may move, but **the handoff lives** — this button nearly disappeared during the move.
     expect(screen.getByTestId('agents-mcp-proof-copy')).toBeInTheDocument();
   });
 });
