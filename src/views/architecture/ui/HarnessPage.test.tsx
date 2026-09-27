@@ -126,7 +126,7 @@ beforeEach(() => {
 });
 
 describe('the destination identity', () => {
-  it('is named 하네스 on every view', () => {
+  it('names the destination with the harness heading on every view', () => {
     mount();
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('하네스');
   });
@@ -257,7 +257,7 @@ describe('the segmented control', () => {
     expect(window.location.search).toBe('');
   });
 
-  it('writes 구조 into a browser address, where the plain one means the blueprint', () => {
+  it('writes the structure view into a browser address, where the plain one means the blueprint', () => {
     /*
      * ⚠️ The arrival view depends on the surface, so "the view that needs no parameter" does too.
      * Dropping `?view=` for `structure` on the web wrote an address that reads back as
