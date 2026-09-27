@@ -109,8 +109,8 @@ function deps(overrides: Partial<AgentLoopDeps> = {}): AgentLoopDeps {
   };
 }
 
-describe('startTurn — 누른 프레임에 반응한다', () => {
-  it('네트워크를 기다리지 않고 사용자 말풍선이 앉은 턴을 동기적으로 돌려준다', () => {
+describe('startTurn responds in the pressed frame', () => {
+  it('returns a turn with the user bubble synchronously without waiting for the network', () => {
     const turn = startTurn({ text: '이 노드 고쳐줘', screenContext: EMPTY_SCREEN_CONTEXT });
     expect(turn.status).toBe('sending');
     expect(turn.events).toHaveLength(1);
@@ -121,7 +121,7 @@ describe('startTurn — 누른 프레임에 반응한다', () => {
 });
 
 describe('runTurn', () => {
-  it('로컬 모델이 필수 읽기를 생략하면 한 번 교정한 뒤 명시적으로 실패한다', async () => {
+  it('corrects a local model once and then fails explicitly when it skips required reads', async () => {
     const send = vi.fn<Send>(async () => echo(OPENAI_TEXT_ONLY));
     const d = deps({
       adapter: localAdapter,
@@ -155,7 +155,7 @@ describe('runTurn', () => {
     });
   });
 
-  it('로컬 모델이 교정 뒤 필수 읽기를 수행하면 다음 근거 단계로 진행한다', async () => {
+  it('advances to the next evidence step when a local model does the required read after correction', async () => {
     const candidates = [
       'domains/agent-experience',
       'domains/graph-modeling',
@@ -222,7 +222,7 @@ describe('runTurn', () => {
     ]);
   });
 
-  it('도구가 없으면 왕복 1회로 끝난다', async () => {
+  it('finishes in one round trip when no tool is called', async () => {
     const d = deps();
     const result = await runTurn(d, startTurn({ text: '뭐가 이상해?', screenContext: EMPTY_SCREEN_CONTEXT }), {
       signal: new AbortController().signal,
@@ -233,7 +233,7 @@ describe('runTurn', () => {
     expect(d.send).toHaveBeenCalledTimes(1);
   });
 
-  it('푸터 누계는 실측 글자수다 (추정치 금지)', async () => {
+  it('footer totals count measured characters, not estimates', async () => {
     const send = vi.fn<Send>(async () => echo(TEXT_ONLY));
     const d = deps({ send });
     const result = await runTurn(d, startTurn({ text: 'x', screenContext: EMPTY_SCREEN_CONTEXT }), {
@@ -244,7 +244,7 @@ describe('runTurn', () => {
     expect(send.mock.calls[0]![0].scope.promptChars).toBe(sentBody.length);
   });
 
-  it('왕복 상한(6)을 넘지 않고 마무리 1회를 더한다', async () => {
+  it('stops at the six round-trip cap and adds one closing call', async () => {
     // The structural cap against a model that calls tools endlessly.
     const send = vi.fn<Send>(async () => echo(TOOL_CALL));
     const d = deps({ send });
@@ -257,7 +257,7 @@ describe('runTurn', () => {
     expect(result.turn.events.at(-1)).toMatchObject({ code: 'round-cap' });
   });
 
-  it('상한 뒤 마무리 답도 provider 검토를 우회하지 못한다', async () => {
+  it('the closing answer after the cap still goes through provider review', async () => {
     let sendCount = 0;
     const send = vi.fn<Send>(async () => {
       sendCount += 1;
@@ -287,7 +287,7 @@ describe('runTurn', () => {
     expect(result.turn.events.some((event) => event.kind === 'assistant')).toBe(false);
   });
 
-  it('중단하면 그 자리에서 멈추고 정리 행을 남긴다', async () => {
+  it('stops in place on abort and leaves a summary row', async () => {
     const controller = new AbortController();
     const send = vi.fn<Send>(async () => {
       controller.abort();
@@ -303,7 +303,7 @@ describe('runTurn', () => {
     expect(send).toHaveBeenCalledTimes(1);
   });
 
-  it('이미 끊긴 신호로 시작하면 왕복이 0회다 (패널 닫힘 = 중단)', async () => {
+  it('makes zero round trips when started with an already aborted signal', async () => {
     const controller = new AbortController();
     controller.abort();
     const d = deps();
@@ -314,7 +314,7 @@ describe('runTurn', () => {
     expect(result.turn.status).toBe('aborted');
   });
 
-  it('도구 행은 왕복이 끝난 뒤에만 확정된다', async () => {
+  it('settles tool rows only after the round trip ends', async () => {
     // Marking something "read" before it is sent makes the screen state what has not happened yet.
     const progress: string[] = [];
     let call = 0;
@@ -333,7 +333,7 @@ describe('runTurn', () => {
     expect(progress.some((line) => line.includes('toolLine'))).toBe(true);
   });
 
-  it('전송 범위에 이 턴에 읽은 노드와 도구 이름이 실린다', async () => {
+  it('records the nodes read and tool names of this turn in the transfer scope', async () => {
     let call = 0;
     const send = vi.fn<Send>(async () => {
       call += 1;
@@ -350,7 +350,7 @@ describe('runTurn', () => {
     expect(secondScope.vaultChars).toBe(120);
   });
 
-  it('429 는 자동 재시도 없이 안내로 끝난다', async () => {
+  it('ends a 429 with guidance and no automatic retry', async () => {
     const send = vi.fn<Send>(async () => echo({}, 429));
     const d = deps({ send });
     const result = await runTurn(d, startTurn({ text: 'x', screenContext: EMPTY_SCREEN_CONTEXT }), {
@@ -360,7 +360,7 @@ describe('runTurn', () => {
     expect(send).toHaveBeenCalledTimes(1);
   });
 
-  it('감사 기록 실패는 전송 거절로 읽힌다', async () => {
+  it('treats an audit log failure as a refused transfer', async () => {
     const send = vi.fn<Send>(async () => {
       // The shape `llm.rs` actually emits: a machine-readable code, then whatever human copy the
       // Rust side happened to compose. This test used to feed its own copy of the Korean sentence
@@ -375,7 +375,7 @@ describe('runTurn', () => {
     expect(result.turn.events.at(-1)).toMatchObject({ code: 'audit-blocked' });
   });
 
-  it('생성 시간 초과를 연결 실패로 숨기지 않는다', async () => {
+  it('does not report a generation timeout as a connection failure', async () => {
     const send = vi.fn<Send>(async () => {
       throw new Error(`${TIMED_OUT_PREFIX}모델이 제한 시간 안에 응답하지 않았어요`);
     });
@@ -390,7 +390,7 @@ describe('runTurn', () => {
     });
   });
 
-  it('쓰기 시도는 실행되지 않고 제안 의사로만 모인다', async () => {
+  it('collects write attempts as proposal intents without executing them', async () => {
     let call = 0;
     const send = vi.fn<Send>(async () => {
       call += 1;
@@ -429,7 +429,7 @@ describe('runTurn', () => {
     ]);
   });
 
-  it('아무것도 안 읽고 나온 답은 unread 로 표시된다', async () => {
+  it('marks an answer produced without any read as unread', async () => {
     const send = vi.fn<Send>(async () =>
       echo({ content: [{ type: 'text', text: '그냥 제 생각인데요' }], stop_reason: 'end_turn' }),
     );
@@ -448,7 +448,7 @@ describe('runTurn', () => {
    * screen was indistinguishable from a normal completion (the `agent ok tools=[]`
    * turns in the measured audit log).
    */
-  it('도구를 한 번도 안 부르고 멈춘 턴은 상한 도달과 대칭인 알림을 남긴다', async () => {
+  it('leaves a notice mirroring the cap notice when a turn stops without calling any tool', async () => {
     const send = vi.fn<Send>(async () =>
       echo({ content: [{ type: 'text', text: '아마 그럴 거예요' }], stop_reason: 'end_turn' }),
     );
@@ -462,7 +462,7 @@ describe('runTurn', () => {
     expect(notice).toMatchObject({ text: `1/${AGENT_ROUND_CAP}번째에서 도구를 한 번도 안 부르고 멈췄어요` });
   });
 
-  it('도구를 쓴 뒤 마무리하는 정상 종료에는 그 알림이 붙지 않는다', async () => {
+  it('adds no such notice when the turn finishes normally after using tools', async () => {
     // Attaching it to ① would add wallpaper to every normal turn.
     const send = vi
       .fn<Send>()

@@ -33,10 +33,10 @@ function renderForm() {
   );
 }
 
-describe("ProjectForm 라벨-입력 연결 (a11y, #295)", () => {
+describe("ProjectForm label-to-input association", () => {
   // The create screen's four required fields — present on the first screen without expanding.
   it.each([fields.name, fields.category, fields.status, fields.description])(
-    "'%s' 라벨이 입력과 연결돼 있다",
+    "associates the '%s' label with its input",
     (label) => {
       renderForm();
       expect(screen.getByLabelText(label)).toBeInTheDocument();
@@ -47,7 +47,7 @@ describe("ProjectForm 라벨-입력 연결 (a11y, #295)", () => {
   // DOM while collapsed, so the same association is checked after expanding — if it breaks
   // inside the collapse, the accessible name falls back to the placeholder.
   it.each([fields.nameEn, fields.tagsCsv, fields.stackCsv, fields.linksText, fields.owner])(
-    "'%s' 라벨이 더 채우기를 펼친 뒤 입력과 연결돼 있다",
+    "associates the '%s' label with its input after expanding add more",
     (label) => {
       renderForm();
       fireEvent.click(screen.getByTestId("project-create-extras-toggle"));

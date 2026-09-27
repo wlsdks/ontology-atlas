@@ -138,7 +138,7 @@ describe('BlockImportModule', () => {
     stubPicker(fakeBlockDir(BLOCK_FILES));
   });
 
-  it('P1 결함② — is disabled with a "open your folder" hint (not hidden) without a loaded vault', () => {
+  it('is disabled with a "open your folder" hint (not hidden) without a loaded vault', () => {
     // In static sample mode "import a block" vanished without a trace, hiding that the
     // feature exists (usability sweep). Instead of rendering null it stays in place, disabled with a hint.
     mocks.vault = makeVault({ status: 'idle', manifest: null });
@@ -151,7 +151,7 @@ describe('BlockImportModule', () => {
     expect(screen.queryByTestId('block-import-dialog')).not.toBeInTheDocument();
   });
 
-  it('opens a merge preview after picking a folder WITHOUT writing to the vault (dry-run 절대 계약)', async () => {
+  it('opens a merge preview after picking a folder WITHOUT writing to the vault', async () => {
     render(<BlockImportModule />);
     await openPreview();
 

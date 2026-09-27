@@ -72,8 +72,8 @@ beforeEach(() => {
   motion.reduced = false;
 });
 
-describe("ProjectForm — 저장 거절은 눌린 사람에게 도착한다", () => {
-  it("빈 생성 폼은 이름에 초점을 두고 자동 주소를 오류로 펼치지 않는다", async () => {
+describe("ProjectForm save rejection focus", () => {
+  it("focuses the name on an empty create form without flagging the automatic slug as an error", async () => {
     Element.prototype.scrollIntoView = vi.fn();
     const onSubmit = vi.fn();
     render(
@@ -90,7 +90,7 @@ describe("ProjectForm — 저장 거절은 눌린 사람에게 도착한다", ()
     expect(screen.queryByLabelText(koMessages.settings.projectForm.fields.slug)).toBeNull();
     expect(onSubmit).not.toHaveBeenCalled();
   });
-  it("저장이 실패하면 초점이 오류 배너로 간다", async () => {
+  it("moves focus to the error banner when the save fails", async () => {
     const scrollSpy = vi.fn();
     Element.prototype.scrollIntoView = scrollSpy;
     const onSubmit = vi.fn(async () => {
@@ -105,7 +105,7 @@ describe("ProjectForm — 저장 거절은 눌린 사람에게 도착한다", ()
 
     // Guard against a no-op run: if submit never happened, the assertions below pass
     // because nothing occurred rather than because they are true.
-    expect(onSubmit, "저장이 호출되지 않았다 — 이 시험이 헛돈다").toHaveBeenCalledTimes(1);
+    expect(onSubmit, "submit was never called, so this test proves nothing").toHaveBeenCalledTimes(1);
 
     const banner = await screen.findByTestId("project-error-banner");
     /*
@@ -120,7 +120,7 @@ describe("ProjectForm — 저장 거절은 눌린 사람에게 도착한다", ()
     );
     expect(
       document.activeElement,
-      "저장이 거절됐는데 초점이 그대로다 — 긴 폼·짧은 화면에서는 이유가 화면 밖에 뜬다",
+      "focus stayed put after a rejected save, leaving the reason off screen on a long form",
     ).toBe(banner);
     expect(scrollSpy).toHaveBeenLastCalledWith({ behavior: 'smooth', block: 'center' });
   });
@@ -143,7 +143,7 @@ describe("ProjectForm — 저장 거절은 눌린 사람에게 도착한다", ()
     expect(scrollSpy).toHaveBeenLastCalledWith({ behavior: 'auto', block: 'center' });
   });
 
-  it("성공하면 초점을 빼앗지 않는다", async () => {
+  it("keeps focus where it is when the save succeeds", async () => {
     const onSubmit = vi.fn(async () => {});
     renderEdit(onSubmit);
 

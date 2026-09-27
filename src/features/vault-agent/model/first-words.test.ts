@@ -46,7 +46,7 @@ function facts(
 }
 
 describe('buildFirstWords', () => {
-  it('빈 폴더에서는 칩 하나만 — 지목할 개념이 없는데 개념 이야기를 하지 않는다', () => {
+  it('offers a single chip in an empty folder without naming concepts', () => {
     const chips = buildFirstWords(
       { nodes: [], docFacts: new Map(), focusedRef: null },
       labels,
@@ -56,7 +56,7 @@ describe('buildFirstWords', () => {
     expect(chips[0].text).toBe('empty');
   });
 
-  it('화면 슬롯이 1번 — 보고 있는 개념의 가장 큰 틈을 먼저 말한다', () => {
+  it('puts the screen slot first with the largest gap of the focused concept', () => {
     const chips = buildFirstWords(
       {
         nodes: [node({ title: 'pay' }), node({ title: 'refund' })],
@@ -74,7 +74,7 @@ describe('buildFirstWords', () => {
     expect(chips[2].text).toBe('map');
   });
 
-  it('포커스가 없으면 화면 슬롯을 만들지 않는다 — 없는 것을 있다고 말하지 않는다', () => {
+  it('creates no screen slot without a focus', () => {
     const chips = buildFirstWords(
       {
         nodes: [node({ title: 'refund' })],
@@ -86,7 +86,7 @@ describe('buildFirstWords', () => {
     expect(chips.map((chip) => chip.slot)).toEqual(['queue', 'standing']);
   });
 
-  it('결함 0 폴더에서는 상비 슬롯만 남는다', () => {
+  it('keeps only the standing slots in a folder with no defects', () => {
     const chips = buildFirstWords(
       {
         nodes: [node({ title: 'pay' })],
@@ -99,7 +99,7 @@ describe('buildFirstWords', () => {
     expect(chips[0].slot).toBe('standing');
   });
 
-  it('같은 개념을 두 번 말하지 않는다 — 화면 슬롯이 집은 개념은 큐가 건너뛴다', () => {
+  it('skips in the queue the concept the screen slot already named', () => {
     const chips = buildFirstWords(
       {
         nodes: [node({ title: 'pay' })],
@@ -111,7 +111,7 @@ describe('buildFirstWords', () => {
     expect(chips.map((chip) => chip.slot)).toEqual(['screen', 'standing']);
   });
 
-  it('자기 문서가 없는 파생 개념은 지목하지 않는다 — 고칠 파일이 없다', () => {
+  it('does not name a derived concept without its own document', () => {
     const derived = node({ title: 'derived', hasOwnDocument: false });
     const chips = buildFirstWords(
       {
@@ -126,7 +126,7 @@ describe('buildFirstWords', () => {
     expect(screenIntentFor(derived, facts({}))).toBeNull();
   });
 
-  it('멀쩡한 개념에는 주장 대신 질문이 붙는다', () => {
+  it('asks a question instead of a claim for a healthy concept', () => {
     const intent = screenIntentFor(
       node({ title: 'pay' }),
       facts({ 'capabilities/pay': {} }),
@@ -135,7 +135,7 @@ describe('buildFirstWords', () => {
     expect(sentenceForIntent(intent!, labels)).toBe('rel:pay');
   });
 
-  it('칩 순서는 폴더가 같으면 같다 — 이름순 고정', () => {
+  it('orders chips by name so the same folder yields the same order', () => {
     const input = {
       nodes: [node({ title: 'zulu' }), node({ title: 'alpha' })],
       docFacts: facts({
@@ -149,15 +149,15 @@ describe('buildFirstWords', () => {
   });
 });
 
-describe('S7 이음새 — 같은 생성기', () => {
-  it('URL 이 나른 의도 종류만 통과시킨다', () => {
+describe('shared generator for queue rows and first chips', () => {
+  it('passes only intent kinds carried by the URL', () => {
     expect(parseNodeIntentKind('missing-definition')).toBe('missing-definition');
     expect(parseNodeIntentKind('map-review')).toBeNull();
     expect(parseNodeIntentKind('drop database')).toBeNull();
     expect(parseNodeIntentKind(null)).toBeNull();
   });
 
-  it('큐 행에서 건너온 문장과 빈 대화 1번 칩이 같은 문장이다', () => {
+  it('produces the same sentence for a queue row and the first chip of an empty chat', () => {
     const target = node({ title: 'pay' });
     const docFacts = facts({ 'capabilities/pay': { findings: ['definition-missing'] } });
     const fromChip = buildFirstWords(

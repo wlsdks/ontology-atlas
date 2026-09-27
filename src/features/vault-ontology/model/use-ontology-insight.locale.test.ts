@@ -15,7 +15,7 @@ const manifest = {
   ],
 } as unknown as VaultManifest;
 
-describe('display_<locale> 수집·해석', () => {
+describe('display_<locale> collection and resolution', () => {
   it('collects display_<locale> keys onto the stub (non-string values ignored)', () => {
     const d = deriveOntologyFromVault(manifest);
     const node = d.nodes.find((n) => n.id === 'domain:payment');

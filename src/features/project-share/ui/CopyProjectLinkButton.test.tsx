@@ -38,7 +38,7 @@ describe("CopyProjectLinkButton", () => {
     mocks.toast.mockReset();
   });
 
-  it("현재 locale이 포함된 정적 export-safe 상세 URL을 복사한다", async () => {
+  it("copies a static-export-safe detail URL that includes the current locale", async () => {
     fireEvent.click(renderButton());
 
     await waitFor(() => expect(mocks.copyText).toHaveBeenCalledTimes(1));

@@ -80,7 +80,7 @@ describe('planBlockImport — dry-run contract', () => {
     expect(plan.writes.map((w) => w.slug)).toEqual(['capabilities/session']);
   });
 
-  it('reports kindless files without planning a write (CLI import parity — kind 없으면 skip)', () => {
+  it('reports kindless files without planning a write (CLI import parity)', () => {
     const plan = planBlockImport(
       [file('notes/loose.md', '# Loose note\n')],
       new Set(),

@@ -45,7 +45,7 @@ describe("rhf zodResolver × projectFormSchema", () => {
     } as ProjectFormValues;
   }
 
-  it("필수 누락 입력 — errors 에 slug / name / category / status 표시", async () => {
+  it("reports slug, name, category and status errors for missing required input", async () => {
     const result = await resolver(emptyValues(), undefined, {
       criteriaMode: "firstError",
       shouldUseNativeValidation: false,
@@ -55,7 +55,7 @@ describe("rhf zodResolver × projectFormSchema", () => {
     expect(Object.keys(result.errors).length).toBeGreaterThan(0);
   });
 
-  it("최소 valid 입력 (description + progress 포함) — errors 비고 values 통과", async () => {
+  it("passes minimal valid input with description and progress without errors", async () => {
     const valid: ProjectFormValues = {
       ...emptyValues(),
       slug: "test-project",
@@ -77,7 +77,7 @@ describe("rhf zodResolver × projectFormSchema", () => {
     });
   });
 
-  it("dirty tracking — setValue 후 isDirty=true, reset(parsed) 후 false", async () => {
+  it("tracks dirtiness through setValue and clears it on reset", async () => {
     const initial: ProjectFormValues = {
       ...emptyValues(),
       slug: "init",
@@ -111,7 +111,7 @@ describe("rhf zodResolver × projectFormSchema", () => {
     expect(result.current.formState.isDirty).toBe(false);
   });
 
-  it("description 누락 — 검증 에러 메시지 노출 ('validation.descriptionRequired')", async () => {
+  it("reports validation.descriptionRequired when the description is missing", async () => {
     const v: ProjectFormValues = {
       ...emptyValues(),
       slug: "x",

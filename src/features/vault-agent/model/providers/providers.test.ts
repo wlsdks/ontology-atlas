@@ -50,19 +50,19 @@ function openAiTool(name: string, args: Record<string, unknown> = {}) {
   };
 }
 
-describe('벤더 어댑터 — 셋이 같은 모양으로 접힌다', () => {
+describe('vendor adapters fold into one shape', () => {
   for (const provider of ['anthropic', 'openai', 'gemini'] as const) {
     describe(provider, () => {
       const adapter = PROVIDER_ADAPTERS[provider];
 
-      it('텍스트만 있는 응답은 인용을 담은 한 덩어리로 읽힌다', () => {
+      it('reads a text-only response as one chunk carrying citations', () => {
         const result = adapter.parseResponse(fixture(`${provider}-text`));
         expect(result.stop).toBe('end');
         expect(result.toolCalls).toHaveLength(0);
         expect(result.text).toContain('[[capabilities/payment]]');
       });
 
-      it('도구 호출은 이름·인자가 같은 자리로 정규화된다', () => {
+      it('normalizes tool calls to the same name and arguments fields', () => {
         const result = adapter.parseResponse(fixture(`${provider}-tool`));
         expect(result.stop).toBe('tool');
         expect(result.toolCalls[0].name).toBe('get_concept');
@@ -71,13 +71,13 @@ describe('벤더 어댑터 — 셋이 같은 모양으로 접힌다', () => {
         expect(result.toolCalls[0].id).toBeTruthy();
       });
 
-      it('오류/차단은 조용한 빈 답이 아니라 강등된 결과로 나온다', () => {
+      it('returns an error or block as a degraded result, not a silent empty answer', () => {
         const result = adapter.parseResponse(fixture(`${provider}-error`));
         expect(['error', 'refusal']).toContain(result.stop);
         expect(result.errorMessage).toBeTruthy();
       });
 
-      it('요청 본문은 도구 목록 전체를 싣고 파싱 가능한 JSON 이다', () => {
+      it('sends the full tool list in a parseable JSON request body', () => {
         const body = adapter.buildBody(assembly());
         const parsed = JSON.parse(body) as Record<string, unknown>;
         expect(JSON.stringify(parsed)).toContain('get_concept');
@@ -86,7 +86,7 @@ describe('벤더 어댑터 — 셋이 같은 모양으로 접힌다', () => {
         expect(JSON.stringify(parsed)).toContain('screen_context');
       });
 
-      it('assistant 턴 원문을 그대로 되돌려 싣는다', () => {
+      it('echoes the raw assistant turn back unchanged', () => {
     // Reassembling drops Anthropic's thinking blocks and the next round trip is rejected.
         const first = adapter.parseResponse(fixture(`${provider}-tool`));
         const body = adapter.buildBody(
@@ -112,19 +112,19 @@ describe('벤더 어댑터 — 셋이 같은 모양으로 접힌다', () => {
     });
   }
 
-  it('OpenAI 의 깨진 arguments 는 실행 전에 걸린다', () => {
+  it('catches malformed OpenAI arguments before execution', () => {
     // Only this vendor has arguments as a string, so the model can emit truncated JSON.
     const result = PROVIDER_ADAPTERS.openai.parseResponse(fixture('openai-tool'));
     expect(result.toolCalls[1].name).toBe('find_backlinks');
     expect(result.toolCalls[1].argsInvalid).toBe(true);
   });
 
-  it('Gemini 는 id 를 주지 않으므로 실행기가 합성한다', () => {
+  it('synthesizes a call id for Gemini, which sends none', () => {
     const result = PROVIDER_ADAPTERS.gemini.parseResponse(fixture('gemini-tool'));
     expect(result.toolCalls[0].id).toBe('g0');
   });
 
-  it('Gemini 스키마에서 지원하지 않는 키는 떨어져 나간다', () => {
+  it('drops schema keys Gemini does not support', () => {
     // One remaining unknown key makes the whole request a 400.
     const body = PROVIDER_ADAPTERS.gemini.buildBody(assembly());
     expect(body).not.toContain('additionalProperties');
@@ -137,7 +137,7 @@ describe('벤더 어댑터 — 셋이 같은 모양으로 접힌다', () => {
     expect(listKinds?.parameters).toBeUndefined();
   });
 
-  it('벤더 기본 모델은 셋 다 정해져 있다', () => {
+  it('defines a default model for all three vendors', () => {
     // Shipping key registration for three vendors while the conversation supports two
     // makes the screen contradict itself.
     for (const provider of ['anthropic', 'openai', 'gemini'] as const) {
@@ -145,7 +145,7 @@ describe('벤더 어댑터 — 셋이 같은 모양으로 접힌다', () => {
     }
   });
 
-  it('주소 갈래는 로컬 사고를 끄고 세 번 읽은 뒤 답을 강제한다', () => {
+  it('local endpoint disables thinking and forces an answer after three reads', () => {
     // System discipline requires the first round trip to choose a read tool. A generic
     // `required` can be ignored by real Ollama, so the whole-map case pins the name to
     // list_concepts.
@@ -343,7 +343,7 @@ describe('벤더 어댑터 — 셋이 같은 모양으로 접힌다', () => {
     );
   });
 
-  it('주소 갈래는 상세 읽기 뒤 인용·한국어 응답을 각각 한 번만 교정한다', () => {
+  it('local endpoint corrects citations and Korean replies once each after the detail read', () => {
     const evidenceTurn = assembly({
       model: 'qwen3:8b',
       exchanges: [
@@ -458,7 +458,7 @@ describe('벤더 어댑터 — 셋이 같은 모양으로 접힌다', () => {
     });
   });
 
-  it('주소 갈래의 구조 감사는 도메인 후보와 상세 slug 인자까지 검증한다', () => {
+  it('local endpoint structure audit validates domain candidates and detail slug arguments', () => {
     const structuralQuestion =
       '온톨로지 구조를 감사해줘. fan-out만으로 브릿지를 만들지는 마.';
     const censusTurn = assembly({
@@ -529,7 +529,7 @@ describe('벤더 어댑터 — 셋이 같은 모양으로 접힌다', () => {
     });
   });
 
-  it('주소 갈래는 census와 모순되거나 좁은 근거를 과장한 합성을 거부한다', () => {
+  it('local endpoint rejects a synthesis that contradicts the census or overstates narrow evidence', () => {
     const turn = assembly({
       model: 'qwen3:8b',
       userText: '이 온톨로지 구조를 감사해줘. 브릿지는 근거가 있을 때만 말해.',
@@ -604,14 +604,14 @@ describe('벤더 어댑터 — 셋이 같은 모양으로 접힌다', () => {
     });
   });
 
-  it('주소 갈래에는 기본 모델이 없다 — 그 컴퓨터만 아는 사실이라서', () => {
+  it('local endpoint has no default model because only that machine knows it', () => {
     // Pinning any name as a default kills the first round trip with "model not found",
     // with the reason nowhere on screen. This branch does not turn on until the user
     // picks from the list (`isLocalEndpointReady`).
     expect(PROVIDER_ADAPTERS.local.defaultModel).toBe('');
   });
 
-  it('주소 갈래는 필수 읽기 생략을 정상 답으로 받지 않는다', () => {
+  it('local endpoint does not accept an answer that skipped required reads', () => {
     const turn = assembly({ model: 'qwen3:8b' });
     const response = PROVIDER_ADAPTERS.local.parseResponse(
       JSON.stringify({
@@ -650,7 +650,7 @@ describe('벤더 어댑터 — 셋이 같은 모양으로 접힌다', () => {
     });
   });
 
-  it('쓰기 도구도 목록에는 실린다 — 막는 곳은 실행기다', () => {
+  it('lists write tools too because the executor is what blocks them', () => {
     expect(findAgentTool('patch_concept')?.effect).toBe('write');
     expect(findAgentTool('get_concept')?.effect).toBe('read');
     // Source-scanning tools outside the vault are never given in the first place.

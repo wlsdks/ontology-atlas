@@ -43,7 +43,7 @@ function makePort(overrides: Partial<VaultWritePort> = {}): VaultWritePort {
 }
 
 describe('proposal-applier', () => {
-  it('선택된 변경만 쓰고, 카드가 그린 문자열을 그대로 쓴다', async () => {
+  it('writes only selected changes using the exact string the card rendered', async () => {
     const port = makePort();
     const result = await applyProposal(proposal(), port, { snapshotLabel: 'x' });
     expect(result.status).toBe('applied');
@@ -54,7 +54,7 @@ describe('proposal-applier', () => {
     );
   });
 
-  it('선택 해제된 변경은 쓰지 않는다 (선별 수용)', async () => {
+  it('does not write deselected changes', async () => {
     const port = makePort();
     const target = proposal();
     target.changes[0].selected = false;
@@ -64,7 +64,7 @@ describe('proposal-applier', () => {
     expect(port.createDoc).not.toHaveBeenCalled();
   });
 
-  it('제안한 뒤 사람이 같은 파일을 고쳤으면 파일 0개 변경으로 멈춘다', async () => {
+  it('stops with zero files changed when a person edited the file after the proposal', async () => {
     // Overwriting quietly makes a sentence a person just wrote disappear without a trace.
     const port = makePort({ currentMtime: vi.fn(() => 999) });
     const result = await applyProposal(proposal(), port, { snapshotLabel: 'x' });
@@ -77,7 +77,7 @@ describe('proposal-applier', () => {
     expect(port.refresh).not.toHaveBeenCalled();
   });
 
-  it('여러 변경 중 하나라도 충돌하면 아무것도 쓰지 않는다', async () => {
+  it('writes nothing when any one of several changes conflicts', async () => {
     // A half-applied state is the hardest state to undo.
     const port = makePort({
       currentMtime: vi.fn((slug: string) => (slug.includes('refund') ? 999 : 100)),
@@ -103,7 +103,7 @@ describe('proposal-applier', () => {
     expect(port.saveDoc).not.toHaveBeenCalled();
   });
 
-  it('저장점이 체크되면 쓰기보다 먼저 찍힌다', async () => {
+  it('takes the checkpoint before writing when it is checked', async () => {
     const order: string[] = [];
     const port = makePort({
       snapshot: vi.fn(async () => {
@@ -121,7 +121,7 @@ describe('proposal-applier', () => {
     expect(result).toMatchObject({ status: 'applied', snapshotSha: 'sha1234' });
   });
 
-  it('저장점을 못 만들면 쓰지 않는다 — "되돌릴 수 있다" 가 거짓이 되면 안 된다', async () => {
+  it('does not write when the checkpoint cannot be created', async () => {
     const port = makePort({
       snapshotRequested: undefined,
       snapshot: vi.fn(async () => {
@@ -135,13 +135,13 @@ describe('proposal-applier', () => {
     expect(port.saveDoc).not.toHaveBeenCalled();
   });
 
-  it('mtime 을 모르는 볼트에서는 충돌을 지어내지 않는다', async () => {
+  it('does not invent a conflict in a vault without mtimes', async () => {
     const port = makePort({ currentMtime: vi.fn(() => undefined) });
     const result = await applyProposal(proposal(), port, { snapshotLabel: 'x' });
     expect(result.status).toBe('applied');
   });
 
-  it('새 파일은 createDoc 으로 간다', async () => {
+  it('routes a new file to createDoc', async () => {
     const port = makePort();
     const target = proposal({
       changes: [
@@ -170,7 +170,7 @@ describe('proposal-applier', () => {
    * violated). The applier now writes each file once — the last selected
    * `after` — and refuses a selection that skips an earlier same-file change.
    */
-  it('같은 파일을 잇는 두 변경을 모두 선택하면 파일당 한 번, 마지막 after 를 쓴다', async () => {
+  it('writes once per file with the last after when two chained changes to one file are selected', async () => {
     const port = makePort();
     const target = proposal();
     target.changes[0].files[0].after = 'A1';
@@ -192,7 +192,7 @@ describe('proposal-applier', () => {
     });
   });
 
-  it('앞선 같은 파일 변경을 해제한 채 뒤 변경만 선택하면 쓰지 않고 실패를 알린다', async () => {
+  it('refuses and reports failure when only the later of two chained changes is selected', async () => {
     const port = makePort();
     const target = proposal();
     target.changes[0].selected = false;
@@ -213,7 +213,7 @@ describe('proposal-applier', () => {
     expect(port.createDoc).not.toHaveBeenCalled();
   });
 
-  it('뒤쪽 같은 파일 변경만 해제하면 앞 변경의 after 만 쓴다', async () => {
+  it('writes only the earlier after when the later chained change is deselected', async () => {
     const port = makePort();
     const target = proposal();
     target.changes[0].files[0].after = 'A1';
@@ -235,7 +235,7 @@ describe('proposal-applier', () => {
     });
   });
 
-  it('vault-only 에이전트는 project competency 자격을 직접 서명해 적용할 수 없다', async () => {
+  it('a vault-only agent cannot sign and apply project competency qualification itself', async () => {
     const port = makePort();
     const target = proposal({
       changes: [
@@ -281,8 +281,8 @@ describe('proposal-applier', () => {
   });
 });
 
-describe('summarizeChangeVolume — 접힌 diff 에 도장 찍기 방지', () => {
-  it('카드 헤더가 총량을 말할 수 있게 센다', () => {
+describe('summarizeChangeVolume', () => {
+  it('counts the totals the card header reports', () => {
     const volume = summarizeChangeVolume(proposal().changes);
     expect(volume.files).toBe(1);
     expect(volume.added).toBe(1);

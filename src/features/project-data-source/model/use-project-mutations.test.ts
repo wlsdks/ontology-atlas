@@ -85,7 +85,7 @@ describe("useProjectMutations path-agnostic project source", () => {
     mocks.vault.deleteDoc.mockReset();
   });
 
-  it("루트 project 문서를 update할 때 원본 경로와 title key-shape를 보존한다", async () => {
+  it("preserves the source path and title key shape when updating the root project document", async () => {
     const { result } = renderHook(() => useProjectMutations());
 
     await act(() => result.current.updateProject(makeInput()));
@@ -105,7 +105,7 @@ describe("useProjectMutations path-agnostic project source", () => {
     expect(mocks.vault.createDoc).not.toHaveBeenCalled();
   });
 
-  it("partial name patch는 기존 title 키만 바꾸고 다른 필드를 만들지 않는다", async () => {
+  it("a partial name patch changes only the existing title key", async () => {
     const { result } = renderHook(() => useProjectMutations());
 
     await act(() =>
@@ -121,7 +121,7 @@ describe("useProjectMutations path-agnostic project source", () => {
     );
   });
 
-  it("이름 변경 시 스타터 기본값 display_ko/en 을 새 이름으로 동반 갱신한다 (C6)", async () => {
+  it("renames starter default display_ko and display_en along with the name", async () => {
     const manifest = makeManifest("project", "project");
     manifest.docs[0].frontmatter = {
       ...manifest.docs[0].frontmatter,
@@ -163,7 +163,7 @@ describe("useProjectMutations path-agnostic project source", () => {
     );
   });
 
-  it("사용자가 지정한 display 이름은 rename 시 덮어쓰지 않는다 (C6)", async () => {
+  it("keeps user-set display names on rename", async () => {
     const manifest = makeManifest("project", "project");
     manifest.docs[0].frontmatter = {
       ...manifest.docs[0].frontmatter,
@@ -182,7 +182,7 @@ describe("useProjectMutations path-agnostic project source", () => {
     );
   });
 
-  it("루트 project와 같은 slug의 신규 생성을 거부한다", async () => {
+  it("rejects creating a project with the root project slug", async () => {
     const { result } = renderHook(() => useProjectMutations());
 
     await expect(
@@ -191,7 +191,7 @@ describe("useProjectMutations path-agnostic project source", () => {
     expect(mocks.vault.createDoc).not.toHaveBeenCalled();
   });
 
-  it("신규 project는 createDoc에 영구 UUIDv4 uid가 포함된 markdown을 넘긴다", async () => {
+  it("passes markdown with a permanent UUIDv4 uid to createDoc for a new project", async () => {
     mocks.vault.manifest = null;
     mocks.vault.fileHandles = new Map();
     const { result } = renderHook(() => useProjectMutations());
@@ -206,7 +206,7 @@ describe("useProjectMutations path-agnostic project source", () => {
     );
   });
 
-  it("루트 project 삭제도 원본 VaultDoc.slug를 쓴다", async () => {
+  it("deletes the root project by its source VaultDoc slug", async () => {
     const { result } = renderHook(() => useProjectMutations());
 
     await act(() => result.current.deleteProject("project"));
