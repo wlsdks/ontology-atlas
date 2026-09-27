@@ -16,8 +16,8 @@ import {
  * never pick `allow_always` for the person. This file measures the rule against **the option arrays
  * the shipped adapter actually builds**, because the rule is only as good as the arrays it meets.
  *
- * Everything below is read from `@agentclientprotocol/claude-agent-acp@0.74.0`
- * `dist/permissions/options/*.js` on 2026-09-05 — `shared.js` for the ids and kinds,
+ * Everything below is read from `dist/permissions/options/*.js` of the version pinned at the bottom
+ * of this file — `shared.js` for the ids and kinds,
  * `shell.js` / `tools.js` / `filesystem.js` for who builds what. Nothing here is invented: this
  * repository already recorded what happens when a gate is measured against a hand-made shape
  * (*"a gate that passes on invented input is not a gate"* — a test built a `file_path` the real
@@ -126,8 +126,43 @@ const CASES: Array<{ tool: string; options: Option[]; expected: string }> = [
     expected: OPTION_ID.allowOnce,
   },
   {
-    // tools.js `buildExitPlanModePermissionOptions`, plan present, `auto` among the modes.
-    tool: 'ExitPlanMode (plan, auto available)',
+    // tools.js `buildExitPlanModePermissionOptions` in an app session: plan present, `auto` and
+    // `bypassPermissions` both advertised, plan mode entered from `default`.
+    tool: 'ExitPlanMode (plan, auto and bypass available)',
+    options: [
+      { optionId: OPTION_ID.exitPlanDefault, name: 'Yes, manually approve edits', kind: 'allow_once' },
+      { optionId: OPTION_ID.exitPlanClearAuto, name: 'Yes, clear context (42% used) and use auto mode', kind: 'allow_always' },
+      { optionId: OPTION_ID.exitPlanAuto, name: 'Yes, and use auto mode', kind: 'allow_always' },
+      { optionId: OPTION_ID.exitPlanBypass, name: 'Yes, and bypass permissions', kind: 'allow_always' },
+      reject('No, keep planning'),
+    ],
+    expected: OPTION_ID.exitPlanDefault,
+  },
+  {
+    tool: 'ExitPlanMode (no plan, auto and bypass available)',
+    options: [
+      { optionId: OPTION_ID.exitPlanDefault, name: 'Yes, manually approve edits', kind: 'allow_once' },
+      { optionId: OPTION_ID.exitPlanAuto, name: 'Yes, and use auto mode', kind: 'allow_always' },
+      { optionId: OPTION_ID.exitPlanBypass, name: 'Yes, and bypass permissions', kind: 'allow_always' },
+      reject('No, keep planning'),
+    ],
+    expected: OPTION_ID.exitPlanDefault,
+  },
+  {
+    // Plan mode entered from `bypassPermissions`: bypass leads the elevated entries.
+    tool: 'ExitPlanMode (plan, entered from bypass)',
+    options: [
+      { optionId: OPTION_ID.exitPlanDefault, name: 'Yes, manually approve edits', kind: 'allow_once' },
+      { optionId: OPTION_ID.exitPlanClearBypass, name: 'Yes, clear context (42% used) and bypass permissions', kind: 'allow_always' },
+      { optionId: OPTION_ID.exitPlanBypass, name: 'Yes, and bypass permissions', kind: 'allow_always' },
+      { optionId: OPTION_ID.exitPlanAuto, name: 'Yes, and use auto mode', kind: 'allow_always' },
+      reject('No, keep planning'),
+    ],
+    expected: OPTION_ID.exitPlanDefault,
+  },
+  {
+    // `auto` without `bypassPermissions` (root outside a sandbox, or bypass disabled in settings).
+    tool: 'ExitPlanMode (plan, auto without bypass)',
     options: [
       { optionId: OPTION_ID.exitPlanDefault, name: 'Yes, manually approve edits', kind: 'allow_once' },
       { optionId: OPTION_ID.exitPlanClearAuto, name: 'Yes, clear context (42% used) and use auto mode', kind: 'allow_always' },
@@ -137,8 +172,7 @@ const CASES: Array<{ tool: string; options: Option[]; expected: string }> = [
     expected: OPTION_ID.exitPlanDefault,
   },
   {
-    // Same builder with no plan text and `bypassPermissions` as the elevated mode.
-    tool: 'ExitPlanMode (no plan, bypass available)',
+    tool: 'ExitPlanMode (no plan, bypass without auto)',
     options: [
       { optionId: OPTION_ID.exitPlanDefault, name: 'Yes, manually approve edits', kind: 'allow_once' },
       { optionId: OPTION_ID.exitPlanBypass, name: 'Yes, and bypass permissions', kind: 'allow_always' },
@@ -170,6 +204,17 @@ const CASES: Array<{ tool: string; options: Option[]; expected: string }> = [
     options: [
       { optionId: OPTION_ID.exitPlanClearAuto, name: 'Yes, clear context (42% used) and use auto mode', kind: 'allow_always' },
       { optionId: OPTION_ID.exitPlanAuto, name: 'Yes, and use auto mode', kind: 'allow_always' },
+      { optionId: OPTION_ID.exitPlanDefault, name: 'Yes, manually approve edits', kind: 'allow_once' },
+      reject('No, keep planning'),
+    ],
+    expected: OPTION_ID.exitPlanDefault,
+  },
+  {
+    tool: 'ExitPlanMode (builder order, auto and bypass)',
+    options: [
+      { optionId: OPTION_ID.exitPlanClearAuto, name: 'Yes, clear context (42% used) and use auto mode', kind: 'allow_always' },
+      { optionId: OPTION_ID.exitPlanAuto, name: 'Yes, and use auto mode', kind: 'allow_always' },
+      { optionId: OPTION_ID.exitPlanBypass, name: 'Yes, and bypass permissions', kind: 'allow_always' },
       { optionId: OPTION_ID.exitPlanDefault, name: 'Yes, manually approve edits', kind: 'allow_once' },
       reject('No, keep planning'),
     ],
@@ -343,9 +388,15 @@ describe('permission options — the app picks the one that ends with this call'
      * would still produce a valid-looking id, so the cases above are only meaningful while the
      * elevating ids are genuinely present to be picked by mistake.
      */
-    const exitPlan = CASES.find((entry) => entry.tool.startsWith('ExitPlanMode (plan, auto'));
-    expect(exitPlan?.options.map((option) => option.optionId)).toContain(OPTION_ID.exitPlanAuto);
-    expect(exitPlan?.options.filter((option) => option.kind === 'allow_always')).toHaveLength(2);
+    const optionsOf = (tool: string) => CASES.find((entry) => entry.tool === tool)?.options ?? [];
+    const launched = optionsOf('ExitPlanMode (plan, auto and bypass available)');
+    expect(launched.map((option) => option.optionId)).toEqual(
+      expect.arrayContaining([OPTION_ID.exitPlanAuto, OPTION_ID.exitPlanBypass]),
+    );
+    expect(launched.filter((option) => option.kind === 'allow_always')).toHaveLength(3);
+    const autoOnly = optionsOf('ExitPlanMode (plan, auto without bypass)');
+    expect(autoOnly.map((option) => option.optionId)).toContain(OPTION_ID.exitPlanAuto);
+    expect(autoOnly.filter((option) => option.kind === 'allow_always')).toHaveLength(2);
   });
 });
 
@@ -361,19 +412,12 @@ describe('permission options — the app picks the one that ends with this call'
  * So the version is asserted against `src-tauri/src/acp-registry.json`, the committed snapshot the
  * app launches from: a bump turns this red and the arrays get re-read.
  */
-// 0.75.1 (2026-09-07): `dist/permissions/` is byte-identical to the transcribed 0.75.0.
-// 0.76.0 (2026-09-11): `dist/permissions/` is byte-identical to 0.75.1 again, and `optionId`
-// appears in no other `dist/**/*.js`, so nothing outside that directory builds an option array.
-// What 0.76.0 actually adds is `session-effort` and `session-model`; the builders did not move.
-// 0.77.0 (2026-09-15): the four option builders and shared ids are byte-identical to 0.76.0.
-// `options.js` adds only the `defaultToNo` decline-first sort represented above; option ids and
-// kinds do not change. SHA-256: shared f3268e6d…, shell 102de11e…, tools fa0736e3…,
-// filesystem a4c5f1cb…, and the changed options.js f3e16436….
-// 0.79.0 (2026-09-20): `dist/permissions/options/` is byte-identical to 0.77.0 and every digest
-// above is unchanged, `optionId` still appears in no `dist/**/*.js` outside that directory, and
-// the only file that moved under `dist/permissions/` is `presentation.js` — it stops compacting a
-// Bash or PowerShell title, which is the request's wording, not its option set.
-const TRANSCRIBED_FROM = '@agentclientprotocol/claude-agent-acp@0.79.0';
+// 0.81.2 (2026-09-27), read by running the published builders. SHA-256 of shared f3268e6d…,
+// shell 102de11e…, filesystem a4c5f1cb… and the sort in options.js f3e16436… are unchanged
+// since 0.77.0; tools.js (6a7dc865…) moved only in `buildExitPlanModePermissionOptions`, which now
+// offers `auto` and `bypassPermissions` together — the four cases naming both are new. `optionId`
+// still appears in no `dist/**/*.js` outside `dist/permissions/`.
+const TRANSCRIBED_FROM = '@agentclientprotocol/claude-agent-acp@0.81.2';
 
 describe('transcribed adapter version', () => {
   it('reads the option builders from the version the app actually launches', () => {
