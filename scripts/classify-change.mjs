@@ -288,7 +288,11 @@ function unitPlan({ paths, existingPaths, deletedPaths, suggestions, full }) {
           command !== 'pnpm knip' &&
           command !== 'pnpm test:contracts' &&
           exactContractFiles(command).length === 0 &&
-          !/^pnpm exec vitest run (?:app|src)\//.test(command),
+          !/^pnpm exec vitest run (?:app|src)\//.test(command) &&
+          // The affected run (`vitest run --changed`, sharded) already runs every test that
+          // imports a changed source; the local sibling-suite command would repeat it unsharded
+          // on shard 1, which for a widely imported file outran the shard's 6-minute ceiling.
+          !(affected && /^pnpm exec vitest related /.test(command)),
       ),
   );
   const contract = contractFull ? 'full' : contractFiles.length > 0 ? 'focused' : 'skip';
