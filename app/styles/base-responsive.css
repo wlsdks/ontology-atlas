@@ -712,6 +712,15 @@
     html[data-print-scope="question-desk"] [data-question-desk-print-root] li {
       break-inside: avoid;
     }
+    html[data-print-scope="question-desk"] [data-question-desk-print-root] [data-report-section-heading] {
+      break-inside: avoid;
+      break-after: avoid-page;
+      page-break-after: avoid;
+    }
+    html[data-print-scope="question-desk"] [data-question-desk-print-root] [data-report-section-heading] + [data-report-markdown] {
+      break-before: avoid-page;
+      page-break-before: avoid;
+    }
     html[data-print-scope="question-desk"] [data-question-desk-print-root] button {
       border: 0;
       padding: 0;

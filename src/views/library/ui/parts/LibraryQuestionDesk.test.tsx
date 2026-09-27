@@ -183,7 +183,10 @@ describe('Library question desk transfer boundary', () => {
     expect(answerParagraphs[0]).toHaveClass('text-display');
     expect(answerParagraphs.slice(1).every((paragraph) => !paragraph.classList.contains('text-display'))).toBe(true);
     expect(within(answer).getByTestId('question-desk-download-markdown')).toBeInTheDocument();
+    expect(answer.querySelector('[data-report-actions]')).not.toHaveClass('border-t');
+    expect(screen.getByTestId('question-desk-report-section-1')).not.toHaveClass('border-t');
     expect(screen.getByTestId('question-desk-report-section-1')).toHaveTextContent('The plan lists no owner.');
+    expect(screen.getByTestId('question-desk-report-section-2')).toHaveClass('border-t');
     expect(screen.getByTestId('question-desk-report-section-2')).toHaveTextContent('One page suggests an owner.');
     expect(screen.getByTestId('question-desk-report-section-3')).toHaveTextContent('Another-language documents may be missed.');
     expect(screen.getByTestId('question-desk-coverage-toggle')).toHaveAttribute('aria-expanded', 'false');
@@ -324,6 +327,7 @@ describe('Library question desk transfer boundary', () => {
       expect(printRoot).toHaveTextContent(report.limits);
       expect(printRoot?.querySelector('[data-source-path="sources/refund.md"]')).toHaveTextContent('sources/refund.md#l2');
       expect(printRoot?.querySelector('[data-report-actions]')).toBeNull();
+      expect(printRoot?.querySelectorAll('[data-report-section-heading] + [data-report-markdown]')).toHaveLength(4);
     });
     try {
       fireEvent.click(screen.getByTestId('question-desk-print-pdf'));

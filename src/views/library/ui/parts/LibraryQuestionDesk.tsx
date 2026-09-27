@@ -118,7 +118,7 @@ function SafeReportMarkdown({ text, sources, onOpenSource, answer = false }: {
   const known = useMemo(() => normalizeOriginalPaths(new Set(sources.map((source) => source.path))), [sources]);
   const firstParagraph = text.trim().split(/\n\s*\n/, 1)[0] ?? '';
   const headlineAnswer = answer && firstParagraph.length <= 160 && !/^(?:[-*+] |\d+\. |#{1,6} |>|```|~~~)/.test(firstParagraph);
-  return <div className={answer
+  return <div data-report-markdown="true" className={answer
     ? 'min-w-0 text-reading leading-prose text-[color:var(--color-text-primary)]'
     : 'min-w-0 text-reading leading-prose text-[color:var(--color-text-secondary)]'} data-testid="question-desk-report-markdown">
     <ReactMarkdown skipHtml remarkPlugins={[remarkGfm]} components={{
@@ -173,8 +173,9 @@ function DraftReport({ text, sources, onOpenSource, actions }: {
     {sections.map((section, index) => <motion.section key={section.title} data-testid={`question-desk-report-section-${index}`}
       initial={reduced ? OVERLAY_RISE_REDUCED : OVERLAY_RISE} animate={OVERLAY_SETTLED}
       transition={{ ...(reduced ? MOTION.fast : MOTION.settle), delay: reduced ? 0 : index * STAGGER }}
-      className={index === 0 ? 'border-b border-[color:var(--color-border-soft)] pb-6' : 'border-t border-[color:var(--color-border-soft)] pt-5'}>
-      <div className={index === 0 ? 'mb-4' : 'mb-2'}>
+      className={index === 0 ? 'border-b border-[color:var(--color-border-soft)] pb-6'
+        : index === 1 ? '' : 'border-t border-[color:var(--color-border-soft)] pt-5'}>
+      <div data-report-section-heading="true" className={index === 0 ? 'mb-4' : 'mb-2'}>
         <h5 className={index === 0
           ? 'text-title font-[var(--font-weight-strong)] leading-title text-[color:var(--color-indigo-text-soft)]'
           : 'text-title font-[var(--font-weight-strong)] leading-title text-[color:var(--color-text-primary)]'}>{section.title}</h5>
@@ -471,7 +472,7 @@ export function LibraryQuestionDesk({
     try { await Promise.resolve(window.print()); }
     catch { clear(); setPrintError(t('report.printFailed')); }
   };
-  const reportActions = activeReport ? <div data-report-actions="true" className="mt-5 border-t border-[color:var(--color-indigo-line-a20)] pt-3">
+  const reportActions = activeReport ? <div data-report-actions="true" className="mt-5">
     <div className="flex flex-wrap items-center gap-2">
       <Chip tone="muted" onClick={downloadReport} data-testid="question-desk-download-markdown">{t('report.downloadMarkdown')}</Chip>
       <Chip tone="muted" onClick={() => void printReport()} data-testid="question-desk-print-pdf">{t('report.printPdf')}</Chip>
