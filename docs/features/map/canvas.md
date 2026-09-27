@@ -131,7 +131,7 @@ routes: [/topology]
 - **Tab** → keyboard cycle to neighbor hub
 - **Empty state** (0–1 nodes) → `TopologyEmptyState` explains whether the
   vault lacks projects or relations, then offers the applicable next actions:
-  bootstrap from found docs, create a node, open Topology INDEX, open Workshop,
+  bootstrap from found docs, create a node, open Topology INDEX, open the new-concept editor (`/topology/?workbench=create`),
   or choose a vault.
 - **Filter active** → bottom-left "filter · N / TOTAL" badge
 - **Six map views, chosen in one picker** — the current-view chip in the top tool

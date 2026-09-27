@@ -17,7 +17,6 @@ routes: []
 | `?` | Every screen with the rail | Toggle shortcut sheet |
 | `⌘O` | Home / Topology static sample | Open a local Markdown folder |
 | `Esc` | All | Close the highest-priority open dialog, picker, preview, or map state |
-| `Enter` | Workshop relation picker | Choose the first filtered relation candidate |
 | `↑↓` | Hub rail | Cycle hubs |
 | `Home` / `End` | Hub rail | First / last hub |
 | `Tab` (in palette) | Workspace palette | Cycle mode (`""` → `>` → `#`) |
