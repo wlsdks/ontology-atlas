@@ -3,18 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useAppUpdate } from './use-app-update';
 
-/**
- * **The app must not erase, behind the scenes, an answer the user asked for.**
- *
- * Caught by measurement in the pre-launch review, 2026-08-20: pressing "check for updates" in the
- * installed app had the marker catching the result (`failed`) while **that sentence was not on
- * screen.** The cause is the **automatic check** that runs four seconds after mount — the automatic
- * path returns to `idle` to pass a failure over quietly, and that erases the answer the user just
- * received along with it.
- *
- * From the user's side it becomes "I pressed it, something appeared, and it vanished without a word".
- * The opposite of the honesty rule this repository set for degraded cards.
- */
+/** The automatic check must not erase the answer to a manual one. */
 
 const check = vi.fn();
 let desktop = true;
@@ -42,8 +31,8 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe('직접 누른 확인의 결과', () => {
-  it('뒤에서 도는 자동 확인이 그 답을 지우지 않는다', async () => {
+describe('result of a manual update check', () => {
+  it('is not cleared by the background automatic check', async () => {
     // The endpoint returning 404 — this repository's real state today (zero final releases).
     check.mockRejectedValue(new Error('404'));
     const { result } = renderHook(() => useAppUpdate());
@@ -51,10 +40,10 @@ describe('직접 누른 확인의 결과', () => {
     await act(async () => {
       await result.current.check(true);
     });
-    expect(result.current.phase.kind, '직접 누른 확인이 실패를 보고해야 한다').toBe('failed');
+    expect(result.current.phase.kind, 'manual check should report the failure').toBe('failed');
     expect(result.current.phase).toMatchObject({ operation: 'check' });
 
-    // The automatic check scheduled four seconds after mount now fires.
+    // The automatic check scheduled after mount fires.
     await act(async () => {
       vi.advanceTimersByTime(5_000);
       await Promise.resolve();
@@ -63,12 +52,12 @@ describe('직접 누른 확인의 결과', () => {
     await waitFor(() => {
       expect(
         result.current.phase.kind,
-        '자동 확인이 사용자가 받은 답을 지웠다 — 눌렀는데 아무 말 없이 사라진다',
+        'automatic check erased the answer the user asked for',
       ).toBe('failed');
     });
   });
 
-  it('설치 단계 실패는 확인 실패와 구분한다', async () => {
+  it('distinguishes an install failure from a check failure', async () => {
     check.mockRejectedValue(new Error('download failed'));
     const { result } = renderHook(() => useAppUpdate());
 
@@ -82,7 +71,7 @@ describe('직접 누른 확인의 결과', () => {
     });
   });
 
-  it('최신이라는 답도 마찬가지로 남는다', async () => {
+  it('keeps an up-to-date answer the same way', async () => {
     check.mockResolvedValue(null);
     const { result } = renderHook(() => useAppUpdate());
 
@@ -97,11 +86,11 @@ describe('직접 누른 확인의 결과', () => {
     });
 
     await waitFor(() => {
-      expect(result.current.phase.kind, '「최신이에요」가 사라졌다').toBe('current');
+      expect(result.current.phase.kind, 'the up-to-date answer disappeared').toBe('current');
     });
   });
 
-  it('웹에서는 자동 확인 자체가 없다', async () => {
+  it('runs no automatic check on the web', async () => {
     desktop = false;
     renderHook(() => useAppUpdate());
     await act(async () => {

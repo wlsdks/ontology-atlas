@@ -20,7 +20,7 @@ function doc(slug: string, mtime: number): VaultDoc {
 }
 
 describe('useDocsBodyIndex', () => {
-  it('resolver 로 전 문서 본문을 읽어 소문자 정규화 인덱스를 만든다', async () => {
+  it('reads every doc body through the resolver into a lowercase index', async () => {
     const reads: string[] = [];
     const getDocContent = vi.fn(async (slug: string) => {
       reads.push(slug);
@@ -38,7 +38,7 @@ describe('useDocsBodyIndex', () => {
     expect(reads.sort()).toEqual(['a', 'b']);
   });
 
-  it('mtime 이 같은 문서는 재독하지 않는다 (diff 갱신)', async () => {
+  it('does not reread a doc whose mtime is unchanged', async () => {
     const getDocContent = vi.fn(async (slug: string) => `body ${slug}`);
     const docsV1 = [doc('a', 1), doc('b', 1)];
     const { result, rerender } = renderHook(
@@ -55,7 +55,7 @@ describe('useDocsBodyIndex', () => {
     expect(getDocContent.mock.calls[2][0]).toBe('b');
   });
 
-  it('읽기 실패 문서는 건너뛰고 나머지는 인덱스된다', async () => {
+  it('skips docs that fail to read and indexes the rest', async () => {
     const getDocContent = vi.fn(async (slug: string) => {
       if (slug === 'bad') throw new Error('io');
       return `body ${slug}`;

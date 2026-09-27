@@ -4,19 +4,8 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 /**
- * One resolution rule for every MCP module the CLI reuses.
- *
- * The CLI and the MCP server ship as two packages and run as two entry points,
- * but that never meant the code had to exist twice. `cli/package.json` declares
- * `ontology-atlas-mcp` as a dependency, and `mcp/package.json` ships the modules
- * in its `files` list, so the CLI can resolve the canonical module at runtime:
- * the monorepo source checkout first, then the installed package. Both shapes
- * therefore execute the *same* file rather than two copies a contract test has
- * to keep in step.
- *
- * Before this helper the same eight-line resolver was written out three times
- * (`vault-sidecar.mjs`, `architecture-record.mjs`, `activity-log.mjs`), each with
- * its own spelling of the fallback. One rule is now stated once.
+ * One resolution rule for every MCP module the CLI reuses: source checkout first, then the installed
+ * `ontology-atlas-mcp` dependency, so both shapes run the same file.
  */
 const here = dirname(fileURLToPath(import.meta.url));
 const sourceCheckoutMcpSource = resolve(here, '../../../mcp/src');
@@ -77,14 +66,8 @@ function inspectSourceCheckoutMcpDependencies(mcpRoot) {
 }
 
 /**
- * Reports runtime dependencies declared by `mcp/package.json` that Node cannot
- * resolve from that package, plus exact-pinned dependencies whose installed
- * version differs. The probe follows Node's resolver instead of only checking
- * for `mcp/node_modules`: a valid hoisted or pnpm-linked installation is valid too.
- *
- * A missing source checkout is not an error here. Installed CLI packages do not
- * ship the repository's sibling `mcp/` folder and resolve
- * `ontology-atlas-mcp` through the ordinary package fallback instead.
+ * Runtime dependencies of `mcp/package.json` that Node cannot resolve, or exact pins at another version,
+ * using Node's resolver so hoisted and pnpm-linked installs count. No source checkout is not an error.
  *
  * @param {string} mcpRoot absolute source-checkout MCP package root
  * @returns {string[]}
@@ -146,9 +129,8 @@ export function assertSourceCheckoutMcpDependencies(mcpRoot = sourceCheckoutMcpR
 }
 
 /**
- * Converts only the known source-checkout loader failure into the repository's
- * dependency recovery. Installed packages and unrelated process exits retain
- * their original diagnostics.
+ * Turns only the known source-checkout loader failure into the dependency recovery message; other exits
+ * keep their diagnostics.
  *
  * @param {string} stderr child-process stderr
  * @param {{ entry?: string, mcpRoot?: string }} options process context
@@ -196,12 +178,8 @@ async function importMcpModule(fileName) {
 }
 
 /**
- * Imports one `mcp/src/<fileName>` module, from the source checkout when this is
- * a monorepo run and from the installed `ontology-atlas-mcp` package otherwise.
- *
- * The in-flight promise is cached rather than the resolved namespace, so a batch
- * caller (`import` walking many files) never re-resolves and two concurrent
- * callers share one resolution.
+ * Imports `mcp/src/<fileName>` from the source checkout or the installed package. The in-flight promise is
+ * cached, so batch and concurrent callers share one resolution.
  *
  * @param {string} fileName file name inside `mcp/src`, e.g. `'schema.mjs'`
  * @returns {Promise<Record<string, unknown>>}

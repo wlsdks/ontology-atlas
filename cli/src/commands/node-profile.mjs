@@ -1,7 +1,5 @@
-// `ontology-atlas node <slug> [vault]` — a full deep dive on one node.
-// Thin wrapper over MCP `query_ontology({operation: 'node_profile'})`.
-// Header, domain, containment lineage, and incoming/outgoing edges grouped by
-// relation, all on one screen.
+// `ontology-atlas node <slug> [vault]`: one node's header, domain, containment lineage and edges grouped
+// by relation, over MCP `query_ontology({operation: 'node_profile'})`.
 
 import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
@@ -75,7 +73,6 @@ function render(result, filters = {}) {
   const kc = KIND_COLORS[n.kind] || COLORS.dim;
   const deg = result?.degree ?? { in: 0, out: 0, total: 0 };
 
-  // Header
   process.stdout.write(
     `${kc}${(n.kind || '?').padEnd(11)}${COLORS.reset} ${COLORS.bold}${n.title || n.slug}${COLORS.reset}\n` +
       `  ${COLORS.dim}slug${COLORS.reset}    ${n.slug}\n` +
@@ -84,7 +81,6 @@ function render(result, filters = {}) {
       ` ${COLORS.dim}(in ${deg.in} · out ${deg.out})${COLORS.reset}\n`,
   );
 
-  // Aliases
   const aliases = Array.isArray(result?.aliases) ? result.aliases : [];
   const extraAliases = aliases.filter((a) => a !== n.slug);
   if (extraAliases.length > 0) {
@@ -94,7 +90,6 @@ function render(result, filters = {}) {
     process.stdout.write(`  ${COLORS.dim}filters${COLORS.reset} ${formatActiveEdgeFilters(filters)}\n`);
   }
 
-  // Lineage (ancestor chain — project ← domain ← capability)
   const ancestors = result?.lineage?.ancestors?.nodes ?? [];
   if (ancestors.length > 0) {
     const chain = ancestors
@@ -109,7 +104,6 @@ function render(result, filters = {}) {
     );
   }
 
-  // Incoming edges
   const incoming = result?.edges?.incoming;
   if (incoming?.total > 0) {
     process.stdout.write(
@@ -120,7 +114,6 @@ function render(result, filters = {}) {
     renderLimitedHint(incoming, 'incoming');
   }
 
-  // Outgoing edges
   const outgoing = result?.edges?.outgoing;
   if (outgoing?.total > 0) {
     process.stdout.write(
@@ -157,14 +150,12 @@ function formatActiveEdgeFilters({ types, includeExternal, includeUnresolved } =
 }
 
 function renderEdgesByRelation(edges, peerField) {
-  // Grouped by relation (the via key)
   const grouped = new Map();
   for (const e of edges) {
     const key = e.relationType || e.via || '?';
     if (!grouped.has(key)) grouped.set(key, []);
     grouped.get(key).push(e);
   }
-  // Highest relation count first
   const sorted = [...grouped.entries()].sort(([, a], [, b]) => b.length - a.length);
   for (const [via, rows] of sorted) {
     process.stdout.write(`  ${COLORS.yellow}${via}${COLORS.reset} ${COLORS.dim}× ${rows.length}${COLORS.reset}\n`);

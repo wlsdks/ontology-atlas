@@ -1,25 +1,17 @@
 /**
- * Pure functions for "just start" (desktop first run, Tauri runtime only) — picks the vault folder
- * name under `~/Ontology Atlas/<name>` and assembles the path string shown to the user.
- * Actual filesystem access (existence checks, creation) belongs to `@/shared/lib/tauri-vault-fs`;
- * this module takes that result (the list of existing names) and computes a collision-free name
- * purely, so it is testable in vitest with no FS mock.
+ * Picks a collision-free vault folder name under `~/Ontology Atlas/` for "just start" from the
+ * existing names; filesystem access belongs to `@/shared/lib/tauri-vault-fs`.
  */
 
 export const DEFAULT_VAULT_BASE_NAME = 'my-ontology';
 /**
- * ⚠️ Not `~/Documents/...` (2026-08-25). Documents is TCC-protected on macOS, so a button promising
- * "no decisions, just begin" opened a system permission dialog as the very first thing a new person
- * saw. `$HOME` carries no such gate. Must stay in step with `default_vault_parent_dir` in
- * `src-tauri/src/lib.rs`; `just-start-vault-location.contract.test.ts` holds them together.
+ * Not `~/Documents`: it is TCC-protected on macOS, so a first run would open a permission dialog.
+ * Must match `default_vault_parent_dir` in `src-tauri/src/lib.rs`
+ * (`just-start-vault-location.contract.test.ts`).
  */
 export const DEFAULT_VAULT_PARENT_LABEL = '~/Ontology Atlas';
 
-/**
- * Returns `baseName` unchanged when it is not in `existingNames`, otherwise the next
- * non-colliding name (`-2`, `-3`, …). The "a new vault every time" contract — an existing vault is
- * never overwritten.
- */
+/** Appends `-2`, `-3`, … on collision, so an existing vault is never overwritten. */
 export function resolveUniqueVaultDirName(
   existingNames: readonly string[],
   baseName: string = DEFAULT_VAULT_BASE_NAME,
@@ -32,7 +24,7 @@ export function resolveUniqueVaultDirName(
   return `${baseName}-${suffix}`;
 }
 
-/** A human-readable path string for the success toast and similar. */
+/** For the success toast. */
 export function buildDefaultVaultDisplayPath(dirName: string): string {
   return `${DEFAULT_VAULT_PARENT_LABEL}/${dirName}`;
 }

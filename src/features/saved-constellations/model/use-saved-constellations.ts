@@ -125,10 +125,7 @@ export function useSavedConstellations(handle: FileSystemDirectoryHandle | null)
       snapshotRef.current = saved;
       setState({ status: 'ready', constellations: collect(next), error: null });
     } catch (error) {
-      // A failed save is the editor's to report (it keeps the draft and says so). The list
-      // still holds exactly what was read, so it stays `ready`: marking it `error` made the
-      // popover say "could not read your saved constellations" about a file that read fine,
-      // and disabled "Create" until a reload.
+      // A failed save is the editor's to report; the list still holds what was read, so it stays `ready`.
       if (handleRef.current === captured && operationRef.current === operation) {
         setState((current) => ({ ...current, status: 'ready', error: null }));
       }

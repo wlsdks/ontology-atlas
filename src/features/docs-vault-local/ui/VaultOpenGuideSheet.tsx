@@ -21,26 +21,20 @@ import { controlClass } from "@/shared/ui/control-class";
 import { IconButton } from "@/shared/ui/controls";
 
 /**
- * The pre-flight sheet for opening a folder. The first-run card's folder CTA used to go straight to
- * the OS folder picker with zero explanation, so a first-time user faced "which folder do I pick /
- * what happens if I do / are my files safe?" and backed out (measured in a live walkthrough). This
- * shows three reassurance lines and one existing-versus-new branch before the OS window opens.
- *
- * The modal skeleton follows the same contract as AgentConnectSheet (scrim + centred card + tokens,
- * Esc and scrim to close, click propagation stopped on the card).
+ * The pre-flight sheet before the OS folder picker: three reassurance lines and one
+ * existing-versus-new branch. Modal contract as AgentConnectSheet (scrim, centred card, Esc and
+ * scrim close, propagation stopped on the card).
  */
 export interface VaultOpenGuideSheetProps {
   open: boolean;
   onClose: () => void;
-  /** "Pick an existing folder" — closes the sheet and opens the OS folder picker (`vault.open()`). */
+  /** Closes the sheet and opens the OS folder picker (`vault.open()`). */
   onPickExisting?: () => void;
-  /** "Start fresh with an empty folder" — closes the sheet and enters the vault creation (scaffold) flow. */
+  /** Closes the sheet and enters the scaffold flow. */
   onCreateNew?: () => void;
   /**
-   * In a browser without the File System Access API (Safari, Firefox) both buttons on this sheet are
-   * **pressable and do nothing** — the sheet closes, and why it failed and where to go both vanish
-   * from the screen. When true, the two CTAs are replaced by an honest notice plus the macOS app
-   * path — a fact known before pressing rather than a failure learned by pressing.
+   * Without the File System Access API both buttons would do nothing, so an honest notice and the
+   * macOS app path replace them before anything is pressed.
    */
   unsupported?: boolean;
 }
@@ -49,16 +43,9 @@ const BULLETS = [
   { icon: FolderOpen, key: "bulletAnyFolder", browserOnly: false },
   { icon: HardDrive, key: "bulletLocal", browserOnly: false },
   { icon: Sparkles, key: "bulletStarter", browserOnly: false },
-  // Owner report from real use (2026-07-24) — the browser's standard permission prompt right after
-  // folder selection ("let this site view files…") was not announced, so first-time users mistook it
-  // for our popup or a malfunction. One line warns of it in advance.
-  //
-  // ⚠️ **True only in a browser** (measured 2026-08-08 in the installed app). This line was drawn
-  // unconditionally, so the installed app's first-run card said "once you pick, **the browser** asks
-  // to allow" — the app opens an OS folder window and has no such prompt. The same card's heading
-  // already correctly said "the OS folder picker", so one card contradicted itself. That is the same
-  // kind of lie as writing that something does not work when it does
-  // (`.claude/rules/surfaces.md`).
+  // Announces the browser's permission prompt after folder selection, which first-time users took
+  // for a malfunction. Browser-only: the installed app opens an OS folder window without it;
+  // claiming a prompt that never comes breaks `.claude/rules/surfaces.md`.
   { icon: ShieldCheck, key: "bulletPermission", browserOnly: true },
 ] as const;
 
@@ -71,17 +58,13 @@ export function VaultOpenGuideSheet({
 }: VaultOpenGuideSheetProps) {
   const t = useTranslations("vaultOpenGuide");
   /*
-   * `isDesktopShell()` is **a fact only the browser knows**, so it is always false in a static
-   * prerender. `useHydrated()` re-renders once after hydration to make the value right in the
-   * installed app — the trap that once cost this repository its left rail permanently (see the
-   * `use-hydrated.ts` preamble).
+   * `isDesktopShell()` is false in a static prerender; `useHydrated()` re-renders once after
+   * hydration so the installed app gets the right value (see `use-hydrated.ts`).
    */
   const hydrated = useHydrated();
   const desktop = hydrated && isDesktopShell();
   const bullets = BULLETS.filter((bullet) => !bullet.browserOnly || !desktop);
-  // The unsupported notice already exists on the first-run card — two copies of the same fact drift
-  // when only one is fixed. The card and this sheet read the same key (the same reuse pattern by
-  // which `FirstRunStarterModule` reads the glossary from `searchWidgets`).
+  // Reuses the first-run card's unsupported notice key, so the two copies cannot drift.
   const tUnsupported = useTranslations("firstRunStarter");
   useBodyScrollLock(open);
   const dialogRef = useDialogFocusTrap<HTMLElement>({
@@ -102,10 +85,8 @@ export function VaultOpenGuideSheet({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0, transition: EXIT_TRANSITION }}
           transition={MOTION.base}
-          /* At a 200% browser text setting the rem breakpoints keep the fixed bottom bar
-             present in a wide window. Give this consumer its own bar reserve so the
-             folder actions remain inside the available viewport rather than underneath
-             that higher shell stacking context. */
+          /* At 200% browser text the rem breakpoints keep the fixed bottom bar in a wide window, so
+             this consumer reserves its own bar space to keep the actions inside the viewport. */
           className="pointer-events-auto fixed inset-0 z-50 flex items-center justify-center bg-[color:var(--color-backdrop-medium)] p-4 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+1rem)] sm:p-6 sm:max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+1.5rem)]"
           onClick={onClose}
           data-testid="vault-guide-scrim"
@@ -123,12 +104,8 @@ export function VaultOpenGuideSheet({
             aria-modal="true"
             aria-label={t("title")}
             data-testid="vault-guide-sheet"
-            // Focus moves to this container on open, so a screen reader starts from the title. That
-            // focus is **for announcement**, not a sign that something is pressable, so the ring is
-            // removed — leaving it draws the browser's default focus ring (system sky blue) around
-            // the first modal a user sees in the app, in a colour that is not indigo (measured in the
-            // 2026-08-04 audit, reproduced on both app and web. Gate:
-            // tests/e2e/dialog-focus-ring.spec.ts).
+            // Focus moves here on open so a screen reader starts from the title; the ring is removed
+            // because this focus is for announcement (tests/e2e/dialog-focus-ring.spec.ts).
             className="flex max-h-full w-full max-w-[var(--dialog-w-sm)] flex-col overflow-y-auto rounded-sheet border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-3)] focus-visible:outline-none"
           >
             <header className="flex shrink-0 items-start justify-between gap-3 border-b border-[color:var(--color-border-soft)] px-5 py-4">
@@ -137,13 +114,8 @@ export function VaultOpenGuideSheet({
                   {t("title")}
                 </h2>
                 <p className="mt-1 text-label leading-prose text-[color:var(--color-text-tertiary)]">
-                  {/* In an unsupported browser, "before the OS folder picker opens" promises a window
-                      that will never come — that slot carries why it cannot instead. */}
-                  {/* The count is not pinned into the copy. When a fourth bullet was added on
-                      2026-07-24 this line's "just three things" was not updated, leaving the card
-                      **saying three and showing four** (measured 2026-08-08). The count now comes
-                      from the list actually rendered, so it stays right as items are added or drop
-                      out at runtime. */}
+                  {/* Unsupported: the slot says why instead of promising a picker that will never come. */}
+                  {/* The count comes from the rendered list, so it stays right as items change at runtime. */}
                   {unsupported
                     ? tUnsupported("unsupportedNotice")
                     : t("subtitle", { count: bullets.length })}
@@ -161,9 +133,8 @@ export function VaultOpenGuideSheet({
               </IconButton>
             </header>
 
-            {/* When unsupported, these bullets all describe the browser picker flow (the permission
-                prompt, the empty-folder scaffold), so leaving them teaches a procedure that will
-                never happen. It reduces to one notice plus one place to go. */}
+            {/* Unsupported: these bullets describe the browser picker flow, so one notice and one
+               place to go replace them. */}
             <ul hidden={unsupported} className="flex flex-col gap-2.5 px-5 py-4">
               {bullets.map(({ icon: Icon, key }) => (
                 <li key={key} className="flex items-start gap-2.5">
@@ -201,9 +172,7 @@ export function VaultOpenGuideSheet({
                 hidden={unsupported}
                 onClick={onPickExisting}
                 data-testid="vault-guide-pick-existing"
-                /* The two stacked buttons are **one set** and move together — sending only one to the
-                   ramp would split their heights (36 vs 34). Both are `chip`/`lg`, so they come down
-                   to 34px side by side. */
+                /* The two stacked buttons are one set, so both are `chip`/`lg` and share a height. */
                 className={controlClass({
                   shape: "chip",
                   size: "lg",

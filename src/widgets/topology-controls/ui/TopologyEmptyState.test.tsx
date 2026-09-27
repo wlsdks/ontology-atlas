@@ -22,10 +22,8 @@ vi.mock("@/i18n/navigation", () => ({
 }));
 
 /*
- * ⚠️ Read from the catalogue, not pinned as literals. These tests guard **which** string the screen
- * chooses, not how it is worded — and `documentation.md` is explicit that checks derive facts rather
- * than pin human prose. Pinning it meant a copy repair (owner, 2026-08-25: the empty state was
- * leaking the `project` kind at a newcomer) broke four tests that had no opinion about wording.
+ * Read from the catalogue, not pinned as literals: these tests guard which string is chosen
+ * (`documentation.md`).
  */
 const EMPTY = koMessages.topology.empty;
 
@@ -38,7 +36,7 @@ function renderEmpty(conceptCount: number, reason?: "no-projects" | "no-relation
 }
 
 describe("TopologyEmptyState", () => {
-  it("0 프로젝트일 때 복구 CTA 를 명확한 화면 이름으로 노출", () => {
+  it('shows the recovery CTA with a clear screen name when there are no projects', () => {
     renderEmpty(0);
     expect(
       screen.getByRole("status", { name: new RegExp(EMPTY.titleNoProjects) }),
@@ -51,18 +49,16 @@ describe("TopologyEmptyState", () => {
   });
 
   /*
-   * ⚠️ `/ontology/` is not a destination — it redirects to `/topology/` with INDEX expanded, which
-   * is the screen this panel is drawn on. With concepts that round trip is worth taking: it opens
-   * the list. With none it ends where it started, showing an empty index, so the offer is a dead
-   * end rather than a slow route. Asserting the *count* alone would pass with the row present and
-   * some other row gone, so the link itself is named.
+   * The `/ontology/` route redirects back to this screen with INDEX expanded, so with no concepts
+   * the offer
+   * is a dead end; the link itself is asserted, not only the count.
    */
-  it("개념이 하나도 없으면 같은 화면으로 되돌아오는 둘러보기를 권하지 않는다", () => {
+  it('does not suggest browsing when there are no concepts', () => {
     renderEmpty(0);
     expect(screen.queryByText(EMPTY.ctaTree)).not.toBeInTheDocument();
   });
 
-  it("개념이 있으면 둘러보기로 목록을 펼칠 수 있다", () => {
+  it('lets the user expand the list by browsing when concepts exist', () => {
     renderEmpty(1, "no-relations");
     expect(screen.getByText(EMPTY.ctaTree).closest("a")).toHaveAttribute(
       "href",
@@ -70,7 +66,7 @@ describe("TopologyEmptyState", () => {
     );
   });
 
-  it("보조 힌트는 별도 안내 박스로 강조하지 않는다", () => {
+  it('does not frame the secondary hint as a separate notice box', () => {
     renderEmpty(1, "no-relations");
     const hint = screen.getByText(
       EMPTY.crossViewHint,
@@ -79,7 +75,7 @@ describe("TopologyEmptyState", () => {
     expect(hint.className).not.toContain("border");
   });
 
-  it("관계가 없으면 저장·편집에서 관계를 만들라는 1차 행동을 먼저 제시한다", () => {
+  it('leads with creating a relation in storage and editing when there are no relations', () => {
     renderEmpty(1, "no-relations");
     const panel = screen.getByRole("status", {
       name: /아직 그릴 관계가 없어요/,
@@ -95,14 +91,9 @@ describe("TopologyEmptyState", () => {
     );
   });
 
-  // For a user who just opened a local vault, download copy saying "install the macOS
-  // app…" is misdirection.
-  //
-  // 2026-08-08 council — the decision was widened to **capability**. The old condition
-  // (`isTauriVaultRuntime() || hasOpenVault`) answered someone who is neither — a
-  // **first-time web visitor on an FSA-capable browser** — with 「install the app」,
-  // when that browser can open a folder right now.
-  it("폴더를 열 수 있으면 다운로드 오안내 대신 picker 카피를 쓴다", () => {
+  // Capability decides: a browser that can open a folder gets picker copy, not an app-install
+  // prompt.
+  it('uses picker copy instead of a download prompt when a folder can be opened', () => {
     render(
       <NextIntlClientProvider locale="ko" messages={koMessages}>
         <TopologyEmptyState conceptCount={0} reason="no-projects" canPickFolder />
@@ -115,58 +106,45 @@ describe("TopologyEmptyState", () => {
     expect(links).not.toContain("/download/");
   });
 
-  // The negative control — without the capability (Firefox and the like) it **still**
-  // degrades to the download. Without this, the test above stays green even if the
-  // picker copy were used unconditionally.
-  it("폴더를 열 수 없으면 내려받기로 강등된다", () => {
+  // Negative control: without the capability the copy still degrades to download.
+  it('falls back to download when a folder cannot be opened', () => {
     renderEmpty(0, "no-projects");
     const links = screen.getAllByRole("link").map((a) => a.getAttribute("href"));
     expect(links).toContain("/download/");
   });
 
-  it("reason 이 no-projects 면 projectCount 가 있어도 빈 프로젝트 안내를 우선한다", () => {
+  it('prefers the empty-project notice for reason no-projects even with a projectCount', () => {
     renderEmpty(1, "no-projects");
     expect(
       screen.getByRole("status", { name: new RegExp(EMPTY.titleNoProjects) }),
     ).toBeInTheDocument();
   });
 
-  it("한국어 빈 상태는 topology 내부 용어 대신 지도 상태를 설명한다", () => {
+  it('describes the map state instead of internal topology terms in Korean', () => {
     renderEmpty(0);
     const panel = screen.getByRole("status");
     expect(panel).toHaveTextContent(EMPTY.titleNoProjects);
     expect(panel).not.toHaveTextContent("TOPOLOGY");
     expect(panel).not.toHaveTextContent("토폴로지");
     /*
-     * ⚠️ The hole this very test was written to close, and did not (owner, 2026-08-25: *"what is 'a
-     * project to draw'? it just means there are no ontology concepts, right?"*).
-     *
-     * It banned the renderer's name and then asserted a count phrased as projects in the same breath — so the
-     * screen's first sentence to a newcomer was built from `project`, a schema kind, and the guard
-     * against internal vocabulary held the door open for it. The count is the graph's **node** count,
-     * which makes the word wrong about the data as well as unreadable.
+     * The first sentence must not use the schema kind `project`; the count is the graph's node
+     * count.
      */
     expect(panel).not.toHaveTextContent("프로젝트");
     expect(panel).toHaveTextContent("개념");
   });
 
-  it("빈 상태 패널은 큰 카드 대신 작은 상태 패널로 렌더", () => {
+  it('renders as a small status panel rather than a large card', () => {
     renderEmpty(0);
     const panel = screen.getByRole("status");
-    // The radius is decided by a **ramp token**. It used to pin `rounded-lg`
-    // (Tailwind's default), a value outside this repository's radius ramp — so it
-    // looked like conformance while actually fixing a position off the ramp.
+    // The radius comes from a ramp token.
     expect(panel.className).toContain("rounded-[var(--radius-panel)]");
     expect(panel.className).not.toContain("rounded-2xl");
     expect(panel.className).not.toContain("p-8");
   });
 
-  it("복구 행동은 폭이 전부 같다 — 글자 수가 치수를 정하지 않는다", () => {
-    /*
-     * It used to be `flex-wrap justify-center`, so a button's width was set by its
-     * character count and so was the wrap point (four buttons stepping 1·2·1). That
-     * violates dimension regularity, and reverting it breaks here.
-     */
+  it('gives every recovery action the same width', () => {
+    /* Actions are one equal-width vertical set, not width-by-copy wrapping. */
     renderEmpty(0);
     const actions = [...screen.queryAllByRole("link"), ...screen.queryAllByRole("button")];
     expect(actions.length).toBeGreaterThan(1);
@@ -175,7 +153,7 @@ describe("TopologyEmptyState", () => {
     }
   });
 
-  it("모든 복구 CTA 는 키보드 focus 링을 가진다 (focus-visible, WCAG 2.4.7)", () => {
+  it('gives every recovery CTA a keyboard focus ring', () => {
     renderEmpty(0);
     // Guards the regression where a keyboard user could not see which recovery action had focus.
     for (const link of screen.getAllByRole("link")) {
@@ -184,12 +162,12 @@ describe("TopologyEmptyState", () => {
     }
   });
 
-  it("기본(canCreateNode 미지정) — 노드 생성 CTA 없음", () => {
+  it('shows no create-node CTA by default', () => {
     renderEmpty(0);
     expect(screen.queryByTestId("empty-create-node")).not.toBeInTheDocument();
   });
 
-  it("canCreateNode — '개념 만들기' 1차 CTA 노출 + 클릭 시 onCreateNode (S6)", () => {
+  it('shows the create-concept primary CTA and calls onCreateNode when canCreateNode', () => {
     const onCreateNode = vi.fn();
     render(
       <NextIntlClientProvider locale="ko" messages={koMessages}>
@@ -202,7 +180,7 @@ describe("TopologyEmptyState", () => {
     expect(onCreateNode).toHaveBeenCalledTimes(1);
   });
 
-  it("docsFoundCount>0 + onStartFromDocs — '내 문서로 지도 만들기'가 1차 CTA 가 되고 macOS 안내는 내려간다 (Slice 1 F1/F2)", () => {
+  it('makes start-from-docs the primary CTA and demotes the macOS notice when docs exist', () => {
     const onStartFromDocs = vi.fn();
     render(
       <NextIntlClientProvider locale="ko" messages={koMessages}>
@@ -219,7 +197,7 @@ describe("TopologyEmptyState", () => {
     expect(onStartFromDocs).toHaveBeenCalledTimes(1);
   });
 
-  it("docsFoundCount=0 이면 부트스트랩 CTA 없음 — 기존 빈 vault 흐름 유지", () => {
+  it('shows no bootstrap CTA when docsFoundCount is 0', () => {
     render(
       <NextIntlClientProvider locale="ko" messages={koMessages}>
         <TopologyEmptyState conceptCount={0} docsFoundCount={0} onStartFromDocs={vi.fn()} />

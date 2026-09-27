@@ -15,10 +15,8 @@ import {
 } from './import-flow';
 
 /**
- * This door's whole promise is that a person never meets the words MCP, stdio, npx or
- * environment variable, and that what happens on their computer is still exactly what the MCP
- * screen would have written. Both halves are checked here, because the second is the one that
- * would rot quietly: an easier door that writes a different kind of row is two products.
+ * A person never meets the words MCP, stdio, npx or environment variable, and the row written is
+ * exactly what the MCP screen would write.
  */
 
 const secretRef = (id: string, name: string) => `${id}:${name}`;
@@ -32,10 +30,7 @@ describe('the tiles', () => {
   });
 
   it('offers no tile that leads to a connection the agent cannot use', () => {
-    /*
-     * Confluence and Jira rode Atlassian's hosted OAuth address and left on 2026-09-07 with it;
-     * every tile that remains resolves to a catalogue entry the in-app session can attach.
-     */
+    /* Every remaining tile resolves to a catalogue entry the in-app session can attach. */
     for (const service of IMPORT_SERVICES) {
       if (service.id === 'other') continue;
       expect(serviceEntry(service)).not.toBeNull();
@@ -45,9 +40,8 @@ describe('the tiles', () => {
 
   it('asks the one token when a service is a program, and never offers a hosted sign-in', () => {
     /*
-     * The hosted shape was this door's first promise, and it could not keep it: the in-app
-     * session cannot open the sign-in window (measured 2026-09-07, evening). What a tile offers
-     * now is a program with one token, which the person types once here.
+     * A tile offers a program with one token, typed once here; the in-app session cannot open a
+     * sign-in window.
      */
     const notion = serviceEntry(importService('notion'))!;
     expect(serviceVariant(notion).kind).toBe('local');
@@ -58,11 +52,7 @@ describe('the tiles', () => {
   });
 
   it('names the one value and where it is issued when a service issues one', () => {
-    /*
-     * Not asserted against a particular service, because which of them is hosted may change with
-     * the next capture. What must never change is that a token ask carries the page that issues
-     * it — a credential with no link is the dead end this door exists to remove.
-     */
+    /* A token ask must carry the page that issues it. */
     for (const service of IMPORT_SERVICES) {
       const ask = serviceAsk(service);
       if (ask.kind !== 'token') continue;
@@ -79,10 +69,8 @@ describe('what it writes into the folder', () => {
     expect(record.args.join(' ')).toContain('@notionhq/notion-mcp-server');
     expect(record.env).toEqual([{ name: 'NOTION_TOKEN', secretRef: 'c1:NOTION_TOKEN' }]);
     /*
-     * ⚠️ **On, and this is the one path where that is right.** Everywhere else a connector
-     * arrives off, because writing one down is not choosing to use it. Here the person pressed a
-     * tile named after the service and a button that says bring my documents in; leaving it off
-     * would mean the next step silently finds nothing.
+     * Switched on, unlike other connector paths: the person asked to bring documents in, so off
+     * would silently find nothing.
      */
     expect(record.enabled).toBe(true);
     // And the row still says where it came from, so the folder can be read back later.
@@ -116,11 +104,7 @@ describe('the brief handed to the agent turn', () => {
   });
 
   it('names the connection, the bound, and the one folder anything may be written into', () => {
-    /*
-     * An unbounded "import my Notion" is a turn that reads a workspace and writes a thousand
-     * files, each through a permission card nobody reads by the fiftieth. The bound is in the
-     * brief rather than in a hope.
-     */
+    /* The brief carries a bound so one turn cannot write a thousand files. */
     expect(brief).toContain('"notion"');
     expect(brief).toContain('at most 20');
     expect(brief).toContain('sources/notion/');

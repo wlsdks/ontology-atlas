@@ -20,17 +20,7 @@ export interface ProjectFrontmatterPatch {
   tags?: string[] | null;
 }
 
-/**
- * Project mutation hook, branching on mode:
- *
- * - **local**: reads, writes, and deletes vault `projects/<slug>.md` directly. The
- *   user's disk is the source of truth, and collision checks hit the manifest's
- *   `fileHandles`.
- * - **static**: rejects every mutation — the dogfood manifest is read-only.
- *
- * Callers (quick create, quick edit, inline editing) use one signature without knowing
- * the mode. `canCreate` / `canEdit` / `canDelete` are the up-front gate for disabling UI.
- */
+/** Project mutations: local mode writes `projects/<slug>.md`; static mode rejects every mutation. */
 export interface ProjectMutations {
   /** Creates a project. Throws when the same slug already exists. */
   createProject: (input: ProjectInput) => Promise<void>;
@@ -41,7 +31,7 @@ export interface ProjectMutations {
     slug: string,
     patch: ProjectFrontmatterPatch,
   ) => Promise<void>;
-  /** Deletes by slug. A no-op when it does not exist. */
+  /** A no-op when the slug does not exist. */
   deleteProject: (slug: string) => Promise<void>;
   /** The up-front gate for UI — whether mutation is possible in the current mode. */
   canCreate: boolean;
@@ -54,12 +44,7 @@ export interface ProjectMutations {
 const STATIC_REJECTION =
   'Cannot mutate projects in static demo mode. Open a markdown folder first.';
 
-/**
- * A typed error signalling that a mutation was rejected in static (sample) mode. The
- * caller (`ProjectEditorPage`) catches this type and substitutes a localized message —
- * exposing a plain `Error(STATIC_REJECTION)` would show the user raw English. Buttons are
- * disabled up front, so this is a defensive path the normal flow should never reach.
- */
+/** Static-mode rejection, caught by `ProjectEditorPage` for localized copy; buttons are disabled up front. */
 export class ProjectStaticModeError extends Error {
   constructor() {
     super(STATIC_REJECTION);
@@ -94,22 +79,18 @@ export function useProjectMutations(): ProjectMutations {
         ? findProjectVaultDoc(vault.manifest, input.slug)
         : null;
       const slug = existing?.slug ?? `projects/${input.slug}`;
-      // Whether it exists — create it if not (the upsert signature).
+      // Upsert: create when missing.
       if (!existing && !vault.fileHandles.has(slug)) {
         const md = buildProjectMarkdown(input);
         await vault.createDoc(slug, md);
         return;
       }
-      // Patch the frontmatter and leave the body alone.
       const fm = projectToFrontmatter(input);
-      // C6 — same starter-display sync as inline rename: full-form saves that
-      // change the name must also refresh a still-default display_<locale>.
+      // A full-form rename also refreshes a still-default display_<locale>.
       if (existing) {
         Object.assign(fm, buildStarterDisplaySync(existing.frontmatter, input.name));
       }
-      // A path-agnostic starter or an external vault sometimes carries the project name
-      // as `title` only. Full edit preserves the same key shape as an inline patch so it
-      // never creates a duplicate title/name pair. New documents keep using the canonical name.
+      // Keep the existing title-only key shape so no duplicate title/name pair appears.
       if (
         existing &&
         typeof existing.frontmatter.title === 'string' &&
@@ -141,9 +122,7 @@ export function useProjectMutations(): ProjectMutations {
         string | number | boolean | string[] | null
       > = {};
       if (patch.name !== undefined) {
-      // An external or initial vault's `kind: project` sometimes uses `title` only. An
-      // inline rename that also creates `name` would leave a person with two different
-      // names, so the original shape is preserved.
+      // A title-only project stays title-only on inline rename.
         const nameKey =
           typeof existing.frontmatter.name === 'string'
             ? 'name'
@@ -151,14 +130,11 @@ export function useProjectMutations(): ProjectMutations {
               ? 'title'
               : 'name';
         updates[nameKey] = patch.name;
-        // Carry the rename into any `display_<locale>` still at its starter default, so
-        // the ko/en map and INDEX do not keep showing the starter name after the project
-        // is renamed. Customized display names are left untouched.
+        // Carry the rename into display names still at their starter default.
         Object.assign(updates, buildStarterDisplaySync(existing.frontmatter, patch.name));
       }
       if (patch.displayName !== undefined) {
-        // The heading edits the word the person is looking at; on a screen whose locale has a
-        // display name that word is the display key, not the canonical title (2026-09-19).
+        // On a locale with a display name, the heading edits that display key.
         updates[`display_${patch.displayName.locale}`] = patch.displayName.value;
       }
       if (patch.description !== undefined) {

@@ -1,11 +1,7 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../../model";
 import { isContainmentRelation } from "./relations";
 
-/**
- * Node counts per kind, for charts and chips. `document` and `project` are included
- * too — filter at the call site if needed. The Map's iteration order follows the
- * input node order.
- */
+/** Counts per kind in input order, `document` and `project` included. */
 export function computeKindDistribution(
   nodes: readonly KnowledgeGraphNode[],
 ): Map<string, number> {
@@ -16,13 +12,7 @@ export function computeKindDistribution(
   return map;
 }
 
-/**
- * Degree per node: outgoing plus incoming edges, with a self-loop counted once.
- *
- * Edges pointing at nodes absent from the index are ignored (orphan edges). Every
- * input node appears as a key, degree 0 included, so the UI decides whether to show
- * zero-degree nodes.
- */
+/** Outgoing plus incoming, self-loops once; orphan edges ignored; every node present, degree 0 included. */
 export function computeDegreeCentrality(
   nodes: readonly KnowledgeGraphNode[],
   edges: readonly KnowledgeGraphEdge[],
@@ -71,8 +61,7 @@ export interface DomainCouplingMatrix {
   crossDomainEdgeCount: number;
   selfDomainEdgeCount: number;
   domains: DomainCouplingDomainRow[];
-  /** Total distinct domain pairs before `connections` is truncated by `limit`, so
-   * the UI and CLI can say "top N of M" instead of capping silently. */
+  /** Distinct domain pairs before `limit`, so callers can say "top N of M". */
   totalConnectionCount: number;
   connections: DomainCouplingConnectionRow[];
 }
@@ -81,11 +70,7 @@ export interface ComputeDomainCouplingMatrixOptions {
   types?: readonly string[];
 }
 
-/**
- * **All** hub candidates sorted by descending degree (degree > 0; `document` and
- * `project` excluded by default). Nothing is sliced off, so the caller can report
- * "top N of M" rather than capping silently.
- */
+/** Every candidate by descending degree (> 0), `document` and `project` excluded by default. */
 export function rankAllByDegree(
   nodes: readonly KnowledgeGraphNode[],
   edges: readonly KnowledgeGraphEdge[],
@@ -111,16 +96,9 @@ export function rankAllByDegree(
 }
 
 /**
- * The domain coupling matrix — the browser, local-first counterpart to MCP
- * `query_ontology(domain_matrix)`. It computes which domain depends on or connects
- * to which from the currently derived frontmatter graph alone, with no server or MCP.
- *
- * Domain assignment walks the containment tree to the nearest domain ancestor; a
- * domain node is assigned to itself. Meta nodes with no domain ancestor (document,
- * project) stay unassigned and are excluded from coupling edges. `contains` /
- * `belongs_to` are structural edges used *for* that assignment, so they are excluded
- * from the coupling count: for a human-facing UI, showing pressure on boundaries is
- * more interpretable than showing the hierarchy again.
+ * Local counterpart of MCP `query_ontology(domain_matrix)`: nodes join their nearest domain
+ * ancestor, and containment edges are left out of the coupling count. One ancestor walk per node:
+ * O(V·d + E) for containment depth d.
  */
 export function computeDomainCouplingMatrix(
   nodes: readonly KnowledgeGraphNode[],
@@ -232,13 +210,7 @@ export function computeDomainCouplingMatrix(
   };
 }
 
-/**
- * Nearest containment PARENT per node — `contains`/`belongs_to` edges walked
- * to a single `childId -> parentId` map (first parent wins if duplicates).
- * Exported (R+ full-detail A1) so the reach-instrument's per-domain
- * breakdown can resolve an ARBITRARY reachable node's owning domain via
- * {@link nearestDomainId} without re-deriving this walk a second time.
- */
+/** `childId → parentId` over containment edges, first parent winning. */
 export function buildContainmentParents(
   edges: readonly KnowledgeGraphEdge[],
   nodeById: ReadonlyMap<string, KnowledgeGraphNode>,
@@ -262,11 +234,7 @@ export function buildContainmentParents(
   return parentOf;
 }
 
-/**
- * Walk containment PARENTS up from `node` until a `kind: domain` ancestor is
- * found (a domain node resolves to itself). Returns `null` for nodes with no
- * domain ancestor (project/document) or a broken/cyclic containment chain.
- */
+/** Nearest domain ancestor (a domain is its own); null without one or on a broken chain. */
 export function nearestDomainId(
   node: KnowledgeGraphNode,
   parentOf: ReadonlyMap<string, string>,
@@ -286,14 +254,7 @@ export function nearestDomainId(
   return null;
 }
 
-/**
- * The N most recently updated nodes by descending `lastApprovedAt`, for the activity
- * feed; ties break on title ascending. `document` and `project` are included, since
- * they are part of the activity too.
- *
- * The field name dates from the v1 cloud LLM worker; here it simply means "last
- * written or updated". In vault mode it is a sentinel value, so vault nodes all tie.
- */
+/** Newest `lastApprovedAt` first, then title; in vault mode the field is a sentinel, so nodes tie. */
 export function selectRecentNodes(
   nodes: readonly KnowledgeGraphNode[],
   limit = 8,

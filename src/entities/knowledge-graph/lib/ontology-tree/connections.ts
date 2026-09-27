@@ -1,16 +1,4 @@
-/**
- * Pure "direct connection" derivation for a single node — the full,
- * direction-tagged incoming+outgoing edge list, resolved to each neighbor's
- * title/kind. Originally lived inside `widgets/ontology-map` (the compact
- * canvas datasheet) as `buildV2Connections`/`groupV2ConnectionsByDirection`;
- * promoted to `entities/knowledge-graph/lib/ontology-tree` (R+ full-detail A1) so a SECOND
- * widget (`full-detail-a1`, the topology "Full detail" / `/ontology` full-detail
- * surface) can reuse the exact same derivation instead of forking a second
- * copy — FSD forbids widget→widget imports, so shared connection logic lives
- * one layer down. `map-datasheet.ts` re-exports these names
- * unchanged so existing call sites (`HomePage.tsx`, `OntologyMapDetailPanel`,
- * its tests) needed zero changes.
- */
+/** Direct connections of one node, shared by the datasheet and full detail (FSD forbids widget → widget imports). */
 
 import { isContainmentRelation } from "./relations";
 
@@ -22,28 +10,15 @@ export interface DatasheetConnection {
   direction: "incoming" | "outgoing";
 }
 
-/** usedBy = incoming (places that use this node); dependsOn = outgoing
- * (places this node leans on). The SAME axis the metric line counts. */
+/** usedBy = incoming, dependsOn = outgoing: the axis the metric line counts. */
 export interface GroupedConnections {
   usedBy: DatasheetConnection[];
   dependsOn: DatasheetConnection[];
 }
 
 /**
- * Split direct connections into the two DIRECTION groups the datasheet
- * renders and the metric line counts — one axis, everywhere. Input order is
- * preserved inside each group so the panel stays deterministic.
- *
- * Also collapses each group to one row per neighbor `id` — the live dogfood
- * bug (`capability:mcp-server` had BOTH a `depends_on` AND a `related_to`
- * edge to the SAME neighbor, `capability:frontmatter-to-ontology`) isn't
- * caught by `buildConnections`'s own dedup (the relationType genuinely
- * differs there), but consumers show only the neighbor's title with a
- * per-row type mark, not a relationType-keyed row, so two rows for the same
- * neighbor in the same direction read as one duplicated row AND collide on
- * React list keys. The SAME neighbor in the OPPOSITE direction (a real
- * mutual-dependency fact) lands in the OTHER group and stays as two rows
- * total — that's correct, not a duplicate (no cross-group dedup).
+ * Groups connections by direction, one row per neighbor within a group (rows show neighbors, not
+ * relation types); the same neighbor in the opposite direction is a separate fact.
  */
 export function groupConnectionsByDirection(
   connections: readonly DatasheetConnection[],
@@ -66,53 +41,26 @@ export function groupConnectionsByDirection(
   return { usedBy, dependsOn };
 }
 
-/**
- * M-2 — connections split by relation ROLE, not just direction. `usedBy` /
- * `dependsOn` are the non-containment incoming/outgoing groups (same as
- * `groupConnectionsByDirection`); containment edges are pulled OUT into their
- * own `contains` (this node is the parent) / `belongsTo` (this node is the
- * child) groups instead of folding into usedBy/dependsOn by raw direction.
- *
- * The compact canvas popover used to group by DIRECTION only, so a domain's
- * 18 `contains` children landed in "Depends on" — the exact typed-
- * fact collapse the UX round flagged (popover "Writes 5 · Depends on 20" vs
- * full-detail "Contains 18 · Writes 4 · Depends on 2 · Belongs to 1"). This is the
- * SAME bucketing the full-detail surface uses (`buildFullDetailGroups` now
- * delegates here), so the two surfaces can never disagree on the counts.
- */
+/** Connections by role, with containment split out, so popover and full detail count alike. */
 export interface RoleGroupedConnections {
-  /** Outgoing containment — what this node contains. */
+  /** Outgoing containment. */
   contains: DatasheetConnection[];
-  /** Incoming non-containment — places that use this node. */
+  /** Incoming non-containment. */
   usedBy: DatasheetConnection[];
-  /** Outgoing non-containment — places this node leans on. */
+  /** Outgoing non-containment. */
   dependsOn: DatasheetConnection[];
-  /** Incoming containment — the (usually single) parent this node belongs to. */
+  /** Incoming containment. */
   belongsTo: DatasheetConnection[];
 }
 
-/**
- * True when a containment connection means `nodeId` is the PARENT (→ contains)
- * vs the CHILD (→ belongsTo). `contains` edges point parent→child (so an
- * OUTGOING one makes nodeId the parent); `belongs_to` edges point child→parent
- * (so an INCOMING one makes nodeId the parent). Same rule as
- * `buildContainmentParents` (insights.ts) — getting it wrong would file a
- * `belongs_to`-authored parent under "Contains" instead of "Belongs to".
- */
+/** `contains` points parent → child and `belongs_to` child → parent (as `buildContainmentParents`). */
 function containmentNodeIsParent(connection: DatasheetConnection): boolean {
   return connection.relationType === "belongs_to"
     ? connection.direction === "incoming"
     : connection.direction === "outgoing";
 }
 
-/**
- * Split direct connections into the four role groups (contains / usedBy /
- * dependsOn / belongsTo), each deduped by neighbor `id` within its own bucket
- * (a neighbor genuinely reachable by two relationTypes in the same role — the
- * live `depends_on` + `related_to` dogfood case — collapses to one row, same
- * guard `groupConnectionsByDirection` already applies). Input order preserved
- * inside each bucket for deterministic rendering.
- */
+/** Four role groups, each deduped by neighbor id, in input order. */
 export function groupConnectionsByRole(
   connections: readonly DatasheetConnection[],
 ): RoleGroupedConnections {
@@ -151,17 +99,12 @@ export function groupConnectionsByRole(
   return { contains, usedBy, dependsOn, belongsTo };
 }
 
-/** Minimal structural shapes — keeps this module pure + testable without
- * importing the full KnowledgeGraph types (which are structurally compatible). */
+/** Structural shapes compatible with the KnowledgeGraph types. */
 export interface ConnectionSourceNode {
   id: string;
   title: string;
-  /** The short display title, when present. Neighbour row labels prefer it. */
   display?: string;
-  /**
-   * Every raw `display_<locale>` — a candidate must be findable by its name in
-   * any locale, regardless of screen language (`shared/lib/node-name-match`).
-   */
+  /** Every `display_<locale>`, so a neighbor matches by name in any locale. */
   displayLocales?: Readonly<Record<string, string>>;
   kind: string;
 }
@@ -172,15 +115,8 @@ export interface ConnectionSourceEdge {
 }
 
 /**
- * The FULL direct-connection list for a node — every incoming + outgoing edge,
- * direction-tagged, resolved to the neighbor's title/kind. Outgoing first, then
- * incoming. Deduped by `(neighbor id, relationType, direction)`, keeping the
- * first occurrence — a live dogfood bug (`capability:mcp-server` had TWO
- * `depends_on` edges to the same neighbor, one direct + one re-derived)
- * otherwise emits duplicate rows: a duplicate React list key
- * ("Encountered two children with the same key") and a visibly doubled
- * DEPENDS entry. Parallel edges of a DIFFERENT relation type, or the same
- * pair in the OPPOSITE direction, are still distinct facts and both kept.
+ * Outgoing then incoming, deduped by (neighbor id, relationType, direction) so parallel copies of
+ * one edge do not duplicate rows or React keys.
  */
 export function buildConnections(
   nodeId: string,

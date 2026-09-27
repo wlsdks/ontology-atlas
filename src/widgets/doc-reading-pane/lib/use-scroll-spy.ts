@@ -4,29 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { scheduleStateSync } from "@/shared/lib/schedule-state-sync";
 
 /**
- * Tracks the current heading inside a reading pane's scroll container.
- *
- * A rAF-throttled scroll handler recomputes each heading's position relative to the root and picks
- * the heading most recently passed by the 32px baseline at the top of the scroll. With no heading
- * passed yet (the very top of the document) it is null, and reaching the bottom clamps to the last
- * heading.
- *
- * The previous implementation used IntersectionObserver and had three latent defects: ① it queried
- * headings once, before the asynchronous markdown fetch, so the observer never attached; ② a React
- * re-render replacing the article DOM left it observing detached nodes; ③ a jump scroll skipping
- * the observed band produced no callback. There are only a handful of headings per document, so
- * recomputing directly on each scroll is simpler and deterministic. ① and ② are additionally
- * guarded by a permanently mounted MutationObserver that re-collects.
- *
- * Dependencies:
- * - `selectedSlug` changing resets active to null (a new document)
- * - `source` ('server' | 'local') changing redraws the article DOM, so it re-subscribes
- *
- * Returns:
- * - `articleScrollRef` — the article container div ref, attached by the caller
- * - `activeHeadingSlug` — the id of the current active heading, or null
- * - `setActiveHeadingSlug` — updates active immediately from an outside click, moving the
- *   indicator before the scroll animation arrives
+ * Tracks the heading most recently passed by the 32px baseline, recomputed on each rAF-throttled
+ * scroll (a few headings per document); null at the top, the last heading at the bottom. A
+ * MutationObserver re-collects headings after async loads or DOM replacement.
  */
 export function useDocReadingScrollSpy(
   selectedSlug: string | null,
@@ -59,15 +39,13 @@ export function useDocReadingScrollSpy(
     const recompute = () => {
       rafPending = 0;
       if (headings.length === 0) return;
-      // Every coordinate is relative to the top of the scroll container (root) — measuring against
-      // the viewport is wrong in this layout, where the root starts mid-screen.
+      // Coordinates are relative to the scroll container, which starts mid-screen.
       const rootTop = root.getBoundingClientRect().top;
       let pick: string | null = null;
       for (const h of headings) {
         if (h.getBoundingClientRect().top - rootTop < 32) pick = h.id;
       }
-      // Bottom clamp — a short last section may never pass the baseline, so reaching the bottom
-      // selects the last heading.
+      // Bottom clamp: a short last section may never pass the baseline.
       if (root.scrollTop + root.clientHeight >= root.scrollHeight - 8) {
         pick = headings[headings.length - 1]?.id ?? pick;
       }
@@ -82,8 +60,7 @@ export function useDocReadingScrollSpy(
     const onScroll = () => scheduleRecompute();
     root.addEventListener("scroll", onScroll, { passive: true });
 
-    // Covers both the asynchronous markdown arriving and React replacing DOM nodes — if the
-    // heading set is empty or detached, re-collect and recompute.
+    // Re-collect when the heading set is empty or detached (async markdown, React replacing nodes).
     const domObserver = new MutationObserver(() => {
       if (headings.length === 0 || headings.some((h) => !h.isConnected)) {
         if (collectHeadings()) scheduleRecompute();

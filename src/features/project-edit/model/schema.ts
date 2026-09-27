@@ -20,10 +20,7 @@ function toDateInputValue(date?: Date) {
   return `${year}-${month}-${day}`;
 }
 
-// Link parsing failure codes — a stable code is returned rather than English prose. The
-// user-facing text is translated by `resolveValidationMessage()` in ProjectForm through
-// the `validation.linkLine.<code>` i18n key (the zod model layer has no access to the
-// `useTranslations` hook).
+// Stable codes, translated by ProjectForm, since the model layer has no `useTranslations`.
 type LinkLineErrorCode = "format" | "protocol" | "invalidUrl";
 
 function parseLinkLine(line: string) {
@@ -78,9 +75,7 @@ export function parseLinksText(
     .map((parsed) => parsed.value);
 }
 
-// zod's min/regex messages are literally the `validation.<key>` i18n keys, resolved in the
-// `settings.projectForm` namespace — the model layer has no access to `useTranslations`, so
-// it carries only the code and ProjectForm translates with `t(issue.message)`.
+// Messages are `validation.<key>` codes; ProjectForm translates them.
 export const projectFormSchema = z
   .object({
     slug: z

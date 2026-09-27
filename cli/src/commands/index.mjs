@@ -1,9 +1,5 @@
-// R+ — `ontology-atlas index [rootPath]`
-//
-// Long-running ontology indexing entrypoint. Default is read-only: analyze the
-// repo, infer import edges, validate the target vault, and return an indexing
-// plan. `--apply` delegates to bootstrap for analyzer concepts/containment;
-// inferred imports remain review-only.
+// `ontology-atlas index [rootPath]`: a read-only indexing plan by default (analyze, infer imports,
+// validate). `--apply` delegates to bootstrap; inferred imports stay review-only.
 
 import { COLORS } from '../lib/colors.mjs';
 import { resolve } from 'node:path';
@@ -142,12 +138,8 @@ export async function runIndex(args) {
       warningFiles: validation.summary?.warningFiles ?? 0,
       pathDrift: validation.pathDrift?.drifts?.length ?? 0,
       /*
-       * ⚠️ **`checked: false` is not zero drift.** When the walk cannot run — the vault is not
-       * inside a repository this process can read, no concept cites an implementation path —
-       * every count comes back 0, and reporting that as `evidenceStale: 0` told a reader
-       * "nothing you recorded has moved" when the truthful answer is "nothing was looked at".
-       * `null` is the one value that cannot be mistaken for a clean bill of health, and
-       * `evidenceChecked` carries the reason.
+       * `checked: false` is not zero drift: when nothing was looked at every count is 0, so report
+       * `null`, which cannot pass for a clean bill of health, and let `evidenceChecked` carry the reason.
        */
       evidenceChecked: validation.evidenceDrift?.checked === true,
       evidenceUncheckedReason: validation.evidenceDrift?.checked === true ? null : (validation.evidenceDrift?.reason ?? 'unknown'),

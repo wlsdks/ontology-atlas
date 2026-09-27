@@ -14,8 +14,7 @@ const STORAGE_KEY = "demo:gesture-hint:dismissed:v1";
 export function GestureHint({ disabled = false }: { disabled?: boolean }) {
   const t = useTranslations("searchWidgets.gestureHint");
   const [visible, setVisible] = useState(false);
-  // Shown on touch environments only. SSR compatible — initializeWithValue:false
-  // avoids a hydration mismatch (static export compatible).
+  // Touch environments only; initializeWithValue:false avoids a hydration mismatch.
   const isCoarsePointer = useMediaQuery("(pointer: coarse)", {
     initializeWithValue: false,
   });

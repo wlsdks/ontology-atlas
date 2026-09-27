@@ -42,11 +42,7 @@ function render(ui: React.ReactElement) {
   );
 }
 
-/**
- * rank2/18 (design council batch B1) — the overlay a11y backbone. SearchPalette
- * already implemented ESC, the Tab trap and trigger focus return itself (with 0 test
- * coverage); this pins that the rank2 spring unification did not break that contract.
- */
+/** SearchPalette implements Escape, the Tab trap and trigger focus return itself; pinned here. */
 function Harness() {
   const [open, setOpen] = useState(false);
   return (
@@ -65,27 +61,25 @@ function Harness() {
 }
 
 describe("SearchPalette", () => {
-  it("열리면 role=dialog 로 렌더된다", () => {
+  it('renders as role=dialog when open', () => {
     render(<Harness />);
     fireEvent.click(screen.getByRole("button", { name: "open trigger" }));
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 
-  it("ESC 를 누르면 닫힌다 (framer AnimatePresence 퇴장 애니메이션 종료 후 언마운트)", async () => {
+  it('closes on Escape and unmounts after the exit animation', async () => {
     render(<Harness />);
     fireEvent.click(screen.getByRole("button", { name: "open trigger" }));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
 
     fireEvent.keyDown(window, { key: "Escape" });
 
-    // rank2 — the exit unmounts only after the opacity/translateY spring has played
-    // through (AnimatePresence). The "only the closing properties change and it
-    // vanishes instantly" regression is caught here too.
+    // The exit unmounts only after the spring plays through (AnimatePresence).
     await waitForElementToBeRemoved(() => screen.queryByRole("dialog"));
   });
 
-  it("닫히면 트리거로 포커스가 복귀한다", async () => {
+  it('returns focus to the trigger when closed', async () => {
     render(<Harness />);
     const trigger = screen.getByRole("button", { name: "open trigger" });
     trigger.focus();
@@ -94,13 +88,12 @@ describe("SearchPalette", () => {
 
     await waitForElementToBeRemoved(() => screen.queryByRole("dialog"));
 
-    // AnimatePresence removes the dialog before React finishes every effect
-    // cleanup. Under a loaded full-suite worker, the mutation observer can
-    // therefore resolve one tick before the cleanup restores focus.
+    // AnimatePresence removes the dialog before every effect cleanup finishes, so under load focus
+    // returns one tick later.
     await waitFor(() => expect(document.activeElement).toBe(trigger));
   });
 
-  it("data-overlay-spring 검증마커가 스크림·패널에 있다", () => {
+  it('marks the scrim and panel with data-overlay-spring', () => {
     render(
       <SearchPalette open onClose={() => {}} projects={[]} onSelect={() => {}} />,
     );

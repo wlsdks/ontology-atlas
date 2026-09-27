@@ -12,52 +12,19 @@ import {
   type RecentVaultReachability,
 } from '../lib/recent-vault-row';
 
-/**
- * How long the list waits for the probe before it is drawn anyway.
- *
- * The probe answers in a few milliseconds on both runtimes (measured through the desktop bridge:
- * 27ms for five folders, the first painted frame included). A folder on a network volume that
- * stopped answering can hold `vault_path_exists` for seconds, and the rest of the list must not wait
- * for it: past this point the list is drawn, an unanswered row reads `unknown`, and its answer
- * lands when it comes.
- */
+/** Past this deadline the list draws anyway, so one unresponsive network volume cannot hold it. */
 const FIRST_ANSWER_DEADLINE_MS = 400;
 
 /**
- * Probes each stored folder for whether it can be opened now, **without asking the person
- * for anything**.
- *
- * Both runtimes can answer gesture-free, which is the only reason a row can state its
- * condition before it is pressed:
- *
- * - **Installed app** - `vault_path_exists` on the stored absolute path. A renamed, moved
- *   or unmounted folder answers false. There is no permission layer to consult: the app
- *   reads the path directly.
- * - **Browser** - `queryPermission`, which is explicitly the non-prompting half of the File
- *   System Access API. `granted` needs nothing, `prompt` means the press itself will ask,
- *   and `denied` means the press will not be allowed to.
- *
- * `requestPermission` is **never** called here. It needs a user gesture, so calling it
- * while drawing a list would either throw or, worse, put a permission dialog on screen
- * that the person did not ask for.
- *
- * ⚠️ **`null` until the first answer** (2026-09-26). The list used to draw every row as
- * `unknown` - pressable, with a "could not check" note - for the frames before the probe
- * answered, then redraw it. Once missing folders fold into one line at the end of the list,
- * that first frame would also be a different *shape*: five full rows collapsing to two and a
- * line. So the list is drawn once, from answers, and `null` tells it to wait. After the first
- * answer the value never goes back to `null`: forgetting a folder re-probes the rest while
- * the list stays on screen.
+ * Probes each stored folder without asking the person for anything: `vault_path_exists` in the
+ * app, `queryPermission` in a browser; never `requestPermission`, which needs a gesture. Null
+ * until the first answer, so the list is drawn once in its real shape.
  */
 export function useRecentVaultReachability(
   records: ReadonlyArray<LocalFsHandleRecord>,
 ): Record<string, RecentVaultReachability> | null {
   const [states, setStates] = useState<Record<string, RecentVaultReachability> | null>(null);
-  /*
-   * The dependency is the key list, not the array: `recentVaults` is rebuilt on every
-   * refresh, so depending on the array itself re-probes every folder whenever anything
-   * touches the list - including a refresh that a press on one row triggers.
-   */
+  /* Keyed on the row keys, since `recentVaults` is rebuilt on every refresh. */
   const identity = records.map(recentVaultRowKey).join(' ');
 
   useEffect(() => {
@@ -110,23 +77,9 @@ async function probe(record: LocalFsHandleRecord, desktop: boolean): Promise<Rec
     if (permission === 'denied') return 'blocked';
     return 'needs-permission';
   } catch (error) {
-    /*
-     * ⚠️ **On the desktop, "the folder is gone" arrives as a rejection, not as
-     * `false`** (workbench seat, 2026-09-13). `vault_path_exists` calls
-     * `canonical_root` before its own NotFound branch (`src-tauri/src/lib.rs:2702`),
-     * and `canonical_root` maps every `canonicalize` error to `Err`
-     * (`src-tauri/src/lib.rs:267`). So a renamed, moved or unmounted folder - the
-     * single most common stale handle, and the one this type exists for - threw, was
-     * called `unknown`, and stayed pressable until it failed on press. Reading the
-     * exception is what the web arm already does for the same fact, through the same
-     * classifier.
-     */
+    /* On the desktop a gone folder rejects: `canonical_root` errors before `vault_path_exists` returns false. */
     if (isMissingFolderError(error)) return 'missing';
-    /*
-     * Anything else is reported as `unknown`, never as `ready`. The row stays
-     * pressable and says the condition could not be read - the honest answer, where
-     * a silent `ready` would be a promise the app cannot keep.
-     */
+    /* Anything else is `unknown`, never `ready`. */
     return 'unknown';
   }
 }

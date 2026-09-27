@@ -10,24 +10,22 @@ describe('matchesDocsTreeQuery', () => {
     frontmatter: { display_ko: '엠시피 서버' },
   } as Parameters<typeof matchesDocsTreeQuery>[0];
 
-  it('빈 query 는 모두 통과', () => {
+  it('passes everything for an empty query', () => {
     expect(matchesDocsTreeQuery(doc, '')).toBe(true);
   });
 
-  it('이름·주소로 찾는다', () => {
+  it('matches by name and path', () => {
     expect(matchesDocsTreeQuery(doc, normalizeForMatch('server'))).toBe(true);
     expect(matchesDocsTreeQuery(doc, normalizeForMatch('엠시피'))).toBe(true);
     expect(matchesDocsTreeQuery(doc, normalizeForMatch('capabilities/'))).toBe(true);
   });
 
-  it('아무 데도 없으면 false', () => {
+  it('returns false when nothing matches', () => {
     expect(matchesDocsTreeQuery(doc, normalizeForMatch('zzz'))).toBe(false);
   });
 });
 
-describe('한글 자판 질의 — 팔레트와 같은 답', () => {
-  // Measured 2026-09-19: the vault tree's own box answered nothing to either of
-  // these while the palette resolved them against the same documents.
+describe('Hangul keyboard queries answer like the palette', () => {
   const doc = {
     title: '장바구니',
     slug: 'capabilities/cart',
@@ -35,16 +33,16 @@ describe('한글 자판 질의 — 팔레트와 같은 답', () => {
     frontmatter: { display_ko: '장바구니' },
   } as Parameters<typeof matchesDocsTreeQuery>[0];
 
-  it('초성으로 찾는다', () => {
+  it('matches by initial consonants', () => {
     expect(matchesDocsTreeQuery(doc, normalizeForMatch('ㅈㅂㄱㄴ'))).toBe(true);
   });
 
-  it('조합 중인 음절로도 찾는다', () => {
+  it('matches a syllable still being composed', () => {
     expect(matchesDocsTreeQuery(doc, normalizeForMatch('장바ㄱ'))).toBe(true);
     expect(matchesDocsTreeQuery(doc, normalizeForMatch('자'))).toBe(true);
   });
 
-  it('초성이 다르면 끌어오지 않는다', () => {
+  it('does not pull in names with different initial consonants', () => {
     expect(matchesDocsTreeQuery(doc, normalizeForMatch('ㅋㅋㅋ'))).toBe(false);
   });
 });

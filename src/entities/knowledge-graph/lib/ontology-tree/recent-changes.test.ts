@@ -6,7 +6,6 @@ import {
   daysAgoFromIso,
   isGraphDrawnKind,
   isWithinRecentWindow,
-  RECENT_CHANGES_DEFAULT_WINDOW_DAYS,
   selectRecentVaultDocs,
 } from "./recent-changes";
 
@@ -42,10 +41,10 @@ describe("isWithinRecentWindow", () => {
     expect(isWithinRecentWindow("not-a-date", NOW, 7)).toBe(false);
   });
 
-  it("허용 창(24h) 밖의 미래만 제외한다 — C-3 계약 갱신", () => {
-    // NOW = 2026-07-21T12:00Z. +12h counts as created during the session.
+  it("excludes only timestamps beyond the 24h future window", () => {
+    // NOW = 2026-07-21T12:00Z; +12h is session-created.
     expect(isWithinRecentWindow("2026-07-22T00:00:00.000Z", NOW, 7)).toBe(true);
-    // +25h is real clock skew, so it is excluded.
+    // +25h is clock skew.
     expect(isWithinRecentWindow("2026-07-22T13:00:00.000Z", NOW, 7)).toBe(false);
   });
 
@@ -120,14 +119,10 @@ describe("computeRecentChanges", () => {
 
   it("respects a custom windowDays", () => {
     const nodes = [node("capability:a", { evidenceIds: ["docs/a"] })];
-    const freshness = new Map([["docs/a", "2026-07-10T00:00:00.000Z"]]); // 11 days ago
+    const freshness = new Map([["docs/a", "2026-07-10T00:00:00.000Z"]]); // 11 days ago.
 
     expect(computeRecentChanges(nodes, freshness, NOW, 7).rows).toHaveLength(0);
     expect(computeRecentChanges(nodes, freshness, NOW, 14).rows).toHaveLength(1);
-  });
-
-  it("uses RECENT_CHANGES_DEFAULT_WINDOW_DAYS (7) when omitted", () => {
-    expect(RECENT_CHANGES_DEFAULT_WINDOW_DAYS).toBe(7);
   });
 
   it("returns empty results for no nodes", () => {
@@ -155,29 +150,29 @@ describe("selectRecentVaultDocs", () => {
     expect(selectRecentVaultDocs([doc("old", "2025-01-01T00:00:00.000Z")], NOW)).toEqual([]);
   });
 });
-/** A document created during the session — mtime later than the snapshot — is "today". */
+/** A document created after the session snapshot counts as today. */
 describe("future-tolerance (session-created docs)", () => {
   const NOW = Date.parse("2026-07-21T12:00:00Z");
-  it("스냅샷 이후 1시간 뒤 생성 문서도 최근에 포함된다", () => {
+  it("includes a document created an hour after the snapshot", () => {
     const iso = new Date(NOW + 60 * 60 * 1000).toISOString();
     expect(isWithinRecentWindow(iso, NOW, 7)).toBe(true);
     expect(daysAgoFromIso(iso, NOW)).toBe(0);
   });
-  it("24h 를 넘는 미래(진짜 skew)는 여전히 제외", () => {
+  it("excludes a timestamp more than 24h in the future", () => {
     const iso = new Date(NOW + 25 * 60 * 60 * 1000).toISOString();
     expect(isWithinRecentWindow(iso, NOW, 7)).toBe(false);
   });
 });
 
 
-describe("computeAdaptiveRecentChanges (M-8 — 렌즈 창 적응화)", () => {
+describe("computeAdaptiveRecentChanges", () => {
   const DAY = 24 * 3600 * 1000;
   const now = Date.parse("2026-07-21T12:00:00Z");
   const node = (id: string, slug: string) =>
     ({ id, title: id, kind: "element", evidenceIds: [slug], projectIds: [] }) as never;
   const iso = (daysAgo: number) => new Date(now - daysAgo * DAY).toISOString();
 
-  it("7일 창 통과율이 50% 이하면 그대로 7일", () => {
+  it("keeps the 7-day window when at most half pass", () => {
     const nodes = [node("a", "a"), node("b", "b"), node("c", "c"), node("d", "d")];
     const fresh = new Map([
       ["a", iso(2)],
@@ -190,8 +185,8 @@ describe("computeAdaptiveRecentChanges (M-8 — 렌즈 창 적응화)", () => {
     expect(r.recentNodeIds.size).toBe(1);
   });
 
-  it("7일이 과반이면 3일 → 1일로 좁힌다", () => {
-    // Mostly 6 days old: 100% pass at 7d, 25% at 3d.
+  it("narrows to 3 then 1 day when most pass 7 days", () => {
+    // Mostly 6 days old: all pass at 7d, a quarter at 3d.
     const nodes = [node("a", "a"), node("b", "b"), node("c", "c"), node("d", "d")];
     const fresh = new Map([
       ["a", iso(0.5)],
@@ -204,7 +199,7 @@ describe("computeAdaptiveRecentChanges (M-8 — 렌즈 창 적응화)", () => {
     expect(r.recentNodeIds.size).toBe(1);
   });
 
-  it("1일까지 좁혀도 과반이면 1일 결과를 정직하게 반환 (0 으로 조작하지 않는다)", () => {
+  it("returns the 1-day result even when most still pass", () => {
     const nodes = [node("a", "a"), node("b", "b")];
     const fresh = new Map([
       ["a", iso(0.1)],
@@ -215,19 +210,14 @@ describe("computeAdaptiveRecentChanges (M-8 — 렌즈 창 적응화)", () => {
     expect(r.recentNodeIds.size).toBe(2);
   });
 
-  it("빈 그래프는 7일 창 빈 결과", () => {
+  it("returns an empty 7-day result for an empty graph", () => {
     const r = computeAdaptiveRecentChanges([], new Map(), now);
     expect(r.windowDays).toBe(7);
     expect(r.rows).toEqual([]);
   });
 });
 
-/**
- * The starter-vault miscount (owner report, 2026-09-04): straight after the five
- * starter files were written, the INDEX segment said "Last 1d · 5" while the census
- * said 4 concepts and the segment drew 4 rows. The fifth was the starter's own
- * README.md — `kind: vault-readme`, changed like the rest, never drawn as a node.
- */
+/** A starter vault's `vault-readme` changes too but is never drawn, so it is not counted. */
 describe("computeRecentChanges — counts only the kinds that are drawn", () => {
   const STARTER_FRESHNESS = new Map([
     ["README", "2026-07-21T11:00:00.000Z"],

@@ -6,28 +6,9 @@ import {
 } from "@/shared/lib/tauri-vault-fs";
 
 /**
- * Adding raw sources to the open folder — **one click on both surfaces**.
- *
- * The two surfaces do the same thing by different means, and the difference is entirely
- * about what each one is allowed to touch:
- *
- * - **App.** A native panel returns absolute paths, and Rust copies the bytes into
- *   `<vault>/sources/`. The WebView never holds a document: `read_vault_binary_file`
- *   hands JavaScript a JSON array of bytes, so routing a 20 MB scan through it to write
- *   it back out again would cost twice the file for nothing.
- * - **Web.** `showOpenFilePicker` returns file handles the person just granted, and the
- *   bytes are written through the vault's own directory handle. A browser has no
- *   absolute path and needs none — it was handed the file.
- *
- * **The copy is the artifact.** Nothing is written beside it: no index, no
- * `sources.jsonl`, no sidecar. A second store of what the folder already says is a
- * second canonical store, which `.claude/rules/forbidden.md` refuses, and where a
- * document came from is recorded later in the wiki page's frontmatter — in Git, where a
- * person can see it.
- *
- * **A duplicate is refused with a reason.** Sameness is decided by sha256 rather than by
- * name, so a file re-exported under a new name is still recognised, and the refusal
- * names the file that already holds those bytes instead of saying "duplicate".
+ * Copies raw sources into `sources/`: Rust copies in the app, the vault handle writes on the web.
+ * No sidecar index (`.claude/rules/forbidden.md`), and a duplicate is refused by sha256,
+ * naming the file that already holds those bytes.
  */
 
 export interface AddSourcesOutcome {
@@ -59,10 +40,7 @@ function splitName(name: string): [string, string] {
   return at > 0 ? [name.slice(0, at), name.slice(at)] : [name, ""];
 }
 
-/**
- * The browser half. Reads the chosen files, hashes them, refuses bytes already in
- * `sources/`, and writes the rest through the vault handle.
- */
+/** The browser half: hash the picks, refuse bytes already in `sources/`, write the rest. */
 export async function addSourcesInBrowser(
   root: FileSystemDirectoryHandle,
   picked: readonly File[],
@@ -70,8 +48,7 @@ export async function addSourcesInBrowser(
   if (picked.length === 0) return EMPTY;
   const sources = await root.getDirectoryHandle(VAULT_SOURCES_DIR, { create: true });
 
-  // Existing bytes, by hash. Reading the folder's own files is what makes "you already
-  // have this" answerable at all; a browser has no index to consult instead.
+  // A browser has no index, so existing bytes are hashed to answer "you already have this".
   const existing = new Map<string, string>();
   const takenNames = new Set<string>();
   for await (const [name, handle] of sources.entries()) {
@@ -170,10 +147,7 @@ function browserCanPickFiles(): boolean {
   return typeof window !== "undefined" && "showOpenFilePicker" in window;
 }
 
-/**
- * The one entry point the screen calls. Chooses the native path when there is an
- * absolute root, and the browser path otherwise.
- */
+/** Native path with an absolute root, browser path otherwise. */
 export async function addSources({
   root,
   vaultRootPath,

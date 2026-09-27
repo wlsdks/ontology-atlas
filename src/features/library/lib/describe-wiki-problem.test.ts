@@ -10,14 +10,7 @@ import {
   type WikiTemplateProblem,
 } from "./describe-wiki-problem";
 
-/**
- * **One describer, and the proof that it is one.**
- *
- * The function under test replaced three copies (`WikiTemplateProblems`,
- * `AnswerRevisionComparison`, `LibraryCheckReport`, carry-forward 2026-09-11). The reason
- * it had to become one is a person's, not an author's: they read a finding on the check
- * report, press the page's name, and must meet the same sentence beside the page.
- */
+/** One describer, so a finding reads the same on the report and beside the page. */
 
 type Translate = Parameters<typeof describeWikiProblem>[1];
 
@@ -70,11 +63,7 @@ describe("describeWikiProblem — what, where, what to do", () => {
     expect(words.sentence).toBe("No original backs up what is written at line 31 under Facts.");
   });
 
-  /*
-   * The computed check report collapses findings that name one page and retell one
-   * sentence into a single row carrying every line on its door (council 2026-09-12). A
-   * line inside the sentence would make two identical findings two sentences and undo it.
-   */
+  /* The check report carries lines on its door, so the sentence omits them. */
   it("drops the line from the sentence where the surface carries lines on the door", () => {
     const t = translator("ko");
     const first = describeWikiProblem(UNCITED, t, { place: "section" });
@@ -170,11 +159,7 @@ describe("wikiProblemMachineLine — the disclosure's line stays the machine's",
   });
 });
 
-/**
- * **Every key the validator can emit has a retelling.** The failure this catches is the
- * one the owner read: a card falling back to the machine's English sentence, backticks
- * and citation grammar included, because nobody wrote the person's version.
- */
+/** Every key the validator can emit has a retelling. */
 describe("the catalogue covers every finding the validator writes", () => {
   const KEYS = [
     "kind-present",
@@ -210,10 +195,7 @@ describe("the catalogue covers every finding the validator writes", () => {
   }
 });
 
-/**
- * **A door may be built only for a thing that is there.** Both of these were found in a
- * capture rather than in a test, which is why they are tests now.
- */
+/** A door is built only for a thing that is there. */
 describe("describeWikiProblem — a name with nowhere to go is words", () => {
   it("never doors the file a citation-target finding says is not in the folder", () => {
     const words = describeWikiProblem(

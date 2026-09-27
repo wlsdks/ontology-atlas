@@ -131,7 +131,7 @@ describe("formValuesToProjectInput", () => {
     });
   });
 
-  it("form-only missing taxonomy 값은 typed fact로 직렬화하지 않는다", () => {
+  it("does not serialize form-only missing taxonomy values as typed facts", () => {
     const result = formValuesToProjectInput(
       validValues({
         category: PRESERVE_MISSING_TAXONOMY_VALUE,

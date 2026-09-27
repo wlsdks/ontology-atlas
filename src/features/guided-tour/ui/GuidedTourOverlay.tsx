@@ -13,15 +13,13 @@ import {
 } from "../model/resolve-anchor-rect";
 import { GuidedTourCard } from "./GuidedTourCard";
 
-/** Slack between step 4's funnel hole and the probe — absorbs momentary error against the visual node. */
+/** Slack between step 4's funnel hole and the probe, absorbing error against the drawn node. */
 const TOUR_HOLE_PADDING = 16;
-/** The card's distance from its anchor (the placement function's own default). */
+/** The placement function's own default. */
 const TOUR_CARD_GAP = 12;
 /**
- * The name a canvas node wears under its disc: `LABEL_OFFSET` (project 20) plus
- * one line of the map's label type, less the ring the anchor already adds.
- * Measured 2026-09-19 at step 4: the hub's name ran 465–484 while the anchor
- * ended at 462, and the card at the plain gap started at 474.
+ * The name a canvas node wears under its disc: `LABEL_OFFSET` (project 20) plus one line of
+ * the map's label type, less the ring the anchor already adds.
  */
 const TOUR_NODE_NAME_BAND = 28;
 
@@ -32,15 +30,9 @@ interface AnchorMeasurements {
 }
 
 /**
- * The probe's box as it stands right now, viewport-tested the same way the rAF tick tests it.
- *
- * Used to seed a canvas-node step at the moment it opens. The tick that follows the node every
- * frame is an effect, so it first runs *after* the step's opening paint — and for that paint
- * `canvasRect` was null, which is the placement function's "no target" case: a card centred on
- * the window. Measured at 1200×863, that is exactly the reported rectangle (x 420–780,
- * y 307–555) sitting on the node the copy asks the person to press, and it jumped aside one
- * frame later. The probe div is shared and already carries the last frame the map wrote, so
- * reading it here costs one `getBoundingClientRect` and removes the frame.
+ * The probe's current box, viewport-tested like the rAF tick. Seeds a canvas-node step before
+ * its opening paint: the tick is an effect and runs after that paint, which would otherwise
+ * centre the card on the node for one frame.
  */
 function readCanvasAnchorBox(ref: RefObject<HTMLDivElement | null> | undefined): AnchorBox | null {
   const el = ref?.current;
@@ -56,33 +48,21 @@ function readCanvasAnchorBox(ref: RefObject<HTMLDivElement | null> | undefined):
 export interface GuidedTourOverlayProps {
   tour: UseGuidedTourResult;
   /**
-   * The measurement probe for canvas node anchors (steps 2 and 4) — the same div
-   * `OntologyMap` writes its per-frame `worldToScreen` transform into (HomePage
-   * creates it and passes it to both). The probe itself paints nothing: the scrim
-   * and cutout circle are drawn by this overlay at z-70 (2026-07-23 correction —
-   * a z-40 scrim inside the widget could not cover outer chrome such as the top
-   * toolbar, so the testid steps and the dimming disagreed).
+   * The canvas-anchor probe (steps 2 and 4), the div `OntologyMap` writes its per-frame
+   * `worldToScreen` transform into. It paints nothing; this overlay draws scrim and cutout at z-70
+   * so the dimming also covers outer chrome such as the top toolbar.
    */
   canvasAnchorRef?: RefObject<HTMLDivElement | null>;
-  /** Lets a keyboard user perform step 4's canvas node click from a button in the card. */
+  /** Lets a keyboard user perform step 4's canvas node click from the card. */
   onActivateAnchor?: () => void;
   /**
-   * The response to pressing a blocked spot. When supplied, a click on the
-   * full-screen blocker calls this.
-   *
-   * Why it was needed (audit 2026-07-27): while the docs surface's first-visit
-   * guide was open, pressing any other navigation **swallowed the click with no
-   * response at all** (confirmed over four seconds). With no cursor change, no
-   * toast, and no shake, a user reads that as "broken" rather than "blocked" and
-   * simply closes it. Esc already closed it, but someone arriving with a mouse
-   * had no door — clicking the scrim is the standard exit for a surface that
-   * covers the screen.
+   * Called on a click on the full-screen blocker, so a blocked press withdraws the tour instead
+   * of being swallowed silently; the mouse user's Escape.
    */
   onBlockedInteraction?: () => void;
   /**
-   * What the card must leave in view on a step, in client px — the drawn nodes the step
-   * explains (`computeCardPlacement`'s `avoidRects`). The map supplies it; the feature does not
-   * know how a map is drawn.
+   * Drawn nodes the step explains, in client px (`computeCardPlacement`'s `avoidRects`); the map
+   * supplies them because the feature does not know how a map is drawn.
    */
   readAvoidRects?: (stepId: string) => readonly AnchorBox[];
 }
@@ -91,12 +71,9 @@ export interface GuidedTourOverlayProps {
 const AVOID_SETTLE_MS = 450;
 
 /**
- * Draws the scrim, cutout, blocker, card, and progress dots. Every step's scrim
- * and cutout are drawn in the same z-70 layer, so the dimming is uniform. The
- * interactive step (4) is not fully click-through but a **four-strip blocker
- * around the cutout** (a funnel) — chrome other than the spotlit node (the tour
- * tile, search, the toolbar) stays blocked, satisfying the ban on stacked
- * transient UI.
+ * Draws the scrim, cutout, blocker, card and progress dots in one z-70 layer so dimming is
+ * uniform. Step 4 blocks with four strips around the cutout (a funnel), so only the spotlit
+ * node is clickable and stacking transient UI stays banned.
  */
 export function GuidedTourOverlay({
   tour,
@@ -107,12 +84,9 @@ export function GuidedTourOverlay({
 }: GuidedTourOverlayProps) {
   const { open: liveOpen, step: liveStep } = tour;
   /*
-   * **It leaves the way it arrived** (2026-09-25). The card fades in over about 100ms,
-   * but on Escape or finish the whole overlay went from present to absent in one frame
-   * (11–13ms measured). The last open state is held through an exit window
-   * (`usePanelPresence`), drawn under `.map-overlay-out` — the map's opacity-only exit,
-   * which keeps its time under reduced motion — and made inert, so nothing in it
-   * answers a press while it fades.
+   * Leaves the way it arrived: the last open state is held through an exit window
+   * (`usePanelPresence`) under `.map-overlay-out`, the opacity-only exit that keeps its time
+   * under reduced motion, and is inert so nothing answers a press while it fades.
    */
   const liveTour = liveOpen && liveStep ? tour : null;
   const heldTour = useHeldValue(liveTour, liveTour ? liveStep?.id : null);
@@ -122,8 +96,8 @@ export function GuidedTourOverlay({
   const open = shownTour !== null;
   const step = shownTour?.step ?? null;
   /*
-   * The drawn marks the card must not cover, keyed by step so a stale read from the previous
-   * step never places this one. Read on arrival and again after the camera has settled.
+   * Keyed by step so a stale read from the previous step never places this one; read on
+   * arrival and again after the camera settles.
    */
   const [avoid, setAvoid] = useState<{ step: string | null; rects: readonly AnchorBox[] }>({ step: null, rects: [] });
   const avoidStepId = open ? (step?.id ?? null) : null;
@@ -157,9 +131,8 @@ export function GuidedTourOverlay({
     return () => window.removeEventListener("resize", onResize);
   }, [open]);
 
-  // A measurement belongs to one specific open/step/anchor identity. Resetting it
-  // by key during render makes an anchor-type transition paint the full scrim first;
-  // an old canvas circle or DOM rect can never leak into the new step.
+  // A measurement belongs to one open/step/anchor identity. Resetting by key during render paints
+  // the full scrim first, so an old circle or rect never leaks into the new step.
   const anchorKey =
     !open || !step
       ? "closed"
@@ -177,9 +150,8 @@ export function GuidedTourOverlay({
     setMeasurements({ key: anchorKey, testidRect: null, canvasRect: null });
   }
 
-  // Seed a canvas-node step from the probe **before the step's first paint** — see
-  // `readCanvasAnchorBox` for what that frame looked like without it. A layout effect, not the
-  // rAF tick below, because only a layout effect is guaranteed to run before the browser paints.
+  // Seeds a canvas-node step from the probe before its first paint (see `readCanvasAnchorBox`).
+  // A layout effect, because only a layout effect is guaranteed to run before paint.
   useLayoutEffect(() => {
     if (!open || !step || step.anchor?.type !== "canvas-node" || !canvasAnchorRef) return;
     const box = readCanvasAnchorBox(canvasAnchorRef);
@@ -189,9 +161,8 @@ export function GuidedTourOverlay({
     );
   }, [anchorKey, open, step, canvasAnchorRef]);
 
-  // testid anchors use a static rect, fixed once layout settles. Recomputed only
-  // on step change and resize — moving the cutout is handled by a CSS
-  // `transition` (180ms).
+  // testid anchors use a static rect, recomputed on step change and resize; a CSS transition
+  // (180ms) moves the cutout.
   useEffect(() => {
     if (!open || !step || step.anchor?.type !== "testid") return undefined;
     const anchorValue = step.anchor.value;
@@ -200,8 +171,7 @@ export function GuidedTourOverlay({
         current.key === anchorKey ? { ...current, testidRect: resolveAnchorRect(anchorValue) } : current,
       );
     recompute();
-    // Re-check one frame after mount — a panel that just opened (the datasheet,
-    // say) may not be at its final size on the first tick because of the slide-in.
+    // Re-check one frame after mount: a panel that just opened may still be sliding in.
     const raf = window.requestAnimationFrame(recompute);
     window.addEventListener("resize", recompute);
     return () => {
@@ -210,9 +180,8 @@ export function GuidedTourOverlay({
     };
   }, [anchorKey, open, step]);
 
-  // What the card must not cover: every `[data-tour-keep-clear]` box on the page (the
-  // map's top toolbar). Read for canvas-node steps only — a DOM anchor may sit inside
-  // that box, and its card stands beside it by design. Refreshed on step and resize.
+  // Every `[data-tour-keep-clear]` box (the map's top toolbar), for canvas-node steps only: a DOM
+  // anchor may sit inside that box by design. Refreshed on step and resize.
   const [keepClear, setKeepClear] = useState<readonly AnchorBox[]>([]);
   const keepClearActive = open && step?.anchor?.type === "canvas-node";
   useEffect(() => {
@@ -232,21 +201,13 @@ export function GuidedTourOverlay({
     };
   }, [keepClearActive, anchorKey]);
 
-  // Canvas node anchors follow every frame (inheriting the camera spring's
-  // rhythm, no CSS transition). While the probe is still unprojected (zero-size)
-  // — or while the node it tracks is panned outside the viewport — this is null
-  // and the full scrim is the fallback.
-  //
-  // The viewport half of that test is `visibleAnchorBox` (round 4, 2026-09-04).
-  // Size alone was not enough: a first domain sitting off-screen produced a real
-  // rect, so the cutout and the four blocker strips were laid out outside the
-  // window and the person saw one uniformly dark screen while the copy promised a
-  // lit dot. The viewport is read live from `window` rather than from the
-  // `viewport` state, because this tick already runs at frame rate and must not
-  // wait a resize event to notice that the anchor left the screen.
+  // Canvas node anchors follow every frame with no CSS transition, so they keep the camera
+  // spring's rhythm. Unprojected or off-viewport, this is null and the full scrim is the
+  // fallback (`visibleAnchorBox`). The viewport is read live from `window`, because this tick
+  // runs at frame rate and must not wait for a resize event.
   useEffect(() => {
     if (!open || !step || step.anchor?.type !== "canvas-node") return undefined;
-    // Canvas node anchors are map-only — destination guides pass no probe.
+    // Canvas node anchors are map-only; destination guides pass no probe.
     if (!canvasAnchorRef) return undefined;
     let raf = 0;
     const tick = () => {
@@ -277,19 +238,8 @@ export function GuidedTourOverlay({
         ? measurements.canvasRect
         : null;
   const cardWidth = Math.min(360, viewport.width - 32);
-  // The card's real height is auto from its content; layout only needs an
-  // approximation (the card is pinned by `top`/`left` and grows to fit, with the
-  // clamp leaving slack). The constants come from measurements at 1440×900
-  // (2026-07-24 tour polish pass, rendered card heights for all eight steps via
-  // Playwright `guided-tour.spec.ts`) — erring slightly large is the safe
-  // direction, since erring small can push a "below" placement's real bottom off
-  // the viewport. The previous constants overestimated try-click by 36.5px
-  // (220px vs a measured 183.5px — safe but with needlessly large slack) and
-  // underestimated recent by 11.5px (240px vs a measured 251.5px).
-  // 2026-09-04: try-click's body now names the ring, so its rendered card grew to
-  // 248px at 1440x900 (measured). 195 underestimated it by 53px, the direction the
-  // note above calls unsafe for a "below" placement, so the interactive constant
-  // moves to 250.
+  // Card height is an approximation from rendered heights at 1440×900 (`guided-tour.spec.ts`).
+  // Err large: a small estimate can push a "below" placement off the viewport.
   const cardHeight = step.id === "recent" ? 255 : step.interactive ? 250 : 205;
   const placement = computeCardPlacement({
     targetRect: anchorRect,
@@ -299,20 +249,16 @@ export function GuidedTourOverlay({
     viewportHeight: viewport.height,
     // A canvas node's name hangs under its disc; the card below must clear it.
     belowGap: step.anchor?.type === "canvas-node" ? TOUR_CARD_GAP + TOUR_NODE_NAME_BAND : TOUR_CARD_GAP,
-    // And the card must clear the node itself, not only its name: this step asks the person to
-    // look at that dot and press it.
+    // The card must also clear the node itself, which the step asks the person to press.
     avoidTarget: step.anchor?.type === "canvas-node",
     keepClear: keepClearActive ? keepClear : undefined,
     avoidRects: avoid.step === step.id ? avoid.rects : undefined,
   });
 
   const isInteractive = Boolean(step.interactive);
-  // The interactive (step 4) click funnel — only the cutout circle's bbox passes
-  // through to the canvas. The hole is opened 16px wider on every side than the
-  // probe rect, absorbing the momentary error between the strips (React state,
-  // one frame behind) and the drawn node while the camera spring is running, so
-  // "I pressed the bright node and nothing happened" cannot occur (hardened from
-  // live observation 2026-07-24; the "probe center" regression in `guided-tour.spec.ts`).
+  // Step 4's click funnel: only the cutout's bbox reaches the canvas. The hole is 16px wider on
+  // every side than the probe, because the strips are React state one frame behind the drawn
+  // node during the camera spring (the "probe center" regression in `guided-tour.spec.ts`).
   const interactiveHole =
     isInteractive && anchorRect
       ? {
@@ -332,14 +278,11 @@ export function GuidedTourOverlay({
       inert={exiting}
       className={exiting ? "map-overlay-out fixed inset-0 z-[var(--z-tour)]" : undefined}
     >
-      {/* The blocker — non-interactive steps block everything (the scrim is the
-          evidence of dimming, satisfying the modal-without-modality rule). The
-          interactive step (4) is not fully click-through but blocks with four
-          strips around the cutout bbox: only the spotlit node is clickable while
-          the rest of the chrome (tour tile re-entry, search, "?", toolbar) is
-          blocked (2026-07-23 correction — a fully `pointer-events-none` overlay
-          allowed other transient surfaces to stack on top of the tour). While the
-          hole is still unresolved, full blocking stays (a one-frame fallback). */}
+      {/*
+       * The blocker: other steps block everything; step 4 blocks with four strips around the
+       * cutout so only the spotlit node is clickable, since a fully click-through overlay let
+       * other transient surfaces stack on the tour. Unresolved, full blocking stays.
+       */}
       {interactiveHole ? (
         <>
           <div
@@ -390,11 +333,8 @@ export function GuidedTourOverlay({
           className={cn(
             "pointer-events-none fixed z-[var(--z-tour)] border",
             step.anchor.type === "canvas-node"
-              ? // The canvas node circle — its motion *is* following worldToScreen
-                // every frame, so there is no CSS transition (it must not fight
-                // the camera spring). The visible ring is drawn by the engine
-                // directly on the canvas, so this leaves only the dimming hole
-                // with a transparent border.
+              ? // Follows worldToScreen every frame, so no CSS transition may fight the camera spring. The
+                // engine draws the visible ring on the canvas; this is only the dimming hole.
                 "rounded-full border-transparent"
               : "rounded-[var(--chrome-radius)] border-[color:var(--color-border-strong)] transition-[top,left,width,height] duration-[var(--topology-tour-transition-ms)] ease-[var(--topology-motion-ease-out)] motion-reduce:transition-none",
           )}
@@ -412,16 +352,13 @@ export function GuidedTourOverlay({
                   width: anchorRect.width + 16,
                   height: anchorRect.height + 16,
                 }),
-            // The scrim paint — a 9999px spread fills everything outside the
-            // cutout with darkness. Zero blur, no colour emission: this is a
-            // different technique from the glow/neon `0 0 …` ring
-            // `.claude/rules/design.md` forbids (that is a luminous highlight with
-            // blur > 0; this is an opaque mask with blur = 0).
+            // A 9999px spread fills everything outside the cutout. Zero blur and no colour emission, so it
+            // is an opaque mask, not the glow ring `.claude/rules/design.md` forbids.
             boxShadow: "0 0 0 9999px var(--topology-tour-scrim-surface)",
           }}
         />
       ) : (
-        // Before layout settles — a full scrim rather than a flickering half cutout.
+        // Before layout settles, a full scrim rather than a flickering half cutout.
         <div
           data-testid="guided-tour-scrim"
           className="fixed inset-0 z-[var(--z-tour)]"
@@ -429,13 +366,11 @@ export function GuidedTourOverlay({
         />
       )}
 
-      {/* Step-transition motion (frame audit 2026-07-24) — the card had only
-          `transition-opacity`, so on a step change its top/left **teleported** (a
-          one-frame jump in 30fps footage). Interpolating the position conflicts
-          with the canvas-node steps following the rect every frame (it would drag
-          behind the camera spring), so the card is remounted per step via `key`
-          and **reuses the existing panel cross-fade keyframes** — the new copy
-          rises into place while tracking accuracy is unchanged. */}
+      {/*
+       * Remounted per step via `key` and reusing the panel cross-fade keyframes: interpolating
+       * position would drag behind the camera spring on canvas-node steps, and without it the
+       * card teleported.
+       */}
       <GuidedTourCard
         key={step.id}
         tour={shownTour}

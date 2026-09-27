@@ -87,7 +87,7 @@ describe("appendWikiLog writes a file a person and grep can both read", () => {
     await appendWikiLog(vault, first);
     await appendWikiLog(vault, second);
     const text = read() ?? "";
-    // Seen on the installed app on 2026-09-06: the first entry sat directly under the header prose.
+    // The first entry sits one blank line under the header prose.
     expect(text).toMatch(/Not a page\.\n\n## \[2026-09-06T13:45:43Z\] lint/);
     expect(text).toMatch(/agent:claude\n## \[2026-09-06T13:50:00Z\] compile/);
     expect(text.endsWith("\n")).toBe(true);

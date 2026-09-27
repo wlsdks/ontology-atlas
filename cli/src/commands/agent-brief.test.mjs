@@ -8,10 +8,8 @@ import {
   readinessExitCode,
 } from './agent-brief.mjs';
 
-// R+ (agent-persona-2026-07 QA friction #5) — agent-brief's exit code
-// encodes graph readiness, not command success. --exit-zero lets scripting
-// read status/readiness from JSON instead of misreading a "needs_attention"
-// vault as a failed command.
+// agent-brief exits by graph readiness, not command success; --exit-zero lets scripts read
+// readiness from JSON instead.
 describe('agent-brief readinessExitCode', () => {
   const baseReadiness = {
     score: 100,
@@ -100,18 +98,8 @@ describe('agent-brief project meaning summary', () => {
 });
 
 /*
- * ⚠️ **A run that exits 1 has to say why in the stream a machine reads.**
- *
- * `readinessExitCode`'s own note says the human one-line explanation is deliberately kept out of
- * JSON, "read by machines, which look at `status` and `readiness` directly". That holds for the
- * plain `--json` output and did not hold for `--verify-fallbacks --json`, whose report carries
- * neither field. Measured 2026-08-26 on this repository's dogfood vault: the command printed
- * `ok: true, failed: 0` and exited 1, and the reason — readiness `needs_attention` at 75 —
- * appeared nowhere. Correct and unattributable at the same time.
- *
- * ⚠️ The first version of this test spawned the real CLI. It passed locally and died in the
- * fastest CI job, which deliberately does not install `mcp/node_modules`. A gate that only holds
- * on a developer's machine is not a gate, so the payload is built by a pure function instead.
+ * A run that exits 1 must say why in the JSON a machine reads. Built by a pure function because
+ * the fastest CI job does not install `mcp/node_modules`.
  */
 describe('agent-brief --verify-fallbacks --json payload', () => {
   const report = Object.freeze({

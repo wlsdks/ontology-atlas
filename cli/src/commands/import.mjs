@@ -17,27 +17,8 @@ const ALLOWED_FLAGS = ['--vault', '--kind', '--auto-prefix', '--raw-slug', '--no
 
 
 /**
- * `ontology-atlas import <path...> [--vault X] [--kind K] [--raw-slug]
- * [--rename] [--dry-run]`
- *
- * Lands external markdown inside the vault. This is the last piece of the promise
- * that an agent (`add_concept`) and a user (`add`) leave only `.md` built from the
- * same schema on disk: a document received from elsewhere is normalised to that
- * same schema before it is fixed in the vault.
- *
- * Flow, per file:
- *   1. read raw → parseFrontmatter
- *   2. kind: input.kind → --kind → skip (no kind means it cannot be imported)
- *   3. slug: input.slug → file basename (extension dropped)
- *      with --auto-prefix, folderForKind(kind) is prepended (never twice)
- *   4. title: input.title → the body's first H1 → slug
- *   5. frontmatter normalisation: buildFrontmatter applies the schema's
- *      arrayDefaults and preserves the input's other keys (depends_on, relates,
- *      status, user-defined, …)
- *   6. conflict: an existing slug in the vault skips with a warning, or with
- *      --rename becomes -2/-3/…
- *   7. body: the input body, or the schema's starter when it is empty
- *   8. writeDoc — a dry run changes nothing on disk
+ * Lands external markdown normalised to the vault schema, like `add`: kind from input or --kind (else skip),
+ * slug from input or basename, title from input, first H1 or slug; a taken slug skips or gets -2 with --rename.
  */
 export async function runImport(args) {
   const opts = parseArgs(args);
@@ -123,11 +104,9 @@ export async function runImport(args) {
       ` (${summary.kindless} kindless · ${summary.conflicts} conflicts · ${summary.skipped} errors)\n`,
   );
 
-  // Exit code: 1 when zero files were imported (or planned, in a dry run) —
-  // intending an import and having nothing happen is an explicit failure. Partial
-  // success (some imported, some conflicting or kindless) exits 0, so a CI gate of
-  // the "at least one" shape is easy to write.
-  void firstError; // kept for a future --strict mode that surfaces the first error message
+  // Exit 1 when nothing was imported (or planned), since intending an import and getting none is a failure;
+  // partial success exits 0, so an "at least one" CI gate is easy to write.
+  void firstError;
   if (summary.imported === 0) return 1;
   return 0;
 }
@@ -182,10 +161,7 @@ function importOne(srcPath, vaultPath, opts, claimedSlugs, claimedUids) {
       ? inputFm.title.trim()
       : extractFirstH1(inputBody) || baseSlug;
 
-  // Schema normalisation, preserving the input's other keys (depends_on, relates,
-  // user-defined). slug/kind/title are overwritten with our decided values:
-  // buildFrontmatter's ...extras already takes every input key, so the new values
-  // are spread last.
+  // Keeps the input's other keys; slug/kind/title are spread last so the decided values win.
   let fm;
   try {
     fm = buildFrontmatter({
@@ -263,9 +239,8 @@ function extractFirstH1(body) {
 }
 
 /**
- * Collects `.md` files from the input paths (files or directories), walking
- * directories recursively. Dotfile directories (.git, node_modules) are skipped —
- * importing the `.md` inside them is too dangerous to assume was intended.
+ * Collects `.md` files from input files and directories, recursively. Dotfile directories (.git,
+ * node_modules) are skipped: importing their `.md` is too dangerous to assume.
  */
 function collectMarkdownFiles(paths) {
   const out = new Set();

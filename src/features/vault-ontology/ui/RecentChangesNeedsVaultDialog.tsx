@@ -17,13 +17,7 @@ import { Button, controlClass } from '@/shared/ui';
 
 export interface RecentChangesNeedsVaultDialogProps {
   open: boolean;
-  /**
-   * Which feature needs the folder — the name of a copy bundle.
-   *
-   * The reason differs per feature, so the sentence must too. "Recent changes" is
-   * *these dates have nothing to do with you*, while "create an item" is *this is an
-   * example and cannot be edited*. Merging them into one sentence makes both awkward.
-   */
+  /** Which feature needs the folder; each has its own reason, so its own sentence. */
   copyKey?: 'recentChangesNeedsVault' | 'createNeedsVault' | 'editNeedsVault';
   onClose: () => void;
   /** "Open my folder" — must be the **same** handler the first-run card uses. */
@@ -31,27 +25,9 @@ export interface RecentChangesNeedsVaultDialogProps {
 }
 
 /**
- * Pressing "recent changes" on the sample — **give a path instead of a dead end.**
- *
- * **Why a popup only here.** The 2026-08-02 decision rejected opening a modal just to
- * say "there is nothing" — that makes the presser do the work twice, and it is the class
- * this repository forbids as `popup soup`. **That decision still stands**: for someone
- * who opened their own folder, zero recent changes really means there is nothing to
- * show, so it stays disabled with a tooltip.
- *
- * The sample is different. Zero here is not "you have not changed anything yet" but
- * **the sample's dates being when this repository last touched the fixture, which has
- * nothing to do with the user**. So before a folder is opened this feature cannot mean
- * anything in principle — waiting will not switch it on. When the reason is "the next
- * action" rather than "nothing", the next action has to be given: that is the
- * degradation contract in `.claude/rules/surfaces.md` (why + where) and the **zero dead
- * CTAs** the web smoke test requires.
- *
- * Owner instruction (2026-08-03): "Shouldn't pressing the chip raise a popup? — put a nice one in the centre of the screen to guide folder setup).
- *
- * **The skeleton is not new.** scrim + centred card + tokens + `MOTION.base` — the same
- * contract as `AgentConnectSheet` (`.claude/rules/design.md`: a modal must **prove**
- * dimming/scrim or blocked interaction). Esc closes it and focus returns to the trigger.
+ * On the sample, recent changes cannot mean anything before a folder opens, so the press leads
+ * to opening one (`.claude/rules/surfaces.md`: why and where). An opened folder with zero
+ * changes stays disabled. Same scrim contract as `AgentConnectSheet` (`.claude/rules/design.md`).
  */
 export function RecentChangesNeedsVaultDialog({
   open,
@@ -64,9 +40,7 @@ export function RecentChangesNeedsVaultDialog({
   const { ref: scrimLockoutRef, onAnimationStart: scrimLockoutOnAnimationStart } = useExitLockout<HTMLDivElement>();
   const { ref: dialogLockoutRef, onAnimationStart: dialogLockoutOnAnimationStart } = useExitLockout<HTMLDivElement>();
 
-  // The latest `onClose` without re-running the open effect: callers pass an inline
-  // arrow, and re-running it on every parent render re-captured the opener from inside
-  // the dialog and pulled focus back to the primary action.
+  // The latest `onClose` without re-running the open effect, which would steal focus back.
   const onCloseRef = useRef(onClose);
   useEffect(() => {
     onCloseRef.current = onClose;
@@ -74,9 +48,7 @@ export function RecentChangesNeedsVaultDialog({
 
   useEffect(() => {
     if (!open) return;
-    // What had focus when it opened — the control that asked. Every close hands focus
-    // back to it: after Escape it used to fall to BODY (measured 2026-09-25 on the
-    // recent-changes chip in the sample), so a keyboard user started over from the top.
+    // Every close returns focus to the control that opened it, or it falls to BODY.
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     // On open, focus goes to **the next action** — that is this surface's only job.
     primaryRef.current?.focus();
@@ -148,13 +120,7 @@ export function RecentChangesNeedsVaultDialog({
 
             <div className="px-5 py-4">
               <p className="text-body text-[color:var(--color-text-secondary)]">{t('body')}</p>
-              {/*
-                This is **exactly the one shape** `<Button>` covers — of 419 controls
-                swept, only 1 was at the standard button height (h-10/11), and a newly
-                built primary action belongs there. It is not hand-written because of an
-                instrument rather than a rule: the adoption ratchet caught two hand-written
-                classNames in this file before the commit.
-              */}
+              {/* The standard `<Button>` shape; the adoption ratchet counts hand-written classNames. */}
               <Button
                 ref={primaryRef}
                 onClick={() => {
@@ -167,10 +133,7 @@ export function RecentChangesNeedsVaultDialog({
                 <FolderOpen size={ICON_SIZE.md} aria-hidden />
                 {t('action')}
               </Button>
-              {/*
-                No second action. This surface has one job, and a second button would be
-                "close" — which the header's X and the scrim already provide by two routes.
-              */}
+              {/* One action: the header's X and the scrim already close it. */}
             </div>
           </motion.section>
         </motion.div>

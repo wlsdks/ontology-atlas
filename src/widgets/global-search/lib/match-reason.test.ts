@@ -5,7 +5,7 @@ const label = "배송비 정책";
 const summary = "Decides who pays to move the parcel and how much, before the shopper sees a total.";
 
 describe("describeMatchReason", () => {
-  it("화면에 있는 이름으로 걸리면 꼬리 칸은 설명이고, 표시는 없다", () => {
+  it('shows the description and no marker when the visible name matched', () => {
     // The mark is already on the name; a second one would make the first ambiguous.
     expect(
       describeMatchReason({
@@ -17,7 +17,7 @@ describe("describeMatchReason", () => {
     ).toEqual({ kind: "summary", text: summary });
   });
 
-  it("화면에 없는 이름으로 걸리면 그 이름을 보여준다", () => {
+  it('shows the matched name when it is not the visible one', () => {
     expect(
       describeMatchReason({
         matched: { field: "name", text: "Shipping Fee Policy" },
@@ -28,7 +28,7 @@ describe("describeMatchReason", () => {
     ).toEqual({ kind: "name", text: "Shipping Fee Policy", query: "policy" });
   });
 
-  it("summary 로 걸리면 매치 자리에서 연 설명을 보여준다", () => {
+  it('shows the description from the match position when summary matched', () => {
     const reason = describeMatchReason({
       matched: { field: "summary", text: summary },
       label,
@@ -41,7 +41,7 @@ describe("describeMatchReason", () => {
     expect(reason?.text).toContain("shopper");
   });
 
-  it("id 로 걸리면 slug 를 보여준다", () => {
+  it('shows the slug when the id matched', () => {
     expect(
       describeMatchReason({
         matched: { field: "id", text: "shipping-fee" },
@@ -52,21 +52,21 @@ describe("describeMatchReason", () => {
     ).toEqual({ kind: "id", text: "shipping-fee", query: "fee" });
   });
 
-  it("빈 query — 근거가 없으면 설명을 그대로 둔다", () => {
+  it('keeps the description for an empty query', () => {
     expect(describeMatchReason({ label, summary, query: "" })).toEqual({
       kind: "summary",
       text: summary,
     });
   });
 
-  it("설명이 없고 이름으로 걸렸으면 꼬리 칸은 비어 있다", () => {
+  it('leaves the tail cell empty when there is no description and the name matched', () => {
     expect(
       describeMatchReason({ matched: { field: "name", text: label }, label, query: "배송비" }),
     ).toBeNull();
     expect(describeMatchReason({ label, query: "" })).toBeNull();
   });
 
-  it("이름 비교는 정규화된 것끼리 한다 — 대소문자·공백이 두 번째 사본을 만들지 않는다", () => {
+  it('compares names normalized so case and spacing do not create a second copy', () => {
     expect(
       describeMatchReason({
         matched: { field: "name", text: "Shipping  Fee  Policy" },
@@ -79,7 +79,7 @@ describe("describeMatchReason", () => {
 });
 
 describe("reasonLineClass", () => {
-  it("어느 쪽이든 md 부터는 한 시작선을 갖는 고정폭 칸이다", () => {
+  it('uses a fixed-width cell with one start line from md upward', () => {
     for (const reason of [
       { kind: "id" as const, text: "shipping-fee", query: "fee" },
       { kind: "summary" as const, text: "Decides who pays." },

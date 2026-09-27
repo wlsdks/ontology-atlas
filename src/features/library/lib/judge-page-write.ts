@@ -3,35 +3,15 @@ import { WIKI_DIR, validateWikiPage } from "@/shared/lib/wiki-page-schema";
 import type { WikiTemplateProblem } from "./describe-wiki-problem";
 
 /**
- * Judge a wiki page **before** the person allows the write.
- *
- * The Compile brief used to say a page that fails `wiki-validate` "will be rejected", and
- * nothing rejected it: the page landed, and the Wiki list showed its first problem code
- * afterwards (accumulation probe, 2026-09-06). The permission card is the one moment the
- * person decides, and it is where the verdict belongs: Allow with the codes in view, or
- * Don't. Two of the six implementations surveyed the same day put the rule as "committed
- * pages are always clean"; this is that rule at the gate this product already has, with
- * the person still deciding.
- *
- * What is judged is what the tool actually asked to write. A whole-file write carries the
- * text; an edit carries `old_string` and `new_string`, which are applied to the page as it
- * is on disk. When the request is not a wiki page, or the edit cannot be applied to the
- * text we hold, the answer is `null` — no verdict rather than a guess, because a verdict
- * on the wrong text would be worse than none.
+ * Judges a wiki page before the person allows the write, on the text the tool would leave.
+ * Not a wiki page or an edit that cannot apply gives `null`: no verdict rather than a guess.
  */
 
 export interface PageWriteVerdict {
   /** Vault-relative `wiki/<slug>.md`. */
   path: string;
   ok: boolean;
-  /**
-   * The findings as the validator handed them over, `detail` included.
-   *
-   * This used to be narrowed to `{ code, message, line }`, which dropped the one field a
-   * surface needs to say the finding in the reader's language. The objects always carried
-   * `detail`; only the type forgot, so the permission card had nothing but the English
-   * `message` to print and printed it into a Korean screen (measured 2026-09-20).
-   */
+  /** Findings with `detail`, so the card can say them in the reader's language. */
   problems: ReadonlyArray<WikiTemplateProblem>;
 }
 

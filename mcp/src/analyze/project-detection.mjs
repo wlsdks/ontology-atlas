@@ -2,12 +2,14 @@
 // `configure.ac`, or the README H1; the domain candidates a README's H2 sections
 // suggest; and the ontology nodes an existing vault already contributes.
 
-import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, lstatSync, existsSync, realpathSync } from 'node:fs';
 import { join, basename, relative } from 'node:path';
 import {
   AUTOTOOLS_IDENTITY_FILES,
   AUTOTOOLS_IDENTITY_MAX_BYTES,
   AUTOTOOLS_IDENTITY_MAX_LENGTH,
+  ONTOLOGY_EVIDENCE_MAX_ENTRIES,
+  ONTOLOGY_EVIDENCE_MAX_FILES,
   PYTHON_PROJECT_MAX_BYTES,
   PYTHON_SETUP_MAX_BYTES,
   STARTER_ONTOLOGY_SLUGS,
@@ -217,18 +219,52 @@ export function detectExistingOntologyEvidence(rootPath, skipped = []) {
   if (!existsSync(ontologyRoot) || !statSync(ontologyRoot).isDirectory()) {
     return [];
   }
+  if (!pathResolvesInsideRoot(rootPath, ontologyRoot)) {
+    pushSkippedOnce(skipped, {
+      path: ontologyRoot,
+      reason: 'ontology-evidence-skip: docs/ontology resolves outside repository root',
+    });
+    return [];
+  }
   const rows = [];
   const seen = new Set();
+  const visitedDirectories = new Set();
+  let entriesSeen = 0;
+  let filesSeen = 0;
+  let budgetSpent = false;
 
-  // Recursive walk of docs/ontology, O(entries) only without directory symlinks: it follows them with no visited set or root check.
+  // O(entries) under the budgets; only a link can leave a folder inside the root.
   function visit(dir) {
+    const realDirectory = realpathSync(dir);
+    if (visitedDirectories.has(realDirectory)) {
+      pushSkippedOnce(skipped, {
+        path: dir,
+        reason: `ontology-evidence-skip: ${relative(rootPath, dir)} repeats a visited directory`,
+      });
+      return;
+    }
+    visitedDirectories.add(realDirectory);
     for (const entry of readdirSync(dir)) {
+      if (walkBudgetReached(dir)) return;
+      entriesSeen += 1;
       const path = join(dir, entry);
       let stat;
+      let insideRoot = true;
       try {
-        stat = statSync(path);
+        stat = lstatSync(path);
+        if (stat.isSymbolicLink()) {
+          stat = statSync(path);
+          insideRoot = pathResolvesInsideRoot(rootPath, path);
+        }
       } catch (err) {
         skipped.push({ path, reason: `ontology-stat-error: ${err.message}` });
+        continue;
+      }
+      if (!insideRoot) {
+        pushSkippedOnce(skipped, {
+          path,
+          reason: `ontology-evidence-skip: ${relative(rootPath, path)} resolves outside repository root`,
+        });
         continue;
       }
       if (stat.isDirectory()) {
@@ -236,11 +272,29 @@ export function detectExistingOntologyEvidence(rootPath, skipped = []) {
         continue;
       }
       if (!entry.endsWith('.md')) continue;
+      filesSeen += 1;
       const evidence = readOntologyEvidence(rootPath, ontologyRoot, path);
       if (!evidence || seen.has(evidence.slug)) continue;
       seen.add(evidence.slug);
       rows.push(evidence);
     }
+  }
+
+  function walkBudgetReached(dir) {
+    if (budgetSpent) return true;
+    const budget =
+      entriesSeen >= ONTOLOGY_EVIDENCE_MAX_ENTRIES
+        ? `${ONTOLOGY_EVIDENCE_MAX_ENTRIES} entry`
+        : filesSeen >= ONTOLOGY_EVIDENCE_MAX_FILES
+          ? `${ONTOLOGY_EVIDENCE_MAX_FILES} Markdown file`
+          : null;
+    if (!budget) return false;
+    budgetSpent = true;
+    pushSkippedOnce(skipped, {
+      path: dir,
+      reason: `ontology-evidence-skip: ${relative(rootPath, dir)} reached ${budget} walk budget`,
+    });
+    return true;
   }
 
   visit(ontologyRoot);

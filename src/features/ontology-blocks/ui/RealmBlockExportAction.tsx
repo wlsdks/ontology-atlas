@@ -28,21 +28,8 @@ export interface RealmBlockExportActionProps {
 type ExportPhase = "idle" | "exporting" | "done" | "error";
 
 /**
- * "Export this realm as a block", living as a quiet text action in the header of the
- * active realm's left panel (`TopologyRealmLedger`). A block is just a folder of `.md`:
- * the **original `.md` of every node in the realm subtree is copied verbatim**, with a
- * single `block-manifest.json` calling card alongside (no new file format — the
- * local-first charter in AGENTS.md).
- *
- * The same self-contained module contract as `FirstRunStarterModule` — it reads vault
- * state (`useLocalVault`) and labels (the `ontologyBlocks` i18n namespace) itself, so it
- * does not grow the host widget's prop surface.
- *
- * Defect found in the 2026-07-23 usability sweep: with no local vault loaded (the static
- * sample) this action vanished without a trace, which read as hiding that the feature
- * exists. It now stays in the same place, disabled with a hint that opening your own folder
- * enables it — the same "no directory picker means disabled plus a hint" degradation
- * pattern already established, just extended to the vault-not-loaded reason. Not a new pattern.
+ * "Export this realm as a block": each subtree node's `.md` copied verbatim plus one
+ * manifest file, `block-manifest.json`. Without a local vault it stays, disabled with a hint.
  */
 export function RealmBlockExportAction({
   rootTitle,
@@ -55,8 +42,7 @@ export function RealmBlockExportAction({
   const [exportedCount, setExportedCount] = useState(0);
 
   const vaultLoaded = status === "loaded" && Boolean(manifest);
-  // Decided by whether it can be called, not by key presence (`in`); the installed app uses
-  // a Tauri picker/shim implementing the same `FileSystemDirectoryHandle` contract.
+  // Supported only when callable; the app's Tauri shim implements the same handle contract.
   const supported =
     (typeof window !== "undefined" && typeof window.showDirectoryPicker === "function") ||
     isTauriVaultRuntime();

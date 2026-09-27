@@ -44,6 +44,8 @@ export const STARTER_ONTOLOGY_SLUGS = new Set([
   'domains/example-domain',
   'capabilities/example-capability',
 ]);
+export const ONTOLOGY_EVIDENCE_MAX_FILES = 8000;
+export const ONTOLOGY_EVIDENCE_MAX_ENTRIES = 20000;
 export const SEMANTIC_EVIDENCE_SEEDS = [
   ['README.md', 'mission'],
   ['README.rst', 'mission'],

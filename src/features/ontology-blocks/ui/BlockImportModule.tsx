@@ -39,11 +39,7 @@ interface PreviewSource {
 
 type InlineText = { kind: "done" | "error"; text: string } | null;
 
-/**
- * What a host needs to draw the trigger in its own row grammar (2026-09-25, the settings
- * Workspace pane). The module keeps the pick, the preview dialog and every state; the host
- * only chooses how the one button and its status line look.
- */
+/** What a host needs to draw the trigger in its own row grammar; the module keeps every state. */
 export interface BlockImportTrigger {
   /** The row's name — what this does. */
   label: string;
@@ -91,22 +87,9 @@ function importUiReducer(state: ImportUiState, action: ImportUiAction): ImportUi
 }
 
 /**
- * "Import a block" (the merge preview). A self-contained module mounted permanently
- * inside the global INDEX panel (`TopologyIndexPanel`) — the same contract as
- * `FirstRunStarterModule` (it supplies its own state and labels and adds zero prop
- * surface to its host).
- *
- * Absolute contract: **zero writes before approval.** Pick a folder → parse `.md` with the
- * shared parser → build a new/conflict report with the pure dry run `planBlockImport`, and
- * only once the user confirms in a scrim-backed dialog does it write through the existing
- * vault write path (`createDoc`). Conflicts resolve by skipping (the default) or by an
- * automatic block-name prefix — consistent with the CLI's `import --rename` down to the
- * -2/-3 fallback (see `merge-plan.ts`).
- *
- * Defect found in the 2026-07-23 usability sweep: with no local vault loaded (the static
- * sample) the "import a block" row vanished without a trace, which read as hiding that the
- * feature exists. It now stays in the same place, disabled with a hint that opening your
- * own folder enables it — the same grammar as `RealmBlockExportAction`'s degradation.
+ * "Import a block": zero writes before approval. The dry run `planBlockImport` reports new and
+ * conflicting files; conflicts skip or take a block prefix like the CLI's `import --rename`
+ * (see `merge-plan.ts`). Without a local vault it stays, disabled with a hint.
  */
 export function BlockImportModule({
   renderTrigger,
@@ -122,15 +105,7 @@ export function BlockImportModule({
   });
   const [resolution, setResolution] = useState<BlockConflictResolution>("skip");
 
-  /*
-   * The conflict-resolution choice — the role was already correct, but **arrow-key
-   * movement was missing** (it promised navigation and nothing happened).
-   *
-   * ⚠️ The container stays put: it is nearly the primitive canonical but uses `p-1`/`gap-1`
-   * (the canonical is `p-px`/`gap-px`), and an inactive segment carries hover ink that is
-   * not in the value layer. If it were only the inset, migrating would be right, but hover
-   * is entangled, so container convergence waits until the hover axis is decided.
-   */
+  /* Arrow keys move the choice. The container keeps `p-1`/`gap-1` until the hover axis is decided. */
   const resolutionGroup = useRovingRadioGroup<BlockConflictResolution>({
     value: resolution,
     values: ["skip", "prefix"],
@@ -190,17 +165,14 @@ export function BlockImportModule({
   useEffect(() => {
     if (!open) return;
     const handler = (event: KeyboardEvent) => {
-      // Never while writes are in flight — closing hid an import mid-write
-      // with no way to see its outcome (bug sweep 2026-09-01).
+      // Never while writes are in flight, or an import is hidden mid-write.
       if (event.key === "Escape" && !busy) dispatchImportUi({ type: "close-preview" });
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [open, busy]);
 
-  // Decided by whether it can be called, not by key presence (`in`) — judging "supported"
-  // in an environment where the value is undefined paints a raw JS error where the user
-  // copy belongs. The installed app uses a Tauri picker/shim implementing the same folder IO contract.
+  // Supported only when callable, not merely present, or a raw JS error shows where copy belongs.
   const supported =
     (typeof window !== "undefined" && typeof window.showDirectoryPicker === "function") ||
     isTauriVaultRuntime();
@@ -249,15 +221,7 @@ export function BlockImportModule({
     if (!preview || !plan || plan.writes.length === 0 || busy) return;
     setBusy(true);
     setDialogError(false);
-    /*
-     * All writes land or none do (bug sweep 2026-09-01). A mid-loop failure
-     * used to leave the earlier files on disk with no manifest refresh, and —
-     * worse — made retry permanently impossible: the memoized plan still
-     * targeted the already-created slugs, so the retry's first createDoc threw
-     * "Document already exists" every time. The files this loop creates are
-     * new by construction, so rolling back is deleting exactly what it made;
-     * after the rollback the same plan applies cleanly on retry.
-     */
+    /* All writes land or none do: a failure deletes exactly what this loop created, so a retry applies cleanly. */
     const landed: string[] = [];
     try {
       for (let i = 0; i < plan.writes.length; i += 1) {
@@ -310,7 +274,7 @@ export function BlockImportModule({
         })
       ) : (
       <>
-        {/* The same quiet row grammar as the "documents not on the map" row — no permanent button noise. */}
+        {/* The quiet row grammar of the "documents not on the map" row. */}
       <button
         type="button"
         onClick={() => void pickBlockFolder()}

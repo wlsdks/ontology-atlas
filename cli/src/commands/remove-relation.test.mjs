@@ -7,15 +7,11 @@ import { describe, it } from 'node:test';
 import { planRemoval, runRemoveRelation } from './remove-relation.mjs';
 
 /**
- * Owner, 2026-08-25: *"make every feature usable from the CLI alone."* Measured the same day: the
- * CLI could **create** a relation with `relate` and had nothing to remove one, so a person working
- * only in the terminal had to open the Markdown and hand-edit frontmatter to undo their own typo.
- *
- * These hold the part a wrong answer would quietly corrupt: which key is touched, what survives it,
- * and that a relation which is not there is reported rather than invented.
+ * The parts a wrong answer would quietly corrupt: which key is touched, what survives, and that a
+ * relation which is not there is reported rather than invented.
  */
-describe('remove-relation — 관계 하나를 정확히 덜어낸다', () => {
-  it('배열에서 그 하나만 빼고 나머지는 그대로 둔다', () => {
+describe('remove-relation removes exactly one relation', () => {
+  it('removes only that entry and keeps the rest of the array', () => {
     const plan = planRemoval(
       { relates: ['capabilities/a', 'capabilities/b', 'capabilities/c'] },
       'relates',
@@ -26,7 +22,7 @@ describe('remove-relation — 관계 하나를 정확히 덜어낸다', () => {
     assert.deepEqual(plan.next, ['capabilities/a', 'capabilities/c']);
   });
 
-  it('관계 타입을 프론트매터 키로 옮긴다 — depends_on 은 dependencies 다', () => {
+  it('maps the relation type to its frontmatter key (depends_on is dependencies)', () => {
     // ⚠️ The public type and the frontmatter key differ, and writing to the type name would create a
     // second key holding half the graph while the real one still says the relation exists.
     const plan = planRemoval({ dependencies: ['capabilities/x'] }, 'depends_on', 'capabilities/x');
@@ -35,9 +31,7 @@ describe('remove-relation — 관계 하나를 정확히 덜어낸다', () => {
   });
 
   it('hand-authored depends_on: aliases read as the dependencies edge family', () => {
-    // Bug sweep 2026-09-01: the remover read only the literal canonical key, so a
-    // doc carrying `depends_on: [x]` answered "this document has no dependencies"
-    // for an edge the map plainly renders. The MCP remover already folds the alias.
+    // A doc carrying `depends_on: [x]` holds the dependencies edge; the MCP remover folds the alias too.
     const plan = planRemoval({ depends_on: ['capabilities/x'] }, 'depends_on', 'capabilities/x');
     assert.equal(plan.found, true);
     assert.equal(plan.key, 'dependencies');
@@ -56,24 +50,23 @@ describe('remove-relation — 관계 하나를 정확히 덜어낸다', () => {
     assert.deepEqual(plan.aliasKeys, ['depends_on']);
   });
 
-  it('domain 은 배열이 아니라 하나짜리 값이다', () => {
+  it('treats domain as a single value, not an array', () => {
     const plan = planRemoval({ domain: 'domains/core' }, 'domain', 'domains/core');
     assert.equal(plan.found, true);
     assert.equal(plan.next, null);
   });
 
-  it('다른 도메인을 지우라고 하면 지우지 않고 현재 값을 알려 준다', () => {
+  it('refuses to remove a different domain and reports the current value', () => {
     const plan = planRemoval({ domain: 'domains/core' }, 'domain', 'domains/other');
     assert.equal(plan.found, false);
     assert.match(plan.reason, /domains\/core/);
   });
 
   /*
-   * ⚠️ Two different failures, and a person can act on only one of them. "The list has no such slug"
-   * means the slug is wrong; "this document has no such list" means the relation *type* is wrong.
-   * Reporting both as "not found" would hide a mistyped type behind a mistyped slug.
+   * "The list has no such slug" means the slug is wrong; "this document has no such list" means the type
+   * is wrong. One "not found" for both would hide a mistyped type behind a mistyped slug.
    */
-  it('없는 관계와 없는 종류를 구분해서 말한다', () => {
+  it('distinguishes a missing relation from an unknown relation type', () => {
     const missingSlug = planRemoval({ relates: ['capabilities/a'] }, 'relates', 'capabilities/zz');
     assert.equal(missingSlug.found, false);
     assert.match(missingSlug.reason, /not in relates/);
@@ -83,7 +76,7 @@ describe('remove-relation — 관계 하나를 정확히 덜어낸다', () => {
     assert.match(missingKey.reason, /no contains/);
   });
 
-  it('중복이 들어 있어도 정규화한 뒤 뺀다', () => {
+  it('normalises duplicates before removing', () => {
     const plan = planRemoval(
       { relates: ['capabilities/a', 'capabilities/a', 'capabilities/b'] },
       'relates',
@@ -94,10 +87,8 @@ describe('remove-relation — 관계 하나를 정확히 덜어낸다', () => {
 });
 
 /*
- * Owner inspection, 2026-09-26: removing the only `relates` entry of capabilities/wiki-pages left
- * `relates: []` in the file (the map's editor), and this command wrote the same residue plus
- * `relation_notes: {  }`. The file must read as if the relation had never been written; only a
- * kind's scaffold list (a capability's `elements`) returns to the `[]` creating the node writes.
+ * The file must read as if the relation had never been written; only a kind's scaffold list (a
+ * capability's `elements`) returns to the `[]` that creating the node writes.
  */
 describe('remove-relation — the bytes it leaves', () => {
   const doc = (lines) =>

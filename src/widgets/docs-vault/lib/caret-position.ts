@@ -1,27 +1,7 @@
 /**
- * The caret's **screen coordinates inside a textarea** — the value that makes the
- * mention menu appear where the user was typing.
- *
- * ## Why it is needed (2026-08-08, owner report)
- *
- * The `@` mention menu appeared in the editor's **bottom-left corner**, because
- * the old wikilink popover was pinned there and this inherited the position. The
- * owner corrected it immediately — *"It should appear right where I was typing."* (it should appear
- * right where I was typing). That is right, and there is a reason: the mention
- * menu is **an extension of the character being typed**, so away from where the
- * eyes are it does not read as the result of what was just done.
- *
- * ## How it is measured — the mirror technique
- *
- * A `textarea` has no API for caret coordinates. So an invisible `div` with **the
- * same font, width and padding** is built, the text up to the caret is put into
- * it, and a marker `span` at the end is read for its position. The browser does
- * the line-breaking for us, so we never imitate line-break rules — imitating them
- * inevitably diverges on Hangul line breaks, tabs and long words.
- *
- * That is also why so many properties have to be copied. Miss one and the mirror's
- * line-breaking differs from the original, and the coordinates then point not
- * slightly off but **at a different line**.
+ * Caret screen coordinates inside a textarea, so the mention menu opens where the user types. A
+ * hidden mirror div with the same font, width and padding lets the browser break lines; a missed
+ * copied property moves the result to another line.
  */
 
 /** Properties that must be copied for the mirror to have the same shape as the original. */
@@ -68,8 +48,7 @@ export function caretPoint(textarea: HTMLTextAreaElement, index: number): CaretP
   for (const property of MIRRORED_PROPERTIES) {
     mirror.style[property] = style[property];
   }
-  // Keep it off screen while **still having layout computed**. With
-  // `display:none` the width is 0 and the line-breaking is completely different.
+  // Off screen but still laid out; `display:none` would zero the width and change line breaks.
   mirror.style.position = 'absolute';
   mirror.style.visibility = 'hidden';
   mirror.style.top = '0';
@@ -100,13 +79,8 @@ export function caretPoint(textarea: HTMLTextAreaElement, index: number): CaretP
 }
 
 /**
- * Move the caret coordinates to a position that keeps the menu **inside the
- * editor**.
- *
- * With the caret at the right or bottom edge, the menu would be clipped as is. In
- * that case the attachment direction flips — a clipped menu is the same as no
- * menu, and one pushed off screen creates a scroll that shifts the text being
- * edited.
+ * Moves the menu to stay inside the editor, flipping direction at the right or bottom edge; a
+ * clipped menu is useless and an overflowing one scrolls the text being edited.
  */
 export function clampMenuToBox({
   caret,

@@ -16,10 +16,8 @@ export interface GuidedTourCardProps {
 }
 
 /**
- * The card — progress dots N/M, title, body, [back][next]/[skip], step 7's
- * (recent) two-way branch, and the interactive (step 4) waiting label are all
- * drawn by this one component. The surface uses only the existing panel tokens:
- * `--color-panel`, `--chrome-border`, `--chrome-shadow`, `--chrome-radius`.
+ * The tour card: progress dots, title, body, back/next/skip, the step 7 branch and the step 4
+ * waiting label, on the existing panel tokens only.
  */
 export function GuidedTourCard({
   tour,
@@ -31,17 +29,9 @@ export function GuidedTourCard({
   const t = useTranslations("guidedTour");
   const { step, stepIndex, personaSteps, personaStepIndex, back, advance, skip, finishAsDone, chooseDevBranch, hasSelection, devBranchAvailable, isFinalStep } = tour;
 
-  // Focus movement (2026-07-23) — when the `role="dialog"` card opens or the step
-  // changes, focus moves to the card (re-announcing the aria-label and giving a
-  // keyboard user a Tab starting point). Restoring the trigger on close belongs to
-  // `useGuidedTour.start()`/`finish()` (avoiding the child effect running first and
-  // polluting the activeElement capture).
-  //
-  // The focus trap lives in **`GuidedTourOverlay`, not here**
-  // (`useDialogFocusTrap`, `initialFocus: "none"`). The overlay contains the card,
-  // so its scope is wider and more accurate. Trapping here as well would create two
-  // window keydown listeners and one Tab would move focus twice — the 2026-07-28
-  // audit nearly introduced exactly that.
+  // Focus moves to the card on open and on each step, re-announcing it and giving keyboard users
+  // a Tab start. Trigger restore belongs to `useGuidedTour.start()`/`finish()`. The focus trap
+  // lives in `GuidedTourOverlay`; a second trap here would move focus twice per Tab.
   const cardRef = useRef<HTMLDivElement | null>(null);
   const stepId = step?.id ?? null;
   useEffect(() => {
@@ -50,10 +40,8 @@ export function GuidedTourCard({
 
   if (!step) return null;
 
-  // Progress is measured against the persona's fixed journey (`personaSteps`),
-  // not the momentarily resolvable `visibleSteps`, so the denominator does not
-  // fluctuate within one tour. A skipped step looks like a dot passed over.
-  // Navigation (including whether [back] is enabled) still uses `visibleSteps` indices.
+  // Progress counts against the fixed `personaSteps`, so the denominator does not fluctuate;
+  // navigation, including [back], still uses `visibleSteps` indices.
   const total = personaSteps.length;
   const current = personaStepIndex + 1;
   const isFirst = stepIndex <= 0;
@@ -72,15 +60,8 @@ export function GuidedTourCard({
       className={cn(
         "fixed z-[var(--z-tour-card)] rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--color-panel)] p-4 shadow-[var(--chrome-shadow)]",
         "transition-opacity duration-[var(--topology-tour-transition-ms)] ease-[var(--topology-motion-ease-out)] motion-reduce:transition-none",
-        // Step-transition entrance — the overlay remounts via `key={step.id}`, so
-        // this keyframe (the opacity-only `panelCrossfadeIn`) runs once per step.
-        //
-        // 2026-07-28: promoted from an inline arbitrary
-        // `animate-[…] motion-reduce:animate-none` **to a named class**. Inline,
-        // globals.css's reduced-motion registry had no selector to point at, so a
-        // reduced-motion user got only the global kill rule and no equivalent at
-        // all — step transitions were entirely hard cuts. The registry list is the
-        // reach.
+        // The overlay remounts via `key={step.id}`, so this opacity-only keyframe runs once per step.
+        // A named class, so globals.css's reduced-motion registry can give it an equivalent.
         "guided-tour-card-in",
         "focus:outline-none",
       )}
@@ -93,11 +74,10 @@ export function GuidedTourCard({
         >
           {t("progressLabel", { current, total })}
         </p>
-        {/* One button grammar for every action in the card (2026-09-25): `<Button>` at
-            `sm`, ghost for the quiet ones, outline for the stand-in press and primary
-            for going forward. The card used to mix three shapes in one surface — a
-            dashed 326x32 chip, a 46x32 segment and a 39x24 text link. The skip sits in
-            the header row, pulled into its corner so its label keeps the padding line. */}
+        {/*
+         * One button grammar for every card action: `<Button>` at `sm`, ghost for quiet ones,
+         * outline for the stand-in press, primary for forward. Skip sits in the header corner.
+         */}
         <Button
           variant="ghost"
           size="sm"
@@ -139,11 +119,10 @@ export function GuidedTourCard({
           onClick={onActivateAnchor}
           disabled={!onActivateAnchor || hasSelection}
           data-testid="guided-tour-activate-target"
-          /* `justify-center` / `text-center` mean nothing without a width. The card
-             is not a flex container, so this button was shrink-to-fit and those two
-             centring declarations **had never once applied** — it sat left-aligned
-             while claiming to be centred (measured 2026-07-29). Filling the width is
-             also what lines its left edge up with "Previous" on the same row. */
+          /*
+           * The card is not a flex container, so the centring classes need a full width;
+           * it also aligns the left edge with "Previous".
+           */
           className="w-full"
         >
           <span data-testid={hasSelection ? "guided-tour-success" : "guided-tour-waiting"}>
@@ -153,22 +132,12 @@ export function GuidedTourCard({
       ) : null}
 
       {/**
-       * **[back] does not disappear on any step** (dogfooding 2026-07-29).
-       *
-       * The draft wrapped the whole back/next row in `!isInteractive`, so on 4/7
-       * ("try clicking it yourself") and the final branch step **[back] vanished
-       * entirely** — a control that had been at the bottom left for five steps
-       * silently disappeared on the sixth. The user then has to relearn whether
-       * this tour can go back at all.
-       *
-       * How to go forward may differ per step (next, try it, choose a branch).
-       * **There is no reason for how to go back to differ.** So [back] is lifted
-       * out of the three branches and stands in the same place always, and only
-       * the forward control is chosen by the step.
+       * [back] stands in the same place on every step; only the forward control (next, try
+       * it, choose a branch) varies.
        */}
       {isBranchStep ? (
         <div className="mt-1 flex flex-col gap-2">
-          {/* The branch's two buttons are **one set** stacked vertically, one height. */}
+          {/* The branch's two buttons are one set stacked vertically, one height. */}
           <Button
             variant="outline"
             size="sm"
@@ -178,9 +147,10 @@ export function GuidedTourCard({
           >
             {t("finishTourAction")}
           </Button>
-          {/* When step 8's anchor (the first-run card) has already been dismissed and
-              cannot resolve, the branch button is hidden — a button with nowhere to go
-              was the welcome reset loop (measured correction 2026-07-23). */}
+          {/*
+           * Hidden when step 8's anchor (the first-run card) cannot resolve, or the button would
+           * reset to welcome.
+           */}
           {devBranchAvailable ? (
             <Button
               variant="primary"
@@ -196,10 +166,9 @@ export function GuidedTourCard({
       ) : null}
 
       <div className="mt-1 flex items-center justify-between gap-2">
-        {/* On the first step there is nowhere to go back to, so there is no [back] — a
-            disabled one was a dead control with no reason given (interaction audit,
-            2026-09-25). An empty slot holds its place, so [next] does not move between
-            step 1 and step 2, and from step 2 on [back] stands where it always does. */}
+        {/*
+         * No [back] on the first step; an empty slot holds its place so [next] does not move.
+         */}
         {isFirst ? (
           <span aria-hidden data-testid="guided-tour-back-slot" />
         ) : (
@@ -212,8 +181,10 @@ export function GuidedTourCard({
             {t("prevLabel")}
           </Button>
         )}
-        {/* Only the forward control is chosen by the step — on an interactive step the
-            anchor click does that job, and on the branch step the two choices above do. */}
+        {/*
+         * On an interactive step the anchor click moves forward, on the branch step the two
+         * choices above do.
+         */}
         {!isInteractive && !isBranchStep ? (
           <Button
             variant="primary"

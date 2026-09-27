@@ -51,16 +51,7 @@ export function answerObservation(
   hashes: ReadonlyMap<string, string>,
 ): AnswerObservation {
   const before = observationMap(frontmatter.answer_source_observations);
-  /*
-   * **What the page was last written from, which the observation cannot say** (installed app,
-   * 2026-09-20). The observation is the immutable record of the bytes the answer read, so once
-   * a source moves it reads *changed* for good — including right after a fix turn rewrote the
-   * page from the new bytes and put the old figure under the new one. The reader then offered
-   * "ask for a fresh draft" for work that had just been done, while the wiki row beside it said
-   * the confirmed version was unchanged, because that row reads `source_hash`. `source_hash` is
-   * defined for every writer as the sha256 of the bytes it read, so it is the evidence for "this
-   * page is already written from this version" and both surfaces can now say one thing.
-   */
+  /* The page's own `source_hash` says what it was last written from, which the immutable observation cannot. */
   const written = observationMap(frontmatter.source_hash);
   const paths = sourceList(frontmatter);
   const changed: string[] = [], missing: string[] = [], unmeasured: string[] = [], rewritten: string[] = [];
@@ -89,15 +80,7 @@ function matchesCurrent(recorded: unknown, current: string): boolean {
     && recorded.toLowerCase() === current.toLowerCase();
 }
 
-/**
- * **What a refresh refuses, decided from facts the page already holds.**
- *
- * `prepareAnswerRefresh` reads the file from disk and throws when the retained question or the
- * thread edge cannot be read. The answer page holds the same frontmatter in its manifest, and
- * before v1.2.2 it did not ask: it drew `library.answers.refresh` enabled, the press threw, and
- * the developer's English landed in the page body (installed-app inspection, B2). One predicate
- * read by both sides is what keeps "the page knows" and "the button is offered" from disagreeing.
- */
+/** What a refresh refuses, from the page's own frontmatter, so the button and the refresh agree. */
 export function answerHistoryUnreadable(slug: string, frontmatter: Record<string, unknown>): boolean {
   const question = typeof frontmatter.answer_question === 'string' ? frontmatter.answer_question : frontmatter.title;
   const thread = typeof frontmatter.answer_thread === 'string' ? frontmatter.answer_thread : slug;

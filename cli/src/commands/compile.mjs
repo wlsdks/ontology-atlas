@@ -1,7 +1,5 @@
-// `ontology-atlas compile [vault]` — deterministic graph compile surface.
-// The default is a side-effect-free compiler summary. `--fix` applies only the
-// canonicalizationActions the compiler produced, via patch_concept, reordering the
-// relation arrays.
+// `ontology-atlas compile [vault]`: a side-effect-free compiler summary; `--fix` applies only the compiler's
+// canonicalizationActions through patch_concept.
 
 import { COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
@@ -25,11 +23,8 @@ const CANONICALIZATION_GRAPH_ARRAY_KEYS = Object.freeze([
   'contains',
   'describes',
   'depends_on',
-  // `broader` (is_a / SKOS) was introduced with the studio surface but left out of
-  // this list (audit 2026-07-25). The list drives the canonical-ordering check and
-  // the dangling-reference check **at the same time**, so the omission meant CI
-  // stayed green even when an agent wrote a typo slug into `broader`. A contract
-  // fixture pins this drift.
+  // Drives both the canonical-ordering and the dangling-reference checks, so every relation key,
+  // `broader` included, must be listed; a contract fixture pins it.
   'broader',
 ]);
 const CANONICALIZATION_GRAPH_ARRAY_KEY_SET = new Set(CANONICALIZATION_GRAPH_ARRAY_KEYS);

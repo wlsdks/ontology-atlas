@@ -15,28 +15,8 @@ vi.mock('@/shared/lib/use-prefers-reduced-motion', () => ({
 }));
 
 /**
- * When a save is rejected, **the reason must reach the eye of the person who pressed it.**
- *
- * ## Why this test exists (measured 2026-08-07)
- *
- * Pressing save on the edit screen put the rejection notice at **top 802 · bottom 872 at
- * 390×844** — with a viewport of 844 it was clipped at both ends and caught behind the
- * bottom tab bar. At 1512×900 it was perfectly visible at 628–676. **The longer the form
- * and the shorter the screen, the worse the mismatch** — that is, a defect invisible
- * forever if you only check on a wide screen.
- *
- * The cause in that instance (being able to press save with no vault) is now prevented by
- * disabling the button up front. But errors **with no field** remain — a failed save, a
- * write conflict. `focusField` takes validation errors to their field; those errors have
- * nowhere to go but this banner.
- *
- * ## Why focus is measured rather than pixels
- *
- * "Is it in a visible position" varies with form length, viewport, and translation length,
- * so pinning one combination goes quietly wrong in another. **Is focus on that banner**
- * means the same thing across all of them, and gives the same value to someone who cannot
- * see the screen. Scrolling is what the browser adds to that focus move (jsdom does not
- * implement `scrollIntoView`, so only focus is asserted here — the same discipline as `focusField`).
+ * A rejected save must move focus to the reason. Focus is asserted rather than pixels because
+ * visibility varies with form length and viewport; jsdom lacks `scrollIntoView`.
  */
 
 const project: Project = {
@@ -72,8 +52,8 @@ beforeEach(() => {
   motion.reduced = false;
 });
 
-describe("ProjectForm — 저장 거절은 눌린 사람에게 도착한다", () => {
-  it("빈 생성 폼은 이름에 초점을 두고 자동 주소를 오류로 펼치지 않는다", async () => {
+describe("ProjectForm save rejection focus", () => {
+  it("focuses the name on an empty create form without flagging the automatic slug as an error", async () => {
     Element.prototype.scrollIntoView = vi.fn();
     const onSubmit = vi.fn();
     render(
@@ -90,7 +70,7 @@ describe("ProjectForm — 저장 거절은 눌린 사람에게 도착한다", ()
     expect(screen.queryByLabelText(koMessages.settings.projectForm.fields.slug)).toBeNull();
     expect(onSubmit).not.toHaveBeenCalled();
   });
-  it("저장이 실패하면 초점이 오류 배너로 간다", async () => {
+  it("moves focus to the error banner when the save fails", async () => {
     const scrollSpy = vi.fn();
     Element.prototype.scrollIntoView = scrollSpy;
     const onSubmit = vi.fn(async () => {
@@ -105,22 +85,17 @@ describe("ProjectForm — 저장 거절은 눌린 사람에게 도착한다", ()
 
     // Guard against a no-op run: if submit never happened, the assertions below pass
     // because nothing occurred rather than because they are true.
-    expect(onSubmit, "저장이 호출되지 않았다 — 이 시험이 헛돈다").toHaveBeenCalledTimes(1);
+    expect(onSubmit, "submit was never called, so this test proves nothing").toHaveBeenCalledTimes(1);
 
     const banner = await screen.findByTestId("project-error-banner");
-    /*
-     * ⚠️ The banner shows **the copy written for a failed save**, not the thrown message
-     * (v1.2.2: `no-raw-error-copy` R1). This fixture throws Korean; the real rejections throw
-     * English from the vault layer, and a screen cannot translate either of them. The thrown
-     * text is kept where a developer reads it and a reader does not.
-     */
+    /* The banner shows the copy written for a failed save, not the thrown message (`no-raw-error-copy`). */
     expect(banner).toHaveTextContent(koMessages.settings.projectForm.validation.saveFailed);
     expect(banner.getAttribute("data-failure-detail")).toContain(
       "데모 모드에서는 저장할 수 없습니다",
     );
     expect(
       document.activeElement,
-      "저장이 거절됐는데 초점이 그대로다 — 긴 폼·짧은 화면에서는 이유가 화면 밖에 뜬다",
+      "focus stayed put after a rejected save, leaving the reason off screen on a long form",
     ).toBe(banner);
     expect(scrollSpy).toHaveBeenLastCalledWith({ behavior: 'smooth', block: 'center' });
   });
@@ -143,7 +118,7 @@ describe("ProjectForm — 저장 거절은 눌린 사람에게 도착한다", ()
     expect(scrollSpy).toHaveBeenLastCalledWith({ behavior: 'auto', block: 'center' });
   });
 
-  it("성공하면 초점을 빼앗지 않는다", async () => {
+  it("keeps focus where it is when the save succeeds", async () => {
     const onSubmit = vi.fn(async () => {});
     renderEdit(onSubmit);
 

@@ -45,7 +45,7 @@ function renderTile(ui: React.ReactElement) {
   );
 }
 
-describe("GitStatusTile — 웹(브리지 없음)", () => {
+describe('GitStatusTile on the web without a bridge', () => {
   it("shows the dirty dot from sessionDirty without any invoke", () => {
     renderTile(<GitStatusTile onActivate={() => {}} sessionDirty />);
     expect(screen.getByTestId("app-nav-rail-git-dot")).toBeInTheDocument();
@@ -66,7 +66,6 @@ describe("GitStatusTile — 웹(브리지 없음)", () => {
     expect(onActivate).toHaveBeenCalledTimes(1);
   });
 
-  // Owner report 2026-07-23 — the utility tier's icon size order (the same token as the activity tile).
   it("keeps the History icon on the utility ladder (--app-nav-rail-utility-icon-size)", () => {
     renderTile(<GitStatusTile onActivate={() => {}} />);
     const icon = screen.getByTestId("app-nav-rail-git-tile").querySelector("svg");
@@ -74,7 +73,7 @@ describe("GitStatusTile — 웹(브리지 없음)", () => {
   });
 });
 
-describe("GitStatusTile — 데스크톱(Tauri)", () => {
+describe('GitStatusTile on desktop (Tauri)', () => {
   it("queries git_status once on mount and shows the dot when the vault is dirty", async () => {
     tauriApiMock.runtimeAvailable = true;
     tauriApiMock.invoke.mockResolvedValue({
@@ -120,7 +119,7 @@ describe("GitStatusTile — 데스크톱(Tauri)", () => {
     expect(tauriApiMock.invoke).toHaveBeenCalledTimes(2);
   });
 
-  it("treats an uninitialized repo as clean (dot 없음 — 자동 init 금지, 상태로만)", async () => {
+  it('treats an uninitialized repo as clean without a dot and never auto-initializes', async () => {
     tauriApiMock.runtimeAvailable = true;
     tauriApiMock.invoke.mockResolvedValue({
       initialized: false,
@@ -133,18 +132,15 @@ describe("GitStatusTile — 데스크톱(Tauri)", () => {
 
     renderTile(<GitStatusTile onActivate={() => {}} vaultPath="/repo/vault" sessionDirty />);
     await waitFor(() => expect(tauriApiMock.invoke).toHaveBeenCalledTimes(1));
-    // A git_status result (clean) wins over the sessionDirty fallback. The call being made
-    // is not the result being rendered: the dot drawn for `sessionDirty` stays until the
-    // resolved status lands, so this waits for the absence rather than asserting it once
-    // (CI shard 2/3 caught the dot still there on 2026-09-23).
+    // Waits for the dot to disappear: the sessionDirty dot stays until the resolved status lands.
     await waitFor(() =>
       expect(screen.queryByTestId("app-nav-rail-git-dot")).not.toBeInTheDocument(),
     );
   });
 });
 
-describe("GitStatusTile — 폴더를 따라간다", () => {
-  it("vault-changed 가 오면 한 번 더 읽고, 그 밖에는 여전히 폴링하지 않는다", async () => {
+describe('GitStatusTile follows the open folder', () => {
+  it('reads once more on vault-changed and otherwise still does not poll', async () => {
     tauriApiMock.runtimeAvailable = true;
     tauriApiMock.invoke.mockResolvedValue({
       initialized: true,
@@ -167,9 +163,8 @@ describe("GitStatusTile — 폴더를 따라간다", () => {
     expect(tauriApiMock.invoke.mock.calls.every(([command]) => command === "git_status")).toBe(true);
   });
 
-  it("폴더를 바꾸면 앞 폴더의 점을 물려주지 않는다", async () => {
-    // The dot says "this folder has unrecorded changes". Carried across a folder switch it
-    // says it about a folder it was never read from — and a clean folder wears it.
+  it('does not carry the previous folder\'s dot over after a folder switch', async () => {
+    // A dot carried across a folder switch would describe a folder it was never read from.
     tauriApiMock.runtimeAvailable = true;
     let finishCleanRead = (_: unknown) => {};
     const cleanRead = new Promise((resolve) => {
@@ -187,8 +182,6 @@ describe("GitStatusTile — 폴더를 따라간다", () => {
             stagedOutsideVault: [],
           };
         }
-        // The new folder's read is still in flight — which is the whole window in which the
-        // previous folder's answer could be shown as this one's.
         return cleanRead;
       },
     );
@@ -198,8 +191,7 @@ describe("GitStatusTile — 폴더를 따라간다", () => {
     );
     expect(await screen.findByTestId("app-nav-rail-git-dot")).toBeInTheDocument();
 
-    // The clean folder's own read has not landed yet at this point — the dot must already
-    // be gone, because the count on screen is not this folder's.
+    // The dot must be gone before the new folder's own read lands.
     await act(async () => {
       rerender(
         <NextIntlClientProvider locale="ko" messages={koMessages}>
@@ -225,7 +217,7 @@ describe("GitStatusTile — 폴더를 따라간다", () => {
     expect(screen.queryByTestId("app-nav-rail-git-dot")).not.toBeInTheDocument();
   });
 
-  it("브라우저(브리지 없음)에서는 워처를 구독하지 않는다", () => {
+  it('does not subscribe to the watcher in a browser without a bridge', () => {
     renderTile(<GitStatusTile onActivate={() => {}} sessionDirty />);
     expect(tauriEventMock.listen).not.toHaveBeenCalled();
   });

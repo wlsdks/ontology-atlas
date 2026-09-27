@@ -13,16 +13,7 @@ interface Props extends Omit<ButtonProps, "onClick"> {
   testId?: string;
 }
 
-/**
- * **The button says what happened, and nothing else does** (2026-09-26).
- *
- * It also raised a toast repeating its own label — in English the two were the same words,
- * "Link copied" — so the outcome was said twice, once where the press happened and once in a
- * box at the bottom of the window. On a project page that box stood over the page's own text
- * (measured at 1512x949: the Includes and Excludes bullets under it). This is
- * the copy-button pattern the other copy controls already keep (`CopyAgentTextButton`): the label
- * changes where the eye is, and a polite live region reads it out.
- */
+/** The button's label says the outcome and a polite live region reads it; no toast repeats it. */
 export function CopyProjectLinkButton({
   slug,
   testId,
@@ -70,12 +61,7 @@ export function CopyProjectLinkButton({
         {...props}
       >
         {icon}
-        {/*
-          Every label this button can wear is laid in one grid cell and only the current one is
-          visible, so the button is always as wide as its longest word (2026-09-25 sweep): "copy
-          link" becoming "link copied" grew it by 12px, and in the right-aligned top bar every
-          control to its left jumped. The live region below still announces the change.
-        */}
+        {/* All labels share one grid cell so the button never changes width. */}
         <span className="inline-grid">
           {[t("labelIdle"), t("labelCopied"), t("labelError")].map((option) => (
             <span

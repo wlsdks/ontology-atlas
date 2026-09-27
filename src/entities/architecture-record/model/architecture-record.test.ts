@@ -55,11 +55,7 @@ describe('parseArchitectureRecord', () => {
     expect(record.brief.conformance.excludedByUsage).toBeUndefined();
   });
 
-  /*
-   * ⚠️ **The two parsers reject each other by contract** (2026-08-27 council, verification set:
-   * "record parser rejects rule fields"). A reviewed profile must never be read as a measurement
-   * receipt — each profile-marking key alone is enough to refuse.
-   */
+  /* The record and profile parsers reject each other: any profile-marking key alone is refused. */
   it.each([
     ['architecture_schema', { architecture_schema: 'architecture-profile/v1' }],
     ['profile_uid', { profile_uid: 'e9f5fe88-3711-4b3c-9f77-3b6f809db82c' }],
@@ -81,7 +77,7 @@ describe('parseArchitectureRecord', () => {
     ).toThrow(/architectureRecord:v1/);
   });
 
-  /* No absolute machine path leaves the sidecar — a surviving rootPath is invalid, not untidy. */
+  /* No absolute machine path may persist; a rootPath anywhere is invalid. */
   it('throws when rootPath survives anywhere in the envelope', () => {
     const leaked = gitRecord({
       conformance: { source: { rootPath: '/Users/someone/dev/repo', filesScanned: 193 } },
@@ -119,17 +115,9 @@ describe('parseArchitectureRecord', () => {
   });
 });
 
-/*
- * The web half of the type-only measurement contract (2026-08-27 council, point 1). The
- * cross-surface parity test owns web-versus-MCP equality; this pins the web parser's own
- * default and its exact refusal wording, which that deep-equality cannot see.
- */
+/* The web parser's default and refusal wording, which the cross-surface deep-equality cannot see. */
 describe('parseArchitectureRecord — observed role traffic', () => {
-  /*
-   * The traffic between roles is measured by the scanner and already written into every record
-   * `atlas architecture --record` produces (verified 2026-08-28: 26 rows on this repository).
-   * The type simply never declared it, so the surface that reads the record threw it away.
-   */
+  /* Role edges already in written records are read, and their absence is tolerated. */
   it('reads the role edges a record already carries, and tolerates their absence', () => {
     const base = gitRecord();
     const withEdges = parseArchitectureRecord({
@@ -201,13 +189,7 @@ describe('parseArchitectureProfile — which import usages the rules govern', ()
     evidence: ['docs/ARCHITECTURE.md#fsd-layers'],
   };
 
-  /*
-   * ⚠️ Rewritten at the 2026-08-29 merge, not deleted. The branch encoded this as
-   * `type_only_dependencies: ruled|free` with `free` as the default; `main` had shipped
-   * `dependency_usages` with both usages governed by default, and the reconciliation kept the
-   * shipped encoding. The property being asserted is the same one: what a profile that says
-   * nothing governs, and what it governs once it speaks.
-   */
+  /* An absent `dependency_usages` governs both usages. */
   it('governs both usages when the key is absent', () => {
     expect(parseArchitectureProfile(base).dependencyUsages).toEqual(['value', 'type_only']);
   });
@@ -219,8 +201,7 @@ describe('parseArchitectureProfile — which import usages the rules govern', ()
   });
 
   it('refuses the retired key by name, and says what to write instead', () => {
-    /* Not an alias and not silently ignored: a profile written against the branch's key gets one
-       parse error carrying its own migration. */
+    /* The retired key is refused with its own migration message, not aliased or ignored. */
     expect(() => parseArchitectureProfile({ ...base, type_only_dependencies: 'free' })).toThrow(
       'type_only_dependencies was replaced by dependency_usages: write dependency_usages: [value] for the old free, or omit the key for the old ruled.',
     );

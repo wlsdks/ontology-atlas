@@ -1,21 +1,8 @@
 /**
- * Ontology tree builder: KnowledgeGraphNode + KnowledgeGraphEdge → a tree.
- *
- * Algorithm:
- *   1. `document` / `vault-readme` nodes are excluded (reader/evidence docs).
- *   2. `contains` edges give parent→child. `belongs_to` is its reverse, so reading
- *      it child→parent yields the same result.
- *   3. A node with no parent is a root (usually `kind=project`).
- *   4. Cycle detection: walking the parent chain and reaching yourself is a cycle →
- *      promote that child to a root and warn.
- *   5. Multiple parents: when one child is the `to` of more than one `contains`
- *      edge, only the first survives and the rest warn.
- *   6. A node appears in the tree at most once — marked visited on first use.
- *
- * Ordering:
- *   - roots: kind first (project before everything else), then title.
- *   - children: kind (domain > capability > element), then title.
- *   - Deterministic: the same input always produces the same output.
+ * Builds the ontology tree from `contains`/`belongs_to`, excluding document and readme nodes.
+ * A cycle or a second parent promotes or drops the edge with a warning; each node appears once.
+ * Deterministic order: kind, then displayed name. Parent map and child lists; the cycle check
+ * walks each ancestor chain, O(V·d) for tree depth d.
  */
 
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../../model";
@@ -30,12 +17,7 @@ const KIND_SORT_ORDER: Record<string, number> = {
   'vault-readme': 5,
 };
 
-/**
- * Siblings sort by the name the row shows (`display ?? title`, the same
- * expression every render surface uses), not by the canonical `title`. Sorted
- * on `title`, the Korean INDEX listed its domains in the alphabet of English
- * names nobody on that screen could see (2026-09-19).
- */
+/** Siblings sort by the displayed name (`display ?? title`), which is what each locale's row shows. */
 function compareNodes(a: KnowledgeGraphNode, b: KnowledgeGraphNode): number {
   const ka = KIND_SORT_ORDER[a.kind] ?? 99;
   const kb = KIND_SORT_ORDER[b.kind] ?? 99;
@@ -49,12 +31,10 @@ export function buildOntologyTree(
 ): OntologyTreeBuildResult {
   const warnings: string[] = [];
 
-  // 1. Exclude graph reader/evidence docs.
   const treeNodes = nodes.filter((n) => n.kind !== "document" && n.kind !== "vault-readme");
   const nodeById = new Map(treeNodes.map((n) => [n.id, n] as const));
 
-  // 2. Parent map: on a `contains` edge `from` is the parent and `to` the child;
-  //    `belongs_to` says the same thing reversed (child belongs_to parent).
+  // `contains` runs parent → child; `belongs_to` states the same reversed.
   const parentOf = new Map<string, string>();
   for (const edge of edges) {
     let parentId: string | undefined;
@@ -75,10 +55,7 @@ export function buildOntologyTree(
     }
     if (parentOf.has(childId)) {
       const existingParent = parentOf.get(childId)!;
-      // The same parent appearing twice (frontmatter declared from both sides) is
-      // silent: derive-ontology-from-vault's dedup normally blocks it, and this is
-      // defence in depth for an externally supplied manifest. Only genuine multiple
-      // parents — different parents — surface to the user.
+      // A repeated same parent (declared from both sides) is silent; only different parents warn.
       if (existingParent === parentId) continue;
       warnings.push(
         `node "${childId}" has multiple parents — keeping first (${existingParent}), ignoring (${parentId})`,
@@ -88,7 +65,6 @@ export function buildOntologyTree(
     parentOf.set(childId, parentId);
   }
 
-  // 3. Cycle detection: a child that ends up being its own ancestor.
   function ancestorChainHasCycle(startId: string): boolean {
     const visited = new Set<string>();
     let curr: string | undefined = startId;
@@ -107,14 +83,12 @@ export function buildOntologyTree(
     }
   }
 
-  // 4. Build the childrenOf index.
   const childrenOf = new Map<string, string[]>();
   for (const [childId, parentId] of parentOf) {
     if (!childrenOf.has(parentId)) childrenOf.set(parentId, []);
     childrenOf.get(parentId)!.push(childId);
   }
 
-  // 5. Recursive build.
   const visited = new Set<string>();
   function buildSubtree(nodeId: string, depth: number): OntologyTreeNode | null {
     if (visited.has(nodeId)) {
@@ -134,7 +108,7 @@ export function buildOntologyTree(
     return { node, depth, children };
   }
 
-  // 6. Root candidates are the nodes absent from parentOf; project kind sorts first.
+  // Roots are nodes without a parent; projects sort first.
   const rootIds = treeNodes
     .filter((n) => !parentOf.has(n.id))
     .map((n) => n.id);
@@ -146,14 +120,13 @@ export function buildOntologyTree(
   }
   roots.sort((a, b) => compareNodes(a.node, b.node));
 
-  // 7. Orphans are non-document nodes never visited, i.e. absent from the tree —
-  //    normally none.
+  // Orphans are tree nodes never visited, normally none.
   const orphans = treeNodes.filter((n) => !visited.has(n.id));
 
   return { roots, orphans, warnings };
 }
 
-/** Total node count in the tree, counted recursively. Used by the minimap and stats. */
+/** Total node count, recursive. */
 export function countTreeNodes(roots: OntologyTreeNode[]): number {
   let count = 0;
   function visit(node: OntologyTreeNode) {
@@ -164,7 +137,7 @@ export function countTreeNodes(roots: OntologyTreeNode[]): number {
   return count;
 }
 
-/** Flattens to a list; `depth` drives indentation. The step before an expand/collapse UI. */
+/** Flattened in display order; `depth` drives indentation. */
 export function flattenTree(roots: OntologyTreeNode[]): OntologyTreeNode[] {
   const out: OntologyTreeNode[] = [];
   function visit(node: OntologyTreeNode) {

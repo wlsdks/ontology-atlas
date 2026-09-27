@@ -89,7 +89,7 @@ function stripAnsi(value) {
   return value.replace(/\x1b\[[0-9;]*m/g, '');
 }
 
-test('relate --dry-run은 preflight 뒤 source read 실패를 성공으로 바꾸지 않는다', { concurrency: false }, async () => {
+test('relate --dry-run reports a source read failure after preflight as a failure', { concurrency: false }, async () => {
   await withVault(async ({ root, source }) => {
     const result = await captureCommand(() =>
       runRelate(['a', 'b', 'relates', root, '--dry-run', '--json'], {
@@ -102,12 +102,12 @@ test('relate --dry-run은 preflight 뒤 source read 실패를 성공으로 바�
 
     assert.equal(result.code, 1, `stdout: ${result.stdout}\nstderr: ${result.stderr}`);
     assert.match(stripAnsi(result.stderr), /Doc not found/i);
-    assert.equal(result.stdout, '', '읽기 실패인데 dry-run 성공 payload를 내보냈다');
-    assert.equal(existsSync(source), false, 'dry-run이 삭제된 source를 되살렸다');
+    assert.equal(result.stdout, '', 'a read failure emitted a dry-run success payload');
+    assert.equal(existsSync(source), false, 'dry-run recreated the deleted source');
   });
 });
 
-test('relate는 관계 배열을 읽은 뒤 사람 수정이 생기면 conflict로 멈추고 바이트를 보존한다', { concurrency: false }, async () => {
+test('relate stops with a conflict and keeps the bytes when a person edits the source after the read', { concurrency: false }, async () => {
   await withVault(async ({ root, source }) => {
     const humanBytes = documentFor({
       uid: SOURCE_UID,
@@ -130,16 +130,16 @@ test('relate는 관계 배열을 읽은 뒤 사람 수정이 생기면 conflict�
       }),
     );
 
-    assert.equal(changedAfterRead, true, '관계 배열을 읽은 뒤 수정 경합을 주입하지 못했다');
+    assert.equal(changedAfterRead, true, 'the edit race was not injected after the read');
     assert.equal(result.code, 1, `stdout: ${result.stdout}\nstderr: ${result.stderr}`);
     assert.match(stripAnsi(result.stderr), /changed or was deleted|conflict/i);
-    assert.equal(result.stdout, '', 'conflict인데 성공 JSON을 내보냈다');
-    assert.equal(readFileSync(source, 'utf-8'), humanBytes, '사람이 쓴 relation 바이트를 덮었다');
-    assert.equal(existsSync(join(root, '.ontology-atlas', 'activity.jsonl')), false, '거절된 write를 활동 로그에 남겼다');
+    assert.equal(result.stdout, '', 'a conflict emitted success JSON');
+    assert.equal(readFileSync(source, 'utf-8'), humanBytes, 'the relation bytes a person wrote were overwritten');
+    assert.equal(existsSync(join(root, '.ontology-atlas', 'activity.jsonl')), false, 'a rejected write was logged as activity');
   });
 });
 
-test('relate는 관계 배열을 읽은 뒤 사람이 source를 삭제하면 conflict로 멈춘다', { concurrency: false }, async () => {
+test('relate stops with a conflict when a person deletes the source after the read', { concurrency: false }, async () => {
   await withVault(async ({ root, source }) => {
     let deletedAfterRead = false;
     const result = await captureCommand(() =>
@@ -156,19 +156,17 @@ test('relate는 관계 배열을 읽은 뒤 사람이 source를 삭제하면 con
       }),
     );
 
-    assert.equal(deletedAfterRead, true, '관계 배열을 읽은 뒤 삭제 경합을 주입하지 못했다');
+    assert.equal(deletedAfterRead, true, 'the delete race was not injected after the read');
     assert.equal(result.code, 1, `stdout: ${result.stdout}\nstderr: ${result.stderr}`);
     assert.match(stripAnsi(result.stderr), /changed or was deleted|conflict/i);
-    assert.equal(result.stdout, '', '삭제 conflict인데 성공 JSON을 내보냈다');
-    assert.equal(existsSync(source), false, '사람이 지운 source를 다시 만들었다');
-    assert.equal(existsSync(join(root, '.ontology-atlas', 'activity.jsonl')), false, '거절된 write를 활동 로그에 남겼다');
+    assert.equal(result.stdout, '', 'a delete conflict emitted success JSON');
+    assert.equal(existsSync(source), false, 'the source the person deleted was recreated');
+    assert.equal(existsSync(join(root, '.ontology-atlas', 'activity.jsonl')), false, 'a rejected write was logged as activity');
   });
 });
 
 test('relate consolidates a hand-authored depends_on: alias instead of splitting the edge family', { concurrency: false }, async () => {
-  // Bug sweep 2026-09-01: reading only the canonical key appended a second
-  // `dependencies:` array beside `depends_on:` — one edge type split across two
-  // keys that MCP would have folded.
+  // Reading only the canonical key would append a second `dependencies:` array beside `depends_on:`.
   await withVault(async ({ root, source }) => {
     writeFileSync(
       source,
@@ -198,8 +196,7 @@ test('relate consolidates a hand-authored depends_on: alias instead of splitting
 });
 
 test('relate --why refuses a flag-like value — a preview must never become a write', { concurrency: false }, async () => {
-  // `--why --dry-run` used to consume `--dry-run` as the rationale: the user
-  // asked for a preview and got a real vault write with that literal persisted.
+  // `--why --dry-run` must not consume `--dry-run` as the rationale and write for real.
   await withVault(async ({ root, source }) => {
     const before = readFileSync(source, 'utf-8');
     const result = await captureCommand(() =>

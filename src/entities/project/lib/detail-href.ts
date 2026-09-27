@@ -1,7 +1,4 @@
-/**
- * The canonical path of a public detail page (`/project/{slug}/`). A slug with
- * URL-unsafe characters would 404, so the path segment is encodeURIComponent'd.
- */
+/** `/project/{slug}/`, with the slug encoded so unsafe characters do not 404. */
 export function getProjectDetailHref(slug: string): string {
   return `/project/${encodeURIComponent(slug)}/`;
 }
@@ -39,10 +36,7 @@ function getProjectFallbackHref(
   return `${PROJECT_FALLBACK_HREF}?${search.toString()}`;
 }
 
-/**
- * The in-app detail path, which can open a local vault slug that static export
- * cannot know at build time. The public canonical still uses `getProjectDetailHref`.
- */
+/** In-app detail path that can open a local slug static export never saw. */
 export function getProjectRuntimeDetailHref(slug: string): string {
   return getProjectFallbackHref(slug);
 }
@@ -75,10 +69,7 @@ export function getProjectEditHref(
   });
 }
 
-/**
- * Normalizes the query-based runtime path and the older CDN rewrite pathname into the
- * same screen state. When it cannot be resolved, the caller returns to the project list.
- */
+/** Resolves the query path and the older rewritten pathname to one state; unresolved returns to the list. */
 export function resolveProjectFallbackRoute(
   pathname: string,
   search: string,

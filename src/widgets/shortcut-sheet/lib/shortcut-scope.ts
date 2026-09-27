@@ -1,15 +1,6 @@
 /**
- * The shortcut sheet's **contextual scope** (#67).
- *
- * The defect: pouring 8 sections of some 40 rows into two columns at once made the
- * dialog eat 852px at 1512×900 (95% of the viewport) with the bottom cut off, and
- * there was no signal that it could scroll (review 2026-07-25, measured; codex audit
- * P2).
- *
- * The answer is **classification, not hiding** — deleting shortcuts destroys
- * discoverability, so what is actually usable on the current screen comes first and
- * the rest sits behind a tab. The `All` (all) tab still shows everything, so no
- * information is lost.
+ * The shortcut sheet's contextual scope: what works on the current screen comes first, and the All
+ * tab keeps everything, so nothing is hidden for good.
  */
 
 export type ShortcutSurface = "global" | "topology" | "docs";
@@ -20,9 +11,8 @@ export type ShortcutScope = "current" | "topology" | "docs" | "all";
 export const SHORTCUT_SCOPES: readonly ShortcutScope[] = ["current", "topology", "docs", "all"];
 
 /**
- * The surface of the route currently being viewed, decided with the locale prefix
- * stripped. Screens with no dedicated shortcuts (studio, insights, projects) are
- * `global` — it is honest for the "current screen" tab to show only global shortcuts.
+ * The surface of the current route with the locale stripped; screens without dedicated shortcuts
+ * are `global`.
  */
 export function surfaceForPathname(pathname: string, libraryTab?: string | null): ShortcutSurface {
   const normalized = pathname.replace(/^\/(?:en|ko)(?=\/|$)/, "") || "/";
@@ -32,17 +22,13 @@ export function surfaceForPathname(pathname: string, libraryTab?: string | null)
   return "global";
 }
 
-/**
- * Whether to show this section in this scope. `current` needs to know the current
- * screen's surface, so it uses `sectionVisibleForCurrent`.
- */
+/** Whether to show this section in this scope; `current` defers to `sectionVisibleForCurrent`. */
 export function sectionVisible(
   scope: Exclude<ShortcutScope, "current">,
   surface: ShortcutSurface,
 ): boolean {
   if (scope === "all") return true;
-  // Global shortcuts (⌘K · ? · Esc) are valid on every tab, so they always remain —
-  // switching tabs must not remove "keys you can press right now".
+  // Global shortcuts stay on every tab; switching tabs must not remove keys you can press now.
   if (surface === "global") return true;
   return scope === surface;
 }

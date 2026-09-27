@@ -10,7 +10,7 @@ import koMessages from '../../../../messages/ko.json';
 import { MeaningEditorPanel } from './MeaningEditorPanel';
 
 describe('MeaningEditorPanel', () => {
-  it('관계 하나의 변경안을 먼저 보여 주고 승인 뒤에만 apply를 부른다', async () => {
+  it('shows the change for one relation first and calls apply only after approval', async () => {
     const onApply = vi.fn().mockResolvedValue(undefined);
     render(
       <NextIntlClientProvider locale="ko" messages={koMessages}>
@@ -55,7 +55,7 @@ describe('MeaningEditorPanel', () => {
     });
   });
 
-  it('기존 관계 끊기도 변경안을 거친 뒤에만 apply한다', async () => {
+  it('applies removing an existing relation only after its change preview', async () => {
     const onApply = vi.fn().mockResolvedValue(undefined);
     render(
       <NextIntlClientProvider locale="ko" messages={koMessages}>
@@ -93,7 +93,7 @@ describe('MeaningEditorPanel', () => {
     expect(onApply.mock.calls[0]?.[0].changeSet.operation).toBe('remove');
   });
 
-  it('아무것도 바꾸지 않으면 빈 검토 화면 대신 이유를 말한다', () => {
+  it('explains why instead of showing an empty review when nothing changed', () => {
     render(
       <NextIntlClientProvider locale="ko" messages={koMessages}>
         <MeaningEditorPanel
@@ -127,11 +127,8 @@ describe('MeaningEditorPanel', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('변경할 내용이 없어요');
   });
 
-  it('쓰기를 마친 뒤 다시 열면 처음 단계로 돌아가고 버튼이 풀린다', async () => {
-    // The panel outlives `onClose` (exit animation) and HomePage keys it by node
-    // id, so a reopen reuses this instance. Before the fix it came back showing
-    // the already-written change with the confirm button frozen in its busy state
-    // and every control -- including "edit again" -- disabled.
+  it('returns to the first step with buttons enabled when reopened after a write', async () => {
+    // A reopen reuses the mounted instance, which must not come back frozen in its busy state.
     const onApply = vi.fn().mockResolvedValue(undefined);
     const props = {
       source: {
@@ -181,13 +178,7 @@ describe('MeaningEditorPanel', () => {
   });
 });
 
-/**
- * **The bytes a removal writes** (owner inspection, 2026-09-26). Removing the only `relates` entry of
- * `capabilities/wiki-pages` from the map's edge panel left `relates: []` in the file; removing a
- * relation that carried the only reason left `relation_notes: {  }`. The panel's plan is applied
- * exactly as the vault session applies it (`applyFrontmatterUpdates`), and the file must read as if
- * the relation had never been written.
- */
+/** Removing the last relation of a key leaves no empty key in the file. */
 describe('removing the last relation of a key writes no empty key', () => {
   const WIKI_PAGES = [
     '---',

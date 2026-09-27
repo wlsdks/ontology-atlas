@@ -8,15 +8,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 
-/**
- * ontology kind → lucide icon.
- *
- * Gives each kind an intuitive visual metaphor. The charter's single-indigo palette
- * is preserved: the icon takes `currentColor`, so the caller decides the colour and
- * this map defines *shape* only.
- *
- * unknown, stub, and legacy kinds fall back to HelpCircle.
- */
+/** Kind → lucide icon. Shape only: icons use `currentColor`. Others fall back to HelpCircle. */
 const KIND_ICON: Record<string, LucideIcon> = {
   project: Folder,
   domain: Layers,
@@ -26,9 +18,7 @@ const KIND_ICON: Record<string, LucideIcon> = {
   unknown: HelpCircle,
 };
 
-/**
- * The representative lucide icon for a kind. Unknown and legacy kinds get HelpCircle.
- */
+/** Unknown and legacy kinds get HelpCircle. */
 export function getOntologyKindIcon(kind: string): LucideIcon {
   return KIND_ICON[kind] ?? HelpCircle;
 }

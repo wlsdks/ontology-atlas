@@ -2,22 +2,9 @@ import { WIKI_DIR } from "@/shared/lib/wiki-page-schema";
 import { parseLintCounts } from "./lint-brief";
 
 /**
- * `wiki/_log.md` — **what happened to the wiki, written by the app, never by the agent.**
- *
- * The LLM Wiki pattern keeps a `log.md` the model appends to. Ours is different on purpose:
- * a person who does not commit their folder has no Git history, and a person who does
- * still gets diffs rather than "Lint found three disagreements". So the app records the
- * events it witnessed itself — a Compile turn and which pages it left new or revised, a
- * Lint run and its counts — one line each, append-only, in the folder, in Markdown a
- * person reads in any editor. It is provenance of the process, not a second copy of any
- * content: nothing here says what a page claims, only that it changed and when.
- *
- * The shape is parseable on purpose (the pattern's one tip worth keeping):
- *
- *   ## [2026-09-06T18:05:12Z] compile | sources/ops-runbook.pdf → runbook (new), architecture (revised) | agent:claude
- *
- * `grep "^## \[" wiki/_log.md | tail -5` is the last five events. The leading underscore
- * is the furniture rule: not a page, not judged, not listed, not linked.
+ * The file `wiki/_log.md` records events the app itself witnessed (Compile, Lint), one parseable line each,
+ * append-only. Provenance of the process, never content. The leading underscore keeps it out
+ * of the wiki's pages.
  */
 
 const WIKI_LOG_FILENAME = "_log.md";
@@ -61,11 +48,7 @@ export function parseWikiLog(text: string): WikiLogEntry[] {
   return out;
 }
 
-/**
- * The compile line: which sources the turn was asked to read, and what it left behind,
- * judged from the folder itself — slugs present after that were not before are new, slugs
- * whose bytes changed are revised. Nothing the agent said is trusted for this.
- */
+/** The compile line, judged from the folder before and after, never from what the agent said. */
 export function describeCompileTurn(input: {
   sources: readonly string[];
   before: ReadonlyMap<string, number>;
@@ -86,15 +69,10 @@ export function describeCompileTurn(input: {
   return `${input.sources.join(", ")} → ${left}`;
 }
 
-/**
- * The lint line: the counts the report ends with, when the agent's last message carries
- * them in the brief's own shape; otherwise just that it ran. The counts are the agent's
- * words, so the line says so by naming the writer.
- */
+/** The lint line with the report's counts when present; the writer is named because they are the agent's. */
 export function describeLintTurn(finalText: string | null): string {
   const text = finalText ?? "";
-  // The block the brief asks for carries the counts in one shape in every language; the
-  // prose count line below is the fallback for a report that left the block out.
+  // The JSON block is language-neutral; the prose count line is the fallback.
   const fromBlock = parseLintCounts(text);
   if (fromBlock) {
     return [
@@ -108,10 +86,7 @@ export function describeLintTurn(finalText: string | null): string {
     const match = label.exec(text);
     return match ? Number(match[1]) : null;
   };
-  // The report is written in the screen's language (the brief is localized), so each
-  // count is read under its English or Korean label; the summary keeps the English keys,
-  // which the Library translates back when it draws the line (installed app, 2026-09-07:
-  // a Korean report ended with the localized count line and the log said "counts not stated").
+  // Each count is read under its English or Korean label; the summary keeps the English keys.
   const counts = [
     ["disagreement", pick(/(?:Disagreement|어긋남)[^\d\n]*?(\d+)/i)],
     ["superseded", pick(/(?:Superseded|대체된 주장)[^\d\n]*?(\d+)/i)],
@@ -123,11 +98,7 @@ export function describeLintTurn(finalText: string | null): string {
   return known.map(([name, n]) => `${name} ${n}`).join(" · ");
 }
 
-/**
- * Append one entry to `wiki/_log.md`, creating the folder and the file with its header on
- * first use. Reads then writes the whole file: the file is small by construction (one line
- * per run), and a partial append through a writable stream is what leaves a torn line.
- */
+/** Appends one entry, rewriting the small file whole, since a partial stream append tears a line. */
 export async function appendWikiLog(
   vault: FileSystemDirectoryHandle,
   entry: WikiLogEntry,

@@ -1,16 +1,6 @@
-// `ontology-atlas snapshot [vault] [--dry-run] [--push] [--message "..."] [--json]`
-//
-// Snapshots the vault as a git commit. Git is already the vault's source of truth,
-// but a non-developer or desktop user has no version history or backup route, and
-// even for a developer an ontology change buried in a code commit is invisible in
-// the history. This command commits the vault scope alone with a **meaning-level
-// commit message** (per-kind added/modified/deleted counts plus representative
-// slugs), turning the git history into an ontology journal.
-//
-// Trust charter: the default is a local commit only (zero transmission). Only an
-// explicit `--push` pushes to the user's existing remote and branch — with no
-// upstream it never sets `-u` automatically, it explains instead. No login or
-// token handling: the user's own git configuration is used as-is.
+// `ontology-atlas snapshot [vault] [--dry-run] [--push] [--message "..."] [--json]`: commits the vault scope alone
+// with a meaning-level message (per-kind counts plus sample slugs). Local commit by default; only an explicit `--push`
+// transmits, never setting `-u` itself. No login or tokens: the user's own git configuration is used.
 
 import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
 import { resolveVaultRoot, VaultRootError } from '../lib/resolve-vault.mjs';
@@ -250,7 +240,6 @@ function emitGitError(err, { operation, json, vaultRoot }) {
   return 1;
 }
 
-// `snapshot --history [N]` — the last N commits touching the vault path (Obsidian Git parity).
 function emitHistory({ json, vaultRoot, repoRoot, pathspec, limit }) {
   const commits = getVaultLog({ repoRoot, pathspec, limit });
   if (json) {

@@ -1,7 +1,5 @@
-// `ontology-atlas all-paths <from> <to> [vault]`
-// Bounded simple path enumeration over MCP query_ontology(all_paths). This is
-// the CLI pair to agent_brief's traversal contract: report completeness
-// metadata before using path absence as evidence.
+// `ontology-atlas all-paths <from> <to> [vault]`: bounded simple path enumeration over MCP
+// query_ontology(all_paths); report completeness before treating path absence as evidence.
 
 import { COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';

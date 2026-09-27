@@ -36,20 +36,13 @@ import { fieldClass } from '@/shared/ui/control-class';
 export type IndexLens = "all" | "recent";
 
 /**
- * Above this many concepts, a map counts as built and the 「make a map from my code」 door steps
- * aside.
- *
- * ⚠️ **Measured in the installed app, 2026-08-25.** The rule was "a vault is open and no code is
- * bound", and it fired on the owner's own vault of 82 concepts and 115 relations — because one
- * project node there has no code folder attached. Someone with a map that size has plainly built
- * one; offering to 「make a map from my code」 reads as an invitation to start over, and pressing it
- * would create a *different* vault inside some project and leave this one behind.
- *
- * The ceiling is the starter vault's seed count with room to spare: a person who has added a handful
- * of nodes is still starting, and one who has added dozens is not. It deliberately does not try to
- * judge quality. Beyond it the unbound-source row still offers the connect path, which is the right
- * action for a built map missing its evidence link.
+ * Above this many concepts the map counts as built and the make-a-map-from-code door steps aside,
+ * since it would read as starting over; the unbound-source row still offers the connect path. Set
+ * above the starter vault's seed count; it does not judge quality.
  */
+const WINDOW_CHIP_VALUES = ["auto", 1, 7, 30] as const;
+type RecentWindow = (typeof WINDOW_CHIP_VALUES)[number];
+
 const UNBUILT_MAP_CONCEPT_CEILING = 8;
 
 /** One row grammar for every tidy row: a fact on the left, one indigo action word on the right. */
@@ -100,9 +93,10 @@ interface TopologyIndexPanelLabels {
   /** "N documents not on the map" (the caller has already formatted the count). */
   uncatalogedDocsLabel: string;
   uncatalogedDocsAction: string;
-  /** Living-map drift — "N dusty nodes" (count formatted by the caller) plus the
-   *  action that moves to the freshness tab. Neutral tone only; the warning ramp is
-   *  forbidden here (Guardian's first ruling). */
+  /**
+   * Living-map drift: "N dusty nodes" plus the action to the freshness tab. Neutral tone only; the
+   * warning ramp is forbidden here.
+   */
   dustyNodesLabel: string;
   dustyNodesAction: string;
   /** "N documents the checks caught" (count formatted by the caller) plus the action that opens
@@ -110,12 +104,9 @@ interface TopologyIndexPanelLabels {
   brokenDocsLabel: string;
   brokenDocsAction: string;
   /**
-   * 「This project has no code folder attached」 (this project has no code folder
-   * attached) — a fact that used to be visible **only after clicking that exact
-   * project node** (measured 2026-08-04: 0 occurrences on the first screen). It is
-   * one quiet line shaped like the two rows above; pressing it opens that project,
-   * where the prescription lives. No folder is chosen here — the same action is
-   * never placed in two spots. */
+   * "This project has no code folder attached": one quiet line whose press opens that project,
+   * where the fix lives; no folder is chosen here.
+   */
   sourceUnboundLabel: string;
   /** The eyebrow over the list of things to tidy (uncataloged, dusty, broken, unbound rows). */
   tidyHeading: string;
@@ -124,11 +115,7 @@ interface TopologyIndexPanelLabels {
   /** Accessible name for the control that closes that notice once it has been read. */
   openedInsideDismiss: string;
   sourceUnboundAction: string;
-  /**
-   * A quiet one-line hint explaining that element rows are absent from the tree in
-   * plain (non-developer) mode. It renders only alongside `plainMode`; omitting it
-   * removes the hint entirely (backwards compatible).
-   */
+  /** A quiet hint that element rows are absent in plain mode; renders only with `plainMode`. */
   plainHint?: string;
 }
 
@@ -142,27 +129,21 @@ export interface TopologyIndexPanelProps {
   onSelect: (nodeId: string) => void;
   onCollapse: () => void;
   /**
-   * The first-run card's "take a 2-minute look" CTA. The tour state machine is
-   * owned by HomePage (the view), per FSD, so only the callback comes down here.
-   * Omitting it makes the card render no CTA.
+   * The first-run card's tour CTA; HomePage owns the tour state (FSD), so only the callback comes
+   * down.
    */
   onStartTour?: () => void;
   /** The guided tour is pointing at the INDEX: the first-run card gives way to the list it describes. */
   tourIndexSpotlit?: boolean;
   /** The guided tour is pointing at the first-run card's one-line command: its disclosure stands open. */
   tourAgentSpotlit?: boolean;
-  /** The first-run card's one-click "show it in plain words" toggle. The
-   *  audiencePlain state is owned by HomePage (the same source as the `plainMode` prop). */
+  /** The first-run card's plain-words toggle; HomePage owns audiencePlain. */
   onEnablePlainMode?: () => void;
   labels: TopologyIndexPanelLabels;
   className?: string;
   /**
-   * The "recently changed" lens (a window over each document's change date,
-   * `useAdaptiveRecentChanges`). Omitting
-   * it renders no segmented control at all (the previous search-only behaviour).
-   * Enabled, `filterTreeByNodeIds` narrows the tree to this id set plus its ancestor
-   * paths — reusing the same "preserve the parent chain" filter mechanism as
-   * `filterTreeByQuery`.
+   * The recently-changed lens (`useAdaptiveRecentChanges`); `filterTreeByNodeIds` keeps these ids
+   * plus their ancestor paths, like `filterTreeByQuery`. Omitted, no segmented control renders.
    */
   recentChanges?: {
     ids: ReadonlySet<string>;
@@ -177,10 +158,7 @@ export interface TopologyIndexPanelProps {
   brokenDocCount?: number;
   /** The node id of a project with no code folder bound. null means the row does not exist. */
   unboundProjectNodeId?: string | null;
-  /**
-   * The unbound-project row's action: open that project so its code folder can be connected.
-   * Falls back to `onSelect`; the caller supplies this to also carry focus to the action.
-   */
+  /** Opens that project so its code folder can be connected; falls back to `onSelect`. */
   onOpenUnboundSource?: (id: string) => void;
   /** The vault holds no project node at all — distinct from "every project already has code bound". */
   noProjectsYet?: boolean;
@@ -193,87 +171,49 @@ export interface TopologyIndexPanelProps {
   /** Clicking the row above → the "build a map from my documents" dialog (`bootstrapOpen`). */
   onPromoteUncatalogedDocs?: (() => void) | null;
   /**
-   * A lookup map for the single source of truth on domain size (graph BFS,
-   * `computeDomainCensusRows`). When present, domain row counts and meters use it —
-   * the same numbers as /projects and insights. Omitting it keeps the previous tree
-   * walk.
+   * Domain size from the graph BFS census (`computeDomainCensusRows`), the same numbers as
+   * /projects and insights; omitted, the tree walk is used.
    */
   domainCensus?: ReadonlyMap<string, DomainCensusRow> | null;
   /**
-   * The spotlight's single source of truth — when supplied, the lens becomes
-   * **controlled**: one `?recent=` URL param drives both the map's settling and this
-   * lens, making a window mismatch between the two surfaces structurally impossible.
-   * Omitting it keeps the existing local state (backwards compatible — other callers
-   * and tests are unaffected).
+   * Makes the lens controlled by one `?recent=` URL param shared with the map, so the two cannot
+   * disagree; omitted, local state.
    */
   lens?: IndexLens;
   onLensChange?: (lens: IndexLens) => void;
   /** The spotlight window — "auto" (an adaptive ramp) or the 1/7/30 presets. Used to mark the active chip. */
-  recentWindow?: "auto" | 1 | 7 | 30;
+  recentWindow?: RecentWindow;
   /** A preset chip click switches the window (applied immediately — no popup or confirmation, by contract). */
-  onWindowChange?: (window: "auto" | 1 | 7 | 30) => void;
+  onWindowChange?: (window: RecentWindow) => void;
   /**
-   * The display gate for plain (non-developer) mode. Removing element rows from
-   * `treeResult` itself is the caller's job (HomePage, `filterTreeExcludeKind`);
-   * this flag only decides whether the hint row explaining "why they are missing"
-   * renders. It changes no data.
+   * Gate for plain mode's hint row; removing element rows is the caller's job
+   * (`filterTreeExcludeKind`).
    */
   plainMode?: boolean;
   /**
-   * Unify attention winner for the left rail of the overview (2026-07-24) — do not expose the "N dusty nodes" row
-   * in the vault disconnected (static sample) state.
-   * This surface describes the *currently loaded graph* — in sample mode,
-   * that graph is this product's own dogfood
-   * vault, not the user's project, so the abandonment count is noise for the first visitor
-   * talking about someone else's repository (`BlockImportModule`'s "without a vault, the feature itself
-   * doesn't work" case is a different problem — that one remains disabled+hinted per P1 defect ②, complete concealment prohibited). If omitted, maintain existing backward-compatible behavior
-   * (always exposed) — if a real vault is connected (`vaultLoaded=true`), both rows
-   * reappear as before (values are demoted, not deleted).
+   * Hides the dusty-nodes row in the static sample, whose graph is the product's own dogfood;
+   * omitted, always shown.
    */
   vaultLoaded?: boolean;
   /**
-   * **The basename of the folder these concepts were actually read from** — `null` in sample
-   * mode or before a folder is open.
-   *
-   * Audit, 2026-09-05: opening a folder from the first-run panel redrew the map with the
-   * person's own concepts and nothing anywhere on the screen said *which folder* had been
-   * read. The panel that had said 「sample」 a second earlier simply stopped saying anything,
-   * so the one visible confirmation that the pick landed disappeared at the moment it was
-   * wanted. A first-run walker could not tell the sample from their own folder without
-   * recognising a node name.
-   *
-   * A basename, not a path, because that is the only identity the browser has: the File System
-   * Access API hands over a directory handle carrying the folder's own name and nothing else.
-   * The app knows the absolute path, but a line that says more on one surface than the other
-   * would mean two different things in two places.
+   * Basename of the folder the concepts were read from, null in sample mode; a basename because the
+   * File System Access API offers nothing more, and both surfaces must say the same thing.
    */
   sourceName?: string | null;
   /** Markdown documents read out of that folder. `null` while the manifest is not built yet. */
   sourceDocumentCount?: number | null;
   /**
-   * Did the walk stop before the end of the tree (`VaultManifest.walkTruncated`)?
-   *
-   * `entities/docs-vault/model/types.ts` states the rule this implements: a screen saying
-   * "N documents" must be able to say **in the same place** whether N is all of them. A
-   * truncated count renders as `N+`.
+   * Whether the walk stopped early
+   * (`VaultManifest.walkTruncated`); `entities/docs-vault/model/types.ts` requires the count to say so in place, as `N+`.
    */
   sourceDocumentCountPartial?: boolean;
 }
 
 /**
- * INDEX — the left machined instrument that replaces the tree/ego `/ontology`
- * page (「The hub is the map」 — the hub is the map). Floats over the topology map,
- * with `--topology-index-*` width/inset tokens (`app/globals.css`). See
- * `docs/prototypes/index-panel-v2-full.html` (v2.1) for the approved visual
- * spec and `TopologyIndexTab` for the collapsed counterpart.
- *
- * The header places only "INDEX · N" (N=total nodes) + a collapse square button.
-   The grid/caret/meter styles of the tree rows themselves are owned by `TopologyIndexTreeRow`.
- *
- * Search reuses `filterTreeByQuery` (`@/entities/knowledge-graph/lib/ontology-tree`) — the
- * SAME pure filter the old `/ontology` tree used — instead of a bespoke
- * matcher, so "search narrows the tree, keeping ancestor chains" behavior
- * can't drift between surfaces.
+ * INDEX: the left panel floating over the topology map with `--topology-index-*` tokens
+ * (`app/globals.css`, `docs/prototypes/index-panel-v2-full.html`); `TopologyIndexTab` is its
+ * collapsed form. Search reuses `filterTreeByQuery` so ancestor-keeping cannot drift between
+ * surfaces.
  */
 export function TopologyIndexPanel({
   treeResult,
@@ -313,27 +253,17 @@ export function TopologyIndexPanel({
   vaultLoaded = true,
 }: TopologyIndexPanelProps) {
   /*
-   * Recently-changed window chips — **only the behaviour** comes from the hook
-   * (2026-08-15 (8)).
-   *
-   * The container stays where it is: these chips' dimensions (24 · 11px · 7px ·
-   * a uniform 48px) were settled by the owner over two rounds (2026-08-02
-   * *"The buttons are too small."* — the buttons are too small → after the fix,
-   * *"The proportions have to line up."* — the proportions have to line up), and they
-   * carry panel-scoped ink (`--map-panel-*`) and the chrome radius, none of
-   * which the value layer combines, so pulling them onto the primitive would break
-   * that history. **Having no arrow-key movement, by contrast, was a defect
-   * unrelated to that history.**
+   * Window chips take only the behaviour from the hook; their settled dimensions and panel-scoped
+   * ink stay here.
    */
-  const WINDOW_CHIP_VALUES = ["auto", 1, 7, 30] as const;
   const WINDOW_CHIP_LABELS = [
     labels.windowChipAuto,
     labels.windowChip1,
     labels.windowChip7,
     labels.windowChip30,
   ];
-  const windowGroup = useRovingRadioGroup<(typeof WINDOW_CHIP_VALUES)[number]>({
-    value: recentWindow as (typeof WINDOW_CHIP_VALUES)[number],
+  const windowGroup = useRovingRadioGroup<RecentWindow>({
+    value: recentWindow,
     values: WINDOW_CHIP_VALUES,
     onChange: (next) => onWindowChange?.(next),
   });
@@ -362,13 +292,8 @@ export function TopologyIndexPanel({
   }
   const openIds = treeOpenState.openIds;
   /*
-   * **The tree follows the selection** (2026-09-25). This panel says it shows what the map
-   * shows, yet a node selected anywhere but on its own rows — a `?p=` link, the canvas, the
-   * palette, or a pick from this search that the reader then cleared — stayed folded away under
-   * a closed domain, its row absent while the map held it selected. Each new selection now opens
-   * the rows above it, once: a reader who folds that branch again is not overruled until they
-   * select something else. A selection whose row is not in the tree yet (the tree still
-   * building) is revealed when the row arrives.
+   * The tree follows the selection: each new selection opens the rows above it once, a later fold
+   * is respected, and a row not built yet is revealed when it arrives.
    */
   const [revealedSelection, setRevealedSelection] = useState<string | null>(null);
   if (selectedId !== revealedSelection) {
@@ -384,11 +309,8 @@ export function TopologyIndexPanel({
       }
     }
   }
-  // P4a — "Recently Changed" lens. If search is active, search takes precedence (narrowing both
-  // splits the "why can't I see it" cause into two, causing confusion) — the lens narrows the tree
-  // only when search is empty.
-  // Spotlight (Council §⑤) — if lensProp is provided, controlled (single source of truth =
-  // URL `?recent=`), otherwise legacy local state.
+  // The lens narrows the tree only while search is empty; with `lensProp` it is controlled by
+  // `?recent=`.
   const [lensLocal, setLensLocal] = useState<IndexLens>("all");
   const lens = lensProp ?? lensLocal;
   const setLens = (next: IndexLens) => {
@@ -406,11 +328,7 @@ export function TopologyIndexPanel({
   const maxDomainDescendantCount = useMemo(() => {
     // The meter's denominator comes from the same source of truth — with a census, the largest BFS total.
     if (domainCensus && domainCensus.size > 0) {
-      let max = 0;
-      for (const row of domainCensus.values()) {
-        if (row.total > max) max = row.total;
-      }
-      return max;
+      return Math.max(0, ...Array.from(domainCensus.values(), (row) => row.total));
     }
     const domains = treeResult.roots.flatMap((root) =>
       root.children.filter((child) => child.node.kind === "domain"),
@@ -426,18 +344,13 @@ export function TopologyIndexPanel({
       return { ...current, openIds: next };
     });
   };
-  // As with search, an active lens auto-expands too, so the user does not have to
-  // open each narrowed ancestor path by caret (the same UX contract as
-  // filterTreeByQuery's "auto-reveal matches", applied to filterTreeByNodeIds results).
+  // An active lens auto-expands narrowed ancestor paths, like search.
   const isOpen = (nodeId: string) => isFiltering || lensActive || openIds.has(nodeId);
 
-  // Roving tabindex. Flatten the rows actually visible into top-to-bottom order
-  // (using the same `isOpen` that reflects the search/lens auto-expansion) and leave
-  // exactly one of them as the Tab entry point (tabIndex=0). Sibling movement is
-  // handled by the arrow handler on the nav below.
+  // Roving tabindex over the visible rows (the same `isOpen` as the auto-expansion); arrow keys are
+  // handled on the tree container.
   const treeRef = useRef<HTMLDivElement>(null);
-  // A revealed row is brought inside the tree's own scroll, not left opened below its fold —
-  // also when a search ends and the whole tree returns around it.
+  // A revealed row is scrolled into the tree's own view, also when a search ends.
   useEffect(() => {
     if (!revealedSelection) return;
     treeRef.current?.querySelectorAll<HTMLElement>("[data-index-row]").forEach((row) => {
@@ -454,8 +367,7 @@ export function TopologyIndexPanel({
   const resolvedActiveRowId = resolveActiveRowId(orderedRowIds, activeRowId, selectedId);
 
   const focusRow = (nodeId: string) => {
-    // A tabIndex=-1 row still accepts a programmatic focus(). On the next render that
-    // row is promoted to tabIndex=0 and the roving entry point moves with it.
+    // A tabIndex=-1 row still accepts focus(); it becomes the entry point on the next render.
     const rows = treeRef.current?.querySelectorAll<HTMLElement>("[data-index-row]");
     rows?.forEach((el) => {
       if (el.dataset.indexRow === nodeId) el.focus();
@@ -472,16 +384,14 @@ export function TopologyIndexPanel({
     focusRow(nextId);
   };
 
-  // Whichever row focus actually lands on (click, Tab or arrow), align the active row
-  // to it — so the roving entry point always matches "the row focused last".
+  // Align the active row to wherever focus lands, so the entry point is the row focused last.
   const handleTreeFocus = (event: ReactFocusEvent<HTMLElement>) => {
     const rowEl = (event.target as HTMLElement).closest?.("[data-index-row]") as HTMLElement | null;
     const id = rowEl?.dataset.indexRow;
     if (id && id !== activeRowId) setActiveRowId(id);
   };
 
-  // The things a person can tidy from here, in the order they were already
-  // shown. A row exists only while its condition holds (no success badges).
+  // Rows a person can tidy from here; each exists only while its condition holds.
   const tidyRows: Array<{
     key: string;
     testId: string;
@@ -530,20 +440,9 @@ export function TopologyIndexPanel({
   const tidyHeadingId = useId();
   return (
     /*
-     * ⚠️ **The panel ends under its last row, not at the floor** (measured 2026-09-25). `h-full`
-     * stretched the surface to the window's bottom inset whatever it held, so a three-domain tree
-     * left 54% of the panel empty at 1512x949 and 60% at 1920x1080: a tall slab of surface with
-     * nothing on it, beside a map that could have used the room. The box now takes its content's
-     * height and stops at the slot (`max-h-full`); a tree longer than the slot still shrinks and
-     * scrolls inside it, so large vaults keep the old behaviour.
-     *
-     * The first-run card is the exception: it is designed against the full height (its reference
-     * block stands at the foot through `mt-auto`), so while it is in the panel the panel stays tall.
-     *
-     * A panel this short no longer tells the map it is one by its height (`computeFreeArea` reads
-     * 60% of the canvas as a side panel), so it says so. Without the declaration, a map that
-     * measured while INDEX was fading in (its full-height slot not counted yet) took the panel for
-     * chrome in the tool lane: the hex board fitted itself under the panel's bottom edge.
+     * The panel takes its content's height up to the slot (`max-h-full`) and scrolls longer trees;
+     * the first-run card keeps it full height. It declares itself a side panel
+     * because `computeFreeArea` can no longer infer that from height.
      */
     <aside
       aria-label={labels.label}
@@ -552,21 +451,15 @@ export function TopologyIndexPanel({
       className={`flex max-h-full flex-col has-[[data-testid=first-run-starter]]:h-full rounded-[var(--map-panel-radius)] border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] p-3 shadow-[var(--map-panel-shadow)] ${className ?? ""}`}
       style={{ width: "var(--topology-index-width)" }}
     >
-      {/* The "get started" module (root-first-open v3, `first-run-v3-flagship.html`).
-          Restructured 2026-07-24 after the owner reported *"Top scroll and bottom scroll separately"* (the top and bottom scroll separately) — the card and INDEX are
-          split into **two exclusive states**. While the guide is expanded the card
-          takes the whole panel (one scroll); once the user chooses, it collapses and
-          INDEX (children) opens. The module takes children and decides which to
-          draw — the widget only passes the INDEX body. */}
+      {/*
+       * The get-started module (`first-run-v3-flagship.html`): the card and INDEX are exclusive
+       * states, so there is one scroll.
+       */}
       <FirstRunStarterModule
         concepts={totalConcepts}
         /*
-         * Pass **the lens state itself** rather than the `lensActive` variable above.
-         * That variable also requires `!isFiltering && recentChanges !== null` — it
-         * answers «can the tree actually be narrowed» — while what is needed here is
-         * «did the user press the lens». Even with zero highlights the card has to
-         * collapse and INDEX has to open, or whoever pressed it reads it as
-         * 「nothing happened」.
+         * Pass lens, not lensActive (which also needs an empty search and computed changes):
+         * pressing the lens must collapse the card even with zero highlights.
          */
         lensActive={lens === "recent"}
         /* Selecting any node means the guidance card has done its job —
@@ -575,21 +468,13 @@ export function TopologyIndexPanel({
         indexSpotlit={tourIndexSpotlit}
         agentSpotlit={tourAgentSpotlit}
         /*
-         * ⚠️ **Who the 「make a map from my code」 door is for** (owner correction, 2026-08-24).
-         * A vault is open and nothing in it points at real code — the same fact the unbound-source
-         * row below reports. Deliberately *not* "has never opened a folder", which is the card's own
-         * rule: somebody who opened a folder, saw an empty map and gave up has opened folders
-         * **more** than a first-timer, and that rule hid the door from exactly that person.
+         * The make-a-map-from-code door is for any open vault with nothing pointing at real code,
+         * not only people who never opened a folder.
          */
         mapUnbuilt={
           /*
-           * ⚠️ **Two different facts, one null** (measured in the installed app, 2026-08-25).
-           * `unboundProjectNodeId` is null both when every project has code bound *and* when the
-           * vault holds no project at all. Keying only on it hid the door from an empty vault —
-           * the person it was built for, sitting in front of nothing.
-           *
-           * `noProjectsYet` separates them: nothing to bind is the strongest evidence that no map
-           * has been built from code, not evidence that one has.
+           * `noProjectsYet` separates "no projects" from "every project bound",
+           * since `unboundProjectNodeId` is null for both.
            */
           vaultLoaded &&
           (unboundProjectNodeId !== null || noProjectsYet) &&
@@ -602,15 +487,10 @@ export function TopologyIndexPanel({
         onEnablePlainMode={onEnablePlainMode}
         audiencePlain={plainMode}
       >
-      {/* Header — label + measured total count + collapse only.
-
-          The whole header row is the collapse toggle (owner feedback — a hit area
-          limited to the chevron was awkward). It reuses the INDEX tree rows' hover
-          grammar (`--map-panel-row-hover` background, `transition-colors`)
-          verbatim, so "this is a clickable row too" is said in the same language. The
-          chevron is no longer a separate button but a state indicator
-          (`aria-hidden`) — folded into the single outer `<button>` to avoid nested
-          interactive elements. */}
+      {/*
+       * The whole header row is the collapse toggle, reusing the tree rows' hover grammar; the
+       * chevron is an aria-hidden indicator inside the one button.
+       */}
       <button
         type="button"
         onClick={onCollapse}
@@ -623,32 +503,19 @@ export function TopologyIndexPanel({
         <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--map-panel-text-tertiary)]">
           {labels.label}
         </span>
-        {/* The visual "· N" count was removed — the terrain HUD already exposes the
-            total permanently alongside the label, making three copies of it (the
-            sr-only census stays). The chevron is a quiet glyph rather than a bordered
-            box: the hit area is the whole row (preserving the owner's feedback), and
-            its direction matches the result of collapsing, `‹`. */}
+        {/* No visible count here; the terrain HUD shows it and the sr-only census stays. */}
         <span
           aria-hidden="true"
-          // `size-5` (20), not the old 26. The row is `shape: "row"`, whose floor is
-          // `min-h-9` (36), but a 26px glyph box plus `py-2` measured **42** — the
-          // content overshot the floor and put the whole control two steps off the
-          // ladder (2026-09-05). At 20 the row lands exactly on its own 36, and the
-          // coarse-pointer floor still lifts it to 44. The glyph itself is unchanged.
+          // `size-5` keeps the row on its 36px ladder step (44 under a coarse pointer).
           className="ml-auto inline-flex size-5 shrink-0 items-center justify-center text-[color:var(--map-panel-text-quaternary)] transition-colors group-hover:text-[color:var(--map-panel-text-secondary)]"
         >
           <ChevronLeft size={ICON_SIZE.sm} aria-hidden="true" />
         </span>
       </button>
       {/*
-          **Which folder these rows came from.** One quiet line directly under the panel's own
-          name, in the same place the search field and the rows begin — not a new surface and not
-          a second control. It sits here rather than in the bottom-right instrument readout
-          because that readout is `md:` and up, and at 390 the INDEX panel *is* the screen: a
-          confirmation only a desktop visitor can see is not a confirmation.
-
-          It renders only with a folder open, so the sample keeps its own SAMPLE badge and this
-          line never has to say what it does not know. */}
+       * Which folder these rows came from, under the panel's name so it shows at every width; only
+       * with a folder open.
+       */}
       {sourceName ? (
         <p
           data-testid="topology-index-source"
@@ -690,16 +557,9 @@ export function TopologyIndexPanel({
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           onKeyDown={(event) => {
-            // M-10 — Escape in the INDEX search is a search-scoped clear (the
-            // macOS workbench convention), NOT a canvas deselect. When there
-            // IS a query, rung 1 clears it and stops the keypress so the
-            // window-level topology Esc ladder doesn't ALSO deselect the node
-            // underneath on the same press. An empty field lets Escape bubble
-            // through to that ladder unchanged.
-            //
-            // The caret stays in the field: clearing is a step inside the
-            // search, and blurring dropped focus on <body> so the next key
-            // started from the top of the page (interaction audit, 2026-09-25).
+            // Escape in INDEX search clears the query and stops the key, so the window's topology
+            // Escape ladder does not also deselect; an empty field lets it bubble. The caret stays
+            // in the field.
             if (event.key === "Escape" && query.length > 0) {
               event.preventDefault();
               event.stopPropagation();
@@ -715,9 +575,6 @@ export function TopologyIndexPanel({
         />
       </div>
 
-      {/* The "all | recently changed N" lens segments. Without `recentChanges` (the
-          mode has not computed it yet, or the caller omitted it) the render is
-          skipped entirely — the previous search-only behaviour is preserved. */}
       {recentChanges ? (
         <div
           role="tablist"
@@ -758,38 +615,16 @@ export function TopologyIndexPanel({
         </div>
       ) : null}
 
-      {/* Spotlight window presets — no popup or confirmation; a click applies
-          immediately. Only when the lens is active, controlled, and all four labels
-          are supplied. "auto" is the adaptive ramp. */}
+      {/*
+       * Spotlight window presets apply on click, shown only when the lens is active, controlled and
+       * fully labelled.
+       */}
       {lensActive && onWindowChange && labels.windowChipAuto && labels.windowChip1 && labels.windowChip7 && labels.windowChip30 ? (
         <div
           {...windowGroup.groupProps}
           aria-label={labels.windowChipsAria ?? labels.segmentRecentAria}
           data-testid="topology-index-window-chips"
-          /*
-           * The period chips **say what row you are choosing in** (2026-08-02, owner:
-           * *"The buttons are so small I can barely tell they exist; does this need a guide too?"* — the buttons are so small I can barely tell they exist;
-           * does this need a guide too?).
-           *
-           * They used to float as four unlabelled chips, so nothing on screen said
-           * what 「Auto/1 day/7 days/30 days」 (auto / 1 day / 7 days / 30 days) applied to.
-           */
-          /*
-           * A **visible label is not used** (2026-08-02, owner call — tried twice and
-           * removed).
-           *
-           * ① On the same row as the chips: the first chip shifted 27px and broke away
-           *    from the panel's left alignment line (search field and segments = 101px)
-           *    on its own — the owner spotted that misalignment first.
-           * ② On its own line above the chips: alignment was recovered, but one word
-           *    consumed a whole row, and this panel already has many rows.
-           *
-           * The reason for wanting a label was 「I can barely tell they exist」, and the
-           * cause of that was not the missing name but **the dimensions** (20px tall,
-           * 9.5px text). That was fixed below. A screen reader already hears
-           * 「Choose recent-change window」 (choose the recent-change window) through `aria-label` —
-           * no accessibility is lost.
-           */
+          /* No visible label for the chips; `aria-label` names them for screen readers. */
           className="mb-3 flex shrink-0 flex-wrap items-center gap-1.5"
         >
           {WINDOW_CHIP_VALUES.map((value, index) => (
@@ -799,32 +634,8 @@ export function TopologyIndexPanel({
               type="button"
               data-testid={`topology-index-window-chip-${value}`}
               /*
-               * The dimensions follow **the same dialect as the segments in this
-               * panel** (measured 2026-08-02; owner: *"The buttons are too small"* — the buttons
-               * are too small → after the fix, *"But it's not very pretty? The proportions should line up"* — it still isn't pretty, the proportions have to line up).
-               *
-               * | | Before | First fix | Now |
-               * |---|---|---|---|
-               * | Height | 20px | 28px | **24px** |
-               * | Text | 9.5px | 12.5px | **11px** |
-               * | Corner | fully round | fully round | **7px** |
-               * | Width | by character count (9.9px spread) | by character count | **a uniform 48px** |
-               *
-               * Why it took two passes: the first looked at **size only**. Measured,
-               * there were two more real defects — ① width was set by character count,
-               * giving a 9.9px spread (the pattern this repository forbids as
-               * 「Dimension regularity」 (dimension regularity): *in a repeated set, letting height
-               * and width become a by-product of the content collapses the grid's
-               * rhythm without anyone choosing it*) and ② the corner was fully round
-               * while **the segment tabs directly above are 7px** — two dialects in one
-               * panel.
-               *
-               * So no new values were minted; they were **taken from the segments
-               * above** (24px · 11px · 7px). 9.5px was the problem, not 11px — the
-               * "pressable text is 12.5px" rule is scoped to the settings sheet, and
-               * here one dialect within a panel wins.
-               *
-               * On touch it rises to `--touch-target-min` (44px).
+               * Chips follow the segments above: 24px high, 11px text, 7px corner, a uniform 48px
+               * width; 44px under touch.
                */
               className={`inline-flex h-6 min-w-12 items-center justify-center rounded-[var(--chrome-radius-inner)] border text-label transition-colors [@media(pointer:coarse)]:h-[var(--touch-target-min)] ${
                 recentWindow === value
@@ -856,16 +667,9 @@ export function TopologyIndexPanel({
         data-testid="topology-index-tree"
         onKeyDown={handleTreeKeyDown}
         onFocusCapture={handleTreeFocus}
-        // min-h 24 (owner report, 2026-07-24) — contracts a minimum height so the tree
-        // does not collapse to 0px in a short window once the first-run card has
-        // switched to flexible shrinking (the card shrinks further instead and scrolls
-        // internally).
+        // min-h 24 keeps the tree from collapsing to 0 in a short window beside the first-run card.
         className="min-h-24 shrink space-y-px overflow-y-auto"
-        // At the bottom of the scroll list the last row was hard-clipped at
-        // mid-height by the container boundary, so a "cut-off row" read as a defect. A
-        // 12px bottom mask fade hides it smoothly and implies "there is more" (the top
-        // stays crisp — the first row is never cut). It is a mask rather than a
-        // transform or colour, so it does not touch the charter.
+        // A 12px bottom mask fade instead of a hard-clipped last row.
         style={{
           maskImage: "linear-gradient(to bottom, black calc(100% - 12px), transparent)",
           WebkitMaskImage: "linear-gradient(to bottom, black calc(100% - 12px), transparent)",
@@ -900,17 +704,9 @@ export function TopologyIndexPanel({
       </div>
 
       {/*
-        **One list of things to tidy, not four floating boxes.** The uncataloged,
-        dusty, broken and unbound rows used to stand as four separate cards of two
-        different shapes, pinned to the panel's floor by the tree above them
-        (`flex-1`), so on a seven-document vault they sat under 60 % of empty panel
-        and read as furniture rather than as the three things the person could do
-        next (owner screenshot, 2026-09-19). They are one titled list now, in one
-        row grammar — a fact and one indigo action word — placed right under the
-        tree, which shrinks and scrolls instead of growing to push them away. Each
-        row still exists only while its condition holds, and the list only while a
-        row does; nothing new is derived here.
-      */}
+       * One titled list of things to tidy, directly under the tree; each row exists only while its
+       * condition holds.
+       */}
       {tidyRows.length > 0 ? (
         <section data-testid="topology-index-tidy" aria-labelledby={tidyHeadingId} className="mt-3 shrink-0">
           <p
@@ -940,12 +736,9 @@ export function TopologyIndexPanel({
       ) : null}
 
       {/*
-        ⚠️ **Saying that a different folder was opened** (owner, 2026-08-24). Since the map moved to
-        `<project>/atlas`, picking a project root opens the map inside it — the substitution people
-        actually want. But quietly opening a folder other than the one somebody chose teaches them
-        the product does not do what they asked, so the fact is stated once, plainly, in the panel
-        that lists what was loaded.
-      */}
+       * States that the map inside the picked project was opened, so the substitution is never
+       * silent.
+       */}
       {openedInsidePickedFolder ? (
         <div
           data-testid="topology-index-opened-inside"
@@ -954,11 +747,7 @@ export function TopologyIndexPanel({
           <p className="min-w-0 flex-1 break-keep text-caption leading-caption text-[color:var(--map-panel-text-tertiary)]">
             {labels.openedInsideLabel}
           </p>
-          {/*
-            A one-time fact must not become permanent furniture. Nothing else clears this, so without
-            a way to close it the line sits in the panel for the rest of the session, long after it
-            has told the person everything it knows.
-          */}
+          {/* The notice can be closed; nothing else clears it. */}
           {onDismissOpenedInside ? (
             <button
               type="button"
@@ -981,16 +770,6 @@ export function TopologyIndexPanel({
       ) : null}
 
 
-      {/* 「Import nodes from another folder」 (import nodes from another folder) moved to
-          **settings → workspace** (2026-08-02, owner: *"What is this? Why is this text here? Is it unnecessary?"* — what is this? why is this text here? is it
-          unnecessary?).
-
-          The feature itself suits a local-first product — pick another vault's `.md`,
-          open a merge preview, and write nothing to the folder before approval. The
-          placement was wrong: **something used once or twice in a lifetime** stood as a
-          permanent button at the bottom of INDEX every time someone read the map. And
-          「Block」 (block) is defined nowhere in this app, so a first-time reader had no
-          way to know what the button opens. */}
 
       </FirstRunStarterModule>
     </aside>

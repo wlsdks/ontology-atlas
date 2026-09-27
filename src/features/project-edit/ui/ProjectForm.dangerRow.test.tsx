@@ -6,13 +6,7 @@ import { TaxonomyProvider } from "@/features/taxonomy";
 import type { Project } from "@/entities/project";
 import { ProjectForm } from "./ProjectForm";
 
-/**
- * Edit-only danger row (#pages-projects-download-forms) — dashed border is
- * the category signal (design charter: category distinction is a border
- * style, not a color), matching docs/prototypes/project-forms-final.html.
- * Guards: only renders in edit mode with a delete handler, never in create
- * mode, and the underlying delete action (`onDelete`) stays wired.
- */
+/** The dashed danger row renders only in edit mode with a delete handler (docs/prototypes/project-forms-final.html). */
 
 const project: Project = {
   slug: "ontology-atlas",

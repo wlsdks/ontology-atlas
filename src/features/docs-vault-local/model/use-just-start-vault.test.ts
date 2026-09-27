@@ -59,9 +59,8 @@ describe('useJustStartVault', () => {
     expect(tauriFsMocks.createTauriVaultHandle).toHaveBeenCalledWith(
       '/Users/me/Ontology Atlas/my-ontology',
     );
-    // The starter rides inside the open: the session writes it before the folder is shown, so it
-    // does not depend on this hook's screen surviving the open (2026-09-25, D1). Walkthrough
-    // 2026-07-26: it is written in the screen's language.
+    // The starter rides inside the open, in the screen's language, so it does not depend on this
+    // hook's screen surviving the open.
     expect(vault.openRecent).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'current', name: 'my-ontology' }),
       { starter: { locale: 'ko', shape: { map: false, wiki: true } } },
@@ -109,8 +108,7 @@ describe('useJustStartVault', () => {
       await result.current.justStart();
     });
 
-    // A code, not a thrown sentence: the screen looks it up in `failures` and writes the
-    // language the reader chose (installed-app inspection before v1.2.2, B2).
+    // A code, not a sentence: the screen looks it up in `failures` in the reader's language.
     expect(result.current.actionError).toBe('app-required');
     expect(vault.openRecent).not.toHaveBeenCalled();
   });

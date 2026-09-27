@@ -31,9 +31,7 @@ describe('FirstRunReadout', () => {
   });
 
   /*
-   * The Cone view draws every concept at every zoom, so "Domains only · zoom in to
-   * reveal elements" stood under 125 visible dots and was simply false (measured
-   * 2026-09-05). The count decides, so a view never has to remember to opt out.
+   * The Cone view draws every concept at every zoom; the count decides, so no view opts out.
    */
   it('drops the tier label and the zoom hint once every concept is already drawn', () => {
     render(<FirstRunReadout conceptCount={125} totalConceptCount={125} domainCount={9} />);
@@ -52,7 +50,7 @@ describe('FirstRunReadout', () => {
 
   it('M-5: defaults to the spine tier label and shows the "zoom in to see elements" hint', () => {
     render(<FirstRunReadout conceptCount={36} totalConceptCount={125} domainCount={6} />);
-    // translations are mocked to echo the key
+    // Translations are mocked to echo the key.
     expect(screen.getByTestId('first-run-readout-tier')).toHaveTextContent('tier_spine');
     expect(screen.getByTestId('first-run-readout-zoom-hint')).toHaveTextContent('zoomHint');
     expect(screen.getByTestId('first-run-readout')).toHaveAttribute('data-zoom-tier', 'spine');
@@ -79,17 +77,15 @@ describe('FirstRunReadout', () => {
   });
 
   it('does not depend on the starter module dismiss state (stays visible after dismiss)', () => {
-    // useFirstRunSampleModeSettled has no knowledge of the module's own
-    // sessionStorage dismiss flag — this test documents that boundary.
+    // `useFirstRunSampleModeSettled` does not know the module's sessionStorage dismiss flag.
     mocks.visible = true;
     render(<FirstRunReadout conceptCount={36} totalConceptCount={125} domainCount={6} />);
     expect(screen.getByTestId('first-run-readout')).toBeInTheDocument();
   });
 
-  // In plain (non-developer) mode the element tier is unreachable
-  // (`PLAIN_TIER_REVEAL`), so "zoom in to see elements" stays false forever. Plain mode
-  // always shows the click-based wording regardless of tier.
-  describe('audiencePlain (P1 결함①b)', () => {
+  // Plain mode never reaches the element tier (`PLAIN_TIER_REVEAL`), so it always shows the
+  // click-based wording.
+  describe('audiencePlain', () => {
     it('shows the plain click-based hint instead of the zoom hint, regardless of tier', () => {
       render(<FirstRunReadout conceptCount={36} totalConceptCount={125} domainCount={6} tier="circuit" audiencePlain />);
       expect(screen.getByTestId('first-run-readout-zoom-hint')).toHaveTextContent('zoomHintPlain');

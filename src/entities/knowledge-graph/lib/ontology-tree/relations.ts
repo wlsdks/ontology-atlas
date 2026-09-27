@@ -3,7 +3,7 @@ import type {
   KnowledgeGraphNode,
 } from "../../model";
 
-/** Count per edge type, in input order so the UI can apply KNOWLEDGE_EDGE_TYPES ordering. */
+/** Counts per edge type in input order. */
 export function computeEdgeTypeDistribution(
   edges: readonly KnowledgeGraphEdge[],
 ): Map<string, number> {
@@ -14,11 +14,7 @@ export function computeEdgeTypeDistribution(
   return map;
 }
 
-/**
- * Cross-project means the two nodes' `projectIds` are disjoint. An empty array on either
- * side returns false — with too little information, assume the same project rather than
- * claim a boundary that may not exist.
- */
+/** Disjoint `projectIds`; an empty side assumes the same project. */
 function isCrossProjectEdgeProjects(
   fromProjects: ReadonlyArray<string> | undefined,
   toProjects: ReadonlyArray<string> | undefined,
@@ -32,7 +28,6 @@ function isCrossProjectEdgeProjects(
   return true;
 }
 
-/** How many edges cross a project boundary. Feeds the count on the insights card. */
 export function countCrossProjectEdges(
   edges: readonly KnowledgeGraphEdge[],
   nodes: readonly KnowledgeGraphNode[],
@@ -53,42 +48,18 @@ export function countCrossProjectEdges(
   return count;
 }
 
-/** Containment relation types — the domain hierarchy (project→domain→capability→element). */
+/** The domain hierarchy's edge types. */
 const CONTAINMENT_RELATION_TYPES = new Set(["contains", "belongs_to"]);
 
-/**
- * Is this edge type a containment edge (`contains` / `belongs_to`). Single source for every
- * place that must treat containment differently from dependency and soft relations —
- * coupling exclusion, projectIds BFS, topology edge kind, visual graph filters. The literal
- * `type === 'contains' || type === 'belongs_to'` used to be duplicated in four places, so a
- * new containment type would have been missed in some of them.
- */
+/** The single containment test for coupling, projectIds BFS, edge kinds and filters. */
 export function isContainmentRelation(type: string): boolean {
   return CONTAINMENT_RELATION_TYPES.has(type);
 }
 
-/**
- * Symmetric relation types — both ends are peers, as in "related to".
- *
- * `derive-ontology-from-vault.ts` emits frontmatter `relates:` as `related_to`, while the
- * MCP and schema side keeps the key name `relates`. Both spellings are listed so either
- * ingress path gets the same verdict.
- */
+/** `related_to` from derivation and `relates` from MCP are both listed. */
 const SYMMETRIC_RELATION_TYPES = new Set(["related_to", "relates"]);
 
-/**
- * Does this relation **have a direction** — the single source for whether the map may draw
- * the directional taper (thick at the source, thin at the target).
- *
- * Why it is needed: the topology adapter classifies edges as
- * `isContainmentRelation ? "contains" : "depends"`, and the symmetric `related_to` fell into
- * that "depends" bucket, so the map **drew a direction that does not exist**. Measured on
- * the dogfood vault (2026-07-31): of 89 non-containment relations, **62 (70%) were
- * `related_to`** — most relation lines were asserting a false causality.
- *
- * The default is "directional": an unknown type keeps its previous rendering, so a newly
- * introduced relation type is never silently demoted to symmetric.
- */
+/** Whether the map may draw a directional taper; unknown types stay directional. */
 export function isDirectionalRelation(type: string): boolean {
   return !SYMMETRIC_RELATION_TYPES.has(type);
 }
