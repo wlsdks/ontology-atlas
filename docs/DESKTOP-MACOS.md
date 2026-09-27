@@ -39,7 +39,7 @@ pnpm desktop:verify-app
 pnpm desktop:verify-dmg
 pnpm desktop:verify-install
 pnpm cli:mcp-verify docs/ontology --timeout-ms 15000
-pnpm desktop:release-preflight            # all of the above as one local pre-tag gate
+pnpm desktop:release-preflight            # local pre-tag gate; its steps are the package.json script
 ```
 
 - `desktop:doctor` exits 0 as a report; add `-- --require-runtime` to fail on a
@@ -82,9 +82,11 @@ pnpm desktop:release-preflight            # all of the above as one local pre-ta
 - `desktop:release-preflight` needs no credentials: it is the fast local proof
   of an unsigned artifact. Source MCP and ontology readiness run separately in
   `pnpm dogfood:release-gate`.
-- `desktop:release-artifact` is the credentialed local path: rebuild,
-  route-smoke, sign, package, notarize and staple, `desktop:verify-release-dmg`,
-  then install-smoke the final DMG.
+- `desktop:release-artifact` is the credentialed local path;
+  `scripts/build-macos-release-artifact.mjs` owns the order: rebuild,
+  route-smoke, sign the `.app`, repack the updater archive, package the DMG,
+  sign the DMG (`desktop:sign:dmg`), notarize and staple,
+  `desktop:verify-release-dmg`, then install-smoke the final DMG.
 
 ## Installed-app log
 
@@ -108,10 +110,15 @@ not, so a blank screen with a clean log points at the frontend.
 
 ## Release channels
 
-The tag decides the channel. A semver pre-release suffix (`v1.1.0-rc.1`)
-publishes a GitHub **Pre-release** that only people who seek it receive; a
-plain tag (`v1.1.0`) is the stable release `releases/latest` points to. A pushed
-tag cannot be recalled, so an RC is the reversible step before stable.
+A semver pre-release suffix (`v1.1.0-rc.1`) publishes a GitHub
+**Pre-release**; a plain tag (`v1.1.0`) publishes a stable release. The
+Pre-release badge only keeps the tag out of GitHub's `releases/latest`. The
+public `/download` facts (written with `--allow-prerelease`) and the hosted
+updater manifest (`scripts/stage-hosted-updater-manifest.mjs`, served at the
+updater endpoint in `src-tauri/tauri.conf.json`) follow the newest non-draft
+release, pre-releases included, and the app checks for updates automatically
+(`src/features/app-update/model/use-app-update.ts`). Once an RC's download
+facts land and the site redeploys, every installed app is offered that RC.
 
 The procedure is identical for both: align the three version files to the
 pre-release version, create and push the tag, and dispatch. The workflow reads
@@ -138,12 +145,8 @@ clean tag and Release slots. It cannot read values; the workflow runs
 pnpm desktop:release-github -- --tag=<tag>
 ```
 
-The legacy repository secrets `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, and
-`APPLE_TEAM_ID` are unused by the workflow. For the first API-key transition
-release only, append `--allow-obsolete-repository-secrets` to tolerate them;
-it never tolerates repository copies of the API secrets. After the public
-download verification passes, delete exactly those three and rerun without the
-option. The certificate and updater secrets stay.
+The legacy names `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, and
+`APPLE_TEAM_ID` are refused at repository scope; delete any that reappear.
 
 **2. Prove locally, then tag at `main` head.** Merge everything first: the tag
 must equal `main` head.
@@ -166,7 +169,9 @@ pnpm desktop:release-run -- --tag=<tag> --ref=main
 
 The run builds, signs, notarizes, and install-smokes both macOS architectures
 and builds the Windows x64 installer. Each lane writes DMG filename, size, and
-SHA-256 to the step summary. `scripts/check-macos-release-slot.mjs` refuses a
+SHA-256 to the step summary. The run also ships the MCP bundle and lists the
+server in the official MCP Registry (the `list-mcp-registry` job), so a
+dispatch publishes outside GitHub Releases. `scripts/check-macos-release-slot.mjs` refuses a
 tag that already has any Release. Assets are staged
 (`scripts/stage-macos-release-assets.mjs`) and uploaded as a draft, then
 verified with `pnpm desktop:verify-download -- --allow-draft --require-updater`.
@@ -177,10 +182,23 @@ vault, then approve. Publication rechecks the admitted source, publishes, runs
 `pnpm desktop:verify-download -- --tag="${RELEASE_TAG}" --require-updater`
 (reachable Apple Silicon and Intel DMGs, one Windows x64 installer, matching
 checksums, `latest.json` pointing at real archives), writes the public URL and
-asset hashes to the step summary, and refreshes the generated `/download` facts
-on `main`.
+asset hashes to the step summary, and uploads an
+`ontology-atlas-release-facts-<tag>` artifact. The workflow token cannot push to
+`main`.
 
-**5. Audit completion.**
+**5. Land the download facts.** After a successful run, `desktop:release-run`
+regenerates the `/download` facts and opens a PR with the operator's
+credentials. Land it with `pnpm pr:land <number>`; if that part failed, retry it
+alone:
+
+```bash
+pnpm desktop:release-run -- --tag=<tag> --refresh-only
+```
+
+Until it lands, `desktop:release-preflight` and the next release's admission
+fail at `download:release-facts:check`.
+
+**6. Audit completion.**
 
 ```bash
 pnpm desktop:release-status -- --pr=<number> --tag=<tag>
@@ -198,7 +216,9 @@ check it with `pnpm desktop:verify-hosted`.
 ## Signing and notarization
 
 Public downloads are Developer ID direct-download artifacts (not App Store).
-The workflow fails closed unless seven hosted secrets exist at their scopes:
+The workflow fails closed unless seven hosted secrets are present and
+structurally valid; `desktop:release-github` checks their scopes before
+dispatch:
 
 | Secret | Scope | Value |
 |---|---|---|
@@ -220,7 +240,8 @@ structurally unusable secret (including base64 that is not PKCS#12 DER) before
 build. The `.p8` is written to a `0600` temporary file only for notarization.
 
 In the workflow, `scripts/sign-macos-app.mjs` deep-signs the `.app` with
-hardened runtime and verifies with strict deep `codesign`;
+hardened runtime and verifies with strict deep `codesign`, and with `--dmg`
+signs the DMG before notarization;
 `scripts/notarize-macos-dmg.mjs` submits via `xcrun notarytool`, waits,
 staples, validates, refreshes the `.sha256` (stapling changes the bytes), and
 redacts credential arguments from failure logs.
@@ -235,8 +256,8 @@ valid stapled ticket, and `spctl` assessment of both app and DMG.
 - `release`: the same branch rule and bypass setting, and it **keeps** a
   required reviewer: the human install approval of the exact draft bytes.
 
-The code does not change environment policies; `desktop:release-github` and
-`node scripts/apple-signing-setup.mjs verify` check them.
+The code does not change environment policies; `desktop:release-github` checks
+them.
 
 ### Create a Developer ID certificate
 
@@ -311,10 +332,6 @@ App Store Connect API key `.p8` once.
    Once all seven are registered, the next dispatched tag takes the signing
    path with no code change.
 
-After a new certificate reverses an unsigned-release decision, the download
-page's Gatekeeper bypass guidance and trust statement must be reverted by hand
-(`docs/DECISIONS.md`); nothing does it automatically.
-
 ### Back up the originals
 
 Saved GitHub secrets cannot be read back. The originals in
@@ -349,9 +366,13 @@ updater artifacts.
 | `desktop:smoke` reports a missing route, asset, or offline doc | Rebuild with `pnpm build`; if only copy or a component marker differs, compare the product and `scripts/desktop-smoke.mjs` before rebuilding once |
 | `desktop:verify-app` exits early or finds no window | Rerun with `--kill-existing --print-window-diagnostics`; a stale `/Applications` copy shares the bundle id |
 | Workflow fails before build on secrets | `pnpm desktop:release-github -- --tag=<tag>`, then `node scripts/apple-signing-setup.mjs verify`; set values with the commands above |
-| Admission rejects the tag | The tag is not `main` head: merge first, retag, redispatch |
+| Admission fails: version | Align the three version files; `pnpm desktop:release-tag -- --tag=<tag>` |
+| Admission fails: release facts | The previous release's facts PR has not landed; land it or `pnpm desktop:release-run -- --tag=<previous tag> --refresh-only` |
+| Admission fails: ACP registry | Refresh drift with `pnpm acp:registry` and land it |
+| Admission fails: tag not at `main` head | Merge first, retag, redispatch |
 | Release slot check fails | A Release already exists for the tag; use the next version |
 | `desktop:verify-download` hits the API rate limit | Set `GITHUB_TOKEN` or `GH_TOKEN` |
 | `desktop:verify-download` reports a missing Release | The tag produced no run; dispatch `release-macos.yml` |
-| Hosted `/download/` is stale or 404 | `gh workflow run deploy-pages.yml --repo wlsdks/ontology-atlas`, then `pnpm desktop:verify-hosted` |
+| `/download` facts are stale | Land the release-facts PR (step 5) |
+| Hosted `/download/` is missing or 404 | `gh workflow run deploy-pages.yml --repo wlsdks/ontology-atlas`, then `pnpm desktop:verify-hosted` |
 | Installed app misbehaves | Read the installed-app log above |
