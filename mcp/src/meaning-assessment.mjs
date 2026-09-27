@@ -11,7 +11,7 @@ import { isPersistableEvidenceReference, isPersistablePathWitness, parseSourceRa
 
 import { PROJECT_SOURCE_GAP_IDS as SOURCE_GAP_IDS } from "./project-source-vocabulary.mjs";
 
-export const MEANING_ASSESSMENT_CONTRACT = "meaningAssessment:v1";
+const MEANING_ASSESSMENT_CONTRACT = "meaningAssessment:v1";
 export const MEANING_COMPETENCY_CONTRACT = "meaningCompetency:v1";
 export const MEANING_COMPETENCY_EVALUATOR = "meaningProposalValidator:v1";
 export const MEANING_WITNESS_INVENTORY_CONTRACT = "meaningWitnessInventory:v1";

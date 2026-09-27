@@ -1,36 +1,5 @@
 {
   "version": 1,
   "knipVersion": "6.29.0",
-  "findings": [
-    "cli:runtime:exports:src/lib/interop-format.mjs:INTEROP_SCHEMA_VERSION",
-    "cli:runtime:exports:src/lib/relation-types.mjs:RELATION_TYPE_VALUES",
-    "cli:runtime:exports:src/lib/vault-sidecar.mjs:SidecarPathError",
-    "cli:runtime:exports:src/lib/vault-sidecar.mjs:appendVaultSidecarLine",
-    "cli:runtime:exports:src/lib/vault-sidecar.mjs:createVaultSidecarTextExclusive",
-    "frontend:runtime:duplicates:src/shared/motion/tokens.ts:OVERLAY_SPRING_REDUCED|SCRIM_FADE_REDUCED",
-    "mcp:runtime:exports:src/construction-rules.mjs:CHAT_RULES_DELTA_EN",
-    "mcp:runtime:exports:src/meaning-assessment.mjs:MEANING_ASSESSMENT_CONTRACT",
-    "mcp:runtime:exports:src/meaning-assessment.mjs:normalizeMeaningStructureStatus",
-    "mcp:runtime:exports:src/meaning-evaluation.mjs:candidateProposalFromAnalysis",
-    "mcp:runtime:exports:src/ontology-engine.mjs:createOntologyEngine",
-    "mcp:runtime:exports:src/project-source-receipt.mjs:serializeProjectSourceState",
-    "mcp:runtime:exports:src/project-source-witnesses.mjs:looksLikeCodePath",
-    "mcp:runtime:exports:src/schema.mjs:CREATED_BY_AGENT_PREFIX",
-    "mcp:runtime:exports:src/schema.mjs:CREATED_BY_AGENT_UNKNOWN",
-    "mcp:runtime:exports:src/schema.mjs:CREATED_BY_HUMAN",
-    "mcp:runtime:exports:src/schema.mjs:VAULT_KINDS",
-    "mcp:runtime:exports:src/schema.mjs:normalizeMergedUids",
-    "mcp:runtime:exports:src/validate.mjs:KNOWN_VAULT_KINDS",
-    "mcp:runtime:exports:src/vault.mjs:pathToSlug",
-    "mcp:runtime:exports:src/vault.mjs:walkMd",
-    "mcp:runtime:exports:src/wiki-schema.mjs:WIKI_CITATION_PATTERN",
-    "mcp:runtime:exports:src/wiki-schema.mjs:WIKI_FIELDS",
-    "mcp:runtime:exports:src/wiki-schema.mjs:WIKI_PAGE_TEMPLATE",
-    "mcp:runtime:exports:src/wiki-schema.mjs:WIKI_REQUIRED_FIELDS",
-    "mcp:runtime:exports:src/wiki-schema.mjs:WIKI_SECTION_ORDER",
-    "scripts:runtime:exports:scripts/lib/dogfood-walk/rpc-client.mjs:SERVER",
-    "scripts:runtime:exports:scripts/lib/static-surface-census.mjs:openingTag",
-    "scripts:runtime:exports:scripts/migrations/2026-08-02-add-node-uids.mjs:description",
-    "scripts:runtime:exports:scripts/migrations/2026-08-02-add-node-uids.mjs:id"
-  ]
+  "findings": []
 }

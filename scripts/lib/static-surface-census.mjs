@@ -35,7 +35,7 @@ export function stripComments(source) {
  * Terminates an opening tag by **brace depth**. Searching for a bare `>` cuts at
  * the arrow in `onClick={() => …}` — a trap this repository stepped on twice.
  */
-export function openingTag(source, from) {
+function openingTag(source, from) {
   let depth = 0;
   let quote = null;
   for (let i = from; i < source.length; i += 1) {
