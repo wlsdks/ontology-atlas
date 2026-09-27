@@ -25,6 +25,19 @@ describe('computeVaultHealth dependency cycles', () => {
     expect(summary.dependencyCycles).toBe(1);
   });
 
+  it('counts a capability that depends on itself as one cycle, however often it names itself', () => {
+    const { status, checks, summary } = computeVaultHealth([
+      { slug: 'domains/core', frontmatter: { kind: 'domain', title: 'Core', capabilities: ['capabilities/loop'] } },
+      {
+        slug: 'capabilities/loop',
+        frontmatter: { kind: 'capability', title: 'Loop', domain: 'domains/core', depends_on: ['capabilities/loop', 'loop'] },
+      },
+    ]);
+    expect(checks.find((check) => check.id === 'dependency_cycles')).toEqual({ id: 'dependency_cycles', status: 'fail', count: 1 });
+    expect(summary.dependencyCycles).toBe(1);
+    expect(status).toBe('needs_attention');
+  });
+
   it('marks the count as a floor when eleven mutually dependent capabilities exhaust the step budget', () => {
     const { summary, checks } = computeVaultHealth(mutuallyDependent(11));
     expect(summary.dependencyCyclesPartial).toBe(true);

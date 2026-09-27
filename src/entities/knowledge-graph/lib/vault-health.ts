@@ -346,22 +346,27 @@ function missingDomainContainment(graph: CompiledGraph): MissingContainmentTarge
 /** DFS calls the cycle count may spend, as many as the Insights cycle list; past it the count is a floor. */
 const CYCLE_STEP_BUDGET = 500_000;
 
-// Dependency cycles up to MAX_DEPTH, matching the engine's `cycles({types:['dependencies']})`. Each is
-// counted once, from its smallest slug (the minimum-vertex rule), so no key set grows with the count.
-// Worst case O(V·b^MAX_DEPTH) for out-degree b, stopped at CYCLE_STEP_BUDGET calls; a reverse BFS per
-// start over the slugs above it, O(V·(V+E)), prunes branches that cannot close.
+// Dependency cycles up to MAX_DEPTH, matching the engine's `cycles({types:['dependencies']})`, where a
+// node that depends on itself is a cycle of one. Each is counted once, from its smallest slug (the
+// minimum-vertex rule), so no key set grows with the count. Worst case O(V·b^MAX_DEPTH) for out-degree
+// b, stopped at CYCLE_STEP_BUDGET calls; a reverse BFS per start over the slugs above it, O(V·(V+E)),
+// prunes branches that cannot close.
 function dependencyCycleCount(graph: CompiledGraph): { count: number; partial: boolean } {
   const MAX_DEPTH = 8;
   const successors = new Map<string, Set<string>>();
   const predecessors = new Map<string, Set<string>>();
+  const selfDependent = new Set<string>();
   const link = (links: Map<string, Set<string>>, from: string, to: string) => {
     const targets = links.get(from);
     if (targets) targets.add(to);
     else links.set(from, new Set([to]));
   };
   for (const edge of graph.edges) {
-    if (!edge.resolved || edge.from === edge.to) continue;
-    if (normalizeRelationType(edge.via) !== 'dependencies') continue;
+    if (!edge.resolved || normalizeRelationType(edge.via) !== 'dependencies') continue;
+    if (edge.from === edge.to) {
+      selfDependent.add(edge.from);
+      continue;
+    }
     link(successors, edge.from, edge.to);
     link(predecessors, edge.to, edge.from);
   }
@@ -383,7 +388,7 @@ function dependencyCycleCount(graph: CompiledGraph): { count: number; partial: b
     return dist;
   };
 
-  let count = 0;
+  let count = selfDependent.size;
   let steps = 0;
   let partial = false;
   const onPath = new Set<string>();
