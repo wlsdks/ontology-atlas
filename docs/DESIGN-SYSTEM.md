@@ -1869,7 +1869,10 @@ Wiki citation count, without interpreting those facts as evidence quality. Entry
 no-match,
 activity, and report states share one outer content edge. A failed or active
 agent receipt stays visible in that grid with a conversation action; completed
-reading receipts do not reserve a separate banner above the question. Once a
+reading receipts do not reserve a separate banner above the question. Starting a
+new question request scopes its visible receipts from that request's start;
+older failures remain in the underlying trace instead of preceding a new report.
+Once a
 report arrives, its question is the sole visible headline; the search form becomes
 an explicit Edit question control. Answer prose stays within the document measure.
 The report may span 1120px by combining two existing `--measure-note-column` widths:

@@ -34,6 +34,12 @@ export function showLibraryWorkStrip(activity: LibraryWorkActivity, questionDesk
   return activity.recent[0]?.kind === 'waiting' || activity.recent[0]?.kind === 'error';
 }
 
+export function libraryWorkSince(activity: LibraryWorkActivity, startedAt: number | null): LibraryWorkActivity {
+  if (startedAt === null) return activity;
+  const current = activity.current && activity.current.at >= startedAt ? activity.current : null;
+  return { isActive: activity.isActive && current !== null, current, recent: activity.recent.filter((event) => event.at >= startedAt) };
+}
+
 export interface LibraryAcpToolSnapshot {
   id: string;
   toolKind: string | null;

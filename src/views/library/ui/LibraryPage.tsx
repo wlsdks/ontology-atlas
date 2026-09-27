@@ -67,6 +67,7 @@ import {
   observedWikiWriteEvents,
   successfulLocalWriteEvents,
   showLibraryWorkStrip,
+  libraryWorkSince,
 } from "@/features/library";
 import {
   DocReadingPane,
@@ -1199,6 +1200,9 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   const activeReadOnlyTurnRef = useRef(false);
   const [lastAnswer, setLastAnswer] = useState<RetainedLibraryAnswer | null>(null);
   const [deskReport, setDeskReport] = useState<{ answer: RetainedLibraryAnswer; searchId: number; listingVersion: string; vaultScope: string; coverage: string; limits: string; generatedAt: string } | null>(null);
+  const [deskWorkStartedAt, setDeskWorkStartedAt] = useState<number | null>(null);
+  useEffect(() => { setDeskWorkStartedAt(null); }, [workVaultScope]);
+  const deskWorkActivity = libraryWorkSince(libraryWorkActivity, deskWorkStartedAt);
   const latestDeskReportRef = useRef(deskReport);
   useEffect(() => { latestDeskReportRef.current = deskReport; }, [deskReport]);
   const reportEpochRef = useRef(0);
@@ -2944,8 +2948,8 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
               dockOpen={dockOpen}
               visible={homeVisible && indexSegment === 'wiki'}
               turnRunning={turnRunning}
-              workActivity={questionDeskVisible && showLibraryWorkStrip(libraryWorkActivity, true) ? <LibraryWorkActivityStrip
-                compact activity={libraryWorkActivity}
+              workActivity={questionDeskVisible && showLibraryWorkStrip(deskWorkActivity, true) ? <LibraryWorkActivityStrip
+                compact activity={deskWorkActivity}
                 onOpenConversation={agent.runtime && nativeVaultRootPath ? () => agent.setOpen(true) : undefined}
                 onSelect={(target) => choose(target.kind === 'wiki' ? { kind: 'wiki', slug: target.ref } : { kind: 'source', path: target.ref })}
               /> : null}
@@ -2961,6 +2965,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
               } : null}
               onSummarize={({ brief, question, searchId, listingVersion, vaultScope, coverage, limits }) => {
                 invalidateDeskReport();
+                setDeskWorkStartedAt(Date.now());
                 pendingAskRef.current = { question, askedOn: null, report: { searchId, listingVersion, vaultScope, coverage, limits, epoch: reportEpochRef.current } };
                 agent.start(brief, 'ask');
               }}
