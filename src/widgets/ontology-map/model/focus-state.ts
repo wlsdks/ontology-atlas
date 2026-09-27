@@ -1,33 +1,10 @@
 /**
- * Focus / ego-state machine + hover-ripple emphasis — ported from the B2+
- * prototype's `nodeEgoState()`/`edgeEgoState()`/`startRipple()`/
- * `updateEmphasis()` (`docs/prototypes/topology-b2plus.html` §9, §11, §13).
- *
- * Contract (`docs/design/ontology-map.md` §3.2 "State Contract Mapping" — the state
- * contract mapping, §3.6 "Click=Safe Contract" — click is a safe action):
- * - **Click** sets a *durable* focus (`focusedNode`) — the ego-set (focused
- *   node + its 1-hop neighbors) reads as `"center"`/`"neighbor"`, everything
- *   else as `"dim"` (opaque dim tokens, never alpha — see
- *   `--map-node-fill-dim`/`node-stroke-dim`).
- * - **Hover** only raises `emphasis` (ripple) — it never touches focus/camera,
- *   and is suppressed entirely while a focus is active: focus takes exclusive
- *   ownership of emphasis (prototype: `if (focusedNode) return;` in pointermove).
- * - `emphasis` per node is a scalar 0..1 that exponentially rises toward 1
- *   while the node is in the active hover's ego-set AND its ripple delay has
- *   elapsed, and decays toward 0 otherwise:
- *   ```
- *   rising:  emphasis += (1 - emphasis) * (1 - exp(-dt / riseTau))   // riseTau  = --map-emphasis-rise-tau  (0.09s)
- *   falling: emphasis += (0 - emphasis) * (1 - exp(-dt / decayTau))  // decayTau = --map-emphasis-decay-tau (0.15s)
- *   ```
- * - Ripple stagger: hovering node N schedules its own ramp to start
- *   immediately, and each 1-hop neighbor's ramp to start
- *   `baseDelayMs + i*perNeighborDelayMs` later (`--map-ripple-stagger-ms`
- *   = 55, `+12`/neighbor — both numbers live under that one token in the
- *   design doc's §2.4 table, the prototype's `startRipple()`).
- *
- * Pure state — no DOM/pointer-event/canvas knowledge. `interaction/pointer-state-machine.ts`
- * owns translating raw pointer events into `focusedNodeId`/`hoveredNodeId`
- * changes that this module reacts to.
+ * Focus and ego state plus hover-ripple emphasis (`docs/design/ontology-map.md` §3.2, §3.6;
+ * prototype `docs/prototypes/topology-b2plus.html` §9, §11, §13). A click sets a durable
+ * focus: the ego set reads `center`/`neighbor` and the rest `dim`, drawn with opaque dim
+ * tokens, never alpha. Hover only raises emphasis and is suppressed while a focus holds, so
+ * a click is always safe. `interaction/pointer-state-machine.ts` turns pointer events into
+ * the focus and hover ids this module reads.
  */
 
 import { DEFAULT_EXPAND } from "@/shared/lib/appearance-preferences";
@@ -36,47 +13,27 @@ export type NodeEgoState = "center" | "neighbor" | "dim" | "normal";
 export type EdgeEgoState = "ego" | "dim" | "normal";
 
 /**
- * Selective ego. When a focused node has more 1-hop neighbours than this — a hub
- * with 87 of them, say — lighting them all up drives a bundle straight across
- * the screen and nothing is readable. Only the top `EGO_NEIGHBOR_LIMIT` by DOI
- * rank light up fully; the rest are **hidden, not dimmed**, folded into a
- * `neighbours +N` chip beside the focused node. Clicking the chip
- * reveals the next batch.
- *
- * **The single source of this value is the settings screen** — "Expand → how many to open at once"
- * (Expand → how many to open at once, default 24) feeds straight into
- * it. This file used to write 24 itself and the settings screen had to repeat it;
- * a value written in two places has already begun to drift (Carbon).
- * `use-topology-loop` reads the live value each frame, and this constant is both
- * its default and the fallback for pure functions that cannot see the settings.
+ * Past this many neighbours only the top by DOI rank light up; the rest are hidden, not
+ * dimmed, behind a `neighbours +N` chip. The settings screen (Expand, how many to open at
+ * once) is the single source; `use-topology-loop` reads the live value each frame and this
+ * is its default for pure callers.
  */
 export const EGO_NEIGHBOR_LIMIT = DEFAULT_EXPAND.batchSize;
 
-/**
- * Synthetic parentId used by selective ego's `neighbours +N` chip. It
- * is a reserved word so it can never collide with a real node id; the pointer
- * handler branches on it to reveal the next neighbour batch rather than toggling
- * the URL.
- */
+/** A reserved word no node id can take; the pointer handler reveals the next batch on it. */
 export const EGO_NEIGHBOR_CHIP_ID = "__ego_neighbors__";
 
 /**
- * Synthetic parentId prefix for the `+N show more` chip that stands
- * in for the **remaining batches** of an expanded cluster parent. It mirrors the
- * `neighbours +N` chip (`EGO_NEIGHBOR_CHIP_ID`), but several parents can be expanded at
- * once, so a single reserved word is not enough: wrapping the real parent id in a
- * reserved prefix keeps each parent's remainder chip distinct. The pointer
- * handler branches on the prefix to reveal **that parent's** next batch instead
- * of toggling the URL to collapse it.
+ * Several parents can be expanded at once, so the real parent id is wrapped in a reserved
+ * prefix to keep each remainder chip distinct; the handler reveals that parent's next batch.
  */
 export const CLUSTER_MORE_CHIP_PREFIX = "__cluster_more__:";
 
-/** Real parent id → the synthetic id of its `+N show more` chip. */
 export function clusterMoreChipId(parentId: string): string {
   return CLUSTER_MORE_CHIP_PREFIX + parentId;
 }
 
-/** Synthetic chip id → the real parent id, else null. Shared by draw, hit-testing, and pointer handling. */
+/** Shared by draw, hit-testing, and pointer handling. */
 export function parseClusterMoreChipId(chipId: string): string | null {
   return chipId.startsWith(CLUSTER_MORE_CHIP_PREFIX) ? chipId.slice(CLUSTER_MORE_CHIP_PREFIX.length) : null;
 }
@@ -84,26 +41,15 @@ export function parseClusterMoreChipId(chipId: string): string | null {
 export interface EgoNeighborRankEntry {
   id: string;
   kind: string;
-  /** Total degree — surfaces hubs first within one kind. */
   degree: number;
   /**
-   * The **original relation type** of the edge joining this neighbour to the
-   * focused node (`WorldEdge.relationType`, i.e. the value before it is collapsed
-   * into the binary contains|depends kind). It ranks just below kind in the DOI
-   * order, reflecting the relation hierarchy contains > depends > relates.
-   * Callers with no relation context — layout disc ordering, for instance — may
-   * omit it; unknown counts as weight 1.
+   * The relation type before it collapses to contains|depends; ranks just below kind.
+   * Callers without relation context may omit it (weight 1).
    */
   relationType?: string;
 }
 
-/**
- * Relation-hierarchy weight, so the DOI rank carries the same hierarchy the
- * render ink already does (solid contains > dashed depends > faint relates):
- * containment (contains, belongs_to) 3 > dependency (depends_on) 2 > everything
- * else (relates, related_to, describes, …) and unknown 1. A pure mapping, so
- * determinism is preserved.
- */
+/** contains/belongs_to 3 > depends_on 2 > everything else and unknown 1, matching the ink hierarchy. */
 function relationTypeWeight(relationType: string | undefined): number {
   if (relationType === "contains" || relationType === "belongs_to") return 3;
   if (relationType === "depends_on") return 2;
@@ -111,14 +57,9 @@ function relationTypeWeight(relationType: string | undefined): number {
 }
 
 /**
- * Degree-of-interest rank, deterministic in four keys: kind weight (domain 3 >
- * capability 2 > element and the rest 1) descending, then relation-type weight
- * (contains 3 > depends 2 > relates and the rest 1) descending, then degree
- * descending, then slug (id) alphabetically. Like Furnas (1986) DOI, it shows the
- * structurally important neighbours first — domains and hubs lead, and at equal
- * kind and degree a contains child outranks a passing relates neighbour, which
- * aligns the rank hierarchy with the render hierarchy. Kind weight always
- * outranks relation type.
+ * Degree-of-interest rank (after Furnas, 1986), deterministic on four keys: kind weight,
+ * relation-type weight, degree descending, then id. Kind always outranks relation type.
+ * O(n log n) sort.
  */
 export function rankEgoNeighborsByDOI(neighbors: readonly EgoNeighborRankEntry[]): string[] {
   const weight = (kind: string): number => (kind === "domain" ? 3 : kind === "capability" ? 2 : 1);
@@ -134,19 +75,16 @@ export function rankEgoNeighborsByDOI(neighbors: readonly EgoNeighborRankEntry[]
 }
 
 export interface SelectiveEgoResult {
-  /** Neighbours lit fully this time — the top `revealedBatches × limit` by rank. */
   visibleNeighbors: Set<string>;
-  /** Neighbours folded away; their edges and labels are hidden too. */
+  /** Their edges and labels are hidden too. */
   hiddenNeighbors: Set<string>;
-  /** How many are hidden — the N on the `neighbours +N` chip. At 0 the chip disappears. */
+  /** The N on the `neighbours +N` chip; at 0 the chip disappears. */
   hiddenCount: number;
 }
 
 /**
- * Reveals ranked neighbours one batch at a time. `revealedBatches` starts at 1
- * (the top `limit`) and grows by one per chip click, adding the next `limit`. The
- * top `revealedBatches × limit` are visible and the rest hidden. Session-only
- * state — nothing is written to the URL.
+ * The `revealedBatches` count starts at 1 and grows by one per chip click; session-only, never
+ * written to the URL.
  */
 export function selectiveEgoNeighbors(
   rankedIds: readonly string[],
@@ -163,11 +101,6 @@ export function selectiveEgoNeighbors(
   return { visibleNeighbors, hiddenNeighbors, hiddenCount: hiddenNeighbors.size };
 }
 
-/**
- * `"center"` if `nodeId === focusedNodeId`, `"neighbor"` if `nodeId` is a
- * 1-hop neighbor of the focused node, `"dim"` otherwise — but only when a
- * focus is active at all; with no focus, every node is `"normal"`.
- */
 export function resolveNodeEgoState(
   nodeId: string,
   focusedNodeId: string | null,
@@ -179,7 +112,6 @@ export function resolveNodeEgoState(
   return "dim";
 }
 
-/** `"ego"` if the edge touches the focused node, `"dim"` otherwise; `"normal"` with no focus. */
 export function resolveEdgeEgoState(
   edgeTouchesFocusedNode: boolean,
   focusedNodeId: string | null,
@@ -189,14 +121,9 @@ export function resolveEdgeEgoState(
 }
 
 /**
- * Selecting an edge focuses the pair. Owner request: "when clicking a line, show only the nodes connected by that line"
- * (clicking a line should show only the nodes that line connects). While an edge is selected and no node is focused:
- * - both endpoints read as `"neighbor"` — the line is the subject, so neither
- *   gets the center ring
- * - every other node and edge reads as `"dim"`
- * - the selected edge itself reads as `"ego"`; its separate selected stroke is
- *   the drawer's business
- * A node focus takes precedence, which preserves the click-is-safe contract.
+ * Selecting an edge focuses its pair: both ends read `neighbor` (the line is the subject,
+ * so neither gets the center ring), the edge `ego`, and the rest `dim`. A node focus takes
+ * precedence, preserving the click-is-safe contract.
  */
 export interface EdgePairFocus {
   sourceId: string;
@@ -229,26 +156,10 @@ export function resolveEdgeEgoStateWithPair(
 }
 
 /**
- * The trail lens — a **replacement** ego classification, valid only while the
- * trail popover is open.
- *
- * Why it swaps the keep-set instead of adding a new mark: the moment you open the
- * popover to read the map as a *path*, the map is still speaking about
- * *relations* (the focused node's indigo edges). The two readings competed on one
- * screen closely enough that the owner misread a relation edge as part of the
- * path walked. So rather than drawing a new path line — in this product a line
- * *is* a relation — only the kept set changes: visited nodes are kept instead of
- * 1-hop neighbours, and everything else recedes to **the existing dim values**.
- * "Glowing" here is value contrast against a darkened field, not glow.
- *
- * Visited nodes are `"normal"` rather than `"neighbor"` because neighbor adds a
- * second pale indigo ring outside the node, and a visited node already carries the
- * footprint ring three orbits out — two same-coloured hairlines in adjacent orbits
- * read as a braid, against the one-signal-per-orbit discipline. The footprint ring
- * already marks the visit, so the lens adds no ink.
- *
- * The currently focused node stays `"center"`, keeping the selection ring above
- * the footprint ring in the hierarchy.
+ * While the trail popover is open the kept set swaps from 1-hop neighbours to visited
+ * nodes instead of adding a path line, because on this map a line is a relation. Visited
+ * nodes read `normal`, not `neighbor`, since the footprint ring already marks them and a
+ * second indigo ring would braid with it; the focused node stays `center`.
  */
 export function resolveTrailLensNodeEgoState(
   nodeId: string,
@@ -260,35 +171,10 @@ export function resolveTrailLensNodeEgoState(
 }
 
 /**
- * How much **trail ink** this node takes while the lens is on (0 = none,
- * 1 = full).
- *
- * Owner, 2026-08-02: *"this is the screen after clicking the walked-path control — the
- * nodes should be selected and glowing"
- * (this is the screen after clicking the walked-path control — the
- * nodes should be selected and glowing). The lens previously only *kept* visited
- * nodes at `"normal"`. Everything else being dim gave relative contrast, but the
- * only visit marker was the footprint *beside* the node, so turning the path on
- * left the nodes along it saying nothing with their own bodies.
- *
- * **What "glowing" means inside the charter.** Not glow. Bloom
- * (`ctx.shadowBlur`) exists only as the opt-in, default-0 exception inside the
- * single file `shared/lib/footprint-glyph.ts`, and never leaves it
- * (`.claude/rules/forbidden.md`). All that happens here is that the colour of the
- * stroke channel the node **already has** moves toward the trail ink — no fourth
- * ring, no new orbit, no new hue. On this map, glowing means value and colour
- * contrast against a darkened field.
- *
- * Three rules:
- * 1. **Lens-only.** `ramp` rises to 1 only while the popover is open and falls to
- *    0 when it closes. That is what guarantees this is not a standing expansion of
- *    amber, and it is the same structure as the two prior exceptions (the agent
- *    focus ring and the recent-change spotlight).
- * 2. **Visited only.** An unvisited node is 0 and recedes to dim as before.
- * 3. **The selected node takes none**, keeping the indigo selection ring above the
- *    footprint. Letting it take ink would paint the node the user just picked the
- *    same colour as the places they walked, and the screen would stop separating
- *    "here now" from "been there".
+ * Trail ink (0 to 1) a node takes while the lens is on: its existing stroke moves toward the
+ * trail ink and adds no ring, orbit, hue or bloom, so no effect needs a token under the rules
+ * in `.claude/rules/forbidden.md`. Only while the lens ramps, only visited nodes, and never
+ * the selected node, so "here now" stays apart from "been there".
  */
 export function trailNodeInkStrength(input: {
   kept: boolean;
@@ -301,15 +187,8 @@ export function trailNodeInkStrength(input: {
 }
 
 /**
- * Ambient comet-tail advance speed for one `depends` edge (`world.edges[].t +=
- * dt * speed`). When a node is clicked ("powered"), its own incident edges carry
- * *more current* — the pulse advances at `egoSpeed` instead of the ambient
- * `baseSpeed`, so the selected subgraph visibly reads as energized (B2+ circuit
- * metaphor, lead spec §2). Every other edge keeps the ambient `baseSpeed`.
- *
- * Pure — the caller decides `edgeTouchesFocusedNode` from
- * `edge.sourceId/targetId === focusedNodeId`. Speeds are tokens
- * (`--map-edge-pulse-speed` / `-ego`).
+ * A `depends` edge touching the focused node runs its comet at `egoSpeed`, so the selected
+ * subgraph reads as energised; every other edge keeps `baseSpeed`.
  */
 export function resolveEdgePulseSpeed(
   edgeTouchesFocusedNode: boolean,
@@ -321,16 +200,9 @@ export function resolveEdgePulseSpeed(
 }
 
 /**
- * Whether a node may ramp its `emphasis` (hover-ripple) this frame.
- *
- * - **No focus:** hover owns the ripple — the hovered node and its 1-hop
- *   neighbors (`isHoverEgoMember`) ramp.
- * - **Focus active:** hover is suppressed (focus owns attention), EXCEPT the one
- *   node the user is hovering in the detail panel's "connected nodes"
- *   list (`panelEmphasisNodeId`). That single neighbor still ramps so the panel row
- *   and the on-canvas node/edge light up together ("emphasis ripple" linkage,
- *   lead spec §4). `panelEmphasisNodeId` is null until the panel-hover API feeds
- *   it in.
+ * With no focus the hover ego set ramps. With a focus, hover is suppressed except the
+ * neighbour hovered in the detail panel list (`panelEmphasisNodeId`), so the row and the
+ * canvas light together.
  */
 export function isNodeEmphasisActive(
   nodeId: string,
@@ -344,15 +216,11 @@ export function isNodeEmphasisActive(
 
 export interface RippleSchedule {
   nodeId: string;
-  /** Absolute ms timestamp (same clock as `performance.now()`) when this node's ramp may begin. */
+  /** Absolute ms on the `performance.now()` clock. */
   startAtMs: number;
 }
 
-/**
- * Schedules the hovered node's own immediate ramp plus each neighbor's
- * staggered ramp. `baseDelayMs`/`perNeighborDelayMs` = 55/12 per
- * `--map-ripple-stagger-ms`.
- */
+/** The hovered node ramps at once; each neighbour follows `--map-ripple-stagger-ms` (55, +12 each). */
 export function scheduleRipple(
   hoveredNodeId: string,
   nowMs: number,
@@ -362,11 +230,8 @@ export function scheduleRipple(
   maxTotalStaggerMs: number = Number.POSITIVE_INFINITY,
 ): readonly RippleSchedule[] {
   const own: RippleSchedule = { nodeId: hoveredNodeId, startAtMs: nowMs };
-  // A7 — the stagger has a TOTAL budget (`--map-ripple-stagger-max-ms`).
-  // Uncapped, a 40-neighbor hub started its last neighbor 523ms in — a slow
-  // enumeration, while a 3-neighbor node finished in 91ms. The ripple says
-  // "these are the neighbors"; it doesn't count them. High-degree nodes
-  // compress the per-neighbor delay so every ripple ends inside the budget.
+  // The stagger has a total budget (`--map-ripple-stagger-max-ms`): the ripple says "these
+  // are the neighbours", it does not count them, so a hub compresses the per-neighbour delay.
   const perDelay =
     neighborIds.length > 0 ? Math.min(perNeighborDelayMs, maxTotalStaggerMs / neighborIds.length) : perNeighborDelayMs;
   const neighbors = neighborIds.map((nodeId, i) => ({
@@ -377,16 +242,9 @@ export function scheduleRipple(
 }
 
 /**
- * One exponential-smoothing step of a single node's emphasis value.
- *
- * @param currentEmphasis 0..1
- * @param isInActiveEgoSet true if this node is the hovered node or one of its
- *   1-hop neighbors AND no focus is currently suppressing hover
- * @param rippleHasStarted true once `nowMs >= scheduledStartAtMs` for this
- *   node (ignored when `isInActiveEgoSet` is false)
- * @param dt elapsed seconds since the last step
- * @param riseTau `--map-emphasis-rise-tau` = 0.09
- * @param decayTau `--map-emphasis-decay-tau` = 0.15
+ * One exponential-smoothing step: rises toward 1 while in the active ego set with the
+ * ripple started, else decays. Taus are `--map-emphasis-rise-tau` (0.09)
+ * and `--map-emphasis-decay-tau` (0.15).
  */
 export function stepEmphasis(
   currentEmphasis: number,
@@ -403,35 +261,17 @@ export function stepEmphasis(
   return currentEmphasis + (0 - currentEmphasis) * (1 - Math.exp(-dt / decayTau));
 }
 
-/**
- * One exponential-smoothing step of a single node's **focus ramp** — a scalar
- * 0..1 that rises toward 1 while ANY focus is active (a clicked node OR a
- * selected edge-pair) and falls toward 0 when none is. It is the shared time
- * base for the click-focus signature: `topology-frame-draw.ts#resolveNodeVisual`
- * lerps each node's normal color toward its dim/ego target by this factor (and
- * eases the center node's radius 1→1.12), so the dim/neighbor/center color swap
- * a click triggers ramps IN with the camera dive instead of hard-cutting, and a
- * deselect ramps it back OUT (owner headline: "must not read as a hard cut" — it must
- * not read as a hard cut). One
- * symmetric τ (`--map-focus-dim-tau`) — the color transition should feel
- * the same entering and leaving. Sibling to `stepEmphasis` (hover ripple) and
- * the ego-reveal ramp; kept separate because those gate on narrower conditions
- * (hover ego-set / tier exemption) than "is the scene focused at all".
- *
- * @param current 0..1 previous ramp value
- * @param focusActive true if a node OR edge-pair focus is live this frame
- * @param dt elapsed seconds since the last step
- * @param tau `--map-focus-dim-tau` (≈0.16s)
- */
-/**
- * What the ego focus dims sinks toward `restAlpha` on the node's own focus
- * ramp — the same ramp the dim colour rides, so ink and presence move as one.
- */
+/** Rides the same ramp as the dim colour, so ink and presence move as one. */
 export function egoRestSink(focusRamp: number, restAlpha: number): number {
   const ramp = Math.min(1, Math.max(0, focusRamp));
   return 1 - ramp * (1 - restAlpha);
 }
 
+/**
+ * Rises toward 1 while any node or edge-pair focus is live and falls otherwise; the frame
+ * draw lerps colours by it so a click ramps in with the camera dive instead of a hard cut.
+ * One symmetric τ (`--map-focus-dim-tau`, about 0.16 s) for entering and leaving.
+ */
 export function stepFocusRamp(current: number, focusActive: boolean, dt: number, tau: number): number {
   const target = focusActive ? 1 : 0;
   return current + (target - current) * (1 - Math.exp(-dt / tau));
