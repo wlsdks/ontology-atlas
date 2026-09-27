@@ -7,13 +7,8 @@ import type { VaultDoc } from "@/entities/docs-vault";
 import { LibraryGraph } from "./LibraryGraph";
 
 /**
- * The interaction claims, made falsifiable.
- *
- * jsdom has no canvas, and that is exactly why this file can exist: `draw()` returns
- * before it touches a 2D context because the box is never measured, so everything below
- * tests the part a person operates — what is drawn without being asked for, the keyboard
- * path, and the two separate places a highlight can come from — without a rendering
- * backend.
+ * The interaction claims. jsdom never measures the box, so nothing paints and these cases
+ * test what a person operates: the keyboard path, the card and the highlight sources.
  */
 
 const routerPush = vi.fn();
@@ -117,12 +112,7 @@ describe("the library graph section", () => {
     ]);
   });
 
-  /*
-   * ⚠️ **`Enter` used to be the commit** — it called `onSelect` and the Library replaced the
-   * picture with the page. Since 2026-09-12 it opens the card beside the mark instead, and
-   * `Open` inside the card is the commit. The claim this case keeps is the pair: the
-   * keyboard reaches the mark, and the mark answers **without leaving the screen**.
-   */
+  // Enter opens the card without leaving the screen; `Open` inside it is the commit.
   it("moves through the dots with the arrow keys and opens a card beside the one it is on", () => {
     const { onSelect } = renderGraph();
     fireEvent.keyDown(canvas(), { key: "ArrowRight" });
@@ -140,12 +130,8 @@ describe("the library graph section", () => {
   });
 
   /**
-   * **The legend answers the state the canvas is actually in.**
-   *
-   * With a card open it still read *press a dot for a card beside it* — an instruction for
-   * the thing that had just happened (inspection 122, S19). The mark vocabulary is the half
-   * a reader still needs while the card stands there, so it is kept verbatim and only the
-   * gesture clause is swapped for the two ways back out.
+   * The legend matches the canvas state: with a card open the vocabulary stays and only the
+   * gesture clause swaps for the ways back out.
    */
   it("stops telling a person how to open the card they already have open", () => {
     renderGraph();
@@ -158,11 +144,7 @@ describe("the library graph section", () => {
     expect(hint()).toContain("누르면 옆에 카드가 열려요");
     fireEvent.keyDown(canvas(), { key: "Enter" });
     expect(screen.getByTestId("library-graph-card")).toBeTruthy();
-    /*
-     * The card is open on the mark the keyboard is on, so this line — which is that mark's
-     * description while a mark is active — says the card is open and how to leave it. The
-     * facts above it (what the lines from this mark mean) are unchanged: only the verb is.
-     */
+    // With the card open on the keyboard's mark, the line says how to leave; only the verb changes.
     expect(hint()).not.toContain("누르면 옆에 카드가 열려요");
     expect(hint()).toContain("Escape");
     expect(hint()).toContain("굵은 선은 이 원문으로 쓴 위키 문서로 이어지고");
@@ -172,17 +154,12 @@ describe("the library graph section", () => {
     expect(hint()).not.toContain("Escape");
   });
 
-  /**
-   * **The fit tile never offers a press that could only repaint the same pixels.** Pressed a
-   * second time on the home it produced a pixel-identical frame (inspection 122, S1).
-   */
+  // The fit tile never offers a press that could only repaint the same pixels.
   it("stops offering the fit while the picture is already framed", () => {
     renderGraph();
     const tile = screen.getByTestId("library-graph-fit");
-    // jsdom paints no frames, so `framed` is only ever published by the loop; what this
-    // asserts is the wiring — the attribute the surface writes from it, and the disabled
-    // grammar that follows it. The camera's own arithmetic is `isSameView`'s unit case and
-    // the rendered claim is `library-graph-picture.spec.ts`.
+    // jsdom paints no frames, so this asserts the wiring only; `isSameView` and
+    // `library-graph-picture.spec.ts` cover the arithmetic and the render.
     expect(tile.getAttribute("data-framed")).toBe("false");
     expect(tile).not.toBeDisabled();
   });
@@ -270,12 +247,7 @@ describe("the library graph section", () => {
     expect(screen.getByText("원문 plan.pdf, 3개 중 1번째. Enter를 누르면 무엇인지 보여 줘요.")).toBeTruthy();
   });
 
-  /*
-   * ⚠️ **The concept's label used to carry "open on the map"**, because its press was the one
-   * press on this canvas that left the screen. No press does now: the concept's card says
-   * what it is and offers the map as a door. So the destination is still named before
-   * anything leaves — one control further in, and pressed on purpose.
-   */
+  // A concept's card names the map as a door, so the destination is named before anything leaves.
   it("leaves for the map only from the concept's own door, never from the press", () => {
     const { onSelect } = renderGraph();
     fireEvent.keyDown(canvas(), { key: "ArrowLeft" });
@@ -290,12 +262,7 @@ describe("the library graph section", () => {
     expect(routerPush).toHaveBeenCalledWith(expect.stringContaining("/topology"));
   });
 
-  /*
-   * This used to assert the disclosure: a chip that opened and closed the section and
-   * remembered the answer in `localStorage`. The owner removed the premise on 2026-09-06
-   * — the pane **is** the picture — so what has to be true now is that nothing has to be
-   * pressed, and that the screen's own row still reaches the header.
-   */
+  // The pane is the picture: nothing has to be pressed, and the screen's own row reaches the header.
   it("draws itself with nothing pressed, and hangs the screen's own row beside the caption", () => {
     renderGraph({ headerEnd: <span data-testid="probe-header-end">next</span> });
     expect(screen.getByTestId("library-graph-canvas")).toBeTruthy();

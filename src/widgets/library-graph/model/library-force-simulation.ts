@@ -6,144 +6,61 @@ import { seedPositions, type LayoutPoint } from "./library-graph-layout";
 import { packGroupsAroundCentre, type PackBox, type PackSlot } from "./library-graph-packing";
 
 /**
- * **The library graph is a live force simulation** — the picture is being held in place
- * by forces rather than having been placed once.
- *
- * ## Why this replaced a one-shot layout
- *
- * The first build ran ForceAtlas2 to a stop before the first frame and never ticked
- * again, on the argument that a simulation beside a document a person is reading is
- * movement with nothing to say. The owner looked at the shipped picture on 2026-09-07 —
- * seven sources, six pages, every page citing most of the sources — and rejected it:
- * *"this graph does not move, it is fixed, and that is a shame"* A settled FA2 pass over a graph that
- * dense is a hairball, and a hairball that cannot be pulled apart is a picture a person
- * can only accept or leave. Being able to take one node in hand and see which lines
- * follow **is** the reading operation on a graph this connected, and it needs live
- * physics, not a cached result.
- *
- * `docs/DECISIONS.md`, 2026-09-07, records that reversal and its bounds.
- *
- * ## What the forces say
+ * The library graph as a live force simulation, so a dense graph can be pulled apart by
+ * hand (`docs/DECISIONS.md`).
  *
  * | Force | What it encodes |
  * |---|---|
- * | link spring, rest length by relation | a citation is a closer relationship than a mention: `cites` rests at {@link CITES_REST}, `mentions` at {@link MENTIONS_REST} |
- * | many-body repulsion | two things with nothing between them do not belong in the same place |
- * | collision | a mark never sits on another mark, whatever the springs want |
- * | gravity, **aspect-aware** | the cloud is held in the box it is drawn in, and stretched along the box's long axis rather than fitted into a corner of it |
- * | orphan ring | a mark no relation answers for has a place of its own — one ellipse around the connected mass, evenly spread — rather than the residue of the other two forces, which threw it at a wall |
+ * | link spring, rest length by relation | a citation is closer than a mention: {@link CITES_REST} vs {@link MENTIONS_REST} |
+ * | many-body repulsion | unrelated things do not share a place |
+ * | collision | a mark never sits on another mark |
+ * | gravity, isotropic | each group is held to its own cell's centre |
+ * | orphan ring | an unattached mark gets a slot on one ellipse, not a wall |
  *
- * The aspect-aware gravity is the one force here that is not standard, and it is what
- * pays the old layout's measured debt: a uniform fit of a 1.39-aspect cloud into a
- * 3.56-aspect canvas could never fill more than 39% of the width, and the shipped
- * picture measured 33.5% (design-infoviz, 2026-09-06). Stretching the *fit* would have
- * lied about every distance. Stretching the **field the layout is computed in** does
- * not: the distances that come out are true to the forces that produced them, and a
- * uniform scale still draws them.
+ * The physics is told nothing about the window; the camera fits. A tick costs O(n log n)
+ * with the Barnes–Hut quadtree past
+ * {@link MANY_BODY_EXACT_MAX_ORDER}, O(n²) below it, plus O(E) springs.
  *
- * ## Determinism
- *
- * No `Math.random`, no clock, no `performance.now`. Seeds are the golden-angle spiral
- * `seedPositions` already produced, every tie is broken by a fixed rule, and one tick is
- * a function of the state alone — so the same folder settles into the same picture on
- * every machine, and a test can assert positions rather than statistics.
- *
- * ⚠️ **`stepLibrarySimulation` mutates its state and returns it.** Determinism, not
- * immutability, is the property that matters: an 800-node graph at 60fps cannot allocate
- * two arrays of node objects sixty times a second, and every test below asserts the
- * function of the input rather than the identity of the output.
+ * Deterministic: no `Math.random` or clock, golden-angle seeds, fixed tie rules, so tests
+ * assert positions. `stepLibrarySimulation` mutates its state and returns it, because an
+ * 800-node graph at 60fps cannot allocate new node arrays every tick.
  */
 
 /**
- * Rest length of a citation, in world units — **a satellite's orbit around its page**.
- *
- * It was 52, half again the 34 the fit reserved for a label, and at that distance a page
- * and the six files it was written from occupied as much of the picture as three unrelated
- * pages did: the hub and its satellites read as a constellation of equals rather than as
- * one thing. 28 is a shade over the widest page mark's diameter plus a source's, so the
- * files a page stands on sit **against** it, close enough that the group is one object at a
- * glance and far enough that no two of them collide ({@link COLLISION_PAD} is 7).
+ * Rest length of a citation in world units: a shade over a page mark's diameter plus a
+ * source's, so a page and its files read as one object. A rest length is a claim about
+ * meaning, never a lever for fill.
  */
 const CITES_REST = 28;
-/**
- * Rest length of a mention. **More than four times a citation**, so a concept a page merely
- * names is pushed clear of the page's own satellites instead of standing among them. The
- * two relations were 52 and 96 — a ratio of 1.8, which the eye reads as "a bit further" —
- * and the hub-and-satellite reading needs them to be different kinds of distance, not
- * different lengths of the same one.
- */
+/** Over four times a citation, so a merely named concept stands clear of a page's satellites. */
 const MENTIONS_REST = 120;
 
 /**
- * Many-body charge. Negative is repulsion, the sign convention `d3-force` uses.
- *
- * ⚠️ **It was −260, and −260 was tuned on eighteen marks.** At that strength a three
- * hundred-file folder settled 1993×1639 world units across with a mean citation length of
- * 65 against a rest of 28 — repulsion, not the springs, was deciding every distance in the
- * picture, and the fit then had to clamp and push a fifth of the folder off the canvas. The
- * sweep at 376 marks: −70 → 1993 across, −55 → 1879, **−45 → 1634**, which is the first
- * value whose fitted scale (0.447) clears the zoom floor a 3px source mark sets (0.429).
- *
- * The floor under it is the collision pass, not this number: two marks are never nearer than
- * their own radii plus {@link COLLISION_PAD} whatever the charge, so weakening repulsion
- * cannot bring back the 2026-09-07 hairball — measured on the owner's 18-mark folder, a mean
- * citation of 56.8 against a collision minimum of 25.
+ * Many-body charge; negative repels (`d3-force` convention). Swept at 376 marks: −45 is the
+ * first value whose fitted scale clears the 3px source mark's zoom floor. The collision
+ * pass, not this number, keeps marks apart.
  */
 const MANY_BODY_STRENGTH = -45;
 
 /**
- * **How much more a page pushes than a file does, per relation it carries.**
- *
- * Repulsion with one charge for every mark makes a page with nine sources exactly as
- * crowd-shy as a source with one, so a busy hub's own satellites are pressed into the
- * satellites of the hub beside it and the two groups read as a single smear — the shape at
- * three hundred documents that no rest length can undo. Charge proportional to degree gives
- * the busy page the room its own satellites need before anything else is placed near it.
- *
- * Linear in the count of relations and capped, because the cap is what stops one hub in a
- * three-hundred-file folder from becoming the only thing the picture is about.
+ * Extra charge per relation a page carries, capped: a busy hub needs room for its own
+ * satellites, or two hubs' satellites smear together; the cap stops one hub owning the picture.
  */
 const PAGE_CHARGE_PER_DEGREE = 0.35;
 const PAGE_CHARGE_MAX = 4;
 
 /**
- * **Repulsion stops at this distance**, in world units — `d3-force`'s `distanceMax`, and at
- * three hundred documents it is the difference between a picture and a cloud.
- *
- * Repulsion falls off as 1/d², which sounds local and is not: the *count* of distant marks
- * grows as d², so every mark in a three-hundred-file folder feels a roughly constant push
- * from everything in the folder, and the only thing that balances it is gravity at the
- * centre. Measured on a 376-mark folder before the cutoff: the settled picture spanned
- * 3216×2859 world units with a mean citation length of 129.6 against a rest length of 28,
- * so the fit had to clamp and a third of the folder stood outside the canvas.
- *
- * What repulsion is actually *for* here is local: keeping the satellites of one page off the
- * satellites of the next. 240 is about eight citation rest lengths — far enough that a page
- * and everything it cites are inside one another's field, and near enough that two clusters
- * a screen apart have no opinion about each other. After: 700×663 and a mean citation of
- * 33.9.
+ * Repulsion cutoff in world units (`d3-force`'s `distanceMax`), about eight citation rest
+ * lengths. Without it distant marks, whose count grows as d², push every mark and a
+ * 376-mark folder spread past the canvas; repulsion here is only for neighbouring clusters.
  */
 const MANY_BODY_MAX_DISTANCE = 240;
 const MANY_BODY_MAX_DISTANCE_SQUARED = MANY_BODY_MAX_DISTANCE * MANY_BODY_MAX_DISTANCE;
 
 /**
- * Order at which the exact O(n²) many-body pass hands over to the Barnes–Hut tree.
- *
- * **Measured, and higher than the obvious guess.** One whole tick, mean of 30, on an
- * M-series laptop (2026-09-07):
- *
- * | Nodes | Exact | Barnes–Hut |
- * |---|---|---|
- * | 500 | 0.95 ms | 1.15 ms |
- * | 600 | 1.20 ms | 1.28 ms |
- * | 700 | 1.54 ms | 1.56 ms |
- * | 800 | 1.97 ms | 1.73 ms |
- * | 900 | 2.36 ms | 2.01 ms |
- * | 3000 | 20.8 ms | 8.5 ms |
- *
- * The tree has to be **built** before it can be walked, and a build touches every node;
- * below ~720 that build costs more than the pairs it skips. `library-force-simulation.perf.test.ts`
- * re-measures both passes on the same graph and fails if this ordering inverts.
+ * Order at which the exact O(n²) many-body pass hands over to the Barnes–Hut tree: below
+ * it, building the tree costs more than the pairs it skips (measured per tick, M-series).
+ * The perf test in `library-force-simulation.perf.test.ts` fails if the crossover inverts.
  */
 export const MANY_BODY_EXACT_MAX_ORDER = 720;
 
@@ -154,13 +71,9 @@ const VELOCITY_DECAY = 0.62;
 /** Alpha below which the picture is at rest and the loop may stop stepping. */
 const ALPHA_MIN = 0.0015;
 /**
- * **The settle budget**: the most ticks an arrival is ever allowed, after which the picture
- * is what it is and the loop idles.
- *
- * {@link ALPHA_DECAY} reaches {@link ALPHA_MIN} in 234 ticks from a cold start, so this is a
- * ceiling with room rather than a cut — it exists so that a folder nobody has measured
- * cannot hold the loop awake, which on a canvas whose whole contract is *it stands still*
- * would be the defect rather than a slow arrival.
+ * The most ticks an arrival may take before the loop idles. {@link ALPHA_DECAY} reaches
+ * {@link ALPHA_MIN} in 234 ticks, so this is a ceiling with room: it keeps an unmeasured
+ * folder from holding the loop awake on a canvas that must stand still.
  */
 export const LIBRARY_SETTLE_MAX_TICKS = 400;
 /** Per-tick approach of alpha toward its target — about 240 ticks from 1 to `ALPHA_MIN`. */
@@ -178,132 +91,38 @@ const COLLISION_PAD = 7;
 const COLLISION_EXACT_MAX_ORDER = 150;
 
 /**
- * **The margin the camera keeps around the whole picture**, in canvas pixels.
- *
- * It was 34 — "an 11px label on a 15px line, 5px under a mark up to 10px", exactly the
- * stack an outermost mark needed and not a pixel more, and it was a *derived* number once
- * the mark band followed the canvas. Both of those are gone: the marks are a fixed world
- * scale, so the stack is knowable in advance, and a margin sized to the tallest label alone
- * puts the picture's edge against the pane's edge, which is what made the owner's 1920
- * capture read as a clump pressed into a field. 64 is the stack (9 × 1.6 zoom + 5 + 15 ≈
- * 34) with room around it, and it is a constant so that the same folder is framed the same
- * way at every window size.
+ * The camera's margin around the picture, in canvas px: an outermost mark's label stack
+ * (9 × 1.6 zoom + 5 + 15 ≈ 34) with room around it, constant so one folder frames the
+ * same at every window size.
  */
 export const LIBRARY_FIT_PADDING = 64;
 
 /**
- * **The orphan ring** — where a mark that is attached to nothing settles.
- *
- * A degree-0 mark is the one node in this model that no spring answers for. It has
- * repulsion pushing it away from everything and gravity pulling it at the centre, and the
- * balance of those two alone is *far out and wherever*: measured on the owner's seeded
- * folder at 1512×917 on 2026-09-07, `interview-notes.txt` sat on the top edge,
- * `design-system.docx` on the bottom one, `Handover notes` on the right, and
- * `kickoff-notes.html` in the bottom-right corner 40px from the fit control, while the two
- * real components sat small in the middle. Nothing was wrong with any single position; the
- * picture read as scattered because four marks had been thrown to four different walls.
- *
- * So the unattached marks are given a place of their own rather than left to the residue
- * of two forces: **one calm ellipse around the connected mass**, its aspect the canvas's,
- * its radius the mass's own bounding radius plus {@link ORPHAN_RING_GAP}, and its angles
- * spread evenly and deterministically by sorted id. It is a gravity target, not a
- * position — orphans still repel, still collide, still drag, and still drift — so the
- * picture stays alive, which `docs/DECISIONS.md` (2026-09-07) requires of it.
- *
- * The ellipse is what keeps the fill the same record measured: a *circular* ring around a
- * 3.56-aspect canvas would make the whole picture as tall as it is wide and give back the
- * width that record's falsifier is stated against.
+ * The orphan ring: unattached marks, which no spring answers for, get evenly spaced slots
+ * (by sorted id) on one ellipse with the canvas's aspect around the connected mass, or
+ * repulsion throws each to a different wall. A gravity target, not a position.
  */
 const ORPHAN_RING_GAP = 56;
 /*
- * ⚠️ **Why this gap is not stretched for a small folder, measured 2026-09-13.**
- *
- * Inspection 122 (S1) found a twelve-mark folder drawing 38.4% x 38.7% of a 1512 window.
- * Raising the camera's ceiling to the map's own node chrome took that to 45.9% x 47.8% and
- * ran out: the mark may not be drawn wider. The next lever is the *world* — make the picture
- * bigger in simulation units and the camera keeps its size while the picture grows.
- *
- * Not the springs. {@link CITES_REST} was cut 52 -> 28 in G2 exactly because at 52 "a page
- * and the six files it was written from occupied as much of the picture as three unrelated
- * pages did: the hub and its satellites read as a constellation of equals rather than as one
- * thing" — measured on a folder this size, which is the folder the finding is about. A rest
- * length is a claim about meaning and may not be spent on fill.
- *
- * This gap carries no such claim, so it was the candidate, scaled by mark count alone (never
- * by the window). Three values were built and measured over the four fixtures at three
- * windows:
- *
- * | gap x | `vault` fill at 1512 | 6x4 occupancy at 1512 | camera / widest mark at 1040 |
- * |---|---|---|---|
- * | 1.00 (this) | 45.9% x 47.8% | 0.417 | 2.00 / 36.0px |
- * | 1.15 | 47.8% x 49.8% | 0.375 | 2.00 / 36.0px |
- * | 1.28 | 49.5% x 51.5% | 0.375 | 2.00 / 36.0px |
- * | 1.55 | 59.8% x 51.4% | 0.375 | **1.74 / 31.4px** |
- *
- * So it is refused, on its own numbers. The 60% that a fill target asks for arrives only at
- * 1.55, where the 1040x720 canvas can no longer hold the picture at the ceiling and the same
- * folder wears **31.4px marks on one window and 36px on another** — the G1 observation
- * verbatim ("26.1px at 1040 and 34.0 at 1920"), and red in
- * `library-graph-picture.spec.ts`, "one folder, one mark size". And below that, every step
- * buys bounding box while *losing* the occupancy of a fixed 6x4 grid: the extra area is air
- * between groups, not picture. The statistic in the complaint improves while the better
- * statistic gets worse, which is the fill objective G2 deleted, re-entering through a gap.
+ * Not scaled up for a small folder: at 1.55× the 1040×720 canvas drops below the zoom
+ * ceiling and one folder wears two mark sizes (`library-graph-picture.spec.ts`), and smaller
+ * steps only add air between groups (measured over four fixtures at three windows).
  */
 /** Ring radius when there is no connected mass to stand off from — a folder of loose files. */
 const ORPHAN_RING_MIN_RADIUS = 90;
-/**
- * Pull toward the ring slot, per tick. Several times {@link GRAVITY}: the ring is a place
- * the mark belongs, not a preference it drifts toward, and it has to answer the repulsion
- * of every mark in the mass at once.
- */
+/** Pull toward the ring slot per tick; several times {@link GRAVITY}, to answer the whole mass's repulsion. */
 const ORPHAN_RING_GRAVITY = 0.085;
 /**
- * The first slot's angle: **on the ring's short axis, and no half-slot offset.**
- *
- * ⚠️ Two measurements decide this, and the second one narrows the first.
- *
- * **No half-slot offset** (2026-09-07). Half a slot off the top looked tidier written down
- * and put four orphans at ±45°, which is a *rectangle*: each of the four marks is then
- * simultaneously the leftmost-or-rightmost and the topmost-or-bottommost thing in the
- * picture, so the fit — which pins the bounding box to the canvas — lands all four in the
- * four corners, 34px from two walls each and one of them under the fit control. On the axes
- * the extremes are held by different marks instead: the bounding box has empty corners, and
- * each loose mark is near one wall and far from the other three. That still stands, and
- * with four slots the rule below produces exactly the same four angles.
- *
- * **Which axis it starts on** (2026-09-08). It used to be three o'clock, and with *one*
- * loose mark three o'clock is the single worst angle available: the ring is an ellipse with
- * the box's aspect, so the 0° slot sits at its **long** radius and one unattached note
- * decides the whole picture's scale. Measured on the owner's own folder at 1400×860 — 19
- * marks, one of them loose: the connected mass spanned 708×538, and
- * `Meeting notes September` alone stretched the picture to 908×525, aspect **1.79** against
- * a canvas of 1.25. The fit is uniform, so it was width-bound and **35% of the canvas height
- * went unused** (fillY 0.65; 0.49 at 1040×720, which is the empty band the owner's screenshot
- * shows).
- *
- * So the first slot is on the **vertical**, where the fit has room. That is a constant and
- * not a function of the box, and the measurement is why: the connected mass settles
- * consistently *wider* than the canvas it is drawn in, because the aspect-aware gravity is a
- * weak shaping term that under-corrects — 1.32 against a box of 1.25 at 1400×860, and 1.41
- * against a box of 1.00 at 1040×720. The slack is therefore vertical at every size measured,
- * and a rule that reads the box instead answered 1040×720 wrong by two pixels of box height.
+ * The first slot sits on the vertical axis with no half-slot offset. On a diagonal, four
+ * orphans each hold two extremes and the fit pins them into the corners. Vertical, because
+ * the mass settles wider than its canvas, so one loose mark on the long radius would decide
+ * the scale and leave the height empty (measured at 1400×860 and 1040×720).
  */
 const ORPHAN_RING_PHASE = Math.PI / 2;
 
-/**
- * **The picture is still once it has arrived.**
- *
- * ⚠️ This is where a ≤0.4px, 7.2s ambient drift used to be applied to every mark's screen
- * position, every fourth frame, forever. It was a bounded owner directive (2026-09-07,
- * *"it does not even move"*) and the owner reversed it on 2026-09-08 looking at the
- * installed app: *"why does it wriggle whenever I put the mouse on the graph? it is hard
- * to look at … get rid of that strange effect."* A drift small enough to be defensible in
- * a number was still large enough to be seen, and a picture that never stops moving is a
- * picture a person cannot rest their eye on while reading the document beside it.
- *
- * Nothing has replaced it. Motion here is now only ever the answer to something a person
- * did: the arrival, a drag, a release, a resize, a folder that changed. `docs/DECISIONS.md`,
- * 2026-09-08, carries the reversal.
+/*
+ * No ambient drift: the arrived picture is still, and motion only answers what a person did
+ * (arrival, drag, release, resize, a changed folder). `docs/DECISIONS.md` records why.
  */
 
 interface SimulationNode {
@@ -320,25 +139,13 @@ interface SimulationNode {
   /** Set while a pointer holds this node. The integrator writes the position instead of the force. */
   fx: number | null;
   fy: number | null;
-  /**
-   * Arrival progress, 0 → 1. A node that has just appeared is faded in over
-   * `--motion-base` by the caller; the simulation only counts, it does not draw.
-   */
+  /** Arrival progress, 0 → 1; the caller fades the node in over `--motion-base`. */
   entered: number;
   /** How many edges touch it — what the drawn radius is graded by. */
   degree: number;
-  /**
-   * Angle of this mark's slot on the orphan ring, or `null` when it has a relation and the
-   * springs answer for it. Assigned from the sorted id, so it is the same on every machine
-   * and the same on every visit.
-   */
+  /** Angle of this mark's orphan-ring slot, assigned from the sorted id; `null` when springs answer for it. */
   orbit: number | null;
-  /**
-   * Which of {@link LibrarySimulation.cells} this mark is held in — the index of its own
-   * group of the folder. A folder that is one connected graph has one cell covering the
-   * whole field, and then this is 0 for everybody and nothing about the physics differs
-   * from what it was before the packing existed.
-   */
+  /** Index of this mark's group in {@link LibrarySimulation.cells}; 0 for everyone in a single-group folder. */
   cell: number;
 }
 
@@ -360,58 +167,32 @@ export interface LibrarySimulation {
   /** Half-width and half-height of the field, which is where the aspect-aware gravity comes from. */
   box: { width: number; height: number };
   /**
-   * **One place per group of the folder**, in the simulation's own units — see
-   * `library-graph-packing.ts` for why a composition rather than a force decides this.
-   * Exactly one cell, covering the whole field, when the folder is a single connected
-   * graph.
+   * One place per group of the folder in simulation units (`library-graph-packing.ts`);
+   * one cell covering the field for a single connected graph.
    */
   cells: PackSlot[];
   /**
-   * The nodes of each group, by cell index, as references — rebuilt when the composition
-   * is, never per tick. The many-body pass walks these rather than the whole array, which
-   * is what stops two groups with no relation between them from pushing each other at the
-   * walls.
+   * Each group's nodes, rebuilt with the composition, never per tick. The many-body pass
+   * walks these, or unrelated groups push each other at the walls.
    */
   groupNodes: SimulationNode[][];
   /**
-   * **Index into {@link groupNodes} of the unattached marks** — and, while {@link packed},
-   * of their cell as well, because a packed composition has one cell per group. `null` when
-   * the folder has no unattached mark.
-   *
-   * ⚠️ **It was named for a cell, and its two setters disagreed about what it addressed.**
-   * The packed branch writes `groups.length - 1`, which is both a `groupNodes` index and a
-   * `cells` index. The single-mass branch writes `1` — the loose marks are listed after the
-   * one connected mass in `groupNodes` — while `cells` holds exactly one entry, the whole
-   * field. Indexing `cells` with it was therefore out of range on every single-mass folder,
-   * and nothing crashed only because `libraryOrphanRing` tests `sim.packed` before it
-   * indexes `cells`. The other reader (`applyManyBody`) always wanted the group index, and
-   * gets it in both branches. So the field is named for what both setters actually produce,
-   * and the one cell-shaped use states its own precondition.
+   * Index into {@link groupNodes} of the unattached marks, or `null` when there are none.
+   * It indexes `cells` only while {@link packed}; unpacked, `cells` has one entry and this
+   * is out of range there.
    */
   looseGroup: number | null;
   /**
-   * Radius of the ring they stand on inside their cell. 0 when there is only one of them.
-   *
-   * ⚠️ **Read only while {@link packed}.** Unpacked — one connected mass — the ring is
-   * measured from the mass's own settled box by `libraryOrphanRing`, because there the ring
-   * goes *around* the picture rather than inside a cell of it. The single-mass branch still
-   * writes this value so that a folder which stops being packed cannot leave a stale radius
-   * behind for the next composition to read.
+   * Radius of the loose marks' ring inside their cell, 0 for a single one. Read only while
+   * {@link packed}; unpacked, `libraryOrphanRing` measures the ring around the mass. Always
+   * written, so a composition change leaves no stale radius.
    */
   looseRadius: number;
-  /**
-   * Whether the groups were composed at all. False for a single-group folder — where the
-   * one cell is the whole field — and for a folder of nothing but unattached files, whose
-   * ring is still the field's own ellipse.
-   */
+  /** False for a single-group folder and for a folder of only unattached files. */
   packed: boolean;
   /**
-   * Order above which the many-body force switches to the Barnes–Hut tree.
-   *
-   * It is state rather than a constant **only so the perf test can measure both passes on
-   * the same graph** — a crossover asserted against two different graphs is not a
-   * crossover. Product code never sets it; `createLibrarySimulation` defaults it to
-   * {@link MANY_BODY_EXACT_MAX_ORDER}.
+   * Barnes–Hut crossover, state only so the perf test can time both passes on one graph;
+   * product code keeps {@link MANY_BODY_EXACT_MAX_ORDER}.
    */
   exactMaxOrder: number;
   /** Ticks since creation. Only the tests read it. */
@@ -419,30 +200,10 @@ export interface LibrarySimulation {
 }
 
 /**
- * **The mark scale, and it is fixed.**
- *
- * ⚠️ **This band used to be a function of the canvas.** On 2026-09-12 the band was graded
- * from "the side of the square each mark would get if the canvas were divided evenly between
- * them", floored at a 10px top and capped at 17 — so twelve marks on a 1512 window wore 34px
- * of diameter, and the same twelve on a 1920 window wore more. The owner's verdict on that
- * build is the reason it is gone: *"the graph is too big and ugly … what happens when a few
- * hundred documents pile up?"* A mark that grows with the window is a folder with as many
- * pictures as the person has window sizes, and it hides the only question the size was ever
- * asked to answer — which page is busy — behind how much room the window happened to have.
- *
- * So the scale is a constant, in **world** units, and the camera is the only thing between
- * it and the screen (`fitLibraryView` clamps the zoom to [z_min, 1.6], so a mark's drawn
- * size has a floor and a ceiling and nothing else). Six documents on a 1920 window look
- * small, exactly as six nodes on the map do.
- *
- * - **A page is 5 → 9** by how many sources it cites: the one thing on this canvas worth
- *   grading, and the grading a person can actually decode because the two ends are a
- *   3.24× area ratio at a fixed size rather than a ratio against a mark that moved.
- * - **A source is a 3.5 square** — the file a page stands on, never the subject. Half the
- *   page band's own top, and a square reads heavier than a circle of the same extent, so a
- *   file's 7px box sits under a quiet page's 10px disc.
- * - **A concept is a 5 ring**, the page band's floor: it lives on the map, not in this
- *   folder, so it is present at the smallest size a named thing is drawn at here.
+ * The mark scale, fixed in world units; only the camera stands between it and the screen,
+ * or one folder draws a different picture at every window size and size stops meaning
+ * "busy page". A page is 5 → 9 by citations; a source a 3.5 square, never the subject; a
+ * concept a 5 ring, the page floor, since it lives on the map.
  */
 export const LIBRARY_PAGE_RADIUS_MIN = 5;
 export const LIBRARY_PAGE_RADIUS_MAX = 9;
@@ -450,13 +211,9 @@ export const LIBRARY_SOURCE_RADIUS = 3.5;
 export const LIBRARY_CONCEPT_RADIUS = 5;
 
 /**
- * Every node's half-extent in world units, in one pass. Pure; the renderer multiplies by
- * the camera's scale and never by anything else.
- *
- * A page is graded by the **citations** it carries, not by its degree: a mention is a page
- * naming a concept, which says nothing about how much of the folder that page was written
- * from, and counting both made a page with one source and six concepts the biggest mark on
- * the picture.
+ * Every node's half-extent in world units; the renderer multiplies by the camera scale
+ * only. A page grades by citations, not degree: a mention says nothing about how much of
+ * the folder the page was written from.
  */
 export function libraryMarkRadii(graph: LibraryGraph): Map<string, number> {
   const cites = new Map<string, number>();
@@ -481,8 +238,7 @@ export function libraryMarkRadii(graph: LibraryGraph): Map<string, number> {
       out.set(node.id, LIBRARY_CONCEPT_RADIUS);
       continue;
     }
-    // Square-rooted, so the band reads as "more sources" rather than as a bar chart: area
-    // grows with the count, which is how a person judges a dot's size.
+    // Square-rooted, so area grows with the count, which is how a dot's size is judged.
     const t = max <= 0 ? 0 : Math.sqrt(Math.min(cites.get(node.id) ?? 0, max) / max);
     out.set(node.id, LIBRARY_PAGE_RADIUS_MIN + (LIBRARY_PAGE_RADIUS_MAX - LIBRARY_PAGE_RADIUS_MIN) * t);
   }
@@ -490,11 +246,8 @@ export function libraryMarkRadii(graph: LibraryGraph): Map<string, number> {
 }
 
 /**
- * A mark's own charge, as a multiple of {@link MANY_BODY_STRENGTH}.
- *
- * Only a **page** grades. A source and a concept are satellites — what holds them is the
- * spring to the page that cites or names them, and giving them a charge of their own only
- * made the two hubs beside each other push their satellites into one another's.
+ * A mark's charge as a multiple of {@link MANY_BODY_STRENGTH}. Only a page grades: graded
+ * satellites push neighbouring hubs' satellites into one another.
  */
 function chargeMultiplier(kind: LibraryGraphNodeKind, degree: number): number {
   if (kind !== "page") return 1;
@@ -515,11 +268,7 @@ export function createLibrarySimulation({
   box: { width: number; height: number };
   /** Measurement-only override; see {@link LibrarySimulation.exactMaxOrder}. */
   exactMaxOrder?: number;
-  /**
-   * False only for the footprint pass `composeLibraryGroups` runs on one group at a time:
-   * a single group has nothing to compose, and saying so explicitly is what keeps the
-   * recursion one level deep by construction rather than by argument.
-   */
+  /** False only for the per-group footprint pass, which keeps that recursion one level deep. */
   compose?: boolean;
 }): LibrarySimulation {
   const ids = graph.nodes.map((node) => node.id);
@@ -586,15 +335,10 @@ function buildLinks(
       source,
       target,
       rest: edge.relation === "cites" ? CITES_REST : MENTIONS_REST,
-      // The busier end moves less. Without it a page cited by nothing else is dragged
-      // across the canvas by a source that six other pages are also holding.
+      // The busier end moves less, or a shared source drags a lightly held page across the canvas.
       bias: sourceDegree / (sourceDegree + targetDegree),
-      /*
-       * A hub's springs are weakened in proportion to how many it has, so a source every
-       * page cites does not out-pull the whole picture into one knot. This is what
-       * ForceAtlas2's `outboundAttractionDistribution` did for the settled layout, kept
-       * because it was the reason a hub stayed reachable from all of its pages.
-       */
+      // A hub's springs weaken with their count (FA2's `outboundAttractionDistribution`), or
+      // a source every page cites pulls the picture into one knot.
       strength: 1 / Math.sqrt(Math.min(sourceDegree, targetDegree)),
     });
   }
@@ -602,61 +346,27 @@ function buildLinks(
 }
 
 /**
- * Order above which the footprint pass is skipped and an estimate stands in.
- *
- * ⚠️ **It was 240, and 240 was the wrong bound for the wrong reason.** The pass settles each
- * group once, synchronously, on mount — Σ n<sub>i</sub>² ≤ n², so it is at worst the cost of
- * the arrival a person is already waiting for — and it only runs at all when the folder has
- * **two or more** components, because one connected mass takes the whole field and has
- * nothing to compose. So the expensive case the old bound was protecting against, a single
- * six-hundred-mark component, never reached this line in the first place; what the bound
- * actually excluded was exactly the folder G2 exists for. Measured on 376 marks in seven
- * groups: the estimate below reserved 916 units a side per group and the packed picture came
- * out 3037 units across, against 700 once each group was measured.
- *
- * 1200 is where Σ n<sub>i</sub>² on a plausible worst case — a hundred groups of twelve —
- * is still under a tenth of the single-component settle nobody complains about.
+ * Order above which the footprint pass is skipped for an estimate. The pass costs
+ * Σ n_i² ≤ n² once on mount and runs only for two or more components; at 1200 a hundred
+ * groups of twelve stay under a tenth of a single-component settle.
  */
 const PACK_PREPASS_MAX_ORDER = 1200;
 
 /**
- * Footprint per mark used **only** above {@link PACK_PREPASS_MAX_ORDER}. Re-measured on
- * 2026-09-12 against the fixed mark scale: a settled component's bounding-box area per mark
- * is about 1.4k at three marks and saturates near 2.6k above forty, so 2200 is the middle of
- * the band this estimate is ever used in. It was 14000, which was measured when a mark was
- * up to 34px across and the canvas decided that.
+ * Footprint per mark above {@link PACK_PREPASS_MAX_ORDER}: measured bounding-box area per
+ * settled mark runs 1.4k to 2.6k at the fixed mark scale, so 2200 is mid-band.
  */
 const PACK_ESTIMATE_AREA_PER_MARK = 2200;
 
 /**
- * **The composition**: every group of the folder is given its own place, and every mark is
- * told which place it belongs to.
+ * Gives every group of the folder its own place: (1) connected components by union-find,
+ * O(E α(n)), biggest first with the smallest id breaking ties, plus the unattached marks as
+ * one more group; (2) each component settled alone so its cell has its real shape, or a wide
+ * cluster overflows a square cell, with the offsets seeding the real run; (3) the boxes
+ * packed around the centre with {@link ORPHAN_RING_GAP} between groups.
  *
- * Three steps, and the middle one is the whole reason this is not a force.
- *
- * 1. **The groups.** The connected components of the relation graph, biggest first with the
- *    smallest member id breaking ties, and then — as one more group — the unattached marks,
- *    which have no relation to answer for and stand on a ring of their own inside their own
- *    cell.
- * 2. **The footprints.** Each component is settled *on its own*, by this very file's
- *    forces, and its bounding box measured. So the rectangle a group is given already has
- *    the shape of what goes in it, which is what a weight-proportional treemap cell cannot
- *    promise: a wide cluster in a square cell overflows onto its neighbour. The settled
- *    offsets are kept and used to seed the real simulation, so the picture *starts*
- *    composed and the arrival a person sees is the last of the settling rather than four
- *    clusters travelling across the canvas.
- * 3. **The packing.** `packGroupBoxes` lays the footprints in rows across an arrangement of
- *    the canvas's aspect, with {@link ORPHAN_RING_GAP} of clear space around every group —
- *    the same number that has always said how far a mark with no relation stands off
- *    everything else.
- *
- * A folder that is **one** connected graph, with no unattached files, has one group; it
- * takes one cell covering the whole field and every line below behaves exactly as it did
- * before this function existed. That is the case the perf gate and most of the unit suite
- * measure, and it is deliberately byte-for-byte the old path.
- *
- * `graph` is null when there is nothing to measure a footprint from — the footprint pass
- * needs the folder, not the simulation — and then the estimate above stands in.
+ * A single connected graph keeps one cell covering the field. `graph` is null when there is
+ * no folder to measure a footprint from, and then the estimate stands in.
  */
 function composeLibraryGroups(sim: LibrarySimulation, graph: LibraryGraph | null): void {
   const { nodes, links } = sim;
@@ -675,7 +385,6 @@ function composeLibraryGroups(sim: LibrarySimulation, graph: LibraryGraph | null
     return;
   }
 
-  // ── 1. The groups. ──
   const parent = nodes.map((_, index) => index);
   const find = (start: number): number => {
     let index = start;
@@ -688,8 +397,7 @@ function composeLibraryGroups(sim: LibrarySimulation, graph: LibraryGraph | null
   for (const link of links) {
     const first = find(link.source);
     const second = find(link.target);
-    // The lower index always wins, so the roots do not depend on the order the links
-    // happened to arrive in.
+    // The lower index always wins, so roots do not depend on link order.
     if (first !== second) parent[Math.max(first, second)] = Math.min(first, second);
   }
   const byRoot = new Map<number, number[]>();
@@ -713,26 +421,17 @@ function composeLibraryGroups(sim: LibrarySimulation, graph: LibraryGraph | null
 
   const looseRadius = looseRingRadius(loose.map((index) => nodes[index]!));
   /*
-   * ⚠️ **A folder with one connected mass keeps the picture it had** — one field, one centre,
-   * and the ring of unattached marks around that mass, exactly as 2026-09-07 decided.
-   *
-   * This is a measurement, not deference. On a 60-mark folder that is one component plus one
-   * uncited file, composing the two as peers gave the single loose mark a place the size of a
-   * group and stretched the picture to make room for it: the band went 26 → 82px and the
-   * height filled fell 0.94 → 0.76. The composition is the answer when there is **no** single
-   * mass to be the picture — three clusters and a loose file have no shared centre — and the
-   * ring is the answer when there is one. Both cases are measured, and each keeps what it
-   * measured better.
+   * One connected mass keeps one field with the loose marks ringed around it: composing a
+   * lone loose mark as a peer group stretches the picture to make room for it (measured on a
+   * 60-mark folder). Composition is for folders with no single mass.
    */
   if (components.length < 2) {
     sim.cells = [wholeField];
-    // The one group is the connected mass; the unattached marks are listed after it so the
-    // many-body pass skips them, which is what it did before this function existed.
+    // The unattached marks are listed after the mass so the many-body pass skips them.
     sim.groupNodes = loose.length > 0
       ? [components[0]?.map((index) => nodes[index]!) ?? [], loose.map((index) => nodes[index]!)]
       : [components[0]?.map((index) => nodes[index]!) ?? []];
-    // One cell, two groups: the mass is 0 and the loose marks are 1. This is a
-    // `groupNodes` index and `cells` has no entry for it — see the field's own note.
+    // A `groupNodes` index; `cells` has no entry for it here.
     sim.looseGroup = loose.length > 0 ? 1 : null;
     sim.looseRadius = looseRadius;
     sim.packed = false;
@@ -740,22 +439,16 @@ function composeLibraryGroups(sim: LibrarySimulation, graph: LibraryGraph | null
     return;
   }
 
-  // ── 2. The footprints. ──
   /*
-   * Each group is settled **on its own**, by this file's own forces and against the canvas's
-   * own aspect — which is the aspect its gravity will keep once it is in its cell — so the
-   * box the packing stacks is exactly the box the group will occupy. The settled offsets are
-   * kept and used to seed the real simulation, so the picture *starts* composed and the
-   * arrival a person sees is the last of the settling rather than four clusters travelling
-   * across the canvas.
+   * Each group settles alone against the canvas's aspect, the aspect its gravity keeps in its
+   * cell; the offsets seed the real run, or the arrival shows clusters crossing the canvas.
    */
   const prepass = graph !== null && nodes.length <= PACK_PREPASS_MAX_ORDER;
   const looseIndex = loose.length > 0 ? groups.length - 1 : -1;
   const looseBox = (): PackBox => {
     let reach = 0;
     for (const index of loose) reach = Math.max(reach, nodes[index]!.radius);
-    // The ring, plus the room its own marks take: the place has to hold the mark, not only
-    // the circle its centre sits on.
+    // The ring plus its marks' own reach: the cell holds the mark, not only its centre.
     const extent = (looseRadius + reach) * 2;
     return { width: extent, height: extent };
   };
@@ -789,10 +482,9 @@ function composeLibraryGroups(sim: LibrarySimulation, graph: LibraryGraph | null
   const { boxes, seeds } = measure();
   const cells = packGroupsAroundCentre(boxes, ORPHAN_RING_GAP);
 
-  // ── 3. The places. ──
   sim.cells = cells;
   sim.groupNodes = groups.map((members) => members.map((index) => nodes[index]!));
-  // Packed: one cell per group, so this addresses both.
+  // Packed: one cell per group, so this indexes both.
   sim.looseGroup = loose.length > 0 ? groups.length - 1 : null;
   sim.looseRadius = looseRadius;
   sim.packed = true;
@@ -802,8 +494,7 @@ function composeLibraryGroups(sim: LibrarySimulation, graph: LibraryGraph | null
     for (const index of members) {
       const node = nodes[index]!;
       node.cell = groupIndex;
-      // A mark that has been on the canvas keeps its position — a composition is not a
-      // reason to throw a picture away — and one that has not is put where it belongs.
+      // A mark already on the canvas keeps its position; a new one is placed in its cell.
       if (node.entered >= 1 && sim.ticks > 0) continue;
       const offset = offsets?.get(node.id);
       if (offset) {
@@ -822,14 +513,8 @@ function composeLibraryGroups(sim: LibrarySimulation, graph: LibraryGraph | null
 }
 
 /**
- * **The radius of the ring the unattached marks stand on**, inside their own cell.
- *
- * One loose file has no ring: a circle of one is a point, and the point is the middle of
- * its cell. Above that the radius is whichever is larger of one slot's worth of arc and the
- * circumference the marks need not to collide — so a folder with twenty unwritten files
- * gets a wide ring and one with two gets a narrow one, and neither is a number written down
- * here. The spacing is the collision diameter with a third more room, which is the same
- * clearance the collision pass would have insisted on anyway.
+ * Radius of the loose marks' ring in their cell: 0 for one mark, else the larger of one
+ * slot's spacing and the circumference they need not to collide (collision diameter × 1.35).
  */
 function looseRingRadius(loose: readonly SimulationNode[]): number {
   if (loose.length <= 1) return 0;
@@ -840,15 +525,9 @@ function looseRingRadius(loose: readonly SimulationNode[]): number {
 }
 
 /**
- * Settles one group on its own and returns the box it took and where each of its marks
- * stood inside it, relative to the box's centre.
- *
- * It runs **this file's own forces**, through `createLibrarySimulation` with the
- * composition switched off, so the footprint measured is the footprint the group will have.
- * Two things are deliberately approximate: the mark radii are graded against this group's
- * own busiest mark rather than the folder's, and the gravity's aspect is the canvas's rather
- * than the cell's it has not been given yet. Both move the box by a few per cent, and the
- * packing's gutter is what absorbs that.
+ * Settles one group alone with this file's forces and returns its box and each mark's offset
+ * from the box centre. Radii graded within the group and the canvas aspect move the box a
+ * few per cent, which the packing gutter absorbs.
  */
 function settledFootprint(
   graph: LibraryGraph,
@@ -881,17 +560,8 @@ function settledFootprint(
 }
 
 /**
- * Hands every unattached mark its slot on the ring, and takes the slot back from every
- * mark that has a relation.
- *
- * **Evenly spread, in sorted-id order.** Even spacing is the whole of what makes four
- * loose files read as a composition rather than as four accidents; sorting by id is what
- * makes it the *same* composition on every machine and every visit, which is the property
- * the rest of this file pays for so carefully. The order is also the one a person can
- * predict — a folder's sources arrive together on the ring rather than interleaved with
- * its pages.
- *
- * Where the first slot sits is {@link ORPHAN_RING_PHASE}.
+ * Gives every unattached mark an evenly spaced ring slot in sorted-id order, the same on
+ * every machine, from {@link ORPHAN_RING_PHASE}; a mark with a relation gets none.
  */
 function assignOrbits(nodes: SimulationNode[]): void {
   const loose: SimulationNode[] = [];
@@ -907,52 +577,23 @@ function assignOrbits(nodes: SimulationNode[]): void {
 }
 
 /**
- * **The ellipse the unattached marks stand on**, in the simulation's own units, or `null`
- * when the folder has none.
- *
- * Exported because it is the claim, not an implementation detail: a test asserting that an
- * orphan settled *in the band* has to be able to ask where the band is, and computing it a
- * second time in the test would only prove the test agrees with itself.
- *
- * Two things decide it. The **centre and the two standoffs** come from the connected mass,
- * measured per axis, so the ring stands off whatever the springs happened to build rather
- * than off the origin — and by {@link ORPHAN_RING_GAP} on both axes, never through it. The
- * **aspect** is the box's, for the reason the gravity is aspect-aware: a circle around a
- * wide canvas throws away its width, and because the ring is the outermost thing in the
- * picture its aspect is the picture's, so a fit that reserves the same padding on all four
- * sides fills both axes to that padding rather than one of them.
- *
- * ⚠️ **It is not clamped to the box, and that is deliberate.** The margin a person sees is
- * the fit's: it maps the whole picture into the canvas less {@link LIBRARY_FIT_PADDING}
- * on every side, so the outermost mark is that far in whatever the world coordinates say. A
- * clamp could only bind on a canvas too small to hold the connected mass either, and there
- * the only thing it could buy would be pulling the loose marks *into* the cluster — the
- * defect, restated inward.
+ * The ellipse the unattached marks stand on, or `null` when there are none; exported so a
+ * test asks the claim rather than recomputing it. Centre and standoffs come from the
+ * connected mass per axis plus {@link ORPHAN_RING_GAP}; the aspect is the box's, so the fit
+ * fills both axes. Not clamped to the box: the fit's padding is the margin, and a clamp
+ * would only pull loose marks into the cluster.
  */
 export function libraryOrphanRing(
   sim: LibrarySimulation,
 ): { cx: number; cy: number; rx: number; ry: number } | null {
   /*
-   * ⚠️ **Once the folder's groups are composed, the ring is inside the loose group's own
-   * cell** (2026-09-12) — the centre and the radius come from the cell, not from the
-   * connected mass.
-   *
-   * The 2026-09-07 record put it around the mass because the mass was the only other thing
-   * in the field and a loose mark's alternative was a wall. With the groups composed there
-   * is no single mass to be around — there are three or four cells — and a ring drawn
-   * around all of them would be a rim the fit has to make room for, which is the 167px band
-   * this change exists to delete, restated as a circle. The unattached marks are a group of
-   * the folder like any other, so they get a place like any other, and inside it they still
-   * stand on a ring rather than against anything.
-   *
-   * Both of that record's live falsifiers are still answered: the ring is not between two
-   * marks that have a relation, and no loose mark is inside a cluster — its cell is its own,
-   * with {@link ORPHAN_RING_GAP} of clear space around it.
+   * Composed groups put the ring inside the loose group's own cell: a ring around several
+   * cells would be a rim the fit must make room for. The cell keeps loose marks out of every
+   * cluster and off every relation.
    */
   if (sim.packed) {
     if (sim.looseGroup === null) return null;
-    // Packed, so the group index is a cell index too — which is the precondition this
-    // branch is inside of, and the reason the field's name no longer promises it outright.
+    // Packed, so the group index is a cell index too.
     const cell = sim.cells[sim.looseGroup];
     if (!cell) return null;
     return { cx: cell.cx, cy: cell.cy, rx: sim.looseRadius, ry: sim.looseRadius };
@@ -976,24 +617,15 @@ export function libraryOrphanRing(
   }
   if (loose === 0) return null;
   /*
-   * ⚠️ **The centre is the mass's bounding box, not its centre of gravity** (2026-09-08).
-   *
-   * It used to be the centroid, with the radius taken as the *largest* distance from it to
-   * any mark — and a cloud whose weight sits off-centre has one half-span much longer than
-   * the other, so a symmetric radius around the centroid stands off the short side by the
-   * long side's distance. Measured on the owner's folder at 1400×860: one loose mark whose
-   * declared standoff is {@link ORPHAN_RING_GAP} (56) sat **185–225px** clear of the
-   * connected mass — a quarter of the picture — which is both why it read as a stray and
-   * why the fit had to shrink everything else to make room for it. Off the bounding box the
-   * standoff is the number this file says it is.
+   * The centre is the mass's bounding box, not its centroid: around an off-centre centroid
+   * the short side stands off by the long side's distance, far past {@link ORPHAN_RING_GAP}.
    */
   const cx = held > 0 ? (minX + maxX) / 2 : 0;
   const cy = held > 0 ? (minY + maxY) / 2 : 0;
   const massX = held > 0 ? (maxX - minX) / 2 : 0;
   const massY = held > 0 ? (maxY - minY) / 2 : 0;
   const ratio = Math.min(4, Math.max(0.25, sim.box.width / sim.box.height));
-  // The smaller radius decides, then the aspect gives the other one: solving it this way
-  // round is what guarantees both standoffs at once, whichever axis the mass is long in.
+  // Solve for ry, then derive rx from the aspect, so both standoffs hold on either long axis.
   const ry = Math.max(
     massY + ORPHAN_RING_GAP,
     (massX + ORPHAN_RING_GAP) / ratio,
@@ -1003,12 +635,8 @@ export function libraryOrphanRing(
 }
 
 /**
- * Pulls each unattached mark toward its own slot instead of toward the centre.
- *
- * It is a force like every other one here, scaled by alpha and answered by repulsion and
- * collision, so a settled orphan sits *near* its slot rather than *at* it, a dragged one
- * leaves it, and a released one comes home. Freezing them on the ellipse would have been
- * fewer lines and would have made four of the marks on a live canvas dead.
+ * Pulls each unattached mark toward its slot as a force, not a freeze, so a dragged one
+ * leaves it and a released one comes home.
  */
 function applyOrphanRing(sim: LibrarySimulation, alpha: number): void {
   const ring = libraryOrphanRing(sim);
@@ -1022,12 +650,8 @@ function applyOrphanRing(sim: LibrarySimulation, alpha: number): void {
 }
 
 /**
- * One tick.
- *
- * Velocity Verlet in the form `d3-force` uses: forces accumulate into velocity, velocity
- * is damped, position integrates velocity. A pinned node has its position written
- * directly and its velocity zeroed, so the picture it drags is the picture the forces
- * make around a fixed point rather than a fight between the pointer and a spring.
+ * One tick, velocity Verlet as `d3-force` does it. A pinned node's position is written and
+ * its velocity zeroed, so dragging is not a fight between the pointer and a spring.
  */
 export function stepLibrarySimulation(sim: LibrarySimulation): LibrarySimulation {
   sim.alpha += (sim.alphaTarget - sim.alpha) * ALPHA_DECAY;
@@ -1055,9 +679,8 @@ export function stepLibrarySimulation(sim: LibrarySimulation): LibrarySimulation
     node.vy *= VELOCITY_DECAY;
     node.x += node.vx;
     node.y += node.vy;
-    // Repulsion alone can push a node in its own component to a non-finite coordinate.
-    // Putting it back at the centre keeps the fit from collapsing to one point, which is
-    // what the old layout's own finite-check was there to prevent.
+    // Repulsion can push a node to a non-finite coordinate; recentring it keeps the fit
+    // from collapsing to one point.
     if (!Number.isFinite(node.x) || !Number.isFinite(node.y)) {
       node.x = 0;
       node.y = 0;
@@ -1069,36 +692,16 @@ export function stepLibrarySimulation(sim: LibrarySimulation): LibrarySimulation
 }
 
 /**
- * ⚠️ **An unattached mark takes no part in this force**, in either pass.
- *
- * Repulsion is what threw the loose marks at the walls: it falls off as 1/d, so seven
- * marks 300 units away still push about 6 units per tick, and the only thing that was
- * answering was a gravity aimed at a centre the mark was already 300 units from. Nothing
- * in the folder said where it should be, so the picture said "far away, in whichever
- * direction it started". The ring says it instead, and saying it twice — a slot and a
- * shove — leaves the mark at whichever offset the two happen to cancel at, which is not a
- * place either.
- *
- * What repulsion exists for is still paid: collision keeps every mark off every other one,
- * and the ring stands the whole set clear of the mass by {@link ORPHAN_RING_GAP}. What is
- * given up is orphans nudging the connected picture around, which is a good trade —
- * a folder's real layout should not depend on how many files nobody cited.
+ * Unattached marks take no part: repulsion throws them at the walls, and a ring slot plus a
+ * shove settles them wherever the two cancel. Collision and the ring gap still keep them
+ * clear, and the connected layout never depends on how many files nobody cited.
  */
 function applyManyBody(sim: LibrarySimulation, alpha: number): void {
   const charge = MANY_BODY_STRENGTH * alpha;
   /*
-   * ⚠️ **Repulsion runs inside a group and never between two of them** (2026-09-12).
-   *
-   * Between two clusters with no relation it was the only force with an opinion, and its
-   * opinion is always the same: as far apart as the field allows. That is what put three
-   * clusters at three walls of the owner's own folder with 54% of the canvas holding
-   * nothing. Where two groups stand is composed instead — `composeLibraryGroups` — and
-   * what repulsion is *for*, keeping marks that have nothing between them out of one
-   * place, is still paid inside every group, plus collision everywhere.
-   *
-   * The lists are references built when the composition was, so the pass allocates nothing
-   * per tick: a branch inside the pair loop runs n²/2 times and measured the 200-node exact
-   * pass at 0.62ms against 0.35 (2026-09-07).
+   * Repulsion runs inside a group, never between two, or unrelated clusters fly to the walls;
+   * groups are placed by `composeLibraryGroups`. Prebuilt lists keep a branch out of the n²/2 pair
+   * loop, which nearly doubled the exact pass (measured at 200 nodes).
    */
   for (let group = 0; group < sim.groupNodes.length; group += 1) {
     if (group === sim.looseGroup) continue;
@@ -1116,11 +719,8 @@ function applyGroupManyBody(sim: LibrarySimulation, held: SimulationNode[], char
       out.fx = 0;
       out.fy = 0;
       /*
-       * The tree carries one charge for the whole cell, so a page's own extra push is
-       * applied at the **receiving** end here rather than at the source. That is the same
-       * quantity on the pair a page is one half of and a weaker claim on the pair it is
-       * not — an approximation the tree is already making about every distance it sums, on
-       * a pass that only runs above 720 marks in one group.
+       * The tree holds one charge per cell, so a page's extra push applies at the receiving
+       * end: an approximation of the kind the tree already makes, above the crossover only.
        */
       tree.accumulate(node.x, node.y, charge * node.charge, out, MANY_BODY_MAX_DISTANCE);
       node.vx += out.fx;
@@ -1136,16 +736,13 @@ function applyGroupManyBody(sim: LibrarySimulation, held: SimulationNode[], char
       let dy = second.y - first.y;
       let distanceSquared = dx * dx + dy * dy;
       if (distanceSquared < 1e-6) {
-        // Two marks exactly on top of each other, separated along a fixed diagonal so
-        // the same folder resolves the same way every time.
+        // Coincident marks separate along a fixed diagonal, so the result is deterministic.
         dx = 1e-3;
         dy = 1e-3;
         distanceSquared = 2e-6;
       }
-      // Out of range: the two are already further apart than this force has an opinion about.
       if (distanceSquared > MANY_BODY_MAX_DISTANCE_SQUARED) continue;
-      // A pair pushes with the charge of the busier of its two ends: a page with nine
-      // sources needs the room whichever of its neighbours is being asked.
+      // A pair pushes with the busier end's charge, so a busy page gets room from every neighbour.
       const weight = (charge * Math.max(first.charge, second.charge)) / distanceSquared;
       const fx = dx * weight;
       const fy = dy * weight;
@@ -1158,25 +755,13 @@ function applyGroupManyBody(sim: LibrarySimulation, held: SimulationNode[], char
 }
 
 /**
- * **Gravity toward the centre of the mark's own group, and it is isotropic.**
- *
- * ⚠️ It used to be *aspect-aware* — the box's aspect split around 1, so a wide canvas got a
- * weaker horizontal pull and the cloud grew sideways into it. That term existed to satisfy a
- * fill gate ("a folder under 60% of its canvas width", 2026-09-07), and the gate is what the
- * owner rejected: a picture stretched to cover a 1920px window is a *different picture* from
- * the same folder on a 1040px one, and the distances a person is asked to read changed with
- * the furniture. The camera fills the canvas now, by fitting and clamping; the physics is
- * told nothing about the window.
- *
- * A folder that is one connected graph has one cell centred on the origin, so the two lines
- * below are a plain centre gravity. A folder of several groups gets several centres — which
- * is the whole of what stops repulsion from being the only force with an opinion about where
- * two unrelated clusters go — and `library-graph-packing.ts` decides those.
+ * Isotropic gravity toward the mark's own group cell (`library-graph-packing.ts`). Never
+ * aspect-aware: a picture stretched to the window changes the distances a person reads.
  */
 function applyGravity(sim: LibrarySimulation, alpha: number): void {
   const strength = GRAVITY * alpha;
   for (const node of sim.nodes) {
-    // An unattached mark answers to its ring slot instead; two centres would fight.
+    // An unattached mark answers to its ring slot; two centres would fight.
     if (node.orbit !== null) continue;
     const cell = sim.cells[node.cell] ?? sim.cells[0];
     if (!cell) continue;
@@ -1209,19 +794,10 @@ function applyLinks(sim: LibrarySimulation, alpha: number): void {
 }
 
 /**
- * No mark ever sits on another mark.
- *
- * Two passes, and which one runs is decided by order. Below
- * {@link COLLISION_EXACT_MAX_ORDER} every pair is tested, which is two multiplies per
- * pair and cheaper than building anything. Above it the nodes are binned into a uniform
- * grid whose cell is one collision diameter, so each node tests only its own cell and the
- * eight around it — the pairs that could possibly be touching.
- *
- * ⚠️ **This is the pass that decided the frame budget, not the many-body force.** Measured
- * before the grid existed: one tick of a 1,500-node folder took 13.7 ms, of which the
- * exact collision pass was over 11 — the quadtree was saving tenths of a millisecond on a
- * force that was not the problem. A grid here is the change that put 1,500 nodes back
- * inside a frame.
+ * No mark ever sits on another. O(n²) pairs up to {@link COLLISION_EXACT_MAX_ORDER}; above
+ * it a uniform grid hash with one-diameter cells tests each node's 3×3 neighbourhood, about
+ * O(n). This pass, not many-body, sets the frame budget (a 1,500-node tick measured 13.7 ms
+ * with over 11 in exact collision).
  */
 function applyCollisions(sim: LibrarySimulation): void {
   const { nodes } = sim;
@@ -1253,7 +829,7 @@ function applyCollisions(sim: LibrarySimulation): void {
       for (let dx = -1; dx <= 1; dx += 1) {
         const bin = bins.get((row + dy) * columns + (column + dx));
         if (!bin) continue;
-        // Each pair once: the higher index always defers to the lower one.
+        // Each pair once: only the lower index resolves it.
         for (const other of bin) if (other > index) resolveCollision(node, nodes[other]!);
       }
     }
@@ -1281,13 +857,9 @@ function resolveCollision(first: SimulationNode, second: SimulationNode): void {
   first.vy -= y;
 }
 
-/** Puts energy back in — a drag, a resize, or a folder that gained a file. */
 /**
- * **Arrange by flow and stand still.** The columns come from `flowLayout`; every node is
- * set on its row with no velocity and the alpha is dropped to rest, so the loop's own
- * `isLibrarySimulationRunning` reads false and not one physics tick moves a mark. The
- * force code stays for the `force` layout and for the map's reasons; this is the Library's
- * picture since 2026-09-17 (owner: "restructure it altogether").
+ * Lays the flow columns and stands still: zero velocity and alpha at rest, so the running
+ * check (`isLibrarySimulationRunning`) reads false and no tick moves a mark.
  */
 export function applyLibraryFlowLayout(
   sim: LibrarySimulation,
@@ -1336,6 +908,7 @@ export function applyLibraryIslandsLayout(
   return layout;
 }
 
+/** Puts energy back in: a drag, or a folder that gained or lost a file. */
 export function reheatLibrarySimulation(sim: LibrarySimulation, alpha = REHEAT_ALPHA): void {
   sim.alpha = Math.max(sim.alpha, alpha);
 }
@@ -1347,12 +920,8 @@ export function isLibrarySimulationRunning(sim: LibrarySimulation): boolean {
 }
 
 /**
- * Runs the simulation to rest in one call.
- *
- * This is the **reduced-motion path**, and the tests'. Under
- * `prefers-reduced-motion: reduce` nothing is animated: the settled picture is computed
- * here and drawn once, which is the same answer the one-shot layout gave and the reason
- * that preference loses nothing but the motion.
+ * Runs the simulation to rest in one call: the reduced-motion path and the tests', so that
+ * preference loses nothing but the motion.
  */
 export function settleLibrarySimulation(
   sim: LibrarySimulation,
@@ -1375,11 +944,8 @@ export function pinLibraryNode(sim: LibrarySimulation, id: string, point: Layout
 }
 
 /**
- * Lets go, handing the node the velocity it was being moved at.
- *
- * A node released dead-still stops as if it had hit a wall; the short inertia is what
- * makes the picture feel like it has mass. It is capped, because a fast flick would
- * otherwise throw a node clear of the canvas before the springs could answer.
+ * Lets go with the drag velocity, so the picture feels like it has mass; capped, or a fast
+ * flick throws the node off the canvas before the springs answer.
  */
 export function releaseLibraryNode(
   sim: LibrarySimulation,
@@ -1404,17 +970,8 @@ export function hasPinnedNode(sim: LibrarySimulation): boolean {
 }
 
 /**
- * Records the canvas's new shape. **Nothing moves.**
- *
- * ⚠️ A resize used to re-pack the composition and re-heat the simulation, because both the
- * gravity and the packing were functions of the canvas's aspect. Neither is any more: the
- * scale is fixed, the gravity is isotropic and the groups are packed around their own
- * centre, so one folder is one picture and a window is only ever a window onto it. What a
- * resize changes is the **camera**, and the camera is the engine's (`fitLibraryView`).
- *
- * The box is still kept because the orphan ring takes its aspect from it — the outermost
- * thing in the picture, whose shape the fit then has to hold — and because a footprint
- * prepass settles each group against it.
+ * Records the canvas's new shape; nothing moves, since a resize changes only the camera
+ * (`fitLibraryView`). The box is kept for the orphan ring's aspect and the footprint prepass.
  */
 export function resizeLibrarySimulation(
   sim: LibrarySimulation,
@@ -1427,14 +984,9 @@ export function resizeLibrarySimulation(
 }
 
 /**
- * **A folder that changed rearranges, it does not jump.**
- *
- * Nodes that are still there keep their positions and their velocities. A new node
- * enters at the position of a neighbour it is already attached to — a page Compile has
- * just written appears **on its sources**, and is then pushed out to its own place by
- * the same forces that hold everybody else — rather than at a seed on a ring nowhere
- * near where it belongs. Removed nodes are handed back so the caller can fade them over
- * `--motion-base` instead of deleting them mid-frame.
+ * A changed folder rearranges without jumping: kept nodes keep position and velocity, a new
+ * node enters on an attached neighbour (a fresh page on its sources), and removed nodes are
+ * returned so the caller fades them over `--motion-base`.
  */
 export function syncLibrarySimulation(
   sim: LibrarySimulation,
@@ -1477,8 +1029,7 @@ export function syncLibrarySimulation(
       return existing;
     }
     entered.push(node.id);
-    // Whichever attached neighbour is already on the canvas; the graph's own edge order
-    // decides, so an arrival is as reproducible as everything else here.
+    // The first attached neighbour already on the canvas, in edge order, so arrival is deterministic.
     const anchor = (neighbours.get(node.id) ?? []).map((id) => byId.get(id)).find(Boolean);
     const seed = seeds.get(node.id) ?? { x: 0, y: 0 };
     return {
@@ -1498,29 +1049,22 @@ export function syncLibrarySimulation(
       cell: existingCell(byId, neighbours, node.id),
     };
   });
-  // A page that just gained its first citation stops being an orphan, and one whose last
-  // source was deleted becomes one: the ring is re-derived from the new degrees, never
-  // carried over.
+  // Orphan slots are re-derived from the new degrees, never carried over.
   assignOrbits(nodes);
 
   sim.nodes = nodes;
   sim.index = new Map(nodes.map((node, position) => [node.id, position]));
   sim.links = buildLinks(graph, sim.index, degree);
-  // A page that Compile has just written can join two groups into one, or leave one behind
-  // as loose, so the composition is re-derived from the new relations rather than carried
-  // over. Marks already on the canvas keep their positions; `composeLibraryGroups` only
-  // seeds the ones that have not arrived.
+  // A new page can join or split groups, so the composition is re-derived; marks already
+  // on the canvas keep their positions.
   composeLibraryGroups(sim, graph);
   if (entered.length > 0 || removed.length > 0) reheatLibrarySimulation(sim);
   return { entered, removed };
 }
 
 /**
- * The cell a brand-new mark starts in: whichever attached neighbour is already on the
- * canvas is in, or the first. It is only a starting value — `composeLibraryGroups` runs a
- * few lines later and decides every cell from the new relations — but a node is created
- * before that runs and a cell of 0 would put an arriving page in the biggest group's cell
- * for one frame.
+ * A new mark's starting cell: its first placed neighbour's, else 0. `composeLibraryGroups`
+ * decides the real cell, but a bare 0 would flash the mark in the biggest group's cell.
  */
 function existingCell(
   byId: ReadonlyMap<string, SimulationNode>,

@@ -50,13 +50,7 @@ interface Recorder {
   alphaAt: Array<{ style: string; alpha: number }>;
   /** Standing names stroked in the ground before they are filled. */
   outlined: Array<{ text: string; style: string; width: number }>;
-  /**
-   * The dash pattern and its offset at each stroke.
-   *
-   * ⚠️ **The offset is the whole of the flow.** A drifting citation differs from a resting
-   * one by `lineDashOffset` alone, so a recorder that kept only styles and patterns could
-   * not tell a line that travels from one that does not, in either direction.
-   */
+  /** The dash pattern and its offset at each stroke; the offset alone tells a drifting line from a resting one. */
   strokedDash: Array<{ pattern: unknown[]; offset: number }>;
 }
 
@@ -189,8 +183,7 @@ function frame(overrides: Partial<Parameters<typeof drawLibraryGraph>[1]> = {}) 
     hoveredId: null,
     focusedId: null,
     activeLabel: null,
-    // The default frame is the hover policy, so every case written before standing names
-    // existed still measures what it was written to measure.
+    // The default frame is the hover naming policy.
     standingLabels: false,
     // Zoomed out, so a file's own name exists only when it is pointed at or in the open
     // page's neighbourhood — the policy every case below either measures or does not touch.
@@ -248,9 +241,7 @@ describe("drawing the library graph", () => {
     const rec = recorder();
     const unverified = { ...edges[0], certainty: "unverified" as const };
     drawLibraryGraph(rec.ctx, frame({ edges: [unverified, edges[1]] }));
-    // A broken edge is two arcs: two `quadraticCurveTo` calls instead of one, so two edges
-    // where one is unverified draw three. Counted on the curve and not on `moveTo`, which the
-    // ruled ground under the picture also calls.
+    // A broken edge is two `quadraticCurveTo` arcs, so two edges with one unverified draw three.
     expect(rec.ctx.quadraticCurveTo).toHaveBeenCalledTimes(3);
   });
 
@@ -321,12 +312,7 @@ describe("drawing the library graph", () => {
     expect(rec.texts[0].x).toBeLessThan(595);
   });
 
-  /**
-   * **The bow is what separates two lines of the same length between the same places.**
-   * A straight line has no way of saying it is one of several; a curve whose depth grows
-   * with its own length does, and the control point never leaves the corridor between the
-   * two marks it joins.
-   */
+  /** The bow deepens with length and its control point stays between the two marks it joins. */
   it("bows an edge to one side, deeper the longer it is", () => {
     const short = edgeControlPoint({ x: 0, y: 0 }, { x: 40, y: 0 });
     const long = edgeControlPoint({ x: 0, y: 0 }, { x: 400, y: 0 });
@@ -344,11 +330,7 @@ describe("drawing the library graph", () => {
     expect(edgeControlPoint({ x: 5, y: 5 }, { x: 5, y: 5 })).toEqual({ x: 5, y: 5 });
   });
 
-  /**
-   * The dim is the whole answer to a folder position cannot separate, so it has a case of
-   * its own: at full dim everything outside the neighbourhood is drawn at `DIMMED_INK` and
-   * everything inside it is untouched.
-   */
+  /** At full dim everything outside the neighbourhood is drawn at `DIMMED_INK`; inside is untouched. */
   it("dims everything outside the pointed-at neighbourhood and nothing inside it", () => {
     const rec = recorder();
     drawLibraryGraph(
@@ -396,13 +378,8 @@ describe("drawing the library graph", () => {
   });
 
   /**
-   * A grey name crossed by a grey line is the one thing on a graph this connected that a
-   * person genuinely cannot read, so every standing name is stroked in the ground first.
-   *
-   * **The halo has to be wider than what crosses it.** At a 2px stroke — 1px of clearance
-   * on each side — a 1.5px `cites` line still ran through the letterforms, so the gate owns
-   * the relationship rather than the number: the clearance either side of a glyph must clear
-   * the widest line this canvas draws.
+   * Every standing name is stroked in the ground first, and the clearance either side of a
+   * glyph must clear the widest line drawn (the relationship, not a number).
    */
   it("outlines every standing name in the ground, wider than the widest edge", () => {
     const rec = recorder();
@@ -417,18 +394,8 @@ describe("drawing the library graph", () => {
   });
 
   /**
-   * **The neighbourhood is named first when there is only room for one name.**
-   *
-   * The standing pass is greedy, so the order it asks in decides who is anonymous. Kind
-   * order alone let the marks the dim had just pushed away take the room: measured on a
-   * 50-node folder at 1512 with a page open beside the canvas (287×852), the three names
-   * the column had space for were all dimmed ones, and the open page and every source it
-   * cites were unnamed.
-   *
-   * ⚠️ Two marks 8px apart used to leave room for exactly one name, and this case asserted
-   * which one. Since 2026-09-12 a name may stand in any of four places around its mark, so
-   * both now fit — and what the pass decides is no longer *whether* the second is named but
-   * **which one is asked first**, which is the same claim read off the order.
+   * The greedy pass asks the open neighbourhood first, or dimmed marks take the room; with
+   * four places both names fit, so the claim is read off which is asked first.
    */
   it("names the neighbourhood before the rest of the folder", () => {
     const crowd: LibraryGraphNode[] = [
@@ -465,11 +432,7 @@ describe("drawing the library graph", () => {
     expect(ego.texts[0]!.y).toBeGreaterThan(100);
   });
 
-  /**
-   * **In the flow picture a page's name shortens before it leaves its side** (installed
-   * app, 2026-09-19: with the conversation dock open two page names whose right side met
-   * a concept ring fell to *under* and *left*, onto the discs and lines of the rows below).
-   */
+  // In the flow picture a page's name shortens before it leaves its side for the rows below.
   it("keeps a flow page's name on its right side by shortening it when a concept ring stands close", () => {
     const crowd: LibraryGraphNode[] = [
       { id: "page:wiki/long", kind: "page", label: "Chargeback path", ref: "wiki/long", href: null },
@@ -510,13 +473,7 @@ describe("drawing the library graph", () => {
     expect(wholeReport[0]!.text).toBe("Chargeback path");
   });
 
-  /**
-   * **A name with nowhere to stand is pushed out on a leader, never deleted.**
-   *
-   * Inspection 122 found the cost on the owner's own folder: six files drawn, five named,
-   * and the sixth left anonymous because a page's label had taken all four of its places
-   * (S18). A mark with no identity is the one thing this canvas cannot afford.
-   */
+  // A name with nowhere to stand is pushed out on a leader, never deleted.
   it("pushes a crowded name onto a leader rather than dropping it", () => {
     const crowd: LibraryGraphNode[] = ["one", "two", "three", "four", "five"].map((name) => ({
       id: `page:wiki/${name}`,
@@ -525,8 +482,7 @@ describe("drawing the library graph", () => {
       ref: `wiki/${name}`,
       href: null,
     }));
-    // Five marks inside 40px: four places each, and 40px-wide names — the four cannot all
-    // be free, so before the leader ring the last ones were simply not drawn.
+    // Five marks inside 40px with 40px names: the four base places cannot all be free.
     const where = new Map(
       crowd.map((node, index) => [node.id, { x: 280 + index * 9, y: 160 + (index % 2) * 9 }]),
     );
@@ -550,9 +506,8 @@ describe("drawing the library graph", () => {
       href: null,
     }));
     /*
-     * A short landscape frame like the Library's 1040×720 graph after its workspace
-     * header was added. Four radial searches over the same twelve angles leave two of
-     * these seven names out even though free boxes exist between those rays.
+     * A short landscape frame: rings on the same twelve angles would leave two of these
+     * seven names out although free boxes exist between the rays.
      */
     const points = [
       [99.7, 48.4],
@@ -612,12 +567,8 @@ describe("hit testing", () => {
 });
 
 /**
- * **The motion, measured where it exists: in the draw calls.**
- *
- * The drift is one canvas property — `lineDashOffset` — and the direction it carries is
- * the whole claim of direction B (2026-09-12): *knowledge flows from the original toward
- * the write-up*. A screenshot cannot show it and a person cannot be asked to eyeball it,
- * so these cases read the property off the stroke that actually ran.
+ * The drift is read off the strokes' `lineDashOffset`, the one property that carries its
+ * direction: file toward page.
  */
 describe("what moves while a card is open", () => {
   const flowing = (overrides: Partial<Parameters<typeof drawLibraryGraph>[1]["flow"] & object> = {}) => ({
@@ -641,12 +592,7 @@ describe("what moves while a card is open", () => {
     // The citation is the first stroke of the frame, and it is dashed only while flowing.
     expect(first.strokedDash[0]!.pattern).toEqual([5, 4]);
     expect(first.strokedDash[0]!.offset).toBe(0);
-    /*
-     * ⚠️ **A rising offset is travel toward the path's start, and the path is stroked
-     * page→file.** So rising means the ink moves from the file to the write-up, which is
-     * the direction the knowledge went. Falling would draw the write-up leaking into its
-     * own sources.
-     */
+    // The path is stroked page→file, so a rising offset moves the ink from the file to the page.
     expect(later.strokedDash[0]!.offset).toBeGreaterThan(first.strokedDash[0]!.offset);
     // The mention is left alone: it is not knowledge moving, it is a page pointing.
     expect(later.strokedDash[1]!.pattern).toEqual([2.5, 3.5]);
@@ -665,11 +611,7 @@ describe("what moves while a card is open", () => {
   });
 
   it("keeps the amber dot in the break with nothing moving at all", () => {
-    /*
-     * The state the home spends its life in: settled, no card, no breath. Before
-     * 2026-09-13 this frame drew **no amber at all**, and the card's own sentence named a
-     * mark a person could not find (inspection 122, S2).
-     */
+    // Settled, no card, no breath: the resting home still draws the stale dot.
     const broken: LibraryGraphEdge[] = [{ ...edges[0]!, certainty: "unverified" }, edges[1]!];
     const rest = recorder();
     drawLibraryGraph(rest.ctx, frame({ edges: broken, flow: null }));
@@ -687,13 +629,8 @@ describe("what moves while a card is open", () => {
 
   it("stops repeating the amber once the folder has more stale citations than the cap", () => {
     /*
-     * Re-inspection 122 R2: 480 standing dots on the three-hundred-source folder measured
-     * 5,227 pixels of strict amber against 33,417 of ink — 15.6% of the picture — and the
-     * reviewer read it as a warning field rather than a folder. `STALE_DOT_STANDING_MAX`
-     * is the boundary; this case stands on both sides of it and on the way back.
-     *
-     * Built here rather than reusing `frame()` because the cap is a count, so the only
-     * fixture that can measure it is one with enough citations to cross it.
+     * Both sides of `STALE_DOT_STANDING_MAX` and back, on a fixture with enough citations
+     * to cross the count.
      */
     const many = (count: number, attend: string[] = []) => {
       const marks: LibraryGraphNode[] = [
@@ -787,11 +724,7 @@ describe("what moves while a card is open", () => {
     // The arrival's own drift, on the citations of the page that landed.
     expect(rec.strokedDash[0]!.pattern).toEqual([5, 4]);
     expect(rec.strokedDash[0]!.offset).toBeCloseTo(0.2 * 9, 5);
-    /*
-     * Two channels, never one: the page is over-painted in the selection's indigo, fading
-     * as the arrival settles, while its own ink stays underneath. The same ink strokes the
-     * drifting line, which is why this reads the **fill** — the last paint of the pair.
-     */
+    // The page is over-painted in fading indigo; the line uses the same ink, so this reads the fill.
     expect(rec.fills.filter((fill) => fill === "selected-ink")).toHaveLength(1);
     const bright = rec.alphaAt.filter((paint) => paint.style === "selected-ink");
     expect(bright[bright.length - 1]!.alpha).toBeCloseTo((1 - 0.2) * 0.65, 5);
@@ -825,13 +758,7 @@ describe("what moves while a card is open", () => {
   });
 });
 
-/**
- * **The one number the renderer writes itself is grouped like every other** (2026-09-19).
- *
- * At 3,000 files the Unread band read "Unread · 1400" under an index chip saying "1,400"
- * and a caption saying "3,000 sources": the canvas was the last surface printing a bare
- * integer. The frame carries the page's locale and the count goes through it.
- */
+// An island's count is grouped in the page's locale, like every other count on screen.
 describe("island captions group their counts", () => {
   // Two islands apart from each other, so neither caption yields its place to the other.
   const island = (kind: "concept" | "unread", label: string, pages: number, sources: number, x: number) => ({
@@ -860,11 +787,7 @@ describe("island captions group their counts", () => {
   });
 });
 
-/**
- * **A name stands beside its own island, never on a neighbour** (2026-09-19, 1040×720 on
- * the 3,000-file fixture): under-and-centred was the only seat, and it landed a name on the
- * next island's marks. Four seats now, and the first that touches no other island wins.
- */
+// An island's name takes the first of four seats touching no other island.
 describe("island names keep off neighbouring islands", () => {
   const island = (id: string, x: number, y: number, r: number) => ({
     id, kind: "concept" as const, label: id, x, y, r, pages: 3, sources: 1, stale: 0,

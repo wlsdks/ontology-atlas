@@ -25,20 +25,13 @@ import {
 import { fitView, worldToScreen } from "./library-graph-view";
 
 /**
- * **The claims the live simulation makes, made falsifiable.**
- *
- * A force layout is easy to write and hard to trust: it always produces *a* picture, and
- * a picture is not evidence that the physics did anything. So every property the owner's
- * verdict turned on has a case here — the picture settles, the picture **clusters** (the
- * defect on 2026-09-07 was a hairball, which is a layout that ran and said nothing), a
- * held node stays held, and the same folder draws the same picture twice.
+ * The live simulation's claims, made falsifiable, since a force layout always produces some
+ * picture: it settles, clusters, holds a held node, and is deterministic.
  */
 
 /**
- * The owner's own folder, in its measured shape: **7 sources, 6 pages, every page citing
- * 4–7 of them and naming 2–3 concepts.** This is the density that produced the hairball,
- * so it is the fixture every claim below is made against rather than a sparse graph on
- * which any layout looks fine.
+ * A dense real folder shape: 7 sources, 6 pages each citing 4–7 of them and naming 2–3
+ * concepts, where a sparse fixture would flatter any layout.
  */
 function denseFolder(): LibraryGraph {
   const nodes: LibraryGraphNode[] = [];
@@ -99,10 +92,8 @@ function denseFolder(): LibraryGraph {
 const BOX = { width: 1046, height: 620 };
 
 /**
- * **The seeded folder that produced the scattered picture**, in its measured shape: seven
- * sources of which three are cited by nobody, four pages of which one cites nothing. Four
- * marks with no relation at all — the exact set the review frame of 2026-09-07 found on
- * four different walls of the canvas.
+ * Seven sources, three cited by nobody, and four pages, one citing nothing: four marks with
+ * no relation at all.
  */
 function looseFolder(): LibraryGraph {
   const cited = ["sources/quarter-plan.pdf", "sources/budget.xlsx", "sources/release-dates.csv", "sources/roadmap.md"];
@@ -162,20 +153,9 @@ describe("the library graph's force simulation", () => {
   });
 
   /**
-   * **The hairball test, on the folder that produced the hairball.**
-   *
-   * ⚠️ Note what is *not* claimed. Six pages citing 4–7 of the same seven sources is
-   * nearly a complete bipartite graph, and a complete bipartite graph **has no
-   * clusters** — no layout can separate groups that share every member, and one that
-   * appeared to would be lying about the folder. What the springs can and must do here
-   * is make the citation itself measurable: across the folder, a page's own sources sit
-   * closer to it than the ones it never cited. Per page the margin is not guaranteed
-   * (one page in this fixture cites six of seven, so its single control is a coin toss),
-   * which is exactly why the assertion is over the whole folder and why the readability
-   * of a graph this dense is bought by hover and drag rather than by position alone.
-   *
-   * Measured on this fixture: cited 104.7 world units, uncited 155.1, over 31 and 11
-   * pairs.
+   * A near-complete bipartite graph has no clusters to find, so the claim is folder-wide:
+   * a page's own sources sit closer than ones it never cited (per page it is a coin toss).
+   * Measured on this fixture: cited 104.7 world units, uncited 155.1, over 31 and 11 pairs.
    */
   it("holds each page's cited sources closer to it than the ones it never cited", () => {
     const graph = denseFolder();
@@ -206,8 +186,7 @@ describe("the library graph's force simulation", () => {
     }
     expect(citedCount).toBeGreaterThan(0);
     expect(uncitedCount).toBeGreaterThan(0);
-    // A margin, not a hair: 0.85 is well inside the measured 0.67 and would still fail a
-    // build whose springs had stopped pulling.
+    // 0.85 leaves margin over the measured 0.67 and still fails if the springs stop pulling.
     expect(cited / citedCount).toBeLessThan((uncited / uncitedCount) * 0.85);
   });
 
@@ -247,21 +226,9 @@ describe("the library graph's force simulation", () => {
     const at = (id: string) => sim.nodes[sim.index.get(id)!]!;
 
     /*
-     * ⚠️ **Restated on 2026-09-12, and the reason is a trade this change made on purpose.**
-     *
-     * What stood here was that *every* source of a page is nearer to it than *any* source of
-     * the other group. That held because cross-group repulsion pushed two unconnected
-     * clusters as far apart as the field allowed — which is exactly what left 54% of the
-     * canvas empty on the owner's folder and is why the groups are now composed into adjacent
-     * cells (`library-graph-packing.ts`). Packed, the far side of your own cluster can be 100
-     * units away while the nearest mark of the cluster beside it is 96, and no gutter fixes
-     * that without giving the empty middle back.
-     *
-     * So the claim is the one a reader actually uses: the **groups are separate places** —
-     * their bounding boxes do not overlap — and every mark is nearer to its own group's centre
-     * than to the other's. Which cluster a mark belongs to is said by the lines that run to
-     * it, and the composition's job is to put the two somewhere a person can tell apart.
-     * `docs/DECISIONS.md`, 2026-09-12, carries the trade and the dissent against it.
+     * Packed groups sit in adjacent cells (`library-graph-packing.ts`), so the claim is that
+     * groups are separate places: boxes disjoint, every mark nearer its own group's centre.
+     * `docs/DECISIONS.md` carries the trade and its dissent.
      */
     const boxOf = (group: number) => {
       const points = [0, 1, 2, 3]
@@ -301,10 +268,7 @@ describe("the library graph's force simulation", () => {
     }
   });
 
-  /**
-   * A mention rests further out than a citation, which is what puts the concepts on the
-   * outside of a page's cluster rather than inside its sources.
-   */
+  // A mention rests further out than a citation, putting concepts outside a page's sources.
   it("holds a mentioned concept further out than a cited source", () => {
     const graph = denseFolder();
     const sim = settleLibrarySimulation(createLibrarySimulation({ graph, box: BOX }));
@@ -355,8 +319,7 @@ describe("the library graph's force simulation", () => {
     const after = sim.nodes[sim.index.get(neighbour)!]!;
     expect(Math.hypot(after.x - before.x, after.y - before.y)).toBeGreaterThan(4);
 
-    // A held node keeps the simulation alive even at rest, so releasing it is what ends
-    // the loop rather than a timer.
+    // A held node keeps the simulation alive, so the release, not a timer, ends the loop.
     expect(isLibrarySimulationRunning(sim)).toBe(true);
     releaseLibraryNode(sim, held, { x: 40, y: 0 });
     // The flick is capped: an unbounded release would throw the mark off the canvas.
@@ -364,11 +327,7 @@ describe("the library graph's force simulation", () => {
     expect(sim.nodes[sim.index.get(held)!]!.vx).toBeGreaterThan(0);
   });
 
-  /**
-   * **Reduced motion settles in one call, not in one frame of a loop.** The preference
-   * loses the motion and nothing else: the same settled positions are computed and drawn
-   * once, which is the behaviour the one-shot layout had before this file existed.
-   */
+  // Reduced motion settles in one call to the same positions, losing only the motion.
   it("settles to rest in a single synchronous call for reduced motion", () => {
     const sim = settleLibrarySimulation(createLibrarySimulation({ graph: denseFolder(), box: BOX }));
     expect(isLibrarySimulationRunning(sim)).toBe(false);
@@ -377,16 +336,8 @@ describe("the library graph's force simulation", () => {
   });
 
   /**
-   * **A settled picture is still — exactly, not nearly** (owner, 2026-09-08:
-   * *"why does it wriggle whenever I put the mouse on the graph?"*).
-   *
-   * This is the regression barrier for the ambient drift that used to live here. It was
-   * ≤0.4px, it was applied to the drawn position on a clock, and it was still visible — so
-   * the bound this gate owns is no longer a small number but **zero**, and it is asserted
-   * the way the loop actually runs: a thousand guarded frames, each stepping only while
-   * `isLibrarySimulationRunning` says there is somewhere to go. The positions must come
-   * back byte-equal, and `libraryPositions` must remain the simulation's own state with
-   * nothing added to it — no clock, no phase, no per-frame offset.
+   * A settled picture is exactly still: a thousand frames guarded as the product loop is
+   * leave positions byte-equal, with no clock, phase or per-frame offset added.
    */
   it("is exactly still once settled, however long the loop keeps asking", () => {
     const sim = settleLibrarySimulation(createLibrarySimulation({ graph: denseFolder(), box: BOX }));
@@ -411,12 +362,7 @@ describe("the library graph's force simulation", () => {
     releaseLibraryNode(sim, sim.nodes[0]!.id);
   });
 
-  /**
-   * A page Compile has just written appears **on the sources it was written from**, then
-   * is pushed out to its own place. Seeding it on the ring instead would fly it across
-   * the canvas past everything else, which reads as a different folder rather than as one
-   * new page.
-   */
+  // A just-written page appears on its sources, then moves out, rather than flying in from the seed ring.
   it("enters a new node at a neighbour it is already attached to, and re-heats", () => {
     const graph = denseFolder();
     const sim = settleLibrarySimulation(createLibrarySimulation({ graph, box: BOX }));
@@ -449,29 +395,16 @@ describe("the library graph's force simulation", () => {
     expect(fresh.entered).toBe(0);
     expect(isLibrarySimulationRunning(sim)).toBe(true);
 
-    // And a removal hands back where the mark was, so the caller can fade it out from
-    // there rather than deleting it under the pointer.
+    // A removal returns where the mark was, so the caller fades it out there.
     const shrunk = syncLibrarySimulation(sim, graph);
     expect(shrunk.removed.map((node) => node.id)).toEqual(["page:wiki/fresh"]);
     expect(shrunk.removed[0]!.x).toBeCloseTo(fresh.x, 5);
   });
 
   /**
-   * **The scattered-orphan case** — the review frame of 2026-09-07,
-   * `.claude/shots-2026-09-07/review/10-library-graph-rest.png`, made falsifiable.
-   *
-   * A degree-0 mark had no spring to answer for it, so it was placed by repulsion against
-   * gravity alone, and that balance is not a place: on the owner's seeded folder the four
-   * loose marks went to four different walls, one of them into the bottom-right corner
-   * under the fit control, while the two real components sat small in the middle. The
-   * claims below are the composition, not the coincidence, and they are made at four box
-   * shapes because a ring that only holds at one aspect is a tuned constant.
-   *
-   * Measured on this fixture at 1046×620, loose marks only: distance from the ring, 0.83
-   * to 1.54 of the mass's own radius before and 0.97 to 1.00 after; smallest angular gap
-   * 0.30 rad before and 1.57 after; marks within 60px of two canvas edges at once, two
-   * before and none after; canvas filled 78.2% wide before and 89.1% after, which is the
-   * whole of what the fit's padding leaves.
+   * Orphans settle on a ring, not against the walls
+   * (.claude/shots-2026-09-07/review/10-library-graph-rest.png), at four box shapes, since
+   * a ring holding at one aspect is a tuned constant.
    */
   it("settles an unattached mark on a ring in its own place, never against a wall", () => {
     for (const box of [BOX, { width: 1156, height: 847 }, { width: 1400, height: 393 }, { width: 420, height: 300 }]) {
@@ -483,21 +416,14 @@ describe("the library graph's force simulation", () => {
       const radialOf = (node: { x: number; y: number }) =>
         Math.hypot((node.x - ring!.cx) / ring!.rx, (node.y - ring!.cy) / ring!.ry);
 
-      // ── On the band, not merely somewhere outside ──────────────────────────────────
+      // On the band, not merely somewhere outside.
       for (const id of LOOSE_IDS) {
         expect(radialOf(at(id)), `${id} left the ring band at ${shape}`).toBeGreaterThan(0.82);
         expect(radialOf(at(id)), `${id} left the ring band at ${shape}`).toBeLessThan(1.18);
       }
       /*
-       * ⚠️ **The ring is its own place, not a rim around the clusters** (2026-09-12).
-       *
-       * The claim that used to stand here was that the ring encircled the connected mass
-       * and nothing the springs hold reached it. Since the folder's groups are composed —
-       * each one packed into a cell of its own — the unattached marks are a group like any
-       * other and the ring is inside their cell. What has to stay true is the thing that
-       * record was protecting: **no loose mark is inside a cluster**. So it is measured
-       * against every component's own bounding box rather than against a shared rim.
-       * `docs/DECISIONS.md`, 2026-09-12, carries the narrowing.
+       * Packed, the ring sits in its own cell, so the claim is that no loose mark is inside
+       * any component's bounding box (`docs/DECISIONS.md`).
        */
       const clusters = new Map<number, { minX: number; minY: number; maxX: number; maxY: number }>();
       for (const node of sim.nodes) {
@@ -518,7 +444,7 @@ describe("the library graph's force simulation", () => {
         }
       }
 
-      // ── Spread, because two loose marks in one direction is the old picture ─────────
+      // Spread around the ring, not bunched in one direction.
       const angles = LOOSE_IDS.map((id) => Math.atan2(at(id).y - ring!.cy, at(id).x - ring!.cx)).sort(
         (first, second) => first - second,
       );
@@ -529,15 +455,7 @@ describe("the library graph's force simulation", () => {
         ((Math.PI * 2) / LOOSE_IDS.length) * 0.8,
       );
 
-      /*
-       * ── Inside the canvas, in the pixels a person is looking at ───────────────────
-       *
-       * ⚠️ Measured **after the fit**, which is the only place the claim means anything:
-       * the simulation's box is a field shape, and it is `fitView` that decides where a
-       * world coordinate lands on the canvas. It reserves `LIBRARY_FIT_PADDING` on
-       * every side for the name that stands under the outermost mark — the same number the
-       * ring's own documentation is written against.
-       */
+      // Inside the canvas, measured after `fitView`, which reserves `LIBRARY_FIT_PADDING` per side.
       const view = fitView(librarySimulationBounds(sim), box, LIBRARY_FIT_PADDING);
       for (const id of LOOSE_IDS) {
         const point = worldToScreen(at(id), view, box);
@@ -549,9 +467,7 @@ describe("the library graph's force simulation", () => {
         expect(fromEnd, `${id} is against the top or bottom at ${shape}`).toBeGreaterThanOrEqual(
           LIBRARY_FIT_PADDING - 0.5,
         );
-        // And never against two of them at once. A mark that is the outermost thing on
-        // both axes lands in a corner however generous the margin is, which is where
-        // `kickoff-notes.html` was found, 40px from the fit control.
+        // Never near two edges at once: a mark outermost on both axes lands in a corner.
         expect(
           Math.max(fromSide, fromEnd),
           `${id} sits in a corner at ${shape}`,
@@ -560,12 +476,7 @@ describe("the library graph's force simulation", () => {
     }
   });
 
-  /**
-   * The ring is a **place**, not a pin. The decision the ring lands under is the one that
-   * made this canvas live, so an orphan that could not be pulled out of shape, or that
-   * stayed where it was dropped, would answer the wall complaint by breaking the record it
-   * is written under.
-   */
+  // The ring is a place, not a pin: an orphan can be dragged away and comes home.
   it("lets an unattached mark be dragged off its ring slot and brings it home again", () => {
     const sim = settleLibrarySimulation(createLibrarySimulation({ graph: looseFolder(), box: BOX }));
     const id = "page:wiki/handover";
@@ -581,17 +492,12 @@ describe("the library graph's force simulation", () => {
     reheatLibrarySimulation(sim);
     settleLibrarySimulation(sim);
     const ring = libraryOrphanRing(sim)!;
-    // Measured from where it was **dropped**, not from the origin: since the folder's
-    // groups are composed the loose group's cell is somewhere of its own, and the origin is
-    // the middle of the whole arrangement rather than the middle of the mass.
+    // Measured from the drop point: the loose group's cell is not at the origin.
     expect(Math.hypot(at().x, at().y), "the released mark stayed where it was dropped").toBeGreaterThan(
       ring.rx * 0.5,
     );
-    // Home is the slot, not the pixel: the mark shoved its way through its neighbours on
-    // the way in, so it comes back to within its own width of where it stood rather than to
-    // the same coordinate. A fraction of the ring is the wrong scale for this — a folder with
-    // three loose files has a small ring — and it is stated against the mark's own collision
-    // reach so that the band following the canvas cannot silently loosen it.
+    // Home is the slot, not the pixel: within the mark's own collision reach, since it
+    // shoves through neighbours on the way back and a small folder has a small ring.
     expect(
       Math.hypot(at().x - home.x, at().y - home.y),
       "the released mark did not come home",
@@ -627,17 +533,11 @@ describe("the library graph's force simulation", () => {
     expect(still).toEqual(["source:sources/design-system.docx", "source:sources/interview-notes.txt"]);
   });
 
-  /**
-   * **The mark scale is fixed, and no window changes it** (2026-09-12, G2). The band briefly
-   * graded from the room each mark had on the canvas, which gave one folder as many pictures
-   * as a person had window sizes — the owner's verdict on that build is why this asserts the
-   * opposite: the same folder returns the same radii whatever it is drawn on.
-   */
+  // The mark scale is a fact about the folder: the same radii whatever window it is drawn on.
   it("returns the same radii whatever the canvas is", () => {
     const graph = denseFolder();
     const radii = libraryMarkRadii(graph);
-    // There is no box parameter left to pass; the map is a fact about the folder alone.
-    expect([...radii.entries()]).toEqual([...libraryMarkRadii(graph).entries()]);
+      expect([...radii.entries()]).toEqual([...libraryMarkRadii(graph).entries()]);
     const pages = graph.nodes.filter((node) => node.kind === "page");
     const top = Math.max(...pages.map((node) => radii.get(node.id)!));
     const bottom = Math.min(...pages.map((node) => radii.get(node.id)!));
@@ -659,26 +559,16 @@ describe("the library graph's force simulation", () => {
       expect(radius).toBeGreaterThanOrEqual(LIBRARY_SOURCE_RADIUS - 1e-9);
       expect(radius).toBeLessThanOrEqual(LIBRARY_PAGE_RADIUS_MAX + 1e-9);
     }
-    // The busiest page is drawn larger than the quietest one: that is the whole of what
-    // the band encodes.
+    // The busiest page is drawn larger than the quietest.
     const pageRadius = (slug: string) => radii.get(`page:${slug}`)!;
     expect(pageRadius("wiki/page-4")).toBeGreaterThan(pageRadius("wiki/page-3"));
   });
 });
 
 /**
- * **The loose group's index, and the branch that had no fixture.**
- *
- * `looseGroup` is written in two places and read in two, and until 2026-09-12 it was named
- * `looseCell` while only one of the two writers produced a cell index (read-only probe,
- * `opus-loose/loose-cell.probe.test.ts`: 5 of 9 cases red on that confusion). Nothing
- * crashed, because the one cell-shaped reader tests `packed` first — which is exactly the
- * kind of invariant that survives a rewrite by luck. These cases state it instead.
- *
- * The second half is a fixture that did not exist: `looseFolder()` above builds **two**
- * connected masses, so `composeLibraryGroups`' single-mass branch — the one that keeps the
- * 2026-09-07 ring around the mass, and the one whose `looseGroup` is not a cell index — was
- * never entered by any test in this file.
+ * `looseGroup` is a cell index only while packed; the one cell-shaped reader checks
+ * `packed` first, and these cases state that invariant. They also cover the single-mass
+ * branch, which `looseFolder()` (two masses) never enters.
  */
 
 /** One connected mass plus unattached marks: the single-mass branch, which had no fixture. */
@@ -726,12 +616,7 @@ describe("the unattached group's own index", () => {
         ).toEqual(loose);
       }
 
-      /*
-       * ⚠️ **The cell claim holds only while packed, and that is the whole correction.**
-       * Packed, every group has a place, so the index addresses both lists and the ring can
-       * read `cells[looseGroup]`. Unpacked there is one cell — the whole field — and the
-       * loose group's index is 1, which is why the field is no longer named for a cell.
-       */
+      // The cell claim holds only while packed; unpacked, one cell covers the field and the index is 1.
       if (sim.packed) {
         expect(sim.cells.length, "packed, so one cell per group").toBe(sim.groupNodes.length);
         if (sim.looseGroup !== null) expect(sim.cells[sim.looseGroup]).toBeDefined();
@@ -741,12 +626,7 @@ describe("the unattached group's own index", () => {
     });
   }
 
-  /**
-   * **The single-mass branch's own claim, measured** (`composeLibraryGroups`, the note above
-   * its `components.length < 2` test): one field, one centre, and the unattached marks on a
-   * ring *around* the mass rather than in a place of their own — which is what keeps a
-   * sixty-mark folder with one uncited file from stretching to make room for it.
-   */
+  // Single mass: one field, one centre, loose marks ringed around the mass (`composeLibraryGroups`).
   it("keeps one field and puts the loose marks outside the mass, not in a cell of their own", () => {
     const sim = settleLibrarySimulation(
       createLibrarySimulation({ graph: oneMassPlusLooseFolder(), box: BOX }),
@@ -766,16 +646,14 @@ describe("the unattached group's own index", () => {
       minY: Math.min(...held.map((node) => node.y - node.radius)),
       maxY: Math.max(...held.map((node) => node.y + node.radius)),
     };
-    // Not one unattached mark inside the connected mass's own box: the 2026-09-07 record's
-    // live falsifier, on the branch that record is about.
+    // No unattached mark inside the connected mass's box.
     for (const node of loose) {
       const inside =
         node.x > box.minX && node.x < box.maxX && node.y > box.minY && node.y < box.maxY;
       expect(inside, `${node.id} stands inside the connected mass`).toBe(false);
     }
 
-    // The ring is measured from the mass, not from a cell — the unpacked path of
-    // `libraryOrphanRing` — and every loose mark stands on it.
+    // Unpacked, the ring is measured from the mass, and every loose mark stands on it.
     const ring = libraryOrphanRing(sim)!;
     expect(ring, "a folder with unattached marks has a ring").not.toBeNull();
     for (const node of loose) {

@@ -2,29 +2,13 @@ import type { LibraryGraph, LibraryGraphNode, LibraryGraphNodeKind } from "./bui
 import type { LayoutPoint } from "./library-graph-layout";
 
 /**
- * **The islands layout** — the Library's overview once a folder is too large to name.
+ * The islands layout: the Library's overview once a folder is too large to name, showing
+ * shape and state instead. A topic is a concept; its island holds the pages naming it and
+ * the files they read. Pages naming none go to Unsorted; unread files form a shore band.
  *
- * The owner, 2026-09-18: *"a wiki piles up thousands of files in no time; plan for tens of
- * thousands. Find the picture that makes a person go 'wow' and is still calm and good to
- * look at."* Columns (`library-flow-layout.ts`) name every file and page and are the right
- * picture up to a few hundred marks; past that no picture can name things, and what a
- * person needs from the home is **shape and state**: what the wiki is about, how much of
- * the folder is written up, where it has gone stale, and a way in.
- *
- * The reference is the data map (Nomic Atlas, "information cartography"): tens of thousands
- * of points as texture, a few topic labels at rest, and topics revealing themselves as the
- * camera closes in — a map app, not a diagram. Atlas's own version of it uses what the wiki
- * already knows instead of an embedding: **a topic is a concept**, and an island is the
- * pages that name it, with the files those pages were written from packed around them.
- * Pages naming no concept gather on an *Unsorted* island; files no page has read gather on
- * an *Unread* island — which on a folder of ten thousand files and five hundred pages is
- * the largest island, and that is the truth the home should tell.
- *
- * Deterministic and pure, like the flow: the same folder is the same map on every visit.
- * Inside an island the marks sit on a sunflower spiral (Vogel's phyllotaxis), pages at the
- * centre and files around them, so an island reads as a body with a shore. Islands are
- * packed largest first on a spiral search about the centre, so the biggest topic is the
- * middle of the map and the rest ring it.
+ * Pure and deterministic. Inside an island marks sit on a Vogel sunflower spiral, pages at
+ * the centre; islands pack largest first by spiral search about the centre. O(n + k²·s)
+ * for n marks, k islands and s spiral steps per island.
  */
 
 /** Below this many marks the flow picture names everything; from here the overview is islands. */
@@ -53,11 +37,7 @@ interface Island {
   sources: string[];
   /** The concept node this island stands for, when it is one. */
   conceptId: string | null;
-  /**
-   * The Unread shore is a band, not a disc: its width and height about `x, y`. `r` is then
-   * half its height — the disc inscribed top to bottom — which is what the packing and the
-   * hit test above it need; a press inside the band's own rectangle is what the engine tests.
-   */
+  /** The Unread shore's band about `x, y`; `r` is then half its height, and presses test the rectangle. */
   band?: { width: number; height: number };
 }
 
@@ -86,8 +66,7 @@ function islandRank(kind: Island["kind"]): number {
 }
 
 export function islandsLayout(graph: LibraryGraph, world: { width: number; height: number }, labels: { unsorted: string; unread: string }): IslandsLayout {
-  // Islands are packed on a spiral stretched to the box's aspect, so a wide canvas gets a
-  // wide map rather than a round one standing in the middle of it.
+  // The packing spiral is stretched to the box's aspect, so a wide canvas gets a wide map.
   const aspect = Math.min(2, Math.max(1, Math.max(1, world.width) / Math.max(1, world.height)));
   const byKind = new Map<LibraryGraphNodeKind, LibraryGraphNode[]>([["source", []], ["page", []], ["concept", []]]);
   for (const node of graph.nodes) byKind.get(node.kind)?.push(node);
@@ -145,15 +124,10 @@ export function islandsLayout(graph: LibraryGraph, world: { width: number; heigh
     claim("unread", "unread", labels.unread, null).sources.push(source.id);
   }
 
-  // ── Inside each island: a sunflower, pages first. ──
+  // Inside each island: a sunflower, pages first.
   const positions = new Map<string, LayoutPoint>();
   const radii = new Map<string, number>();
-  /**
-   * A page's dot grows with the files it read, the way its disc does on the flow: the
-   * busiest page of a folder is a fifth wider than the quietest, enough to give an island a
-   * grain without any dot outgrowing its cell. The scale is the folder's own — its widest
-   * read against its narrowest — so a folder of even pages is even dots.
-   */
+  /** A page's dot grows with the files it read, up to a fifth wider, scaled within the folder. */
   const reads = new Map<string, number>();
   for (const page of pages) reads.set(page.id, (cites.get(page.id) ?? []).length);
   const mostRead = Math.max(1, ...reads.values());
@@ -186,16 +160,12 @@ export function islandsLayout(graph: LibraryGraph, world: { width: number; heigh
       return { id, kind: held.kind, label: held.label, conceptId: held.conceptId, pages: held.pages, sources: held.sources, r, x: 0, y: 0, local };
     })
     /*
-     * Largest named island first: the biggest topic is the middle of the map. Unsorted
-     * and Unread pack after every named island, however big they are — on a folder that
-     * has just been filled the Unread pile is the largest thing there, and packed by size
-     * it sat in the middle with the concepts ringed around it (installed app, 3,000
-     * files, 2026-09-18). The middle belongs to what the wiki is about; the pile nobody
-     * has read is the shore.
+     * Largest named island first, so the biggest topic is the middle; Unsorted packs after
+     * every named island, whatever its size, since the middle belongs to what the wiki is about.
      */
     .sort((a, b) => islandRank(a.kind) - islandRank(b.kind) || b.r - a.r || a.id.localeCompare(b.id));
 
-  // ── Islands packed about the centre: each takes the nearest free place on a spiral. ──
+  // Islands packed about the centre: each takes the nearest free place on a spiral.
   const placed: Array<{ x: number; y: number; r: number }> = [];
   for (const island of islands) {
     if (placed.length === 0) {
@@ -220,14 +190,8 @@ export function islandsLayout(graph: LibraryGraph, world: { width: number; heigh
   }
 
   /*
-   * ── The Unread shore: a band under the islands, as wide as they stand. ──
-   *
-   * Files no page has read are not a topic, so they are not an island. Packed as one
-   * they were the largest disc on a freshly filled folder and took the middle of the map
-   * with the topics ringed around them (installed app, 3,000 files, 2026-09-18). They are
-   * the shore the islands stand off: a flat band of dots along the bottom edge, as wide
-   * as the archipelago above it, rows deep in proportion to how much is unread. The
-   * eye reads the islands as the map and the band as its ground, which is what it is.
+   * Unread files are not a topic, so they form a shore band under the islands, as wide as
+   * the archipelago, rather than a disc that takes the middle of the map.
    */
   if (unreadMember) {
     const cell = ISLAND_SOURCE_RADIUS * 2 + DOT_GAP;
@@ -272,7 +236,7 @@ export function islandsLayout(graph: LibraryGraph, world: { width: number; heigh
     });
   }
 
-  // ── The whole map scaled to the world box, keeping its aspect, and centred. ──
+  // The whole map scaled to the world box, keeping its aspect, and centred.
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;
@@ -314,9 +278,8 @@ export function islandsLayout(graph: LibraryGraph, world: { width: number; heigh
       ...(island.band ? { band: { width: island.band.width * s, height: island.band.height * s } } : {}),
     });
   }
-  // A concept is its island: its mark stands at the island's centre with no radius, so the
-  // island is what a person sees and the concept is what a press on it opens. A concept no
-  // page names stands at the map's centre the same way; it is a ring on the map itself.
+  // A concept stands at its island's centre with no radius, so a press on the island opens
+  // it; a concept no page names stands at the map's centre.
   for (const concept of concepts) {
     const island = out.find((candidate) => candidate.conceptId === concept.id);
     positions.set(concept.id, island ? { x: island.x, y: island.y } : { x: world.width / 2, y: world.height / 2 });

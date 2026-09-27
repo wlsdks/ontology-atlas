@@ -19,38 +19,14 @@ import {
 } from "../model/library-graph-card";
 
 /**
- * **The card a press on a mark opens, beside that mark.**
+ * The card a press on a mark opens beside it: ego focus plus a compact surface, with full
+ * detail as an explicit door, never a full-screen modal (`.claude/rules/forbidden.md`).
+ * As an `anchored` surface (`src/shared/ui/transient-surface.ts`) it stands beside its
+ * opener, closes on Escape and gives the keyboard back.
  *
- * The owner, 2026-09-12: *"when I click it just navigates straight to the page — I want a
- * press to raise a popup that shows me something."* This is that popup, and the shape is
- * not new: on the map a press on a node has meant *ego focus plus a compact surface beside
- * it, with full detail as an explicit action inside* since the interaction was first
- * decided, and `.claude/rules/forbidden.md` keeps the alternative — a full-screen detail
- * modal on a node press — permanently banned.
- *
- * ## What it owes, as an `anchored` surface
- *
- * `transientSurface("anchored")` is a declaration with obligations
- * (`src/shared/ui/transient-surface.ts`): stand beside what opened it, close on Escape,
- * and give the keyboard back. All three are here, and the sweeping surface check measures
- * them rather than guessing which element is "the card".
- *
- * ⚠️ **Focus lands on the card, not on its first door** — `tabIndex={-1}` on the surface
- * itself. Focusing the first control was measured on the Library's own popup as a defect
- * twice over (council, 2026-09-12): it charged a Tab to reach the content, and it made the
- * `Enter` that *opened* the card press `Open` and leave for the page, which is exactly the
- * navigation this whole slice exists to stop being the answer to one press. The direction's
- * "focus enters the card's first door" is corrected to the card, for that reason.
- *
- * ## Why it is `absolute` in the canvas's own box, not a portal
- *
- * `LibraryHomePopover` portals to the body because it hangs from a door inside a pane that
- * scrolls, and an absolute panel would be clipped by the first scrolling ancestor. This
- * card hangs from a **mark on the canvas**, and the canvas's own box is exactly the region
- * the card must stay inside: clamped into it, the card cannot reach the caption row, the
- * strip's clauses or the doors above the picture, and it follows the mark through a pan, a
- * zoom or a drag for free because it is positioned in the same coordinates the mark is.
- * The clipping a portal avoids is, here, the guarantee (`placeLibraryGraphCard`).
+ * Focus lands on the card itself, not its first door, or the Enter that opened it presses
+ * `Open`. It is absolute in the canvas box, not a portal: the box is the region it must stay
+ * inside, and it shares the mark's coordinates (`placeLibraryGraphCard`).
  */
 export function LibraryMarkPopover({
   node,
@@ -85,15 +61,8 @@ export function LibraryMarkPopover({
   t: ReturnType<typeof useTranslations<"library">>;
 }) {
   /**
-   * **Focus moves in on open**, so Tab reaches the doors and Escape has something to give
-   * back. One move per open, and the card itself rather than its first control.
-   *
-   * ⚠️ **Giving the keyboard back is the caller's, not this effect's cleanup.** It was
-   * written here first and measured wrong in the browser: React's development double-mount
-   * runs mount → cleanup → mount, so the cleanup fired while the card was still open, saw
-   * the focus it had just taken, and handed it straight back to the canvas — a card that
-   * opened with no keyboard at all, in dev only. `LibraryGraph.dismissCard` does it on the
-   * actual close instead, where every exit already passes.
+   * Focus moves onto the card once per open. Giving it back is `LibraryGraph.dismissCard`'s,
+   * not this cleanup's, or a dev double-mount hands focus straight back to the canvas.
    */
   const focusedRef = useRef(false);
   useEffect(() => {
@@ -105,11 +74,8 @@ export function LibraryMarkPopover({
   }, [cardRef]);
 
   /**
-   * Escape closes this and nothing else.
-   *
-   * Capture on `window`, so the press never reaches the canvas's own `Escape` (which drops
-   * the keyboard's position) or the Library's (which lifts the stale clause). One press,
-   * one thing closed — the ladder rule the map's own Escape decision records.
+   * Escape closes this and nothing else: captured on `window` before the canvas's or the
+   * Library's own Escape, one press closing one thing.
    */
   useEffect(() => {
     const onKey = (event: KeyboardEvent): void => {
@@ -123,10 +89,8 @@ export function LibraryMarkPopover({
   }, [onClose]);
 
   /*
-   * An outside press closes it — **except on the canvas**, which has its own answer to
-   * every press: a mark opens its card, the same mark closes this one, and the empty
-   * background dismisses. Closing here as well would have made the second press on a mark
-   * a close followed by an open, so the card could never be toggled shut by its own mark.
+   * An outside press closes it, except on the canvas, which answers every press itself;
+   * closing here too would turn a second press on the mark into close-then-open.
    */
   useEffect(() => {
     const onDown = (event: MouseEvent): void => {
@@ -155,26 +119,14 @@ export function LibraryMarkPopover({
         : (facts?.sentence ?? null);
 
   /**
-   * **The facts line — and a count nobody has measured is left out, not printed as zero.**
-   *
-   * `cites` is read out of the page's own body, and the body is read lazily: a page a
-   * person has not opened yet has no text in the model. Printing `0 citations` there was
-   * measured on the three-hundred-file folder as exactly the wrong sentence — the card
-   * listed ten originals and claimed the page cited nothing — so a null term is dropped and
-   * the line says only what the folder actually knows.
+   * The facts line. A null count is dropped, never printed as zero: bodies load lazily, so
+   * an unread page has no citation count yet.
    */
   const counts = facts?.counts ?? null;
   const factsLine = counts
     ? [
         t("graph.card.factOriginals", { count: counts.sources }),
-        /*
-         * ⚠️ **"quoted passages", not "citations".** Three cold walkers read
-         * `0 citations` beside `10 originals` as a contradiction (2026-09-12): *"one of
-         * the two is wrong"*, because the strip above the picture already counts the
-         * **relation** `cites`, and the lines drawn to this mark are that relation. This
-         * number is a different thing — the `[[src:…]]` markers inside the page's own
-         * body — so it is named for that and the collision goes.
-         */
+        // Named "quoted passages": it counts `[[src:…]]` markers, not the `cites` relation drawn as lines.
         counts.cites === null ? null : t("graph.card.factPassages", { count: counts.cites }),
         t("graph.card.factMentions", { count: counts.mentions }),
         counts.stale > 0 ? t("home.staleClause", { count: counts.stale }) : null,
@@ -214,14 +166,8 @@ export function LibraryMarkPopover({
         "shadow-[var(--shadow-elevation-2)] outline-none",
       )}
     >
-      {/* ── Identity: the same three marks the canvas draws, the name, the kind. ── */}
-      {/*
-        The card is where a name the canvas already cut can be read whole, so the title wraps
-        to two lines instead of truncating, and the kind moves under it to give the name the
-        full width beside the glyph (2026-09-25: a long page name was cut mid-word on both
-        the canvas and the card, so the whole name appeared nowhere on screen). The glyph and
-        the close glyph stay on the first line.
-      */}
+      {/* The title wraps to two lines rather than truncate: the card is where a name the
+          canvas cut can be read whole. */}
       <div className="flex items-start gap-2">
         <span className="flex h-[var(--leading-title)] flex-none items-center">
           <MarkGlyph kind={node.kind} />
@@ -249,7 +195,6 @@ export function LibraryMarkPopover({
         </button>
       </div>
 
-      {/* ── One sentence. A page's Summary, a file's three facts, a concept's place. ── */}
       {sentence ? (
         <p
           data-testid="library-graph-card-sentence"
@@ -259,7 +204,6 @@ export function LibraryMarkPopover({
         </p>
       ) : null}
 
-      {/* ── The facts line. Amber the moment one of its citations cannot be vouched for. ── */}
       {factsLine ? (
         <p
           data-testid="library-graph-card-facts"
@@ -274,7 +218,6 @@ export function LibraryMarkPopover({
         </p>
       ) : null}
 
-      {/* ── What it leans on, or what leans on it. ── */}
       {shown.length > 0 ? (
         <ul
           data-testid="library-graph-card-rows"
@@ -309,10 +252,7 @@ export function LibraryMarkPopover({
         </ul>
       ) : null}
 
-      {/* ── The doors. The first one is what a press used to do, now named and explicit.
-             Chips, not `Button sm`: the card's close glyph and every other Library popover
-             control are the 6px/11px chip grammar, and a 12px/14px button beside them was a
-             second grammar in one card (2026-09-25). ── */}
+      {/* The doors, as chips like every Library popover control, not `Button sm`. */}
       <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
         {node.kind === "concept" ? (
           onOpenOnMap ? (
@@ -377,37 +317,18 @@ export function LibraryMarkPopover({
         ) : null}
       </div>
 
-      {/*
-        ⚠️ **The drift is named here, beside the lines, and not only under the picture.**
-
-        Three cold walkers read the travelling dashes as *loading* before they found any
-        sentence about them (2026-09-12) — which is direction B's own falsifier — and the
-        one sentence that explained it was at the foot of the window, in the slot that
-        otherwise teaches the marks. Two defects, one cause: the explanation was far from
-        the thing. It is in the card now, where the eye already is, and the legend below the
-        canvas keeps saying what a circle, a square and a ring are while the card is open.
-      */}
+      {/* The drift is explained here, beside the lines, or it reads as loading. */}
       {node.kind !== "concept" && (facts?.rows?.length ?? 0) > 0 ? (
         <p
           data-testid="library-graph-card-flow"
           className="text-label leading-body text-[color:var(--color-text-quaternary)]"
         >
-          {/*
-            ⚠️ **The amber clause is printed only when an amber dot is on the canvas.**
-            `flowStale` is `libraryGraphFlowEdges(graph, cardId).stale`, i.e. exactly this
-            mark's own unverified citations — and since 2026-09-13 every one of those
-            carries the dot in its break at rest, not only during a breath. Before that the
-            sentence named a mark the default window never drew (inspection 122, S2).
-          */}
+          {/* The amber clause prints only for this mark's own unverified citations, which
+              always carry a drawn dot. */}
           {t(flowStale ? "graph.card.flowInlineStale" : "graph.card.flowInline")}
         </p>
       ) : null}
-      {/*
-        ⚠️ **A door that cannot open is replaced by the reason, never left pressable.**
-        `stale && no agent` is the case: there is nothing in the folder that can write a
-        draft, and a chip that does nothing reads as a broken product (installed app,
-        2026-09-05).
-      */}
+      {/* A door that cannot open (stale, no agent) shows its reason instead, never a dead chip. */}
       {facts?.refresh && !facts.refresh.onRequest && facts.refresh.reason ? (
         <p
           data-testid="library-graph-card-reason"
@@ -421,13 +342,8 @@ export function LibraryMarkPopover({
 }
 
 /**
- * The card wears the canvas's own three marks, at the type's own scale.
- *
- * ⚠️ **Because a list of names beside a picture of dots is two vocabularies for one
- * folder.** The circle, the square and the ring are what the legend teaches and what the
- * canvas paints; drawing them here costs nine pixels and means a row in the card and a
- * mark in the picture are visibly the same kind of thing. The inks are the same tokens the
- * canvas resolves (`library-graph-ink.ts`), so the two cannot drift apart.
+ * The canvas's own three marks at type scale, so card rows and picture marks share one
+ * vocabulary; same ink tokens as `library-graph-ink.ts`.
  */
 function MarkGlyph({ kind }: { kind: LibraryGraphNode["kind"] }): React.ReactElement {
   if (kind === "source") {

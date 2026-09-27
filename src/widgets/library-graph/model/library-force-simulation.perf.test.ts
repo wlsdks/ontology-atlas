@@ -14,33 +14,10 @@ import {
 } from "./library-force-simulation";
 
 /**
- * **A tick has to fit in a frame, and the Barnes–Hut crossover has to be a measurement.**
- *
- * The simulation now runs on `requestAnimationFrame` while a person is looking at it, so
- * its cost is not amortised over anything: whatever one tick takes is time subtracted
- * from a 16.7 ms budget that also has to paint. This file measures it at three orders and
- * prints the table, and it measures the exact and approximated many-body passes against
- * each other so `MANY_BODY_EXACT_MAX_ORDER` stays a number somebody measured rather than
- * a number somebody liked.
- *
- * ## Measured, M-series laptop, 2026-09-07 (mean of 40 ticks)
- *
- * | Nodes | Edges | Tick | Of a 16.7 ms frame |
- * |---|---|---|---|
- * | 100 | 99 | 0.10 ms | 1% |
- * | 300 | 299 | 0.47 ms | 3% |
- * | 800 | 799 | 1.93 ms | 12% |
- *
- * Re-measured 2026-09-12 on the same laptop, after the fixture became **one** connected
- * folder rather than `nodeCount / 4` disconnected stars (see `folder` below). The edge
- * counts are the ones that changed; the ticks moved by a tenth of a millisecond.
- *
- * The gate is a **ceiling**, not the measurement: a wall-clock assertion tuned to this
- * laptop either fails honest code on a loaded CI runner or is loosened until it catches
- * nothing (the same lesson the layout's own perf test recorded on 2026-09-06 — 95 ms
- * locally, 279 ms on CI for one identical pass). 16.7 ms at 800 nodes is roughly ten
- * times the local measurement, which still fails a change that dropped the collision grid
- * — restoring the exact pass there cost 11 of a 13.7 ms tick at 1,500 nodes.
+ * A tick must fit a 16.7 ms frame, and the Barnes–Hut crossover
+ * (`MANY_BODY_EXACT_MAX_ORDER`) must stay measured. Measured on an M-series laptop: 0.10,
+ * 0.47 and 1.93 ms per tick at 100, 300 and 800 nodes. The gate is a ceiling about ten
+ * times that, so a loaded CI runner passes and dropping the collision grid still fails.
  */
 
 function folder(nodeCount: number): LibraryGraph {
@@ -72,16 +49,8 @@ function folder(nodeCount: number): LibraryGraph {
       certainty: "current",
     });
     /*
-     * ⚠️ **One folder, one graph** (2026-09-12).
-     *
-     * Without this edge the fixture was `nodeCount / 4` **disconnected stars** — each page
-     * cited two sources nobody else cited and named one concept nobody else named — and
-     * nothing above said so. It did not matter while the many-body pass ran over every
-     * mark in the field. It matters now: repulsion runs inside a group, so 2,160 marks in
-     * 540 groups is 540 four-body passes, the O(n²) the crossover below exists to measure
-     * never happens, and the comparison inverted on noise. A large folder in the product is
-     * one big component — that is what a wiki *is* — so the fixture becomes one, and the
-     * crossover is measured on the shape it is claimed for.
+     * This edge joins the folder into one component: repulsion runs per group, so
+     * disconnected stars would never exercise the O(n²) pass the crossover measures.
      */
     if (page > 0) {
       edges.push({
@@ -107,18 +76,9 @@ function folder(nodeCount: number): LibraryGraph {
 }
 
 /**
- * The **best** of four runs per strategy, not the mean of them.
- *
- * A mean measures the machine's other work as much as this code's; the fastest run is the
- * one where the process got a clean slice, and it is the only figure two implementations
- * can be compared on when both are timed inside one loaded test process. Measured
- * 2026-09-07: the same 500-node comparison inverted on a mean.
- *
- * Warm both strategies before collecting either and alternate their order. With all
- * exact samples first, the tree inherited warm shared tick code: on 2026-09-10, warming
- * both paths moved the local 100-node exact result from 0.05ms to 0.03ms while the tree
- * stayed at 0.06ms. The frame-budget test above this comparison still measures arrival
- * after its original five warm ticks; only the steady-state crossover gets this warmup.
+ * The best of four runs per strategy, not the mean, which also measures the machine's other
+ * work (a 500-node comparison inverted on a mean). Both are warmed first and alternated, or
+ * the second inherits warm shared tick code.
  */
 function bestTickPairMs(nodeCount: number): { exact: number; tree: number } {
   const best = { exact: Infinity, tree: Infinity };
@@ -157,24 +117,15 @@ describe("the live simulation's frame budget", () => {
         `[library-graph] ${row.order} nodes: ${row.ms.toFixed(2)}ms per tick (${((row.ms / 16.7) * 100).toFixed(0)}% of a 60fps frame)`,
       );
     }
-    // 100 and 300 are the everyday orders and have to be nearly free; 800 is the ceiling
-    // the widget is claimed to hold.
+    // 100 and 300 are everyday orders; 800 is the claimed ceiling.
     expect(table[0]!.ms).toBeLessThan(4);
     expect(table[1]!.ms).toBeLessThan(8);
     expect(table[2]!.ms).toBeLessThan(16.7);
   });
 
-  /**
-   * **The crossover is a fact about this machine's arithmetic, not a preference.**
-   *
-   * Both passes are measured on the **same graph** — the exact one forced by lifting the
-   * switch out of reach, the approximated one by dropping it to zero. A crossover
-   * asserted against two different graphs is not a crossover, it is two unrelated
-   * numbers.
-   */
+  // Both passes run on the same graph, forced by moving the switch, or the crossover compares unrelated numbers.
   it("keeps the exact pass ahead below the crossover and behind it above", () => {
-    // Far enough either side of the crossing that the gap is bigger than the noise: at
-    // 100 the exact pass is clearly ahead, at 2160 the tree is clearly ahead.
+    // Far enough either side of the crossing that the gap beats the noise.
     const below = 100;
     const above = 2160;
     meanTickMs(below, 100, Number.POSITIVE_INFINITY);
@@ -191,23 +142,13 @@ describe("the live simulation's frame budget", () => {
     expect(aboveTree).toBeLessThan(aboveExact);
     expect(MANY_BODY_EXACT_MAX_ORDER).toBeGreaterThan(below);
     expect(MANY_BODY_EXACT_MAX_ORDER).toBeLessThan(above);
-    /*
-     * ⚠️ **30 seconds, because this case runs four O(n²) passes over 2,160 marks.** It
-     * measured 5.47s on an idle laptop and 7.25s on the same laptop with four other slices
-     * building, against vitest's 5s default — a lane that goes red on machine load rather
-     * than on a defect. The assertions are untouched; only the clock they get is.
-     */
+    // 30s: four O(n²) passes over 2,160 marks measured 5.47s idle and 7.25s under load.
   }, 30_000);
 });
 
 /**
- * **The folder G2 is about: sixty write-ups over three hundred files, in six clusters.**
- *
- * The `folder` fixture above is one long chain, which is the right shape for the crossover
- * and the wrong one for the arrival: what a real wiki of this size looks like is a handful
- * of themed components, each a set of pages citing an overlapping run of the same files. The
- * composition pass settles every one of those **synchronously on mount**, so this is the
- * shape whose settle a person actually waits for.
+ * Sixty write-ups over three hundred files in six clusters: the real arrival shape, since
+ * composition settles every component synchronously on mount.
  */
 function wiki(pageCount: number, sourceCount: number): LibraryGraph {
   const nodes: LibraryGraphNode[] = [];
@@ -248,12 +189,7 @@ function wiki(pageCount: number, sourceCount: number): LibraryGraph {
 }
 
 describe("the arrival's settle budget", () => {
-  /**
-   * **The whole arrival, not one tick.** A tick inside a frame says nothing about whether a
-   * person waits: the composition settles every component synchronously before the first
-   * paint, and then the picture settles again on `requestAnimationFrame`. Both are measured
-   * here, at the two orders G2 is claimed for.
-   */
+  // The whole arrival: the synchronous composition settle, then the rAF settle.
   it("settles 300 and 1000 marks inside the budget, and idles after", () => {
     for (const [pages, sources] of [
       [60, 240],
@@ -270,37 +206,22 @@ describe("the arrival's settle budget", () => {
       process.stdout.write(
         `[library-graph] ${order} marks: mount (composition) ${mountMs.toFixed(0)}ms, settle ${settleMs.toFixed(0)}ms over ${sim.ticks} ticks, ${(settleMs / Math.max(1, sim.ticks)).toFixed(2)}ms per tick\n`,
       );
-      // The picture is at rest and the loop may stop: this canvas stands still
-      // (`docs/DECISIONS.md`, 2026-09-08), and a settle that never lands is that promise
-      // broken rather than a slow arrival.
+      // The settle lands, so the loop may stop (`docs/DECISIONS.md`).
       expect(isLibrarySimulationRunning(sim)).toBe(false);
       expect(sim.ticks).toBeLessThanOrEqual(LIBRARY_SETTLE_MAX_TICKS);
-      // Ten times the local measurement, for the same reason the frame budget above is a
-      // ceiling rather than the number that was measured.
+      // A ceiling about ten times the local measurement.
       expect(mountMs).toBeLessThan(order > 500 ? 4000 : 1500);
-      // One 60fps frame per tick, and the measurement is printed above. Measured
-      // 2026-09-12: 0.27ms per tick at 312 marks and 1.21ms at 992, so 16.7ms is 62x
-      // and 14x headroom respectively.
+      // One 60fps frame per tick; measured 0.27ms at 312 marks and 1.21ms at 992.
       expect(settleMs / Math.max(1, sim.ticks)).toBeLessThan(16.7);
     }
   });
 });
 
 /**
- * **What an open card costs, per frame, at three hundred marks and at a thousand.**
- *
- * The card's citation drift is the first motion on this canvas that paints without a hand
- * on it (`docs/DECISIONS.md`, 2026-09-12 "a press opens a card beside the mark"), so the
- * question it has to answer is the one the 2026-09-08 stillness record leaves open: *how
- * much of a frame does it take?* The budget on the record is **2 ms of added frame cost**
- * at 372 marks and at 992.
- *
- * ⚠️ **This measures the frame's own arithmetic, not the rasteriser.** `drawLibraryGraph`
- * runs here against a recording context, so what is timed is every line of this
- * repository's per-frame work — the flow sets, the dash phase, the label pass, the arcs and
- * curves issued — and not the GPU's. The rasterised number is measured in a real browser
- * through `window.__atlasLibraryGraph.paint()` and written into the round's measurements;
- * the two are complementary, and only this one can be a gate.
+ * An open card's per-frame cost at 372 and 992 marks, against the recorded budget of 2 ms
+ * added (`docs/DECISIONS.md`). Only this repository's per-frame arithmetic is timed, on a
+ * recording context; the rasterised cost is read in a browser through the probe,
+ * window.__atlasLibraryGraph.paint().
  */
 describe("what an open card costs per frame", () => {
   /** A 2D context that records nothing and costs nothing: what is left is our own code. */
@@ -379,14 +300,8 @@ describe("what an open card costs per frame", () => {
       });
 
       /*
-       * ⚠️ **Interleaved and taken as medians, and the gate is a ratio.** Two consecutive
-       * blocks of frames and an absolute millisecond budget measured **+0.53ms** on an idle
-       * laptop and **+2.45ms** on the same laptop with four other slices building — the
-       * failure mode this file's own preamble names, where a wall-clock number either fails
-       * honest code under load or gets loosened until it catches nothing. Alternating the
-       * two and comparing medians cancels the drift that both arms share; the ceiling is
-       * then *the picture's own frame plus a margin*, which a real regression (an allocation
-       * per edge, a second pass over the graph) breaks and a loaded machine does not.
+       * Interleaved medians against a ratio, since an absolute budget measured +0.53ms idle
+       * and +2.45ms under load; shared drift cancels, and a real per-edge regression still breaks it.
        */
       const withoutRuns: number[] = [];
       const withRuns: number[] = [];
@@ -403,8 +318,7 @@ describe("what an open card costs per frame", () => {
       );
 
       expect(withCard).toBeLessThan(without * 1.6 + 0.5);
-      // Resolving the sets is not a per-frame cost at all — the engine recomputes them when
-      // the card or the folder changes — but if they ever became one they would still fit.
+      // The sets are recomputed only on card or folder change, but would fit a frame anyway.
       expect(setsMs).toBeLessThan(2);
       // And the drift never touches a mention: the sets are the citations of one mark.
       expect(flowEdges.size).toBeLessThan(graph.counts.cites);

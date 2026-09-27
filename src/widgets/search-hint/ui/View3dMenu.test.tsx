@@ -6,12 +6,8 @@ import ko from "../../../../messages/ko.json";
 import { View3dMenu } from "./View3dMenu";
 
 /**
- * The contract for the view picker the 「3D」 chip opens.
- *
- * What this check holds is not values but **position and count**. When the
- * arrangements lived in the settings sheet under the names 「Ownership/Combination」, the owner
- * failed to find them twice (ledger (84)) — that regression leaves no value in the
- * code, so only the rendered result can catch it.
+ * The view picker's position, count and wording: a picker nobody finds leaves no wrong
+ * value in the code (ledger (84)), so only the rendered result can catch it.
  */
 function mount() {
   return render(
@@ -46,11 +42,7 @@ describe("View3dMenu view picker", () => {
     expect(screen.getByTestId("topology-view-3d-choice-coupling")).toBeInTheDocument();
   });
 
-  /*
-   * The Cone left the picker on 2026-09-25. A reader who had it stored still sees a
-   * chosen row — Strata, the containment view that replaced it — rather than a list
-   * with nothing checked.
-   */
+  // A stored Cone still shows a chosen row (Strata), not a list with nothing checked.
   it("offers no Cone, and a stored Cone reads as Strata chosen", () => {
     window.localStorage.setItem("atlas.appearance.view3d", "on");
     window.localStorage.setItem("atlas.appearance.map-arrangement", "ownership");
@@ -60,11 +52,7 @@ describe("View3dMenu view picker", () => {
     expect(screen.getByTestId("topology-view-3d-choice-strata")).toHaveAttribute("aria-checked", "true");
   });
 
-  /*
-   * An abstract noun is only a name to someone who already knows the concept. The
-   * words on screen have to be the visible things (cone, cloud) — that was (84)'s
-   * second correction.
-   */
+  // An abstract noun is only a name to someone who already knows the concept ((84)).
   it("labels rows by what is visible, never by the abstract arrangement nouns", () => {
     mount();
     expect(screen.getByText("층")).toBeInTheDocument();
@@ -95,10 +83,8 @@ describe("View3dMenu view picker", () => {
   });
 
   /**
-   * The galaxy is the *other flat view*, so picking it must turn the dome off as well as turn
-   * the sky on. The pair is what the drawing reads, and a state where both are on is one the
-   * picker must never be able to produce — the map's contrast floors for 3D assume the flat
-   * sky is not also being painted (`tests/e2e/map-3d-relation-ink.spec.ts`).
+   * The map's 3D contrast floors assume the flat sky is not also painted
+   * (`tests/e2e/map-3d-relation-ink.spec.ts`), so the picker never leaves both on.
    */
   it("turns the sky on and 3D off when galaxy is picked, so both are never on", () => {
     window.localStorage.setItem("atlas.appearance.view3d", "on");
@@ -132,17 +118,9 @@ describe("View3dMenu view picker", () => {
   });
 
   /**
-   * **It does not swallow Esc while closed** (regression, 2026-08-19).
-   *
-   * This component is **always rendered** beside the chip. Hooks run before any early
-   * return, so without guarding the global listener on `open` it intercepts document
-   * Esc and calls `stopPropagation()` the whole time it is closed — killing Esc across
-   * the app. Measured in CI: node detail stopped closing on Esc, and five specs went
-   * red together, covering the keyboard path, focus return and the popover contract.
-   *
-   * Two things are measured here: «the close function is not called» and «propagation
-   * is alive». Drop the latter and an implementation that merely skips `onClose` while
-   * still swallowing would pass.
+   * The picker is always rendered, so an unguarded listener would swallow Escape app-wide.
+   * Both counts matter: without the propagation count, skipping `onClose` while still
+   * swallowing would pass.
    */
   it("lets document Escape through while closed, so app-wide Escape keeps working", () => {
     let closed = 0;

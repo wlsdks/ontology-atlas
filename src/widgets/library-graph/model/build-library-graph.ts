@@ -2,46 +2,29 @@ import { buildTopologyDeeplinkForDoc, type VaultDoc } from "@/entities/docs-vaul
 import { resolveLocaleDisplayName } from "@/shared/lib/locale-display-name";
 
 /**
- * The library's own small graph — **what this folder's write-ups are made of**.
- *
- * It is not the map, and the separation is the point (`docs/DECISIONS.md`, 2026-09-06).
- * The map draws the ontology: nodes with a `kind:`, the graph a person curates. This
- * draws the two file kinds the map deliberately never shows — a raw source under
- * `sources/`, kept byte for byte, and a wiki page under `wiki/`, which has no `kind:` —
- * plus the concepts a page reaches into. So the two pictures answer different questions:
- * *what does this project mean* over there, *what was read to write that down* here.
- *
- * Three node kinds and two relations, and nothing else:
+ * The library's own graph: what this folder's write-ups are made of. It is not the map
+ * (`docs/DECISIONS.md`): it draws the files the map never shows, raw `sources/` and `wiki/`
+ * pages, plus the concepts (`kind:` docs) a page reaches into or that link a page back.
  *
  * | Node | Comes from | Why it is here |
  * |---|---|---|
- * | `source` | `manifest.sources` | every file in the folder, cited or not — an unattached dot **is** the fact that nobody has written it up |
+ * | `source` | `manifest.sources` | every file, cited or not; an unattached dot is the fact that nobody wrote it up |
  * | `page` | wiki pages | one write-up |
- * | `concept` | a page's `[[slug]]` that resolves to a doc carrying `kind:`, or a `kind:` doc whose body links a page | the reach between a write-up and the ontology, in either direction |
+ * | `concept` | a page's `[[slug]]` resolving to a `kind:` doc, or a `kind:` doc linking a page | the reach between write-up and ontology |
  *
  * | Edge | Read from | Means |
  * |---|---|---|
  * | `cites` | the page's `sources:` frontmatter | this write-up was made from that file |
- * | `mentions` | the page's body wikilinks, and a concept's body `[[wiki/…]]` links | one names the other: a write-up names a concept, or a node cites the write-ups it was drawn from (a node the wiki proposed carries them as evidence, 2026-09-06) |
+ * | `mentions` | page body wikilinks, and a concept's body `[[wiki/…]]` links | one names the other |
  *
- * **An unresolved link is not drawn.** `[[src:sources/quarter-plan.pdf#p2]]` — the
- * citation form wiki pages use inside a bullet — resolves to no document, and neither
- * does a wikilink whose target was renamed away. Drawing those as nodes would put
- * addresses on a canvas of things, and a person cannot tell a typo from a plan by
- * looking at a dot. They fall out here, once, rather than being filtered by each caller.
- *
- * Everything in this file is pure and deterministic: the same folder gives the same
- * nodes in the same order, which is what lets the layout below be reproducible rather
- * than a new picture on every mount.
+ * An unresolved link (a `[[src:…]]` citation, a renamed-away target) is dropped here, once,
+ * because a dot cannot tell a typo from a plan. Pure and deterministic, so the layout is
+ * reproducible: O(docs + pages + links) with Map/Set lookups.
  */
 
 export type LibraryGraphNodeKind = "source" | "page" | "concept";
 
-/**
- * What the folder knows about a source, in the same words the list beside this canvas
- * uses (`SourceCompileState`). It is optional only so a caller that has not measured
- * anything can still draw the shape of the folder.
- */
+/** A source's state in the words of the list beside the canvas (`SourceCompileState`). */
 export type LibraryGraphSourceState =
   | "not-compiled"
   | "compiled"
@@ -53,59 +36,40 @@ export interface LibraryGraphNode {
   /** `source:<path>` · `page:<slug>` · `concept:<slug>`. Stable across renders. */
   id: string;
   kind: LibraryGraphNodeKind;
-  /**
-   * Sources only: whether anybody has written this file up, and whether that write-up
-   * still matches the bytes. The canvas draws it, because the list two inches to the left
-   * says it and a picture that disagreed with the list would be the worse of the two.
-   */
+  /** Sources only; optional so a caller that measured nothing can still draw the folder. */
   state?: LibraryGraphSourceState;
   /** What a person sees in the hover label — a file name or a document title. */
   label: string;
   /** The vault address: a source's path, or a document's slug. */
   ref: string;
   /**
-   * Where a click goes. Sources and pages are selected **in place** on this screen, so
-   * they carry none; a concept lives on the map, so it carries the map's own deeplink —
-   * or null when its kind has no map node (`buildTopologyDeeplinkForDoc`).
+   * A concept's map deeplink, or null when its kind has no map node; sources and pages
+   * are selected in place and carry none.
    */
   href: string | null;
 }
 
 export interface LibraryGraphEdge {
   id: string;
-  /** Always a page: both relations start at the write-up. */
+  /** The write-up, except a `mentions` edge read from a concept's body, which starts at the concept. */
   source: string;
   target: string;
   relation: "cites" | "mentions";
   /**
-   * **Whether this line may still be believed.**
-   *
-   * A `cites` edge asserts "this write-up was made from that file". When the source is
-   * `stale` — the page recorded a hash the bytes no longer match, or recorded none — that
-   * assertion is exactly what the folder denies, and drawing it as a confident line put
-   * the canvas at odds with the list beside it (design-infoviz, 2026-09-06). `checking`
-   * is unverified for the same reason: nothing has measured it yet.
-   *
-   * A `mentions` edge is read out of the page's own body, so there is nothing to go
-   * stale: it is always `current`.
+   * Whether this line may still be believed. A `cites` edge to a source the folder does not
+   * vouch for (stale, checking, not compiled) is `unverified`, or the canvas contradicts the
+   * list beside it. A `mentions` edge is read from a body and is always `current`.
    */
   certainty: "current" | "unverified";
 }
 
-/**
- * The write-ups this graph is built from — structurally what `LibraryWikiPage` already
- * is, named here so the derivation depends on the three fields it reads rather than on
- * the library model's whole row.
- */
-/**
- * A source as this canvas needs it: where it is, and what the folder has judged about it.
- * `LibrarySourceRow` satisfies it structurally, which is what the Library passes.
- */
+/** `LibrarySourceRow` satisfies this structurally. */
 export interface LibraryGraphSource {
   path: string;
   state?: LibraryGraphSourceState;
 }
 
+/** The three fields of `LibraryWikiPage` the derivation reads. */
 export interface LibraryGraphPage {
   slug: string;
   title: string;
@@ -152,11 +116,7 @@ export function buildLibraryGraph({
   docs: readonly VaultDoc[];
   wikiPages: readonly LibraryGraphPage[];
   sources: readonly LibraryGraphSource[] | undefined;
-  /**
-   * The screen's locale. A concept is named the way the map names it — its `display_<locale>`
-   * when the document has one, else its `title` — so a Korean screen does not print English
-   * concept names beside Korean page titles (found in the gateway capture, 2026-09-24).
-   */
+  /** Concepts are named as the map names them: `display_<locale>`, else `title`. */
   locale?: string;
 }): LibraryGraph {
   const conceptLabel = (doc: VaultDoc): string =>
@@ -196,16 +156,10 @@ export function buildLibraryGraph({
   for (const page of wikiPages) {
     const from = pageId(page.slug);
 
-    // ── cites: the frontmatter list, which is also what the compile state is judged on. ──
+    // cites: the frontmatter list, which is also what the compile state is judged on.
     for (const path of page.sourcePaths) {
       const to = sourceId(path);
-      /*
-       * A page may cite a path that is no longer in the folder — the file was moved or
-       * deleted after it was written up. That is a real and interesting state, but it is
-       * the source list's to report (it cannot: the row is gone), not a dot's: an edge to
-       * a node that does not exist would draw a line into empty canvas. It is dropped
-       * here for the same reason an unresolved wikilink is.
-       */
+      // A cited path no longer in the folder is dropped, or the line runs into empty canvas.
       if (!seen.has(to)) continue;
       const id = `cites:${page.slug}→${path}`;
       if (drawn.has(id)) continue;
@@ -215,11 +169,7 @@ export function buildLibraryGraph({
         source: from,
         target: to,
         relation: "cites",
-        /*
-         * `partial` is believed. The page recorded a hash that still matches, so the line
-         * "this write-up was made from that file" is true — it is the *coverage* that
-         * stops short, which the row's own word says and a dashed line would not.
-         */
+        // `partial` is believed: the hash still matches; only coverage stops short.
         certainty:
           sourceState.get(path) === "compiled" || sourceState.get(path) === "partial"
             ? "current"
@@ -227,13 +177,11 @@ export function buildLibraryGraph({
       });
     }
 
-    // ── mentions: body wikilinks that land on a document carrying `kind:`. ──
+    // mentions: body wikilinks that land on a document carrying `kind:`.
     const doc = bySlug.get(page.slug);
     for (const target of doc?.linksOut ?? []) {
       const linked = bySlug.get(target);
-      // A page linking another page is a real link, but it is not what this picture is
-      // about, and page→page lines would out-number both relations that answer the
-      // question. Concepts only.
+      // Concepts only: page→page lines would out-number both relations this picture is about.
       if (!linked || !isConcept(linked) || pages.has(target)) continue;
       const to = conceptId(target);
       push({
@@ -250,9 +198,8 @@ export function buildLibraryGraph({
     }
   }
 
-  // ── mentions, the other way: a concept whose body links a wiki page. The node the
-  //    wiki proposed cites its pages as `[[wiki/…]]`; without this the bridge the Library
-  //    made was invisible on the Library's own picture (installed app, 2026-09-07). ──
+  // mentions, the other way: a node the wiki proposed cites its pages as `[[wiki/…]]`,
+  // or the bridge the Library made is invisible on its own picture.
   for (const doc of docs) {
     if (!isConcept(doc) || pages.has(doc.slug)) continue;
     for (const target of doc.linksOut) {
