@@ -1,40 +1,18 @@
 /**
- * Bidirectional mapper between the Project entity and vault frontmatter.
- *
- * - read: `mapFrontmatterToProject` turns `projects/*.md` into a `Project`
- * - write: `projectToFrontmatter` produces a frontmatter object from a `Project`
- *   or `ProjectInput`, serializable straight through the local vault's
- *   createDoc / updateDoc (`apply-frontmatter-updates` compatible)
- *
- * Our frontmatter parser (`shared/lib/parse-frontmatter`) has no inline-object
- * support, so `position` is split into `positionX` / `positionY`. Every other
- * field is string, number, boolean, or string[].
+ * Maps Project ↔ vault frontmatter. The frontmatter parser has no inline objects, so `position`
+ * is split into `positionX` / `positionY`.
  */
 
 import type { Project, ProjectInput } from '@/entities/project';
 import { generateNodeUid } from './build-vault-markdown';
 
-/**
- * Starter `display_<locale>` values shipped by the `node $ATLAS/cli/src/index.mjs init`
- * project template (`ontology-starter.ts` PROJECT_MD). C6 — these are treated
- * as "never customized": when a project is renamed while its display name still
- * equals one of these, the display key is auto-filled from the new title so the
- * map/INDEX don't keep showing "My project" / "My project" after a rename.
- * A user who set their own display name is NOT in this set, so their choice is
- * never overwritten.
- */
+/** Starter display names from the `init` template; only these follow a rename, never a user's own. */
 const STARTER_PROJECT_DISPLAY_VALUES: ReadonlySet<string> = new Set([
   '내 프로젝트',
   'My project',
 ]);
 
-/**
- * Starter project body summary shipped by `node $ATLAS/cli/src/index.mjs init` (PROJECT_MD).
- * With no `description:` frontmatter the derived `Project.description` falls back
- * to the body excerpt — this English boilerplate. #9 — quick-edit treats it as
- * "never filled in" so it renders as a placeholder (empty value), not a real
- * value the user has to delete before writing a real one-liner.
- */
+/** The starter body summary, treated as unfilled so quick edit shows a placeholder. */
 const STARTER_PROJECT_DESCRIPTION_MARKERS: readonly string[] = [
   'Write a one- or two-line summary of your project here',
   '프로젝트를 한두 줄로 요약',
@@ -50,12 +28,7 @@ export function isStarterProjectDescription(
   );
 }
 
-/**
- * Given the existing frontmatter and a new project name, compute the
- * `display_<locale>` updates needed so stale STARTER display names track the
- * rename. Returns only the keys that are currently at a starter default (empty
- * object when there's nothing to sync). C6.
- */
+/** `display_<locale>` updates for keys still at a starter default. */
 export function buildStarterDisplaySync(
   existingFrontmatter: Record<string, unknown>,
   newName: string,
@@ -73,16 +46,11 @@ export function buildStarterDisplaySync(
   return updates;
 }
 
-/**
- * The *optional* field shape used for serialization. `Project` and `ProjectInput`
- * do not match exactly (position is required on one of them), so serialization
- * only needs to see the common subset.
- */
+/** The serializable subset shared by `Project` and `ProjectInput`. */
 export interface ProjectFrontmatterShape {
   slug: string;
   name: string;
-  // `Project` is honest to the vault, so `category` is optional there;
-  // `ProjectInput` requires it form-locally. Optional lets both assign.
+  // Optional so both `Project` (vault-honest) and `ProjectInput` (required) assign.
   category?: string;
   status?: string;
   description?: string;
@@ -96,10 +64,7 @@ export interface ProjectFrontmatterShape {
   position?: { x: number; y: number };
 }
 
-// Compile-time sanity: `Project` and `ProjectInput` must still extend
-// ProjectFrontmatterShape. Note this only proves every FM field exists on
-// `Project` — a new field on `Project` is not added to FM automatically, so a
-// serialization gap needs its own check.
+// Proves only that FM fields exist on `Project`; a new `Project` field needs its own serialization.
 type _ProjectAssignable = Project extends ProjectFrontmatterShape ? true : false;
 type _ProjectInputAssignable = ProjectInput extends ProjectFrontmatterShape ? true : false;
 const _projectCheck: _ProjectAssignable = true;
@@ -107,22 +72,16 @@ const _projectInputCheck: _ProjectInputAssignable = true;
 void _projectCheck;
 void _projectInputCheck;
 
-/**
- * Project → vault frontmatter object. Empty and undefined values are omitted;
- * our serializer treats only `null` as a delete, so skipping is enough.
- */
+/** Empty values are omitted; the serializer deletes only on `null`. */
 export function projectToFrontmatter(
   project: ProjectFrontmatterShape,
 ): Record<string, string | number | boolean | string[]> {
   const out: Record<string, string | number | boolean | string[]> = {};
-  // Every input here comes from an already-typed write path (Project/ProjectInput).
-  // Normalizing `kind` keeps new documents and full edits from losing the graph-node
-  // contract.
+  // `kind` is always normalized so writes keep the graph-node contract.
   out.kind = 'project';
   out.name = project.name;
   out.slug = project.slug;
-  // `category` is optional, so an unset one is omitted from the frontmatter too —
-  // the vault is the source of truth and must not fabricate information it lacks.
+  // An unset category stays absent rather than fabricated.
   if (project.category) out.category = project.category;
   if (project.status) out.status = project.status;
   if (project.description?.trim()) out.description = project.description;
@@ -135,7 +94,6 @@ export function projectToFrontmatter(
   if (project.owner?.trim()) out.owner = project.owner;
   if (project.icon?.trim()) out.icon = project.icon;
   if (project.isHub) out.isHub = true;
-  // `position` is split across two keys because the frontmatter parser cannot read inline objects.
   if (project.position) {
     out.positionX = project.position.x;
     out.positionY = project.position.y;
@@ -143,10 +101,7 @@ export function projectToFrontmatter(
   return out;
 }
 
-/**
- * Project frontmatter → raw markdown including the frontmatter block, used as
- * `createDoc`'s initial content.
- */
+/** Full markdown for `createDoc`. */
 export function buildProjectMarkdown(
   project: ProjectFrontmatterShape,
   options: { body?: string; uid?: string } = {},
@@ -169,29 +124,17 @@ function serializeValue(v: string | number | boolean | string[]): string {
 }
 
 /*
- * Does this value need quoting — **four places must agree on the answer.**
- *
- * Reviewed and reproduced 2026-08-16: newline was missing from the rule. That one
- * character destroys the whole frontmatter block — `note\nkind: element` **changes
- * the node's kind**, and `note\n---\nx: 1` ends the frontmatter there, dropping the
- * remaining keys into the body. Silently, with no warning.
- *
- * Quoting alone does not help once the line is already broken, so the writer
- * escapes to `\n` and the reader restores it (`unquote`).
- *
- * The single quote joined the rule too: `unquote` strips unmatched quotes from both
- * ends, so an unquoted value like `'map'` reads back as `map`.
+ * Newline and quote characters force quoting, and newlines are escaped (`unquote` restores
+ * them), or a value could inject keys. Four writers must agree on this rule.
  */
 function needsQuote(s: string): boolean {
   if (/[:,#\[\]"'{}&|*!%@`\n\t]|^\s|\s$/.test(s)) return true;
-  // A string the reader would re-type — 'true', 'false', or a number-like
-  // value ('2026') — must be quoted, or it comes back as a boolean/number and
-  // every consumer gating on typeof string silently drops it after one round
-  // trip (bug sweep 2026-09-01). Quoting is how an author forces text.
+  // Boolean- and number-shaped strings are quoted, or they read back retyped.
   return s === 'true' || s === 'false' || (s !== '' && !Number.isNaN(Number(s)));
 }
 
-/** Makes a value safe inside quotes — newlines fold to `\n`. */
+/** Newlines fold to `
+`. */
 function escapeQuoted(s: string): string {
   return s
     .replace(/\\/g, '\\\\')

@@ -3,17 +3,8 @@ import type { KnowledgeGraphNode } from "../../model";
 import type { OntologyTreeNode } from "./types";
 
 /**
- * Does a node match the search text — any of its names, or its id's slug. `query` is
- * expected to be normalised with `normalizeForMatch`. Single source so tree
- * filtering/counting and orphan filtering share one rule.
- *
- * **It is the palette's rule, not a second one** (2026-09-19). The map draws INDEX
- * and the `⌘K` palette on the same screen, and they disagreed twice: INDEX answered
- * "no matching concept" to a chosung query and to a half-typed syllable that the
- * palette resolved on the same vault, and it pulled every element for the word
- * "element" because it compared the whole `kind:slug`. Two boxes on one screen must
- * answer the same typing the same way, so both now call `findNameMatch` and
- * `idSearchText`.
+ * Whether a node's names or id slug match a `normalizeForMatch` query, by the `⌘K` palette's rule
+ * (`findNameMatch`, `idSearchText`), so INDEX and the palette answer the same typing alike.
  */
 export function knowledgeNodeMatchesQuery(
   node: KnowledgeGraphNode,
@@ -25,10 +16,7 @@ export function knowledgeNodeMatchesQuery(
   return id !== null && normalizeForMatch(id).includes(normalizedQuery);
 }
 
-/**
- * How many tree nodes actually match the query, excluding structural nodes kept
- * only as ancestors. Same match rule as `filterTreeByQuery`; 0 for an empty query.
- */
+/** Matching nodes only, not ancestors kept for structure; 0 for an empty query. */
 export function countMatchingTreeNodes(
   roots: readonly OntologyTreeNode[],
   query: string,
@@ -44,21 +32,7 @@ export function countMatchingTreeNodes(
   return count;
 }
 
-/**
- * Keeps only nodes matching the query while **preserving the parent chain**.
- *
- * Matching is normalised containment on the canonical title, current and raw
- * locale display names, or `node.id` (the `kind:slug` form), so the name visible
- * on screen remains searchable without hiding canonical and developer-facing
- * names. Developers read slugs daily in frontmatter and code, so a slug search
- * like 'mcp-server' must not come back empty.
- *
- * Every ancestor of a match survives to keep the tree shape; non-matching
- * siblings are dropped; all descendants of a match are kept, because the user
- * expects to see the context.
- *
- * An empty query (or one empty after trimming) returns the input roots as they are.
- */
+/** Keeps matches, their ancestors and all their descendants; an empty query returns the roots. */
 export function filterTreeByQuery(
   roots: readonly OntologyTreeNode[],
   query: string,
@@ -73,11 +47,11 @@ export function filterTreeByQuery(
       .filter((c): c is OntologyTreeNode => c !== null);
 
     if (titleMatch) {
-      // A match: keep every descendant (the original children, not the filtered ones).
+      // A match keeps its original children.
       return { ...node, children: node.children };
     }
     if (filteredChildren.length > 0) {
-      // Only a descendant matched: this node survives purely as part of the parent chain.
+      // Kept only as an ancestor.
       return { ...node, children: filteredChildren };
     }
     return null;
@@ -89,16 +63,8 @@ export function filterTreeByQuery(
 }
 
 /**
- * Drops nodes of the given `kind` together with their whole subtree. Used by the
- * general (non-developer) mode of the INDEX tree to hide element rows by
- * default. **The data is unchanged**: this prunes a derived display tree and
- * never touches `roots` or the graph. Counts and inventories must be computed
- * from the full graph rather than from this output — that is the caller's
- * responsibility, because a display filter must not distort a true number.
- *
- * Unlike `filterTreeByQuery` and `filterTreeByNodeIds` it does **not** preserve
- * the ancestor chain: if an excluded kind is itself an ancestor (uncommon), the
- * entire subtree disappears. Pure and deterministic.
+ * Drops a kind with its whole subtree from a display tree (no ancestor preservation). Counts must
+ * come from the full graph, not this output.
  */
 export function filterTreeExcludeKind(
   roots: readonly OntologyTreeNode[],
@@ -117,19 +83,7 @@ export function filterTreeExcludeKind(
     .filter((n): n is OntologyTreeNode => n !== null);
 }
 
-/**
- * Keeps only nodes in the given id set while **preserving the parent chain** —
- * the tree scoping behind "show only what changed".
- *
- * Same algorithm as `filterTreeByQuery` with two differences:
- *   1. Matching is `ids.has(node.id)` (added or changed nodes), not string
- *      containment.
- *   2. Descendants of a match are **not all kept** — only matching ones — so
- *      unchanged siblings and children are not dragged in as noise. The result is
- *      the minimal tree of changed nodes plus their ancestor paths.
- *
- * An empty `ids` returns an empty array (nothing changed; the caller shows a hint).
- */
+/** Keeps nodes in `ids` and their ancestors, but only the matching descendants; empty `ids` → []. */
 export function filterTreeByNodeIds(
   roots: readonly OntologyTreeNode[],
   ids: ReadonlySet<string>,
@@ -142,8 +96,7 @@ export function filterTreeByNodeIds(
       .map(visit)
       .filter((c): c is OntologyTreeNode => c !== null);
 
-    // Keep a node that changed, or an ancestor of one that did. In both cases
-    // descendants are the filtered set — even a match hides its unchanged children.
+    // Even a match hides its unchanged children.
     if (match || filteredChildren.length > 0) {
       return { ...node, children: filteredChildren };
     }

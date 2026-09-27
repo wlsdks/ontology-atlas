@@ -9,13 +9,8 @@ import {
 } from './round-record';
 
 /**
- * `.ontology-atlas/rounds.json` — the rounds this Mac keeps for this folder.
- *
- * The sidecar folder is ignored by its own `.gitignore`, and that is right for a round: the
- * machine that is open is the one that runs it, and two machines sharing one round would fetch
- * the same service twice. The shape and the queue discipline mirror `connector-store.ts`: every
- * mutation re-reads first, so a concurrent edit is never lost, and a malformed file is never
- * overwritten as though it were empty.
+ * `.ontology-atlas/rounds.json`, local to this Mac. Like `connector-store.ts`, every mutation
+ * re-reads first and a malformed file is never overwritten.
  */
 
 const ROUNDS_VAULT_FILE = 'rounds.json';
@@ -35,23 +30,19 @@ type RoundWriteResult =
 
 export interface RoundStore {
   read(): Promise<RoundReadResult>;
-  /** Replace the whole state. Every mutation below is expressed as a replacement of what was just read. */
+  /** Replaces the whole state; every mutation replaces what was just read. */
   save(state: RoundState): Promise<RoundWriteResult>;
   upsert(round: RoundRecord): Promise<RoundWriteResult>;
   remove(id: string): Promise<RoundWriteResult>;
-  /** Apply a partial change to one round, re-reading first. Unknown id: saved unchanged. */
+  /** Re-reads first; an unknown id saves unchanged. */
   patch(id: string, change: Partial<RoundRecord>): Promise<RoundWriteResult>;
-  /** The window went hidden: remember when, unless an absence is already open. */
+  /** Records when the window went hidden, unless an absence is open. */
   markAway(at: string): Promise<RoundWriteResult>;
-  /** The person is back: close the open absence into `lastAway`. No open absence: saved unchanged. */
+  /** Closes the open absence into `lastAway`; none open saves unchanged. */
   markBack(at: string): Promise<RoundWriteResult>;
 }
 
-/**
- * The latest moment this state itself proves the app was running: the newest pass and the end of
- * the last completed absence. An `awayFrom` older than that cannot describe a real absence,
- * because the app was demonstrably awake after it was written.
- */
+/** The newest moment the state proves the app was awake; an older `awayFrom` is stale. */
 function lastKnownActivity(state: RoundState): number | null {
   let latest: number | null = null;
   const consider = (value: string | undefined) => {
@@ -64,7 +55,7 @@ function lastKnownActivity(state: RoundState): number | null {
   return latest;
 }
 
-/** The start `markBack` records for an absence found on disk: never before the app was last awake. */
+/** An on-disk absence starts no earlier than the app was last awake. */
 function clampAbsenceStart(state: RoundState, awayFrom: string, at: string, bornAt: number): string {
   const opened = Date.parse(awayFrom);
   const floor = lastKnownActivity(state) ?? bornAt;
@@ -75,14 +66,8 @@ function clampAbsenceStart(state: RoundState, awayFrom: string, at: string, born
 }
 
 export function createRoundStore(medium: RoundMedium): RoundStore {
-  /*
-   * **An absence this process did not open is not trusted for its start.** `markAway` writes
-   * `awayFrom` and only `markBack` clears it, so a crash or a force quit while the window was
-   * hidden leaves one on disk forever. The next run then read it as the beginning of the current
-   * absence, and a two-minute hide reported "since you left" spanning days. An absence opened
-   * here is exact and kept as written; one found on disk starts no earlier than the last moment
-   * this folder can prove the app was awake, or than this process itself.
-   */
+  /* An `awayFrom` this process did not write may be left by a crash, so its start is clamped;
+     * one opened here is exact. */
   const bornAt = Date.now();
   let openedHere = false;
 

@@ -1,50 +1,11 @@
 /**
- * Vault health — a faithful browser-side mirror of the MCP engine's
- * `query_ontology({operation:'health'})` verdict (`mcp/src/ontology-engine.mjs`
- * `health()` + `mcp/src/ontology-compiler.mjs`).
- *
- * WHY this exists (insights and the CLI disagreed on health; audit 2026-07-25):
- * `/ontology/insights` used to derive its repair queue and health score from
- * `deriveOntologyFromVault`, which AUTO-HEALS containment — a `domain: X`
- * frontmatter key becomes a synthetic `domain:X --contains--> node` edge. The
- * MCP compiler does NOT do this: `domain:` is only a node property plus a
- * `node --domain--> X` edge (`collectNeighborRefs` inline key), so a
- * capability/element whose domain never links back stays a disconnected island
- * AND a missing-containment recommendation. Result: the app said "nothing to
- * repair, 100%" while `node $ATLAS/cli/src/index.mjs health` said
- * `needs_attention` (2 islands, 3 missing containments) on the SAME vault — a
- * trust hole.
- *
- * This lib computes the SAME actionable checks from the raw vault frontmatter
- * (NOT the auto-healed derived graph), so both surfaces agree. A contract test
- * (`tests/contract/vault-health.contract.test.ts`) feeds one fixture vault
- * through BOTH this lib and the MCP engine and asserts identical
- * status + per-check counts, following the parser/validator contract pattern.
- *
- * Scope: the health VERDICT (status + actionable check counts). It deliberately
- * mirrors the six health checks the MCP engine flips status on
- * (vault_present · compile_issues · unresolved_edges · dependency_cycles ·
- * relation_recommendations · components), not the full engine API.
+ * Browser mirror of the MCP `health()` verdict, computed from raw frontmatter rather than the
+ * auto-healed derived graph so the app and CLI agree (`tests/contract/vault-health.contract.test.ts`).
  */
 
 import { ATLAS_CLI, ATLAS_CLI_HINT_EN } from '@/shared/config/cli-invocation';
 
-/**
- * Checks the CLI reports that this browser mirror **does not run**.
- *
- * This file mirrors the compiled-graph engine, which answers six checks. The
- * health command answers eight: the MCP tool layer adds
- * frontmatter validation and a project meaning assessment on top of the engine's
- * verdict. Re-deriving the second one here would be a second implementation of
- * meaning assessment — a semantic judgement rather than a graph count — which is
- * exactly the drift this file's header was written against.
- *
- * So the two are named rather than silently missing. A surface that does not run
- * every check must not imply its list is the whole list: on this repository's own
- * vault the CLI answers `needs_attention` on the strength of one of them while
- * every check this mirror runs passes, so a screen reporting only these six would
- * be telling a person the opposite of what the command says.
- */
+/** CLI checks this mirror does not run (frontmatter validation, meaning assessment), named so the list never reads as complete. */
 export const UNAVAILABLE_CHECKS = [
   {
     id: 'vault_validation',
@@ -60,7 +21,7 @@ export const UNAVAILABLE_CHECKS = [
   },
 ];
 
-/** Minimal vault-doc shape — a subset of `VaultDoc` (slug + frontmatter). */
+/** The subset of `VaultDoc` this needs. */
 export interface VaultHealthDoc {
   slug: string;
   frontmatter: Record<string, unknown>;
@@ -86,28 +47,23 @@ interface VaultHealthCheck {
 interface UnavailableVaultHealthCheck {
   id: string;
   reason: string;
-  /** A runnable command, not a bare binary name — there is no npm package. */
+  /** A runnable command; there is no npm package. */
   where: string;
-  /** How to fill in the placeholder `where` carries. A command nobody can run is not a remedy. */
+  /** How to fill in the placeholder in `where`. */
   hint: string;
 }
 
-/** A capability/element whose `domain:` never links back (missing containment). */
 interface MissingContainmentTarget {
-  /** full node slug (e.g. `capabilities/invoice`) */
+  /** e.g. `capabilities/invoice` */
   slug: string;
-  /** resolved domain slug that should back-link */
+  /** Domain slug that should link back. */
   domain: string;
 }
 
 export interface VaultHealthResult {
   status: VaultHealthStatus;
   checks: VaultHealthCheck[];
-  /**
-   * What this verdict did not look at. Empty would mean the list is complete;
-   * it is not, and saying so is the difference between a scoped answer and a
-   * wrong one.
-   */
+  /** Checks this verdict did not run. */
   unavailableChecks: readonly UnavailableVaultHealthCheck[];
   summary: {
     nodes: number;
@@ -119,22 +75,13 @@ export interface VaultHealthResult {
     dependencyCycles: number;
     relationRecommendations: number;
   };
-  /**
-   * Concrete repair targets so the UI can link to the offending node — the
-   * counts alone answer "how healthy", these answer "fix what". Sorted by slug.
-   */
+  /** Repair targets for linking to the offending node, sorted by slug. */
   missingContainment: MissingContainmentTarget[];
-  /**
-   * Member slugs of each actionable island BEYOND the largest (main) component,
-   * i.e. the disconnected groups a user would want to reconnect. Largest group
-   * omitted (that's the healthy trunk). Sorted, largest islands first.
-   */
+  /** Members of every actionable island except the largest, largest first. */
   islands: string[][];
 }
 
-// ── mirror of mcp/src/vault.mjs graph keys ──────────────────────────────────
-// Array frontmatter keys that become graph edges. Kept in lockstep with
-// `NEIGHBOR_KEYS` in mcp/src/vault.mjs; the contract test guards drift.
+// Array keys that become edges, in lockstep with `NEIGHBOR_KEYS` in `mcp/src/vault.mjs`.
 const NEIGHBOR_KEYS = [
   'domains',
   'capabilities',
@@ -145,7 +92,7 @@ const NEIGHBOR_KEYS = [
   'describes',
   'broader',
 ] as const;
-// frontmatter key → canonical edge `via`. Only `depends_on` differs.
+// Frontmatter key → canonical edge `via`; only `depends_on` differs.
 const NEIGHBOR_KEY_ALIASES: Record<string, string> = { depends_on: 'dependencies' };
 // Singular string keys that also become an edge (`node --domain--> ref`).
 const INLINE_NEIGHBOR_KEYS = ['domain'] as const;
@@ -168,7 +115,7 @@ interface CompiledNode {
   path: unknown;
 }
 
-// mcp/src/ontology-compiler.mjs isPathLikeGraphRef
+// Mirrors `isPathLikeGraphRef` in mcp/src/ontology-compiler.mjs.
 function isPathLikeGraphRef(ref: string): boolean {
   return (
     ref.startsWith('src/') ||
@@ -181,7 +128,7 @@ function isPathLikeGraphRef(ref: string): boolean {
   );
 }
 
-// mcp/src/vault.mjs collectNeighborRefs (arrays + depends_on alias + inline domain)
+// Mirrors `collectNeighborRefs` in mcp/src/vault.mjs.
 function collectNeighborRefs(fm: Record<string, unknown>): { key: string; ref: string }[] {
   const refs: { key: string; ref: string }[] = [];
   const seen = new Set<string>();
@@ -211,7 +158,7 @@ function collectNeighborRefs(fm: Record<string, unknown>): { key: string; ref: s
   return refs;
 }
 
-// mcp normalizeRelationType — only depends_on collapses onto dependencies.
+// Mirrors MCP `normalizeRelationType`.
 function normalizeRelationType(type: string): string {
   return type === 'depends_on' ? 'dependencies' : type;
 }
@@ -230,26 +177,8 @@ function malformedFrontmatterCount(doc: VaultHealthDoc): number {
   ).length;
 }
 
-// Mirror of mcp/src/ontology-compiler.mjs compileOntology — only the parts the
-// health verdict needs (alias map, edges, resolution, issue count).
-/**
- * A document without `kind:` is **not an ontology node** — it is ordinary markdown
- * living in the same folder: a design document, a backlog, a release note.
- *
- * Measured 2026-08-17: the MCP compiler does not count these as nodes (verified —
- * adding one `kind:`-less document leaves `nodes` at 1), while this mirror
- * **counted them all**. Against our own document folder (83 of 163 files are plain
- * markdown) the screen said "83 things to fix" and the CLI called the same vault
- * healthy.
- *
- * The top of this file exists to prevent exactly that — *"the insights surface must
- * agree with the CLI"* — yet the two disagreed on what a node even is. For a user
- * this is the worst kind of wrong answer: **a map that names 83 unfixable problems**
- * is not believed about anything afterwards.
- *
- * Gate: `plain markdown without kind: is not a node` in
- * `tests/fixtures/vault-health-cases.mjs`.
- */
+// The parts of `compileOntology` the health verdict needs.
+/** A document without `kind:` is plain markdown, not a node, as in the MCP compiler. */
 function isOntologyNode(doc: VaultHealthDoc): boolean {
   const kind = doc.frontmatter?.kind;
   return typeof kind === 'string' && kind.trim().length > 0;
@@ -322,12 +251,10 @@ function compile(input: readonly VaultHealthDoc[]): CompiledGraph {
   };
 }
 
-// Undirected connected components over resolved edges (mcp connectedComponentGroups
-// with typeSet=null → all edge types), then drop groups that are only ignored kinds.
+// Undirected components over resolved edges, dropping groups of ignored kinds only.
 function actionableComponentCounts(graph: CompiledGraph): {
   actionable: number;
   ignored: number;
-  /** actionable groups' member slugs, sorted largest-first. */
   actionableGroups: string[][];
 } {
   const kindBySlug = new Map(graph.nodes.map((n) => [n.slug, n.kind]));
@@ -382,12 +309,10 @@ function actionableComponentCounts(graph: CompiledGraph): {
   return { actionable, ignored, actionableGroups };
 }
 
-// mcp recommendRelations (missing_domain_containment): capability/element whose
-// `domain:` resolves to a domain that does not link back via capabilities /
-// elements / contains.
+// Mirrors MCP `missing_domain_containment`: a `domain:` the domain does not link back.
 function missingDomainContainment(graph: CompiledGraph): MissingContainmentTarget[] {
   const slugSet = new Set(graph.nodes.map((n) => n.slug));
-  // mcp resolveOptional: exact slug first, then single-target alias.
+  // Exact slug first, then a single-target alias (MCP `resolveOptional`).
   const resolveOptional = (input: unknown): string | null => {
     if (typeof input !== 'string' || !input.trim()) return null;
     const candidate = input.trim();
@@ -416,8 +341,7 @@ function missingDomainContainment(graph: CompiledGraph): MissingContainmentTarge
   return targets;
 }
 
-// mcp cycles over dependency edges (DFS, maxDepth 8). Mirrors the engine's
-// `cycles({types:['dependencies']})` totalCycles.
+// Dependency cycles up to MAX_DEPTH, matching the engine's `cycles({types:['dependencies']})`.
 function dependencyCycleCount(graph: CompiledGraph): number {
   const MAX_DEPTH = 8;
   const outByType = new Map<string, string[]>();
@@ -440,17 +364,9 @@ function dependencyCycleCount(graph: CompiledGraph): number {
   }
 
   /**
-   * Nodes that can reach `start` again within MAX_DEPTH, and their shortest
-   * distance in edges. A branch into anything outside this set **can never close a
-   * cycle**, so it is pruned — the result set is unchanged and only dead paths
-   * disappear.
-   *
-   * WHY: the browser runs this on the main thread. Measured before pruning, on
-   * 2000 nodes averaging 4 dependencies (strongly connected but with zero cycles of
-   * length ≤ 8): 6.3 s blocked. After pruning: tens of milliseconds. Count parity
-   * with the MCP engine is still enforced by
-   * `tests/contract/vault-health.contract.test.ts`.
-   */
+     * Nodes that can reach `start` within MAX_DEPTH, with distances; other branches cannot close a
+     * cycle and are pruned, which keeps a dense 2000-node graph on the main thread in milliseconds.
+     */
   const reverseDistances = (start: string): Map<string, number> => {
     const dist = new Map<string, number>();
     let frontier = [start];
@@ -469,7 +385,7 @@ function dependencyCycleCount(graph: CompiledGraph): number {
   };
 
   const normalizeCycle = (path: string[]): string => {
-    // path is a closed walk start..start; drop trailing repeat, rotate to min.
+    // A closed walk start..start: drop the repeat and rotate to the minimum.
     const ring = path.slice(0, -1);
     let minIdx = 0;
     for (let i = 1; i < ring.length; i += 1) {
@@ -493,8 +409,7 @@ function dependencyCycleCount(graph: CompiledGraph): number {
         continue;
       }
       if (visited.has(next) || path.length >= MAX_DEPTH) continue;
-      // If stepping to `next` leaves no budget to get back to start, this branch
-      // cannot form a cycle. (Cycle length = path.length + backDist ≤ MAX_DEPTH.)
+      // Cycle length = path.length + backDist ≤ MAX_DEPTH, or this branch cannot close.
       const back = backDist.get(next);
       if (back === undefined || path.length + back > MAX_DEPTH) continue;
       visited.add(next);
@@ -505,19 +420,13 @@ function dependencyCycleCount(graph: CompiledGraph): number {
 
   for (const slug of sortedSlugs) {
     const backDist = reverseDistances(slug);
-    if (backDist.size === 0) continue; // nothing reaches start — no cycle possible
+    if (backDist.size === 0) continue; // Nothing reaches start.
     dfs(slug, slug, [slug], new Set([slug]), backDist);
   }
   return cycleKeys.size;
 }
 
-/**
- * Capability slugs whose vault record cannot lead an agent to implementation.
- * This is the browser-side twin of `maintenance_plan`'s
- * `capability_without_evidence` predicate: either one canonical `path:` or one
- * resolved `elements:` relation is sufficient. A dangling element ref or a raw
- * source path placed inside `elements:` is not.
- */
+/** Capabilities with neither a `path:` nor a resolved `elements:` ref (MCP `capability_without_evidence`). */
 export function capabilitiesWithoutImplementationEvidence(
   docs: readonly VaultHealthDoc[],
 ): string[] {
@@ -538,10 +447,7 @@ export function capabilitiesWithoutImplementationEvidence(
     .sort();
 }
 
-/**
- * Compute the vault health verdict from raw frontmatter, matching the MCP
- * engine's `health()` for the six status-flipping checks.
- */
+/** The six status-flipping checks of MCP `health()`, from raw frontmatter. */
 export function computeVaultHealth(docs: readonly VaultHealthDoc[]): VaultHealthResult {
   const graph = compile(docs);
   const unresolvedEdges = graph.edges.filter((e) => !e.resolved && !e.external).length;
@@ -549,14 +455,11 @@ export function computeVaultHealth(docs: readonly VaultHealthDoc[]): VaultHealth
   const dependencyCycles = dependencyCycleCount(graph);
   const missingContainment = missingDomainContainment(graph);
   const relationRecommendations = missingContainment.length;
-  // Islands to reconnect = every actionable group except the largest (trunk).
+  // Every actionable group except the largest.
   const islands = actionableGroups.slice(1);
 
   const checks: VaultHealthCheck[] = [
-    // Ask whether there is anything to count first. With zero nodes the five checks
-    // below all pass for want of anything to fail, and the verdict reads "healthy" —
-    // leaving someone who pointed at the wrong folder no way to notice (measured
-    // 2026-08-16; the MCP engine had the same defect).
+    // An empty vault fails, or a wrong folder reads as healthy.
     { id: 'vault_present', status: graph.nodes.length === 0 ? 'fail' : 'pass', count: graph.nodes.length },
     { id: 'compile_issues', status: graph.issueCount === 0 ? 'pass' : 'warn', count: graph.issueCount },
     { id: 'unresolved_edges', status: unresolvedEdges === 0 ? 'pass' : 'warn', count: unresolvedEdges },
@@ -595,33 +498,13 @@ export function computeVaultHealth(docs: readonly VaultHealthDoc[]): VaultHealth
 }
 
 /**
- * **What an agent asked this vault for and did not get.**
- *
- * ## Why (2026-09-05)
- *
- * A relation *type* an agent invents never lands here — the write tools reject an
- * unknown `type` with a closest-value hint before touching a file, and that refusal is
- * returned to the caller and persisted nowhere. So the vault cannot say which relation
- * types agents keep reaching for.
- *
- * What it *can* say is the other half of the same question, and that half is on disk:
- * **a name written into frontmatter that no node in this vault answers to.** An agent
- * wrote `dependencies: [capabilities/holds-position]` because it believed that concept
- * existed. The reference is durable, dated by Git, and reviewable as a diff — and a
- * name three different nodes reached for is a concept this ontology is missing, not a
- * typo to swat.
- *
- * `computeVaultHealth` already counts these as `summary.unresolvedEdges` and stops at
- * the number. This returns the names behind it, grouped, so a person can read them.
- * It is the browser-side twin of the MCP maintenance plan's `resolve_dangling_reference`
- * action and resolves references exactly the way `compile()` does — the same aliases,
- * the same source-path exemption for `elements:` — so the two never disagree about what
- * is missing.
- */
+   * References no node answers to, grouped by name: concepts agents reached for that the vault
+   * lacks. Resolved exactly like `compile()`; MCP twin: `resolve_dangling_reference`.
+   */
 export interface UnmatchedGraphAsk {
-  /** The name written in frontmatter, verbatim. This vault has no node for it. */
+  /** The name as written in frontmatter. */
   ref: string;
-  /** The frontmatter keys it was written under, sorted. What the writer meant by it. */
+  /** The frontmatter keys it was written under, sorted. */
   relations: string[];
   /** How many `(node, key)` references asked for it. */
   count: number;
@@ -633,8 +516,7 @@ export function unmatchedGraphAsks(docs: readonly VaultHealthDoc[]): UnmatchedGr
   const graph = compile(docs);
   const grouped = new Map<string, { relations: Set<string>; sources: Set<string>; count: number }>();
   for (const edge of graph.edges) {
-    // `external` is an `elements:` source path — evidence pointing at code, not a
-    // concept this vault failed to hold.
+    // `external` is an `elements:` source path: evidence, not a missing concept.
     if (edge.resolved || edge.external) continue;
     const entry = grouped.get(edge.ref) ?? {
       relations: new Set<string>(),

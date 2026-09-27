@@ -5,48 +5,21 @@ import {
 } from './coverage-scopes';
 
 /**
- * **Crossing what the repository declares with what the vault knows the repository is for.**
- *
- * Every tool in this category scores a repository out of its files, and the one team that built one
- * and audited it against 21 real repositories found it gave an official reference implementation
- * the same verdict as an abandoned toy, because a file scan cannot tell "this is missing" from
- * "this is correctly absent". Telling those apart needs to know what a part of the repository is
- * **for**, and that is the one thing a vault records and a scanner cannot derive.
- *
- * So this module never grades. It joins two lists of facts:
- *
- * - **From the vault**: the domains recorded in files a person can read, correct and reject in a
- *   diff, each with the implementation paths its capabilities point at and the sentence saying what
- *   the domain is for. Not "approved": the vault's own approval keys are used by one node in 105,
- *   and the claim this screen may make is that the meaning is owned and overrulable, not signed.
- * - **From the repository**: files that declare a path scope (`coverage-scopes.ts`).
- *
- * A declaration lands in an area when a path it declares reaches a path the vault records for that
- * area. Nothing else puts it there. The output carries the declaration text with every entry so the
- * attribution is checkable, and it carries the empty cells as first-class results, because an empty
- * cell beside a sentence saying what the area is for is the only thing here a file scanner cannot
- * write.
- *
- * **No score, no grade, no percentage, no maturity level.** Counts are a census of what was found;
- * the judgement stays with the person reading it.
+ * Joins vault areas (what each part is for) with path scopes files declare. Empty cells are
+ * results, and nothing is scored or graded.
  */
 
-/** One capability the vault records, reduced to what the join needs. */
 export interface CoverageCapability {
   slug: string;
   title: string;
-  /** The canonical repo-relative implementation entrypoint the vault records. */
+  /** The canonical implementation entrypoint the vault records. */
   path: string;
 }
 
-/** One area of the repository, as the vault defines it. */
 export interface CoverageAreaInput {
   slug: string;
   title: string;
-  /**
-   * What this area is for, in the vault's own words. It is what makes an empty cell readable: "this
-   * area does X and no check names it" rather than "a file is absent".
-   */
+  /** The vault's sentence for this area, which makes an empty cell readable. */
   purpose: string;
   capabilities: readonly CoverageCapability[];
 }
@@ -55,35 +28,21 @@ export interface CoverageAreaRow extends CoverageAreaInput {
   told: readonly ScopeDeclaration[];
   gated: readonly ScopeDeclaration[];
   watched: readonly ScopeDeclaration[];
-  /**
-   * Test files sitting under this area's recorded paths, found by a runner's own discovery rather
-   * than by being named in a command. The second half of what an empty Watched cell means.
-   */
+  /** Test files a runner discovers under this area's paths. */
   discoveredTests: number;
 }
 
 export interface CoverageMatrix {
   areas: readonly CoverageAreaRow[];
-  /**
-   * Declarations that name no path at all. They reach every area by declaration, and are listed
-   * once rather than repeated down a column — repeating them would make eight identical hits look
-   * like eight separate findings.
-   */
+  /** Path-less declarations, listed once instead of repeated down a column. */
   everywhere: Readonly<Record<CoverageColumn, readonly ScopeDeclaration[]>>;
-  /** Areas with nothing in the Watched column. The one count the matrix makes possible. */
+  /** Areas with nothing in the Watched column. */
   unwatchedAreas: readonly string[];
   /** Areas with nothing in the Gated column. */
   ungatedAreas: readonly string[];
-  /**
-   * Capabilities no scoped guide reaches. A blank here is a finding about the repository, not about
-   * the mapping — and on a repository where it is empty, that is worth saying out loud.
-   */
+  /** Capabilities no scoped guide reaches. */
   unreachedCapabilities: readonly CoverageCapability[];
-  /**
-   * Declarations that name a path reaching none of the recorded areas. Neither universal nor
-   * attached to a row, so they are held here rather than silently dropped: a check scoped to a
-   * folder no capability points at is a fact about the vault's coverage of its own repository.
-   */
+  /** Declarations whose paths reach no recorded area, kept rather than dropped. */
   outsideAreas: readonly ScopeDeclaration[];
 }
 
@@ -93,22 +52,13 @@ function sortDeclarations(list: ScopeDeclaration[]): ScopeDeclaration[] {
   return list.sort((a, b) => a.label.localeCompare(b.label));
 }
 
-/**
- * Areas × declarations. Pure, and the only place the join rule lives, so the screen, the tests and
- * the contract read the same answer.
- */
+/** The only place the join rule lives. */
 export function buildCoverageMatrix(
   declarations: readonly ScopeDeclaration[],
   areas: readonly CoverageAreaInput[],
   testFiles: readonly string[] = [],
 ): CoverageMatrix {
-  /*
-   * A scope that reaches every recorded area is universal in fact even though it declares a path,
-   * and it belongs in the strip for the same reason a path-less one does: printed in every row it
-   * turns one fact into eight findings. Measured here — `pre-push`'s `^(src|app)/` reached all
-   * eight of this repository's domains, so the Gated column said one bit eight times and read as
-   * decoration (design-lead, 2026-09-13).
-   */
+  /* A scope reaching every area is universal in fact and goes to the strip, not every row. */
   const reachesEveryArea = (entry: ScopeDeclaration) =>
     areas.length > 1 &&
     areas.every((area) =>

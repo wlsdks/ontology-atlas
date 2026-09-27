@@ -32,42 +32,18 @@ export interface BuildOntologyReachabilityOptions {
   depth?: number;
   limit?: number;
   types?: readonly string[];
-  /** Relation types to exclude. Only for hiding specific relations during a structural walk. */
+  /** Relation types hidden from the walk. */
   excludeTypes?: readonly string[];
-  /**
-   * A pre-built index — pass it **only when calling repeatedly over the same graph**.
-   *
-   * Measured 2026-08-16. This function rebuilds the `nodeById` map and the adjacency lists
-   * from scratch on every call. That is the right design for a single call, since the caller
-   * has to hold nothing. But the impact ranking calls it once per node, rebuilding the index
-   * 2N times for N nodes, and that accounted for roughly **half** the measured cost:
-   *
-   * | Nodes | Time |
-   * |---:|---:|
-   * | 500 | 132ms |
-   * | 2,000 | 2.37s |
-   * | 8,000 | 51.8s |
-   *
-   * Building the index once outside removes that half. **No verdict changes** — the same
-   * material simply is not rebuilt.
-   *
-   * ⚠️ The index is **bound to `types` and `excludeTypes`.** Passing one built with different
-   * filters silently produces different answers, which is why `buildReachabilityIndex` takes
-   * those filters as arguments and forces the caller to use matching values.
-   */
+  /** A prebuilt index for repeated walks of one graph; it must match `types` and `excludeTypes`. */
   index?: ReachabilityIndex;
 }
 
-/** Index reused across repeated walks of the same graph with the same filters. */
 export interface ReachabilityIndex {
   nodeById: ReadonlyMap<string, KnowledgeGraphNode>;
   adjacency: ReachabilityAdjacency;
 }
 
-/**
- * Builds the index once. The filters are part of the index, so pass **the same values** you
- * will walk with.
- */
+/** The filters are part of the index, so walk with the same values. */
 export function buildReachabilityIndex(
   nodes: readonly KnowledgeGraphNode[],
   edges: readonly KnowledgeGraphEdge[],
@@ -106,14 +82,8 @@ const DEFAULT_LIMIT = 20;
 export const IMPACT_RELATION_TYPES: readonly string[] = ['depends_on'];
 
 /**
- * Single source for the blast-radius "dependents" count — how many nodes depend on this one
- * directly or transitively, i.e. the transitive closure of incoming `depends_on`. The drawer
- * (`reach.dependents`) and the changeset diff both call *this* function, so the number a
- * person reads and the number in an agent's brief cannot drift apart.
- *
- * `depth` = node count gives the full closure over cycles and long chains alike; the
- * discovered set blocks repeats. `limit: 1` because `summary.reachableNodes` is the total
- * regardless of limit — shrinking the visible layers just avoids the allocations.
+ * Transitive incoming `depends_on` closure, shared by the drawer and changeset diff. `depth` = node
+ * count reaches the full closure; `limit: 1` because the total ignores limit.
  */
 export function computeOntologyDependents(
   nodeId: string,
@@ -149,8 +119,7 @@ export function buildOntologyReachability(
     [startId, { id: startId, distance: 0 }],
   ]);
   const queue: DiscoveredNode[] = [{ id: startId, distance: 0 }];
-  // A head pointer makes dequeue O(1). `Array.shift()` is O(n) and turns this into O(n²) on
-  // large graphs — the same pattern depth.ts uses.
+  // Head pointer: O(1) dequeue, where `Array.shift()` would make this O(n²).
   let head = 0;
   const traversedEdges = new Map<string, KnowledgeGraphEdge>();
 

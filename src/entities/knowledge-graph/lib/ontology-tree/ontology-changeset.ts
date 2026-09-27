@@ -1,36 +1,21 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../../model";
 
 /**
- * What changed in the ontology — nodes and relations added / changed / removed relative
- * to a session baseline snapshot.
- *
- * **Why a snapshot and not a git diff.** The web and Tauri (WKWebView) runtimes are
- * browsers, so no git subprocess exists. For a human-facing change view (a meeting, a
- * design review) the natural baseline is a snapshot of "now". A git HEAD diff is offered
- * separately from the MCP/CLI side, which has Node.
- *
- * Pure functions — no React, no IO. Same input, same output.
+ * Nodes and relations changed against a session snapshot; the browser runtimes have no Git, so
+ * a Git diff comes from MCP/CLI instead. Pure.
  */
 
-// Field separator, U+0001. It can never occur in a slug, title or relation type, so the
-// join is collision-free. With an empty or ordinary separator, two different inputs whose
-// field boundary moved would concatenate to the same string (a+bc vs ab+c) and the change
-// would be missed. Written as a `\u0001` escape rather than a raw control character so it
-// stays visible in the source — an invisible literal is easily mistaken for "".)
+// U+0001 never occurs in a slug, title or type, so joined fields cannot collide (a+bc vs ab+c).
 const SEP = "\u0001";
 
 export interface OntologySnapshot {
-  /** nodeId → content signature (kind/title/summary plus sorted outgoing edges). */
+  /** nodeId → kind/title/summary plus sorted outgoing edges. */
   nodeSigs: Map<string, string>;
-  /**
-   * nodeId → kind. The signature is SEP-joined and cannot be parsed back, so kind is kept
-   * separately — otherwise the review UI could not show the kind of a removed node, which
-   * by definition is absent from the current graph.
-   */
+  /** Kept apart from the signature so a removed node's kind can still be shown. */
   nodeKinds: Map<string, string>;
-  /** Set of edge keys, `"from\u0001to\u0001type"` joined with SEP. */
+  /** `from`, `to` and `type` joined with SEP. */
   edgeKeys: Set<string>;
-  /** When the snapshot was taken (ms), stamped by the caller. Used for labels and sorting. */
+  /** Stamped by the caller, in ms. */
   takenAt: number;
 }
 
@@ -42,14 +27,9 @@ export interface OntologyChangeset {
   removedEdges: string[];
   /** Sum of added + removed + changed nodes and added + removed edges. */
   total: number;
-  /** Fast lookup of added|changed nodes, for UI highlighting. */
+  /** Added or changed nodes, for highlighting. */
   touchedNodeIds: Set<string>;
-  /**
-   * nodeId → kind for removed nodes, preserved from the baseline. A removed node is not in
-   * the current graph, so `nodeById` cannot supply its kind, and the review panel would be
-   * unable to say whether what was deleted was a domain or an element. added/changed nodes
-   * are still in the graph, so callers read their kind from `nodeById` directly.
-   */
+  /** Removed nodes' kinds from the baseline; present nodes' kinds come from `nodeById`. */
   removedNodeKinds: Map<string, string>;
 }
 
@@ -57,12 +37,7 @@ function edgeKey(edge: Pick<KnowledgeGraphEdge, "from" | "to" | "type">): string
   return `${edge.from}${SEP}${edge.to}${SEP}${edge.type}`;
 }
 
-/**
- * Content signature for one node; an unchanged signature counts as no change. Built from
- * kind/title/summary plus that node's sorted outgoing edges — this catches substantive
- * frontmatter changes (name, summary, relations added or removed) while ignoring noise
- * such as coordinates and timestamps.
- */
+/** Kind, title, summary and sorted outgoing edges; coordinates and timestamps are ignored. */
 function nodeSignature(
   node: KnowledgeGraphNode,
   outgoingByNode: Map<string, string[]>,
@@ -87,10 +62,7 @@ function buildOutgoingMap(edges: readonly KnowledgeGraphEdge[]): Map<string, str
   return map;
 }
 
-/**
- * Takes a baseline snapshot of the current graph. `takenAt` comes from the caller, so
- * `Date.now()` stays outside and this module stays pure.
- */
+/** `takenAt` comes from the caller so this stays pure. */
 export function snapshotOntology(
   nodes: readonly KnowledgeGraphNode[],
   edges: readonly KnowledgeGraphEdge[],
@@ -108,10 +80,7 @@ export function snapshotOntology(
   return { nodeSigs, nodeKinds, edgeKeys, takenAt };
 }
 
-/**
- * Computes what changed in the current graph relative to a baseline snapshot. A null
- * baseline means none has been set, which reports as no changes.
- */
+/** A null baseline reports no changes. */
 export function computeOntologyChangeset(
   baseline: OntologySnapshot | null,
   nodes: readonly KnowledgeGraphNode[],
@@ -181,21 +150,8 @@ export function computeOntologyChangeset(
 }
 
 /**
- * Marks one node's change as reviewed by advancing the baseline for that node alone. The
- * node then drops out of the changeset, and if an agent edits it *again* its signature
- * differs and it is flagged afresh — no change can slip through. Reusing the changeset
- * machinery instead of keeping a separate reviewed-set is what makes the count naturally
- * mean "not yet reviewed".
- *
- * **Non-destructive**: the vault `.md` files are untouched; only the in-memory baseline
- * advances. Always returns a *new* snapshot object, leaving the original intact, because
- * `useSyncExternalStore` needs the identity change to re-render.
- *
- * - Node present in the current graph (added|changed): refresh nodeSig/nodeKind and sync
- *   its outgoing edges (`from === nodeId`) into the baseline — drop the stale ones, add
- *   the current ones.
- * - Node absent from the current graph (removed): drop it from the baseline.
- * - Null baseline: there is nothing to acknowledge, so this is a no-op.
+ * Advances the baseline for one node only, so a later edit is flagged again. Returns a new
+ * snapshot for `useSyncExternalStore`; vault files are untouched. Null baseline: no-op.
  */
 export function acknowledgeNodeChange(
   baseline: OntologySnapshot | null,
@@ -208,8 +164,7 @@ export function acknowledgeNodeChange(
   const nodeKinds = new Map(baseline.nodeKinds);
   const edgeKeys = new Set(baseline.edgeKeys);
 
-  // Drop that node's stale outgoing edges from the baseline. The SEP terminates the
-  // prefix, so only `from === nodeId` matches — no prefix collisions.
+  // SEP ends the prefix, so only edges with `from === nodeId` match.
   const fromPrefix = `${nodeId}${SEP}`;
   for (const key of baseline.edgeKeys) {
     if (key.startsWith(fromPrefix)) edgeKeys.delete(key);
@@ -224,7 +179,6 @@ export function acknowledgeNodeChange(
       if (e.from === nodeId) edgeKeys.add(edgeKey(e));
     }
   } else {
-    // Acknowledging a removal drops the node from the baseline.
     nodeSigs.delete(nodeId);
     nodeKinds.delete(nodeId);
   }

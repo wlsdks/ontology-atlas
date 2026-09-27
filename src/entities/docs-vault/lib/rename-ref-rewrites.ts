@@ -10,24 +10,8 @@ import {
 } from './frontmatter-updates';
 
 /**
- * Rewrites one referrer document's references after a rename — frontmatter
- * graph refs AND body links.
- *
- * **Why it exists** (bug sweep 2026-09-01). The web rename rewrote only body
- * `[[wikilink]]` / `](x.md)` forms, while the primary graph of this product
- * lives in frontmatter relation keys (`dependencies:`, `capabilities:`, …).
- * Renaming a node in the web UI therefore orphaned every frontmatter relation
- * to it: backlinks vanished and the graph minted a phantom stub under the old
- * name — unlike MCP `rename_concept`, which rewrites the same key family. The
- * key set and the tail-rewrite rule mirror `mcp/src/vault.mjs`
- * `redirectBacklinks` (NEIGHBOR_KEYS + `domain` + `relation_notes`; a bare or
- * suffixed tail is rewritten only while it uniquely resolves).
- *
- * Markdown links are re-resolved with the same rules as
- * `extractOutLinksWithContext` (relative to the referrer's directory, `./` and
- * `..` honored) instead of substring-matched — the old regex demanded the full
- * slug inside the parentheses, so a same-directory relative link (`](foo.md)`)
- * was detected as a referrer but silently left dangling.
+ * Rewrites a referrer's frontmatter graph refs and body links after a rename, like MCP
+ * `redirectBacklinks`; links resolve like `extractOutLinksWithContext`, not by substring.
  */
 
 const REF_ARRAY_KEYS = [
@@ -35,10 +19,7 @@ const REF_ARRAY_KEYS = [
   'capabilities',
   'elements',
   'dependencies',
-  // `depends_on` is the schema's authoring alias for `dependencies`, and
-  // `broader` (is-a) is written by this web UI itself — omitting them here
-  // orphaned exactly the edges the map renders (2026-09-01 review): the MCP
-  // rewrite iterates every frontmatter key and never had the gap.
+  // `depends_on` and `broader` hold edges the map draws, so they are rewritten too.
   'depends_on',
   'broader',
   'relates',
@@ -56,11 +37,7 @@ function dirOf(slug: string): string {
 }
 
 export interface RenameRefContext {
-  /**
-   * A bare/suffixed tail may be rewritten only while it uniquely resolves to
-   * the renamed document. When two docs share the tail, rewriting "foo" would
-   * silently redirect whichever concept the author meant.
-   */
+  /** A bare tail is rewritten only while it uniquely names the renamed document. */
   canRewriteTail: boolean;
 }
 
@@ -73,7 +50,7 @@ export function computeRenameRefContext(
   return { canRewriteTail: tailMatches.length === 1 && tailMatches[0] === oldSlug };
 }
 
-/** Mirror of the MCP rewrite rule for one frontmatter ref string. */
+/** Mirrors the MCP rewrite rule for one ref. */
 function rewriteRefValue(
   value: string,
   oldSlug: string,
@@ -90,7 +67,7 @@ function rewriteRefValue(
   return value;
 }
 
-/** Does a written ref name `oldSlug` — the same matches `rewriteRefValue` rewrites? */
+/** Whether a ref names `oldSlug` by the rules `rewriteRefValue` uses. */
 function refNamesSlug(value: string, oldSlug: string, canRewriteTail: boolean): boolean {
   if (value === oldSlug) return true;
   if (!canRewriteTail) return false;
@@ -100,7 +77,7 @@ function refNamesSlug(value: string, oldSlug: string, canRewriteTail: boolean): 
 
 /** An entry a kind change moved from the list for the old kind to the list for the new one. */
 export interface ReferrerListMove {
-  /** The entry as it is written after the move (the new address, in the referrer's spelling). */
+  /** The entry after the move, in the referrer's spelling. */
   ref: string;
   from: ContainmentKey;
   to: ContainmentKey;
@@ -127,20 +104,8 @@ function stringList(value: unknown): string[] | null {
 }
 
 /**
- * Where a kind change puts the entries of one referrer that name the moved document.
- *
- * **Why it exists** (2026-09-26, map-edit review). The same-key rewrite gave a reclassified
- * document's referrers its new address but kept every entry in the list for its OLD kind, so a
- * domain read `capabilities: [..., elements/companion-memories]`: an element in the capability
- * list, resolving, flagged by nothing. A list named for a kind says what its entries are, so an
- * entry follows its document into the list for the new kind — appended, never twice, every other
- * entry left in its order — when the referrer's kind may keep that list (spec §5, the same table
- * as `containmentKeyFor` in `mcp/src/schema.mjs`). When it may not, the entry keeps its list and
- * is reported, rather than guessed into another relation. A `domain:` parent that is no longer a
- * domain has no list to move to at all, so it is reported the same way.
- *
- * Reads frontmatter as parsed, so the folder preview (`planKindChangeReferrers`) and the write
- * (`planReferrerRewrite`) reach the same verdict from the same function.
+ * A kind change moves each naming entry into the list for the new kind when the referrer's kind
+ * may keep it (spec §5, `containmentKeyFor`); otherwise the entry stays and is reported.
  */
 function planKindLists(
   frontmatter: Record<string, unknown>,
@@ -155,8 +120,7 @@ function planKindLists(
   const lists = new Map<ContainmentKey, string[]>();
   const moved: ReferrerListMove[] = [];
   const kept: ReferrerListKept[] = [];
-  // A list this plan rewrites, read once and then carried: the destination can receive entries
-  // from more than one source list.
+  // Lists are read once and carried, since a destination can receive from several sources.
   const working = (key: ContainmentKey): string[] =>
     lists.get(key) ?? [...new Set((stringList(frontmatter[key]) ?? []).map(rewrite))];
 
@@ -164,10 +128,9 @@ function planKindLists(
     const written = stringList(frontmatter[key]);
     if (!written) continue;
     const hits = [...new Set(written.filter(names).map(rewrite))];
-    // Already the list for its new kind: only the address changes, which the same-key pass does.
+    // Already in the new kind's list: the same-key pass changes the address.
     if (hits.length === 0 || destination === key) continue;
-    // A destination written as something other than a list of names cannot be re-serialized
-    // without losing what it holds, so that case is reported like a missing list.
+    // A destination that is not a list of names cannot be re-serialized, so it is reported.
     const destinationReadable =
       destination !== null &&
       (frontmatter[destination] === undefined || stringList(frontmatter[destination]) !== null);
@@ -220,21 +183,8 @@ function resolveMdTarget(target: string, referrerSlug: string): string {
 }
 
 /**
- * The moved document's own bytes, as they are written at the new address.
- *
- * **Why it exists** (2026-09-26, map-edit QA). A rename rewrote every referrer byte for byte
- * and then copied the moved file verbatim, so the file living at
- * `capabilities/mcp-tool-server-renamed.md` still declared
- * `slug: capabilities/mcp-tool-server` — the one document in the folder whose `slug:`
- * disagreed with its own path.
- *
- * The rule is MCP `rename_concept`'s (`mcp/src/tools/lifecycle.mjs`): `slug:` follows the
- * move **only when it mirrors the old file slug**. A different value is a user-facing alias
- * that other documents reference by that spelling (the dogfood project carries
- * `slug: ontology-atlas`), and a document with no `slug:` gains none — its path is its
- * address. `updates` carries any other frontmatter change that belongs to the same move (a
- * reclassify changes `kind:` in the same bytes), so the new file is written once and never
- * exists in a half-moved state.
+ * The moved document at its new address. `slug:` follows only when it mirrored the old file slug,
+ * as in MCP `rename_concept`; other values are aliases and are kept.
  */
 export function rewriteMovedDocSelf(
   raw: string,
@@ -253,21 +203,17 @@ export function rewriteMovedDocSelf(
 
 export interface ReferrerRewriteArgs {
   oldSlug: string;
-  /** Equal to `oldSlug` when the document changes kind without moving. */
+  /** Equal to `oldSlug` for a kind change without a move. */
   newSlug: string;
-  /** The referrer's own slug — markdown links resolve relative to its directory. */
+  /** Links resolve relative to the referrer's directory. */
   referrerSlug: string;
   canRewriteTail: boolean;
-  /**
-   * The document's kind after the move — passed **only when the move changes its kind**. Then
-   * an entry in a list named for a kind follows the document into the list for the new kind
-   * (`planKindLists`); a rename leaves every entry in the list it is in.
-   */
+  /** Set only when the kind changes; entries then follow into the new kind's list. */
   newKind?: string;
 }
 
 export interface ReferrerRewritePlan {
-  /** The referrer's bytes after the rewrite (identical to the input when nothing names the doc). */
+  /** Unchanged when nothing names the document. */
   text: string;
   moved: ReferrerListMove[];
   kept: ReferrerListKept[];
@@ -287,7 +233,6 @@ export function planReferrerRewrite(raw: string, args: ReferrerRewriteArgs): Ref
   const oldTail = tailOf(oldSlug);
   const newTail = tailOf(newSlug);
 
-  // ── frontmatter graph refs ──────────────────────────────────────────
   const { frontmatter } = parseFrontmatter(raw);
   const updates: Record<string, FrontmatterUpdateValue> = {};
   for (const key of REF_ARRAY_KEYS) {
@@ -301,7 +246,7 @@ export function planReferrerRewrite(raw: string, args: ReferrerRewriteArgs): Ref
       return rewritten;
     });
     if (changed && next.every((item): item is string => typeof item === 'string')) {
-      // Never append a duplicate when the new ref is already present.
+      // No duplicate when the new ref is already present.
       updates[key] = [...new Set(next)];
     }
   }
@@ -314,8 +259,7 @@ export function planReferrerRewrite(raw: string, args: ReferrerRewriteArgs): Ref
   const notes = frontmatter.relation_notes;
   if (notes && typeof notes === 'object' && !Array.isArray(notes)) {
     const entries = Object.entries(notes as Record<string, unknown>);
-    // Rewriting re-serializes the whole map, so refuse when any value is not a
-    // plain primitive — dropping an entry we cannot represent would be silent loss.
+    // Rewriting re-serializes the map, so refuse when a value is not a plain primitive.
     const representable = entries.every(
       ([, value]) =>
         typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean',
@@ -323,8 +267,7 @@ export function planReferrerRewrite(raw: string, args: ReferrerRewriteArgs): Ref
     if (representable) {
       let changed = false;
       const nextNotes: Record<string, string | number | boolean> = {};
-      // Untouched keys first: a note the user already wrote under the new name
-      // wins over the displaced old value (same collision rule as the MCP rewrite).
+      // A note already written under the new name wins (the MCP collision rule).
       for (const [key, value] of entries) {
         if (rewriteRefValue(key, oldSlug, newSlug, canRewriteTail) === key) {
           nextNotes[key] = value as string | number | boolean;
@@ -341,7 +284,6 @@ export function planReferrerRewrite(raw: string, args: ReferrerRewriteArgs): Ref
       if (changed) updates.relation_notes = nextNotes;
     }
   }
-  // ── a kind change: entries follow the document into the list for its new kind ──
   const kindLists = newKind
     ? planKindLists(frontmatter, { oldSlug, newSlug, canRewriteTail, newKind })
     : null;
@@ -352,21 +294,11 @@ export function planReferrerRewrite(raw: string, args: ReferrerRewriteArgs): Ref
     moved: kindLists?.moved ?? [],
     kept: kindLists?.kept ?? [],
   });
-  // A kind change in place moves no address, and re-resolving a link that already points at
-  // the document would only respell it (`./x.md` → `x.md`).
+  // A kind change in place moves no address; re-resolving would only respell links.
   if (oldSlug === newSlug) return plan(next);
 
-  // ── body links, on the (possibly frontmatter-updated) text ──────────
-  /*
-   * Wikilinks resolve the way `extractOutLinksWithContext` resolves them, not
-   * by raw substring (2026-09-01 review): inside the nested ontology/ vault a
-   * `[[capabilities/y]]` means `ontology/capabilities/y`, so matching the raw
-   * written form both missed the nested link that pointed at the renamed doc
-   * AND rewrote a nested link that pointed at a different root-level doc of
-   * the same name. Each target is resolved from the referrer, compared against
-   * the renamed slug, and written back in the referrer's own vault-relative
-   * form. The bare-tail shorthand keeps its unique-resolution guard.
-   */
+  /* Wikilinks resolve from the referrer, as in `extractOutLinksWithContext`, and are written back
+     * in its vault-relative form; the bare tail keeps its uniqueness guard. */
   next = next.replace(
     /(\[\[)([^\]|#]+)((?:[|#][^\]]*)?\]\])/g,
     (whole, open: string, target: string, rest: string) => {
@@ -382,8 +314,7 @@ export function planReferrerRewrite(raw: string, args: ReferrerRewriteArgs): Ref
       return `${open}${writtenNext}${rest}`;
     },
   );
-  // Markdown links: re-resolve each target against the referrer's directory and
-  // replace the ones that resolve to the renamed document.
+  // Markdown links resolved against the referrer's directory.
   next = next.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (whole, text: string, target: string) => {
     if (!target || target.startsWith('#') || /^https?:\/\//i.test(target)) return whole;
     if (!target.endsWith('.md') && !target.includes('.md#')) return whole;
@@ -395,19 +326,14 @@ export function planReferrerRewrite(raw: string, args: ReferrerRewriteArgs): Ref
   return plan(next);
 }
 
-/** What a kind change does to one referrer's lists — the preview row before Save. */
+/** A kind change's effect on one referrer's lists, previewed before Save. */
 export interface KindChangeReferrer {
   slug: string;
   moved: ReferrerListMove[];
   kept: ReferrerListKept[];
 }
 
-/**
- * Every referrer whose lists a kind change moves or leaves behind, read from the folder as it is
- * — what the quick patch names before Save. The same `planKindLists` verdict the write applies,
- * over the manifest's parsed frontmatter; referrers that only get the new address are omitted
- * (the move hint already says every reference follows). In the folder's order.
- */
+/** Referrers whose lists a kind change moves or leaves, in folder order; address-only ones are omitted. */
 export function planKindChangeReferrers(
   docs: ReadonlyArray<{ slug: string; frontmatter?: Record<string, unknown> }>,
   args: { oldSlug: string; newSlug: string; newKind: string },
