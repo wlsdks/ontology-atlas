@@ -185,13 +185,6 @@ struct TauriTextFile {
     last_modified: u128,
 }
 
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct TauriBinaryFile {
-    bytes: Vec<u8>,
-    last_modified: u128,
-}
-
 pub(crate) fn normalize_relative_path(relative_path: &str) -> Result<PathBuf, String> {
     let mut out = PathBuf::new();
     for component in Path::new(relative_path).components() {
@@ -2291,18 +2284,29 @@ fn read_vault_text_file(root_path: String, relative_path: String) -> Result<Taur
     })
 }
 
-#[tauri::command]
+/// A u64 LE mtime, then raw bytes: a serde `Vec<u8>` is one JSON number per byte.
+#[tauri::command(async)]
 fn read_vault_binary_file(
     root_path: String,
     relative_path: String,
-) -> Result<TauriBinaryFile, String> {
+) -> Result<tauri::ipc::Response, String> {
     let path = resolve_existing_inside(&root_path, &relative_path)?;
-    let bytes = fs::read(&path).map_err(|err| err.to_string())?;
-    let last_modified = metadata_mtime_ms(&path)?;
-    Ok(TauriBinaryFile {
-        bytes,
-        last_modified,
-    })
+    read_stamped_bytes(&path).map(tauri::ipc::Response::new)
+}
+
+fn read_stamped_bytes(path: &Path) -> Result<Vec<u8>, String> {
+    let mut file = fs::File::open(path).map_err(|err| err.to_string())?;
+    let metadata = file.metadata().map_err(|err| err.to_string())?;
+    let modified = metadata.modified().map_err(|err| err.to_string())?;
+    let last_modified = modified
+        .duration_since(UNIX_EPOCH)
+        .map_err(|err| err.to_string())?
+        .as_millis() as u64;
+    let mut stamped = Vec::with_capacity(8 + metadata.len() as usize);
+    stamped.extend_from_slice(&last_modified.to_le_bytes());
+    file.read_to_end(&mut stamped)
+        .map_err(|err| err.to_string())?;
+    Ok(stamped)
 }
 
 /// Temporary file, sync, then rename, so a crash leaves old or new content, never a
@@ -3782,6 +3786,23 @@ pub fn run() {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn a_binary_read_is_the_mtime_then_the_raw_bytes() {
+        let dir = std::env::temp_dir().join(format!("atlas-binary-read-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let file = dir.join("figure.png");
+        let body: Vec<u8> = (0..=255).collect();
+        std::fs::write(&file, &body).unwrap();
+
+        let stamped = super::read_stamped_bytes(&file).unwrap();
+
+        let (stamp, bytes) = stamped.split_at(8);
+        assert_eq!(bytes, body.as_slice());
+        let expected = super::metadata_mtime_ms(&file).unwrap() as u64;
+        assert_eq!(u64::from_le_bytes(stamp.try_into().unwrap()), expected);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
     #[test]
     fn a_logged_line_is_trimmed_and_capped() {
         assert_eq!(

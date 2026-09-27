@@ -326,10 +326,11 @@ export async function installHarnessRuntime(page: Page, options: { includeOverfl
             if (!files) return Promise.reject(new Error("unknown root"));
             const path = trim(args.relativePath);
             if (!(path in files)) return Promise.reject(new Error(`missing ${path}`));
-            return Promise.resolve({
-              bytes: [...new TextEncoder().encode(files[path])],
-              lastModified: mtime,
-            });
+            const body = new TextEncoder().encode(files[path]);
+            const stamped = new Uint8Array(8 + body.length);
+            new DataView(stamped.buffer).setBigUint64(0, BigInt(mtime), true);
+            stamped.set(body, 8);
+            return Promise.resolve(stamped.buffer);
           }
           case "vault_path_exists": {
             const files = treeFor(args.rootPath);

@@ -383,7 +383,7 @@ export async function installLibraryWorkHarness(
         }));
         if (command === "list_vault_directory") { const directory = relative(args.relativePath); const prefix = directory ? `${directory}/` : ""; const entries = new Map<string, "file" | "directory">(); for (const file of Object.keys(files)) { if (!file.startsWith(prefix)) continue; const rest = file.slice(prefix.length); if (!rest) continue; const [name, child] = rest.split("/"); entries.set(name, child ? "directory" : "file"); } return Promise.resolve([...entries].map(([name, kind]) => ({ name, kind }))); }
         if (command === "read_vault_text_file") { const path = relative(args.relativePath); if (!(path in files)) return Promise.reject(new Error(`missing ${path}`)); return Promise.resolve({ text: files[path], lastModified: mtimes[path] ?? nextMtime }); }
-        if (command === "read_vault_binary_file") { const path = relative(args.relativePath); if (!(path in files)) return Promise.reject(new Error(`missing ${path}`)); return Promise.resolve({ bytes: [...new TextEncoder().encode(files[path])], lastModified: mtimes[path] ?? nextMtime }); }
+        if (command === "read_vault_binary_file") { const path = relative(args.relativePath); if (!(path in files)) return Promise.reject(new Error(`missing ${path}`)); const body = new TextEncoder().encode(files[path]); const stamped = new Uint8Array(8 + body.length); new DataView(stamped.buffer).setBigUint64(0, BigInt(mtimes[path] ?? nextMtime), true); stamped.set(body, 8); return Promise.resolve(stamped.buffer); }
         if (command === "create_vault_text_file") {
           const path = relative(args.relativePath);
           if (Object.prototype.hasOwnProperty.call(files, path)) return Promise.resolve(false);

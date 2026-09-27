@@ -529,9 +529,9 @@ async function collectEntries(
   }
   const files = walked.entries;
   const entries: BuiltVaultEntry[] = [];
-  /* Sources are listed by size and mtime from native stamps, never opened (`getFile()` under
+  /* Sources and images are listed from native stamps, never opened (`getFile()` under
    * Tauri transfers the whole file). On the web a directory `File` is metadata only. */
-  const stamps = files.some((entry) => entry.kind === 'source')
+  const stamps = files.some((entry) => entry.kind !== 'md')
     ? await nativeStampIndex(root)
     : null;
   for (const entry of files) {
@@ -549,16 +549,17 @@ async function collectEntries(
       });
       continue;
     }
-    const file = await entry.handle.getFile();
     if (entry.kind === 'image') {
+      const stamp = stamps?.get(entry.relativePath);
       entries.push({
         relativePath: entry.relativePath,
-        lastModified: file.lastModified,
+        lastModified: stamp ? stamp.lastModified : (await entry.handle.getFile()).lastModified,
         handle: entry.handle,
         kind: 'image',
       });
       continue;
     }
+    const file = await entry.handle.getFile();
     const raw = await file.text();
     entries.push(buildMdEntry(entry, raw, file.lastModified));
   }
@@ -639,6 +640,15 @@ export async function rebuildLocalManifestIncremental(
         bytes,
         handle: entry.handle,
         kind: 'source',
+      });
+      continue;
+    }
+    if (entry.kind === 'image' && nativeStamp) {
+      entries.push({
+        relativePath: entry.relativePath,
+        lastModified: nativeStamp.lastModified,
+        handle: entry.handle,
+        kind: 'image',
       });
       continue;
     }

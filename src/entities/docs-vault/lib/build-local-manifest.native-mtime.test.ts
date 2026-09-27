@@ -193,3 +193,48 @@ describe('incremental rebuild with native stamps skips unchanged files', () => {
     expect(result.build.manifest.docs.length).toBe(5);
   });
 });
+
+describe('images are dated from native stamps', () => {
+  const WITH_IMAGES: Record<string, FakeFile> = {
+    ...FILES,
+    'assets/diagram.png': { text: 'png', lastModified: 700 },
+    'assets/photo.jpg': { text: 'jpg', lastModified: 800 },
+  };
+  const openedImages = (opens: Map<string, number>) =>
+    [...opens.keys()].filter((path) => path.startsWith('assets/'));
+  const lastModifiedOf = (entries: { relativePath: string; lastModified: number }[], path: string) =>
+    entries.find((entry) => entry.relativePath === path)?.lastModified;
+
+  it('opens no image on a full build when native stamps exist', async () => {
+    nativeVaultFingerprint.mockResolvedValue(stampsFor(WITH_IMAGES));
+
+    const opens = new Map<string, number>();
+    const built = await buildLocalManifestWithEntries(makeRoot(WITH_IMAGES, opens, '/vault'));
+
+    expect(openedImages(opens)).toEqual([]);
+    expect(lastModifiedOf(built.entries, 'assets/photo.jpg')).toBe(800);
+  });
+
+  it('opens no changed image on an incremental rebuild', async () => {
+    nativeVaultFingerprint.mockResolvedValue(stampsFor(WITH_IMAGES));
+    const seed = await buildLocalManifestWithEntries(makeRoot(WITH_IMAGES, new Map(), '/vault'));
+    const changed: Record<string, FakeFile> = {
+      ...WITH_IMAGES,
+      'assets/diagram.png': { text: 'png2', lastModified: 999 },
+    };
+    nativeVaultFingerprint.mockResolvedValue(stampsFor(changed));
+
+    const opens = new Map<string, number>();
+    const result = await rebuildLocalManifestIncremental(makeRoot(changed, opens, '/vault'), seed.entries);
+
+    expect(openedImages(opens)).toEqual([]);
+    expect(lastModifiedOf(result.entries, 'assets/diagram.png')).toBe(999);
+  });
+
+  it('still reads each image on the web, where no stamps exist', async () => {
+    nativeVaultFingerprint.mockResolvedValue(null);
+    const opens = new Map<string, number>();
+    await buildLocalManifestWithEntries(makeRoot(WITH_IMAGES, opens));
+    expect(openedImages(opens).sort()).toEqual(['assets/diagram.png', 'assets/photo.jpg']);
+  });
+});
