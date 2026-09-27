@@ -63,7 +63,6 @@ describe("DomainCompositionRows", () => {
     fireEvent.click(orders);
 
     expect(orders).toHaveAttribute("aria-expanded", "true");
-    // All of them, not "the top 2" — the number with nowhere to go ("N more capabilities") disappears.
     expect(screen.getByText("주문 생성")).toBeInTheDocument();
     expect(screen.getByText("주문 취소")).toBeInTheDocument();
     expect(screen.getByText("주문 조회")).toBeInTheDocument();
@@ -77,7 +76,6 @@ describe("DomainCompositionRows", () => {
     const boxes = screen.getAllByTestId("project-detail-domain-disclosure");
     expect(boxes[0]).toHaveAttribute("data-state", "open");
     expect(boxes[1]).toHaveAttribute("data-state", "closed");
-    // The collapsed side leaves the tab order and the screen reader (what is not visible is not read).
     expect(boxes[1]).toHaveAttribute("inert");
   });
 

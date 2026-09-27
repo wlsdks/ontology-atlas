@@ -21,7 +21,6 @@ describe("stripDuplicateHeading draws the title once", () => {
     expect(stripDuplicateHeading(body, "이름")).toBe(body);
   });
 
-  // A heading with the same name in the middle of the body is a meaningful section there.
   it("keeps a same-name heading in the middle of the body", () => {
     const body = "앞선 문단.\n\n# 이름\n\n뒷 문단.";
     expect(stripDuplicateHeading(body, "이름")).toBe(body);

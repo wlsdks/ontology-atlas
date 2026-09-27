@@ -67,17 +67,7 @@ vi.mock("@/shared/lib/use-document-title", () => ({
   useDocumentTitle: vi.fn(),
 }));
 
-/*
- * **A partial mock — the barrel is not replaced wholesale.**
- *
- * The only stub needed here is `useToast` (this renders without the provider). But it used to replace the
- * entire barrel with `{ useToast }`, so the test broke **the moment the component used one more thing**
- * from that barrel — which really happened when `controlClass` was added, dying with *"No controlClass
- * export is defined on the @/shared/ui mock"* and staying that way on `main`.
- *
- * `controlClass` is a pure function needing no provider, so there was never a reason to mock it.
- * Spreading the original and overriding only what is needed stops this class of failure recurring.
- */
+/* Only `useToast` is stubbed; replacing the whole barrel breaks on the next export the page uses. */
 vi.mock("@/shared/ui", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/shared/ui")>()),
   useToast: () => ({ show: vi.fn() }),

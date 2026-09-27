@@ -16,9 +16,7 @@ function doc(overrides: Partial<VaultDoc> & Pick<VaultDoc, "slug" | "updatedAt">
     linksOut: [],
     ...overrides,
   };
-  // Both production paths (`scripts/build-docs-vault.mjs`, `build-local-manifest.ts`) fill
-  // `doc.description` **only from that frontmatter key**. The fixture matches — a fixture filling only
-  // one side would be testing a document that cannot actually exist.
+  // Production fills `doc.description` only from the frontmatter key, so the fixture does too.
   if (typeof merged.description === "string" && merged.frontmatter.description === undefined) {
     merged.frontmatter = { ...merged.frontmatter, description: merged.description };
   }
@@ -63,9 +61,7 @@ describe("resolveRecentActivityAgo", () => {
 
 describe("buildRecentActivityRows", () => {
   it("sorts vault docs by real mtime desc, resolves kind + nearest domain title, skips project/readme noise", () => {
-    // `doc.slug` is the full vault-relative path (including the "ontology/" root prefix, matching
-    // `deriveDocNode`'s doc.slug convention) — that a real node id uses only the file tail is this test's
-    // core regression point.
+    // Full vault-relative slugs, while node ids use only the file tail.
     const docs: VaultDoc[] = [
       doc({
         slug: "ontology/elements/topology-map-canvas",
@@ -141,8 +137,6 @@ describe("buildRecentActivityRows", () => {
   });
 
   it("does not fall back to the excerpt without a description, like the card body", () => {
-    // `node.summary` is excluded from the fallback too: that value itself falls back to `doc.excerpt`, so
-    // keeping it lets the excerpt back in via one detour.
     const docs: VaultDoc[] = [
       doc({
         slug: "ontology/elements/a",
@@ -173,7 +167,6 @@ describe("buildRecentActivityRows", () => {
     const rows = buildRecentActivityRows([written], new Map(), new Map(), 4);
 
     expect(rows[0].what).toBe("지도 뷰 단일 컨테이너 변환 엔진");
-    // Same document, same verdict — one source shared with the card-body consumer.
     expect(resolveAuthoredDescription(written)).toBe("지도 뷰 단일 컨테이너 변환 엔진");
   });
 

@@ -23,12 +23,6 @@ function makeProject(slug: string, name: string): Project {
   };
 }
 
-/**
- * The static-mode fallback (15 `SEED_PROJECTS`) was removed. Those seeds described **already-removed
- * features as fact** (Firebase Hosting, Sigma/WebGL, a whitelist admin), and since `/project/[slug]`
- * routes are generated from the vault those slugs were unreachable to begin with. Better to say "it does
- * not exist" than to describe a product that does not.
- */
 describe("resolveSubscribeUpdate", () => {
   it("returns next=null when the slug is not in the current list, so the caller shows not-found", () => {
     const result = resolveSubscribeUpdate([makeProject("other", "Other")], "iam");

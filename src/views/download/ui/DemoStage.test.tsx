@@ -11,16 +11,7 @@ import {
   hasDemoClips,
 } from '../model/demo-clips';
 
-/**
- * The front-page demo section — locks the playback contract.
- *
- * What this file protects is the **properties of playback**: one clip, muted, no loop, per-locale
- * assets, the poster surviving under reduced-motion, and no section at all without an asset.
- *
- * Values (length, frame share) are verified **only against footage**, and that gate is
- * `/motion-verify` plus ffprobe. This file does not claim them — a check that passes before the
- * shoot pretending to guarantee post-shoot quality is a false green.
- */
+/** Playback properties only; length and framing are checked against footage by `/motion-verify`. */
 const wrap = (ui: React.ReactNode) => (
   <NextIntlClientProvider locale="en" messages={messages}>
     {ui}
@@ -54,25 +45,13 @@ describe('DemoStage', () => {
   });
 
   it('plays one clip with no picker, since choosing what to watch costs a first impression', () => {
-    /*
-     * There used to be two, split across tabs. Most people watch only the first tab and leave, so
-     * the second clip became something made but never watched (owner-confirmed 2026-08-03).
-     * Reverting turns this red.
-     */
     expect(DEMO_CLIPS).toHaveLength(1);
     render(wrap(<DemoStage available={['atlas-tour']} />));
     expect(screen.getByTestId('demo-stage')).toBeInTheDocument();
     expect(screen.queryByTestId('demo-tablist')).toBeNull();
   });
 
-  /**
-   * Muted, looping, no controls, nothing preloaded.
-   *
-   * `loop` and the absence of `controls` both **reverse** earlier decisions (2026-07-29 "no
-   * loop"; the control bar that a 199-second tour needed for scrubbing). The owner reversed them
-   * on 2026-08-23 for a nine-second clip, and `docs/DECISIONS.md` carries the reasoning — this
-   * asserts the state so that going back is a deliberate act with a ledger entry, not a drift.
-   */
+  /** Loop and no controls reverse earlier decisions (`docs/DECISIONS.md`); going back needs a new one. */
   it('plays muted in an endless loop with no controls and no preload', () => {
     render(wrap(<DemoStage available={['atlas-tour']} />));
     const video = screen.getByTestId('demo-video-atlas-tour') as HTMLVideoElement;
@@ -86,11 +65,6 @@ describe('DemoStage', () => {
   });
 
   it('picks assets by locale because the text inside the video is in that language', () => {
-    /*
-     * This is not the structure where one master had captions swapped. The video itself is filmed
-     * per language, so the locale is baked into the path — breaking this makes a Korean user watch
-     * an English screen.
-     */
     const clip = DEMO_CLIPS[0];
     expect(demoSources(clip, 'ko')[0].src).toContain('.ko.');
     expect(demoSources(clip, 'en')[0].src).toContain('.en.');
@@ -98,8 +72,6 @@ describe('DemoStage', () => {
   });
 
   it('offers webm first with mp4 as the fallback', () => {
-    // The primary visitor is on macOS (i.e. Safari), and Safari's AV1 depends on hardware support —
-    // there must be somewhere to fall back to.
     const [first, second] = demoSources(DEMO_CLIPS[0], 'en');
     expect(first.type).toBe('video/webm');
     expect(second.type).toBe('video/mp4');
@@ -112,22 +84,7 @@ describe('DemoStage', () => {
     expect(screen.queryByTestId('demo-caption-atlas-tour')).toBeNull();
   });
 
-  /**
-   * **The observer must follow the `<video>` across the locale remount.**
-   *
-   * The element is keyed on the locale, and the locale arrives late: static export freezes the
-   * first paint as `en` and hydration corrects it, so on a Korean page React throws the first
-   * `<video>` away and mounts a second one. An effect that does not list `locale` keeps observing
-   * the discarded node, and a detached node never intersects — the clip simply never starts.
-   *
-   * This is not hypothetical. Measured 2026-08-22 in Chromium at 1512×982 with the section fully
-   * in view: `/en/` reached `currentTime` 2.97s, `/ko/` sat at 0 and paused. It had been live
-   * since `key={locale}` landed on 2026-08-20.
-   *
-   * What is asserted is the property, not the dependency array: **whatever is being observed is
-   * the element that is actually in the document.** Writing it the other way — grepping the deps —
-   * would pass for any spelling that happens to include the word and fail for a correct rewrite.
-   */
+  /** Asserts the observed element is the one in the document, not the effect's dependency list. */
   it('observes the new video when a late locale remounts it', () => {
     const observed: Element[] = [];
     const disconnect = vi.fn();
@@ -148,7 +105,6 @@ describe('DemoStage', () => {
     const first = screen.getByTestId('demo-video-atlas-tour');
     expect(observed.at(-1), 'the first render did not observe the video, so this test is vacuous').toBe(first);
 
-    // Hydration corrects `lang`; the component re-reads it on its next render and the key flips.
     act(() => {
       document.documentElement.lang = 'ko';
     });
@@ -164,8 +120,6 @@ describe('DemoStage', () => {
   });
 
   it('turns on only when both the registry and the asset list have the clip', () => {
-    // Switching on from file existence alone would put a half-uploaded asset straight into the
-    // first-impression slot.
     expect(availableDemoClips([])).toHaveLength(0);
     expect(availableDemoClips(['atlas-tour'])).toHaveLength(1);
   });

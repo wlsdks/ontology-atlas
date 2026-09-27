@@ -1,26 +1,9 @@
 /**
- * The hero atlas — **the real vault as a lit object** (three.js, 2026-09-08).
- *
- * The owner, on the wireframe dome: *"the disc need not be ASCII; if anything, make it in
- * three.js, not a disc, something cooler and prettier."* This is that object. The placement is
- * the map's own Cone view (`buildDomeModel`, arrangement `ownership`), so the hero draws the same
- * object the map draws: the project at the apex, domains on a ring below it, each domain's
- * capabilities under it in its own sector, elements as dust at the base. What the map's canvas
- * cannot do and WebGL can (the 2026-09-06 probe's own list): lit solids that occlude, thick
- * lines, and a bloom on the marks that carry attention. No planes, no rims — the shape is the
- * tree itself.
- *
- * Contracts kept from the 2D engine so every measured gate holds:
- *   - the typing echo (`hero-echo.ts`): the headline's typed characters light the dots, in tier
- *     then clockwise order, and the last character lights the last dot;
- *   - hover → one real edge fact (`onHover(slug)`), the caption line under the stage;
- *   - `litCount()` and `nodesOnScreen()` for the inspection window under `?e2e=1`;
- *   - the gateway's shared frame loop (`gateway-frame-loop.ts`): one rAF, sleeps after 30 s;
- *   - reduced motion: no orbit, no currents, one still frame per state.
- *
- * Bloom is not a post-process (a transparent canvas and `UnrealBloomPass` do not agree); it is
- * an additive sprite behind the project and the domains, sized by the mark, which is the same
- * light in fewer passes.
+ * The real vault as a lit three.js object, placed by the map's own cone (`buildDomeModel`).
+ * It keeps the 2D engine's contracts the gates measure: the typing echo, one edge fact on hover,
+ * the `litCount()`/`nodesOnScreen()` probes under `?e2e=1`, the shared frame loop, and a still
+ * reduced motion.
+ * Bloom is additive sprites: `UnrealBloomPass` does not work on a transparent canvas.
  */
 
 import * as THREE from 'three';
@@ -52,26 +35,14 @@ export interface AtlasOptions {
   tokenEl?: Element;
   reducedMotion?: boolean;
   onHover?: (slug: string | null) => void;
-  /**
-   * Where the object's centre sits: fractions of the canvas, or — below the split, where the
-   * stage is a plinth under the stacked text — a fixed height above the canvas's bottom edge,
-   * the same `bottomPx` the 2D engine took.
-   */
+  /** Canvas fractions, or below the split a fixed height above the bottom edge. */
   anchor?: { x: number; y: number } | { x: number; bottomPx: number };
-  /** Overall brightness multiplier for the stage (the wide split dims the ground). */
   dim?: number;
-  /** Camera distance in object radii — larger draws the object smaller. */
+  /** In object radii. */
   distance?: number;
-  /**
-   * The object's width on screen in CSS pixels; when set, the camera distance follows the
-   * canvas height so the object keeps this size across viewports (the 2D engine's `fitPx`).
-   */
+  /** On-screen width in CSS pixels; the camera distance follows the canvas height to keep it. */
   fitPx?: number;
-  /**
-   * Camera pitch in radians above the object's plane. The split width looks across the cone
-   * (0.5); below it the object is the ground under the decision block and is seen from higher up,
-   * so it reads as a plane and keeps its ink out of the type.
-   */
+  /** Radians; below the split the object is seen from higher up so its ink stays out of the type. */
   pitch?: number;
 }
 
@@ -93,7 +64,6 @@ function cssVar(el: Element, name: string, fallback: string): string {
   return v || fallback;
 }
 
-/** A soft radial disc for the additive bloom sprites. */
 function haloTexture(): THREE.Texture {
   const size = 128;
   const c = document.createElement('canvas');
@@ -101,8 +71,7 @@ function haloTexture(): THREE.Texture {
   c.height = size;
   const g = c.getContext('2d')!;
   const grad = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-  // A white alpha ramp on an offscreen canvas texture: the sprite's own material tints it with
-  // the accent token, so no colour is written here — only the falloff.
+  // White alpha only: the sprite material tints it with the accent token.
   // eslint-disable-next-line no-restricted-syntax -- canvas gradient stop; a CSS variable cannot reach a texture
   grad.addColorStop(0, 'rgba(255,255,255,0.9)');
   // eslint-disable-next-line no-restricted-syntax -- canvas gradient stop
@@ -119,8 +88,7 @@ function haloTexture(): THREE.Texture {
 export function mountHeroAtlas(canvas: HTMLCanvasElement, data: AtlasData, opts: AtlasOptions = {}): AtlasHandle | null {
   let renderer: THREE.WebGLRenderer;
   try {
-    // `preserveDrawingBuffer`: the gates read the stage's pixels through a 2D copy of the last
-    // frame (`download-gateway-grid.spec.ts`), which a discarded buffer would hand back blank.
+    // Keep the drawing buffer, or `download-gateway-grid.spec.ts` reads a blank copy of the frame.
     renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'low-power', preserveDrawingBuffer: true });
   } catch {
     return null;
@@ -135,13 +103,11 @@ export function mountHeroAtlas(canvas: HTMLCanvasElement, data: AtlasData, opts:
   const inkDim = new THREE.Color(cssVar(rootEl, '--color-text-quaternary', '#61626c'));
 
   renderer.setClearColor(0x000000, 0);
-  // 1.5 is where a sphere's edge stops showing steps on a Retina display; 2 doubles the fill
-  // cost for nothing a reader can see through the fog.
+  // 1.5 hides sphere edge steps on Retina; 2 doubles fill cost for nothing visible through fog.
   renderer.setPixelRatio(Math.min(1.5, window.devicePixelRatio || 1));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
 
-  // ── placement: the map's own cone, normalised to a unit radius ──────────────────────────
   const parentOf = new Map<string, string>();
   for (const e of data.edges) if (e.y === 'contains') parentOf.set(e.b, e.a);
   const domeNodes: DomeInputNode[] = data.nodes.map((n) => ({ id: n.s, kind: n.k, x: 0, y: 0, parentId: parentOf.get(n.s) ?? null }));
@@ -164,20 +130,15 @@ export function mountHeroAtlas(canvas: HTMLCanvasElement, data: AtlasData, opts:
   const nodes = data.nodes.filter((n) => pos.has(n.s));
   const bySlug = new Map(nodes.map((n) => [n.s, n] as const));
 
-  // ── echo order and per-node visibility ramps ──────────────────────────────────────────
   const order = echoOrder(nodes.map((n) => ({ s: n.s, k: n.k, px: pos.get(n.s)!.x, pz: pos.get(n.s)!.z })));
   const rank = new Map(order.map((s, i) => [s, i] as const));
   const vis = new Map<string, number>(nodes.map((n) => [n.s, 0] as const));
   let litTarget = 0;
   let echoing = true;
 
-  // ── scene ───────────────────────────────────────────────────────────────────────────────
   const scene = new THREE.Scene();
-  // Depth is a fact of the object, so the far side sinks toward the page's own ground colour —
-  // the same fog ramp the 2D engine used (near 1.0, far dimmer), here as real scene fog.
   const ground = new THREE.Color(cssVar(rootEl, '--gateway-fx-deep', '#050506'));
-  // Measured off the camera distance: the near side keeps its full ink, the far side loses about
-  // half by the object's back edge, never all of it (the 2D engine's floor was 0.22).
+  // Fog follows the camera distance: the back edge loses about half its ink, never all.
   let camDistance = opts.distance ?? 3.4;
   scene.fog = new THREE.Fog(ground, camDistance - 0.2, camDistance + 2.4);
   const fog = scene.fog;
@@ -193,7 +154,6 @@ export function mountHeroAtlas(canvas: HTMLCanvasElement, data: AtlasData, opts:
 
   const camera = new THREE.PerspectiveCamera(30, 1, 0.05, 50);
 
-  // Nodes: one instanced mesh per kind, lit solids that occlude.
   const sphere = new THREE.SphereGeometry(1, 20, 14);
   const materials: Record<DomeViewKind, THREE.MeshStandardMaterial> = {
     project: new THREE.MeshStandardMaterial({ color: accent, emissive: accentBright, emissiveIntensity: 1.3, roughness: 0.28, metalness: 0.15 }),
@@ -214,7 +174,6 @@ export function mountHeroAtlas(canvas: HTMLCanvasElement, data: AtlasData, opts:
     meshes[k] = mesh;
   }
 
-  // Bloom: additive sprites behind the project and the domains.
   const halo = haloTexture();
   const haloSprites: { s: string; sprite: THREE.Sprite; base: number }[] = [];
   for (const n of [...byKind.project, ...byKind.domain]) {
@@ -227,17 +186,14 @@ export function mountHeroAtlas(canvas: HTMLCanvasElement, data: AtlasData, opts:
     haloSprites.push({ s: n.s, sprite, base });
   }
 
-  // The floor: one wide additive pool of the accent under the object, so the tree stands in
-  // its own light instead of floating on nothing. Flat on the ground plane, no rim, no edge.
+  // An accent pool under the object, so the tree stands in its own light.
   const floorMat = new THREE.SpriteMaterial({ map: halo, color: accent, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0 });
   const floor = new THREE.Sprite(floorMat);
   floor.scale.set(3.2, 1.1, 1);
   floor.position.set(0, minY === Infinity ? -0.6 : (minY - midY) / maxR - 0.08, 0);
   group.add(floor);
 
-  // Lines: contains as thin fat-lines, the spine heavier, depends as accent arcs — and each
-  // depends arc twice: a wide faint pass under a thin bright one, which is a glow without a
-  // post-process.
+  // Each depends arc is drawn twice, wide and faint under thin and bright: a glow without post-processing.
   const lineRes = new THREE.Vector2(1, 1);
   const containsMat = new LineMaterial({ color: inkSoft.getHex(), linewidth: 1.1, transparent: true, opacity: 0.42, depthWrite: false });
   const spineMat = new LineMaterial({ color: ink.getHex(), linewidth: 1.8, transparent: true, opacity: 0.55, depthWrite: false });
@@ -302,14 +258,12 @@ export function mountHeroAtlas(canvas: HTMLCanvasElement, data: AtlasData, opts:
     dependsLine = swap(dependsLine, dep, dependsMat);
   };
 
-  // Currents: one bright bead per lit depends arc, travelling it.
   const beadGeom = new THREE.SphereGeometry(0.011, 10, 8);
   const beadMat = new THREE.MeshBasicMaterial({ color: accentBright, transparent: true, opacity: 0.95 });
   const beads = new THREE.InstancedMesh(beadGeom, beadMat, Math.max(1, dependsEdges.length));
   beads.count = 0;
   group.add(beads);
 
-  // ── camera and interaction state ──────────────────────────────────────────────────────
   let W = 1;
   let H = 1;
   let tiltYaw = 0;
@@ -330,16 +284,14 @@ export function mountHeroAtlas(canvas: HTMLCanvasElement, data: AtlasData, opts:
     renderer.setSize(W, H, false);
     camera.aspect = W / H;
     if (opts.fitPx) {
-      // A unit radius projects to (H/2)/(d·tan(fov/2)) pixels; solve for the distance that
-      // draws the object `fitPx` wide, and keep the fog ramp tied to that distance.
+      // A unit radius projects to (H/2)/(d·tan(fov/2)) pixels; solved for d at `fitPx`.
       camDistance = H / (opts.fitPx * Math.tan((camera.fov * Math.PI) / 360));
       fog.near = camDistance - 0.2;
       fog.far = camDistance + 2.4;
     }
     const ax = opts.anchor?.x ?? 0.5;
     const ay = opts.anchor && 'bottomPx' in opts.anchor ? 1 - opts.anchor.bottomPx / H : (opts.anchor?.y ?? 0.5);
-    // The view offset moves the projection's centre to the anchor, so the object sits where the
-    // 2D engine put it (72%/60% at the split width) without moving the scene.
+    // The view offset moves the projection centre to the anchor without moving the scene.
     camera.setViewOffset(W, H, (0.5 - ax) * W, (0.5 - ay) * H, W, H);
     camera.updateProjectionMatrix();
     lineRes.set(W, H);
@@ -385,7 +337,6 @@ export function mountHeroAtlas(canvas: HTMLCanvasElement, data: AtlasData, opts:
   const frame = (dtMs: number): void => {
     if (disposed) return;
     const dim = opts.dim ?? 1;
-    // Echo ramps: a lit node swells in on its own time constant.
     let changed = false;
     const k = 1 - Math.exp(-dtMs / ECHO_TAU_MS);
     for (const n of nodes) {
@@ -401,7 +352,6 @@ export function mountHeroAtlas(canvas: HTMLCanvasElement, data: AtlasData, opts:
     }
     if (!changed && !reduced && litTarget >= nodes.length) echoing = false;
 
-    // Instances: scale by visibility (a 0.6 → 1 swell with a little give at the end).
     for (const kind of Object.keys(meshes) as DomeViewKind[]) {
       const mesh = meshes[kind]!;
       const list = byKind[kind];
@@ -428,14 +378,11 @@ export function mountHeroAtlas(canvas: HTMLCanvasElement, data: AtlasData, opts:
     spineMat.opacity = 0.55 * dim;
     dependsMat.opacity = 0.9 * dim;
     dependsGlowMat.opacity = 0.16 * dim;
-    // The floor arrives with the object: its light is the sum of what is lit.
     let litShare = 0;
     for (const v of vis.values()) litShare += v;
     floorMat.opacity = 0.28 * dim * (nodes.length ? litShare / nodes.length : 0);
-    // A slow bob — a body at rest still breathes; 14 s, 0.02 of the radius, none under reduced motion.
     group.position.y = reduced ? 0 : Math.sin((clock / 14_000) * Math.PI * 2) * 0.02;
 
-    // Currents along the lit depends arcs.
     if (!reduced) {
       clock += dtMs;
       let count = 0;
@@ -453,7 +400,6 @@ export function mountHeroAtlas(canvas: HTMLCanvasElement, data: AtlasData, opts:
       beads.instanceMatrix.needsUpdate = true;
     }
 
-    // Camera: a slow orbit, a lean toward the pointer, both time-based.
     const kt = 1 - Math.exp(-dtMs / TILT_TAU_MS);
     tiltYaw += (tiltYawT - tiltYaw) * kt;
     tiltPitch += (tiltPitchT - tiltPitch) * kt;
@@ -472,7 +418,6 @@ export function mountHeroAtlas(canvas: HTMLCanvasElement, data: AtlasData, opts:
     renderer.render(scene, camera);
   };
 
-  // The shared gateway loop: one rAF, asleep after 30 s without input, awake on any input.
   let unregister: (() => void) | null = null;
   if (reduced) {
     frame(16);

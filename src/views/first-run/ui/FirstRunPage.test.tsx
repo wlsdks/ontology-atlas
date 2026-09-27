@@ -10,11 +10,7 @@ interface MockVault {
   openRecent: ReturnType<typeof vi.fn>;
   forgetRecent: ReturnType<typeof vi.fn>;
   scaffoldOntology: ReturnType<typeof vi.fn>;
-  /**
-   * The launch chooser's inputs (2026-09-13). This screen is also the installed app's
-   * launch chooser, so it reads the known-folder list; an empty list renders nothing and
-   * keeps every case below measuring the first-run screen it was written for.
-   */
+  /** Empty by default, so the first-run cases see no launch chooser list. */
   recentVaults: unknown[];
   awaitingVaultChoice: boolean;
   storedVaultRecord: unknown | null;
@@ -92,15 +88,8 @@ function makeVault(): MockVault {
 type StarterRequest = { locale: string; shape?: { map: boolean; wiki: boolean } };
 
 /**
- * A vault double that behaves like the installed app around a creation door.
- *
- * - **The screen is swapped away while the folder opens.** The shell puts its opening pane where
- *   this page was as soon as the status turns `opening`, and the root entry puts the map there once
- *   a manifest exists, so the page never renders again. `open`/`openRecent` unmount it at exactly
- *   that moment.
- * - **An empty folder**, with a disk the test can read. The starter can land the two ways the real
- *   session offers — a `starter` request riding the open, or `scaffoldOntology()` on the open folder
- *   — so what is asserted is the disk, not which call carried it.
+ * Unmounts the page when the folder starts opening, as the shell does, over an empty folder
+ * whose disk the test reads, so either starter route is asserted by its result.
  */
 function swappingVault(unmountPage: () => void) {
   const disk: string[] = [];
@@ -152,7 +141,6 @@ describe('FirstRunPage', () => {
     expect(screen.getByTestId('first-run-create')).toBeInTheDocument();
     expect(screen.queryByTestId('first-run-demo')).not.toBeInTheDocument();
     expect(screen.getByText('trustLine')).toBeInTheDocument();
-    // There is never a CTA inside the installed app telling you to download it.
     expect(screen.queryByText(/download/i)).not.toBeInTheDocument();
   });
 
@@ -168,7 +156,6 @@ describe('FirstRunPage', () => {
   it('keeps every action card keyboard-operable (focusable native button/link)', () => {
     render(<FirstRunPage />);
 
-    // Native button/a elements — focusable, with Enter activation guaranteed by the browser.
     const open = screen.getByTestId('first-run-open');
     const create = screen.getByTestId('first-run-create');
     expect(open.tagName).toBe('BUTTON');
@@ -205,12 +192,6 @@ describe('FirstRunPage', () => {
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
-  /*
-   * D1, 2026-09-25: "Just start" and "Create a new folder" opened a folder that stayed empty,
-   * with no error and no toast, 3 runs out of 3. The starter was written by an effect waiting for
-   * this page's next render, and the installed app never renders it again once the folder starts
-   * opening. These two cases swap the page away exactly as the shell does and read the disk.
-   */
   it('just start leaves its starter on disk and says where, though the page is swapped away mid-open', async () => {
     tauriFsMocks.isTauriVaultRuntime.mockReturnValue(true);
     let unmountPage = () => undefined as void;
@@ -261,7 +242,6 @@ describe('FirstRunPage', () => {
     await waitFor(() => {
       expect(toastMocks.show).toHaveBeenCalledWith('starterFailed', 'error');
     });
-    // Not a success sentence about a folder that holds nothing.
     expect(toastMocks.show).not.toHaveBeenCalledWith(expect.stringContaining('justStartToast'), 'success');
   });
 
@@ -281,7 +261,6 @@ describe('FirstRunPage', () => {
     fireEvent.click(screen.getByTestId('first-run-just-start'));
     fireEvent.click(screen.getByTestId('first-run-shape-wiki'));
 
-    // The door asks what the folder will hold; the answer rides into the open.
     await waitFor(() => {
       expect(mocks.vault.openRecent).toHaveBeenCalledWith(
         expect.objectContaining({ name: 'my-ontology' }),
@@ -323,15 +302,6 @@ describe('FirstRunPage', () => {
     });
   });
 
-  /**
-   * **This screen is the installed app's launch chooser too.**
-   *
-   * `AppShell` sends every workbench route to `/` while the installed app has no vault
-   * loaded, and `RootEntryPage` renders this screen there - so when the cold restore stops
-   * to ask which folder, this is where the person lands. A chooser that existed only on
-   * `/docs` would have been invisible on the owner's launch, and on a wiki-only vault
-   * `/docs` is not even a destination.
-   */
   describe('as the launch chooser', () => {
     function folder(name: string) {
       return {
@@ -354,17 +324,9 @@ describe('FirstRunPage', () => {
 
       render(<FirstRunPage />);
 
-      // The list is drawn once its reachability probe has answered, not a frame before.
       expect(await screen.findByTestId('recent-vault-list')).toBeTruthy();
       expect(screen.getAllByTestId('recent-vault-row')).toHaveLength(2);
-      /*
-       * The *rendered wording* of the facts line is asserted in a real browser against the
-       * real catalogue (`tests/e2e/vault-launch-chooser.spec.ts` matches "3 documents" and
-       * "2 concepts"), because this file renders without an i18n provider and would only be
-       * measuring message keys. What this case owns is the structure the wording hangs on:
-       * a row per known folder, and exactly one of them marked.
-       */
-      // Exactly one row is marked as the folder the last session had open.
+      /* Wording is checked against the real catalogue by `tests/e2e/vault-launch-chooser.spec.ts`. */
       expect(
         document.querySelectorAll('[data-testid="recent-vault-row"][data-current="true"]'),
       ).toHaveLength(1);
@@ -384,8 +346,6 @@ describe('FirstRunPage', () => {
     });
 
     it('shows no folder list on a genuine first run', () => {
-      // The screen this file was written for is unchanged: an empty list renders nothing,
-      // so a first-time person is not shown an empty "folders Atlas knows" heading.
       mocks.vault.recentVaults = [];
 
       render(<FirstRunPage />);

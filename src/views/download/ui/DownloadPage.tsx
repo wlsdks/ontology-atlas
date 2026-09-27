@@ -39,150 +39,40 @@ import { useVisitorDesktopPlatform } from '../lib/visitor-platform';
 import type { StageGraph } from '../lib/stage-graph';
 
 /**
- * **This page's grid is one grid** (council verdict, 2026-07-29 — it survives the remake).
- *
- * Everything starts at one alignment origin and stops at `--gateway-page-max`. Five
- * elements, one x: GNB, headline, map section, caption, footer.
- *
- * ```
- * origin = max(--gateway-gutter, (viewport − --gateway-page-max) / 2)   ← --gateway-origin
- * ```
- *
- * The owner's report (*"The left and right must match"* — the left and right must match) and why `mx-auto`
- * was rejected live in the origin doc-blocks of `shared/lib/gateway-frame.ts` and
- * `app/globals.css`. This file's only job is seating every section's content inside
- * `PAGE_GUTTER` + `PAGE_COLUMN`. Gate: `tests/e2e/download-gateway-grid.spec.ts` reads the
- * origin live and measures equal side margins and resize tracking.
- *
- * [Retired 2026-08-18] The old camera reserve width (derived from
- * `--map-safe-inset-left`) was arithmetic from when the map was the background behind
- * the panel. Once the map moved down into its own (evidence) section the two became
- * structurally unable to overlap, and the derivation (`computeGatewaySafeInset`) and its
- * consumers were deleted.
- *
- * [Retired 2026-08-19] The install section (three steps, the panel, the verification rail)
- * disappeared entirely, taking with it the assertions that used the panel as their yardstick —
- * owner: *"The last one can go; it's all at the top anyway"* (the last one can go; it's
- * all at the top anyway). The hero carries all four destinations.
+ * One grid: every section's content sits in `PAGE_GUTTER` + `PAGE_COLUMN`, starting at
+ * max(--gateway-gutter, (viewport − --gateway-page-max) / 2), the --gateway-origin
+ * (`shared/lib/gateway-frame.ts`, `tests/e2e/download-gateway-grid.spec.ts`).
  */
 
-/** Rhythm between sections — the value's source of truth is `--gateway-section-gap` (160px). */
 const SECTION_GAP = 'mt-[var(--gateway-section-gap)]';
 
 /**
- * `/download` — **the living screen** (owner-approved remake, 2026-08-18, `docs/DECISIONS.md`).
- *
- * ## This screen's job
- *
- * > A first-time visitor recognizes, within 30 seconds, the problem of «cognitive debt piling
- * > up while agents write the code» as their own problem, watches the product **move**, and
- * > downloads the file for their machine without getting lost.
- *
- * ## Four sections, one idea each (owner-confirmed skeleton, revised 2026-08-19)
- *
- * ① Hero — type (the monument headline, the owner's sentence verbatim) plus the hero object
- *    (a depth projection of the real graph) plus one filled CTA. The map was **pulled out** of
- *    the first screen (owner call) and returns to its own place in the evidence section.
- * ② Demo — plays itself once it enters the viewport, and the screen says honestly that the
- *    attached clip is provisional.
- * ③ Evidence — the real map engine assembles once in front of the viewer, and the census
- *    caption arrives after assembly finishes (the numbers are the *result* of assembly). The
- *    caption lives in the same section as the map.
- * ④ Agents — one measured round trip of the in-app conversation (ACP), plus three still cards
- *    (reworked 2026-08-18 — the old `mcp-verify` terminal was rejected by the owner).
- *
- * ## [Deleted 2026-08-19] ⑤ Install and download
- *
- * Owner: *"The last one can go; it's all at the top anyway"* (the last one can go; it's
- * all at the top anyway). The hero carries all four destinations (my platform, Intel, Windows,
- * browser), so the panel was asking the same decision a second time. Gone with it: the three
- * install steps, the download panel, and the verification rail — and the **four honesty facts**
- * that rail alone carried (SHA-256 checksum, Developer ID signature, notarization, "nothing is
- * sent to a server") are now nowhere on this page. The owner accepted that cost explicitly
- * (`docs/DECISIONS.md` 2026-08-19). Only two sentences of release policy remain, in the colophon.
- *
- * The motion discipline is "informational motion only" (owner: *"Motion matters on the download page, since showing is the best we can do"* — motion matters on the download page, since showing is the
- * best we can do). The effect layer (the current field, the grain, the cursor ring) is the
- * sealed `--gateway-fx-*` exception (see the `GatewayFx` doc-block).
- *
- * ## Two clocks — the first screen runs on time, everything below runs on scroll (2026-08-22)
- *
- * ① **The hero is owned by time.** The first-three-seconds choreography (150/220 headline →
- *    700 lead → 800 CTA → 950 facts strip) is unchanged. What changed is one trigger: the start
- *    frame moved into `@starting-style`, so **the first style computation** begins the
- *    choreography (it used to be a rAF after hydration). So a late or failed JS load no longer
- *    leaves the hero blank. It used to — measured, the first screenshot held only the GNB, and
- *    what stood behind it was 32 JS files, 2,572 KB decoded. The full story is in the
- *    `.gateway-rise` doc-block in `app/globals.css`.
- *
- * ② **The three sections below are owned by scroll.** Owner: *"We want smooth motion too, something nice as you scroll"* (we want smooth motion too, something nice as you
- *    scroll). With `animation-timeline: view()` the sole input to progress is how far the
- *    element has entered the scrollport — scroll slowly and it arrives slowly, stop and it
- *    stops. It uses neither rAF nor a scroll listener, so it adds not one frame to this page's
- *    single frame loop. `useInViewOnce` was **not removed** — it carries the same entrance in
- *    browsers without `view()` (two paths, one choreography).
- *
- * So "the foreground is permanently still after it appears" is still true. Nothing fades back
- * out or rewinds, and what has arrived stays put — only what *calls* the arrival differs per
- * section. Measured across three widths (1512, 834, 390) × 21 scroll positions: **zero** elements
- * fully inside the viewport and stuck faded.
- *
- * Under `prefers-reduced-motion: reduce` the scroll-choreography declarations **do not exist** —
- * the sections are fully visible from the start (measured: zero animations on those elements).
- * Contract: `tests/contract/reduced-motion-equivalent.contract.test.ts` turns red if those
- * declarations leak outside `no-preference`.
- */
-/**
- * The hero's download CTA **wraps at 320px**.
- *
- * `buttonVariants` sets `whitespace-nowrap`, so a long label pushes the button through its
- * container. That is the right default — button text wrapping anywhere stops reading as a
- * control. The problem was that at the narrowest width the slack was zero: measured at 320px,
- * `en`, macOS fonts, "Download Windows x64 beta + unsigned" was 296px wide with overflow of
- * **exactly 0**. Zero is not passing, it is **waiting for the next pixel** — on Linux CI's font
- * stack the same label overflowed by 9px and the gate went red (2026-08-19).
- *
- * Three fixes were possible and two were rejected. ① Shorten the label — dropping "x64" or
- * "beta" blurs what file you get. ② Hide "unsigned" at narrow widths — that a build is unsigned
- * is something a visitor must know **before pressing** (the honest-degradation contract in
- * `.claude/rules/surfaces.md`), so a narrow screen cannot erase it. That leaves ③ **wrapping**:
- * a two-line button at 320px is not a flaw, and from `sm:` it is one line as before.
- *
- * `text-left` is required with it — a centred two-line wrap misaligns the left edges of icon and
- * text, and the label reads as two fragments.
+ * The CTA wraps below `sm`: its longest label overflows 320px, and neither "unsigned" nor the
+ * file's name may be cut (`.claude/rules/surfaces.md`). Left-aligned, or a two-line wrap splits
+ * the icon from the text.
  */
 const HERO_CTA_WRAP = 'min-w-0 whitespace-normal text-left sm:whitespace-nowrap';
 
+/**
+ * Serves /download and / (`docs/DECISIONS.md` 2026-08-18): a hero on its own clock, then sections
+ * that arrive on scroll through `animation-timeline: view()`, absent under reduced motion
+ * (`tests/contract/reduced-motion-equivalent.contract.test.ts`). The install section and its
+ * checksum facts were removed on purpose (`docs/DECISIONS.md` 2026-08-19).
+ */
 export function DownloadPage() {
   const pathname = usePathname() ?? '/';
   const tFooter = useTranslations('footer');
   const published = isMacosReleasePublished();
-  // Apple Silicon is the default suggestion — nearly every Mac sold since late 2020 is one.
   const primaryAsset = published ? macosAssetFor('aarch64') : null;
-  /**
-   * Does the bottom tab bar stand on this screen? This view lives at two addresses and they
-   * differ: `/download` hides the tab bar, `/` raises it. The verdict uses the same function as
-   * the tab bar itself — each listing its own routes lets one side drift (measured 17px, 2026-08-06).
-   */
+  /** The tab bar's own function: `/` shows the bar and `/download` hides it, and two lists drift. */
   const bottomTabBarPresent = !shouldHideBottomTabBar(pathname, false);
-  /**
-   * One hook feeds the hero object, the evidence section's map, and the census caption — this
-   * single line is the honesty contract that the numbers the screen claims and the graph it
-   * draws are the same object (locked by `DownloadPage.test.tsx`).
-   */
+  /** One graph for the hero, the map and the caption, so the numbers and the drawing agree. */
   const graph = useStageGraph();
-  /**
-   * Which file this screen is talking about — decided **once** (2026-09-02). The hero's CTA, its
-   * trust line, the facts strip, and the closing band at the page's end all read this pair; the
-   * 2026-08-22 defect (a Windows visitor shown a DMG's checksum) was two of them deciding alone.
-   */
+  /** Decided once for the CTA, trust line, facts strip and closing band, or they disagree. */
   const visitorPlatform = useVisitorDesktopPlatform();
   const windowsInstaller = windowsAsset();
   const windowsPrimary = visitorPlatform === 'windows' && windowsInstaller !== null;
-  /**
-   * The winner of the hero's filled control. `file` — the platform's file; `web` — the browser
-   * map, which wins when there is nothing to download or when the visitor holds a phone.
-   */
+  /** The browser map wins when there is nothing to download or the visitor holds a phone. */
   const winner: 'file' | 'web' =
     published && primaryAsset && visitorPlatform !== 'handheld' ? 'file' : 'web';
 
@@ -200,20 +90,11 @@ export function DownloadPage() {
           winner={winner}
           graph={graph}
         />
-        {/* The demo is second (owner, 2026-09-08): a person sees it move before reading what is
-            in it; the live map follows, then the folder's other screens on one stage
-            (2026-09-24), then the agents. */}
         <DemoSection />
         <EvidenceSection graph={graph} />
         <ScreensSection />
         <AgentSection />
 
-        {/*
-         * **The bottom band** — the colophon. Only the reading links, the two release-policy
-         * sentences, and the license live here (the verification list went with the install
-         * section on 2026-08-19). The tab-bar reserve idiom is unchanged from before the
-         * remake (only `/` raises a tab bar).
-         */}
         <div
           data-testid="download-bottom-band"
           data-gateway-bottom-reserve-token={
@@ -246,10 +127,7 @@ export function DownloadPage() {
                 <span aria-hidden>·</span>
                 <span className="font-mono">{tFooter('stack')}</span>
               </div>
-              {/* Nominative use: the names say what Atlas connects to, and the line
-                  states that no affiliation is claimed. Marks themselves follow the
-                  stricter rule in docs/features/agents.md — a service's own glyph only where
-                  its published brand guideline was read and permits it. */}
+              {/* Nominative use; marks follow the stricter rule in docs/features/agents.md. */}
               <p className="mt-3 max-w-[var(--measure-doc-column)] break-keep text-[color:var(--color-text-quaternary)]">
                 {tFooter('trademarks')}
               </p>
@@ -261,21 +139,7 @@ export function DownloadPage() {
   );
 }
 
-// ─── Shared section parts ───────────────────────────────────────────────────
-
-/**
- * Section head — eyebrow (mono caps plus an accent dot), title, subtitle.
- *
- * The title is `--text-display` (23px), correcting the hierarchy inversion where the old
- * section title (14px) was smaller than a card title (16px). Eyebrow labels keep the same mono
- * notation in both locales, while their words come from the locale catalog so the Korean page
- * does not introduce an English label before each Korean sentence.
- *
- * [Retired 2026-09-25] The `centered` variant. The demo section was the page's one centred
- * block, so the page ran two alignment grammars (measured 1512: its head's ink at x≈508–930
- * while every other section's text began at the origin, x=200). Every head now starts at the
- * origin; the demo answers its narrower stage by standing the head beside it (`DemoSection`).
- */
+/** Every head starts at the origin; eyebrow words are localized, never an English label first. */
 function SectionIntro({
   eyebrow,
   title,
@@ -285,17 +149,11 @@ function SectionIntro({
   title: string;
   sub?: string;
 }) {
-  /*
-   * A section head is still. Until 2026-08-30 its three lines rose on the scroll timeline and
-   * the stage beneath them rose again, four entrances per section and twelve on the page — every
-   * one of them said "something arrived" and none of them said what. Now one thing per section
-   * moves, the stage (`gateway-scroll-stage`), because it is the one thing with mass; the head
-   * that names it is simply there when the reader gets to it.
-   */
+  /* Still: only the stage below it moves, one entrance per section. */
   return (
     <>
       <p className="flex items-center gap-2 font-mono text-label uppercase leading-label tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
-        {/* A static dot — a signal is a state, and there is no state here, so it does not blink. */}
+        {/* Static: there is no state for it to signal. */}
         <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-[color:var(--color-indigo-brand)]" />
         {eyebrow}
       </p>
@@ -311,32 +169,10 @@ function SectionIntro({
   );
 }
 
-// ─── ① Hero — type, object, one filled CTA ──────────────────────────────────
-
 /**
- * The first three seconds (owner-confirmed): 0–150ms the background paints in its still state →
- * 150/220ms the two headline lines rise from their own line boxes → 240ms eyebrow and lead →
- * 320ms CTA → 400ms trust line and instrument strip (2026-09-03; it was 700/800/950 — the CTA
- * stood invisible yet hit-testable for 920ms, and the typing already says "arriving"). After that the foreground is permanently
- * still. Every delay lives in CSS (`gateway-t***`); JS only adds one `is-in` class on the frame
- * after mount.
- *
- * ## The headline is the owner's sentence, verbatim — not one character is polished
- *
- * "Agents write the code / a person's cognitive debt piles up". The size is `--text-monument` (clamp 40px–96px) — with
- * the map out of the first screen, the type inherits that weight (ramp registration in
- * `app/globals.css` and `cn.ts`).
- *
- * ## Layout — a monument measure plus a split band (second revision of the approved mockup, 2026-08-18)
- *
- * Implementing the mockup's "headline left / object right" split with the headline inside the
- * column broke the monument when measured: at 1728 the text column was 800px against a Korean
- * line budget of 916/1009px — the two sentences split into four lines, leaving `write code` and
- * `piles up` stranded as rag lines. A monument is a monument only when **sentence = line**. So
- * the headline uses the full column as its measure (an `@container` wrapper declares it, and
- * `--text-monument`'s 4.8cqw sizes against that measure), and the split starts with the band
- * below it: lead, CTA, and trust line on the left, the hero object (a depth projection of the
- * real graph) as the right column. Below `lg` the object drops beneath the type as a plinth.
+ * Every entrance delay lives in CSS (`gateway-t***`); JS adds one `is-in` class after mount, and
+ * the foreground is still afterwards. The headline is the owner's sentence verbatim, one line per
+ * sentence at every width, so it measures against the full column.
  */
 function HeroSection({
   published,
@@ -357,33 +193,19 @@ function HeroSection({
   const t = useTranslations('download');
   const [heroIn, setHeroIn] = useState(false);
   useEffect(() => {
-    // Inside a rAF callback, so this is not a synchronous setState in the effect body — the
-    // choreography starts on the frame after the first paint (the still background).
+    // The frame after the still first paint; not a synchronous setState in the effect body.
     const id = requestAnimationFrame(() => setHeroIn(true));
     return () => cancelAnimationFrame(id);
   }, []);
-  /** The typing echo: what the headline has typed is what the object has lit (`HeroObject`). */
   const [typing, setTyping] = useState({ typed: 0, total: 0 });
   const onTyping = useCallback((typed: number, total: number) => {
     setTyping((prev) => (prev.typed === typed && prev.total === total ? prev : { typed, total }));
   }, []);
 
   /**
-   * The hero CTA's four destinations (owner, 2026-08-18: *"There is no Windows download button and no web playground button.. I don't even know if 'see the demo first' is a button"* — there is no
-   * Windows download button and no web playground button, and "see the demo first" does not even
-   * read as a button):
-   * ① get it for my platform (filled — the sole attention winner) ② see the demo first
-   * (outline lg) ③ every other desktop file (outline md, one step down) ④ open in the browser
-   * (outline md). Detection happens in one client place (`useVisitorDesktopPlatform`) and falls
-   * back to macOS — every branch keeps all four destinations reachable.
-   *
-   * When Windows is the winner, the unsigned fact is stated **before pressing**, in the trust
-   * line slot (`trustLineWindows`) — exactly the grammar by which a macOS visitor reads about
-   * signing and notarization in the same slot. In the demoted version (the Windows button on the
-   * second row) the `unsigned` marker beside the label does the same job. [2026-08-19] The
-   * install section that carried the full warning text and the checksum was deleted, so this
-   * trust line and its mirror in the closing band (2026-09-02) are the only places that fact
-   * lives — shortening the copy here deletes the fact.
+   * Every branch keeps all four destinations reachable. Windows' unsigned status is stated before
+   * pressing, in the trust line or beside a demoted label; this line and the closing band are the
+   * only places it lives, so shortening the copy deletes the fact.
    */
   const releaseTag = published
     ? MACOS_RELEASE.tag
@@ -400,30 +222,16 @@ function HeroSection({
   ];
 
   return (
-    /* **The hero is as tall as what it says** (2026-09-25). From 2026-09-02 it claimed the
-       viewport below the chrome at the split width, so the facts strip stood on the fold. The
-       copy is ≈440px tall and the fold 884px (1512×949), so that claim was ≈440px of slack with
-       nowhere good to go: under the CTAs it was a 370px empty lower-left column, and split above
-       and below the copy it was a 250px empty band under the chrome (h1 at y=347; 391 at 1920).
-       Every placement moved the void. Now the hero ends at the strip and the section rhythm
-       follows, so the fold holds the headline, the decision, the strip and the start of the demo
-       — the next thing to look at, instead of nothing. */
+    /* As tall as its copy, not the viewport, or the fold holds an empty band instead of the demo. */
     <section
       data-testid="gateway-hero"
       className={cn(PAGE_GUTTER, 'relative flex w-full flex-col')}
     >
-      {/* The monument measure — the headline uses the full column as its measure. `@container`
-          declares that measure and `--text-monument` (4.8cqw) sizes against it, so both sentences
-          stay on one line each at every width of the split hero (the budget arithmetic is in the
-          token doc-block). */}
-      {/* The stage — the dome is the ground of the whole first screen (2026-09-02, owner: *"I
-          wanted cool motion or a background effect"*). It sits behind the type at every width;
-          the monument, the decision band, and the strip stack above it on `z-[1]`. */}
+      {/* Behind the type at every width; the text stacks above it on `z-[1]`. */}
       <HeroAtlas graph={graph} typed={typing.typed} total={typing.total} />
 
-      {/* `pointer-events-none` on the two wrappers, `pointer-events-auto` on what they hold: the
-          wrappers span the whole column, and the stage behind them takes the hand wherever the
-          type is not — measured, a full-width band ate the hover over the plane's apex. */}
+      {/* Wrappers pass the pointer through, so the stage behind takes the hand wherever the type is not.
+          The container sizes `--text-monument` against the full column, one line per sentence. */}
       <div className={cn(PAGE_COLUMN, '@container pointer-events-none relative z-[1] min-w-0 pt-12 md:pt-16')}>
         <p
           className={cn(
@@ -438,46 +246,24 @@ function HeroSection({
         </p>
 
         <h1
-          // The visible characters are `aria-hidden`, so the heading is named here — once.
+          // The visible characters are aria-hidden.
           aria-label={heroSentence(heroLines)}
           className={cn(
             'pointer-events-auto mt-6 w-fit break-keep text-monument font-[var(--font-weight-signature)] tracking-[var(--tracking-monument)] text-[color:var(--color-text-primary)]',
           )}
         >
-          {/* Typed one character at a time (`HeroTypewriter` owns the cadence and the caret).
-              The first line is one step down in ink, making the hierarchy — the second line
-              (a person's debt) is the sentence's subject — out of brightness. */}
+          {/* The first line is a step down in ink: the second line is the sentence's subject. */}
           <HeroTypewriter start={heroIn} lines={heroLines} onProgress={onTyping} />
         </h1>
       </div>
 
-      {/* The split band — lead, CTA, and trust line on the left, the object as the right column.
-          `items-center` puts the object's centre of mass on the same axis as the decision block
-          (lead → CTA).
-
-          ⚠️ **The split waits for a column that can hold the decision** (2026-08-30). It opened at
-          `lg`, where the page column is 624px: the object took its 320px minimum, the decision
-          block got 256px, and the Windows button (304px) ran into the object. From 1024 to 1439
-          all five destinations stood one per row. Now the split opens at `xl` and the decision
-          block never drops below 500px, which is what the widest pair of destinations needs to
-          share a row; below that the object sits under the text with the whole column. */}
       <div
         className={cn(
           PAGE_COLUMN,
-          // One column since 2026-09-02: the object left the band for the stage behind it. The
-          // decision block keeps the 40rem measure the lead already had, so the dome's near side
-          // (anchored at 68% of the width) stays right of the type at the split width.
           'pointer-events-none relative z-[1] min-w-0 pb-6 pt-7 min-[90rem]:pb-7',
         )}
       >
-        {/* The old `lg:pb-14` optical correction was returned (owner, 2026-08-18: *"Too much space at the top"* — too much space at the top; measured at 1512, the correction lifted the
-            decision block 28px, leaving 108px of empty lower-left between the block's bottom and
-            the canvas bottom, which in turn made the object look pushed down). Now that the CTA
-            wraps to two lines and the block is closer to the canvas height, plain `items-center`
-            is also optically correct. */}
-        {/* The lead keeps the 40rem measure; the decision row below it is allowed its own width
-            so the three controls stand on one line in English at the split (`gateway-stage-width`
-            owns 48rem — the demo stage's number — so this is not that). */}
+        {/* Wider than the lead's 40rem so the three English controls share one line at the split. */}
         <div className="pointer-events-auto min-w-0 max-w-[45rem]">
           <p
             className={cn(
@@ -488,14 +274,7 @@ function HeroSection({
             {t('heroLead')}
           </p>
 
-          {/*
-           * Three controls, one row (owner, 2026-09-08: *"too many buttons — Mac opens Silicon
-           * and Intel, one Windows, one playground; the demo button goes"*). The winner is the
-           * filled one and follows the visitor's platform; the other two stand beside it as
-           * outlines of the same height. The Mac file is a menu because a browser cannot tell
-           * which chip a Mac has (`HeroMacMenu`); the demo needs no button now that it is the
-           * second section. Before this the hero held five controls across three rows.
-           */}
+          {/* Three controls: the visitor's platform filled, the others outlined at the same height. */}
           <div className={cn(rise('gateway-t320'), 'mt-9 flex flex-wrap items-center gap-3')}>
             {fileWins ? (
               heroWindowsPrimary ? (
@@ -515,8 +294,7 @@ function HeroSection({
                 <>
                   <HeroMacMenu variant="primary" testId="gateway-hero-cta" />
                   {windowsInstaller ? (
-                    /* Signing status is a fact you need before downloading, so the `unsigned`
-                       marker rides on the button. */
+                    /* Needed before downloading, so the unsigned marker rides on the button. */
                     <a
                       href={windowsInstaller.downloadUrl}
                       data-testid="gateway-hero-windows"
@@ -532,8 +310,6 @@ function HeroSection({
                 </>
               )
             ) : (
-              /* With nothing to download — or nothing this device can install — the winner is
-                 what does work: the map in the browser. */
               <Link
                 href="/topology"
                 data-testid="gateway-hero-cta"
@@ -542,7 +318,7 @@ function HeroSection({
                 {t('webCta')}
               </Link>
             )}
-            {/* The gateway's second promise — the path to look without installing is always open. */}
+            {/* The browser route is always open. */}
             {fileWins ? (
               <Link
                 href="/topology"
@@ -561,9 +337,7 @@ function HeroSection({
               'mt-5 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]',
             )}
           >
-            {/* The trust line's slot is "the fact you need before pressing". When the winner is
-                Windows, the Apple signing sentence is not a fact about that file — unsigned and the
-                SmartScreen warning are the honest sentence for that slot. */}
+            {/* The fact needed before pressing, about the winning file. */}
             {heroWindowsPrimary ? t('trustLineWindows') : t('trustLine')}
           </p>
         </div>
@@ -578,16 +352,12 @@ function HeroSection({
         windowsPrimary={heroWindowsPrimary}
         heroIn={heroIn}
       />
-      {/* The narrow layout's plinth: below `xl` the plane draws here, under the strip, instead
-          of behind a decision block that spans the column (`HeroObject`'s placement note). */}
-      {/* The plinth exists only when there is a plane to stand on it (council, 2026-09-02): an
-          empty graph used to leave 352px of nothing in the flow below `xl`. */}
+      {/* Below the split the plane draws in this plinth under the strip; no graph, no plinth. */}
       {graph.nodes.length > 0 ? (
         <div
           aria-hidden
           data-testid="gateway-hero-plinth"
-          // The reserve follows the ink: at 834 the plane fills 22rem, at 390 it is 162px tall
-          // and a fixed 22rem left half a viewport of empty scroll (council, 2026-09-02).
+          // Follows the plane's height, or a phone scrolls through empty space.
           className="h-[clamp(0rem,62vw,22rem)] min-[90rem]:hidden"
         />
       ) : null}
@@ -596,30 +366,8 @@ function HeroSection({
 }
 
 /**
- * The engraved instrument strip — **facts never move.** Version, date, minimum OS, size, and
- * SHA-256 all come from the release generation module, and in an unpublished state it honestly
- * shrinks (rows for the size and checksum of a file that does not exist simply do not exist).
- *
- * The census is not here — the caption for that number lives in **the same section as the map it
- * counts** (③, owner-confirmed). A definition written twice on one page makes both copies footnotes.
- *
- * ## This rail describes **the file the primary CTA points at** (2026-08-22)
- *
- * While it did not, this page broke its own promise. Opened with a Windows UA, the winner button
- * read "Get Windows x64 beta · 47.8 MB" while the rail directly beneath said
- * `Requires macOS 12 or later · DMG 53.5 MB · SHA-256 c420d0b4…` — **the checksum of a file that
- * would never be downloaded**. A checksum is offered so someone can verify that what they got
- * matches what we published, so showing another file's checksum has a value that is not zero but
- * **negative**: anyone who checks will necessarily see a mismatch, and at that moment what they
- * doubt is the file they downloaded.
- *
- * The hero's CTA (`heroWindowsPrimary`) and trust line (`trustLineWindows`) already followed the
- * detected platform — only this rail was left tied to `macosAssetFor`. So rather than inventing a
- * second verdict it **takes the same boolean down**: which file a screen is talking about must be
- * decided in exactly one place.
- *
- * The mac branch's values and ordering **did not change by one byte** — the server snapshot is
- * always mac (`visitor-platform.ts`), so the first paint is unchanged too.
+ * Release facts for the file the CTA points at, taking the page's one platform decision, or a
+ * visitor checks another file's checksum. Unpublished, size and checksum rows do not exist.
  */
 function FactsStrip({
   className,
@@ -660,18 +408,10 @@ function FactsStrip({
         releaseVersion: RELEASE_VERSION,
       })} · ${t('factUnpublished')}`;
 
-  /** The winning file — precisely what the hero CTA points at. */
   const subject = windowsPrimary && windowsInstaller ? windowsInstaller : primaryAsset;
   const subjectIsWindows = subject !== null && subject === windowsInstaller;
 
-  /*
-   * **Mono is for program text only** (2026-09-25). A value that is a hash is set in the mono
-   * face; a value that is words and numbers (the Korean release date, "macOS 12 or later") is
-   * set in the sans face with tabular figures. In the mono face its Hangul fell back glyph by glyph
-   * while the spaces kept the monospace advance, so the date read as spaced-out printout — the
-   * defect `app/globals.css` records for caps labels. The section eyebrows and these labels are
-   * already covered by that rule (`:root:lang(ko) .font-mono.uppercase`).
-   */
+  /* Mono only for program text (`code`): Hangul in the mono face reads as spaced-out printout. */
   const facts: { label: string; value: string; code?: boolean }[] = [
     { label: t('factVersionLabel'), value: version },
     {
@@ -681,7 +421,6 @@ function FactsStrip({
   ];
   if (published && subject) {
     facts.push({
-      // The file format is the label — it states "what you are getting" once more, beside the size.
       label: subjectIsWindows ? 'EXE' : 'DMG',
       value: formatAssetSize(subject.sizeBytes),
     });
@@ -692,15 +431,7 @@ function FactsStrip({
     });
   }
 
-  /**
-   * The two destinations on the strip — **facts on the left, where they lead on the right**
-   * (2026-09-02). The page said "open source" in its eyebrow and linked the repository nowhere;
-   * the changelog sat only in the chrome, a row above the version it explains. The 2026-08-19
-   * deletion of the install section had already named this loss in its dissent and pointed the
-   * remedy at exactly this rail. Both are links, not facts: the engraved numeral face is for
-   * values that never move, so these take the page's link grammar instead (underline, secondary
-   * ink, `↗` declaring the one that leaves the site).
-   */
+  /** Links, not facts, so they take the link grammar instead of the engraved face. */
   const tag = published
     ? MACOS_RELEASE.tag
     : resolveDisplayReleaseTag({
@@ -723,30 +454,16 @@ function FactsStrip({
       href: GITHUB_REPO_URL,
       external: true,
       testId: 'gateway-facts-source',
-      // `owner/repo` is a path, so it keeps the mono face; the changelog link is a sentence.
+      // A path, so mono.
       code: true,
     },
   ];
 
   return (
     <div className={cn('gateway-rise gateway-t400', heroIn && 'is-in', 'w-full', className)}>
-      {/* Two flex items on one rule: the facts list and the destination pair. The pair is one
-          item so it moves as a unit — measured at 834 with the links loose in the list, the
-          push-right left one link alone on a third row. When all six fit on one line, the pair
-          sits on the column's right edge.
-
-          **When they do not fit, the strip is one grid** (2026-09-25). The pair used to wrap
-          whole beneath the facts and keep its push-right, so at 1040 and 1280 the second row
-          started mid-column on a grid of its own: two rows sharing no start line. Below the
-          one-line width the facts and the pair are subgrids of one `max-content` grid, so the
-          two links fall into the facts' first two columns and every row starts at the column's
-          left edge. The switch is a container query on the strip, because the column, not the
-          window, decides whether six items fit.
-
-          One column gap in every layout (`gap-x-12`), and the four-column step waits for the
-          width four columns need: 167 + 173 + 53 + 128 of max-content plus three 48px gaps is
-          665px, so it switches at 42rem (672). It switched at 38rem (608) while the tablet column
-          was 624 wide, which pushed the SHA-256 value 16px past the strip at 1024. */}
+      {/* One line when all six fit; otherwise one subgrid so every row shares a start line. A
+          container query, since the column decides the fit. 42rem: four max-content columns and
+          three gaps need 665px. */}
       <div
         data-testid="gateway-facts"
         className={cn(
@@ -811,25 +528,15 @@ function FactsStrip({
 const FACT_LABEL =
   'font-mono text-caption uppercase leading-caption tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]';
 
-/** The strip's link grammar — the same underline and ink as the evidence section's file link. */
+/** The same underline and ink as the evidence section's file link. */
 const FACT_LINK = controlClass({
   shape: 'link',
   hoverInk: 'strong',
   className:
-    // `items-start`: the link shape centres its text in a 24px floor, which sat the label 2px
-    // below the engraved values beside it (measured 1512). Top-aligned, both share one line box.
+    // Top-aligned, or the link's 24px floor sits its label below the values beside it.
     'touch-hit-expand items-start text-body leading-body text-[color:var(--color-text-secondary)] underline underline-offset-2',
 });
 
-// ─── ② Demo — plays itself once visible ─────────────────────────────────────
-
-/**
- * The folder's other screens, on one stage (2026-09-24, owner-selected direction B). The
- * architecture and the library used to be two sections of their own (2026-09-08, "one folder,
- * three readings"); the stage widens that to every destination of the app's rail and keeps one
- * picture on screen at a time. The map is the one live reading, just above; the others are
- * captures because a view may not mount another view. `ScreensStage` owns the list and the swap.
- */
 function ScreensSection() {
   const t = useTranslations('download.screens');
   return (
@@ -847,7 +554,6 @@ function ScreensSection() {
 
 function DemoSection() {
   const t = useTranslations('download');
-  /** The request belongs to the take — with no clip attached there is no take to quote. */
   const hasClip = availableDemoClips().length > 0;
 
   return (
@@ -856,20 +562,7 @@ function DemoSection() {
       data-testid="gateway-demo-section"
       className={cn(PAGE_GUTTER, SECTION_GAP, 'w-full scroll-mt-24')}
     >
-      {/*
-       * **Head beside the stage from the split width** (2026-09-25). The demo is the page's one
-       * stage narrower than the column (`--gateway-stage-max`), and until now it answered that
-       * by centring the whole section — the page's one second axis (measured 1512: the head's
-       * ink at x≈508–930, the stage at 372–1140, every other section at 200). Left-aligned in
-       * the same stacked layout, the right 30% of the column would stand empty instead. So from
-       * 90rem the head takes the column's left track and the stage its right one: the head's text
-       * starts at the origin like every other section's, the stage ends on the column's right
-       * edge, and the stage keeps its approved width. Narrower, the head stacks above a stage
-       * that starts at the origin too. The head sits on the video's vertical centre (`pb-9`
-       * discounts the caption under the video), and under its lede it quotes the request the
-       * take was filmed on (`DemoPrompt`): the head alone was a third of the stage's height at
-       * 1920, with ≈170px of empty track above it and ≈200px below.
-       */}
+      {/* The stage is narrower than the column, so from 90rem the head stands beside it instead of centring. `pb-9` discounts the caption. */}
       <div
         className={cn(
           PAGE_COLUMN,
@@ -889,13 +582,8 @@ function DemoSection() {
 }
 
 /**
- * **The request the take was filmed on, verbatim** (2026-09-25). The shoot sends the locale's
- * `download.demoAgentPrompt` word for word (`docs/launch/demo-scenario.md` §3), and until now the page
- * never showed it: a visitor watched Codex answer a question they could not read. At the split
- * width it also closes the head's track — beside a 768px stage at 1920 the head was a third of
- * the video's height, with ≈170px of empty track above it and ≈200px below. It wears the chat
- * scene's user bubble (label over a bordered bubble), because it is the same thing: what a person
- * typed to an agent. Tool names and slugs keep the mono face; the sentence around them does not.
+ * The request the take was filmed on (`docs/launch/demo-scenario.md` §3), so a visitor can read
+ * what the agent answers. The chat scene's user-bubble shape: it is what a person typed.
  */
 function DemoPrompt({ text, label }: { text: string; label: string }) {
   return (
@@ -918,32 +606,9 @@ function DemoPrompt({ text, label }: { text: string; label: string }) {
   );
 }
 
-// ─── ③ Evidence — the map assembles in front of you, and the numbers arrive when it finishes ──
-
 /**
- * The map left the first screen (owner call) but did not disappear — it has its own section, as
- * **evidence**. When the section enters the viewport the real engine (`StageMap` →
- * `OntologyMap`) fires its arrival choreography (the homing spring) once, and the census
- * caption arrives after assembly completes (1400ms) — the numbers are the **result** of assembly.
- *
- * The caption's honesty contract is unchanged from before the remake: the number the caption
- * counts and the graph the map draws come from one hook, `useStageGraph()`.
- */
-/**
- * The linked demo's score — step index → (what the map focuses, which file line lights).
- *
- * One run, three beats, then release. Each beat is the pair the section's whole claim is made
- * of: a line of the file on the right, and the thing that line **is** on the live map to the
- * left. The map side drives the engine's own focus states (`StageScriptedFocus`) with node ids
- * the generator derived from the same vault file — nothing here is a second source.
- *
- *  1. the `title` line ↔ the node itself (ego focus: its neighbourhood stays, the rest recedes)
- *  2. the `domain` line ↔ the domain node, emphasised inside that neighbourhood
- *  3. the `dependencies` line ↔ the dependency node, emphasised the same way
- *
- * The beats sit `DEMO_BEAT_MS` apart — slower than the reading rhythm of the agent scene's
- * choreography because each beat asks the eye to travel between two panels. One pointer act on
- * the map cancels the run for good: the map is an object to handle, and a hand beats a script.
+ * Three beats, each a file line paired with what it is on the live map, using the generator's
+ * node ids. Slower than the chat scene's rhythm: the eye travels between two panels.
  */
 const DEMO_SCRIPT: readonly { focus: StageScriptedFocus; line: EvidenceDemoKey }[] = [
   {
@@ -968,13 +633,14 @@ const DEMO_SCRIPT: readonly { focus: StageScriptedFocus; line: EvidenceDemoKey }
 const DEMO_START_MS = 900;
 const DEMO_BEAT_MS = 1700;
 
+/** The live map, whose census caption arrives once assembly settles: the numbers are its result. */
 function EvidenceSection({ graph }: { graph: StageGraph }) {
   const t = useTranslations('download');
   const { ref, inView } = useInViewOnce<HTMLDivElement>(0.25);
   const [captionIn, setCaptionIn] = useState(false);
-  /** −1 = idle/finished, 0..2 = a beat of `DEMO_SCRIPT` is on. */
+  /** −1 is idle or finished. */
   const [demoStep, setDemoStep] = useState(-1);
-  /** Set forever on the first pointer act or after one full run — the demo never replays. */
+  /** The demo never replays after a pointer act or one full run. */
   const demoDoneRef = useRef(false);
 
   useEffect(() => {
@@ -986,11 +652,7 @@ function EvidenceSection({ graph }: { graph: StageGraph }) {
     return () => window.clearTimeout(id);
   }, [inView]);
 
-  /**
-   * The demo waits for the caption (i.e. for assembly to have settled) and runs once. Under
-   * reduced motion it never runs — the resting section already carries every fact, so the demo
-   * is strictly additive and skipping it loses nothing a reader cannot get by hovering.
-   */
+  /** Waits for the caption; never under reduced motion, where the resting section says everything. */
   useEffect(() => {
     if (!captionIn || demoDoneRef.current) return;
     if (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches)
@@ -1030,23 +692,7 @@ function EvidenceSection({ graph }: { graph: StageGraph }) {
           sub={t('evidenceSub')}
         />
 
-        {/*
-         * Map 55 / real data 45 (owner report 2026-08-18 — in the full-width frame the graph used
-         * 20% of the width and 80% was empty black). One half gives the graph a near-square frame
-         * it fills by bbox fit (camera and tier reveal are in `StageMap` and
-         * `--map-overview-entry-ratio`), and the other half is filled by real data derived
-         * from the same graph (the kind census, verbatim relations, impact radius) — this section
-         * is called evidence.
-         */}
-        {/*
-         * The map is the stage and the file is a card on it (2026-09-08, owner: *"improve
-         * this"*). Until now the two stood side by side, 11/20 and 9/20, and the map had the
-         * grid and the proportions of a tool; now the frame takes the whole column, the grid is
-         * gone, and at `xl` the file stands inside the frame on the right — the product's own
-         * grammar, a compact card beside the thing it describes — while the camera fits the
-         * graph to its left (`--map-safe-inset-right` in the gateway scope). Below `xl` the
-         * card follows the map at full width: at 1024 the card left the map 200px (measured).
-         */}
+        {/* From `xl` the file is a card inside the map frame, and `--map-safe-inset-right` fits the graph left of it. */}
         <div ref={ref} className="gateway-scroll-stage relative mt-9 min-w-0">
           <div
             data-testid="download-stage-map-frame"
@@ -1062,15 +708,11 @@ function EvidenceSection({ graph }: { graph: StageGraph }) {
           </aside>
         </div>
 
-        {/* This number is the graph drawn directly above it. The lineage of the source, the scope
-            label, and the tactile hint is in the pre-remake comments and the decision ledger. */}
         <p
           data-testid="download-portrait-caption"
           className={cn('gateway-map-after', captionIn && 'is-in', 'pointer-events-none mt-5')}
         >
-          {/* Mono only for the data — the path and the census — and the sans caption face for
-              the two sentences beside them (2026-09-25): Hangul set in the mono face falls back
-              with visibly spaced glyphs and reads as a printout, not a sentence. */}
+          {/* Mono only for data; Hangul in the mono face reads as a printout. */}
           <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-caption leading-caption text-[color:var(--color-text-tertiary)]">
             <span className="font-mono text-[color:var(--color-text-quaternary)]">docs/ontology</span>
             <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
@@ -1081,8 +723,6 @@ function EvidenceSection({ graph }: { graph: StageGraph }) {
               {t.rich('portraitCensus', {
                 concepts: graph.nodes.length,
                 relations: graph.edges.length,
-                // Owner-picked count-up (survey 2026-08-23). The DOM always carries the final
-                // value (CountUp's contract), so the caption-honesty test reads truth at any time.
                 c: () => <CountUp value={graph.nodes.length} />,
                 r: () => <CountUp value={graph.edges.length} />,
               })}
@@ -1100,26 +740,10 @@ function EvidenceSection({ graph }: { graph: StageGraph }) {
   );
 }
 
-// ─── ④ Agents — a measured in-app (ACP) round trip plus three still cards ───
-
 /**
- * This section's one idea (reworked 2026-08-18, `docs/DECISIONS.md`):
- *
- * > **A guarded agent can live inside the app; other agents connect through MCP outside it.**
- *
- * The previous version was an `mcp-verify` terminal and the owner rejected it (*"I have no idea what this means"* — I have no idea what this means; it showed a developer verifying configuration, not
- * the thing being sold). The real thing already exists: `AcpChatPanel` (the in-app conversation),
- * `AcpRuntimeSettings`, and the vault capability "in-app coding agent runner (ACP)". Eligibility
- * requires an app-owned write review and folder boundary, and both Claude Agent and Codex meet
- * it (`CHAT_ELIGIBLE` in `src-tauri/src/acp.rs`; Codex opens in its forced `read-only` mode and
- * its Atlas writes pause at the server checkpoint — `runtime-gate.ts`). The scene
- * (`AcpChatScene`) re-enacts a measured round trip of the guarded path (ledger 2026-08-16 (7)).
- *
- * Copy boundaries come from ledger 2026-08-16 (5): ① we redistribute nothing (the adapter runs
- * via npx on the user's machine) ② "Claude Code" is forbidden where our runner list is described —
- * only the registry's permitted name (Claude Agent) ③ it stands only on **"connect the agent you
- * already use"** — never implying we provide model access or that every detected runtime can open
- * inside the app.
+ * A guarded agent lives inside the app; others connect through MCP (see `CHAT_ELIGIBLE` in
+ * the file src-tauri/src/acp.rs). Copy follows `docs/DECISIONS.md` 2026-08-16 (5): nothing redistributed,
+ * registry names only, never implying we provide model access.
  */
 function AgentSection() {
   const t = useTranslations('download');
@@ -1136,22 +760,7 @@ function AgentSection() {
       data-testid="gateway-agents-section"
       className={cn(PAGE_GUTTER, SECTION_GAP, 'w-full scroll-mt-24')}
     >
-      {/*
-       * **Head and scene left, cards right** (2026-09-25). The split itself is the evidence
-       * section's grammar (2026-09-02): the moving thing on the left at 11/20, the still facts on
-       * the right at 9/20, one moving thing per section. What changed is where the head stands.
-       * Spanning the column above the split, it left the scene (≈345px) beside cards ≈590px tall,
-       * and every way of reconciling the two moved the gap rather than closing it: centred, the
-       * scene floated with no shared start; stretched, the frame held 230px of empty panel above
-       * its first bubble at 1512. With the head in the scene's track the left column is head +
-       * scene, the same height class as the cards, and both columns start on the eyebrow's line.
-       * This is also the demo section's grammar — its head stands in the track beside its stage.
-       *
-       * The split opens at 90rem, the hero's split width. At `lg` (1040) the left track was 326px
-       * and at `xl` (1280) 458px: the user bubble left its last words alone on a second line and
-       * the record's `why` broke mid-clause. Below 90rem the head, the scene and the cards stack
-       * at the column's full width.
-       */}
+      {/* Head and scene left, cards right from 90rem, so both columns are one height class; narrower tracks broke the chat lines. */}
       <div
         className={cn(
           PAGE_COLUMN,
@@ -1164,7 +773,7 @@ function AgentSection() {
             <AcpChatScene />
           </div>
         </div>
-        {/* The three cards are still — one moving thing beside them is enough. */}
+        {/* Still: one moving thing per section. */}
         <div className="grid min-w-0 content-start">
           {columns.map((column, i) => (
             <div
@@ -1189,14 +798,7 @@ function AgentSection() {
   );
 }
 
-/**
- * A card's fact row — short facts separated by `·`, or one literal command.
- *
- * Wraps only at the `·` between two facts (2026-09-25): at 1040 the Korean "write → review" pair
- * broke inside its last word, leaving one syllable alone on the second line. Each fact is one
- * unbreakable run. Only the literal command is set in mono; the Korean phrase rows were mono too
- * and read as spaced-out printout, not as the short facts they are.
- */
+/** Wraps only between facts, each an unbreakable run; only a literal command is mono. */
 function AgentFactRow({ text, command = false }: { text: string; command?: boolean }) {
   const rowClass =
     'mt-4 flex flex-wrap gap-x-2 break-keep border-l border-[color:var(--color-border-strong)] pl-3 text-body leading-body text-[color:var(--color-text-tertiary)]';
@@ -1204,8 +806,7 @@ function AgentFactRow({ text, command = false }: { text: string; command?: boole
   return (
     <p className={rowClass}>
       {text.split(' · ').map((part, i) => (
-        // One fixed sentence split at its separators: the position is the identity, and two
-        // equal facts in one row would still get distinct keys.
+        // Position is identity in a fixed sentence; equal facts still get distinct keys.
         <span key={i} className="whitespace-nowrap">
           {i > 0 ? <span className="mr-2 text-[color:var(--color-text-quaternary)]">·</span> : null}
           {part}
@@ -1216,38 +817,15 @@ function AgentFactRow({ text, command = false }: { text: string; command?: boole
 }
 
 /**
- * The file size attached to a button — **not attached below `sm`** (verdict ④, 2026-07-29).
- *
- * `buttonVariants` sets `whitespace-nowrap`, so a long label pushes the button through its
- * container. Measured at 320px: the primary CTA's content was 261px against 216px of real width →
- * horizontal overflow. No scrollbar appeared; it was **simply clipped**.
- *
- * The size is what got cut because a 320px phone cannot install a macOS DMG. The size is **a fact
- * for the person deciding to install**, and that person is at a desktop.
- *
- * Both buttons sharing one grammar is a bonus — the primary CTA used to put `· {size}` **inside
- * the translated string** while Intel drew it as a separate span, so two buttons on one row stated
- * the same fact in different typefaces with different punctuation.
- *
- * ⚠️ **Engraved numerals are a grammar for neutral surfaces** (`--engraved-numeral-face` #8c8c94
- * plus a 1px `#08080a` highlight below — the look of being pressed into a dark panel). Placed
- * straight onto filled indigo (#5e6ad2) the contrast collapses to **1.41:1** (measured 2026-07-29
- * — the first draft made exactly this mistake). On a filled button it uses the button's own
- * foreground colour: it is part of the same sentence, so there is no reason for the colour to differ.
+ * Hidden below `sm`, where it clipped the button and a phone cannot install the file anyway.
+ * On a filled button it takes the label's ink: the engraved face drops to 1.41:1 on indigo.
  */
 function AssetSize({ bytes, onFill = false }: { bytes: number; onFill?: boolean }) {
   return (
     <span
       className={cn(
         'hidden font-mono text-label leading-label sm:inline',
-        // On a filled button it is **not even weakened**. Adding `opacity-80` dropped the composite
-        // contrast to 3.45:1 (11px text, measured 2026-07-29) — one step down already breaks
-        // through. Separating the size from the label is already done by the mono face and the spacing.
-        //
-        // The ink must be the **same token** as the label. Until 2026-08-03 this slot was
-        // `--color-text-primary`, which is 4.42:1 on filled indigo and below AA. The label moved up
-        // to `--color-text-on-accent` (4.70:1), so the size badge moves with it — two inks inside
-        // one button is the next regression.
+        // The label's exact token, unweakened: any step down falls below AA on filled indigo.
         onFill
           ? 'text-[color:var(--color-text-on-accent)]'
           : 'text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]',
@@ -1259,22 +837,8 @@ function AssetSize({ bytes, onFill = false }: { bytes: number; onFill?: boolean 
 }
 
 /**
- * **The closing band** — the page ends where it began (2026-09-02).
- *
- * Below the agents section the page used to stop at a licence line: someone who read to the end
- * had to scroll 3,500px back up to act. The reference survey found the strongest pages bookend
- * their one action (the same button at the top and at the foot), so the winner's file returns here
- * — as an `outline`, because the 2026-08-08 decision keeps exactly one filled indigo control on
- * this screen and it is the hero's.
- *
- * The other half is the verification recipe. The install section deleted on 2026-08-19 took the
- * checksum and the command with it, and its falsifier named the remedy: proof lines at the foot,
- * not a revived section. HandBrake and Sublime carry this without reading like a file server by
- * stating *why* in one sentence and placing the value beside the file it belongs to. The command
- * follows the winner's platform, and the hash is the winner's — the 2026-08-22 defect (another
- * file's checksum) cannot recur because the page decides the winner once.
- *
- * Unpublished: the band holds only the browser route, since there is no file to verify.
+ * The winner's file again at the foot, outlined since the hero holds the one filled control,
+ * with the verification command and hash for that same file. Unpublished, only the browser route.
  */
 function ClosingBand({
   published,
@@ -1296,7 +860,7 @@ function ClosingBand({
   const fileName = subject ? subject.downloadUrl.slice(subject.downloadUrl.lastIndexOf('/') + 1) : '';
   const format = useFormatter();
   const publishedAt = macosPublishedDate();
-  /** The same three facts the strip opened with — OBS repeats them under every tab for the same reason. */
+  /** The strip's facts again, beside the file they describe. */
   const versionLine = [
     published
       ? MACOS_RELEASE.tag
@@ -1380,11 +944,7 @@ function ClosingBand({
   );
 }
 
-/**
- * Release policy prose belongs to the colophon (verdict 2026-07-29: policy prose is not decision
- * material). Since the install section and the verification rail were deleted on 2026-08-19, these
- * two sentences are the **only** release-policy facts left on the page.
- */
+/** The page's only release-policy sentences, kept in the colophon since they are not decision material. */
 function ReleasePolicyNotes({ published }: { published: boolean }) {
   const t = useTranslations('download');
 
@@ -1393,8 +953,7 @@ function ReleasePolicyNotes({ published }: { published: boolean }) {
       <p className="mt-3 break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
         {published
           ? t('trustPolicyPublished', { tag: MACOS_RELEASE.tag })
-          : /* An unreleased build is named by the development version — while unpublished,
-               `MACOS_RELEASE.tag` is by definition a stale value. */
+          : /* Unpublished, `MACOS_RELEASE.tag` is stale by definition. */
             t('trustPolicyPending', {
                 tag: resolveDisplayReleaseTag({
                   published: false,

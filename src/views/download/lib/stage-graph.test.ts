@@ -2,11 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from '@/entities/knowledge-graph';
 import { buildStageGraph } from './stage-graph';
 
-/**
- * This adapter claims **the same charter-level invariants** as home's `buildOntologyMapGraph`
- * (exactly one hub, and there may be none). A duplicate implementing that invariant differently is
- * what the design-system seat flagged, so the contract is pinned here.
- */
+/** The hub invariants twin home's `buildOntologyMapGraph`: at most one hub. */
 const node = (id: string, kind: KnowledgeGraphNode['kind']): KnowledgeGraphNode =>
   ({
     id,
@@ -21,8 +17,6 @@ const edge = (from: string, to: string, type: string): KnowledgeGraphEdge =>
 
 describe('buildStageGraph', () => {
   it('marks no hub when nothing is referenced', () => {
-    // The amber hub ring is a single-node emphasis. Picking the first node as hub in a graph with
-    // zero references draws a fact absent from the data.
     const { nodes } = buildStageGraph(
       [node('a', 'domain'), node('b', 'domain'), node('c', 'domain')],
       [],
@@ -49,7 +43,6 @@ describe('buildStageGraph', () => {
   });
 
   it('terminates on cyclic containment', () => {
-    // Cycles genuinely exist in this vault. Descendant counting must not recurse infinitely.
     const { nodes } = buildStageGraph(
       [node('a', 'domain'), node('b', 'capability')],
       [edge('a', 'b', 'contains'), edge('b', 'a', 'contains')],
@@ -58,14 +51,7 @@ describe('buildStageGraph', () => {
     for (const n of nodes) expect(Number.isFinite(n.descendantCount)).toBe(true);
   });
 
-  /**
-   * The engraved number is **a count of unique nodes, not a sum over paths.**
-   *
-   * Measured regression (2026-07-29): the hub engraved `379` while the caption right beside it read
-   * `96 concepts`. A hand-rolled recursion recounted descendants **per containment path** through
-   * multiple parents, inflating by 4×. This page's honesty contract is that the background and the
-   * caption share one source, so that contract is pinned here.
-   */
+  /** Path sums once made the hub disagree with the caption beside it. */
   it('counts a descendant once across multiple parents instead of summing paths', () => {
     const { nodes } = buildStageGraph(
       [
@@ -78,7 +64,6 @@ describe('buildStageGraph', () => {
       [
         edge('p', 'd1', 'contains'),
         edge('p', 'd2', 'contains'),
-        // The same capability is contained by two domains — two paths, one node.
         edge('d1', 'shared', 'contains'),
         edge('d2', 'shared', 'contains'),
         edge('shared', 'leaf', 'contains'),
@@ -97,7 +82,6 @@ describe('buildStageGraph', () => {
       [node('a', 'domain'), node('b', 'element')],
       [edge('a', 'b', 'contains')],
     );
-    // This surface has neither a change baseline nor vault mtimes, so any value would be false.
     expect(nodes.every((n) => n.recentlyUpdated === false && n.stale === false)).toBe(true);
     expect(nodes.every((n) => n.ownerKey === null)).toBe(true);
     expect(edges.every((e) => e.relationQuality === null)).toBe(true);

@@ -6,11 +6,8 @@ import { resolveAuthoredDescription } from "./authored-description";
 export interface RecentActivityRow {
   slug: string;
   kind: string;
-  /** The graph node id for the map focus deeplink (`${kind}:${tailSlug}`) — null when the lookup fails
-   *  (a dangling doc), in which case the UI renders the row without a link. */
+  /** Null for a dangling doc, whose row renders without a link. */
   nodeId: string | null;
-  /** The human-readable title — the screen-language display name (`node.display`) first, then the
-   *  canonical title, then the tail slug. */
   title: string;
   domainTitle: string | null;
   what: string;
@@ -22,7 +19,7 @@ export type RecentActivityAgo =
   | { unit: "yesterday" }
   | { unit: "daysAgo"; days: number };
 
-/** Day-bucket for the "ago" label — translated at the UI layer (en/ko). */
+/** Translated at the UI layer. */
 export function resolveRecentActivityAgo(updatedAt: Date, now: Date): RecentActivityAgo {
   const ageMs = Math.max(0, now.getTime() - updatedAt.getTime());
   const ageDays = Math.floor(ageMs / (1000 * 60 * 60 * 24));
@@ -34,13 +31,8 @@ export function resolveRecentActivityAgo(updatedAt: Date, now: Date): RecentActi
 const NOISE_KINDS = new Set(["project", "vault-readme"]);
 
 /**
- * /projects "recent activity" strip — real vault doc mtimes (`VaultDoc.
- * updatedAt`), NOT `KnowledgeGraphNode.lastApprovedAt` (that field is a
- * sentinel epoch-0 for every vault-mode node, see `derivationToInsight`, so
- * it can't rank recency). Each doc's `kind:` frontmatter resolves it back to
- * its canonical node (`id === \`${kind}:${doc.slug}\``) to read a domain
- * ancestor (via `nearestDomainId`) and a one-line summary. `project` and
- * `vault-readme` docs are noise for an activity feed and are skipped.
+ * Ranked by doc mtime, since `lastApprovedAt` is epoch 0 for every vault node. Project and
+ * vault-readme docs are skipped as noise.
  */
 export function buildRecentActivityRows(
   docs: readonly VaultDoc[],
@@ -58,24 +50,16 @@ export function buildRecentActivityRows(
     const updatedAt = new Date(doc.updatedAt);
     if (Number.isNaN(updatedAt.getTime())) continue;
 
-    // A node id is formed from the file's tail slug (see `deriveDocNode`) — `doc.slug` is the full
-    // vault-relative path ("ontology/capabilities/x"), so looking it up without taking the tail always
-    // missed and `domainTitle` was permanently at its fallback.
+    // Node ids use the file's tail slug (`deriveDocNode`); `doc.slug` is the full path.
     const tailSlug = doc.slug.split("/").pop() || doc.slug;
     const nodeId = `${kind}:${tailSlug}`;
     const node = nodeById.get(nodeId);
     const domainId = node ? nearestDomainId(node, parentOf, nodeById) : null;
     const domainNode = domainId ? nodeById.get(domainId) : undefined;
     const domainTitle = domainNode ? (domainNode.display ?? domainNode.title) : null;
-    // Uses **the same rule** as the card body through the same function — only what a person wrote as
-    // `description:`. `node.summary` is excluded from the fallback because that value itself falls back
-    // to `doc.excerpt` (`derive-ontology-from-vault.ts`) — keeping summary lets the excerpt back in via
-    // one detour. With nothing, the row states only title, kind, domain, and date. An empty slot beats a
-    // wrong sentence.
+    // Not `node.summary`, which itself falls back to the excerpt.
     const what = resolveAuthoredDescription(doc) ?? "";
-    // Uses the same name as the map and the popover — `display` is already resolved to the screen
-    // language (`derivationToInsight`), so using the canonical title only here leaked long English
-    // originals onto Korean screens and Korean originals onto English ones.
+    // The screen-language name the map draws, not the other locale's canonical title.
     const title = node?.display || node?.title || tailSlug;
 
     rows.push({

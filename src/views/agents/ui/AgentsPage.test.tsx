@@ -69,8 +69,6 @@ describe('agents destination', () => {
   });
 
   it('says one lede sentence with no folded paragraph or pointer sentence', () => {
-    // Owner, 2026-09-19: "there is so much useless text here". The fold "what this screen
-    // does" and its paragraph are gone; the page says one sentence and then the strip.
     renderPage();
     expect(screen.queryByText('이 화면이 하는 일')).toBeNull();
     const main = screen.getByRole('main');
@@ -81,9 +79,7 @@ describe('agents destination', () => {
 
 describe('one name per list', () => {
   it('starts the hidden region name and the visible group label with the same words', () => {
-    // The region heading and the group label named the same list two different ways, and the
-    // count rode parentheses here while the MCP tab's rode a middot. One noun phrase, one
-    // count grammar, across both tabs.
+    // One noun phrase and one count grammar across both tabs.
     const region = ko.agents.runtimesHeading;
     expect(ko.nav.settingsMenu.runtimes.readyHeading.startsWith(region)).toBe(true);
     expect(ko.nav.settingsMenu.runtimes.readyHeading).toContain('·');
@@ -155,8 +151,6 @@ describe('three tabs, one at a time', () => {
   });
 
   it('places the tab strip in the page body below the title, not in the 56px chrome', () => {
-    // 2026-09-18 the owner rejected a header strip; 2026-09-19 the stack. The strip lives
-    // inside `<main>`, below the title, as the Library's and Insights' do.
     renderPage();
     const strip = screen.getByRole('tablist');
     const main = screen.getByRole('main');
@@ -178,7 +172,7 @@ describe('destination skeleton', () => {
     renderPage();
     const main = screen.getByRole('main');
     expect(main).toHaveAttribute('id', 'main');
-    // "Skip to content" has to be able to give it focus.
+    // "Skip to content" must be able to focus it.
     expect(main).toHaveAttribute('tabindex', '-1');
   });
 
@@ -195,12 +189,7 @@ describe('one job per destination', () => {
     expect(screen.queryByTestId('connectors-panel')).toBeNull();
   });
 
-  /*
-   * The name, not the element that used to carry it. Until 2026-09-20 this panel was labelled
-   * twice — an `sr-only` heading here and, from that day, a visible group heading inside the
-   * runtime panel saying the same words. The heading went; the region's name is the invariant
-   * this test was always about, and it is what assistive tech announces on entry.
-   */
+  /* The region's name, which assistive tech announces on entry, not whichever element carries it. */
   it('names the remaining region so it can be scanned', () => {
     renderPage();
     expect(screen.getByRole('region', { name: ko.agents.runtimesHeading })).toBeInTheDocument();

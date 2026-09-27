@@ -48,7 +48,7 @@ describe("buildProjectDomainComposition", () => {
       contains("domain:views", "capability:a"),
       contains("domain:views", "capability:b"),
       contains("domain:views", "element:x"),
-      // element:y / element:z nested under capability:a — should still roll up to the domain.
+      // Nested under capability:a, still rolled up to the domain.
       contains("capability:a", "element:y"),
       contains("capability:a", "element:z"),
     ];
@@ -75,13 +75,11 @@ describe("buildProjectDomainComposition", () => {
       contains("domain:views", "capability:b"),
       contains("domain:views", "capability:c"),
       contains("capability:b", "element:e1"),
-      // capability:b gets an extra edge to bump its degree above a/c.
+      // An extra edge ranks capability:b above a and c.
       contains("capability:a", "capability:b"),
     ];
     const result = buildProjectDomainComposition(nodes, edges, SLUG);
     const [views] = result.domains;
-    // All of them, not "the top 2 plus N more" — expanding the row shows the whole list, so there is no
-    // reason to create a number with nowhere to go ("1 more capability").
     expect(views.capabilities.map((cap) => cap.title)).toEqual(["Bravo", "Alpha", "Charlie"]);
     expect(views.capabilities[0]).toEqual({ id: "capability:b", title: "Bravo" });
     expect(views.capabilityCount).toBe(3);
@@ -101,10 +99,7 @@ describe("buildProjectDomainComposition", () => {
   });
 
   it("counts members reached by containment regardless of projectIds, matching the four-surface census", () => {
-    // The old contract (filtering by projectIds) was why the numbers diverged from the single-source BFS
-    // used by the map INDEX, insights, and `/projects`. If a domain contains it, it counts toward that
-    // domain's size whatever project stamp it carries — the same number across surfaces takes precedence
-    // over per-surface filtering.
+    // Filtering by projectIds made this count disagree with the map INDEX, insights and `/projects`.
     const nodes = [
       n("domain:views", "domain", [SLUG], "Views"),
       n("capability:foreign", "capability", ["other-project"]),

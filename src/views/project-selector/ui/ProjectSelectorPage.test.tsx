@@ -48,8 +48,7 @@ vi.mock("@/features/project-data-source", () => ({
       path: "docs/ontology/capabilities/mcp-server.md",
       title: "MCP Server",
       tags: [],
-      // Both production paths fill `doc.description` only from that frontmatter key — the no-excerpt rule
-      // reads frontmatter too.
+      // Production fills `doc.description` only from the frontmatter key.
       frontmatter: { kind: "capability", description: "write 도구로 확장" },
       headings: [],
       excerpt: "",
@@ -96,9 +95,7 @@ vi.mock("@/widgets/app-settings-menu", () => ({
   AppSettingsMenu: () => <button type="button" data-testid="app-settings-trigger-stub" />,
 }));
 
-// Since settings moved to the nav rail's bottom slot, the page calls `useNavRailSettingsSlot`. That hook
-// throws without its provider (the layout-resident contract), so it is stubbed as a no-op in page-level
-// tests.
+// The nav rail settings slot hook throws without its layout provider.
 vi.mock("@/widgets/app-nav-rail", () => ({
   useNavRailSettingsSlot: () => {},
 }));
@@ -128,36 +125,14 @@ function renderPage() {
 }
 
 describe("ProjectSelectorPage", () => {
-  // `AppNavRail` now lives in `app/[locale]/layout.tsx` (AppShell) and this page no longer mounts it
-  // directly (so the rail's DOM identity survives route changes). So this unit test asserts only the
-  // settings and agent-status cluster the page still owns, not the rail itself — rail persistence is
-  // verified by Playwright (rail DOM identity preserved under production static serving).
   it("keeps settings but shows no live indicator here", () => {
-    /*
-     * "Live · N changes" is **the map's object** — that number leads to a next action only on a screen
-     * that draws what changed onto the nodes. On a list screen it has nowhere to go while taking the
-     * strongest ink at the top right and reserving a whole row, pushing the content below it down
-     * (owner report 2026-08-03).
-     */
+    /* "Live · N changes" belongs to the map, where changes are drawn onto nodes. */
     renderPage();
     expect(screen.getByTestId("app-settings-trigger-stub")).toBeInTheDocument();
     expect(screen.queryByTestId("live-activity-indicator-stub")).toBeNull();
   });
 
-  /**
-   * **The whole-folder count is not tallied on this screen** (owner verdict, 2026-08-09).
-   *
-   * "Whole folder: N concepts · N relations" used to sit at the right of the breadcrumb row. But that is
-   * **the project cards below, sliced differently** — measured on the storefront sample:
-   * 49 capabilities + 54 elements + 8 domains + 1 project = **exactly 112**, the number the top was
-   * stating. Only relations differed by 8 (relations outside the project).
-   *
-   * Counting the same thing twice under two scopes makes the reader **assume one of them is wrong**. The
-   * code comment knew this and waved it away with "just add a scope label"; the owner's verdict was the
-   * opposite: *"This sort of thing is confusing; the top row doesn't need information."*
-   *
-   * This test stops that row from quietly coming back.
-   */
+  /** The same count under two scopes makes a reader assume one is wrong. */
   it("does not repeat the folder-wide concept and relation counts; the project card is the one place that counts", () => {
     renderPage();
     const main = screen.getByRole("main").textContent ?? "";
@@ -185,8 +160,7 @@ describe("ProjectSelectorPage", () => {
     expect(
       within(card).getByRole("link", { name: "Open ontology-atlas details" }),
     ).toHaveAttribute("href", "/project/fallback/?slug=ontology-atlas");
-    // The project's own node, not the bare slug: the bare slug opens the project drawer, which
-    // cannot connect the project's code folder (2026-09-25 sweep); the node's inspector can.
+    // The node's inspector can connect the code folder; the bare slug's drawer cannot.
     expect(within(card).getByRole("link", { name: "View on map" })).toHaveAttribute(
       "href",
       `/topology/?p=${encodeURIComponent("project:ontology-atlas")}`,
@@ -201,8 +175,6 @@ describe("ProjectSelectorPage", () => {
     );
   });
 
-  // Round four (2026-09-25): the header's "New project" and the tile's agent request were two add
-  // entries with no rule between them. Both paths live in the tile now, and nowhere else.
   it("offers both ways to add a project in one tile, and only there", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
@@ -217,16 +189,12 @@ describe("ProjectSelectorPage", () => {
     );
   });
 
-  // Audit finding: the English screen shipped "1 project · 1 domains". A plural at a count of 1 reads as
-  // a sentence that was generated automatically.
   it("agrees in number with the count it labels", () => {
     renderPage();
     const header = screen.getByRole("main").textContent ?? "";
-    // The sample is the loaded folder here (static mode), and the count says so itself.
     expect(screen.getByTestId("project-selector-count")).toHaveTextContent(/^1 sample project$/);
     expect(header).not.toContain("domain");
     expect(header).not.toContain("1 CONCEPTS");
     expect(header).not.toContain("1 RELATIONS");
-    // The whole-folder count left this screen on 2026-08-09 — the test above holds that ground.
   });
 });

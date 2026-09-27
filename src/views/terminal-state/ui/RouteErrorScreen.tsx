@@ -10,19 +10,9 @@ import { TerminalState } from './TerminalState';
 import { StandaloneLocaleProvider, useStandaloneLocale } from './standalone-locale';
 
 /**
- * The render-error screen (the root error boundary).
- *
- * It replaces `app/[locale]/layout.tsx` when a render throws, so it always mounts its own
- * locale provider. Until 2026-09-25 its copy was hard-coded English, so a Korean user who hit a
- * render error got English, and its "Topology home" link went to `/`, not the map. Its two
- * actions were a hand-built pill dialect while the sibling 404 used `Button`; both screens now
- * share `TerminalState` and the standard button.
- *
- * No gateway chrome: the error can come from anywhere, the installed app included, and the chrome
- * itself may be what threw.
- *
- * Its copy comes from the root layout (`StandaloneMessagesProvider` with `ROUTE_ERROR_PICK`), not
- * from a JSON import, so the message files stay out of every page's JavaScript.
+ * The root error boundary, which replaces the locale layout, so it mounts its own locale
+ * provider fed by the root layout (`ROUTE_ERROR_PICK`), never a JSON import that would ship the
+ * message files to every page. No gateway chrome: it may be what threw.
  */
 export function RouteErrorScreen({ digest, onRetry }: { digest?: string; onRetry: () => void }) {
   return (
@@ -42,9 +32,7 @@ function RouteErrorBody({ digest, onRetry }: { digest?: string; onRetry: () => v
       icon={<AlertTriangle size={ICON_SIZE.lg} />}
       eyebrow={t('label')}
       title={t('title')}
-      // The "report it with the ID below" sentence only when there is an ID to report. Under
-      // `output: 'export'` a client render error usually has no digest, and the sentence then
-      // pointed at nothing (review of PR #1839).
+      // A static export's client errors usually have no digest to report.
       body={digest ? t('bodyWithId') : t('body')}
       detail={
         digest ? (
@@ -59,8 +47,7 @@ function RouteErrorBody({ digest, onRetry }: { digest?: string; onRetry: () => v
             <RefreshCw size={ICON_SIZE.md} aria-hidden />
             {t('retry')}
           </Button>
-          {/* A plain anchor, not the locale router: the provider above is this screen's own,
-              and a full navigation is the honest reset after a render failure. */}
+          {/* A full navigation, the honest reset after a render failure. */}
           <a href={withBasePath(`/${locale}/`)} className={cn(buttonVariants({ variant: 'outline' }))}>
             {t('home')}
           </a>

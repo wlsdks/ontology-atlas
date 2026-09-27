@@ -8,42 +8,14 @@ import { EVIDENCE_SPECIMEN } from '../model/evidence-specimen.generated';
 import { CountUp } from './CountUp';
 
 /**
- * The evidence section's right half — **one real file, and what an agent reads out of it.**
- *
- * ## What this replaced, and why
- *
- * The previous version was an *inventory*: four kind counts, three sample relations, and one
- * impact number. The owner rejected it (2026-08-23) as unsuitable for open-source documentation.
- * Looking at what it actually rendered, they were right, and the cause was the selection rule rather than
- * the styling. It picked "the three most common relation types, and from each the alphabetically
- * first edge by slug", which optimises for *representing the vault* and not at all for *being
- * legible to a stranger*. What reached the screen was this repository's own internals, in two
- * languages at once, joined by raw `--contains-->` syntax.
- *
- * A survey of how other products carry the same burden (2026-08-23: Biome, Linear, Raycast,
- * Cursor, Logseq, Ghostty, Tauri, Cap, AppFlowy) found one thing in common among the ones that
- * work: **they show a single concrete moment, never an inventory.** Biome puts messy code beside
- * the formatted result with one measured number and the conditions it was measured under. Raycast
- * gives four short claims with at most one number each. Logseq — famous for its graph — leads with
- * the notes you actually write, not the graph. Cursor gives one idea per block.
- *
- * So this section stopped counting and started showing a transformation, which is the product's
- * actual claim: **the frontmatter is the graph.** The left panel is a file that exists in this
- * repository; the right is the same file as the agent reads it; the caption links to the file so
- * the claim can be checked in one click.
- *
- * ## Nothing here is hand-typed
- *
- * Every value comes from `evidence-specimen.generated.ts`, produced by
- * `scripts/generate-evidence-specimen.mjs` from the vault itself and diffed in CI. A hand-written
- * copy of a file's contents stops being true the moment the file changes and says nothing when it
- * does — which is precisely the failure this page hit twice in two days with the demo section's
- * prose. The generator's doc block carries the rest.
+ * One real vault file beside what an agent reads out of it: the frontmatter is the graph, and the
+ * link lets anyone check. Every value is generated (`scripts/generate-evidence-specimen.mjs`),
+ * since a hand-typed copy goes silently false when the file changes.
  */
-/** Which meaning the linked demo is pointing at right now — `null` between runs. */
+/** `null` between demo runs. */
 export type EvidenceDemoKey = 'title' | 'domain' | 'dependencies' | null;
 
-/** The frontmatter keys each demo step lights — `title` also covers the display names. */
+/** `title` also lights the display-name lines. */
 const DEMO_LINE_PREFIXES: Record<Exclude<EvidenceDemoKey, null>, readonly string[]> = {
   title: ['title:', 'display_ko:', 'display_en:'],
   domain: ['domain:'],
@@ -56,17 +28,10 @@ export function EvidenceSpecimen({ demoKey = null }: { demoKey?: EvidenceDemoKey
   const locale = useLocale();
   const spec = EVIDENCE_SPECIMEN;
   const tag: 'ko' | 'en' = locale === 'ko' ? 'ko' : 'en';
-  /*
-   * The panel shows the file as it pertains to its reader: the other locale's `display_*` line is
-   * left out and counted. `/en/download/` is locked by `tests/e2e/locale-purity.spec.ts` as a route
-   * that draws no vault text, and a `display_ko:` line rendered there is Korean on an English
-   * screen — CI caught exactly that (2026-08-23).
-   */
+  /* The other locale's display line is left out and counted (`tests/e2e/locale-purity.spec.ts`). */
   const frontmatter = spec.frontmatter[tag];
   const omitted = spec.omittedLines[tag];
-  /* Node names are the vault's, not the message catalogue's — a node named only in English shows
-     its English name rather than a blank, which is the honest state for a vault that has not been
-     given a Korean name for it yet. */
+  /* The vault's names, not the catalogue's: an untranslated node shows its English name, not a blank. */
   const name = (pair: { ko: string; en: string }) => pair[tag];
 
   const facts: { key: EvidenceDemoKey; label: string; value: string; mono?: boolean }[] = [
@@ -81,7 +46,6 @@ export function EvidenceSpecimen({ demoKey = null }: { demoKey?: EvidenceDemoKey
 
   return (
     <div data-testid="evidence-specimen" className="flex min-w-0 flex-col gap-5">
-      {/* ── The file, verbatim ─────────────────────────────────────────────── */}
       <div className="min-w-0">
         <h3 className="text-caption font-[var(--font-weight-emphasis)] leading-caption text-[color:var(--color-text-secondary)]">
           {t('specimenFileHeading')}
@@ -90,19 +54,9 @@ export function EvidenceSpecimen({ demoKey = null }: { demoKey?: EvidenceDemoKey
           <p className="truncate border-b border-[color:var(--color-border-soft)] px-4 py-2.5 font-mono text-caption leading-caption text-[color:var(--color-text-tertiary)]">
             {spec.file}
           </p>
-          {/* Wide content scrolls inside its own box — the page body must never scroll sideways. */}
+          {/* Scrolls inside its box so the page never scrolls sideways. */}
           <div className="min-w-0 overflow-x-auto px-4 py-3">
-            {/*
-             * One span per line so the linked demo can light the line the map is answering.
-             * The lit style is the selection grammar (indigo family, brightness only): a soft
-             * overlay plus primary ink — no second colour, no motion beyond the colour ramp.
-             */}
-            {/*
-             * A gutter of line numbers and a key/value split (2026-09-08): the file reads as a
-             * file, and the key — the part that names a fact — carries less ink than the value
-             * it points at. The numbers stand outside each line's span, so a line's text is
-             * still the line itself.
-             */}
+            {/* Line numbers stand outside each line's span, so a span's text is exactly the file line the demo lights. */}
             <pre className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 font-mono text-caption leading-body text-[color:var(--color-text-secondary)]">
               {frontmatter.map((line, i) => {
                 const colon = line.indexOf(':');
@@ -133,11 +87,7 @@ export function EvidenceSpecimen({ demoKey = null }: { demoKey?: EvidenceDemoKey
             </pre>
           </div>
         </div>
-        {/*
-         * One line doing two jobs: it names the payoff (these lines *are* a node and an edge) and
-         * it states how many were left out. The second half is not optional — showing a subset as
-         * if it were the whole file is the same untruth this section exists to disprove.
-         */}
+        {/* The omitted-line count is required: a subset must never pass as the whole file. */}
         <p className="mt-2 text-caption leading-caption text-[color:var(--color-text-tertiary)]">
           {omitted > 0
             ? t('specimenElided', { shown: frontmatter.length, count: omitted })
@@ -145,7 +95,6 @@ export function EvidenceSpecimen({ demoKey = null }: { demoKey?: EvidenceDemoKey
         </p>
       </div>
 
-      {/* ── The same file, as the agent reads it ───────────────────────────── */}
       <div className="min-w-0 border-t border-[color:var(--color-border-soft)] pt-5">
         <h3 className="break-keep text-caption font-[var(--font-weight-emphasis)] leading-caption text-[color:var(--color-text-secondary)]">
           {t('specimenFactsHeading')}
@@ -176,27 +125,14 @@ export function EvidenceSpecimen({ demoKey = null }: { demoKey?: EvidenceDemoKey
         </dl>
       </div>
 
-      {/* ── Go and check ───────────────────────────────────────────────────── */}
       <div className="min-w-0 border-t border-[color:var(--color-border-soft)] pt-5">
         <p className="min-w-0 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
           {t.rich('specimenFooter', {
             count: spec.vaultNodeCount,
-            // The tag marks the number's position; the value comes from the same variable the
-            // plain interpolation used, so the animated number and the sentence cannot disagree.
             n: () => <CountUp value={spec.vaultNodeCount} />,
           })}
         </p>
-        {/*
-         * The link stands on its own line rather than trailing the sentence.
-         *
-         * Both alternatives were measured and rejected. Inside the sentence it has to be
-         * `display: inline` (`.prose-link`), and `/download`'s coarse-pointer gate has no
-         * in-sentence exemption — it came back 338x35 and red. Making it a value-layer control
-         * *inside* the sentence gives `inline-flex`, which the value layer's own notes record as
-         * killing wrapping at 320px. Out of the sentence both problems disappear: the shape is
-         * correct, and `touch-hit-expand` gives the 44px finger target without moving a pixel of
-         * layout (`app/globals.css`, coarse-pointer block).
-         */}
+        {/* On its own line: inline it fails the coarse-pointer gate, and inline-flex stops wrapping at 320px. */}
         <a
           href={spec.url}
           target="_blank"
@@ -207,7 +143,7 @@ export function EvidenceSpecimen({ demoKey = null }: { demoKey?: EvidenceDemoKey
             className: 'touch-hit-expand mt-2 text-[color:var(--color-text-secondary)] underline underline-offset-2',
           })}
         >
-          {/* `↗` leads the label and is declared — it warns that the link leaves the app. */}
+          {/* The leading ↗ warns that the link leaves the app. */}
           <span aria-hidden data-external-link-marker>
             ↗
           </span>

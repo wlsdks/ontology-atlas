@@ -75,7 +75,6 @@ describe('MCP tab asks for a folder once', () => {
   it('renders the connector section as one line without a second button when no folder is open', () => {
     draw({ status: 'unavailable' }, null);
     expect(screen.getByTestId('mcp-connectors-need-folder')).toBeInTheDocument();
-    // The share group above already asks and carries the button; the panel is not drawn at all.
     expect(screen.queryByTestId('connectors-panel')).toBeNull();
   });
 
@@ -92,11 +91,7 @@ describe('MCP tab states no count it does not know yet', () => {
     expect(screen.getByText(ko.mcp.connectorsHeading)).toBeInTheDocument();
   });
 
-  /*
-   * Both numbers, because the card below stopped saying the denominator on 2026-09-20 and this
-   * heading is now the only place it appears. A heading that dropped back to "1 on" would leave
-   * a person unable to tell a missing connector from a switched-off one.
-   */
+  /* The heading is the only place the total appears. */
   it('states the enabled and total counts once the store answers', () => {
     draw({
       status: 'ready',

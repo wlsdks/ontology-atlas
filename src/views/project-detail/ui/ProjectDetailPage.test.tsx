@@ -7,13 +7,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import enMessages from "../../../../messages/en.json";
 import { ProjectDetailPage } from "./ProjectDetailPage";
 
-// The tab state **lives in the URL** so it can be shared and reproduced by an agent. In the real app
-// `router.replace` triggers a re-render and `useSearchParams` yields the new value. Mocking both breaks
-// that loop, so it is reconnected here.
+// Mocking both router and search params breaks the replace → re-render loop, so it is reconnected here.
 const nav = vi.hoisted(() => ({ search: "", version: 0 }));
 
 vi.mock("next/navigation", () => ({
-  // Reading `version` produces a new instance on the re-render after a replace.
   useSearchParams: () => new URLSearchParams(nav.search),
 }));
 
@@ -47,7 +44,7 @@ vi.mock("@/widgets/search-palette", () => ({
 vi.mock("@/features/construction-review-local", () => ({
   useConstructionReviewSession: () => mocks.constructionReview,
 }));
-// The agent hook reaches the desktop bridge; the page is tested against the two routes it draws.
+// The real hook reaches the desktop bridge.
 vi.mock("../lib/use-project-agent", () => ({
   useProjectAgent: () => mocks.agent,
 }));
@@ -58,7 +55,7 @@ vi.mock("./parts/ProjectAgentDock", () => ({
     </div>
   ),
 }));
-// The dock needs a native folder path, which only an installed-app handle carries (`rootPath`).
+// Only an installed-app handle carries the native `rootPath` the dock needs.
 vi.mock("@/entities/vault-session", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/entities/vault-session")>();
   return {
@@ -249,10 +246,7 @@ function baseProject() {
   };
 }
 
-/**
- * There is **one** render harness. The same tree used to be written out twice more by hand, and when a
- * provider had to be added those two were missed — wherever there is a copy is where things drift.
- */
+/** The one render harness: hand-written copies missed a new provider. */
 function renderPage(
   overrides: {
     related?: ReturnType<typeof baseProject>[];
@@ -260,8 +254,7 @@ function renderPage(
   } = {},
 ) {
   return render(
-    // This screen puts the folder-opening path beside the "read only" badge, and that component reads
-    // vault context, so the provider is required (the 2026-08-07 dead-CTA fix).
+    // The read-only line's folder door reads vault context.
     <NextIntlClientProvider locale="en" messages={enMessages}>
       <LocalVaultProvider>
       <ProjectDetailPage
@@ -276,7 +269,6 @@ function renderPage(
 
 describe("ProjectDetailPage", () => {
   beforeEach(() => {
-    // The tab is URL state, so it is reset between tests to stop it leaking.
     nav.search = "";
     mocks.vaultBody = null;
     mocks.projects = [];
@@ -392,7 +384,6 @@ describe("ProjectDetailPage", () => {
     const seated = start.mock.calls[0][0] as string;
     expect(seated).toContain(`get_concept("${SLUG}"`);
     expect(seated).toContain("patch_concept");
-    // The dock is mounted beside the page only on this route.
     expect(screen.getByTestId("project-agent-dock-frame")).toHaveAttribute("data-dock-state", "empty");
   });
 
@@ -458,10 +449,7 @@ describe("ProjectDetailPage", () => {
     mocks.canEdit = false;
     renderPage();
 
-    // domains=1, capabilities=1, elements=2. Read as a description list pairs them — the term and
-    // the description it belongs to — rather than as running text, whose order is a drawing
-    // decision: the row is reversed visually so the figure reads "1 Domains" on screen while the
-    // document names the term first, which is the order a description list requires.
+    // A description list, since the row is reversed visually to read "1 Domains" on screen.
     const cell = screen.getByTestId("project-detail-surface-board").querySelector('[data-surface="ontology"]')!;
     const figures = [...cell.querySelectorAll("dt")].map((term) => [
       term.textContent,
@@ -483,16 +471,12 @@ describe("ProjectDetailPage", () => {
     expect(cells.map((cell) => cell.getAttribute("data-surface"))).toEqual(["ontology", "library", "harness"]);
     const doors = screen.getAllByTestId("project-detail-surface-open");
     expect(doors.map((door) => door.getAttribute("href"))).toEqual(["/library/", "/architecture/"]);
-    // The ontology cell's door would be the map, which the hero's primary action already opens.
     const mapDoors = screen
       .getAllByRole("link")
       .filter((link) => link.getAttribute("href") === `/topology/?p=${encodeURIComponent(`project:${SLUG}`)}`);
     expect(mapDoors).toHaveLength(1);
   });
 
-  // 2026-09-25 sweep: the bare slug opened the project drawer, which has no code evidence, so
-  // connecting the project's code folder was unreachable from this page. The map door lands
-  // on the project's own node, whose inspector carries the evidence and the connect control.
   it("opens the map on the project's own node, where its code folder is connected", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
@@ -504,8 +488,6 @@ describe("ProjectDetailPage", () => {
     );
   });
 
-  // The same sweep: the editable title answered only as a button, so the page had no level-1
-  // heading for the people who can edit it. It is the heading, and the press lives inside it.
   it("keeps the project name the page's level-1 heading when it is editable", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
@@ -517,9 +499,6 @@ describe("ProjectDetailPage", () => {
     expect(within(heading).getByRole("button", { name: "ontology-atlas" })).toBeInTheDocument();
   });
 
-  // The Library cell once counted wiki pages out of the chosen sample while counting sources out
-  // of the open local folder, so every reader without a folder open — the web, and any sample —
-  // was told the folder held no sources whatever it held. One manifest answers both now.
   it("counts the sample's sources in the library cell without an open folder", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
@@ -546,9 +525,6 @@ describe("ProjectDetailPage", () => {
     expect(harness).toHaveTextContent(/instructions, structure and sensors/i);
   });
 
-  // Relations say how connected the map is, not how much of it there is, so they are a different
-  // kind from the containment figures and ride the cell's note line instead of becoming a fourth
-  // figure of equal weight. Pinned so that hierarchy inside the cell cannot collapse.
   it("shows the relation count as a line in the ontology cell, not a fourth metric", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
@@ -558,21 +534,13 @@ describe("ProjectDetailPage", () => {
     const cell = screen.getByTestId("project-detail-surface-board").querySelector('[data-surface="ontology"]')!;
     const figureLabels = [...cell.querySelectorAll("dt")].map((node) => node.textContent);
     expect(figureLabels).toEqual(["Domains", "Capabilities", "Elements"]);
-    // ...and it names its own scope. This counts only the edges whose two ends are both in this
-    // project, which is a smaller number than the folder's relation total shown in the same
-    // block — two figures called "relations" in one eyeful, with nothing saying they measure
-    // different things.
+    // It names its scope: only edges with both ends in this project.
     expect(cell.querySelector('[data-testid="project-detail-surface-note"]')).toHaveTextContent(
       "3 relations among these concepts",
     );
   });
 
-  /*
-   * **One folder, one number.** The strip beside the composition board says "whole folder", so it
-   * has to count what every other surface calls a concept — `computeCanonicalCensus`, the rule the
-   * map's INDEX row reads. Counting the raw node array added the vault readme, and the same folder
-   * read 7 here and 6 on the map, one click apart.
-   */
+  /* The raw node array also counts the vault readme. */
   it("counts folder-wide concepts by the same rule as the map INDEX", () => {
     mocks.insightNodes = [
       ...BASE_NODES,
@@ -585,12 +553,9 @@ describe("ProjectDetailPage", () => {
     expect(screen.getByTestId("project-detail-global-census")).toHaveTextContent(
       "6 concepts in the whole folder",
     );
-    // The folder's relations are not restated beside the ontology cell's own relation count.
     expect(screen.getByTestId("project-detail-global-census")).not.toHaveTextContent(/relation/i);
   });
 
-  // Only the ontology half of the board is this project's; sources and wiki pages count the folder.
-  // Two scopes side by side read as one unless the difference is said in words.
   it("captions the composition board with its scope, since only the ontology belongs to this project", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
@@ -606,14 +571,9 @@ describe("ProjectDetailPage", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
     mocks.canEdit = false;
-    // Composition sits behind a tab and the URL is the tab state's source of truth. The render contract
-    // and the click contract are checked separately: here, "if the URL says composition, the rows are
-    // drawn". (Click → URL navigation is Next's job, and the separate test below only checks the URL record.)
     nav.search = "tab=composition";
     renderPage();
 
-    // The card grid lost and the row list took its place — the door to the map is not the whole card but a
-    // single link **inside the expanded row** (2026-08-12, option B).
     const row = screen.getByTestId("project-detail-domain-row-toggle");
     expect(row).toHaveTextContent("Views");
     fireEvent.click(row);
@@ -623,10 +583,6 @@ describe("ProjectDetailPage", () => {
     );
   });
 
-  // The hero's radial map promised "the fuller a domain, the larger it is", but the measured width
-  // difference between 17 and 6 was 4.7px (17 against 16 was 0.3px) and the lines ran through the label.
-  // A promise that cannot be kept is a misunderstanding, not ink — instead of layering another picture
-  // there, the list lives in a judgeable form (rows plus bars) in **one place only**.
   it("draws no radial domain map in the hero; the domain list lives only in the composition tab", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
@@ -634,10 +590,7 @@ describe("ProjectDetailPage", () => {
     const { container } = renderPage();
     const header = container.querySelector("header")!;
 
-    /*
-     * **An assertion measuring an absence passes forever if the selector is wrong** — so first confirm
-     * this selector really does catch such an SVG (`/gate-probe`: is the check idling on an empty set?).
-     */
+    /* An absence check passes forever on a wrong selector, so the selector is probed first. */
     const probe = document.createElement("div");
     probe.innerHTML = '<svg role="img" aria-label="probe"></svg>';
     header.appendChild(probe);
@@ -645,11 +598,9 @@ describe("ProjectDetailPage", () => {
     probe.remove();
 
     expect(header.querySelector("svg[role='img']")).toBeNull();
-    // The hero has no domain rows (the same nine lines are not drawn twice on one screen).
     expect(header.querySelector("[data-testid='domain-capacity-bar-row']")).toBeNull();
   });
 
-  // The same sentence is not said twice — the footnote appears once, where the list is.
   it("shows the overlap footnote once, beside the list", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
@@ -659,8 +610,6 @@ describe("ProjectDetailPage", () => {
     expect(screen.getAllByTestId("project-detail-domain-overlap-note")).toHaveLength(1);
   });
 
-  // The tabs are gone (2026-09-19): the page's question is "what is in here", so composition is
-  // not behind a press, and the document's own destination holds the prose the card used to pour out.
   it("draws the composition and the domains on one page, with no tablist", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
@@ -677,8 +626,7 @@ describe("ProjectDetailPage", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
     mocks.canEdit = false;
-    // The question is only asked of a folder that holds another project, so the empty state needs
-    // one to exist before it can be read.
+    // The card is only drawn when the folder holds another project.
     mocks.vaultDocs = [projectDoc("project", SLUG), projectDoc("second", "second")];
     renderPage();
 
@@ -687,8 +635,6 @@ describe("ProjectDetailPage", () => {
     expect(empty.textContent).not.toMatch(/^0\b/);
   });
 
-  // A folder with one project cannot answer "which other project is this tied to": connecting needs
-  // a second project to exist, so the card's empty state would sit at the top of the rail forever.
   it("skips the connection card when the folder has one project", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
@@ -697,7 +643,6 @@ describe("ProjectDetailPage", () => {
     renderPage();
 
     expect(screen.queryByTestId("project-detail-connected-card")).toBeNull();
-    // The rail itself stays: the agent card below it is what now opens the column.
     expect(screen.getByTestId("project-detail-connected")).toBeInTheDocument();
   });
 
@@ -705,9 +650,7 @@ describe("ProjectDetailPage", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
     mocks.canEdit = false;
-    // baseProject() intentionally has no `status` — honest-undefined per the
-    // Project entity contract (R15). heroMeta must not render a trailing
-    // "Individual project · —" dash collision for the missing field.
+    // baseProject() has no `status`, so no trailing "· —".
     renderPage();
 
     expect(screen.getByText("Individual project")).toBeInTheDocument();
@@ -723,8 +666,7 @@ describe("ProjectDetailPage", () => {
 
     expect(screen.getByText("Sibling Project")).toBeInTheDocument();
     expect(screen.queryByTestId("project-detail-connected-empty")).not.toBeInTheDocument();
-    // No decorative arrow on a link that navigates inside the app — where it goes is said by the label,
-    // and that it is pressable is said by the control.
+    // No decorative arrow on an in-app link.
     expect(screen.getByTestId("project-detail-connected").textContent).not.toContain("↗");
   });
 
@@ -792,8 +734,6 @@ describe("ProjectDetailPage", () => {
     mocks.vaultBody = "## Real project.md content\n\nThis is the actual markdown body.";
     renderPage();
 
-    // The card summarises: the section titles are the contents line, the opening paragraph is the
-    // prose, and the document's own destination holds the rest.
     const content = screen.getByTestId("project-detail-brief-summary");
     expect(content).toHaveTextContent("Real project.md content");
     expect(content).toHaveTextContent("This is the actual markdown body.");
@@ -819,22 +759,18 @@ describe("ProjectDetailPage", () => {
 
     const brief = screen.getByTestId("project-detail-brief-summary");
     expect(brief).toHaveAttribute("data-section-count", "3");
-    // The contents line names what is written, in order, without pouring the document out.
     const sections = screen.getByTestId("project-detail-brief-sections");
     expect([...sections.querySelectorAll("li")].map((item) => item.textContent?.replace(/^·\s*/, ""))).toEqual([
       "What it does",
       "How work flows",
       "Where it is uneven",
     ]);
-    // Only the opening paragraph is drawn, so the steps and rows of later sections are not.
     expect(screen.queryByTestId("project-detail-brief-steps")).not.toBeInTheDocument();
     expect(screen.getByTestId("project-detail-body-content")).toHaveTextContent("A store.");
     expect(screen.getByTestId("project-detail-body-continue")).toBeInTheDocument();
     expect(screen.getByTestId("project-detail-brief-ask")).toHaveAttribute("data-brief-state", "structured");
   });
 
-  // A body can open with a list. The summary used to look for a paragraph, find none, and draw
-  // nothing at all about the document — the one thing this card exists to carry.
   it("shows the first block of a body that starts with a list", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
@@ -866,14 +802,12 @@ describe("ProjectDetailPage", () => {
     ];
     renderPage();
 
-    // No `##` heading: the opening paragraph stands alone with no contents line.
     expect(screen.getByTestId("project-detail-body-content")).toHaveTextContent("One paragraph.");
     expect(screen.queryByTestId("project-detail-brief-sections")).not.toBeInTheDocument();
     const ask = screen.getByTestId("project-detail-brief-ask");
     expect(ask).toHaveAttribute("data-brief-state", "unstructured");
     const copy = screen.getByTestId("project-detail-brief-ask-copy");
     expect(copy.className).toContain("--color-indigo-brand");
-    // The instructions name the document and the write guard, so the agent changes only the body.
     const preview = ask.querySelector("pre")?.textContent ?? "";
     expect(preview).toContain(`get_concept("${SLUG}"`);
     expect(preview).toContain("docs/ontology/project.md");

@@ -17,17 +17,13 @@ describe("resolveProjectTagline: the hero one-line definition", () => {
     ).toBe("이 프로젝트는 고객 주문을 재고와 배송까지 잇습니다.");
   });
 
-  // A first sentence that is too short (under 20 characters) does not represent the definition, so it is
-  // not treated as a sentence and the next one is appended — the existing contract of
-  // `compactOntologyDescription`.
+  // Under 20 characters, per `compactOntologyDescription`.
   it("does not stop at a first sentence that is too short", () => {
     expect(resolveProjectTagline({ description: "짧다. 이어지는 설명이 본체다." })).toBe(
       "짧다. 이어지는 설명이 본체다.",
     );
   });
 
-  // Measured defect: the hero passed a 320-character excerpt straight through and cut **mid-word**, as in
-  // "…the ontology of this project is busi". It has to end at a sentence boundary.
   it("ends at a sentence boundary, never mid-word", () => {
     const long =
       "마크다운에서 자라는 오픈소스 온톨로지 워크벤치입니다. " +
