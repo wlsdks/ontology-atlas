@@ -18,7 +18,7 @@ import { AGENTS_TAB_PARAM, buildAgentsTabHref, parseAgentsTab, type AgentsTab } 
 /**
  * Where coding agents are installed, connected and opened into a conversation, with tabs for
  * Atlas's own models and the folder's MCP. The MCP tab is `children` from the app layer, so
- * neither view imports the other; the workspace folder belongs to `local-vault-management`.
+ * neither view imports the other. Choosing the workspace folder is `capabilities/vault-folder-session`.
  */
 export function AgentsPage({
   children,

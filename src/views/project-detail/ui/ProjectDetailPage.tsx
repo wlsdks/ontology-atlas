@@ -638,7 +638,8 @@ export function ProjectDetailPage({
         />
       </section>
 
-      {/* One column of bands: nothing beside a list of unknown length can match its height. */}
+      {/* One column of bands: nothing beside a list of unknown length can match its height. The
+          hero draws no domain map or rows, so the domain list lives only here. */}
       <section
         data-testid="project-detail-domains"
         className="mt-[var(--section-gap)] min-w-0 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)]"

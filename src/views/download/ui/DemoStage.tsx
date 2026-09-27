@@ -9,7 +9,7 @@ import { controlClass } from '@/shared/ui/control-class';
 /**
  * The demo section's playback contract: one per-locale clip, muted, no captions (each take is
  * already in its language). Reduced motion keeps the poster and a play button. The section owns
- * the `--gateway-stage-max` cap (`app/globals.css`), or the video and caption edges split; it is
+ * the `--gateway-stage-max` cap (`app/styles/tokens.css`), or the video and caption edges split; it is
  * left-aligned to its heading like the other stages (`docs/DECISIONS.md` 2026-08-23).
  */
 export function DemoStage({ available }: { available?: readonly DemoClip['id'][] }) {
@@ -85,6 +85,7 @@ function DemoPlayer({ clip }: { clip: DemoClip }) {
          * (nothing to scrub toward) and a loop for late arrivals (`docs/DECISIONS.md` 2026-08-30).
          * Keyed on locale: a video does not re-select its source when its children change, or a
          * Korean page plays the English take.
+         * Browsers autoplay inline only when `muted` and `playsInline` are both set.
          */}
         <video
           key={locale}

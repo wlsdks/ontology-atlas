@@ -75,7 +75,7 @@ export function ProjectSelectorPage() {
             </p>
 
             {/* Cards, not page-wide rows, so words and doors stay within one hand's reach
-                (`docs/records/decisions/2026-09-15-compact-project-identification-…`). */}
+                (`docs/records/decisions/2026-09-15-compact-project-identification-1fd40970-f033-4260-861d-d54d44899bdd.md`). */}
             {projects.length > 0 ? (
               <ul
                 data-testid="project-selector-grid"

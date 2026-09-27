@@ -6,8 +6,9 @@ import { cn } from '@/shared/lib/cn';
 import { HeroTypewriter } from './HeroTypewriter';
 
 /**
- * A chat message becoming a relation inside the app, from the measured round trip in the
- * record `docs/DECISIONS.md` 2026-08-16 (7). The copy never implies we provide model access and uses only
+ * A chat message becoming a relation inside the app. The person's sentence and the `why` are the
+ * measured round trip (`docs/DECISIONS.md` 2026-08-16 (7)); the caption and result show today's
+ * write review, not a verbatim replay. The copy never implies we provide model access and uses only
  * registry names (docs/DECISIONS.md 2026-08-16 (5), `tests/contract/vendor-naming.contract.test.ts`).
  * Steps arrive in causal order (`.claude/rules/design.md`); reduced motion shows all at once.
  */

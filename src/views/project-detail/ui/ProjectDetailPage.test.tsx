@@ -567,7 +567,7 @@ describe("ProjectDetailPage", () => {
     );
   });
 
-  it("reveals the domain map deep link when a composition-tab domain row expands", () => {
+  it("reveals the domain map deep link when a domain row expands", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
     mocks.canEdit = false;
@@ -583,7 +583,7 @@ describe("ProjectDetailPage", () => {
     );
   });
 
-  it("draws no radial domain map in the hero; the domain list lives only in the composition tab", () => {
+  it("draws no radial domain map in the hero; the domain list lives only in the domain rows", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
     mocks.canEdit = false;

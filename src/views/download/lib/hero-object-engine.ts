@@ -323,15 +323,15 @@ export function mountHeroObject(
     const ay = opts.anchor?.y ?? 0.5;
     const envMidY = ((envelope.y0 + envelope.y1) / 2) * scaleFit;
     centerX = W * ax - ((envelope.x0 + envelope.x1) / 2) * scaleFit;
-    // Pixels, not a fraction: the narrow plinth's height follows the copy.
+    // Pixels from the foot, not a fraction: the stage grows with the copy, the plinth does not.
     centerY =
       opts.anchor?.bottomPx !== undefined ? H - opts.anchor.bottomPx - envMidY : H * ay - envMidY;
   }
   size();
 
-  /** Each dot fades in from its own moment, so two keystrokes' dots never share a frame. */
   const echo = opts.echo === true;
   const order = echoOrder(model.nodes);
+  /** Each dot fades in from its own moment, so two keystrokes' dots never share a frame. */
   const revealAt = new Map<string, number>();
   const REVEAL_MS = parseFloat(cssVar(rootEl, '--motion-base', '180ms')) || 180;
 

@@ -50,8 +50,9 @@ export function StageMap({
   );
 
   /**
-   * Starts at 0 and rises a tick after mount, or the engine's baseline of 0 swallows it and the
-   * map arrives as a hard cut instead of settling (`tests/contract/gateway-map-reveal.contract.test.ts`).
+   * Starts at 0 and rises to 1 a frame after the stage is first seen (effect below), never in the
+   * mount frame, or the engine's baseline of 0 swallows it and the map arrives as a hard cut
+   * (`tests/contract/gateway-map-reveal.contract.test.ts`).
    */
   const [revealToken, setRevealToken] = useState(0);
 

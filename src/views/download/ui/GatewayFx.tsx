@@ -60,7 +60,7 @@ export function GatewayFx() {
     }
     size();
 
-    // Weights are relative, only ever multiplied by the alpha ceiling.
+    // Weights stay at most 1: they multiply the `--gateway-fx-blob-alpha` ceiling, the cap.
     const blobs = [
       { w: 1, r: 0.46, cx: 0.26, cy: 0.34, sp: 1.0, ph: 0, follow: false },
       { w: 0.64, r: 0.52, cx: 0.76, cy: 0.22, sp: 0.66, ph: 2.2, follow: false },
@@ -191,12 +191,12 @@ export function GatewayFx() {
       }, 1000);
     }
 
-    // The cursor ring: fine pointers only, translate3d only.
-    const cur = cursorRef.current;
+    // translate3d only, so following the pointer never lays out the page.
+    const ringHost = cursorRef.current;
     let cleanupCursor: (() => void) | null = null;
-    if (cur && typeof matchMedia === 'function' && matchMedia('(pointer: fine)').matches) {
-      const ring = cur.firstElementChild as HTMLElement | null;
-      cur.classList.add('is-live');
+    if (ringHost && typeof matchMedia === 'function' && matchMedia('(pointer: fine)').matches) {
+      const ring = ringHost.firstElementChild as HTMLElement | null;
+      ringHost.classList.add('is-live');
       let tx = innerWidth / 2;
       let ty = innerHeight / 2;
       let cx = tx;
@@ -204,7 +204,7 @@ export function GatewayFx() {
       const HOT =
         'a,button,[role="button"],video,summary,input,select,textarea,label';
       const put = (): void => {
-        cur.style.transform = `translate3d(${cx}px,${cy}px,0)`;
+        ringHost.style.transform = `translate3d(${cx}px,${cy}px,0)`;
       };
       const onPointerMove = (e: PointerEvent): void => {
         tx = e.clientX;
@@ -215,7 +215,7 @@ export function GatewayFx() {
           cy = ty;
           put();
         }
-        cur.classList.add('is-on');
+        ringHost.classList.add('is-on');
         const target = e.target as Element | null;
         ring?.classList.toggle('is-hot', Boolean(target?.closest?.(HOT)));
       };
@@ -224,8 +224,8 @@ export function GatewayFx() {
         cy += (ty - cy) * 0.3;
         put();
       };
-      const onBlur = (): void => cur.classList.remove('is-on');
-      const onLeave = (): void => cur.classList.remove('is-on');
+      const onBlur = (): void => ringHost.classList.remove('is-on');
+      const onLeave = (): void => ringHost.classList.remove('is-on');
       addEventListener('pointermove', onPointerMove, { passive: true });
       addEventListener('blur', onBlur);
       document.documentElement.addEventListener('mouseleave', onLeave);

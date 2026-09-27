@@ -7,7 +7,8 @@ import type { SurfaceCell } from "../model/surface-composition";
 
 /**
  * One card per surface, the ontology wide. Cells share a height and a door line whatever their
- * copy (`.claude/rules/forbidden.md`, content-decided card height).
+ * copy (`.claude/rules/forbidden.md`, content-decided card height). No proportion bar over the
+ * totals: they form a containment pyramid, not parts of a whole.
  */
 export function SurfaceCompositionBoard({
   cells,

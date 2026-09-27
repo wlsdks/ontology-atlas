@@ -11,7 +11,7 @@ import { cn } from '@/shared/lib/cn';
  * The name is one `aria-label` from `heroSentence()`; a hidden copy doubled `h1.innerText`.
  */
 
-/** A cadence, not a transition, so a number rather than a `--motion-*` token. */
+/** 26 characters a second still reads as typing, not flicker; a cadence, so not a `--motion-*` token. */
 const CADENCE_MS = 38;
 /** A longer sentence types faster instead of taking longer. */
 const BUDGET_MS = 1800;

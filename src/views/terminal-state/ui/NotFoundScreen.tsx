@@ -41,7 +41,7 @@ function NotFoundBody() {
   const desktop = useIsDesktopShell();
   const answered = useClientAnswered();
 
-  // Hides the mobile tab bar, or "where to go" splits across two places (rule in globals.css).
+  // Hides the mobile tab bar, or "where to go" splits across two places (rule in `app/styles/shell.css`).
   useEffect(() => {
     document.body.setAttribute('data-no-tabbar', 'true');
     return () => {

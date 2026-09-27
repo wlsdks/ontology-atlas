@@ -1,8 +1,9 @@
 /**
  * The real vault as a lit three.js object, placed by the map's own cone (`buildDomeModel`).
  * It keeps the 2D engine's contracts the gates measure: the typing echo, one edge fact on hover,
- * the `litCount()`/`nodesOnScreen()` probes under `?e2e=1`, the shared frame loop, and a still
- * reduced motion.
+ * the `litCount()`/`nodesOnScreen()` probes under `?e2e=1`, the shared frame loop, and one still
+ * frame under reduced motion. Per frame O(N + D) over slug-keyed Maps and instanced meshes, plus
+ * an O(E) line rebuild while the echo is still lighting dots.
  * Bloom is additive sprites: `UnrealBloomPass` does not work on a transparent canvas.
  */
 

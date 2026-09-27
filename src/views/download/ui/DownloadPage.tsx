@@ -55,9 +55,9 @@ const HERO_CTA_WRAP = 'min-w-0 whitespace-normal text-left sm:whitespace-nowrap'
 
 /**
  * Serves /download and / (`docs/DECISIONS.md` 2026-08-18): a hero on its own clock, then sections
- * that arrive on scroll through `animation-timeline: view()`, absent under reduced motion
- * (`tests/contract/reduced-motion-equivalent.contract.test.ts`). The install section and its
- * checksum facts were removed on purpose (`docs/DECISIONS.md` 2026-08-19).
+ * whose scroll entrances (`animation-timeline: view()`) do not exist under reduced motion
+ * (`tests/contract/reduced-motion-equivalent.contract.test.ts`). The install section went on
+ * purpose (`docs/DECISIONS.md` 2026-08-19); the facts strip and closing band still carry the checksum.
  */
 export function DownloadPage() {
   const pathname = usePathname() ?? '/';
@@ -431,7 +431,6 @@ function FactsStrip({
     });
   }
 
-  /** Links, not facts, so they take the link grammar instead of the engraved face. */
   const tag = published
     ? MACOS_RELEASE.tag
     : resolveDisplayReleaseTag({
@@ -439,6 +438,7 @@ function FactsStrip({
         publishedTag: MACOS_RELEASE.tag,
         releaseVersion: RELEASE_VERSION,
       });
+  /** Links, not facts, so they take the link grammar instead of the engraved face. */
   const links = [
     {
       label: t('factChangelogLabel'),
