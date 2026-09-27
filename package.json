@@ -96,7 +96,7 @@
     "docs:check": "pnpm docs:surface:check && pnpm design:toc:check && pnpm changelog:check && pnpm dev-checks:check && pnpm docs:language && pnpm source:language && pnpm docs:comment-refs && pnpm docs:links && pnpm docs:meta && pnpm docs:move -- --check",
     "test:docs:checks": "node --test scripts/build-docs-surface.test.mjs scripts/check-doc-links.test.mjs scripts/docs-move.test.mjs scripts/check-doc-meta.test.mjs",
     "test:docs:language": "node --test scripts/quality/markdown-language/inventory.test.mjs",
-    "test:source:language": "node --test scripts/quality/source-language/inventory.test.mjs",
+    "test:source:language": "node --test scripts/quality/source-language/inventory.test.mjs scripts/quality/source-language/test-titles.test.mjs",
     "vault:validate": "node scripts/validate-vault.mjs",
     "decisions:check": "node scripts/check-decision-record.mjs",
     "backlog": "node scripts/backlog.mjs",

@@ -114,12 +114,12 @@ describe('타입 램프는 루트 글꼴 크기를 따른다', () => {
 
       expect(
         offenders,
-        '램프 단이 루트에 상대적이지 않다. px 로 쓰면 브라우저의 «글자만 확대»\n' +
-          '설정이 이 단에 전혀 닿지 않는다 (2026-09-11 U2 carry-forward: 200% 에서\n' +
-          '화면이 픽셀 단위로 동일했다). 16px 루트로 나눠 rem 으로 적는다 —\n' +
-          '9.5px → 0.59375rem. 램프 밖에 서야 하는 단이라면 이 파일의\n' +
-          'NOT_ROOT_RELATIVE 에 사유와 함께 등록하고 docs/DECISIONS.md 에 기록한다.\n' +
-          '위반:\n' +
+        'A ramp step is not relative to the root. Written in px, the browser setting that enlarges\n' +
+          'text only never reaches this step (2026-09-11 U2 carry-forward: at 200% the\n' +
+          'screen was identical pixel for pixel). Divide by the 16px root and write rem:\n' +
+          '9.5px is 0.59375rem. If a step must stand outside the ramp, register it with the reason\n' +
+          'in NOT_ROOT_RELATIVE in this file and record it in docs/DECISIONS.md.\n' +
+          'Violations:\n' +
           offenders.join('\n'),
       ).toEqual([]);
     },
@@ -187,9 +187,9 @@ describe('타입 램프는 루트 글꼴 크기를 따른다', () => {
     }
     expect(
       offenders,
-      '`text-[length:var(…)]` 로 소비되는 크기 토큰이 루트를 따르지 않는다.\n' +
-        '접두사가 아니라 수량이 규칙을 정한다 — rem 으로 적거나 var(--text-*) 를\n' +
-        '가리킨다. 위반:\n' +
+      'A size token consumed through `text-[length:var(…)]` does not follow the root.\n' +
+        'The quantity sets the rule, not the prefix: write it in rem or point it at\n' +
+        'a var(--text-*). Violations:\n' +
         offenders.join('\n'),
     ).toEqual([]);
   });

@@ -102,15 +102,15 @@ describe("화면 안내 자동 표시 — 스위치가 모든 발화 지점을 �
     const unregistered = found.filter((p) => !registered.has(p));
     expect(
       unregistered,
-      `등재되지 않은 자동 시작 지점: ${unregistered.join(", ")} — ` +
-        `스위치를 읽는 파일이 늘었으면 AUTO_START_SITES 에도 넣는다`,
+      `Unregistered auto-start sites: ${unregistered.join(", ")}. ` +
+        `A new file that reads the switch goes into AUTO_START_SITES too`,
     ).toEqual([]);
 
     const stale = [...registered].filter((p) => !found.includes(p));
     expect(
       stale,
-      `등재됐는데 스위치를 안 읽는 파일: ${stale.join(", ")} — ` +
-        `자동 시작을 지웠으면 목록에서도 빼고, 안 지웠으면 그 파일이 스위치를 잃은 것이다`,
+      `Registered files that no longer read the switch: ${stale.join(", ")}. ` +
+        `If auto-start was removed, drop them from the list; if not, the file lost the switch`,
     ).toEqual([]);
   });
 

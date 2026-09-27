@@ -54,8 +54,8 @@ describe('번들 볼트 데이터 상시 예산', () => {
     expect(
       total,
       [
-        '모든 라우트가 파싱하는 번들 볼트 데이터가 예산을 넘었다.',
-        '가장 큰 것을 지연 로드(비동기 청크·public asset)로 옮기거나 미리보기로 잘라라.',
+        'The bundled vault data every route parses is over budget.',
+        'Move the largest file to a lazy load (an async chunk or a public asset) or cut it down to a preview.',
         ...sizes.map((f) => `  ${f.name}: ${(f.bytes / 1024).toFixed(0)}KB`),
       ].join('\n'),
     ).toBeLessThanOrEqual(AGGREGATE_BUDGET_BYTES);

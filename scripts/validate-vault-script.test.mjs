@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { describe, it } from "node:test";
@@ -87,6 +87,19 @@ describe("validate-vault script arguments", () => {
       assert.equal(notDirectory.stdout, "");
       assert.match(notDirectory.stderr, /Vault path is not a directory:/);
       assert.doesNotMatch(notDirectory.stderr, /at async/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("does not read a Markdown file under sources/ as a vault document", () => {
+    const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-validate-vault-sources-"));
+    try {
+      mkdirSync(join(dir, "sources"));
+      writeFileSync(join(dir, "sources", "roadmap.md"), "---\nkind: domain\ntitle: Roadmap\nelements\n---\n");
+      const result = spawnSync(process.execPath, [SCRIPT, dir], { cwd: ROOT, encoding: "utf8" });
+      assert.equal(result.status, 0, result.stdout);
+      assert.match(result.stdout, /0 files scanned/);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

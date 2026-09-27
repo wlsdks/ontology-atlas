@@ -21,6 +21,7 @@ import { parseFrontmatter } from "./lib/parse-frontmatter.mjs";
 // R13 #58 logic now lives in the MCP package (shared with the agent-callable
 // validate_vault pathDrift surface) — single source of truth. Atlas Track A #2.
 import { detectVaultPathDrift } from "../mcp/src/detect-drift.mjs";
+import { VAULT_SOURCES_DIR } from "../mcp/src/schema.mjs";
 
 const COLORS = {
   red: "\x1b[31m",
@@ -86,12 +87,13 @@ if (!statSync(REPO).isDirectory()) {
   process.exit(2);
 }
 
-function walkMd(dir, out = []) {
+function walkMd(dir, out = [], root = dir) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     if (entry.name.startsWith(".")) continue;
     const full = join(dir, entry.name);
-    if (entry.isDirectory()) walkMd(full, out);
-    else if (entry.isFile() && entry.name.endsWith(".md")) out.push(full);
+    if (entry.isDirectory()) {
+      if (dir !== root || entry.name !== VAULT_SOURCES_DIR) walkMd(full, out, root);
+    } else if (entry.isFile() && entry.name.endsWith(".md")) out.push(full);
   }
   return out;
 }

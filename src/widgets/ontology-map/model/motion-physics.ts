@@ -6,11 +6,7 @@
  * camera's `--map-camera-spring-angfreq-*` tokens are tuned specialisations of the same grammar.
  */
 
-/**
- * Bounds of the distance-proportional programmatic camera tween (`model/camera-easing.ts`).
- * The max matches `--topology-motion-camera-duration` (420 ms), so the canvas dive and chrome
- * riding the camera share one clock.
- */
+/** Bounds of the distance-proportional programmatic camera tween (`model/camera-easing.ts`). */
 export const CAMERA_TWEEN_MIN_MS = 200;
 export const CAMERA_TWEEN_MAX_MS = 420;
 

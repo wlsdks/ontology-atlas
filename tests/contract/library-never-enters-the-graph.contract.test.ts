@@ -5,7 +5,8 @@ import { afterAll, describe, expect, it } from 'vitest';
 
 import { buildLocalManifest } from '@/entities/docs-vault/lib/build-local-manifest';
 import { deriveOntologyFromVault } from '@/entities/docs-vault/lib/derive-ontology-from-vault';
-import { walkMd } from '../../mcp/src/vault.mjs';
+import { walkMd as walkCliVault } from '../../cli/src/lib/walk-vault.mjs';
+import { loadVaultDocs, walkMd } from '../../mcp/src/vault.mjs';
 
 /**
  * **A vault holds three kinds of file and only one is the graph** (`docs/DECISIONS.md`,
@@ -17,9 +18,9 @@ import { walkMd } from '../../mcp/src/vault.mjs';
  * announce itself — a graph full of PDF stubs is not an error, only a map nobody trusts.
  *
  * 1. **A raw source becoming a node.** `sources/plan.pdf` has no frontmatter to parse,
- *    so a parser reaching it would either fail or invent. Both walks — this repository's
- *    `buildLocalManifest` and the MCP server's `listMarkdownFiles` — must keep it out of
- *    the document list entirely rather than filter it later.
+ *    so a parser reaching it would either fail or invent. Every walk — the app's
+ *    `buildLocalManifest` and the MCP and CLI `walkMd` — must keep it out of the
+ *    document list entirely rather than filter it later.
  * 2. **A wiki page becoming a node.** `wiki/quarter-plan.md` *is* Markdown, and the
  *    parser reads it like any other document. What keeps it out of the graph is the
  *    absence of `kind:`, which `deriveDocNode` requires. That is a real property of the
@@ -45,6 +46,11 @@ writeFileSync(join(fixtureRoot, 'sources/budget.xlsx'), Buffer.from([0x50, 0x4b,
 writeFileSync(
   join(fixtureRoot, 'sources/plan-notes.md'),
   '---\norigin: sources/plan.pdf\n---\n\n# Plan notes\n',
+);
+mkdirSync(join(fixtureRoot, 'sources/Planning'), { recursive: true });
+writeFileSync(
+  join(fixtureRoot, 'sources/Planning/roadmap.md'),
+  '---\nkind: domain\ntitle: Roadmap\n---\n\n# Roadmap\n',
 );
 writeFileSync(
   join(fixtureRoot, 'wiki/quarter-plan.md'),
@@ -116,6 +122,7 @@ describe('the library never enters the graph', () => {
     expect(slugs).not.toContain('sources/plan.pdf');
     expect(slugs).not.toContain('sources/budget.xlsx');
     expect(build.manifest.sources?.map((source) => source.path).sort()).toEqual([
+      'sources/Planning/roadmap.md',
       'sources/budget.xlsx',
       'sources/plan-notes.md',
       'sources/plan.pdf',
@@ -140,7 +147,20 @@ describe('the library never enters the graph', () => {
     expect(files.every((file: string) => file.endsWith('.md'))).toBe(true);
     expect(files).not.toContain('sources/plan.pdf');
     expect(files).not.toContain('sources/budget.xlsx');
+    expect(files).not.toContain('sources/plan-notes.md');
     expect(files).toContain('wiki/quarter-plan.md');
+  });
+
+  it('a sources/ file that carries kind: is a node on no surface', async () => {
+    const appNodes = deriveOntologyFromVault((await buildLocalManifest(nodeDirectoryHandle(fixtureRoot, 'fixture'))).manifest)
+      .nodes.filter((node) => node.sourceSlug)
+      .map((node) => node.sourceSlug);
+    const mcpDocs = loadVaultDocs(fixtureRoot).filter((doc: { frontmatter: { kind?: string } }) => doc.frontmatter.kind);
+    const cliFiles = walkCliVault(fixtureRoot).map((file: string) => file.slice(resolve(fixtureRoot).length + 1));
+
+    expect(appNodes).toEqual(['capabilities/mcp-server']);
+    expect(mcpDocs.map((doc: { slug: string }) => doc.slug)).toEqual(appNodes);
+    expect(cliFiles).not.toContain('sources/Planning/roadmap.md');
   });
 
   it('a wiki page contributes no node, however much frontmatter it carries', async () => {

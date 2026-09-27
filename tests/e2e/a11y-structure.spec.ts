@@ -89,9 +89,9 @@ for (const vp of WIDTHS) {
 
     expect(
       findings.map((f) => `${f.kind} @ ${f.route} (${f.width}px) ${f.detail}`),
-      `heading/landmark 계약 위반. 화면에 제목이 **보이는 것**과 문서에 제목이\n` +
-        `**있는 것**은 다른 문제다 — 제목으로 훑는 사용자에게는 뒤쪽만 존재한다.\n` +
-        `본문이 카드 하나뿐인 화면(강등·빈 상태)이면 EmptyState 의 titleAs 로 h1 을 낸다.`,
+      `Heading/landmark contract violated. A title being **visible** on screen and a title\n` +
+        `**existing** in the document are different problems; a person who skims by headings only gets the latter.\n` +
+        `On a screen whose body is a single card (degraded or empty state), emit the h1 through EmptyState's titleAs.`,
     ).toEqual([]);
   });
 }
