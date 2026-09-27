@@ -4,7 +4,7 @@
  */
 
 /** Severity order, worst first. `unknown` is deliberately not `ok`. */
-export const SEVERITIES = Object.freeze(['violation', 'unknown', 'review', 'info']);
+const SEVERITIES = Object.freeze(['violation', 'unknown', 'review', 'info']);
 
 const SEVERITY_RANK = Object.freeze(Object.fromEntries(SEVERITIES.map((value, index) => [value, index])));
 

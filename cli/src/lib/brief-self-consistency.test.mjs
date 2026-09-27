@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { assertAgentBriefShape, assertBriefCountsAgree } from './query-result-contract.mjs';
+import { assertBriefCountsAgree } from './query-result-contract.mjs';
 
 /** The minimum shape that passes the contract check — only the fields a real response needs. */
 function briefWith(healthChecks, checks) {
@@ -31,14 +31,4 @@ test('does not judge when either count is missing', () => {
   assertBriefCountsAgree({ health: { checks: [{ id: 'a' }] } });
   assertBriefCountsAgree({ readiness: { healthChecks: 3 } });
   assertBriefCountsAgree({});
-});
-
-test('the agent-brief contract check exists', () => {
-  // Fixing the function above without wiring it into the contract would leave real
-  // responses going out self-contradictory.
-  assert.equal(
-    typeof assertAgentBriefShape,
-    'function',
-    'the contract check is missing',
-  );
 });

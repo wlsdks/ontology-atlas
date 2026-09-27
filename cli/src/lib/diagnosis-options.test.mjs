@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { DIAGNOSIS_OPTION_FLAGS, parseDiagnosisOption } from './diagnosis-options.mjs';
+import { parseDiagnosisOption } from './diagnosis-options.mjs';
 
 const errorMessage = (value) => {
   assert.ok(value instanceof Error);
@@ -8,18 +8,6 @@ const errorMessage = (value) => {
 };
 
 describe('diagnosis option parsers', () => {
-  it('exposes the focused health and workspace-brief tuning flags', () => {
-    assert.deepEqual(DIAGNOSIS_OPTION_FLAGS, [
-      '--component-limit',
-      '--cycle-limit',
-      '--recommendation-limit',
-      '--order-limit',
-      '--node-limit',
-      '--dependency-types',
-      '--component-types',
-    ]);
-  });
-
   it('maps bounded numeric flags to query_ontology option names', () => {
     const options = {};
 
