@@ -12,6 +12,7 @@ export interface RoleSourceModule {
    * (`checkout/domain`) — the plain segment would collapse every service to the same word.
    */
   name: string;
+  /** Repo-relative. */
   path: string;
   kind: 'dir' | 'file';
 }

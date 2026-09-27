@@ -38,12 +38,10 @@ export function ArchitectureRules({
         'flex shrink-0 flex-col gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-3 lg:col-span-2',
         hiddenAtWorkbench ? 'xl:hidden' : undefined,
       )}
-    
       data-testid="architecture-rules"
     >
       {/* A key row appears only when its mark is drawn; the arrow sentence stays whenever any stroke exists. */}
       <p className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-[color:var(--color-divider)] pt-3 text-caption text-[color:var(--color-text-quaternary)]">
-        {/* The shape key comes first: shapes are drawn before any stroke. */}
         {graph.edgeSource === 'permitted' || graph.edgeSource === 'both' ? (
           <span className="flex items-center gap-1.5">
             <svg width={18} height={6} aria-hidden>
@@ -60,9 +58,7 @@ export function ArchitectureRules({
             {legendTraffic}
           </span>
         ) : null}
-        {/* Both sentences come after every swatch, so the marks read as one run. */}
         <span>{directionLabel}</span>
-        {/* The canvas hides skips until an end is chosen, so it says so. */}
         {graph.edges.some((edge) => violatedPairs.has(`${edge.from}>${edge.to}`)) ? (
           <span className="flex items-center gap-1.5 text-[color:var(--color-danger-text)]">
             <svg width={18} height={6} aria-hidden>
@@ -79,6 +75,7 @@ export function ArchitectureRules({
             {legendViolated}
           </span>
         ) : null}
+        {/* The canvas hides skips until an end is chosen, so it says so. */}
         {graph.edges.some((edge) => edge.columnSpan > 1) ? <span>{legendSkipHint}</span> : null}
       </p>
     </div>

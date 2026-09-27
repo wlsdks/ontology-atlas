@@ -132,7 +132,7 @@ export function GatewayDocPage({
         )}
       >
         <div className={cn(PAGE_COLUMN, 'mx-auto')}>
-          {/* Two columns only with a table of contents, which folds below `xl` so it never takes the prose column's width; the chrome's guide chip stands in. */}
+          {/* Two columns only with a table of contents, which folds below xl; GuideChapterPicker stands in, since the chrome's guide chip also folds below sm. */}
           {/*
            * The grid waits for `xl`, and the middle track reaches the full measure before either side
            * gets a pixel; the `1fr` sides split the rest, so text sits on the centre when there is room.
@@ -189,7 +189,6 @@ export function GatewayDocPage({
 
           {sidebar ? <GuideChapterPicker activeSegment={activeSegment} /> : null}
 
-          {/* `[&>*:first-child]:mt-0` so the first block sits exactly `mt-10` under the header on both pages. */}
           {/* The body is bundled synchronously, so the only failure is a build without the document; it says so and names where the text is. */}
           {body.trim() === '' ? (
             <aside
@@ -202,6 +201,7 @@ export function GatewayDocPage({
               <ReadFullSourceLink sourcePath={sourcePath} label={t('readFullSource')} />
             </aside>
           ) : (
+            /* `[&>*:first-child]:mt-0` so the first block sits exactly `mt-10` under the header on both pages. */
             <article
               data-testid="gateway-doc-body"
               lang={bodyIsForeign ? 'en' : undefined}
@@ -254,10 +254,6 @@ function ReadFullSourceLink({ sourcePath, label }: { sourcePath: string; label: 
   );
 }
 
-/**
- * The prose component map, deliberately not shared with `widgets/docs-vault`, whose work-surface
- * machinery is dead weight here; both use the same ramp tokens.
- */
 /** Segments that exist as guide chapters — the test separating a slug from a route. */
 const GUIDE_SEGMENTS = new Set(GUIDE_PAGES.map((page) => page.segment));
 
@@ -299,6 +295,10 @@ function ProseLink({ href, children, ...rest }: React.ComponentPropsWithoutRef<'
   );
 }
 
+/**
+ * The prose component map, deliberately not shared with `widgets/docs-vault`, whose work-surface
+ * machinery is dead weight here; both use the same ramp tokens.
+ */
 const PROSE_COMPONENTS: Components = {
   h2: ({ children, ...rest }) => (
     <h2
@@ -413,10 +413,6 @@ const PROSE_COMPONENTS: Components = {
   a: ProseLink,
 };
 
-/**
- * The guide's left table of contents, sticky so the next chapter stays in reach while scrolling.
- * The current chapter is marked by surface, not colour.
- */
 /** The chapter list, shared by `GuideSidebar` at `xl` and `GuideChapterPicker` below it. */
 function GuideChapterList({ activeSegment }: { activeSegment?: string }) {
   const t = useTranslations('gatewayNav');
@@ -512,6 +508,10 @@ function GuidePagerLink({
   );
 }
 
+/**
+ * The guide's left table of contents, sticky so the next chapter stays in reach while scrolling.
+ * The current chapter is marked by surface, not colour.
+ */
 function GuideSidebar({ activeSegment }: { activeSegment?: string }) {
   const t = useTranslations('gatewayNav');
   return (

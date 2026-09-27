@@ -413,6 +413,7 @@ export function HarnessAnatomyView({
         </section>
       ) : null}
       {presentation === 'text' ? (
+        /* The diagram prints this path in its own header. */
         <p className="break-all font-mono text-label text-[color:var(--color-text-quaternary)]">
           {t('sourceRoot', { path: sourceRoot })}
         </p>

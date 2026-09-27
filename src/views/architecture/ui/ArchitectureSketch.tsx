@@ -32,7 +32,7 @@ const BOX_W_ROOMY = 220;
 const BOX_H_ROOMY = 84;
 const OBSERVATION_BOX_H = 44;
 const OBSERVATION_LANE_GAP = 48;
-/* A ledger box widens as well as deepens, so the receipt line stays inside the outline in both locales. */
+/* 180 fits the widest measured receipt line (156px) and keeps seven roles across at 1920 (1628 of 1756px). */
 const BOX_W_LEDGER = 180;
 /** Split contract/observation faces may yield this far once their long receipt line is separate. */
 const BOX_W_LEDGER_FIT = 160;
@@ -48,7 +48,7 @@ const BOX_H_LEDGER = 82;
 const ROW_GAP_LEDGER = 12;
 /** How far apart two crossings of the same span sit, so a bundle reads as separate strokes. */
 const SKIP_LANE_STEP = 14;
-/** Caption lines per role sentence; `captionLineBudgets` reads each line's width off the box. */
+/** Caption lines per role sentence; every face is a rectangle, so each line gets captionLineRoom's straight room. */
 const SUMMARY_LINES = 2;
 /* The across split face has room for a third caption line without the per-face lane label. */
 const SUMMARY_LINES_ACROSS = 3;
@@ -137,7 +137,7 @@ const PAD_Y_LEDGER = 12;
 /** How far past the lane a skip swings, and how much deeper each further rank pushes it. */
 const SKIP_DROP = 30;
 const SKIP_STEP = 10;
-/* Every stroke at rest says its sentence; the room is measured from the sentences with the 4.7px caption glyph. */
+/* Every stroke at rest says its sentence; rooms use the 4.7px edge-sentence glyph, not the caption's 4.8. */
 const SENTENCE_LEAD_MAX = 380;
 const SENTENCE_TOP_ROOM = 44;
 const SENTENCE_TRAIL_ROOM = 260;
@@ -370,11 +370,7 @@ function ObservationEmptyState({ panel, title, body }: { panel: EmptyPanel; titl
   );
 }
 
-/**
- * The architecture, drawn in one `<svg>`. The stroke says where a fact came from: a declared rule
- * is an unsteady human line, an observation an exact machine one. Shapes are ISO 5807's, assigned
- * in `buildArchitectureGraph`.
- */
+/** The architecture in one <svg>: one face per role; a declared rule is a fixed-width stroke and measured traffic's width carries its count. */
 export function ArchitectureSketch({
   graph,
   selected,
@@ -578,9 +574,9 @@ export function ArchitectureSketch({
       : hasLedger || splitsEvidence
         ? BOX_H_LEDGER
         : BOX_H;
-  /* The tight row pays with the sentence's second line, not the face width. */
   /* The observation face is exactly its row, so both lanes share arrow lengths and sentence baselines. */
   const observationBoxH = usesPairedDown ? boxH : OBSERVATION_BOX_H;
+  /* The tight row pays with the sentence's second line, not the face width. */
   const summaryLineCount =
     usesTightLadder || (axis === 'down' && !usesPairedDown && !usesNarrowLadder)
       ? 1
@@ -657,11 +653,11 @@ export function ArchitectureSketch({
     (edge) => edge.kind === 'permitted' && edge.columnSpan > 1,
   );
   const pairedSlack = usesPairedDown && boxWidth > 0 ? Math.max(0, boxWidth - pairedFixedW) : PAIRED_SIDE_ROOM * 2;
-  /* The plane floor comes out of the lead room first and the trail room is measured from what is left, so canvases with slack keep their width. */
   /* The drawing is centred: once the face has its width, leftover lane ground is split evenly while each lane keeps its floor. */
   const pairedCentredLane = usesPairedDown && boxWidth > 0
     ? Math.max(0, boxWidth - 2 * PAD_X - pairedContractW - pairedGutterW - PAIRED_OBSERVATION_W) / 2
     : 0;
+  /* The plane floor comes out of the lead room first and the trail room is measured from what is left, so canvases with slack keep their width. */
   const pairedLeadRoom = Math.max(
     planeRoom,
     pairedCentredLane,
@@ -1139,7 +1135,7 @@ export function ArchitectureSketch({
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
-      {/* A hidden-role count, derived from the boxes, shown only while something is hidden: a fade or a macOS overlay scrollbar alone does not tell a reader the drawing continues. */}
+      {/* Left, right and above counts take a row shown only while something is hidden: a fade or a macOS overlay scrollbar alone does not say the drawing continues. */}
       {covered.hiddenLeft === 0 && covered.hiddenRight === 0 ? null : (
         <div className="flex items-center justify-end gap-2 px-[var(--card-pad)] pt-2.5">
         {covered.hiddenLeft === 0 ? null : (
@@ -1400,7 +1396,7 @@ export function ArchitectureSketch({
           const a = edgeLane.get(edge.from);
           const b = edgeLane.get(edge.to);
           if (!a || !b) return null;
-          /* A skip stays mounted at zero opacity, so revealing it on focus is a fade, not a mount. */
+          /* A skip stays mounted at zero opacity, so revealing it on selection is a fade, not a mount. */
           const drawn = visibleEdges.includes(edge);
           const edgeBoxW = usesObservationLane ? observationBoxW : contractBoxW;
           const edgeBoxH = usesObservationLane ? observationBoxH : boxH;
@@ -1419,7 +1415,7 @@ export function ArchitectureSketch({
           /* Choosing either end of a violation raises it; nothing moves while nothing is selected. */
           const raised = selected !== null && (selected === edge.from || selected === edge.to);
 
-          /* A declared rule is drawn by hand; measured traffic is exact, its width carrying the count. */
+          /* A declared rule keeps one width; measured traffic's width carries its count. */
           const isDeclared = edge.kind === 'permitted';
           const violated = violatedPairs.has(`${edge.from}>${edge.to}`);
           /* A skip swings below an across chain or out to the side of a downward one; the axis only picks the coordinate. */
@@ -1632,6 +1628,7 @@ export function ArchitectureSketch({
                 counts,
                 ledger ? ledgerStatusLabel(ledger) : null,
                 ledger ? ledgerImportsLabel(ledger.importsOut) : null,
+                /* Before any inspection the empty state says it once, not in every role's name. */
                 splitsEvidence && !ledger && !observationEmpty ? observationMissingLabel : null,
               ]
                 .filter((part): part is string => part !== null)
@@ -1684,28 +1681,28 @@ export function ArchitectureSketch({
                 pointerEvents="all"
                 data-architecture-role-hit-area="true"
               />
-              {/* The fill is a separate flat shape: the sketch outline is several subpaths that would fill as slivers and smudge the wobble. */}
               {/* One face for every role; position already says where a chain begins. */}
-                <rect
-                  x={at.x}
-                  y={at.y}
-                  width={contractBoxW}
-                  height={boxH}
-                  rx={12}
-                  fill={
-                    isSelected
-                      ? 'var(--color-indigo-a12)'
-                      : roleState === 'active'
-                        ? 'var(--color-indigo-a06)'
-                        : roleState === 'hover'
-                          ? 'var(--color-elevated)'
-                          : 'var(--color-panel)'
-                  }
-                  stroke={isSelected ? 'var(--color-indigo-accent)' : 'var(--color-architecture-sketch-ink)'}
-                  strokeWidth={isSelected ? 1.6 : 1}
-                  className="architecture-canvas-node architecture-node-face"
-                  data-node-selected={isSelected ? 'true' : 'false'}
-                />              {usesPairedDown && contractPortEdges.some((edge) => edge.columnSpan > 1 && (edge.from === box.id || edge.to === box.id)) ? (
+              <rect
+                x={at.x}
+                y={at.y}
+                width={contractBoxW}
+                height={boxH}
+                rx={12}
+                fill={
+                  isSelected
+                    ? 'var(--color-indigo-a12)'
+                    : roleState === 'active'
+                      ? 'var(--color-indigo-a06)'
+                      : roleState === 'hover'
+                        ? 'var(--color-elevated)'
+                        : 'var(--color-panel)'
+                }
+                stroke={isSelected ? 'var(--color-indigo-accent)' : 'var(--color-architecture-sketch-ink)'}
+                strokeWidth={isSelected ? 1.6 : 1}
+                className="architecture-canvas-node architecture-node-face"
+                data-node-selected={isSelected ? 'true' : 'false'}
+              />
+              {usesPairedDown && contractPortEdges.some((edge) => edge.columnSpan > 1 && (edge.from === box.id || edge.to === box.id)) ? (
                 <ConnectionPort
                   axis={axis}
                   at={at}
@@ -1743,23 +1740,21 @@ export function ArchitectureSketch({
                 />
               ) : null}
               {splitsEvidence ? (
-                <>
-                  <text
-                    x={at.x + 14}
-                    y={at.y + 17}
-                    textAnchor="start"
-                    aria-hidden
-                    data-testid={`architecture-role-index-${box.id}`}
-                    className={cn(
-                      'architecture-node-copy font-mono text-caption tabular-nums',
-                      isSelected
-                        ? 'fill-[color:var(--color-indigo-text-soft)]'
-                        : 'fill-[color:var(--color-text-quaternary)]',
-                    )}
-                  >
-                    {String(boxIndex + 1).padStart(2, '0')}
-                  </text>
-                </>
+                <text
+                  x={at.x + 14}
+                  y={at.y + 17}
+                  textAnchor="start"
+                  aria-hidden
+                  data-testid={`architecture-role-index-${box.id}`}
+                  className={cn(
+                    'architecture-node-copy font-mono text-caption tabular-nums',
+                    isSelected
+                      ? 'fill-[color:var(--color-indigo-text-soft)]'
+                      : 'fill-[color:var(--color-text-quaternary)]',
+                  )}
+                >
+                  {String(boxIndex + 1).padStart(2, '0')}
+                </text>
               ) : null}
               <text
                 x={at.x + contractBoxW / 2}
@@ -1797,7 +1792,7 @@ export function ArchitectureSketch({
               </text>
               {!splitsEvidence && ledger ? (
                 <>
-                  {/* Ruled and straight: above is declared (hand-drawn), below is counted (machine line). */}
+                  {/* A ruled line between what the profile declares (above) and what the scanner counted (below). */}
                   <line
                     x1={at.x + 12}
                     x2={at.x + contractBoxW - 12}
@@ -1826,9 +1821,7 @@ export function ArchitectureSketch({
                 </>
               ) : null}
               {splitsEvidence && observedAt && !observationEmpty ? (
-                <g
-                  className="architecture-observation-reveal"
-                >
+                <g className="architecture-observation-reveal">
                   <line
                     x1={usesPairedDown ? at.x + contractBoxW + 8 : at.x + contractBoxW / 2}
                     x2={usesPairedDown ? observedAt.x - 8 : at.x + contractBoxW / 2}
@@ -1984,7 +1977,7 @@ export function ArchitectureSketch({
         })}
         </svg>
       </div>
-      {/* The hidden count sits over the bottom fade, not in a row: a row would take the height it counts against. The strip is two insets tall (`coveredMask`) so the badge covers no opaque ink. */}
+      {/* The below count overlays the bottom fade instead: a row there would take the height it counts against. The strip is two insets tall (coveredMask) so the badge covers no opaque ink. */}
       {covered.coveredDown && covered.hiddenRight > 0 ? (
         <div className="pointer-events-none absolute inset-x-0 bottom-2 flex items-center justify-center px-[var(--card-pad)]">
           <span

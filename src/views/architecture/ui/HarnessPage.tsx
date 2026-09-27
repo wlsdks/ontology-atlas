@@ -189,7 +189,6 @@ function HarnessPageInner() {
     />
   );
 
-  /* `relative z-10` on the wrapper keeps this block's hint panel above the later results block; the panel's own `z-30` only orders it among siblings. */
   const structureCount = useMemo(() => {
     if (!report) return null;
     const places = buildHarnessAnatomy(report).slots.filter((slot) => slot.band !== 'tool');
@@ -199,6 +198,7 @@ function HarnessPageInner() {
     };
   }, [report]);
 
+  /* `relative z-10` on the wrapper keeps this block's hint panel above the later results block; the panel's own `z-30` only orders it among siblings. */
   const sentence = report ? (
     <div data-testid="harness-sentence" className="architecture-result-arrive relative z-10">
       {/* The thesis takes the one step above body, at regular weight, still lighter than the cards' numerals. */}
@@ -225,6 +225,7 @@ function HarnessPageInner() {
   ) : null;
 
   /* The structure view's thesis in its own unit: how many harness places this repository fills, the split every row prints. */
+  /* `relative z-10`: the same stacking reason as `sentence` above. */
   const structureSentence = structureCount ? (
     <div data-testid="harness-structure-sentence" className="architecture-result-arrive relative z-10">
       <p className="max-w-prose text-title tabular-nums text-[color:var(--color-text-primary)]">
@@ -297,12 +298,10 @@ function HarnessPageInner() {
             {reportState.status === 'ready' ? (
               <div className={cn('architecture-result-arrive', view === 'structure' && 'flex min-h-0 flex-1 flex-col')}>
                 {view === 'structure' ? (
-                  <>
-                    <HarnessAnatomyView
-                      report={reportState.report}
-                      sourceRoot={reportState.sourceRoot}
-                    />
-                  </>
+                  <HarnessAnatomyView
+                    report={reportState.report}
+                    sourceRoot={reportState.sourceRoot}
+                  />
                 ) : view === 'coverage' ? (
                   <HarnessCoverageView
                     report={reportState.report}

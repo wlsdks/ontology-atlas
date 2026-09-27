@@ -157,7 +157,6 @@ export function ArchitectureWorkbench({
   const evidenceTriggerRef = useRef<HTMLButtonElement>(null);
   const inspectorTriggerRef = useRef<HTMLElement | SVGElement | null>(null);
 
-
   /* Owned here because the canvas and the panel answering it sit in different grid rows. */
   /* The chosen role is in the address: a selected dependency is shareable state, and a deep link is how an agent is handed a state. */
   const [selectedRole, setSelectedRole] = useState<string | null>(
@@ -228,6 +227,7 @@ export function ArchitectureWorkbench({
     }
     return pairs;
   }, [selectedRecord]);
+  /* The canvas's pure, memoized drawing built again for the words; lifting it would cost the flow its ownership. */
   const rulesGraph = useMemo(
     () => (selected ? buildArchitectureGraph(buildArchitectureLayout(selected), roleTraffic ?? []) : null),
     [selected, roleTraffic],
@@ -423,16 +423,7 @@ export function ArchitectureWorkbench({
           align="center"
           /* Standalone, the `h1` takes the display step; embedded, the `h2` keeps EmptyState's own step. */
           className="max-w-[var(--measure-stage-column)] [&_h1]:font-[var(--font-weight-strong)] [&_h1]:text-display"
-          /*
-           * The button carries the task: `queueAgentChatIntent` survives the route change (a window
-           * event would be lost), and the map names the runner. The app does not call MCP itself
-           * (2026-08-24): a second `analyze_repo_structure` implementation is what `AGENTS.md` forbids.
-           */
-          /*
-           * Two doors: with no agent the map discards the queued sentence, so the clipboard door is
-           * the one that always works, in the workbench's own handoff words. The app does not call
-           * MCP itself (2026-08-24): a second `analyze_repo_structure` is what `AGENTS.md` forbids.
-           */
+          /* The clipboard door always works; the agent door needs a connected agent. The app never calls MCP tools itself (docs/DECISIONS.md, 2026-08-24 first-run door). */
           action={(
             <div className="flex flex-wrap items-center justify-center gap-2">
               {agentRoute === 'agent' ? (
@@ -497,7 +488,7 @@ export function ArchitectureWorkbench({
 
   const selectedModules = sourceModulesByProfile[selected.slug] ?? null;
   /*
-   * The receipt is a dated machine measurement, not a live claim (2026-08-27 council, point 5).
+   * The receipt is a dated machine measurement, not a live claim (`docs/DECISIONS.md`).
    * No record keeps the amber "Source check required". A record shows its stamp (git short sha,
    * the folder fingerprint sentence, the dirty suffix) with counts beside the verdict, and says this
    * surface cannot re-probe the source.
@@ -507,7 +498,6 @@ export function ArchitectureWorkbench({
   const measured = record?.brief.measured ?? null;
   const recordDate = measured ? measured.at.slice(0, 10) : '';
   const recordDirty = measured?.source.kind === 'git' && measured.source.dirty;
-  /* The canvas's pure, memoized drawing built again for the words; lifting it would cost the flow its ownership. */
   const recordCounts = conformance
     ? [
         t('recordCounts', {
@@ -547,7 +537,7 @@ export function ArchitectureWorkbench({
     deltaStatus === 'missing' ? t('recordStatus.unknown') : t(`recordStatus.${deltaStatus}`);
   const patternLabel = (name: string) =>
     t.has(`patternLabels.${name}`) ? t(`patternLabels.${name}`) : name;
-  /* An untranslated free-text axis gets no explanation: inventing one would infer from a name (decision 2026-08-26). */
+  /* An untranslated free-text axis gets no explanation: inventing one would infer from a name (`docs/DECISIONS.md`). */
   const axisBody = (axis: string) =>
     t.has(`patternAxes.${axis}.body`) ? t(`patternAxes.${axis}.body`) : '';
   const roleLabel = (id: string) =>
@@ -1065,11 +1055,12 @@ export function ArchitectureWorkbench({
             )}
           </div>
 
-          {/* The absence is explained beside the rules, not over the canvas, where it cost the chain its height. */}
+          {/* The absence is explained in the dock, not over the canvas, where it cost the chain its height. */}
           {sourceListingCapable || !sourceUnavailableReason ? null : (
             <div
               className={cn(
                 'border-b border-[color:var(--color-border-soft)] px-4 py-3 lg:col-span-2 xl:shrink-0',
+                /* Why a module count is missing belongs with the role whose modules are missing. */
                 inspector === 'role' ? undefined : 'xl:hidden',
               )}
             >
@@ -1108,7 +1099,6 @@ export function ArchitectureWorkbench({
           inspector === 'rules' ? undefined : 'xl:hidden',
         )} aria-labelledby="architecture-blueprint-title" data-testid="architecture-blueprint" tabIndex={0}>
           <div className="mx-auto flex w-full max-w-5xl flex-col xl:max-w-none">
-            {/* `ml-auto`, because `justify-between` stops applying once the row wraps. */}
             <div className="flex flex-wrap items-start justify-between gap-3">
               {/* The kind of drawing leads: the axis names the question and the pattern the answer (C4: clarify the diagram type and scope). */}
               <div className="min-w-0">
@@ -1153,10 +1143,10 @@ export function ArchitectureWorkbench({
               </p>
             ) : null}
 
-            {/* One band per role carries name, globs and allowances, with arrows down the gutter; a diagram plus a list said everything twice. */}
           </div>
         </section>
           {rulesGraph === null ? null : (
+          /* One band per role carries name, globs and allowances, with arrows down the gutter; a diagram plus a list said everything twice. */
           <ArchitectureRules
             graph={rulesGraph}
             violatedPairs={violatedPairs}

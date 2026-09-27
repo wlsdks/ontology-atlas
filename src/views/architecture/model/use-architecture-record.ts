@@ -47,6 +47,7 @@ export function useArchitectureRecords(
             const text = await (await fileHandle.getFile()).text();
             next[slug] = parseArchitectureRecord(JSON.parse(text));
           } catch {
+            // A missing or invalid receipt means no record for this profile.
           }
         }
       }

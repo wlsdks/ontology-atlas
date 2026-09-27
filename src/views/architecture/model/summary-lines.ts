@@ -1,7 +1,7 @@
 /**
  * Breaks a role's sentence into the caption lines its box can hold, by character budget because an
  * SVG text node neither wraps nor ellipsizes. Words wrap greedily; only the last line is ellipsized,
- * only when something was left out; an over-long word is hard-cut. Two lines carry every first clause.
+ * only when something was left out; an over-long word is hard-cut.
  */
 export function splitSummaryLines(
   summary: string,
@@ -127,7 +127,7 @@ const CLAUSE_BREAK_SLACK = 1.08;
 
 /**
  * `text-wrap: balance` for SVG text: the greedy line count at the narrowest room that holds it, so
- * the last line is never a lone word. Within `CLAUSE_BREAK_SLACK`, a break ending on a clause wins.
+ * the last line is never a lone word under a full line. Within `CLAUSE_BREAK_SLACK`, a break ending on a clause wins.
  * A wrap that had to ellipsize is returned as it was.
  */
 export function balanceLinesByWidthAt(

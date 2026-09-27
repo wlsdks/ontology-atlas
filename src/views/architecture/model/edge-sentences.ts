@@ -18,7 +18,7 @@ export interface SentenceEdge {
   columnSpan: number;
   violated: boolean;
   /**
-   * Whether the stroke is drawn now (a skip appears only on focus or when violated); default true.
+   * Whether the stroke is drawn now (a skip appears only on selection or when violated); default true.
    * An undrawn stroke places last and holds no ground.
    */
   drawn?: boolean;
@@ -26,7 +26,7 @@ export interface SentenceEdge {
 
 export interface SentencePlacement {
   key: string;
-  /** A rule and a measurement can join the same pair, so the kind is part of the placement's identity. */
+  /** A rule and a measurement can join the same pair, so the kind is part of the placement's identity; keyed on the pair alone, React leaves a stale sentence. */
   kind: SentenceEdge['kind'];
   from: string;
   to: string;
@@ -79,7 +79,7 @@ export interface SentenceLayoutInput {
   focus?: string | null;
 }
 
-/** The same conservative glyph width the box captions budget with. */
+/** Edge-sentence glyph width; captions use 4.8 and a wider script set (summary-lines.ts). */
 const CHAR_PX = 4.7;
 const WIDE_CHAR_PX = 8;
 const LINE_H = 12;
@@ -142,7 +142,7 @@ export function placeEdgeSentences(input: SentenceLayoutInput): SentencePlacemen
   const taken: { x: number; y: number; width: number; height: number }[] = [...occupied];
   const pitch = axis === 'across' ? boxW + colGap : boxH + rowGap;
 
-  /* Focus first, then rules, then the busiest traffic; what is not drawn goes last and takes nothing. */
+  /* Drawn first, then focus, rules, shorter spans, busier traffic: the sentence a reader needs wins a contested place. */
   const touchesFocus = (e: SentenceEdge) => focus !== null && (e.from === focus || e.to === focus);
   const isDrawn = (e: SentenceEdge) => e.drawn !== false;
   /*
@@ -191,7 +191,7 @@ export function placeEdgeSentences(input: SentenceLayoutInput): SentencePlacemen
       const sy = a.y + boxH;
       const ty = b.y;
       if (!isSkip) {
-        /* When a rule and traffic join the same roles, the rule reads on the left and the traffic on the right. */
+        /* When a rule and traffic join the same roles, the rule reads on the left and the traffic on the right, or the rule wins the collision and hides the count. */
         const isTraffic = edge.kind === 'traffic';
         if (adjacentSeat === 'connector') {
           /* Beside the arrow: the words start right of the lower face's centre line and run over the gap. */
