@@ -1,5 +1,7 @@
 use notify_debouncer_full::notify::{RecommendedWatcher, RecursiveMode, Watcher};
-use notify_debouncer_full::{new_debouncer_opt, DebounceEventResult, Debouncer, NoCache};
+use notify_debouncer_full::{
+    new_debouncer_opt, DebounceEventResult, DebouncedEvent, Debouncer, NoCache,
+};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
@@ -2156,7 +2158,8 @@ fn vault_entry_is_tracked(name: &str) -> bool {
 
 const VAULT_AGENT_CONFIG_FILES: &[&str] = &[".mcp.json", ".mcp.json.example", ".codex/config.toml"];
 
-/// Without a poll this is the app's only live signal: everything a refresh reads.
+/// macOS reports a folder moved in, out or renamed only on the folder's own path, so a walked
+/// path that is no longer a regular file counts too.
 fn vault_change_is_visible(root: &Path, path: &Path) -> bool {
     if path.extension().is_some_and(|ext| ext == "md") {
         return true;
@@ -2173,9 +2176,22 @@ fn vault_change_is_visible(root: &Path, path: &Path) -> bool {
     let mut parts = relative.split('/');
     let name = parts.next_back().unwrap_or_default();
     let walked = parts.all(|part| !part.starts_with('.') && !VAULT_PRUNE_DIR_NAMES.contains(&part));
-    walked
-        && !name.starts_with('.')
-        && (vault_entry_is_tracked(name) || vault_relative_is_source(&relative))
+    if !walked || name.starts_with('.') || VAULT_PRUNE_DIR_NAMES.contains(&name) {
+        return false;
+    }
+    vault_entry_is_tracked(name)
+        || vault_relative_is_source(&relative)
+        || !fs::symlink_metadata(path).is_ok_and(|metadata| metadata.is_file())
+}
+
+fn vault_batch_is_visible(root: &Path, events: &[DebouncedEvent]) -> bool {
+    events.iter().any(|event| {
+        event.need_rescan()
+            || event
+                .paths
+                .iter()
+                .any(|path| vault_change_is_visible(root, path))
+    })
 }
 
 fn walk_vault_stamps(
@@ -3218,11 +3234,7 @@ async fn start_vault_watch(
         None,
         move |result: DebounceEventResult| match result {
             Ok(events) => {
-                let visible = events
-                    .iter()
-                    .flat_map(|event| event.paths.iter())
-                    .any(|path| vault_change_is_visible(&watched_root, path));
-                if visible {
+                if vault_batch_is_visible(&watched_root, &events) {
                     let _ = app_handle.emit("vault-changed", ());
                 }
             }
@@ -3893,8 +3905,29 @@ mod tests {
 
     #[test]
     fn the_watcher_reports_what_a_refresh_reads_and_nothing_under_git() {
-        let root = std::path::Path::new("/vault");
-        let visible = |relative: &str| super::vault_change_is_visible(root, &root.join(relative));
+        let root = std::env::temp_dir().join(format!("atlas-watch-filter-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        for dir in [
+            "notes/sources",
+            "features",
+            ".git/objects/ab",
+            "node_modules/pkg",
+            "capabilities",
+        ] {
+            std::fs::create_dir_all(root.join(dir)).unwrap();
+        }
+        for file in [
+            "notes/sources/a.pdf",
+            "notes/todo.txt",
+            ".git/index",
+            ".git/objects/ab/cdef.png",
+            "node_modules/pkg/logo.png",
+            ".DS_Store",
+            "capabilities/.draft.png",
+        ] {
+            std::fs::write(root.join(file), b"x").unwrap();
+        }
+        let visible = |relative: &str| super::vault_change_is_visible(&root, &root.join(relative));
         for path in [
             "capabilities/a.md",
             ".claude/skills/x.md",
@@ -3904,19 +3937,38 @@ mod tests {
             ".ontology-atlas/agent-activity.json",
             ".mcp.json",
             ".codex/config.toml",
+            "features",
+            "drafts",
         ] {
             assert!(visible(path), "{path} changes what the screen shows");
         }
         for path in [
+            ".git",
             ".git/index",
             ".git/objects/ab/cdef.png",
+            "node_modules",
             "node_modules/pkg/logo.png",
             "notes/sources/a.pdf",
+            "notes/todo.txt",
             ".DS_Store",
             "capabilities/.draft.png",
         ] {
             assert!(!visible(path), "{path} changes nothing on screen");
         }
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_rescan_after_dropped_events_is_always_reported() {
+        use notify_debouncer_full::notify::{event::Flag, Event, EventKind};
+        let root = std::path::Path::new("/vault");
+        let batch = |event: Event| [super::DebouncedEvent::new(event, std::time::Instant::now())];
+        let rescan = Event::new(EventKind::Other)
+            .set_flag(Flag::Rescan)
+            .add_path(root.join(".git"));
+        assert!(super::vault_batch_is_visible(root, &batch(rescan)));
+        let unseen = Event::new(EventKind::Any).add_path(root.join(".git/index"));
+        assert!(!super::vault_batch_is_visible(root, &batch(unseen)));
     }
 
     #[test]

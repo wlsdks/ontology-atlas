@@ -70,25 +70,19 @@ import {
 } from '@/shared/config';
 import { readBundledMcpServer } from '@/shared/lib/tauri-agent-setup';
 import {
+  AGENT_ACTIVITY_STALE_AFTER_MS,
   emptyAgentActivityStatus,
   parseAgentActivityStatus,
   type AgentActivityStatus,
 } from './agent-activity-status';
-import { createAdaptivePoller } from './poll-cadence';
+import { createAdaptivePoller, type PollCadenceConfig } from './poll-cadence';
 /** Minimum interval (ms) between auto-refreshes when the tab regains focus.
  *  Without the throttle every quick trip to an IDE and back makes the UI flash. */
 const AUTO_REFRESH_DEBOUNCE_MS = 2000;
 
-/**
- * Background filesystem polling. While the tab is visible, fingerprints are compared
- * and a change triggers a reload, so edits made through an IDE or an AI agent show up
- * **without focusing the web tab**. The cadence is adaptive (`poll-cadence.ts`): right
- * after a change it bursts (~1.5 s) because an agent is probably mid-session, and it
- * decays to idle (5 s) when things go quiet. With no change only the fingerprint is
- * compared, which is nearly free. The FS Access API has no native directory-change
- * event (the Tauri shell watches the OS), so on the web adaptive polling is the
- * ceiling without a backend.
- */
+/** Network drives, a watcher that failed to start, and events the OS dropped. */
+const APP_SAFETY_POLL: PollCadenceConfig = { burstMs: 60_000, idleMs: 60_000, burstWindowMs: 0 };
+const HEARTBEAT_STALE_MARGIN_MS = 1000;
 
 /**
  * Thrown when the vault's `.md` changed outside the app (another editor, an AI over
@@ -1516,29 +1510,15 @@ export function useLocalVaultInternal() {
       nativeStamps = stamps;
       if (fp === lastFingerprintRef.current) {
         const sidecars = await readVaultSidecarStatuses(handle);
-        /*
-         * ⚠️ **Nothing changed means state is not touched** (review, 2026-08-16).
-         *
-         * This used to `setState` a fresh object even on a tick where nothing changed, and
-         * the context provider passed that straight through — so **the entire app re-rendered
-         * every five seconds**, forever, with nothing happening.
-         *
-         * `lastLoadedAt` is not read anywhere on screen (a new object was built every tick
-         * for it), while the three sidecar states genuinely can change. So update **only when
-         * something actually did.**
-         */
+        // State changes only when a sidecar did, or every check re-renders the whole app.
         setState((s) => {
           const same =
             structurallyEqualStatus(s.agentConfigStatus, sidecars.agentConfigStatus) &&
-            // Volatile age fields are excluded — they advance on every parse
-            // and defeated this guard whenever a heartbeat file existed.
             structurallyEqualStatus(
               comparableAgentActivityStatus(s.agentActivityStatus),
               comparableAgentActivityStatus(sidecars.agentActivityStatus),
             ) &&
-            // Length alone misses an append once the log reaches its 50-entry
-            // read cap (tail replaced at identical length) — compare the last
-            // entry too.
+            // The log is read capped at 50 entries, so an append can keep its length.
             s.agentActivityLog.length === sidecars.agentActivityLog.length &&
             structurallyEqualStatus(s.agentActivityLog.at(-1), sidecars.agentActivityLog.at(-1)) &&
             s.acpWorkReceipts.length === sidecars.acpWorkReceipts.length &&
@@ -1580,32 +1560,41 @@ export function useLocalVaultInternal() {
     window.addEventListener('focus', fire);
     document.addEventListener('visibilitychange', onVisibility);
 
-    // Adaptive self-rescheduling polling while the tab is visible, on the web only: the app's
-    // OS watcher (`TauriVaultWatchBridge`) reports every change this would find. Right after a
-    // detected change it bursts (~1.5 s) and decays to idle (5 s) when quiet
-    // (`nextPollDelay`); with no change only the fingerprint is compared, so even a burst is
-    // nearly free. The generation-token loop (`poll-cadence.createAdaptivePoller`) means an
-    // in-flight check resolving after a stop/restart — hide→show during a burst — can
-    // never re-arm an orphaned second loop. Unit-tested in poll-cadence.test.ts.
-    const poller = isTauriVaultRuntime() ? null : createAdaptivePoller({ poll: syncWithDisk });
+    // The web has no folder events, so it polls adaptively (`poll-cadence.ts`). The app's
+    // watcher reports changes at once; its slow poll catches what a watcher cannot see.
+    const poller = createAdaptivePoller({
+      poll: syncWithDisk,
+      config: isTauriVaultRuntime() ? APP_SAFETY_POLL : undefined,
+    });
     const onVisibilityForPoll = () => {
-      if (document.visibilityState === 'visible') poller?.start();
-      else poller?.stop();
+      if (document.visibilityState === 'visible') poller.start();
+      else poller.stop();
     };
-    if (document.visibilityState === 'visible') poller?.start();
+    if (document.visibilityState === 'visible') poller.start();
     document.addEventListener('visibilitychange', onVisibilityForPoll);
 
     return () => {
       window.removeEventListener('focus', fire);
       document.removeEventListener('visibilitychange', onVisibility);
       document.removeEventListener('visibilitychange', onVisibilityForPoll);
-      poller?.stop();
+      poller.stop();
       if (tracker.timer) {
         clearTimeout(tracker.timer);
         tracker.timer = null;
       }
     };
   }, [state.status, state.handle, syncWithDisk]);
+
+  const freshHeartbeatAt = state.agentActivityStatus.stale
+    ? null
+    : (state.agentActivityStatus.heartbeat?.updatedAt ?? null);
+  useEffect(() => {
+    if (!freshHeartbeatAt) return;
+    const staleAt =
+      Date.parse(freshHeartbeatAt) + AGENT_ACTIVITY_STALE_AFTER_MS + HEARTBEAT_STALE_MARGIN_MS;
+    const timer = setTimeout(() => void syncWithDisk(), Math.max(0, staleAt - Date.now()));
+    return () => clearTimeout(timer);
+  }, [freshHeartbeatAt, syncWithDisk]);
 
   const requestPermission = useCallback(async () => {
     if (!state.handle) return;
