@@ -1,5 +1,4 @@
-// The next step's contract: the marker is never shown on screen, only the last line is a
-// marker, and a chip is one line.
+// The marker never shows, only the last line is a marker, and a chip is one line.
 import { describe, expect, it } from 'vitest';
 
 import { NEXT_STEP_MAX_CHARS, splitNextStep } from './next-step';

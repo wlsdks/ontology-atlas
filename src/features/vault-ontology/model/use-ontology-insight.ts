@@ -58,7 +58,6 @@ export function derivationToInsight(
     ref: stub.ref,
     lastApprovedAt: VAULT_SENTINEL_DATE,
     lastApprovedBy: VAULT_SENTINEL_AUTHOR,
-    // Authorship carries **verbatim** whatever derivation read from the frontmatter.
     createdBy: stub.createdBy,
     summary: stub.summary,
   }));
@@ -75,6 +74,7 @@ export function derivationToInsight(
   }));
 
   // Without `project:` keys, BFS the `contains` closure to attach each project to its descendants.
+  // O(P·(V+E)) over an adjacency map, one BFS per project node.
   const projectNodes = nodes.filter((n) => n.kind === 'project');
   if (projectNodes.length > 0) {
     const containsAdj = new Map<string, string[]>();

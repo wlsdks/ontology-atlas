@@ -47,9 +47,7 @@ describe('manifestToConceptFacts', () => {
   });
 
   it('keeps the missing-meaning finding even when the body has a summary', () => {
-    // Before 2026-09-22 a single excerpt line read as "the meaning is written down",
-    // so the one document `validate_vault` was reporting `definition-missing` on to the
-    // agent was the one document this screen called clean.
+    // An excerpt must not hide the `definition-missing` finding `validate_vault` reports.
     const facts = manifestToConceptFacts(
       manifest([
         doc({

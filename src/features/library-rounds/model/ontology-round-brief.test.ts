@@ -20,11 +20,7 @@ describe('ontology round brief', () => {
     expect(brief).toContain('Do not turn a structural health result into a semantic approval.');
   });
 
-  /*
-   * The person reading this packet is deciding which proposals are worth a turn. A proposal
-   * carrying a write-door code repairs something the tools already measured; one carrying none is
-   * this pass's own judgement. Saying which is which is cheaper than re-deriving it at review time.
-   */
+  /* A write-door code marks a measured repair; none marks the pass's own judgement. */
   it('names which write-door finding a proposal answers, and admits when none', () => {
     const brief = buildOntologyRoundBrief({ vaultRoot: '/Users/probe/project', locale: 'en' });
 

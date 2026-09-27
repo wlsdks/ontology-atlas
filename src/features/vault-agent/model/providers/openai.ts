@@ -8,15 +8,8 @@ import type {
 import { PROVIDER_DEFAULT_MODELS, readVendorErrorMessage } from '../provider-adapter';
 
 /**
- * The OpenAI Chat Completions adapter.
- *
- * Two things differ from the other vendors:
- * ① A tool call's `arguments` is **a string** — the model can emit broken JSON, and
- *    then it is blocked before execution and the error is returned to the model.
- * ② The output token cap is **not sent.** The parameter name differs by model
- *    generation (`max_tokens` vs `max_completion_tokens`), and the wrong name gets
- *    the whole request rejected. Omitting it uses the model's default — the turn
- *    limit is already held by our own round-trip cap.
+ * OpenAI adapter: string `arguments` are validated before execution, and no output token cap is
+ * sent because its parameter name differs by model generation.
  */
 
 interface OpenAiToolCall {

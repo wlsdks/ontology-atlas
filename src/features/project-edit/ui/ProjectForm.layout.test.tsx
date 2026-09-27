@@ -7,20 +7,8 @@ import type { Project } from "@/entities/project";
 import { ProjectForm } from "./ProjectForm";
 
 /**
- * The create/edit layout contract (restructured 2026-07-27).
- *
- * Owner's report: the create screen was nothing but a long scroll, the save button came
- * before the input fields, and the same guidance repeated four times. After the
- * restructure the contract is two lines:
- *
- * 1. **Create** — only the four required fields (name, category, status, short description)
- *    are expanded, and actions exist **after** the form only (no top save cluster).
- *    Everything else folds into "add more" and the user expands it.
- * 2. **Edit** — no regression. Every item is reachable without expanding, and the top
- *    sticky save cluster, section navigation, and delete row all remain.
- *
- * A validation error inside a collapsed section must expand it — otherwise it is the dead
- * end of "fix this field" with no such field on screen.
+ * Create shows four required fields with actions after the form; edit keeps every field
+ * reachable plus the sticky save cluster. An error in a folded section expands it.
  */
 
 const fields = koMessages.settings.projectForm.fields;
@@ -128,8 +116,7 @@ describe("ProjectForm create layout", () => {
 
   it("expands the folded section when an empty required field there blocks submit", () => {
     renderCreate();
-    // Name and description are empty, so submit fails. The first error is the name, so the
-    // collapsed section must stay closed while the error banner appears.
+    // The first error is the name, so the folded section stays closed.
     fireEvent.click(screen.getByTestId("project-save"));
     expect(
       screen.getByText(koMessages.settings.projectForm.validation.globalErrorBanner),

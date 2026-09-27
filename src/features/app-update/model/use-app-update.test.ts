@@ -3,18 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useAppUpdate } from './use-app-update';
 
-/**
- * **The app must not erase, behind the scenes, an answer the user asked for.**
- *
- * Caught by measurement in the pre-launch review, 2026-08-20: pressing "check for updates" in the
- * installed app had the marker catching the result (`failed`) while **that sentence was not on
- * screen.** The cause is the **automatic check** that runs four seconds after mount — the automatic
- * path returns to `idle` to pass a failure over quietly, and that erases the answer the user just
- * received along with it.
- *
- * From the user's side it becomes "I pressed it, something appeared, and it vanished without a word".
- * The opposite of the honesty rule this repository set for degraded cards.
- */
+/** The automatic check must not erase the answer to a manual one. */
 
 const check = vi.fn();
 let desktop = true;
@@ -54,7 +43,7 @@ describe('result of a manual update check', () => {
     expect(result.current.phase.kind, 'manual check should report the failure').toBe('failed');
     expect(result.current.phase).toMatchObject({ operation: 'check' });
 
-    // The automatic check scheduled four seconds after mount now fires.
+    // The automatic check scheduled after mount fires.
     await act(async () => {
       vi.advanceTimersByTime(5_000);
       await Promise.resolve();

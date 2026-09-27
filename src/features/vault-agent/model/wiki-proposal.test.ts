@@ -56,8 +56,7 @@ describe('buildWikiPageProposal — the page Atlas is willing to show', () => {
     expect(proposal.problems).toEqual([]);
     expect(proposal.path).toBe('wiki/quarter-plan.md');
     expect(proposal.slug).toBe('wiki/quarter-plan');
-    // The shared contract is the authority; this is the same call the Library's own list
-    // makes against a page already on disk.
+    // The shared contract is the authority.
     expect(validateWikiPage(proposal.page, { knownSources: ['sources/quarter-plan.md'] }).ok).toBe(
       true,
     );
@@ -193,14 +192,7 @@ describe('buildWikiPageProposal — the page Atlas is willing to show', () => {
     ]);
   });
 
-  /**
-   * **The card is read once; the frontmatter is read for as long as the page exists.**
-   *
-   * The sentence under `## Not in sources` tells the next reader. `sources_truncated:`
-   * tells the next *reader of the folder* — it is what lets the Library say `partial`
-   * where a matching hash alone would let it say `compiled`, and half a document would
-   * then disappear with nobody told (`vault-library.ts`).
-   */
+  /** `sources_truncated:` lets the Library say `partial` for as long as the page exists. */
   it('records the partial read in frontmatter, where the Library can read it back', () => {
     const proposal = buildWikiPageProposal(fields(), {
       reads: [planRead({ truncated: true })],
@@ -223,8 +215,7 @@ describe('buildWikiPageProposal — the page Atlas is willing to show', () => {
     });
 
     expect(proposal.ok).toBe(true);
-    // Not `sources_truncated: []`. A key that is on every page ever compiled is a key
-    // nobody reads, and an empty list records a boundary that does not exist.
+    // No empty `sources_truncated: []` key.
     expect(proposal.page).not.toContain('sources_truncated');
     expect(proposal.sourcesTruncated).toEqual([]);
   });

@@ -126,8 +126,7 @@ describe('RealmBlockExportAction', () => {
   });
 
   it('is disabled with a "open your folder" hint (not hidden) when no vault is loaded', () => {
-    // In static sample mode this action vanished without a trace, which read as hiding that
-    // the feature exists (usability sweep). Instead of rendering null it stays in place, disabled with a hint.
+    // Without a vault it stays in place, disabled with a hint, rather than vanishing.
     mocks.vault = { ...makeVault(), status: 'idle', manifest: null };
     render(<RealmBlockExportAction rootTitle="Views" census={census} subtree={subtree} />);
     const button = screen.getByTestId('realm-block-export');
@@ -135,7 +134,7 @@ describe('RealmBlockExportAction', () => {
     expect(button).toBeDisabled();
     expect(button).toHaveAttribute('title', 'vaultRequiredHint');
     fireEvent.click(button);
-    expect(mocks.vault.fileHandles).toBeDefined(); // no crash / no-op click
+    expect(mocks.vault.fileHandles).toBeDefined();
   });
 
   it('is disabled with a hint when the environment has no directory picker', () => {

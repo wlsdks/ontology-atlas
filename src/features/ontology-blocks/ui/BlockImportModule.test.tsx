@@ -139,8 +139,7 @@ describe('BlockImportModule', () => {
   });
 
   it('is disabled with a "open your folder" hint (not hidden) without a loaded vault', () => {
-    // In static sample mode "import a block" vanished without a trace, hiding that the
-    // feature exists (usability sweep). Instead of rendering null it stays in place, disabled with a hint.
+    // Without a vault it stays in place, disabled with a hint, rather than vanishing.
     mocks.vault = makeVault({ status: 'idle', manifest: null });
     render(<BlockImportModule />);
     const button = screen.getByTestId('block-import-open');
@@ -155,7 +154,6 @@ describe('BlockImportModule', () => {
     render(<BlockImportModule />);
     await openPreview();
 
-    // Renders 1 conflict (capabilities/login) and 1 new item (capabilities/session).
     expect(screen.getByTestId('block-import-conflicts')).toHaveTextContent(
       'capabilities/login',
     );

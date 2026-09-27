@@ -1,4 +1,3 @@
-// The turn state machine — immediacy, interruptibility, and the cap are the contract.
 import { describe, expect, it, vi } from 'vitest';
 
 import type { LlmChatEcho } from '@/shared/lib/tauri-llm';
@@ -245,14 +244,13 @@ describe('runTurn', () => {
   });
 
   it('stops at the six round-trip cap and adds one closing call', async () => {
-    // The structural cap against a model that calls tools endlessly.
+    // The cap stops a model that calls tools endlessly.
     const send = vi.fn<Send>(async () => echo(TOOL_CALL));
     const d = deps({ send });
     const result = await runTurn(d, startTurn({ text: 'x', screenContext: EMPTY_SCREEN_CONTEXT }), {
       signal: new AbortController().signal,
     });
     expect(result.turn.roundsUsed).toBe(AGENT_ROUND_CAP);
-    // The capped round trips plus one wrap-up.
     expect(send).toHaveBeenCalledTimes(AGENT_ROUND_CAP + 1);
     expect(result.turn.events.at(-1)).toMatchObject({ code: 'round-cap' });
   });
@@ -315,7 +313,7 @@ describe('runTurn', () => {
   });
 
   it('settles tool rows only after the round trip ends', async () => {
-    // Marking something "read" before it is sent makes the screen state what has not happened yet.
+    // Nothing is marked read before it is sent.
     const progress: string[] = [];
     let call = 0;
     const send = vi.fn<Send>(async () => {
@@ -328,7 +326,6 @@ describe('runTurn', () => {
         progress.push(turn.events.map((event) => event.kind).join(','));
       },
     });
-    // The first progress snapshot has only the user's bubble and no tool row.
     expect(progress[0]).toBe('user');
     expect(progress.some((line) => line.includes('toolLine'))).toBe(true);
   });
@@ -362,9 +359,7 @@ describe('runTurn', () => {
 
   it('treats an audit log failure as a refused transfer', async () => {
     const send = vi.fn<Send>(async () => {
-      // The shape `llm.rs` actually emits: a machine-readable code, then whatever human copy the
-      // Rust side happened to compose. This test used to feed its own copy of the Korean sentence
-      // and assert the code — so it passed no matter what Rust really said.
+      // The shape `llm.rs` emits: a code, then Rust's own copy.
       throw new Error(`${AUDIT_BLOCKED_PREFIX}감사 기록을 남기지 못했어요: EACCES`);
     });
     const result = await runTurn(
@@ -442,12 +437,7 @@ describe('runTurn', () => {
     expect(assistant).toMatchObject({ grounding: 'unread' });
   });
 
-  /**
-   * 2026-08-02 — this branch was accepted as `status: 'done'` with no notice at all.
-   * Reaching the cap raises `round-cap` while an early exit stayed silent, so the
-   * screen was indistinguishable from a normal completion (the `agent ok tools=[]`
-   * turns in the measured audit log).
-   */
+  /** An early exit must not look like a normal completion. */
   it('leaves a notice mirroring the cap notice when a turn stops without calling any tool', async () => {
     const send = vi.fn<Send>(async () =>
       echo({ content: [{ type: 'text', text: '아마 그럴 거예요' }], stop_reason: 'end_turn' }),
@@ -463,7 +453,7 @@ describe('runTurn', () => {
   });
 
   it('adds no such notice when the turn finishes normally after using tools', async () => {
-    // Attaching it to ① would add wallpaper to every normal turn.
+    // A normal finish after tools gets no notice.
     const send = vi
       .fn<Send>()
       .mockResolvedValueOnce(echo(TOOL_CALL))

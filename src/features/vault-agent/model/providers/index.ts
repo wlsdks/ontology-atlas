@@ -4,12 +4,7 @@ import { geminiAdapter } from './gemini';
 import { localAdapter } from './local';
 import { openaiAdapter } from './openai';
 
-/**
- * Three named vendors plus the one connect-by-address branch — shipping key
- * registration for three vendors while the conversation supports two makes the screen
- * contradict itself. The first three follow the order of the allowlist in
- * `secrets.rs`, and `local` is **not** on that list (there is no key to store).
- */
+/** Three named vendors in `secrets.rs` allowlist order, plus the keyless connect-by-address branch. */
 export const PROVIDER_ADAPTERS: Record<string, ProviderAdapter> = {
   anthropic: anthropicAdapter,
   openai: openaiAdapter,

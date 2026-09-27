@@ -79,8 +79,7 @@ beforeEach(() => {
   mocks.bridge = true;
   mocks.pathsLastChange.mockReset();
   mocks.diff.mockReset();
-  // The settled walk is shared by every reader for the life of the page; each test opens its own
-  // folder so one test's answer is never another's.
+  // The settled walk is shared page-wide, so each test opens its own folder.
   folder += 1;
   mocks.vault = { ...mocks.vault, handle: { rootPath: `/vaults/atlas-${folder}` } };
 });

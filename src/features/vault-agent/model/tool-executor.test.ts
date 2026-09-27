@@ -1,8 +1,4 @@
-// The executor's one invariant: **a model's write call never reaches the disk.**
-//
-// This file locks it in two layers:
-// ① type level — proving at compile time that the port the executor receives has no write method.
-// ② behaviour level — passing a write tool through calls the fs mock zero times.
+// A model's write never reaches disk: checked at the type level and by zero fs calls.
 import { describe, expect, it, vi } from 'vitest';
 
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from '@/entities/knowledge-graph';
@@ -88,8 +84,7 @@ function call(name: string, args: unknown = {}): NormalizedToolCall {
 
 describe('tool-executor never writes', () => {
   it('the port type has no write method', () => {
-    // This array is the whole port. A write name entering here lets the executor reach
-    // the disk, and at that moment "zero writes without consent" is demoted to a discipline.
+    // A write name in this port would let the executor reach disk.
     const port = makePort();
     expect(Object.keys(port).sort()).toEqual(['docs', 'edges', 'nodes', 'readDocText']);
     for (const key of Object.keys(port)) {
@@ -176,8 +171,7 @@ describe('tool-executor reads', () => {
   });
 
   it('answers a name-only concept with guidance to create its document, not "missing"', async () => {
-    // Answering "not found" for a concept the map showed breaks the promise that a
-    // person and an agent see the same ontology.
+    // A concept the map showed must not answer "not found".
     const execute = createToolExecutor(makePort());
     const result = await execute(call('get_concept', { slug: 'src/lib/ghost.ts' }));
     const payload = JSON.parse(result.content) as Record<string, unknown>;
@@ -230,9 +224,7 @@ describe('tool-executor reads', () => {
   });
 
   it('find_backlinks counts from raw frontmatter, not map edges', async () => {
-    // The map draws only a subset of relation types as edges (`describes` is not drawn).
-    // Counting backlinks from edges would leave the in-app agent unable to see relations
-    // an agent in the terminal can.
+    // The map omits some relation types as edges, so backlinks come from frontmatter.
     const execute = createToolExecutor(
       makePort({
         docs: [

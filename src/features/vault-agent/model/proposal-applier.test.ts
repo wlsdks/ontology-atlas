@@ -161,15 +161,7 @@ describe('proposal-applier', () => {
     expect(port.saveDoc).not.toHaveBeenCalled();
   });
 
-  /*
-   * Bug sweep 2026-09-01 — one file, several changes. The builder computes each
-   * change's `after` on the previous change's `after`, so at apply time:
-   * writing every selected `after` in sequence tripped the second write's own
-   * mtime guard (half-applied), and a deselected change whose later sibling
-   * stayed selected still reached disk inside that sibling's `after` (consent
-   * violated). The applier now writes each file once — the last selected
-   * `after` — and refuses a selection that skips an earlier same-file change.
-   */
+  /* Chained changes to one file are written once, and a selection skipping an earlier one is refused. */
   it('writes once per file with the last after when two chained changes to one file are selected', async () => {
     const port = makePort();
     const target = proposal();

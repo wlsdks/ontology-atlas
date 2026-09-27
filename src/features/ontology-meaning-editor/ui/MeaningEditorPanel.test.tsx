@@ -128,10 +128,7 @@ describe('MeaningEditorPanel', () => {
   });
 
   it('returns to the first step with buttons enabled when reopened after a write', async () => {
-    // The panel outlives `onClose` (exit animation) and HomePage keys it by node
-    // id, so a reopen reuses this instance. Before the fix it came back showing
-    // the already-written change with the confirm button frozen in its busy state
-    // and every control -- including "edit again" -- disabled.
+    // A reopen reuses the mounted instance, which must not come back frozen in its busy state.
     const onApply = vi.fn().mockResolvedValue(undefined);
     const props = {
       source: {
@@ -181,13 +178,7 @@ describe('MeaningEditorPanel', () => {
   });
 });
 
-/**
- * **The bytes a removal writes** (owner inspection, 2026-09-26). Removing the only `relates` entry of
- * `capabilities/wiki-pages` from the map's edge panel left `relates: []` in the file; removing a
- * relation that carried the only reason left `relation_notes: {  }`. The panel's plan is applied
- * exactly as the vault session applies it (`applyFrontmatterUpdates`), and the file must read as if
- * the relation had never been written.
- */
+/** Removing the last relation of a key leaves no empty key in the file. */
 describe('removing the last relation of a key writes no empty key', () => {
   const WIKI_PAGES = [
     '---',

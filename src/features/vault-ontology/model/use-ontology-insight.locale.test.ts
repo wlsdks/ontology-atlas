@@ -3,8 +3,7 @@ import { deriveOntologyFromVault } from '@/entities/docs-vault';
 import type { VaultManifest } from '@/entities/docs-vault';
 import { derivationToInsight } from './use-ontology-insight';
 
-// Per-locale display names (owner instruction, 2026-07-24) — pins that frontmatter
-// `display_<locale>` is collected onto the stub and resolved to the screen locale at the insight boundary.
+// `display_<locale>` is collected onto the stub and resolved at the insight boundary.
 const manifest = {
   docs: [
     {

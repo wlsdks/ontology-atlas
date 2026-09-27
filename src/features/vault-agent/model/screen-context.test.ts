@@ -1,4 +1,4 @@
-// The screen context block's contract: it never states what is absent, and it is capped because it rides every round trip.
+// The block never states what is absent, and it is capped because it rides every round trip.
 import { describe, expect, it } from 'vitest';
 
 import {

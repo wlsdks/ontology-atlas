@@ -4,17 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { projectFormSchema, type ProjectFormValues } from "./schema";
 
-/**
- * Baseline test for the react-hook-form + zod integration.
- *
- * Verifies that RHF's `zodResolver` integrates correctly with `projectFormSchema`, pinning
- * schema↔resolver compatibility before ProjectForm migrated onto it.
- *
- * What it checks:
- * 1. valid input → `errors` empty and `values` pass through
- * 2. invalid input (a missing required field) → `errors` populated
- * 3. the resolver is compatible with the same human-friendly defaults as `projectToFormValues`
- */
+/** `zodResolver` stays compatible with `projectFormSchema` and its form defaults. */
 describe("rhf zodResolver × projectFormSchema", () => {
   const resolver = zodResolver(projectFormSchema);
 
@@ -51,7 +41,6 @@ describe("rhf zodResolver × projectFormSchema", () => {
       shouldUseNativeValidation: false,
       fields: {},
     });
-    // resolver returns { values, errors } — errors should NOT be empty
     expect(Object.keys(result.errors).length).toBeGreaterThan(0);
   });
 
@@ -94,13 +83,11 @@ describe("rhf zodResolver × projectFormSchema", () => {
     );
     expect(result.current.formState.isDirty).toBe(false);
 
-    // Change via setValue — isDirty becomes true.
     act(() => {
       result.current.setValue("name", "수정된 이름", { shouldDirty: true });
     });
     expect(result.current.formState.isDirty).toBe(true);
 
-    // Simulate a successful submit — after `reset(parsed)`, isDirty is false.
     const parsed: ProjectFormValues = {
       ...initial,
       name: "수정된 이름",

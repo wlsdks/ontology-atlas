@@ -31,11 +31,7 @@ describe('citation enforcement', () => {
     expect(result.paragraphs[0].citations).toEqual(['capabilities/payment']);
   });
 
-  /**
-   * 2026-08-02 — the old implementation folded these two into **the same value**
-   * (`demoted: true`). Their next actions actually differ: one needs a way back, the
-   * other is finished once the screen compensates with the read list.
-   */
+  /** The two states have different next actions. */
   it('marks a read but unmarked answer as uncited for correction, not degradation', () => {
     const result = extractCitations('제 생각에는 이렇습니다.', ['capabilities/payment']);
     expect(result.grounding).toBe('uncited');

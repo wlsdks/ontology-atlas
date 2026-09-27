@@ -11,8 +11,7 @@ export interface TaxonomyContextValue {
   statuses: Status[];
   getCategory: (id: string | undefined) => Category | undefined;
   getStatus: (id: string | undefined) => Status | undefined;
-  // Vault frontmatter that does not state category/status yields undefined, and the taxonomy
-  // provider displays an em-dash placeholder — more honest than a fabricated 'uncategorized'.
+  // Undefined shows as an em-dash, never a fabricated 'uncategorized'.
   categoryLabel: (id: string | undefined) => string;
   statusLabel: (id: string | undefined) => string;
 }
@@ -23,16 +22,9 @@ interface Props {
   children: ReactNode;
 }
 
-/**
- * A static provider exposing the defaults only — build-time defaults are enough for the
- * taxonomy (categories and statuses). Vault-defined custom classifications (a
- * `categories.md` frontmatter, say) are a later stage.
- */
+/** Defaults-only taxonomy provider. */
 export function TaxonomyProvider({ children }: Props) {
-  // Labels follow the screen's language — category and status are code constants rather than
-  // vault data, so we hold the per-locale labels ourselves (`shared/lib/taxonomy-label`).
-  // This provider is the **only place** that picks a label: a caller reading `.label`
-  // directly leaks Korean onto the English screen (the 2026-07-28 `/project/new` defect).
+  // The only place a label is picked; `.label` itself is Korean.
   const locale = useLocale();
   const value = useMemo<TaxonomyContextValue>(() => {
     const categoryMap = new Map(DEFAULT_CATEGORIES.map((c) => [c.id, c]));
@@ -42,8 +34,7 @@ export function TaxonomyProvider({ children }: Props) {
       statuses: DEFAULT_STATUSES,
       getCategory: (id) => (id ? categoryMap.get(id) : undefined),
       getStatus: (id) => (id ? statusMap.get(id) : undefined),
-      // An id absent from the defaults comes from the user's vault — it is shown verbatim
-      // (the id) rather than translated.
+      // An id outside the defaults comes from the vault and shows verbatim.
       categoryLabel: (id) =>
         id ? (pickTaxonomyLabel(categoryMap.get(id), locale) ?? id) : '—',
       statusLabel: (id) =>

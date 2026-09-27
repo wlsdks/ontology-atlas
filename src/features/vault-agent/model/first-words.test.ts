@@ -1,5 +1,4 @@
-// The three contracts of an opening line: it comes from real data, the slot priority is
-// fixed, and three are never forced.
+// Opening lines come from real data in fixed slot priority, and three are never forced.
 import { describe, expect, it } from 'vitest';
 
 import type { ConceptDocFacts } from '@/entities/knowledge-graph';

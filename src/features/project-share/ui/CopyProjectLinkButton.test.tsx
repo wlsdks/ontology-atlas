@@ -49,15 +49,11 @@ describe("CopyProjectLinkButton", () => {
     );
   });
 
-  /*
-   * 2026-09-26: the button already said the link was copied, and a toast said it again in a box
-   * over the project page's own text. The outcome is said once, where the press was.
-   */
+  /* The outcome is said once, on the button. */
   it("says the copy on the button and raises no toast", async () => {
     fireEvent.click(renderButton());
 
-    // Every label is laid in one cell and only the current one is read (the others are
-    // `aria-hidden`), so the button's name is what it says now.
+    // Only the current label is read; the others are `aria-hidden`.
     await waitFor(() => expect(screen.getByRole("button", { name: labels.labelCopied })).toBeInTheDocument());
     expect(mocks.toast).not.toHaveBeenCalled();
     // The live region reads the same outcome out.
