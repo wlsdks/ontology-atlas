@@ -31,7 +31,7 @@ import {
   findBacklinks,
   readDoc,
   redirectBacklinks,
-  slugToPath,
+  slugToWritePath,
   vaultSlugExists,
 } from '../vault.mjs';
 import { compactPostWriteMaintenance } from './maintenance.mjs';
@@ -108,8 +108,8 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
     requireNodeNotReservedForHuman(readDocIfPresent(newSlug), 'rename_concept');
   }
 
-  const sourcePath = slugToPath(VAULT_ROOT, diskOldSlug);
-  const targetPath = slugToPath(VAULT_ROOT, newSlug);
+  const sourcePath = slugToWritePath(VAULT_ROOT, diskOldSlug);
+  const targetPath = slugToWritePath(VAULT_ROOT, newSlug);
   const sourceDoc = readDoc(VAULT_ROOT, sourcePath);
   const targetDoc = overwrite && targetExists ? readDoc(VAULT_ROOT, targetPath) : null;
 
@@ -233,8 +233,8 @@ function reclassifyConcept({ slug, newKind, newSlug, domain, body, confirm = fal
   if (!canonicalOld) throw new Error(missingSlugMessage('Source slug does not exist in vault', slug));
   const canonicalNew = newSlug || canonicalOld;
   if (canonicalNew !== canonicalOld && vaultSlugExists(VAULT_ROOT, canonicalNew)) throw new Error(`Target slug already exists: "${canonicalNew}".`);
-  const sourcePath = slugToPath(VAULT_ROOT, canonicalOld);
-  const targetPath = slugToPath(VAULT_ROOT, canonicalNew);
+  const sourcePath = slugToWritePath(VAULT_ROOT, canonicalOld);
+  const targetPath = slugToWritePath(VAULT_ROOT, canonicalNew);
   const sourceDoc = readDoc(VAULT_ROOT, sourcePath);
   if (typeof expected_mtime === 'number' && sourceDoc.mtime !== expected_mtime) throw new VaultConflictError(canonicalOld, expected_mtime, sourceDoc.mtime);
   const oldKind = sourceDoc.frontmatter.kind;
@@ -354,9 +354,9 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime, ex
   fromSlug = diskFromSlug;
   intoSlug = diskIntoSlug;
 
-  const fromPath = slugToPath(VAULT_ROOT, fromSlug);
+  const fromPath = slugToWritePath(VAULT_ROOT, fromSlug);
   const fromDoc = readDoc(VAULT_ROOT, fromPath);
-  const intoPath = slugToPath(VAULT_ROOT, intoSlug);
+  const intoPath = slugToWritePath(VAULT_ROOT, intoSlug);
   const intoDoc = readDoc(VAULT_ROOT, intoPath);
   const identityHistory = mergeNodeIdentityHistory(fromDoc.frontmatter, intoDoc.frontmatter);
   const absorbedUids = identityHistory.absorbedUids;
@@ -469,7 +469,7 @@ function deleteConcept({ slug, confirm = false, force = false, expected_mtime })
   // Existence check, so a dry run never falsely reports "deletable". (deleteDoc
   // throws again at the real delete step, but the dry-run path never reaches
   // deleteDoc, hence the separate check.)
-  let filePath = slugToPath(VAULT_ROOT, slug);
+  let filePath = slugToWritePath(VAULT_ROOT, slug);
   // Resolve to the disk's spelling before the backlink safety check: a wrong-case
   // slug passes `existsSync` on macOS/Windows while `findBacklinks` is
   // case-sensitive, so a referenced node would be deletable without force.
@@ -478,7 +478,7 @@ function deleteConcept({ slug, confirm = false, force = false, expected_mtime })
     throw new Error(missingSlugMessage('Doc not found', slug));
   }
   slug = diskSlug;
-  filePath = slugToPath(VAULT_ROOT, slug);
+  filePath = slugToWritePath(VAULT_ROOT, slug);
   const sourceDoc = readDoc(VAULT_ROOT, filePath);
   requireNodeNotReservedForHuman(sourceDoc, 'delete_concept');
   // Ambiguous-tail referrers count too: a doc whose ref could mean this node still

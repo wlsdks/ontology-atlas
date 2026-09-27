@@ -15,8 +15,11 @@ export const READ_SOURCE_DEFAULT_LIMIT = 200;
 export const READ_SOURCE_MAX_LIMIT = 1000;
 /** Characters of text returned at most per call, whatever the unit count. */
 export const READ_SOURCE_MAX_CHARS = 60_000;
+/** GitHub refuses a larger file, so no pushed vault holds a larger source. */
+export const READ_SOURCE_MAX_FILE_BYTES = 100 * 1024 * 1024;
 
 
+const ZIP_ENTRY_MAX_BYTES = 256 * 1024 * 1024;
 const EOCD_SIGNATURE = 0x06054b50;
 const CENTRAL_SIGNATURE = 0x02014b50;
 const LOCAL_SIGNATURE = 0x04034b50;
@@ -58,7 +61,14 @@ export function readZipEntries(buffer) {
       const raw = buffer.subarray(start, start + compressedSize);
       if (method === 0) return Buffer.from(raw);
       if (method === 8) {
-        const out = inflateRawSync(raw);
+        const limit = Math.max(1, Math.min(uncompressedSize === 0xffffffff ? Infinity : uncompressedSize, ZIP_ENTRY_MAX_BYTES));
+        let out;
+        try {
+          out = inflateRawSync(raw, { maxOutputLength: limit });
+        } catch (error) {
+          if (error?.code !== 'ERR_BUFFER_TOO_LARGE') throw error;
+          throw new Error(`zip entry ${name} inflates past ${limit} bytes, more than it declares or than read_source unpacks`);
+        }
         if (uncompressedSize !== 0xffffffff && out.length !== uncompressedSize) {
           throw new Error(`zip entry ${name} inflated to ${out.length} bytes, expected ${uncompressedSize}`);
         }

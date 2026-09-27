@@ -36,6 +36,7 @@ import {
   generateNodeUid,
   inspectMergedUids,
   nodeUidIssue,
+  unwritableSlugIssue,
 } from './schema.mjs';
 import {
   STARTER_EXAMPLE_SLUGS,
@@ -464,6 +465,12 @@ export function slugToPath(rootPath, slug) {
   // realpath'd; a new file's parent is checked below.
   assertRealPathInside(candidate, normalizedRoot, slug);
   return candidate;
+}
+
+export function slugToWritePath(rootPath, slug) {
+  const issue = unwritableSlugIssue(slug);
+  if (issue) throw new Error(issue);
+  return slugToPath(rootPath, slug);
 }
 
 /**
@@ -1241,7 +1248,7 @@ function noteParentGrowth(slug, previousFrontmatter, nextFrontmatter) {
 
 /** Writes a new doc, creating directories; throws if it exists, so an overwrite is always explicit. */
 export function writeDoc(rootPath, slug, { frontmatter, body = '' }) {
-  const filePath = slugToPath(rootPath, slug);
+  const filePath = slugToWritePath(rootPath, slug);
   if (existsSync(filePath)) {
     throw new Error(
       `Doc already exists at "${slug}". To update fields, use patch_concept(slug, frontmatter, body, expected_mtime). To rename, use rename_concept(oldSlug, newSlug). Never delete-then-add: that loses backlinks.`,
@@ -1266,7 +1273,7 @@ export function writeDoc(rootPath, slug, { frontmatter, body = '' }) {
  * state read just before the delete, throws when absent, honours `expectedMtime`.
  */
 export function deleteDoc(rootPath, slug, options = {}) {
-  const filePath = slugToPath(rootPath, slug);
+  const filePath = slugToWritePath(rootPath, slug);
   if (!existsSync(filePath)) {
     throw new Error(`Doc not found: "${slug}". ${notFoundSuffix(rootPath, slug)}`);
   }
@@ -1285,7 +1292,7 @@ export function deleteDoc(rootPath, slug, options = {}) {
  * identity, and the caller must tell the person.
  */
 export function patchFrontmatter(rootPath, slug, patch, options = {}) {
-  const filePath = slugToPath(rootPath, slug);
+  const filePath = slugToWritePath(rootPath, slug);
   if (!existsSync(filePath)) {
     throw new Error(`Doc not found: "${slug}". ${notFoundSuffix(rootPath, slug)}`);
   }
@@ -1324,7 +1331,7 @@ export function updateDoc(rootPath, slug, {
   expectedMtime,
   beforeCommit,
 }) {
-  const filePath = slugToPath(rootPath, slug);
+  const filePath = slugToWritePath(rootPath, slug);
   if (!existsSync(filePath)) {
     throw new Error(`Doc not found: "${slug}". ${notFoundSuffix(rootPath, slug)}`);
   }

@@ -542,6 +542,37 @@ export function flatSlugIssue(kind, slug) {
   );
 }
 
+const AGENT_INSTRUCTION_FILE_STEMS = new Set(['agents', 'agents.override', 'claude', 'claude.local', 'gemini']);
+
+export function unwritableSlugIssue(slug) {
+  if (typeof slug !== 'string') return null;
+  const segments = slug.split(/[\\/]/);
+  const hidden = segments.find((segment) => segment.startsWith('.'));
+  if (hidden !== undefined) {
+    return (
+      `slug "${slug}" has the path segment "${hidden}", and a write tool never names a segment that starts with ".": ` +
+      'hidden folders such as .claude, .agents, .codex, .github and .git hold agent and tool configuration, ' +
+      'and the vault never reads them as nodes. Use a slug without a leading-dot segment, such as "capabilities/<name>".'
+    );
+  }
+  const stem = segments.at(-1).normalize('NFKC').toLowerCase();
+  if (AGENT_INSTRUCTION_FILE_STEMS.has(stem)) {
+    return (
+      `slug "${slug}" names ${segments.at(-1)}.md, a file coding agents load as their instructions ` +
+      '(AGENTS.md, CLAUDE.md, GEMINI.md and their .local and .override forms, in any letter case, because macOS and ' +
+      'Windows open those as one file). A write tool never creates, edits or deletes one; a person edits it by hand. ' +
+      'Name the node for what it means instead, such as "domains/agent-runtime".'
+    );
+  }
+  if (segments.length === 1 && stem === 'readme') {
+    return (
+      `slug "${slug}" is the vault README (kind vault-readme), which a write tool never authors. ` +
+      'Write the overview as a document node instead, such as "overview".'
+    );
+  }
+  return null;
+}
+
 /** The kind's starter markdown, used when no body is passed, so a first file explains itself. */
 export function defaultBody(kind, title) {
   const schema = VAULT_KIND_SCHEMA[kind];
