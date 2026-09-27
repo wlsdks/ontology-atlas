@@ -1872,6 +1872,9 @@ agent receipt stays visible in that grid with a conversation action; completed
 reading receipts do not reserve a separate banner above the question. Starting a
 new question request scopes its visible receipts from that request's start;
 older failures remain in the underlying trace instead of preceding a new report.
+Below the desktop band, the question scroll viewport ends above the fixed bottom
+navigation using its existing reserve token. End padding alone does not make
+keyboard-focused citations visible above an overlapping navigation bar.
 Once a
 report arrives, its question is the sole visible headline; the search form becomes
 an explicit Edit question control. Answer prose stays within the document measure.

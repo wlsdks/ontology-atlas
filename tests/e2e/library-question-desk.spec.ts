@@ -16,6 +16,42 @@ const wiki = (title: string, source: string, hash: string, fact: string) => [
   `- ${fact} [[src:${source}#l2]]`, '## Decisions', '## Open questions', '## Not in sources',
 ].join('\n');
 
+test('keeps the report scroll viewport and focused citations above mobile navigation', async ({ page }) => {
+  const harness = await installLibraryWorkHarness(page, { files: {
+    'project.md': '---\nuid: 00000000-0000-4000-8000-000000000001\nkind: project\ntitle: Refunds\nslug: refunds\n---\n',
+    'sources/refund-handling.md': refund,
+    'wiki/refund-overview.md': wiki('Refund overview', 'sources/refund-handling.md', digest(refund), 'Refund approval queues a stock restoration job.'),
+  } });
+  await page.goto('/en/docs/');
+  await page.getByRole('button', { name: /^Open my folder/ }).first().click();
+  await expect(page.getByRole('heading', { name: 'Map', exact: true })).toBeVisible();
+  await page.goto('/en/library/?tab=wiki&guides=off');
+  await page.getByTestId('library-workspace-wiki').click();
+  await page.getByTestId('question-desk-input').fill('When does refund approval restore stock?');
+  await page.getByTestId('question-desk-search').click();
+  await page.getByTestId('question-desk-summarize').click();
+  await expect.poll(async () => (await harness.snapshot(page)).calls.some((call) => call.method === 'session/prompt')).toBe(true);
+  await harness.answer(page, '## Answer\nA separate job restores stock. [[src:sources/refund-handling.md#l2]]\n\n## Source-backed evidence\n- Approval queues a restoration job. [[src:sources/refund-handling.md#l2]]\n- The job may finish in the next inventory batch. [[src:sources/refund-handling.md#l3]]\n\n## Disagreements or changed claims\nNo additional claims were read.\n\n## Unknowns and search limits\nThe completion time is unknown.');
+  await expect(page.getByTestId('question-desk-report')).toBeVisible();
+  await page.getByRole('button', { name: 'Close conversation', exact: true }).click();
+  await page.setViewportSize({ width: 390, height: 844 });
+  const desk = page.getByTestId('library-question-desk');
+  await expect.poll(() => desk.evaluate((element) => {
+    const navigation = document.querySelector('[data-tabbar="primary"]')!;
+    const contentTop = navigation.getBoundingClientRect().top + parseFloat(getComputedStyle(navigation).borderTopWidth);
+    return element.getBoundingClientRect().bottom - contentTop;
+  })).toBeLessThanOrEqual(0);
+  const citation = page.getByRole('button', { name: 'sources/refund-handling.md#l3', exact: true });
+  await citation.focus();
+  await expect.poll(() => citation.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
+    return hit === element || element.contains(hit);
+  })).toBe(true);
+  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('library-source-passage')).toHaveAttribute('data-state', 'resolved');
+});
+
 test('Wiki question desk finds contradictory leads and keeps the no-key source path usable', async ({ page }) => {
   await page.setViewportSize({ width: 1512, height: 901 });
   await seedFirstRunSeen(page);

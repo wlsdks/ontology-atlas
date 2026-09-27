@@ -540,7 +540,7 @@ export function LibraryQuestionDesk({
     {fileReportNote ? <p role="alert" className="mt-2 text-label leading-label text-[color:var(--color-danger-text)]">{fileReportNote}</p> : null}
   </div> : null;
   return (
-    <div data-testid="library-question-desk" className="atlas-scroll-quiet min-h-0 flex-1 overflow-y-auto px-5 py-6 sm:px-6 lg:py-8 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+12px)]">
+    <div data-testid="library-question-desk" className="atlas-scroll-quiet min-h-0 flex-1 overflow-y-auto px-5 py-6 sm:px-6 lg:py-8 max-lg:mb-[var(--topology-mobile-bottom-tab-reserve)] max-lg:pb-3">
       <div data-question-desk-container="true" className="mx-auto w-full max-w-[calc(var(--measure-note-column)+var(--measure-note-column))]">
         {!activeReport ? <header className="mb-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
