@@ -10,21 +10,11 @@ import { BuildFromCodeDoor } from './BuildFromCodeDoor';
 import type { useBuildFromCode } from '../model/use-build-from-code';
 
 /**
- * **R3 of the re-inspection before v1.2.2 — a bare failure code painted as Korean copy.**
- *
- * `use-build-from-code.ts` returns `failureCodeOf(err) ?? ''`, so `build.errorText` is a
- * kebab-case **code**. This door rendered `{build.errorText || t('buildFromCodeFailed')}`,
- * which put the literal token `permission-denied` onto a Korean first-run screen. Its sibling
- * `BuildFromCodeConfirmDialog` had been converted in the same change; this one had not, and
- * neither rule in `no-raw-error-copy.contract.test.ts` could see it — no `.message`, no catch
- * binding, and the `a || t(…)` spelling was outside the matcher.
- *
- * The inspection could not force the native folder picker into a permission failure, so the
- * defect was source-confirmed and runtime-unconfirmed. This file is the cheap reproduction: the
- * producer's own code, handed to the door as state, rendered in both locales.
+ * `build.errorText` is a kebab-case failure code; the door must render its catalogue sentence in
+ * both locales rather than the bare token (`no-raw-error-copy.contract.test.ts` cannot see the
+ * `a || t(…)` spelling).
  */
 
-/** The three codes `failureCodeOf` mints from a folder-pick refusal. */
 const CODES = ['permission-denied', 'target-missing', 'already-exists'] as const;
 
 function buildWith(errorText: string | null): ReturnType<typeof useBuildFromCode> {
@@ -53,9 +43,8 @@ describe('BuildFromCodeDoor shows failures as sentences rather than codes', () =
     renderDoor(code, 'ko');
     const line = screen.getByTestId('first-run-build-error');
     expect(line.textContent, 'the producer\'s code is being painted as copy').not.toContain(code);
-    // The catalogue's own sentence for the code, not the door's generic fallback.
     expect(line.textContent).toBe(koMessages.failures[code]);
-    // The machine half is kept where a developer reads it and a reader does not.
+    // The machine half stays where a developer reads it and a reader does not.
     expect(line.getAttribute('data-failure-detail')).toBe(code);
   });
 
@@ -67,7 +56,7 @@ describe('BuildFromCodeDoor shows failures as sentences rather than codes', () =
   });
 
   it('falls back to the door sentence for an unrecognised failure', () => {
-    // `messageOf` returns `''` for "it failed and nothing recognised it".
+    // `messageOf` returns `''` when nothing recognised the failure.
     renderDoor('', 'ko');
     const line = screen.getByTestId('first-run-build-error');
     expect(line.textContent).toBe(koMessages.firstRunStarter.buildFromCodeFailed);
@@ -81,9 +70,7 @@ describe('BuildFromCodeDoor shows failures as sentences rather than codes', () =
   });
 
   /*
-   * The probe for this file's own instrument: the pre-repair expression, evaluated here, really
-   * does produce the token. Without this the assertions above could pass against a screen that
-   * never had the defect.
+   * Proves this file's instrument: the pre-repair expression really produces the token.
    */
   it('probe: the pre-repair expression yields the bare token', () => {
     const errorText: string | null = 'permission-denied';

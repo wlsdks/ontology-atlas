@@ -56,56 +56,34 @@ import {
 import { groupDiscovered, shortSourceKey, type DiscoveredGroup } from './discovered-groups';
 
 /**
- * **Adding a connector: one list under one search, and a press that does what the row says.**
+ * Adding a connector: one list under one search, like every surveyed MCP client, in the order
+ * a person can act without typing: already on this computer (one press copies it), ready to
+ * attach (`mcp-catalogue.generated.ts`, showing the verbatim address or command and what it
+ * asks), and by hand (a folded form, where an install link lands filled in).
  *
- * ## Why one list and not three tabs
- *
- * The 2026-09-07 morning build split this dialog into *Found here*, *Catalogue* and *By hand*
- * tabs. The owner read the result in the installed app the same afternoon and said the tabs were
- * the problem: a person opening "add" does not know which of three errands they are on, and a
- * strip that asks them to pick one before showing anything is the same "I don't know what to do
- * here" the tabs were built to answer. Every MCP client surveyed that day (Cline, Goose, Cursor,
- * VS Code, Claude Desktop, Codex) shows one list — name, one line, one button — and keeps "by
- * hand" as the last row or a separate form. So this dialog does too.
- *
- * Three groups, in the order somebody can act on them without typing:
- *
- * 1. **Already on this computer.** Registered in another tool's config. One press copies it.
- * 2. **Ready to attach.** The committed catalogue (`mcp-catalogue.generated.ts`). The row shows
- *    the address or command it will write, verbatim, and what it will ask.
- * 3. **By hand.** A disclosure at the bottom that unfolds the full form. It is also where an
- *    install link lands, filled in.
- *
- * ## What the press does
- *
- * One rule, so the button can read the same everywhere: **a press attaches what asks nothing and
- * asks, in place, for what asks one thing.** A hosted address with OAuth asks nothing of this
- * dialog — the coding agent opens the sign-in window and holds what comes back — so the row goes
- * straight into the folder, switched off. A local program that needs a token unfolds a small panel
- * under its own row: the command written out, one password field per required variable, and the
- * press. Nothing is written until that press, and no value ever goes into the folder's file.
- *
- * This overturns the morning's "picking fills the by-hand form" for catalogue rows; the record is
- * in `docs/DECISIONS.md` (2026-09-07, one list). What it keeps: the row shows what will run
- * before the press, the row is off after it, the origin is recorded, and a link only pre-fills.
+ * A press attaches what asks nothing and asks in place for what asks one thing: a hosted OAuth
+ * address goes straight into the folder switched off; a local program needing a token unfolds
+ * one password field per required variable under its row. Nothing is written until the press,
+ * and no value ever goes into the folder's file. Record: `docs/DECISIONS.md` (2026-09-07,
+ * one list).
  */
 
-/** A short, stable id. `crypto.randomUUID` exists in every surface this ships to. */
+/** `crypto.randomUUID` exists on every surface this ships to. */
 export function newConnectorId(): string {
   return typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
     ? crypto.randomUUID()
     : `c${Date.now().toString(36)}`;
 }
 
-/** One variable being drafted in the by-hand form: a name, a value, and where the value goes. */
+/** A name, a value, and where the value goes. */
 interface DraftVariable {
   name: string;
   value: string;
-  /** The person's choice. A credential-shaped name starts checked and cannot be unchecked. */
+  /** A credential-shaped name starts checked and cannot be unchecked. */
   secret: boolean;
 }
 
-/** The draft a catalogue entry or an install link hands to the by-hand form. */
+/** Handed to the by-hand form by a catalogue entry or an install link. */
 export interface CustomPrefill {
   name: string;
   transport: ConnectorTransport;
@@ -113,7 +91,7 @@ export interface CustomPrefill {
   args: string;
   url: string;
   variables: DraftVariable[];
-  /** One line naming where this came from, drawn above the form. Absent for a blank form. */
+  /** Drawn above the form; absent for a blank form. */
   provenance?: { title: string; detail: string; docsUrl?: string };
 }
 
@@ -137,8 +115,8 @@ function prefillFromCatalogue(
     variables: variantVariables(variant).map((variable) => ({
       name: variable.name,
       value: '',
-      // The publisher's own `isSecret`, not a guess from the name. `OPENAPI_MCP_HEADERS` is the
-      // measured case where the guess was wrong and the connector attached with no credential.
+      // The publisher's own `isSecret`, not only a guess from the name: `OPENAPI_MCP_HEADERS` would
+      // otherwise attach with no credential.
       secret: variable.secret || looksLikeSecretKey(variable.name),
     })),
     provenance: {
@@ -149,7 +127,7 @@ function prefillFromCatalogue(
   };
 }
 
-/** A connector record already parsed (an install link) → the same by-hand shape. */
+/** An install link's parsed record, in the by-hand shape. */
 export function prefillFromRecord(record: ConnectorRecord): CustomPrefill {
   const entries: ConnectorValueEntry[] =
     record.transport === 'http' ? record.headers : record.env;
@@ -179,7 +157,6 @@ const EMPTY_PREFILL: CustomPrefill = {
 type ProblemKey = `problem.${ConnectorProblem}`;
 type SourceKey = `source.${ReturnType<typeof shortSourceKey>}`;
 
-/** What to tell somebody when the folder saved nothing. */
 type AddFailureReason = 'noFolder' | 'malformed' | 'writeFailed' | 'secret';
 type AddFailureKey = `addFailReason.${AddFailureReason}`;
 
@@ -199,30 +176,26 @@ function addFailureReason(result: ConnectorWriteResult | null): AddFailureReason
   }
 }
 
-
-/** How many scanned rows show before the fold. Enough to recognise a machine, not to list it. */
+/** Enough to recognise a machine, not to list it. */
 const FOUND_FOLD = 3;
 
-/** The variables a variant cannot attach without. */
 function requiredVariables(variant: CatalogueVariant): readonly CatalogueVariable[] {
   return variantVariables(variant).filter((variable) => variable.required);
 }
 
 /**
- * The row's own button goes to the first hosted address, else the first local program. A hosted
- * address is the one that asks nothing, which is what a single press should land on when the
- * vendor offers both; the local program stays one press further, named for what it is.
+ * The first hosted address, else the first local program: a hosted address asks nothing, so a
+ * single press lands there when the vendor offers both.
  */
 function primaryVariant(entry: CatalogueEntry): CatalogueVariant {
   return entry.variants.find((variant) => variant.kind === 'remote') ?? entry.variants[0];
 }
 
-/** A stable key for a variant inside its entry, for the unfolded panel and the test hooks. */
+/** For the unfolded panel and the test hooks. */
 function variantKey(variant: CatalogueVariant): string {
   return variantRuns(variant);
 }
 
-/** What a press on this variant will do: write the row, or ask for something first. */
 type PressOutcome = 'attaches' | 'asks';
 function pressOutcome(variant: CatalogueVariant): PressOutcome {
   return requiredVariables(variant).length > 0 ? 'asks' : 'attaches';
@@ -237,13 +210,13 @@ export function AddConnectorDialog({
   attachedNames,
   onAddDiscovered,
   onAddCustom,
-  /** A draft handed in from outside — an install link, today; a deep link once it is registered. */
+  /** A draft handed in from outside, such as an install link. */
   incoming,
   testIdPrefix,
 }: {
   open: boolean;
   onClose: () => void;
-  /** Scanning / failed / done — see `ConnectorDiscoveryState`; `done` is the only one with rows. */
+  /** See `ConnectorDiscoveryState`; only `done` has rows. */
   discovery: ConnectorDiscoveryState;
   canDiscover: boolean;
   canStoreSecrets: boolean;
@@ -258,17 +231,14 @@ export function AddConnectorDialog({
   const [query, setQuery] = useState('');
   const [failure, setFailure] = useState<AddFailureReason | null>(null);
   const [prefill, setPrefill] = useState<CustomPrefill>(EMPTY_PREFILL);
-  /** Bumped on every pre-fill so the form remounts and takes the new values. */
+  /** Bumped on every pre-fill so the form remounts with the new values. */
   const [prefillTick, setPrefillTick] = useState(0);
-  /** Whether the by-hand form is unfolded at the bottom. */
   const [customOpen, setCustomOpen] = useState(false);
-  /** The one catalogue variant currently asking for its value, if any. */
   const [asking, setAsking] = useState<{ entryId: string; variant: string } | null>(null);
 
   /**
-   * Where this machine's runtimes are. Read once when the dialog opens, because the answer is the
-   * difference between a path a person guesses and one they choose — and asking on every
-   * keystroke would run a directory walk while somebody types.
+   * This machine's runtimes, read once on open; asking per keystroke would walk directories
+   * while somebody types.
    */
   const [runtimes, setRuntimes] = useState<ResolvedRuntime[] | null>(null);
   useEffect(() => {
@@ -283,17 +253,10 @@ export function AddConnectorDialog({
   }, [open]);
 
   /*
-   * ── Two resets, adjusted during render rather than in an effect ───────────────────────────
-   *
-   * Both are the React "adjust state when a prop changes" pattern: compare with what was seen
-   * last render and correct immediately, so the dialog never paints one frame in the wrong state.
-   * An effect would do the same work a frame later — and `react-hooks/set-state-in-effect`
-   * refuses it for the same reason.
-   *
-   * ① **Opening** folds everything back: no search, no panel asking for a value, the form closed.
-   * ② **A draft arriving from outside** (an install link) unfolds the by-hand form already filled.
-   *    It is deliberately not saved: a link is an invitation, and the press is still the
-   *    person's (`src/shared/lib/mcp-install-link.ts` carries the CVE that rule comes from).
+   * Two resets adjusted during render, not in an effect, so the dialog never paints a frame in
+   * the wrong state (`react-hooks/set-state-in-effect` refuses the effect): opening folds
+   * everything back, and a draft from outside unfolds the form filled but unsaved, because a link
+   * is an invitation and the press stays the person's (`src/shared/lib/mcp-install-link.ts`).
    */
   const [seenOpen, setSeenOpen] = useState(open);
   if (open !== seenOpen) {
@@ -306,10 +269,8 @@ export function AddConnectorDialog({
     }
   }
   /*
-   * ⚠️ **Seeded `null`, not with what arrived** (caught in the rendered run, 2026-09-07). Seeding
-   * with `incoming` made the first render already equal to it, so the comparison never fired and
-   * a link opened the dialog with the form folded — filled form, out of sight, and nothing saying
-   * why. `null` means the first arrival is always a change.
+   * Seeded `null`, not with `incoming`, so the first arrival is always a change; otherwise a link
+   * opened the dialog with the filled form folded out of sight.
    */
   const [seenIncoming, setSeenIncoming] = useState<CustomPrefill | null>(null);
   if (open && incoming && incoming !== seenIncoming) {
@@ -320,19 +281,16 @@ export function AddConnectorDialog({
   }
 
   /*
-   * **The search takes focus after the dialog has recorded who opened it** (2026-09-25 sweep).
-   * With `autoFocus` the input focused itself during the commit, before the focus trap's effect
-   * read `document.activeElement` — so the trap recorded the search box as the opener, and on
-   * Escape or the corner close it tried to return focus to an input that no longer existed and
-   * the keyboard fell to `<body>`. This effect belongs to the dialog's parent, so it runs after
-   * the trap's (child effects run first) and the real opener is already kept.
+   * Focuses the search after the dialog records its opener. With `autoFocus` the trap recorded
+   * the search box as opener, and Escape dropped focus to `<body>`. This parent effect runs after
+   * the trap's child effect.
    */
   const searchRef = useRef<HTMLInputElement | null>(null);
   useEffect(() => {
     if (open) searchRef.current?.focus({ preventScroll: true });
   }, [open]);
 
-  /** The unfolded form, so a pre-fill from a link or a row can bring it into view. */
+  /** So a pre-fill can bring the unfolded form into view. */
   const customRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (prefillTick === 0 || !customOpen) return;
@@ -344,11 +302,8 @@ export function AddConnectorDialog({
   }, [customOpen, prefillTick, reducedMotion]);
 
   /*
-   * **The empty search's one door lands in the form** (review, 2026-09-25). Pressing it used
-   * to unfold the form below while the card and its button stayed, focus stayed on the button,
-   * and a second press did nothing. Now the press unfolds the form, brings it into view and
-   * puts the keyboard on its first field; the card's button and the fold's own toggle are
-   * never both on screen.
+   * The empty search's door unfolds the form, scrolls to it and focuses its first field; the
+   * card's button and the fold's toggle are never both on screen.
    */
   const focusCustomNameRef = useRef(false);
   useEffect(() => {
@@ -377,10 +332,8 @@ export function AddConnectorDialog({
   );
 
   /**
-   * A row plus the values it asked for. The token goes into the keychain **only after the row is
-   * on disk**. Storing it first and then failing the write leaves a value on this machine that
-   * nothing on screen points at — the orphan the removal path already had to fix once
-   * (`forgetSecrets`, 2026-09-05).
+   * Writes the row, then stores tokens in the keychain only after the row is on disk, or a
+   * failed write leaves an orphaned value on this machine (see `forgetSecrets`).
    */
   const addWithSecrets = useCallback(
     (connector: ConnectorRecord, secrets: Array<{ ref: string; value: string }>) =>
@@ -415,7 +368,7 @@ export function AddConnectorDialog({
   const nothingMatches =
     needle.length > 0 && catalogueMatches.length === 0 && (!canDiscover || foundMatches.length === 0);
 
-  /** A catalogue row, as the record the folder will hold. */
+  /** As the record the folder will hold. */
   const catalogueRecord = (entry: CatalogueEntry, variant: CatalogueVariant) => {
     const id = newConnectorId();
     return catalogueDraft(entry, variant, {
@@ -426,7 +379,7 @@ export function AddConnectorDialog({
     });
   };
 
-  /** The one rule: attach what asks nothing, ask in place for what asks one thing. */
+  /** Attaches what asks nothing; asks in place for what asks one thing. */
   const pressCatalogue = (entry: CatalogueEntry, variant: CatalogueVariant) => {
     setFailure(null);
     if (pressOutcome(variant) === 'attaches') {
@@ -437,7 +390,7 @@ export function AddConnectorDialog({
     setAsking({ entryId: entry.id, variant: variantKey(variant) });
   };
 
-  /** The escape hatch out of a row: the same facts, in the by-hand form, editable. */
+  /** The same facts in the editable by-hand form. */
   const editCatalogue = (entry: CatalogueEntry, variant: CatalogueVariant) => {
     setPrefill(prefillFromCatalogue(entry, variant, runtimes));
     setPrefillTick((tick) => tick + 1);
@@ -466,22 +419,17 @@ export function AddConnectorDialog({
       testId={`${testIdPrefix}-add-dialog`}
       initialFocus="none"
       /*
-       * The title and the search stay put; the groups scroll under them. Scrolling the whole
-       * panel took the search box off screen at the fourth row (own review, 2026-09-07), which
-       * is the moment somebody wants to narrow the list.
+       * The title and search stay put while the groups scroll, so narrowing stays in reach.
        */
       /*
-       * A fixed height, not a maximum (installed-app check, 2026-09-07): as a search narrowed the
-       * list the panel shrank and re-centred, and the search box under the person's cursor moved
-       * by half a screen. The groups scroll inside; the frame does not move.
+       * A fixed height, not a maximum, so narrowing the list does not move the search box.
        */
       className="flex h-[min(80vh,var(--dialog-max-h))] flex-col"
     >
       {/*
-        The close control sits where every other dialog in this app keeps it, at the top corner,
-        and Escape and the scrim do the same. A "Close" button under a list that scrolls was the
-        last thing on screen and the least useful (owner, 2026-09-07).
-      */}
+       * The close control sits in the top corner like every other dialog; Escape and the
+       * scrim do the same.
+       */}
       <div className="flex items-start justify-between gap-3">
         <h2
           id={`${testIdPrefix}-add-title`}
@@ -502,16 +450,12 @@ export function AddConnectorDialog({
       </div>
 
       {/*
-        **One search over everything below.** Somebody typing "notion" does not yet know whether
-        this machine already registers it, whether the catalogue holds it, or whether they will end
-        up typing it themselves — and the list answers by narrowing every group at once.
-      */}
+       * One search narrows every group at once.
+       */}
       {/*
-        It takes focus on open (see `searchRef`) and wears the strong border at rest (design lead, 2026-09-07):
-        drawn like the rows under it, it read as "row zero" rather than the one control that
-        acts on all of them. `initialFocus="none"` on the dialog is what lets it, since the
-        trap's "first" would land on the corner close.
-      */}
+       * Takes focus on open (see `searchRef`) and wears the strong border so it reads as the
+       * control over all rows. `initialFocus="none"` keeps the trap off the corner close.
+       */}
       <Input
         aria-label={t('searchLabel')}
         size="md"
@@ -532,12 +476,9 @@ export function AddConnectorDialog({
       >
       <div className="flex flex-col gap-5" data-testid={`${testIdPrefix}-add-groups`}>
         {/*
-          **A search that matches nothing answers first, as one card, for the whole dialog**
-          (2026-09-25 sweep). The line used to come after the groups, under the machine scan's
-          heading and its note, so "nothing matches" read as the scan having found nothing; and
-          it was bare text above an empty frame. The groups step aside while it stands, and the
-          card carries the one next step, which is typing it by hand.
-        */}
+         * A search matching nothing answers first, as one card for the whole dialog, with typing
+         * it by hand as the next step; the groups step aside.
+         */}
         {nothingMatches ? (
           <div data-testid={`${testIdPrefix}-add-none`}>
           <EmptyState
@@ -570,12 +511,9 @@ export function AddConnectorDialog({
           </div>
         ) : null}
         {/*
-          The catalogue leads on every surface (installed-app check, 2026-09-07). The scan of this
-          machine led at first, and on a developer's machine it is nine rows of chrome-devtools,
-          codegraph and the like that pushed Notion off the bottom of the frame; the services a
-          person came here for are the short list, so they come first, and the scan follows,
-          folded past its first few rows.
-        */}
+         * The catalogue leads: on a developer's machine the scan lists many utilities that
+         * would push the services a person came for out of the frame.
+         */}
         <CatalogueSection
           entries={catalogueMatches}
           query={query}
@@ -604,10 +542,8 @@ export function AddConnectorDialog({
         {nothingMatches ? null : foundSection}
 
         {/*
-          **By hand is the last row, folded.** It reaches every server the two lists do not, and it
-          says so in its one line; unfolding it is the only step, and a link arriving from outside
-          unfolds it already filled.
-        */}
+         * By hand is the last row, folded; a link from outside unfolds it filled.
+         */}
         <section ref={customRef} data-testid={`${testIdPrefix}-custom-section`} className="pb-2">
           {/* While the empty card offers the same door, the fold's toggle waits behind it. */}
           {nothingMatches && !customOpen ? null : (
@@ -648,9 +584,8 @@ export function AddConnectorDialog({
       </div>
 
       {/*
-        The caveat about which sessions carry a connector is true and stays, below the task
-        rather than ahead of it (design lead, 2026-09-07): it is a fact to know, not a step.
-      */}
+       * Which sessions carry a connector is a fact to know, so it sits below the task.
+       */}
       <p
         data-testid={`${testIdPrefix}-add-runtime`}
         className="mt-4 break-keep border-t border-[color:var(--color-border-soft)] pt-3 text-label leading-prose text-[color:var(--color-text-quaternary)]"
@@ -672,14 +607,14 @@ export function AddConnectorDialog({
   );
 }
 
-/** "Add connector" is one action with one shape, wherever in the dialog it is pressed. */
+/** One action with one shape wherever it is pressed. */
 const CONNECTOR_SUBMIT_CLASS = controlClass({
   shape: 'chip',
   size: 'lg',
   tone: 'onAccent',
   className: 'border-transparent',
 });
-/** The quiet actions beside it: the same 32px step, so the row keeps one height. */
+/** The same 32px step, so the row keeps one height. */
 const CONNECTOR_QUIET_CLASS = controlClass({
   shape: 'chip',
   size: 'lg',
@@ -689,7 +624,7 @@ const CONNECTOR_QUIET_CLASS = controlClass({
   className: 'border-transparent',
 });
 
-/** A group's one-line heading: what the rows below have in common, and a quiet fact beside it. */
+/** What the rows below have in common, with a quiet fact beside it. */
 function GroupHeading({ title, meta }: { title: string; meta?: string }) {
   return (
     <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
@@ -705,7 +640,7 @@ function GroupHeading({ title, meta }: { title: string; meta?: string }) {
   );
 }
 
-/** What this machine already registers — one row per thing that actually runs. */
+/** One row per server that actually runs. */
 function FoundSection({
   canDiscover,
   discovery,
@@ -723,10 +658,8 @@ function FoundSection({
 }) {
   const t = useTranslations('connectors');
   /**
-   * Folded past the first few rows unless a search is on (installed-app check, 2026-09-07). The
-   * scan finds every MCP server another tool registered, most of them developer utilities, and
-   * all of them stood between the person and the folded by-hand row. A search shows everything
-   * it matches, because then the person asked.
+   * Folded past the first rows unless searching, because most scanned servers are developer
+   * utilities; a search shows every match.
    */
   const [showAll, setShowAll] = useState(false);
   const searching = query.trim().length > 0;
@@ -734,9 +667,8 @@ function FoundSection({
   const folded = matches.length - visible.length;
   if (!canDiscover) {
     /*
-     * Why it is missing and what still works — the degradation contract, not "coming soon". It
-     * stands where the scan would, after the list that does work here; the panel behind is fully
-     * usable, and putting this first would read as a verdict on the whole dialog.
+     * The degradation contract, not "coming soon": why it is missing and what still works, placed
+     * after the working list so it does not read as a verdict on the dialog.
      */
     return (
       <div
@@ -773,17 +705,15 @@ function FoundSection({
       </div>
     );
   }
-  // Searching hides an empty group rather than explaining it; the dialog's one line does that.
+  // Searching hides an empty group; the dialog's one line explains it.
   if (discovery.status === 'done' && matches.length === 0 && query.trim()) return null;
   return (
     <section data-testid={`${testIdPrefix}-found-section`}>
       <GroupHeading title={t('groupFound')} />
       {/*
-        A failed scan says so here as well. This group is the only place the scan's results
-        appear, so leaving it on "reading…" after the command rejected is where the wait looks
-        endless; and the sentence has to be different from "found none", which is a claim about
-        this computer that a failed read has not earned.
-      */}
+       * A failed scan says so here, the only place scan results appear; "found none" would claim
+       * something a failed read has not earned.
+       */}
       {discovery.status === 'failed' ? (
         <p
           role="status"
@@ -844,8 +774,10 @@ function FoundSection({
                       </span>
                     ))}
                   </div>
-                  {/* Verbatim and unwrapped-away: a confirmation that hides an argument is the
-                      DeepJack shape (`mcp-install-link.ts`). */}
+                  {/*
+                   * Verbatim and unwrapped: a confirmation that hides an argument is the DeepJack shape
+                   * (`mcp-install-link.ts`).
+                   */}
                   <code className="mt-0.5 block break-all font-mono text-label leading-label text-[color:var(--color-text-tertiary)]">
                     {runs}
                   </code>
@@ -888,12 +820,9 @@ function FoundSection({
 }
 
 /**
- * The catalogue — **a shortcut past typing a package name, and it says so.**
- *
- * Every row carries the address or command it would write, verbatim, and one clause saying what
- * the press will ask. The press attaches a row that asks nothing; a row that needs a value unfolds
- * `VariantAsk` under itself and waits. A curated row and a registry row are still told apart, in
- * the unfolded panel: Atlas must not borrow the registry's authority for a line one of us typed.
+ * The catalogue: each row carries the verbatim address or command and what the press asks.
+ * A curated row and a registry row stay distinct in the unfolded panel, so Atlas does not
+ * borrow the registry's authority.
  */
 function CatalogueSection({
   entries,
@@ -925,10 +854,8 @@ function CatalogueSection({
   return (
     <section data-testid={`${testIdPrefix}-catalogue-section`}>
       {/*
-        The facts the steward's review made conditions, in one quiet line: when the list was
-        captured and that nobody here audited it. Its size is the list itself, and the folded row
-        under it is where everything it does not hold goes in.
-      */}
+       * When the list was captured and that nobody here audited it.
+       */}
       <GroupHeading
         title={t('groupCatalogue')}
         meta={t('catalogueMeta', { date: MCP_CATALOGUE_CAPTURED_AT })}
@@ -944,8 +871,7 @@ function CatalogueSection({
               : null;
           const primaryPath =
             primary.kind === 'local' ? runtimePath(runtimes, primary.runtime) : null;
-          // One disclosure contract for every control that opens the asking panel (interaction
-          // seat, 2026-09-07): the panel has an id, and each opener says it controls it.
+          // One disclosure contract: the panel has an id and each opener says it controls it.
           const askId = `${testIdPrefix}-catalogue-ask-${entry.id}`;
           return (
             <li
@@ -958,10 +884,8 @@ function CatalogueSection({
               <div className="flex items-start gap-3">
                 <ServiceMark
                   /*
-                   * ⚠️ **Not the docs URL** (caught in the rendered capture, 2026-09-07). Every
-                   * vendor's instructions live on github.com, so matching against `docsUrl` put
-                   * GitHub's mark on the Atlassian row. The command or address is the part that
-                   * cannot lie about which service is on the other end.
+                   * Not the docs URL: vendors' docs live on github.com. The command or address cannot
+                   * lie about which service is on the other end.
                    */
                   mark={resolveServiceMark(
                     entry.name,
@@ -981,20 +905,17 @@ function CatalogueSection({
                     {entry.title}
                   </p>
                   {/*
-                    The one line is localized; the facts are not. `summary` is what a person read
-                    on the vendor's English page; `messages/<locale>.json` carries the sentence.
-                  */}
+                   * The line is localized; the facts are not (`messages/<locale>.json`).
+                   */}
                   <p className="mt-0.5 break-keep text-label leading-prose text-[color:var(--color-text-tertiary)]">
                     {t.has(`catalogueSummary.${entry.id}` as 'catalogueSummary.notion')
                       ? t(`catalogueSummary.${entry.id}` as 'catalogueSummary.notion')
                       : entry.summary}
                   </p>
                   {/*
-                    **What the press writes and what it asks, before the press.** The address or
-                    command is verbatim — the last thing seen before a row lands in the folder is
-                    still the thing that will run, which is the whole distance between this and
-                    the one-click CVEs.
-                  */}
+                   * The verbatim address or command before the press: the last thing seen is what
+                   * will run, the distance between this and the one-click CVEs.
+                   */}
                   <p
                     data-testid={`${testIdPrefix}-catalogue-runs`}
                     className="mt-1 flex min-w-0 flex-wrap items-baseline gap-x-2 text-label leading-label text-[color:var(--color-text-quaternary)]"
@@ -1007,9 +928,8 @@ function CatalogueSection({
                   {others.length > 0 ? (
                     <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
                       {/*
-                        The other ways in are controls, drawn as controls. As muted links they read
-                        as a third caption line (rendered check, 2026-09-07) and nobody pressed them.
-                      */}
+                       * The other ways in are drawn as controls; as muted links nobody pressed them.
+                       */}
                       {others.map((variant) => (
                         <Chip
                           key={variantKey(variant)}
@@ -1075,7 +995,7 @@ function CatalogueSection({
 
 type Translate = ReturnType<typeof useTranslations<'connectors'>>;
 
-/** The one clause after the verbatim line: what pressing will ask of the person. */
+/** What pressing will ask of the person. */
 function asksClause(t: Translate, variant: CatalogueVariant): string {
   const required = requiredVariables(variant);
   if (required.length > 0)
@@ -1084,7 +1004,6 @@ function asksClause(t: Translate, variant: CatalogueVariant): string {
   return t('variantAsksNothing');
 }
 
-/** The name of a secondary way in, as a person would say it. */
 function variantLabel(t: Translate, variant: CatalogueVariant): string {
   if (variant.kind === 'remote')
     return variant.label ? t('variantRemoteLabelled', { label: variant.label }) : t('variantRemote');
@@ -1092,13 +1011,9 @@ function variantLabel(t: Translate, variant: CatalogueVariant): string {
 }
 
 /**
- * **A row asking for the one thing it cannot attach without**, unfolded under itself.
- *
- * What it shows, in order: where these facts came from; the command written out, with this
- * machine's resolved runtime where one was found; the sentence saying where the value goes; one
- * password field per required variable with a link to where it is issued; and the press. On a
- * surface with no keychain the field is not offered — a box whose contents would be thrown away
- * is worse than no box — and the sentence says what to do instead.
+ * Unfolded under a row that needs one value: provenance, the command with this machine's
+ * runtime, where the value goes, one password field per required variable, and the press.
+ * Without a keychain the field is not offered, since its contents would be thrown away.
  */
 function VariantAsk({
   id,
@@ -1205,11 +1120,8 @@ function VariantAsk({
         </div>
       ) : null}
       {/*
-        One row, one height (2026-09-25 sweep). The submit was a 40px `Button` with 14px type while
-        the by-hand form's submit for the same action was a 32px chip at 11px, and the quiet
-        actions beside it were 24px links, one of them 19px wide. Every control here now stands
-        on the chip `lg` step: the submit filled, the rest quiet with a transparent border.
-      */}
+       * Every control stands on the chip `lg` step, so the row has one height.
+       */}
       <div className="mt-3 flex flex-wrap items-center gap-2">
         {canStoreSecrets ? (
           <button
@@ -1275,7 +1187,7 @@ function CustomConnectorForm({
   const [args, setArgs] = useState(prefill.args);
   const [url, setUrl] = useState(prefill.url);
   const [variables, setVariables] = useState<DraftVariable[]>(prefill.variables);
-  /** True once the person types a path themselves — the picker then stops overwriting it. */
+  /** Once the person types a path, the picker stops overwriting it. */
   const [typedCommand, setTypedCommand] = useState(false);
 
   const installed = (runtimes ?? []).filter((runtime) => runtime.path !== null);
@@ -1287,12 +1199,8 @@ function CustomConnectorForm({
       .map((variable) => {
         const name = variable.name.trim();
         /*
-         * ⚠️ **The name decides too, and the row's checkbox is not the only vote.** A row typed
-         * as `GITHUB_TOKEN` with the box untouched used to build an entry with a literal, which
-         * `serializeConnectorState` then refused — so the press did nothing and the reason was a
-         * write failure rather than the truth, which is that a credential never goes in the
-         * file. The row draws the box checked and locked for such a name; this makes the record
-         * agree with what the row is showing.
+         * The name decides too: `serializeConnectorState` refuses a literal under a credential
+         * name, so the record agrees with the row's locked checkbox instead of failing the write.
          */
         const secret = variable.secret || looksLikeSecretKey(name);
         return secret
@@ -1325,9 +1233,7 @@ function CustomConnectorForm({
     <div data-testid={`${testIdPrefix}-custom`}>
       {prefill.provenance ? (
         /*
-         * Where this form's contents came from, standing above them. Without it a pre-filled form
-         * is indistinguishable from one the person typed, and `connectors.json` would carry a row
-         * nobody can trace back (PO steward, 2026-09-07).
+         * Provenance above a pre-filled form, or `connectors.json` would hold an untraceable row.
          */
         <p
           data-testid={`${testIdPrefix}-custom-provenance`}
@@ -1360,10 +1266,8 @@ function CustomConnectorForm({
         />
 
         {/*
-          A program or an address is one exclusive choice, so it is a segmented control — two chips
-          wearing `aria-pressed` announce two independent toggles that happen never to be pressed
-          together (2026-09-05).
-        */}
+         * One exclusive choice, so a segmented control; `aria-pressed` chips announce two toggles.
+         */}
         <div>
           <p className="text-label leading-label text-[color:var(--color-text-secondary)]">
             {t('transportLabel')}
@@ -1393,13 +1297,9 @@ function CustomConnectorForm({
           <>
             <div data-testid={`${testIdPrefix}-custom-runtime`}>
               {/*
-                ⚠️ **The group label exists only when there is a group** (rendered capture,
-                2026-09-07). With no runtimes resolved — every browser, and any machine where
-                none of the five is installed — this collapsed to "What starts it" sitting
-                directly on top of the field's own "Command", two labels for one box. `Input`
-                already owns the accessible name; a heading above it is for the choice, and with
-                nothing to choose there is nothing to head.
-              */}
+               * The group label only when there is a choice; otherwise `Input` owns the accessible
+               * name and a second label would sit on the same box.
+               */}
               {installed.length > 0 ? (
                 <p className="text-label leading-label text-[color:var(--color-text-secondary)]">
                   {t('fieldRuntime')}
@@ -1431,8 +1331,9 @@ function CustomConnectorForm({
                       {t('runtimeOther')}
                     </Chip>
                   </div>
-                  {/* The full path, under the choice. It is what gets written down, so it is
-                      shown rather than implied by a friendly name. */}
+                  {/*
+                   * The full path is what gets written, so it is shown under the choice.
+                   */}
                   {command && !typedCommand ? (
                     <code
                       data-testid={`${testIdPrefix}-custom-runtime-path`}
@@ -1557,10 +1458,8 @@ function CustomConnectorForm({
                     label={t('variableSecret')}
                     checked={secret}
                     /*
-                     * A credential-shaped name cannot be unchecked: `serializeConnectorState`
-                     * refuses to write a literal under one, so the box would be somewhere to type
-                     * something that is then silently dropped. Disabled on the web for the other
-                     * reason — there is no keychain to put it in, and the row says so.
+                     * A credential name cannot be unchecked, since `serializeConnectorState` would drop
+                     * the literal silently. Disabled on the web: there is no keychain.
                      */
                     disabled={locked || !canStoreSecrets}
                     onChange={(event) => changeVariable(index, { secret: event.target.checked })}

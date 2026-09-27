@@ -8,7 +8,7 @@ import { EXIT_WINDOW_MS } from "@/shared/lib/use-presence";
 import { DestinationGuide } from "./DestinationGuide";
 
 const DOCS_KEY = destinationTourStatusKey("docs");
-/** The global auto-display switch — one test turning it off leaves it off for the next. */
+/** The global auto-display switch; a test turning it off would leave it off for the next. */
 const AUTO_START_KEY = "ontology-atlas:guide-auto-start:v1";
 
 function renderGuide(destination: "docs" | null = "docs") {
@@ -34,13 +34,11 @@ function ReplayButton() {
 }
 
 beforeEach(() => {
-  // The auto-start guard looks at document focus (so guidance is not fired into a
-  // background tab). jsdom defaults to unfocused, so it is set explicitly.
+  // The auto-start guard reads document focus, and jsdom defaults to unfocused.
   vi.spyOn(document, "hasFocus").mockReturnValue(true);
   window.localStorage.removeItem(DOCS_KEY);
-  // Auto-display has been off by default (opt-in) since 2026-08-13 — the tests below
-  // that examine automatic firing assume the switch is on. The default itself is
-  // checked separately by the "with no stored value" test.
+  // Auto-display is off by default (opt-in), so these tests turn it on; the default has its
+  // own "with no stored value" test.
   window.localStorage.setItem(AUTO_START_KEY, "1");
   vi.useFakeTimers({ shouldAdvanceTime: true });
 });
@@ -87,11 +85,8 @@ describe("DestinationGuide", () => {
     expect(screen.getByTestId("guided-tour-card")).toBeInTheDocument();
   });
 
-  // Regression 2026-07-26 — the workshop is a screen where the entry choice
-  // (`role=dialog aria-modal`) stands the moment you arrive. Firing guidance over it
-  // covers the very choices the card meant to introduce and puts two `aria-modal`
-  // elements up at once (the card vanishes for a screen reader). The contract is to
-  // wait until the decision is made and appear on the work surface.
+  // Guidance over the workshop's entry choice would cover the cards it introduces and stack two
+  // `aria-modal` elements; it waits for the decision.
   it("waits for a decision modal to close before opening", async () => {
     const modal = document.createElement("section");
     modal.setAttribute("role", "dialog");
@@ -111,10 +106,8 @@ describe("DestinationGuide", () => {
     expect(screen.getByTestId("guided-tour-card")).toBeInTheDocument();
   });
 
-  // Audit 2026-07-27 — pressing any other navigation while the guidance was up
-  // swallowed the click with no response. Blocking that does not say "blocked" reads
-  // to the user as "broken". Pressing a blocked spot withdraws the guidance, and a
-  // second press goes through.
+  // A blocked press that says nothing reads as broken, so it withdraws the guidance and a second
+  // press goes through.
   it("dismisses the tour when a blocked area is pressed", async () => {
     renderGuide();
     await act(async () => {
@@ -135,10 +128,7 @@ describe("DestinationGuide", () => {
     expect(screen.queryByTestId("guided-tour-card")).toBeNull();
   });
 
-  // Verdict ① of 2026-07-28 — the "cancel the firing if the user moves first while
-  // waiting" guard, which only the map had, was ported to the five destination tours.
-  // With a 30-second waiting window, a card appearing belatedly over someone who had
-  // started exploring on their own was the defect.
+  // Someone who started exploring during the up-to-30-second wait must not get a belated card.
   it("never opens when the user acts during the delay", async () => {
     renderGuide();
     await act(async () => {
@@ -188,12 +178,8 @@ describe("DestinationGuide", () => {
 });
 
 /**
- * The switch's real contract — **off stops only the automatic, and calling it still works.**
- *
- * Why both are in one test: honouring only half becomes a different defect each way.
- * If the automatic does not stop, the switch is a lie; if it also does not come when
- * called, that is not a switch but **deletion**. The owner asked for the former
- * ("Or else when clicked" — or else when clicked).
+ * Off stops only the automatic opening; replay still works. Both halves are tested together
+ * because each alone is a different defect: a switch that lies, or deletion.
  */
 describe("tour auto-show switch", () => {
   it("does not auto-open when the switch is off", async () => {

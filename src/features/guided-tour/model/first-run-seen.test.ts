@@ -15,8 +15,7 @@ describe("first-run-seen", () => {
   });
 
   describe("FIRST_RUN_SEEN_ENTRIES", () => {
-    // If this list is not derived from the destinations, someone adding a new guide can
-    // omit it and no check fails — the guidance simply appears in that audit session.
+    // Derived from the destinations, so a new guide cannot be omitted silently.
     it("covers every destination guide", () => {
       const keys = new Set(FIRST_RUN_SEEN_ENTRIES.map(([key]) => key));
       for (const id of Object.keys(DESTINATION_TOURS)) {
@@ -25,7 +24,7 @@ describe("first-run-seen", () => {
       expect(keys).toContain("guided-tour:v1");
       expect(keys).toContain("vault-open-guide:auto:v1");
       expect(keys).toContain("atlas.library.guide-seen");
-      // 5 destinations + the map + the folder sheet + the Library home's guide.
+      // The destinations plus the map, the folder sheet and the Library home guide.
       expect(keys.size).toBe(Object.keys(DESTINATION_TOURS).length + 3);
     });
   });
@@ -36,7 +35,7 @@ describe("first-run-seen", () => {
       expect(resolveGuideOverride("?guides=reset")).toBe("reset");
     });
 
-    // If a typo quietly disabled the guidance, nobody could find out why it stopped appearing.
+    // A typo must not quietly disable the guidance.
     it("returns null for unknown or missing values", () => {
       expect(resolveGuideOverride("?guides=nope")).toBeNull();
       expect(resolveGuideOverride("?guides=")).toBeNull();
@@ -53,7 +52,7 @@ describe("first-run-seen", () => {
       }
     });
 
-    // With only a door to turn it off and none to turn it back on, an auditor could never see the guidance again.
+    // Without a way back on, an auditor could never see the guidance again.
     it("clears the keys for reset", () => {
       applyFirstRunSeen();
       expect(applyGuideOverride("?guides=reset")).toBe("reset");

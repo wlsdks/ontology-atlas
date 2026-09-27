@@ -36,16 +36,15 @@ describe('useSampleNodeHint', () => {
     );
     expect(result.current.visible).toBe(true);
 
-    // The first node click creates a selection. Display switches off immediately
-    // (`!hasSelection`), while the permanent record is deferred to a microtask, so it is
-    // checked after a flush.
+    // Display switches off at once (`!hasSelection`); the permanent record waits for a microtask,
+    // so it is checked after a flush.
     rerender({ hasSelection: true });
     expect(result.current.visible).toBe(false);
     await waitFor(() => {
       expect(window.localStorage.getItem(SAMPLE_NODE_HINT_DISMISSED_KEY)).toBe('1');
     });
 
-    // Clearing the selection (closing the node) does not bring the hint back — it is permanently retired.
+    // Clearing the selection does not bring the hint back.
     rerender({ hasSelection: false });
     expect(result.current.visible).toBe(false);
   });

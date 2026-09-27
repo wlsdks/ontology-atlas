@@ -6,26 +6,18 @@ import {
   projectVaultLocation,
 } from './project-vault-location';
 
-/**
- * Owner, 2026-08-24: *"if someone picks a particular project, should our folder be created at that
- * project's root, rather than somewhere outside it?"* — and, on the name, *"can we not make a folder
- * called atlas? docs is used so much I think it would just get deleted."*
- *
- * What these tests hold is the part a person is asked to agree to: the path shown before anything is
- * created has to be the path that is created.
- */
+/** The path shown before anything is created must be the path that is created. */
 describe('project vault location shown equals the path created', () => {
   it('places the atlas folder directly under the chosen project', () => {
     const location = projectVaultLocation('/Users/dana/my-product');
     expect(location?.projectRoot).toBe('/Users/dana/my-product');
     expect(location?.vaultRoot).toBe('/Users/dana/my-product/atlas');
-    // The screen shows this string and the create uses that path; they are the same value on purpose.
+    // The screen shows this string and the create uses that path.
     expect(location?.displayPath).toBe(location?.vaultRoot);
   });
 
   it('does not produce a doubled separator from a trailing one', () => {
-    // `…/my-product//atlas` is the same folder, but it does not match what a shell prints, and a
-    // path a person cannot match against their own terminal is not one they can check.
+    // `…/my-product//atlas` is the same folder but does not match what a shell prints.
     expect(projectVaultLocation('/Users/dana/my-product/')?.vaultRoot).toBe(
       '/Users/dana/my-product/atlas',
     );
@@ -35,16 +27,14 @@ describe('project vault location shown equals the path created', () => {
   });
 
   it('returns no path without a chosen project', () => {
-    // ⚠️ Inventing a location here would put a real, creatable path in front of a person who chose
-    // nothing — and a confirmation of something nobody picked is not a confirmation.
+    // A location invented from no choice would ask the person to confirm something nobody picked.
     for (const nothing of [null, undefined, '', '   ', '/']) {
       expect(projectVaultLocation(nothing), `invented a path for ${String(nothing)}`).toBeNull();
     }
   });
 
   it('takes the folder name from one constant', () => {
-    // Every surface that creates one reads this constant; a second literal is how two surfaces end
-    // up disagreeing about where a person's map lives.
+    // Every surface that creates one reads this constant, so two surfaces cannot disagree.
     expect(PROJECT_VAULT_DIR).toBe('atlas');
     expect(projectVaultLocation('/p')?.vaultRoot.endsWith(`/${PROJECT_VAULT_DIR}`)).toBe(true);
   });

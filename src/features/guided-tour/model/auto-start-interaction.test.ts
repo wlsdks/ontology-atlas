@@ -1,16 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { watchGuidedTourAutoStartCancel } from "./auto-start-interaction";
 
-/**
- * Regression — the automatic tour waits for the screen to settle and can fire two to
- * six seconds later, and in that window a user who clicked a node and opened the
- * detail panel had a 1/7 card cut in over it. The first substantive interaction while
- * waiting cancels the firing.
- */
+/** The first substantive interaction while the tour waits cancels the firing. */
 describe("watchGuidedTourAutoStartCancel", () => {
   beforeEach(() => {
-    // jsdom's `document.hasFocus()` defaults to false — imitate a foreground tab so the
-    // guard does not block on that alone (the same idiom as auto-start-guard.test).
+    // jsdom's `document.hasFocus()` defaults to false; imitate a foreground tab.
     vi.spyOn(document, "hasFocus").mockReturnValue(true);
   });
 
@@ -45,7 +39,7 @@ describe("watchGuidedTourAutoStartCancel", () => {
     window.dispatchEvent(new Event("pointerdown"));
     expect(onCancel).not.toHaveBeenCalled();
 
-    // The watch stays alive after the sheet closes — the next interaction cancels.
+    // The watch stays alive after the sheet closes; the next interaction cancels.
     modal.remove();
     window.dispatchEvent(new Event("pointerdown"));
     expect(onCancel).toHaveBeenCalledTimes(1);

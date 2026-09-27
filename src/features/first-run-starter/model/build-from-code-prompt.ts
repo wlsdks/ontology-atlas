@@ -1,49 +1,22 @@
 /**
- * The instruction the 「make a map from my code」 door sends as the person's first turn.
- *
- * ⚠️ **Why this is a sentence and not a function call** (decision, 2026-08-24). The app never calls
- * MCP — that is the agents' surface — so a door that analysed the repository itself would create a
- * second canonical implementation of `analyze_repo_structure`, which `AGENTS.md` forbids. Handing
- * the work to the agent is not a workaround; it is the shape this product argues for: the agent
- * works through MCP and the person approves every write.
- *
- * **It names the order, because an unspecified order is invented.** Left to itself an agent tends
- * to create first and explain later, which is the failure the session's own handoff instructions
- * already record. So the sentence asks for the survey first, the proposal second, and the writing
- * only after the person has seen what is proposed.
- *
- * **The writing step names the batch path, because 「only then create the nodes」 did not say how.**
- * Reproduced against an unfamiliar repository: the agent read this step beside a handoff that
- * routed every build through the bulk qualification lifecycle, spent a turn authoring a full
- * proposal, and stopped at `canWrite:false` — an app session has no independent evaluator — with
- * the vault still empty after the person had already said to build it. So step 3 now names the
- * path that finishes here: small reviewed batches, then validate, bind, and finalize.
- *
- * **And it asks for what could not be checked, because nothing else will.** The write door
- * answers a body with no stated unknown by a `uncertainty-missing` finding, which is advice
- * arriving after the node exists; a node that states no unknown reads as a complete claim about
- * the product. Asking for it in the person's own turn puts it in the body the first time.
- *
- * **It promises nothing the checkpoint does not keep.** Every write this leads to still stops at
- * the permission card (decisions (113) and (114)); this sentence does not and cannot bypass one.
- * It is written in the person's own voice because it lands in the transcript as their turn — a
- * button that names an instruction should send that instruction, not something else.
- *
- * The wording stays in English deliberately. The session's appended instructions already tell the
- * agent to answer in the language the person wrote in, and an instruction the adapter parses is not
- * the place to test that.
+ * The first turn the 「make a map from my code」 door sends. A sentence, not a call: the app never
+ * calls MCP, and analysing the repository here would be a second `analyze_repo_structure`, which
+ * `AGENTS.md` forbids.
+ * - It names the order (survey, propose, write after approval), or agents create first.
+ * - The write step names small reviewed batches, then validate, bind and finalize: an app session
+ *   has no independent evaluator, so the bulk lifecycle stops at `canWrite:false`.
+ * - It asks for what could not be checked, so the first body states its unknowns.
+ * Every write still stops at the permission card (decisions (113) and (114)). English, in the
+ * person's voice, because it lands in the transcript as their turn.
  */
 export function buildFromCodePrompt(
   rootPath: string | null,
   folderName: string | null,
 ): string {
-  // The absolute path when the desktop bridge knows it, the folder's name when it does not, and
-  // "this folder" when neither is available — never an invented path.
+  // The absolute path, else the folder's name, else "this folder"; never an invented path.
   const target = rootPath ?? (folderName ? `the folder named "${folderName}"` : 'this folder');
-  // The vault now lives *inside* the project (`<project>/atlas`), so the code to survey is the
-  // parent of the open vault, not the vault. Saying so is not pedantry: an agent told only "build an
-  // ontology for this vault" surveys the folder it was handed, finds the four files Atlas just
-  // seeded, and reports a product made of nothing.
+  // The vault lives inside the project (`<project>/atlas`), so the survey target is its parent,
+  // or an agent surveys only the files Atlas just seeded.
   const codeRoot = rootPath ? `${rootPath} (the vault sits inside it, at ${rootPath}/atlas)` : target;
   return [
     `Build a first ontology for ${codeRoot}.`,

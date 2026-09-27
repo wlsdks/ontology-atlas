@@ -5,14 +5,6 @@ import {
   isInstallProgressFresh,
 } from './acp-doctor';
 
-/**
- * **Holding the last state and deciding how long to show it are different questions.**
- *
- * Rust keeps the last install result per runtime so that "a completion that went past while closed"
- * is not missed. But with no window, **an install that finished yesterday appears as "installed" when
- * settings are opened today** — stating something that is not what was just done as if it were, the
- * shape this repository has forbidden across every loading and progress surface.
- */
 describe('held install progress freshness', () => {
   const now = 1_787_000_000_000;
 
@@ -31,8 +23,7 @@ describe('held install progress freshness', () => {
   });
 
   it('does not treat progress as stale when the clock moves backwards', () => {
-    // A timezone change or manual adjustment can make the elapsed time negative. Judging that "stale"
-    // would make an install that just finished disappear.
+    // A timezone change or manual adjustment can make elapsed time negative.
     expect(isInstallProgressFresh({ at: now + 60_000 }, now)).toBe(true);
   });
 

@@ -3,22 +3,12 @@ import { describe, expect, it } from 'vitest';
 import { buildFromCodePrompt } from './build-from-code-prompt';
 
 /**
- * What the door sends is the person's first turn, so its order is the order the build takes.
- *
- * Reproduced against an unfamiliar repository: step 3 used to say only «only then create the nodes
- * and relations», and the agent — reading it beside a handoff that routed every build into the bulk
- * qualification lifecycle — spent a whole turn authoring a proposal, stopped at `canWrite:false`,
- * and left the vault empty after the person had already approved the build. So the step that writes
- * now names the path that finishes in one session, and these tests hold that order and those calls.
- *
- * Step 3 also asks for what could not be checked. The MCP write door answers a body with no
- * stated unknown after the node already exists, and a node that states none reads as a complete
- * claim about the product — so the person's own turn asks for it the first time.
+ * The door's prompt is the person's first turn, so its order is the build order. The write step
+ * names the batch path that finishes in one app session, and asks for what could not be checked.
  */
 describe('build-from-code prompt step order', () => {
   const prompt = buildFromCodePrompt('/Users/dana/my-product', null);
-  // The prompt is wrapped for the transcript, so a sentence can straddle a line break. What is
-  // asserted is the sentence, not where it happens to wrap.
+  // The prompt is wrapped for the transcript, so the sentence is asserted, not where it wraps.
   const flat = prompt.replace(/\s+/g, ' ');
 
   it('orders the three steps as inspect, propose in sentences, then write after approval', () => {
@@ -49,8 +39,7 @@ describe('build-from-code prompt step order', () => {
   it('names only the needed inspection tools and not the bulk approval path', () => {
     expect(flat).toContain('`analyze_repo_structure`');
     expect(flat).toContain('`infer_imports`');
-    // The bulk qualification lifecycle cannot complete in an app session; this turn must not
-    // send the agent after it.
+    // The bulk qualification lifecycle cannot complete in an app session.
     expect(prompt).not.toContain('canWrite');
     expect(prompt).not.toContain('writePlan');
     expect(prompt).not.toContain('qualification');

@@ -14,31 +14,20 @@ import {
 
 export interface UseGuidedTourArgs {
   /**
-   * The steps this tour walks. Defaults to the map's eight-step journey
-   * (`TOUR_STEPS`); destination guides (docs, workshop, insights, projects,
-   * history) pass `DESTINATION_TOURS[id]` to reuse **the same state machine** —
-   * there is only one guidance system. The map-only branches below (leaving
-   * `datasheet`, `try-click` auto-advance, the `agent` developer branch) all key
-   * off step ids, so other arrays pass through them silently.
+   * Defaults to the map journey (`TOUR_STEPS`); destination guides pass `DESTINATION_TOURS[id]`
+   * to reuse this state machine. The map-only branches key off step ids, so other arrays pass
+   * through them.
    */
   steps?: readonly TourStep[];
-  /** Is a node currently selected on the map (`canvasSelectedSlug != null`)? */
+  /** `canvasSelectedSlug != null`. */
   hasSelection: boolean;
-  /** Can the testid/canvas-node anchor be resolved right now — HomePage decides
-   *  from DOM and graph state and passes it down (a feature does not know widgets). */
+  /** HomePage decides from DOM and graph state, since a feature does not know widgets. */
   canResolveAnchor: (anchor: TourAnchor) => boolean;
-  /** Injected localStorage key (for tests). Defaults to `guided-tour:v1`. */
+  /** Injected for tests; defaults to `guided-tour:v1`. */
   storageKey?: string;
   /**
-   * Called once when leaving step 5 (datasheet) — whether advancing to step 6 or
-   * ending the tour with [skip], i.e. "the moment that card is no longer needed".
-   * HomePage passes node deselection (`handleClose`).
-   *
-   * Measured regression: with the selection still in place, the map stays in
-   * "node focus" mode and folds the utility lane (including the spotlight
-   * toggle), making step 7's (recent) anchor permanently unresolvable and step 8
-   * (the dev branch) unreachable. Omitted, the selection is left alone
-   * (zero regression — previous behaviour).
+   * Called once when leaving step 5 (datasheet) by advancing or skipping; HomePage deselects the
+   * node. A kept selection folds the utility lane and makes steps 7 and 8 unreachable.
    */
   onLeaveDatasheet?: () => void;
 }
@@ -50,56 +39,39 @@ export interface UseGuidedTourResult {
   stepIndex: number;
   visibleSteps: readonly TourStep[];
   /**
-   * For progress display only — the full journey with the persona filter applied.
-   * `visibleSteps` fluctuates in length with momentary anchor resolvability
-   * (a selection folds the utility lane → the recent step vanishes → "5/5" is
-   * followed by "5/6"), which broke trust in the progress indicator. The
-   * denominator and the progress dots use this fixed journey (7 for
-   * non-developers, 8 on the dev branch) while navigation (the skip rules)
-   * continues to use `visibleSteps` — a skipped step simply looks like a dot
-   * passed over.
+   * The fixed persona journey for the progress denominator and dots (7, or 8 on the dev
+   * branch); navigation still uses `visibleSteps`, whose length fluctuates with anchors.
    */
   personaSteps: readonly TourStep[];
-  /** The current step's position within `personaSteps` (for the dots and N-of-M). */
+  /** For the dots and N-of-M. */
   personaStepIndex: number;
-  /** Mirrors the map's selection state — the card uses it to pick step 4's
-   *  (try-click) waiting or success copy (`GuidedTourCard`). */
+  /** Lets the card pick step 4's waiting or success copy. */
   hasSelection: boolean;
   start: () => void;
   advance: () => void;
   back: () => void;
-  /** The card's [skip] — ends the whole tour as 'skipped'. */
+  /** Ends the tour as 'skipped'. */
   skip: () => void;
-  /** Step 7's "done looking — to the map" — ends the tour as 'done'. */
+  /** Step 7's "done looking"; ends the tour as 'done'. */
   finishAsDone: () => void;
-  /** Step 7's "I'm a developer →" — enters step 8, the dev branch. */
+  /** Step 7's "I'm a developer"; enters step 8. */
   chooseDevBranch: () => void;
   /**
-   * Can step 8's (agent) anchor be resolved right now? When false the card hides
-   * the dev-branch button entirely (measured correction 2026-07-23: for a user
-   * who had already dismissed the first-run card, "I'm a developer →" jumped to
-   * an unresolvable stepId and silently reset to welcome, forming a loop).
+   * When false the card hides the dev-branch button, or it would jump to an unresolvable step
+   * and reset to welcome.
    */
   devBranchAvailable: boolean;
   /**
-   * Would pressing [next] now end the tour — the single basis on which the card
-   * chooses the [next] / [done] label. **It must not be decided by whether this
-   * is the end of `visibleSteps`**: that list is a fluctuating projection of
-   * "steps whose anchor resolves at this instant", and on the datasheet step the
-   * open detail panel hides the INDEX and spotlight anchors behind it, cutting
-   * the list off there. But `advance()` does not end at that step — it closes the
-   * panel, re-reads the DOM, and moves on. Deciding by length drew [done] at 5/7,
-   * and pressing it ended the tour early (measured in e2e, 2026-07-26). So the
-   * verdict uses the same condition as `advance()`.
+   * Chooses the [next] or [done] label with the same condition as `advance()`, not the end of
+   * `visibleSteps`: on the datasheet step the open panel hides later anchors, but `advance()`
+   * closes it and moves on.
    */
   isFinalStep: boolean;
 }
 
 /**
- * The guided tour state machine: linear advance, back, skip, auto-advance when a
- * selection occurs on step 4 (try-click), and the 7→8 developer branch.
- * `visibleSteps` is the array after the skip rules, so the progress denominator
- * (N/M) is `visibleSteps.length`.
+ * The tour state machine: advance, back, skip, auto-advance on a selection at step 4
+ * (try-click), and the 7→8 developer branch.
  */
 export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
   const {
@@ -113,16 +85,12 @@ export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
   const [open, setOpen] = useState(false);
   const [persona, setPersona] = useState<TourPersona>("all");
   const [stepId, setStepId] = useState<string>(steps[0]?.id ?? "");
-  // DOM resolution of a testid anchor can change with resize and layout, so a
-  // separate tick forces recomputation (persona/hasSelection changes alone are
-  // not enough).
+  // A testid anchor's resolution changes with resize and layout, so a tick forces
+  // recomputation.
   const [resolveTick, setResolveTick] = useState(0);
 
-  // A step change moves the screen underneath the tour — the INDEX step folds
-  // the first-run card and the next step gives it back — and the anchors are
-  // resolved against the DOM at render time, before that commit. One re-check
-  // on the frame after the step commits keeps the dev branch's own anchor (the
-  // first-run card) resolvable at the step that offers it (2026-09-19).
+  // A step change folds or restores the first-run card after anchors were resolved at render,
+  // so one re-check on the next frame keeps the dev branch's anchor resolvable.
   useEffect(() => {
     if (!open) return undefined;
     const frame = window.requestAnimationFrame(() => setResolveTick((t) => t + 1));
@@ -136,13 +104,8 @@ export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
     return () => window.removeEventListener("resize", bump);
   }, [open]);
 
-  // When the selection changes (a node click or deselect, `onLeaveDatasheet`
-  // included), surrounding chrome — the utility lane's spotlight toggle, say —
-  // appears or disappears on the next commit. `visibleSteps` already lists
-  // `hasSelection` as a dep and recomputes in that render, but at that point this
-  // commit has not reached the DOM yet (the same race as the step-4 auto-advance
-  // note below), so it may read stale state. Re-resolve once more on the frame
-  // after commit and paint to settle it.
+  // A selection change shows or hides chrome on the next commit, which the `visibleSteps` memo
+  // cannot see yet; re-resolve on the frame after commit and paint.
   useEffect(() => {
     if (!open) return undefined;
     const raf = window.requestAnimationFrame(() => setResolveTick((t) => t + 1));
@@ -160,19 +123,14 @@ export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
     [steps, persona, hasSelection, canResolveAnchor, resolveTick],
   );
 
-  // A datasheet exit is pending: after `onLeaveDatasheet` clears the selection,
-  // the decision about the next step waits until `hasSelection` actually settles
-  // to false (a separate effect below). It is state because render needs this
-  // observable guard when normalizing an unavailable step.
+  // After `onLeaveDatasheet` clears the selection, the next step waits until `hasSelection`
+  // settles false. State, because render reads this guard when normalizing a step.
   const [pendingLeaveDatasheet, setPendingLeaveDatasheet] = useState(false);
   const requestedStepIndex = visibleSteps.findIndex((s) => s.id === stepId);
 
-  // `visibleSteps` is a projection of the current DOM, so an anchor may disappear
-  // between renders. Normalize that state during rendering rather than committing a
-  // second render from an effect: React discards this render and retries with the
-  // first still-visible step before anything paints. Keeping the correction in the
-  // state machine (rather than only deriving a fallback) also prevents a later DOM
-  // reappearance from resurrecting an abandoned step.
+  // An anchor may disappear between renders. Normalizing during render lets React retry before
+  // paint, and keeping it in the state machine stops a reappearing anchor from resurrecting an
+  // abandoned step.
   if (
     !pendingLeaveDatasheet &&
     requestedStepIndex < 0 &&
@@ -184,18 +142,15 @@ export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
   const stepIndex = requestedStepIndex >= 0 ? requestedStepIndex : visibleSteps.length > 0 ? 0 : -1;
   const step = stepIndex >= 0 ? visibleSteps[stepIndex] : null;
 
-  // The fixed journey used for progress display — see the interface comment above.
+  // The fixed journey for progress display; see the interface comment.
   const personaSteps = useMemo(
     () => steps.filter((s) => s.persona === "all" || s.persona === persona),
     [steps, persona],
   );
   const personaStepIndex = step ? personaSteps.findIndex((s) => s.id === step.id) : -1;
 
-  // Focus restoration (2026-07-23) — the card takes focus on every step
-  // (`GuidedTourCard`), so on close it is returned to whatever opened the tour
-  // (the compass tile in the right rail). The capture happens synchronously
-  // inside `start()`: capturing in an effect lets the child card's focus effect
-  // run first and capture the card itself.
+  // The card takes focus on every step, so close returns it to the opener. Captured
+  // synchronously in `start()`, because in an effect the card's focus effect runs first.
   const restoreFocusElRef = useRef<HTMLElement | null>(null);
 
   const finish = useCallback(
@@ -222,8 +177,7 @@ export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
     setOpen(true);
   }, [steps]);
 
-  // The same expression as `advance()`'s end condition — for the reason in the
-  // interface comment, the two diverging makes the label lie.
+  // Must match `advance()`'s end condition, or the label lies.
   const leavesDatasheetOnAdvance = Boolean(
     step?.id === "datasheet" && onLeaveDatasheet && hasSelection,
   );
@@ -245,10 +199,8 @@ export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
     setStepId(next.id);
   }, [stepIndex, visibleSteps, step, onLeaveDatasheet, hasSelection, finish]);
 
-  // Completes the datasheet exit: once `hasSelection` settles to false (the
-  // deselection the callback requested has actually committed), re-read the DOM
-  // at that moment and choose the next step. The same commit-race pattern as the
-  // try-click auto-advance.
+  // Once `hasSelection` settles false, re-read the DOM and choose the next step; the same
+  // commit race as the try-click auto-advance.
   useEffect(() => {
     if (!pendingLeaveDatasheet) return undefined;
     if (!open || hasSelection) return undefined;
@@ -289,9 +241,8 @@ export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
     finish("done");
   }, [finish]);
 
-  // Whether step 8's (agent) anchor resolves — shares the re-resolution trigger
-  // (`resolveTick`) with `visibleSteps` so it follows DOM changes such as the
-  // first-run card being dismissed.
+  // Shares `resolveTick` with `visibleSteps` so it follows DOM changes such as a dismissed
+  // first-run card.
   const devBranchAvailable = useMemo(() => {
     const agentStep = steps.find((s) => s.id === "agent");
     if (!agentStep) return false;
@@ -300,9 +251,7 @@ export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
   }, [steps, canResolveAnchor, resolveTick]);
 
   const chooseDevBranch = useCallback(() => {
-  // A backstop — even a stale click from before the button was hidden converges
-  // on a normal finish (identical to "done looking") rather than the welcome
-  // reset loop.
+  // A backstop: a stale click after the button hid finishes normally instead of looping.
     const agentStep = steps.find((s) => s.id === "agent");
     const resolvable =
       agentStep !== undefined &&
@@ -315,27 +264,12 @@ export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
     setStepId("agent");
   }, [steps, canResolveAnchor, finish]);
 
-  // Step 4 (try-click) auto-advance — waits for a real node click (the
-  // hasSelection false→true transition) before moving on. The `queueMicrotask`
-  // defer follows the same synchronous-setState-cascade avoidance as
-  // `use-sample-node-hint.ts`.
-  //
-  // Two commit races to beware of. ① The `advance()` captured in the closure
-  // (i.e. this render's `visibleSteps`) must not be called directly: in the very
-  // render where `hasSelection` flips to true, the `visibleSteps` useMemo
-  // recomputes before this commit reaches the DOM (React goes render → commit →
-  // paint → effect), so step 5's anchor (`map-detail-panel`) does not
-  // exist yet, `canResolveAnchor` returns false, and datasheet is skipped
-  // entirely (measured regression — clicking on step 4 jumped straight to step 7).
-  // Effects run after commit, so this microtask calls `computeVisibleSteps`
-  // **fresh** to re-read the DOM and choose the next step.
-  // ② Calling only `setStepId` with that fresh result hits another trap — this
-  // hook's own `visibleSteps` useMemo reuses the cache it just computed (without
-  // datasheet) unless `[persona, hasSelection, …, resolveTick]` changes, so the
-  // next render cannot find `stepId="datasheet"` in that cache, falls to -1, and
-  // the "correct to the first step" effect resets to welcome. So `resolveTick` is
-  // raised in the same microtask to invalidate the memo cache — `setStepId` and
-  // `setResolveTick` are batched and land in one render.
+  // Step 4 (try-click) auto-advances on the hasSelection false→true transition, deferred to a
+  // microtask to avoid a synchronous setState cascade. Two commit races:
+  // 1. This render's `visibleSteps` predates the datasheet panel in the DOM, so the microtask
+  //    calls `computeVisibleSteps` fresh, or datasheet is skipped.
+  // 2. `resolveTick` is raised in the same microtask, or the memo cache without datasheet makes
+  //    the next render reset to welcome; both setters batch into one render.
   const prevHasSelectionRef = useRef(hasSelection);
   useEffect(() => {
     const prev = prevHasSelectionRef.current;
@@ -365,9 +299,8 @@ export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
     };
   }, [steps, hasSelection, open, step, persona, canResolveAnchor, finish]);
 
-  // Reopening the tour re-baselines against the current selection state, so
-  // opening with a node already selected is not mistaken for "just clicked" and
-  // does not skip step 4.
+  // Reopening re-baselines against the current selection, so an existing selection is not
+  // taken as a click that skips step 4.
   useEffect(() => {
     if (open) prevHasSelectionRef.current = hasSelection;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- captures only the `open` transition

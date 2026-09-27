@@ -30,7 +30,7 @@ describe("VaultOpenGuideSheet", () => {
       />,
     );
     expect(screen.getByRole("dialog")).toBeInTheDocument();
-    // The three reassurance lines — any folder / stays local / empty-folder scaffold.
+    // Any folder, stays local, empty-folder scaffold.
     expect(screen.getByText("bulletAnyFolder")).toBeInTheDocument();
     expect(screen.getByText("bulletLocal")).toBeInTheDocument();
     expect(screen.getByText("bulletStarter")).toBeInTheDocument();
@@ -110,13 +110,11 @@ describe("VaultOpenGuideSheet", () => {
     opener.remove();
   });
 
-  // In an unsupported browser (Safari, Firefox) both CTAs did nothing when pressed, and the sheet
-  // simply closed, taking away both why it failed and where to go.
   it("drops both FSA CTAs and keeps only the macOS app path when unsupported", () => {
     render(<VaultOpenGuideSheet open unsupported onClose={vi.fn()} />);
     expect(screen.getByTestId("vault-guide-pick-existing")).not.toBeVisible();
     expect(screen.getByTestId("vault-guide-create-new")).not.toBeVisible();
-    // Instead of a subtitle announcing an OS picker that will never come, the reason takes that slot.
+    // The reason replaces a subtitle announcing an OS picker that will never come.
     expect(screen.queryByText("subtitle")).not.toBeInTheDocument();
     expect(screen.getByText("unsupportedNotice")).toBeInTheDocument();
     expect(screen.getByTestId("vault-guide-unsupported-cta")).toHaveAttribute(

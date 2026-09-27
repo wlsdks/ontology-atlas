@@ -25,61 +25,25 @@ import {
 } from '../model/acp-doctor';
 
 /**
- * The connection check — **measure step by step why it does not work, and fix here what can be fixed.**
- *
- * Why it sits here (owner instruction, 2026-08-20): *"if the connection fails, it is effectively unusable"*
- * (if the connection fails, it is effectively unusable). It goes where someone who is stuck is
- * already looking — a check buried somewhere deep has to be hunted for, and mostly is not.
- *
- * ## ⚠️ The owner rejected the first version (2026-08-20): *"design-wise this leaves a lot to be desired"*
- * (design-wise this leaves a lot to be desired)
- *
- * Putting the result list in as the row's **fourth flex child** broke three things at once.
- *
- * ① **The hierarchy inverted.** That row's job is "this tool exists, open a conversation here",
- *    yet seven lines of secondary diagnosis ate the row's right half and pushed the "ready" badge
- *    off the end. What the eye should land on first is the name and the button, and the diagnosis won.
- * ② **A void opened between name and button.** Wedging a large block into a single
- *    `justify-between` row sends all the remaining width into that gap.
- * ③ **"Everything is fine" was seven lines long.** That very file (`AcpRuntimeSettings.tsx`)
- *    already recorded the failure *"18 of 20 lines were the same sentence, so half the screen was a
- *    copy"* — and the same failure was made again.
- *
- * So all three were fixed: **the button sits beside the row's other controls**, **the results go
- * full width beneath the row** (making the row a single line again), and **when everything is fine
- * it folds to one line** — the lines unfold only when something is blocked. The facts are still on
- * screen (the summary gives the count); only the duplication goes quiet.
- *
- * ## Two things this screen keeps
- *
- * 1. **Never draw the unknown as green.** There are three states, and `unknown` means "there was no
- *    way to check".
- * 2. **Do not claim it was fixed; show the value measured again.** `acp_repair` re-measures the
- *    state after fixing and returns that.
+ * Measures step by step why an agent connection fails and fixes here what can be fixed.
+ * Unknown is never drawn as ok, and a fix shows the re-measured value rather than a claim.
+ * An all-clear folds to one line; only blocked checks unfold.
  */
 /**
- * A hook that hands back the check button and the results **separately**.
- *
- * One component drawing both leaves the caller unable to separate them — the button must be inside
- * the row and the results beneath it, which is impossible as one block. That is the structural
- * reason the first version broke.
+ * Returns the check button and the results separately: the button sits in the row and the
+ * results go full width beneath it.
  */
 /**
- * Checks with a written next step for the person. Meaningful only for problems the app cannot fix.
- *
- * An id absent here has no copy either, so nothing is drawn — calling for copy that does not exist
- * prints the key onto the screen.
+ * Checks with a written next step; meaningful only for problems the app cannot fix.
+ * An id absent here has no copy, and asking for it would print the key.
  */
 const NEXT_STEP = new Set(['cli', 'launcher', 'login', 'gate']);
 
 export function useAgentDoctor(
   runtimeId: string,
   /**
-   * Called when the app changed something, to have the list re-measured.
-   *
-   * Without it, right after an install or repair **the badge above states the old fact while the
-   * diagnosis right below states the new one.** Two sentences disagreeing on one screen is the very
-   * defect this round has been fixing throughout, so it is not recreated here.
+   * Called when the app changed something so the list is re-measured; without it the badge
+   * above and the diagnosis below would disagree.
    */
   onChanged?: () => void,
 ) {
@@ -87,16 +51,11 @@ export function useAgentDoctor(
   const [checks, setChecks] = useState<AcpCheck[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
-  /*
-   * **How far the install has got.** `null` means it has never been drawn, and nothing is drawn —
-   * no 0% bar is raised for work that has not started.
-   */
+  /* `null` draws nothing: no 0% bar for work that has not started. */
   const [progress, setProgress] = useState<AcpInstallProgress | null>(null);
 
   /*
-   * The subscription attaches **once**. Attaching and detaching on every install press misses the
-   * first event Rust emits ahead of it — the `acp://exit` wiring above in this file was moved onto a
-   * thread for the same reason.
+   * Attaches once: re-attaching per install press misses the first event Rust emits ahead of it.
    */
   useEffect(() => {
     let alive = true;
@@ -108,15 +67,8 @@ export function useAgentDoctor(
       else unlisten();
     });
     /*
-     * **Fetch what went past while it was closed.**
-     *
-     * This sheet unmounts entirely when closed (the conditional portal in `AppSettingsMenu.tsx`), so
-     * all state here disappears. The Node download ticks every 250ms and revives itself from the next
-     * event, but **completion is a single event** and going past while closed means it is **never
-     * seen** — which is exactly the indicator the owner asked for this round.
-     *
-     * Anything already received is not overwritten: the subscription may answer first, and then that
-     * value is the newer one.
+     * The sheet unmounts when closed and `done` is a single event, so the last state is fetched on
+     * mount. A value already received is newer and is not overwritten.
      */
     void lastInstallProgress(runtimeId).then((last) => {
       if (alive && last) setProgress((current) => current ?? last);
@@ -130,8 +82,7 @@ export function useAgentDoctor(
   const run = useCallback(async () => {
     setBusy('scan');
     setFailed(false);
-    // Starting a re-measure **clears the previous install's result line** — something that is not
-    // what was just done must not be left looking like "just finished".
+    // A new check clears the previous install result so it does not look just finished.
     setProgress(null);
     try {
       setChecks(await diagnoseAgent(runtimeId));
@@ -171,15 +122,10 @@ export function useAgentDoctor(
     }
   }, [runtimeId, onChanged]);
 
+  /** An earlier step is blocked, so rebuilding the config (reconnect) would achieve nothing. */
   /**
-   * Is an earlier step blocked? Then "reconnect" is useless too. Rebuilding the config folder when
-   * the tool is missing does not open a conversation (walkthrough 2026-08-20).
-   */
-  /**
-   * **Show the command text first** — condition ② of ledger entry 2026-08-20 (88).
-   *
-   * Asked only when the check reported "the tool is missing". Showing an install offer permanently
-   * to someone with no problem is advertising, not guidance.
+   * The install command, shown before pressing. Asked only when the tool is missing, so a healthy
+   * tool gets no install offer.
    */
   const [installPlan, setInstallPlan] = useState<string | null>(null);
   const toolMissing = useMemo(
@@ -187,9 +133,8 @@ export function useAgentDoctor(
     [checks],
   );
   useEffect(() => {
-    // No synchronous setState in the effect body (a ratchet catches it) — "invisible when the tool is
-    // fine" is kept by **not drawing it**, not by clearing state. The render condition below reads
-    // `toolMissing` alongside.
+    // No synchronous setState in the effect body (a ratchet catches it); a healthy tool hides the
+    // plan because the render condition also reads `toolMissing`.
     if (!toolMissing) return;
     let alive = true;
     void agentInstallPlan(runtimeId).then((plan) => {
@@ -200,10 +145,7 @@ export function useAgentDoctor(
     };
   }, [toolMissing, runtimeId]);
 
-  /**
-   * **The app can fetch Node too** — ledger entry (89). Asked only when "can the tool be launched"
-   * is blocked. That was the final dead end for someone with no tooling at all.
-   */
+  /** The Node download plan, asked only when launching the tool is blocked. */
   const [nodePlan, setNodePlan] = useState<string | null>(null);
   const launcherMissing = useMemo(
     () => (checks ?? []).some((check) => check.id === 'launcher' && check.state === 'problem'),
@@ -259,30 +201,13 @@ export function useAgentDoctor(
   const scanButton = (
     <>
     {/*
-      ⚠️ **Use the primitive** (owner, 2026-08-20: *"please unify the button sizes"* — please unify the
-      button sizes). A hand-written `<button>` plus `controlClass` **reads as a different object**
-      from the `Chip` beside it (which carries an icon) even with identical size classes — and this
-      repository already has a ratchet preventing hand-written controls from growing.
+      Uses the `Chip` primitive: a hand-written button reads as a different object beside it,
+      and a ratchet blocks new hand-written controls.
     */}
     <Chip
       /*
-       * ⚠️ **One row, one step apart** (owner, 2026-08-24: *"the other buttons on the right — I want
-       * them bigger, they are too small right now"*). This chip sits beside the `lg` 「open a chat
-       * with this tool」 chip on the agents row, and `sm` is **two steps** below it, so it read as
-       * debris rather than as the row's second action. `md` shares `lg`'s 32px height and drops only
-       * one text step — equal height, real hierarchy, which is what the dimensional-regularity rule
-       * asks for.
-       *
-       * ⚠️ **Hierarchy by tone, not by type size** (2026-09-25). Measured on the agents row, the
-       * one step down was 11px text in the quaternary ink next to 12.5px — it read as disabled,
-       * not as secondary. `lg` puts both on one label size; the chat chip beside it keeps the
-       * indigo, so the order of the two is still said, now by colour.
-       *
-       * ⚠️ **One ink step back from the row's optional action** (round 2, 2026-09-25). At
-       * `secondary` the check matched the install link beside it and sat one hue away from the
-       * chat chip, so a ready row read as three peers. `default` (tertiary ink, AA on the panel)
-       * keeps the size and puts the check last in line: open a chat or install first, and the
-       * diagnosis you reach for when those fail after them.
+       * `lg` matches the chat chip beside it; the order is said by ink instead: `default` puts
+       * the check after the chat chip and the install link.
        */
       size="lg"
       tone="default"
@@ -297,12 +222,8 @@ export function useAgentDoctor(
       {busy === 'scan' ? t('scanning') : t('scan')}
     </Chip>
     {/*
-      **This is "reconnect", not "log out".** This app has no login of its own, so offering a logout
-      would either erase someone else's login or pretend to. Deleting only what the app created and
-      recreating it is the precise meaning of "reconnect" in this structure.
-
-      **Offered only after the check results.** Showing "reconnect" permanently to someone with no
-      problem at all reads as a signal that something is wrong.
+      Reconnect, not log out: the app has no login of its own, so a logout would erase someone
+      else's login. Offered only after check results, or it reads as a sign of trouble.
     */}
     {checks && !prerequisiteBlocked ? (
       <Chip
@@ -324,17 +245,8 @@ export function useAgentDoctor(
   );
 
   /**
-   * **The screen speaks while the install runs.**
-   *
-   * Three rules:
-   *
-   * ① **Never draw a percentage that is unknown.** Only the Node download has a denominator; npm
-   *    does not, so instead of a bar it shows **the line that tool actually emitted**. This app's
-   *    update toast already follows the same rule.
-   * ② **Record that it finished.** This line is the answer to the owner's question about checking
-   *    off what completed — a list quietly turning green does not tell you whether what you just
-   *    pressed succeeded.
-   * ③ **No decoration.** A neutral track plus one indigo. Exactly the repository's charter.
+   * Progress rules: never draw an unknown percentage (npm has no total, so its output line shows
+   * instead), and record completion, since a list turning green does not say the press succeeded.
    */
   const percent =
     progress && progress.received !== null
@@ -373,7 +285,7 @@ export function useAgentDoctor(
         </span>
       </p>
       {percent ? (
-        /* Raise a bar only while the denominator is known. Unknown, the bar itself is a lie. */
+        /* A bar only while the total is known. */
         <span
           data-testid="agent-doctor-progress-bar"
           aria-hidden
@@ -386,8 +298,7 @@ export function useAgentDoctor(
         </span>
       ) : progress.note ? (
         /*
-         * With no percentage, what is shown is **the line that tool emitted, verbatim**. It is cut to
-         * one line — npm emits hundreds, and pouring all of it out is not guidance.
+         * Without a percentage, the tool's own line is shown, cut to one line (npm emits hundreds).
          */
         <code
           data-testid="agent-doctor-progress-note"
@@ -408,16 +319,8 @@ export function useAgentDoctor(
       >
         {progressRow}
         {/*
-          ⚠️ **No `checks` means "not measured", not "fine".**
-
-          Once progress alone was enough to render this block, a screen that had never run a check
-          could ride `blocked.length === 0` into saying "no problems right now" — drawing green
-          without measuring, in direct violation of the first of this screen's two rules ("never draw
-          the unknown as green"). (Revealed in a 2026-08-20 installed-app screenshot where "install
-          required" stood directly above "no problems right now".)
-
-          So the verdict sentence is emitted **only when there is something measured**. The progress
-          line stays above, so the completion indicator is not lost.
+          No `checks` means not measured, not fine: without this guard, progress alone would render
+          "no problems right now". The verdict needs a measurement; the progress line stays above.
         */}
         {failed ? (
           <p
@@ -428,21 +331,8 @@ export function useAgentDoctor(
           </p>
         ) : !checks ? null : blocked.length === 0 ? (
           /*
-           * **When everything is fine it is one line.** Seven copies of the same sentence are
-           * duplication, not information, and this screen has already suffered that failure once.
-           *
-           * ⚠️ **Counting them was rejected too** (2026-08-20, owner: *"3 steps are fine" and the like, I cannot make out what it
-           * means* — "3 steps are fine" and the like, I cannot make out what it
-           * means). "Step" is our internal word, and the check count differs per tool (Claude 7,
-           * Codex 3), so **the number looks different for reasons the user cannot know** — it was our
-           * implementation leaking out rather than information.
-           *
-           * So the status is one sentence in plain language, and what was examined is **folded away**.
-           * Anyone curious unfolds it; for everyone else it is one line.
-           *
-           * ⚠️ **It must look pressable** (owner, 2026-08-20: *"Can this be opened and closed?"* —
-           * can this be opened and closed?). Text alone leaves nobody aware it is a `<details>`. It
-           * uses the indicator this screen already uses — a chevron that rotates when open.
+           * All-clear is one plain sentence with no count (the check count differs per tool), and the
+           * checks fold into a `<details>` with a rotating chevron so it looks openable.
            */
           <details data-testid="agent-doctor-all-clear" className="group">
             <summary
@@ -488,8 +378,7 @@ export function useAgentDoctor(
                 className="flex min-w-0 flex-wrap items-start gap-x-2 gap-y-1 break-keep text-label leading-prose"
               >
                 {/*
-                  One dot states the status, but **colour is not the only channel** — the copy right
-                  beside it says the same thing in words.
+                  The dot is not the only channel; the copy beside it says the same in words.
                 */}
                 <span
                   aria-hidden
@@ -506,9 +395,7 @@ export function useAgentDoctor(
                   </span>
                 </span>
                 {/*
-                  **Where the app cannot fix it, write what the person should do.** The same rule this
-                  repository set for degraded cards — saying only why something does not work, without
-                  saying where to go, is a dead end.
+                  Where the app cannot fix it, say what the person should do, or it is a dead end.
                 */}
                 {check.state === 'problem' && check.fixable ? (
                   <Chip
@@ -524,8 +411,7 @@ export function useAgentDoctor(
                 ) : null}
                 {check.id === 'cli' && check.state === 'problem' && toolMissing && installPlan ? (
                   /*
-                    Conditions ② and ④ are visible on screen: exactly what will be run, and where alone
-                    it will be installed. Both readable before pressing.
+                    Shows exactly what will run and where it installs, before pressing.
                   */
                   <span
                     data-testid="agent-doctor-install-plan"
@@ -535,17 +421,8 @@ export function useAgentDoctor(
                       {t('installPlanTitle')}
                     </span>
                     {/*
-                      ⚠️ **Not pinned to one line** (owner, 2026-08-20: *"What is
-                      going on with this design"* — what is
-                      going on with this design). Measured: this command is **142 characters**, roughly
-                      900px at caption size (11px), while the settings sheet's right pane is **698px**
-                      (880 − 180 for the LNB). It used to be bound to one line with `whitespace-pre`,
-                      putting the overflowing third behind a horizontal scroll — and **nobody ever
-                      discovers a horizontal scroll**, so the screen was not actually keeping condition
-                      ② (show what will be run, first).
-
-                      The path contains a space (`Application Support`), so wrapping only at word
-                      boundaries still overflows. `break-all` lets it wrap anywhere.
+                      The 142-character command overflows the 698px pane and its path contains a
+                      space, so it uses `break-all`; a horizontal scroll would hide what will run.
                     */}
                     <code className="mt-1 block min-w-0 break-all whitespace-pre-wrap text-caption leading-caption text-[color:var(--color-text-secondary)]">
                       {installPlan}
@@ -596,15 +473,7 @@ export function useAgentDoctor(
                   </span>
                 ) : null}
                 {/*
-                  ⚠️ **When the app can do it for you, do not say "do it yourself".**
-
-                  In a 2026-08-20 screenshot two sentences stood on one screen: the "install into this
-                  app" button directly above, and beneath it *"press 「install instructions」 for that
-                  tool in this list, install it, then press 「check again」 above"*. Offering to do it
-                  and instructing the user to do it themselves in the same place is not guidance but a
-                  **contradiction**, and the user cannot tell which is real.
-
-                  So this slot speaks **only when the app has no path to offer**.
+                  Speaks only when the app has no install path, so it never contradicts the install button.
                 */}
                 {check.state === 'problem' &&
                 !check.fixable &&
@@ -620,7 +489,7 @@ export function useAgentDoctor(
                 ) : null}
               </li>
             ))}
-            {/* Passing checks remain as a count — "what was not measured" must not be invisible. */}
+            {/* Passing checks remain as a count so what was measured stays visible. */}
             {(checks?.length ?? 0) > blocked.length ? (
               <li
                 data-testid="agent-doctor-rest"

@@ -6,13 +6,7 @@ import ko from '../../../../messages/ko.json';
 import type { AcpCheck } from '../model/acp-doctor';
 import { useAgentDoctor } from './AgentDoctor';
 
-/**
- * The connection-check screen — the subject of these tests is **whether it becomes noise.**
- *
- * The owner rejected the first version over the screen rather than the behaviour: "everything is
- * fine" was seven lines long, and that list ate the row's right half. So what is measured here is
- * not "does it return good values" but **"how many lines does it draw"**.
- */
+/** These tests measure how many rows the doctor draws, because an all-clear list became noise. */
 
 const diagnoseAgent = vi.fn<(runtimeId: string) => Promise<AcpCheck[]>>();
 const repairAgentCheck = vi.fn<(runtimeId: string, checkId: string) => Promise<AcpCheck[]>>();
@@ -21,9 +15,7 @@ const agentInstallPlan = vi.fn<(runtimeId: string) => Promise<string | null>>();
 const installAgentCli = vi.fn<(runtimeId: string) => Promise<AcpCheck[]>>();
 const nodeInstallPlan = vi.fn<() => Promise<string | null>>();
 const installManagedNode = vi.fn<(runtimeId: string) => Promise<AcpCheck[]>>();
-/** The test fires the progress events Rust would emit. */
 let emitProgress: ((progress: unknown) => void) | null = null;
-/** The "last progress" Rust holds. The test plants it directly. */
 const lastInstallProgress = vi.fn<(runtimeId: string) => Promise<unknown>>();
 
 vi.mock('../model/acp-doctor', async () => {
@@ -63,8 +55,7 @@ function Harness({ runtimeId = 'claude-acp' }: { runtimeId?: string }) {
 }
 
 function renderHarness(runtimeId = 'claude-acp') {
-  // `useTranslations` lives only inside a provider, and the component calling the hook must not be
-  // outside one — hence the extra wrapper.
+  // `useTranslations` needs a provider around the component that calls it.
   return render(
     <NextIntlClientProvider locale="ko" messages={ko}>
       <Harness runtimeId={runtimeId} />
@@ -105,15 +96,12 @@ describe('agent doctor screen', () => {
     fireEvent.click(screen.getByTestId('agent-doctor-scan'));
 
     await waitFor(() => expect(screen.getByTestId('agent-doctor-all-clear')).toBeInTheDocument());
-    // This was the first version's defect: the list must not be drawn.
     expect(screen.queryByTestId('agent-doctor-checks')).toBeNull();
-    // ⚠️ **No count is given** (rejected 2026-08-20): "step" is our internal word, and the check
-    // count differs per tool, so the number looks different for reasons the user cannot know. The
-    // status is one sentence in plain language and what was examined is folded away.
+    // No count: the check count differs per tool, so a number changes for reasons the user
+    // cannot see. The status is one plain sentence and the checks are folded away.
     const summary = screen.getByTestId('agent-doctor-all-clear').textContent ?? '';
     expect(summary).not.toMatch(/\d/);
     expect(summary).toContain('문제 없어요');
-    // Folded, the list is still in the DOM — unfold it if curious.
     expect(screen.getAllByRole('listitem')).toHaveLength(7);
   });
 
@@ -132,11 +120,9 @@ describe('agent doctor screen', () => {
     fireEvent.click(screen.getByTestId('agent-doctor-scan'));
     await waitFor(() => expect(screen.getByTestId('agent-doctor-checks')).toBeVisible());
 
-    // Only the two blocked ones become rows.
     expect(screen.getByTestId('agent-doctor-check-shadow-keychain')).toBeVisible();
     expect(screen.getByTestId('agent-doctor-check-login')).toBeVisible();
     expect(screen.queryByTestId('agent-doctor-check-cli')).toBeNull();
-    // The five that are not drawn must not look as though they vanished.
     expect(screen.getByTestId('agent-doctor-rest').textContent).not.toMatch(/\d/);
   });
 
@@ -151,7 +137,6 @@ describe('agent doctor screen', () => {
     await waitFor(() => expect(screen.getByTestId('agent-doctor-checks')).toBeVisible());
 
     expect(screen.getByTestId('agent-doctor-fix-shadow-keychain')).toBeVisible();
-    // A button on something the app cannot fix produces a screen where pressing does nothing.
     expect(screen.queryByTestId('agent-doctor-fix-login')).toBeNull();
   });
 
@@ -179,7 +164,6 @@ describe('agent doctor screen', () => {
 
     const row = screen.getByTestId('agent-doctor-check-login');
     expect(row.dataset.state).toBe('unknown');
-    // "Fix" on something unknown claims the app will do what it cannot.
     expect(screen.queryByTestId('agent-doctor-fix-login')).toBeNull();
     expect(screen.queryByTestId('agent-doctor-all-clear')).toBeNull();
   });
@@ -194,9 +178,7 @@ describe('agent doctor screen', () => {
     fireEvent.click(screen.getByTestId('agent-doctor-scan'));
     await waitFor(() => expect(screen.getByTestId('agent-doctor-checks')).toBeVisible());
 
-    // Saying only why it does not work, without saying where to go, is a dead end.
     expect(screen.getByTestId('agent-doctor-next-cli')).toBeVisible();
-    // Where the app can fix it, the button is the answer, so no sentence is added.
     expect(screen.queryByTestId('agent-doctor-next-shadow-keychain')).toBeNull();
   });
 
@@ -204,7 +186,6 @@ describe('agent doctor screen', () => {
     diagnoseAgent.mockResolvedValue([ok('cli')]);
     renderHarness();
 
-    // Shown permanently to someone with no problem, it reads as a signal that something is wrong.
     expect(screen.queryByTestId('agent-doctor-reset')).toBeNull();
 
     fireEvent.click(screen.getByTestId('agent-doctor-scan'));
@@ -225,12 +206,6 @@ describe('agent doctor screen', () => {
     expect(resetAgentConnection).toHaveBeenCalledWith('claude-acp');
   });
 
-  /**
-   * **No fix button is raised on a collapsed foundation** (walkthrough 2026-08-20).
-   *
-   * Someone with no tool at all was being offered "fix the app's config" and "reconnect". Pressing
-   * them is useless — there is no tool to launch in the first place.
-   */
   it('does not offer a later fix while an earlier step is blocked', async () => {
     diagnoseAgent.mockResolvedValue([
       { id: 'cli', state: 'problem', fixable: false, blocked: false },
@@ -242,18 +217,10 @@ describe('agent doctor screen', () => {
     await waitFor(() => expect(screen.getByTestId('agent-doctor-checks')).toBeVisible());
 
     expect(screen.queryByTestId('agent-doctor-fix-config-dir')).toBeNull();
-    // The same for "reconnect" — rebuilding the config with no tool present achieves nothing.
     expect(screen.queryByTestId('agent-doctor-reset')).toBeNull();
-    // But **what to do about it** must still remain.
     expect(screen.getByTestId('agent-doctor-next-cli')).toBeVisible();
   });
 
-  /**
-   * **Show the command text first** — condition ② of ledger entry 2026-08-20 (88).
-   *
-   * With only an "install into this app" button and no view of what will be run, the user presses
-   * without knowing what happens on their own machine.
-   */
   it('shows the exact install command beside the install button', async () => {
     diagnoseAgent.mockResolvedValue([{ id: 'cli', state: 'problem', fixable: false, blocked: false }]);
     agentInstallPlan.mockResolvedValue('npm install --prefix /app/managed-node --global @anthropic-ai/claude-code@2.1.236');
@@ -276,9 +243,8 @@ describe('agent doctor screen', () => {
     fireEvent.click(screen.getByTestId('agent-doctor-scan'));
     await waitFor(() => expect(screen.getByTestId('agent-doctor-checks')).toBeVisible());
 
-    // Never claim a package that was never verified will be installed on the user's machine.
+    // Never claim that an unverified package will be installed.
     expect(screen.queryByTestId('agent-doctor-install')).toBeNull();
-    // But what the person can do must still remain.
     expect(screen.getByTestId('agent-doctor-next-cli')).toBeVisible();
   });
 
@@ -304,15 +270,9 @@ describe('agent doctor screen', () => {
     fireEvent.click(screen.getByTestId('agent-doctor-scan'));
     await waitFor(() => expect(screen.getByTestId('agent-doctor-all-clear')).toBeInTheDocument());
 
-    // Showing an install offer permanently to someone with no problem is advertising, not guidance.
     expect(screen.queryByTestId('agent-doctor-install-plan')).toBeNull();
   });
 
-  /**
-   * **The app fetches Node too** — ledger entry (89). This was the final dead end for someone with
-   * no tooling at all: launching the adapter needs Node, and without it all the screen could say was
-   * "install it yourself".
-   */
   it('shows the Node download URL and hash when Node is missing', async () => {
     diagnoseAgent.mockResolvedValue([
       { id: 'launcher', state: 'problem', fixable: false, blocked: false },
@@ -324,7 +284,6 @@ describe('agent doctor screen', () => {
     await waitFor(() => expect(screen.getByTestId('agent-doctor-node-plan')).toBeVisible());
 
     const card = screen.getByTestId('agent-doctor-node-plan').textContent ?? '';
-    // Where it is downloaded from and what it is checked against must both be readable before pressing.
     expect(card).toContain('https://nodejs.org/dist/');
     expect(card).toContain('e1a97e14c99c');
     expect(screen.getByTestId('agent-doctor-install-node')).toBeVisible();
@@ -341,7 +300,6 @@ describe('agent doctor screen', () => {
     await waitFor(() => expect(screen.getByTestId('agent-doctor-checks')).toBeVisible());
 
     expect(screen.queryByTestId('agent-doctor-install-node')).toBeNull();
-    // But what the person can do must still remain.
     expect(screen.getByTestId('agent-doctor-next-launcher')).toBeVisible();
   });
 
@@ -372,16 +330,6 @@ describe('agent doctor screen', () => {
   });
 });
 
-
-/**
- * **Does the screen speak while the install runs** (owner, 2026-08-20: *"Show the
- * installation process that happens automatically when you press the buttons, and check off completion?"* — does pressing the buttons show the
- * install progress and check off completion?).
- *
- * The command used to return only when finished, so while 52MB downloaded all the screen could do
- * was leave the chip disabled — the pattern the walkthrough named **"the silent wait"**. So what is
- * measured here is not "does the install work" but **"what is visible while it runs"**.
- */
 describe('install progress', () => {
   it('shows no progress row before any install starts', async () => {
     diagnoseAgent.mockResolvedValue([ok('cli'), ok('launcher')]);
@@ -410,7 +358,6 @@ describe('install progress', () => {
     const row = await screen.findByTestId('agent-doctor-progress');
     expect(row).toHaveAttribute('data-stage', 'downloading');
     expect(row.textContent).toContain('50%');
-    // The amount received is stated in a human-readable size too — a percentage alone does not convey scale.
     expect(row.textContent).toContain('MB');
     const bar = screen.getByTestId('agent-doctor-progress-bar');
     expect((bar.firstElementChild as HTMLElement).style.width).toBe('50%');
@@ -437,7 +384,6 @@ describe('install progress', () => {
     expect(screen.getByTestId('agent-doctor-progress-note').textContent).toBe(
       'added 121 packages in 8s',
     );
-    // No percentage was invented.
     expect(screen.getByTestId('agent-doctor-progress').textContent).not.toContain('%');
   });
 
@@ -483,13 +429,6 @@ describe('install progress', () => {
   });
 });
 
-/**
- * **When the app can do it for you, do not say "do it yourself".**
- *
- * In a 2026-08-20 screenshot, directly beneath the "install into this app" button stood *"press
- * 「install instructions」 for that tool in this list, install it, then press 「check again」 above"*.
- * The user cannot tell which of the two is real.
- */
 describe('contradictory guidance', () => {
   it('hides the manual install hint while the app offers install', async () => {
     diagnoseAgent.mockResolvedValue([problem('cli', false)]);
@@ -522,14 +461,6 @@ describe('contradictory guidance', () => {
   });
 });
 
-/**
- * **A command text wider than its column breaks condition ②** (ledger 2026-08-20 (88): show what
- * will be run, first).
- *
- * Measured: this command is 142 characters and the settings sheet's right pane is 698px. It used to
- * be bound to one line with `whitespace-pre`, putting the overflowing third behind a horizontal
- * scroll — and **nobody ever discovers a horizontal scroll.**
- */
 describe('raw command text', () => {
   it('wraps the command instead of hiding overflow behind a scroll', async () => {
     diagnoseAgent.mockResolvedValue([problem('cli', false)]);
@@ -544,20 +475,11 @@ describe('raw command text', () => {
     expect(code).not.toBeNull();
     expect(code?.className).not.toContain('whitespace-pre ');
     expect(code?.className).not.toContain('overflow-x-auto');
-    // The path contains a space (`Application Support`), so wrapping only at word boundaries still overflows.
     expect(code?.className).toContain('break-all');
   });
 });
 
-/**
- * **Is an install that finished while closed still caught?**
- *
- * The settings sheet unmounts entirely when closed (the conditional portal in
- * `AppSettingsMenu.tsx`), taking this hook's state and its event subscription with it. The Node
- * download ticks every 250ms and revives on reopening, but **completion (`done`) is a single event**
- * and going past in the meantime means it is never seen — which is exactly the "check off completion"
- * the owner asked for.
- */
+/** The settings sheet unmounts when closed and `done` is a single event, so it is fetched on mount. */
 describe('completion that survives unmount', () => {
   const done = {
     runtimeId: 'claude-acp',
@@ -595,7 +517,7 @@ describe('completion that survives unmount', () => {
 
   it('keeps a subscription event that arrived before the held progress', async () => {
     diagnoseAgent.mockResolvedValue([ok('cli')]);
-    // Rust holds an old completion while a new install is running right now.
+    // Rust holds an old completion while a new install is running.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- the test controls when it resolves
     let release!: (value: any) => void;
     lastInstallProgress.mockReturnValue(
@@ -617,7 +539,6 @@ describe('completion that survives unmount', () => {
     });
     await screen.findByTestId('agent-doctor-progress');
 
-    // A late-arriving "last state" must not overwrite what is running now.
     release(done);
     await waitFor(() =>
       expect(screen.getByTestId('agent-doctor-progress')).toHaveAttribute(
@@ -628,15 +549,6 @@ describe('completion that survives unmount', () => {
   });
 });
 
-/**
- * **Never draw the unknown as green.**
- *
- * Reviving "completion while closed" made progress state load on mount, and with it the result block
- * began rendering **even with no checks**. At that point `blocked.length === 0` does not mean
- * "everything is fine" but **"nothing has been measured yet"**, while the screen says "no problems
- * right now" — drawing green without measuring, in direct violation of the first of this screen's
- * two rules.
- */
 describe('unmeasured state is not reported as healthy', () => {
   it('does not show the all-clear when only progress exists and no check ran', async () => {
     lastInstallProgress.mockResolvedValue({
@@ -650,9 +562,7 @@ describe('unmeasured state is not reported as healthy', () => {
     });
     renderHarness();
 
-    // Completion is shown — that is what this wiring exists for.
     await screen.findByTestId('agent-doctor-progress');
-    // But the checks never ran once. That must not be turned into "fine".
     expect(screen.queryByTestId('agent-doctor-all-clear')).toBeNull();
     expect(screen.queryByTestId('agent-doctor-checks')).toBeNull();
   });

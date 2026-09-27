@@ -4,9 +4,7 @@ import { readVaultGuideAutoOpened } from './vault-guide-auto-open';
 
 describe('global auto-show switch scope', () => {
   /*
-   * Before this test existed the switch turned off «five of six guides». The screen
-   * said "auto-display off" while still raising the sheet on a first screen with no
-   * folder. Without a gate, the same hole reappears the next time a guide is added.
+   * Without this gate, a newly added guide ignores the auto-display switch.
    */
   beforeEach(() => {
     window.localStorage.clear();
@@ -19,7 +17,7 @@ describe('global auto-show switch scope', () => {
 
   it('does not auto-open the folder-first sheet when the switch is off', () => {
     window.localStorage.setItem('ontology-atlas:guide-auto-start:v1', '0');
-    // Treated as "already opened" = not auto-displayed.
+    // Treated as already opened, so not auto-displayed.
     expect(readVaultGuideAutoOpened()).toBe(true);
   });
 

@@ -22,23 +22,13 @@ import {
 } from './project-vault-location';
 
 /**
- * The 「make a map from my code」 flow: choose a project, **see where the folder will go**, then
- * create it.
- *
- * ⚠️ **The middle step is the point** (owner direction, 2026-08-24). The map now lands *inside* the
- * chosen project, which means this feature writes a folder into somebody's repository. A product
- * that creates files in a person's source tree without showing them the path first has taken a
- * decision that was theirs to take, and `local-first.md` is explicit that nothing about their disk
- * happens silently. So `chooseProject` only computes and describes; nothing is created until
- * `confirm` is called from a screen that has shown `location.displayPath`.
- *
- * **An existing folder is reported, not overwritten.** When the project already carries an `atlas`
- * directory this reuses it and says so, because the alternative — quietly writing into a folder
- * whose contents nobody has looked at — is how a person loses work they had already done.
+ * The 「make a map from my code」 flow: choose a project, see the path, then create. The folder
+ * goes into the person's repository, so nothing is created until `confirm` runs from a screen
+ * that showed `location.displayPath` (`local-first.md`). An existing `atlas` folder is reused
+ * and reported, never overwritten.
  */
 /**
- * Names the folder being asked for. English because it is an OS dialog title, chosen by the native
- * layer's own default when absent, and the surrounding native chrome is not localised either.
+ * English because it is an OS dialog title and the surrounding native chrome is not localised.
  */
 const PROJECT_PICKER_TITLE = 'Choose your project folder';
 
@@ -46,25 +36,19 @@ type BuildFromCodeStage = 'idle' | 'choosing' | 'confirm' | 'creating';
 
 export interface BuildFromCodeState {
   stage: BuildFromCodeStage;
-  /** Set once a project is chosen; the screen must render `displayPath` before offering `confirm`. */
+  /** The screen must render `displayPath` before offering `confirm`. */
   location: ProjectVaultLocation | null;
-  /** True when the chosen project already has an `atlas` folder, so the copy says "use" not "create". */
+  /** So the copy says "use" rather than "create". */
   reusesExisting: boolean;
-  /**
-   * The person picked the map folder itself rather than the project around it.
-   *
-   * ⚠️ Measured 2026-08-25: that produced `…/atlas/atlas` on screen, offered with a straight face.
-   * The flow now names the mistake and proposes the parent, because a confirmation that proposes
-   * nonsense is one people stop reading — fatal for a step whose whole job is to be read.
-   */
+  /** The map folder itself was picked; the flow names it and proposes the parent. */
   pickedMapFolder: boolean;
   errorText: string | null;
 }
 
 export interface BuildFromCodeDeps {
-  /** Registers and loads a vault without reopening a picker — the app's one existing open path. */
+  /** Registers and loads a vault without reopening a picker. */
   openRecord: (record: LocalFsHandleRecord) => Promise<unknown>;
-  /** Sends the opening turn once the vault is live. Called with the project root, never the vault. */
+  /** Called with the project root, never the vault. */
   handoff: (location: ProjectVaultLocation) => void;
 }
 
@@ -82,20 +66,14 @@ export function useBuildFromCode({ openRecord, handoff }: BuildFromCodeDeps) {
   const reset = useCallback(() => setState(IDLE), []);
 
   /**
-   * Opens the folder picker on the **project**, not on a vault.
-   *
-   * A cancelled picker returns to idle without an error, matching `use-local-vault`'s contract that
-   * cancelling is not a failure — an error card for "I changed my mind" is noise.
+   * Picks the project, not a vault. A cancelled picker returns to idle without an error.
    */
   const chooseProject = useCallback(async () => {
     if (!isTauriVaultRuntime()) return;
     setState({ ...IDLE, stage: 'choosing' });
     try {
       /*
-       * ⚠️ The dialog has to ask for what this flow actually wants (measured in the installed app,
-       * 2026-08-25). The button says 「make a map from my code」 and the picker's default title says
-       * "Open ontology vault" — so at the exact moment of choosing, the person is told to find a
-       * vault they do not have, inside the flow that exists to create one.
+       * The default title asks for a vault, which the person does not have in this flow.
        */
       const handle = await pickTauriVaultDirectory(PROJECT_PICKER_TITLE);
       if (!handle) {
@@ -103,8 +81,7 @@ export function useBuildFromCode({ openRecord, handoff }: BuildFromCodeDeps) {
         return;
       }
       const picked = getTauriVaultRootPath(handle) ?? null;
-      // Handed the map instead of the project: step up one, and say so rather than proposing
-      // `…/atlas/atlas`.
+      // Handed the map instead of the project: step up one and say so.
       const pickedMapFolder = pickedTheMapFolder(picked);
       const location = projectVaultLocation(
         pickedMapFolder ? (picked ?? '').replace(/[/\\]+[^/\\]+$/, '') : picked,
@@ -113,14 +90,13 @@ export function useBuildFromCode({ openRecord, handoff }: BuildFromCodeDeps) {
         setState({ ...IDLE, errorText: '' });
         return;
       }
-      // Listing before offering tells the person whether this creates or reuses. It is a read, so it
-      // needs no consent, and it is the difference between two very different sentences on screen.
+      // Listing is a read, so it needs no consent, and it decides between create and reuse copy.
       let reusesExisting = false;
       try {
         reusesExisting = projectAlreadyHasVault(await listTauriDirectoryNames(location.projectRoot));
       } catch {
-        // An unreadable project is not fatal here: the confirm step still shows the path, and the
-        // create below will surface the real reason if it is a permission problem.
+        // An unreadable project is not fatal: confirm still shows the path, and the create below
+        // surfaces a permission problem.
       }
       setState({ stage: 'confirm', location, reusesExisting, pickedMapFolder, errorText: null });
     } catch (err) {
@@ -129,9 +105,7 @@ export function useBuildFromCode({ openRecord, handoff }: BuildFromCodeDeps) {
   }, []);
 
   /**
-   * Creates `<project>/atlas`, opens it as the vault, and hands the work to the agent.
-   *
-   * Only reachable from the `confirm` stage, so the path in `location` is one the person has seen.
+   * Creates `<project>/atlas`, opens it and hands off to the agent. Reachable only from `confirm`.
    */
   const confirm = useCallback(async () => {
     const location = state.location;
@@ -151,8 +125,7 @@ export function useBuildFromCode({ openRecord, handoff }: BuildFromCodeDeps) {
       handoff(location);
       setState(IDLE);
     } catch (err) {
-      // Staying on `confirm` keeps the path and the button on screen, so a failure that the person
-      // can fix — a read-only checkout, a folder they need to unlock — is one press from retrying.
+      // Staying on `confirm` keeps the path and button, so a fixable failure is one press from retry.
       setState((s) => ({ ...s, stage: 'confirm', errorText: messageOf(err) }));
     }
   }, [state.location, state.stage, openRecord, handoff]);
@@ -161,9 +134,8 @@ export function useBuildFromCode({ openRecord, handoff }: BuildFromCodeDeps) {
 }
 
 /**
- * The **failure code** this screen looks up, or `''` for "it failed and nothing recognised it",
- * which the screen fills in locale-side. Never the thrown English: a module that throws cannot
- * know the reader's language (installed-app inspection before v1.2.2, B2).
+ * A failure code for the screen, or `''` when nothing recognised it. Never the thrown English,
+ * which cannot know the reader's language.
  */
 function messageOf(err: unknown): string {
   return failureCodeOf(err) ?? '';

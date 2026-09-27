@@ -15,7 +15,6 @@ const doc = (slug: string, title = '', fm: Record<string, unknown> = {}): Bootst
   frontmatter: fm,
 });
 
-/** The same folder as the reproduction scenario — my-saas. */
 const MY_SAAS = [
   doc('README', 'my-saas'),
   doc('docs/architecture', 'Architecture'),
@@ -104,7 +103,6 @@ describe('buildProjectMarkdown', () => {
     expect(md).toContain('title: my-saas');
     expect(md).toContain('domains:\n  - docs\n  - notes');
     expect(md).toContain('elements:\n  - CONTRIBUTING');
-    // The frontmatter block closes correctly.
     expect(md.startsWith('---\n')).toBe(true);
     expect(md.split('---').length).toBeGreaterThanOrEqual(3);
   });
@@ -120,7 +118,7 @@ describe('buildProjectMarkdown', () => {
 describe('domainDocSlug and buildDomainMarkdown', () => {
   it('matches the file tail to the derived slugifyName ref', () => {
     expect(domainDocSlug('docs')).toBe('docs/docs');
-    // Folder names with capitals and spaces — the tail is slugified, the folder path stays verbatim.
+    // The tail is slugified; the folder path stays verbatim.
     expect(domainDocSlug('User Guides')).toBe('User Guides/user-guides');
   });
 
@@ -144,18 +142,8 @@ describe('domainDocSlug and buildDomainMarkdown', () => {
 });
 
 /**
- * **Do not write into someone else's files** — an already-shipped defect found in the PO council,
- * 2026-08-09.
- *
- * "Build a map from my documents" treats any slug in `manifest.docs` as a candidate and, on approval,
- * writes `uid`, `kind`, and `title` into that file. When a user opens a skills folder as their
- * document store, the `SKILL.md` files come straight into that list — measured, 105 candidates were
- * all `SKILL.md`. Those files are owned by the Claude runtime and the marketplace, and that folder is
- * a git checkout, so an update overwrites whatever we wrote.
- *
- * The property this test locks: *a `SKILL.md` owned by the runtime per its spec never enters the
- * candidates.* The test follows the official spec exactly — the file is named `SKILL.md`, it has both
- * required keys (`name`, `description`), and it has no `kind`.
+ * A runtime-owned `SKILL.md` (both spec keys `name` and `description`, no `kind`) never becomes a
+ * candidate: approval would write into files the runtime and marketplace overwrite on update.
  */
 describe('excludes runtime-owned SKILL.md files from candidates', () => {
   const skill = (slug: string) => ({
@@ -191,7 +179,7 @@ describe('excludes runtime-owned SKILL.md files from candidates', () => {
       [{ slug: 'x/SKILL', title: 'x', frontmatter: { name: 'x', description: 'd', kind: 'element' } }],
       'vault',
     );
-    // It already has a kind, so it counts as "already typed", not as runtime-owned.
+    // It already has a kind, so it counts as already typed, not as runtime-owned.
     expect(plan.runtimeOwnedSkipped).toBe(0);
     expect(plan.alreadyTypedCount).toBe(1);
   });
@@ -207,13 +195,8 @@ describe('excludes runtime-owned SKILL.md files from candidates', () => {
 });
 
 /**
- * **The starter must not flag its own instruction files** (measured 2026-09-04).
- *
- * "Start from an empty folder" writes `AGENTS.md` plus the `CLAUDE.md` bridge that points at it
- * (`entities/vault-session/lib/ontology-starter.ts`). Neither carries a `kind:`, so one click later
- * the INDEX offered "2 docs not on the map · add to map" and the dialog proposed stamping
- * `kind: element` onto both. Those files are addressed to an agent, not to the graph, and the next
- * starter run rewrites them — the same failure mode as the runtime-owned `SKILL.md` above.
+ * The starter's own `AGENTS.md` and `CLAUDE.md` bridge carry no `kind:` and are rewritten by the
+ * next starter run (`entities/vault-session/lib/ontology-starter.ts`), so they are not candidates.
  */
 describe('excludes agent instruction files from candidates', () => {
   const STARTER_OUTPUT = [
@@ -255,9 +238,8 @@ describe('excludes agent instruction files from candidates', () => {
 });
 
 /**
- * **A vault that already has a project never gets a second one.** `executeBootstrapPlan` merges
- * into the existing document, and the plan must report the same thing so the confirmation screen
- * cannot promise a file the run will not write.
+ * The plan reports the merge `executeBootstrapPlan` performs, so the confirmation screen cannot
+ * promise a file the run will not write.
  */
 describe('when a project document already exists', () => {
   it('points at the existing project instead of creating a new file', () => {
@@ -274,14 +256,8 @@ describe('when a project document already exists', () => {
 });
 
 /**
- * **The Library's own files are not uncataloged documents** (measured 2026-09-20).
- *
- * A dogfood folder whose only kind-less files were six raw sources under `sources/` and the
- * wiki's pages showed an INDEX row offering to add seven documents to the map, and one press
- * would have stamped `kind: element` into each of them. A raw source is a copy of someone else's
- * document — frontmatter written into it breaks the verbatim promise and invalidates the
- * citation hashes recorded against its bytes — and a wiki page is a statement *about* sources
- * that the next Compile run rewrites in place.
+ * Frontmatter in a raw source breaks its verbatim promise and citation hashes, and Compile
+ * rewrites wiki pages in place, so neither is a candidate.
  */
 describe('excludes library files under sources/ and wiki/ from candidates', () => {
   it('yields zero candidates for a sources-and-wiki folder and counts the excluded files', () => {

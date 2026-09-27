@@ -16,8 +16,8 @@ describe("canAutoStartGuidedTour (stacked-transient guard)", () => {
 
   it("blocks auto start while a blocking edit composer is open", () => {
     vi.spyOn(document, "hasFocus").mockReturnValue(true);
-    // CreateNodeForm/OntologyBootstrapForm declare modality via
-    // data-surface-role, not role=dialog — the tour must still defer.
+    // CreateNodeForm and OntologyBootstrapForm declare modality via data-surface-role, not
+    // role=dialog; the tour must still defer.
     document.body.innerHTML =
       '<section data-surface-role="blocking-edit-surface" data-testid="create-node-form"></section>';
     expect(canAutoStartGuidedTour(document)).toBe(false);
@@ -25,8 +25,7 @@ describe("canAutoStartGuidedTour (stacked-transient guard)", () => {
 
   it("blocks auto start while an honest fallback card is shown", () => {
     vi.spyOn(document, "hasFocus").mockReturnValue(true);
-    // A screen that says "you cannot get here" (the workshop below `lg`). Raising
-    // "this is the workshop" over it is a lie rather than guidance.
+    // A "you cannot get here" screen (the workshop below `lg`) has no surface to introduce.
     document.body.innerHTML =
       '<main data-surface-role="degraded-surface" data-testid="degraded-surface"></main>';
     expect(canAutoStartGuidedTour(document)).toBe(false);
@@ -46,10 +45,8 @@ describe("canAutoStartGuidedTour (stacked-transient guard)", () => {
 
   it("blocks auto start while the workshop entry modal is open", () => {
     vi.spyOn(document, "hasFocus").mockReturnValue(true);
-    // The workshop puts this decision screen up the moment you arrive; firing guidance
-    // over it covers the entry-choice cards the card meant to introduce and puts two
-    // `aria-modal` elements up (the card vanishes for a screen reader). Guidance appears
-    // on the work surface after the decision is made.
+    // Guidance over the entry choice would cover the cards it introduces and stack two
+    // `aria-modal` elements; it appears after the decision.
     document.body.innerHTML =
       '<section role="dialog" aria-modal="true" data-testid="studio-entry-choice"></section>';
     expect(canAutoStartGuidedTour(document)).toBe(false);
@@ -57,19 +54,12 @@ describe("canAutoStartGuidedTour (stacked-transient guard)", () => {
 
   it("allows auto start on an idle focused page — non-modal hint chips do not block", () => {
     vi.spyOn(document, "hasFocus").mockReturnValue(true);
-    // Non-blocking chips like GestureHint carry only data-interactive-overlay and are
-    // not modals — the guard must not block the tour on that basis.
+    // Non-blocking chips like GestureHint carry only data-interactive-overlay and are not modals.
     document.body.innerHTML = '<div data-interactive-overlay="true"></div>';
     expect(canAutoStartGuidedTour(document)).toBe(true);
   });
 
-  /**
-   * **Do not explain to someone who is already doing it.** Measured in the installed
-   * app 2026-07-29: starting the workshop practice raised the first-visit tour over it
-   * 900ms later and physically blocked the practice's step 1 ("give it a name"). The
-   * practice band is a non-blocking band rather than a modal, so it matched none of the
-   * modality conditions.
-   */
+  /** A hands-on practice band is not modal, but the tour must not cover it. */
   it("does not explain a surface the user is already working through", () => {
     document.body.innerHTML =
       '<div data-testid="studio-practice-rail" data-surface-role="hands-on-guide"></div>';
@@ -78,10 +68,8 @@ describe("canAutoStartGuidedTour (stacked-transient guard)", () => {
 });
 
 /**
- * The settings dock is non-modal and has no `aria-modal`. But the fact that "the user
- * is in conversation with another surface" is unchanged — this guard's criterion is
- * not modality but **where the attention is**, so a marker has to bridge the place
- * where the attribute was lost.
+ * The settings dock is non-modal, but the guard follows where attention is, so a marker
+ * bridges the missing `aria-modal`.
  */
 describe("settings dock blocking", () => {
   it("blocks auto start while the settings-dock marker is present", () => {
@@ -92,7 +80,7 @@ describe("settings dock blocking", () => {
   });
 
   it("allows auto start again after the dock closes", () => {
-    // This guard also looks at document focus (so guidance is not fired into a background tab).
+    // The guard also reads document focus, so guidance is not fired into a background tab.
     vi.spyOn(document, "hasFocus").mockReturnValue(true);
     document.body.innerHTML = "";
     expect(canAutoStartGuidedTour(document)).toBe(true);

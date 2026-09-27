@@ -3,13 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useInstallNotice } from './use-install-notice';
 
-/**
- * **When an install finishes while you are on another screen, say so.**
- *
- * Storing "completion while closed" in Rust revived it for **someone who came back**. This hook is the
- * other side — **telling them to come back.**
- */
-
 let emit: ((progress: unknown) => void) | null = null;
 
 vi.mock('./acp-doctor', async () => {

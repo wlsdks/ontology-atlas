@@ -62,10 +62,8 @@ describe("useGuidedTour", () => {
     expect(window.localStorage.getItem(TEST_KEY)).toBe("skipped");
   });
 
-  // Even while anchor resolvability fluctuates moment to moment (a selection folds the
-  // utility lane and `recent` vanishes), the progress denominator must stay the
-  // persona's fixed journey (7 for non-developers). Blocks the regression where "5/5"
-  // is followed by "5/6".
+  // While anchor resolvability fluctuates, the denominator stays the persona's fixed journey,
+  // so "5/5" is never followed by "5/6".
   it("keeps the display denominator (personaSteps) fixed while anchor resolvability fluctuates", () => {
     let resolvable = true;
     const { result, rerender } = renderHook(
@@ -81,14 +79,12 @@ describe("useGuidedTour", () => {
     expect(result.current.personaSteps).toHaveLength(7);
     expect(result.current.personaStepIndex).toBe(0);
 
-    // Even if the testid anchors (recent, relations) all become momentarily
-    // unresolvable — shrinking visibleSteps — the displayed journey stays at 7.
     resolvable = false;
     rerender({ hasSelection: true });
     expect(result.current.visibleSteps.length).toBeLessThan(7);
     expect(result.current.personaSteps).toHaveLength(7);
 
-    // Only on the dev branch does it become 8 — the user explicitly chose one more step.
+    // Only the dev branch makes it 8.
     resolvable = true;
     rerender({ hasSelection: true });
     act(() => result.current.chooseDevBranch());
@@ -97,13 +93,10 @@ describe("useGuidedTour", () => {
     expect(result.current.personaStepIndex).toBe(7);
   });
 
-  // Regression 2026-07-26 — deciding the card's [next]/[done] label from the
-  // `visibleSteps` length lies on the datasheet step. There, the open detail panel
-  // hides the anchors of later steps (INDEX, spotlight) and the list is cut off, but
-  // `advance()` closes the panel, re-reads the DOM, and moves on. By length, [done]
-  // was drawn at 5/7 and pressing it ended the tour early.
+  // On the datasheet step the open panel hides later anchors, but `advance()` closes it and
+  // moves on, so [done] must not come from the `visibleSteps` length.
   it("does not treat the datasheet step as final even at the end of the list", () => {
-    // Models the state where only the datasheet anchor resolves and later anchors are hidden.
+    // Only the datasheet anchor resolves; later anchors are hidden.
     const canResolveAnchor = (anchor: TourAnchor) =>
       anchor === null ||
       anchor.type === "canvas-node" ||
@@ -130,7 +123,7 @@ describe("useGuidedTour", () => {
     const { result } = setup();
     act(() => result.current.start());
     expect(result.current.isFinalStep).toBe(false);
-    // The non-developer journey ends at recent — the next page (agent) is dev-persona only.
+    // The non-developer journey ends at recent; agent is dev-persona only.
     for (let i = 0; i < 8 && result.current.step?.id !== "recent"; i += 1) {
       act(() => result.current.advance());
     }
@@ -189,13 +182,8 @@ describe("useGuidedTour", () => {
   });
 
   it("still reaches the datasheet step when its DOM anchor only resolves after the commit that flips hasSelection (commit-race regression)", async () => {
-    // Regression: React finishes the render that flips `hasSelection` BEFORE
-    // committing the new DOM (the datasheet panel mounts in that same
-    // commit). The `visibleSteps` memo evaluated during that render still
-    // sees the OLD DOM (no panel yet), so if the auto-advance effect used
-    // that stale memo it would skip straight past "datasheet". Model the
-    // pre-commit/post-commit gap explicitly with a resolver flag that only
-    // flips true right after the `hasSelection` rerender.
+    // React renders the `hasSelection` flip before committing the datasheet panel, so an
+    // auto-advance using that render's memo would skip "datasheet". The flag models the gap.
     let panelMounted = false;
     const canResolveAnchor = (anchor: TourAnchor) => {
       if (anchor && anchor.type === "testid" && anchor.value === "map-detail-panel") {
@@ -214,8 +202,7 @@ describe("useGuidedTour", () => {
     act(() => result.current.advance()); // relations -> try-click
     expect(result.current.step?.id).toBe("try-click");
 
-    // The render that flips hasSelection happens with the panel NOT yet
-    // resolvable (pre-commit) — then the "commit" lands right after.
+    // The flip renders with the panel not yet resolvable; the commit lands right after.
     rerender({ hasSelection: true });
     panelMounted = true;
 
@@ -231,17 +218,13 @@ describe("useGuidedTour", () => {
     act(() => result.current.advance()); // nodes -> relations
     act(() => result.current.advance()); // relations -> try-click
     expect(result.current.step?.id).toBe("try-click");
-    // hasSelection stayed true the whole time (no false->true transition) — no auto-advance.
+    // hasSelection stayed true throughout, so no auto-advance.
     expect(result.current.step?.id).toBe("try-click");
   });
 
   it("calls onLeaveDatasheet exactly once when advancing past the datasheet step, not on other transitions", async () => {
-    // Regression: leaving a real node selection open while the tour moved on
-    // to "index"/"recent" made the map's node-focus mode collapse the
-    // utility lane (including the spotlight toggle 7th step anchors), making
-    // the "recent" step — and the dev-branch step behind it — permanently
-    // unreachable. `onLeaveDatasheet` is the hook's way of asking the host
-    // to release the selection at exactly the right moment.
+    // A selection left open past the datasheet collapses the utility lane that later steps
+    // anchor on; `onLeaveDatasheet` asks the host to release it at the right moment.
     const onLeaveDatasheet = vi.fn();
     const { result, rerender } = renderHook(
       ({ hasSelection }: { hasSelection: boolean }) =>
@@ -259,21 +242,18 @@ describe("useGuidedTour", () => {
     act(() => result.current.advance()); // relations -> try-click
     expect(onLeaveDatasheet).not.toHaveBeenCalled();
 
-    rerender({ hasSelection: true }); // simulates the click — auto-advances to datasheet
+    rerender({ hasSelection: true }); // Simulates the click; auto-advances to datasheet.
     await waitFor(() => {
       expect(result.current.step?.id).toBe("datasheet");
     });
     expect(onLeaveDatasheet).not.toHaveBeenCalled();
 
-    act(() => result.current.advance()); // requests the host release the selection
+    act(() => result.current.advance()); // Asks the host to release the selection.
     expect(onLeaveDatasheet).toHaveBeenCalledTimes(1);
-    // Still on datasheet — the transition waits for `hasSelection` to
-    // actually settle false (mirrors how HomePage's `handleClose` flows
-    // back through a prop, not synchronously inside the callback).
+    // Still on datasheet until `hasSelection` settles false through the prop.
     expect(result.current.step?.id).toBe("datasheet");
 
-    // The host (HomePage, in production) reacts to onLeaveDatasheet by
-    // clearing the selection, which flows back in as `hasSelection: false`.
+    // The host clears the selection, which flows back as `hasSelection: false`.
     rerender({ hasSelection: false });
     await waitFor(() => {
       expect(result.current.step?.id).toBe("index");
@@ -294,9 +274,8 @@ describe("useGuidedTour", () => {
   });
 
   it("reports devBranchAvailable=false and finishes as 'done' (not a welcome reset) when the agent anchor can't resolve", () => {
-  // Measured regression guard 2026-07-23 — for a user who had already dismissed the
-  // first-run card (`first-run-starter`), "I'm a developer →" jumped to an
-  // unresolvable stepId and silently reset to the first step (welcome), forming a loop.
+  // "I'm a developer" after a dismissed first-run card must not jump to an unresolvable step and
+  // reset to welcome.
     const { result } = renderHook(() =>
       useGuidedTour({
         hasSelection: true,
@@ -325,8 +304,8 @@ describe("useGuidedTour", () => {
   it("advancing past the last visible step finishes the tour as 'done'", () => {
     const { result } = setup(true);
     act(() => result.current.start());
-    // walk to the very last linear step (recent) — 7 steps once selection exists
-    // (welcome, nodes, relations, try-click, datasheet, index, recent)
+    // Walk to the last linear step (recent): welcome, nodes, relations, try-click, datasheet,
+    // index, recent.
     for (let i = 0; i < 6; i += 1) {
       act(() => result.current.advance());
     }
@@ -337,10 +316,7 @@ describe("useGuidedTour", () => {
   });
 });
 
-/**
- * Destination guides (docs, workshop, and so on) swap only the step array into **the
- * same state machine** — this test pins that no second guidance system was built.
- */
+/** Destination guides swap only the step array into the same state machine. */
 describe("useGuidedTour with injected steps", () => {
   const DEST_KEY = "guided-tour:docs:v1:test";
   const steps = [

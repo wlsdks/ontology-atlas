@@ -6,7 +6,7 @@ interface MockVault {
   status: string;
   manifest: { docs: unknown[] } | null;
   errorMessage: string | null;
-  /** The **variant** of the failure. For variants that leak no raw string, this value is the only meaning. */
+  /** For codes that leak no raw string, this value is the only meaning. */
   errorCode?: 'root-rejected' | 'path-missing' | 'permission-denied' | 'access-failed' | null;
   handle?: { name: string } | null;
   open: ReturnType<typeof vi.fn>;
@@ -20,9 +20,9 @@ const mocks = vi.hoisted(() => ({
   desktop: true,
   rootPath: '/Users/dana/my-product' as string | null,
   requestAgentChat: vi.fn(),
-  /** What the native project picker returns; `null` is a cancel, which must never be a failure. */
+  /** `null` is a cancel, which must never be a failure. */
   pickedProject: '/Users/dana/my-product' as string | null,
-  /** Names directly under the chosen project — decides "create" versus "continue in". */
+  /** Decides "create" versus "continue in". */
   projectEntries: ['src', 'package.json'] as string[],
   ensureChildDir: vi.fn(async (_root: string, _name: string) => undefined),
   openRecent: vi.fn(async (_record: { desktopRootPath?: string }) => undefined),
@@ -63,11 +63,10 @@ vi.mock('@/shared/lib/tauri-vault-fs', async () => {
   };
 });
 
-// The starter body's language follows the screen's, and the hook reads `useLocale()`,
-// so this unit test — which runs without an intl provider — needs a locale stub.
+// The hook reads `useLocale()` for the starter language, and this test has no intl provider.
 vi.mock('next-intl', () => ({
   useLocale: () => 'ko',
-  // Checks **which string was chosen**, not the string itself — the key is returned verbatim.
+  // The key is returned verbatim, so tests check which string was chosen.
   useTranslations: () => (key: string) => key,
 }));
 
@@ -96,9 +95,8 @@ describe('useFirstRunStarter', () => {
     window.sessionStorage.removeItem(FIRST_RUN_STARTER_DISMISSED_KEY);
   });
   afterEach(() => {
-    // ⚠️ Explicit, because the handoff effect below is the one thing in this hook that reaches
-    // outside itself. A hook left mounted keeps watching a vault the next test is still setting
-    // up, and 「did the door fire」 stops meaning anything.
+    // Explicit, because the handoff effect reaches outside the hook: a hook left mounted watches the
+    // next test's vault and the door-fired assertions stop meaning anything.
     cleanup();
     window.sessionStorage.removeItem(FIRST_RUN_STARTER_DISMISSED_KEY);
   });
@@ -149,8 +147,7 @@ describe('useFirstRunStarter', () => {
       await result.current.createVault();
     });
 
-    // Walkthrough 2026-07-26 — the INDEX's "create a new vault" also produces a starter
-    // in the screen's language (the same result as the checklist and docs CTAs).
+    // The starter is written in the screen's language.
     expect(mocks.vault.open).toHaveBeenCalledWith({ starter: { locale: 'ko', shape: undefined } });
     expect(result.current.errorText).toBeNull();
   });
@@ -188,9 +185,7 @@ describe('useFirstRunStarter', () => {
   });
 
   it('yields Escape to the guided tour while its overlay is open (no silent permanent dismiss)', () => {
-  // Measured regression guard 2026-07-23 — a card covered beneath the tour scrim
-  // swallowed Escape in the capture phase and was permanently dismissed, while the
-  // tour's `close-tour` ladder rung never received that keypress.
+  // A card beneath the tour scrim must not swallow Escape in the capture phase.
     const overlay = document.createElement('div');
     overlay.setAttribute('data-testid', 'guided-tour-overlay');
     document.body.appendChild(overlay);
@@ -222,10 +217,7 @@ describe('useFirstRunStarter', () => {
 
 describe('first-run card states failures it can explain', () => {
   /*
-   * Review 2026-08-16: "not a valid root" and "the folder is gone" deliberately leave
-   * `errorMessage` null so no raw string reaches the screen. But this card looked only
-   * at that value, so in both cases it **said nothing at all**. Silence on screen while
-   * the code knows the meaning is worse than leaking the raw string.
+   * Codes that leave `errorMessage` null must still produce a sentence rather than silence.
    */
   beforeEach(() => {
     mocks.vault = makeVault();
@@ -246,11 +238,6 @@ describe('first-run card states failures it can explain', () => {
     expect(result.current.errorText).toBe('errorPathMissing');
   });
 
-  /*
-   * ⚠️ Owner, 2026-08-24, on the repeating macOS consent dialog. The dialog is the OS's, but what
-   * happened when somebody declined it was ours: `Operation not permitted (os error 1)` on screen —
-   * an errno, no folder named, and no hint that the fix is a checkbox in System Settings.
-   */
   it('states where to allow access for an OS-blocked folder instead of the raw error', () => {
     mocks.vault.errorCode = 'permission-denied';
     mocks.vault.errorMessage = 'Operation not permitted (os error 1)';
@@ -264,17 +251,11 @@ describe('first-run card states failures it can explain', () => {
   it('shows a sentence for other failures and moves the raw error to detail', () => {
     mocks.vault.errorCode = 'access-failed';
     const { result } = renderHook(() => useFirstRunStarter());
-    // `access-failed` is the one code that carries a cause string. With nothing to recognise it
-    // falls back to the card's own sentence rather than showing a blank line.
+    // `access-failed` carries a cause string; unrecognised, it falls back to the card's sentence.
     expect(result.current.errorText).toBe('errorFallback');
     expect(result.current.errorDetail).toBeNull();
   });
 
-  /*
-   * Re-inspection before v1.2.2, S20: this branch handed `vault.errorMessage` to the card, which
-   * printed it as a "quiet clue" beneath the Korean sentence — the cause string in English on a
-   * Korean screen, while `no-raw-error-copy` stayed green.
-   */
   it('never puts the raw access-failed English into the message', () => {
     mocks.vault.errorCode = 'access-failed';
     mocks.vault.errorMessage = 'Tauri command failed: EPIPE writing manifest';
@@ -310,9 +291,7 @@ describe('build a map from my code', () => {
   });
 
   /*
-   * ⚠️ The load-bearing test of this whole flow (owner direction, 2026-08-24). The map now lands
-   * *inside* the chosen project, so pressing the door writes a folder into somebody's source tree.
-   * `local-first.md` allows nothing about their disk to happen silently: choosing must only look.
+   * The map lands inside the chosen project, so choosing must only look (`local-first.md`).
    */
   it('creates nothing on project pick and shows the path first', async () => {
     const { result } = renderHook(() => useFirstRunStarter());
@@ -348,7 +327,7 @@ describe('build a map from my code', () => {
 
     expect(mocks.requestAgentChat).toHaveBeenCalledTimes(1);
     const prompt = mocks.requestAgentChat.mock.calls[0][1] as string;
-    // The code to survey is the **project**, not the vault Atlas just created inside it.
+    // The code to survey is the project, not the vault Atlas created inside it.
     expect(prompt).toContain('/Users/dana/my-product');
     // The order is the contract: survey, then propose, then write.
     expect(prompt.indexOf('analyze_repo_structure')).toBeLessThan(
@@ -356,12 +335,6 @@ describe('build a map from my code', () => {
     );
   });
 
-  /*
-   * ⚠️ Measured on the installed app, 2026-08-25. Picking an existing `atlas` folder as "the
-   * project" produced `…/atlas/atlas` on screen and offered to create it. Nothing crashes, but a
-   * confirmation that proposes nonsense with a straight face is one people stop reading — fatal for
-   * a step whose entire job is to be read.
-   */
   it('moves up one level when the atlas folder itself was chosen and says so', async () => {
     mocks.pickedProject = '/Users/dana/my-product/atlas';
     const { result } = renderHook(() => useFirstRunStarter());
@@ -400,10 +373,6 @@ describe('build a map from my code', () => {
     expect(mocks.ensureChildDir).not.toHaveBeenCalled();
   });
 
-  /*
-   * A read-only checkout, a folder the person needs to unlock. Staying on `confirm` keeps the path
-   * and the button on screen, so a failure they can fix is one press from retrying.
-   */
   it('stays and states the reason when creation fails without opening the vault or chat', async () => {
     mocks.ensureChildDir.mockRejectedValueOnce(new Error('permission denied'));
     const { result } = renderHook(() => useFirstRunStarter());
@@ -415,8 +384,7 @@ describe('build a map from my code', () => {
     });
 
     expect(result.current.build.stage).toBe('confirm');
-    // The OS refusal is recognised as a code; `failures.permission-denied` is the sentence the
-    // dialog shows, and the raw errno never reaches the screen (B2).
+    // The OS refusal is recognised as a code, and the raw errno never reaches the screen.
     expect(result.current.build.errorText).toBe('permission-denied');
     expect(result.current.build.location?.displayPath).toBe('/Users/dana/my-product/atlas');
     expect(
@@ -436,8 +404,7 @@ describe('build a map from my code', () => {
     await act(async () => {
       await result.current.build.confirm();
     });
-    // Drawn nowhere on the web, and refused here too — a request that arrived some other way
-    // still must not promise a conversation that cannot open.
+    // Refused here too, so a request that arrived another way cannot promise a chat that cannot open.
     expect(mocks.requestAgentChat).not.toHaveBeenCalled();
   });
 });

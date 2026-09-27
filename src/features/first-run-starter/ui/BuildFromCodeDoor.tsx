@@ -14,24 +14,10 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 import type { useBuildFromCode } from '../model/use-build-from-code';
 
 /**
- * The 「make a map from my code」 door, and the step that shows where the folder will go.
- *
- * ⚠️ **Why this is a component and not markup inside the card** (owner correction, 2026-08-24).
- * The door first shipped inside the first-run card, whose visibility is `sampleModeSettled` — and
- * that is gated on `recentVaults.length === 0`, "this computer has never opened a folder". The owner
- * named the mistake exactly: *"shouldn't it be person B who has opened folders many times and still
- * hasn't made one?"* Someone who opened a folder, saw an empty map, and gave up has opened folders
- * **more** than a first-timer, and the old rule hid this door from precisely the person it was built
- * for. Repeated opening is evidence of struggling, not of being finished.
- *
- * "Never connected" is still the right rule for *browsing guidance* — the sample switch and the
- * tour teach someone who has not looked around yet, and pushing that at a returning person is
- * noise. It is the wrong rule for *unfinished work*. So the two conditions separate here: the card
- * keeps its rule, and this door follows "hasn't built one yet" wherever that person is.
- *
- * `variant` carries that split. `card` is the full-width action inside first run; `row` is the quiet
- * line above the INDEX for someone who already has a vault and no map in it — deliberately smaller,
- * because it sits beside their own data and must not out-shout it.
+ * The 「make a map from my code」 door. It follows "has not built a map yet", not the first-run
+ * card's "never opened a folder": repeated opening is struggling, not being finished. `card` is
+ * the full-width first-run action; `row` is the quiet line above an INDEX that has a vault but
+ * no map, smaller so it does not out-shout the person's data.
  */
 export interface BuildFromCodeDoorProps {
   build: ReturnType<typeof useBuildFromCode>;
@@ -44,12 +30,8 @@ export function BuildFromCodeDoor({ build, variant, disabled = false }: BuildFro
   const failureSentence = useFailureSentence();
   const busy = build.stage === 'choosing' || build.stage === 'creating';
   /*
-   * ⚠️ `build.errorText` is a **failure code**, not a sentence — `use-build-from-code.ts` returns
-   * `failureCodeOf(err) ?? ''`. Until this line was converted it rendered that token raw, so a
-   * folder-pick refused by macOS printed the literal `permission-denied` onto a Korean screen
-   * (re-inspection before v1.2.2, R3). Its sibling `BuildFromCodeConfirmDialog` was converted with
-   * the other eight consumers in the same change and this one was not, which is why the gate that
-   * change shipped now also watches the `a || t(…)` spelling and not only `err.message ? …`.
+   * `build.errorText` is a failure code (`failureCodeOf(err) ?? ''`), never a sentence, so it is
+   * looked up rather than rendered raw.
    */
   const failure =
     build.errorText !== null ? failureSentence(build.errorText, t('buildFromCodeFailed')) : null;
@@ -64,14 +46,10 @@ export function BuildFromCodeDoor({ build, variant, disabled = false }: BuildFro
           void build.chooseProject();
         }}
         /*
-         * Hover comes from the axes, not from hand-written `hover:` literals. The adoption ratchet
-         * counts those and its whole point is that they may fall and never rise.
+         * Hover comes from the axes; the adoption ratchet counts hand-written `hover:` literals.
          */
         /*
-         * ⚠️ The two variants differ by the `size` **axis**, not by hand-written heights and type.
-         * Writing `h-8 … text-body` / `h-7 … text-caption` in `className` bypassed the axis system
-         * and fought the compound variants that already set height, padding, gap and type for a card
-         * at each size — which is what composing it oddly looked like on screen.
+         * The variants differ by the `size` axis; hand-written heights fight the compound variants.
          */
         className={controlClass({
           shape: 'card',
@@ -89,28 +67,18 @@ export function BuildFromCodeDoor({ build, variant, disabled = false }: BuildFro
       </button>
 
       {/*
-        ⚠️ **The path is shown before anything is written** (owner direction, 2026-08-24). The map
-        now lands inside the chosen project, so this press ends in a folder written into somebody's
-        source tree. `local-first.md` allows nothing about their disk to happen silently, and a path
-        a person never saw is not a path they agreed to — so the exact location is on screen, in a
-        face they can compare against a shell, before the button that creates it.
-      */}
+       * The path is shown before anything is written into the person's source tree
+       * (`local-first.md`), in a face they can compare against a shell.
+       */}
       {/*
-        The path and the confirm live in a centred dialog, not here. Cramming a warning, an
-        explanation, an absolute path and two controls into a ~240px column produced mid-token path
-        wraps and two-line buttons, and stacked a bordered block under a bordered button inside a
-        bordered panel — three rectangles of equal weight. See `BuildFromCodeConfirmDialog`.
-      */}
+       * The path and the confirm live in `BuildFromCodeConfirmDialog`, not this narrow column.
+       */}
       <BuildFromCodeConfirmDialog build={build} />
 
       {build.location === null && failure !== null ? (
         /*
-         * A failure before a project is chosen has no dialog to live in — the dialog opens on a
-         * location, and there is none. Without this the button simply did nothing and the person
-         * pressed it again.
-         *
-         * `data-failure-detail` is where the machine half goes: a developer reads the attribute,
-         * a reader reads the sentence.
+         * A failure before a project is chosen has no dialog to live in, so it is said here.
+         * `data-failure-detail` carries the machine half.
          */
         <p
           data-testid={variant === 'card' ? 'first-run-build-error' : 'index-build-error'}
@@ -120,7 +88,7 @@ export function BuildFromCodeDoor({ build, variant, disabled = false }: BuildFro
           {failure.sentence}
         </p>
       ) : variant === 'card' ? (
-        /* What will actually happen, before it happens — including that it asks before writing. */
+        /* Says what will happen, including that it asks before writing. */
         <p className="mt-1 break-keep text-caption leading-caption text-[color:var(--map-panel-text-quaternary)]">
           {t('buildFromCodeHint')}
         </p>

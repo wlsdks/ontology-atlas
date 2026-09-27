@@ -36,12 +36,7 @@ describe("useGuidedTourAutoStartReady", () => {
     expect(ready()).toBe(true);
   });
 
-  /**
-   * Measured defect (2026-07-26): the old condition was `mode === 'static'`, so
-   * choosing a folder switched to local mode and **the tour was never received at all** —
-   * even though the map, INDEX, and datasheet the tour explains are the same screen in
-   * both modes.
-   */
+  /** The tour explains the same screen in local mode, so a loaded folder is ready too. */
   it("is ready once a chosen folder loads", () => {
     mocks.mode = "local";
     mocks.vault = { status: "loaded", restoreAttempted: true };

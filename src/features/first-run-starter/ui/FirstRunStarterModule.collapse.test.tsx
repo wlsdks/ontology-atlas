@@ -6,17 +6,8 @@ import koMessages from "../../../../messages/ko.json";
 import { FirstRunStarterModule } from "./FirstRunStarterModule";
 
 /**
- * The first-run card **collapses once the map is being used** (owner, 2026-08-19:
-   * "It stays stuck on the left and looks bad, so it needs improvement" — it looks bad with
-   * this stuck on the left the whole time; it needs improving).
- *
- * What this check protects is not "it collapses" but **"it collapses and can be
- * brought back"**. Collapsing with no way back is not an improvement, it is deleting
- * a feature. So both directions are measured — including that it stays expanded while
- * nothing has been selected.
- *
- * Why mocks rather than providers, and how, follows the idiom of its sibling file
- * (`FirstRunStarterModule.glossary.test.tsx`).
+ * The card collapses once the map is in use and can be brought back; both directions are
+ * measured. Mocks follow `FirstRunStarterModule.glossary.test.tsx`.
  */
 const mocks = vi.hoisted(() => ({
   vault: {

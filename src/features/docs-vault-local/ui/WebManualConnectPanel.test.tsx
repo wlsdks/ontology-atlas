@@ -1,12 +1,6 @@
 /**
- * Locks that "connect" in a web session **finishes in place**.
- *
- * It targets the two previous defects:
- * ① the card understated the capability, saying "you cannot connect from this screen"
- * ② the only alternative was a documentation link, so someone trying to connect lost the sheet
- *
- * So what is protected here is not "there is an input box" but **whether what was copied is directly
- * runnable** — a config still holding a placeholder must not be copyable.
+ * Connecting from the web finishes in place: what is copied must be runnable, so a config still
+ * holding a placeholder is not copyable.
  */
 import { describe, expect, it } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
@@ -15,7 +9,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { useAgentClientControls, type AgentClientControlsProps } from './AgentClientButtons';
 
 // The smallest host for the hook: with no launchable server it returns the degradation card
-// plus the by-hand panel, which is exactly the surface this file measures.
+// plus the by-hand panel.
 function AgentClientButtons(props: AgentClientControlsProps) {
   const { serverUnavailable, controls } = useAgentClientControls(props);
   return <div data-testid="agent-client-buttons">{controls ? null : serverUnavailable}</div>;
@@ -44,11 +38,8 @@ describe('WebManualConnectPanel manual path entry', () => {
   });
 
   /*
-   * Design-lead finding, 2026-09-05: `/mcp` carries the page's own tab bar directly above this
-   * panel, and the tool row underneath was a second `role="tablist"` — one screen announcing two
-   * tab lists. Measured on `/en/mcp/` with a folder open: two tablists, "MCP sections" and
-   * "Your tool". The inner one does not switch a section of the page; it parameterises one config
-   * block, which is a radiogroup.
+   * `/mcp` carries the page's own tab bar above this panel; the client row parameterises one
+   * config block, so it is a radiogroup, not a second tablist.
    */
   it('uses a radiogroup rather than a second tablist for the client choice', () => {
     renderPanel();
@@ -63,9 +54,7 @@ describe('WebManualConnectPanel manual path entry', () => {
   });
 
   /*
-   * The `role="tab"` chips carried no key handler at all, so the role promised arrow-key
-   * movement that never happened — the failure `use-roving-radio-group.ts` measured across 18
-   * groups. Going through `SegmentedControl` brings the behaviour with the container.
+   * Going through `SegmentedControl` brings arrow-key movement with the radiogroup role.
    */
   it('moves between clients with arrow keys', () => {
     renderPanel();
@@ -142,10 +131,8 @@ describe('WebManualConnectPanel manual path entry', () => {
 
   it('states that only the path shape is checked', () => {
     /*
-     * Assert against the message itself, not a hand-typed excerpt of it. The old
-     * regex pinned two fragments of the sentence, so rewording the copy — even into
-     * plainer Korean that says exactly the same thing — turned this red while the
-     * screen was fine. `documentation.md`: never pin a sentence a human wrote.
+     * Assert against the message itself, not a typed excerpt (`documentation.md`: never pin a
+     * sentence a human wrote).
      */
     renderPanel();
     expect(screen.getByTestId('web-manual-connect-shape-only').textContent).toContain(
@@ -170,11 +157,10 @@ describe('AgentClientButtons web fallback is not a dead end', () => {
     );
     const card = screen.getByTestId('agent-server-unavailable');
     expect(card.textContent).not.toMatch(/연결할 수 없어요/);
-    // It names precisely one thing as impossible: saving the file automatically.
+    // It names exactly one thing as impossible: saving the file automatically.
     expect(card.textContent).toMatch(/설정 파일을 대신 저장하지 못해요/);
-    // The app remains the easier path — it simply no longer says the web is blocked.
+    // The app remains the easier path.
     expect(screen.getByTestId('agent-connect-web-get-app')).toBeInTheDocument();
-    // The primary path is this slot.
     expect(screen.getByTestId('web-manual-connect')).toBeInTheDocument();
   });
 });
