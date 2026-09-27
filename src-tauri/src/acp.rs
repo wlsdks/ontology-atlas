@@ -4087,6 +4087,9 @@ mod npx_cache_tests {
         let home = scratch("direct");
         let entry = plant_adapter(&home, "0.69.0");
         let mut launch = npx_launch(CLAUDE_SPEC);
+        launch
+            .args
+            .insert(1, "--before=2026-01-01T00:00:00.000Z".to_string());
         launch.args.push("--acp".to_string());
         launch.path_env = "/opt/node/bin".to_string();
 
