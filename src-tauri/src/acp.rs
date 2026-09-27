@@ -702,6 +702,9 @@ pub(crate) fn launch_from_npx_cache(
     home: Option<&Path>,
     is_executable: &dyn Fn(&Path) -> bool,
 ) -> Option<AcpLaunch> {
+    if !cfg!(unix) {
+        return None;
+    }
     let package = npx_launch_package(launch)?;
     let (name, pinned) = package
         .rsplit_once('@')
@@ -3953,6 +3956,7 @@ mod npx_cache_tests {
         entry
     }
 
+    #[cfg(unix)]
     #[test]
     fn a_ready_entry_launches_its_pinned_bin_without_npm_exec() {
         let home = scratch("direct");
