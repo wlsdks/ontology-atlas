@@ -1857,7 +1857,19 @@ A closed graph must not keep a drawing loop running. The Dialog reads system mot
 
 ## Wiki question report — editorial evidence grammar (2026-09-27)
 
-The Wiki question desk uses the same Atlas shell as other workbenches. Once a
+The Wiki question desk uses the same Atlas shell as other workbenches. Its entry
+is a bounded question composer followed by actual inventoried originals. Source
+rows open the file without inventing a citation or reading it in the background.
+The entry headline uses the existing hero type/leading step, and the search
+button uses the small control step inside the input's shared frame. Counts name
+the folder inventory until an actual search can report coverage. A large bare
+field uses the existing body-lg type and leading pair; the parent still owns its
+box and dimensions. Source rows carry directory size/format and the observed
+Wiki citation count, without interpreting those facts as evidence quality. Entry,
+no-match,
+activity, and report states share one outer content edge. A failed or active
+agent receipt stays visible in that grid with a conversation action; completed
+reading receipts do not reserve a separate banner above the question. Once a
 report arrives, its question is the sole visible headline; the search form becomes
 an explicit Edit question control. Answer prose stays within the document measure.
 The report may span 1120px by combining two existing `--measure-note-column` widths:
@@ -1894,13 +1906,14 @@ keeping its open state and focus through ACP completion. Reduced motion removes
 travel without removing any content or feedback. Motion starts from the action
 that caused it and never delays the answer or blocks another press.
 
-Reference calibration: [Apple layout](https://developer.apple.com/design/human-interface-guidelines/layout)
-puts the important fact early in reading order and uses alignment to show
-relationships; [Carbon typography](https://preview.carbondesignsystem.com/building-blocks/foundations/typography/style-strategies)
-separates productive controls from editorial reading; [NotebookLM](https://blog.google/innovation-and-ai/technology/ai/notebooklm-google-ai/)
-and [Notion Enterprise Search](https://www.notion.com/help/enterprise-search)
-keep a path from an answer back to its source. Atlas's local originals,
-unreviewed status, omissions, and explicit write approval remain its own rules.
+Reference calibration for the entry redesign uses the composable label, input,
+action, and empty-state patterns in [shadcn/ui](https://ui.shadcn.com/docs/components/empty)
+and [Radix Themes](https://www.radix-ui.com/themes/docs/components/text-area).
+Their repository licenses were checked on 2026-09-27: [shadcn MIT](https://github.com/shadcn-ui/ui/blob/main/LICENSE.md)
+and [Radix MIT](https://github.com/radix-ui/themes/blob/main/LICENSE). The selected
+mock uses only Atlas screenshots as visual input. Its composition is authored
+for Atlas and implemented with existing Atlas primitives and tokens; no external
+code, screenshots, logos, fonts, or assets are copied into this surface.
 
 ## Absolute rules (Don'ts)
 

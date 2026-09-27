@@ -48,7 +48,10 @@ response, cited addresses, search coverage and omissions in a local Markdown
 download or the app's Print/Save as PDF flow. Jev judgment is not exported as
 accepted meaning. External links and images stay inert in Markdown exports;
 unusual syntax that cannot be safely rewritten is preserved as a literal text
-document. Search completion, report arrival and evidence expansion use
+document. Before searching, the desk shows inventoried originals that can be
+opened directly without an agent or an invented citation. A failed agent action
+stays visible beside the question with a path back to the conversation. Search
+completion, report arrival and evidence expansion use
 brief, interruptible motion; reduced-motion settings preserve every fact.
 
 **Retained questions and explicit revisions.** The Library landing lists saved

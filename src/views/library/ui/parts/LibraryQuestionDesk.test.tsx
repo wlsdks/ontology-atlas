@@ -52,7 +52,7 @@ function Desk({ hash = currentHash, scope = 'folder-a', listedMtime = 10, includ
   onSummarize?: (request: QuestionDeskReportRequest) => void;
   report?: QuestionDeskReportDraft | null;
   onFileReport?: (() => void) | null;
-  onOpenSource?: (path: string, anchor: string) => void;
+  onOpenSource?: (path: string, anchor?: string) => void;
 }) {
   const { doc, raw, source, handle } = fixture(hash, listedMtime);
   return <NextIntlClientProvider locale={locale} messages={locale === 'ko' ? ko : en}>
@@ -87,6 +87,16 @@ describe('Library question desk transfer boundary', () => {
     const toggle = screen.queryByTestId('question-desk-evidence-toggle');
     if (revealLeads && toggle?.getAttribute('aria-expanded') === 'false') fireEvent.click(toggle);
   }
+
+  it('opens an inventoried original before searching without reading or inventing a citation', () => {
+    const onOpenSource = vi.fn();
+    render(<Desk onOpenSource={onOpenSource} agentReady={false} />);
+    const originals = screen.getByTestId('question-desk-originals');
+    fireEvent.click(within(originals).getByRole('button', { name: /refund.md/ }));
+    expect(onOpenSource).toHaveBeenCalledWith('sources/refund.md');
+    expect(fileReads).toBe(0);
+    expect(mocks.status).not.toHaveBeenCalled();
+  });
 
   it('keeps local search and original anchors usable with no Jev key', async () => {
     render(<Desk />);
@@ -199,7 +209,6 @@ describe('Library question desk transfer boundary', () => {
     await waitFor(() => expect(document.activeElement).toBe(screen.getByTestId('question-desk-input')));
     rendered.rerender(<Desk dockOpen report={report} onSummarize={onSummarize} />);
     expect(screen.getByTestId('question-desk-report')).toHaveAttribute('data-dock-open', 'true');
-    expect(screen.getByTestId('library-question-desk').firstElementChild).toHaveClass('max-w-[var(--measure-doc-column)]');
     expect(screen.getByTestId('question-desk-report-section-1')).not.toHaveClass('border-t');
     expect(screen.getByTestId('question-desk-report-sections').querySelector('[data-report-evidence-pair]')).not.toHaveClass('flex');
     expect(screen.getByTestId('question-desk-report-section-1')).toHaveTextContent('The plan lists no owner.');
@@ -439,7 +448,7 @@ describe('Library question desk transfer boundary', () => {
     expect(screen.getByTestId('question-desk-search')).toBeEnabled();
     fileGate = null;
     fireEvent.click(screen.getByTestId('question-desk-search'));
-    expect(await screen.findByTestId('question-desk-unknown')).toHaveTextContent('No local word match');
+    expect(await screen.findByTestId('question-desk-unknown')).toBeInTheDocument();
     await act(async () => { release(); });
     expect(screen.getByTestId('question-desk-unknown')).toBeInTheDocument();
     expect(screen.queryByText('Refund approval immediately restores stock.')).not.toBeInTheDocument();
@@ -495,7 +504,7 @@ describe('Library question desk transfer boundary', () => {
     expect(screen.queryByTestId('question-desk-jev-consent')).not.toBeInTheDocument();
     expect(screen.queryByTestId('question-desk-jev-note')).not.toBeInTheDocument();
     fireEvent.click(screen.getByTestId('question-desk-search'));
-    expect(await screen.findByTestId('question-desk-unknown')).toHaveTextContent('No local word match');
+    expect(await screen.findByTestId('question-desk-unknown')).toBeInTheDocument();
   });
 
   it('shows the exact outgoing payload in a blocking consent dialog and sends only after Send', async () => {

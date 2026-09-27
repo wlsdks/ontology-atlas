@@ -33,7 +33,7 @@ export type {
 export { FindDocumentsDialog } from "./ui/FindDocumentsDialog";
 export { buildAskBrief } from "./lib/ask-brief";
 export { buildQuestionDeskReportBrief, planQuestionDeskReportFile, questionDeskReportFilename, serializeQuestionDeskReport, splitQuestionDeskReportSections } from './lib/question-desk-brief';
-export { countDeskReadablePages, findDeskClaims, findDeskSourceHits, jevClaimEligibility, jevPayloadEligibility, planDeskSourceReads, questionDeskListingVersion, questionDeskReportFileCurrent, questionTerms } from './lib/question-desk';
+export { countDeskReadablePages, countDeskWikiPages, findDeskClaims, findDeskSourceHits, jevClaimEligibility, jevPayloadEligibility, planDeskSourceReads, questionDeskListingVersion, questionDeskReportFileCurrent, questionTerms } from './lib/question-desk';
 export type { DeskCitation, DeskClaim, DeskSourceHit } from './lib/question-desk';
 export type { AskQuestionId } from "./lib/ask-brief";
 export { buildAnswerPage } from "./lib/answer-page";

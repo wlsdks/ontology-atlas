@@ -28,8 +28,8 @@ export interface LibraryWorkActivity {
   recent: readonly LibraryWorkEvent[];
 }
 
-export function showLibraryWorkStrip(activity: LibraryWorkActivity, questionReportVisible: boolean): boolean {
-  if (!questionReportVisible) return true;
+export function showLibraryWorkStrip(activity: LibraryWorkActivity, questionDeskVisible: boolean): boolean {
+  if (!questionDeskVisible) return true;
   if (activity.isActive || activity.current !== null) return true;
   return activity.recent[0]?.kind === 'waiting' || activity.recent[0]?.kind === 'error';
 }

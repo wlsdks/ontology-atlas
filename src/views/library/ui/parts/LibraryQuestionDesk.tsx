@@ -5,14 +5,17 @@ import { useLocale, useTranslations } from 'next-intl';
 import { motion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { FileText, Search } from 'lucide-react';
 
 import type { VaultDoc, LibrarySourceRow } from '@/entities/docs-vault';
+import { formatSourceBytes } from '@/entities/docs-vault';
 import {
   buildQuestionDeskReportBrief,
   questionDeskReportFilename,
   serializeQuestionDeskReport,
   splitQuestionDeskReportSections,
   countDeskReadablePages,
+  countDeskWikiPages,
   findDeskClaims,
   findDeskSourceHits,
   jevClaimEligibility,
@@ -29,8 +32,9 @@ import { citedPassage, sourceUnits, type SourceUnit } from '@/shared/lib/source-
 import { controlClass } from '@/shared/ui/control-class';
 import { normalizeOriginalPaths, parseWikilinkHref, resolveSourceCitation, rewriteWikilinks } from '@/shared/lib/source-citation';
 import { WIKI_CITATION_ANCHOR_PATTERN } from '@/shared/lib/wiki-page-schema';
-import { Button, Chip, Dialog, Disclosure } from '@/shared/ui';
+import { Button, Chip, Dialog, Disclosure, RowButton, RowDisclosure } from '@/shared/ui';
 import { Input } from '@/shared/ui/input';
+import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { MOTION, OVERLAY_RISE, OVERLAY_RISE_REDUCED, OVERLAY_SETTLED, STAGGER } from '@/shared/motion';
 import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion';
 import { latinEyebrowClass } from '@/shared/lib/latin-eyebrow';
@@ -234,6 +238,7 @@ export function LibraryQuestionDesk({
   onBrowse,
   onOpenWiki,
   onOpenSource,
+  workActivity = null,
 }: {
   docs: readonly VaultDoc[];
   pageTexts: ReadonlyMap<string, string>;
@@ -254,7 +259,8 @@ export function LibraryQuestionDesk({
   fileReportNote: string | null;
   onBrowse: () => void;
   onOpenWiki: (slug: string) => void;
-  onOpenSource: (path: string, anchor: string) => void;
+  onOpenSource: (path: string, anchor?: string) => void;
+  workActivity?: ReactNode;
 }) {
   const t = useTranslations('library.questionDesk');
   const locale = useLocale();
@@ -459,6 +465,17 @@ export function LibraryQuestionDesk({
     ? report : null;
   const showQuestionForm = !activeReport || editingQuestion || questionFormFocused;
   const hasLocalMatches = Boolean(displayResult && (displayResult.claims.length > 0 || displayResult.sourceHits.length > 0));
+  const startingSources = useMemo(() => [...sources].sort((a, b) => a.path.localeCompare(b.path)).slice(0, 3), [sources]);
+  const reportAction = displayResult && !activeReport ? <Button size="sm" variant="primary" disabled={!agentReady || turnRunning} onClick={() => {
+    if (!vaultRoot) return;
+    onSummarize({
+      brief: buildQuestionDeskReportBrief({ question: displayResult.question, vaultRoot, locale,
+        claims: displayResult.claims, sourceHits: displayResult.sourceHits, coverage: `${coverage} ${limits}` }),
+      question: displayResult.question, searchId: displayResult.searchId,
+      listingVersion: displayResult.listingVersion,
+      vaultScope, coverage, limits,
+    });
+  }} data-testid="question-desk-summarize">{hasLocalMatches ? t('report.summarize') : t('report.investigate')}</Button> : null;
   const downloadReport = () => {
     if (!activeReport) return;
     const markdown = serializeQuestionDeskReport(activeReport, locale, new Set(sources.map((source) => source.path)));
@@ -523,21 +540,25 @@ export function LibraryQuestionDesk({
     {fileReportNote ? <p role="alert" className="mt-2 text-label leading-label text-[color:var(--color-danger-text)]">{fileReportNote}</p> : null}
   </div> : null;
   return (
-    <div data-testid="library-question-desk" className="atlas-scroll-quiet min-h-0 flex-1 overflow-y-auto px-5 py-6 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+12px)]">
-      <div data-question-desk-container="true" className={`mx-auto w-full space-y-5 ${activeReport && !dockOpen ? 'max-w-[calc(var(--measure-note-column)+var(--measure-note-column))]' : 'max-w-[var(--measure-doc-column)]'}`}>
-        {!activeReport ? <header>
+    <div data-testid="library-question-desk" className="atlas-scroll-quiet min-h-0 flex-1 overflow-y-auto px-5 py-6 sm:px-6 lg:py-8 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+12px)]">
+      <div data-question-desk-container="true" className="mx-auto w-full max-w-[calc(var(--measure-note-column)+var(--measure-note-column))]">
+        {!activeReport ? <header className="mb-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-caption leading-caption text-[color:var(--color-text-tertiary)]">{t('eyebrow')}</p>
+            <p className="text-label leading-label text-[color:var(--color-indigo-text-soft)]">{t('eyebrow')}</p>
             <Chip className="lg:hidden" tone="muted" onClick={onBrowse} data-testid="question-desk-browse">{t('browse')}</Chip>
           </div>
-          <h2 className={displayResult ? 'sr-only' : 'mt-1 text-title font-[var(--font-weight-signature)] leading-title text-[color:var(--color-text-primary)]'}>{t('title')}</h2>
-          {!displayResult ? <p className="mt-2 text-body leading-body text-[color:var(--color-text-secondary)]">{t('intro')}</p> : null}
-        </header> : <header className="lg:hidden"><Chip tone="muted" onClick={onBrowse} data-testid="question-desk-browse">{t('browse')}</Chip></header>}
+          <RowDisclosure open={!displayResult} id="question-desk-introduction">
+            <h2 className="mt-4 max-w-[var(--measure-doc-column)] text-hero font-[var(--font-weight-signature)] leading-hero tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]">{t('title')}</h2>
+          </RowDisclosure>
+        </header> : <header className="mb-4 lg:hidden"><Chip tone="muted" onClick={onBrowse} data-testid="question-desk-browse">{t('browse')}</Chip></header>}
+        {workActivity ? <div className={activeReport ? 'mb-4' : 'mb-4 max-w-[var(--measure-doc-column)]'}>{workActivity}</div> : null}
         {showQuestionForm ? <form id="question-desk-question-form" onSubmit={(event) => { event.preventDefault(); void search(); }}
           onFocusCapture={() => setQuestionFormFocused(true)}
           onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setQuestionFormFocused(false); }}
-          className="flex flex-wrap items-end gap-2 max-sm:flex-col max-sm:items-stretch">
-          <Input ref={questionInputRef} label={t('questionLabel')} value={question} readOnly={jevSending} onChange={(event) => {
+          className="mb-5 max-w-[var(--measure-doc-column)]">
+          <div className="flex flex-wrap items-center gap-3 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 py-2 transition-colors focus-within:border-[color:var(--color-indigo-line-a54)]">
+          <Search size={ICON_SIZE.lg} className="flex-none text-[color:var(--color-text-tertiary)]" aria-hidden="true" />
+          <Input ref={questionInputRef} frame="bare" size="lg" aria-label={t('questionLabel')} placeholder={t('questionPlaceholder')} value={question} readOnly={jevSending} onChange={(event) => {
             onInvalidateReport();
             searchId.current += 1;
             jevRequestId.current += 1;
@@ -550,15 +571,36 @@ export function LibraryQuestionDesk({
             setJevSelection(null);
             setJevFinding(null);
             setJevNote(null);
-          }} className="min-w-48 flex-1 max-sm:w-full" data-testid="question-desk-input" />
-          <Button type="submit" variant={displayResult && agentReady ? 'outline' : 'primary'} className="max-sm:w-full" disabled={!question.trim() || reading || jevSending} data-testid="question-desk-search">{reading ? t('reading', { read: readCount }) : t('search')}</Button>
+          }} className="min-w-40 flex-1" data-testid="question-desk-input" />
+          <Button type="submit" size="sm" variant={displayResult && agentReady ? 'outline' : 'primary'} className="ml-auto" disabled={!question.trim() || reading || jevSending} data-testid="question-desk-search">{reading ? t('reading', { read: readCount }) : t('search')}</Button>
+          </div>
+          {!displayResult ? <p className="mt-2 text-label leading-label text-[color:var(--color-text-tertiary)]">{t('folderScope', { pages: countDeskWikiPages(docs), sources: sources.length })}</p> : null}
         </form> : null}
+        <RowDisclosure open={!displayResult && !activeReport} id="question-desk-starting-material" className="max-w-[var(--measure-doc-column)] pb-5">
+          <p className="text-reading leading-prose text-[color:var(--color-text-secondary)]">{t('intro')}</p>
+          {startingSources.length ? <section className="mt-7 border-t border-[color:var(--color-border-soft)] pt-5" data-testid="question-desk-originals" aria-labelledby="question-desk-originals-title">
+            <h3 id="question-desk-originals-title" className="mb-3 text-body font-[var(--font-weight-strong)] leading-body">{t('originalsTitle')}</h3>
+            <ul className="divide-y divide-[color:var(--color-border-soft)]">
+              {startingSources.map((source) => <li key={source.path}>
+                <RowButton size="lg" tone="muted" hoverInk="strong" hoverSurface="lift" className="w-full justify-start gap-3" title={source.path} onClick={() => onOpenSource(source.path)}>
+                  <FileText size={ICON_SIZE.lg} className="flex-none text-[color:var(--color-text-tertiary)]" aria-hidden="true" />
+                  <span className="min-w-0 flex-1 space-y-1 text-left">
+                    <span className="block truncate text-body-lg leading-body-lg text-[color:var(--color-text-primary)]">{source.name}</span>
+                    <span className="block text-label leading-label text-[color:var(--color-text-tertiary)]">{t('originalMeta', { format: source.format.toUpperCase() || 'FILE', size: formatSourceBytes(source.bytes), pages: source.citedBy.length })}</span>
+                  </span>
+                  <span className="flex-none text-label leading-label text-[color:var(--color-text-tertiary)]">{t('readOriginal')}</span>
+                </RowButton>
+              </li>)}
+            </ul>
+            {sources.length > startingSources.length ? <p className="mt-2 text-label leading-label text-[color:var(--color-text-tertiary)]">{t('otherOriginals', { count: sources.length - startingSources.length })}</p> : null}
+          </section> : null}
+        </RowDisclosure>
         {visible && (outdated || (report && displayResult && !activeReport)) ? <p role="status" className="text-label leading-label text-[color:var(--color-text-tertiary)]">{report ? t('report.outdated') : t('outdated')}</p> : null}
         {visible && displayResult ? (
           <motion.section key={displayResult.searchId} initial={reducedMotion ? OVERLAY_RISE_REDUCED : OVERLAY_RISE}
             animate={OVERLAY_SETTLED} transition={reducedMotion ? MOTION.fast : MOTION.base}
             className="space-y-5" data-testid="question-desk-results">
-            {!activeReport ? <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[color:var(--color-border-soft)] pb-4">
+            {!activeReport ? <div className="flex max-w-[var(--measure-doc-column)] flex-wrap items-start justify-between gap-3 border-b border-[color:var(--color-border-soft)] pb-4">
               <div className="min-w-0 flex-1">
                 <p aria-live="polite" className="text-label leading-label text-[color:var(--color-text-secondary)]">
                   {t('coverageCompact', { readPages: displayResult.readPages, totalPages: displayResult.totalPages,
@@ -571,16 +613,7 @@ export function LibraryQuestionDesk({
                   </Disclosure>
                 </div>
               </div>
-              <Button variant="primary" disabled={!agentReady || turnRunning} onClick={() => {
-                  if (!vaultRoot) return;
-                  onSummarize({
-                    brief: buildQuestionDeskReportBrief({ question: displayResult.question, vaultRoot, locale,
-                      claims: displayResult.claims, sourceHits: displayResult.sourceHits, coverage: `${coverage} ${limits}` }),
-                    question: displayResult.question, searchId: displayResult.searchId,
-                    listingVersion: displayResult.listingVersion,
-                    vaultScope, coverage, limits,
-                  });
-                }} data-testid="question-desk-summarize">{hasLocalMatches ? t('report.summarize') : t('report.investigate')}</Button>
+              {hasLocalMatches ? reportAction : null}
             </div> : null}
             {!agentReady && !activeReport ? <p className="text-label leading-label text-[color:var(--color-text-tertiary)]">{t('report.agentUnavailable')}</p> : null}
             {activeReport ? <motion.section key={`${activeReport.searchId}:${activeReport.generatedAt}`}
@@ -619,10 +652,11 @@ export function LibraryQuestionDesk({
                 </footer>
               </div>
             </motion.section> : null}
-            {!hasLocalMatches && !activeReport ? <section data-testid="question-desk-unknown">
-              <h3 className="text-body font-[var(--font-weight-strong)] leading-body text-[color:var(--color-text-primary)]">{t('zeroLocalTitle')}</h3>
+            {!hasLocalMatches && !activeReport ? <section className="max-w-[var(--measure-doc-column)]" data-testid="question-desk-unknown">
+              <h3 className="text-title font-[var(--font-weight-strong)] leading-title text-[color:var(--color-text-primary)]">{t('zeroLocalTitle')}</h3>
               <p className="mt-2 text-body leading-body text-[color:var(--color-text-secondary)]">{t('zeroLocalBody')}</p>
               {agentReady ? <p className="mt-2 text-label leading-label text-[color:var(--color-text-tertiary)]">{t('zeroLocalAgentNote')}</p> : null}
+              <div className="mt-4">{reportAction}</div>
             </section> : null}
             {hasLocalMatches ? <div data-testid="question-desk-evidence-leads" className="border-t border-[color:var(--color-border-soft)] pt-4">
               <Disclosure animated open={!agentReady}

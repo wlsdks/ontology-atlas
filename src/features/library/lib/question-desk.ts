@@ -22,6 +22,10 @@ function deskPages(docs: readonly VaultDoc[]): VaultDoc[] {
   return docs.filter((doc) => doc.slug.startsWith('wiki/') && !doc.slug.split('/').some((part) => part.startsWith('_')) && !doc.frontmatter.kind);
 }
 
+export function countDeskWikiPages(docs: readonly VaultDoc[]): number {
+  return deskPages(docs).length;
+}
+
 export function questionDeskListingVersion(docs: readonly VaultDoc[], sources: readonly { path: string; mtime: number; bytes: number }[]): string {
   return JSON.stringify([
     docs.filter((doc) => doc.slug.startsWith('wiki/')).map((doc) => [doc.slug, doc.mtime ?? null]),

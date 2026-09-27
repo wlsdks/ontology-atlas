@@ -2557,8 +2557,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
         count: segment === "sources" ? model.sources.length : model.wikiPages.length,
       })
     : t("title");
-  const questionReportVisible = homeVisible && indexSegment === 'wiki' && deskReport?.answer === lastAnswer
-    && questionDeskReportFileCurrent(deskReport.vaultScope, workVaultScope, deskReport.listingVersion, currentDeskListingVersion);
+  const questionDeskVisible = homeVisible && indexSegment === 'wiki';
 
   return (
     /*
@@ -2864,7 +2863,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
         className={cn("flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden max-lg:order-first focus-visible:outline-none", indexSegment === 'wiki' && homeVisible && mobileBrowseOpen && 'max-lg:hidden')}
       >
         {/* Work stays above the reader and guidance, independent of the graph dialog. */}
-        {showLibraryWorkStrip(libraryWorkActivity, questionReportVisible) ? <LibraryWorkActivityStrip
+        {!questionDeskVisible ? <LibraryWorkActivityStrip
           activity={libraryWorkActivity}
           /* The lane belongs to an open conversation, not to the folder: see the prop's
              own note for the 112px an idle Library was paying without one. */
@@ -2945,6 +2944,11 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
               dockOpen={dockOpen}
               visible={homeVisible && indexSegment === 'wiki'}
               turnRunning={turnRunning}
+              workActivity={questionDeskVisible && showLibraryWorkStrip(libraryWorkActivity, true) ? <LibraryWorkActivityStrip
+                compact activity={libraryWorkActivity}
+                onOpenConversation={agent.runtime && nativeVaultRootPath ? () => agent.setOpen(true) : undefined}
+                onSelect={(target) => choose(target.kind === 'wiki' ? { kind: 'wiki', slug: target.ref } : { kind: 'source', path: target.ref })}
+              /> : null}
               report={deskReport && deskReport.answer === lastAnswer ? {
                 question: deskReport.answer.question,
                 text: deskReport.answer.text,
@@ -2968,7 +2972,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
               onOpenWiki={(slug) => choose({ kind: 'wiki', slug })}
               onOpenSource={(path, anchor) => {
                 choose({ kind: 'source', path });
-                setSourceCitation({ path, anchor });
+                setSourceCitation(anchor ? { path, anchor } : null);
               }}
             />
           </div>

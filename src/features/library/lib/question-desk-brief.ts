@@ -190,8 +190,6 @@ function inertExportMarkdown(text: string, ko: boolean): string {
   }
   const sanitized = parts.join('') + text.slice(cursor);
   if (!missingPosition && !hasUnsafeMarkdownNode(markdownParser.parse(sanitized))) return sanitized;
-  // GFM can synthesize links without positions. Keep every byte inspectable in
-  // a literal document if a safe edit cannot be located or reparsing finds a reach.
   const fence = exportCodeDelimiter(text, 3);
   return `${fence}text\n${text}\n${fence}\n`;
 }
