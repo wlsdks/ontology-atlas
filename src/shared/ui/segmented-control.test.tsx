@@ -42,7 +42,7 @@ function Harness({ initial = "b", onChange }: { initial?: string; onChange?: (v:
 }
 
 describe("SegmentedControl", () => {
-  it("radiogroup + radio + aria-checked — 버튼 role 은 0 이다", () => {
+  it("renders a radiogroup of aria-checked radios and no buttons", () => {
     render(<Harness />);
     expect(screen.getByRole("radiogroup").getAttribute("aria-label")).toBe("시험 그룹");
     const radios = screen.getAllByRole("radio");
@@ -53,13 +53,13 @@ describe("SegmentedControl", () => {
     expect(document.querySelector("[aria-pressed]")).toBeNull();
   });
 
-  it("탭 스톱은 체크된 항목 하나뿐이다 (roving tabindex)", () => {
+  it("keeps the checked option as the only tab stop", () => {
     render(<Harness />);
     const radios = screen.getAllByRole("radio");
     expect(radios.map((r) => r.tabIndex)).toEqual([-1, 0, -1]);
   });
 
-  it("화살표가 이동+선택을 함께 하고 순환한다 (selection follows focus)", () => {
+  it("moves and selects together on arrow keys and wraps", () => {
     const onChange = vi.fn();
     render(<Harness onChange={onChange} />);
     const radios = () => screen.getAllByRole("radio");
@@ -75,7 +75,7 @@ describe("SegmentedControl", () => {
     expect(onChange).toHaveBeenLastCalledWith("c");
   });
 
-  it("Home/End 는 아무 것도 하지 않는다 — 라디오 표에 없는 키다 (회귀 방지)", () => {
+  it("ignores Home and End", () => {
     const onChange = vi.fn();
     render(<Harness onChange={onChange} />);
     const radios = screen.getAllByRole("radio");
@@ -86,7 +86,7 @@ describe("SegmentedControl", () => {
     expect(document.activeElement).toBe(radios[1]);
   });
 
-  it("클릭과 Space 는 그 항목을 체크한다", () => {
+  it("checks the option on click and on Space", () => {
     const onChange = vi.fn();
     render(<Harness onChange={onChange} />);
     fireEvent.click(screen.getByRole("radio", { name: "다" }));
@@ -97,7 +97,7 @@ describe("SegmentedControl", () => {
     expect(onChange).toHaveBeenLastCalledWith("a");
   });
 
-  it("컨테이너 캐노니컬 — p-px · gap-px · overlay-1 · border-soft · rounded-chip", () => {
+  it("uses the canonical well container classes", () => {
     render(<Harness />);
     const group = screen.getByRole("radiogroup");
     for (const cls of [
@@ -112,7 +112,7 @@ describe("SegmentedControl", () => {
     }
   });
 
-  it("호버 계약 — 선택 안 된 항목은 lift+strong 으로 답하고, 선택된 항목은 침묵한다", () => {
+  it("answers hover on unselected options only", () => {
     /*
      * 2026-08-26: all three segments on /ko/architecture/ gave no hover answer
      * at all, starving the hover-contrast gate below its floor of 3 compared
@@ -136,7 +136,7 @@ describe("SegmentedControl", () => {
     }
   });
 
-  it("boolean 값 2택도 같은 문법이다 (구 SegmentSwitch 흡수)", () => {
+  it("handles a two-option boolean choice with the same grammar", () => {
     const onChange = vi.fn();
     render(
       <SegmentedControl
@@ -155,7 +155,7 @@ describe("SegmentedControl", () => {
     expect(onChange).toHaveBeenCalledWith(true);
   });
 
-  it("busy 면 재선택이 no-op 이고 초점은 산다 (그룹 disabled 금지)", () => {
+  it("ignores selection while busy and keeps focus reachable", () => {
     const onChange = vi.fn();
     render(
       <SegmentedControl
@@ -189,14 +189,14 @@ describe("SegmentedControl", () => {
  * and zero onKeyDown** — so this variant exists to supply the behaviour, not the
  * appearance.
  */
-describe("SegmentedControl — chips 변형", () => {
+describe("SegmentedControl chips variant", () => {
   const OPTIONS = [
     { value: "a", label: "A" },
     { value: "b", label: "B" },
     { value: "c", label: "C" },
   ] as const;
 
-  it("행동은 그릇과 무관하다 — chips 도 radiogroup + roving 을 그대로 받는다", () => {
+  it("keeps the radiogroup and roving tabindex behaviour", () => {
     const onChange = vi.fn();
     render(
       <SegmentedControl ariaLabel="모양" variant="chips" value="a" options={OPTIONS} onChange={onChange} />,
@@ -210,7 +210,7 @@ describe("SegmentedControl — chips 변형", () => {
     expect(onChange).toHaveBeenCalledWith("b");
   });
 
-  it("chips 컨테이너 캐노니컬 — 우물을 입지 않는다", () => {
+  it("uses the wrapping chip row without the well classes", () => {
     const { container } = render(
       <SegmentedControl ariaLabel="모양" variant="chips" value="a" options={OPTIONS} onChange={vi.fn()} />,
     );
@@ -223,7 +223,7 @@ describe("SegmentedControl — chips 변형", () => {
     expect(group.className).not.toContain("gap-px");
   });
 
-  it("fill 은 항목이 폭을 균등하게 나눠 갖게 한다", () => {
+  it("splits the width evenly between options when fill is set", () => {
     render(
       <SegmentedControl ariaLabel="모양" variant="chips" fill value="a" options={OPTIONS} onChange={vi.fn()} />,
     );
@@ -233,7 +233,7 @@ describe("SegmentedControl — chips 변형", () => {
     }
   });
 
-  it("옵션 title 은 통과하고, per-option className 통로는 열려 있지 않다", () => {
+  it("passes an option title through and offers no per-option className", () => {
     render(
       <SegmentedControl
         ariaLabel="모양"

@@ -3,12 +3,12 @@ import { render, screen } from '@testing-library/react';
 import { HighlightedText } from './highlighted-text';
 
 describe('HighlightedText', () => {
-  it('query 없으면 plain 텍스트 (mark 없음)', () => {
+  it('renders plain text without a mark when there is no query', () => {
     render(<HighlightedText text="Auth Service" />);
     expect(screen.getByText('Auth Service').tagName).not.toBe('MARK');
   });
 
-  it('매치 부분을 <mark> 로 강조하고 나머지는 plain', () => {
+  it('wraps the matched part in a mark and leaves the rest plain', () => {
     const { container } = render(
       <HighlightedText text="Authentication" query="auth" />,
     );
@@ -19,7 +19,7 @@ describe('HighlightedText', () => {
     expect(container.textContent).toBe('Authentication');
   });
 
-  it('매치 없으면 mark 없이 전체 텍스트', () => {
+  it('renders the whole text without a mark when nothing matches', () => {
     const { container } = render(
       <HighlightedText text="Auth Service" query="zzz" />,
     );

@@ -15,8 +15,8 @@ const CHROME = { paddingBlock: 8, borderBlock: 2 };
 /** The configuration a real runner produced: 3 chat rows plus 4 embedding rows. */
 const REAL_RUNNER = [SINGLE, SINGLE, SINGLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE];
 
-describe('목록의 자람 — 상한이 둘이고 작은 쪽이 이긴다', () => {
-  it('실측 러너의 7개는 스크롤 없이 전부 담긴다 (흔한 경우가 스크롤되면 신호가 거짓말이 된다)', () => {
+describe('listboxGrowth takes the smaller of the row cap and the space cap', () => {
+  it('fits all seven rows of the measured runner without scrolling', () => {
     const growth = listboxGrowth({ ...CHROME, rowHeights: REAL_RUNNER, availableHeight: 600 });
     // Nothing caps it, so the cap is the available space and the box sizes to
     // its own content.
@@ -30,14 +30,14 @@ describe('목록의 자람 — 상한이 둘이고 작은 쪽이 이긴다', () 
    * or a late web font growing a row by 1px is enough to make the box scroll its
    * own content, so the cap must never track the content.
    */
-  it('안 묶일 때의 상한은 내용 높이가 아니다 — 1px 자라도 스크롤이 생기면 안 된다', () => {
+  it('does not overflow when uncapped rows grow by 1px', () => {
     const settled = REAL_RUNNER.map((h) => h + 1);
     const growth = listboxGrowth({ ...CHROME, rowHeights: settled, availableHeight: 600 });
     expect(growth?.overflowing).toBe(false);
     expect(growth?.height).toBeGreaterThan(settled.reduce((a, b) => a + b, 0) + 10);
   });
 
-  it('행 상한을 넘으면 그때부터 안쪽 스크롤이다', () => {
+  it('scrolls inside once the row cap is exceeded', () => {
     const rowHeights = Array.from({ length: 12 }, () => SINGLE);
     const growth = listboxGrowth({ ...CHROME, rowHeights, availableHeight: 900 });
     expect(growth?.rows).toBe(LISTBOX_MAX_ROWS);
@@ -46,7 +46,7 @@ describe('목록의 자람 — 상한이 둘이고 작은 쪽이 이긴다', () 
     expect(growth?.cappedBy).toBe('rows');
   });
 
-  it('행 상한이 남아도 자리가 없으면 자리가 이긴다 (창 아래쪽 트리거)', () => {
+  it('caps by space when the space runs out before the row cap', () => {
     const growth = listboxGrowth({ ...CHROME, rowHeights: REAL_RUNNER, availableHeight: 120 });
     expect(growth?.height).toBe(120);
     expect(growth?.overflowing).toBe(true);
@@ -56,7 +56,7 @@ describe('목록의 자람 — 상한이 둘이고 작은 쪽이 이긴다', () 
     expect(growth?.rows).toBe(3);
   });
 
-  it('행 높이가 섞여도 반 행을 «담겼다» 고 세지 않는다', () => {
+  it('does not count a half-visible row as fitted when heights are mixed', () => {
     const growth = listboxGrowth({
       ...CHROME,
       rowHeights: [SINGLE, DOUBLE, DOUBLE],
@@ -67,42 +67,42 @@ describe('목록의 자람 — 상한이 둘이고 작은 쪽이 이긴다', () 
     expect(growth?.overflowing).toBe(true);
   });
 
-  it('재료가 없으면 판정하지 않는다 — 0px 로 접는 것보다 손대지 않는 편이 낫다', () => {
+  it('returns null without rows, space or finite heights', () => {
     expect(listboxGrowth({ ...CHROME, rowHeights: [], availableHeight: 600 })).toBeNull();
     expect(listboxGrowth({ ...CHROME, rowHeights: [SINGLE], availableHeight: 0 })).toBeNull();
     expect(listboxGrowth({ ...CHROME, rowHeights: [Number.NaN], availableHeight: 600 })).toBeNull();
   });
 });
 
-describe('스크롤 어포던스 — 없는 넘침을 광고하지 않는다', () => {
-  it('상한에 안 닿았으면 어떤 스크롤 값에서도 신호가 없다', () => {
+describe('scroll affordance', () => {
+  it('shows no signal at any scroll offset while not overflowing', () => {
     expect(listboxTopIsHidden(false, 40)).toBe(false);
     expect(listboxBottomIsHidden(false, 0, 200, 400)).toBe(false);
   });
 
-  it('상한에 닿았어도 맨 위에 있으면 위는 가려진 것이 없다', () => {
+  it('hides nothing above at the top of an overflowing list', () => {
     expect(listboxTopIsHidden(true, 0)).toBe(false);
     // Just-opened state: nothing hidden above, and the bottom carries "more".
     expect(listboxBottomIsHidden(true, 0, 240, 400)).toBe(true);
   });
 
-  it('끝까지 내리면 아래 신호가 꺼진다', () => {
+  it('clears the bottom signal at the end of the list', () => {
     expect(listboxBottomIsHidden(true, 160, 240, 400)).toBe(false);
     expect(listboxTopIsHidden(true, 160)).toBe(true);
   });
 });
 
-describe('목록의 왼쪽 자리 — 화면 안에 남는 것이 트리거 밑에 남는 것보다 먼저다', () => {
-  it('맞으면 트리거의 왼쪽 가장자리를 그대로 쓴다', () => {
+describe('listboxLeft keeps the list inside the viewport before under the trigger', () => {
+  it('uses the trigger left edge when the list fits', () => {
     expect(listboxLeft({ triggerLeft: 120, listWidth: 200, viewportWidth: 800, pad: 8 })).toBe(120);
   });
 
-  it('오른쪽을 뚫으면 오른쪽 여백에 닿을 때까지 왼쪽으로 민다 (설치 앱 작성창의 작업 방식 목록, 2026-09-03)', () => {
+  it('shifts left to the right margin when the list would cross the right edge', () => {
     // Trigger at 620 in a 1512px window, list 400 wide: 620 + 400 > 1504.
     expect(listboxLeft({ triggerLeft: 620, listWidth: 400, viewportWidth: 1000, pad: 8 })).toBe(592);
   });
 
-  it('창보다 넓은 목록은 왼쪽 여백에서 시작한다 — 두 여백을 다 지킬 수 없으면 시작점을 지킨다', () => {
+  it('starts a list wider than the viewport at the left margin', () => {
     expect(listboxLeft({ triggerLeft: 300, listWidth: 1200, viewportWidth: 1000, pad: 8 })).toBe(8);
   });
 });

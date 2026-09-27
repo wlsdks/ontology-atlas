@@ -18,7 +18,7 @@ describe('SimilarNodeWarning', () => {
     expect(screen.getByRole('button', { name: '그래도 새로 만들기' })).toBeInTheDocument();
   });
 
-  it('calls onOpen when "그 노드 열기" is clicked', () => {
+  it('calls onOpen when the open link is clicked', () => {
     const onOpen = vi.fn();
     render(
       <SimilarNodeWarning
@@ -33,7 +33,7 @@ describe('SimilarNodeWarning', () => {
     expect(onOpen).toHaveBeenCalledTimes(1);
   });
 
-  it('calls onCreateAnyway when "그래도 새로 만들기" is clicked — creation stays non-blocking', () => {
+  it('calls onCreateAnyway when the create-anyway link is clicked, so creation stays non-blocking', () => {
     const onCreateAnyway = vi.fn();
     render(
       <SimilarNodeWarning

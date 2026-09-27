@@ -41,17 +41,17 @@ beforeEach(() => {
   sonnerToast.error.mockClear();
 });
 
-describe('useToast — 후속 동작 계약', () => {
+describe('useToast follow-up action contract', () => {
   /*
    * With no action, the only option handed to sonner is the id (see below): the
    * ~50 existing call sites keep their behaviour, and no `action` key appears.
    */
-  it('액션이 없으면 sonner 에 id 외의 옵션을 넘기지 않는다', () => {
+  it('passes only the id to sonner without an action', () => {
     show('저장됨');
     expect(sonnerToast.success).toHaveBeenCalledWith('저장됨', { id: 'success:저장됨' });
   });
 
-  it('tone 은 종전대로 갈린다 — 액션 없이도', () => {
+  it('routes each tone to its sonner method without an action', () => {
     show('실패', 'error');
     show('안내', 'info');
     expect(sonnerToast.error).toHaveBeenCalledWith('실패', { id: 'error:실패' });
@@ -60,7 +60,7 @@ describe('useToast — 후속 동작 계약', () => {
 
   // The fourth tone (2026-09-24): done, with a caveat. Its own sonner type, so its
   // glyph is the triangle and its ink the warning token.
-  it('warning 톤은 sonner 의 warning 으로 간다', () => {
+  it('routes the warning tone to sonner warning', () => {
     show('붙였지만 꺼져 있어요', 'warning');
     expect(sonnerToast.warning).toHaveBeenCalledWith('붙였지만 꺼져 있어요', {
       id: 'warning:붙였지만 꺼져 있어요',
@@ -73,7 +73,7 @@ describe('useToast — 후속 동작 계약', () => {
    * one agent turn produced two "capability edited" boxes, 2026-09-06). Different
    * tones of one message stay apart.
    */
-  it('같은 메시지는 같은 id 로 나가서 겹쳐 쌓이지 않는다', () => {
+  it('reuses the id for the same message so toasts do not stack', () => {
     show('역량 6 편집', 'info');
     show('역량 6 편집', 'info');
     const ids = sonnerToast.info.mock.calls.map(([, options]) => (options as { id: string }).id);
@@ -82,7 +82,7 @@ describe('useToast — 후속 동작 계약', () => {
     expect(sonnerToast.success).toHaveBeenCalledWith('역량 6 편집', { id: 'success:역량 6 편집' });
   });
 
-  it('액션을 주면 라벨과 핸들러가 그대로 전달된다', () => {
+  it('passes the action label and handler through', () => {
     const onClick = vi.fn();
     show('만들었어요', 'success', { label: '지도에서 보기', onClick });
 
@@ -96,7 +96,7 @@ describe('useToast — 후속 동작 계약', () => {
     expect(onClick).not.toHaveBeenCalled();
   });
 
-  it('설명은 제목·액션과 분리된 보조 정보로 전달된다', () => {
+  it('passes the description separately from the title and action', () => {
     const onClick = vi.fn();
     show('새 문서를 만들었습니다', 'success', { label: '되돌리기', onClick }, {
       description: '결제 정산 정책.md',
@@ -110,7 +110,7 @@ describe('useToast — 후속 동작 계약', () => {
     expect(onClick).not.toHaveBeenCalled();
   });
 
-  it('같은 결과라도 다른 문서는 따로 쌓고 같은 문서 반복은 갱신한다', () => {
+  it('stacks the same result for different documents and updates a repeat for the same one', () => {
     const outcome = '새 문서를 만들었습니다';
     show(outcome, 'success', undefined, { description: '결제 정책.md' });
     show(outcome, 'success', undefined, { description: '환불 정책.md' });
@@ -123,7 +123,7 @@ describe('useToast — 후속 동작 계약', () => {
     expect(ids[0]).toBe(ids[2]);
   });
 
-  it('액션은 error·info 톤에서도 같은 문법으로 붙는다', () => {
+  it('attaches an action the same way for error and info tones', () => {
     const onClick = vi.fn();
     show('멎었어요', 'error', { label: '다시', onClick });
     expect(sonnerToast.error).toHaveBeenCalledWith('멎었어요', {

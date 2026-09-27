@@ -7,7 +7,7 @@ import { ROUTE_MEMORY_KEY } from './route-memory';
  * Design-system gate — every colour in the root locale redirect must go through a
  * CSS token; hardcoded hex is forbidden (`.claude/rules/design.md`).
  */
-describe('LocaleRedirect — 디자인 토큰 가드', () => {
+describe('LocaleRedirect', () => {
   const originalLocation = window.location;
 
   beforeEach(() => {
@@ -33,14 +33,14 @@ describe('LocaleRedirect — 디자인 토큰 가드', () => {
     vi.restoreAllMocks();
   });
 
-  it('인라인 스타일에 raw hex 색이 없다', () => {
+  it('has no raw hex colour in its inline styles', () => {
     const { container } = render(<LocaleRedirect />);
     const html = container.innerHTML;
     // No #rrggbb / #rgb colour literal may survive in an inline style.
     expect(html).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
   });
 
-  it('배경·텍스트·링크가 CSS 토큰 var() 를 참조한다', () => {
+  it('takes background, text and link colours from CSS tokens', () => {
     const { container } = render(<LocaleRedirect />);
     const html = container.innerHTML;
     expect(html).toContain('var(--color-canvas)');
@@ -61,7 +61,7 @@ describe('LocaleRedirect — 디자인 토큰 가드', () => {
    * The old contract is kept **inverted rather than deleted**, so the next person
    * who thinks "restoring would be convenient" reads here why it is gone.
    */
-  it('마지막 작업 surface 를 기억해도 관문으로 보낸다', () => {
+  it('sends to the gateway even when a last work surface is remembered', () => {
     window.localStorage.setItem('ontology-atlas:locale', 'en');
     window.localStorage.setItem(ROUTE_MEMORY_KEY, '/en/topology/');
 
@@ -70,7 +70,7 @@ describe('LocaleRedirect — 디자인 토큰 가드', () => {
     expect(window.location.replace).toHaveBeenCalledWith('/en/');
   });
 
-  it('다른 locale 의 기억도 그 사람의 언어 관문으로 보낸다', () => {
+  it('sends a remembered route in another locale to the stored language gateway', () => {
     window.localStorage.setItem('ontology-atlas:locale', 'en');
     window.localStorage.setItem(ROUTE_MEMORY_KEY, '/ko/topology/');
 
@@ -85,7 +85,7 @@ describe('LocaleRedirect — 디자인 토큰 가드', () => {
    * (`/?p=…`, `/?realm=…`) opened an unselected map — the clicked project was
    * silently lost. Deciding the language only means changing the PATH only.
    */
-  it('쿼리와 해시는 locale 홉을 그대로 통과한다', () => {
+  it('keeps the query and hash across the locale hop', () => {
     window.localStorage.setItem('ontology-atlas:locale', 'en');
     Object.defineProperty(window, 'location', {
       configurable: true,

@@ -18,12 +18,12 @@ describe('Surface', () => {
     vi.useRealTimers();
   });
 
-  it('닫혀 있으면 그리지 않는다', () => {
+  it('renders nothing while closed', () => {
     render(<Surface open={false}>내용</Surface>);
     expect(screen.queryByText('내용')).toBeNull();
   });
 
-  it('① 퇴장 창 — `open=false` 에 즉시 사라지지 않는다', () => {
+  it('stays on screen through the exit window after open=false', () => {
     // Unmounting immediately means the surface vanishes in one frame. Measured 2026-07-28:
     // the thing the user clicked disappeared at delta 13.25 @17ms while the map — merely the
     // consequence — got a 217ms eased transition.
@@ -31,13 +31,13 @@ describe('Surface', () => {
     expect(screen.getByText('내용')).toBeInTheDocument();
 
     act(() => rerender(<Surface open={false}>내용</Surface>));
-    expect(screen.getByText('내용'), '퇴장 창 안에서는 아직 화면에 있어야 한다').toBeInTheDocument();
+    expect(screen.getByText('내용')).toBeInTheDocument();
 
     act(() => void vi.advanceTimersByTime(EXIT_WINDOW_MS + 10));
     expect(screen.queryByText('내용')).toBeNull();
   });
 
-  it('② 퇴장은 자기 이름의 클래스다 — 등장 클래스를 되감지 않는다', () => {
+  it('exits with its own class instead of reversing the entrance class', () => {
     // A CSS animation does **not** restart while `animation-name` is unchanged, even if the
     // duration or direction changes. An exit built by playing the entrance in `reverse`
     // therefore turns into a silent hard cut.
@@ -47,12 +47,12 @@ describe('Surface', () => {
     act(() => rerender(<Surface open={false}>내용</Surface>));
     const el = screen.getByText('내용');
     expect(el).toHaveClass('topology-chrome-out');
-    expect(el, '등장 클래스가 남아 있으면 두 애니메이션이 겹친다').not.toHaveClass(
+    expect(el, 'a leftover entrance class overlaps the two animations').not.toHaveClass(
       'topology-chrome-in',
     );
   });
 
-  it('③ 나가는 프레임은 못 눌린다 — inert + pointer-events-none', () => {
+  it('makes the exiting frame inert and unclickable', () => {
     // Without this the exiting surface swallows the click, and the user gets a result they
     // did not press for.
     const { rerender } = render(<Surface open>내용</Surface>);
@@ -66,7 +66,7 @@ describe('Surface', () => {
     expect(exiting).toHaveClass('pointer-events-none');
   });
 
-  it('④ 상태를 밖에서 읽을 수 있다 — 검사 가능한 표면', () => {
+  it('exposes its state through data-surface-state', () => {
     // A state nothing outside can distinguish is a state nothing outside can test — the same
     // lesson the map hooks learned.
     const { rerender } = render(<Surface open>내용</Surface>);
@@ -75,7 +75,7 @@ describe('Surface', () => {
     expect(screen.getByText('내용')).toHaveAttribute('data-surface-state', 'exiting');
   });
 
-  it('퇴장이 끝난 뒤에 한 번 알린다 — 포커스 복귀가 붙는 자리', () => {
+  it('calls onExited once after the exit finishes', () => {
     const onExited = vi.fn();
     const { rerender } = render(
       <Surface open onExited={onExited}>
@@ -87,13 +87,13 @@ describe('Surface', () => {
         내용
       </Surface>,
     ));
-    expect(onExited, '퇴장 «중» 에 부르면 포커스가 애니 도중에 튄다').not.toHaveBeenCalled();
+    expect(onExited, 'calling during the exit moves focus mid-animation').not.toHaveBeenCalled();
 
     act(() => void vi.advanceTimersByTime(EXIT_WINDOW_MS + 10));
     expect(onExited).toHaveBeenCalledTimes(1);
   });
 
-  it('등장이 트리거 방향에서 자란다 — transform-origin 을 받는다', () => {
+  it('grows from the trigger side through transform-origin', () => {
     // A popover born in the centre of the screen is a rejection by the motion seat: when what
     // you pressed and what appears are in different places, the causal link is broken.
     render(
@@ -104,7 +104,7 @@ describe('Surface', () => {
     expect(screen.getByText('내용')).toHaveStyle({ transformOrigin: 'top right' });
   });
 
-  it('data-* 를 통과시킨다 — 밖에서 이 표면을 집을 수 있어야 한다', () => {
+  it('passes data attributes through', () => {
     /*
      * ⚠️ Without this assertion **the type system waves it through.** TypeScript does not
      * check hyphenated JSX attributes, so if `Surface` stopped forwarding them, `tsc` would
@@ -119,7 +119,7 @@ describe('Surface', () => {
     expect(screen.getByTestId('the-surface')).toBeInTheDocument();
   });
 
-  it('⑤ 큰 표면은 밝기만 쓴다 — `motion="overlay"`', () => {
+  it('fades a large surface without movement when motion="overlay"', () => {
     /*
      * The `.map-overlay-in` comment in `globals.css` states the reason: **when a surface
      * covering a large part of the screen moves, it reads as the screen itself shaking.**
@@ -134,7 +134,7 @@ describe('Surface', () => {
     );
     const entered = screen.getByText('내용');
     expect(entered).toHaveClass('map-overlay-in');
-    expect(entered, '큰 표면에 이동/스케일 문법이 붙으면 화면이 흔들린다').not.toHaveClass(
+    expect(entered, 'moving or scaling a large surface reads as the screen shaking').not.toHaveClass(
       'topology-chrome-in',
     );
 
@@ -144,15 +144,15 @@ describe('Surface', () => {
       </Surface>,
     ));
     const exiting = screen.getByText('내용');
-    expect(exiting, '나가는 길도 같은 문법이어야 한다').toHaveClass('map-overlay-out');
+    expect(exiting).toHaveClass('map-overlay-out');
     expect(exiting).not.toHaveClass('map-overlay-in');
-    expect(exiting, '퇴장 창의 계약 셋은 문법과 무관하게 산다').toHaveAttribute('inert');
+    expect(exiting, 'the exit-window contract holds for every motion grammar').toHaveAttribute('inert');
 
     act(() => void vi.advanceTimersByTime(EXIT_WINDOW_MS + 10));
     expect(screen.queryByText('내용')).toBeNull();
   });
 
-  it('소비처 className 이 덧붙는다 — 모양은 소비처가 정한다', () => {
+  it('appends the consumer className', () => {
     render(
       <Surface open className="w-[300px]">
         내용
@@ -160,12 +160,12 @@ describe('Surface', () => {
     );
     const el = screen.getByText('내용');
     expect(el).toHaveClass('w-[300px]');
-    expect(el, '모션 문법은 그대로 남아야 한다').toHaveClass('topology-chrome-in');
+    expect(el).toHaveClass('topology-chrome-in');
   });
 
 });
 
-describe('useHeldValue — 퇴장 창 동안 내용이 비지 않는다', () => {
+describe('useHeldValue keeps content through the exit window', () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => {
     vi.runOnlyPendingTimers();
@@ -181,7 +181,7 @@ describe('useHeldValue — 퇴장 창 동안 내용이 비지 않는다', () => 
     );
   }
 
-  it('값이 사라져도 퇴장 창 동안 직전 값을 그린다', () => {
+  it('draws the last value through the exit window after the value goes', () => {
     // Without this the surface exits gracefully while its contents are empty — the entrance
     // and exit that were meant to improve things make the screen worse.
     const { rerender } = render(<Holder model="엣지 A→B" />);
@@ -190,14 +190,14 @@ describe('useHeldValue — 퇴장 창 동안 내용이 비지 않는다', () => 
     act(() => rerender(<Holder model={null} />));
     expect(
       screen.getByTestId('body'),
-      '퇴장 중에 내용이 비면 사라지는 표면이 빈 상자로 보인다',
+      'emptied content turns the exiting surface into a blank box',
     ).toHaveTextContent('엣지 A→B');
 
     act(() => void vi.advanceTimersByTime(EXIT_WINDOW_MS + 10));
     expect(screen.queryByTestId('body')).toBeNull();
   });
 
-  it('★ 정체성이 매 렌더 바뀌는 객체를 키로 붙든다 — 안 그러면 무한 루프다', () => {
+  it('holds an object whose identity changes every render by its key without looping', () => {
     /*
      * The first version compared with `value !== held`, and the moment it was attached to the
      * map's edge panel **React #301 (infinite re-render) took the whole map down**: the
@@ -220,18 +220,18 @@ describe('useHeldValue — 퇴장 창 동안 내용이 비지 않는다', () => 
     expect(screen.getByTestId('body')).toHaveTextContent('모델 a');
 
     act(() => rerender(<Unstable id={null} />));
-    expect(screen.getByTestId('body'), '퇴장 중에도 직전 모델을 그린다').toHaveTextContent('모델 a');
+    expect(screen.getByTestId('body')).toHaveTextContent('모델 a');
     act(() => void vi.advanceTimersByTime(EXIT_WINDOW_MS + 10));
     expect(screen.queryByTestId('body')).toBeNull();
   });
 
-  it('새 값이 오면 즉시 바뀐다 — 붙드는 것이 갱신을 막지 않는다', () => {
+  it('switches to a new value immediately', () => {
     const { rerender } = render(<Holder model="첫째" />);
     act(() => rerender(<Holder model="둘째" />));
     expect(screen.getByTestId('body')).toHaveTextContent('둘째');
   });
 
-  it('값이 바뀌는 동안 한 프레임도 비지 않는다', () => {
+  it('never renders an empty frame while the value changes', () => {
     // Holding the value in an effect would be one frame late, and the child would receive null
     // in between. Adjusting during render means that frame never exists.
     const { rerender } = render(<Holder model="A" />);

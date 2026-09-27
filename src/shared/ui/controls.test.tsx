@@ -16,7 +16,7 @@ import { Chip, IconButton, RowButton } from './controls';
  * So what this file asserts is not appearance but **the layer contract**: values
  * must come through `controlClass()`, and the component carries the behaviour.
  */
-describe('컨트롤 컴포넌트 — 값은 반드시 시스템을 통과한다', () => {
+describe('control components take their values from the system', () => {
   it.each([
     ['Chip', <Chip key="c">칩</Chip>, controlClass({ shape: 'chip' })],
     [
@@ -27,14 +27,14 @@ describe('컨트롤 컴포넌트 — 값은 반드시 시스템을 통과한다'
       controlClass({ shape: 'icon' }),
     ],
     ['RowButton', <RowButton key="r">행</RowButton>, controlClass({ shape: 'row' })],
-  ])('%s 의 className 이 controlClass 산출물과 같다', (_name, element, expected) => {
+  ])('%s className equals the controlClass output', (_name, element, expected) => {
     const { container } = render(element);
     // A single hand-added character diverges here — that is where ramp drift begins.
     expect(container.querySelector('button')?.className).toBe(expected);
   });
 });
 
-describe('컨트롤 컴포넌트 — className 이 못 나르는 것들', () => {
+describe('control components carry what a className cannot', () => {
   it.each([
     ['Chip', <Chip key="c">칩</Chip>],
     [
@@ -44,7 +44,7 @@ describe('컨트롤 컴포넌트 — className 이 못 나르는 것들', () => 
       </IconButton>,
     ],
     ['RowButton', <RowButton key="r">행</RowButton>],
-  ])('%s 는 type="button" 이다 — 폼 안에서 submit 이 되지 않는다', (_name, element) => {
+  ])('%s is type="button" so it never submits a form', (_name, element) => {
     // A `<button>` defaults to submit. One chip submitting a form cannot be
     // prevented by a className in principle, which is half of why this component
     // layer exists.
@@ -52,7 +52,7 @@ describe('컨트롤 컴포넌트 — className 이 못 나르는 것들', () => 
     expect(screen.getByRole('button')).toHaveAttribute('type', 'button');
   });
 
-  it('IconButton 은 접근 이름을 강제한다 — 아이콘에는 읽을 글자가 없다', () => {
+  it('IconButton turns its label into the accessible name', () => {
     render(
       <IconButton label="지도 닫기">
         <span aria-hidden>×</span>
@@ -64,14 +64,14 @@ describe('컨트롤 컴포넌트 — className 이 못 나르는 것들', () => 
     expect(screen.getByRole('button', { name: '지도 닫기' })).toBeInTheDocument();
   });
 
-  it('RowButton 은 `<button>` 이다 — 넓다고 div 로 만들지 않는다', () => {
+  it('RowButton renders a button element, not a div', () => {
     // A list row is wide enough to tempt div+onClick, which makes it unreachable
     // by keyboard and stops screen readers from announcing it as a control.
     const { container } = render(<RowButton>행</RowButton>);
     expect(container.firstElementChild?.tagName).toBe('BUTTON');
   });
 
-  it('비활성이 값 층에서 온다 — 컴포넌트마다 챙기지 않는다', () => {
+  it('takes the disabled styling from the value layer', () => {
     // Handled per component, one gets missed: ChromeChip and ChromeTile were both
     // missing it, and the owner found it on screen.
     render(<Chip disabled>칩</Chip>);
@@ -80,7 +80,7 @@ describe('컨트롤 컴포넌트 — className 이 못 나르는 것들', () => 
     expect(el.className).toContain('disabled:cursor-not-allowed');
   });
 
-  it('자리잡기 className 은 덧붙고 모양은 남는다', () => {
+  it('appends a placement className and keeps the shape', () => {
     render(<Chip className="absolute right-2">칩</Chip>);
     const el = screen.getByRole('button');
     expect(el).toHaveClass('absolute');
@@ -96,7 +96,7 @@ describe('컨트롤 컴포넌트 — className 이 못 나르는 것들', () => 
       </IconButton>,
     ],
     ['row', <RowButton key="r">행</RowButton>],
-  ])('%s 는 밖에서 질의된다 — data-control', (shape, element) => {
+  ])('%s is queryable from outside through data-control', (shape, element) => {
     /*
      * **What cannot be told apart from outside cannot be checked from outside.**
      * Without this attribute, answering "does every icon control on this screen
@@ -108,7 +108,7 @@ describe('컨트롤 컴포넌트 — className 이 못 나르는 것들', () => 
     expect(container.querySelector(`[data-control="${shape}"]`)).toBeInTheDocument();
   });
 
-  it('한 화면의 컨트롤을 부류로 셀 수 있다 — 계기가 쓰는 형태', () => {
+  it('counts the controls on a screen by class', () => {
     render(
       <div>
         <Chip>가</Chip>

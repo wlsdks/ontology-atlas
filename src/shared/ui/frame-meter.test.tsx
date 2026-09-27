@@ -48,18 +48,18 @@ describe('FrameMeter', () => {
     window.localStorage.clear();
   });
 
-  it('꺼져 있으면 rAF 를 한 번도 걸지 않는다', () => {
+  it('never requests an animation frame while off', () => {
     const raf = vi.spyOn(window, 'requestAnimationFrame');
     renderMeter();
     expect(raf).not.toHaveBeenCalled();
   });
 
-  it('꺼져 있으면 아무것도 렌더하지 않는다', () => {
+  it('renders nothing while off', () => {
     const { container } = renderMeter();
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('켜면 측정 루프가 돈다', () => {
+  it('runs the measuring loop when on', () => {
     const raf = vi.spyOn(window, 'requestAnimationFrame');
     act(() => {
       writeFrameMeter(true);
@@ -68,7 +68,7 @@ describe('FrameMeter', () => {
     expect(raf).toHaveBeenCalled();
   });
 
-  it('껐다 켜는 것이 저장되고 되읽힌다', () => {
+  it('removes the readout when the stored switch turns off', () => {
     act(() => {
       writeFrameMeter(true);
     });
@@ -85,7 +85,7 @@ describe('FrameMeter', () => {
     expect(screen.queryByText(/fps/)).toBeNull();
   });
 
-  it('켜져 있어도 첫 표본이 모이기 전에는 숫자를 지어내지 않는다', () => {
+  it('shows no number before the first samples arrive', () => {
     act(() => {
       writeFrameMeter(true);
     });
@@ -100,7 +100,7 @@ describe('FrameMeter', () => {
    * beside an English "fps", so an English screen read a sentence in two languages and a Korean
    * one did too. Every word of the reading is the screen's language.
    */
-  it('영어 화면에서는 읽음값이 전부 영어다', () => {
+  it('reads entirely in English on an English screen', () => {
     act(() => {
       writeFrameMeter(true);
     });
@@ -115,7 +115,7 @@ describe('FrameMeter', () => {
     expect(container.textContent).not.toMatch(/\p{Script=Hangul}/u);
   });
 
-  it('한국어 화면에서는 읽음값이 전부 한국어다', () => {
+  it('reads entirely in Korean on a Korean screen', () => {
     act(() => {
       writeFrameMeter(true);
     });

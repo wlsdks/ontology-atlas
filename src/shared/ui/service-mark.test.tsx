@@ -86,12 +86,12 @@ describe('service marks — only what a read guideline permits', () => {
       source.indexOf('const SERVICE_MARK_PATHS'),
       source.indexOf('export type ServiceMarkName'),
     );
-    expect(table.length, '표를 못 찾았다 — 이 시험이 공회전한다').toBeGreaterThan(200);
+    expect(table.length, 'the mark table was not found, so this test would idle').toBeGreaterThan(200);
     const keys = [...table.matchAll(/^\s{2}([a-z][\w]*):/gm)].map((match) => match[1]);
-    expect(keys.length, '마크가 하나도 없다').toBeGreaterThan(0);
+    expect(keys.length).toBeGreaterThan(0);
     for (const key of keys) {
       const citation = new RegExp(`${key}[\\s\\S]{0,400}?https?://[\\S]+[\\s\\S]{0,200}?read \\d{4}-\\d{2}-\\d{2}`, 'i');
-      expect(citation.test(table), `${key} 에 읽은 날짜와 가이드라인 주소가 없다`).toBe(true);
+      expect(citation.test(table), `${key} lacks a guideline URL and read date`).toBe(true);
     }
   });
 });

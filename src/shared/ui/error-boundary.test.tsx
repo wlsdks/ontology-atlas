@@ -26,7 +26,7 @@ function Fallback({
 }
 
 describe('ErrorBoundary', () => {
-  it('children 이 throw 안 하면 children 그대로 렌더', () => {
+  it('renders children when they do not throw', () => {
     render(
       <ErrorBoundary fallback={Fallback}>
         <Bomb explode={false} />
@@ -35,7 +35,7 @@ describe('ErrorBoundary', () => {
     expect(screen.getByText('safe')).toBeInTheDocument();
   });
 
-  it('children render 가 throw 하면 fallback 렌더', () => {
+  it('renders the fallback when a child throws', () => {
     // Suppress JSDOM's React error logging — the throw is deliberate, so keep the output clean.
     const original = console.error;
     console.error = () => {};
@@ -51,7 +51,7 @@ describe('ErrorBoundary', () => {
     }
   });
 
-  it('reset 버튼 → boundary 다시 children 시도', () => {
+  it('retries the children after reset', () => {
     function Wrapper() {
       const [explode, setExplode] = useState(true);
       return (
@@ -87,7 +87,7 @@ describe('ErrorBoundary', () => {
     }
   });
 
-  it('resetKey 변경 시 자동 reset', () => {
+  it('resets when resetKey changes', () => {
     function Wrapper({ flag }: { flag: number }) {
       return (
         <ErrorBoundary
@@ -110,7 +110,7 @@ describe('ErrorBoundary', () => {
     }
   });
 
-  it('onError 콜백이 호출됨', () => {
+  it('calls onError with the thrown error', () => {
     let captured: Error | null = null;
     const original = console.error;
     console.error = () => {};

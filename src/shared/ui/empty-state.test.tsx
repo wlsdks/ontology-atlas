@@ -155,14 +155,14 @@ describe('EmptyState — size variant', () => {
  * is not a document section) and **`h1` chosen by the caller when the card is
  * the page's content**.
  */
-describe("EmptyState — 제목 태그", () => {
-  it("기본은 p 다 — 목록/섹션 안의 빈 상태는 문서 구획이 아니다", () => {
+describe("EmptyState title tag", () => {
+  it("renders the title as p by default", () => {
     render(<EmptyState title="아직 없어요" />);
     expect(screen.queryByRole("heading")).not.toBeInTheDocument();
     expect(screen.getByText("아직 없어요").tagName).toBe("P");
   });
 
-  it("titleAs 로 heading 을 낼 수 있다", () => {
+  it("renders a heading when titleAs is set", () => {
     render(<EmptyState titleAs="h1" title="공방은 넓은 화면에서 열려요" />);
     expect(
       screen.getByRole("heading", { level: 1, name: "공방은 넓은 화면에서 열려요" }),
@@ -174,7 +174,7 @@ describe("EmptyState — 제목 태그", () => {
    * heading's size and weight to `inherit`, so the classes keep deciding. Lose
    * the classes and the title jumps to the browser's default h1 size.
    */
-  it("태그가 바뀌어도 같은 클래스를 싣는다", () => {
+  it("keeps the same classes when the tag changes", () => {
     const { unmount } = render(<EmptyState title="X" />);
     const asP = screen.getByText("X").className;
     unmount();
