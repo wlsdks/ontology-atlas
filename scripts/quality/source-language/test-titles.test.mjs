@@ -1,0 +1,66 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+
+import { extractTestTitles, hangulTestTitles, isTestSourcePath } from './test-titles.mjs';
+
+const texts = (source, path = 'a.test.ts') => extractTestTitles(path, source).map((e) => `${e.kind}:${e.text}`);
+
+test('reads titles through modifiers, each tables and playwright steps', () => {
+  const source = [
+    "describe('outer', () => {});",
+    "it.skip('skipped', () => {});",
+    "test.describe.only('pw block', () => {});",
+    "it.each([[1]])('row %s', () => {});",
+    "await test.step('a step', async () => {});",
+    'bench(`template ${x}`, () => {});',
+  ].join('\n');
+  assert.deepEqual(texts(source), [
+    'title:outer',
+    'title:skipped',
+    'title:pw block',
+    'title:row %s',
+    'title:a step',
+    'title:`template ${x}`',
+  ]);
+});
+
+test('reads expect and node assert messages at their argument positions', () => {
+  const source = [
+    "expect(a, 'expect message').toBe(1);",
+    "expect.soft(a, 'soft message').toBe(1);",
+    "assert(a, 'bare message');",
+    "assert.ok(a, 'ok message');",
+    "assert.equal(a, b, 'equal message');",
+    "assert.match(a, /x/, 'match message');",
+    "assert.equal(a, 'not a message');",
+  ].join('\n');
+  assert.deepEqual(texts(source), [
+    'message:expect message',
+    'message:soft message',
+    'message:bare message',
+    'message:ok message',
+    'message:equal message',
+    'message:match message',
+  ]);
+});
+
+test('flags Hangul in titles and messages but not in test bodies or each tables', () => {
+  const source = [
+    "it('한글 제목', () => {});",
+    "it('english title', () => { expect(parse('한글 입력')).toBe('값'); });",
+    "it.each([['한글']])('matches %s', () => {});",
+    "expect(a, '한글 메시지').toBe(1);",
+    "test('steps', async () => { await test.step('한글 단계', () => {}); });",
+  ].join('\n');
+  assert.deepEqual(
+    hangulTestTitles('a.test.tsx', source).map((e) => [e.kind, e.line]),
+    [['title', 1], ['message', 4], ['title', 5]],
+  );
+});
+
+test('recognises test and spec files only', () => {
+  assert.equal(isTestSourcePath('src/a.test.ts'), true);
+  assert.equal(isTestSourcePath('tests/e2e/a.spec.ts'), true);
+  assert.equal(isTestSourcePath('mcp/src/a.test.mjs'), true);
+  assert.equal(isTestSourcePath('src/a.ts'), false);
+});
