@@ -140,6 +140,26 @@ const readServerDesktopRuntime = () => false;
 /** How many referrer names a kind-change receipt spells out before it counts the rest. */
 const REFERRER_NAMES_SHOWN = 3;
 
+// An updater can run during render, so the write goes to a microtask.
+function storeSlugListSoon(storageKey: string, slugs: readonly string[]): void {
+  queueMicrotask(() => {
+    try {
+      window.localStorage.setItem(storageKey, JSON.stringify(slugs));
+    } catch {
+      /* ignore */
+    }
+  });
+}
+
+function readVaultFileText(handles: Pick<Map<string, { getFile(): Promise<File> }>, 'get'>) {
+  return async (slug: string) => {
+    const fh = handles.get(slug);
+    if (!fh) throw new Error(`Local vault: no file handle for "${slug}"`);
+    const file = await fh.getFile();
+    return file.text();
+  };
+}
+
 function splitVaultSlugPath(slug: string): { dir: string; name: string } {
   const parts = slug.split('/');
   const name = parts.pop() ?? slug;
@@ -718,13 +738,7 @@ function DocsVaultContent({
   >(() => {
     if (source !== 'local') return undefined;
     if (localVault.fileHandles.size === 0) return undefined;
-    const handles = localVault.fileHandles;
-    return async (slug: string) => {
-      const fh = handles.get(slug);
-      if (!fh) throw new Error(`Local vault: no file handle for "${slug}"`);
-      const file = await fh.getFile();
-      return file.text();
-    };
+    return readVaultFileText(localVault.fileHandles);
   }, [source, localVault.fileHandles]);
 
   const resolveImage = useMemo<
@@ -745,13 +759,7 @@ function DocsVaultContent({
     ((slug: string) => Promise<string>) | undefined
   >(() => {
     if (!canEditCurrent) return undefined;
-    const handles = localVault.fileHandles;
-    return async (slug: string) => {
-      const fh = handles.get(slug);
-      if (!fh) throw new Error(`Local vault: no file handle for "${slug}"`);
-      const file = await fh.getFile();
-      return file.text();
-    };
+    return readVaultFileText(localVault.fileHandles);
   }, [canEditCurrent, localVault.fileHandles]);
   useEffect(() => {
     if (!canEditCurrent) scheduleStateSync(() => setEditing(false));
@@ -800,31 +808,12 @@ function DocsVaultContent({
       replaceUrlState({ slug: toSlug });
       setRecentSlugs((list) => {
         const mapped = list.map((s) => (s === fromSlug ? toSlug : s));
-        // An updater can run during render, so the write goes to a microtask.
-        queueMicrotask(() => {
-          try {
-            window.localStorage.setItem(
-              `${RECENT_DOCS_STORAGE_PREFIX}${recentKey}`,
-              JSON.stringify(mapped),
-            );
-          } catch {
-            /* ignore */
-          }
-        });
+        storeSlugListSoon(`${RECENT_DOCS_STORAGE_PREFIX}${recentKey}`, mapped);
         return mapped;
       });
       setPinnedSlugs((list) => {
         const mapped = list.map((s) => (s === fromSlug ? toSlug : s));
-        queueMicrotask(() => {
-          try {
-            window.localStorage.setItem(
-              `${PINNED_DOCS_STORAGE_PREFIX}${recentKey}`,
-              JSON.stringify(mapped),
-            );
-          } catch {
-            /* ignore */
-          }
-        });
+        storeSlugListSoon(`${PINNED_DOCS_STORAGE_PREFIX}${recentKey}`, mapped);
         return mapped;
       });
       return report;
@@ -861,17 +850,7 @@ function DocsVaultContent({
     setPinnedSlugs((list) => {
       const next = list.filter((s) => s !== slug);
       if (next.length !== list.length) {
-        // An updater can run during render, so the idempotent write goes to a microtask.
-        queueMicrotask(() => {
-          try {
-            window.localStorage.setItem(
-              `${PINNED_DOCS_STORAGE_PREFIX}${recentKey}`,
-              JSON.stringify(next),
-            );
-          } catch {
-            /* ignore */
-          }
-        });
+        storeSlugListSoon(`${PINNED_DOCS_STORAGE_PREFIX}${recentKey}`, next);
       }
       return next;
     });
@@ -2039,13 +2018,168 @@ function DocsVaultContent({
   // never paints as the installed app's data.
   if (!vaultScopeSettled || legacyRedirectToLibrary) return <RouteLoadingFallback />;
 
+  // While the list is expanded, zone-l ends at the document pane's left edge so tabs sit
+  // over the pane (list width − header padding − zone gap).
+  const identityZone = (
+    <div
+      data-docs-header-zone="identity"
+      className={cn(
+        // From md this uses content width; the pane alignment applies at lg only.
+        "flex w-full min-w-0 flex-none flex-wrap items-center gap-2 md:w-auto md:flex-nowrap md:gap-3",
+        legacyDocumentMode
+          ? "lg:w-auto"
+          : docListCollapsed
+          ? "lg:w-auto"
+          : "lg:w-[calc(var(--docs-list-width)-1.5rem)]",
+      )}
+    >
+      {legacyDocumentMode ? (
+        <>
+          <Link
+            href={libraryOntologyHref}
+            data-testid="docs-compatibility-library-return"
+            className={controlClass({
+              shape: 'chip',
+              size: 'lg',
+              className: 'flex-none justify-center hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]',
+            })}
+          >
+            <ArrowLeft size={ICON_SIZE.md} aria-hidden />
+            <span>{t('compatibility.back')}</span>
+          </Link>
+          <span className="text-body font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
+            {t('compatibility.title')}
+          </span>
+        </>
+      ) : null}
+      {/* Return to the insights review the user came from; the rail owns the way back to the map. */}
+      {insightsReturnTab ? (
+        <Link
+          href={workspaceHref}
+          aria-label={t('header.backToReviewAriaLabel')}
+          // Not a `<button>`, so the ratchet does not see it, but it must match the chip height.
+          className={controlClass({
+            shape: 'chip',
+            size: 'lg',
+            className:
+              'flex-none justify-center hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]',
+          })}
+        >
+          <ArrowLeft size={ICON_SIZE.md} aria-hidden />
+          <span className="hidden sm:inline">{t('header.reviewBack')}</span>
+        </Link>
+      ) : null}
+      <Chip
+        size="lg"
+        onClick={() => setSourceTreeOpen(true)}
+        className="flex-none justify-center hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)] lg:hidden"
+        aria-label={t('header.openTreeAriaLabel')}
+        title={t('header.openTreeTitle')}
+      >
+        <Menu size={ICON_SIZE.md} aria-hidden />
+        <span className="hidden sm:inline">{t('header.openTreeTitle')}</span>
+      </Chip>
+      <DocsHeaderTile
+        icon={<PanelLeft size={ICON_SIZE.lg} aria-hidden />}
+        title={docListCollapsed ? t('header.docListExpand') : t('header.docListCollapse')}
+        active={docListCollapsed}
+        aria-expanded={!docListCollapsed}
+        onClick={toggleDocListCollapsed}
+        className="hidden lg:inline-flex"
+      />
+      {/* The chip states the chosen source (`lib/vault-chip-identity`). */}
+      <DocsVaultVaultChip
+        label={
+          vaultChipIdentity.kind === 'local'
+            ? vaultChipIdentity.label
+            : vaultChipIdentity.kind === 'local-pending'
+              ? t('header.vaultChipLocalPending')
+              : t('advanced.sourceServer')
+        }
+        docCount={vaultChipIdentity.showDocCount ? scopedDocs.length : null}
+        folderCount={vaultTopLevelFolderCount}
+        path={vaultPillPath}
+        isLocalSourceLoaded={isLocalSourceLoaded}
+        open={vaultChipOpen}
+        onToggle={() =>
+          setVaultChipOpen((open) => {
+            const next = !open;
+            if (next) setAdvancedOpen(false);
+            return next;
+          })
+        }
+        onSwap={() => {
+          setVaultChipOpen(false);
+          handleVaultPillSwap();
+        }}
+        isSample={source === 'server'}
+        allowSample={!installedShell}
+        onUseSample={() => {
+          setVaultChipOpen(false);
+          handleSourceChange('server');
+        }}
+        localDisabled={localSourceDisabled}
+        localDisabledReason={
+          localSourceDisabled ? t('vaultStatus.unsupportedTooltip') : undefined
+        }
+        onOpenAudit={() => {
+          setVaultChipOpen(false);
+          openContract();
+        }}
+        menuRef={vaultChipMenuRef}
+        toolsMovedHint={t('header.vaultToolsMovedHint')}
+        t={t}
+      />
+    </div>
+  );
+  // `self-stretch` fills the header height so the active tab covers the baseline.
+  const tabsZone = (
+    <div
+      data-docs-header-zone="tabs"
+      className="hidden min-w-0 flex-1 self-stretch lg:flex"
+    >
+      {view === 'doc' ? (
+        <DocsVaultTabStrip
+          tabs={openDocTabs}
+          activeSlug={selectedSlug}
+          onActivate={handleSelect}
+          onClose={handleCloseDocTab}
+          t={t}
+        />
+      ) : null}
+    </div>
+  );
+  // Fixed order at natural width; zone-c shrinks so nothing overlaps. From md `ml-auto`
+  // right-aligns; at lg zone-c owns the gap.
+  const toolsZone = (
+    <div className="flex w-full flex-none flex-wrap items-center justify-end gap-2 md:ml-auto md:w-auto md:flex-nowrap">
+      {/* Source display and switching live in the vault chip only. */}
+      <DocsHeaderTile
+        icon={<Search size={ICON_SIZE.lg} aria-hidden />}
+        title={t('header.paletteTooltip')}
+        aria-label={t('header.paletteAriaLabel')}
+        onClick={() => {
+          setAdvancedOpen(false);
+          setVaultChipOpen(false);
+          setPaletteQuery('');
+        }}
+      />
+      {/* At lg+ the nav rail gear owns settings; this tile appears only below lg. */}
+      <div className="lg:hidden">
+        <AppSettingsMenu
+          mode={source === 'local' ? 'local' : 'static'}
+          triggerVariant="chrome-tile"
+        />
+      </div>
+    </div>
+  );
+
   return (
     <div className="flex h-full w-full">
       <div className="topology-ui-scale relative flex h-full min-w-0 flex-1 flex-col bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]">
       {/* 44px chrome grid keeps the content start line fixed across views. Below lg the header
          wraps to two rows to avoid overflow at 390px (local-vault-picker.spec.ts). */}
       <div data-chrome-grid="44" className="flex-none">
-      {/* Header zones: [zone-l identity] [zone-c tabs] [zone-r tools]. */}
       {/* From md the header is one row; below md it wraps. */}
       {/* `isolate` and `z-10` are a pair: `isolate` confines the header's stacking, and `z-10`
          lifts the header over the reading pane so its dropdowns are not covered. Keep it
@@ -2059,155 +2193,9 @@ function DocsVaultContent({
           aria-hidden
           className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-px bg-[color:var(--color-border-soft)]"
         />
-        {/* While the list is expanded, zone-l ends at the document pane's left edge so tabs sit
-           over the pane (list width − header padding − zone gap). */}
-        <div
-          data-docs-header-zone="identity"
-          className={cn(
-            // From md this uses content width; the pane alignment applies at lg only.
-            "flex w-full min-w-0 flex-none flex-wrap items-center gap-2 md:w-auto md:flex-nowrap md:gap-3",
-            legacyDocumentMode
-              ? "lg:w-auto"
-              : docListCollapsed
-              ? "lg:w-auto"
-              : "lg:w-[calc(var(--docs-list-width)-1.5rem)]",
-          )}
-        >
-          {legacyDocumentMode ? (
-            <>
-              <Link
-                href={libraryOntologyHref}
-                data-testid="docs-compatibility-library-return"
-                className={controlClass({
-                  shape: 'chip',
-                  size: 'lg',
-                  className: 'flex-none justify-center hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]',
-                })}
-              >
-                <ArrowLeft size={ICON_SIZE.md} aria-hidden />
-                <span>{t('compatibility.back')}</span>
-              </Link>
-              <span className="text-body font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
-                {t('compatibility.title')}
-              </span>
-            </>
-          ) : null}
-          {/* Return to the insights review the user came from; the rail owns the way back to the map. */}
-          {insightsReturnTab ? (
-            <Link
-              href={workspaceHref}
-              aria-label={t('header.backToReviewAriaLabel')}
-              // Not a `<button>`, so the ratchet does not see it, but it must match the chip height.
-              className={controlClass({
-                shape: 'chip',
-                size: 'lg',
-                className:
-                  'flex-none justify-center hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]',
-              })}
-            >
-              <ArrowLeft size={ICON_SIZE.md} aria-hidden />
-              <span className="hidden sm:inline">{t('header.reviewBack')}</span>
-            </Link>
-          ) : null}
-          <Chip
-            size="lg"
-            onClick={() => setSourceTreeOpen(true)}
-            className="flex-none justify-center hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)] lg:hidden"
-            aria-label={t('header.openTreeAriaLabel')}
-            title={t('header.openTreeTitle')}
-          >
-            <Menu size={ICON_SIZE.md} aria-hidden />
-            <span className="hidden sm:inline">{t('header.openTreeTitle')}</span>
-          </Chip>
-          <DocsHeaderTile
-            icon={<PanelLeft size={ICON_SIZE.lg} aria-hidden />}
-            title={docListCollapsed ? t('header.docListExpand') : t('header.docListCollapse')}
-            active={docListCollapsed}
-            aria-expanded={!docListCollapsed}
-            onClick={toggleDocListCollapsed}
-            className="hidden lg:inline-flex"
-          />
-          {/* The chip states the chosen source (`lib/vault-chip-identity`). */}
-          <DocsVaultVaultChip
-            label={
-              vaultChipIdentity.kind === 'local'
-                ? vaultChipIdentity.label
-                : vaultChipIdentity.kind === 'local-pending'
-                  ? t('header.vaultChipLocalPending')
-                  : t('advanced.sourceServer')
-            }
-            docCount={vaultChipIdentity.showDocCount ? scopedDocs.length : null}
-            folderCount={vaultTopLevelFolderCount}
-            path={vaultPillPath}
-            isLocalSourceLoaded={isLocalSourceLoaded}
-            open={vaultChipOpen}
-            onToggle={() =>
-              setVaultChipOpen((open) => {
-                const next = !open;
-                if (next) setAdvancedOpen(false);
-                return next;
-              })
-            }
-            onSwap={() => {
-              setVaultChipOpen(false);
-              handleVaultPillSwap();
-            }}
-            isSample={source === 'server'}
-            allowSample={!installedShell}
-            onUseSample={() => {
-              setVaultChipOpen(false);
-              handleSourceChange('server');
-            }}
-            localDisabled={localSourceDisabled}
-            localDisabledReason={
-              localSourceDisabled ? t('vaultStatus.unsupportedTooltip') : undefined
-            }
-            onOpenAudit={() => {
-              setVaultChipOpen(false);
-              openContract();
-            }}
-            menuRef={vaultChipMenuRef}
-            toolsMovedHint={t('header.vaultToolsMovedHint')}
-            t={t}
-          />
-        </div>
-        {/* `self-stretch` fills the header height so the active tab covers the baseline. */}
-        <div
-          data-docs-header-zone="tabs"
-          className="hidden min-w-0 flex-1 self-stretch lg:flex"
-        >
-          {view === 'doc' ? (
-            <DocsVaultTabStrip
-              tabs={openDocTabs}
-              activeSlug={selectedSlug}
-              onActivate={handleSelect}
-              onClose={handleCloseDocTab}
-              t={t}
-            />
-          ) : null}
-        </div>
-        {/* zone-r: fixed order, natural width; zone-c shrinks so nothing overlaps. */}
-        {/* From md `ml-auto` right-aligns; at lg zone-c owns the gap. */}
-        <div className="flex w-full flex-none flex-wrap items-center justify-end gap-2 md:ml-auto md:w-auto md:flex-nowrap">
-          {/* Source display and switching live in the vault chip only. */}
-          <DocsHeaderTile
-            icon={<Search size={ICON_SIZE.lg} aria-hidden />}
-            title={t('header.paletteTooltip')}
-            aria-label={t('header.paletteAriaLabel')}
-            onClick={() => {
-              setAdvancedOpen(false);
-              setVaultChipOpen(false);
-              setPaletteQuery('');
-            }}
-          />
-          {/* At lg+ the nav rail gear owns settings; this tile appears only below lg. */}
-          <div className="lg:hidden">
-            <AppSettingsMenu
-              mode={source === 'local' ? 'local' : 'static'}
-              triggerVariant="chrome-tile"
-            />
-          </div>
-        </div>
+        {identityZone}
+        {tabsZone}
+        {toolsZone}
       </header>
       </div>
       <DocsVaultAuditModal
