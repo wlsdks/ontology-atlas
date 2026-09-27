@@ -10,8 +10,8 @@ routes: [/agents]
 
 ### `/agents` — Agents (the default tab)
 
-The page has three tabs, in the order of `src/views/agents/lib/agents-tab-state.ts`:
-Agents, Models and MCP. `?tab=` selects one; a missing or unknown value opens Agents.
+The page's tabs are Agents, Models and MCP, in the order of
+`src/views/agents/lib/agents-tab-state.ts`. `?tab=` selects one; a missing or unknown value opens Agents.
 
 **One sentence on what this screen does**: **Get · install · attach · fix · and start conversation with** the AI coding tool on this computer.
 
@@ -151,7 +151,7 @@ and Escape. The record is in `docs/DECISIONS.md` (one list).
   address did not carry over. The generator refuses that shape. What remains is a **local
   program** that asks for exactly one credential, with a link to the page that issues it,
   and an **address that asks nothing** (Context7). The entries are the generated file
-  named below. The hosted rows return when an adapter is measured running the
+  named above. The hosted rows return when an adapter is measured running the
   flow.
 - **The program is chosen, not typed.** `resolve_connector_runtimes` resolves a fixed
   allow-list — `npx`, `node`, `uvx`, `python3`, `docker` — to absolute paths on this

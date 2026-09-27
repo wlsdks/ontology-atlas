@@ -16,8 +16,9 @@ routes: []
   Insights (`/ontology/insights`) · Projects (`/projects` or `/project/*`) ·
   Agents (`/agents`) · Git (`/git`). MCP is a tab of Agents; `/mcp` redirects
   there and has no tile.
-  Library holds the Sources, Wiki, Ontology, Work scopes and Check history tabs
-  (`src/app/library-workspace/index.tsx`). Its Ontology tab reuses the Markdown
+  Library's tabs are the `LibraryTab` type in
+  `src/app/library-workspace/index.tsx`, described in
+  [`library/workspace.md`](../library/workspace.md). Its Ontology tab reuses the Markdown
   reader/editor and preserves `/docs/?slug=…` links, fragments, local drafts,
   and conflict protection. Library also inherits the former mobile Docs slot.
   Relation writing stays on the map, in the contextual meaning editor

@@ -33,8 +33,8 @@ writable folder instead of presenting a dead editor.
 ## 2. Bootstrap from existing docs
 
 Opening a folder that has markdown but no `kind:` frontmatter shows a topology
-empty state that acknowledges the found documents and offers **Create map from
-my docs** — a blocking dialog that proposes candidates from the already scanned
+empty state that acknowledges the found documents and offers **Build the map from
+my documents** — a blocking dialog that proposes candidates from the already scanned
 manifest (root README → project title · 1-depth folders → domains · each doc →
 element with `domain:`), and on confirm writes only frontmatter to the accepted
 docs (bodies untouched) plus one new `project.md`. Candidate derivation is pure:
@@ -77,14 +77,16 @@ ingress paths converge on the same shape. The dialog never says "ontology".
 - **Magnitude & type scale** — domain/capability radii encode descendant
   count (log-compressed); labels/engraved numerals scale sub-linearly with
   zoom (widthCache keys include quantized font size).
-- **First-map reveal** — after "Create map from my docs", nodes assemble out
+- **First-map reveal** — after "Build the map from my documents", nodes assemble out
   of the project position and spring-settle into place (reduced-motion
   arrives instantly).
 - **Idle frame gate** — the canvas stops physics+paint after 1.2s of true
   idle (rAF stays alive; any state change resumes next frame).
 - **Canonical census** — every surface that says "N concepts" uses one
-  derivation (`computeCanonicalCensus`). Topology, Library, the meaning editor,
-  Insights, and Projects read the same file-backed scope; a surface-specific
+  derivation (`computeCanonicalCensus`). Its callers are the Topology index
+  (`src/views/home/model/use-topology-index-read-model.ts`), Insights
+  (`src/views/ontology-insights/lib/census-health.ts`) and project detail
+  (`src/views/project-detail/ui/ProjectDetailPage.tsx`); a surface-specific
   subset is labeled as a subset rather than presented as the vault total.
 - **Library on the web** — the local-vault gate is capability-based
   (File System Access), not runtime-based: the same browser session that
@@ -100,7 +102,12 @@ ingress paths converge on the same shape. The dialog never says "ontology".
 In the installed app (Tauri — detected via `isDesktopShell()`,
 `src/shared/lib/desktop-shell.ts`), `/` with no vault renders **FirstRunPage**
 (`src/views/first-run/`): local-only actions to open a vault folder or create
-one, plus a local-first trust line. Bundled demo vaults are web-only; no demo or
+one, plus a local-first trust line. **Just start** (`first-run-just-start` in
+`FirstRunPage.tsx`, and the create menu of `FirstRunFolderActions.tsx` when
+known folders are listed) needs no picker: it creates `~/Ontology Atlas/<name>`
+on real disk, numbering `-2`/`-3` on a name clash, and seeds it like a new
+vault. It is the no-project path; a project's own map uses the project-local
+vault below. Bundled demo vaults are web-only; no demo or
 download CTA appears inside the installed app. Creation doors hand the starter
 seed to the open itself (`open`/`openRecent` with `starter`), so it lands before
 the folder is first shown. A seed that cannot be written is said in a toast that
@@ -134,9 +141,10 @@ between the CLI templates and the web starter constants is gated by
 
 ## 5. Web first open
 
-On hosted web with no vault selected, `/` renders `HomePage` (the same topology
-hub `/topology` uses) drawing the bundled sample read-only, with a first-run
-starter module inside the INDEX panel (`FirstRunStarterModule`,
+On hosted web with no vault selected, `/` shows the gateway
+(`GatewayLandingPage`, chosen by `src/views/root-entry/ui/RootEntryPage.tsx`;
+see [`gateway.md`](gateway.md)). `/topology` draws the bundled sample
+read-only, with a first-run starter module inside the INDEX panel (`FirstRunStarterModule`,
 `src/features/first-run-starter/`). Opening a folder from it first shows a
 guide sheet (`VaultOpenGuideSheet`, `src/features/docs-vault-local/`): any
 markdown folder is fine; Atlas opens it locally and does not upload it to an

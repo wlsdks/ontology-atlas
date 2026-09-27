@@ -41,10 +41,10 @@ legacy addresses and malformed quoted remainders. Original bytes and existing
 wiki citations are not rewritten, and a matching source hash does not prove that
 an old ambiguous citation identifies the intended passage.
 
-Sources and Wiki shipped inside the Docs sidebar on 2026-09-05 and moved to Library the
-next day after five capped lists competed inside one 280px column. On 2026-09-14 the owner
-unified navigation without recombining those lists: Library now has Sources, Wiki, Ontology,
-and Collections tabs, and each tab keeps its own reader and file meaning. The mobile Library tab
+Library has five tabs — Sources, Wiki, Ontology, Work scopes and Check history
+(`LibraryTab` in `src/app/library-workspace/index.tsx`; labels in
+`messages/en/library.json` `workspace.*`) — and each tab keeps its own reader and
+file meaning. The mobile Library tab
 inherits the former Docs slot; `/docs/?slug=…` remains a compatible exact-file link, using the
 general Document reader only when the target is outside Ontology. The Ontology tree and all of
 its displayed and restored working sets show only the five explicit schema kinds, and its name-and-path filter
@@ -592,7 +592,7 @@ Tour one-click doors: hree one-click doors, plus one that reaches outside this c
 - **Bring from a service** (new 2026-09-07) — the door for documents that are not on
   this computer at all. Owner: *"connecting a service is mostly for the Library anyway —
   people want the things they already wrote somewhere else."* Tiles name services, not
-  protocols — Notion, GitHub, and last, a way out to the technical dialog on the Agents page's MCP tab (`/agents/?tab=mcp`) for
+  protocols — Notion, GitHub, and last, a way out to the technical dialog at `/agents/?tab=mcp&mcp=connectors` for
   anything else. **This path never says MCP, stdio, npx or environment variable**; a
   component test asserts that. Three steps: ① the person pastes the one value the service
   issues, with a link to where; Atlas puts it in the keychain, writes the connection into
