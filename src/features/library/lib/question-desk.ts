@@ -22,6 +22,14 @@ function deskPages(docs: readonly VaultDoc[]): VaultDoc[] {
   return docs.filter((doc) => doc.slug.startsWith('wiki/') && !doc.slug.split('/').some((part) => part.startsWith('_')) && !doc.frontmatter.kind);
 }
 
+/** One search/report snapshot, independent of the folder handle's display name. */
+export function questionDeskListingVersion(docs: readonly VaultDoc[], sources: readonly { path: string; mtime: number; bytes: number }[]): string {
+  return JSON.stringify([
+    docs.filter((doc) => doc.slug.startsWith('wiki/')).map((doc) => [doc.slug, doc.mtime ?? null]),
+    sources.map((source) => [source.path, source.mtime, source.bytes]),
+  ]);
+}
+
 export function countDeskReadablePages(docs: readonly VaultDoc[], rawBySlug: ReadonlyMap<string, string>): number {
   return deskPages(docs).filter((doc) => rawBySlug.has(doc.slug)).length;
 }

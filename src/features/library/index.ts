@@ -32,8 +32,8 @@ export type {
 } from "./lib/describe-wiki-problem";
 export { FindDocumentsDialog } from "./ui/FindDocumentsDialog";
 export { buildAskBrief } from "./lib/ask-brief";
-export { buildQuestionDeskBrief } from './lib/question-desk-brief';
-export { countDeskReadablePages, findDeskClaims, findDeskSourceHits, jevClaimEligibility, jevPayloadEligibility, planDeskSourceReads, questionTerms } from './lib/question-desk';
+export { buildQuestionDeskBrief, buildQuestionDeskReportBrief, planQuestionDeskReportFile, questionDeskReportFilename, serializeQuestionDeskReport } from './lib/question-desk-brief';
+export { countDeskReadablePages, findDeskClaims, findDeskSourceHits, jevClaimEligibility, jevPayloadEligibility, planDeskSourceReads, questionDeskListingVersion, questionTerms } from './lib/question-desk';
 export type { DeskCitation, DeskClaim, DeskSourceHit } from './lib/question-desk';
 export type { AskQuestionId } from "./lib/ask-brief";
 export { buildAnswerPage } from "./lib/answer-page";

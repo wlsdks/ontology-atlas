@@ -662,6 +662,57 @@
     [data-docs-viewer] a {
       color: #1a1a1a;
     }
+
+    /* Question Desk print is a separate, explicit scope. Its report and the
+       Markdown download read the same question, ACP text, and search receipts. */
+    html[data-print-scope="question-desk"] [data-docs-viewer],
+    html[data-print-scope="question-desk"] [data-docs-viewer] * {
+      visibility: hidden;
+    }
+    html[data-print-scope="question-desk"] body > *,
+    html[data-print-scope="question-desk"] [data-testid="library-page"],
+    html[data-print-scope="question-desk"] [data-testid="library-reader"],
+    html[data-print-scope="question-desk"] [data-testid="library-pane-body"],
+    html[data-print-scope="question-desk"] [data-testid="library-question-desk"] {
+      height: auto !important;
+      max-height: none !important;
+      overflow: visible !important;
+    }
+    html[data-print-scope="question-desk"] [data-question-desk-print],
+    html[data-print-scope="question-desk"] [data-question-desk-print] * {
+      visibility: visible;
+    }
+    html[data-print-scope="question-desk"] [data-question-desk-print] {
+      page: atlas-question-report;
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      color: #111;
+      background: #fff;
+    }
+    html[data-print-scope="question-desk"] [data-question-desk-print] * {
+      color: #111 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+    html[data-print-scope="question-desk"] [data-question-desk-print] header,
+    html[data-print-scope="question-desk"] [data-question-desk-print] footer,
+    html[data-print-scope="question-desk"] [data-question-desk-print] li {
+      break-inside: avoid;
+    }
+    html[data-print-scope="question-desk"] [data-question-desk-print] button {
+      border: 0;
+      padding: 0;
+      text-decoration: underline;
+    }
   }
 }
 
+@page atlas-question-report {
+  size: A4;
+  margin: 18mm 16mm;
+}

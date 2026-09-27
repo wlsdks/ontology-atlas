@@ -39,6 +39,8 @@ import {
   dropCandidatesWithNodes,
   wikiPagePathOf,
   buildAskBrief,
+  planQuestionDeskReportFile,
+  questionDeskListingVersion,
   buildFixBrief,
   buildWikiShapeFixBrief,
   parseLintFindings,
@@ -96,6 +98,7 @@ import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion
 import { RIGHT_DOCK_WIDTH_VAR } from "@/shared/lib/right-dock-reserve";
 import { getTauriVaultRootPath, nativeVaultFileHashes, revealTauriVaultFile } from "@/shared/lib/tauri-vault-fs";
 import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
+import { citedPassage as resolveCitedPassage } from '@/shared/lib/source-passage';
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { PAGE_COLUMN_STAGE } from "@/shared/ui/page-frame";
@@ -143,7 +146,7 @@ import { SourceSummary } from "./parts/SourceSummary";
 import { WikiPageHeader } from "./parts/WikiPageHeader";
 import { WikiTemplateProblems } from "./parts/WikiTemplateProblems";
 import { LibraryQuestions } from './parts/LibraryQuestions';
-import { LibraryQuestionDesk } from './parts/LibraryQuestionDesk';
+import { LibraryQuestionDesk, type QuestionDeskReportRequest } from './parts/LibraryQuestionDesk';
 import { RetainedAnswerContext, RetainedAnswerFooter } from './parts/RetainedAnswerContext';
 import { AnswerRevisionComparison } from './parts/AnswerRevisionComparison';
 import { LibraryConstellation } from "./parts/LibraryConstellation";
@@ -447,6 +450,9 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
     vaultScope: workVaultScope,
     enabled: hasFolder,
   });
+  const currentDeskListingVersion = questionDeskListingVersion(docs, model.sources);
+  const latestDeskListingVersionRef = useRef(currentDeskListingVersion);
+  useEffect(() => { latestDeskListingVersionRef.current = currentDeskListingVersion; }, [currentDeskListingVersion]);
   const retainedAnswers = model.retainedAnswers ?? EMPTY_DOCS;
   const knownOriginalPaths = useMemo(() => new Set(model.sources.map((source) => source.path)), [model.sources]);
   /** What step three already lists, so "Start with …" names a different page than the rows. */
@@ -1186,9 +1192,20 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   const writeMode = useWikiWriteMode();
   /* The last question asked from a page and the answer it got: the pair a person can file
      back as a wiki page (owner direction 2026-09-07, the LLM Wiki pattern). */
-  const pendingAskRef = useRef<{ question: string; askedOn: string | null } | null>(null);
+  const pendingAskRef = useRef<{ question: string; askedOn: string | null; report?: Pick<QuestionDeskReportRequest, 'searchId' | 'listingVersion' | 'vaultScope' | 'coverage' | 'limits'> & { epoch: number } } | null>(null);
   const activeReadOnlyTurnRef = useRef(false);
   const [lastAnswer, setLastAnswer] = useState<RetainedLibraryAnswer | null>(null);
+  const [deskReport, setDeskReport] = useState<{ answer: RetainedLibraryAnswer; searchId: number; listingVersion: string; vaultScope: string; coverage: string; limits: string; generatedAt: string } | null>(null);
+  const latestDeskReportRef = useRef(deskReport);
+  useEffect(() => { latestDeskReportRef.current = deskReport; }, [deskReport]);
+  const reportEpochRef = useRef(0);
+  const invalidateDeskReport = useCallback(() => {
+    reportEpochRef.current += 1;
+    const previous = latestDeskReportRef.current;
+    latestDeskReportRef.current = null;
+    if (previous) setLastAnswer((current) => current === previous.answer ? null : current);
+    setDeskReport(null);
+  }, []);
   const answerGenerationRef = useRef(0);
   const filedAnswersRef = useRef(new WeakSet<RetainedLibraryAnswer>());
   const [filingAnswer, setFilingAnswer] = useState<RetainedLibraryAnswer | null>(null);
@@ -1266,13 +1283,13 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
     [failureSentence, handle, knownSlugs, markSelfWrite, nativeVaultRootPath, t, toast, unmarkSelfWrite],
   );
 
-  const handleFileAnswer = useCallback(async () => {
+  const handleFileAnswer = useCallback(async (answerOverride?: string) => {
     if (!lastAnswer || !handle || lastAnswer.generation !== answerGenerationRef.current || filedAnswersRef.current.has(lastAnswer)) return;
     const filed = lastAnswer;
     const selectionAtFileStart = latestSelectedRef.current;
     const input = {
       question: lastAnswer.question,
-      answer: lastAnswer.text,
+      answer: answerOverride ?? lastAnswer.text,
       askedOn: lastAnswer.askedOn,
       writer: agent.runtime ? `agent:${agent.runtime.id}` : "agent:unknown",
       now: new Date(),
@@ -1350,6 +1367,38 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
     }
   }, [agent.runtime, failureSentence, handle, lastAnswer, markSelfWrite, model.pairing.originalsByWiki, model.sources, nativeVaultRootPath, t, toast, unmarkSelfWrite]);
 
+  const handleFileReport = useCallback(async () => {
+    if (!deskReport || deskReport.answer !== lastAnswer || !handle) return;
+    setFileAnswerNote(null);
+    const plan = planQuestionDeskReportFile({
+      question: deskReport.answer.question, text: deskReport.answer.text,
+      coverage: deskReport.coverage, limits: deskReport.limits, generatedAt: deskReport.generatedAt,
+    }, locale, new Set(model.sources.map((source) => source.path)));
+    if (!plan.ok) { setFileAnswerNote(t(`questionDesk.report.fileRefused.${plan.reason}`)); return; }
+    const bytesByPath = new Map<string, Uint8Array>();
+    try {
+      for (const { path, anchor } of plan.citations) {
+        const listed = model.sources.find((source) => source.path === path);
+        const sourceHandle = localVault.sourceHandles.get(path);
+        if (!listed || !sourceHandle) { setFileAnswerNote(t('questionDesk.report.fileRefused.source')); return; }
+        let bytes = bytesByPath.get(path);
+        if (!bytes) {
+          const file = await sourceHandle.getFile();
+          if (file.lastModified !== listed.mtime || (typeof file.size === 'number' && file.size !== listed.bytes)) { setFileAnswerNote(t('questionDesk.report.fileRefused.changed')); return; }
+          bytes = new Uint8Array(await file.arrayBuffer());
+          bytesByPath.set(path, bytes);
+        }
+        if (resolveCitedPassage(bytes, path, anchor).state !== 'resolved') { setFileAnswerNote(t('questionDesk.report.fileRefused.anchor')); return; }
+      }
+      if (answerGenerationRef.current !== deskReport.answer.generation || latestDeskReportRef.current !== deskReport
+        || latestDeskListingVersionRef.current !== deskReport.listingVersion) {
+        setFileAnswerNote(t('questionDesk.report.outdated'));
+        return;
+      }
+      await handleFileAnswer(plan.answer);
+    } catch { setFileAnswerNote(t('questionDesk.report.fileRefused.source')); }
+  }, [deskReport, handle, handleFileAnswer, lastAnswer, localVault.sourceHandles, locale, model.sources, t]);
+
   const autoDecide = useCallback(
     (request: { filePath: string | null; rawInput: Record<string, unknown>; toolKind: string | null; toolName: string | null }) => {
       if (activeReadOnlyTurnRef.current) return null;
@@ -1416,13 +1465,14 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
       activeReadOnlyTurnRef.current = kind === 'ask';
       const refreshTurn = kind === 'refresh' ? captureAnswerRefresh() : null;
       const selectionAtStart = latestSelectedRef.current;
-      const asked = kind === "ask"
+      const asked: { question: string; askedOn: string | null; report?: Pick<QuestionDeskReportRequest, 'searchId' | 'listingVersion' | 'vaultScope' | 'coverage' | 'limits'> & { epoch: number } } | null = kind === "ask"
         ? opening && pendingAskRef.current
           ? pendingAskRef.current
           : { question: start.text.trim(), askedOn: selectionAtStart?.kind === "wiki" ? selectionAtStart.slug : null }
         : null;
       if (opening?.kind === "ask") pendingAskRef.current = null;
       setLastAnswer(null);
+      setDeskReport(null);
       setFileAnswerNote(null);
       const stamp = (list: typeof docs) =>
         new Map(
@@ -1495,7 +1545,15 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
          * is an entry, or the log would claim a compile that never ran.
          */
         if (kind === "ask") {
-          if (generation === answerGenerationRef.current && asked && lastAgentText && lastAgentText.trim()) setLastAnswer({ generation, question: asked.question, text: lastAgentText, askedOn: asked.askedOn });
+          if (generation === answerGenerationRef.current && asked && lastAgentText && lastAgentText.trim()
+            && (!asked.report || asked.report.epoch === reportEpochRef.current)) {
+            const answer = { generation, question: asked.question, text: lastAgentText, askedOn: asked.askedOn };
+            setLastAnswer(answer);
+            if (asked.report) {
+              const { epoch: _epoch, ...report } = asked.report;
+              setDeskReport({ answer, ...report, generatedAt: completion.endedAt });
+            }
+          }
           return;
         }
         if (kind === "propose" || kind === "import") return;
@@ -2867,6 +2925,27 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
               vaultRoot={nativeVaultRootPath}
               vaultScope={workVaultScope}
               agentReady={agent.route === 'agent' && agent.runtime !== null && nativeVaultRootPath !== null}
+              visible={homeVisible && indexSegment === 'wiki'}
+              turnRunning={turnRunning}
+              report={deskReport && deskReport.answer === lastAnswer ? {
+                question: deskReport.answer.question,
+                text: deskReport.answer.text,
+                searchId: deskReport.searchId,
+                listingVersion: deskReport.listingVersion,
+                vaultScope: deskReport.vaultScope,
+                coverage: deskReport.coverage,
+                limits: deskReport.limits,
+                generatedAt: deskReport.generatedAt,
+              } : null}
+              onSummarize={({ brief, question, searchId, listingVersion, vaultScope, coverage, limits }) => {
+                invalidateDeskReport();
+                pendingAskRef.current = { question, askedOn: null, report: { searchId, listingVersion, vaultScope, coverage, limits, epoch: reportEpochRef.current } };
+                agent.start(brief, 'ask');
+              }}
+              onInvalidateReport={invalidateDeskReport}
+              onFileReport={deskReport && deskReport.answer === lastAnswer ? () => void handleFileReport() : null}
+              filingReport={lastAnswer !== null && filingAnswer === lastAnswer}
+              fileReportNote={fileAnswerNote}
               onBrowse={() => setMobileBrowseOpen(true)}
               onAsk={(brief, question) => {
                 pendingAskRef.current = { question, askedOn: null };
@@ -3447,7 +3526,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
           onTurnActivityChange={setAgentActivity}
           onTurnToolActivityChange={handleAcpToolActivityChange}
           onTerminalToolObservation={handleTerminalToolObservation}
-          onFileAnswer={lastAnswer ? handleFileAnswer : null}
+          onFileAnswer={lastAnswer ? deskReport?.answer === lastAnswer ? handleFileReport : handleFileAnswer : null}
           filingAnswer={lastAnswer !== null && filingAnswer === lastAnswer}
           fileAnswerNote={fileAnswerNote}
           noticeActions={{

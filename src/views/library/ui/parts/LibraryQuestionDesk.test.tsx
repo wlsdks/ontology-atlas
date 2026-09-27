@@ -1,5 +1,5 @@
 import { createHash, webcrypto } from 'node:crypto';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import en from '../../../../../messages/en.json';
@@ -14,7 +14,7 @@ vi.mock('@/shared/lib/tauri-jev', async (importOriginal) => {
   return { ...actual, jevSecretStatus: mocks.status, jevJudge: mocks.judge };
 });
 
-import { LibraryQuestionDesk } from './LibraryQuestionDesk';
+import { LibraryQuestionDesk, type QuestionDeskReportDraft, type QuestionDeskReportRequest } from './LibraryQuestionDesk';
 
 const original = '# Refund handling\nRefund approval queues a stock restoration job.\n';
 const currentHash = createHash('sha256').update(original).digest('hex');
@@ -45,13 +45,25 @@ function fixture(hash = currentHash, listedMtime = 10) {
   return { doc, raw, source, handle };
 }
 
-function Desk({ hash = currentHash, scope = 'folder-a', listedMtime = 10, includeWiki = true, onAsk = () => {} }: { hash?: string; scope?: string; listedMtime?: number; includeWiki?: boolean; onAsk?: (brief: string, question: string) => void }) {
+function Desk({ hash = currentHash, scope = 'folder-a', listedMtime = 10, includeWiki = true, visible = true, agentReady = true, onAsk = () => {}, onSummarize = () => {}, report = null, onFileReport = null, onOpenSource = () => {} }: {
+  hash?: string; scope?: string; listedMtime?: number; includeWiki?: boolean;
+  visible?: boolean; agentReady?: boolean;
+  onAsk?: (brief: string, question: string) => void;
+  onSummarize?: (request: QuestionDeskReportRequest) => void;
+  report?: QuestionDeskReportDraft | null;
+  onFileReport?: (() => void) | null;
+  onOpenSource?: (path: string, anchor: string) => void;
+}) {
   const { doc, raw, source, handle } = fixture(hash, listedMtime);
   return <NextIntlClientProvider locale="en" messages={en}>
     <LibraryQuestionDesk docs={includeWiki ? [doc] : []} pageTexts={includeWiki ? new Map([[doc.slug, raw]]) : new Map()}
       sources={[source]} sourceHandles={new Map([[path, handle]])} hashes={new Map([[path, currentHash]])}
-      vaultRoot="/fixture" vaultScope={scope} agentReady={true}
-      onBrowse={() => {}} onAsk={onAsk} onOpenWiki={() => {}} onOpenSource={() => {}} />
+      vaultRoot="/fixture" vaultScope={scope} agentReady={agentReady}
+      visible={visible}
+      turnRunning={false} report={report} onSummarize={onSummarize}
+      onInvalidateReport={() => {}}
+      onFileReport={onFileReport} filingReport={false} fileReportNote={null}
+      onBrowse={() => {}} onAsk={onAsk} onOpenWiki={() => {}} onOpenSource={onOpenSource} />
   </NextIntlClientProvider>;
 }
 
@@ -86,6 +98,122 @@ describe('Library question desk transfer boundary', () => {
     expect(mocks.judge).not.toHaveBeenCalled();
   });
 
+  it('starts a report only on explicit press and renders the returned freeform draft with safe citations', async () => {
+    const onSummarize = vi.fn<(request: QuestionDeskReportRequest) => void>();
+    const onFileReport = vi.fn();
+    const onOpenSource = vi.fn();
+    const rendered = render(<Desk onSummarize={onSummarize} onFileReport={onFileReport} onOpenSource={onOpenSource} />);
+    await search();
+    expect(onSummarize).not.toHaveBeenCalled();
+    expect(mocks.status).not.toHaveBeenCalled();
+    expect(screen.getByTestId('question-desk-summarize')).toBeEnabled();
+    fireEvent.click(screen.getByTestId('question-desk-summarize'));
+    expect(onSummarize).toHaveBeenCalledTimes(1);
+    const request = onSummarize.mock.calls[0]![0];
+    expect(request.brief).toContain('## Disagreements or changed claims');
+    expect(request.brief).toContain('Write no files.');
+    const report: QuestionDeskReportDraft = {
+      question: request.question, searchId: request.searchId, listingVersion: request.listingVersion, vaultScope: request.vaultScope,
+      text: '# A freeform heading\n\nThe job runs later. [[src:sources/refund.md#l2]]\n\nMissing [[src:sources/gone.md#l4]]. Invalid [[src:sources/refund.md#bogus]]. [external](https://example.com) ![remote](https://example.com/image.png)<img src="https://example.com/raw.png" />',
+      coverage: request.coverage, limits: request.limits, generatedAt: '2026-09-27T17:00:00Z',
+    };
+    rendered.rerender(<Desk report={report} onSummarize={onSummarize} onFileReport={onFileReport} onOpenSource={onOpenSource} />);
+    const draft = screen.getByTestId('question-desk-report');
+    expect(draft).toHaveTextContent('AGENT DRAFT · UNREVIEWED');
+    expect(draft).toHaveTextContent('A freeform heading');
+    expect(draft).not.toHaveTextContent('Source-backed evidence');
+    const cited = within(draft).getByRole('button', { name: 'sources/refund.md#l2' });
+    fireEvent.click(cited);
+    expect(onOpenSource).toHaveBeenCalledWith('sources/refund.md', 'l2');
+    expect(screen.getAllByTestId('question-desk-report-citation-unavailable')).toHaveLength(2);
+    expect(screen.queryByRole('button', { name: 'sources/refund.md#bogus' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'external' })).not.toBeInTheDocument();
+    expect(draft.querySelector('img')).toBeNull();
+    expect(draft.querySelector('img[src="https://example.com/raw.png"]')).toBeNull();
+    expect(onFileReport).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId('question-desk-file-report'));
+    expect(onFileReport).toHaveBeenCalledTimes(1);
+    expect(mocks.judge).not.toHaveBeenCalled();
+    rendered.rerender(<Desk visible={false} report={report} onSummarize={onSummarize} onFileReport={onFileReport} onOpenSource={onOpenSource} />);
+    expect(screen.queryByTestId('question-desk-report-markdown')).not.toBeInTheDocument();
+    rendered.rerender(<Desk visible report={report} onSummarize={onSummarize} onFileReport={onFileReport} onOpenSource={onOpenSource} />);
+    expect(screen.getByTestId('question-desk-report')).toHaveTextContent('A freeform heading');
+  });
+
+  it('offers explicit Markdown and print exports only for the current unreviewed report', async () => {
+    const onSummarize = vi.fn<(request: QuestionDeskReportRequest) => void>();
+    const rendered = render(<Desk onSummarize={onSummarize} />);
+    await search();
+    expect(screen.queryByTestId('question-desk-download-markdown')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('question-desk-print-pdf')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('question-desk-summarize'));
+    const request = onSummarize.mock.calls[0]![0];
+    const report: QuestionDeskReportDraft = {
+      question: request.question, searchId: request.searchId, listingVersion: request.listingVersion, vaultScope: request.vaultScope,
+      text: 'A job runs later. [[src:sources/refund.md#l2]]',
+      coverage: request.coverage, limits: request.limits, generatedAt: '2026-09-27T17:00:00Z',
+    };
+    rendered.rerender(<Desk report={report} onSummarize={onSummarize} />);
+    const printable = screen.getByTestId('question-desk-print-content');
+    expect(printable).toHaveTextContent(request.question);
+    expect(printable).toHaveTextContent(report.text.replace('[[src:sources/refund.md#l2]]', 'sources/refund.md#l2'));
+    expect(printable).toHaveTextContent(report.coverage);
+    expect(printable).toHaveTextContent(report.limits);
+    expect(printable.querySelector('[data-testid="question-desk-download-markdown"]')).toBeNull();
+    const previousCreate = URL.createObjectURL;
+    const previousRevoke = URL.revokeObjectURL;
+    const createUrl = vi.fn(() => 'blob:question-desk');
+    const revokeUrl = vi.fn();
+    Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: createUrl });
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: revokeUrl });
+    let downloadedName = '';
+    const anchorClick = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) { downloadedName = this.download; });
+    try {
+      vi.useFakeTimers();
+      fireEvent.click(screen.getByTestId('question-desk-download-markdown'));
+      expect(createUrl).toHaveBeenCalledWith(expect.any(Blob));
+      expect(downloadedName).toBe('atlas-question-report-does-refund-approval-restore-stock-20260927.md');
+      vi.advanceTimersByTime(1000);
+      expect(revokeUrl).toHaveBeenCalledWith('blob:question-desk');
+    } finally {
+      vi.useRealTimers();
+      anchorClick.mockRestore();
+      if (previousCreate) Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: previousCreate });
+      else delete (URL as unknown as { createObjectURL?: unknown }).createObjectURL;
+      if (previousRevoke) Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: previousRevoke });
+      else delete (URL as unknown as { revokeObjectURL?: unknown }).revokeObjectURL;
+    }
+    const print = vi.spyOn(window, 'print').mockImplementation(() => {});
+    fireEvent.click(screen.getByTestId('question-desk-print-pdf'));
+    expect(print).toHaveBeenCalledTimes(1);
+    expect(document.documentElement.dataset.printScope).toBe('question-desk');
+    window.dispatchEvent(new Event('afterprint'));
+    expect(document.documentElement.dataset.printScope).toBeUndefined();
+    print.mockRestore();
+    rendered.rerender(<Desk report={report} listedMtime={11} onSummarize={onSummarize} />);
+    expect(screen.queryByTestId('question-desk-report')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('question-desk-print-pdf')).not.toBeInTheDocument();
+  });
+
+  it('clears an active print scope when the desk unmounts before afterprint', async () => {
+    const onSummarize = vi.fn<(request: QuestionDeskReportRequest) => void>();
+    const rendered = render(<Desk onSummarize={onSummarize} />);
+    await search();
+    fireEvent.click(screen.getByTestId('question-desk-summarize'));
+    const request = onSummarize.mock.calls[0]![0];
+    rendered.rerender(<Desk onSummarize={onSummarize} report={{
+      question: request.question, searchId: request.searchId, listingVersion: request.listingVersion,
+      vaultScope: request.vaultScope, text: 'Unreviewed answer.', coverage: request.coverage,
+      limits: request.limits, generatedAt: '2026-09-27T17:00:00Z',
+    }} />);
+    const print = vi.spyOn(window, 'print').mockImplementation(() => {});
+    fireEvent.click(screen.getByTestId('question-desk-print-pdf'));
+    expect(document.documentElement.dataset.printScope).toBe('question-desk');
+    rendered.unmount();
+    expect(document.documentElement.dataset.printScope).toBeUndefined();
+    print.mockRestore();
+  });
+
   it('renders a source-only folder and searches it without touching Keychain', async () => {
     mocks.status.mockReturnValue(new Promise(() => {}));
     render(<Desk includeWiki={false} />);
@@ -94,6 +222,17 @@ describe('Library question desk transfer boundary', () => {
     await search();
     expect(screen.getByTestId('question-desk-results')).toHaveTextContent('Searched 0 of 0 Wiki pages and 1 of 1 original files.');
     expect(screen.getByText('Refund approval queues a stock restoration job.')).toBeInTheDocument();
+    expect(mocks.status).not.toHaveBeenCalled();
+  });
+
+  it('keeps local source review usable when no agent is connected', async () => {
+    const onOpenSource = vi.fn();
+    render(<Desk agentReady={false} onOpenSource={onOpenSource} />);
+    await search();
+    expect(screen.getByTestId('question-desk-summarize')).toBeDisabled();
+    expect(screen.getByTestId('question-desk-ask')).toBeDisabled();
+    fireEvent.click(screen.getAllByRole('button', { name: 'sources/refund.md#l2' })[0]!);
+    expect(onOpenSource).toHaveBeenCalledWith('sources/refund.md', 'l2');
     expect(mocks.status).not.toHaveBeenCalled();
   });
 
