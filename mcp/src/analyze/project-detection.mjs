@@ -230,6 +230,7 @@ export function detectExistingOntologyEvidence(rootPath, skipped = []) {
   const seen = new Set();
   const realOntologyRoot = realpathSync.native(ontologyRoot);
   const ancestors = new Set();
+  const visitedDirectories = new Set();
   let entriesSeen = 0;
   let filesSeen = 0;
   let budgetSpent = false;
@@ -244,6 +245,8 @@ export function detectExistingOntologyEvidence(rootPath, skipped = []) {
       });
       return;
     }
+    if (visitedDirectories.has(realDirectory)) return;
+    visitedDirectories.add(realDirectory);
     ancestors.add(realDirectory);
     for (const entry of readdirSync(dir)) {
       if (walkBudgetReached(dir)) return;

@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import {
+  existsSync,
   mkdtempSync,
   mkdirSync,
   writeFileSync,
@@ -4722,7 +4723,6 @@ test('existing ontology evidence stops a sibling link cycle and keeps both real 
     ]);
     assert.deepEqual(skipped, [
       'ontology-evidence-skip: docs/ontology/domains/a/to-b/to-a repeats a visited directory',
-      'ontology-evidence-skip: docs/ontology/domains/b/to-a/to-b repeats a visited directory',
     ]);
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -4746,6 +4746,70 @@ test('existing ontology evidence stops a link back to an ancestor folder', () =>
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('existing ontology evidence lists one row for two links to one folder outside docs/ontology', () => {
+  const root = withRepo((r) => {
+    mkdirSync(join(r, 'notes'), { recursive: true });
+    mkdirSync(join(r, 'docs/ontology'), { recursive: true });
+    writeFileSync(join(r, 'notes/ledger.md'), ontologyDomainDoc('Ledger'));
+    symlinkSync('../../notes', join(r, 'docs/ontology/ext1'));
+    symlinkSync('../../notes', join(r, 'docs/ontology/ext2'));
+  });
+  try {
+    const { rows, skipped } = ontologyEvidence(root);
+
+    assert.deepEqual(rows, [{ slug: 'ext1/ledger', source: 'docs/ontology/ext1/ledger.md' }]);
+    assert.deepEqual(skipped, []);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('existing ontology evidence walks a folder shared by three links once', () => {
+  const root = withRepo((r) => {
+    mkdirSync(join(r, 'docs/ontology/shared'), { recursive: true });
+    writeFileSync(join(r, 'docs/ontology/shared/ops.md'), ontologyDomainDoc('Ops'));
+    symlinkSync('..', join(r, 'docs/ontology/shared/up'));
+    for (const name of ['a', 'b', 'c']) symlinkSync('shared', join(r, `docs/ontology/${name}`));
+  });
+  try {
+    const { rows, skipped } = ontologyEvidence(root);
+
+    assert.deepEqual(rows, [{ slug: 'shared/ops', source: 'docs/ontology/shared/ops.md' }]);
+    assert.deepEqual(skipped, ['ontology-evidence-skip: docs/ontology/a/up repeats a visited directory']);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+function tmpdirIgnoresCase() {
+  const probe = mkdtempSync(join(tmpdir(), 'ontology-atlas-case-'));
+  try {
+    writeFileSync(join(probe, 'Probe'), '');
+    return existsSync(join(probe, 'probe'));
+  } finally {
+    rmSync(probe, { recursive: true, force: true });
+  }
+}
+
+test(
+  'existing ontology evidence names a differently cased alias by the on-disk folder',
+  { skip: !tmpdirIgnoresCase() && 'the temporary folder is case-sensitive' },
+  () => {
+    const root = withRepo((r) => {
+      mkdirSync(join(r, 'docs/ontology/domains'), { recursive: true });
+      writeFileSync(join(r, 'docs/ontology/domains/ops.md'), ontologyDomainDoc('Ops'));
+      symlinkSync('DOMAINS', join(r, 'docs/ontology/alias'));
+    });
+    try {
+      const { rows } = ontologyEvidence(root);
+
+      assert.deepEqual(rows, [{ slug: 'domains/ops', source: 'docs/ontology/domains/ops.md' }]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  },
+);
 
 test('invalid analyze options are rejected instead of coerced', () => {
   const root = withRepo(() => {});
