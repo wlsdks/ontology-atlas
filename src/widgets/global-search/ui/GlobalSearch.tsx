@@ -29,6 +29,13 @@ import { focusMapCanvasWhenReady, MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/f
  */
 const RESULT_LIMIT = 20;
 
+function toggledSet<T>(set: ReadonlySet<T>, value: T): ReadonlySet<T> {
+  const next = new Set(set);
+  if (next.has(value)) next.delete(value);
+  else next.add(value);
+  return next;
+}
+
 const EMPTY_PROJECT_PAGE = { results: [], total: 0 } as const;
 
 /** The copy that depends on where the dialog opened: each key exists plain and under `onMap`. */
@@ -114,21 +121,11 @@ export function GlobalSearch({
   );
 
   const toggleKind = useCallback((kind: MeaningfulOntologyKind) => {
-    setSelectedKinds((prev) => {
-      const next = new Set(prev);
-      if (next.has(kind)) next.delete(kind);
-      else next.add(kind);
-      return next;
-    });
+    setSelectedKinds((prev) => toggledSet(prev, kind));
   }, []);
 
   const toggleProjectId = useCallback((projectId: string) => {
-    setSelectedProjectIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(projectId)) next.delete(projectId);
-      else next.add(projectId);
-      return next;
-    });
+    setSelectedProjectIds((prev) => toggledSet(prev, projectId));
   }, []);
 
   // Count what the map draws: a `vault-readme` is a document, not a node (same predicate as the
@@ -270,7 +267,6 @@ export function GlobalSearch({
             "fixed inset-0 z-50 flex items-stretch justify-center md:items-start md:px-4 md:pt-[12vh]",
             reducedMotion ? "overlay-fade-only" : "overlay-spring-surface",
           )}
-          // Focus the search box on open with preventScroll.
           onOpenAutoFocus={(event) => {
             event.preventDefault();
             previousFocusRef.current = document.activeElement as HTMLElement | null;
@@ -406,7 +402,6 @@ export function GlobalSearch({
               >
                 {t('projectLabel', { count: projectChipSource.length })}
               </span>
-              {/* Horizontal virtualizer renders only chips in the viewport. */}
               {/*
                * The scroller height follows `--control-h-sm`; `overflow-x: auto` clips vertically,
                * so a fixed height cut the coarse-pointer chip.
@@ -559,7 +554,7 @@ export function GlobalSearch({
                     onSelectProject(project);
                     closeAndClear();
                   }}
-                  // Same ladder height as the concept rows.
+                  // Same control-ladder height as the concept rows.
                   className="flex min-h-[var(--control-h-lg)] cursor-pointer items-center gap-2 rounded-chip px-3 py-2 text-body-lg text-[color:var(--color-text-secondary)] aria-selected:bg-[color:var(--color-indigo-a14)] aria-selected:text-[color:var(--color-text-primary)]"
                 >
                   <span className="inline-flex shrink-0 items-center rounded-full border border-[color:var(--color-indigo-a20)] bg-[color:var(--color-indigo-a06)] px-1.5 py-[1px] font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-indigo-text-strong)]">

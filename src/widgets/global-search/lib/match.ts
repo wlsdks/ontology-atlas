@@ -66,15 +66,7 @@ export interface MatchOntologyOptions {
   projectIds?: ReadonlySet<string>;
 }
 
-/**
- * Ontology node search: O(n * names) scoring over the filtered nodes, then an O(n log n) sort.
- * Scores: 7 exact name, 6 name prefix, 5 name substring, 4 Hangul-aware prefix, 3 Hangul-aware
- * substring (`shared/lib/hangul-match`), 2 summary, 1 id slug, 0 excluded. Names are the title and
- * every display name (`shared/lib/node-name-match`). The id matches its slug unless the query has a
- * colon. Every hit carries `matched`. An empty query returns the most recent nodes; ties sort by
- * lastApprovedAt desc. Filters apply before scoring.
- */
-/** The score each name tier earns. The ladder above is this table read downwards. */
+/** The score each name tier earns. The ladder below is this table read downwards. */
 const NAME_TIER_SCORE: Readonly<Record<NameMatchTier, number>> = {
   equals: 7,
   prefix: 6,
@@ -83,6 +75,27 @@ const NAME_TIER_SCORE: Readonly<Record<NameMatchTier, number>> = {
   "hangul-includes": 3,
 };
 
+/** A normalised project name's tier score against a normalised query; 0 when it does not match. */
+function projectNameScore(candidate: string, query: string): number {
+  if (candidate === "") return 0;
+  if (candidate === query) return NAME_TIER_SCORE.equals;
+  if (candidate.startsWith(query)) return NAME_TIER_SCORE.prefix;
+  if (candidate.includes(query)) return NAME_TIER_SCORE.includes;
+  if (hangulStartsWith(candidate, query)) return NAME_TIER_SCORE["hangul-prefix"];
+  if (hangulIncludes(candidate, query)) return NAME_TIER_SCORE["hangul-includes"];
+  return 0;
+}
+
+/**
+ * Ontology node search. One pass: per filtered node up to k cached names, each an
+ * O(|name|·|query|) literal or Hangul check, plus summary and id normalised per query; then
+ * O(m log m) over the m matches.
+ * Scores: 7 exact name, 6 name prefix, 5 name substring, 4 Hangul-aware prefix, 3 Hangul-aware
+ * substring (`shared/lib/hangul-match`), 2 summary, 1 id slug, 0 excluded. Names are the title and
+ * every display name (`shared/lib/node-name-match`). The id matches its slug unless the query has a
+ * colon. Every hit carries `matched`. An empty query returns the most recent nodes; ties sort by
+ * lastApprovedAt desc. Filters apply before scoring.
+ */
 export function matchOntologyNodes(
   query: string,
   nodes: readonly KnowledgeGraphNode[],
@@ -96,12 +109,7 @@ export function matchOntologyNodes(
 
   const passesFilter = (node: KnowledgeGraphNode): boolean => {
     if (hasKindFilter && !kinds!.has(node.kind)) return false;
-    if (hasProjectFilter) {
-      if (node.projectIds.length === 0) return false;
-      const anyMatch = node.projectIds.some((pid) => projectIds!.has(pid));
-      if (!anyMatch) return false;
-    }
-    return true;
+    return !hasProjectFilter || node.projectIds.some((pid) => projectIds!.has(pid));
   };
 
   const trimmed = normalizeForMatch(query);
@@ -170,7 +178,8 @@ export interface ProjectSearchResult {
 }
 
 /**
- * Project search on the node matcher's ladder: 7 exact name or nameEn, 6 prefix, 5 substring, 4 and
+ * Project search, O(n · (names + prose fields)) normalised substring and Hangul checks per query,
+ * then O(m log m) over the m matches. On the node matcher's ladder: 7 exact name or nameEn, 6 prefix, 5 substring, 4 and
  * 3 Hangul-aware, 2 description, tags or category, 1 slug, 0 excluded. Same `normalizeForMatch`
  * (NFC, lowercase, whitespace) so decomposed Hangul matches. An empty query returns the limit by
  * updatedAt desc; ties by updatedAt desc.
@@ -198,16 +207,8 @@ export function matchProjects(
     const nameEn = normalizeForMatch(project.nameEn ?? "");
     const slug = normalizeForMatch(project.slug);
 
-    // Which name matched decides what the row shows, so the pair is resolved once.
-    const nameTier = (candidate: string): number => {
-      if (candidate === "") return 0;
-      if (candidate === trimmed) return 7;
-      if (candidate.startsWith(trimmed)) return 6;
-      if (candidate.includes(trimmed)) return 5;
-      if (hangulStartsWith(candidate, trimmed)) return 4;
-      if (hangulIncludes(candidate, trimmed)) return 3;
-      return 0;
-    };
+    // Which name matched decides what the row shows, so each name is scored once.
+    const nameTier = (candidate: string) => projectNameScore(candidate, trimmed);
     /*
      * A `display_<locale>` is a candidate name on the same ladder, including the Hangul rungs, so a
      * row matched on the Korean word shows that word.

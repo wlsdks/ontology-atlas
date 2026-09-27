@@ -74,6 +74,37 @@ interface EditorDraft {
 const MENTION_MENU_WIDTH = 320;
 const MENTION_MENU_MAX_HEIGHT = 280;
 
+/** Same menu dialect as the vault chip and sort menu. */
+const MENTION_MENU_CLASS =
+  'pointer-events-auto absolute z-10 overflow-hidden rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] shadow-[var(--chrome-shadow)]';
+
+function mentionMenuStyle(at: { top: number; left: number } | null) {
+  return { width: MENTION_MENU_WIDTH, top: at?.top ?? 0, left: at?.left ?? 0 };
+}
+
+/** A leading frontmatter block, left out of the preview. */
+const FRONTMATTER_BLOCK = /^---[\s\S]*?\n---\n?/;
+
+function dirtyIconInk(dirty: boolean): string {
+  return dirty
+    ? 'text-[color:var(--color-amber-docs-a95)]'
+    : 'text-[color:var(--color-text-quaternary)]';
+}
+
+function dirtyValueInk(dirty: boolean): string {
+  return dirty
+    ? 'font-[var(--font-weight-signature)] text-[color:var(--color-amber-docs-a95)]'
+    : 'text-[color:var(--color-text-tertiary)]';
+}
+
+/** Focus the textarea and select a range on the next frame, after React commits the new value. */
+function focusRange(ta: HTMLTextAreaElement, start: number, end: number) {
+  requestAnimationFrame(() => {
+    ta.focus();
+    ta.setSelectionRange(start, end);
+  });
+}
+
 const DRAFT_STORAGE_PREFIX = 'ontology-atlas:docs-vault-editor-draft:';
 
 /**
@@ -226,13 +257,10 @@ export function DocsVaultEditor({
     return () => window.clearTimeout(handle);
   }, [preview, content]);
 
-  // The body used for the preview — frontmatter block removed.
-  const previewBody = useMemo(() => {
-    const src = debounced ?? content ?? '';
-    return src.startsWith('---')
-      ? src.replace(/^---[\s\S]*?\n---\n?/, '')
-      : src;
-  }, [debounced, content]);
+  const previewBody = useMemo(
+    () => (debounced ?? content ?? '').replace(FRONTMATTER_BLOCK, ''),
+    [debounced, content],
+  );
 
   // Wrap the selection and restore the caret; with no selection insert a selected placeholder.
   const wrapSelection = useCallback((wrapper: string, placeholder?: string) => {
@@ -245,13 +273,9 @@ export function DocsVaultEditor({
     const next =
       content.slice(0, start) + wrapper + selected + wrapper + content.slice(end);
     setContent(next);
-    requestAnimationFrame(() => {
-      ta.focus();
-      const selStart = start + wrapper.length;
-      ta.setSelectionRange(selStart, selStart + selected.length);
-    });
+    const selStart = start + wrapper.length;
+    focusRange(ta, selStart, selStart + selected.length);
   }, [content, t]);
-  // Prefix the current line (for headings, lists and quotes).
   const prefixLine = useCallback((prefix: string) => {
     const ta = taRef.current;
     if (!ta || content === null) return;
@@ -259,11 +283,7 @@ export function DocsVaultEditor({
     const lineStart = content.lastIndexOf('\n', caret - 1) + 1;
     const next = content.slice(0, lineStart) + prefix + content.slice(lineStart);
     setContent(next);
-    requestAnimationFrame(() => {
-      ta.focus();
-      const p = caret + prefix.length;
-      ta.setSelectionRange(p, p);
-    });
+    focusRange(ta, caret + prefix.length, caret + prefix.length);
   }, [content]);
   /**
    * The chosen concept before its relation is decided; stopping at the name would add nothing to
@@ -339,16 +359,12 @@ export function DocsVaultEditor({
       setContent(result.content);
       setMentionNotice(result.relationAdded ? 'added' : 'exists');
       setPendingMention(null);
-      requestAnimationFrame(() => {
-        ta.focus();
-        ta.setSelectionRange(result.caret, result.caret);
-      });
+      focusRange(ta, result.caret, result.caret);
     },
     [content, doc.slug, locale, pendingMention],
   );
 
 
-  // Insert a [text](url) link. With a selection, that becomes the text.
   const insertLink = useCallback(() => {
     const ta = taRef.current;
     if (!ta || content === null) return;
@@ -358,12 +374,8 @@ export function DocsVaultEditor({
     const body = `[${selected || t('linkText')}](url)`;
     const next = content.slice(0, start) + body + content.slice(end);
     setContent(next);
-    requestAnimationFrame(() => {
-      ta.focus();
-      // Select the `url` placeholder (3 characters) after the text part.
-      const urlStart = start + body.indexOf('(url)') + 1;
-      ta.setSelectionRange(urlStart, urlStart + 3);
-    });
+    const urlStart = start + body.indexOf('(url)') + 1;
+    focusRange(ta, urlStart, urlStart + 'url'.length);
   }, [content, t]);
 
   const doSave = useCallback(async () => {
@@ -645,22 +657,14 @@ export function DocsVaultEditor({
           </span>
           <Save
             size={ICON_SIZE.sm}
-            className={
-              dirty
-                ? 'text-[color:var(--color-amber-docs-a95)]'
-                : 'text-[color:var(--color-text-quaternary)]'
-            }
+            className={dirtyIconInk(dirty)}
             aria-hidden
           />
           <span className="font-mono uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]">
             {t('diskContract')}
           </span>
           <span
-            className={`truncate ${
-              dirty
-                ? 'font-[var(--font-weight-signature)] text-[color:var(--color-amber-docs-a95)]'
-                : 'text-[color:var(--color-text-tertiary)]'
-            }`}
+            className={`truncate ${dirtyValueInk(dirty)}`}
           >
             {dirty ? t('diskContractNeedsSave') : t('diskContractClean')}
           </span>
@@ -671,22 +675,14 @@ export function DocsVaultEditor({
         >
           <CheckSquare
             size={ICON_SIZE.sm}
-            className={
-              dirty
-                ? 'text-[color:var(--color-amber-docs-a95)]'
-                : 'text-[color:var(--color-text-quaternary)]'
-            }
+            className={dirtyIconInk(dirty)}
             aria-hidden
           />
           <span className="font-mono uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]">
             {t('validateContract')}
           </span>
           <span
-            className={`truncate ${
-              dirty
-                ? 'font-[var(--font-weight-signature)] text-[color:var(--color-amber-docs-a95)]'
-                : 'text-[color:var(--color-text-tertiary)]'
-            }`}
+            className={`truncate ${dirtyValueInk(dirty)}`}
           >
             {dirty ? t('validateContractDirty') : t('validateContractClean')}
           </span>
@@ -695,11 +691,7 @@ export function DocsVaultEditor({
           </span>
           <X
             size={ICON_SIZE.sm}
-            className={
-              dirty
-                ? 'text-[color:var(--color-amber-docs-a95)]'
-                : 'text-[color:var(--color-text-quaternary)]'
-            }
+            className={dirtyIconInk(dirty)}
             aria-hidden
           />
           <span className="font-mono uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]">
@@ -940,15 +932,8 @@ export function DocsVaultEditor({
             <Surface
               open={acOpen}
               origin="bottom left"
-              /*
-               * Same menu dialect as the vault chip and sort menu.
-               */
-              className="pointer-events-auto absolute z-10 overflow-hidden rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] shadow-[var(--chrome-shadow)]"
-              style={{
-                width: MENTION_MENU_WIDTH,
-                top: menuAt?.top ?? 0,
-                left: menuAt?.left ?? 0,
-              }}
+              className={MENTION_MENU_CLASS}
+              style={mentionMenuStyle(menuAt)}
             >
               <div className="border-b border-[color:var(--color-border-soft)] px-2 py-1.5 text-label text-[color:var(--color-text-tertiary)]">
                 {/* Hide the empty quotes for an empty query. */}
@@ -1029,15 +1014,8 @@ export function DocsVaultEditor({
                   pendingMention.doc.title,
                 ),
               })}
-              /*
-               * Same menu dialect as the vault chip and sort menu.
-               */
-              className="pointer-events-auto absolute z-10 overflow-hidden rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] shadow-[var(--chrome-shadow)]"
-              style={{
-                width: MENTION_MENU_WIDTH,
-                top: menuAt?.top ?? 0,
-                left: menuAt?.left ?? 0,
-              }}
+              className={MENTION_MENU_CLASS}
+              style={mentionMenuStyle(menuAt)}
             >
               <div className="border-b border-[color:var(--color-border-soft)] px-2 py-1.5 text-label text-[color:var(--color-text-tertiary)]">
                 {t('mentionRelationLabel', {

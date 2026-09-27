@@ -76,6 +76,9 @@ function sectionsOnScreen(): readonly string[] {
   return [...needed].filter((selector) => document.querySelector(selector) !== null);
 }
 
+const FOCUSABLE_SELECTOR =
+  'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+
 /**
  * Glossary terms shown under the shortcut list rather than on a new surface: ontology first, then
  * the map's kind order.
@@ -310,7 +313,6 @@ export function ShortcutSheet({ open, onClose, returnFocusSelector }: Props) {
     return () => window.removeEventListener("keydown", handler);
   }, [open, onClose]);
 
-  // Focus trap: focus the first element on open and cycle Tab; restore on close.
   useEffect(() => {
     if (!open) return;
     /**
@@ -322,17 +324,12 @@ export function ShortcutSheet({ open, onClose, returnFocusSelector }: Props) {
       active instanceof HTMLElement && active !== document.body ? active : null;
     const dialog = dialogRef.current;
     if (!dialog) return;
-    const focusables = dialog.querySelectorAll<HTMLElement>(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-    );
-    focusables[0]?.focus();
+    dialog.querySelector<HTMLElement>(FOCUSABLE_SELECTOR)?.focus();
 
     const trapHandler = (event: KeyboardEvent) => {
       if (event.key !== "Tab") return;
       const items = Array.from(
-        dialog.querySelectorAll<HTMLElement>(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-        ),
+        dialog.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
       ).filter((el) => !el.hasAttribute("disabled"));
       if (items.length === 0) return;
       const first = items[0];

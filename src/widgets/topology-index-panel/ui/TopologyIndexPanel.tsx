@@ -40,6 +40,9 @@ export type IndexLens = "all" | "recent";
  * since it would read as starting over; the unbound-source row still offers the connect path. Set
  * above the starter vault's seed count; it does not judge quality.
  */
+const WINDOW_CHIP_VALUES = ["auto", 1, 7, 30] as const;
+type RecentWindow = (typeof WINDOW_CHIP_VALUES)[number];
+
 const UNBUILT_MAP_CONCEPT_CEILING = 8;
 
 /** One row grammar for every tidy row: a fact on the left, one indigo action word on the right. */
@@ -179,9 +182,9 @@ export interface TopologyIndexPanelProps {
   lens?: IndexLens;
   onLensChange?: (lens: IndexLens) => void;
   /** The spotlight window — "auto" (an adaptive ramp) or the 1/7/30 presets. Used to mark the active chip. */
-  recentWindow?: "auto" | 1 | 7 | 30;
+  recentWindow?: RecentWindow;
   /** A preset chip click switches the window (applied immediately — no popup or confirmation, by contract). */
-  onWindowChange?: (window: "auto" | 1 | 7 | 30) => void;
+  onWindowChange?: (window: RecentWindow) => void;
   /**
    * Gate for plain mode's hint row; removing element rows is the caller's job
    * (`filterTreeExcludeKind`).
@@ -253,15 +256,14 @@ export function TopologyIndexPanel({
    * Window chips take only the behaviour from the hook; their settled dimensions and panel-scoped
    * ink stay here.
    */
-  const WINDOW_CHIP_VALUES = ["auto", 1, 7, 30] as const;
   const WINDOW_CHIP_LABELS = [
     labels.windowChipAuto,
     labels.windowChip1,
     labels.windowChip7,
     labels.windowChip30,
   ];
-  const windowGroup = useRovingRadioGroup<(typeof WINDOW_CHIP_VALUES)[number]>({
-    value: recentWindow as (typeof WINDOW_CHIP_VALUES)[number],
+  const windowGroup = useRovingRadioGroup<RecentWindow>({
+    value: recentWindow,
     values: WINDOW_CHIP_VALUES,
     onChange: (next) => onWindowChange?.(next),
   });
@@ -326,11 +328,7 @@ export function TopologyIndexPanel({
   const maxDomainDescendantCount = useMemo(() => {
     // The meter's denominator comes from the same source of truth — with a census, the largest BFS total.
     if (domainCensus && domainCensus.size > 0) {
-      let max = 0;
-      for (const row of domainCensus.values()) {
-        if (row.total > max) max = row.total;
-      }
-      return max;
+      return Math.max(0, ...Array.from(domainCensus.values(), (row) => row.total));
     }
     const domains = treeResult.roots.flatMap((root) =>
       root.children.filter((child) => child.node.kind === "domain"),
@@ -577,7 +575,6 @@ export function TopologyIndexPanel({
         />
       </div>
 
-      {/* The lens segments render only once `recentChanges` exists. */}
       {recentChanges ? (
         <div
           role="tablist"

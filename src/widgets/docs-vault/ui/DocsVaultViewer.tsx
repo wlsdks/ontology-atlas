@@ -149,10 +149,7 @@ export function DocsVaultViewer({
     fetcher
       .then((text) => {
         if (cancelled) return;
-        // Strip the frontmatter block (avoids rendering it twice).
-        let cleaned = text.startsWith('---')
-          ? text.replace(/^---[\s\S]*?\n---\n?/, '')
-          : text;
+        let cleaned = text.replace(FRONTMATTER_BLOCK, '');
         /*
          * Wikilinks become standard links with a sentinel the `a` component catches. The sentinel
          * must not look like a URL scheme, or react-markdown's `defaultUrlTransform` empties the
@@ -203,9 +200,6 @@ export function DocsVaultViewer({
     return (children: React.ReactNode, key = 'hl') => hl(children, q, key);
   }, [highlightQuery]);
 
-  // Heading ids must be idempotent across StrictMode double renders; duplicate headings share an id
-  // (the browser anchors to the first).
-  const headingSlugOf = (children: React.ReactNode) => slugFromChildren(children);
 
   /**
    * The GitHub-rule heading id when it differs from this viewer's, rendered as a second empty
@@ -215,6 +209,26 @@ export function DocsVaultViewer({
     const canonical = slugFromChildren(children);
     const alias = githubAnchorSlug(flattenText(children));
     return alias && alias !== canonical ? alias : null;
+  };
+
+  const renderHeading = (
+    Tag: 'h2' | 'h3',
+    className: string,
+    highlightKey: string,
+    children: React.ReactNode,
+    rest: React.HTMLAttributes<HTMLHeadingElement>,
+  ) => {
+    // Heading ids must be idempotent across StrictMode double renders; duplicate headings share an id
+    // (the browser anchors to the first).
+    const slug = slugFromChildren(children);
+    const alias = headingAliasOf(children);
+    return (
+      <Tag id={slug} className={className} {...rest}>
+        {alias ? <span id={alias} aria-hidden /> : null}
+        {highlightChildren(children, highlightKey)}
+        <HeadingAnchor anchor={slug} docSlug={doc.slug} basePath={basePath} />
+      </Tag>
+    );
   };
 
   /** NFC copy of the vault slugs, built once; raw `vaultSlugs` misses NFD Hangul slugs. */
@@ -443,55 +457,9 @@ export function DocsVaultViewer({
           </a>
         );
       },
-      h1({ children, ...rest }) {
-        const slug = headingSlugOf(children);
-        const alias = headingAliasOf(children);
-        return (
-          <h2
-            id={slug}
-            className="group relative mt-0 mb-6 text-display font-[var(--font-weight-strong)] leading-display text-[color:var(--color-text-primary)]"
-            {...rest}
-          >
-            {alias ? <span id={alias} aria-hidden /> : null}
-            {highlightChildren(children, 'h1')}
-            <HeadingAnchor anchor={slug} docSlug={doc.slug} basePath={basePath} />
-          </h2>
-        );
-      },
-      h2({ children, ...rest }) {
-        const slug = headingSlugOf(children);
-        const alias = headingAliasOf(children);
-        return (
-          <h2
-            id={slug}
-            /*
-             * No section gap above a first-line heading; the Library draws the title in its own
-             * header.
-             */
-            className="group relative mt-10 mb-3 text-title font-[var(--font-weight-strong)] leading-body text-[color:var(--color-text-primary)] first:mt-0"
-            {...rest}
-          >
-            {alias ? <span id={alias} aria-hidden /> : null}
-            {highlightChildren(children, 'h2')}
-            <HeadingAnchor anchor={slug} docSlug={doc.slug} basePath={basePath} />
-          </h2>
-        );
-      },
-      h3({ children, ...rest }) {
-        const slug = headingSlugOf(children);
-        const alias = headingAliasOf(children);
-        return (
-          <h3
-            id={slug}
-            className="group relative mt-6 mb-2 text-title font-[var(--font-weight-strong)] leading-body text-[color:var(--color-text-primary)]"
-            {...rest}
-          >
-            {alias ? <span id={alias} aria-hidden /> : null}
-            {highlightChildren(children, 'h3')}
-            <HeadingAnchor anchor={slug} docSlug={doc.slug} basePath={basePath} />
-          </h3>
-        );
-      },
+      h1: ({ children, ...rest }) => renderHeading('h2', HEADING_CLASS.h1, 'h1', children, rest),
+      h2: ({ children, ...rest }) => renderHeading('h2', HEADING_CLASS.h2, 'h2', children, rest),
+      h3: ({ children, ...rest }) => renderHeading('h3', HEADING_CLASS.h3, 'h3', children, rest),
       p({ children, ...rest }) {
         return (
           <p
@@ -601,38 +569,10 @@ export function DocsVaultViewer({
         return <hr className="my-6 border-[color:var(--color-border-soft)]" />;
       },
       img({ src, alt, title }) {
-        // External URLs (http/data/blob) pass through. Only relative paths use resolveImage.
         const rawSrc = typeof src === 'string' ? src : undefined;
-        if (!rawSrc || /^(https?:|data:|blob:)/i.test(rawSrc)) {
-          return (
-            <Image
-              src={rawSrc ?? ''}
-              alt={alt ?? ''}
-              width={1200}
-              height={800}
-              sizes={IMAGE_SIZES}
-              unoptimized
-              className="my-4 max-w-full rounded-chip border border-[color:var(--color-border-soft)]"
-              style={{ height: 'auto' }}
-              title={title}
-            />
-          );
-        }
-        if (!resolveImage) {
-        // Server vault — try referencing directly under public/docs-vault.
-          return (
-            <Image
-              src={rawSrc}
-              alt={alt ?? ''}
-              width={1200}
-              height={800}
-              sizes={IMAGE_SIZES}
-              unoptimized
-              className="my-4 max-w-full rounded-chip border border-[color:var(--color-border-soft)]"
-              style={{ height: 'auto' }}
-              title={title}
-            />
-          );
+        // A server vault has no resolveImage and references public/docs-vault directly.
+        if (!rawSrc || /^(https?:|data:|blob:)/i.test(rawSrc) || !resolveImage) {
+          return <BodyImage src={rawSrc ?? ''} alt={alt ?? ''} title={title} />;
         }
         return (
           <VaultImage
@@ -683,6 +623,16 @@ export function DocsVaultViewer({
     </article>
   );
 }
+
+/** A leading frontmatter block, stripped so it is not rendered twice. */
+const FRONTMATTER_BLOCK = /^---[\s\S]*?\n---\n?/;
+
+const HEADING_CLASS = {
+  h1: 'group relative mt-0 mb-6 text-display font-[var(--font-weight-strong)] leading-display text-[color:var(--color-text-primary)]',
+  // No section gap above a first-line heading; the Library draws the title in its own header.
+  h2: 'group relative mt-10 mb-3 text-title font-[var(--font-weight-strong)] leading-body text-[color:var(--color-text-primary)] first:mt-0',
+  h3: 'group relative mt-6 mb-2 text-title font-[var(--font-weight-strong)] leading-body text-[color:var(--color-text-primary)]',
+} as const;
 
 /**
  * Next `sizes` hint for body images, in rem so it follows the root font size like the prose measure
@@ -748,16 +698,15 @@ function detectCallout(
   children: React.ReactNode,
 ): { kind: CalloutKind; title: string; rest: React.ReactNode } | null {
   const kids = Array.isArray(children) ? children : [children];
-  // Find the first element-like p (skipping whitespace text and the like).
-  const firstIdx = kids.findIndex(
+  const firstElementIdx = kids.findIndex(
     (c) =>
       c != null &&
       typeof c === 'object' &&
       'type' in (c as object) &&
       (c as { type?: unknown }).type !== undefined,
   );
-  if (firstIdx === -1) return null;
-  const firstEl = kids[firstIdx] as React.ReactElement<{
+  if (firstElementIdx === -1) return null;
+  const firstEl = kids[firstElementIdx] as React.ReactElement<{
     children?: React.ReactNode;
   }>;
   const inner = firstEl.props?.children;
@@ -770,21 +719,19 @@ function detectCallout(
   if (!m) return null;
   const kind = m[1].toLowerCase() as CalloutKind;
   const title = m[2].trim() || kind.toUpperCase();
-  // The remaining children of the first paragraph: the piece after the firstText match plus innerArr[1:].
   const remainderText = firstText.slice(m[0].length).trimStart();
-  const restFirstP = [
+  const firstParagraphRemainder = [
     remainderText,
     ...innerArr.slice(1),
   ].filter((x) => x !== '' && x != null);
   const restKids = [...kids];
-  if (restFirstP.length > 0) {
-  // Restore the remainder into the same p (a React element clone).
-    restKids[firstIdx] = {
+  if (firstParagraphRemainder.length > 0) {
+    restKids[firstElementIdx] = {
       ...firstEl,
-      props: { ...firstEl.props, children: restFirstP },
+      props: { ...firstEl.props, children: firstParagraphRemainder },
     };
   } else {
-    restKids.splice(firstIdx, 1);
+    restKids.splice(firstElementIdx, 1);
   }
   return { kind, title, rest: restKids };
 }
@@ -836,24 +783,7 @@ function VaultImage({
   useEffect(() => {
     let cancelled = false;
     let created: string | null = null;
-  // Normalise a path relative to the document's directory to be relative to the vault root.
-    const fromDir = docSlug.includes('/')
-      ? docSlug.slice(0, docSlug.lastIndexOf('/'))
-      : '';
-    const rel = src.replace(/^\.\//, '');
-    const joined = fromDir ? `${fromDir}/${rel}` : rel;
-    const parts = joined.split('/');
-    const stack: string[] = [];
-    for (const p of parts) {
-      if (p === '' || p === '.') continue;
-      if (p === '..') {
-        stack.pop();
-        continue;
-      }
-      stack.push(p);
-    }
-    const normalized = stack.join('/');
-    resolve(normalized)
+    resolve(vaultPathFromDoc(docSlug, src))
       .then((url) => {
         if (cancelled) {
           if (url) URL.revokeObjectURL(url);
@@ -892,9 +822,13 @@ function VaultImage({
       />
     );
   }
+  return <BodyImage src={blobUrl} alt={alt} />;
+}
+
+function BodyImage({ src, alt, title }: { src: string; alt: string; title?: string }) {
   return (
     <Image
-      src={blobUrl}
+      src={src}
       alt={alt}
       width={1200}
       height={800}
@@ -902,8 +836,22 @@ function VaultImage({
       unoptimized
       className="my-4 max-w-full rounded-chip border border-[color:var(--color-border-soft)]"
       style={{ height: 'auto' }}
+      title={title}
     />
   );
+}
+
+/** A path relative to the document's folder, resolved to a vault-root path. */
+function vaultPathFromDoc(docSlug: string, src: string): string {
+  const fromDir = docSlug.includes('/') ? docSlug.slice(0, docSlug.lastIndexOf('/')) : '';
+  const rel = src.replace(/^\.\//, '');
+  const stack: string[] = [];
+  for (const part of (fromDir ? `${fromDir}/${rel}` : rel).split('/')) {
+    if (part === '' || part === '.') continue;
+    if (part === '..') stack.pop();
+    else stack.push(part);
+  }
+  return stack.join('/');
 }
 
 /** Heading anchor icon: copies the slug#anchor URL and shows a check for 2 seconds. */
