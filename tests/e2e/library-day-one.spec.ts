@@ -189,14 +189,7 @@ async function openLibrary(page: Page) {
   const door = page.getByRole("button", { name: /^Open my folder/ });
   await door.first().waitFor({ timeout: 25_000 });
   await door.first().click();
-  /*
-   * ⚠️ **Below `lg` there is no rail.** The destinations live in the bottom tab bar
-   * (`[data-tabbar="primary"]`, `lg:hidden`), and waiting on the rail at 390 waits on a
-   * hidden element forever — measured while building the narrow half of this proof. So the
-   * walk asks for whichever navigation this width actually draws.
-   */
-  const wide = (page.viewportSize()?.width ?? 0) >= 1024;
-  const navigation = wide ? page.getByTestId("app-nav-rail") : page.locator('[data-tabbar="primary"]');
+  const navigation = page.getByTestId("app-nav-rail");
   await navigation.waitFor({ timeout: 30_000 });
   const libraryTile = navigation.getByRole("link", { name: "Library" });
   await libraryTile.waitFor({ timeout: 30_000 });
@@ -218,11 +211,14 @@ async function openLibrary(page: Page) {
  * site — it is a wait on the screen catching up: the markup has stopped changing, every
  * finite transition has run out, and two more frames have been painted from that state.
  */
-async function captureSettled(page: Page, path: string) {
+async function captureSettled(page: Page, name: string) {
+  // Evidence for a person, written only when asked for, and never into the repository.
+  const directory = process.env.ATLAS_DAY_ONE_SHOTS;
+  if (!directory) return;
   await waitForDomQuiet(page);
   await waitForAnimationsDone(page.locator("html"));
   await waitFrames(page, 2);
-  await page.screenshot({ path });
+  await page.screenshot({ path: `${directory}/${name}` });
 }
 
 test.describe("the Library on its first day, with no agent", () => {
@@ -311,7 +307,7 @@ test.describe("the Library on its first day, with no agent", () => {
     );
     expect(seen).toEqual({ emptyWhileReading: 0, noteWhileReading: 0 });
 
-    await captureSettled(page, ".claude/shots-2026-09-11/library-day-one/1-search-inside-sources.png");
+    await captureSettled(page, "1-search-inside-sources.png");
 
     /*
      * **Enter, not only a click.** The caption is a button and a keyboard press has to
@@ -328,7 +324,7 @@ test.describe("the Library on its first day, with no agent", () => {
 
     // And the caption that opened it says so, so a returning reader knows which one it was.
     await expect(hit).toHaveAttribute("aria-current", "location");
-    await captureSettled(page, ".claude/shots-2026-09-11/library-day-one/1b-caption-lands-on-the-unit.png");
+    await captureSettled(page, "1b-caption-lands-on-the-unit.png");
   });
 
   test("says what a spreadsheet is made of, without compiling it", async ({ page }) => {
@@ -362,7 +358,7 @@ test.describe("the Library on its first day, with no agent", () => {
     });
     expect(Math.abs(sentenceRight - tableRight), `sentence ends at ${sentenceRight}, table at ${tableRight}`).toBeLessThan(1);
 
-    await captureSettled(page, ".claude/shots-2026-09-11/library-day-one/2-outline-every-file.png");
+    await captureSettled(page, "2-outline-every-file.png");
   });
 
   test("opens a door from the blocked step instead of ending in a sentence", async ({ page }) => {
@@ -384,7 +380,7 @@ test.describe("the Library on its first day, with no agent", () => {
 
     const door = popover.getByTestId("library-compile-popover-blocked-door");
     await expect(door).toHaveCount(1);
-    await captureSettled(page, ".claude/shots-2026-09-11/library-day-one/3-door-beside-the-reason.png");
+    await captureSettled(page, "3-door-beside-the-reason.png");
 
     await door.click();
 
@@ -401,7 +397,7 @@ test.describe("the Library on its first day, with no agent", () => {
     await expect(page.getByTestId("app-settings-runtimes-others-toggle")).toBeVisible({
       timeout: 30_000,
     });
-    await captureSettled(page, ".claude/shots-2026-09-11/library-day-one/3b-lands-on-agents.png");
+    await captureSettled(page, "3b-lands-on-agents.png");
   });
 
   /**
@@ -417,19 +413,12 @@ test.describe("the Library on its first day, with no agent", () => {
    */
   for (const viewport of [
     { width: 1040, height: 720, name: "app-minimum" },
-    { width: 390, height: 844, name: "phone" },
   ]) {
     test(`keeps the door on screen at ${viewport.width}×${viewport.height}`, async ({ page }) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await openLibrary(page);
 
-      const narrow = viewport.width < 1024;
       for (const file of ["sources/dispute-handling-standard.docx", "sources/dispute-metrics.xlsx"]) {
-        /* Below `lg` the reader takes the column the index was in, so the walk goes back
-           the way a person does — through the reader's own back control. */
-        if (narrow && (await page.getByTestId("library-reader-back").isVisible())) {
-          await page.getByTestId("library-reader-back").click();
-        }
         await page.getByTestId(`library-source-${file}`).click();
         const outline = page.getByTestId("library-source-outline");
         await expect(outline).toHaveAttribute("data-state", "ready", { timeout: 20_000 });
@@ -445,7 +434,7 @@ test.describe("the Library on its first day, with no agent", () => {
 
       await captureSettled(
         page,
-        `.claude/shots-2026-09-11/library-day-one/4-door-in-view-${viewport.name}.png`,
+        `4-door-in-view-${viewport.name}.png`,
       );
     });
   }

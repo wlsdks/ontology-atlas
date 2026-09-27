@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import { installDesktopRailRuntime, type DesktopRuntimeOptions } from "./desktop-rail-arrival-harness";
@@ -21,10 +21,10 @@ import { dogfoodEvidenceVault, syntheticVault } from "./hex-board-vaults";
  * - at 300 capabilities the board opens in the far band: one nameplate per region, none over a
  *   tile or another plate.
  *
- * Captures land in the owner's scratch folder when it exists, for the design review.
+ * Captures are written to `HEX_BOARD_CAPTURE_DIR` when it is set, for the design review.
  */
 
-const CAPTURE_DIR = "/Users/jinan/scratch/map-concepts/app-hex";
+const CAPTURE_DIR = process.env.HEX_BOARD_CAPTURE_DIR ?? null;
 
 interface Box {
   x: number;
@@ -169,10 +169,8 @@ test("hex board writes the address only on a real change: stale-only and 20 fore
   await expect(page.getByTestId("hex-board-map")).toHaveAttribute("data-hex-stale-only", "true");
 });
 
-for (const viewport of [
-  { width: 1512, height: 982 },
-  { width: 1280, height: 800 },
-]) {
+// The owner's window; the board's naming, honesty and walk do not change between `xl` widths.
+for (const viewport of [{ width: 1512, height: 982 }]) {
   test(`hex board on the dogfood vault at ${viewport.width}: named, clear, honest, walkable`, async ({ page }) => {
     test.setTimeout(240_000);
     const vault = dogfoodEvidenceVault();
@@ -233,10 +231,9 @@ for (const viewport of [
     await expect(page.getByTestId("hex-board-evidence-note")).toContainText(`낡음 ${vault.expectedStale}`);
     await expect(page.getByTestId("hex-board-stale-only")).toContainText(String(vault.expectedStale));
 
-    const canCapture = existsSync(path.dirname(CAPTURE_DIR));
-    if (canCapture) mkdirSync(CAPTURE_DIR, { recursive: true });
+    if (CAPTURE_DIR) mkdirSync(CAPTURE_DIR, { recursive: true });
     const shot = async (name: string) => {
-      if (canCapture) await page.screenshot({ path: path.join(CAPTURE_DIR, `${name}-${viewport.width}.png`) });
+      if (CAPTURE_DIR) await page.screenshot({ path: path.join(CAPTURE_DIR, `${name}-${viewport.width}.png`) });
     };
     await shot("a-overview");
 
@@ -380,7 +377,7 @@ test("hex board at 300 capabilities opens on region nameplates, none over a tile
     }
   }
   expect(hits).toEqual([]);
-  if (existsSync(path.dirname(CAPTURE_DIR))) {
+  if (CAPTURE_DIR) {
     mkdirSync(CAPTURE_DIR, { recursive: true });
     await page.screenshot({ path: path.join(CAPTURE_DIR, "f-scale-300-1512.png") });
   }
