@@ -1,33 +1,15 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { computeDegreeCentrality, computeDomainCensusRows } from "@/entities/knowledge-graph";
 
-/**
- * One **row** of data for the project detail's "domain composition".
- *
- * `capabilities` holds **every** capability belonging to this domain (directly or nested), ordered by
- * degree descending — so the order means "what the graph references and connects most comes first"
- * rather than insertion order.
- *
- * **Why all of them rather than the top 2 plus "N more"** (2026-08-12, option B). The old card drew the
- * top 2 and counted the rest in a footer line reading "N more capabilities". That line was **a number
- * with nowhere to go** — it could be neither pressed nor expanded, so seeing those N meant leaving for
- * the map. A row that expands in place shows the whole list, so the footer line disappears and there is
- * no longer any need to explain the "top 2" criterion (most connected — which was never written on
- * screen anyway).
- */
+/** Every capability of the domain, since the row expands in place instead of saying "N more". */
 export interface DomainCompositionRow {
-  /** The ontology node id (e.g. `domain:views`) — used verbatim in a topology focus deep-link. */
+  /** Node id such as `domain:views`, used verbatim in a map deep link. */
   id: string;
   title: string;
   capabilityCount: number;
   elementCount: number;
   total: number;
-  /**
-   * Degree descending, ties by title ascending. The short display title (`display`) wins.
-   * `id` is the graph node id (e.g. `capability:pay`) — used to make the name a map deeplink
-   * (2026-08-13: while only titles were carried, the expanded list was dead-end text — the same
-   * "number with nowhere to go" defect option B removed, surviving in the names).
-   */
+  /** Degree descending, ties by title; `id` makes each name a map deep link. */
   capabilities: { id: string; title: string }[];
 }
 
@@ -37,10 +19,8 @@ export interface ProjectDomainComposition {
 }
 
 /**
- * Composition rows for the domain nodes belonging to a project. The counts used to come from
- * `nearestDomainId` (a one-domain-per-node rollup) and disagreed with the single-source BFS
- * (`computeDomainCensusRows`) used by the map INDEX, insights, and `/projects` on four surfaces — it now
- * uses the same BFS, and this module owns only the capability ranking (degree) and the row shape.
+ * Counts come from `computeDomainCensusRows`, the BFS the map INDEX, insights and `/projects` use,
+ * or the surfaces disagree; this module owns only the degree ranking and row shape.
  */
 export function buildProjectDomainComposition(
   nodes: readonly KnowledgeGraphNode[],
@@ -75,7 +55,6 @@ export function buildProjectDomainComposition(
         capabilityCount: row.capabilityCount,
         elementCount: row.elementCount,
         total: row.total,
-        // The capability name uses the short display title too.
         capabilities: capabilities.map((cap) => ({ id: cap.id, title: cap.display ?? cap.title })),
       };
     });

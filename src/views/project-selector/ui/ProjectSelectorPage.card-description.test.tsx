@@ -5,11 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import enMessages from "../../../../messages/en.json";
 import { ProjectSelectorPage } from "./ProjectSelectorPage";
 
-// The card must show only the single line a user wrote themselves in `description:` frontmatter.
-// `Project.description` (the entity layer) contracts to fall back to a body excerpt when frontmatter has
-// no description, so this mock deliberately feeds in "excerpt-shaped" internal positioning copy that
-// fallback would produce, verifying the card never exposes it — the real incident was
-// `docs/ontology/project.md`, whose identity paragraph leaked out as an excerpt with no description key.
+// Feeds excerpt-shaped copy through the entity layer's fallback; the card must never show it.
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, children, ...props }: { href: string; children: ReactNode }) => (
     <a href={href} {...props}>

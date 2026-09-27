@@ -29,9 +29,7 @@ describe("resolveAuthoredDescription", () => {
     expect(resolveAuthoredDescription(doc({ description: "  Trimmed.  " }))).toBe("Trimmed.");
   });
 
-  // The list draws one line, and a paragraph-length description was cut by the clamp at whatever
-  // pixel the row ran out of. The hero has taken the first sentence since 2026-07-26; so does this.
-  it("문단짜리 설명은 첫 문장에서 끝난다", () => {
+  it("cuts a paragraph description at its first sentence", () => {
     const paragraph =
       "Not a real company: an example built so that a first-time visitor can learn how to read the map. " +
       "It draws a small online store that ships physical goods out of a single warehouse.";
@@ -44,9 +42,6 @@ describe("resolveAuthoredDescription", () => {
     expect(resolveAuthoredDescription(doc({}))).toBeNull();
   });
 
-  // The flagship carries its definition as the body's first sentence and no `description:` key; the
-  // hero drew it while the list said "no description yet". A sentence that names the project is the
-  // definition the construction card asks for, and the list takes it whole.
   it("takes the body's first sentence when it names the project", () => {
     const withDefinition = {
       ...doc({}),

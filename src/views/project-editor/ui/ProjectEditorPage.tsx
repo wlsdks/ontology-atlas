@@ -75,8 +75,6 @@ function EditorContent({
   const safeReturnLabel = t(resolveReturnLabelKey(normalizeReturnTo(returnTo)));
   const publicProjectHref = slug ? getProjectRuntimeDetailHref(slug) : null;
   const [project, setProject] = useState<Project | null>(null);
-  // Mode-aware (the vault manifest or the build-time dogfood manifest) — `useProjects` is the single
-  // source for `allProjects`.
   const { projects: allProjects, loaded: projectsLoaded } = useProjects();
   const [isDirty, setIsDirty] = useState(false);
   const [loading, setLoading] = useState(Boolean(targetSlug));
@@ -89,18 +87,14 @@ function EditorContent({
 
   useEffect(() => {
     if (!targetSlug) return;
-    // On first load, and right after a write before the incremental rebuild finishes, do not settle
-    // not-found from the last manifest or an incomplete static fallback list.
+    // Not before load, or a stale manifest right after a write settles on not-found.
     if (!projectsLoaded) return;
 
-    // Synchronous lookup by slug against the `useProjects` result. A miss surfaces an empty detail card
-    // via `loadError` (the slug is not in the manifest).
     const found = allProjects.find((p) => p.slug === targetSlug);
     if (found) {
       window.queueMicrotask(() => {
         setProject(found);
-        // Just before a persisted vault rehydrates, the static fallback can appear first and trip
-        // `loadError` once. It recovers when the real local project arrives.
+        // The static fallback can precede a rehydrating vault; recover when the real project arrives.
         setLoadError(null);
         setLoading(false);
       });
@@ -148,8 +142,7 @@ function EditorContent({
       if (err instanceof VaultConflictError) {
         throw new Error(t("vaultConflict"));
       }
-      // A defensive path — `writeDisabled` already blocks the submit button, but if it is reached
-      // anyway, show the localized guidance instead of the raw English message.
+      // The writeDisabled gate normally blocks this; never show the raw English message.
       if (err instanceof ProjectStaticModeError) {
         throw new Error(t("demoModeSaveFailed"));
       }
@@ -249,18 +242,10 @@ function EditorContent({
   }
 
   return (
-    // The page root only fills the shell's body slot with `min-h-full`. The no-compression contract
-    // that keeps the bottom reserve alive at the end of the scroll is **owned by the shell**
-    // (`[&>*]:shrink-0` on `AppShell`'s body slot) — `shrink-0` used to be hand-applied here, and a
-    // structure each page has to remember gets missed on the next screen (it really was missing on four
-    // sibling routes).
+    // No `shrink-0` here: `AppShell`'s body slot owns it for every page.
     <div className="flex min-h-full w-full">
-      {/* The rail lives in the layout (AppShell) since the persistent-shell work. */}
-      {/* The bottom reserve is a base `pb` plus `lg:pb` — `max-lg:pb-[...]` is emitted before
-          `md:py-10` in the stylesheet and silently loses between 768 and 1023. */}
+      {/* Base `pb` plus `lg:pb`: `max-lg:pb-[...]` loses to `md:py-10` by stylesheet order. */}
       <main id="main" tabIndex={-1} className="min-w-0 flex-1 bg-[color:var(--color-canvas)] pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)] lg:pb-10">
-      {/* 960 — the utility column from RATIO-SYSTEM.md. `ProjectForm`'s 640 form column plus the 260
-          preview column plus the gap fit with room to spare. */}
       <div className={PAGE_FRAME_FORM}>
         <Link
           href={safeReturnTo}
@@ -277,11 +262,7 @@ function EditorContent({
           {safeReturnLabel}
         </Link>
 
-        {/* The preamble is said once. The eyebrow ("create a new project") used to repeat the h1
-            directly beneath it ("new project"), and the two chips beside it ("your position is kept",
-            "you can save and keep looking") were system circumstances rather than user concerns. On the
-            create screen the eyebrow is removed and one subtitle line says "what do I fill in" — that
-            sentence points at the four required fields right below it, so the guidance sits in one place. */}
+        {/* The guidance is said once, in the subtitle; the form says the rest beside its fields. */}
         <header className={mode === "create" ? "mt-6" : "mt-8"}>
           {mode === "edit" && (
             <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
@@ -360,13 +341,6 @@ function EditorContent({
           </div>
         ) : null}
 
-        {/* 2026-07-27 — two of the create screen's four teaching surfaces (the "easiest start" card that
-            was here and the three-step "for a first-time operator" card) were removed. All four repeated
-            the same sentence ("fill in name, category, status, and description, and save first"), and
-            their height pushed those very four fields off the screen. Guidance was not lacking; the form
-            simply was not easy on its own. The one remaining place is the subtitle line above, and the
-            rest is said beside the fields. */}
-
         <section className={mode === "create" ? "mt-6" : "mt-10"}>
           {mode === "edit" && slug && (
             <div className="mb-6 rounded-panel border border-[color:var(--color-indigo-a18)] bg-[color:var(--color-indigo-a06)] px-5 py-4">
@@ -392,22 +366,11 @@ function EditorContent({
             onCancel={handleCancel}
             onDelete={mode === "edit" ? handleDelete : undefined}
             onDirtyChange={setIsDirty}
-            /*
-             * Editing states the same fact **in advance**, exactly as creating does.
-             *
-             * It used to lock only when `mode === "create"`. So on the edit screen the save button was
-             * active with no vault, and only on pressing it did *"you cannot save in demo mode"* appear —
-             * one screen stating a fact up front while the other stated it after the press.
-             *
-             * `canEdit` existed all along, with a comment saying it was «for the UI pre-gate», and this
-             * form alone was not using it.
-             */
+            /* Both modes say before the press that nothing can be saved without a vault. */
             writeDisabled={
               mode === "create" ? !projectMutations.canCreate : !projectMutations.canEdit
             }
-            // The banner's «where to» — it opens in place rather than sending them to an address. The
-            // old `/` link landed on the gateway (download) on the web and was itself a dead end
-            // (measured 2026-08-07).
+            // Opens a folder in place; `/` is the gateway on the web.
             openVaultAction={<OpenVaultCta testId="project-write-disabled-open-folder" />}
           />
         </section>
@@ -418,8 +381,7 @@ function EditorContent({
 }
 
 export function ProjectEditorPage(props: Props) {
-  // The local-first charter: entry itself is never blocked. Local mode writes straight to the vault,
-  // and static mode rejects the mutation inside `useProjectMutations`.
+  // Entry is never blocked; static mode rejects the write inside `useProjectMutations`.
   return (
     <EditorContent
       key={`${props.slug ?? `new-${props.mode}`}:${props.duplicateFromSlug ?? ""}`}

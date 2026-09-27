@@ -16,15 +16,7 @@ function readJson(relativePath: string): Record<string, unknown> {
 }
 
 describe("release-facts", () => {
-  /*
-   * ⚠️ This no longer proves alignment — since 2026-08-25 the value **is** `package.json`'s, read
-   * through `next.config.ts`, so comparing them is comparing a thing to itself. What it still
-   * proves is that the chain is wired: with the env missing the module falls back to `unknown`, so
-   * a broken `next.config.ts` or a missing vitest `env` shows up here rather than as a download
-   * page quietly advertising nothing.
-   *
-   * `check-macos-release-tag.mjs` owns the other half — that nobody reintroduces a literal.
-   */
+  /* Proves the `next.config.ts` chain is wired; `check-macos-release-tag.mjs` forbids a literal. */
   it("is fed from package.json rather than carrying its own copy", () => {
     const pkg = readJson("package.json");
     expect(RELEASE_VERSION).not.toBe("unknown");
@@ -41,28 +33,13 @@ describe("release-facts", () => {
     expect(RELEASE_VERSION).toBe(tauriConf.version);
   });
 
-  /**
-   * **The fourth place** — `src-tauri/Cargo.toml` (added 2026-08-01).
-   *
-   * This test long watched only three (`RELEASE_VERSION`, `package.json`, `tauri.conf.json`) while
-   * Cargo was checked only by `pnpm desktop:check`. The cost of that asymmetry showed up on the
-   * rc.5 version bump: with all 5,502 unit tests green, the release rehearsal stopped **at the first
-   * step** (`cargo=1.0.0-rc.4`).
-   *
-   * The problem is finding out late — the rehearsal includes compiling the app, so it is a heavy
-   * gate a person runs right before tagging, and learning it there costs one extra round trip. If
-   * the same fact can be known in half a second, know it in half a second.
-   *
-   * No TOML parser is added — this file needs one top-level `version` line, and adding a dependency
-   * for that would make the gate cost more than it saves.
-   */
+  /* Catches a Cargo version drift in unit tests instead of the release rehearsal; one line needs no TOML parser. */
   it("matches the version declared in src-tauri/Cargo.toml", () => {
     const cargo = readFileSync(join(process.cwd(), "src-tauri/Cargo.toml"), "utf8");
-    // The first `version = "…"` of the `[package]` section — searched only near the top of the file
-    // so it cannot pick up a dependency's version.
+    // Only the `[package]` section, so a dependency's version cannot match.
     const packageSection = cargo.split(/^\[/m)[1] ?? cargo;
     const match = /^version\s*=\s*"([^"]+)"/m.exec(packageSection);
-    expect(match?.[1], "src-tauri/Cargo.toml 의 [package] version 을 못 읽었다").toBeDefined();
+    expect(match?.[1], "could not read [package] version from src-tauri/Cargo.toml").toBeDefined();
     expect(RELEASE_VERSION).toBe(match?.[1]);
   });
 
@@ -83,11 +60,6 @@ describe("release-facts", () => {
     }
   });
 
-  // `/download` states as fact that "this app is Apple-signed and notarized". What backs that claim
-  // is not the copy but the command chain that produces the release asset — if signing or
-  // notarization verification drops out of the chain, the copy quietly becomes false, so it is
-  // blocked here. (Before 2026-07-27 it was false in the other direction: the signing path was back
-  // while the page kept saying "not signed yet".)
   it("only claims signing and notarization while the release chain actually enforces them", () => {
     const pkg = readJson("package.json") as { scripts?: Record<string, string> };
     const chain = RELEASE_ARTIFACT_STEPS.flatMap((step) => step.args);
@@ -95,15 +67,12 @@ describe("release-facts", () => {
     expect(pkg.scripts?.["desktop:release-artifact"]).toContain("build-macos-release-artifact.mjs");
     expect(RELEASE_SIGNING.developerId).toBe(chain.includes("desktop:sign"));
     expect(RELEASE_SIGNING.notarized).toBe(chain.includes("desktop:notarize"));
-    // Signing without verification is a claim, not evidence.
     expect(chain).toContain("desktop:verify-release-dmg");
     expect(pkg.scripts?.["desktop:verify-release-dmg"]).toContain("--require-signed");
     expect(pkg.scripts?.["desktop:verify-release-dmg"]).toContain("--require-notarized");
   });
 
   it("matches the MCP tool count declared in mcp/src/server/registry.mjs", () => {
-    // The `TOOLS` table left `index.js` when the entry point became wiring only
-    // (docs/DECISIONS.md, 2026-09-12).
     const source = readFileSync(join(process.cwd(), "mcp/src/server/registry.mjs"), "utf8");
     const start = source.indexOf("const TOOLS = [");
     expect(start).toBeGreaterThan(-1);

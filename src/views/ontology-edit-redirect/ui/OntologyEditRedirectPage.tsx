@@ -8,15 +8,7 @@ import {
   buildTopologyMeaningEditorNodeHref,
 } from "@/entities/knowledge-graph";
 
-/**
- * `/ontology/edit` and `/ontology/studio` are compatibility entries. The map
- * now owns node creation and relation editing, so this component translates
- * legacy query strings into the canonical contextual-workbench URL.
- *
- * A `?node=<id>` deep-link becomes `?p=<id>&workbench=edit`, preserving the
- * canonical (`capability:foo`) and legacy plural-slash (`capabilities/foo`)
- * forms through the shared node-href normalizer.
- */
+/** Legacy `/ontology/edit` and `/ontology/studio` links open the map's edit workbench. */
 export function OntologyEditRedirectPage() {
   const searchParams = useSearchParams();
   const router = useRouter();

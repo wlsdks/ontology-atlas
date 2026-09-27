@@ -1,25 +1,10 @@
 import type { StageGraph } from './stage-graph';
 
 /**
- * The typing echo — which dot lights for which typed character, and what a pointed-at dot says.
- *
- * Direction B (owner, 2026-08-30): the hero object does not assemble on a timer of its own; it
- * assembles **as the headline is typed**. Every keystroke lights the next dots of the real vault
- * graph, so the object's arrival has a visible cause, and the sentence and the object finish on
- * the same beat in every locale. That replaces the generic 450ms stage fade and the per-tier
- * delays the engine used to run on its own clock.
- *
- * Two pure decisions live here so they can be tested without a canvas:
- *
- * - `echoOrder` — the order dots light: apex first, then each plane top to bottom, clockwise
- *   from twelve o'clock. Tier by tier is what keeps the assembly legible as a *stack*; the
- *   clockwise sweep inside a tier is what makes each keystroke read as the next dot, not a
- *   random one.
- * - `echoCount` — how many dots a typed count has earned. The headline has 30 characters in
- *   Korean and 59 in English; the graph has however many nodes the vault has. Neither number is
- *   the other's, so the mapping is proportional and rounds *up*: the first character always
- *   lights at least one dot, and the last character lights the last dot. Nothing is left for a
- *   burst after the sentence ends.
+ * The hero object assembles as the headline is typed: each keystroke lights the next dots, so
+ * sentence and object finish on the same beat in every locale. `echoOrder` goes tier by tier,
+ * clockwise from twelve, so it reads as a stack; `echoCount` is proportional and rounds up, so
+ * the first character lights a dot and the last lights the last one.
  */
 
 type EchoKind = 'project' | 'domain' | 'capability' | 'element';
@@ -48,19 +33,13 @@ export function echoOrder(nodes: readonly EchoNode[]): string[] {
 }
 
 export function echoCount(typed: number, total: number, nodeCount: number): number {
-  // No sentence reported yet is not a finished sentence: before the headline speaks, nothing is
-  // lit. (Measured 2026-08-30: treating total 0 as "done" lit the whole object on the mount
-  // frame, one commit before the typewriter's first report, and the echo never happened.)
+  // total 0 means the typewriter has not reported yet, not a finished sentence.
   if (nodeCount <= 0 || total <= 0 || typed <= 0) return 0;
   if (typed >= total) return nodeCount;
   return Math.min(nodeCount, Math.ceil((typed / total) * nodeCount));
 }
 
-/**
- * The one fact a pointed-at dot states. A dot is a real node, so what it says is one real edge of
- * that node: the edge to its parent when it has one (that is the line drawn to it), otherwise the
- * first edge it owns. Both ends are the labels the evidence section prints for the same graph.
- */
+/** A pointed-at dot's one real edge: to its drawn parent, else the first edge it owns. */
 export interface EchoFact {
   relation: 'contains' | 'depends';
   from: string;
@@ -68,12 +47,8 @@ export interface EchoFact {
 }
 
 /**
- * The one parent every consumer agrees on. An element is often contained twice, by its domain
- * and by a capability, and the layout fans elements under the capability because the fan comes
- * out denser; the hover line and the caption must point at that same parent, or the line drawn
- * to a dot and the sentence printed for it would name two different things. Measured 2026-08-30
- * (review): three separate first-match lookups agreed only because the manifest lists
- * capabilities before domains alphabetically. This is the contract instead of the coincidence.
+ * The one parent every consumer uses: an element contained by a domain and a capability hangs
+ * under the capability, or the drawn line and the printed sentence name different parents.
  */
 export function preferredParents(
   nodes: readonly { s: string; k: EchoKind }[],

@@ -5,9 +5,6 @@ import { describe, expect, it, vi } from "vitest";
 import enMessages from "../../../../messages/en.json";
 import { ProjectSelectorPage } from "./ProjectSelectorPage";
 
-// Toss P2 companion — when the user *does* write a frontmatter
-// `description:`, the card must show exactly that, not the entity-layer
-// excerpt fallback.
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, children, ...props }: { href: string; children: ReactNode }) => (
     <a href={href} {...props}>
