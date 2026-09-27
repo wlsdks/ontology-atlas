@@ -13,7 +13,7 @@
  */
 import { randomUUID } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { closeSync, existsSync, mkdirSync, openSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { closeSync, existsSync, linkSync, mkdirSync, openSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -179,8 +179,17 @@ export const readLessons = (root = process.cwd()) => composeLessons(readLessonRe
 
 function writeExclusive(root, relativePath, content) {
   mkdirSync(join(root, LESSON_DIR), { recursive: true });
-  const fd = openSync(join(root, relativePath), 'wx');
-  try { writeFileSync(fd, content, 'utf8'); } finally { closeSync(fd); }
+  // Readers enumerate *.md. Publish the complete file with one atomic link so
+  // concurrent writers never expose an empty or partially written lesson.
+  const temporary = join(root, LESSON_DIR, `.${randomUUID()}.tmp`);
+  const fd = openSync(temporary, 'wx');
+  try {
+    try { writeFileSync(fd, content, 'utf8'); } finally { closeSync(fd); }
+    // Unlike rename, link keeps the final name exclusive and fails on a repeated id.
+    linkSync(temporary, join(root, relativePath));
+  } finally {
+    unlinkSync(temporary);
+  }
 }
 
 const today = () => new Date().toISOString().slice(0, 10);

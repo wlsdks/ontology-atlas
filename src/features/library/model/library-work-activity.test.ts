@@ -14,9 +14,34 @@ import {
   localCompileWaitingEvent,
   observedWikiWriteEvents,
   successfulLocalWriteEvents,
+  showLibraryWorkStrip,
+  libraryWorkSince,
 } from "./library-work-activity";
 
 describe("Library work activity", () => {
+  it('keeps current-question failures visible while preserving older failures only in the full trace', () => {
+    const oldFailure = { id: 'old', kind: 'error' as const, phase: 'complete' as const, target: null, at: 1 };
+    const currentFailure = { ...oldFailure, id: 'current', at: 3 };
+    const history = { isActive: false, current: null, recent: [currentFailure, oldFailure] };
+    expect(libraryWorkSince(history, 2).recent).toEqual([currentFailure]);
+    expect(history.recent).toEqual([currentFailure, oldFailure]);
+    expect(showLibraryWorkStrip(libraryWorkSince(history, 2), true)).toBe(true);
+    expect(showLibraryWorkStrip(libraryWorkSince({ ...history, recent: [oldFailure] }, 2), true)).toBe(false);
+    const active = { ...currentFailure, kind: 'read' as const, phase: 'active' as const };
+    expect(libraryWorkSince({ ...history, isActive: true, current: active }, 2)).toMatchObject({ isActive: true, current: active });
+  });
+
+  it('hides completed receipts behind a current report while retaining active and error work', () => {
+    const complete = { id: 'r', kind: 'read' as const, phase: 'complete' as const, target: null, at: 1 };
+    const activity = { isActive: false, current: null, recent: [complete] };
+    expect(showLibraryWorkStrip(activity, false)).toBe(true);
+    expect(showLibraryWorkStrip(activity, true)).toBe(false);
+    expect(showLibraryWorkStrip({ ...activity, recent: [{ ...complete, kind: 'write' }] }, true)).toBe(false);
+    expect(showLibraryWorkStrip({ ...activity, isActive: true, current: { ...complete, phase: 'active' } }, true)).toBe(true);
+    expect(showLibraryWorkStrip({ ...activity, isActive: true, current: { ...complete, kind: 'waiting', phase: 'active' } }, true)).toBe(true);
+    expect(showLibraryWorkStrip({ ...activity, recent: [{ ...complete, kind: 'error' }] }, true)).toBe(true);
+  });
+
   it("accepts only structured vault paths, never a sentence that happens to name one", () => {
     expect(libraryWorkTargetFromToolInput({ filePath: "/vault/sources/plan.pdf" }, "/vault")).toEqual({ kind: "source", ref: "sources/plan.pdf" });
     expect(libraryWorkTargetFromToolInput({ text: "read sources/plan.pdf" }, "/vault")).toBeNull();
