@@ -141,13 +141,9 @@ export async function runAgentSetup(args) {
   return result.summary.review > 0 || result.summary.missing > 0 ? 1 : 0;
 }
 
-// R+ — `--install-pre-commit-hook`. Resolves the *actual* git hooks directory
-// (respects `core.hooksPath` and worktrees, unlike a hardcoded `.git/hooks`)
-// via `git rev-parse --git-path hooks`, then appends a managed
-// `ontology-atlas preflight --staged` block (see lib/pre-commit-hook.mjs for
-// the append-vs-create-vs-idempotent decision). Never overwrites an existing
-// hook body, never fails the whole `agent-setup` run if the root isn't a git
-// repo — it just reports `status: 'not-a-git-repo'`.
+// `--install-pre-commit-hook` resolves the real hooks directory (core.hooksPath, worktrees) with
+// `git rev-parse --git-path hooks` and appends a managed block (lib/pre-commit-hook.mjs). It never
+// overwrites a hook body and reports `not-a-git-repo` instead of failing the run.
 function installPreCommitHook(codebaseRoot) {
   let hooksDir;
   try {
@@ -257,12 +253,8 @@ function buildAgentSetup(parsed) {
         serverCommand.command,
         ...serverCommand.args,
       ].map(shellQuote).join(' '),
-      // R+ (agent-persona-2026-07 QA wishlist #5) — this command only ever
-      // checks/writes .mcp.json (Claude Code/Cursor) and .codex/config.toml
-      // (Codex). A fourth MCP client (opencode, a custom harness, ...) gets
-      // no first-class guidance from this tool otherwise — surface the same
-      // portable command/args/env triple those two configs use, standalone,
-      // so any stdio MCP client can register it under its own config shape.
+      // Only .mcp.json and .codex/config.toml are written here; print the portable command/args/env
+      // triple so any other stdio MCP client can register the server itself.
       genericClient: JSON.stringify({
         command: serverCommand.command,
         args: serverCommand.args,
@@ -679,10 +671,8 @@ function resolveMcpServerCommand() {
       return { command: 'node', args: [monoDev], launchScope: 'source-bound', portable: false };
     }
   }
-  // npm publication was abandoned (docs/DECISIONS.md 2026-07-27), so this looks for
-  // the server the installed app carries in its bundle. With neither, it states the
-  // reason it failed — stopping here diagnoses more cheaply than quietly writing a
-  // configuration that will not connect.
+  // npm publication was abandoned (docs/DECISIONS.md 2026-07-27), so this looks for the server the installed
+  // app bundles. With neither it says why and stops, rather than write a configuration that cannot connect.
   const bundled = '/Applications/Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp';
   if (existsSync(bundled) && statSync(bundled).isFile()) {
     return { command: bundled, args: [], launchScope: 'app-bundled', portable: true };

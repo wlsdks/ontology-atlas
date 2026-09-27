@@ -36,8 +36,8 @@ function vaultDoc(slug: string, updatedAt: string): VaultDoc {
 
 const labels = (nodes: VaultTreeNode[]) => nodes.map((n) => n.title ?? n.name);
 
-describe('정렬 기준 URL 계약', () => {
-  it('빈 값·모르는 값은 에러가 아니라 기본값으로 떨어진다', () => {
+describe('sort order URL contract', () => {
+  it('falls back to the default for empty or unknown values', () => {
     expect(parseDocsTreeSort(null)).toBe(DEFAULT_DOCS_TREE_SORT);
     expect(parseDocsTreeSort(undefined)).toBe(DEFAULT_DOCS_TREE_SORT);
     expect(parseDocsTreeSort('')).toBe(DEFAULT_DOCS_TREE_SORT);
@@ -45,21 +45,21 @@ describe('정렬 기준 URL 계약', () => {
     expect(parseDocsTreeGroup('typo')).toBe(DEFAULT_DOCS_TREE_GROUP);
   });
 
-  it('알려진 값은 그대로 읽는다', () => {
+  it('reads known values as they are', () => {
     expect(parseDocsTreeSort('recent')).toBe('recent');
     expect(parseDocsTreeSort('name')).toBe('name');
     expect(parseDocsTreeGroup('docs')).toBe('docs');
     expect(parseDocsTreeGroup('folders')).toBe('folders');
   });
 
-  it('기본값은 URL 에 쓰지 않는다 — 공유 링크를 짧게 유지', () => {
+  it('omits the default from the URL to keep shared links short', () => {
     expect(serializeDocsTreeSort('name')).toBeNull();
     expect(serializeDocsTreeSort('recent')).toBe('recent');
     expect(serializeDocsTreeGroup('folders')).toBeNull();
     expect(serializeDocsTreeGroup('docs')).toBe('docs');
   });
 
-  it('직렬화한 값을 다시 읽으면 같은 값이다', () => {
+  it('round-trips serialized values', () => {
     for (const sort of ['name', 'recent'] as const) {
       expect(parseDocsTreeSort(serializeDocsTreeSort(sort))).toBe(sort);
     }
@@ -69,7 +69,7 @@ describe('정렬 기준 URL 계약', () => {
   });
 });
 
-describe('폴더/문서 묶음', () => {
+describe('folder and doc grouping', () => {
   const nodes = [
     doc('architecture', 'architecture', 'Architecture'),
     dir('archive'),
@@ -77,7 +77,7 @@ describe('폴더/문서 묶음', () => {
     dir('benchmark'),
   ];
 
-  it('기본은 폴더 먼저 — 폴더가 문서 사이에 흩어지지 않는다', () => {
+  it('puts folders first by default', () => {
     expect(labels(sortDocsTreeNodes(nodes, { sort: 'name', group: 'folders' }))).toEqual([
       'archive',
       'benchmark',
@@ -86,7 +86,7 @@ describe('폴더/문서 묶음', () => {
     ]);
   });
 
-  it('문서 먼저를 고르면 문서가 앞으로 온다', () => {
+  it('puts docs first when chosen', () => {
     expect(labels(sortDocsTreeNodes(nodes, { sort: 'name', group: 'docs' }))).toEqual([
       'Architecture',
       'Backlog',
@@ -95,14 +95,14 @@ describe('폴더/문서 묶음', () => {
     ]);
   });
 
-  it('원본 배열을 건드리지 않는다', () => {
+  it('does not mutate the input array', () => {
     const before = labels(nodes);
     sortDocsTreeNodes(nodes, { sort: 'name', group: 'folders' });
     expect(labels(nodes)).toEqual(before);
   });
 });
 
-describe('최근 수정순', () => {
+describe('recently modified order', () => {
   const older = doc('old', 'old', 'Old');
   const newer = doc('new', 'new', 'New');
   const middle = doc('mid', 'mid', 'Mid');
@@ -112,7 +112,7 @@ describe('최근 수정순', () => {
     [newer.path, Date.parse('2026-07-01T00:00:00Z')],
   ]);
 
-  it('최근에 고친 문서가 위로 온다', () => {
+  it('puts the most recently edited doc on top', () => {
     expect(
       labels(
         sortDocsTreeNodes([older, newer, middle], {
@@ -124,7 +124,7 @@ describe('최근 수정순', () => {
     ).toEqual(['New', 'Mid', 'Old']);
   });
 
-  it('수정 시각이 같으면 이름순으로 갈린다 — 순서가 흔들리지 않게', () => {
+  it('breaks equal modification times by name for a stable order', () => {
     const a = doc('a', 'a', 'Alpha');
     const b = doc('b', 'b', 'Beta');
     const same = new Map([
@@ -136,7 +136,7 @@ describe('최근 수정순', () => {
     ).toEqual(['Alpha', 'Beta']);
   });
 
-  it('최근 수정순에서도 폴더 묶음이 먼저 적용된다', () => {
+  it('applies folder grouping before recency', () => {
     const folder = dir('archive');
     const withFolder = new Map(recency);
     // "Folders first" holds even when the folder is the oldest — the two axes are independent.
@@ -152,14 +152,14 @@ describe('최근 수정순', () => {
     ).toEqual(['archive', 'New', 'Old']);
   });
 
-  it('수정 시각을 모르면 이름순으로 되돌아간다', () => {
+  it('falls back to name order when modification time is unknown', () => {
     expect(
       labels(sortDocsTreeNodes([newer, older, middle], { sort: 'recent', group: 'folders' })),
     ).toEqual(['Mid', 'New', 'Old']);
   });
 });
 
-describe('폴더의 수정 시각', () => {
+describe('folder modification time', () => {
   const tree = dir('root', [
     dir('archive', [doc('a', 'archive/a'), doc('b', 'archive/b')]),
     dir('launch', [doc('c', 'launch/c')]),
@@ -172,14 +172,14 @@ describe('폴더의 수정 시각', () => {
     ['readme', vaultDoc('readme', '2026-03-01T00:00:00Z')],
   ]);
 
-  it('폴더는 안에서 가장 최근에 고쳐진 문서의 시각을 쓴다', () => {
+  it('uses the newest doc time inside the folder', () => {
     const recency = buildDocsTreeRecencyIndex(tree, docsBySlug);
     expect(recency.get('archive')).toBe(Date.parse('2026-04-01T00:00:00Z'));
     expect(recency.get('launch')).toBe(Date.parse('2026-06-01T00:00:00Z'));
     expect(recency.get('readme.md')).toBe(Date.parse('2026-03-01T00:00:00Z'));
   });
 
-  it('최근 문서를 품은 폴더가 이름순을 거슬러 위로 올라온다', () => {
+  it('lifts a folder holding a recent doc above name order', () => {
     const recency = buildDocsTreeRecencyIndex(tree, docsBySlug);
     expect(
       labels(
@@ -192,7 +192,7 @@ describe('폴더의 수정 시각', () => {
     ).toEqual(['launch', 'archive', 'readme']);
   });
 
-  it('매니페스트에 없는 문서는 0 으로 둔다 — 목록이 비지 않게', () => {
+  it('treats a doc missing from the manifest as time 0', () => {
     const recency = buildDocsTreeRecencyIndex(dir('root', [doc('ghost', 'ghost')]), new Map());
     expect(recency.get('ghost.md')).toBe(0);
   });

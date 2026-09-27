@@ -12,30 +12,9 @@ import {
 import { useOntologyInsight } from "../model/use-ontology-insight";
 
 /**
- * Once a local vault loads, handles the change baseline (once per vault):
- *
- * 1. **Restore first** — if a baseline persisted before the reload overlaps the current
- *    graph enough, restore it (`restorePersistedBaseline`). Then "what changed while I
- *    was away" (persisted baseline vs the current disk state) survives a refresh, and
- *    "reviewed" approvals are preserved.
- * 2. **Otherwise auto-mark** — with nothing to restore, a baseline is captured once.
- *
- * That way later vault edits by an agent (MCP) or a person appear without a click, as
- * the same changeset, in the topology's fresh channel, INDEX, the review link, the git
- * workbench, and the activity count.
- *
- * Handled **once per vault** (`handledScopeRef`), so an explicit Clear is not
- * immediately undone (respecting manual intent). Static/dogfood mode never changes, so
- * there is no auto-mark. Headless (renders nothing) — mounted inside the layout's vault provider.
- *
- * ## Why "per vault" rather than "per mount" (fix, 2026-08-01)
- *
- * `handledRef` used to be a boolean, so **a folder switch mid-session went unseen**. The
- * restore guard (`snapshotMatchesGraph`) runs only inside this effect and the effect did
- * not re-run, so vault A's baseline left in memory was compared against vault B's graph
- * and "N changed while you were away" reported **all of B**. A scope change re-runs the
- * handling — and the store discards the previous vault's baseline the moment it receives
- * `setChangeBaselineScope`.
+ * Once per vault scope: restore a persisted baseline if it matches the graph, otherwise capture
+ * one, so later edits appear as one changeset. Per scope, not per mount, or a folder switch
+ * compares one vault's baseline against another's graph. Once, so an explicit Clear is not re-marked.
  */
 export function OntologyLiveBaselineInit() {
   const mode = useDataSourceMode();
@@ -47,14 +26,11 @@ export function OntologyLiveBaselineInit() {
     if (!insight) return;
     if (handledScopeRef.current === vaultScope) return;
     handledScopeRef.current = vaultScope;
-    // 0) Tell the store which vault is active — a scope change discards the previous
-    //    vault's baseline here, and the save/restore key switches to this vault's.
+    // A scope change discards the previous vault's baseline and switches the save key.
     setChangeBaselineScope(vaultScope);
-    // 1) Try restoring a persisted baseline (overlap-guarded); on success, skip auto-mark.
+    // Try restoring a persisted baseline (overlap-guarded); on success, skip auto-mark.
     const restored = restorePersistedBaseline(insight.nodes);
-    // 2) With nothing restored and the auto-mark condition met, capture a new baseline.
-    //    `getChangeBaseline()` is read directly — the scope switch just above may have
-    //    discarded the baseline, while the value carried in this render is still the previous vault's.
+    // Read `getChangeBaseline()` directly: the scope switch above may just have discarded it.
     if (
       !restored &&
       shouldAutoMarkBaseline({

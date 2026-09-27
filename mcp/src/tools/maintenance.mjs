@@ -24,10 +24,8 @@ function attachVaultValidation(result, args = {}, loadedDocs = null) {
   const errorCount = validation.summary.errorFiles;
   const frontmatterWarnings = validation.summary.warningFiles;
   const warningCount = frontmatterWarnings + driftCount;
-  // **The sentence states what this check looked at.** It used to merge two kinds
-  // of warning into one number and say only "validator or source-path warning(s)".
-  // So when `health` reported warn:13 on a vault that `validate` called clean, the
-  // user had no way to tell whether those 13 were frontmatter or code paths.
+  // The sentence names which check found the warnings, so frontmatter warnings and
+  // code-path warnings are never merged into one unexplained number.
   const scopeTail = pathsChecked
     ? ` (frontmatter/graph refs ${frontmatterWarnings}, source paths ${driftCount}; repoRoot ${validation.pathDrift?.repoRoot ?? 'unknown'})`
     : ' (frontmatter/graph refs only — source paths were NOT checked; pass repoRoot / OATLAS_REPO_ROOT to include them)';
@@ -110,13 +108,9 @@ function compactPostWriteMaintenance(limit = 5) {
   COMPILED_ONTOLOGY_CACHE.clear();
   const artifact = COMPILED_ONTOLOGY_CACHE.get({ includeIndexes: true });
   const ontologyAtlasIgnorePatterns = loadOntologyAtlasIgnore(VAULT_ROOT);
-  // Node-eligibility gate hand-off (2026-07-31 council). The gate runs inside
-  // `commitDoc`, so it has already fired for every door — add_concept,
-  // patch_concept, add_relation, and the batch variants alike. Draining here,
-  // at the one place a write response is assembled, is what gives batch tools
-  // the "skip per row, summarize once at the end" behaviour for free: each row
-  // writes with `includePostWriteMaintenance: false`, findings accumulate, and
-  // the batch's single closing call collects all of them.
+  // The node-eligibility gate runs inside `commitDoc` for every write door. Draining
+  // here, where a write response is assembled, lets batch rows accumulate findings
+  // and the batch's closing call report them once.
   const nodeEligibilityFindings = drainNodeEligibilityFindings();
   const maintenanceDocs = loadVaultDocs(VAULT_ROOT);
   // Same signal `validate_vault` reports as `summaryFreshness`, surfaced here as an
@@ -130,10 +124,8 @@ function compactPostWriteMaintenance(limit = 5) {
     ontologyAtlasIgnorePatterns,
     nodeEligibilityFindings,
     staleSummaries: freshness.checked ? freshness.stale : [],
-    // The empty-bridge audit needs bodies to tell "created and abandoned" from
-    // "documented but childless" — and without that distinction it would fire on
-    // 20 of this vault's 38 capabilities. The compiled-cache read above already
-    // loads every doc, so this second pass is the same disk we just touched.
+    // The empty-bridge audit needs bodies to tell an abandoned node from a documented
+    // but childless one; the compiled-cache read above already loaded every doc.
     sourceDocs: maintenanceDocs,
   });
   return {

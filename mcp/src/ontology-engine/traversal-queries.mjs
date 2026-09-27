@@ -125,6 +125,7 @@ export function createTraversalQueries({
     return { operation: 'path', from, to, found: false, maxHops, hops: [], nodes: [], edges: [] };
   }
   
+  // Stack DFS over simple paths: exponential in maxHops, bounded by `searchBudget`.
   function allPaths(fromInput, toInput, options = {}) {
     const from = resolve(fromInput, 'from');
     const to = resolve(toInput, 'to');

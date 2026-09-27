@@ -107,13 +107,9 @@ function listConcepts({ kind, domain, since, summary, offset = 0, limit = 100 })
   // corruption becomes visible, and an agent sees the vault's state in one call.
   let errorCount = 0;
   let warningCount = 0;
-  /*
-   * ⚠️ **Narrow before aggregating** (2026-08-11). This number is
-   * `list_concepts.vaultWarnings`, and `mcp-verify` fails when it is non-zero. A
-   * freshly created vault was reported as "connection failed" for exactly that
-   * reason: the warning was "no parent" while the project already contained the
-   * node. Grouping by slug before counting is what makes containment visible.
-   */
+  // Group by slug before counting, so a node its project already contains is not
+  // counted as parentless; this number is `list_concepts.vaultWarnings`, which
+  // `mcp-verify` fails on.
   const issuesBySlugForCount = new Map();
   for (const doc of docs) {
     if (!doc.raw) continue;
@@ -133,19 +129,16 @@ function listConcepts({ kind, domain, since, summary, offset = 0, limit = 100 })
     }
   }
 
-  // When `since` (ms) is a number, only docs with mtime > since pass. Agents use
-  // it for incremental sync: capture the maximum mtime from a previous list
-  // response, pass it as `since`, receive only what changed. Equal mtimes are
-  // excluded strictly, so resending the max never double-fetches.
+  // With a numeric `since` (ms), only docs with mtime > since pass, for incremental
+  // sync from the previous response's maximum mtime. Equal mtimes are excluded, so
+  // resending the max never double-fetches.
   const sinceMs = typeof since === 'number' && Number.isFinite(since) ? since : null;
   const filtered = docs.filter((doc) => {
     const docKind = doc.frontmatter.kind;
     if (kind && docKind !== kind) return false;
     if (!docKind) return false; // A frontmatter `kind:` is what makes it an ontology node.
-    // Domain filter — matches frontmatter `domain:`. Answers the common query
-    // ("every capability in the auth domain") in one call without the
-    // query_concepts DSL. Applied uniformly across kinds; no match simply yields
-    // an empty result.
+    // Domain filter on frontmatter `domain:`, applied across kinds, so "every
+    // capability in the auth domain" needs no query_concepts DSL.
     if (domain && doc.frontmatter.domain !== domain) return false;
     if (sinceMs !== null && (typeof doc.mtime !== 'number' || doc.mtime <= sinceMs)) return false;
     return true;
@@ -199,10 +192,8 @@ function listConcepts({ kind, domain, since, summary, offset = 0, limit = 100 })
       hasMore: offset + nodes.length < filtered.length,
       nextOffset: offset + nodes.length < filtered.length ? offset + nodes.length : null,
     },
-    // A truncated summary is **marked on the row and explained once for the
-    // list**. Repeating the notice per row only grows the payload; omitting it
-    // entirely leaves the caller unable to tell what is missing, so it cannot
-    // ask again.
+    // A truncated summary is marked on the row and explained once for the list, so the
+    // caller can tell what is missing without a per-row notice.
     summaryHint:
       summaryTruncatedSlugs.length > 0
         ? `${summaryTruncatedSlugs.length} row(s) carry a partial summary (summaryTruncated: true). Read those bodies in full with get_concepts({ slugs: [...], body: "full" }).`
@@ -251,18 +242,9 @@ function getConcept({ slug, uid, body }, context = {}) {
   // warnings and recommend vault:validate.
   const validation = doc.raw ? validateVaultDocument(doc.raw) : null;
   const warnings = validation ? [...validation.issues] : [];
-  /*
-   * ⚠️ **Say so when the document is outside the graph** (measured 2026-08-08).
-   *
-   * A vault is an ordinary markdown folder, so meeting notes, memos, and drafts
-   * live alongside nodes by design. But this tool is named `get_concept`, so the
-   * response itself asserts "this is a concept". Previously a memo with no
-   * frontmatter at all carried **no warning whatsoever** (while a doc missing only
-   * `kind:` got `missing-kind`) — the most common case had the least signal.
-   *
-   * Do not reject it: reading a person's notes is legitimate, and blocking it
-   * would break the local-first promise. Say what is being handed over instead.
-   */
+  // Warn when the document is outside the graph: a vault holds ordinary notes by
+  // design, and `get_concept`'s name alone would assert this is a concept. Reading
+  // them stays allowed; refusing would break the local-first promise.
   const isNode =
     typeof doc.frontmatter?.kind === 'string' && doc.frontmatter.kind.trim() !== '';
   if (!isNode) {
@@ -286,10 +268,8 @@ function getConcept({ slug, uid, body }, context = {}) {
     const rationale = relationNoteFor(doc, ref);
     return rationale === undefined ? { to: ref, via: key } : { to: ref, via: key, rationale };
   });
-  // **Say that it was truncated.** Even excerpt mode must carry the original
-  // length and the number of characters withheld, so the caller knows there is
-  // more and can ask again. It used to cut silently, and an agent handed only the
-  // vault answered "it might exist but I could not confirm".
+  // Even excerpt mode carries the original length and the withheld character count,
+  // so the caller knows there is more and can ask again.
   const delivery = describeBodyDelivery(doc.body, {
     mode: bodyMode,
     hint:
@@ -331,11 +311,9 @@ function getConcept({ slug, uid, body }, context = {}) {
   };
 }
 
-// Batch variant of get_concept. Input `slugs[]` order is preserved, and a missing
-// slug surfaces as an `{ ok: false, error }` row instead of aborting the batch, so
-// an agent gets a partial result (reusing a list_concepts result without
-// revalidating does not kill the whole batch over one or two stale slugs). The cap
-// of 50 keeps the payload bounded; larger vaults chunk the call.
+// Batch get_concept: input order is preserved and a missing slug becomes an
+// `{ ok: false, error }` row instead of aborting the batch. The cap of 50 keeps the
+// payload bounded; larger vaults chunk the call.
 function getConceptsBatch({ slugs, uids, body }) {
   const hasSlugs = slugs !== undefined;
   const hasUids = uids !== undefined;
@@ -404,8 +382,8 @@ function findEvidence({ title, limit, nodesOnly = false } = {}) {
     // capabilities/elements joined with \n so a needle can't false-match across
     // the field boundary — keeps inclusion identical to the prior per-field sweep.
     const frontmatterHaystack = `${String(doc.frontmatter.capabilities ?? '')}\n${String(doc.frontmatter.elements ?? '')}`;
-    // Atlas Track A #4 — relevance score (title > frontmatter ref > body + title
-    // token-overlap). Inclusion unchanged: score>0 ⟺ a substring matched.
+    // Relevance score: title > frontmatter ref > body + title token overlap; score > 0
+    // exactly when a substring matched.
     const { score, matchedIn } = scoreEvidence(title, {
       title: docTitle,
       frontmatterHaystack,
@@ -416,11 +394,8 @@ function findEvidence({ title, limit, nodesOnly = false } = {}) {
     // body, so without saying it was cut, the very sentence that matched can be
     // absent from the response. The two fields appear only when truncated.
     const evidenceDelivery = describeBodyDelivery(doc.body, { maxLen: 200 });
-    // ⚠️ **The row states whether it is a node** (2026-08-08).
-    // Markdown that is not a node (meeting notes, memos, drafts) legitimately
-    // lives in a vault. That used to be expressed only as «the `kind` key is
-    // absent», and an absent key disappears from JSON — which is **no signal at
-    // all** to the reader. Agents were reading memos as nodes and citing them.
+    // The row states whether it is a node, because an absent `kind` key vanishes from
+    // JSON and agents would cite memos as nodes.
     const isNode = typeof doc.frontmatter.kind === 'string' && doc.frontmatter.kind.trim() !== '';
     if (nodesOnly && !isNode) continue;
     matches.push({
@@ -448,19 +423,9 @@ function findEvidence({ title, limit, nodesOnly = false } = {}) {
         : {}),
     });
   }
-  /*
-   * Best match first: score desc → **nodes before non-nodes** → slug asc.
-   *
-   * The middle key was added 2026-08-08. Body matches all score identically
-   * (0.3), so sorting on score alone left slug alphabetisation as the only
-   * tiebreak — in a vault of 3,000 loose documents the top five were all memos
-   * and not one real node appeared (measured).
-   *
-   * It never beats score. A memo whose title matches exactly (0.75+) still ranks
-   * above a node grazed in the body (0.3) — a person's memo is sometimes the real
-   * evidence, and hiding it would break this product's promise. Only the handling
-   * of ties changed.
-   */
+  // Best match first: score desc, then nodes before non-nodes, then slug asc. Body
+  // matches tie at 0.3, so without the middle key loose memos crowd out nodes; it
+  // never beats score, so a memo whose title matches still ranks high.
   matches.sort(
     (a, b) =>
       b.score - a.score ||
@@ -500,13 +465,9 @@ function findEvidence({ title, limit, nodesOnly = false } = {}) {
 }
 
 /**
- * The long-form rules a truncating host never delivers.
- *
- * A live Claude Code session kept only the first 2,048 characters of the
- * `instructions` string, so everything past the construction card was invisible
- * to the attached agent. Tool descriptions and tool results arrive whole, so
- * this map is the reliable channel: one topic per section, each pointing at the
- * same constant the instructions interpolate rather than a second copy.
+ * The long-form rules a truncating host never delivers. Tool descriptions and
+ * results arrive whole, so this map is the reliable channel: one topic per
+ * section, each pointing at the constant the instructions interpolate.
  */
 const CONSTRUCTION_GUIDE_TEXT = {
   meta_model: META_MODEL_RULES_EN,
@@ -667,10 +628,9 @@ function findPathTool({ from, to, maxHops }) {
   requireOptionalNonNegativeInteger(maxHops, 'maxHops', { max: 20 });
   const result = findPath(VAULT_ROOT, from, to, maxHops ?? 5);
   if (!result) {
-    // A zero-path answer is an unanswered question. Check first whether both
-    // endpoints actually exist in the vault, so "the endpoint itself is missing"
-    // (suggest add_concept) is distinguished from "both exist but no path"
-    // (suggest add_relation).
+    // A zero-path answer checks whether both endpoints exist, so a missing endpoint
+    // (suggest add_concept) is told apart from no path between existing ones (suggest
+    // add_relation).
     const docs = loadVaultDocs(VAULT_ROOT);
     const fromExists = Boolean(resolveGraphRef(from, docs).slug);
     const toExists = Boolean(resolveGraphRef(to, docs).slug);
@@ -780,13 +740,8 @@ function queryConceptsTool({ filter, limit }) {
 function readSourceTool({ path, from, limit, sheet } = {}) {
   const relPath = String(path ?? '').replace(/\\/g, '/').replace(/^\.\//, '');
   if (!relPath.startsWith('sources/') && relPath && !relPath.split('/').includes('..')) {
-    /*
-     * A repository path, not a vault source. A Rust trial builder (2026-09-23) asked
-     * this tool for `src/options.rs` lines 276-470 and got only "must name a file
-     * under sources/"; it found the code reader by itself, and a less persistent
-     * agent would have stopped with the next read undone. The refusal names the
-     * door that reads repository code, in the shape that call takes.
-     */
+    // A repository path, not a vault source: the refusal names the tool that reads
+    // repository code, in the shape that call takes, so the next read still happens.
     const quoted = JSON.stringify(relPath);
     throw new Error(
       `read_source: \`${relPath}\` is repository code, and read_source reads only the documents in ` +

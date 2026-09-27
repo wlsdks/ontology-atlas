@@ -3,17 +3,12 @@ interface DocsVaultHrefInput {
   hash?: string | null;
   intent?: 'local' | null;
   dogfood?: boolean;
-  /** Return context for an insights review. Pass only a valid `via` marker and an exact row id. */
+  /** Insights return context; pass only a valid `via` marker and an exact row id. */
   via?: string | null;
   reviewId?: string | null;
 }
 
-/**
- * Builds a vault href of the form `/docs/?slug=...#section`.
- *
- * Empty input gives `/docs/`; a slug alone gives `/docs/?slug=...`; a hash appends the
- * fragment.
- */
+/** `/docs/`, plus `?slug=` and a `#section` fragment when given. */
 export function buildDocsVaultHref({
   slug,
   hash,

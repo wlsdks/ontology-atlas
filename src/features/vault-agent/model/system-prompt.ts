@@ -1,51 +1,7 @@
 /**
- * The layer-1 system prompt — **product discipline. It lives in code. Not editable.**
- *
- * **Why code.** This prompt must move **atomically** with `mcp/src/schema.mjs`
- * (mirror: `cli/src/lib/schema.mjs`): when the schema changes, this copy changes
- * in the same PR. Living in the vault it would go stale out of step with the
- * schema — the prompt edition of code-doc drift. It is also the product's
- * discipline, not the user's data.
- *
- * **Why it is still readable.** Editing is impossible but **reading is one click**
- * (the panel header's "instructions"). A hidden prompt is trust debt — the user
- * must know what goes out alongside their vault's contents.
- *
- * **Where the urge to edit goes.** To the optional layer-2 file
- * (`.ontology-atlas/agent-instructions.md`). The user's discipline is the user's
- * plain text — visible in git and portable.
- *
- * ## ⚠️ Language boundary — do not translate this prompt
- *
- * There are three channels and each has its own language. Confusing them leads the
- * next person to translate this file into Korean, which breaks byte equality with
- * the source of truth and turns the contract test red.
- *
- * | Channel | Language |
- * |---|---|
- * | The system prompt the LLM reads (this file) | **English only** — this is open source and a model channel |
- * | User-facing copy | ko / en (`messages/*.json`) |
- * | The language the LLM **answers** in | whatever the user wrote in (the Voice section below instructs this) |
- *
- * The construction rules' *"in the language the person is writing to you in"* is
- * about **the third row**, not about the prompt's own language.
- *
- * ## ⚠️ The three blocks below are hand-copied — fix them in pairs
- *
- * The source of truth is `META_MODEL_RULES_EN`, `CONSTRUCTION_RULES_EN`, and
- * `CHAT_RULES_DELTA_EN` in `mcp/src/construction-rules.mjs`. `src/` and `mcp/` are
- * separate packages, so a cross-import is physically impossible (the same
- * situation as `schema.mjs` ↔ `cli/src/lib/schema.mjs`) and a literal copy plus a
- * contract test is the only way. `tests/contract/ontology-meta-model.contract.test.ts`
- * and `tests/contract/vault-schema.contract.test.ts` enforce byte equality — fixing
- * only the source turns those tests red immediately, and that is the only reason
- * this copy does not go quietly stale.
- *
- * This file's header long claimed it *"must move atomically with schema.mjs"* while
- * **nothing enforced that**. The kind hierarchy had in fact already diverged
- * (measured 2026-07-31): it said a project owns only domains while the schema has
- * domains, capabilities, and elements, and the `vault-readme` warning existed only
- * in the MCP guidance. Both were fixed in that commit and the tests now hold them.
+ * Layer-1 system prompt: product discipline in code, readable from the panel, English only (the
+ * model channel). The rule blocks are literal copies of `mcp/src/construction-rules.mjs`, held
+ * byte-equal by tests/contract/ontology-meta-model.contract.test.ts and vault-schema.contract.test.ts.
  */
 
 import { NEXT_STEP_MAX_CHARS } from './next-step';
@@ -184,11 +140,7 @@ Write plainly, in the person's language, for someone who is not a developer. Sho
 
 You are talking to a person, not returning structured \`warnings\` to another program. So when step 4 of the construction rules above would have you create a grouping node, say so in the conversation first, in the language the person is writing to you in, and let them answer before you propose the call. A structured warning a person never opens is not a disclosure — silently reshaping someone's ontology and logging it where only a machine looks is the failure this rule exists to prevent.`;
 
-/**
- * The full text of layer 1 plus layer 2 (when present). The panel's "instructions"
- * disclosure shows **exactly this function's result** — if what is shown differs
- * from what is sent, that reading is decoration rather than transparency.
- */
+/** Layer 1 plus layer 2; the panel shows exactly this result, so what is shown is what is sent. */
 export function buildSystemPrompt(projectInstructions?: string | null): string {
   const trimmed = projectInstructions?.trim();
   if (!trimmed) return PRODUCT_DISCIPLINE;

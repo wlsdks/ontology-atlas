@@ -1,37 +1,9 @@
 /**
- * **Bringing documents in from a service you already write in** — the model behind the door.
- *
- * ## Why this exists beside the MCP screen
- *
- * The owner, 2026-09-07: *"it has to be really easy to use, or nobody will. Connecting a service
- * is mostly for the Library anyway — people want the things they already wrote somewhere else."*
- *
- * That is a different errand from the one `/mcp` serves. `/mcp` answers *"what may my agent
- * reach"*, in the vocabulary of transports and environment variables, and it is right for someone
- * who came to configure. This answers *"my notes are in Notion, put them in here"*, and a person
- * asking that must never meet the words MCP, stdio, npx or environment variable. The technical
- * dialog stays exactly where it is; it is reachable from here as the last tile, for the service
- * this list does not know.
- *
- * ## Three steps, and what each one honestly is
- *
- * 1. **Connect.** Atlas writes the connector descriptor into the folder and switches it on. For a
- *    hosted service that is all: the sign-in window belongs to the **coding agent**, not to Atlas,
- *    which is why the copy says a window will open and that Atlas neither opens it nor keeps what
- *    comes back. For a service that issues a token, one field and a link to the page that issues
- *    it.
- * 2. **Say what to bring.** A phrase and a scope, which become a bounded brief.
- * 3. **Bring them in.** The brief goes to the Library's existing agent turn. The agent lists what
- *    it found, the person picks inside that turn, and every file lands under `sources/<service>/`
- *    through the **permission card that already exists**. Atlas writes nothing itself.
- *
- * ⚠️ **What step two is not, and why.** The owner asked for a search box and a ticked list drawn
- * by Atlas. Atlas cannot draw that: it is not the MCP client — the coding agent is — so it has no
- * way to call Notion's tools or to receive their result as data. Building a list here would mean
- * either Atlas talking to the service directly (a second provider boundary the trust charter does
- * not have) or inventing rows. So the picking happens one surface over, inside the agent turn,
- * where the results actually are. The brief says how many to expect and what to do with them, and
- * the screen says where the choosing will happen rather than implying it happens here.
+ * Model for bringing documents in from a service: connect (write the connector descriptor and
+ * switch it on, asking for one token if needed), say what to bring, then hand a bounded brief to
+ * the Library's agent turn. Atlas is not the MCP client, so the agent lists and picks results
+ * inside its turn and every file lands under `sources/<service>/` through the permission card;
+ * Atlas writes nothing itself.
  */
 import {
   MCP_CATALOGUE,
@@ -44,11 +16,8 @@ import {
 import type { ConnectorRecord } from '@/shared/lib/connector-record';
 
 /**
- * The tiles, in the order they are drawn. `other` is always last and always present.
- *
- * A union rather than a `const` array: the array existed only to derive this type, and an
- * exported constant with no reader is what the dead-code ratchet is there to catch. `IMPORT_SERVICES`
- * below is the list, and its `id` field is checked against this.
+ * The tiles in draw order; `other` is always last. `IMPORT_SERVICES` is the list and its `id` is
+ * checked against this union.
  */
 export type ImportServiceId = 'notion' | 'github' | 'other';
 
@@ -57,11 +26,8 @@ export interface ImportService {
   /** The catalogue entry this tile connects through. `null` for the escape hatch. */
   catalogueId: string | null;
   /**
-   * How the person will be asked to connect.
-   *
-   * `browser` — a window opens and they press Allow there. Nothing to type.
-   * `token` — one value, with a link to where it is issued.
-   * `manual` — the technical dialog; this tile does not know the service.
+   * How the person connects: `browser` (press Allow in a window), `token` (one value with a link to
+   * its issuer), `manual` (the technical dialog).
    */
   connect: 'browser' | 'token' | 'manual';
   /** Where the agent will be asked to put what it brings, under the folder. */
@@ -69,27 +35,12 @@ export interface ImportService {
 }
 
 /**
- * The tiles.
- *
- * Confluence and Jira are two tiles over one Atlassian connector on purpose: nobody thinks *"I
- * want my Atlassian documents"*, they think *"that Confluence page"*. One connector, two doors,
- * and the folder each lands in says which they meant.
- *
- * ⚠️ **Google Drive is deliberately absent** (decision 2026-09-07). The owner named it, and the
- * MCP Registry was read on 2026-09-07: Google publishes no Drive server, and every community one
- * (`io.github.domdomegg/google-drive-mcp` 1.3.0 and the rest) asks the person to create their own
- * OAuth client in the Google Cloud console before anything works. A tile would be a door onto
- * that console, which is the opposite of what this dialog is for. The dialog says so under the
- * tiles, with the path that does work today. It goes in when Google or a hosted provider offers
- * a sign-in-only endpoint and somebody adds it to `scripts/build-mcp-catalogue.mjs` with sources.
+ * The tiles. Google Drive is absent: every Drive server needs a self-made OAuth client; add it
+ * to `scripts/build-mcp-catalogue.mjs` with sources when a sign-in-only endpoint exists.
  */
 /*
- * ⚠️ **Confluence and Jira left on 2026-09-07, evening.** Both rode the Atlassian hosted address,
- * which signs in with OAuth — and a hosted OAuth address handed to the in-app session reports
- * "requires authentication" with no way to open the window (measured against claude-agent-acp
- * 0.75.0; the catalogue generator now refuses that shape). A tile that leads to a connection the
- * agent can never use is the dead end this door exists to remove, so the tiles wait for an
- * adapter that can sign in. Notion and GitHub stay as programs with one token each.
+ * Confluence and Jira wait for an adapter that can sign in: a hosted OAuth address given to the
+ * in-app session only reports "requires authentication".
  */
 export const IMPORT_SERVICES: readonly ImportService[] = [
   { id: 'notion', catalogueId: 'notion', connect: 'token', folder: 'sources/notion' },
@@ -110,14 +61,8 @@ export function serviceEntry(service: ImportService): CatalogueEntry | null {
 }
 
 /**
- * The variant this door uses.
- *
- * **The hosted address wins whenever the service has one**, because it is the shape with nothing
- * to type — which is the entire promise this door makes. A service with only a local program falls
- * back to that, and the step then asks for its one credential. A hosted address with a *second*
- * hosted address (GitHub's read-only endpoint) takes the first: a person bringing documents in is
- * reading, but choosing between two URLs is the technical question this door exists to avoid, and
- * the MCP screen is where somebody who wants the narrower one goes.
+ * The hosted address wins whenever a service has one, since nothing needs typing; otherwise the
+ * local program with its credential. With two hosted addresses the first is taken.
  */
 export function serviceVariant(entry: CatalogueEntry): CatalogueVariant {
   return (
@@ -146,14 +91,8 @@ export function serviceAsk(
 }
 
 /**
- * The connector this door writes, **switched on**.
- *
- * ⚠️ **On, unlike every other path into `connectors.json`.** Everywhere else a connector arrives
- * off, because writing one down is not the same as deciding to use it — somebody copying rows out
- * of `~/.claude.json` is filing, not choosing. Here the person pressed a tile named after the
- * service and a button that says bring my documents in, and leaving it off would mean the next
- * step silently finds nothing. The row is still visible and still switchable on the MCP screen,
- * and the step says out loud that it has been turned on.
+ * The connector, switched on unlike every other path into `connectors.json`: the person asked to
+ * bring documents in, so off would find nothing. It stays visible and switchable on the MCP screen.
  */
 export function importConnector(
   service: ImportService,
@@ -183,16 +122,9 @@ export interface ImportRequest {
 export const DEFAULT_IMPORT_LIMIT = 20;
 
 /**
- * The brief handed to the Library's agent turn.
- *
- * **Bounded on purpose, in the same shape Compile's brief already uses.** It names the connector
- * by the name the descriptor was written under, caps how many documents may be brought, fixes the
- * folder they land in, and forbids everything else — because an unbounded "import my Notion" is a
- * turn that reads a workspace and writes a thousand files, each through a permission card nobody
- * will read by the fiftieth.
- *
- * It also states the two things a person is owed afterwards: where each file came from, and that
- * nothing outside the named folder is touched.
+ * The bounded brief for the Library's agent turn: names the connector, caps the count, fixes the
+ * destination folder and forbids everything else, so a turn cannot write a thousand files through
+ * unread permission cards.
  */
 export function buildImportBrief(input: {
   serviceLabel: string;
@@ -213,13 +145,7 @@ export function buildImportBrief(input: {
   ].join('\n');
 }
 
-/**
- * Where the flow goes next, given what has happened.
- *
- * A pure function so the dialog has no branch of its own to get wrong, and so the whole path is
- * testable without a service, a keychain or an agent — none of which exist in a test, and one of
- * which does not exist on the web.
- */
+/** The next step as a pure function, testable without a service, keychain or agent. */
 export function nextStep(state: {
   step: ImportStep;
   service: ImportService | null;

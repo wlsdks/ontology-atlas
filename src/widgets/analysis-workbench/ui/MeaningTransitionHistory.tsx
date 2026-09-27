@@ -27,11 +27,7 @@ export type MeaningTransitionArchiveState = 'no-folder' | 'unavailable' | 'pendi
 export function MeaningTransitionHistory({ handle, open, foldWhenQuiet = false, onStateChange }: {
   handle: FileSystemDirectoryHandle | null;
   open: boolean;
-  /**
-   * Draw nothing while the archive is quiet, because the caller already says so in its own empty
-   * state. Round three (2026-09-25): an empty history tab carried two "nothing here" messages on
-   * two surfaces with a dead band between them.
-   */
+  /** Draws nothing while quiet; the caller shows its own empty state. */
   foldWhenQuiet?: boolean;
   onStateChange?: (state: MeaningTransitionArchiveState) => void;
 }) {

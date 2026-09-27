@@ -1,15 +1,6 @@
-// `ontology-atlas export [vault] --format jsonld|graphml|json` — interop
-// export surface. Runs the deterministic MCP `compile_ontology`, adapts the
-// artifact into a portable standard format, and writes it to stdout.
-//
-//   jsonld   RDF 1.1 JSON-LD (rdflib / Protégé / triplestores)
-//   graphml  XML graph (Gephi / Cytoscape / NetworkX)
-//   json     the raw compile artifact (nodes/edges/graphHash), unchanged
-//
-// Serialization is delegated to cli/src/lib/interop-format.mjs — the same pure
-// functions the web ERD builder uses (kept in lock-step by
-// tests/contract/interop-format.contract.test.ts). Payload → stdout only;
-// status + errors → stderr, so `export ... | neo4j-admin import` is safe.
+// `ontology-atlas export [vault] --format jsonld|graphml|json` adapts MCP `compile_ontology` through
+// lib/interop-format.mjs, the web ERD builder's twin (tests/contract/interop-format.contract.test.ts).
+// Payload goes to stdout only, status and errors to stderr, so piping is safe.
 
 import { COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
@@ -95,16 +86,8 @@ export async function runExport(args) {
   );
 
   /*
-   * **Say what was left out too** (measured 2026-08-17).
-   *
-   * Nodes and relations really do all go out. But none of our vault's 7 relation
-   * rationales (`relation_notes`) do, and neither do the implementation paths.
-   * This repository wrote the standard itself: *"an edge with no rationale is a
-   * mind-map line, not an ontology claim."* Someone moving to Protégé sees
-   * «80 nodes · 174 relations» and believes they took everything.
-   *
-   * The list of carried fields is not written by hand here — it would go stale
-   * silently as the schema grows. **It is derived from the payload just produced.**
+   * Say which fields the format left out. Derived from the payload just produced, because a
+   * hand-written list would go stale silently as the schema grows.
    */
   const omissions = describeExportOmissions({
     nodes: artifact.nodes,
@@ -119,11 +102,7 @@ export async function runExport(args) {
   return 0;
 }
 
-/**
- * The node fields this format actually carried — **derived from the produced
- * result.** A hand-written list goes stale silently as the schema grows, and then
- * claims everything was carried while it is not.
- */
+/** The node fields this format actually carried, derived from the produced result. */
 function carriedKeysOf(format, payload) {
   // `json` is the raw compile artifact, so nothing is lost.
   if (format === 'json') return null;

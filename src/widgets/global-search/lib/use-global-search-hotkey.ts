@@ -9,19 +9,8 @@ export interface GlobalSearchHotkeyOptions {
 }
 
 /**
- * Is this ⌘K (Ctrl+K elsewhere), with or without Shift.
- *
- * **One search, one key** (2026-09-26). ⇧⌘K used to be a second row in the shortcut sheet —
- * "search concepts, docs and projects together" beside ⌘K's "open the search palette" — left
- * over from when the map's ⌘K opened a project-only palette and this search lived on ⇧⌘K. The
- * map has opened this one search on both keys since then, so two rows taught two searches that
- * were the same dialog. The sheet now teaches ⌘K alone; Shift is accepted, never required, so a
- * hand that learned ⇧⌘K still lands here.
- *
- * **The key's position, not only its character.** With a Korean input source the K key emits a
- * Hangul jamo, so `event.key` is never `k`, and with Shift held it is `K`: the character check
- * alone was dead in both cases. `event.code` is the position and does not move with the input
- * source (the same reason as `useTypingShortcuts`).
+ * Cmd+K (Ctrl+K elsewhere), Shift accepted but never required. Checks `event.code` too, because a
+ * Korean input source emits a jamo in `event.key`.
  */
 export function isGlobalSearchHotkey(
   event: Pick<KeyboardEvent, "key" | "code" | "metaKey" | "ctrlKey" | "altKey">,
@@ -31,13 +20,8 @@ export function isGlobalSearchHotkey(
 }
 
 /**
- * ⌘K (mac) / Ctrl+K (elsewhere) — the global search toggle hotkey.
- *
- * Inert inside input, textarea and contentEditable — except that closing an already
- * open search is allowed, so ⌘K closes from within the search input.
- *
- * With disabled=true the binding is inert (a controlled mount where an external hotkey
- * manages open).
+ * Global search toggle hotkey; inert in inputs except for closing an open search, and fully inert
+ * when disabled.
  */
 export function useGlobalSearchHotkey(
   open: boolean,

@@ -8,24 +8,15 @@ export interface RelatedDocMatch {
 
 interface MatchInput {
   projectSlug: string;
-  /** The project's real name (e.g. "Demo Reactor"), used for title and body matching. */
+  /** e.g. "Demo Reactor", for title and body matching. */
   projectName?: string;
-  /** Hub/container identifiers. Usually the same as projectSlug, but a hub can differ. */
+  /** Hub or container ids when they differ from projectSlug. */
   aliases?: string[];
 }
 
 /**
- * The top N documents in the vault most related to a project.
- *
- * Signals, strongest to weakest:
- *  1. frontmatter `projects: [slug]` contains it exactly — 100
- *  2. body wikilink `[[project:slug]]` (folded into linksOut as `project:slug`) — 60
- *  3. body mentions the `/project/{slug}` path — 40
- *  4. title contains projectName exactly — 25
- *  5. tag equals projectSlug — 15
- *  6. excerpt contains projectName — 10
- *
- * Sorted by score descending, ties by slug. Scores of zero or less are dropped.
+ * Top N related docs by score: frontmatter `projects` 100, `[[project:slug]]` 60, `/project/{slug}`
+ * 40, title name 25, tag 15, excerpt name 10. Ties by slug; zero drops.
  */
 export function findRelatedDocs(
   docs: VaultDoc[],

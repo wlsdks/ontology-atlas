@@ -20,10 +20,8 @@ const DEFAULT_START_DELAY_MS = 250;
 interface Options {
   docs: VaultDoc[];
   /**
-   * A local vault's slug → raw md reader (the same source as DocsVaultPage's viewer
-   * resolver: FileSystemFileHandle.getFile().text()). Unset means a static vault,
-   * falling back to the bundled content.json plus a `/docs-vault/{slug}.md` fetch —
-   * the same priority as the viewer's body source.
+   * A local vault's slug to raw md reader (the viewer's source); unset means a static vault read
+   * from the bundled content.json or a `/docs-vault/{slug}.md` fetch.
    */
   getDocContent?: (slug: string) => Promise<string>;
   /** Test-only override of the build start delay. */
@@ -31,14 +29,8 @@ interface Options {
 }
 
 /**
- * The in-memory index the palette searches bodies with. When the vault loads (the
- * docs array is replaced) it reads and lowercases every body, and after a polling
- * diff rebuild it skips the re-read of any document whose {@link docBodyCacheKey}
- * (slug + mtime) is unchanged — only changed files are read again.
- *
- * Sense of scale: 305 docs × ~6KB × (raw + lower) ≈ 3.5MB of memory, and the build
- * I/O is the same order as the full-file read the manifest build already does.
- * Search itself is the linear scan in `search.ts` (~0.1–0.2ms/key measured).
+ * The palette's in-memory body index: reads and lowercases every body on load and re-reads only
+ * documents whose docBodyCacheKey changed.
  */
 export function useDocsBodyIndex({
   docs,
@@ -47,10 +39,8 @@ export function useDocsBodyIndex({
 }: Options): { bodyIndex: DocsBodyIndex; indexing: boolean } {
   const [bodyIndex, setBodyIndex] = useState<DocsBodyIndex>(() => new Map());
   const [indexing, setIndexing] = useState(false);
-  // A static vault's bundled bodies — for search results to point at the same vault
-  // as the list (the manifest), the bodies have to come from the same sample. Reading
-  // the bundled content.json directly makes "view the example business" search the
-  // dogfood bodies.
+  // Bundled bodies must come from the same sample as the manifest, or search points at another
+  // vault's bodies.
   const { content: bundledContent } = useStaticVaultSource();
   /** slug → entry cache. Reused across a changed docs array whenever the key matches. */
   const cacheRef = useRef<Map<string, DocsBodyEntry>>(new Map());

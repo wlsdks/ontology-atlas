@@ -10,18 +10,7 @@ import {
 import { useOntologyInsight } from './use-ontology-insight';
 import { useVaultDocDates } from './use-vault-doc-freshness';
 
-/**
- * The mode-aware adapter for the "recent changes" lens. It passes `useVaultDocDates()` (slug →
- * when the document last changed, from Git where Git knows) and `useOntologyInsight()` (the
- * current graph nodes) straight into the pure `computeAdaptiveRecentChanges`
- * (`@/entities/knowledge-graph/lib/ontology-tree`) — the mode branch and the time arithmetic are already
- * owned by those two hooks and that pure function, so nothing new is built here (the same
- * thin composition pattern as `use-ontology-insight.ts` / `use-vault-doc-freshness.ts`).
- *
- * The reference time is a snapshot from the hook's first call
- * (`useState(() => Date.now())`) — `Date.now()` is never read during render (render purity,
- * matching this repository's existing convention).
- */
+/** The recent-changes lens: `useVaultDocDates` and `useOntologyInsight` fed into the pure `computeAdaptiveRecentChanges`. */
 export interface RecentChangesLens extends AdaptiveRecentChangesResult {
   /** The dates are still being read (`VaultDocDates.reading`): the lens counts nothing yet. */
   reading: boolean;
@@ -34,15 +23,8 @@ const EMPTY_ADAPTIVE: AdaptiveRecentChangesResult = {
 };
 
 /**
- * The window-adaptive variant. On a bulk-commit day a 7-day window can let 80% of
- * everything through, at which point the lens stops filtering, so it narrows down a
- * 7d→3d→1d ramp (the `computeAdaptiveRecentChanges` contract). The INDEX lens uses this.
- *
- * Spotlight: when `overrideWindowDays` is a number, that window is **fixed** instead of the
- * adaptive ramp (going straight to `computeRecentChanges`, with `windowDays` echoed back
- * unchanged). The `?recent=1|7|30` preset chips arrive through this argument; omitted or
- * undefined keeps the existing adaptive behaviour. The map's settling and the INDEX lens
- * share this one hook, so the two surfaces' windows cannot diverge.
+ * Narrows 7d→3d→1d when a window would pass most nodes; a numeric `overrideWindowDays` fixes
+ * the window instead. The map and the INDEX lens share this hook.
  */
 export function useAdaptiveRecentChanges(
   overrideWindowDays?: number,

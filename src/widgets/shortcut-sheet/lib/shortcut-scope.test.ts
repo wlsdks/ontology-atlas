@@ -11,37 +11,37 @@ describe("surfaceForPathname", () => {
     expect(surfaceForPathname('/ko/library/', 'ontology')).toBe('docs');
     expect(surfaceForPathname('/ko/library/', 'wiki')).toBe('global');
   });
-  it("루트와 /topology 는 지도 표면", () => {
+  it('maps the root and /topology to the map surface', () => {
     expect(surfaceForPathname("/")).toBe("topology");
     expect(surfaceForPathname("/topology")).toBe("topology");
     expect(surfaceForPathname("/ko/topology/")).toBe("topology");
   });
 
-  it("/docs 는 문서함 표면", () => {
+  it('maps /docs to the docs surface', () => {
     expect(surfaceForPathname("/docs")).toBe("docs");
     expect(surfaceForPathname("/en/docs/")).toBe("docs");
   });
 
   // Studio, insights and projects have no dedicated shortcuts — we do not claim what is not there.
-  it("전용 단축키가 없는 화면은 전역만", () => {
+  it('maps a screen without its own shortcuts to global only', () => {
     expect(surfaceForPathname("/ko/ontology/studio/")).toBe("global");
     expect(surfaceForPathname("/ko/projects/")).toBe("global");
   });
 });
 
 describe("sectionVisible", () => {
-  it("'전체' 탭은 모두 보여준다 — 분류로 정보를 잃지 않는다", () => {
+  it('shows everything on the all tab', () => {
     expect(sectionVisible("all", "topology")).toBe(true);
     expect(sectionVisible("all", "docs")).toBe(true);
     expect(sectionVisible("all", "global")).toBe(true);
   });
 
-  it("전역 단축키는 어느 탭에서도 남는다 — 지금 누를 수 있는 키가 사라지면 안 된다", () => {
+  it('keeps global shortcuts on every tab', () => {
     expect(sectionVisible("topology", "global")).toBe(true);
     expect(sectionVisible("docs", "global")).toBe(true);
   });
 
-  it("표면 탭은 그 표면만", () => {
+  it('shows only that surface on a surface tab', () => {
     expect(sectionVisible("topology", "topology")).toBe(true);
     expect(sectionVisible("topology", "docs")).toBe(false);
     expect(sectionVisible("docs", "topology")).toBe(false);
@@ -49,13 +49,13 @@ describe("sectionVisible", () => {
 });
 
 describe("sectionVisibleForCurrent", () => {
-  it("지도에서는 전역 + 지도", () => {
+  it('shows global plus map on the map', () => {
     expect(sectionVisibleForCurrent("topology", "global")).toBe(true);
     expect(sectionVisibleForCurrent("topology", "topology")).toBe(true);
     expect(sectionVisibleForCurrent("topology", "docs")).toBe(false);
   });
 
-  it("전용 단축키가 없는 화면에서는 전역만", () => {
+  it('shows only global on a screen without its own shortcuts', () => {
     expect(sectionVisibleForCurrent("global", "global")).toBe(true);
     expect(sectionVisibleForCurrent("global", "topology")).toBe(false);
     expect(sectionVisibleForCurrent("global", "docs")).toBe(false);

@@ -1,8 +1,5 @@
-// `ontology-atlas analyze [rootPath]`
-// Wraps MCP analyze_repo_structure. Zero side effects — the vault is not modified,
-// only candidates are returned. A candidate reaches the MCP writer only after the
-// connected agent's review → qualification → human acceptance → exact writePlan
-// lifecycle.
+// `ontology-atlas analyze [rootPath]` wraps MCP analyze_repo_structure with no side effects. Candidates reach
+// the MCP writer only after review, qualification, human acceptance and an exact writePlan.
 
 import { COLORS } from '../lib/colors.mjs';
 import { resolve } from 'node:path';

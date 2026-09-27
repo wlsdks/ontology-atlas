@@ -9,18 +9,9 @@ import { architectureRecordFromAnalysis } from './analysis-architecture-record';
 const EMPTY_RECORDS: Readonly<Record<string, ArchitectureRecord>> = Object.freeze({});
 
 /**
- * Read the persisted conformance receipts `.ontology-atlas/architecture/<profile-slug>.json`
- * for the given profiles, through the same vault handle both surfaces already hold — the
- * browser and the installed app read the identical sidecar path (2026-08-27 council, point 3).
- *
- * Read-only and resilient by contract: a vault without the sidecar directory, a profile without
- * a receipt, or a receipt that does not parse all resolve to "no record" — silently, because a
- * missing machine receipt is a normal state, not an error a console should shout about. The
- * surface then renders the unchanged "Source check required" amber, never a defect.
- *
- * The loaded set stays keyed to the handle and slug list it was read for (the same derive-not-
- * reset pattern `ArchitecturePage` uses for handoff contexts), so a vault or profile change
- * falls back to "no records" without a synchronous state reset.
+ * Reads `.ontology-atlas/architecture/<profile-slug>.json` receipts through the vault handle both
+ * surfaces hold. A missing or unparsable receipt is a normal "no record", silently. The loaded set
+ * stays keyed to the handle and slugs it was read for, so a change falls back without a reset.
  */
 export function useArchitectureRecords(
   handle: FileSystemDirectoryHandle | null,
@@ -56,13 +47,12 @@ export function useArchitectureRecords(
             const text = await (await fileHandle.getFile()).text();
             next[slug] = parseArchitectureRecord(JSON.parse(text));
           } catch {
-            // Missing or invalid receipt → no record for this profile.
+            // A missing or invalid receipt means no record for this profile.
           }
         }
       }
       if (profileDocuments && fileHandles) {
-        // Newest-first pages stop once every requested profile has a run. The
-        // bounded history viewer remains the path to older or unreadable files.
+        // Newest-first pages stop once every requested profile has a run; the history viewer reaches older ones.
         const wanted = new Set(slugKey.split('\0'));
         let cursor: string | null = null;
         for (let pageIndex = 0; pageIndex < 10 && wanted.size; pageIndex += 1) {
@@ -72,8 +62,7 @@ export function useArchitectureRecords(
             if (run.recordType !== 'run' || run.mode !== 'architecture' || !run.scope.profileSlug || !wanted.has(run.scope.profileSlug)) continue;
             const slug = run.scope.profileSlug;
             wanted.delete(slug);
-            // A newer attempt without a compatible measurement cannot make a
-            // legacy receipt look like the result of that new attempt.
+            // A newer attempt without a compatible measurement must not let a legacy receipt stand for it.
             delete next[slug];
             const record = architectureRecordFromAnalysis(run);
             const profileFile = fileHandles.get(profileDocuments.get(slug) ?? '');

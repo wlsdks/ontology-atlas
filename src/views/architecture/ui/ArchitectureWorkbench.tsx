@@ -52,12 +52,9 @@ const XL_COLUMNS = {
 
 const XL_EVIDENCE_COLUMNS = 'xl:grid-cols-[minmax(0,1fr)_360px]';
 
-/**
- * The same document with a different role selected. Defaults stay bare, and obsolete workflow
- * stage parameters are removed when this screen next writes its state.
- */
+/** The same document with another role selected; defaults stay bare and obsolete stage parameters are dropped. */
 function buildArchitectureHref(role: string | null, pathname: string): string {
-  /* Preserve orthogonal route flags (`guides=off`, fixtures, future view options). */
+  /* Preserve orthogonal route flags (`guides=off`, fixtures, view options). */
   const query = new URLSearchParams(
     typeof window === 'undefined' ? undefined : window.location.search,
   );
@@ -81,9 +78,7 @@ function readArchitectureRole(): string | null {
   return new URL(window.location.href).searchParams.get('role');
 }
 type CopyState = 'idle' | 'pending' | 'copied' | 'error';
-/* Long enough to read a sentence that names the task: a product-manager walker saw a 1.6s
-   confirmation vanish before finishing it (2026-09-03). Deliberately longer than the 1.5s the
-   shared `useCopyFeedback` gives a one-word confirmation; the chosen task then stays on the button. */
+/* Long enough to read a sentence naming the task, unlike `useCopyFeedback`'s 1.5s one-word confirmation. */
 const COPY_FEEDBACK_MS = 4000;
 
 export function ArchitectureWorkbench({
@@ -119,7 +114,7 @@ export function ArchitectureWorkbench({
   sourceModulesByProfile?: Readonly<Record<string, Record<string, RoleSourceModule[]>>>;
   /** Whether this surface can list a source folder at all — false in a browser, by nature. */
   sourceListingCapable?: boolean;
-  /* Which absence the stage should name when it cannot list source modules. */
+  /** Which absence the stage names when it cannot list source modules. */
   sourceUnavailableReason?: 'browser' | 'unbound' | null;
   /** Per profile slug, the persisted conformance receipt read from the vault sidecar. */
   recordsByProfile?: Readonly<Record<string, ArchitectureRecord | undefined>>;
@@ -139,11 +134,7 @@ export function ArchitectureWorkbench({
   const t = useTranslations('architecture');
   const tReview = useTranslations('analysisWorkbench');
   const reviewUsesSheet = useViewportBelow(LG_BREAKPOINT_PX);
-  /*
-   * The reader's own language decides which reviewed sentence is shown, and nothing else does.
-   * `summary_<role>` stays the canonical fact every agent brief, prompt and CLI line prints; a
-   * `summary_<role>_<locale>` line is a restatement of it for whoever is looking at the screen.
-   */
+  /* The locale picks which reviewed sentence shows; `summary_<role>` stays the fact briefs, prompts and CLI lines print. */
   const locale = useLocale();
   const [draftCopyState, setDraftCopyState] = useState<CopyState>('idle');
   const [selectedSlug, setSelectedSlug] = useState(profiles[0]?.slug ?? null);
@@ -154,14 +145,9 @@ export function ArchitectureWorkbench({
 
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   /*
-   * ⚠️ **At workbench width the screen stops being a document.** Everything that used to sit in a
-   * second grid row — the applied scopes, the pattern and its rules, the receipt, the chosen
-   * role — was squeezed into whatever height the canvas left it: measured 2026-08-30 on the
-   * installed app at 1512×945, that was 64px per panel, each with its own inner scroll of 66 and
-   * 219px. The page scroller had 187px of travel and was already at its end, so the lower half was
-   * not merely long, it was unreachable. It is a dock now: the canvas holds the height, and this
-   * opens beside it when a role is clicked or the button is pressed. Below `xl` the screen stays
-   * the stacked document it was, because a phone has no room for a dock beside anything.
+   * At `xl` the scopes, rules, receipt and chosen role open in a dock beside the canvas, which keeps
+   * the height; stacked under it they were squeezed out of reach. Below `xl` the page stays a
+   * stacked document.
    */
   const [inspector, setInspector] = useState<'role' | 'rules' | null>(() => {
     return readArchitectureRole() !== null ? 'role' : null;
@@ -171,25 +157,13 @@ export function ArchitectureWorkbench({
   const evidenceTriggerRef = useRef<HTMLButtonElement>(null);
   const inspectorTriggerRef = useRef<HTMLElement | SVGElement | null>(null);
 
-
-  /* Which role the canvas has chosen. It lives here because the canvas and the panel that answers
-     it sit in different rows of the page grid: the drawing takes the full width, the answer is
-     column content. */
-  /*
-   * ⚠️ **The chosen role is in the address because a selected dependency is a shareable state.** Selecting one left
-   * `/ko/architecture/` unchanged and a reload dropped it (measured on the built export,
-   * 2026-08-28) — and this is the half a person is likelier to send: "look at what widgets may
-   * depend on" is a link, not an instruction to go and click something.
-   *
-   * It is also the technique the public writing on driving coding agents keeps naming: hand the
-   * agent a deep link straight to the exact state instead of a sequence of clicks that reproduces
-   * it.
-   */
+  /* Owned here because the canvas and the panel answering it sit in different grid rows. */
+  /* The chosen role is in the address: a selected dependency is shareable state, and a deep link is how an agent is handed a state. */
   const [selectedRole, setSelectedRole] = useState<string | null>(
     () => readArchitectureRole(),
   );
 
-  /* Back and forward move the selected role because the address is part of the screen's state. */
+  /* Back and forward move the selected role, since the address is screen state. */
   useEffect(() => {
     const syncFromHistory = () => {
       const role = readArchitectureRole();
@@ -199,12 +173,7 @@ export function ArchitectureWorkbench({
     window.addEventListener('popstate', syncFromHistory);
     return () => window.removeEventListener('popstate', syncFromHistory);
   }, []);
-  /*
-   * ⚠️ **A click on a role answers about that role, and nothing else.** The dock first carried the
-   * role's answer *and* the whole profile's rules, sentences, legend and scope list underneath —
-   * so every box opened the same long tail and the owner asked for the tail to be its own button
-   * (2026-08-30). One dock, two contents, never both.
-   */
+  /* A role click answers about that role only; the profile's rules have their own button. One dock, two contents, never both. */
 
   function openInspector(kind: 'role' | 'rules', trigger?: HTMLElement | SVGElement) {
     if (contextDockOpen && selected) { onOpenReview?.(selected.slug, selectedRole); return; }
@@ -214,13 +183,9 @@ export function ArchitectureWorkbench({
   }
 
   /**
-   * ⚠️ **Closing the role's panel lets go of the role.** `inspectorOpen` initialises from
-   * `?role=`, so a screen somebody deliberately closed came back open on a reload or a share
-   * (judged 2026-08-30), and the address is cleared with the panel. The role used to stay chosen
-   * in memory so the panel could be reopened from it, but a source-hidden walker read the result
-   * as a screen that says "selected" with nothing to show for it: the pressed face, the bridge
-   * and the dimmed neighbours stayed while their answer was gone (2026-09-03). Closing now
-   * returns the whole chain; the rules panel closes without touching the selection.
+   * Closing the role panel lets go of the role and clears `?role=`, or a reload would reopen a
+   * closed panel and a pressed face would stand without its answer. Closing the rules panel keeps
+   * the selection.
    */
   const closeInspector = useCallback(() => {
     if (inspector === 'role') setSelectedRole(null);
@@ -235,17 +200,11 @@ export function ArchitectureWorkbench({
   }, [setEvidenceOpen]);
 
   const [copyState, setCopyState] = useState<CopyState>('idle');
-  /* Which task the last copy carried, so the confirmation names it (a source-hidden walker chose
-     "find improvements" and the button only said "copied", 2026-09-03). */
+  /* Which task the last copy carried, so the confirmation names it. */
   const [copiedTaskLabel, setCopiedTaskLabel] = useState<string | null>(null);
-  /* The last request wins: a second copy started while the first is still pending must not let
-     the first one's result name the second one's task (review, 2026-09-03). */
+  /* The last request wins, so a pending first copy cannot name the second one's task. */
   const copyRequest = useRef(0);
-  /*
-   * ⚠️ **A confirmation that never leaves is a lost button.** The copied sentence replaced the
-   * button label for good; the same walker waited thirty seconds and could not tell how to copy
-   * again. The feedback window is the repository's clipboard convention (`useCopyFeedback`).
-   */
+  /* The confirmation leaves after the feedback window, so the button stays usable (`useCopyFeedback` convention). */
   useEffect(() => {
     if (copyState !== 'copied' && copyState !== 'error') return undefined;
     const timer = window.setTimeout(() => {
@@ -258,13 +217,7 @@ export function ArchitectureWorkbench({
 
   const selectedRecord = selected ? recordsByProfile[selected.slug] ?? null : null;
   const roleTraffic = selectedRecord?.brief.conformance.observedRoleEdges;
-  /**
-   * The crossings the receipt counted as violations, as `from>to`.
-   *
-   * ⚠️ Rows without a role are skipped rather than guessed at, the same refusal
-   * `buildRoleLedgers` makes: a violation the receipt cannot attribute is not a violation this
-   * screen may draw on someone's edge.
-   */
+  /** Violated crossings as `from>to`; rows without a role are skipped, as in `buildRoleLedgers`. */
   const violatedPairs = useMemo(() => {
     const pairs = new Set<string>();
     for (const row of selectedRecord?.brief.conformance.violations ?? []) {
@@ -274,13 +227,13 @@ export function ArchitectureWorkbench({
     }
     return pairs;
   }, [selectedRecord]);
+  /* The canvas's pure, memoized drawing built again for the words; lifting it would cost the flow its ownership. */
   const rulesGraph = useMemo(
     () => (selected ? buildArchitectureGraph(buildArchitectureLayout(selected), roleTraffic ?? []) : null),
     [selected, roleTraffic],
   );
   useEffect(() => {
     if (!inspectorOpen) return undefined;
-    /* Escape closes the dock, the way it closes every other panel in this app. */
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
       closeInspector();
@@ -298,14 +251,7 @@ export function ArchitectureWorkbench({
     return () => window.removeEventListener('keydown', onKey);
   }, [closeEvidence, evidenceOpen]);
 
-  /*
-   * ⚠️ **Reveal when the panel exists, not when the flag flips.** Below `xl` the evidence is a
-   * section after the canvas. The reveal used to run from a layout effect on `evidenceOpen`, but
-   * `Surface` mounts its node one commit later (its presence gate is an effect), so the frame
-   * that scrolled found no node: at 900x900 the rail said expanded while the panel sat at
-   * y=892..1218 with its close button off-screen (2026-09-25). The press arms the reveal and the
-   * panel's own ref fires it once the node is attached.
-   */
+  /* Reveal when the panel exists: `Surface` mounts one commit after the flag, so the press arms it and the panel's ref fires it. */
   const revealEvidence = useRef(false);
   const attachEvidencePanel = useCallback((node: HTMLElement | null) => {
     evidencePanelRef.current = node;
@@ -319,20 +265,12 @@ export function ArchitectureWorkbench({
     });
   }, []);
 
-  /*
-   * ⚠️ **One button, one derived default, and a chooser for the rest.** The button used to be
-   * the only door and its task was decided for the person: `conforms` meant "plan a change",
-   * anything else meant "inspect". A developer whose receipt passed and whose code then changed
-   * had no way to ask for a re-check, and nobody could ask where the reviewed structure itself
-   * needed a decision (owner, 2026-09-03). The default stays derived; the chooser beside it
-   * offers the other two tasks with one line each on what they do.
-   */
+  /* One button with a derived default task, and a chooser offering the other two with a line each. */
   const primaryAgentKind: ArchitectureAgentTaskKind =
     selectedRecord?.brief.conformance.status === 'conforms' ? 'change' : 'verify';
-  /* A task chosen from the menu stays chosen: the button carries it until the person picks another
-     (walkers on 2026-09-03 could not tell afterwards which task they had copied). */
+  /* A task chosen from the menu stays on the button until another is picked. */
   const [chosenAgent, setChosenAgent] = useState<{ slug: string; kind: ArchitectureAgentTaskKind } | null>(null);
-  /* Derived, not reset: a choice made for one profile must not follow the person to another. */
+  /* Derived, not reset: a choice for one profile must not follow the person to another. */
   const chosenAgentKind = chosenAgent && chosenAgent.slug === selected?.slug ? chosenAgent.kind : null;
   const requestedAgentKind: ArchitectureAgentTaskKind = chosenAgentKind ?? primaryAgentKind;
   const [taskMenuOpen, setTaskMenuOpen] = useState(false);
@@ -345,8 +283,7 @@ export function ArchitectureWorkbench({
         setTaskMenuOpen(false);
       }
     };
-    /* Escape closes the menu only: this listener runs in the capture phase on the document and
-       stops propagation, so the docks' window listeners never see the key. */
+    /* Escape closes only the menu: capture phase on the document, propagation stopped before the docks' window listeners. */
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
       event.stopPropagation();
@@ -355,8 +292,7 @@ export function ArchitectureWorkbench({
     };
     document.addEventListener('pointerdown', onPointerDown, true);
     document.addEventListener('keydown', onKeyDown, true);
-    /* The surface mounts its items one presence frame after `open`; the second frame is when the
-       first item exists to take focus, so Arrow keys work from the moment the menu is visible. */
+    /* Items mount one presence frame after `open`; the second frame is when the first can take focus. */
     let inner = 0;
     const frame = window.requestAnimationFrame(() => {
       inner = window.requestAnimationFrame(() => {
@@ -406,45 +342,24 @@ export function ArchitectureWorkbench({
     { kind: 'improve', label: t('findImprovementsAction'), hint: t('agentTaskHints.improve') },
   ];
   const requestedAgentLabel = agentTasks.find((task) => task.kind === requestedAgentKind)?.label;
-  /* The label the button rests on, and so the width it keeps through every copy state. */
+  /* The resting label, whose width the button keeps through every copy state. */
   const idleAgentLabel =
     agentRoute === 'clipboard'
       ? t('copyTaskSentence', { task: requestedAgentLabel ?? '' })
       : requestedAgentLabel ?? t('inspectSourceAction');
 
-  /*
-   * What the detail panel needs about the chosen role, derived from the same layout the canvas
-   * draws so the two can never disagree about a role's reach or its order.
-   */
-  /* `selected` is null on the zero-profile screen, which is a real state: this surface renders
-     an empty stage rather than refusing to mount, so the derived maps must survive it. */
+  /* The detail panel's facts come from the same layout the canvas draws, so they never disagree. */
+  /* `selected` is null on the zero-profile screen, which renders an empty stage, so derived maps must survive it. */
   const roleLayout = useMemo(
     () => (selected ? buildArchitectureLayout(selected) : null),
     [selected],
   );
   const roleOrder = roleLayout?.rows.flat() ?? [];
 
-  /*
-   * ⚠️ **A role the profile does not have is not honoured.** The address is screen state now, so
-   * it can carry a role from somebody else's vault or one the profile has since dropped — and
-   * `?role=not-a-real-role` did not render an empty card, it rendered a card titled with the
-   * string and asserting "depends on no role at all" (measured on the built export,
-   * 2026-08-28). A screen that states a dependency rule for a role that does not exist is
-   * saying something false, which is worse than saying nothing.
-   *
-   * Derived, not corrected. Storing the address's value and clearing it from an effect was the
-   * first attempt, and the lint refused it: setting state inside an effect to fix state is a
-   * cascade. The address stays as the sender wrote it; only the screen declines to honour it.
-   */
+  /* A role the profile does not have is not honoured, or the card would state a false dependency rule. Derived, not corrected by an effect; the address stays as sent. */
   const activeRole = selectedRole && roleOrder.includes(selectedRole) ? selectedRole : null;
 
-  /*
-   * ⚠️ **Below `xl` a pressed role has to be brought to its answer.** The dock is a column only at
-   * `xl`; under it the role's detail is a stacked section after the canvas, and at 1040×720 it
-   * landed at y=1009 in a scroller 632px tall — the box took the selected ring and the screen
-   * showed nothing else (2026-09-25). The reveal is armed by the press, so a `?role=` link that
-   * opens on the canvas does not jump.
-   */
+  /* Below `xl` the detail stacks after the canvas, so a press scrolls to it; a `?role=` link does not jump. */
   const roleDetailRef = useRef<HTMLDivElement>(null);
   const rulesSectionRef = useRef<HTMLElement>(null);
   const revealRoleDetail = useRef(false);
@@ -464,13 +379,7 @@ export function ArchitectureWorkbench({
   const roleReachOf = useMemo(() => {
     const map = new Map<string, string[]>(roleOrder.map((id) => [id, []]));
     for (const edge of roleLayout?.edges ?? []) map.get(edge.from)?.push(edge.to);
-    /*
-     * ⚠️ **In the screen's own order, not the file's.** These arrive in the order the profile
-     * happens to list them, while the sentences under the canvas read down the chain — so one
-     * role's targets appeared as "port, domain" beside the drawing and "domain · port" in its
-     * card. A fresh-eyes walkthrough on 2026-08-28 caught it as "same fact, three orderings", and
-     * a reader comparing the two should not have to re-sort one of them in their head.
-     */
+    /* In the screen's chain order, not the profile's listing order, so the drawing and the card agree. */
     const rank = new Map(roleOrder.map((id, index) => [id, index]));
     for (const targets of map.values()) {
       targets.sort((a, b) => (rank.get(a) ?? 0) - (rank.get(b) ?? 0));
@@ -479,13 +388,7 @@ export function ArchitectureWorkbench({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- roleOrder is derived from roleLayout
   }, [roleLayout]);
 
-  /*
-   * ⚠️ **A document this surface could not read is named, not swallowed.** The parse is still
-   * strict per profile — an unreadable one is not drawn — but before 2026-09-03 the whole route
-   * threw, so one unknown key in one file replaced every profile in the folder with an error
-   * boundary and said nothing about which file or which key. The notice carries the document and
-   * the parser's own sentence, in the same amber the rail already uses for "unknown".
-   */
+  /* An unreadable document is named with the parser's sentence instead of failing every profile. */
   const profileNotices = profileProblems.length === 0 ? null : (
     <div className="mb-3 flex flex-col gap-1">
       {profileProblems.map((problem) => (
@@ -503,16 +406,12 @@ export function ArchitectureWorkbench({
 
   if (!selected) {
     return (
-      /* Starts under the tabs rather than in the middle of the leftover height: centred, the card
-         sat 254px below the tab strip at 1512x900, the same floating empty state Automations had
-         (design sweep, 2026-09-23). */
+      /* Starts under the tabs rather than centred in the leftover height. */
       <main className="flex min-h-0 flex-1 flex-col items-center justify-start p-5 md:p-10">
         {profileNotices ? <div className="w-full max-w-[var(--measure-stage-column)]">{profileNotices}</div> : null}
         <EmptyState
           title={t('noProfiles')}
-          /* Embedded under the Harness shell the page headline is already spoken above, so this
-             fallback drops a rung rather than putting a second `h1` on one screen. Standing alone
-             it is the route's only headline and keeps it. */
+          /* Embedded, the shell already has the `h1`, so this drops to `h2`. */
           titleAs={embedded ? 'h2' : 'h1'}
           description={
             agentRoute === 'clipboard'
@@ -522,48 +421,9 @@ export function ArchitectureWorkbench({
           icon={<Boxes aria-hidden />}
           tone="solid"
           align="center"
-          /*
-           * A whole-route fallback still needs the route's page-headline rung, so the standalone
-           * h1 is lifted to the display step. Embedded, the `h2` keeps EmptyState's own heading
-           * step — a centred card with a description no longer demotes its title.
-           */
+          /* Standalone, the `h1` takes the display step; embedded, the `h2` keeps EmptyState's own step. */
           className="max-w-[var(--measure-stage-column)] [&_h1]:font-[var(--font-weight-strong)] [&_h1]:text-display"
-          /*
-           * ⚠️ **The button carries the task; it used to only change the address.**
-           *
-           * This was a bare link to the map, defended by "the map is where an agent is already
-           * connected". Measured on the installed rc.15 with the owner's own folder: pressing it
-           * moved the person to the map and produced nothing, while the sentence above promised an
-           * agent would read the folder and the imports and draft this. Being *where* an agent
-           * lives is not the agent doing the thing the sentence promised.
-           *
-           * `queueAgentChatIntent` is the bridge that survives the route change — a window event
-           * alone is lost, because the map's subscriber does not exist on this route. The runner is
-           * left unnamed: this screen holds the task, not a runner list, and the map already reads
-           * `runtimeId ?? acpRuntime?.id`.
-           *
-           * The app still does not call MCP itself. That is the 2026-08-24 decision behind the
-           * first-run door: analysing the repository here would be a second canonical
-           * implementation of `analyze_repo_structure`, which `AGENTS.md` forbids.
-           */
-          /*
-           * ⚠️ **Two doors, because one of them was silently a dead end.**
-           *
-           * The agent door queues the sentence and moves to the map, where the dock opens it as
-           * the first turn. But the map resolves the runner as `runtimeId ?? acpRuntime?.id`, and
-           * with neither it returns early and the queued sentence is consumed and discarded — so
-           * with no agent connected the person pressed a button, changed screens, and nothing
-           * happened. That is the defect this button was built to fix, relocated one route right.
-           *
-           * The clipboard door is the one that always works, including in a browser, where
-           * spawning a process is an impossibility rather than a gap. It reuses the workbench's
-           * handoff vocabulary verbatim; a second set of words for the same act is how two
-           * dialects start.
-           *
-           * The app still does not call MCP itself. That is the 2026-08-24 decision behind the
-           * first-run door: analysing the repository here would be a second canonical
-           * implementation of `analyze_repo_structure`, which `AGENTS.md` forbids.
-           */
+          /* The clipboard door always works; the agent door needs a connected agent. The app never calls MCP tools itself (docs/DECISIONS.md, 2026-08-24 first-run door). */
           action={(
             <div className="flex flex-wrap items-center justify-center gap-2">
               {agentRoute === 'agent' ? (
@@ -628,26 +488,15 @@ export function ArchitectureWorkbench({
 
   const selectedModules = sourceModulesByProfile[selected.slug] ?? null;
   /*
-   * ⚠️ **The receipt is rendered as what it is: a dated machine measurement, not a live claim**
-   * (2026-08-27 council, point 5). Three states: no record keeps the amber "Source check
-   * required" — not measured on this computer, never a defect. A record renders its stamp —
-   * date plus commit short sha for git sources, the fingerprint sentence (never a sha) for
-   * folder sources, "with uncommitted edits" when dirty — and the verdict always carries the
-   * counts beside it: violations and unknown-edge accounting, type-only edges labelled when the
-   * scanner reported them. This surface cannot re-probe the source (a browser cannot, and no
-   * re-verification bridge exists yet), so it says exactly that instead of claiming the stamp
-   * is current.
+   * A receipt is a dated measurement, not a live claim (`docs/DECISIONS.md`): no record keeps the amber
+   * "Source check required"; a record shows its stamp (git short sha, folder fingerprint, dirty suffix)
+   * with counts beside the verdict, and says this surface cannot re-probe the source.
    */
   const record = recordsByProfile[selected.slug] ?? null;
   const conformance = record?.brief.conformance ?? null;
   const measured = record?.brief.measured ?? null;
   const recordDate = measured ? measured.at.slice(0, 10) : '';
   const recordDirty = measured?.source.kind === 'git' && measured.source.dirty;
-  /*
-   * The same drawing the canvas builds, built again for the words beside it. Both calls are pure
-   * and memoized over a seven-row profile; sharing one instance would mean lifting the canvas's
-   * layout into this component, which buys nothing and costs the flow its own ownership.
-   */
   const recordCounts = conformance
     ? [
         t('recordCounts', {
@@ -687,9 +536,7 @@ export function ArchitectureWorkbench({
     deltaStatus === 'missing' ? t('recordStatus.unknown') : t(`recordStatus.${deltaStatus}`);
   const patternLabel = (name: string) =>
     t.has(`patternLabels.${name}`) ? t(`patternLabels.${name}`) : name;
-  /* An axis is free text in the contract, so a profile may declare one nobody has translated.
-     Saying nothing is then the honest answer: inventing a friendly explanation for an axis we do
-     not recognise would be the folder-name inference decision (2026-08-26) in another costume. */
+  /* An untranslated free-text axis gets no explanation: inventing one would infer from a name (`docs/DECISIONS.md`). */
   const axisBody = (axis: string) =>
     t.has(`patternAxes.${axis}.body`) ? t(`patternAxes.${axis}.body`) : '';
   const roleLabel = (id: string) =>
@@ -709,8 +556,7 @@ export function ArchitectureWorkbench({
     setCopyState(ok ? 'copied' : 'error');
   }
 
-  /* One path for every task: a verified agent takes it as the opening turn, anything else copies
-     the same bounded sentence. The chooser and the button both end here. */
+  /* One path for every task: a verified agent takes it as the opening turn, anything else copies the same sentence. */
   function runAgentTask(kind: ArchitectureAgentTaskKind, taskLabel: string | null = null) {
     if (!selected) return;
     setTaskMenuOpen(false);
@@ -729,14 +575,7 @@ export function ArchitectureWorkbench({
       <div
         data-testid="architecture-layout-scroll"
         className={cn(
-          /*
-           * ⚠️ **One row at workbench width, and it does not scroll.** The second row used to hold
-           * the scopes, the rules and the chosen role, and row 1 took every pixel the canvas
-           * wanted first: 64px each, with their own inner scrollers, at the end of a page scroller
-           * that had already run out. Docks replace it — the canvas owns the height and the rest
-           * opens beside it. Below `xl` the stacked, scrolling document stays exactly as it was,
-           * because a phone cannot put anything beside anything.
-           */
+          /* One non-scrolling row at workbench width: the canvas owns the height and docks open beside it. */
           'architecture-workbench-grid grid min-h-0 flex-1 grid-cols-1 overflow-y-auto bg-[color:var(--color-canvas)] xl:grid-rows-1 xl:overflow-hidden',
           contextDockOpen ? 'grid-rows-1 overflow-hidden' : 'lg:grid-cols-[220px_minmax(0,1fr)]',
           contextDockOpen ? 'xl:grid-cols-1' : evidenceOpen
@@ -744,19 +583,8 @@ export function ArchitectureWorkbench({
             : XL_COLUMNS[inspectorOpen ? 'inspector' : 'closed'],
         )}
       >
-        {/*
-          ⚠️ **The canvas takes the width; the columns sit under it.** Measured on the installed
-          app 2026-08-28: inside the middle column the graph had about 806px and a seven-role
-          profile needs roughly 1170px, so four boxes were on screen and three were behind a
-          horizontal scroll nobody asked for. Node editors this shape borrows from do the
-          opposite, giving the canvas the full width and opening the inspector over or beside it
-          rather than standing a column permanently in its way.
-        */}
-        {/* Embedded, the gutter is the Harness shell's own, so the toolbar starts on the `h1`'s
-            line and ends on the tab rail's; at `px-8` it sat 8px left of the title under one
-            header (design audit, 2026-09-25). Above the page cap that gutter grows to keep the
-            frame's 1600px column (`harness-frame.ts`); with a dock open the right edge meets the
-            dock, so only the start line pays the cap there. */}
+        {/* The canvas takes the full width with the columns under it; inside a column a seven-role graph was cut. */}
+        {/* Embedded, the gutter is the Harness shell's (`harness-frame.ts`); with a dock open only the start line pays the cap. */}
         <div
           className={cn(
             'min-w-0 border-b border-[color:var(--color-border-soft)] px-5 pb-5 pt-4 lg:col-start-1 lg:col-end-3 xl:col-start-1 xl:col-end-2 xl:row-start-1 xl:flex xl:min-h-0 xl:flex-col xl:border-b-0 xl:pb-3 xl:pt-3',
@@ -768,15 +596,7 @@ export function ArchitectureWorkbench({
           )}
           data-testid="architecture-flow-panel"
         >
-          {/*
-            ⚠️ **Embedded, this header owns nothing but a problem report.** The Harness chrome row
-            above already names the destination, and the canvas cannot afford a second header
-            saying it again: the ladder needs 573px of canvas column to tighten its seven rows
-            instead of hiding the seventh, and at the app's 1280×800 window the block below cost
-            36 of them. The profile's name and its review door move into the control row that was
-            already there, so they cost nothing, and this element collapses to zero height unless a
-            profile could not be read — which is the one thing that must not be quiet.
-          */}
+          {/* Embedded, this header holds only a problem report, collapsing to zero otherwise: the ladder has no canvas height to spare at 1280x800. */}
           <header className={cn('shrink-0 px-1', !embedded && 'mb-3')}>
             {embedded ? null : (
               <div className="min-w-0">
@@ -799,26 +619,15 @@ export function ArchitectureWorkbench({
             {profileNotices ? <div className={embedded ? 'mb-3' : 'mt-3'}>{profileNotices}</div> : null}
             {!embedded && onOpenReview ? <div className="mt-3"><Chip data-testid="architecture-review-open" onClick={() => { setInspector(null); setEvidenceOpen(false); onOpenReview(selected.slug, selectedRole); }}>{tReview('history')}</Chip></div> : null}
           </header>
-          {/*
-            The provenance explanation is available in one press, but it does not own a permanent
-            150px band above the architecture. The rail keeps the three authorities visible at a
-            glance; the full plane opens over the canvas below.
-          */}
+          {/* The rail keeps the three authorities visible; the full provenance plane opens on demand. */}
           <div className="mb-3 flex min-w-0 flex-wrap items-center gap-2 md:flex-nowrap">
               {embedded ? (
-                /*
-                  The profile's name and the door to its own history are one thing — what this
-                  drawing is, and where its record lives — so they stand in one group rather than
-                  as two more siblings in a row of six. The name is a label, not a control, and
-                  keeping it inside the group is what stops the row reading as loose pieces
-                  (owner, 2026-09-13).
-                */
+                /* The profile's name and the door to its history are one group, the name a label, not a control. */
                 <div className="flex min-w-0 shrink items-center gap-2">
                   <h2 className="min-w-0 shrink truncate text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
                     {selected.title}
                   </h2>
-                  {/* The same `Button` md as every other control in this row: as a `Chip` it was
-                      the one 32px / 11px / r6 control beside four at 40px (2026-09-25). */}
+                  {/* The same `Button` md as every other control in this row. */}
                   {onOpenReview ? (
                     <Button
                       variant="outline"
@@ -869,8 +678,7 @@ export function ArchitectureWorkbench({
                   ];
                   if (items.length === 0) return;
                   const at = items.indexOf(document.activeElement as HTMLButtonElement);
-                  /* From the trigger (focus not on an item) ArrowDown enters at the top and
-                     ArrowUp at the bottom, the way a native menu does. */
+                  /* From the trigger, ArrowDown enters at the top and ArrowUp at the bottom, like a native menu. */
                   const next =
                     at === -1
                       ? event.key === 'ArrowDown' ? 0 : items.length - 1
@@ -879,17 +687,7 @@ export function ArchitectureWorkbench({
                   event.preventDefault();
                 }}
               >
-                {/*
-                  ⚠️ **The row's one primary** (owner, 2026-09-13, translated: *"this part's
-                  design is awkward too"*).
-                  Six controls stood in this row as outlines of equal weight — the workbench name,
-                  the findings door, the evidence rail, its status caret, this split button and the
-                  rules toggle — so nothing said which one moved the screen forward. This is that
-                  one: the Delta and Observation columns are empty until a source is inspected, and
-                  every other control in the row opens something beside the drawing rather than
-                  changing what the drawing can say. Its caret keeps the outline it always had, so
-                  the pair still reads as one split control rather than two primaries.
-                */}
+                {/* The row's one primary: until a source is inspected the Delta and Observation columns are empty, and only this changes what the drawing can say. Its caret keeps the outline, so the pair reads as one split control. */}
                 <Button
                   variant="primary"
                   size="md"
@@ -909,20 +707,12 @@ export function ArchitectureWorkbench({
                   ) : (
                     <Bot size={ICON_SIZE.sm} aria-hidden />
                   )}
-                  {/*
-                    ⚠️ **A confirmation does not resize the toolbar.** The whole sentence used to
-                    replace the label, and at 1280 the button went 178 → 373px, squeezing the
-                    evidence rail until it dropped its status text, then snapping back 4s later
-                    (2026-09-25). The idle label stays in the box, invisible, so the width is the
-                    idle label's; the short state sits over it, and the full sentence goes to the
-                    polite status region beside this button, where a screen reader hears it.
-                  */}
+                  {/* A confirmation does not resize the toolbar: the invisible idle label holds the width, and the full sentence goes to the polite status region. */}
                   <span className="inline-grid">
                     <span aria-hidden className="invisible col-start-1 row-start-1">
                       {idleAgentLabel}
                     </span>
-                    {/* Every transient label reserves its width too: the Korean error line is
-                        wider than some idle labels and would still resize the button. */}
+                    {/* Every transient label reserves its width; the Korean error line is wider than some idle labels. */}
                     {agentRoute === 'clipboard'
                       ? [t('copyingHandoff'), t('copiedShort'), t('copyHandoffError')].map((reserve) => (
                           <span key={reserve} aria-hidden className="invisible col-start-1 row-start-1">
@@ -984,7 +774,6 @@ export function ArchitectureWorkbench({
                       onClick={() => {
                         if (selected) setChosenAgent({ slug: selected.slug, kind: task.kind });
                         runAgentTask(task.kind, task.label);
-                        /* The menu is leaving; focus goes back to what opened it, not to body. */
                         taskMenuTriggerRef.current?.focus();
                       }}
                       className={controlClass({
@@ -1021,13 +810,7 @@ export function ArchitectureWorkbench({
                     ? t('copyHandoffError')
                   : ''}
               </span>
-              {/*
-                Present at every width. Below `xl` the rules are a section further down the same
-                scroller rather than a dock, so the button takes the reader there instead of
-                opening anything, and folds to its icon so it does not squeeze the evidence rail;
-                it used to be `hidden` there, leaving no control that reached the rules at all
-                (1040×720, 2026-09-25).
-              */}
+              {/* Present at every width: below `xl` it scrolls to the rules section and folds to its icon. */}
               <Button
                 variant="outline"
                 size="md"
@@ -1050,15 +833,12 @@ export function ArchitectureWorkbench({
               </Button>
           </div>
           <div className="relative flex min-h-0 flex-1">
-              {/* The policy sentence is the section description above; do not print it twice. */}
               <ArchitectureFlow
                 profile={selected}
                 modules={selectedModules}
                 concepts={conceptsByProfile[selected.slug] ?? {}}
                 roleLabel={roleLabel}
-                /* Measured crossings ride in from the persisted record; undefined without one.
-                   Under lower-only these are the only strokes there are, so losing this prop
-                   loses the entire drawing (measured on the installed app, 2026-08-28). */
+                /* Undefined without a record; under lower-only these are the only strokes, so losing the prop loses the drawing. */
                 roleTraffic={roleTraffic}
                 violatedPairs={violatedPairs}
                 roleSummary={(id) => roleSummaryOf.get(id) ?? null}
@@ -1073,8 +853,7 @@ export function ArchitectureWorkbench({
                         })
                   }`
                 }
-                /* The same receipt, grouped per role. Without it a box shows no ledger at all
-                   rather than a row of zeros — an unmeasured role must not read as a clean one. */
+                /* Without a receipt a box shows no ledger, never zeros: an unmeasured role must not read as clean. */
                 record={record}
                 ledgerStatusLabel={(ledger) =>
                   ledger.state === 'no-source'
@@ -1104,8 +883,7 @@ export function ArchitectureWorkbench({
                   const next = shouldClear ? null : id;
                   setSelectedRole(next);
                   if (next !== null) revealRoleDetail.current = true;
-                  /* Choosing a role is the question the dock answers, so it opens with the
-                     choice; clicking the same role again clears both. */
+                  /* Choosing a role opens the dock; choosing it again clears both. */
                   if (next === null) setInspector(null);
                   else if (contextDockOpen) onOpenReview?.(selected.slug, next);
                   else openInspector('role', trigger);
@@ -1148,9 +926,7 @@ export function ArchitectureWorkbench({
                 <span>{t('deltaLabel')}</span>
               </p>
             </div>
-            {/* One close for the three sibling panels — this, the rules dock and the review
-                workbench — the same `IconButton`, with the Esc hint beside it rather than inside
-                it (it was 65×32 here, 42×32 there and 28×28 on the review panel, 2026-09-25). */}
+            {/* One close for the three sibling panels: the same `IconButton`, with the Esc hint beside it. */}
             <div className="flex shrink-0 items-center gap-1">
               <span className="text-caption text-[color:var(--color-text-quaternary)]">
                 {t('inspectorEscHint')}
@@ -1188,12 +964,7 @@ export function ArchitectureWorkbench({
           </div>
         </Surface>
 
-        {/*
-          The dock. Below `xl` these are two stacked sections in document order, exactly as
-          before — `display: contents` keeps them as direct grid children there. At `xl` the
-          wrapper becomes a column beside the canvas, and it is only mounted when somebody asked
-          for it: by clicking a role, or by pressing the button on the canvas.
-        */}
+        {/* Below `xl` two stacked sections via `display: contents`; at `xl` a column mounted only when asked for. */}
         <div
           id="architecture-inspector"
           data-testid="architecture-inspector"
@@ -1205,11 +976,7 @@ export function ArchitectureWorkbench({
               ? [
                   'xl:col-start-2 xl:row-start-1 xl:flex xl:min-h-0 xl:flex-col xl:overflow-y-auto',
                   'xl:border-l xl:border-[color:var(--color-border-soft)]',
-                  /* ⚠️ **A panel that scrolls must say so.** macOS hides its overlay scrollbar
-                     until something moves, and this file has already answered that three times —
-                     the handoff packet, the canvas mask, the canvas scrollbar. A dock that cuts a
-                     sentence mid-word with no visible bar is the same defect the whole change
-                     exists to remove, one level down (judged 2026-08-30). */
+                  /* A panel that scrolls must say so: macOS hides its overlay scrollbar until something moves. */
                   '[&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-divider)]',
                 ].join(' ')
               : 'xl:hidden',
@@ -1220,7 +987,6 @@ export function ArchitectureWorkbench({
               {inspector === 'role' && activeRole !== null ? roleLabel(activeRole) : t('inspectorTitle')}
             </h2>
             <div className="flex shrink-0 items-center gap-1">
-              {/* The escape hatch says itself, the way the reference's breadcrumb does. */}
               <span className="text-caption text-[color:var(--color-text-quaternary)]">
                 {t('inspectorEscHint')}
               </span>
@@ -1235,11 +1001,7 @@ export function ArchitectureWorkbench({
             </div>
           </div>
 
-          {/*
-            The answer to the canvas's selection. It is column content rather than part of the
-            drawing: the graph says what the shape is, this says what is actually in the layer a
-            reader chose, and the density the removed bands were good at survives here.
-          */}
+          {/* The answer to the canvas's selection: what is actually in the chosen layer. */}
           <div
             ref={roleDetailRef}
             data-testid="architecture-role-detail-slot"
@@ -1253,19 +1015,7 @@ export function ArchitectureWorkbench({
                 className="break-keep rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] text-body text-[color:var(--color-text-tertiary)]"
                 data-testid="architecture-role-detail-empty"
               >
-                {/*
-                  ⚠️ **Declining a link silently looks exactly like not having clicked yet.** The
-                  address can name a role this profile does not have — a link from another
-                  profile, or one kept after the profile changed — and the screen used to render
-                  the invitation below and nothing else. A fresh-eyes walker arriving on
-                  `?role=widgets` measured the page as pixel-identical to an untouched one, and
-                  so could not tell "the link pointed somewhere I do not have" from "I have not
-                  picked anything". The refusal was already correct; it was simply not stated.
-
-                  The address is still left as the sender wrote it. That is coherent now rather
-                  than silent: the URL says what was asked for, and the screen says why it cannot
-                  serve it.
-                */}
+                {/* A declined `?role=` must be stated, or it looks identical to not having picked yet; the address stays as the sender wrote it. */}
                 {selectedRole === null ? null : (
                   <p
                     className="mb-2 text-[color:var(--color-text-secondary)]"
@@ -1304,12 +1054,7 @@ export function ArchitectureWorkbench({
             )}
           </div>
 
-          {/*
-            ⚠️ **The absence is explained where the explanations live, not on the canvas.** It sat
-            above the drawing as a bordered notice, and at 1512 that notice plus its gap was 56px —
-            the exact amount by which the seven-role chain was then cut. It is the same class of
-            fact as the rules beside it: why a number on the drawing is missing.
-          */}
+          {/* The absence is explained in the dock, not over the canvas, where it cost the chain its height. */}
           {sourceListingCapable || !sourceUnavailableReason ? null : (
             <div
               className={cn(
@@ -1328,13 +1073,7 @@ export function ArchitectureWorkbench({
                     : 'sourceListingUnavailable',
                 )}
               </p>
-              {/*
-                ⚠️ **The one surface that can lift this absence is named where the absence is
-                stated.** A browser cannot read a source folder at all, so the note ends in a fact
-                with nothing to do about it; the installed app is what turns the missing module
-                counts into real ones. The installed app never offers its own download, so the page
-                passes this only while the runtime is a browser.
-              */}
+              {/* A browser can never read a source folder, so the note names the installed app; the app never offers its own download. */}
               {offersInstalledApp ? (
                 <Link
                   href="/download"
@@ -1352,39 +1091,15 @@ export function ArchitectureWorkbench({
             </div>
           )}
 
-        {/* ⚠️ One inset down the dock. Measured 2026-08-30: the role card sat flush, the rules at
-            16px and this section at 32px with a `max-w-5xl` that means nothing in a 380px column —
-            three left edges in one panel, which is the repeated-set regularity this design system
-            asks for and the first thing a glance down the dock failed. */}
-        {/* ⚠️ `shrink-0`, not `min-h-0`: in a scrolling flex column a shrinkable child is pushed
-            below its own content, and the prose then paints straight through the list beneath it
-            (measured 2026-08-30 at 1512 — "Source organization says which folder…" ran across the
-            edge sentences). The dock scrolls; its sections keep their natural height. */}
+        {/* One inset down the dock, so its sections share a left edge. */}
+        {/* `shrink-0`, not `min-h-0`: a shrinkable child in a scrolling flex column paints over the list beneath it. */}
         <section ref={rulesSectionRef} id="architecture-blueprint" className={cn(
           'min-w-0 scroll-mt-3 p-5 md:p-8 lg:col-span-2 xl:shrink-0 xl:px-4 xl:py-3',
           inspector === 'rules' ? undefined : 'xl:hidden',
         )} aria-labelledby="architecture-blueprint-title" data-testid="architecture-blueprint" tabIndex={0}>
           <div className="mx-auto flex w-full max-w-5xl flex-col xl:max-w-none">
-            {/*
-              ⚠️ **`ml-auto` on the status block, because `justify-between` stops applying the
-              moment the row wraps.** Measured on the built export at 1512 (2026-08-28): the
-              block reported `x=336`, the heading's own x — it had dropped to its own line, and a
-              `text-right` box 400px wide then sat in the left half of an 804px column as
-              right-aligned prose with a ragged left edge. `ml-auto` holds it at the right edge on
-              both the shared row and its own.
-            */}
             <div className="flex flex-wrap items-start justify-between gap-3">
-              {/*
-                ⚠️ **The kind of drawing is the subject, not a tag.** The pattern rode in a 9.5px
-                chip below the heading while the heading said "roles and dependency direction" —
-                a sentence true of every architecture diagram ever drawn. So the screen never told
-                a first reader which of the two questions it was answering, and the owner asked
-                the honest one back: *is this really architecture?* The data always knew: the axis
-                is literally `source-organization` on this profile and `dependency` on the
-                storefront sample. It now leads, with the axis naming the question and the pattern
-                naming the answer. C4's review checklist calls this "clarify the diagram type and
-                scope" — the first thing it asks of any architecture drawing.
-              */}
+              {/* The kind of drawing leads: the axis names the question and the pattern the answer (C4: clarify the diagram type and scope). */}
               <div className="min-w-0">
                 <p className="text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
                   {t('roles')}
@@ -1398,8 +1113,7 @@ export function ArchitectureWorkbench({
                     ? selected.patterns.map((pattern) => patternLabel(pattern.name)).join(' · ')
                     : t('patternsUndeclared')}
                 </h2>
-                {/* The axis name is not repeated here: the sentence below already opens with it,
-                    and naming it twice in two lines reads as a stutter rather than an emphasis. */}
+                {/* The sentence below opens with the axis name, so it is not repeated here. */}
                 <p className="mt-1 break-keep text-body text-[color:var(--color-text-tertiary)]">
                   <span className="block">
                     {selected.dependencyPolicy === 'lower-only'
@@ -1412,28 +1126,13 @@ export function ArchitectureWorkbench({
                       ? t('dependencyUsagesValue')
                       : t('dependencyUsagesAll')}
                   </span>
-                  {/*
-                    The scanner's first rule is `if (fromRole === toRole) return { allowed: true,
-                    rule: 'same-role' }` — unconditional, under both policies. The screen never
-                    said it, and the 2026-08-28 walkthrough asked exactly this and found nothing:
-                    "whether a file may import from another module in its own role" was the one
-                    question left open on both samples. It is not an open question in the
-                    contract, only on the screen, so the screen says it.
-
-                    ⚠️ Both sides of the merge added a sentence here and neither replaced the
-                    other: main said which import usages the rules govern, the branch said that a
-                    role may always reference itself. A reader needs both, and main's one-span-per
-                    -sentence shape is what keeps them from running together — which the branch had
-                    been fixing by rewriting the clauses instead.
-                  */}
+                  {/* The scanner always allows same-role imports (`rule: 'same-role'`), so the screen says so; one span per sentence keeps it apart from the governed-usages sentence. */}
                   <span className="mt-1 block">{t('dependencySameRole')}</span>
                 </p>
               </div>
             </div>
 
-            {/* The chips are gone: the pattern is the heading now, and repeating it beneath
-                would be the same name twice with nothing added. What the chips carried that the
-                heading cannot — what the axis actually means — is one sentence instead. */}
+            {/* The pattern is the heading, so one sentence says what the axis means instead of repeating chips. */}
             {selected.patterns.length > 0 ? (
               <p
                 className="mt-2 break-keep text-body leading-prose text-[color:var(--color-text-quaternary)]"
@@ -1443,17 +1142,10 @@ export function ArchitectureWorkbench({
               </p>
             ) : null}
 
-            {/*
-              ⚠️ **One artifact, not a picture and then a list of the same thing.** This was two
-              blocks -- a diagram of four boxes, then four cards repeating the same roles -- and the
-              owner's reaction to the installed build was that it neither looked good nor read as a
-              flow. Saying everything twice is why: neither half could use the width, so the screen
-              was simultaneously redundant and empty. One band per role carries the name, the globs
-              and the allowances, and the arrows run down the gutter beside them.
-            */}
           </div>
         </section>
           {rulesGraph === null ? null : (
+          /* One band per role carries name, globs and allowances, with arrows down the gutter; a diagram plus a list said everything twice. */
           <ArchitectureRules
             graph={rulesGraph}
             violatedPairs={violatedPairs}
@@ -1491,10 +1183,7 @@ export function ArchitectureWorkbench({
                   <span className="mt-0.5 block truncate text-caption text-[color:var(--color-text-tertiary)]">
                     {profile.scopePaths.join(' · ')}
                   </span>
-                  {/* Tertiary, not quaternary: this row is clickable, so its selected state
-                      composites overlay-2 where quaternary measures 4.36:1 — below AA. The
-                      design system's surface license already prescribes tertiary from rows
-                      that can be clicked (`docs/DESIGN-SYSTEM.md`, quaternary ink). */}
+                  {/* Tertiary, not quaternary: a clickable row's selected state composites where quaternary fails AA (`docs/DESIGN-SYSTEM.md`, quaternary ink). */}
                   <span className="mt-0.5 block truncate text-caption text-[color:var(--color-text-tertiary)]">
                     {t('railRoles', { count: profile.roles.length })}
                     {profile.patterns[0] ? ` · ${patternLabel(profile.patterns[0].name)}` : ''}

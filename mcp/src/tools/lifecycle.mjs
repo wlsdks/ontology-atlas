@@ -69,26 +69,9 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
   if (oldSlug === newSlug) {
     throw new Error('oldSlug and newSlug are identical.');
   }
-  /*
-   * ⚠️ **Names differing only in case are stopped here** (review 2026-08-16 — the
-   * document actually disappearing was reproduced).
-   *
-   * The check above is a string comparison, so it treats `Auth` and `auth` as
-   * different. macOS and Windows filesystems treat them as the **same file**, so
-   * writing the new name and deleting the old one deleted what had just been
-   * written — and this tool returned `ok: true, moved: true`. Measured:
-   *
-   * ```
-   * rename_concept{oldSlug:"Auth", newSlug:"auth", confirm:true, overwrite:true}
-   *   → ok:true, moved:true, backlinkUpdates:{totalUpdated:1}
-   *   → neither Auth.md nor auth.md left on disk; references left dangling
-   * ```
-   *
-   * The write layer guards it too (`applyAllOrNothing`'s same-file detection), but
-   * that alone yields a **half-finished rename**: references point at the new name
-   * while the filename on disk does not change. Half-finished is not success — say
-   * plainly that it cannot be done here, and name the path that works.
-   */
+  // Names differing only in case are refused: macOS and Windows treat them as one
+  // file, so writing the new name and deleting the old deletes the document, and the
+  // write layer's guard alone leaves a half-finished rename.
   if (oldSlug.toLowerCase() === newSlug.toLowerCase()) {
     throw new Error(
       `oldSlug and newSlug differ only in letter case ("${oldSlug}" → "${newSlug}"). ` +
@@ -97,10 +80,9 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
         `(for example "${newSlug}-tmp"), then to "${newSlug}".`,
     );
   }
-  // Resolve the caller's spelling to the on-disk one before anything else. A
-  // wrong-case oldSlug passes `existsSync` on macOS/Windows while every backlink
-  // match below is case-sensitive — reproduced: rename deleted the document,
-  // redirected 0 backlinks, and reported success (bug sweep 2026-09-01).
+  // Resolve the caller's spelling to the on-disk one first: a wrong-case oldSlug
+  // passes `existsSync` on macOS/Windows while backlink matching is case-sensitive,
+  // so the rename would delete the document and redirect nothing.
   const diskOldSlug = canonicalDiskSlug(VAULT_ROOT, oldSlug);
   if (!diskOldSlug) {
     throw new Error(missingSlugMessage('Source slug does not exist in vault', oldSlug));
@@ -120,11 +102,8 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
       `Target slug already exists: "${newSlug}". Pass overwrite: true to replace it.`,
     );
   }
-  // **The destination is a write too** (Codex review, 2026-09-02). Guarding only
-  // the source left `overwrite: true` as a door: the reserved document at the
-  // destination was read, then replaced with the source's bytes, and its
-  // reservation went with it. A refusal that covers the operand but not the
-  // casualty is not a refusal.
+  // The destination is a write too: with `overwrite: true` a reserved document at the
+  // destination would be replaced and lose its reservation.
   if (targetExists) {
     requireNodeNotReservedForHuman(readDocIfPresent(newSlug), 'rename_concept');
   }
@@ -134,9 +113,8 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
   const sourceDoc = readDoc(VAULT_ROOT, sourcePath);
   const targetDoc = overwrite && targetExists ? readDoc(VAULT_ROOT, targetPath) : null;
 
-  // Slug flatness — rename writes directly rather than through writeDoc, so the
-  // same gate is applied here (closing the door on path-shaped identity returning
-  // through rename).
+  // Rename writes directly rather than through writeDoc, so the slug-flatness gate
+  // is applied here too.
   const renameSlugIssue = flatSlugIssue(sourceDoc.frontmatter?.kind, newSlug);
   if (renameSlugIssue) throw new Error(renameSlugIssue);
 
@@ -172,25 +150,13 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
   }
 
   /**
-   * Step 2 — **three steps bound into one plan, applied all-or-nothing.**
-   *
-   * It used to write each step immediately in order: create the new file, rewrite
-   * backlinks, delete the old file. The comment claimed *"partial failure doesn't
-   * lose data"*, which was true (no data is lost) — but **the graph split**.
-   * Measured 2026-08-01: with one of three references read-only, two nodes with
-   * the same title remained and the references forked across both names. And
-   * `validate` and `health` both called that vault clean. The tool description's
-   * promise of "one atomic graph-level operation" was false.
-   *
-   * Now only the plan is built (`deferWrite`) and applied once at the end. On
-   * failure it rolls back — as long as the process lives, the vault is as it started.
+   * Step 2: the three steps are one plan (`deferWrite`) applied all-or-nothing and,
+   * while the process lives, rolled back on failure, or a partial failure splits the graph across two names
+   * that `validate` and `health` both call clean.
    */
   const nextFrontmatter = { ...sourceDoc.frontmatter };
   // Update `slug:` only when it mirrors the file slug. A differing value is a
-  // user-facing alias (the dogfood vault's `project.md` carries
-  // `slug: ontology-atlas`) that other documents reference by that spelling;
-  // overwriting it with newSlug severed every alias-form ref while
-  // backlinkUpdates reported nothing (bug sweep 2026-09-01).
+  // user-facing alias other documents reference; overwriting it severs those refs.
   if (typeof nextFrontmatter.slug === 'string' && nextFrontmatter.slug.trim() === diskOldSlug) {
     nextFrontmatter.slug = newSlug;
   }
@@ -285,13 +251,9 @@ function reclassifyConcept({ slug, newKind, newSlug, domain, body, confirm = fal
     nextBody = defaultBody(newKind, title);
     bodyAction = 'regenerated_starter';
   }
-  /*
-   * A kind change also moves each referrer's entry from the list for the old kind to the list
-   * for the new one (2026-09-26, map-edit review: a domain was left reading
-   * `capabilities: [elements/x]`). That holds when the slug stays too, so the referrers are
-   * visited whenever either the address or the kind changes. An entry the referrer's kind keeps
-   * no list for stays where it was and is named in `warnings`.
-   */
+  // A kind change also moves each referrer's entry from the old kind's list to the
+  // new kind's, even when the slug stays; an entry the referrer's kind keeps no list
+  // for stays and is named in `warnings`.
   const kindChanges = oldKind !== newKind;
   const rewritesReferrers = canonicalNew !== canonicalOld || kindChanges;
   const kindOption = kindChanges ? { targetKind: newKind } : {};
@@ -370,9 +332,9 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime, ex
   if (fromSlug === intoSlug) {
     throw new Error('fromSlug and intoSlug are identical.');
   }
-  // Operate on the disk's spelling, not the caller's — a wrong-case slug passes
-  // `existsSync` on macOS/Windows while backlink matching is case-sensitive, so
-  // the merge would delete the source and redirect nothing (bug sweep 2026-09-01).
+  // Operate on the disk's spelling: a wrong-case slug passes `existsSync` on
+  // macOS/Windows while backlink matching is case-sensitive, so the merge would
+  // delete the source and redirect nothing.
   const diskFromSlug = canonicalDiskSlug(VAULT_ROOT, fromSlug);
   if (!diskFromSlug) {
     throw new Error(missingSlugMessage('fromSlug does not exist in vault', fromSlug));
@@ -399,7 +361,7 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime, ex
   const identityHistory = mergeNodeIdentityHistory(fromDoc.frontmatter, intoDoc.frontmatter);
   const absorbedUids = identityHistory.absorbedUids;
 
-  // R11 closeout — fromSlug mtime conflict guard.
+  // fromSlug mtime conflict guard.
   if (typeof expected_mtime === 'number' && fromDoc.mtime !== expected_mtime) {
     throw new VaultConflictError(fromSlug, expected_mtime, fromDoc.mtime);
   }
@@ -438,10 +400,8 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime, ex
     };
   }
 
-  // Rewrite plus delete in one plan. Rewrites used to be written per file
-  // immediately with the delete separate — if one file failed to write, only some
-  // references pointed at the new name and `fromSlug` survived (and both checks
-  // reported clean).
+  // Rewrite plus delete in one plan, or a failed write leaves references split
+  // between the two names with `fromSlug` still present.
   const result = redirectBacklinks(VAULT_ROOT, fromSlug, intoSlug, {
     dryRun: false,
     deferWrite: true,
@@ -510,10 +470,9 @@ function deleteConcept({ slug, confirm = false, force = false, expected_mtime })
   // throws again at the real delete step, but the dry-run path never reaches
   // deleteDoc, hence the separate check.)
   let filePath = slugToPath(VAULT_ROOT, slug);
-  // Resolve to the disk's spelling before the backlink safety check — a
-  // wrong-case slug passes `existsSync` on macOS/Windows while `findBacklinks`
-  // matches case-sensitively, so a referenced node was deletable without force
-  // and without a warning (bug sweep 2026-09-01).
+  // Resolve to the disk's spelling before the backlink safety check: a wrong-case
+  // slug passes `existsSync` on macOS/Windows while `findBacklinks` is
+  // case-sensitive, so a referenced node would be deletable without force.
   const diskSlug = canonicalDiskSlug(VAULT_ROOT, slug);
   if (!diskSlug) {
     throw new Error(missingSlugMessage('Doc not found', slug));
@@ -522,8 +481,8 @@ function deleteConcept({ slug, confirm = false, force = false, expected_mtime })
   filePath = slugToPath(VAULT_ROOT, slug);
   const sourceDoc = readDoc(VAULT_ROOT, filePath);
   requireNodeNotReservedForHuman(sourceDoc, 'delete_concept');
-  // Ambiguous-tail referrers included: a doc whose ref merely *could* mean this
-  // node still blocks an un-forced delete (bug sweep 2026-09-01).
+  // Ambiguous-tail referrers count too: a doc whose ref could mean this node still
+  // blocks an un-forced delete.
   const backlinks = findBacklinks(VAULT_ROOT, slug, { includeAmbiguousTailRefs: true });
 
   if (!confirm) {

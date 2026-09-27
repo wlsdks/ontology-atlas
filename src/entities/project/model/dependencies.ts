@@ -43,8 +43,7 @@ export function collectProjectDependencyClosure(
 ): Project[] {
   const projectMap = new Map(projects.map((project) => [project.slug, project]));
   const included = new Set<string>();
-  // BFS with a head pointer. `Array.shift()` is O(n), so on a large vault every
-  // dequeue shifts the whole array — O(n²). The head index avoids that.
+  // BFS with a head pointer: O(V + E), where `shift()` would make it O(n²).
   const queue = [...new Set(targetSlugs)];
   let head = 0;
 
@@ -88,7 +87,7 @@ export function collectProjectDependentClosure(
   }
 
   const included = new Set<string>();
-  // BFS with a head pointer for O(1) dequeue (`shift` is O(n)).
+  // BFS with a head pointer: O(V + E).
   const queue = [...new Set(targetSlugs)];
   let head = 0;
 
@@ -137,7 +136,7 @@ export function collectProjectConnectedClosure(
   }
 
   const included = new Set<string>();
-  // BFS with a head pointer for O(1) dequeue (`shift` is O(n)).
+  // BFS with a head pointer: O(V + E).
   const queue = [...new Set(targetSlugs)];
   let head = 0;
 

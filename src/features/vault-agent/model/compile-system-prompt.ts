@@ -4,18 +4,8 @@ import { COMPILE_SOURCES_PER_TURN } from './compile-tool-catalog';
 import { SOURCE_TEXT_CHAR_CAP } from './source-text';
 
 /**
- * The system prompt for a Compile turn on the local route. **English only** — this is the
- * model channel, and `system-prompt.ts` owns the reason that boundary exists.
- *
- * It is short on purpose. The ACP branch of `buildCompileBrief` carries the canonical page
- * template, while its local branch names the typed proposal boundary. This prompt owns the
- * local runner's fixed tool behavior and limits; a third page-shape paraphrase here would be
- * the first thing to drift.
- *
- * The local branch and this system prompt are deliberately aligned: the user message tells
- * the model which local tools and proposal fields it can use, and this model-channel prompt
- * repeats the exact runtime boundary plus the turn-specific limits. The ACP branch keeps its
- * own readers and template because it reaches the folder through a different runtime.
+ * The local Compile system prompt, English only (see `system-prompt.ts`). It holds the runtime
+ * tool boundary and limits, never a third paraphrase of the page shape.
  */
 export function buildCompileSystemPrompt(options: {
   /** The runner's model name, so the page's `created_by` is not a surprise to it. */

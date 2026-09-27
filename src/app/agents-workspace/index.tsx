@@ -7,26 +7,17 @@ import { useLocalVault } from '@/entities/vault-session';
 import { selectOpenVaultHandle } from '@/shared/lib/select-open-vault-handle';
 
 /**
- * **One Agents page, MCP as its second tab in the body** (owner, 2026-09-19: *"I don't want
- * agents and MCP stacked on one screen with a scroll — split them into tabs, pick one, see that
- * one."*). The strip is the page's own, under the title; the 2026-09-18 objection was to a
- * header band, not to tabs.
+ * One Agents page with MCP as its second body tab; only the selected tab mounts. `McpPage` is
+ * handed in as children so neither view imports the other.
  *
- * `AgentsPage` owns the strip and the tool list; `McpPage` is the MCP tab's body and is handed
- * in as children so that neither view imports the other. Only the selected tab mounts.
- *
- * **One connectors store, read by both the strip and the panel.** The count beside the MCP tab
- * has to change the moment a switch is flipped, and a second `useVaultConnectors` inside the
- * MCP tab would be a second reader of the same file that never learns about the first one's
- * writes — the two-canonical-stores defect `.claude/rules/forbidden.md` names. So this layer
- * owns it and hands it to both.
- *
- * `?tab=mcp` stays what `/mcp/` redirects into and what `DESTINATION_HREF.mcp` names, so every
- * older link and the installed app's deep link (`ontology-atlas://mcp?install=…`) keep resolving.
+ * This layer owns the one connectors store and hands it to both the tab count and the panel: a
+ * second `useVaultConnectors` would never learn of the first one's writes, the two-canonical-
+ * stores defect `.claude/rules/local-first.md` names. `?tab=mcp` is what `/mcp/` and the app's
+ * deep link (`ontology-atlas://mcp?install=…`) resolve into.
  */
 export function AgentsWorkspace() {
   const localVault = useLocalVault();
-  // Kept across a rescan: a null handle here re-read the connectors from nothing each time.
+  // Kept across a rescan, or the connectors are re-read from nothing each time.
   const handle = selectOpenVaultHandle(localVault.status, localVault.handle);
   const connectors = useVaultConnectors(handle);
   const mcpCount =
@@ -34,9 +25,8 @@ export function AgentsWorkspace() {
       ? connectors.connectors.filter((connector) => connector.enabled).length
       : undefined;
 
-  // No wrapper: `AgentsPage`'s `<main>` is the shell slot's first child, as every destination's
-  // is. A wrapper with its own `overflow-y-auto` was a second scroll container inside the slot,
-  // and the scroll-end gate measured the slot as never scrolling (CI, 2026-09-18).
+  // No wrapper: `AgentsPage`'s `<main>` must be the shell slot's first child, or a second
+  // scroll container hides the slot's scroll from the scroll-end gate.
   return (
     <AgentsPage mcpCount={mcpCount}>
       <McpPage connectors={connectors} handle={handle} />

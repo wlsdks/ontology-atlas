@@ -18,11 +18,7 @@ export interface OntologyKindTone {
   nodeSize: number;
 }
 
-/**
- * Qualitative ontology-kind palette for compact chips, legends, summaries, and
- * classification guidance. `ontology-map` uses its own neutral engraved
- * canvas tokens; retired Sigma/tree/Builder adapters are not consumers.
- */
+/** Kind hues for chips, legends and summaries; `ontology-map` uses its own canvas tokens. */
 export const ONTOLOGY_KIND_TONE: Record<OntologyVisualKind, OntologyKindTone> = {
   project: {
     hueName: "indigo",
@@ -72,10 +68,8 @@ export const ONTOLOGY_KIND_TONE: Record<OntologyVisualKind, OntologyKindTone> = 
 };
 
 /**
- * The same five hues as paint — for a canvas, an image, or a contrast measurement, none of which
- * can read a CSS variable. `app/globals.css` holds the token (`--color-kind-<kind>-rgb`) and this
- * is its copy; `tests/contract/kind-tone-mirror.contract.test.ts` refuses a drift between them.
- * DOM consumers take `ONTOLOGY_KIND_TONE`, which references the tokens.
+ * The same hues as paint for canvas, images and contrast checks, which cannot read CSS variables;
+ * mirrors `app/globals.css` (`kind-tone-mirror.contract.test.ts`). DOM uses `ONTOLOGY_KIND_TONE`.
  */
 export const ONTOLOGY_KIND_PAINT: Record<OntologyVisualKind, { rgb: readonly [number, number, number]; fill: string; chipBg: string }> = {
   project: { rgb: [126, 134, 216], fill: "rgba(126, 134, 216, 0.94)", chipBg: "rgba(126, 134, 216, 0.12)" },

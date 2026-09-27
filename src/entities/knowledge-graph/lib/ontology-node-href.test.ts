@@ -19,7 +19,7 @@ import {
 } from "./ontology-node-href";
 
 describe("buildOntologyNodeHref", () => {
-  it("kind:slug 형식 노드 ID", () => {
+  it("builds an href for a kind:slug node id", () => {
     expect(buildOntologyNodeHref("domain:ontology-core")).toBe(
       `/ontology/?node=${encodeURIComponent("domain:ontology-core")}`,
     );
@@ -28,7 +28,7 @@ describe("buildOntologyNodeHref", () => {
     );
   });
 
-  it("특수 문자 / 한글 encodeURIComponent escape", () => {
+  it("escapes special characters and Hangul", () => {
     expect(buildOntologyNodeHref("project:한글")).toBe(
       `/ontology/?node=${encodeURIComponent("project:한글")}`,
     );
@@ -37,23 +37,23 @@ describe("buildOntologyNodeHref", () => {
     );
   });
 
-  it("빈 ID 도 그대로 반환 (caller contract)", () => {
+  it("returns an empty id unchanged", () => {
     expect(buildOntologyNodeHref("")).toBe("/ontology/?node=");
   });
 
-  it("via 출처 마커를 encode 해 덧붙인다 (insights → map 복귀 칩 계약)", () => {
+  it("appends an encoded via marker", () => {
     expect(
       buildOntologyNodeHref("domain:views", { via: "insights:structure" }),
     ).toBe(
       `/ontology/?node=${encodeURIComponent("domain:views")}&via=${encodeURIComponent("insights:structure")}`,
     );
-    // Without `via` the link form is unchanged — the seven-plus other call sites are untouched.
+    // Without `via` the link is unchanged.
     expect(buildOntologyNodeHref("domain:views")).toBe(
       `/ontology/?node=${encodeURIComponent("domain:views")}`,
     );
   });
 
-  it("검토 행 id도 지도 복귀 문맥으로 함께 보존한다", () => {
+  it("keeps the review row id in the return context", () => {
     expect(
       buildOntologyNodeHref("domain:views", {
         via: "insights:do-next",
@@ -73,7 +73,7 @@ describe("buildOntologyNodeHref", () => {
 });
 
 describe("insights return marker", () => {
-  it("build ↔ parse 왕복", () => {
+  it("round-trips build and parse", () => {
     expect(parseInsightsReturnMarker(buildInsightsReturnMarker("do-next"))).toBe(
       "do-next",
     );
@@ -82,7 +82,7 @@ describe("insights return marker", () => {
     ).toBe("structure");
   });
 
-  it("마커 문법이 아니면 null — 지도는 칩을 렌더하지 않는다", () => {
+  it("returns null for a string outside the marker grammar", () => {
     expect(parseInsightsReturnMarker(null)).toBeNull();
     expect(parseInsightsReturnMarker("")).toBeNull();
     expect(parseInsightsReturnMarker("insights")).toBeNull();
@@ -90,7 +90,7 @@ describe("insights return marker", () => {
     expect(parseInsightsReturnMarker("insights:UPPER")).toBeNull();
   });
 
-  it("복귀 href 는 원래 보던 인사이트 탭을 가리킨다", () => {
+  it("points the return href at the original insights tab", () => {
     expect(buildOntologyInsightsReturnHref("freshness")).toBe(
       "/ontology/insights/?tab=freshness",
     );
@@ -120,7 +120,7 @@ describe("resolveOntologyBuilderNodeSlug", () => {
     };
   }
 
-  it("vault source slug 를 focus query 로 사용", () => {
+  it("uses the vault source slug as the focus query", () => {
     const selected = node({
       id: "capability:mcp-server",
       evidenceIds: ["capabilities/mcp-server"],
@@ -131,7 +131,7 @@ describe("resolveOntologyBuilderNodeSlug", () => {
     );
   });
 
-  it("ontology/ prefix 가 붙은 evidence slug 를 정규화", () => {
+  it("normalizes an evidence slug with an ontology/ prefix", () => {
     const selected = node({
       evidenceIds: ["ontology/elements/parser"],
       kind: "element",
@@ -140,7 +140,7 @@ describe("resolveOntologyBuilderNodeSlug", () => {
     expect(resolveOntologyBuilderNodeSlug(selected)).toBe("elements/parser");
   });
 
-  it("legacy kind:id 노드를 canonical vault folder 로 fallback", () => {
+  it("falls back from a legacy kind:id to the canonical vault folder", () => {
     expect(
       resolveOntologyBuilderNodeSlug(
         node({ id: "domain:views", kind: "domain" }),
@@ -153,7 +153,7 @@ describe("resolveOntologyBuilderNodeSlug", () => {
     ).toBe("elements/parser");
   });
 
-  it("slash 기반 vault id 는 그대로 유지", () => {
+  it("keeps a slash-based vault id", () => {
     expect(
       resolveOntologyBuilderNodeSlug(
         node({ id: "capabilities/topology-analysis-modes" }),
@@ -186,8 +186,8 @@ describe("resolveOntologyBuilderNodeSlug", () => {
 });
 
 describe("buildTopologyMeaningEditorNodeHref", () => {
-  // URL contract: links sent from the map editor always use canonical `<kind>:<slug>`.
-  it("canonical graph id 를 그대로 실어 보낸다", () => {
+  // Map-editor links always use canonical `<kind>:<slug>`.
+  it("passes a canonical graph id through", () => {
     expect(resolveOntologyBuilderNodeSlugFromGraphId("domain:views")).toBe(
       "domains/views",
     );
@@ -214,7 +214,7 @@ describe("buildTopologyMeaningEditorNodeHref", () => {
     );
   });
 
-  it("project graph id 도 canonical `project:<slug>` 로 넘긴다", () => {
+  it("passes a project graph id as `project:<slug>`", () => {
     expect(resolveOntologyBuilderNodeSlugFromGraphId("project:ontology-atlas")).toBe(
       "ontology-atlas",
     );
@@ -223,7 +223,7 @@ describe("buildTopologyMeaningEditorNodeHref", () => {
     );
   });
 
-  it("복수-슬래시/ontology-prefix vault 폴더형은 canonical 로 승격해 보낸다", () => {
+  it("promotes multi-slash and ontology-prefixed folder ids to canonical", () => {
     expect(
       resolveOntologyBuilderNodeSlugFromGraphId(
         "ontology/capabilities/topology-analysis-modes",
@@ -239,7 +239,7 @@ describe("buildTopologyMeaningEditorNodeHref", () => {
   });
 });
 
-describe("meaningEditRelationForEdgeType (Slice 6 — 지도 엣지 → bearing)", () => {
+describe("meaningEditRelationForEdgeType", () => {
   it("maps the four editable bearings (+ frontmatter-key aliases)", () => {
     expect(meaningEditRelationForEdgeType("is_a")).toBe("isA");
     expect(meaningEditRelationForEdgeType("depends_on")).toBe("dependsOn");
@@ -283,7 +283,7 @@ describe("edgeAuthoredByFromNode (Slice 6 — direction / authorship)", () => {
   });
 });
 
-describe("buildTopologyMeaningEditorEdgeHref (Slice 6 — 지도 관계 편집 딥링크)", () => {
+describe("buildTopologyMeaningEditorEdgeHref", () => {
   it("carries focal (from) + edit=<relation>:<target>, both canonical", () => {
     expect(
       buildTopologyMeaningEditorEdgeHref("capability:token-issue", "capability:jwt", "dependsOn"),
@@ -315,7 +315,7 @@ describe("buildTopologyMeaningEditorEdgeHref (Slice 6 — 지도 관계 편집 �
   });
 });
 
-describe("parseOntologyMeaningEditParam (Slice 6 — 지도 편집기 소비자)", () => {
+describe("parseOntologyMeaningEditParam", () => {
   it("splits on the FIRST colon so the target's kind:slug colon survives", () => {
     expect(parseOntologyMeaningEditParam("dependsOn:capability:jwt")).toEqual({
       relation: "dependsOn",
@@ -357,32 +357,27 @@ describe("buildOntologyInsightsNodeHref", () => {
   });
 });
 
-describe("지도로 돌아오는 표식", () => {
-  /*
-   * ⚠️ Leaving the map used to be one-way. Full detail's "Open document" sent the reader
-   * to `/docs/`, whose crumb pointed at a bare `/topology` with nothing selected, so the
-   * node they had open was simply gone (owner, 2026-09-14). The marker carries the node
-   * they left from.
-   */
-  it("표식을 만들고 다시 읽으면 같은 노드가 나온다", () => {
+describe("map return marker", () => {
+  /* The marker returns the reader from `/docs/` to the node they left, not a bare map. */
+  it("round-trips a marker to the same node", () => {
     const marker = buildTopologyReturnMarker("capability:mcp-server");
     expect(marker).toBe("topology:capability:mcp-server");
     expect(parseTopologyReturnMarker(marker)).toBe("capability:mcp-server");
   });
 
-  it("폴더 표기도 정규 id 로 모은다 — `?p=` 가 쓰는 문법 하나", () => {
+  it("normalizes folder notation to the canonical id used by `?p=`", () => {
     expect(buildTopologyReturnMarker("capabilities/mcp-server")).toBe(
       "topology:capability:mcp-server",
     );
   });
 
-  it("다른 문법의 via 는 지도 표식이 아니다", () => {
+  it("rejects a via in another grammar", () => {
     expect(parseTopologyReturnMarker("insights:do-next")).toBeNull();
     expect(parseTopologyReturnMarker(null)).toBeNull();
     expect(parseTopologyReturnMarker("")).toBeNull();
   });
 
-  it("돌아가는 주소는 그 노드를 고른 지도다", () => {
+  it("returns to the map with that node selected", () => {
     expect(buildTopologyReturnHref("capability:mcp-server")).toBe(
       "/topology/?p=capability%3Amcp-server",
     );

@@ -213,54 +213,13 @@ function forcedReadTool(turn: TurnAssembly): string | null {
 }
 
 /**
- * The adapter for the "connect by address" branch — local and open-source runners.
- *
- * **Why the OpenAI-compatible grammar rather than the native `/api/chat`.**
- * Ollama opens both doors: native `/api/chat` and OpenAI-compatible
- * `/v1/chat/completions`. The compatible one was chosen because **this branch is
- * not for Ollama alone** — LM Studio, llama.cpp server, vLLM, and LocalAI all
- * expose the same compatible grammar, so the same adapter runs unchanged with
- * only the address swapped. Choosing native would mean one adapter per runner,
- * which is exactly the long tail `secrets.rs` avoids by freezing named vendors at three.
- *
- * The cost is stated honestly: **compatibility depends on the runner's version.**
- * Tool calling (`tools` / `tool_calls`) arrived relatively late in the compatible
- * layer and is at different levels of completeness per runner. So the screen does
- * not say "this should work" — it carries the runner's own error sentence through
- * verbatim alongside the model name, so choosing a model that cannot use tools is
- * visible to the user right there.
- *
- * Body assembly and response parsing are delegated to the OpenAI adapter. The
- * address branch does add the OpenAI-compatible `reasoning_effort` and
- * `tool_choice` fields according to the turn's position. The first round trip has
- * no evidence yet and product discipline requires a read, so the tool is pinned by
- * name: `get_concept` on a selected node, `list_kinds` on the whole map. The whole
- * map then picks candidates with `list_concepts` and reads their bodies together
- * with `get_concepts`. After three tool round trips the answer comes from a
- * synthesis instruction with the tools withdrawn. Every local round trip runs at
- * `reasoning_effort: none`.
- *
- * A prompt-only turn limit was ignored by gemma4:12b, which burned all six tool
- * turns — the execution contract has to enforce that limit. Measured 2026-08-02
- * against real Ollama with gemma4:12b on a complex audit: the first tool call took
- * 59.7s at `low` and 0.632s at `none` + `required`, and both were `list_kinds`.
- * Both `required` and a named tool choice can be ignored depending on the model,
- * so required turns also narrow the allowed tools to one. Local quality is never
- * assumed from thinking time — it is judged only by actual reads, citations, and
- * defect reproduction. Just before synthesis, the detail slugs still present in the
- * real payload after the result cap are handed back as a receipt, and if none of
- * them is cited, or a Korean question is answered without Korean, it re-synthesizes
- * once. Breaking it a second time discards the answer rather than showing a fluent guess.
+ * The "connect by address" adapter: the OpenAI-compatible grammar serves every local runner.
+ * Required turns pin one tool and `reasoning_effort: none`, since models ignore prompt-only limits;
+ * an uncited or wrong-language synthesis is retried once, then discarded rather than shown.
  */
 export const localAdapter: ProviderAdapter = {
   provider: 'local',
-  /**
-   * There is **no default model.** Named vendors have models whose names we know,
-   * but in this branch only that computer knows what is installed. So the user
-   * picks from a list in settings, and until they do this branch does not turn on
-   * (`isLocalEndpointReady`). Pinning any name as a default kills the first round
-   * trip with "model not found", with the reason nowhere on screen.
-   */
+  /** No default model: only that computer knows what is installed, and a guess fails the first round trip. */
   defaultModel: '',
 
   buildBody(turn: TurnAssembly): string {
@@ -281,9 +240,7 @@ export const localAdapter: ProviderAdapter = {
       const messages = body.messages as Array<Record<string, unknown>>;
       messages.push({ role: 'user', content: requiredReadInstruction(turn, forcedToolName) });
       body.reasoning_effort = 'none';
-      // Ollama's models can ignore a named tool_choice too. The list of tools allowed
-      // in this round trip must also be narrowed to one to stop it leaking into
-      // another census tool.
+      // Models can ignore a named tool_choice, so the allowed tools narrow to that one.
       body.tool_choice = {
         type: 'function',
         function: { name: forcedToolName },

@@ -11,14 +11,13 @@ import { ATLAS_CLI } from '@/shared/config/cli-invocation';
 import { controlClass } from '@/shared/ui/control-class';
 
 /**
- * The neutral chip's **face and hover**. The value layer (`controlClass`) emits shape, size, and
- * text colour only, deliberately leaving the background tint and hover to the consumer (hover
- * frequency eats the motion budget). Four slots on this surface held the same string — bundled as one.
+ * The neutral chip's face and hover; `controlClass` leaves background tint and hover to the
+ * consumer because hover frequency eats the motion budget.
  */
 const NEUTRAL_CHIP_SKIN =
   'bg-[color:var(--color-overlay-1)] hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]';
 
-/** The primary action (indigo fill) — one set for the same reason. */
+/** The indigo-filled primary action, shared for the same reason. */
 const INDIGO_SOLID_SKIN =
   'border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a18)] hover:bg-[color:var(--color-indigo-a28)]';
 
@@ -52,12 +51,11 @@ export const ONTOLOGY_POST_CHANGE_SYNC_LINES = [
 ];
 
 interface Props {
-  /** Calls `useLocalVault.scaffoldOntology()` on click, returning created/skipped. */
+  /** Calls `useLocalVault.scaffoldOntology()`. */
   onScaffold: () => Promise<{ created: number; skipped: number }>;
-  /** The current vault's document count. 0 means an empty vault; above 0 shows the secondary
-   *  message in the "adding a starter to an existing vault" tone. */
+  /** 0 means an empty vault; above 0 shows the add-to-existing-vault tone. */
   docCount: number;
-  /** The absolute path of the vault chosen in the installed app. With it, the copied command is directly runnable. */
+  /** The installed app's vault path; with it the copied command runs as is. */
   vaultPath?: string | null;
 }
 
@@ -104,22 +102,16 @@ export function buildOntologyStarterAgentVerifyPrompt(
 }
 
 /**
- * The ontology starter CTA — a prominent card when the chosen vault folder is empty, a small
- * secondary button when it is not. The key entry point for "non-developers too": five seeded md
- * files plus `.mcp.json` and `.codex/config.toml`, with no terminal and no npm.
- *
- * This component only emits the result; the caller (DocsVaultPage) raises the toast that explains
- * registering an AI agent.
+ * A prominent card for an empty vault, a small secondary button otherwise: five seeded md files
+ * plus `.mcp.json` and `.codex/config.toml`, with no terminal or npm. The caller raises the toast.
  */
 export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: Props) {
   const t = useTranslations('featuresMisc.starterCta');
   const failureSentence = useFailureSentence();
   const [busy, setBusy] = useState(false);
   /*
-   * The failure is kept as a sentence **plus** its English detail, never as the thrown message.
-   * Scaffolding writes into a folder the person chose, so the two failures that actually happen
-   * here are `permission-denied` and `already-exists`, and the `failures` catalogue has a sentence
-   * with a next step for both. The thrown English goes to `data-failure-detail`.
+   * A sentence plus its English detail, never the thrown message: `permission-denied` and
+   * `already-exists` have catalogue sentences; the thrown English goes to `data-failure-detail`.
    */
   const [error, setError] = useState<FailureCopy | null>(null);
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
@@ -186,7 +178,6 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
         : t('copyJsonGateLabel');
 
   if (isEmpty) {
-    // Empty vault — a large card saying "start here".
     return (
       <section
         aria-label={t('emptyAriaLabel')}
@@ -330,7 +321,7 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
     );
   }
 
-  // The vault already has `.md` files — a small secondary option.
+  // The vault already has `.md` files.
   return (
     <div className="grid gap-2">
       <button

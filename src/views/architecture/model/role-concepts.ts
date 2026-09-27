@@ -1,15 +1,9 @@
 import { matchesArchitecturePath, type ArchitectureProfile } from '@/entities/architecture-profile';
 
 /**
- * The labeled meaning layer inside a band, returned by decision (2026-08-27, second record's
- * falsifier fired): the owner asked what a layer *contains* while looking at a browser, and the
- * browser's only real data is the vault. So a band's click-open detail lists the **reviewed
- * concepts** whose `path` frontmatter falls inside the role's globs — explicitly labeled as
- * concepts, never mixed into the source-module row, so the meaning layer and the source layer
- * stay two named things.
- *
- * Same glob dialect as everything else (`matchesArchitecturePath`, contract-tested against the
- * MCP). No source is read here; this is a join of two reviewed stores.
+ * Reviewed concepts whose `path` falls inside a role's globs, kept apart from source modules so the
+ * meaning layer and the source layer stay two named things. A join of two reviewed stores; no
+ * source is read.
  */
 
 export interface RoleConcept {

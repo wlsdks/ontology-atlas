@@ -1,37 +1,12 @@
-// **How the CLI names itself** — so a command printed on screen actually runs.
-//
-// **Why** (dogfooding, measured 2026-07-28): `init`'s "Next steps" told the user
-// to run `ontology-atlas list`, which pasted verbatim gives `command not found`
-// (exit 127). That name is **not in any registry and never will be**
-// (`docs/DECISIONS.md` 2026-07-27 「the app carries the MCP server … npm publishing plan abandoned」 —
-// the app carries the MCP server; publishing to npm was abandoned). The two live
-// channels are the app bundle and a source checkout.
-//
-// Stranger still, **the README the same `init` writes was correct**
-// (`node <checkout>/cli/src/index.mjs …`). The generated artifact and the
-// generating tool's own guidance followed different rules.
-//
-// **The discipline.** Strings printed on screen come in two kinds:
-//
-// - **Meant to be copied and run** (the cyan command lines, "Next steps", the
-//   "next" hints) — these must pass through this function, or they do not run.
-// - **Prose naming a command** (usage synopses, "did you mean" in error text,
-//   comments) — left alone. There `ontology-atlas add` is the name of a
-//   subcommand, not a value to execute, and splicing an absolute path in only
-//   makes it harder to read.
-//
-// Same principle as the label-decoration gate deciding an arrow by its
-// **position** rather than its glyph: the same string means different things in
-// different places.
+// How the CLI names itself so a printed command runs: `ontology-atlas` is in no registry (`docs/DECISIONS.md`
+// 2026-07-27). Strings meant to be copied and run go through this module; prose naming a command (usage,
+// did-you-mean) keeps `ontology-atlas <sub>` for readability.
 
 import path from 'node:path';
 
 /**
- * The real command that started this process. `process.argv[1]` is this script's
- * path, so it points at whichever checkout the user invoked.
- *
- * **Always absolute.** The `init` guidance tells the user to `cd <vault>` first,
- * so a relative path would break on the very next line.
+ * The command that started this process (`process.argv[1]`, whichever checkout was invoked), always
+ * absolute because `init` tells the user to `cd <vault>` first.
  *
  * @param {{ argv?: string[], cwd?: string }} [io] injection point for tests.
  */

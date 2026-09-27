@@ -23,8 +23,7 @@ describe('literalPrefix — a glob reduced to the folder it certainly touches', 
   });
 
   it('returns nothing for a glob that starts with a wildcard', () => {
-    /* `**` + `/*.test.ts` reaches every folder in the repository. Treating its prefix as a folder
-       name would attach it to one area and hide it from the rest. */
+    /* A leading `**` reaches every folder, so its prefix is empty, not a folder name. */
     expect(literalPrefix('**/*.test.ts')).toBe('');
     expect(literalPrefix('*.md')).toBe('');
   });
@@ -64,8 +63,7 @@ describe('ruleGlobs — the paths a .claude rule declares', () => {
   });
 
   it('returns nothing for an always-loaded rule', () => {
-    /* Empty here means "declares no path", which the caller turns into "reaches every area" —
-       never into "reaches nothing". */
+    /* "Declares no path" means every area, never none. */
     expect(ruleGlobs('# Forbidden patterns\n\nNo frontmatter at all.\n')).toEqual([]);
     expect(ruleGlobs('---\ndescription: always\n---\n\n# Git\n')).toEqual([]);
   });
@@ -90,12 +88,7 @@ describe('scriptPathScopes — what a guard script says about itself', () => {
   });
 
   it('over-collects a regex that is not a path, which the disk probe then drops', () => {
-    /*
-     * `/^eslint/` tests a finding name. The extractor cannot tell it from a folder and is not
-     * asked to: `resolveScopeDeclarations` keeps only what resolves, and the declaration text is
-     * printed beside the claim so a reader can check. Asserted rather than fixed, because a
-     * cleverer extractor here would be guessing.
-     */
+    /* `/^eslint/` is extracted too; callers keep only scopes that resolve, so this is asserted, not fixed. */
     expect(scriptPathScopes('if (/^eslint/.test(finding)) return;')).toContain('eslint');
   });
 });
@@ -106,8 +99,7 @@ describe('commandPathScopes — the files a check command names', () => {
   });
 
   it('names nothing for a repository-wide lane', () => {
-    /* The difference the Watched column exists to draw: `vitest` runs over this area and every
-       other one, which is a different fact from a check written for this area. */
+    /* A repository-wide `vitest` names no area, unlike a check written for one. */
     expect(commandPathScopes('vitest run')).toEqual([]);
     expect(commandPathScopes('eslint --max-warnings 0')).toEqual([]);
     expect(commandPathScopes('tsc --noEmit')).toEqual([]);
@@ -135,8 +127,7 @@ describe('workflowPathFilters — only the trigger block is a path filter', () =
   });
 
   it('does not read a job step as a path filter', () => {
-    /* A workflow with no filter runs for every change. Mining its steps for paths would credit one
-       area with a lane that is not scoped to it. */
+    /* An unfiltered workflow runs for every change; its steps are not mined for paths. */
     const yaml = ['on:', '  pull_request:', '', 'jobs:', '  a:', '    steps:', '      - run: vitest run src/views'].join('\n');
     expect(workflowPathFilters(yaml)).toEqual([]);
   });

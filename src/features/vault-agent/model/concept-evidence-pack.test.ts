@@ -19,12 +19,7 @@ describe('packConceptEvidence — an unreadable pack', () => {
     expect(JSON.parse(packed.content)).toMatchObject({ concepts: [{ slug: 'atlas' }] });
   });
 
-  /**
-   * ⚠️ The parse used to be bare. A throw here does not stay here — this runs inside
-   * the ACP tool pipeline, where an exception kills the whole turn rather than
-   * thinning one tool result. An unreadable pack claims nothing and delivers nothing;
-   * it is the same shape as a pack with no `concepts` array.
-   */
+  /* A throw here would kill the whole ACP turn. */
   it('returns the empty pack shape instead of throwing', () => {
     vi.spyOn(JSON, 'parse').mockImplementation(() => {
       throw new SyntaxError('Unexpected end of JSON input');

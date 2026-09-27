@@ -1,22 +1,6 @@
-// `ontology-atlas remove-relation <from> <to> <type> [vault]`
-//
-// ⚠️ The half of relation editing the CLI never had (measured 2026-08-25, owner:
-// *"make every feature usable from the CLI alone"*). `relate` could **create** a
-// relation and nothing could remove one, so a person working only in the terminal
-// had to open the Markdown and hand-edit frontmatter to undo their own typo —
-// which is exactly the hand-editing every other write command exists to avoid,
-// and the one place where "the CLI can do everything" was simply false.
-//
-// Same argument shape as `relate` on purpose, so undoing reads as the mirror of
-// doing: identical positional order, identical flags, dry-run by default off but
-// available. It writes with the same `write-vault.mjs` primitives and the same
-// `expectedRevision` guard, so a relation removed here cannot silently clobber a
-// change somebody else made to that file since it was read.
-//
-// It deliberately does **not** call `relation-check`: that command answers "may
-// this relation exist", which is a question about creating one. Removing needs a
-// different fact — does this relation exist right now — and that is read straight
-// from the document's own frontmatter.
+// `ontology-atlas remove-relation <from> <to> <type> [vault]`: the mirror of `relate`, same arguments and flags.
+// Writes with the write-vault.mjs primitives and the `expectedRevision` guard, so it cannot clobber a newer edit.
+// It reads the document's own frontmatter instead of calling `relation-check`, which answers whether one may exist.
 
 import { COLORS } from '../lib/colors.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
@@ -54,11 +38,8 @@ const DEFAULT_RUNTIME = Object.freeze({
 });
 
 /**
- * Finds the relation on the document, or explains precisely why it is not there.
- *
- * The two failures are different and a person can act on only one of them: a slug that is not in the
- * list at all versus a list that does not exist on this document. Saying "not found" for both would
- * hide a mistyped relation type behind a mistyped slug.
+ * Finds the relation on the document, or says precisely why it is not there: a slug missing from
+ * the list and a list missing from the document are different mistakes.
  */
 export function planRemoval(frontmatter, relation, to) {
   const key = RELATION_KEY[relation] ?? relation;
@@ -69,9 +50,8 @@ export function planRemoval(frontmatter, relation, to) {
     }
     return { key, found: true, next: null };
   }
-  // Alias-aware, like the MCP remover: a hand-authored `depends_on:` array is
-  // the same edge family as `dependencies:` — answering "this document has no
-  // dependencies" for an edge the map plainly renders was the bug (2026-09-01).
+  // Alias-aware, like the MCP remover: a hand-authored `depends_on:` array is the same edge family
+  // as `dependencies:`.
   const aliasKeys = (LEGACY_KEYS[key] ?? []).filter((k) => frontmatter[k] !== undefined);
   const existing = [key, ...aliasKeys]
     .map((k) => frontmatter[k])
@@ -101,7 +81,7 @@ function removeRelation(rootPath, { from, to, relation }, runtime) {
       : null;
   const hadNote = notes !== null && Object.prototype.hasOwnProperty.call(notes, to);
   if (hadNote) delete notes[to];
-  // An emptied map is deleted, not written as `relation_notes: {  }` (2026-09-26).
+  // An emptied map is deleted, not written as `relation_notes: {  }`.
   const nextNotes = notes !== null && Object.keys(notes).length > 0 ? notes : null;
 
   if (plan.key === 'domain') {

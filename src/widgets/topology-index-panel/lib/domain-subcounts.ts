@@ -1,11 +1,8 @@
 import { flattenTree, type OntologyTreeNode } from "@/entities/knowledge-graph";
 
 /**
- * INDEX tree domain rows show a "Capability N · Element M" subcount + a proportional
- * capacity meter (docs/prototypes/hub-b3-immersive.html). Both derive from
- * the SAME `buildOntologyTree` result the rest of the app already trusts
- * (`@/entities/knowledge-graph/lib/ontology-tree`) — no bespoke recount, so these numbers can
- * never drift from the tree the row itself renders.
+ * Domain row subcounts and capacity meter (docs/prototypes/hub-b3-immersive.html), derived from the
+ * same `buildOntologyTree` result the row renders so the numbers cannot drift.
  */
 export interface DomainSubcounts {
   /** Total descendant nodes (capabilities + elements, recursively) — the
@@ -26,18 +23,13 @@ export function computeDomainSubcounts(domain: OntologyTreeNode): DomainSubcount
   return { descendantCount: descendants.length, capabilityCount, elementCount };
 }
 
-/** Clamped 0..1 ratio for the capacity meter's fill width. `maxCount <= 0`
- * (empty vault / single domain with no siblings to compare against) reads as
- * an empty meter rather than dividing by zero. */
+/** Clamped 0..1 meter ratio; `maxCount <= 0` reads as empty rather than dividing by zero. */
 export function computeCapacityRatio(count: number, maxCount: number): number {
   if (maxCount <= 0) return 0;
   return Math.min(1, Math.max(0, count / maxCount));
 }
 
-/** The meter's denominator — the largest domain's descendant count among
- * siblings, so the widest domain reads as a "full" bar and the rest scale
- * relative to it (matches the prototype's `MAXN` constant, computed instead
- * of hardcoded). */
+/** The meter denominator: the largest sibling domain's descendant count. */
 export function computeMaxDomainDescendantCount(
   domains: readonly OntologyTreeNode[],
 ): number {

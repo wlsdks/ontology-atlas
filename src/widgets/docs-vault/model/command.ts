@@ -1,18 +1,13 @@
 /**
- * One global command in the source vault. The unified palette
- * (DocsVaultUnifiedPalette) takes this array and runs fuzzy matching over it in
- * `> ` prefix mode.
- *
- * `icon` accepts either a string (emoji) or a React element — the palette UI only
- * renders it.
+ * One global command for the unified palette's `> ` mode; `icon` is an emoji string or a React
+ * element.
  */
 export interface VaultCommand {
   id: string;
   label: string;
   /**
-   * Other words a person types for this command, matched like the label but never shown.
-   * A relabelled command keeps answering to its old name: rename carried one Korean label
-   * for a year before it was reworded, and the old wording is still what people type.
+   * Other words a person types for this command, matched like the label but never shown, so renamed
+   * commands still answer to their old names.
    */
   keywords?: string;
   hint?: string;

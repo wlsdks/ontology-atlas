@@ -12,16 +12,9 @@ import { controlClass } from '@/shared/ui/control-class';
 import { BrandMark } from '@/shared/ui/brand-mark';
 
 /**
- * The top chrome shared by the gateway surfaces.
- *
- * **It lives at four addresses** — `/` (a web visitor's first face) · `/download`
- * (the install deep link) · `/guide` · `/changelog`. The chrome is the same, but two
- * pieces differ by address: at the root it ① drops the breadcrumb's current node
- * (that is not the address) and ② drops "back to the map" (back to the map) — someone
- * who arrived here did not come from the map, and the route to the map is already
- * offered by "try it in the browser without installing" (try it in the browser without
- * installing) inside the page. Putting the same link in both the chrome and the page
- * makes one of the two a dead promise.
+ * Top chrome for the gateway surfaces (`/`, `/download`, `/guide`, `/changelog`). At the root it
+ * drops the breadcrumb node; the page itself offers the route to the map, and the same link in
+ * chrome and page makes one a dead promise.
  */
 export function GatewayNav() {
   const t = useTranslations('download');
@@ -29,17 +22,10 @@ export function GatewayNav() {
   const path = stripLocalePrefix(usePathname() ?? '/');
   const atRoot = path === '/';
 
-  /**
-   * The current node's name. Absent at the root (no breadcrumb is drawn).
-   *
-   * ⚠️ Why the label is decided here: if each page injected its own name into the
-   * chrome, the same name would live in two places and only one would change. The
-   * address is the source of truth.
-   */
+  /** The current node's name, derived from the address so it has one source; absent at the root. */
   /*
-   * The crumb names only the three routes this chrome belongs to. The 404 wears this chrome
-   * too (2026-09-25), and a fallback of "download" there claimed a lost visitor was on the
-   * download page.
+   * The crumb names only this chrome's three routes; the 404 wears it too and must not claim to be
+   * the download page.
    */
   const crumb = atRoot
     ? null
@@ -61,11 +47,10 @@ export function GatewayNav() {
         'sticky top-0 z-30 w-full shrink-0 border-b border-[color:var(--color-divider)] bg-[color:var(--color-canvas)]',
       )}
     >
-      {/* Why `flex-wrap` was removed: wrapping at narrow widths turns the gateway's
-          face into two 97px rows that eat the stage (measured at 390px). What collapses
-          instead is **the breadcrumb and the section links** — the title states which
-          route this is even on a narrow screen, while the logo and the locale switch
-          have to survive at any width. */}
+      {/*
+       * No `flex-wrap`: the breadcrumb and section links collapse instead, while the logo and
+       * locale switch survive at any width.
+       */}
       <div
         className={cn(
           PAGE_COLUMN,
@@ -85,17 +70,17 @@ export function GatewayNav() {
             data-testid="gateway-brand-mark"
             className="size-8 shrink-0"
           />
-          {/* `whitespace-nowrap`: measured at 834 the wordmark broke into two lines once the row
-              held the repository mark beside X. A brand that wraps is a defect, not a reflow. */}
+          {/* `whitespace-nowrap`: the wordmark must never wrap. */}
           <span className="whitespace-nowrap text-body leading-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
             Ontology Atlas
           </span>
         </Link>
         {crumb ? (
           <>
-            {/* The breadcrumb yields before the brand does: from `sm` to `lg` the 434px column
-                (the frame's gutter stays 200) cannot hold brand, crumb, two chips, two marks and
-                the locale switch, so the crumb waits for `lg` (2026-09-02). */}
+            {/*
+             * The breadcrumb waits for `lg`; from `sm` the column cannot hold it with the other
+             * controls.
+             */}
             <span aria-hidden className="hidden text-body text-[color:var(--color-text-quaternary)] lg:inline">
               /
             </span>
@@ -108,27 +93,23 @@ export function GatewayNav() {
           </>
         ) : null}
 
-        {/* This group's **right edge** is the mirror of the origin — it has to stop at
-            `vw − origin` for the top bar to live in the same frame as the band below.
-            The owner's report *"why is there such a long gap?"* (why is there such a long gap?)
-            was exactly this edge against the screen edge (measured 1920: 256px · 2560:
-            864px). The gate measures it through this testid. */}
+        {/*
+         * The right edge mirrors the origin (`vw - origin`) so the bar shares the band's frame; the
+         * gate measures it through this testid.
+         */}
         <span
           data-testid="download-gnb-actions"
           className="ml-auto flex shrink-0 items-center gap-3"
         >
-          {/* The two reading links. Collapsed below `sm` — a narrow first screen belongs
-              to the headline and the download button, and these two are met again in the
-              footer on scroll. */}
+          {/* Collapsed below `sm`; `GatewayReadingLinks` carries them there. */}
           <span className="hidden items-center gap-3 sm:flex">
             <GatewayNavLink href="/guide" active={path.startsWith('/guide')}>
               {tNav('guide')}
             </GatewayNavLink>
-            {/* On the gateway face (`/` and `/download`) the page itself carries the changelog —
-                the facts strip's labeled, versioned "What changed in vX.Y.Z" beside the version
-                it explains — so the chrome does not offer it a second time in the same viewport
-                (council, 2026-09-03; the rule is this file's own: the same link in chrome and page
-                makes one of them a dead promise). `/guide` and `/changelog` keep the chip. */}
+            {/*
+             * On `/` and `/download` the page carries the changelog link, so the chrome does not
+             * repeat it; `/guide` and `/changelog` keep the chip.
+             */}
             {atRoot || path.startsWith('/download') ? null : (
               <GatewayNavLink href="/changelog" active={path.startsWith('/changelog')}>
                 {tNav('changelog')}
@@ -137,22 +118,11 @@ export function GatewayNav() {
           </span>
 
           {/*
-           * The two marks are one group: 32px square targets (`shape: 'icon'`, the row's chip
-           * height) 4px apart. As bare `link` shapes they were 15×24 and 14×24, under the 24px
-           * WCAG 2.2 target minimum across, and read as loose glyphs (measured 2026-09-25).
-           *
-           * Under a coarse pointer the `icon` shape's `touch-hit-expand` grows each hit area to
-           * 44px, 6px past each edge. At 4px apart the two invisible areas overlapped by 8px, the
-           * overlap `touch-hit-expand` was rejected for elsewhere, so the gap opens to 12px there
-           * and the two areas meet without overlapping. Fine pointers keep the tight pair.
+           * Two 32px icon targets 4px apart; under a coarse pointer the gap opens to 12px so the
+           * expanded 44px hit areas do not overlap.
            */}
           <span className="flex items-center gap-1 pointer-coarse:gap-3">
-          {/*
-           * The repository (2026-09-02). The eyebrow on `/download` says "open source" and the
-           * chrome offered no way to the source — the only github.com links on the page were the
-           * release files. Same shape and tone as the X mark beside it: one row, one kind of
-           * object.
-           */}
+          {/* The repository link, same shape and tone as the X mark. */}
           <a
             href={GITHUB_REPO_URL}
             target="_blank"
@@ -165,13 +135,8 @@ export function GatewayNav() {
           </a>
 
           {/*
-           * X — the position exists and the destination does not yet (`X_HANDLE` is
-           * empty).
-           *
-           * Drawing it disabled is more honest than drawing it as a link: something
-           * that looks pressable and goes nowhere is a 「dead CTA」, while this looks
-           * unpressable and its `title` says why. Filling in the handle moves this
-           * branch to the link side by itself.
+           * X has a position but no destination yet (`X_HANDLE` is empty), so it is disabled with a
+           * title instead of a dead link.
            */}
           {xHref ? (
             <a
@@ -185,12 +150,10 @@ export function GatewayNav() {
               <XMark size={14} aria-hidden />
             </a>
           ) : (
-            /* ⚠️ **Removing `opacity-50` is the fix at this position** (2026-07-30).
-               Before that, quaternary (4.76:1) with 0.5 opacity on top dropped the
-               effective contrast below the WCAG non-text threshold (1.4.11, 3:1) —
-               owner observation *"hard to see"* (hard to see). Disabled speaks through
-               **shape, not dimming**: no border, `cursor-not-allowed`, `aria-disabled`
-               and a tooltip. */
+            /*
+             * Disabled speaks through shape, not opacity: dimming dropped below the 3:1 non-text
+             * contrast floor.
+             */
             <span
               data-testid="gateway-x-placeholder"
               aria-disabled="true"
@@ -204,18 +167,8 @@ export function GatewayNav() {
           </span>
 
           {/*
-           * ⚠️ **There is no "back to the map"** (2026-07-31, owner: *"this is a promotional
-           * page, so make it navigable only from the main screen"* — this is a promotional page, so
-           * make it navigable only from the main screen).
-           *
-           * The gateway is what a visitor reads before installing. Putting a route to
-           * the workbench in the chrome recommends a working surface to someone who has
-           * no vault yet, while someone who does have one goes to the map from `/`
-           * anyway (`isGatewaySurface()`). It was a link neither of them used.
-           *
-           * The route to the map is offered by "try it in the browser without installing" inside
-           * the page — that single one remains and stays under the watch of
-           * `map-destination-route.contract.test.ts`.
+           * No route to the map here: the page's try-in-browser link is the single route
+           * (`map-destination-route.contract.test.ts`).
            */}
           <LocaleSwitch />
         </span>
@@ -225,32 +178,12 @@ export function GatewayNav() {
 }
 
 /**
- * The gateway chrome's reading links — **drawn as chips**.
- *
- * ## Why not bare text (2026-07-30, owner: *"it isn't a button and it's hard to see"* — it isn't a
- * button and it's hard to see)
- *
- * Contrast was never the problem — measured at **6.13:1**, comfortably over the body
- * threshold. The problem was **the neighbours on the same row**: the EN/KO locale
- * switch is a 32×32 chip, while these two alone were bare text (32×20 and 46×20, with
- * no background and no border), so side by side one reads as a control and the other
- * as a label. **Affordance is relative to its neighbours, not an absolute value.**
- *
- * So instead of raising the colour, **the shape was matched**. A background, a border
- * and the same height make all three read as one kind of object.
- *
- * ## The active state is distinguished by surface, not colour
- *
- * The current page has a filled surface (`--color-elevated`) and the others are empty
- * until hover gives them that surface. It is how «you are here» is said within
- * neutrals, and it opens no new colour (`design.md` — one indigo).
+ * Reading links as chips, matching the locale switch beside them (`design.md`): affordance is
+ * relative to neighbours. The current page has a filled surface; others gain it on hover.
  */
 /**
- * The repository and X marks — **the icon-button shape, 32×32** (2026-09-25). They were `link`
- * shapes around a bare 15px glyph, so their boxes measured 15×24 and 14×24: under the 24px floor
- * across, and a third height in a row whose chips and locale switch stand at 32. The icon shape at
- * `lg` is the same 32px square, the same chip radius and a hover surface, so the right group reads
- * as one row of controls.
+ * Repository and X marks use the 32px icon-button shape so the right group reads as one row of
+ * controls.
  */
 const GATEWAY_ICON_LINK = controlClass({
   shape: 'icon',
@@ -275,18 +208,11 @@ function GatewayNavLink({
       data-testid={`gateway-nav-${href.slice(1)}`}
       aria-current={active ? 'page' : undefined}
       className={controlClass({ shape: 'chip', size: 'md', className: cn(
-        // ⚠️ `touch-hit-expand` became **more** necessary once these were chips. It had
-        // been there since they were bare text and was dropped in the conversion, and
-        // the touch contract caught the 32px height (44px on a coarse pointer). The
-        // visible box is untouched and only the hit area widens through a pseudo
-        // element, so this row's layout does not change by a pixel.
+        // `touch-hit-expand` widens the hit area to 44px on coarse pointers without moving the
+        // visible box.
         'touch-hit-expand h-8 whitespace-nowrap px-2.5',
         'text-body leading-body',
-        // ⚠️ **The border is there at rest.** At first the inactive state was
-        // `border-transparent` with the chip appearing only on hover, but then the
-        // state the owner named (*"It isn't even a button"* — it isn't even a button) is **exactly
-        // what the screen shows at rest** — hover is discovered only by someone who
-        // already believed it was a control. Affordance has to exist before the hand arrives.
+        // The border shows at rest so the chip reads as a control before the hand arrives.
         active
           ? 'border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] text-[color:var(--color-text-primary)]'
           : 'border-[color:var(--color-border-strong)] text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-elevated)] hover:text-[color:var(--color-text-primary)]',

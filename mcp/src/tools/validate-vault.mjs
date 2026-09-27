@@ -44,17 +44,9 @@ import { existsSync } from 'node:fs';
 import { relative } from 'node:path';
 
 /**
- * Judge the wiki pages against their own contract.
- *
- * `validate_vault` cannot answer this and should not try: a wiki page carries no `kind:`
- * **by contract**, so to that validator it is a document with nothing to check, and
- * `suppressLibraryKindIssues` deliberately drops the one issue it would raise. Whether a
- * page fits the shape every writer was handed is a separate question with its own codes,
- * and this tool is where an agent asks it — after writing a page, and before claiming a
- * compile finished.
- *
- * The output is the shape `ontology-atlas wiki-validate --json` prints, so a person
- * reading a terminal and an agent reading a tool result are reading one report.
+ * Judges wiki pages against their own contract, which `validate_vault` cannot: a
+ * wiki page carries no `kind:` by contract. The output is the shape
+ * `ontology-atlas wiki-validate --json` prints.
  */
 function validateWikiTool({ paths } = {}) {
   if (paths !== undefined && !Array.isArray(paths)) {
@@ -157,10 +149,8 @@ function validateVaultTool({ repoRoot } = {}, loadedDocs = null) {
     issues.push(issue);
     docIssues.set(slug, issues);
   }
-  /*
-   * Never tell a node that already has a parent that it has none (2026-08-11).
-   * A single-file check cannot know; this one holds the whole vault.
-   */
+  // A single-file check cannot see a parent; this pass holds the whole vault, so it
+  // never tells a node that has a parent that it has none.
   suppressParentedExpectedFieldIssues(docIssues, docs);
   suppressLibraryKindIssues(docIssues);
   const problems = [];
@@ -211,16 +201,11 @@ function validateVaultTool({ repoRoot } = {}, loadedDocs = null) {
       files: [...entry.files],
     };
   }
-  // Atlas roadmap Track A #2 — vault→code path drift: frontmatter path:/elements:
-  // entries that no longer exist on disk. Read-only; resolves against repoRoot
-  // (default: active resolved repository root). Surfaced here because it is a vault-health signal the
-  // agent already runs validate_vault for at first-contact. The agent fixes via
-  // patch_concept (correct the path) or by removing the stale entry.
+  // Vault-to-code path drift: `path:`/`elements:` entries missing on disk, resolved
+  // against the active repository root. The agent fixes them with patch_concept.
   const driftRoot = repoRoot ? assertScanRootAllowed(repoRoot, 'repoRoot') : REPO_ROOT;
-  // **Do not measure against an ungrounded repo root.** Measuring would flag every
-  // file missing from a directory unrelated to the vault as "drift", turning a
-  // healthy vault into `needs_attention`. Not looking is not zero — it is *not
-  // looked at* — so it reports `checked: false` and how to make it look.
+  // Never measure against an ungrounded repo root: not looking is not zero, so it
+  // reports `checked: false` and how to make it look.
   const driftGrounded = Boolean(repoRoot) || REPO_ROOT_IS_GROUNDED;
   if (!driftGrounded) {
     return {
@@ -245,11 +230,9 @@ function validateVaultTool({ repoRoot } = {}, loadedDocs = null) {
     repoRoot: driftRoot,
     fileExists: existsSync,
   });
-  // Atlas roadmap Track A #3 — reconcile suggestion. A drifted path is usually a
-  // MOVE; when exactly one existing repo source file shares the missing file's
-  // basename, annotate the drift with `suggestedPath` so the fix is "did you
-  // mean X?". Only walk the repo when there IS drift (zero cost on a clean vault),
-  // and only suggest on a unique basename match (ambiguous names never guess).
+  // A drifted path is usually a move: when exactly one repo file shares its basename,
+  // add `suggestedPath`. Walk the repo only when there is drift; ambiguous names
+  // never guess.
   let drifts = drift.drifts;
   let suggestedCount = 0;
   if (drifts.length > 0) {
@@ -290,20 +273,9 @@ function validateVaultTool({ repoRoot } = {}, loadedDocs = null) {
 }
 
 /**
- * Evidence that names a folder rather than the one file to open.
- *
- * **Why it is here and not in `validateVaultDocument`.** The judgement asks the
- * filesystem whether one cited `path:` is a directory, and the answer only means
- * anything relative to a repository root. A per-document validator has neither,
- * so it would either guess a root — comparing this vault against whichever
- * directory the process started in, the exact mistake `REPO_ROOT_IS_GROUNDED`
- * exists to prevent — or say nothing. It says nothing, and this pass, which does
- * hold the root, answers instead. Merged per slug exactly like the dangling
- * references above, because both are whole-vault facts that no single file
- * reveals.
- *
- * Silent when the root is not grounded. Not looking is not the same as finding
- * nothing, and `pathDrift` already states which of the two happened.
+ * Evidence that names a folder rather than one file. Whole-vault because the answer
+ * needs a grounded repository root, which a per-document validator lacks
+ * (`REPO_ROOT_IS_GROUNDED`); silent when the root is not grounded.
  */
 function findFolderOnlyEvidenceIssues(docs, repoRoot) {
   const grounded = Boolean(repoRoot) || REPO_ROOT_IS_GROUNDED;
@@ -352,18 +324,9 @@ function evidencePathIndex(docs) {
 }
 
 /**
- * Declared dependencies the citing file never mentions.
- *
- * The same judgement the write door makes, read at a different moment: the door
- * asks about the edge somebody just added, this asks about every edge in the
- * vault. It is here rather than in `validateVaultDocument` for the reason the
- * folder-only pass above states — it opens a file on disk, and a path only means
- * something against a repository root — with one more reason of its own: it has
- * to know what the node at the *other* end of the edge cites, which no single
- * document reveals.
- *
- * Silent when the root is not grounded. `pathDrift` already says which of "found
- * nothing" and "did not look" happened.
+ * Declared dependencies the citing file never mentions: the write door's check,
+ * applied to every edge. It needs a grounded repository root and what the other end
+ * cites, so it is whole-vault and silent when the root is not grounded.
  */
 function findDependencyWitnessIssues(docs, repoRoot) {
   const grounded = Boolean(repoRoot) || REPO_ROOT_IS_GROUNDED;
@@ -390,14 +353,9 @@ function findDependencyWitnessIssues(docs, repoRoot) {
 }
 
 /**
- * Starter examples the vault has outgrown.
- *
- * Unlike the two passes above this one needs **no repository root and no
- * filesystem** — a slug, a kind and a title decide it — so it never goes silent,
- * and it runs on every call. It is still a whole-vault pass rather than a
- * per-document check for one reason: the question is not "is this a starter" but
- * "is this starter still the only node of its kind", and one document cannot see
- * the other.
+ * Starter examples the vault has outgrown. Needs no repository root, so it runs on
+ * every call; whole-vault because the question is whether a starter is still the
+ * only node of its kind.
  */
 function findStarterExampleIssues(docs) {
   return starterExampleFindings(

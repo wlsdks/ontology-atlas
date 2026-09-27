@@ -1,9 +1,5 @@
-// `ontology-atlas agent-files [--root path]` — read-only detection of which
-// AI tool reads which instruction file, plus six drift checks (CLAUDE.md ↔
-// AGENTS.md bridge · duplicated skill trees byte diff · duplicated agent-brief
-// byte diff · @reference existence · English-only agent text · AGENTS.md Codex
-// 32 KiB cap). Never converts, syncs, or repairs — this is
-// a workbench readout, not a rulesync-style converter (strategy-audit no-go).
+// `ontology-atlas agent-files [--root path]`: read-only detection of which AI tool reads which
+// instruction file (CLAUDE.md, AGENTS.md, skills), plus drift checks. Never converts, syncs or repairs.
 
 import { COLORS } from '../lib/colors.mjs';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
@@ -148,9 +144,8 @@ function readEntry(absPath, relativePath) {
 }
 
 /**
- * Resolve @reference candidates against the real filesystem so the pure
- * analyzer can judge existence. Only paths actually referenced are probed —
- * no broad disk scan.
+ * Resolves @reference candidates on disk so the pure analyzer can judge existence. Only referenced
+ * paths are probed, never a broad disk scan.
  */
 function resolveReferencedPaths(root, files) {
   const existing = new Set();
@@ -174,21 +169,8 @@ function resolveReferencedPaths(root, files) {
 }
 
 /**
- * Reports how close AGENTS.md is to the Codex cap **before** it is exceeded.
- *
- * This check used to be binary — over the cap fails, otherwise silence. But the
- * penalty at the moment of crossing is severe: the excess is **truncated with no
- * warning**, so later sections stop existing for Codex. Binary means a person
- * learns about that cliff only **after stepping off it**.
- *
- * And with only a few hundred bytes of headroom left, adding one ordinary
- * paragraph turns CI red. When a gate looks like it blocks normal work, the next
- * step is a workaround rather than a cleanup. So the verdict (is it over?) is left
- * alone and only the **distance** is reported first.
- *
- * Not changing the verdict is the point — the return shape and status are
- * unchanged, so the equivalence contract with the web mirror
- * (`views/docs-vault/lib/agent-files.ts`) does not wobble.
+ * Reports how close AGENTS.md is to the Codex cap before crossing it, since Codex truncates silently.
+ * The verdict and return shape stay equal to the web twin `src/entities/agent-files/model/agent-files.ts`.
  */
 const CODEX_HEADROOM_WARN_RATIO = 0.1;
 

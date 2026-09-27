@@ -94,7 +94,7 @@ describe("pickDominantOntologyKind", () => {
     ).toBeNull();
   });
 
-  it("prioritizes unknown when stub is present (검수 신호)", () => {
+  it("prioritizes unknown when a stub is present", () => {
     const dominant = pickDominantOntologyKind({
       byKind: { domain: 5, capability: 3, element: 2, unknown: 1 },
       total: 11,

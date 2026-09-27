@@ -1,21 +1,6 @@
 /**
- * Translates a `/ontology/?node=<id>` deep-link id — or any other raw vault slug form,
- * such as an agent heartbeat's `focus.ontologySlug` — into the `?p=` value `/topology`
- * already understands (`/ontology` is now a thin redirect to `/topology`).
- *
- * Ported from the retired `resolveOntologyDeeplinkNode`'s id normalization,
- * specifically the plural vault-folder prefix mapping (`capabilities/foo` →
- * `capability:foo`). `/topology`'s own resolver
- * (`resolveTopologySelectedOntologyNode`) already handles canonical `kind:slug` ids
- * and bare slugs through its `endsWith(':'+tail)` fallback, so this function's only
- * job is closing the ONE gap that resolver does not cover. It stays pure and
- * synchronous and needs no node list, so callers can act without waiting for
- * ontology data to load.
- *
- * It lives at the entity layer because two views share it: `views/ontology-redirect`
- * (the deep-link redirect) and `views/home` (agent-focus node resolution). FSD forbids
- * view→view imports, so the shared piece moved down a layer rather than duplicating
- * the vault-folder→kind map.
+ * A raw vault slug (`capabilities/foo`) → the topology `?p=` value (`capability:foo`); canonical and
+ * bare ids already resolve there. Pure, so callers need no node list.
  */
 
 const VAULT_FOLDER_TO_KIND: Record<string, string> = {
@@ -37,8 +22,6 @@ export function translateOntologyDeeplinkToTopologyParam(nodeId: string): string
     }
   }
 
-  // Already canonical (`capability:foo`), already bare (`foo`), or a nested
-  // evidence-style path (`cli/src/commands/foo.mjs`) — pass through
-  // unchanged; the topology resolver's own fallback chain covers those.
+  // Canonical, bare or evidence-path ids pass through; the topology resolver covers them.
   return normalized;
 }

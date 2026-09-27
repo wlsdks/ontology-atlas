@@ -14,20 +14,20 @@ const doc = (partial: Partial<ConceptDocFacts> = {}): ConceptDocFacts => ({
 });
 
 describe("detectMeaningGaps", () => {
-  it("뜻 없음은 검사가 적어 둔 definition-missing 일 때만", () => {
+  it("reports a missing meaning only for definition-missing findings", () => {
     expect(detectMeaningGaps({ kind: "capability" }, doc())).toEqual([]);
     expect(
       detectMeaningGaps({ kind: "capability" }, doc({ findings: ["definition-missing"] })),
     ).toEqual(["missing-definition"]);
   });
 
-  it("다른 소견은 뜻 없음으로 번지지 않는다", () => {
+  it("does not treat other findings as missing meaning", () => {
     expect(
       detectMeaningGaps({ kind: "capability" }, doc({ findings: ["boundary-missing"] })),
     ).toEqual([]);
   });
 
-  it("뜻이 먼저, 소속이 다음 — 순서는 사람이 답할 수 있는 순서다", () => {
+  it("orders meaning before membership", () => {
     expect(
       detectMeaningGaps(
         { kind: "capability" },
@@ -36,13 +36,13 @@ describe("detectMeaningGaps", () => {
     ).toEqual(["missing-definition", "missing-domain"]);
   });
 
-  it("도메인·프로젝트·문서는 상위가 없어도 온전하다", () => {
+  it("treats domains, projects and documents without a parent as complete", () => {
     expect(detectMeaningGaps({ kind: "domain" }, doc({ domainRef: null }))).toEqual([]);
   });
 });
 
 describe("detectMeaningFindingGaps", () => {
-  it("코드를 자리 이름으로 옮긴다 — 정해진 순서로", () => {
+  it("maps codes to slot names in a fixed order", () => {
     expect(
       detectMeaningFindingGaps(
         doc({
@@ -62,7 +62,7 @@ describe("detectMeaningFindingGaps", () => {
     ]);
   });
 
-  it("경계 양쪽이 비어도 한 줄이다 — 자리 하나에 문서 하나", () => {
+  it("emits one row when both boundaries are empty", () => {
     expect(
       detectMeaningFindingGaps(
         doc({ findings: ["boundary-missing", "boundary-missing"] }),
@@ -70,11 +70,11 @@ describe("detectMeaningFindingGaps", () => {
     ).toEqual(["missing-boundary"]);
   });
 
-  it("뜻 없음은 여기 오지 않는다 — 그 자리는 쓰는 줄이 따로 있다", () => {
+  it("excludes missing meaning, which has its own row", () => {
     expect(detectMeaningFindingGaps(doc({ findings: ["definition-missing"] }))).toEqual([]);
   });
 
-  it("모르는 코드는 조용히 넘긴다 — 없는 자리를 지어내지 않는다", () => {
+  it("skips unknown codes without inventing a slot", () => {
     expect(detectMeaningFindingGaps(doc({ findings: ["folder-only-evidence"] }))).toEqual([]);
   });
 });

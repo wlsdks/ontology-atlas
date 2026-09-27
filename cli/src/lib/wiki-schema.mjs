@@ -1,10 +1,7 @@
 import { loadMcpModule } from './mcp-module.mjs';
 
-// The MCP package owns the wiki page contract, exactly as it owns the vault schema and
-// the frontmatter validator. `docs/ONTOLOGY-ATLAS-SPEC.md` §11 is its public statement;
-// `tests/contract/wiki-page-schema.contract.test.ts` forces the web bundle's TypeScript
-// twin to agree with it on problem codes. The CLI executes the canonical file rather
-// than carrying a copy, so its arm of that agreement is guaranteed by execution.
+// The MCP package owns the wiki page contract (`docs/ONTOLOGY-ATLAS-SPEC.md` §11); the CLI executes that file,
+// and `tests/contract/wiki-page-schema.contract.test.ts` holds the web TypeScript twin to its problem codes.
 /** @type {typeof import('../../../mcp/src/wiki-schema.mjs')} */
 const wiki = await loadMcpModule('wiki-schema.mjs');
 

@@ -289,26 +289,13 @@ async function queryOntologyTool(args = {}) {
     );
     return buildMeaningRepairReviewPage(context.meaningRepairInput, args);
   }
-  // `maintenance_plan` is the one read operation that needs Git history: summary
-  // freshness compares a node's description against the membership it describes,
-  // and a compiled artifact carries neither clock. Computed only for that
-  // operation so every other query stays a pure snapshot read.
-  //
-  // The same walk answers a second question the snapshot cannot. A compiled
-  // artifact carries no bodies, so the empty-bridge audit and the meaning-gap
-  // review items (`definition_missing`, `boundary_missing`,
-  // `epistemic_exclusion`) had nothing to read on this path and went silent —
-  // correct behaviour for "no bodies were handed over", and the wrong answer
-  // for an unattended round that only ever calls this read operation and would
-  // therefore never see a node whose body is still the starter scaffold. One
-  // load, both answers, using the documents already read for compilation.
+  // `maintenance_plan` alone needs Git history (summary freshness) and bodies (the
+  // empty-bridge audit and meaning-gap items), which a compiled artifact lacks, so
+  // only that operation loads them, sharing the documents read for compilation.
   const maintenanceDocs =
     args.operation === 'maintenance_plan' ? loadedDocs : null;
-  // `growth_plan` needs the same bodies for a different question. Its
-  // `nextReads` group reads each node's `## Uncertainty` section and returns
-  // the reads it asks for, and a compiled artifact carries no bodies, so on the
-  // snapshot path the group could only report that it was handed nothing. One
-  // load is shared with compilation, as it is for the maintenance read.
+  // `growth_plan`'s `nextReads` group needs the same bodies to read each node's
+  // `## Uncertainty` section; one load is shared with compilation.
   const growthDocs = args.operation === 'growth_plan' ? loadedDocs : null;
   const maintenanceFreshness = maintenanceDocs ? buildSummaryFreshness(maintenanceDocs) : null;
   const agentBriefInput = args.operation === 'agent_brief'
@@ -338,17 +325,8 @@ async function queryOntologyTool(args = {}) {
     : ['health', 'workspace_brief'].includes(args.operation)
       ? attachMeaningReadiness(validatedResult, artifact, args, loadedDocs)
       : validatedResult;
-  /*
-   * **Count it, do not maintain it** (measured 2026-08-17).
-   *
-   * Two places attach checks (`attachVaultValidation`, `attachProjectMeaning`) and
-   * only the first hand-incremented `healthChecks`. So one response said
-   * "7 health checks" while carrying 8.
-   *
-   * Asking every attachment site to keep a counter in step means the next person
-   * forgets again — so count once, at the end, and the whole class disappears.
-   * Gate: `cli/src/lib/brief-self-consistency.test.mjs`.
-   */
+  // Count health checks once at the end rather than at each attachment site, or the
+  // count drifts from the checks carried. Gate: `cli/src/lib/brief-self-consistency.test.mjs`.
   let result = Array.isArray(attached.health?.checks) && attached.readiness
     ? { ...attached, readiness: { ...attached.readiness, healthChecks: attached.health.checks.length } }
     : attached;
@@ -391,30 +369,20 @@ async function queryOntologyTool(args = {}) {
 }
 
 /**
- * Translates a remedy id into **something the reader can act on**.
- *
- * A bare code like `assessment_input_invalid` used to be the whole message. The
- * reader is a person or an agent, and neither can do anything with a code alone.
- * A vault straight out of `init` in particular received "invalid" here, so
- * someone who had done nothing wrong concluded they had broken something.
+ * Translates a remedy id into something the reader, a person or an agent, can act
+ * on; a bare code such as `assessment_input_invalid` gives neither a next step.
  */
-// One gap id, two different situations (2026-08-17 (28) named the missing
-// receipt `competency_not_authored` in both). When the project document already
-// carries a parseable `## Competency answers` section, the only missing thing
-// is the finalize receipt, and the instruction must say exactly that: a person
-// who wrote all five answers must never be told to write them. The generic
-// hint below stays for the case where the section is absent or does not parse.
+// One gap id, two situations: when the project document already has a parseable
+// `## Competency answers` section only the finalize receipt is missing, so a person
+// who wrote all five answers is never told to write them.
 const MEANING_AUTHORED_NOT_FINALIZED_HINT =
   'This project\'s five competency answers are already written, but this vault '
   + 'has no finalize receipt for them. Nothing is broken. Call '
   + 'finalize_project_meaning to record the receipt.';
 
 const MEANING_NEXT_ACTION_HINTS = Object.freeze({
-  // Never assert "the section is missing" — a vault can have the section and
-  // simply not have finalised it (this repository is one), and telling that user
-  // to "add it" is wrong guidance. The parseable-section case is answered by
-  // MEANING_AUTHORED_NOT_FINALIZED_HINT above, so this text covers a section
-  // that is absent or does not parse.
+  // Never claim the section is missing: a vault can have it without having
+  // finalised it. This text covers a section that is absent or does not parse.
   author_competency_answers:
     'This project\'s five competency answers have not been finalized yet. '
     + 'Nothing is broken. Fill in the `## Competency answers` section of the '
@@ -483,8 +451,7 @@ function meaningReadinessCheck(artifact, loadedDocs) {
               },
             }
           : {}),
-        // The remedy was already computed and was being discarded here
-        // (2026-08-17), so the reader — person or agent — got only an error code.
+        // Keep the computed remedy so the reader gets more than an error code.
         nextAction: context.meaningAssessment?.nextAction?.id ?? 'repair_assessment_input',
         // Whether the `## Competency answers` section parses. This picks the
         // honest hint when the receipt is missing: written-but-not-finalized
@@ -594,12 +561,10 @@ function meaningSourceFromProjectSource(projectSource) {
 }
 
 /**
- * One project's containment scope, its documents, and its graph hash.
- * Shared by the meaning assessment and the source connect tools so the two can
- * never disagree about what "this project" contains — the hash stamped into a
- * receipt and the witnesses checked against the source must come from the same
- * boundary. A bounded/partial scope yields `graphHash: null`, which every
- * caller treats as fail-closed.
+ * One project's containment scope, documents and graph hash, shared by the meaning
+ * assessment and the source connect tools so a receipt's hash and its checked
+ * witnesses come from the same boundary. A partial scope yields `graphHash: null`,
+ * which every caller treats as fail-closed.
  */
 function projectSourceScope(artifact, projectSlug, allDocs = null) {
   let scope = null;

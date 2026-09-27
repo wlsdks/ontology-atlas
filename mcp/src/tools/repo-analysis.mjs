@@ -68,10 +68,9 @@ function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, sourceReads, pro
   const sourceDigest = proposal == null
     ? undefined
     : composeSourceDigest(sourceBefore, sourceEvidence);
-  // A proposal may cite up to four exact endpoints already observable through
-  // infer_imports. Recompute that bounded, read-only receipt in the proposal
-  // call so validation does not depend on hidden state from an earlier
-  // index_project/infer_imports call.
+  // A proposal may cite up to four exact endpoints observable through infer_imports;
+  // recompute that bounded receipt here so validation never depends on hidden state
+  // from an earlier call.
   const proposalImportEvidence = proposal == null
     ? undefined
     : inferImports(target, { ignore });
@@ -136,8 +135,8 @@ function inspectArchitectureTool({ rootPath, profileSlug, maxFiles } = {}) {
     throw error;
   }
   const imports = inferImports(target, { maxFiles });
-  // Measured stamp (2026-08-27 decision, point 2): when the scan ran, which tool version measured,
-  // and the exact source state it saw. Reading the source inspection is still side effect 0.
+  // Measured stamp: when the scan ran, which tool version measured, and the exact
+  // source state it saw.
   const measured = buildArchitectureMeasuredStamp(inspectProjectSource(target), {
     toolName: 'ontology-atlas',
     toolVersion: SERVER_VERSION,
@@ -291,19 +290,15 @@ function inferImportsTool({
     };
   }
 
-  // Atlas roadmap Track A #1 — reconcile the code-derived module edges against
-  // the vault's compiled depends_on edges so the agent gets "exactly what to
-  // review", not a raw firehose. Read-only; raw imports never land directly.
-  // Guarded: a missing/unreadable vault must never fail the import scan.
+  // Reconcile code-derived module edges against the vault's compiled depends_on
+  // edges so the agent reviews exactly the difference. Read-only; a missing or
+  // unreadable vault never fails the import scan.
   if (reconcile !== false) {
     try {
       const artifact = compileOntology(loadVaultDocs(VAULT_ROOT), { includeIndexes: true });
       const nodeSlugs = new Set((artifact.nodes ?? []).map((n) => n.slug).filter(Boolean));
-      // Where each node says its implementation lives — used to decide **whether
-      // to defer judgement**. Calling a relation implemented in a language the
-      // scanner cannot read (Rust and friends) "absent from the code" makes an
-      // agent delete a correct relation (measured on this repository itself,
-      // 2026-08-17: 3 of 3 were that case).
+      // Where each node says its implementation lives, to defer judgement on languages
+      // the scanner cannot read rather than calling a correct relation absent from code.
       const pathBySlug = Object.create(null);
       for (const node of artifact.nodes ?? []) {
         if (node?.slug && typeof node.path === 'string') pathBySlug[node.slug] = node.path;
@@ -317,9 +312,7 @@ function inferImportsTool({
         scannedExtensions: result.coverage?.supportedExtensions,
       });
       result.reconciliation = r;
-      // Factual, never-lie hint: only report "in sync" when there is genuinely
-      // no drift in any bucket (the prior version falsely claimed "match" while
-      // silently swallowing real edges — the bug the gate caught).
+      // Report "in sync" only when no bucket has drift.
       const parts = [];
       if (r.inCodeMissingFromVault.length > 0) {
         parts.push(
@@ -333,9 +326,8 @@ function inferImportsTool({
       }
       if (r.inVaultNotInCode.length > 0) {
         parts.push(
-          // Never assert "stale". An import is **one kind of evidence**, and a
-          // dependency may be a spawned process or a config pointer instead — all
-          // three of this repository's own edges were that case (2026-08-17).
+          // Never assert "stale": an import is one kind of evidence, and a dependency may be
+          // a spawned process or a config pointer instead.
           `${r.inVaultNotInCode.length} vault depends_on edge(s) have no matching code import. An import is only one kind of evidence: a dependency can be a process spawn, a config reference, or a runtime contract. Read the code before treating any of these as stale`,
         );
       }

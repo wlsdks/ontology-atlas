@@ -10,9 +10,8 @@ function press(init: KeyboardEventInit) {
 }
 
 /**
- * ⌘K and ⇧⌘K are one key for one search (2026-09-26): the shortcut sheet teaches ⌘K alone, and a
- * hand that learned ⇧⌘K lands in the same place. Both used to miss here — `event.key` is `K` with
- * Shift held, and a jamo under a Korean input source.
+ * Cmd+K and Shift+Cmd+K open one search; the handler must accept `K` with Shift and a Korean-input
+ * jamo.
  */
 describe("useGlobalSearchHotkey", () => {
   it("opens on ⌘K", () => {

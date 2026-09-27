@@ -18,7 +18,7 @@ import {
   serializeRoundState,
 } from './round-record';
 
-/** Local-time constructor so the expectations read like the wall clock the spec talks about. */
+/** Local-time constructor, so expectations read as wall-clock times. */
 const local = (y: number, m: number, d: number, h = 0, min = 0) => new Date(y, m - 1, d, h, min, 0, 0);
 
 function round(overrides: Partial<RoundRecord> = {}): RoundRecord {
@@ -38,7 +38,7 @@ function round(overrides: Partial<RoundRecord> = {}): RoundRecord {
 describe('cadence', () => {
   it('an hourly round runs on the hour, strictly after the moment it is asked from', () => {
     expect(nextDueAt({ every: 'hour' }, local(2026, 9, 17, 9, 2))).toEqual(local(2026, 9, 17, 10, 0));
-    // Exactly on the hour: the *next* hour, so a pass that ran at 10:00 does not run again at 10:00.
+    // Exactly on the hour yields the next hour, so a 10:00 pass does not repeat.
     expect(nextDueAt({ every: 'hour' }, local(2026, 9, 17, 10, 0))).toEqual(local(2026, 9, 17, 11, 0));
   });
 
@@ -58,7 +58,7 @@ describe('cadence', () => {
   });
 
   it('a missed window catches up once: the next due time after a late run is in the future', () => {
-    // Slept through 01:00..08:00; the runner catches up at 08:55 and asks for the next due time.
+    // Slept through 01:00..08:00; catching up at 08:55 yields one next due time.
     const next = nextDueAt({ every: 'hour' }, local(2026, 9, 17, 8, 55));
     expect(next).toEqual(local(2026, 9, 17, 9, 0));
   });
@@ -78,11 +78,7 @@ describe('cadence', () => {
   });
 
   it('a daylight-saving day keeps the wall clock, not a fixed number of milliseconds', () => {
-    /*
-     * 2026-03-29 is the European spring-forward; 2026-11-01 is the US fall-back. The grid is
-     * built with local date components, so the boundary after either change is still a whole
-     * number of hours on the wall clock rather than one drifted by the offset.
-     */
+    /* Spring-forward (2026-03-29, EU) and fall-back (2026-11-01, US) still land on whole wall-clock hours. */
     for (const day of [[2026, 3, 29], [2026, 11, 1]] as const) {
       const from = local(day[0], day[1], day[2], 9, 2);
       const next = nextDueAt({ everyMinutes: 120 }, from);
@@ -100,7 +96,7 @@ describe('cadence', () => {
     expect(cadenceMinutes({ every: '6h' })).toBe(360);
     expect(cadenceMinutes({ everyMinutes: 10 })).toBe(10);
     expect(cadenceMinutes({ daily: '09:00', weekdaysOnly: false })).toBeNull();
-    // Round-tripped through the file, an interval is still the interval it was.
+    // An interval survives a file round trip.
     const text = serializeRoundState({ v: 1, rounds: [round({ cadence: { everyMinutes: 10 } })] });
     expect(parseRoundState(text).state.rounds[0].cadence).toEqual({ everyMinutes: 10 });
     expect(parseRoundState(JSON.stringify({ v: 1, rounds: [round({ cadence: { everyMinutes: 0 } })] })).status).toBe('malformed');

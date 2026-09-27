@@ -51,32 +51,24 @@ export async function runAgentBrief(args) {
     );
     return 2;
   }
-  // Slice 0 magic-moment instrumentation (PRODUCT-PLAN-2026-07.md §4/§9) —
-  // this CLI command is the cheapest safe proxy for "an agent read the vault
-  // and answered" (see lib/telemetry.mjs for why the MCP-side read tools
-  // themselves are intentionally NOT instrumented). Best-effort only — a
-  // telemetry write failure must never break the actual agent-brief output.
+  // Telemetry proxy for an agent reading the vault (docs/plans/PRODUCT-PLAN-2026-07.md §4/§9, lib/telemetry.mjs).
+  // Best-effort: a telemetry write failure must never break the brief.
   try {
     stampMomentIfFirst(vaultRoot, { source: 'agent-brief' });
   } catch {
     // local-only instrumentation is advisory; ignore write failures.
   }
   if (verifyFallbacks) {
-    const effectiveFallbackTimeoutMs = fallbackTimeoutMs ?? agentFallbackTimeoutMs();
-    if (effectiveFallbackTimeoutMs instanceof Error) {
-      process.stderr.write(`${COLORS.red}error${COLORS.reset}  ${effectiveFallbackTimeoutMs.message}\n`);
-      printUsage();
-      return 1;
-    }
-    const effectiveFallbackSlowMs = fallbackSlowMs ?? agentFallbackSlowMs();
-    if (effectiveFallbackSlowMs instanceof Error) {
-      process.stderr.write(`${COLORS.red}error${COLORS.reset}  ${effectiveFallbackSlowMs.message}\n`);
-      printUsage();
-      return 1;
-    }
-    const effectiveFallbackConcurrency = fallbackConcurrency ?? agentFallbackConcurrency();
-    if (effectiveFallbackConcurrency instanceof Error) {
-      process.stderr.write(`${COLORS.red}error${COLORS.reset}  ${effectiveFallbackConcurrency.message}\n`);
+    const effectiveFallbackTimeoutMs = fallbackTimeoutMs
+      ?? positiveIntegerFromEnv(FALLBACK_TIMEOUT_ENV, '--fallback-timeout-ms', DEFAULT_FALLBACK_TIMEOUT_MS);
+    const effectiveFallbackSlowMs = fallbackSlowMs
+      ?? positiveIntegerFromEnv(FALLBACK_SLOW_ENV, '--fallback-slow-ms', DEFAULT_FALLBACK_SLOW_MS);
+    const effectiveFallbackConcurrency = fallbackConcurrency
+      ?? positiveIntegerFromEnv(FALLBACK_CONCURRENCY_ENV, '--fallback-concurrency', DEFAULT_FALLBACK_CONCURRENCY);
+    const settingError = [effectiveFallbackTimeoutMs, effectiveFallbackSlowMs, effectiveFallbackConcurrency]
+      .find((setting) => setting instanceof Error);
+    if (settingError) {
+      process.stderr.write(`${COLORS.red}error${COLORS.reset}  ${settingError.message}\n`);
       printUsage();
       return 1;
     }
@@ -86,10 +78,8 @@ export async function runAgentBrief(args) {
       slowThresholdMs: effectiveFallbackSlowMs,
       concurrency: effectiveFallbackConcurrency,
     });
-    // --exit-zero only silences the readiness-driven part of the exit code
-    // (see readinessExitCode below) — an actual failing fallback command is
-    // a real command failure, not an advisory readiness signal, so it still
-    // exits non-zero even with --exit-zero.
+    // --exit-zero silences only the readiness part of the exit code; a fallback command that
+    // failed to run is a real failure and still exits non-zero.
     return Math.max(readinessExitCode(result, exitZero), report.failed > 0 ? 1 : 0);
   }
   if (json) {
@@ -108,18 +98,8 @@ export async function runAgentBrief(args) {
   else render(result);
   const exitCode = readinessExitCode(result, exitZero);
   /*
-   * **Say that exit 1 is not a failure, at the moment it is emitted** (walkthrough
-   * measurement 2026-08-11).
-   *
-   * This exit code signals «the graph is not ripe yet», not «the command failed».
-   * The `readinessExitCode` comment above already records that, and so does
-   * `--help`. But **the screen that actually emits 1 never said it.** A person does
-   * not reread `--help`, and an agent seeing 1 usually stops — which is exactly the
-   * misreading that comment itself recorded.
-   *
-   * So the contract is untouched and one line is added to the screen: why it is 1,
-   * and where to go. Not added to JSON, prompt, or pack output — those are read by
-   * machines, which look at `status` and `readiness` directly.
+   * Exit 1 here means the graph is not ripe, not a failure; say so on the screen that emits it,
+   * because people and agents do not reread --help. JSON, prompt and pack output stay machine-only.
    */
   if (exitCode === 1 && !exitZero) {
     process.stdout.write(
@@ -131,26 +111,16 @@ export async function runAgentBrief(args) {
 }
 
 /**
- * agent-brief's non-zero exit encodes graph *readiness* (`needs_attention` /
- * `needs_shape`), not "the command failed" — the call still ran and printed
- * valid data. Naive `agent-brief && next-step` scripting misreads that as a
- * failure the first time a vault has any warning (agent-persona-2026-07 QA
- * friction #5). `--exit-zero` opts into always exiting 0 for scripting that
- * wants to read `status`/`readiness` from JSON output itself instead of the
- * process exit code — it does not silence real parse/MCP-call failures
- * (those still return 1/2 above, before this is ever reached).
+ * The non-zero exit encodes graph readiness, not failure. `--exit-zero` always exits 0 for scripts that
+ * read `status`/`readiness` from JSON; parse and MCP-call failures still return 1/2 above.
  */
 export function readinessExitCode(result, exitZero) {
   return exitZero ? 0 : agentBriefExitCode(result);
 }
 
 /**
- * What `--verify-fallbacks --json` prints.
- *
- * Exported so the invariant can be checked without spawning anything. The first version of this
- * test ran the real CLI against the real vault, which needs `mcp/node_modules` — and the fastest
- * CI job deliberately does not install it, so the test died there while passing locally. A gate
- * that only holds on a developer's machine is not a gate.
+ * What `--verify-fallbacks --json` prints. Pure, so the invariant is testable without
+ * `mcp/node_modules`, which the fastest CI job does not install.
  */
 export function fallbackReportPayload(report, result) {
   return { ...report, status: result?.status ?? null, readiness: result?.readiness ?? null };
@@ -160,14 +130,8 @@ async function verifyCliFallbacks(result, vaultRoot, { json = false, timeoutMs =
   const report = await buildFallbackVerificationReport(result, vaultRoot, { timeoutMs, slowThresholdMs, concurrency });
   if (json) {
     /*
-     * ⚠️ **The readiness verdict travels with the report, because it is what decides the exit code.**
-     *
-     * `readinessExitCode`'s note says the one-line explanation is deliberately kept out of JSON
-     * "read by machines, which look at `status` and `readiness` directly". That is true of the
-     * plain `--json` output and false of this one: the fallback report carries neither field, so a
-     * run that printed `ok: true, failed: 0` and exited 1 gave no visible reason anywhere.
-     * Measured 2026-08-26 on this repository's own dogfood vault, whose readiness is
-     * `needs_attention` at 75 — the exit was correct and unattributable at the same time.
+     * The readiness verdict travels with the report because it decides the exit code; this report
+     * carries neither `status` nor `readiness` otherwise, so an exit 1 would have no visible reason.
      */
     process.stdout.write(JSON.stringify(fallbackReportPayload(report, result), null, 2) + '\n');
     return report;
@@ -240,18 +204,9 @@ async function verifyOneCliFallback(raw, vaultRoot, { timeoutMs, slowThresholdMs
     const child = await spawnFallbackCommand(parsed.args, timeoutMs);
     const elapsedMs = Math.max(0, Math.round(performance.now() - startedAt));
     const timedOut = child.timedOut === true;
-    // Fallback CLI commands follow one exit-code convention: exit 2 (or a crash)
-    // means the MCP call/parse itself FAILED; exit 1 is an ADVISORY result — the
-    // command ran and printed valid data, it just reports a negative/empty or
-    // needs-attention answer (health needs_attention, `all-paths`/`explain`/
-    // `path`/`cycles` "no path / unrelated / none found", etc.). On a fresh or
-    // sparse vault (e.g. the 5-node starter, whose example nodes have no
-    // relations yet) those advisory exit-1s are the CORRECT answer, not a run
-    // failure. The gate proves the commands EXECUTE, so only a real run failure
-    // — timeout, kill signal, spawn error, exit >= 2, or an exit-1 that wrote to
-    // stderr (a usage/arg error, not an advisory result on stdout) — fails it.
-    // Treating every exit 1 as failure made the documented setup gate impossible
-    // to pass on any vault that isn't fully connected and perfectly healthy.
+    // Exit 2 (or a crash) means the MCP call failed; exit 1 is an advisory answer (no path, needs
+    // attention) that is correct on a sparse vault. Only a timeout, signal, spawn error, exit >= 2,
+    // or an exit 1 that wrote to stderr fails the gate.
     const wroteToStderr = ((child.stderr ?? '').trim().length > 0);
     const advisoryResult =
       !timedOut &&
@@ -344,32 +299,12 @@ function spawnFallbackCommand(args, timeoutMs) {
   });
 }
 
-function agentFallbackTimeoutMs(env = process.env) {
-  const raw = env[FALLBACK_TIMEOUT_ENV];
-  if (raw == null || raw === '') return DEFAULT_FALLBACK_TIMEOUT_MS;
-  const parsed = parsePositiveIntegerFlag(FALLBACK_TIMEOUT_ENV, raw);
+function positiveIntegerFromEnv(envName, flagName, defaultValue, env = process.env) {
+  const raw = env[envName];
+  if (raw == null || raw === '') return defaultValue;
+  const parsed = parsePositiveIntegerFlag(envName, raw);
   if (parsed instanceof Error) {
-    return new Error(`${parsed.message}. Received: ${JSON.stringify(String(raw))}. Set ${FALLBACK_TIMEOUT_ENV}=N or --fallback-timeout-ms N.`);
-  }
-  return parsed;
-}
-
-function agentFallbackSlowMs(env = process.env) {
-  const raw = env[FALLBACK_SLOW_ENV];
-  if (raw == null || raw === '') return DEFAULT_FALLBACK_SLOW_MS;
-  const parsed = parsePositiveIntegerFlag(FALLBACK_SLOW_ENV, raw);
-  if (parsed instanceof Error) {
-    return new Error(`${parsed.message}. Received: ${JSON.stringify(String(raw))}. Set ${FALLBACK_SLOW_ENV}=N or --fallback-slow-ms N.`);
-  }
-  return parsed;
-}
-
-function agentFallbackConcurrency(env = process.env) {
-  const raw = env[FALLBACK_CONCURRENCY_ENV];
-  if (raw == null || raw === '') return DEFAULT_FALLBACK_CONCURRENCY;
-  const parsed = parsePositiveIntegerFlag(FALLBACK_CONCURRENCY_ENV, raw);
-  if (parsed instanceof Error) {
-    return new Error(`${parsed.message}. Received: ${JSON.stringify(String(raw))}. Set ${FALLBACK_CONCURRENCY_ENV}=N or --fallback-concurrency N.`);
+    return new Error(`${parsed.message}. Received: ${JSON.stringify(String(raw))}. Set ${envName}=N or ${flagName} N.`);
   }
   return parsed;
 }
@@ -391,22 +326,13 @@ function stripAnsi(value) {
 }
 
 /**
- * Extracts **everything after the subcommand** from a one-line fallback command.
- *
- * 2026-07-29: the commands this pack printed read `ontology-atlas …`. That name is
- * installed nowhere (registry publication was abandoned, `docs/DECISIONS.md`
- * 2026-07-27), so copying all 19 lines produced `command not found` — under a
- * header reading "Run these commands". Moving to `cliInvocation()` means this
- * parser must accept the new form too: `node <abs>/cli/src/index.mjs <sub> …`.
- *
- * The old form is still accepted — a user may paste older output, and refusing it
- * here would leave `--verify-fallbacks` unable to read its own pack.
+ * Extracts everything after the subcommand from `node <abs>/cli/src/index.mjs <sub>` or the legacy
+ * `ontology-atlas <sub>` (installed nowhere, docs/DECISIONS.md 2026-07-27), so older output still parses.
  */
 function parseFallbackCommand(command) {
   const tokens = splitShellWords(command);
   if (tokens.length === 0) return { error: 'empty fallback command' };
   if (tokens[0] === 'ontology-atlas') return { args: tokens.slice(1) };
-  // `node <entry> <sub> …` — entry may be an absolute or a relative path.
   if (tokens[0] === 'node' && tokens.length >= 2 && /index\.mjs$/.test(tokens[1])) {
     return { args: tokens.slice(2) };
   }
@@ -454,11 +380,8 @@ function formatGraphDbCliPack(result, vaultRoot) {
   ].join('\n');
 }
 
-// The MCP handoff prompt is generated before the project-meaning overlay is
-// attached in the server boundary. Keep the copy-only CLI surface truthful by
-// replacing its single readiness line with the categorical result returned by
-// the same call. This avoids a stale "healthy/ready/100" prompt on an
-// unassessed or invalid meaning graph.
+// The MCP prompt is generated before the project-meaning overlay is attached, so replace its
+// readiness line with this call's categorical result; otherwise it could claim an unassessed graph is ready.
 function normalizeHandoffPrompt(result) {
   const readiness = result?.readiness ?? {};
   const graph = result?.graph ?? {};
@@ -909,10 +832,7 @@ function render(result) {
   }
 }
 
-/**
- * The diagnosis and the command that resolves it, on the same block. A named
- * `nextAction` with nothing to run is what this readout used to print.
- */
+/** The diagnosis and the command that resolves it, in one block. */
 export function formatProjectSourceSummary(projectSource, remedy = null) {
   if (!projectSource || typeof projectSource !== 'object') return [];
   const gap = projectSource.topGap?.id
@@ -1071,20 +991,14 @@ function parseArgs(args) {
   if (flags.compact && (flags.verifyFallbacks || flags.graphDbPack)) {
     return { error: `--compact cannot be used with ${flags.verifyFallbacks ? '--verify-fallbacks' : '--graph-db-pack'}` };
   }
-  if (flags.fallbackTimeoutMs instanceof Error) {
-    return {
-      error: `${flags.fallbackTimeoutMs.message}. Received: ${JSON.stringify(String(flags.fallbackTimeoutRaw))}. Set --fallback-timeout-ms N or ${FALLBACK_TIMEOUT_ENV}=N.`,
-    };
-  }
-  if (flags.fallbackSlowMs instanceof Error) {
-    return {
-      error: `${flags.fallbackSlowMs.message}. Received: ${JSON.stringify(String(flags.fallbackSlowRaw))}. Set --fallback-slow-ms N or ${FALLBACK_SLOW_ENV}=N.`,
-    };
-  }
-  if (flags.fallbackConcurrency instanceof Error) {
-    return {
-      error: `${flags.fallbackConcurrency.message}. Received: ${JSON.stringify(String(flags.fallbackConcurrencyRaw))}. Set --fallback-concurrency N or ${FALLBACK_CONCURRENCY_ENV}=N.`,
-    };
+  for (const [flag, value, raw, envName] of [
+    ['--fallback-timeout-ms', flags.fallbackTimeoutMs, flags.fallbackTimeoutRaw, FALLBACK_TIMEOUT_ENV],
+    ['--fallback-slow-ms', flags.fallbackSlowMs, flags.fallbackSlowRaw, FALLBACK_SLOW_ENV],
+    ['--fallback-concurrency', flags.fallbackConcurrency, flags.fallbackConcurrencyRaw, FALLBACK_CONCURRENCY_ENV],
+  ]) {
+    if (value instanceof Error) {
+      return { error: `${value.message}. Received: ${JSON.stringify(String(raw))}. Set ${flag} N or ${envName}=N.` };
+    }
   }
   const vaultResult = resolveExclusiveVaultArg({ vault: flags.vault, positional });
   if (vaultResult.error) return vaultResult;

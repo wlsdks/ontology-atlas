@@ -25,79 +25,31 @@ import { Link } from '@/i18n/navigation';
 import { controlClass } from '@/shared/ui/control-class';
 
 /**
- * **One page of gateway reading material** — `/guide` and `/changelog` share this view.
- *
- * This is where someone reads who wants to judge before downloading. The gateway itself has to
- * earn trust in five seconds, so its sentences are short, and until this page there was nowhere
- * for anyone who wanted more.
- *
- * **Why "like a blog" is the right call for prose.** The map, the docs surface, and the editor are
- * **work surfaces** — dense, with a lot of chrome. This is a **reading surface**, so three things
- * change:
- *
- * 1. **65–75 characters per line** (`--measure-prose`). The workbench's full-width column makes the
- *    eye lose the first character of the next line in prose. ⚠️ That sentence was aspiration
- *    rather than measurement until 2026-09-11: the token read `70ch`, and `ch` is the advance of
- *    the digit `0` (0.5957em in Pretendard Variable) while a proportional Latin average is only
- *    0.4588em, so `70ch` drew **91** characters per line here, not 65–75. The token is now `60ch`
- *    = 78 characters, and `tests/e2e/prose-measure-calibration.spec.ts` keeps the number and the
- *    sentence together. Full derivation: `app/globals.css`, the `--measure-prose` block.
- * 2. **`leading-prose` for the body** — the pair for text a person wrote (`.claude/rules/design.md`
-    ["line height is the pair of size"], line height is the pair of size). UI text's tight leading is
- *    suffocating in a paragraph.
- * 3. **Large gaps between sections** — this is read in order rather than scanned, so rhythm carries
- *    the hierarchy in place of a table of contents.
- *
- * The palette is unchanged: neutrals plus a single indigo. "Pretty like a blog" does not open a new
- * colour or a gradient — the charter applies to this surface too.
+ * One reading page for `/guide` and `/changelog`: the prose measure (`--measure-prose`, derived in
+ * `app/globals.css`, held by `tests/e2e/prose-measure-calibration.spec.ts`), `leading-prose`
+ * (`.claude/rules/design.md`), wide section gaps, and the neutrals-plus-indigo palette.
  */
 export interface GatewayDocPageProps {
-  /** Vault slug — `GUIDE` or `CHANGELOG`. */
+  /** Vault slug: `GUIDE` or `CHANGELOG`. */
   slug: string;
   /** The screen title, used instead of the vault document's `# H1` because it must be translated. */
   title: string;
-  /**
-   * One line under the title. **Not drawn when absent.**
-   *
-   * The guide's subtitle introduces the guide **as a whole**, so repeating it on every chapter makes
-   * it ink competing with each chapter's own title — it is given only on the first chapter.
-   */
+  /** One line under the title, only on the first chapter, where it introduces the guide as a whole. */
   lead?: string;
-  /**
-   * How many `## ` sections to draw; the whole document when omitted.
-   *
-   * Given only for documents that keep growing, such as CHANGELOG — the guide is read whole and must
-   * not be truncated.
-   */
+  /** How many `## ` sections to draw, only for growing documents such as CHANGELOG; the guide is read whole. */
   recentSectionLimit?: number;
   /** The source file's repo-relative path — used for "the rest is here" when truncated. */
   sourcePath: string;
   /**
-   * One line of notice above the body. **Not drawn when absent.**
-   *
-   * Its only caller today is the guide's unknown-segment fallback: static export makes 404 routing
-   * limited, so the first chapter is drawn instead, and **not saying that a substitution happened**
-   * turns it into a misdelivery pretending to be that address's document (measured in a 2026-08-14
-   * walkthrough). The page passes the translated string — this view does not know the locale.
+   * One notice line above the body, for the guide's unknown-segment fallback: static export cannot
+   * route real 404s, and an unstated substitution is a misdelivery. The page passes translated text.
    */
   notice?: string;
-  /**
-   * Whether to draw the table of contents on the left — true only for documents that are **several
-   * chapters as one set**, such as the guide.
-   *
-   * The changelog is a single page, so it has no table of contents. A list with one item is ink,
-   * not a guide.
-   */
+  /** The left table of contents, only for a set of chapters such as the guide. */
   sidebar?: boolean;
   /** Which chapter is current in the table of contents — used only when `sidebar` is true. */
   activeSegment?: string;
-  /**
-   * Whether to draw **this document's own `## ` entries** on the left (for the changelog).
-   *
-   * A different thing from the guide's `sidebar`: that one lists **several documents** while this
-   * lists entries **inside one document**, so its links are anchors rather than routes. Folding both
-   * into one flag would make "table of contents" mean two things.
-   */
+  /** This document's own `## ` entries on the left (the changelog): anchors inside one document, unlike `sidebar`'s routes. */
   entryNav?: boolean;
 }
 
@@ -113,40 +65,20 @@ export function GatewayDocPage({
   entryNav = false,
 }: GatewayDocPageProps) {
   const t = useTranslations('gatewayNav');
-  /*
-   * The body is the English source document on every locale (authored prose is English, and
-   * the guide and changelog are vault documents, not translated copies). Under a Korean title
-   * that read as a broken translation: /ko/guide had 0 Hangul in 2,023 body characters
-   * (measured 2026-09-25). So the page says so in one line, and the article carries
-   * `lang="en"` so a screen reader switches voice instead of reading English with a Korean one.
-   */
+  /* The body is the English source on every locale, so the page says so and the article carries `lang="en"` for screen readers. */
   const locale = useLocale();
   const bodyIsForeign = locale !== 'en';
 
   const { body, omittedSections } = useMemo(() => {
     const raw = readVaultDoc(slug);
     if (raw === null) return { body: '', omittedSections: 0 };
-    /*
-     * Strip the vault document's leading `# H1` — the screen title already occupies that slot, and a
-     * translated title standing beside the original says the same thing twice.
-     */
+    /* The screen title occupies the `# H1` slot, so the document's own is stripped. */
     const withoutH1 = raw.replace(/^#\s+.*(\r?\n)+/, '');
-    /*
-     * Strip the changelog's (entryNav) leading blockquote too — it is meta addressed to repository
-     * contributors about how to use this file, and the screen's lead already says the same thing in
-     * the user's language (measured 2026-08-13: the first paragraph of the KO page was an English
-     * maintenance note). The trailing `---` rule is part of the same chunk. With no blockquote,
-     * nothing is stripped.
-     */
+    /* The changelog's leading blockquote and `---` are contributor meta the translated lead already covers. */
     const withoutPreamble = entryNav
       ? separateCategoryLines(withoutH1.replace(/^(?:>.*(?:\r?\n)+)+(?:---(?:\r?\n)+)?/, ''))
       : withoutH1;
-    /*
-     * The folded-section count is the sum of two truncations — at bundle time (the full text was too
-     * large, so only the gateway-changelog.json preview shipped) and at screen time
-     * (`recentSectionLimit`). Without adding the bundle side it would say "showing 12, folded 4" when
-     * more than 200 were actually folded.
-     */
+    /* Folded sections are the bundle-time fold (`gateway-changelog.json`) plus the screen's own; either alone understates. */
     const bundledOmitted = readVaultDocOmittedSections(slug);
     if (!recentSectionLimit) {
       return { body: withoutPreamble, omittedSections: bundledOmitted };
@@ -158,10 +90,7 @@ export function GatewayDocPage({
     };
   }, [slug, recentSectionLimit, entryNav]);
 
-  /**
-   * The entry list and the body headings get their ids from **the same function** — two places
-   * generating them means a slightly different rule silently sends the anchor nowhere.
-   */
+  /** The entry list and the body headings get ids from the same function, or anchors silently miss. */
   const entries = useMemo(() => (entryNav ? extractEntries(body) : []), [entryNav, body]);
   const headingIds = useMemo(() => {
     const map = new Map<string, string>();
@@ -182,23 +111,9 @@ export function GatewayDocPage({
       <GatewayNav />
 
       {/*
-       * **A reading page centres its prose column** (2026-07-31, owner: *"everything is bunched on the left"* —
-       * everything is bunched on the left).
-       *
-       * ⚠️ At first this applied the gateway's "every element on one x" verdict (2026-07-29 ③) and
-       * left-aligned to the origin (200). **That was applying the rule outside its range.** That
-       * verdict exists because the gateway has **a map on the right** and the panel must not cover
-       * it — this page has nothing on the right. With the rule kept and its reason gone, the same
-       * rule produces **a page skewed to one side with 1053px empty** at 1920.
-       *
-       * ⚠️⚠️ `mx-auto` was once a **rejected pattern** (verdict ③). The rejection was not "centring
-       * is bad" but **that it creates a second origin** — the wrapper centres against the viewport
-       * while the map camera's reserve width stands against a token, and on wide screens the two
-       * diverged. **This page has no camera.** With no second consumer to compete, that reason does
-       * not hold. Recorded here so the next auditor does not read `mx-auto` alone as "it came back".
-       *
-       * The chrome (top bar) still uses the origin — that frame is shared by every gateway surface,
-       * and a logo standing at a different x per page would be worse.
+       * A reading page centres its prose column. The gateway's one-origin rule exists because its
+       * panel must not cover the map, and this page has no map or camera, so `mx-auto` creates no
+       * second origin here. The chrome still uses the shared origin.
        */}
       <main
         id="main"
@@ -207,49 +122,19 @@ export function GatewayDocPage({
           PAGE_GUTTER,
           'w-full flex-1 pt-10 md:pt-16',
           /*
-           * Bottom reserve — below `lg` there is a tab bar and this page is a scrolling document.
-           * The previous `pb-20` (80px) happened to fit only because the last ink was the end of the
-           * body; once the reading-material row was placed at the bottom it had **23px of slack** and
-           * was occluded by the tab bar (caught by `scroll-end-gap` at 390×844).
-           *
-           * Written as an unconditional base plus an `lg:` override — a `max-lg:` variant can appear
-           * before other variants in the stylesheet and silently lose (`.claude/rules/design.md`, the
-           * CSS-order trap).
+           * Bottom reserve below `lg`, where a tab bar sits over a scrolling document. An
+           * unconditional base plus an `lg:` override, because a `max-lg:` variant can lose on CSS
+           * order (`.claude/rules/design.md`).
            */
           'pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))] lg:pb-20',
         )}
       >
         <div className={cn(PAGE_COLUMN, 'mx-auto')}>
+          {/* Two columns only with a table of contents, which folds below xl; GuideChapterPicker stands in, since the chrome's guide chip also folds below sm. */}
           {/*
-           * Two columns only when there is a table of contents; otherwise one centred column.
-           *
-           * ⚠️ The table of contents **folds below `xl`**. Keeping the sidebar at narrow widths lets
-           * the list take width from the prose column, so what someone came to read becomes unreadable.
-           * The chrome's "guide" chip stands in for the folded slot — the way back to the guide
-           * survives without the list.
-           */}
-          {/*
-           * ⚠️ **The grid waits for `xl`, and its tracks give the prose its measure first**
-           * (2026-09-25). It used to turn on at `lg` as `15rem · 1fr · 15rem` with a 48px gap.
-           * The gateway gutter is 200px at every width, so at 1040 the page column is 640px and
-           * that grid left the article **64px** (a Korean title broke two syllables per line,
-           * the changelog grew to 133,603px); at 1280 it left 304px.
-           *
-           * The tracks now read `minmax(11.5rem, 1fr) · minmax(0, measure) · minmax(0, 1fr)`: the
-           * middle track grows to the full measure before either side gets a pixel, and the two
-           * `1fr` sides split what is left equally, so the text still sits on the true centre
-           * whenever there is room (1512: 629px measure, both sides 209px). When there is not
-           * (1280), the right side collapses to zero first and the left keeps its 11.5rem, so the
-           * table of contents survives beside a full measure (880 = 184 + 32 + 629 + 32 + 3).
-           * The left minimum is `clamp(9rem, 100% - measure - 4rem, 11.5rem)`, not a flat 11.5rem:
-           * CI resolved the guide's measure to 660px, and a flat 184px left the article 632px at
-           * 1280. The list now gives up to 40px before the measure does.
-           * The empty right cell that used to reserve the centre is gone: an empty `1fr` track
-           * does that without an element. The list itself sits at the **start** of its track, on
-           * the gutter: at 1920 an end-aligned list began at x=381 while the brand above it began
-           * at 200, so its start line moved with the viewport; on the gutter it shares the
-           * brand's line at every width (review of PR #1839). Below `xl` the column is a single centred flow and the chapter picker
-           * stands in for the list.
+           * From `xl` the middle track reaches the full measure before the `1fr` sides grow, the right side
+           * collapses first, and the left minimum `clamp(9rem, 100% - measure - 4rem, 11.5rem)` yields
+           * before the measure does; the list starts on the gutter, on the brand's line.
            */}
           <div
             className={cn(
@@ -261,11 +146,7 @@ export function GatewayDocPage({
             {sidebar ? <GuideSidebar activeSegment={activeSegment} /> : null}
             {entryNav ? <EntrySidebar entries={entries} /> : null}
             <div className="flex min-w-0 flex-col items-center">
-          {/*
-           * The notice stands **before** the title — that this screen is not the document for the
-           * requested address is something to know before reading the title. Same panel grammar as
-           * the truncation notice (`gateway-doc-truncated`): panel surface plus tertiary text.
-           */}
+          {/* The notice stands before the title; same panel grammar as `gateway-doc-truncated`. */}
           {notice ? (
             <aside
               data-testid="gateway-doc-notice"
@@ -278,14 +159,9 @@ export function GatewayDocPage({
             <h1
               data-testid="gateway-doc-title"
               /*
-               * The top of the ramp (`--text-hero-lg`, 34px) — the same step as the gateway headline.
-               * These pages are gateway surfaces too and this line is their headline, so it belongs
-               * at the same step. No new step was created (a size outside the ramp is silently
-               * dropped without registration in `TYPE_RAMP_STEPS` in `cn.ts`).
-               *
-               * The line height is that size's **pair** (`--leading-hero-lg`, 38px). The previously
-               * used `leading-display-tight` (1.06) is for names and figures, and gave 23px text a
-               * 24.4px line — suffocating for a page title.
+               * The top of the ramp (`--text-hero-lg`) with its pair `--leading-hero-lg`, the gateway
+               * headline's step; a size outside the ramp is dropped unless registered in
+               * `TYPE_RAMP_STEPS` in `cn.ts`.
                */
               className="text-hero-lg leading-hero-lg font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
             >
@@ -309,19 +185,7 @@ export function GatewayDocPage({
 
           {sidebar ? <GuideChapterPicker activeSegment={activeSegment} /> : null}
 
-          {/*
-           * `[&>*:first-child]:mt-0` — the first block sits exactly `mt-10` under the header on
-           * both pages. The changelog opens with an `h2` (`mt-12`) and the guide with a `p`
-           * (`my-4`); the article's own margin stacked with either, so the changelog's first
-           * entry floated 88px below its header against the guide's 56px (measured 2026-09-25).
-           */}
-          {/*
-           * **The empty state.** The body is bundled data read synchronously, so there is no
-           * loading moment to design; the one way it goes wrong is a build that did not carry the
-           * document (`readVaultDoc` returns null). An empty article under the title then read as
-           * a page that forgot its content. It says so in one line and names where the text is,
-           * in the same panel grammar as the truncation notice.
-           */}
+          {/* The body is bundled synchronously, so the only failure is a build without the document; it says so and names where the text is. */}
           {body.trim() === '' ? (
             <aside
               data-testid="gateway-doc-empty"
@@ -333,6 +197,7 @@ export function GatewayDocPage({
               <ReadFullSourceLink sourcePath={sourcePath} label={t('readFullSource')} />
             </aside>
           ) : (
+            /* `[&>*:first-child]:mt-0` so the first block sits exactly `mt-10` under the header on both pages. */
             <article
               data-testid="gateway-doc-body"
               lang={bodyIsForeign ? 'en' : undefined}
@@ -344,26 +209,13 @@ export function GatewayDocPage({
             </article>
           )}
 
-          {/*
-           * The two reading destinations the chrome folds at narrow widths belong here. These two
-           * routes have no footer, so getting from the guide to the changelog (or back) was zero
-           * paths at 390.
-           */}
-          {/*
-           * Prev/next at the end of a chapter — thirteen ordered chapters, yet where the body ended
-           * there were zero paths to the next one (measured 2026-08-13: someone who finished reading
-           * had to go back to the table of contents on the left and find the chapter they had just
-           * read). The order's single source is `GUIDE_PAGES`. The changelog (no sidebar) is not a
-           * chapter, so it has none.
-           */}
+          {/* These routes have no footer, so the reading destinations the chrome folds at narrow widths live here. */}
+          {/* Prev/next at a chapter's end, ordered by `GUIDE_PAGES`; the changelog is not a chapter. */}
           {sidebar ? <GuidePager activeSegment={activeSegment} /> : null}
 
           <GatewayReadingLinks className="mt-12 w-full max-w-[var(--measure-prose)]" />
 
-          {/*
-           * When truncated, say **how many were hidden and where to read the rest**. Silent
-           * truncation is the same as saying "this is all of it".
-           */}
+          {/* When truncated, say how many were hidden and where to read the rest. */}
           {omittedSections > 0 ? (
             <aside
               data-testid="gateway-doc-truncated"
@@ -398,73 +250,27 @@ function ReadFullSourceLink({ sourcePath, label }: { sourcePath: string; label: 
   );
 }
 
-/**
- * The prose component map.
- *
- * **Deliberately not shared** with the docs viewer (`widgets/docs-vault`) — that one carries work-surface
- * machinery (search highlighting, wikilinks, vault-internal anchors) that is all dead weight on this
- * surface. They use the same ramp tokens, so the visual grain is already one set.
- */
 /** Segments that exist as guide chapters — the test separating a slug from a route. */
 const GUIDE_SEGMENTS = new Set(GUIDE_PAGES.map((page) => page.segment));
 
 /**
- * Resolves a prose link's `href` to **the real address for this locale**.
- *
- * The markdown source does not know the locale — one copy serves both `/ko` and `/en`, so writing
- * `/ko/…` into the source would drag an English reader into Korean. Attaching the locale is
- * therefore **the screen's job**.
- *
- * ⚠️ **Internal links in guide bodies point only at guide chapters.** Resolving links to vault
- * documents as `?slug=` here was tried and reverted: a web visitor who has not chosen a vault sees
- * the **sample vault (112 documents)**, while the documents the guide pointed at exist only in the
- * dogfood vault (153). Those addresses become a silent dead end that **returns 200 and opens
- * nothing** — harder to notice than a 404. Vault documents are sent to GitHub instead. That
- * discipline is held by `tests/contract/guide-inbody-links.contract.test.ts`.
+ * Resolves a prose link for this locale (one markdown copy serves all). Body links point only at
+ * guide chapters, since a vault-less visitor sees the sample and vault links would open nothing;
+ * vault documents go to GitHub (`tests/contract/guide-inbody-links.contract.test.ts`).
  */
 function resolveProseHref(href: string, locale: string): string {
   if (!href.startsWith('/')) return href;
   const path = href.split('?')[0];
   const segment = /^\/guide\/([^/]+)\/?$/.exec(path)?.[1];
   if (segment && GUIDE_SEGMENTS.has(segment)) return `/${locale}/guide/${segment}`;
-  // The contract above blocks root-absolute links that are not guide chapters. If one still leaks
-  // through, only the locale is attached so the 404 happens *inside that locale* — a 404 that lost
-  // its locale fell to the English screen, hiding which journey had broken.
+  // A leaked root-absolute link keeps its locale, so the 404 stays in the reader's language.
   return `/${locale}${path}`;
 }
 
 /**
- * Body links — **a root-absolute link is a vault slug, and it is resolved to a route here.**
- *
- * ## Why (usability audit, 2026-08-07)
- *
- * The `href` used to be put straight onto the `<a>`. Guide bodies are markdown, and the internal
- * links written there have **no locale prefix** — `[How to read the map](/guide/reading-the-map)` — because
- * one copy of the markdown serves both `/ko` and `/en` and the locale cannot be baked into the
- * source. So the address being clicked became `/guide/…`, and no such route exists.
- *
- * Measured: **all 34** internal body links across the guide's 13 chapters were 404s (11 distinct
- * targets, both `/ko` and `/en`, both dev and static export). The landing screen was an English 404
- * in the middle of a Korean journey, and its primary button was "Find by project search" — useless
- * to a first-time visitor with no vault.
- *
- * **Why it went unnoticed**: the table of contents on the same screen (`GuideSidebar`) used `Link`
- * from the start. Links that got a locale and links that did not coexisted on one screen, and the
- * one people mostly clicked was the working one.
- *
- * ## Why `<a>` + `useLocale()` rather than `Link`
- *
- * Using `Link` here was blocked by three gates at once — the anchor adoption ratchet (hand anchors
- * bypassing the value layer, 0 → 1), the tag inventory (`Link 17 → 18`), and `prose-link` usage
- * (6 → 5). This repository's rule is **"a link inside prose is prose, not a control"**
- * (`.claude/rules/design.md`, `prose-link.contract`), and those contracts require a prose link to be
- * an `<a>` carrying `.prose-link`. So the tag stays and **only the address** is resolved.
- *
- * `docs:links` cannot see this class of defect in principle — that check asks whether the **target
- * a document points at exists**, resolving it as a **vault slug** (which is why `/ONTOLOGY-QUALITY`
- * passed). It never opens the route. That layer is split between
- * `tests/contract/guide-inbody-links.contract.test.ts` (where the source points) and
- * `tests/e2e/guide-inbody-links.spec.ts` (whether it really returns 200).
+ * Body links: a root-absolute vault slug becomes a locale-prefixed route, kept as an `<a>` with
+ * `.prose-link` (`.claude/rules/design.md`). `tests/contract/guide-inbody-links.contract.test.ts`
+ * checks where it points and `tests/e2e/guide-inbody-links.spec.ts` that it returns 200.
  */
 function ProseLink({ href, children, ...rest }: React.ComponentPropsWithoutRef<'a'>) {
   const locale = useLocale();
@@ -482,6 +288,10 @@ function ProseLink({ href, children, ...rest }: React.ComponentPropsWithoutRef<'
   );
 }
 
+/**
+ * The prose component map, deliberately not shared with `widgets/docs-vault`, whose work-surface
+ * machinery is dead weight here; both use the same ramp tokens.
+ */
 const PROSE_COMPONENTS: Components = {
   h2: ({ children, ...rest }) => (
     <h2
@@ -568,8 +378,7 @@ const PROSE_COMPONENTS: Components = {
       {children}
     </pre>
   ),
-  // A wide table scrolls horizontally **inside its own box**, not in the page body — a body that
-  // flows horizontally ruins the line length of every paragraph.
+  // A wide table scrolls inside its own box, so the body never scrolls sideways.
   table: ({ children, ...rest }) => (
     <div className="my-6 overflow-x-auto">
       <table
@@ -597,24 +406,7 @@ const PROSE_COMPONENTS: Components = {
   a: ProseLink,
 };
 
-/**
- * The guide's table of contents on the left.
- *
- * **Why `sticky`.** The guide is read while scrolling, and a table of contents that scrolls away
- * forces anyone heading for the next chapter to scroll back up. If the list's job is to guide, it
- * has to stay visible while the path is being walked.
- *
- * **The current chapter is marked by surface, not colour** — the same grammar as the chrome's
- * reading chips: a filled surface plus strong text. That is how "you are here" is said within
- * neutrals, without opening a new colour.
- */
-/**
- * The guide's chapter list — **one copy shared by two widths.**
- *
- * At `xl` and above the left table of contents (`GuideSidebar`) calls this; below that, the
- * disclosure under the title (`GuideChapterPicker`) does. Writing the list twice means only one side
- * grows when a chapter is added.
- */
+/** The chapter list, shared by `GuideSidebar` at `xl` and `GuideChapterPicker` below it. */
 function GuideChapterList({ activeSegment }: { activeSegment?: string }) {
   const t = useTranslations('gatewayNav');
   return (
@@ -648,11 +440,7 @@ function GuideChapterList({ activeSegment }: { activeSegment?: string }) {
   );
 }
 
-/**
- * Prev/next at the end of a chapter. No arrow glyphs — direction is already stated by the
- * "previous chapter / next chapter" eyebrow and by the alignment (left/right), and an arrow at the
- * end of a label is decoration by the charter (the `label-decoration` gate).
- */
+/** Prev/next at a chapter's end, with no arrow glyphs: the eyebrow and alignment carry direction (`label-decoration` gate). */
 function GuidePager({ activeSegment }: { activeSegment?: string }) {
   const t = useTranslations('gatewayNav');
   const segment = activeSegment ?? GUIDE_ENTRY_PAGE.segment;
@@ -713,6 +501,10 @@ function GuidePagerLink({
   );
 }
 
+/**
+ * The guide's left table of contents, sticky so the next chapter stays in reach while scrolling.
+ * The current chapter is marked by surface, not colour.
+ */
 function GuideSidebar({ activeSegment }: { activeSegment?: string }) {
   const t = useTranslations('gatewayNav');
   return (
@@ -732,31 +524,9 @@ function GuideSidebar({ activeSegment }: { activeSegment?: string }) {
 }
 
 /**
- * The table of contents below `xl` — a disclosure directly under the title.
- *
- * ## Why it is needed (measured 2026-08-07)
- *
- * At this width there used to be **no table of contents anywhere**. Two code comments promised a
- * substitute and **neither was true**:
- *
- * | What the comment said | Reality |
- * |---|---|
- * | *"the chrome's guide chip stands in for the folded slot"* | that chip also folds below `sm` — zero at 390 |
- * | *"these two meet again in the footer when you scroll"* | the gateway footer has zero links at any width |
- *
- * On top of that `/guide` draws **chapter 1**, not an index — pressing the chip to go back finds no
- * list there either. Result: visible guide-chapter links numbered **1 at 768 and 0 at 390**, so for
- * someone who opened a chapter from a link on their phone the 13 chapters were **13 dead ends with
- * no path between them**. Two of those chapters are "connect an agent" and "CLI", so what was
- * blocked was not reading material but **the path to attaching an agent**.
- *
- * ## Why a disclosure (`<details>`)
- *
- * Leaving the list open at narrow widths takes not width but **the first screen** from the prose
- * column — someone who came to read has to scroll past a table of contents first. A closed
- * disclosure is one line, and that line also states **which chapter of how many** this is. The
- * chevron is an exception to the decorative-arrow ban (`.claude/rules/design.md`: indicating an
- * expanded state is information).
+ * The table of contents below `xl`: a disclosure under the title, so phone readers can move
+ * between chapters without scrolling past an open list. The closed line states which chapter of
+ * how many; its chevron indicates state, which `.claude/rules/design.md` allows.
  */
 function GuideChapterPicker({ activeSegment }: { activeSegment?: string }) {
   const t = useTranslations('gatewayNav');
@@ -794,16 +564,8 @@ function GuideChapterPicker({ activeSegment }: { activeSegment?: string }) {
 }
 
 /**
- * The changelog's entry list on the left — the date leads and the title follows.
- *
- * **Why anchors rather than routes.** The guide's chapters are separate pieces of writing, so
- * separate addresses are right. The changelog is **one flow**, normally read straight down, and
- * carving an address per entry would mean opening a new page every time to see "what came next".
- * The list exists for **skipping**, not for splitting.
- *
- * **Why the links are `<a href="#…">`.** The browser already does anchors well — back undoes them,
- * copying the address points at that entry, and it works without JS. Moving the scroll by hand means
- * rebuilding all three.
+ * The changelog's entry list, date first. Anchors, not routes: the changelog is one flow, and
+ * `<a href="#…">` gives back, shareable addresses and no-JS behaviour for free.
  */
 function EntrySidebar({ entries }: { entries: DocEntry[] }) {
   const t = useTranslations('gatewayNav');
@@ -831,11 +593,7 @@ function EntrySidebar({ entries }: { entries: DocEntry[] }) {
                     {entry.date}
                   </span>
                 ) : null}
-                {/*
-                 * Titles are clamped to two lines — this repository's changelog titles run close to
-                 * a full sentence, and unclamped a single entry eats half the list. The whole
-                 * sentence is at the destination.
-                 */}
+                {/* Titles clamp to two lines, so one near-sentence title cannot eat half the list. */}
                 <span className="line-clamp-2 text-body leading-body text-[color:var(--color-text-tertiary)]">
                   {entry.title}
                 </span>
@@ -849,14 +607,8 @@ function EntrySidebar({ entries }: { entries: DocEntry[] }) {
 }
 
 /**
- * The prose component map, **plus anchor ids on `h2`**.
- *
- * The body has to own the place the list points at. The ids are taken verbatim from the same
- * function the list used — recomputing them here would create a second source of truth the moment
- * it happens.
- *
- * `scroll-mt` covers the sticky chrome (top bar) height — without it a heading reached by anchor
- * hides behind the bar and reads as "nothing moved".
+ * The prose map plus `h2` anchor ids taken verbatim from the list's function. `scroll-mt` clears
+ * the sticky top bar, or an anchored heading would hide behind it.
  */
 function proseComponentsWithAnchors(headingIds: Map<string, string>): Components {
   return {
@@ -873,7 +625,7 @@ function proseComponentsWithAnchors(headingIds: Map<string, string>): Components
   };
 }
 
-/** Concatenates only the plain text out of the children ReactMarkdown passes (for id matching). */
+/** The plain text of ReactMarkdown children, for id matching. */
 function flattenText(node: React.ReactNode): string {
   if (typeof node === 'string') return node;
   if (typeof node === 'number') return String(node);

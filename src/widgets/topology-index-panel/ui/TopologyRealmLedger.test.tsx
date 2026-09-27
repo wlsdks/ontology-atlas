@@ -4,15 +4,10 @@ import { buildOntologyTree } from "@/entities/knowledge-graph/lib/ontology-tree"
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { TopologyRealmLedger, type RealmBoundaryRow } from "./TopologyRealmLedger";
 
-// The ontology block export action is a self-contained module needing its own vault
-// (useLocalVault) and i18n context — its behaviour is unit-verified by
-// `RealmBlockExportAction.test.tsx`, so it is stubbed here (the same pattern as the
-// FirstRunStarterModule stub in TopologyIndexPanel.test). This file only checks that
-// the ledger mounts the action.
+// The block export action needs its own vault and i18n context and is tested in
+// `RealmBlockExportAction.test.tsx`, so it is stubbed.
 const exportActionProps = vi.hoisted(() => ({ current: null as unknown }));
-// This widget receives labels as props, but the rows below it read the screen's
-// language (the decision that keeps a Latin eyebrow off Hangul,
-// `shared/lib/latin-eyebrow`).
+// The rows read the screen's language through `shared/lib/latin-eyebrow`.
 vi.mock("next-intl", () => ({
   useLocale: () => "ko",
   useTranslations: () => (key: string) => key,
@@ -56,9 +51,7 @@ const nodes = [
   makeNode("E1", "element", "Canvas"),
 ];
 const edges = [makeEdge("P", "D1"), makeEdge("D1", "C1"), makeEdge("C1", "E1")];
-// D1 subtree = project root P → its only child D1 (findRealmSubtree is unit-
-// tested separately in views/home; navigating the tree directly here keeps
-// this widget test free of a views-layer import).
+// The subtree is navigated directly to keep this test free of a views-layer import.
 const subtree = buildOntologyTree(nodes, edges).roots[0].children[0];
 
 const labels = {
@@ -143,7 +136,7 @@ describe("TopologyRealmLedger", () => {
     expect(labelsSeen.some((t) => t?.includes("Views"))).toBe(false);
   });
 
-  it("fires onExit from the 영역 해제 button", () => {
+  it('fires onExit from the clear-region button', () => {
     const props = renderLedger();
     fireEvent.click(screen.getByTestId("topology-realm-exit"));
     expect(props.onExit).toHaveBeenCalledTimes(1);

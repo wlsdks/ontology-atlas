@@ -1,8 +1,4 @@
-// The executor's one invariant: **a model's write call never reaches the disk.**
-//
-// This file locks it in two layers:
-// ① type level — proving at compile time that the port the executor receives has no write method.
-// ② behaviour level — passing a write tool through calls the fs mock zero times.
+// A model's write never reaches disk: checked at the type level and by zero fs calls.
 import { describe, expect, it, vi } from 'vitest';
 
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from '@/entities/knowledge-graph';
@@ -86,10 +82,9 @@ function call(name: string, args: unknown = {}): NormalizedToolCall {
   return { id: 't1', name, args, argsInvalid: false };
 }
 
-describe('tool-executor — 쓰기 무접촉', () => {
-  it('포트 타입에는 쓰기 메서드가 없다 (구조적 증명)', () => {
-    // This array is the whole port. A write name entering here lets the executor reach
-    // the disk, and at that moment "zero writes without consent" is demoted to a discipline.
+describe('tool-executor never writes', () => {
+  it('the port type has no write method', () => {
+    // A write name in this port would let the executor reach disk.
     const port = makePort();
     expect(Object.keys(port).sort()).toEqual(['docs', 'edges', 'nodes', 'readDocText']);
     for (const key of Object.keys(port)) {
@@ -97,7 +92,7 @@ describe('tool-executor — 쓰기 무접촉', () => {
     }
   });
 
-  it('write 도구를 흘려도 파일 접근이 0회이고 제안 의사만 돌아온다', async () => {
+  it('a write tool call touches no file and returns only a proposal intent', async () => {
     const fsSpy = vi.fn();
     const execute = createToolExecutor(makePort({ readDocText: fsSpy as never }));
     for (const name of [
@@ -116,7 +111,7 @@ describe('tool-executor — 쓰기 무접촉', () => {
     expect(fsSpy).not.toHaveBeenCalled();
   });
 
-  it('vault-only 에이전트는 competency 자격 서명을 제안으로 우회할 수 없다', async () => {
+  it('a vault-only agent cannot bypass competency qualification signing through a proposal', async () => {
     const execute = createToolExecutor(makePort());
 
     const result = await execute(call('patch_concept', {
@@ -132,21 +127,21 @@ describe('tool-executor — 쓰기 무접촉', () => {
     );
   });
 
-  it('목록에 없는 도구는 실행 0 + 오류 반환', async () => {
+  it('returns an error without executing an unlisted tool', async () => {
     const execute = createToolExecutor(makePort());
     const result = await execute(call('delete_concept', { slug: 'x' }));
     expect(result.outcome).toBe('unknown-tool');
     expect(result.isError).toBe(true);
   });
 
-  it('볼트 밖을 보는 도구도 같은 경로로 막힌다', async () => {
+  it('blocks tools that look outside the vault the same way', async () => {
     const execute = createToolExecutor(makePort());
     for (const name of ['analyze_repo_structure', 'index_project', 'infer_imports']) {
       expect((await execute(call(name))).outcome).toBe('unknown-tool');
     }
   });
 
-  it('깨진 인자는 실행 전에 걸리고 모델에게 정정 기회를 준다', async () => {
+  it('catches malformed arguments before execution and lets the model correct them', async () => {
     const execute = createToolExecutor(makePort());
     const result = await execute({
       id: 't1',
@@ -159,8 +154,8 @@ describe('tool-executor — 쓰기 무접촉', () => {
   });
 });
 
-describe('tool-executor — 읽기', () => {
-  it('get_concept 은 mtime 을 함께 준다 (동시 수정 가드의 근거)', async () => {
+describe('tool-executor reads', () => {
+  it('get_concept returns the mtime for the concurrent edit guard', async () => {
     const execute = createToolExecutor(makePort());
     const result = await execute(call('get_concept', { slug: 'capabilities/payment' }));
     expect(result.outcome).toBe('ok');
@@ -169,15 +164,14 @@ describe('tool-executor — 읽기', () => {
     expect(payload.mtime).toBe(1_700_000_000_000);
   });
 
-  it('볼트 본문은 신뢰할 수 없는 데이터로 래핑된다', async () => {
+  it('wraps vault bodies as untrusted data', async () => {
     const execute = createToolExecutor(makePort());
     const result = await execute(call('get_concept', { slug: 'capabilities/payment' }));
     expect(result.content).toContain('<untrusted_vault_content>');
   });
 
-  it('이름만 불린 개념은 "없음" 이 아니라 문서 신설 안내로 돌아온다', async () => {
-    // Answering "not found" for a concept the map showed breaks the promise that a
-    // person and an agent see the same ontology.
+  it('answers a name-only concept with guidance to create its document, not "missing"', async () => {
+    // A concept the map showed must not answer "not found".
     const execute = createToolExecutor(makePort());
     const result = await execute(call('get_concept', { slug: 'src/lib/ghost.ts' }));
     const payload = JSON.parse(result.content) as Record<string, unknown>;
@@ -186,14 +180,14 @@ describe('tool-executor — 읽기', () => {
     expect(String(payload.hint)).toContain('add_concept');
   });
 
-  it('없는 이름은 오타 추측 없이 목록을 보라고 답한다', async () => {
+  it('answers an unknown name by pointing to the list without guessing typos', async () => {
     const execute = createToolExecutor(makePort());
     const result = await execute(call('get_concept', { slug: 'capabilities/nope' }));
     expect(result.content).toContain('list_concepts');
     expect(result.content).toContain('Do not guess');
   });
 
-  it('list_kinds 는 문서 수와 이름만 불린 수를 같이 말한다', async () => {
+  it('list_kinds reports document counts alongside name-only counts', async () => {
     // The field names match MCP's `list_kinds` (a contract test compares them).
     const execute = createToolExecutor(makePort());
     const payload = JSON.parse((await execute(call('list_kinds'))).content) as Record<
@@ -205,7 +199,7 @@ describe('tool-executor — 읽기', () => {
     expect(payload.conceptsIncludingReferenced).toBe(3);
   });
 
-  it('list_concepts 는 결정적 slug 순서와 offset pagination 을 지킨다', async () => {
+  it('list_concepts keeps deterministic slug order and offset pagination', async () => {
     const execute = createToolExecutor(
       makePort({
         docs: [
@@ -229,10 +223,8 @@ describe('tool-executor — 읽기', () => {
     });
   });
 
-  it('find_backlinks 는 지도 엣지가 아니라 frontmatter 원문에서 센다', async () => {
-    // The map draws only a subset of relation types as edges (`describes` is not drawn).
-    // Counting backlinks from edges would leave the in-app agent unable to see relations
-    // an agent in the terminal can.
+  it('find_backlinks counts from raw frontmatter, not map edges', async () => {
+    // The map omits some relation types as edges, so backlinks come from frontmatter.
     const execute = createToolExecutor(
       makePort({
         docs: [
@@ -263,7 +255,7 @@ describe('tool-executor — 읽기', () => {
     ]);
   });
 
-  it('결과가 상한을 넘으면 잘라내고 좁히라고 알린다', async () => {
+  it('truncates results over the cap and asks to narrow the query', async () => {
     // Carrying it whole would quietly grow the user's cost (BYOK billing).
     const many = Array.from({ length: 400 }, (_, index) => ({
       slug: `capabilities/c${index}`,
@@ -280,7 +272,7 @@ describe('tool-executor — 읽기', () => {
     expect(result.content.length).toBeLessThan(7_000);
   });
 
-  it('대형 목록은 deterministic offset 페이지로 누락 없이 복원한다', async () => {
+  it('restores a large list through deterministic offset pages without gaps', async () => {
     const many = Array.from({ length: 503 }, (_, index) => ({
       slug: `capabilities/c${String(index).padStart(3, '0')}`,
       path: `capabilities/c${index}.md`,
@@ -319,7 +311,7 @@ describe('tool-executor — 읽기', () => {
     expect(outOfRange.content).toContain('invalid_arguments');
   });
 
-  it('get_concepts 는 상한 안에서 요청한 근거 행을 고르게 남긴다', async () => {
+  it('get_concepts keeps requested evidence rows evenly within the cap', async () => {
     const parents = Array.from({ length: 8 }, (_, index) =>
       node(`domain:d${index}`, {
         kind: 'domain',
@@ -401,7 +393,7 @@ describe('tool-executor — 읽기', () => {
     }
   });
 
-  it('find_path 는 이어진 길을 실제 slug 로 돌려준다', async () => {
+  it('find_path returns a connected path as real slugs', async () => {
     const execute = createToolExecutor(makePort());
     const result = await execute(
       call('find_path', { from: 'capabilities/payment', to: 'src/lib/ghost.ts' }),
@@ -411,7 +403,7 @@ describe('tool-executor — 읽기', () => {
     expect(payload.hops).toEqual(['capabilities/payment', 'src/lib/ghost.ts']);
   });
 
-  it('find_orphans 는 문서 있는 개념만 센다', async () => {
+  it('find_orphans counts only concepts that have a document', async () => {
     const execute = createToolExecutor(makePort());
     const payload = JSON.parse((await execute(call('find_orphans'))).content) as {
       orphans: Array<{ slug: string }>;

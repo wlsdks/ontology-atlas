@@ -28,11 +28,7 @@ export function AutomationsWorkspace() {
           connectors={runner.connectors}
           agentReady={runner.agentReady}
           folders={folders}
-          /*
-           * `save` answers `{ ok, startedNow }` so the Library screen can say which of the two
-           * promises it kept. This lane has no line to say it in, so it takes the verdict only;
-           * the sheet closes on `ok` exactly as before.
-           */
+          /* This lane only needs `save`'s `ok`; the Library screen also reports `startedNow`. */
           onSave={async (round) => (await runner.save(round)).ok}
           existingNames={documentRounds.map((round) => round.name)}
           passRunning={runner.running !== null}

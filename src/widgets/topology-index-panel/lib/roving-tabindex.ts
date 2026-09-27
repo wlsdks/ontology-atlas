@@ -1,25 +1,13 @@
 /**
- * The INDEX tree's roving-tabindex contract (the WAI-ARIA `tree` pattern).
- *
- * `role="tree"` promises "one Tab enters the tree, arrow keys move inside it".
- * The previous implementation pinned `tabIndex=0` on every `role="treeitem"`
- * row, so expanding a single domain added 14 more tab stops and a keyboard user
- * had to step through the whole tree (accessibility audit P0). Roving tabindex
- * keeps `tabIndex=0` on the active row alone, `-1` on the rest, and lets
- * ArrowUp/Down handle sibling movement.
- *
- * This module isolates those movement rules as pure functions so they can be
- * unit-tested without DOM or React (`roving-tabindex.test.ts`). The panel
- * assembles these functions plus `ref.focus()`.
+ * Roving tabindex for the INDEX tree (WAI-ARIA `tree`): one Tab stop on the active row, arrow keys
+ * inside. Pure functions tested in `roving-tabindex.test.ts`.
  */
 
 import type { OntologyTreeNode } from "@/entities/knowledge-graph";
 
 /**
- * Flatten the nodeIds of the rows actually visible on screen into top-to-bottom
- * DOM order. `isOpen` is the same predicate the panel uses (including the
- * auto-expand during search and lens modes) — children of a collapsed parent are
- * skipped. Arrow movement targets exactly this array.
+ * Visible row ids in top-to-bottom order, skipping children of closed parents; `isOpen` is the
+ * panel's own predicate.
  */
 export function flattenVisibleRowIds(
   roots: readonly OntologyTreeNode[],
@@ -39,12 +27,8 @@ export function flattenVisibleRowIds(
 export type RovingNavKey = "ArrowDown" | "ArrowUp" | "Home" | "End";
 
 /**
- * Decide which nodeId one arrow key should move the roving focus to.
- * - ArrowDown/Up: next/previous sibling, clamped at the boundary — no wrapping,
- *   per the tree convention.
- * - Home/End: first/last.
- * If currentId is outside the list (removed by a filter, say), it lands on the
- * first row. An empty list gives null.
+ * Target of one arrow key: ArrowDown/Up clamp at the ends, Home/End go to the first or last; an
+ * unknown current id lands on the first row, an empty list gives null.
  */
 export function nextRovingId(
   orderedIds: readonly string[],
@@ -62,11 +46,8 @@ export function nextRovingId(
 }
 
 /**
- * Resolve which row should be `tabIndex=0` — the tree's single Tab entry point.
- * Priority: a valid active row → the selected node (when both are visible) →
- * the first row. When the active or selected id is not currently visible
- * (filtered out or collapsed), it falls back to the first row, guaranteeing the
- * roving entry point always names a row that exists.
+ * The row holding tabIndex=0: a visible active row, else the visible selected node, else the first
+ * row.
  */
 export function resolveActiveRowId(
   orderedIds: readonly string[],

@@ -4,12 +4,8 @@ import { resolveDocLink } from './resolve-doc-link';
 import { buildDocLinkMarkdown, relativeDocPath } from './relative-doc-path';
 
 /**
- * The point of this test is not «is the path string pretty» but **does the viewer
- * resolve that link back to the same document**. So the producing side
- * (`relativeDocPath`) and the resolving side (`resolveDocLink`) are measured as a
- * **round trip**. Measuring one side alone can go green while the two disagree,
- * and that is exactly the accident this feature had (the parser passed an encoded
- * URL and the resolving side did not know).
+ * Measured as a round trip: `relativeDocPath` builds the link and `resolveDocLink` must resolve it
+ * back to the same slug.
  */
 
 const VAULT = new Set([
@@ -27,8 +23,8 @@ function roundTrip(fromSlug: string, toSlug: string) {
   return resolveDocLink({ href, fromSlug, vaultSlugs: VAULT });
 }
 
-describe('relativeDocPath — 만든 링크를 뷰어가 다시 푼다', () => {
-  it('다른 폴더로 — 올라갔다 내려간다', () => {
+describe('relativeDocPath produces links the viewer resolves back', () => {
+  it('climbs up and back down to another folder', () => {
     expect(relativeDocPath('domains/typed-api', 'capabilities/fixtures')).toBe(
       '../capabilities/fixtures.md',
     );
@@ -39,7 +35,7 @@ describe('relativeDocPath — 만든 링크를 뷰어가 다시 푼다', () => {
     });
   });
 
-  it('같은 폴더로 — `./` 를 붙여 링크임을 눈으로도 알 수 있게', () => {
+  it('prefixes ./ for the same folder so it reads as a link', () => {
     expect(relativeDocPath('domains/typed-api', 'domains/orders')).toBe('./orders.md');
     expect(roundTrip('domains/typed-api', 'domains/orders')).toMatchObject({
       kind: 'internal',
@@ -47,7 +43,7 @@ describe('relativeDocPath — 만든 링크를 뷰어가 다시 푼다', () => {
     });
   });
 
-  it('볼트 루트 문서에서 폴더 안으로', () => {
+  it('links from a vault-root doc into a folder', () => {
     expect(relativeDocPath('README', 'capabilities/fixtures')).toBe('capabilities/fixtures.md');
     expect(roundTrip('README', 'capabilities/fixtures')).toMatchObject({
       kind: 'internal',
@@ -55,7 +51,7 @@ describe('relativeDocPath — 만든 링크를 뷰어가 다시 푼다', () => {
     });
   });
 
-  it('깊은 폴더에서 루트 문서로', () => {
+  it('links from a deep folder to a root doc', () => {
     expect(relativeDocPath('guides/deep/nested-note', 'README')).toBe('../../README.md');
     expect(roundTrip('guides/deep/nested-note', 'README')).toMatchObject({
       kind: 'internal',
@@ -63,13 +59,8 @@ describe('relativeDocPath — 만든 링크를 뷰어가 다시 푼다', () => {
     });
   });
 
-  /**
-   * A Hangul slug is this feature's weak spot. The wikilink side had the same
-   * defect — the markdown parser passes URLs percent-encoded and the resolving side
-   * did not decode. **An ASCII slug has nothing to encode, so it stays fine and the
-   * defect appears only in a Hangul vault.**
-   */
-  it('한글 슬러그도 왕복한다 — 인코딩되어 도착해도', () => {
+  /** Hangul slugs arrive percent-encoded from the parser; ASCII slugs cannot show that defect. */
+  it('round-trips a Hangul slug even when it arrives percent-encoded', () => {
     const href = relativeDocPath('domains/typed-api', 'capabilities/스윕-검증-절차');
     expect(href).toBe('../capabilities/스윕-검증-절차.md');
     // Passed through as is
@@ -84,11 +75,11 @@ describe('relativeDocPath — 만든 링크를 뷰어가 다시 푼다', () => {
         fromSlug: 'domains/typed-api',
         vaultSlugs: VAULT,
       }),
-      '퍼센트 인코딩된 링크를 못 풀면 한글 볼트의 모든 링크가 죽는다',
+      'a Hangul vault needs percent-encoded links to resolve',
     ).toMatchObject({ kind: 'internal', slug: 'capabilities/스윕-검증-절차' });
   });
 
-  it('앵커를 붙여도 슬러그를 찾는다', () => {
+  it('finds the slug when an anchor is attached', () => {
     const href = `${relativeDocPath('domains/typed-api', 'capabilities/fixtures')}#정의`;
     expect(
       resolveDocLink({ href, fromSlug: 'domains/typed-api', vaultSlugs: VAULT }),
@@ -96,8 +87,8 @@ describe('relativeDocPath — 만든 링크를 뷰어가 다시 푼다', () => {
   });
 });
 
-describe('buildDocLinkMarkdown — 링크 문법이 라벨에 깨지지 않는다', () => {
-  it('제목을 라벨로 쓴다', () => {
+describe('buildDocLinkMarkdown keeps link syntax intact for any label', () => {
+  it('uses the title as the label', () => {
     expect(
       buildDocLinkMarkdown({
         fromSlug: 'domains/typed-api',
@@ -107,7 +98,7 @@ describe('buildDocLinkMarkdown — 링크 문법이 라벨에 깨지지 않는�
     ).toBe('[Fixtures](../capabilities/fixtures.md)');
   });
 
-  it('제목이 비면 슬러그를 쓴다 — 빈 라벨을 남기지 않는다', () => {
+  it('uses the slug when the title is empty', () => {
     expect(
       buildDocLinkMarkdown({
         fromSlug: 'README',
@@ -118,7 +109,7 @@ describe('buildDocLinkMarkdown — 링크 문법이 라벨에 깨지지 않는�
   });
 
   /** A title is a human-written value — a bracket in it breaks the link on the spot. */
-  it('라벨의 대괄호를 이스케이프한다', () => {
+  it('escapes brackets in the label', () => {
     const md = buildDocLinkMarkdown({
       fromSlug: 'README',
       toSlug: 'capabilities/fixtures',

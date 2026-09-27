@@ -29,9 +29,7 @@
   font-weight: normal;
   white-space: nowrap;
 }
-/* Where it was read from, printed once: the parent in the quiet ink, the folder's own name in the
-   stronger one. A long parent gives way before the name does, so the part that identifies the
-   folder is the part that never truncates. */
+/* A long parent gives way before the folder name, so the identifying part never truncates. */
 .source code .sourceName { flex: none; color: var(--color-text-secondary); }
 .source code .sourcePath { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--color-text-quaternary); }
 
@@ -109,9 +107,7 @@
 .slot[data-status='absent'] .slotCount { color: var(--color-text-quaternary); }
 .inlineEvidence { display: none; }
 
-/* A column of the panel, not a card floating in it: the divider runs the panel's full body, so
-   the room under a short piece of evidence reads as the column's own space rather than as a hole
-   beside the bands (design review, 2026-09-25). */
+/* A column of the panel, not a floating card: the divider runs the panel's full body. */
 .inspector {
   min-width: 0;
   margin: 0;
@@ -133,11 +129,8 @@
 @keyframes detailFade { from { opacity: 0; } to { opacity: 1; } }
 
 /*
- * **Rows take the room a tall window has.** At 1512×949 the panel ended with 134px of the window
- * unused under it, and at 1920×1080 about 260 — the bands' rows kept the 40px a 1280×800 window
- * needs. Heights are stepped by media query rather than grown with flex: a flex-grown row list
- * stretches the whole panel to the window and leaves the empty space inside the card instead,
- * and the stepped values are ones `structure fits a desktop viewport` holds at 1440×900.
+ * Tall windows get taller rows, stepped by media query: a flex-grown list would stretch the panel
+ * and leave the empty space inside the card. `structure fits a desktop viewport` holds 1440x900.
  */
 @media (min-width: 80rem) and (min-height: 58rem) {
   .slot button { min-height: 3.5rem; }

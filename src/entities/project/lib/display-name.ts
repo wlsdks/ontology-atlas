@@ -1,18 +1,8 @@
 import type { Project } from '../model/types';
 
 /**
- * The name a person reads for a project on this screen: `display_<locale>` when the document
- * carries one, otherwise the canonical `title`/`name`.
- *
- * One thing, one word (owner, 2026-08-25). The map, the INDEX and the Library already draw a
- * node by its `display_<locale>` (`KnowledgeGraphNode.display`), so on a Korean screen the
- * sample project is its Korean word there. The projects list and the project page read
- * `Project.name`, the canonical title, and said "Online Store" for the same file on the same
- * screen (measured 2026-09-19). Every place that names a project now asks this function, so
- * the four screens agree on the word.
- *
- * The canonical name is still what identifies the document (search, slugs, the frontmatter
- * `title`); this only decides what is drawn.
+ * `display_<locale>` when present, else the canonical `title`/`name`, so every screen names a
+ * project by the same word the map draws. The canonical name still identifies the document.
  */
 export function projectDisplayName(
   project: Pick<Project, 'name' | 'displayNames'>,
@@ -31,11 +21,7 @@ export function projectHasDisplayName(
   return Boolean(display && display.length > 0);
 }
 
-/**
- * Reads every `display_<locale>` key off a document's frontmatter. Keys are two lowercase
- * letters after the underscore, the same shape `buildStarterDisplaySync` matches; anything
- * else is not a display name.
- */
+/** Two lowercase letters after `display_`, as `buildStarterDisplaySync` matches. */
 export function readDisplayNames(
   frontmatter: Record<string, unknown>,
 ): Record<string, string> | undefined {

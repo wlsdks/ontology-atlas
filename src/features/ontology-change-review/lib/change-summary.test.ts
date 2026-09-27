@@ -13,12 +13,7 @@ import {
 
 const TOOL = (name: string) => `mcp__atlas-vault__${name}`;
 
-/**
- * The headline is the one line a person reads before answering, so every branch of it has to come
- * from a fact the request actually carried. These cases are the request shapes the ACP adapter
- * sends, built through the same `buildOntologyChangeSet` the card uses — not hand-written change
- * sets, which would prove only that the sentence table is spelled correctly.
- */
+/** Cases built through `buildOntologyChangeSet`, the shapes the ACP adapter sends. */
 describe('the headline is derived from the request, never guessed', () => {
   it('names the field and how many values it carries — the owner`s measured case', () => {
     const notes = Object.fromEntries(
@@ -90,10 +85,7 @@ describe('the headline is derived from the request, never guessed', () => {
     expect(headline).toEqual({ key: 'updateFields', values: { name: 'cart-session', count: 2 } });
   });
 
-  /**
-   * ⚠️ The branch that matters most. A card that invents a subject is worse than one that admits it
-   * cannot read one: a person would approve a write against a document they were never shown.
-   */
+  /** A card that invents a subject would have a person approve a write on an unseen document. */
   it('says only what it knows when the request carries no target', () => {
     const headline = ontologyChangeHeadline(
       buildOntologyChangeSet(TOOL('patch_concept'), {

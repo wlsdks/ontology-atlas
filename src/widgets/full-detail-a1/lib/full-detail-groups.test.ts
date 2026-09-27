@@ -26,7 +26,7 @@ describe("buildFullDetailGroups", () => {
     { from: "domain:a", to: "capability:dep", type: "depends_on" },
   ];
 
-  it("빈 edges → 네 그룹 모두 total 0", () => {
+  it('returns total 0 in all four groups for no edges', () => {
     const groups = buildFullDetailGroups("domain:a", nodes, []);
     expect(groups.contains.total).toBe(0);
     expect(groups.usedBy.total).toBe(0);
@@ -34,7 +34,7 @@ describe("buildFullDetailGroups", () => {
     expect(groups.belongsTo.total).toBe(0);
   });
 
-  it("outgoing containment → contains 그룹, 자식의 자식 개수를 childCount 로", () => {
+  it('puts outgoing containment in contains with the grandchild count as childCount', () => {
     const groups = buildFullDetailGroups("domain:a", nodes, edges);
     expect(groups.contains.total).toBe(2);
     const child1 = groups.contains.rows.find((r) => r.id === "capability:child-1");
@@ -43,34 +43,34 @@ describe("buildFullDetailGroups", () => {
     expect(child2?.childCount).toBe(0);
   });
 
-  it("incoming containment → belongsTo 그룹, 그 부모의 자식 수(=domain:a 포함 1)를 childCount 로", () => {
+  it('puts incoming containment in belongsTo with the parent\'s child count as childCount', () => {
     const groups = buildFullDetailGroups("domain:a", nodes, edges);
     expect(groups.belongsTo.total).toBe(1);
     expect(groups.belongsTo.rows[0].id).toBe("project:root");
     expect(groups.belongsTo.rows[0].childCount).toBe(1);
   });
 
-  it("incoming non-containment → usedBy 그룹", () => {
+  it('puts incoming non-containment in usedBy', () => {
     const groups = buildFullDetailGroups("domain:a", nodes, edges);
     expect(groups.usedBy.total).toBe(1);
     expect(groups.usedBy.rows[0].id).toBe("capability:user");
     expect(groups.usedBy.rows[0].containment).toBe(false);
   });
 
-  it("outgoing non-containment → dependsOn 그룹", () => {
+  it('puts outgoing non-containment in dependsOn', () => {
     const groups = buildFullDetailGroups("domain:a", nodes, edges);
     expect(groups.dependsOn.total).toBe(1);
     expect(groups.dependsOn.rows[0].id).toBe("capability:dep");
   });
 
-  it("containment row 는 trace mark 용 containment:true, 비-containment 는 false", () => {
+  it('marks containment rows containment:true and others false', () => {
     const groups = buildFullDetailGroups("domain:a", nodes, edges);
     for (const row of groups.contains.rows) expect(row.containment).toBe(true);
     for (const row of groups.belongsTo.rows) expect(row.containment).toBe(true);
     for (const row of groups.dependsOn.rows) expect(row.containment).toBe(false);
   });
 
-  it("uncapped — full 리스트 (cap 없음)", () => {
+  it('returns the full uncapped list', () => {
     const manyEdges = Array.from({ length: 12 }, (_, i) => ({
       from: "domain:a",
       to: `element:e${i}`,
@@ -89,10 +89,8 @@ describe("buildFullDetailGroups", () => {
     expect(groups.contains.rows).toHaveLength(12);
   });
 
-  it("belongs_to 로 저작된 containment 도 방향 반대로 올바르게 분류", () => {
-    // capability:child-1 --belongs_to--> domain:a : domain:a is the parent (the
-    // container) and capability:child-1 the child — the opposite direction encoding
-    // from `contains` (parent→child).
+  it('classifies containment authored as belongs_to in the reverse direction', () => {
+    // belongs_to encodes containment child to parent, the opposite of `contains`.
     const belongsToEdges = [
       { from: "capability:child-1", to: "domain:a", type: "belongs_to" },
     ];
@@ -111,7 +109,7 @@ describe("buildFullDetailGroups", () => {
     expect(fromChildGroups.contains.total).toBe(0);
   });
 
-  it("같은 방향에 두 relationType(depends_on + related_to) 인 같은 이웃 → 버킷당 1행만 (React key 충돌 회귀 방지)", () => {
+  it('keeps one row per bucket for a neighbour with two relation types in one direction', () => {
     const dupEdges = [
       { from: "domain:a", to: "capability:dep", type: "depends_on" },
       { from: "domain:a", to: "capability:dep", type: "related_to" },
@@ -121,7 +119,7 @@ describe("buildFullDetailGroups", () => {
     expect(groups.dependsOn.rows).toHaveLength(1);
   });
 
-  it("changedIds 로 fresh 플래그 표시", () => {
+  it('flags fresh rows from changedIds', () => {
     const groups = buildFullDetailGroups(
       "domain:a",
       nodes,

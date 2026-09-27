@@ -14,7 +14,7 @@ const serverCfg = {
 };
 
 describe('resolveDocLink', () => {
-  it('vault 내부 상대 링크 → internal (앱 라우팅)', () => {
+  it('resolves a relative link inside the vault to an internal route', () => {
     expect(
       resolveDocLink({
         href: './README.md',
@@ -34,7 +34,7 @@ describe('resolveDocLink', () => {
     ).toEqual({ kind: 'internal', slug: 'guides/setup', anchor: 'install' });
   });
 
-  it('vault root 를 벗어나는 상대 링크 → external GitHub blob (회귀: mcp/README 404)', () => {
+  it('sends a relative link that leaves the vault root to an external GitHub blob', () => {
     // `../mcp/README.md` in docs/README.md → mcp/README.md at the repo root
     expect(
       resolveDocLink({
@@ -61,7 +61,7 @@ describe('resolveDocLink', () => {
     });
   });
 
-  it('중첩 문서에서 vault 를 벗어나는 링크도 repo 루트로 정규화', () => {
+  it('normalizes a vault-escaping link from a nested doc to the repo root', () => {
     // `../../cli/README.md` in docs/ontology/project.md → cli/README.md
     expect(
       resolveDocLink({
@@ -76,7 +76,7 @@ describe('resolveDocLink', () => {
     });
   });
 
-  it('절대 URL / 앵커 only / 비-md → passthrough (기존 동작 유지)', () => {
+  it('passes through absolute URLs, anchor-only links and non-md links', () => {
     expect(
       resolveDocLink({
         href: 'https://example.com/x.md',
@@ -103,7 +103,7 @@ describe('resolveDocLink', () => {
     ).toEqual({ kind: 'passthrough' });
   });
 
-  it('repoBlobBase 없음(로컬 vault) + vault 외부 → unresolved (죽은 404 금지)', () => {
+  it('marks a vault-external link unresolved when there is no repoBlobBase', () => {
     expect(
       resolveDocLink({
         href: '../mcp/README.md',
@@ -121,7 +121,7 @@ describe('resolveDocLink', () => {
     ).toEqual({ kind: 'unresolved' });
   });
 
-  it('내부지만 알 수 없는 slug + repo 정보 있음 → external (repo 에는 있을 수 있음)', () => {
+  it('sends an unknown internal slug to external when repo info exists', () => {
     expect(
       resolveDocLink({
         href: './missing-doc.md',
@@ -137,7 +137,7 @@ describe('resolveDocLink', () => {
 });
 
 describe('githubBlobUrl', () => {
-  it('repo 상대 경로 → blob URL', () => {
+  it('turns a repo-relative path into a blob URL', () => {
     expect(githubBlobUrl('mcp/README.md')).toBe(
       'https://github.com/wlsdks/ontology-atlas/blob/main/mcp/README.md',
     );

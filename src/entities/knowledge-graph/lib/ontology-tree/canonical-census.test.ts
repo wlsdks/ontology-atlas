@@ -13,11 +13,7 @@ const node = (id: string, kind: string): KnowledgeGraphNode => ({
   lastApprovedBy: "",
 });
 
-/**
- * Regression guard for surfaces disagreeing on the node count — measured at map 294, insights
- * 293, projects 288. The canonical figure is the whole derivation; the moment a surface adds
- * `project` back in or filters by kind, the numbers split apart again.
- */
+/** Surfaces agree only while every count is the whole derivation, without re-adding `project` or filtering kinds. */
 describe("computeCanonicalCensus", () => {
   const nodes = [
     node("p", "project"),
@@ -29,11 +25,11 @@ describe("computeCanonicalCensus", () => {
   ];
   const edges = [{ id: "1", from: "p", to: "d", type: "contains" }] as KnowledgeGraphEdge[];
 
-  it("project/document 는 개념이지만 reader sentinel 은 화면 census 에서 제외한다", () => {
+  it("counts project and document but excludes the reader sentinel", () => {
     expect(computeCanonicalCensus(nodes, edges)).toEqual({ conceptCount: 5, relationCount: 1 });
   });
 
-  it("빈 그래프는 0/0", () => {
+  it("returns zeros for an empty graph", () => {
     expect(computeCanonicalCensus([], [])).toEqual({ conceptCount: 0, relationCount: 0 });
   });
 });

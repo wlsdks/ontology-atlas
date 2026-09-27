@@ -10,11 +10,7 @@ import {
   type UpdatePhase,
 } from './update-state';
 
-/**
- * What the updater remembers on this computer: when it last reached the release feed, and the
- * one build someone said "Later" to. Read-only, for the settings pane to state as facts; a store
- * that cannot be read answers "nothing remembered", the same fallback the checker uses.
- */
+/** What the updater remembers here; an unreadable store answers "nothing remembered". */
 export function readUpdateMemory(): { lastCheckedAt: number | null; dismissedVersion: string | null } {
   try {
     const last = Number(window.localStorage.getItem(LAST_CHECK_KEY));
@@ -28,14 +24,8 @@ export function readUpdateMemory(): { lastCheckedAt: number | null; dismissedVer
 }
 
 /**
- * The updater's runtime wiring.
- *
- * Every judgement is made by the pure functions in `update-state.ts`; this only connects them to the
- * Tauri plugin and `localStorage` — policy mixed with side effects makes "when does it speak up"
- * untestable.
- *
- * The plugin is brought in by **dynamic import**. This app ships one static export for both web and
- * desktop, so a desktop-only module must not enter the web bundle.
+ * The updater's runtime wiring; every judgement is in `update-state.ts`. The plugin is
+ * dynamically imported so a desktop-only module stays out of the web bundle.
  */
 export function useAppUpdate() {
   const [phase, setPhase] = useState<UpdatePhase>({ kind: 'idle' });
@@ -46,8 +36,7 @@ export function useAppUpdate() {
     try {
       return window.localStorage.getItem(key);
     } catch {
-      // Where access is blocked (private mode and the like) it is treated as "no memory" — failing to
-      // remember is better than failing to update.
+      // Blocked storage is treated as no memory: failing to remember beats failing to update.
       return null;
     }
   };
@@ -71,23 +60,8 @@ export function useAppUpdate() {
       return;
     }
 
-    /*
-     * ⚠️ **An automatic check speaks only for "a new version exists"** (corrected by measurement,
-     * 2026-08-20). In every other case it **does not touch the state at all.**
-     *
-     * The automatic path used to use `checking` and `idle` too. So when a scheduled automatic check
-     * fired right after the user pressed "check for updates", it **silently erased** the answer they
-     * had just received — a screen where pressing something makes it appear and then vanish without a word.
-     *
-     * And it happened **only on failure**: on success `LAST_CHECK_KEY` is written and the automatic
-     * check skips on the interval, while a failure does not write it and the automatic check runs
-     * anyway. This repository's endpoint has no final release today and so **always fails** — meaning
-     * this defect was the default path, not an edge case.
-     *
-     * It was also the original intent. As the toast's own documentation records: *"the `checking`
-     * stage is not drawn … it speaks first when the result is 'a new version exists'."* The code was
-     * not keeping that promise.
-     */
+    /* An automatic check speaks only for "a new version exists" and otherwise leaves the state alone,
+     * or it erases the answer to a manual check. */
     if (manual) setPhase({ kind: 'checking' });
     try {
       const { check: checkForUpdate } = await import('@tauri-apps/plugin-updater');
@@ -104,9 +78,7 @@ export function useAppUpdate() {
       }
       setPhase({ kind: 'available', version: update.version, notes: update.body ?? null });
     } catch (error) {
-      // An automatic check's failure passes quietly — there is no reason to speak to the user because
-      // the network is down. Failure is reported only when the user pressed it themselves.
-      // **"Quietly" is not "erase"** — that confusion was the defect described above.
+      // An automatic check fails quietly; quietly never means erasing the state.
       if (manual) {
         setPhase({
           kind: 'failed',
@@ -168,8 +140,7 @@ export function useAppUpdate() {
 
   useEffect(() => {
     if (!isDesktopShell()) return;
-    // It checks a beat later rather than immediately on entry, so it does not compete with the first
-    // screen appearing. An update has never been urgent.
+    // A beat after entry, so it does not compete with the first screen.
     const timer = window.setTimeout(() => void check(false), 4_000);
     return () => window.clearTimeout(timer);
   }, [check]);

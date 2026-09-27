@@ -80,7 +80,7 @@ function renderPalette({
   );
 }
 
-describe('DocsVaultUnifiedPalette — 본문 검색 결과', () => {
+describe('DocsVaultUnifiedPalette body search results', () => {
   const bodyIndex: DocsBodyIndex = new Map([
     [
       'beta',
@@ -91,7 +91,7 @@ describe('DocsVaultUnifiedPalette — 본문 검색 결과', () => {
     ],
   ]);
 
-  it('본문에만 매치되는 문서가 스니펫과 함께 표시된다', () => {
+  it('shows body-only matches with a snippet', () => {
     renderPalette({ initialQuery: 'deterministic', bodyIndex });
     // The result row itself (the title has no match).
     expect(screen.getByText('Beta Doc')).toBeInTheDocument();
@@ -105,17 +105,15 @@ describe('DocsVaultUnifiedPalette — 본문 검색 결과', () => {
     ).toBeInTheDocument();
   });
 
-  it('본문 히트 행 선택 시 onDocSelect 에 쿼리가 전달된다 (뷰어 착지 — 마우스)', () => {
+  it('passes the query to onDocSelect when a body hit is clicked', () => {
     const onDocSelect = vi.fn();
     renderPalette({ initialQuery: 'deterministic', bodyIndex, onDocSelect });
     screen.getByText('Beta Doc').closest('a')!.click();
     expect(onDocSelect).toHaveBeenCalledWith('beta', 'deterministic');
   });
 
-  // Landing defect (P1 review) — the keyboard (Enter) path has to pass the query just
-  // like the mouse. The `row.onRun` reference is shared, but a separate assertion pins
-  // it against a measured regression.
-  it('본문 히트 행 선택 시 onDocSelect 에 쿼리가 전달된다 (뷰어 착지 — 키보드 Enter)', () => {
+  // The Enter path must pass the query like the mouse path.
+  it('passes the query to onDocSelect when a body hit is chosen with Enter', () => {
     const onDocSelect = vi.fn();
     renderPalette({ initialQuery: 'deterministic', bodyIndex, onDocSelect });
     const input = screen.getByRole('combobox');
@@ -123,21 +121,20 @@ describe('DocsVaultUnifiedPalette — 본문 검색 결과', () => {
     expect(onDocSelect).toHaveBeenCalledWith('beta', 'deterministic');
   });
 
-  it('bodyIndex 없이 0건이면 본문까지-검색했다는 새 안내 문구', () => {
+  it('says the body was searched too when zero results come without a bodyIndex', () => {
     renderPalette({ initialQuery: 'zzz-no-match' });
     expect(screen.getByText('문서 어디에서도 못 찾았어요')).toBeInTheDocument();
   });
 
-  it('인덱싱 중 0건이면 본문 인덱스 준비 중 안내를 덧붙인다', () => {
-    // Look the notice up by its message key, not by a fragment of its wording — the
-    // contract is "the notice appears", not "the notice reads like this".
+  it('adds an indexing notice when zero results come while indexing', () => {
+    // Found by message key: the contract is that the notice appears, not its wording.
     renderPalette({ initialQuery: 'zzz-no-match', bodyIndexing: true });
     expect(
       screen.getByText(koMessages.vaultWidgets.palette.bodyIndexingNotice),
     ).toBeInTheDocument();
   });
 
-  it('제목 매치 행에는 스니펫을 중복 표시하지 않는다', () => {
+  it('does not repeat a snippet on title-match rows', () => {
     const idx: DocsBodyIndex = new Map([
       ['alpha', buildBodyEntry('alpha appears in body too', 'alpha@1')],
     ]);

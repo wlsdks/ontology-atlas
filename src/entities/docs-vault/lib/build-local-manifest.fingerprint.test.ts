@@ -22,7 +22,7 @@ function makeFileHandle(name: string, file: FakeFile): FileSystemFileHandle {
 }
 
 function makeRoot(files: Record<string, FakeFile>): FileSystemDirectoryHandle {
-  // The simplest shape — a flat directory. Keys are 'foo.md' or 'sub/bar.md'.
+  // Flat directory; keys are 'foo.md' or 'sub/bar.md'.
   const groups: Record<string, Record<string, FakeFile>> = {};
   for (const [path, file] of Object.entries(files)) {
     const parts = path.split('/');
@@ -64,7 +64,7 @@ function makeRoot(files: Record<string, FakeFile>): FileSystemDirectoryHandle {
 }
 
 describe('computeLocalVaultFingerprint', () => {
-  it('동일 파일 / 동일 mtime → 같은 fingerprint', async () => {
+  it('gives the same fingerprint for the same files and mtimes', async () => {
     const files = {
       'a.md': { text: '# A', lastModified: 1000 },
       'b.md': { text: '# B', lastModified: 2000 },
@@ -77,7 +77,7 @@ describe('computeLocalVaultFingerprint', () => {
     expect(fp1.length).toBeGreaterThan(0);
   });
 
-  it('파일 mtime 변경 → 다른 fingerprint', async () => {
+  it('changes the fingerprint when a file mtime changes', async () => {
     const root1 = makeRoot({ 'a.md': { text: 'x', lastModified: 1 } });
     const root2 = makeRoot({ 'a.md': { text: 'x', lastModified: 2 } });
     expect(await computeLocalVaultFingerprint(root1)).not.toBe(
@@ -85,7 +85,7 @@ describe('computeLocalVaultFingerprint', () => {
     );
   });
 
-  it('파일 추가 → 다른 fingerprint', async () => {
+  it('changes the fingerprint when a file is added', async () => {
     const root1 = makeRoot({ 'a.md': { text: 'x', lastModified: 1 } });
     const root2 = makeRoot({
       'a.md': { text: 'x', lastModified: 1 },
@@ -96,12 +96,12 @@ describe('computeLocalVaultFingerprint', () => {
     );
   });
 
-  it('빈 디렉터리는 빈 fingerprint', async () => {
+  it('gives an empty fingerprint for an empty directory', async () => {
     const root = makeRoot({});
     expect(await computeLocalVaultFingerprint(root)).toBe('');
   });
 
-  it('buildLocalManifest 의 fingerprint 가 standalone 결과와 일치', async () => {
+  it('matches the standalone fingerprint from buildLocalManifest', async () => {
     const files = {
       'a.md': { text: '# A', lastModified: 100 },
       'b.md': { text: '# B', lastModified: 200 },

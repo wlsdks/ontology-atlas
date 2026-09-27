@@ -1,15 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildLocalManifest } from './build-local-manifest';
 
-/**
- * D-1 — the doc reader's backlink strip showed a FALSE "no backlinks" for docs
- * referenced only through frontmatter relation keys (`dependencies`,
- * `relates`, `describes`, …). The backlink index used to scan BODY markdown
- * links ONLY, so `capabilities/mcp-server` — referenced by 13 docs via
- * frontmatter — read as unreferenced. These tests lock in that frontmatter
- * relation refs now contribute to `backlinksDetail`, matching the graph's
- * `find_backlinks` semantics.
- */
+/** Frontmatter relation refs count as backlinks, as `find_backlinks` counts them. */
 
 interface FakeFile {
   text: string;
@@ -108,7 +100,7 @@ describe('build-local-manifest — D-1 frontmatter relation backlinks', () => {
         ]),
       }),
     );
-    // `mcp/src/index.js` is a source-file ref, not a doc — no backlink target.
+    // A source-file ref, not a doc.
     expect(manifest.manifest.backlinksDetail['mcp/src/index.js']).toBeUndefined();
     expect(Object.keys(manifest.manifest.backlinksDetail)).not.toContain('mcp/src/index.js');
   });
@@ -159,7 +151,7 @@ describe('build-local-manifest — D-1 frontmatter relation backlinks', () => {
       }),
     );
     const backlinks = manifest.manifest.backlinksDetail['capabilities/mcp-server'] ?? [];
-    // one entry per fromSlug (deduped), and it's the body-link one (richer context)
+    // One entry per fromSlug, keeping the body link's richer context.
     const fromCli = backlinks.filter((b) => b.fromSlug === 'capabilities/cli-entry');
     expect(fromCli).toHaveLength(1);
     expect(fromCli[0].context).not.toContain('frontmatter ·');

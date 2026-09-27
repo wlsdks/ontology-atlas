@@ -6,11 +6,7 @@ import type {
 export interface OntologyHealthSignalCandidate {
   slug: string;
   name: string;
-  /**
-   * Incoming reference count (fan-in). Filled only for promotion candidates — it is
-   * the evidence for "why is this a candidate", which the to-do queue shows verbatim
-   * as "N references". Undefined for stale and orphan candidates.
-   */
+  /** Incoming references, the queue's "N references" evidence; set only for promotion candidates. */
   fanIn?: number;
 }
 
@@ -27,11 +23,7 @@ export interface OntologyHealthSignalOptions {
 }
 
 const DEFAULT_STALE_DAYS_THRESHOLD = 30;
-/**
- * Incoming fan-in at or above which a node is treated as load-bearing — enough
- * other concepts depend on it that it's a promotion / "core" candidate. Shared
- * single source so significance ("core axis") and health-signal promotion agree.
- */
+/** Fan-in at which a node is a promotion candidate; shared by significance and health signals. */
 export const PROMOTION_MIN_FAN_IN = 4;
 const DEFAULT_PROMOTION_MIN_FAN_IN = PROMOTION_MIN_FAN_IN;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -109,9 +101,7 @@ function isStaleNode(
 function toSignalCandidate(node: KnowledgeGraphNode): OntologyHealthSignalCandidate {
   return {
     slug: node.id,
-    // The short display title. This candidate is the single source shared by the map's
-    // health chip, DoNextTab, and the repair queue's action target, so shortening it
-    // once shortens it on all of them.
+    // Short display title, shared by the map chip, DoNextTab and the repair queue.
     name: node.display ?? node.title,
   };
 }
@@ -119,23 +109,12 @@ function toSignalCandidate(node: KnowledgeGraphNode): OntologyHealthSignalCandid
 export interface OntologyHealthActionTarget {
   slug: string;
   title: string;
-  // `island` / `containment` come from the CLI-parity vault-health verdict
-  // (disconnected actionable islands · missing domain containment). They rank ABOVE
-  // the statistical stale/orphan/promotion signals because the CLI
-  // (`node $ATLAS/cli/src/index.mjs health`) flips to `needs_attention` on them, so
-  // surfacing them keeps the app's "nothing to repair" claim honest.
+  // `island` and `containment` come from the CLI-parity health verdict and rank first, because the
+  // CLI reports `needs_attention` on them.
   kind: "island" | "containment" | "stale" | "orphan" | "promotion";
 }
 
-/**
- * Picks ONE actionable repair target from the three health-signal buckets — stale
- * first (evidence is aging), then orphan (no owner yet), then promotion (a
- * statistical suggestion, lowest urgency). It lives here rather than in
- * `views/home/lib/topology-analysis.ts` (still re-exported there under its old name
- * for the topology map's health chip) so the insights to-do tab's repair queue can
- * reuse the SAME rule without a cross-view import. Both surfaces read this one
- * entities-level function, so the two "next repair" targets can never drift.
- */
+/** One repair target: stale, then orphan, then promotion; shared by the map chip and insights queue. */
 export function buildOntologyHealthActionTarget({
   stale,
   orphan,

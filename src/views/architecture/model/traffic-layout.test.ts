@@ -2,20 +2,12 @@ import { describe, expect, it } from 'vitest';
 
 import { buildTrafficArcs } from './traffic-layout';
 
-/**
- * The rows this repository's own profile resolves to, deepest last, as `buildArchitectureLayout`
- * returns them. The counts below are the real ones measured on 2026-08-28.
- */
+/** This repository's own profile rows, deepest last, with real measured counts. */
 const ROWS = [['routing'], ['app'], ['views'], ['widgets'], ['features'], ['entities'], ['shared']];
 
 describe('buildTrafficArcs', () => {
   it('weighs crossings against the busiest crossing, never against same-role traffic', () => {
-    /*
-     * ⚠️ The reason this is the first test. `views → views` (223) and `widgets → widgets` (240)
-     * are among the largest counts in the measurement and can never be a boundary crossing: the
-     * scanner allows same-role imports unconditionally. Letting them set the scale would draw
-     * every real crossing as a hairline beside traffic that crosses nothing.
-     */
+    /* Same-role counts are among the largest and never cross; they must not set the scale. */
     const arcs = buildTrafficArcs(
       [
         { fromRole: 'widgets', toRole: 'shared', count: 314 },
@@ -52,7 +44,6 @@ describe('buildTrafficArcs', () => {
   });
 
   it('drops an edge naming a role the profile no longer has', () => {
-    /* A record outlives a profile edit: it was measured against the roles of its own moment. */
     expect(buildTrafficArcs([{ fromRole: 'views', toRole: 'gone', count: 9 }], ROWS)).toEqual([]);
     expect(buildTrafficArcs([{ fromRole: 'gone', toRole: 'views', count: 9 }], ROWS)).toEqual([]);
   });

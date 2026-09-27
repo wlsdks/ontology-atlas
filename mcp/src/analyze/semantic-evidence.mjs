@@ -1,7 +1,6 @@
 // The semantic evidence packet: which repository documents are worth quoting,
-// what they say, and how far they can be trusted. Discovery of candidate
-// documents, per-document heading/excerpt extraction, and the risk scan that
-// downgrades trust when a document reads like marketing or a template.
+// their headings and excerpts, and the risk scan that downgrades trust when a
+// document reads like marketing or a template.
 
 import { readFileSync, readdirSync, statSync, existsSync, realpathSync } from 'node:fs';
 import { join, basename, relative } from 'node:path';
@@ -266,6 +265,8 @@ function discoverSemanticEvidenceCandidates(rootPath, skipped = []) {
     });
     return true;
   }
+  // Sorted depth-first walk: O(entries), capped by the file and entry budgets;
+  // `visitedDirectories` (real paths) stops symlink loops.
   function visit(dir) {
     if (filesSeen >= SEMANTIC_DISCOVERY_MAX_FILES || walkBudgetReached(dir)) return;
     const realDirectory = realpathSync(dir);

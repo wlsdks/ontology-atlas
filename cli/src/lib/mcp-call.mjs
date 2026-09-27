@@ -1,17 +1,6 @@
-// Graph-level commands (backlinks / rename / merge / delete / query) thin-wrap the
-// MCP server. The logic in mcp/src/index.js is the single source of truth; the CLI
-// calls it by spawning a child process and speaking JSON-RPC.
-//
-// Why spawn rather than duplicate the logic:
-//   - the atomic backlink redirect of rename_concept / merge_concepts is 100+ LOC.
-//     Duplicating it would create a 5-way drift surface (schema/parser/validator
-//     are already 4-way).
-//   - spawn overhead is ~50-100ms, acceptable for a command a user runs one at a time.
-//
-// Resolution order for the mcp entry:
-//   1. OATLAS_MCP_PATH env (explicit override)
-//   2. relative ../../../mcp/src/index.js (monorepo dev)
-//   3. node:require.resolve('ontology-atlas-mcp/src/index.js')
+// Graph-level commands spawn the MCP server and speak JSON-RPC instead of duplicating mcp/src/index.js:
+// the rename/merge backlink redirect is 100+ lines, and a spawn costs about 50-100ms per command.
+// Entry: OATLAS_MCP_PATH, then ../../../mcp/src/index.js, then require.resolve('ontology-atlas-mcp/src/index.js').
 
 import { spawn } from 'node:child_process';
 import { existsSync, readFileSync, statSync } from 'node:fs';
@@ -63,10 +52,8 @@ function isFile(path) {
 }
 
 /**
- * One-shot MCP tool call. Spawns the server, sends initialize +
- * notifications/initialized + tools/call, parses the JSON-RPC response,
- * resolves with `structuredContent` after checking it matches text JSON when
- * both payloads are present, then falls back to the JSON in `content[0].text`.
+ * One-shot MCP tool call: spawns the server, runs initialize and tools/call, and resolves with
+ * `structuredContent` (checked against the text JSON when both exist) or the JSON in `content[0].text`.
  *
  * @param {string} vaultRoot — passed as OATLAS_VAULT env
  * @param {string} toolName — e.g. 'find_backlinks'
@@ -83,15 +70,8 @@ export function callMcpTool(vaultRoot, toolName, args = {}, options = {}) {
     const entry = resolveMcpEntry();
     const timeoutMs = mcpCallTimeoutMs();
     const killGraceMs = mcpKillGraceMs();
-    // `OATLAS_REPO_ROOT` is passed **only when it was stated** (measured 2026-08-01).
-    //
-    // It used to fall back to `process.cwd()`. That skipped the resolution order
-    // the server documents — look at the vault's git top-level first — and declared
-    // **whatever directory I happened to be in** to be that vault's repository.
-    // Inspecting someone else's vault from inside this repository made `health`
-    // check that vault's code paths against *our* repository and stamp
-    // `needs_attention — vault_validation warn:13` on a vault with nothing wrong,
-    // while `validate` called the same vault clean — with no way to tell which was right.
+    // `OATLAS_REPO_ROOT` is passed only when stated. Defaulting to `process.cwd()` skipped the server's own
+    // order (the vault's git top-level first) and checked another vault's paths against this repository.
     const env = { ...process.env, OATLAS_VAULT: vaultRoot };
     if (repoRoot !== undefined) env.OATLAS_REPO_ROOT = repoRoot;
     else if (!process.env.OATLAS_REPO_ROOT) delete env.OATLAS_REPO_ROOT;

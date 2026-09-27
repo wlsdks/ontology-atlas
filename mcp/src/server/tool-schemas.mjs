@@ -50,10 +50,9 @@ const BACKLINK_REWRITE_VALUE_OUTPUT_SCHEMA = Object.freeze({
 const GRAPH_REF_ARRAY_MAX_ITEMS = 500;
 
 /**
- * Per-locale display-name input schema (owner decision, 2026-07-24). `title` is
- * the single source of truth for search, matching, and file identity, so it
- * never varies by locale — only render surfaces (map labels, INDEX, popovers)
- * read `display_<locale>`. Filling one side only attaches an advisory warning.
+ * Per-locale display-name input schema. `title` stays the single source of truth
+ * for search, matching and file identity; only render surfaces read
+ * `display_<locale>`. Filling one side only attaches an advisory warning.
  */
 const LOCALE_LABELS_SCHEMA = Object.freeze({
   type: 'object',
@@ -1296,26 +1295,17 @@ const OUTGOING_EDGE_OUTPUT_SCHEMA = Object.freeze({
   required: ['to', 'via'],
   additionalProperties: false,
 });
-// Growth signal, attached only when a read tool hits an empty or unresolved
-// result — never on a success response. `mcp/src/growth-hint.mjs` fills it from
-// real vault data only (inventory, near-miss slugs and titles).
 /**
- * How the body is delivered. `'excerpt'` is the first prose paragraph (<=800
- * chars), `'full'` is the whole markdown body. The default is `'excerpt'`
- * because of payload size; `'full'` exists because **the construction rules
- * require the evidence to be written in the body** — telling authors to write
- * it and then giving no way to read it makes half of that rule fictional.
+ * How the body is delivered: `'excerpt'` is the first prose paragraph (<=800
+ * chars, the default for payload size) and `'full'` the whole markdown body,
+ * because the construction rules put the evidence in the body.
  */
 const BODY_DELIVERY_MODES = Object.freeze(['excerpt', 'full']);
-/** Row cap for one `get_concepts({ body: 'full' })` call. Excerpt mode stays 50. */
 
 /**
- * How much body was delivered — and **what was left out**.
- *
- * Always present in the response. When nothing was cut, `truncated: false`
- * guarantees that; when it was, the remaining character count comes with the
- * call that fetches the rest. Cutting silently was the defect (handover trial,
- * 2026-08-01).
+ * How much body was delivered and what was left out. Always present:
+ * `truncated: false` guarantees nothing was cut; otherwise the remaining
+ * character count comes with the call that fetches the rest.
  */
 const BODY_INFO_OUTPUT_SCHEMA = Object.freeze({
   type: 'object',
@@ -1331,6 +1321,9 @@ const BODY_INFO_OUTPUT_SCHEMA = Object.freeze({
   additionalProperties: false,
 });
 
+// Growth signal, attached only when a read tool hits an empty or unresolved
+// result — never on a success response. `mcp/src/growth-hint.mjs` fills it from
+// real vault data only (inventory, near-miss slugs and titles).
 const GROWTH_HINT_OUTPUT_SCHEMA = Object.freeze({
   type: 'object',
   properties: {
@@ -1340,10 +1333,9 @@ const GROWTH_HINT_OUTPUT_SCHEMA = Object.freeze({
       type: 'object',
       properties: {
         tool: NON_BLANK_STRING_SCHEMA,
-        // Tool arguments are intentionally polymorphic: the example is a
-        // repair hint for several tools, not an invocation envelope for one
-        // fixed operation. Keep that openness explicit so it cannot be
-        // mistaken for an omitted nested schema.
+        // Tool arguments are polymorphic: the example is a repair hint for several tools,
+        // not an envelope for one operation, so the openness is explicit rather than an
+        // omitted nested schema.
         args: { type: 'object', additionalProperties: true },
       },
       required: ['tool', 'args'],
@@ -1354,11 +1346,9 @@ const GROWTH_HINT_OUTPUT_SCHEMA = Object.freeze({
   additionalProperties: false,
 });
 
-// Nested tools/list objects are closed by default. These small contracts are
-// deliberately kept beside the registry so the MCP wire shape and the
-// runtime values cannot drift independently. Only maps whose keys are chosen
-// at runtime (frontmatter and example-call arguments) use an explicit open
-// object schema above/below.
+// Nested tools/list objects are closed by default and kept beside the registry so
+// wire shape and runtime values cannot drift. Only maps whose keys are chosen at
+// runtime (frontmatter, example-call arguments) are explicitly open.
 const PROJECT_SOURCE_GAP_SCHEMA = Object.freeze({
   type: ['object', 'null'],
   properties: {

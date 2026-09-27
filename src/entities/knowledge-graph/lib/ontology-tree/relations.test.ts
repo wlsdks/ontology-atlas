@@ -38,7 +38,7 @@ const edge = (
 });
 
 describe("computeEdgeTypeDistribution", () => {
-  it("type 별 카운트", () => {
+  it("counts edges per relation type", () => {
     const dist = computeEdgeTypeDistribution([
       edge("e1", "a", "b", "contains"),
       edge("e2", "b", "c", "contains"),
@@ -48,23 +48,23 @@ describe("computeEdgeTypeDistribution", () => {
     expect(dist.get("depends_on")).toBe(1);
   });
 
-  it("빈 배열 → 빈 Map", () => {
+  it("returns an empty Map for no edges", () => {
     expect(computeEdgeTypeDistribution([]).size).toBe(0);
   });
 });
 
 describe("countCrossProjectEdges", () => {
-  it("빈 입력 → 0", () => {
+  it("counts 0 for empty input", () => {
     expect(countCrossProjectEdges([], [])).toBe(0);
   });
 
-  it("같은 프로젝트 edge → 0 (cross 아님)", () => {
+  it("counts 0 for an edge within one project", () => {
     const ns = [node("a", "A", ["p1"]), node("b", "B", ["p1"])];
     const es = [edge("e1", "a", "b", "depends_on")];
     expect(countCrossProjectEdges(es, ns)).toBe(0);
   });
 
-  it("disjoint projectIds edge 만 카운트", () => {
+  it("counts only edges between disjoint projectIds", () => {
     const ns = [
       node("a", "A", ["demo-iam"]),
       node("b", "B", ["sample-app"]),
@@ -79,25 +79,25 @@ describe("countCrossProjectEdges", () => {
     expect(countCrossProjectEdges(es, ns)).toBe(2);
   });
 
-  it("미존재 노드 edge → 0 (안전 폴백)", () => {
+  it("counts 0 for an edge to a missing node", () => {
     const ns = [node("a", "A", ["p1"])];
     const es = [edge("e1", "a", "ghost", "depends_on")];
     expect(countCrossProjectEdges(es, ns)).toBe(0);
   });
 
-  it("빈 projectIds 노드 edge → 0", () => {
+  it("counts 0 for nodes without projectIds", () => {
     const ns = [node("a", "A", []), node("b", "B", ["p2"])];
     const es = [edge("e1", "a", "b", "uses")];
     expect(countCrossProjectEdges(es, ns)).toBe(0);
   });
 });
 
-describe("isContainmentRelation — 구조(containment) edge 단일 판별", () => {
-  it("contains / belongs_to 는 containment", () => {
+describe("isContainmentRelation", () => {
+  it("treats contains and belongs_to as containment", () => {
     expect(isContainmentRelation("contains")).toBe(true);
     expect(isContainmentRelation("belongs_to")).toBe(true);
   });
-  it("의존/연관 등은 containment 아님", () => {
+  it("does not treat dependency or association as containment", () => {
     expect(isContainmentRelation("depends_on")).toBe(false);
     expect(isContainmentRelation("related_to")).toBe(false);
     expect(isContainmentRelation("relates")).toBe(false);

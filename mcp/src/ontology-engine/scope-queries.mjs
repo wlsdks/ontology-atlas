@@ -276,10 +276,9 @@ export function createScopeQueries({
   }
 
   function externalElementCandidates(limit) {
-    // A ref matching an `.ontology-atlasignore` pattern counts as *intentional
-    // external code* and is skipped in the materialize recommendation. The ignored
-    // count is exposed in the response so nobody has to ask why fewer external
-    // refs appear than expected.
+    // A ref matching `.ontology-atlasignore` is intentional external code and is not
+    // recommended for materialisation; the ignored count is returned so the smaller
+    // number is explained.
     const allExternal = edges.filter(
       (edge) => edge.external && edge.via === 'elements',
     );
@@ -330,18 +329,9 @@ export function createScopeQueries({
       .sort(compareEdges)
       .map((edge) => {
         const kind = inferKindFromRelation(edge.via);
-        // R+ (agent-persona-2026-07 QA #4) — typo / missing folder-prefix
-        // dangling refs (e.g. "checkout" when "domains/checkout" already
-        // exists) used to always propose add_concept regardless, which
-        // would create a duplicate node instead of fixing the reference.
-        // When an unambiguous existing-node match is found, surface it as
-        // `didYouMean` and suppress the add_concept proposal (kept `null`,
-        // same as the existing "kind could not be inferred" case) so an
-        // agent following proposedAction literally never manufactures a
-        // duplicate — `reason` carries the correction instead. `kind` /
-        // score / other fields stay on the same `resolve_dangling_reference`
-        // shape other callers (growth/maintenance renderers, contract
-        // checks) already expect.
+        // A typo or missing-prefix dangling ref with one unambiguous existing match gets
+        // `didYouMean` and no add_concept proposal, so an agent following proposedAction
+        // never creates a duplicate; the row keeps the `resolve_dangling_reference` shape.
         const didYouMean = findNearMatchSlug(edge.ref, nodes);
         return {
           kind: 'resolve_dangling_reference',
@@ -410,23 +400,9 @@ export function createScopeQueries({
   }
 
   /**
-   * Capabilities that never reach code.
-   *
-   * ## Why the predicate is "no `elements:` edge at all", not "no children"
-   *
-   * `retire_unearned_node` below explains why "a capability with no resolved
-   * children" is too loud a signal: capabilities routinely name a behavior whose
-   * elements have no node yet. This check counts either a real element relation or
-   * the capability's canonical `path:` entrypoint as evidence. A raw path inside
-   * `elements:` is still noticed by the write gate as a category error.
-   *
-   * ## Why this reports instead of blocking
-   *
-   * Construction rule 5: the procedure never blocks a write. Refusing an
-   * evidence-less capability would push agents to work around the tool, and the
-   * honest sequence — name the behavior first, attach the file second — would
-   * become impossible. So this is `review` / `info`: the write succeeds, and the
-   * queue remembers what is still unproven.
+   * Capabilities that never reach code: no `elements:` edge and no canonical
+   * `path:` entrypoint. Reported, not blocked (construction rule 5), so naming the
+   * behavior before attaching its file stays possible.
    */
   function capabilityWithoutEvidenceCandidates(limit) {
     const hasElementsEdge = new Set(
@@ -459,34 +435,9 @@ export function createScopeQueries({
   }
 
   /**
-   * Bridge nodes that group nothing — the fourth bridge condition, enforced.
-   *
-   * ## Why the predicate is this narrow
-   *
-   * "A capability with no children" is NOT the signal. Measured on this repo's own
-   * vault: 20 of 38 capabilities have zero resolved children, and they are fine —
-   * they are documented behaviors whose elements simply have no nodes yet. Firing
-   * on all of them would bury the real case under twenty false alarms, and a
-   * channel that cries wolf gets filtered out, which is how a check like this
-   * quietly stops working.
-   *
-   * So emptiness alone is not enough. There has to be positive evidence the node
-   * was *meant* to group, and there are exactly two shapes of that:
-   *
-   *   1. **A same-kind containment parent.** A capability under a capability only
-   *      happens when someone inserted a layer — the four-kind hierarchy is
-   *      otherwise flat (project → domain → capability → element). Measured: 0
-   *      such nodes exist in this vault today, so this half has no false positives
-   *      at all right now.
-   *   2. **An untouched starter body.** `add_concept` fills a kind-specific
-   *      template when no body is given; a node still carrying it verbatim was
-   *      created and abandoned. Measured: 0 in this vault today.
-   *
-   * Both halves are zero today, which is the point — this audit reports nothing
-   * until someone actually leaves a bridge empty.
-   *
-   * Bodies only exist when the caller passes `sourceDocs`; without them the check
-   * degrades to shape (1) rather than guessing.
+   * Bridge nodes that group nothing. Emptiness alone is common and fine, so a node
+   * must also have a same-kind containment parent or an untouched `add_concept`
+   * starter body; without `sourceDocs` only the parent shape is checked.
    */
   function unearnedNodeCandidates(limit) {
     const rows = nodes
@@ -582,17 +533,9 @@ export function createScopeQueries({
     const searchBudget = normalizeSearchBudget(options.searchBudget);
     const cycleMap = new Map();
     const sortedNodes = [...nodes].sort((a, b) => a.slug.localeCompare(b.slug));
-    // This DFS enumerates paths, so it is exponential. The only early exit used to
-    // be `cycleMap.size > limit`, which fires **only when a cycle is found**. So a
-    // graph with no cycles — exactly the case where a user calls this "to check it
-    // is healthy" — exhausts the entire path space (measured: 60 nodes, 444 edges,
-    // 0 cycles → 10.9s; MCP is single-threaded stdio, so the whole agent surface
-    // is frozen for that long).
-    //
-    // `allPaths` already carries a budget, `truncatedByBudget`, and an evidence
-    // contract for the same explosion. That grammar is transplanted rather than a
-    // second mechanism invented. **Silent truncation is forbidden in this
-    // repository**, so hitting the budget reports `exhaustive: false`.
+    // Path enumeration is exponential and a cycle-free graph never trips the cycle
+    // limit, so this uses `allPaths`' searchBudget contract; hitting it reports `exhaustive: false`
+    // rather than truncating silently.
     let expandedStates = 0;
     let truncatedByBudget = false;
 
@@ -651,18 +594,8 @@ export function createScopeQueries({
 
       for (const edge of outgoing.get(current) || []) {
         if (!edge.resolved || !typeAllowed(edge.via, typeSet)) continue;
-        // **An edge pointing at itself is a cycle too** (measured 2026-07-29).
-        //
-        // The `path.length > 1` gate excluded length-1 cycles (self-loops)
-        // entirely. So `cycles` returned `totalCycles: 0` with `exhaustive: true`
-        // attached, asserting *"zero means acyclic within maxDepth"*, while on the
-        // same graph `topological_order` returned `acyclic: false` — and `health`
-        // carried both **in one response** (`dependencyCycles: 0` alongside
-        // `dependencyOrderAcyclic: false`).
-        //
-        // `add_relation` accepts a self-edge as normal, so they are easy to make.
-        // Length-2 cycles were caught and only length-1 slipped through, leaving
-        // the user no way to work out why just this one was missed.
+        // A self-edge is a length-1 cycle. `add_relation` accepts one, and skipping it
+        // would contradict `topological_order`'s `acyclic: false` on the same graph.
         if (edge.to === start && (path.length > 1 || edge.to === current)) {
           const cycle = normalizeCycle(path, [...edgePath, edge]);
           if (!cycleMap.has(cycle.key) && cycleMap.size <= limit) {
@@ -684,6 +617,7 @@ export function createScopeQueries({
     }
   }
 
+  // Layered Kahn's algorithm over deduplicated edge pairs (adjacency Map of Sets, indegree Map): O((V + E) log V), since each layer and adjacency set is sorted for a stable order.
   function topologicalOrder(options = {}) {
     const limit = normalizeLimit(options.limit, 100);
     const typeSet = normalizeTypes(options.types ?? ['dependencies'], options.typeName || 'types');
@@ -774,12 +708,9 @@ export function createScopeQueries({
       const domainSlug = resolveOptional(node.domain);
       if (!domainSlug) continue;
       const relation = node.kind === 'capability' ? 'capabilities' : 'elements';
-      // `element.domain` already records domain membership, while a resolved
-      // capability/project `elements` edge records ownership. Section 5 permits
-      // containment views to display the domain inverse without writing it.
-      // Recommending a second direct domain edge in that shape makes an exact
-      // approved plan look unfinished after it lands. Unowned elements still
-      // fall through to the direct-domain recommendation below.
+      // `element.domain` records membership and a resolved `elements` edge records
+      // ownership; section 5 lets containment views show the inverse, so an owned element
+      // needs no direct domain edge. Unowned elements fall through below.
       if (node.kind === 'element' && hasResolvedContainmentParent(node.slug)) {
         continue;
       }
@@ -819,22 +750,9 @@ export function createScopeQueries({
   }
 
   /**
-   * The reads this vault's own uncertainty asks for.
-   *
-   * Every node here records what its author did not open, did not finish, or
-   * took on somebody else's word. Until this group existed that record was
-   * where the loop stopped: the product asked for the admission, stored it as
-   * prose, and then had nothing that turned it back into a next step. This
-   * reads those lines and hands each one back as a read with an address.
-   *
-   * ## Why it says `no_bodies` instead of nothing
-   *
-   * A compiled artifact carries no bodies, and `growth_plan` was until now a
-   * pure snapshot read. An empty group would be indistinguishable from a vault
-   * whose every unknown is settled — the most flattering possible lie a queue
-   * can tell. `meaningGapCandidates` on the maintenance path accepts the same
-   * degradation and states it the same way; this names it in the response so a
-   * caller can tell "nothing to read" from "nothing was handed to me".
+   * The reads this vault's own `## Uncertainty` lines ask for, each returned with an
+   * address. Without bodies the group says `no_bodies`, so "nothing to read" is
+   * never confused with "nothing was handed over".
    */
   function nextReadCandidates(limit) {
     const docsWithBodies = nodes
@@ -883,10 +801,8 @@ export function createScopeQueries({
         unassignedNodes: unassignedNodes.total,
         emptyDomains: emptyDomains.total,
         nextReads: nextReads.total,
-        // Deliberately unchanged. `totalActions` counts what a writer would
-        // change in the vault; a next read changes the reader first, and
-        // folding it in here would inflate the one number other surfaces
-        // already treat as "writes waiting".
+        // Unchanged on purpose: `totalActions` counts pending writes, which other
+        // surfaces read as "writes waiting"; a next read is not a write.
         totalActions:
           relationRecommendations.totalRecommendations +
           externalElementRefs.total +
@@ -901,26 +817,6 @@ export function createScopeQueries({
     };
   }
 
-  /**
-   * Write-path gate findings → maintenance actions, on the existing channel.
-   *
-   * Three deliberate absences, each of them a rule the council applied:
-   *
-   * 1. **No `resolve_dangling_reference` row here.** The gate classifies plain
-   *    unresolved references — that classification is what tells a path-shaped
-   *    entry apart from a mistyped slug — but `danglingReferenceCandidates()`
-   *    above already reports them from the same post-write vault. Emitting both
-   *    would put the same fact in one payload twice, and a channel that repeats
-   *    itself gets filtered. No union.
-   * 2. **No `proposedAction`.** Every row here is a review action. The 92 exist
-   *    because the one prescription on offer was "create the node", and an agent
-   *    that follows a scaffold literally answers 92 unresolved strings by
-   *    manufacturing 92 nodes. The `reason` names both exits in prose and lets
-   *    the caller choose; the same restraint the `didYouMean` branch already
-   *    applies a few functions above.
-   * 3. **No count anywhere in the wording.** `fold_bulk_siblings` reports how
-   *    many siblings one batch made, never how many a parent may have.
-   */
   return {
     lineage, containmentTree, cycles, topologicalOrder, recommendRelations, growthPlan,
     collectContainmentScope, collectLineage, domainMapRow, intersectSlugSets, nearestDomainFor,

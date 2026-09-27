@@ -56,11 +56,7 @@ describe('service round brief', () => {
   });
 
   it('gives each place its own line with its own location and query, inside one turn', () => {
-    /*
-     * Spec §3.2: one round may watch a Slack room and a Confluence space, and the cost line
-     * above the primary press promises **one** agent turn per pass — so the places are a list
-     * inside one brief, never a brief each.
-     */
+    /* One agent turn per pass, so all places go in one brief. */
     const brief = buildServiceRoundBrief({
       ...base,
       places: [

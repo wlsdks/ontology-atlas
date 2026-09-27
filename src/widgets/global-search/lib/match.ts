@@ -8,31 +8,17 @@ import {
 } from "@/shared/lib/node-name-match";
 
 /**
- * N12 (persona-ux-2026-07 report) — element nodes are often titled after the
- * source file they represent (`mcp/src/ontology-engine.mjs`). At full title
- * weight that reads as body-text noise next to plain-language capability/
- * domain titles in the same result list. Heuristic: a slash-separated
- * segment ending in a short code-file extension. Used to DEMOTE the row's
- * visual weight (mono + quaternary tone), never to hide the row — the path
- * is still the only identifying label these nodes have.
+ * Detects file-path-shaped element titles (a slash segment ending in a short code extension) to
+ * demote the row's weight; the path is never hidden because it is the only label.
  */
 export function isPathLikeTitle(title: string): boolean {
   return /\/.*\.[a-z0-9]{1,5}$/i.test(title.trim());
 }
 
 /**
- * What carried the match, so a result row can say why it is in the list. One shape
- * for both sources, because the two kinds of row sit in one list and a person
- * reading it should not have to learn two explanations.
- *
- * `text` is the exact string that matched. The three seats:
- *
- * - `name` — one specific name. For a concept that is the canonical `title` or any
- *   `display_<locale>`; for a project, its name or `nameEn`. It is often **not** the
- *   name the row is drawing, which is the whole reason this type exists.
- * - `summary` — the descriptive prose beside the name: a concept's summary, or a
- *   project's description, tag or category.
- * - `id` — the identifier: a concept's id slug, or a project's slug.
+ * What carried the match, so a row can say why it is listed; one shape for concepts and
+ * projects. `name` is a specific name (often not the drawn one), `summary` the descriptive prose, `id` the
+ * identifier.
  */
 export interface SearchMatchEvidence {
   field: "name" | "summary" | "id";
@@ -40,14 +26,7 @@ export interface SearchMatchEvidence {
 }
 
 /**
- * One page of results plus the size of what was found.
- *
- * **The number on screen has to be the answer, not the page.** The palette showed
- * its limit as if it were the count: typing a common letter put "match · 20" in the
- * heading and "21 matches" in the footer when the vault held far more, and the footer
- * is the one place that names the scope it searched — so the sentence read as a fact
- * about the folder. The empty state already did this correctly ("20 / 125"), which is
- * the shape the query state now uses too (measured 2026-09-19).
+ * One page of results plus the found count, so the screen shows the answer rather than the limit.
  */
 export interface OntologySearchPage {
   /** The results to draw, already cut to the limit. */
@@ -71,16 +50,8 @@ export interface OntologySearchResult {
 }
 
 /**
- * Optional filters for matchOntologyNodes.
- *
- * With both sets empty (or unset) the filter is inactive and every node is a
- * candidate. Non-empty sets are ANDed — a result must match the kind *and* the
- * project.
- *
- * The user's mental model:
- *   "only show capabilities" → kinds = {capability}
- *   "only nodes in this project" → projectIds = {project-slug}
- *   "capabilities in this project" → both sets
+ * Optional filters; empty or unset sets are inactive, and non-empty kind and project sets are
+ * ANDed.
  */
 export interface MatchOntologyOptions {
   /**
@@ -95,58 +66,14 @@ export interface MatchOntologyOptions {
 }
 
 /**
- * Ontology node search.
- *
- * Scores (lower is a weaker match):
- *   7 — exact name match. Someone who typed a name in full is looking for the node
- *       with that name; tied with a prefix match, the recency tie-break sinks the
- *       exact match (measured 2026-08-13: "order" landed 6th, below five others)
- *   6 — name prefix match
- *   5 — name substring match
- *   4 — Hangul-aware name prefix — consonant initials alone, or the half-typed
- *       syllable an IME passes through. `shared/lib/hangul-match` owns the rule.
- *   3 — Hangul-aware name substring
- *   2 — summary substring match
- *   1 — id substring match (for searching a kebab-case slug directly)
- *   0 — no match (excluded)
- *
- * Every scored result carries `matched` — the field and the exact text that earned
- * it — because a row that gives no sign of why it is in the list reads as a broken
- * search. Measured 2026-09-19 on the bundled sample: 30.6% of rows over thirty
- * English queries showed no highlight at all.
- *
- * **The id matches on its slug, not its `kind:` prefix.** Every element's id begins
- * `element:`, so typing that word used to return twenty rows, every one of them
- * unexplained — that is the kind, which the filter chips already select properly, not
- * a search result. A query that carries a colon is someone pasting a real id, so the
- * whole id is still matched for them.
- *
- * The Hangul tiers sit **between** the literal name tiers and the summary tier.
- * Below the literal ones because a name that really contains what was typed is
- * the better answer; above the summary because what a Korean typist half-typed is
- * still a name, and burying it under a body-text graze is the failure the display-name
- * rule above already fixed once.
- *
- * "Name" means the canonical `title` **and** every display name on screen
- * (`display` plus all `display_<locale>`) — `shared/lib/node-name-match` is the
- * single source of that rule and the studio picker uses it too. Display names score
- * **level with the title** because what a user types is usually the name they just
- * read on screen: ranking that match below a summary (body) match buries the node
- * they were looking for under one the body merely grazed. The title is still the
- * source of truth and only the scope widens, so anyone searching by the raw title is
- * unaffected.
- *
- * An empty query returns all nodes (limit applied), so the UI can use it as an
- * initial suggestion. Sorted by score desc, then lastApprovedAt desc (most recent
- * first) — unified with the documents matcher for a predictable order.
- *
- * For mixed Korean and English, matching is substring-based after normalisation
- * (NFC + lowercase + whitespace tidy), so `auth-login` and "login" go through the
- * same call.
- *
- * The kind and projectIds filters are applied before scoring (only nodes that pass
- * are scored). An empty query plus a filter becomes "the most recent N of this kind
- * or project".
+ * Ontology node search. One pass: per filtered node up to k cached names, each an
+ * O(|name|·|query|) literal or Hangul check, plus summary and id normalised per query; then
+ * O(m log m) over the m matches.
+ * Scores: 7 exact name, 6 name prefix, 5 name substring, 4 Hangul-aware prefix, 3 Hangul-aware
+ * substring (`shared/lib/hangul-match`), 2 summary, 1 id slug, 0 excluded. Names are the title and
+ * every display name (`shared/lib/node-name-match`). The id matches its slug unless the query has a
+ * colon. Every hit carries `matched`. An empty query returns the most recent nodes; ties sort by
+ * lastApprovedAt desc. Filters apply before scoring.
  */
 export function matchOntologyNodes(
   query: string,
@@ -161,12 +88,7 @@ export function matchOntologyNodes(
 
   const passesFilter = (node: KnowledgeGraphNode): boolean => {
     if (hasKindFilter && !kinds!.has(node.kind)) return false;
-    if (hasProjectFilter) {
-      if (node.projectIds.length === 0) return false;
-      const anyMatch = node.projectIds.some((pid) => projectIds!.has(pid));
-      if (!anyMatch) return false;
-    }
-    return true;
+    return !hasProjectFilter || node.projectIds.some((pid) => projectIds!.has(pid));
   };
 
   const trimmed = normalizeForMatch(query);
@@ -224,7 +146,7 @@ export interface ProjectSearchPage {
 }
 
 /**
- * One search result — a project source. S4 closure.
+ * One search result — a project source.
  */
 export interface ProjectSearchResult {
   project: Project;
@@ -235,27 +157,11 @@ export interface ProjectSearchResult {
 }
 
 /**
- * Project search.
- *
- * Scores — one ladder with the node matcher, so a mixed result list ranks on one scale:
- *   7 — exact name / nameEn match (same reason as the node matcher — so the recency
- *       tie-break cannot sink an exact match)
- *   6 — name / nameEn prefix match
- *   5 — name / nameEn substring match
- *   4 — Hangul-aware name prefix (chosung, or a syllable still being typed)
- *   3 — Hangul-aware name substring
- *   2 — description / tags / stack / category substring match
- *   1 — slug substring match (searching kebab-case directly)
- *   0 — no match (excluded)
- *
- * An empty query returns a limit by updatedAt desc. Sorted by score desc, ties by
- * updatedAt desc (unified with the other matchers — ontology uses lastApprovedAt desc).
- *
- * Substring matching for mixed Korean and English, through the **same** `normalizeForMatch`
- * the node matcher uses: NFC, then lowercase, then a whitespace tidy. The NFC half is not
- * cosmetic — Hangul arrives decomposed from local vault filenames and the macOS clipboard, and
- * a raw comparison sent an exactly typed name down to the Hangul rung while a decomposed word
- * in a description matched nothing at all.
+ * Project search, O(n · (names + prose fields)) normalised substring and Hangul checks per query,
+ * then O(m log m) over the m matches. On the node matcher's ladder: 7 exact name or nameEn, 6 prefix, 5 substring, 4 and
+ * 3 Hangul-aware, 2 description, tags, stack or category, 1 slug, 0 excluded. Same `normalizeForMatch`
+ * (NFC, lowercase, whitespace) so decomposed Hangul matches. An empty query returns the limit by
+ * updatedAt desc; ties by updatedAt desc.
  */
 export function matchProjects(
   query: string,

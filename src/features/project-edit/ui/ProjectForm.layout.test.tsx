@@ -7,20 +7,8 @@ import type { Project } from "@/entities/project";
 import { ProjectForm } from "./ProjectForm";
 
 /**
- * The create/edit layout contract (restructured 2026-07-27).
- *
- * Owner's report: the create screen was nothing but a long scroll, the save button came
- * before the input fields, and the same guidance repeated four times. After the
- * restructure the contract is two lines:
- *
- * 1. **Create** — only the four required fields (name, category, status, short description)
- *    are expanded, and actions exist **after** the form only (no top save cluster).
- *    Everything else folds into "add more" and the user expands it.
- * 2. **Edit** — no regression. Every item is reachable without expanding, and the top
- *    sticky save cluster, section navigation, and delete row all remain.
- *
- * A validation error inside a collapsed section must expand it — otherwise it is the dead
- * end of "fix this field" with no such field on screen.
+ * Create shows four required fields with actions after the form; edit keeps every field
+ * reachable plus the sticky save cluster. An error in a folded section expands it.
  */
 
 const fields = koMessages.settings.projectForm.fields;
@@ -73,15 +61,15 @@ async function renderEdit() {
   });
 }
 
-describe("ProjectForm 만들기 레이아웃", () => {
-  it("필수 4칸만 펼친 채로 시작한다", () => {
+describe("ProjectForm create layout", () => {
+  it("starts with only the four required fields expanded", () => {
     renderCreate();
     for (const label of [fields.name, fields.category, fields.status, fields.description]) {
       expect(screen.getByLabelText(label)).toBeInTheDocument();
     }
   });
 
-  it("선택 항목은 접혀 있고, 펼치면 전부 도달 가능하다", () => {
+  it("folds optional fields and makes all of them reachable once expanded", () => {
     renderCreate();
     // Collapsed — not in the DOM.
     expect(screen.queryByLabelText(fields.tagsCsv)).not.toBeInTheDocument();
@@ -107,7 +95,7 @@ describe("ProjectForm 만들기 레이아웃", () => {
     expect(screen.getByText(fields.dependencies)).toBeInTheDocument();
   });
 
-  it("문서 주소는 캡션이고, 직접 정하기를 누르면 입력 칸이 열린다", () => {
+  it("shows the slug as a caption and opens an input when set manually", () => {
     renderCreate();
     expect(screen.queryByTestId("project-input-slug")).not.toBeInTheDocument();
     expect(screen.getByText(fields.slugAutoLabel)).toBeInTheDocument();
@@ -116,7 +104,7 @@ describe("ProjectForm 만들기 레이아웃", () => {
     expect(screen.getByTestId("project-input-slug")).toBeInTheDocument();
   });
 
-  it("액션은 폼 뒤에만 있다 — 상단 저장 클러스터는 없다", () => {
+  it("places actions only after the form with no top save cluster", () => {
     renderCreate();
     expect(screen.queryByTestId("project-save-top")).not.toBeInTheDocument();
     expect(screen.queryByTestId("project-save-return-top")).not.toBeInTheDocument();
@@ -126,10 +114,9 @@ describe("ProjectForm 만들기 레이아웃", () => {
     expect(screen.getByTestId("project-cancel")).toBeInTheDocument();
   });
 
-  it("접힌 자리의 필수 항목이 비어 제출이 막히면 그 자리를 스스로 펼친다", () => {
+  it("expands the folded section when an empty required field there blocks submit", () => {
     renderCreate();
-    // Name and description are empty, so submit fails. The first error is the name, so the
-    // collapsed section must stay closed while the error banner appears.
+    // The first error is the name, so the folded section stays closed.
     fireEvent.click(screen.getByTestId("project-save"));
     expect(
       screen.getByText(koMessages.settings.projectForm.validation.globalErrorBanner),
@@ -137,8 +124,8 @@ describe("ProjectForm 만들기 레이아웃", () => {
   });
 });
 
-describe("ProjectForm 편집 레이아웃 (회귀 금지)", () => {
-  it("모든 항목이 펼침 없이 도달 가능하다", async () => {
+describe("ProjectForm edit layout", () => {
+  it("makes every field reachable without expanding", async () => {
     await renderEdit();
     for (const label of [
       fields.slug,
@@ -157,13 +144,13 @@ describe("ProjectForm 편집 레이아웃 (회귀 금지)", () => {
       fields.icon,
       fields.progress,
     ]) {
-      expect(screen.getByLabelText(label), `편집 화면에 "${label}" 이 없다`).toBeInTheDocument();
+      expect(screen.getByLabelText(label), `edit screen is missing "${label}"`).toBeInTheDocument();
     }
     expect(screen.getByText(fields.dependencies)).toBeInTheDocument();
     expect(screen.getByText(fields.isHubLabel, { exact: false })).toBeInTheDocument();
   });
 
-  it("상단 sticky 저장 클러스터·섹션 이동·삭제 줄이 그대로 있다", async () => {
+  it("keeps the sticky save cluster, section navigation and delete row", async () => {
     await renderEdit();
     expect(screen.getByTestId("project-save-top")).toBeInTheDocument();
     expect(screen.getByTestId("project-save-return-top")).toBeInTheDocument();
@@ -174,7 +161,7 @@ describe("ProjectForm 편집 레이아웃 (회귀 금지)", () => {
     expect(screen.getByTestId("project-danger-row")).toBeInTheDocument();
   });
 
-  it("만들기 전용 접힘 표면은 편집 화면에 없다", async () => {
+  it("omits the create-only folded surface on the edit screen", async () => {
     await renderEdit();
     expect(screen.queryByTestId("project-create-extras-toggle")).not.toBeInTheDocument();
     expect(screen.queryByTestId("project-slug-disclosure")).not.toBeInTheDocument();

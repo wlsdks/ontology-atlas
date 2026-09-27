@@ -15,7 +15,6 @@ const doc = (slug: string, title = '', fm: Record<string, unknown> = {}): Bootst
   frontmatter: fm,
 });
 
-/** The same folder as the reproduction scenario — my-saas. */
 const MY_SAAS = [
   doc('README', 'my-saas'),
   doc('docs/architecture', 'Architecture'),
@@ -24,13 +23,13 @@ const MY_SAAS = [
 ];
 
 describe('deriveBootstrapPlan', () => {
-  it('루트 README 는 project 제목이 되고 element 후보에서 빠진다', () => {
+  it('uses the root README as the project title and excludes it from element candidates', () => {
     const plan = deriveBootstrapPlan(MY_SAAS, 'fallback-folder');
     expect(plan.projectTitle).toBe('my-saas');
     expect(plan.elements.map((e) => e.slug)).not.toContain('README');
   });
 
-  it('1뎁스 폴더가 domain 후보가 되고 문서 수 내림차순으로 정렬된다', () => {
+  it('turns top-level folders into domain candidates sorted by document count descending', () => {
     const plan = deriveBootstrapPlan(MY_SAAS, 'x');
     expect(plan.domains).toEqual([
       { name: 'docs', docCount: 2 },
@@ -38,7 +37,7 @@ describe('deriveBootstrapPlan', () => {
     ]);
   });
 
-  it('폴더 문서는 element 후보가 되고 자기 최상위 폴더를 domain 으로 갖는다', () => {
+  it('turns folder documents into element candidates owned by their top-level folder domain', () => {
     const plan = deriveBootstrapPlan(MY_SAAS, 'x');
     expect(plan.elements).toEqual([
       { slug: 'docs/architecture', title: 'Architecture', domain: 'docs' },
@@ -47,12 +46,12 @@ describe('deriveBootstrapPlan', () => {
     ]);
   });
 
-  it('README 가 없으면 vault 폴더 이름이 project 제목이 된다', () => {
+  it('uses the vault folder name as the project title when there is no README', () => {
     const plan = deriveBootstrapPlan([doc('docs/a', 'A')], 'my-vault');
     expect(plan.projectTitle).toBe('my-vault');
   });
 
-  it('이미 kind: 를 가진 문서는 후보에서 빠지고 부분 구축 카운트로 집계된다', () => {
+  it('excludes documents that already have kind and counts them as partially built', () => {
     const plan = deriveBootstrapPlan(
       [...MY_SAAS, doc('domains/auth', 'Auth', { kind: 'domain' })],
       'x',
@@ -61,24 +60,24 @@ describe('deriveBootstrapPlan', () => {
     expect(plan.elements.map((e) => e.slug)).not.toContain('domains/auth');
   });
 
-  it('루트 레벨 문서(README 제외)는 domain 없는 element 가 된다', () => {
+  it('turns root-level documents other than README into elements without a domain', () => {
     const plan = deriveBootstrapPlan([doc('README', 'p'), doc('CONTRIBUTING', 'Contributing')], 'x');
     expect(plan.elements).toEqual([{ slug: 'CONTRIBUTING', title: 'Contributing', domain: null }]);
   });
 
-  it('project slug 충돌 시 대체 slug 를 쓴다', () => {
+  it('uses a fallback project slug on collision', () => {
     const plan = deriveBootstrapPlan([doc('project', 'Existing')], 'x');
     expect(plan.projectSlug).toBe('ontology-project');
   });
 
-  it('제목 없는 문서는 파일명이 제목이 된다', () => {
+  it('uses the file name as the title of an untitled document', () => {
     const plan = deriveBootstrapPlan([doc('docs/setup-guide')], 'x');
     expect(plan.elements[0].title).toBe('setup-guide');
   });
 });
 
 describe('selectedElements', () => {
-  it('승인된 domain 의 문서와 루트 문서만 남는다', () => {
+  it('keeps only root documents and documents of approved domains', () => {
     const plan = deriveBootstrapPlan([...MY_SAAS, doc('LICENSE-NOTES', 'License')], 'x');
     const picked = selectedElements(plan, new Set(['docs']));
     expect(picked.map((e) => e.slug)).toEqual(['docs/architecture', 'docs/api', 'LICENSE-NOTES']);
@@ -86,7 +85,7 @@ describe('selectedElements', () => {
 });
 
 describe('buildProjectMarkdown', () => {
-  it('생성하는 project에 fresh lowercase UUIDv4 uid를 넣는다', () => {
+  it('gives a created project a fresh lowercase UUIDv4 uid', () => {
     const plan = deriveBootstrapPlan(MY_SAAS, 'x');
     const first = buildProjectMarkdown(plan, new Set(['docs']));
     const second = buildProjectMarkdown(plan, new Set(['docs']));
@@ -97,19 +96,18 @@ describe('buildProjectMarkdown', () => {
     expect(first.match(uidPattern)?.[1]).not.toBe(second.match(uidPattern)?.[1]);
   });
 
-  it('kind: project + 승인된 domains + 루트 elements 를 frontmatter 로 노출한다', () => {
+  it('writes kind project, approved domains and root elements to frontmatter', () => {
     const plan = deriveBootstrapPlan([...MY_SAAS, doc('CONTRIBUTING', 'Contributing')], 'x');
     const md = buildProjectMarkdown(plan, new Set(['docs', 'notes']));
     expect(md).toContain('kind: project');
     expect(md).toContain('title: my-saas');
     expect(md).toContain('domains:\n  - docs\n  - notes');
     expect(md).toContain('elements:\n  - CONTRIBUTING');
-    // The frontmatter block closes correctly.
     expect(md.startsWith('---\n')).toBe(true);
     expect(md.split('---').length).toBeGreaterThanOrEqual(3);
   });
 
-  it('거부된 domain 은 frontmatter 에서 빠진다', () => {
+  it('omits rejected domains from frontmatter', () => {
     const plan = deriveBootstrapPlan(MY_SAAS, 'x');
     const md = buildProjectMarkdown(plan, new Set(['docs']));
     expect(md).toContain('  - docs');
@@ -117,14 +115,14 @@ describe('buildProjectMarkdown', () => {
   });
 });
 
-describe('domainDocSlug · buildDomainMarkdown (재검 마찰 D — 도메인 파일화)', () => {
-  it('파일 tail 이 derive 의 slugifyName ref 와 일치한다', () => {
+describe('domainDocSlug and buildDomainMarkdown', () => {
+  it('matches the file tail to the derived slugifyName ref', () => {
     expect(domainDocSlug('docs')).toBe('docs/docs');
-    // Folder names with capitals and spaces — the tail is slugified, the folder path stays verbatim.
+    // The tail is slugified; the folder path stays verbatim.
     expect(domainDocSlug('User Guides')).toBe('User Guides/user-guides');
   });
 
-  it('kind: domain frontmatter + 평문 본문을 만든다', () => {
+  it('builds kind domain frontmatter with a plain body', () => {
     const md = buildDomainMarkdown({ name: 'docs', docCount: 3 });
     expect(md).toContain('kind: domain');
     expect(md).toContain('title: docs');
@@ -132,7 +130,7 @@ describe('domainDocSlug · buildDomainMarkdown (재검 마찰 D — 도메인 �
     expect(md.startsWith('---\n')).toBe(true);
   });
 
-  it('생성하는 domain에 fresh lowercase UUIDv4 uid를 넣는다', () => {
+  it('gives a created domain a fresh lowercase UUIDv4 uid', () => {
     const first = buildDomainMarkdown({ name: 'docs', docCount: 3 });
     const second = buildDomainMarkdown({ name: 'docs', docCount: 3 });
     const uidPattern = /^uid: ([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/m;
@@ -144,36 +142,26 @@ describe('domainDocSlug · buildDomainMarkdown (재검 마찰 D — 도메인 �
 });
 
 /**
- * **Do not write into someone else's files** — an already-shipped defect found in the PO council,
- * 2026-08-09.
- *
- * "Build a map from my documents" treats any slug in `manifest.docs` as a candidate and, on approval,
- * writes `uid`, `kind`, and `title` into that file. When a user opens a skills folder as their
- * document store, the `SKILL.md` files come straight into that list — measured, 105 candidates were
- * all `SKILL.md`. Those files are owned by the Claude runtime and the marketplace, and that folder is
- * a git checkout, so an update overwrites whatever we wrote.
- *
- * The property this test locks: *a `SKILL.md` owned by the runtime per its spec never enters the
- * candidates.* The test follows the official spec exactly — the file is named `SKILL.md`, it has both
- * required keys (`name`, `description`), and it has no `kind`.
+ * A runtime-owned `SKILL.md` (both spec keys `name` and `description`, no `kind`) never becomes a
+ * candidate: approval would write into files the runtime and marketplace overwrite on update.
  */
-describe('런타임이 소유한 SKILL.md 는 후보에 넣지 않는다', () => {
+describe('excludes runtime-owned SKILL.md files from candidates', () => {
   const skill = (slug: string) => ({
     slug,
     title: 'SKILL',
     frontmatter: { name: slug.split('/')[0], description: 'Does a thing. Use when asked.' },
   });
 
-  it('스킬 폴더를 열면 후보가 0이고, 몇 개를 뺐는지 센다', () => {
+  it('yields zero candidates for a skills folder and counts the excluded files', () => {
     const plan = deriveBootstrapPlan(
       [skill('pdf/SKILL'), skill('docx/SKILL'), skill('xlsx/SKILL')],
       'skills',
     );
-    expect(plan.elements, '남의 SKILL.md 에 쓸 후보가 만들어졌다').toEqual([]);
-    expect(plan.runtimeOwnedSkipped, '왜 비었는지 화면이 말할 수 있어야 한다').toBe(3);
+    expect(plan.elements, 'a candidate was created for a runtime-owned SKILL.md').toEqual([]);
+    expect(plan.runtimeOwnedSkipped, 'the excluded count must explain the empty result').toBe(3);
   });
 
-  it('평범한 문서는 그대로 후보다 — 계기가 무엇이든 걸러내면 안 된다', () => {
+  it('keeps an ordinary document as a candidate', () => {
     const plan = deriveBootstrapPlan(
       [
         skill('pdf/SKILL'),
@@ -186,17 +174,17 @@ describe('런타임이 소유한 SKILL.md 는 후보에 넣지 않는다', () =>
     expect(plan.runtimeOwnedSkipped).toBe(1);
   });
 
-  it('SKILL.md 라도 이미 kind 가 있으면 우리 노드다 — 이 규칙이 가로채지 않는다', () => {
+  it('treats a SKILL.md that already has kind as a vault node', () => {
     const plan = deriveBootstrapPlan(
       [{ slug: 'x/SKILL', title: 'x', frontmatter: { name: 'x', description: 'd', kind: 'element' } }],
       'vault',
     );
-    // It already has a kind, so it counts as "already typed", not as runtime-owned.
+    // It already has a kind, so it counts as already typed, not as runtime-owned.
     expect(plan.runtimeOwnedSkipped).toBe(0);
     expect(plan.alreadyTypedCount).toBe(1);
   });
 
-  it('이름이 SKILL 이어도 필수 두 키가 없으면 스킬이 아니다 — 그냥 문서다', () => {
+  it('treats a SKILL.md without the two required keys as an ordinary document', () => {
     const plan = deriveBootstrapPlan(
       [{ slug: 'notes/SKILL', title: '스킬이라는 제목의 메모', frontmatter: {} }],
       'vault',
@@ -207,15 +195,10 @@ describe('런타임이 소유한 SKILL.md 는 후보에 넣지 않는다', () =>
 });
 
 /**
- * **The starter must not flag its own instruction files** (measured 2026-09-04).
- *
- * "Start from an empty folder" writes `AGENTS.md` plus the `CLAUDE.md` bridge that points at it
- * (`entities/vault-session/lib/ontology-starter.ts`). Neither carries a `kind:`, so one click later
- * the INDEX offered "2 docs not on the map · add to map" and the dialog proposed stamping
- * `kind: element` onto both. Those files are addressed to an agent, not to the graph, and the next
- * starter run rewrites them — the same failure mode as the runtime-owned `SKILL.md` above.
+ * The starter's own `AGENTS.md` and `CLAUDE.md` bridge carry no `kind:` and are rewritten by the
+ * next starter run (`entities/vault-session/lib/ontology-starter.ts`), so they are not candidates.
  */
-describe('에이전트 안내 파일은 후보에 넣지 않는다', () => {
+describe('excludes agent instruction files from candidates', () => {
   const STARTER_OUTPUT = [
     doc('project', 'My project', { kind: 'project' }),
     doc('AGENTS'),
@@ -223,13 +206,13 @@ describe('에이전트 안내 파일은 후보에 넣지 않는다', () => {
     doc('domains/example', '예시 영역', { kind: 'domain' }),
   ];
 
-  it('빈 폴더로 시작한 직후 「지도에 없는 문서」가 0이다', () => {
+  it('reports zero unmapped documents right after starting from an empty folder', () => {
     const plan = deriveBootstrapPlan(STARTER_OUTPUT, 'my-vault');
-    expect(plan.elements, '스타터가 쓴 안내 파일이 후보로 올라왔다').toEqual([]);
+    expect(plan.elements, 'a starter instruction file became a candidate').toEqual([]);
     expect(plan.agentPointerSkipped).toBe(2);
   });
 
-  it('에이전트 런타임 폴더 안의 문서도 후보가 아니다', () => {
+  it('excludes documents inside agent runtime folders', () => {
     const plan = deriveBootstrapPlan(
       [
         doc('.claude/rules/design'),
@@ -244,7 +227,7 @@ describe('에이전트 안내 파일은 후보에 넣지 않는다', () => {
     expect(plan.agentPointerSkipped).toBe(4);
   });
 
-  it('사람이 쓴 문서는 이름이 비슷해도 그대로 후보다', () => {
+  it('keeps a human-written document with a similar name as a candidate', () => {
     const plan = deriveBootstrapPlan(
       [doc('docs/AGENTS', '우리 팀 에이전트 정리'), doc('claude-notes', '메모')],
       'vault',
@@ -255,12 +238,11 @@ describe('에이전트 안내 파일은 후보에 넣지 않는다', () => {
 });
 
 /**
- * **A vault that already has a project never gets a second one.** `executeBootstrapPlan` merges
- * into the existing document, and the plan must report the same thing so the confirmation screen
- * cannot promise a file the run will not write.
+ * The plan reports the merge `executeBootstrapPlan` performs, so the confirmation screen cannot
+ * promise a file the run will not write.
  */
-describe('이미 project 문서가 있을 때', () => {
-  it('기존 project 를 가리키고 새 파일을 만들지 않는다', () => {
+describe('when a project document already exists', () => {
+  it('points at the existing project instead of creating a new file', () => {
     const plan = deriveBootstrapPlan(
       [
         doc('project', 'My project', { kind: 'project', title: 'My project' }),
@@ -274,17 +256,11 @@ describe('이미 project 문서가 있을 때', () => {
 });
 
 /**
- * **The Library's own files are not uncataloged documents** (measured 2026-09-20).
- *
- * A dogfood folder whose only kind-less files were six raw sources under `sources/` and the
- * wiki's pages showed an INDEX row offering to add seven documents to the map, and one press
- * would have stamped `kind: element` into each of them. A raw source is a copy of someone else's
- * document — frontmatter written into it breaks the verbatim promise and invalidates the
- * citation hashes recorded against its bytes — and a wiki page is a statement *about* sources
- * that the next Compile run rewrites in place.
+ * Frontmatter in a raw source breaks its verbatim promise and citation hashes, and Compile
+ * rewrites wiki pages in place, so neither is a candidate.
  */
-describe('자료실 파일(sources/·wiki/)은 후보에 넣지 않는다', () => {
-  it('원문과 위키만 있는 폴더는 후보가 0이고, 몇 개를 뺐는지 센다', () => {
+describe('excludes library files under sources/ and wiki/ from candidates', () => {
+  it('yields zero candidates for a sources-and-wiki folder and counts the excluded files', () => {
     const plan = deriveBootstrapPlan(
       [
         doc('sources/quarter-plan', '분기 계획'),
@@ -297,12 +273,12 @@ describe('자료실 파일(sources/·wiki/)은 후보에 넣지 않는다', () =
       ],
       'my-vault',
     );
-    expect(plan.elements, '자료실 파일에 kind 를 찍을 후보가 만들어졌다').toEqual([]);
-    expect(plan.domains, '자료실 폴더가 도메인 후보로 올라왔다').toEqual([]);
-    expect(plan.librarySkipped, '왜 비었는지 화면이 말할 수 있어야 한다').toBe(7);
+    expect(plan.elements, 'a candidate would stamp kind on a library file').toEqual([]);
+    expect(plan.domains, 'a library folder became a domain candidate').toEqual([]);
+    expect(plan.librarySkipped, 'the excluded count must explain the empty result').toBe(7);
   });
 
-  it('사람이 쓴 문서는 그대로 후보다 — 자료실 규칙이 삼키지 않는다', () => {
+  it('keeps a human-written document as a candidate beside library files', () => {
     const plan = deriveBootstrapPlan(
       [doc('sources/quarter-plan', '분기 계획'), doc('wiki/quarter-plan', '분기 계획'), doc('notes/plan', '계획')],
       'my-vault',
@@ -312,7 +288,7 @@ describe('자료실 파일(sources/·wiki/)은 후보에 넣지 않는다', () =
     expect(plan.librarySkipped).toBe(2);
   });
 
-  it('규칙은 볼트 루트에 붙는다 — 내 폴더 안의 wiki/ 는 내 문서다', () => {
+  it('applies the library rule only at the vault root, not to a nested wiki/', () => {
     const plan = deriveBootstrapPlan(
       [doc('notes/wiki/plan', '계획'), doc('notes/sources/raw', '원문 메모')],
       'my-vault',
@@ -321,7 +297,7 @@ describe('자료실 파일(sources/·wiki/)은 후보에 넣지 않는다', () =
     expect(plan.librarySkipped).toBe(0);
   });
 
-  it('wiki/ 아래라도 kind 가 있으면 그래프 노드다 — 이 규칙이 가로채지 않는다', () => {
+  it('treats a document under wiki/ that has kind as a graph node', () => {
     const plan = deriveBootstrapPlan([doc('wiki/orders', '주문', { kind: 'domain' })], 'my-vault');
     expect(plan.librarySkipped).toBe(0);
     expect(plan.alreadyTypedCount).toBe(1);

@@ -16,8 +16,7 @@ describe('hookScriptPath', () => {
   });
 
   it('refuses a path that still carries a variable rather than guessing where it points', () => {
-    // The whole value of `wired` is that the filesystem answered. A path with an unexpanded
-    // variable cannot be asked, so the honest answer is "we could not resolve this".
+    // An unexpanded variable cannot be checked on disk, so it is unresolved.
     expect(hookScriptPath('bash $HOOKS_DIR/guard.sh')).toBeNull();
   });
 
@@ -63,8 +62,7 @@ describe('collectHookFacts', () => {
   });
 
   it('counts one script once however many matchers repeat it, and joins the events', async () => {
-    // Codex fans a single Bash call out across three matchers. Counting config entries would
-    // report three guards where one script exists — a number that flatters the repository.
+    // Codex repeats one script across three matchers; it counts as one guard.
     const facts = await collectHookFacts(
       '.codex/hooks.json',
       codexShape,

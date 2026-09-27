@@ -1,8 +1,4 @@
-// Bug sweep 2026-09-01: an unreadable file failed the run in text mode
-// ("excluded from validation scope" → exit 1) but --json — exactly the mode CI
-// consumes — exited 0, certifying files that were never opened. Text mode with
-// warnings coexisting had the same gap through decideExit. Unreadable files are
-// now fatal in every mode.
+// An unreadable file is fatal in every mode, --json included, so no run certifies a file it never opened.
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';

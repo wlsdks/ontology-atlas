@@ -18,15 +18,8 @@ import type {
 } from '../model/types';
 
 /**
- * D-1 — frontmatter keys that hold graph relation refs to OTHER docs. A doc
- * that names another doc here (e.g. `dependencies: [capabilities/mcp-server]`)
- * is a backlink to that doc, exactly as the MCP `find_backlinks` tool counts it
- * (same key set: `mcp/src/vault.mjs` NEIGHBOR_KEYS + INLINE_NEIGHBOR_KEYS).
- * The old backlink index only scanned BODY markdown links, so a doc referenced
- * purely through frontmatter (the common vault case) showed a false "no
- * backlinks" — the exact defect the UX round caught on `capabilities/mcp-server`
- * (13 real referrers, footer said "none"). Kept in sync with the build-time
- * script (`scripts/build-docs-vault.mjs`).
+ * Frontmatter keys whose refs count as backlinks: the same set as `mcp/src/vault.mjs`
+ * NEIGHBOR_KEYS + INLINE_NEIGHBOR_KEYS and `scripts/build-docs-vault.mjs`.
  */
 const RELATION_REF_ARRAY_KEYS = [
   'domains',
@@ -39,7 +32,6 @@ const RELATION_REF_ARRAY_KEYS = [
 ] as const;
 const RELATION_REF_STRING_KEYS = ['domain'] as const;
 
-/** Frontmatter value → the doc slugs it references (folder-prefixed or bare). */
 function frontmatterRefStrings(frontmatter: Record<string, unknown>): string[] {
   const out: string[] = [];
   for (const key of RELATION_REF_ARRAY_KEYS) {
@@ -47,10 +39,8 @@ function frontmatterRefStrings(frontmatter: Record<string, unknown>): string[] {
     if (Array.isArray(value)) {
       for (const item of value) if (typeof item === 'string' && item.trim()) out.push(item.trim());
     }
-    // A scalar at an array key is NOT tolerated here (bug sweep 2026-09-01):
-    // the graph derivation and the MCP reader both consume arrays only, so
-    // counting the scalar as a backlink made the doc footer report a referrer
-    // the map refuses to draw. The parser now diagnoses the scalar instead.
+    // Arrays only: the graph derivation and the MCP reader ignore a scalar, so counting it
+    // would report a referrer the map never draws; the parser diagnoses it instead.
   }
   for (const key of RELATION_REF_STRING_KEYS) {
     const value = frontmatter[key];
@@ -59,20 +49,13 @@ function frontmatterRefStrings(frontmatter: Record<string, unknown>): string[] {
   return out;
 }
 
-/**
- * Resolve a frontmatter ref to a known doc slug, or null. Folder-prefixed refs
- * (`capabilities/mcp-server`) match a slug directly; bare refs (`mcp-server`,
- * `ai-agent-partner`) resolve by unique tail segment. Refs that match no doc
- * (e.g. `elements: [mcp/src/index.js]` — a source-file ref with no `.md`) are
- * skipped, so no phantom backlinks are minted.
- */
+/** Resolves a ref by exact slug or unique tail; null for no match or an ambiguous tail. */
 function resolveRefToDocSlug(
   ref: string,
   slugSet: ReadonlySet<string>,
   tailToSlug: ReadonlyMap<string, string | null>,
 ): string | null {
-  // References are normalized to NFC as well — normalizing only one side leaves
-  // identical characters that do not match (the CLI validator's own rule).
+  // NFC on both sides, or identical characters fail to match (the CLI validator's rule).
   const normalized = ref.normalize('NFC').replace(/\.md$/i, '');
   if (slugSet.has(normalized)) return normalized;
   const tail = normalized.split('/').pop() ?? normalized;
@@ -80,9 +63,6 @@ function resolveRefToDocSlug(
   // `byTail === null` marks an ambiguous tail (2+ docs share it) — don't guess.
   return byTail ?? null;
 }
-
-// Walks a FileSystemDirectoryHandle recursively, collecting `.md` files. The
-// file-handle map comes back with it so the viewer can read slug → content.
 
 interface WalkEntry {
   handle: FileSystemFileHandle;
@@ -94,28 +74,13 @@ interface WalkEntry {
 const IMAGE_EXT = /\.(png|jpe?g|gif|webp|svg|avif|bmp)$/i;
 
 /**
- * The library folder — **the one place a non-Markdown file is a first-class vault
- * member.**
- *
- * A vault holds three kinds of file and only one is the graph (`docs/DECISIONS.md`,
- * 2026-09-05). Everything under this top-level folder is a raw source: kept verbatim in
- * whatever format it arrived in, listed by name, format, size and mtime, and **never
- * read**. Only `.md` reaches `parseFrontmatter`, here and in `mcp/src/vault.mjs`, so the
- * separation is a property of the walk rather than a filter someone downstream has to
- * remember.
- *
- * The prefix is anchored at the root: `sources/a.pdf` is a raw source and
- * `notes/sources/a.pdf` is an ordinary file the walk ignores, because "everything under
- * this one name is raw" is the rule a person can hold in their head.
- *
- * Mirrored in `src-tauri/src/lib.rs` as `VAULT_SOURCES_DIR`; the two walks are held
- * together by `tests/contract/vault-walk-rules.contract.test.ts`, because a fingerprint
- * that counts a different file set makes the app either rebuild constantly or miss a
- * dropped document.
+ * The top-level raw-source folder: listed by name, format, size and mtime, never read
+ * (`docs/DECISIONS.md` 2026-09-05, "A vault holds three kinds of file and only one is the graph").
+ * Mirrored in `src-tauri/src/lib.rs` (`vault-walk-rules.contract.test.ts`); if the walks diverge the
+ * fingerprint counts a different file set, so the app rebuilds constantly or misses a new document.
  */
 export const VAULT_SOURCES_DIR = 'sources';
 
-/** Whether a vault-relative path lies inside the top-level `sources/` folder. */
 export function isVaultSourcePath(relativePath: string): boolean {
   return relativePath.startsWith(`${VAULT_SOURCES_DIR}/`);
 }
@@ -127,80 +92,32 @@ function vaultSourceFormat(name: string): string {
 }
 
 /**
- * Source files, counted but never read.
- *
- * The walk already visits every entry and drops whatever is not Markdown or an
- * image, so this is a comparison on a name the loop is holding anyway — no extra
- * directory read, no file opened, nothing transmitted.
- *
- * It exists because the app could not tell a code repository from a documents
- * folder and said so out loud: pointed at a repository with five TypeScript
- * files, the first-run card announced it had "found 1 documents" and offered to
- * map them (`docs/audits/USER-WALKTHROUGH-FIRST-RUN-2026-08-31.md`, finding 3).
- * The count is the smallest fact that lets the card stop leading with the wrong
- * one.
- *
- * The list is deliberately short and popular rather than exhaustive. A missing
- * extension makes a folder look less like code than it is, which costs one Skip;
- * a wrong extension would cost the same in the other direction. Neither is a
- * dead end, because the steps are a sequence with a skip on every one.
+ * Source-code extensions, counted but never read, so first run can tell a repository from a documents folder
+ * (`docs/audits/USER-WALKTHROUGH-FIRST-RUN-2026-08-31.md`, finding 3).
  */
 const SOURCE_EXT =
   /\.(m?[jt]sx?|vue|svelte|dart|py|go|rs|java|kt|swift|rb|php|cs|c|cc|cpp|h|hpp|scala|ex|exs|sh)$/i;
 
-/**
- * The walk's boundary — **a vault is a document folder, not an arbitrary directory.**
- *
- * Measured 2026-07-29: picking the **repository root** as the vault killed the
- * WebView in the installed app ("This page couldn't load"). With no bound the
- * walk descended into `src-tauri/target` and carried 984 directories / 965
- * markdown files (9.4 MB) across IPC — 16× a normal vault (23 / 97).
- *
- * This hurts precisely because some features (the skill-copy check, for one) are
- * only meaningful when the vault *is* the repo root — so that combination is
- * exactly what a first-time user tries.
- */
+/** Walk bounds keep a repository root picked as a vault from flooding IPC with build trees. */
 
-/**
- * Names that are certain. The odds of a user's ontology living inside
- * `node_modules` are zero and the name never collides. **Do not extend this
- * list** — `build`, `dist`, `out` are legitimate names inside a document folder,
- * so pruning by name would silently drop someone's documents.
- */
+/** Only names that never hold documents; `build`, `dist` and `out` can, so do not extend. */
 const PRUNE_BY_NAME = new Set(['node_modules']);
 
-/**
- * The public convention for cache directories: the directory declares itself
- * (bford.info/cachedir, followed by Cargo, Bazel, and others). Unlike a name
- * list there is nothing to maintain and no false positive is possible — a user
- * has no reason to put this file in their document folder.
- */
+/** A directory that declares itself a cache (bford.info/cachedir) is pruned whole. */
 const CACHE_DIR_TAG = 'CACHEDIR.TAG';
 
-/**
- * Past this the walk truncates and **says so**. It was 4,000 (roughly 20× a normal vault)
- * from 2026-07-29, when the bound's job was to survive the repository root being picked;
- * `CACHEDIR.TAG` pruning now handles that tree. A wiki fills by the thousand — the owner
- * asks for tens of thousands of files (2026-09-18) — so the ceiling is one a document
- * folder does not meet, and the truncation notice stays for the folder that is not one.
- */
+/** Far above any document folder; past it the walk truncates and the manifest says so. */
 export const VAULT_WALK_MAX_ENTRIES = 50000;
 /** A realistic ceiling for a document folder. Deeper usually means someone else's tree. */
 export const VAULT_WALK_MAX_DEPTH = 12;
 
 export interface WalkResult {
   entries: WalkEntry[];
-  /**
-   * Whether a limit was hit and the walk saw **only part** of the tree. Silent
-   * truncation reads as "we saw everything", so it is reported to the caller.
-   */
+  /** A limit was hit, so the walk saw only part of the tree. */
   truncated: boolean;
   /** Relative paths of directories skipped whole as cache or dependencies. */
   prunedDirs: string[];
-  /**
-   * How many source files the walk passed over. Not read, not stored — only
-   * counted, so the first-run card can tell a codebase from a documents folder.
-   */
+  /** Source files passed over: counted, never read or stored. */
   sourceFileCount: number;
 }
 
@@ -216,9 +133,7 @@ async function walkInto(
     return;
   }
 
-  // Collect the listing **first**. The cache tag is already in it, so asking for
-  // it with `getFileHandle` would add one IPC round trip per directory — the same
-  // class of cost this walk exists to avoid.
+  // The listing already holds the cache tag; `getFileHandle` would cost an IPC round trip per directory.
   const children: Array<[string, FileSystemHandle]> = [];
   for await (const entry of root.entries()) children.push(entry);
 
@@ -233,14 +148,7 @@ async function walkInto(
       return;
     }
     if (name.startsWith('.')) continue;
-    /*
-     * macOS filesystems hand back NFD names while frontmatter refs are NFC —
-     * identical characters, different bytes. The MCP walker (`pathToSlug`) and
-     * the CLI walker both normalize to NFC; without it here a Hangul-named doc's
-     * slug matches no ref, its containment edge dangles, and derivation mints a
-     * phantom duplicate. Same defect the 2026-08-08 DocsVaultViewer wikilink fix
-     * measured, one layer up.
-     */
+    /* macOS returns NFD names while refs are NFC; the MCP and CLI walkers normalize too. */
     const nfcName = name.normalize('NFC');
     const relative = prefix ? `${prefix}/${nfcName}` : nfcName;
     if (handle.kind === 'directory') {
@@ -250,12 +158,7 @@ async function walkInto(
       }
       await walkInto(handle as FileSystemDirectoryHandle, relative, depth + 1, acc);
     } else if (isVaultSourcePath(relative)) {
-      // Ordered before every other file branch on purpose, the Markdown one included.
-      // A PNG, a `.py` or a `.md` under `sources/` is a document somebody chose to keep
-      // verbatim, not an asset, not this folder's code and not a page of the vault —
-      // one folder, one meaning. Markdown is the format notes arrive in most (a Notion
-      // or Obsidian export, an import from a service), and until 2026-09-07 it was the
-      // one format the Library could not list, because this branch sat second.
+      // Before every other branch: anything under `sources/`, Markdown included, is a raw source.
       acc.entries.push({ handle: handle as FileSystemFileHandle, relativePath: relative, kind: 'source' });
     } else if (name.endsWith('.md')) {
       acc.entries.push({ handle: handle as FileSystemFileHandle, relativePath: relative, kind: 'md' });
@@ -324,50 +227,23 @@ export interface LocalVaultBuild {
   fileHandles: Map<string, FileSystemFileHandle>;
   /** Asset files such as images, keyed by path relative to the vault root ('img/foo.png'). */
   imageHandles: Map<string, FileSystemFileHandle>;
-  /**
-   * Raw sources under `sources/`, keyed by vault-relative path. Only a person's explicit
-   * "open this" reaches through one of these; the build itself never calls `getFile()`
-   * on them.
-   */
+  /** Raw sources under `sources/`; opened only on a person's explicit request, never by the build. */
   sourceHandles: Map<string, FileSystemFileHandle>;
-  /**
-   * Directory fingerprint at build time — `${path}@${mtime}` entries sorted and
-   * joined. Compare against a later `computeLocalVaultFingerprint(root)` to skip
-   * a rebuild when nothing changed.
-   */
+  /** Sorted `${path}@${mtime}` entries; an equal `computeLocalVaultFingerprint` skips a rebuild. */
   fingerprint: string;
 }
 
 function fingerprintFromEntries(
   entries: ReadonlyArray<{ relativePath: string; lastModified: number }>,
 ): string {
-  // NFC here too: native entries arrive with raw filesystem (NFD) names, and a
-  // fingerprint that differs from the walk's normalized paths would report a
-  // change on every focus.
+  // NFC here too, or native NFD names would report a change on every focus.
   return entries
     .map((e) => `${e.relativePath.normalize('NFC')}@${e.lastModified}`)
     .sort()
     .join('\n');
 }
 
-/**
- * Walks the directory collecting only file mtimes — *never reading content* —
- * and folds them into a fingerprint. An unchanged fingerprint means no `.md` or
- * image changed since the last build.
- *
- * This variant returns the fingerprint **and the stamps that produced it**.
- * While only `computeLocalVaultFingerprint` existed, a caller learned "something
- * changed" and then threw away the evidence, so an incremental rebuild walked
- * the same vault a **second** time. Returning both means one walk per change.
- */
-/**
- * Path → the stamp the native walk returned for it.
- *
- * Carries the size as well as the mtime because a raw source is listed by size and never
- * opened: without it the app would have to call `getFile()` on every PDF, and under
- * Tauri that is `read_vault_binary_file` — the whole document across IPC to learn one
- * number, the exact waste `vault_fingerprint` exists to remove.
- */
+/** Size travels with mtime so a raw source is listed without opening it over IPC. */
 export type VaultStampIndex = Map<string, NativeVaultStamp>;
 
 function stampIndex(entries: readonly NativeVaultStamp[]): VaultStampIndex {
@@ -376,17 +252,22 @@ function stampIndex(entries: readonly NativeVaultStamp[]): VaultStampIndex {
   );
 }
 
+/** The desktop shim's absolute root path, or `null` for a web handle. */
+function nativeRootPath(root: FileSystemDirectoryHandle): string | null {
+  const rootPath = (root as { rootPath?: unknown }).rootPath;
+  return typeof rootPath === 'string' && rootPath ? rootPath : null;
+}
+
 /** The native stamp index for this handle, or `null` on the web where there is none. */
 async function nativeStampIndex(
   root: FileSystemDirectoryHandle,
 ): Promise<VaultStampIndex | null> {
-  const nativeRoot = (root as { rootPath?: unknown }).rootPath;
-  if (typeof nativeRoot !== 'string' || !nativeRoot) return null;
+  const nativeRoot = nativeRootPath(root);
+  if (!nativeRoot) return null;
   try {
     const native = await nativeVaultFingerprint(nativeRoot);
     return native ? stampIndex(native.entries) : null;
   } catch {
-    /* Native failed → the caller falls back to per-file reads (behaviour unchanged). */
     return null;
   }
 }
@@ -394,8 +275,8 @@ async function nativeStampIndex(
 export async function computeLocalVaultFingerprintWithStamps(
   root: FileSystemDirectoryHandle,
 ): Promise<{ fingerprint: string; nativeStamps: VaultStampIndex | null }> {
-  const nativeRoot = (root as { rootPath?: unknown }).rootPath;
-  if (typeof nativeRoot === 'string' && nativeRoot) {
+  const nativeRoot = nativeRootPath(root);
+  if (nativeRoot) {
     const native = await nativeVaultFingerprint(nativeRoot);
     if (native) {
       return {
@@ -410,21 +291,10 @@ export async function computeLocalVaultFingerprintWithStamps(
 export async function computeLocalVaultFingerprint(
   root: FileSystemDirectoryHandle,
 ): Promise<string> {
-  /*
-   * **In the app this is one native call** (2026-07-31).
-   *
-   * The web path below calls `getFile()` per file; under Tauri that is a
-   * `read_vault_text_file` IPC round trip, and that command returns **the full
-   * body plus the mtime**. One number is used and the whole vault crosses the
-   * bridge — opening this repository as a vault makes `docs/` 261 files / 17.7 MB,
-   * and this function runs every time the window regains focus.
-   *
-   * `vault_fingerprint` has Rust walk it once and return **paths and mtimes only**.
-   * The web has no such batch API, so it returns `null` and falls through below —
-   * the bridge convention from `.claude/rules/surfaces.md` (absent → `null`, degrade honestly).
-   */
-  const nativeRoot = (root as { rootPath?: unknown }).rootPath;
-  if (typeof nativeRoot === 'string' && nativeRoot) {
+  /* In the app one native call returns paths and mtimes; per-file `getFile()` under Tauri
+   * transfers every body. The web has no batch API and falls through (`.claude/rules/surfaces.md`). */
+  const nativeRoot = nativeRootPath(root);
+  if (nativeRoot) {
     const native = await nativeVaultFingerprint(nativeRoot);
     if (native) return fingerprintFromEntries(native.entries);
   }
@@ -442,12 +312,7 @@ export async function computeLocalVaultFingerprint(
   return fingerprintFromEntries(stamps);
 }
 
-/**
- * One unit of a build: a markdown document (plus the link context backlink
- * reconstruction needs) or an image. It carries `handle` + `lastModified` so an
- * incremental rebuild can skip re-reading a file whose mtime is unchanged and
- * reuse the previous result.
- */
+/** One built file; `handle` and `lastModified` let an incremental rebuild reuse it unchanged. */
 export interface BuiltVaultEntry {
   relativePath: string;
   lastModified: number;
@@ -461,7 +326,7 @@ export interface BuiltVaultEntry {
   linkContexts?: LinkContext[];
 }
 
-/** One `.md` file's raw body → BuiltVaultEntry. Pure; no I/O. */
+/** Pure: one `.md` body to a BuiltVaultEntry. */
 function buildMdEntry(
   entry: WalkEntry,
   raw: string,
@@ -488,12 +353,6 @@ function buildMdEntry(
       : [];
   const { slugs: linksOut, contexts: linkContexts } =
     extractOutLinksWithContext(body, slug);
-  /*
-   * The findings are computed here, in the one place that already holds the whole
-   * body, so asking what the body says costs no second read. The slug is the
-   * vault-relative path of the file, which is exactly the question
-   * `slug-outside-kind-folder` asks.
-   */
   const kind =
     typeof frontmatter.kind === 'string' ? frontmatter.kind.trim() : '';
 
@@ -532,11 +391,7 @@ function buildMdEntry(
   };
 }
 
-/**
- * BuiltVaultEntry[] → a finished LocalVaultBuild. Sorting, tree, backlinks, tags,
- * and fingerprint are all in memory. Full and incremental builds share **this one
- * function**, so the two paths cannot structurally disagree.
- */
+/** Full and incremental builds share this aggregation so they cannot disagree. */
 function aggregateBuild(
   entries: BuiltVaultEntry[],
   rootName: string,
@@ -561,9 +416,7 @@ function aggregateBuild(
       continue;
     }
     if (entry.kind === 'source') {
-      // A raw source never joins `docs`, so nothing downstream can read it as a
-      // concept. Its handle is kept only so the browser can hand the file back to the
-      // person who asked to open it.
+      // A raw source never joins `docs`; its handle only lets a person open the file.
       sourceHandles.set(entry.relativePath, entry.handle);
       sources.push({
         path: entry.relativePath,
@@ -578,8 +431,6 @@ function aggregateBuild(
     if (!doc) continue;
     fileHandles.set(doc.slug, entry.handle);
 
-    // Plain `backlinks` (deprecated) is no longer put in the manifest; only
-    // `backlinksDetail`, which carries context.
     for (const ctx of entry.linkContexts ?? []) {
       if (!backlinksDetailMap.has(ctx.target)) {
         backlinksDetailMap.set(ctx.target, []);
@@ -597,17 +448,13 @@ function aggregateBuild(
     docs.push(doc);
   }
 
-  // D-1 — second pass: register FRONTMATTER relation-ref backlinks (the body
-  // pass above only saw markdown links). A ref that resolves to a known doc
-  // slug adds a backlink from the declaring doc to that target — deduped by
-  // fromSlug in the final assembly below, so a doc that references a target
-  // through BOTH a body link and frontmatter keeps the richer body context.
+  // Frontmatter relation refs add backlinks too, deduped by fromSlug so a body link's richer
+  // context wins.
   const slugSet = new Set(docs.map((doc) => doc.slug));
   const tailToSlug = new Map<string, string | null>();
   for (const doc of docs) {
     const tail = doc.slug.split('/').pop() ?? doc.slug;
-    // First occurrence wins; a second doc with the same tail marks it ambiguous
-    // (null) so `resolveRefToDocSlug` won't guess.
+    // A tail shared by two docs becomes null (ambiguous).
     tailToSlug.set(tail, tailToSlug.has(tail) ? null : doc.slug);
   }
   for (const doc of docs) {
@@ -651,17 +498,11 @@ function aggregateBuild(
   const manifest: VaultManifest = {
     version: '2026-04-23',
     generatedAt: new Date().toISOString(),
-    // Omit the field entirely when no limit was hit — always emitting `false`/`[]`
-    // would create meaningless differences for code that compares manifests
-    // (incremental build, snapshots).
+    // Walk fields are emitted only when set, so manifests compare equal across builds.
     ...(walkInfo?.truncated ? { walkTruncated: true } : {}),
     ...(walkInfo?.prunedDirs.length ? { prunedDirs: walkInfo.prunedDirs } : {}),
-    // Same rule as the two fields above: emitted only when there is something to
-    // say, so a documents folder's manifest is unchanged by this addition.
     ...(walkInfo?.sourceFileCount ? { sourceFileCount: walkInfo.sourceFileCount } : {}),
     docs,
-    // Same rule again: emitted only when the folder has a library, so a vault without
-    // one produces the manifest it always produced.
     ...(sources.length ? { sources } : {}),
     backlinksDetail,
     tags,
@@ -676,10 +517,8 @@ function aggregateBuild(
   };
 }
 
-/** Walks the directory reading every `.md` body into BuiltVaultEntry[]. Full I/O. */
 async function collectEntries(
   root: FileSystemDirectoryHandle,
-  /** Carries the walk's boundary facts through to the manifest, so it stays visible. */
   walkInfo?: { truncated: boolean; prunedDirs: string[]; sourceFileCount?: number },
 ): Promise<BuiltVaultEntry[]> {
   const walked = await walkVault(root);
@@ -690,14 +529,8 @@ async function collectEntries(
   }
   const files = walked.entries;
   const entries: BuiltVaultEntry[] = [];
-  /*
-   * Fetched once, and only for the sources. A raw source is listed by size and mtime and
-   * must never be opened to learn them: under Tauri `getFile()` is
-   * `read_vault_binary_file`, so a folder of ten PDFs would cross the bridge whole on
-   * every full build. The native walk already knows both numbers. On the web this is
-   * `null` and `getFile()` is the right answer there — a `File` from a directory handle
-   * is metadata, not content.
-   */
+  /* Sources are listed by size and mtime from native stamps, never opened (`getFile()` under
+   * Tauri transfers the whole file). On the web a directory `File` is metadata only. */
   const stamps = files.some((entry) => entry.kind === 'source')
     ? await nativeStampIndex(root)
     : null;
@@ -732,7 +565,6 @@ async function collectEntries(
   return entries;
 }
 
-/** Size and mtime from a File System Access handle: metadata, never a read. */
 async function sourceStampFromHandle(
   handle: FileSystemFileHandle,
 ): Promise<{ lastModified: number; bytes: number }> {
@@ -740,10 +572,7 @@ async function sourceStampFromHandle(
   return { lastModified: file.lastModified, bytes: file.size };
 }
 
-/**
- * Full build plus the reusable entries. The caller (use-local-vault `load`) keeps
- * the entries in a ref and hands them to the next incremental rebuild.
- */
+/** Full build plus the entries the next incremental rebuild reuses. */
 export async function buildLocalManifestWithEntries(
   root: FileSystemDirectoryHandle,
 ): Promise<{ build: LocalVaultBuild; entries: BuiltVaultEntry[] }> {
@@ -752,11 +581,7 @@ export async function buildLocalManifestWithEntries(
   return { build: aggregateBuild(entries, root.name, walkInfo), entries };
 }
 
-/**
- * Builds a markdown manifest from a chosen local directory, in the same
- * VaultManifest shape as `scripts/build-docs-vault.mjs`, so the viewer, tree,
- * and graph work unchanged.
- */
+/** Builds a local manifest in the same VaultManifest shape as `scripts/build-docs-vault.mjs`. */
 export async function buildLocalManifest(
   root: FileSystemDirectoryHandle,
 ): Promise<LocalVaultBuild> {
@@ -766,43 +591,17 @@ export async function buildLocalManifest(
 }
 
 /**
- * Incremental rebuild — reuses the `previous` entries. After walking, only each
- * file's mtime is checked (no body read); when (relativePath, mtime, kind) match
- * the previous run, that entry's doc and link context are reused verbatim. Only
- * changed or added files are re-read; deleted ones simply fall out. The result is
- * equivalent to a full `buildLocalManifest` except for `generatedAt` —
- * `incremental.test.ts` proves that across add/change/remove/no-op/rename.
- *
- * Assumption: the same (relativePath, mtime) implies the same content — the same
- * assumption the `computeLocalVaultFingerprint` skip already relies on.
+ * Reuses previous entries whose (relativePath, mtime, kind) match and rereads the rest;
+ * equivalent to a full build except `generatedAt`. Assumes equal mtime means equal content.
  */
 export async function rebuildLocalManifestIncremental(
   root: FileSystemDirectoryHandle,
   previous: BuiltVaultEntry[],
-  /**
-   * Native stamps (path → mtime) already fetched. `refresh()` just walked for
-   * exactly this to decide whether anything changed, so passing them in
-   * **avoids walking twice**. Omitted, this fetches them itself.
-   */
+  /** Native stamps already fetched by the caller's change check, so the vault is walked once. */
   providedStamps?: VaultStampIndex | null,
 ): Promise<{ build: LocalVaultBuild; entries: BuiltVaultEntry[] }> {
-  /*
-   * **The counters have to survive this path too, or the screen changes under
-   * the person standing on it.**
-   *
-   * This used to call the entries-only `walk()` and hand `aggregateBuild` no
-   * walk info, so an incremental rebuild produced a manifest with no
-   * `sourceFileCount`. The first-run card reads that number to decide whether
-   * to open with the code step, and its absence reads as zero — so the card
-   * silently reordered from "draft the map from your code" to "start from the
-   * documents in this folder" while it was still on screen.
-   *
-   * The trigger is this feature's own happy path: the person copies the
-   * instruction, their agent writes an approved document into the folder, the
-   * mtime fingerprint changes, and the refresh runs incrementally.
-   * `walkTruncated` and `prunedDirs` were being dropped here for the same
-   * reason and are restored with it.
-   */
+  /* The walk info must survive an incremental rebuild: the first-run card reads
+   * `sourceFileCount`, and its absence reorders the card while it is on screen. */
   const walked = await walkVault(root);
   const files = walked.entries;
   const walkInfo = {
@@ -811,33 +610,12 @@ export async function rebuildLocalManifestIncremental(
     sourceFileCount: walked.sourceFileCount,
   };
   const prevByPath = new Map(previous.map((e) => [e.relativePath, e] as const));
-  /*
-   * **Do not drag file bodies across the bridge just to learn an mtime** (measured 2026-08-09).
-   *
-   * This function exists to re-read only changed files, yet it called `getFile()`
-   * per file to find out *what* changed. Under Tauri that is a
-   * `read_vault_text_file` round trip returning the whole body — the same waste
-   * the `computeLocalVaultFingerprint` comment above already names. So body
-   * re-parsing was saved while transfer and round trips were not.
-   *
-   * Measured in the installed app, editing one file until the map caught up:
-   * **2.0 s for a 71-file vault, 0.7 s for a 5-file vault** — linear in file count
-   * (≈20 ms each, matching an IPC round trip). Reading those same 71 files from
-   * disk costs **1.8 ms**.
-   *
-   * The fix is not a new native command: `vault_fingerprint` already returns paths
-   * and mtimes in one call and is used 300 lines above. Decide with it first, then
-   * call `getFile()` only where the mtime differs.
-   *
-   * The web has no batch API, so it gets `null` and falls through to the previous
-   * path — the bridge convention from `.claude/rules/surfaces.md`.
-   */
+  /* Decide from native mtimes before calling `getFile()`, which under Tauri transfers the whole
+   * body. The web has no batch API and gets null (`.claude/rules/surfaces.md`). */
   const nativeStamps: VaultStampIndex | null = providedStamps ?? (await nativeStampIndex(root));
   const entries: BuiltVaultEntry[] = [];
   for (const entry of files) {
-    // If native knows this path's mtime and it is unchanged, **the file is never
-    // opened**. An unknown path (just created, or listings disagreeing) falls
-    // through and is handled as before — "read it when unsure" is the safe side.
+    // An unchanged native mtime means the file is never opened; an unknown path is read to be safe.
     const nativeStamp = nativeStamps?.get(entry.relativePath);
     if (nativeStamp !== undefined) {
       const prevNative = prevByPath.get(entry.relativePath);
@@ -851,8 +629,7 @@ export async function rebuildLocalManifestIncremental(
       }
     }
     if (entry.kind === 'source') {
-      // Changed or new — still metadata only. A raw source's bytes have no reason to
-      // enter this process at any point in a rebuild.
+      // Metadata only: a raw source's bytes never enter this process.
       const { lastModified, bytes } = nativeStamp
         ? { lastModified: nativeStamp.lastModified, bytes: nativeStamp.size }
         : await sourceStampFromHandle(entry.handle);

@@ -283,20 +283,8 @@ export function materializeImplementationOnlySourceElements(
 
 /**
  * Proposes top-level standalone packages (a directory with its own `package.json`
- * directly under root) as element candidates — sibling packages such as `mcp/`
- * and `cli/`.
- *
- * Why (measured 2026-08-01): without this function, analyze caught only the `src/`
- * FSD layers and `apps/`/`packages/` workspaces, and **the tool's field of view
- * became the vault's reach**. When an agent with no spec context regenerated the
- * dogfood vault from these proposals alone, this repository's entire agent surface
- * (the MCP server `mcp/`, the CLI `cli/`) fell off the map: all 43 `path:` values
- * were under `src/`. An omission in a proposal tool propagates as silence, so the
- * reach is fixed in code — fixing only the wording lets the next person build the
- * same vault.
- *
- * `package.json` is the discriminator: top-level folders that are not standalone
- * packages (`scripts/`, `tests/`, `docs/`) are not proposed. Coverage is not the goal.
+ * directly under root, such as `mcp/` and `cli/`) as element candidates, so the
+ * vault's reach is not limited to `src/`. Other top-level folders are not proposed.
  */
 export function detectRootPackages(rootPath, { ignore, domainForName, existingElements }) {
   const out = [];

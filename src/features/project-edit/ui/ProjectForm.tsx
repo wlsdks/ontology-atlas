@@ -64,26 +64,14 @@ interface Props {
   onCancel: () => void;
   onDelete?: () => Promise<void>;
   onDirtyChange?: (dirty: boolean) => void;
-  /**
-   * True in demo/sample mode, where no vault is loaded: a banner appears at the top
-   * of the form and every submit button is disabled up front. The earlier flow let
-   * someone fill the whole form and only then showed a raw English error
-   * ("Cannot mutate projects…"); this says so on arrival instead.
-   */
+  /** Demo mode with no vault: a banner shows and every submit is disabled up front. */
   writeDisabled?: boolean;
-  /**
-   * The «where to go instead» control for the write-locked banner. The view injects
-   * it — the folder-opening component lives in another feature, and FSD forbids
-   * feature→feature imports.
-   */
+  /** Opens a folder from the write-locked banner; injected because FSD forbids feature→feature imports. */
   openVaultAction?: ReactNode;
 }
 
 
-// The zod schema (schema.ts) has no access to the `useTranslations` hook, so it
-// returns `validation.<key>` i18n keys as `issue.message` (or the link-line format
-// `validation.linkLine:<index>:<code>`) rather than real English text. The final
-// translation happens here, in the `settings.projectForm` namespace.
+// schema.ts cannot use hooks, so it returns `validation.<key>` i18n keys translated here.
 function resolveValidationMessage(
   t: ReturnType<typeof useTranslations>,
   message: string,
@@ -105,12 +93,7 @@ const FORM_SECTION_IDS = [
   "project-form-operations",
 ] as const;
 
-/**
- * The required fields **visible on the first screen** of the create flow. Everything
- * else folds into "add more" (those can be filled later, from the edit screen after
- * saving). When a validation error points at a field outside this set, the collapsed
- * section is expanded first.
- */
+/** The create screen's first view; everything else folds into "add more". */
 const CREATE_ESSENTIAL_FIELDS = new Set<keyof ProjectFormValues>([
   "name",
   "category",
@@ -198,6 +181,29 @@ function buildInitialValues({
   };
 }
 
+function initialSectionOpen(mode: "create" | "edit"): Record<string, boolean> {
+  const edit = mode === "edit";
+  return {
+    "project-form-basics": true,
+    "project-form-story": true,
+    "project-form-network": edit,
+    "project-form-operations": edit,
+  };
+}
+
+/** Keeps a preserved-missing or unknown taxonomy value selectable in front of the known options. */
+function withKeptTaxonomyOption(
+  options: { value: string; label: string }[],
+  value: string,
+  known: boolean,
+  unspecifiedLabel: string,
+  missingLabel: string,
+): { value: string; label: string }[] {
+  if (value === PRESERVE_MISSING_TAXONOMY_VALUE) return [{ value, label: unspecifiedLabel }, ...options];
+  if (value && !known) return [{ value, label: missingLabel }, ...options];
+  return options;
+}
+
 export function ProjectForm({
   mode,
   initialProject,
@@ -214,7 +220,6 @@ export function ProjectForm({
   const t = useTranslations("settings.projectForm");
   const failureSentence = useFailureSentence();
   const reducedMotion = usePrefersReducedMotion();
-  // The freshness model returns a grade only; the screen chooses the words.
   const tFreshness = useTranslations("projectFreshness");
   const { categories, statuses, getCategory, getStatus, categoryLabel, statusLabel } =
     useTaxonomy();
@@ -267,12 +272,8 @@ export function ProjectForm({
   const [savedValues, setSavedValues] = useState<ProjectFormValues>(initialValues);
   const [values, setValues] = useState<ProjectFormValues>(initialValues);
 
-  // RHF's `formState.isDirty` is the single source of truth for dirty tracking. The
-  // external `values` state holds the source of truth and the setValue helper calls
-  // RHF's `setValue` on every call — RHF only supplements dirty and submit state.
-  //
-  // The resolver's inferred input/output types differ (zod `default([])` and the
-  // like) and do not match RHF's Resolver signature, hence the `as never` cast.
+  // `values` state is the source of truth; RHF only supplements dirty and submit state.
+  // The resolver's inferred types do not match RHF's Resolver signature, hence `as never`.
   const rhfMethods = useForm<ProjectFormValues>({
     defaultValues: initialValues,
     resolver: zodResolver(projectFormSchema) as never,
@@ -280,64 +281,31 @@ export function ProjectForm({
   const rhfIsDirty = rhfMethods.formState.isDirty;
   const rhfReset = rhfMethods.reset;
   const rhfSetValue = rhfMethods.setValue;
-  const categoryOptions = useMemo(() => {
-    // The taxonomy provider picks labels for the screen's language — reading
-    // `category.label` (Korean) directly here leaks Korean onto the English screen.
-    const options = categories.map((category) => ({
-      value: category.id,
-      label: categoryLabel(category.id),
-    }));
-    if (values.category === PRESERVE_MISSING_TAXONOMY_VALUE) {
-      return [
-        {
-          value: PRESERVE_MISSING_TAXONOMY_VALUE,
-          label: t("fields.categoryUnspecified"),
-        },
-        ...options,
-      ];
-    }
-    if (values.category && !getCategory(values.category)) {
-      return [
-        {
-          value: values.category,
-          label: t("fields.categoryMissingOption", { id: values.category }),
-        },
-        ...options,
-      ];
-    }
-    return options;
-  }, [categories, categoryLabel, getCategory, t, values.category]);
-  const statusOptions = useMemo(() => {
-    const options = statuses.map((status) => ({
-      value: status.id,
-      label: statusLabel(status.id),
-    }));
-    if (values.status === PRESERVE_MISSING_TAXONOMY_VALUE) {
-      return [
-        {
-          value: PRESERVE_MISSING_TAXONOMY_VALUE,
-          label: t("fields.statusUnspecified"),
-        },
-        ...options,
-      ];
-    }
-    if (values.status && !getStatus(values.status)) {
-      return [
-        {
-          value: values.status,
-          label: t("fields.statusMissingOption", { id: values.status }),
-        },
-        ...options,
-      ];
-    }
-    return options;
-  }, [getStatus, statusLabel, statuses, t, values.status]);
+  const categoryOptions = useMemo(
+    () =>
+      withKeptTaxonomyOption(
+        // The provider picks labels for the screen locale; `category.label` itself is Korean.
+        categories.map((category) => ({ value: category.id, label: categoryLabel(category.id) })),
+        values.category,
+        !!getCategory(values.category),
+        t("fields.categoryUnspecified"),
+        t("fields.categoryMissingOption", { id: values.category }),
+      ),
+    [categories, categoryLabel, getCategory, t, values.category],
+  );
+  const statusOptions = useMemo(
+    () =>
+      withKeptTaxonomyOption(
+        statuses.map((status) => ({ value: status.id, label: statusLabel(status.id) })),
+        values.status,
+        !!getStatus(values.status),
+        t("fields.statusUnspecified"),
+        t("fields.statusMissingOption", { id: values.status }),
+      ),
+    [getStatus, statusLabel, statuses, t, values.status],
+  );
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(mode === "edit");
-  // Create only: the document address (slug) is generated from the name, so it is a
-  // caption by default and only someone who wants to set it opens the input.
   const [slugFieldOpen, setSlugFieldOpen] = useState(false);
-  // Create only: everything outside the four required fields stays folded. Those can
-  // be filled later from the edit screen, so they have no claim on the first screen's height.
   const [createExtrasOpen, setCreateExtrasOpen] = useState(false);
   const [errors, setErrors] = useState<
     Partial<Record<keyof ProjectFormValues, string>>
@@ -345,29 +313,15 @@ export function ProjectForm({
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
-  /*
-   * A failed save keeps **both halves**: the sentence the banner shows and the English cause a
-   * developer reads off `data-failure-detail`. It used to hold `err.message`, which put the
-   * vault layer's English into this banner on a Korean screen.
-   */
+  /* A failed save keeps the banner sentence and the English cause for `data-failure-detail`. */
   const [globalError, setGlobalError] = useState<FailureCopy | null>(null);
   const [saveNotice, setSaveNotice] = useState<string | null>(null);
   const submitBehaviorRef = useRef<"stay" | "return">("stay");
   const [sectionOpen, setSectionOpen] = useState<Record<string, boolean>>(() =>
-    mode === "create"
-      ? {
-          "project-form-basics": true,
-          "project-form-story": true,
-          "project-form-network": false,
-          "project-form-operations": false,
-        }
-      : {
-          "project-form-basics": true,
-          "project-form-story": true,
-          "project-form-network": true,
-          "project-form-operations": true,
-        },
+    initialSectionOpen(mode),
   );
+  const toggleSection = (id: string) =>
+    setSectionOpen((current) => ({ ...current, [id]: !current[id] }));
   const existingSlugSet = useMemo(
     () =>
       new Set(
@@ -388,9 +342,6 @@ export function ProjectForm({
       )
       .map((project) => project.slug);
   }, [allProjects, initialProject]);
-  // Suggest other projects mentioned in the description or detail as dependency
-  // candidates. Candidates that would create a cycle are already caught by
-  // `invalidDependencySlugs` and are excluded from the suggestions.
   const dependencySuggestions = useMemo(() => {
     const invalidSet = new Set(invalidDependencySlugs);
     return computeSuggestedDependencies(
@@ -410,9 +361,7 @@ export function ProjectForm({
     values.detail,
     values.slug,
   ]);
-  // The dirty signal is RHF's `formState.isDirty` OR a comparison against the
-  // `savedValues` baseline. RHF's `isDirty` has occasional false negatives on nested
-  // arrays, so the direct comparison is OR'd in.
+  // RHF's `isDirty` has false negatives on nested arrays, so the baseline comparison is OR'd in.
   const isDirty =
     rhfIsDirty || JSON.stringify(values) !== JSON.stringify(savedValues);
 
@@ -420,11 +369,8 @@ export function ProjectForm({
     onDirtyChange?.(isDirty);
   }, [isDirty, onDirtyChange]);
 
-  // Shows the browser's confirm dialog when closing, reloading, or following a link
-  // while dirty. Browsers display a generic message even with an empty `returnValue`
-  // (Chrome, Firefox, Safari); the message itself cannot be customized for security
-  // reasons. Actual in-app navigation (a Next.js Link) needs a separate router-event
-  // guard — this only covers leaving the page entirely.
+  // Browsers show a generic message whatever `returnValue` says; in-app Link navigation
+  // is not covered here.
   useEffect(() => {
     if (!isDirty) return;
     const handler = (event: BeforeUnloadEvent) => {
@@ -437,21 +383,7 @@ export function ProjectForm({
 
   useEffect(() => {
     queueMicrotask(() => {
-      setSectionOpen(
-        mode === "create"
-          ? {
-              "project-form-basics": true,
-              "project-form-story": true,
-              "project-form-network": false,
-              "project-form-operations": false,
-            }
-          : {
-              "project-form-basics": true,
-              "project-form-story": true,
-              "project-form-network": true,
-              "project-form-operations": true,
-            },
-      );
+      setSectionOpen(initialSectionOpen(mode));
     });
   }, [mode]);
 
@@ -461,12 +393,7 @@ export function ProjectForm({
   ) => {
     setSaveNotice(null);
     setValues((prev) => ({ ...prev, [key]: v }));
-    // RHF's `setValue` fires alongside (`shouldDirty: true`) so `formState.isDirty`
-    // matches the baseline exactly.
-    //
-    // The optional `undefined` in `ProjectFormValues[K]` mismatches RHF's Path-typed
-    // `setValue` signature, hence the one-line `as never` cast: `Path<T>` is a subset
-    // of `string` and is not compatible with `keyof T` (normal RHF 7.x behaviour).
+    // `Path<T>` is not compatible with `keyof T` in RHF 7.x, hence `as never`.
     rhfSetValue(
       key as Parameters<typeof rhfSetValue>[0],
       v as never,
@@ -475,8 +402,7 @@ export function ProjectForm({
   };
 
   const focusField = (field: keyof ProjectFormValues) => {
-    // A field inside a collapsed section must be expanded before focus moves to it —
-    // an error in the banner while its field is nowhere on screen is a dead end.
+    // Expand a collapsed section before focusing its field; an off-screen error is a dead end.
     if (mode === "create") {
       if (field === "slug") setSlugFieldOpen(true);
       else if (!CREATE_ESSENTIAL_FIELDS.has(field)) setCreateExtrasOpen(true);
@@ -487,8 +413,7 @@ export function ProjectForm({
       const target = document.getElementById(fieldId);
       if (target instanceof HTMLElement) {
         target.focus();
-    // jsdom does not implement `scrollIntoView`. Focus is the point and scrolling is
-    // secondary, so its absence is skipped silently.
+        // jsdom lacks `scrollIntoView`; focus is what matters.
         target.scrollIntoView?.({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'center' });
       }
     });
@@ -667,10 +592,6 @@ export function ProjectForm({
 
     setSubmitting(true);
     try {
-      // The current project list, used to avoid overlapping placement slots.
-      // `allProjects` comes from the mode-aware `useProjects` hook, so it is in sync
-      // with either the vault or the build-time dogfood source of truth.
-      const latestProjects = allProjects;
       // Position is computed only on create, or when the user actually changed the
       // category. Edit must not silently fill in a category or position the original lacked.
       const initialPos = initialProject?.position;
@@ -679,28 +600,22 @@ export function ProjectForm({
         : parsed.data.category;
       const categoryChanged =
         initialProject?.category !== resolvedCategoryId;
-      // Branch on the MODE, not on `initialProject` truthiness: duplicate mode
-      // is "create" WITH an initialProject, and testing truthiness sent the
-      // copy down the edit branch — with the category unchanged it inherited
-      // initialPos and landed exactly on top of the source project on the map
-      // (bug sweep 2026-09-01). A duplicate gets a fresh placement slot like
-      // any other create, with the source still occupying its own.
+      // Branch on mode: duplicate is create with an initialProject and needs a fresh slot.
       const position = mode === "edit" && initialProject
         ? categoryChanged && nextCategory
           ? findProjectPlacement(
               nextCategory,
-              latestProjects.filter(
+              allProjects.filter(
                 (project) => project.slug !== initialProject.slug,
               ),
             )
           : initialPos
         : nextCategory
-          ? findProjectPlacement(nextCategory, latestProjects)
+          ? findProjectPlacement(nextCategory, allProjects)
           : undefined;
       const input = formValuesToProjectInput(parsed.data, position);
       await onSubmit(input, { behavior: submitBehavior });
       setSavedValues(parsed.data);
-      // Reset RHF's baseline too, so `isDirty` returns to false immediately.
       rhfReset(parsed.data);
       if (submitBehavior === "stay") {
         setSaveNotice(
@@ -729,13 +644,7 @@ export function ProjectForm({
     }
   };
 
-  /*
-   * **The create screen counts what it asks for** (2026-09-25 sweep). Its lede promises that
-   * name, category, status and a short description are all it takes, yet the side card scored
-   * the eight optional fields the edit screen offers — 13%, "1/8 filled" — after the person had
-   * filled everything in front of them. On create the score is over those four; the optional
-   * fields are scored on the edit screen, where they can be filled.
-   */
+  /* Create scores only the four fields it asks for; optional fields are scored on edit. */
   const completenessInsight = useMemo(() => {
     if (mode !== "create") return resolveProjectCompletenessInsight(previewProject);
     const required = [
@@ -824,10 +733,7 @@ export function ProjectForm({
     ? t("preview.summaryDirty", { score: completenessInsight.score, count: changePreviewItems.length })
     : t("preview.summaryClean", { score: completenessInsight.score });
 
-  // ── Field fragments ────────────────────────────────────────────────────
-  // The create and edit screens share **one set of field definitions**; each fragment
-  // is defined once and only the arrangement differs. Writing the fields twice starts
-  // the drift where only one copy gets fixed.
+  // Create and edit share one set of field fragments; only the arrangement differs.
 
   const slugField = (
     <FieldRow label={t("fields.slug")} error={errors.slug} fieldId={PROJECT_FIELD_IDS.slug}>
@@ -1150,27 +1056,8 @@ export function ProjectForm({
   );
 
   /*
-   * ⚠️ **This was a dead-end CTA** (raised by the hierarchy seat 2026-08-06, confirmed
-   * by measurement).
-   *
-   * This banner is **the most prominent thing on screen** (the only warm colour) and
-   * said only *"you need to open a folder"*, while **nothing on this screen opened
-   * one** — a full sweep found **zero** controls that open a folder.
-   *
-   * The charter's degradation grammar is «why it is unavailable **and where to go**»
-   * (`.claude/rules/surfaces.md`). The docs surface had already solved the same
-   * problem that way: *"pressing it goes to what makes it possible — open my folder."*
-   *
-   * ⚠️ **The destination `/` was itself a dead end on the web** (measured 2026-08-07).
-   * Following it landed on `/ko/`, where the number of folder-opening controls is
-   * **zero** — for a web visitor with no vault, `/` is the **gateway** (the download
-   * screen) (`isGatewaySurface()`, 2026-07-30). In the installed app `/` is the map,
-   * so it was correct there, and checking only in the app hides this. The old gate
-   * likewise checked only «did the URL change», never «can you open a folder there».
-   *
-   * So rather than fixing the destination, it opens **in place**. The control is
-   * injected by the view (`openVaultAction`) — the folder-opening component lives in
-   * the `docs-vault-local` feature, and FSD forbids feature→feature imports.
+   * Opens a folder in place: on the web `/` is the gateway, which cannot open one.
+   * Degradation grammar: `.claude/rules/surfaces.md`.
    */
   const writeDisabledBanner = writeDisabled ? (
     <div
@@ -1188,25 +1075,13 @@ export function ProjectForm({
     </div>
   ) : null;
 
-  /**
-   * When a save is rejected, **is the reason visible to the person who pressed it?**
-   *
-   * Measured 2026-08-07 (390×844): pressing save on the edit screen put the rejection
-   * notice at top 802 · bottom 872 — with a viewport of 844 it was **clipped at both
-   * ends** and caught behind the bottom tab bar. From the presser's point of view
-   * nothing happened. At 1512 it was perfectly visible (628–676). The longer the form
-   * and the shorter the screen, the worse the mismatch.
-   *
-   * `focusField` already takes validation errors to their field, but an error with
-   * **no field** — a failed save — has nowhere to go except this banner.
-   */
+  /** A failed save has no field to focus, so focus goes to this banner. */
   const errorBannerRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (!globalError) return;
     const node = errorBannerRef.current;
     if (!node) return;
-    // jsdom does not implement `scrollIntoView`. Focus is the point and scrolling is
-    // secondary, so its absence is skipped silently (same discipline as `focusField`).
+    // jsdom lacks `scrollIntoView`; focus is what matters.
     node.scrollIntoView?.({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'center' });
     node.focus();
   }, [globalError, reducedMotion]);
@@ -1249,9 +1124,7 @@ export function ProjectForm({
   const returnSubmitLabel =
     mode === "create" ? t("actions.createAndReturn") : t("actions.saveAndReturn");
 
-  // The action row comes **after the form**. The same three buttons used to sit at the
-  // top as well, so on the create screen you could press "create and keep viewing"
-  // before seeing a single input.
+  // Actions come after the form so nothing is pressed before the inputs are seen.
   const actionRow = (
     <div className="flex flex-wrap items-center justify-end gap-2 border-t border-[color:var(--color-overlay-2)] pt-6">
       <Button
@@ -1275,17 +1148,7 @@ export function ProjectForm({
       >
         {returnSubmitLabel}
       </Button>
-      {/* There is **one** filled primary CTA per screen (hierarchy verdict 2026-08-08).
-          The edit screen already had a save in the sticky band above — same action,
-          same label, same 142×40 — and measurement found two filled indigo surfaces
-          (ledger 2026-08-08 (3) ①). The sticky band is visible at any scroll position,
-          so it carries the primary CTA, and this save at the end of the reading flow is
-          a repeat of the same action and drops to a secondary tone — the function and
-          the label are unchanged. The create screen has no sticky band (see the comment
-          above), so this is its only primary CTA and keeps `primary`: without the
-          condition the create screen would have zero filled CTAs, a hierarchy defect in
-          the opposite direction. No new variant is introduced; this uses `Button`'s
-          existing `outline`. */}
+      {/* One filled primary CTA per screen: edit's sticky band carries it, so this repeat is outline. */}
       <Button
         data-testid="project-save"
         type="submit"
@@ -1301,10 +1164,7 @@ export function ProjectForm({
     </div>
   );
 
-  // ── Create screen form ─────────────────────────────────────────────────
-  // Only the four required fields (name, category, status, short description) are
-  // expanded; everything else folds into "add more". The document address (slug) is
-  // generated from the name, so it is a caption under the name rather than a field.
+  // Create shows the four required fields; the slug is a caption under the name.
   const createForm = (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
       {writeDisabledBanner}
@@ -1316,10 +1176,7 @@ export function ProjectForm({
           {slugFieldOpen ? (
             slugField
           ) : (
-            /* The caption is pinned to one line (dimensional regularity). Letting a
-               long address from a long name grow the line would make that card's height
-               depend on character count — the value is clipped, and the full value is
-               visible in the input once "set it myself" is opened. */
+            /* One line, so the caption height never depends on the slug length. */
             <div className="flex items-baseline gap-2 overflow-hidden">
               <span className="shrink-0 text-label text-[color:var(--color-text-quaternary)]">
                 {t("fields.slugAutoLabel")}
@@ -1334,10 +1191,7 @@ export function ProjectForm({
                 type="button"
                 data-testid="project-slug-disclosure"
                 onClick={() => setSlugFieldOpen(true)}
-                /* A control inside a caption row — carried only up to a floor of 24
-                   (`min-h-6`). The row rises 16→24, but carrying 44 would turn the
-                   caption row into a card. There is under 12px of clearance to the form
-                   field below, so touch-hit-expand is not attached. */
+                /* Floor of 24 only; under 12px clearance below, so no touch-hit-expand. */
                 className={controlClass({
                   shape: "link",
                   tone: "accent",
@@ -1376,10 +1230,7 @@ export function ProjectForm({
     </form>
   );
 
-  // ── Edit screen form ───────────────────────────────────────────────────
-  // Editing is "filling out something that already exists", so the demands differ:
-  // every item is visible expanded, and the save row sticks to the top so it follows
-  // you while scrolling a long form.
+  // Edit shows every field expanded, with the save row sticky at the top.
   const editForm = (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
       {writeDisabledBanner}
@@ -1423,10 +1274,7 @@ export function ProjectForm({
             </span>
           </div>
           <div className="grid grid-cols-2 gap-2 md:flex md:flex-wrap md:items-center md:justify-end">
-            {/* Delete is intentionally absent from this save-cluster — the
-                destructive action lives isolated in the dashed danger row at
-                the form's foot (design charter + Apple HIG: keep destructive
-                actions away from frequently-tapped buttons). */}
+            {/* Delete lives in the danger row at the foot, away from the save cluster. */}
             <Button
               data-testid="project-save-top"
               type="submit"
@@ -1476,9 +1324,6 @@ export function ProjectForm({
               <a
                 key={section.id}
                 href={`#${section.id}`}
-                // pill/lg — the natural height of 32 matches the previous `py-1.5`, and
-                // the border uses the ramp default `border-soft` (0.06) to match the
-                // majority (the old `divider` was 0.08).
                 className={controlClass({
                   shape: "pill",
                   size: "lg",
@@ -1515,12 +1360,7 @@ export function ProjectForm({
         label={t("sections.storyLabel")}
         description={t("sections.storyDetailedDescription")}
         isOpen={sectionOpen["project-form-story"]}
-        onToggle={() =>
-          setSectionOpen((current) => ({
-            ...current,
-            "project-form-story": !current["project-form-story"],
-          }))
-        }
+        onToggle={() => toggleSection("project-form-story")}
         helperBadge={t("sections.helperBadgeDescriptionRequired")}
         collapseLabel={t("sections.collapseLabel")}
         expandLabel={t("sections.expandLabel")}
@@ -1536,19 +1376,13 @@ export function ProjectForm({
         label={t("sections.networkLabel")}
         description={t("sections.networkDetailedDescription")}
         isOpen={sectionOpen["project-form-network"]}
-        onToggle={() =>
-          setSectionOpen((current) => ({
-            ...current,
-            "project-form-network": !current["project-form-network"],
-          }))
-        }
+        onToggle={() => toggleSection("project-form-network")}
         helperBadge={t("sections.helperBadgeAfterSave")}
         collapseLabel={t("sections.collapseLabel")}
         expandLabel={t("sections.expandLabel")}
       >
         {dependenciesField}
-        {/* No screenshot uploader — the local-first flow handles images inline in
-            markdown or as an image asset inside the vault. */}
+        {/* No screenshot uploader: images live inline in Markdown or as vault assets. */}
       </FormSection>
 
       <FormSection
@@ -1556,12 +1390,7 @@ export function ProjectForm({
         label={t("sections.operationsLabel")}
         description={t("sections.operationsDetailedDescription")}
         isOpen={sectionOpen["project-form-operations"]}
-        onToggle={() =>
-          setSectionOpen((current) => ({
-            ...current,
-            "project-form-operations": !current["project-form-operations"],
-          }))
-        }
+        onToggle={() => toggleSection("project-form-operations")}
         helperBadge={t("sections.helperBadgeOptional")}
         collapseLabel={t("sections.collapseLabel")}
         expandLabel={t("sections.expandLabel")}
@@ -1571,13 +1400,7 @@ export function ProjectForm({
 
       {actionRow}
 
-      {/* Edit-only danger row — dashed border is the category signal
-          (design charter: category distinction is a border style, not a
-          color). This is the single, isolated home for deletion: the
-          destructive action is deliberately kept out of the sticky
-          save-cluster (Apple HIG — keep destructive actions away from
-          frequently-tapped buttons) and given the consequence caption a
-          compact bar has no room for. */}
+      {/* Edit-only danger row: the only home for deletion, dashed border as the category signal. */}
       {onDelete && (
         <div
           data-testid="project-danger-row"
@@ -1608,34 +1431,13 @@ export function ProjectForm({
 
   return (
     /*
-     * Inputs on the left, live preview on the right. **The left takes whatever is left.**
-     *
-     * ⚠️ **The old `lg:grid-cols-[640px_260px]` was wider than its own frame** (measured
-     * during the 2026-08-20 release review). This form sits in `PAGE_FRAME_FORM`
-     * (max-w 960 + px-10), giving a content box of **880px**, while the tracks summed to
-     * 640 + 32 (gap-8) + 260 = **932px**. So at every viewport width the right column
-     * hung **52px** outside its container (at 1512 too), and below a viewport of ~1092px
-     * it started being clipped off screen.
-     *
-     * Neither cited justification supported that value: `RATIO-SYSTEM.md` and the
-     * `--page-col-form` token **do not exist**, and the 640 in the live
-     * `docs/prototypes/project-forms-final.html` is
-     * `.formcol { width: 640px; margin: 0 auto }` — **a single centred column with no
-     * sidebar** (`260` appears zero times in that file). A single-column width had been
-     * stood next to a column that never existed, making it a literal that had lost its
-     * origin rather than a ratio to preserve. The sibling token `--page-col-utility` was
-     * deleted by the 2026-07-29 council for the same reason.
-     *
-     * So the fixed width stays **only on the preview** (its width is decided by its own
-     * content). The input column takes the remaining width and follows the frame if it
-     * changes. `minmax(0,…)` rather than `1fr` because `1fr` alone lets long content
-     * inside push the track back out.
-     * Gate: `tests/contract/page-grid-fits-frame.contract.test.ts`.
+     * The input column takes the remaining width and only the preview is fixed; `minmax(0,…)`
+     * keeps long content inside the frame. The 640 in docs/prototypes/project-forms-final.html
+     * is a single column, not a sidebar track. Gate: tests/contract/page-grid-fits-frame.contract.test.ts.
      */
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_260px]">
       {mode === "create" ? createForm : editForm}
 
-      {/* On mobile the form inputs come first; the side panel stays on the right only on desktop. */}
       <aside className="order-none">
         <div className="lg:sticky lg:top-10">
           <button
@@ -1661,10 +1463,6 @@ export function ProjectForm({
             />
           </button>
           <div className={cn("hidden lg:block", mobilePreviewOpen && "block")}>
-            {/* The sentence about "what is changing" is added on the edit screen only.
-                The create screen has no saved previous state, so it always repeated the
-                same thing, and "your input on the left is reflected here" was an excuse
-                from when that input was off screen. They face each other now, so it goes. */}
             {(mode === "edit" || saveNotice) && (
               <div className="mb-4 rounded-panel border border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] p-[var(--card-pad)]">
                 <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
@@ -1695,17 +1493,7 @@ export function ProjectForm({
             <p className="mb-3 font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
               {t("preview.cardEyebrow")}
             </p>
-            {/*
-              **Do not let the card become a box inside a box** (2026-08-17).
-
-              The preview's job is to show *"this is how it looks on the map"*, and
-              putting that card inside another bordered frame shows a border the map
-              does not have — the preview stops matching the real thing.
-
-              The frame is removed and only **the map's background** is laid down. The
-              card already has its own border and radius, which is boundary enough. The
-              padding drops 6 → 5 as well (without the frame, the inner padding reads larger).
-            */}
+            {/* No frame around the card: the preview matches the map, which has none. */}
             <div className="flex items-start justify-center rounded-panel bg-[color:var(--color-canvas)] py-4">
               <ProjectCard
                 project={previewProject}
@@ -1770,28 +1558,7 @@ export function ProjectForm({
   );
 }
 
-/**
- * The create screen's "add more" section. Every item outside the four required fields
- * folds in here, and the user is the one who expands it. Rather than fixing the closed
- * height, one caption always says in the same place that these can be filled after
- * saving — the only guidance on this screen.
- *
- * ## No box around it (owner, 2026-08-17)
- *
- * Owner: *"It looks a bit AI-designed and cheap."*
- * Measurement found the values already followed the system — zero radius deviations and
- * zero font-size deviations on this screen. What was wrong was the **hierarchy**.
- *
- * A `rounded-panel border bg-panel` section used to wrap the single collapsed row.
- * Measured (1512×900): that box occupied **92px to hold one title line and one caption
- * line**, and it was one of four outer boxes on the screen — the shape this repository
- * named "floating box soup" and forbade.
- *
- * A border means «something different starts here», and in the collapsed state there is
- * nothing different inside. So a single hairline is boundary enough, and only on expand
- * does the content distinguish itself by its own weight. With less chrome, the remaining
- * box (the form) stands as the subject on its own.
- */
+/** The create screen's "add more" section: a hairline, not a box, expanded by the user. */
 function CreateExtras({
   open,
   onToggle,

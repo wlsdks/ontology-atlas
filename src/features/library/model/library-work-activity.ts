@@ -1,10 +1,4 @@
-/**
- * A bounded, factual activity trace for the Library graph.
- *
- * The trace is presentation state, never a second record of the vault. A target is admitted
- * only from a tool's structured input (or an observed/successful write), so a model sentence
- * can never light a source or wiki page by merely mentioning its name.
- */
+/** A bounded activity trace; targets come only from structured tool input, never model prose. */
 
 type LibraryWorkEventKind = "read" | "proposal" | "waiting" | "write" | "error";
 type LibraryWorkEventPhase = "active" | "complete";

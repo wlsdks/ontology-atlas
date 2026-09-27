@@ -2,18 +2,9 @@ import type { ArchitectureLayout } from '@/entities/architecture-profile';
 import type { ArchitectureRoleEdge } from '@/entities/architecture-record';
 
 /**
- * What a box is in the drawing's vocabulary.
- *
- * ⚠️ **The shapes are ISO 5807's, and the assignment is derived, never named.** The international
- * flowchart standard gives a terminator (rounded ends) to the start or end of a process and a
- * rectangle to a unit of work. This drawing has no branch and no input/output step, so the
- * standard's diamond and parallelogram are simply not used rather than repurposed into something
- * they do not mean.
- *
- * A role is a terminator when the declared dependency graph makes it an end of the chain: nothing
- * reaches it, or it reaches nothing. That comes from `allow_*` and `dependency_policy`, never from
- * the role's name — reading intent out of a name is exactly what decision (2026-08-26) forbids,
- * and a profile may call its entry layer anything at all.
+ * ISO 5807 shapes, derived from the declared graph (`allow_*`, `dependency_policy`), never from a
+ * role's name: an end of the chain (nothing reaches it, or it reaches nothing) is a terminator,
+ * every other role a process.
  */
 export type GraphBoxShape = 'terminator' | 'process';
 
@@ -47,27 +38,9 @@ export interface ArchitectureGraph {
 }
 
 /**
- * Place the roles in columns and decide which relationships earn a stroke.
- *
- * ⚠️ **A stroke must carry something the columns cannot.** Three different things get confused
- * here, and only two of them may ever be drawn:
- *
- * - **Rank** is which role comes before which. It is the column position and never a line.
- * - **Permitted edges** are what may reach what. Under `lower-only` the rule is "everything to my
- *   right", so the whole set is derivable from the order: this repository's own profile has 21 of
- *   them among 7 roles, and drawing them would restate the column order twenty-one times. Under
- *   `explicit` the set *is* the information and cannot be read off the order at all, so there it
- *   is drawn in full.
- * - **Measured traffic** is how many imports actually crossed. It is derivable from nothing, so it
- *   is drawn wherever a record supplies it, under either policy.
- *
- * The same screen therefore draws different strokes for different profiles. That is the rule, not
- * an inconsistency: every line has to be able to answer "why am I here", and under `lower-only` a
- * permitted edge has no answer.
- *
- * Ranks are not recomputed. `buildArchitectureLayout` already assigns them by longest path to a
- * sink, which is the property that makes every real dependency point one way; this function turns
- * those rows into columns and does nothing else to them.
+ * Places roles in columns (ranks from `buildArchitectureLayout`) and picks strokes that carry what the
+ * columns cannot: every permitted edge under `explicit`, only the adjacent spine under `lower-only`
+ * (skips follow from the order), and all measured traffic.
  */
 export function buildArchitectureGraph(
   layout: ArchitectureLayout,
@@ -82,17 +55,9 @@ export function buildArchitectureGraph(
     Math.abs((columnOf.get(edge.to) ?? 0) - (columnOf.get(edge.from) ?? 0));
 
   /*
-   * ⚠️ **Under `lower-only` the spine is drawn and the rest is not** (2026-08-30). Refusing all 21
-   * was right about the 15 and wrong about the 6: with no permitted stroke at all, the measured
-   * dogfood profile drew seven equal boxes in one column joined by three strokes, three roles
-   * touching nothing, while five of those boxes stated an outgoing import count (`45`, `16`,
-   * `26,000`, `314`, `143`) whose stroke the canvas never drew. A reader was asked to believe a
-   * number the drawing contradicted.
-   *
-   * The adjacent pair is the one permitted edge the column order cannot restate. The order says
-   * which role comes before which; only the stroke says they are a chain rather than a stack. The
-   * skips stay refused under this policy for the original reason — each of them means "everything
-   * to my right", which the order already carries.
+   * Under `lower-only` the adjacent spine is drawn: it is the one permitted edge the order cannot
+   * restate (a chain, not a stack), and without it measured counts had no stroke. Skips mean
+   * "everything to my right", which the order already carries.
    */
   const permitted: GraphEdge[] = layout.edges
     .filter((edge) => layout.policy === 'explicit' || spanOf(edge) === 1)
@@ -103,11 +68,7 @@ export function buildArchitectureGraph(
       columnSpan: spanOf(edge),
     }));
 
-  /*
-   * Same-role traffic is excluded rather than drawn faintly. It is the largest measured number on
-   * this repository and it crosses nothing, so it has no two ends to join and it must not set the
-   * scale for the crossings that do. The box carries it as a count instead.
-   */
+  /* Same-role traffic crosses nothing and must not set the crossing scale; the box carries it as a count. */
   const crossings = traffic.filter(
     (edge) =>
       edge.fromRole !== edge.toRole &&
@@ -121,7 +82,7 @@ export function buildArchitectureGraph(
     kind: 'traffic' as const,
     count: edge.count,
     weight: busiest === 0 ? 0 : edge.count / busiest,
-    columnSpan: Math.abs((columnOf.get(edge.toRole) ?? 0) - (columnOf.get(edge.fromRole) ?? 0)),
+    columnSpan: spanOf({ from: edge.fromRole, to: edge.toRole }),
   }));
 
   const edgeSource: ArchitectureGraph['edgeSource'] =
@@ -133,18 +94,16 @@ export function buildArchitectureGraph(
           ? 'traffic'
           : 'none';
 
-  /*
-   * Shape comes from the *declared* graph, not from the strokes on screen. Under `lower-only` no
-   * permitted edge is drawn at all, so asking the drawn set would make every box a terminator.
-   */
+  /* Shape comes from the declared graph: under `lower-only` the drawn set would make every box a terminator. */
   const declaredIn = new Set(layout.edges.map((edge) => edge.to));
   const declaredOut = new Set(layout.edges.map((edge) => edge.from));
 
+  const drawnEdges = [...permitted, ...measured];
   return {
-    boxes: assignSlots(layout.rows, [...permitted, ...measured], (id) =>
+    boxes: assignSlots(layout.rows, drawnEdges, (id) =>
       declaredIn.has(id) && declaredOut.has(id) ? 'process' : 'terminator',
     ),
-    edges: [...permitted, ...measured].sort(
+    edges: drawnEdges.sort(
       (a, b) =>
         b.columnSpan - a.columnSpan ||
         (b.count ?? 0) - (a.count ?? 0) ||
@@ -157,13 +116,9 @@ export function buildArchitectureGraph(
 }
 
 /**
- * Order the boxes inside each column so the lines between columns cross as little as possible.
- *
- * One pass of the barycentre heuristic: a box sits at the average slot of the boxes it connects
- * back to in the previous column, and declaration order breaks every tie. Dagre repeats this pass
- * until it settles, which matters at hundreds of nodes; at columns of one or two it changes
- * nothing that a second pass would improve, and a stable tie-break is what keeps the picture from
- * moving between renders.
+ * Orders boxes in each column to reduce crossings: one barycentre pass, declaration order breaking
+ * ties. One pass suffices for columns of one or two, and the stable tie-break keeps renders still.
+ * O(V·E): each box scans every edge for placed predecessors; slots are a Map.
  */
 function assignSlots(
   rows: readonly (readonly string[])[],

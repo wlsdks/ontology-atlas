@@ -1,11 +1,4 @@
-/**
- * One question about a passage a person selected in a wiki page.
- *
- * Owner direction 2026-09-07: dragging over a sentence should let a person ask the agent
- * about it at once, with the question chosen from a short list or typed. The brief carries
- * the exact passage, the page it came from, and the rule that keeps the answer honest —
- * read the page and the originals it cites, quote them, and say when they do not say.
- */
+/** One question about a selected passage; the answer must read the page and its cited originals and say when they are silent. */
 export type AskQuestionId = "evidence" | "disagreement" | "explain" | "custom";
 
 export interface AskBriefInput {

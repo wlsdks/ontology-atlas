@@ -20,20 +20,8 @@ export interface VaultConceptFacts {
 const NO_FINDINGS: readonly string[] = [];
 
 /**
- * Manifest → per-doc-slug facts. Pure, so a test only has to build one manifest.
- *
- * `findings` is carried through unchanged from `VaultDoc.meaningFindings`, which both
- * manifest builders fill from `src/shared/lib/meaning-findings.ts`. Nothing is judged
- * here: until 2026-09-22 this hook decided "has a definition" from the presence of a
- * `description` or an excerpt, so a node whose body was a heading and a placeholder
- * counted as defined, and the person's own queue disagreed with what `validate_vault`
- * told their agent about the same file.
- *
- * A document with no `kind:`, a manifest built before the key existed, and a node whose
- * findings were **not computed** (`null` — the builder ran without the rule module) all read
- * as an empty list here, which raises no row and no count. That is deliberately the quiet
- * answer: silence says "nothing was reported", never "this file was checked and is clean",
- * and no surface may turn it into the second.
+ * Manifest to per-slug facts, carrying `VaultDoc.meaningFindings` unchanged. Uncomputed
+ * findings read as an empty list: silence means "nothing reported", never "checked and clean".
  */
 export function manifestToConceptFacts(
   manifest: VaultManifest,
@@ -63,11 +51,7 @@ function cachedFacts(manifest: VaultManifest): Map<string, VaultConceptFacts> {
   return built;
 }
 
-/**
- * The mode-aware adapter — the same pattern as `useVaultDocFreshnessIndex` /
- * `useVaultHealth`. Static means the bundled sample currently shown, local means the user's
- * folder. The user's folder always wins, so nothing beyond the branch is decided here.
- */
+/** Mode-aware adapter; the user's folder always wins. */
 export function useVaultConceptFacts(): ReadonlyMap<string, VaultConceptFacts> {
   const mode = useDataSourceMode();
   const vault = useLocalVault();
@@ -75,11 +59,8 @@ export function useVaultConceptFacts(): ReadonlyMap<string, VaultConceptFacts> {
 
   return useMemo(() => {
     if (mode === 'static') return cachedFacts(staticSource.manifest);
-    // Decided by **whether a manifest exists**, not by `status`. `load()` flips status to
-    // 'loading' after every save and on every poll (the manifest stays), and returning an
-    // empty map in that moment makes every row built from these facts disappear — to the
-    // user it looks like "the fields I was filling vanished" (measured 2026-07-26).
-    // Re-reading does not mean there is no data. Write safety is guarded by `expectedMtime`, not here.
+    // By manifest presence, not `status`: status is 'loading' on every save and poll, and an
+    // empty map then makes rows vanish.
     if (!vault.manifest) return EMPTY_FACTS;
     return cachedFacts(vault.manifest);
   }, [mode, vault.manifest, staticSource.manifest]);

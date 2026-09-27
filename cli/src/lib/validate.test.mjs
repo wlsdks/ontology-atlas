@@ -8,21 +8,13 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { validateVaultDocument } from './validate.mjs';
 
-// `cli/src/lib/validate.mjs` re-exports mcp/src/validate.mjs rather than copying
-// it, so these cases are also the proof that the re-export resolves and delegates
-// — including inside the packed two-package install, where `npm test` runs this
-// file against the installed ontology-atlas-mcp package rather than the checkout.
-// tests/contract/validate-vault-document.contract.test.ts still pins the
-// issue-code set the TypeScript twin must agree on.
+// `cli/src/lib/validate.mjs` re-exports mcp/src/validate.mjs, so these cases also prove the re-export resolves,
+// including in the packed two-package install; tests/contract/validate-vault-document.contract.test.ts pins
+// the issue codes the TypeScript twin must agree on.
 const TEST_UID = '00000000-0000-4000-8000-000000000001';
 
 /**
- * A finished capability body.
- *
- * The validator reads the prose too since 2026-09-22, so a case written to test
- * one frontmatter rule needs a body that answers every meaning question, or the
- * rule under test arrives buried under findings about a body nobody meant to
- * write.
+ * A finished capability body, so a case about one frontmatter rule is not buried under body findings.
  */
 const FINISHED_CAPABILITY_BODY =
   '\n# Ability\n\n' +
@@ -36,10 +28,8 @@ describe('relation_notes guard (swallowed entries and orphaned keys)', () => {
   const tail = `---\n${FINISHED_CAPABILITY_BODY}`;
 
   it('an unquoted value that ran past its comma leaves a pseudo-key: orphaned-relation-note', () => {
-    // The exact shape found in docs/ontology/capabilities/acp-runtime.md on
-    // 2026-08-30: the first value ends at the comma, and the rest of the sentence
-    // plus the next entry's slug become the second KEY. The value test alone saw
-    // nothing, so validate_vault reported 0 problems.
+    // A first value that ends at a comma turns the rest of the sentence plus the next slug into a second
+    // key, which the value test alone missed.
     const r = validateVaultDocument(
       head +
         'dependencies: [capabilities/mcp-server]\nrelates: [capabilities/reviewed-ontology-writing]\n' +
@@ -93,10 +83,8 @@ describe('relation_notes guard (swallowed entries and orphaned keys)', () => {
   });
 
   it('the body half arrives through the same re-export', () => {
-    // The CLI executes `mcp/src/validate.mjs` rather than copying it, so this is
-    // the proof that the meaning findings reach `ontology-atlas validate` at all
-    // — including in the packed two-package install, where `meaning-findings.mjs`
-    // has to be in the MCP package's `files` list to resolve.
+    // The CLI executes `mcp/src/validate.mjs`, so this proves the meaning findings reach `ontology-atlas validate`,
+    // including in the packed install, where `meaning-findings.mjs` must be in the MCP package's `files` list.
     const r = validateVaultDocument(head + tail.replace(FINISHED_CAPABILITY_BODY, '\n# ACP\n'));
     assert.deepEqual(
       r.issues.map((issue) => issue.code).sort(),
@@ -116,14 +104,8 @@ describe('relation_notes guard (swallowed entries and orphaned keys)', () => {
 });
 
 /**
- * The whole-vault half of the validator.
- *
- * `dependency-unwitnessed` cannot live in `validateVaultDocument` for two
- * reasons at once: it opens the source file a node cites, which only means
- * something against a repository root, and it needs the `path:` of the node at
- * the *far* end of the edge, which no single document carries. So it runs as a
- * pass over the whole vault, and the only honest way to prove that wiring is to
- * run the command the way a person does.
+ * The whole-vault half of the validator. `dependency-unwitnessed` opens the cited source against a
+ * repository root and needs the far node's `path:`, so it runs over the vault; the proof runs the command.
  */
 describe('dependency-unwitnessed — the whole-vault pass in `validate`', () => {
   function fixture() {
@@ -183,9 +165,8 @@ describe('dependency-unwitnessed — the whole-vault pass in `validate`', () => 
   });
 
   /*
-   * With no root, the check has no tree to measure against. Silence here means
-   * "not looked at", which is the opposite of "nothing found" and the reason
-   * `--list-codes` marks this one vault scope.
+   * With no root there is nothing to measure against; silence means "not looked at", not "nothing found",
+   * which is why `--list-codes` marks this one vault scope.
    */
   it('stays silent with OATLAS_REPO_ROOT unset', (t) => {
     const { root, vault } = fixture();
@@ -199,13 +180,8 @@ describe('dependency-unwitnessed — the whole-vault pass in `validate`', () => 
 });
 
 /**
- * The starter examples `init` leaves behind.
- *
- * The one whole-vault meaning pass with no environment condition: no repository
- * root, no file on disk, no body. So the interesting case is not that it fires
- * but that a freshly scaffolded vault — which is nothing *but* starters — comes
- * back clean, because that is the vault `ontology-atlas init` hands a person on
- * their first minute.
+ * Starter examples `init` leaves behind. The pass has no environment condition, so the case that matters is
+ * that a freshly scaffolded vault, nothing but starters, comes back clean.
  */
 describe('starter-example-node — the whole-vault pass in `validate`', () => {
   function vaultWith(extra) {

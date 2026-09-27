@@ -8,7 +8,7 @@ type HintAlign = 'left' | 'center' | 'right';
 
 /** The panel's distance from a field edge, the same 8px it keeps from its own trigger. */
 const EDGE_CLEARANCE = 8;
-/** The gap between the button and the panel (the old `mt-2`). */
+/** The gap between the button and the panel. */
 const TRIGGER_GAP = 8;
 
 /** The translation part of a computed `transform` (`none`, `matrix(…)` or `matrix3d(…)`). */
@@ -19,23 +19,14 @@ function translation(transform: string): { x: number; y: number } {
 }
 
 /**
- * Whether an ancestor scrolls its content on one axis, and so hides what passes its edge there.
- *
- * Only a scroller that actually scrolls counts. A fixed panel escapes every clip, so an
- * `overflow-hidden` card around a hint must not shrink it to the card; and the Guides table's
- * `overflow-x-auto` scroller computes `overflow-y: auto` too, where bounding a header hint by a
- * short table's height would push it off for nothing.
+ * Whether an ancestor scrolls on one axis. Only a scroller that actually scrolls counts: a fixed
+ * panel escapes `overflow-hidden`, and a table's `overflow-x-auto` also computes `overflow-y: auto`.
  */
 function clipsAxis(overflow: string, scrollSize: number, clientSize: number): boolean {
   return (overflow === 'auto' || overflow === 'scroll') && scrollSize > clientSize + 1;
 }
 
-/**
- * The rect a hint panel may occupy: the window, cut by every ancestor scroller.
- *
- * What lies outside the page scroller is chrome — at 768×1024 the Structure scroller ended at
- * y=928 with the bottom tab bar under it, and the panel ran 39px past that edge (2026-09-25).
- */
+/** The rect a hint panel may occupy: the window cut by every ancestor scroller (beyond it is chrome). */
 function hintField(from: HTMLElement): { top: number; right: number; bottom: number; left: number } {
   let top = 0;
   let left = 0;
@@ -57,35 +48,9 @@ function hintField(from: HTMLElement): { top: number; right: number; bottom: num
 }
 
 /**
- * **An `InfoHint` whose panel hangs from its own button, inside the page field, never clipped.**
- *
- * The Harness views used to reach for `className="static"` wherever a fixed anchor ran off a
- * narrow window. That made the panel's containing block the enclosing text block instead of the
- * button, and on a desktop window it opened up to 603px to the left of the `?` that opened it
- * (1512×949, 2026-09-25). `max-w-full` on the diagram's own hint then capped a relative panel at
- * the 24px button, and the loop card's explanation came out one syllable per line.
- *
- * ⚠️ **Fixed, measured and clamped** (re-review, 2026-09-25). Three fixed anchors and an
- * `absolute` panel were not enough: at 390 on Guides no anchor fit and the panel ran 8px past the
- * window into the table scroller's clip; at 768 on Structure the panel ran 39px under the page
- * scroller's bottom edge, cut mid-sentence, because it could only flip sideways. The panel is now
- * `position: fixed` — no scroller between it and the window clips it — placed below the button
- * when it fits, above when only that fits, and otherwise on the roomier side with its text
- * scrolling inside. Horizontally the caller's `preferred` edge wins when it fits, then the other
- * two, then a clamp to the field. It is re-placed on pointer or focus arrival, resize and scroll.
- *
- * ⚠️ **The panel resets the text it inherits.** In a table header it inherited `nowrap`, came out
- * 640px wide inside a 254px box, and the inner scroller cut it to one truncated line.
- *
- * It also closes the two gaps WCAG 1.4.13 names for content shown on hover or focus: a
- * transparent strip bridges the gap between button and panel so the pointer can travel into the
- * panel (hoverable), and Escape hides it without moving pointer or focus (dismissible). Escape is
- * taken in the capture phase and stopped, so one press closes only the innermost surface — the
- * hint — and not also a coverage detail that listens on the window. Arriving again, by pointer
- * or focus, brings a dismissed hint back.
- *
- * ⚠️ These belong in `shared/ui/info-hint.tsx` itself, whose doc-block already describes the
- * self-placing panel. Move the measurement there and delete this wrapper once that file is free.
+ * An `InfoHint` with a fixed, measured, clamped panel (below, above, else roomier side; `preferred`
+ * edge first), re-placed on arrival, resize and scroll. WCAG 1.4.13: a hit strip bridges the gap and a
+ * captured Escape closes only the hint. Belongs in `shared/ui/info-hint.tsx` once that file is free.
  */
 export function PlacedInfoHint({
   label,
@@ -142,8 +107,7 @@ export function PlacedInfoHint({
     const align = order.find((candidate) => fits(starts[candidate]));
     const left = align ? starts[align] : Math.min(Math.max(starts.center, min), Math.max(min, max));
 
-    // A transformed ancestor makes itself the containing block of a fixed box; measure the
-    // origin the panel actually resolves against and correct for it.
+    // A transformed ancestor becomes the containing block of a fixed box; correct for its origin.
     panel.style.left = '0px';
     panel.style.top = '0px';
     const origin = panel.getBoundingClientRect();
@@ -211,8 +175,7 @@ export function PlacedInfoHint({
           'fixed mt-0 z-[var(--z-tooltip)]',
           // Inherited text would otherwise follow the host: a header's `nowrap`, caps or weight.
           'whitespace-normal font-normal normal-case tracking-normal text-label text-[color:var(--color-text-secondary)]',
-          // The hit strip over the gap: part of the panel, so crossing it keeps the hover. It sits
-          // on whichever side faces the button.
+          // The hit strip over the gap, part of the panel so crossing it keeps the hover, facing the button.
           "before:absolute before:inset-x-0 before:bottom-full before:h-2 before:content-['']",
           'data-[side=above]:before:top-full data-[side=above]:before:bottom-auto',
           // A surface arriving and leaving is the ramp's move step, not the 120ms feedback step.
@@ -221,8 +184,7 @@ export function PlacedInfoHint({
           panelClassName,
         )}
       >
-        {/* The scroll lives inside the panel, not on it: an `overflow` panel would clip the hit
-            strip, which sits outside its padding box. */}
+        {/* The scroll lives inside the panel: an `overflow` panel would clip the hit strip outside its padding box. */}
         <div data-hint-body className="overflow-y-auto overscroll-contain">{children}</div>
       </InfoHint>
     </div>

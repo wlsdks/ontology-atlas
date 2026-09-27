@@ -1,7 +1,6 @@
-// The business-first meaning gate. Business capability candidates derived from
-// semantic evidence, the enrichment that binds a candidate to the sentence that
-// witnesses it, the gate itself (what is already in the vault, what is proposed,
-// what needs review), and the extraction contract its competency questions form.
+// The business-first meaning gate: capability candidates from semantic evidence,
+// the sentence that witnesses each, what is in the vault versus proposed, and the
+// extraction contract its competency questions form.
 
 import { COMPETENCY_QUESTION_CONTRACTS } from '../meaning-evaluation.mjs';
 import {
@@ -32,9 +31,8 @@ export function deriveBusinessCapabilityCandidates({
   const businessNarrativeEvidence = trustedEvidence.filter((row) =>
     ['mission', 'product-contract', 'product-capabilities'].includes(row.role),
   );
-  // A README containing only headings is structural evidence, not enough
-  // material to suppress or promote implementation candidates. Preserve the
-  // older review surface in that case; richer prose opts into the semantic
+  // A README of headings alone is structural evidence, too thin to suppress or
+  // promote implementation candidates; only richer prose opts into the semantic
   // cross-check below.
   if (trustedEvidence.length === 0) return [];
 
@@ -85,10 +83,9 @@ export function deriveBusinessCapabilityCandidates({
   }
 
   const emittedSlugs = new Set(candidates.map((row) => row.slug));
-  // Generic candidates are intentionally stricter than the outcome clue table:
-  // the prose must name the structural candidate and a separately observed
-  // element path must carry the same normalized term. That keeps a documented
-  // folder from becoming a capability when no implementation entrypoint exists.
+  // Stricter than the outcome clue table: the prose must name the candidate and a
+  // separately observed element path must carry the same normalized term, so a
+  // documented folder with no implementation entrypoint never becomes a capability.
   const genericBusinessEvidence = trustedEvidence
     .filter((row) =>
       ['mission', 'product-contract', 'product-capabilities', 'package-contract'].includes(
@@ -204,10 +201,9 @@ export function enrichProjectCandidate(project, semanticEvidence) {
     .find(({ sentence }) => sentence);
   const lead = purposeWitness?.row ?? trustedRows[0];
   const sentence = purposeWitness?.sentence ?? boundedEvidenceSentence(lead?.excerpt);
-  // Project identity evidence can remain visible, but a second semantic source
-  // corroborates this purpose only when its own bounded prose overlaps the
-  // selected purpose claim. A trustworthy but unrelated product document is
-  // still useful evidence elsewhere; it is not a purpose witness.
+  // A second semantic source corroborates this purpose only when its own prose
+  // overlaps the selected purpose claim; an unrelated trusted document is not a
+  // purpose witness.
   const purposeCorroborators = sentence
     ? independentSemanticEvidenceRows(trustedRows.filter(
       (row) => row.source !== lead?.source && hasClaimSpecificSemanticOverlap(sentence, row.excerpt),
@@ -447,10 +443,9 @@ export function buildMeaningGate({
     existingOntologyEvidence.map((evidence) => [evidence.slug, evidence]),
   );
   const existingDomainEvidence = existingOntologyEvidence.filter((evidence) => evidence.kind === 'domain');
-  // A README heading is evidence that a phrase is important enough to document,
-  // not evidence that people share it as a stable business responsibility
-  // boundary. Only persisted ontology docs count as already-shared concepts;
-  // README/code-derived rows remain explicit proposals.
+  // A README heading shows a phrase is documented, not that it is a shared business
+  // boundary. Only persisted ontology docs count as shared concepts; README- and
+  // code-derived rows stay proposals.
   const businessDomains = [...new Set(existingDomainEvidence.map((evidence) => evidence.slug))];
   const existingByElement = new Map();
   for (const evidence of existingOntologyEvidence) {
@@ -474,10 +469,9 @@ export function buildMeaningGate({
   const matchedCapabilityCandidateSlugs = new Set(
     [...existingEvidenceByCandidateSlug.keys()].filter(Boolean),
   );
-  // Structural candidates remain visible below as implementation evidence,
-  // but never become business proposals merely because the semantic packet is
-  // empty. This is the fail-closed boundary that prevents a folder such as
-  // `logger`, `web`, or `theme-toggle` from becoming a capability by default.
+  // Fail closed: structural candidates stay visible as implementation evidence but
+  // never become business proposals because the semantic packet is empty, so a
+  // folder such as `logger` or `theme-toggle` is not a capability by default.
   const hasSharedBusinessContext = existingOntologyEvidence.some(
     (evidence) =>
       (evidence.kind === 'domain' || evidence.kind === 'capability') &&

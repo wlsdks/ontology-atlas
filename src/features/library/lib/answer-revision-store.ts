@@ -56,12 +56,7 @@ export async function prepareAnswerRefresh(
   const previousText = await store.read(previousSlug);
   const { frontmatter } = parseFrontmatter(previousText);
   const thread = typeof frontmatter.answer_thread === 'string' ? frontmatter.answer_thread : previousSlug;
-  /*
-   * The same predicate the answer page reads before it draws the button, so a press that would
-   * land here is not offered in the first place (installed-app inspection before v1.2.2, B2).
-   * Kept as a throw as well: this side reads the file as it is on disk right now, while the page
-   * reads the manifest, and only one of the two is fresh.
-   */
+  /* The page checks the same predicate, but reads the manifest; this reads the file on disk now. */
   if (answerHistoryUnreadable(previousSlug, frontmatter)) {
     throw codedFailure('answer-history-unreadable', `thread=${JSON.stringify(frontmatter.answer_thread ?? null)}`);
   }

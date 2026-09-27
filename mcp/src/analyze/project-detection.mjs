@@ -2,12 +2,14 @@
 // `configure.ac`, or the README H1; the domain candidates a README's H2 sections
 // suggest; and the ontology nodes an existing vault already contributes.
 
-import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, lstatSync, existsSync, realpathSync } from 'node:fs';
 import { join, basename, relative } from 'node:path';
 import {
   AUTOTOOLS_IDENTITY_FILES,
   AUTOTOOLS_IDENTITY_MAX_BYTES,
   AUTOTOOLS_IDENTITY_MAX_LENGTH,
+  ONTOLOGY_EVIDENCE_MAX_ENTRIES,
+  ONTOLOGY_EVIDENCE_MAX_FILES,
   PYTHON_PROJECT_MAX_BYTES,
   PYTHON_SETUP_MAX_BYTES,
   STARTER_ONTOLOGY_SLUGS,
@@ -85,9 +87,8 @@ export function detectProject(rootPath, skipped = []) {
       const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
       const slugRaw = String(pkg.name || basename(rootPath));
       const slug = slugRaw.replace(/^@/, '').replace(/\//g, '-');
-      // package.json `description` is explanatory prose, not an identity label.
-      // Using it as `title` produced sentence-long project names (Muse exposed
-      // this in dogfood). Prefer the README H1, then the package name.
+      // package.json `description` is prose, not an identity label, and yields
+      // sentence-long project names; prefer the README H1, then the package name.
       const title = detectReadmeH1(rootPath) || humanize(slug);
       return { slug, title };
     } catch (err) {
@@ -218,17 +219,52 @@ export function detectExistingOntologyEvidence(rootPath, skipped = []) {
   if (!existsSync(ontologyRoot) || !statSync(ontologyRoot).isDirectory()) {
     return [];
   }
+  if (!pathResolvesInsideRoot(rootPath, ontologyRoot)) {
+    pushSkippedOnce(skipped, {
+      path: ontologyRoot,
+      reason: 'ontology-evidence-skip: docs/ontology resolves outside repository root',
+    });
+    return [];
+  }
   const rows = [];
   const seen = new Set();
+  const visitedDirectories = new Set();
+  let entriesSeen = 0;
+  let filesSeen = 0;
+  let budgetSpent = false;
 
+  // O(entries) under the budgets; only a link can leave a folder inside the root.
   function visit(dir) {
+    const realDirectory = realpathSync(dir);
+    if (visitedDirectories.has(realDirectory)) {
+      pushSkippedOnce(skipped, {
+        path: dir,
+        reason: `ontology-evidence-skip: ${relative(rootPath, dir)} repeats a visited directory`,
+      });
+      return;
+    }
+    visitedDirectories.add(realDirectory);
     for (const entry of readdirSync(dir)) {
+      if (walkBudgetReached(dir)) return;
+      entriesSeen += 1;
       const path = join(dir, entry);
       let stat;
+      let insideRoot = true;
       try {
-        stat = statSync(path);
+        stat = lstatSync(path);
+        if (stat.isSymbolicLink()) {
+          stat = statSync(path);
+          insideRoot = pathResolvesInsideRoot(rootPath, path);
+        }
       } catch (err) {
         skipped.push({ path, reason: `ontology-stat-error: ${err.message}` });
+        continue;
+      }
+      if (!insideRoot) {
+        pushSkippedOnce(skipped, {
+          path,
+          reason: `ontology-evidence-skip: ${relative(rootPath, path)} resolves outside repository root`,
+        });
         continue;
       }
       if (stat.isDirectory()) {
@@ -236,11 +272,29 @@ export function detectExistingOntologyEvidence(rootPath, skipped = []) {
         continue;
       }
       if (!entry.endsWith('.md')) continue;
+      filesSeen += 1;
       const evidence = readOntologyEvidence(rootPath, ontologyRoot, path);
       if (!evidence || seen.has(evidence.slug)) continue;
       seen.add(evidence.slug);
       rows.push(evidence);
     }
+  }
+
+  function walkBudgetReached(dir) {
+    if (budgetSpent) return true;
+    const budget =
+      entriesSeen >= ONTOLOGY_EVIDENCE_MAX_ENTRIES
+        ? `${ONTOLOGY_EVIDENCE_MAX_ENTRIES} entry`
+        : filesSeen >= ONTOLOGY_EVIDENCE_MAX_FILES
+          ? `${ONTOLOGY_EVIDENCE_MAX_FILES} Markdown file`
+          : null;
+    if (!budget) return false;
+    budgetSpent = true;
+    pushSkippedOnce(skipped, {
+      path: dir,
+      reason: `ontology-evidence-skip: ${relative(rootPath, dir)} reached ${budget} walk budget`,
+    });
+    return true;
   }
 
   visit(ontologyRoot);
@@ -326,11 +380,9 @@ export function detectDomainsFromReadme(rootPath) {
         const normalizedTitle = title
           .replace(/^[^a-z0-9가-힣]+/i, '')
           .trim();
-        // README H2 is a heuristic domain source. Skip headers that are almost
-        // never real codebase domains and only add bootstrap noise: generic doc
-        // sections, narrative / question-style headers ("Why It Exists"),
-        // language-guide headers ("Korean Guide"), and sentence-like headers
-        // ("Three views plus MCP, one vault").
+        // README H2 is a heuristic domain source. Skip headers that are almost never
+        // codebase domains: generic doc sections, narrative or question headers,
+        // language-guide headers, and sentence-like headers.
         const wordCount = title.split(/\s+/).filter(Boolean).length;
         if (
           // generic doc sections (exact match)
@@ -351,9 +403,6 @@ export function detectDomainsFromReadme(rootPath) {
           /가이드|\bguide\b/i.test(normalizedTitle) ||
           // bare language-name headers ("## Korean", "## English") — a
           // translated-README section, same noise class as "## Korean Guide".
-          // Measured 2026-07-30: the repo's own "## Korean" section counted as
-          // a 6th domain candidate and drifted the verify census when the
-          // section moved.
           /^(한국어|한글|english|日本語|中文|简体中文|繁體中文|español|français|deutsch|português|русский|italiano|türkçe)$/i.test(
             normalizedTitle,
           ) ||

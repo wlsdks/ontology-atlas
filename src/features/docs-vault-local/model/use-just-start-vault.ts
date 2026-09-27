@@ -13,34 +13,23 @@ import { buildDefaultVaultDisplayPath, resolveUniqueVaultDirName } from '../lib/
 import type { CreationReport } from './use-vault-create-flow';
 
 export interface JustStartReport extends CreationReport {
-  /** The folder opened with its starter. The argument is how the screen names the new folder. */
+  /** Receives how the screen names the new folder. */
   created?: (displayPath: string) => void;
 }
 
 /**
- * The minimal shape of `useLocalVault()` that `useJustStartVault` requires — kept narrow so both the
- * real hook and a test double satisfy it (the same pattern as `VaultCreateFlowVault`).
+ * The narrow part of `useLocalVault()` this hook needs, so a test double satisfies it.
  */
 export interface JustStartVaultVault {
   openRecent: (record: LocalFsHandleRecord, options?: VaultOpenOptions) => Promise<VaultOpenResult>;
 }
 
 /**
- * "Just start" — Tauri desktop only. With no folder picker, it creates a real disk folder under
- * `~/Ontology Atlas/<name>` and connects to it immediately. **Not OPFS** — the whole point
- * of the design is that an agent, MCP, or Claude Code can reach it directly.
- *
- * The starter rides **inside the open** (`openRecent(record, { starter })`), not after it
- * (2026-09-25, D1). It used to be written by an effect waiting for this hook's next render once
- * `openRecent()` resolved, and that render never came: the shell swaps the first-run screen for the
- * opening pane the moment the open begins, and the root entry swaps that for the map. The folder
- * opened empty, with no error, every time. So nothing here waits for a render any more: the session
- * writes the starter before the folder is first shown, and the outcome comes back as a value.
- *
- * What happens after the open is told through `report`, because the screen that pressed the door is
- * gone by then; `actionError` covers only what fails while it is still on the glass (preparing the
- * folder). `starterLocale` follows the same contract as `useVaultCreateFlow` — whichever creation
- * path is taken, the starter must come out in the screen's language (walkthrough 2026-07-26).
+ * "Just start" on the desktop: creates a real folder under `~/Ontology Atlas/<name>` and opens it.
+ * Not OPFS, so agents, MCP and Claude Code can reach it. The starter rides inside the open
+ * (`openRecent(record, { starter })`): the shell unmounts this screen as the open begins, so
+ * nothing may wait for a later render. Later outcomes go through `report`; `actionError` covers
+ * only folder preparation. `starterLocale` writes the starter in the screen's language.
  */
 export function useJustStartVault(
   vault: JustStartVaultVault,
@@ -51,7 +40,7 @@ export function useJustStartVault(
   const [actionError, setActionError] = useState<string | null>(null);
   const { created, starterFailed } = report;
 
-  /** `chosen` is what the person said the folder will hold; `null` keeps the full starter. */
+  /** `null` keeps the full starter. */
   const justStart = useCallback(async (chosen: VaultShape | null = null) => {
     setActionError(null);
     setBusy(true);
@@ -85,13 +74,8 @@ export function useJustStartVault(
       created?.(buildDefaultVaultDisplayPath(dirName));
     } catch (err) {
       /**
-       * `actionError` carries a **failure code**, not a sentence.
-       *
-       * `''` still means "it failed and there is nothing more specific to say"; a non-empty value is a
-       * code the screen looks up in the `failures` catalogue. It used to be `err.message` — the
-       * developer's English — which a Korean screen then printed verbatim (installed-app inspection
-       * before v1.2.2, B2). A module that throws cannot know the reader's language, so it names the
-       * failure and the screen owns the sentence.
+       * A failure code, not a sentence: `''` means nothing more specific; otherwise the screen looks
+       * it up in `failures`, because a throwing module cannot know the reader's language.
        */
       setActionError(failureCodeOf(err) ?? '');
     } finally {

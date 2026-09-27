@@ -1,12 +1,7 @@
 import { BLOCK_MANIFEST_FILENAME } from './block-manifest';
 import type { BlockImportFile } from './merge-plan';
 
-/**
- * Block folder IO. It depends only on the structural minimum of the File System Access API,
- * so jsdom tests can verify it against an in-memory fake. Real call sites pass the genuine
- * `FileSystemDirectoryHandle` from `showDirectoryPicker()` straight through (structural
- * typing absorbs the iterator declaration differences across TS DOM libs).
- */
+/** Block folder IO over the structural minimum of the File System Access API, so tests can use a fake. */
 
 interface BlockFileLike {
   text(): Promise<string>;

@@ -1,16 +1,6 @@
-// `ontology-atlas wiki-validate [vault]`
-//
-// Judges every page under `wiki/` against the contract in
-// `docs/ONTOLOGY-ATLAS-SPEC.md` §11 — the shape a page must have whoever wrote it: an
-// ACP agent, a local model, or a person. The validator itself is `mcp/src/wiki-schema.mjs`,
-// the same module the app's Wiki list and the Compile brief use, so a page that passes
-// here is a page every surface accepts.
-//
-// **Exit codes** follow the 2026-09-04 rule (`docs/DECISIONS.md`): non-zero means the
-// input could not be answered, zero means it was answered even when the answer is empty.
-// A folder with no wiki pages exits 0 — that is an answer. The verdict itself rides on
-// the same split `validate` uses: 1 when at least one page does not fit, 2 when the
-// vault could not be read at all.
+// `ontology-atlas wiki-validate [vault]`: judges every `wiki/` page against `docs/ONTOLOGY-ATLAS-SPEC.md` §11 with
+// `mcp/src/wiki-schema.mjs`, the module every surface uses. Exit codes follow `docs/DECISIONS.md` (2026-09-04):
+// 0 when answered (no pages included), 1 when a page does not fit, 2 when the vault could not be read.
 
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';

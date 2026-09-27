@@ -15,8 +15,7 @@ import { RouteLoadingFallback, TabBar } from '@/shared/ui';
 
 import styles from './library-workspace.module.css';
 
-// The editor is loaded only when its tab is opened. Composition belongs to the
-// app layer so neither view imports the other or duplicates its state machine.
+// The app layer composes both views so neither imports the other.
 const OntologyPage = dynamic(
   () => import('@/views/docs-vault').then((module) => module.DocsVaultPage),
   { loading: () => <RouteLoadingFallback /> },
@@ -26,7 +25,7 @@ type LibraryTab = 'sources' | 'wiki' | 'ontology' | 'collections' | 'rounds';
 
 export function LibraryWorkspace() {
   const t = useTranslations('library');
-  // Counts past a thousand read as the messages write them (`{count, number}`): grouped.
+  // Counts are grouped the way the messages' `{count, number}` writes them.
   const format = useFormatter();
   const params = useSearchParams();
   const router = useRouter();
@@ -40,30 +39,17 @@ export function LibraryWorkspace() {
     ? requested
     : requested === 'sources' || requested === 'wiki' ? requested : preferredSegment;
   const handle = selectOpenVaultHandle(vault.status, vault.handle);
-  /**
-   * The strip's right end is empty past its last tab; the Library's info glyph and the
-   * column fold stand there, portalled by `LibraryPage` so their state stays where it is.
-   * Measured 2026-09-17 (design pass): with them in the column's head, that head was 105px
-   * for a 28px field.
-   */
+  /** The strip's empty right end, where `LibraryPage` portals the info glyph and column fold. */
   const [toolsHost, setToolsHost] = useState<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const previousTab = useRef(tab);
   /*
-   * **Sources and Wiki cross-fade too** (2026-09-25, round two). They share one view, so the
-   * key below keeps the panel mounted between them and its CSS enter never replays: the one
-   * tab pair that switched with a hard cut. Remounting would drop the view's selection and
-   * scroll, so the same arrival is played on the mounted panel instead. Opacity only, which
-   * is also the reduced-motion form of the other tabs' enter, and no transform, so no fixed
-   * popover inside the panel changes its containing block. Before paint, so the new list
-   * never shows a full-opacity first frame.
-   */
-  /*
-   * **Reduced motion keeps the fade** (round three). The global reduced-motion rule cuts every
-   * CSS animation to 0.01ms with `!important`, so the panel's CSS enter — travel and fade —
-   * became a hard cut there, and only Sources↔Wiki (played here) still faded. The reduced form
-   * of an arrival is the fade without the travel, not no arrival: under reduced motion every
-   * switch plays it here, opacity only, on the short step.
+   * Sources and Wiki share one keyed view, so their CSS enter never replays; the same fade is
+   * played on the mounted panel instead, before paint, keeping the view's selection and scroll.
+   * Opacity only, so no fixed popover inside changes its containing block.
+   *
+   * The global reduced-motion rule cuts CSS animations, so under reduced motion every switch
+   * plays the fade here, without travel, on the short step.
    */
   useLayoutEffect(() => {
     const from = previousTab.current;
@@ -96,11 +82,8 @@ export function LibraryWorkspace() {
     <div data-testid="library-workspace" className="flex min-h-0 w-full flex-1 flex-col overflow-hidden">
       <header className="topology-ui-scale flex h-14 shrink-0 items-stretch border-b border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-0">
         {/*
-          No name in the strip. Every other tabbed destination carries a display title
-          above its tabs (MCP, Insights); this workbench has none, and a body-size word
-          beside a hairline read as a sixth tab with a different font (owner, 2026-09-17,
-          twice). The rail already names the place. The tabs start on the index column's
-          own text line so the strip and the column share one start.
+          No title in the strip: the rail names the place, and a title here read as a sixth tab.
+          The tabs start on the index column's text line.
         */}
         <TabBar
           ariaLabel={t('workspace.aria')}
@@ -144,10 +127,8 @@ export function LibraryWorkspace() {
           ]}
         />
         {/*
-          The column's two controls (the glyph, the fold) sit here, on the tabs' own row:
-          the tabs stand on the strip's bottom edge at `--control-h-lg`, so this box takes
-          the same seat and height rather than the strip's centre — measured 2026-09-18,
-          centring on the strip put the glyphs 8.5px above the tab text.
+          The column's glyph and fold sit on the tabs' row: the tabs stand on the strip's bottom
+          edge at `--control-h-lg`, so this box takes that seat rather than the strip's centre.
         */}
         <div ref={setToolsHost} data-testid="library-strip-tools" className="ml-auto flex min-h-[var(--control-h-lg)] shrink-0 items-center gap-1 self-end pr-3" />
       </header>

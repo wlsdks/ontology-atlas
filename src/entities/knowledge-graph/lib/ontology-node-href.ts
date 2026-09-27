@@ -2,17 +2,8 @@ import type { KnowledgeGraphNode } from "../model";
 import { translateOntologyDeeplinkToTopologyParam } from "./translate-ontology-deeplink";
 
 /**
- * Builds the ontology view's node deeplink — `/ontology/?node=<encoded-id>`.
- *
- * Seven-plus surfaces call this (node detail "copy node link", insights cards,
- * global search results, the project drawer, the docs viewer's kind chip).
- * Defining it once keeps the `?node=` key and the encoding consistent with
- * `translateOntologyDeeplinkToTopologyParam`, which the redirect page uses.
- *
- * `options.via` is the origin marker (`?via=insights:<tab>`). When the insights
- * page stamps its own tab onto a map deeplink, the map reads it back and renders
- * a "return to insights" chip. The marker grammar's single source is the
- * build/parseInsightsReturnMarker pair below.
+ * `/ontology/?node=<encoded-id>`, encoded like `translateOntologyDeeplinkToTopologyParam`.
+ * `options.via` is an origin marker from `buildInsightsReturnMarker`.
  */
 export function buildOntologyNodeHref(
   nodeId: string,
@@ -30,43 +21,30 @@ export function buildOntologyNodeHref(
       `${ONTOLOGY_DEEPLINK_REVIEW_KEY}=${encodeURIComponent(options.reviewId)}`,
     );
   }
-  // The **kind of intent** carried over when a queue row says "ask the agent".
-  // The sentence itself is deliberately not in the URL: the destination's opening-line
-  // generator writes it in the screen's language. Carrying only the kind means both
-  // entry points pass through the same function, and no human sentence ends up in an address.
+  // Only the ask kind travels in the URL; the destination writes the sentence in its language.
   if (options?.ask) {
     params.push(`${ONTOLOGY_DEEPLINK_ASK_KEY}=${encodeURIComponent(options.ask)}`);
   }
   return params.length > 0 ? `${base}&${params.join("&")}` : base;
 }
 
-/**
- * The `ask` value meaning "explain the whole product". Owned here beside the
- * builder that writes it, so the link and the route that reads it cannot drift
- * apart into two spellings of the same intent.
- */
+/** The `ask` value meaning "explain the whole product". */
 export const BUSINESS_FLOW_ASK_VALUE = "business-flow";
 
-/** Query key for the deeplink origin marker — shared across insights → redirect → topology. */
+/** Query key for the deeplink origin marker. */
 export const ONTOLOGY_DEEPLINK_VIA_KEY = "via";
-/** The exact insights "to do" review row id — consumed only alongside a valid `via` marker. */
+/** The insights review row id; read only with a valid `via` marker. */
 export const ONTOLOGY_DEEPLINK_REVIEW_KEY = "review";
-/** The **kind** of opening line to hand the agent — consumed on arrival and stripped from the address. */
+/** The kind of opening line for the agent; stripped from the address on arrival. */
 export const ONTOLOGY_DEEPLINK_ASK_KEY = "ask";
 
 const INSIGHTS_RETURN_MARKER_PATTERN = /^insights:([a-z][a-z0-9-]*)$/;
 
-/** Serializes the `via=insights:<tab>` marker. Producer side (the insights page) only. */
 export function buildInsightsReturnMarker(tab: string): string {
   return `insights:${tab}`;
 }
 
-/**
- * Raw `via` value → insights tab slug. Anything that is not the `insights:<slug>`
- * grammar returns null, and the map then renders no chip. Validity of the slug
- * itself is checked at the destination (`parseInsightsTab`), which falls back to
- * the default tab.
- */
+/** `insights:<slug>` → slug, else null; the destination validates the slug. */
 export function parseInsightsReturnMarker(
   raw: string | null | undefined,
 ): string | null {
@@ -77,26 +55,11 @@ export function parseInsightsReturnMarker(
 
 const TOPOLOGY_RETURN_MARKER_PATTERN = /^topology:(.+)$/;
 
-/**
- * Serializes the `via=topology:<nodeId>` marker.
- *
- * ⚠️ **It exists because leaving the map used to be one-way.** Full detail's "Open
- * document" sent the reader to `/docs/`, whose crumb goes to a bare `/topology` with
- * nothing selected, so the node they had open was simply gone (owner, 2026-09-14:
- * from here there is no way back). With the marker the crumb
- * returns to that node, selected, which is where the reader stood one step earlier.
- *
- * The return is the **selected node**, not the full-detail overlay, and that is a
- * statement of what can be addressed rather than a preference: `fullDetailSlug` is
- * component state with no place in the URL, so no address can reopen it. Giving it one
- * is a route-state change with its own decision; this repairs the dead end with the
- * address that already exists.
- */
+/** The map node to return to from `/docs/`; full-detail state is not addressable, so the node is selected. */
 export function buildTopologyReturnMarker(nodeId: string): string {
   return `topology:${translateOntologyDeeplinkToTopologyParam(nodeId)}`;
 }
 
-/** Raw `via` value → the map node to come back to, or null when it is not that grammar. */
 export function parseTopologyReturnMarker(
   raw: string | null | undefined,
 ): string | null {
@@ -105,14 +68,12 @@ export function parseTopologyReturnMarker(
   return match ? match[1] : null;
 }
 
-/** Where the return crumb goes — the map with the node the reader left from selected. */
 export function buildTopologyReturnHref(nodeId: string): string {
   return `/topology/?p=${encodeURIComponent(
     translateOntologyDeeplinkToTopologyParam(nodeId),
   )}`;
 }
 
-/** Where the return chip goes — the insights tab and review row the user came from. */
 export function buildOntologyInsightsReturnHref(
   tab: string,
   reviewId?: string | null,
@@ -142,16 +103,7 @@ export function resolveOntologyBuilderNodeSlugFromGraphId(nodeId: string): strin
   return folder ? `${folder}/${tail}` : normalized;
 }
 
-/**
- * Sender for the map's contextual-editor deeplink: puts the canonical
- * `<kind>:<slug>` id in `?p=` and opens `workbench=edit`.
- *
- * Normalizing through `translateOntologyDeeplinkToTopologyParam` converges both
- * grammars onto one: already-canonical (`capability:foo`) passes through, a
- * folder form (`capabilities/foo`) is promoted to `capability:foo`, and bare or
- * evidence-path ids pass through — so the map's `n.id === requestedNode` match
- * holds either way. Same normalizer as the map's `?p=` and the ontology redirect.
- */
+/** Map editor link with the canonical `<kind>:<slug>` in `?p=`, normalized like the map's own `?p=`. */
 export function buildTopologyMeaningEditorNodeHref(
   nodeId: string,
   options?: { via?: string | null; reviewId?: string | null },
@@ -173,11 +125,7 @@ export function buildTopologyMeaningEditorNodeHref(
   return params.length > 0 ? `${base}&${params.join("&")}` : base;
 }
 
-/**
- * The four relations the map's contextual editor can write. URL, preview, and
- * frontmatter writing share this one vocabulary at the entity layer so separate
- * surfaces never define it in parallel.
- */
+/** The four relations the map's editor can write. */
 export type MeaningEditRelation = "isA" | "dependsOn" | "contains" | "relates";
 const MEANING_EDIT_RELATIONS: readonly MeaningEditRelation[] = [
   "isA",
@@ -186,13 +134,7 @@ const MEANING_EDIT_RELATIONS: readonly MeaningEditRelation[] = [
   "relates",
 ];
 
-/**
- * Maps a map edge's relationType (the derive-ontology edge `type`) onto an
- * editable relation. Anything outside the four (`describes`, `belongs_to`,
- * domain membership) returns null, so no "edit on the map" affordance is shown —
- * a dead affordance is worse than none. Frontmatter key aliases such as
- * `dependencies` / `relates` are absorbed here too.
- */
+/** A map edge type → editable relation, or null so no dead edit affordance is shown. */
 export function meaningEditRelationForEdgeType(
   edgeType: string,
 ): MeaningEditRelation | null {
@@ -214,18 +156,11 @@ export function meaningEditRelationForEdgeType(
   }
 }
 
-/** Query key for a deeplink's edit target — `edit=<relation>:<targetId>`. */
 const ONTOLOGY_MEANING_EDIT_KEY = "edit";
 
 /**
- * Is edge A→B really authored in the `from` node's frontmatter — i.e. does
- * `declaredBySlug` (the declaring doc, `edge.evidenceIds[0]`) equal the `from`
- * node's source slug (`node.evidenceIds[0]`)? For all four bearing relations the
- * `from` of the canonical direction is the author. The one exception is a
- * `contains` edge derived backwards from a child's `domain:` key, where the author
- * is the `to` node; that cannot be edited as a `contains` bearing, so the action
- * must not appear. This function filters that case out. Both slugs are compared
- * with any `ontology/` prefix stripped, so the dogfood vault and a local vault match.
+ * Whether the `from` node's document declares the edge. A `contains` derived from a child's
+ * `domain:` is authored by `to` and cannot be edited as `contains`.
  */
 export function edgeAuthoredByFromNode(
   declaredBySlug: string | null | undefined,
@@ -237,15 +172,7 @@ export function edgeAuthoredByFromNode(
   return a !== "" && a === b;
 }
 
-/**
- * Sender for a map edge deeplink. The focal (`?p=`) is the node that authored the
- * relation; `edit=<relation>:<targetId>` hands the relation and target to the
- * editor on the same map. Both ids are normalized to canonical `<kind>:<slug>`
- * exactly as in the node variant.
- *
- * The `edit` value splits on the **first** colon only, so the target's own
- * `kind:slug` colon survives (`parseOntologyMeaningEditParam` splits the same way).
- */
+/** Map edge editor link; `edit=<relation>:<targetId>` splits on the first colon only. */
 export function buildTopologyMeaningEditorEdgeHref(
   fromId: string,
   toId: string,
@@ -262,11 +189,7 @@ export function buildTopologyMeaningCreateHref(): string {
   return "/topology/?workbench=create";
 }
 
-/**
- * Parses `edit=<relation>:<targetId>`, splitting on the **first** colon so the
- * target's own `kind:slug` colon is preserved. Returns null when the value is
- * absent, malformed, or names a relation outside the four editable types.
- */
+/** Parses `edit=<relation>:<targetId>` on the first colon; null for anything else. */
 export function parseOntologyMeaningEditParam(
   raw: string | null | undefined,
 ): { relation: MeaningEditRelation; targetId: string } | null {

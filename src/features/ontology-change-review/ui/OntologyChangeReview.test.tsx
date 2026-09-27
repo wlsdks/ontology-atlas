@@ -38,15 +38,7 @@ describe('OntologyChangeReview text fit', () => {
       fields: [{ key: 'dependencies', after: ['capabilities/account-closure'] }],
     });
 
-    /*
-     * ⚠️ Adapted 2026-09-06 with the plain-name redesign. The key used to be the whole `dt`; it is
-     * now the mono line **under** the field's plain name, because a frontmatter key alone is not
-     * something a person can weigh at a permission checkpoint. Both halves stay: the plain name
-     * leads, and the raw key remains because that is the word that will be in the file.
-     *
-     * The measured property is unchanged and is what `contextual-meaning-editor.spec.ts` reads:
-     * the `dt` still carries the testid, still sits in the 6rem track, and still wraps on words.
-     */
+    /* The raw key is the mono line under the plain name; `contextual-meaning-editor.spec.ts` reads it. */
     const key = screen.getByText('dependencies');
     const term = key.closest('dt');
     expect(term, 'the raw key must stay inside its own field term').not.toBeNull();
@@ -64,8 +56,7 @@ describe('OntologyChangeReview text fit', () => {
       target: 'elements/cart-session',
       exact: true,
       relation: null,
-      // Not in the schema's plain-word list. Inventing a friendly name for a key we do not know
-      // would show a person one thing and write another — the single failure this card cannot have.
+      // An unknown key must never get an invented friendly name.
       fields: [{ key: 'x_custom_key', after: 'value' }],
     });
 
@@ -112,13 +103,7 @@ describe('OntologyChangeReview text fit', () => {
       ],
     });
 
-    /*
-     * ⚠️ Adapted 2026-09-06. The fold marker moved from the field row onto the text block itself,
-     * because one row can now carry a previous value beside the new one and a sentence map carries
-     * one text block per target. 「Is this folded?」 became a fact about a block of text rather than
-     * about a field. The behaviour under test — first lines only, unclamped whole on request — is
-     * unchanged.
-     */
+    /* The fold marker sits on the text block. */
     const texts = screen.getAllByTestId('ontology-change-review-text');
     expect(texts[0]).not.toHaveAttribute('data-long');
     expect(screen.queryAllByTestId('ontology-change-review-field-toggle')).toHaveLength(1);
@@ -138,16 +123,7 @@ describe('OntologyChangeReview text fit', () => {
   });
 });
 
-/**
- * ⚠️ **A map of sentences is a list of decisions, not one value** (owner, installed app, 2026-09-06:
- * *"can this design be improved? … something is lacking"*).
- *
- * `relation_notes` carries one sentence per target. It reached this card first as a single JSON
- * string on one line and then as one text block of alternating lines — in both shapes a person had
- * to parse the value before they could judge any part of it, at a checkpoint that stops the agent.
- * One row per target, the target quiet and the sentence at reading size, is what makes 「is this
- * right?」 answerable line by line.
- */
+/** A sentence map reads as one row per target. */
 describe('sentence maps read as one row per target', () => {
   const NOTES = {
     'domains/checkout': 'Checkout owns the basket, so the session hangs off it.',
@@ -196,12 +172,7 @@ describe('sentence maps read as one row per target', () => {
   });
 });
 
-/**
- * ⚠️ **Never draw a previous value the request did not carry.** `before` is populated only by an
- * editor that already holds the document; an ACP request carries the requested after-values alone.
- * Rendering a bare value with no note lets a person read it as 「this replaces nothing」, which is a
- * claim nobody made. The card says which of the two situations it is in instead.
- */
+/** Never draw a previous value the request did not carry. */
 describe('before and after are drawn only from what the change set carries', () => {
   const item = (fields: OntologyChangeItem['fields']): OntologyChangeItem => ({
     key: 'patch_concept:0:elements/cart-session',
@@ -242,12 +213,7 @@ describe('before and after are drawn only from what the change set carries', () 
   });
 });
 
-/**
- * **A field that ends up holding nothing says so in words** (2026-09-26). Removing the last
- * relation of a key printed 「After []」, and a patch that deletes a key printed 「null」 — the
- * request's serialization, not the change. Since the same day an emptied relation key is deleted
- * rather than written `[]`, so the literal would also show a value the file never holds.
- */
+/** A field left holding nothing says so in words. */
 describe('an emptied or deleted value reads as none', () => {
   const item = (fields: OntologyChangeItem['fields']): OntologyChangeItem => ({
     key: 'patch_concept:0:capabilities/wiki-pages',
