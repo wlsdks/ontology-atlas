@@ -103,9 +103,8 @@ const GRAPH_ARRAY_KEYS = [
  * unclosed block and a zero-key parse are caught. Issue codes
  * match `src/shared/lib/validate-vault-document.ts`; a contract test blocks
  * drift. `slug-outside-kind-folder` needs `options.slug` (where the file sits), and a
- * caller holding only bytes cannot be told it. A caller that already parsed `raw`
- * (a loaded vault document) passes the result as `options.parsed`, so a
- * whole-vault pass does not parse every file a second time.
+ * caller holding only bytes cannot be told it. `options.parsed` reuses a parse
+ * of the same `raw` the caller already has.
  *
  * @param {string} raw
  * @param {{ slug?: string, parsed?: { frontmatter: object, body?: string, diagnostics?: object[] } }} [options]

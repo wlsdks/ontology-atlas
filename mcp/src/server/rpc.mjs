@@ -18,15 +18,9 @@ function formatUnknownToolError(name) {
 const OK_ENVELOPE_BYTES = Buffer.byteLength('{"content":[{"type":"text","text":""}],"structuredContent":}');
 
 /**
- * The UTF-8 bytes `ok(result)` puts on the wire: the pretty text once, escaped as
- * a JSON string, and the result once, compact. Both follow from the pretty text,
- * so `result` is serialized once: inside it every raw `"`, `\` and line break
- * gains a backslash when embedded, and every space or line break outside a string
- * is layout the compact form drops.
- *
- * @param {object} result
- * @param {string} [text] `JSON.stringify(result, null, 2)`, when the caller has it
- * @returns {number}
+ * The UTF-8 bytes `ok(result)` puts on the wire, derived from the pretty text
+ * alone: escaping adds a byte per `"`, `\` and line break, and the compact copy
+ * drops the layout whitespace outside strings.
  */
 function okResponseBytes(result, text = JSON.stringify(result, null, 2)) {
   const textBytes = Buffer.byteLength(text, 'utf8');

@@ -14,10 +14,6 @@ import { drainNodeEligibilityFindings } from '../vault.mjs';
 import { validateVaultTool } from './validate-vault.mjs';
 import { buildSummaryFreshness } from './vault-nodes.mjs';
 
-/**
- * `validation` is a `validate_vault({})` report the caller already computed over
- * the same documents; without it the vault is validated here.
- */
 function attachVaultValidation(result, args = {}, loadedDocs = null, validation = validateVaultTool({}, loadedDocs)) {
   const pathsChecked = validation.pathDrift?.checked !== false;
   const driftCount = validation.pathDrift?.drifts?.length ?? 0;
@@ -106,7 +102,6 @@ function attachVaultValidation(result, args = {}, loadedDocs = null, validation 
 
 function compactPostWriteMaintenance(limit = 5) {
   COMPILED_ONTOLOGY_CACHE.clear();
-  // One read of the vault serves the compile and the bodies the plan needs below.
   const { artifact, docs: maintenanceDocs } = COMPILED_ONTOLOGY_CACHE.getWithDocs();
   const ontologyAtlasIgnorePatterns = loadOntologyAtlasIgnore(VAULT_ROOT);
   // The node-eligibility gate runs inside `commitDoc` for every write door. Draining

@@ -202,11 +202,8 @@ function starterPlaceholders(starter) {
 }
 
 /**
- * One document's sections with its kind's starter and placeholders. The body
- * checks below run back to back on one document (validate_vault, the write door,
- * the maintenance plan), and each parsed the body and rendered and parsed the
- * starter itself, four to five times per document on every whole-vault pass.
- * Keeping the last document's view makes it once. Callers only read it.
+ * The body checks run back to back on one document, so the last document's parse
+ * and starter are kept for the next check instead of redone. Callers only read it.
  */
 let lastBodyView = null;
 
@@ -567,12 +564,7 @@ function relationNoteText(frontmatter, target) {
   return '';
 }
 
-/**
- * What one pass over many documents shares: each cited file's text (`null` when
- * it is not a readable file), read once however many documents cite it, and the
- * module names parsed from it. A whole-vault pass re-read a file once per citing
- * document, 363 MB per `health` call at 12k nodes. Drop it when the pass ends.
- */
+/** Cited files and their module names, read once per whole-vault pass however many documents cite them. */
 export function createDependencyWitnessReads() {
   return { texts: new Map(), moduleNames: new Map() };
 }
@@ -623,11 +615,10 @@ export function dependencyWitnessFinding({
   if (!source) return [];
   const previous = previousFrontmatter ? declaredDependencies(previousFrontmatter) : new Set();
   const targets = [...declaredDependencies(frontmatter)].filter((target) => !previous.has(target));
-  // Nothing to judge, so nothing to read.
   if (targets.length === 0) return [];
   const sourceText = citedFileText(reads, source.absolute);
   if (sourceText === null) return [];
-  /** Each note path resolved once however many edges cite it; `null` marks unreadable. */
+  /** One read per file however many edges cite it; `null` marks unreadable. */
   const textCache = new Map([[source.path, sourceText]]);
   const moduleNamesByText = reads.moduleNames;
   /**

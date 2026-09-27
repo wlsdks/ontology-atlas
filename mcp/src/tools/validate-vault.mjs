@@ -126,8 +126,7 @@ function validateVaultTool({ repoRoot } = {}, loadedDocs = null) {
   const docIssues = new Map();
   for (const doc of docs) {
     // The slug is passed because `slug-outside-kind-folder` is a fact about
-    // where the file sits, and only this caller knows it. The loaded document
-    // already holds the parse of these bytes.
+    // where the file sits, and only this caller knows it.
     const result = validateVaultDocument(doc.raw || '', { slug: doc.slug, parsed: doc });
     docIssues.set(doc.slug, result.issues || []);
   }

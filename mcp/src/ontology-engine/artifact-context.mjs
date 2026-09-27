@@ -3,22 +3,13 @@ import { suggestCompiledSlugs } from '../suggestions.mjs';
 import { edgeSortKey } from './query-primitives.mjs';
 
 /**
- * Artifacts their owner shares between calls and never modifies: the session
- * cache hands one artifact to every query, and each query rebuilt and re-sorted
- * every edge of it. Their indexes are built on the first query and dropped with
- * the artifact. Any other artifact is indexed per query, because a library caller
- * may change one between queries and must see the change.
+ * A shared artifact is never modified, so its indexes are built on its first
+ * query; any other is indexed per query, since a library caller may change it.
  */
 const sharedArtifacts = new WeakSet();
 const indexesByArtifact = new WeakMap();
 
-/**
- * Declares an artifact shared and immutable, and returns it.
- *
- * @template T
- * @param {T} artifact
- * @returns {T}
- */
+/** Declares an artifact shared and immutable, and returns it. */
 export function shareArtifact(artifact) {
   if (artifact !== null && typeof artifact === 'object') sharedArtifacts.add(artifact);
   return artifact;
@@ -105,7 +96,7 @@ function buildArtifactIndexes(artifact) {
       const error = new Error(
         `${fieldName} "${candidate}" is referenced by the vault but has no document of its own, so it is not a compiled node. Referenced by: ${cited}. Create it with add_concept({slug:"${candidate}"}) to make it queryable.`,
       );
-      // A copy: the list belongs to the shared index, and the error leaves this module.
+      // A copy: the list belongs to the shared index.
       error.referencedBy = referencedBy.map((hit) => ({ ...hit }));
       throw error;
     }

@@ -705,7 +705,7 @@ function buildGateIndex(rootPath) {
     const tail = doc.slug.split('/').pop();
     if (tail) names.add(tail);
     const fmSlug = doc.frontmatter?.slug;
-    // Copied: the index outlives this read, and the parsed value would pin its whole file.
+    // Copied: the index outlives this read.
     if (typeof fmSlug === 'string' && fmSlug.trim()) names.add(detachString(fmSlug.trim()));
   }
   return { rootPath, names };

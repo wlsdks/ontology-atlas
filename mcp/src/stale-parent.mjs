@@ -51,14 +51,7 @@ function digest(text) {
   return createHash('sha256').update(text).digest('base64url');
 }
 
-/**
- * The two clocks of one revision as fixed-size digests: `lastMovementOf` only asks
- * whether neighbouring revisions differ. A history reader keeps these instead of
- * the text, so a cached walk costs bytes per revision rather than the file.
- *
- * @param {{ body?: string, children?: string[] }} revision
- * @returns {{ bodyDigest: string, membershipDigest: string }}
- */
+/** A revision's two clocks as digests: `lastMovementOf` only compares neighbours for equality. */
 export function revisionClocks({ body, children } = {}) {
   return {
     bodyDigest: digest(String(body ?? '')),
@@ -66,7 +59,6 @@ export function revisionClocks({ body, children } = {}) {
   };
 }
 
-/** A revision that already carries its digests is compared as it is. */
 function clocksOf(revision) {
   return typeof revision.bodyDigest === 'string' && typeof revision.membershipDigest === 'string'
     ? revision
@@ -80,10 +72,9 @@ function toTime(value) {
 }
 
 /**
- * Walks revisions (newest first, the first is current) and reports when each clock
- * last moved. A revision is `{ changedAt, body, children }` or, as the history
- * reader returns it, `{ changedAt, bodyDigest, membershipDigest }` (`revisionClocks`).
- * A value unchanged back to the oldest revision is `null`: unknown, not "never".
+ * Walks revisions (`{ changedAt, body, children }` or `revisionClocks` digests,
+ * newest first, the first is current) and reports when each clock last moved. A
+ * value unchanged back to the oldest revision is `null`: unknown, not "never".
  */
 export function lastMovementOf(revisions) {
   const list = Array.isArray(revisions) ? revisions.filter(Boolean) : [];
@@ -120,8 +111,8 @@ export function lastMovementOf(revisions) {
  * Summary nodes whose membership changed after their description last did.
  *
  * @param docs `{ slug, frontmatter }` documents.
- * @param revisionsOf `(slug) => revisions` in either shape `lastMovementOf` reads,
- *   newest first; a slug with no revisions is skipped, never guessed.
+ * @param revisionsOf `(slug) => revisions` as `lastMovementOf` reads them, newest
+ *   first; a slug with no revisions is skipped, never guessed.
  * @returns Rows by lag, then slug, stable across runs.
  */
 export function findStaleParentSummaries({ docs, revisionsOf } = {}) {

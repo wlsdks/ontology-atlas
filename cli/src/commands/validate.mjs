@@ -223,8 +223,7 @@ export function runValidate(args) {
     const { frontmatter, body } = parsed;
     entries.push({ file, slug, frontmatter, body });
     // The slug travels with the raw text: `slug-outside-kind-folder` is a fact
-    // about where the file sits, which the bytes alone never state. The parse
-    // above is handed over so the file is parsed once.
+    // about where the file sits, which the bytes alone never state.
     const report = validateVaultDocument(raw, { slug, parsed });
     reportByFile.set(file, report);
   }
@@ -657,7 +656,6 @@ function findDependencyWitnessIssues(entries) {
     : '';
   if (!repoRoot) return [];
   const resolveTargetPath = evidencePathIndex(entries);
-  // Each cited file is read once for the whole pass, however many nodes cite it.
   const reads = createDependencyWitnessReads();
   const issues = [];
   for (const entry of entries) {

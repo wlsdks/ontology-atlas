@@ -6,13 +6,8 @@ import { GRAPH_ARRAY_KEYS, collectNeighborRefs, normalizeRelationRefs } from './
 
 const COMPILER_VERSION = 2;
 
-/*
- * The artifact outlives the documents it was compiled from (the session cache
- * keeps it between calls), and every frontmatter value is a slice of its file's
- * text. So each string the artifact keeps from a document goes through
- * `detachString`: at 12k nodes the file text it would otherwise pin was 45 of the
- * cache's 73 MB. Slugs come from file paths and are kept as they are.
- */
+// The artifact outlives its documents, so every string it keeps from their text
+// goes through `detachString`; slugs come from file paths.
 
 /**
  * With `summary: true` it omits the nodes, edges and aliases arrays and returns counts
