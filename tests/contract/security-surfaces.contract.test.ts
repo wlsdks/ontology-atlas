@@ -42,6 +42,17 @@ describe('security surfaces', () => {
     expect(commands.filter((path) => !covered(path))).toEqual([]);
   });
 
+  it('registers every source file that imports invoke from the Tauri core as a surface', () => {
+    const callers = tracked.filter(
+      (path) =>
+        /^src\/.+\.tsx?$/.test(path) &&
+        !/\.test\.tsx?$/.test(path) &&
+        /import\s*\{[^}]*\binvoke\b[^}]*\}\s*from\s*['"]@tauri-apps\/api\/core['"]/.test(read(ROOT, path)),
+    );
+    expect(callers.length).toBeGreaterThan(0);
+    expect(callers.filter((path) => !covered(path))).toEqual([]);
+  });
+
   it('runs the same existing contracts from pnpm test:security and from both check rules', () => {
     const listed = contractFiles(JSON.parse(read(ROOT, 'package.json')).scripts['test:security'] as string);
     expect(listed.length).toBeGreaterThanOrEqual(19);

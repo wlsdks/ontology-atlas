@@ -94,7 +94,9 @@ hunks skip it:
   in the WebView, a Tauri command, a secret, the network, or a CI credential.
   A reach with no guard, or a guard no test proves with a planted hostile
   input, is a finding; so is a new dependency, action, or install-time script
-  without a pin and a reason.
+  without a pin and a reason. Keep the planted input for the lead, and end
+  each security finding with the defect class a public commit or pull request
+  may name until the fixed build ships.
 
 ## Report
 
