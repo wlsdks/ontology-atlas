@@ -76,9 +76,11 @@ pnpm desktop:release-preflight            # local pre-tag gate; its steps are th
 - `desktop:verify-install` copies the app from the mounted DMG to a temporary
   folder, launches it through LaunchServices, runs the bundled
   `ontology-atlas-mcp` against `docs/ontology`, then detaches and cleans up.
-- `desktop:build:app:local` builds without updater artifacts, so local dogfood
-  never needs the updater private key; `./script/build_and_run.sh` uses it and
-  refreshes a matching `/Applications/Ontology Atlas.app`.
+- No build makes an updater archive (`createUpdaterArtifacts: false` in
+  `tauri.conf.json`), so no build needs the updater private key;
+  `desktop:repack-updater` makes and signs the only archive, from the signed app.
+  `./script/build_and_run.sh` uses `desktop:build:app:local` and refreshes a
+  matching `/Applications/Ontology Atlas.app`.
 - `desktop:release-preflight` needs no credentials: it is the fast local proof
   of an unsigned artifact. Source MCP and ontology readiness run separately in
   `pnpm dogfood:release-gate`.
@@ -86,7 +88,10 @@ pnpm desktop:release-preflight            # local pre-tag gate; its steps are th
   `scripts/build-macos-release-artifact.mjs` owns the order: rebuild,
   route-smoke, sign the `.app`, repack the updater archive, package the DMG,
   sign the DMG (`desktop:sign:dmg`), notarize and staple,
-  `desktop:verify-release-dmg`, then install-smoke the final DMG.
+  `desktop:verify-release-dmg`, then install-smoke the final DMG. The release
+  workflow runs it as `--phase=build`, imports the certificate, then runs
+  `--phase=sign`, so the build phase runs before the certificate is imported and
+  with no credential in its environment.
 
 ## Installed-app log
 
