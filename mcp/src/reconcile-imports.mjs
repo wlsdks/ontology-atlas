@@ -36,8 +36,9 @@ const SOURCE_ROLE_VALUES = ['production', 'test', 'unknown'];
 const IMPORT_USAGE_VALUES = ['value', 'type_only', 'unknown'];
 
 /**
- * Diffs code-derived import edges against compiled vault depends_on edges.
- * O(E_code + E_vault) with Maps keyed by JSON `[from, to]`.
+ * Diffs code-derived import edges against compiled vault depends_on edges: Map
+ * joins keyed by JSON `[from, to]`, O(E_code + E_vault), then each output list is
+ * sorted, O(E log E).
  *
  * @param {object} args
  * @param {Array<{from:string,to:string,count?:number}>} [args.moduleEdges]  inferImports().moduleEdges

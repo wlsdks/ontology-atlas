@@ -20,7 +20,7 @@ export function parseOntologyAtlasIgnore(text) {
     const line = raw.trim();
     if (!line) continue;
     if (line.startsWith('#')) continue;
-    if (line.startsWith('!')) continue; // negation not supported
+    if (line.startsWith('!')) continue;
     patterns.push(line.endsWith('/') ? line.slice(0, -1) : line);
   }
   return patterns;

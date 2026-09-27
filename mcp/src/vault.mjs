@@ -718,9 +718,9 @@ function gateIndex(rootPath, { rebuild = false } = {}) {
 }
 
 /**
- * The index can only be stale toward "missing" (a doc written by someone else
- * since the build), so a miss triggers one rebuild and a re-check before it is
- * trusted.
+ * A miss is never trusted: a doc written elsewhere since the index was built
+ * would look missing, so a miss rebuilds once and re-checks. A hit is trusted,
+ * so a file deleted outside this process resolves until the next rebuild.
  */
 function gateResolves(rootPath, ref) {
   const name = String(ref).normalize('NFC');
@@ -921,8 +921,8 @@ function runNodeEligibilityGate(
   }
 
   // ⓪b A node written outside its kind folder. Creation only, since a slug is
-  //     minted once and a patch cannot undo it. Advisory: a flat slug is valid;
-  //     `flatSlugIssue` in writeDoc rejects the shape that merges distinct nodes.
+  //     minted once and a patch cannot undo it. Advisory: a flat slug is valid,
+  //     and writeDoc's `flatSlugIssue` rejects the shape that merges distinct nodes.
   if (created && typeof frontmatter.kind === 'string') {
     const folder = folderForKind(frontmatter.kind.trim());
     if (folder && !slug.startsWith(folder)) {
@@ -1023,8 +1023,8 @@ function runNodeEligibilityGate(
     }
   }
 
-  // ④ Meaning gaps in the body. `meaning-findings.mjs` owns the logic and
-  //    `construction-rules.mjs` the sentences; this is the wiring. Gated on what
+  // ④ Meaning gaps in the body: the logic lives in `meaning-findings.mjs` and the
+  //    sentences in `construction-rules.mjs`; this is the wiring. Gated on what
   //    the write touched, so an unrelated patch does not repeat the accusation.
   for (const finding of meaningFindings({
     kind: frontmatter.kind,
@@ -1486,8 +1486,9 @@ export function findPath(rootPath, fromSlug, toSlug, maxHops = 5) {
       parent.set(n, cur);
       parentEdge.set(n, meta);
       if (n === resolvedTo) {
-        // Push then reverse once, O(D). edges[i] carries the `via` key between hops i
-        // and i+1, plus the declaring document's `rationale` when it has one.
+        // hops are pushed then reversed once; edges are unshifted (O(D²), but
+        // D ≤ maxHops ≤ 20). edges[i] carries the `via` key between hops i and
+        // i+1, plus the declaring document's `rationale` when it has one.
         const hops = [n];
         const edges = [];
         let p = n;

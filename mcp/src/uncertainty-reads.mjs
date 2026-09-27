@@ -298,6 +298,8 @@ function proposeAction({ slug, path, range, readRange }) {
  * only by a statement that something was not read without naming a file; an
  * unopened area, an unrun command or an unchecked claim stay pathless rather
  * than point at the wrong file.
+ * Per Uncertainty line, a fixed set of regex scans plus a whole-line polarity
+ * scan per span: O(line length × spans).
  */
 export function extractUncertaintyReads({ slug, kind, path, body, title } = {}) {
   if (typeof slug !== 'string' || !slug) return [];

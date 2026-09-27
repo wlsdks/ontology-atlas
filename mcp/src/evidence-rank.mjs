@@ -1,6 +1,6 @@
 // Relevance order for find_evidence, local and deterministic (no embeddings).
-// Inclusion is unchanged (score > 0 iff a substring matched), so the result set
-// is the same and only its order improves.
+// A doc is included iff a substring matched (score > 0); the score only orders
+// the results.
 
 const TOKEN_RE = /[a-z0-9]+/g;
 function tokenize(s) {
@@ -42,17 +42,17 @@ export function scoreEvidence(query, { title = '', frontmatterHaystack = '', bod
     base = 0.3;
     matchedIn = 'body';
   } else {
-    return { score: 0, matchedIn: null }; // no substring match → excluded (unchanged)
+    return { score: 0, matchedIn: null }; // no substring match: excluded
   }
 
   const qTokens = [...new Set(tokenize(needle))];
-  let bonus = 0;
+  let titleOverlapTiebreak = 0;
   if (qTokens.length > 0) {
     const titleTokens = new Set(tokenize(t));
-    const present = qTokens.filter((tok) => titleTokens.has(tok)).length;
-    bonus = (present / qTokens.length) * 0.1;
+    const queryTokensInTitle = qTokens.filter((tok) => titleTokens.has(tok)).length;
+    titleOverlapTiebreak = (queryTokensInTitle / qTokens.length) * 0.1;
   }
 
-  const score = Math.round((base + bonus) * 1000) / 1000;
+  const score = Math.round((base + titleOverlapTiebreak) * 1000) / 1000;
   return { score, matchedIn };
 }

@@ -1,6 +1,5 @@
 /**
- * Input validation for the MCP tools. The title rule matches the
- * app's `src/views/ontology-edit/lib/is-untitled-title.ts`: non-empty after trimming,
+ * Input validation for the MCP tools. A title must be non-empty after trimming,
  * so an agent cannot create untitled nodes.
  */
 

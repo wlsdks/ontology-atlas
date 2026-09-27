@@ -143,8 +143,8 @@ export {
   WRITE_RELATION_TYPE_VALUES,
 } from './ontology-engine/query-values.mjs';
 // Frontmatter key (edge.via) → the public relation `type` for dangling-reference
-// hints; only `dependencies` differs (`depends_on`). Inverse of RELATION_KEY in
-// mcp/src/index.js.
+// hints; only `dependencies` differs (`depends_on`). The inverse of
+// RELATION_KEY in tools/relation-keys.mjs.
 const RELATION_TYPE_FOR_KEY = Object.freeze({
   dependencies: 'depends_on',
   relates: 'relates',
@@ -156,15 +156,15 @@ const RELATION_TYPE_FOR_KEY = Object.freeze({
   domain: 'domain',
 });
 /**
- * Bridge-shaped nodes: a capability whose containment parent or child is also a
- * capability. The four kinds nest flat, so same-kind containment happens only
- * when someone inserted a grouping layer; no frontmatter flag to forge or lose.
- * ("Parent is a capability, children all elements" is vacuously true of every
- * leaf.) O(V + E): a slug→kind Map, one pass over edges.
+ * Bridge-shaped nodes: a node whose containment parent or child has its own kind
+ * (a capability under a capability). The four kinds nest flat, so same-kind
+ * containment happens only when someone inserted a grouping layer; no frontmatter
+ * flag to forge or lose. ("Parent is a capability, children all elements" is
+ * vacuously true of every leaf.) O(V + E): a slug→kind Map, one pass over edges.
  *
- * @param {{nodes?: Array, edges?: Array}} graph compiled artifact or the same
- *   `{slug, kind}` / `{from, to|ref, via, resolved}` shape, kept plain so the web
- *   renderer can mirror this without importing `mcp/`.
+ * @param {{nodes?: Array, edges?: Array}} graph compiled artifact, or anything of
+ *   the same `{slug, kind}` / `{from, to|ref, via, resolved}` shape, kept plain so
+ *   the web renderer can mirror this without importing `mcp/`.
  * @returns {Map<string, {via: 'same-kind-parent'|'same-kind-child', counterpart: string}>}
  *   keyed by slug; absent means "not bridge-shaped".
  */

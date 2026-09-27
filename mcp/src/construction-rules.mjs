@@ -197,11 +197,6 @@ function sampleRefs(refs, limit) {
 }
 
 /**
- * Warning literal for a graph-array entry that resolves to no node. It names both
- * exits and carries no `proposedAction`: a literal "create the node" makes an
- * agent manufacture one node per unresolved string.
- */
-/**
  * Warning literal for an entry a kind change could not move: the referrer's kind
  * keeps no list for the new kind (spec §5), so the entry stays, still resolves,
  * and fires no compile warning. Only the writer knows, so the writer says it.
@@ -211,6 +206,11 @@ export function containmentEntryKeptMessage({ slug, key, ref, holderKind, newKin
   return `"${slug}" still lists "${ref}" under ${key}:, but "${ref}" is now a ${newKind} and ${holder} keeps no list for a ${newKind}, so the entry was left where it was rather than guessed into another relation. Readers still count it as one of "${slug}"'s ${key}. Decide what "${slug}" means by it: remove_relation({from:"${slug}", to:"${ref}", type:"${key}"}) drops it, and add_relation with the type that fits restates it.`;
 }
 
+/**
+ * Warning literal for a graph-array entry that resolves to no node. It names both
+ * exits and carries no `proposedAction`: a literal "create the node" makes an
+ * agent manufacture one node per unresolved string.
+ */
 export function danglingGraphReferenceMessage({ slug, key, refs, count, sampleLimit }) {
   return `${count} entry/entries in "${slug}".${key} resolve to no vault node: ${sampleRefs(refs, sampleLimit)}. A relation array is a claim that a node exists; an unresolved string is not a child, it is a name with nothing behind it. Either promote it — add_concept({slug, kind, title}) for the concept it names, then keep the reference — or drop it from ${key}: and record what it points at as evidence on this node instead. Do not leave it in a meaning slot.`;
 }

@@ -9,12 +9,13 @@ import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-/** The table moved out of `index.js` when the entry point became wiring only. */
+/** The hint table every emitted remedy needs a sentence in. */
 const HINT_TABLE_FILE = join(HERE, 'tools', 'graph.mjs');
 
 /**
- * The modules that produce remedies. Two declare the same list
- * (`ACTION_IDS`, `SOURCE_ACTION_IDS`) and the evaluator emits its own, so the union is scanned.
+ * The modules that produce remedies: two import one action list (named
+ * ACTION_IDS and SOURCE_ACTION_IDS there) and the evaluator emits its own, so
+ * the union is scanned.
  */
 const REMEDY_SOURCES = [
   'meaning-assessment.mjs',
@@ -94,8 +95,8 @@ test('every remedy the source can emit has a sentence', () => {
   assert.deepEqual(
     missing,
     [],
-    `이 처방들이 화면에 id 그대로 나간다: ${missing.join(', ')}. `
-      + '표(MEANING_NEXT_ACTION_HINTS)에 사람이 읽을 문장을 더해라.',
+    `these remedies would reach the screen as bare ids: ${missing.join(', ')}. `
+      + 'Add a sentence a person can read to MEANING_NEXT_ACTION_HINTS.',
   );
 });
 

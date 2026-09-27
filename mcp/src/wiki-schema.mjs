@@ -8,6 +8,8 @@ import { parseFrontmatter } from './parser.mjs';
  * is loud), `sources_truncated` (which were only partly read) and a citation on
  * every `## Facts` bullet; ungrounded text goes under `## Not in sources`. A
  * page never has `kind:` (`deriveDocNode` requires it), checked first.
+ * The app twin src/shared/lib/wiki-page-schema.ts must return the same problem
+ * codes; tests/contract/wiki-page-schema.contract.test.ts runs both on one table.
  */
 
 /** Vault folder holding wiki pages. */
@@ -496,9 +498,10 @@ function readDeclaredSources(frontmatter) {
  * facts: `dangling-wikilink` (a `[[wiki/…]]` target not in the folder), `orphan-page` (no
  * inbound link, two or more pages only), `shared-source-unlinked` (pages written
  * from one primary source that do not link each other).
+ * Why these three: docs/benchmark/FINDINGS-2026-09-06-wiki-accumulation-probe.md.
  *
  * @param {Array<{ path: string, raw: string }>} pages every page, template excluded,
- *   `path` vault-relative (`wiki/<slug>.md`)
+ *   each with a vault-relative `path` (`wiki/<slug>.md`)
  * @returns {Array<{ path: string, problems: Array<{ code: string, message: string, line?: number }> }>}
  *   one entry per input page, in input order, `problems` possibly empty
  */

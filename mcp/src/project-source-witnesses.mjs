@@ -56,8 +56,8 @@ function graphNodeId(doc) {
 
 /**
  * @param {{projectSlug: string, docs: ReadonlyArray<{slug: string, frontmatter?: object, title?: string, body?: string}>}} input
- *   `docs` already scoped to the project by the caller, with the same containment
- *   as the project graph hash, so the two cannot disagree about "this project".
+ *   The caller must scope `docs` to the project with the containment the project
+ *   graph hash uses, so the two cannot disagree about "this project".
  */
 export function deriveProjectSourceWitnessesFromDocs(input) {
   const docs = Array.isArray(input?.docs) ? input.docs : [];

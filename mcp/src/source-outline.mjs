@@ -3,7 +3,8 @@
  * the right range instead of the head of a long file. A table of contents,
  * never a claim about behaviour. `outlineSource` is pure over text the caller
  * already read; a line scanner, not a parser, so a missed declaration is not
- * evidence of absence. O(lines).
+ * evidence of absence. One pass over lines, but JVM_MEMBER is unanchored, so one
+ * long line (minified Java, Kotlin, C#) costs time quadratic in its length.
  */
 
 /** Declarations per outline. A longer file reports `truncated: true`. */

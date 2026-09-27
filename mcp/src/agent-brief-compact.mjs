@@ -346,6 +346,10 @@ function defensibleMatch(row) {
   return fields.has('title') && (fields.has('slug') || fields.has('path'));
 }
 
+/**
+ * One tokenising pass per capability and element body, O(vault bytes); each
+ * task term is then a Set lookup, and candidates sort in O(C log C).
+ */
 function selectCapability(docs, intent) {
   const capabilities = docs.filter((doc) => doc.frontmatter?.kind === 'capability');
   const elements = docs.filter((doc) => doc.frontmatter?.kind === 'element');

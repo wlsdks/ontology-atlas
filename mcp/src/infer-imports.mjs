@@ -128,8 +128,9 @@ const SIDE_IMPORT_RE = /\bimport\s+['"]([^'"]+)['"]/g;
 
 /**
  * Walks a code repository and infers file-level import edges: one bounded walk
- * (`maxFiles`), a regex pass per file and a few fs probes per import, so O(source
- * bytes + imports); module edges are aggregated in Maps.
+ * (`maxFiles`), a regex pass per file and a few fs probes per import; module
+ * edges are aggregated in Maps. IMPORT_RE scans lazily from each import or
+ * export keyword to the next `from '…'`, so one file costs O(bytes × keywords).
  *
  * @param {string} rootPath — repo root (must exist)
  * @param {{ sourceFolders?: string[], ignore?: string[], maxFiles?: number }} options
@@ -280,10 +281,9 @@ export function inferImports(rootPath, options = {}) {
         );
     }
     for (const match of content.matchAll(SIDE_IMPORT_RE)) {
-      // Count a bare `import "X"` only when `import ... from "X"` did not already match it.
-      const idx = match.index;
-      const window = content.slice(Math.max(0, idx - 10), idx + 2);
-      if (/from\s*$/.test(window.replace(/\s+$/, ''))) continue;
+      const window = content.slice(Math.max(0, match.index - 10), match.index + 2);
+      const countedByImportRe = /from\s*$/.test(window.replace(/\s+$/, ''));
+      if (countedByImportRe) continue;
       const spec = match[1];
       classify(
         spec,

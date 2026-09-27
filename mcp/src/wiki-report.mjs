@@ -58,8 +58,8 @@ function comparePages(left, right) {
  *   pages?: ReadonlyArray<{ page?: string, path?: string, problems?: ReadonlyArray<{ code: string, message?: string, line?: number, detail?: unknown }> }>,
  *   unmeasured?: ReadonlyArray<string>,
  * }} input `pages` were judged (vault-relative, the `wiki-validate --json` shape);
- *   `unmeasured` exist but were not judged yet (the app reads lazily), and must
- *   never be drawn as "nothing found".
+ *   pages in `unmeasured` exist but were not judged yet (the app reads lazily),
+ *   and must never be drawn as "nothing found".
  * @returns {{
  *   pageCount: number,
  *   fitPageCount: number,
@@ -79,11 +79,8 @@ export function aggregateWikiFindings({ pages = [], unmeasured = [] } = {}) {
     const page = String(entry?.page ?? entry?.path ?? '');
     const problems = entry?.problems ?? [];
     if (problems.length === 0) fitPageCount += 1;
-    if (problems.every((problem) => isWikiAdvisoryCode(problem.code))) {
-      // Only advisory findings: the page's own bytes are fine, so it fits the template.
-    } else {
-      blockingPageCount += 1;
-    }
+    const onlyAdvisory = problems.every((problem) => isWikiAdvisoryCode(problem.code));
+    if (!onlyAdvisory) blockingPageCount += 1;
     for (const problem of problems) {
       const kind = wikiFindingCode(problem.code);
       if (!byCode.has(kind)) byCode.set(kind, []);

@@ -291,6 +291,10 @@ function importUsageOf(edge) {
     : 'unknown';
 }
 
+/**
+ * O(E × P) glob tests over E import edges and P scope, exclude and role
+ * patterns; matchesPathPattern compiles a fresh RegExp for every test.
+ */
 export function evaluateArchitectureConformance(profile, importResult) {
   const edges = Array.isArray(importResult?.edges) ? importResult.edges : [];
   const filesByRole = new Map(profile.roles.map((role) => [role.id, new Set()]));
@@ -414,9 +418,9 @@ export function evaluateArchitectureConformance(profile, importResult) {
         : [],
       /*
        * The `missing` tally counts edges with no `importUsage` at all, unlike
- * unclassifiable ones.
-       * The record writer refuses to mint a durable receipt from a scan that cannot
-       * tell type-only imports from value imports, and reads this tally to know.
+       * unclassifiable ones. The record writer refuses to mint a durable receipt
+       * from a scan that cannot tell type-only imports from value imports, and
+       * reads this tally to know.
        */
       importUsageCounts: importUsageTally,
     },
