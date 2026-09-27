@@ -136,7 +136,3 @@ sweep*/
 # Local capture sessions, including scripts and recordings beside screenshots.
 /.claude/shots-*/
 /.scratch-po/
-# Accepted historical review evidence remains versioned.
-!docs/audits/analysis-acp-2026-09-05/*.png
-!docs/benchmark/results/2026-09-10-wiki-review-*.png
-!docs/benchmark/results/2026-09-11-library-*.png
