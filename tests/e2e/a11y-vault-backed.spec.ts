@@ -458,14 +458,14 @@ test("볼트를 물린 접근성·대비 래칫 — 데이터가 있어야 존�
   // ── ② Separate "0 violations" from "nothing was measured" ────────────
   expect(
     notRendered,
-    `이 상태들이 안 열렸다 — 위반이 없는 게 아니라 **미측정**이다. 픽스처 볼트가 ` +
-      `그 모양을 더 이상 못 내고 있거나(파일 ${FIXTURE_VAULT_NODE_COUNT}개), 화면이 ` +
-      `조용히 비었다.\n${notRendered.join("\n")}`,
+    `These states did not open. That is not the absence of violations but **unmeasured**: the fixture vault ` +
+      `can no longer produce that shape (${FIXTURE_VAULT_NODE_COUNT} files), or the screen ` +
+      `went quietly empty.\n${notRendered.join("\n")}`,
   ).toEqual([]);
   expect(
     thinBodies,
-    `<main> 안에 상태별 최소 요소도 안 그려졌다 (기본 ${MIN_MAIN_ELEMENTS}개) — 셸 크롬만 남은 화면을 ` +
-      `재고 있다.\n${thinBodies.join("\n")}`,
+    `Inside <main>, not even the per-state minimum of elements rendered (default ${MIN_MAIN_ELEMENTS}), so this measures a screen ` +
+      `with only the shell chrome left.\n${thinBodies.join("\n")}`,
   ).toEqual([]);
   expect(
     thinAxe,
@@ -484,8 +484,8 @@ test("볼트를 물린 접근성·대비 래칫 — 데이터가 있어야 존�
   const unknown = [...axeCounts.keys()].filter((id) => !(id in AXE_BASELINE)).sort();
   expect(
     unknown,
-    `기준선에 없는 접근성 룰이 떴다 — 새 결함이다. 고쳐라. 정말 등재해야 한다면 ` +
-      `AXE_BASELINE 을 올리는 커밋이 리뷰에 보여야 한다.\n` +
+    `An accessibility rule the baseline does not have was raised: a new defect. Fix it. If it really must be listed, ` +
+      `the commit that raises AXE_BASELINE has to be visible in review.\n` +
       unknown.map((id) => `  ${id}: ${axeSamples.get(id)}`).join("\n"),
   ).toEqual([]);
 
@@ -496,14 +496,14 @@ test("볼트를 물린 접근성·대비 래칫 — 데이터가 있어야 존�
 
   expect(
     contrastFailures.length,
-    `WCAG 1.4.3 미달 조합이 ${CONTRAST_BASELINE_FAILING_COMBINATIONS} → ` +
-      `${contrastFailures.length} 로 늘었다.\n${contrastFailures.join("\n")}`,
+    `Combinations failing WCAG 1.4.3 grew from ${CONTRAST_BASELINE_FAILING_COMBINATIONS} to ` +
+      `${contrastFailures.length}.\n${contrastFailures.join("\n")}`,
   ).toBeLessThanOrEqual(CONTRAST_BASELINE_FAILING_COMBINATIONS);
 
   // ★ Fixing without lowering the baseline leaves exactly that much **headroom to regress**.
   expect(
     contrastFailures.length,
-    `미달이 ${CONTRAST_BASELINE_FAILING_COMBINATIONS} → ${contrastFailures.length} 로 줄었다. ` +
-      `CONTRAST_BASELINE_FAILING_COMBINATIONS 도 같이 내려라.`,
+    `Failures fell from ${CONTRAST_BASELINE_FAILING_COMBINATIONS} to ${contrastFailures.length}. ` +
+      `Lower CONTRAST_BASELINE_FAILING_COMBINATIONS with them.`,
   ).toBeGreaterThanOrEqual(CONTRAST_BASELINE_FAILING_COMBINATIONS);
 });

@@ -267,8 +267,8 @@ test("smoke markers must exist in product source, not only in generated data", (
   assert.deepEqual(
     orphaned,
     [],
-    `제품 소스에 없는 스모크 마커(생성물 제외). 컴포넌트가 은퇴했는데 마커만 남았거나, `
-      + `오타다. 남겨 두면 게이트가 틀린 이유로 통과하다 무관한 변경에 빨개진다:\n  `
+    `Smoke markers absent from product source (generated files excluded): the component retired and left its marker behind, `
+      + `or the marker is a typo. Left alone, the gate passes for the wrong reason, then turns red on an unrelated change:\n  `
       + orphaned.join("\n  "),
   );
 });

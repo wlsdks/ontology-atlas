@@ -168,8 +168,8 @@ describe("데스크톱 검증 프로브 표식 계약", () => {
   it("없는 표식을 기다리는 프로브가 늘지 않는다", () => {
     expect(
       missing.length,
-      `프로브가 제품에 없는 표식 ${missing.length}개를 기다린다(상한 ${RETIRED_MARKER_CAP}). ` +
-        `늘었다면 새 프로브가 이미 사라진 DOM 을 겨냥한 것이다:\n${missing.join(" ")}`,
+      `The probes wait for ${missing.length} markers the product does not render (cap ${RETIRED_MARKER_CAP}). ` +
+        `If this grew, a new probe targets DOM that is already gone:\n${missing.join(" ")}`,
     ).toBeLessThanOrEqual(RETIRED_MARKER_CAP);
   });
 
@@ -206,8 +206,8 @@ describe("데스크톱 검증 프로브 표식 계약", () => {
     const offenders = deadFlags.filter((flag) => pkg.includes(flag));
     expect(
       offenders,
-      `package.json 이 은퇴한 검증 플래그를 넘긴다: ${offenders.join(", ")} — ` +
-        `그 프로브는 제거된 Sigma DOM 을 기다리므로 반드시 실패한다.`,
+      `package.json passes retired verification flags: ${offenders.join(", ")}. ` +
+        `Those probes wait for the removed Sigma DOM, so they always fail.`,
     ).toEqual([]);
   });
 });

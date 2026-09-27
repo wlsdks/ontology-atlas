@@ -72,10 +72,10 @@ describe("접근성 래칫의 라우트 커버리지", () => {
 
     expect(
       unclassified,
-      `접근성 래칫이 안 보는 라우트가 있다. 재려면 tests/e2e/audited-routes.ts 의 ` +
-        `AUDITED_ROUTES 에 실제 URL 을 더하고, 안 잴 거면 EXCLUDED_ROUTES 에 ` +
-        `**이유와 함께** 등재해라. 조용히 빠진 라우트와 의도적으로 뺀 라우트가 ` +
-        `코드에서 구별되지 않으면 다음 사람이 같은 사각지대를 만든다.\n` +
+      `Some routes are outside the accessibility ratchet. To measure one, add its real URL to ` +
+        `AUDITED_ROUTES in tests/e2e/audited-routes.ts; to leave it out, list it in EXCLUDED_ROUTES ` +
+        `**with the reason**. When code cannot tell a route that slipped out from one left out on purpose, ` +
+        `the next person builds the same blind spot.\n` +
         unclassified.map((r) => `  ${r}`).join("\n"),
     ).toEqual([]);
   });

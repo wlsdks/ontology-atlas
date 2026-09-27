@@ -284,9 +284,9 @@ test.describe("브라우저 «글자만 확대»가 타입 램프에 닿는다",
     }
     expect(
       moved,
-      "크롬 기하가 독자의 글꼴 설정에 따라 움직였다. 타입은 독자를 따르고\n" +
-        "박스는 따르지 않는다 — 히트 영역·레일 폭·대화상자 단은 px 로 남는다.\n" +
-        "움직인 값:\n" +
+      "Chrome geometry moved with the reader's font setting. Type follows the reader;\n" +
+        "boxes do not: hit areas, rail width and dialog steps stay in px.\n" +
+        "Values that moved:\n" +
         moved.join("\n"),
     ).toEqual([]);
     // The gutters are part of that list and also part of the column's derivation, so their

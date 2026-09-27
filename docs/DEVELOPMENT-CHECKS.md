@@ -1066,7 +1066,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 
 **Run**: `pnpm exec vitest run tests/contract/test-title-language.contract.test.ts tests/contract/source-comment-bytes.contract.test.ts tests/contract/source-shape.contract.test.ts`
 **Proves**: In each area the changed files touch, Hangul test titles and assertion messages, comment bytes, files over 800 lines and parent folders over 30 direct files do not grow against the merge base.
-**Escalate**: `pnpm test:contracts`
+**Escalate**: `pnpm test:source:language` when the title and message census changed, otherwise `pnpm test:contracts`
 **Fix**: Translate the title or message, delete or shorten the comment, or split the file or folder; a deliberate raise is a `tests/contract/ratchet-raises/<gate>.<slug>.json` record saying why.
 
 ### Source-checkout MCP dependency preflight

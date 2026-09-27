@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { describe, it } from "node:test";
@@ -77,6 +77,22 @@ describe("audit-vault-paths script arguments", () => {
       assert.equal(repoFile.stdout, "");
       assert.match(repoFile.stderr, /Repo path is not a directory:/);
       assert.doesNotMatch(repoFile.stderr, /at async|at Object|drift/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("does not audit a capability filed under sources/, which is a raw source", () => {
+    const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-audit-vault-sources-"));
+    try {
+      mkdirSync(join(dir, "sources"));
+      writeFileSync(
+        join(dir, "sources", "capability.md"),
+        "---\nkind: capability\ntitle: Filed as a source\npath: src/missing.ts\n---\n",
+      );
+      const result = spawnSync(process.execPath, [SCRIPT, dir, dir], { cwd: ROOT, encoding: "utf8" });
+      assert.equal(result.status, 0, result.stdout);
+      assert.match(result.stdout, /0 nodes/);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

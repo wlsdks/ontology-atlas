@@ -109,6 +109,15 @@ same findings the MCP write door already returned to an agent, and they are here
 because the person running this command could not see them: a folder could be
 called clean by one reader and thin by another, with only the agent able to tell.
 
+Files under the vault's `sources/` folder are raw sources, never nodes, exactly
+as the app reads them: `list`, `find`, `validate` and every other command skip
+them, and `add`, `import` and `relate` refuse a slug that opens one, including a
+spelling a case-folding disk opens as `sources/` and a link inside the vault. A
+`.md` under `sources/` that still carries `kind:` is reported once by `validate`
+as the warning `kind-under-sources`. To keep it as a node, move it into its kind
+folder, then repoint each relation `validate` reports as a
+`dangling-graph-reference` to the old `sources/…` slug (MCP `patch_concept`).
+
 `analysis --vault=<dir> --history [--mode=meaning|architecture] --json` lists
 versioned in-app ACP analysis records, and `--record=<UUID> --json` reads one
 exact run or review. These read-only flags use the archive inside the vault;

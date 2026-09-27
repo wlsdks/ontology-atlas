@@ -606,6 +606,25 @@ export function folderForKind(kind) {
   return schema.folder;
 }
 
+export const VAULT_SOURCES_DIR = 'sources';
+
+export function isVaultSourcePath(relativePath) {
+  return typeof relativePath === 'string' && relativePath.startsWith(`${VAULT_SOURCES_DIR}/`);
+}
+
+export function rawSourceFileForSlug(slug) {
+  return /\.[^/.]+$/.test(slug) ? slug : `${slug}.md`;
+}
+
+export function rawSourceSlugIssue(slug) {
+  if (!isVaultSourcePath(slug)) return null;
+  return (
+    `slug "${slug}" must not name a file under ${VAULT_SOURCES_DIR}/: every file there is a raw source, never a node. ` +
+    'Write or move a node into a kind folder such as domains/ or capabilities/, ' +
+    `and read the source with read_source({ path: "${rawSourceFileForSlug(slug)}" }).`
+  );
+}
+
 /** The `requiredExtras` a frontmatter lacks; advisory. */
 export function missingExpectedFields(kind, frontmatter) {
   const schema = VAULT_KIND_SCHEMA[kind];

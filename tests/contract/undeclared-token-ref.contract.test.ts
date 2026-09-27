@@ -2,6 +2,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
+import { blankComments } from '../../scripts/quality/source-language/inventory.mjs';
 
 /**
  * Blocks **`var()` calling a token that does not exist** — a gate for the class of
@@ -33,6 +34,8 @@ import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
  * 3. A Tailwind arbitrary **property** declaration — `[--name:value]` (declared on the element)
  * 4. `next/font`'s `variable: '--name'`
  *
+ * Both directions read code: a comment neither declares a token nor calls one.
+ *
  * **References with a fallback (`var(--x, #08090a)`) are exempt** — the render is
  * defined even without the token, so nothing breaks silently. What this gate
  * blocks is exactly the references whose value disappears when the token is
@@ -55,6 +58,32 @@ function walk(dir: string, out: string[] = []): string[] {
 }
 
 const files = SOURCE_ROOTS.flatMap((root) => walk(path.join(ROOT, root)));
+const sources = new Map(files.map((file) => [file, readFileSync(file, "utf8")]));
+
+const DECLARATIONS = [
+  /setProperty\(\s*['"](--[a-z0-9-]+)/g,
+  // Style-object keys (`{ '--x': v }`) and Tailwind arbitrary properties (`[--x:v]`)
+  /['"](--[a-z0-9-]+)['"]\s*:/g,
+  /\[(--[a-z0-9-]+):/g,
+  /variable:\s*['"](--[a-z0-9-]+)/g,
+];
+// Every match keeps one of these runs whole; a comment can sit only where a pattern allows space.
+const DECLARATION_SHAPE = /setProperty\(|variable:|['"]--|\[--/;
+const REFERENCE_SHAPE = /var\(/;
+
+const blanked = new Map<string, string>();
+/** The file's code, parsed only when its text has `shape`: without it, its code cannot match. */
+function codeOf(file: string, shape: RegExp): string {
+  const text = sources.get(file)!;
+  if (!shape.test(text)) return "";
+  let code = blanked.get(file);
+  if (code === undefined) blanked.set(file, (code = blankComments(file, text) as string));
+  return code;
+}
+
+function declarationsIn(code: string): string[] {
+  return DECLARATIONS.flatMap((pattern) => Array.from(code.matchAll(pattern), (m) => m[1]));
+}
 
 function collectDeclared(): Set<string> {
   const css = readGlobalCss();
@@ -62,14 +91,7 @@ function collectDeclared(): Set<string> {
     [...css.matchAll(/(--[a-z0-9-]+)\s*:/g)].map((m) => m[1]),
   );
   for (const file of files) {
-    const source = readFileSync(file, "utf8");
-    for (const m of source.matchAll(/setProperty\(\s*['"](--[a-z0-9-]+)/g)) {
-      declared.add(m[1]);
-    }
-    // Style-object keys (`{ '--x': v }`) and Tailwind arbitrary properties (`[--x:v]`)
-    for (const m of source.matchAll(/['"](--[a-z0-9-]+)['"]\s*:/g)) declared.add(m[1]);
-    for (const m of source.matchAll(/\[(--[a-z0-9-]+):/g)) declared.add(m[1]);
-    for (const m of source.matchAll(/variable:\s*['"](--[a-z0-9-]+)/g)) declared.add(m[1]);
+    for (const name of declarationsIn(codeOf(file, DECLARATION_SHAPE))) declared.add(name);
   }
   return declared;
 }
@@ -88,11 +110,23 @@ describe("없는 토큰을 부르는 var() — 조용히 깨지는 것을 막는
     const violations: string[] = [];
     for (const file of files) {
       if (/\.test\.tsx?$/.test(file)) continue;
-      for (const name of undeclaredRefs(readFileSync(file, "utf8"), declared)) {
+      for (const name of undeclaredRefs(codeOf(file, REFERENCE_SHAPE), declared)) {
         violations.push(`${path.relative(ROOT, file)} → ${name}`);
       }
     }
+    expect(files.length, "the scan read no source files").toBeGreaterThan(1000);
     expect(violations).toEqual([]);
+  });
+
+  it("reads code, not comments — the probe", () => {
+    const code = blankComments(
+      "probe.ts",
+      "// el.style.setProperty('--probe-ghost', '1px') would declare it; this comment does not.\n" +
+        "/* var(--probe-retired) is history, not a reference. */\n" +
+        "export const cls = 'h-[var(--probe-ghost)]';\n",
+    ) as string;
+    expect(declarationsIn(code)).toEqual([]);
+    expect(undeclaredRefs(code, new Set())).toEqual(["--probe-ghost"]);
   });
 
   // A silently disabled detector fails here first. The check above claims "0
@@ -117,7 +151,7 @@ describe("없는 토큰을 부르는 var() — 조용히 깨지는 것을 막는
   it("2026-07-28 에 잡힌 유령 토큰이 되살아나지 않는다", () => {
     expect(declared.has("--color-status-warning-a36")).toBe(false);
     for (const file of files) {
-      expect(readFileSync(file, "utf8")).not.toContain(
+      expect(codeOf(file, REFERENCE_SHAPE)).not.toContain(
         "var(--color-status-warning-a36)",
       );
     }
