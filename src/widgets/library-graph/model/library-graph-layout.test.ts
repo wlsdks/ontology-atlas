@@ -3,11 +3,8 @@ import { describe, expect, it } from "vitest";
 import { easeMotion, fitToBox, seedPositions } from "./library-graph-layout";
 
 /**
- * What is left of the layout after the physics moved out: the seed spiral, the uniform
- * fit, and the sampled easing curve. The cases for `layoutLibraryGraph`,
- * `alignToLongestAxis` and `interpolatePositions` went with the functions themselves on
- * 2026-09-07 — the live simulation answers all three, and `library-force-simulation.test.ts`
- * is where those claims are now made.
+ * The seed spiral, the uniform fit and the sampled easing curve. The live simulation's
+ * claims are in `library-force-simulation.test.ts`.
  */
 
 describe("the seed spiral", () => {

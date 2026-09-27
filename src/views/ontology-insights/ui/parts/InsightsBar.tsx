@@ -2,10 +2,8 @@ import { useEffect, useState } from "react";
 import { usePrefersReducedMotion } from "@/shared/lib/use-prefers-reduced-motion";
 
 /**
- * The fill of an insights distribution bar — on first paint it grows from width 0 to the target
- * percentage over `--motion-settle`, staggered 30ms per row so it flows top to bottom. Under
- * reduced-motion it starts at the target value with no animation. The track (the background groove)
- * is owned by the consumer; this component renders only the inner fill.
+ * An insights bar's fill, growing from 0 over `--motion-settle`, staggered 30ms per row; reduced motion starts at
+ * the target. The consumer owns the track.
  */
 export function InsightsBar({
   pct,
@@ -19,10 +17,8 @@ export function InsightsBar({
   testId?: string;
 }) {
   const reduce = usePrefersReducedMotion();
-  // Under reduced motion `filled` starts at the target (no visible 0). Otherwise
-  // it starts at 0 and flips to the target on the next frame so the CSS width
-  // transition runs from empty — the flip lives in the rAF callback (not the
-  // effect body) so it never cascades a synchronous re-render.
+  // Starts at the target under reduced motion; otherwise it flips to the target in the next frame's rAF callback,
+  // so the width transition runs from empty without a synchronous re-render.
   const [filled, setFilled] = useState(reduce);
 
   useEffect(() => {

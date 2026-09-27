@@ -1,54 +1,19 @@
 /**
- * **The one batch this board offers: give a domain back the members it already claims.**
- *
- * ## Why this repair, and only this one
- *
- * `computeVaultHealth` reports a missing containment when a capability or element declares
- * `domain: X` **and X does not list it back** (`missingDomainContainment`). Both halves are
- * already written by a person: the concept named its domain, and the domain exists. Nothing is
- * inferred, guessed, or ranked — the repair is to append one slug to one array on one document,
- * and the value to append is fully determined by the two facts on disk.
- *
- * That is the whole reason a batch is offered here and nowhere else on this board. A missing
- * definition needs a sentence only a person can write; a duplicate pair needs a judgement about
- * whether two names mean one thing; an island needs a relation nobody has decided yet. Those have
- * no correct value to fill in, so no button may fill them.
- *
- * ## What is written
- *
- * One frontmatter key on the **domain** document — `capabilities` for a capability member,
- * `elements` for an element — set to its current members plus the missing ones, in the order the
- * file already had them, with the new slugs appended. Every other key, the body, and key order are
- * preserved by `applyFrontmatterUpdates`; a block-style list is rewritten as an inline list, which
- * is that function's standing behaviour and visible in the git diff like any other edit.
- *
- * Several missing members of one domain become **one write to that file**, because two writes to
- * one file in one run would make the second fail its own `expected_mtime` guard.
- *
- * ## When each fact is read, and why that is the whole guarantee
- *
- * The sheet promises two things a person cannot check themselves: *a write never lands on a file
- * that changed since the proposal*, and *only the named files are written*. Both depend on **when**
- * each fact is read, so the split is deliberate and structural:
- *
- * - **At open** (`buildContainmentPlan`): the target document, the members it already lists, and
- *   its `mtime`. Freezing the mtime here is the entire conflict guard. Reading it at Apply would
- *   capture the mtime of a file that had *already* been changed and re-read in between, so the
- *   guard would compare a stale baseline against itself and pass — the write the sheet promised to
- *   refuse. A document whose mtime is unknown is refused rather than written unguarded.
- * - **At Apply** (`selectContainmentWrites`): whether the concept *still* names this domain. That
- *   is the fact that justified the proposal; if a person or an agent changed `domain:` while the
- *   sheet was open, writing the back-link would state a containment nobody approved.
+ * The one batch repair on this board: give a domain back the members that already name it. `computeVaultHealth`
+ * flags a capability or element whose `domain: X` is not listed back by X; both facts are on disk, so the value
+ * to append is fully determined. Other findings need a person's sentence or judgement, so no button fills them.
+ * One frontmatter key (`capabilities` or `elements`) on the domain document gets its members plus the missing
+ * slugs appended; `applyFrontmatterUpdates` keeps every other key and the body. Members of one domain become one
+ * write, or the second write to a file fails its own `expected_mtime` guard. The target, members and mtime are
+ * frozen at open (`buildContainmentPlan`), which is the whole conflict guard: read at Apply, a changed file's
+ * mtime would pass against itself. At Apply (`selectContainmentWrites`) the concept must still name the domain,
+ * or the back-link states a containment nobody approved.
  */
 
 /** The subset of a vault document this plan reads. `VaultDoc` satisfies it. */
 export interface ContainmentPlanDoc {
   slug: string;
-  /**
-   * The document's path in the vault, when the manifest carries one. Shown on the row: the
-   * dogfood folder holds several documents with the same title, so a title alone does not say
-   * which file a write lands in.
-   */
+  /** Shown on the row, since several documents may share a title. */
   path?: string;
   title: string;
   frontmatter: Record<string, unknown>;
@@ -63,19 +28,13 @@ export interface ContainmentProposal {
   conceptTitle: string;
   domainSlug: string;
   domainTitle: string;
-  /**
-   * Where the changed file sits in the vault — `path` when the manifest has one, the slug
-   * otherwise. The row shows this, because two documents may carry the same title.
-   */
+  /** `path` when the manifest has one, else the slug; shown on the row since titles may repeat. */
   domainPath: string;
   /** Which frontmatter key on the domain document gains the concept. */
   key: "capabilities" | "elements";
 }
 
-/**
- * One document the plan may write, exactly as it stood when the sheet opened. Reachable through
- * `ContainmentPlan['targets']`; it is not exported separately because nothing outside builds one.
- */
+/** One document the plan may write, as it stood when the sheet opened; built only here. */
 interface ContainmentPlanTarget {
   domainSlug: string;
   domainPath: string;
@@ -88,10 +47,7 @@ interface ContainmentPlanTarget {
   proposalIds: string[];
 }
 
-/**
- * The frozen plan: the rows the sheet shows and the documents they would change, both read at the
- * moment the sheet opened. Nothing here is recomputed while the sheet is open.
- */
+/** Rows and documents read when the sheet opened; nothing is recomputed while it is open. */
 export interface ContainmentPlan {
   proposals: readonly ContainmentProposal[];
   targets: readonly ContainmentPlanTarget[];
@@ -104,11 +60,7 @@ export interface ContainmentWrite {
   key: "capabilities" | "elements";
   /** The complete next value for that key — existing members first, new ones appended. */
   members: string[];
-  /**
-   * `file.lastModified` read when the sheet opened. Never null: a document whose mtime is unknown
-   * becomes a skip, because a write with no guard is exactly the write this sheet promises never
-   * to make.
-   */
+  /** `file.lastModified` read at open. Never null: an unknown mtime becomes a skip, since an unguarded write is never made. */
   expectedMtime: number;
   /** The proposals this one write satisfies, so a failure can be reported on each of their rows. */
   proposalIds: string[];
@@ -136,11 +88,8 @@ export interface ContainmentRun {
 }
 
 /**
- * What happened to one row.
- *
- * `done` · `conflict` (the file changed since the sheet was opened — its `expected_mtime` refused
- * the write, which is the guard working) · `skipped` with the sentence saying why it was never
- * attempted · `failed` with the message the write threw.
+ * `conflict` means the file changed since open and `expected_mtime` refused the write (the guard
+ * working); `skipped` carries the reason it was never attempted; `failed` carries the thrown message.
  */
 export type ContainmentRowStatus =
   | { phase: "pending" }
@@ -161,11 +110,9 @@ function kindOf(doc: ContainmentPlanDoc | undefined): string | null {
 }
 
 /**
- * Turns the health verdict's missing-containment targets into proposals a person can read and
- * tick. A target is dropped — never silently repaired — when the concept or the domain document
- * is not in this manifest, when the concept is neither a capability nor an element, or when the
- * domain already lists it (which means the verdict and the manifest disagree and the safe answer
- * is to write nothing).
+ * Turns the health verdict's missing-containment targets into proposals. A target is dropped, never repaired, when
+ * the concept or domain document is missing, the concept is neither capability nor element, or the domain already
+ * lists it (verdict and manifest disagree, so the safe answer is to write nothing).
  */
 export function buildContainmentProposals(
   targets: ReadonlyArray<{ slug: string; domain: string }>,
@@ -207,12 +154,8 @@ function documentPath(doc: ContainmentPlanDoc): string {
 }
 
 /**
- * Does this reference still name that domain document?
- *
- * The same three names `computeVaultHealth` resolves a `domain:` through — the slug, its last
- * segment, and a `slug:` written in the frontmatter — so a reference the verdict accepted is not
- * called a contradiction here. Anything else is treated as changed, which costs a skipped row and
- * never a write nobody approved.
+ * Whether this reference still names the domain, by the three names `computeVaultHealth` resolves (slug, its last
+ * segment, frontmatter `slug:`). Anything else counts as changed: a skipped row, never an unapproved write.
  */
 function namesDomain(reference: unknown, domain: ContainmentPlanDoc): boolean {
   if (typeof reference !== "string") return false;
@@ -226,12 +169,8 @@ function namesDomain(reference: unknown, domain: ContainmentPlanDoc): boolean {
 }
 
 /**
- * **Reads the documents once, when the sheet opens.**
- *
- * Groups the proposals into one target per (document, key) — two writes to one file in one run
- * would make the second fail its own `expected_mtime` guard — and records the members and the
- * mtime as they are right now. Ticking happens afterwards and changes nothing here, which is what
- * lets the mtime be the baseline the write is judged against.
+ * Reads the documents once, when the sheet opens: one target per (document, key), with members and mtime as they
+ * are now. Ticking afterwards changes nothing here, which keeps the mtime a valid baseline.
  */
 export function buildContainmentPlan(
   proposals: readonly ContainmentProposal[],
@@ -263,15 +202,9 @@ export function buildContainmentPlan(
 }
 
 /**
- * **Decides what Apply may still do**, from the frozen plan and the ticks.
- *
- * Two things are refused rather than written. A target whose mtime was unknown at open has no
- * guard to offer, and an unguarded write is the one this sheet promised not to make. A ticked row
- * whose concept no longer names this domain has lost the fact that justified it, so writing the
- * back-link would state a containment nobody approved. Both leave the row with a reason and the
- * rest of the run continues — the other documents are independent files.
- *
- * The `docs` here are the current ones; the members and the mtime still come from the plan.
+ * Decides what Apply may still do. An unknown mtime or a concept that no longer names the domain becomes a skip
+ * with a reason; the run continues over the other, independent files. Members and mtime come from the
+ * plan; `docs` are the current ones.
  */
 export function selectContainmentWrites(
   plan: ContainmentPlan,
@@ -337,12 +270,8 @@ export function selectContainmentWrites(
 }
 
 /**
- * Runs one selected batch, **one document at a time**, reporting each row as it resolves.
- *
- * A refusal does not stop the run: the remaining documents are independent files, and abandoning
- * them would leave the folder in a state nobody chose. The conflict branch is keyed on the vault's
- * own `VaultConflictError` name, so the guard refusing a changed file reads as the guard working
- * and not as an unexplained failure.
+ * Runs one document at a time, reporting each row. A refusal does not stop the run, since the documents are
+ * independent; a `VaultConflictError` is reported as the guard working, not an unexplained failure.
  */
 export async function runContainmentBatch(
   run: ContainmentRun,

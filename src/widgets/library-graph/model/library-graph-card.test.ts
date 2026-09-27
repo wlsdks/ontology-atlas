@@ -10,12 +10,8 @@ import {
 } from "./library-graph-card";
 
 /**
- * **Two claims about a card beside a dot, settled without a browser.**
- *
- * The first is the one direction B names as its own falsifier — *a card covers its own
- * mark or the strip* — and it is geometry, so it is decided here rather than by looking at
- * a screenshot. The second is which lines the drift runs along, which is a fact about the
- * folder's citations and nothing else.
+ * Two claims settled without a browser: the card never covers its mark or the strip
+ * (geometry), and the drift runs along exactly the mark's citations.
  */
 
 const BOX = { width: 1000, height: 600 };
@@ -79,10 +75,8 @@ describe("where the card stands", () => {
   });
 
   /**
-   * ⚠️ **The falsifier, swept.** Every mark position on a 20×12 lattice, at three window
-   * sizes and two mark radii: the card never overlaps the mark it belongs to, and never
-   * leaves the canvas box — which begins *below* the caption row and the strip, so staying
-   * inside it is the whole of "the card never covers the strip".
+   * Swept over a 20×12 lattice at three window sizes and two radii: the card never overlaps
+   * its mark and never leaves the canvas box, which lies below the caption row and strip.
    */
   it("never covers its own mark, and never leaves the canvas, anywhere on the picture", () => {
     const boxes = [

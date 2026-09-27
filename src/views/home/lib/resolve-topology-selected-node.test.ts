@@ -47,7 +47,7 @@ describe("resolveTopologySelectedOntologyNode", () => {
     });
   });
 
-  it("reserved reader guide는 topology 편집 대상으로 열지 않는다", () => {
+  it("does not open the reserved reader guide as a topology edit subject", () => {
     expect(resolveTopologySelectedOntologyNode("README", nodes)).toBeNull();
     expect(resolveTopologySelectedOntologyNode("vault-readme:README", nodes)).toBeNull();
   });

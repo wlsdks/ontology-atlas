@@ -7,30 +7,11 @@ import {
 } from "./duplicate-pairs";
 
 /**
- * A performance gate against retokenization regressing into the pair-comparison inner loop.
- *
- * **What happened** (measured 2026-08-19). `buildDuplicatePairs` narrows candidates with a word
- * inverted index, but the same folder name (`capabilities/…`, `elements/…`) appears in **every**
- * node's slug words, so one bucket is effectively the full n². Inside that loop
- * `scoreNodeSimilarity` was called per pair, **re-tokenizing** slug and title and building four
- * new Sets each time — on a cold entry to `/ontology/insights` with the bundled sample vault (125
- * documents) this one function consumed 74% of the page's derivation time (34.8ms of 46.9ms under
- * 4× CPU throttling) and turned one render slice into a 62–66ms long task. The fix: tokenize each
- * node's word set once and let the pair comparison read only those sets.
- *
- * **Gate design — a self-calibrating ratio, never absolute wall-clock.** It started as an absolute
- * threshold (80ms), but while parallel agents ran builds on the same machine, runs that should
- * have been green wandered to 82–91ms and produced a false red once in five (measured 2026-08-19).
- * Wall-clock is a function of CI machine speed and concurrent load. So a naive loop scoring all the
- * same pairs in the defective shape (re-tokenizing per pair) is measured **inside the same run**,
- * and the assertion is how many times faster than it we are — numerator and denominator ride the
- * same load, so the verdict does not depend on the machine.
- *
- * Measured 2026-08-19 (600 nodes ≈ 180k pairs, min of 3): buildDuplicatePairs ~45ms, naive ~175ms
- * → a ratio of 3.8–4.2. Reinjecting the defect (reverting the inner loop's `scorePair` to
- * `scoreNodeSimilarity(left, right).total`) gives a ratio of 0.88 and three consecutive reds —
- * confirmed by gate-probe. The threshold of 2 sits just above the geometric mean of the two states
- * (≈1.9).
+ * Guards against per-pair retokenizing in `buildDuplicatePairs`: a shared folder word puts every node in one
+ * bucket, so the pair loop is the full n^2. The gate is a ratio against a naive loop measured in the same run,
+ * so machine speed and concurrent load cancel out.
+ * Measured 2026-08-19 (600 nodes, about 180k pairs, min of 3): the fix runs 3.8-4.2x faster than the naive loop;
+ * reinjecting the defect gives 0.88. The threshold of 2 sits above the two states' geometric mean (about 1.9).
  */
 function node(id: string, kind: string, title: string, slug: string): KnowledgeGraphNode {
   return {
@@ -44,16 +25,13 @@ function node(id: string, kind: string, title: string, slug: string): KnowledgeG
   };
 }
 
-describe("buildDuplicatePairs 성능 게이트", () => {
-  it("공유 폴더 낱말로 버킷이 전수가 되어도(600 노드 ≈ 18만 쌍) 쌍당 재토큰화 없이 끝난다", () => {
+describe("buildDuplicatePairs performance gate", () => {
+  it("finishes without per-pair retokenizing when a shared folder word buckets all 600 nodes (about 180k pairs)", () => {
     const N = 600;
     const nodes: KnowledgeGraphNode[] = [];
     for (let i = 0; i < N; i += 1) {
-      // Sharing only the folder word (`elements`) makes one inverted-index bucket the full set, so
-      // n² pairs are compared. Title words are unique per node so no pair can reach the threshold
-      // (0.6), and the longer the title the larger the share of cost taken by "re-tokenize per
-      // pair", widening the separation between the defect and the fix (real vault titles are
-      // multi-word too).
+      // Only the folder word (`elements`) is shared, so one bucket holds every node; unique multi-word titles keep every
+      // pair below 0.6 and make per-pair retokenizing the dominant cost.
       nodes.push(
         node(
           `element:u${i}x`,
@@ -63,15 +41,13 @@ describe("buildDuplicatePairs 성능 게이트", () => {
         ),
       );
     }
-      // Proof the instrument is not idling — one pair that really does exceed the threshold is
-      // planted. If it is not caught, the fixture never compared anything.
+      // One planted pair above the threshold proves the fixture compares anything.
     nodes.push(node("element:node-drawer", "element", "Node drawer", "elements/node-drawer"));
     nodes.push(node("element:node-drawer-copy", "element", "Node drawer", "elements/node-drawer-copy"));
     const edges: KnowledgeGraphEdge[] = [];
 
-    // The baseline: a naive loop scoring all the same pairs in the defective shape
-    // (`scoreNodeSimilarity`, re-tokenizing per pair) — measured on the same machine under the same
-    // load, so it self-calibrates against CI speed.
+    // The baseline: a naive loop scoring the same pairs with `scoreNodeSimilarity`, re-tokenizing per pair, in the
+    // same run.
     const candidates = [...buildSimilarityCandidates(nodes, edges).values()];
     const naiveScan = () => {
       let above = 0;
@@ -83,7 +59,7 @@ describe("buildDuplicatePairs 성능 게이트", () => {
       return above;
     };
 
-    // One JIT warm-up each, then the minimum of three — removing GC and scheduling noise from a single measurement.
+    // One warm-up each, then the minimum of three, to remove GC and scheduling noise.
     buildDuplicatePairs(nodes, edges, 3);
     naiveScan();
     let bestBuild = Infinity;
@@ -99,17 +75,12 @@ describe("buildDuplicatePairs 성능 게이트", () => {
       bestNaive = Math.min(bestNaive, performance.now() - start);
     }
 
-    // Proof the instrument is not idling — both sides caught the planted duplicate pair.
+    // Both sides caught the planted pair, so neither idled.
     expect(result?.suspectCount).toBe(1);
     expect(result?.rows[0]?.dissolveSlug).toBe("elements/node-drawer-copy");
     expect(naiveAbove).toBe(1);
 
-    // Measured 2026-08-19 (min of 3): a standalone ratio of 3.8–4.2 (build ~45ms, naive ~175ms),
-    // confirmed passing under the parallel load of the full vitest suite (2,183 tests). Reinjecting
-    // the defect (re-tokenizing with scoreNodeSimilarity per pair) gives 0.88 and three consecutive
-    // reds (gate-probe). The threshold of 2 sits just above the geometric mean of the two states
-    // (≈1.9) — being a ratio rather than wall-clock, the verdict is not flipped by machine speed or
-    // concurrent load.
+    // See the file header for the measured ratios behind the threshold of 2.
     expect(bestNaive / bestBuild).toBeGreaterThan(2);
   });
 });

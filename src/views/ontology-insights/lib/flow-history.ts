@@ -6,27 +6,19 @@ export interface FlowVersion {
   createdAt: string;
   /** The agent runtime that wrote it, as the record names it. */
   writer: string;
-  /** The Markdown the agent produced. This is the body a person reads. */
+  /** The Markdown the agent produced: the body a person reads. */
   answer: string;
   /** Whether the folder still matches what the explanation was written from. */
   standing: AnalysisCompatibility['status'];
-  /** Why it is stale or unknown, in the record's own words. */
+  /** Why it is stale or unknown, in the record's words. */
   reasons: readonly string[];
   /** Whether Atlas could prove the answer rested on reads it made. */
   grounded: boolean;
 }
 
 /**
- * **The product's explanation, as versions rather than one disposable answer.**
- *
- * The Flow tab used to show the *request* — a wall of tool rules — and nothing else, so a
- * reader asked what the tab was for (owner, 2026-09-19). The thing worth reading is the
- * explanation an agent wrote, and the thing worth keeping is how it changed: Atlas already
- * saves each analysis turn beside the vault, and `compareAnalysisBasis` already says whether
- * the folder moved since. This turns those records into the versions the screen shows.
- *
- * Only runs from this surface and this project scope are versions of this explanation; an
- * architecture run or another project's run answers a different question.
+ * Saved analysis turns as versions of the product's explanation, with `compareAnalysisBasis` saying whether the
+ * folder moved since. Only runs from this surface and project scope count; others answer a different question.
  */
 export function selectFlowVersions(
   records: readonly AnalysisRecord[],
@@ -58,10 +50,8 @@ export function selectFlowVersions(
 }
 
 /**
- * What changed between two saved explanations, by heading. Headings are the six scenes the
- * request asks for, so a reader sees which scene was rewritten without reading both in full.
- * Prose inside a scene is compared as a whole: a word-level diff of an agent's sentences
- * invites reading a rewrite as a change of meaning.
+ * Changes between two saved explanations by heading, the request's six scenes. Prose inside a scene is compared
+ * whole: a word diff of an agent's sentences invites reading a rewrite as a change of meaning.
  */
 export function flowHeadingChanges(newer: string, older: string): { heading: string; change: 'added' | 'removed' | 'rewritten' }[] {
   const sections = (text: string) => {
