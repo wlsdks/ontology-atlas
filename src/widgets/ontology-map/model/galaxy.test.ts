@@ -17,19 +17,12 @@ import {
 } from "./galaxy";
 
 /**
- * The galaxy is a **view the person picks**, and these tests hold what that choice promised:
- * that nothing the flat map could tell you is lost in the sky, and that the sky never claims a
- * fact the data does not have.
- *
- * ⚠️ It was an altitude for one afternoon, and the tests that went with it are gone: a ramp
- * measured against `farT`, a check that the sky was underway before the altitude chip said
- * "constellation", and a no-step sweep across the whole zoom axis. The owner moved the galaxy
- * into the view picker, so the transition is now a mode crossfade on the loop's clock and the
- * ramp those tests guarded does not exist to guard.
+ * The galaxy is a view the person picks: nothing the flat map tells is lost in the sky, and
+ * the sky claims no fact the data lacks.
  */
 describe("starMagnitude — the fact the map already ranked by, made continuous", () => {
   it("orders by the same magnitude the bright-star ranking uses", () => {
-    // `size + fullDegree * 18`: degree dominates, which is what makes a hub a hub.
+    // Degree dominates `size + fullDegree * 18`, which makes a hub a hub.
     const hub = starMagnitude(4, 20, 400);
     const leaf = starMagnitude(4, 0, 400);
     expect(hub).toBeGreaterThan(leaf);
@@ -37,8 +30,8 @@ describe("starMagnitude — the fact the map already ranked by, made continuous"
   });
 
   it("compresses the top and lifts the bottom, the way brightness is actually seen", () => {
-    // Stevens' law: linear luminance would crush everything below a few connections into one
-    // dark. Half the raw magnitude must read as clearly more than half as bright.
+    // Stevens' law: linear luminance would crush every low-degree node into one dark, so half
+    // the magnitude must read as clearly more than half as bright.
     const half = starMagnitude(0, 10, 360);
     expect(half).toBeGreaterThan(0.65);
     expect(half).toBeLessThan(0.75);
@@ -52,15 +45,13 @@ describe("starMagnitude — the fact the map already ranked by, made continuous"
 
 describe("starLuminance — a faint star is still a star", () => {
   it("never lets a node with no connections go dark", () => {
-    // The overview's job is to show what you have. A node that reached zero would be a node the
-    // picture denies exists.
+    // A node at zero would be one the picture denies exists.
     expect(starLuminance(0)).toBe(GALAXY_DIM_FLOOR);
     expect(GALAXY_DIM_FLOOR).toBeGreaterThan(0.1);
   });
 
   it("still gives a hub a clear margin over a leaf", () => {
-    // Floored *and* legible: the range above the floor is what carries the fact, so it has to
-    // stay wide enough to read.
+    // The range above the floor carries the fact, so it stays wide enough to read.
     expect(starLuminance(1) / starLuminance(0)).toBeGreaterThan(2.25);
   });
 });
@@ -196,10 +187,7 @@ describe("bodyPresence / filamentPresence — what the sky replaces and what it 
     expect(bodyPresence(1)).toBe(0);
   });
 
-  /**
-   * The frame that would read as a bug: a node drawn as a solid shape *and* as a bright star at
-   * once. The body has to be more than half gone by the time the sky is half arrived.
-   */
+  /** A node drawn as a solid shape and a bright star at once reads as a bug. */
   it("fades the body faster than the sky arrives, so the two never both dominate", () => {
     expect(bodyPresence(0.5)).toBeLessThan(0.5 - 0.2);
     for (let i = 0; i <= 20; i += 1) {
@@ -211,8 +199,7 @@ describe("bodyPresence / filamentPresence — what the sky replaces and what it 
   it("thins relations to filaments but never erases the structure", () => {
     expect(filamentPresence(0)).toBe(1);
     expect(filamentPresence(1)).toBeCloseTo(GALAXY_FILAMENT_FLOOR, 10);
-    // A galaxy with no structure between its stars is a scatter plot, and the structure is the
-    // thing Atlas exists to show.
+    // Structure between stars is what Atlas shows; without it the galaxy is a scatter plot.
     expect(GALAXY_FILAMENT_FLOOR).toBeGreaterThan(0.2);
   });
 });

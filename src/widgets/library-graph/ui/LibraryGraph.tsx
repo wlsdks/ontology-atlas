@@ -30,37 +30,11 @@ import { LibraryMarkPopover } from "./LibraryMarkPopover";
 import { useLibraryGraphEngine, type LibraryGraphCardBox, type LibraryIslandPick } from "./use-library-graph-engine";
 
 /**
- * **The library's graph — one live canvas of what this folder's write-ups are made of.**
- *
- * The owner asked for it on 2026-09-06, and asked for it to be *separate from the map*:
- * *"a canvas that shows all the connected data in 2D … separate from (map, architecture)!
- * small circles, like a force graph, inside this tab."* The separation is the design, not
- * a limitation. The map draws the ontology a person curates; this draws the paper trail
- * underneath it — which file was read, what was written from it, and which concepts that
- * write-up reaches. Merging them would put a PDF on the meaning graph, which is exactly
- * what `sources/` exists to prevent.
- *
- * ## Why it is a section, not a third pane
- *
- * The Library is already an index and a reader, and a person opening it came to read.
- * A picture that shows the whole folder at once is an *overview*, so the pane **is** this
- * canvas whenever nothing is chosen, the way the map fills its own tab.
- *
- * ## Motion — live under a hand, still under a gaze
- *
- * The physics is live: `library-force-simulation.ts` steps on `requestAnimationFrame`
- * while the picture is arriving and re-heats when a hand disturbs it. With ten pages
- * citing the same eight files a settled layout is a hairball, and the only way to read a
- * hairball is to **pull it apart** — which needs forces still running when the hand
- * arrives (2026-09-07, owner).
- *
- * ⚠️ **It also used to keep a 0.28px/7.2s ambient drift after it settled**, so the canvas
- * never read as a frozen image. The owner reversed that on 2026-09-08 in the installed
- * app — *"why does it wriggle whenever I put the mouse on the graph? it is hard to look
- * at … get rid of that strange effect"* — and the drift is gone entirely. What is left is
- * the rule the reversal is really about: **motion here is only ever the answer to
- * something a person did.** Hover changes ink and nothing else; the loop stops painting
- * the moment nothing is moving. `docs/DECISIONS.md`, 2026-09-08.
+ * The library's graph: the paper trail under the ontology (which file was read, what was
+ * written from it, which concepts it reaches), kept apart from the map so a PDF never
+ * lands on the meaning graph. It is the pane whenever nothing is chosen. Motion only
+ * answers something a person did; hover changes ink only (`docs/DECISIONS.md`, "The
+ * Library graph stands still").
  */
 
 export interface LibraryGraphSelection {
@@ -84,114 +58,34 @@ export interface LibraryGraphProps {
   /** Keep the settled graph mounted behind a reader without scheduling hidden frames. */
   visible?: boolean;
   /**
-   * The marks a sentence **outside this canvas** is currently about.
-   *
-   * The Library's home strip has one clause per unfinished fact, and pressing the stale
-   * one has to show *which* citation it means. The picture answers that the way a hover
-   * already does — these node ids keep their ink and the rest of the folder ramps down to
-   * quaternary — and, per 2026-09-08 "The Library graph stands still", **no mark moves**.
-   * A pointer or the keyboard still wins over it. Null is the resting state.
+   * The marks a sentence outside this canvas is about, such as the strip's stale clause:
+   * they keep their ink as under a hover and no mark moves. A pointer or the keyboard wins.
    */
   highlight?: ReadonlySet<string> | null;
   /**
-   * What the {@link highlight} is, in one sentence, for the legend's own slot.
-   *
-   * ⚠️ **Because a picture that dims is otherwise a state with no words.** Three cold
-   * walkers pressed the home strip's stale clause and all three recorded the same two
-   * failures (2026-09-12): *"no list appeared… the words looked exactly as they did
-   * before the press, so I couldn't tell the filter was on"*, and *"there is no visible
-   * way to return the dimmed half to normal."* Two of them also counted the lit marks
-   * against the clause's number and got six against three — correctly, because a citation
-   * has two ends, and nothing said so.
-   *
-   * The legend's slot is the answer rather than a new box: it is already the line that
-   * says what the marks mean and already swaps for a description of the pointed-at mark,
-   * and both sentences share one grid cell so the row's height never moves. A hover still
-   * wins over it — pointing at a dot is a more specific question than the clause.
+   * The {@link highlight} in one sentence, in the legend's slot: a dim alone is a state with
+   * no words, no way back and an unexplained count (a citation lights two ends). A hover wins.
    */
   highlightNote?: string | null;
-  /**
-   * What the screen hangs at the right of the caption row — the Library passes its status
-   * strip and the chip that opens the shelf.
-   *
-   * A slot rather than props, because both are the **view's** facts: which step is next,
-   * and where the guide lives. `src/widgets/` sits below `src/views/` in the import
-   * direction, so a widget cannot reach either; handing the rendered nodes down is the
-   * direction that is allowed and the one that keeps this canvas about the canvas.
-   */
+  /** The view's own caption-row content (status strip, shelf chip), as a slot since a widget cannot import views. */
   headerEnd?: ReactNode;
   /**
-   * **The caption yields while a surface stands over it** (2026-09-06).
-   *
-   * The legend is a line at the foot of this section, so at `lg` and above the Library's
-   * guide — 360×469, hung from the row's top right — never reaches it. Below `lg` the
-   * canvas is the top half of one column and the panel does: measured at 768×1024 and
-   * 390×844, `elementsFromPoint` found the panel over all three probe points of this
-   * sentence. Overlap is not tolerated because a surface "mostly still works"
-   * (`docs/DESIGN-SYSTEM.md`, Don'ts), and the two honest fixes are to move the surface
-   * clear or to let the quieter thing stand aside; a sentence explaining marks that are
-   * themselves behind the panel is the quieter thing.
-   *
-   * It stays in the document as `sr-only`, never unmounted: it is the canvas's
-   * `aria-describedby` target, and dropping it would take the marks' meaning away from
-   * the reader who has no picture at all.
+   * The caption yields below `lg` while the guide stands over it, since overlap is not
+   * tolerated (`docs/DESIGN-SYSTEM.md`, Don'ts). It stays as `sr-only`, never unmounted: it is
+   * the canvas's `aria-describedby` target.
    */
   captionQuiet?: boolean;
-  /**
-   * **This canvas is a column beside something else, not the pane** (direction B,
-   * 2026-09-08). The legend is a teaching line written for a picture that fills the pane;
-   * in a 368px column it wrapped to four lines and became more furniture than picture
-   * (measured at 1512 with the reader open). Compact keeps the slot — so a hover still has
-   * somewhere to say what a mark is — and drops the standing sentence.
-   */
+  /** A column beside the reader, not the pane: the slot stays for hover, the long legend becomes one line. */
   compact?: boolean;
   /**
-   * **What the card beside a pressed mark says**, asked for one mark at a time.
-   *
-   * A press on a mark opens a card rather than leaving for the page (direction B,
-   * 2026-09-12), and what belongs in it — the Summary's opening sentence, a file's byte
-   * length and state, which pages cite it, whether a draft can be asked for — are the
-   * *folder's* facts, derived once in the Library's own model. A widget sits below `views`
-   * in the import direction and cannot reach that model, so the facts come down as this
-   * function and the wording stays here, where the rest of this canvas's words are. Same
-   * seam as {@link headerEnd}, same reason.
-   *
-   * Absent, a press still opens a card: name, kind, and the doors. The picture never
-   * depends on the screen having answered.
+   * The folder's facts for a pressed mark's card, from the Library model a widget cannot
+   * import (same seam as {@link headerEnd}). Absent, the card still shows name, kind and doors.
    */
   cardFacts?: (node: LibraryGraphNode) => LibraryGraphCardFacts | null;
 }
 
-/**
- * **No fixed height, and no width cap either — the canvas is the pane.**
- *
- * The height stopped being a band on 2026-09-06, when the owner made the picture the tab.
- * The **width** cap went on 2026-09-07: it existed because a uniform fit of a settled
- * ForceAtlas2 cloud into a wide box left gutters wider than the marks, so the box was cut
- * down to the picture. The live simulation's gravity is shaped like the canvas instead, so
- * the picture grows into the box (measured 67.8% of the width and 91.6% of the height on
- * the owner's own folder shape, against 33.5% before) — and a canvas a person can now pan
- * and zoom has to be the whole pane, because the frame is the workspace.
- */
+/** No fixed height or width cap: a canvas that pans and zooms is the whole pane. */
 const CANVAS_CLASS = "min-h-0 w-full flex-1";
-/**
- * ⚠️ **The standing names used to be switched off above sixty marks**, on the argument that
- * past some order the picture is a field of hidden labels plus the few that happened to win,
- * which reads as an arbitrary subset rather than a policy.
- *
- * The argument was right about the subset and wrong about the remedy. Measured on the G2
- * fixture — sixty write-ups over three hundred files — the threshold turned **every** name
- * off, so the home of a folder that size answered *which write-ups exist* with three hundred
- * and seventy-two anonymous dots. A person cannot ask a dot for a name they have no reason to
- * point at.
- *
- * What makes the subset a policy rather than an accident is **which** names are dropped, and
- * that is now decided in two places that can be stated: a page always carries its name and a
- * file carries its own only when the screen is about it (`sourceLabels`,
- * `SOURCE_LABEL_MIN_SCALE`), and inside the page names a collision is resolved against the
- * page with fewer citations (`draw-library-graph.ts`, `rank`). So the names that survive are
- * the folder's busiest write-ups, at every order and every window size.
- */
 
 function selectionNodeId(selection: LibraryGraphSelection | null): string | null {
   if (!selection) return null;
@@ -226,21 +120,13 @@ export function LibraryGraph({
     [docs, locale, sources, wikiPages],
   );
   /**
-   * **The island a person stepped onto.** On a folder past `ISLANDS_MIN_MARKS` the home is a
-   * map of islands; a press on one narrows the picture to that island's own pages, files
-   * and concept, which is few enough for the flow to name every one — the map's "zoom in
-   * until the streets have names", done as one press and one way back. The narrowed graph
-   * is the whole graph filtered by id, so every fact on it is the folder's own.
+   * The opened island: past `ISLANDS_MIN_MARKS` the home is islands, and a press narrows the
+   * picture to one island's marks, few enough for the flow to name, filtered by id.
    */
   const [pickedIsland, setPickedIsland] = useState<LibraryIslandPick | null>(null);
   /**
-   * **The Unread island does not open.** It is the files no page has read, and files no
-   * page has read have nothing between them: opened as columns it was a bare grid of
-   * fourteen hundred hollow squares (owner, 2026-09-18: "this looks bad when clicked — is
-   * it because they have no relation to each other?" — yes). What a press on it can do is
-   * say so, and point at the two places that act on it: the Sources list, where each of
-   * them is marked not compiled, and the Compile clause above the picture, which starts
-   * on the first. The island stays pressed until the pointer leaves it or Escape.
+   * The Unread island never opens: unread files have no relations, so columns are a bare
+   * grid. A press says so and points at Sources and Compile, until the pointer leaves or Escape.
    */
   const [unreadPressed, setUnreadPressed] = useState<LibraryIslandPick | null>(null);
   const setIsland = useCallback((next: LibraryIslandPick | null) => {
@@ -264,8 +150,7 @@ export function LibraryGraph({
   }, [pickedIsland, wholeGraph]);
   const graph = useMemo(() => {
     if (!island) return wholeGraph;
-    // The island's own concept is what every page on it names — the bar says so — so its
-    // ring and the dashed line from every page to it would be fifty lines saying one word.
+    // The island's own concept is left out: the bar names it, and every page's line to it says one word.
     const keep = new Set<string>([...island.pages, ...island.sources]);
     const nodes = wholeGraph.nodes.filter((node) => keep.has(node.id));
     const edges = wholeGraph.edges.filter((edge) => keep.has(edge.source) && keep.has(edge.target));
@@ -287,24 +172,12 @@ export function LibraryGraph({
   const cardRef = useRef<HTMLElement | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [focusedId, setFocusedId] = useState<string | null>(null);
-  /**
-   * **The mark whose card is open, and whether its list is fully shown.**
-   *
-   * One id, not a copy of the node: the folder can change under an open card — Compile
-   * writes a page, a file leaves — and a snapshot would keep answering with a mark that is
-   * no longer on the picture. Looked up every render, so a card whose mark has gone closes
-   * itself.
-   */
+  /** The open card's mark as an id, looked up each render, so a card whose mark is gone closes. */
   const [cardId, setCardId] = useState<string | null>(null);
   const [cardExpanded, setCardExpanded] = useState(false);
   /**
-   * Which side of its mark the card stands on — the only part of its placement React needs.
-   *
-   * ⚠️ **The pixels are written straight onto the element, not held as state.** The mark
-   * can still move (a drag reheats the springs, a dock narrows the box), so the card is
-   * placed every frame while that lasts, and a `useState` there would be a React render per
-   * frame on the one canvas whose whole design is that it stops asking for frames. The side
-   * changes at most once per flip, and the surface needs it for its growth origin.
+   * The card's side, the one placement fact in state (its growth origin); pixels go straight
+   * onto the element, or a moving mark renders React every frame.
    */
   const [cardSide, setCardSide] = useState<LibraryGraphCardSide>("right");
   const placeCardElement = useCallback((box: LibraryGraphCardBox | null) => {
@@ -312,8 +185,7 @@ export function LibraryGraph({
     if (box && element) {
       element.style.left = `${box.left}px`;
       element.style.top = `${box.top}px`;
-      // The room it has, not the height it wants: a card taller than its corner of the
-      // canvas scrolls inside instead of standing over the edge (`placeLibraryGraphCard`).
+      // A card taller than its room scrolls inside rather than overhang the edge.
       element.style.maxHeight = `${box.maxHeight}px`;
     }
     if (box) setCardSide((current) => (current === box.side ? current : box.side));
@@ -325,25 +197,12 @@ export function LibraryGraph({
     () => graph.nodes.find((node) => node.id === activeId) ?? null,
     [activeId, graph.nodes],
   );
-  /**
-   * What the hover label says: the mark's name, and nothing else.
-   *
-   * ⚠️ **A concept's label used to carry `· open on the map`**, because a press on it was
-   * the one press on this canvas that left the screen, and a verb standing for three
-   * outcomes is the defect design-interaction named on 2026-09-06. No press leaves the
-   * screen now — every one of them opens a card beside the mark, and the card carries
-   * `open on the map` as a door a person presses on purpose. The suffix would now be
-   * describing something the press does not do.
-   */
+  // The hover label is the name alone: every press opens a card, and the card holds the doors.
   const activeLabel = activeNode ? activeNode.label : null;
 
   /**
-   * **A press: the mark answers, and stays where it is.**
-   *
-   * The same mark pressed twice closes its card — the reversal a person expects of a
-   * toggle, and the third of the anchored contract's three ways out (Escape and an outside
-   * press are the other two). Nothing here moves a mark: `docs/DECISIONS.md`, 2026-09-08,
-   * "The Library graph stands still".
+   * A press opens the mark's card; pressing it again closes it, beside Escape and an outside
+   * press. No mark moves (`docs/DECISIONS.md`, "The Library graph stands still").
    */
   const pressMark = useCallback((node: LibraryGraphNode) => {
     setCardId((current) => (current === node.id ? null : node.id));
@@ -351,12 +210,8 @@ export function LibraryGraph({
   }, []);
 
   /**
-   * Closes the card and gives the canvas its keyboard back.
-   *
-   * ⚠️ **Only when the close left the keyboard inside the card or nowhere.** Pressing the
-   * *canvas* closes this and focuses the picture in the same gesture, and a press on some
-   * other control is that control's — pulling focus there would be the surface arguing with
-   * the hand (the rule `LibraryHomePopover` records for the Library's other popup).
+   * Closes the card and refocuses the canvas only when focus was in the card or nowhere;
+   * a press on another control keeps its focus (as in `LibraryHomePopover`).
    */
   const dismissCard = useCallback(() => {
     const active = document.activeElement;
@@ -371,9 +226,7 @@ export function LibraryGraph({
       setCardId(null);
       setCardExpanded(false);
       if (node.kind === "concept") {
-        // A concept is not a file in this folder, so there is nothing here to open. It
-        // belongs to the map, and the map's own deeplink is what takes a person there.
-        // The label said so before the click.
+        // A concept is not a file here; its map deeplink takes a person there.
         if (node.href) router.push(node.href);
         return;
       }
@@ -382,8 +235,7 @@ export function LibraryGraph({
     [onSelect, router],
   );
 
-  // A page always carries its name; what the order changes is which *files* are named, and
-  // the camera decides that. See the note above the removed threshold.
+  // Every page asks for its name (a collision drops the quieter); the camera decides which files do.
   const standingLabels = true;
   const islandLabels = useMemo(() => ({ unsorted: t("graph.islandUnsorted"), unread: t("graph.islandUnread") }), [t]);
   const engine = useLibraryGraphEngine({
@@ -422,15 +274,10 @@ export function LibraryGraph({
     () => (cardId === null ? null : graph.nodes.find((node) => node.id === cardId) ?? null),
     [cardId, graph.nodes],
   );
-  /*
-   * ⚠️ **Placed synchronously on open, then by the frame.** An effect runs after the
-   * browser has painted, so a card placed only by the next `requestAnimationFrame` was
-   * visible for one frame at the canvas's top-left corner before it reached its mark.
-   */
+  // Placed synchronously on open, or the card shows one frame at the canvas's corner.
   const placeCard = engine.placeCard;
   useLayoutEffect(() => {
-    // The id is passed, not read: the engine's own state ref is filled by a passive effect
-    // that React runs after this one.
+    // The id is passed because the engine's state ref fills in a later passive effect.
     placeCard(cardNode?.id ?? null);
   }, [cardExpanded, cardNode, placeCard]);
   const cardStale = useMemo(
@@ -468,11 +315,7 @@ export function LibraryGraph({
     [focusedId, ordered],
   );
 
-  /**
-   * What a screen reader is told: the kind, the name, where in the traversal it is, and
-   * **what Enter will do** — the one thing a bare title cannot say, and the one thing that
-   * differs between a dot that selects here and a dot that leaves for the map.
-   */
+  // Kind, name, position in the walk, and what Enter will do, which differs by kind.
   const announcement = focusedIsland && engine.picture === "islands"
     ? t("graph.announceIsland", {
         name: focusedIsland.label,
@@ -485,8 +328,7 @@ export function LibraryGraph({
     ? t("graph.announce", {
         kind: t(`graph.kind.${activeNode.kind}`),
         name: activeNode.label,
-        // Counted along the walk the arrows take, not the order the model happens to hold:
-        // "3 of 40" has to be the third stop of this traversal or it is a number about nothing.
+        // Counted along the arrows' walk, so "3 of 40" is the third stop.
         position: ordered.indexOf(activeNode) + 1,
         total: ordered.length,
         action: t(activeNode.kind === "concept" ? "graph.actionMap" : "graph.actionSelect"),
@@ -495,15 +337,8 @@ export function LibraryGraph({
 
   const counts = graph.counts;
   /*
-   * The two relations are counted apart. One "links" number could not say whether the
-   * dashed mark matters in this folder at all, and the caption is the picture's only
-   * written statement of what it contains (design-infoviz, 2026-09-06).
-   */
-  /*
-   * Inside an opened island the concept is the island itself — its name stands on the bar
-   * and its mark is not on the picture — so the folder's caption read *0 concepts · 0
-   * mentions* there (dev, 2026-09-19), a count of a thing the picture excludes by design.
-   * The island's caption counts what the picture shows: its files, its pages, its cites.
+   * The relations are counted apart, or the caption cannot say whether dashes matter. An
+   * opened island's caption counts only what it draws: files, pages, cites.
    */
   const caption = island
     ? t("graph.countsIsland", { sources: counts.sources, pages: counts.pages, cites: counts.cites })
@@ -517,13 +352,8 @@ export function LibraryGraph({
 
   return (
     /*
-     * **The pane, not a strip on top of it** (2026-09-06, owner). This was a `flex-none`
-     * band of at most 320px above the reader, opened by a chip: *"shouldn't the Library
-     * tab's default be the graph on top? why is the area split above and below?"* The
-     * split was the defect — an overview and a guide taking turns for the same column,
-     * neither of them the screen. So the picture is what the tab shows, the way the map
-     * fills its own tab, and the guide it used to share the column with became a popup
-     * one press away. `docs/DECISIONS.md`, 2026-09-06.
+     * The pane, not a strip over the reader; the guide is a popup (`docs/DECISIONS.md`,
+     * "The Library pane is the graph; the shelf is a popup").
      */
     <section
       data-testid="library-graph"
@@ -531,24 +361,10 @@ export function LibraryGraph({
       className="flex min-h-0 flex-1 flex-col px-5 py-2 sm:px-6 md:px-10"
     >
       <div className="flex flex-none flex-wrap items-center gap-x-3 gap-y-1 lg:flex-nowrap">
-        {/* The counts are the caption of the picture, and now its only title: with the
-            canvas always drawn there is no disclosure left to name. */}
-        {/*
-          ⚠️ **At `lg` and up the row does not wrap; the counts give way first** (design
-          sweep, 2026-09-25). At 1040 the counts plus the clauses filled the line and the
-          guide and questions doors dropped to a second 40px row taken from the canvas. The
-          counts are the one child that truncates cleanly, so they shrink first and keep the
-          whole sentence in their `title`; below `lg` the row still wraps as before.
-        */}
-        {/*
-          ⚠️ **Whole clauses give way, never half of one** (2026-09-25). A single truncating
-          line cut at 1040 to *3 sources · 4 pages …*, hiding the concept, cite and mention
-          counts behind an ellipsis. Each clause is now its own unbreakable item on a
-          one-line wrapping row whose second line is clipped, so what does not fit leaves
-          whole, from the end — mentions, then cites, then concepts — and the first clause
-          alone may still ellipsize when even it cannot fit. `textContent` is the caption
-          itself, so assistive technology and `title` still read every count.
-        */}
+        {/* The counts are the picture's caption and only title. From `lg` the row never
+            wraps and they shrink first, or the doors drop to a second row off the canvas. */}
+        {/* Whole clauses give way from the end, never half of one: each is an unbreakable
+            item on a clipped one-line row; `title` and `textContent` keep every count. */}
         <p
           data-testid="library-graph-counts"
           title={caption}
@@ -564,38 +380,16 @@ export function LibraryGraph({
             </span>
           ))}
         </p>
-        {/*
-          Whatever the screen wants to hang on this row — the step-fact clauses and the
-          doors, both of which are the view's facts, not the canvas's. A widget below
-          `views` cannot reach them, so they arrive as a slot.
-
-          ⚠️ **The slot's children are this row's children, not a right-anchored box of
-          their own** (owner, 2026-09-12, against the "one text edge per column" rule slice
-          A1 installed). They used to sit in an `ml-auto … justify-end` wrapper, so when the
-          row wrapped the clause line was pulled to the **right** edge: measured at 1512 the
-          caption began at the pane's text edge, x=384, and the clause line below it at
-          **x=620** — a floating second row with no edge to read down. Flat children wrap
-          into the same flex container, so a clause line that does not fit beside the
-          caption starts exactly where the caption starts, and the doors keep their own
-          right anchor through `ml-auto` on their group (`LibraryHomeStrip`). Where
-          everything fits, that is one row: caption and clauses on the text edge, doors at
-          the right.
-
-          The 2026-09-07 finding this replaces still holds by the same mechanism — below
-          ~560px the clauses take their own line rather than truncating their payload or
-          clipping a door out of reach.
-        */}
+        {/* The slot's children are this row's own flex children, not a right-anchored box, so
+            a wrapped clause line starts on the caption's text edge; the doors anchor right
+            through `ml-auto` on their group (`LibraryHomeStrip`). */}
         {headerEnd}
       </div>
 
       {graph.nodes.length === 0 ? (
         /*
-         * ⚠️ **The Library no longer reaches this branch** (2026-09-06). A folder with no
-         * sources and no pages draws no nodes, and that is exactly the state `LibraryPage`
-         * now answers with a centred empty stage instead of a workbench — the owner read
-         * the old frame, where this sentence lay under a 560px popup, as broken. The
-         * branch stays because this widget is not the Library's alone to guarantee: a
-         * canvas that renders nothing and says nothing is worse than one that says so.
+         * An empty folder is answered by `LibraryPage` itself, but this widget still says so
+         * rather than render a silent empty canvas.
          */
         <p
           data-testid="library-graph-empty"
@@ -605,13 +399,10 @@ export function LibraryGraph({
         </p>
       ) : (
         <>
-        {/* The canvas and its one control share a positioning context; the control is a
-            real button over the canvas rather than a painted mark, so it is reachable by
-            the keyboard and measurable by every touch-target gate in the repository. */}
+        {/* Canvas and controls share a positioning context; the controls are real buttons,
+            reachable by keyboard and touch-target gates. */}
         <div className="relative flex min-h-0 flex-1 flex-col">
-        {/* The way back off an island, and its name: one chip at the picture's top-left,
-            where a map app puts its own "back to overview". A `Surface`, so it leaves the
-            way every conditional surface in this repository leaves. */}
+        {/* The way back off an island, top-left like a map's "back to overview"; a `Surface`, so it has an exit motion. */}
         <Surface open={island !== null} className="absolute left-2 top-2 z-10 flex items-center gap-2" data-testid="library-graph-island-bar">
           {island ? (
           <>
@@ -633,42 +424,25 @@ export function LibraryGraph({
         <canvas
           ref={canvasRef}
           data-testid="library-graph-canvas"
-          /* Machine-readable state, because a canvas has no DOM to assert against and
-             every interaction claim would otherwise be unfalsifiable
-             (design-interaction, 2026-09-06). */
+          /* Machine-readable state: a canvas has no DOM to assert against. */
           data-hovered-node-id={hoveredId ?? ""}
           data-focused-node-id={focusedId ?? ""}
           data-selected-node-id={selectedId ?? ""}
-          /* Which marks a sentence off-canvas is holding, so a spec can assert the ramp
-             without reading pixels — the same reason the three ids above are written. */
           data-highlight={highlight === null ? "" : [...highlight].join(" ")}
-          /* The picture's own aspect, for the same reason as the three above: a canvas has
-             no DOM, so a claim about the shape of what it drew is otherwise unfalsifiable.
-             `data-view-scale` and `data-interaction` are written by the loop itself, once
-             per frame and only when they change — a gesture's identity (a grabbed node
-             versus a panned background) cannot be read from pixels at all. */
+          /* `data-view-scale` and `data-interaction` are written by the loop itself, only on change. */
           data-picture-aspect={engine.pictureAspect === null ? "" : engine.pictureAspect.toFixed(3)}
-          /* Which naming policy is in force. Same reason as the four above: a claim about
-             what a canvas draws has to be checkable from outside it. */
           data-labels="standing"
           data-active-kind={activeNode?.kind ?? ""}
           /*
-           * `group`, not `application`. `OntologyMap` decided this for the identical
-           * shape — a hit-tested canvas graph with arrow traversal — and named the one
-           * condition that reopens it: a measured screen reader whose browse mode
-           * claims the arrows first. Taking every key away pre-emptively, without that
-           * measurement, would silently reverse a standing decision.
+           * A group, not an application, as `OntologyMap` decided for the same shape; only a
+           * measured screen reader whose browse mode claims the arrows first reopens it.
            */
           role="group"
           tabIndex={0}
           aria-label={t("graph.canvasAria")}
           aria-describedby="library-graph-hint library-graph-keys"
-          /* No border and the canvas ground **is** `--color-canvas`, the same ink this
-             column is painted in, so the picture floats in the section instead of
-             sitting in a mostly empty box: at 1512 the frame was the largest bounded
-             shape on the screen while its marks used a third of it (design-lead,
-             2026-09-06). The focus ring is the map's, verbatim — its own outline is the
-             repository's 2px indigo floor, which `outline-none` had opted out of. */
+          /* No border: the ground is the column's own `--color-canvas`, so the picture floats.
+             The focus ring is the map's 2px indigo floor, which `outline-none` would drop. */
           className={cn(
             CANVAS_CLASS,
             "mt-2 block cursor-grab touch-none outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]",
@@ -680,7 +454,6 @@ export function LibraryGraph({
           onPointerLeave={engine.onPointerLeave}
           onDoubleClick={engine.onDoubleClick}
           onKeyDown={(event) => {
-            // On the overview the keyboard walks the islands, not three thousand dots.
             const onIslands = engine.picture === "islands";
             if (event.key === "ArrowRight" || event.key === "ArrowDown") {
               event.preventDefault();
@@ -698,8 +471,7 @@ export function LibraryGraph({
               const target = activeNode;
               if (!target) return;
               event.preventDefault();
-              // The keyboard gets the same answer the pointer does: a card beside the mark,
-              // with `Open` inside it. The card takes focus, and Escape gives it back here.
+              // The same card a press opens; it takes focus and Escape gives it back.
               pressMark(target);
             } else if (event.key === "Escape") {
               // With a card open its own capture listener has already answered this press.
@@ -710,12 +482,8 @@ export function LibraryGraph({
               if (cardId === null && island) setIsland(null);
             }
           }}
-          /* Only the keyboard's own position leaves with the keyboard. A pointer that
-             has wandered off is cleared by `pointerleave`, not by this.
-
-             ⚠️ **An open card is not the keyboard leaving.** The card takes focus, which
-             blurs the canvas — and clearing the position there meant Escape handed the
-             keyboard back to the top of the walk instead of to the mark it had been on. */
+          /* Clears only the keyboard's position, except while a card is open: the card takes
+             focus, and Escape must return to the mark, not the top of the walk. */
           onBlur={() => {
             if (cardId === null) setFocusedId(null);
             setFocusedIslandId(null);
@@ -726,13 +494,7 @@ export function LibraryGraph({
             node={cardNode}
             facts={cardFacts?.(cardNode) ?? null}
             side={cardSide}
-            /*
-             * The cap, or the canvas minus its gutters where the canvas is the narrower —
-             * resolved in CSS against the box the card is absolutely positioned in, which
-             * is the canvas itself. So a 390px phone gets a card that fits without the
-             * widget having to know the box, and `offsetWidth` is still what the placement
-             * measures.
-             */
+            // The cap, or the canvas minus gutters, resolved in CSS; placement measures `offsetWidth`.
             width={`min(${LIBRARY_CARD_MAX_WIDTH}px, calc(100% - ${LIBRARY_CARD_INSET * 2}px))`}
             cardRef={cardRef}
             flowStale={cardStale}
@@ -744,25 +506,11 @@ export function LibraryGraph({
             t={t}
           />
         ) : null}
-        {/* The way back to the whole picture after a zoom or a pan. Desktop only: a
-            coarse pointer fits by pinching out, and a floating 36px tile over a
-            phone-sized canvas would cover the marks it is meant to help find. The shared
-            `ChromeTile` rather than a hand-rolled square, so it inherits the 36px chrome
-            contract and its own 44px coarse-pointer promotion; `title` is the accessible
-            name, and no `label` because that mode wants a `.chrome-rail` ancestor this
-            canvas has no reason to grow. */}
+        {/* Fit, desktop only: a phone pinches out, and a tile would cover its marks. It takes
+            no `label`, since that mode wants a `.chrome-rail` ancestor; `title` names it. */}
         <div className="pointer-events-none absolute bottom-3 right-3 hidden md:block">
           <div className="pointer-events-auto">
-            {/*
-              ⚠️ **Disabled while the picture is already framed.** Inspection 122 pressed
-              this tile a second time on the home and measured a **pixel-identical frame**
-              (S1): the control was offering to do something it had already done, which is
-              the "a chip that does nothing reads as a broken product" finding in another
-              corner. It re-frames from any camera a person has taken — a pan, a wheel, a
-              mark dragged out — and says so by moving; with nothing to re-frame it takes
-              the disabled grammar `ChromeTile` already owns and names the state in its
-              tooltip instead.
-            */}
+            {/* Disabled while already framed, or a press repaints the same pixels; the tooltip names the state. */}
             <ChromeTile
               data-testid="library-graph-fit"
               data-framed={engine.framed ? "true" : "false"}
@@ -774,37 +522,11 @@ export function LibraryGraph({
           </div>
         </div>
         </div>
-        {/* The legend: what the three marks mean, and the one verb. `text-label`
-            rather than `text-caption` because 9.5px is this product's uppercase-eyebrow
-            size and this is the sentence a newcomer has to read; `text-tertiary`
-            because quaternary is for what may go unread (design-lead, 2026-09-06).
-
-            ⚠️ **The row's height is the legend's, at every width and in every state.**
-            The line below swaps the legend sentence for a description of the pointed-at
-            mark, and "the same slot" was only true where both fitted on one line. Measured
-            on 2026-09-08: at 1040×720, 768 and 390 the legend wraps and the description
-            does not, so the row lost 20px the instant a pointer touched a dot — and the
-            canvas is `flex-1` above it, so it *grew by 20px*, re-fitted, and moved every
-            mark. That is a whole line-height of movement on every hover, against the 0.4px
-            of ambient drift removed the same day, and it is the larger half of what the
-            owner saw. Both sentences are laid in one grid cell so the taller of them sets
-            the height and the visible one never changes it. */}
-        {/* A teaching line keeps a reading measure: at 1920 it ran ~1,600px in one line of
-            11px text (2026-09-19). It was bounded from `2xl` only, to keep a second line's
-            height for the canvas at 1512; but the picture keeps its fixed scale (owner,
-            "too big and ugly" at 1920) and fills about a fifth of that canvas, so the
-            line was spending nothing it saved and ran 1,070px under the fullscreen door
-            while 1920 wrapped at 690 (review, 2026-09-25). One cap at every width. */}
+        {/* The legend, `text-label` and tertiary because a newcomer must read it, capped at
+            a reading measure. Every state's sentence sits in one grid cell so the row's height
+            never changes, or the `flex-1` canvas above refits and moves every mark. */}
         <div className={cn("mt-1.5 grid max-w-[var(--measure-doc-column)]", captionQuiet && "max-lg:mt-0")}>
-          {/*
-            ⚠️ **Both states' sentences size the row, not the current one.** The sizer used
-            to print the sentence of the state it was in, so the row was the *rest* legend's
-            height until a card opened and the shorter card-open legend took a line away:
-            measured 2026-09-18 at 1512, three lines to two, the canvas above grew 20px, and
-            the flow picture — which lays itself into its box — moved every mark 8–14px on
-            the press. Two invisible sentences in one cell, and the taller sets the height
-            in every state.
-          */}
+          {/* Invisible sizers for every state's sentence, so the tallest sets the height. */}
           {(compact ? ["graph.legendShort", "graph.legendShortCardOpen"] : ["graph.legend", "graph.legendCardOpen", "graph.legendIslands"]).map((key) => (
             <p
               key={key}
@@ -812,8 +534,7 @@ export function LibraryGraph({
               className={cn(
                 "invisible col-start-1 row-start-1 text-label leading-body [word-break:keep-all]",
                 captionQuiet && "max-lg:sr-only",
-                // Compact reserves one line, not the legend's four: the short legend and the
-                // describe line are each one sentence, so the row's height never moves.
+                // Compact reserves one line: its legend and describe line are one sentence each.
                 compact && "line-clamp-1",
               )}
             >
@@ -823,31 +544,16 @@ export function LibraryGraph({
           <p
             id="library-graph-hint"
             data-testid="library-graph-hint"
-            /* Quiet is per line, not on the cell: `sr-only` on the wrapper leaves each
-               line laid out at its own size inside a clipped box, so the legend still
-               measured as painted and the guide still had it underneath (CI, 2026-09-08).
-               Both lines take it, so the row collapses and the shelf gets the room. */
+            /* Quiet goes on each line, not the cell: `sr-only` on the wrapper leaves the lines
+               laid out at full size, still under the guide. */
             className={cn(
               "col-start-1 row-start-1 text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]",
               captionQuiet && "max-lg:sr-only",
             )}
           >
-            {/* While a mark is under the pointer or the keyboard, the legend's line says what
-                that one mark is and what pressing it does — the same slot, so nothing moves.
-                Owner direction 2026-09-07: the bridge to the map has to read at a glance. */}
-            {/*
-              ⚠️ **An open card does not take this slot.** The drift's own sentence was
-              printed here first, and a walker recorded the cost: *"the legend I was relying
-              on is gone … the moment I open a card I lose the key to the picture"*
-              (2026-09-12). The card says what is moving, beside the lines; this line goes
-              on saying what the marks mean.
-
-              ⚠️ **What it stops saying is how to open a card, once one is open.** The
-              sentence ended in *press a dot for a card beside it* while the card stood on
-              screen — an instruction for the thing that had already happened (inspection
-              122, S19). The vocabulary is the half a reader still needs and is kept
-              verbatim; only the gesture clause is swapped, for the two ways back out.
-            */}
+            {/* A pointed-at mark or island is described in the same slot. An open card keeps
+                the legend's vocabulary, or the reader loses the key; only the gesture clause
+                swaps to the ways back out. */}
             {!activeNode && unreadPressed && engine.picture === "islands"
               ? t("graph.unreadPressed", { sources: unreadPressed.sources.length })
               : !activeNode && (hoveredIsland ?? focusedIsland) && engine.picture === "islands"
@@ -855,32 +561,22 @@ export function LibraryGraph({
                 ? t("graph.describeUnread", { sources: (hoveredIsland ?? focusedIsland)!.sources.length })
                 : t("graph.describeIsland", { name: (hoveredIsland ?? focusedIsland)!.label, pages: (hoveredIsland ?? focusedIsland)!.pages.length, sources: (hoveredIsland ?? focusedIsland)!.sources.length })
               : activeNode
-              ? /* The mark whose card is open is described by how to leave it, not by how
-                   to open it; pointing at some *other* mark while a card stands open still
-                   answers with what pressing that one would do, because it would. */
+              ? /* The open card's mark says how to leave it; any other mark, what a press does. */
                 t(
                   `graph.${activeNode.id === cardId ? "describeOpen" : "describe"}.${activeNode.kind}`,
                   { name: activeNode.label },
                 )
               : highlightNote
-                ? /* The emphasis a sentence off-canvas is holding, said in words: what is
-                     lit, and the two ways back. See `highlightNote`. */
-                  highlightNote
+                ? highlightNote
                 : compact
-                ? /* **Never empty.** This paragraph is the canvas's `aria-describedby`
-                     target, and the canvas has no DOM of its own: blanking it in the
-                     column took the mark vocabulary away from a first-time reader and
-                     from assistive technology at the same moment (design-infoviz,
-                     2026-09-08). Compact states it in one line instead of four. */
+                ? /* Never empty: this is the canvas's `aria-describedby` target. */
                   t(cardNode ? "graph.legendShortCardOpen" : "graph.legendShort")
                 : engine.picture === "islands" && !cardNode
                   ? t("graph.legendIslands")
                   : t(cardNode ? "graph.legendCardOpen" : "graph.legend")}
           </p>
         </div>
-        {/* The keyboard path is said to the people who need it and not to the ones
-            who do not: it is part of the canvas's description, never a rendered line
-            telling a phone to press arrow keys. */}
+        {/* The keyboard path lives in the description only, never a rendered line on a phone. */}
         <span id="library-graph-keys" className="sr-only">
           {t("graph.keys")}
         </span>

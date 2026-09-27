@@ -1,43 +1,22 @@
 /**
- * One-shot "commit pulse" for a just-selected node — the charter-compliant
- * substitute for a glow/halo (`.claude/rules/design.md` forbids glow pulse ·
- * neon · halo animation). Instead of a perpetual glow, a click plays a single
- * ring-expansion + fade-out over `--map-select-pulse-duration-ms`
- * (180ms default, well under the owner's ≤200ms ceiling) and then stops for
- * good — the PERMANENT selection indicator is the static double ring
- * (`render/node-shapes.ts`'s `strokeKindOutline` calls under
- * `egoState === "center"`), which this pulse only decorates for its brief
- * window.
- *
- * Pure — no `Date.now()`/`performance.now()` inside. The caller
- * (`ui/use-topology-loop.ts`) captures the commit timestamp once (when
- * `focusedSlug` changes to a non-null id) and passes `now - startAtMs` in
- * every frame; this function only maps that elapsed duration to a
- * scale/alpha pair, so it stays trivially deterministic and unit-testable.
+ * A one-shot commit pulse (ring expansion and fade over `--map-select-pulse-duration-ms`)
+ * rather than a standing glow, which `.claude/rules/design.md` allows only as a token naming
+ * its state; the static double ring already carries this one. The caller passes elapsed
+ * time, so this stays deterministic.
  */
 export interface SelectionPulseVisual {
-  /** 1.0 at commit, rising to 1.15 as the pulse completes. */
   scaleFactor: number;
-  /** 1.0 at commit, fading to 0 as the pulse completes. */
   alpha: number;
 }
 
-/** Fallback when the caller doesn't thread the token through (tests, legacy call sites). */
+/** When the caller does not pass the token through. */
 const DEFAULT_SCALE_DELTA = 0.28;
 
 /**
- * `null` before commit (negative elapsed) or once the pulse has fully played
- * out (`elapsedMs >= durationMs`) — the caller then draws nothing extra,
- * leaving only the permanent static ring. Never loops: there is no modulo,
- * so a stale ref that stops updating just stays expired.
- *
- * Curve shape (Guardian 2026-07-20 A3): both channels used to be linear,
- * which cut the ring off with non-zero slope — it read as vanishing, not
- * completing. A commit gesture should decelerate to be read as "received"
- * (Apple HIG), so the ring now expands on easeOutCubic and the alpha dies
- * on a quadratic — zero slope at the end of both. `scaleDelta` comes from
- * `--map-select-pulse-scale-delta`; the old hardcoded 0.15 moved
- * only 1.5px on an element node (r=7) — below perception.
+ * Returns `null` before commit and once played out; no modulo, so a stale ref stays expired. The
+ * ring expands on easeOutCubic and alpha dies quadratically, both with zero end slope, so
+ * the commit reads as received rather than cut off. `scaleDelta`
+ * is `--map-select-pulse-scale-delta`.
  */
 export function computeSelectionPulse(
   elapsedMs: number,

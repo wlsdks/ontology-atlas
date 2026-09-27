@@ -39,9 +39,7 @@ describe("flow layout", () => {
   });
 
   it("lets a page name run into the empty concept column instead of cutting it", () => {
-    // A wiki whose pages cite no concept: the concept column is never laid, so a third of
-    // the canvas stands empty to the right of the pages while their names were still cut at
-    // the page column's own budget ("Engineering onboarding…", 2026-09-21).
+    // Pages citing no concept: no concept column is laid, so page names may use the empty right side.
     const layout = flowLayout(
       graph({ sources: ["a.md", "b.md"], pages: ["Engineering onboarding and the rest of it", "b"], cites: [["b", "b.md"]] }),
       BOX,
