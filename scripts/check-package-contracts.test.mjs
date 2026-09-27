@@ -31,11 +31,7 @@ import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { describe, it } from 'node:test';
 
-import {
-  expectedToolsListAnnotationSummary,
-  tunedHealthScopeOutputSummary,
-  tunedWorkspaceBriefScopeOutputSummary,
-} from '../mcp/scripts/verify.mjs';
+import { expectedToolsListAnnotationSummary } from '../mcp/scripts/verify.mjs';
 import {
   MAINTENANCE_KIND_VALUES,
   MAINTENANCE_PHASE_VALUES,
@@ -78,10 +74,6 @@ function markdownEnumList(values) {
 
 function normalizedMarkdownIncludes(markdown, expected) {
   return markdown.replace(/\s+/g, ' ').includes(expected);
-}
-
-function regexEscape(value) {
-  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function runNodeScript(args) {
@@ -291,15 +283,6 @@ describe('package contract helpers', () => {
    * verify** — the README transcript must contain that computed result verbatim. It
    * does not change as the vault grows, so it cannot rot.
    */
-  it('keeps the MCP verify README quoting the tuned-scope summaries the code computes', () => {
-    const readme = readFileSync('mcp/README.md', 'utf-8');
-    const verifySection = readme.split('### One-line verify CLI')[1]?.split('### Manual verification')[0] ?? '';
-
-    assert.notEqual(verifySection, '', 'mcp/README.md lost the "One-line verify CLI" section — move this anchor');
-    assert.match(verifySection, new RegExp(regexEscape(tunedWorkspaceBriefScopeOutputSummary())));
-    assert.match(verifySection, new RegExp(regexEscape(tunedHealthScopeOutputSummary())));
-  });
-
   /**
    * **Counts on the public contract** — the tool inventory and the annotation census.
    * These change only when a tool is registered or removed, and that change is

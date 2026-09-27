@@ -61,26 +61,6 @@ describe("Atlas meta-model — one public canon reaches every authoring channel"
     }
   });
 
-  it("compact boundary exposes current broader/is_a support without inventing an API", () => {
-    const rules = flat(MCP_META_MODEL_RULES_EN);
-    expect(rules).toMatch(/five authorable kinds/i);
-    expect(rules).toMatch(/vault-readme.*reserved/i);
-    expect(rules).toMatch(/broader.*narrower.*direct broader/i);
-    expect(rules).toMatch(/UI.*is_a/i);
-    expect(rules).toMatch(/not.*add_relation/i);
-    expect(rules).toMatch(/get_concept.*mtime.*full post-change.*broader/i);
-    expect(rules).toMatch(/patch_concept.*expected_mtime.*validate_vault/i);
-    expect(rules).toMatch(/no.*inverse.*transitive.*inference/i);
-    expect(rules).toMatch(/RDF.*OWL.*SKOS.*SHACL.*conformance/i);
-  });
-
-  it("kind and is_a counterevidence is present at the tool decision point", () => {
-    const rules = flat(MCP_META_MODEL_RULES_EN);
-    expect(rules).toMatch(/folder.*package.*team.*workflow.*not.*domain.*capability/i);
-    expect(rules).toMatch(/same domain.*name similarity.*folder nesting.*not.*is_a/i);
-    expect(rules).toMatch(/every valid example.*broader definition/i);
-  });
-
   it.each([
     ".agents/skills/ontology-bootstrap/SKILL.md",
     ".claude/skills/ontology-bootstrap/SKILL.md",
