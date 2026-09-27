@@ -12,30 +12,22 @@ import { controlClass, fieldClass } from "@/shared/ui/control-class";
 import { Checkbox } from "@/shared/ui";
 
 /**
- * The first-graph bootstrap form for someone who opened an existing .md folder
- * with no frontmatter. Presentational: candidates come from
- * `features/docs-vault-local/lib/bootstrap-candidates.ts`, and the vault write
- * lives in the HomePage glue — the same split as `CreateNodeForm`.
- *
- * Two copy rules this surface exists to honour. The word "ontology" never
- * appears: to a non-developer this action is "make a map of my documents". And
- * local-first trust means showing exactly what will be written before confirming
- * — bodies untouched, frontmatter added, one new file.
+ * The first-graph form for a folder of .md files without frontmatter; candidates come
+ * from `features/docs-vault-local/lib/bootstrap-candidates.ts`, the write from the HomePage glue.
+ * The word "ontology" never appears, and the form shows exactly what will be written before
+ * confirming.
  */
 
 export interface OntologyBootstrapFormLabels {
   headingId?: string;
   heading: string;
-  /**
-   * Used instead of `heading` when the vault already has a project: the action adds to that
-   * map, so it must not announce a new one.
-   */
+  /** With an existing project the action adds to that map, so it must not announce a new one. */
   headingAddToMap: string;
   projectName: string;
   folders: string;
   folderDocCount: (count: number) => string;
   summary: (docCount: number, projectFile: string) => string;
-  /** Used instead of `summary` when the vault already has a `kind: project` document. */
+  /** When the vault already has a `kind: project` document. */
   summaryExistingProject: (docCount: number, projectFile: string) => string;
   bodyUntouched: string;
   alreadyTyped: (count: number) => string;
@@ -43,7 +35,7 @@ export interface OntologyBootstrapFormLabels {
   agentPointers: (count: number) => string;
   libraryFiles: (count: number) => string;
   confirm: string;
-  /** Used instead of `confirm` when the vault already has a project. */
+  /** When the vault already has a project. */
   confirmAddToMap: (count: number) => string;
   cancel: string;
   errorPrefix: string;
@@ -74,21 +66,11 @@ export function OntologyBootstrapForm({
     () => selectedElements(plan, accepted).length,
     [plan, accepted],
   );
-  // ⚠️ **Never offer to create a second project file.** `executeBootstrapPlan` already merges the
-  // approved domains into an existing `kind: project` document instead of writing a new one, but
-  // this summary named `plan.projectSlug` unconditionally — so a folder that already held
-  // `project.md` was told "and creates one new project file (ontology-project.md)", a file the run
-  // never creates (measured on the starter's own output, 2026-09-04). The name and the sentence
-  // both follow the branch the execution actually takes.
+  // `executeBootstrapPlan` merges into an existing project document, so never name a second
+  // project file.
   const projectFileName = `${plan.existingProjectSlug ?? plan.projectSlug}.md`;
-  /*
-   * **Adding to a map is not making one** (interaction audit, 2026-09-25). On a vault that
-   * already had its project, "add to map" opened a dialog titled "make a map from my documents"
-   * with a project-name field and a "make the map" button, while its own summary said the
-   * documents would be added to the existing project file. With a project present the title
-   * and the button say "add", and the name field goes: the existing project keeps its own name
-   * (`executeBootstrapPlan` merges into it).
-   */
+  // With a project present, title and button say "add" and the name field goes: the project keeps
+  // its name.
   const addingToMap = plan.existingProjectSlug != null;
   const heading = addingToMap ? labels.headingAddToMap : labels.heading;
   const canConfirm = (addingToMap || projectTitle.trim().length > 0) && pickedCount > 0 && !busy;
@@ -155,7 +137,7 @@ export function OntologyBootstrapForm({
             <span className="text-label text-[color:var(--color-text-tertiary)]">
               {labels.projectName}
             </span>
-            {/* The same field size as the sibling create-node dialog (`CreateNodeForm`). */}
+            {/* Same field size as `CreateNodeForm`. */}
             <input
               type="text"
               value={projectTitle}
@@ -181,8 +163,7 @@ export function OntologyBootstrapForm({
               {plan.domains.map((d, index) => (
                 <Checkbox
                   key={d.name}
-                  // With no name field (adding to a map), focus starts on the first choice so
-                  // the dialog opens with focus inside it, as the create branch does.
+                  // Without a name field, focus starts on the first choice.
                   autoFocus={addingToMap && index === 0}
                   className="rounded-[var(--radius-chip)] px-1.5 py-1 text-body text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-1)]"
                   checked={accepted.has(d.name)}
@@ -217,8 +198,7 @@ export function OntologyBootstrapForm({
               {labels.alreadyTyped(plan.alreadyTypedCount)}
             </p>
           ) : null}
-          {/* Say that these files were left alone because they belong to someone
-              else — unsaid, it reads as "why is this empty?". */}
+          {/* Say why these files were left alone, or the list reads as broken. */}
           {plan.runtimeOwnedSkipped > 0 ? (
             <p
               data-testid="ontology-bootstrap-runtime-skills"
@@ -227,9 +207,7 @@ export function OntologyBootstrapForm({
               {labels.runtimeSkills(plan.runtimeOwnedSkipped)}
             </p>
           ) : null}
-          {/* Same reason as the line above: `AGENTS.md` and `CLAUDE.md` are addressed to an agent,
-              and the starter writes them itself — say they were left alone rather than letting them
-              vanish without explanation. */}
+          {/* `AGENTS.md` and `CLAUDE.md` address an agent and the starter writes them; say so. */}
           {plan.agentPointerSkipped > 0 ? (
             <p
               data-testid="ontology-bootstrap-agent-pointers"
@@ -238,10 +216,8 @@ export function OntologyBootstrapForm({
               {labels.agentPointers(plan.agentPointerSkipped)}
             </p>
           ) : null}
-          {/* Same reason again, and the commonest one on a folder that already uses the Library:
-              `sources/` is somebody else's document kept verbatim and `wiki/` is what Atlas wrote
-              about it. Neither is a concept, and both would otherwise vanish from this list with
-              no explanation. */}
+          {/* `sources/` keeps others' documents verbatim and `wiki/` is Atlas's writing about them:
+             neither is a concept. */}
           {plan.librarySkipped > 0 ? (
             <p
               data-testid="ontology-bootstrap-library-files"
@@ -268,8 +244,8 @@ export function OntologyBootstrapForm({
           disabled={!canConfirm}
           data-testid="ontology-bootstrap-confirm"
           autoFocus={addingToMap && plan.domains.length === 0}
-          // The create-node dialog's submit, class for class: two dialogs in the same slot on
-          // the same map keep one control height (40) and one type size.
+          // Matches the create-node dialog's submit, so two dialogs in one slot share height and
+          // type size.
           className={controlClass({
             shape: "pill",
             tone: "accentOnTint",

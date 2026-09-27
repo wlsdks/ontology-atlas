@@ -18,7 +18,7 @@ function entries(...ids: string[]): PastWalkEntry[] {
   return ids.map((id) => ({ id, title: id.toUpperCase(), kind: id.split(":")[0] ?? "element" }));
 }
 
-/** Minimal vault-folder fake: only the File System Access surface this store actually uses. */
+/** Only the File System Access surface this store uses. */
 function createFakeVaultHandle(options: { readOnly?: boolean } = {}) {
   const files = new Map<string, string>();
   const dirs = new Set<string>();
@@ -77,27 +77,24 @@ function createFakeVaultHandle(options: { readOnly?: boolean } = {}) {
   };
 }
 
-/**
- * The contract screens see must survive a change of medium, so the same matrix
- * runs against every implementation. Adding a medium is one line here.
- */
+/** Every medium runs the same contract; adding one is one line. */
 const IMPLEMENTATIONS: Array<{ name: string; create: () => PastTrailStore }> = [
   { name: "vault file", create: () => createVaultFilePastTrailStore(createFakeVaultHandle().handle) },
   { name: "memory", create: () => createMemoryPastTrailStore() },
 ];
 
-describe.each(IMPLEMENTATIONS)("PastTrailStore 계약 — $name", ({ create }) => {
-  it("빈 상태에서 목록은 비어 있다", async () => {
+describe.each(IMPLEMENTATIONS)("PastTrailStore contract: $name", ({ create }) => {
+  it("lists nothing when empty", async () => {
     await expect(create().list()).resolves.toEqual([]);
   });
 
-  it("문턱 미만은 보관하지 않는다", async () => {
+  it("does not keep a walk under the threshold", async () => {
     const store = create();
     await expect(store.save("w1", entries("domain:a"))).resolves.toEqual([]);
     await expect(store.list()).resolves.toEqual([]);
   });
 
-  it("보관한 길이 다시 읽힌다", async () => {
+  it("reads back a kept trail", async () => {
     const store = create();
     await store.save("w1", entries("domain:a", "capability:b"), { now: 1_000 });
     const walks = await store.list();
@@ -105,7 +102,7 @@ describe.each(IMPLEMENTATIONS)("PastTrailStore 계약 — $name", ({ create }) =
     expect(walks[0].entries.map((e) => e.id)).toEqual(["domain:a", "capability:b"]);
   });
 
-  it("같은 id 로 다시 저장하면 줄이 늘지 않고 제자리에서 자란다", async () => {
+  it("saving again with the same id grows the row in place", async () => {
     const store = create();
     await store.save("w1", entries("domain:a", "capability:b"), { now: 1_000 });
     const after = await store.save("w1", entries("domain:a", "capability:b", "element:c"), {
@@ -116,14 +113,14 @@ describe.each(IMPLEMENTATIONS)("PastTrailStore 계약 — $name", ({ create }) =
     expect(after[0].endedAt).toBe(2_000);
   });
 
-  it("다른 id 는 새 줄이고 최근이 앞", async () => {
+  it("a different id is a new row, newest first", async () => {
     const store = create();
     await store.save("w1", entries("domain:a", "capability:b"), { now: 1_000 });
     const after = await store.save("w2", entries("element:c", "element:d"), { now: 2_000 });
     expect(after.map((w) => w.id)).toEqual(["w2", "w1"]);
   });
 
-  it("다른 id 라도 최신 길과 경로가 같으면 줄을 늘리지 않는다", async () => {
+  it("a different id with the same path as the newest trail adds no row", async () => {
     const store = create();
     await store.save("w1", entries("domain:a", "capability:b"), { now: 1_000 });
     const after = await store.save("w2", entries("domain:a", "capability:b"), { now: 9_000 });
@@ -131,7 +128,7 @@ describe.each(IMPLEMENTATIONS)("PastTrailStore 계약 — $name", ({ create }) =
     expect(after[0].endedAt).toBe(1_000);
   });
 
-  it("개별 삭제가 실제로 지운다", async () => {
+  it("removing one entry deletes it", async () => {
     const store = create();
     await store.save("w1", entries("domain:a", "capability:b"), { now: 1_000 });
     await store.save("w2", entries("element:c", "element:d"), { now: 2_000 });
@@ -140,14 +137,14 @@ describe.each(IMPLEMENTATIONS)("PastTrailStore 계약 — $name", ({ create }) =
     await expect(store.list()).resolves.toHaveLength(1);
   });
 
-  it("모두 지우기가 실제로 지운다", async () => {
+  it("clear all deletes everything", async () => {
     const store = create();
     await store.save("w1", entries("domain:a", "capability:b"), { now: 1_000 });
     await expect(store.clear()).resolves.toEqual([]);
     await expect(store.list()).resolves.toEqual([]);
   });
 
-  it("연속 저장이 겹쳐도 마지막 걸음이 유실되지 않는다 (쓰기 직렬화)", async () => {
+  it("overlapping saves keep the last step because writes are serialized", async () => {
     const store = create();
     await Promise.all([
       store.save("w1", entries("domain:a", "capability:b"), { now: 1_000 }),
@@ -162,8 +159,8 @@ describe.each(IMPLEMENTATIONS)("PastTrailStore 계약 — $name", ({ create }) =
   });
 });
 
-describe("볼트 파일 구현 — 매체 고유 계약", () => {
-  it("`.ontology-atlas/past-trails.json` 에 쓴다 (agent-activity.json 과 같은 자리)", async () => {
+describe("vault file store contract specific to the medium", () => {
+  it("writes to `.ontology-atlas/past-trails.json` beside agent-activity.json", async () => {
     const vault = createFakeVaultHandle();
     const store = createVaultFilePastTrailStore(vault.handle);
     await store.save("w1", entries("domain:a", "capability:b"), { now: 1_000 });
@@ -172,7 +169,7 @@ describe("볼트 파일 구현 — 매체 고유 계약", () => {
     expect(vault.dirs.has(PAST_TRAILS_VAULT_DIR)).toBe(true);
   });
 
-  it("사이드카 폴더가 스스로를 git 에서 감춘다 — 사용자 볼트에서 실수로 커밋되지 않게", async () => {
+  it("the sidecar folder hides itself from git so a user vault does not commit it by accident", async () => {
     const vault = createFakeVaultHandle();
     const store = createVaultFilePastTrailStore(vault.handle);
     await store.save("w1", entries("domain:a", "capability:b"), { now: 1_000 });
@@ -181,7 +178,7 @@ describe("볼트 파일 구현 — 매체 고유 계약", () => {
     );
   });
 
-  it("이미 있는 .gitignore 는 덮어쓰지 않는다 — 사용자 의도가 우선", async () => {
+  it("does not overwrite an existing .gitignore because user intent wins", async () => {
     const vault = createFakeVaultHandle();
     vault.dirs.add(PAST_TRAILS_VAULT_DIR);
     vault.files.set(`${PAST_TRAILS_VAULT_DIR}/${SIDECAR_IGNORE_FILE}`, "keep-me\n");
@@ -190,7 +187,7 @@ describe("볼트 파일 구현 — 매체 고유 계약", () => {
     expect(vault.files.get(`${PAST_TRAILS_VAULT_DIR}/${SIDECAR_IGNORE_FILE}`)).toBe("keep-me\n");
   });
 
-  it("저장된 파일 내용에 걸음당 시각이 하나도 없다 — 시각은 길당 endedAt 1개뿐", async () => {
+  it("the saved file has no per-step time, only one endedAt per trail", async () => {
     const vault = createFakeVaultHandle();
     const store = createVaultFilePastTrailStore(vault.handle);
     await store.save("w1", entries("domain:a", "capability:b", "element:c"), { now: 1_700_000 });
@@ -213,7 +210,7 @@ describe("볼트 파일 구현 — 매체 고유 계약", () => {
     expect(numbers.sort((a, b) => a - b)).toEqual([1, 1_700_000]);
   });
 
-  it("읽기 전용 볼트에서 조용히 지나간다 — 던지지 않고, 파일도 만들지 않는다", async () => {
+  it("passes silently on a read-only vault without throwing or creating a file", async () => {
     const vault = createFakeVaultHandle({ readOnly: true });
     const store = createVaultFilePastTrailStore(vault.handle);
     // A blocked write must not pretend the list grew, so screen and disk agree.
@@ -226,25 +223,25 @@ describe("볼트 파일 구현 — 매체 고유 계약", () => {
     await expect(store.remove("w1")).resolves.toEqual([]);
   });
 
-  it("모두 지우기는 파일을 삭제한다 — 빈 껍데기를 남기지 않는다", async () => {
+  it("clear all deletes the file instead of leaving an empty shell", async () => {
     const vault = createFakeVaultHandle();
     const store = createVaultFilePastTrailStore(vault.handle);
     await store.save("w1", entries("domain:a", "capability:b"), { now: 1_000 });
     await store.clear();
     expect(vault.files.has(PAST_TRAILS_RELATIVE_PATH)).toBe(false);
-    // The sidecar's .gitignore stays: it is shared with `agent-activity.json`,
-    // so clearing trails is no reason to drop the whole folder's commit guard.
+    // The .gitignore is shared with `agent-activity.json`, so clearing trails keeps the folder's
+    // commit guard.
     expect([...vault.files.keys()]).toEqual([`${PAST_TRAILS_VAULT_DIR}/${SIDECAR_IGNORE_FILE}`]);
   });
 
-  it("문턱 미달 저장은 폴더를 만들지도 않는다", async () => {
+  it("a save under the threshold does not even create the folder", async () => {
     const vault = createFakeVaultHandle();
     await createVaultFilePastTrailStore(vault.handle).save("w1", entries("domain:a"));
     expect(vault.dirs.size).toBe(0);
     expect(vault.files.size).toBe(0);
   });
 
-  it("파손된 파일이 있어도 빈 목록으로 읽고 다음 저장이 복구한다", async () => {
+  it("reads a broken file as an empty list and the next save repairs it", async () => {
     const vault = createFakeVaultHandle();
     // Create the folder with a normal save first, then corrupt only the content.
     const store = createVaultFilePastTrailStore(vault.handle);
@@ -255,8 +252,8 @@ describe("볼트 파일 구현 — 매체 고유 계약", () => {
   });
 });
 
-describe("createPastTrailStore — 매체 계약", () => {
-  it("매체는 텍스트만 안다 — 스키마·상한을 알 필요가 없다", async () => {
+describe("createPastTrailStore medium contract", () => {
+  it("the medium knows only text, not the schema or caps", async () => {
     const seen: string[] = [];
     const medium: PastTrailMedium = {
       read: async () => seen.at(-1) ?? null,

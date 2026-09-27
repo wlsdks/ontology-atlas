@@ -125,10 +125,12 @@ async function openLocalCompile(page: Page, selectPage = false, options: Paramet
    * home, where it was.
    */
   if (options?.detectedRuntime) {
+    await page.getByTestId('library-workspace-sources').click();
     await page.getByTestId('library-strip-compile').click();
     await expect(page.getByTestId('library-compile-brain')).toContainText('probe-model');
     await page.keyboard.press('Escape');
     await expect(page.getByTestId('library-compile-popover')).toHaveCount(0);
+    await page.getByTestId('library-workspace-wiki').click();
   }
   // This is the installed-shell local route; the web degradation copy must not be present.
   await expect(page.getByTestId("library-compile-web-limit")).toHaveCount(0);

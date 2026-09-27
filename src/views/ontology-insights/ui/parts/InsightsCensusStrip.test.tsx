@@ -76,15 +76,11 @@ describe("InsightsCensusStrip accessibility", () => {
 });
 
 /**
- * **The strip is four tiles, and the health tile never prints a total.**
- *
- * The single number a person acts on lives in exactly two agreeing places — the Do-next tab badge
- * and its list title (`insights-badge-agreement`). A third place printing it is the accident of
- * 2026-08-07 (3), "one screen does not count the same thing two ways". What this strip adds is the
- * verdict *word*, which is the fact the number never carried.
+ * Four tiles, and the health tile never prints a total: the number a person acts on lives in the Do-next badge and
+ * list title (`insights-badge-agreement`); the strip adds the verdict word.
  */
-describe("InsightsCensusStrip — 네 타일, 그리고 세 번째 총계는 없다", () => {
-  it("타일은 넷이고, 건강 타일은 총계 대신 판정 단어를 쓴다", () => {
+describe("InsightsCensusStrip four tiles without a third total", () => {
+  it("renders four tiles with a verdict word on the health tile instead of a total", () => {
     renderStrip();
     expect(screen.getAllByTestId("insights-census-tile")).toHaveLength(4);
     const verdictWord = screen.getByTestId("insights-verdict-word");
@@ -94,7 +90,7 @@ describe("InsightsCensusStrip — 네 타일, 그리고 세 번째 총계는 없
     expect(screen.getByTestId("insights-census-strip").textContent).not.toContain("15");
   });
 
-  it("막힘과 권고는 나뉘어 보이고, 판정 단어는 CLI 와 같은 두 가지뿐이다", () => {
+  it("shows blocking and recommended apart with only the two CLI verdict words", () => {
     renderStrip();
     const split = screen.getByTestId("insights-verdict-split");
     expect(split).toHaveTextContent("Blocking9");
@@ -106,19 +102,18 @@ describe("InsightsCensusStrip — 네 타일, 그리고 세 번째 총계는 없
     expect(screen.getAllByTestId("insights-verdict-word")[1]).toHaveTextContent("Nothing blocking");
   });
 
-  it("주간 막대는 12개이고 마지막 주만 인디고를 쓴다", () => {
+  it("draws twelve weekly bars with only the last in indigo", () => {
     renderStrip();
     const bars = screen.getAllByTestId("insights-weekly-bar");
     expect(bars).toHaveLength(12);
     expect(bars[11].style.backgroundColor).toBe("var(--color-indigo-brand)");
-    // A week with no update is a 2px baseline tick, never a short bar — a quiet week and a busy
-    // week must not be drawn the same size.
+    // A week with no update is a 2px baseline tick, never a short bar.
     expect(bars[0].style.height).toBe("2px");
     expect(bars[0].style.backgroundColor).toBe("var(--color-text-quaternary)");
     expect(bars[1].style.height).not.toBe("2px");
   });
 
-  it("주간 자료가 없으면 막대를 그리지 않는다 — 빈 축은 사실이 아니다", () => {
+  it("draws no bars without weekly data", () => {
     renderStrip({ weeklyTotals: [] });
     expect(screen.queryByTestId("insights-weekly-bars")).toBeNull();
     expect(screen.getByText("0 this week")).toBeInTheDocument();

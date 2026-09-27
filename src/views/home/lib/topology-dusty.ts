@@ -1,37 +1,15 @@
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 
-/**
- * Derives the "dusty" nodes — long-untouched ones — and sinks them through the
- * engine's existing stale channel (dash [3,3] plus the opaque stale token pair,
- * `model/freshness.ts`) so neglect reads together with graph position. No new
- * draw code or tokens: it only wires `topology-world`'s `stale` flag.
- *
- * The test is relative (strictly below the median mtime) **and** absolute (older
- * than `max(30 days, 2 x median age)`). Ties count as fresh, which means a bulk
- * import or a fresh `git clone` — where every file shares one mtime — marks
- * nothing at all; that is the intended limit, since the alternative is
- * synthesizing dates.
- *
- * The multiplier is the fallback from the guardian's first review (2026-07-23):
- * a plain "below median and over 30 days" test marked the majority of the
- * dogfood vault dusty (56/105), i.e. half of a healthy but slowly maintained
- * vault was permanently dusty. Marking only the tail that lags 2x the median age
- * narrows the signal to real neglect.
- *
- * The bottom-quartile cap (dusty never exceeds 25% of nodes, oldest first) comes
- * from a second dogfood measurement: in an actively maintained vault (median 4
- * days) a large neglected tail escapes the multiplier too, because the
- * distribution is bimodal. This signal is meant to find the dustiest corner, not
- * to take a staleness inventory, and the cap is what preserves the map's
- * attention economy.
- *
- * Dates are each document's change date (`useVaultDocFreshnessIndex`: Git's
- * last commit in the app where Git knows, `file.lastModified` otherwise, a
- * build-time git stamp for dogfood), keyed by `evidenceIds[0]`. A node with no
- * date is fresh.
- */
 export const DUSTY_MIN_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
+/**
+ * Derives long-untouched "dusty" nodes and wires them to `topology-world`'s existing `stale` flag.
+ * Dusty is strictly below the median mtime and older than `max(30 days, 2 x median age)`; ties are
+ * fresh, so a bulk import or fresh clone marks nothing rather than inventing dates. The multiplier
+ * and the 25% cap keep a healthy, slowly maintained vault from reading mostly dusty. Dates come
+ * from `useVaultDocFreshnessIndex`, keyed by `evidenceIds[0]`; a node without one is fresh. O(n log
+ * n) for the median sort.
+ */
 export function deriveDustySlugs(
   nodes: readonly Pick<KnowledgeGraphNode, "id" | "evidenceIds">[],
   freshnessIndex: ReadonlyMap<string, string>,
@@ -61,11 +39,9 @@ export function deriveDustySlugs(
   for (const [id, ts] of mtimeById) {
     if (ts < median && nowMs - ts > minAgeMs) candidates.push({ id, ts });
   }
-  // Bottom-quartile cap: oldest first, at most 25% of the population. Ties on
-  // timestamp break by ascending id so the result is deterministic.
+  // Oldest first; ties break by id so the result is deterministic.
   candidates.sort((a, b) => a.ts - b.ts || (a.id < b.id ? -1 : 1));
-  // Floor of 1 so a genuinely old node is still visible in a small vault: under
-  // four nodes, any that passes the conditions still shows.
+  // Floor of 1 so a genuinely old node still shows in a vault under four nodes.
   const cap = Math.max(1, Math.floor(mtimeById.size / 4));
   return new Set(candidates.slice(0, cap).map((c) => c.id));
 }

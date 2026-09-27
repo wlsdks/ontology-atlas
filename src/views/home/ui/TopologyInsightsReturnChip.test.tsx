@@ -17,8 +17,8 @@ const baseProps = {
   dismissAriaLabel: "인사이트 복귀 칩 닫기",
 };
 
-describe("TopologyInsightsReturnChip — 인사이트발 딥링크 복귀 칩", () => {
-  it("복귀 링크가 원래 보던 인사이트 탭 href 를 가리킨다", () => {
+describe("TopologyInsightsReturnChip return chip for insights deep links", () => {
+  it("the return link points at the insights tab href the person came from", () => {
     render(<TopologyInsightsReturnChip {...baseProps} onDismiss={() => {}} />);
 
     const link = screen.getByTestId("topology-insights-return-chip-link");
@@ -27,7 +27,7 @@ describe("TopologyInsightsReturnChip — 인사이트발 딥링크 복귀 칩", 
     expect(link).toHaveAccessibleName("보던 인사이트 탭으로 돌아가기");
   });
 
-  it("X dismiss 는 onDismiss 만 부른다 (내비게이션 아님)", () => {
+  it("the dismiss control calls only onDismiss without navigating", () => {
     const onDismiss = vi.fn();
     render(<TopologyInsightsReturnChip {...baseProps} onDismiss={onDismiss} />);
 

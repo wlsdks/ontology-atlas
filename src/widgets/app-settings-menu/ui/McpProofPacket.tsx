@@ -14,39 +14,9 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
 
 /**
- * The AI agent's first-contact proof packet - a typed handoff pasted straight into an agent,
- * rather than a card for a human to read.
- *
- * ## Why it is a component now (2026-09-05)
- *
- * It used to be a card sitting on its own, below the connect pane. On the installed app that put
- * it **after** the three steps that end in "check the connection", so the thing that actually
- * proves the connection stood outside the step whose whole job is proving it. It is now the last
- * thing inside step 3.
- *
- * On the web there is no step 3 - no runnable server means steps 2 and 3 do not exist, and
- * drawing a greyed-out step is a dead end rather than guidance - so the same component stands on
- * its own at the end of the pane there. **One component, two placements**, because the two
- * surfaces really do have different shapes (`.claude/rules/surfaces.md`); a second copy is what
- * would let the packet drift between them.
- *
- * ⚠️ **Moved once before** (2026-08-21, ledger 90) and it nearly disappeared with the surface it
- * lived on - only the "Copy" button inside a deleted branch used the constant, and lint's
- * unused-variable warning is what revealed it. The surface may move; the handoff lives.
- */
-/**
- * ⚠️ **The commands are built, not frozen** (2026-09-05, design council).
- *
- * This was a module constant, so it shipped two lines nobody could run:
- * `pnpm cli:mcp-verify docs/ontology` needs the checkout as its working directory and exits
- * "Vault root not found" from anywhere else, and `node cli/src/index.mjs` is a relative path to a
- * file the reader does not have. A packet exists to be pasted into an agent that is somewhere
- * else; a command that only works where it was written is not a proof step, it is a trap.
- *
- * So both lines go through the same three pieces the connect panel already uses — `ATLAS_CLI`
- * (the repo's one invocation form, carrying `$ATLAS` plus the hint that says how to set it),
- * `vaultPathForPacket` (the real absolute path when this surface knows it, an instruction to fill
- * in when it does not), and `shellQuoteForPacket` (so a folder with a space in its name survives).
+ * The commands are built, not frozen, so they run wherever the packet is pasted: `ATLAS_CLI`
+ * gives the one invocation form, `vaultPathForPacket` the absolute path or a fill-in
+ * instruction, and `shellQuoteForPacket` keeps a path with spaces intact.
  */
 function buildMcpFirstCallsPacket(vaultName: string, vaultPath: string | null): string {
   const vaultArg = shellQuoteForPacket(vaultPathForPacket(vaultName, vaultPath));
@@ -55,11 +25,7 @@ function buildMcpFirstCallsPacket(vaultName: string, vaultPath: string | null): 
     '',
     ATLAS_CLI_HINT_EN,
     '',
-    /*
-     * `codex mcp list` was the first step and is **one client's command**. Somebody in Claude Code
-     * or Cursor met an instruction naming a program they do not have as step 1 of proving their
-     * own connection. What every client can answer is `tools/list`, which is now step 1.
-     */
+    // Step 1 is `tools/list`, which every client can answer, not one client's command.
     'Direct MCP proof inside the current agent session:',
     '1. tools/list -> read toolCount from connection_info for the current number; finalize_project_meaning and query_ontology must be present',
     '2. query_ontology({"operation":"agent_brief"})',
@@ -69,12 +35,7 @@ function buildMcpFirstCallsPacket(vaultName: string, vaultPath: string | null): 
     'If direct MCP tools are missing, this is CLI fallback proof only:',
     `${ATLAS_CLI} mcp-verify ${vaultArg} --timeout-ms 15000`,
     '',
-    /*
-     * The stale-cache hint used to name **23 tools**. `connection_info` reports 36 today, so the
-     * number was telling a reader that a correct client was broken. A count that has to be
-     * maintained by hand in prose is a count that will be wrong again, so the hint compares
-     * against what `connection_info` says instead of against a literal.
-     */
+    // The stale-cache hint compares against `connection_info`'s count, never a literal that goes stale.
     'Stale client cache hint:',
     'If tools/list disagrees with connection_info toolCount, or query_ontology is not callable, reload/restart the agent or refresh cached MCP tools.',
     '',
@@ -90,6 +51,11 @@ function buildMcpFirstCallsPacket(vaultName: string, vaultPath: string | null): 
   ].join('\n');
 }
 
+/**
+ * The agent's first-contact proof packet, a typed handoff pasted into an agent. One component
+ * in two placements (`.claude/rules/surfaces.md`): last in step 3 with a runnable server, and
+ * standalone where there is no step 3, so the packet cannot drift between copies.
+ */
 export function McpProofPacket({
   /** `boxed` draws its own card; `inline` sits inside a step that already has one. */
   frame = 'boxed',
@@ -120,12 +86,7 @@ export function McpProofPacket({
       <p className="mt-1 break-keep text-label leading-label text-[color:var(--color-text-tertiary)]">
         {t('mcpProofBody')}
       </p>
-      {/*
-        ⚠️ **No `font-mono` on the label** (2026-09-05). What gets copied is a command packet; the
-        word on the button is ordinary prose, and in Korean a monospace face does nothing but make
-        that prose harder to read - monospace has no Hangul metrics to align. Monospace is for a
-        command or an address, and this button is neither.
-      */}
+      {/* No `font-mono`: the label is prose, and monospace has no Hangul metrics. */}
       <Chip
         tone="accentOnTint"
         data-testid="agents-mcp-proof-copy"

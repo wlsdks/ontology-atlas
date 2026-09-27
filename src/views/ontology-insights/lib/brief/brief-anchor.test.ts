@@ -57,9 +57,7 @@ describe('the recorded visit survives a browser that will not store it', () => {
   });
 
   it('still reads as recorded when writing to storage throws', () => {
-    // Private windows, blocked site data, and a full quota all throw here. The visit then holds
-    // for this session only — but it must hold, or the brief keeps counting from the old anchor
-    // and the person's "I have seen this" does nothing.
+    // Private windows, blocked site data and a full quota throw here; the visit must still hold for this session.
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new Error('storage is disabled');
     });

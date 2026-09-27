@@ -401,9 +401,13 @@ graph. The separation is a property of the **walk**, not a filter applied later.
 - `src-tauri/src/library.rs` owns the native half: hashing, the native picker, the import
   copy, metadata-only discovery, and Finder reveal. It writes nothing outside
   `<vault>/sources/`, and its discovery walk contains no writer.
-- **One Library destination, five tabs (2026-09-17; four on 2026-09-15).**
-  `src/app/library-workspace/` composes `src/views/library/` for Sources/Wiki and
-  Work scopes, and `src/views/docs-vault/` for Ontology. `/library/?tab=ontology` opens the existing
+- **One Library destination, four tabs (2026-09-28).**
+  `src/app/library-workspace/` composes `src/views/library/` for Sources/Wiki, Check history,
+  and saved Concept sets, and `src/views/docs-vault/` for Concept documents. Ontology owns the
+  document/set switch (`ontologyView=documents|sets`); `view` remains owned by the document reader.
+  Legacy `tab=collections` replaces itself with `tab=ontology&ontologyView=sets`, retaining
+  every other query parameter and the fragment. Sets remain reachable with zero current nodes.
+  `/library/?tab=ontology` opens the existing
   reader/editor and filters every list, search, count, and saved working set to explicit
   authorable kinds. `/docs` redirects ontology and no-slug entries into Library; only an
   exact existing non-ontology target stays in its bounded Document reader with the same
@@ -481,6 +485,28 @@ graph. The separation is a property of the **walk**, not a filter applied later.
   `evaluate:wiki` runner uses this index and the production Compile executor, loop,
   review builder and proposal applier against memory-only fixtures; its textual
   omission rubric is not a production gate or a semantic truth assessment.
+- `src/features/library/lib/question-desk.ts` ranks bounded local Wiki fact and
+  decision leads and source units for the Wiki tab's unselected question desk.
+  `LibraryQuestionDesk` retains its in-memory source-unit cache only for the
+  current vault and inventoried file version, reports unread and omitted work,
+  and opens exact source anchors. `question-desk-brief.ts` passes leads to ACP
+  as untrusted context and requests a cited, no-write answer; `LibraryPage`
+  disables automatic Wiki approval for Ask turns, while the existing human
+  permission path still governs unexpected writes. In the installed app, a
+  current claim and its cited original can reach the existing fixed Jev bridge
+  only through a blocking exact-payload consent dialog. Its Keychain key and
+  audit-before-send contract remain in `src-tauri/src/jev.rs`; the answer is
+  advisory and grants no Wiki or ontology authority. The browser has no Jev
+  key or send path.
+  A separate explicit report request reuses the ACP answer turn and shows its
+  actual response as a sectioned unreviewed draft before expandable leads.
+  Compact coverage opens full omissions without changing the read contract.
+  Report state is tied
+  to the query, vault and inventoried listing; stale drafts leave the surface.
+  Filing reuses the existing answer validator and concurrent-edit guard. One
+  client-side report model feeds a Markdown Blob download and a scoped print
+  document for Save as PDF. The main macOS WebView has only the print permission
+  needed for that native dialog; neither route adds a backend or accepts Jev advice.
 
 The Library's live-work projection is separate from the persisted graph:
 `src/features/library/model/library-work-activity.ts` normalizes structured ACP
@@ -661,10 +687,11 @@ until a local manifest exists.
                            connectors dialog. Was its own destination from 2026-09-05.
 /library                   the project documents gathered into this folder, the wiki
                            pages written from them, typed ontology documents, and saved
-                           constellations. Four tabs keep Sources, Wiki, Ontology, and
-                           Work scopes distinct. The first two use the two-pane document
+                           concept sets. Four tabs keep Sources, Wiki, Ontology, and
+                           Check history distinct; Ontology contains Concept documents and
+                           Concept sets. The first two use the two-pane document
                            flow, whose right pane shows the selected Wiki page or the
-                           bounded facts known about a raw source. Work scopes resolves
+                           bounded facts known about a raw source. Concept sets resolves
                            real ontology members by UID and returns the whole set to Galaxy
                            with `?constellation=<folder UUID>`. Split out of /docs 2026-09-06:
                            gathering documents of any format and reading the ontology's
@@ -761,7 +788,8 @@ different list of buttons.** The desktop rail shows eight destinations: Map,
 Architecture, Library, Automations, Insights, Projects, Agents, and Git. Agents carries
 three body tabs, `agents`, `models` and `mcp`, addressed by `?tab=`. The mobile bottom
 bar shows five persistent destinations: Map, Architecture, Library, Insights, and Projects;
-web adds Get App as a separate utility. Library contains Sources, Wiki, Ontology, and Work scopes;
+web adds Get App as a separate utility. Library contains Sources, Wiki, Ontology, and Check history;
+Concept sets lives inside Ontology alongside Concept documents;
 `/docs` remains an exact-document compatibility address for non-ontology files and resolves
 active navigation to Library; it does not restore a general Docs home.
 Contextual writing stays inside Map, while Agents, MCP and Git keep their narrow-screen

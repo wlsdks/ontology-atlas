@@ -11,40 +11,7 @@ import {
   type EgoView,
 } from "../lib/ego-layout";
 
-/**
- * One concept and its **immediate neighbours** — a read-only preview, not the map.
- *
- * It reuses the map's **silhouettes**: hexagon = project · rounded square =
- * domain · circle = capability · square = element. Shape carries kind, colour
- * does not (charter: Kind = shape, not color). Two line styles: solid =
- * contains/belongs to, dashed = depends on/used by.
- *
- * The SVG is drawn by hand here because `OntologyMapKindGlyph` is a **DOM glyph**
- * and cannot be placed inside a coordinate system. That facade stays the source
- * of truth for the silhouettes; this file only ports the same mapping into
- * coordinates, and must not diverge from what the `node-kind-shape-parity`
- * contract holds.
- *
- * Where every mark and label sits is decided by `layoutConceptEgo` (pure, tested);
- * this component only draws it.
- *
- * ## The table carries names, the drawing carries structure (round four, 2026-09-25)
- *
- * Every neighbour's name was printed twice in one card, once in the relation table and again
- * as a label here (sixteen names twice for a dense concept), and the labels that stayed on the
- * drawing were struck through by the spokes of their neighbours. The relation table already
- * holds the names, grouped and clickable (2026-08-02: "names, not counts"), so the drawing
- * now draws only what the table cannot: kind by silhouette, relation by line, and the share
- * of each relation around the concept. A neighbour's name appears here only while it is
- * pointed at or focused, in the table or on its mark, and it wears a canvas halo so no line
- * crosses the one label on screen. The centre's name is the card's own header, so it is not
- * drawn a second time either.
- */
-
-/**
- * The geometry is **decided by tokens** (`--git-ego-*`). Numbers held inside the
- * component leave the next person unable to find where the value came from.
- */
+/** The geometry comes from the `--git-ego-*` tokens. */
 function readGeometry(el: Element | null): EgoGeometry {
   const fallback = DEFAULT_EGO_GEOMETRY;
   const read = (name: string, value: number) => {
@@ -138,6 +105,13 @@ function pullBack(x1: number, y1: number, x2: number, y2: number, inset: number)
   return [x2 - (dx / length) * inset, y2 - (dy / length) * inset];
 }
 
+/**
+ * One concept and its immediate neighbours, a read-only preview drawn from the result of
+ * the pure `layoutConceptEgo`. Kind is shape, as on the map; solid lines are contains/belongs to,
+ * dashed are depends on/used by. The SVG ports `OntologyMapKindGlyph`'s silhouettes and
+ * must stay within the `node-kind-shape-parity` contract. The relation table carries names,
+ * so a neighbour is named here only while pointed at or focused, over a canvas halo.
+ */
 export function ConceptEgoGraph({
   ego,
   bearingLabel,
@@ -158,12 +132,8 @@ export function ConceptEgoGraph({
   className?: string;
 }) {
   const gradientId = useId();
-  /*
-   * The drawing is laid out in its cell's own pixels (round three, 2026-09-25): a fixed
-   * 660x345 view scaled into the cell left about 60% of a 740x410 box blank and drew the
-   * 11px labels at 9-10px. Until the cell is measured (first paint, tests without a
-   * ResizeObserver) the default view is drawn scaled, exactly as before.
-   */
+  // Laid out in the cell's own pixels; until measured (first paint, tests without a
+  // ResizeObserver) the default view is drawn scaled.
   const boxRef = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<EgoView | null>(null);
   useLayoutEffect(() => {
@@ -210,11 +180,8 @@ export function ConceptEgoGraph({
           </linearGradient>
         </defs>
         {slots.map((slot) => {
-          /*
-           * A spoke runs from the centre's ring to the edge of its neighbour's mark, not through
-           * either shape: through the centre it crossed the selection ring, and through an
-           * "and N more" pill it struck the pill's own words (round-four review).
-           */
+          // A spoke stops at both shapes' edges so it crosses neither the selection ring nor a
+          // pill's words.
           const [x1, y1] = pullBack(slot.x, slot.y, cx, cy, selfRadius + 6);
           // A pill is a rect: the spoke stops where its direction meets the pill's edge.
           const angle = Math.atan2(slot.y - cy, slot.x - cx);

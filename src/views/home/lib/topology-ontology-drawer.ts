@@ -12,11 +12,8 @@ import {
 } from "./topology-analysis";
 
 /**
- * The shared "node facts" model behind the compact canvas popover
- * (`topology-node-focus.ts`) and the plain-language significance line
- * (`topology-node-significance.ts`) — direct relations, transitive reach,
- * owning domain. `buildTopologyNodeFocus`/`buildNodeSignificance` are
- * PROJECTIONS of this model (zero recompute, so counts can't drift).
+ * Node facts shared by the canvas popover and the significance line, which project it without
+ * recompute.
  */
 
 export interface TopologyOntologyDrawerRelation {
@@ -32,27 +29,22 @@ export type TopologyRelationProvenance =
   | "needs_review";
 
 interface TopologyOntologyDrawerReach {
-  /**
-   * Transitive incoming closure — nodes that depend on this one directly or
-   * indirectly, i.e. the blast radius of changing it. Same direction semantics
-   * as CLI `blast-radius --direction incoming`.
-   */
+  /** Transitive incoming closure: the blast radius, as CLI `blast-radius --direction incoming`. */
   dependents: number;
-  /** Transitive outgoing closure — nodes this one depends on, directly or indirectly. */
+  /** Transitive outgoing closure. */
   dependencies: number;
 }
 
 export interface TopologyOntologyDrawerModel {
   sourceSlug: string | null;
   /**
-   * Set only when `sourceSlug` is this node's own `.md`. Derived nodes that are
-   * merely named by a relation stay null: their `sourceSlug` is someone else's
-   * document, so opening it as "this node's document" would be a lie.
+   * Set only when `sourceSlug` is this node's own `.md`; a relation-named node's `sourceSlug` is
+   * another document.
    */
   ownDocumentSlug: string | null;
-  /** The other document that mentions a node with no document of its own; null when it has one. */
+  /** Null when the node has its own document. */
   mentionedInSlug: string | null;
-  /** The owning domain node, if any — the first incoming edge whose source is `kind: domain`. */
+  /** The source of the first incoming edge from a `kind: domain` node. */
   ownerDomain: { id: string; title: string } | null;
   incomingCount: number;
   outgoingCount: number;
@@ -60,11 +52,7 @@ export interface TopologyOntologyDrawerModel {
   provenanceCounts: Array<{ provenance: TopologyRelationProvenance; count: number }>;
   relationQuality: TopologyRelationQualityBreakdown;
   previewRelations: TopologyOntologyDrawerRelation[];
-  /**
-   * The transitive impact that 1-hop degree (`incomingCount`/`outgoingCount`)
-   * understates. A person reads "changing this affects N" at a glance and an
-   * agent gets the same number in its brief.
-   */
+  /** The transitive impact that 1-hop degree understates, shared with the agent brief. */
   reach: TopologyOntologyDrawerReach;
 }
 
@@ -108,13 +96,10 @@ export function buildTopologyOntologyDrawerModel(
     })),
   ].slice(0, Math.max(0, previewLimit));
 
-  // Reuses the existing reachability engine rather than adding a BFS here.
-  // depth = node count guarantees the full closure through cycles and long
-  // chains (the discovered set blocks repeats). limit:1 because
-  // `summary.reachableNodes` is the total regardless of limit, so shrinking the
-  // returned layer to one keeps allocation minimal.
-  // Only `depends_on` is causal impact — containment/domain/element are used for
-  // structural traversal and must not enter the Affected/Dependencies numbers.
+  // Reuses the reachability engine (BFS, O(V + E)); depth = node count reaches the full closure
+  // through cycles.
+  // limit 1 because `summary.reachableNodes` is the total regardless. Only `depends_on` counts as
+  // impact.
   const fullDepth = Math.max(nodes.length, 1);
   const reach: TopologyOntologyDrawerReach = {
     // The change diff calls this same function, so the two counts cannot drift.
@@ -127,14 +112,8 @@ export function buildTopologyOntologyDrawerModel(
     }).summary.reachableNodes,
   };
 
-  // A domain usually contains its children, so the owner is found among the
-  // incoming edges.
-  //
-  // domain and project nodes belong to no domain: a domain's parent is a
-  // project, not another domain. Taking incoming cross-relations (`relates` and
-  // friends) at face value produced misattributions like "domain · <another
-  // domain>", polluting both the datasheet header and the handoff packet's
-  // `domain:` field. They report null instead and the UI omits the line.
+  // The owner is found among incoming edges. Domain and project nodes report null:
+  // incoming cross-relations would misattribute them to another domain.
   let ownerDomain: { id: string; title: string } | null = null;
   const canBelongToDomain = node.kind !== "domain" && node.kind !== "project";
   if (canBelongToDomain) {

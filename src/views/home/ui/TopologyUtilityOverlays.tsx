@@ -20,11 +20,7 @@ const DocsQuickDrawer = dynamic(
   { ssr: false },
 );
 
-/**
- * What the tour's card must leave in view, per step (interaction audit, 2026-09-25): on "lines
- * are relations" the project and the domains whose lines it explains, and on the datasheet
- * step the node whose datasheet just opened. Module scope, so its identity is stable.
- */
+/** What the tour card must leave visible per step. Module scope for a stable identity. */
 function readTourAvoidRects(stepId: string) {
   if (stepId === "relations") {
     return readDrawnMapMarks((id) => id.startsWith("domain:") || id.startsWith("project:"));
