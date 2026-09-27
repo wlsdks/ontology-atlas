@@ -182,8 +182,7 @@ struct PorcelainRow {
 fn parse_porcelain(out: &str) -> Vec<PorcelainRow> {
     out.lines()
         .filter_map(|line| {
-            // Read with `get`, not sliced: callers are sync commands on the macOS main thread,
-            // where a panic aborts the app. An unrecognized line is skipped.
+            // Read with `get`, not sliced, so an unrecognized line is skipped, not a panic.
             let bytes = line.as_bytes();
             let index = *bytes.first()? as char;
             let worktree = *bytes.get(1)? as char;
@@ -780,7 +779,7 @@ pub struct GitPullResult {
 }
 
 /// Reports `initialized:false` outside a repo instead of an error, since auto-init is forbidden.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn git_status(vault_path: String) -> Result<GitStatusResult, String> {
     let vault_dir = validate_vault_dir(&vault_path)?;
     let Some(repo_root) = find_repo_root(&vault_dir)? else {
@@ -1047,7 +1046,7 @@ fn run_push(repo_root: &Path, set_upstream: bool) -> PushOutcome {
 }
 
 /// Empty list when there are no commits.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn git_history(
     vault_path: String,
     limit: Option<u32>,
@@ -1304,7 +1303,7 @@ pub struct GitInitResult {
 
 /// Only on a direct user press. It only inits: no add, commit, push, remote or
 /// user setup, and an existing repository is left alone (`reason: "already"`).
-#[tauri::command]
+#[tauri::command(async)]
 pub fn git_init(vault_path: String) -> Result<GitInitResult, String> {
     let vault_dir = validate_vault_dir(&vault_path)?;
 
@@ -1375,7 +1374,7 @@ fn cap_document_diff(path: String, diff: String, untracked: bool) -> GitDocument
     }
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn git_document_diff(
     vault_path: String,
     relative_path: String,
@@ -1581,7 +1580,7 @@ fn validate_restore_source(source: &str) -> Result<String, String> {
 /// Restores one document to `source`, uncommitted. Refuses an untracked path
 /// (restoring would delete it), a missing source, a changed `uid`/`slug`/`merged_uids`
 /// or an unreadable file, since `git restore` is identity-blind. Confirm-button only.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn git_restore_file(
     vault_path: String,
     relative_path: String,
@@ -1660,7 +1659,7 @@ pub struct GitSetRemoteResult {
 }
 
 /// Only addresses the user entered; nothing is guessed. No push happens here.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn git_set_remote(vault_path: String, url: String) -> Result<GitSetRemoteResult, String> {
     let vault_dir = validate_vault_dir(&vault_path)?;
     let repo_root = require_repo_root(&vault_dir)?;
@@ -1720,7 +1719,7 @@ pub struct NodeRevision {
 /// Revisions newest first for the summary-freshness check. Git plumbing only; the
 /// ontology judgement lives in one shared TypeScript module. A slug without history
 /// is absent, not an error.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn vault_node_revisions(
     vault_path: String,
     slugs: Vec<String>,
@@ -1795,7 +1794,7 @@ const EVIDENCE_WALK_COMMITS: &str = "--max-count=3000";
 /// `repo_paths` are repository-relative; `vault_paths` resolve through the vault
 /// pathspec. Anything that could climb, be absolute or look like an option is
 /// dropped, since every value reaches a `git log` argument.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn git_paths_last_change(
     vault_path: String,
     repo_paths: Vec<String>,
@@ -1918,7 +1917,7 @@ const MAX_FRESHNESS_SLUGS: usize = 64;
 
 /// Read-only detection so the UI can pick platform install guidance; it installs
 /// nothing.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn git_probe() -> GitProbe {
     let platform = host_platform().to_string();
     match Command::new("git").arg("--version").output() {

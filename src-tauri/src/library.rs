@@ -126,7 +126,7 @@ pub struct VaultFileHash {
 
 /// Hashed natively because a byte array over IPC would cost millions of numbers;
 /// the screen asks only for sources a wiki page cites.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn hash_vault_files(
     root_path: String,
     relative_paths: Vec<String>,
@@ -253,7 +253,7 @@ fn copy_source_into(
 /// Never overwrites and refuses a second copy of the same bytes. Nothing is written
 /// beside the copy, since a sidecar index would be a second canonical store
 /// (`.claude/rules/forbidden.md`).
-#[tauri::command]
+#[tauri::command(async)]
 pub fn import_source_files(
     root_path: String,
     source_paths: Vec<String>,
@@ -442,7 +442,7 @@ fn walk_candidates(
 }
 
 /// Metadata only: no file is opened and nothing is copied until the person chooses.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn discover_source_candidates(
     roots: Vec<SourceDiscoveryRoot>,
 ) -> Result<SourceDiscoveryReport, String> {

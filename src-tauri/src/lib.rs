@@ -783,7 +783,7 @@ struct AcpNoticeEvent {
 /// The working folder must pass the picker's vault-root check, the child gets its
 /// own process group so grandchildren end with it, and PATH is rebuilt from the
 /// locations found, or the adapter cannot resolve the real CLI.
-#[tauri::command]
+#[tauri::command(async)]
 fn acp_start(
     app: AppHandle,
     sessions: State<'_, AcpSessions>,
@@ -1130,7 +1130,7 @@ fn acp_send(
     sessions.send_line(&session_id, &line)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn acp_stop(sessions: State<'_, AcpSessions>, session_id: String) -> Result<(), String> {
     // Distinguishes a stop the screen asked for from the child exiting on its own after stdin closes.
     log::info!("acp session {session_id} stop requested by the screen");
@@ -1629,7 +1629,7 @@ fn pick_vault_directory(dialog_title: Option<String>) -> Result<Option<String>, 
     Ok(Some(picked.to_string_lossy().to_string()))
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn list_vault_directory(
     root_path: String,
     relative_path: String,
@@ -2268,7 +2268,7 @@ fn walk_vault_stamps(
 /// Paths and mtimes only, in one call instead of reading every body across IPC. The
 /// walk rules must match TS exactly or fingerprints diverge; the contract
 /// test `tests/contract/vault-walk-rules.contract.test.ts` holds both.
-#[tauri::command]
+#[tauri::command(async)]
 fn vault_fingerprint(root_path: String) -> Result<VaultFingerprint, String> {
     let root = resolve_existing_inside(&root_path, "")?;
     let mut acc = VaultFingerprint {
@@ -2280,7 +2280,7 @@ fn vault_fingerprint(root_path: String) -> Result<VaultFingerprint, String> {
     Ok(acc)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn read_vault_text_file(root_path: String, relative_path: String) -> Result<TauriTextFile, String> {
     let path = resolve_existing_inside(&root_path, &relative_path)?;
     let text = fs::read_to_string(&path).map_err(|err| err.to_string())?;
@@ -2430,7 +2430,7 @@ fn read_library_collections_file(path: &Path) -> Result<Option<String>, String> 
     Ok(Some(text))
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn read_library_collections(root_path: String) -> Result<Option<String>, String> {
     const DIRECTORY: &str = ".ontology-atlas";
     const FILE_NAME: &str = "library-collections.json";
