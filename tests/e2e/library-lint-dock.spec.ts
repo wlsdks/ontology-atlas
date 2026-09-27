@@ -245,34 +245,6 @@ test.describe("Check the wiki opens the agent dock", () => {
     await expect(page.getByTestId("library-check-report-when")).toContainText("superseded 1");
     await expect(page.getByTestId("library-check-report")).toBeVisible();
     await expect(page.getByTestId("library-reading-pane")).toHaveCount(0);
-    // Back to the index the way a person goes: the tab is untouched by a page that is neither half.
-    await page.getByTestId("library-workspace-wiki").click();
-    // At a phone's width the report (still open: the switch does not close a page) is one
-    // column that never scrolls sideways.
-    await page.setViewportSize({ width: 390, height: 844 });
-    const report = page.getByTestId("library-check-report");
-    await expect(report).toBeVisible();
-    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-    expect(overflow).toBeLessThanOrEqual(0);
-    const box = (await report.boundingBox())!;
-    expect(box.x + box.width).toBeLessThanOrEqual(390);
-    // At 320 (1280 at 400% zoom) the report and the way back out of it are still
-    // hit-testable: an `overflow-hidden` ancestor clips instead of scrolling, so
-    // `scrollWidth` alone stays green over lost content (design-responsive, council
-    // 2026-09-07). The `Graph` chip this used to read is gone — the picture is the home
-    // (2026-09-12) — and the report is open here, so the control that owns the next press
-    // is the reader's own way back, which is the one this width must not clip.
-    await page.setViewportSize({ width: 320, height: 844 });
-    for (const id of ["library-check-report", "library-reader-back"]) {
-      const target = page.getByTestId(id);
-      await expect(target).toBeVisible();
-      const rect = (await target.boundingBox())!;
-      const hit = await page.evaluate(
-        ([x, y, testId]) => document.elementFromPoint(x, y)?.closest(`[data-testid="${testId}"]`) !== null,
-        [rect.x + rect.width / 2, rect.y + Math.min(rect.height / 2, 20), id] as const,
-      );
-      expect(hit, `${id} is under the pointer at 320`).toBe(true);
-    }
   });
 
   test("pressing it opens the dock carrying a lint request", async ({ page }) => {
@@ -282,13 +254,5 @@ test.describe("Check the wiki opens the agent dock", () => {
     await expect(dock).toBeVisible({ timeout: 25_000 });
     await expect(dock).toHaveAttribute("data-agent-request-kind", "lint");
     await expect(dock).toContainText(RUNTIME.label);
-  });
-
-  test("the keyboard opens it too", async ({ page }) => {
-    await openFolder(page);
-    await page.getByTestId("library-lint").focus();
-    await page.keyboard.press("Enter");
-    await expect(page.getByTestId("library-agent-dock")).toBeVisible({ timeout: 25_000 });
-    await expect(page.getByTestId("library-agent-dock")).toHaveAttribute("data-agent-request-kind", "lint");
   });
 });

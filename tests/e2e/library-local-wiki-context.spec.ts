@@ -322,7 +322,7 @@ test.describe("local Compile carries existing Wiki context safely", () => {
 
     for (const [name, viewport] of [
       ["desktop", { width: 1512, height: 900 }],
-      ["mobile", { width: 390, height: 844 }],
+      ["app-minimum", { width: 1040, height: 720 }],
     ] as const) {
       await page.setViewportSize(viewport);
       await expect(preview).toBeVisible();

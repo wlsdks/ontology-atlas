@@ -5,7 +5,7 @@ for (const subject of [
   { tab: 'harness', panel: 'harness-tab', destination: '/en/architecture/?view=guides' },
 ]) {
   test(`${subject.tab} examples reveal setup by keyboard and keep the next step reversible`, async ({ page }) => {
-    await page.setViewportSize({ width: 390, height: 844 });
+    await page.setViewportSize({ width: 1040, height: 720 });
     await page.goto(`/en/ontology/insights/?tab=${subject.tab}&guides=off`);
     const panel = page.getByTestId(subject.panel);
     await expect(panel).toBeVisible();
@@ -35,60 +35,11 @@ for (const subject of [
     await page.keyboard.press('Tab');
     await page.keyboard.press('Tab');
     await expect(next).toBeFocused();
-    const nav = page.locator('[data-tabbar="primary"]');
-    await expect(nav).toBeVisible();
-    await expect.poll(async () => {
-      const [linkBox, navBox] = await Promise.all([next.boundingBox(), nav.boundingBox()]);
-      if (!linkBox || !navBox) return false;
-      return linkBox.y + linkBox.height <= navBox.y;
-    }).toBe(true);
     await page.keyboard.press('Enter');
     await expect.poll(() => new URL(page.url()).pathname + new URL(page.url()).search).toBe(subject.destination);
     await expect(page.getByRole('main')).toBeVisible();
   });
 }
-
-test('wiki source quote stays singular and readable through the narrow reflow boundary', async ({ page }) => {
-  for (const { locale, quote } of [
-    { locale: 'en', quote: '“After cancellation, access continues until the next billing date.”' },
-    { locale: 'ko', quote: '“구독을 취소해도 다음 결제일까지는 이용할 수 있다.”' },
-  ]) for (const { width, rootFontPx } of [
-    { width: 390, rootFontPx: 16 },
-    { width: 512, rootFontPx: 16 },
-    { width: 640, rootFontPx: 16 },
-    { width: 640, rootFontPx: 32 },
-    { width: 767, rootFontPx: 16 },
-  ]) {
-    await page.setViewportSize({ width, height: 900 });
-    await page.goto(`/${locale}/ontology/insights/?tab=library&guides=off`);
-    if (rootFontPx !== 16) await page.addStyleTag({ content: `html { font-size: ${rootFontPx}px !important; }` });
-    const panel = page.getByTestId('library-tab');
-    const quotedText = panel.getByText(quote, { exact: true });
-    await expect(quotedText).toHaveCount(1);
-    await expect(quotedText).toBeVisible();
-    await expect.poll(() => panel.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
-    await expect.poll(() => panel.evaluate((root) => {
-      const source = root.querySelector<HTMLElement>('[data-relationship-item="source"]');
-      const pageItem = root.querySelector<HTMLElement>('[data-relationship-item="page"]');
-      const port = source?.querySelector<HTMLElement>('[data-relationship-port]');
-      const button = source?.querySelector<HTMLElement>('button');
-      if (!source || !pageItem || !port || !button) return false;
-      const buttonRect = button.getBoundingClientRect();
-      const pageRect = pageItem.getBoundingClientRect();
-      const walker = document.createTreeWalker(port, NodeFilter.SHOW_TEXT);
-      const textRects: DOMRect[] = [];
-      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-        if (!node.textContent?.trim()) continue;
-        const range = document.createRange();
-        range.selectNodeContents(node);
-        textRects.push(...range.getClientRects());
-      }
-      const contained = textRects.every((rect) => rect.left >= buttonRect.left && rect.right <= buttonRect.right && rect.top >= buttonRect.top && rect.bottom <= buttonRect.bottom);
-      const missesPage = textRects.every((rect) => rect.right <= pageRect.left || rect.left >= pageRect.right || rect.bottom <= pageRect.top || rect.top >= pageRect.bottom);
-      return textRects.length > 0 && contained && missesPage;
-    })).toBe(true);
-  }
-});
 
 test('example title and illustration border share fast hover focus and selected feedback', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });

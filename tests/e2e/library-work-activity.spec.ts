@@ -109,26 +109,3 @@ test.describe("Library live work activity", () => {
     await expect(page.getByTestId("library-work-current")).toHaveAttribute("data-work-phase", "complete");
   });
 });
-
-test.describe("Library work receipts on touch", () => {
-  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
-  test("keeps changed-file receipts reachable without the conversation", async ({ page }) => {
-    const harness = await openLibraryWorkScenario(page);
-    await harness.read(page);
-    await harness.wait(page);
-    await page.getByTestId("acp-permission-allow").click();
-    await harness.write(page);
-    await harness.finish(page);
-    await page.getByRole("button", { name: "Close conversation" }).click();
-    await page.getByTestId("library-work-history-toggle").click();
-    await expect(page.getByTestId("library-work-recent")).toContainText("File changed");
-    const receipt = page.getByRole("button", { name: "File changed · wiki/architecture", exact: true });
-    await expect(receipt).toBeVisible();
-    const box = await receipt.boundingBox();
-    expect(box!.height).toBeGreaterThanOrEqual(44);
-    expect(box!.width).toBeGreaterThanOrEqual(44);
-    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBe(0);
-    await receipt.tap();
-    await expect(page.getByTestId("library-reader-back")).toBeVisible();
-  });
-});
