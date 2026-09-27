@@ -22,13 +22,6 @@ import {
 } from '@/shared/motion';
 import { transientSurface } from "./transient-surface";
 
-/**
- * The centred modal dialog. Focus trap, Escape, focus return, scroll lock, `aria-modal` and
- * scrim-click close are one package with no opt-out (WAI-ARIA APG, `.claude/rules/design.md`);
- * non-modal surfaces use `Surface` with `transientSurface("anchored")`. Tokens as ratified
- * in `docs/DECISIONS.md`; `role="dialog"` elsewhere is held
- * by `tests/contract/dialog-adoption-ratchet`.
- */
 export interface DialogProps {
   open: boolean;
   /** Escape, a scrim click and the consumer's close button all go through this. */
@@ -63,6 +56,13 @@ function useIsMounted(): boolean {
   );
 }
 
+/**
+ * The centred modal dialog. Focus trap, Escape, focus return, scroll lock, `aria-modal` and
+ * scrim-click close are one package with no opt-out (WAI-ARIA APG, `.claude/rules/design.md`);
+ * non-modal surfaces use `Surface` with `transientSurface("anchored")`. Tokens as ratified
+ * in `docs/DECISIONS.md`; `role="dialog"` elsewhere is held
+ * by `tests/contract/dialog-adoption-ratchet`.
+ */
 export function Dialog({
   open,
   onClose,
@@ -76,6 +76,8 @@ export function Dialog({
   children,
 }: DialogProps) {
   const reducedMotion = usePrefersReducedMotion();
+  // The overlay grammar (opacity plus an 8px rise); moving the dialog onto `Surface`'s CSS
+  // keyframes is an open motion decision.
   const overlayStart = reducedMotion ? OVERLAY_RISE_REDUCED : OVERLAY_RISE;
   const containerRef = useDialogFocusTrap<HTMLDivElement>({
     open,

@@ -134,8 +134,9 @@ export function RouteFocusManager() {
       }
 
       /*
-       * A heading that is itself a control (an in-place editor) is not the title to announce;
-       * the landmark is, as `?focus=main` promises.
+       * A heading that is itself a control (an in-place editor) is not the title to announce, and
+       * setting its `tabIndex` to -1 below would drop it from the tab order; the landmark is the
+       * target, as `?focus=main` promises.
        */
       const heading = document.querySelector<HTMLElement>(
         'h1:not([hidden]):not([aria-hidden="true"])',

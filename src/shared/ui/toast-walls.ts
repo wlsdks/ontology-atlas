@@ -9,7 +9,7 @@
 /** Below this free width the side walls are ignored and the toast uses the viewport. */
 export const TOAST_LANE_MIN_WIDTH_PX = 360;
 
-/** A taller floor wall is a sheet, and a toast on it would stand mid-screen. */
+/** A floor wall above this share of the window is a sheet; a toast on it would stand mid-screen. */
 export const TOAST_FLOOR_MAX_SHARE = 0.4;
 
 export const TOAST_LEFT_WALL_VAR = '--app-toast-left-wall';

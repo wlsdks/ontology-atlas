@@ -120,9 +120,9 @@ function useToastLane(active: boolean): void {
 }
 
 /**
- * The box is one neutral surface; the glyph shape and ink carry the tone, so it survives
- * without colour. Each ink passes 3:1 on `--color-elevated`, pinned by
- * tests/contract/toast-surface.contract.test.ts.
+ * The tone glyph: small, in its tone's ink on no fill, its shape carrying the tone without colour
+ * on one neutral box. Each ink clears 4.5:1 on `--color-elevated`, error's `--color-danger-text`
+ * included (tests/contract/toast-surface.contract.test.ts).
  */
 const TONE_GLYPH_SIZE = ICON_SIZE.md;
 
@@ -151,10 +151,7 @@ export function ToastProvider({
   }, []);
   const { toasts } = useSonner();
   useToastLane(toasts.length > 0);
-  /*
-   * sonner reads `mobileOffset` below 600px, so each band states its own clearance. The floor
-   * is the higher of the tab bar top and the highest declared floor wall, plus 16px.
-   */
+  // sonner reads `mobileOffset` below 600px, so each band states its own clearance.
   const offset = useMemo(
     () => ({
       top: 16,
@@ -201,8 +198,8 @@ export function ToastProvider({
         toastOptions={{
           unstyled: true,
           classNames: {
-            // `app-toast` is the motion hook that replaces sonner's ease-in with the app ramp
-            // and its reduced-motion equivalent (`app/globals.css`).
+            // `app-toast` is the motion hook (sonner's ease-in replaced by the app ramp and its
+            // reduced-motion equivalent, `app/globals.css`); `pr-10` seats the close button.
             toast:
               'app-toast group inset-x-0 mx-auto flex w-fit max-w-full items-center data-[x-position=right]:mr-0 gap-2.5 rounded-[var(--radius-card)] border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] py-2.5 pl-3 pr-10 text-body leading-body text-[color:var(--color-text-primary)] shadow-[var(--shadow-elevation-1)] [@media(pointer:coarse)]:pr-14',
             content: 'flex min-w-0 flex-1 flex-col items-stretch',

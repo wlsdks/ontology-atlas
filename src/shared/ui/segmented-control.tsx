@@ -11,8 +11,9 @@ import { controlClass, type ControlSize } from "./control-class";
  * and `aria-pressed` on siblings would not state exclusivity. Keyboard behaviour
  * is `shared/lib/use-roving-radio-group`; this file applies the two measured containers
  * (`well`, `chips`). Busy never disables the group, which would drop its only tab stop.
- * The `well` needs `border-soft`: the overlay-1 surface alone is invisible. A selected segment
- * answers no hover, because the hover axes never emit under `active`.
+ * The `well` needs `border-soft`, since the overlay-1 surface alone is invisible, and `p-px`, which
+ * keeps it 28/36 tall on the control-height ramp. A selected segment answers no hover, because
+ * the hover axes never emit under `active`.
  */
 
 type SegmentedName =

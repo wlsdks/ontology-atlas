@@ -1,9 +1,8 @@
 /**
- * The reading measure as a number, for three consumers that cannot read the CSS token
- * (`app/globals.css`): the popout window, the image `sizes=` hint and the outline-rail fit.
- * Each follows text zoom (rem, or the live root via `docColumnPxAtRoot`); the `_PX` values are
- * the default-root numbers. A mirror, not a second
- * source: `tests/e2e/prose-measure-calibration.spec.ts` fails if it drifts from the token.
+ * The reading measure as a number for three consumers that cannot read the CSS token: the popout
+ * window (an inlined stylesheet outside the app's cascade), the image `sizes=` hint (parsed at
+ * build time) and the outline-rail fit (arithmetic). Each follows text zoom; the `_PX` values
+ * are the default-root numbers, held to the token by tests/e2e/prose-measure-calibration.spec.ts.
  */
 
 /** Mirrors `--measure-prose-steps`; change both together. */

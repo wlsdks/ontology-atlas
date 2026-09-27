@@ -22,7 +22,7 @@ export { HiddenCountLine } from './hidden-count-line';
 export { EvidenceOnlyBadge } from './evidence-only-badge';
 export { Select } from './select';
 export { InlineEditable } from './inline-editable';
-/* Why `Card`, `Badge` and the list editors are gone: `docs/DECISIONS.md`, two dead primitives. */
+/* A new primitive ships with consumers and a gate: `docs/DECISIONS.md`, two dead primitives. */
 export { Tooltip, TooltipProvider } from './tooltip';
 export { StaggeredFadeIn } from './staggered-fade-in';
 export { HighlightedText } from './highlighted-text';

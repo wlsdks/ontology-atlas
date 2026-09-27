@@ -61,7 +61,6 @@ export function OntologyMapKindGlyph({
   }
   const resolved: OntologyMapRenderableKind = kind;
   const strokeColor = `var(--map-node-stroke-${resolved})`;
-  // Line set: a 1px outline only. Geometric set: the kind fill plus a 1.25px outline.
   const common = {
     fill: line ? "none" : `var(--map-node-fill-${resolved})`,
     stroke: strokeColor,

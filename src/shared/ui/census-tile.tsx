@@ -68,8 +68,10 @@ export function CensusBigNumber({
   unit?: string;
   suffix?: string;
   scale?: 'signature' | 'section';
-  /** For a number whose subject is an absence: the one amber this grammar allows. */
-  /** The ink a verdict word beside it wears, so the number is not out-ranked. */
+  /**
+   * The `warning` tone marks a number whose subject is an absence (the one amber allowed), and
+   * the `primary` tone takes the ink of a verdict word beside it so the number is not out-ranked.
+   */
   tone?: 'numeral' | 'warning' | 'primary';
   testId?: string;
 }) {

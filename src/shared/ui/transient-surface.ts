@@ -18,7 +18,10 @@ export const TRANSIENT_SURFACE_ATTR = "data-transient-surface" as const;
 
 export type TransientSurfaceKind = "anchored" | "menu" | "sheet" | "notice" | "hint";
 
-/** Kinds that must not take focus: surfaces you lose nothing by missing. */
+/**
+ * Kinds that must not take focus: a focused notice swallows the keys meant for the surface below
+ * and stalls its own dismissal.
+ */
 export const FOCUSLESS_KINDS: readonly TransientSurfaceKind[] = ["notice", "hint"];
 
 /** Kinds that must stand beside what raised them. */

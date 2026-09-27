@@ -51,7 +51,6 @@ export function InlineEditable({
   const inputRef = useRef<HTMLInputElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
-  // Adopts an externally changed value only while not editing.
   useEffect(() => {
     if (!editing) queueMicrotask(() => setDraft(value));
   }, [value, editing]);
@@ -103,9 +102,8 @@ export function InlineEditable({
       cancel();
       return;
     }
-    // Single-line commits on Enter; multiline needs Cmd/Ctrl+Enter.
-    if (e.key === "Enter") {
-      if (multiline && !(e.metaKey || e.ctrlKey)) return;
+    const isCommitKey = e.key === "Enter" && (!multiline || e.metaKey || e.ctrlKey);
+    if (isCommitKey) {
       e.preventDefault();
       void commit();
     }

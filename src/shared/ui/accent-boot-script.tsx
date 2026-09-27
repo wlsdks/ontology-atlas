@@ -28,9 +28,9 @@ const LANG_BOOT = [
 ].join("");
 
 /**
- * Where an inline boot script lives is a contract: as a child of `<html>`, first in `<body>` or
- * in an explicit `<head>`, each placement raised a React warning or broke the not-found route.
- * A dev-overlay issue badge turning an unrelated e2e gate red is the symptom.
+ * Where an inline boot script lives is a contract: rendered raw under `<html>`, first in `<body>`
+ * or in an explicit `<head>`, it warned, never ran on the client-rendered not-found route, or made
+ * that route a 500. A dev-overlay badge turning an unrelated e2e gate red is the symptom.
  */
 export function AccentBootScript() {
   /*

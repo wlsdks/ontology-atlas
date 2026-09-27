@@ -134,14 +134,12 @@ export function Select({
   const optionDomId = (index: number) => `${baseId}-opt-${index}`;
 
   const [open, setOpen] = useState(false);
-  // Keyboard highlight, set on open to the selected option (or 0).
   const [activeIndex, setActiveIndex] = useState(0);
   const [anchor, setAnchor] = useState<Anchor | null>(null);
   const [growth, setGrowth] = useState<ListboxGrowth | null>(null);
   // `null` means the trigger's edge; remeasured before paint on every open.
   const [listLeft, setListLeft] = useState<number | null>(null);
-  // Edge affordances turn on only when something is genuinely hidden.
-  const [edges, setEdges] = useState<{ top: boolean; bottom: boolean }>({
+  const [hiddenEdges, setHiddenEdges] = useState<{ top: boolean; bottom: boolean }>({
     top: false,
     bottom: false,
   });
@@ -181,8 +179,8 @@ export function Select({
     [options, onChange, closeList],
   );
 
-  // The list is portalled, so `rootRef` alone would count the list as outside and a pointerdown
-  // would close it before the click lands.
+  // Closes without refocusing the trigger, since the pressed target takes focus. The list is
+  // portalled, so `rootRef` alone would count it as outside and close it before the click lands.
   useEffect(() => {
     if (!open) return;
     const onPointerDown = (e: PointerEvent) => {
@@ -254,11 +252,11 @@ export function Select({
   useLayoutEffect(() => {
     const list = listRef.current;
     if (!open || !list || !growth) {
-      setEdges({ top: false, bottom: false });
+      setHiddenEdges({ top: false, bottom: false });
       return;
     }
     const read = () =>
-      setEdges({
+      setHiddenEdges({
         top: listboxTopIsHidden(growth.overflowing, list.scrollTop),
         bottom: listboxBottomIsHidden(
           growth.overflowing,
@@ -358,11 +356,11 @@ export function Select({
   /** Fades only the covered side, and only once a cap hides something; adds no colour. */
   const edgeMask = (() => {
     const fade = "var(--leading-body)";
-    if (edges.top && edges.bottom) {
+    if (hiddenEdges.top && hiddenEdges.bottom) {
       return `linear-gradient(to bottom, transparent 0, black ${fade}, black calc(100% - ${fade}), transparent 100%)`;
     }
-    if (edges.top) return `linear-gradient(to bottom, transparent 0, black ${fade})`;
-    if (edges.bottom) return `linear-gradient(to top, transparent 0, black ${fade})`;
+    if (hiddenEdges.top) return `linear-gradient(to bottom, transparent 0, black ${fade})`;
+    if (hiddenEdges.bottom) return `linear-gradient(to top, transparent 0, black ${fade})`;
     return undefined;
   })();
 

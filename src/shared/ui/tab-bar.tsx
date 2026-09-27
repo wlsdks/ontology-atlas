@@ -229,9 +229,9 @@ export function TabBar({
             onClick={() => activateTab(item.key)}
             onKeyDown={(event) => handleKeyDown(event, index)}
             /*
-             * The `shrink-0 whitespace-nowrap` classes keep a flex child in
-             * an `overflow-x-auto` row from shrinking and wrapping. `atlas-touch-floor` is a
-             * real min-height so adjacent tabs never share phantom targets (`app/globals.css`).
+             * The `shrink-0 whitespace-nowrap` classes stop a flex child in an `overflow-x-auto` row
+             * from wrapping. Heights are minimums so zoomed text grows the tab; the touch-floor
+             * classes (`app/globals.css`) are real min-heights, so tabs never share phantom targets.
              */
             className={
               vertical

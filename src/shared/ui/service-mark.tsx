@@ -28,9 +28,9 @@ const SERVICE_MARK_PATHS: Record<string, string> = {
 export type ServiceMarkName = keyof typeof SERVICE_MARK_PATHS;
 
 /**
- * Matches the connector name and what it runs (command or URL host), because either can
- * identify the service after a rename. Fragments must be specific enough not to occur by
- * accident in ordinary paths.
+ * Matches the connector name and what it runs (command or URL host), so a renamed row still finds
+ * its service. Fragments must not occur by accident in ordinary paths. A table even at one row,
+ * because a re-added mark drops in as one line once its guideline is read.
  */
 const SERVICE_MARK_HINTS: ReadonlyArray<readonly [ServiceMarkName, readonly string[]]> = [
   ['github', ['github', 'githubcopilot.com']],

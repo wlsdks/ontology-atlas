@@ -7,8 +7,8 @@ import { cn } from "@/shared/lib/cn";
 import { controlClass } from '@/shared/ui/control-class';
 
 /**
- * Which edge of the 24px button the 288px panel hangs from. `right` is the default so no pixel
- * moved, but it runs off the left edge near a narrow screen's left side. A static anchor is
+ * Which edge of the 24px button the 288px panel hangs from. `right` stays the default for existing
+ * callers, but it runs off the left edge near a narrow screen's left side. A static anchor is
  * sound only where the button's distance from the window edge holds at every width and locale;
  * where it does not, use one hint per definition rather than a breakpoint-conditional anchor. A
  * self-placing panel needs JS or CSS anchor positioning proven in WebKit, the app's WebView,

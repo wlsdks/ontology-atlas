@@ -6,13 +6,6 @@ import { cn } from '@/shared/lib/cn';
 import { usePanelPresence } from '@/shared/lib/use-presence';
 
 /**
- * A conditionally rendered inline surface with entrance and exit built in. It holds the exit
- * window (`usePanelPresence`), exits with its own `-out` class because a reversed entrance
- * never restarts an unchanged `animation-name`, and makes exiting frames inert. Reduced motion
- * comes from the base layer; do not branch here. Not a modal: no scrim, focus trap
- * or `aria-modal` (`.claude/rules/design.md`).
- */
-/**
  * The surface's size picks the grammar. `chrome` (move, scale and brightness) is for small
  * chrome over the map; `overlay` is brightness only, because a large surface that moves reads
  * as the screen shaking, so `origin` does nothing under it.
@@ -56,6 +49,13 @@ export interface SurfaceProps {
   [ariaAttribute: `aria-${string}`]: unknown;
 }
 
+/**
+ * A conditionally rendered inline surface with entrance and exit built in. It holds the exit
+ * window (`usePanelPresence`), exits with its own `-out` class because a reversed entrance
+ * never restarts an unchanged `animation-name`, and makes exiting frames inert. Reduced motion
+ * comes from the base layer's `!important` rule, which a branch here would lose to. Not a modal:
+ * no scrim, focus trap or `aria-modal` (`.claude/rules/design.md`).
+ */
 export function Surface({
   open,
   children,
