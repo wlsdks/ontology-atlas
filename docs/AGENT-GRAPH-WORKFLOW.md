@@ -8,18 +8,20 @@ area: agents
 # Agent Graph Workflow
 
 This guide is for a person or an AI coding agent working against an Atlas vault
-from a terminal or an MCP client. It covers the four topics that `agent-setup`,
-`agent-brief` and MCP `agent_brief` point to: CLI-only use, MCP-connected use,
-how Atlas differs from a graph database, and the verification checks.
+from a terminal or an MCP client. It covers what `agent-setup`, `agent-brief` and
+MCP `agent_brief` point to: CLI-only use, MCP-connected use, the graph DB-style
+query pack, how Atlas differs from a graph database, and the verification
+checks.
 
 `ontology-atlas` is not a hosted graph database. Markdown frontmatter is the
 graph, Git is the audit log, and agents read or write through MCP when they are
-connected. Atlas does not run an agent loop, host a terminal, or start a process
-on your behalf; it prepares config files and text that you choose to run in the
-agent session you already use.
+connected. Atlas does not host a terminal or type commands for you. For work on
+your source code it prepares config files and text that you run in the agent
+session you already use; the app's own agent conversations are described in
+[features/agents.md](features/agents.md).
 
 There is no npm package. The installed macOS app carries a compiled MCP server
-and connects it through **Connect agent**. From a source checkout, register
+and connects it from the **Connect an AI agent** dialog. From a source checkout, register
 `node /absolute/path/to/ontology-atlas/mcp/src/index.js` and run the CLI as
 `node cli/src/index.mjs <command>`. A config that still holds `command: "npx"`
 cannot start.
@@ -36,10 +38,9 @@ nothing. `agent-setup --json` reports these ids as `docs.modeComparison`.
 | `graph_db_pack` | You want graph-database-style exploration without a database server | Bounded query plans, node and edge scans, domain matrix, paths, relation explanations, and follow-up evidence commands |
 | `setup_gate` | Setup is unclear or the agent opened at another codebase root | Config repair commands, restart guidance, JSON readiness checks, and fallback timing before edits |
 
-The installed app's **Connect agent** shows the config it is about to write,
-writes it after you approve, then spawns the bundled server and round-trips
-`get_concept`; a green light means the vault is readable. A browser has no
-absolute path to write, so it shows the source-checkout instructions instead.
+In the installed app, **Connect** on a tool's row writes that tool's config
+files into the folder and confirms completion. A browser has no absolute path to
+write, so it copies the config with instructions instead.
 
 Read the JSON setup gate in three states:
 
@@ -122,7 +123,7 @@ reviewed evidence. Otherwise run the returned full-body read and treat exact
 navigation as unknown. Do not precede this path with `workspace_brief`,
 `list_concepts`, or a full `agent_brief`; those orient over the whole vault and
 duplicate the known-task handoff. The measured effect of this profile, and its
-limits, live in [docs/benchmark/README.md](benchmark/README.md); it is not a
+limits, live in [mcp/README.md](../mcp/README.md#read-only-registration-oatlas_read_only); it is not a
 claim about every MCP registration.
 
 When no coding task is known, start read-only:
@@ -170,8 +171,8 @@ node $ATLAS/cli/src/index.mjs all-paths capabilities/cli-developer-entry capabil
 node $ATLAS/cli/src/index.mjs explain capabilities/cli-developer-entry capabilities/mcp-server docs/ontology --types depends_on,relates
 ```
 
-Scan rows are candidates, not proof. `agent-setup --json` returns this
-scan-to-proof checklist as `docs.graphScanProofChecklist`:
+Scan rows are candidates, not proof. `agent-brief --json` and MCP `agent_brief`
+return this scan-to-proof checklist as `docs.graphScanProofChecklist`:
 
 1. Report `totalMatches`, `limited`, and the returned row count from
    `match-nodes` or `match-edges`.
@@ -246,7 +247,8 @@ approval.
 With the installed app:
 
 1. Open the local vault folder in the app.
-2. Open App Settings → AI agent and check the setup and connection card.
+2. Open **Agents → MCP** (`/agents/?tab=mcp`; Settings → Connections → **MCP**
+   opens it) and check the setup and connection card.
 3. A session opened in the vault folder can use `.` as the vault path; a
    session opened at a separate codebase root passes the vault as an absolute
    path.

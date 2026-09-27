@@ -245,8 +245,8 @@ records stay readable before a decision is convened.
 **Owner**: <the accountable person>
 ```
 
-Route, evidence state, review turns, delta, and later result are typed per
-run with `pnpm po:record`; they are not repeated in the record. A change that
+Route, evidence state and review delta stay in the pass and the pull-request
+rationale; they are not repeated in the record. A change that
 fits its commit message needs no record. Overturning is a new record whose
 `Prior` names the old one; `pnpm decisions:find` lists who cites a record, so
 status is derived, never edited in place.

@@ -118,7 +118,7 @@ and limits.
 
 ### Graph-level commands
 
-These wrap the MCP server so the developer has the same authority as an AI agent — compile the graph, find backlinks, rename / merge / delete safely, run a typed filter DSL. Each command is a one-shot MCP call; commands that mutate the graph are dry-run by default with an explicit `--confirm` flag, except `compile --fix`, which only applies compiler-produced canonicalization patches.
+These wrap the MCP server so the developer has the same authority as an AI agent — compile the graph, find backlinks, rename / merge / delete safely, run a typed filter DSL. Most are one MCP call. `rename`, `merge` and `delete` preview by default and apply with `--confirm`; `relate` and `remove-relation` write unless `--dry-run` is passed, through the CLI's own guarded file writer.
 
 | Command | What it does |
 |---|---|
@@ -223,8 +223,9 @@ its table row, so automation passes `--exit-zero` and reads `status` from the
 JSON. Human output prints health coverage as `id:status:count` rows. All three
 forward the focused diagnosis flags `--dependency-types A,B`,
 `--component-types A,B`, `--component-limit N`, `--cycle-limit N`,
-`--recommendation-limit N`, `--order-limit N`, and `--node-limit N` (`--limit N`
-is an alias for `--node-limit N`).
+`--recommendation-limit N`, `--order-limit N`, and `--node-limit N` (`health`
+and `workspace-brief` also accept `--limit N` for `--node-limit N`;
+`agent-brief` does not).
 
 When editing the CLI from this repository, `pnpm checks:changed` names the
 focused checks for the touched files; the usual ones are:
@@ -320,8 +321,8 @@ verified.
 
 ## See the graph
 
-The map is a custom canvas-2D `ontology-map` renderer, with Graphology data
-structures and ForceAtlas2 layout.
+The map is a custom canvas-2D `ontology-map` renderer; Graphology supplies
+only the ForceAtlas2 layout.
 
 - **Hosted website** (intro, download, read-only dogfood demo):
   https://ontologyatlas.com/
