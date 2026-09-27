@@ -19,24 +19,31 @@ quality gain was measured
 
 | Agent | Effort | Work |
 |---|---|---|
-| lead session | max, set by you | decide, plan small changes, talk to the owner |
+| lead session | xhigh from `.claude/settings.json`; `/effort max` for one session | decide, plan small changes, talk to the owner |
 | `planner` | max | slices a low-effort implementer can build without judgment |
 | `implementer` | low | one planned slice from `/parallel-brief` |
+| `investigator` | max | root cause of a failure or flake, then the fix |
 | `reviewer` | max | an independent review of a returned diff, or of a routed product or design decision |
 | `design-guardian` | max | a design verdict with edits, when the owner asks |
 
 ## Steps
 
-1. Start the lead with `claude --effort max`, or run `/effort max` in the
-   session. `max` lasts one session; nothing in the repository can raise the
-   lead's effort, and a model cannot raise its own.
+1. The lead starts at `xhigh` from the project's `.claude/settings.json`
+   (`effortLevel`), the highest level a settings file accepts. For a session
+   that is mostly planning or judgment, run `/effort max` or start with
+   `claude --effort max`; `max` lasts one session, and a model cannot raise
+   its own effort.
 2. Do not export `CLAUDE_CODE_EFFORT_LEVEL`. It outranks every agent's
    `effort:` line, so implementers would run at max as well.
 3. Delegate by agent type. The Agent tool has no per-call effort, so the type
    is the dial; in a Workflow script pass `effort` to `agent()`.
-4. `/tasks` shows each running agent's model and effort; confirm the tiers
-   there.
-5. Retune a tier by editing the `effort:` line in `.claude/agents/<name>.md`.
+4. `/tasks` shows each running agent's model and effort. Afterwards, each
+   subagent's transcript under `~/.claude/projects/<project>/<session>/subagents/`
+   records the `effort` every request ran at; the session header shows the
+   lead's.
+5. Debugging and reproduction go to `investigator`, not `general-purpose`,
+   which inherits the lead's level and carries no instructions of its own.
+6. Retune a tier by editing the `effort:` line in `.claude/agents/<name>.md`.
 
 ## If it fails
 
