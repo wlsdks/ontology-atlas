@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
 import type { VaultDoc } from '@/entities/docs-vault';
 import { countDeskReadablePages, findDeskClaims, findDeskSourceHits, jevClaimEligibility, jevPayloadEligibility, planDeskSourceReads, questionDeskReportFileCurrent, questionTerms } from './question-desk';
-import { buildQuestionDeskBrief, buildQuestionDeskReportBrief, questionDeskReportFilename, serializeQuestionDeskReport, QUESTION_DESK_BRIEF_MAX_CHARS } from './question-desk-brief';
+import { buildQuestionDeskBrief, buildQuestionDeskReportBrief, questionDeskReportFilename, serializeQuestionDeskReport, splitQuestionDeskReportSections, QUESTION_DESK_BRIEF_MAX_CHARS } from './question-desk-brief';
 import { planQuestionDeskReportFile } from './question-desk-brief';
 import { buildAnswerPage } from './answer-page';
 
@@ -170,6 +170,17 @@ describe('question desk evidence', () => {
     expect(report.length).toBeLessThanOrEqual(QUESTION_DESK_BRIEF_MAX_CHARS);
   });
 
+  it('separates only exact ordered localized report headings and keeps freeform text raw', () => {
+    const korean = '## 답\n승인 뒤 작업이 실행됩니다.\n## 원문 근거\n- 원문은 작업 대기라고 말합니다. [[src:sources/refund.md#l2]]\n## 불일치하거나 변경된 주장\n- 즉시 복구 주장은 어긋납니다.\n## 모르는 점과 검색 한계\n- 실행 시각은 알 수 없습니다.';
+    const sections = splitQuestionDeskReportSections(korean, 'ko');
+    expect(sections?.map((section) => section.title)).toEqual(['답', '원문 근거', '불일치하거나 변경된 주장', '모르는 점과 검색 한계']);
+    expect(sections?.[0]?.markdown).toBe('승인 뒤 작업이 실행됩니다.');
+    expect(sections?.[1]?.markdown).toContain('[[src:sources/refund.md#l2]]');
+    expect(splitQuestionDeskReportSections('# 자유 형식\n\n모델 답변입니다.', 'ko')).toBeNull();
+    expect(splitQuestionDeskReportSections(korean.replace('## 원문 근거', '## 바뀐 근거'), 'ko')).toBeNull();
+    expect(splitQuestionDeskReportSections(korean + '\n## 답\n반복', 'ko')).toBeNull();
+  });
+
   it('reserves room for report instructions when the evidence handoff approaches its cap', () => {
     const sourcePath = `sources/${'nested/'.repeat(18)}${'a'.repeat(70)}.md`;
     const input = {
@@ -285,6 +296,35 @@ describe('question desk evidence', () => {
     expect(facts).not.toContain('completion date');
     expect(page.text.split('## Open questions\n')[1]!).toContain('claims immediate restoration');
     expect(page.text.split('## Not in sources\n')[1]!).toContain('One original unreadable; one lead omitted.');
+  });
+
+  it('files a realistic Korean ACP report with explanatory prose without promoting it to Facts', () => {
+    const report = {
+      question: '재고는 언제 복구되나요?', generatedAt: '2026-09-27T17:00:00Z',
+      coverage: '위키 2/2 · 원문 2/2', limits: '로컬 단어 일치 없음; 다른 언어 문서는 빠질 수 있음',
+      text: [
+        '## 답', '즉시는 아닙니다. 별도 작업이 실행된 뒤 반영됩니다.',
+        '## 원문 근거', '두 영어 원문을 다시 읽었습니다.',
+        '- 환불 승인은 재고 복구 작업을 대기열에 넣습니다. [[src:sources/refund.md#l2]]',
+        '이것은 승인 즉시 수량이 바뀐다는 뜻이 아닙니다.',
+        '## 불일치하거나 변경된 주장', '위키의 즉시 복구 주장은 원문과 어긋납니다. [[src:sources/refund.md#l2]]',
+        '## 모르는 점과 검색 한계', '실제 작업 완료 시각은 문서에 없습니다.',
+        '마지막으로 로컬 단어 검색은 한국어 질문과 영어 원문을 연결하지 못했습니다.',
+      ].join('\n'),
+    };
+    const plan = planQuestionDeskReportFile(report, 'ko', new Set(['sources/refund.md']));
+    expect(plan.ok).toBe(true);
+    if (!plan.ok) return;
+    const page = buildAnswerPage({ question: report.question, answer: plan.answer, askedOn: null,
+      writer: 'agent:test', now: new Date(report.generatedAt), knownSources: ['sources/refund.md'] });
+    expect(page.problems).toEqual([]);
+    const facts = page.text.split('## Facts\n')[1]!.split('## Decisions')[0]!;
+    expect(facts).toContain('환불 승인은 재고 복구 작업을 대기열에 넣습니다.');
+    expect(facts).not.toContain('두 영어 원문을 다시 읽었습니다.');
+    expect(facts).not.toContain('즉시 복구 주장은');
+    expect(page.text.split('## Open questions\n')[1]!).toContain('즉시 복구 주장은');
+    expect(page.text.split('## Not in sources\n')[1]!).toContain('두 영어 원문을 다시 읽었습니다.');
+    expect(page.text.split('## Not in sources\n')[1]!).toContain('로컬 단어 검색은 한국어 질문');
   });
 
   it('refuses freeform, duplicate/mixed headings, uncited evidence, and unavailable citations before filing', () => {

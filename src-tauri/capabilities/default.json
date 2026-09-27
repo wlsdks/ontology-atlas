@@ -8,6 +8,7 @@
   "permissions": [
     "core:event:default",
     "core:app:default",
+    "core:webview:allow-print",
     "updater:default",
     "process:allow-restart"
   ]

@@ -682,6 +682,13 @@
     html[data-print-scope="question-desk"] [data-question-desk-print] * {
       visibility: visible;
     }
+    html[data-print-scope="question-desk"] [data-testid="question-desk-results"],
+    html[data-print-scope="question-desk"] [data-testid="question-desk-report"] {
+      opacity: 1 !important;
+      transform: none !important;
+      animation: none !important;
+      transition: none !important;
+    }
     html[data-print-scope="question-desk"] [data-question-desk-print] {
       page: atlas-question-report;
       position: absolute;
@@ -698,6 +705,15 @@
       color: #111 !important;
       background: transparent !important;
       box-shadow: none !important;
+      opacity: 1 !important;
+      transform: none !important;
+      animation: none !important;
+      transition: none !important;
+    }
+    html[data-print-scope="question-desk"] [data-question-desk-print] [data-report-actions],
+    html[data-print-scope="question-desk"] [data-question-desk-print] [data-report-actions] * {
+      display: none !important;
+      visibility: hidden !important;
     }
     html[data-print-scope="question-desk"] [data-question-desk-print] header,
     html[data-print-scope="question-desk"] [data-question-desk-print] footer,

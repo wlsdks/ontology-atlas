@@ -104,6 +104,35 @@ export function buildQuestionDeskReportBrief(input: Parameters<typeof buildQuest
   return brief;
 }
 
+/** Presentation only. A malformed ACP response stays raw instead of gaining invented sections. */
+export function splitQuestionDeskReportSections(text: string, locale: string): Array<{ title: string; markdown: string }> | null {
+  const titles = locale === 'ko'
+    ? ['답', '원문 근거', '불일치하거나 변경된 주장', '모르는 점과 검색 한계']
+    : ['Answer', 'Source-backed evidence', 'Disagreements or changed claims', 'Unknowns and search limits'];
+  const bodies: string[][] = [[], [], [], []];
+  let section = -1;
+  let fence: string | null = null;
+  for (const line of text.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    const marker = /^(```|~~~)/.exec(trimmed)?.[1] ?? null;
+    if (!fence && marker) fence = marker;
+    else if (fence && marker === fence) fence = null;
+    const heading = !fence ? /^##\s+(.+)$/.exec(trimmed)?.[1] : undefined;
+    if (heading) {
+      if (heading !== titles[section + 1]) return null;
+      section += 1;
+      continue;
+    }
+    if (section < 0) {
+      if (trimmed) return null;
+      continue;
+    }
+    bodies[section]!.push(line);
+  }
+  if (section !== 3 || fence) return null;
+  return titles.map((title, index) => ({ title, markdown: bodies[index]!.join('\n').trim() }));
+}
+
 export interface QuestionDeskReportContent {
   question: string;
   text: string;
@@ -207,19 +236,23 @@ export function planQuestionDeskReportFile(report: QuestionDeskReportContent, lo
     }
     if (section < 0 || /^#{1,6}\s/.test(line) || /^(```|~~~)/.test(line)) return { ok: false, reason: 'shape' };
     if (/!?\[[^\]]*\]\s*(?:\([^)]*\)|\[[^\]]*\])/.test(line) || /^\[[^\]]+\]:/.test(line) || /<[^>]+>/.test(line)) return { ok: false, reason: 'unsafe' };
-    if (section > 0 && !/^[-*]\s+/.test(line)) return { ok: false, reason: 'shape' };
     sections[section]!.push(line);
   }
   if (section !== 3 || sections[0]!.length === 0) return { ok: false, reason: 'shape' };
   if (sections[1]!.length === 0) return { ok: false, reason: 'no-evidence' };
   const cited = new RegExp(WIKI_CITATION_PATTERN, 'g');
   const citations: Array<{ path: string; anchor: string }> = [];
+  const citedFacts: string[] = [];
+  const evidenceCommentary: string[] = [];
   for (const [index, lines] of sections.entries()) {
     for (const line of lines) {
       const loose = [...line.matchAll(/\[\[src:[^\]]+\]\]/g)];
       const valid = [...line.matchAll(cited)];
       if (loose.length !== valid.length) return { ok: false, reason: 'citation' };
-      if (index === 1 && valid.length === 0) return { ok: false, reason: 'no-evidence' };
+      if (index === 1) {
+        if (/^[-*]\s+/.test(line) && valid.length > 0) citedFacts.push(line);
+        else evidenceCommentary.push(line);
+      }
       for (const match of valid) {
         const path = match[1]!;
         const anchor = match[2]!;
@@ -228,21 +261,24 @@ export function planQuestionDeskReportFile(report: QuestionDeskReportContent, lo
       }
     }
   }
+  if (citedFacts.length === 0) return { ok: false, reason: 'no-evidence' };
   const bullet = (line: string) => line.replace(/^[-*]\s+/, '- ');
+  const ensureBullet = (line: string) => /^[-*]\s+/.test(line) ? bullet(line) : `- ${line}`;
   const answer = [
     '## Summary',
     ...sections[0]!,
     '',
     '## Facts',
-    ...sections[1]!.map(bullet),
+    ...citedFacts.map(bullet),
     '',
     '## Decisions',
     '',
     '## Open questions',
-    ...sections[2]!.map(bullet),
+    ...sections[2]!.map(ensureBullet),
     '',
     '## Not in sources',
-    ...sections[3]!.map(bullet),
+    ...evidenceCommentary.map((line) => ensureBullet(`${locale === 'ko' ? '근거 해설 (사실로 승격하지 않음)' : 'Evidence commentary (not promoted to a fact)'}: ${line}`)),
+    ...sections[3]!.map(ensureBullet),
     `- ${locale === 'ko' ? '검색 당시 범위' : 'Search-time coverage'}: ${report.coverage}`,
     `- ${locale === 'ko' ? '검색 당시 한계' : 'Search-time limits'}: ${report.limits}`,
   ].join('\n');

@@ -1,16 +1,17 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import { motion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 import type { VaultDoc, LibrarySourceRow } from '@/entities/docs-vault';
 import {
-  buildQuestionDeskBrief,
   buildQuestionDeskReportBrief,
   questionDeskReportFilename,
   serializeQuestionDeskReport,
+  splitQuestionDeskReportSections,
   countDeskReadablePages,
   findDeskClaims,
   findDeskSourceHits,
@@ -30,6 +31,8 @@ import { normalizeOriginalPaths, parseWikilinkHref, resolveSourceCitation, rewri
 import { WIKI_CITATION_ANCHOR_PATTERN } from '@/shared/lib/wiki-page-schema';
 import { Button, Chip, Dialog } from '@/shared/ui';
 import { Input } from '@/shared/ui/input';
+import { MOTION, OVERLAY_RISE, OVERLAY_RISE_REDUCED, OVERLAY_SETTLED, STAGGER } from '@/shared/motion';
+import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion';
 import { StateBadge } from './StateBadge';
 
 const INLINE_CITATION = /\[\[src:[^\]]+\]\]/g;
@@ -100,7 +103,7 @@ async function digestHex(bytes: ArrayBuffer): Promise<string | null> {
 }
 
 /** Untrusted ACP Markdown: local source citations alone become controls. */
-function DraftReport({ text, sources, onOpenSource }: {
+function SafeReportMarkdown({ text, sources, onOpenSource }: {
   text: string;
   sources: readonly LibrarySourceRow[];
   onOpenSource: (path: string, anchor: string) => void;
@@ -139,6 +142,39 @@ function DraftReport({ text, sources, onOpenSource }: {
   </div>;
 }
 
+function DraftReport({ text, sources, onOpenSource, actions }: {
+  text: string;
+  sources: readonly LibrarySourceRow[];
+  onOpenSource: (path: string, anchor: string) => void;
+  actions: ReactNode;
+}) {
+  const locale = useLocale();
+  const t = useTranslations('library.questionDesk');
+  const reduced = usePrefersReducedMotion();
+  const sections = useMemo(() => splitQuestionDeskReportSections(text, locale), [locale, text]);
+  if (!sections) return <div data-testid="question-desk-report-raw">
+    <p className="mb-3 text-label leading-label text-[color:var(--color-text-tertiary)]">{t('report.rawFallback')}</p>
+    <SafeReportMarkdown text={text} sources={sources} onOpenSource={onOpenSource} />
+    {actions}
+  </div>;
+  return <div data-testid="question-desk-report-sections" className="space-y-6">
+    {sections.map((section, index) => <motion.section key={section.title} data-testid={`question-desk-report-section-${index}`}
+      initial={reduced ? OVERLAY_RISE_REDUCED : OVERLAY_RISE} animate={OVERLAY_SETTLED}
+      transition={{ ...(reduced ? MOTION.fast : MOTION.settle), delay: reduced ? 0 : index * STAGGER }}
+      className={index === 0 ? 'border-b border-[color:var(--color-indigo-line-a20)] pb-5' : 'border-t border-[color:var(--color-border-soft)] pt-4'}>
+      <div className="mb-2 flex items-baseline gap-3">
+        <span aria-hidden className="font-mono text-caption leading-caption text-[color:var(--color-text-tertiary)]">{String(index + 1).padStart(2, '0')}</span>
+        <h5 className={index === 0
+          ? 'text-title font-[var(--font-weight-strong)] leading-title text-[color:var(--color-text-primary)]'
+          : 'text-body font-[var(--font-weight-strong)] leading-body text-[color:var(--color-text-primary)]'}>{section.title}</h5>
+      </div>
+      {section.markdown ? <SafeReportMarkdown text={section.markdown} sources={sources} onOpenSource={onOpenSource} />
+        : <p className="text-label leading-label text-[color:var(--color-text-tertiary)]">{t('report.emptySection')}</p>}
+      {index === 0 ? actions : null}
+    </motion.section>)}
+  </div>;
+}
+
 /** The Wiki tab's local question desk. All source reads start with Search, never with typing. */
 export function LibraryQuestionDesk({
   docs,
@@ -158,7 +194,6 @@ export function LibraryQuestionDesk({
   filingReport,
   fileReportNote,
   onBrowse,
-  onAsk,
   onOpenWiki,
   onOpenSource,
 }: {
@@ -180,12 +215,12 @@ export function LibraryQuestionDesk({
   filingReport: boolean;
   fileReportNote: string | null;
   onBrowse: () => void;
-  onAsk: (brief: string, question: string) => void;
   onOpenWiki: (slug: string) => void;
   onOpenSource: (path: string, anchor: string) => void;
 }) {
   const t = useTranslations('library.questionDesk');
   const locale = useLocale();
+  const reducedMotion = usePrefersReducedMotion();
   const [question, setQuestion] = useState('');
   const [result, setResult] = useState<DeskResult | null>(null);
   const [reading, setReading] = useState(false);
@@ -195,6 +230,7 @@ export function LibraryQuestionDesk({
   const [jevFinding, setJevFinding] = useState<LocatedJevFinding | null>(null);
   const [jevNote, setJevNote] = useState<string | null>(null);
   const [jevSending, setJevSending] = useState(false);
+  const [printError, setPrintError] = useState<string | null>(null);
   const searchId = useRef(0);
   const printCleanupRef = useRef<(() => void) | null>(null);
   /** Only the current folder's inventoried versions, in memory; no persisted search index. */
@@ -367,6 +403,9 @@ export function LibraryQuestionDesk({
     readSources: displayResult.plannedSources - displayResult.unreadableSources - displayResult.changedSources,
     totalSources: displayResult.totalSources,
   }) : '';
+  const readSources = displayResult
+    ? displayResult.plannedSources - displayResult.unreadableSources - displayResult.changedSources : 0;
+  const omittedLeads = displayResult ? displayResult.omittedClaims + displayResult.omittedSources : 0;
   const limits = displayResult ? t('limits', {
     unreadable: displayResult.unreadableSources, changed: displayResult.changedSources,
     skipped: displayResult.totalSources - displayResult.plannedSources,
@@ -376,6 +415,7 @@ export function LibraryQuestionDesk({
     && report.question === displayResult.question && report.listingVersion === displayResult.listingVersion
     && report.vaultScope === vaultScope
     ? report : null;
+  const hasLocalMatches = Boolean(displayResult && (displayResult.claims.length > 0 || displayResult.sourceHits.length > 0));
   const downloadReport = () => {
     if (!activeReport) return;
     const markdown = serializeQuestionDeskReport(activeReport, locale, new Set(sources.map((source) => source.path)));
@@ -388,8 +428,9 @@ export function LibraryQuestionDesk({
     anchor.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
-  const printReport = () => {
+  const printReport = async () => {
     if (!activeReport) return;
+    setPrintError(null);
     const root = document.documentElement;
     const printMedia = window.matchMedia?.('print');
     printCleanupRef.current?.();
@@ -404,9 +445,20 @@ export function LibraryQuestionDesk({
     root.dataset.printScope = 'question-desk';
     window.addEventListener('afterprint', clear, { once: true });
     printMedia?.addEventListener?.('change', onMediaChange);
-    try { window.print(); }
-    catch { clear(); }
+    try { await Promise.resolve(window.print()); }
+    catch { clear(); setPrintError(t('report.printFailed')); }
   };
+  const reportActions = activeReport ? <div data-report-actions="true" className="mt-5 border-t border-[color:var(--color-indigo-line-a20)] pt-3">
+    <div className="flex flex-wrap items-center gap-2">
+      <Chip tone="muted" onClick={downloadReport} data-testid="question-desk-download-markdown">{t('report.downloadMarkdown')}</Chip>
+      <Chip tone="muted" onClick={() => void printReport()} data-testid="question-desk-print-pdf">{t('report.printPdf')}</Chip>
+      <Chip tone="accentOnTint" disabled={!onFileReport || filingReport} onClick={onFileReport ?? undefined} data-testid="question-desk-file-report">
+        {filingReport ? t('report.filing') : t('report.file')}
+      </Chip>
+    </div>
+    {printError ? <p role="alert" className="mt-2 text-label leading-label text-[color:var(--color-danger-text)]" data-testid="question-desk-print-error">{printError}</p> : null}
+    {fileReportNote ? <p role="alert" className="mt-2 text-label leading-label text-[color:var(--color-danger-text)]">{fileReportNote}</p> : null}
+  </div> : null;
   return (
     <div data-testid="library-question-desk" className="atlas-scroll-quiet min-h-0 flex-1 overflow-y-auto px-5 py-6 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+12px)]">
       <div className="mx-auto w-full max-w-[var(--measure-doc-column)] space-y-5">
@@ -415,8 +467,8 @@ export function LibraryQuestionDesk({
             <p className="text-caption leading-caption text-[color:var(--color-text-tertiary)]">{t('eyebrow')}</p>
             <Chip className="lg:hidden" tone="muted" onClick={onBrowse} data-testid="question-desk-browse">{t('browse')}</Chip>
           </div>
-          <h2 className="mt-1 text-title font-[var(--font-weight-signature)] leading-title text-[color:var(--color-text-primary)]">{t('title')}</h2>
-          <p className="mt-2 text-body leading-body text-[color:var(--color-text-secondary)]">{t('intro')}</p>
+          <h2 className={displayResult ? 'sr-only' : 'mt-1 text-title font-[var(--font-weight-signature)] leading-title text-[color:var(--color-text-primary)]'}>{t('title')}</h2>
+          {!displayResult ? <p className="mt-2 text-body leading-body text-[color:var(--color-text-secondary)]">{t('intro')}</p> : null}
         </header>
         <form onSubmit={(event) => { event.preventDefault(); void search(); }} className="flex flex-wrap items-end gap-2 max-sm:flex-col max-sm:items-stretch">
           <Input label={t('questionLabel')} value={question} readOnly={jevSending} onChange={(event) => {
@@ -432,18 +484,26 @@ export function LibraryQuestionDesk({
             setJevFinding(null);
             setJevNote(null);
           }} className="min-w-48 flex-1 max-sm:w-full" data-testid="question-desk-input" />
-          <Button type="submit" variant="primary" className="max-sm:w-full" disabled={!question.trim() || reading || jevSending} data-testid="question-desk-search">{reading ? t('reading', { read: readCount }) : t('search')}</Button>
+          <Button type="submit" variant={displayResult && agentReady ? 'outline' : 'primary'} className="max-sm:w-full" disabled={!question.trim() || reading || jevSending} data-testid="question-desk-search">{reading ? t('reading', { read: readCount }) : t('search')}</Button>
         </form>
         {visible && (outdated || (report && displayResult && !activeReport)) ? <p role="status" className="text-label leading-label text-[color:var(--color-text-tertiary)]">{report ? t('report.outdated') : t('outdated')}</p> : null}
         {visible && displayResult ? (
-          <section className="space-y-5" data-testid="question-desk-results">
-            <div className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)]">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <p aria-live="polite" className="text-label leading-label text-[color:var(--color-text-secondary)]">{coverage}</p>
+          <motion.section key={displayResult.searchId} initial={reducedMotion ? OVERLAY_RISE_REDUCED : OVERLAY_RISE}
+            animate={OVERLAY_SETTLED} transition={reducedMotion ? MOTION.fast : MOTION.base}
+            className="space-y-5" data-testid="question-desk-results">
+            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[color:var(--color-border-soft)] pb-4">
+              <div className="min-w-0 flex-1">
+                <p aria-live="polite" className="text-label leading-label text-[color:var(--color-text-secondary)]">
+                  {t('coverageCompact', { readPages: displayResult.readPages, totalPages: displayResult.totalPages,
+                    readSources, totalSources: displayResult.totalSources, omitted: omittedLeads })}
+                </p>
+                <details data-testid="question-desk-coverage-details" className="mt-2">
+                  <summary className="w-fit text-label leading-label text-[color:var(--color-indigo-text-soft)] underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]">{t('coverageDetails')}</summary>
+                  <p className="mt-2 text-label leading-label text-[color:var(--color-text-secondary)]">{coverage}</p>
                   <p className="mt-1 text-label leading-label text-[color:var(--color-text-tertiary)]">{limits}</p>
-                </div>
-                <Button variant="primary" disabled={!agentReady || turnRunning} onClick={() => {
+                </details>
+              </div>
+              {!activeReport ? <Button variant="primary" disabled={!agentReady || turnRunning} onClick={() => {
                   if (!vaultRoot) return;
                   onSummarize({
                     brief: buildQuestionDeskReportBrief({ question: displayResult.question, vaultRoot, locale,
@@ -452,33 +512,24 @@ export function LibraryQuestionDesk({
                     listingVersion: displayResult.listingVersion,
                     vaultScope, coverage, limits,
                   });
-                }} data-testid="question-desk-summarize">{t('report.summarize')}</Button>
-              </div>
-              {!agentReady ? <p className="mt-2 text-label leading-label text-[color:var(--color-text-tertiary)]">{t('report.agentUnavailable')}</p> : null}
+                }} data-testid="question-desk-summarize">{hasLocalMatches ? t('report.summarize') : t('report.investigate')}</Button> : null}
             </div>
-            {activeReport ? <section data-testid="question-desk-report" aria-labelledby="question-desk-report-title"
+            {!agentReady && !activeReport ? <p className="text-label leading-label text-[color:var(--color-text-tertiary)]">{t('report.agentUnavailable')}</p> : null}
+            {activeReport ? <motion.section key={`${activeReport.searchId}:${activeReport.generatedAt}`}
+              initial={reducedMotion ? OVERLAY_RISE_REDUCED : OVERLAY_RISE} animate={OVERLAY_SETTLED}
+              transition={reducedMotion ? MOTION.fast : MOTION.settle}
+              data-testid="question-desk-report" aria-labelledby="question-desk-report-title"
               className="rounded-panel border border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] p-[var(--card-pad)]">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <h3 id="question-desk-report-title" className="text-title font-[var(--font-weight-strong)] leading-title text-[color:var(--color-text-primary)]">{t('report.title')}</h3>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button size="sm" variant="outline" onClick={downloadReport} data-testid="question-desk-download-markdown">{t('report.downloadMarkdown')}</Button>
-                  <Button size="sm" variant="outline" onClick={printReport} data-testid="question-desk-print-pdf">{t('report.printPdf')}</Button>
-                  <Button size="sm" variant="outline" disabled={!onFileReport || filingReport} onClick={onFileReport ?? undefined} data-testid="question-desk-file-report">
-                    {filingReport ? t('report.filing') : t('report.file')}
-                  </Button>
-                </div>
-              </div>
-              <p className="mt-2 text-label leading-label text-[color:var(--color-text-secondary)]">{t('report.caveat')}</p>
-              <div data-question-desk-print="true" data-testid="question-desk-print-content" className="mt-4 border-t border-[color:var(--color-indigo-line-a20)] pt-3">
-                <header className="mb-4">
+              <p role="status" className="sr-only">{t('report.readyNotice')}</p>
+              <div data-question-desk-print="true" data-testid="question-desk-print-content">
+                <header className="mb-5 border-b border-[color:var(--color-indigo-line-a20)] pb-4">
                   <p className="text-caption leading-caption tracking-[var(--tracking-caps-08)] text-[color:var(--color-indigo-text-soft)]">{t('report.masthead')}</p>
-                  <p className="text-caption leading-caption text-[color:var(--color-indigo-text-soft)]">{t('report.unreviewed')}</p>
-                  <h4 className="mt-1 text-title font-[var(--font-weight-strong)] leading-title text-[color:var(--color-text-primary)]">{activeReport.question}</h4>
-                  <p className="mt-1 text-label leading-label text-[color:var(--color-text-tertiary)]">{t('report.generated', { time: activeReport.generatedAt })}</p>
+                  <p className="mt-1 text-label leading-label text-[color:var(--color-indigo-text-soft)]">{t('report.unreviewed')}</p>
+                  <h3 id="question-desk-report-title" className="mt-2 text-title font-[var(--font-weight-strong)] leading-title text-[color:var(--color-text-primary)]">{activeReport.question}</h3>
+                  <p className="mt-2 text-label leading-label text-[color:var(--color-text-tertiary)]">{t('report.caveat')}</p>
+                  <p className="mt-1 text-caption leading-caption text-[color:var(--color-text-tertiary)]">{t('report.generated', { time: activeReport.generatedAt })}</p>
                 </header>
-                <DraftReport text={activeReport.text} sources={sources} onOpenSource={onOpenSource} />
+                <DraftReport text={activeReport.text} sources={sources} onOpenSource={onOpenSource} actions={reportActions} />
                 <footer className="mt-6 border-t border-[color:var(--color-border-soft)] pt-3 text-label leading-label text-[color:var(--color-text-tertiary)]">
                   <h5 className="font-[var(--font-weight-strong)] text-[color:var(--color-text-secondary)]">{t('report.searchScope')}</h5>
                   <p className="mt-1">{activeReport.coverage}</p>
@@ -486,12 +537,20 @@ export function LibraryQuestionDesk({
                   <p className="mt-2">{t('report.citationNote')}</p>
                 </footer>
               </div>
-              {fileReportNote ? <p role="alert" className="mt-3 text-label leading-label text-[color:var(--color-danger-text)]">{fileReportNote}</p> : null}
+            </motion.section> : null}
+            {!hasLocalMatches && !activeReport ? <section data-testid="question-desk-unknown" className="border-t border-[color:var(--color-border-soft)] pt-4">
+              <h3 className="text-body font-[var(--font-weight-strong)] leading-body text-[color:var(--color-text-primary)]">{t('zeroLocalTitle')}</h3>
+              <p className="mt-2 text-body leading-body text-[color:var(--color-text-secondary)]">{t('zeroLocalBody')}</p>
+              {agentReady ? <p className="mt-2 text-label leading-label text-[color:var(--color-text-tertiary)]">{t('zeroLocalAgentNote')}</p> : null}
             </section> : null}
-            <div data-testid="question-desk-evidence-leads" className={activeReport ? 'space-y-5 border-t border-[color:var(--color-border-soft)] pt-5' : 'space-y-5'}>
-              {activeReport ? <h3 className="text-body font-[var(--font-weight-strong)] leading-body text-[color:var(--color-text-secondary)]">{t('report.leadsTitle')}</h3> : null}
-            {displayResult.claims.length === 0 && displayResult.sourceHits.length === 0 ? <p className="text-body leading-body text-[color:var(--color-text-secondary)]" data-testid="question-desk-unknown">{t('unknown')}</p> : null}
-            <section aria-labelledby="desk-wiki-title">
+            {hasLocalMatches ? <details key={`${displayResult.searchId}:${activeReport ? 'report' : agentReady ? 'agent' : 'local'}`}
+              open={!activeReport && !agentReady ? true : undefined}
+              data-testid="question-desk-evidence-leads" className="border-t border-[color:var(--color-border-soft)] pt-4">
+              <summary className="w-fit text-body font-[var(--font-weight-strong)] leading-body text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]">
+                {t('leadsSummary', { claims: displayResult.claims.length, sources: displayResult.sourceHits.length })}
+              </summary>
+              <div className="mt-4 space-y-5">
+            {displayResult.claims.length ? <section aria-labelledby="desk-wiki-title">
               <h3 id="desk-wiki-title" className="text-body font-[var(--font-weight-strong)] leading-body">{t('wikiTitle')}</h3>
               <p className="mt-1 text-label leading-label text-[color:var(--color-text-tertiary)]">{t('wikiCaveat')}</p>
               {displayResult.claims.length ? <ul className="mt-3 space-y-2">{displayResult.claims.map((claim, index) => (
@@ -525,8 +584,8 @@ export function LibraryQuestionDesk({
                   ))}</div> : <p className="mt-2 text-label leading-label text-[color:var(--color-text-tertiary)]">{t('noCitation')}</p>}
                 </li>
               ))}</ul> : <p className="mt-3 text-label leading-label text-[color:var(--color-text-tertiary)]">{t('noWikiHits')}</p>}
-            </section>
-            <section aria-labelledby="desk-source-title">
+            </section> : null}
+            {displayResult.sourceHits.length ? <section aria-labelledby="desk-source-title">
               <h3 id="desk-source-title" className="text-body font-[var(--font-weight-strong)] leading-body">{t('sourceTitle')}</h3>
               {displayResult.sourceHits.length ? <ul className="mt-3 space-y-2">{displayResult.sourceHits.map((hit) => (
                 <li key={`${hit.path}#${hit.anchor}`} className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)]">
@@ -534,17 +593,11 @@ export function LibraryQuestionDesk({
                   <p className="mt-2 text-body leading-body text-[color:var(--color-text-secondary)]">{hit.text}</p>
                 </li>
               ))}</ul> : <p className="mt-3 text-label leading-label text-[color:var(--color-text-tertiary)]">{t('noSourceHits')}</p>}
-            </section>
-            </div>
-            <div className="border-t border-[color:var(--color-border-soft)] pt-4">
-              <Button variant="outline" disabled={!agentReady} onClick={() => {
-                if (!vaultRoot) return;
-                onAsk(buildQuestionDeskBrief({ question: displayResult.question, vaultRoot, locale, claims: displayResult.claims, sourceHits: displayResult.sourceHits, coverage: `${coverage} ${limits}` }), displayResult.question);
-              }} data-testid="question-desk-ask">{t('ask')}</Button>
-              <p className="mt-2 text-label leading-label text-[color:var(--color-text-tertiary)]">{agentReady ? t('askNote') : t('askUnavailable')}</p>
-              {jevNote ? <p role="status" className="mt-2 text-label leading-label text-[color:var(--color-text-tertiary)]" data-testid="question-desk-jev-note">{jevNote}</p> : null}
-            </div>
-          </section>
+            </section> : null}
+              </div>
+            </details> : null}
+            {jevNote ? <p role="status" className="text-label leading-label text-[color:var(--color-text-tertiary)]" data-testid="question-desk-jev-note">{jevNote}</p> : null}
+          </motion.section>
         ) : null}
       </div>
       <Dialog open={jevSelection !== null} onClose={() => { if (!jevSending) setJevSelection(null); }} size="md" labelledBy="question-desk-jev-title" testId="question-desk-jev-consent" className="max-h-[calc(100vh-var(--chrome-inset)*2)] overflow-y-auto">

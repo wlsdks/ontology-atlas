@@ -39,7 +39,7 @@ test('Wiki question desk finds contradictory leads and keeps the no-key source p
   await expect(page.getByTestId('question-desk-results')).toContainText('Refund approval does not immediately restore inventory.');
   await expect(page.getByTestId('question-desk-results')).toContainText('Source changed since this page was written');
   await expect(page.getByTestId('question-desk-results')).toContainText('Refund approval queues a stock restoration job.');
-  await expect(page.getByTestId('question-desk-ask')).toBeDisabled();
+  await expect(page.getByTestId('question-desk-summarize')).toBeDisabled();
   await expect(page.getByText('Check claim with Jev')).toHaveCount(0);
   await page.screenshot({ path: '/tmp/atlas-question-desk-sol/desk-results.png', fullPage: true });
   writeFileSync('/tmp/atlas-question-desk-sol/desk-results.ax.txt', await page.locator('body').ariaSnapshot());
@@ -58,6 +58,7 @@ test('Wiki question desk finds contradictory leads and keeps the no-key source p
   await page.getByTestId('question-desk-back').click();
   await expect(page.getByTestId('library-question-desk')).toBeVisible();
   await page.setViewportSize({ width: 1512, height: 901 });
+  await page.getByTestId('question-desk-evidence-leads').locator('summary').click();
   await page.getByRole('button', { name: 'sources/refund-handling.md#l2' }).first().click();
   await expect(page.getByTestId('library-source-passage')).toHaveAttribute('data-state', 'resolved');
   await page.getByTestId('library-reader-back').click();
@@ -67,7 +68,7 @@ test('Wiki question desk finds contradictory leads and keeps the no-key source p
   await expect(page.getByTestId('question-desk-results')).toBeVisible();
   await page.getByTestId('question-desk-input').fill('Who owns the lunar migration?');
   await page.getByTestId('question-desk-search').click();
-  await expect(page.getByTestId('question-desk-unknown')).toContainText('The answer remains unknown');
+  await expect(page.getByTestId('question-desk-unknown')).toContainText('Word search can miss documents in another language');
 });
 
 test('Jev preview keeps the exact claim and long original passage reachable before consent', async ({ page }) => {

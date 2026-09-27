@@ -2962,10 +2962,6 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
               filingReport={lastAnswer !== null && filingAnswer === lastAnswer}
               fileReportNote={fileAnswerNote}
               onBrowse={() => setMobileBrowseOpen(true)}
-              onAsk={(brief, question) => {
-                pendingAskRef.current = { question, askedOn: null };
-                agent.start(brief, 'ask');
-              }}
               onOpenWiki={(slug) => choose({ kind: 'wiki', slug })}
               onOpenSource={(path, anchor) => {
                 choose({ kind: 'source', path });

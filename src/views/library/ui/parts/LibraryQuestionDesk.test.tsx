@@ -45,10 +45,9 @@ function fixture(hash = currentHash, listedMtime = 10) {
   return { doc, raw, source, handle };
 }
 
-function Desk({ hash = currentHash, scope = 'folder-a', listedMtime = 10, includeWiki = true, visible = true, agentReady = true, onAsk = () => {}, onSummarize = () => {}, report = null, onFileReport = null, onOpenSource = () => {} }: {
+function Desk({ hash = currentHash, scope = 'folder-a', listedMtime = 10, includeWiki = true, visible = true, agentReady = true, onSummarize = () => {}, report = null, onFileReport = null, onOpenSource = () => {} }: {
   hash?: string; scope?: string; listedMtime?: number; includeWiki?: boolean;
   visible?: boolean; agentReady?: boolean;
-  onAsk?: (brief: string, question: string) => void;
   onSummarize?: (request: QuestionDeskReportRequest) => void;
   report?: QuestionDeskReportDraft | null;
   onFileReport?: (() => void) | null;
@@ -63,7 +62,7 @@ function Desk({ hash = currentHash, scope = 'folder-a', listedMtime = 10, includ
       turnRunning={false} report={report} onSummarize={onSummarize}
       onInvalidateReport={() => {}}
       onFileReport={onFileReport} filingReport={false} fileReportNote={null}
-      onBrowse={() => {}} onAsk={onAsk} onOpenWiki={() => {}} onOpenSource={onOpenSource} />
+      onBrowse={() => {}} onOpenWiki={() => {}} onOpenSource={onOpenSource} />
   </NextIntlClientProvider>;
 }
 
@@ -86,12 +85,20 @@ describe('Library question desk transfer boundary', () => {
     await screen.findByTestId('question-desk-results');
   }
 
-  it('keeps question search, original anchors, and Ask usable with no Jev key', async () => {
+  it('keeps local search and original anchors usable with no Jev key', async () => {
     render(<Desk />);
     await search();
     expect(screen.getByText(/immediately restores stock/)).toBeInTheDocument();
     expect(screen.getAllByText('sources/refund.md#l2')).toHaveLength(2);
-    expect(screen.getByTestId('question-desk-ask')).toBeEnabled();
+    expect(screen.getByTestId('question-desk-summarize')).toBeEnabled();
+    const leads = screen.getByTestId('question-desk-evidence-leads') as HTMLDetailsElement;
+    expect(leads.open).toBe(false);
+    const summary = within(leads).getByText(/Evidence leads/);
+    expect(summary.tagName).toBe('SUMMARY');
+    summary.focus();
+    expect(document.activeElement).toBe(summary);
+    fireEvent.click(summary);
+    expect(leads.open).toBe(true);
     expect(mocks.status).not.toHaveBeenCalled();
     fireEvent.click(screen.getByText('Check claim with Jev'));
     expect(await screen.findByTestId('question-desk-jev-note')).toHaveTextContent('No Jev key');
@@ -126,6 +133,10 @@ describe('Library question desk transfer boundary', () => {
     fireEvent.click(cited);
     expect(onOpenSource).toHaveBeenCalledWith('sources/refund.md', 'l2');
     expect(draft).toHaveTextContent('refund policy · sources/refund.md#l2');
+    const leads = screen.getByTestId('question-desk-evidence-leads') as HTMLDetailsElement;
+    expect(leads.open).toBe(false);
+    fireEvent.click(within(leads).getByText(/Evidence leads/));
+    expect(leads.open).toBe(true);
     expect(screen.getAllByTestId('question-desk-report-citation-unavailable')).toHaveLength(2);
     expect(screen.queryByRole('button', { name: 'sources/refund.md#bogus' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'external' })).not.toBeInTheDocument();
@@ -135,10 +146,37 @@ describe('Library question desk transfer boundary', () => {
     fireEvent.click(screen.getByTestId('question-desk-file-report'));
     expect(onFileReport).toHaveBeenCalledTimes(1);
     expect(mocks.judge).not.toHaveBeenCalled();
+    expect(screen.getByTestId('question-desk-report-raw')).toHaveTextContent('A freeform heading');
     rendered.rerender(<Desk visible={false} report={report} onSummarize={onSummarize} onFileReport={onFileReport} onOpenSource={onOpenSource} />);
     expect(screen.queryByTestId('question-desk-report-markdown')).not.toBeInTheDocument();
     rendered.rerender(<Desk visible report={report} onSummarize={onSummarize} onFileReport={onFileReport} onOpenSource={onOpenSource} />);
     expect(screen.getByTestId('question-desk-report')).toHaveTextContent('A freeform heading');
+  });
+
+  it('makes an exact four-section report answer-first and keeps local-zero diagnostics secondary', async () => {
+    const onSummarize = vi.fn<(request: QuestionDeskReportRequest) => void>();
+    const rendered = render(<Desk onSummarize={onSummarize} />);
+    fireEvent.change(screen.getByTestId('question-desk-input'), { target: { value: 'Who owns the lunar migration?' } });
+    fireEvent.click(screen.getByTestId('question-desk-search'));
+    await screen.findByTestId('question-desk-unknown');
+    expect(screen.queryByTestId('question-desk-evidence-leads')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('question-desk-summarize'));
+    const request = onSummarize.mock.calls[0]![0];
+    const report: QuestionDeskReportDraft = {
+      question: request.question, searchId: request.searchId, listingVersion: request.listingVersion, vaultScope: request.vaultScope,
+      text: '## Answer\nNo owner is recorded in the originals.\n## Source-backed evidence\n- The plan lists no owner. [[src:sources/refund.md#l2]]\n## Disagreements or changed claims\n- One page suggests an owner.\n## Unknowns and search limits\n- Another-language documents may be missed.',
+      coverage: request.coverage, limits: request.limits, generatedAt: '2026-09-27T17:00:00Z',
+    };
+    rendered.rerender(<Desk report={report} onSummarize={onSummarize} />);
+    expect(screen.queryByTestId('question-desk-unknown')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('question-desk-summarize')).not.toBeInTheDocument();
+    const answer = screen.getByTestId('question-desk-report-section-0');
+    expect(answer).toHaveTextContent('No owner is recorded in the originals.');
+    expect(within(answer).getByTestId('question-desk-download-markdown')).toBeInTheDocument();
+    expect(screen.getByTestId('question-desk-report-section-1')).toHaveTextContent('The plan lists no owner.');
+    expect(screen.getByTestId('question-desk-report-section-2')).toHaveTextContent('One page suggests an owner.');
+    expect(screen.getByTestId('question-desk-report-section-3')).toHaveTextContent('Another-language documents may be missed.');
+    expect(screen.getByTestId('question-desk-coverage-details')).not.toHaveAttribute('open');
   });
 
   it('offers explicit Markdown and print exports only for the current unreviewed report', async () => {
@@ -160,7 +198,7 @@ describe('Library question desk transfer boundary', () => {
     expect(printable).toHaveTextContent(report.text.replace('[[src:sources/refund.md#l2]]', 'sources/refund.md#l2'));
     expect(printable).toHaveTextContent(report.coverage);
     expect(printable).toHaveTextContent(report.limits);
-    expect(printable.querySelector('[data-testid="question-desk-download-markdown"]')).toBeNull();
+    expect(printable.querySelector('[data-report-actions]')).not.toBeNull();
     const previousCreate = URL.createObjectURL;
     const previousRevoke = URL.revokeObjectURL;
     const createUrl = vi.fn(() => 'blob:question-desk');
@@ -189,6 +227,10 @@ describe('Library question desk transfer boundary', () => {
     expect(print).toHaveBeenCalledTimes(1);
     expect(document.documentElement.dataset.printScope).toBe('question-desk');
     window.dispatchEvent(new Event('afterprint'));
+    expect(document.documentElement.dataset.printScope).toBeUndefined();
+    print.mockImplementationOnce(() => Promise.reject(new Error('ACL')) as never);
+    fireEvent.click(screen.getByTestId('question-desk-print-pdf'));
+    expect(await screen.findByTestId('question-desk-print-error')).toHaveTextContent('Could not open the print dialog');
     expect(document.documentElement.dataset.printScope).toBeUndefined();
     print.mockRestore();
     rendered.rerender(<Desk report={report} listedMtime={11} onSummarize={onSummarize} />);
@@ -231,7 +273,7 @@ describe('Library question desk transfer boundary', () => {
     render(<Desk agentReady={false} onOpenSource={onOpenSource} />);
     await search();
     expect(screen.getByTestId('question-desk-summarize')).toBeDisabled();
-    expect(screen.getByTestId('question-desk-ask')).toBeDisabled();
+    expect((screen.getByTestId('question-desk-evidence-leads') as HTMLDetailsElement).open).toBe(true);
     fireEvent.click(screen.getAllByRole('button', { name: 'sources/refund.md#l2' })[0]!);
     expect(onOpenSource).toHaveBeenCalledWith('sources/refund.md', 'l2');
     expect(mocks.status).not.toHaveBeenCalled();
@@ -241,9 +283,12 @@ describe('Library question desk transfer boundary', () => {
     render(<Desk />);
     fireEvent.change(screen.getByTestId('question-desk-input'), { target: { value: 'Who owns the lunar migration?' } });
     fireEvent.click(screen.getByTestId('question-desk-search'));
-    expect(await screen.findByTestId('question-desk-unknown')).toHaveTextContent('The answer remains unknown');
+    expect(await screen.findByTestId('question-desk-unknown')).toHaveTextContent('Word search can miss documents in another language');
+    expect(screen.getByTestId('question-desk-summarize')).toHaveTextContent('Investigate originals');
     expect(screen.getByTestId('question-desk-results')).toHaveTextContent('Searched 1 of 1 Wiki pages and 1 of 1 original files.');
-    expect(screen.getByTestId('question-desk-ask')).toBeEnabled();
+    expect(screen.getByTestId('question-desk-summarize')).toBeEnabled();
+    expect(screen.queryByText('No matching Wiki fact or decision in the pages read.')).not.toBeInTheDocument();
+    expect(screen.queryByText('No matching text unit in the originals Atlas could read.')).not.toBeInTheDocument();
   });
 
   it('reuses the unchanged source units for a second question in the same folder', async () => {
@@ -259,8 +304,8 @@ describe('Library question desk transfer boundary', () => {
   it('cancels an in-flight search when the question changes and lets the new question run', async () => {
     let release!: () => void;
     fileGate = new Promise<void>((resolve) => { release = resolve; });
-    const onAsk = vi.fn();
-    render(<Desk onAsk={onAsk} />);
+    const onSummarize = vi.fn<(request: QuestionDeskReportRequest) => void>();
+    render(<Desk onSummarize={onSummarize} />);
     fireEvent.change(screen.getByTestId('question-desk-input'), { target: { value: 'Does refund approval restore stock?' } });
     fireEvent.click(screen.getByTestId('question-desk-search'));
     await waitFor(() => expect(fileReads).toBe(1));
@@ -269,12 +314,12 @@ describe('Library question desk transfer boundary', () => {
     expect(screen.getByTestId('question-desk-search')).toBeEnabled();
     fileGate = null;
     fireEvent.click(screen.getByTestId('question-desk-search'));
-    expect(await screen.findByTestId('question-desk-unknown')).toHaveTextContent('unknown');
+    expect(await screen.findByTestId('question-desk-unknown')).toHaveTextContent('No local word match');
     await act(async () => { release(); });
     expect(screen.getByTestId('question-desk-unknown')).toBeInTheDocument();
     expect(screen.queryByText('Refund approval immediately restores stock.')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByTestId('question-desk-ask'));
-    expect(onAsk).toHaveBeenCalledWith(expect.any(String), 'Who owns the lunar migration?');
+    fireEvent.click(screen.getByTestId('question-desk-summarize'));
+    expect(onSummarize.mock.calls[0]?.[0].question).toBe('Who owns the lunar migration?');
   });
 
   it('invalidates cached source units when the inventoried file version changes', async () => {
@@ -325,7 +370,7 @@ describe('Library question desk transfer boundary', () => {
     expect(screen.queryByTestId('question-desk-jev-consent')).not.toBeInTheDocument();
     expect(screen.queryByTestId('question-desk-jev-note')).not.toBeInTheDocument();
     fireEvent.click(screen.getByTestId('question-desk-search'));
-    expect(await screen.findByTestId('question-desk-unknown')).toHaveTextContent('unknown');
+    expect(await screen.findByTestId('question-desk-unknown')).toHaveTextContent('No local word match');
   });
 
   it('shows the exact outgoing payload in a blocking consent dialog and sends only after Send', async () => {
