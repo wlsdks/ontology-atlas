@@ -148,7 +148,8 @@ const FOCUS =
  *
  * `icon` is excluded because its square-surface contract cannot be held by
  * `min-h`, and `link` because raising it would tear text lines (WCAG 2.5.8
- * inline exemption). Gate: `tests/contract/touch-floor-layer.contract.test.ts`.
+ * inline exemption). Touch is not a planned surface (2026-09-27), so no gate holds this
+ * floor any longer; it stays because removing it would change the shipped layout.
  */
 const TOUCH_FLOOR = 'atlas-touch-floor';
 

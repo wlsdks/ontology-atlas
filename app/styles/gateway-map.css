@@ -170,12 +170,8 @@ html[data-gateway-stage] {
  * and `mobile` configurations, `setDeviceMetricsOverride` with `mobile: false`): the
  * moment touch exists at all, `(pointer: coarse)` **and** `(any-pointer: coarse)` both
  * match and `(any-pointer: fine)` stops matching — there is no combination reporting a
- * fine primary pointer beside an attached coarse one. The query is therefore pinned by
- * `tests/contract/touch-floor-layer.contract.test.ts`, which reads these bytes and
- * asserts **both** directions, because `pointer: coarse` is a substring of the new query
- * and a loosely written check would stay green on a revert.
- * `tests/e2e/touch-target-contract.spec.ts` proves the other half in a real browser: the
- * floor still reaches every control, now at a desktop width as well as at 390.
+ * fine primary pointer beside an attached coarse one. Touch is not a planned surface
+ * (2026-09-27), so the static and browser gates on this query were retired with it.
  *
  * The values still come from `--touch-target-min`; only the question changed.
  */

@@ -2987,7 +2987,6 @@ All reuse existing lamps. Enforcement is not lint but the **full contract of cva
 | `tests/contract/field-class.contract.test.ts` | Exhaustive 16 combinations · **unit↔token 1:1** (reading px from CSS for comparison) · `bare` does not create a box · type↔size pairing · no width creation |
 | `tests/contract/checkbox-target-size.contract.test.ts` | Checkbox target 24 (its own size ∨ label floor) |
 | `tests/contract/control-adoption-ratchet.contract.test.ts` | Hand-written forms do not grow (form debt) |
-| `tests/contract/touch-floor-layer.contract.test.ts` | `boxed` gets coarse floor, `bare` does not |
 
 ⚠️ **Do not use "is it in the vocabulary" as a check.** If you measure height by "is it in the height vocabulary,"**a flaw where a single-line `md` is set to `h-9`(36) passes green**(empirical). It must be unit↔token 1:1.
 
@@ -3027,10 +3026,8 @@ All reuse existing lamps. Enforcement is not lint but the **full contract of cva
   nothing that promoted before stops promoting. **No browser can be put in the hybrid
   state**: measured in Chromium across three context shapes and four CDP emulation
   calls, the moment touch exists both queries match and `(any-pointer: fine)` stops
-  matching, so the query is gated statically
-  (`tests/contract/touch-floor-layer.contract.test.ts`, asserting both directions
-  because the old query is a substring of the new one) and the floor's reach is gated at
-  a desktop width in `tests/e2e/touch-target-contract.spec.ts`.
+  matching. Touch is not a planned surface (owner, 2026-09-27), so the gates on this
+  query and on the floor's reach were retired; the rules stay as shipped.
 
   | Prescription | Where | Why this one |
   |---|---|---|
@@ -3042,8 +3039,7 @@ All reuse existing lamps. Enforcement is not lint but the **full contract of cva
   ⚠️ **The floor rule lives outside cascade layers.** If placed inside `@layer base`,
   `min-h-8` from `@layer utilities` wins — **layer order dictates specificity**,
   so stacking classes cannot override it. We experienced this: the rule was in the
-  build, but the screen remained 32px. Gate:
-  `tests/contract/touch-floor-layer.contract.test.ts`.
+  build, but the screen remained 32px.
 - **The `inline` axis is deleted.** "Is it inside a sentence?" cannot be determined statically (sibling text origin, used display, reflow all open outside the tag), so runtime handles it.
 
 **Prose links are not controls.** Links within markdown body flow (Document Viewer 5 ·
