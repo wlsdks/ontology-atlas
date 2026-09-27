@@ -20,8 +20,47 @@ test('reads titles through modifiers, each tables and playwright steps', () => {
     'title:pw block',
     'title:row %s',
     'title:a step',
-    'title:`template ${x}`',
+    'title:template ${x}',
   ]);
+});
+
+test('evaluates messages and titles assembled with + and templates', () => {
+  const source = [
+    "expect(a, 'one ' + 'two').toBe(1);",
+    "expect(a, `line ${n}` + ' then ' + `${'literal'} end`).toBe(1);",
+    "assert.equal(a, b, ('why: ' + detail));",
+    "it('case ' + name, () => {});",
+    'expect(a, prefix + suffix).toBe(1);',
+  ].join('\n');
+  assert.deepEqual(texts(source), [
+    'message:one two',
+    'message:line ${n} then literal end',
+    'message:why: ${detail}',
+    'title:case ${name}',
+  ]);
+});
+
+test('reads the literals of a message it cannot evaluate', () => {
+  const source = [
+    "expect(a, ok ? '' : 'why it failed').toBe(1);",
+    "expect(a, ['first line', 'second line'].join('\\n')).toBe(1);",
+  ].join('\n');
+  assert.deepEqual(texts(source), ['message:why it failed', 'message:first line … second line']);
+});
+
+test('flags Hangul in an assembled message', () => {
+  const source = [
+    "expect(a, '한글 ' + detail).toBe(1);",
+    "expect(a, `첫 줄\\n` +",
+    "  `둘째 줄`).toBe(1);",
+    "expect(a, ok ? '' : `한글 ${n}`).toBe(1);",
+    "expect(a, 'english ' + '영어 아님').toBe(1);",
+    "expect(a, 'english ' + detail).toBe(1);",
+  ].join('\n');
+  assert.deepEqual(
+    hangulTestTitles('a.test.ts', source).map((e) => [e.kind, e.line]),
+    [['message', 1], ['message', 2], ['message', 4], ['message', 5]],
+  );
 });
 
 test('reads expect and node assert messages at their argument positions', () => {

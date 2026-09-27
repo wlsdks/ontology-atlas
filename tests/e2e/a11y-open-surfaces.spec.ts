@@ -295,8 +295,8 @@ async function openAndAudit(page: Page, o: Opener) {
   // "0 violations on open surfaces".
   await expect(
     page.locator(o.surface).first(),
-    `«${o.name}» 트리거를 눌렀는데 표면이 안 열렸다 — 이 게이트는 아무것도 재지 않았다. ` +
-      `트리거 testid(${o.trigger})가 컴포넌트보다 오래 살아남았는지 먼저 의심하라.`,
+    `Pressing the "${o.name}" trigger did not open the surface, so this gate measured nothing. ` +
+      `Suspect first that the trigger testid (${o.trigger}) outlived its component.`,
   ).toBeVisible({ timeout: 5000 });
   // Audit the surface once it has finished opening, not a frame of its entrance.
   await waitForAnimationsDone(page.locator(o.surface).first());
@@ -351,14 +351,14 @@ test("접근성 래칫(열린 표면) — 새 룰 위반 0, 기존 개수는 늘
   // Separates "0 violations" from "nothing was measured".
   expect(
     thin,
-    `axe 가 표면당 ${MIN_RULES_PASSED}개 룰도 내용에 적용하지 못했다 — 위반이 없는 게 아니라 ` +
-      `화면이 안 떴거나 채집이 깨진 것이다.\n${thin.join("\n")}`,
+    `axe applied fewer than ${MIN_RULES_PASSED} rules to the content of a surface. That is not the absence of violations: ` +
+      `the screen did not render or collection broke.\n${thin.join("\n")}`,
   ).toEqual([]);
 
   const unknown = [...counts.keys()].filter((id) => !(id in BASELINE)).sort();
   expect(
     unknown,
-    `열린 표면에서 기준선에 없는 접근성 룰이 떴다 — 새 결함이다.\n` +
+    `An open surface raised an accessibility rule the baseline does not have: a new defect.\n` +
       unknown.map((id) => `  ${id}: ${samples.get(id)}`).join("\n"),
   ).toEqual([]);
 
@@ -366,8 +366,8 @@ test("접근성 래칫(열린 표면) — 새 룰 위반 0, 기존 개수는 늘
     const actual = counts.get(id) ?? 0;
     expect(
       actual,
-      `\`${id}\` 위반이 ${max} → ${actual} 로 늘었다. 래칫은 내려가기만 한다.\n` +
-        `  예: ${samples.get(id) ?? "(없음)"}`,
+      `\`${id}\` violations grew from ${max} to ${actual}. The ratchet only goes down.\n` +
+        `  e.g. ${samples.get(id) ?? "(none)"}`,
     ).toBeLessThanOrEqual(max);
   }
 

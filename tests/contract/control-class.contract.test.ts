@@ -360,8 +360,8 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
       .filter((x): x is string => x !== null);
     expect(
       same,
-      `두 무채 램프의 이 단이 같아졌다 — 그 단의 \`scope: 'panel'\` 컴파운드는 근거가 없다.\n` +
-        `수렴한 단을 값 층에서 지우거나(그 단은 tone 하나로 충분하다), 전부 수렴했으면 축 자체를 지워라.\n` +
+      `This step is now the same on both neutral ramps, so its \`scope: 'panel'\` compound has no basis.\n` +
+        `Delete the converged step from the value layer (one tone is enough for it), or delete the axis once every step has converged.\n` +
         same.join('\n'),
     ).toEqual([]);
   });
@@ -386,8 +386,8 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
     expect(panel, '--map-panel-text-quaternary 를 못 읽었다').toBeTruthy();
     expect(
       panel,
-      `quaternary 가 두 램프에서 다시 갈라졌다(전역 ${app} · 패널 ${panel}) — ` +
-        `panel 위 muted 잉크가 근거를 잃었다. \`scope: 'panel', tone: 'muted'\` 컴파운드를 되살리고 이 고정을 갱신하라.`,
+      `quaternary diverged between the two ramps again (global ${app} · panel ${panel}), ` +
+        `so muted ink on the panel lost its basis. Restore the \`scope: 'panel', tone: 'muted'\` compound and update this pin.`,
     ).toBe(app);
     // The compound really is absent — `muted` emits one global token regardless of scope.
     const onPanel = controlClass({ shape: 'chip', size: 'md', tone: 'muted', scope: 'panel' });

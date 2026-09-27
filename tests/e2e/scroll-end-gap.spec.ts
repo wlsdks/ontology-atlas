@@ -426,8 +426,8 @@ for (const vp of VIEWPORTS) {
     {
       expect(
         framedRoutes,
-        `${vp.label}: 페이지 틀을 입은 라우트를 한 번도 못 찾았다 — ④ 검사가 통째로 공회전했다. ` +
-          `틀이 사라졌거나(그러면 계약이 바뀐 것) --page-max 판별이 낡았다.`,
+        `${vp.label}: no route wearing the page frame was found, so check (4) ran on nothing. ` +
+          `Either the frame is gone (then the contract changed) or the --page-max detection is stale.`,
         ).toBeGreaterThan(1);
       /*
        * ⚠️ **The frame that moved is the one that must be seen.** `/agents` and `/mcp` are the two

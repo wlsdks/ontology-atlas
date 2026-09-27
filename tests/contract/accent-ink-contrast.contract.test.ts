@@ -259,8 +259,8 @@ describe("accent × 틴트 페어링 금지 — lint 가 못 보는 상수 우�
     const hits = handWritten();
     expect(
       hits.length,
-      `잉크와 틴트를 손으로 나란히 쓴 자리가 ${BASELINE_HAND_WRITTEN_ACCENT_ON_TINT} → ${hits.length} 로 늘었다.\n` +
-        `틴트를 지는 잉크는 --color-indigo-text-soft 다(같은 자리 4.27 → 8.39:1).\n` +
+      `Sites that hand-write accent ink beside its tint grew from ${BASELINE_HAND_WRITTEN_ACCENT_ON_TINT} to ${hits.length}.\n` +
+        `Ink that sits on the tint is --color-indigo-text-soft (the same site goes from 4.27 to 8.39:1).\n` +
         hits.join("\n"),
     ).toBeLessThanOrEqual(BASELINE_HAND_WRITTEN_ACCENT_ON_TINT);
   });

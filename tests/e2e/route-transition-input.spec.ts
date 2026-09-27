@@ -221,9 +221,9 @@ test("레일에서 자료실로 건너오면 도착한 문이 한 크로스페�
   for (const [index, press] of aimed.entries()) {
     expect(
       press.on,
-      `문이 놓인 뒤 ${waitFor + index * SECOND_PRESS_GAP_MS}ms 에 누름이 문에 닿지 않았다 — ` +
-        `문 놓임 +${arrival.layout}ms · 히트 가능 +${arrival.hittable ?? "?"}ms · ` +
-        `전환 해제 +${arrival.holdEnd ?? "?"}ms · 기록 ${JSON.stringify(presses)}`,
+      `A press ${waitFor + index * SECOND_PRESS_GAP_MS}ms after the door was placed did not reach it: ` +
+        `door placed +${arrival.layout}ms · hittable +${arrival.hittable ?? "?"}ms · ` +
+        `transition released +${arrival.holdEnd ?? "?"}ms · log ${JSON.stringify(presses)}`,
     ).toBe("library-open-vault");
   }
 });

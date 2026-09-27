@@ -84,8 +84,8 @@ describe("lint 경고 래칫 — 상한이 실제로 물려 있는가", () => {
   it("`pnpm lint` 가 경고 상한을 지고 있다 — 없으면 warn 룰은 게이트가 아니다", () => {
     expect(
       capMatch,
-      `package.json 의 "lint" 스크립트에 --max-warnings 가 없다 (지금: ${lintScript}).\n` +
-        `경고로만 잡는 룰은 상한이 없으면 아무것도 실패시키지 않는다.`,
+      `The "lint" script in package.json has no --max-warnings (now: ${lintScript}).\n` +
+        `Without a ceiling, a rule that only warns fails nothing.`,
     ).not.toBeNull();
     // In ESLint `-1` means unlimited — a cap that pretends to exist is worse than none.
     expect(Number.isInteger(cap) && cap >= 0, `--max-warnings ${cap} 은 상한이 아니다`).toBe(true);

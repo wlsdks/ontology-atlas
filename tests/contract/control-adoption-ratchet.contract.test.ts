@@ -1241,8 +1241,8 @@ describe('컨트롤 채택 래칫 — 등재된 「값 층 밖」', () => {
     for (const entry of OUTSIDE_VALUE_LAYER) {
       expect(
         readFileSync(entry.file, 'utf8').includes(entry.proof),
-        `${entry.file} 에서 «${entry.proof}» 가 사라졌다. 이 줄의 주장(${entry.claim})은 그 근거 위에 ` +
-          `서 있다 — 자리가 바뀌었으면 등록부를 다시 쓰고, 값 층으로 옮겼으면 줄을 지워라.`,
+        `"${entry.proof}" disappeared from ${entry.file}. This row's claim (${entry.claim}) stands on that evidence: ` +
+          `if the site moved, rewrite the registry; if it moved onto the value layer, delete the row.`,
       ).toBe(true);
     }
   });
@@ -1253,8 +1253,8 @@ describe('컨트롤 채택 래칫 — 등재된 「값 층 밖」', () => {
     for (const entry of chromeTokens) {
       expect(
         tokenIsBeyondFixedSteps(globalsCss, entry.proof),
-        `${entry.proof} 가 globals.css 에서 **고정 단 하나**가 됐다. 그러면 값 층이 낼 수 있으므로 ` +
-          `«표현 불가» 주장이 죽는다 — ${entry.file} 를 등록부에서 지우고 부채로 갚아라.`,
+        `${entry.proof} became **one fixed step** in globals.css. The value layer can now emit it, so ` +
+          `the "cannot be expressed" claim is dead: remove ${entry.file} from the registry and pay it down as debt.`,
       ).toBe(true);
     }
   });
@@ -1264,8 +1264,8 @@ describe('컨트롤 채택 래칫 — 등재된 「값 층 밖」', () => {
       const actual = byFile.get(file) ?? 0;
       expect(
         claimed,
-        `${file}: 등재 ${claimed} 인데 실측 손 컨트롤은 ${actual} 뿐이다. 자리를 값 층으로 옮겼으면 ` +
-          `등록부의 수도 함께 내려라 — 안 내리면 그만큼이 부채에서 조용히 사라진다.`,
+        `${file}: registered ${claimed}, but only ${actual} hand-built controls were measured. If sites moved onto the value layer, ` +
+          `lower the registry count with them; otherwise that much disappears from the debt without anyone seeing it.`,
       ).toBeLessThanOrEqual(actual);
     }
   });
@@ -1293,8 +1293,8 @@ describe('컨트롤 채택 래칫 — 앵커(`<Link>` · `<a>`)', () => {
     for (const entry of OUTSIDE_VALUE_LAYER_ANCHORS) {
       expect(
         readFileSync(entry.file, 'utf8').includes(entry.proof),
-        `${entry.file} 에서 «${entry.proof}» 가 사라졌다. 이 줄의 주장(${entry.claim})은 그 근거 위에 ` +
-          `서 있다 — 자리가 바뀌었으면 등록부를 다시 쓰고, 값 층으로 옮겼으면 줄을 지워라.`,
+        `"${entry.proof}" disappeared from ${entry.file}. This row's claim (${entry.claim}) stands on that evidence: ` +
+          `if the site moved, rewrite the registry; if it moved onto the value layer, delete the row.`,
       ).toBe(true);
     }
   });
@@ -1305,8 +1305,8 @@ describe('컨트롤 채택 래칫 — 앵커(`<Link>` · `<a>`)', () => {
     for (const entry of chromeTokens) {
       expect(
         tokenIsBeyondFixedSteps(globalsCss, entry.proof),
-        `${entry.proof} 가 globals.css 에서 **고정 단 하나**가 됐다 — 값 층이 낼 수 있으므로 ` +
-          `${entry.file} 를 등록부에서 지우고 부채로 갚아라.`,
+        `${entry.proof} became **one fixed step** in globals.css, so the value layer can emit it: ` +
+          `remove ${entry.file} from the registry and pay it down as debt.`,
       ).toBe(true);
     }
   });
@@ -1316,8 +1316,8 @@ describe('컨트롤 채택 래칫 — 앵커(`<Link>` · `<a>`)', () => {
       const actual = anchorCensus.byFile.get(file) ?? 0;
       expect(
         claimed,
-        `${file}: 앵커 등재 ${claimed} 인데 실측 손 앵커는 ${actual} 뿐이다. 자리를 값 층으로 옮겼으면 ` +
-          `등록부의 수도 함께 내려라.`,
+        `${file}: ${claimed} anchors registered, but only ${actual} hand-built anchors were measured. If sites moved onto the value layer, ` +
+          `lower the registry count with them.`,
       ).toBeLessThanOrEqual(actual);
     }
   });
@@ -1391,8 +1391,8 @@ describe('컨트롤 채택 래칫 — 아직 안 옮긴 부채', () => {
   it('세 수의 합이 전수와 맞는다 — 갈라진 수가 서로를 잃지 않는다', () => {
     expect(
       registered + noBasis + debt,
-      `등재 ${registered} + 근거 없음 ${noBasis} + 부채 ${debt} 가 전수 ${total} 과 다르다. ` +
-        '한 자리를 두 부류에 동시에 넣었거나, 어느 부류가 실측을 넘어 등재됐다.',
+      `registered ${registered} + no basis ${noBasis} + debt ${debt} differs from the census total ${total}. ` +
+        'One site sits in two classes at once, or a class registers more than was measured.',
     ).toBe(total);
   });
 });
@@ -1415,9 +1415,9 @@ describe('컨트롤 채택 래칫 — 근거 없음(값 층이 낼 것이 없다
       const qualified = handWrittenTags(entry.file, tags).filter(isClickSurface).length;
       expect(
         qualified,
-        `${entry.file}: 「${entry.claim}」 ${entry.count} 을 주장하는데 판정을 통과하는 자리는 ${qualified} 뿐이다. ` +
-          '판정은 ① 전면(inset-0) ② 램프 소유 속성 0개 를 동시에 요구한다 — 스크림에 높이·인셋·반경·타입을 ' +
-          '하나라도 달면 값 층이 낼 것이 생긴 것이므로 「낼 것이 없다」가 거짓이 된다. 그 자리는 부채로 갚아라.',
+        `${entry.file}: claims "${entry.claim}" ${entry.count} times, but only ${qualified} sites pass the verdict. ` +
+          'The verdict requires both (1) full cover (inset-0) and (2) zero ramp-owned properties: once a scrim carries any height, inset, radius or type step, ' +
+          'the value layer has something to emit and "nothing to emit" is false. Pay those sites down as debt.',
       ).toBeGreaterThanOrEqual(entry.count);
     }
   });

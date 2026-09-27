@@ -110,14 +110,14 @@ test.describe("페이지 틀", () => {
       const ys = new Set(measured.map((m) => m.titleY));
       expect(
         ys.size,
-        `${width}px 에서 제목 y 가 갈렸다: ` +
+        `At ${width}px the title y differs: ` +
           measured.map((m) => `${m.title} ${m.titleY}`).join(" / "),
       ).toBe(1);
 
       const lefts = new Set(measured.map((m) => m.padLeft));
       expect(
         lefts.size,
-        `${width}px 에서 좌우 인셋이 갈렸다: ` +
+        `At ${width}px the side insets differ: ` +
           measured.map((m) => `${m.title} ${m.padLeft}`).join(" / "),
       ).toBe(1);
     }

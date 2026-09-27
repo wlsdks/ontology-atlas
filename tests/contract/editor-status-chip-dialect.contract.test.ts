@@ -80,9 +80,9 @@ describe("편집기 상단 줄 — 상태 칩의 타입 방언은 하나다", ()
     const offenders = chips.filter((chip) => chip.includes("text-caption"));
     expect(
       offenders.map((c) => c.slice(0, 100)),
-      "이 줄의 칩 규격은 text-label(11px) 이다. 9.5px 은 램프 정의상 " +
-        "마이크로 라벨·범례·타임스탬프의 단이고, 나란히 선 칩은 그 셋이 아니다 — " +
-        "칩 하나만 한 단 작으면 아무도 정하지 않은 위계가 생긴다.",
+      "Chips in this row are text-label (11px). By the ramp's definition 9.5px is " +
+        "the step for micro labels, legends and timestamps, and chips standing side by side are none of those: " +
+        "one chip a step smaller creates a hierarchy nobody decided.",
     ).toEqual([]);
   });
 
@@ -165,8 +165,8 @@ describe("편집기의 9.5px 은 아이브로우 한 곳뿐이다", () => {
     );
     expect(
       offenders.map(({ no, line }) => `${no}: ${line.slice(0, 100)}`),
-      "9.5px 은 램프 정의상 «마이크로 라벨·범례·타임스탬프» 의 단이다. 편집기에서 " +
-        "그 자격이 있는 것은 아이브로우 하나뿐 — 설명·힌트·바닥글은 text-label(11px) 이다.",
+      "By the ramp's definition 9.5px is the step for micro labels, legends and timestamps. In the editor " +
+        "only the eyebrow qualifies; descriptions, hints and footers are text-label (11px).",
     ).toEqual([]);
   });
 });
@@ -181,8 +181,8 @@ describe("「미리보기」 라벨은 한 화면에 하나다", () => {
       expect(splitToggle.length, `${locale}: split 토글 라벨이 비었다`).toBeGreaterThan(0);
       expect(
         splitToggle.trim().toLowerCase(),
-        `${locale}: 두 컨트롤이 한 화면에 같이 그려지는데 이름이 같다 — ` +
-          `헤더 탭은 「읽기/고치기」, 이쪽은 「원문 옆에 결과를 나란히」다.`,
+        `${locale}: two controls drawn on one screen share a name. ` +
+          `The header tab switches between reading and editing; this one puts the result beside the source.`,
       ).not.toBe(headerTab.trim().toLowerCase());
     }
   });
