@@ -15,12 +15,7 @@ export function isValidVaultTitle(value) {
 
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import {
-  boundaryFindings,
-  definitionFinding,
-  epistemicExclusionFinding,
-  uncertaintyFinding,
-} from './meaning-findings.mjs';
+import { bodyMeaningFindings } from './meaning-findings.mjs';
 import { parseFrontmatter } from './parser.mjs';
 import {
   VAULT_KINDS,
@@ -159,11 +154,10 @@ const GRAPH_ARRAY_KEYS = [
  * unclosed block and a zero-key parse are caught. Issue codes
  * match `src/shared/lib/validate-vault-document.ts`; a contract test blocks
  * drift. `slug-outside-kind-folder` needs `options.slug` (where the file sits), and a
- * caller holding only bytes cannot be told it. `options.parsed` reuses a parse
- * of the same `raw` the caller already has.
+ * caller holding only bytes cannot be told it.
  *
  * @param {string} raw
- * @param {{ slug?: string, parsed?: { frontmatter: object, body?: string, diagnostics?: object[] } }} [options]
+ * @param {{ slug?: string, parsed?: object }} [options]
  * @returns {{ ok: boolean, issues: Array<{code: string, severity: 'error'|'warning', message: string}> }}
  */
 export function validateVaultDocument(raw, options = {}) {
@@ -277,14 +271,7 @@ function pushMeaningIssues({ frontmatter, body, slug, issues }) {
   const kind = typeof frontmatter?.kind === 'string' ? frontmatter.kind.trim() : '';
   if (!kind || !KNOWN_VAULT_KINDS.includes(kind)) return;
   const title = typeof frontmatter?.title === 'string' ? frontmatter.title : '';
-  const findings = [
-    definitionFinding({ kind, slug, title, body }),
-    ...boundaryFindings({ kind, slug, title, body }),
-    uncertaintyFinding({ kind, slug, title, body }),
-    epistemicExclusionFinding({ kind, slug, title, body }),
-  ];
-  for (const finding of findings) {
-    if (!finding) continue;
+  for (const finding of bodyMeaningFindings({ kind, slug, title, body })) {
     issues.push({ code: finding.code, severity: 'warning', message: finding.message });
   }
   pushSlugOutsideKindFolderIssue({ kind, slug, issues });

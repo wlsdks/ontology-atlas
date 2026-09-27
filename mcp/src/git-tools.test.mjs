@@ -20,7 +20,6 @@ function git(root, ...args) {
   return execFileSync('git', ['-C', root, ...args], { encoding: 'utf8' }).trim();
 }
 
-/** The digest a revision declaring exactly these containment members carries. */
 function membershipOf(children) {
   return revisionClocks({ children }).membershipDigest;
 }
@@ -422,11 +421,6 @@ test('collectNodeRevisions matches the former per-file result across a merge', (
   }
 });
 
-/**
- * A repository whose `vault/domains/core.md` changed in each of `count` commits,
- * written by one `git fast-import` so a deep history costs one process. Returns
- * each revision's body, oldest first.
- */
 function makeDeepHistory(count, bodyOf) {
   const root = mkdtempSync(join(tmpdir(), 'ontology-atlas-git-deep-'));
   mkdirSync(join(root, 'vault'));
@@ -475,8 +469,6 @@ test('collectNodeRevisions keeps digests, not the revision text it read', () => 
 });
 
 test('collectNodeRevisions reads a history longer than one cat-file batch in order', () => {
-  // 300 revisions span two 256-object batches; a misaligned second batch would
-  // attach each digest to the wrong commit.
   const { root, vault, bodies } = makeDeepHistory(300, (index) => `Core meaning ${index}.\n`);
   try {
     const result = collectNodeRevisions({

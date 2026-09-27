@@ -2,14 +2,13 @@ import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { relative, resolve, sep } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
-import { detachString } from './parser.mjs';
+import { detachText } from './parser.mjs';
 import { CONTAINMENT_KEYS, revisionClocks } from './stale-parent.mjs';
 
 const MAX_GIT_OUTPUT = 4 * 1024 * 1024;
 /** One screen paint asks about at most this many paths; documents are queued before code. */
 const MAX_WALK_PATHS = 512;
 const MAX_GIT_BATCH_OUTPUT = 64 * 1024 * 1024;
-/** Objects per `cat-file --batch` process: one process for a deep history outgrew the output cap. */
 const GIT_BATCH_CHUNK = 256;
 const NODE_REVISION_CACHE_LIMIT = 8;
 const nodeRevisionCache = new Map();
@@ -254,9 +253,9 @@ function git(cwd, args, { allowFailure = false } = {}) {
 }
 
 /**
- * Reads historical blobs in `cat-file --batch` chunks and reduces each as it
- * arrives. A malformed or oversized chunk leaves its entries null for the
- * caller's per-object fallback.
+ * Reads historical blobs through `git cat-file --batch` instead of one `git show`
+ * per revision. A malformed or oversized chunk leaves its entries null and the
+ * caller falls back to per-object reads.
  */
 function gitBatchBlobs(cwd, objectSpecs, reduce) {
   const reduced = new Array(objectSpecs.length).fill(null);
@@ -490,10 +489,9 @@ function unionRevisionRequests(gitRoot, entries, maxRevisions) {
 
 /**
  * Revisions of summary nodes, newest first, for the stale-parent
- * check: `{ changedAt, bodyDigest, membershipDigest }` (`revisionClocks`), the
- * membership being the union of containment arrays. Digests, not text, because
- * the result is cached per HEAD. The union walk stops at `maxRevisions × nodes`;
- * blobs are read in `cat-file` batches. Parsing is line-level, not YAML: old
+ * check: `{ changedAt, bodyDigest, membershipDigest }`, the membership being the
+ * union of containment arrays. The union walk stops at `maxRevisions × nodes`;
+ * results are reused only under the same HEAD. Parsing is line-level, not YAML: old
  * revisions may predate the schema, and a strict parser would take the whole
  * advisory down. Outside a repository it returns `{ ok: false, reason }`.
  */
@@ -542,8 +540,7 @@ export function collectNodeRevisions({ repoRoot, vaultRoot, slugs, maxRevisions 
         if (!show.ok) continue;
         clocks = clocksOfBlob(show.stdout);
       }
-      // `changedAt` is a slice that would keep the whole log output alive.
-      revisions.push({ changedAt: detachString(request.changedAt), ...clocks });
+      revisions.push({ changedAt: detachText(request.changedAt), ...clocks });
     }
     if (revisions.length) revisionsBySlug.set(slug, revisions);
   }

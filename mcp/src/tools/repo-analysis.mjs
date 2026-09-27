@@ -363,7 +363,7 @@ function inferImportsTool({
   let effectiveReviewMode = requestedReviewMode ?? 'full';
   let delivery;
   if (reviewMode === undefined || (reviewMode === 'full' && allowLargeResponse !== true)) {
-    const estimatedFullResponseBytes = estimateMcpToolResultUtf8Bytes(result);
+    const estimatedFullResponseBytes = okResponseBytes(result);
     if (estimatedFullResponseBytes <= automaticLimitBytes) {
       return result;
     }
@@ -460,13 +460,8 @@ function inferImportsTool({
   return result;
 }
 
-/** The compiler's `indexes.aliasToSlug`, from the `aliases` rows: the cached artifact has no `indexes`. */
 function aliasToSlugOf(artifact) {
   return Object.fromEntries((artifact?.aliases ?? []).map(({ alias, slug }) => [alias, slug]));
-}
-
-function estimateMcpToolResultUtf8Bytes(result) {
-  return okResponseBytes(result);
 }
 
 function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports = false } = {}) {

@@ -307,7 +307,6 @@ function finalizeProjectMeaningTool({ projectSlug, expected_mtime } = {}) {
     throw new VaultConflictError(canonicalSlug, expected_mtime, projectDoc.mtime);
   }
 
-  // One snapshot of the vault for validation, the compile and the project scope.
   const validation = validateVaultTool({}, allDocs);
   if (validation.summary.errorFiles > 0) {
     throw new Error(

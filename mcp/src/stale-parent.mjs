@@ -51,18 +51,11 @@ function digest(text) {
   return createHash('sha256').update(text).digest('base64url');
 }
 
-/** A revision's two clocks as digests: `lastMovementOf` only compares neighbours for equality. */
 export function revisionClocks({ body, children } = {}) {
   return {
     bodyDigest: digest(String(body ?? '')),
     membershipDigest: digest(membershipKey(children)),
   };
-}
-
-function clocksOf(revision) {
-  return typeof revision.bodyDigest === 'string' && typeof revision.membershipDigest === 'string'
-    ? revision
-    : revisionClocks(revision);
 }
 
 function toTime(value) {
@@ -72,26 +65,25 @@ function toTime(value) {
 }
 
 /**
- * Walks revisions (`{ changedAt, body, children }` or `revisionClocks` digests,
- * newest first, the first is current) and reports when each clock last moved. A
- * value unchanged back to the oldest revision is `null`: unknown, not "never".
+ * Walks revisions (`{ changedAt, bodyDigest, membershipDigest }`, newest first,
+ * the first is current) and reports when each clock last moved. A value
+ * unchanged back to the oldest revision is `null`: unknown, not "never".
  */
 export function lastMovementOf(revisions) {
   const list = Array.isArray(revisions) ? revisions.filter(Boolean) : [];
   if (list.length === 0) return { bodyChangedAt: null, membershipChangedAt: null, truncated: true };
-  const clocks = list.map(clocksOf);
 
   let bodyChangedAt = null;
   let membershipChangedAt = null;
 
   for (let index = 0; index < list.length - 1; index += 1) {
-    const newer = clocks[index];
-    const older = clocks[index + 1];
+    const newer = list[index];
+    const older = list[index + 1];
     if (bodyChangedAt == null && newer.bodyDigest !== older.bodyDigest) {
-      bodyChangedAt = list[index].changedAt ?? null;
+      bodyChangedAt = newer.changedAt ?? null;
     }
     if (membershipChangedAt == null && newer.membershipDigest !== older.membershipDigest) {
-      membershipChangedAt = list[index].changedAt ?? null;
+      membershipChangedAt = newer.changedAt ?? null;
     }
     if (bodyChangedAt != null && membershipChangedAt != null) break;
   }
@@ -111,8 +103,8 @@ export function lastMovementOf(revisions) {
  * Summary nodes whose membership changed after their description last did.
  *
  * @param docs `{ slug, frontmatter }` documents.
- * @param revisionsOf `(slug) => revisions` as `lastMovementOf` reads them, newest
- *   first; a slug with no revisions is skipped, never guessed.
+ * @param revisionsOf `(slug) => [{ changedAt, bodyDigest, membershipDigest }]`,
+ *   newest first; a slug with no revisions is skipped, never guessed.
  * @returns Rows by lag, then slug, stable across runs.
  */
 export function findStaleParentSummaries({ docs, revisionsOf } = {}) {

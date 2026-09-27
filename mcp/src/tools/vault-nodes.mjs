@@ -270,7 +270,6 @@ function assertGraphNodeEndpoint(canonicalSlug, role) {
   );
 }
 
-/** The names one loaded document list answers to, built on its first lookup and dropped with it. */
 const slugIndexByDocs = new WeakMap();
 
 function slugIndexOf(docs) {
@@ -294,7 +293,6 @@ function slugIndexOf(docs) {
 
 function resolveExistingVaultSlug(slug, docs = null) {
   if (typeof slug !== 'string' || slug.trim() === '') return null;
-  // A slug the walk just listed needs no disk check; other spellings still get one.
   if (docs && slugIndexOf(docs).slugs.has(slug)) return slug;
   // Return the on-disk letter case: `existsSync` accepts a wrong-case slug on macOS
   // and Windows, but every backlink and relation match downstream is case-sensitive.

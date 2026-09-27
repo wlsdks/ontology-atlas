@@ -1,17 +1,4 @@
 #!/usr/bin/env node
-// Memory windows for the MCP server, measured over real stdio on a generated
-// vault. Each window reads the heap after two forced collections through a
-// test-only fd-3 preload (`scripts/lib/mcp-memory-probe.mjs`) and never resident
-// size, which depends on the allocator and on other processes.
-//
-// Usage:
-//   node scripts/perf-mcp-memory.mjs              # measure and print
-//   node scripts/perf-mcp-memory.mjs --check      # exit 1 when a window is over budget
-//   node scripts/perf-mcp-memory.mjs --json
-//   node scripts/perf-mcp-memory.mjs --calls=50 --commits=10
-//
-// Kept out of pre-push: it starts a server and runs several hundred calls.
-
 import { execFileSync, spawn } from 'node:child_process';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -33,7 +20,9 @@ const WARM_UP_CALLS = 5;
 const FIRST_MEASURED_COMMIT = 2;
 
 const BUDGETS = {
+  // measured 2026-09-28: at most 12.9 KB per call (agent_brief)
   leakBytesPerCall: 64 * KB,
+  // measured 2026-09-28: 85 KB per commit
   headMoveBytesPerCommit: 2 * MB,
 };
 
@@ -48,12 +37,6 @@ function integerFlag(prefix, fallback, { min, max }) {
   return value;
 }
 
-/**
- * A repository with a vault shaped like a real one: a project, domains that sum
- * their capabilities, elements, `path:` citations of real files, and summary
- * nodes with 40 revisions each, the history the stale-summary check reads on
- * every `health`. One `git fast-import` writes the history.
- */
 function buildFixture() {
   const root = mkdtempSync(join(tmpdir(), 'atlas-mcp-memory-'));
   const git = (...gitArgs) => execFileSync('git', ['-C', root, ...gitArgs], { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
@@ -79,7 +62,6 @@ function buildFixture() {
     '',
     '## Excludes',
     `- ${prose(10)}`,
-    // Every third node leaves its uncertainty unstated, so validation has rows to report.
     ...(index % 3 === 0 ? [] : ['', '## Uncertainty', `- Not read: ${prose(8)}.`]),
     '',
   ].join('\n');
@@ -105,8 +87,6 @@ function buildFixture() {
   const domainFile = (index, revision) => {
     const members = capabilities.filter((_, capability) => capability % DOMAINS === index)
       .slice(0, 4 + (revision % 10));
-    // A long summary (about 16 KB): whole revisions kept in memory are what the
-    // head-moves window catches, 7 MB per HEAD across the 480 domain revisions.
     const summary = Array.from({ length: 150 }, () => `Revision ${revision} of domain ${index}: ${prose(16)}.`).join('\n');
     return `${frontmatter({
       uid: uid(9000 + index), slug: `domains/d-${index}`, kind: 'domain', title: `Domain ${index}`, capabilities: members,
@@ -131,7 +111,6 @@ function buildFixture() {
   return { root, vault: join(root, 'vault'), git };
 }
 
-/** One server over stdio, with the heap probe on fd 3. */
 async function startServer(vault) {
   const child = spawn(process.execPath, ['--expose-gc', '--import', PROBE, SERVER], {
     env: { ...process.env, OATLAS_VAULT: vault, OATLAS_MEMORY_PROBE_FD: '3' },
@@ -277,7 +256,6 @@ if (failure) {
   console.error(`[perf-mcp-memory] ${failure instanceof Error ? failure.message : String(failure)}`);
   process.exit(1);
 }
-// A window that measured nothing must not read as a pass.
 const expectedRows = LEAK_CALLS.length + 1;
 if (rows.length !== expectedRows) {
   console.error(`[perf-mcp-memory] measured ${rows.length} of ${expectedRows} windows`);

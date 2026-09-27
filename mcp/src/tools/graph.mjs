@@ -263,7 +263,6 @@ function privateCurrentProjectSourceAccess(projectSlug, projectSource, graphHash
   };
 }
 
-/** Imported on first use: its TypeScript schema would load Node's type stripper at startup. */
 function analysisRecords() {
   return import('../analysis-records.mjs');
 }

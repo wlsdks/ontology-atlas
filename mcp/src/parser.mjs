@@ -23,12 +23,14 @@ const GRAPH_ARRAY_KEYS = new Set([
 ]);
 const UNSAFE_OBJECT_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
-/**
- * A parsed value is a V8 slice that keeps its whole file alive, so a holder that
- * outlives the document keeps this flat copy (JSON is the cheapest one measured).
- */
-export function detachString(value) {
-  return typeof value === 'string' ? JSON.parse(JSON.stringify(value)) : value;
+/** A copy that shares no memory with its file: V8 keeps a whole file alive for any slice of it. */
+export function detachText(value) {
+  if (typeof value === 'string') return JSON.parse(JSON.stringify(value));
+  if (Array.isArray(value)) return value.map(detachText);
+  if (value !== null && typeof value === 'object' && Object.getPrototypeOf(value) === Object.prototype) {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, detachText(item)]));
+  }
+  return value;
 }
 
 function assignParsedKey(target, key, value, diagnostics, line) {
@@ -291,7 +293,6 @@ function unquote(value) {
 }
 
 // A separator inside quotes is data: `labels: { ko: "map, search" }` is one value.
-// Parts are slices; appending a character at a time allocated three times as much.
 function splitTopLevel(input, separator) {
   const parts = [];
   let start = 0;

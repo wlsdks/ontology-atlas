@@ -1,13 +1,10 @@
 import { createHash } from 'node:crypto';
 
-import { detachString } from './parser.mjs';
+import { detachText } from './parser.mjs';
 import { nodeUidIssue } from './schema.mjs';
 import { GRAPH_ARRAY_KEYS, collectNeighborRefs, normalizeRelationRefs } from './vault.mjs';
 
 const COMPILER_VERSION = 2;
-
-// The artifact outlives its documents, so every string it keeps from their text
-// goes through `detachString`; slugs come from file paths.
 
 /**
  * With `summary: true` it omits the nodes, edges and aliases arrays and returns counts
@@ -15,7 +12,8 @@ const COMPILER_VERSION = 2;
  * / `nodesOffset` (and the edge pair) slice an array and add `nodesPagination:
  * { offset, limit, total, hasMore, nextOffset }`. `summary` wins over both.
  */
-export function compileOntology(docs, options = {}) {
+export function compileOntology(loadedDocs, options = {}) {
+  const docs = loadedDocs.map(detachedDocument);
   const includeIndexes = optionalBoolean(options.includeIndexes, 'includeIndexes') ?? false;
   const summary = optionalBoolean(options.summary, 'summary') ?? false;
   const nodesLimit = optionalPositiveInt(options.nodesLimit, 'nodesLimit', { max: 500 });
@@ -44,7 +42,7 @@ export function compileOntology(docs, options = {}) {
     if (tail && tail !== doc.slug) addAlias(aliasEntries, tail, doc.slug);
     const frontmatterSlug = doc.frontmatter?.slug;
     if (typeof frontmatterSlug === 'string' && frontmatterSlug.trim()) {
-      addAlias(aliasEntries, detachString(frontmatterSlug.trim()), doc.slug);
+      addAlias(aliasEntries, frontmatterSlug.trim(), doc.slug);
     }
   }
 
@@ -76,7 +74,7 @@ export function compileOntology(docs, options = {}) {
         severity: 'error',
         slug: doc.slug,
         line: diagnostic.line,
-        message: detachString(diagnostic.message),
+        message: diagnostic.message,
       });
     }
   }
@@ -124,7 +122,7 @@ export function compileOntology(docs, options = {}) {
       if (alreadyCanonical) {
         continue;
       }
-      frontmatterPatch[key] = canonical.map(detachString);
+      frontmatterPatch[key] = canonical;
       keys.push(key);
     }
     if (keys.length > 0) {
@@ -135,16 +133,15 @@ export function compileOntology(docs, options = {}) {
         expected_mtime: doc.mtime,
       });
     }
-    for (const { key, ref: slicedRef } of collectNeighborRefs(doc)) {
-      const resolved = aliasToSlug.get(slicedRef) || null;
-      const external = !resolved && key === 'elements' && isPathLikeGraphRef(slicedRef);
-      const edgeKey = `${doc.slug}\0${resolved || slicedRef}\0${key}\0${slicedRef}`;
+    for (const { key, ref } of collectNeighborRefs(doc)) {
+      const resolved = aliasToSlug.get(ref) || null;
+      const external = !resolved && key === 'elements' && isPathLikeGraphRef(ref);
+      const to = resolved || ref;
+      const edgeKey = `${doc.slug}\0${to}\0${key}\0${ref}`;
       if (edgeKeys.has(edgeKey)) continue;
       edgeKeys.add(edgeKey);
-      const ref = detachString(slicedRef);
-      const to = resolved || ref;
       const edge = {
-        id: detachString(`${doc.slug}->${to}:${key}:${ref}`),
+        id: `${doc.slug}->${to}:${key}:${ref}`,
         from: doc.slug,
         to,
         via: key,
@@ -156,7 +153,7 @@ export function compileOntology(docs, options = {}) {
       if (relationNotes && typeof relationNotes === 'object' && !Array.isArray(relationNotes)) {
         const rawRationale = relationNotes[ref] ?? relationNotes[to];
         if (typeof rawRationale === 'string' && rawRationale.trim()) {
-          edge.rationale = detachString(rawRationale.trim());
+          edge.rationale = rawRationale.trim();
         }
       }
       edges.push(edge);
@@ -167,7 +164,7 @@ export function compileOntology(docs, options = {}) {
           slug: doc.slug,
           via: key,
           ref,
-          message: detachString(`Graph reference "${ref}" from "${doc.slug}" via "${key}" does not resolve to a vault node.`),
+          message: `Graph reference "${ref}" from "${doc.slug}" via "${key}" does not resolve to a vault node.`,
         });
       }
     }
@@ -181,14 +178,14 @@ export function compileOntology(docs, options = {}) {
       const uid = doc.frontmatter?.uid;
       const mergedUids = normalizeUidList(doc.frontmatter?.merged_uids);
       return {
-        uid: detachString(uid),
-        ...(mergedUids.length > 0 ? { merged_uids: mergedUids.map(detachString) } : {}),
+        uid,
+        ...(mergedUids.length > 0 ? { merged_uids: mergedUids } : {}),
         slug: doc.slug,
-        kind: detachString(doc.frontmatter?.kind),
-        title: detachString(doc.frontmatter?.title || doc.frontmatter?.name || doc.slug),
-        domain: detachString(doc.frontmatter?.domain),
+        kind: doc.frontmatter?.kind,
+        title: doc.frontmatter?.title || doc.frontmatter?.name || doc.slug,
+        domain: doc.frontmatter?.domain,
         ...(typeof doc.frontmatter?.path === 'string' && doc.frontmatter.path.trim()
-          ? { path: detachString(doc.frontmatter.path) }
+          ? { path: doc.frontmatter.path }
           : {}),
         mtime: doc.mtime,
         outDegree: 0,
@@ -316,6 +313,15 @@ export function compileOntology(docs, options = {}) {
           mergedUidToSlug,
         }
       : undefined,
+  };
+}
+
+function detachedDocument(doc) {
+  return {
+    slug: doc?.slug,
+    mtime: doc?.mtime,
+    frontmatter: detachText(doc?.frontmatter),
+    diagnostics: detachText(doc?.diagnostics),
   };
 }
 
@@ -467,7 +473,7 @@ function validateGraphIdentity(graphDocs) {
       continue;
     }
     uidToSlug[uid] = slugs[0];
-    slugToUid[slugs[0]] = detachString(uid);
+    slugToUid[slugs[0]] = uid;
   }
 
   for (const doc of graphDocs) {

@@ -2,17 +2,20 @@ import { buildSlugNotFoundGrowthHint } from '../growth-hint.mjs';
 import { suggestCompiledSlugs } from '../suggestions.mjs';
 import { edgeSortKey } from './query-primitives.mjs';
 
-/**
- * A shared artifact is never modified, so its indexes are built on its first
- * query; any other is indexed per query, since a library caller may change it.
- */
 const sharedArtifacts = new WeakSet();
 const indexesByArtifact = new WeakMap();
 
-/** Declares an artifact shared and immutable, and returns it. */
 export function shareArtifact(artifact) {
-  if (artifact !== null && typeof artifact === 'object') sharedArtifacts.add(artifact);
+  sharedArtifacts.add(deepFreeze(artifact));
   return artifact;
+}
+
+function deepFreeze(value) {
+  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
+    Object.freeze(value);
+    for (const item of Object.values(value)) deepFreeze(item);
+  }
+  return value;
 }
 
 /** Build the immutable indexes shared by ontology query families. */
@@ -58,6 +61,7 @@ function buildArtifactIndexes(artifact) {
       incoming.get(edge.to).push(edge);
     }
   }
+  for (const list of [...outgoing.values(), ...incoming.values()]) Object.freeze(list);
 
   // Keep unresolved names queryable as evidence even though they are not nodes.
   const referencedOnlyByRef = new Map();
@@ -66,14 +70,15 @@ function buildArtifactIndexes(artifact) {
     const list = referencedOnlyByRef.get(edge.ref);
     if (list) {
       if (!list.some((hit) => hit.slug === edge.from && hit.via === edge.via)) {
-        list.push({ slug: edge.from, via: edge.via });
+        list.push(Object.freeze({ slug: edge.from, via: edge.via }));
       }
     } else {
-      referencedOnlyByRef.set(edge.ref, [{ slug: edge.from, via: edge.via }]);
+      referencedOnlyByRef.set(edge.ref, [Object.freeze({ slug: edge.from, via: edge.via })]);
     }
   }
   for (const list of referencedOnlyByRef.values()) {
     list.sort((left, right) => left.slug.localeCompare(right.slug) || left.via.localeCompare(right.via));
+    Object.freeze(list);
   }
 
   function resolve(input, fieldName = 'slug') {
@@ -96,8 +101,7 @@ function buildArtifactIndexes(artifact) {
       const error = new Error(
         `${fieldName} "${candidate}" is referenced by the vault but has no document of its own, so it is not a compiled node. Referenced by: ${cited}. Create it with add_concept({slug:"${candidate}"}) to make it queryable.`,
       );
-      // A copy: the list belongs to the shared index.
-      error.referencedBy = referencedBy.map((hit) => ({ ...hit }));
+      error.referencedBy = referencedBy;
       throw error;
     }
     const similar = suggestCompiledSlugs(candidate, [...nodeBySlug.keys()]);

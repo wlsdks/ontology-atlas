@@ -17,31 +17,27 @@ function formatUnknownToolError(name) {
 
 const OK_ENVELOPE_BYTES = Buffer.byteLength('{"content":[{"type":"text","text":""}],"structuredContent":}');
 
-/**
- * The UTF-8 bytes `ok(result)` puts on the wire, derived from the pretty text
- * alone: escaping adds a byte per `"`, `\` and line break, and the compact copy
- * drops the layout whitespace outside strings.
- */
-function okResponseBytes(result, text = JSON.stringify(result, null, 2)) {
-  const textBytes = Buffer.byteLength(text, 'utf8');
-  let escapes = 0;
-  let layout = 0;
+function okResponseBytes(result, prettyText = JSON.stringify(result, null, 2)) {
+  let charsEscapedAsText = 0;
+  let layoutOutsideStrings = 0;
   let inString = false;
   let escaping = false;
-  for (let index = 0; index < text.length; index += 1) {
-    const code = text.charCodeAt(index);
-    if (code === 0x22 || code === 0x5c || code === 0x0a) escapes += 1;
+  for (const char of prettyText) {
+    if (char === '"' || char === '\\' || char === '\n') charsEscapedAsText += 1;
     if (inString) {
       if (escaping) escaping = false;
-      else if (code === 0x5c) escaping = true;
-      else if (code === 0x22) inString = false;
-    } else if (code === 0x22) {
+      else if (char === '\\') escaping = true;
+      else if (char === '"') inString = false;
+    } else if (char === '"') {
       inString = true;
-    } else if (code === 0x20 || code === 0x0a) {
-      layout += 1;
+    } else if (char === ' ' || char === '\n') {
+      layoutOutsideStrings += 1;
     }
   }
-  return OK_ENVELOPE_BYTES + textBytes + escapes + textBytes - layout;
+  const prettyBytes = Buffer.byteLength(prettyText, 'utf8');
+  const textFieldBytes = prettyBytes + charsEscapedAsText;
+  const structuredContentBytes = prettyBytes - layoutOutsideStrings;
+  return OK_ENVELOPE_BYTES + textFieldBytes + structuredContentBytes;
 }
 
 function ok(result) {

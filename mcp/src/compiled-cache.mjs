@@ -13,7 +13,7 @@ export function createCompiledOntologyCache({ loadDocs, compile }) {
   }
 
   // Current bytes are loaded even on a hit, so read-only callers can share them
-  // within one request, or passed in as `docs` by a caller that just loaded them.
+  // within one request.
   function getWithDocs(options = {}) {
     const docs = options.docs ?? loadDocs();
     const signature = docsSignature(docs);
