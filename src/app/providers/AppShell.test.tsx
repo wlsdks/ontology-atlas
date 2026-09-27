@@ -74,8 +74,8 @@ beforeEach(() => {
   shellMocks.vault.isReloadingSameVault = false;
 });
 
-describe("AppShell — 레일 하단 유틸 티어 (#65)", () => {
-  it("페이지가 슬롯을 주입하지 않아도 설정이 선다", () => {
+describe("AppShell rail utility tier (#65)", () => {
+  it("shows settings when no page injects a slot", () => {
     render(
       <AppShell>
         <div>page</div>
@@ -88,10 +88,10 @@ describe("AppShell — 레일 하단 유틸 티어 (#65)", () => {
     // broke as soon as one web-specific element was added to the tier (2026-07-28 「App fetch」 addition).
     // Instead of count, we look at **composition**.
     expect(screen.queryByTestId("app-nav-rail-agent-status")).not.toBeInTheDocument();
-    expect(tier.querySelector("details"), "설정 트리거가 없다").not.toBeNull();
+    expect(tier.querySelector("details")).not.toBeNull();
   });
 
-  it("기록은 유틸 타일이 아니라 목적지다 (2026-07-25 승격 — 입구 하나)", () => {
+  it("renders no git utility tile because git is a destination", () => {
     render(
       <AppShell>
         <div>page</div>
@@ -106,8 +106,8 @@ describe("AppShell — 레일 하단 유틸 티어 (#65)", () => {
   });
 });
 
-describe("셸 칼럼 — 뷰포트 소유 계약", () => {
-  it("설치 앱은 실제 vault 없이 workbench 레일이나 번들 목적지를 그리지 않는다", () => {
+describe("shell column owns the viewport", () => {
+  it("hides the rail and bundled destinations in the installed app without a vault", () => {
     shellMocks.desktop = true;
     shellMocks.pathname = "/ko/projects";
 
@@ -123,7 +123,7 @@ describe("셸 칼럼 — 뷰포트 소유 계약", () => {
     expect(shellMocks.replace).toHaveBeenCalledWith("/");
   });
 
-  it("셸이 뷰포트 높이를 잡고 본문만 스크롤한다", () => {
+  it("holds the viewport height and scrolls only the body", () => {
     // Structure a page has to remember — such as `--app-viewport-h` — is exactly what
     // drifts. With the shell owning `h-dvh overflow-hidden`, a page needs only `h-full`.
     const { container } = render(
@@ -132,11 +132,11 @@ describe("셸 칼럼 — 뷰포트 소유 계약", () => {
       </AppShell>,
     );
     const shell = container.querySelector(".h-dvh");
-    expect(shell, "셸 루트가 뷰포트 높이를 잡아야 한다").not.toBeNull();
+    expect(shell).not.toBeNull();
     expect(shell?.className).toContain("overflow-hidden");
   });
 
-  it("본문 슬롯이 자식을 압축하지 않는다 — 스크롤 끝 여백 계약", () => {
+  it("keeps the body slot from shrinking its children so the scroll-end gap survives", () => {
     // The slot is a scroll container. The `min-h-full` a page root uses to fill it
     // overrides the flex item's automatic minimum size, so without blocking compression
     // the page box shrinks to viewport height as content grows and the bottom reserve is
@@ -157,17 +157,15 @@ describe("셸 칼럼 — 뷰포트 소유 계약", () => {
      * that class" cannot be a contract.
      */
     const slot = container.querySelector('[data-testid="app-shell-body-slot"]');
-    expect(slot, "본문 스크롤 슬롯이 있어야 한다").not.toBeNull();
-    expect(slot?.className, "본문 슬롯이 스크롤 컨테이너가 아니다").toContain(
-      "overflow-y-auto",
-    );
+    expect(slot).not.toBeNull();
+    expect(slot?.className).toContain("overflow-y-auto");
     expect(
       slot?.className,
-      "슬롯의 직계 자식은 압축되지 않아야 한다 — 페이지마다 shrink-0 을 기억하게 하면 다음 화면에서 또 빠진다",
+      "direct children must not shrink; making each page remember shrink-0 regresses on the next screen",
     ).toContain("[&>*]:shrink-0");
   });
 
-  it("앱 내장 터미널 손잡이가 없다 — 2026-07-26 제거", () => {
+  it("renders no built-in terminal handle", () => {
     // Regression guard: the bottom dock was removed on the decision that anyone running
     // an agent uses their own terminal. A handle reappearing means that decision was
     // quietly reversed.

@@ -12,7 +12,7 @@ import {
 
 /** indigo-tokens is the single source of truth, matching the charter §11 "one indigo" promise. */
 describe("indigo-tokens", () => {
-  it("hex 6 variant 가 정의되고 모두 7자 hex 형식", () => {
+  it("defines six variants, each a 7-character lowercase hex", () => {
     const all = [
       INDIGO_BRAND,
       INDIGO_ACCENT,
@@ -26,7 +26,7 @@ describe("indigo-tokens", () => {
     }
   });
 
-  it("RGB triplet 6 variant 가 hex 와 일치 (lowercase)", () => {
+  it("pins each RGB triplet to its hex", () => {
     const expected: Record<keyof typeof INDIGO_RGB, string> = {
       brand: "94, 106, 210", // 5e=94, 6a=106, d2=210
       accent: "113, 112, 255", // 71=113, 70=112, ff=255
@@ -39,12 +39,12 @@ describe("indigo-tokens", () => {
   });
 
   describe("indigoRgba()", () => {
-    it("variant + alpha 조합으로 rgba 문자열 합성", () => {
+    it("composes an rgba string from a variant and an alpha", () => {
       expect(indigoRgba("highlight", 0.95)).toBe("rgba(139, 151, 255, 0.95)");
       expect(indigoRgba("brand", 0.14)).toBe("rgba(94, 106, 210, 0.14)");
     });
 
-    it("alpha 0 / 1 경계", () => {
+    it("accepts the alpha bounds 0 and 1", () => {
       expect(indigoRgba("brand", 0)).toBe("rgba(94, 106, 210, 0)");
       expect(indigoRgba("brand", 1)).toBe("rgba(94, 106, 210, 1)");
     });
