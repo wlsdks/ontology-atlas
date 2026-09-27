@@ -1,40 +1,13 @@
 #!/usr/bin/env node
 /**
- * MCP server verify CLI — UX-3.
- *
- * Verify that the server is healthy in one command after registering .mcp.json.
+ * MCP server verify CLI: checks in one command that a registered server boots,
+ * lists its tools, and answers every read and dry-run write contract.
  *
  * Usage:
- *   node mcp/scripts/verify.mjs                    # vault = cwd
- *   node mcp/scripts/verify.mjs ./docs/ontology    # vault = positional arg
- *   node mcp/scripts/verify.mjs --vault ./docs/ontology
- *   node mcp/scripts/verify.mjs ./docs/ontology --timeout-ms 15000
- *   OATLAS_VAULT=./docs/ontology node mcp/scripts/verify.mjs
- *   OATLAS_VERIFY_TIMEOUT_MS=15000 npm run verify    # larger/slower vaults
+ *   node mcp/scripts/verify.mjs [vault] [--vault <dir>] [--timeout-ms <n>]
+ *   OATLAS_VAULT=<dir> OATLAS_VERIFY_TIMEOUT_MS=<n> npm run verify
  *
- * Verification items:
- *   1. parser smoke test (parser.test.mjs) passes
- *   2. server boot — initialize JSON-RPC response
- *   3. tools/list — complete tool inventory + graph-query/write-relation enum schema contract + strict tool-name/argument/enum runtime smoke
- *   4. tools/call list_concepts — output vault node count
- *   5. tools/call list_concepts(kind=project) — project_scope gate probe
- *   6. tools/call get_concept — single-node detail + structuredContent contract
- *   7. tools/call get_concepts — batch reader success + partial-row contract
- *   8. tools/call find_evidence/find_backlinks/query_concepts/limited query_concepts — search, backlink, typed-filter, and limit-semantics read smoke
- *   9. tools/call find_neighbors/find_path — daily graph-read smoke
- *   10. tools/call analyze_repo_structure/infer_imports/index_project — bootstrap/import/indexing analysis read smoke
- *   11. tools/call add_concepts/add_relations — invalid batch rows remain row-level, not top-level errors
- *   12. tools/call find_orphans — row shape + root/sentinel default-exclusion contract
- *   13. tools/call list_kinds — kind census aggregate
- *   14. tools/call validate_vault — whole-vault frontmatter / graph-reference health
- *   15. tools/call query_ontology agent_brief + workspace_brief + tuned workspace_brief + health + tuned health — agent first-contact graph diagnosis
- *   16. tools/call compile_ontology(summary + paginated full artifact) — compiler graph contract
- *   17. tools/call query_ontology overview + query_plan(overview/project_map) — graph-query smoke contract
- *   18. tools/call query_ontology neighbors/node-to-project path/all_paths/project_scope — core graph query smoke contract
- *   19. tools/call query_ontology relation_check + graph kind typo rejection — write/query preflight fail-closed smoke
- *   20. tools/call absorb_document dry-run against a temp fixture (Slice 0) — CLAUDE.md/AGENTS.md absorption tool smoke, never touches the vault under test
- *
- * All PASS → exit 0, failure → exit 1 + diagnostic message.
+ * Exit 0 when every check passes, 1 with a diagnostic otherwise.
  */
 
 import { isBacklinkKeyValue } from '../src/backlink-key-shape.mjs';
@@ -84,10 +57,8 @@ const MCP_ROOT = resolve(__dirname, '..');
 const REPO_ROOT = resolve(MCP_ROOT, '..');
 const PARSER_TEST = join(MCP_ROOT, 'src', 'parser.test.mjs');
 const SERVER_ENTRY = join(MCP_ROOT, 'src', 'index.js');
-// Override to subject the compiled binary included in the app bundle to the same exhaustive verification.
-// If unspecified, it uses node + source entry as before. If specified, it spawns that executable
-// without arguments — because "passing from source" and "what the user actually receives" can differ,
-// so the same suite must check both sides.
+// Runs the same suite against the compiled app binary, spawned without arguments:
+// passing from source and what the user receives can differ.
 const SERVER_BIN_OVERRIDE = process.env.OATLAS_MCP_SERVER_BIN || '';
 const SERVER_COMMAND = SERVER_BIN_OVERRIDE || process.execPath;
 const SERVER_COMMAND_ARGS = SERVER_BIN_OVERRIDE ? [] : [SERVER_ENTRY];
@@ -118,13 +89,9 @@ export const VERIFY_TUNED_HEALTH_ARGS = {
 };
 export const VERIFY_TUNED_WORKSPACE_BRIEF_NODE_LIMIT = 3;
 
-// Slice 0 (PRODUCT-PLAN-2026-07.md §9) — absorb_document dry-run smoke.
-// A fixed, per-verify-process temp file so the live walk exercises the tool
-// end-to-end without touching the vault under test (dry-run only — never
-// confirm:true here). One heading matches the policy vocabulary (→ absorb
-// candidate) and one matches the architecture vocabulary (→ suggest
-// candidate, never auto-written) so both classification branches are
-// covered; neither is injection-suspect.
+// A per-process temp fixture for the absorb_document dry-run (never confirm:true).
+// One policy heading and one architecture heading cover both classification
+// branches without touching the vault under test.
 const ABSORB_FIXTURE_DIR = join(tmpdir(), `ontology-atlas-verify-absorb-${process.pid}`);
 export const ABSORB_FIXTURE_PATH = join(ABSORB_FIXTURE_DIR, 'CLAUDE.md');
 const ABSORB_FIXTURE_CONTENT = [
@@ -434,11 +401,9 @@ function topLevelInputCombinatorFailure(tools) {
   return null;
 }
 
-// Every nested object in the published tools/list contract must say whether
-// unknown keys are accepted. A bare `{type:'object'}` is ambiguous to clients:
-// it may be an intentional dynamic map or a typed contract that silently lost
-// its fields during a merge. Dynamic maps are explicit and narrowly named;
-// everything else is closed (or uses a typed `additionalProperties` map).
+// Every nested tools/list object must say whether unknown keys are accepted: a bare
+// `{type:'object'}` could be a dynamic map or a contract that lost its fields.
+// Dynamic maps are named here; everything else is closed or a typed map.
 export const TOOLS_LIST_OPEN_OBJECT_PATHS = new Set([
   'get_concept.outputSchema.properties.frontmatter',
   'get_concepts.outputSchema.properties.concepts.items.properties.frontmatter',
@@ -1089,9 +1054,8 @@ export function toolsListSchemaFailure(tools) {
   ) {
     return 'get_concept inputSchema uid drift';
   }
-  // `excerpt` is no longer required — if `body: 'full'`, the body comes as `body`.
-  // Instead, **`bodyInfo` is required**: a response not saying what wasn't given
-  // was the defect in this measurement, so that field missing is a regression (2026-08-01).
+  // `bodyInfo` is required because a response must say what it left out; `excerpt`
+  // is optional because `body: 'full'` sends `body` instead.
   if (!sameArray(getConceptTool.inputSchema?.properties?.body?.enum, ['excerpt', 'full'])) {
     return 'get_concept inputSchema body mode drift';
   }
@@ -2958,7 +2922,7 @@ export function toolsListSchemaFailure(tools) {
   if (!sameArray(singleAddRelationInputType?.enum, WRITE_RELATION_TYPE_VALUES)) {
     return 'add_relation inputSchema type enum drift';
   }
-  // P6 regression gate — preventing recurrence of the incident where the why schema block evaporated in round merge, causing strict-args to reject why as unknown_argument.
+  // strict-args derives its allowlist from the schema, so a missing `why` block rejects `why`.
   const addRelationWhy = propertyAt(addRelationTool, ['properties', 'why']);
   if (addRelationWhy?.type !== 'string' || addRelationWhy?.maxLength !== 300) {
     return 'add_relation inputSchema why (relation_notes rationale) drift';
@@ -4913,10 +4877,8 @@ export function buildFirstContactRequests() {
       jsonrpc: '2.0',
       id: 69,
       method: 'tools/call',
-      // Slice 0 — absorb_document dry-run against a temp fixture (never the
-      // vault under test). Unconditional: no vault dependency, so this is
-      // part of the initial batch rather than a reactive follow-up like the
-      // rename/merge/delete dry-run smokes.
+      // absorb_document dry-run against the temp fixture: it needs no vault node, so it
+      // joins the initial batch rather than the reactive dry-run smokes.
       params: {
         name: 'absorb_document',
         arguments: { filePath: ABSORB_FIXTURE_PATH, allowOutsideRepo: true },
@@ -5593,10 +5555,8 @@ export function destructiveDryRunFailure(response, toolName) {
   return null;
 }
 
-// Slice 0 — absorb_document dry-run smoke (separate from
-// destructiveDryRunFailure/destructiveDryRunSmokeFailure: it targets a temp
-// fixture file rather than a vault node, so it is checked and logged as its
-// own line instead of joining the rename/merge/delete dry-run count).
+// absorb_document targets a temp fixture rather than a vault node, so it is
+// checked and logged on its own line, outside the rename/merge/delete count.
 export function absorbDocumentDryRunFailure(response) {
   if (!response || !response.result) {
     return 'no absorb_document dry-run response';
@@ -5788,13 +5748,8 @@ function backlinkKeyChangeFailure(row) {
 }
 
 /**
- * ⚠️ **Do not rewrite the verdict here** (2026-08-17).
- *
- * Previously, this function accepted only strings/arrays, so nodes with
- * `relation_notes` (a map) could not pass this gate even though their rename was
- * **correct**. The gate that should be open is closed.
- *
- * Shape validation is handled by a single module `mcp/src/backlink-key-shape.mjs`, and its tests are there too.
+ * Shape validation, including the `relation_notes` map, lives in
+ * `mcp/src/backlink-key-shape.mjs`; do not re-implement the verdict here.
  */
 function isBacklinkRewriteValue(value) {
   return isBacklinkKeyValue(value);
@@ -5851,11 +5806,8 @@ export function vaultWarningsFailure(parsed) {
 }
 
 /**
- * Warning-level vault diagnostics (a dangling reference, a non-canonical
- * array) do not fail verification: `ontology-atlas validate` exits 0 on the
- * same vault, and a pre-commit hook wired to it would otherwise pass what the
- * agent's verification then fails (audit 2026-09-04). They are still printed,
- * because a warning the reader never sees is one nobody repairs.
+ * Warning-level diagnostics do not fail verification, matching
+ * `ontology-atlas validate` exiting 0 on the same vault; they are still printed.
  */
 export function vaultWarningsNotice(parsed) {
   const warnings = parsed?.vaultWarnings;
@@ -6276,11 +6228,9 @@ export function inferImportsFailure(parsed) {
     return 'infer_imports response missing filesScanned count';
   }
 
-  // Large scans are deliberately delivered as a bounded review packet. The
-  // automatic 128 KiB response limit is part of the public contract, so a
-  // dogfood/client call must not treat the compact branch as a malformed full
-  // scan merely because its raw edge arrays are absent. Keep the packet
-  // structural checks strict; only the large arrays are omitted.
+  // Large scans arrive as a bounded review packet under the public 128 KiB response
+  // limit. Accept the compact branch without its raw edge arrays, but keep the
+  // packet's structural checks strict.
   if (parsed.contract === 'inferImportsReview:v1') {
     const summary = parsed.scanSummary;
     if (!summary || typeof summary !== 'object' || Array.isArray(summary)) {
@@ -7322,7 +7272,7 @@ export function validateVaultFailure(parsed) {
   return `validate_vault found ${formatCount(problemFiles, 'problem file')}: errors ${summary.errorFiles}, warnings ${summary.warningFiles}${suffix}`;
 }
 
-/** Warning-only validation problems, printed but never fatal (2026-09-04). */
+/** Warning-only validation problems, printed but never fatal. */
 export function validateVaultNotice(parsed) {
   const summary = parsed?.summary;
   if (!summary || !Number.isInteger(summary.problemFiles) || summary.problemFiles === 0) return null;
@@ -8668,11 +8618,9 @@ const AGENT_BRIEF_LIVE_WITNESS_STATUSES = new Set([
   'witnesses_supported', 'witnesses_missing', 'no_witnesses', 'inventory_truncated',
 ]);
 
-// `projectSource.live` (projectSourceLiveWitnesses:v1) appears only when the
-// receipt is behind the source or the ontology: it says whether the recorded
-// witness paths still resolve in the live checkout. The dogfood vault in CI has
-// no bound source, so a release rehearsal against the real vault is the first
-// place this object is seen; it must be part of the categorical contract there.
+// `projectSource.live` appears only when the receipt is behind the source or the
+// ontology. CI's dogfood vault has no bound source, so a release rehearsal against
+// the real vault is where this object is first checked.
 function validAgentBriefLiveWitnesses(live) {
   return agentBriefExactKeys(live, [
     'contract', 'status', 'basis', 'sourceRevision', 'sourceFingerprint', 'witnessSummary', 'missingPaths',
@@ -9708,10 +9656,8 @@ async function step2BootAndCall() {
   }
   log('info', `step 2: server boot + tools/list + list_concepts/project probe/get_concept/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/analyze_repo_structure/infer_imports/index_project/find_neighbors/find_path/find_orphans/list_kinds/destructive dry-runs (vault=${VAULT}, timeout=${timeoutMs}ms)`);
 
-  // Slice 0 — the absorb_document dry-run request (id 69, part of the
-  // initial batch above) targets this temp fixture. Must exist before the
-  // server can process it; cleaned up in the finally below regardless of
-  // outcome.
+  // The absorb_document dry-run request (id 69) reads this fixture, so it must exist
+  // before the batch is sent; the finally below removes it.
   ensureAbsorbFixture();
   const lines = buildFirstContactRequests().map((request) => JSON.stringify(request));
 

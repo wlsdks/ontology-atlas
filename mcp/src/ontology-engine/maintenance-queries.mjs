@@ -25,12 +25,9 @@ const MEANING_GAP_SCORE_BY_CODE = Object.freeze({
   'folder-only-evidence': 0.5,
   'slug-outside-kind-folder': 0.35,
   'uncertainty-missing': 0.55,
-  // Second highest, and the reasoning is the same as `epistemic-exclusion`'s:
-  // both put a claim on the map that is simply not true of the codebase. This
-  // one is worse in reach — a reader sees «Example domain» beside the real
-  // domains before opening anything — and better in cost, because the repair is
-  // one delete rather than a sentence only the author can write. Ranked just
-  // under the exclusion, which a source-hidden reader repeats as fact.
+  // Ranked just under `epistemic-exclusion`: both put a claim on the map that is not
+  // true of the codebase. This one is seen before anything is opened, but its repair
+  // is a single delete.
   'starter-example-node': 0.65,
 });
 
@@ -104,15 +101,9 @@ export function createMaintenanceQueries({
   }
 
   /**
-   * `init` starter examples the vault has outgrown.
-   *
-   * Beside `slugOutsideKindFolderCandidates` because it shares that function's
-   * one useful property: it needs nothing the compiled artifact does not already
-   * carry — a slug, a kind and a title — so it answers on every
-   * `maintenance_plan` call, bodies or no bodies. That is the whole point here.
-   * The vault measured on 2026-09-22 was freshly built by an agent through the
-   * first-run door; nobody had compiled it with bodies loaded, and it is exactly
-   * the vault that needed telling.
+   * `init` starter examples the vault has outgrown. Needs only slug, kind and title
+   * from the compiled artifact, so it answers on every `maintenance_plan` call,
+   * with or without bodies.
    */
   function starterExampleCandidates(limit) {
     const rows = starterExampleFindings(
@@ -135,18 +126,13 @@ export function createMaintenanceQueries({
       'path-shaped-title': { kind: 'separate_evidence_from_concept', phase: 'repair', severity: 'warn', score: 0.9 },
       'path-shaped-reference': { kind: 'separate_evidence_from_concept', phase: 'repair', severity: 'warn', score: 0.92 },
       'bulk-provenance': { kind: 'fold_bulk_siblings', phase: 'review', severity: 'info', score: 0.45 },
-      // Shares `fold_bulk_siblings` rather than claiming a ninth kind. The gate
-      // only raises `dense-parent` when the parent's references are mostly broken
-      // or a machine filled it this session, so the row always arrives alongside
-      // one of those facts and asks the identical question: name why these
-      // siblings are not interchangeable, or fold the ones you cannot. A separate
-      // enum value would grow the public contract (README, dogfood vault node,
-      // strict-filter fixtures, contract regex) to say the same sentence twice.
+      // Shares `fold_bulk_siblings` rather than adding a kind: `dense-parent` always
+      // arrives with a broken-references or machine-filled fact and asks the same
+      // question, and a new enum value would grow the public contract to repeat it.
       'dense-parent': { kind: 'fold_bulk_siblings', phase: 'review', severity: 'info', score: 0.5 },
-      // The write-path half of `capability_without_evidence`. The vault-wide half
-      // (below, from the compiled artifact) keeps asking as long as the answer is
-      // missing; this one fires once, at the moment the author still has the file
-      // in hand. Same kind on purpose — it is one question, asked at two times.
+      // The write-path half of `capability_without_evidence`: it fires once, while the
+      // author has the file in hand; the vault-wide half below keeps asking. Same kind on
+      // purpose — one question asked at two times.
       'capability-without-evidence': { kind: 'capability_without_evidence', phase: 'review', severity: 'info', score: 0.5 },
       ...Object.fromEntries(
         Object.entries(MEANING_GAP_KIND_BY_CODE).map(([code, kind]) => [
@@ -321,10 +307,8 @@ export function createMaintenanceQueries({
       actions.push({ phase: 'review', kind: row.kind, severity: 'info', score: row.score, reason: row.reason, node: row.node });
     }
 
-    // A freshly written node is caught by two paths at once — the write gate, then
-    // the full vault scan. Writing the same question about the same node on two
-    // rows makes the queue generate its own noise, so whatever the full scan
-    // already said is dropped here.
+    // A fresh node is caught by both the write gate and the full scan; drop what the
+    // full scan already said so the queue does not repeat itself.
     const capabilitiesWithoutEvidenceSlugs = new Set(capabilitiesWithoutEvidence.slugs ?? []);
     const meaningGapKeys = new Set([
       ...(meaningGaps.keys ?? []),
