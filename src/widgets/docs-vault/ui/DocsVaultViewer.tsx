@@ -15,6 +15,7 @@ import {
 } from '@/entities/docs-vault';
 import { useStaticVaultSource } from '@/entities/vault-session';
 import { IconButton, controlClass } from '@/shared/ui';
+import { badgeClass } from '@/shared/ui/badge-class';
 import { splitHighlightSegments } from '@/shared/lib/highlight-match';
 import { githubAnchorSlug } from '@/shared/lib/github-anchor-slug';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
@@ -570,8 +571,9 @@ export function DocsVaultViewer({
       },
       img({ src, alt, title }) {
         const rawSrc = typeof src === 'string' ? src : undefined;
+        if (rawSrc && /^https?:/i.test(rawSrc)) return <RemoteImage src={rawSrc} alt={alt ?? ''} />;
         // A server vault has no resolveImage and references public/docs-vault directly.
-        if (!rawSrc || /^(https?:|data:|blob:)/i.test(rawSrc) || !resolveImage) {
+        if (!rawSrc || /^(data:|blob:)/i.test(rawSrc) || !resolveImage) {
           return <BodyImage src={rawSrc ?? ''} alt={alt ?? ''} title={title} />;
         }
         return (
@@ -823,6 +825,41 @@ function VaultImage({
     );
   }
   return <BodyImage src={blobUrl} alt={alt} />;
+}
+
+function RemoteImage({ src, alt }: { src: string; alt: string }) {
+  const t = useTranslations('vaultWidgets.viewer');
+  let host = src;
+  try {
+    host = new URL(src).host;
+  } catch {
+    host = src;
+  }
+  return (
+    <span
+      data-testid="docs-viewer-remote-image"
+      className={badgeClass({
+        shape: 'micro',
+        className:
+          'my-3 max-w-full flex-wrap items-baseline gap-x-2 gap-y-1 border border-dashed border-[color:var(--color-border-strong)] text-[color:var(--color-text-tertiary)]',
+      })}
+    >
+      {alt ? <span className="text-[color:var(--color-text-secondary)]">{alt}</span> : null}
+      <span>{t('remoteImage', { host })}</span>
+      <a
+        href={src}
+        target="_blank"
+        rel="noopener noreferrer"
+        referrerPolicy="no-referrer"
+        className={controlClass({ shape: 'link', tone: 'accent', className: 'text-caption' })}
+      >
+        <span aria-hidden data-external-link-marker>
+          ↗
+        </span>
+        {t('remoteImageOpen', { host })}
+      </a>
+    </span>
+  );
 }
 
 function BodyImage({ src, alt, title }: { src: string; alt: string; title?: string }) {

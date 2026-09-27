@@ -97,6 +97,7 @@ import {
   type LibraryIndexSegment,
 } from "@/shared/lib/appearance-preferences";
 import { cn } from "@/shared/lib/cn";
+import { handOverVaultFile, vaultImageUrl } from "@/shared/lib/open-vault-file";
 import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion';
 import { RIGHT_DOCK_WIDTH_VAR } from "@/shared/lib/right-dock-reserve";
 import { getTauriVaultRootPath, nativeVaultFileHashes, revealTauriVaultFile } from "@/shared/lib/tauri-vault-fs";
@@ -644,7 +645,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
     return async (path: string) => {
       const image = handles.get(path);
       if (!image) return null;
-      return URL.createObjectURL(await image.getFile());
+      return vaultImageUrl(await image.getFile());
     };
   }, [localVault.imageHandles]);
 
@@ -813,11 +814,9 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
       void sourceHandle
         .getFile()
         .then((file) => {
-          const url = URL.createObjectURL(file);
-          window.open(url, "_blank", "noopener");
-          // The tab has the blob by the time this runs; revoking frees the copy the page
-          // would otherwise hold for its whole life.
-          window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+          if (handOverVaultFile(file) === "saved") {
+            toast.show(t("sources.savedInstead", { name: file.name }), "info");
+          }
         })
         .catch(() => toast.show(t("sources.openFailed"), "error"));
     },

@@ -89,6 +89,8 @@ const countReading = (page: import("@playwright/test").Page) =>
     };
   }, PAINTED);
 
+test.use({ bypassCSP: true });
+
 test.describe("관문 읽을거리 — 좁은 화면에서도 닿는다", () => {
   for (const { w, h } of WIDTHS) {
     test(`${w}×${h} — 관문 표면 어디서든 가이드와 변경 내역에 닿는다`, async ({ page }) => {

@@ -53,6 +53,7 @@ import { seedFirstRunSeen } from "./first-run-seed";
  */
 // Each audit owns its page and pointer; no file hooks or shared mutable state.
 test.describe.configure({ mode: 'parallel' });
+test.use({ bypassCSP: true });
 
 const VIEWPORT = { width: 1512, height: 900 };
 
