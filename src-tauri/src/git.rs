@@ -35,6 +35,7 @@ fn run_git(cwd: &Path, args: &[&str]) -> Result<GitRun, String> {
     command.args(args).current_dir(cwd);
     silence_git_credential_prompts(&mut command);
     let output = command
+        .env("GIT_OPTIONAL_LOCKS", "0")
         .output()
         .map_err(|err| coded("git-not-runnable", err))?;
     Ok(GitRun {
@@ -2529,6 +2530,28 @@ mod tests {
         fn drop(&mut self) {
             let _ = fs::remove_dir_all(&self.dir);
         }
+    }
+
+    #[test]
+    fn a_status_read_leaves_the_index_to_writers() {
+        let scratch = Scratch::new("optional-locks");
+        let later = std::time::SystemTime::now() + std::time::Duration::from_secs(5);
+        fs::File::options()
+            .write(true)
+            .open(scratch.work.join("one.md"))
+            .unwrap()
+            .set_modified(later)
+            .unwrap();
+        let index = scratch.work.join(".git").join("index");
+        let before = fs::read(&index).unwrap();
+
+        git_status(scratch.vault()).unwrap();
+
+        assert_eq!(
+            fs::read(&index).unwrap(),
+            before,
+            "a status read refreshed the index, so it held index.lock"
+        );
     }
 
     #[test]
