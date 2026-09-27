@@ -2229,7 +2229,9 @@ function DocsVaultContent({
                 localVault.errorCode === 'root-rejected'
                 ? t('vaultStatus.rootRejectedBanner')
                 : // Each code owns a finished sentence; append the cause only when there is one.
-                  localVault.errorCode === 'path-missing'
+                  localVault.errorCode === 'grant-needed'
+                  ? t('vaultStatus.grantNeededBanner')
+                  : localVault.errorCode === 'path-missing'
                   ? t('vaultStatus.pathMissingBanner')
                   : localVault.errorCode === 'permission-denied'
                     ? t('vaultStatus.permissionDeniedBanner')

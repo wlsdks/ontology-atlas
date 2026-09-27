@@ -19,6 +19,7 @@
   "errorRootRejected": "This folder can't be used as a map. Pick a folder that holds your documents, not a system folder or your whole home folder.",
   "trustLine": "Local Markdown is the source of truth · no Atlas backend",
   "errorPathMissing": "That folder is gone. It looks like it was moved or deleted. Pick another one.",
+  "errorGrantNeeded": "After this update, choose your ontology folder once to confirm access. Your documents are still there.",
   "errorPermission": "Atlas cannot read this folder. Pick it again to grant access.",
   "errorPermissionDenied": "macOS is protecting the folder “{folder}”. Allow Ontology Atlas in System Settings under Privacy & Security, then Files and Folders, and open it again.",
   "errorPermissionDeniedThisFolder": "this one",
