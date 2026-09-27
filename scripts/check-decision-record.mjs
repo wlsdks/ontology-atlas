@@ -204,7 +204,6 @@ function entryPointMovesContract(status) {
     .some((line) => /^[+-](?![+-])/.test(line) && ENTRY_POINT_CONTRACT.test(line));
 }
 
-/** A comment-only edit to a contract file changes nothing a client can call. */
 function contractCodeChanged({ path, status }) {
   if (status !== "M") return true;
   return !isCommentOnlyChange(path, git(["show", `${base}:${path}`]), readFileSync(path, "utf8"));
