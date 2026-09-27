@@ -3,8 +3,8 @@
  * the right range instead of the head of a long file. A table of contents,
  * never a claim about behaviour. `outlineSource` is pure over text the caller
  * already read; a line scanner, not a parser, so a missed declaration is not
- * evidence of absence. One pass over lines, but JVM_MEMBER is unanchored, so one
- * long line (minified Java, Kotlin, C#) costs time quadratic in its length.
+ * evidence of absence. Linear in the text; a line over OUTLINE_LINE_CHARS
+ * (minified, generated) is skipped.
  */
 
 /** Declarations per outline. A longer file reports `truncated: true`. */
@@ -12,6 +12,8 @@ export const OUTLINE_DECLARATION_LIMIT = 400;
 
 /** One signature is kept short so an outline stays a table of contents. */
 export const OUTLINE_SIGNATURE_CHARS = 160;
+
+export const OUTLINE_LINE_CHARS = 1000;
 
 const LANGUAGE_BY_EXTENSION = new Map(Object.entries({
   '.cjs': 'javascript',
@@ -49,8 +51,10 @@ function languageForPath(path) {
   return LANGUAGE_BY_EXTENSION.get(name.slice(dot).toLowerCase()) ?? 'unknown';
 }
 
-function splitLines(text) {
-  return String(text ?? '').split(/\r\n|\n|\r/u);
+function scannableLines(text) {
+  return String(text ?? '')
+    .split(/\r\n|\n|\r/u)
+    .map((line) => (line.length > OUTLINE_LINE_CHARS ? '' : line));
 }
 
 function indentOf(line) {
@@ -93,13 +97,17 @@ const JS_CLASS = /^(?:export\s+)?(?:default\s+)?(?:declare\s+)?(?:abstract\s+)?c
 const JS_INTERFACE = /^(?:export\s+)?(?:declare\s+)?interface\s+([A-Za-z_$][\w$]*)/u;
 const JS_ENUM = /^(?:export\s+)?(?:declare\s+)?(?:const\s+)?enum\s+([A-Za-z_$][\w$]*)/u;
 const JS_TYPE = /^(?:export\s+)?(?:declare\s+)?type\s+([A-Za-z_$][\w$]*)\s*[=<]/u;
-const JS_FUNCTION = /^(?:export\s+)?(?:default\s+)?(?:declare\s+)?(?:async\s+)?function\s*\*?\s*([A-Za-z_$][\w$]*)\s*[<(]/u;
+const JS_FUNCTION = /^(?:export\s+)?(?:default\s+)?(?:declare\s+)?(?:async\s+)?function\s*(?:\*\s*)?([A-Za-z_$][\w$]*)\s*[<(]/u;
 const JS_BINDING = /^(?:export\s+)?(?:declare\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*(?::[^=]*)?=\s*(.*)$/u;
 const JS_BINDING_IS_FUNCTION = /^(?:async\s+)?(?:function\b|\(|<[A-Za-z_$]|[A-Za-z_$][\w$]*\s*=>)/u;
 const JS_REEXPORT = /^export\s+(?:\*|\{)/u;
 const JS_FROM = /from\s+['"]([^'"]+)['"]/u;
-const JS_METHOD = /^(?:(?:public|private|protected|readonly|static|abstract|override|async|get|set)\s+)*\*?\s*([A-Za-z_$#][\w$]*)\s*(?:<[^>]*>)?\s*\(/u;
+const JS_METHOD = /^(?:(?:public|private|protected|readonly|static|abstract|override|async|get|set)\s+)*(?:\*\s*)?([A-Za-z_$#][\w$]*)\s*(?:<[^>]*>\s*)?\(/u;
 const JS_METHOD_TAIL = /\)\s*(?::[^{]*)?\{$/u;
+
+function endsWithMethodTail(trimmed) {
+  return trimmed.endsWith('{') && JS_METHOD_TAIL.test(trimmed.slice(trimmed.lastIndexOf('{', trimmed.length - 2) + 1));
+}
 
 function outlineJavaScript(lines, out) {
   let classIndent = null;
@@ -145,7 +153,7 @@ function outlineJavaScript(lines, out) {
       out.add(index, 'export', from ? from[1] : trimmed.slice(0, 40), line);
       continue;
     }
-    if (classIndent === null || indent <= classIndent || !JS_METHOD_TAIL.test(trimmed)) continue;
+    if (classIndent === null || indent <= classIndent || !endsWithMethodTail(trimmed)) continue;
     match = JS_METHOD.exec(trimmed);
     if (match && !NOT_A_DECLARATION.has(match[1])) out.add(index, 'method', match[1], line);
   }
@@ -205,7 +213,7 @@ function outlineGo(lines, out) {
 }
 
 const RUST_FN = /^(?:pub(?:\([^)]*\))?\s+)?(?:default\s+)?(?:const\s+)?(?:async\s+)?(?:unsafe\s+)?(?:extern\s+"[^"]*"\s+)?fn\s+([A-Za-z_]\w*)/u;
-const RUST_IMPL = /^(?:unsafe\s+)?impl(?:<[^>]*>)?\s+(.+?)\s*\{?\s*$/u;
+const RUST_IMPL = /^(?:unsafe\s+)?impl(?:<[^>]*>)?\s+(.+)$/u;
 const RUST_STRUCT = /^(?:pub(?:\([^)]*\))?\s+)?struct\s+([A-Za-z_]\w*)/u;
 const RUST_ENUM = /^(?:pub(?:\([^)]*\))?\s+)?enum\s+([A-Za-z_]\w*)/u;
 const RUST_TRAIT = /^(?:pub(?:\([^)]*\))?\s+)?(?:unsafe\s+)?trait\s+([A-Za-z_]\w*)/u;
@@ -224,7 +232,7 @@ function outlineRust(lines, out) {
     }
     match = RUST_IMPL.exec(trimmed);
     if (match) {
-      out.add(index, 'class', match[1], line);
+      out.add(index, 'class', match[1].endsWith('{') ? match[1].slice(0, -1).trimEnd() : match[1], line);
       continue;
     }
     match = RUST_STRUCT.exec(trimmed);
@@ -263,7 +271,14 @@ const JVM_TYPE_KIND = new Map([
   ['struct', 'struct'],
 ]);
 const KOTLIN_FUN = /^(?:(?:public|private|protected|internal|open|override|abstract|final|inline|suspend|operator|infix|tailrec|external|expect|actual|companion)\s+)*fun\s+(?:<[^>]*>\s*)?(?:[\w.<>?]+\.)?([A-Za-z_]\w*)\s*\(/u;
-const JVM_MEMBER = /([A-Za-z_]\w*)\s*(?:<[^>]*>)?\s*\([^;]*\)\s*(?:[\w\s,.<>\[\]:?]*)?\{$/u;
+const JVM_MEMBER_NAME = /\b([A-Za-z_]\w*)\s*(?:<[^<>]*>\s*)?\(/u;
+const JVM_MEMBER_TAIL = /^[\w\s,.<>\[\]:?]*$/u;
+
+function jvmMemberName(trimmed) {
+  const close = trimmed.lastIndexOf(')');
+  if (close < 0 || !trimmed.endsWith('{') || !JVM_MEMBER_TAIL.test(trimmed.slice(close + 1, -1))) return null;
+  return JVM_MEMBER_NAME.exec(trimmed.slice(trimmed.lastIndexOf(';', close) + 1, close))?.[1] ?? null;
+}
 
 function outlineJvm(lines, out) {
   for (const [index, line] of lines.entries()) {
@@ -280,8 +295,8 @@ function outlineJvm(lines, out) {
       out.add(index, indent === 0 ? 'function' : 'method', match[1], line);
       continue;
     }
-    match = JVM_MEMBER.exec(trimmed);
-    if (match && !NOT_A_DECLARATION.has(match[1])) out.add(index, 'method', match[1], line);
+    const member = jvmMemberName(trimmed);
+    if (member && !NOT_A_DECLARATION.has(member)) out.add(index, 'method', member, line);
   }
 }
 
@@ -343,6 +358,6 @@ export function outlineSource(text, path) {
   const scanner = SCANNERS.get(language);
   if (!scanner) return { language, declarations: [], truncated: false };
   const out = collector();
-  scanner(splitLines(text), out);
+  scanner(scannableLines(text), out);
   return { language, declarations: out.declarations, truncated: out.truncated };
 }

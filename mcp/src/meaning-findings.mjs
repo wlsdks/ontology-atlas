@@ -459,12 +459,18 @@ const SPECIFIER_PATTERNS = [
   /\bfrom\s*['"]([^'"\n]+)['"]/g,
   /\bimport\s*\(\s*['"]([^'"\n]+)['"]/g,
   /\bimport\s+['"]([^'"\n]+)['"]/g,
-  /\brequire(?:_relative)?\s*\(?\s*['"]([^'"\n]+)['"]/g,
-  /^\s*(?:from\s+([\w.]+)\s+import\b|import\s+([\w.]+))/gm,
-  /^\s*(?:pub(?:\([^)]*\))?\s+)?(?:use|mod)\s+([\w:{}\s,]+?)\s*;/gm,
-  /^\s*#\s*include\s*[<"]([^>"\n]+)[>"]/gm,
+  /\brequire(?:_relative)?\s*(?:\(\s*)?['"]([^'"\n]+)['"]/g,
+  /^[ \t]*(?:from\s+([\w.]+)\s+import\b|import\s+([\w.]+))/gm,
+  /^[ \t]*(?:pub(?:\([^)\n]*\))?\s+)?(?:use|mod)\s+(?!\s)((?:(?!\b(?:use|mod)\b)[\w:{}\s,])*?[\w:{},])\s*;/gm,
+  /^[ \t]*#\s*include\s*[<"]([^>"\n]+)[>"]/gm,
 ];
-const GO_IMPORT_BLOCK = /^\s*import\s*\(([\s\S]*?)\)/gm;
+const GO_IMPORT_BLOCK = /^[ \t]*import\s*\(((?:(?!\n[ \t]*import\b)[^)])*)\)/gm;
+const WITNESS_TEXT_MAX_BYTES = 2 * 1024 * 1024;
+
+function readWitnessText(absolute) {
+  const stat = statSync(absolute);
+  return stat.isFile() && stat.size <= WITNESS_TEXT_MAX_BYTES ? readFileSync(absolute, 'utf-8') : null;
+}
 
 function moduleSpecifiers(text) {
   const specifiers = [];
@@ -507,8 +513,18 @@ function textWitnesses(text, targetPath, witnessNames, moduleNamesByText) {
  * takes a bare basename, useless against a root), restated since that module
  * does not export it.
  */
-const NOTE_PATH_EDGES = /^[([{"'`\u201c\u2018]+|[)\]}"'`\u201d\u2019.,;:!?]+$/g;
+const NOTE_PATH_OPENERS = new Set(['(', '[', '{', '"', "'", '`', '\u201c', '\u2018']);
+const NOTE_PATH_CLOSERS = new Set([')', ']', '}', '"', "'", '`', '\u201d', '\u2019', '.', ',', ';', ':', '!', '?']);
+const NOTE_PATH_MAX_CHARS = 1024;
 const NOTE_PATH_EXTENSION = /\.[A-Za-z][A-Za-z0-9]{0,9}$/;
+
+function trimNotePathEdges(token) {
+  let start = 0;
+  let end = token.length;
+  while (start < end && NOTE_PATH_OPENERS.has(token[start])) start += 1;
+  while (end > start && NOTE_PATH_CLOSERS.has(token[end - 1])) end -= 1;
+  return token.slice(start, end);
+}
 
 /**
  * The `:42` the message explicitly asks the writer to append, and the `:42:7`
@@ -520,11 +536,12 @@ const NOTE_PATH_LINE_SUFFIX = /(?::\d+(?:[-\u2013]\d+)?(?::\d+)?|#L\d+(?:-L?\d+)
 function pathTokensIn(text) {
   const tokens = new Set();
   for (const raw of String(text ?? '').split(/\s+/)) {
+    if (raw.length > NOTE_PATH_MAX_CHARS) continue;
     let token = raw;
     let previous = null;
     while (token !== previous) {
       previous = token;
-      token = token.replace(NOTE_PATH_EDGES, '').replace(NOTE_PATH_LINE_SUFFIX, '');
+      token = trimNotePathEdges(token).replace(NOTE_PATH_LINE_SUFFIX, '');
     }
     if (!token || token.startsWith('http://') || token.startsWith('https://')) continue;
     if (!token.includes('/') || !NOTE_PATH_EXTENSION.test(token)) continue;
@@ -577,11 +594,11 @@ export function dependencyWitnessFinding({
   if (!source) return [];
   let sourceText;
   try {
-    if (!statSync(source.absolute).isFile()) return [];
-    sourceText = readFileSync(source.absolute, 'utf-8');
+    sourceText = readWitnessText(source.absolute);
   } catch {
     return [];
   }
+  if (sourceText === null) return [];
   const previous = previousFrontmatter ? declaredDependencies(previousFrontmatter) : new Set();
   /** One read per file however many edges cite it; `null` marks unreadable. */
   const textCache = new Map([[source.path, sourceText]]);
@@ -603,9 +620,8 @@ export function dependencyWitnessFinding({
       const resolved = insideRepo(repoRoot, base ? `${base}/${path}` : path);
       if (!resolved) continue;
       try {
-        if (!statSync(resolved.absolute).isFile()) continue;
-        text = readFileSync(resolved.absolute, 'utf-8');
-        break;
+        text = readWitnessText(resolved.absolute);
+        if (text !== null) break;
       } catch {
         continue;
       }

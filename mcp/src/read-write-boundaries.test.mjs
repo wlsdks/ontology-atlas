@@ -169,3 +169,23 @@ describe('the unwritable slug rule', () => {
   });
 });
 
+describe('import analysis never walks a source root that leaves the repository', () => {
+  const base = scratch();
+  const repo = join(base, 'repo');
+  write(join(base, 'outside', 'nested', 'leak.js'), "import x from 'OUTSIDE-ONLY-MODULE';\n");
+  write(join(repo, 'lib', 'inside.js'), "import y from 'INSIDE-MODULE';\n");
+  write(join(repo, 'project.md'), '---\nkind: project\ntitle: P\nuid: 11111111-1111-4111-8111-111111111111\n---\n\nbody\n');
+  symlinkSync('../outside', join(repo, 'src'));
+
+  it('skips a symbolic-link source folder and a parent-relative one, and still reads the real folder', async () => {
+    const [byDefault, byArgument] = await callTools(repo, [
+      ['infer_imports', { reconcile: false }],
+      ['infer_imports', { reconcile: false, sourceFolders: ['../outside', 'lib'] }],
+    ]);
+    for (const result of [byDefault, byArgument]) {
+      assert.equal(result.isError, false, result.text.slice(0, 200));
+      assert.doesNotMatch(result.text, /OUTSIDE-ONLY-MODULE/, 'a module outside the repository was scanned');
+      assert.match(result.text, /INSIDE-MODULE/, 'the real source folder must still be scanned');
+    }
+  });
+});
