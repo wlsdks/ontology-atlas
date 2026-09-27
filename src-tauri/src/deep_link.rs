@@ -96,6 +96,7 @@ pub(crate) fn parse_install_deep_link(raw: &str) -> Result<String, DeepLinkRefus
 }
 
 /// Escaped again although `parse_install_deep_link` refused literal-ending characters: a new caller would skip that check.
+/// One location.assign per link, marked in sessionStorage, because re-evaluating it would restart the navigation.
 pub(crate) fn build_install_route_script(payload: &str) -> String {
     let payload = crate::js_string_literal(payload);
     format!(
