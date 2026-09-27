@@ -1,25 +1,16 @@
 /**
- * INDEX panel expanded/collapsed state contract (「The hub is the map」 — the hub is
- * the map).
- *
- * The state has two independent sources — a `?index=` URL param (deep-link
- * intent, e.g. `/ontology/` redirecting with `index=expanded`) and a
- * localStorage preference (the user's last explicit toggle). Neither is a
- * React concern by itself; this module is the pure "which one wins" contract
- * so the merge logic is unit-testable without mounting HomePage.
- *
- * Precedence: URL param (when present and valid) > stored preference > the
- * "expanded" default (INDEX is the new default left occupant on /topology —
- * see docs/prototypes/hub-b3-immersive.html).
+ * INDEX expanded or collapsed state: URL `?index=` (deep-link intent) wins over the stored
+ * preference, which wins over the "expanded" default (docs/prototypes/hub-b3-immersive.html). Pure
+ * so the merge is testable without HomePage.
  */
 
 export type IndexPanelState = "expanded" | "collapsed";
 
 const VALID_STATES: readonly IndexPanelState[] = ["expanded", "collapsed"];
 
-/** Parses the `?index=` URL param. Anything other than the two valid literal
- * values is treated as "not specified" (null) rather than an error — deep
- * links from older tooling or typos degrade to the default, not a crash. */
+/**
+ * Parses `?index=`; anything but the two literals is null so bad links fall back to the default.
+ */
 export function parseIndexPanelStateParam(
   raw: string | null | undefined,
 ): IndexPanelState | null {

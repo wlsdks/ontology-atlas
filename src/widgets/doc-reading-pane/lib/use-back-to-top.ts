@@ -4,17 +4,8 @@ import { useCallback, useEffect, useState, type RefObject } from "react";
 import { scheduleStateSync } from "@/shared/lib/schedule-state-sync";
 
 /**
- * The visibility threshold and click behaviour of the "back to top" button in the article scroll
- * container.
- *
- * It subscribes to the same container (`articleScrollRef`) as `use-scroll-spy.ts` but is a separate
- * hook because the concern differs (tracking the active heading vs toggling visibility), so the
- * existing spy logic is not polluted.
- *
- * Dependency: when `dependencyKey` (the caller's `selectedSlug`) changes it is treated as a new
- * document — visible resets to false and the listener re-attaches. This matches `use-scroll-spy`'s
- * `selectedSlug` dependency pattern, and the re-attach also covers the first-render case where the
- * scroll container's DOM node may not be mounted yet when switching documents.
+ * Back-to-top visibility and click for the article scroll container. A new `dependencyKey` is a new
+ * document: visibility resets and the listener re-attaches, covering a container not yet mounted.
  */
 
 export const BACK_TO_TOP_SCROLL_THRESHOLD = 640;

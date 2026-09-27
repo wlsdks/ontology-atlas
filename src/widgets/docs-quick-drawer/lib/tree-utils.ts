@@ -1,5 +1,3 @@
-// Pure tree helpers used by DocsQuickDrawer. Split out from React so they are easy
-// to unit test.
 
 import type { VaultTreeNode } from "@/entities/docs-vault";
 
@@ -37,11 +35,8 @@ export function flattenTreeSlugs(
 }
 
 /**
- * Filter the tree by needle (lowercase) and tagSlugs (null = unrestricted).
- * - doc: null immediately if the tag restriction fails, otherwise kept when the
- *   needle is in the title or the path
- * - dir: kept if any child is kept (with the children array replaced)
- * The source nodes are never mutated.
+ * Filter by lowercase needle and tagSlugs (null = unrestricted); dirs stay when any child stays.
+ * Never mutates the source.
  */
 export function filterTree(
   node: VaultTreeNode,

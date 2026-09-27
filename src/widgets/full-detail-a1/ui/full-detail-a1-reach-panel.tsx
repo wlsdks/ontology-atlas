@@ -11,27 +11,14 @@ import { SegmentedControl } from "@/shared/ui/segmented-control";
 import { Link } from "@/i18n/navigation";
 
 /**
- * Full-detail A1 "reach = sentence instrument" — replaces the rejected
- * query-builder (from/to/both direction × 1/2/3-step segments) with a
- * single outward-reach sentence + a clickable 1/2/3 step selector + a
- * per-domain engraved bar breakdown. Indigo is reserved for the self domain:
- * separately from `.claude/rules/design.md`'s "only hub/container get a supporting tone"
- * (only hub/container get a supporting tone) principle, this bar is the sole
- * place indigo is used, to separate self from other.
+ * Outward reach sentence, a 1/2/3 step selector and a per-domain bar breakdown. Indigo is reserved
+ * for the self domain here (`.claude/rules/design.md`).
  */
 export interface FullDetailA1ReachLabels {
   leadIn: string;
   stepUnit: string;
   afterSteps: string;
-  /**
-   * The name of the depth control for assistive tech, and the reason it now has one.
-   *
-   * ⚠️ The three numbers were `text-label` chips with a **transparent border** until one
-   * was selected, set inline in a body-lg sentence: they read as part of the prose, and the
-   * owner reported that they were too small and that he had not realised they could be
-   * pressed at all (2026-09-14). They are also a genuine exclusive choice, so they are a
-   * radiogroup, and a radiogroup needs a name.
-   */
+  /** The depth control's accessible name; an exclusive choice is a radiogroup and needs one. */
   stepsAria: string;
   ofTotal: (count: number, total: number) => string;
   mostlyNone: string;
@@ -39,11 +26,7 @@ export interface FullDetailA1ReachLabels {
   mostlyTwo: (a: string, aCount: number, b: string, bCount: number) => string;
   selfDomainLabel: string;
   noDomainLabel: string;
-  /**
-   * The remainder sentence for the domain bars, which stop at
-   * `DOMAIN_ROW_LIMIT`. Until 2026-09-05 the eighth domain onward simply
-   * vanished, while the sentence above the bars proved the true count was known.
-   */
+  /** The remainder sentence for domains past `DOMAIN_ROW_LIMIT`. */
   domainsHidden: (hidden: number) => string;
   /** Where every domain-to-domain relation is drawn — the insights boundaries tab. */
   domainsHiddenRoute: string;
@@ -93,18 +76,10 @@ export function FullDetailA1ReachPanel({
       <p className="max-w-[var(--measure-doc-column)] text-body-lg leading-prose tracking-[var(--tracking-title)] text-[color:var(--map-panel-text-secondary)]">
         {labels.leadIn}{" "}
         {/*
-          ⚠️ **A control set in prose still has to look like a control.** These three were
-          `text-label` chips whose border was transparent until one was selected, so at rest
-          the set was three grey numerals inside a sentence and nothing said they could be
-          pressed (owner, 2026-09-14). `SegmentedControl` is what this actually is — an
-          exclusive single choice — and its `well` container draws the box at rest, which is
-          the whole affordance. It is `inline-flex`, so it still sits in the line.
-
-          It also removes one of this repository's hand-rolled radiogroups: the primitive's
-          own ledger counted 18 of them with **0** roving-tabindex implementations, and this
-          was one. Arrow keys move between the steps now, and the segment shape carries the
-          coarse-pointer touch floor rather than a 16px press target.
-        */}
+         * `SegmentedControl`: an exclusive choice whose well draws the affordance at rest;
+         * inline-flex keeps it in the sentence, with roving tabindex and the coarse-pointer touch
+         * floor.
+         */}
         <span data-fulldetail-reach-steps className="mx-1.5 align-middle">
           <SegmentedControl<FullDetailReachDepth>
             ariaLabel={labels.stepsAria}

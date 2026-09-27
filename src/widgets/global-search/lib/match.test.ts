@@ -24,23 +24,21 @@ describe("matchOntologyNodes", () => {
     node({ id: "session", title: "세션", summary: "사용자 세션 토큰 발급" }),
   ];
 
-  it("빈 query — 전체 (limit 까지)", () => {
+  it('returns everything up to the limit for an empty query', () => {
     const { results: r } = matchOntologyNodes("", corpus, 2);
     expect(r).toHaveLength(2);
     expect(r.every((m) => m.score === 0)).toBe(true);
   });
 
-  it("title exact > prefix > substring > summary > id 순 점수", () => {
+  it('scores title exact above prefix, substring, summary and id', () => {
     const { results: r } = matchOntologyNodes("세션", corpus);
     // "Session" matches the title character for character — an exact match.
     expect(r[0]?.node.id).toBe("session");
     expect(r[0]?.score).toBe(7);
   });
 
-  it("정확 일치는 더 최근에 승인된 prefix 매치보다 위다 (2026-08-13 실측 회귀)", () => {
-    // Measured: typing 「Order」 put the domain 「Order」 (an exact match) 6th, below five
-    // later-approved prefix matches — after the tie at 4, recency sank the exact
-    // match. Someone who typed a name in full is looking for the node with that name.
+  it('ranks an exact match above a more recently approved prefix match', () => {
+    // An exact match must rank above later-approved prefix matches that tie on score.
     const earlier = new Date("2026-04-01T00:00:00Z");
     const later = new Date("2026-04-27T00:00:00Z");
     const vault = [
@@ -54,23 +52,22 @@ describe("matchOntologyNodes", () => {
     expect(r[1]?.score).toBe(6);
   });
 
-  it("summary 매치 (title 에 없음) — score 2", () => {
+  it('scores a summary-only match at 2', () => {
     const { results: r } = matchOntologyNodes("토큰", corpus);
     expect(r).toHaveLength(1);
     expect(r[0]?.node.id).toBe("session");
     expect(r[0]?.score).toBe(2);
   });
 
-  it("id 매치 (kebab-case slug 직접 검색)", () => {
+  it('matches a kebab-case slug through the id', () => {
     const { results: r } = matchOntologyNodes("logout", corpus);
     expect(r).toHaveLength(1);
     expect(r[0]?.node.id).toBe("auth-logout");
-    // A title containing 'logout' would score in the name tier; 1 is the id-only
-    // fallback. The title "Logout" has no English logout, so this is that fallback.
+    // A title containing 'logout' would score in the name tier; 1 is the id-only fallback.
     expect(r[0]?.score).toBe(1);
   });
 
-  it("같은 점수 — lastApprovedAt desc 정렬 (최신 우선)", () => {
+  it('breaks ties by lastApprovedAt descending', () => {
     const earlier = new Date("2026-04-26T00:00:00Z");
     const later = new Date("2026-04-27T00:00:00Z");
     const same = [
@@ -84,15 +81,13 @@ describe("matchOntologyNodes", () => {
     expect(r[1]?.node.id).toBe("a");
   });
 
-  it("매치 없음 — 빈 결과", () => {
+  it('returns nothing when nothing matches', () => {
     const { results: r } = matchOntologyNodes("xyzqwerty", corpus);
     expect(r).toHaveLength(0);
   });
 
-  // Flow review 2026-07-26 D1 — the map and INDEX draw `display_ko` while search
-  // looked only at the canonical title, so typing the Korean name read off the
-  // screen returned zero results.
-  describe("어권별 표시 이름 (display_ko / display_en)", () => {
+  // Search must find the display name the map and INDEX draw.
+  describe('per-locale display names', () => {
     const localized = node({
       id: "ontology-core",
       title: "Ontology Core",
@@ -101,7 +96,7 @@ describe("matchOntologyNodes", () => {
       summary: "그래프 파생 엔진",
     });
 
-    it("화면에 보이는 한국어 표시 이름으로 찾힌다", () => {
+    it('finds a node by its visible Korean display name', () => {
       const { results: r } = matchOntologyNodes("온톨로지 코어", [localized]);
       expect(r).toHaveLength(1);
       expect(r[0]?.node.id).toBe("ontology-core");
@@ -109,18 +104,18 @@ describe("matchOntologyNodes", () => {
       expect(r[0]?.score).toBe(7);
     });
 
-    it("표시 이름 부분 일치는 substring 점수", () => {
+    it('scores a partial display-name match as substring', () => {
       const { results: r } = matchOntologyNodes("코어", [localized]);
       expect(r[0]?.score).toBe(5);
     });
 
-    it("원문 title 로도 그대로 찾힌다 (범위는 넓히기만 한다)", () => {
+    it('still finds a node by its original title', () => {
       const { results: r } = matchOntologyNodes("Ontology Core", [localized]);
       expect(r).toHaveLength(1);
       expect(r[0]?.score).toBe(7);
     });
 
-    it("한국어 화면에서도 다른 어권 이름으로 찾힌다", () => {
+    it('finds a node by another locale\'s name on the Korean screen', () => {
     // Even with display resolved as ko, the en name must not vanish from search.
       const koScreen = node({
         id: "cap-payments",
@@ -133,23 +128,21 @@ describe("matchOntologyNodes", () => {
       expect(r[0]?.score).toBe(7);
     });
 
-    it("자소 분리(NFD) 입력도 같은 결과", () => {
+    it('gives decomposed (NFD) input the same result', () => {
       const { results: r } = matchOntologyNodes("온톨로지".normalize("NFD"), [localized]);
       expect(r).toHaveLength(1);
     });
 
-    it("표시 이름 매치가 summary 매치보다 위", () => {
+    it('ranks a display-name match above a summary match', () => {
       const bodyOnly = node({ id: "other", title: "Other", summary: "온톨로지 코어를 쓴다" });
       const { results: r } = matchOntologyNodes("온톨로지 코어", [bodyOnly, localized]);
       expect(r.map((m) => m.node.id)).toEqual(["ontology-core", "other"]);
     });
   });
 
-  // 2026-09-19 — measured against the bundled Online Store sample: every one of
-  // these returned 0 results, because the matcher only ever compared normalised
-  // substrings. The last two are not a convenience — a Hangul IME emits a syllable
-  // one jamo at a time, so every Korean word is typed through them.
-  describe("한글 자판이 실제로 만드는 질의", () => {
+  // A Hangul IME emits a syllable one jamo at a time, so every Korean word is typed through these
+  // states.
+  describe('queries a Hangul keyboard actually produces', () => {
     const shop: KnowledgeGraphNode[] = [
       node({ id: "cap-cart", title: "장바구니" }),
       node({ id: "cap-order", title: "주문서 작성" }),
@@ -157,27 +150,26 @@ describe("matchOntologyNodes", () => {
       node({ id: "cap-coupon", title: "쿠폰 발급" }),
     ];
 
-    it("초성만 쳐도 찾는다", () => {
+    it('matches by initial consonants alone', () => {
       const { results: r } = matchOntologyNodes("ㅈㅂㄱㄴ", shop);
       expect(r.map((m) => m.node.id)).toEqual(["cap-cart"]);
       expect(r[0]?.score).toBe(4);
     });
 
-    it("띄어쓰기 없이 친 초성이 두 낱말 이름을 찾는다", () => {
+    it('matches a two-word name from initials typed without a space', () => {
       expect(matchOntologyNodes("ㅎㅇㅌㅌ", shop).results.map((m) => m.node.id)).toEqual(["cap-close"]);
       expect(matchOntologyNodes("ㅈㅁㅅㅈㅅ", shop).results.map((m) => m.node.id)).toEqual(["cap-order"]);
     });
 
-    it("초성이 이름 첫머리가 아니면 substring 점수", () => {
+    it('scores initials that do not start the name as substring', () => {
       const { results: r } = matchOntologyNodes("ㅌㅌ", shop);
       expect(r.map((m) => m.node.id)).toEqual(["cap-close"]);
       expect(r[0]?.score).toBe(3);
     });
 
-    it("조합 중인 음절도 이미 찾는다", () => {
-      // The half-typed syllable reaches one name at the front and another in the
-      // middle — both are names this typist is genuinely on the way to, and the one
-      // it starts ranks first.
+    it('matches a syllable still being composed', () => {
+      // The half-typed syllable reaches one name at the front and another in the middle; the front
+      // match ranks first.
       expect(matchOntologyNodes("자", shop).results.map((m) => m.node.id)).toEqual([
         "cap-cart",
         "cap-order",
@@ -185,7 +177,7 @@ describe("matchOntologyNodes", () => {
       expect(matchOntologyNodes("장바ㄱ", shop).results.map((m) => m.node.id)).toEqual(["cap-cart"]);
     });
 
-    it("글자 그대로 맞는 이름이 한글 추정 매치보다 위다", () => {
+    it('ranks a literal name match above a Hangul-inferred match', () => {
       const both = [
         node({ id: "literal", title: "자동 승인" }),
         node({ id: "hangul", title: "장바구니" }),
@@ -196,7 +188,7 @@ describe("matchOntologyNodes", () => {
       expect(r[1]?.score).toBe(4);
     });
 
-    it("한글 이름 매치가 summary 매치보다 위다", () => {
+    it('ranks a Hangul name match above a summary match', () => {
       const both = [
         node({ id: "body", title: "Other", summary: "장바구니를 비운다" }),
         node({ id: "name", title: "장바구니 담기" }),
@@ -205,15 +197,13 @@ describe("matchOntologyNodes", () => {
       expect(r.map((m) => m.node.id)).toEqual(["name"]);
     });
 
-    it("초성이 안 맞으면 끌어오지 않는다", () => {
+    it('does not pull in names whose initials differ', () => {
       expect(matchOntologyNodes("ㅋㅋㅋ", shop).results).toHaveLength(0);
     });
   });
 
-  // 2026-09-19 — measured on the bundled sample: 97 of 317 rows over thirty English
-  // queries carried no highlight, because the row drew only the localised name and the
-  // summary while matching looked at every name, the summary and the id.
-  describe("행이 왜 목록에 있는지 — matched 근거", () => {
+  // Every row must say why it matched: the name, the summary or the id.
+  describe('matched reason for each row', () => {
     const localized = node({
       id: "capability:shipping-fee",
       title: "Shipping Fee Policy",
@@ -222,50 +212,49 @@ describe("matchOntologyNodes", () => {
       summary: "Decides who pays to move the parcel.",
     });
 
-    it("화면에 없는 이름으로 걸리면 그 이름을 돌려준다", () => {
+    it('returns the matched name when it is not the visible one', () => {
       const { results: r } = matchOntologyNodes("policy", [localized]);
       expect(r[0]?.matched).toEqual({ field: "name", text: "Shipping Fee Policy" });
     });
 
-    it("화면에 있는 이름으로 걸리면 그 이름을 돌려준다", () => {
+    it('returns the visible name when it matched', () => {
       const { results: r } = matchOntologyNodes("배송비", [localized]);
       expect(r[0]?.matched).toEqual({ field: "name", text: "배송비 정책" });
     });
 
-    it("summary 로 걸리면 summary 를 돌려준다", () => {
+    it('returns summary when the summary matched', () => {
       const { results: r } = matchOntologyNodes("parcel", [localized]);
       expect(r[0]?.matched).toEqual({ field: "summary", text: "Decides who pays to move the parcel." });
     });
 
-    it("id 로 걸리면 kind 접두를 뺀 slug 를 돌려준다", () => {
+    it('returns the slug without the kind prefix when the id matched', () => {
       const { results: r } = matchOntologyNodes("fee", [node({ id: "capability:shipping-fee", title: "배송비" })]);
       expect(r[0]?.matched).toEqual({ field: "id", text: "shipping-fee" });
     });
 
-    it("빈 query 는 근거가 없다 — 매치가 아니라 최근 표본이다", () => {
+    it('returns no reason for an empty query', () => {
       expect(matchOntologyNodes("", [localized]).results[0]?.matched).toBeUndefined();
     });
   });
 
-  describe("id 의 kind 접두는 매치하지 않는다", () => {
+  describe('does not match the kind prefix of an id', () => {
     const kinds = [
       node({ id: "element:order-number", title: "주문번호", kind: "element" }),
       node({ id: "element:login-session", title: "로그인 세션", kind: "element" }),
       node({ id: "capability:cart", title: "장바구니", kind: "capability" }),
     ];
 
-    it("종류 낱말은 그 종류 전부를 끌어오지 않는다", () => {
-      // Every element id begins with it, so this used to return the whole kind —
-      // which the filter chips already select, properly.
+    it('does not pull in every node of a kind for a kind word', () => {
+      // Every element id begins with the kind, which the filter chips select.
       expect(matchOntologyNodes("element", kinds).results).toHaveLength(0);
       expect(matchOntologyNodes("capability", kinds).results).toHaveLength(0);
     });
 
-    it("slug 로는 그대로 찾는다", () => {
+    it('still matches by slug', () => {
       expect(matchOntologyNodes("order", kinds).results.map((m) => m.node.id)).toEqual(["element:order-number"]);
     });
 
-    it("콜론이 든 질의는 id 를 통째로 붙여넣은 것이다", () => {
+    it('treats a query containing a colon as a pasted id', () => {
       const { results: r } = matchOntologyNodes("capability:cart", kinds);
       expect(r.map((m) => m.node.id)).toEqual(["capability:cart"]);
       expect(r[0]?.matched).toEqual({ field: "id", text: "capability:cart" });
@@ -273,10 +262,8 @@ describe("matchOntologyNodes", () => {
 
   });
 
-  it("limit 적용 — 자른 수가 아니라 찾은 수를 함께 돌려준다", () => {
-    // The palette drew the limit as if it were the count: a common letter put
-    // "match · 20" in the heading and "21 matches" in the footer beside the folder's
-    // name, when the folder held far more (measured 2026-09-19).
+  it('returns the found count alongside the limited list', () => {
+    // The found count must not be the drawn limit.
     const many = Array.from({ length: 50 }, (_, i) =>
       node({ id: `node-${i}`, title: `노드 ${i}` }),
     );
@@ -285,7 +272,7 @@ describe("matchOntologyNodes", () => {
     expect(page.total).toBe(50);
   });
 
-  it("빈 query 도 거른 뒤의 전체를 센다", () => {
+  it('counts the filtered total for an empty query', () => {
     const many = Array.from({ length: 50 }, (_, i) =>
       node({ id: `node-${i}`, title: `노드 ${i}`, kind: i < 12 ? "domain" : "capability" }),
     );
@@ -295,13 +282,13 @@ describe("matchOntologyNodes", () => {
     ).toBe(12);
   });
 
-  it("상한에 안 걸리면 찾은 수와 그린 수가 같다", () => {
+  it('reports equal found and drawn counts under the limit', () => {
     const few = [node({ id: "a", title: "노드 하나" })];
     const page = matchOntologyNodes("노드", few, 20);
     expect(page.total).toBe(page.results.length);
   });
 
-  describe("kind / project 필터", () => {
+  describe('kind and project filters', () => {
     const filterCorpus: KnowledgeGraphNode[] = [
       node({ id: "cap-1", title: "능력 1", kind: "capability", projectIds: ["demo-iam"] }),
       node({ id: "cap-2", title: "능력 2", kind: "capability", projectIds: ["demo-knowledge"] }),
@@ -310,14 +297,14 @@ describe("matchOntologyNodes", () => {
       node({ id: "elem-orphan", title: "요소 미연결", kind: "element", projectIds: [] }),
     ];
 
-    it("kind 필터 — capability 만", () => {
+    it('filters to capability only', () => {
       const { results: r } = matchOntologyNodes("", filterCorpus, 30, {
         kinds: new Set(["capability"]),
       });
       expect(r.map((m) => m.node.id).sort()).toEqual(["cap-1", "cap-2"]);
     });
 
-    it("kind 필터 + query 결합", () => {
+    it('combines a kind filter with a query', () => {
       const { results: r } = matchOntologyNodes("능력", filterCorpus, 30, {
         kinds: new Set(["capability"]),
       });
@@ -325,14 +312,14 @@ describe("matchOntologyNodes", () => {
       expect(r.every((m) => m.node.kind === "capability")).toBe(true);
     });
 
-    it("project 필터 — 단일 project", () => {
+    it('filters to a single project', () => {
       const { results: r } = matchOntologyNodes("", filterCorpus, 30, {
         projectIds: new Set(["demo-knowledge"]),
       });
       expect(r.map((m) => m.node.id).sort()).toEqual(["cap-2", "elem-1"]);
     });
 
-    it("project 필터 — 노드의 projectIds 중 적어도 하나 매치 (OR within node)", () => {
+    it('keeps a node when any of its projectIds matches', () => {
     // elem-1 carries both [iam, knowledge] — either set matches.
       const { results: iam } = matchOntologyNodes("", filterCorpus, 30, {
         projectIds: new Set(["demo-iam"]),
@@ -341,7 +328,7 @@ describe("matchOntologyNodes", () => {
       expect(includes).toBeDefined();
     });
 
-    it("project 필터 — projectIds 비어 있는 노드는 제외", () => {
+    it('excludes nodes with no projectIds under a project filter', () => {
       const { results: r } = matchOntologyNodes("", filterCorpus, 30, {
         projectIds: new Set(["demo-iam"]),
       });
@@ -349,7 +336,7 @@ describe("matchOntologyNodes", () => {
       expect(orphan).toBeUndefined();
     });
 
-    it("kind + project 필터 AND 조합", () => {
+    it('combines kind and project filters with AND', () => {
       const { results: r } = matchOntologyNodes("", filterCorpus, 30, {
         kinds: new Set(["capability"]),
         projectIds: new Set(["demo-iam"]),
@@ -357,7 +344,7 @@ describe("matchOntologyNodes", () => {
       expect(r.map((m) => m.node.id)).toEqual(["cap-1"]);
     });
 
-    it("빈 set / 미지정 = 필터 비활성", () => {
+    it('disables filtering for an empty or missing set', () => {
       const { results: all } = matchOntologyNodes("", filterCorpus, 30);
       const { results: emptySets } = matchOntologyNodes("", filterCorpus, 30, {
         kinds: new Set(),
@@ -414,43 +401,38 @@ describe("matchProjects", () => {
     }),
   ];
 
-  it("name prefix > substring 우선", () => {
+  it('ranks name prefix above substring', () => {
     const { results: r } = matchProjects("ia", corpus);
     expect(r[0]?.project.slug).toBe("demo-iam"); // an "IAM" prefix match
     expect(r[0]?.score).toBe(6);
   });
 
-  it("name 정확 일치는 최상단 — 노드 매처와 같은 사다리", () => {
+  it('puts an exact name match on top like the node matcher', () => {
     const { results: r } = matchProjects("iam", corpus);
     expect(r[0]?.project.slug).toBe("demo-iam");
     expect(r[0]?.score).toBe(7);
   });
 
-  it("description / tags / category 도 매치", () => {
+  it('matches description, tags and category', () => {
     const { results: r } = matchProjects("agent", corpus);
     expect(r.find((m) => m.project.slug === "reactor-runtime")).toBeDefined();
   });
 
-  it("slug substring 도 매치 (낮은 점수)", () => {
+  it('matches a slug substring at a low score', () => {
     const { results: r } = matchProjects("knowledge", corpus);
     const knowledge = r.find((m) => m.project.slug === "demo-knowledge");
     expect(knowledge).toBeDefined();
   });
 
-  it("프로젝트 이름도 초성으로 찾는다 — 노드와 한 사다리", () => {
+  it('finds projects by initial consonants like nodes', () => {
     const shops = [project({ slug: "shop", name: "온라인 쇼핑몰" })];
     const { results: r } = matchProjects("ㅇㄹㅇ", shops);
     expect(r[0]?.project.slug).toBe("shop");
     expect(r[0]?.score).toBe(4);
   });
 
-  /*
-   * The node matcher normalises both sides (`normalizeForMatch`); this one compared raw
-   * strings, so a decomposed name — what a local vault filename and the macOS clipboard
-   * hand over — never reached the literal tiers. An exact name landed on the Hangul rung
-   * (4) instead of 7, and a decomposed word in the description matched nothing at all.
-   */
-  it("자소 분리(NFD) 입력도 같은 결과 — 노드 매처와 같은 정규화", () => {
+  /* Both sides are normalised, so decomposed (NFD) names reach the literal tiers. */
+  it('gives decomposed (NFD) input the same result as the node matcher', () => {
     const shops = [project({ slug: "shop", name: "온라인 쇼핑몰", description: "결제와 배송" })];
     const exact = matchProjects("온라인 쇼핑몰".normalize("NFD"), shops);
     expect(exact.results[0]?.project.slug).toBe("shop");
@@ -461,17 +443,17 @@ describe("matchProjects", () => {
     expect(prose.results[0]?.score).toBe(2);
   });
 
-  it("매치 0 — 빈 결과", () => {
+  it('returns nothing for zero matches', () => {
     expect(matchProjects("xyzqwerty", corpus).results).toHaveLength(0);
   });
 
-  it("프로젝트도 찾은 수를 함께 돌려준다", () => {
+  it('returns the found count for projects too', () => {
     const page = matchProjects("demo", corpus, 1);
     expect(page.results).toHaveLength(1);
     expect(page.total).toBe(3); // two by slug, one by name
   });
 
-  it("빈 query — updatedAt desc 정렬 + limit", () => {
+  it('sorts an empty query by updatedAt descending with the limit', () => {
     const { results: r } = matchProjects("", corpus, 2);
     expect(r).toHaveLength(2);
     expect(r[0]?.project.slug).toBe("reactor-runtime"); // 4-27
@@ -480,19 +462,19 @@ describe("matchProjects", () => {
 });
 
 describe("isPathLikeTitle", () => {
-  it("N12 — 파일 경로 형태 title 을 감지한다", () => {
+  it('detects a file-path-shaped title', () => {
     expect(isPathLikeTitle("mcp/src/ontology-engine.mjs")).toBe(true);
     expect(isPathLikeTitle("mcp/scripts/verify.mjs")).toBe(true);
     expect(isPathLikeTitle("src/widgets/global-search/ui/GlobalSearch.tsx")).toBe(true);
   });
 
-  it("일반 개념 title 은 경로로 오판하지 않는다", () => {
+  it('does not mistake an ordinary concept title for a path', () => {
     expect(isPathLikeTitle("MCP Server")).toBe(false);
     expect(isPathLikeTitle("로그인")).toBe(false);
     expect(isPathLikeTitle("Agent Graph Readiness")).toBe(false);
   });
 
-  it("확장자 없는 슬래시 문자열은 경로로 보지 않는다 (오탐 방지)", () => {
+  it('does not treat a slash string without an extension as a path', () => {
     expect(isPathLikeTitle("and/or")).toBe(false);
   });
 });

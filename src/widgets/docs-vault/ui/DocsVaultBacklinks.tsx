@@ -19,19 +19,14 @@ interface Props {
   onNavigate: (slug: string) => void;
   hideHeading?: boolean;
   /**
-   * 'list' (default) — an Obsidian-style vertical list where each item expands and
-   * collapses its context.
-   * 'strip' — an anchor strip at the pane's bottom (docs-vault-final spec).
-   * Horizontal chips that navigate on click, with no context expansion — for
-   * scanning at a glance.
+   * 'list' (default): expandable context per item. 'strip': navigating chips at the pane's bottom
+   * without context.
    */
   layout?: 'list' | 'strip';
 }
 
 /**
- * The backlinks panel — other documents that reference this one, grouped by
- * document. Each item toggles to show 120 characters of context around the link in
- * that document. The same experience as Obsidian's "Linked mentions".
+ * Backlinks panel: documents referencing this one, each toggling 120 characters of link context.
  */
 export function DocsVaultBacklinks({
   entries,
@@ -152,9 +147,8 @@ function BacklinkItem({
   );
 }
 
-// Replace what the build script wrapped in **[linkText]** with an indigo emphasis
-// span, escaping everything else against XSS. "context" is still raw markdown, so a
-// few symbols (* ` >) may remain, but it is rendered through textContent only.
+// Emphasise the build script's **[linkText]** and escape everything else against XSS; context is
+// raw markdown rendered through textContent only.
 function formatContext(raw: string): string {
   const escaped = raw
     .replace(/&/g, '&amp;')

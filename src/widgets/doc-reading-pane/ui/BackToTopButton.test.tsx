@@ -34,11 +34,8 @@ describe("BackToTopButton", () => {
   });
 
   /**
-   * The inset is the number the pane's own reserve is derived from
-   * (`--doc-reading-back-to-top-clearance`), and it is also what lifts this control above
-   * the fixed bottom tab bar below `lg`. A literal `bottom-6` here would silently break
-   * both: measured 2026-09-08, it put the last line of a wiki page 8px behind this pill at
-   * 1400/1200/1040, and put this pill behind a tab-bar link at 768 and 390.
+   * The inset token also sets the pane's scroll-end reserve and lifts the pill above the tab bar
+   * below lg; a literal `bottom-6` breaks both.
    */
   it("takes its bottom inset from the token the pane reserves against", () => {
     renderButton(true);

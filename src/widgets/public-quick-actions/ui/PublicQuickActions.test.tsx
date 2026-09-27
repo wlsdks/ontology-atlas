@@ -5,10 +5,8 @@ import enMessages from "../../../../messages/en.json";
 import { PublicQuickActions } from "./PublicQuickActions";
 
 /**
- * elements/public-quick-actions builds hrefs and nothing else. Its two stated rules
- * are exactly what a wrong href would break silently: every action carries the route
- * the visitor is standing on (query included) as `returnTo`, and the edit action is
- * absent rather than broken when no project is in context.
+ * Every action carries the current route (query included) as `returnTo`, and the edit action is
+ * absent without a project in context.
  */
 
 let pathname = "/topology";

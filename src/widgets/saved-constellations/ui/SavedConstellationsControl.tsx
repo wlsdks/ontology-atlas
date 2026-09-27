@@ -49,10 +49,8 @@ interface ListPlacement {
 }
 
 /**
- * Places the list under its trigger, inside the nearest `[data-popover-boundary]` ancestor
- * (on the map, the toolbar box, which already reserves INDEX, the node inspector and the
- * agent dock), falling back to the viewport. Coordinates come back in the root's own space,
- * so the `topology-ui-scale` zoom on the toolbar is divided out once.
+ * Places the list under its trigger inside the nearest `[data-popover-boundary]` (on the map, the
+ * toolbar box), else the viewport; divides out the `topology-ui-scale` zoom once.
  */
 function measureListPlacement(root: HTMLElement, trigger: HTMLElement): ListPlacement {
   const rootRect = root.getBoundingClientRect();
@@ -176,15 +174,8 @@ export function SavedConstellationsControl({ handle, candidates, selectedSlug, i
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const [listPlacement, setListPlacement] = useState<ListPlacement | null>(null);
   /*
-   * A disclosure, not a dialog. The chip used to claim `aria-haspopup="dialog"`
-   * while what opened was an unnamed `div`: measured 2026-09-20, zero elements
-   * with `role="dialog"`, no `aria-controls`, no accessible name — a reader
-   * heard "expanded" and had nothing to move to. Giving it the dialog role
-   * instead would be a hand-assembled modal, which `dialog.tsx` owns and the
-   * adoption ratchet refuses, and it would be a lie besides: there is no scrim
-   * and no focus trap, focus stays on the chip, and the map behind stays live.
-   * So the honest shape is the one the behaviour already had — a button that
-   * expands a named region it points at.
+   * A disclosure, not a dialog: no scrim or focus trap, focus stays on the chip, and a hand-built
+   * modal belongs to `dialog.tsx`. The button expands a named region it points at.
    */
   const listId = useId();
   const listHeadingId = useId();
@@ -218,10 +209,7 @@ export function SavedConstellationsControl({ handle, candidates, selectedSlug, i
     };
   }, [listOpen]);
 
-  /*
-   * Measured before paint on every open, and again whenever the boundary or the viewport
-   * changes size while it is open (INDEX folding, the inspector arriving, a window resize).
-   */
+  /* Measured before paint on open, and again when the boundary or viewport resizes while open. */
   useLayoutEffect(() => {
     if (!listOpen) return;
     const root = rootRef.current;
@@ -452,11 +440,8 @@ export function SavedConstellationsControl({ handle, candidates, selectedSlug, i
         id={listId}
         aria-labelledby={listHeadingId}
         /*
-         * Hangs from its trigger and stays in the free map (owner report, 2026-09-25): it
-         * used to be pinned to the trigger's right edge at a fixed 320px, which from `xl`,
-         * where this lane holds the free map's left edge, ran it over the INDEX panel and
-         * the collapsed INDEX tab. `measureListPlacement` aligns it to the trigger and
-         * clamps it inside the toolbar box. Gate: tests/e2e/map-constellation-popover-bounds.spec.ts
+         * Hangs from its trigger, clamped inside the toolbar box so it never covers INDEX
+         * (tests/e2e/map-constellation-popover-bounds.spec.ts).
          */
         origin={listPlacement ? `${listPlacement.originX}px top` : 'top left'}
         style={listPlacement ? { left: listPlacement.left, top: listPlacement.top, width: listPlacement.width } : undefined}
@@ -473,12 +458,8 @@ export function SavedConstellationsControl({ handle, candidates, selectedSlug, i
             <h2 id={listHeadingId} className="mt-1 text-title text-[color:var(--color-text-primary)]">{t('listTitle')}</h2>
           </div>
           {/*
-           * One action per state, one control grammar (owner report, 2026-09-25): the
-           * header's primary and the body's recovery action are the same `Button` size
-           * and radius. Where saving is impossible (no writable folder, a failed read) the
-           * body already names why and carries the only action, so the header offers no
-           * dimmed primary to puzzle over. Where it is only waiting (reading, saving, an
-           * empty map) the button stays and says why it cannot be pressed yet.
+           * One action per state in one control grammar: where saving is impossible the body names
+           * why and holds the only action; where it is waiting, the button stays and says why.
            */}
           {store.status === 'ready' || store.status === 'saving' || store.status === 'loading' ? (
             createBlockedReason ? (

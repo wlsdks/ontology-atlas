@@ -34,12 +34,8 @@ interface TabItem {
   icon: typeof MapIcon;
 }
 
-// Mobile-only bottom tab bar — it keeps the five reading/planning destinations
-// from the desktop `AppNavRail` (lg+). Agents remains a desktop destination and
-// an in-context map action below lg; architecture must stay here because a route
-// whose selected destination disappears from the mobile shell has no location
-// marker at all. Active state still comes from the same
-// `resolveActiveNavDestination`, so the two widgets cannot disagree.
+// Mobile tab bar below lg; it shares `resolveActiveNavDestination` with the desktop rail so the two
+// cannot disagree.
 const TABS: ReadonlyArray<TabItem> = [
   ...MOBILE_DESTINATION_IDS.map((id) => ({
     id,
@@ -49,8 +45,7 @@ const TABS: ReadonlyArray<TabItem> = [
       map: MapIcon,
       architecture: Blocks,
       library: Library,
-      // `LineChart`, not `BarChart3` — beside the Library's shelf of spines a bar chart was
-      // the same silhouette at tile size (`AppNavRail.tsx` carries the measurement).
+      // `LineChart`, not `BarChart3` (see `AppNavRail.tsx`).
       insights: LineChart,
       projects: FolderKanban,
     } satisfies Record<MobileDestinationId, typeof MapIcon>)[id],
@@ -66,31 +61,15 @@ const WIKI_ONLY_TABS: ReadonlyArray<TabItem> = WIKI_ONLY_MOBILE_DESTINATION_IDS.
 
 export function BottomTabBar() {
   const pathname = usePathname() ?? '/';
-  /*
-   * The same answer the desktop rail reads: with exactly one project in the folder, the Projects
-   * tab opens that project. A rail and a tab bar that disagree about where one destination leads
-   * are two navigations rather than one, which this file's own comment about active state already
-   * says (2026-09-19).
-   */
+  /* The same single-project target as the desktop rail. */
   const soleProjectHref = useSoleProjectHref();
   const t = useTranslations('nav');
   const tRail = useTranslations('navRail');
   const vault = useLocalVault();
 
   /**
-   * "Get the app" — the only download path on web below `lg`.
-   *
-   * Measured 2026-07-28: the rail is `lg:flex`, so the number of `/download`
-   * links visible at 390 and 768 was **zero** — mobile and tablet web visitors
-   * had no route to the download at all. The owner gave it the web-only utility slot.
-   *
-   * It is a **utility, not a destination**, so it lives outside the `TABS`
-   * array and never touches `resolveActiveNavDestination`. `/download` hides
-   * the tab bar (`shouldHideBottomTabBar`), so an active state for this item
-   * cannot occur in the first place.
-   *
-   * **The hook sits above the early return.** The bar returns `null` on some
-   * routes, and below the return the hook order would differ between renders.
+   * Web-only download utility below lg, outside `TABS`. The hook sits above the early return to
+   * keep hook order stable.
    */
   const desktopRuntime = useSyncExternalStore(
     subscribeToRuntime,
@@ -143,11 +122,7 @@ export function BottomTabBar() {
             {active ? (
               <span
                 aria-hidden
-                // No glow — the indigo line alone clears 3:1 against the track.
-                // The former `0 0 12px` indigo halo was exactly the "glow-like
-                // boxShadow 0 0 ring" the charter forbids by name, but its value
-                // contained `var(`, which put it outside the shadow lint's reach.
-                // The same PR narrowed that rule to catch coloured halos.
+                // No glow: the indigo line alone clears 3:1 against the track.
                 className="absolute top-1 h-0.5 w-6 rounded-full bg-[color:var(--color-indigo-line-a90)]"
                 data-active-indicator="true"
               />
@@ -167,13 +142,7 @@ export function BottomTabBar() {
         );
       })}
 
-      {/*
-        Sixth visible slot on the web — a utility, not a destination, so it stays outside
-        the `TABS` array and the active decision is untouched. It reuses the
-        sibling tabs' touch-target classes (`--topology-bottom-tab-min-height`
-        plus the coarse-pointer contract): shrinking it because it is "only" a
-        utility would make it the hardest item to hit below `lg`.
-      */}
+      {/* Web-only utility slot; reuses the sibling tabs' touch-target classes. */}
       {showGetApp ? (
         <Link
           href="/download/"

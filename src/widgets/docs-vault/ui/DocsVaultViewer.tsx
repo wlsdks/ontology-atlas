@@ -47,18 +47,20 @@ interface Props {
   /** Optional. When given, the md body is fetched through this function (for a local
    *  vault). Unset falls back to fetching /docs-vault/{slug}.md. */
   getDocContent?: (slug: string) => Promise<string>;
-  /** Bundled bodies from the same vault as the static manifest the parent settled on.
-   *  Stops the viewer re-reading the global sample preference and picking a different
-   *  body when a route-scoped sample override is in effect. */
+  /**
+   * Bundled bodies from the same vault as the parent's static manifest, so a route-scoped sample
+   * override is respected.
+   */
   bundledContent?: Record<string, string>;
   /** The query passed from the search palette. Matches are wrapped in mark per text node. */
   highlightQuery?: string;
   /** Turn a relative image path into a real src (a local vault's asset blob URL and
    *  the like). Unset for a server vault. */
   resolveImage?: (path: string) => Promise<string | null>;
-  /** The base for turning a vault-external (`../` escape) relative md link into a
-   *  GitHub blob URL. Set only for the bundled docs vault; a local vault leaves it
-   *  unset → non-routing render rather than a dead 404. */
+  /**
+   * Base for turning a vault-escaping `.md` link into a GitHub blob URL; set only for the bundled
+   * docs vault.
+   */
   repoBlobBase?: string;
   /** Where this vault sits inside the repo (the bundled docs vault = `docs`). */
   vaultRepoRoot?: string;
@@ -67,9 +69,8 @@ interface Props {
   /** Opens a known original source at the cited anchor. */
   onSourceNavigate?: (path: string, anchor?: string) => void;
   /**
-   * The one original the parent already names beside this page (the Library header's
-   * "View original"). A citation of that file says only where in it; every other citation
-   * names its file too, because nothing else on screen would.
+   * The original the parent already names beside this page; its citations say only where in it,
+   * others also name their file.
    */
   namedSourcePath?: string;
   /** Uses the smaller top inset when parent context already separates the body. */
@@ -77,10 +78,8 @@ interface Props {
 }
 
 /**
- * The individual vault document viewer. It fetches /docs-vault/{slug}.md on the
- * client and renders it with react-markdown. Internal links are identified against
- * the vaultSlugs set and swapped for Link; external ones open in a new tab. Images
- * are plain native img for now.
+ * The vault document viewer: fetches the md body and renders it with react-markdown; internal links
+ * become Link, external ones open in a new tab.
  */
 export function DocsVaultViewer({
   doc,
@@ -88,10 +87,7 @@ export function DocsVaultViewer({
   onNavigate,
   basePath = '/docs',
   getDocHref = (slug, hash) => buildDocsVaultHref({ slug, hash }),
-  // Every link that promises the map points to /topology (route contract). The
-  // old `/?p=` default hard-navigated to the locale-less root, whose redirect
-  // dropped the query — the clicked project was silently lost (bug sweep
-  // 2026-09-01).
+  // Map links point to /topology; a locale-less root redirect would drop the query.
   getProjectHref = getTopologyProjectHref,
   getDocContent,
   bundledContent: bundledContentOverride,
@@ -108,43 +104,23 @@ export function DocsVaultViewer({
   const libraryT = useTranslations('library');
   const reducedMotion = usePrefersReducedMotion();
   /*
-   * **A document already read once arrives painted** (2026-09-12).
-   *
-   * `useDelayedVisible` below already stops the skeleton flashing — but stopping the
-   * *skeleton* is not the same as having a *screen*. With `raw` starting null on every
-   * mount, what the pane showed instead was its own ground. Measured at 1512×901 on the
-   * static export with the installed app's runtime injected, arriving at Docs from the rail
-   * left this pane **blank for 65-168 ms on the second arrival exactly as on the first**,
-   * with the body's own heading appearing only at 193 ms — and the route crossfade captured
-   * the blank, so the document then cut in with no motion at all.
-   *
-   * The memory key carries `mtime` (`shared/lib/route-arrival-memory.ts`), which is what
-   * makes this safe rather than a cache needing a policy: an edited file has a different
-   * mtime, so it has a different key and is read again. A remembered body can only ever be
-   * the body of exactly the bytes it was read from. The read below still runs every time and
-   * replaces this in place.
+   * A body already read once arrives painted: the memory key carries mtime
+   * (`shared/lib/route-arrival-memory.ts`), so an edited file is read again. The read below still
+   * runs and replaces it.
    */
   const [raw, setRaw] = useArrivalMemory<string | null>(
     `docs-vault-body:${getDocContent ? 'local' : 'bundled'}:${doc.slug}:${doc.mtime ?? 0}`,
     null,
   );
   const [error, setError] = useState<string | null>(null);
-  /*
-   * The skeleton appears **only when there is something to wait for**. This component
-   * remounts on every document change, so `raw` starts null for a document never read in
-   * this session, and since the body is usually already in hand, the three-bar skeleton used
-   * to flash for a single frame (measured 8.2–15.9ms · see the `SKELETON_DELAY_MS` comment).
-   */
+  /* The skeleton appears only when there is something to wait for (`SKELETON_DELAY_MS`). */
   const showSkeleton = useDelayedVisible(raw === null && error === null);
-  // A static vault's bundled bodies — they have to come from **the same vault** the
-  // manifest was chosen from. An earlier defect was exactly that mismatch (the manifest
-  // was the sample shop and the bodies were dogfood, so title and content pointed at
-  // different documents).
+  // Bundled bodies must come from the same vault as the manifest, or title and content point at
+  // different documents.
   const { content: preferredBundledContent } = useStaticVaultSource();
   const bundledContent = bundledContentOverride ?? preferredBundledContent;
 
-  // Once raw has loaded and highlightQuery is present, auto-scroll to the first match —
-  // find the first mark carrying the md-highlight class and scrollIntoView.
+  // Once the body loads with a highlightQuery, scroll to the first `mark.docs-match`.
   useEffect(() => {
     if (!raw || !highlightQuery) return;
     const handle = requestAnimationFrame(() => {
@@ -159,9 +135,8 @@ export function DocsVaultViewer({
     return () => cancelAnimationFrame(handle);
   }, [raw, highlightQuery, reducedMotion]);
 
-  // This component remounts through key={doc.slug} in the parent, and the memory above is
-  // keyed by slug and mtime, so the body in hand always belongs to the document on screen.
-  // No reset is needed in the effect.
+  // Remounted through key={doc.slug} and the memory is keyed by slug and mtime, so no reset is
+  // needed here.
   useEffect(() => {
     let cancelled = false;
     const fetcher = getDocContent
@@ -174,26 +149,11 @@ export function DocsVaultViewer({
     fetcher
       .then((text) => {
         if (cancelled) return;
-        // Strip the frontmatter block (avoids rendering it twice).
-        let cleaned = text.startsWith('---')
-          ? text.replace(/^---[\s\S]*?\n---\n?/, '')
-          : text;
+        let cleaned = text.replace(FRONTMATTER_BLOCK, '');
         /*
-         * Wikilink preprocessing — turn `[[slug]]` / `[[slug|text]]` / `[[slug#anchor]]`
-         * into a standard markdown link plus a sentinel. The `a` component below
-         * catches that sentinel for internal routing.
-         *
-         * ⚠️ **The sentinel must not look like a URL scheme** (measured fix,
-         * 2026-08-08). It used to be `WIKILINK:slug`, but `react-markdown` sanitises
-         * URLs (`defaultUrlTransform`) and **turns an unknown scheme into an empty
-         * string** — measured: `defaultUrlTransform('WIKILINK:capabilities/x') === ''`.
-         * So `href` was empty and the `a` component's first line returned **plain text
-         * with no marking at all**, neither a link nor a "not found" indicator. In
-         * other words this feature had code and documentation but **had never once
-         * worked** (the dogfood vault has 0 body wikilinks, so nobody stepped on it).
-         *
-         * A query shape survives the sanitiser. Gate:
-         * `tests/contract/wikilink-url-scheme.contract.test.ts`.
+         * Wikilinks become standard links with a sentinel the `a` component catches. The sentinel
+         * must not look like a URL scheme, or react-markdown's `defaultUrlTransform` empties the
+         * href (`tests/contract/wikilink-url-scheme.contract.test.ts`).
          */
         cleaned = rewriteWikilinks(cleaned);
         setRaw(cleaned);
@@ -207,9 +167,7 @@ export function DocsVaultViewer({
     };
   }, [bundledContent, doc.slug, getDocContent, setRaw]);
 
-  // Wrap highlightQuery matches in a string node with <mark>. Split out as a pure
-  // function so dependencies track well inside useMemo, passing the query as an
-  // argument rather than through a closure.
+  // Pure function taking the query as an argument so useMemo dependencies stay accurate.
   const highlightChildren = useMemo(() => {
     const hl = (
       children: React.ReactNode,
@@ -218,9 +176,8 @@ export function DocsVaultViewer({
     ): React.ReactNode => {
       if (!q) return children;
       if (typeof children === 'string') {
-        // Substring segmentation reuses the shared splitHighlightSegments (lower
-        // complexity). The effect that scrollIntoViews the first match looks for
-        // `.docs-match`, so the mark className is preserved.
+        // Reuses splitHighlightSegments; the `.docs-match` class is what the scroll effect looks
+        // for.
         return splitHighlightSegments(children, q).map((seg, i) =>
           seg.match ? (
             <mark
@@ -243,22 +200,10 @@ export function DocsVaultViewer({
     return (children: React.ReactNode, key = 'hl') => hl(children, q, key);
   }, [highlightQuery]);
 
-  // A heading id must be the same regardless of render count (idempotent). The previous
-  // occurrence-counter Map mutated a closure during render, so under StrictMode's double
-  // invocation every id shifted to `-2` and diverged from the manifest's heading slugs
-  // (scroll-spy, table-of-contents rail active state, anchor clicks). Duplicate headings
-  // with the same text now collide on id (the browser anchors to the first), and that
-  // trade-off beats killing navigation for every heading.
-  const headingSlugOf = (children: React.ReactNode) => slugFromChildren(children);
 
   /**
-   * The same heading under GitHub's rule, when that differs from this viewer's.
-   * A document under `docs/` is read here and on GitHub, and the two rules
-   * disagree on half of this repository's headings (an em dash between spaces
-   * leaves two hyphens for GitHub, one here). Rendering the GitHub form as a
-   * second, empty anchor keeps a link written for either surface live in both;
-   * scroll-spy and the contents rail keep using the id above, so the manifest
-   * needs no change.
+   * The GitHub-rule heading id when it differs from this viewer's, rendered as a second empty
+   * anchor so links written for either surface work; scroll-spy keeps the id above.
    */
   const headingAliasOf = (children: React.ReactNode) => {
     const canonical = slugFromChildren(children);
@@ -266,13 +211,27 @@ export function DocsVaultViewer({
     return alias && alias !== canonical ? alias : null;
   };
 
-  /**
-   * An NFC copy of the vault slugs — the lookup set wikilink resolution uses.
-   *
-   * Using the original `vaultSlugs` directly fails to match Hangul slugs (NFC 21
-   * characters against NFD 31). The set is built once rather than normalising per
-   * link — with dozens of links in a body, that is repeated work.
-   */
+  const renderHeading = (
+    Tag: 'h2' | 'h3',
+    className: string,
+    highlightKey: string,
+    children: React.ReactNode,
+    rest: React.HTMLAttributes<HTMLHeadingElement>,
+  ) => {
+    // Heading ids must be idempotent across StrictMode double renders; duplicate headings share an id
+    // (the browser anchors to the first).
+    const slug = slugFromChildren(children);
+    const alias = headingAliasOf(children);
+    return (
+      <Tag id={slug} className={className} {...rest}>
+        {alias ? <span id={alias} aria-hidden /> : null}
+        {highlightChildren(children, highlightKey)}
+        <HeadingAnchor anchor={slug} docSlug={doc.slug} basePath={basePath} />
+      </Tag>
+    );
+  };
+
+  /** NFC copy of the vault slugs, built once; raw `vaultSlugs` misses NFD Hangul slugs. */
   const normalizedVaultSlugs = useMemo(
     () => new Set([...vaultSlugs].map((slug) => slug.normalize('NFC'))),
     [vaultSlugs],
@@ -291,8 +250,7 @@ export function DocsVaultViewer({
   const components: Components = {
       a({ href, children, ...rest }) {
         if (!href) return <span {...rest}>{children}</span>;
-        // The preprocessing sentinel — `[[slug#anchor]]` has been turned into
-        // WIKILINK:slug#anchor. Matched directly against vault slugs.
+        // The preprocessing sentinel, matched directly against vault slugs.
         const wikilink = parseWikilinkHref(href);
         if (wikilink) {
           const { rawSlug: rawWikiSlug, rawAnchor, labelled } = wikilink;
@@ -302,22 +260,8 @@ export function DocsVaultViewer({
             : typedSlug;
           const anchor = rawAnchor ? decodeWikilinkSlug(rawAnchor) : rawAnchor;
           /*
-           * ⚠️ **Percent-decode and normalise to NFC** (measured fix, 2026-08-08).
-           *
-           * The markdown parser passes link URLs **percent-encoded** — measured:
-           * `capabilities/sweep-verification-procedure` arrived as
-           * `capabilities/%EC%8A%A4%EC%9C%95-…` (69 characters). That string is not in
-           * the vault's slug set, so **every** wikilink to a Hangul slug fell through
-           * to the "link not in the folder" dotted style. ASCII slugs have nothing to
-           * encode and stayed fine — which is why this defect appears only in a Hangul
-           * vault.
-           *
-           * NFC is matched too. Hangul slugs split into NFC (21 characters) and NFD
-           * (31) depending on origin (the macOS filesystem uses NFD), so the characters
-           * are identical while the strings do not match. The CLI validator already
-           * recorded the same judgement (`validate.mjs`: *"References are also normalised to NFC — normalising only one side leaves identical characters that don't match"* — references are
-           * normalised to NFC too; normalising one side leaves identical characters
-           * that do not match). That rule is followed rather than re-decided.
+           * Percent-decode and NFC-normalise: the parser passes Hangul slugs encoded and macOS
+           * stores NFD; same rule as the CLI's `validate.mjs`.
            */
           const citation = rawWikiSlug
             ? resolveSourceCitation(
@@ -329,10 +273,8 @@ export function DocsVaultViewer({
             : null;
           if (citation) {
             /*
-             * **A citation says where, in words** (2026-09-25). Without a `|label` the
-             * link's text is its target, and the page printed `src:sources/budget.md#l5`
-             * on every fact while the Source pane a press away said "line 5". The words
-             * replace that stand-in only; a label the author wrote is kept as written.
+             * An unlabelled citation's text says where ("line 5") instead of its target; an
+             * author's label is kept.
              */
             const words = sourceCitationWords(
               { path: citation.path ?? citation.rawPath, anchor: citation.anchor },
@@ -363,8 +305,8 @@ export function DocsVaultViewer({
                 </button>
               );
             }
-            // The helper distinguishes an unavailable allow-list from an allow-listed
-            // missing source while keeping both states visibly non-navigable.
+            // Missing and unavailable citations both render as a visibly non-navigable span; only
+            // the title differs.
             return (
               <span
                 className="border-b border-dashed border-[color:var(--color-amber-source-a50)] text-[color:var(--color-amber-source-text-a85)]"
@@ -381,21 +323,13 @@ export function DocsVaultViewer({
             );
           }
           /*
-           * ⚠️ **Resolve against the document doing the linking, not against bare text**
-           * (2026-09-09). This lookup matched the typed slug straight against the vault's
-           * slug set, which made it a *third* answer to "what does `[[x]]` mean here",
-           * disagreeing with `extractOutLinksWithContext` (backlinks, the Library graph)
-           * and with `validateWikiFolder` (the folder check). Measured: `[[budget]]`
-           * inside `wiki/handover.md` rendered as plain text with no anchor while both
-           * other resolvers had it pointing at `wiki/budget`. The same blindness swallowed
-           * the nested `ontology/` vault's links, which is the case that function was
-           * written for in the first place.
+           * Resolve against the linking document, as `extractOutLinksWithContext`
+           * and `validateWikiFolder` do, so `[[budget]]` in `wiki/handover.md` means `wiki/budget`.
            */
           // A `project:` prefix routes to the public topology route, e.g. [[project:reactor]].
           if (wikiSlug && wikiSlug.startsWith('project:')) {
             const projectSlug = wikiSlug.slice('project:'.length);
-            // A locale-aware Link, not a raw anchor — the raw form triggered a
-            // full locale-less page load whose redirect discarded `?p=`.
+            // A locale-aware Link; a raw anchor loads the locale-less root and drops `?p=`.
             return (
               <Link
                 href={getProjectHref(projectSlug)}
@@ -451,9 +385,7 @@ export function DocsVaultViewer({
               href={href}
               target="_blank"
               rel="noreferrer noopener"
-              /* Fake-prose fix (2026-08-04): inline-flex kills line breaking in a prose
-                 position — 1 rect at 320px against 2 for an inline control. A prose link
-                 is contractually display:inline (prose-link.contract.test.ts). */
+              /* A prose link stays display:inline so it wraps (`prose-link.contract.test.ts`). */
               className="prose-link decoration-[color:var(--color-indigo-line-a40)] hover:decoration-[color:var(--color-indigo-accent)]"
               {...rest}
             >
@@ -491,17 +423,14 @@ export function DocsVaultViewer({
             </Link>
           );
         }
-        // A file outside the vault (in the repo) → GitHub blob in a new tab. Fixes the
-        // regression where it was handed to app routing and died in the 404.
+        // A file outside the vault opens as a GitHub blob in a new tab.
         if (resolved.kind === 'external') {
           return (
             <a
               href={resolved.url}
               target="_blank"
               rel="noreferrer noopener"
-              /* Fake-prose fix (2026-08-04): inline-flex kills line breaking in a prose
-                 position — 1 rect at 320px against 2 for an inline control. A prose link
-                 is contractually display:inline (prose-link.contract.test.ts). */
+              /* A prose link stays display:inline so it wraps (`prose-link.contract.test.ts`). */
               className="prose-link decoration-[color:var(--color-indigo-line-a40)] hover:decoration-[color:var(--color-indigo-accent)]"
               {...rest}
             >
@@ -510,8 +439,7 @@ export function DocsVaultViewer({
             </a>
           );
         }
-        // Repo location unknown (a local vault) and outside the vault → not routable.
-        // Rendered as non-routing text (href removed) rather than a dead 404.
+        // Outside the vault with no repo location: non-routing text, not a dead 404.
         if (resolved.kind === 'unresolved') {
           return (
             <span
@@ -529,54 +457,9 @@ export function DocsVaultViewer({
           </a>
         );
       },
-      h1({ children, ...rest }) {
-        const slug = headingSlugOf(children);
-        const alias = headingAliasOf(children);
-        return (
-          <h2
-            id={slug}
-            className="group relative mt-0 mb-6 text-display font-[var(--font-weight-strong)] leading-display text-[color:var(--color-text-primary)]"
-            {...rest}
-          >
-            {alias ? <span id={alias} aria-hidden /> : null}
-            {highlightChildren(children, 'h1')}
-            <HeadingAnchor anchor={slug} docSlug={doc.slug} basePath={basePath} />
-          </h2>
-        );
-      },
-      h2({ children, ...rest }) {
-        const slug = headingSlugOf(children);
-        const alias = headingAliasOf(children);
-        return (
-          <h2
-            id={slug}
-            /* A page whose first line is a section heading — every wiki page, whose title the
-               Library draws in its own header — carried the section gap on top of the
-               article's own inset: measured 80px of nothing above "Summary" (2026-09-07). */
-            className="group relative mt-10 mb-3 text-title font-[var(--font-weight-strong)] leading-body text-[color:var(--color-text-primary)] first:mt-0"
-            {...rest}
-          >
-            {alias ? <span id={alias} aria-hidden /> : null}
-            {highlightChildren(children, 'h2')}
-            <HeadingAnchor anchor={slug} docSlug={doc.slug} basePath={basePath} />
-          </h2>
-        );
-      },
-      h3({ children, ...rest }) {
-        const slug = headingSlugOf(children);
-        const alias = headingAliasOf(children);
-        return (
-          <h3
-            id={slug}
-            className="group relative mt-6 mb-2 text-title font-[var(--font-weight-strong)] leading-body text-[color:var(--color-text-primary)]"
-            {...rest}
-          >
-            {alias ? <span id={alias} aria-hidden /> : null}
-            {highlightChildren(children, 'h3')}
-            <HeadingAnchor anchor={slug} docSlug={doc.slug} basePath={basePath} />
-          </h3>
-        );
-      },
+      h1: ({ children, ...rest }) => renderHeading('h2', HEADING_CLASS.h1, 'h1', children, rest),
+      h2: ({ children, ...rest }) => renderHeading('h2', HEADING_CLASS.h2, 'h2', children, rest),
+      h3: ({ children, ...rest }) => renderHeading('h3', HEADING_CLASS.h3, 'h3', children, rest),
       p({ children, ...rest }) {
         return (
           <p
@@ -637,10 +520,8 @@ export function DocsVaultViewer({
         );
       },
       blockquote({ children, ...rest }) {
-        // Callout detection — a first paragraph shaped `[!type] text...` gets dedicated
-        // styling. Obsidian/GitHub notation: `> [!note] title\n> body...`. ReactMarkdown
-        // has already parsed it into the first p > text of children, so the inner text
-        // node has to be inspected.
+        // Callout detection: `[!type] text` in the first paragraph gets callout styling;
+        // ReactMarkdown already parsed it into children, so the inner text node is inspected.
         const callout = detectCallout(children);
         if (callout) {
           return (
@@ -688,38 +569,10 @@ export function DocsVaultViewer({
         return <hr className="my-6 border-[color:var(--color-border-soft)]" />;
       },
       img({ src, alt, title }) {
-        // External URLs (http/data/blob) pass through. Only relative paths use resolveImage.
         const rawSrc = typeof src === 'string' ? src : undefined;
-        if (!rawSrc || /^(https?:|data:|blob:)/i.test(rawSrc)) {
-          return (
-            <Image
-              src={rawSrc ?? ''}
-              alt={alt ?? ''}
-              width={1200}
-              height={800}
-              sizes={IMAGE_SIZES}
-              unoptimized
-              className="my-4 max-w-full rounded-chip border border-[color:var(--color-border-soft)]"
-              style={{ height: 'auto' }}
-              title={title}
-            />
-          );
-        }
-        if (!resolveImage) {
-        // Server vault — try referencing directly under public/docs-vault.
-          return (
-            <Image
-              src={rawSrc}
-              alt={alt ?? ''}
-              width={1200}
-              height={800}
-              sizes={IMAGE_SIZES}
-              unoptimized
-              className="my-4 max-w-full rounded-chip border border-[color:var(--color-border-soft)]"
-              style={{ height: 'auto' }}
-              title={title}
-            />
-          );
+        // A server vault has no resolveImage and references public/docs-vault directly.
+        if (!rawSrc || /^(https?:|data:|blob:)/i.test(rawSrc) || !resolveImage) {
+          return <BodyImage src={rawSrc ?? ''} alt={alt ?? ''} title={title} />;
         }
         return (
           <VaultImage
@@ -745,11 +598,7 @@ export function DocsVaultViewer({
     );
   }
   if (raw === null) {
-    /*
-     * If the body arrives before the window passes, nothing is drawn — an empty space
-     * is quieter than a loading bar flashing for one frame. There is nothing to
-     * announce either, so no `role="status"` is created then.
-     */
+    /* A body arriving within the delay draws nothing and announces nothing. */
     if (!showSkeleton) return <div className="p-8" aria-hidden />;
     return (
       <div className="flex flex-col gap-3 p-8" role="status" aria-label={t('loadingLabel')}>
@@ -775,37 +624,25 @@ export function DocsVaultViewer({
   );
 }
 
+/** A leading frontmatter block, stripped so it is not rendered twice. */
+const FRONTMATTER_BLOCK = /^---[\s\S]*?\n---\n?/;
+
+const HEADING_CLASS = {
+  h1: 'group relative mt-0 mb-6 text-display font-[var(--font-weight-strong)] leading-display text-[color:var(--color-text-primary)]',
+  // No section gap above a first-line heading; the Library draws the title in its own header.
+  h2: 'group relative mt-10 mb-3 text-title font-[var(--font-weight-strong)] leading-body text-[color:var(--color-text-primary)] first:mt-0',
+  h3: 'group relative mt-6 mb-2 text-title font-[var(--font-weight-strong)] leading-body text-[color:var(--color-text-primary)]',
+} as const;
+
 /**
- * Next's `sizes` hint for a body image, which is parsed at build time and so cannot read a CSS
- * variable. An image is `max-w-full` inside the column's **content** box, which is the prose
- * measure — not the column, and not the `760px` this said until 2026-09-11, when the content box
- * was 680px wide and the hint over-fetched every image by 12%.
- *
- * **In `rem`, not `px`** (2026-09-12). `sizes` is a list of CSS lengths and a font-relative one
- * is resolved against the **root element's** font size, which is exactly the quantity the prose
- * measure now follows (`app/globals.css`, "The ramp is written in `rem`"). One string therefore
- * describes the box at every zoom level, where `629px` described it only at 100% and under-fetched
- * by a full srcset step at 200% — the mirror image of the 12% over-fetch above. A browser that
- * cannot parse the unit discards the source-size list and falls back to `100vw`, i.e. it
- * over-fetches rather than rendering anything wrong.
+ * Next `sizes` hint for body images, in rem so it follows the root font size like the prose measure
+ * (`app/globals.css`); unparsable units fall back to 100vw.
  */
 const IMAGE_SIZES = `(max-width: 768px) 100vw, ${PROSE_MEASURE_REM.toFixed(4)}rem`;
 
 /**
- * **The line-length cap, applied to the prose and not to the column** (2026-09-11).
- *
- * `--measure-doc-column` (760px) is the *box* — the gutter, the headings, the tables and
- * the frontmatter block all need that width. Nothing was capping the *line*, so measured
- * on the installed app at 1512 wide the body ran a **680px content box at 105.8 English
- * characters per line**, while `app/globals.css` already claimed docs prose was held at
- * `--measure-prose`. It was not; no element in this file referenced the token. The claim
- * is now true, and it lands on the elements a person reads a sentence in — paragraphs,
- * lists and quotes — leaving headings, tables, code and images on the full column so a
- * table still gets its own `overflow-x` room.
- *
- * The cap is a `max-width`, so it only ever narrows: a viewport already below the measure
- * is untouched, and the prose stays left-aligned inside the column rather than being
- * re-centred into a second origin (`app/globals.css`, `--page-col-utility`'s retirement).
+ * Line-length cap on prose elements only (paragraphs, lists, quotes); headings, tables, code and
+ * images keep the full column. A max-width only narrows, and prose stays left-aligned.
  */
 const PROSE_MEASURE = 'max-w-[var(--measure-prose)]';
 
@@ -854,25 +691,22 @@ const CALLOUT_STYLES: Record<
 };
 
 /**
- * Extract the `[!kind] title` pattern from blockquote children. Only the very first
- * text of the first paragraph is inspected. Returns null on no match; on a match,
- * returns the remainder with that prefix removed as `rest`, so it renders in the body
- * as-is.
+ * Extracts a leading `[!kind] title` from blockquote children; returns null or the remainder
+ * as `rest`.
  */
 function detectCallout(
   children: React.ReactNode,
 ): { kind: CalloutKind; title: string; rest: React.ReactNode } | null {
   const kids = Array.isArray(children) ? children : [children];
-  // Find the first element-like p (skipping whitespace text and the like).
-  const firstIdx = kids.findIndex(
+  const firstElementIdx = kids.findIndex(
     (c) =>
       c != null &&
       typeof c === 'object' &&
       'type' in (c as object) &&
       (c as { type?: unknown }).type !== undefined,
   );
-  if (firstIdx === -1) return null;
-  const firstEl = kids[firstIdx] as React.ReactElement<{
+  if (firstElementIdx === -1) return null;
+  const firstEl = kids[firstElementIdx] as React.ReactElement<{
     children?: React.ReactNode;
   }>;
   const inner = firstEl.props?.children;
@@ -885,21 +719,19 @@ function detectCallout(
   if (!m) return null;
   const kind = m[1].toLowerCase() as CalloutKind;
   const title = m[2].trim() || kind.toUpperCase();
-  // The remaining children of the first paragraph: the piece after the firstText match plus innerArr[1:].
   const remainderText = firstText.slice(m[0].length).trimStart();
-  const restFirstP = [
+  const firstParagraphRemainder = [
     remainderText,
     ...innerArr.slice(1),
   ].filter((x) => x !== '' && x != null);
   const restKids = [...kids];
-  if (restFirstP.length > 0) {
-  // Restore the remainder into the same p (a React element clone).
-    restKids[firstIdx] = {
+  if (firstParagraphRemainder.length > 0) {
+    restKids[firstElementIdx] = {
       ...firstEl,
-      props: { ...firstEl.props, children: restFirstP },
+      props: { ...firstEl.props, children: firstParagraphRemainder },
     };
   } else {
-    restKids.splice(firstIdx, 1);
+    restKids.splice(firstElementIdx, 1);
   }
   return { kind, title, rest: restKids };
 }
@@ -933,11 +765,7 @@ function CalloutBlock({
   );
 }
 
-/**
- * Render a local vault's image src by converting it asynchronously to a blob URL. The
- * blob created with createObjectURL is revoked on unmount or on a src change to avoid
- * a memory leak.
- */
+/** Local vault image through a blob URL, revoked on unmount or src change. */
 function VaultImage({
   src,
   alt,
@@ -955,24 +783,7 @@ function VaultImage({
   useEffect(() => {
     let cancelled = false;
     let created: string | null = null;
-  // Normalise a path relative to the document's directory to be relative to the vault root.
-    const fromDir = docSlug.includes('/')
-      ? docSlug.slice(0, docSlug.lastIndexOf('/'))
-      : '';
-    const rel = src.replace(/^\.\//, '');
-    const joined = fromDir ? `${fromDir}/${rel}` : rel;
-    const parts = joined.split('/');
-    const stack: string[] = [];
-    for (const p of parts) {
-      if (p === '' || p === '.') continue;
-      if (p === '..') {
-        stack.pop();
-        continue;
-      }
-      stack.push(p);
-    }
-    const normalized = stack.join('/');
-    resolve(normalized)
+    resolve(vaultPathFromDoc(docSlug, src))
       .then((url) => {
         if (cancelled) {
           if (url) URL.revokeObjectURL(url);
@@ -1011,9 +822,13 @@ function VaultImage({
       />
     );
   }
+  return <BodyImage src={blobUrl} alt={alt} />;
+}
+
+function BodyImage({ src, alt, title }: { src: string; alt: string; title?: string }) {
   return (
     <Image
-      src={blobUrl}
+      src={src}
       alt={alt}
       width={1200}
       height={800}
@@ -1021,15 +836,25 @@ function VaultImage({
       unoptimized
       className="my-4 max-w-full rounded-chip border border-[color:var(--color-border-soft)]"
       style={{ height: 'auto' }}
+      title={title}
     />
   );
 }
 
-/**
- * The # icon beside a heading — it lifts slightly on hover and copies the
- * slug#anchor URL to the clipboard on click, with a check mark as feedback for 2
- * seconds.
- */
+/** A path relative to the document's folder, resolved to a vault-root path. */
+function vaultPathFromDoc(docSlug: string, src: string): string {
+  const fromDir = docSlug.includes('/') ? docSlug.slice(0, docSlug.lastIndexOf('/')) : '';
+  const rel = src.replace(/^\.\//, '');
+  const stack: string[] = [];
+  for (const part of (fromDir ? `${fromDir}/${rel}` : rel).split('/')) {
+    if (part === '' || part === '.') continue;
+    if (part === '..') stack.pop();
+    else stack.push(part);
+  }
+  return stack.join('/');
+}
+
+/** Heading anchor icon: copies the slug#anchor URL and shows a check for 2 seconds. */
 function HeadingAnchor({
   anchor,
   docSlug,

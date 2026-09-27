@@ -7,32 +7,20 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { controlClass, Tooltip } from '@/shared/ui';
 import type { Project } from '@/entities/project';
 
-// With a list of 21 hubs already expanded on first entry, the eye never reaches the
-// topology in the centre. Once the user expands it themselves, that choice is remembered.
+// Collapsed until the user expands it, then that choice is remembered.
 const RAIL_OPEN_KEY = 'demo:sigma-hub-rail-open:v1';
 
 interface HubRailProps {
   projects: Project[];
   selectedSlug?: string | null;
   onSelect: (slug: string) => void;
-  /**
-   * true hides the Hub Rail entirely (its tab included), preventing an overlap with
-   * the expanded Hero panel at the top left. It returns to false and renders normally
-   * once Hero collapses.
-   */
+  /** Hides the rail and its tab so it does not overlap the expanded Hero panel. */
   suppressed?: boolean;
-  /**
-   * Inside Layer 1, strips each hub name's container prefix (e.g. "Demo Reactor · ")
-   * to keep the rail compact. Unset keeps the original name (Layer 0).
-   */
+  /** Inside Layer 1, strips each hub name's container prefix; unset keeps the name. */
   stripNamePrefix?: string;
 }
 
-/**
- * The left vertical hub shortcut bar. It lists roughly eleven hub projects so one
- * click reaches that hub — the map's "major stations". Collapsed, only a thin tab
- * remains, freeing map space.
- */
+/** Left hub shortcut bar: one click reaches a hub; collapsed, only a thin tab remains. */
 export function HubRail({
   projects,
   selectedSlug,
@@ -41,11 +29,8 @@ export function HubRail({
   stripNamePrefix,
 }: HubRailProps) {
   const t = useTranslations('topologyWidgets.hubRail');
-  // ⚠️ Both accesses are wrapped because `localStorage` **throws rather than
-  // returning null** when storage is disabled — the installed app's WKWebView does
-  // exactly that under some privacy settings. An unguarded read sits in a `useState`
-  // initializer, so the throw happened during render and took the whole map down with
-  // it. Storage we cannot read means "the user has not expanded it": closed.
+  // Both accesses are guarded because `localStorage` throws when storage is disabled, and a throw
+  // in a useState initializer takes the map down. Unreadable means closed.
   const [open, setOpen] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     try {
@@ -88,9 +73,7 @@ export function HubRail({
     const rest = name.slice(prefixWithSep.length).trim();
     return rest.length > 0 ? rest : name;
   };
-  // Compute each project's degree (dependencies plus references) and expose it as a
-  // badge at the hub's right, so scale differences between hubs read at a glance. One
-  // O(N + E) pass.
+  // Each project's degree (dependencies plus references) as a badge, in one O(N + E) pass.
   const degreeBySlug = new Map<string, number>();
   for (const project of projects) {
     const current = degreeBySlug.get(project.slug) ?? 0;
@@ -108,10 +91,8 @@ export function HubRail({
     );
   if (hubs.length === 0) return null;
   const railLabel = t('label');
-  // Roving tabindex — a listbox must have exactly one tab stop. The selected option is
-  // the sole tab entry point, and with no selection the first option is. The rest are
-  // -1 so they are reached by arrow keys only (the WAI-ARIA listbox pattern). Every
-  // native button used to be tabIndex 0, so Tab stopped at every hub.
+  // Roving tabindex: the selected option, or the first, is the only tab stop; the rest are reached
+  // by arrow keys (WAI-ARIA listbox).
   const hasActiveOption = hubs.some((hub) => hub.slug === selectedSlug);
 
   if (!open) {
@@ -151,9 +132,10 @@ export function HubRail({
             type="button"
             onClick={() => setOpenPersisted(false)}
             aria-label={t('collapseAriaLabel')}
-            /* The tooltip already names this control, so only the value layer is used
-               rather than `IconButton` (which adds its own `title`) — combining them
-               produces two tooltips. */
+            /*
+             * The tooltip already names this control, so the value layer is used instead of
+             * the `IconButton` primitive, which would add a second title.
+             */
             className={controlClass({
               shape: 'icon',
               size: 'sm',

@@ -50,50 +50,27 @@ export function extractBodySnippet(
 }
 
 /**
- * The body tier's score — clamped into (1, 2) so it is always below any metadata
- * hit (the lowest being an excerpt match at the tail, 2 points). Among bodies, an
- * earlier match wins by a hair. This tier applies to scattered multi-token AND
- * matches, where the phrase is not actually contiguous.
+ * Body tier score, clamped into (1, 2) so it stays below every metadata hit; an earlier match wins
+ * by a hair.
  */
 function bodyTierScore(idx: number): number {
   return 1 + Math.max(0, 0.9 - idx / 10000);
 }
 
 /**
- * The body "exact phrase" boost — restoring ranking trust (P1 review #2). Far above
- * a scattered token AND match, but clamped into (10, 16] so it can never beat the
- * title hit's minimum (20; see the `titleIdx` clamp above `bodyTierScore`). idx 0
- * (an exact phrase at the very start of the document) takes the maximum, and it
- * approaches 10 further in.
+ * Exact-phrase body boost, clamped into (10, 16] so it beats scattered tokens but never the title
+ * minimum of 20.
  */
 function bodyPhraseScore(idx: number): number {
   return 10 + Math.max(0, 6 - idx / 10000);
 }
 
 /**
- * A simple client-side full-text search, supporting single-word and
- * whitespace-separated AND queries.
- *
- * Scoring rules, by tier:
- *  - title match: 100 − the match start index (earlier scores higher; minimum 20)
- *  - slug match: 25
- *  - excerpt match: 20 − min(match start, 18) (minimum 2)
- *  - tag match: 15 each
- *  - body match (scattered tokens): around 1 — the lowest tier, so no metadata hit
- *    ever loses to a body hit. Among bodies, an earlier match wins by a hair.
- *  - body match (exact phrase — a multi-token query present contiguously in the
- *    body): 10–16 (P1 review #2 — more trustworthy than a scattered token match, so
- *    it ranks higher, but still cannot beat the title minimum of 20)
- *
- * For multi-token queries, every token must match at least one of
- * title|excerpt|slug|tags|body to be included (they need not form a phrase — that
- * is the AND requirement). Passing bodyIndex (pre-lowercased, `body-index.ts`)
- * activates the body tier — a linear scan over 305 docs measures ~0.1–0.2ms/key, so
- * neither debouncing nor an inverted index is needed. Exact-phrase detection reuses
- * `buildPhraseMatcher` (shared, `shared/lib/highlight-match.ts`), so it uses the
- * same whitespace-flexible rule (newlines count as spaces) as the viewer's
- * highlight matching — what search calls a match must actually be markable and
- * scrollable in the viewer (consistency between ranking and landing).
+ * Client-side full-text search with whitespace-separated AND tokens. Tiers: title 100 minus index
+ * (min 20), slug 25, excerpt 20 minus min(index, 18), tag 15 each, body exact phrase 10-16,
+ * scattered body about 1. The body tier is a linear indexOf scan over the pre-lowercased index
+ * (`body-index.ts`), and phrase detection shares `buildPhraseMatcher` with the viewer so every
+ * match can be marked and scrolled to.
  */
 export function searchDocs(
   query: string,
@@ -111,10 +88,7 @@ export function searchDocs(
     const excerptLc = doc.excerpt.toLowerCase();
     const slugLc = doc.slug.toLowerCase();
     const tagLc = doc.tags.map((t) => t.toLowerCase());
-    // It must also be findable by the name the list draws (`display_ko` /
-    // `display_en`) — what a user types is usually the name they just read on
-    // screen. This only widens the scope, so anyone searching by the raw title is
-    // unaffected.
+    // Also match the display name the list draws; this only widens the scope.
     const displayLc = Object.values(readDisplayLocales(doc.frontmatter) ?? {}).map((v) =>
       v.toLowerCase(),
     );
@@ -135,10 +109,8 @@ export function searchDocs(
     const titleIdx = titleLc.indexOf(needle);
     const excerptIdx = excerptLc.indexOf(needle);
 
-    // The body match position — for a multi-token query, first look for an exact
-    // phrase (whitespace-flexible, newlines counting as spaces). If found, its
-    // position and length drive the boost tier; if not (tokens scattered), fall back
-    // to the first token's position in the lowest tier, as before.
+    // Body match position: an exact phrase (newlines as spaces) sets the boost tier; otherwise the
+    // first token's position in the lowest tier.
     let bodyIdx = -1;
     let bodyMatchLength = needle.length;
     let bodyPhraseMatched = false;

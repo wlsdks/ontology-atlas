@@ -8,8 +8,7 @@ import type { Project } from '@/entities/project';
 
 const RAIL_OPEN_KEY = 'demo:sigma-hub-rail-open:v1';
 
-// jsdom implements neither scrollIntoView nor matchMedia — stubbed so the
-// component's effects do not throw.
+// jsdom has neither scrollIntoView nor matchMedia; stubbed so effects do not throw.
 if (!Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = () => {};
 }
@@ -61,12 +60,7 @@ const HUBS = [
   project({ slug: 'leaf', name: 'Leaf', isHub: false }),
 ];
 
-/**
- * HubRail roving tabindex — a listbox (role=listbox) must have exactly one tab stop.
- * Every option (a native button) used to carry the default tabIndex 0, so Tab
- * stopped at every hub (a roving-pattern violation). Only the active option (or the
- * first, when there is none) is 0; the rest are -1.
- */
+/** A listbox has exactly one tab stop: the active option, or the first without one. */
 describe('HubRail — roving tabindex a11y', () => {
   beforeEach(() => {
     window.localStorage.setItem(RAIL_OPEN_KEY, '1'); // render with the rail expanded
@@ -76,7 +70,7 @@ describe('HubRail — roving tabindex a11y', () => {
     window.localStorage.clear();
   });
 
-  it('선택이 없으면 첫 option 만 tab stop(0), 나머지 -1', () => {
+  it('makes only the first option a tab stop when nothing is selected', () => {
     render(<HubRail projects={HUBS} onSelect={() => {}} />);
     const options = screen.getAllByRole('option');
     expect(options).toHaveLength(2); // hub-a, hub-b (leaves excluded)
@@ -86,7 +80,7 @@ describe('HubRail — roving tabindex a11y', () => {
     expect(options[1]).toHaveAttribute('tabindex', '-1');
   });
 
-  it('선택된 hub 이 유일한 tab stop', () => {
+  it('makes the selected hub the only tab stop', () => {
     render(
       <HubRail projects={HUBS} selectedSlug="hub-b" onSelect={() => {}} />,
     );
