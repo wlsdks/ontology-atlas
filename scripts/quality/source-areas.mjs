@@ -60,7 +60,7 @@ export function directFilesAtCommit(dir, sha, cwd = process.cwd()) {
   }
 }
 
-export const AREA_GATE_PREFIXES = ['test-title-hangul', 'comment-bytes', 'oversize-files', 'wide-folders'];
+const AREA_GATE_PREFIXES = ['test-title-hangul', 'comment-bytes', 'oversize-files', 'wide-folders'];
 
 const FIXED_AREAS = new Set(['src', 'app', 'tests', 'mcp', 'cli', 'scripts', 'src-tauri', 'harness', 'root']);
 
