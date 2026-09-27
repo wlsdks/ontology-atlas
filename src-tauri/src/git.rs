@@ -247,19 +247,26 @@ fn classify_change(row: &PorcelainRow) -> &'static str {
     "modified"
 }
 
+type KindSlug = (Option<String>, Option<String>);
+
 // Best-effort top-level `kind:`/`slug:` from the leading `---` block; never
 // blocks a commit.
-fn read_kind_slug(abs_path: &Path) -> (Option<String>, Option<String>) {
-    let Ok(raw) = fs::read_to_string(abs_path) else {
+fn read_kind_slug(abs_path: &Path) -> KindSlug {
+    use std::io::BufRead;
+
+    let Ok(file) = fs::File::open(abs_path) else {
         return (None, None);
     };
-    let mut lines = raw.lines();
-    if lines.next().map(|l| l.trim_end()) != Some("---") {
+    let mut lines = std::io::BufReader::new(file).lines();
+    if !matches!(lines.next(), Some(Ok(first)) if first.trim_end() == "---") {
         return (None, None);
     }
     let mut kind = None;
     let mut slug = None;
     for line in lines {
+        let Ok(line) = line else {
+            return (None, None);
+        };
         let trimmed = line.trim_end();
         if trimmed == "---" {
             break;
@@ -1067,6 +1074,7 @@ pub fn git_history(
     if trimmed.is_empty() {
         return Ok(Vec::new());
     }
+    let mut kinds = std::collections::HashMap::new();
     let commits = trimmed
         .split(REC)
         .filter(|block| !block.trim().is_empty())
@@ -1081,7 +1089,7 @@ pub fn git_history(
                 fields.next().unwrap_or("").to_string(),
             );
             let files = lines
-                .filter_map(|line| history_change_entry(line, &repo_root, &vault_dir))
+                .filter_map(|line| history_change_entry(line, &repo_root, &vault_dir, &mut kinds))
                 .collect();
             Some(GitCommitInfo {
                 short_hash: info.0,
@@ -1098,7 +1106,12 @@ pub fn git_history(
 
 /// One `M\tpath` line. `kind` comes from the file on disk now, not the blob at that
 /// commit, to avoid a `git show` per commit; deleted files get only a path slug.
-fn history_change_entry(line: &str, repo_root: &Path, vault_dir: &Path) -> Option<ChangeEntry> {
+fn history_change_entry(
+    line: &str,
+    repo_root: &Path,
+    vault_dir: &Path,
+    kinds: &mut std::collections::HashMap<String, KindSlug>,
+) -> Option<ChangeEntry> {
     let mut cols = line.split('\t');
     let code = cols.next()?.trim();
     let path = cols.next()?.trim();
@@ -1115,7 +1128,10 @@ fn history_change_entry(line: &str, repo_root: &Path, vault_dir: &Path) -> Optio
     let mut kind = None;
     let mut slug = path_based_slug(vault_dir, &abs_path);
     if path.ends_with(".md") && status != "deleted" {
-        let (k, s) = read_kind_slug(&abs_path);
+        let (k, s) = kinds
+            .entry(path.to_string())
+            .or_insert_with(|| read_kind_slug(&abs_path))
+            .clone();
         if k.is_some() {
             kind = k;
         }
@@ -1921,6 +1937,7 @@ pub fn git_probe() -> GitProbe {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashMap;
 
     #[test]
     fn vault_pathspec_returns_dot_when_vault_is_repo_root() {
@@ -1963,26 +1980,32 @@ mod tests {
     fn history_change_entry_reads_status_code_and_path() {
         let repo = PathBuf::from("/repo");
         let vault = PathBuf::from("/repo/docs");
-        let added = history_change_entry("A\tdocs/elements/foo.md", &repo, &vault).unwrap();
+        let added = history_change_entry(
+            "A\tdocs/elements/foo.md",
+            &repo,
+            &vault,
+            &mut HashMap::new(),
+        )
+        .unwrap();
         assert_eq!(added.status, "added");
         assert_eq!(added.path, "docs/elements/foo.md");
         assert_eq!(added.slug, "elements/foo");
         assert_eq!(added.kind, None);
 
         assert_eq!(
-            history_change_entry("D\tdocs/gone.md", &repo, &vault)
+            history_change_entry("D\tdocs/gone.md", &repo, &vault, &mut HashMap::new())
                 .unwrap()
                 .status,
             "deleted"
         );
         assert_eq!(
-            history_change_entry("M\tdocs/x.md", &repo, &vault)
+            history_change_entry("M\tdocs/x.md", &repo, &vault, &mut HashMap::new())
                 .unwrap()
                 .status,
             "modified"
         );
         assert_eq!(
-            history_change_entry("R100\tdocs/y.md", &repo, &vault)
+            history_change_entry("R100\tdocs/y.md", &repo, &vault, &mut HashMap::new())
                 .unwrap()
                 .status,
             "renamed"
@@ -1993,9 +2016,9 @@ mod tests {
     fn history_change_entry_rejects_lines_without_a_tab() {
         let repo = PathBuf::from("/repo");
         let vault = PathBuf::from("/repo/docs");
-        assert!(history_change_entry("", &repo, &vault).is_none());
-        assert!(history_change_entry("no tab here", &repo, &vault).is_none());
-        assert!(history_change_entry("M\t", &repo, &vault).is_none());
+        assert!(history_change_entry("", &repo, &vault, &mut HashMap::new()).is_none());
+        assert!(history_change_entry("no tab here", &repo, &vault, &mut HashMap::new()).is_none());
+        assert!(history_change_entry("M\t", &repo, &vault, &mut HashMap::new()).is_none());
     }
 
     #[test]
@@ -2290,6 +2313,38 @@ mod tests {
         let (kind, slug) = read_kind_slug(&file);
         assert_eq!(kind.as_deref(), Some("capability"));
         assert_eq!(slug.as_deref(), Some("my-cap"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn read_kind_slug_reads_no_further_than_the_frontmatter() {
+        let dir = std::env::temp_dir().join(format!("atlas-git-front-{}", std::process::id()));
+        let _ = fs::create_dir_all(&dir);
+        let file = dir.join("node.md");
+        let mut bytes = b"---\nkind: element\nslug: reader\n---\n".to_vec();
+        bytes.extend_from_slice(&[0xff, 0xfe, b'\n']);
+        fs::write(&file, bytes).unwrap();
+        let (kind, slug) = read_kind_slug(&file);
+        assert_eq!(kind.as_deref(), Some("element"));
+        assert_eq!(slug.as_deref(), Some("reader"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn history_rows_of_one_path_reuse_the_first_read() {
+        let dir = std::env::temp_dir().join(format!("atlas-git-rows-{}", std::process::id()));
+        let _ = fs::create_dir_all(dir.join("docs"));
+        fs::write(dir.join("docs/a.md"), "---\nkind: capability\n---\n").unwrap();
+        let vault = dir.join("docs");
+        let mut kinds = HashMap::new();
+        let first = history_change_entry("M\tdocs/a.md", &dir, &vault, &mut kinds).unwrap();
+        fs::write(dir.join("docs/a.md"), "---\nkind: element\n---\n").unwrap();
+        let second = history_change_entry("A\tdocs/a.md", &dir, &vault, &mut kinds).unwrap();
+        assert_eq!(first.kind.as_deref(), Some("capability"));
+        assert_eq!(
+            second.kind, first.kind,
+            "the second row must not open the file again"
+        );
         let _ = fs::remove_dir_all(&dir);
     }
 
