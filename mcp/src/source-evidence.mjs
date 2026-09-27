@@ -142,6 +142,7 @@ function pathRefusal(path, ignore) {
   return null;
 }
 
+/** Whether any segment of a `/` path is hidden (leading `.`) or named like a credential, so it is never read. */
 export function namesHiddenOrCredentialFile(path) {
   return path.split('/').some((part) => part.startsWith('.') || SENSITIVE.test(part));
 }
@@ -162,6 +163,7 @@ function inspectPathComponents(root, literalPath) {
   return { finalStat };
 }
 
+/** One regular file under `rootPath`, read without following a link and re-checked after: `{ bytes }` or `{ reason }`. */
 export function readStableFile(
   rootPath,
   literalPath,
