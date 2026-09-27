@@ -613,13 +613,10 @@ if (
   downloadReleaseVerifier.includes("do not match the tag version") &&
   downloadReleaseVerifier.includes("allowDraft") &&
   downloadReleaseVerifier.includes("per_page=100") &&
-  // The fallback finds the draft **by tag**, and does not filter again on
-  // prerelease status — a caller who named the tag has already said what it wants,
-  // and filtering once more makes an RC draft impossible to verify (measured on
-  // v1.0.0-rc.1, 2026-07-27).
   downloadReleaseVerifier.includes("export function isRequestedDraft") &&
   downloadReleaseVerifier.includes("release?.tag_name === tag && release?.draft === true") &&
-  downloadReleaseVerifier.includes("if (!options.tag && release.prerelease && !options.allowPrerelease)") &&
+  downloadReleaseVerifier.includes("if (release.prerelease) {") &&
+  !downloadReleaseVerifier.includes("allowPrerelease") &&
   downloadReleaseVerifier.includes("unsupported macOS DMG asset names") &&
   downloadReleaseVerifier.includes("function isAnyDmgAsset") &&
   downloadReleaseVerifier.includes('asset.name.endsWith(".dmg")') &&
@@ -637,7 +634,7 @@ if (
   pass("desktop download verifier re-downloads and hashes the required macOS and Windows installers");
 } else {
   fail(
-    "scripts/check-macos-download-release.mjs must require explicit one-per-architecture aarch64 and x64 ontology-atlas DMGs plus exactly one Windows x64 setup executable, reject unsupported or duplicate DMGs, verify artifact filename versions match the release tag, re-download macOS and Windows bytes to match their checksums, and let --allow-draft find tagged draft pre-publish assets",
+    "scripts/check-macos-download-release.mjs must require explicit one-per-architecture aarch64 and x64 ontology-atlas DMGs plus exactly one Windows x64 setup executable, reject unsupported or duplicate DMGs, verify artifact filename versions match the release tag, re-download macOS and Windows bytes to match their checksums, and let --allow-draft find tagged draft pre-publish assets, and refuse any release GitHub marks as a pre-release",
   );
 }
 
@@ -657,15 +654,9 @@ if (desktopPreflightContract.ok) {
  * This order is a contract, not a preference. **DMG signing must sit between
  * packaging and notarisation.**
  *
- * Measured on v1.0.0-rc.1, 2026-07-27: signing only the `.app` and wrapping it in
- * a DMG passes notarisation, but Gatekeeper rejects it —
- *
- *   [desktop-notarize] notarized and stapled ...aarch64.dmg
- *   spctl --assess --type open ... : rejected
- *   source=no usable signature
- *
- * The notarisation ticket attached but the wrapper had no signature. Signing
- * **after** notarisation invalidates the staple, so there is exactly one slot.
+ * Gatekeeper evaluates the DMG container itself, so a notarised DMG around a
+ * signed `.app` is still rejected, and signing after notarisation invalidates the
+ * staple: there is exactly one slot.
  *
  * **Repacking the updater archive (`desktop:repack-updater`) also has exactly one
  * slot — immediately after app signing.** `tauri build` emits `.app.tar.gz`

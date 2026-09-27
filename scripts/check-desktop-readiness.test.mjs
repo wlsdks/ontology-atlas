@@ -425,7 +425,7 @@ test("desktop release helper scripts expose credential-aware help", () => {
   assert.match(verifyDownload.stdout, /exactly one DMG per architecture/);
   assert.match(verifyDownload.stdout, /Intel/);
   assert.match(verifyDownload.stdout, /x64/);
-  assert.match(verifyDownload.stdout, /--allow-prerelease/);
+  assert.doesNotMatch(verifyDownload.stdout, /--allow-prerelease/);
 
   assert.equal(releaseGithub.status, 0, releaseGithub.stderr);
   assert.match(releaseGithub.stdout, /GitHub-side prerequisites/);
@@ -982,6 +982,8 @@ test("desktop release tag gate requires the v-prefixed tag to match app versions
   const ok = run(`v${version}`);
   const mismatch = run(`v${otherVersion}`);
   const invalid = run(version);
+  const suffixed = run(`v${version}-rc.1`);
+  const partial = run(`v${major}.${minor}`);
 
   assert.equal(ok.status, 0, ok.stderr);
   assert.match(
@@ -1000,4 +1002,9 @@ test("desktop release tag gate requires the v-prefixed tag to match app versions
 
   assert.equal(invalid.status, 1);
   assert.match(invalid.stderr, /must be v-prefixed/);
+  assert.equal(suffixed.status, 1);
+  assert.match(suffixed.stderr, /pre-release or build suffix/);
+  assert.ok(suffixed.stderr.includes(`tag v${version} instead`), suffixed.stderr);
+  assert.equal(partial.status, 1);
+  assert.match(partial.stderr, /must be vMAJOR\.MINOR\.PATCH/);
 });
