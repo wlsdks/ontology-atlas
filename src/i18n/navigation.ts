@@ -2,11 +2,7 @@ import { createNavigation } from 'next-intl/navigation';
 import { routing } from './routing';
 
 /**
- * Locale-aware Link / useRouter / usePathname.
- *
- * Use these instead of the bare `next/link` / `next/navigation` exports
- * whenever the destination is an in-app route, so locale prefix is
- * preserved automatically. External URLs and root `/` redirects keep
- * using the bare next/* exports.
+ * Locale-aware Link / useRouter / usePathname for in-app routes, so the locale prefix is kept.
+ * External URLs and root `/` redirects use the bare next/* exports.
  */
 export const { Link, usePathname, useRouter } = createNavigation(routing);

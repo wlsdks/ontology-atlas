@@ -3,9 +3,8 @@ import { defineRouting } from 'next-intl/routing';
 export const routing = defineRouting({
   locales: ['en', 'ko'] as const,
   defaultLocale: 'en',
-  // Static export limitation: server-side locale negotiation is not available.
-  // The locale is determined solely by the URL prefix (/en/..., /ko/...).
-  // Root `/` is handled separately by app/page.tsx (client-side detection).
+  // Static export has no server-side negotiation: the URL prefix decides, and root `/`
+  // detects on the client in app/page.tsx.
   localePrefix: 'always',
   localeDetection: false,
 });
