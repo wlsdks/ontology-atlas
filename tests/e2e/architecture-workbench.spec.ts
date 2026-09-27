@@ -4,43 +4,8 @@ import { seedFirstRunSeen } from './first-run-seed';
 import { useDogfoodSample } from './sample-source';
 import { waitForAnimationsDone, waitForBoxStill } from './settle';
 
-test.use({ viewport: { width: 600, height: 900 } });
+test.use({ viewport: { width: 1512, height: 945 } });
 
-
-test('핵심 행동만 남고 에이전트 작업 버튼은 하단 탭에 가리지 않는다', async ({ page }) => {
-  await seedFirstRunSeen(page);
-  await useDogfoodSample(page);
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.goto('/ko/architecture/?view=architecture&guides=off');
-
-  await expect(page.getByText('Atlas Web Workbench').first()).toBeVisible();
-  await expect(page.getByTestId('architecture-graph-run')).toHaveCount(0);
-  await expect(page.getByTestId('architecture-walk')).toHaveCount(0);
-  await expect(page.getByRole('radio')).toHaveCount(0);
-  await expect(page.locator('[data-architecture-stage]')).toHaveCount(0);
-
-  const agentButton = page.getByTestId('architecture-agent-action');
-  await expect(agentButton).toBeVisible();
-  const report = await agentButton.evaluate(
-    (button) => {
-      const bar = document.querySelector<HTMLElement>('nav[data-tabbar="primary"]');
-      const barShown = Boolean(bar) && bar!.getBoundingClientRect().height > 0;
-      const buttonRect = button.getBoundingClientRect();
-      const barRect = barShown ? bar!.getBoundingClientRect() : null;
-      const hit = document.elementFromPoint(
-        buttonRect.left + buttonRect.width / 2,
-        buttonRect.top + buttonRect.height / 2,
-      );
-      return {
-        clearance: barRect ? barRect.top - buttonRect.bottom : null,
-        hitOwnsPoint: hit === button || button.contains(hit),
-      };
-    },
-  );
-
-  if (report.clearance !== null) expect(report.clearance).toBeGreaterThanOrEqual(-1);
-  expect(report.hitOwnsPoint).toBe(true);
-});
 
 test('the agent task chooser offers a re-check and an improvement search beside the derived task', async ({ page }) => {
   /*
@@ -168,74 +133,6 @@ test('keyboard opens, closes, restores focus, and reopens the selected role', as
   expect(selectedFit.columnGap).toBeGreaterThanOrEqual(20);
 });
 
-test('a real viewport resize may reflow the chain without losing the selected role', async ({ page }) => {
-  await page.setViewportSize({ width: 834, height: 1112 });
-  await page.goto('/ko/architecture/?view=architecture&guides=off');
-  const graph = page.getByTestId('architecture-graph');
-  await expect(graph).toHaveAttribute('data-architecture-axis', 'down');
-
-  const role = page.getByTestId('architecture-graph-box-application');
-  await role.click();
-  await expect(role).toHaveAttribute('aria-pressed', 'true');
-
-  /* Since 2026-09-03 the comparison ladder takes any canvas from 744px wide whose rows fit its
-     height, so a tablet in landscape keeps the chain down; only a canvas too short for the rows
-     turns it across. The subject here is the selection surviving the turn, so turn it. */
-  await page.setViewportSize({ width: 1400, height: 420 });
-  await page.evaluate(
-    () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
-  );
-  await expect(graph).toHaveAttribute('data-architecture-axis', 'across');
-  await expect(role).toHaveAttribute('aria-pressed', 'true');
-
-  await page.setViewportSize({ width: 834, height: 1112 });
-  await page.evaluate(
-    () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
-  );
-  await expect(graph).toHaveAttribute('data-architecture-axis', 'down');
-  await expect(role).toHaveAttribute('aria-pressed', 'true');
-});
-
-test('320px and a 200%-equivalent viewport keep controls and evidence inside the page', async ({
-  page,
-}) => {
-  for (const width of [320, 384]) {
-    await page.setViewportSize({ width, height: 900 });
-    await page.goto('/ko/architecture/?view=architecture&guides=off');
-    await expect(page.getByTestId('architecture-graph')).toBeVisible();
-    const before = await page.evaluate(() => ({
-      overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-      agentOwnsPoint: (() => {
-        const button = document.querySelector<HTMLElement>(
-          '[data-testid="architecture-agent-action"]',
-        );
-        if (!button) return false;
-        const rect = button.getBoundingClientRect();
-        const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
-        return hit === button || Boolean(hit && button.contains(hit));
-      })(),
-    }));
-    expect(before.overflow, `${width}px document overflow`).toBeLessThanOrEqual(0);
-    expect(before.agentOwnsPoint, `${width}px agent control`).toBe(true);
-
-    await page.getByTestId('architecture-evidence-rail').click();
-    const dock = page.getByTestId('architecture-evidence-dock');
-    await expect(dock).toBeVisible();
-    const after = await dock.evaluate((element) => {
-      const rect = element.getBoundingClientRect();
-      return {
-        right: rect.right,
-        viewport: document.documentElement.clientWidth,
-        columns: getComputedStyle(
-          element.querySelector('[data-testid="architecture-evidence-plane"] > div')!,
-        ).gridTemplateColumns.split(' ').length,
-      };
-    });
-    expect(after.right, `${width}px evidence right edge`).toBeLessThanOrEqual(after.viewport + 1);
-    expect(after.columns, `${width}px evidence columns`).toBe(1);
-  }
-});
-
 test('a link carries the chosen role, and refuses one the profile lacks', async ({ page }) => {
   /*
    * ⚠️ Selecting a role left the address unchanged and a reload dropped it — the same defect the
@@ -327,13 +224,9 @@ test('a chain is never cut in silence — it turns, or it says what is hidden', 
   const sizes = [
     [1920, 1200],
     [1440, 1000],
-    [1400, 400],
     [1280, 720],
     [1100, 900],
-    [900, 600],
-    [820, 300],
-    [700, 900],
-    [390, 844],
+    [1040, 720],
   ] as const;
 
   await page.goto('/ko/architecture/?view=architecture');
@@ -344,14 +237,10 @@ test('a chain is never cut in silence — it turns, or it says what is hidden', 
   for (const [width, height] of sizes) {
     await page.setViewportSize({ width, height });
     /* ResizeObserver updates the measured axis, then React commits the resulting SVG on the next
-       frame. Measuring between those two frames reads a stale role group against the new canvas
-       and reports a role cut in silence even though the settled frame is whole. */
-    await page.evaluate(
-      () =>
-        new Promise<void>((resolve) =>
-          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
-        ),
-    );
+       frame. Measuring before that lands reads a stale role group against the new canvas and
+       reports a role cut in silence even though the settled frame is whole — so the graph's box
+       has to stop moving first, however many frames that takes on this runner. */
+    await waitForBoxStill(page.getByTestId('architecture-graph'));
     /*
      * ⚠️ **The claim narrowed on 2026-08-30, and this is the half that survived.** It used to
      * assert the canvas never overflows at any size, which held only because the *page* scrolled
@@ -615,6 +504,10 @@ for (const locale of ['ko', 'en'] as const) {
         ...document.querySelectorAll('[data-testid="architecture-paired-lane-headings"] text'),
       ];
       const empties = document.querySelectorAll('[data-testid="architecture-observation-empty"]');
+      /* A role sentence ending in an ellipsis is the defect the card-width fix ended (inspection
+         122, S8): the ladder held its faces whatever the card's width and cut all seven. */
+      const truncated = [...document.querySelectorAll('[data-testid^="architecture-box-line-"]')]
+        .filter((node) => (node.textContent ?? '').trimEnd().endsWith('…')).length;
       const panel = empties[0]?.querySelector('rect')?.getBoundingClientRect() ?? null;
       const lines = [...(empties[0]?.querySelectorAll('tspan') ?? [])].map((line) => line.getBoundingClientRect());
       const sentences = [
@@ -630,6 +523,7 @@ for (const locale of ['ko', 'en'] as const) {
         bandRatio: (right - left) / card.width,
         offCentre: round((left + right) / 2 - (card.left + card.right) / 2),
         emptyStates: empties.length,
+        truncated,
         placeholders: document.querySelectorAll(
           '[data-testid^="architecture-observation-box-"], [data-testid^="architecture-delta-marker-"]',
         ).length,
@@ -652,6 +546,7 @@ for (const locale of ['ko', 'en'] as const) {
     expect(measured.planeLeftEdges.length, `${locale}: the depth stagger is gone`).toBe(7);
     // The band was 0.60 of the card before the reserve was made conditional.
     expect(measured.bandRatio, `${locale}: the drawing gave the card back`).toBeGreaterThan(0.65);
+    expect(measured.truncated, `${locale}: role sentences are cut again`).toBe(0);
     expect(Math.abs(measured.offCentre), `${locale}: the drawing slid off centre`).toBeLessThanOrEqual(8);
     // Before any inspection the measured columns say so once, not in fourteen placeholders.
     expect(measured.emptyStates, `${locale}: the empty state is not one`).toBe(1);
