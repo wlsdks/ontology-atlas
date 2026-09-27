@@ -116,10 +116,6 @@
       "seconds": 12,
       "tests": 4
     },
-    "changelog-preamble.spec.ts": {
-      "seconds": 0.328,
-      "tests": 1
-    },
     "chat-answer-overflow-edge.spec.ts": {
       "seconds": 8.5,
       "tests": 4
@@ -167,10 +163,6 @@
     "demo-clip-locale.spec.ts": {
       "seconds": 3.4,
       "tests": 2
-    },
-    "dense-row-target-size.spec.ts": {
-      "seconds": 7.2,
-      "tests": 1
     },
     "desktop-shell-rail.spec.ts": {
       "seconds": 7.397,
@@ -612,10 +604,6 @@
       "seconds": 5.6,
       "tests": 1
     },
-    "map-narrow-viewport-fill.spec.ts": {
-      "seconds": 1.4,
-      "tests": 1
-    },
     "map-navigation-wait.spec.ts": {
       "seconds": 29.3,
       "tests": 5
@@ -623,10 +611,6 @@
     "map-no-label-under-the-panel.spec.ts": {
       "seconds": 8.8,
       "tests": 1
-    },
-    "map-node-sheet-contract.spec.ts": {
-      "seconds": 10,
-      "tests": 6
     },
     "map-open-folder-stays-named.spec.ts": {
       "seconds": 25.3,
@@ -666,10 +650,6 @@
     },
     "map-review-chip-toggles.spec.ts": {
       "seconds": 2.1,
-      "tests": 1
-    },
-    "map-search-filters-speak-korean.spec.ts": {
-      "seconds": 5.4,
       "tests": 1
     },
     "map-selection-framing.spec.ts": {
@@ -748,10 +728,6 @@
       "seconds": 3.213,
       "tests": 3
     },
-    "mobile-settings-mode.spec.ts": {
-      "seconds": 1.7,
-      "tests": 1
-    },
     "nav-yield-map-frames.spec.ts": {
       "seconds": 3.3,
       "tests": 1
@@ -799,10 +775,6 @@
     "prose-measure-calibration.spec.ts": {
       "seconds": 3.816,
       "tests": 4
-    },
-    "public-detail-access.spec.ts": {
-      "seconds": 1.3,
-      "tests": 1
     },
     "public-surface-health.spec.ts": {
       "seconds": 10.6,
@@ -856,10 +828,6 @@
       "seconds": 11.785,
       "tests": 2
     },
-    "task-review-permission-geometry.spec.ts": {
-      "seconds": 4.5,
-      "tests": 2
-    },
     "text-zoom-layout.spec.ts": {
       "seconds": 11.677,
       "tests": 14
@@ -891,10 +859,6 @@
     "vault-launch-chooser.spec.ts": {
       "seconds": 21.1,
       "tests": 3
-    },
-    "vault-live-arrival.spec.ts": {
-      "seconds": 14.8,
-      "tests": 1
     },
     "vault-reflect-loop.spec.ts": {
       "seconds": 10.3,
