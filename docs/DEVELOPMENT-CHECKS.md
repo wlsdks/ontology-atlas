@@ -584,6 +584,12 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Proves**: The complete MCP integration suite passes, including that `health`/`workspace_brief`/`agent_brief` preserve the stale-summary receipt while sharing one bounded union log and object batch.
 **Escalate**: none.
 
+### Gate yield report
+
+**Run**: `node --test scripts/gate-yield.test.mjs`
+**Proves**: Commands reduce to checks counted per distinct run, `no CI failure` needs 50+ runs, no failed run and 60+ days, a real-shaped artifact zip reaches the cache, and a low quota yields a partial table.
+**Escalate**: `pnpm gates:yield -- --runs=5` when listing, download or cache changed; it costs one REST call per day page, per uncached run's artifact list, and per report download.
+
 ### Gateway evidence specimen
 
 **Run**: `pnpm gateway:specimen:check`
