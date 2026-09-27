@@ -542,7 +542,7 @@ export function LibraryQuestionDesk({
   return (
     <div data-testid="library-question-desk" className="atlas-scroll-quiet flex min-h-0 flex-1 flex-col overflow-y-auto px-5 py-6 sm:px-6 lg:py-8 max-lg:mb-[var(--topology-mobile-bottom-tab-reserve)]">
       <motion.div layout={reducedMotion ? false : 'position'} transition={{ layout: MOTION.settle }}
-        data-question-desk-container="true" className={activeReport || hasLocalMatches
+        data-question-desk-container="true" className={activeReport
           ? 'mx-auto w-full shrink-0 max-w-[calc(var(--measure-note-column)+var(--measure-note-column))]'
           : 'm-auto w-full shrink-0 max-w-[var(--measure-doc-column)]'}>
         {!activeReport ? <header className="mb-5">

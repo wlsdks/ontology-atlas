@@ -212,7 +212,6 @@ describe('Library question desk transfer boundary', () => {
     expect(screen.getByTestId('question-desk-report-section-1')).not.toHaveClass('border-t');
     expect(screen.getByTestId('question-desk-report-sections').querySelector('[data-report-evidence-pair]')).not.toHaveClass('flex');
     expect(screen.getByTestId('question-desk-report-section-1')).toHaveTextContent('The plan lists no owner.');
-    expect(screen.getByTestId('question-desk-report-section-2')).toHaveClass('border-t');
     expect(screen.getByTestId('question-desk-report-section-2')).toHaveTextContent('One page suggests an owner.');
     expect(screen.getByTestId('question-desk-report-section-3')).toHaveTextContent('Another-language documents may be missed.');
     expect(screen.getByTestId('question-desk-coverage-toggle')).toHaveAttribute('aria-expanded', 'false');

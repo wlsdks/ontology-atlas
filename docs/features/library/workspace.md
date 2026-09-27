@@ -23,8 +23,9 @@ retains its codebase scope.
 **Question desk (2026-09-27).** With nothing selected in Wiki, the reader pane
 asks a question and searches locally only after a press. The complete inquiry group
 centers horizontally and vertically inside the reader pane, including its original-file
-rows; safe auto margins collapse when content exceeds the viewport. Short no-match
-results retain that balance, while matching leads and long reports read from the top.
+rows; safe auto margins collapse when content exceeds the viewport. Short positive and no-match
+results retain that balance. Expanding long evidence collapses vertical auto margins;
+reports read from the top.
 Position-only motion connects those states without scaling text. It separates matching
 Wiki fact and decision sentences from original source units, with exact anchors;
 a compact summary opens read coverage, skipped files and hidden match counts.

@@ -16,6 +16,44 @@ const wiki = (title: string, source: string, hash: string, fact: string) => [
   `- ${fact} [[src:${source}#l2]]`, '## Decisions', '## Open questions', '## Not in sources',
 ].join('\n');
 
+test('keeps a short positive inquiry centered and expanded evidence reachable', async ({ page }) => {
+  await page.setViewportSize({ width: 1512, height: 949 });
+  await installLibraryWorkHarness(page, { files: {
+    'project.md': '---\nuid: 00000000-0000-4000-8000-000000000001\nkind: project\ntitle: Refunds\nslug: refunds\n---\n',
+    'sources/refund-handling.md': refund,
+    'sources/inventory-state.md': inventory,
+    'wiki/refund-overview.md': wiki('Refund overview', 'sources/refund-handling.md', digest(refund), 'Refund approval queues a stock restoration job.'),
+  } });
+  await page.goto('/en/docs/');
+  await page.getByRole('button', { name: /^Open my folder/ }).first().click();
+  await expect(page.getByRole('heading', { name: 'Map', exact: true })).toBeVisible();
+  await page.goto('/en/library/?tab=wiki&guides=off');
+  await page.getByTestId('question-desk-input').fill('refund');
+  await page.getByTestId('question-desk-search').click();
+  const toggle = page.getByTestId('question-desk-evidence-toggle');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  const desk = page.getByTestId('library-question-desk');
+  await expect.poll(() => desk.evaluate((element) => {
+    const pane = element.getBoundingClientRect();
+    const group = element.querySelector('[data-question-desk-container]')!.getBoundingClientRect();
+    const form = element.querySelector('form')!.getBoundingClientRect();
+    return Math.max(Math.abs(form.left - pane.left - (pane.right - form.right)),
+      Math.abs(group.top - pane.top - (pane.bottom - group.bottom)));
+  })).toBeLessThanOrEqual(2);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await toggle.click();
+  await expect.poll(() => desk.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true);
+  const citation = page.getByRole('button', { name: 'sources/refund-handling.md#l2', exact: true }).last();
+  await citation.focus();
+  await expect.poll(() => citation.evaluate((element) => {
+    const r = element.getBoundingClientRect();
+    const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+    return hit === element || element.contains(hit);
+  })).toBe(true);
+  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('library-source-passage')).toHaveAttribute('data-state', 'resolved');
+});
+
 test('keeps the report scroll viewport and focused citations above mobile navigation', async ({ page }) => {
   await page.setViewportSize({ width: 1512, height: 949 });
   const harness = await installLibraryWorkHarness(page, { files: {
