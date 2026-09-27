@@ -384,14 +384,17 @@ Markdown source headings open their original cited lines inside Library, includi
 
 **Library → Wiki opens on a question desk.** A question searches Wiki claims and
 original passages locally when you press **Find evidence**. Each candidate opens
-its page or exact source address; coverage and omitted files stay visible, and
+its page or exact source address; a compact search summary opens the full
+coverage and omitted-file detail in one action, and
 a matching source hash is not presented as proof that a claim is true. The
 existing page browser remains one action away. An attached ACP agent can use
 the candidates as leads, re-read originals, and answer with citations; an Ask
 turn does not automatically approve Wiki writes. Search and source inspection
 work without Jev or an agent. **Summarize as report** explicitly asks ACP to
 re-read the originals and organize an answer, cited evidence, disagreements,
-and unknowns above the search leads. The result is an unreviewed draft, not a
+and unknowns in a report before the expandable search leads. Local word matching
+can miss a question phrased in another language; ACP can still read the originals
+on that explicit request. The result is an unreviewed draft, not a
 Wiki page until you file it. Its editorial document template can be downloaded
 as Markdown or opened in the app's Print dialog to save as PDF; both retain the
 question, citations, search coverage, and limits.

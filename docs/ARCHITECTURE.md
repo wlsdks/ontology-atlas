@@ -495,11 +495,14 @@ graph. The separation is a property of the **walk**, not a filter applied later.
   advisory and grants no Wiki or ontology authority. The browser has no Jev
   key or send path.
   A separate explicit report request reuses the ACP answer turn and shows its
-  actual response above the leads as an unreviewed draft. Report state is tied
+  actual response as a sectioned unreviewed draft before expandable leads.
+  Compact coverage opens full omissions without changing the read contract.
+  Report state is tied
   to the query, vault and inventoried listing; stale drafts leave the surface.
   Filing reuses the existing answer validator and concurrent-edit guard. One
   client-side report model feeds a Markdown Blob download and a scoped print
-  document for Save as PDF; neither route adds a backend or accepts Jev advice.
+  document for Save as PDF. The main macOS WebView has only the print permission
+  needed for that native dialog; neither route adds a backend or accepts Jev advice.
 
 The Library's live-work projection is separate from the persisted graph:
 `src/features/library/model/library-work-activity.ts` normalizes structured ACP

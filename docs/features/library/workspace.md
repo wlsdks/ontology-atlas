@@ -21,9 +21,10 @@ Documents-only folders need no code nodes or separate mode switch. The ontology
 retains its codebase scope.
 
 **Question desk (2026-09-27).** With nothing selected in Wiki, the reader pane
-asks a question and searches locally only after a press. It lists matching Wiki
-fact and decision sentences separately from original source units, with exact
-anchors, read coverage, skipped files and hidden match counts. A matching hash
+asks a question and searches locally only after a press. It separates matching
+Wiki fact and decision sentences from original source units, with exact anchors;
+a compact summary opens read coverage, skipped files and hidden match counts.
+A matching hash
 means the cited source bytes agree with the page's receipt; it does not verify
 the sentence. Results from an older folder listing disappear until searched
 again. The source units are cached only in memory for the current folder and
@@ -36,14 +37,17 @@ Neither a key nor an agent is needed to search or open the originals.
 
 **Report and document (2026-09-27).** One explicit ACP action turns the current
 question into a report request: answer, cited originals, disagreements or
-changed claims, and unknowns. Its response appears above the evidence leads
-with an unreviewed draft label. Only citations to inventoried originals open
+changed claims, and unknowns. The screen leads with the answer and separates
+those sections before expandable evidence leads, with an unreviewed draft label.
+Zero local word matches do not assert that a differently worded original lacks
+the answer; ACP can re-read the folder on request. Only citations to inventoried originals open
 inside Library. The draft follows the current query and file listing; a new
 search or external folder change clears it. Filing remains an explicit Wiki
 review/write action. One editorial document template preserves the question,
 response, cited addresses, search coverage and omissions in a local Markdown
 download or the app's Print/Save as PDF flow. Jev judgment is not exported as
-accepted meaning.
+accepted meaning. Search completion, report arrival and evidence expansion use
+brief, interruptible motion; reduced-motion settings preserve every fact.
 
 **Retained questions and explicit revisions.** The Library landing lists saved
 questions and the tips of their answer histories. It distinguishes source-byte
