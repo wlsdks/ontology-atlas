@@ -107,7 +107,7 @@ describe("computeFreshnessSummary", () => {
     });
   });
 
-  it("sums real per-domain update counts into the weekly trend the freshness sparkline reads", () => {
+  it("sums real per-domain update counts into the weekly totals the census strip draws", () => {
     const nodes = [
       node("domain:views", "domain", { evidenceIds: ["domain-views"] }),
       node("domain:core", "domain", { evidenceIds: ["domain-core"] }),

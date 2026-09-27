@@ -89,9 +89,9 @@ export function InsightsCensusStrip({
   return (
     <div
       data-testid="insights-census-strip"
-      // Four tiles in a row from 960, two below that, never one: one stacked column pushes the list off the first screen
-      // at 390. One panel with a 1px divider grid, the divider colour on the grid inside, or the surface-vocabulary
-      // ratchet fails.
+      // Four tiles from the insights container's 960 step, the step this view's grids share; two below it, never one:
+      // one stacked column pushes the list off the first screen at 390. One panel with the divider colour on the grid
+      // inside, or the surface-vocabulary ratchet fails.
       className="overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]"
     >
       <div className="grid grid-cols-2 gap-px bg-[color:var(--color-divider)] @min-[960px]/insights:grid-cols-4">

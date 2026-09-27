@@ -52,16 +52,14 @@ export function VaultPresentStack({
   // the surface. Derived at render, since it is a fact of the environment.
   const canWatch = typeof IntersectionObserver !== "undefined";
 
-  // Every layer from the shared list, so no layer is omitted from the maximum.
   const largest = Math.max(...LAYER_ORDER.map((layer) => present[layer]), 1);
   const filesPerBlock = Math.max(1, Math.ceil(largest / BLOCKS_MAX));
   // A layer holding anything is never drawn as nothing; only a true zero reaches zero.
   const blocksOf = (count: number) =>
     count === 0 ? 0 : Math.max(1, Math.round(count / filesPerBlock));
   const blocks = LAYER_ORDER.map((layer) => blocksOf(present[layer]));
-  /** The deepest pile decides how long the pour runs. */
-  const deepest = Math.max(...blocks, 0);
-  const poured = reducedMotion || !canWatch ? deepest : landed;
+  const pourSteps = Math.max(...blocks, 0);
+  const poured = reducedMotion || !canWatch ? pourSteps : landed;
 
   useEffect(() => {
     if (reducedMotion || !canWatch) return;
@@ -74,7 +72,7 @@ export function VaultPresentStack({
     const step = () => {
       n += 1;
       setLanded(n);
-      if (n >= deepest) window.clearInterval(timer);
+      if (n >= pourSteps) window.clearInterval(timer);
     };
     // The wall builds when it is seen, not on mount, so it does not play to nobody on a long tabbed board.
     const observer = new IntersectionObserver(
@@ -91,7 +89,7 @@ export function VaultPresentStack({
       observer.disconnect();
       window.clearInterval(timer);
     };
-  }, [reducedMotion, canWatch, deepest]);
+  }, [reducedMotion, canWatch, pourSteps]);
 
   return (
     <div
@@ -174,7 +172,6 @@ export function VaultPresentStack({
           );
         })}
       </div>
-      {/* Silent while a block is one file. */}
       {filesPerBlock > 1 ? (
         <p className="text-caption text-[color:var(--color-text-quaternary)]">
           {labels.scaleNote(filesPerBlock)}

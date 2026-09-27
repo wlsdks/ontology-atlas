@@ -55,8 +55,7 @@ export function OverviewTab({
   domainLink,
   labels,
 }: OverviewTabProps) {
-  // Two columns only when folding leaves no hole (see the domain list below).
-  const foldDomains = domainRows.length % 2 === 0 || domainRows.length >= 7;
+  const foldLeavesNoHole = domainRows.length % 2 === 0 || domainRows.length >= 7;
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-[var(--card-gap)]">
       <section
@@ -111,13 +110,13 @@ export function OverviewTab({
             />
             {/* Fold only when it leaves no hole: an odd row cannot span both columns without drawing its bar twice as long.
                A short odd list stays one column; from seven rows the empty cell is a list's ragged end. */}
-            <div className={foldDomains ? `mt-1 ${INSIGHTS_LIST_TWO_COLUMN}` : 'mt-1 grid auto-rows-min content-start'}>
+            <div className={foldLeavesNoHole ? `mt-1 ${INSIGHTS_LIST_TWO_COLUMN}` : 'mt-1 grid auto-rows-min content-start'}>
               {/* The row is the door to the map. The consumer wraps the link because the bar is shared with `/projects` cards,
                  which are already pressable. The link adds only hit area, hover, focus ring and a finger floor: `block`/`w-auto`
                  cancel the value layer's flex layout and `py-3` is the list inset, so all rows share one height. The breakdown
                  sits under the name (`breakdownPlacement="title"`), so each bar ends near its number. */}
               {domainRows.map((row, i) => (
-                <div key={row.id} className={foldDomains ? insightsTwoColumnCell(i) : i === 0 ? '' : 'border-t border-[color:var(--color-divider)]'}>
+                <div key={row.id} className={foldLeavesNoHole ? insightsTwoColumnCell(i) : i === 0 ? '' : 'border-t border-[color:var(--color-divider)]'}>
                   <Link
                     href={domainLink.href(row.id)}
                     aria-label={domainLink.ariaLabel(row)}

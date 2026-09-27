@@ -109,7 +109,7 @@ function CountingPart({ state, children }: { state: 'stale' | 'unknown'; childre
   );
 }
 
-/** The product's one mark for words whose work is still arriving (`app/globals.css`), gone the frame the work lands. */
+/** The product's one mark for words whose work is still arriving (`app/styles/base-foundation.css`), gone the frame the work lands. */
 const WORKING_INK = 'acp-working-shimmer';
 
 /**
@@ -529,10 +529,7 @@ const MARK_SLOT = 'flex w-2.5 shrink-0 justify-center';
 const EMPTY_DETAILS: readonly BriefLineDetail[] = [];
 const DETAIL_ROWS = 5;
 
-/**
- * The link carries real width and height, not a transparent hit area: two sit 12px apart and overlapping phantom
- * hit areas are rejected (`app/globals.css`). `atlas-touch-floor` gives a coarse pointer the 44px floor.
- */
+/** "Get the app" for the download page, "open" elsewhere: two identical labels with different outcomes cost a navigation. */
 function destinationLabel(href: string, t: (key: string) => string): string {
   return href === '/download/' ? t('getApp') : t('open');
 }
@@ -549,7 +546,11 @@ function lineHref(lineId: string, availability: BriefCore['availability'], appRo
   return href;
 }
 
-/** A door inside a sentence, after `DOOR_GAP`, with no side margin: a margin would indent a door wrapped onto its own line. */
+/**
+ * A door inside a sentence, after `DOOR_GAP`, with no side margin: a margin would indent a door wrapped onto its own
+ * line. It has real width and height, not a transparent hit area, since two sit 12px apart and overlapping phantom hit
+ * areas are rejected (`app/styles/gateway-map.css`); `atlas-touch-floor` gives a coarse pointer the 44px floor.
+ */
 const LINE_LINK = 'atlas-touch-floor atlas-touch-floor-wide whitespace-nowrap align-baseline text-[color:var(--color-indigo-text-strong)]';
 /** One em space: unlike a margin it stays at the end of the line when the door wraps. */
 const DOOR_GAP = '\u2003';

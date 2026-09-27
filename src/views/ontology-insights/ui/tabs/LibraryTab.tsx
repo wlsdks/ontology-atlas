@@ -108,8 +108,7 @@ export function LibraryTab({ detail, nowMs }: { detail: InsightsBrief['library']
   const filled = cards.filter((card) => card.size > 0);
   const clear = cards.filter((card) => card.size === 0);
   const beside = filled.length > 0 && clear.length > 0;
-  // Claims "this is everything" only when no card cut rows behind a "N more" line.
-  const complete = cards.every((card) => (card.shownOverride ?? Math.min(ROWS, card.size)) >= card.size);
+  const noCardCutRows = cards.every((card) => (card.shownOverride ?? Math.min(ROWS, card.size)) >= card.size);
   // From 1280 the clear statuses stand beside the cards, both columns starting on one line, and the clear panel keeps
   // its own height. The tab ends on a line saying this is everything, so a small folder's empty canvas is not
   // read as a load failure.
@@ -145,7 +144,7 @@ export function LibraryTab({ detail, nowMs }: { detail: InsightsBrief['library']
           </ul>
         </div>
       ) : null}
-      {complete ? <p data-library-end className="col-span-full flex items-center gap-3 pt-2 text-label text-[color:var(--color-text-tertiary)]">
+      {noCardCutRows ? <p data-library-end className="col-span-full flex items-center gap-3 pt-2 text-label text-[color:var(--color-text-tertiary)]">
         <span aria-hidden className="h-px w-6 flex-none bg-[color:var(--color-border-strong)]" />
         <span className="min-w-0">{t('end')}</span>
       </p> : null}

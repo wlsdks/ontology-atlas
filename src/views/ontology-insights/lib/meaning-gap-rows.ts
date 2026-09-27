@@ -88,7 +88,7 @@ function emptyFindingRows(): MeaningFindingRows {
 }
 
 export interface DomainChoice {
-  /** The frontmatter value, the tail-slug form the vault uses. */
+  /** The frontmatter value: the domain document's own address (`canonicalizeDomainRef` of its slug), not its tail. */
   value: string;
   label: string;
 }

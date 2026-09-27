@@ -5,7 +5,8 @@ import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledg
  * MCP `query_ontology({operation:"cycles"})`: dependency, not containment. Both `depends_on` and `dependencies`
  * are accepted, since the storage key may precede canonicalization. A depth-limited DFS from each node with a
  * Johnson-style minimum-vertex rule finds each simple cycle once, at its minimum node. Worst case is exponential in the
- * depth limit `maxHops`, so `STEP_BUDGET` bounds the work and sets `limited`.
+ * depth limit `maxHops`. `STEP_BUDGET` caps DFS calls, not the cycles recorded or their sort: ten nodes that all
+ * depend on one another record 500,000 cycles in seconds (measured), with `limited` set.
  */
 
 /** Directed dependency edge types, not containment; the same meaning as MCP cycles. */
@@ -83,9 +84,7 @@ export function findDependencyCycles(
   }
 
   const foundPaths = new Map<string, string[]>();
-  // The flag `depthTruncated` means a branch hit the depth limit (per-branch prune); `budgetExhausted` means the
-  // work budget stopped the search globally. Either sets `limited`.
-  let depthTruncated = false;
+  let someBranchHitMaxHops = false;
   let budgetExhausted = false;
   let steps = 0;
 
@@ -109,7 +108,7 @@ export function findDependencyCycles(
     }
   // A per-branch prune, so sibling branches with shorter cycles keep being searched.
     if (path.length >= maxHops) {
-      depthTruncated = true;
+      someBranchHitMaxHops = true;
       return;
     }
     path.push(current);
@@ -152,6 +151,6 @@ export function findDependencyCycles(
     totalCycles,
     hiddenCycles: Math.max(0, totalCycles - cycles.length),
     activeCycleIds: allCycles.map((nodeIds) => nodeIds.join(" ")),
-    limited: depthTruncated || budgetExhausted,
+    limited: someBranchHitMaxHops || budgetExhausted,
   };
 }

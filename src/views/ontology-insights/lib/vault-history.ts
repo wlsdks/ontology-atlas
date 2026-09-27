@@ -113,8 +113,8 @@ export function replayVaultHistory(
     }
   }
 
-  // A count goes negative only when the window's oldest commit adds a file an earlier commit outside the window
-  // already added (a split rename pair); clamp rather than draw negative files.
+  // The present comes from disk and the window from commits, so the rewind can pass zero (a deletion not yet
+  // committed, an add whose earlier state is outside the window); clamp rather than draw negative files.
   for (const point of points) {
     for (const layer of VAULT_LAYERS) {
       if (point.counts[layer] < 0) point.counts[layer] = 0;

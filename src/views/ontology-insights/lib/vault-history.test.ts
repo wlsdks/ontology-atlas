@@ -364,7 +364,7 @@ describe("every aggregate folds over every layer", () => {
   });
 
   it("clamps a negative count in every layer, not only the first three", () => {
-    // One deletion inside the window of a file added before it: the rename-pair case.
+    // Each layer gains a file inside the window that the present (zero) no longer holds, so the rewind passes zero.
     const commits = [
       {
         hash: "c1",

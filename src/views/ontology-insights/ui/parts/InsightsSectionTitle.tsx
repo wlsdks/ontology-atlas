@@ -7,8 +7,9 @@ import { cn } from "@/shared/lib/cn";
 /**
  * The insights board's section title as a real heading, so a screen-reader user can skim the board by heading.
  * One component keeps the title classes in one place instead of copies on spans. Preflight resets heading size and
- * weight, so the classes decide the look. It forwards a ref: when a list's last self-deleting row goes, focus
- * lands on the heading.
+ * weight, so the classes decide the look. `shrink-0` is the role's default: in a flex row the figures and chips
+ * beside a title shrink, never the title. It forwards a ref: when a list's last self-deleting row goes, focus lands
+ * on the heading.
  */
 export const InsightsSectionTitle = forwardRef<
   HTMLHeadingElement,

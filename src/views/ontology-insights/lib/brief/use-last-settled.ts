@@ -6,7 +6,8 @@ import { useState } from 'react';
  * Holds what a count last settled on while the next read runs. The first read waits (`briefTotals`), but a recount
  * after a reload or rescan keeps the last settled value, which the screen marks as recounting, instead of
  * blanking the headline. `scope` is what the value answers (folder and recorded visit); a value from another
- * scope is never returned. `value` must keep its identity while unchanged (a `useMemo` result).
+ * scope is never returned. `value` must keep its identity while unchanged (a `useMemo` result), or every render
+ * stores it again and the first re-render loops until React throws "Too many re-renders".
  */
 export function useLastSettled<T>(value: T | null, scope: string): T | null {
   const [held, setHeld] = useState<{ scope: string; value: T } | null>(() =>

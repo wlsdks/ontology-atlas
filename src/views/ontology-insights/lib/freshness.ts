@@ -106,7 +106,6 @@ export function computeFreshnessSummary(
   const domainNodes = nodes.filter((n) => n.kind === "domain");
   const domainTitleById = new Map(domainNodes.map((d) => [d.id, d.display ?? d.title]));
 
-  // Resolved once per node.
   type Resolved = { node: KnowledgeGraphNode; updatedAt: string | null; domainId: string | null };
   const resolved: Resolved[] = nodes.map((node) => ({
     node,

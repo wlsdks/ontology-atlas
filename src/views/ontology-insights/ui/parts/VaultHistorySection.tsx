@@ -34,7 +34,6 @@ export function VaultHistorySection({
       <div
         className={`flex w-full flex-col ${state.status === "ready" ? "max-w-[var(--vault-history-width)]" : ""}`}
       >
-      {/* The caption shares the title's row only from 640; below that it takes its own row. */}
       <div className="flex flex-col gap-1 @min-[640px]/insights:flex-row @min-[640px]/insights:items-baseline @min-[640px]/insights:gap-2">
         <InsightsSectionTitle
           level={2}
@@ -83,8 +82,7 @@ export function VaultHistorySection({
     );
   }
 
-  // Narrowed to `unavailable
-  // none` by the branch above; both draw the folder as it stands and then say whose
+  // Narrowed to `unavailable | none` by the branch above; both draw the folder as it stands and then say whose
   // limitation hides the weeks.
   if (state.status !== "ready") {
     const key =

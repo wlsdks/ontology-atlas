@@ -2,7 +2,7 @@ import { indigoRgba } from "@/shared/config/indigo-tokens";
 
 /**
  * Relation type tones: one indigo hue varying only in alpha and texture, as `--map-selection-ring-hairline`
- * and `--map-hover-ring` do in `app/globals.css`. The floor is a contrast floor: the `highlight` indigo at 0.62
+ * and `--map-hover-ring` do in `app/styles/base-map-tokens.css`. The floor is a contrast floor: the `highlight` indigo at 0.62
  * composites to 3.45:1 on the panel (WCAG 1.4.11 asks 3:1). Alpha alone gives only two readable steps, so the
  * families differ in kind: containment the strongest solid, depends_on the floor solid, everything else hatched
  * (`relationTypeFill`).

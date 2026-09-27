@@ -47,8 +47,6 @@ export interface OntologyBriefInput {
   anchorMs: number;
 }
 
-// Every count labelled "concept" goes through `canonical-census.ts`, so this card and the census strip agree.
-
 /**
  * Why the concepts' evidence has no verdict yet, in order of precedence. A walk in flight is reading whatever else
  * is known, so a folder without a bound project does not flip from "no repository" to measured lines unmarked.
@@ -78,6 +76,7 @@ function isAgentWritten(createdBy: string | null | undefined): boolean {
 }
 
 export function buildOntologyBrief(input: OntologyBriefInput): BriefCore {
+  // The census strip's rule (`canonical-census.ts`), so every count labelled "concept" on this screen agrees.
   const concepts = input.nodes.filter(isCanonicalConcept);
   let current = 0;
   let stale = 0;

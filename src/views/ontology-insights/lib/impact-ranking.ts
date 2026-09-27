@@ -42,11 +42,11 @@ export interface ImpactRanking {
 }
 
 /**
- * Concepts ordered by how many concepts point at them, directly and transitively. It reuses
- * the function `buildOntologyReachability`, the semantics of MCP `blast_radius` (incoming, excluding soft associations), and the
- * contract `tests/contract/impact-ranking.contract.test.ts` catches divergence. Only `depends_on` counts: containment is
- * structure, not change. Layers split after measuring the whole graph, so the numbers match the agent's.
- * One reverse BFS per node over a shared adjacency index: O(N x (N + E)).
+ * Concepts ordered by how many concepts point at them, directly and transitively, through `buildOntologyReachability`
+ * (MCP `blast_radius` semantics: incoming, soft associations excluded); `tests/contract/impact-ranking.contract.test.ts`
+ * catches divergence. Only `depends_on` counts: containment is structure, not change. Layers split after measuring the
+ * whole graph, so the numbers match the agent's. Two reverse BFS per node (full depth, then depth 1) over one shared
+ * index, each sorting what it reaches: O(N x (N log N + E)).
  */
 export function buildImpactRanking(
   nodes: readonly KnowledgeGraphNode[],

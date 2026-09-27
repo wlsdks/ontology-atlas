@@ -21,7 +21,7 @@ export interface DoNextRow {
   nodeId: string;
   title: string;
   nodeKind: string;
-  /** Degree (neglected-hub · promotion). */
+  /** Degree for a neglected hub; incoming references (`fanIn`) for a promotion row. */
   degree?: number;
   /** Days since the last update (neglected-hub). */
   agoDays?: number;
@@ -228,14 +228,13 @@ export function buildDoNextQueue(
     handoffPayload: buildOrphanHandoff(prose, nodeById.get(slug), slug),
   }));
 
-  // Who points at whom, built once in one pass over the edges.
-  const referencedBy = new Map<string, string[]>();
+  const referencingNamesByTarget = new Map<string, string[]>();
   for (const edge of edges) {
     const source = nodeById.get(edge.from);
     if (!source) continue;
-    const names = referencedBy.get(edge.to);
+    const names = referencingNamesByTarget.get(edge.to);
     const name = source.display ?? source.title;
-    if (!names) referencedBy.set(edge.to, [name]);
+    if (!names) referencingNamesByTarget.set(edge.to, [name]);
     else if (names.length < REFERENCED_BY_NAMES && !names.includes(name)) names.push(name);
   }
 
@@ -245,9 +244,8 @@ export function buildDoNextQueue(
     nodeId: slug,
     title: name,
     nodeKind: nodeById.get(slug)?.kind ?? "unknown",
-    // The incoming reference count, shown verbatim as the row metric.
     degree: fanIn,
-    referencedBy: referencedBy.get(slug) ?? [],
+    referencedBy: referencingNamesByTarget.get(slug) ?? [],
     evidenceOnly: isEvidenceOnlyConcept(nodeById.get(slug)),
     handoffPayload: buildPromotionHandoff(prose, nodeById.get(slug), slug),
   }));

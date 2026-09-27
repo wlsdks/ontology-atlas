@@ -322,7 +322,7 @@ describe("DoNextTab one observed fact per kind", () => {
   const kindOf = (kind: string) =>
     screen.getAllByTestId("do-next-item").find((el) => el.getAttribute("data-fix-kind") === kind);
 
-  it("stale hubs, orphans, duplicates and cycles", () => {
+  it("states one observed fact each for stale hubs, orphans, duplicates and cycles", () => {
     renderExpanded({
       totalCount: 6,
       groupCounts: { ...NO_COUNTS, "neglected-hub": 3, orphan: 1, duplicate: 1, cycle: 1 },

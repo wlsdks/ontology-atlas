@@ -28,7 +28,7 @@ import {
  * Contracts: the sentence above Save names the `.md` path and key to be written; cancel and Esc change no file, and
  * with text entered closing takes a second press; the save carries `expected_mtime`, so a concurrent edit is
  * refused and re-read, never overwritten; the save locks on the pressed frame, so two presses never write twice;
- * motion uses only the row disclosure grammar (`.ai-row-disclosure`, `app/globals.css`).
+ * motion uses only the row disclosure grammar (`.ai-row-disclosure`, `app/styles/base-motion.css`).
  */
 
 export interface MeaningGapLabels extends FixRowLabels {

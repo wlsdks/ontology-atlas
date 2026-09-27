@@ -102,7 +102,6 @@ export function ConnectionsTab({
     () => buildImpactRanking(impactNodes, impactEdges, impactLimit),
     [impactNodes, impactEdges, impactLimit],
   );
-  // The largest hub degree; `hubs` is sorted by degree descending.
   const hubDegreeMax = hubs.reduce((m, h) => Math.max(m, h.degree), 0);
 
   return (

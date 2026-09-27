@@ -8,13 +8,13 @@ import {
 } from "@/entities/knowledge-graph";
 
 /**
- * Similar-name pairs for the "are these the same thing?" card. The scoring functions mirror the MCP engine
- * (`textTokens`, `setJaccard`, `similarityScore` in `mcp/src/ontology-engine.mjs`), so the screen and `similar_nodes`
- * name the same pairs; `tests/contract/duplicate-pairs.contract.test.ts` catches divergence.
+ * Similar-name pairs for the "are these the same thing?" card. The scoring functions mirror the MCP engine's
+ * helpers (`textTokens`, `setJaccard`, `similarityScore` in `mcp/src/ontology-engine/engine-helpers.mjs`), so the
+ * screen and `similar_nodes` name the same pairs; `tests/contract/duplicate-pairs.contract.test.ts` catches divergence.
  * Weights match the engine (slug 0.35, title 0.35, kind 0.1, domain 0.1, neighbours 0.1), capping a name-only match at 0.7.
  */
 
-/** Mirror of the engine's `textTokens`: lowercase alphanumeric runs, dropping runs under 2 characters. */
+/** Mirror of the engine's `textTokens`: lowercase ASCII letter and digit runs of 2+ characters, so Hangul yields no token. */
 export function similarityTokens(value: string | null | undefined): string[] {
   return String(value ?? "")
     .toLowerCase()

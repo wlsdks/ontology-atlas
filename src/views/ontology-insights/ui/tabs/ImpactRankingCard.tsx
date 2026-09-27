@@ -58,7 +58,7 @@ export interface ImpactRankingCardProps {
 }
 
 /**
- * "Concepts whose change spreads furthest", from `buildImpactRanking` and `computeOntologyDependents`, which share
+ * "Concepts whose change spreads furthest", from `buildImpactRanking`, which walks `buildOntologyReachability` with
  * MCP `blast_radius` semantics. The bar is two indigo values: darker direct, lighter indirect. Concepts with their
  * own document rank above; the folded layer holds names other documents merely cited, where the same number means
  * citations (a test file cited widely is protection, not risk). The evidence stays because the "create a document"

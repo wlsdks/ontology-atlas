@@ -278,8 +278,6 @@ export function OntologyInsightsPage() {
     return () => window.removeEventListener("popstate", syncTabFromHistory);
   }, []);
 
-  // Settings use the nav-rail gear (`useNavRailSettingsSlot`); the search palette is the shell's (`ShellKeyboardSurfaces`).
-
   // Every map-bound link here stamps `via=insights:<tab>`, which the map reads to draw a "back to insights" chip.
   const mapNodeHref = useCallback(
     (nodeId: string, exactReviewId?: string) =>
@@ -1192,7 +1190,6 @@ export function OntologyInsightsPage() {
             ) : null}
           </div>
         </header>
-        {/* Two rows: the subject (brief, ontology, library, harness), then the ontology's own questions. */}
         {/* The subject is a mode (segmented control); the questions are sections (tabs). Two identical tab rows make the
            active state ambiguous. Only the ontology subject draws the question row. */}
         <div className="mt-[var(--section-gap)] flex flex-col gap-2">
