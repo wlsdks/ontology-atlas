@@ -587,9 +587,8 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### Gate yield report
 
 **Run**: `node --test scripts/gate-yield.test.mjs`
-**Proves**: `scripts/gate-yield.mjs` collapses volatile bases and shards into one command, counts runs and failures per command, and calls a check a retire candidate only at 50+ runs, zero failures and 60+ days since first seen.
-**Escalate**: `pnpm gates:yield -- --runs=5` when the GitHub listing, artifact download or cache changed; it spends one REST call per page and per uncached run.
-**Fix**: keep `aggregateYield` pure and fixture-tested; the lane report shape is written by `appendLaneReport` in `scripts/run-ci-lane.mjs`.
+**Proves**: Commands reduce to checks counted per distinct run, `no CI failure` needs 50+ runs, no failed run and 60+ days, a real-shaped artifact zip reaches the cache, and a low quota yields a partial table.
+**Escalate**: `pnpm gates:yield -- --runs=5` when listing, download or cache changed; it costs one REST call per day page, per uncached run's artifact list, and per report download.
 
 ### Gateway evidence specimen
 
