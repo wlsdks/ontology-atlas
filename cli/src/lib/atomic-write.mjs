@@ -57,10 +57,9 @@ function existingRegularFileMode(filePath) {
 }
 
 /**
- * Writes one file without a torn window: temp file, fsync, then rename. `writeFileSync` truncates the
- * original first, so a crash or a full disk would leave the user's markdown at zero bytes; a rename
- * within one filesystem leaves either the old content or the new one.
- * Twin of `writeFileAtomically` in `mcp/src/vault.mjs`: a fix lands in both (tests/contract/vault-integrity-guards.contract.test.ts).
+ * Writes one file without a torn window (temp file, fsync, rename): `writeFileSync` truncates first, so a crash
+ * could leave the user's markdown at zero bytes. Twin of `writeFileAtomically` in `mcp/src/vault.mjs`; a fix
+ * lands in both (tests/contract/vault-integrity-guards.contract.test.ts).
  */
 export function writeFileAtomically(filePath, text, { expectedRevision = null } = {}) {
   const temporaryPath = `${filePath}.oatlas-tmp-${process.pid}`;

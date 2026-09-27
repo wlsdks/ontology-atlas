@@ -125,7 +125,6 @@ function parseArgs(args) {
   for (const value of Object.values(flags)) {
     if (value instanceof Error) return { error: value.message };
   }
-  // 3rd positional = vault path (parity with list/find/validate/backlinks/orphans).
   const vaultResult = resolveTrailingVaultArg({ vault: flags.vault, positional, vaultIndex: 2 });
   if (vaultResult.error) return vaultResult;
   return { from: positional[0], to: positional[1], vault: vaultResult.vault, json: flags.json, maxHops: flags.maxHops };

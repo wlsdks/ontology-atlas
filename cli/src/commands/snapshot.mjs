@@ -240,7 +240,6 @@ function emitGitError(err, { operation, json, vaultRoot }) {
   return 1;
 }
 
-// `snapshot --history [N]` — the last N commits touching the vault path (Obsidian Git parity).
 function emitHistory({ json, vaultRoot, repoRoot, pathspec, limit }) {
   const commits = getVaultLog({ repoRoot, pathspec, limit });
   if (json) {

@@ -44,9 +44,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const TEMPLATE_ROOT = resolve(__dirname, '..', 'templates', 'vault');
 
 /**
- * Starter body locale. Files and frontmatter are identical across locales and only the prose differs,
- * so every locale yields the same graph and canonical `title`. The CLI cannot see the UI language, so it
- * takes a flag; English stays the default.
+ * Starter body locale: only the prose differs across locales, so every locale yields the same graph and
+ * canonical `title`. The CLI cannot see the UI language, so it takes a flag; English is the default.
  */
 const TEMPLATE_ROOTS = {
   en: TEMPLATE_ROOT,
@@ -260,10 +259,7 @@ function parseInitArgs(args) {
   }
   const positional = [];
   let quickStart = false;
-  // A folder of documents, not a codebase: `sources/` and `wiki/` only, no node folders,
-  // no project file, no agent files. The wiki stands on its own until a map is wanted.
   let documents = false;
-  // Starter body language. The file set and frontmatter are identical; only the prose differs.
   let locale = 'en';
   for (let i = 0; i < args.length; i += 1) {
     const arg = args[i];
@@ -275,7 +271,6 @@ function parseInitArgs(args) {
       documents = true;
       continue;
     }
-    // Both value forms, like every other command; supporting only `=` made the space form fail.
     if (arg === '--locale') {
       const value = args[i + 1];
       if (value === undefined || value.startsWith('-')) {
@@ -456,10 +451,9 @@ async function runInit(targetArg, opts = {}) {
   // agent reaching the folder is how pages get compiled.
   const installSkills = !documentsOnly;
   const skillsRelativeRoot = join('.claude', 'skills');
-  // `--documents`: only the wiki's furniture comes from the template. The rest of the tree
-  // — node folders, `project.md`, the agent files and skills — is the map's scaffolding,
-  // and a person who opened Atlas on a folder of documents did not ask for a map. The
-  // folder reads as `sources/` and `wiki/`, which is the whole shape of a wiki on its own.
+  // `--documents`: only the wiki's furniture comes from the template. Node folders, `project.md`,
+  // the agent files and skills are the map's scaffolding, which a person who opened a folder of
+  // documents did not ask for.
   const wikiRoot = 'wiki';
   const documentsSkip = (rel) => rel !== wikiRoot && !rel.startsWith(`${wikiRoot}${sep}`);
   const { created, skipped } = copyTree(templateRoot, target, {
@@ -480,16 +474,14 @@ async function runInit(targetArg, opts = {}) {
   const skillsSource = join(templateRoot, skillsRelativeRoot);
   if (installSkills && existsSync(skillsSource)) {
     for (const name of readdirSync(skillsSource)) installedSkills.push(name);
-    // Where the agent will be started from: cwd when the vault sits inside it,
-    // the vault itself when the vault is its own root or lies elsewhere.
-    const skillsRoot = skillsStayInVault ? target : cwd();
+    const agentStartDir = skillsStayInVault ? target : cwd();
     const destinations = skillsStayInVault
       // The template already wrote `.claude/skills` here; only the mirror is missing.
       ? [agentsSkillsRelativeRoot]
       : [skillsRelativeRoot, agentsSkillsRelativeRoot];
     const written = [];
     for (const relativeRoot of destinations) {
-      if (copyTree(skillsSource, join(skillsRoot, relativeRoot)).created > 0) written.push(relativeRoot);
+      if (copyTree(skillsSource, join(agentStartDir, relativeRoot)).created > 0) written.push(relativeRoot);
     }
     if (written.length > 0) {
       const where = skillsStayInVault
@@ -514,14 +506,8 @@ async function runInit(targetArg, opts = {}) {
   }
   const clientBindingIssues = [];
 
-  // .mcp.json — wired to *this* vault. Two locations covered:
-  //   1. cwd (codebase root) — typical "open myproject in Claude Code" flow.
-  //      OATLAS_VAULT points to the vault sub-folder relative to cwd.
-  //   2. vault target — for "open the vault folder itself in Claude Code"
-  //      flow. OATLAS_VAULT='.' (vault is cwd).
-  // Existing parseable configs keep every unrelated server/section while the
-  // single ontology-atlas binding is moved to this requested vault. Malformed
-  // or ambiguous configs remain untouched and receive a merge example.
+  // .mcp.json is wired to this vault in cwd and in the vault itself; parseable configs keep every
+  // unrelated server, and malformed or ambiguous ones stay untouched and get a merge example.
   function mcpConfigForVault(omotVault, repoRoot) {
     return {
       mcpServers: {
@@ -607,12 +593,9 @@ async function runInit(targetArg, opts = {}) {
     }
   }
 
-  // macOS exposes the same temporary directory through aliases such as
-  // `/tmp` and `/private/tmp`. Mixing an aliased absolute target with the
-  // canonical process cwd makes `relative()` produce `/private/private/...`
-  // when the generated config is resolved from the vault. Both directories
-  // exist after scaffolding, so calculate every config path in one canonical
-  // coordinate system.
+  // macOS aliases temporary directories (`/tmp` and `/private/tmp`), and mixing an aliased target
+  // with the canonical cwd makes `relative()` produce `/private/private/...`. Both directories exist
+  // now, so every config path is computed from their realpaths.
   const cwdPath = realpathSync(cwd());
   const canonicalTarget = realpathSync(target);
   let vaultRepoArg = relative(canonicalTarget, cwdPath) || '.';
@@ -639,7 +622,6 @@ async function runInit(targetArg, opts = {}) {
     );
   }
 
-  // The closing summary names only what was actually wired.
   const wiredFolders = bindingScope.write
     ? 'Both your codebase root (cwd) and the vault folder now have'
     : 'The vault folder now has';
@@ -686,9 +668,7 @@ async function runInit(targetArg, opts = {}) {
     ...['bootstrap', '.', '--vault', cwdVaultArg].map(shellQuote),
   ].join(' ');
 
-  // Slice 0 magic-moment instrumentation (PRODUCT-PLAN-2026-07.md §4/§9) —
-  // local-only baseline for "vault worth asking" (see lib/telemetry.mjs).
-  // Applies to every init, quick-start or not.
+  // Local-only telemetry baseline for every init (docs/plans/PRODUCT-PLAN-2026-07.md §4/§9, lib/telemetry.mjs).
   stampInitCompleted(target);
 
   if (quickStart) {

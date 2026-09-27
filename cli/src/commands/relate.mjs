@@ -184,9 +184,8 @@ export function relationWriteRefusal({ frontmatter, relation, to, why = null }) 
 }
 
 /**
- * relation_check already returned canonical slugs. Same two branches as mcp/src/tools/write-relations.mjs addRelation:
- * `domain` replaces a scalar and refuses a different existing value; anything else appends and then
- * normalizeRelationRefs sorts and dedupes.
+ * relation_check returned canonical slugs. As in mcp/src/tools/write-relations.mjs addRelation, `domain`
+ * replaces a scalar and refuses a different value; other keys append, then normalizeRelationRefs sorts and dedupes.
  */
 function writeRelation(rootPath, { from, to, relation, why = null }, runtime) {
   // preflight sometimes returns the frontmatter key ('dependencies' and friends) as

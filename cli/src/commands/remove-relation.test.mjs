@@ -63,9 +63,8 @@ describe('remove-relation removes exactly one relation', () => {
   });
 
   /*
-   * ⚠️ Two different failures, and a person can act on only one of them. "The list has no such slug"
-   * means the slug is wrong; "this document has no such list" means the relation *type* is wrong.
-   * Reporting both as "not found" would hide a mistyped type behind a mistyped slug.
+   * "The list has no such slug" means the slug is wrong; "this document has no such list" means the type
+   * is wrong. One "not found" for both would hide a mistyped type behind a mistyped slug.
    */
   it('distinguishes a missing relation from an unknown relation type', () => {
     const missingSlug = planRemoval({ relates: ['capabilities/a'] }, 'relates', 'capabilities/zz');

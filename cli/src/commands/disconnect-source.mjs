@@ -1,8 +1,5 @@
-// `ontology-atlas disconnect-source <projectSlug> [vault]` — remove a project's
-// local source binding and receipt. The reversal of `connect-source`.
-//
-// Thin wrapper over MCP `disconnect_project_source`. Only the local sidecar
-// changes; no ontology markdown is touched.
+// `ontology-atlas disconnect-source <projectSlug> [vault]`: removes a project's local source binding and
+// receipt over MCP `disconnect_project_source`; only the local sidecar changes.
 
 import { COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';

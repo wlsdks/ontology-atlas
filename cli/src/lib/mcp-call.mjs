@@ -52,10 +52,8 @@ function isFile(path) {
 }
 
 /**
- * One-shot MCP tool call. Spawns the server, sends initialize +
- * notifications/initialized + tools/call, parses the JSON-RPC response,
- * resolves with `structuredContent` after checking it matches text JSON when
- * both payloads are present, then falls back to the JSON in `content[0].text`.
+ * One-shot MCP tool call: spawns the server, runs initialize and tools/call, and resolves with
+ * `structuredContent` (checked against the text JSON when both exist) or the JSON in `content[0].text`.
  *
  * @param {string} vaultRoot — passed as OATLAS_VAULT env
  * @param {string} toolName — e.g. 'find_backlinks'

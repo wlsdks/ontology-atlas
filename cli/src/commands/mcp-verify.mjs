@@ -15,9 +15,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const require_ = createRequire(import.meta.url);
 const ALLOWED_FLAGS = ['--vault', '--timeout-ms'];
 /*
- * Headroom, not a guess: a bare `mcp-verify docs/ontology` took 12.6s on an Apple Silicon laptop, since
- * verify scans the whole source tree. The timeout catches a hung server, not a slow one, so the
- * budget is about 2.5x that; a tighter one blocked a release on the slower x64 runner.
+ * About 2.5x the 12.6s a bare `mcp-verify docs/ontology` took on an Apple Silicon laptop: the timeout
+ * catches a hung server, not a slow one, and a tighter budget blocked a release on the x64 runner.
  */
 const DEFAULT_VERIFY_TIMEOUT_MS = 30_000;
 const DEFAULT_VERIFY_KILL_GRACE_MS = 1_000;
@@ -149,9 +148,8 @@ function runVerifyScript(verifyScript, vaultRoot, timeoutMs, vaultArg) {
 }
 
 /*
- * ⚠️ The suggested value is derived from the one that was actually used, never written as a literal.
- * This string is printed *after* a run timed out, so naming the same number the run just failed at
- * is a dead end -- and that is exactly what a literal becomes the moment a default moves to it.
+ * Derived from the value actually used, never a literal: this prints after a timeout, and a literal
+ * would name the number that just failed as soon as a default moves to it.
  */
 function mcpVerifyRetryExample(vaultArg, effectiveTimeoutMs = DEFAULT_VERIFY_TIMEOUT_MS) {
   const vaultPart = vaultArg && vaultArg !== '.' ? ` --vault ${shellArg(vaultArg)}` : '';

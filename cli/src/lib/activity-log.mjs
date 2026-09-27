@@ -21,8 +21,8 @@ export async function readHeartbeatAgentName(vaultRoot) {
 }
 
 /**
- * Appends one CLI write to the audit log, best-effort: it never throws or changes the caller's exit
- * code or output. Do not call it for a dry run or a failed write.
+ * Appends one CLI write to the audit log, best-effort: it never throws or changes the caller's exit code.
+ * Do not call it for a dry run or a failed write.
  *
  * @param {string} vaultRoot absolute path.
  * @param {{tool:string, target:string, summary:string, why?:string|null}} entry `tool` is prefixed

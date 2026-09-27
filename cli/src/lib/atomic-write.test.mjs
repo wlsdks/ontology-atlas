@@ -17,10 +17,8 @@ test('never leaves the original at zero bytes during a write', () => {
   writeFileSync(target, original, 'utf-8');
 
   /*
-   * The observer measures the file size throughout the write. The write is
-   * synchronous, so nothing on this thread can interleave with it; the verdict
-   * comes from **the trace left on disk** instead — if it went through a temp file,
-   * the original holds its old content right up to the rename.
+   * The write is synchronous, so the verdict comes from the trace left on disk: through a temp file, the
+   * original keeps its old content right up to the rename.
    */
   const before = statSync(target).size;
   assert.equal(before, original.length);

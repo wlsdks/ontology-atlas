@@ -27,10 +27,7 @@ import {
   vaultPathspec,
 } from './git-snapshot.mjs';
 
-// Temporary repository fixture driving a real git process. The partial-commit
-// pathspec behaviour (protecting other staged files) cannot be verified with a
-// mock, so it is checked end to end against a real repository. Each test creates
-// its own tmp dir and removes it afterwards.
+// A real git repository per test: only a real one proves the pathspec commit leaves other staged files alone.
 
 function sh(args, cwd) {
   return execFileSync('git', args, { cwd, encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] });

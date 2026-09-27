@@ -1,7 +1,4 @@
-// `ontology-atlas similar "<query>" [vault]` — finds similar nodes.
-// Thin wrapper over MCP `query_ontology({operation: 'similar_nodes'})`. This is
-// *duplicate avoidance* before creating a new node, and the core cross-check of
-// the `/ontology-extract` skill.
+// `ontology-atlas similar "<query>" [vault]` — duplicate check before a new node, over MCP `query_ontology({operation: 'similar_nodes'})`.
 
 import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
@@ -33,8 +30,6 @@ export async function runSimilar(args) {
     return 1;
   }
   const vaultRoot = resolveVaultRoot(vault);
-  // candidateSlug takes precedence (slug-similarity), title rides along
-  // (title-similarity). At least one is required — parseArgs guarantees it.
   const toolArgs = { operation: 'similar_nodes', limit };
   if (slug) toolArgs.candidateSlug = slug;
   if (title) toolArgs.title = title;

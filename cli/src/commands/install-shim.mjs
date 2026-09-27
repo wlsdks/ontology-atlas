@@ -45,10 +45,8 @@ export function defaultShimDir() {
 }
 
 /**
- * Is this path already ours, somebody else's, or free?
- *
- * The distinction decides whether `--force` is even offered: overwriting our own stale shim is
- * routine, and overwriting a stranger's file is not something a flag should make easy.
+ * Is this path ours, somebody else's, or free? Only our own stale shim may be overwritten with
+ * `--force`; a flag must not make overwriting a stranger's file easy.
  */
 export function inspectTarget(path) {
   if (!existsSync(path)) return { state: 'free' };

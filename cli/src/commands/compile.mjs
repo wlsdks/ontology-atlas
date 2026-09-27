@@ -1,7 +1,5 @@
-// `ontology-atlas compile [vault]` — deterministic graph compile surface.
-// The default is a side-effect-free compiler summary. `--fix` applies only the
-// canonicalizationActions the compiler produced, via patch_concept, reordering the
-// relation arrays.
+// `ontology-atlas compile [vault]`: a side-effect-free compiler summary; `--fix` applies only the compiler's
+// canonicalizationActions through patch_concept.
 
 import { COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';

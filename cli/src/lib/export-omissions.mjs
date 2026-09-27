@@ -3,9 +3,7 @@
 // vault against the fields the format carries, never a hand-written list.
 
 /**
- * Graph-internal derived fields — attached by the compiler, not written by the
- * user. Reporting these as "lost" makes the status line noisy every time and
- * buries the real losses.
+ * Compiler-derived fields, not user data; reporting them as lost would bury the real losses.
  */
 const DERIVED_KEYS = new Set([
   'mtime',
@@ -31,11 +29,9 @@ function hasValue(value) {
 /**
  * @param {object} input
  * @param {Array<Record<string, unknown>>} input.nodes compiled nodes.
- * @param {Array<Record<string, unknown>>} [input.edges] compiled edges.
- *   **A relation's rationale lives here**, not on the node. It is the value that
- *   separates a mind-map line from an ontology claim, so its absence must be stated.
- * @param {readonly string[]|null} input.carriedKeys the node fields this format
- *   actually carries. `null` means the format is lossless, so nothing is counted.
+ * @param {Array<Record<string, unknown>>} [input.edges] compiled edges; they carry the relation rationale,
+ *   whose absence must be stated.
+ * @param {readonly string[]|null} input.carriedKeys node fields the format carries; `null` means lossless.
  * @param {boolean} [input.carriesEdgeRationale] does this format carry edge rationales.
  * @returns {{omitted: string[], counts: Record<string, number>, sentence: string|null}}
  */

@@ -9,7 +9,7 @@ import {
 
 export const TELEMETRY_RELATIVE_PATH = '.ontology-atlas/telemetry.local.json';
 const TELEMETRY_FILENAME = 'telemetry.local.json';
-// North star (PRODUCT-PLAN-2026-07.md §4): moment reached within 5 minutes.
+// North star (docs/plans/PRODUCT-PLAN-2026-07.md §4): moment reached within 5 minutes.
 export const MOMENT_TARGET_MS = 5 * 60 * 1000;
 
 function defaultTelemetry() {

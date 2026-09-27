@@ -277,14 +277,8 @@ export function assertGrowthPlanShape(result) {
 }
 
 /**
- * The next-reads group keeps its own contract.
- *
- * Every other growth group is a proposed vault write and carries `kind`,
- * `reason`, `score` and an executable `proposedAction`. A next read is not a
- * write: its evidence is the author's own sentence, its address is a path and
- * an optional line range, and its action is one sentence a person or an agent
- * performs by reading. Forcing it through the write-shaped check would mean
- * inventing a score nothing measured.
+ * Next reads keep their own contract: they are reads, not proposed writes, so they carry the author's
+ * sentence and a path instead of a score and an executable `proposedAction`.
  */
 function assertNextReadsGroup(group, expectedTotal) {
   if (!isPlainObject(group)) {
@@ -1066,6 +1060,7 @@ function validProjectSourceAction(value) {
   return isPlainObject(value) && hasNonEmptyString(value.id);
 }
 
+// Depth-first over the parsed response, O(values); parsed JSON cannot be cyclic.
 function containsPrivateSourceField(value) {
   if (!value || typeof value !== 'object') return false;
   if (Array.isArray(value)) return value.some(containsPrivateSourceField);
@@ -2554,9 +2549,8 @@ function validAllPathsSuggestedQuery(query) {
 }
 
 /**
- * One backlink row: either kind of evidence is enough. A row matched only by a body link carries
- * `matchedInBody: true` and no `matchedKeys` (`mcp/src/vault.mjs`). The authority is `mcp/scripts/verify.mjs`;
- * a row with no evidence at all is still rejected; a copy stricter than that authority rejects valid server rows.
+ * One backlink row: `matchedKeys` or `matchedInBody: true` (`mcp/src/vault.mjs`) is enough, and a row with
+ * neither is rejected. `mcp/scripts/verify.mjs` is the authority; a stricter copy rejects valid server rows.
  */
 function validBacklinkRow(row) {
   if (!validNodeSummary(row)) return false;

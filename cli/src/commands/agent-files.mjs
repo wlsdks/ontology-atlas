@@ -144,9 +144,8 @@ function readEntry(absPath, relativePath) {
 }
 
 /**
- * Resolve @reference candidates against the real filesystem so the pure
- * analyzer can judge existence. Only paths actually referenced are probed —
- * no broad disk scan.
+ * Resolves @reference candidates on disk so the pure analyzer can judge existence. Only referenced
+ * paths are probed, never a broad disk scan.
  */
 function resolveReferencedPaths(root, files) {
   const existing = new Set();
@@ -170,9 +169,8 @@ function resolveReferencedPaths(root, files) {
 }
 
 /**
- * Reports how close AGENTS.md is to the Codex cap before it is crossed, since Codex truncates the
- * excess without warning. The verdict and return shape stay unchanged for the web twin
- * (`views/docs-vault/lib/agent-files.ts`).
+ * Reports how close AGENTS.md is to the Codex cap before crossing it, since Codex truncates silently.
+ * The verdict and return shape stay equal to the web twin `src/entities/agent-files/model/agent-files.ts`.
  */
 const CODEX_HEADROOM_WARN_RATIO = 0.1;
 

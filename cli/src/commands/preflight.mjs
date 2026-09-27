@@ -128,10 +128,8 @@ async function buildRow(vaultRoot, match, depth) {
   }
 }
 
-// No vault, zero staged files, zero matched nodes — all mean "this hook has
-// nothing to do". With --json only the machine-readable skip reason remains, and
-// the human output is left completely empty: no noise is the only thing that
-// prevents disable fatigue.
+// No vault, staged file or matched node means nothing to do: --json prints only the skip reason and
+// human output stays empty, because noise is what makes people disable the hook.
 function emitSkip(json, reason, extra = {}) {
   if (json) {
     process.stdout.write(JSON.stringify({ skipped: true, reason, ...extra }, null, 2) + '\n');

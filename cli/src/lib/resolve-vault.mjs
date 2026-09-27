@@ -9,18 +9,8 @@ export class VaultRootError extends Error {
 }
 
 /**
- * **Vault root resolution order**, shared by the graph-level read commands
- * (list / query / path / orphans / backlinks / find / validate).
- *
- *  1. an `explicit` value from the caller (positional argument or `--vault path`)
- *     that is not the default (`.` or empty) → use it as given
- *  2. the `OATLAS_VAULT` environment variable, when set → that path (the variable the MCP server reads)
- *  3. a `docs/ontology/` directory in cwd → that, so a repository dogfooding
- *     itself resolves to its canonical vault even when a build mirror
- *     (`public/docs-vault/`) or `cli/templates/` also sits under cwd
- *  4. final fallback: cwd
- *
- * Always returns an absolute path.
+ * Vault root, as an absolute path: a non-default `explicit` argument, then `OATLAS_VAULT` (the variable the MCP
+ * server reads), then `docs/ontology/` in cwd (so a dogfooding repository skips its build mirrors), then cwd.
  */
 export function resolveVaultRoot(explicit) {
   if (typeof explicit === 'string' && explicit && explicit !== '.') {

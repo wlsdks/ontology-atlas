@@ -89,9 +89,8 @@ function withFixtureUid(content) {
 }
 
 /**
- * A finished body per kind. `validate` reads prose, so a bodyless node carries definition, boundary
- * and uncertainty findings; `withVault` fills a blank body in, as it fills `uid:`, so fixtures about
- * other things stay clean. A fixture that writes its own body keeps it.
+ * A finished body per kind: `validate` reads prose, so `withVault` fills a blank body (as it fills `uid:`)
+ * to keep fixtures about other things clean. A fixture that writes its own body keeps it.
  */
 const FINISHED_BODY_BY_KIND = {
   domain:
@@ -504,9 +503,8 @@ await test('init --locale=ko — Korean starter bodies, identical graph, English
       const v = await run(['validate', dir], { cwd: repo });
       assert.equal(v.code, 0, `${dir} validate failed: ${v.stdout}${v.stderr}`);
       /*
-       * Not every `.md` on disk is a vault document: the scan skips dot folders (`cli/src/lib/walk-vault.mjs`,
-       * `.claude/rules/local-first.md`). Skills install at the repository root, so this asserts where they went
-       * and that the document count is unaffected, in Korean too.
+       * The vault scan skips dot folders (`cli/src/lib/walk-vault.mjs`, `.claude/rules/local-first.md`), and skills
+       * install at the repository root: assert where they went and that the document count holds, in Korean too.
        */
       const vaultRoot = join(repo, dir);
       const markdownEntries = readdirSync(vaultRoot, {
@@ -572,7 +570,7 @@ await test('init --quick-start — scaffolds, previews candidates, and ends with
     assert.equal((clean.match(/^\s*\d\.\s/gm) || []).length, 3, `expected exactly 3 next-step lines:\n${clean}`);
     assert.doesNotMatch(clean, /quick start done/);
 
-    // Slice 0 magic-moment baseline stamped (local only, never transmitted).
+    // Magic-moment baseline stamped (local only, never transmitted).
     const telemetry = JSON.parse(
       readFileSync(join(vault, '.ontology-atlas', 'telemetry.local.json'), 'utf-8'),
     );
@@ -643,9 +641,8 @@ await test('agent-brief — exit 1 for readiness says on screen that it is not a
 });
 
 /**
- * A freshly created vault must pass its own checks: the next command must never report the state the
- * first one created as a failure. Missing domains are still reported; a node with a parent is never
- * told it has none.
+ * A freshly created vault must pass its own checks: missing domains are still reported, but a node
+ * with a parent is never told it has none.
  */
 await test('init --quick-start — fresh starter validates and reports health attention honestly', async () => {
   const repo = makeQuickStartRepoFixture();
@@ -2305,9 +2302,8 @@ await test('mcp-verify — times out a stalled verify script override', async ()
   );
 
   /*
-   * A wall-clock limit is never absolute: run the same path with a script that returns at once to
-   * measure this machine's floor, then compare against that plus headroom. It still catches waiting for
-   * the 15s default.
+   * A wall-clock limit is never absolute: a script that returns at once measures this machine's floor, and
+   * the bound is that plus headroom, which still catches waiting for the 15s default.
    */
   const instantScript = join(root, 'instant-verify.mjs');
   writeFileSync(instantScript, 'process.exit(1);', 'utf-8');
@@ -5547,10 +5543,8 @@ await test('graph diagnostic commands — reject invalid option values before MC
 });
 
 await test('orphans — reports no referenced nodes in the graph fixture', async () => {
-  // buildGraphFixture: foo (referenced by bar.relates + auth.capabilities),
-  // bar (referenced by auth's domain.capabilities),
-  // auth (referenced by foo/bar domain: inline parent).
-  // So in the exact graph, foo, bar, and auth are all referenced.
+  // buildGraphFixture references foo (bar.relates, auth.capabilities), bar (auth's capabilities) and
+  // auth (the inline `domain:` parent of foo and bar), so all three are referenced.
   const root = await buildGraphFixture();
   try {
     const r = await run(['orphans', root]);
@@ -7909,7 +7903,6 @@ await test('rename --confirm — moves the file and redirects backlinks', async 
       existsSyncTest(join(root, 'capabilities/foo-renamed.md')),
       true,
     );
-    // Whether bar's relates was redirected
     const barText = readFileSync(
       join(root, 'capabilities/bar.md'),
       'utf-8',
@@ -8570,11 +8563,8 @@ await test('architecture --record — refuses a scan with no import-usage discri
 });
 
 await test('init — fresh starter vault compiles clean (no ambiguous alias / compile issue) [cold-start]', async () => {
-  // A freshly scaffolded vault must be CLEAN so the SessionStart hook stays
-  // silent on first contact (AGENTS.md: "a clean vault stays silent (no
-  // noise)"). Starter files that share a tail slug (e.g. all named example.md)
-  // produce an ambiguous-alias compile issue → the hook would nudge the user to
-  // "fix before relying on the graph" on a pristine vault. Guard against that.
+  // A freshly scaffolded vault must be clean so the SessionStart hook stays silent (AGENTS.md); starter
+  // files sharing a tail slug would raise ambiguous-alias and make the hook nag on a pristine vault.
   const root = mkdtempSync(join(tmpdir(), 'cli-init-clean-'));
   try {
     const init = await run(['init', 'ontology'], { cwd: root });
@@ -9290,7 +9280,6 @@ await test('infer-imports --threshold 3 — filters edges with count < 3 in prev
     for (const m of data.moduleEdges) {
       assert.ok(m.count >= 3, `${m.from}→${m.to} count=${m.count} should be ≥3`);
     }
-    // thresholdApplied metadata.
     assert.ok(data.thresholdApplied);
     assert.equal(data.thresholdApplied.threshold, 3);
     assert.ok(data.thresholdApplied.filteredOut >= 1);
@@ -9790,9 +9779,8 @@ await test('index --json — analyzes and verifies a repo without mutating the v
     assert.match(data.meaningGate.reviewQuestions[0], /business\/product/);
     assert.equal(data.validation.problemFiles, 0);
     /*
-     * A fixture repository with no concept citing an implementation path dates nothing. The
-     * readout must say that rather than report a zero, which reads as "nothing you recorded has
-     * moved" — the opposite of the truth.
+     * With no concept citing an implementation path nothing is dated, and the readout must say so rather
+     * than print a zero that reads as "nothing you recorded has moved".
      */
     assert.equal(data.validation.evidenceChecked, false);
     assert.equal(data.validation.evidenceStale, null);

@@ -61,11 +61,8 @@ export async function runBootstrap(args) {
     : domainSplit.corroborated;
   const concepts = collectConcepts(analyzeResult, domainsToLand);
 
-  // This command is deliberately a preview-only ingress. There is no CLI
-  // switch, environment variable, or hidden parser state that can manufacture
-  // the independent constructionQualification:v1 + human acceptance required
-  // by the lifecycle. Keep the return unconditional so a future option cannot
-  // accidentally resurrect the former batch-writer branch.
+  // Preview-only by design: no switch, variable or parser state can manufacture constructionQualification:v1
+  // and human acceptance. Keep the return unconditional so no future option revives a batch writer.
   return printApprovalRequiredPlan({
     parsed,
     target,
@@ -183,12 +180,8 @@ async function printApprovalRequiredPlan({
 const LARGE_IMPORT_RESPONSE_RE = /exceeds the automatic 128 KiB delivery limit/u;
 
 /**
- * Turns the MCP "response too large without a loadable vault" refusal into a
- * review-only envelope instead of a crash. Without `--vault`, `bootstrap` runs
- * against a scratch vault the server cannot reconcile against, so a large
- * repository's import graph cannot be compacted. The plan totals from the
- * structure stage are still valid; the import stage reports itself omitted
- * and names both ways to get it back.
+ * Turns the MCP "response too large without a loadable vault" refusal into a review-only envelope: the
+ * structure-stage totals stay valid, and the import stage reports itself omitted with both ways back.
  */
 export function omittedLargeImports(err, { target, vaultRoot } = {}) {
   const message = err instanceof Error ? err.message : String(err ?? '');
@@ -205,9 +198,8 @@ export function omittedLargeImports(err, { target, vaultRoot } = {}) {
 }
 
 /**
- * Separates README-only domains from those the code corroborates (directory evidence, or named as
- * parent by a code-derived candidate). A stopword sieve cannot keep up with new README headings, so
- * README-only domains stay review candidates; `--apply-readme-domains` restores planting them.
+ * Separates README-only domains from code-corroborated ones (directory evidence, or a code-derived parent).
+ * A stopword sieve cannot keep up with new headings, so README-only domains stay candidates (`--apply-readme-domains`).
  */
 export function partitionReadmeOnlyDomains(analyzeResult) {
   const domains = analyzeResult.domains ?? [];

@@ -172,7 +172,6 @@ export function runValidate(args) {
     return 1;
   }
 
-  // --list-codes prints immediately without looking at the vault, ignoring any other option.
   if (parsed.listCodes) {
     return printKnownCodes(parsed.json);
   }
@@ -247,46 +246,15 @@ export function runValidate(args) {
     if (report) report.issues = issues;
   }
 
-  for (const { file, issue } of findDuplicateSlugIssues(entries)) {
-    const report = reportByFile.get(file);
-    if (!report) continue;
-    report.issues.push(issue);
-    report.ok = !report.issues.some((i) => i.severity === 'error');
-  }
-
-  for (const { file, issue } of findDuplicateUidIssues(entries)) {
-    const report = reportByFile.get(file);
-    if (!report) continue;
-    report.issues.push(issue);
-    report.ok = false;
-  }
-
-  for (const { file, issue } of findDanglingGraphReferenceIssues(entries)) {
-    const report = reportByFile.get(file);
-    if (!report) continue;
-    report.issues.push(issue);
-    report.ok = !report.issues.some((i) => i.severity === 'error');
-  }
-
-  for (const { file, issue } of findFolderOnlyEvidenceIssues(entries)) {
-    const report = reportByFile.get(file);
-    if (!report) continue;
-    report.issues.push(issue);
-    report.ok = !report.issues.some((i) => i.severity === 'error');
-  }
-
-  for (const { file, issue } of findDependencyWitnessIssues(entries)) {
-    const report = reportByFile.get(file);
-    if (!report) continue;
-    report.issues.push(issue);
-    report.ok = !report.issues.some((i) => i.severity === 'error');
-  }
-
-  for (const { file, issue } of findStarterExampleIssues(entries)) {
-    const report = reportByFile.get(file);
-    if (!report) continue;
-    report.issues.push(issue);
-    report.ok = !report.issues.some((i) => i.severity === 'error');
+  for (const findVaultIssues of [
+    findDuplicateSlugIssues,
+    findDuplicateUidIssues,
+    findDanglingGraphReferenceIssues,
+    findFolderOnlyEvidenceIssues,
+    findDependencyWitnessIssues,
+    findStarterExampleIssues,
+  ]) {
+    attachVaultIssues(reportByFile, findVaultIssues(entries));
   }
 
   for (const file of files) {
@@ -376,7 +344,6 @@ export function runValidate(args) {
     return unreadable.length > 0 ? 1 : 0;
   }
 
-  // The strict-mode notice is handled by the final summary line.
 
   for (const { file, report } of reports) {
     console.log(`\n${file}`);
@@ -389,7 +356,7 @@ export function runValidate(args) {
   }
 
   // Per-code summary for large vaults; only codes seen twice or more, since one occurrence is already
-  // in the per-file output. `groups` is shared by JSON, fail-on and text.
+  // in the per-file output.
   const repeatedCodes = groups.filter((g) => g.count >= 2);
   if (repeatedCodes.length > 0) {
     console.log(`\n${COLORS.dim}── grouped by code ──${COLORS.reset}`);
@@ -425,8 +392,6 @@ export function runValidate(args) {
   return decideExit(errorFiles, warningFiles, strict, failOn, groups, unreadable.length);
 }
 
-// Precedence: unreadable files (always fatal) > --fail-on (then it alone) >
-// --strict > default (errors only).
 function decideExit(errorFiles, warningFiles, strict, failOn, groups, unreadableCount = 0) {
   // A file that could not be opened was never validated, so no mode may certify the vault, --json
   // included, which is what CI consumes.
@@ -482,8 +447,6 @@ function printUsage(stream = process.stderr) {
   );
 }
 
-// --list-codes output: a human-readable table in text mode, machine-readable in
-// --json mode so CI can discover the codes dynamically.
 function printKnownCodes(asJson) {
   if (asJson) {
     process.stdout.write(JSON.stringify({ codes: KNOWN_CODES }, null, 2) + '\n');
@@ -555,10 +518,18 @@ function collectGraphRefs(frontmatter) {
   return refs;
 }
 
+function attachVaultIssues(reportByFile, findings) {
+  for (const { file, issue } of findings) {
+    const report = reportByFile.get(file);
+    if (!report) continue;
+    report.issues.push(issue);
+    report.ok = !report.issues.some((i) => i.severity === 'error');
+  }
+}
+
 /**
- * Two documents claiming the same canonical slug. A per-file check cannot see it, so it lives in the
- * whole-vault pass; `patch_concept` can still overwrite `frontmatter.slug` with a taken value. An error,
- * not a warning: every relation naming the slug becomes unresolvable.
+ * Two documents claiming one canonical slug: invisible per file, so checked over the whole vault. An error,
+ * since `patch_concept` can still write a taken slug and every relation naming it becomes unresolvable.
  */
 function findDuplicateSlugIssues(entries) {
   const byDeclared = new Map();
@@ -624,9 +595,8 @@ function findDuplicateUidIssues(entries) {
 }
 
 /**
- * Evidence that names a folder instead of one file. Outside `validateVaultDocument` because a path
- * needs a repository root: `OATLAS_REPO_ROOT`, as the MCP server reads it. Unset, the check stays
- * silent (not looked at), which is why `--list-codes` calls it a vault-scope code.
+ * Evidence naming a folder instead of one file. Needs a repository root (`OATLAS_REPO_ROOT`, as the MCP
+ * server reads it); unset, it stays silent (not looked at), hence a vault-scope code in `--list-codes`.
  */
 function findFolderOnlyEvidenceIssues(entries) {
   const repoRoot = typeof process.env.OATLAS_REPO_ROOT === 'string'
@@ -653,9 +623,8 @@ function findFolderOnlyEvidenceIssues(entries) {
 }
 
 /**
- * Which implementation file does each node cite? Full slug, then the tail an
- * author actually types — and only when that tail names exactly one node, since
- * a guess here becomes an accusation about the wrong file.
+ * Which implementation file each node cites: full slug, then a typed tail only when it names exactly one
+ * node, since a guess would accuse the wrong file.
  */
 function evidencePathIndex(entries) {
   const bySlug = new Map();
@@ -676,9 +645,8 @@ function evidencePathIndex(entries) {
 }
 
 /**
- * A declared dependency the citing file never mentions. Needs `OATLAS_REPO_ROOT` and the far node's
- * `path:`, so it is vault scope and silent when unset. Every declared edge is judged, not only new ones:
- * a validator someone chose to run is asked about the whole vault.
+ * A declared dependency the citing file never mentions. Needs `OATLAS_REPO_ROOT` and the far node's `path:`,
+ * so it is vault scope and silent when unset; every declared edge is judged, not only new ones.
  */
 function findDependencyWitnessIssues(entries) {
   const repoRoot = typeof process.env.OATLAS_REPO_ROOT === 'string'

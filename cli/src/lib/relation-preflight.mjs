@@ -6,10 +6,8 @@ import { callMcpTool } from './mcp-call.mjs';
 import { assertRelationCheckShape } from './query-result-contract.mjs';
 
 /**
- * Runs the relation_check preflight and asserts its shape. Throws (same as
- * the underlying MCP call) when `from`/`to` do not resolve to vault nodes or
- * `type` is invalid — callers should treat a thrown error as a hard reject,
- * not just an advisory.
+ * Runs the relation_check preflight and asserts its shape. It throws when `from`/`to` do not resolve or
+ * `type` is invalid; treat that as a hard reject, not an advisory.
  */
 export async function runRelationCheckQuery(vaultRoot, from, to, type) {
   const result = await callMcpTool(vaultRoot, 'query_ontology', {

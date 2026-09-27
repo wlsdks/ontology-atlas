@@ -66,16 +66,12 @@ export async function runAdd(args) {
       target: slug,
       summary: `add ${kind}:${slug}`,
     });
-    // A missing `requiredExtras` from the schema (a capability or element's domain)
-    // prints as an advisory warning, so the user can fill it in afterwards.
     const missing = missingExpectedFields(kind, fm);
     for (const key of missing) {
       process.stderr.write(
         `${COLORS.yellow}warn${COLORS.reset}  expected field "${key}" missing for kind "${kind}": add it later with --domain or by editing the file.\n`,
       );
     }
-    // A path-shaped slug is rejected as a hard error by writeDoc's flatSlugIssue
-    // gate (docs/DECISIONS.md "slugs are flat identifiers" — slugs are flat identifiers).
     return 0;
   } catch (err) {
     process.stderr.write(

@@ -17,9 +17,8 @@ const ALLOWED_FLAGS = ['--vault', '--kind', '--auto-prefix', '--raw-slug', '--no
 
 
 /**
- * Lands external markdown normalised to the vault schema, like `add`. Kind: input, then --kind, else
- * skip. Slug: input, then basename. Title: input, first H1, then slug. An existing slug is skipped,
- * or becomes -2/-3 with --rename; a dry run changes nothing on disk.
+ * Lands external markdown normalised to the vault schema, like `add`: kind from input or --kind (else skip),
+ * slug from input or basename, title from input, first H1 or slug; a taken slug skips or gets -2 with --rename.
  */
 export async function runImport(args) {
   const opts = parseArgs(args);
@@ -105,10 +104,8 @@ export async function runImport(args) {
       ` (${summary.kindless} kindless · ${summary.conflicts} conflicts · ${summary.skipped} errors)\n`,
   );
 
-  // Exit code: 1 when zero files were imported (or planned, in a dry run) —
-  // intending an import and having nothing happen is an explicit failure. Partial
-  // success (some imported, some conflicting or kindless) exits 0, so a CI gate of
-  // the "at least one" shape is easy to write.
+  // Exit 1 when nothing was imported (or planned), since intending an import and getting none is a failure;
+  // partial success exits 0, so an "at least one" CI gate is easy to write.
   void firstError;
   if (summary.imported === 0) return 1;
   return 0;
@@ -242,9 +239,8 @@ function extractFirstH1(body) {
 }
 
 /**
- * Collects `.md` files from the input paths (files or directories), walking
- * directories recursively. Dotfile directories (.git, node_modules) are skipped —
- * importing the `.md` inside them is too dangerous to assume was intended.
+ * Collects `.md` files from input files and directories, recursively. Dotfile directories (.git,
+ * node_modules) are skipped: importing their `.md` is too dangerous to assume.
  */
 function collectMarkdownFiles(paths) {
   const out = new Set();

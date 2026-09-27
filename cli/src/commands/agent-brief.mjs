@@ -51,7 +51,7 @@ export async function runAgentBrief(args) {
     );
     return 2;
   }
-  // Telemetry proxy for an agent reading the vault (PRODUCT-PLAN-2026-07.md §4/§9, lib/telemetry.mjs).
+  // Telemetry proxy for an agent reading the vault (docs/plans/PRODUCT-PLAN-2026-07.md §4/§9, lib/telemetry.mjs).
   // Best-effort: a telemetry write failure must never break the brief.
   try {
     stampMomentIfFirst(vaultRoot, { source: 'agent-brief' });
@@ -59,21 +59,16 @@ export async function runAgentBrief(args) {
     // local-only instrumentation is advisory; ignore write failures.
   }
   if (verifyFallbacks) {
-    const effectiveFallbackTimeoutMs = fallbackTimeoutMs ?? agentFallbackTimeoutMs();
-    if (effectiveFallbackTimeoutMs instanceof Error) {
-      process.stderr.write(`${COLORS.red}error${COLORS.reset}  ${effectiveFallbackTimeoutMs.message}\n`);
-      printUsage();
-      return 1;
-    }
-    const effectiveFallbackSlowMs = fallbackSlowMs ?? agentFallbackSlowMs();
-    if (effectiveFallbackSlowMs instanceof Error) {
-      process.stderr.write(`${COLORS.red}error${COLORS.reset}  ${effectiveFallbackSlowMs.message}\n`);
-      printUsage();
-      return 1;
-    }
-    const effectiveFallbackConcurrency = fallbackConcurrency ?? agentFallbackConcurrency();
-    if (effectiveFallbackConcurrency instanceof Error) {
-      process.stderr.write(`${COLORS.red}error${COLORS.reset}  ${effectiveFallbackConcurrency.message}\n`);
+    const effectiveFallbackTimeoutMs = fallbackTimeoutMs
+      ?? positiveIntegerFromEnv(FALLBACK_TIMEOUT_ENV, '--fallback-timeout-ms', DEFAULT_FALLBACK_TIMEOUT_MS);
+    const effectiveFallbackSlowMs = fallbackSlowMs
+      ?? positiveIntegerFromEnv(FALLBACK_SLOW_ENV, '--fallback-slow-ms', DEFAULT_FALLBACK_SLOW_MS);
+    const effectiveFallbackConcurrency = fallbackConcurrency
+      ?? positiveIntegerFromEnv(FALLBACK_CONCURRENCY_ENV, '--fallback-concurrency', DEFAULT_FALLBACK_CONCURRENCY);
+    const settingError = [effectiveFallbackTimeoutMs, effectiveFallbackSlowMs, effectiveFallbackConcurrency]
+      .find((setting) => setting instanceof Error);
+    if (settingError) {
+      process.stderr.write(`${COLORS.red}error${COLORS.reset}  ${settingError.message}\n`);
       printUsage();
       return 1;
     }
@@ -83,10 +78,8 @@ export async function runAgentBrief(args) {
       slowThresholdMs: effectiveFallbackSlowMs,
       concurrency: effectiveFallbackConcurrency,
     });
-    // --exit-zero only silences the readiness-driven part of the exit code
-    // (see readinessExitCode below) — an actual failing fallback command is
-    // a real command failure, not an advisory readiness signal, so it still
-    // exits non-zero even with --exit-zero.
+    // --exit-zero silences only the readiness part of the exit code; a fallback command that
+    // failed to run is a real failure and still exits non-zero.
     return Math.max(readinessExitCode(result, exitZero), report.failed > 0 ? 1 : 0);
   }
   if (json) {
@@ -118,9 +111,8 @@ export async function runAgentBrief(args) {
 }
 
 /**
- * The non-zero exit encodes graph readiness (`needs_attention` / `needs_shape`), not failure.
- * `--exit-zero` always exits 0 for scripts that read `status`/`readiness` from JSON; real
- * parse or MCP-call failures still return 1/2 above.
+ * The non-zero exit encodes graph readiness, not failure. `--exit-zero` always exits 0 for scripts that
+ * read `status`/`readiness` from JSON; parse and MCP-call failures still return 1/2 above.
  */
 export function readinessExitCode(result, exitZero) {
   return exitZero ? 0 : agentBriefExitCode(result);
@@ -307,32 +299,12 @@ function spawnFallbackCommand(args, timeoutMs) {
   });
 }
 
-function agentFallbackTimeoutMs(env = process.env) {
-  const raw = env[FALLBACK_TIMEOUT_ENV];
-  if (raw == null || raw === '') return DEFAULT_FALLBACK_TIMEOUT_MS;
-  const parsed = parsePositiveIntegerFlag(FALLBACK_TIMEOUT_ENV, raw);
+function positiveIntegerFromEnv(envName, flagName, defaultValue, env = process.env) {
+  const raw = env[envName];
+  if (raw == null || raw === '') return defaultValue;
+  const parsed = parsePositiveIntegerFlag(envName, raw);
   if (parsed instanceof Error) {
-    return new Error(`${parsed.message}. Received: ${JSON.stringify(String(raw))}. Set ${FALLBACK_TIMEOUT_ENV}=N or --fallback-timeout-ms N.`);
-  }
-  return parsed;
-}
-
-function agentFallbackSlowMs(env = process.env) {
-  const raw = env[FALLBACK_SLOW_ENV];
-  if (raw == null || raw === '') return DEFAULT_FALLBACK_SLOW_MS;
-  const parsed = parsePositiveIntegerFlag(FALLBACK_SLOW_ENV, raw);
-  if (parsed instanceof Error) {
-    return new Error(`${parsed.message}. Received: ${JSON.stringify(String(raw))}. Set ${FALLBACK_SLOW_ENV}=N or --fallback-slow-ms N.`);
-  }
-  return parsed;
-}
-
-function agentFallbackConcurrency(env = process.env) {
-  const raw = env[FALLBACK_CONCURRENCY_ENV];
-  if (raw == null || raw === '') return DEFAULT_FALLBACK_CONCURRENCY;
-  const parsed = parsePositiveIntegerFlag(FALLBACK_CONCURRENCY_ENV, raw);
-  if (parsed instanceof Error) {
-    return new Error(`${parsed.message}. Received: ${JSON.stringify(String(raw))}. Set ${FALLBACK_CONCURRENCY_ENV}=N or --fallback-concurrency N.`);
+    return new Error(`${parsed.message}. Received: ${JSON.stringify(String(raw))}. Set ${envName}=N or ${flagName} N.`);
   }
   return parsed;
 }
@@ -354,15 +326,13 @@ function stripAnsi(value) {
 }
 
 /**
- * Extracts everything after the subcommand from a fallback command, in both the
- * `node <abs>/cli/src/index.mjs <sub>` form and the legacy `ontology-atlas <sub>` form (installed
- * nowhere, docs/DECISIONS.md 2026-07-27), so older pasted output still parses.
+ * Extracts everything after the subcommand from `node <abs>/cli/src/index.mjs <sub>` or the legacy
+ * `ontology-atlas <sub>` (installed nowhere, docs/DECISIONS.md 2026-07-27), so older output still parses.
  */
 function parseFallbackCommand(command) {
   const tokens = splitShellWords(command);
   if (tokens.length === 0) return { error: 'empty fallback command' };
   if (tokens[0] === 'ontology-atlas') return { args: tokens.slice(1) };
-  // `node <entry> <sub> …` — entry may be an absolute or a relative path.
   if (tokens[0] === 'node' && tokens.length >= 2 && /index\.mjs$/.test(tokens[1])) {
     return { args: tokens.slice(2) };
   }
@@ -1021,20 +991,14 @@ function parseArgs(args) {
   if (flags.compact && (flags.verifyFallbacks || flags.graphDbPack)) {
     return { error: `--compact cannot be used with ${flags.verifyFallbacks ? '--verify-fallbacks' : '--graph-db-pack'}` };
   }
-  if (flags.fallbackTimeoutMs instanceof Error) {
-    return {
-      error: `${flags.fallbackTimeoutMs.message}. Received: ${JSON.stringify(String(flags.fallbackTimeoutRaw))}. Set --fallback-timeout-ms N or ${FALLBACK_TIMEOUT_ENV}=N.`,
-    };
-  }
-  if (flags.fallbackSlowMs instanceof Error) {
-    return {
-      error: `${flags.fallbackSlowMs.message}. Received: ${JSON.stringify(String(flags.fallbackSlowRaw))}. Set --fallback-slow-ms N or ${FALLBACK_SLOW_ENV}=N.`,
-    };
-  }
-  if (flags.fallbackConcurrency instanceof Error) {
-    return {
-      error: `${flags.fallbackConcurrency.message}. Received: ${JSON.stringify(String(flags.fallbackConcurrencyRaw))}. Set --fallback-concurrency N or ${FALLBACK_CONCURRENCY_ENV}=N.`,
-    };
+  for (const [flag, value, raw, envName] of [
+    ['--fallback-timeout-ms', flags.fallbackTimeoutMs, flags.fallbackTimeoutRaw, FALLBACK_TIMEOUT_ENV],
+    ['--fallback-slow-ms', flags.fallbackSlowMs, flags.fallbackSlowRaw, FALLBACK_SLOW_ENV],
+    ['--fallback-concurrency', flags.fallbackConcurrency, flags.fallbackConcurrencyRaw, FALLBACK_CONCURRENCY_ENV],
+  ]) {
+    if (value instanceof Error) {
+      return { error: `${value.message}. Received: ${JSON.stringify(String(raw))}. Set ${flag} N or ${envName}=N.` };
+    }
   }
   const vaultResult = resolveExclusiveVaultArg({ vault: flags.vault, positional });
   if (vaultResult.error) return vaultResult;

@@ -1,8 +1,7 @@
 /**
- * Ontology interop serializers: a compiled graph (`{ nodes, edges }` as `mcp/src/ontology-compiler.mjs` emits)
- * to JSON-LD 1.1 and GraphML. Node identity is `urn:uuid:<uid>`; the compiler's `graphHash` versions a snapshot.
- * Twin of `src/shared/lib/interop-format.ts`, byte-identical per `tests/contract/interop-format.contract.test.ts`.
- * Pure and deterministic; an edge without both endpoints emitted is dropped, never minted as a phantom node.
+ * Interop serializers from a compiled graph to JSON-LD 1.1 and GraphML; identity is `urn:uuid:<uid>`, and edges
+ * without both endpoints are dropped. Twin of `src/shared/lib/interop-format.ts`, byte-identical per
+ * `tests/contract/interop-format.contract.test.ts`.
  */
 
 const INTEROP_URN_BASE = 'urn:uuid';
@@ -13,11 +12,8 @@ const GRAPHML_GRAPH_ID = 'atlas';
 const NODE_UID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 /**
- * Every graph edge key the compiler can emit as `via`, mapped to its oatlas
- * predicate term. Keep in sync with `mcp/src/vault.mjs` NEIGHBOR_KEYS +
- * INLINE_NEIGHBOR_KEYS (`dependencies` is the canonical form of `depends_on`).
- * An unknown `via` falls back to an `oatlas:<via>` term so a new edge type is
- * never silently dropped.
+ * Every edge key the compiler can emit as `via` → its oatlas predicate; keep in sync with `mcp/src/vault.mjs`
+ * NEIGHBOR_KEYS and INLINE_NEIGHBOR_KEYS. An unknown `via` becomes `oatlas:<via>`, never dropped.
  */
 const VIA_PREDICATE = Object.freeze({
   domains: 'domains',
@@ -42,10 +38,8 @@ function predicateTerm(via) {
 }
 
 /**
- * Normalize + validate the compile-artifact graph into a canonical internal
- * form: sorted nodes keyed by slug, and resolved edges (both endpoints known)
- * sorted deterministically. Shared by both serializers so JSON-LD and GraphML
- * agree on which nodes/edges exist.
+ * Canonical form of the graph, shared by both serializers so they agree on which nodes and edges exist:
+ * nodes sorted by slug, edges with both endpoints known, sorted deterministically.
  */
 function normalizeGraph(graph) {
   const rawNodes = Array.isArray(graph?.nodes) ? graph.nodes : [];
@@ -95,10 +89,8 @@ function normalizeGraph(graph) {
     seenEdge.add(key);
     edges.push({ from, to, via });
   }
-  // Compare field by field — **the same order** as comparing NUL-joined strings
-  // (NUL sorts below every character, so earlier fields decide first). Running
-  // localeCompare over a joined string is worse: some collations ignore the
-  // separator entirely. Comparing fields states the intended precedence exactly.
+  // Field by field, in the same precedence as NUL-joined strings; localeCompare over a joined string could
+  // ignore the separator under some collations.
   edges.sort(
     (a, b) =>
       a.from.localeCompare(b.from) ||
@@ -110,9 +102,8 @@ function normalizeGraph(graph) {
 }
 
 /**
- * JSON-LD 1.1 — `@context` + `@graph`. RDF 1.1 compatible; semantic-web tools
- * (rdflib, Protégé, any triplestore) read it directly. Node URIs use the
- * `urn:ontology-atlas:` scheme; edge `via` keys become `oatlas:` predicates.
+ * JSON-LD 1.1 (`@context` + `@graph`), readable by rdflib, Protégé and triplestores; edge `via` keys become
+ * `oatlas:` predicates.
  */
 export function buildJsonLd(graph) {
   const { nodes, nodeBySlug, edges } = normalizeGraph(graph);
@@ -172,9 +163,8 @@ export function buildJsonLd(graph) {
 }
 
 /**
- * GraphML — XML graph format that Gephi / Cytoscape import natively. Node
- * attributes = slug / kind / title / domain; edge attribute = via. Node id is
- * the same URN as JSON-LD so both formats share one identity.
+ * GraphML for Gephi and Cytoscape: nodes carry slug, kind, title and domain, edges carry via, and node ids
+ * are the JSON-LD URNs.
  */
 export function buildGraphML(graph) {
   const { nodes, nodeBySlug, edges } = normalizeGraph(graph);

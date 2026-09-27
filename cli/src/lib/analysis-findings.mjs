@@ -1,7 +1,6 @@
 /**
- * Turns evidence Atlas already computes into findings comparable across runs: each id derives from the
- * check and the thing it points at, never the wording. Lives in the CLI, its only consumer, because the
- * package contract forbids importing MCP internals. Pure: evidence in; findings, a diff and Markdown out.
+ * Turns evidence Atlas already computes into findings comparable across runs, with ids derived from the check
+ * and its target, never the wording. Lives in the CLI, its only consumer: the package contract forbids MCP imports.
  */
 
 /** Severity order, worst first. `unknown` is deliberately not `ok`. */
@@ -10,9 +9,8 @@ export const SEVERITIES = Object.freeze(['violation', 'unknown', 'review', 'info
 const SEVERITY_RANK = Object.freeze(Object.fromEntries(SEVERITIES.map((value, index) => [value, index])));
 
 /**
- * An id is `source/check/target`. The target is a slug, a path, or an edge — a
- * thing that exists in the repository, so the same problem raised by two runs
- * lands on the same id even when the wording moves.
+ * An id is `source/check/target`, where the target is a slug, path or edge, so one problem keeps one id
+ * across runs even when its wording moves.
  */
 export function findingId({ source, check, target }) {
   const clean = (value) => String(value ?? '').trim().replace(/\s+/g, ' ');
@@ -73,11 +71,8 @@ export function findingsFromValidation(validation) {
 }
 
 /**
- * Architecture contributes two different things, and collapsing them would be
- * the product's own documented mistake: a declared violation is a fact, while an
- * unmapped edge is an absence of evidence. The profile contract says unknown
- * import usage never means compliant, so unmapped coverage is reported as its
- * own finding rather than rounded to green.
+ * A declared violation is a fact; an unmapped edge is an absence of evidence. Unknown import usage never
+ * means compliant, so unmapped coverage is its own finding rather than rounded to green.
  */
 export function findingsFromArchitecture(architecture) {
   const conformance = architecture?.conformance;
@@ -144,9 +139,8 @@ export function collectFindings({ health, validation, architecture }) {
 }
 
 /**
- * What changed since the last run. `changed` is deliberately narrow: a finding
- * whose severity moved. Re-wording is not a change, which is the entire reason
- * ids exist.
+ * What changed since the last run. `changed` means only a severity move; re-wording is not a change,
+ * which is why ids exist.
  */
 export function diffFindings(previous, current) {
   const before = new Map((previous ?? []).map((item) => [item.id, item]));
@@ -205,9 +199,8 @@ export function parseFindings(markdown) {
 }
 
 /**
- * The record is Markdown with no `kind:` in its frontmatter, so the compiler
- * does not count it as an ontology node. It is committed, and therefore
- * versioned and readable in a diff, without becoming reviewed meaning.
+ * The record is Markdown with no `kind:`, so the compiler does not count it as a node; committed, it is
+ * versioned and diffable without becoming reviewed meaning.
  */
 export function renderAnalysis({ findings, diff, basis, previousLabel = null }) {
   const counts = severityCounts(findings);

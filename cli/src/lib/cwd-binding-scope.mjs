@@ -1,9 +1,8 @@
 import { relative } from 'node:path';
 
 /**
- * Decides whether `init` may write agent config into the directory it ran from: only when the vault is
- * inside cwd, where cwd is the codebase the vault describes. Outside, cwd is merely where the person
- * stood, and repointing its `.mcp.json` and `.codex/config.toml` would silently edit an unrelated project.
+ * Decides whether `init` may write agent config into cwd: only when the vault is inside it. Outside, cwd is
+ * where the person stood, and repointing its `.mcp.json` and `.codex/config.toml` would edit an unrelated project.
  *
  * @param {string} cwdPath canonical (realpath) directory the command ran in
  * @param {string} vaultPath canonical (realpath) directory the vault was created in

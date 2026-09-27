@@ -671,10 +671,8 @@ function resolveMcpServerCommand() {
       return { command: 'node', args: [monoDev], launchScope: 'source-bound', portable: false };
     }
   }
-  // npm publication was abandoned (docs/DECISIONS.md 2026-07-27), so this looks for
-  // the server the installed app carries in its bundle. With neither, it states the
-  // reason it failed — stopping here diagnoses more cheaply than quietly writing a
-  // configuration that will not connect.
+  // npm publication was abandoned (docs/DECISIONS.md 2026-07-27), so this looks for the server the installed
+  // app bundles. With neither it says why and stops, rather than write a configuration that cannot connect.
   const bundled = '/Applications/Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp';
   if (existsSync(bundled) && statSync(bundled).isFile()) {
     return { command: bundled, args: [], launchScope: 'app-bundled', portable: true };

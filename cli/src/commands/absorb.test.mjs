@@ -18,7 +18,7 @@ import { runAbsorb } from './absorb.mjs';
 import { writeDoc } from '../lib/write-vault.mjs';
 import { readTelemetry, TELEMETRY_RELATIVE_PATH } from '../lib/telemetry.mjs';
 
-// `ontology-atlas absorb` (docs/plans/PRODUCT-PLAN-2026-07.md §9 Slice 0).
+// `ontology-atlas absorb` (docs/plans/PRODUCT-PLAN-2026-07.md §9).
 
 let tmp;
 let vault;

@@ -110,9 +110,8 @@ function runAbsorbWithRuntime(args, runtime) {
     }
 
     /*
-     * All sections of one source land or none do: a partial landing made the re-run re-absorb the
-     * landed sections under -2 suffixes. writeDoc refuses an existing slug, so rollback unlinks exactly
-     * what this loop created.
+     * All sections of one source land or none do, or a re-run re-absorbs the landed ones under -2 suffixes.
+     * writeDoc refuses an existing slug, so rollback unlinks exactly what this loop created.
      */
     const landedPaths = [];
     try {
@@ -179,8 +178,7 @@ function runAbsorbWithRuntime(args, runtime) {
       throw error;
     }
 
-    // Slice 0 magic-moment instrumentation (PRODUCT-PLAN-2026-07.md §4/§9) —
-    // local-only baseline for "vault worth asking" (see lib/telemetry.mjs).
+    // Local-only telemetry baseline (docs/plans/PRODUCT-PLAN-2026-07.md §4/§9, lib/telemetry.mjs).
     stampAbsorbWriteCompleted(vaultPath);
 
     process.stdout.write(

@@ -8,9 +8,8 @@ function posix(relativePath) {
 }
 
 /**
- * Two paragraphs, no more. A briefing an agent has to scroll is a briefing it
- * summarises, and the point is the trigger — when to look — not a second copy of
- * the tool manual it already has.
+ * Two paragraphs, no more: an agent summarises a briefing it has to scroll, and the point is when to look,
+ * not a second tool manual.
  */
 export function rootBriefing(vaultRelativePath) {
   const vault = posix(vaultRelativePath) || '.';

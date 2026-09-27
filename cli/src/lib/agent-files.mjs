@@ -10,12 +10,8 @@ const CLAUDE_AGENTS_PREFIX = '.claude/agents/';
 const AGENTS_AGENTS_PREFIX = '.agents/agents/';
 
 /**
- * Tool ids → human labels. Data, not code — when a tool renames or a new
- * client appears, this is the single update point (with AGENT_FILE_RULES).
- */
-/**
- * `gemini-cli` stays beside `antigravity`: paid Gemini Code Assist tiers and API keys still reach
- * Gemini CLI although Antigravity CLI succeeds it.
+ * Tool ids → human labels, the single update point with AGENT_FILE_RULES. `gemini-cli` stays beside
+ * `antigravity`: paid Gemini Code Assist tiers and API keys still reach Gemini CLI.
  */
 export const AGENT_TOOL_LABELS = Object.freeze({
   'claude-code': 'Claude Code',
@@ -42,10 +38,8 @@ export const AGENT_FILE_RULES = Object.freeze([
   Object.freeze({ id: 'claude-skills', kind: 'skill', tools: Object.freeze(['claude-code']), pattern: /^\.claude\/skills\/.+/ }),
   Object.freeze({ id: 'claude-agents', kind: 'agent', tools: Object.freeze(['claude-code']), pattern: /^\.claude\/agents\/.+/ }),
   Object.freeze({ id: 'agents-skills', kind: 'skill', tools: Object.freeze(['codex']), pattern: /^\.agents\/skills\/.+/ }),
-  // `.claude/agents` is Claude Code's **summoning registry** — a seat missing from
-  // it cannot be spawned at all. Its twin here is where a tool without subagents
-  // **opens and reads** the same brief. The purposes differ but the content must
-  // match, which is what agent-copy enforces.
+  // `.claude/agents` is Claude Code's summoning registry (a seat missing there cannot be spawned); this twin
+  // is where a tool without subagents reads the same brief. Purposes differ, content must match (agent-copy).
   Object.freeze({ id: 'agents-agents', kind: 'agent', tools: Object.freeze(['codex']), pattern: /^\.agents\/agents\/.+/ }),
   // `.cursorrules` is the legacy form Cursor ignores in agent mode, the mode every consumer here runs in;
   // `.cursor/rules/*.mdc` is the format to write.
@@ -56,11 +50,9 @@ export const AGENT_FILE_RULES = Object.freeze([
   Object.freeze({ id: 'claude-settings', kind: 'config', tools: Object.freeze(['claude-code']), pattern: /^\.claude\/settings\.json$/ }),
   Object.freeze({ id: 'codex-dir', kind: 'config', tools: Object.freeze(['codex']), pattern: /^\.codex\/.+/ }),
   Object.freeze({ id: 'mcp-json', kind: 'mcp-config', tools: Object.freeze(['claude-code', 'cursor']), pattern: /^\.mcp\.json$/ }),
-  // Exclusion files — what the repository asks a tool not to look at. Each name belongs to exactly
-  // one product: `.cursorignore`/`.cursorindexingignore` (Cursor), `.codeiumignore` (Windsurf),
-  // `.aiexclude` (Gemini **Code Assist**, not Gemini CLI, which reads `.geminiignore`), `.aiignore`
-  // (JetBrains AI). `.claudeignore` does not exist and `.agentignore` is a proposal; neither is
-  // listed. Kept byte-for-byte in step with the web twin — see the block comment there.
+  // Exclusion files, one product each: `.cursorignore`/`.cursorindexingignore` (Cursor), `.codeiumignore` (Windsurf),
+  // `.aiexclude` (Gemini Code Assist; Gemini CLI reads `.geminiignore`), `.aiignore` (JetBrains AI). `.claudeignore`
+  // and `.agentignore` are not real formats. Kept byte-for-byte in step with the web twin.
   Object.freeze({ id: 'cursor-ignore', kind: 'exclusion', tools: Object.freeze(['cursor']), pattern: /^\.cursorignore$/ }),
   Object.freeze({ id: 'cursor-indexing-ignore', kind: 'exclusion', tools: Object.freeze(['cursor']), pattern: /^\.cursorindexingignore$/ }),
   Object.freeze({ id: 'codeium-ignore', kind: 'exclusion', tools: Object.freeze([]), pattern: /^\.codeiumignore$/ }),
@@ -88,10 +80,8 @@ const AT_REF_EXTENSIONS = Object.freeze([
 const AT_REF_RE = /(?:^|[\s(`"'])@([A-Za-z0-9._/-]+)/gm;
 
 /**
- * Extract `@path/to/file.ext` references from markdown. Requires a known file
- * extension so emails (user@host), npm scopes (@scope/pkg), css at-rules
- * (@media) and versions (@4.11) never match. Trailing sentence punctuation is
- * trimmed. Returns refs in document order, deduplicated.
+ * Extracts `@path/to/file.ext` references from markdown, in order and deduplicated. A known extension is
+ * required so emails, npm scopes, css at-rules and versions never match; trailing punctuation is trimmed.
  */
 export function extractAtRefs(content) {
   const out = [];
@@ -142,9 +132,8 @@ function dirnamePath(path) {
 }
 
 /**
- * Detect a *real* `@AGENTS.md` import in CLAUDE.md — fenced code blocks and
- * inline code spans are stripped first, so a backticked mention (`@AGENTS.md`)
- * in prose does not count as a working bridge.
+ * Detects a real `@AGENTS.md` import in CLAUDE.md: code fences and spans are stripped first, so a
+ * backticked mention in prose is not a working bridge.
  */
 function hasClaudeAgentsImport(content) {
   const withoutFences = String(content ?? '').replace(/```[\s\S]*?```/g, '');
@@ -185,9 +174,8 @@ function checkClaudeAgentsBridge(recordByPath, existingPathSet, drift) {
 }
 
 /**
- * `.claude/agents` ↔ `.agents/agents`: seat briefs serve a different purpose per tool (Claude Code's
- * summoning registry, a reference Codex opens) with identical content, so the pair is required, and a
- * file on one side only is drift: a name the other tool can neither summon nor read.
+ * `.claude/agents` ↔ `.agents/agents`: seat briefs serve each tool differently (Claude Code's registry, a
+ * reference Codex opens) with identical content, so a file on one side only is drift.
  */
 function checkAgentCopy(records, drift) {
   const claudeByName = new Map();
@@ -388,9 +376,8 @@ const NON_ENGLISH_SCRIPT_RE =
   /[\u1100-\u11ff\u3040-\u30ff\u3130-\u318f\u3400-\u4dbf\u4e00-\u9fff\ua960-\ua97f\uac00-\ud7ff\uf900-\ufaff\uff65-\uffdc]/gu;
 
 /**
- * An agent reads every agent file whole, so its string literals steer too; this repository is
- * English-only. Localized product data (`cli/templates/vault-ko/**`, `display_<locale>`) never matches
- * AGENT_FILE_RULES, so it is out of scope by construction.
+ * An agent reads every agent file whole, so its string literals steer too; this repository is English-only.
+ * Localized product data (`cli/templates/vault-ko/**`, `display_<locale>`) never matches AGENT_FILE_RULES.
  */
 function checkAgentLanguage(records, drift, requireEnglish) {
   // Opt-in: one repository's policy, not a truth about agent files. The web docs workbench reads a user's
@@ -451,12 +438,8 @@ function declaredFromMcpJson(record) {
 }
 
 /**
- * Codex declares its servers in TOML, and this module is shared with the web
- * bundle, so it reads section headers rather than importing a parser the browser
- * build has no reason to carry. `[mcp_servers.name]` and
- * `[mcp_servers.name.env]` both name the same server; only the first segment
- * counts. A config with no such section declares nothing, which is the
- * `unparseable` verdict above rather than a pass.
+ * Codex servers are TOML, and this module ships in the web bundle, so it reads `[mcp_servers.name]` section
+ * headers instead of importing a parser; no such section declares nothing (`unparseable`, not a pass).
  */
 const TOML_MCP_SECTION_RE =
   /^[ \t]*\[[ \t]*(?:mcp_servers|"mcp_servers"|'mcp_servers')[ \t]*\.[ \t]*(?:"([^"]+)"|'([^']+)'|([A-Za-z0-9_-]+))/gm;
@@ -473,9 +456,8 @@ function declaredFromCodexConfig(record) {
 }
 
 /**
- * A brief's `tools:` list is an allowlist: a tool whose server no repository config declares is silently
- * absent, and the seat runs without it. Each tree is measured against its own reader's config (`.claude`
- * briefs against `.mcp.json`, `.agents` against `.codex/config.toml`); a personal config is not the contract.
+ * A brief's `tools:` list is an allowlist, and an undeclared server's tool is silently absent. `.claude`
+ * briefs are measured against `.mcp.json`, `.agents` against `.codex/config.toml`, never a personal config.
  */
 const MCP_TOOL_RE = /\bmcp__([a-z0-9][a-z0-9_-]*)__[a-z0-9_]+/gi;
 
@@ -611,20 +593,9 @@ function checkCodexSizeCap(recordByPath, records, drift) {
 
 
 /**
- * Analyze a scanned file set. Pure — the caller supplies everything:
- *
- * - `files`: `{ path, content?, bytes? }[]` — repo-root-relative paths with
- *   contents where the scanner could read them. Non-agent paths are ignored.
- * - `existingPaths`: every extra path the scanner can confirm exists
- *   (used to resolve `@references` and the AGENTS.md bridge target).
- * - `unverifiablePrefixes`: path prefixes the scanner *cannot see* (the web
- *   FSA scanner passes `['.']` — dot files are invisible to the vault walk),
- *   so refs into them report `unverified` instead of false `missing`.
- * - `verifiableExtensions`: when set, only refs with these extensions can be
- *   judged missing (the web manifest only indexes `.md`).
- * - `requireEnglish`: opt in to the English-only agent-text check. Off by
- *   default so analysing someone else's repository or vault never imports this
- *   repository's language policy.
+ * Analyzes a scanned file set; pure, the caller supplies everything. `unverifiablePrefixes` marks paths the
+ * scanner cannot see (refs report `unverified`, not `missing`); `requireEnglish` opts into this repository's
+ * language policy, so analysing someone else's repository never imports it.
  */
 export function analyzeAgentFiles({
   files,

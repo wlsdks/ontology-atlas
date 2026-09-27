@@ -7,9 +7,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 /**
- * No registry install is allowed, so the CLI writes its own one-line launcher. Of the four
- * `.claude/rules/surfaces.md` conditions, a test can hold two: the contents are exact and printable
- * before writing, and a file this command did not write is never touched.
+ * The two `.claude/rules/surfaces.md` install conditions a test can hold: the contents are exact and
+ * printable before writing, and a file this command did not write is never touched.
  */
 describe('install-shim puts atlas on PATH without touching foreign files', () => {
   it('writes a one-line launcher that execs the CLI', () => {

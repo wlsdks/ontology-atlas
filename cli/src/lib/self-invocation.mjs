@@ -5,11 +5,8 @@
 import path from 'node:path';
 
 /**
- * The real command that started this process. `process.argv[1]` is this script's
- * path, so it points at whichever checkout the user invoked.
- *
- * **Always absolute.** The `init` guidance tells the user to `cd <vault>` first,
- * so a relative path would break on the very next line.
+ * The command that started this process (`process.argv[1]`, whichever checkout was invoked), always
+ * absolute because `init` tells the user to `cd <vault>` first.
  *
  * @param {{ argv?: string[], cwd?: string }} [io] injection point for tests.
  */
