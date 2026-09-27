@@ -11,6 +11,9 @@ import type { VaultDoc, VaultSourceFile } from '../model/types';
 /** The top-level wiki folder, anchored at the root like `VAULT_SOURCES_DIR`. */
 const VAULT_WIKI_DIR = 'wiki';
 
+/** Retained answers are revised through their own review workflow, not Compile. */
+const WIKI_ANSWERS_PREFIX = 'wiki/answers/';
+
 /**
  * `stale` covers a hash mismatch and a missing hash; `partial` means the matching page read only
  * part of the file; `checking` is transient until the file is hashed.
@@ -182,7 +185,7 @@ export function buildLibraryModel({
       state: deriveSourceState(cited, hashes.get(source.path)),
       citedBy: [...new Set((cited ?? []).map((citation) => citation.wikiSlug))].sort(),
       reviewPages: actual === undefined ? [] : [...new Set((cited ?? [])
-        .filter((citation) => citation.sourceHash !== actual && !citation.wikiSlug.startsWith('wiki/answers/'))
+        .filter((citation) => citation.sourceHash !== actual && !citation.wikiSlug.startsWith(WIKI_ANSWERS_PREFIX))
         .map((citation) => citation.wikiSlug))].sort(),
     };
   });
@@ -213,8 +216,6 @@ export function formatSourceBytes(bytes: number): string {
   return `${value >= 100 ? Math.round(value) : value.toFixed(1)} ${units[unit]}`;
 }
 
-/* Pairing: from a wiki page to the sources it cites, and from a source to its write-ups. */
-
 export interface LibraryOriginalLink {
   path: string;
   /** File name, or the whole path when the citation has no `/`. */
@@ -228,6 +229,13 @@ export interface LibraryOriginalLink {
  * impossible, so it must not collapse into `behind`.
  */
 type WriteUpFreshness = 'current' | 'partial' | 'behind' | 'unchecked';
+
+function writeUpFreshness(citation: WikiCitation, actualHash: string | undefined): WriteUpFreshness {
+  if (citation.sourceHash === null) return 'behind';
+  if (actualHash === undefined) return 'unchecked';
+  if (citation.sourceHash !== actualHash) return 'behind';
+  return citation.truncated ? 'partial' : 'current';
+}
 
 export interface LibraryWriteUpLink {
   slug: string;
@@ -280,16 +288,7 @@ function buildLibraryPairing({
       bySlug.set(citation.wikiSlug, {
         slug: citation.wikiSlug,
         title: titles.get(citation.wikiSlug) ?? citation.wikiSlug,
-        freshness:
-          citation.sourceHash === null
-            ? 'behind'
-            : actual === undefined
-              ? 'unchecked'
-              : citation.sourceHash !== actual
-                ? 'behind'
-                : citation.truncated
-                  ? 'partial'
-                  : 'current',
+        freshness: writeUpFreshness(citation, actual),
       });
     }
     writeUpsBySource.set(

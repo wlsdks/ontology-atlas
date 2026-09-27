@@ -263,6 +263,406 @@ interface AnalyzeAgentFilesInput {
   requireEnglish?: boolean;
 }
 
+function checkClaudeAgentsBridge(
+  recordByPath: Map<string, InternalRecord>,
+  existingPathSet: Set<string>,
+  drift: AgentDriftFinding[],
+): { status: AgentDriftCheckStatus } {
+  const claude = recordByPath.get('CLAUDE.md');
+  if (!claude) return { status: 'not-applicable' };
+  const agentsExists = recordByPath.has('AGENTS.md') || existingPathSet.has('AGENTS.md');
+  const hasImport = hasClaudeAgentsImport(claude.entry.content);
+  if (hasImport && agentsExists) return { status: 'ok' };
+  if (hasImport && !agentsExists) {
+    drift.push({
+      check: 'claude-agents-bridge',
+      code: 'broken-agents-import',
+      path: 'CLAUDE.md',
+      message: 'CLAUDE.md imports @AGENTS.md but AGENTS.md does not exist',
+      detail: { ref: 'AGENTS.md' },
+    });
+    claude.drift.push('broken-agents-import');
+    return { status: 'drift' };
+  }
+  if (!hasImport && agentsExists) {
+    drift.push({
+      check: 'claude-agents-bridge',
+      code: 'missing-agents-import',
+      path: 'CLAUDE.md',
+      message:
+        'CLAUDE.md does not import @AGENTS.md: Claude Code and AGENTS.md readers see different instructions',
+      detail: { ref: 'AGENTS.md' },
+    });
+    claude.drift.push('missing-agents-import');
+    return { status: 'drift' };
+  }
+  return { status: 'not-applicable' };
+}
+
+function markDrift(record: InternalRecord, code: string): void {
+  if (!record.drift.includes(code)) record.drift.push(code);
+}
+
+function recordsUnder(records: InternalRecord[], prefix: string): Map<string, InternalRecord> {
+  const byRelativePath = new Map<string, InternalRecord>();
+  for (const record of records) {
+    if (record.path.startsWith(prefix)) byRelativePath.set(record.path.slice(prefix.length), record);
+  }
+  return byRelativePath;
+}
+
+// Codes stay literal: `agent-drift-code-messages.contract.test.ts` reads them from this file.
+interface CopyTree {
+  check: 'skill-copy' | 'agent-copy';
+  diverged: { code: string };
+  missing: { code: string };
+  noun: string;
+  claudeDir: string;
+  agentsDir: string;
+}
+
+const SKILL_TREE: CopyTree = {
+  check: 'skill-copy',
+  diverged: { code: 'skill-copy-diverged' },
+  missing: { code: 'skill-copy-file-missing' },
+  noun: 'skill file',
+  claudeDir: '.claude/skills',
+  agentsDir: '.agents/skills',
+};
+
+const AGENT_TREE: CopyTree = {
+  check: 'agent-copy',
+  diverged: { code: 'agent-copy-diverged' },
+  missing: { code: 'agent-copy-file-missing' },
+  noun: 'agent brief',
+  claudeDir: '.claude/agents',
+  agentsDir: '.agents/agents',
+};
+
+function compareCopyTrees(
+  keys: readonly string[],
+  claudeByKey: Map<string, InternalRecord>,
+  agentsByKey: Map<string, InternalRecord>,
+  tree: CopyTree,
+  drift: AgentDriftFinding[],
+): { comparedFiles: number; divergedFiles: number; oneSidedFiles: number } {
+  let comparedFiles = 0;
+  let divergedFiles = 0;
+  let oneSidedFiles = 0;
+  for (const key of keys) {
+    const claude = claudeByKey.get(key);
+    const agents = agentsByKey.get(key);
+    if (claude && agents) {
+      comparedFiles += 1;
+      const bytesDiffer = claude.bytes !== agents.bytes;
+      const bothContents =
+        typeof claude.entry.content === 'string' && typeof agents.entry.content === 'string';
+      const contentDiffers = bothContents && claude.entry.content !== agents.entry.content;
+      if (bytesDiffer || contentDiffers) {
+        divergedFiles += 1;
+        const { code } = tree.diverged;
+        drift.push({
+          check: tree.check,
+          code,
+          path: key,
+          message: `duplicated ${tree.noun} diverged between ${tree.claudeDir} and ${tree.agentsDir}: ${key}`,
+          detail: {
+            claudePath: claude.path,
+            agentsPath: agents.path,
+            claudeBytes: claude.bytes,
+            agentsBytes: agents.bytes,
+          },
+        });
+        claude.drift.push(code);
+        agents.drift.push(code);
+      }
+    } else {
+      oneSidedFiles += 1;
+      const { code } = tree.missing;
+      drift.push({
+        check: tree.check,
+        code,
+        path: key,
+        message: `${tree.noun} exists in only one of the duplicated trees: ${key}`,
+        detail: { presentIn: claude ? tree.claudeDir : tree.agentsDir },
+      });
+      (claude ?? agents)!.drift.push(code);
+    }
+  }
+  return { comparedFiles, divergedFiles, oneSidedFiles };
+}
+
+function copyTreeStatus(
+  counts: { divergedFiles: number; oneSidedFiles: number },
+  anyCompared: boolean,
+): AgentDriftCheckStatus {
+  if (counts.divergedFiles > 0 || counts.oneSidedFiles > 0) return 'drift';
+  return anyCompared ? 'ok' : 'not-applicable';
+}
+
+function checkSkillCopy(records: InternalRecord[], drift: AgentDriftFinding[]) {
+  const claudeByRel = recordsUnder(records, CLAUDE_SKILLS_PREFIX);
+  const agentsByRel = recordsUnder(records, AGENTS_SKILLS_PREFIX);
+  const skillName = (rel: string) => rel.split('/')[0];
+  const claudeSkills = new Set([...claudeByRel.keys()].map(skillName));
+  const agentsSkills = new Set([...agentsByRel.keys()].map(skillName));
+  const sharedSkills = [...claudeSkills].filter((name) => agentsSkills.has(name)).sort();
+  const claudeOnlySkills = [...claudeSkills].filter((name) => !agentsSkills.has(name)).sort();
+  const agentsOnlySkills = [...agentsSkills].filter((name) => !claudeSkills.has(name)).sort();
+  const sharedSet = new Set(sharedSkills);
+  const rels = [...new Set([...claudeByRel.keys(), ...agentsByRel.keys()])]
+    .filter((rel) => sharedSet.has(skillName(rel)))
+    .sort();
+  const counts = compareCopyTrees(rels, claudeByRel, agentsByRel, SKILL_TREE, drift);
+  const status = copyTreeStatus(counts, sharedSkills.length > 0);
+  return { status, ...counts, sharedSkills, claudeOnlySkills, agentsOnlySkills };
+}
+
+// Unlike skills, a brief present on one side only is drift: the registry and its reference
+// document must both exist.
+function checkAgentCopy(records: InternalRecord[], drift: AgentDriftFinding[]) {
+  const claudeByName = recordsUnder(records, CLAUDE_AGENTS_PREFIX);
+  const agentsByName = recordsUnder(records, AGENTS_AGENTS_PREFIX);
+  const names = [...new Set([...claudeByName.keys(), ...agentsByName.keys()])].sort();
+  const counts = compareCopyTrees(names, claudeByName, agentsByName, AGENT_TREE, drift);
+  return { status: copyTreeStatus(counts, counts.comparedFiles > 0), ...counts };
+}
+
+function checkAtRefs(
+  records: InternalRecord[],
+  knownPaths: { existing: Set<string>; records: Set<string> },
+  unverifiable: { prefixes: string[]; extensions: string[] | null },
+  drift: AgentDriftFinding[],
+) {
+  let refsChecked = 0;
+  let missingRefs = 0;
+  let unverifiedRefs = 0;
+  for (const record of records) {
+    if (!/\.(md|mdc)$/.test(record.path)) continue;
+    if (typeof record.entry.content !== 'string') continue;
+    for (const { ref } of extractAtRefs(record.entry.content)) {
+      if (ref.includes('*')) continue;
+      refsChecked += 1;
+      const dir = dirnamePath(record.path);
+      const candidates: string[] = [];
+      const fileRelative = normalizePath(dir ? `${dir}/${ref}` : ref);
+      if (fileRelative) candidates.push(fileRelative);
+      const rootRelative = normalizePath(ref);
+      if (rootRelative && !candidates.includes(rootRelative)) candidates.push(rootRelative);
+      const exists = candidates.some(
+        (candidate) => knownPaths.existing.has(candidate) || knownPaths.records.has(candidate),
+      );
+      if (exists) continue;
+      const extUnverifiable =
+        Array.isArray(unverifiable.extensions) &&
+        !unverifiable.extensions.some((ext) => ref.endsWith(ext));
+      const prefixUnverifiable =
+        unverifiable.prefixes.length > 0 &&
+        candidates.every((candidate) =>
+          unverifiable.prefixes.some((prefix) => candidate.startsWith(prefix)),
+        );
+      if (extUnverifiable || prefixUnverifiable) {
+        unverifiedRefs += 1;
+        continue;
+      }
+      missingRefs += 1;
+      drift.push({
+        check: 'at-refs',
+        code: 'at-ref-missing',
+        path: record.path,
+        message: `@reference target not found: ${ref} (referenced from ${record.path})`,
+        detail: { ref },
+      });
+      markDrift(record, 'at-ref-missing');
+    }
+  }
+  const status: AgentDriftCheckStatus =
+    missingRefs > 0 ? 'drift' : refsChecked > 0 ? 'ok' : 'not-applicable';
+  return { status, refsChecked, missingRefs, unverifiedRefs };
+}
+
+/** English-only agent text: an agent reads a file's whole content, not only its comments. */
+function checkAgentLanguage(
+  records: InternalRecord[],
+  requireEnglish: boolean,
+  drift: AgentDriftFinding[],
+) {
+  // Opt-in: a user's own vault may be Korean.
+  if (!requireEnglish) {
+    const status: AgentDriftCheckStatus = 'not-applicable';
+    return { status, scannedFiles: 0, flaggedFiles: 0, codePoints: 0 };
+  }
+  let scannedFiles = 0;
+  let flaggedFiles = 0;
+  let codePoints = 0;
+  for (const record of records) {
+    if (typeof record.entry.content !== 'string') continue;
+    scannedFiles += 1;
+    const hits = record.entry.content.match(NON_ENGLISH_SCRIPT_RE);
+    if (!hits) continue;
+    flaggedFiles += 1;
+    codePoints += hits.length;
+    const sample = Array.from(new Set(hits)).slice(0, 8).join('');
+    drift.push({
+      check: 'agent-language',
+      code: 'non-english-agent-text',
+      path: record.path,
+      message:
+        `${record.path} carries ${hits.length} non-English code point(s) (${sample}); `
+        + 'agent files are English-only because their text is what a blocked or '
+        + 'steered agent reads',
+      detail: { codePoints: hits.length, sample },
+    });
+    markDrift(record, 'non-english-agent-text');
+  }
+  const status: AgentDriftCheckStatus =
+    flaggedFiles > 0 ? 'drift' : scannedFiles > 0 ? 'ok' : 'not-applicable';
+  return { status, scannedFiles, flaggedFiles, codePoints };
+}
+
+/**
+ * Brief MCP grants, each tree against its own reader's config (`.claude` → `.mcp.json`,
+ * `.agents` → `.codex/config.toml`). A config declaring nothing makes every grant undeclared.
+ */
+function checkMcpGrants(
+  records: InternalRecord[],
+  recordByPath: Map<string, InternalRecord>,
+  drift: AgentDriftFinding[],
+) {
+  const sources = [
+    {
+      prefix: '.claude/agents/',
+      configPath: '.mcp.json',
+      read: (text: string): Set<string> => {
+        const servers = (JSON.parse(text) as { mcpServers?: unknown })?.mcpServers;
+        return new Set(servers && typeof servers === 'object' ? Object.keys(servers) : []);
+      },
+    },
+    {
+      prefix: '.agents/agents/',
+      configPath: '.codex/config.toml',
+      read: (text: string): Set<string> => {
+        const found = new Set<string>();
+        for (const match of text.matchAll(TOML_MCP_SECTION_RE)) {
+          found.add((match[1] ?? match[2] ?? match[3]) as string);
+        }
+        return found;
+      },
+    },
+  ];
+
+  const undeclared = new Set<string>();
+  const unparseableConfigs: string[] = [];
+  let briefsChecked = 0;
+  let grantsChecked = 0;
+  let anyConfig = false;
+
+  for (const source of sources) {
+    const configRecord = recordByPath.get(source.configPath);
+    const briefs = records.filter(
+      (r) => r.path.startsWith(source.prefix) && typeof r.entry.content === 'string',
+    );
+    if (!configRecord || typeof configRecord.entry.content !== 'string') continue;
+    if (briefs.length === 0) continue;
+    anyConfig = true;
+    briefsChecked += briefs.length;
+
+    let declared = new Set<string>();
+    try {
+      declared = source.read(configRecord.entry.content);
+    } catch {
+      declared = new Set();
+    }
+    if (declared.size === 0) {
+      unparseableConfigs.push(source.configPath);
+      drift.push({
+        check: 'mcp-grants',
+        code: 'mcp-config-unparseable',
+        path: source.configPath,
+        message:
+          `${source.configPath} exists but declares no MCP server: every agent-brief grant in `
+          + `${source.prefix} is undeclared and a fresh clone silently loses those tools`,
+        detail: { prefix: source.prefix },
+      });
+      markDrift(configRecord, 'mcp-config-unparseable');
+    }
+
+    for (const record of briefs) {
+      const frontmatter = (record.entry.content as string).split('\n---')[0];
+      const seen = new Set<string>();
+      for (const [, server] of frontmatter.matchAll(MCP_TOOL_RE)) {
+        grantsChecked += 1;
+        if (declared.has(server) || seen.has(server)) continue;
+        seen.add(server);
+        undeclared.add(server);
+        drift.push({
+          check: 'mcp-grants',
+          code: 'undeclared-mcp-server',
+          path: record.path,
+          message:
+            `${record.path} grants tools from the MCP server "${server}", which `
+            + `${source.configPath} does not declare; a fresh clone gets the seat without the `
+            + 'tools and no error',
+          detail: { server, configPath: source.configPath },
+        });
+        markDrift(record, 'undeclared-mcp-server');
+      }
+    }
+  }
+
+  if (!anyConfig) {
+    const status: AgentDriftCheckStatus = 'not-applicable';
+    return { status, briefsChecked: 0, grantsChecked: 0, undeclaredServers: [] as string[], unparseableConfigs: [] as string[] };
+  }
+  return {
+    status: (undeclared.size > 0 || unparseableConfigs.length > 0 ? 'drift' : 'ok') as AgentDriftCheckStatus,
+    briefsChecked,
+    grantsChecked,
+    undeclaredServers: [...undeclared].sort(),
+    unparseableConfigs: unparseableConfigs.sort(),
+  };
+}
+
+// Codex merges AGENTS.md files from the root down the working path and nested files are one
+// level deep, so the worst case is root plus the largest nested file, not the sum.
+function checkCodexSizeCap(
+  records: InternalRecord[],
+  recordByPath: Map<string, InternalRecord>,
+  drift: AgentDriftFinding[],
+) {
+  const agents = recordByPath.get('AGENTS.md');
+  const nested = records.filter((r) => r.ruleId === 'nested-agents-md');
+  const nestedBytes = nested.reduce((max, r) => Math.max(max, r.bytes), 0);
+  const worst = nested.reduce<InternalRecord | null>((a, b) => (a && a.bytes >= b.bytes ? a : b), null);
+  const worstCaseBytes = agents ? agents.bytes + nestedBytes : null;
+  const shared = {
+    agentsMdBytes: agents ? agents.bytes : null,
+    nestedFiles: nested.length,
+    worstNestedPath: worst?.path ?? null,
+    worstCaseBytes,
+    capBytes: CODEX_PROJECT_DOC_CAP_BYTES,
+  };
+  if (!agents || worstCaseBytes === null) {
+    return { status: 'not-applicable' as AgentDriftCheckStatus, ...shared };
+  }
+  if (worstCaseBytes > CODEX_PROJECT_DOC_CAP_BYTES) {
+    const via = worst ? ` (AGENTS.md ${agents.bytes} + ${worst.path} ${worst.bytes})` : '';
+    drift.push({
+      check: 'codex-size-cap',
+      code: 'agents-md-over-codex-cap',
+      path: worst?.path ?? 'AGENTS.md',
+      message:
+        `the merged Codex instruction set reaches ${worstCaseBytes} bytes${via}: over the `
+        + `project_doc_max_bytes default of ${CODEX_PROJECT_DOC_CAP_BYTES}, past which Codex `
+        + 'truncates silently',
+      detail: shared,
+    });
+    (worst ?? agents).drift.push('agents-md-over-codex-cap');
+    return { status: 'drift' as AgentDriftCheckStatus, ...shared };
+  }
+  return { status: 'ok' as AgentDriftCheckStatus, ...shared };
+}
+
 export function analyzeAgentFiles({
   files,
   existingPaths = [],
@@ -291,428 +691,18 @@ export function analyzeAgentFiles({
   const existingPathSet = new Set(existingPaths);
   const drift: AgentDriftFinding[] = [];
 
-  // CLAUDE.md ↔ AGENTS.md import bridge.
-  const claudeAgentsBridge = ((): { status: AgentDriftCheckStatus } => {
-    const claude = recordByPath.get('CLAUDE.md');
-    if (!claude) return { status: 'not-applicable' };
-    const agentsExists = recordByPath.has('AGENTS.md') || existingPathSet.has('AGENTS.md');
-    const hasImport = hasClaudeAgentsImport(claude.entry.content);
-    if (hasImport && agentsExists) return { status: 'ok' };
-    if (hasImport && !agentsExists) {
-      drift.push({
-        check: 'claude-agents-bridge',
-        code: 'broken-agents-import',
-        path: 'CLAUDE.md',
-        message: 'CLAUDE.md imports @AGENTS.md but AGENTS.md does not exist',
-        detail: { ref: 'AGENTS.md' },
-      });
-      claude.drift.push('broken-agents-import');
-      return { status: 'drift' };
-    }
-    if (!hasImport && agentsExists) {
-      drift.push({
-        check: 'claude-agents-bridge',
-        code: 'missing-agents-import',
-        path: 'CLAUDE.md',
-        message:
-          'CLAUDE.md does not import @AGENTS.md: Claude Code and AGENTS.md readers see different instructions',
-        detail: { ref: 'AGENTS.md' },
-      });
-      claude.drift.push('missing-agents-import');
-      return { status: 'drift' };
-    }
-    return { status: 'not-applicable' };
-  })();
-
-  // Duplicated skill trees, byte diff.
-  const skillCopy = (() => {
-    const claudeByRel = new Map<string, InternalRecord>();
-    const agentsByRel = new Map<string, InternalRecord>();
-    for (const record of records) {
-      if (record.path.startsWith(CLAUDE_SKILLS_PREFIX)) {
-        claudeByRel.set(record.path.slice(CLAUDE_SKILLS_PREFIX.length), record);
-      } else if (record.path.startsWith(AGENTS_SKILLS_PREFIX)) {
-        agentsByRel.set(record.path.slice(AGENTS_SKILLS_PREFIX.length), record);
-      }
-    }
-    const skillName = (rel: string) => rel.split('/')[0];
-    const claudeSkills = new Set([...claudeByRel.keys()].map(skillName));
-    const agentsSkills = new Set([...agentsByRel.keys()].map(skillName));
-    const sharedSkills = [...claudeSkills].filter((name) => agentsSkills.has(name)).sort();
-    const claudeOnlySkills = [...claudeSkills].filter((name) => !agentsSkills.has(name)).sort();
-    const agentsOnlySkills = [...agentsSkills].filter((name) => !claudeSkills.has(name)).sort();
-
-    let comparedFiles = 0;
-    let divergedFiles = 0;
-    let oneSidedFiles = 0;
-    const sharedSet = new Set(sharedSkills);
-    const rels = [...new Set([...claudeByRel.keys(), ...agentsByRel.keys()])]
-      .filter((rel) => sharedSet.has(skillName(rel)))
-      .sort();
-    for (const rel of rels) {
-      const claude = claudeByRel.get(rel);
-      const agents = agentsByRel.get(rel);
-      if (claude && agents) {
-        comparedFiles += 1;
-        const bytesDiffer = claude.bytes !== agents.bytes;
-        const bothContents =
-          typeof claude.entry.content === 'string' && typeof agents.entry.content === 'string';
-        const contentDiffers = bothContents && claude.entry.content !== agents.entry.content;
-        if (bytesDiffer || contentDiffers) {
-          divergedFiles += 1;
-          drift.push({
-            check: 'skill-copy',
-            code: 'skill-copy-diverged',
-            path: rel,
-            message: `duplicated skill file diverged between .claude/skills and .agents/skills: ${rel}`,
-            detail: {
-              claudePath: claude.path,
-              agentsPath: agents.path,
-              claudeBytes: claude.bytes,
-              agentsBytes: agents.bytes,
-            },
-          });
-          claude.drift.push('skill-copy-diverged');
-          agents.drift.push('skill-copy-diverged');
-        }
-      } else {
-        oneSidedFiles += 1;
-        const present = (claude ?? agents)!;
-        drift.push({
-          check: 'skill-copy',
-          code: 'skill-copy-file-missing',
-          path: rel,
-          message: `skill file exists in only one of the duplicated trees: ${rel}`,
-          detail: { presentIn: claude ? '.claude/skills' : '.agents/skills' },
-        });
-        present.drift.push('skill-copy-file-missing');
-      }
-    }
-
-    const status: AgentDriftCheckStatus =
-      divergedFiles > 0 || oneSidedFiles > 0
-        ? 'drift'
-        : sharedSkills.length > 0
-          ? 'ok'
-          : 'not-applicable';
-    return {
-      status,
-      comparedFiles,
-      divergedFiles,
-      oneSidedFiles,
-      sharedSkills,
-      claudeOnlySkills,
-      agentsOnlySkills,
-    };
-  })();
-
-  // Agent briefs, byte diff. Unlike skills, a seat present on one side only is drift: the
-  // registry and its reference document must both exist.
-  const agentCopy = (() => {
-    const claudeByName = new Map<string, InternalRecord>();
-    const agentsByName = new Map<string, InternalRecord>();
-    for (const record of records) {
-      if (record.path.startsWith(CLAUDE_AGENTS_PREFIX)) {
-        claudeByName.set(record.path.slice(CLAUDE_AGENTS_PREFIX.length), record);
-      } else if (record.path.startsWith(AGENTS_AGENTS_PREFIX)) {
-        agentsByName.set(record.path.slice(AGENTS_AGENTS_PREFIX.length), record);
-      }
-    }
-
-    let comparedFiles = 0;
-    let divergedFiles = 0;
-    let oneSidedFiles = 0;
-    const names = [...new Set([...claudeByName.keys(), ...agentsByName.keys()])].sort();
-    for (const name of names) {
-      const claude = claudeByName.get(name);
-      const agents = agentsByName.get(name);
-      if (claude && agents) {
-        comparedFiles += 1;
-        const bytesDiffer = claude.bytes !== agents.bytes;
-        const bothContents =
-          typeof claude.entry.content === 'string' && typeof agents.entry.content === 'string';
-        const contentDiffers = bothContents && claude.entry.content !== agents.entry.content;
-        if (bytesDiffer || contentDiffers) {
-          divergedFiles += 1;
-          drift.push({
-            check: 'agent-copy',
-            code: 'agent-copy-diverged',
-            path: name,
-            message: `duplicated agent brief diverged between .claude/agents and .agents/agents: ${name}`,
-            detail: {
-              claudePath: claude.path,
-              agentsPath: agents.path,
-              claudeBytes: claude.bytes,
-              agentsBytes: agents.bytes,
-            },
-          });
-          claude.drift.push('agent-copy-diverged');
-          agents.drift.push('agent-copy-diverged');
-        }
-      } else {
-        oneSidedFiles += 1;
-        const present = (claude ?? agents)!;
-        drift.push({
-          check: 'agent-copy',
-          code: 'agent-copy-file-missing',
-          path: name,
-          message: `agent brief exists in only one of the duplicated trees: ${name}`,
-          detail: { presentIn: claude ? '.claude/agents' : '.agents/agents' },
-        });
-        present.drift.push('agent-copy-file-missing');
-      }
-    }
-
-    const status: AgentDriftCheckStatus =
-      divergedFiles > 0 || oneSidedFiles > 0 ? 'drift' : comparedFiles > 0 ? 'ok' : 'not-applicable';
-    return { status, comparedFiles, divergedFiles, oneSidedFiles };
-  })();
-
-  // @reference existence.
-  const atRefs = (() => {
-    let refsChecked = 0;
-    let missingRefs = 0;
-    let unverifiedRefs = 0;
-    for (const record of records) {
-      if (!/\.(md|mdc)$/.test(record.path)) continue;
-      if (typeof record.entry.content !== 'string') continue;
-      for (const { ref } of extractAtRefs(record.entry.content)) {
-        if (ref.includes('*')) continue;
-        refsChecked += 1;
-        const dir = dirnamePath(record.path);
-        const candidates: string[] = [];
-        const fileRelative = normalizePath(dir ? `${dir}/${ref}` : ref);
-        if (fileRelative) candidates.push(fileRelative);
-        const rootRelative = normalizePath(ref);
-        if (rootRelative && !candidates.includes(rootRelative)) candidates.push(rootRelative);
-        const exists = candidates.some(
-          (candidate) => existingPathSet.has(candidate) || recordPathSet.has(candidate),
-        );
-        if (exists) continue;
-        const extUnverifiable =
-          Array.isArray(verifiableExtensions) &&
-          !verifiableExtensions.some((ext) => ref.endsWith(ext));
-        const prefixUnverifiable =
-          unverifiablePrefixes.length > 0 &&
-          candidates.every((candidate) =>
-            unverifiablePrefixes.some((prefix) => candidate.startsWith(prefix)),
-          );
-        if (extUnverifiable || prefixUnverifiable) {
-          unverifiedRefs += 1;
-          continue;
-        }
-        missingRefs += 1;
-        drift.push({
-          check: 'at-refs',
-          code: 'at-ref-missing',
-          path: record.path,
-          message: `@reference target not found: ${ref} (referenced from ${record.path})`,
-          detail: { ref },
-        });
-        if (!record.drift.includes('at-ref-missing')) record.drift.push('at-ref-missing');
-      }
-    }
-    const status: AgentDriftCheckStatus =
-      missingRefs > 0 ? 'drift' : refsChecked > 0 ? 'ok' : 'not-applicable';
-    return { status, refsChecked, missingRefs, unverifiedRefs };
-  })();
-
-  /** English-only agent text: an agent reads a file's whole content, not only its comments. */
-  const agentLanguage = (() => {
-    // Opt-in: a user's own vault may be Korean.
-    if (!requireEnglish) {
-      return {
-        status: 'not-applicable' as AgentDriftCheckStatus,
-        scannedFiles: 0,
-        flaggedFiles: 0,
-        codePoints: 0,
-      };
-    }
-    let scannedFiles = 0;
-    let flaggedFiles = 0;
-    let codePoints = 0;
-    for (const record of records) {
-      if (typeof record.entry.content !== 'string') continue;
-      scannedFiles += 1;
-      const hits = record.entry.content.match(NON_ENGLISH_SCRIPT_RE);
-      if (!hits) continue;
-      flaggedFiles += 1;
-      codePoints += hits.length;
-      const sample = Array.from(new Set(hits)).slice(0, 8).join('');
-      drift.push({
-        check: 'agent-language',
-        code: 'non-english-agent-text',
-        path: record.path,
-        message:
-          `${record.path} carries ${hits.length} non-English code point(s) (${sample}); `
-          + 'agent files are English-only because their text is what a blocked or '
-          + 'steered agent reads',
-        detail: { codePoints: hits.length, sample },
-      });
-      if (!record.drift.includes('non-english-agent-text')) {
-        record.drift.push('non-english-agent-text');
-      }
-    }
-    const status: AgentDriftCheckStatus =
-      flaggedFiles > 0 ? 'drift' : scannedFiles > 0 ? 'ok' : 'not-applicable';
-    return { status, scannedFiles, flaggedFiles, codePoints };
-  })();
-
-  /**
-   * Brief MCP grants, each tree against its own reader's config (`.claude` → `.mcp.json`,
-   * `.agents` → `.codex/config.toml`). A config declaring nothing makes every grant undeclared.
-   */
-  const mcpGrants = (() => {
-    const sources = [
-      {
-        prefix: '.claude/agents/',
-        configPath: '.mcp.json',
-        read: (text: string): Set<string> => {
-          const servers = (JSON.parse(text) as { mcpServers?: unknown })?.mcpServers;
-          return new Set(servers && typeof servers === 'object' ? Object.keys(servers) : []);
-        },
-      },
-      {
-        prefix: '.agents/agents/',
-        configPath: '.codex/config.toml',
-        read: (text: string): Set<string> => {
-          const found = new Set<string>();
-          for (const match of text.matchAll(TOML_MCP_SECTION_RE)) {
-            found.add((match[1] ?? match[2] ?? match[3]) as string);
-          }
-          return found;
-        },
-      },
-    ];
-
-    const undeclared = new Set<string>();
-    const unparseableConfigs: string[] = [];
-    let briefsChecked = 0;
-    let grantsChecked = 0;
-    let anyConfig = false;
-
-    for (const source of sources) {
-      const configRecord = recordByPath.get(source.configPath);
-      const briefs = records.filter(
-        (r) => r.path.startsWith(source.prefix) && typeof r.entry.content === 'string',
-      );
-      if (!configRecord || typeof configRecord.entry.content !== 'string') continue;
-      if (briefs.length === 0) continue;
-      anyConfig = true;
-      briefsChecked += briefs.length;
-
-      let declared = new Set<string>();
-      try {
-        declared = source.read(configRecord.entry.content);
-      } catch {
-        declared = new Set();
-      }
-      if (declared.size === 0) {
-        unparseableConfigs.push(source.configPath);
-        drift.push({
-          check: 'mcp-grants',
-          code: 'mcp-config-unparseable',
-          path: source.configPath,
-          message:
-            `${source.configPath} exists but declares no MCP server: every agent-brief grant in `
-            + `${source.prefix} is undeclared and a fresh clone silently loses those tools`,
-          detail: { prefix: source.prefix },
-        });
-        if (!configRecord.drift.includes('mcp-config-unparseable')) {
-          configRecord.drift.push('mcp-config-unparseable');
-        }
-      }
-
-      for (const record of briefs) {
-        const frontmatter = (record.entry.content as string).split('\n---')[0];
-        const seen = new Set<string>();
-        for (const [, server] of frontmatter.matchAll(MCP_TOOL_RE)) {
-          grantsChecked += 1;
-          if (declared.has(server) || seen.has(server)) continue;
-          seen.add(server);
-          undeclared.add(server);
-          drift.push({
-            check: 'mcp-grants',
-            code: 'undeclared-mcp-server',
-            path: record.path,
-            message:
-              `${record.path} grants tools from the MCP server "${server}", which `
-              + `${source.configPath} does not declare; a fresh clone gets the seat without the `
-              + 'tools and no error',
-            detail: { server, configPath: source.configPath },
-          });
-          if (!record.drift.includes('undeclared-mcp-server')) {
-            record.drift.push('undeclared-mcp-server');
-          }
-        }
-      }
-    }
-
-    if (!anyConfig) {
-      return {
-        status: 'not-applicable' as AgentDriftCheckStatus,
-        briefsChecked: 0,
-        grantsChecked: 0,
-        undeclaredServers: [] as string[],
-        unparseableConfigs: [] as string[],
-      };
-    }
-    return {
-      status: (undeclared.size > 0 || unparseableConfigs.length > 0
-        ? 'drift'
-        : 'ok') as AgentDriftCheckStatus,
-      briefsChecked,
-      grantsChecked,
-      undeclaredServers: [...undeclared].sort(),
-      unparseableConfigs: unparseableConfigs.sort(),
-    };
-  })();
-
-  // Codex merges AGENTS.md files from the root down the working path and nested files are one
-  // level deep, so the worst case is root plus the largest nested file, not the sum.
-  const codexSizeCap = (() => {
-    const agents = recordByPath.get('AGENTS.md');
-    const nested = records.filter((r) => r.ruleId === 'nested-agents-md');
-    const nestedBytes = nested.reduce((max, r) => Math.max(max, r.bytes), 0);
-    const worst = nested.reduce<typeof nested[number] | null>(
-      (a, b) => (a && a.bytes >= b.bytes ? a : b),
-      null,
-    );
-    if (!agents) {
-      return {
-        status: 'not-applicable' as AgentDriftCheckStatus,
-        agentsMdBytes: null,
-        nestedFiles: nested.length,
-        worstNestedPath: worst?.path ?? null,
-        worstCaseBytes: null,
-        capBytes: CODEX_PROJECT_DOC_CAP_BYTES,
-      };
-    }
-    const worstCaseBytes = agents.bytes + nestedBytes;
-    const shared = {
-      agentsMdBytes: agents.bytes,
-      nestedFiles: nested.length,
-      worstNestedPath: worst?.path ?? null,
-      worstCaseBytes,
-      capBytes: CODEX_PROJECT_DOC_CAP_BYTES,
-    };
-    if (worstCaseBytes > CODEX_PROJECT_DOC_CAP_BYTES) {
-      const via = worst ? ` (AGENTS.md ${agents.bytes} + ${worst.path} ${worst.bytes})` : '';
-      drift.push({
-        check: 'codex-size-cap',
-        code: 'agents-md-over-codex-cap',
-        path: worst?.path ?? 'AGENTS.md',
-        message:
-          `the merged Codex instruction set reaches ${worstCaseBytes} bytes${via}: over the `
-          + `project_doc_max_bytes default of ${CODEX_PROJECT_DOC_CAP_BYTES}, past which Codex `
-          + 'truncates silently',
-        detail: shared,
-      });
-      (worst ?? agents).drift.push('agents-md-over-codex-cap');
-      return { status: 'drift' as AgentDriftCheckStatus, ...shared };
-    }
-    return { status: 'ok' as AgentDriftCheckStatus, ...shared };
-  })();
+  const claudeAgentsBridge = checkClaudeAgentsBridge(recordByPath, existingPathSet, drift);
+  const skillCopy = checkSkillCopy(records, drift);
+  const agentCopy = checkAgentCopy(records, drift);
+  const atRefs = checkAtRefs(
+    records,
+    { existing: existingPathSet, records: recordPathSet },
+    { prefixes: unverifiablePrefixes, extensions: verifiableExtensions },
+    drift,
+  );
+  const agentLanguage = checkAgentLanguage(records, requireEnglish, drift);
+  const mcpGrants = checkMcpGrants(records, recordByPath, drift);
+  const codexSizeCap = checkCodexSizeCap(records, recordByPath, drift);
 
   const byTool: Record<string, number> = {};
   const byKind: Record<string, number> = {};

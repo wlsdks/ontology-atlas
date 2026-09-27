@@ -32,7 +32,7 @@ export function countMatchingTreeNodes(
   return count;
 }
 
-/** Keeps matches, their ancestors and all their descendants; an empty query returns the roots. */
+/** Keeps matches, their ancestors and all their descendants in one O(n) pass; an empty query returns the roots. */
 export function filterTreeByQuery(
   roots: readonly OntologyTreeNode[],
   query: string,
@@ -41,13 +41,12 @@ export function filterTreeByQuery(
   if (normalizedQuery === "") return roots.slice();
 
   function visit(node: OntologyTreeNode): OntologyTreeNode | null {
-    const titleMatch = knowledgeNodeMatchesQuery(node.node, normalizedQuery);
+    const matches = knowledgeNodeMatchesQuery(node.node, normalizedQuery);
     const filteredChildren = node.children
       .map(visit)
       .filter((c): c is OntologyTreeNode => c !== null);
 
-    if (titleMatch) {
-      // A match keeps its original children.
+    if (matches) {
       return { ...node, children: node.children };
     }
     if (filteredChildren.length > 0) {

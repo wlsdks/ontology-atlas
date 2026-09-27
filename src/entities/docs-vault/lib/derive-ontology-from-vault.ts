@@ -171,6 +171,20 @@ function deriveDocNode(doc: VaultDoc): OntologyStubNode | null {
   };
 }
 
+/** Adds a relation-named node without its own document, unless the id already exists. */
+function ensureStubNode(
+  nodes: Map<string, OntologyStubNode>,
+  sourceSlug: string,
+  id: string,
+  kind: string,
+  title: string,
+  ref: string,
+  display = deriveDisplayTitle(undefined, title),
+): void {
+  if (nodes.has(id)) return;
+  nodes.set(id, { id, title, display, kind, sourceSlug, hasOwnDocument: false, ref: ref.trim(), source: 'frontmatter' });
+}
+
 function deriveOntologyFromVaultUncached(
   manifest: VaultManifest,
 ): VaultOntologyDerivation {
@@ -232,18 +246,14 @@ function deriveOntologyFromVaultUncached(
         : slugifyName(fm.domain);
       if (domainSlug) {
         const domainId = existingNodeIdFor(fm.domain) ?? `domain:${domainSlug}`;
-        if (!nodes.has(domainId)) {
-          nodes.set(domainId, {
-            id: domainId,
-            title: folderRef?.kind === 'domain' ? folderRef.title : fm.domain.trim(),
-            display: deriveDisplayTitle(undefined, folderRef?.kind === 'domain' ? folderRef.title : fm.domain.trim()),
-            kind: 'domain',
-            sourceSlug: doc.slug,
-            hasOwnDocument: false,
-            ref: fm.domain.trim(),
-            source: 'frontmatter',
-          });
-        }
+        ensureStubNode(
+          nodes,
+          doc.slug,
+          domainId,
+          'domain',
+          folderRef?.kind === 'domain' ? folderRef.title : fm.domain.trim(),
+          fm.domain,
+        );
         edges.push({
           id: `${domainId}--contains-->${docNode.id}`,
           from: domainId,
@@ -263,18 +273,14 @@ function deriveOntologyFromVaultUncached(
         existingNodeIdFor(dom) ??
         (folderRef?.kind === 'domain' ? folderRef.id : `domain:${slugifyName(dom)}`);
       if (domId === 'domain:') continue;
-      if (!nodes.has(domId)) {
-        nodes.set(domId, {
-          id: domId,
-          title: folderRef?.kind === 'domain' ? folderRef.title : dom,
-          display: deriveDisplayTitle(undefined, folderRef?.kind === 'domain' ? folderRef.title : dom),
-          kind: 'domain',
-          sourceSlug: doc.slug,
-          hasOwnDocument: false,
-          ref: dom.trim(),
-          source: 'frontmatter',
-        });
-      }
+      ensureStubNode(
+        nodes,
+        doc.slug,
+        domId,
+        'domain',
+        folderRef?.kind === 'domain' ? folderRef.title : dom,
+        dom,
+      );
       edges.push({
         id: `${docNode.id}--contains-->${domId}`,
         from: docNode.id,
@@ -292,18 +298,14 @@ function deriveOntologyFromVaultUncached(
         : slugifyName(cap);
       if (!capSlug) continue;
       const capId = existingNodeIdFor(cap) ?? `capability:${capSlug}`;
-      if (!nodes.has(capId)) {
-        nodes.set(capId, {
-          id: capId,
-          title: folderRef?.kind === 'capability' ? folderRef.title : cap,
-          display: deriveDisplayTitle(undefined, folderRef?.kind === 'capability' ? folderRef.title : cap),
-          kind: 'capability',
-          sourceSlug: doc.slug,
-          hasOwnDocument: false,
-          ref: cap.trim(),
-          source: 'frontmatter',
-        });
-      }
+      ensureStubNode(
+        nodes,
+        doc.slug,
+        capId,
+        'capability',
+        folderRef?.kind === 'capability' ? folderRef.title : cap,
+        cap,
+      );
       edges.push({
         id: `${docNode.id}--contains-->${capId}`,
         from: docNode.id,
@@ -321,20 +323,15 @@ function deriveOntologyFromVaultUncached(
         : slugifyName(el);
       if (!elSlug) continue;
       const elId = existingNodeIdFor(el) ?? `element:${elSlug}`;
-      if (!nodes.has(elId)) {
-        nodes.set(elId, {
-          id: elId,
-          title: folderRef?.kind === 'element' ? folderRef.title : el,
-          display:
-            humanizeCodePathTitle(el) ??
-            deriveDisplayTitle(undefined, folderRef?.kind === 'element' ? folderRef.title : el),
-          kind: 'element',
-          sourceSlug: doc.slug,
-          hasOwnDocument: false,
-          ref: el.trim(),
-          source: 'frontmatter',
-        });
-      }
+      ensureStubNode(
+        nodes,
+        doc.slug,
+        elId,
+        'element',
+        folderRef?.kind === 'element' ? folderRef.title : el,
+        el,
+        humanizeCodePathTitle(el) ?? deriveDisplayTitle(undefined, folderRef?.kind === 'element' ? folderRef.title : el),
+      );
       edges.push({
         id: `${docNode.id}--contains-->${elId}`,
         from: docNode.id,
@@ -353,18 +350,14 @@ function deriveOntologyFromVaultUncached(
         : slugifyName(contained);
       if (!containedSlug) continue;
       const containedId = existingNodeIdFor(contained) ?? folderRef?.id ?? `unknown:${containedSlug}`;
-      if (!nodes.has(containedId)) {
-        nodes.set(containedId, {
-          id: containedId,
-          title: folderRef?.title ?? contained,
-          display: deriveDisplayTitle(undefined, folderRef?.title ?? contained),
-          kind: folderRef?.kind ?? 'unknown',
-          sourceSlug: doc.slug,
-          hasOwnDocument: false,
-          ref: contained.trim(),
-          source: 'frontmatter',
-        });
-      }
+      ensureStubNode(
+        nodes,
+        doc.slug,
+        containedId,
+        folderRef?.kind ?? 'unknown',
+        folderRef?.title ?? contained,
+        contained,
+      );
       edges.push({
         id: `${docNode.id}--contains-->${containedId}`,
         from: docNode.id,
@@ -379,18 +372,7 @@ function deriveOntologyFromVaultUncached(
     for (const rel of asStringArray(fm.relates)) {
       const relId = existingNodeIdFor(rel) ?? resolveRelatesRef(rel);
       if (!relId) continue;
-      if (!nodes.has(relId)) {
-        nodes.set(relId, {
-          id: relId,
-          title: rel,
-          display: deriveDisplayTitle(undefined, rel),
-          kind: 'unknown',
-          sourceSlug: doc.slug,
-          hasOwnDocument: false,
-          ref: rel.trim(),
-          source: 'frontmatter',
-        });
-      }
+      ensureStubNode(nodes, doc.slug, relId, 'unknown', rel, rel);
       edges.push({
         id: `${docNode.id}--related_to-->${relId}`,
         from: docNode.id,
@@ -406,18 +388,14 @@ function deriveOntologyFromVaultUncached(
       const folderRef = resolveFolderPrefixedRef(described);
       const describedId = existingNodeIdFor(described) ?? folderRef?.id ?? resolveRelatesRef(described);
       if (!describedId) continue;
-      if (!nodes.has(describedId)) {
-        nodes.set(describedId, {
-          id: describedId,
-          title: folderRef?.title ?? described,
-          display: deriveDisplayTitle(undefined, folderRef?.title ?? described),
-          kind: folderRef?.kind ?? 'unknown',
-          sourceSlug: doc.slug,
-          hasOwnDocument: false,
-          ref: described.trim(),
-          source: 'frontmatter',
-        });
-      }
+      ensureStubNode(
+        nodes,
+        doc.slug,
+        describedId,
+        folderRef?.kind ?? 'unknown',
+        folderRef?.title ?? described,
+        described,
+      );
       edges.push({
         id: `${docNode.id}--describes-->${describedId}`,
         from: docNode.id,
@@ -441,18 +419,14 @@ function deriveOntologyFromVaultUncached(
       const depId = existingNodeIdFor(dep) ?? folderRef?.id ?? `${docNode.kind}:${depSlug}`;
       if (seenDepIds.has(depId)) continue;
       seenDepIds.add(depId);
-      if (!nodes.has(depId)) {
-        nodes.set(depId, {
-          id: depId,
-          title: folderRef?.title ?? dep,
-          display: deriveDisplayTitle(undefined, folderRef?.title ?? dep),
-          kind: folderRef?.kind ?? docNode.kind,
-          sourceSlug: doc.slug,
-          hasOwnDocument: false,
-          ref: dep.trim(),
-          source: 'frontmatter',
-        });
-      }
+      ensureStubNode(
+        nodes,
+        doc.slug,
+        depId,
+        folderRef?.kind ?? docNode.kind,
+        folderRef?.title ?? dep,
+        dep,
+      );
       edges.push({
         id: `${docNode.id}--depends_on-->${depId}`,
         from: docNode.id,
@@ -472,18 +446,14 @@ function deriveOntologyFromVaultUncached(
       if (!broaderSlug) continue;
       const broaderId =
         existingNodeIdFor(broaderRef) ?? folderRef?.id ?? `${docNode.kind}:${broaderSlug}`;
-      if (!nodes.has(broaderId)) {
-        nodes.set(broaderId, {
-          id: broaderId,
-          title: folderRef?.title ?? broaderRef,
-          display: deriveDisplayTitle(undefined, folderRef?.title ?? broaderRef),
-          kind: folderRef?.kind ?? docNode.kind,
-          sourceSlug: doc.slug,
-          hasOwnDocument: false,
-          ref: broaderRef.trim(),
-          source: 'frontmatter',
-        });
-      }
+      ensureStubNode(
+        nodes,
+        doc.slug,
+        broaderId,
+        folderRef?.kind ?? docNode.kind,
+        folderRef?.title ?? broaderRef,
+        broaderRef,
+      );
       edges.push({
         id: `${docNode.id}--is_a-->${broaderId}`,
         from: docNode.id,

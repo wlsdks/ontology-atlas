@@ -184,7 +184,7 @@ function isOntologyNode(doc: VaultHealthDoc): boolean {
   return typeof kind === 'string' && kind.trim().length > 0;
 }
 
-function compile(input: readonly VaultHealthDoc[]): CompiledGraph {
+function compileHealthGraph(input: readonly VaultHealthDoc[]): CompiledGraph {
   const docs = input.filter(isOntologyNode);
   const aliasEntries = new Map<string, Set<string>>();
   const addAlias = (alias: unknown, slug: string) => {
@@ -251,7 +251,7 @@ function compile(input: readonly VaultHealthDoc[]): CompiledGraph {
   };
 }
 
-// Undirected components over resolved edges, dropping groups of ignored kinds only.
+// Undirected components over resolved edges by BFS, O(V + E); groups of only ignored kinds drop.
 function actionableComponentCounts(graph: CompiledGraph): {
   actionable: number;
   ignored: number;
@@ -342,24 +342,23 @@ function missingDomainContainment(graph: CompiledGraph): MissingContainmentTarge
 }
 
 // Dependency cycles up to MAX_DEPTH, matching the engine's `cycles({types:['dependencies']})`.
+// Adjacency lists; a reverse BFS per start (O(V·(V+E))) prunes a depth-bounded DFS.
 function dependencyCycleCount(graph: CompiledGraph): number {
   const MAX_DEPTH = 8;
-  const outByType = new Map<string, string[]>();
+  const dependencySuccessors = new Map<string, string[]>();
   for (const edge of graph.edges) {
     if (!edge.resolved) continue;
     if (normalizeRelationType(edge.via) !== 'dependencies') continue;
-    if (!outByType.has(edge.from)) outByType.set(edge.from, []);
-    outByType.get(edge.from)!.push(edge.to);
+    if (!dependencySuccessors.has(edge.from)) dependencySuccessors.set(edge.from, []);
+    dependencySuccessors.get(edge.from)!.push(edge.to);
   }
   const cycleKeys = new Set<string>();
   const sortedSlugs = graph.nodes.map((n) => n.slug).sort((a, b) => a.localeCompare(b));
-
-    // Reverse adjacency, built to measure "how many steps from here back to start".
-  const inByType = new Map<string, string[]>();
-  for (const [from, targets] of outByType) {
+  const dependencyPredecessors = new Map<string, string[]>();
+  for (const [from, targets] of dependencySuccessors) {
     for (const to of targets) {
-      if (!inByType.has(to)) inByType.set(to, []);
-      inByType.get(to)!.push(from);
+      if (!dependencyPredecessors.has(to)) dependencyPredecessors.set(to, []);
+      dependencyPredecessors.get(to)!.push(from);
     }
   }
 
@@ -373,7 +372,7 @@ function dependencyCycleCount(graph: CompiledGraph): number {
     for (let step = 1; step <= MAX_DEPTH && frontier.length > 0; step += 1) {
       const next: string[] = [];
       for (const node of frontier) {
-        for (const prev of inByType.get(node) ?? []) {
+        for (const prev of dependencyPredecessors.get(node) ?? []) {
           if (dist.has(prev) || prev === start) continue;
           dist.set(prev, step);
           next.push(prev);
@@ -403,7 +402,7 @@ function dependencyCycleCount(graph: CompiledGraph): number {
     backDist: Map<string, number>,
   ) => {
     if (path.length > MAX_DEPTH) return;
-    for (const next of outByType.get(current) ?? []) {
+    for (const next of dependencySuccessors.get(current) ?? []) {
       if (next === start && path.length > 1) {
         cycleKeys.add(normalizeCycle([...path, next]));
         continue;
@@ -430,7 +429,7 @@ function dependencyCycleCount(graph: CompiledGraph): number {
 export function capabilitiesWithoutImplementationEvidence(
   docs: readonly VaultHealthDoc[],
 ): string[] {
-  const graph = compile(docs);
+  const graph = compileHealthGraph(docs);
   const withResolvedElement = new Set(
     graph.edges
       .filter((edge) => edge.via === 'elements' && edge.resolved)
@@ -449,7 +448,7 @@ export function capabilitiesWithoutImplementationEvidence(
 
 /** The six status-flipping checks of MCP `health()`, from raw frontmatter. */
 export function computeVaultHealth(docs: readonly VaultHealthDoc[]): VaultHealthResult {
-  const graph = compile(docs);
+  const graph = compileHealthGraph(docs);
   const unresolvedEdges = graph.edges.filter((e) => !e.resolved && !e.external).length;
   const { actionable, ignored, actionableGroups } = actionableComponentCounts(graph);
   const dependencyCycles = dependencyCycleCount(graph);
@@ -499,7 +498,7 @@ export function computeVaultHealth(docs: readonly VaultHealthDoc[]): VaultHealth
 
 /**
  * References no node answers to, grouped by name: concepts agents reached for that the vault
- * lacks. Resolved exactly like `compile()`; MCP twin: `resolve_dangling_reference`.
+ * lacks. Resolved exactly like `compileHealthGraph()` and MCP `compile()`; MCP twin: `resolve_dangling_reference`.
  */
 export interface UnmatchedGraphAsk {
   /** The name as written in frontmatter. */
@@ -513,7 +512,7 @@ export interface UnmatchedGraphAsk {
 }
 
 export function unmatchedGraphAsks(docs: readonly VaultHealthDoc[]): UnmatchedGraphAsk[] {
-  const graph = compile(docs);
+  const graph = compileHealthGraph(docs);
   const grouped = new Map<string, { relations: Set<string>; sources: Set<string>; count: number }>();
   for (const edge of graph.edges) {
     // `external` is an `elements:` source path: evidence, not a missing concept.

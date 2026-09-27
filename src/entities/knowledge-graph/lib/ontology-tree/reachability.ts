@@ -105,8 +105,8 @@ export function buildOntologyReachability(
   options: BuildOntologyReachabilityOptions = {},
 ): OntologyReachability {
   const direction = options.direction ?? "outgoing";
-  const depth = clampNonNegativeInteger(options.depth, DEFAULT_DEPTH);
-  const limit = clampPositiveInteger(options.limit, DEFAULT_LIMIT);
+  const depth = nonNegativeIntegerOr(options.depth, DEFAULT_DEPTH);
+  const limit = positiveIntegerOr(options.limit, DEFAULT_LIMIT);
   const typeSet = Array.isArray(options.types) && options.types.length > 0
     ? new Set(options.types)
     : null;
@@ -119,7 +119,7 @@ export function buildOntologyReachability(
     [startId, { id: startId, distance: 0 }],
   ]);
   const queue: DiscoveredNode[] = [{ id: startId, distance: 0 }];
-  // Head pointer: O(1) dequeue, where `Array.shift()` would make this O(n²).
+  // BFS over adjacency lists, O(V + E); a head pointer keeps dequeue O(1) where `shift()` is O(n).
   let head = 0;
   const traversedEdges = new Map<string, KnowledgeGraphEdge>();
 
@@ -234,11 +234,11 @@ function countBy(values: readonly string[]): Record<string, number> {
   return Object.fromEntries(Object.entries(out).sort(([, a], [, b]) => b - a));
 }
 
-function clampNonNegativeInteger(value: unknown, fallback: number): number {
+function nonNegativeIntegerOr(value: unknown, fallback: number): number {
   return Number.isInteger(value) && Number(value) >= 0 ? Number(value) : fallback;
 }
 
-function clampPositiveInteger(value: unknown, fallback: number): number {
+function positiveIntegerOr(value: unknown, fallback: number): number {
   return Number.isInteger(value) && Number(value) > 0 ? Number(value) : fallback;
 }
 

@@ -250,12 +250,18 @@ function stampIndex(entries: readonly NativeVaultStamp[]): VaultStampIndex {
   );
 }
 
+/** The desktop shim's absolute root path, or `null` for a web handle. */
+function nativeRootPath(root: FileSystemDirectoryHandle): string | null {
+  const rootPath = (root as { rootPath?: unknown }).rootPath;
+  return typeof rootPath === 'string' && rootPath ? rootPath : null;
+}
+
 /** The native stamp index for this handle, or `null` on the web where there is none. */
 async function nativeStampIndex(
   root: FileSystemDirectoryHandle,
 ): Promise<VaultStampIndex | null> {
-  const nativeRoot = (root as { rootPath?: unknown }).rootPath;
-  if (typeof nativeRoot !== 'string' || !nativeRoot) return null;
+  const nativeRoot = nativeRootPath(root);
+  if (!nativeRoot) return null;
   try {
     const native = await nativeVaultFingerprint(nativeRoot);
     return native ? stampIndex(native.entries) : null;
@@ -267,8 +273,8 @@ async function nativeStampIndex(
 export async function computeLocalVaultFingerprintWithStamps(
   root: FileSystemDirectoryHandle,
 ): Promise<{ fingerprint: string; nativeStamps: VaultStampIndex | null }> {
-  const nativeRoot = (root as { rootPath?: unknown }).rootPath;
-  if (typeof nativeRoot === 'string' && nativeRoot) {
+  const nativeRoot = nativeRootPath(root);
+  if (nativeRoot) {
     const native = await nativeVaultFingerprint(nativeRoot);
     if (native) {
       return {
@@ -285,8 +291,8 @@ export async function computeLocalVaultFingerprint(
 ): Promise<string> {
   /* In the app one native call returns paths and mtimes; per-file `getFile()` under Tauri
    * transfers every body. The web has no batch API and falls through (`.claude/rules/surfaces.md`). */
-  const nativeRoot = (root as { rootPath?: unknown }).rootPath;
-  if (typeof nativeRoot === 'string' && nativeRoot) {
+  const nativeRoot = nativeRootPath(root);
+  if (nativeRoot) {
     const native = await nativeVaultFingerprint(nativeRoot);
     if (native) return fingerprintFromEntries(native.entries);
   }

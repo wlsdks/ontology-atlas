@@ -52,6 +52,12 @@ function sortDeclarations(list: ScopeDeclaration[]): ScopeDeclaration[] {
   return list.sort((a, b) => a.label.localeCompare(b.label));
 }
 
+function declarationReachesArea(entry: ScopeDeclaration, area: CoverageAreaInput): boolean {
+  return area.capabilities.some((capability) =>
+    entry.scopes.some((scope) => scopeReaches(scope, capability.path)),
+  );
+}
+
 /** The only place the join rule lives. */
 export function buildCoverageMatrix(
   declarations: readonly ScopeDeclaration[],
@@ -60,12 +66,7 @@ export function buildCoverageMatrix(
 ): CoverageMatrix {
   /* A scope reaching every area is universal in fact and goes to the strip, not every row. */
   const reachesEveryArea = (entry: ScopeDeclaration) =>
-    areas.length > 1 &&
-    areas.every((area) =>
-      area.capabilities.some((capability) =>
-        entry.scopes.some((scope) => scopeReaches(scope, capability.path)),
-      ),
-    );
+    areas.length > 1 && areas.every((area) => declarationReachesArea(entry, area));
   const scoped = declarations.filter(
     (entry) => entry.declaresPath && entry.scopes.length > 0 && !reachesEveryArea(entry),
   );
@@ -86,10 +87,7 @@ export function buildCoverageMatrix(
       watched: [],
     };
     for (const entry of scoped) {
-      const hits = area.capabilities.some((capability) =>
-        entry.scopes.some((scope) => scopeReaches(scope, capability.path)),
-      );
-      if (hits) buckets[entry.column].push(entry);
+      if (declarationReachesArea(entry, area)) buckets[entry.column].push(entry);
     }
     for (const column of COLUMNS) sortDeclarations(buckets[column]);
     const discoveredTests = testFiles.filter((file) =>
