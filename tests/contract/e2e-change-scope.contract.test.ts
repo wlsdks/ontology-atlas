@@ -120,6 +120,7 @@ describe('one immutable build feeds every protected browser job', () => {
     expect(build).toContain('if-no-files-found: error');
     expect(build).not.toContain('continue-on-error');
     expect(stepBlock(jobBlock('suite'), 'Upload timing evidence')).toContain('continue-on-error: true');
+    expect(readFileSync(join(ROOT, '.github', 'workflows', 'checks.yml'), 'utf8').match(/- name: Upload lane report\n\s+continue-on-error: true\n/g)).toHaveLength(4);
     expect(build).toContain('name: playwright-export-${{ github.sha }}');
   });
   it.each(PROTECTED_JOB_IDS)('%s fails if the shared build fails and downloads the same source', (id) => {

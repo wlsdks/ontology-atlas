@@ -137,6 +137,7 @@ jobs:
         run: echo "No affected type, lint, or documentation gate"
 
       - name: Upload lane report
+        continue-on-error: true
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
@@ -221,6 +222,7 @@ jobs:
         run: echo "No affected unit or contract evidence"
 
       - name: Upload lane report
+        continue-on-error: true
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
@@ -296,6 +298,7 @@ jobs:
         run: echo "No changed module can reach a performance ratio"
 
       - name: Upload lane report
+        continue-on-error: true
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
@@ -399,6 +402,7 @@ jobs:
         run: echo "MCP and CLI boundaries are untouched — skipped both dependency trees and tests"
 
       - name: Upload lane report
+        continue-on-error: true
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:

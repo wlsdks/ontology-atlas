@@ -257,7 +257,11 @@ test('the lane runner appends one report line per command when CI_LANE_REPORT is
     shard: '2/3',
     stdout: { write() {} },
     stderr: { write() {} },
-    spawn: (command) => ({ status: command === 'bad' ? 1 : 0 }),
+    spawn: (command, options) => {
+      assert.equal('CI_LANE_REPORT' in options.env, false, 'child commands must not inherit the report path');
+      assert.equal(options.env.GITHUB_SHA, 'abc');
+      return { status: command === 'bad' ? 1 : 0 };
+    },
     appendFile: (file, text) => writes.push([file, text]),
   });
   assert.equal(status, 1);
