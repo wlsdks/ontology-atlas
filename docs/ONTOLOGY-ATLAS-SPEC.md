@@ -544,6 +544,7 @@ kept in lock-step by
 | `folder-only-evidence` | warning | *(write-path gate, plus `validate_vault` and the CLI when a repository root is known)* frontmatter `path:` resolves to a directory, so this node's evidence drift can never be judged: a folder changes on almost any commit beneath it |
 | `dependency-unwitnessed` | warning | *(write-path gate for an edge the write just added, plus `validate_vault` and the CLI for every edge, when a repository root is known)* a `dependencies:` entry no file names: neither the source node's own file nor any repository-relative file path written in that edge's `relation_notes` mentions the target's path or its basename. An import witnesses a code dependency; its absence is **not** proof of independence, so the repair asked for is the witness (which file, which line, in the relation's `why`), not the deletion |
 | `starter-example-node` | warning | *(write-path gate at the creation of a real node, plus `validate_vault`, the CLI, and `maintenance_plan` for the starter itself)* a node `init` wrote as a shape to copy — `domains/example-domain`, `capabilities/example-capability`, `elements/example-element`, or any `example-…` slug whose title opens with "Example" — still standing after a real node of the same kind arrived. Needs no repository root, no body, and no filesystem, only the other nodes' kinds |
+| `kind-under-sources` | warning | *(`validate_vault` and the CLI)* a `.md` under `sources/` carries `kind:`. Every file there is a raw source (§11), so it is not a node and none of the codes above judge it; move it into its kind folder to make it one |
 | `uncertainty-missing` | warning | *(body scope)* a `domain`, `capability`, or `element` with no `## Uncertainty` / `## Open questions` / `## Unknowns` / `## Not checked` / `## Confidence` section holding anything but a placeholder. A node that records no unknown claims completeness, and §2.1 evidence is always partial |
 | `slug-outside-kind-folder` | warning | *(body scope, and only where the caller knows the document's position)* a `domain`, `capability`, or `element` whose slug does not start with its kind's folder (§4). Valid, never blocked, and reported once at creation: a flat node groups with nothing in any reader that shows a vault by kind |
 
@@ -776,7 +777,7 @@ section defines the second: the **wiki page**.
 
 | Kind | Where | Identified by | In the graph? |
 |---|---|---|---|
-| Raw source | `sources/**` | any format, kept verbatim | no — a parser MUST read only `.md` |
+| Raw source | `sources/**` | any format, kept verbatim | no — a reader MUST NOT read a file here, `.md` included, as a page or node (decision ledger, 2026-09-07) |
 | Wiki page | `wiki/**.md` | Markdown with **no `kind:`** | no — `kind:` is what makes a node |
 | Ontology node | anywhere else | `kind:` in frontmatter | yes, and only these |
 

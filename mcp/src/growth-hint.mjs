@@ -4,6 +4,8 @@
 // the caller already has; with no real candidate they fall back to a generic
 // add_concept scaffold rather than a guessed node.
 
+import { isVaultSourcePath, rawSourceFileForSlug } from './schema.mjs';
+
 const TOKEN_RE = /[a-z0-9]+/g;
 
 function tokenize(text) {
@@ -70,6 +72,13 @@ export function buildFindPathGrowthHint({ from, to, fromExists, toExists }) {
 
 /** get_concept / node_profile miss; `candidateSlugs` come from the caller's real slug set. */
 export function buildSlugNotFoundGrowthHint({ slug, candidateSlugs = [], referencedBy = [] }) {
+  if (isVaultSourcePath(slug)) {
+    return {
+      reason: `"${slug}" is under sources/, where every file is a raw source and never a node.`,
+      suggestion: 'Read it as a source. To make it a node, move the file into a kind folder such as domains/.',
+      exampleCall: { tool: 'read_source', args: { path: rawSourceFileForSlug(slug) } },
+    };
+  }
   // The vault already names this concept; only the document is missing. Say who
   // wrote it under which key and the one move that materialises it.
   if (referencedBy.length > 0) {

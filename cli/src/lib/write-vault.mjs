@@ -1,8 +1,8 @@
-import { mkdirSync, existsSync, readFileSync, realpathSync } from 'node:fs';
+import { mkdirSync, existsSync, readFileSync, readdirSync, realpathSync } from 'node:fs';
 import { readFileRevision, sameFileRevision, writeFileAtomically } from './atomic-write.mjs';
-import { dirname, resolve, sep } from 'node:path';
+import { dirname, join, relative, resolve, sep } from 'node:path';
 import { buildMarkdown, parseFrontmatter } from './parse-frontmatter.mjs';
-import { flatSlugIssue, inspectMergedUids, nodeUidIssue } from './schema.mjs';
+import { VAULT_SOURCES_DIR, flatSlugIssue, inspectMergedUids, nodeUidIssue, rawSourceSlugIssue } from './schema.mjs';
 import { walkMd, pathToSlug } from './walk-vault.mjs';
 
 /**
@@ -24,6 +24,7 @@ export function slugToPath(rootPath, slug) {
   ) {
     throw new Error(`slug points outside the vault root: "${slug}"`);
   }
+  assertNotRawSource(normalizedRoot, candidate);
   // A string check alone cannot stop a symlink: `writeFileSync` follows a link inside the vault and writes
   // outside it. Same contract as `mcp/src/vault.mjs`.
   assertRealPathInside(candidate, normalizedRoot, slug);
@@ -55,6 +56,22 @@ function assertRealPathInside(candidate, normalizedRoot, slug) {
       if (parent === probe) return;
       probe = parent;
     }
+  }
+}
+
+function assertNotRawSource(normalizedRoot, candidate) {
+  const [top, ...below] = relative(normalizedRoot, candidate).split(sep);
+  if (below.length === 0 || top.toLowerCase() !== VAULT_SOURCES_DIR) return;
+  if (top !== VAULT_SOURCES_DIR && !opensAsVaultSourcesDir(normalizedRoot, top)) return;
+  throw new Error(rawSourceSlugIssue([VAULT_SOURCES_DIR, ...below].join('/').replace(/\.md$/, '')));
+}
+
+function opensAsVaultSourcesDir(root, name) {
+  try {
+    const names = readdirSync(root);
+    return !names.includes(name) && names.includes(VAULT_SOURCES_DIR) && existsSync(join(root, name));
+  } catch {
+    return false;
   }
 }
 

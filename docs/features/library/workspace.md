@@ -541,7 +541,7 @@ of 31 citations resolving — the other five are two pointing at a file the fold
 hold and three addresses their files no longer have, all of which a reader could only
 discover before by opening the documents themselves.
 
-- **Sources** — every non-`.md` file under `sources/**`, listed by name, format, size and
+- **Sources** — every file under `sources/**`, Markdown included, listed by name, format, size and
   one state. Listing one opens nothing; the walk records what a directory listing already
   holds, which is why a folder of PDFs adds nothing to the map. The one read is a
   **citation's press** (below), and it is that file only.

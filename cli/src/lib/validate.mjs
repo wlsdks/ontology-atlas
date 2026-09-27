@@ -9,6 +9,7 @@ const validate = await loadMcpModule('validate.mjs');
 export const suppressParentedExpectedFieldIssues = validate.suppressParentedExpectedFieldIssues;
 export const validateVaultDocument = validate.validateVaultDocument;
 export const suppressLibraryKindIssues = validate.suppressLibraryKindIssues;
+export const rawSourceKindIssues = validate.rawSourceKindIssues;
 
 /*
  * The folder-evidence finding needs a repository root, so `validate` runs it over the whole vault, as

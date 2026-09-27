@@ -30,11 +30,13 @@ import {
   REVIEW_NOTE_KEY,
   REVIEW_STATE_HUMAN_DECIDES,
   REVIEW_STATE_KEY,
+  VAULT_SOURCES_DIR,
   containmentKeyFor,
   flatSlugIssue,
   folderForKind,
   generateNodeUid,
   inspectMergedUids,
+  rawSourceSlugIssue,
   nodeUidIssue,
 } from './schema.mjs';
 import {
@@ -393,7 +395,7 @@ export function describeBodyDelivery(body, options = {}) {
   return { text, info };
 }
 
-/** Absolute paths of every `.md` under the vault root, skipping dotfiles and node_modules. */
+/** Absolute paths of every `.md` in the vault except dotfiles, build folders and sources/. */
 export function walkMd(rootPath) {
   const out = [];
   const stack = [rootPath];
@@ -418,6 +420,7 @@ export function walkMd(rootPath) {
       if (entry.name.startsWith('.')) continue;
       if (entry.isDirectory()) {
         if (SKIP_DIRS.has(entry.name)) continue;
+        if (dir === rootPath && entry.name === VAULT_SOURCES_DIR) continue;
         stack.push(join(dir, entry.name));
       } else if (entry.isFile() && entry.name.endsWith('.md')) {
         out.push(join(dir, entry.name));
@@ -459,6 +462,7 @@ export function slugToPath(rootPath, slug) {
   ) {
     throw new Error(`slug points outside the vault root: "${slug}"`);
   }
+  assertNotRawSource(normalizedRoot, candidate);
   // The string check cannot stop a symlink: `escape.md` inside the vault may
   // link outside it, and writeFileSync follows the link. Existing paths are
   // realpath'd; a new file's parent is checked below.
@@ -495,6 +499,22 @@ function assertRealPathInside(candidate, normalizedRoot, slug) {
       if (parent === probe) return;
       probe = parent;
     }
+  }
+}
+
+function assertNotRawSource(normalizedRoot, candidate) {
+  const [top, ...below] = relative(normalizedRoot, candidate).split(sep);
+  if (below.length === 0 || top.toLowerCase() !== VAULT_SOURCES_DIR) return;
+  if (top !== VAULT_SOURCES_DIR && !opensAsVaultSourcesDir(normalizedRoot, top)) return;
+  throw new Error(rawSourceSlugIssue([VAULT_SOURCES_DIR, ...below].join('/').replace(/\.md$/, '')));
+}
+
+function opensAsVaultSourcesDir(root, name) {
+  try {
+    const names = readdirSync(root);
+    return !names.includes(name) && names.includes(VAULT_SOURCES_DIR) && existsSync(join(root, name));
+  } catch {
+    return false;
   }
 }
 

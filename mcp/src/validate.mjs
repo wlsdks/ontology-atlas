@@ -13,6 +13,8 @@ export function isValidVaultTitle(value) {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import {
   boundaryFindings,
   definitionFinding,
@@ -21,6 +23,7 @@ import {
 } from './meaning-findings.mjs';
 import { parseFrontmatter } from './parser.mjs';
 import {
+  VAULT_SOURCES_DIR,
   folderForKind,
   inspectMergedUids,
   missingExpectedFields,
@@ -71,7 +74,53 @@ export const VAULT_ISSUE_CODE_VALUES = Object.freeze([
    * freshly built, uncompiled vault.
    */
   'starter-example-node',
+  'kind-under-sources',
 ]);
+
+export function rawSourceKindIssues(rootPath) {
+  const rows = [];
+  const stack = [VAULT_SOURCES_DIR];
+  while (stack.length > 0) {
+    const dir = stack.pop();
+    let entries;
+    try {
+      entries = readdirSync(join(rootPath, dir), { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      if (entry.name.startsWith('.')) continue;
+      const path = `${dir}/${entry.name}`;
+      if (entry.isDirectory()) stack.push(path);
+      else if (entry.isFile() && entry.name.endsWith('.md')) {
+        const vaultPath = path.normalize('NFC');
+        const issue = rawSourceKindIssue(vaultPath, readFrontmatterKind(join(rootPath, path)));
+        if (issue) rows.push({ path: vaultPath, issue });
+      }
+    }
+  }
+  return rows.sort((a, b) => a.path.localeCompare(b.path));
+}
+
+function readFrontmatterKind(filePath) {
+  try {
+    const kind = parseFrontmatter(readFileSync(filePath, 'utf8')).frontmatter?.kind;
+    return typeof kind === 'string' ? kind.trim() : '';
+  } catch {
+    return '';
+  }
+}
+
+function rawSourceKindIssue(path, kind) {
+  if (!kind) return null;
+  return {
+    code: 'kind-under-sources',
+    severity: 'warning',
+    message:
+      `${path} carries \`kind: ${kind}\`, but every file under sources/ is read as a raw source, never as a node. ` +
+      'Move it into a kind folder such as domains/ to make it a node.',
+  };
+}
 
 export const KNOWN_VAULT_KINDS = [
   'project',

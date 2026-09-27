@@ -18,8 +18,10 @@ import {
   REVIEW_STATE_CONFIRMED,
   REVIEW_STATE_HUMAN_DECIDES,
   REVIEW_STATE_KEY,
+  VAULT_SOURCES_DIR,
   agentCreatedBy,
   nodeUidIssue,
+  rawSourceSlugIssue,
   reviewCurrentness,
 } from '../schema.mjs';
 import { server } from '../server/instance.mjs';
@@ -55,6 +57,13 @@ import { join } from 'node:path';
 // verify contract depend on the literal string); only growthHint rides on the
 // Error instance, and error() lifts it into structuredContent.
 function docNotFoundError(slug, docs) {
+  const rawSourceIssue = rawSourceSlugIssue(slug);
+  if (rawSourceIssue) {
+    const err = new Error(`Doc not found: ${slug}. ${rawSourceIssue}`);
+    err.repairFields = { missingSubject: 'Doc not found', missingSlug: slug, recoveryTools: ['read_source'] };
+    err.growthHint = buildSlugNotFoundGrowthHint({ slug });
+    return err;
+  }
   const err = new Error(`Doc not found: ${slug}`);
   const candidateSlugs = suggestSimilarSlugs(VAULT_ROOT, slug);
   // A name the vault references without a document is a reference-only concept;
@@ -315,6 +324,8 @@ function resolveExistingVaultUid(uid, docs = null) {
 }
 
 function missingSlugMessage(prefix, slug, { createHint = false } = {}) {
+  const rawSourceIssue = rawSourceSlugIssue(slug);
+  if (rawSourceIssue) return `${prefix}: "${slug}". ${rawSourceIssue}`;
   const suggestions = suggestSimilarSlugs(VAULT_ROOT, slug);
   const lines = [
     `${prefix}: "${slug}". Use list_concepts() to see all slugs, or find_evidence({title:"${slug}"}) to search by title.`,
@@ -376,7 +387,7 @@ function buildSummaryFreshness(docs) {
 
 function listVaultSourcePaths() {
   const out = [];
-  const stack = [{ dir: join(VAULT_ROOT, 'sources'), prefix: 'sources' }];
+  const stack = [{ dir: join(VAULT_ROOT, VAULT_SOURCES_DIR), prefix: VAULT_SOURCES_DIR }];
   while (stack.length > 0) {
     const { dir, prefix } = stack.pop();
     let entries;

@@ -7,6 +7,10 @@ import {
   VAULT_WALK_MAX_ENTRIES,
   isVaultSourcePath,
 } from '@/entities/docs-vault/lib/build-local-manifest';
+import {
+  VAULT_SOURCES_DIR as MCP_VAULT_SOURCES_DIR,
+  isVaultSourcePath as isMcpVaultSourcePath,
+} from '../../mcp/src/schema.mjs';
 
 const repoRoot = resolve(__dirname, '../..');
 const rustSource = readFileSync(resolve(repoRoot, 'src-tauri/src/lib.rs'), 'utf8');
@@ -87,6 +91,13 @@ describe('볼트 walk 규칙 — TS 와 Rust 가 같아야 한다', () => {
     expect(VAULT_SOURCES_DIR).toBe('sources');
     expect(tsSource).toMatch(/export const VAULT_SOURCES_DIR = 'sources';/);
     expect(rustSource).toMatch(/const VAULT_SOURCES_DIR: &str = "sources";/);
+  });
+
+  it('MCP, which the CLI and scripts load, names and anchors the sources folder like the app', () => {
+    expect(MCP_VAULT_SOURCES_DIR).toBe(VAULT_SOURCES_DIR);
+    for (const path of ['sources/a.pdf', 'sources/notes/a.md', 'notes/sources/a.md', 'sources.md']) {
+      expect(isMcpVaultSourcePath(path), path).toBe(isVaultSourcePath(path));
+    }
   });
 
   it('both walks anchor the sources prefix at the vault root', () => {
