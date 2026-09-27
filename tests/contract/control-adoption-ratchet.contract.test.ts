@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, 
 import { tmpdir } from 'node:os';
 import { basename, extname, join, relative } from 'node:path';
 
+import ts from 'typescript';
 import { afterAll, describe, expect, it } from 'vitest';
 
 import { judgeRatchet, RAISES_DIR, type RatchetJudgement } from './lib/ratchet-base';
@@ -695,12 +696,40 @@ const BUTTON_TAGS = ['button'] as const;
 const ANCHOR_TAGS = ['Link', 'a'] as const;
 const FIELD_TAGS = ['input', 'textarea', 'select', 'label'] as const;
 
+const VALUE_LAYER_CALLS = new Set(['controlClass', 'fieldClass', 'fieldLabel']);
+const helperCache = new Map<string, string[]>();
+
+/** Same-file functions and constants that call the value layer and render no JSX: a class helper, not a component. */
+function valueLayerHelpers(source: string): string[] {
+  const cached = helperCache.get(source);
+  if (cached) return cached;
+  const file = ts.createSourceFile('control.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const contains = (node: ts.Node, test: (n: ts.Node) => boolean): boolean =>
+    test(node) || ts.forEachChild(node, (child) => (contains(child, test) ? true : undefined)) === true;
+  const callsValueLayer = (n: ts.Node) =>
+    ts.isCallExpression(n) && ts.isIdentifier(n.expression) && VALUE_LAYER_CALLS.has(n.expression.text);
+  const rendersJsx = (n: ts.Node) => ts.isJsxElement(n) || ts.isJsxSelfClosingElement(n) || ts.isJsxFragment(n);
+  const names: string[] = [];
+  const visit = (node: ts.Node): void => {
+    const body = ts.isFunctionDeclaration(node) ? node.body : ts.isVariableDeclaration(node) ? node.initializer : undefined;
+    const name = ts.isFunctionDeclaration(node) || ts.isVariableDeclaration(node) ? node.name : undefined;
+    if (name && ts.isIdentifier(name) && body && contains(body, callsValueLayer) && !contains(body, rendersJsx)) {
+      names.push(name.text);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(file);
+  helperCache.set(source, names);
+  return names;
+}
+
 function handWrittenTags(file: string, tags: readonly string[] = BUTTON_TAGS): string[] {
   const source = stripComments(readFileSync(file, 'utf8'));
   // Names bound by `const X = controlClass({…})` / `const X = cn(controlClass({…}), …)`.
   const systemConstants = [
-    ...source.matchAll(/const\s+([A-Za-z_$][\w$]*)\s*=[^;\n]*(?:controlClass|fieldClass|fieldLabel)\s*\(/g),
-  ].map((m) => m[1]);
+    ...[...source.matchAll(/const\s+([A-Za-z_$][\w$]*)\s*=[^;\n]*(?:controlClass|fieldClass|fieldLabel)\s*\(/g)].map((m) => m[1]),
+    ...valueLayerHelpers(source),
+  ];
   const found: string[] = [];
   for (const m of source.matchAll(new RegExp(`<(?:${tags.join('|')})\\b`, 'g'))) {
     const tag = openingTag(source, m.index + m[0].length);
@@ -1403,6 +1432,36 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
      * scanner's field of view) instead; that is independent of debt.
      */
     expect(scannedFiles.length, '훑은 파일이 너무 적다 — 스캐너의 시야가 죽었다').toBeGreaterThan(150);
+  });
+
+  it('a class helper that calls the value layer counts as adoption, and a component does not launder a tag', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'control-adoption-helper-'));
+    const probe = join(dir, 'HelperProbe.tsx');
+    try {
+      writeFileSync(
+        probe,
+        [
+          'function chipClass(active: boolean) {',
+          "  return controlClass({ shape: 'pill', active });",
+          '}',
+          'function Toolbar() {',
+          "  return <span className={controlClass({ shape: 'pill' })} />;",
+          '}',
+          'export function HelperProbe({ active }: { active: boolean }) {',
+          '  return (',
+          '    <>',
+          '      <button className={chipClass(active)} />',
+          '      <button className={chipClass(!active)} />',
+          '      <button data-owner={Toolbar} className="h-9 px-3" />',
+          '    </>',
+          '  );',
+          '}',
+        ].join('\n'),
+      );
+      expect(countInFile(probe)).toBe(1);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it('② 등재 안 된 자리를 손 컨트롤로 만들면 **부채**로 잡힌다 — 등재 쪽으로 새지 않는다', () => {

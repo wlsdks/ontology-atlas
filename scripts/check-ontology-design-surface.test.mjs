@@ -268,6 +268,67 @@ test("ontology design surface rejects kind decision full-height stripes", () => 
   );
 });
 
+test("ontology design surface ignores a comment naming a forbidden token after JSX text with an apostrophe", () => {
+  const root = makeFixture();
+  writeCleanWorkbenchFixtures(root);
+  writeFixture(
+    root,
+    "src/views/ontology-view/ui/KindCard.tsx",
+    [
+      "export function KindCard() {",
+      "  return <p>Don't draw a rail</p>;",
+      "}",
+      "// ontology-kind-decision-stripe stays out of this card",
+    ].join("\n"),
+  );
+
+  const report = evaluateOntologyDesignSurface({ root, targetDirs: ["src/views/ontology-view"] });
+
+  assert.deepEqual(report.violations, []);
+});
+
+test("ontology design surface reports a real use at its own line and column after a block comment", () => {
+  const root = makeFixture();
+  writeCleanWorkbenchFixtures(root);
+  writeFixture(
+    root,
+    "src/views/ontology-view/ui/KindCard.tsx",
+    [
+      "/*",
+      " * A kind card.",
+      " */",
+      `/* Don't draw a rail. */ export const KindCard = () => <span className="ontology-kind-decision-stripe" />;`,
+    ].join("\n"),
+  );
+
+  const report = evaluateOntologyDesignSurface({ root, targetDirs: ["src/views/ontology-view"] });
+
+  assert.deepEqual(
+    report.violations.map((violation) => [violation.check.id, violation.line, violation.column]),
+    [["no-kind-decision-stripe", 4, 73]],
+  );
+});
+
+test("ontology design surface does not accept a workbench marker that survives only in a comment", () => {
+  const root = makeFixture();
+  writeCleanWorkbenchFixtures(root);
+  const modal = "src/views/docs-vault/ui/parts/DocsVaultAuditModal.tsx";
+  writeFixture(
+    root,
+    modal,
+    fs.readFileSync(path.join(root, modal), "utf8")
+      .replace("function DocsVaultAuditModal() {}", "// function DocsVaultAuditModal() {}")
+      .replace("sourceContract.graphChip", "/* sourceContract.graphChip */"),
+  );
+
+  const report = evaluateOntologyDesignSurface({ root, targetDirs: ["src/views/ontology-view"] });
+
+  assert.deepEqual(
+    report.violations.map((violation) => violation.source),
+    ["missing marker: function DocsVaultAuditModal", "missing marker: sourceContract.graphChip"],
+  );
+});
+
 test("ontology design surface reports missing workbench structure markers", () => {
   const root = makeFixture();
   writeCleanWorkbenchFixtures(root);

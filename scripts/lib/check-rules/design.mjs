@@ -32,6 +32,7 @@ export const rules = [
     reason: 'ontology workbench design surface or its guard changed',
     matches: [
       /^scripts\/check-ontology-design-surface\.(?:mjs|test\.mjs)$/,
+      /^scripts\/quality\/source-language\/inventory\.mjs$/,
       /^src\/views\/ontology-insights\//,
     ],
   },
