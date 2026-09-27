@@ -392,7 +392,7 @@ mod tests {
 
     fn prepare_for_test(c: &DoctorContext<'_>) {
         acp::prepare_isolated_config(c.runtime_id, c.app_data_dir, c.home, c.cli, c.path_env)
-            .expect("준비가 실패하면 이 시험의 전제가 무너진다");
+            .expect("setup must succeed for this test to hold");
     }
 
     fn ctx<'a>(app_data: &'a Path, home: Option<&'a Path>) -> DoctorContext<'a> {
@@ -424,7 +424,7 @@ mod tests {
         let c = ctx(&app_data, Some(&home));
         assert!(
             c.cli.is_none() && c.launcher.is_none(),
-            "이 시험의 전제가 깨졌다"
+            "the test precondition does not hold"
         );
 
         let checks = diagnose(&c);
@@ -432,14 +432,14 @@ mod tests {
         assert_eq!(missing_tool.state, "problem");
         assert!(
             !missing_tool.blocked,
-            "선행 조건 자신이 막혔다고 표시되면 안 된다"
+            "a prerequisite must not mark itself blocked"
         );
 
         for check in checks.iter().filter(|x| !PREREQUISITE_IDS.contains(&x.id)) {
-            assert!(check.blocked, "{} 가 막힌 표시가 없다", check.id);
+            assert!(check.blocked, "{} is not marked blocked", check.id);
             assert!(
                 !check.fixable,
-                "{} 에 고치기를 권하고 있다 — 눌러도 소용없다",
+                "{} offers a fix that cannot work",
                 check.id
             );
         }
@@ -468,7 +468,7 @@ mod tests {
             .unwrap();
         assert_eq!(cfg.state, "problem");
         assert!(!cfg.blocked);
-        assert!(cfg.fixable, "선행 조건이 멀쩡한데 수리를 막았다");
+        assert!(cfg.fixable, "repair is blocked although prerequisites hold");
         let _ = std::fs::remove_dir_all(&base);
     }
 
@@ -549,13 +549,13 @@ mod tests {
 
         assert!(
             !dir.join("junk.json").exists(),
-            "다시 맺었는데 옛 파일이 남았다"
+            "the old file survived relinking"
         );
         // **Deleting alone is not enough.** The next session comes up without a gate or dies.
-        assert!(dir.join("settings.json").is_file(), "다시 만들지 않았다");
+        assert!(dir.join("settings.json").is_file(), "settings.json was not recreated");
         assert!(
             dir.join(".credentials.json").exists(),
-            "링크를 다시 안 걸었다"
+            "the link was not recreated"
         );
         let _ = std::fs::remove_dir_all(&base);
     }
@@ -578,7 +578,7 @@ mod tests {
         for id in REPAIRABLE_IDS {
             assert!(
                 CHECK_IDS.contains(id),
-                "고칠 수 있다고 등재했는데 검사 목록에 없다: {id}"
+                "listed as fixable but missing from checks: {id}"
             );
         }
     }
@@ -652,11 +652,11 @@ mod tests {
         for absent in ["config-dir", "credentials-link", "shadow-keychain", "login"] {
             assert!(
                 !ids.contains(&absent),
-                "격리를 안 쓰는 실행기에 {absent} 를 냈다"
+                "emitted {absent} for a runner without isolation"
             );
         }
         // That said, an empty list is not acceptable — the common checks must still come out.
-        assert!(ids.contains(&"cli"), "공통 검사까지 사라졌다");
+        assert!(ids.contains(&"cli"), "the shared checks disappeared");
         assert!(ids.contains(&"launcher"));
     }
 
@@ -670,7 +670,7 @@ mod tests {
             // The app does not download and install someone else's tool on
             // their behalf — a line this repository has already drawn. So it
             // must not claim it can fix this either.
-            assert!(!check.fixable, "{id} 를 앱이 고칠 수 있다고 말하고 있다");
+            assert!(!check.fixable, "{id} claims the app can fix it");
         }
     }
 
@@ -693,7 +693,7 @@ mod tests {
 
         let before = diagnose(&c);
         let cfg = before.iter().find(|c| c.id == "config-dir").unwrap();
-        assert_eq!(cfg.state, "problem", "설정 폴더가 없는데 문제로 안 봤다");
+        assert_eq!(cfg.state, "problem", "a missing config folder is not reported as a problem");
         assert!(cfg.fixable);
 
         repair(&c, "config-dir").unwrap();
@@ -702,7 +702,7 @@ mod tests {
         assert_eq!(
             after.iter().find(|c| c.id == "config-dir").unwrap().state,
             "ok",
-            "고쳤다고 했는데 다시 재 보니 그대로다"
+            "the fix reported success but a recheck shows no change"
         );
         let _ = std::fs::remove_dir_all(&base);
     }

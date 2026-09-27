@@ -4365,7 +4365,7 @@ mod tests {
             "http://example.com/a?b=c",
             "HTTPS://EXAMPLE.COM",
         ] {
-            assert!(crate::is_openable_url(good), "{good} 를 막았다");
+            assert!(crate::is_openable_url(good), "{good} was blocked");
         }
         for bad in [
             "file:///etc/passwd",
@@ -4377,7 +4377,7 @@ mod tests {
             "https://exa mple.com",
             "https://example.com\nfile:///etc/passwd",
         ] {
-            assert!(!crate::is_openable_url(bad), "{bad:?} 를 열려고 한다");
+            assert!(!crate::is_openable_url(bad), "{bad:?} would be opened");
         }
     }
 
@@ -4554,7 +4554,7 @@ mod tests {
         assert_eq!(
             permission_verdict_for_session(&sessions, "caller-invented-session", outside.to_str()),
             acp::PermissionVerdict::Ask,
-            "등록되지 않은 세션은 화면이 어떤 경로를 보내도 자동 허용하면 안 된다"
+            "an unregistered session must not auto-allow any path"
         );
 
         let _ = std::fs::remove_dir_all(&base);
@@ -4618,7 +4618,7 @@ mod tests {
             assert_eq!(
                 vault_root_rejection(Path::new(path)),
                 Some("bundle-directory"),
-                "{path} 이 통과하면 폴더를 여는 대신 프로그램이 실행된다"
+                "{path} passing would run a program instead of opening a folder"
             );
         }
     }
@@ -4654,13 +4654,13 @@ mod tests {
         };
         assert!(
             !blocked.is_empty(),
-            "이 플랫폼에는 막을 자리가 하나도 등록돼 있지 않다"
+            "no blocked roots are registered for this platform"
         );
         for dir in blocked {
             assert_eq!(
                 vault_root_rejection(Path::new(dir)),
                 Some("system-directory"),
-                "{dir} 는 볼트 루트로 받으면 안 된다"
+                "{dir} must not be accepted as a vault root"
             );
         }
     }
@@ -4677,7 +4677,7 @@ mod tests {
         assert_eq!(
             vault_root_rejection(&home),
             Some("home-directory"),
-            "홈 디렉터리 자체는 볼트가 아니다"
+            "the home directory itself is not a vault"
         );
     }
 
@@ -4974,7 +4974,7 @@ mod tests {
         )
         .unwrap();
 
-        assert!(!alias.exists(), "링크 엔트리가 남았다");
+        assert!(!alias.exists(), "the link entry remains");
         assert_eq!(fs::read_to_string(&target).unwrap(), "keep me");
         fs::remove_dir_all(root).ok();
     }
@@ -5589,12 +5589,12 @@ mod atomic_write_tests {
 
         assert!(
             result.is_ok(),
-            "안정된 원래 부모 쓰기는 성공해야 한다: {result:?}"
+            "a write under the stable original parent must succeed: {result:?}"
         );
         assert_eq!(
             std::fs::read_to_string(outside.join("project-sources.json")).unwrap(),
             "outside",
-            "검증 뒤 생긴 부모 symlink를 따라 볼트 밖 파일을 바꿨다"
+            "followed a parent symlink created after validation and wrote outside the vault"
         );
         assert_eq!(
             std::fs::read_to_string(original_sidecar.join("project-sources.json")).unwrap(),
@@ -5634,11 +5634,11 @@ mod atomic_write_tests {
 
         assert!(
             result.is_ok(),
-            "안정된 원래 부모 mkdir은 성공해야 한다: {result:?}"
+            "mkdir under the stable original parent must succeed: {result:?}"
         );
         assert!(
             !outside.join("new-dir").exists(),
-            "검증 뒤 생긴 부모 symlink를 따라 볼트 밖 디렉터리를 만들었다"
+            "followed a parent symlink created after validation and created a directory outside the vault"
         );
         assert!(original_sidecar.join("new-dir").is_dir());
         std::fs::remove_dir_all(&base).ok();
@@ -5677,7 +5677,7 @@ mod atomic_write_tests {
         assert_ne!(
             std::fs::metadata(&outside).unwrap().ino(),
             std::fs::metadata(&target).unwrap().ino(),
-            "vault entry가 기존 외부 inode와의 링크를 끊지 않았다"
+            "the vault entry kept its link to the outside inode"
         );
         std::fs::remove_dir_all(&base).ok();
     }
@@ -5705,7 +5705,7 @@ mod atomic_write_tests {
             .map(|e| e.file_name().to_string_lossy().to_string())
             .filter(|name| name.contains("oatlas-tmp"))
             .collect();
-        assert!(leftovers.is_empty(), "임시 파일이 남았다: {leftovers:?}");
+        assert!(leftovers.is_empty(), "temporary files remain: {leftovers:?}");
         std::fs::remove_dir_all(&dir).ok();
     }
 
@@ -5719,8 +5719,8 @@ mod atomic_write_tests {
 
         let result = write_text_atomically(&target, "new");
 
-        assert!(result.is_err(), "디렉터리를 파일로 덮어썼다");
-        assert!(target.is_dir(), "대상이 파일로 바뀌었다");
+        assert!(result.is_err(), "overwrote a directory with a file");
+        assert!(target.is_dir(), "the target became a file");
         std::fs::remove_dir_all(&dir).ok();
     }
 
@@ -5798,7 +5798,7 @@ mod acp_install_progress_tests {
                 "stage",
                 "total"
             ],
-            "화면이 읽는 키와 다르다 — 이러면 진행률이 조용히 사라진다"
+            "key differs from the one the UI reads, so progress would vanish"
         );
         assert_eq!(object["runtimeId"], "claude-acp");
         assert_eq!(object["received"], 26_043_779u64);

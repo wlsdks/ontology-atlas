@@ -901,7 +901,7 @@ mod tests {
         )
         .unwrap();
         for arg in curl_argv() {
-            assert!(!arg.contains("sk-ant"), "argv 에 키가 실렸다: {arg}");
+            assert!(!arg.contains("sk-ant"), "argv carries the key: {arg}");
         }
         assert!(curl_config(&request).contains("sk-ant-secret-value"));
     }
@@ -954,11 +954,11 @@ mod tests {
         assert_eq!(request.url, GEMINI_VERIFY_URL);
         assert!(
             !request.url.contains("key="),
-            "URL 에 키 자리가 있으면 안 된다"
+            "the URL must not carry the key"
         );
         assert!(!request.url.contains("AIza-secret-value"));
         for arg in curl_argv() {
-            assert!(!arg.contains("AIza"), "argv 에 키가 실렸다: {arg}");
+            assert!(!arg.contains("AIza"), "argv carries the key: {arg}");
         }
         let config = curl_config(&request);
         assert!(
@@ -983,7 +983,7 @@ mod tests {
             let request = verify_request(provider, &Target::Vendor { secret: "secret" }).unwrap();
             assert!(
                 request.url.starts_with("https://"),
-                "{provider} 의 확인 주소가 평문이다: {}",
+                "{provider} probe URL is plaintext: {}",
                 request.url
             );
         }
@@ -1014,7 +1014,7 @@ mod tests {
             serde_json::from_str(include_str!("../../tests/fixtures/llm-provider-hosts.json"))
                 .unwrap();
         let hosts = fixture["hosts"].as_object().unwrap();
-        assert_eq!(hosts.len(), 3, "픽스처가 명명 벤더 전부를 덮어야 한다");
+        assert_eq!(hosts.len(), 3, "fixture must cover every named vendor");
         for (provider, expected) in hosts {
             let request = verify_request(provider, &Target::Vendor { secret: "secret" }).unwrap();
             assert_eq!(
@@ -1043,7 +1043,7 @@ mod tests {
         )
         .unwrap();
         assert!(!result.ok);
-        assert!(result.denied, "400 이 거부로 읽혀야 한다");
+        assert!(result.denied, "400 must read as denied");
         let raw = fs::read_to_string(llm_audit::audit_log_path(&vault)).unwrap();
         let line: serde_json::Value = serde_json::from_str(raw.trim()).unwrap();
         assert_eq!(line["outcome"], "denied");
@@ -1108,7 +1108,7 @@ mod tests {
             },
         );
         assert!(result.is_err());
-        assert!(!sent.get(), "감사 기록에 실패했는데 전송이 일어났다");
+        assert!(!sent.get(), "sent although the audit write failed");
         assert!(!llm_audit::audit_log_path(&vault).exists());
         fs::remove_dir_all(&vault).ok();
     }
@@ -1200,13 +1200,13 @@ mod tests {
             .filter(|(idx, _)| source[*idx..].contains("]\npub fn "))
             .map(|(idx, _)| idx)
             .collect();
-        assert_eq!(commands.len(), 2, "연결 확인과 대화 왕복 둘뿐이다");
+        assert_eq!(commands.len(), 2, "only the connection probe and chat round trip");
         for idx in commands {
             let signature = &source[idx..(idx + 600).min(source.len())];
             assert!(
                 signature.contains("Result<LlmVerifyResult, String>")
                     || signature.contains("Result<LlmChatEcho, String>"),
-                "커맨드 반환 타입이 허용 목록 밖이다: {}",
+                "command return type is outside the allowlist: {}",
                 &signature[..signature.find('{').unwrap_or(200).min(signature.len())]
             );
         }
@@ -1228,8 +1228,8 @@ mod tests {
         )
         .unwrap();
         for arg in curl_argv_with_timeout(CHAT_TIMEOUT_SECONDS) {
-            assert!(!arg.contains("sk-ant"), "argv 에 키가 실렸다: {arg}");
-            assert!(!arg.contains("결제"), "argv 에 볼트 발췌가 실렸다: {arg}");
+            assert!(!arg.contains("sk-ant"), "argv carries the key: {arg}");
+            assert!(!arg.contains("결제"), "argv carries a vault excerpt: {arg}");
         }
         let config = curl_chat_config(&request);
         assert!(config.contains("sk-ant-secret-value"));
@@ -1254,7 +1254,7 @@ mod tests {
         let data_line = config
             .lines()
             .find(|line| line.starts_with("data = "))
-            .expect("data 줄이 있어야 한다");
+            .expect("a data line must exist");
         // Unescape by the same rule curl applies and check it matches the original.
         let quoted = data_line.trim_start_matches("data = ");
         let inner = &quoted[1..quoted.len() - 1];
@@ -1262,7 +1262,7 @@ mod tests {
         let mut chars = inner.chars();
         while let Some(ch) = chars.next() {
             if ch == '\\' {
-                restored.push(chars.next().expect("이스케이프가 잘리면 안 된다"));
+                restored.push(chars.next().expect("an escape must not be truncated"));
             } else {
                 restored.push(ch);
             }
@@ -1296,7 +1296,7 @@ mod tests {
             );
             assert!(
                 !request.url.contains("key="),
-                "URL 에 키 자리가 있으면 안 된다"
+                "the URL must not carry the key"
             );
         }
     }
@@ -1308,7 +1308,7 @@ mod tests {
         for bad in ["../../v1/evil", "x?key=leak", "a b", "m#frag", ""] {
             assert!(
                 validate_model_id(bad, ModelPlacement::UrlPath).is_err(),
-                "통과하면 안 된다: {bad:?}"
+                "must be rejected: {bad:?}"
             );
         }
         let request = chat_request(
@@ -1356,7 +1356,7 @@ mod tests {
             },
         );
         assert!(result.is_err());
-        assert!(!sent.get(), "감사 기록에 실패했는데 전송이 일어났다");
+        assert!(!sent.get(), "sent although the audit write failed");
         assert!(!llm_audit::audit_log_path(&vault).exists());
         fs::remove_dir_all(&vault).ok();
     }
@@ -1397,7 +1397,7 @@ mod tests {
         assert_eq!(result.host, "api.anthropic.com");
 
         let raw = fs::read_to_string(llm_audit::audit_log_path(&vault)).unwrap();
-        assert_eq!(raw.lines().count(), 1, "왕복 1회 = 줄 1개");
+        assert_eq!(raw.lines().count(), 1, "one round trip, one line");
         let line: serde_json::Value = serde_json::from_str(raw.trim()).unwrap();
         assert_eq!(line["purpose"], "agent");
         assert_eq!(line["outcome"], "ok");
@@ -1412,7 +1412,7 @@ mod tests {
         assert_eq!(line["responseChars"], 14);
         assert!(
             !raw.contains("content\\\":[]"),
-            "응답 본문이 기록되면 안 된다"
+            "the response body must not be logged"
         );
         fs::remove_dir_all(&vault).ok();
     }
@@ -1429,7 +1429,7 @@ mod tests {
             .filter(|line| !line.trim().is_empty())
             .map(|line| serde_json::from_str::<serde_json::Value>(line).unwrap())
             .find(|line| line["purpose"] == "agent")
-            .expect("픽스처에 에이전트 줄이 있어야 한다");
+            .expect("fixture must contain an agent line");
 
         let vault = temp_vault("chat-fixture");
         chat_with(
@@ -1549,7 +1549,7 @@ mod tests {
         .unwrap();
         assert!(request.headers.is_empty(), "{:?}", request.headers);
         assert_eq!(request.url, "http://localhost:11434/v1/models");
-        assert!(request.returns_body, "모델 목록을 화면이 받아야 한다");
+        assert!(request.returns_body, "the UI must receive the model list");
     }
 
     #[test]
@@ -1565,7 +1565,7 @@ mod tests {
                     },
                 )
                 .is_err(),
-                "{provider} 가 임의 주소를 받아들였다"
+                "{provider} accepted an arbitrary URL"
             );
             assert!(chat_request(
                 provider,
@@ -1593,14 +1593,14 @@ mod tests {
             "http://[::1]:11434",
             "https://box.example.com:8080",
         ] {
-            assert!(normalize_base_url(ok).is_ok(), "거절하면 안 된다: {ok}");
+            assert!(normalize_base_url(ok).is_ok(), "must be accepted: {ok}");
         }
         for bad in [
             "http://example.com",
             "http://192.168.0.9:11434",
             "http://127.example.invalid:11434",
         ] {
-            assert!(normalize_base_url(bad).is_err(), "통과하면 안 된다: {bad}");
+            assert!(normalize_base_url(bad).is_err(), "must be rejected: {bad}");
         }
     }
 
@@ -1619,7 +1619,7 @@ mod tests {
         ] {
             assert!(
                 normalize_base_url(bad).is_err(),
-                "통과하면 안 된다: {bad:?}"
+                "must be rejected: {bad:?}"
             );
         }
     }
@@ -1728,7 +1728,7 @@ mod tests {
         assert_eq!(line["outcome"], "ok");
         assert_eq!(line["scope"]["vaultChars"], 0);
         // The list body is **not recorded** — only the length remains.
-        assert!(!raw.contains("qwen3:8b"), "확인 응답 본문이 기록됐다");
+        assert!(!raw.contains("qwen3:8b"), "the probe response body was logged");
         assert_eq!(line["responseChars"], listing.chars().count());
         fs::remove_dir_all(&vault).ok();
     }
@@ -1757,7 +1757,7 @@ mod tests {
         .unwrap();
         assert!(!result.ok);
         assert_eq!(result.http_status, Some(404));
-        assert!(result.body.is_none(), "실패 본문은 화면으로 가지 않는다");
+        assert!(result.body.is_none(), "a failure body does not reach the UI");
         fs::remove_dir_all(&vault).ok();
     }
 
@@ -1826,7 +1826,7 @@ mod tests {
             },
         );
         assert!(result.is_err());
-        assert!(!sent.get(), "감사 기록에 실패했는데 전송이 일어났다");
+        assert!(!sent.get(), "sent although the audit write failed");
         fs::remove_dir_all(&vault).ok();
     }
 

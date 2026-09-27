@@ -243,12 +243,12 @@ mod tests {
         // the key was still there.
         assert!(
             !is_cleared(Step::Failed, Step::Failed),
-            "못 지웠으면 지웠다고 하면 안 된다"
+            "a failed delete must not report deleted"
         );
         // If it claims deleted but still reads back, it was not deleted.
         assert!(
             !is_cleared(Step::Done, Step::Done),
-            "아직 읽히면 안 지워진 것이다"
+            "still readable means not deleted"
         );
     }
 
@@ -292,7 +292,7 @@ mod tests {
         // A fourth comes only when both hold: "cannot be absorbed via Bearer
         // compatibility + evidence of demand". If this assertion broke, first check
         // that those two conditions are written in the PR body.
-        assert_eq!(PROVIDERS.len(), 3, "명명 벤더는 3에서 동결한다");
+        assert_eq!(PROVIDERS.len(), 3, "named vendors stay frozen at three");
     }
 
     #[test]
@@ -328,7 +328,7 @@ mod tests {
         let status_returns = source.matches("Result<SecretStatus, String>").count();
         assert_eq!(
             command_count, status_returns,
-            "모든 커맨드는 SecretStatus 만 반환해야 한다"
+            "every command must return only SecretStatus"
         );
     }
 }

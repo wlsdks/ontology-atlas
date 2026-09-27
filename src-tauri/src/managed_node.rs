@@ -334,11 +334,11 @@ mod tests {
         };
         assert!(
             artifact.filename.contains(MANAGED_NODE_VERSION),
-            "파일 이름이 고정 버전과 다르다: {} vs {MANAGED_NODE_VERSION}",
+            "file name differs from the pinned version: {} vs {MANAGED_NODE_VERSION}",
             artifact.filename
         );
         assert!(artifact.filename.contains(artifact.platform));
-        assert_eq!(artifact.sha256.len(), 64, "sha256 이 64자가 아니다");
+        assert_eq!(artifact.sha256.len(), 64, "sha256 is not 64 characters");
         assert!(artifact.sha256.chars().all(|c| c.is_ascii_hexdigit()));
     }
 
@@ -350,12 +350,12 @@ mod tests {
     #[test]
     fn artifact_bytes_can_serve_as_a_denominator() {
         let Some(artifact) = MANAGED_NODE else { return };
-        assert!(artifact.bytes > 0, "0 을 분모로 쓸 수 없다");
+        assert!(artifact.bytes > 0, "size must be non-zero");
         // Node distributions are tens of MB. If the magnitude is off (e.g., writing KB instead of bytes),
         // progress immediately jumps to 100% or stays stuck at 1% forever.
         assert!(
             (10_000_000..200_000_000).contains(&artifact.bytes),
-            "크기 자릿수가 이상하다: {}",
+            "size magnitude is implausible: {}",
             artifact.bytes
         );
     }
@@ -372,9 +372,9 @@ mod tests {
     fn everything_lives_under_the_app_private_root() {
         let app_data = Path::new("/tmp/atlas-app-data");
         let root = managed_node_root(app_data);
-        assert!(root.starts_with(app_data), "앱 전용 자리 밖이다: {root:?}");
+        assert!(root.starts_with(app_data), "outside app data: {root:?}");
         if let Some(bin) = managed_node_bin_dir(app_data) {
-            assert!(bin.starts_with(app_data), "앱 전용 자리 밖이다: {bin:?}");
+            assert!(bin.starts_with(app_data), "outside app data: {bin:?}");
         }
     }
 

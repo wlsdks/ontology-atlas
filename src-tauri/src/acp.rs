@@ -2657,7 +2657,7 @@ mod tests {
         let path = std::env::join_paths([PathBuf::from("/from/path")]).unwrap();
         let out = candidate_bin_dirs(Some(Path::new("/home/me")), Some(&path), &probe, None, None);
         assert_eq!(out.first(), Some(&PathBuf::from("/from/path")));
-        assert!(out.len() > 1, "잘 알려진 자리도 뒤에 붙어야 한다");
+        assert!(out.len() > 1, "well-known locations must be appended");
     }
 
     #[test]
@@ -2690,7 +2690,7 @@ mod tests {
                 PathBuf::from("/home/me/.nvm/versions/node/v20.11.1/bin"),
                 PathBuf::from("/home/me/.nvm/versions/node/v9.11.2/bin"),
             ],
-            "숫자 순서로 내림차순이어야 하고, 버전이 아닌 이름은 빠져야 한다"
+            "versions sort numerically descending and non-version names are dropped"
         );
     }
 
@@ -2727,7 +2727,7 @@ mod tests {
         assert_eq!(
             claude.cli_path.as_deref(),
             Some("/home/me/.local/bin/claude"),
-            "낡은 nvm 사본을 집었다 — 사용자의 셸이 쓰는 것과 다른 바이너리다"
+            "picked a stale nvm copy, not the binary the user shell runs"
         );
     }
 
@@ -2768,7 +2768,7 @@ mod tests {
         assert_eq!(
             out.first(),
             Some(&PathBuf::from("/home/me/.nvm/versions/node/v20.11.1/bin")),
-            "기본으로 지정한 버전이 앞에 와야 한다"
+            "the default version must come first"
         );
     }
 
@@ -2825,7 +2825,7 @@ mod tests {
         let out = detect_runtimes(Some(Path::new("/home/me")), Some(&path), &probe, None, None);
 
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
-        assert_eq!(claude.state, "ready", "PATH 밖에 있어도 찾아야 한다");
+        assert_eq!(claude.state, "ready", "must be found outside PATH");
         assert_eq!(
             claude.cli_path.as_deref(),
             Some("/home/me/.local/bin/claude")
@@ -2833,12 +2833,12 @@ mod tests {
         assert_eq!(
             claude.adapter_path.as_deref(),
             Some("/home/me/.nvm/versions/node/v24.16.0/bin/npx"),
-            "설치된 어댑터가 없으면 npx 로 띄운다"
+            "without an installed adapter, launch through npx"
         );
         assert_eq!(
             claude.adapter_package.as_deref(),
             Some(npx_package("claude-acp")),
-            "탐지 결과는 현재 레지스트리에 못 박힌 패키지를 그대로 내놓아야 한다"
+            "detection must return the package pinned in the registry"
         );
 
         let codex = out.iter().find(|r| r.id == "codex-acp").unwrap();
@@ -2864,7 +2864,7 @@ mod tests {
             let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
             assert_eq!(
                 claude.state, "cli-missing",
-                "CLI 부재가 먼저다 — 할 일이 더 분명하다"
+                "a missing CLI wins because its next step is clearer"
             );
         }
 
@@ -2926,7 +2926,7 @@ mod tests {
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
         assert_eq!(
             claude.state, "login-needed",
-            "설치만 하고 로그인 안 한 사람에게 준비됐다고 말하면, 그 사람은 대화를 열어 보고서야 안다",
+            "an installed but signed-out CLI must not report ready",
         );
 
         // ③ **The unknown is not recorded as "not working".** Counting what we could not
@@ -2942,7 +2942,7 @@ mod tests {
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
         assert_eq!(
             claude.state, "login-unknown",
-            "물어보고 답을 못 받은 것을 「로그인 필요」로도 「준비됨」으로도 말하면 안 된다",
+            "an unanswered probe is neither signed out nor ready",
         );
     }
 
@@ -2962,24 +2962,24 @@ mod tests {
         assert_eq!(
             classify_login_exit(Some(0)),
             Some(true),
-            "0 은 로그인돼 있다"
+            "exit 0 means signed in"
         );
         assert_eq!(
             classify_login_exit(Some(LOGIN_LOGGED_OUT_EXIT)),
             Some(false),
-            "잰 로그아웃 코드까지 모르는 것으로 돌리면 진짜 로그아웃한 사람이 아무 말도 못 듣는다",
+            "a measured signed-out code must report signed out, not unknown",
         );
         for code in [2, 3, 126, 127, 130, 255] {
             assert_eq!(
                 classify_login_exit(Some(code)),
                 None,
-                "{code} 는 로그인 여부가 아니라 실행이 틀어졌다는 뜻이다",
+                "{code} means the run failed, not the sign-in state",
             );
         }
         assert_eq!(
             classify_login_exit(None),
             None,
-            "신호로 죽은 프로세스는 자격 증명에 대해 아무 말도 하지 않았다",
+            "a process killed by a signal says nothing about credentials",
         );
     }
 
@@ -3004,11 +3004,11 @@ mod tests {
         assert_eq!(claude.state, "login-unknown");
         assert!(
             claude.cli_path.is_some(),
-            "찾은 CLI 경로를 지우면 실행할 방법이 사라진다"
+            "the detected CLI path must be kept"
         );
         assert!(
             claude.adapter_path.is_some(),
-            "어댑터 경로도 그대로 남아야 한다"
+            "the adapter path must be kept"
         );
     }
 
@@ -3031,7 +3031,7 @@ mod tests {
         let out = detect_runtimes(None, Some(path_env.as_os_str()), &probe, None, None);
         assert!(
             out.iter().all(|s| s.state != "login-unknown"),
-            "물어본 적 없는 실행기에까지 「로그인 확인 못 함」을 붙였다",
+            "marked sign-in unknown on a runner that was never probed",
         );
     }
 
@@ -3071,13 +3071,13 @@ mod tests {
         assert_eq!(
             asked.len(),
             LOGIN_PROBE.len(),
-            "물어본 횟수가 표와 다르다: {asked:?}"
+            "probe count differs from the table: {asked:?}"
         );
         assert!(
             !asked.iter().any(|p| Path::new(p)
                 .file_name()
                 .is_some_and(|name| name == "gemini")),
-            "재 보지 않은 도구에 물어봤다 — 그 도구에서 그 인자가 무슨 뜻인지 모른다",
+            "probed a tool whose status argument was never measured",
         );
     }
 
@@ -3118,10 +3118,10 @@ mod tests {
         detect_runtimes(None, Some(path_env.as_os_str()), &probe, None, None);
 
         let seen = seen.borrow();
-        assert!(!seen.is_empty(), "아무에게도 안 물어봤다 — 탐지기가 죽었다");
+        assert!(!seen.is_empty(), "no tool was probed");
         assert!(
             seen.iter().all(|p| p.contains("/nvm/bin")),
-            "찾은 자리를 자식에게 안 물려줬다: {seen:?}",
+            "the detected location was not passed to the child: {seen:?}",
         );
     }
 
@@ -3159,7 +3159,7 @@ mod tests {
                  */
                 assert_ne!(
                     status.state, "ready",
-                    "{}: 감싸는 CLI 를 모르는데 준비됐다고 말한다 — 확인한 적 없는 것이다",
+                    "{}: reports ready without knowing its wrapped CLI",
                     status.id,
                 );
             } else {
@@ -3172,12 +3172,12 @@ mod tests {
         assert_eq!(
             out.iter().filter(|s| s.state == "ready").count(),
             0,
-            "아는 CLI 가 하나도 없는 기기인데 준비됨이 있다",
+            "a machine with no known CLI reports ready",
         );
         // Also check the test is not running over an empty set.
         assert!(
             out.iter().filter(|s| s.state == "cli-unknown").count() > 0,
-            "cli-unknown 이 0 이면 이 검사는 아무것도 안 지키고 있다",
+            "cli-unknown must be non-zero for this check to guard anything",
         );
     }
 
@@ -3204,7 +3204,7 @@ mod tests {
         assert_eq!(
             claude.adapter_path,
             Some(test_bin("claude-agent-acp").to_string_lossy().to_string()),
-            "설치된 어댑터를 찾아냈어야 한다"
+            "the installed adapter must be found"
         );
     }
 
@@ -3238,7 +3238,7 @@ mod tests {
             assert_eq!(
                 launch.args,
                 vec!["-y".to_string(), npx_package("claude-acp").to_string()],
-                "설치돼 있지 않으면 버전 못 박은 npx 로 띄운다"
+                "without an install, launch through version-pinned npx"
             );
         }
 
@@ -3260,7 +3260,7 @@ mod tests {
         )
         .unwrap();
         assert_eq!(launch.program, test_bin("claude-agent-acp"));
-        assert!(launch.args.is_empty(), "설치돼 있으면 npx 를 건너뛴다");
+        assert!(launch.args.is_empty(), "an installed adapter skips npx");
     }
 
     #[cfg(not(windows))]
@@ -3299,14 +3299,14 @@ mod tests {
         .unwrap();
         assert!(
             launch.path_env.contains("/home/me/.local/bin"),
-            "자식 PATH 에 CLI 가 있는 자리가 없다: {}",
+            "child PATH lacks the CLI directory: {}",
             launch.path_env
         );
         assert!(
             launch
                 .path_env
                 .contains("/home/me/.nvm/versions/node/v24.16.0/bin"),
-            "자식 PATH 에 node 자리가 없다: {}",
+            "child PATH lacks the node directory: {}",
             launch.path_env
         );
     }
@@ -3403,7 +3403,7 @@ mod tests {
         assert_eq!(
             read_bounded_line(&mut input, 64).unwrap().as_deref(),
             Some(&b"{\"ok\":true}"[..]),
-            "상한을 넘긴 줄 하나 때문에 세션 전체가 죽으면 안 된다"
+            "one oversized line must not kill the session"
         );
     }
 
@@ -3441,11 +3441,11 @@ mod tests {
                 .stdout(Stdio::piped())
                 .process_group(0)
                 .spawn()
-                .expect("sh 를 띄우지 못했다");
+                .expect("failed to spawn sh");
             let mut out = BufReader::new(child.stdout.take().unwrap());
             let mut line = String::new();
             out.read_line(&mut line).unwrap();
-            let grandchild: u32 = line.trim().parse().expect("손자 pid 를 못 읽었다");
+            let grandchild: u32 = line.trim().parse().expect("failed to read the grandchild pid");
             (child, grandchild)
         };
 
@@ -3457,8 +3457,8 @@ mod tests {
             let _ = child.wait();
             assert!(
                 process_is_running(grandchild),
-                "이 검사의 전제가 깨졌다 — 순진한 kill 이 손자까지 죽였다면 \
-                 이 플랫폼에서는 트리 정리가 필요 없다는 뜻이다"
+                "precondition broken: a plain kill also killed the grandchild, \
+                 so this platform needs no tree cleanup"
             );
             // Do not leave it behind.
             let _ = terminate_tree(grandchild);
@@ -3472,11 +3472,11 @@ mod tests {
         // after this function leaves a dead group leader in an EPERM transitional state on
         // macOS, testing a lifetime condition the app does not have.
         let reaper = std::thread::spawn(move || child.wait());
-        terminate_tree(leader_pid).expect("트리를 끝내지 못했다");
+        terminate_tree(leader_pid).expect("failed to terminate the tree");
         let _ = reaper.join();
         assert!(
             wait_until_gone(grandchild, std::time::Duration::from_secs(3)),
-            "손자 {grandchild} 가 살아남았다 — 앱을 꺼도 계속 도는 상태"
+            "grandchild {grandchild} survived and would outlive the app"
         );
     }
 
@@ -3501,7 +3501,7 @@ mod tests {
             .stdout(Stdio::piped())
             .process_group(0)
             .spawn()
-            .expect("테스트 프로세스 그룹을 띄우지 못했다");
+            .expect("failed to spawn the test process group");
         let leader_pid = leader.id();
         let mut out = BufReader::new(leader.stdout.take().unwrap());
         let mut line = String::new();
@@ -3509,11 +3509,11 @@ mod tests {
         let grandchild: u32 = line
             .trim()
             .parse()
-            .expect("TERM 무시 손자의 pid 를 못 읽었다");
+            .expect("failed to read the TERM-ignoring grandchild pid");
         assert_eq!(
             unsafe { libc::getpgid(grandchild as i32) },
             leader_pid as i32,
-            "손자가 리더의 프로세스 그룹을 떠나면 이 검사는 다른 조건을 잰다"
+            "the grandchild must stay in the leader process group"
         );
 
         assert_eq!(
@@ -3523,7 +3523,7 @@ mod tests {
         let _ = leader.wait();
         assert!(
             process_is_running(grandchild),
-            "손자가 TERM을 무시하지 않아 조기 반환 조건을 만들지 못했다"
+            "the grandchild did not ignore TERM, so the early-return case was not set up"
         );
 
         let result = terminate_tree(leader_pid);
@@ -3538,10 +3538,10 @@ mod tests {
             let _ = wait_until_gone(grandchild, std::time::Duration::from_secs(3));
         }
 
-        result.expect("남은 프로세스 그룹을 끝내지 못했다");
+        result.expect("failed to terminate the remaining process group");
         assert!(
             gone_before_cleanup,
-            "리더가 사라졌다는 이유로 반환해 TERM을 무시한 손자 {grandchild}가 남았다"
+            "returned when the leader exited and left TERM-ignoring grandchild {grandchild}"
         );
     }
 
@@ -3569,17 +3569,17 @@ mod tests {
     #[test]
     fn isolated_config_never_inherits_a_permissive_allow_list() {
         let settings: serde_json::Value = serde_json::from_str(ISOLATED_CLAUDE_SETTINGS)
-            .expect("격리 설정이 올바른 JSON 이어야 한다");
+            .expect("isolated settings must be valid JSON");
         let perms = &settings["permissions"];
         assert_eq!(
             perms["defaultMode"], "default",
-            "모델이 알아서 승인하면 관문이 없다"
+            "model self-approval removes the gate"
         );
         for key in ["allow", "deny", "ask"] {
             assert_eq!(
                 perms[key].as_array().map(|a| a.len()),
                 Some(0),
-                "{key} 가 비어 있지 않다 — 미리 허용된 것은 모드와 무관하게 통과한다"
+                "{key} is not empty; pre-allowed entries pass in every mode"
             );
         }
     }
@@ -3651,10 +3651,10 @@ mod tests {
             node_command("setTimeout(() => {}, 30000)"),
             std::time::Duration::from_millis(400),
         );
-        assert!(out.is_none(), "안 끝나는 명령이 값을 돌려줬다");
+        assert!(out.is_none(), "a command that never ends returned a value");
         assert!(
             started.elapsed() < std::time::Duration::from_secs(15),
-            "상한이 안 먹었다: {:?}",
+            "the timeout did not apply: {:?}",
             started.elapsed()
         );
     }
@@ -3681,7 +3681,7 @@ mod tests {
         ] {
             assert!(
                 !claude_status_is_logged_out(noise),
-                "모르는 출력을 로그아웃으로 읽었다: {noise:?}"
+                "read unknown output as signed out: {noise:?}"
             );
         }
     }
@@ -3713,7 +3713,7 @@ mod tests {
                 .rsplit('@')
                 .next()
                 .is_some_and(|v| v.chars().next().is_some_and(|c| c.is_ascii_digit())),
-            "버전이 고정되지 않았다: {package}"
+            "version is not pinned: {package}"
         );
     }
 
@@ -3724,7 +3724,7 @@ mod tests {
         assert!(managed_install_command("gemini-acp", Path::new("/tmp/x")).is_none());
         assert!(installable_package("gemini-acp").is_none());
         for (id, _) in INSTALLABLE_CLI {
-            assert!(registry_agent(id).is_some(), "{id} 가 레지스트리에 없다");
+            assert!(registry_agent(id).is_some(), "{id} is missing from the registry");
         }
     }
 
@@ -3742,7 +3742,7 @@ mod tests {
         let path = std::env::join_paths([Path::new("/usr/local/bin")]).unwrap();
         let dirs = candidate_bin_dirs(None, Some(&path), &probe, Some(&managed), None);
 
-        assert_eq!(dirs.last(), Some(&managed), "앱이 깐 자리가 맨 뒤가 아니다");
+        assert_eq!(dirs.last(), Some(&managed), "the app-managed directory is not last");
         assert!(dirs.len() > 1);
     }
 
@@ -4006,7 +4006,7 @@ mod tests {
     fn claude_keychain_service_is_stable_and_path_sensitive() {
         let a = claude_credentials_service(Path::new("/tmp/a"));
         let b = claude_credentials_service(Path::new("/tmp/b"));
-        assert_ne!(a, b, "경로가 다르면 항목 이름도 달라야 한다");
+        assert_ne!(a, b, "different paths must yield different entry names");
         assert_eq!(a, claude_credentials_service(Path::new("/tmp/a")));
         assert!(a.starts_with("Claude Code-credentials-"));
         assert_eq!(a.len(), "Claude Code-credentials-".len() + 8);
@@ -4092,7 +4092,7 @@ mod tests {
             assert_eq!(
                 std::fs::read_link(&link).unwrap(),
                 home.join(".claude").join(".credentials.json"),
-                "자격증명은 복사가 아니라 링크여야 한다"
+                "credentials must be linked, not copied"
             );
         }
 
@@ -4107,7 +4107,7 @@ mod tests {
         assert_eq!(
             std::fs::read_to_string(dir2.join("settings.json")).unwrap(),
             ISOLATED_CLAUDE_SETTINGS,
-            "다시 준비할 때 우리 설정으로 되돌아와야 한다"
+            "re-preparing must restore our settings"
         );
 
         let _ = std::fs::remove_dir_all(&base);
@@ -4142,7 +4142,7 @@ mod tests {
             prepare_runtime_isolation("claude-acp", &app_data_file, None, None, "").unwrap_err();
         assert!(
             error.starts_with("isolation-failed:config-dir-failed:"),
-            "격리 준비 실패가 시작 실패로 올라오지 않았다: {error}"
+            "an isolation setup failure did not fail the start: {error}"
         );
 
         let _ = std::fs::remove_dir_all(&base);
@@ -4188,17 +4188,17 @@ mod tests {
                 Some(outside.join("notes.md").to_str().unwrap())
             ),
             PermissionVerdict::Ask,
-            "볼트 밖은 반드시 물어야 한다"
+            "a path outside the vault must ask"
         );
         assert_eq!(
             permission_verdict(&session_root, Some("../escape.md")),
             PermissionVerdict::Ask,
-            "상대 경로로 올라가는 것도 밖이다"
+            "a relative path climbing out is outside"
         );
         assert_eq!(
             permission_verdict(&session_root, None),
             PermissionVerdict::Ask,
-            "경로를 모르면 묻는다 — 판단할 수 없는 것을 통과시키지 않는다"
+            "an unknown path must ask"
         );
 
         let _ = std::fs::remove_dir_all(&base);
@@ -4224,7 +4224,7 @@ mod tests {
             assert_eq!(
                 permission_verdict(invalid_root, Some(outside.to_str().unwrap())),
                 PermissionVerdict::Ask,
-                "유효하지 않은 볼트 루트 {invalid_root:?} 는 어떤 경로도 자동 허용하면 안 된다"
+                "invalid vault root {invalid_root:?} must not auto-allow any path"
             );
         }
 
@@ -4250,7 +4250,7 @@ mod tests {
         assert_eq!(
             permission_verdict(&session_root, Some(secret.to_str().unwrap())),
             PermissionVerdict::Ask,
-            "세션 시작 뒤 루트 경로가 외부 링크로 바뀌어도 새 대상을 볼트로 받아들이면 안 된다"
+            "a root replaced by an outside link after session start must not be accepted"
         );
 
         let _ = std::fs::remove_dir_all(&base);
@@ -4273,7 +4273,7 @@ mod tests {
         assert_eq!(
             permission_verdict(&session_root, Some(trap.to_str().unwrap())),
             PermissionVerdict::Ask,
-            "볼트 안처럼 보이는 링크가 밖을 가리키면 안이 아니다"
+            "a link inside the vault that points outside is outside"
         );
         let _ = std::fs::remove_dir_all(&base);
     }
@@ -4284,7 +4284,7 @@ mod tests {
         let agents = registry();
         assert!(
             agents.len() >= 20,
-            "레지스트리 스냅샷이 비었거나 너무 작다: {}",
+            "registry snapshot is empty or too small: {}",
             agents.len()
         );
 
@@ -4300,12 +4300,12 @@ mod tests {
                                 .chars()
                                 .next()
                                 .is_some_and(|c| c.is_ascii_digit())),
-                        "{} 의 npx 패키지에 버전이 없다: {package}",
+                        "{} npx package has no version: {package}",
                         agent.id
                     );
                     assert!(
                         adapter_bin_name(package).is_some(),
-                        "{}: 실행 파일 이름을 못 뽑는다",
+                        "{}: cannot derive the executable name",
                         agent.id
                     );
                 }
@@ -4314,7 +4314,7 @@ mod tests {
                     assert!(!command.is_empty());
                     assert!(
                         !command.starts_with("./"),
-                        "{}: `./` 가 안 벗겨졌다",
+                        "{}: `./` was not stripped",
                         agent.id
                     );
                 }
@@ -4329,7 +4329,7 @@ mod tests {
         for spec in ISOLATION {
             assert!(
                 registry_agent(spec.id).is_some(),
-                "격리 표의 {} 가 레지스트리에 없다",
+                "isolation table entry {} is missing from the registry",
                 spec.id
             );
             assert!(!spec.config_env.is_empty() && !spec.credentials_file.is_empty());
@@ -4381,7 +4381,7 @@ mod real_machine_probe {
         for id in ["claude-acp", "codex-acp"] {
             match resolve_launch(id, home.as_deref(), Some(&gui_path), &probe, None, None) {
                 Ok(l) => println!("{id}: {:?} {:?}", l.program, l.args),
-                Err(e) => println!("{id}: 실패 {e}"),
+                Err(e) => println!("{id}: failed {e}"),
             }
         }
     }
@@ -4408,7 +4408,7 @@ mod timing_probe {
         };
         let t = std::time::Instant::now();
         let out = detect_runtimes(home.as_deref(), path.as_deref(), &fast, None, None);
-        println!("확인 없이: {:?} · {}개", t.elapsed(), out.len());
+        println!("without probe: {:?} · {}", t.elapsed(), out.len());
 
         let full = FsProbe {
             is_executable: &is_executable,
@@ -4418,7 +4418,7 @@ mod timing_probe {
         };
         let t = std::time::Instant::now();
         let out = detect_runtimes(home.as_deref(), path.as_deref(), &full, None, None);
-        println!("확인 포함: {:?} · {}개", t.elapsed(), out.len());
+        println!("with probe: {:?} · {}", t.elapsed(), out.len());
     }
 }
 
@@ -4447,16 +4447,16 @@ mod newcomer_view {
         for s in &out {
             by_state.entry(s.state.as_str()).or_default().push(&s.id);
         }
-        println!("── 아무것도 안 깔린 기계 ──");
+        println!("-- machine with nothing installed --");
         for (state, ids) in &by_state {
             println!(
-                "  {state:16} {}개  예: {}",
+                "  {state:16} {}  e.g. {}",
                 ids.len(),
                 ids.iter().take(3).cloned().collect::<Vec<_>>().join(", ")
             );
         }
         println!(
-            "  → 「이 컴퓨터에서 확인됐어요」 = {}개",
+            "  verified on this computer = {}",
             out.iter().filter(|s| s.state == "ready").count()
         );
 
@@ -4471,16 +4471,16 @@ mod newcomer_view {
             login_ok: &|_, _, _, _| None,
         };
         let out = detect_runtimes(None, None, &probe, None, None);
-        println!("── npx 만 있는 기계 ──");
+        println!("-- machine with only npx --");
         let mut by_state: std::collections::BTreeMap<&str, usize> = Default::default();
         for s in &out {
             *by_state.entry(s.state.as_str()).or_default() += 1;
         }
         for (state, n) in &by_state {
-            println!("  {state:16} {n}개");
+            println!("  {state:16} {n}");
         }
         println!(
-            "  → 「확인됐어요」 = {}개",
+            "  verified = {}",
             out.iter().filter(|s| s.state == "ready").count()
         );
     }
@@ -4688,14 +4688,14 @@ mod npx_cache_tests {
                 reason: "package-json-missing"
             },
         );
-        assert!(!ours.exists(), "깨진 항목은 지워져야 한다");
+        assert!(!ours.exists(), "the broken entry must be removed");
         assert!(
             neighbor
                 .join("node_modules")
                 .join(".bin")
                 .join("other")
                 .exists(),
-            "옆의 남의 항목은 그대로여야 한다 — 범위는 항목 하나다"
+            "a neighbouring foreign entry must stay"
         );
 
         // After the delete, the next launch is a first download — the grounds for the screen saying so.

@@ -662,7 +662,7 @@ mod tests {
         assert_eq!(
             lines.len(),
             2,
-            "확정은 줄을 늘리지 않는다 (한 호출 = 한 줄)"
+            "finalizing adds no line (one call, one line)"
         );
         let first_line: Value = serde_json::from_str(lines[0]).unwrap();
         let second_line: Value = serde_json::from_str(lines[1]).unwrap();
@@ -692,7 +692,7 @@ mod tests {
         assert!(result.is_err());
         assert!(
             !vault.join(SIDECAR_DIR).exists(),
-            "검증되지 않은 플랫폼에서 감사 경로를 만들면 안 된다"
+            "an unverified platform must not create the audit path"
         );
         fs::remove_dir_all(&vault).ok();
     }
@@ -714,7 +714,7 @@ mod tests {
         fs::remove_file(vault.join(SIDECAR_DIR)).ok();
         fs::remove_dir_all(&vault).ok();
         fs::remove_dir_all(&outside).ok();
-        assert!(result.is_err(), "사이드카 링크를 따라가면 안 된다");
+        assert!(result.is_err(), "must not follow a sidecar link");
         assert_eq!(outside_after, b"outside-sentinel\n");
     }
 
@@ -736,7 +736,7 @@ mod tests {
         fs::remove_file(audit_log_path(&vault)).ok();
         fs::remove_dir_all(&vault).ok();
         fs::remove_dir_all(&outside).ok();
-        assert!(result.is_err(), "로그 링크를 따라가면 안 된다");
+        assert!(result.is_err(), "must not follow a log link");
         assert_eq!(outside_after, b"outside-sentinel\n");
     }
 
@@ -756,7 +756,7 @@ mod tests {
         fs::remove_file(audit_log_path(&vault)).ok();
         fs::remove_dir_all(&vault).ok();
         fs::remove_dir_all(&outside).ok();
-        assert!(result.is_err(), "하드링크를 감사 파일로 쓰면 안 된다");
+        assert!(result.is_err(), "must not write a hard link as the audit file");
         assert_eq!(outside_after, b"outside-sentinel\n");
     }
 
@@ -776,7 +776,7 @@ mod tests {
         drop(reservation);
 
         fs::remove_dir_all(&vault).ok();
-        assert_eq!(mode, 0o600, "감사 질문을 다른 계정이 읽게 두면 안 된다");
+        assert_eq!(mode, 0o600, "audit questions must not be readable by other accounts");
     }
 
     #[cfg(unix)]
@@ -808,7 +808,7 @@ mod tests {
         fs::remove_dir_all(&outside).ok();
         assert!(
             result.is_err(),
-            "예약 후 교체된 로그 경로를 따라가면 안 된다"
+            "must not follow a log path replaced after reservation"
         );
         assert_eq!(outside_after, b"outside-sentinel\n");
     }
@@ -835,11 +835,11 @@ mod tests {
         });
         let result = rx
             .recv_timeout(Duration::from_secs(1))
-            .expect("FIFO를 감사 파일로 열 때 독자를 기다리면 안 된다");
+            .expect("opening a FIFO as the audit file must not wait for a reader");
 
         fs::remove_file(&path).ok();
         fs::remove_dir_all(&vault).ok();
-        assert!(result.is_err(), "FIFO는 감사 파일이 될 수 없다");
+        assert!(result.is_err(), "a FIFO cannot be the audit file");
     }
 
     #[cfg(unix)]
@@ -869,10 +869,10 @@ mod tests {
 
         fs::remove_file(&path).ok();
         fs::remove_dir_all(&vault).ok();
-        assert!(result.is_err(), "FIFO는 감사 파일이 될 수 없다");
+        assert!(result.is_err(), "a FIFO cannot be the audit file");
         assert!(
             leaked.is_empty(),
-            "정규 파일 검증 전에 감사 데이터를 쓰면 안 된다"
+            "must not write audit data before the regular-file check"
         );
     }
 
@@ -1131,7 +1131,7 @@ mod tests {
         let second = reserve(&vault, verify_draft());
         assert!(
             second.is_err(),
-            "두 예약이 같은 파일 꼬리를 소유하면 안 된다"
+            "two reservations must not own the same file tail"
         );
 
         finalize(
@@ -1189,8 +1189,8 @@ mod tests {
         let after = fs::read(audit_log_path(&vault)).unwrap();
 
         fs::remove_dir_all(&vault).ok();
-        assert!(result.is_err(), "바뀐 예약 줄을 잘라내면 안 된다");
-        assert_eq!(after, before, "실패할 때 기존 바이트를 보존해야 한다");
+        assert!(result.is_err(), "must not truncate a changed reserved line");
+        assert_eq!(after, before, "a failure must preserve existing bytes");
     }
 
     #[cfg(unix)]
@@ -1218,8 +1218,8 @@ mod tests {
         let after = fs::read(audit_log_path(&vault)).unwrap();
 
         fs::remove_dir_all(&vault).ok();
-        assert!(result.is_err(), "예상 밖 꼬리를 잘라내면 안 된다");
-        assert_eq!(after, before, "실패할 때 기존 바이트를 보존해야 한다");
+        assert!(result.is_err(), "must not truncate an unexpected tail");
+        assert_eq!(after, before, "a failure must preserve existing bytes");
     }
 
     #[cfg(unix)]
@@ -1272,8 +1272,8 @@ mod tests {
             .filter(|line| !line.trim().is_empty())
             .map(|line| serde_json::from_str::<Value>(line).unwrap())
             .find(|line| line.get("host").is_none());
-        let legacy = legacy.expect("host 없는 옛 줄이 픽스처에 있어야 한다");
-        assert_eq!(legacy["v"], 1, "옛 줄도 같은 스키마 버전이다");
+        let legacy = legacy.expect("fixture must contain a legacy line without host");
+        assert_eq!(legacy["v"], 1, "legacy lines share the schema version");
         assert_eq!(legacy["outcome"], "ok");
     }
 }
