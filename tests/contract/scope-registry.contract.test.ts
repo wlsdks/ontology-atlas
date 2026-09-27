@@ -178,6 +178,20 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "atlas.library.index-segment", kind: "storage", scope: "global", note: "Library index: Sources or Wiki" },
   { key: "atlas.library.index-collapsed", kind: "storage", scope: "global", note: "Library index folded to its rail tab" },
   { key: "atlas.library.guide-seen", kind: "storage", scope: "global", note: "The Library home raised its three-step guide once on this machine" },
+  {
+    key: "ontology-atlas:machine-approvals",
+    kind: "storage",
+    scope: "global",
+    file: "src/shared/lib/machine-approvals-format.ts",
+    provenBy: "src/shared/lib/machine-approvals.test.ts",
+    note: "Connector and round allowances on this Mac, keyed inside by absolute folder path; never in the vault, because the folder travels and consent must not",
+  },
+  {
+    key: "ontology-atlas:machine-approvals-change",
+    kind: "event",
+    scope: "global",
+    note: "An allowance changed; the panels and the rounds clock re-read (shared/lib/machine-approvals.ts)",
+  },
   { key: "ontology-atlas:locale", kind: "storage", scope: "global", note: "화면 언어" },
   { key: "ontology-atlas:local-endpoint", kind: "storage", scope: "global", note: "LLM 로컬 엔드포인트" },
   // Which brain Compile runs on when this computer offers both. A machine preference

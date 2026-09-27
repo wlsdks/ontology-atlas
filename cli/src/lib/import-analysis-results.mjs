@@ -6,6 +6,7 @@ const UNRESOLVED_REASONS = new Set([
   'relative-not-found',
   'alias-not-found',
   'unsupported-static-form',
+  'file-too-large',
 ]);
 const GO_PACKAGE_IMPORT_KINDS = new Set(['static', 'side']);
 const GO_PACKAGE_IMPORT_SOURCE_QUALIFICATION =

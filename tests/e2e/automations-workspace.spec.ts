@@ -206,3 +206,33 @@ for (const lane of ['documents', 'ontology'] as const) {
     expect(count).toBe(3);
   });
 }
+
+test('a round and a connector a cloned folder switched on wait for this Mac, and one press allows each', async ({ page }) => {
+  await installDesktopBridge(page, { seedRounds: true, allowedHere: false });
+  await page.goto('/en/');
+  await page.getByRole('button', { name: /Open.*folder/i }).first().click();
+  await expect(page.getByTestId('app-nav-rail')).toBeVisible();
+  const before = await page.evaluate(() => (window as unknown as { __roundsStubFiles: Record<string, string> }).__roundsStubFiles['.ontology-atlas/rounds.json']);
+
+  await page.goto('/en/automations/?guides=off&kind=documents');
+  const row = page.getByTestId('automation-r-confluence');
+  const item = page.locator('li', { has: row });
+  await expect(row).toContainText('Not on this Mac');
+  await expect(item.getByTestId('automation-allow-here')).toContainText('Switched on in this folder, not on this Mac');
+  await expect(item.getByTestId('automation-allow-here-line')).toContainText('confluence · looks for “pages changed in the last day” · at most 20 new documents a pass');
+  await item.getByTestId('automation-allow-here-button').click();
+  await expect(item.getByTestId('automation-allow-here')).toHaveCount(0);
+  await expect(row).toContainText('Scheduled');
+  await expect(page.getByTestId('automation-r-consistency')).toContainText('Not on this Mac');
+  const after = await page.evaluate(() => (window as unknown as { __roundsStubFiles: Record<string, string> }).__roundsStubFiles['.ontology-atlas/rounds.json']);
+  expect(after).toBe(before);
+
+  await page.goto('/en/agents/?tab=mcp&mcp=connectors&guides=off');
+  const connector = page.getByTestId('connectors-item').filter({ hasText: 'confluence' });
+  await expect(connector).toHaveAttribute('data-connector-waiting', 'true');
+  await expect(connector).toHaveAttribute('data-connector-enabled', 'false');
+  await expect(connector.getByTestId('connectors-item-runs')).toHaveText('https://mcp.atlassian.com/v1/mcp');
+  await connector.getByTestId('connectors-item-allow').click();
+  await expect(connector).toHaveAttribute('data-connector-enabled', 'true');
+  await expect(connector.getByTestId('connectors-item-waiting')).toHaveCount(0);
+});

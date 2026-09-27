@@ -4493,6 +4493,7 @@ const TOOLS = [
         targetPath: { type: 'string' },
         moved: { type: 'boolean' },
         backlinkUpdates: BACKLINK_REWRITE_PLAN_OUTPUT_SCHEMA,
+        warnings: { type: 'array', items: { type: 'string' } },
         message: { type: 'string' },
         changed: { type: 'boolean' },
         postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,

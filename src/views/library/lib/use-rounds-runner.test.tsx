@@ -41,7 +41,7 @@ const h = vi.hoisted(() => ({
     agentConfigStatus: null,
   },
   agentServer: { launch: { command: '/Applications/Ontology Atlas.app/mcp', args: [] } },
-  connectors: { connectors: [] },
+  connectors: { connectors: [], allowedHere: () => false, isOnHere: () => false },
 }));
 
 vi.mock('@/entities/vault-session', () => ({
@@ -128,6 +128,82 @@ function wrapper({ children }: { children: ReactNode }) {
 beforeEach(() => {
   h.ledger = createMemoryRoundLedger();
   h.session = hangingSession();
+  window.localStorage.clear();
+});
+
+const flush = () => act(() => vi.advanceTimersByTimeAsync(0));
+
+describe('a round the folder switched on, on a Mac that never allowed it', () => {
+  it('opens no agent session on the first tick, and runs once this Mac allows it', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] });
+    try {
+      const overdue = { ...review('shared', 'Tidy the map'), query: 'a focus the folder chose', nextDueAt: '2026-01-01T00:00:00.000Z' };
+      h.store = createMemoryRoundStore(JSON.stringify({ v: 1, rounds: [overdue] }));
+      h.runtimes = [READY_CLAUDE];
+      const session = h.session as Session;
+      const { result } = renderHook(() => useRoundsRunner(), { wrapper });
+      await flush();
+      await flush();
+      expect(result.current.rounds).toHaveLength(1);
+      expect(result.current.agentReady).toBe(true);
+
+      await act(() => vi.advanceTimersByTimeAsync(2_100));
+      expect(session.start).not.toHaveBeenCalled();
+      expect(ledgerLines()).toEqual([]);
+      expect([...result.current.notAllowedHere]).toEqual(['shared']);
+      act(() => result.current.runNow('shared'));
+      await flush();
+      expect(session.start).not.toHaveBeenCalled();
+
+      act(() => {
+        expect(result.current.allow('shared')).toBe(true);
+      });
+      await flush();
+      await flush();
+      expect(session.start).toHaveBeenCalledTimes(1);
+      expect(result.current.running).toMatchObject({ roundId: 'shared', phase: 'agent' });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('asks again when somebody else changes a round this Mac allowed', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] });
+    try {
+      const check: RoundRecord = {
+        id: 'check',
+        name: 'Pages still match',
+        kind: 'consistency',
+        cadence: { every: 'hour' },
+        enabled: true,
+        onStale: 'mark',
+        createdAt: '2026-09-25T00:00:00.000Z',
+        nextDueAt: '2026-01-01T00:00:00.000Z',
+      };
+      h.store = createMemoryRoundStore(JSON.stringify({ v: 1, rounds: [check] }));
+      h.runtimes = [];
+      const { result } = renderHook(() => useRoundsRunner(), { wrapper });
+      await flush();
+      await flush();
+      act(() => {
+        result.current.allow('check');
+      });
+      await flush();
+      await flush();
+      expect(ledgerLines()).toHaveLength(1);
+      expect(result.current.notAllowedHere.size).toBe(0);
+
+      await store().upsert({ ...check, onStale: 'redraft', nextDueAt: '2026-01-01T00:00:00.000Z' });
+      await act(async () => {
+        await result.current.refresh();
+      });
+      expect([...result.current.notAllowedHere]).toEqual(['check']);
+      await act(() => vi.advanceTimersByTimeAsync(60_000));
+      expect(ledgerLines()).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 
 describe('the rounds runner', () => {
@@ -138,6 +214,10 @@ describe('the rounds runner', () => {
     const { result } = renderHook(() => useRoundsRunner(), { wrapper });
     await waitFor(() => expect(result.current.rounds).toHaveLength(2));
     await waitFor(() => expect(result.current.agentReady).toBe(true));
+    act(() => {
+      result.current.allow('first');
+      result.current.allow('second');
+    });
 
     act(() => result.current.runNow('first'));
     await waitFor(() => expect(result.current.running).toMatchObject({ roundId: 'first', phase: 'agent' }));
@@ -173,6 +253,9 @@ describe('the rounds runner', () => {
     // Both scans answered (the fast one and the login probe), and neither found an agent.
     await waitFor(() => expect(vi.mocked(detectAcpRuntimes).mock.calls.length).toBeGreaterThanOrEqual(2));
     expect(result.current.agentReady).toBe(false);
+    act(() => {
+      result.current.allow('first');
+    });
 
     act(() => result.current.runNow('first'));
     await waitFor(() => expect(ledgerLines()).toHaveLength(1));

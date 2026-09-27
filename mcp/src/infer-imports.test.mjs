@@ -540,7 +540,7 @@ test('Rust scanning rejects escaped paths and bounds source text and statements'
       {
         from: 'src/large.rs',
         spec: '<source-text>',
-        reason: 'unsupported-static-form',
+        reason: 'file-too-large',
       },
       {
         from: 'src/lib.rs',

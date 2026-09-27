@@ -36,14 +36,15 @@ const connector: ConnectorRecord = {
 };
 
 const launch = { kind: 'app-bundled' as const, command: '/app/ontology-atlas-mcp', args: [] };
+const allowedEverywhere = () => true;
 
 describe('connectors reach only a measured runtime', () => {
   it('gives a Codex session the vault server and nothing else', () => {
     expect(runtimeCarriesConnectors('codex-acp')).toBe(false);
-    expect(connectorAcpServers([connector], 'codex-acp')).toEqual([]);
+    expect(connectorAcpServers([connector], 'codex-acp', allowedEverywhere)).toEqual([]);
     const servers = [
       ...vaultMcpServers(launch, '/vault'),
-      ...connectorAcpServers([connector], 'codex-acp'),
+      ...connectorAcpServers([connector], 'codex-acp', allowedEverywhere),
     ];
     expect(servers.map((server) => (server as { name: string }).name)).toEqual(['atlas-vault']);
   });
@@ -52,7 +53,7 @@ describe('connectors reach only a measured runtime', () => {
     expect(runtimeCarriesConnectors('claude-acp')).toBe(true);
     const servers = [
       ...vaultMcpServers(launch, '/vault'),
-      ...connectorAcpServers([connector], 'claude-acp'),
+      ...connectorAcpServers([connector], 'claude-acp', allowedEverywhere),
     ];
     expect(servers.map((server) => (server as { name: string }).name)).toEqual([
       'atlas-vault',
@@ -62,9 +63,9 @@ describe('connectors reach only a measured runtime', () => {
 
   it('treats an unknown or absent runtime the same as an unmeasured one', () => {
     // A call site that forgets to pass a runtime attaches nothing rather than attaching blind.
-    expect(connectorAcpServers([connector])).toEqual([]);
-    expect(connectorAcpServers([connector], null)).toEqual([]);
-    expect(connectorAcpServers([connector], 'some-future-adapter')).toEqual([]);
+    expect(connectorAcpServers([connector], undefined, allowedEverywhere)).toEqual([]);
+    expect(connectorAcpServers([connector], null, allowedEverywhere)).toEqual([]);
+    expect(connectorAcpServers([connector], 'some-future-adapter', allowedEverywhere)).toEqual([]);
   });
 
   it('decides from the table runtime-gate already keeps, not a second list', () => {
