@@ -581,6 +581,9 @@ describe('authored definition projection through the local manifest', () => {
   const intro = 'Retries a failed read, but does not persist a report.';
   const boundaries = '\n\n## Includes\nRetrying reads.\n\n## Excludes\nPersisting a report.\n\n## Uncertainty\nThe retry limit is unknown.';
   const cases = [
+    { name: 'inline-pipe-qualification', metadata: '', body: 'Retry dispatch may write reports\nonly for `ReadRequest | WriteRequest` with explicit approval.', expected: 'Retry dispatch may write reports only for `ReadRequest | WriteRequest` with explicit approval.' },
+    { name: 'indented-qualification', metadata: '', body: 'Retry dispatch may write reports\n    only with explicit approval.', expected: 'Retry dispatch may write reports only with explicit approval.' },
+    { name: 'tabbed-qualification', metadata: '', body: 'Retry dispatch may write reports\n\tonly with explicit approval.', expected: 'Retry dispatch may write reports only with explicit approval.' },
     { name: 'intro', metadata: '', body: intro + boundaries, expected: intro },
     { name: 'empty', metadata: 'description: ""\n', body: intro, expected: intro },
     { name: 'blank', metadata: 'description: "   "\n', body: intro, expected: intro },

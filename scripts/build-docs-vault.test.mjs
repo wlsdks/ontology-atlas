@@ -435,6 +435,9 @@ test('generated manifests retain eligible definitions without flattening boundar
   const root = await mkdtemp(path.join(os.tmpdir(), 'definition-preview-'));
   const intro = 'Retries a failed read, but does not persist a report.';
   const cases = [
+    ['inline-pipe-qualification', 'title: Retry\n', 'Retry dispatch may write reports\nonly for `ReadRequest | WriteRequest` with explicit approval.', 'Retry dispatch may write reports only for `ReadRequest | WriteRequest` with explicit approval.'],
+    ['indented-qualification', 'title: Retry\n', 'Retry dispatch may write reports\n    only with explicit approval.', 'Retry dispatch may write reports only with explicit approval.'],
+    ['tabbed-qualification', 'title: Retry\n', 'Retry dispatch may write reports\n\tonly with explicit approval.', 'Retry dispatch may write reports only with explicit approval.'],
     ['intro', 'title: Retry\n', intro + '\n\n## Excludes\nPersisting a report.', intro],
     ['title', 'title: Retry\n', '# Retry\n\n' + intro, intro],
     ['display', 'title: Retry\ndisplay_ko: 재시도\n', '# 재시도\n\n다시 읽지만\n보고서를 저장하지 않는다.', '다시 읽지만 보고서를 저장하지 않는다.'],
