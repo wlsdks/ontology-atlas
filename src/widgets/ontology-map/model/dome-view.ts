@@ -1,4 +1,5 @@
 import { findCouplingGroups } from './coupling-groups';
+import { easeOutCubic, TIER_ASSEMBLE_TOTAL_MS, tierProgress } from '../morph/tier-assembly';
 
 /**
  * The opt-in 3D view: arrangements where height and bearing carry typed facts (height is
@@ -1391,15 +1392,6 @@ export function chargeTierLag(lag: Record<DomeViewKind, number>, deltaYaw: numbe
   lag.element += d * DOME_TIER_LAG.element;
 }
 
-/** Rings rise from the project spine when switching on; switching off replays backwards. */
-const DOME_TIER_DELAY_MS: Readonly<Record<DomeViewKind, number>> = {
-  project: 0,
-  domain: 180,
-  capability: 380,
-  element: 600,
-};
-/** The hero's 520 ms ease-out cubic. */
-const DOME_TIER_RISE_MS = 520;
 
 /**
  * The entry sweep: pitch starts from nearly above, so structure reads first, and yaw
@@ -1439,14 +1431,9 @@ function domeEntrySweep(entryClockMs: number): number {
   const c = t <= 0 ? 0 : t >= 1 ? 1 : t;
   return 1 - domeEaseOutCubic(c);
 }
-/** Last tier delay + rise. */
-export const DOME_ASSEMBLE_TOTAL_MS = DOME_TIER_DELAY_MS.element + DOME_TIER_RISE_MS;
+export const DOME_ASSEMBLE_TOTAL_MS = TIER_ASSEMBLE_TOTAL_MS;
 
-/** The hero's tierAlpha curve. */
-function domeEaseOutCubic(t: number): number {
-  const c = t <= 0 ? 0 : t >= 1 ? 1 : t;
-  return 1 - Math.pow(1 - c, 3);
-}
+const domeEaseOutCubic = easeOutCubic;
 
 export interface DomeTierRampAnchor {
   from: number;
@@ -1455,10 +1442,7 @@ export interface DomeTierRampAnchor {
 
 const DOME_TIER_RAMP_START: DomeTierRampAnchor = { from: 0, fromT: 0 };
 
-export function domeTierProgress(clockMs: number, kind: DomeViewKind): number {
-  const t = (clockMs - DOME_TIER_DELAY_MS[kind]) / DOME_TIER_RISE_MS;
-  return t <= 0 ? 0 : t >= 1 ? 1 : t;
-}
+export const domeTierProgress: (clockMs: number, kind: DomeViewKind) => number = tierProgress;
 
 export function setDomeFolding(runtime: DomeRuntime, folding: boolean): void {
   if (runtime.folding === folding) return;
