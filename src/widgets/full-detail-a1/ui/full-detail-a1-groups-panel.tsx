@@ -85,7 +85,7 @@ function GroupCard({
   return (
     <section
       data-fulldetail-group={dataGroup}
-      className="rounded-card border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] p-3"
+      className="w-full self-start rounded-card border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] p-3"
     >
       <div className="mb-2 flex items-center gap-2">
         <span className="text-body font-[var(--font-weight-signature)] tracking-[var(--tracking-title)] text-[color:var(--map-panel-text-primary)]">

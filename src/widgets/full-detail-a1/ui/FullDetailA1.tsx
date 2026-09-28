@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Check, Clipboard, Link2, X } from "lucide-react";
+import { Check, Clipboard, Link2, TriangleAlert, X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Link } from "@/i18n/navigation";
 import ReactMarkdown from "react-markdown";
@@ -20,7 +20,7 @@ import {
   formatProjectSourceHandoff,
   type ProjectSourceView,
 } from "@/shared/lib/project-source-receipt";
-import { controlClass, LastEditSubjectRow, MtimeConflictBadge, useToast } from "@/shared/ui";
+import { controlClass, LastEditSubjectRow, useToast } from "@/shared/ui";
 import {
   NodeExplanationEdit,
   type NodeExplanationEditLabels,
@@ -49,7 +49,7 @@ export interface FullDetailA1Node {
    *  when it differs from `title` (layering, not hiding). Identical, it is not rendered. */
   fullTitle?: string;
   kind: string;
-  /** Vault slug / evidence path shown mono top-right. */
+  /** Vault slug / evidence path beneath the identity. */
   slug: string;
   /**
    * The name handed to an agent: the vault-relative slug, or the raw reference text for a concept
@@ -224,9 +224,9 @@ export function FullDetailA1({
     <div
       data-testid="full-detail-a1"
       data-fulldetail-node={node.id}
-      className={["full-detail-a1 mx-auto flex max-w-[1240px] flex-col px-6 py-7", className ?? ""].join(" ")}
+      className={["full-detail-a1 mx-auto flex max-w-[1240px] flex-col px-4 py-5 sm:px-6 sm:py-7", className ?? ""].join(" ")}
     >
-      <nav className="mb-6 flex items-center gap-2.5 text-body text-[color:var(--map-panel-text-tertiary)]">
+      <nav className="mb-6 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-body text-[color:var(--map-panel-text-tertiary)]">
         {onBackToMap ? (
           <button
             type="button"
@@ -264,24 +264,27 @@ export function FullDetailA1({
         ) : null}
       </nav>
 
-      <header className="flex items-start gap-3.5">
-        <span className="mt-[5px]">
+      <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2">
+        <span className="mt-1">
           <OntologyMapKindGlyph kind={node.kind} size={22} />
         </span>
         <div className="min-w-0 flex-1">
-          <h1 className="text-display font-[var(--font-weight-strong)] tracking-[var(--tracking-card)] text-[color:var(--map-panel-text-primary)]">
+          <h1 className="[overflow-wrap:anywhere] text-display font-[var(--font-weight-strong)] tracking-[var(--tracking-card)] text-[color:var(--map-panel-text-primary)]">
             {node.title}
           </h1>
           {/* The full title as secondary text when the display name abbreviates it. */}
           {node.fullTitle && node.fullTitle !== node.title ? (
             <p
               data-testid="full-detail-a1-full-title"
-              className="mt-0.5 truncate text-body text-[color:var(--map-panel-text-tertiary)]"
+              className="mt-1 [overflow-wrap:anywhere] text-body text-[color:var(--map-panel-text-tertiary)]"
             >
               {node.fullTitle}
             </p>
           ) : null}
-          <div className="mt-1 flex items-center gap-2 text-body text-[color:var(--map-panel-text-tertiary)]">
+          <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-label text-[color:var(--map-panel-text-tertiary)]">
+            <span className="min-w-0 max-w-full [overflow-wrap:anywhere] font-mono text-[color:var(--map-panel-text-quaternary)]">{node.slug}</span>
+            <span aria-hidden className="text-[color:var(--map-panel-text-quaternary)]">·</span>
+            <span className="inline-flex items-center gap-2">
             <span
               aria-hidden="true"
               className="h-[6px] w-[6px] shrink-0 rounded-full"
@@ -296,12 +299,9 @@ export function FullDetailA1({
             <span data-testid="full-detail-freshness">
               {node.updatedAtLabel ?? (node.fresh ? t("freshOn") : t("freshOff"))}
             </span>
-          </div>
-          {/*
-           * Last-edit provenance and expected_mtime conflict, gated on real data by the caller.
-           */}
+            </span>
           {node.lastEditSubject ? (
-            <div className="mt-1">
+            <div className="min-w-0 sm:ml-2">
               <LastEditSubjectRow
                 kind={node.lastEditSubject.kind}
                 prefixLabel={tProvenance("prefix")}
@@ -312,16 +312,9 @@ export function FullDetailA1({
               />
             </div>
           ) : null}
-          {node.mtimeConflict ? (
-            <div className="mt-1">
-              <MtimeConflictBadge message={tProvenance("conflictMessage")} />
-            </div>
-          ) : null}
+          </div>
         </div>
-        <div className="mt-2.5 flex shrink-0 items-center gap-3">
-          <span className="font-mono text-label text-[color:var(--map-panel-text-quaternary)]">
-            {node.slug}
-          </span>
+        <div className="flex shrink-0 items-center gap-1">
           <button
             type="button"
             onClick={handleCopyLink}
@@ -489,14 +482,13 @@ export function FullDetailA1({
 
       <section
         data-fulldetail-handoff
-        className="mt-6.5 flex items-center gap-3.5 rounded-card border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] px-3.5 py-3"
+        className="mt-5 flex flex-col gap-3 rounded-card border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] p-[var(--card-pad)]"
       >
-        <span className="shrink-0 text-body font-[var(--font-weight-signature)] text-[color:var(--map-panel-text-primary)]">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <span className="min-w-0 flex-1 text-body font-[var(--font-weight-signature)] text-[color:var(--map-panel-text-primary)]">
           {t("handoff.label")}
         </span>
-        <span className="min-w-0 flex-1 truncate font-mono text-label text-[color:var(--map-panel-text-tertiary)]">
-          {handoffChain}
-        </span>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <button
           type="button"
           onClick={handleCopyHandoff}
@@ -555,9 +547,21 @@ export function FullDetailA1({
         >
           {t("handoff.openStudio")}
         </Link>
+        </div>
+        </div>
+        <code className="block min-w-0 whitespace-pre-wrap [overflow-wrap:anywhere] border-t border-[color:var(--map-panel-border)] pt-3 font-mono text-label leading-label text-[color:var(--map-panel-text-tertiary)]">
+          {handoffChain}
+        </code>
       </section>
 
-      <section data-fulldetail-body className="mt-6.5">
+      <section data-fulldetail-body className="mt-6 rounded-card border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-metric-surface)] p-[var(--card-pad)]">
+        {node.mtimeConflict ? (
+          <p data-testid="mtime-conflict-badge" role="status" className="mb-4 flex items-start gap-2 text-body leading-body text-[color:var(--map-panel-text-secondary)]">
+            <TriangleAlert size={ICON_SIZE.md} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-status-warning)]" />
+            <span>{tProvenance("conflictMessage")}</span>
+          </p>
+        ) : null}
+        <div className="min-w-0 max-w-[var(--measure-doc-column)] [&>div>div:first-child]:mb-4 [&>div>div:first-child]:border-b [&>div>div:first-child]:border-[color:var(--map-panel-border)] [&>div>div:first-child]:pb-3 [&>div>div:first-child>span]:font-sans [&>div>div:first-child>span]:text-body [&>div>div:first-child>span]:font-[var(--font-weight-strong)] [&>div>div:first-child>span]:normal-case [&>div>div:first-child>span]:tracking-normal [&>div>div:first-child>span]:text-[color:var(--map-panel-text-primary)]">
         {explanationEdit ? (
           <NodeExplanationEdit
             value={bodyMarkdown ?? ""}
@@ -566,7 +570,7 @@ export function FullDetailA1({
           />
         ) : (
           <>
-            <h2 className="mb-2 text-body font-[var(--font-weight-signature)] text-[color:var(--map-panel-text-primary)]">
+            <h2 className="mb-4 border-b border-[color:var(--map-panel-border)] pb-3 text-body font-[var(--font-weight-signature)] text-[color:var(--map-panel-text-primary)]">
               {t("body.title")}
             </h2>
             {/*
@@ -576,7 +580,7 @@ export function FullDetailA1({
             {bodyMarkdown && bodyMarkdown.trim().length > 0 ? (
               <div
                 className={cn(
-                  "max-w-none text-body-lg leading-prose text-[color:var(--map-panel-text-secondary)]",
+                  "min-w-0 overflow-x-auto [overflow-wrap:anywhere] text-body-lg leading-prose text-[color:var(--map-panel-text-secondary)]",
                   MARKDOWN_PROSE_CLASS,
                 )}
               >
@@ -589,6 +593,7 @@ export function FullDetailA1({
             )}
           </>
         )}
+        </div>
       </section>
     </div>
   );
