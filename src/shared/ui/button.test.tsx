@@ -94,12 +94,13 @@ describe('Button', () => {
     expect(variants.join(' ')).toContain('hover:bg');
   });
 
-  it('motion-reduce variant disables transition + transform', () => {
+  it('press travels on the translate property and stops under reduced motion', () => {
     render(<Button>m</Button>);
     const btn = screen.getByRole('button');
-    // Protects prefers-reduced-motion users.
-    expect(btn.className).toContain('motion-reduce:transition-none');
-    expect(btn.className).toContain('motion-reduce:transform-none');
+    expect(btn.className).toContain('transition-[color,background-color,border-color,box-shadow,translate]');
+    expect(btn.className).toContain('active:translate-y-px');
+    expect(btn.className).toContain('motion-reduce:active:translate-none');
+    expect(btn.className).not.toContain('transform');
   });
 
   it('forwards ref to underlying button', () => {

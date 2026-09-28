@@ -97,6 +97,11 @@ export const CONTROL_DISABLED_CLASS =
   'disabled:cursor-not-allowed disabled:opacity-55 disabled:shadow-none disabled:hover:border-inherit disabled:hover:bg-inherit disabled:hover:text-inherit';
 const DISABLED = CONTROL_DISABLED_CLASS;
 
+export const CONTROL_TRANSITION = 'transition-[color,background-color,border-color,box-shadow,translate]';
+
+export const CONTROL_PRESS_TRAVEL =
+  'active:translate-y-px motion-reduce:active:translate-none disabled:active:translate-none';
+
 /**
  * Keyboard focus — in the value layer for the same reason as `DISABLED`.
  *
@@ -172,7 +177,7 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
        * coexisting in one output; `cn`'s radius group merge
        * (`RADIUS_RAMP_STEPS`) would resolve it, but a single class is honest.
        */
-      chip: `${TOUCH_FLOOR} inline-flex items-center gap-1.5 border transition-colors`,
+      chip: `${TOUCH_FLOOR} inline-flex items-center gap-1.5 border ${CONTROL_TRANSITION} ${CONTROL_PRESS_TRAVEL}`,
       /**
        * Square icon control. No label, so an accessible name is **required**
        * (36).
@@ -194,7 +199,7 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
        * hit area through a pseudo-element while leaving the visible box alone —
        * zero layout shift.
        */
-      icon: 'touch-hit-expand inline-flex shrink-0 items-center justify-center rounded-chip transition-colors',
+      icon: `touch-hit-expand inline-flex shrink-0 items-center justify-center rounded-chip ${CONTROL_TRANSITION} ${CONTROL_PRESS_TRAVEL}`,
       /**
        * A whole list row that is pressable; left alignment is its identity (39).
        *
@@ -202,18 +207,18 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
        * a square hover background (radius 6 → 0). Defining a shape without
        * giving it a radius caused it; measurement caught it.
        */
-      row: `${TOUCH_FLOOR} flex w-full items-center text-left transition-colors`,
+      row: `${TOUCH_FLOOR} flex w-full items-center text-left ${CONTROL_TRANSITION}`,
       /** Fully rounded control carrying a state or a count (32). */
-      pill: `${TOUCH_FLOOR} inline-flex items-center rounded-full border transition-colors`,
+      pill: `${TOUCH_FLOOR} inline-flex items-center rounded-full border ${CONTROL_TRANSITION} ${CONTROL_PRESS_TRAVEL}`,
       /** A whole card as one large pressable surface (18). */
-      card: 'flex items-center rounded-card border transition-colors',
+      card: `flex items-center rounded-card border ${CONTROL_TRANSITION}`,
       /**
        * Text-only, no border and no background (85). Floor is WCAG 2.5.8 (AA)
        * 24 (`min-h-6`) — the 44 for coarse pointers comes from
        * `.touch-hit-expand` (zero layout shift), not from height. See the
        * removed `inline` axis below.
        */
-      link: 'inline-flex min-h-6 items-center gap-1 rounded-chip transition-colors',
+      link: `inline-flex min-h-6 items-center gap-1 rounded-chip ${CONTROL_TRANSITION}`,
       /**
        * **Vertical** tile: icon above, label below.
        *
@@ -221,7 +226,7 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
        * **horizontal**, leaving 5 vertical action tiles outside the system. The
        * inventory had counted "shape" along one axis only.
        */
-      tile: 'flex flex-col items-center justify-start rounded-card border text-center transition-colors',
+      tile: `flex flex-col items-center justify-start rounded-card border text-center ${CONTROL_TRANSITION} ${CONTROL_PRESS_TRAVEL}`,
       /**
        * **Borderless inset** — segmented items, tabs, ghost buttons.
        *
@@ -257,7 +262,7 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
       // the design-systems seat): segments alone had no coarse 44 promotion, so
       // "one sheet, two specs" was reproducing. Their gap-px packing disqualifies
       // a phantom hit area (touch-hit-expand); real height is the only option.
-      segment: `${TOUCH_FLOOR} atlas-touch-floor-wide inline-flex items-center justify-center rounded-chip text-center transition-colors`,
+      segment: `${TOUCH_FLOOR} atlas-touch-floor-wide inline-flex items-center justify-center rounded-chip text-center ${CONTROL_TRANSITION}`,
     },
     /**
      * Size — **the ramp decides the height; padding is chosen within it.**
@@ -781,6 +786,15 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
     { shape: 'tile', active: false, class: 'border-[color:var(--color-border-soft)]' },
     { shape: 'tile', active: true, class: 'border-[color:var(--color-indigo-pale-a28)] bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]' },
 
+    { shape: ['chip', 'pill', 'icon'], active: false, class: 'active:bg-[color:var(--color-overlay-3)]' },
+    { shape: 'tile', active: false, class: 'active:bg-[color:var(--color-overlay-2)]' },
+    { shape: 'row', scope: 'app', active: false, class: 'active:bg-[color:var(--color-overlay-2)]' },
+    { shape: 'row', scope: 'panel', active: false, class: 'active:bg-[color:var(--map-panel-row-hover)]' },
+    { shape: 'segment', active: false, class: 'active:bg-[color:var(--color-overlay-3)]' },
+    { shape: 'card', active: false, class: 'active:bg-[color:var(--color-overlay-2)]' },
+    { shape: 'link', scope: 'app', active: false, class: 'active:text-[color:var(--color-text-primary)]' },
+    { shape: 'link', scope: 'panel', active: false, class: 'active:text-[color:var(--map-panel-text-primary)]' },
+
     // ── Pressed: expressed with **the single indigo** only. A new hue violates the charter.
     { shape: 'chip', active: true, class: 'border-[color:var(--color-indigo-pale-a28)] bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]' },
     { shape: 'pill', active: true, class: 'border-[color:var(--color-indigo-pale-a28)] bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]' },
@@ -823,7 +837,7 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
      * **after** the `border-[…divider]` compounds above, so it wins in
      * tailwind-merge.
      */
-    { tone: 'onAccent', class: 'border-transparent' },
+    { tone: 'onAccent', class: 'border-transparent active:bg-[color:var(--color-indigo-brand)] active:shadow-[var(--shadow-control-press)]' },
   ],
   defaultVariants: {
     shape: 'chip',
