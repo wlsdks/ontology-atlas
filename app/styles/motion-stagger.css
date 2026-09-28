@@ -1,2 +1,36 @@
 @layer base {
+  :root {
+    --motion-stagger: 35ms;
+  }
+
+  @keyframes motionStaggerIn {
+    from {
+      opacity: 0;
+      transform: translateY(var(--overlay-enter-translate));
+    }
+
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .motion-stagger-in {
+    animation: motionStaggerIn var(--motion-base) var(--motion-ease) both;
+    animation-delay: calc(var(--motion-stagger-index, 0) * var(--motion-stagger));
+  }
+
+  .motion-stagger-fade {
+    animation: panelCrossfadeIn var(--motion-base) var(--motion-ease) both;
+    animation-delay: calc(var(--motion-stagger-index, 0) * var(--motion-stagger));
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .motion-stagger-in,
+    .motion-stagger-fade {
+      animation-name: panelCrossfadeIn !important;
+      animation-duration: var(--motion-fast) !important;
+      animation-delay: 0ms !important;
+    }
+  }
 }

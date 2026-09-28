@@ -100,6 +100,10 @@ const SHARED_SOURCE: WikiTemplateProblem = {
   },
 };
 
+function openTechnical() {
+  for (const toggle of document.querySelectorAll<HTMLElement>('[data-testid$="-technical"][aria-expanded="false"]')) fireEvent.click(toggle);
+}
+
 describe("WikiTemplateProblems — a folder finding is not an off-template verdict", () => {
   it("a page whose only finding is a link keeps the off-template heading off the screen", () => {
     renderPanel([LINK_PROBLEM]);
@@ -116,6 +120,7 @@ describe("WikiTemplateProblems — a folder finding is not an off-template verdi
 
   it("a page carrying both gets both headings, each over its own findings", () => {
     renderPanel([TEMPLATE_PROBLEM, LINK_PROBLEM]);
+    openTechnical();
     const shape = screen.getByTestId("library-wiki-problems");
     const folder = screen.getByTestId("library-wiki-link-findings");
     expect(shape.textContent).toContain("missing-field:title");
@@ -353,6 +358,7 @@ describe("WikiTemplateProblems — the machine's vocabulary is one press away, n
     renderPanel([LINK_PROBLEM]);
     const technical = screen.getByTestId("library-wiki-link-findings-technical");
     expect(technical.textContent).toContain(ko.library.wiki.technical);
+    openTechnical();
     const codes = screen.getAllByTestId("library-wiki-problem-code");
     expect(codes[0]!.textContent).toContain("dangling-wikilink:15");
     expect(codes[0]!.textContent).toContain("names a page that is not in this folder");
@@ -360,6 +366,7 @@ describe("WikiTemplateProblems — the machine's vocabulary is one press away, n
 
   it("says there that the command and the tool report the same codes", () => {
     renderPanel([LINK_PROBLEM]);
+    openTechnical();
     const card = screen.getByTestId("library-wiki-link-findings");
     expect(card.textContent).toContain("wiki-validate");
     expect(card.textContent).toContain("validate_wiki");
@@ -377,6 +384,7 @@ describe("WikiTemplateProblems — the machine's vocabulary is one press away, n
    */
   it("names the file on disk the findings are about", () => {
     renderPanel([UNCITED], "ko", { file: "wiki/merchant-onboarding.md" });
+    openTechnical();
     expect(screen.getByTestId("library-wiki-problems-file").textContent).toContain(
       "wiki/merchant-onboarding.md",
     );
@@ -384,9 +392,8 @@ describe("WikiTemplateProblems — the machine's vocabulary is one press away, n
 
   it("starts closed — the disclosure is a fold, not a second list", () => {
     renderPanel([LINK_PROBLEM]);
-    const details = screen
-      .getByTestId("library-wiki-link-findings-technical")
-      .closest("details")!;
-    expect(details.open).toBe(false);
+    const toggle = screen.getByTestId("library-wiki-link-findings-technical");
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryAllByTestId("library-wiki-problem-code")).toHaveLength(0);
   });
 });

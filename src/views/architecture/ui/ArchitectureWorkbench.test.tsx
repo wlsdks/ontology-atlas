@@ -19,6 +19,8 @@ import {
 } from '../../../../tests/fixtures/architecture-profile-cases.mjs';
 import { ArchitectureWorkbench } from './ArchitectureWorkbench';
 
+vi.mock('@/entities/vault-session', () => ({ useVaultSessionIdentityScope: () => 'sample:test' }));
+
 function renderWorkbench(handoffContext?: ArchitectureHandoffContext) {
   const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
   return render(

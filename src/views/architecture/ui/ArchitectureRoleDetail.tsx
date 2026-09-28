@@ -26,6 +26,7 @@ const OCCUPANT_PREVIEW_MIN = 4;
 
 export function ArchitectureRoleDetail({
   roleId,
+  vaultKey,
   index,
   label,
   summary,
@@ -45,6 +46,7 @@ export function ArchitectureRoleDetail({
 }: {
   /** The selected role's id — used for the test hooks the surface already names. */
   roleId: string;
+  vaultKey: string;
   /** The role's position in reach order, already 1-based: the number a reader says out loud. */
   index: number;
   /** The reviewed role name. */
@@ -199,11 +201,10 @@ export function ArchitectureRoleDetail({
             <div className="min-w-0" data-testid={`architecture-modules-${roleId}`}>
               <StaggeredFadeIn
                 key={`${roleId}-modules`}
+                vaultKey={vaultKey}
+                scopeKey={`architecture:${roleId}:modules`}
                 as="div"
                 className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2.5"
-                stagger={24}
-                duration={180}
-                translateY={6}
               >
                 {visibleModules.map((module) => (
                   <div
@@ -259,11 +260,10 @@ export function ArchitectureRoleDetail({
         {concepts.length > 0 ? (
           <StaggeredFadeIn
             key={`${roleId}-concepts`}
+            vaultKey={vaultKey}
+            scopeKey={`architecture:${roleId}:concepts`}
             as="div"
             className="mt-2.5 grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2.5"
-            stagger={24}
-            duration={180}
-            translateY={6}
           >
             {visibleConcepts.map((concept) => (
               <div

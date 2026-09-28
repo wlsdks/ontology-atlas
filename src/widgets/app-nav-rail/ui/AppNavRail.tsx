@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from "react";
+import { useSyncExternalStore } from "react";
 import type {
   ComponentType,
   MouseEvent as ReactMouseEvent,
@@ -29,6 +22,7 @@ import {
 } from "lucide-react";
 import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { cn } from "@/shared/lib/cn";
+import { useSlidingIndicator } from "@/shared/motion/use-sliding-indicator";
 import { signalNavigationIntent } from "@/shared/lib/navigation-intent";
 import { beginMapNavigation, cancelMapNavigation, useMapNavigationPending } from "@/shared/lib/map-navigation-pending";
 import { navigateWithViewTransition } from "@/shared/lib/route-view-transition";
@@ -132,53 +126,10 @@ export function AppNavRail({
   const mapEntryPending = useMapNavigationPending() !== null;
   const shownActiveId: AppNavRailItemId | null = mapEntryPending ? "map" : activeId;
 
-  /**
-   * The active indicator position is measured from the active tile through a callback ref, not
-   * computed from row height.
-   */
-  const [indicator, setIndicator] = useState<{ top: number; height: number } | null>(null);
-  const [indicatorReady, setIndicatorReady] = useState(false);
-  const listRef = useRef<HTMLUListElement | null>(null);
-  const listObserverRef = useRef<ResizeObserver | null>(null);
-
-  const measureIndicator = useCallback(() => {
-    const list = listRef.current;
-    if (!list) return;
-    const activeTile = list.querySelector<HTMLElement>('[data-active="true"] > span');
-    if (!activeTile) {
-      setIndicator(null);
-      return;
-    }
-    const listBox = list.getBoundingClientRect();
-    const tileBox = activeTile.getBoundingClientRect();
-    setIndicator({ top: tileBox.top - listBox.top, height: tileBox.height });
-  }, []);
-
-  const attachDestinationList = useCallback(
-    (el: HTMLUListElement | null) => {
-      listRef.current = el;
-      listObserverRef.current?.disconnect();
-      listObserverRef.current = null;
-      if (!el) return;
-      measureIndicator();
-      const observer = new ResizeObserver(() => measureIndicator());
-      observer.observe(el);
-      listObserverRef.current = observer;
-    },
-    [measureIndicator],
+  const { containerRef, itemRef, indicatorStyle, placed, animated } = useSlidingIndicator(
+    shownActiveId,
+    "surface-y",
   );
-
-  useEffect(() => () => listObserverRef.current?.disconnect(), []);
-
-  useLayoutEffect(() => {
-    measureIndicator();
-  }, [shownActiveId, measureIndicator]);
-
-  useEffect(() => {
-    if (!indicator || indicatorReady) return;
-    const raf = requestAnimationFrame(() => setIndicatorReady(true));
-    return () => cancelAnimationFrame(raf);
-  }, [indicator, indicatorReady]);
 
   // Addresses come from `shared/config/destinations` so keyboard navigation and the shortcut sheet
   // share them.
@@ -235,30 +186,15 @@ export function AppNavRail({
         aria-label={t("ariaLabel")}
         className="flex w-full min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overscroll-contain"
       >
-        <ul ref={attachDestinationList} className="relative flex w-full flex-col gap-0.5">
-          {/* One moving active marker, so a route change reads as the same thing moving. */}
+        <ul ref={containerRef} className="relative flex w-full flex-col gap-0.5">
           <span
             aria-hidden
             data-testid="app-nav-rail-active-indicator"
-            data-placed={indicator ? "true" : "false"}
-            className={cn(
-              // One inline transform: Tailwind v4 `translate` utilities plus an inline transform
-              // would shift twice.
-              "pointer-events-none absolute left-1/2 z-0 rounded-card bg-[color:var(--color-indigo-a14)] shadow-[inset_0_0_0_1px_var(--color-indigo-line-a22)]",
-              // No transition on the first placement, so it does not read as an entrance.
-              indicatorReady && "transition-[transform,height] duration-[var(--motion-base)] ease-[var(--motion-ease)] motion-reduce:transition-none",
-            )}
-            style={
-              indicator
-                ? {
-                    width: "var(--app-nav-rail-tile-width)",
-                    height: indicator.height,
-                    top: 0,
-                    transform: `translate(-50%, ${indicator.top}px)`,
-                    opacity: 1,
-                  }
-                : { opacity: 0, height: 0, top: 0 }
-            }
+            data-selection-indicator="surface-y"
+            data-placed={placed ? "true" : "false"}
+            data-animated={animated ? "true" : "false"}
+            className="motion-indicator z-0 rounded-card bg-[color:var(--color-indigo-a14)] shadow-[inset_0_0_0_1px_var(--color-indigo-line-a22)]"
+            style={indicatorStyle ?? { opacity: 0 }}
           />
           {destinations.map(({ id, href, label, Icon, badgeCount }) => {
             const isActive = activeId === id;
@@ -302,6 +238,7 @@ export function AppNavRail({
                   className={controlClass({ shape: "card", className: "group relative w-full flex-col gap-1 border-0 px-0 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]" })}
                 >
                   <span
+                    ref={itemRef(id)}
                     className={cn(
                       "relative flex h-[var(--app-nav-rail-tile-height)] w-[var(--app-nav-rail-tile-width)] items-center justify-center rounded-card transition-colors",
                       isShownActive
@@ -358,7 +295,7 @@ export function AppNavRail({
             title={t("getAppTitle")}
             aria-label={t("getApp")}
             data-testid="app-nav-rail-get-app"
-            className={controlClass({ shape: "card", tone: "muted", className: "group relative min-h-0 p-0 h-[var(--app-nav-rail-tile-height)] w-[var(--app-nav-rail-tile-width)] justify-center border-0 transition-[color,background-color,transform] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] active:translate-y-px active:bg-[color:var(--color-overlay-3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset" })}
+            className={controlClass({ shape: "card", tone: "muted", className: "group relative min-h-0 p-0 h-[var(--app-nav-rail-tile-height)] w-[var(--app-nav-rail-tile-width)] justify-center border-0 transition-[color,background-color,translate] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] active:translate-y-px motion-reduce:translate-none active:bg-[color:var(--color-overlay-3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset" })}
           >
             {/*
              * `min-h-0 p-0`: the card shape's own padding would override the rail tile geometry.
