@@ -34,8 +34,6 @@ describe("ambientSleepFactor", () => {
     expect(ambientSleepFactor(D + 3_600_000, 0)).toBe(0);
   });
 
-  // `idle-gate` has no wake wiring by design, so returning 1 at once is the whole
-  // wake contract.
   it("returns to 1 at once when input arrives", () => {
     const deepSleep = D + R * 5;
     expect(ambientSleepFactor(deepSleep, 0)).toBe(0);

@@ -25,8 +25,7 @@
  * **It releases itself — there is no freeze failure mode.** A listener records a
  * deadline for how long to yield and returns on its own once it passes. Even if
  * navigation is cancelled (press-and-drag-away, or a router no-op because the
- * address is unchanged), the map cannot stop forever — the same reasoning behind
- * `idle-gate.ts` being designed without wake wiring.
+ * address is unchanged), the map cannot stop forever.
  */
 
 /** Navigation started (a window event). */

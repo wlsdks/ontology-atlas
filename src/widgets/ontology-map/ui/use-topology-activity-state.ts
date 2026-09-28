@@ -1,8 +1,6 @@
 "use client";
 
-import {
-  useRef
-} from "react";
+import { useRef, useState } from "react";
 import type { Pulse } from "../render/edge-fireflies";
 
 /** Own frame activity clocks, idle diagnostics, and motion preference. */
@@ -67,8 +65,13 @@ export function useTopologyActivityState() {
    */
   const hasContainsEdgesRef = useRef(false);
 
-  /** Time of last activity, refreshed on every frame where an activity flag is true. */
-  const lastActiveMsRef = useRef(0);
+  /**
+   * `wakeFrameLoopRef` is installed by `useTopologyFrameLoop` and schedules a frame unless one is.
+   * `lastActiveMsRef` is the time of last activity, refreshed on every frame where an activity flag
+   * is true. Writing it is how the map asks to be drawn, and the loop stops when nothing is active,
+   * so a write also wakes it.
+   */
+  const [{ wakeFrameLoopRef, lastActiveMsRef }] = useState(createActivityClock);
 
   /**
    * Ambient sleep — time of the last **user input**. Being different from
@@ -90,6 +93,21 @@ export function useTopologyActivityState() {
   return {
     lastActiveCausesRef, idleDebugEnabledRef, lastFrameTimeRef, navYieldUntilRef, reducedMotionRef,
     selectionPulseRef, pulsesRef, hasDependsEdgesRef, hasContainsEdgesRef, lastActiveMsRef, lastInputMsRef,
-    prevCameraSampleRef,
+    prevCameraSampleRef, wakeFrameLoopRef,
   };
+}
+
+function createActivityClock() {
+  const wakeFrameLoopRef = { current: () => {} };
+  let lastActiveMs = 0;
+  const lastActiveMsRef = {
+    get current() {
+      return lastActiveMs;
+    },
+    set current(next: number) {
+      lastActiveMs = next;
+      wakeFrameLoopRef.current();
+    },
+  };
+  return { wakeFrameLoopRef, lastActiveMsRef };
 }

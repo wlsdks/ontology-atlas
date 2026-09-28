@@ -2,6 +2,7 @@ import type { useTopologyVaultReadModel } from "./use-topology-vault-read-model"
 
 import { buildChatNodeIndex, resolveNodeAgentTarget } from "@/entities/knowledge-graph";
 import { presentationRelationKeysForGraphEdge } from "@/features/acp-session";
+import { requestOntologyMapFrame } from "@/widgets/ontology-map";
 import { type PointerEvent as ReactPointerEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 type FullDetailA1Component = Awaited<ReturnType<typeof importFullDetailA1>>["FullDetailA1"];
 const importFullDetailA1 = () => import("@/widgets/full-detail-a1");
@@ -23,37 +24,20 @@ export function useTopologyCanvasFocus({ topologyVaultReadModel }: Options) {
     [ontologyInsight],
   );
   const chatKnownSlugs = useMemo(() => new Set(chatNodeIndex.keys()), [chatNodeIndex]);
-  const chatKnownRelations = useMemo(() => {
-    const agentSlugByNodeId = new Map((ontologyInsight?.nodes ?? []).map((node) => [
-      node.id,
-      resolveNodeAgentTarget(node).ref ?? node.id,
-    ]));
-    const kindByNodeId = new Map((ontologyInsight?.nodes ?? []).map((node) => [node.id, node.kind]));
-    return new Set((ontologyInsight?.edges ?? []).flatMap((edge) => presentationRelationKeysForGraphEdge({
-      from: agentSlugByNodeId.get(edge.from) ?? edge.from,
-      to: agentSlugByNodeId.get(edge.to) ?? edge.to,
-      type: edge.type,
-      toKind: kindByNodeId.get(edge.to) ?? null,
-    })));
-  }, [ontologyInsight]);
+  const chatKnownRelations = useMemo(() => chatRelationKeys(ontologyInsight), [ontologyInsight]);
+  const pointMapAt = useCallback((nodeId: string | null) => {
+    panelHoverNodeIdRef.current = nodeId;
+    requestOntologyMapFrame();
+  }, []);
   // Changes only with the index; reading a ref in render breaks under concurrent rendering.
   const handleChatHoverSlug = useCallback(
-    (slug: string | null) => {
-      panelHoverNodeIdRef.current = slug ? (chatNodeIndex.get(slug) ?? null) : null;
-    },
-    [chatNodeIndex],
+    (slug: string | null) => pointMapAt(slug ? (chatNodeIndex.get(slug) ?? null) : null),
+    [chatNodeIndex, pointMapAt],
   );
   // Relation rows hand over canvas ids, so they skip the index.
-  const handleDatasheetHoverConnection = useCallback((id: string | null) => {
-    panelHoverNodeIdRef.current = id;
-  }, []);
+  const handleDatasheetHoverConnection = pointMapAt;
   // Evidence rows hand over vault slugs; one the map lacks resolves to null.
-  const handleDatasheetHoverEvidence = useCallback(
-    (slug: string | null) => {
-      panelHoverNodeIdRef.current = slug ? (chatNodeIndex.get(slug) ?? null) : null;
-    },
-    [chatNodeIndex],
-  );
+  const handleDatasheetHoverEvidence = handleChatHoverSlug;
 
   // A click opens the compact popover; full detail is opt-in
   // (`docs/design/topology-focus-and-scale.md`).
@@ -123,4 +107,18 @@ export function useTopologyCanvasFocus({ topologyVaultReadModel }: Options) {
     panelHoverNodeIdRef, handleDatasheetHoverConnection, handleDatasheetHoverEvidence, FullDetailCard,
     chatKnownSlugs, chatKnownRelations, handleChatHoverSlug
   };
+}
+
+function chatRelationKeys(insight: Options["topologyVaultReadModel"]["ontologyInsight"]): ReadonlySet<string> {
+  const agentSlugByNodeId = new Map((insight?.nodes ?? []).map((node) => [
+    node.id,
+    resolveNodeAgentTarget(node).ref ?? node.id,
+  ]));
+  const kindByNodeId = new Map((insight?.nodes ?? []).map((node) => [node.id, node.kind]));
+  return new Set((insight?.edges ?? []).flatMap((edge) => presentationRelationKeysForGraphEdge({
+    from: agentSlugByNodeId.get(edge.from) ?? edge.from,
+    to: agentSlugByNodeId.get(edge.to) ?? edge.to,
+    type: edge.type,
+    toKind: kindByNodeId.get(edge.to) ?? null,
+  })));
 }
