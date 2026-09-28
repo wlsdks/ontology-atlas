@@ -467,7 +467,13 @@ export function buildDefinitionPreview(
     const trimmed = line.trim();
     if (!trimmed) break;
     if (/^(?:=+|-+)\s*$/.test(trimmed) || /^\|?\s*:?-{3,}/.test(trimmed)) return undefined;
-    if (/^(?: {4}|\t)/.test(line) || /^(?:#{1,6}(?:\s|$)|>|`{3,}|~{3,}|[-+*]\s|\d+[.)]\s|<|!\[|\[[^\]]+\]:|(?:\*\s*){3,}$|(?:_\s*){3,}$)/.test(trimmed) || trimmed.replace(/\[\[[^\]]*\]\]/g, '').includes('|')) break;
+    if (/^(?: {4}|\t)/.test(line)) {
+      if (!paragraph.length) return undefined;
+      paragraph.push(trimmed);
+      continue;
+    }
+    if (/^(?:\||<|!\[|\[[^\]]+\]:)/.test(trimmed)) return undefined;
+    if (/^(?:#{1,6}(?:\s|$)|>|`{3,}|~{3,}|[-+*]\s|\d+[.)]\s|(?:\*\s*){3,}$|(?:_\s*){3,}$)/.test(trimmed)) break;
     paragraph.push(trimmed);
   }
   const preview = paragraph.join(' ').replace(/\s+/g, ' ').trim();

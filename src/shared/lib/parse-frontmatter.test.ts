@@ -360,10 +360,20 @@ describe('complete opening definition previews', () => {
   ])('does not promote block content into a definition: %s', (body) => {
     expect(buildDefinitionPreview(body, { title: 'Retry' })).toBeUndefined();
   });
-  it.each(['## Excludes', '- Excluded', '> Quoted', '```', '| Column |'])('ends prose at the next block: %s', (block) => {
+  it.each(['## Excludes', '- Excluded', '> Quoted', '```'])('ends prose at the next block: %s', (block) => {
     expect(buildDefinitionPreview(`Retries but never persists.\n${block}\nPersisting a report.`, {})).toBe('Retries but never persists.');
   });
   it('does not treat an inferred first heading as authored title authority', () => {
     expect(buildDefinitionPreview('# Excludes\nPersisting a report.', {})).toBeUndefined();
+  });
+});
+
+
+describe('ambiguous definition continuations', () => {
+  it('keeps indented continuation text even when its first character resembles a block', () => {
+    expect(buildDefinitionPreview('Retry dispatch may write reports\n    # only with explicit approval.', {})).toBe('Retry dispatch may write reports # only with explicit approval.');
+  });
+  it.each(['| only with approval |', '<em>only with approval</em>', '![only with approval](policy.png)', '[approval]: policy.md'])('abstains instead of returning an unqualified prefix: %s', (continuation) => {
+    expect(buildDefinitionPreview(`Retry dispatch may write reports\n${continuation}`, {})).toBeUndefined();
   });
 });
