@@ -187,6 +187,8 @@ tokens. Contract tests cover cross-file values and rendered geometry, and
 
 ## Motion
 
+- Motion goes through the thirteen primitives in `docs/DESIGN-SYSTEM.md`
+  "Motion primitives"; each owns one `app/styles/motion-*.css` part.
 - Prefer colour and opacity transitions over transform.
 - Durations: `--motion-fast` 120ms for feedback (the Tailwind default; omit the
   class), `--motion-base` 180ms to move a surface, `--motion-settle` 240ms for a
