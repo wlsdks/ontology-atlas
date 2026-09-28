@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Check, Clipboard, Link2, TriangleAlert, X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
@@ -26,6 +26,7 @@ import {
   type NodeExplanationEditLabels,
 } from "@/shared/ui/node-explanation-edit";
 import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
+import { morphName, morphTargetProps } from "@/shared/motion/shared-element";
 import { formatFullDetailHandoffChain } from "../lib/full-detail-handoff";
 import { formatFullDetailMetricLine } from "../lib/full-detail-metric";
 import type { FullDetailGroups } from "../lib/full-detail-groups";
@@ -160,6 +161,11 @@ export function FullDetailA1({
   const copyLinkFeedback = useCopyFeedback();
   const copyHandoffFeedback = useCopyFeedback();
   const [step, setStep] = useState<FullDetailReachDepth>(3);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+
+  useEffect(() => {
+    headingRef.current?.focus({ preventScroll: true });
+  }, []);
 
   const handoffChain = useMemo(() => {
     const nodeChain = formatFullDetailHandoffChain(node.agentSlug ?? node.slug, step, {
@@ -269,7 +275,11 @@ export function FullDetailA1({
           <OntologyMapKindGlyph kind={node.kind} size={22} />
         </span>
         <div className="min-w-0 flex-1">
-          <h1 className="[overflow-wrap:anywhere] text-display font-[var(--font-weight-strong)] tracking-[var(--tracking-card)] text-[color:var(--map-panel-text-primary)]">
+          <h1
+            ref={headingRef}
+            tabIndex={-1}
+            {...morphTargetProps(morphName("concept", node.id))}
+            className="[overflow-wrap:anywhere] text-display font-[var(--font-weight-strong)] tracking-[var(--tracking-card)] text-[color:var(--map-panel-text-primary)]">
             {node.title}
           </h1>
           {/* The full title as secondary text when the display name abbreviates it. */}
