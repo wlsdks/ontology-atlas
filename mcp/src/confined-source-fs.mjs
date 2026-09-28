@@ -21,11 +21,11 @@ function address(ctx,input){
   if(ctx.excluded?.some(p=>normalized===p||normalized.startsWith(`${p}/`)))return refuse(ctx,'input deliberately excluded');
   return normalized;
 }
-function get(ctx,input,follow=true){
+function get(ctx,input){
   const path=address(ctx,input);const entry=ctx.entries.get(path);
   ctx.lookups.set(path,{path,state:entry?.kind??'missing'});
   if(!entry){const error=new Error('Input absent from the complete snapshot');error.code='ENOENT';throw error;}
-  if(follow&&entry.kind==='symlink')return refuse(ctx,'symlink');
+  if(entry.kind==='symlink')return refuse(ctx,'symlink');
   return entry;
 }
 const methods = kind => ({isFile:()=>kind==='file',isDirectory:()=>kind==='directory',isSymbolicLink:()=>kind==='symlink',isBlockDevice:()=>false,isCharacterDevice:()=>false,isFIFO:()=>false,isSocket:()=>false});
@@ -46,7 +46,7 @@ export function readdirSync(input,options){
   return names.map(name=>{const path=entry.path==='.'?name:`${entry.path}/${name}`;const child=ctx.entries.get(path);if(!child)return refuse(ctx,'incomplete directory');return {name,parentPath:resolve(ctx.root,entry.path),path:resolve(ctx.root,entry.path),...methods(child.kind)};});
 }
 export function statSync(input,options){const ctx=context.getStore();return ctx?stat(get(ctx,input)):fs.statSync(input,options);}
-export function lstatSync(input,options){const ctx=context.getStore();return ctx?stat(get(ctx,input,false)):fs.lstatSync(input,options);}
+export function lstatSync(input,options){const ctx=context.getStore();return ctx?stat(get(ctx,input)):fs.lstatSync(input,options);}
 export function existsSync(input){const ctx=context.getStore();if(!ctx)return fs.existsSync(input);try{get(ctx,input);return true;}catch{return false;}}
 export function realpathSync(input){const ctx=context.getStore();if(!ctx)return fs.realpathSync(input);return resolve(ctx.root,get(ctx,input).path);}
 
