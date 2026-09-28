@@ -2328,8 +2328,11 @@ Hover changes ink, surface or border on `--motion-fast`, never position.
 
 ### Toggle and checkbox draw
 
-`DrawnCheck` in `src/shared/motion/drawn-check.tsx`, CSS in
-`motion-checkbox.css`: the check draws on `--motion-fast`.
+`Checkbox` keeps the native input as `peer appearance-none` with a token
+border (`--color-text-quaternary`, at least 3:1 against its ground) and a
+brand fill. A static `DrawnCheck` sits beside it, and `motion-checkbox.css`
+draws it with `motionCheckDraw` on `--motion-fast` whenever the peer becomes
+checked. Under reduced motion the check appears whole.
 
 ### Selection indicator
 
