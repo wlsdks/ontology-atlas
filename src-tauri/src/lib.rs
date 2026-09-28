@@ -826,7 +826,7 @@ fn acp_start(
     let managed_node_bin = app_data_for_paths
         .as_deref()
         .and_then(managed_node::managed_node_bin_dir);
-    let launch = acp::resolve_launch(
+    let mut launch = acp::resolve_launch(
         &runtime_id,
         home.as_deref(),
         std::env::var_os("PATH").as_deref(),
@@ -834,6 +834,7 @@ fn acp_start(
         managed_bin.as_deref(),
         managed_node_bin.as_deref(),
     )?;
+    launch.path_env = acp::path_without_vault_node_modules_bin(&launch.path_env, &root);
 
     // Heal a half-downloaded npx entry just before launch (see the npx cache block in `acp.rs`).
     let npx_preflight = acp::preflight_npx_cache(&launch, home.as_deref());
@@ -880,7 +881,7 @@ fn acp_start(
     let mut command = Command::new(&spawned.program);
     command
         .args(&spawned.args)
-        .current_dir(&root)
+        .current_dir(&app_data)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());

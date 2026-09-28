@@ -3,7 +3,7 @@
 //! a login shell (it would execute the user's whole config). npx adapters are pinned.
 
 use std::ffi::{OsStr, OsString};
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 
 /// Generated into `src-tauri/src/acp-registry.json` by `scripts/build-acp-registry.mjs`
 /// and never fetched at runtime: no unrequested network traffic, and it works offline.
@@ -542,6 +542,24 @@ pub(crate) struct AcpLaunch {
     pub args: Vec<String>,
     /// The adapter finds the real CLI by name, so it needs the reconstructed PATH too.
     pub path_env: String,
+}
+
+fn is_node_modules_bin(entry: &Path) -> bool {
+    let mut tail = entry.components().rev();
+    matches!(tail.next(), Some(Component::Normal(last)) if last == ".bin")
+        && matches!(tail.next(), Some(Component::Normal(parent)) if parent == "node_modules")
+}
+
+pub(crate) fn path_without_vault_node_modules_bin(path_env: &str, vault_root: &Path) -> String {
+    let kept: Vec<PathBuf> = std::env::split_paths(&OsString::from(path_env))
+        .filter(|entry| !entry.as_os_str().is_empty())
+        .filter(|entry| {
+            !is_node_modules_bin(entry) || (entry.is_absolute() && !entry.starts_with(vault_root))
+        })
+        .collect();
+    std::env::join_paths(kept)
+        .map(|joined| joined.to_string_lossy().into_owned())
+        .unwrap_or_else(|_| path_env.to_string())
 }
 
 // An interrupted first npx download leaves a half-made `~/.npm/_npx/<hash>/` that
@@ -4205,5 +4223,30 @@ mod npx_cache_tests {
         assert_eq!(dir_size_bytes(&dir), 1500);
         assert_eq!(dir_size_bytes(&dir.join("missing")), 0);
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_vault_bin_never_reaches_the_adapter_path() {
+        let vault = Path::new("/private/tmp/atlas-hostile-vault");
+        let path_env = std::env::join_paths([
+            PathBuf::from("/private/tmp/atlas-hostile-vault/node_modules/.bin"),
+            PathBuf::from("node_modules/.bin"),
+            PathBuf::from("/opt/homebrew/bin"),
+            PathBuf::from("/usr/bin"),
+            PathBuf::from("/opt/other/node_modules/.bin"),
+        ])
+        .unwrap()
+        .to_string_lossy()
+        .into_owned();
+
+        let cleaned = path_without_vault_node_modules_bin(&path_env, vault);
+        let entries: Vec<PathBuf> = std::env::split_paths(&OsString::from(cleaned)).collect();
+
+        assert!(!entries.iter().any(|entry| entry.starts_with(vault)));
+        assert!(!entries.iter().any(|entry| entry.is_relative()));
+        assert!(entries.contains(&PathBuf::from("/opt/homebrew/bin")));
+        assert!(entries.contains(&PathBuf::from("/usr/bin")));
+        assert!(entries.contains(&PathBuf::from("/opt/other/node_modules/.bin")));
     }
 }
