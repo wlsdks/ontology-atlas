@@ -11,7 +11,7 @@ import {
 } from 'react';
 import { Link, useRouter } from '@/i18n/navigation';
 import { getTopologyProjectHref } from '@/entities/project';
-import { useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { AnimatePresence } from 'framer-motion';
 import {
@@ -89,7 +89,7 @@ import {
   useDocReadingScrollSpy,
 } from '@/widgets/doc-reading-pane';
 import { usePaletteState } from '../lib/use-palette-state';
-import { replaceDocsVaultUrlState } from '../lib/url-state';
+import { replaceDocsVaultUrlState, settleDocsVaultAddress } from '../lib/url-state';
 import {
   parseDocsTreeGroup,
   parseDocsTreeSort,
@@ -245,6 +245,7 @@ function DocsVaultContent({
   const siteT = useTranslations('metadata');
   const tSkillParity = useTranslations('skillParity');
   const searchParams = useSearchParams();
+  const routePathname = usePathname();
   const querySlug = searchParams?.get('slug') ?? null;
   const queryView = parseView(searchParams?.get('view'));
   const querySource = parseDocsVaultSource(searchParams?.get('source'));
@@ -1105,7 +1106,7 @@ function DocsVaultContent({
   }, [legacyLibraryRedirectHref, legacyRedirectToLibrary, router, vaultScopeSettled]);
   const showSampleWelcomeNote = shouldShowSampleWelcomeNote({
     source,
-    normalizedQuerySlug,
+    normalizedQuerySlug: normalizedQuerySlug ?? selectedSlug,
     dismissed: sampleWelcomeDismissed,
   });
   const prevQuerySlug = usePrevious(normalizedQuerySlug);
@@ -1187,20 +1188,19 @@ function DocsVaultContent({
     if (!openDocTabsHydrated || restoredDocTabsSourceKey === recentKey) {
       return;
     }
+    const restoredSlug = normalizedQuerySlug ? null : restoredActiveSlug;
+    if (restoredSlug) settleDocsVaultAddress(routePathname, restoredSlug);
     scheduleStateSync(() => {
       setRestoredDocTabsSourceKey(recentKey);
-      if (!normalizedQuerySlug && restoredActiveSlug) {
-        setSelectedSlug(restoredActiveSlug);
-        replaceUrlState({ slug: restoredActiveSlug });
-      }
+      if (restoredSlug) setSelectedSlug(restoredSlug);
     });
   }, [
     openDocTabsHydrated,
     normalizedQuerySlug,
     recentKey,
-    replaceUrlState,
     restoredActiveSlug,
     restoredDocTabsSourceKey,
+    routePathname,
   ]);
   // Every path that changes `selectedSlug` converges here, so opening a tab needs no call-site code.
   useEffect(() => {
@@ -1622,14 +1622,12 @@ function DocsVaultContent({
       shouldDeferDocsVaultDefaultSelection({
         normalizedQuerySlug,
         selectedSlug,
-        // Wait until boot settles the vault, or a sample default overwrites the local deeplink.
         selectionReady: vaultScopeSettled,
       })
     ) {
       return;
     }
 
-    // Prefer FEATURES for a first visitor (AGENTS.md points at docs/FEATURES.md); `docs/README.md` is usually absent.
     const candidates = [
       ...collectionPinnedSlugs,
       ...collectionRecentSlugs,
@@ -1644,12 +1642,9 @@ function DocsVaultContent({
     );
     if (!nextSlug) return;
 
-    scheduleStateSync(() => {
-      setSelectedSlug(nextSlug);
-      /** The address names the document that is open, even when the requested one could not be. */
-      replaceUrlState({ slug: nextSlug });
-    });
-  }, [collectionDocSlugs, collectionDocs, collectionPinnedSlugs, collectionRecentSlugs, normalizedQuerySlug, openDocTabsHydrated, outOfScopeQuerySlug, pendingRestoredActiveSlug, replaceUrlState, scopedDocSlugs, selectedSlug, vaultScopeSettled]);
+    settleDocsVaultAddress(routePathname, nextSlug);
+    scheduleStateSync(() => setSelectedSlug(nextSlug));
+  }, [collectionDocSlugs, collectionDocs, collectionPinnedSlugs, collectionRecentSlugs, normalizedQuerySlug, openDocTabsHydrated, outOfScopeQuerySlug, pendingRestoredActiveSlug, routePathname, scopedDocSlugs, selectedSlug, vaultScopeSettled]);
 
   const handleSelect = useCallback(
     (slug: string, query?: string) => {

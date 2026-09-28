@@ -57,6 +57,14 @@ test("the INDEX renders the rows in view and still reaches every row", async ({ 
   await page.keyboard.press("Home");
   await expect.poll(async () => (await focusedRow(page)).position).toBe(1);
 
+  await page.keyboard.press("PageDown");
+  await page.keyboard.press("PageDown");
+  await page.keyboard.press("PageDown");
+  await expect.poll(async () => (await focusedRow(page)).position, { message: "PageDown let focus fall out of the tree" }).toBe(31);
+  await page.keyboard.press("PageUp");
+  await expect.poll(async () => (await focusedRow(page)).position, { message: "PageUp let focus fall out of the tree" }).toBe(21);
+  await expect(page.locator(`${TREE} [role="treeitem"][aria-posinset="21"]`)).toBeFocused();
+
   await page.locator(TREE).evaluate((tree) => tree.scrollTo({ top: tree.scrollHeight }));
   await expect
     .poll(() => page.locator(`${TREE} [role="treeitem"][tabindex="0"]`).count(), { message: "a scrolled tree lost its tab stop" })
