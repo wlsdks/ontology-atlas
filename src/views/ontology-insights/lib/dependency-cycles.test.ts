@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
-import { findDependencyCycles, isDependencyEdgeType } from "./dependency-cycles";
+import { findDependencyCycles, isDependencyEdgeType, MAX_KEPT_CYCLES } from "./dependency-cycles";
 
 function n(id: string): KnowledgeGraphNode {
   return {
@@ -125,4 +125,50 @@ describe("findDependencyCycles", () => {
     const edges = [e("c:a", "c:b"), e("c:b", "c:ghost"), e("c:ghost", "c:a")];
     expect(findDependencyCycles(g, edges).totalCycles).toBe(0);
   });
+
+  it("returns an empty, complete inventory for an empty graph", () => {
+    expect(findDependencyCycles([], [])).toEqual({
+      cycles: [],
+      totalCycles: 0,
+      hiddenCycles: 0,
+      activeCycleIds: [],
+      limited: false,
+    });
+  });
+
+  it("counts every cycle of seven mutually dependent nodes and keeps the shortest", () => {
+    const result = findDependencyCycles(nodes(...completeIds(7)), completeEdges(7));
+    expect(result.totalCycles).toBe(2365);
+    expect(result.activeCycleIds).toHaveLength(MAX_KEPT_CYCLES);
+    expect(result.cycles[0].length).toBe(2);
+    expect(result.limited).toBe(true);
+  });
+
+  it("shows a two-node loop first when a thousand longer loops were found before it", () => {
+    const layers = Array.from({ length: 5 }, (_, layer) => Array.from({ length: 4 }, (_, i) => `b:${layer}${i}`));
+    const edges = [
+      ...layers[0].map((first) => e("a:hub", first)),
+      ...layers.slice(1).flatMap((layer, i) => layers[i].flatMap((from) => layer.map((to) => e(from, to)))),
+      ...layers[4].map((last) => e(last, "a:hub")),
+      e("payments", "refunds"),
+      e("refunds", "payments"),
+    ];
+    const result = findDependencyCycles(nodes("a:hub", ...layers.flat(), "payments", "refunds"), edges);
+    expect(result.totalCycles).toBe(1025);
+    expect(result.cycles[0].id).toBe("payments refunds");
+    expect(result.limited).toBe(true);
+  });
+
+  it("reports the search as limited when ten mutually dependent nodes exhaust the step budget", () => {
+    expect(findDependencyCycles(nodes(...completeIds(10)), completeEdges(10)).limited).toBe(true);
+  });
 });
+
+function completeIds(size: number): string[] {
+  return Array.from({ length: size }, (_, i) => `c:${i}`);
+}
+
+function completeEdges(size: number): KnowledgeGraphEdge[] {
+  const ids = completeIds(size);
+  return ids.flatMap((from) => ids.filter((to) => to !== from).map((to) => e(from, to)));
+}

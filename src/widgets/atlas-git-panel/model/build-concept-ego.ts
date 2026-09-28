@@ -44,10 +44,7 @@ function emptyNeighbors(): Record<EgoBearing, EgoNeighbor[]> {
   return { belongsTo: [], contains: [], dependsOn: [], usedBy: [] };
 }
 
-/**
- * Edge type → bearing. Direction is half of the relation: an incoming `contains`
- * means "what contains me", not "what I contain".
- */
+/** Edge type → bearing: `contains` runs container → content and `is_a` narrower → broader. */
 function outgoingBearing(type: KnowledgeGraphEdge["type"]): EgoBearing {
   if (type === "is_a") return "belongsTo";
   if (type === "contains") return "contains";
@@ -55,7 +52,8 @@ function outgoingBearing(type: KnowledgeGraphEdge["type"]): EgoBearing {
 }
 
 function incomingBearing(type: KnowledgeGraphEdge["type"]): EgoBearing {
-  if (type === "contains" || type === "is_a") return "belongsTo";
+  if (type === "contains") return "belongsTo";
+  if (type === "is_a") return "contains";
   return "usedBy";
 }
 

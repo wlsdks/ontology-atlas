@@ -177,9 +177,18 @@ describe("the coverage matrix over this repository", () => {
      * everything) nor everything (which would mean it is matching nothing). The exact numbers move
      * with every document written, so they are printed rather than pinned.
      */
-    const report = await scanHarness(fsPort(), {
+    const port = fsPort();
+    const read = port.readText.bind(port);
+    let readingCitations = false;
+    let citationReads = 0;
+    port.readText = async (path) => {
+      if (readingCitations) citationReads += 1;
+      return read(path);
+    };
+    const report = await scanHarness(port, {
       capabilityPaths: [],
       excludedFolders: ["docs/ontology"],
+      onProgress: (progress) => { readingCitations = progress.stage === "citations"; },
     });
     const reach = report.documentReach;
 
@@ -201,7 +210,11 @@ describe("the coverage matrix over this repository", () => {
     expect(reach.guides).toBeGreaterThan(0);
     expect(reach.named).toBeGreaterThan(0);
     expect(reach.unnamed).toBeGreaterThan(0);
-    expect(reach.truncated).toBe(false);
+    expect(citationReads).toBeGreaterThan(0);
+    expect(citationReads).toBeLessThanOrEqual(800);
+    const alreadyRead = [...report.contents.keys()].filter((path) => /\.mdc?$/.test(path)).length;
+    const unread = reach.total - alreadyRead - citationReads;
+    if (unread > 0) expect(reach.truncated).toBe(true);
   });
 
   it("does not let a longer path's citation mark a shorter one as reached", async () => {

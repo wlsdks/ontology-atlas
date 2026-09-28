@@ -26,7 +26,7 @@
  * defines. Copy lives in `messages/*.json`; this file returns facts and counts only.
  */
 import type { AcpWorkDecision, AcpWorkReceipt, AcpWorkResult } from '@/shared/lib/acp-work-receipt';
-import type { AgentNotification, AgentNotificationKind } from '@/shared/lib/agent-notifications';
+import type { AgentNotification, AgentNotificationKind, VaultProblemCounts } from '@/shared/lib/agent-notifications';
 import {
   AGENT_TASK_IDLE_MS,
   AGENT_TASK_VISIBLE_WINDOW_MS,
@@ -54,7 +54,7 @@ export type BellTodo =
       kind: 'folder-problem';
       id: string;
       at: number;
-      problems: { unresolvedEdges: number; dependencyCycles: number };
+      problems: VaultProblemCounts;
     };
 
 /** One finished piece of work. */
@@ -106,7 +106,7 @@ export interface BellHistoryRow {
   node: VaultShapeNode | null;
   label: string | null;
   counts: AgentWriteCounts | null;
-  problems: { unresolvedEdges: number; dependencyCycles: number } | null;
+  problems: VaultProblemCounts | null;
   childCount: number | null;
   /** Set only for a folded task that both started and ended. */
   durationMs: number | null;

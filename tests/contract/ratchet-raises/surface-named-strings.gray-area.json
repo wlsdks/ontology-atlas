@@ -1,0 +1,5 @@
+{
+  "gate": "surface-named-strings",
+  "raise": 1,
+  "why": "grayArea.webLimit renders only when the native bridge returns no preview because isTauri() is false. Native failures render unavailable or platformLimit instead. tests/e2e/web-surface-smoke.spec.ts opens this exact web-only degradation and verifies its reason, working map/document alternatives and download link; gray-area.spec.ts covers the native preview and results."
+}

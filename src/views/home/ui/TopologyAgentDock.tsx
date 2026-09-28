@@ -1,3 +1,4 @@
+import type { VaultAgentPrefill } from "../model/agent-chat-door";
 import type { useAcpRuntimeController } from "../model/use-acp-runtime-controller";
 import type { useHomeWorkbenchController } from "../model/use-home-workbench-controller";
 import type { useTopologyAgentActivity } from "../model/use-topology-agent-activity";
@@ -15,7 +16,7 @@ import { ErrorBoundary } from "@/shared/ui/error-boundary";
 import { AcpChatPanel, AcpChatResizeHandle } from "@/widgets/acp-chat-panel";
 import { AnalysisWorkbench, MeaningContext } from "@/widgets/analysis-workbench";
 import dynamic from "next/dynamic";
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { subjectSuggestions } from "@/features/acp-session";
 import { resolveAnalysisFindingTarget } from '../model/analysis-finding-target';
 const VaultAgentPanel = dynamic(
@@ -24,7 +25,7 @@ const VaultAgentPanel = dynamic(
 );
 
 interface TopologyAgentDockProps {
-  vaultAgentPrefill: { text: string; nonce: number; } | null;
+  vaultAgentPrefill: VaultAgentPrefill | null;
   chatSuggestions: import("@/features/acp-session/model/chat-suggestions").ChatSuggestion[];
   routeState: import("@/views/home/model/url-state").HomeRouteState;
   topologyCanvasFocus: Pick<ReturnType<typeof useTopologyCanvasFocus>, "chatKnownSlugs" | "chatKnownRelations" | "handleChatHoverSlug">;
@@ -101,11 +102,12 @@ interface TopologyAgentDockProps {
 }
 
 export function TopologyAgentDock({
-  vaultAgentPrefill, chatSuggestions, routeState, topologyVaultReadModel, topologyPreferences,
+  vaultAgentPrefill: incomingPrefill, chatSuggestions, routeState, topologyVaultReadModel, topologyPreferences,
   topologyAgentOrchestration, topologyNavigationActions, homeWorkbenchController, acpRuntimeController,
   topologyAgentActivity, topologyAnalysisReview, topologyAuthoring, topologyCanvasFocus
 }: TopologyAgentDockProps) {
   const { llmBridgeAvailable, gitVaultPath, ontologyInsight, vault, selectedOntologyNode } = topologyVaultReadModel;
+  const vaultAgentPrefill=incomingPrefill?.context&&incomingPrefill.context.vaultPath!==gitVaultPath?null:incomingPrefill;
   const { t, activeLocale, tWorkbench } = topologyPreferences;
   const {
     keyChatOpen, closeVaultAgent, vaultAgentScreenContext, askPrefill, runtimeChatOpen,
@@ -128,8 +130,28 @@ export function TopologyAgentDock({
     meaningRelations, captureTaskBaseline
   } = topologyAnalysisReview;
   const { edgePanelModel, selectedEdge, setAcpRelationPreview } = topologyAuthoring;
+  // The draft outlives the panel, which unmounts on an idle close; one folder's draft, in memory.
+  const draftRef = useRef<{ folder: string | null; text: string; prefillNonce:number|null }>({ folder: null, text: "", prefillNonce:null });
+  const draftStore = useMemo(
+    () => ({
+      read: () => (draftRef.current.folder === gitVaultPath ? {text:draftRef.current.text,prefillNonce:draftRef.current.prefillNonce} : {text:"",prefillNonce:null}),
+      write: (draft: {text:string;prefillNonce:number|null}) => {
+        draftRef.current = { folder: gitVaultPath, ...draft };
+      },
+    }),
+    [gitVaultPath],
+  );
+  const draftContextKey=JSON.stringify([gitVaultPath,vaultAgentPrefill?.nonce]);
+  const [draftContext,setDraftContext]=useState<{key:string;seen:boolean;retired:boolean}|null>(null);
+  const handleDraftPresence=useCallback((present:boolean)=>{
+    const hasDraft=present||(draftRef.current.folder===gitVaultPath&&draftRef.current.text.trim().length>0);
+    setDraftContext(current=>{
+    if(current?.key!==draftContextKey)return {key:draftContextKey,seen:hasDraft,retired:false};
+    return {...current,seen:current.seen||hasDraft,retired:current.retired||(!hasDraft&&current.seen)};
+  });},[draftContextKey,gitVaultPath]);
+  const preparedContext=vaultAgentPrefill?.context?.vaultPath===gitVaultPath && (draftContext?.key!==draftContextKey||!draftContext.retired) ? vaultAgentPrefill?.context?.label : null;
   // One subject for header, composer and asks: a picked concept, or the folder.
-  const composerSubject = edgePanelModel ? null : selectedOntologyNode?.display ?? selectedOntologyNode?.title ?? null;
+  const composerSubject = preparedContext ?? (edgePanelModel ? null : selectedOntologyNode?.display ?? selectedOntologyNode?.title ?? null);
   const subjectRef = selectedOntologyNode ? resolveNodeAgentTarget(selectedOntologyNode).ref ?? selectedOntologyNode.id : null;
   const dockSuggestions = useMemo(
     () => composerSubject && subjectRef ? subjectSuggestions({ slug: subjectRef, label: composerSubject }) : chatSuggestions,
@@ -138,17 +160,7 @@ export function TopologyAgentDock({
   // An empty history tab ends the surface under its card (see AnalysisWorkbench).
   const [workbenchFitsContent, setWorkbenchFitsContent] = useState(false);
   const { chatKnownSlugs, chatKnownRelations, handleChatHoverSlug } = topologyCanvasFocus;
-  // The draft outlives the panel, which unmounts on an idle close; one folder's draft, in memory.
-  const draftRef = useRef<{ folder: string | null; text: string }>({ folder: null, text: "" });
-  const draftStore = useMemo(
-    () => ({
-      read: () => (draftRef.current.folder === gitVaultPath ? draftRef.current.text : ""),
-      write: (text: string) => {
-        draftRef.current = { folder: gitVaultPath, text };
-      },
-    }),
-    [gitVaultPath],
-  );
+
 
   return (<>
     {llmBridgeAvailable ? (
@@ -248,6 +260,7 @@ export function TopologyAgentDock({
                 returnFocusSelector={'[data-testid="topology-meaning-workbench-toggle"]'}
                 context={meaningAnalysisContext}
                 capture={analysisCapture}
+                conversationLabel={preparedContext}
                 contextLabel={edgePanelModel?.sentence ?? selectedOntologyNode?.display ?? selectedOntologyNode?.title ?? tWorkbench('wholeProject')}
                 contextKind={edgePanelModel ? null : selectedOntologyNode?.kind ?? null}
                 open={acpDockFrameOpen || meaningWorkbenchOpen}
@@ -314,6 +327,7 @@ export function TopologyAgentDock({
                   suggestions={dockSuggestions}
                   // The composer names what the header names.
                   composerSubject={composerSubject}
+                  onDraftPresenceChange={handleDraftPresence}
                   onSuggestionAction={handleChatSuggestionAction}
                   knownSlugs={chatKnownSlugs}
                   knownRelations={chatKnownRelations}
