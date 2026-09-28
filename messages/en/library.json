@@ -818,6 +818,8 @@
     "loadingTitle": "Reading this folder's rounds",
     "malformedTitle": "The rounds file needs attention",
     "malformedDescription": "Atlas could not read .ontology-atlas/rounds.json and left it unchanged. Fix or remove it, then read again.",
+    "unavailableTitle": "Atlas cannot read this folder",
+    "unavailableDescription": "The folder was moved, renamed or disconnected, so its rounds cannot be shown or run. Put it back or open it again, then read again.",
     "retry": "Read again",
     "emptyTitle": "Schedule the first document check",
     "emptyDescription": "Each time a scheduled check runs, its result lands here, newest first.",
@@ -851,8 +853,8 @@
       "6hShort": "every 6 h",
       "dailyChip": "Daily",
       "weekdaysChip": "Weekdays",
-      "everyMinutes": "Every {count, number} minutes",
-      "everyHours": "Every {count, number} hours",
+      "everyMinutes": "{count, plural, one {Every minute} other {Every # minutes}}",
+      "everyHours": "{count, plural, one {Every hour} other {Every # hours}}",
       "everyMinutesShort": "every {count, number} min",
       "everyHoursShort": "every {count, number} h"
     },
@@ -922,6 +924,8 @@
       "durationMinutes": "{minutes, number} min",
       "heldLine": "{name} · {checked} · no change",
       "noAgent": "No coding agent was ready on this Mac, so nothing was redrafted. Open Agents to sign in, then run the round again.",
+      "failedError": "This pass stopped on an error: {detail}. Run it again; if the same error comes back, open the folder again.",
+      "failedFolderNotRead": "Atlas had not finished reading this folder, so this pass checked nothing. Run it again in a moment.",
       "runningNow": "{name} · {phase} · {seconds, number} s",
       "phaseChecking": "Checking documents",
       "phaseAgent": "Agent turn in progress",
@@ -1011,8 +1015,8 @@
       "unitDay": "Day",
       "railAria": "How often · drag, or use the arrow keys",
       "dayAria": "Which days",
-      "valueMinutes": "every {count, number} minutes",
-      "valueHours": "every {count, number} hours"
+      "valueMinutes": "{count, plural, one {every minute} other {every # minutes}}",
+      "valueHours": "{count, plural, one {every hour} other {every # hours}}"
     },
     "index": {
       "title": "Scheduled checks",

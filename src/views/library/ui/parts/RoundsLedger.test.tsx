@@ -45,6 +45,13 @@ function draw(props: Partial<Parameters<typeof RoundsLedger>[0]> = {}) {
 }
 
 describe('the ledger', () => {
+  it('says what stopped a failed pass and what to do next, instead of the raw error', () => {
+    draw({ entries: [entry({ id: 'err', outcome: 'failed', checked: 0, stale: [], summary: 'No such file or directory (os error 2)' })] });
+    const card = screen.getByTestId('library-rounds-pass-err');
+    expect(card).toHaveTextContent(en.library.rounds.ledger.failedError.replace('{detail}', 'No such file or directory (os error 2)'));
+    expect(card).not.toHaveTextContent('0 checked');
+  });
+
   it('draws the pass in flight and drops the empty sentence that contradicted it', () => {
     /*
      * Measured in the browser, 2026-09-21: the header said "running now · <name>" while this

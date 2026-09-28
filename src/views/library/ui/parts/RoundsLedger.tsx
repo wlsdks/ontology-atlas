@@ -294,8 +294,9 @@ export function RoundsLedger({
                         </span>
                       </div>
                       <p className="mt-1 text-body leading-body text-[color:var(--color-text-tertiary)]">
-                        {t("ledger.checked", { count: entry.checked })}
-                        {entry.summary ? ` · ${entry.summary}` : null}
+                        {entry.outcome === "failed" && entry.summary
+                          ? entry.summary === "no-manifest" ? t("ledger.failedFolderNotRead") : t("ledger.failedError", { detail: entry.summary })
+                          : <>{t("ledger.checked", { count: entry.checked })}{entry.summary ? ` · ${entry.summary}` : null}</>}
                       </p>
                       {entry.stale.length > 0 || pagesWritten(entry).length > 0 ? (
                         <div className="mt-2 flex flex-wrap gap-1.5">

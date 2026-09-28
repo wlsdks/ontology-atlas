@@ -52,12 +52,15 @@ export function AutomationsPage({
 
   const allRounds = runner?.rounds ?? EMPTY_RUNNER_ROUNDS;
   const rounds = useMemo(() => allRounds.filter((round) => isLaneRound(round, lane)), [allRounds, lane]);
-  const selected = selectedId === undefined ? rounds[0] ?? null : rounds.find((round) => round.id === selectedId) ?? null;
+  const requestedRound = params.get("round");
+  const selected = selectedId === undefined
+    ? rounds.find((round) => round.id === requestedRound) ?? rounds[0] ?? null
+    : rounds.find((round) => round.id === selectedId) ?? null;
 
   const selectLane = (nextLane: AutomationLane) => {
     const query = new URLSearchParams(params.toString());
     query.set("kind", nextLane);
-    // The old lane's create action must not remain pressable while navigation commits.
+    query.delete("round");
     startLaneTransition(() => router.push(`/automations/?${query}`, { scroll: false }));
     setSelectedId(undefined);
   };
@@ -70,10 +73,9 @@ export function AutomationsPage({
     return ok;
   };
 
-  // A missing file is a new schedule collection, not a failed read. The first save creates it.
   const ready = desktop === true && (runner?.storeStatus === "ok" || runner?.storeStatus === "missing");
   const state = desktop === null ? "loading" : !desktop || !runner ? "app-required" : runner.storeStatus === "no-vault" ? "no-vault"
-    : runner.storeStatus === "loading" ? "loading" : ready ? "ready" : "malformed";
+    : runner.storeStatus === "loading" ? "loading" : ready ? "ready" : runner.storeStatus === "unavailable" ? "unavailable" : "malformed";
   const add = lane === "ontology" ? () => {
     setOntologyDraft((draft) => draft + 1);
     setOntologySheetOpen(true);
@@ -129,8 +131,8 @@ export function AutomationsPage({
             </div>
           ) : state === "loading" ? (
             <div role="status" aria-busy="true"><EmptyState title={t("loadingTitle")} skeleton tone="solid" /></div>
-          ) : state === "malformed" ? (
-            <EmptyState title={t("malformedTitle")} description={t("malformedDescription")} icon={<TriangleAlert />} tone="solid"
+          ) : state === "malformed" || state === "unavailable" ? (
+            <EmptyState title={t(`${state}Title`)} description={t(`${state}Description`)} icon={<TriangleAlert />} tone="solid"
               action={<Button variant="outline" onClick={() => void runner?.refresh()} className="atlas-touch-floor atlas-touch-floor-wide">{t("retry")}</Button>} />
           ) : runner ? (
             <>

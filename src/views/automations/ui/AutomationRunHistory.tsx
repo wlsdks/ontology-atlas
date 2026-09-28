@@ -4,6 +4,7 @@ import { FileText } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import type { RoundPassEntry } from '@/entities/library-round';
 import { Link } from '@/i18n/navigation';
+import { DESTINATION_HREF } from '@/shared/config/destinations';
 import { cn } from '@/shared/lib/cn';
 import { Disclosure } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
@@ -42,31 +43,32 @@ function RunEntry({ entry, latest = false }: { entry: RoundPassEntry; latest?: b
   const t = useTranslations('automations');
   const ledgerText = useTranslations('library.rounds.ledger');
   const locale = useLocale();
-  /* The Library's wording for the same ledger note; a review redrafts nothing, so it says it did not run. */
   const note = entry.note === 'no-agent'
     ? entry.kind === 'ontology' ? t('noAgentReview') : ledgerText('noAgent')
     : entry.note === 'stopped' ? ledgerText('stopped') : null;
-  /* A failed pass with nothing to say never gets the "finished" filler, which read as success. */
-  const own = entry.summary || (entry.checked > 0 ? t('checked', { count: entry.checked }) : '');
+  const failure = entry.outcome === 'failed' && entry.summary
+    ? entry.summary === 'no-manifest' ? t('failedFolderNotRead') : t('failedError', { detail: entry.summary })
+    : null;
+  const own = failure ?? (entry.summary || (entry.checked > 0 ? t('checked', { count: entry.checked }) : ''));
   const noteLeads = !own && note !== null;
   const lead = own || note || (entry.outcome === 'failed' ? t('failedNoResult') : t('noSummary'));
-  /* Only a missing agent is a warning; a stopped pass was the person's own press. */
   const leadInk = noteLeads && entry.note === 'no-agent' ? WARNING_INK
     : latest ? 'text-[color:var(--color-text-primary)]' : 'text-[color:var(--color-text-secondary)]';
   return (
             <li data-testid={latest ? 'automations-last-run' : undefined} className="py-3 first:pt-0">
-              {/* The row header already states the latest outcome and time. */}
               {latest ? null : <div className="mb-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
                 <span className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">{t(`outcome.${entry.outcome}`)}</span>
                 <time dateTime={entry.endedAt} className="text-body text-[color:var(--color-text-tertiary)]">{automationDate(locale, entry.endedAt)}</time>
               </div>}
               <p data-run-note={noteLeads ? entry.note : undefined} className={cn('break-words', latest ? 'text-body-lg' : 'text-body', leadInk)}>{lead}</p>
-              {/* Each file once: a wiki page as its link, anything else as its path. */}
               {entry.stale.length > 0 || entry.written.length > 0 ? <dl className="mt-3 space-y-2">
                 {entry.stale.length > 0 ? <FileGroup label={t('staleLabel')} paths={entry.stale} page={() => true} /> : null}
                 {entry.written.length > 0 ? <FileGroup label={t('writtenLabel')} paths={entry.written} page={(path) => path.startsWith('wiki/')} /> : null}
               </dl> : null}
               {note && !noteLeads ? <p data-run-note={entry.note} className={cn('mt-2 break-words text-body', entry.note === 'no-agent' ? WARNING_INK : 'text-[color:var(--color-text-tertiary)]')}>{note}</p> : null}
+              {latest && entry.note === 'no-agent' ? <div className="mt-2">
+                <Link href={DESTINATION_HREF.agents} className={cn(controlClass({ shape: 'link', size: 'lg', tone: 'accent' }), 'atlas-touch-floor')}>{t('openAgents')}</Link>
+              </div> : null}
               {entry.refused.length > 0 ? <p className="mt-2 text-body text-[color:var(--color-text-secondary)]">{t('blockedActions', { count: entry.refused.length })}</p> : null}
               {entry.refused.length > 0 || entry.called.length > 0 ? (
                 <div className="mt-2"><Disclosure animated summary={t('toolActivity')}>

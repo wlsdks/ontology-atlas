@@ -20,6 +20,7 @@ export function AutomationScheduleRow({ round, runner, expanded, onToggle }: {
 }) {
   const t = useTranslations('automations');
   const cadenceText = useTranslations('library.rounds.cadence');
+  const ledgerText = useTranslations('library.rounds.ledger');
   const locale = useLocale();
   const entries = runner.ledger.filter((entry) => entry.roundId === round.id);
   const last = entries.at(-1);
@@ -51,7 +52,8 @@ export function AutomationScheduleRow({ round, runner, expanded, onToggle }: {
           <span className="col-span-2 min-w-0 md:col-span-1">
             <span className="block break-words text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{round.name}</span>
             <span className="mt-1 block text-body text-[color:var(--color-text-tertiary)]">
-              {running ? t('state.running') : onHere ? t('state.on') : round.enabled ? t('allowHere.state') : t('state.paused')}
+              {running ? `${t('state.running')} · ${ledgerText(runner.running?.phase === 'agent' ? 'phaseAgent' : 'phaseChecking')}`
+                : onHere ? t('state.on') : round.enabled ? t('allowHere.state') : t('state.paused')}
             </span>
           </span>
           <span className="min-w-0 text-body text-[color:var(--color-text-secondary)]">

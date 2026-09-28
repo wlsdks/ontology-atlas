@@ -194,6 +194,58 @@ describe('Automations manager', () => {
     expect(failed.refresh).toHaveBeenCalledTimes(1);
   });
 
+  it('says the folder cannot be reached, not that the file needs fixing, when reading it failed', () => {
+    const unreachable = runner({ storeStatus: 'unavailable' });
+    renderPage(unreachable);
+    expect(screen.getByTestId('automations')).toHaveAttribute('data-automations-state', 'unavailable');
+    expect(screen.getByText(en.automations.unavailableTitle)).toBeInTheDocument();
+    expect(screen.queryByText(en.automations.malformedTitle)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: en.automations.retry }));
+    expect(unreachable.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('opens the schedule a link names, not the first one in the lane', () => {
+    search = 'kind=documents&round=second';
+    const first: RoundRecord = { id: 'first', kind: 'consistency', name: 'First check', enabled: true, onStale: 'mark',
+      cadence: { every: 'hour' }, createdAt: '2026-09-20T08:00:00Z', nextDueAt: '2026-09-21T14:00:00Z' };
+    renderPage(runner({ rounds: [first, { ...first, id: 'second', name: 'Second check' }] }));
+    expect(screen.getByTestId('automation-second')).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByTestId('automation-first')).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('says what stopped a failed pass and what to do next, instead of the raw error', () => {
+    search = 'kind=documents';
+    const round: RoundRecord = { id: 'docs', kind: 'consistency', name: 'Pages match sources', enabled: true, onStale: 'mark',
+      cadence: { every: 'hour' }, createdAt: '2026-09-25T00:00:00Z', nextDueAt: '2026-09-26T01:00:00Z' };
+    const failed: RoundPassEntry = { v: 1, id: 'err', roundId: round.id, roundName: round.name, kind: 'consistency',
+      startedAt: '2026-09-25T15:08:00Z', endedAt: '2026-09-25T15:08:01Z', outcome: 'failed', checked: 0, stale: [],
+      written: [], refused: [], called: [], agentTurns: 0, summary: 'No such file or directory (os error 2)', trigger: 'clock' };
+    const view = renderPage(runner({ rounds: [round], ledger: [failed] }));
+    expect(screen.getByTestId('automations-last-run'))
+      .toHaveTextContent(en.automations.failedError.replace('{detail}', 'No such file or directory (os error 2)'));
+    view.unmount();
+    renderPage(runner({ rounds: [round], ledger: [{ ...failed, summary: 'no-manifest' }] }));
+    expect(screen.getByTestId('automations-last-run')).toHaveTextContent(en.automations.failedFolderNotRead);
+  });
+
+  it('names the step a running pass is on', () => {
+    const round: RoundRecord = { id: 'live', kind: 'ontology', name: 'Live review', enabled: true,
+      cadence: { every: '6h' }, createdAt: '2026-09-25T00:00:00Z', nextDueAt: '2026-09-26T06:00:00Z' };
+    renderPage(runner({ rounds: [round], running: { roundId: 'live', roundName: 'Live review', startedAt: '2026-09-25T10:00:00Z', phase: 'agent' } }));
+    expect(screen.getByTestId('automation-live')).toHaveTextContent(`${en.automations.state.running} · ${en.library.rounds.ledger.phaseAgent}`);
+  });
+
+  it('gives a review that had no agent the way to the Agents screen it names', () => {
+    const round: RoundRecord = { id: 'review', kind: 'ontology', name: 'Ontology refinement', enabled: true,
+      cadence: { every: '6h' }, createdAt: '2026-09-25T00:00:00Z', nextDueAt: '2026-09-26T06:00:00Z' };
+    const entry: RoundPassEntry = { v: 1, id: 'no-agent', roundId: round.id, roundName: round.name, kind: 'ontology',
+      startedAt: '2026-09-25T10:00:00Z', endedAt: '2026-09-25T10:00:00Z', outcome: 'failed', checked: 0, stale: [],
+      written: [], refused: [], called: [], agentTurns: 0, summary: '', trigger: 'manual', note: 'no-agent' };
+    renderPage(runner({ rounds: [round], ledger: [entry] }));
+    expect(within(screen.getByTestId('automations-last-run')).getByRole('link', { name: en.automations.openAgents }))
+      .toHaveAttribute('href', '/agents/');
+  });
+
   it('selects and collapses schedule details, and targets actions to the selected schedule', () => {
     const first: RoundRecord = { id: 'first', kind: 'ontology', name: 'First review', enabled: true,
       cadence: { every: '6h' }, createdAt: '2026-09-20T08:00:00Z', nextDueAt: '2026-09-21T14:00:00Z' };
