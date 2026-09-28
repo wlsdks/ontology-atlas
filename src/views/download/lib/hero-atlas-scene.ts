@@ -105,30 +105,20 @@ let sessionRenderer: THREE.WebGLRenderer | null = null;
 let sessionRendererLent = false;
 
 function borrowRenderer(): RendererLease | null {
-  if (!sessionRendererLent) {
-    if (sessionRenderer?.getContext().isContextLost()) {
-      sessionRenderer.dispose();
-      sessionRenderer = null;
-    }
-    sessionRenderer ??= createRenderer();
-    const renderer = sessionRenderer;
-    if (!renderer) return null;
-    sessionRendererLent = true;
-    return {
-      renderer,
-      release: () => {
-        renderer.setSize(1, 1, false);
-        sessionRendererLent = false;
-      },
-    };
+  if (sessionRendererLent) return null;
+  if (sessionRenderer?.getContext().isContextLost()) {
+    sessionRenderer.dispose();
+    sessionRenderer = null;
   }
-  const own = createRenderer();
-  if (!own) return null;
+  sessionRenderer ??= createRenderer();
+  const renderer = sessionRenderer;
+  if (!renderer) return null;
+  sessionRendererLent = true;
   return {
-    renderer: own,
+    renderer,
     release: () => {
-      own.dispose();
-      own.forceContextLoss();
+      renderer.setSize(1, 1, false);
+      sessionRendererLent = false;
     },
   };
 }

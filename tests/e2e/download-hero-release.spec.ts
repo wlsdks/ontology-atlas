@@ -23,23 +23,25 @@ async function census(cdp: CDPSession): Promise<{ domNodes: number; webgl2Contex
   return { domNodes: nodes, webgl2Contexts };
 }
 
-test("five visits to /download keep one WebGL context and leave no page behind", async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  await seedFirstRunSeen(page);
-  const cdp = await page.context().newCDPSession(page);
-  await cdp.send("HeapProfiler.enable");
-  await page.goto("/en/download/?hero=three", { waitUntil: "load" });
-  await heroOnCanvas(page);
+for (const reducedMotion of ["no-preference", "reduce"] as const) {
+  test(`five visits to /download keep one WebGL context and leave no page behind (motion: ${reducedMotion})`, async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.emulateMedia({ reducedMotion });
+    await seedFirstRunSeen(page);
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send("HeapProfiler.enable");
+    await page.goto("/en/download/?hero=three", { waitUntil: "load" });
+    await heroOnCanvas(page);
 
-  await roundTripToGuide(page);
-  const first = await census(cdp);
-  for (let trip = 2; trip <= 5; trip += 1) await roundTripToGuide(page);
-  const fifth = await census(cdp);
+    await roundTripToGuide(page);
+    const first = await census(cdp);
+    for (let trip = 2; trip <= 5; trip += 1) await roundTripToGuide(page);
+    const fifth = await census(cdp);
 
-  expect(fifth.webgl2Contexts, "live WebGL2 contexts after five visits").toBeLessThanOrEqual(1);
-  expect(
-    fifth.domNodes,
-    `DOM nodes after the first round trip ${first.domNodes}, after the fifth ${fifth.domNodes}`,
-  ).toBeLessThanOrEqual(Math.ceil(first.domNodes * 1.05));
-});
+    expect(fifth.webgl2Contexts, "live WebGL2 contexts after five visits").toBeLessThanOrEqual(1);
+    expect(
+      fifth.domNodes,
+      `DOM nodes after the first round trip ${first.domNodes}, after the fifth ${fifth.domNodes}`,
+    ).toBeLessThanOrEqual(Math.ceil(first.domNodes * 1.05));
+  });
+}
