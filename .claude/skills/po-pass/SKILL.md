@@ -138,13 +138,18 @@ alone. Keep meaning acceptance separate from code, merge, and deployment checks.
 ## 6. Follow and measure the route
 
 - `skip`: maintenance checks.
-- `solo`: one accountable owner proceeds; unknown evidence means probe first.
-- `review`: give one `reviewer` this screen, the route output, and the primary
-  evidence; it applies the lenses the route lists. The author answers a finding
-  once, only on a material conflict; a one-way disagreement takes one second
-  opinion from a different model (the other harness's `reviewer` brief), given
-  the evidence and the disputed decision but neither argument. The owner
-  decides; `unchanged` is valid.
+- `solo`: one accountable owner proceeds; unknown evidence means probe first. No
+  spec unless the owner asks for one.
+- `review`: when the Decision is build and verify, first give `product-planner`
+  this screen, the route output, and the primary evidence; it writes the spec in
+  `docs/specs/` and its copy in `messages/`. Then give one `reviewer` the same
+  packet and the spec; it applies the lenses the route lists, then `spec`, and a
+  `spec: revise` goes back to `product-planner` once. The author answers a
+  finding once, only on a material conflict; a one-way disagreement takes one
+  second opinion from a different model (the other harness's `reviewer` brief),
+  given the evidence and the disputed decision but neither argument. The owner
+  decides; `unchanged` is valid. Once decided, put the decision fragment's id in
+  the spec's `decisions:`.
 
 Routine solo work does not create a decision fragment; a significant decision
 creates one with `pnpm record:new -- --kind=decision`. The pilot closed on

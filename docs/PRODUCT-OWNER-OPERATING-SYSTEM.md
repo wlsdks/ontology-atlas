@@ -158,7 +158,8 @@ pnpm po:route -- --evidence=observed --outcome=correct \
 - `solo`: one accountable pass. Unknown evidence means `probe-first`.
 - `review`: one `reviewer` with the lenses the router returns: `moment` and
   `evidence` always, plus `boundaries` for meaning and `smallest-slice` for
-  scope.
+  scope. When the pass decides to build, a `product-planner` writes the product
+  spec first and the reviewer adds the `spec` lens (see Product spec).
 
 The human owner may request extra review; it does not widen the default router.
 
@@ -179,6 +180,22 @@ PO reviewer to repeat browser, motion, responsive, design, or journey gates.
 
 This proof is the product contract. The router only determines how much
 independent judgment it needs.
+
+## Product spec
+
+A one-way route whose pass decides to build gets a product spec before its
+review, so the reviewer and the builder work from one concrete answer: who, at
+which moment, through which steps, in which states, with which exact words, and
+how anyone can tell it works. The `product-planner` agent writes it at max
+effort with `pnpm doc:new -- --type=spec`; it cites a file, capture, or record
+for every claim about today, weighs the status quo against at least one other
+way to restore the ability, and never builds. Exact English and Korean copy go
+into `messages/`, because prose under `docs/` stays English. The one `reviewer`
+adds the `spec` lens before any build; the `planner` maps each acceptance
+criterion to a slice, `/design-build` captures each state row, and the
+returned-slice review checks the criteria and the Out of scope list. A solo
+route writes none; its one-screen pass is enough. The spec lands with the change
+it describes, marked `current`; an abandoned change's spec never lands.
 
 ## Compact solo pass
 
@@ -210,6 +227,7 @@ lenses the router returns.
    its falsifier.
 2. Record the requested words, intended decision, scope, and recovery proof
    before review. Without a before-state, review cannot claim a causal delta.
+   On a build decision, that record is the product spec.
 3. Give the reviewer the primary evidence and seal its first judgment before
    the author answers. If the execution environment weakens independence,
    record it.
@@ -282,3 +300,23 @@ supports keeping proofs and slices small enough to hold in a reviewer's head.
 Atlas applies those constraints to its own product category: the outcome is not
 more process or faster code generation. It is recovered, evidence-bound human
 understanding after agents move faster than a person can follow.
+
+The product spec borrows from practice for specs that agents build from.
+GitHub's [Spec Kit template](https://github.com/github/spec-kit/blob/main/templates/spec-template.md)
+writes user scenarios as Given/When/Then with edge cases and marks what is not
+known instead of guessing, and [EARS](https://alistairmavin.com/ears/) shapes
+each flow step as a trigger and a response. [Design Docs at Google](https://www.industrialempathy.com/posts/design-docs-at-google/)
+list non-goals that could reasonably be goals, and alternatives with their
+trade-offs, doing nothing included. [Shape Up](https://basecamp.com/shapeup/1.5-chapter-06)
+pairs a problem with its solution, rabbit holes, and no-gos, and
+[opportunity solution trees](https://www.producttalk.org/opportunity-solution-trees/)
+compare options instead of asking whether one is good. SVPG's
+[four big risks](https://www.svpg.com/four-big-risks/) name value, usability,
+feasibility, and viability; a [premortem](https://hbr.org/2007/09/performing-a-project-premortem)
+finds likely failures before commitment; [NN/g](https://www.nngroup.com/articles/error-message-guidelines/)
+asks error copy to be precise and constructive; and a
+[good product manager](https://a16z.com/good-product-manager-bad-product-manager/)
+defines the what, not the how, and errs on the side of clarity. Böckeler's
+[review of spec-driven tools](https://martinfowler.com/articles/exploring-gen-ai/sdd-3-tools.html)
+warns that one heavy workflow for every size buries review, which is why solo
+routes write no spec.

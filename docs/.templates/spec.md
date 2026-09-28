@@ -11,8 +11,37 @@ decisions: []
 
 ## Person and moment
 
-## Design
+## Today
+
+## Problem and alternatives
+
+## Flow
+
+## States
+
+| State | Web | macOS app |
+|---|---|---|
+| Empty | | |
+| Loading | | |
+| Error | | |
+| Partial | | |
+| Largest measured vault | | |
+
+## Copy
+
+| Key | Where it appears | English |
+|---|---|---|
+
+## Edge cases
 
 ## Out of scope
 
-## Verification
+## Acceptance criteria
+
+## Risks
+
+## Later
+
+<!-- The ranked next slices, one line each: what it adds and what would make it next. -->
+
+## Owner question

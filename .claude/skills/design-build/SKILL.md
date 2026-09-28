@@ -43,6 +43,11 @@ Run `pnpm design:route` with every observable change class. Run
 `/design-directions` only when its result says `directions=yes`; value changes
 inside a selected shape do not pay for divergence.
 
+When a spec in `docs/specs/` governs the change, the §0-B loop captures every
+States row the change touches, and new text uses only the message keys its Copy
+section lists; a missing state or string goes back to the lead, never into the
+build.
+
 ## 0-B. Render while building
 
 When the route includes `final-capture` (copy only), take one fresh capture of

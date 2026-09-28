@@ -20,7 +20,9 @@ Return one plan:
 2. **Slices** — the smallest independent units. Each names the files it owns
    (no file in two slices), the files it reads, the exact acceptance command,
    and a time budget. A slice that still needs judgment is not finished: split
-   it or move the judgment into Decisions.
+   it or move the judgment into Decisions. When a spec in `docs/specs/` governs
+   the work, each of its acceptance criteria is some slice's acceptance command
+   or named capture; list any it leaves uncovered as a gap.
 3. **Order** — which slices run in parallel and which wait, and whether they
    land as separate train drafts or one integration branch (`/review-and-land`).
 4. **Risk** — what a reviewer must check that tests will not catch.

@@ -78,6 +78,8 @@ or inspecting the current baseline. An already selected direction proceeds to
 5. Do not propose a forbidden pattern. Request a rule change separately.
 6. Build only the one selected by the human owner. Never merge directions into a
    third shape nobody chose.
+7. If a spec under `docs/specs/` governs the change, every direction lists the
+   States rows and acceptance criteria it meets and explains any it leaves out.
 
 ## Output
 
