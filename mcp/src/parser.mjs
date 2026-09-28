@@ -293,6 +293,7 @@ function unquote(value) {
 }
 
 // A separator inside quotes is data: `labels: { ko: "map, search" }` is one value.
+// O(n) in the input: one pass, and each part is one slice of it.
 function splitTopLevel(input, separator) {
   const parts = [];
   let start = 0;

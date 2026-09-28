@@ -60,6 +60,7 @@ const BOUNDARY_KINDS = new Set(['domain', 'capability']);
 const UNCERTAINTY_KINDS = new Set(['domain', 'capability', 'element']);
 const EPISTEMIC_KINDS = new Set(['domain', 'capability', 'element', 'project']);
 const BODY_CHECK_KINDS = new Set([...DEFINITION_KINDS, ...BOUNDARY_KINDS, ...UNCERTAINTY_KINDS, ...EPISTEMIC_KINDS]);
+const BODY_CHECKS = [definitionFinding, boundaryFindings, uncertaintyFinding, epistemicExclusionFinding];
 const FOLDER_EVIDENCE_KINDS = new Set(['capability', 'element']);
 
 /** Entry-point filenames in the order an unfamiliar agent would try them, to say "open this instead". */
@@ -211,12 +212,7 @@ function bodyView(kind, title, body) {
 export function bodyMeaningFindings(input) {
   if (!BODY_CHECK_KINDS.has(input.kind)) return [];
   const view = bodyView(input.kind, input.title, input.body);
-  return [
-    definitionFinding(input, view),
-    ...boundaryFindings(input, view),
-    uncertaintyFinding(input, view),
-    epistemicExclusionFinding(input, view),
-  ].filter(Boolean);
+  return BODY_CHECKS.flatMap((check) => check(input, view) ?? []);
 }
 
 /**
@@ -479,12 +475,13 @@ const SPECIFIER_PATTERNS = [
 ];
 const GO_IMPORT_BLOCK = /^[ \t]*import\s*\(((?:(?!\n[ \t]*import\b)[^)])*)\)/gm;
 const WITNESS_TEXT_MAX_BYTES = 2 * 1024 * 1024;
+const WITNESS_TEXT_CACHE_BYTES = 16 * 1024 * 1024;
 
 function readWitnessText(absolute) {
   try {
     const stat = statSync(absolute);
     if (!stat.isFile()) return null;
-    return stat.size > WITNESS_TEXT_MAX_BYTES ? { tooLarge: true } : { text: readFileSync(absolute, 'utf-8') };
+    return stat.size > WITNESS_TEXT_MAX_BYTES ? { tooLarge: true } : { text: readFileSync(absolute, 'utf-8'), bytes: stat.size };
   } catch {
     return null;
   }
@@ -509,18 +506,18 @@ function moduleSpecifiers(text) {
  * specifier. A bare word elsewhere is no witness (unrelated identifiers would
  * keep an edge green with no import). Case-sensitive: `Vault` and `vault` differ.
  */
-function textWitnesses(text, targetPath, witnessNames, moduleNamesByText) {
-  if (String(text).includes(targetPath)) return true;
+function textWitnesses({ text, path }, targetPath, witnessNames, moduleNamesByPath) {
+  if (text.includes(targetPath)) return true;
   const names = witnessNames.filter(Boolean);
   if (names.length === 0) return false;
-  let moduleNames = moduleNamesByText.get(text);
+  let moduleNames = moduleNamesByPath.get(path);
   if (!moduleNames) {
     moduleNames = new Set(moduleSpecifiers(text).flatMap((specifier) =>
       specifier
         .split(/::|[/\\{},\s]+|\.(?![A-Za-z0-9]{1,10}$)/)
         .map((segment) => segment.replace(/\.[^.]+$/, '')),
     ));
-    moduleNamesByText.set(text, moduleNames);
+    moduleNamesByPath.set(path, moduleNames);
   }
   return names.some((name) => moduleNames.has(name));
 }
@@ -581,11 +578,19 @@ function relationNoteText(frontmatter, target) {
   return '';
 }
 
-export const createDependencyWitnessReads = () => ({ files: new Map(), moduleNames: new Map() });
+export const createDependencyWitnessReads = () => ({ recent: new Map(), textBytes: 0, moduleNames: new Map() });
 
 function cachedWitnessRead(fileReads, absolute) {
-  if (!fileReads.files.has(absolute)) fileReads.files.set(absolute, readWitnessText(absolute));
-  return fileReads.files.get(absolute);
+  const { recent } = fileReads;
+  const read = recent.has(absolute) ? recent.get(absolute) : readWitnessText(absolute);
+  if (!recent.delete(absolute)) fileReads.textBytes += read?.bytes ?? 0;
+  recent.set(absolute, read);
+  for (const [oldest, evicted] of recent) {
+    if (fileReads.textBytes <= WITNESS_TEXT_CACHE_BYTES) break;
+    recent.delete(oldest);
+    fileReads.textBytes -= evicted?.bytes ?? 0;
+  }
+  return read;
 }
 
 /**
@@ -605,7 +610,6 @@ function cachedWitnessRead(fileReads, absolute) {
  * @param {Record<string, unknown>} [args.previousFrontmatter] absent judges every dependency
  * @param {string|null} args.repoRoot
  * @param {(ref: string) => string|null} args.resolveTargetPath target slug → its `path:`, or null
- * @param {ReturnType<typeof createDependencyWitnessReads>} [args.fileReads]
  * @returns {Array<object>} one finding per unwitnessed target, `key` = target slug (a per-edge notice key)
  */
 export function dependencyWitnessFinding({
@@ -624,9 +628,7 @@ export function dependencyWitnessFinding({
   if (targets.length === 0) return [];
   const sourceRead = cachedWitnessRead(fileReads, source.absolute);
   if (sourceRead === null) return [];
-  /** One read per file however many edges cite it; `null` marks unreadable. */
   const readCache = new Map([[source.path, { ...sourceRead, path: source.path }]]);
-  const moduleNamesByText = fileReads.moduleNames;
   /**
    * A note path is tried from the repository root, then from each ancestor of the
    * citing file, nearest first, since writers copy editor-relative paths. Every
@@ -665,8 +667,7 @@ export function dependencyWitnessFinding({
       const read = readCandidate(token);
       if (read) reads.push(read);
     }
-    const texts = reads.filter((read) => read.text !== undefined).map((read) => read.text);
-    if (texts.some((text) => textWitnesses(text, resolved.path, witnessNames, moduleNamesByText))) continue;
+    if (reads.some((read) => read.text !== undefined && textWitnesses(read, resolved.path, witnessNames, fileReads.moduleNames))) continue;
     const unread = [...new Set(reads.filter((read) => read.tooLarge).map((read) => read.path))];
     findings.push({
       code: unread.length > 0 ? 'dependency-unjudged' : 'dependency-unwitnessed',

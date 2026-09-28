@@ -13,6 +13,7 @@ import { join, sep } from 'node:path';
 import { defaultBody } from './schema.mjs';
 import {
   boundaryFindings,
+  createDependencyWitnessReads,
   definitionFinding,
   dependencyWitnessFinding,
   epistemicExclusionFinding,
@@ -630,6 +631,30 @@ describe('dependency-unwitnessed — the file cited does not name the file depen
    * File paths in the edge's `why` are witness candidates on the same terms as any
    * other file, since the message tells the writer to put the witness there.
    */
+  it('a whole-vault pass holds at most 16 MiB of cited text and judges as fresh reads do', (t) => {
+    const root = mkdtempSync(join(tmpdir(), 'atlas-witness-pass-'));
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    mkdirSync(join(root, 'src'));
+    const count = 24;
+    const padding = `// ${'x'.repeat(1024 * 1024)}\n`;
+    for (let index = 0; index < count; index += 1) {
+      const imports = index % 2 === 0 ? `import './m-${(index + 1) % count}';\n` : '';
+      writeFileSync(join(root, 'src', `m-${index}.ts`), `${imports}${padding}`);
+    }
+    const inputs = Array.from({ length: count }, (_, index) => ({
+      slug: `capabilities/m-${index}`,
+      frontmatter: { path: `src/m-${index}.ts`, dependencies: [`capabilities/m-${(index + 1) % count}`] },
+      repoRoot: root,
+      resolveTargetPath: (ref) => `src/${ref.split('/').pop()}.ts`,
+    }));
+    const fileReads = createDependencyWitnessReads();
+    const shared = inputs.flatMap((input) => dependencyWitnessFinding({ ...input, fileReads }));
+    assert.deepEqual(shared, inputs.flatMap((input) => dependencyWitnessFinding(input)));
+    assert.equal(shared.length, count / 2);
+    const heldBytes = [...fileReads.recent.values()].reduce((sum, read) => sum + (read?.bytes ?? 0), 0);
+    assert.ok(heldBytes <= 16 * 1024 * 1024, `the pass holds ${heldBytes} bytes of cited text`);
+  });
+
   it('a `why` naming a file that does import the target clears the finding', (t) => {
     const root = repoWithSources();
     t.after(() => rmSync(root, { recursive: true, force: true }));
