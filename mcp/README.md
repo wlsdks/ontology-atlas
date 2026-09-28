@@ -15,7 +15,7 @@ For a known task, compact `agent_brief` supplies recorded context, implementatio
 anchors, currentness, and unknowns before the agent inspects source. Declared
 dependencies do not establish complete runtime impact. Host permissions and
 review behavior vary; an MCP connection is not a guarantee that every write is
-human-approved. [Product purpose and limits](../README.md#use-it-in-the-next-task).
+human-approved. [Product purpose and limits](../README.md#how-it-works).
 
 The vault is still plain markdown. The graph-database-like behavior comes from
 `compile_ontology` and `query_ontology`, which build and query a deterministic
