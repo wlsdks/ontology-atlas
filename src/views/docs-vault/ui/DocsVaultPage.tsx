@@ -37,6 +37,7 @@ import {
   VaultConflictError,
   useLocalVault,
   useStaticVaultSource,
+  useVaultSessionIdentityScope,
   VaultSourceHydrationBoundary,
   type ReferrerRewriteReport,
 } from '@/entities/vault-session';
@@ -298,6 +299,9 @@ function DocsVaultContent({
   const [selectedSlug, setSelectedSlug] = useState<string | null>(querySlug);
   // A truthy `openWith` opens the palette; its value is the initial query (`>`, `#`, ``).
   const { paletteQuery, setPaletteQuery, paletteOpen } = usePaletteState();
+  const [paletteOpened, setPaletteOpened] = useState(false);
+  if (paletteOpen && !paletteOpened) setPaletteOpened(true);
+  const vaultSessionScope = useVaultSessionIdentityScope();
   const [view, setView] = useState<DocsVaultView>(queryView);
   // No visible menu remains; other surfaces still call `setAdvancedOpen(false)` to close popovers.
   const { setOpen: setAdvancedOpen } = useAdvancedMenu();
@@ -1442,9 +1446,13 @@ function DocsVaultContent({
     () => new Set(collectionDocs.map((doc) => doc.slug)),
     [collectionDocs],
   );
-  // Palette full-text index, keyed by mtime so only changed documents are re-read.
-  const { bodyIndex: docsBodyIndex, indexing: docsBodyIndexing } =
-    useDocsBodyIndex({ docs: collectionDocs, getDocContent });
+  // Palette full-text index from the first open, keyed by mtime.
+  const { bodyIndex: docsBodyIndex, indexing: docsBodyIndexing } = useDocsBodyIndex({
+    docs: collectionDocs,
+    enabled: paletteOpened,
+    scope: vaultSessionScope,
+    getDocContent,
+  });
   // Built from the whole folder: a reserved node keeps waiting whatever the filter shows.
   const reviewQueue = useReviewQueue({
     docs: scopedDocs,
