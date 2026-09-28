@@ -944,7 +944,7 @@
         "unreadable": "Atlas could not read it back to check it."
       },
       "undoneCopy": "The text Atlas took out is saved in {copy}.",
-      "leftAsIs": "{page} was changed by someone else during this pass, so Atlas left it as it is."
+      "leftAsIs": "{page} changed after this pass wrote it; Atlas left it as is."
     },
     "sheet": {
       "readbackConsistency": "{cadence}, check that every page still matches its originals, and {onStale} a page that has gone stale. It runs once as soon as you save.",

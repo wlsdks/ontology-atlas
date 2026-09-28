@@ -118,6 +118,16 @@ describe('round scope', () => {
     expect(judge({ request: notes, round: service, node }).decision).toBe('allow');
   });
 
+  it('never writes through a link or into a folder the pass did not find as a real folder, under wiki/ or sources/', () => {
+    const unsafe = (relative: string) => relative.startsWith('wiki/escape') || relative.startsWith('sources/unseen/');
+    for (const path of ['wiki/escape.md', 'sources/unseen/notes.md']) {
+      const write = request({ filePath: `${VAULT}/${path}`, toolKind: 'edit', rawInput: { content: DRAFT } });
+      expect(judge({ request: write, round: service, unsafe })).toEqual({ decision: 'reject', reason: path });
+    }
+    const notes = request({ filePath: `${VAULT}/sources/notes.md`, toolKind: 'edit', rawInput: { content: '# Notes' } });
+    expect(judge({ request: notes, round: service, unsafe }).decision).toBe('allow');
+  });
+
   it('never writes retained answers or the wiki\'s furniture, under any spelling of their names', () => {
     for (const path of ['wiki/answers/q-1.md', 'wiki/Answers/q-1.md', 'wiki/_log.md', 'wiki/notes/_draft.md', 'Wiki/plan.md']) {
       const write = request({ filePath: `${VAULT}/${path}`, toolKind: 'edit', rawInput: { content: DRAFT } });

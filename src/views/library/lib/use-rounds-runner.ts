@@ -50,7 +50,7 @@ import {
   planTick,
   readOrMissing,
   runConsistencyPass,
-  scanWikiFolder,
+  scanPassFolders,
   scopeNoteEffect,
   settlePassPages,
   triggerFor,
@@ -61,7 +61,7 @@ import type { RoundUnrecorded, RoundsRunnerValue, RoundsStoreStatus } from "@/fe
 import { useVaultConnectors } from "@/features/mcp-connectors";
 import { forgetApproval, readMachineApprovals, recordApproval, useMachineApprovals } from "@/shared/lib/machine-approvals";
 import { detectAcpRuntimes, isAcpBridgeAvailable } from "@/shared/lib/tauri-acp";
-import { getTauriVaultRootPath, nativeVaultFileHashes, readTauriVaultText } from "@/shared/lib/tauri-vault-fs";
+import { getTauriVaultRootPath, listTauriVaultLinks, nativeVaultFileHashes, readTauriVaultText } from "@/shared/lib/tauri-vault-fs";
 import { parseFrontmatter } from "@/shared/lib/parse-frontmatter";
 import { selectOpenVaultHandle } from "@/shared/lib/select-open-vault-handle";
 import { useLatestRef } from "@/shared/lib/use-latest-ref";
@@ -237,6 +237,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
 
   const activeRef = useRef<{ round: RoundRecord; data: PassData; landings: ReturnType<typeof createLandings> } | null>(null);
   const completionRef = useRef<((completion: AcpTurnCompletion) => void) | null>(null);
+  const landingsRef = useRef<ReturnType<typeof createLandings> | null>(null);
 
   const autoDecide = useCallback((request: ScopeRequest & { title?: string | null; toolCallId?: string | null }) => {
     const active = activeRef.current;
@@ -262,6 +263,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
         return page && !active.data.pages.conflict(page.path) ? page : null;
       },
       node: (relative) => active.data.pages.node(relative),
+      unsafe: (relative) => active.data.pages.unsafe(relative),
     });
     if (verdict.decision !== "allow") return { reject: verdict.reason };
     if (verdict.wrote?.text != null) {
@@ -277,7 +279,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
     };
   }, []);
 
-  const onToolSettled = useCallback((toolCallId: string, status: string) => activeRef.current?.landings.settled(toolCallId, status), []);
+  const onToolSettled = useCallback((toolCallId: string, status: string) => landingsRef.current?.settled(toolCallId, status), []);
 
   const session = useAcpSession({
     runtimeId: runtimeId ?? "",
@@ -354,15 +356,14 @@ export function useRoundsRunner(): RoundsRunnerValue {
     const docs = manifest.docs;
     const sources = manifest.sources ?? [];
     const hashes = (await nativeVaultFileHashes(rootPath, citedSourcePaths(docs))) ?? new Map<string, string>();
-    const start = await scanWikiFolder(handle);
+    const scan = await scanPassFolders(handle, (directory) => listTauriVaultLinks(rootPath, directory));
     const nodes = docs.filter((doc) => typeof doc.frontmatter.kind === "string").map((doc) => doc.path);
-    const pageTexts = new Map(start.flatMap((page) => (page.text === null ? [] : [[page.path.slice(0, -3), page.text] as const])));
-    return { sources, docs, hashes, pageTexts, pages: createPassPages({ pages: start, complete: true, nodes }), knownSources: new Set(sources.map((source) => source.path)) };
+    const pageTexts = new Map(scan.pages.flatMap((page) => (page.text === null ? [] : [[page.path.slice(0, -3), page.text] as const])));
+    return { sources, docs, hashes, pageTexts, pages: createPassPages({ ...scan, complete: true, nodes }), knownSources: new Set(sources.map((source) => source.path)) };
   }, [handle, manifestRef, rootPath]);
 
   const runPass = useCallback(async (round: RoundRecord, trigger: RoundPassEntry["trigger"]) => {
     if (!store || !ledger || !rootPath || !handle || runningRef.current) return;
-    // Every way into a pass comes through here.
     if (!allowedNow(round)) return;
     const vault = handle;
     const startedAt = new Date();
@@ -388,10 +389,6 @@ export function useRoundsRunner(): RoundsRunnerValue {
     const base = { v: 1 as const, id: newId(), roundId: round.id, roundName: round.name, kind: round.kind, startedAt: startedAt.toISOString(), places: roundPlaceLabels(places), trigger };
     let entry: RoundPassEntry;
     try {
-      /*
-       * An ontology round reads the graph through the vault MCP, not the folder manifest, so it
-       * opens with an empty pass set: nothing local to hash, nothing local to compile.
-       */
       const data: PassData | null = round.kind === "ontology"
         ? { sources: [], docs: [], hashes: new Map<string, string>(), pageTexts: new Map<string, string>(), pages: createPassPages([]), knownSources: new Set<string>() }
         : await readPassData();
@@ -412,7 +409,6 @@ export function useRoundsRunner(): RoundsRunnerValue {
         round.kind === "consistency"
           ? runConsistencyPass({ ...data, paths: watched.paths, ownDocumentsOnly: watched.ownDocumentsOnly, fromService })
           : null;
-      /** No local library model for an ontology round: it reads the graph, not the folder. */
       const model = round.kind === "ontology"
         ? null
         : buildLibraryModel({ sources: data.sources, docs: data.docs, hashes: data.hashes });
@@ -434,11 +430,13 @@ export function useRoundsRunner(): RoundsRunnerValue {
         }
         const read = readOrMissing(vault, (path) => readTauriVaultText(rootPath, path));
         const landings = createLandings(data.pages, read);
+        landingsRef.current = landings;
         activeRef.current = { round, data, landings };
         mark("agent");
         const result = await agentTurn(brief, aborted);
         activeRef.current = null;
         await landings.done();
+        landingsRef.current = null;
         const settled = await settlePassPages({
           pages: data.pages,
           read,
@@ -515,7 +513,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
           ({ failed, written, refused, called, answer, undone, leftAsIs, agentTurns } = await turn(brief));
         }
       }
-      const putBack = new Set(undone.filter((item) => item.action !== "failed").map((item) => pageIdentity(item.path)));
+      const putBack = new Set(undone.filter((item) => item.action === "restored" || item.action === "removed").map((item) => pageIdentity(item.path)));
       const kept = written.filter((path) => !putBack.has(pageIdentity(path)));
       const { outcome, checked, stale } = passLedgerFacts({
         kind: round.kind,
@@ -557,6 +555,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
       if (stoppedByPerson) entry.note = "stopped";
     } finally {
       activeRef.current = null;
+      landingsRef.current = null;
       abortRef.current = null;
     }
     const record = async () => {

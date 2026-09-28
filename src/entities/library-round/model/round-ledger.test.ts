@@ -105,6 +105,7 @@ describe('round ledger', () => {
     const undone = [
       { path: 'wiki/plan.md', reason: 'duplicate-key', key: 'status', action: 'restored', copy: '.ontology-atlas/undone/p1/wiki/plan.md' },
       { path: 'wiki/new.md', reason: 'not-draft', action: 'removed' },
+      { path: 'wiki/theirs.md', reason: 'not-draft', action: 'left' },
     ];
     const line = JSON.stringify({ ...pass({ outcome: 'failed' }), leftAsIs: ['wiki/notes.md', 3], undone: [...undone, { path: 'wiki/x.md', reason: 'sunspots', action: 'restored' }, 'wiki/y.md'] });
     expect(parseRoundPassEntry(line)).toMatchObject({ undone, leftAsIs: ['wiki/notes.md'] });

@@ -944,7 +944,7 @@
         "unreadable": "Atlas가 다시 읽어 확인하지 못했어요."
       },
       "undoneCopy": "Atlas가 빼낸 글은 {copy}에 보관했어요.",
-      "leftAsIs": "{page} 문서는 이번 점검 중에 다른 사람이 바꿔서 Atlas가 그대로 두었어요."
+      "leftAsIs": "{page} 문서는 이번 점검이 쓴 뒤에 바뀌어 Atlas가 그대로 두었어요."
     },
     "sheet": {
       "readbackConsistency": "{cadence} 문서가 원문과 여전히 맞는지 확인하고, 낡은 문서는 {onStale}. 저장하면 바로 한 번 돌아요.",

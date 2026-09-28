@@ -18,6 +18,8 @@ const h = vi.hoisted(() => ({
   session: null as unknown,
   options: null as null | Record<string, unknown>,
   files: {} as Record<string, string>,
+  links: {} as Record<string, string[]>,
+  delays: {} as Record<string, number>,
   vault: { status: 'loaded', handle: null as unknown, manifest: { docs: [], sources: [{ path: 'sources/plan.pdf' }] } as unknown, agentConfigStatus: null },
 }));
 
@@ -60,7 +62,12 @@ vi.mock('@/shared/lib/tauri-acp', () => ({
 vi.mock('@/shared/lib/tauri-vault-fs', () => ({
   getTauriVaultRootPath: () => '/vault',
   nativeVaultFileHashes: async () => new Map(),
-  readTauriVaultText: async (_root: string, path: string) => h.files[path] ?? null,
+  readTauriVaultText: async (_root: string, path: string) => {
+    const text = h.files[path] ?? null;
+    if (h.delays[path]) await new Promise((resolve) => setTimeout(resolve, h.delays[path]));
+    return text;
+  },
+  listTauriVaultLinks: async (_root: string, directory: string) => h.links[directory] ?? [],
 }));
 
 const notFound = () => Object.assign(new Error('not found'), { name: 'NotFoundError' });
@@ -105,18 +112,21 @@ function scriptedSession(requests: Request[], decisions: Decision[], apply: (req
       const start = { runtimeId: 'claude-acp', sessionId: 's-1', vaultRoot: '/vault', userEventId: 'u-1', text: 'brief', startedAt: new Date().toISOString() };
       const observer = onTurnStarted(start);
       const events: Record<string, unknown>[] = [];
-      requests.forEach((request, index) => {
+      const late: Array<() => void> = [];
+      requests.forEach(({ status = 'completed', late: after = false, ...request }, index) => {
         const decided = autoDecide({ ...request, toolCallId: `call-${index}` });
         decisions.push(decided);
         if (decided && typeof decided === 'object') events.push({ kind: 'notice', id: `n${index}`, text: 'auto-refused', detail: decided.reject });
         if (typeof decided !== 'string') return;
         events.push({ kind: 'notice', id: `n${index}`, text: 'auto-allowed', detail: decided });
         apply(request);
-        settled(`call-${index}`, 'completed');
+        if (after) late.push(() => settled(`call-${index}`, String(status)));
+        else settled(`call-${index}`, String(status));
       });
       person?.();
       events.push({ kind: 'agent', id: 'a1', text: 'done' });
       observer?.({ ...start, endedAt: new Date().toISOString(), outcome: 'completed', stopReason: 'end_turn', events });
+      for (const fire of late) setTimeout(fire, 0);
     }),
   };
 }
@@ -135,7 +145,7 @@ const serviceRound: RoundRecord = {
   places: [{ kind: 'vault', paths: [] }, { kind: 'service', connectorId: 'c1', connectorName: 'confluence' }],
 };
 
-async function pass(requests: Request[], { apply = tool, person, files = { 'wiki/plan.md': onDisk } }: { apply?: (request: Request) => void; person?: () => void; files?: Record<string, string> } = {}) {
+async function pass(requests: Request[], { apply = tool, person, files = { 'wiki/plan.md': onDisk, 'sources/plan.pdf': 'pdf' } }: { apply?: (request: Request) => void; person?: () => void; files?: Record<string, string> } = {}) {
   h.files = { ...files };
   h.store = createMemoryRoundStore(JSON.stringify({ v: 1, rounds: [serviceRound] }));
   recordApproval('round', '/vault', serviceRound.id, roundFingerprint(serviceRound));
@@ -163,6 +173,8 @@ beforeEach(() => {
 afterEach(() => {
   vi.useRealTimers();
   h.files = {};
+  h.links = {};
+  h.delays = {};
 });
 
 describe('a document pass judges each write against the page as its earlier writes left it', () => {
@@ -219,13 +231,49 @@ describe('after the turn, the pass reads back every page it wrote', () => {
 
   it.each([
     ['P1, a page the pass wrote', 'wiki/plan.md', { 'wiki/plan.md': onDisk }],
-    ['P2, a page the pass created', 'wiki/new.md', {}],
-  ])('keeps what a person did to %s during the pass, and does not fail the pass for it', async (_case, path, files) => {
+    ['P2, a page the pass created', 'wiki/new.md', { 'wiki/plan.md': onDisk }],
+  ])('keeps what changed %s after the pass wrote it, and fails the pass naming it when it no longer reads as a draft', async (_case, path, files) => {
     const theirs = onDisk.replace('status: draft', 'status: reviewed');
     await pass([write(`/vault/${path}`, onDisk.replace('<the page name>', 'Plan'))], { files, person: () => { h.files[path] = theirs; } });
     expect(h.files[path]).toBe(theirs);
-    expect(lines()[0]).toMatchObject({ outcome: 'redrafted', written: [path], leftAsIs: [path] });
-    expect(lines()[0].undone).toBeUndefined();
+    expect(lines()[0]).toMatchObject({ outcome: 'failed', written: [path], undone: [{ path, reason: 'not-draft', action: 'left' }] });
+    expect(copyOf(path)).toBeUndefined();
+  });
+
+  it('keeps a change made after the pass wrote a page, and passes, while the page still reads as a draft', async () => {
+    const theirs = onDisk.replace('<the page name>', 'Their title');
+    await pass([write(PAGE, onDisk.replace('<the page name>', 'Plan'))], { person: () => { h.files['wiki/plan.md'] = theirs; } });
+    expect(h.files['wiki/plan.md']).toBe(theirs);
+    expect(lines()[0]).toMatchObject({ outcome: 'redrafted', written: ['wiki/plan.md'], leftAsIs: ['wiki/plan.md'] });
+  });
+
+  it('still counts a tool call that ends after the turn, while another landing read is outstanding', async () => {
+    const planted = onDisk.replace('status: draft', 'status: reviewed');
+    h.delays = { 'wiki/plan.md': 50 };
+    await pass([write(PAGE, onDisk.replace('<the page name>', 'Plan')), { ...write('/vault/wiki/new.md', onDisk), late: true }], {
+      apply: (request) => { if (relative(request) === 'wiki/new.md') h.files['wiki/new.md'] = planted; else tool(request); },
+    });
+    expect(h.files['wiki/new.md']).toBeUndefined();
+    expect(lines()[0]).toMatchObject({ outcome: 'failed', undone: [{ path: 'wiki/new.md', reason: 'not-draft', action: 'removed' }] });
+  });
+
+  it('reads what a write left even when its tool reports a failure', async () => {
+    const planted = onDisk.replace('status: draft', 'status: reviewed');
+    await pass([{ ...write(PAGE, onDisk.replace('<the page name>', 'Plan')), status: 'failed' }], { apply: () => { h.files['wiki/plan.md'] = planted; } });
+    expect(h.files['wiki/plan.md']).toBe(onDisk);
+    expect(lines()[0]).toMatchObject({ outcome: 'failed', undone: [{ path: 'wiki/plan.md', reason: 'not-draft', action: 'restored' }] });
+  });
+
+  it.each([
+    ['a link filed as a page', { wiki: ['escape.md'] }, 'wiki/escape.md'],
+    ['a page under a linked folder', { wiki: ['elsewhere'] }, 'wiki/elsewhere/plan.md'],
+    ['a page under a linked wiki folder', { '': ['wiki'] }, 'wiki/plan.md'],
+    ['a page in a folder the pass never saw', {}, 'wiki/unseen/plan.md'],
+  ])('refuses %s, so a write never follows a link out of the folder', async (_case, links, path) => {
+    h.links = links;
+    const decisions = await pass([write(`/vault/${path}`, onDisk)], { files: path === 'wiki/plan.md' ? {} : { 'wiki/plan.md': onDisk } });
+    expect(decisions).toEqual([{ reject: path }]);
+    expect(lines()[0]).toMatchObject({ written: [], refused: [path] });
   });
 
   it('refuses to write over an ontology node filed under wiki/, which the manifest does not list as a page', async () => {

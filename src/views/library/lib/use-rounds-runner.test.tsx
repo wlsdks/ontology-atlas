@@ -100,6 +100,7 @@ vi.mock('@/shared/lib/tauri-acp', () => ({
 vi.mock('@/shared/lib/tauri-vault-fs', () => ({
   getTauriVaultRootPath: () => '/vault',
   nativeVaultFileHashes: async () => new Map(),
+  listTauriVaultLinks: async () => [],
   readTauriVaultText: async (_root: string, path: string) => {
     h.onRead?.(path);
     return h.files[path] ?? null;

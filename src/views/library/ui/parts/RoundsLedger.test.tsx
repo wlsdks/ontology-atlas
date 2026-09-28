@@ -111,12 +111,14 @@ describe('the ledger', () => {
     draw({ entries: [entry({ id: 'undo', outcome: 'failed', stale: [], leftAsIs: ['wiki/notes.md'], undone: [
       { path: 'wiki/plan.md', reason: 'duplicate-key', key: 'status', action: 'restored', copy },
       { path: 'wiki/new.md', reason: 'forbidden-key', key: 'describes', action: 'removed' },
+      { path: 'wiki/theirs.md', reason: 'not-draft', action: 'left' },
     ] })] });
     const ledger = createTranslator({ locale: 'en', messages: en, namespace: 'library.rounds.ledger' });
     const card = within(screen.getByTestId('library-rounds-pass-undo'));
     const line = card.getByTestId('library-rounds-undone');
     expect(line).toHaveTextContent(`${ledger('undone.restored', { page: 'wiki/plan.md' })} ${ledger('undoneReason.duplicateKey', { key: 'status' })} ${ledger('undoneCopy', { copy })}`);
     expect(line).toHaveTextContent(`${ledger('undone.removed', { page: 'wiki/new.md' })} ${ledger('undoneReason.forbiddenKey', { key: 'describes' })}`);
+    expect(line).toHaveTextContent(`${ledger('leftAsIs', { page: 'wiki/theirs.md' })} ${ledger('undoneReason.notDraft')}`);
     expect(card.getByTestId('library-rounds-left-as-is')).toHaveTextContent(ledger('leftAsIs', { page: 'wiki/notes.md' }));
   });
 });

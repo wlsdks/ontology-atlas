@@ -8,7 +8,7 @@ import {
   pageIdentity,
   readOrMissing,
   roundDraftProblem,
-  scanWikiFolder,
+  scanPassFolders,
   settlePassPages,
 } from './pass-pages';
 
@@ -84,8 +84,9 @@ describe('the pages of one pass', () => {
     expect(pages.node('sources/notes.md')).toBe(false);
   });
 
-  it('scans the files on disk under wiki/, at any depth, and reads each one', async () => {
-    const files: Record<string, string> = { 'wiki/plan.md': DRAFT, 'wiki/team/checkout.md': NODE, 'wiki/.trash/old.md': 'x', 'wiki/logo.png': 'png', 'notes.md': 'y' };
+  it('scans the files on disk under wiki/ and the folders under sources/, and reports every link without following it', async () => {
+    const files: Record<string, string> = { 'wiki/plan.md': DRAFT, 'wiki/team/checkout.md': NODE, 'wiki/.trash/old.md': 'x', 'wiki/logo.png': 'png', 'sources/team/notes.md': 'n', 'notes.md': 'y' };
+    const linksIn: Record<string, string[]> = { '': [], wiki: ['escape.md'], 'wiki/team': ['elsewhere'], sources: [], 'sources/team': [] };
     const dir = (prefix: string): unknown => ({
       kind: 'directory',
       getDirectoryHandle: async (name: string) => {
@@ -100,23 +101,76 @@ describe('the pages of one pass', () => {
         }
       },
     });
-    const scanned = await scanWikiFolder(dir('') as FileSystemDirectoryHandle);
-    expect(scanned).toEqual([{ path: 'wiki/plan.md', text: DRAFT }, { path: 'wiki/team/checkout.md', text: NODE }]);
-    await expect(scanWikiFolder({ getDirectoryHandle: async () => { throw notFound(); } } as unknown as FileSystemDirectoryHandle)).resolves.toEqual([]);
+    const lister = async (directory: string) => linksIn[directory] ?? [];
+    expect(await scanPassFolders(dir('') as FileSystemDirectoryHandle, lister)).toEqual({
+      pages: [{ path: 'wiki/plan.md', text: DRAFT }, { path: 'wiki/team/checkout.md', text: NODE }],
+      dirs: ['wiki', 'wiki/team', 'sources', 'sources/team'],
+      links: ['wiki/escape.md', 'wiki/team/elsewhere'],
+    });
+    const linkedWiki = await scanPassFolders(dir('') as FileSystemDirectoryHandle, async (directory) => (directory === '' ? ['Wiki'] : []));
+    expect(linkedWiki).toEqual({ pages: [], dirs: ['sources', 'sources/team'], links: ['wiki'] });
+    const empty = { getDirectoryHandle: async () => { throw notFound(); } } as unknown as FileSystemDirectoryHandle;
+    await expect(scanPassFolders(empty, async () => [])).resolves.toEqual({ pages: [], dirs: [], links: [] });
   });
 
-  it('records the text an allowed write left when its tool call completes, and nothing for one that failed', async () => {
+  it('refuses a write through a link, into a folder the scan did not see as a real folder, or anywhere under a linked folder', () => {
+    const pages = createPassPages({ complete: true, pages: [{ path: 'wiki/plan.md', text: DRAFT }], dirs: ['wiki', 'wiki/team', 'sources'], links: ['wiki/escape.md', 'wiki/elsewhere'] });
+    expect(pages.unsafe('wiki/new.md')).toBe(false);
+    expect(pages.unsafe('wiki/team/new.md')).toBe(false);
+    expect(pages.unsafe('sources/new.md')).toBe(false);
+    for (const path of ['wiki/escape.md', 'wiki/Escape.md', 'wiki/elsewhere/x.md', 'wiki/unseen/x.md', 'sources/unseen/x.md']) {
+      expect(pages.unsafe(path)).toBe(true);
+      expect(pages.conflict(path)).toBe(true);
+    }
+    expect(createPassPages({ complete: true, pages: [], links: ['wiki'] }).conflict('wiki/new.md')).toBe(true);
+  });
+
+  it('records the text a write left when its tool call ends, even when it reports a failure, and only for the latest write to the page', async () => {
     const pages = createPassPages({ complete: true, pages: [{ path: 'wiki/plan.md', text: 'start' }] });
-    const landings = createLandings(pages, async (path) => (path === 'wiki/plan.md' ? 'landed' : 'other'));
-    pages.commit('wiki/plan.md', 'judged');
+    const disk: Record<string, string> = { 'wiki/plan.md': 'first' };
+    const gates: Array<() => void> = [];
+    const landings = createLandings(pages, async (path) => {
+      const text = disk[path] ?? null;
+      if (gates.length === 0) await new Promise<void>((release) => gates.push(release));
+      return text;
+    });
+    pages.commit('wiki/plan.md', 'judged first');
     landings.expect('call-1', 'wiki/plan.md');
-    landings.settled('call-2', 'completed');
-    pages.commit('wiki/other.md', 'judged');
-    landings.expect('call-3', 'wiki/other.md');
-    landings.settled('call-3', 'failed');
     landings.settled('call-1', 'completed');
-    await landings.done();
-    expect(pages.touched()).toEqual([{ path: 'wiki/plan.md', start: 'start', own: 'landed' }, { path: 'wiki/other.md', start: null, own: 'judged' }]);
+    pages.commit('wiki/plan.md', 'judged second');
+    landings.expect('call-2', 'wiki/plan.md');
+    disk['wiki/plan.md'] = 'second as it landed';
+    landings.settled('call-2', 'failed');
+    landings.settled('call-9', 'completed');
+    const finished = landings.done();
+    await Promise.resolve();
+    gates[0]();
+    await finished;
+    expect(pages.touched()).toEqual([{ path: 'wiki/plan.md', start: 'start', own: 'second as it landed' }]);
+  });
+
+  it('waits for a landing read that starts while it is already waiting', async () => {
+    const pages = createPassPages({ complete: true, pages: [{ path: 'wiki/plan.md', text: 'start' }, { path: 'wiki/other.md', text: 'start' }] });
+    const gates: Record<string, () => void> = {};
+    const landings = createLandings(pages, (path) => new Promise((resolve) => {
+      gates[path] = () => resolve(`landed ${path}`);
+    }));
+    pages.commit('wiki/plan.md', 'judged');
+    pages.commit('wiki/other.md', 'judged');
+    landings.expect('call-1', 'wiki/plan.md');
+    landings.expect('call-2', 'wiki/other.md');
+    landings.settled('call-1', 'completed');
+    let finished = false;
+    const done = landings.done().then(() => {
+      finished = true;
+    });
+    landings.settled('call-2', 'cancelled');
+    gates['wiki/plan.md']();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(finished).toBe(false);
+    gates['wiki/other.md']();
+    await done;
+    expect(pages.touched().map((page) => page.own)).toEqual(['landed wiki/plan.md', 'landed wiki/other.md']);
   });
 });
 
@@ -160,15 +214,22 @@ describe('after the turn, every page the pass wrote is read back', () => {
     });
   });
 
-  it('leaves a page someone else changed after the pass wrote it, reviewed or not, and does not undo it', async () => {
-    const pages = createPassPages({ complete: true, pages: [{ path: 'wiki/plan.md', text: DRAFT }] });
-    pages.commit('wiki/plan.md', withLine('# kept'));
-    pages.land('wiki/plan.md', withLine('# kept'));
+  it('leaves a page that changed after the pass wrote it, and names it and fails the pass when it no longer reads as a draft', async () => {
+    const pages = createPassPages({ complete: true, pages: [{ path: 'wiki/plan.md', text: DRAFT }, { path: 'wiki/kept.md', text: DRAFT }] });
+    pages.commit('wiki/plan.md', withLine('# ours'));
+    pages.land('wiki/plan.md', withLine('# ours'));
     pages.commit('wiki/new.md', DRAFT);
-    const theirs = DRAFT.replace('status: draft', 'status: reviewed');
-    const io = disk({ 'wiki/plan.md': theirs, 'wiki/new.md': theirs });
-    expect(await settlePassPages({ pages, ...io })).toEqual({ undone: [], leftAsIs: ['wiki/plan.md', 'wiki/new.md'] });
-    expect(io.files).toEqual({ 'wiki/plan.md': theirs, 'wiki/new.md': theirs });
+    pages.commit('wiki/kept.md', withLine('# ours'));
+    const reviewed = DRAFT.replace('status: draft', 'status: reviewed');
+    const io = disk({ 'wiki/plan.md': reviewed, 'wiki/new.md': reviewed, 'wiki/kept.md': withLine('# theirs') });
+    expect(await settlePassPages({ pages, ...io })).toEqual({
+      undone: [
+        { path: 'wiki/plan.md', reason: 'not-draft', action: 'left' },
+        { path: 'wiki/new.md', reason: 'not-draft', action: 'left' },
+      ],
+      leftAsIs: ['wiki/kept.md'],
+    });
+    expect(io.files).toEqual({ 'wiki/plan.md': reviewed, 'wiki/new.md': reviewed, 'wiki/kept.md': withLine('# theirs') });
     expect(io.keep).not.toHaveBeenCalled();
   });
 

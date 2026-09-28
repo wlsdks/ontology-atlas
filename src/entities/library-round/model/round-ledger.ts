@@ -54,12 +54,12 @@ export interface RoundUndone {
   path: string;
   reason: RoundUndoReason;
   key?: string;
-  action: 'restored' | 'removed' | 'failed';
+  action: 'restored' | 'removed' | 'failed' | 'left';
   copy?: string;
 }
 
 const UNDO_REASONS: readonly RoundUndoReason[] = ['not-draft', 'duplicate-key', 'forbidden-key', 'no-frontmatter', 'unreadable'];
-const UNDO_ACTIONS: readonly RoundUndone['action'][] = ['restored', 'removed', 'failed'];
+const UNDO_ACTIONS: readonly RoundUndone['action'][] = ['restored', 'removed', 'failed', 'left'];
 
 function parseUndone(value: unknown): RoundUndone[] {
   if (!value || typeof value !== 'object') return [];

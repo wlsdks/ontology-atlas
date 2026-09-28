@@ -27,8 +27,9 @@ pass the standing scope answers every permission request itself and refuses anyt
 outside `sources/` and `wiki/` pages that fit the template, naming the refusal in the
 ledger. A page the pass's own write left that does not read as a draft is put back as the
 pass found it, or removed if the pass created it, and the pass's card names the page, why, and
-where the text it took out is saved, in amber. A page someone else changed during the pass is
-left as it is, and the card says so. The stage opens on **Since you left**: the span the window was away, the pages
+where the text it took out is saved, in amber. A page that changed after the pass wrote it is
+left as it is, and the card says so; if it no longer reads as a draft, the pass fails and the
+card names it. The stage opens on **Since you left**: the span the window was away, the pages
 that went stale, the redrafts waiting, the refusals, and the passes that held, each page
 a press into Wiki. Below it the **ledger** draws passes on a time axis, newest first: a
 held pass is one quiet line, a change is a card, and a sleep gap is a hatched band with

@@ -238,7 +238,10 @@ describe('Automations manager', () => {
     const putBack: RoundPassEntry = { v: 1, id: 'undo', roundId: round.id, roundName: round.name, kind: 'consistency',
       startedAt: '2026-09-25T15:08:00Z', endedAt: '2026-09-25T15:09:00Z', outcome: 'failed', checked: 3, stale: [],
       written: [], refused: [], called: [], agentTurns: 1, summary: '', trigger: 'clock', leftAsIs: ['wiki/notes.md'],
-      undone: [{ path: 'wiki/plan.md', reason: 'not-draft', action: 'restored', copy: '.ontology-atlas/undone/undo/wiki/plan.md' }] };
+      undone: [
+        { path: 'wiki/plan.md', reason: 'not-draft', action: 'restored', copy: '.ontology-atlas/undone/undo/wiki/plan.md' },
+        { path: 'wiki/theirs.md', reason: 'not-draft', action: 'left' },
+      ] };
     renderPage(runner({ rounds: [round], ledger: [putBack] }));
     const last = screen.getByTestId('automations-last-run');
     expect(last).toHaveTextContent([
@@ -246,6 +249,7 @@ describe('Automations manager', () => {
       en.library.rounds.ledger.undoneReason.notDraft,
       en.library.rounds.ledger.undoneCopy.replace('{copy}', '.ontology-atlas/undone/undo/wiki/plan.md'),
     ].join(' '));
+    expect(last).toHaveTextContent(`${en.automations.leftAsIs.replace('{page}', 'wiki/theirs.md')} ${en.library.rounds.ledger.undoneReason.notDraft}`);
     expect(last).not.toHaveTextContent(en.automations.failedNoResult);
     expect(screen.getByTestId('automations-left-as-is')).toHaveTextContent(en.automations.leftAsIs.replace('{page}', 'wiki/notes.md'));
   });

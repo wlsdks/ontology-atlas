@@ -80,7 +80,7 @@
     "removed": "이번 실행이 새로 만든 {page} 문서를 지웠어요.",
     "failed": "이번 실행 뒤 {page} 문서를 되돌리지 못했어요. 믿고 쓰기 전에 문서를 열어 확인하세요."
   },
-  "leftAsIs": "{page} 문서는 이번 실행 중에 다른 사람이 바꿔서 Atlas가 그대로 두었어요.",
+  "leftAsIs": "{page} 문서는 이번 실행이 쓴 뒤에 바뀌어 Atlas가 그대로 두었어요.",
   "refused": "거부됨: {tools}",
   "called": "읽은 도구: {tools}",
   "saving": "예약 중…",

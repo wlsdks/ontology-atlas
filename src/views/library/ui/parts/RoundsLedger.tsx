@@ -304,7 +304,7 @@ export function RoundsLedger({
                       </p>
                       {entry.undone?.length ? (
                         <p data-testid="library-rounds-undone" className="mt-2 text-body leading-body text-[color:var(--color-amber-source-a90)]">
-                          {entry.undone.map((item) => `${t(`ledger.undone.${item.action}`, { page: item.path })} ${t(`ledger.undoneReason.${undoneReasonKey(item.reason)}`, { key: item.key ?? "" })}${item.copy ? ` ${t("ledger.undoneCopy", { copy: item.copy })}` : ""}`).join(" ")}
+                          {entry.undone.map((item) => `${item.action === "left" ? t("ledger.leftAsIs", { page: item.path }) : t(`ledger.undone.${item.action}`, { page: item.path })} ${t(`ledger.undoneReason.${undoneReasonKey(item.reason)}`, { key: item.key ?? "" })}${item.copy ? ` ${t("ledger.undoneCopy", { copy: item.copy })}` : ""}`).join(" ")}
                         </p>
                       ) : null}
                       {entry.leftAsIs?.length ? (

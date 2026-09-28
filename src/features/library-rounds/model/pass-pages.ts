@@ -8,8 +8,10 @@ export interface PassPages {
   current(path: string): string | null;
   conflict(path: string): boolean;
   node(path: string): boolean;
+  unsafe(path: string): boolean;
   commit(path: string, text: string): void;
-  land(path: string, text: string): void;
+  sequence(path: string): number;
+  land(path: string, text: string, sequence?: number): void;
   touched(): { path: string; start: string | null; own: string }[];
 }
 
@@ -17,6 +19,8 @@ export interface PassScan {
   pages: Iterable<{ path: string; text: string | null }>;
   complete?: boolean;
   nodes?: Iterable<string>;
+  dirs?: Iterable<string>;
+  links?: Iterable<string>;
 }
 
 const FORBIDDEN_KEYS = new Set(['describes', 'kind']);
@@ -72,20 +76,32 @@ interface KnownPage {
   start: string | null;
   text: string | null;
   landed: string | null;
+  sequence: number;
 }
+
+const parentsOf = (path: string) => {
+  const parts = path.split('/').slice(0, -1);
+  return parts.map((_, index) => parts.slice(0, index + 1).join('/'));
+};
 
 export function createPassPages(scan: PassScan | Iterable<{ path: string; text: string | null }>): PassPages {
   const input: PassScan = 'pages' in scan ? scan : { pages: scan };
   const known = new Map<string, KnownPage>();
   const blocked = new Set<string>();
   const nodes = new Set<string>();
+  const scanned: string[] = [];
   for (const path of input.nodes ?? []) nodes.add(pageIdentity(path));
   for (const page of input.pages) {
     const id = pageIdentity(page.path);
+    scanned.push(page.path);
     if (page.text !== null && carriesKind(page.text)) nodes.add(id);
     if (known.has(id) || page.text === null) blocked.add(id);
-    if (!known.has(id)) known.set(id, { path: page.path, start: page.text, text: page.text, landed: null });
+    if (!known.has(id)) known.set(id, { path: page.path, start: page.text, text: page.text, landed: null, sequence: 0 });
   }
+  const dirs = new Set([...(input.dirs ?? scanned.flatMap(parentsOf))].map(pageIdentity));
+  const links = new Set([...(input.links ?? [])].map(pageIdentity));
+  const unsafe = (path: string) =>
+    links.has(pageIdentity(path)) || parentsOf(path).some((parent) => links.has(pageIdentity(parent)) || !dirs.has(pageIdentity(parent)));
   const complete = input.complete === true;
   const touched = new Set<string>();
   return {
@@ -93,20 +109,23 @@ export function createPassPages(scan: PassScan | Iterable<{ path: string; text: 
     conflict: (path) => {
       const id = pageIdentity(path);
       const page = known.get(id);
-      if (blocked.has(id) || nodes.has(id)) return true;
+      if (blocked.has(id) || nodes.has(id) || unsafe(path)) return true;
       return page === undefined ? !complete : page.path !== path;
     },
     node: (path) => nodes.has(pageIdentity(path)),
+    unsafe,
     commit: (path, text) => {
       const id = pageIdentity(path);
       const page = known.get(id);
-      if (page) Object.assign(page, { text, landed: null });
-      else known.set(id, { path, start: null, text, landed: null });
+      if (page) Object.assign(page, { text, landed: null, sequence: page.sequence + 1 });
+      else known.set(id, { path, start: null, text, landed: null, sequence: 1 });
       touched.add(id);
     },
-    land: (path, text) => {
+    sequence: (path) => known.get(pageIdentity(path))?.sequence ?? 0,
+    land: (path, text, sequence) => {
       const page = known.get(pageIdentity(path));
-      if (page && touched.has(pageIdentity(path))) Object.assign(page, { text, landed: text });
+      if (!page || !touched.has(pageIdentity(path)) || (sequence !== undefined && sequence !== page.sequence)) return;
+      Object.assign(page, { text, landed: text });
     },
     touched: () => [...touched].map((id) => {
       const page = known.get(id)!;
@@ -116,22 +135,26 @@ export function createPassPages(scan: PassScan | Iterable<{ path: string; text: 
 }
 
 export function createLandings(pages: PassPages, read: (path: string) => Promise<string | null>) {
-  const expected = new Map<string, string>();
-  const reads: Promise<void>[] = [];
+  const expected = new Map<string, { path: string; sequence: number }>();
+  const pending = new Set<Promise<void>>();
   return {
     expect(toolCallId: unknown, path: string) {
-      if (typeof toolCallId === 'string') expected.set(toolCallId, path);
+      if (typeof toolCallId === 'string') expected.set(toolCallId, { path, sequence: pages.sequence(path) });
     },
-    settled(toolCallId: string, status: string) {
-      const path = expected.get(toolCallId);
-      if (path === undefined) return;
+    settled(toolCallId: string, _status: string) {
+      const write = expected.get(toolCallId);
+      if (!write) return;
       expected.delete(toolCallId);
-      if (status !== 'completed') return;
-      reads.push(read(path).then((text) => {
-        if (text !== null) pages.land(path, text);
-      }, () => undefined));
+      const reading: Promise<void> = read(write.path)
+        .then((text) => {
+          if (text !== null) pages.land(write.path, text, write.sequence);
+        }, () => undefined)
+        .finally(() => pending.delete(reading));
+      pending.add(reading);
     },
-    done: () => Promise.all(reads).then(() => undefined),
+    async done() {
+      while (pending.size > 0) await Promise.all([...pending]);
+    },
   };
 }
 
@@ -159,27 +182,41 @@ export function readOrMissing(vault: FileSystemDirectoryHandle, read: (path: str
   };
 }
 
-export async function scanWikiFolder(vault: FileSystemDirectoryHandle): Promise<{ path: string; text: string | null }[]> {
+export async function scanPassFolders(
+  vault: FileSystemDirectoryHandle,
+  linksIn: (directory: string) => Promise<string[]>,
+): Promise<Required<Pick<PassScan, 'dirs' | 'links'>> & { pages: { path: string; text: string | null }[] }> {
   const pages: { path: string; text: string | null }[] = [];
-  const walk = async (directory: FileSystemDirectoryHandle, prefix: string) => {
+  const dirs: string[] = [];
+  const links: string[] = [];
+  const walk = async (directory: FileSystemDirectoryHandle, prefix: string, readPages: boolean) => {
+    dirs.push(prefix);
+    for (const name of await linksIn(prefix)) links.push(`${prefix}/${name}`);
     for await (const [name, entry] of (directory as unknown as { entries(): AsyncIterable<[string, FileSystemHandle]> }).entries()) {
       if (name.startsWith('.')) continue;
       const path = `${prefix}/${name}`;
-      if (entry.kind === 'directory') await walk(entry as FileSystemDirectoryHandle, path);
-      else if (name.toLowerCase().endsWith('.md')) {
+      if (entry.kind === 'directory') await walk(entry as FileSystemDirectoryHandle, path, readPages);
+      else if (readPages && name.toLowerCase().endsWith('.md')) {
         pages.push({ path, text: await (entry as FileSystemFileHandle).getFile().then((file) => file.text(), () => null) });
       }
     }
   };
-  let wiki: FileSystemDirectoryHandle;
-  try {
-    wiki = await vault.getDirectoryHandle('wiki');
-  } catch (error) {
-    if (isNotFoundError(error)) return pages;
-    throw error;
+  const rootLinks = new Set((await linksIn('')).map(pageIdentity));
+  for (const [folder, readPages] of [['wiki', true], ['sources', false]] as const) {
+    if (rootLinks.has(pageIdentity(folder))) {
+      links.push(folder);
+      continue;
+    }
+    let directory: FileSystemDirectoryHandle;
+    try {
+      directory = await vault.getDirectoryHandle(folder);
+    } catch (error) {
+      if (isNotFoundError(error)) continue;
+      throw error;
+    }
+    await walk(directory, folder, readPages);
   }
-  await walk(wiki, 'wiki');
-  return pages;
+  return { pages, dirs, links };
 }
 
 export interface SettleInput {
@@ -203,7 +240,9 @@ export async function settlePassPages({ pages, read, keep, restore, remove }: Se
     }
     if (now === null || now === start) continue;
     if (now !== own) {
-      leftAsIs.push(path);
+      const changed = roundDraftProblem(now);
+      if (changed) undone.push({ path, ...changed, action: 'left' });
+      else leftAsIs.push(path);
       continue;
     }
     const problem = roundDraftProblem(now);

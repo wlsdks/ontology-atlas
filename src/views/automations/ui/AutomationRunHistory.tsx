@@ -51,7 +51,7 @@ function RunEntry({ entry, latest = false }: { entry: RoundPassEntry; latest?: b
     ? entry.kind === 'ontology' ? t('noAgentReview') : ledgerText('noAgent')
     : entry.note === 'stopped' ? ledgerText('stopped') : null;
   const undone = (entry.undone ?? []).map((item) =>
-    `${t(`undone.${item.action}`, { page: item.path })} ${ledgerText(`undoneReason.${undoneReasonKey(item.reason)}`, { key: item.key ?? '' })}${item.copy ? ` ${ledgerText('undoneCopy', { copy: item.copy })}` : ''}`);
+    `${item.action === 'left' ? t('leftAsIs', { page: item.path }) : t(`undone.${item.action}`, { page: item.path })} ${ledgerText(`undoneReason.${undoneReasonKey(item.reason)}`, { key: item.key ?? '' })}${item.copy ? ` ${ledgerText('undoneCopy', { copy: item.copy })}` : ''}`);
   const failure = undone.length > 0 ? undone.join(' ') : entry.outcome === 'failed' && entry.summary
     ? entry.summary === 'no-manifest' ? t('failedFolderNotRead') : t('failedError', { detail: entry.summary })
     : null;
