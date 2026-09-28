@@ -85,6 +85,7 @@
     "src/competency-coverage.mjs",
     "src/capability-evidence.mjs",
     "src/confined-source-fs.mjs",
+    "src/hardened-git.mjs",
     "src/infer-imports.mjs",
     "src/architecture-profile.mjs",
     "src/architecture-record.mjs",
