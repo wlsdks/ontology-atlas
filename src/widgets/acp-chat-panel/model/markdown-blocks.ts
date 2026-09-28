@@ -3,7 +3,7 @@ const CONTINUES = /^(?:[-*+]|\d{1,9}[.)])(?:[ \t]|$)|^>/;
 /** Indentation and list or quote markers before a line's own content. */
 const PREFIXES = /^(?:[ \t]*(?:[-*+]|\d{1,9}[.)]|>))*[ \t]*/;
 /** Definitions and raw HTML reach across blocks, so such a text stays whole. */
-const REACHES_ACROSS = /^(?:\[[^\]]+\]:|<)/;
+const REACHES_ACROSS = /^(?:\[(?:\\.|[^\\\]])+\]:|<)/;
 const FENCE_AT_START = /^(`{3,}|~{3,})(.*)$/;
 const FENCE_MARKER = /^(?:`{3,}|~{3,})/;
 const FENCE_CLOSE = /^ {0,3}(`{3,}|~{3,})[ \t]*$/;
@@ -40,5 +40,8 @@ export function splitMarkdownBlocks(text: string): string[] {
     }
     at = end + 1;
   }
+  // The line still being written can already be a definition, and a finished answer often ends on one.
+  const rest = text.slice(at).replace(/\r$/, '');
+  if (!fence && rest && REACHES_ACROSS.test(rest.replace(PREFIXES, ''))) return [text];
   return starts.map((start, index) => text.slice(start, starts[index + 1] ?? text.length));
 }

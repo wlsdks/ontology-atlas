@@ -49,6 +49,11 @@ const CASES: Record<string, string> = {
     'Intro.\n\n```\ncode\n```\u3000\n\nstill code?\n\n```\n\nAfter.\n',
   'a properly indented fence in a list, then more text':
     'Intro.\n\nSteps follow.\n\n1. Install:\n\n   ```bash\n   pnpm install\n\n   pnpm build\n   ```\n\n2. Run.\n\nDone.\n\nMore after.\n',
+  'a footnote on the final line, no trailing newline':
+    'The refund path is checkout.[^1]\n\nIt is the only path.\n\n[^1]: capabilities/checkout',
+  'a reference definition on the final line, no trailing newline':
+    'See [the spec][spec].\n\nMore.\n\n[spec]: https://example.com',
+  'a definition with an escaped bracket in its label': 'See [a\\]b].\n\nMore.\n\n[a\\]b]: https://example.com\n',
 };
 
 const COLLAPSING = new Set([
@@ -57,6 +62,9 @@ const COLLAPSING = new Set([
   'an HTML comment across a blank line',
   'a definition inside a quote, used earlier',
   'a definition inside a list item, used earlier',
+  'a footnote on the final line, no trailing newline',
+  'a reference definition on the final line, no trailing newline',
+  'a definition with an escaped bracket in its label',
 ]);
 
 describe('splitMarkdownBlocks', () => {
