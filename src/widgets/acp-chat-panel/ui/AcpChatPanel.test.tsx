@@ -23,7 +23,7 @@ const bridge = vi.hoisted(() => {
     stopped: [] as string[],
     /** So a test can make the adapter process die. */
     exit: null as ((code: number | null) => void) | null,
-    /** Notices from the Rust side (`acp://notice`) — the first-download indicator arrives this way. */
+    /** Notices from the Rust side — the first-download indicator arrives this way. */
     notice: null as ((message: string) => void) | null,
     /** stderr diagnostics — the clues to a corrupt npx cache arrive this way (measured). */
     stderr: null as ((line: string) => void) | null,
@@ -2908,60 +2908,152 @@ describe('완료된 대화의 추천 — 답변에서 다음 행동으로 잇는
     );
   });
 
-  it('답변 전 바닥에 있으면 긴 답변과 추천 끝까지 따라가되, 직접 위로 올리면 멈춘다', async () => {
-    await bootSession({ suggestions: [{ kind: 'explain', params: { count: 12 } }] });
-    fireEvent.change(screen.getByRole('textbox'), { target: { value: '긴 답변을 줘' } });
-    fireEvent.click(screen.getByTestId('acp-chat-send'));
-    await waitFor(() => expect(screen.getByText('긴 답변을 줘')).toBeInTheDocument());
-
-    const transcript = screen.getByTestId('acp-chat-transcript');
-    let contentHeight = 400;
-    Object.defineProperties(transcript, {
-      clientHeight: { configurable: true, get: () => 200 },
-      scrollHeight: {
-        configurable: true,
-        get: () =>
-          contentHeight
-          + (screen.queryByTestId('acp-chat-post-turn-suggestions') ? 120 : 0),
-      },
-      scrollTop: { configurable: true, writable: true, value: 200 },
-    });
-    fireEvent.scroll(transcript);
-
-    contentHeight = 1_000;
-    emit({
-      jsonrpc: '2.0',
-      method: 'session/update',
-      params: {
-        update: {
-          sessionUpdate: 'agent_message_chunk',
-          content: { text: '아주 긴 첫 조각' },
+  describe('the transcript follows its end only while the person is there', () => {
+    // jsdom has no layout: the box is stubbed and `layout()` reports growth as a browser would.
+    async function streamingTranscript() {
+      const observers = new Set<() => void>();
+      vi.stubGlobal(
+        'ResizeObserver',
+        class {
+          constructor(private readonly callback: () => void) {}
+          observe() { observers.add(this.callback); }
+          unobserve() {}
+          disconnect() { observers.delete(this.callback); }
         },
-      },
-    });
-    await screen.findByText('아주 긴 첫 조각');
-    await waitFor(() => expect(transcript.scrollTop).toBe(1_000));
-
-    contentHeight = 1_200;
-    replyTo('session/prompt', { stopReason: 'end_turn' });
-    await screen.findByTestId('acp-chat-post-turn-suggestions');
-    await waitFor(() => expect(transcript.scrollTop).toBe(1_320));
-
-    transcript.scrollTop = 300;
-    fireEvent.scroll(transcript);
-    contentHeight = 1_400;
-    emit({
-      jsonrpc: '2.0',
-      method: 'session/update',
-      params: {
-        update: {
-          sessionUpdate: 'agent_message_chunk',
-          content: { text: ' 위로 읽는 동안 온 둘째 조각' },
+      );
+      await bootSession({ suggestions: [{ kind: 'explain', params: { count: 12 } }] });
+      fireEvent.change(screen.getByRole('textbox'), { target: { value: '긴 답변을 줘' } });
+      fireEvent.click(screen.getByTestId('acp-chat-send'));
+      await waitFor(() => expect(screen.getByText('긴 답변을 줘')).toBeInTheDocument());
+      const transcript = screen.getByTestId('acp-chat-transcript');
+      const box = { content: 400 };
+      Object.defineProperties(transcript, {
+        clientHeight: { configurable: true, get: () => 200 },
+        scrollHeight: {
+          configurable: true,
+          get: () => box.content + (screen.queryByTestId('acp-chat-post-turn-suggestions') ? 120 : 0),
         },
-      },
+        scrollTop: { configurable: true, writable: true, value: 200 },
+      });
+      fireEvent.scroll(transcript);
+      const layout = () => act(() => { for (const callback of observers) callback(); });
+      const chunk = async (text: string, content: number) => {
+        box.content = content;
+        emit({
+          jsonrpc: '2.0',
+          method: 'session/update',
+          params: { update: { sessionUpdate: 'agent_message_chunk', content: { text } } },
+        });
+        await screen.findByText((_, node) => node?.getAttribute('data-acp-entry') === 'agent' && node.textContent?.includes(text.trim()) === true);
+        layout();
+      };
+      return { transcript, box, layout, chunk };
+    }
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
     });
-    await screen.findByText('아주 긴 첫 조각 위로 읽는 동안 온 둘째 조각');
-    expect(transcript.scrollTop).toBe(300);
+
+    it('follows a long answer and the suggestions to the end from the bottom, and stays put once the person scrolls up', async () => {
+      const { transcript, box, layout, chunk } = await streamingTranscript();
+
+      await chunk('아주 긴 첫 조각', 1_000);
+      await waitFor(() => expect(transcript.scrollTop).toBe(800));
+
+      box.content = 1_200;
+      replyTo('session/prompt', { stopReason: 'end_turn' });
+      await screen.findByTestId('acp-chat-post-turn-suggestions');
+      layout();
+      await waitFor(() => expect(transcript.scrollTop).toBe(1_120));
+
+      transcript.scrollTop = 300;
+      fireEvent.scroll(transcript);
+      box.content = 1_400;
+      layout();
+      expect(transcript.scrollTop).toBe(300);
+      expect(await screen.findByTestId('acp-chat-jump-latest')).toHaveTextContent('jumpToLatest');
+    });
+
+    it('stops at the first upward wheel turn, before the next chunk can pull the reader back', async () => {
+      const { transcript, chunk } = await streamingTranscript();
+      await chunk('첫 조각', 1_000);
+      await waitFor(() => expect(transcript.scrollTop).toBe(800));
+
+      fireEvent.wheel(transcript, { deltaY: -4 });
+      transcript.scrollTop = 796;
+      fireEvent.scroll(transcript);
+      await chunk(' 둘째 조각', 1_040);
+      await chunk(' 셋째 조각', 1_080);
+      expect(transcript.scrollTop).toBe(796);
+    });
+
+    it('applies the wheel turn that stops the follow itself, and leaves later turns to the browser', async () => {
+      const { transcript, chunk } = await streamingTranscript();
+      await chunk('첫 조각', 1_000);
+      await waitFor(() => expect(transcript.scrollTop).toBe(800));
+
+      expect(fireEvent.wheel(transcript, { deltaY: -40 }), 'the stopping turn is taken over').toBe(false);
+      expect(transcript.scrollTop).toBe(760);
+      expect(fireEvent.wheel(transcript, { deltaY: -40 }), 'later turns stay native').toBe(true);
+    });
+
+    it('lets go of a touch released on a line that was replaced meanwhile', async () => {
+      const { transcript, chunk } = await streamingTranscript();
+      await chunk('첫 조각', 1_000);
+      await waitFor(() => expect(transcript.scrollTop).toBe(800));
+      const line = document.createElement('span');
+      transcript.appendChild(line);
+      fireEvent.touchStart(line);
+      line.remove();
+      fireEvent.touchEnd(line);
+
+      await chunk(' 둘째 조각', 1_100);
+      await waitFor(() => expect(transcript.scrollTop).toBe(900));
+    });
+
+    it('stops following when focus moves onto a control inside the transcript', async () => {
+      const { transcript, chunk } = await streamingTranscript();
+      await chunk('첫 조각', 1_000);
+      await waitFor(() => expect(transcript.scrollTop).toBe(800));
+      const control = document.createElement('button');
+      transcript.appendChild(control);
+      fireEvent.focusIn(control);
+
+      await chunk(' 둘째 조각', 1_300);
+      expect(transcript.scrollTop).toBe(800);
+      expect(await screen.findByTestId('acp-chat-jump-latest')).toBeInTheDocument();
+    });
+
+    it('returns to the end and follows again when the person presses the door', async () => {
+      const { transcript, chunk } = await streamingTranscript();
+      await chunk('첫 조각', 1_000);
+      await waitFor(() => expect(transcript.scrollTop).toBe(800));
+      transcript.scrollTop = 100;
+      fireEvent.scroll(transcript);
+      await chunk(' 둘째 조각', 1_300);
+      expect(transcript.scrollTop).toBe(100);
+
+      fireEvent.click(await screen.findByTestId('acp-chat-jump-latest'));
+      await waitFor(() => expect(transcript.scrollTop).toBe(1_100));
+      await chunk(' 셋째 조각', 1_500);
+      await waitFor(() => expect(transcript.scrollTop).toBe(1_300));
+      await waitFor(() => expect(screen.queryByTestId('acp-chat-jump-latest')).toBeNull());
+    });
+
+    it('follows again once the person scrolls back down to the end themselves', async () => {
+      const { transcript, chunk } = await streamingTranscript();
+      await chunk('첫 조각', 1_000);
+      await waitFor(() => expect(transcript.scrollTop).toBe(800));
+      transcript.scrollTop = 500;
+      fireEvent.scroll(transcript);
+      await chunk(' 둘째 조각', 1_100);
+      expect(transcript.scrollTop).toBe(500);
+
+      transcript.scrollTop = 900;
+      fireEvent.scroll(transcript);
+      await chunk(' 셋째 조각', 1_300);
+      await waitFor(() => expect(transcript.scrollTop).toBe(1_100));
+    });
   });
 
   it('사용자가 쓰거나 권한을 검토하는 동안은 추천이 물러난다', async () => {

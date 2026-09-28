@@ -115,14 +115,17 @@ export function readToolOutcome(
   if (status === 'failed') return { kind: 'status', status: 'failed' };
   if (status === 'cancelled') return { kind: 'status', status: 'cancelled' };
 
-  const result = fromVaultServer ? resultObject(rawOutput) : null;
-  if (result) {
-    for (const key of COUNT_KEYS) {
-      const value = result[key];
-      if (typeof value === 'number' && Number.isInteger(value) && value >= 0) {
-        return { kind: 'count', count: value };
-      }
-    }
+  const count = fromVaultServer ? outputCount(rawOutput) : null;
+  return count ? { kind: 'count', count: count.value } : { kind: 'status', status: 'done' };
+}
+
+/** A trimmed answer's preview carries this count under the same key. */
+export function outputCount(rawOutput: unknown): { key: (typeof COUNT_KEYS)[number]; value: number } | null {
+  const result = resultObject(rawOutput);
+  if (!result) return null;
+  for (const key of COUNT_KEYS) {
+    const value = result[key];
+    if (typeof value === 'number' && Number.isInteger(value) && value >= 0) return { key, value };
   }
-  return { kind: 'status', status: 'done' };
+  return null;
 }

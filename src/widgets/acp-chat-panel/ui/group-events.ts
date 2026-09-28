@@ -1,4 +1,5 @@
 import type { AcpEvent } from '@/features/acp-session';
+import { stringHash } from '@/shared/lib/string-hash';
 
 type AcpWorkEvent = Extract<AcpEvent, { kind: 'thought' }>;
 
@@ -36,6 +37,21 @@ export type TranscriptItem =
  */
 const REPEAT_THRESHOLD = 3;
 
+/** Length and hash: tells two values apart without holding either (a slice would pin its parent). */
+function fingerprint(value: unknown): string {
+  if (value === undefined || value === null) return '-';
+  let text: string;
+  try {
+    text = JSON.stringify(value) ?? '';
+  } catch {
+    text = String(value);
+  }
+  return `${text.length}:${stringHash(text)}`;
+}
+
+/** An event is replaced whenever its call changes, so a key cached per event never goes stale. */
+const repeatKeys = new WeakMap<AcpToolEvent, string>();
+
 /**
  * **Two calls are the same call only when nothing a reader could act on differs.**
  *
@@ -49,13 +65,17 @@ const REPEAT_THRESHOLD = 3;
  * and the fold unreachable.
  */
 function repeatKey(event: AcpToolEvent): string {
-  return JSON.stringify([
+  const cached = repeatKeys.get(event);
+  if (cached !== undefined) return cached;
+  const key = JSON.stringify([
     event.title,
     event.toolKind,
     event.status,
-    event.rawInput ?? null,
-    event.rawOutput ?? null,
+    fingerprint(event.rawInput),
+    fingerprint(event.rawOutput),
   ]);
+  repeatKeys.set(event, key);
+  return key;
 }
 
 /**
