@@ -37,11 +37,12 @@ export function afterScroll(state: FollowState, box: ScrollBox): FollowState {
     // Up never starts a follow; at the end it is a clamp, which keeps the state.
     return { following: state.following && distance <= END_SLACK_PX, lastTop: top };
   }
-  if (distance <= RETURN_SLACK_PX) return { following: true, lastTop: top };
+  // Only a move down resumes: a stop's own pending scroll event lands where the box already was.
+  if (top > state.lastTop + MOVE_EPSILON_PX && distance <= RETURN_SLACK_PX) return { following: true, lastTop: top };
   return { following: state.following, lastTop: top };
 }
 
-/** Wheel, key or finger asked to go up before the box moved; the next chunk must not win. */
+/** Upward intent arrives before the box moves; the next chunk must not win. */
 export function afterUpwardIntent(state: FollowState, box: ScrollBox): FollowState {
   if (box.scrollTop <= 0 || box.scrollHeight <= box.clientHeight) return state;
   return { ...state, following: false };

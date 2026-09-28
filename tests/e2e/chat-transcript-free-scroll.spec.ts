@@ -107,33 +107,36 @@ async function driftWhile(page: Page, top: number, untilEmitted: number) {
 
 test('a reader who scrolls up mid-answer stays where they stopped, and the door brings them back', async ({ page }) => {
   const harness = await openStreamingDock(page);
-  const chunks = streamedAnswer(480);
+  const chunks = streamedAnswer(640);
   await harness.stream(page, chunks, { perSecond: RATE, endTurn: true });
   await untilStreamed(page, 60);
 
   const box = await page.getByTestId('acp-chat-transcript').boundingBox();
   if (!box) throw new Error('the transcript has no box');
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-  await page.mouse.wheel(0, 20_000);
-  await expect.poll(async () => (await transcriptBox(page)).distance, 'the reader starts at the tail').toBeLessThanOrEqual(48);
-  await untilStreamed(page, 90);
-  expect((await transcriptBox(page)).distance, 'and the tail is being followed').toBeLessThanOrEqual(48);
-
   // One notch up stays within 120px of the end, where the old follow still counted as following.
-  const beforeNudge = await transcriptBox(page);
-  await page.mouse.wheel(0, -60);
-  await waitFrames(page, 2);
-  const nudged = await transcriptBox(page);
-  expect(beforeNudge.top - nudged.top, 'one notch has to take the view up').toBeGreaterThan(40);
-  const nudgeDrift = await driftWhile(page, nudged.top, 150);
-  expect(nudgeDrift, 'a reader one notch above the end must stay there').toBeLessThanOrEqual(1);
+  // Three rounds: the WebKit race that loses a notch does not lose every one.
+  for (let round = 1; round <= 3; round += 1) {
+    await page.mouse.wheel(0, 20_000);
+    await expect.poll(async () => (await transcriptBox(page)).distance, `round ${round} starts at the tail`).toBeLessThanOrEqual(48);
+    const emitted = (await harness.streamed(page)).emitted;
+    await untilStreamed(page, emitted + 30);
+    await expect.poll(async () => (await transcriptBox(page)).distance, `round ${round}: the tail is being followed`).toBeLessThanOrEqual(48);
+    const beforeNudge = await transcriptBox(page);
+    await page.mouse.wheel(0, -60);
+    await waitFrames(page, 2);
+    const nudged = await transcriptBox(page);
+    expect(beforeNudge.top - nudged.top, `round ${round}: one notch has to take the view up`).toBeGreaterThan(40);
+    const nudgeDrift = await driftWhile(page, nudged.top, (await harness.streamed(page)).emitted + 40);
+    expect(nudgeDrift, `round ${round}: a reader one notch above the end must stay there`).toBeLessThanOrEqual(1);
+  }
 
   const before = await transcriptBox(page);
   await flickUp(page);
   const after = await transcriptBox(page);
   expect(before.top - after.top, 'the flick has to take the view up, not down').toBeGreaterThan(200);
 
-  const drift = await driftWhile(page, after.top, 260);
+  const drift = await driftWhile(page, after.top, (await harness.streamed(page)).emitted + 110);
   expect(drift, 'text arriving below must not move a reader who left the end').toBeLessThanOrEqual(1);
 
   const door = page.getByTestId('acp-chat-jump-latest');
@@ -163,38 +166,35 @@ test('scrolling back down to the end resumes the follow without the door', async
   await expect.poll(async () => (await transcriptBox(page)).distance).toBeLessThanOrEqual(2);
 });
 
-/**
- * Longest run of frames spent away from the end while following. A frame samples before layout
- * observers run, so a landing follow reads one-frame runs; a glide reads several.
- */
-async function longestGlide(page: Page, harness: LibraryWorkHarness, question: string) {
+/** Writes short of the end while following: a glide's steps (frames away count arrivals too). */
+async function glideSteps(page: Page, harness: LibraryWorkHarness, question: string) {
   const chat = page.getByTestId('acp-chat-panel');
   await chat.getByRole('textbox').fill(question);
   await page.getByTestId('acp-chat-send').click();
   await expect(chat).toHaveAttribute('data-acp-status', 'thinking');
   await expect.poll(async () => (await transcriptBox(page)).distance).toBeLessThanOrEqual(2);
   await page.getByTestId('acp-chat-transcript').evaluate((list) => {
-    const probe = window as unknown as { __away?: { run: number; longest: number; running: boolean } };
-    probe.__away = { run: 0, longest: 0, running: true };
-    const sample = () => {
-      const away = probe.__away;
-      if (!away?.running) return;
-      away.run = list.scrollHeight - list.clientHeight - list.scrollTop > 2 ? away.run + 1 : 0;
-      away.longest = Math.max(away.longest, away.run);
-      requestAnimationFrame(sample);
-    };
-    requestAnimationFrame(sample);
+    const own = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollTop');
+    if (!own?.get || !own.set) throw new Error('scrollTop is not an accessor here');
+    const probe = window as unknown as { __glideSteps: number };
+    probe.__glideSteps = 0;
+    Object.defineProperty(list, 'scrollTop', {
+      configurable: true,
+      get() { return own.get!.call(this); },
+      set(value: number) {
+        if (value < list.scrollHeight - list.clientHeight - 1) probe.__glideSteps += 1;
+        own.set!.call(this, value);
+      },
+    });
   });
   const chunks = streamedAnswer(90);
   await harness.stream(page, chunks, { perSecond: RATE, endTurn: true });
   await untilStreamed(page, chunks.length);
   await expect(chat).toHaveAttribute('data-acp-status', 'ready');
   await expect.poll(async () => (await transcriptBox(page)).distance).toBeLessThanOrEqual(2);
-  return page.evaluate(() => {
-    const probe = window as unknown as { __away?: { run: number; longest: number; running: boolean } };
-    if (!probe.__away) throw new Error('away probe missing');
-    probe.__away.running = false;
-    return probe.__away.longest;
+  return page.getByTestId('acp-chat-transcript').evaluate((list) => {
+    delete (list as unknown as { scrollTop?: number }).scrollTop;
+    return (window as unknown as { __glideSteps: number }).__glideSteps;
   });
 }
 
@@ -203,10 +203,8 @@ test('under reduced motion the follow lands at the end instead of gliding', asyn
   await harness.stream(page, streamedAnswer(20), { perSecond: RATE, endTurn: true });
   await expect(page.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready');
 
-  const gliding = await longestGlide(page, harness, 'And with motion?');
-  expect(gliding, 'a glide spends several frames on its way to each new line').toBeGreaterThanOrEqual(4);
+  expect(await glideSteps(page, harness, 'And with motion?'), 'with motion the follow glides').toBeGreaterThan(0);
 
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  const landing = await longestGlide(page, harness, 'And without it?');
-  expect(landing, 'reduced motion is back at the end the frame after each arrival').toBeLessThanOrEqual(2);
+  expect(await glideSteps(page, harness, 'And without it?'), 'reduced motion lands on the end in one write').toBe(0);
 });

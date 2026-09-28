@@ -15,6 +15,7 @@ import {
 } from './transcript-follow';
 
 const UPWARD_KEYS = new Set(['ArrowUp', 'PageUp', 'Home']);
+const WHEEL_LINE_PX = 40;
 const FRAME_MS = 1000 / 60;
 const MAX_STEP_MS = 64;
 
@@ -126,22 +127,32 @@ export function useTranscriptFollow({
     };
     const onWheel = (event: WheelEvent) => {
       // A pinch is a ctrl-wheel and zooms.
-      if (event.ctrlKey || event.deltaY >= 0) return;
+      if (event.ctrlKey || event.deltaY >= 0 || !stateRef.current.following) return;
       stopForIntent();
+      if (stateRef.current.following) return;
+      // WebKit scrolls a wheel off the main thread, and a queued follow write lands over it.
+      event.preventDefault();
+      scroller.scrollTop += event.deltaY * (event.deltaMode === 1 ? WHEEL_LINE_PX : event.deltaMode === 2 ? scroller.clientHeight : 1);
     };
     const onKeyDown = (event: KeyboardEvent) => {
       const upward = UPWARD_KEYS.has(event.key) || (event.key === ' ' && event.shiftKey);
       if (!upward || event.defaultPrevented || isEditable(event.target)) return;
       stopForIntent();
     };
-    const onTouchStart = () => {
-      holding = true;
-      halt();
+    const onFocusIn = (event: FocusEvent) => {
+      if (event.target !== scroller && !isEditable(event.target)) stopForIntent();
     };
     const onTouchEnd = () => {
       holding = false;
       syncJump(read());
       run();
+    };
+    const onTouchStart = (event: TouchEvent) => {
+      holding = true;
+      halt();
+      // Text React replaces mid-touch releases the touch on the detached node, off the scroller.
+      event.target?.addEventListener('touchend', onTouchEnd, { once: true, passive: true });
+      event.target?.addEventListener('touchcancel', onTouchEnd, { once: true, passive: true });
     };
     const observer = new ResizeObserver(() => {
       const box = read();
@@ -156,8 +167,9 @@ export function useTranscriptFollow({
     observer.observe(content);
     observer.observe(scroller);
     scroller.addEventListener('scroll', onScroll, { passive: true });
-    scroller.addEventListener('wheel', onWheel, { passive: true });
+    scroller.addEventListener('wheel', onWheel, { passive: false });
     scroller.addEventListener('keydown', onKeyDown);
+    scroller.addEventListener('focusin', onFocusIn);
     scroller.addEventListener('touchstart', onTouchStart, { passive: true });
     scroller.addEventListener('touchend', onTouchEnd, { passive: true });
     scroller.addEventListener('touchcancel', onTouchEnd, { passive: true });
@@ -172,6 +184,7 @@ export function useTranscriptFollow({
       scroller.removeEventListener('scroll', onScroll);
       scroller.removeEventListener('wheel', onWheel);
       scroller.removeEventListener('keydown', onKeyDown);
+      scroller.removeEventListener('focusin', onFocusIn);
       scroller.removeEventListener('touchstart', onTouchStart);
       scroller.removeEventListener('touchend', onTouchEnd);
       scroller.removeEventListener('touchcancel', onTouchEnd);

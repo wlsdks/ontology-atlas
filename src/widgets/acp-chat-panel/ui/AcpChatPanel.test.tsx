@@ -23,7 +23,7 @@ const bridge = vi.hoisted(() => {
     stopped: [] as string[],
     /** So a test can make the adapter process die. */
     exit: null as ((code: number | null) => void) | null,
-    /** Notices from the Rust side (`acp://notice`) — the first-download indicator arrives this way. */
+    /** Notices from the Rust side — the first-download indicator arrives this way. */
     notice: null as ((message: string) => void) | null,
     /** stderr diagnostics — the clues to a corrupt npx cache arrive this way (measured). */
     stderr: null as ((line: string) => void) | null,
@@ -2985,6 +2985,43 @@ describe('완료된 대화의 추천 — 답변에서 다음 행동으로 잇는
       await chunk(' 둘째 조각', 1_040);
       await chunk(' 셋째 조각', 1_080);
       expect(transcript.scrollTop).toBe(796);
+    });
+
+    it('applies the wheel turn that stops the follow itself, and leaves later turns to the browser', async () => {
+      const { transcript, chunk } = await streamingTranscript();
+      await chunk('첫 조각', 1_000);
+      await waitFor(() => expect(transcript.scrollTop).toBe(800));
+
+      expect(fireEvent.wheel(transcript, { deltaY: -40 }), 'the stopping turn is taken over').toBe(false);
+      expect(transcript.scrollTop).toBe(760);
+      expect(fireEvent.wheel(transcript, { deltaY: -40 }), 'later turns stay native').toBe(true);
+    });
+
+    it('lets go of a touch released on a line that was replaced meanwhile', async () => {
+      const { transcript, chunk } = await streamingTranscript();
+      await chunk('첫 조각', 1_000);
+      await waitFor(() => expect(transcript.scrollTop).toBe(800));
+      const line = document.createElement('span');
+      transcript.appendChild(line);
+      fireEvent.touchStart(line);
+      line.remove();
+      fireEvent.touchEnd(line);
+
+      await chunk(' 둘째 조각', 1_100);
+      await waitFor(() => expect(transcript.scrollTop).toBe(900));
+    });
+
+    it('stops following when focus moves onto a control inside the transcript', async () => {
+      const { transcript, chunk } = await streamingTranscript();
+      await chunk('첫 조각', 1_000);
+      await waitFor(() => expect(transcript.scrollTop).toBe(800));
+      const control = document.createElement('button');
+      transcript.appendChild(control);
+      fireEvent.focusIn(control);
+
+      await chunk(' 둘째 조각', 1_300);
+      expect(transcript.scrollTop).toBe(800);
+      expect(await screen.findByTestId('acp-chat-jump-latest')).toBeInTheDocument();
     });
 
     it('returns to the end and follows again when the person presses the door', async () => {

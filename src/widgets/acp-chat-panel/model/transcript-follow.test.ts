@@ -44,6 +44,11 @@ describe('a person scrolling up stops the follow', () => {
     expect(afterUpwardIntent(following(0), box(0)).following).toBe(true);
   });
 
+  it('stays stopped when the follower’s own pending scroll arrives after the stop', () => {
+    const stopped = afterUpwardIntent(following(END - 11), box(END - 11));
+    expect(afterScroll(stopped, box(END - 11)).following).toBe(false);
+  });
+
   it('stays stopped while the person scrolls down short of the end', () => {
     expect(afterScroll(reading(3_000), box(3_900)).following).toBe(false);
   });
