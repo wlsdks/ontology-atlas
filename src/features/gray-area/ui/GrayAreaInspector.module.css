@@ -1,0 +1,6 @@
+@media (width < 64rem) {
+  .inspector {
+    --map-panel-bottom-reserve: calc(var(--topology-mobile-bottom-tab-reserve) + 8px);
+    --map-inspector-max-height: calc(45dvh / var(--topology-ui-scale-factor));
+  }
+}
