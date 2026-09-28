@@ -33,6 +33,7 @@ async function sampleWhile(page: Page, name: string, press: () => Promise<void>)
   await page.evaluate((groupName) => {
     const frames: Frame[] = [];
     (window as unknown as { __morphFrames: Frame[] }).__morphFrames = frames;
+    (window as unknown as { __morphDone: boolean }).__morphDone = false;
     const html = document.documentElement;
     const start = performance.now();
     const tick = (t: number) => {
@@ -47,12 +48,15 @@ async function sampleWhile(page: Page, name: string, press: () => Promise<void>)
         transform: pseudos.length ? group.transform : null,
         duration: pseudos.length ? group.animationDuration : null,
       });
-      if (t - start < 1500) requestAnimationFrame(tick);
+      const seen = frames.some((f) => f.pseudos.length > 0);
+      const over = seen && pseudos.length === 0 && !html.classList.contains("morph-transition");
+      if (over || t - start > 3000) (window as unknown as { __morphDone: boolean }).__morphDone = true;
+      else requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
   }, name);
   await press();
-  await page.waitForTimeout(1600);
+  await page.waitForFunction(() => (window as unknown as { __morphDone: boolean }).__morphDone);
   return page.evaluate(() => (window as unknown as { __morphFrames: Frame[] }).__morphFrames);
 }
 
