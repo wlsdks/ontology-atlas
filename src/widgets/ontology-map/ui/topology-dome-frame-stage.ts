@@ -35,6 +35,7 @@ import {
   ORBIT_SNAP_ARRIVE_RAD,
   orbitSnapTauMs,
   projectDomeCoord,
+  sameDomeLayoutInputs,
   settleDomeRuntimeOffscreen,
   stepDomeDragSpring,
   updateDomeFrame,
@@ -70,6 +71,7 @@ export interface DomeFrameStageSources {
     world: unknown;
     arrangement: string;
     build: DomeModelBuild;
+    settlesOnScreen: boolean;
   } | null>;
   mapArrangementRef: SourceRef<MapArrangement>;
   domeFitPendingRef: SourceRef<boolean>;
@@ -153,129 +155,105 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
       const domeTargetOn = view3dRef.current && realmTransitionRef.current.phase === "idle";
       let dome = domeRuntimeRef.current;
       if (domeTargetOn || (dome !== null && dome.rampClock > 0)) {
+        const shown = domeWorldSourceRef.current;
+        if (
+          dome !== null &&
+          shown !== null &&
+          shown !== world &&
+          dome.model.arrangement === mapArrangementRef.current &&
+          sameDomeLayoutInputs(shown as TopologyWorld, world)
+        ) {
+          domeModelBuildRef.current = null;
+          domeWorldSourceRef.current = world;
+        }
         if (dome === null || domeWorldSourceRef.current !== world) {
-          if (dome === null) {
-            /*
-             * First dome — the model build is consumed in **frame-budget
-             * slices** (see the `domeModelBuildRef` doc-block: the coupled
-             * cloud relaxation used to hitch this one frame by 346–368 ms).
-             * The ownership arrangement has a null `step`, so it still
-             * completes immediately in this frame.
-             */
-            let pending = domeModelBuildRef.current;
-            if (
-              pending === null ||
-              pending.world !== world ||
-              pending.arrangement !== mapArrangementRef.current
-            ) {
-              pending = {
-                world,
-                arrangement: mapArrangementRef.current,
-                build: beginDomeModelBuild(
-                  world.nodes.map((n) => ({ id: n.id, kind: n.kind, x: n.x, y: n.y, parentId: n.parentId })),
-                  /*
-                   * The coupling arrangement takes **every relation** as
-                   * input to its angles — which is precisely how it differs
-                   * from the ownership arrangement, which sees only the
-                   * containment parent.
-                   */
-                  { arrangement: mapArrangementRef.current, edges: world.edges },
-                ),
-              };
-              domeModelBuildRef.current = pending;
-            }
-            if (pending.build.step !== null && !pending.build.step(DOME_BUILD_SLICE_MS)) {
-              // Still relaxing — draw nothing this frame, exactly as the
-              // synchronous hitch used to show a still frame. Count it as
-              // activity so the idle gate does not fold, and resume next
-              // frame.
-              lastActiveMsRef.current = now;
-              return false;
-            }
-            domeModelBuildRef.current = null;
-            dome = createDomeRuntime(pending.build.model);
-            domeRuntimeRef.current = dome;
-            // When the map loads with 3D already on (a saved preference on
-            // revisit) the toggle effect never runs, so the first fit is
-            // scheduled here.
-            if (domeTargetOn) {
-              domeFitPendingRef.current = true;
-              domeFitDurationRef.current = DOME_ASSEMBLE_TOTAL_MS;
-            }
-          } else {
-            /*
-             * The world or the arrangement changed while the dome is on
-             * screen — re-solve layout, keep the pose (yaw/pitch).
-             *
-             * Measured 2026-09-02: this path rebuilt synchronously, so a
-             * dome→cloud switch held one frame for 22 ms at 125 nodes and
-             * **260 ms at 1,000** — the first-entry path above had been sliced
-             * (ledger (85)) but a switch had not. It now consumes the same
-             * sliced build; the previous model keeps drawing meanwhile, and
-             * on completion the coordinates **morph** to the new model
-             * (`beginDomeMorph`) instead of cutting.
-             */
-            let pending = domeModelBuildRef.current;
-            if (
-              pending === null ||
-              pending.world !== world ||
-              pending.arrangement !== mapArrangementRef.current
-            ) {
-              pending = {
-                world,
-                arrangement: mapArrangementRef.current,
-                build: beginDomeModelBuild(
-                  world.nodes.map((n) => ({ id: n.id, kind: n.kind, x: n.x, y: n.y, parentId: n.parentId })),
-                  { arrangement: mapArrangementRef.current, edges: world.edges },
-                ),
-              };
-              domeModelBuildRef.current = pending;
-            }
-            if (pending.build.step !== null && !pending.build.step(DOME_BUILD_SLICE_MS)) {
+          let pending = domeModelBuildRef.current;
+          if (
+            pending !== null &&
+            pending.world !== world &&
+            pending.arrangement === mapArrangementRef.current &&
+            sameDomeLayoutInputs(pending.world as TopologyWorld, world)
+          ) {
+            pending.world = world;
+          }
+          let begun = false;
+          if (
+            pending === null ||
+            pending.world !== world ||
+            pending.arrangement !== mapArrangementRef.current
+          ) {
+            const build = beginDomeModelBuild(
+              world.nodes.map((n) => ({ id: n.id, kind: n.kind, x: n.x, y: n.y, parentId: n.parentId })),
               /*
-               * Still relaxing — **hold the previous picture** this frame and
-               * resume next frame, the same contract as first entry. Redrawing
-               * the old model on every slice frame stacked ~10 ms of draw on the
-               * 28 ms slice (measured 2026-09-02 at 3,000 nodes: p95 52 ms for 31
-               * frames), and nothing on screen was moving anyway — the click on
-               * the picker put the pointer over the canvas, which parks the spin.
-               * Counted as activity so the idle gate does not fold mid-build.
+               * The coupling arrangement takes **every relation** as
+               * input to its angles — which is precisely how it differs
+               * from the ownership arrangement, which sees only the
+               * containment parent.
                */
-              lastActiveMsRef.current = now;
-              return false;
-            } else {
-              domeModelBuildRef.current = null;
-              /*
-               * **The structure stays where it stood** (2026-09-25). A selection opens its
-               * ancestors in the flat layout, which rebuilds the world, and the model's anchor
-               * (`centerX/Y`, `unit`) is derived from that flat layout — so the whole 3D view
-               * slid under the pointer after a click, and the next click landed on a
-               * different node. The selection reframe used to hide the slide by moving the
-               * camera anyway; now that a click only selects, a rebuild in the same
-               * arrangement keeps the anchor it was drawn at.
-               */
-              const arrangementChanged = pending.build.model.arrangement !== dome.model.arrangement;
-              if (!arrangementChanged) {
-                pending.build.model.centerX = dome.model.centerX;
-                pending.build.model.centerY = dome.model.centerY;
-                pending.build.model.unit = dome.model.unit;
+              { arrangement: mapArrangementRef.current, edges: world.edges },
+            );
+            const settlesOnScreen =
+              build.step !== null &&
+              !reducedMotionRef.current &&
+              (dome === null || dome.model.arrangement !== build.model.arrangement || domeWorldSourceRef.current === null);
+            pending = { world, arrangement: mapArrangementRef.current, build, settlesOnScreen };
+            domeModelBuildRef.current = pending;
+            begun = true;
+            if (settlesOnScreen && dome === null) {
+              dome = createDomeRuntime(build.model);
+              domeRuntimeRef.current = dome;
+              if (domeTargetOn) {
+                domeFitPendingRef.current = true;
+                domeFitDurationRef.current = DOME_ASSEMBLE_TOTAL_MS;
               }
-              beginDomeMorph(dome, pending.build.model, now, reducedMotionRef.current ? 0 : DOME_POSE_MS);
+            } else if (settlesOnScreen && dome !== null) {
+              beginDomeMorph(dome, build.model, now, DOME_POSE_MS);
               dome.drawnBounds = null;
               dome.drag = null;
-              domeWorldSourceRef.current = world;
+            }
+          }
+          const complete =
+            pending.build.step === null || (!(begun && pending.settlesOnScreen) && pending.build.step(DOME_BUILD_SLICE_MS));
+          if (!complete) {
+            lastActiveMsRef.current = now;
+            if (dome === null) return true;
+            // Held rather than redrawn: an unchanged model's draw would stack on every slice.
+            if (!pending.settlesOnScreen) return false;
+          } else {
+            domeModelBuildRef.current = null;
+            domeWorldSourceRef.current = world;
+            if (dome === null) {
+              dome = createDomeRuntime(pending.build.model);
+              domeRuntimeRef.current = dome;
+              // When the map loads with 3D already on (a saved preference on
+              // revisit) the toggle effect never runs, so the first fit is
+              // scheduled here.
+              if (domeTargetOn) {
+                domeFitPendingRef.current = true;
+                domeFitDurationRef.current = DOME_ASSEMBLE_TOTAL_MS;
+              }
+            } else {
+              const arrangementChanged = pending.settlesOnScreen || pending.build.model.arrangement !== dome.model.arrangement;
+              if (!pending.settlesOnScreen) {
+                /*
+                 * **The structure stays where it stood.** A selection opens its ancestors in
+                 * the flat layout, which rebuilds the world, and the model's anchor
+                 * (`centerX/Y`, `unit`) is derived from that flat layout, so a rebuild in the
+                 * same arrangement keeps the anchor it was drawn at.
+                 */
+                if (!arrangementChanged) {
+                  pending.build.model.centerX = dome.model.centerX;
+                  pending.build.model.centerY = dome.model.centerY;
+                  pending.build.model.unit = dome.model.unit;
+                }
+                beginDomeMorph(dome, pending.build.model, now, reducedMotionRef.current ? 0 : DOME_POSE_MS);
+                dome.drawnBounds = null;
+                dome.drag = null;
+              }
               /*
-               * Refit only when the new shape does not fit the viewport at the
-               * current zoom (the cloud is wider than the tree, so a switch made
-               * after a selection reframe spilled nodes past the top edge —
-               * measured 2026-09-02). A shape that still fits keeps the zoom the
-               * user set; the pose is never touched either way.
-               *
-               * A camera nobody has moved is not a zoom the user set: it is the
-               * previous arrangement's own fit. Kept for the new shape, it left
-               * Neural 61 px right of the free map's centre after a switch from
-               * Strata at 1512×949 (measured 2026-09-26), so a switch of
-               * arrangement frames the new shape the way entering it does.
+               * Refit only when the new shape does not fit the viewport at the current zoom,
+               * or when the arrangement changed under a camera nobody moved: that camera is
+               * the previous shape's own fit, not a zoom the user set.
                */
               const b = domeWorldBounds(dome.model, dome.yaw, dome.pitch);
               if (b !== null) {
@@ -284,12 +262,11 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
                 const spanY = (b.maxY - b.minY) * 1.3 * scale;
                 if (spanX > width || spanY > height || (arrangementChanged && !userDrivenCameraRef.current)) {
                   domeFitPendingRef.current = true;
-                  domeFitDurationRef.current = DOME_POSE_MS;
+                  domeFitDurationRef.current = Math.max(DOME_POSE_MS, DOME_ASSEMBLE_TOTAL_MS - dome.rampClock);
                 }
               }
             }
           }
-          if (domeModelBuildRef.current === null) domeWorldSourceRef.current = world;
         }
         dome.active = domeTargetOn;
         // Once, right after turning on: fit the camera so the cone fills the

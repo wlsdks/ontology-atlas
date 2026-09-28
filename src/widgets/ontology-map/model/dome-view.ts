@@ -1,3 +1,4 @@
+import { BarnesHutOctree, CollisionHashGrid } from './cloud-spatial-index';
 import { findCouplingGroups } from './coupling-groups';
 
 /**
@@ -905,17 +906,15 @@ const CLOUD_DEPTH_GAMMA = 0.62;
 const CLOUD_CENTERING = 0.0016;
 /** Runaway guard. */
 const CLOUD_MAX_STEP = 9;
-/**
- * Up to this node count the O(n²) repulsion runs in full; above it iterations drop so time
- * stays nearer linear. Barnes-Hut waits for a genuinely large vault to validate against.
- */
+/** Up to this node count every iteration runs; above it iterations drop so time stays nearer linear. */
 const CLOUD_FULL_ITERATION_NODE_CAP = 400;
+const CLOUD_EXACT_MAX_NODES = 400;
+const CLOUD_COLLISION_CELL = 2 * DOME_NODE_R.element * 2.1 * CLOUD_COLLIDE_RADIUS_SCALE;
 
 /**
- * Relaxation is O(n²) × iterations, so it is sliced across frames: `step(budgetMs)` returns
- * true on the frame it completes. Iterations are sequential, so cutting and resuming keeps
- * the operation order and the result bit-identical. The loop creates the dome runtime only
- * after completion.
+ * Relaxation is O(n²) per iteration up to `CLOUD_EXACT_MAX_NODES` and O(n log n) above it,
+ * sliced across frames: `step(budgetMs)` resumes where it paused, so the result stays
+ * bit-identical, and every finished iteration rewrites `coords` normalised for a live picture.
  */
 interface CouplingCloudRelaxer {
   /** True once finished, convergence included. */
@@ -932,15 +931,10 @@ function createCouplingCloudRelaxer(
   if (n < 2) return { step: () => true };
   const index = new Map(ids.map((id, i) => [id, i]));
 
-  const px = new Float64Array(n);
-  const py = new Float64Array(n);
-  const pz = new Float64Array(n);
-  for (let i = 0; i < n; i += 1) {
-    const c = coords.get(ids[i])!;
-    px[i] = c.px;
-    py[i] = c.py;
-    pz[i] = c.pz;
-  }
+  const drawn = ids.map((id) => coords.get(id)!);
+  const px = Float64Array.from(drawn, (c) => c.px);
+  const py = Float64Array.from(drawn, (c) => c.py);
+  const pz = Float64Array.from(drawn, (c) => c.pz);
 
   const links: Array<[number, number]> = [];
   for (const e of edges) {
@@ -950,7 +944,6 @@ function createCouplingCloudRelaxer(
     links.push([a, b]);
   }
 
-  /* `DOME_NODE_R × 2.1` is the dome-unit radius the draw uses. */
   const kindOf = new Map(nodes.map((node) => [node.id, node.kind]));
   const collideR = new Float64Array(n);
   for (let i = 0; i < n; i += 1) {
@@ -983,7 +976,6 @@ function createCouplingCloudRelaxer(
   const anchorY = new Float64Array(domainIds.length);
   const anchorZ = new Float64Array(domainIds.length);
   for (let k = 0; k < domainIds.length; k += 1) {
-    // Evenly spread directions for any count, no randomness.
     const y = domainIds.length === 1 ? 0 : 1 - (2 * (k + 0.5)) / domainIds.length;
     const ring = Math.sqrt(Math.max(0, 1 - y * y));
     const theta = k * Math.PI * (3 - Math.sqrt(5));
@@ -1017,26 +1009,42 @@ function createCouplingCloudRelaxer(
   let iter = 0;
   let settled = false;
   let done = false;
+  let row = 0;
+  let phase: "between" | "repel" | "collide" = "between";
 
-  /*
-   * Resumable inside the pair loop: one iteration can exceed a frame slice on a large vault.
-   * Row `i` is the cursor, and pausing between rows keeps the operation order, so the result
-   * stays bit-identical. Springs, centering and cooling finish in the call that ends the rows.
-   */
-  let pairRow = 0;
-  let inPairLoop = false;
+  const tree = n > CLOUD_EXACT_MAX_NODES;
+  const octree = new BarnesHutOctree();
+  const allPoints = Int32Array.from(ids, (_, i) => i);
+  const groupStart = new Int32Array(groupCount + 1);
+  for (let g = 0; g < groupCount; g += 1) groupStart[g + 1] = groupStart[g] + groupSize[g];
+  const byGroup = new Int32Array(n);
+  const slotOf = new Int32Array(n);
+  const nextSlot = groupStart.slice(0, groupCount);
+  for (let i = 0; i < n; i += 1) {
+    slotOf[i] = nextSlot[groups[i]]++;
+    byGroup[slotOf[i]] = i;
+  }
+  const groupTrees: Array<BarnesHutOctree | undefined> = [];
+  for (let g = 0; tree && g < groupCount; g += 1) {
+    if (groupSize[g] > CLOUD_EXACT_MAX_NODES) groupTrees[g] = new BarnesHutOctree();
+  }
+  const grid = new CollisionHashGrid();
+  const pushed = new Float64Array(3);
+  const localShare = CLOUD_REPULSION * (1 - CLOUD_LOCAL_REPULSION);
+
   const beginIteration = (): void => {
     fx.fill(0);
     fy.fill(0);
     fz.fill(0);
-    pairRow = 0;
-    inPairLoop = true;
+    row = 0;
+    phase = "repel";
+    if (!tree) return;
+    octree.build(px, py, pz, allPoints, n);
+    groupTrees.forEach((own, g) => own?.build(px, py, pz, byGroup.subarray(groupStart[g]), groupSize[g]));
   };
   const runPairRows = (deadlineMs: number): boolean => {
-
-    /* Repulsion and collision share one pair loop, since both need the same deltas. */
-    while (pairRow < n) {
-      const i = pairRow;
+    while (row < n) {
+      const i = row;
       for (let j = i + 1; j < n; j += 1) {
         let dx = px[i] - px[j];
         let dy = py[i] - py[j];
@@ -1063,7 +1071,6 @@ function createCouplingCloudRelaxer(
         fy[j] -= uy;
         fz[j] -= uz;
 
-        // Collision pushes positions directly until the discs do not overlap.
         const want = collideR[i] + collideR[j];
         if (d < want) {
           const push = ((want - d) / d) * CLOUD_COLLIDE_RELAX * 0.5;
@@ -1075,11 +1082,60 @@ function createCouplingCloudRelaxer(
           pz[j] -= dz * push;
         }
       }
-      pairRow += 1;
-      // Checking the clock every 16 rows keeps the overshoot under a millisecond at any size.
-      if ((pairRow & 15) === 0 && performance.now() >= deadlineMs) return false;
+      row += 1;
+      if ((row & 15) === 0 && performance.now() >= deadlineMs) return false;
     }
-    inPairLoop = false;
+    return true;
+  };
+  const runTreeRows = (deadlineMs: number): boolean => {
+    while (row < n) {
+      const i = row;
+      pushed.fill(0);
+      octree.accumulate(i, CLOUD_REPULSION, pushed);
+      fx[i] += pushed[0];
+      fy[i] += pushed[1];
+      fz[i] += pushed[2];
+      const group = groups[i];
+      const own = groupTrees[group];
+      if (own !== undefined) {
+        pushed.fill(0);
+        own.accumulate(i, localShare, pushed);
+        fx[i] -= pushed[0];
+        fy[i] -= pushed[1];
+        fz[i] -= pushed[2];
+      } else {
+        for (let k = slotOf[i] + 1; k < groupStart[group + 1]; k += 1) {
+          const j = byGroup[k];
+          let dx = px[i] - px[j];
+          let dy = py[i] - py[j];
+          let dz = pz[i] - pz[j];
+          let d2 = dx * dx + dy * dy + dz * dz;
+          if (d2 < 1e-6) {
+            dx = (i - j) * 1e-3;
+            dy = 1e-3;
+            dz = (j - i) * 1e-3;
+            d2 = dx * dx + dy * dy + dz * dz;
+          }
+          const inv = localShare / (d2 * Math.sqrt(d2));
+          fx[i] -= dx * inv;
+          fy[i] -= dy * inv;
+          fz[i] -= dz * inv;
+          fx[j] += dx * inv;
+          fy[j] += dy * inv;
+          fz[j] += dz * inv;
+        }
+      }
+      row += 1;
+      if ((row & 15) === 0 && performance.now() >= deadlineMs) return false;
+    }
+    return true;
+  };
+  const runCollideRows = (deadlineMs: number): boolean => {
+    while (row < n) {
+      grid.separate(row, px, py, pz, collideR, CLOUD_COLLIDE_RELAX);
+      row += 1;
+      if ((row & 63) === 0 && performance.now() >= deadlineMs) return false;
+    }
     return true;
   };
   const finishIteration = (): void => {
@@ -1114,7 +1170,6 @@ function createCouplingCloudRelaxer(
       fz[i] += (groupZ[group] / size - pz[i]) * CLOUD_COHESION;
     }
 
-    // Domains to their anchors, members to their domain (see `domainIndexOf`).
     for (let k = 0; k < domainNodeIndex.length; k += 1) {
       const d = domainNodeIndex[k];
       fx[d] += (anchorX[k] - px[d]) * CLOUD_DOMAIN_ANCHOR_PULL;
@@ -1150,13 +1205,17 @@ function createCouplingCloudRelaxer(
     }
     if (maxStep < settleEpsilon) settled = true;
     iter += 1;
+    phase = "between";
   };
 
+  let written = -1;
   /*
    * Centre the mass on the origin: rotation turns about the origin, so an off-centre cloud
    * swings off screen under a small drag.
    */
-  const finalize = (): void => {
+  const writeNormalized = (): void => {
+    if (written === iter) return;
+    written = iter;
     let mx = 0;
     let my = 0;
     let mz = 0;
@@ -1177,28 +1236,33 @@ function createCouplingCloudRelaxer(
     }
     const norm = maxR > 1e-6 ? DOME_FIT_RADIUS / maxR : 1;
     for (let i = 0; i < n; i += 1) {
-      const c = coords.get(ids[i])!;
-      c.px = (px[i] - mx) * norm;
-      c.py = (py[i] - my) * norm;
-      c.pz = (pz[i] - mz) * norm;
+      drawn[i].px = (px[i] - mx) * norm;
+      drawn[i].py = (py[i] - my) * norm;
+      drawn[i].pz = (pz[i] - mz) * norm;
     }
   };
+  writeNormalized();
 
   return {
     step(budgetMs: number): boolean {
       if (done) return true;
-      // The next call resumes the same iteration where it paused.
       const deadline = performance.now() + budgetMs;
       while (iter < iterations && !settled) {
-        if (!inPairLoop) beginIteration();
-        if (!runPairRows(deadline)) return false;
-        finishIteration();
+        if (phase === "between") beginIteration();
+        if (phase === "repel") {
+          if (!(tree ? runTreeRows(deadline) : runPairRows(deadline))) break;
+          if (tree) {
+            grid.build(px, py, pz, n, CLOUD_COLLISION_CELL);
+            row = 0;
+            phase = "collide";
+          }
+        }
+        if (phase === "collide" && !runCollideRows(deadline)) break;
+        if (phase !== "between") finishIteration();
         if (performance.now() >= deadline) break;
       }
-      if (iter >= iterations || settled) {
-        finalize();
-        done = true;
-      }
+      done = iter >= iterations || settled;
+      writeNormalized();
       return done;
     },
   };
@@ -1211,15 +1275,15 @@ function createCouplingCloudRelaxer(
 export const DOME_BUILD_SLICE_MS = 28;
 
 export interface DomeModelBuild {
-  /** Valid only after `step` has returned true. */
+  /** Drawable from the start: a coupling build rewrites its coords after every finished iteration. */
   model: DomeModel;
   /** null means already complete. */
   step: ((budgetMs: number) => boolean) | null;
 }
 
 /**
- * Builds the ownership seed at once and hands only the coupling cloud's O(n²) relaxation
- * to `step` (see `CouplingCloudRelaxer`).
+ * Builds the ownership seed at once and hands only the coupling cloud's relaxation to `step`
+ * (see `CouplingCloudRelaxer`).
  */
 export function beginDomeModelBuild(
   nodes: readonly DomeInputNode[],
@@ -1270,6 +1334,22 @@ export function beginDomeModelBuild(
     return { model, step: (budgetMs: number) => relaxer.step(budgetMs) };
   }
   return { model, step: null };
+}
+
+export function sameDomeLayoutInputs(
+  a: { nodes: readonly { id: string; kind: string; parentId: string | null }[]; edges: readonly { sourceId: string; targetId: string }[] },
+  b: { nodes: readonly { id: string; kind: string; parentId: string | null }[]; edges: readonly { sourceId: string; targetId: string }[] },
+): boolean {
+  if (a.nodes.length !== b.nodes.length || a.edges.length !== b.edges.length) return false;
+  for (let i = 0; i < a.nodes.length; i += 1) {
+    const x = a.nodes[i];
+    const y = b.nodes[i];
+    if (x.id !== y.id || x.kind !== y.kind || x.parentId !== y.parentId) return false;
+  }
+  for (let i = 0; i < a.edges.length; i += 1) {
+    if (a.edges[i].sourceId !== b.edges[i].sourceId || a.edges[i].targetId !== b.edges[i].targetId) return false;
+  }
+  return true;
 }
 
 export function buildDomeModel(

@@ -1129,6 +1129,47 @@ describe("cloud relaxation slices give the same bytes when cut inside the pair l
   });
 });
 
+describe("the cloud past the exact pair ceiling", () => {
+  const nodes: DomeInputNode[] = [
+    { id: "p", kind: "project", x: 0, y: 0, parentId: null },
+    ...Array.from({ length: 12 }, (_, i) => ({ id: `d${i}`, kind: "domain" as const, x: i, y: 0, parentId: "p" })),
+    ...Array.from({ length: 150 }, (_, i) => ({ id: `c${i}`, kind: "capability" as const, x: i, y: 1, parentId: `d${i % 12}` })),
+    ...Array.from({ length: 800 }, (_, i) => ({ id: `e${i}`, kind: "element" as const, x: i, y: 2, parentId: `c${(i * 37) % 150}` })),
+  ];
+  const edges = [
+    ...nodes.flatMap((node) => (node.parentId === null ? [] : [{ sourceId: node.parentId, targetId: node.id }])),
+    ...Array.from({ length: 120 }, (_, i) => ({ sourceId: `e${i * 6}`, targetId: `c${(i * 53) % 150}` })),
+  ];
+
+  it("gives the same bytes on every run and however finely it is sliced", () => {
+    const whole = buildDomeModel(nodes, { arrangement: "coupling", edges });
+    const again = buildDomeModel(nodes, { arrangement: "coupling", edges });
+    const build = beginDomeModelBuild(nodes, { arrangement: "coupling", edges });
+    let calls = 1;
+    while (!build.step!(0.5)) calls += 1;
+    expect(calls).toBeGreaterThan(10);
+    expect(whole.coords.size).toBe(nodes.length);
+    for (const [id, coord] of whole.coords) {
+      expect(again.coords.get(id)).toEqual(coord);
+      expect(build.model.coords.get(id)).toEqual(coord);
+    }
+  });
+
+  it("can be drawn before its first step and moves toward the final cloud as iterations finish", () => {
+    const build = beginDomeModelBuild(nodes, { arrangement: "coupling", edges });
+    const seed = new Map([...build.model.coords].map(([id, coord]) => [id, { ...coord }]));
+    expect(seed.size).toBe(nodes.length);
+    expect(Math.max(...[...seed.values()].map((c) => Math.hypot(c.px, c.py, c.pz)))).toBeCloseTo(DOME_FIT_RADIUS, 6);
+    const moved = () => [...build.model.coords].some(([id, coord]) => coord.px !== seed.get(id)!.px);
+    let done = false;
+    while (!done && !moved()) done = build.step!(0.5);
+    expect(done).toBe(false);
+    while (!build.step!(Number.POSITIVE_INFINITY));
+    const final = buildDomeModel(nodes, { arrangement: "coupling", edges });
+    for (const [id, coord] of final.coords) expect(build.model.coords.get(id)).toEqual(coord);
+  });
+});
+
 describe("Strata — four labelled planes, and drops that cannot cross", () => {
   const tree: DomeInputNode[] = [
     { id: "p", kind: "project", x: 0, y: 0, parentId: null },
