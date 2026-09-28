@@ -19,5 +19,4 @@ export const rawSourceKindIssues = validate.rawSourceKindIssues;
 const meaningFindings = await loadMcpModule('meaning-findings.mjs');
 export const folderOnlyEvidenceFinding = meaningFindings.folderOnlyEvidenceFinding;
 export const dependencyWitnessFinding = meaningFindings.dependencyWitnessFinding;
-export const createDependencyWitnessReads = meaningFindings.createDependencyWitnessReads;
 export const starterExampleFindings = meaningFindings.starterExampleFindings;

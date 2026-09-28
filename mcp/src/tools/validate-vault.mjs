@@ -23,7 +23,6 @@ import {
   validateVaultDocument,
 } from '../validate.mjs';
 import {
-  createDependencyWitnessReads,
   dependencyWitnessFinding,
   folderOnlyEvidenceFinding,
   starterExampleFindings,
@@ -341,7 +340,7 @@ function findDependencyWitnessIssues(docs, repoRoot) {
   if (!grounded) return [];
   const root = repoRoot ? assertScanRootAllowed(repoRoot, 'repoRoot') : REPO_ROOT;
   const resolveTargetPath = evidencePathIndex(docs);
-  const fileReads = createDependencyWitnessReads();
+  const moduleNamesByPath = new Map();
   const issues = [];
   for (const doc of docs) {
     const kind = typeof doc?.frontmatter?.kind === 'string' ? doc.frontmatter.kind.trim() : '';
@@ -351,7 +350,7 @@ function findDependencyWitnessIssues(docs, repoRoot) {
       frontmatter: doc.frontmatter,
       repoRoot: root,
       resolveTargetPath,
-      fileReads,
+      moduleNamesByPath,
     })) {
       issues.push({
         slug: doc.slug,

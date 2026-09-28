@@ -475,13 +475,12 @@ const SPECIFIER_PATTERNS = [
 ];
 const GO_IMPORT_BLOCK = /^[ \t]*import\s*\(((?:(?!\n[ \t]*import\b)[^)])*)\)/gm;
 const WITNESS_TEXT_MAX_BYTES = 2 * 1024 * 1024;
-const WITNESS_TEXT_CACHE_BYTES = 16 * 1024 * 1024;
 
 function readWitnessText(absolute) {
   try {
     const stat = statSync(absolute);
     if (!stat.isFile()) return null;
-    return stat.size > WITNESS_TEXT_MAX_BYTES ? { tooLarge: true } : { text: readFileSync(absolute, 'utf-8'), bytes: stat.size };
+    return stat.size > WITNESS_TEXT_MAX_BYTES ? { tooLarge: true } : { text: readFileSync(absolute, 'utf-8') };
   } catch {
     return null;
   }
@@ -578,21 +577,6 @@ function relationNoteText(frontmatter, target) {
   return '';
 }
 
-export const createDependencyWitnessReads = () => ({ recent: new Map(), textBytes: 0, moduleNames: new Map() });
-
-function cachedWitnessRead(fileReads, absolute) {
-  const { recent } = fileReads;
-  const read = recent.has(absolute) ? recent.get(absolute) : readWitnessText(absolute);
-  if (!recent.delete(absolute)) fileReads.textBytes += read?.bytes ?? 0;
-  recent.set(absolute, read);
-  for (const [oldest, evicted] of recent) {
-    if (fileReads.textBytes <= WITNESS_TEXT_CACHE_BYTES) break;
-    recent.delete(oldest);
-    fileReads.textBytes -= evicted?.bytes ?? 0;
-  }
-  return read;
-}
-
 /**
  * A declared dependency its file never mentions; `impact` keeps
  * answering `sourceBacked: false` for every declared edge, and this names the rows behind
@@ -618,7 +602,7 @@ export function dependencyWitnessFinding({
   previousFrontmatter,
   repoRoot,
   resolveTargetPath,
-  fileReads = createDependencyWitnessReads(),
+  moduleNamesByPath = new Map(),
 }) {
   if (!repoRoot || typeof resolveTargetPath !== 'function') return [];
   const source = insideRepo(repoRoot, frontmatter?.path);
@@ -626,7 +610,7 @@ export function dependencyWitnessFinding({
   const previous = previousFrontmatter ? declaredDependencies(previousFrontmatter) : new Set();
   const targets = [...declaredDependencies(frontmatter)].filter((target) => !previous.has(target));
   if (targets.length === 0) return [];
-  const sourceRead = cachedWitnessRead(fileReads, source.absolute);
+  const sourceRead = readWitnessText(source.absolute);
   if (sourceRead === null) return [];
   const readCache = new Map([[source.path, { ...sourceRead, path: source.path }]]);
   /**
@@ -644,7 +628,7 @@ export function dependencyWitnessFinding({
     for (const base of ['', ...sourceAncestors]) {
       const resolved = insideRepo(repoRoot, base ? `${base}/${path}` : path);
       if (!resolved) continue;
-      const found = cachedWitnessRead(fileReads, resolved.absolute);
+      const found = readWitnessText(resolved.absolute);
       read = found && { ...found, path: resolved.path };
       if (read) break;
     }
@@ -667,7 +651,7 @@ export function dependencyWitnessFinding({
       const read = readCandidate(token);
       if (read) reads.push(read);
     }
-    if (reads.some((read) => read.text !== undefined && textWitnesses(read, resolved.path, witnessNames, fileReads.moduleNames))) continue;
+    if (reads.some((read) => read.text !== undefined && textWitnesses(read, resolved.path, witnessNames, moduleNamesByPath))) continue;
     const unread = [...new Set(reads.filter((read) => read.tooLarge).map((read) => read.path))];
     findings.push({
       code: unread.length > 0 ? 'dependency-unjudged' : 'dependency-unwitnessed',
