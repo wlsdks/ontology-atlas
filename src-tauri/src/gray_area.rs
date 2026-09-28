@@ -399,8 +399,8 @@ pub fn preview_gray_area_scope(vault_path: String, project_slug: String) -> Resu
     )
 }
 
-#[cfg(test)]
-mod tests {
+#[cfg(all(test, unix))]
+mod unix_tests {
     use super::*;
     use crate::gray_area_scope::observe_source;
     use std::fs;
@@ -657,5 +657,85 @@ mod tests {
         fs::remove_file(&sidecar).unwrap();
         std::os::unix::fs::symlink(outside, sidecar).unwrap();
         assert!(resolve_binding(&f.vault, "project").is_err());
+    }
+}
+
+#[cfg(all(test, not(unix)))]
+mod unsupported_platform_tests {
+    use super::*;
+    use std::fs;
+
+    #[test]
+    fn existing_folders_do_not_enable_the_unsupported_reader_or_change_files() {
+        let root = std::env::temp_dir().join(format!(
+            "atlas-gray-unsupported-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::create_dir(&root).unwrap();
+        let root = crate::canonical_root(root.to_str().unwrap()).unwrap();
+        fs::create_dir(root.join(".ontology-atlas")).unwrap();
+        let source = b"export const untouched = true;\n";
+        fs::write(root.join("source.ts"), source).unwrap();
+        let source_id = crate::source_digest(&[b"folder", root.to_string_lossy().as_bytes()]);
+        let binding = json!({"projectSlug":"project","sourceId":source_id,"rootPath":root,"kind":"folder","boundAt":"2026-09-28","receipt":{"projectSlug":"project","sourceId":source_id,"sourceKind":"folder"}});
+        let sidecar = json!({"contractVersion":1,"bindings":[binding]}).to_string();
+        fs::write(root.join(".ontology-atlas/project-sources.json"), &sidecar).unwrap();
+        let basis = EvidenceBasis {
+            project_slug: "project".into(),
+            selected_uids: vec!["node".into()],
+            source_id,
+            source_fingerprint: "unmeasured".into(),
+            source_roots: vec![".".into()],
+            graph_digest: "unmeasured".into(),
+            body_digest: "unmeasured".into(),
+            binding_digest: "unmeasured".into(),
+        };
+        let path = root.to_string_lossy().into_owned();
+        assert_eq!(
+            preview_gray_area_scope(path.clone(), "project".into())
+                .err()
+                .as_deref(),
+            Some("unsupported_platform")
+        );
+        assert_eq!(
+            read_gray_area_evidence(
+                path.clone(),
+                "project".into(),
+                vec!["node".into()],
+                "unmeasured".into()
+            )
+            .err()
+            .as_deref(),
+            Some("unsupported_platform")
+        );
+        assert_eq!(
+            check_gray_area_evidence(path, basis, vec![])
+                .err()
+                .as_deref(),
+            Some("unsupported_platform")
+        );
+        assert_eq!(
+            read_text(&root, Path::new("source.ts")).err().as_deref(),
+            Some("unsupported_platform")
+        );
+        assert_eq!(
+            observe_scoped_source(&root, &[".".into()]).err().as_deref(),
+            Some("unsupported_platform")
+        );
+        assert_eq!(fs::read(root.join("source.ts")).unwrap(), source);
+        assert_eq!(
+            fs::read_to_string(root.join(".ontology-atlas/project-sources.json")).unwrap(),
+            sidecar
+        );
+        assert_eq!(fs::read_dir(&root).unwrap().count(), 2);
+        assert_eq!(
+            fs::read_dir(root.join(".ontology-atlas")).unwrap().count(),
+            1
+        );
+        fs::remove_dir_all(root).unwrap();
     }
 }
