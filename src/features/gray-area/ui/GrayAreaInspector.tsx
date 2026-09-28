@@ -48,15 +48,20 @@ export function GrayAreaInspector({ open, vaultPath, selection, onClose, onFocus
   useEffect(() => {
     if (!open) return;
     sequence.current+=1;
-    setSourceSelection(null);
     closeRef.current?.focus();
     let cancelled = false;
     const read = async () => {
       try {
         const value = vaultPath ? await previewGrayAreaScope(vaultPath,selection.projectSlug) : null;
-        if (!cancelled) setPreview({key:requestKey,value,error:null});
+        if (!cancelled) {
+          setSourceSelection(null);
+          setPreview({key:requestKey,value,error:null});
+        }
       } catch (error) {
-        if (!cancelled) setPreview({key:requestKey,value:null,error});
+        if (!cancelled) {
+          setSourceSelection(null);
+          setPreview({key:requestKey,value:null,error});
+        }
       }
     };
     void read();

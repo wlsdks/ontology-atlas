@@ -629,7 +629,7 @@
      * **actually growing** (gaining 52px from top, giving 24px to bottom).
      *
      * `<lg` has no relevance — positioner in that range centers via
-     * `top-[72px] inset-x-3` using this token, and bottom reservation remains owned by BottomTabBar override (below `@media (max-width: 1023px)`).
+     * `top-[72px] inset-x-3` using this token, and bottom reservation remains owned by BottomTabBar override (below `@media (width < 64rem)`).
      */
     --topology-node-popover-inset: clamp(24px, 2.1vw, 44px);
     --topology-node-popover-top: var(--topology-node-popover-inset);
