@@ -1,2 +1,25 @@
 @layer base {
+  .motion-indicator {
+    position: absolute;
+    left: 0;
+    top: 0;
+    pointer-events: none;
+    transform-origin: 0 0;
+  }
+
+  .motion-indicator[data-selection-indicator="underline-x"] {
+    translate: 0 -100%;
+  }
+
+  .motion-indicator[data-animated="true"] {
+    transition-property: transform, width, height;
+    transition-duration: var(--motion-base);
+    transition-timing-function: var(--motion-ease);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .motion-indicator[data-animated="true"] {
+      transition: none;
+    }
+  }
 }
