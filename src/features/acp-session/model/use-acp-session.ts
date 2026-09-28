@@ -151,29 +151,11 @@ export interface UseAcpSessionOptions {
    * agent answered in prose, and "Save answer" refused the answer as `no-cited-fact`.
    */
   systemPromptAppendix?: string | null;
-  /**
-   * Whether opening this panel **continues where the folder left off** instead of starting a
-   * blank conversation.
-   *
-   * Owner, installed app, 2026-09-08: *"every time I press X and go back into the agent it is a
-   * new conversation — I cannot pick the one I was having and carry on. The previous, latest
-   * conversation should always open."* The pieces were already here (`session/list`,
-   * `session/load`, the history door); nothing consulted them until a person pressed the history
-   * button, and the history button only exists once a session has already opened — so the first
-   * screen a returning person saw was always empty.
-   *
-   * With this on, the first `start()` of this panel asks the adapter for this folder's
-   * conversations and resumes the newest one. Failure is not fatal in either direction: an
-   * adapter with no `session/list`, a folder with no past conversation, or a `session/load` that
-   * refuses all fall through to a new conversation, which is what happened before this option
-   * existed. Nothing leaves the machine — the list is the adapter's own, for this folder only
-   * (`keepSessionsInFolder`).
-   *
-   * A person who presses **New conversation** has answered the question themselves, so this stops
-   * applying for the rest of that panel's life.
-   */
   resumeLatest?: boolean;
+  putAway?: boolean;
 }
+
+const PUT_AWAY_IDLE_STOP_MS = 10 * 60 * 1000;
 
 export interface AcpTurnStart {
   runtimeId: string;
@@ -434,6 +416,7 @@ export function useAcpSession({
   autoDecide,
   systemPromptAppendix = null,
   resumeLatest = false,
+  putAway = false,
 }: UseAcpSessionOptions) {
   /*
    * The interface language, handed to the agent so a button-started turn has one to answer in.
@@ -534,6 +517,8 @@ export function useAcpSession({
   const sessionIdRef = useRef<string | null>(null);
   /** The conversation the next `start()` resumes. Used once, then cleared. */
   const resumeIdRef = useRef<string | null>(null);
+  const idleStoppedSessionIdRef = useRef<string | null>(null);
+  const openAsksRef = useRef(0);
   /**
    * Has the person asked for a blank conversation? Then `resumeLatest` stops applying.
    *
@@ -912,8 +897,10 @@ export function useAcpSession({
         },
       });
     });
-    const result = askChainRef.current.then(present, present);
-    // The chain must survive any outcome, or one settled question blocks every later one.
+    openAsksRef.current += 1;
+    const result = askChainRef.current.then(present, present).finally(() => {
+      openAsksRef.current -= 1;
+    });
     askChainRef.current = result.catch(() => null);
     return result;
   }, [approvalSettleMs, emitWorkReceipt, push, runtimeId, setApprovedOntologyWriteTracked, vaultRoot]);
@@ -1160,11 +1147,6 @@ export function useAcpSession({
           resumeIdRef.current = latestSession(ordered)?.sessionId ?? null;
         }
       }
-      /*
-       * With a conversation to resume, try that first. On failure it **falls through to a new
-       * conversation** — being unable to open a past conversation must not become the reason a
-       * conversation cannot be opened at all (that file is not ours and can disappear at any time).
-       */
       let session: { sessionId: string; choices: AcpSessionChoices } | null = null;
       if (resumeIdRef.current) {
         try {
@@ -1172,7 +1154,6 @@ export function useAcpSession({
             sessionId: resumeIdRef.current,
             cwd: vaultRoot,
             mcpServers,
-            // Resuming does not change the rules — same instructions as a new conversation.
             appendSystemPrompt: withAppendix(vaultHandoffPrompt(hasVaultMcp, locale), systemPromptAppendixRef.current),
           });
         } catch {
@@ -1185,6 +1166,11 @@ export function useAcpSession({
         mcpServers,
         appendSystemPrompt: withAppendix(vaultHandoffPrompt(hasVaultMcp, locale), systemPromptAppendixRef.current),
       });
+      if (idleStoppedSessionIdRef.current !== null && idleStoppedSessionIdRef.current !== session.sessionId) {
+        updateEvents(() => []);
+        latestUserRequestRef.current = null;
+      }
+      idleStoppedSessionIdRef.current = null;
       sessionIdRef.current = session.sessionId;
 
       /*
@@ -1299,6 +1285,7 @@ export function useAcpSession({
     runtimeId,
     setApprovedOntologyWriteTracked,
     setStatusTracked,
+    updateEvents,
     vaultRoot,
   ]);
 
@@ -1466,6 +1453,21 @@ export function useAcpSession({
     if (acpSessionId) await stopAcpSession(acpSessionId);
     setStatusTracked('idle');
   }, [emitWorkReceipt, finishTurn, setApprovedOntologyWriteTracked, setStatusTracked]);
+
+  const stopIdleChain = useCallback(async () => {
+    const settled = statusRef.current === 'ready' || statusRef.current === 'error';
+    if (!settled || !acpSessionRef.current || activeTurnRef.current || openAsksRef.current > 0) return;
+    idleStoppedSessionIdRef.current = sessionIdRef.current;
+    resumeIdRef.current = sessionIdRef.current;
+    await stop();
+  }, [stop]);
+
+  const idleWhilePutAway = putAway && (status === 'ready' || status === 'error') && pending === null;
+  useEffect(() => {
+    if (!idleWhilePutAway) return;
+    const timer = window.setTimeout(() => void stopIdleChain(), PUT_AWAY_IDLE_STOP_MS);
+    return () => window.clearTimeout(timer);
+  }, [idleWhilePutAway, stopIdleChain]);
 
   /*
    * Hold the latest in a ref so `switchSession` can call it without a circular dependency.
