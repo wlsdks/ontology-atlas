@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 
 import { resolveNodeAgentTarget } from "@/entities/knowledge-graph";
+import { requestOntologyMapFrame } from "@/widgets/ontology-map";
 import { copyText } from "@/shared/lib/copy-text";
 import { COPY_FEEDBACK_RESET_MS } from "@/shared/lib/use-copy-feedback";
 
@@ -162,6 +163,7 @@ export function useFootprintTrail({
   const footprintBrushNodeIdRef = useRef<string | null>(null);
   const handleFootprintLens = useCallback((active: boolean) => {
     footprintLensActiveRef.current = active;
+    requestOntologyMapFrame();
     // The lens also dims the DOM panel that declares `data-attention-role="supporting-detail"`,
     // which otherwise takes the eye from the map. A dataset attribute costs no render; hover or
     // focus brings the panel back.
@@ -172,6 +174,7 @@ export function useFootprintTrail({
   }, []);
   const handleFootprintBrush = useCallback((id: string | null) => {
     footprintBrushNodeIdRef.current = id;
+    requestOntologyMapFrame();
   }, []);
   return {
     setFootprintTrail,

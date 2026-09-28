@@ -53,6 +53,7 @@ export interface TopologyViewportLifecycleSources {
     reframeViewportRef: SourceRef<
       ((motion: ViewportReframeMotion) => boolean) | null
     >;
+    wakeFrameLoopRef: SourceRef<() => void>;
   };
   trySnapInitialCamera: (tokens: OntologyMapTokens) => void;
   rescueCameraIfEverythingOffscreen: (tokens: OntologyMapTokens) => void;
@@ -86,6 +87,7 @@ export function useTopologyViewportLifecycle({
     commitViewportSizeRef,
     rebuildViewportLayersRef,
     reframeViewportRef,
+    wakeFrameLoopRef,
   } = frameBridge;
 
   useEffect(() => {
@@ -133,16 +135,17 @@ export function useTopologyViewportLifecycle({
         left: rect.left + (rect.width - width) / 2,
         top: rect.top + (rect.height - height) / 2,
       };
+      wakeFrameLoopRef.current();
     };
 
     /** The cheap half, called from inside a frame: backing size and viewport facts only. */
     const commitViewportSize = () => {
-      // The top and bottom lanes follow the viewport height; read them before
-      // the fit and the label cull consume the size that just changed.
-      refreshIndexDependentTokens();
       const pending = pendingViewportRef.current;
       if (!pending) return false;
       pendingViewportRef.current = null;
+      // The top and bottom lanes follow the viewport height; read them before
+      // the fit and the label cull consume the size that just changed.
+      refreshIndexDependentTokens();
       const backingWidth = Math.max(1, Math.round(pending.width * pending.dpr));
       const backingHeight = Math.max(1, Math.round(pending.height * pending.dpr));
       const sizeChanged = canvas.width !== backingWidth || canvas.height !== backingHeight;
@@ -295,5 +298,6 @@ export function useTopologyViewportLifecycle({
     viewportCameraTrackedRef,
     viewportRebuildPendingRef,
     viewportRef,
+    wakeFrameLoopRef,
   ]);
 }

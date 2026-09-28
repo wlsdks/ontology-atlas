@@ -81,7 +81,8 @@ ingress paths converge on the same shape. The dialog never says "ontology".
   of the project position and spring-settle into place (reduced-motion
   arrives instantly).
 - **Idle frame gate** — the canvas stops physics+paint after 1.2s of true
-  idle (rAF stays alive; any state change resumes next frame).
+  idle and then schedules no frames; input, new data, a resize, a theme or
+  motion-preference change, and `requestOntologyMapFrame()` wake it.
 - **Canonical census** — every surface that says "N concepts" uses one
   derivation (`computeCanonicalCensus`). Its callers are the Topology index
   (`src/views/home/model/use-topology-index-read-model.ts`), Insights
