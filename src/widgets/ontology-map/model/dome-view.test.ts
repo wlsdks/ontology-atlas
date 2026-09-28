@@ -53,7 +53,9 @@ import {
   domeNearestYawTurn,
   domeReachesRect,
   domeTierRamp,
+  domeTierProgress,
   domeWorldBounds,
+  setDomeFolding,
   KIND_DEPTH,
   projectDomeCoord,
   resistDomePitch,
@@ -194,6 +196,35 @@ describe("dome-view frame map equals worldToScreen, one source for draw and hit"
     for (const kind of KINDS) {
       expect(domeTierRamp(DOME_ASSEMBLE_TOTAL_MS, kind)).toBe(1);
     }
+  });
+
+  it("folds a tier fastest where it starts, so no plane spends its last frames plunging", () => {
+    const full = { from: 1, fromT: 1 };
+    const fold = (t: number) => domeTierRamp(380 + 520 * t, "capability", true, full);
+    expect(fold(1)).toBe(1);
+    expect(fold(0)).toBe(0);
+    expect(1 - fold(0.5)).toBeGreaterThan(0.8);
+    expect(fold(0.1) - fold(0)).toBeLessThan(0.01);
+  });
+
+  it("keeps every tier's value when the clock changes direction mid-way", () => {
+    const runtime = createDomeRuntime(buildDomeModel(NODES));
+    runtime.rampClock = 700;
+    for (const kind of KINDS) runtime.kindRamp[kind] = domeTierRamp(700, kind);
+    const assembled = { ...runtime.kindRamp };
+    setDomeFolding(runtime, true);
+    for (const kind of KINDS) {
+      expect(domeTierRamp(700, kind, true, runtime.rampAnchor[kind])).toBeCloseTo(assembled[kind], 10);
+    }
+    runtime.rampClock = 500;
+    for (const kind of KINDS) runtime.kindRamp[kind] = domeTierRamp(500, kind, true, runtime.rampAnchor[kind]);
+    const folded = { ...runtime.kindRamp };
+    setDomeFolding(runtime, false);
+    for (const kind of KINDS) {
+      expect(domeTierRamp(500, kind, false, runtime.rampAnchor[kind])).toBeCloseTo(folded[kind], 10);
+      expect(runtime.rampAnchor[kind].fromT).toBe(domeTierProgress(500, kind));
+    }
+    for (const kind of KINDS) expect(domeTierRamp(DOME_ASSEMBLE_TOTAL_MS, kind, false, runtime.rampAnchor[kind])).toBe(1);
   });
 });
 

@@ -1,7 +1,46 @@
 import { act, fireEvent, render, renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { usePanelPresence, useSwapHeight } from './use-presence';
+import { useEffect } from 'react';
+
+import { EXIT_WINDOW_MS, usePanelPresence, useSurfaceSwap, useSwapHeight } from './use-presence';
+
+function SwapFrames({ view, onMount }: { view: string; onMount: (view: string) => void }) {
+  const { leaving } = useSurfaceSwap(view);
+  const frames = leaving === null ? [view] : [leaving, view];
+  return (
+    <>
+      {frames.map((frame) => (
+        <Frame key={frame} name={frame} leaving={frame === leaving} onMount={onMount} />
+      ))}
+    </>
+  );
+}
+
+function Frame({ name, leaving, onMount }: { name: string; leaving: boolean; onMount: (view: string) => void }) {
+  useEffect(() => {
+    onMount(name);
+  }, [name, onMount]);
+  return <div data-testid={`frame-${name}`} data-leaving={leaving} />;
+}
+
+describe('useSurfaceSwap', () => {
+  it('names the leaving value on the render that swaps, so its frame is never remounted', () => {
+    vi.useFakeTimers();
+    const mounts: string[] = [];
+    const onMount = (view: string) => mounts.push(view);
+    const { queryByTestId, rerender } = render(<SwapFrames view="flat" onMount={onMount} />);
+    rerender(<SwapFrames view="territories" onMount={onMount} />);
+    expect(queryByTestId('frame-flat')).toHaveAttribute('data-leaving', 'true');
+    expect(queryByTestId('frame-territories')).toHaveAttribute('data-leaving', 'false');
+    act(() => {
+      vi.advanceTimersByTime(EXIT_WINDOW_MS);
+    });
+    expect(queryByTestId('frame-flat')).toBeNull();
+    expect(mounts).toEqual(['flat', 'territories']);
+    vi.useRealTimers();
+  });
+});
 
 function Harness({ token }: { token: string }) {
   const { hostRef, capture } = useSwapHeight(token);

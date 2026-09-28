@@ -1,8 +1,9 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
 import type { MouseEventHandler, ReactNode } from "react";
 import koMessages from "../../../../messages/ko.json";
+import { beginMapNavigation, cancelMapNavigation } from "@/shared/lib/map-navigation-pending";
 import { AppNavRail } from "./AppNavRail";
 
 const mocks = vi.hoisted(() => ({
@@ -151,6 +152,22 @@ describe("AppNavRail", () => {
     expect(screen.getByTestId("app-nav-rail-item-insights")).toHaveAttribute("data-active", "true");
     expect(screen.getByTestId("app-nav-rail-item-map")).toHaveAttribute("data-active", "false");
     expect(screen.getByTestId("app-nav-rail-item-map")).not.toHaveAttribute("aria-current");
+  });
+
+  it("moves the active mark to the map on the press while the page it leaves stays current", () => {
+    mocks.pathname = "/ontology/insights/";
+    renderRail();
+    act(() => {
+      beginMapNavigation(vi.fn(), "/ontology/insights/");
+    });
+    try {
+      expect(screen.getByTestId("app-nav-rail-item-map")).toHaveAttribute("data-active", "true");
+      expect(screen.getByTestId("app-nav-rail-item-insights")).toHaveAttribute("data-active", "false");
+      expect(screen.getByTestId("app-nav-rail-item-insights")).toHaveAttribute("aria-current", "page");
+    } finally {
+      act(() => cancelMapNavigation());
+    }
+    expect(screen.getByTestId("app-nav-rail-item-insights")).toHaveAttribute("data-active", "true");
   });
 
   it("renders the settingsSlot passed in at the bottom of the rail", () => {

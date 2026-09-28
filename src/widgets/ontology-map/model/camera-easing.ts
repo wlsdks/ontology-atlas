@@ -22,7 +22,10 @@ export interface CameraTween {
   durationMs: number;
   /** `"out"` decelerates only, for the 3D fly-to that moves the instant a double-click lands. */
   ease?: "out";
+  altitude?: CameraTweenAltitude;
 }
+
+export type CameraTweenAltitude = "follows-camera" | "held-at-target";
 
 export function easeOutCubic(t: number): number {
   const c = t <= 0 ? 0 : t >= 1 ? 1 : t;

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { beginMapNavigation, cancelMapNavigation, completeMapNavigation, readMapNavigationPending } from './map-navigation-pending';
+import { ROUTE_VIEW_TRANSITION_CROSSFADE_FALLBACK_MS as COVER_MS } from './route-view-transition';
 
 describe('map navigation pending', () => {
   let frames: FrameRequestCallback[];
@@ -19,10 +20,30 @@ describe('map navigation pending', () => {
     frame();
     expect(navigate).not.toHaveBeenCalled();
     frame();
+    expect(navigate).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(COVER_MS);
     expect(navigate).toHaveBeenCalledOnce();
     expect(readMapNavigationPending()?.id).toBe(id);
     completeMapNavigation(id);
     expect(readMapNavigationPending()).toBeNull();
+  });
+
+  it('leaves the old pane only once the cover has faded in and a frame has painted', () => {
+    const navigate = vi.fn();
+    beginMapNavigation(navigate, '/mcp/');
+    vi.advanceTimersByTime(COVER_MS - 1);
+    frame(); frame();
+    expect(navigate).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
+    expect(navigate).toHaveBeenCalledOnce();
+
+    cancelMapNavigation();
+    const later = vi.fn();
+    beginMapNavigation(later, '/mcp/');
+    vi.advanceTimersByTime(COVER_MS);
+    expect(later).not.toHaveBeenCalled();
+    frame(); frame();
+    expect(later).toHaveBeenCalledOnce();
   });
 
   it('cancels queued navigation and ignores an earlier frame completion', () => {
@@ -30,6 +51,7 @@ describe('map navigation pending', () => {
     const old = beginMapNavigation(first, '/mcp/');
     cancelMapNavigation();
     frame(); frame();
+    vi.advanceTimersByTime(COVER_MS);
     expect(first).not.toHaveBeenCalled();
     const id = beginMapNavigation(vi.fn(), '/architecture/');
     completeMapNavigation(old);
@@ -48,6 +70,7 @@ describe('map navigation pending', () => {
   it('keeps a synchronous navigation error recoverable', () => {
     beginMapNavigation(() => { throw new Error('navigation rejected'); }, '/mcp/');
     frame(); frame();
+    vi.advanceTimersByTime(COVER_MS);
     expect(readMapNavigationPending()?.phase).toBe('stalled');
   });
 });

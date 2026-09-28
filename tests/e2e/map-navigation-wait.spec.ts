@@ -39,6 +39,36 @@ test('Map announces preparation before leaving the current pane and reveals a dr
   await expect(page.locator('canvas[data-surface-role="map-canvas"]')).toBeFocused();
 });
 
+test('the old pane leaves only under a full cover, and the rail marks the map at the press', async ({ page }) => {
+  await installDesktopRailRuntime(page);
+  await mountDesktopVault(page);
+  await page.getByTestId('app-nav-rail-item-agents').click();
+  await expect(page.getByRole('heading', { name: 'Agents', exact: true })).toBeVisible();
+  type Frame = { cover: number | null; arrived: boolean; railMap: string | null };
+  const frames = page.evaluate(() => new Promise<Frame[]>((resolve) => {
+    const out: Frame[] = [];
+    const start = performance.now();
+    const tick = () => {
+      const cover = document.querySelector('[data-testid="map-navigation-wait"]');
+      const frame: Frame = {
+        cover: cover ? Number(getComputedStyle(cover).opacity) : null,
+        arrived: !!document.querySelector('[data-testid="topology-map-surface"], [data-testid="map-entry-fallback"]'),
+        railMap: document.querySelector('[data-testid="app-nav-rail-item-map"]')?.getAttribute('data-active') ?? null,
+      };
+      out.push(frame);
+      if (performance.now() - start < 4000 && !(frame.arrived && frame.cover === null)) requestAnimationFrame(tick);
+      else resolve(out);
+    };
+    requestAnimationFrame(tick);
+  }));
+  await page.getByTestId('app-nav-rail-item-map').click();
+  const seen = await frames;
+  expect(seen.find((frame) => frame.cover !== null)?.railMap, 'the rail still marks the page being left').toBe('true');
+  const arrival = seen.find((frame) => frame.arrived);
+  expect(arrival, 'the map never arrived').toBeDefined();
+  expect(arrival!.cover, 'the old pane changed under a cover the eye can see through').toBeGreaterThanOrEqual(0.99);
+});
+
 test('leaving during map preparation does not strand an overlay', async ({ page }) => {
   await installDesktopRailRuntime(page);
   await mountDesktopVault(page);

@@ -139,6 +139,7 @@ export interface PhysicsStepInput {
    * co-occur.
    */
   freezeCamera?: boolean;
+  altitudeScale?: number | null;
   /**
    * Nodes the density gate collapsed and therefore **does not draw** (a subtree
    * replaced by a single chip).
@@ -233,6 +234,7 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     isDragging,
     worldBoundsOverride = null,
     focusAnchorOverride = null,
+    altitudeScale = null,
     focusLeashPx = null,
     scaleMinOverride = null,
     reducedMotion,
@@ -333,7 +335,7 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
   }
 
   const band = computeAltitudeBand(overviewScale, tokens.altitudeFarHighRatio, tokens.altitudeFarLowRatio);
-  const farT = computeFarT(nextCamera.scale.value, band.farLow, band.farHigh);
+  const farT = computeFarT(altitudeScale ?? nextCamera.scale.value, band.farLow, band.farHigh);
 
   const zoomRatio = computeZoomRatio(nextCamera.scale.value, overviewEntryScale);
 

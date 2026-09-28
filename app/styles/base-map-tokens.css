@@ -671,7 +671,7 @@ so leave it as is. */
     --map-panel-surface: #17171c;
     --map-panel-border: #2a2a30;
     --map-panel-divider: #23232a;
-    --map-panel-shadow: 0 16px 40px rgba(0, 0, 0, 0.42);
+    --map-panel-shadow: var(--shadow-elevation-1);
     --map-panel-row-hover: rgba(255, 255, 255, 0.045);
     /* rank3 — Press (active) surface for panel actions/rows. Use alpha one step darker than hover (0.045) to give tactile "press" feel via color alone (Toss press-state priority).
 No transform/scale — surface darkens as if pressed during pointer down, returns to hover on release. transition-colors (150ms) prevents hard toggle. */

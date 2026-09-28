@@ -751,15 +751,7 @@ export function OntologyMap(props: OntologyMapProps) {
            */
           tabIndex={-1}
           aria-hidden
-          // rank6 — it always lays out with flex and appears and disappears through
-          // opacity and pointer-events alone (refreshed by the loop every frame). An
-          // opacity transition fades it instead of the hard jolt of toggling display,
-          // while camera following is preserved.
-          // The duration names the ramp's "movement" step (--motion-base): this
-          // transition's protagonist is the control appearing and leaving rather than
-          // its hover colour, and leaving it on the default (confirmation, 120ms) puts
-          // the jolt back into the fade. The easing keeps the same curve as the map surface.
-          className={controlClass({ shape: "icon", className: `${props.indexExpanded ? "max-md:hidden " : ""}atlas-touch-floor atlas-touch-floor-wide group absolute left-0 top-0 z-40 flex h-7 w-7 rounded-full border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] text-[color:var(--map-indigo-bright)] shadow-[var(--map-panel-shadow)] transition-[opacity,background-color] duration-[var(--motion-fast)] ease-[var(--topology-motion-ease-out)] hover:bg-[color:var(--map-panel-row-hover)]` })}
+          className={controlClass({ shape: "icon", className: `${props.indexExpanded ? "max-md:hidden " : ""}atlas-touch-floor atlas-touch-floor-wide group absolute left-0 top-0 z-40 flex h-7 w-7 rounded-full border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] text-[color:var(--map-indigo-bright)] shadow-[var(--map-panel-shadow)] transition-[opacity,background-color] hover:bg-[color:var(--map-panel-row-hover)]` })}
           style={{ opacity: 0, pointerEvents: "none" }}
         >
           <Orbit size={ICON_SIZE.md} aria-hidden />

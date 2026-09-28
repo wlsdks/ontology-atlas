@@ -3,6 +3,7 @@
 import { startTransition, useSyncExternalStore } from 'react';
 import { flushSync } from 'react-dom';
 import { focusMapCanvasWhenReady } from './focus-map-canvas';
+import { readCrossfadeBudgetMs } from './route-view-transition';
 
 interface MapNavigationPending {
   id: number;
@@ -25,7 +26,6 @@ export function useMapNavigationPending() {
   return useSyncExternalStore(subscribe, readMapNavigationPending, () => null);
 }
 
-/** Paint live feedback before scheduling the destination's synchronous graph work. */
 export function beginMapNavigation(navigate: () => void, from: string, focusCanvas = false) {
   if (current) {
     if (focusCanvas && !current.focusCanvas) { current = { ...current, focusCanvas: true }; emit(); }
@@ -37,14 +37,17 @@ export function beginMapNavigation(navigate: () => void, from: string, focusCanv
     current = { id, from, phase: 'preparing', focusCanvas };
     emit();
   });
-  // Two frames cross an actual paint boundary. This is not a minimum display time.
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    if (current?.id !== id) return;
+  let painted = false;
+  let covered = false;
+  const proceed = () => {
+    if (!painted || !covered || current?.id !== id) return;
     startTransition(() => {
       try { navigate(); }
       catch { markStalled(id); }
     });
-  }));
+  };
+  setTimeout(() => { covered = true; proceed(); }, readCrossfadeBudgetMs());
+  requestAnimationFrame(() => requestAnimationFrame(() => { painted = true; proceed(); }));
   // A hang detector, never simulated progress or successful completion. The
   // original route remains an explicit escape even if navigation never commits.
   timeout = setTimeout(() => markStalled(id), 15_000);

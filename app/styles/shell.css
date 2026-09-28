@@ -233,9 +233,9 @@ body *::-webkit-scrollbar {
     var(--motion-fast);
   transition-timing-function:
     var(--topology-motion-ease-out),
-    ease,
-    ease,
-    ease;
+    var(--motion-ease),
+    var(--motion-ease),
+    var(--motion-ease);
 }
 
 @media (min-width: 768px) {
@@ -244,29 +244,16 @@ body *::-webkit-scrollbar {
   }
 }
 
-/* ── Remaining width centering of right inspector and top map command (2026-08-22) ───────────
-   SearchHint stands at the center of the map column itself. The agent dock reduces that column,
-   so it reflects automatically, but the fixed node inspector covers above the column, requiring separate reservation. Moving left by half the right inset equal to the panel width places the command column
-   at the center of the actual remaining map area excluding the inspector. It is not pixel-per-screen or chat-width constant, but the sum of current design tokens. */
-/* Since 2026-09-24 the reserve lands on the whole top toolbar
-   (`topology-top-toolbar`), which holds the search lane at its left edge (since the
-   balance fix of 2026-09-24; it used to centre it) while the node inspector owns the
-   right rail (the utility lane is not mounted then). Pulling the right edge in by the
-   inspector's width plus its inset keeps a wrapped or truncating lane clear of the
-   inspector, and the last term is the toolbar's own inset, the chrome inset (it was
-   `2rem` while the toolbar stood 32px in at `xl`). The toolbar also carries
-   `data-agent-dock-adjacent-rail`; its `left` moves when INDEX opens or closes, so
-   the transition list below names `left` as well as `right`. */
 @media (min-width: 1280px) {
   [data-testid='topology-top-toolbar'][data-right-inspector-reserve='recenter-in-remaining-map'] {
-    right: calc(
-      var(--map-panel-width) + var(--topology-node-popover-right-inset) + var(--chrome-inset)
-    );
+    margin-right: calc(var(--map-panel-width) + var(--topology-node-popover-right-inset));
   }
 }
 
 [data-testid='topology-top-toolbar'][data-agent-dock-adjacent-rail='true'] {
   transition-property: left, right;
+  transition-duration: var(--agent-panel-reflow-duration);
+  transition-timing-function: var(--topology-motion-ease-out);
 }
 
 /* ── Toast (sonner) motion — swapping vendor factory values with app ramp (2026-07-28) ──

@@ -284,7 +284,7 @@
        over by the map rather than above it. One surface with the map panels. */
     --topology-floating-panel-surface: var(--map-panel-surface);
     --topology-floating-panel-border: rgba(255, 255, 255, 0.075);
-    --topology-floating-panel-shadow: 0 16px 34px rgba(0, 0, 0, 0.26);
+    --topology-floating-panel-shadow: var(--shadow-elevation-2);
     --topology-floating-panel-divider: rgba(255, 255, 255, 0.06);
     --topology-floating-control-desktop-top: 140px;
     /*
@@ -312,20 +312,11 @@
        `gap-2`; one row showed two rhythms, which is part of why the owner read the
        collapsed row as one broken control. Both lanes now read this token. */
     --topology-chrome-gap: 0.5rem;
-    /*
-     * The same 12px at the default root, in `rem` because this is a **type size** consumed
-     * through `text-[length:var(…)]` (`TopologyReviewLink`, `TopologyChangeAnnouncement`) —
-     * a size token outside the `--text-*` prefix is still type, and the ramp's own rule
-     * applies to it or the prefix becomes the specification instead of the quantity
-     * (2026-09-12). The deliberate 13 → 12 step above is unchanged; only the unit moves.
-     */
-    --topology-chrome-title-size: 0.75rem;
     --topology-utility-lane-height: var(--topology-chrome-control-height);
     --topology-utility-lane-gap: var(--topology-chrome-gap);
     --topology-utility-lane-compact-width: var(--topology-chrome-control-height);
     --topology-utility-lane-surface: rgba(15, 16, 17, 0.92);
     --topology-utility-lane-border: rgba(255, 255, 255, 0.07);
-    --topology-utility-lane-shadow: 0 10px 22px rgba(0, 0, 0, 0.16);
     --topology-utility-lane-accent-surface: var(--color-indigo-a12);
     --topology-utility-lane-accent-border: var(--color-indigo-a38);
     --topology-utility-lane-accent-hover-surface: var(--color-indigo-a18);

@@ -60,7 +60,10 @@ describe("Galaxy living-sky paint contract", () => {
     expect(layout).toContain("export function computeGalaxyLayout");
     expect(layout).toContain("export function isGalaxyEdgeVisible");
     expect(frame).toMatch(
-      /if\s*\(\s*galaxyOn\s*&&\s*!isGalaxyEdgeVisible\(edge,[\s\S]*?\)\s*\)\s*\{\s*continue;/,
+      /const galaxyEdgeReturn =\s*galaxyOn\s*&&\s*!isGalaxyEdgeVisible\(edge,[\s\S]*?\)\s*\?\s*galaxyIdentityOn\s*\?\s*0\s*:\s*bodyPresence\(galaxy\)\s*:\s*1;\s*if \(galaxyEdgeReturn <= 0\.001\) continue;/,
+    );
+    expect(frame, "hidden relations fade back in with the Flat bodies instead of popping").toMatch(
+      /filament \*\s*galaxyEdgeReturn \*/,
     );
     expect(pointer).toMatch(
       /if\s*\(galaxyRef\?\.current\)\s*\{[\s\S]*?if\s*\(\s*!isGalaxyEdgeVisible\(edge,[\s\S]*?\)\s*\)\s*\{\s*continue;/,
