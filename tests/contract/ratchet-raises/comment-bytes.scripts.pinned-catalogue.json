@@ -1,0 +1,1 @@
+{ "gate": "comment-bytes.scripts", "raise": 312, "why": "The catalogue generator now pins every program it offers; the lines beside the pin say why the version comes from the curation rather than the registry (registry entries lag or run ahead of the check date) and why an image needs a digest, and the usage block names the new offline rebuild flag." }

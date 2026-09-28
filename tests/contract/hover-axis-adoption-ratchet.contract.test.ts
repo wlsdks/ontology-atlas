@@ -149,10 +149,10 @@ describe("호버 축 채택 래칫", () => {
     });
     expect(
       verdict.current,
-      `손 호버 선언이 ${verdict.current} 로, 기준 ${verdict.ceiling} 을 넘었다.\n${verdict.explain}\n` +
-        "값 층이 세 축을 갖고 있다 — `hoverInk`('strong'|'secondary') · " +
-        "`hoverSurface`('lift') · `hoverBorder`('strong'). 그 값이면 축을 쓰고,\n" +
-        "다른 값이 필요하면 **왜 다른지**를 먼저 대라(인디고 틴트 단은 값이 아니라 위계 판정이다).\n" +
+      `Hand-written hover declarations reached ${verdict.current}, over the ceiling ${verdict.ceiling}.\n${verdict.explain}\n` +
+        "The value layer has three axes: `hoverInk`('strong'|'secondary') · " +
+        "`hoverSurface`('lift') · `hoverBorder`('strong'). For those values use the axis;\n" +
+        "for another value, first say **why it differs** (an indigo tint step is a hierarchy verdict, not a value).\n" +
         [...census.byFile.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([f, n]) => `  ${n} ${f}`).join("\n"),
     ).toBeLessThanOrEqual(verdict.ceiling);
   });

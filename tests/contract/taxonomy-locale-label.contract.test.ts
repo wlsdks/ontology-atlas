@@ -121,8 +121,8 @@ describe("분류 라벨 — 두 어권을 다 갖고, 고르는 자리는 하나
 
     expect(
       violations,
-      `분류 라벨은 TaxonomyProvider 의 categoryLabel/statusLabel 로만 읽는다 — ` +
-        `직접 읽으면 화면 언어를 무시한다:\n${violations.join("\n")}`,
+      `Taxonomy labels are read only through TaxonomyProvider's categoryLabel/statusLabel; ` +
+        `reading them directly ignores the screen language:\n${violations.join("\n")}`,
     ).toEqual([]);
   });
 });

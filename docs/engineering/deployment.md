@@ -118,7 +118,7 @@ step is picked up automatically. Steps it cannot run are printed as `SKIP`
 | Protected dispatch context | GitHub owns the event/ref/workflow SHA context | the `main` workflow_dispatch run |
 | Tag version and source admission | needs an existing remote tag; `--tag` rehearses both against current HEAD | the tagged rehearsal, then `admit-release` |
 | Signing credentials / `Import Apple Developer ID certificate` | protected environment secrets | the runner |
-| `Build signed and notarized release artifact` | `codesign` with a real identity + `notarytool` | the runner |
+| `Sign and notarize release artifact` | `codesign` with a real identity + `notarytool` | the runner |
 | `Stage Draft Desktop Release` / `Publish Desktop Release` jobs | a real draft release and the `release` environment gate | the dispatched run |
 
 In place of the signed build the rehearsal runs

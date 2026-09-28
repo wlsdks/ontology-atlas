@@ -30,9 +30,18 @@
  * the WebView. `connectorSecretRefs` names the references a session is about to need, so the screen
  * can check they exist **before** it opens rather than meeting a refusal at the moment somebody was
  * about to ask a question.
+ *
+ * ## The folder's switch is not this Mac's consent
+ *
+ * `enabled: true` can arrive with a clone, so a connector also needs this Mac's allowance for its
+ * exact definition. `allowedHere` is required so no call site can build a line without it.
  */
-import type { ConnectorRecord, ConnectorValueEntry } from '@/shared/lib/connector-record';
-import { connectorProblems } from '@/shared/lib/connector-record';
+import {
+  connectorProblems,
+  ownsSecretRef,
+  type ConnectorRecord,
+  type ConnectorValueEntry,
+} from '@/shared/lib/connector-record';
 import { ACP_SECRET_REF_KEY } from '@/shared/lib/tauri-connector-secrets';
 
 import { runtimeCarriesConnectors } from './runtime-gate';
@@ -60,11 +69,15 @@ interface AcpConnectorHttpServer {
 
 type AcpConnectorServer = AcpConnectorStdioServer | AcpConnectorHttpServer;
 
-function toAcpEntries(entries: readonly ConnectorValueEntry[]): AcpValueEntry[] {
+type ConnectorAllowedHere = (connector: ConnectorRecord) => boolean;
+
+function toAcpEntries(connectorId: string, entries: readonly ConnectorValueEntry[]): AcpValueEntry[] {
   const out: AcpValueEntry[] = [];
   for (const entry of entries) {
     if (entry.secretRef) {
-      out.push({ name: entry.name, [ACP_SECRET_REF_KEY]: entry.secretRef });
+      if (ownsSecretRef(connectorId, entry)) {
+        out.push({ name: entry.name, [ACP_SECRET_REF_KEY]: entry.secretRef });
+      }
       continue;
     }
     // A `secretLiteral` entry carries no value by design — the file held a plaintext token and
@@ -90,32 +103,36 @@ export function connectorAcpServers(
    * `runtimeCarriesConnectors`. Omitting it is the same as naming an unmeasured runtime, so a
    * call site that forgets to pass one attaches nothing rather than attaching blind.
    */
-  runtimeId?: string | null,
+  runtimeId: string | null | undefined,
+  allowedHere: ConnectorAllowedHere,
 ): AcpConnectorServer[] {
   if (!runtimeCarriesConnectors(runtimeId)) return [];
-  return attachable(connectors).map((connector) =>
+  return attachable(connectors, allowedHere).map((connector) =>
     connector.transport === 'http'
       ? {
           type: 'http' as const,
           name: connector.name.trim(),
           url: (connector.url ?? '').trim(),
-          headers: toAcpEntries(connector.headers),
+          headers: toAcpEntries(connector.id, connector.headers),
         }
       : {
           name: connector.name.trim(),
           command: (connector.command ?? '').trim(),
           args: [...connector.args],
-          env: toAcpEntries(connector.env),
+          env: toAcpEntries(connector.id, connector.env),
         },
   );
 }
 
 /** The enabled connectors that are actually sendable. */
-function attachable(connectors: readonly ConnectorRecord[]): ConnectorRecord[] {
+function attachable(
+  connectors: readonly ConnectorRecord[],
+  allowedHere: ConnectorAllowedHere,
+): ConnectorRecord[] {
   const seen = new Set<string>([VAULT_MCP_SERVER_NAME]);
   const out: ConnectorRecord[] = [];
   for (const connector of connectors) {
-    if (!connector.enabled) continue;
+    if (!connector.enabled || !allowedHere(connector)) continue;
     const name = connector.name.trim();
     // The vault server's name is already taken; a connector under it would replace the person's
     // own map. Two connectors sharing a name are both refused instead, by `connectorProblems`'
@@ -138,14 +155,16 @@ function attachable(connectors: readonly ConnectorRecord[]): ConnectorRecord[] {
  */
 export function connectorsWithProblems(
   connectors: readonly ConnectorRecord[],
-): Array<{ connector: ConnectorRecord; reason: 'name-taken' | 'invalid' }> {
-  const attached = new Set(attachable(connectors).map((connector) => connector.id));
+  allowedHere: ConnectorAllowedHere,
+): Array<{ connector: ConnectorRecord; reason: 'not-allowed-here' | 'name-taken' | 'invalid' }> {
+  const attached = new Set(attachable(connectors, allowedHere).map((connector) => connector.id));
   return connectors
     .filter((connector) => connector.enabled && !attached.has(connector.id))
     .map((connector) => ({
       connector,
-      reason:
-        connectorProblems(connector, connectors).length > 0
+      reason: !allowedHere(connector)
+        ? ('not-allowed-here' as const)
+        : connectorProblems(connector, connectors).length > 0
           ? ('invalid' as const)
           : ('name-taken' as const),
     }));
@@ -158,8 +177,11 @@ export function connectorsWithProblems(
  * about to ask a question. The presence check itself lives in the bridge; this only says which
  * references to ask about.
  */
-export function connectorSecretRefs(connectors: readonly ConnectorRecord[]): string[] {
-  return attachable(connectors)
+export function connectorSecretRefs(
+  connectors: readonly ConnectorRecord[],
+  allowedHere: ConnectorAllowedHere,
+): string[] {
+  return attachable(connectors, allowedHere)
     .flatMap((connector) => [...connector.env, ...connector.headers])
     .map((entry) => entry.secretRef)
     .filter((reference): reference is string => typeof reference === 'string');

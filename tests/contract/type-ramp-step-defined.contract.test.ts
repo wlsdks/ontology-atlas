@@ -186,12 +186,12 @@ describe("타입/행간 램프 — 존재하지 않는 스텝 차단", () => {
     const bad = scan();
     expect(
       bad,
-      `정의되지 않은 램프 스텝이다. Tailwind 는 이 클래스를 아예 만들지 않으므로\n` +
-        `그 자리는 루트 16px 을 상속해 렌더된다(= 램프 미적용 결함).\n` +
-        `app/globals.css 의 --text-* / --leading-* 중 하나로 수렴시키거나, 정말\n` +
-        `새 스텝이 필요하면 ① globals.css 램프 ② docs/DESIGN-SYSTEM.md 등재\n` +
-        `③ src/shared/lib/cn.ts 의 TYPE_RAMP_STEPS/LEADING_RAMP_STEPS 등록을\n` +
-        `같은 PR 에서 함께 해라.\n${bad.join("\n")}`,
+      `An undefined ramp step. Tailwind does not generate this class at all, so\n` +
+        `the site renders with the inherited 16px root (a ramp-not-applied defect).\n` +
+        `Converge on one of the --text-* / --leading-* steps in app/globals.css, or if a\n` +
+        `new step is really needed, do (1) the globals.css ramp, (2) the docs/DESIGN-SYSTEM.md entry\n` +
+        `and (3) the TYPE_RAMP_STEPS/LEADING_RAMP_STEPS registration in src/shared/lib/cn.ts\n` +
+        `together in the same PR.\n${bad.join("\n")}`,
     ).toEqual([]);
   });
 

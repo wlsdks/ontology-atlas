@@ -144,9 +144,10 @@ elif touched "$APP"; then
   # arguments does not exist ("No files matching the pattern ... were found") — so deleting one
   # source file turned this lane red for reasons that had nothing to do with the code being
   # pushed. Keep only what is still on disk.
-  LINT_FILES=$(printf '%s\n' "$CHANGED" | grep -E '^(src|app)/.*\.(ts|tsx|mjs|js)$' | while read -r f; do [ -f "$f" ] && printf '%s\n' "$f"; done || true)
-  if [ -n "$LINT_FILES" ]; then
-    lane lint "pnpm exec eslint --max-warnings=0 $(printf '%s' "$LINT_FILES" | tr '\n' ' ')"
+  # A file name is data: it reaches eslint through xargs, never through the lane's eval.
+  printf '%s\n' "$CHANGED" | grep -E '^(src|app)/.*\.(ts|tsx|mjs|js)$' | while IFS= read -r f; do [ -f "$f" ] && printf '%s\0' "$f"; done >"$TMP/lint-files" || true
+  if [ -s "$TMP/lint-files" ]; then
+    lane lint "xargs -0 pnpm exec eslint --max-warnings=0 <'$TMP/lint-files'"
   fi
 fi
 # `*.perf.test.*` is excluded here and **only** here — those three compare a fast

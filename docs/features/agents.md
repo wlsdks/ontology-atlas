@@ -118,6 +118,17 @@ vault server.
 - **The list lives in the folder**, at `.ontology-atlas/connectors.json`, which carries
   its own ignore rule. **No token is ever written there**: a credential-shaped variable
   holds a keychain reference, and the writer refuses a literal.
+- **The folder's switch is not this Mac's consent.** A folder can arrive switched on (a
+  clone, a synced drive, a pull), so in the app a connector attaches only when the folder
+  has it on **and** this Mac allowed it exactly as it now reads: its name, command and
+  arguments or address, and every variable and header with its value or keychain
+  reference. Switching it on here allows it; anything else the folder switched on is
+  listed as on in this folder, not on this Mac, with what it would pass and one press to
+  allow it, and it asks again whenever the folder changes it. The allowances live in this
+  app's own storage, keyed by the folder's path, never in the folder.
+- **A reference is the connector's own.** A variable pointing at another connector's
+  keychain entry keeps the connector off and says why, and removing it never deletes the
+  other connector's token.
 - **The token stays out of the browser process too.** The reference becomes a value in
   Rust, one line before it leaves for the agent.
 - **Name collisions are called out first.** Codex silently drops an ACP-supplied server
@@ -148,6 +159,11 @@ and Escape. The record is in `docs/DECISIONS.md` (one list).
   carries no download count, no ranking and no "recommended", and the screen states its
   size, its capture date, that Atlas has audited none of it, and that *By hand* reaches
   everything it does not list.
+- **A program runs the version that was checked.** Each program is pinned to the release
+  current on its row's check date (`npx -y <package>@<version>`, an image by tag and
+  digest), and the row says which, so a session never starts whatever was published last.
+  `pnpm mcp:catalogue -- --from-snapshot` rebuilds the file from the committed capture
+  without the network.
 - **Only what the press can make work.** A hosted address that signs in with OAuth
   (Notion's, Atlassian's, GitHub's, and the rest) is **not** offered: measured
   against claude-agent-acp 0.75.0, such an address handed to the in-app session

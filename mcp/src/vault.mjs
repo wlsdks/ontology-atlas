@@ -20,7 +20,7 @@ import {
   statSync,
   unlinkSync,
 } from 'node:fs';
-import { join, relative, dirname, resolve, sep } from 'node:path';
+import { basename, join, relative, dirname, resolve, sep } from 'node:path';
 
 import { parseFrontmatter, buildMarkdown } from './parser.mjs';
 import { previewDocumentPatch } from './document-patch.mjs';
@@ -30,12 +30,15 @@ import {
   REVIEW_NOTE_KEY,
   REVIEW_STATE_HUMAN_DECIDES,
   REVIEW_STATE_KEY,
+  VAULT_SOURCES_DIR,
   containmentKeyFor,
   flatSlugIssue,
   folderForKind,
   generateNodeUid,
   inspectMergedUids,
+  rawSourceSlugIssue,
   nodeUidIssue,
+  unwritableSlugIssue,
 } from './schema.mjs';
 import {
   STARTER_EXAMPLE_SLUGS,
@@ -393,7 +396,7 @@ export function describeBodyDelivery(body, options = {}) {
   return { text, info };
 }
 
-/** Absolute paths of every `.md` under the vault root, skipping dotfiles and node_modules. */
+/** Absolute paths of every `.md` in the vault except dotfiles, build folders and sources/. */
 export function walkMd(rootPath) {
   const out = [];
   const stack = [rootPath];
@@ -418,6 +421,7 @@ export function walkMd(rootPath) {
       if (entry.name.startsWith('.')) continue;
       if (entry.isDirectory()) {
         if (SKIP_DIRS.has(entry.name)) continue;
+        if (dir === rootPath && entry.name === VAULT_SOURCES_DIR) continue;
         stack.push(join(dir, entry.name));
       } else if (entry.isFile() && entry.name.endsWith('.md')) {
         out.push(join(dir, entry.name));
@@ -459,11 +463,23 @@ export function slugToPath(rootPath, slug) {
   ) {
     throw new Error(`slug points outside the vault root: "${slug}"`);
   }
-  // The string check cannot stop a symlink: `escape.md` inside the vault may
-  // link outside it, and writeFileSync follows the link. Existing paths are
-  // realpath'd; a new file's parent is checked below.
+  const rawSourceSlug = rawSourceSlugForPath(normalizedRoot, candidate);
+  if (rawSourceSlug) throw new Error(rawSourceSlugIssue(rawSourceSlug));
+  // writeFileSync follows a link, so the real path must stay inside too.
   assertRealPathInside(candidate, normalizedRoot, slug);
   return candidate;
+}
+
+/** `slugToPath` for a file a write tool will create, change or delete; refuses what `unwritableSlugIssue` names, as typed or where it resolves. */
+export function slugToWritePath(rootPath, slug) {
+  const issue = unwritableSlugIssue(slug);
+  if (issue) throw new Error(issue);
+  const filePath = slugToPath(rootPath, slug);
+  const real = realSegmentsBelowRoot(resolve(rootPath), filePath);
+  const resolved = real ? segmentsToSlug(real) : slug;
+  const resolvedIssue = resolved === slug ? null : unwritableSlugIssue(resolved);
+  if (resolvedIssue) throw new Error(`slug "${slug}" resolves through a link to "${resolved}". ${resolvedIssue}`);
+  return filePath;
 }
 
 /**
@@ -496,6 +512,45 @@ function assertRealPathInside(candidate, normalizedRoot, slug) {
       probe = parent;
     }
   }
+}
+
+function rawSourceSlugForPath(normalizedRoot, candidate) {
+  const spelled = relative(normalizedRoot, candidate).split(sep);
+  if (namesRawSource(spelled)) return segmentsToSlug(spelled);
+  // A case-folding disk opens `ſources/` as `sources/`, and a link can alias it.
+  const real = realSegmentsBelowRoot(normalizedRoot, candidate);
+  return real && namesRawSource(real) ? segmentsToSlug(real) : null;
+}
+
+function namesRawSource(segments) {
+  return segments.length > 1 && segments[0] === VAULT_SOURCES_DIR;
+}
+
+function segmentsToSlug(segments) {
+  return segments.join('/').replace(/\.md$/, '');
+}
+
+function realSegmentsBelowRoot(normalizedRoot, candidate) {
+  try {
+    const realRoot = realpathSync.native(normalizedRoot);
+    const unresolved = [];
+    for (let probe = candidate; ; probe = dirname(probe)) {
+      try {
+        return relative(realRoot, join(realpathSync.native(probe), ...unresolved)).split(sep);
+      } catch {
+        if (dirname(probe) === probe) return null;
+        unresolved.unshift(basename(probe));
+      }
+    }
+  } catch {
+    return null;
+  }
+}
+
+export function rawSourceSlugAt(rootPath, slug) {
+  if (typeof slug !== 'string' || slug.length === 0 || slug.includes('\0')) return null;
+  const normalizedRoot = resolve(rootPath);
+  return rawSourceSlugForPath(normalizedRoot, resolve(normalizedRoot, `${slug}.md`));
 }
 
 /**
@@ -1241,7 +1296,7 @@ function noteParentGrowth(slug, previousFrontmatter, nextFrontmatter) {
 
 /** Writes a new doc, creating directories; throws if it exists, so an overwrite is always explicit. */
 export function writeDoc(rootPath, slug, { frontmatter, body = '' }) {
-  const filePath = slugToPath(rootPath, slug);
+  const filePath = slugToWritePath(rootPath, slug);
   if (existsSync(filePath)) {
     throw new Error(
       `Doc already exists at "${slug}". To update fields, use patch_concept(slug, frontmatter, body, expected_mtime). To rename, use rename_concept(oldSlug, newSlug). Never delete-then-add: that loses backlinks.`,
@@ -1266,7 +1321,7 @@ export function writeDoc(rootPath, slug, { frontmatter, body = '' }) {
  * state read just before the delete, throws when absent, honours `expectedMtime`.
  */
 export function deleteDoc(rootPath, slug, options = {}) {
-  const filePath = slugToPath(rootPath, slug);
+  const filePath = slugToWritePath(rootPath, slug);
   if (!existsSync(filePath)) {
     throw new Error(`Doc not found: "${slug}". ${notFoundSuffix(rootPath, slug)}`);
   }
@@ -1285,7 +1340,7 @@ export function deleteDoc(rootPath, slug, options = {}) {
  * identity, and the caller must tell the person.
  */
 export function patchFrontmatter(rootPath, slug, patch, options = {}) {
-  const filePath = slugToPath(rootPath, slug);
+  const filePath = slugToWritePath(rootPath, slug);
   if (!existsSync(filePath)) {
     throw new Error(`Doc not found: "${slug}". ${notFoundSuffix(rootPath, slug)}`);
   }
@@ -1324,7 +1379,7 @@ export function updateDoc(rootPath, slug, {
   expectedMtime,
   beforeCommit,
 }) {
-  const filePath = slugToPath(rootPath, slug);
+  const filePath = slugToWritePath(rootPath, slug);
   if (!existsSync(filePath)) {
     throw new Error(`Doc not found: "${slug}". ${notFoundSuffix(rootPath, slug)}`);
   }
@@ -1973,7 +2028,7 @@ export function applyAllOrNothing(plan, options = {}) {
  * referrer's kind keeps one (`containmentKeyFor`, spec §5), else it stays and is
  * listed in `keptInPlace`; then `targetSlug === nextSlug` is a kind change in place.
  *
- * Returns `{ updates: [{ slug, beforeKeys, afterKeys, bodyHit }], totalUpdated, keptInPlace }`.
+ * Returns `{ updates: [{ slug, beforeKeys, afterKeys, bodyHit }], totalUpdated, keptInPlace, unwritableReferrers }`.
  */
 export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) {
   /**
@@ -2017,6 +2072,7 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
 
   const updates = [];
   const keptInPlace = [];
+  const unwritableReferrers = [];
   /** Applied in one go once the loop ends. */
   const plan = [];
   for (const doc of docs) {
@@ -2199,6 +2255,10 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
     }
 
     if (!fmChanged && !bodyChanged) continue;
+    if (unwritableSlugIssue(doc.slug) !== null) {
+      unwritableReferrers.push(doc.slug);
+      continue;
+    }
 
     updates.push({
       slug: doc.slug,
@@ -2225,6 +2285,7 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
     updates,
     totalUpdated: updates.length,
     keptInPlace,
+    unwritableReferrers,
     ...(deferWrite ? { plan } : {}),
   };
 }

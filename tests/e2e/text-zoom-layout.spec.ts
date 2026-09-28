@@ -62,8 +62,8 @@ test.describe("실제 브라우저 글자 크기 설정 200%", () => {
     expect(state.root).toBe(`${ZOOMED_ROOT_PX}px`);
     expect(
       state.remBreakpoint,
-      "48rem 이 1512 에서 참이다 — 브라우저 기본 글자 크기가 32px 이 아니라 " +
-        "author-set 루트로 측정되고 있다. 이 그룹의 모든 레이아웃 주장이 무의미해진다",
+      "48rem holds at 1512, so it is measured against the author-set root, not the browser's 32px default " +
+        "font size. Every layout claim in this group becomes meaningless",
     ).toBe(false);
     expect(state.pxBreakpoint, "레포의 px 미디어 쿼리는 그대로여야 한다").toBe(true);
   });
@@ -121,10 +121,10 @@ test.describe("실제 브라우저 글자 크기 설정 200%", () => {
         const cut = (await page.evaluate(eval(CUT_TEXT))) as string[];
         expect(
           cut,
-          "잘린 채 나머지를 볼 방법이 없는 글자가 있다. 줄임표·라인 클램프·스크롤러 중\n" +
-            "하나라도 있으면 좁은 상자의 설계된 동작이지만, 셋 다 없으면 독자는 그 글자에\n" +
-            "닿을 수 없다. html·body 가 둘 다 overflow-x: hidden 이라 문서 scrollWidth\n" +
-            "로는 이걸 절대 못 본다.\n" +
+          "Some text is cut off with no way to see the rest. With an ellipsis, a line clamp or a scroller\n" +
+            "it is a narrow box's designed behaviour, but with none of the three the reader cannot\n" +
+            "reach that text. html and body are both overflow-x: hidden, so the document's scrollWidth\n" +
+            "can never show this.\n" +
             cut.join("\n"),
         ).toEqual([]);
       });

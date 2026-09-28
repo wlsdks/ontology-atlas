@@ -110,9 +110,9 @@ describe("디자인 문서의 토큰 참조 무결성", () => {
       .join("\n");
     expect(
       gone.length,
-      `문서가 인용한 토큰 중 실재하지 않는 것이 ${CEILING} → ${gone.length} 로 늘었다.\n` +
-        "새 토큰을 문서에 적을 때는 `app/styles/tokens.css` (the `@theme` part `app/globals.css` imports) 에 **먼저** 넣어라.\n" +
-        "이미 없어진 화면의 토큰을 적고 있다면 그 절을 지우는 것이 답이다.\n" +
+      `Tokens the docs cite that do not exist grew from ${CEILING} to ${gone.length}.\n` +
+        "When a doc names a new token, add it to `app/styles/tokens.css` (the `@theme` part `app/globals.css` imports) **first**.\n" +
+        "If the doc describes tokens of a screen that no longer exists, delete that section.\n" +
         top,
     ).toBeLessThanOrEqual(CEILING);
   });

@@ -207,6 +207,8 @@ test("토큰이 필요한 줄은 그 자리에서 묻고, 키체인이 없는 �
   const notion = page.locator('[data-testid="connectors-catalogue-item"][data-catalogue-id="notion"]');
   // Notion is a program with a token, so its own button asks in place instead of attaching.
   await expect(notion.getByTestId("connectors-catalogue-add")).toHaveAttribute("data-press", "asks");
+  await expect(notion.getByTestId("connectors-catalogue-runs")).toContainText("@notionhq/notion-mcp-server@2.5.1");
+  await expect(notion.getByTestId("connectors-catalogue-version")).toHaveText("2026-09-07에 확인한 2.5.1 버전");
   await notion.getByTestId("connectors-catalogue-add").click();
   const ask = page.getByTestId("connectors-catalogue-ask");
   await expect(ask).toBeVisible();
@@ -220,7 +222,7 @@ test("토큰이 필요한 줄은 그 자리에서 묻고, 키체인이 없는 �
   await expect(page.getByTestId("connectors-custom-toggle")).toHaveAttribute("aria-expanded", "true");
   await expect(page.getByTestId("connectors-custom-provenance")).toBeVisible();
   await expect(page.getByTestId("connectors-custom-name")).toHaveValue("notion");
-  await expect(page.getByTestId("connectors-custom-args")).toHaveValue("-y @notionhq/notion-mcp-server");
+  await expect(page.getByTestId("connectors-custom-args")).toHaveValue("-y @notionhq/notion-mcp-server@2.5.1");
   await expect(page.getByTestId("connectors-item")).toHaveCount(0);
 });
 

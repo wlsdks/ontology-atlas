@@ -40,8 +40,8 @@ describe("폴더 감시 브리지", () => {
     );
     expect(
       rust,
-      "디바운서가 사라졌다. 에디터의 다중 write 가 그대로 새어 나와 매 저장마다 " +
-        "전체 refresh 가 돈다 — 영상이 파는 '즉시'가 '깜빡임'이 된다.",
+      "The debouncer is gone. An editor's burst of writes leaks straight through and every save " +
+        "runs a full refresh: the 'instant' the video sells becomes a 'flicker'.",
     ).toContain("new_debouncer");
   });
 
@@ -50,8 +50,8 @@ describe("폴더 감시 브리지", () => {
     expect(bridge).toContain("start_vault_watch");
     expect(
       bridge,
-      "리스너가 없으면 Rust 가 이벤트를 쏴도 화면은 아무 일도 하지 않는다 — " +
-        "가장 조용한 종류의 고장이다.",
+      "Without a listener the screen does nothing when Rust emits the event, " +
+        "which is the quietest kind of failure.",
     ).toContain("vault-changed");
   });
 
@@ -59,8 +59,8 @@ describe("폴더 감시 브리지", () => {
     const cadence = read("src/entities/vault-session/model/poll-cadence.test.ts");
     expect(
       cadence,
-      "폴링 케이던스가 사라지면 웹은 파일 변화를 정말로 못 보게 된다. 그러면 " +
-        "이 능력은 강등 축으로 넘어가고 DEGRADED_SURFACES 등재가 필요해진다.",
+      "Without the polling cadence the web build really cannot see file changes. Then " +
+        "this capability moves to the degraded axis and needs a DEGRADED_SURFACES entry.",
     ).toMatch(/burstMs|idleMs/);
   });
 });

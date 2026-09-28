@@ -133,7 +133,7 @@ const E2E_FULL_INPUTS = [
 const KNOWN_PATHS = [
   /^(?:app|assets|cli|docs|examples|mcp|messages|public|samples|script|scripts|src|src-tauri|tests)\//,
   /^\.(?:agents|claude|codex|github|githooks)\//,
-  /^\.(?:env\.example|gitattributes|gitignore|mcp\.json(?:\.example)?|nvmrc)$/,
+  /^\.(?:bun-version|env\.example|gitattributes|gitignore|mcp\.json(?:\.example)?|nvmrc)$/,
   /^(?:AGENTS|CLAUDE|CODE_OF_CONDUCT|CONTRIBUTING|NOTICE|README|SECURITY)\.md$/,
   /^LICENSE$/,
   /^(?:eslint\.config\.mjs|next\.config\.ts|package\.json|playwright\.config\.ts|pnpm-lock\.yaml|postcss\.config\.mjs|tsconfig\.json|vitest\.config\.ts|vitest\.setup\.ts)$/,

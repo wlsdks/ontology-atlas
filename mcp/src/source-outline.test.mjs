@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
   OUTLINE_DECLARATION_LIMIT,
+  OUTLINE_LINE_CHARS,
   OUTLINE_SIGNATURE_CHARS,
   outlineSource,
 } from './source-outline.mjs';
@@ -331,6 +332,14 @@ test('numbers lines from one across CRLF, CR and a missing final newline', () =>
   const noTrailing = outlineSource('def a():\n    pass\ndef b():\n    pass', 'a.py');
   assert.deepEqual(noTrailing.declarations.map((row) => row.line), [1, 3]);
   assert.deepEqual(outlineSource('', 'a.py'), { language: 'python', declarations: [], truncated: false });
+});
+
+test('skips a line longer than the scan limit and says the outline is truncated', () => {
+  const text = [`const packed = '${'x'.repeat(OUTLINE_LINE_CHARS)}';`, 'export function after() {}'].join('\n');
+  const outline = outlineSource(text, 'bundle.js');
+  assert.deepEqual(outline.declarations.map((row) => [row.line, row.name]), [[2, 'after']]);
+  assert.equal(outline.truncated, true);
+  assert.equal(outlineSource('export function only() {}', 'small.js').truncated, false);
 });
 
 test('caps the declaration list and the kept signature', () => {

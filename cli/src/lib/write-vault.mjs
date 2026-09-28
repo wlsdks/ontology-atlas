@@ -1,8 +1,8 @@
 import { mkdirSync, existsSync, readFileSync, realpathSync } from 'node:fs';
 import { readFileRevision, sameFileRevision, writeFileAtomically } from './atomic-write.mjs';
-import { dirname, resolve, sep } from 'node:path';
+import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { buildMarkdown, parseFrontmatter } from './parse-frontmatter.mjs';
-import { flatSlugIssue, inspectMergedUids, nodeUidIssue } from './schema.mjs';
+import { VAULT_SOURCES_DIR, flatSlugIssue, inspectMergedUids, nodeUidIssue, rawSourceSlugIssue, unwritableSlugIssue } from './schema.mjs';
 import { walkMd, pathToSlug } from './walk-vault.mjs';
 
 /**
@@ -24,10 +24,23 @@ export function slugToPath(rootPath, slug) {
   ) {
     throw new Error(`slug points outside the vault root: "${slug}"`);
   }
+  const rawSourceSlug = rawSourceSlugForPath(normalizedRoot, candidate);
+  if (rawSourceSlug) throw new Error(rawSourceSlugIssue(rawSourceSlug));
   // A string check alone cannot stop a symlink: `writeFileSync` follows a link inside the vault and writes
   // outside it. Same contract as `mcp/src/vault.mjs`.
   assertRealPathInside(candidate, normalizedRoot, slug);
   return candidate;
+}
+
+function slugToWritePath(rootPath, slug) {
+  const issue = unwritableSlugIssue(slug);
+  if (issue) throw new Error(issue);
+  const filePath = slugToPath(rootPath, slug);
+  const real = realSegmentsBelowRoot(resolve(rootPath), filePath);
+  const resolved = real ? segmentsToSlug(real) : slug;
+  const resolvedIssue = resolved === slug ? null : unwritableSlugIssue(resolved);
+  if (resolvedIssue) throw new Error(`slug "${slug}" resolves through a link to "${resolved}". ${resolvedIssue}`);
+  return filePath;
 }
 
 /** Still inside the vault after link resolution. A path that does not exist yet is
@@ -58,6 +71,38 @@ function assertRealPathInside(candidate, normalizedRoot, slug) {
   }
 }
 
+function rawSourceSlugForPath(normalizedRoot, candidate) {
+  const spelled = relative(normalizedRoot, candidate).split(sep);
+  if (namesRawSource(spelled)) return segmentsToSlug(spelled);
+  const real = realSegmentsBelowRoot(normalizedRoot, candidate);
+  return real && namesRawSource(real) ? segmentsToSlug(real) : null;
+}
+
+function namesRawSource(segments) {
+  return segments.length > 1 && segments[0] === VAULT_SOURCES_DIR;
+}
+
+function segmentsToSlug(segments) {
+  return segments.join('/').replace(/\.md$/, '');
+}
+
+function realSegmentsBelowRoot(normalizedRoot, candidate) {
+  try {
+    const realRoot = realpathSync.native(normalizedRoot);
+    const unresolved = [];
+    for (let probe = candidate; ; probe = dirname(probe)) {
+      try {
+        return relative(realRoot, join(realpathSync.native(probe), ...unresolved)).split(sep);
+      } catch {
+        if (dirname(probe) === probe) return null;
+        unresolved.unshift(basename(probe));
+      }
+    }
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Writes a new doc, creating directories; throws when the file exists, never overwriting the user's work.
  * Same contract as writeDoc in mcp/src/vault.mjs.
@@ -73,7 +118,7 @@ export function writeDoc(rootPath, slug, { frontmatter, body = '' }) {
 /** The single preflight through which a dry run and a real write check the same
  * slug and UID contract. */
 export function preflightWriteDoc(rootPath, slug, frontmatter) {
-  const filePath = slugToPath(rootPath, slug);
+  const filePath = slugToWritePath(rootPath, slug);
   if (existsSync(filePath)) {
     throw new Error(`Doc already exists: ${slug}`);
   }
@@ -145,7 +190,7 @@ export function writeFrontmatterKey(rootPath, slug, key, value, options) {
  * atomically — written separately, a failure between them leaves one without the
  * other. */
 export function writeFrontmatterKeys(rootPath, slug, patch, { expectedRevision = null } = {}) {
-  const filePath = slugToPath(rootPath, slug);
+  const filePath = slugToWritePath(rootPath, slug);
   let current;
   try {
     current = readDocFrontmatter(rootPath, slug);

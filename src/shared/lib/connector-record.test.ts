@@ -7,6 +7,7 @@ import {
   type ConnectorRecord,
   type ConnectorTransport,
   type ConnectorValueEntry,
+  connectorFingerprint,
   connectorProblems,
   deserializeConnectorState,
   looksLikeSecretKey,
@@ -26,6 +27,36 @@ function stdio(overrides: Partial<ConnectorRecord> = {}): ConnectorRecord {
     ...overrides,
   };
 }
+
+describe("what this Mac's allowance covers", () => {
+  it('changes with anything that decides what runs or where a token goes, and not with the switch', () => {
+    const base = stdio({
+      env: [
+        { name: 'NOTION_TOKEN', secretRef: 'connector:c1:NOTION_TOKEN' },
+        { name: 'NOTION_VERSION', value: '2022-06-28' },
+      ],
+    });
+    const allowed = connectorFingerprint(base);
+    expect(connectorFingerprint({ ...base, enabled: true, origin: 'custom' })).toBe(allowed);
+    const changes: ConnectorRecord[] = [
+      { ...base, command: '/tmp/other-program' },
+      { ...base, args: [...base.args, '--debug'] },
+      { ...base, name: 'notion-2' },
+      { ...base, env: [...base.env, { name: 'NODE_OPTIONS', value: '--require /tmp/x.js' }] },
+      { ...base, env: [base.env[0]!, { name: 'NOTION_VERSION', value: '2099-01-01' }] },
+      { ...base, env: [{ name: 'NOTION_TOKEN', secretRef: 'connector:c9:NOTION_TOKEN' }, base.env[1]!] },
+      { ...base, transport: 'http', url: 'https://elsewhere.example/mcp' },
+    ];
+    for (const changed of changes) expect(connectorFingerprint(changed)).not.toBe(allowed);
+  });
+
+  it("refuses a keychain reference that is not the connector's own", () => {
+    const withRef = (secretRef: string) => stdio({ env: [{ name: 'NOTION_TOKEN', secretRef }] });
+    expect(connectorProblems(withRef('connector:c2:NOTION_TOKEN'))).toContain('secret-ref-foreign');
+    expect(connectorProblems(withRef('connector:c1:GITHUB_TOKEN'))).toContain('secret-ref-foreign');
+    expect(connectorProblems(withRef('connector:c1:NOTION_TOKEN'))).not.toContain('secret-ref-foreign');
+  });
+});
 
 describe('connector record', () => {
   it('can only store a transport an ACP session actually carries', () => {

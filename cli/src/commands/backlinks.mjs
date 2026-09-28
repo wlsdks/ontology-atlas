@@ -1,4 +1,4 @@
-// `ontology-atlas backlinks <slug> [vault]`: every node referencing the target, over MCP find_backlinks.
+// `ontology-atlas backlinks <slug> [vault]`: every file linking the target, over MCP find_backlinks.
 
 import { COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
@@ -67,7 +67,7 @@ export async function runBacklinks(args) {
     const keys = Array.isArray(bl.matchedKeys) ? bl.matchedKeys.join(', ') : '';
     const titleText = bl.title && bl.title !== bl.slug ? ` ${COLORS.dim}· ${bl.title}${COLORS.reset}` : '';
     process.stdout.write(
-      `  ${COLORS.cyan}${bl.kind ?? '?'}${COLORS.reset}  ` +
+      `  ${COLORS.cyan}${bl.kind ?? (bl.slug.startsWith('wiki/') ? 'wiki page' : 'no kind')}${COLORS.reset}  ` +
         `${bl.slug}${titleText}` +
         (keys ? ` ${COLORS.dim}(${keys})${COLORS.reset}` : '') +
         `\n`,
