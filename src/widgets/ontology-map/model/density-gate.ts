@@ -23,6 +23,15 @@ export function chipAnchorRadius(ring: number, expanded: boolean): number {
   return expanded ? ring + EXPANDED_CHIP_CLEARANCE : ring;
 }
 
+/** Along the parent's fan direction, at the chip ring (beyond the child disc once expanded). */
+export function chipAnchor(geometry: DensityGateParentGeometry, expanded: boolean): { x: number; y: number } {
+  const anchorRadius = chipAnchorRadius(geometry.ring ?? DEFAULT_CHIP_RING, expanded);
+  return {
+    x: geometry.x + Math.cos(geometry.angle) * anchorRadius,
+    y: geometry.y + Math.sin(geometry.angle) * anchorRadius,
+  };
+}
+
 export interface DensityGateParentGeometry {
   x: number;
   y: number;
@@ -127,21 +136,16 @@ export function computeDensityGate(input: DensityGateInput): DensityGateResult {
     if (clusteredIds.has(parentId)) continue;
     const geometry = parentGeometry.get(parentId);
     if (!geometry) continue;
-    const ring = geometry.ring ?? DEFAULT_CHIP_RING;
     const expanded = expandedParents.has(parentId);
     const folded = foldedSubtreeOf(parentId);
     // The glyph names the rank the chip sits on, so it reads the direct children.
     const foldedChildren = heldOpen ? gated.filter((c) => !heldOpen.has(c)) : gated;
     if (foldedChildren.length === 0 && !expanded) continue;
-    const anchorRadius = chipAnchorRadius(ring, expanded);
     chips.push({
       parentId,
       count: folded.length,
       expanded,
-      anchor: {
-        x: geometry.x + Math.cos(geometry.angle) * anchorRadius,
-        y: geometry.y + Math.sin(geometry.angle) * anchorRadius,
-      },
+      anchor: chipAnchor(geometry, expanded),
       childKind: kindOf?.(foldedChildren[0] ?? gated[0]),
     });
   }

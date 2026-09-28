@@ -53,6 +53,7 @@ interface Dependencies {
   bornNodeIdsRef: RefObject<Set<string>>;
   hasDependsEdgesRef: RefObject<boolean>;
   hasContainsEdgesRef: RefObject<boolean>;
+  lastActiveMsRef: RefObject<number>;
   pulsesRef: RefObject<Pulse[]>;
   simRef: RefObject<ForceSimulation | null>;
   nodeDragRef: RefObject<NodeDragState | null>;
@@ -101,6 +102,7 @@ export function useTopologyWorldLifecycle({
   bornNodeIdsRef,
   hasDependsEdgesRef,
   hasContainsEdgesRef,
+  lastActiveMsRef,
   pulsesRef,
   simRef,
   nodeDragRef,
@@ -308,6 +310,8 @@ export function useTopologyWorldLifecycle({
       hasInitializedRef.current = false;
     }
     trySnapInitialCamera(tokens);
+    // New data is a static state change: draw it even when the map sleeps.
+    lastActiveMsRef.current = performance.now();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodes, edges, expand.structure]);
   return { rescueCameraIfEverythingOffscreen, trySnapInitialCamera };

@@ -228,10 +228,14 @@ export function SavedConstellationsControl({ handle, candidates, selectedSlug, i
     };
   }, [listOpen]);
 
-  const candidateByMapId = useMemo(() => new Map(candidates.map((candidate) => [candidate.mapId, candidate])), [candidates]);
   const selectedMembers = useMemo(
     () => resolvedDraftCandidates(memberDrafts, candidates),
     [candidates, memberDrafts],
+  );
+  const selectedUids = useMemo(() => new Set(selectedMembers.map((member) => member.uid)), [selectedMembers]);
+  const membersBySaved = useMemo(
+    () => new Map(store.constellations.map((saved) => [saved, resolvedMembers(saved, candidates)])),
+    [candidates, store.constellations],
   );
   const unresolvedMembers = useMemo(
     () => unresolvedDraftMembers(memberDrafts, candidates),
@@ -283,7 +287,7 @@ export function SavedConstellationsControl({ handle, candidates, selectedSlug, i
       setPurpose(saved.folder.purpose ?? '');
       setMemberDrafts(constellationMemberDrafts(saved));
     } else {
-      const selected = selectedSlug ? candidateByMapId.get(selectedSlug) : null;
+      const selected = selectedSlug ? candidates.findLast((candidate) => candidate.mapId === selectedSlug) : null;
       setEditingId(null);
       setName('');
       setPurpose('');
@@ -506,7 +510,7 @@ export function SavedConstellationsControl({ handle, candidates, selectedSlug, i
               <p className="mt-1 text-body text-[color:var(--color-text-tertiary)]">{t('emptyBody')}</p>
             </div>
           ) : store.constellations.map((saved) => {
-            const members = resolvedMembers(saved, candidates);
+            const members = membersBySaved.get(saved) ?? [];
             const missing = saved.items.filter((item) => item.target.kind === 'ontology').length - members.length;
             return (
               <div key={saved.folder.id} role="listitem" className="group flex items-center gap-1">
@@ -594,15 +598,12 @@ export function SavedConstellationsControl({ handle, candidates, selectedSlug, i
               autoComplete="off"
             />
             <div className="max-h-40 overflow-y-auto rounded-panel border border-[color:var(--color-divider)] p-[var(--card-pad)]" data-testid="constellation-member-picker">
-              {filteredCandidates.length === 0 ? (
+              {!editorOpen ? null : filteredCandidates.length === 0 ? (
                 <p className="px-2 py-4 text-center text-body text-[color:var(--color-text-tertiary)]">{t('noMatches')}</p>
               ) : filteredCandidates.map((candidate) => (
                 <Checkbox
                   key={candidate.uid}
-                  checked={[...memberDrafts.keys()].some((savedUid) => {
-                    const resolution = resolveConstellationCandidate(savedUid, candidates);
-                    return resolution.status === 'resolved' && resolution.candidate.uid === candidate.uid;
-                  })}
+                  checked={selectedUids.has(candidate.uid)}
                   onChange={(event) => setMemberDrafts((current) =>
                     toggleConstellationCandidate(current, candidate, candidates, event.target.checked))}
                   className="rounded-chip px-2 py-1.5 hover:bg-[color:var(--color-overlay-1)]"

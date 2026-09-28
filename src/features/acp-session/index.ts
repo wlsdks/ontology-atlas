@@ -35,6 +35,7 @@ export type {
   AcpPresentationIntent,
   AcpPresentationScene,
   AcpPresentationTrace,
+  KnownRelations,
 } from "./model/presentation-trace";
 export { permissionIntent } from "./model/permission-intent";
 export { permissionScope } from "./model/permission-scope";
