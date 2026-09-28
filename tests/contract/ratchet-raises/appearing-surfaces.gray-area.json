@@ -1,0 +1,5 @@
+{
+  "gate": "appearing-surfaces",
+  "raise": 4,
+  "why": "GrayAreaInspector adds the folder inspector, candidate disclosure, scope disclosure and source excerpt. tests/e2e/gray-area/gray-area.spec.ts opens all four through the installed-app bridge fixture and applies the same nonempty WCAG axe floor and zero-violation requirement as a11y-open-surfaces.spec.ts; this fixture-specific opener is measured separately from its generic OPENERS."
+}

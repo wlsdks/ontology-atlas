@@ -10,7 +10,7 @@
   "inspectFolder": "Inspect this folder",
   "boundary": "These are reasons to read, not verified defects or accepted relations.",
   "unavailable": "This evidence could not be read safely and consistently.",
-  "connectHint": "Check the project’s connected source folder, or refresh after the files stop changing. A missing, ambiguous, oversized or changed scope stays unmeasured.",
+  "connectHint": "Check the connected source folder, or refresh after the files stop changing. A missing, ambiguous, oversized or changed scope stays unmeasured.",
   "webLimit": "The browser cannot inspect the connected code folder. This local reader runs in the installed app.",
   "webStillWorks": "You can still read concept documents and follow recorded relations on the map.",
   "getApp": "Get the app",
@@ -66,5 +66,6 @@
   "scopeDetails": "Scope, limits and permissions",
   "scopeBoundary": "Project/domain members extend the selection scope; membership is not evidence of impact.",
   "platformLimit": "This secure local reader currently runs in the macOS app. On this platform the evidence remains unmeasured; map and document reading still work.",
-  "copyFailed": "The clipboard could not be updated. The evidence is unchanged."
+  "copyFailed": "The clipboard could not be updated. The evidence is unchanged.",
+  "localFolderRequired": "Open a local ontology folder to inspect its connected code. The sample has no local source binding."
 }

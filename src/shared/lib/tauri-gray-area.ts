@@ -1,6 +1,6 @@
 import { invoke, isTauri } from '@tauri-apps/api/core';
 
-export interface GrayAreaNode {
+interface GrayAreaNode {
   uid: string;
   slug: string;
   title: string;
@@ -9,7 +9,7 @@ export interface GrayAreaNode {
   body: string;
   bodyDigest: string;
 }
-export interface GrayAreaEdge { from: string; to: string; via: string }
+interface GrayAreaEdge { from: string; to: string; via: string }
 export interface GrayAreaWitness {
   path: string;
   status: 'read' | 'refused' | 'omitted';
@@ -20,7 +20,7 @@ export interface GrayAreaWitness {
   reason?: string;
   fileComplete?: boolean;
 }
-export interface GrayAreaBasis {
+interface GrayAreaBasis {
   projectSlug: string;
   selectedUids: string[];
   sourceId: string;

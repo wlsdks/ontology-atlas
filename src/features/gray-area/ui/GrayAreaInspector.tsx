@@ -1,10 +1,13 @@
 'use client';
 
+import { isTauriVaultRuntime } from '@/shared/lib/tauri-vault-fs';
+import { cn } from '@/shared/lib/cn';
+import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { copyText } from '@/shared/lib/copy-text';
 import { useHeldValue } from '@/shared/lib/use-presence';
 import { Link } from '@/i18n/navigation';
 import { checkGrayAreaEvidence, readGrayAreaEvidence, previewGrayAreaScope, type GrayAreaScopePreview, type GrayAreaSnapshot, type GrayAreaWitness } from '@/shared/lib/tauri-gray-area';
-import { Button, IconButton, RowButton, Surface } from '@/shared/ui';
+import { Button, IconButton, RowButton, Surface, controlClass } from '@/shared/ui';
 import { ArrowRight, Check, ChevronDown, Copy, FileSearch, RefreshCw, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 'react';
@@ -25,6 +28,7 @@ interface Props {
 
 export function GrayAreaInspector({ open, vaultPath, selection, onClose, onFocus, onPrepare, onExited }: Props) {
   const t = useTranslations('grayArea');
+  const nativeRuntime = isTauriVaultRuntime();
   const [attempt, setAttempt] = useState(0);
   const [preview,setPreview] = useState<{key:string;value:GrayAreaScopePreview|null;error:string|null}|null>(null);
   const [scanKey,setScanKey] = useState<string|null>(null);
@@ -85,12 +89,12 @@ export function GrayAreaInspector({ open, vaultPath, selection, onClose, onFocus
       <IconButton ref={closeRef} label={t('close')} onClick={onClose} size="sm"><X size={16}/></IconButton>
     </header>
     <div ref={bodyRef} data-testid="gray-area-body" className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-[var(--card-pad)]">
-      {proposal?.value && scanKey!==requestKey ? <div className="space-y-4" data-testid="gray-area-scope-preview"><p className="text-body">{t('preview')}</p><p className="break-all rounded-card border border-[color:var(--color-divider)] p-3 font-mono text-caption">{proposal.value.sourcePath}</p><p className="text-caption text-[color:var(--color-text-secondary)]">{t('previewLimit',{limit:proposal.value.maxFiles})}</p><Button className="max-w-full" onClick={()=>void start()}><span className="min-w-0 whitespace-normal">{t('inspectFolder')}</span></Button></div> : !current && (!proposal || scanKey===requestKey) ? <div role="status" className="space-y-3 text-body text-[color:var(--color-text-secondary)]"><FileSearch size={20}/><p>{t('reading')}</p><p className="text-caption">{t('localOnly')}</p></div> : current?.snapshot && vaultPath ?
+      {proposal?.value && scanKey!==requestKey ? <div className="space-y-4" data-testid="gray-area-scope-preview"><p className="text-body">{t('preview')}</p><p className="break-all rounded-card border border-[color:var(--color-divider)] p-3 font-mono text-caption">{proposal.value.sourcePath}</p><p className="text-caption text-[color:var(--color-text-secondary)]">{t('previewLimit',{limit:proposal.value.maxFiles})}</p><Button className="max-w-full" onClick={()=>void start()}><span className="min-w-0 whitespace-normal">{t('inspectFolder')}</span></Button></div> : !current && (!proposal || scanKey===requestKey) ? <div role="status" className="space-y-3 text-body text-[color:var(--color-text-secondary)]"><FileSearch size={ICON_SIZE.lg}/><p>{t('reading')}</p><p className="text-caption">{t('localOnly')}</p></div> : current?.snapshot && vaultPath ?
         <Findings onReady={mountResults} enabled={open} escapeFirstRef={escapeFirstRef} key={current.snapshot.snapshotId} snapshot={current.snapshot} vaultPath={vaultPath} onFocus={onFocus} onPrepare={onPrepare} onRefresh={() => setAttempt(n=>n+1)}/> :
-        <div className="space-y-3 text-body text-[color:var(--color-text-secondary)]" data-testid={current?.error||proposal?.error ? 'gray-area-unavailable' : 'gray-area-web-limit'}>
-          <p>{current?.error||proposal?.error ? String(current?.error??proposal?.error).includes('unsupported_platform')?t('platformLimit'):t('unavailable') : t('webLimit')}</p>
+        <div className="space-y-3 text-body text-[color:var(--color-text-secondary)]" data-testid={current?.error||proposal?.error ? 'gray-area-unavailable' : nativeRuntime ? 'gray-area-local-folder-required' : 'gray-area-web-limit'}>
+          <p>{current?.error||proposal?.error ? String(current?.error??proposal?.error).includes('unsupported_platform')?t('platformLimit'):t('unavailable') : nativeRuntime ? t('localFolderRequired') : t('webLimit')}</p>
           <p className="text-caption">{current?.error||proposal?.error ? t('connectHint') : t('webStillWorks')}</p>
-          {current?.error||proposal?.error ? <Button variant="outline" onClick={()=>setAttempt(n=>n+1)}><RefreshCw size={14}/>{t('retry')}</Button> : <Link href="/download" data-testid="gray-area-get-app" className="inline-flex text-body underline underline-offset-4">{t('getApp')}</Link>}
+          {current?.error||proposal?.error ? <Button variant="outline" onClick={()=>setAttempt(n=>n+1)}><RefreshCw size={14}/>{t('retry')}</Button> : !nativeRuntime ? <Link href="/download" data-testid="gray-area-get-app" className={cn(controlClass({shape:'link',tone:'accent'}),'text-body')}>{t('getApp')}</Link> : null}
         </div>}
     </div>
   </Surface>;
@@ -126,7 +130,7 @@ function Findings({ snapshot,vaultPath,onFocus,onPrepare,onRefresh,escapeFirstRe
   const label = (slug:string|null) => snapshot.nodes.find(n=>n.slug===slug)?.title ?? slug ?? '';
   return <div ref={onReady} tabIndex={-1} role="group" aria-label={t('title')} className="space-y-4 outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]">
     <p className="text-caption text-[color:var(--color-text-secondary)]">{t('boundary')}</p>
-    {stale ? <div role="status" className="space-y-3 rounded-card border border-[color:var(--color-divider)] p-3"><p className="text-body">{t('stale')}</p><Button onClick={onRefresh} variant="outline">{t('refresh')}</Button></div> : null}
+    {stale ? <div role="status" className="space-y-3 rounded-card border border-[color:var(--color-divider)] p-[var(--card-pad)]"><p className="text-body">{t('stale')}</p><Button onClick={onRefresh} variant="outline">{t('refresh')}</Button></div> : null}
     {visible.length===0 ? <div role="status" className="space-y-2 py-4"><h3 className="text-body font-[var(--font-weight-strong)]">{dismissed.size ? t('foldedAll') : t('empty')}</h3><p className="text-caption text-[color:var(--color-text-secondary)]">{t('emptyLimit')}</p></div> : null}
     {visible.map(candidate=>{
       const active=expanded===candidate.id;

@@ -58,3 +58,31 @@ test('a changed evidence version blocks source opening and copying; session fold
   await expect(page.getByRole('button',{name:'Copy investigation',exact:true}).first()).toBeDisabled();
   await expect(page.getByTestId('gray-area-source-witness')).toHaveCount(0);
 });
+
+test('the inspector, candidate detail, scope and source open with nonempty WCAG coverage',async({page})=>{
+  await page.setViewportSize({width:1512,height:949});await install(page);await open(page);
+  const receipts: unknown[]=[];
+  const audit=async(state:string)=>{
+    await waitForAnimationsDone(page.getByTestId('gray-area-inspector'));
+    await page.addScriptTag({path:require.resolve('axe-core/axe.min.js')});
+    const result=await page.evaluate(async()=>{
+      const axe=(window as unknown as {axe:{run:(root:Document,options:unknown)=>Promise<{passes:unknown[];violations:unknown[]}>}}).axe;
+      const result=await axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21a','wcag21aa','wcag22aa']}});
+      return {rulesPassed:result.passes.length,violations:result.violations};
+    });
+    receipts.push({state,...result});
+    expect(result.rulesPassed,state).toBeGreaterThanOrEqual(15);
+    expect(result.violations,state).toEqual([]);
+  };
+  await audit('folder preview');
+  await page.getByRole('button',{name:'Inspect this folder',exact:true}).click();
+  await expect(page.getByTestId('gray-area-missing-link').getByText('Observed',{exact:true})).toBeVisible();
+  await audit('candidate detail');
+  await page.getByRole('button',{name:'Scope, limits and permissions',exact:true}).click();
+  await expect(page.getByRole('list',{name:'Implementation folders inspected'})).toBeVisible();
+  await audit('scope disclosure');
+  await page.getByRole('button',{name:/src\/retry\/index.ts:1/}).first().click();
+  await expect(page.getByRole('region',{name:'Captured source',exact:true})).toBeFocused();
+  await audit('source excerpt');
+  writeFileSync('/tmp/atlas-gray-area-proof/open-surfaces-axe.json',JSON.stringify(receipts,null,2));
+});
