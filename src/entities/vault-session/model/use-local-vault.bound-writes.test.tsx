@@ -45,7 +45,6 @@ function notFound(): Error {
   return Object.assign(new Error('not found'), { name: 'NotFoundError' });
 }
 
-/** A folder whose files live in `written`, keyed by name. */
 function folder(rootPath: string, written: Map<string, string>): LocalFsHandleRecord {
   const handle = {
     kind: 'directory',
