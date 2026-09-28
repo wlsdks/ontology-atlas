@@ -2,12 +2,40 @@
 //! Discovery returns metadata for granted roots only, so no credential is scanned
 //! (`.claude/rules/local-first.md`); mirrored in `source-discovery.ts`, or they drift.
 
+use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::{Mutex, OnceLock};
 
 use sha2::{Digest, Sha256};
 
 use crate::{canonical_root, canonical_source_root, resolve_existing_inside};
+
+fn vended_source_paths() -> &'static Mutex<HashSet<PathBuf>> {
+    static VENDED: OnceLock<Mutex<HashSet<PathBuf>>> = OnceLock::new();
+    VENDED.get_or_init(|| Mutex::new(HashSet::new()))
+}
+
+fn remember_source_paths<I: IntoIterator<Item = PathBuf>>(paths: I) {
+    let mut vended = vended_source_paths()
+        .lock()
+        .unwrap_or_else(|err| err.into_inner());
+    for path in paths {
+        if let Ok(canonical) = fs::canonicalize(&path) {
+            vended.insert(canonical);
+        }
+    }
+}
+
+fn take_source_path(path: &Path) -> bool {
+    let Ok(canonical) = fs::canonicalize(path) else {
+        return false;
+    };
+    vended_source_paths()
+        .lock()
+        .unwrap_or_else(|err| err.into_inner())
+        .remove(&canonical)
+}
 
 /// Same value as TS `VAULT_SOURCES_DIR`.
 const SOURCES_DIR: &str = "sources";
@@ -150,6 +178,7 @@ pub fn pick_source_files(dialog_title: Option<String>) -> Result<Vec<String>, St
     let Some(picked) = rfd::FileDialog::new().set_title(title).pick_files() else {
         return Ok(Vec::new());
     };
+    remember_source_paths(picked.iter().cloned());
     Ok(picked
         .into_iter()
         .map(|path| path.to_string_lossy().to_string())
@@ -276,6 +305,11 @@ pub fn import_source_files(
             size: None,
             reason: Some(reason.to_string()),
         };
+
+        if !take_source_path(&picked) {
+            results.push(failure("source-not-user-selected"));
+            continue;
+        }
 
         let Some(base_name) = safe_source_file_name(&picked_name) else {
             results.push(failure("unusable-file-name"));
@@ -460,6 +494,12 @@ pub fn discover_source_candidates(
         };
         walk_candidates(&canonical, root, "", 0, &mut report);
     }
+    remember_source_paths(
+        report
+            .candidates
+            .iter()
+            .map(|candidate| PathBuf::from(&candidate.root_path).join(&candidate.relative_path)),
+    );
     report
         .candidates
         .sort_by(|a, b| b.mtime.cmp(&a.mtime).then_with(|| a.name.cmp(&b.name)));
@@ -583,8 +623,10 @@ mod tests {
         let picked = root.join("scan.pdf");
         let body: Vec<u8> = (0..300_000_u32).map(|i| (i % 251) as u8).collect();
         fs::write(&picked, &body).unwrap();
+        let picked_path = picked.clone();
         let picked = picked.to_string_lossy().to_string();
 
+        remember_source_paths([picked_path.clone()]);
         let first = import_source_files(root_path.clone(), vec![picked.clone()]).unwrap();
         assert_eq!(first[0].status, "added");
         assert_eq!(first[0].size, Some(body.len() as u64));
@@ -594,9 +636,58 @@ mod tests {
             hash_path(&root.join("sources/scan.pdf")).ok()
         );
 
+        remember_source_paths([picked_path]);
         let second = import_source_files(root_path, vec![picked]).unwrap();
         assert_eq!(second[0].status, "duplicate");
         assert_eq!(second[0].relative_path.as_deref(), Some("sources/scan.pdf"));
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn import_refuses_a_source_the_user_never_selected() {
+        let root = std::env::temp_dir().join(format!("atlas-vended-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(&root).unwrap();
+        let root_path = fs::canonicalize(&root)
+            .unwrap()
+            .to_string_lossy()
+            .to_string();
+
+        let chosen = root.join("chosen.pdf");
+        fs::write(&chosen, b"%PDF-1.7 chosen\n").unwrap();
+        let secret = root.join("stolen.pdf");
+        fs::write(&secret, b"%PDF-1.7 secret\n").unwrap();
+
+        remember_source_paths([chosen.clone()]);
+        let results = import_source_files(
+            root_path.clone(),
+            vec![
+                chosen.to_string_lossy().to_string(),
+                secret.to_string_lossy().to_string(),
+            ],
+        )
+        .unwrap();
+        let outcome = |name: &str| {
+            results
+                .iter()
+                .find(|result| result.picked_name == name)
+                .unwrap()
+        };
+        assert_eq!(outcome("chosen.pdf").status, "added");
+        assert_eq!(outcome("stolen.pdf").status, "failed");
+        assert_eq!(
+            outcome("stolen.pdf").reason.as_deref(),
+            Some("source-not-user-selected")
+        );
+        assert!(!root.join("sources/stolen.pdf").exists());
+
+        let replay =
+            import_source_files(root_path, vec![chosen.to_string_lossy().to_string()]).unwrap();
+        assert_eq!(replay[0].status, "failed");
+        assert_eq!(
+            replay[0].reason.as_deref(),
+            Some("source-not-user-selected")
+        );
         let _ = fs::remove_dir_all(&root);
     }
 
