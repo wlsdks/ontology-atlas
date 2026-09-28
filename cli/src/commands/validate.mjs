@@ -5,7 +5,6 @@ import { walkMd } from '../lib/walk-vault.mjs';
 import { parseFrontmatter } from '../lib/parse-frontmatter.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import {
-  createDependencyWitnessReads,
   dependencyWitnessFinding,
   folderOnlyEvidenceFinding,
   rawSourceKindIssues,
@@ -673,7 +672,7 @@ function findDependencyWitnessIssues(entries) {
     : '';
   if (!repoRoot) return [];
   const resolveTargetPath = evidencePathIndex(entries);
-  const fileReads = createDependencyWitnessReads();
+  const moduleNamesByPath = new Map();
   const issues = [];
   for (const entry of entries) {
     const kind = typeof entry.frontmatter?.kind === 'string' ? entry.frontmatter.kind.trim() : '';
@@ -683,7 +682,7 @@ function findDependencyWitnessIssues(entries) {
       frontmatter: entry.frontmatter,
       repoRoot,
       resolveTargetPath,
-      fileReads,
+      moduleNamesByPath,
     })) {
       issues.push({
         file: entry.file,

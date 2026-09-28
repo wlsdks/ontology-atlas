@@ -60,6 +60,7 @@ const BOUNDARY_KINDS = new Set(['domain', 'capability']);
 const UNCERTAINTY_KINDS = new Set(['domain', 'capability', 'element']);
 const EPISTEMIC_KINDS = new Set(['domain', 'capability', 'element', 'project']);
 const BODY_CHECK_KINDS = new Set([...DEFINITION_KINDS, ...BOUNDARY_KINDS, ...UNCERTAINTY_KINDS, ...EPISTEMIC_KINDS]);
+const BODY_CHECKS = [definitionFinding, boundaryFindings, uncertaintyFinding, epistemicExclusionFinding];
 const FOLDER_EVIDENCE_KINDS = new Set(['capability', 'element']);
 
 /** Entry-point filenames in the order an unfamiliar agent would try them, to say "open this instead". */
@@ -211,12 +212,7 @@ function bodyView(kind, title, body) {
 export function bodyMeaningFindings(input) {
   if (!BODY_CHECK_KINDS.has(input.kind)) return [];
   const view = bodyView(input.kind, input.title, input.body);
-  return [
-    definitionFinding(input, view),
-    ...boundaryFindings(input, view),
-    uncertaintyFinding(input, view),
-    epistemicExclusionFinding(input, view),
-  ].filter(Boolean);
+  return BODY_CHECKS.flatMap((check) => check(input, view) ?? []);
 }
 
 /**
@@ -509,18 +505,18 @@ function moduleSpecifiers(text) {
  * specifier. A bare word elsewhere is no witness (unrelated identifiers would
  * keep an edge green with no import). Case-sensitive: `Vault` and `vault` differ.
  */
-function textWitnesses(text, targetPath, witnessNames, moduleNamesByText) {
-  if (String(text).includes(targetPath)) return true;
+function textWitnesses({ text, path }, targetPath, witnessNames, moduleNamesByPath) {
+  if (text.includes(targetPath)) return true;
   const names = witnessNames.filter(Boolean);
   if (names.length === 0) return false;
-  let moduleNames = moduleNamesByText.get(text);
+  let moduleNames = moduleNamesByPath.get(path);
   if (!moduleNames) {
     moduleNames = new Set(moduleSpecifiers(text).flatMap((specifier) =>
       specifier
         .split(/::|[/\\{},\s]+|\.(?![A-Za-z0-9]{1,10}$)/)
         .map((segment) => segment.replace(/\.[^.]+$/, '')),
     ));
-    moduleNamesByText.set(text, moduleNames);
+    moduleNamesByPath.set(path, moduleNames);
   }
   return names.some((name) => moduleNames.has(name));
 }
@@ -581,13 +577,6 @@ function relationNoteText(frontmatter, target) {
   return '';
 }
 
-export const createDependencyWitnessReads = () => ({ files: new Map(), moduleNames: new Map() });
-
-function cachedWitnessRead(fileReads, absolute) {
-  if (!fileReads.files.has(absolute)) fileReads.files.set(absolute, readWitnessText(absolute));
-  return fileReads.files.get(absolute);
-}
-
 /**
  * A declared dependency its file never mentions; `impact` keeps
  * answering `sourceBacked: false` for every declared edge, and this names the rows behind
@@ -605,7 +594,6 @@ function cachedWitnessRead(fileReads, absolute) {
  * @param {Record<string, unknown>} [args.previousFrontmatter] absent judges every dependency
  * @param {string|null} args.repoRoot
  * @param {(ref: string) => string|null} args.resolveTargetPath target slug → its `path:`, or null
- * @param {ReturnType<typeof createDependencyWitnessReads>} [args.fileReads]
  * @returns {Array<object>} one finding per unwitnessed target, `key` = target slug (a per-edge notice key)
  */
 export function dependencyWitnessFinding({
@@ -614,7 +602,7 @@ export function dependencyWitnessFinding({
   previousFrontmatter,
   repoRoot,
   resolveTargetPath,
-  fileReads = createDependencyWitnessReads(),
+  moduleNamesByPath = new Map(),
 }) {
   if (!repoRoot || typeof resolveTargetPath !== 'function') return [];
   const source = insideRepo(repoRoot, frontmatter?.path);
@@ -622,11 +610,9 @@ export function dependencyWitnessFinding({
   const previous = previousFrontmatter ? declaredDependencies(previousFrontmatter) : new Set();
   const targets = [...declaredDependencies(frontmatter)].filter((target) => !previous.has(target));
   if (targets.length === 0) return [];
-  const sourceRead = cachedWitnessRead(fileReads, source.absolute);
+  const sourceRead = readWitnessText(source.absolute);
   if (sourceRead === null) return [];
-  /** One read per file however many edges cite it; `null` marks unreadable. */
   const readCache = new Map([[source.path, { ...sourceRead, path: source.path }]]);
-  const moduleNamesByText = fileReads.moduleNames;
   /**
    * A note path is tried from the repository root, then from each ancestor of the
    * citing file, nearest first, since writers copy editor-relative paths. Every
@@ -642,7 +628,7 @@ export function dependencyWitnessFinding({
     for (const base of ['', ...sourceAncestors]) {
       const resolved = insideRepo(repoRoot, base ? `${base}/${path}` : path);
       if (!resolved) continue;
-      const found = cachedWitnessRead(fileReads, resolved.absolute);
+      const found = readWitnessText(resolved.absolute);
       read = found && { ...found, path: resolved.path };
       if (read) break;
     }
@@ -665,8 +651,7 @@ export function dependencyWitnessFinding({
       const read = readCandidate(token);
       if (read) reads.push(read);
     }
-    const texts = reads.filter((read) => read.text !== undefined).map((read) => read.text);
-    if (texts.some((text) => textWitnesses(text, resolved.path, witnessNames, moduleNamesByText))) continue;
+    if (reads.some((read) => read.text !== undefined && textWitnesses(read, resolved.path, witnessNames, moduleNamesByPath))) continue;
     const unread = [...new Set(reads.filter((read) => read.tooLarge).map((read) => read.path))];
     findings.push({
       code: unread.length > 0 ? 'dependency-unjudged' : 'dependency-unwitnessed',

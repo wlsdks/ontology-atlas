@@ -272,6 +272,7 @@ function assertGraphNodeEndpoint(canonicalSlug, role) {
 
 const slugIndexByDocs = new WeakMap();
 
+// O(docs) once per loaded list, then O(1) per lookup.
 function slugIndexOf(docs) {
   let index = slugIndexByDocs.get(docs);
   if (index) return index;
