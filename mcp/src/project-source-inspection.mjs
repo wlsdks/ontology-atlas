@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
+import { hardenedGitArgv } from './hardened-git.mjs';
 import {
   closeSync,
   lstatSync,
@@ -139,7 +140,7 @@ function walkFolder(root, prefix, depth, state) {
 }
 
 function runGit(root, args) {
-  return execFileSync('git', ['-C', root, ...args], {
+  return execFileSync('git', hardenedGitArgv(root, args), {
     encoding: null,
     maxBuffer: GIT_MAX_BUFFER,
     stdio: ['ignore', 'pipe', 'pipe'],

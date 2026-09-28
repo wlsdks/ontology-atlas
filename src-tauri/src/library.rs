@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 
 use sha2::{Digest, Sha256};
 
-use crate::{canonical_root, resolve_existing_inside};
+use crate::{canonical_root, canonical_source_root, resolve_existing_inside};
 
 /// Same value as TS `VAULT_SOURCES_DIR`.
 const SOURCES_DIR: &str = "sources";
@@ -424,14 +424,13 @@ pub fn discover_source_candidates(
         unreadable_roots: Vec::new(),
     };
     for root in &roots {
-        let Ok(canonical) = fs::canonicalize(&root.root_path) else {
+        // Only a granted vault or the repo a granted vault lives in; the renderer
+        // supplies these from the vault root and its project-source bindings, so a
+        // forged root cannot enumerate names/sizes/mtimes under an arbitrary directory.
+        let Ok(canonical) = canonical_source_root(&root.root_path) else {
             report.unreadable_roots.push(root.label.clone());
             continue;
         };
-        if !canonical.is_dir() {
-            report.unreadable_roots.push(root.label.clone());
-            continue;
-        }
         walk_candidates(&canonical, root, "", 0, &mut report);
     }
     report

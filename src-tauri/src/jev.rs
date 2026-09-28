@@ -273,6 +273,9 @@ where
 /// as the `secret_verify` and `llm_chat` commands do in `llm.rs`.
 #[tauri::command(async)]
 pub fn jev_judge(vault_path: String, payload: String) -> Result<JevJudgment, String> {
+    // The judgment writes an audit line under the vault and sends the payload out, so
+    // the vault must be a granted root — checked before the keychain is touched.
+    let vault = crate::canonical_root(&vault_path)?;
     validate_payload(&payload)?;
     let secret = entry()?
         .get_password()
@@ -280,7 +283,7 @@ pub fn jev_judge(vault_path: String, payload: String) -> Result<JevJudgment, Str
     if secret.contains(['\r', '\n']) {
         return Err(coded("secret-has-newline", ""));
     }
-    judge_with(Path::new(&vault_path), &payload, &secret, |config| {
+    judge_with(&vault, &payload, &secret, |config| {
         run_curl(curl_argv_with_timeout("30"), config)
     })
 }
