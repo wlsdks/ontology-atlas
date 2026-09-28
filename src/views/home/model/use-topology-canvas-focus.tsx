@@ -1,7 +1,7 @@
 import type { useTopologyVaultReadModel } from "./use-topology-vault-read-model";
 
 import { buildChatNodeIndex, resolveNodeAgentTarget } from "@/entities/knowledge-graph";
-import { presentationRelationKeysForGraphEdge } from "@/features/acp-session";
+import { presentationRelationKeysForGraphEdge, type KnownRelations } from "@/features/acp-session";
 import { requestOntologyMapFrame } from "@/widgets/ontology-map";
 import { type PointerEvent as ReactPointerEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 type FullDetailA1Component = Awaited<ReturnType<typeof importFullDetailA1>>["FullDetailA1"];
@@ -24,7 +24,10 @@ export function useTopologyCanvasFocus({ topologyVaultReadModel }: Options) {
     [ontologyInsight],
   );
   const chatKnownSlugs = useMemo(() => new Set(chatNodeIndex.keys()), [chatNodeIndex]);
-  const chatKnownRelations = useMemo(() => chatRelationKeys(ontologyInsight), [ontologyInsight]);
+  const chatKnownRelations = useMemo<KnownRelations>(() => {
+    let keys: ReadonlySet<string> | null = null;
+    return { has: (key) => (keys ??= chatRelationKeys(ontologyInsight)).has(key) };
+  }, [ontologyInsight]);
   const pointMapAt = useCallback((nodeId: string | null) => {
     panelHoverNodeIdRef.current = nodeId;
     requestOntologyMapFrame();
