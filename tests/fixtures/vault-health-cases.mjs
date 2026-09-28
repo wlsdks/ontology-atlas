@@ -126,6 +126,24 @@ export const VAULT_HEALTH_CASES = [
     ],
   },
   {
+    name: 'self dependency → fail',
+    docs: [
+      {
+        slug: 'domains/core',
+        frontmatter: { kind: 'domain', title: 'Core', capabilities: ['capabilities/loop'] },
+      },
+      {
+        slug: 'capabilities/loop',
+        frontmatter: {
+          kind: 'capability',
+          title: 'Loop',
+          domain: 'domains/core',
+          depends_on: ['capabilities/loop'],
+        },
+      },
+    ],
+  },
+  {
     name: 'dangling reference → unresolved edge + compile issue',
     docs: [
       {
