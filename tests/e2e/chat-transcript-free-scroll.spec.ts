@@ -115,7 +115,8 @@ test('a reader who scrolls up mid-answer stays where they stopped, and the door 
   if (!box) throw new Error('the transcript has no box');
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.evaluate(() => {
-    const seen = ((window as unknown as { __upwardWheels: boolean[] }).__upwardWheels = []);
+    const seen: boolean[] = [];
+    (window as unknown as { __upwardWheels: boolean[] }).__upwardWheels = seen;
     window.addEventListener('wheel', (event) => { if (event.deltaY < 0) seen.push(event.defaultPrevented); }, { passive: true });
   });
   // One notch up stays within 120px of the end, where the old follow still counted as following.

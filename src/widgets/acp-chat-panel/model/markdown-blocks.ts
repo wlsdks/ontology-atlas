@@ -40,8 +40,7 @@ export function splitMarkdownBlocks(text: string): string[] {
     }
     at = end + 1;
   }
-  // The line still being written can already be a definition, and a finished answer often ends on one.
-  const rest = text.slice(at).replace(/\r$/, '');
-  if (!fence && rest && REACHES_ACROSS.test(rest.replace(PREFIXES, ''))) return [text];
+  const unfinishedLastLine = text.slice(at).replace(/\r$/, '');
+  if (!fence && REACHES_ACROSS.test(unfinishedLastLine.replace(PREFIXES, ''))) return [text];
   return starts.map((start, index) => text.slice(start, starts[index + 1] ?? text.length));
 }
