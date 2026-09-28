@@ -1,11 +1,16 @@
 import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { relative, resolve, sep } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { hardenedGitArgv } from './hardened-git.mjs';
+
+import { detachText } from './parser.mjs';
+import { CONTAINMENT_KEYS, revisionClocks } from './stale-parent.mjs';
 
 const MAX_GIT_OUTPUT = 4 * 1024 * 1024;
 /** One screen paint asks about at most this many paths; documents are queued before code. */
 const MAX_WALK_PATHS = 512;
 const MAX_GIT_BATCH_OUTPUT = 64 * 1024 * 1024;
+const GIT_BATCH_CHUNK = 256;
 const NODE_REVISION_CACHE_LIMIT = 8;
 const nodeRevisionCache = new Map();
 const PATH_CHANGE_CACHE_LIMIT = 8;
@@ -30,8 +35,8 @@ export function inspectVaultGit({ repoRoot, vaultRoot }) {
 
   const head = git(gitRoot, ['rev-parse', 'HEAD'], { allowFailure: true });
   const branch = git(gitRoot, ['symbolic-ref', '--quiet', '--short', 'HEAD'], { allowFailure: true });
-  // `-z` disables Git's C-style path quoting and makes filenames containing
-  // spaces, unicode, tabs, or newlines unambiguous for machine consumers.
+  // `-z` disables C-style path quoting, so names with spaces, unicode, tabs or
+  // newlines stay unambiguous.
   const scoped = git(gitRoot, ['status', '--porcelain=v1', '-z', '--untracked-files=all', '--', vaultRelative]);
   const all = git(gitRoot, ['status', '--porcelain=v1', '-z', '--untracked-files=all']);
   const files = parsePorcelain(scoped.stdout);
@@ -203,8 +208,8 @@ function resolveVaultGitScope({ repoRoot, vaultRoot, operation }) {
       vaultRoot: resolve(vaultRoot),
     };
   }
-  // macOS commonly exposes /var as a symlink to /private/var. Compare canonical
-  // paths so a vault reached through a symlink is not misclassified as outside.
+  // Canonical paths: macOS exposes /var as a symlink to /private/var, and a vault
+  // reached through it must not look outside.
   const gitRoot = realpathSync(resolve(gitRootResult.stdout.trim()));
   const absoluteVault = realpathSync(resolve(vaultRoot));
   const vaultRelative = relative(gitRoot, absoluteVault) || '.';
@@ -238,7 +243,7 @@ function snapshotBlockedReasons(status) {
 }
 
 function git(cwd, args, { allowFailure = false } = {}) {
-  const result = spawnSync('git', ['-C', cwd, ...args], {
+  const result = spawnSync('git', hardenedGitArgv(cwd, args), {
     encoding: 'utf8',
     maxBuffer: MAX_GIT_OUTPUT,
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -249,19 +254,26 @@ function git(cwd, args, { allowFailure = false } = {}) {
 }
 
 /**
- * Reads many historical blobs through one long-lived Git process.
- *
- * `collectNodeRevisions` used to spawn `git show` once per revision. The dogfood
- * vault has 66 revisions across nine summary nodes, so one first-contact health
- * call started 75 Git processes before returning the graph answer. `cat-file
- * --batch` preserves the exact blob bytes while collapsing those 66 processes
- * into one. A malformed/oversized batch returns null and the caller falls back
- * to the previous per-object read, keeping correctness ahead of speed.
+ * Reads historical blobs through `git cat-file --batch` instead of one `git show`
+ * per revision. A malformed or oversized chunk leaves its entries null and the
+ * caller falls back to per-object reads.
  */
-function gitBatchBlobs(cwd, objectSpecs) {
+function gitBatchBlobs(cwd, objectSpecs, reduce) {
+  const reduced = new Array(objectSpecs.length).fill(null);
+  for (let start = 0; start < objectSpecs.length; start += GIT_BATCH_CHUNK) {
+    const blobs = gitBatchBlobChunk(cwd, objectSpecs.slice(start, start + GIT_BATCH_CHUNK));
+    if (blobs === null) continue;
+    blobs.forEach((blob, index) => {
+      if (blob !== null) reduced[start + index] = reduce(blob);
+    });
+  }
+  return reduced;
+}
+
+function gitBatchBlobChunk(cwd, objectSpecs) {
   if (objectSpecs.length === 0) return [];
   if (objectSpecs.some((spec) => /[\r\n]/.test(spec))) return null;
-  const result = spawnSync('git', ['-C', cwd, 'cat-file', '--batch'], {
+  const result = spawnSync('git', hardenedGitArgv(cwd, ['cat-file', '--batch']), {
     encoding: null,
     input: Buffer.from(`${objectSpecs.join('\n')}\n`, 'utf8'),
     maxBuffer: MAX_GIT_BATCH_OUTPUT,
@@ -299,10 +311,7 @@ function cloneNodeRevisionResult(result) {
     revisionsBySlug: new Map(
       [...result.revisionsBySlug].map(([slug, revisions]) => [
         slug,
-        revisions.map((revision) => ({
-          ...revision,
-          children: [...revision.children],
-        })),
+        revisions.map((revision) => ({ ...revision })),
       ]),
     ),
   };
@@ -332,9 +341,8 @@ function parsePorcelain(text) {
     const index = line[0] || ' ';
     const worktree = line[1] || ' ';
     const path = line.slice(3);
-    // In porcelain v1 -z mode, rename/copy records contain the destination
-    // path first and the source path in the following NUL-delimited record.
-    // The destination is the path agents should use for subsequent operations.
+    // In -z mode a rename or copy record holds the destination first and the source
+    // in the next record; agents use the destination.
     if (['R', 'C'].includes(index) || ['R', 'C'].includes(worktree)) {
       indexInRecords += 1;
     }
@@ -397,26 +405,6 @@ function semanticSubject(files) {
   return `ontology snapshot: ${parts.join(', ')} vault file${files.length === 1 ? '' : 's'}`;
 }
 
-/**
- * Reads the revisions of specific vault nodes, newest first, for the stale-parent check.
- *
- * That check compares two clocks living in one file — the body, which is the
- * judgement, and the containment arrays, which are the membership — so it needs
- * content per revision, not just a timestamp. Only summary nodes are asked for,
- * the union walk stops at `maxRevisions * node count`, and any path hidden by
- * that bound gets its own `maxRevisions` fallback. Revision bodies are one
- * object batch and immutable results are reused only under the same HEAD.
- *
- * Each entry is `{ changedAt, body, children }`. `body` is everything after the
- * frontmatter block; `children` is the union of the containment arrays. Parsing is
- * deliberately line-level rather than a full YAML load: this reads historical
- * revisions that may predate the current schema, and a strict parser throwing on an
- * old file would take the whole advisory down with it.
- *
- * Returns `{ ok: false, reason }` in the same shape as the other helpers here when
- * the vault is not inside a repository, so a vault kept outside Git degrades to no
- * advisory instead of an error.
- */
 function parseRevisionHeader(value) {
   const separator = value.indexOf('\x1f');
   if (separator < 1) return null;
@@ -443,10 +431,10 @@ function perFileRevisionRequests(gitRoot, filePath, slug, maxRevisions) {
 }
 
 /**
- * Reads the union history once, then falls back only for a path whose oldest
- * relevant revision was hidden by the union bound. Requesting one extra commit
- * distinguishes complete history from truncation; a dominant file can therefore
- * never make a quieter summary node look complete by accident.
+ * Reads the union history once, then falls back per path only when the union
+ * bound hid its oldest relevant revision. One extra commit is requested to tell
+ * complete history from truncation, so a busy file cannot make a quiet summary
+ * node look complete.
  */
 function unionRevisionRequests(gitRoot, entries, maxRevisions) {
   if (entries.length === 0) return new Map();
@@ -500,6 +488,14 @@ function unionRevisionRequests(gitRoot, entries, maxRevisions) {
   return byPath;
 }
 
+/**
+ * Revisions of summary nodes, newest first, for the stale-parent
+ * check: `{ changedAt, bodyDigest, membershipDigest }`, the membership being the
+ * union of containment arrays. The union walk stops at `maxRevisions × nodes`;
+ * results are reused only under the same HEAD. Parsing is line-level, not YAML: old
+ * revisions may predate the schema, and a strict parser would take the whole
+ * advisory down. Outside a repository it returns `{ ok: false, reason }`.
+ */
 export function collectNodeRevisions({ repoRoot, vaultRoot, slugs, maxRevisions = 40 }) {
   const scope = resolveVaultGitScope({ repoRoot, vaultRoot, operation: 'node_revisions' });
   if (!scope.ok) return scope;
@@ -526,25 +522,26 @@ export function collectNodeRevisions({ repoRoot, vaultRoot, slugs, maxRevisions 
   }
   const revisionRequests = requestedSlugs.flatMap((slug) => requestsBySlug.get(slug) ?? []);
 
-  const batchBlobs = gitBatchBlobs(
+  const clocksOfBlob = (raw) => revisionClocks(splitNodeRevision(raw));
+  const batchClocks = gitBatchBlobs(
     gitRoot,
     revisionRequests.map((request) => request.objectSpec),
+    clocksOfBlob,
   );
-  const blobBySpec = new Map(
-    revisionRequests.map((request, index) => [request.objectSpec, batchBlobs?.[index] ?? null]),
+  const clocksBySpec = new Map(
+    revisionRequests.map((request, index) => [request.objectSpec, batchClocks[index]]),
   );
 
   for (const slug of requestedSlugs) {
     const revisions = [];
     for (const request of requestsBySlug.get(slug) ?? []) {
-      let raw = blobBySpec.get(request.objectSpec);
-      if (typeof raw !== 'string') {
+      let clocks = clocksBySpec.get(request.objectSpec);
+      if (!clocks) {
         const show = git(gitRoot, ['show', request.objectSpec], { allowFailure: true });
         if (!show.ok) continue;
-        raw = show.stdout;
+        clocks = clocksOfBlob(show.stdout);
       }
-      const { body, children } = splitNodeRevision(raw);
-      revisions.push({ changedAt: request.changedAt, body, children });
+      revisions.push({ changedAt: detachText(request.changedAt), ...clocks });
     }
     if (revisions.length) revisionsBySlug.set(slug, revisions);
   }
@@ -554,9 +551,6 @@ export function collectNodeRevisions({ repoRoot, vaultRoot, slugs, maxRevisions 
   return cloneNodeRevisionResult(result);
 }
 
-/** Containment keys, mirrored from `stale-parent.mjs` so this module stays free of a cycle. */
-const REVISION_CONTAINMENT_KEYS = ['contains', 'capabilities', 'elements', 'domains'];
-
 /** Splits one historical revision into its body and its declared containment members. */
 function splitNodeRevision(text) {
   const source = String(text ?? '');
@@ -564,7 +558,7 @@ function splitNodeRevision(text) {
   const frontmatter = match ? match[1] : '';
   const body = match ? source.slice(match[0].length) : source;
   const children = [];
-  for (const key of REVISION_CONTAINMENT_KEYS) {
+  for (const key of CONTAINMENT_KEYS) {
     const inline = new RegExp(`^${key}:[ \\t]*\\[(.*?)\\]`, 'm').exec(frontmatter);
     if (inline) {
       for (const ref of inline[1].split(',')) {
@@ -577,12 +571,11 @@ function splitNodeRevision(text) {
 }
 
 /**
- * When each path last changed, in one bounded walk. `repoPaths` are repository-relative
- * (`path:` values); `vaultPaths` are vault-relative document paths resolved through the
- * vault's own place in the repository. A path is an address, never an option or a way
- * out: anything that could climb the tree or look like a flag is dropped, not escaped.
- * Mirrors `git_paths_last_change` in the desktop app so the agent and the screen read
- * the same fact from the same walk.
+ * When each path last changed, in one bounded walk. `repoPaths` are
+ * repository-relative `path:` values; `vaultPaths` are vault-relative documents.
+ * Security: a path that could climb the tree or read as a flag is dropped, not
+ * escaped. Mirrors `git_paths_last_change` in the desktop app so the agent and
+ * the screen read one fact.
  */
 export function collectPathLastChanges({ repoRoot, vaultRoot, repoPaths = [], vaultPaths = [], maxCommits = 3000 }) {
   const scope = resolveVaultGitScope({ repoRoot, vaultRoot, operation: 'path_last_changes' });
@@ -590,10 +583,9 @@ export function collectPathLastChanges({ repoRoot, vaultRoot, repoPaths = [], va
   const { gitRoot, vaultRelative } = scope;
   const prefix = vaultRelative === '.' ? '' : `${vaultRelative}/`;
   /*
-   * A `path:` is written against the repository the caller named, which is not always the Git
-   * toplevel: a package inside a monorepo passes its own root. Resolving those against the
-   * toplevel made every cited file vanish and reported the whole vault as `missing` while
-   * `pathDrift` in the same response said the files were there.
+   * A `path:` is written against the caller's repository root, which in a monorepo
+   * package is not the Git toplevel; resolving against the toplevel loses every
+   * cited file.
    */
   const repoPrefix = (() => {
     try {
@@ -613,9 +605,8 @@ export function collectPathLastChanges({ repoRoot, vaultRoot, repoPaths = [], va
     wanted.push({ key, resolved });
   };
   /*
-   * Documents first. The cap is shared, and a vault citing more implementation paths than the
-   * cap used to consume all of it, leaving no concept document dated — which reads as "no
-   * commit in the window" rather than "the walk ran out of room".
+   * Documents first: the cap is shared, and implementation paths must not starve
+   * every concept document of a date.
    */
   for (const raw of vaultPaths) {
     const clean = safeRelativePath(raw);
@@ -637,9 +628,8 @@ export function collectPathLastChanges({ repoRoot, vaultRoot, repoPaths = [], va
   } else {
     const walked = walkPathLastChanges(gitRoot, wanted, commitLimit);
     last = walked.last;
-    // Do not retain a failed walk or one taken across a history change. HEAD
-    // alone is insufficient: shallow fetches, grafts, and replace refs can
-    // change the visible history without changing the commit at HEAD.
+    // Keep only a successful walk under unchanged history; HEAD alone misses
+    // shallow fetches, grafts and replace refs.
     if (walked.ok && cacheKey && historyState === pathHistoryState(gitRoot)) {
       pathChangeCache.set(cacheKey, last);
       while (pathChangeCache.size > PATH_CHANGE_CACHE_LIMIT) {
@@ -647,8 +637,8 @@ export function collectPathLastChanges({ repoRoot, vaultRoot, repoPaths = [], va
       }
     }
   }
-  // Only committed dates are reusable. A delete, restore, or file/directory
-  // replacement in the working tree must be visible on every request.
+  // Only committed dates are reused; working-tree deletes and restores must show
+  // on every request.
   for (const { key, resolved } of wanted) {
     const onDisk = resolve(gitRoot, resolved);
     let isDir = false;
@@ -686,8 +676,8 @@ function walkPathLastChanges(gitRoot, wanted, commitLimit) {
   const log = git(
     gitRoot,
     [
-      // Without this Git C-quotes any non-ASCII path, so a Korean folder or file name never
-      // matches the path we asked about and every concept under it degrades to `unknown`.
+      // Without this Git C-quotes non-ASCII paths, and a Korean path never matches
+      // the path asked about.
       '-c',
       'core.quotepath=false',
       'log',

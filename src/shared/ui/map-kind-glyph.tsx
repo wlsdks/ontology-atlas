@@ -1,29 +1,9 @@
 /**
- * Shared kind-shape miniature + relation trace mark — the same silhouette
- * family the v2 canvas draws (hex = project, chip = domain, circle =
- * capability, via-pad = element), stroked/filled with the shared
- * `--map-node-*` kind tokens. Extracted from `OntologyMapDetailPanel`
- * (the compact datasheet) into `shared/ui` so a SECOND widget
- * (`full-detail-a1`) can reuse the EXACT same glyph/trace rendering instead
- * of forking a second copy — FSD forbids widget→widget imports, so shared UI
- * primitives live one layer down. The header miniature and per-row trace
- * marks must read as shrunk copies of the same node/edge the canvas draws,
- * in both surfaces.
- *
- * Icon sets: this component is the **single facade** for DOM kind glyphs across the
- * app. It reads the current set with `useGlyphSet()` and changes only the render
- * style — the kind→silhouette mapping is **invariant** across sets (geometric =
- * fill + stroke, line = a thin stroke only). Changing the set in settings swaps INDEX,
- * the studio, popovers, and detail together, because they all go through here; the
- * canvas renderer reads the same store and stays in lockstep. The `glyphSet` prop is
- * an override for tests and previews.
- *
- * **A kind the map does not draw borrows no silhouette** (2026-09-25). `document`,
- * `vault-readme` and any kind this app does not know used to fall back to the element's
- * square with its via-hole, so the vault's README read as an implementation role on the
- * Git step chips and "Document" looked exactly like "Element" in the new-document kind
- * picker. They take the page mark the vault tree already draws for a document with no map
- * kind (`DocsVaultTree`'s `FileText` in quaternary ink), in both sets.
+ * Kind silhouettes and relation trace marks drawn as shrunk copies of the canvas nodes and
+ * edges, with the `--map-node-*` tokens. In `shared/ui` so several widgets reuse one rendering.
+ * The single facade for DOM kind glyphs: it reads `useGlyphSet()`, and only the render style
+ * changes between sets, never the kind-to-silhouette mapping. A kind the map does not draw
+ * takes the vault tree's page mark, not a borrowed silhouette.
  */
 
 import { FileText } from "lucide-react";
@@ -59,7 +39,7 @@ export function OntologyMapKindGlyph({
   kind: string;
   size?: number;
   className?: string;
-  /** Test/preview override; omitted, the app-wide setting (`useGlyphSet`) is read. */
+  /** Test and preview override; omitted, the app-wide setting is read. */
   glyphSet?: GlyphSet;
 }) {
   const preferredSet = useGlyphSet();
@@ -81,8 +61,6 @@ export function OntologyMapKindGlyph({
   }
   const resolved: OntologyMapRenderableKind = kind;
   const strokeColor = `var(--map-node-stroke-${resolved})`;
-  // Line set: same silhouette, different render style — no fill, a 1px outline only.
-  // Geometric set: the kind fill plus a 1.25px outline.
   const common = {
     fill: line ? "none" : `var(--map-node-fill-${resolved})`,
     stroke: strokeColor,
@@ -110,7 +88,7 @@ export function OntologyMapKindGlyph({
       ) : (
         <g>
           <rect x={2.4} y={2.4} width={s - 4.8} height={s - 4.8} rx={1.4} {...common} />
-          {/* via-hole: a hole-fill dot in the geometric set, a stroke-only dot in the line set — same silhouette (square + centre dot) */}
+          {/* The via-hole dot: filled in the geometric set, stroked in the line set. */}
           {line ? (
             <circle cx={c} cy={c} r={1.5} fill="none" stroke={strokeColor} strokeWidth={1} vectorEffect="non-scaling-stroke" />
           ) : (
@@ -123,10 +101,8 @@ export function OntologyMapKindGlyph({
 }
 
 /**
- * Trace mini-line matching the canvas edge style: contains = solid hairline,
- * depends = dashed. One per row — relation TYPE (containment vs depends) is
- * a per-row marker, not a group-header marker (R+ decision, see
- * `map-datasheet.ts` module doc).
+ * Solid hairline for containment, dashed for depends, one per row (see the `map-datasheet.ts`
+ * module doc).
  */
 export function OntologyMapTraceMark({ containment }: { containment: boolean }) {
   const stroke = containment

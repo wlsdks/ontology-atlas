@@ -4,9 +4,8 @@ import enMessages from "../../../../messages/en.json";
 import koMessages from "../../../../messages/ko.json";
 
 /**
- * Contract guard for the `topology.significance.*` ICU messages that render the
- * node "so what" block. Catches ICU syntax errors and en/ko branch drift before
- * they reach the UI (the popover formats these at runtime via next-intl).
+ * Catches ICU syntax errors and en/ko branch drift in `topology.significance.*` before next-intl
+ * formats them.
  */
 const locales = [
   { locale: "en", messages: enMessages },

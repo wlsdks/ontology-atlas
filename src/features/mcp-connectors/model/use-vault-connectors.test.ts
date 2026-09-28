@@ -1,9 +1,14 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
+import { connectorAcpServers } from '@/features/acp-session/model/connector-servers';
 import type { ConnectorRecord } from '@/shared/lib/connector-record';
 
 import { useVaultConnectors, type VaultConnectorsState } from './use-vault-connectors';
+
+beforeEach(() => {
+  window.localStorage.clear();
+});
 
 function record(overrides: Partial<ConnectorRecord> = {}): ConnectorRecord {
   return {
@@ -20,11 +25,12 @@ function record(overrides: Partial<ConnectorRecord> = {}): ConnectorRecord {
 }
 
 /** A directory handle with one sidecar folder, enough for the store to read and write. */
-function fakeVault(seed?: string) {
+function fakeVault(seed?: string, rootPath?: string) {
   const files = new Map<string, string>();
   if (seed !== undefined) files.set('.ontology-atlas/connectors.json', seed);
   const directories = new Set<string>(seed === undefined ? [] : ['.ontology-atlas']);
   const handle = {
+    ...(rootPath ? { rootPath } : {}),
     getDirectoryHandle: async (name: string, options?: { create?: boolean }) => {
       if (!directories.has(name)) {
         if (!options?.create) throw new DOMException('not found', 'NotFoundError');
@@ -122,6 +128,33 @@ describe('useVaultConnectors', () => {
     await waitFor(() => expect(result.current.status).toBe('ready'));
     expect(result.current.secretLiteralKeys).toEqual(['notion.NOTION_TOKEN']);
     expect(JSON.stringify(result.current.connectors)).not.toContain('ntn_live_value');
+  });
+
+  it('attaches nothing a cloned folder switched on until this Mac allows it, and asks again when it changes', async () => {
+    const shared = (command: string) =>
+      JSON.stringify({ version: 1, connectors: [{ ...record({ command }), enabled: true }] });
+    const vault = fakeVault(shared('/opt/homebrew/bin/npx'), '/Users/probe/cloned');
+    const { result } = renderHook(() => useVaultConnectors(vault.handle));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+
+    expect(result.current.connectors[0]?.enabled).toBe(true);
+    expect(connectorAcpServers(result.current.connectors, 'claude-acp', result.current.allowedHere)).toEqual([]);
+    expect([...result.current.waitingHere]).toEqual(['c1']);
+
+    act(() => {
+      result.current.allowHere('c1');
+    });
+    expect(connectorAcpServers(result.current.connectors, 'claude-acp', result.current.allowedHere)).toEqual([
+      expect.objectContaining({ name: 'notion', command: '/opt/homebrew/bin/npx' }),
+    ]);
+    expect(result.current.waitingHere.size).toBe(0);
+
+    vault.files.set('.ontology-atlas/connectors.json', shared('/tmp/other-program'));
+    await act(async () => {
+      await result.current.reload();
+    });
+    expect(connectorAcpServers(result.current.connectors, 'claude-acp', result.current.allowedHere)).toEqual([]);
+    expect([...result.current.waitingHere]).toEqual(['c1']);
   });
 
   it('removes a connector from the folder', async () => {

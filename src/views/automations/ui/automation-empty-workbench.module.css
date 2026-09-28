@@ -1,19 +1,12 @@
-/* One column under the lane tabs, one text start line: intro, facts, then the schedule list.
-   Top-aligned: centred in the leftover height with a 25rem floor, the first words sat 263px under
-   the tabs at 1512x900 (design sweep, 2026-09-23); centred beside the preview card, the title
-   floated ~88px under the card's top edge (review, 2026-09-25).
-   The list takes the tab panel's remaining height, capped at a 56rem stage, so the page ends in
-   the list it becomes instead of a blank floor: a fixed-height stage left 34% of 1920x1080 and
-   25% of 1512x949 empty under it. */
+/* Top-aligned, since centring floated the first words far below the tabs. The list takes the
+   remaining height up to a 56rem stage, so the page ends in the list instead of a blank floor. */
 .stage { display: flex; flex: 1 1 0; flex-direction: column; min-height: min-content; max-height: 56rem; width: 100%; min-width: 0; }
 .intro { min-width: 0; max-width: 40rem; }
-/* One display-size string per screen: the page h1 owns --text-display, so the stage title
-   sits one ramp step below it (was 23px/510 twice, 180px apart). */
+/* The page h1 owns --text-display, so this title sits one ramp step below it. */
 .title { margin-top: 0; color: var(--color-text-primary); font-size: var(--text-title); line-height: var(--leading-title); font-weight: var(--font-weight-strong); word-break: keep-all; overflow-wrap: break-word; }
 .description { margin-top: .5rem; color: var(--color-text-secondary); font-size: var(--text-body-lg); line-height: var(--leading-title); word-break: keep-all; overflow-wrap: break-word; }
 .action { display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; margin-top: 1.5rem; }
-/* Three facts as a divided row, not three more cards, so the list stays the stage's one raised
-   surface. Each column's text starts on its own divider. */
+/* A divided row, not cards, so the list stays the stage's one raised surface. */
 .facts { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 2rem; margin: 2.5rem 0 0; }
 .fact { min-width: 0; padding-top: 1rem; border-top: 1px solid var(--color-divider); animation: rowIn var(--motion-base) var(--motion-ease) both; }
 .fact:nth-child(2) { animation-delay: .05s; }
@@ -25,10 +18,7 @@
 .previewTitle { color: var(--color-text-primary); font-size: var(--text-body-lg); font-weight: var(--font-weight-emphasis); }
 .zero { display: inline-grid; place-items: center; min-width: 1.5rem; height: 1.5rem; margin-left: auto; border: 1px solid var(--color-border-soft); border-radius: var(--radius-chip); color: var(--color-text-secondary); font: var(--text-label)/var(--leading-label) var(--font-mono); }
 .columnHead { display: grid; grid-template-columns: minmax(0,1.6fr) minmax(0,.7fr) minmax(0,.7fr); gap: .75rem; padding: .75rem 1.25rem; color: var(--color-text-tertiary); font-size: var(--text-label); line-height: var(--leading-label); }
-/* The list body: the ground rows will land on, taking the card's spare height. It holds no
-   sentence: "appears here" under a title that had just said "none yet" was the page's empty
-   message twice more (owner review, 2026-09-26). No dashed box either: one with a + read as an
-   add button and did nothing when pressed (2026-09-25). The real action is above the facts. */
+/* No sentence and no dashed box: a dashed box read as an add button that did nothing. */
 .rows { flex: 1 1 auto; min-height: 4.5rem; margin: 0 1.25rem; border-top: 1px solid var(--color-divider); }
 @keyframes previewIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes rowIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }

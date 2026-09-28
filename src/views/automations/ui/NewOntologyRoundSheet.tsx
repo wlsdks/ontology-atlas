@@ -18,7 +18,7 @@ import { CadencePicker, type CadenceUnit } from "@/shared/ui/cadence-picker";
 import { Button, Dialog, DialogBody, DialogFooter } from "@/shared/ui";
 import { Input } from "@/shared/ui/input";
 
-/** The documents sheet's threshold: a cadence of thirty minutes or faster is 48 agent turns a day. */
+/** The documents sheet's threshold: thirty minutes or faster is 48 agent turns a day. */
 const COST_ALARM_TURNS_PER_DAY = 48;
 
 export interface NewOntologyRoundSheetProps {
@@ -35,19 +35,13 @@ export function NewOntologyRoundSheet({ open, onClose, onSave }: NewOntologyRoun
   const t = useTranslations("automations");
   const rounds = useTranslations("library.rounds");
   const titleId = useId();
-  /*
-   * ⚠️ **One cadence control for one concept.** This sheet drew four radio chips (hourly, every
-   * six hours, daily, weekdays) while the documents sheet for the same "create a schedule" action
-   * drew the shared unit + rail picker (2026-09-25). Both now use `CadencePicker`; every six hours
-   * stays the default, as the rail's 6h detent.
-   */
+  /* The documents sheet's `CadencePicker` too; every six hours is the default detent. */
   const [unit, setUnit] = useState<CadenceUnit>("hours");
   const [minutes, setMinutes] = useState(360);
   const [weekdaysOnly, setWeekdaysOnly] = useState(false);
   const [time, setTime] = useState("09:00");
   const [focus, setFocus] = useState("");
-  // The default name is a real, editable value: as a placeholder it rendered in placeholder
-  // grey, so nobody could tell it was already filled and would be saved.
+  // A real value, not a placeholder: placeholder grey hid that it would be saved.
   const [name, setName] = useState(() => t("ontology.defaultName"));
   const [saving, setSaving] = useState(false);
   const [failure, setFailure] = useState(false);
@@ -90,7 +84,6 @@ export function NewOntologyRoundSheet({ open, onClose, onSave }: NewOntologyRoun
 
   return (
     <Dialog open={open} onClose={close} size="md" labelledBy={titleId} testId="ontology-automation-sheet" className="flex max-h-[calc(100dvh-var(--chrome-inset)*2)] flex-col gap-4 overflow-hidden break-keep">
-      {/* No eyebrow: "Ontology review" sat directly above "Schedule an ontology review". */}
       <header className="shrink-0">
         <h2 id={titleId} className="text-title leading-title font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
           {t("ontology.sheet.title")}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
-import { findDependencyCycles, isDependencyEdgeType } from "./dependency-cycles";
+import { findDependencyCycles, isDependencyEdgeType, MAX_KEPT_CYCLES } from "./dependency-cycles";
 
 function n(id: string): KnowledgeGraphNode {
   return {
@@ -24,12 +24,12 @@ function nodes(...ids: string[]): KnowledgeGraphNode[] {
 }
 
 describe("isDependencyEdgeType", () => {
-  it("depends_on · dependencies 만 의존 계열로 본다 (MCP cycles 파생과 동일)", () => {
+  it("treats only depends_on and dependencies as dependency relations, like the MCP cycle derivation", () => {
     expect(isDependencyEdgeType("depends_on")).toBe(true);
     expect(isDependencyEdgeType("dependencies")).toBe(true);
   });
 
-  it("containment · 기타 계열은 의존으로 보지 않는다", () => {
+  it("does not treat containment or other relations as dependencies", () => {
     for (const t of ["contains", "belongs_to", "relates", "related_to", "implements", "uses", "describes"]) {
       expect(isDependencyEdgeType(t)).toBe(false);
     }
@@ -37,7 +37,7 @@ describe("isDependencyEdgeType", () => {
 });
 
 describe("findDependencyCycles", () => {
-  it("사이클 0 — 비순환 의존 사슬은 빈 결과", () => {
+  it("returns no cycle for an acyclic dependency chain", () => {
     const g = nodes("c:a", "c:b", "c:c");
     const edges = [e("c:a", "c:b"), e("c:b", "c:c")];
     const result = findDependencyCycles(g, edges);
@@ -47,14 +47,14 @@ describe("findDependencyCycles", () => {
     expect(result.activeCycleIds).toEqual([]);
   });
 
-  it("사이클 0 — containment 순환은 의존 사이클이 아니다", () => {
+  it("returns no cycle for a containment loop", () => {
     const g = nodes("c:a", "c:b");
     // A loop through `contains` only → ignored.
     const edges = [e("c:a", "c:b", "contains"), e("c:b", "c:a", "belongs_to")];
     expect(findDependencyCycles(g, edges).totalCycles).toBe(0);
   });
 
-  it("사이클 1 — A→B→C→A 를 방향 유지해 하나로 잡는다", () => {
+  it("finds A→B→C→A as one directed cycle", () => {
     const g = nodes("c:a", "c:b", "c:c");
     const edges = [e("c:a", "c:b"), e("c:b", "c:c"), e("c:c", "c:a")];
     const result = findDependencyCycles(g, edges);
@@ -65,14 +65,14 @@ describe("findDependencyCycles", () => {
     expect(cycle.hiddenNodeCount).toBe(0);
   });
 
-  it("사이클 1 — 시작 노드가 달라도 회전 중복을 하나로 접는다", () => {
+  it("folds rotations of one cycle regardless of the start node", () => {
     const g = nodes("c:a", "c:b", "c:c");
     // One cycle in one direction stays one, however many entry points exist.
     const edges = [e("c:b", "c:c"), e("c:c", "c:a"), e("c:a", "c:b")];
     expect(findDependencyCycles(g, edges).totalCycles).toBe(1);
   });
 
-  it("자기참조 — A depends_on A 를 길이 1 사이클로 잡는다", () => {
+  it("finds a self-dependency as a cycle of length 1", () => {
     const g = nodes("c:a", "c:b");
     const edges = [e("c:a", "c:a"), e("c:a", "c:b")];
     const result = findDependencyCycles(g, edges);
@@ -81,7 +81,7 @@ describe("findDependencyCycles", () => {
     expect(result.cycles[0].length).toBe(1);
   });
 
-  it("중첩 — 두 사이클이 노드를 공유하면 각각 별개로 잡는다", () => {
+  it("finds two cycles that share a node separately", () => {
     // a→b→a (a 2-cycle) and a→b→c→a (a 3-cycle) share nodes a and b.
     const g = nodes("c:a", "c:b", "c:c");
     const edges = [e("c:a", "c:b"), e("c:b", "c:a"), e("c:b", "c:c"), e("c:c", "c:a")];
@@ -92,7 +92,7 @@ describe("findDependencyCycles", () => {
     expect(result.cycles[1].length).toBe(3);
   });
 
-  it("상한 — 사이클 5개 초과는 5개만 노출하고 나머지는 hiddenCycles", () => {
+  it("shows five cycles and counts the rest in hiddenCycles", () => {
     // Eight distinct cycles returning through the shared `hub` node.
     const g = nodes("c:hub", ...Array.from({ length: 8 }, (_, i) => `c:n${i}`));
     const edges: KnowledgeGraphEdge[] = [];
@@ -107,7 +107,7 @@ describe("findDependencyCycles", () => {
     expect(result.activeCycleIds).toHaveLength(8);
   });
 
-  it("경로 상한 — 8 노드 초과 사이클은 8개만 표기하고 hiddenNodeCount 로 정직 표기", () => {
+  it("lists eight nodes of a longer cycle and counts the rest in hiddenNodeCount", () => {
     // A single 10-node cycle.
     const ids = Array.from({ length: 10 }, (_, i) => `c:p${i}`);
     const g = nodes(...ids);
@@ -120,9 +120,55 @@ describe("findDependencyCycles", () => {
     expect(cycle.hiddenNodeCount).toBe(2);
   });
 
-  it("dangling — 노드 집합에 없는 끝점을 가진 의존 edge 는 무시", () => {
+  it("ignores a dependency edge whose endpoint is not a node", () => {
     const g = nodes("c:a", "c:b");
     const edges = [e("c:a", "c:b"), e("c:b", "c:ghost"), e("c:ghost", "c:a")];
     expect(findDependencyCycles(g, edges).totalCycles).toBe(0);
   });
+
+  it("returns an empty, complete inventory for an empty graph", () => {
+    expect(findDependencyCycles([], [])).toEqual({
+      cycles: [],
+      totalCycles: 0,
+      hiddenCycles: 0,
+      activeCycleIds: [],
+      limited: false,
+    });
+  });
+
+  it("counts every cycle of seven mutually dependent nodes and keeps the shortest", () => {
+    const result = findDependencyCycles(nodes(...completeIds(7)), completeEdges(7));
+    expect(result.totalCycles).toBe(2365);
+    expect(result.activeCycleIds).toHaveLength(MAX_KEPT_CYCLES);
+    expect(result.cycles[0].length).toBe(2);
+    expect(result.limited).toBe(true);
+  });
+
+  it("shows a two-node loop first when a thousand longer loops were found before it", () => {
+    const layers = Array.from({ length: 5 }, (_, layer) => Array.from({ length: 4 }, (_, i) => `b:${layer}${i}`));
+    const edges = [
+      ...layers[0].map((first) => e("a:hub", first)),
+      ...layers.slice(1).flatMap((layer, i) => layers[i].flatMap((from) => layer.map((to) => e(from, to)))),
+      ...layers[4].map((last) => e(last, "a:hub")),
+      e("payments", "refunds"),
+      e("refunds", "payments"),
+    ];
+    const result = findDependencyCycles(nodes("a:hub", ...layers.flat(), "payments", "refunds"), edges);
+    expect(result.totalCycles).toBe(1025);
+    expect(result.cycles[0].id).toBe("payments refunds");
+    expect(result.limited).toBe(true);
+  });
+
+  it("reports the search as limited when ten mutually dependent nodes exhaust the step budget", () => {
+    expect(findDependencyCycles(nodes(...completeIds(10)), completeEdges(10)).limited).toBe(true);
+  });
 });
+
+function completeIds(size: number): string[] {
+  return Array.from({ length: size }, (_, i) => `c:${i}`);
+}
+
+function completeEdges(size: number): KnowledgeGraphEdge[] {
+  const ids = completeIds(size);
+  return ids.flatMap((from) => ids.filter((to) => to !== from).map((to) => e(from, to)));
+}

@@ -3,7 +3,7 @@ import {
 } from './meaning-assessment.mjs';
 import { WRITE_RELATION_TYPE_VALUES } from './ontology-engine.mjs';
 import { extractProjectMeaningEvidencePaths } from './project-meaning-evidence.mjs';
-// The vocabulary is declared once — see the file comment there (2026-08-17).
+// One vocabulary, declared in project-source-vocabulary.mjs.
 import {
   PROJECT_SOURCE_ACTION_IDS as SOURCE_ACTION_IDS,
   PROJECT_SOURCE_GAP_IDS as SOURCE_GAP_IDS,
@@ -131,10 +131,7 @@ function sanitizeSourceReceipt(projectSource, projectSlug) {
   return receipt;
 }
 
-/**
- * Builds the exact evidence inventory that competency answers may cite.
- * Unknown or incomplete inputs fail closed instead of synthesizing witnesses.
- */
+/** The exact evidence inventory competency answers may cite; incomplete input fails closed. */
 export function buildProjectMeaningInventory({
   projectSlug,
   graphHash,

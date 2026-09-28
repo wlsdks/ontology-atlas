@@ -27,10 +27,9 @@ import {
 import { RELEASE_ARTIFACT_STEPS } from "../../scripts/build-macos-release-artifact.mjs";
 
 /**
- * `v1.0.0-rc.2` was tagged four times and stopped **at the very next step** all
- * four times. They have one thing in common: these steps are wired nowhere outside
- * the release workflow, so **they are first exercised only by tagging.** Locally
- * they all pass, because a person's machine already has everything.
+ * These steps are wired nowhere outside the release workflow, so they first run only
+ * after a tag exists, and a developer's machine passes them because it already has
+ * everything the runner lacks.
  *
  * Where the sibling file `release-sidecar-order.contract.test.ts` locks the
  * sidecar's **order**, this file locks the stretch after it — dependency
@@ -260,8 +259,8 @@ describe("리허설이 릴리스 잡을 빠짐없이 덮는다", () => {
 
     expect(
       unclassified.map((step) => step.name),
-      "리허설이 이 단계를 어떻게 다룰지 말하지 않는다 — REHEARSAL_SKIPS 에 이유를 " +
-        "적거나 REHEARSAL_SUBSTITUTES 에 대신 돌 것을 넣어라",
+      "The rehearsal does not say how it handles this step: give the reason in REHEARSAL_SKIPS " +
+        "or put what runs instead in REHEARSAL_SUBSTITUTES",
     ).toEqual([]);
   });
 

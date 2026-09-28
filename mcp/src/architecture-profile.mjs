@@ -3,11 +3,9 @@ const BRIEF_CONTRACT = 'architectureBrief:v1';
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const ROLE_ID = /^[a-z][a-z0-9-]*$/;
 /*
- * A locale is recognised by shape, never by the application's list of locales. A profile is a
- * vault file that outlives whichever locales a build happens to ship, so `summary_views_fr` has to
- * parse the same way in a build with no French screen: as a French sentence nobody asks for yet,
- * not as a role called `views_fr`. Two letters is the whole rule, which is why `summary_views_kor`
- * falls back to the role-id reading and is refused as an unknown role. Mirrors the web parser.
+ * A locale is recognised by shape (two letters), never by the app's locale list:
+ * a profile outlives the locales a build ships, so `summary_views_fr` is a
+ * French sentence and `summary_views_kor` an unknown role. Mirrors the web parser.
  */
 const SUMMARY_LOCALE = /^[a-z]{2}$/;
 const MATCHED_FILE_SAMPLE_LIMIT = 20;
@@ -108,12 +106,9 @@ export function parseArchitectureProfile(frontmatter) {
   if (!UUID_V4.test(projectUid)) throw new Error('project_uid must be a lowercase UUIDv4.');
 
   /*
-   * ⚠️ **The retired key is refused by name, not aliased and not ignored.** Two councils
-   * independently cured the same false red — 18 type-only edges an eslint config already permitted
-   * — one with `type_only_dependencies: ruled|free` and one with `dependency_usages`, and the
-   * 2026-08-29 reconciliation kept the shipped encoding. An alias would carry two spellings of one
-   * policy through two parsers forever, for a key no profile ever wrote; ignoring it would flip
-   * that profile's verdict without a word, which is the silent change this ledger forbids.
+   * The retired `type_only_dependencies` key is refused by name: an alias would
+   * keep two spellings of one policy in two parsers, and ignoring it would flip a
+   * profile's verdict silently. `dependency_usages` is the shipped encoding.
    */
   if (frontmatter.type_only_dependencies !== undefined) {
     throw new Error(
@@ -121,12 +116,11 @@ export function parseArchitectureProfile(frontmatter) {
     );
   }
 
-  /* `summary_<id>`, not `role_summary_<id>`: every `role_*` key is a path group, so the second
-     prefix would parse as a role called `summary_views`. Aspect first, role id last — the same
-     shape `allow_<id>` already uses. Mirrors the web parser under the cross-surface contract. */
+  // `summary_<id>`, not `role_summary_<id>`: every `role_*` key is a path group.
+  // Aspect first, role id last, like `allow_<id>`. Mirrors the web parser.
   const roleSummaries = new Map();
-  /* Role id to locale to sentence, in the order the file wrote them, so both parsers report the
-     same first problem when a file carries several. */
+  // Role id → locale → sentence in file order, so both parsers report the same
+  // first problem.
   const localizedSummaries = new Map();
   for (const [key, value] of Object.entries(frontmatter)) {
     if (!key.startsWith('summary_')) continue;
@@ -164,10 +158,9 @@ export function parseArchitectureProfile(frontmatter) {
     }
   }
   /*
-   * A translation of nothing is refused too. `summary_views_ko` without `summary_views` would put
-   * a sentence on the Korean screen that the English screen, every agent brief and the CLI cannot
-   * show, so the same role would be explained on one surface and silent on the others. The
-   * canonical sentence is the one a person reviewed; a locale line may only restate it.
+   * A translation of nothing is refused: `summary_views_ko`
+   * without `summary_views` would explain a role on one screen and nowhere else. A locale
+   * line may only restate the reviewed canonical sentence.
    */
   for (const [summaryId, byLocale] of localizedSummaries) {
     for (const locale of byLocale.keys()) {
@@ -210,8 +203,8 @@ export function parseArchitectureProfile(frontmatter) {
       : stringArray(frontmatter.exclude_paths, 'exclude_paths'),
     roles: roleOrder.map((id) => {
       const summary = roleSummaries.get(id);
-      /* Parsed for parity with the web reader, and deliberately unread here: `buildArchitectureBrief`
-         emits `summary` only, so no agent brief, prompt or CLI line can ever print a translation. */
+      // Parsed for parity with the web reader and unread here: `buildArchitectureBrief`
+      // emits `summary` only, so no agent-facing text prints a translation.
       const summaries = Object.fromEntries(localizedSummaries.get(id) ?? []);
       return summary === undefined
         ? { id, paths: rolePaths.get(id), summaries }
@@ -225,25 +218,13 @@ export function parseArchitectureProfile(frontmatter) {
 }
 
 /**
- * ⚠️ **A collision has to say which two files collided.**
- *
- * Measured 2026-08-26: `atlas architecture .` at this repository's root died with
- * `Duplicate architecture profile slug: atlas-web.` and nothing else. The cause was the
- * repository's own generated mirror — `pnpm docs-vault:build` copies the vault into
- * `public/docs-vault/`, so the one profile was found twice. The message named neither path, so
- * the only way to learn that was to grep for the slug.
- *
- * Two collisions are not the same thing, and conflating them is what made the message useless:
- *
- * - **The same profile seen twice.** Identical `profile_uid` and identical frontmatter is one
- *   record reached by two paths — a generated mirror, a symlinked vault, a scan whose root
- *   contains both. Refusing to run is wrong; there is nothing for a person to resolve.
- * - **Two different profiles wearing one name.** Different `profile_uid`, or the same uid with
- *   frontmatter that disagrees, is a genuine conflict and must still fail closed — but now the
- *   error names both documents, because "which two?" is the whole question.
+ * Duplicate profile slugs: identical `profile_uid` and frontmatter is one record
+ * reached twice (a generated mirror such as `public/docs-vault/`, a symlink) and
+ * is skipped; anything else is a real conflict that fails closed, naming both
+ * files.
  */
 function profileFingerprint(frontmatter) {
-  // Key order must not decide identity: two mirrors of one file can serialise differently.
+  // Key order must not decide identity: two mirrors can serialise differently.
   return JSON.stringify(
     Object.fromEntries(Object.entries(frontmatter).sort(([left], [right]) => (left < right ? -1 : 1))),
   );
@@ -260,7 +241,6 @@ export function findArchitectureProfiles(docs) {
     const previous = seen.get(profile.slug);
     if (previous) {
       if (previous.uid === profile.uid && previous.fingerprint === fingerprint) {
-        // One record reached twice. Keep the first path and carry on.
         continue;
       }
       throw new Error(
@@ -311,6 +291,10 @@ function importUsageOf(edge) {
     : 'unknown';
 }
 
+/**
+ * O(E × P) glob tests over E import edges and P scope, exclude and role
+ * patterns; matchesPathPattern compiles a fresh RegExp for every test.
+ */
 export function evaluateArchitectureConformance(profile, importResult) {
   const edges = Array.isArray(importResult?.edges) ? importResult.edges : [];
   const filesByRole = new Map(profile.roles.map((role) => [role.id, new Set()]));
@@ -329,10 +313,9 @@ export function evaluateArchitectureConformance(profile, importResult) {
   }
 
   for (const edge of edges) {
-    // Architecture rules govern dependencies *originating* in the selected
-    // scope. Excluded sources (tests, fixtures, generated code) do not become
-    // violations merely because their target is production code. A production
-    // source pointing outside the model remains an explicit unknown below.
+    // Rules govern dependencies originating in scope: excluded sources (tests,
+    // fixtures, generated code) are not violations for targeting production code.
+    // A production source pointing outside the model stays an explicit unknown.
     if (!inScope(profile, edge.from)) continue;
     if (excludedFromScope(profile, edge.to)) continue;
     const fromRoles = matchingRoles(profile, edge.from);
@@ -434,12 +417,10 @@ export function evaluateArchitectureConformance(profile, importResult) {
         ? importResult.coverage.supportedLanguages
         : [],
       /*
-       * ⚠️ **A whole-scan usage receipt.** `missing` counts edges the scanner emitted with no
-       * `importUsage` at all, which is a different fact from an edge whose usage it could not
-       * classify. The record writer's refusal gate reads these: a scan that cannot tell a
-       * type-only import from a value one must not mint a durable receipt, and without this tally
-       * it cannot tell that it cannot tell. Restored at the 2026-08-29 reconciliation, where
-       * taking one side of the merge wholesale had left the gate reading a field nothing produced.
+       * The `missing` tally counts edges with no `importUsage` at all, unlike
+       * unclassifiable ones. The record writer refuses to mint a durable receipt
+       * from a scan that cannot tell type-only imports from value imports, and
+       * reads this tally to know.
        */
       importUsageCounts: importUsageTally,
     },

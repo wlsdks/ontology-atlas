@@ -96,6 +96,38 @@ describe("findHangulMatch — 조합 중인 마지막 음절", () => {
   });
 });
 
+describe("findHangulMatch on a two-set keyboard", () => {
+  it("matches while the next syllable's initial shows as the last syllable's final", () => {
+    expect(findHangulMatch("장바구니", "장박")).toEqual({ start: 0, end: 3 });
+    expect(findHangulMatch("장바구니", "장바군")).toEqual({ start: 0, end: 4 });
+    expect(findHangulMatch("주문서", "줌")).toEqual({ start: 0, end: 2 });
+  });
+
+  it("keeps the first half of a compound final and moves the second to the next syllable", () => {
+    expect(findHangulMatch("달걀", "닭")).toEqual({ start: 0, end: 2 });
+  });
+
+  it("rejects a final that is not the next syllable's initial", () => {
+    expect(findHangulMatch("주문서", "줄")).toBeNull();
+    expect(findHangulMatch("장바구니", "장밥")).toBeNull();
+    expect(findHangulMatch("달걀", "닮")).toBeNull();
+  });
+
+  it("carries a final neither across a space nor past the last syllable", () => {
+    expect(findHangulMatch("가 게", "각")).toBeNull();
+    expect(findHangulMatch("장바구니", "장바구닌")).toBeNull();
+  });
+
+  it("treats a double consonant as one key", () => {
+    expect(findHangulMatch("가까", "갂")).toEqual({ start: 0, end: 2 });
+    expect(findHangulMatch("가까", "각")).toBeNull();
+  });
+
+  it("carries a final after a compound medial", () => {
+    expect(findHangulMatch("과일", "광")).toEqual({ start: 0, end: 2 });
+  });
+});
+
 describe("findHangulMatch — 한글이 없는 질의", () => {
   it("한글이 없으면 한글 경로를 타지 않는다", () => {
     expect(findHangulMatch("auth-login", "login")).toBeNull();

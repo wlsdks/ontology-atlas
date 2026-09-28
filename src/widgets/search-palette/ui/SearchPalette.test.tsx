@@ -5,9 +5,11 @@ import {
   screen,
   waitFor,
   waitForElementToBeRemoved,
+  within,
 } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { beforeAll, describe, expect, it, vi } from "vitest";
+import type { Project } from "@/entities/project";
 import enMessages from "../../../../messages/en.json";
 import { SearchPalette } from "./SearchPalette";
 
@@ -101,5 +103,38 @@ describe("SearchPalette", () => {
     expect(
       document.querySelectorAll('[data-overlay-spring="true"]').length,
     ).toBeGreaterThanOrEqual(2);
+  });
+
+  it("finds a project by Korean initials or its stack and labels the field that matched", () => {
+    const cart = {
+      slug: "cart",
+      name: "장바구니",
+      description: "",
+      tags: [],
+      stack: ["React"],
+      links: [],
+      dependencies: [],
+      screenshots: [],
+      createdAt: new Date("2026-04-01T00:00:00Z"),
+      updatedAt: new Date("2026-04-20T00:00:00Z"),
+    } as unknown as Project;
+    render(<SearchPalette open onClose={() => {}} projects={[cart]} onSelect={() => {}} />);
+    const input = screen.getByRole("textbox", { name: "Project search" });
+    const row = () => screen.getByRole("option", { name: /장바구니/ });
+
+    fireEvent.change(input, { target: { value: "ㅈㅂㄱㄴ" } });
+    expect(within(row()).getByText("Name")).toBeInTheDocument();
+
+    fireEvent.change(input, { target: { value: "react" } });
+    expect(within(row()).getByText("Stack")).toBeInTheDocument();
+  });
+
+  it("marks the part of the name that Korean initials matched", () => {
+    const cart = { slug: "cart", name: "장바구니 담기", description: "", tags: [], stack: [], updatedAt: new Date() };
+    render(<SearchPalette open onClose={() => {}} projects={[cart as unknown as Project]} onSelect={() => {}} />);
+    fireEvent.change(screen.getByRole("textbox", { name: "Project search" }), { target: { value: "ㅈㅂㄱㄴ" } });
+
+    const option = screen.getByRole("option", { name: /장바구니/ });
+    expect(within(option).getByText("장바구니").tagName).toBe("MARK");
   });
 });

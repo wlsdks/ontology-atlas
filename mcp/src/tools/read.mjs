@@ -53,7 +53,8 @@ import {
   requireOptionalPositiveInteger,
   requireOptionalRelationTypeArray,
 } from '../server/validate.mjs';
-import { readSourceText } from '../source-text.mjs';
+import { namesHiddenOrCredentialFile, readStableFile } from '../source-evidence.mjs';
+import { READ_SOURCE_MAX_FILE_BYTES, readSourceText } from '../source-text.mjs';
 import {
   suppressLibraryKindIssues,
   suppressParentedExpectedFieldIssues,
@@ -87,11 +88,6 @@ import {
   uidNotFoundError,
 } from './vault-nodes.mjs';
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
-import {
-  resolve,
-  sep,
-} from 'node:path';
 
 function listConcepts({ kind, domain, since, summary, offset = 0, limit = 100 }) {
   requireOptionalNonBlankString(kind, 'kind');
@@ -371,7 +367,9 @@ function getConceptsBatch({ slugs, uids, body }) {
   return { concepts };
 }
 
-function findEvidence({ title, limit, nodesOnly = false } = {}) {
+const FIND_EVIDENCE_DEFAULT_LIMIT = 50;
+
+function findEvidence({ title, limit = FIND_EVIDENCE_DEFAULT_LIMIT, nodesOnly = false } = {}) {
   requireNonBlankString(title, 'title');
   requireOptionalPositiveInteger(limit, 'limit', { max: 500 });
   requireOptionalBoolean(nodesOnly, 'nodesOnly');
@@ -432,8 +430,17 @@ function findEvidence({ title, limit, nodesOnly = false } = {}) {
       Number(b.isNode) - Number(a.isNode) ||
       a.slug.localeCompare(b.slug),
   );
-  const limited = typeof limit === 'number' ? matches.slice(0, limit) : matches;
-  const result = { query: title, matches: limited };
+  const limited = matches.slice(0, limit);
+  const moreMatched = limited.length < matches.length;
+  const result = {
+    ...(moreMatched
+      ? { limitHint: `The ${limited.length} best of ${matches.length} matches. Narrow the title, pass nodesOnly: true, or raise limit (at most 500).` }
+      : {}),
+    query: title,
+    total: matches.length,
+    limited: moreMatched,
+    matches: limited,
+  };
   // When loose documents came back in the results, say so and give the way to
   // narrow it — rather than filtering silently, hand the reader what they need to
   // judge for themselves.
@@ -729,13 +736,21 @@ function queryConceptsTool({ filter, limit }) {
   return result;
 }
 
-/** Vault-relative paths under `sources/`. A listing, never a read. */
+const READ_SOURCE_REFUSALS = {
+  symlink_path: 'is a symbolic link or sits under one. read_source reads only regular files inside the vault\'s `sources/` folder, so a link cannot hand it a file from elsewhere on the disk. Copy the document into `sources/` instead of linking it.',
+  non_regular_file: 'is not a regular file. Name one document file under `sources/`.',
+  file_too_large: `is larger than ${READ_SOURCE_MAX_FILE_BYTES / 1024 / 1024} MiB, the most read_source reads at once. Split the document, or cite a PDF by page from your own reader.`,
+  outside_root: 'resolves outside the vault\'s `sources/` folder.',
+  not_found: 'is not in this folder. `validate_wiki` lists the sources every page cites.',
+  file_changed: 'changed while it was being read. Read it again.',
+  unsafe_read: 'could not be opened as a readable regular file. Check its permissions.',
+  sensitive_path: 'is a hidden file or has a credential-like name (secret, credentials, *.pem, *.key), which a vault read never opens. Rename the document if it is neither.',
+};
+
 /**
- * The text of one raw source, in citable units — `read_source`.
- *
- * The path is checked before anything is opened: it must sit under `sources/` and resolve
- * inside the vault, so a request cannot read a file the folder does not hold. The bytes are
- * hashed as read, which is the same `source_hash` a page records.
+ * The text of one raw source, in citable units — `read_source`. Every path segment is checked
+ * first (under `sources/`, no symbolic link, inside the vault); the bytes are hashed as read,
+ * the same `source_hash` a page records.
  */
 function readSourceTool({ path, from, limit, sheet } = {}) {
   const relPath = String(path ?? '').replace(/\\/g, '/').replace(/^\.\//, '');
@@ -754,18 +769,12 @@ function readSourceTool({ path, from, limit, sheet } = {}) {
   if (!relPath.startsWith('sources/') || relPath.split('/').includes('..') || relPath.endsWith('/')) {
     throw new Error('read_source: `path` must name a file under `sources/`, such as `sources/plan.docx`.');
   }
-  const absolute = resolve(VAULT_ROOT, relPath);
-  if (!absolute.startsWith(resolve(VAULT_ROOT, 'sources') + sep)) {
-    throw new Error('read_source: `path` must stay inside the vault\'s `sources/` folder.');
-  }
-  let buffer;
-  try {
-    buffer = readFileSync(absolute);
-  } catch {
-    throw new Error(`read_source: \`${relPath}\` is not in this folder. \`validate_wiki\` lists the sources every page cites.`);
-  }
-  const answer = readSourceText(buffer, relPath, { from, limit, sheet });
-  answer.sha256 = createHash('sha256').update(buffer).digest('hex');
+  const read = namesHiddenOrCredentialFile(relPath)
+    ? { reason: 'sensitive_path' }
+    : readStableFile(VAULT_ROOT, relPath, { maxBytes: READ_SOURCE_MAX_FILE_BYTES });
+  if (read.reason) throw new Error(`read_source: \`${relPath}\` ${READ_SOURCE_REFUSALS[read.reason]}`);
+  const answer = readSourceText(read.bytes, relPath, { from, limit, sheet });
+  answer.sha256 = createHash('sha256').update(read.bytes).digest('hex');
   return answer;
 }
 

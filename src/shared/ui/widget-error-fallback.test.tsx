@@ -41,7 +41,7 @@ describe('WidgetErrorFallback', () => {
   });
 
   it('replaces only the failed widget and offers the boundary its retry', () => {
-    // The boundary itself already logs; silence the expected React error noise.
+    // The boundary already logs; silence the expected React error noise.
     vi.spyOn(console, 'error').mockImplementation(() => {});
 
     render(
@@ -51,12 +51,11 @@ describe('WidgetErrorFallback', () => {
       </div>,
     );
 
-    // The neighbour survived — that is the whole point of a per-widget boundary.
+    // The neighbour survives, which is the point of a per-widget boundary.
     expect(screen.getByText('the rest of the page')).toBeTruthy();
     const alert = screen.getByRole('alert');
     expect(alert.textContent).toContain('The map could not be drawn.');
     expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy();
-    // The stack is for the log, never for the screen.
     expect(alert.textContent).not.toContain('renderer lost its context');
   });
 

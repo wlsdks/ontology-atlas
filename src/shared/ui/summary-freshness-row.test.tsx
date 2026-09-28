@@ -1,10 +1,6 @@
 /**
- * The row's job is to say a domain owes a judgement **without** reading as an alarm.
- *
- * The underlying signal is `severity: info` — nothing is broken and nothing is blocked.
- * A row that drifts toward warning colour, or that grows a "fix it" affordance, would
- * misreport what the vault actually knows and would teach people to dismiss the mark. So
- * these tests pin the absence of an error channel and of any action, not just the text.
+ * The signal is `severity: info`, so these pin the absence of a warning colour and of any
+ * action, not just the text: an alarm would teach people to dismiss the mark.
  */
 
 import { render, screen } from "@testing-library/react";
@@ -43,8 +39,7 @@ describe("SummaryFreshnessRow", () => {
     render(<SummaryFreshnessRow {...LABELS} />);
     const className = screen.getByTestId("summary-freshness-row").className;
     expect(className).toContain("--color-text-tertiary");
-    // Warning/error/success families would each announce a state change this row is not
-    // reporting. Named here so a later "make it stand out" edit fails loudly.
+    // Each of these families would announce a state change the row is not reporting.
     expect(className).not.toMatch(/warning|error|danger|success|amber|red|emerald/i);
   });
 

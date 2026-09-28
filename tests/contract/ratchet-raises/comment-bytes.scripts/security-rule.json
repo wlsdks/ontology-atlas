@@ -1,0 +1,1 @@
+{ "gate": "comment-bytes.scripts", "raise": 150, "why": "The new security check rule needs its one-line header saying where untrusted input meets a capability and that the first rule asks for the security lens." }

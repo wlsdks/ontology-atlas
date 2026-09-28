@@ -116,6 +116,22 @@ Source lenses, for hygiene, refactor and structural slices:
   duplicate, cyclic, Hangul and largest-measured inputs against the tests.
   Never waived for a low-effort implementer's slice.
 
+Security lens, for a diff on a path `pnpm checks:changed` calls a security
+surface, or one that adds a `security-raw-sinks` raise record; comment-only
+hunks skip it:
+
+- `security` — name each untrusted input the change reads: vault or
+  repository text, a tool argument an agent may send after reading injected
+  text, a wiki or web page, connector config, or a fork's pull request.
+  Follow it to what it can reach: a path outside the granted root (`..`, a
+  symlink, an absolute path), a process or shell string, HTML or a URL scheme
+  in the WebView, a Tauri command, a secret, the network, or a CI credential.
+  A reach with no guard, or a guard no test proves with a planted hostile
+  input, is a finding; so is a new dependency, action, or install-time script
+  without a pin and a reason. Keep the planted input for the lead, and end
+  each security finding with the defect class a public commit or pull request
+  may name until the fixed build ships.
+
 ## Report
 
 Verdict first. Then each finding, most severe first: the lens, file:line or

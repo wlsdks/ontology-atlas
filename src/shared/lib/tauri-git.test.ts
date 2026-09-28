@@ -117,8 +117,10 @@ describe('tauri git bridge', () => {
     tauriApiMock.runtimeAvailable = true;
     tauriApiMock.invoke.mockResolvedValue({});
     await gitDiff('/v');
+    await gitDiff('/v', { includePatch: false });
     await gitPull('/v');
-    expect(tauriApiMock.invoke).toHaveBeenCalledWith('git_diff', { vaultPath: '/v' });
+    expect(tauriApiMock.invoke).toHaveBeenCalledWith('git_diff', { vaultPath: '/v', includePatch: true });
+    expect(tauriApiMock.invoke).toHaveBeenCalledWith('git_diff', { vaultPath: '/v', includePatch: false });
     expect(tauriApiMock.invoke).toHaveBeenCalledWith('git_pull', { vaultPath: '/v' });
   });
 

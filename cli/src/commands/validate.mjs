@@ -7,6 +7,7 @@ import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import {
   dependencyWitnessFinding,
   folderOnlyEvidenceFinding,
+  rawSourceKindIssues,
   starterExampleFindings,
   validateVaultDocument,
   suppressLibraryKindIssues,
@@ -138,6 +139,12 @@ export const KNOWN_CODES = [
     description: 'a declared dependency whose citing file never names the file the target cites, so nothing in the source witnesses the edge.',
   },
   {
+    code: 'dependency-unjudged',
+    severity: 'warning',
+    scope: 'vault',
+    description: 'a declared dependency whose citing file is too large to read, so no witness was looked for and the edge is not judged.',
+  },
+  {
     code: 'starter-example-node',
     severity: 'warning',
     scope: 'vault',
@@ -154,6 +161,12 @@ export const KNOWN_CODES = [
     severity: 'error',
     scope: 'vault',
     description: 'two nodes claim the same primary or merged UID as their permanent identity.',
+  },
+  {
+    code: 'kind-under-sources',
+    severity: 'warning',
+    scope: 'vault',
+    description: 'a file under `sources/` carries `kind:`, but every file there is a raw source, never a node.',
   },
 ];
 
@@ -218,11 +231,12 @@ export function runValidate(args) {
     // The body travels with the frontmatter so the whole-vault passes can say
     // exactly what `validate_vault` says about the same node — one vault must
     // not be described two ways by the two tools that read it.
-    const { frontmatter, body } = parseFrontmatter(raw);
+    const parsed = parseFrontmatter(raw);
+    const { frontmatter, body } = parsed;
     entries.push({ file, slug, frontmatter, body });
     // The slug travels with the raw text: `slug-outside-kind-folder` is a fact
     // about where the file sits, which the bytes alone never state.
-    const report = validateVaultDocument(raw, { slug });
+    const report = validateVaultDocument(raw, { slug, parsed });
     reportByFile.set(file, report);
   }
 
@@ -266,6 +280,10 @@ export function runValidate(args) {
     });
     if (report.issues.some((i) => i.severity === 'error')) errorFiles += 1;
     else warningFiles += 1;
+  }
+  for (const { path, issue } of rawSourceKindIssues(vaultPath)) {
+    reports.push({ file: path, report: { ok: true, issues: [issue] } });
+    warningFiles += 1;
   }
 
   // Count issues, not files: counting files with a problem hid a warning inside a file that also had
@@ -654,6 +672,7 @@ function findDependencyWitnessIssues(entries) {
     : '';
   if (!repoRoot) return [];
   const resolveTargetPath = evidencePathIndex(entries);
+  const moduleNamesByPath = new Map();
   const issues = [];
   for (const entry of entries) {
     const kind = typeof entry.frontmatter?.kind === 'string' ? entry.frontmatter.kind.trim() : '';
@@ -663,6 +682,7 @@ function findDependencyWitnessIssues(entries) {
       frontmatter: entry.frontmatter,
       repoRoot,
       resolveTargetPath,
+      moduleNamesByPath,
     })) {
       issues.push({
         file: entry.file,

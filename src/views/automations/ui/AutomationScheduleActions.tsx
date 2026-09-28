@@ -8,9 +8,11 @@ import type { RoundsRunnerValue } from '@/features/library-rounds';
 import { Button } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 
-export function AutomationScheduleActions({ round, runner }: {
+export function AutomationScheduleActions({ round, runner, notAllowedSentenceId = null }: {
   round: RoundRecord;
   runner: RoundsRunnerValue;
+  /** While set, "Run now" waits and names why; Resume stays, because resuming here allows. */
+  notAllowedSentenceId?: string | null;
 }) {
   const t = useTranslations('automations');
   const [confirmRemove, setConfirmRemove] = useState(false);
@@ -50,13 +52,7 @@ export function AutomationScheduleActions({ round, runner }: {
 
   return (
     <div className="space-y-3">
-      {/*
-        ⚠️ **The question takes the place of the buttons that asked it.** It used to open under a
-        divider below the row, 59px lower and 126px left of the Remove that opened it, with focus
-        left on that trigger and Escape doing nothing (1512, 2026-09-25). Now the row turns into
-        the question: Cancel takes focus, and Escape or Cancel gives the row back with focus on
-        Remove.
-      */}
+      {/* The question replaces the buttons; Escape or Cancel gives them back with focus on Remove. */}
       {confirmRemove ? (
         <div id={`${detailId}-remove`} role="group" aria-labelledby={`${detailId}-question`}
           data-testid="automations-remove-confirm"
@@ -69,9 +65,7 @@ export function AutomationScheduleActions({ round, runner }: {
           <p id={`${detailId}-question`} className="min-w-0 text-body text-[color:var(--color-text-primary)]">
             {t('removeQuestion', { name: round.name })}
           </p>
-          {/* ⚠️ The answer pair is one unit and never splits: at 390 the danger button wrapped alone
-              to a second line, below and left of its Cancel (2026-09-25). The pair moves as one —
-              beside the question where it fits, under it where it does not. */}
+          {/* One unit, or at narrow widths the danger button wraps alone away from Cancel. */}
           <div className="flex shrink-0 items-center gap-2" data-testid="automations-remove-answers">
             <Button ref={cancelButton} variant="outline" size="sm" disabled={pending} className="atlas-touch-floor"
               onClick={closeConfirm}>{t('cancel')}</Button>
@@ -85,11 +79,10 @@ export function AutomationScheduleActions({ round, runner }: {
           </div>
         </div>
       ) : (
-        /* One control grammar: three outline sm buttons (32px, one radius, one surface). */
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => runner.runNow(round.id)}
-            disabled={runner.running !== null || pending}
-            aria-describedby={runner.running ? `${detailId}-busy` : undefined}
+            disabled={runner.running !== null || pending || notAllowedSentenceId !== null}
+            aria-describedby={notAllowedSentenceId ?? (runner.running ? `${detailId}-busy` : undefined)}
             data-testid="automations-run-now" className="atlas-touch-floor">
             <Play size={ICON_SIZE.sm} aria-hidden />{t('runNow')}
           </Button>

@@ -68,51 +68,22 @@ jobs:
       - name: Verify requested release version
         run: pnpm desktop:release-tag -- --tag="$RELEASE_TAG"
 
-      # The *previous* release's facts must already be on main before this one starts.
-      #
-      # This workflow generates `macos-release.generated.ts` after publishing, but its token
-      # cannot push to protected main, so it uploads the file as an artifact for a person to
-      # apply in an ordinary pull request. On 2026-08-29 the owner found the download page still
-      # naming v1.0.0-rc.14 while rc.15 was published and the repository was on rc.16: the handoff
-      # had been forgotten twice and nothing went red, so visitors were being handed an older
-      # build with a straight face.
-      #
-      # **Why here**: at admit time the newest published release is the last one, which is exactly
-      # what the committed facts must describe. Checking after publication would compare against
-      # the release this run is about to create and fail for the one reason that is not a mistake.
-      #
-      # **When blocked**: apply the `ontology-atlas-release-facts-*` artifact from the previous
-      # release run, or regenerate with `pnpm download:release-facts -- --tag=<previous>`, then
-      # dispatch again.
+      # The *previous* release's facts must already be on main: this token cannot push them, so
+      # a person lands the uploaded file, and a forgotten handoff leaves /download naming an older
+      # build. At admit time the newest published release is exactly what the facts must describe.
+      # **When blocked**: apply the previous run's `ontology-atlas-release-facts-*` artifact, or
+      # `pnpm download:release-facts -- --tag=<previous>`, then dispatch again.
       - name: Verify the download page names the newest published release
         run: pnpm download:release-facts:check
         env:
           GH_TOKEN: ${{ github.token }}
 
-      # Prevents stale upstream ACP registry snapshots from going out (2026-08-20).
-      #
-      # `pnpm acp:registry:check` **existed but was never called** —
-      # neither in CI nor in hooks. So the snapshot quietly fell behind, and measured
-      # during verification before official release, **9 packages** were older than upstream (two of which are adapters we actually run: claude-agent-acp 0.69.0→0.70.0 ·
-      # codex-acp 1.4.0→1.6.2). **A gate that exists but does not run is worse than none** —
-      # it gives false reassurance.
-      #
-      # **Why here and not every PR**: This check turns red *when upstream deploys*.
-      # If gated as a PR gate, someone else's changes randomly block our PR, making the rule
-      # noise rather than a rule (same discipline this repository has already set for lint rules).
-      # Releases are manual work, so asking here exactly blocks "shipping outdated things."
-      #
-      # **It blocks on the runtimes this app runs, and only those** (narrowed 2026-08-26). It used
-      # to fail on any of 39 listed agents moving, and it fired on all four releases of 2026-08-25/26
-      # without the mover ever being one we launch. Each cost a refresh, a PR, a CI round and a
-      # retag to ship a version number for a tool nobody here uses; on rc.14 it was green at tag
-      # time and stale twenty seconds later, which is a rule nobody can satisfy. The blocking set is
-      # read from Rust's `ISOLATION` table so it cannot drift from what the app actually knows;
-      # everything else is reported and does not stop the release.
-      #
-      # A compatibility-pinned runtime is different: its diagnostic names the reviewed upstream
-      # identity, and the installed permission matrix must pass before that identity changes.
-      # **When blocked**: follow the diagnostic; refresh ordinary drift with `pnpm acp:registry`.
+      # A stale ACP registry snapshot must not ship (2026-08-20: nine packages had fallen behind
+      # while the check existed but ran nowhere). It turns red when upstream deploys, so it gates
+      # releases, not pull requests, and blocks only on the runtimes Rust's `ISOLATION` table runs
+      # (narrowed 2026-08-26); other drift is reported. A compatibility-pinned runtime changes only
+      # after the installed permission matrix passes. **When blocked**: follow the diagnostic;
+      # refresh ordinary drift with `pnpm acp:registry`.
       - name: Verify bundled ACP registry is current
         run: pnpm acp:registry:check
 
@@ -160,6 +131,7 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
+          persist-credentials: false
           ref: ${{ needs.admit-release.outputs.release_sha }}
 
       - name: Setup Node.js
@@ -174,24 +146,22 @@ jobs:
           pnpm --version
 
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
+        uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master #182
+        with:
+          toolchain: stable
 
-      # The compiler that bakes the MCP sidecar into a single binary (`bun build --compile`).
-      # It is not installed by default on the runner, so `v1.0.0-rc.2` stopped here — when bringing
-      # in bundling (#732), this installation step did not come along. Toolchain installations are
-      # gathered at the top.
+      # `bun build --compile` bakes the sidecar and embeds this runtime; the runner does not ship
+      # bun. Toolchain installations are gathered at the top.
       - name: Setup Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
-          bun-version: latest
+          bun-version-file: .bun-version
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # `mcp/` is not a pnpm workspace member and uses its own `node_modules`
-      # (remnant of packages previously published separately to npm). Root install does not install it,
-      # so it exists only on human machines, not runners — `v1.0.0-rc.2` stopped while baking the sidecar
-      # because it could not find `@modelcontextprotocol/sdk`. There is exactly one pinned dependency.
+      # `mcp/` is not a pnpm workspace member and uses its own `node_modules`, which the root
+      # install does not populate on a runner. There is exactly one pinned dependency.
       #
       # Reason for `--frozen-lockfile`: the `package-lock.json` in this folder is **npm's**,
       # and pnpm does not read it. Running without a lock file causes the runner to resolve fresh
@@ -218,10 +188,9 @@ jobs:
 
       # After `tauri.conf.json` declares the MCP sidecar via `externalBin`,
       # **all cargo calls** require that file — not just the bundle step but also the below
-      # `cargo test`, which checks resource paths in the build script. The order of creating
-      # the sidecar only inside `desktop:build:app` stops here first
-      # (2026-07-28 v1.0.0-rc.2 failure). The runner is native architecture, so the host triple
-      # default is correct. The later bundle step calls it again but produces the same output.
+      # `cargo test`, which checks resource paths in the build script, so the sidecar is built
+      # here first. The runner is native architecture, so the host triple default is correct.
+      # The later bundle step calls it again but produces the same output.
       - name: Build bundled MCP sidecar
         run: pnpm mcp:build-binary
 
@@ -255,6 +224,13 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: pnpm desktop:release-secrets
 
+      # The certificate is imported only after this step, and this step's environment holds
+      # no credential. The build makes no updater archive.
+      - name: Build release app bundle
+        run: pnpm desktop:release-artifact -- --phase=build
+
+      # Without `-A`, only codesign may use the key unprompted; exporting it needs this step's
+      # random keychain password. `-x` was ignored for PKCS#12 on macOS 27 (2026-09-27).
       - name: Import Apple Developer ID certificate
         env:
           APPLE_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}
@@ -262,31 +238,27 @@ jobs:
         run: |
           CERTIFICATE_PATH="$RUNNER_TEMP/apple-developer-id.p12"
           KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
-          # This keychain is created and destroyed within this job — there is no reason for
-          # a person to register it. Fewer secrets to register means fewer mistakes.
+          trap 'rm -f "$CERTIFICATE_PATH"' EXIT
           APPLE_KEYCHAIN_PASSWORD="$(openssl rand -base64 24)"
           echo "::add-mask::$APPLE_KEYCHAIN_PASSWORD"
-          echo "$APPLE_CERTIFICATE_P12_BASE64" | base64 -D > "$CERTIFICATE_PATH"
+          (umask 077; echo "$APPLE_CERTIFICATE_P12_BASE64" | base64 -D > "$CERTIFICATE_PATH")
           security create-keychain -p "$APPLE_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
           security unlock-keychain -p "$APPLE_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security import "$CERTIFICATE_PATH" -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security import "$CERTIFICATE_PATH" -P "$APPLE_CERTIFICATE_PASSWORD" -x -T /usr/bin/codesign -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          rm -f "$CERTIFICATE_PATH"
           security list-keychain -d user -s "$KEYCHAIN_PATH"
           security default-keychain -s "$KEYCHAIN_PATH"
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$APPLE_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
 
-      - name: Build signed and notarized release artifact
-        run: pnpm desktop:release-artifact
+      # The updater key signs the archive repacked from the signed app, and only that stage
+      # receives it (scripts/build-macos-release-artifact.mjs).
+      - name: Sign and notarize release artifact
+        run: pnpm desktop:release-artifact -- --phase=sign
         env:
-          APPLE_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           APPLE_API_KEY_P8_BASE64: ${{ secrets.APPLE_API_KEY_P8_BASE64 }}
           APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
           APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
-          # Updater artifacts (.app.tar.gz + .sig) are signed with this key. Separate from Apple
-          # certificates — Apple guarantees "who made it," this key guarantees "is this update
-          # package ours?". The installed app verifies with the public key, so any package
-          # without this key will not install via any path.
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
@@ -340,9 +312,6 @@ jobs:
     runs-on: windows-2022
     # budget: 1100s
     timeout-minutes: 27
-    permissions:
-      contents: read
-      checks: write
     env:
       RELEASE_TAG: ${{ needs.admit-release.outputs.release_tag }}
     steps:
@@ -350,6 +319,7 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
+          persist-credentials: false
           ref: ${{ needs.admit-release.outputs.release_sha }}
 
       - name: Setup Node.js
@@ -365,12 +335,14 @@ jobs:
           pnpm --version
 
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
+        uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master #182
+        with:
+          toolchain: stable
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
-          bun-version: latest
+          bun-version-file: .bun-version
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -378,33 +350,21 @@ jobs:
       - name: Install bundled MCP server dependencies
         run: pnpm --dir mcp install --frozen-lockfile
 
-      # Observed three times (2026-09-04): a registry.npmjs.org socket timeout fails this
-      # step after pnpm audit's own two retries, killing the whole ~20-minute job for a
-      # transient network blip. A bounded outer retry keeps the same scope/level and still
-      # fails the step on a real advisory (the final attempt's exit code is honoured).
+      # A registry timeout (three on 2026-09-04) retries; a real advisory still fails on the
+      # last attempt. The app and the bundled MCP server have separate lockfiles.
       - name: Audit JavaScript production dependencies
         shell: pwsh
         run: |
-          for ($attempt = 1; $attempt -le 4; $attempt++) {
-            pnpm audit --prod --audit-level=high
-            if ($LASTEXITCODE -eq 0) { break }
-            if ($attempt -eq 4) { exit $LASTEXITCODE }
-            $delaySeconds = $attempt * 30
-            Write-Host "pnpm audit failed (exit $LASTEXITCODE); retrying in $delaySeconds s (attempt $attempt of 4)..."
-            Start-Sleep -Seconds $delaySeconds
+          foreach ($dir in @('.', 'mcp')) {
+            for ($attempt = 1; $attempt -le 4; $attempt++) {
+              pnpm --dir $dir audit --prod --audit-level=high
+              if ($LASTEXITCODE -eq 0) { break }
+              if ($attempt -eq 4) { exit $LASTEXITCODE }
+              $delaySeconds = $attempt * 30
+              Write-Host "pnpm audit in $dir failed (exit $LASTEXITCODE); retrying in $delaySeconds s (attempt $attempt of 4)..."
+              Start-Sleep -Seconds $delaySeconds
+            }
           }
-
-      - name: Audit Rust dependencies
-        uses: rustsec/audit-check@69366f33c96575abad1ee0dba8212993eecbe998 # v2.0.0
-        with:
-          token: ${{ github.token }}
-          working-directory: src-tauri
-
-      # audit-check reports informational advisories but does not fail on them.
-      # GTK3's glib advisory is Linux-only in Tauri's dependency tree; this
-      # native Windows lane still fails on every other Rust unsoundness warning.
-      - name: Deny unsound Rust advisories
-        run: cargo audit --file src-tauri/Cargo.lock --deny unsound --ignore RUSTSEC-2024-0429
 
       - name: Windows release contract tests
         run: node --test scripts/lib/mcp-binary.test.mjs scripts/stage-windows-release-assets.test.mjs scripts/verify-mcp-binary.test.mjs
@@ -427,17 +387,10 @@ jobs:
       - name: Verify release tag version
         run: pnpm desktop:release-tag -- --tag="$env:RELEASE_TAG"
 
-      - name: Require updater signing credentials
-        run: pnpm desktop:release-secrets -- --updater-only
-        env:
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-
+      # No updater key: the Windows beta ships no in-app update (latest.json lists macOS only),
+      # so the build makes no updater signature for anything to publish.
       - name: Build Windows NSIS installer
         run: pnpm desktop:build:windows
-        env:
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
       - name: Require the beta installer to be unsigned
         shell: pwsh
@@ -511,14 +464,57 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
+  # The audit's check run is the only write before staging; the checkout holds only the
+  # lockfile, so no build code runs beside that token.
+  audit-rust:
+    name: Audit Rust dependencies
+    needs: admit-release
+    runs-on: ubuntu-latest
+    # budget: 40s (the two audit steps took 10 s inside the Windows job)
+    timeout-minutes: 2
+    permissions:
+      contents: read
+      checks: write
+    steps:
+      - name: Checkout the lockfile only
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+          ref: ${{ needs.admit-release.outputs.release_sha }}
+          sparse-checkout: src-tauri/Cargo.lock
+          sparse-checkout-cone-mode: false
+
+      - name: Install cargo-audit
+        env:
+          CARGO_AUDIT_VERSION: v0.22.2
+          CARGO_AUDIT_SHA256: ab28a1bdb54db4d5d8ad5981cf1f959410370b3d28250dbd35f6a44248620e39
+        run: |
+          curl -fsSLo cargo-audit.tgz \
+            "https://github.com/rustsec/rustsec/releases/download/cargo-audit%2F${CARGO_AUDIT_VERSION}/cargo-audit-x86_64-unknown-linux-gnu-${CARGO_AUDIT_VERSION}.tgz"
+          echo "${CARGO_AUDIT_SHA256}  cargo-audit.tgz" | sha256sum --check --strict
+          mkdir -p "$RUNNER_TEMP/cargo-audit"
+          tar xzf cargo-audit.tgz --strip-components=1 -C "$RUNNER_TEMP/cargo-audit"
+          echo "$RUNNER_TEMP/cargo-audit" >> "$GITHUB_PATH"
+
+      - name: Audit Rust dependencies
+        uses: rustsec/audit-check@69366f33c96575abad1ee0dba8212993eecbe998 # v2.0.0
+        with:
+          token: ${{ github.token }}
+          working-directory: src-tauri
+
+      # audit-check does not fail on informational advisories. GTK3's glib advisory is
+      # Linux-only in Tauri's tree; every other unsoundness warning still fails here.
+      - name: Deny unsound Rust advisories
+        run: cargo audit --file src-tauri/Cargo.lock --deny unsound --ignore RUSTSEC-2024-0429
+
   # Staging and publishing are separate jobs so a human can install the exact
   # bytes that will go public before they do. The draft release is assembled
   # and verified here; nothing is visible to users yet.
   stage-macos:
     name: Stage Draft Desktop Release
-    if: ${{ always() && needs.admit-release.result == 'success' && needs.build-macos.result == 'success' && needs.build-windows.result == 'success' }}
+    if: ${{ always() && needs.admit-release.result == 'success' && needs.build-macos.result == 'success' && needs.build-windows.result == 'success' && needs.audit-rust.result == 'success' }}
     runs-on: ubuntu-latest
-    needs: [admit-release, build-macos, build-windows]
+    needs: [admit-release, build-macos, build-windows, audit-rust]
     # budget: 120s
     timeout-minutes: 3
     permissions:
@@ -530,6 +526,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
+          persist-credentials: false
           ref: ${{ needs.admit-release.outputs.release_sha }}
 
       - name: Setup Node.js
@@ -602,10 +599,6 @@ jobs:
           tag_name: ${{ needs.admit-release.outputs.release_tag }}
           target_commitish: ${{ needs.admit-release.outputs.release_sha }}
           draft: true
-          # Semver pre-release tags come after the hyphen (v1.1.0-rc.1). That single character
-          # separates "early adopters" from "everyone" — GitHub uses this flag to
-          # attach the Pre-release badge and exclude it from `releases/latest`.
-          prerelease: ${{ contains(needs.admit-release.outputs.release_tag, '-') }}
           generate_release_notes: true
           files: |
             release-assets/*/*.dmg
@@ -657,13 +650,13 @@ jobs:
       RELEASE_TAG: ${{ needs.admit-release.outputs.release_tag }}
       RELEASE_SHA: ${{ needs.admit-release.outputs.release_sha }}
     steps:
-      # fetch-depth: 0 — The determinism contract for the generated manifest requires the full history
-      # (`generated-vault-determinism.contract.test.ts`), and updating main below
-      # cannot be done safely with a shallow clone.
+      # fetch-depth: 0 — the generated manifest's determinism contract needs the full history
+      # (`generated-vault-determinism.contract.test.ts`).
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
+          persist-credentials: false
           ref: ${{ needs.admit-release.outputs.release_sha }}
 
       - name: Setup Node.js
@@ -703,14 +696,9 @@ jobs:
 
       - name: Publish verified stable release
         run: |
-          # At publish time, the tag is the source of truth. Pinning `--prerelease=false` here
-          # means that as soon as the RC tag leaves draft status, it promotes to a stable release,
-          # completely removing the pre-release indicator.
-          if [[ "${RELEASE_TAG}" == *-* ]]; then
-            gh release edit "${RELEASE_TAG}" --draft=false --prerelease=true
-          else
-            gh release edit "${RELEASE_TAG}" --draft=false --prerelease=false
-          fi
+          # Clears a pre-release flag set by hand on the draft: the hosted updater skips a GitHub
+          # pre-release, and `desktop:verify-download` and `download:release-facts` below refuse one.
+          gh release edit "${RELEASE_TAG}" --draft=false --prerelease=false
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
@@ -721,7 +709,7 @@ jobs:
 
       - name: Generate verified release facts from admitted source
         run: |
-          pnpm download:release-facts -- --tag="${RELEASE_TAG}" --allow-prerelease
+          pnpm download:release-facts -- --tag="${RELEASE_TAG}"
           cp src/views/download/model/macos-release.generated.ts "$RUNNER_TEMP/macos-release.generated.ts"
         env:
           GITHUB_TOKEN: ${{ github.token }}

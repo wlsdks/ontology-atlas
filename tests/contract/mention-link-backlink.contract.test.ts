@@ -91,8 +91,8 @@ describe('멘션이 쓴 본문 링크를 에이전트가 역참조로 찾는다'
       //    see "mentioned in the prose" and loses the context a person wrote.
       expect(
         hit.matchedInBody,
-        `본문 링크를 MCP 의 바늘이 못 찾았다 — 표기를 바꿀 때 이 이음새를 같이 봐야 한다. ` +
-          `링크: ${link}`,
+        `The MCP needle did not find the body link; when the notation changes, check this seam too. ` +
+          `Link: ${link}`,
       ).toBe(true);
     });
   }

@@ -140,7 +140,7 @@ const BASELINE_HARD_CUTS = 0;
  * runs on the working tree and on the base tree, and only growth this change did not
  * record fails.
  *
- * A new surface is recorded as `tests/contract/ratchet-raises/appearing-surfaces.<slug>.json`,
+ * A new surface is recorded as `tests/contract/ratchet-raises/appearing-surfaces/<slug>.json`,
  * whose `why` names the surface and **where its open path is exercised** (an `OPENERS`
  * entry, or the component or e2e test that opens it when the static sweep cannot).
  * The notes written before this mechanism, one per surface, are in this file's Git
@@ -160,9 +160,9 @@ describe('등장·퇴장 래칫 — 소스 전수', () => {
   it('하드컷이 늘지 않는다 — 새 표면은 나가는 길을 지고 태어난다', () => {
     expect(
       census.length,
-      `조건부로 나타나는데 나가는 길이 없는 표면이 ${BASELINE_HARD_CUTS} → ${census.length} 로 늘었다.\n` +
-        `\`<Surface open={…}>\` 로 감싸면 퇴장 창 · 퇴장 클래스 · inert · 포커스 복귀가 기본으로 딸려 온다.\n` +
-        `정말 갚을 수 없는 부채라면 BASELINE_HARD_CUTS 를 손으로 올리고 그 diff 에 «왜» 를 적어라.\n` +
+      `Surfaces that appear conditionally with no way out grew from ${BASELINE_HARD_CUTS} to ${census.length}.\n` +
+        `Wrapping in \`<Surface open={…}>\` brings the exit window, exit class, inert and focus return by default.\n` +
+        `If this debt truly cannot be paid, raise BASELINE_HARD_CUTS by hand and say why in that diff.\n` +
         census.map((c) => `  [${c.kind}] ${c.what} — ${c.at.join(' · ')}`).join('\n'),
     ).toBeLessThanOrEqual(BASELINE_HARD_CUTS);
   });
@@ -170,8 +170,8 @@ describe('등장·퇴장 래칫 — 소스 전수', () => {
   it('갚았으면 기준선도 내린다 — 여유를 무료로 두지 않는다', () => {
     expect(
       census.length,
-      `하드컷이 ${BASELINE_HARD_CUTS} → ${census.length} 로 줄었다. 이 파일의 BASELINE_HARD_CUTS 도 ` +
-        `${census.length} 로 내려라. 안 내리면 그 차이가 다시 나빠질 여유로 남는다.`,
+      `Hard cuts fell from ${BASELINE_HARD_CUTS} to ${census.length}. Lower this file's BASELINE_HARD_CUTS ` +
+        `to ${census.length} as well; otherwise the difference stays as room to get worse again.`,
     ).toBeGreaterThanOrEqual(BASELINE_HARD_CUTS);
   });
 
@@ -261,8 +261,8 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
     const withProbe = addOne('ContentSwap.tsx.fixture');
     expect(
       withProbe.length,
-      '이미 마운트된 컨테이너 안의 내용 교체를 하드컷으로 셌다. 그러면 고칠 것 없는 자리에 ' +
-        '나가는 길을 붙이라고 요구하기 시작한다 — 실물 세 자리가 이 부류다.',
+      'A content swap inside an already mounted container was counted as a hard cut. The gate would then ' +
+        'start demanding an exit where there is nothing to fix; three real sites are of this kind.',
     ).toBe(census.length);
   });
 
@@ -300,9 +300,9 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
     });
     expect(
       appearing.length,
-      `조건부로 나타나는 표면이 ${appearing.length} 로, 기준 ${verdict.ceiling} 을 넘었다.\n${verdict.explain}\n` +
-        `새 표면을 더했으면 a11y-open-surfaces.spec.ts 의 OPENERS 에 그것을 여는 길이 있는지 보고,\n` +
-        `그 길을 raise 기록의 why 에 적어라 — 분모가 조용히 커지면 「5/19」가 「5/30」이 되어 있어도 아무도 모른다.\n` +
+      `Conditionally appearing surfaces reached ${appearing.length}, over the ceiling ${verdict.ceiling}.\n${verdict.explain}\n` +
+        `If you added a surface, check that OPENERS in a11y-open-surfaces.spec.ts has a way to open it,\n` +
+        `and name that way in the raise record's why: when the denominator grows silently, nobody notices 5/19 has become 5/30.\n` +
         appearing.map((c) => `  [${c.kind}] ${c.what} — ${c.at[0]}`).join('\n'),
     ).toBeLessThanOrEqual(verdict.ceiling);
     expect(appearing.length, '하드컷은 등장 표면의 부분집합이다').toBeGreaterThanOrEqual(census.length);

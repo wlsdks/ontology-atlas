@@ -7,23 +7,9 @@ export interface AutomationLaneFact {
 }
 
 /**
- * An empty lane in the order a person reads it, on one text start line: what to do, the three
- * facts a person needs before scheduling (what runs, when, what it may change), then the
- * schedule list itself, full width like the list it becomes, holding the page's remaining height.
- * No invented schedule or execution.
- *
- * Each sentence appears once on the screen. The page lede owns "runs on this computer while
- * Atlas is open", the facts own what/when/what-changes, and the description only says what the
- * facts do not (review, 2026-09-25: the same runtime sentence was on screen three times).
- *
- * ⚠️ **The empty list says nothing of its own** (owner review, 2026-09-26). Its body used to say
- * "schedules appear here" and its foot "results appear here after the first run", under a title
- * that had just said there were none: the page's empty message twice more, in a quieter voice.
- * The list is its frame now, title, count and column heads over the ground its rows will take,
- * and the one message is the title above it.
- *
- * `count` is null where no schedule can exist yet (the browser, no folder): a "0" there counted
- * something this runtime cannot hold.
+ * An empty lane: what to do, the three facts to know before scheduling, then the empty list
+ * frame. Each sentence appears once on screen, so the list itself says nothing. `count` is null
+ * where no schedule can exist (browser, no folder), where a "0" would count the impossible.
  */
 export function AutomationEmptyWorkbench({ title, description, action, previewTitle,
   count, columns, facts }: {
@@ -37,7 +23,6 @@ export function AutomationEmptyWorkbench({ title, description, action, previewTi
 }) {
   return <div className={styles.stage} data-testid="automations-empty-workbench">
     <div className={styles.intro}>
-      {/* No eyebrow: it repeated the list's own title below. */}
       <h2 className={styles.title}>{title}</h2>
       <p className={styles.description}>{description}</p>
       <div className={styles.action}>{action}</div>
@@ -56,7 +41,6 @@ export function AutomationEmptyWorkbench({ title, description, action, previewTi
       <div className={styles.columnHead}>
         {columns.map(column => <span key={column}>{column}</span>)}
       </div>
-      {/* Where rows will land: ground, not a sentence. */}
       <div className={styles.rows} aria-hidden data-testid="automations-empty-list-rows" />
     </aside>
   </div>;

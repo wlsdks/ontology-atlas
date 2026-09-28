@@ -6,9 +6,8 @@ import { CadencePicker, type CadenceUnit } from './CadencePicker';
 import { HOUR_DETENTS, MINUTE_DETENTS, detentForMinutes, nearestDetent, stepDetent } from './detents';
 
 /**
- * The rail's travel is measured, not assumed (spec §2.2 "Ratchet"). The arithmetic is tested
- * without a screen, and the component is tested for the three things a person does with it
- * that no pixel is needed for: switch the unit, press a detent, and use the keyboard.
+ * Arithmetic is tested without a screen; the component for what a person does without pixels:
+ * switch the unit, press a detent, use the keyboard.
  */
 
 const LABELS = {
@@ -53,7 +52,7 @@ describe('the rail arithmetic', () => {
     expect(nearestDetent(0, 400, MINUTE_DETENTS)).toBe(0);
     expect(nearestDetent(160, 400, MINUTE_DETENTS)).toBe(2);
     expect(nearestDetent(400, 400, MINUTE_DETENTS)).toBe(4);
-    // 40% across a five-detent rail is the third detent: ten minutes, the owner's example.
+    // 40% across a five-detent rail is the third detent: ten minutes.
     expect(MINUTE_DETENTS[nearestDetent(0.4 * 400, 400, MINUTE_DETENTS)]).toBe(10);
     // A drag that leaves the rail clamps rather than wrapping to the other end.
     expect(nearestDetent(-90, 400, MINUTE_DETENTS)).toBe(0);
@@ -114,9 +113,8 @@ describe('the rail on screen', () => {
 
   it('the thumb carries no transition while the pointer is down, and the spring only after it lifts', () => {
     /*
-     * The reduced-motion equivalent is the absence of the transition, not a second animation:
-     * `motion-reduce:transition-none` on the same element the spring rides, so a person who
-     * asked for less motion finds the thumb already at the detent.
+     * The reduced-motion equivalent is no transition (`motion-reduce:transition-none`), so the
+     * thumb is already at the detent.
      */
     render(<Harness />);
     const thumb = screen.getByTestId('rail-thumb');

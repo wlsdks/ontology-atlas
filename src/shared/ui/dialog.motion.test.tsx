@@ -5,8 +5,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { EXIT_TRANSITION, OVERLAY_SPRING, OVERLAY_SPRING_REDUCED } from "@/shared/motion";
 import { Dialog } from "./dialog";
 
-// Observe the targets handed to the animation engine, without pretending jsdom
-// can verify native compositor frames. Keep the real media-query subscription.
+// Observes the targets handed to the animation engine; jsdom cannot verify compositor frames.
+// The real media-query subscription stays.
 vi.mock("framer-motion", async (importOriginal) => {
   const actual = await importOriginal<typeof import("framer-motion")>();
   return {

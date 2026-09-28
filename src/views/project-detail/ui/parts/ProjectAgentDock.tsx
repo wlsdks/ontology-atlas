@@ -11,17 +11,9 @@ import { AcpChatPanel, AcpChatResizeHandle, AcpDockHeader } from "@/widgets/acp-
 import type { ProjectAgentOpeningRequest, ProjectAgentRuntime } from "../../lib/use-project-agent";
 
 /**
- * The guarded ACP conversation, docked to a project page.
- *
- * The shape is the Library's and Analysis's, for the same measured reason: the outer frame
- * claims its width first and the agent process starts after that movement settles, so process
- * startup cannot stall the one animation that explains where the page went. The eyebrow names
- * the project the turn was started from; the header is the shared `AcpDockHeader`, so the title
- * is the same word on four screens.
- *
- * Closing puts the conversation away rather than ending it (owner, 2026-09-08, on the Library
- * dock): the frame's width goes to zero and it turns `inert`, and the panel with its transcript,
- * permission card and running turn stays mounted until the person leaves the page.
+ * The guarded ACP conversation docked to a project page. The process starts after the frame's
+ * width settles, or startup stalls the animation. Closing only hides the frame (inert, zero
+ * width); the running turn stays mounted until the page is left.
  */
 export function ProjectAgentDock({
   open,
@@ -63,11 +55,8 @@ export function ProjectAgentDock({
   }, [open]);
 
   /*
-   * **Focus goes back where it came from** (2026-09-25 sweep). Closing turns the frame
-   * `inert`, and a focused control inside an inert subtree loses focus to `<body>`: the
-   * keyboard was left at the top of the document, pages away from the "hand it to an agent"
-   * door that opened the dock. The opener is read in a layout effect so it is taken before
-   * any child's passive effect can move focus into the composer.
+   * Closing makes the frame inert, which drops focus to `<body>`, so focus returns to the opener,
+   * read in a layout effect before any child moves focus into the composer.
    */
   const frameRef = useRef<HTMLDivElement | null>(null);
   const openerRef = useRef<HTMLElement | null>(null);
@@ -90,9 +79,7 @@ export function ProjectAgentDock({
     wasOpenRef.current = open;
   }, [open]);
 
-  // The session is enabled once the frame's width transition has ended (see `onTransitionEnd`);
-  // narrow viewports and reduced motion have no transition to wait for, so they settle on the
-  // next frame instead.
+  // Without a width transition (narrow, reduced motion) the session starts on the next frame.
   useEffect(() => {
     if (!open) {
       const frame = window.requestAnimationFrame(() => setSettled(false));
@@ -104,16 +91,8 @@ export function ProjectAgentDock({
   }, [open]);
 
   /*
-   * **Below `xl` the dock covers the page, so the keyboard goes into it** (2026-09-25 sweep).
-   * There the frame is a full-width overlay: focus left on the opener sat on a control the dock
-   * now hides, and Tab walked the covered page. Once the frame has settled, focus moves to the
-   * composer when it can take text, otherwise to the header's close button; Escape (handled on
-   * the frame) puts the dock away and the layout effect above returns focus to the opener. At
-   * `xl` the dock is a column beside the page, the opener stays visible, and focus stays put.
-   *
-   * The surface's enter keyframes start at `visibility: hidden`, where `focus()` is a silent
-   * no-op (measured at 1040: the first attempt landed nowhere), so the move is retried each
-   * frame until it lands, for at most a second, and stops if the person moved focus meanwhile.
+   * Below `xl` the dock covers the page, so focus moves into it. Retried each frame for up to a
+   * second, since `focus()` is a no-op while the enter keyframes are `visibility: hidden`.
    */
   useEffect(() => {
     if (!open || !settled || !isBelowDockColumn()) return;
@@ -145,7 +124,7 @@ export function ProjectAgentDock({
       inert={!open}
       aria-hidden={!open || undefined}
       onKeyDown={(event) => {
-        // Nested surfaces (the history list, the slash menu) take Escape first and stop it.
+        // Nested surfaces take Escape first.
         if (event.key !== "Escape" || event.defaultPrevented || !open || !isBelowDockColumn()) return;
         event.preventDefault();
         onClose();
@@ -165,16 +144,9 @@ export function ProjectAgentDock({
       }
       className={cn(
         /*
-         * **One window tall at every width** (2026-09-25 sweep). The frame lives in the shell's
-         * scrolling body slot beside `main`, and the page row is as tall as the page. At `xl` it
-         * used to be a plain `relative` sibling and below `xl` an `absolute top-0` overlay: both
-         * stretched to the row, 1389px against a 949px window at 1512 and 1389 against 806 at
-         * 1040, so after the page had scrolled the close button sat above the window and, at the
-         * top, the composer sat below it; the two were never on screen together. The frame is now
-         * sticky to the slot's top at the window's height (less the bottom tab bar below `lg`).
-         * Below `xl` it is still an overlay over `main`: a full-width flex item with an equal
-         * negative left margin takes no space in the row, and width and margin move together,
-         * so it still grows in from the right edge.
+         * Sticky at the window's height, or a page-tall frame never shows close button and
+         * composer together. Below `xl` an equal negative margin makes it an overlay that grows
+         * in from the right.
          */
         "sticky top-0 z-30 min-h-0 shrink-0 self-start overflow-hidden bg-[color:var(--color-canvas)]",
         "h-[calc(100dvh-var(--topology-mobile-bottom-tab-reserve)-0.75rem)] lg:h-dvh xl:z-auto",

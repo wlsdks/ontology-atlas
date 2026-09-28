@@ -10,10 +10,6 @@ import {
   projectSourceSnapshotUnchanged,
 } from '../agent-brief-compact.mjs';
 import {
-  listAnalysisRecords,
-  readAnalysisRecord,
-} from '../analysis-records.mjs';
-import {
   attachMeaningRepair,
   buildMeaningRepair,
   buildMeaningRepairReviewPage,
@@ -31,6 +27,7 @@ import {
   RELATION_TYPE_VALUES,
   queryCompiledOntology,
   refreshAgentBriefHandoffPrompt,
+  shareArtifact,
 } from '../ontology-engine.mjs';
 import { buildProjectMeaningInventory } from '../project-meaning-inventory.mjs';
 import {
@@ -62,9 +59,17 @@ import { loadVaultDocs } from '../vault.mjs';
 import { attachVaultValidation } from './maintenance.mjs';
 import { buildSummaryFreshness } from './vault-nodes.mjs';
 
+const COMPILE_SUMMARY_DELIVERY = Object.freeze({
+  selection: 'summary_default',
+  reason: 'No argument asked for arrays, so this is the bounded summary: counts, graphHash and aggregates.',
+  fullArguments: Object.freeze({ full: true }),
+  pageArguments: Object.freeze({ nodesLimit: 500, edgesLimit: 500 }),
+});
+
 function compileOntologyTool({
   includeIndexes,
   summary,
+  full,
   nodesLimit,
   nodesOffset,
   edgesLimit,
@@ -72,13 +77,18 @@ function compileOntologyTool({
 } = {}) {
   requireOptionalBoolean(includeIndexes, 'includeIndexes');
   requireOptionalBoolean(summary, 'summary');
+  requireOptionalBoolean(full, 'full');
   requireOptionalPositiveInteger(nodesLimit, 'nodesLimit', { max: 500 });
   requireOptionalNonNegativeInteger(nodesOffset, 'nodesOffset');
   requireOptionalPositiveInteger(edgesLimit, 'edgesLimit', { max: 500 });
   requireOptionalNonNegativeInteger(edgesOffset, 'edgesOffset');
+  const asksForArrays = full === true
+    || includeIndexes === true
+    || [nodesLimit, nodesOffset, edgesLimit, edgesOffset].some((value) => value !== undefined);
+  const summaryOnly = summary === true || !asksForArrays;
   const artifact = compileOntology(loadVaultDocs(VAULT_ROOT), {
     includeIndexes: includeIndexes === true,
-    summary: summary === true,
+    summary: summaryOnly,
     nodesLimit: typeof nodesLimit === 'number' ? nodesLimit : undefined,
     nodesOffset: typeof nodesOffset === 'number' ? nodesOffset : undefined,
     edgesLimit: typeof edgesLimit === 'number' ? edgesLimit : undefined,
@@ -87,6 +97,7 @@ function compileOntologyTool({
   // Summary mode — the artifact is itself the count/aggregate, so the wrapper's
   // extra summary stats would duplicate it. Returned as-is.
   if (summary === true) return artifact;
+  if (summaryOnly) return { delivery: COMPILE_SUMMARY_DELIVERY, ...artifact };
   return {
     ...artifact,
     summary: {
@@ -217,7 +228,7 @@ function scopedAgentBriefInput(artifact, args, ontologyAtlasIgnorePatterns, load
     if (cached?.projectSlug === projectSlug) {
       scopedArtifact = cached.artifact;
     } else {
-      scopedArtifact = compileOntology(scope.docs, { includeIndexes: true });
+      scopedArtifact = shareArtifact(compileOntology(scope.docs));
       lastProjectArtifact.set(artifact, { projectSlug, artifact: scopedArtifact });
     }
   }
@@ -266,13 +277,21 @@ function privateCurrentProjectSourceAccess(projectSlug, projectSource, graphHash
   };
 }
 
+function analysisRecords() {
+  return import('../analysis-records.mjs');
+}
+
 async function queryOntologyTool(args = {}) {
   validateQueryOntologyArgs(args);
   if (args.operation === 'analysis_history') {
+    const { listAnalysisRecords } = await analysisRecords();
     return listAnalysisRecords(VAULT_ROOT, { limit: args.limit ?? 30, cursor: args.analysisCursor ?? null, mode: args.analysisMode ?? null, project: args.project ?? null });
   }
-  if (args.operation === 'analysis_record') return readAnalysisRecord(VAULT_ROOT, args.recordId);
-  const { artifact, docs: loadedDocs } = COMPILED_ONTOLOGY_CACHE.getWithDocs({ includeIndexes: true });
+  if (args.operation === 'analysis_record') {
+    const { readAnalysisRecord } = await analysisRecords();
+    return readAnalysisRecord(VAULT_ROOT, args.recordId);
+  }
+  const { artifact, docs: loadedDocs } = COMPILED_ONTOLOGY_CACHE.getWithDocs();
   const ontologyAtlasIgnorePatterns = loadOntologyAtlasIgnore(VAULT_ROOT);
   if (args.operation === 'meaning_repair_review') {
     const agentBrief = queryCompiledOntology(artifact, {

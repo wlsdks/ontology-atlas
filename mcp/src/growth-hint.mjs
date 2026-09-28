@@ -1,16 +1,10 @@
-// growth-hint.mjs — Ask-to-Grow.
-//
-// A read tool that resolves to nothing (no path, no slug, 0 rows, 0 hits)
-// otherwise just returns an empty result — the "unanswerable question" is exactly
-// where the vault should grow, and the signal was being thrown away. These pure
-// helpers turn that empty result into a small, machine-consumable `growthHint`
-// which the caller (index.js / ontology-engine.mjs) attaches only when the result
-// is empty or unresolved — never on success.
-//
-// Every hint is derived from data the caller already has (vault inventory,
-// near-slug/near-title candidates computed from real docs) — nothing here invents
-// a node. With no real candidate, the hint falls back to a generic add_concept
-// scaffold example rather than a guessed concrete node.
+// Ask-to-Grow: a read that resolves to nothing is where the vault should grow.
+// These pure helpers turn an empty result into a `growthHint` the caller attaches
+// only to empty or unresolved results, never on success. Hints come from data
+// the caller already has; with no real candidate they fall back to a generic
+// add_concept scaffold rather than a guessed node.
+
+import { isVaultSourcePath, rawSourceFileForSlug } from './schema.mjs';
 
 const TOKEN_RE = /[a-z0-9]+/g;
 
@@ -26,20 +20,10 @@ function titleCaseFromSlug(slug) {
 }
 
 /**
- * The slug a growth hint suggests to the agent.
- *
- * Audit 2026-07-25 — this function alone substituted on `[^a-z0-9]`, so **a
- * Korean title was erased entirely and came out as `untitled`**. The other four
- * implementations (`shared/lib/slugify.ts`, `derive-ontology-from-vault.ts`,
- * `analyze.mjs`, `absorb.mjs`) all preserve the Hangul syllable range
- * (U+AC00–U+D7A3). Since `init --locale=ko` is a
- * supported path, agents were instructing Korean-vault users to create
- * `untitled.md`, and the slug collided on their second Korean concept.
- *
- * Only **the Korean loss** is fixed here. This function's own behaviour of keeping
- * `/` as a separator (`Payment/Billing` → `payment-billing`) is left alone.
- * Collapsing the five implementations into one is separate work, and folding it
- * into this bug fix would invite a regression in the other direction.
+ * The slug a growth hint suggests. It keeps the Hangul syllable range
+ * (U+AC00–U+D7A3) like the other slugifiers (shared/lib/slugify.ts, analyze.mjs,
+ * absorb.mjs), or Korean titles become `untitled`; a `/` stays a separator, so a
+ * title like `Payment/Billing` becomes `payment-billing`.
  */
 function slugify(text) {
   const slug = String(text ?? '')
@@ -51,9 +35,8 @@ function slugify(text) {
 }
 
 /**
- * find_path — no path found within maxHops. Distinguishes "an endpoint isn't
- * even in the vault" (suggest add_concept) from "both exist but nothing
- * connects them yet" (suggest add_relation) — the vault-growth move differs.
+ * find_path found nothing within maxHops: a missing endpoint suggests
+ * add_concept, two unconnected endpoints suggest add_relation.
  */
 export function buildFindPathGrowthHint({ from, to, fromExists, toExists }) {
   const missing = [];
@@ -87,17 +70,22 @@ export function buildFindPathGrowthHint({ from, to, fromExists, toExists }) {
   };
 }
 
-/**
- * get_concept / node_profile — slug doesn't resolve. `candidateSlugs` is
- * computed by the caller (suggestSimilarSlugs / suggestCompiledSlugs against
- * the real vault slug set).
- */
-export function buildSlugNotFoundGrowthHint({ slug, candidateSlugs = [], referencedBy = [] }) {
-  // The vault **already knows** this name — only the document is missing. Most of
-  // what the map and insights count as concepts falls here (193 of 289 in the
-  // dogfood vault). Ending at "not found" makes the screen and the agent describe
-  // different universes, so name who wrote it under which key, and give the one
-  // move that materialises it.
+/** get_concept / node_profile miss; `candidateSlugs` come from the caller's real slug set. */
+export function buildSlugNotFoundGrowthHint({
+  slug,
+  candidateSlugs = [],
+  referencedBy = [],
+  rawSourceSlug = isVaultSourcePath(slug) ? slug : null,
+}) {
+  if (rawSourceSlug) {
+    return {
+      reason: `"${slug}" opens ${rawSourceSlug} under sources/, where every file is a raw source and never a node.`,
+      suggestion: 'Read it as a source. To make it a node, move the file into its kind folder.',
+      exampleCall: { tool: 'read_source', args: { path: rawSourceFileForSlug(rawSourceSlug) } },
+    };
+  }
+  // The vault already names this concept; only the document is missing. Say who
+  // wrote it under which key and the one move that materialises it.
   if (referencedBy.length > 0) {
     const cited = referencedBy
       .slice(0, 3)
@@ -136,10 +124,9 @@ export function buildSlugNotFoundGrowthHint({ slug, candidateSlugs = [], referen
 }
 
 /**
- * query_concepts — filter matched 0 rows. Pulls `kind=`/`domain=` equality
- * references out of the raw filter string and cross-checks them against the
- * real vault census (`byKind`/`byDomain`) so the hint can say, when true,
- * "that kind/domain doesn't exist at all" instead of a generic nudge.
+ * query_concepts matched 0 rows. `kind=` and `domain=` equalities in the filter
+ * are checked against the census, so the hint can say the kind or domain does
+ * not exist at all.
  */
 export function buildQueryConceptsZeroRowsGrowthHint({ filter, byKind = {}, byDomain = {} }) {
   const filterText = String(filter ?? '');
@@ -173,10 +160,7 @@ export function buildQueryConceptsZeroRowsGrowthHint({ filter, byKind = {}, byDo
   };
 }
 
-/**
- * find_evidence — title matched 0 vault docs. `nearMatches` is computed by
- * the caller via `findNearTitleMatches` against the real vault title set.
- */
+/** find_evidence matched 0 titles; `nearMatches` come from `findNearTitleMatches`. */
 export function buildFindEvidenceZeroHitsGrowthHint({ title, nearMatches = [] }) {
   if (nearMatches.length > 0) {
     const names = nearMatches.map((match) => `${match.title} (${match.slug})`);
@@ -197,11 +181,9 @@ export function buildFindEvidenceZeroHitsGrowthHint({ title, nearMatches = [] })
 }
 
 /**
- * Near-title candidates for find_evidence's 0-hit case. find_evidence itself
- * already ruled out every substring match (score<=0 for all docs), so this
- * only needs a cheap token-overlap (Jaccard) similarity — no embeddings, no
- * backend, stays local-first. A minScore floor keeps unrelated titles out
- * rather than inventing a "closest" match that isn't actually close.
+ * Near titles for find_evidence's 0-hit case by token Jaccard (every substring
+ * match already failed): local, no embeddings. `minScore` keeps unrelated titles
+ * out rather than inventing a closest match.
  */
 export function findNearTitleMatches(query, candidates = [], { limit = 3, minScore = 0.3 } = {}) {
   const queryTokens = new Set(tokenize(query));

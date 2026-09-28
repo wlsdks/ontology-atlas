@@ -2,54 +2,36 @@ import type { ReactNode } from 'react';
 import { cn } from '@/shared/lib/cn';
 
 interface EmptyStateProps {
-  /** One-line summary of the empty situation; a node, so it may contain a link. */
+  /** A node, so it may contain a link. */
   title: ReactNode;
   /**
-   * `p` by default: an empty state inside a list or section is not a document
-   * division.
-   *
-   * **Pass `h1` where this card *is* the whole page body.** Measured while
-   * dogfooding, 2026-07-29: a route that degraded to a single fallback card at
-   * narrow widths ended up with **zero** heading elements, leaving a screen
-   * reader user no way to hear what the page was or why the real surface did not
-   * open. A degradation card promises "why, and where to go next"; if the "why"
-   * cannot be read, that promise is not kept.
-   *
-   * Only the tag changes — Tailwind preflight resets heading size and weight to
-   * `inherit`, so the classes below still decide the appearance.
+   * Pass `h1` where this card is the whole page body, so the page has a heading. Only the tag
+   * changes: preflight resets heading size and weight, so the classes still decide.
    */
   titleAs?: 'p' | 'h1' | 'h2';
-  /** Supporting text or the next action; a node, so it may contain a link. */
+  /** A node, so it may contain a link. */
   description?: ReactNode;
-  /** Line-art glyph, framed in a muted rounded square. Above the title when centred, left of it otherwise. */
+  /** Framed in a muted square: above the title when centred, left of it otherwise. */
   icon?: ReactNode;
   /**
-   * `true` draws three muted bars; a node draws that shape instead. Shows an
-   * empty chart or list the shape it will take rather than a long blank.
-   * Decorative, hence `aria-hidden`.
+   * Passing `true` draws three muted bars, a node draws that shape: the shape the content will
+   * take. Decorative.
    */
   skeleton?: boolean | ReactNode;
   /**
-   * The shape the list will take, drawn with its own words — a ghost of one row with its
-   * column names — instead of the loading bars. `skeleton` says *not here yet* and the
-   * arrival gate counts it as unpainted (`[data-empty-skeleton]`); an empty destination is
-   * painted and finished, and the owner read the bars there as a load that never ends
-   * (installed app, 2026-09-18: the empty Collections and Rounds tabs). Decorative, hence
-   * `aria-hidden`; rendered in the skeleton's place and never together with it.
+   * A ghost row of the finished empty list, drawn in place of the skeleton. The arrival gate
+   * counts `[data-empty-skeleton]` as unpainted, and an empty destination is finished.
    */
   shape?: ReactNode;
-  /** Primary action at the bottom. */
   action?: ReactNode;
-  /** `regular` when the card needs more room. */
   size?: 'compact' | 'regular';
-  /** `dashed` signals "something belongs here"; `solid` suits a whole empty page. */
+  /** `dashed` says "something belongs here"; `solid` suits a whole empty page. */
   tone?: 'dashed' | 'solid';
   /** `center` is for a page body that is empty apart from one sentence. */
   align?: 'left' | 'center';
   className?: string;
 }
 
-/** Three muted bars, hinting at the shape a list or chart will take. */
 function DefaultSkeleton({ align }: { align: 'left' | 'center' }) {
   const widths = ['72%', '52%', '38%'];
   return (
@@ -70,9 +52,8 @@ function DefaultSkeleton({ align }: { align: 'left' | 'center' }) {
 }
 
 /**
- * Shared empty state for lists and sections. A whole empty page calls it with
- * `tone="solid"` + `align="center"`: with no `description` that is one centred sentence
- * (the title drops to the body step); with a `description` the title keeps the heading step.
+ * Shared empty state for lists and sections. A whole empty page uses `tone="solid"`
+ * and `align="center"`.
  */
 export function EmptyState({
   title,
@@ -97,14 +78,8 @@ export function EmptyState({
 
   const TitleTag = titleAs;
   /*
-   * **Only the one-sentence centred card demotes its title** (2026-09-25).
-   *
-   * A centred card with no description *is* one sentence, and that sentence reads as body
-   * text. A centred card with a description has a title and a paragraph under it; demoting
-   * the title there put it at the same 14px tertiary step as the paragraph, so the two
-   * lines read as one grey block with no heading. Two consumers had written their own way
-   * back — a styled span inside the title (project detail) and descendant `[&_h2]` overrides
-   * (architecture) — which is the primitive's job, done twice by hand.
+   * Only the one-sentence centred card demotes its title to body text; with a description the
+   * title keeps the heading step so the two lines do not read as one grey block.
    */
   const demoteTitle = isCenter && !description;
   const titleEl = (
@@ -183,12 +158,7 @@ export function EmptyState({
     >
       {skeletonEl ? <div className="mb-4">{skeletonEl}</div> : null}
       {iconEl && !isCenter ? (
-        /*
-         * **The action starts on the text's line, not under the icon** (2026-09-25). The action
-         * row used to close the card at its padding edge, so with a left icon the title and
-         * description began at one x and the button at another — measured on /ko/automations
-         * at 1512: text at x417, the action at x369. The row now lives in the text column.
-         */
+        /* The action row sits in the text column, so it starts on the text's line. */
         <div className="flex items-start gap-3">
           {iconEl}
           <div className="min-w-0 flex-1">

@@ -155,7 +155,6 @@ test('the record wraps the stamped brief with every rootPath stripped recursivel
   assert.equal(record.brief.contract, 'architectureBrief:v1');
   assert.equal(record.brief.measured.source.kind, 'folder');
   assert.equal(hasKeyDeep(record, 'rootPath'), false);
-  // The original brief is not mutated by the strip.
   assert.equal(brief.conformance.source.rootPath, '/machine/path/repo');
   assert.doesNotThrow(() => assertArchitectureRecord(record));
 });
@@ -166,12 +165,10 @@ test('record and profile parsers reject each other in both directions', () => {
     profileSlug: HEXAGONAL_PROFILE_FRONTMATTER.profile_slug,
     profileContentHash: CONTENT_HASH,
   });
-  // A profile can never validate as a record.
   assert.throws(() => assertArchitectureRecord(FSD_PROFILE_FRONTMATTER), /looks like an architecture profile/);
   assert.throws(() => assertArchitectureRecord(HEXAGONAL_PROFILE_FRONTMATTER), /looks like an architecture profile/);
   assert.throws(() => assertArchitectureRecord({ profile_uid: 'x', contract: 'architectureRecord:v1' }));
   assert.throws(() => assertArchitectureRecord({ role_core: ['src/**'], contract: 'architectureRecord:v1' }));
-  // And a record can never parse as a profile.
   assert.throws(() => parseArchitectureProfile(record), /architecture_schema/);
 });
 

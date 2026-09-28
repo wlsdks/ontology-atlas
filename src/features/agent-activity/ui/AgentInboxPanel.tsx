@@ -8,6 +8,7 @@ import { Link } from '@/i18n/navigation';
 import { buildOntologyInsightsReturnHref } from '@/entities/knowledge-graph';
 import { getTopologyFocusHref } from '@/entities/project';
 import { agentDisplayName } from '@/shared/lib/agent-display-name';
+import type { VaultProblemCounts } from '@/shared/lib/agent-notifications';
 import { cn } from '@/shared/lib/cn';
 import { Chip, RowButton } from '@/shared/ui/controls';
 import { controlClass } from '@/shared/ui/control-class';
@@ -93,6 +94,19 @@ function writeSentence(
   ].sort((a, b) => b.count - a.count);
   const top = ordered[0];
   return top && top.count > 0 ? t(top.key, { count: top.count }) : t('resultNothing');
+}
+
+function problemSummary(
+  t: (key: string, values?: Record<string, number>) => string,
+  problems: VaultProblemCounts,
+): string {
+  const parts: string[] = [];
+  if (problems.unresolvedEdges > 0) parts.push(t('problemUnresolved', { count: problems.unresolvedEdges }));
+  if (problems.dependencyCycles > 0) {
+    const key = problems.dependencyCyclesPartial ? 'problemCyclesAtLeast' : 'problemCycles';
+    parts.push(t(key, { count: problems.dependencyCycles }));
+  }
+  return parts.join(t('summaryJoin'));
 }
 
 /**
@@ -692,16 +706,7 @@ function TodoRow({
           </span>
         </span>
         <span className="truncate text-caption text-[color:var(--color-text-tertiary)]">
-          {[
-            todo.problems.unresolvedEdges > 0
-              ? t('problemUnresolved', { count: todo.problems.unresolvedEdges })
-              : null,
-            todo.problems.dependencyCycles > 0
-              ? t('problemCycles', { count: todo.problems.dependencyCycles })
-              : null,
-          ]
-            .filter(Boolean)
-            .join(t('summaryJoin'))}
+          {problemSummary(t, todo.problems)}
         </span>
       </span>
       <Link
@@ -789,16 +794,7 @@ function HistoryRow({
         : t(HISTORY_LABEL_KEY[row.kind]);
 
   const detail = (() => {
-    if (row.problems) {
-      const parts: string[] = [];
-      if (row.problems.unresolvedEdges > 0) {
-        parts.push(t('problemUnresolved', { count: row.problems.unresolvedEdges }));
-      }
-      if (row.problems.dependencyCycles > 0) {
-        parts.push(t('problemCycles', { count: row.problems.dependencyCycles }));
-      }
-      return parts.join(t('summaryJoin'));
-    }
+    if (row.problems) return problemSummary(t, row.problems);
     if (row.childCount) return t('bridgeChildren', { count: row.childCount });
     return row.label ?? '';
   })();

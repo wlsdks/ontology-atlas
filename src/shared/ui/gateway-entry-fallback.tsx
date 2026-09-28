@@ -3,30 +3,11 @@ import { withBasePath } from '@/shared/lib/base-path';
 import { controlClass } from '@/shared/ui/control-class';
 
 /**
- * The server-rendered surface for the root `/` — **the gateway version**.
- *
- * **Why not `MapEntryFallback`.** Under static export this route's HTML body is
- * nothing but the Suspense fallback, so this component *is* the entire page content
- * as seen by anything that does not run JS: link preview cards and crawlers.
- *
- * The owner's 2026-07-29 sign-off made `/` the face shown to web visitors (ledger:
- * the reversal of 「root-first-open」). The fallback still described the map, which
- * meant sharing this product's headline URL produced a preview saying something
- * **different from the screen that actually opens**. `MapEntryFallback` stays where
- * that description is true (`/topology`).
- *
- * **No new copy is written here.** The headline and lead reuse the sentences the
- * gateway page already uses (`download.heroTitleLine1/2` and `heroLead`, the
- * monument headline from the 2026-08-18 gateway remake). Inventing positioning here
- * would be a positioning change routed through `pnpm po:route`, and above all **a fallback saying something other
- * than the real screen** is precisely the defect this fixes.
- *
- * (The old `stageTitle`/`stageLead` left the catalogue during that remake while this
- * shared component kept requesting them, so `/ko/` printed MISSING_MESSAGE — owner
- * observation, 2026-08-18. Deleting a copy key starts with grepping every consumer.)
- *
- * The two links are real destinations — where to download and where to look without
- * installing. A gateway has to stay alive with no JS.
+ * The server-rendered fallback for `/`: under static export it is the whole page for anything
+ * without JS (link previews, crawlers), so it must say what the gateway says. It reuses the
+ * gateway's own sentences; new positioning copy would go
+ * through `pnpm po:route`. `MapEntryFallback` stays where the map description is true. Both
+ * links are real destinations, so the gateway works with no JS.
  */
 export async function GatewayEntryFallback({ locale }: { locale: string }) {
   const t = await getTranslations({ locale, namespace: 'download' });
@@ -45,7 +26,7 @@ export async function GatewayEntryFallback({ locale }: { locale: string }) {
           {t('eyebrow')}
         </p>
         <h1 className="mt-3 text-display leading-display font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] break-keep text-[color:var(--color-text-primary)]">
-          {/* The same two lines as the real screen: one sentence per line, the monument contract in miniature. */}
+          {/* The same two lines as the real screen, one sentence per line. */}
           <span className="block">{t('heroTitleLine1')}</span>
           <span className="block">{t('heroTitleLine2')}</span>
         </h1>
@@ -55,7 +36,7 @@ export async function GatewayEntryFallback({ locale }: { locale: string }) {
       </div>
 
       <p className="flex flex-wrap items-center gap-x-5 gap-y-2 text-body leading-body">
-        {/* link/lg = text-body (matching the parent p) + min-h-6, the WCAG 2.5.8 floor; it used to be an 18px line box. */}
+        {/* `link/lg` matches the parent text and adds `min-h-6`, the WCAG 2.5.8 floor. */}
         <a
           className={controlClass({ shape: 'link', size: 'lg', tone: 'accent', className: 'touch-hit-expand' })}
           href={withBasePath(`/${locale}/download/`)}

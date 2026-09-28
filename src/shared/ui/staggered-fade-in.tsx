@@ -4,49 +4,31 @@ import { cloneElement, isValidElement, useEffect, useState } from 'react';
 import { cn } from '@/shared/lib/cn';
 import { MOTION_EASE } from '@/shared/motion';
 
-/** The entry curve, as CSS — the token `--motion-ease`, read through its JS copy. */
+/** `--motion-ease`, read through its JS copy. */
 const EASE = `cubic-bezier(${MOTION_EASE.join(', ')})`;
 
 interface StaggeredFadeInProps {
-  /** The children; an array of `li` when `as` is a list element. */
+  /** An array of `li` when `as` is a list element. */
   children: React.ReactNode;
-  /** Stagger interval between children, in ms. Default 60 — the design system's recommendation. */
+  /** Interval between children in ms. */
   stagger?: number;
   /**
-   * How many children receive an increasing delay. Everything past this index
-   * appears together on the capped delay, so a large list (200 projects, say)
-   * does not end with a limping cascade whose last card arrives seconds later.
-   * Default 8, i.e. a maximum cascade of 8 × stagger (480ms at 60).
+   * Children past this index share the capped delay, so a long list does not end in a cascade
+   * whose last card arrives seconds late.
    */
   maxStaggerSteps?: number;
-  /** Transition duration in ms. Default 200. */
   duration?: number;
-  /** The container element; not always a div when the wrapper carries meaning. */
   as?: 'div' | 'ul' | 'ol' | 'section';
-  /** Extra className, applied to the container. */
   className?: string;
-  /** Vertical travel in px. Default 8. */
+  /** Vertical travel in px. */
   translateY?: number;
-  /** aria-label passed through to the container, for a wrapper that is a real region. */
+  /** For a wrapper that is a real region. */
   ariaLabel?: string;
 }
 
 /**
- * Staggered fade-in — applies `opacity 0 → 1` plus `translateY {y}px → 0` to the
- * children in sequence, so the design system's motion pattern lives in one
- * component.
- *
- * The hidden state must be committed on the first paint for the transition to
- * mean anything, so `mounted` flips on the next frame. Users with
- * `prefers-reduced-motion` see everything immediately.
- *
- * ```tsx
- * <StaggeredFadeIn as="ol" className="grid gap-3 md:grid-cols-3">
- *   <li>...</li>
- *   <li>...</li>
- *   <li>...</li>
- * </StaggeredFadeIn>
- * ```
+ * Fades and lifts the children in sequence. The hidden state must commit on the first paint,
+ * so `mounted` flips on the next frame.
  */
 export function StaggeredFadeIn({
   children,
@@ -62,8 +44,7 @@ export function StaggeredFadeIn({
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    // No JS branch is needed for prefers-reduced-motion: the child's
-    // `motion-reduce:!` classes override the inline style through !important.
+    // The children's `motion-reduce:!` classes override the inline style, so no JS branch.
     const handle = window.requestAnimationFrame(() => setMounted(true));
     return () => window.cancelAnimationFrame(handle);
   }, []);
@@ -76,8 +57,6 @@ export function StaggeredFadeIn({
         applyTransitionStyle(child, i, {
           mounted,
           duration,
-          // Cap the delay so the last child of a long list does not arrive
-          // seconds late.
           delay: Math.min(i, maxStaggerSteps) * stagger,
           translateY,
         }),
@@ -94,14 +73,8 @@ interface ApplyOptions {
 }
 
 /**
- * Injects the inline transition style directly onto the child element.
- *
- * An earlier version wrapped each child in `<span style={display: contents}>`,
- * but with an `<ol>`/`<ul>` parent that put a `<span>` between the `<li>`s —
- * invalid HTML, and screen readers lost the list semantics. Cloning the child
- * keeps the tree as `<ol><li/><li/></ol>`.
- *
- * Non-element children (string, number, null) pass through unchanged.
+ * Clones the child with the inline style instead of wrapping it, so an `<ol>` keeps its `<li>`
+ * children and its list semantics. Non-element children pass through.
  */
 function applyTransitionStyle(
   child: React.ReactNode,
@@ -121,7 +94,6 @@ function applyTransitionStyle(
   return cloneElement(child, {
     key: child.key ?? index,
     style: { ...existing, ...inlineTransition },
-    // Keep the motion-reduce: classes so the prefers-reduced-motion CSS still applies.
     className: cn(
       child.props.className,
       'motion-reduce:!transform-none motion-reduce:!opacity-100 motion-reduce:!transition-none',

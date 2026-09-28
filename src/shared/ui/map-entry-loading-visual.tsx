@@ -6,7 +6,7 @@ import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion
 export interface MapEntryLoadingVisualProps {
   title: string;
   description: string;
-  /** Product description for static HTML and crawlers. On screen, the loader is the protagonist. */
+  /** For static HTML and crawlers; on screen the loader leads. */
   headline?: string;
   lede?: string;
 }

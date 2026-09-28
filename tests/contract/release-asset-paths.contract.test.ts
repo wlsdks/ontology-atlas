@@ -94,7 +94,7 @@ function fakeBundle(root: string, version: string, arch: string): string {
   return bundleDir;
 }
 
-const VERSION = "1.0.0-rc.5";
+const VERSION = "1.3.0";
 // The bundle is named from the server's own version, which is not the app's tag.
 const MCP_VERSION = (
   JSON.parse(readFileSync("mcp/package.json", "utf8")) as { version: string }
@@ -131,7 +131,7 @@ afterAll(() => {
 describe("릴리스 자산 경로 계약", () => {
   it("업로드 경로는 하나다 — 여럿이면 루트를 우리가 정하지 못한다", () => {
     // Given several paths, `upload-artifact` takes the least common ancestor as the
-    // root. On v1.0.0-rc.1 that root became `bundle/`, adding an extra `dmg/` and
+    // root: here that is `bundle/`, which adds a `dmg/` and
     // `macos/` level, and the downloading side had no way to know that depth.
     const upload = step(buildJob, "Upload workflow artifact");
     expect(yamlValues(upload, "path")).toEqual(["release-upload"]);

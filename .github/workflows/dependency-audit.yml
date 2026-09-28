@@ -1,0 +1,72 @@
+name: Dependency Audit
+
+# An advisory can land without a commit, so this runs weekly as well as whenever a
+# manifest or lockfile changes. pnpm reads the lockfiles; no dependency is installed.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "mcp/package.json"
+      - "mcp/pnpm-lock.yaml"
+      - ".github/workflows/dependency-audit.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "mcp/package.json"
+      - "mcp/pnpm-lock.yaml"
+      - ".github/workflows/dependency-audit.yml"
+  schedule:
+    - cron: "23 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  audit-js:
+    name: Audit JavaScript production dependencies
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
+    runs-on: ubuntu-latest
+    # budget: 40s
+    timeout-minutes: 2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+
+      - name: Enable Corepack pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.18.0 --activate
+          pnpm --version
+
+      # The app and the bundled MCP server have separate lockfiles. A registry timeout
+      # retries; the last attempt's exit code is the verdict.
+      - name: Audit JavaScript production dependencies
+        run: |
+          for dir in . mcp; do
+            for attempt in 1 2 3 4; do
+              if pnpm --dir "$dir" audit --prod --audit-level=high; then break; else status=$?; fi
+              if [ "$attempt" -eq 4 ]; then exit "$status"; fi
+              echo "pnpm audit in $dir failed (exit $status); retrying in $((attempt * 30)) s"
+              sleep "$((attempt * 30))"
+            done
+          done

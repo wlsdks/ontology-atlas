@@ -12,7 +12,7 @@ import {
   xlsxUnits,
 } from './source-text.mjs';
 
-// ── a zip writer for the tests only: what Office writes, at its smallest ────────
+// A minimal zip writer, shaped like Office output, for these tests only.
 
 const CRC_TABLE = new Uint32Array(256).map((_, n) => {
   let c = n;
@@ -125,6 +125,14 @@ test('the zip reader returns every entry, deflated or stored, by name', () => {
   assert.throws(() => readZipEntries(Buffer.from('not a zip at all, not even close')), /not a zip/);
 });
 
+test('the zip reader stops inflating an entry at the size it declares', () => {
+  const bomb = zip({ 'word/document.xml': ' '.repeat(8 * 1024 * 1024) });
+  const centralStart = bomb.readUInt32LE(bomb.length - 22 + 16);
+  bomb.writeUInt32LE(1024, centralStart + 24);
+  assert.throws(() => readZipEntries(bomb).get('word/document.xml')(), /inflates past 1024 bytes/);
+  assert.throws(() => readSourceText(bomb, 'sources/bomb.docx'), /inflates past 1024 bytes/);
+});
+
 test('a DOCX becomes paragraphs under heading anchors, with runs and tabs joined', () => {
   const units = docxUnits(DOCX);
   assert.deepEqual(
@@ -213,7 +221,7 @@ test('heading slugs match the anchor grammar: lowercase, hyphens, letters of any
   assert.equal(headingSlug('Error handling & retries'), 'error-handling-retries');
   assert.equal(headingSlug('  6. Constraints '), '6-constraints');
   assert.equal(headingSlug('Café — résumé'), 'cafe-resume');
-  // No Latin letters leaves no slug; the document reader numbers such a heading instead.
+  // No Latin letters, no slug: the document reader numbers such a heading.
   assert.equal(headingSlug('범위와 예산'), '');
   const korean = docxUnits(zip({ 'word/document.xml': `<w:document><w:body>${paragraph('범위와 예산', 'Heading1')}${paragraph('예산은 240,000.')}</w:body></w:document>` }));
   assert.deepEqual(korean.map((unit) => unit.anchor), ['h:heading-1', 'h:heading-1']);

@@ -54,6 +54,7 @@ interface CatalogueLocalVariant {
   /** Which runtime starts it. Resolved to a full path on this machine before it is written down. */
   runtime: 'npx' | 'uvx' | 'docker' | 'node' | 'python3';
   packageId: string;
+  version: string;
   args: string[];
   env: CatalogueVariable[];
   source: CatalogueSource;

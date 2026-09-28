@@ -16,6 +16,12 @@ function graph(input: { sources?: string[]; pages?: string[]; concepts?: string[
   return { nodes, edges, counts: { sources: input.sources?.length ?? 0, pages: input.pages?.length ?? 0, concepts: input.concepts?.length ?? 0, cites: input.cites?.length ?? 0, mentions: input.mentions?.length ?? 0 } };
 }
 
+function sameTitles(folder: LibraryGraph, reversed: boolean): LibraryGraph {
+  const title = { source: "notes.md", page: "Notes", concept: "Payments" } as const;
+  const nodes = folder.nodes.map((node) => ({ ...node, label: title[node.kind] }));
+  return reversed ? { ...folder, nodes: nodes.reverse(), edges: [...folder.edges].reverse() } : { ...folder, nodes };
+}
+
 const BOX = { width: 1000, height: 600, ceiling: 1 };
 
 describe("flow layout", () => {
@@ -39,9 +45,7 @@ describe("flow layout", () => {
   });
 
   it("lets a page name run into the empty concept column instead of cutting it", () => {
-    // A wiki whose pages cite no concept: the concept column is never laid, so a third of
-    // the canvas stands empty to the right of the pages while their names were still cut at
-    // the page column's own budget ("Engineering onboarding…", 2026-09-21).
+    // Pages citing no concept: no concept column is laid, so page names may use the empty right side.
     const layout = flowLayout(
       graph({ sources: ["a.md", "b.md"], pages: ["Engineering onboarding and the rest of it", "b"], cites: [["b", "b.md"]] }),
       BOX,
@@ -71,6 +75,19 @@ describe("flow layout", () => {
   it("is the same picture for the same folder, whatever order the nodes arrived in", () => {
     const one = flowLayout(graph({ sources: ["b.md", "a.md"], pages: ["b", "a"], cites: [["a", "a.md"], ["b", "b.md"]] }), BOX);
     const two = flowLayout(graph({ sources: ["a.md", "b.md"], pages: ["a", "b"], cites: [["b", "b.md"], ["a", "a.md"]] }), BOX);
+    expect([...one.positions.entries()].sort()).toEqual([...two.positions.entries()].sort());
+  });
+
+  it("keeps same-titled files, pages and concepts in their places whatever order they arrived in", () => {
+    const folder = graph({
+      sources: ["a/notes.md", "b/notes.md"],
+      pages: ["one", "two"],
+      concepts: ["x", "y"],
+      cites: [["one", "a/notes.md"], ["two", "b/notes.md"]],
+      mentions: [["one", "x"], ["two", "y"]],
+    });
+    const one = flowLayout(sameTitles(folder, false), BOX);
+    const two = flowLayout(sameTitles(folder, true), BOX);
     expect([...one.positions.entries()].sort()).toEqual([...two.positions.entries()].sort());
   });
 
@@ -198,5 +215,13 @@ describe("flow layout", () => {
   it("lays a single node at the centre", () => {
     const layout = flowLayout(graph({ pages: ["only"] }), BOX);
     expect(layout.positions.get("page:only")).toEqual({ x: 500, y: 300 });
+  });
+
+  it("lays an empty folder as an empty picture in the world box", () => {
+    const layout = flowLayout(graph({}), BOX);
+    expect(layout.positions.size).toBe(0);
+    expect(layout.columns).toEqual([]);
+    expect(layout.extent).toEqual({ width: 1000, height: 600 });
+    expect(layout.scale).toBe(1);
   });
 });

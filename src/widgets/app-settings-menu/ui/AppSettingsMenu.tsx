@@ -63,167 +63,26 @@ import { controlClass } from '@/shared/ui/control-class';
 import { transientSurface } from "@/shared/ui/transient-surface";
 
 /**
- * The single settings surface (settings consolidation 2026-07-24, owner
- * instruction). Settings used to be scattered across two places: ① the nav
- * rail gear's "map settings" popover (OntologyMapSettingsGear — language, view
- * mode, INDEX default state, switch vault) and ② each page header's "settings"
- * pill opening a five-tab "app settings" modal (three of the tabs were
- * effectively one link plus a large empty area). This widget is now settings'
- * only home: no tabs, a single-column sheet, and the "group header +
- * immediately operable rows" grammar (Toss public talks — one thing per screen,
- * simplified hierarchy).
- *
- * - [screen] language · view mode (when the host injects it) · INDEX default
- *   state. Map screen state (HomePage state) arrives through the optional
- *   `screenControls` prop, so pages that do not inject it do not render those
- *   rows.
- * - [workspace] one row of current vault name and status, plus open/switch
- *   folder and a docs-vault link. Of the old vault tab's LocalVaultPicker
- *   surface, **copy path and reveal in Finder** were restored into this group in
- *   #72 — the B2 merge recorded them as "handled by the /docs vault pill", but no
- *   surface actually rendered that component, so they were lost outright on the
- *   desktop (review 2026-07-25).
- * - [my agent connection] `VaultAgentSetupPanel` — the config file that lets
- *   outside tools (Claude Code · Codex · Cursor · Antigravity) read this folder.
- *   The long MCP proof, the status card grid and the decision-order document sit
- *   behind the "Advanced, detailed verification" fold.
- * - [in-app agent] (#80) key registration, connection check, sent log. Zero new
- *   routes — settings has one home.
- *
- * ## The drill-in corridor was removed (2026-08-02, design council A-3)
- *
- * Those last two were once **two summary rows inside one LNB section** called
- * "AI Agent", each drilling into a subview. Measuring that corridor pane gave
- * 108px of ink out of 698×617 — **82.5% empty** with zero settings items. A pane
- * where nothing can be chosen was consuming a whole section. Worse, drilling in
- * removed all 180px of the LNB, so the list you had just chosen from was gone and
- * a back step appeared.
- *
- * So **the corridor was deleted and both destinations promoted into the LNB**
- * (6 rows → 7). Subview transitions 2 → 0, back steps 1 → 0, LNB always present.
- * It also ended three names all starting with "AI" that never separated on their
- * first character — now "My" versus "In-app".
- *
- * The P3 defect ⑥ contract still holds — `open`/`onOpenChange` are optional
- * controlled props, ⌘K yields to the palette (settings demote), and Escape is
- * owned by this dialog and stopPropagation keeps it from leaking into the map's
- * Esc dismissal order.
- */
-
-/**
- * LNB items — the left list's order and grouping *is* this array.
- *
- * "Map Background" and "The path you walked" sit at the **same level** as "Screen"
- * rather than under it because folding them into the screen section would let that
- * section swallow the rest. (The walked path carried eight values when that was
- * decided; six were retired on 2026-09-10 with the glyph they shaped.) An LNB's advantage over drill-in is that adding a
- * section is nearly free, so sections were added.
- *
- * ## Why there are groups and icons (measured 2026-07-29)
- *
- * A text-only list with no icons put **19–51px** of text into a 163px item — 70%
- * of the width empty, and 329 of 505px (65%) empty vertically. That space is not
- * whitespace; it is **an absence of information**.
- *
- * Icons are not decoration but a **scanning channel** (in a list you reopen
- * repeatedly they let you remember positions before reading words). The group
- * titles say why the five items are in that order — the first three are what you
- * see, the last two are what this app is connected to.
- *
- * ## Dimensions are not borrowed from chrome (2026-08-02, owner: *"This LNB button is small too"*
- * — this LNB button is small too)
- *
- * Items used to be `px-2.5 py-1.5`, giving a height of **32px** with **14px**
- * icons. 32px is the nav rail utility tile's value
- * (`--app-nav-rail-tile-height`), and 14px has no basis anywhere in this sheet.
- * So the dimensions of **a tool bar that floats over the map and yields screen
- * space** were being borrowed by *a destination you deliberately enter to read
- * and choose in* — the exact reason "Locked-scale contract" (the locked-scale contract)
- * limits its own reach to workbench chrome, applied here in reverse
- * (`design.md`, the same logic as the `GatewayNav` exception).
- *
- * So the values are drawn **from inside this sheet**. No new tokens:
- *
- * - `px-3 py-2` — **the same padding** as the right pane's `SettingsRow`. Equal
- *   vertical inset derives a height of 36px, and equal horizontal inset puts the
- *   left list's and the right rows' text on the same rhythm.
- * - `text-body` (12.5px) since 2026-09-25. It was `text-body-lg` (14px) as the
- *   sheet's attention winner, which made the index louder than every setting it
- *   leads to (rows 12.5, captions 11) and as loud as the sheet title. The winner
- *   is now each pane's own head (`SettingsPaneHead`, 16px); the nav is the quiet
- *   index beside it.
- * - 16px icons — at 14px they matched the text (14px) and never became a
- *   scanning channel.
+ * LNB items: the left list's order and grouping is this array. Group titles say why items sit
+ * in that order, and icons are a scanning channel. Item dimensions come from this sheet, not
+ * the workbench chrome (`design.md` locked-scale scope): `px-3 py-2` like `SettingsRow`, the
+ * body text step so the pane head stays the loudest line, and 16px icons.
  */
 const SETTINGS_GROUPS = [
-  // Why "Expand" sits **between** background and the walked path (owner, 2026-08-01:
-  // *"It seems like putting one above footprints would work"*, said when the mark was prints):
-  // the first two are what the map is drawn from (ground, glyphs) and expand is
-  // what opens on top of that. The walked path is the trace left after everything is
-  // drawn, so last is right.
-  // Why "Notifications" (notify) sits **after** the walked path: the first four follow how the
-  // map is drawn (ground · glyph · expand · trace), and notify is the layer where
-  // the app speaks on top of it. Why it is not moved under "Connected" is in the
-  // render-branch comment.
+  // Ordered as the map is drawn (ground, glyphs, expand, the walked path), then notifications,
+  // the layer where the app speaks on top of it.
   { key: 'look', items: ['screen', 'background', 'expand', 'footprint', 'notify'] },
-  // Why "My Agent Connection" and "In-App Agent" sit **side by side** here: they
-  // are two different destinations, not two summary rows of one section. One is
-  // the **config file** that lets outside tools read this folder; the other is the
-  // **key** for talking to an agent inside the app.
   /*
-   * These three names **stay in English** (owner call, 2026-08-16: *"Wouldn't it be better to split these into Agents, MCP API KEY? They don't need to be Korean."* —
-   * splitting into Agents, MCP and API KEY seems better, and they don't have to be
-   * Korean). The three previous names (「Runtime」 · 「My Agent Connection」 ·
-   * 「In-App Agent」) were all coinages of ours that said nothing about what the
-   * pane does — 「Runtime」 especially is a literal translation of "runtime" and
-   * means nothing when read in Korean.
-   *
-   * Agents · MCP · API Key are words the target user **already knows**, and they
-   * do not overlap. What each pane does is stated in plain language by the line at
-   * its top — the name is for finding, the explanation happens inside.
-   *
-   * The order carries meaning: **「Agents」 is first** because it is the path to
-   * talking to an agent right inside this app, and **API Key is last** because
-   * that path is frozen and was deliberately de-emphasised (2026-08-16 PO council).
-   *
-   * Name history — it has gone back and forth three times, so read this before a
-   * fourth:
-   * ① 「Agents」·「MCP」 (owner call, 2026-08-16) → ② 「Chat in App」 ·
-   * 「Connect from Terminal」 (2026-08-17): someone trying to connect an agent could not
-   * tell which of the two to press — one was a category name, the other a protocol
-   * acronym, and both read as "connect an agent". So they were split by **where
-   * you use them**. → ③ 「Agents」·「MCP Connection」 (owner instruction, 2026-08-19):
-   * 「MCP Connection」 answers its half of the 08-17 concern (an acronym alone does not
-   * show what action it is) with 「Connection」, but 「Agents」 still does not say that it
-   * means in-app conversation — the one-line intro at the top of each pane carries
-   * that distinction instead.
-   * The 「Agents」 label is not a vendor condition — the list uses `Claude Agent`
-   * (the recommended dropdown name), so it does not depend on being "inside a menu
-   * named Agents" (`tests/contract/vendor-naming.contract.test.ts`).
+   * Agents, MCP and API Key stay in English: words the target user already knows, with each
+   * pane's first line saying what it does. The Agents label is not a vendor condition (`tests/contract/vendor-naming.contract.test.ts`).
    */
   /*
-   * ⚠️ **`runtimes` and `agent` left for the 「Agent」 destination on
-   * 2026-08-20** (ledger 90). Settings is where you choose values, while
-   * downloading, installing, connecting and repairing tools is **operational work
-   * with progress**, and a modal that blocks what is behind it is the wrong
-   * container for that.
-   *
-   * What remains is 「Folder」 (folder) and 「Key」 (key) — both values you set once.
-   * (`ai` is not promoted to a destination because the 2026-08-16 "frozen path,
-   * de-emphasised" decision still stands.)
-   *
-   * For anyone looking for what left, **one signpost row stands at the head** of
-   * this group — it draws no content and only sends you to the destination.
+   * Only values set once stay here; operational work with progress (runtimes, agent
+   * connection) lives on the Agents destination, reached by signpost rows at this group's head.
    */
   { key: 'connect', items: ['workspace'] },
   /*
-   * Why 「App」 (app) is **last**: the two groups before it are things you touch
-   * daily (how the map looks · what attaches to this folder), while this group is
-   * about **the app itself** and you only come here to look something up. It is
-   * also where macOS convention puts it (about and updates at the end of a list).
-   *
-   * Desktop only — a browser tab cannot replace itself, so talking about updates
-   * on the web offers something we cannot do. The section simply does not exist.
+   * App is last, as in macOS convention; desktop only, since a browser tab cannot replace itself.
    */
   { key: 'app', items: ['update'] },
 ] as const;
@@ -246,14 +105,8 @@ const SECTION_ICON: Record<SettingsSection, typeof Monitor> = {
   workspace: HardDrive,
 };
 /**
- * Hover for an LNB row — **written in one place only** (2026-08-21).
- *
- * The signpost row made this hover a second copy. The value layer's
- * `hoverSurface: 'lift'` gives the row `overlay-1`, but this sheet's sibling rows
- * use `overlay-2`, so going through the axis would make **only this row brighten
- * differently**. So instead of moving it to the axis, the copy is deleted — what
- * the ratchet exists to stop is hand-written hovers **increasing**, and this
- * constant reduces them.
+ * Hover for an LNB row, defined once: `hoverSurface: 'lift'` gives `overlay-1`, but the
+ * sibling rows use `overlay-2`.
  */
 const SETTINGS_NAV_ROW_HOVER =
   'hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]';
@@ -264,20 +117,12 @@ const SETTINGS_LOCALE_FOCUS_KEY = 'ontology-atlas:settings-locale-focus';
 const SETTINGS_LOCALE_FOCUS_MAX_AGE_MS = 10_000;
 
 /**
- * The **border and hover** of the indigo emphasis chip — the two layers the value
- * layer does not supply.
- *
- * `tone: 'accentOnTint'` gives only the text colour (that is what the ramp owns).
- * The border tint and hover colour are still outside the ramp, so three places
- * were each holding the same string by hand. One copy removes the divergence, and
- * when the ramp gains this layer there will be one place to delete.
+ * Border and hover of the indigo emphasis chip, which `tone: 'accentOnTint'` does not supply;
+ * delete when the ramp gains this layer.
  */
 const INDIGO_ACTION_CHIP =
   'shrink-0 border-[color:var(--color-indigo-line-a32)] hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)]';
-// The single source for the value is `@/shared/config` — writing it again here
-// makes it diverge from the sheet's copy, which is what actually happened on
-// 2026-08-01. This file only consumes it and re-exports the name for existing
-// consumers.
+// @/shared/config owns the value; re-exported here for existing consumers.
 export { AGENT_GRAPH_WORKFLOW_HREF };
 
 interface SettingsLocaleFocusIntent {
@@ -309,11 +154,8 @@ function rememberSettingsLocaleFocus(
 const SETTINGS_SECTIONS: readonly string[] = SETTINGS_GROUPS.flatMap((group) => [...group.items]);
 
 /**
- * Reads the intent left by a language switch. Returns the pane to reopen on, or `null`.
- *
- * `canConsume` is asked before the intent is removed: several instances of this widget are
- * mounted at once (the rail tile and the narrow-width chrome tiles), and a hidden one that took
- * the intent first left the visible one with nothing to restore (inspection, 2026-09-25).
+ * Reads the intent left by a language switch: the pane to reopen on, or `null`. `canConsume` is
+ * asked first because several instances are mounted and only the visible one may take it.
  */
 function consumeSettingsLocaleFocus(
   locale: string,
@@ -365,16 +207,18 @@ export interface AppSettingsMenuProps {
    */
   screenControls?: AppSettingsScreenControls;
   /**
-   * Trigger surface contract. `header-pill` (default) = the page header's
-   * "settings" pill. `rail-tile` = the nav rail's lower utility tile (the same
-   * `--app-nav-rail-tile-*` geometry as activity and trail). `chrome-tile` = the
-   * `--chrome-tile-size` tile in the `<lg` top utility lane. It inherits the old
-   * OntologyMapSettingsGear's trigger grammar exactly — the only difference is that
-   * this sheet opens instead of a popover.
+   * Trigger surface: `header-pill` (default) is the page header's settings pill, `rail-tile`
+   * the nav rail's lower utility tile, `chrome-tile` the `<lg` top utility lane tile.
    */
   triggerVariant?: SettingsTriggerVariant;
 }
 
+/**
+ * The single settings surface: a modal sheet with an always-visible LNB and one pane per
+ * section, no drill-in. Map screen rows appear only where the host injects `screenControls`.
+ * The `open`/`onOpenChange` props are optional controlled props, ⌘K yields to the palette, and Escape
+ * stops propagation so it does not reach the map's Esc dismissal order.
+ */
 export function AppSettingsMenu({
   mode,
   open: openProp,
@@ -383,14 +227,12 @@ export function AppSettingsMenu({
   triggerVariant = 'header-pill',
 }: AppSettingsMenuProps) {
   const t = useTranslations('nav.settingsMenu');
-  // #72 — the copy-path and Finder strings reuse the keys the old
-  // LocalVaultPicker used, so only the surface moves and no copy is duplicated.
+  // The copy-path and Finder strings reuse the localVaultPicker keys, so no copy is duplicated.
   const tPicker = useTranslations('featuresMisc.localVaultPicker');
   const locale = useLocale();
   const { state: copyState, copy } = useCopyFeedback();
   const router = useRouter();
   const localVault = useLocalVault();
-  // Whether the bundled MCP server exists — decides whether one-click is possible.
   // The guide the current screen registered for "reopen the guide". On a screen
   // with no registration the row itself is absent (no empty rows, no dead buttons).
   const replayGuide = useGuideReplay();
@@ -422,18 +264,13 @@ export function AppSettingsMenu({
     // closePanel owns the return target so ⌘K can intentionally yield focus
     // to the command palette without the modal cleanup stealing it back.
     restoreFocus: false,
-    // ⚠️ trapTab defaults to true — this sheet regressed to modal plus dim on
-    // 2026-07-30 (`aria-modal="true"`) and really does trap Tab. The "the dock is
-    // non-modal" comment that used to sit here predated that and was deleted as
-    // misinformation.
+    // Tab stays trapped (the default): the sheet is aria-modal over a scrim.
   });
   const titleId = useId();
   const isDesktopRuntime = isTauriVaultRuntime();
   /*
-   * **The web lists no pane it cannot fill.** The 「App」 group's one item, Updates, draws
-   * nothing outside the desktop shell (`AppUpdateSettings` returns null there, by design: a tab
-   * cannot replace itself). Listed anyway, it opened on a heading, one app-only promise and a
-   * 470px empty pane (inspection, 2026-09-25, `h-web-ko-update.png`). The group goes with it.
+   * The web lists no pane it cannot fill: `AppUpdateSettings` is null outside the desktop
+   * shell, so the App group is dropped there.
    */
   const desktopShell = isDesktopShell();
   const settingsGroups = SETTINGS_GROUPS.filter((group) => group.key !== 'app' || desktopShell);
@@ -441,7 +278,7 @@ export function AppSettingsMenu({
     section === 'update' && !desktopShell ? 'screen' : section;
 
   const isLocalVaultLoaded = localVault.status === 'loaded';
-  // #72 — the absolute path is knowable only on the desktop (a web FSA handle has no path).
+  // The absolute path is knowable only on the desktop (a web FSA handle has no path).
   const vaultRootPath =
     isLocalVaultLoaded && localVault.handle
       ? (getTauriVaultRootPath(localVault.handle) ?? null)
@@ -481,24 +318,17 @@ export function AppSettingsMenu({
   };
 
 
-  // P3 defect ⑥ — in controlled mode React state must be the source of truth for
-  // this `<details>`. Re-aligning the DOM `open` to the React value on every render
-  // removes the race structurally (in uncontrolled mode the same value is a no-op).
   /**
-   * Exit presence (frame measurement, 2026-07-28). This sheet spent 8 frames
-   * (134ms, peak 2.15) entering and **exactly 1 frame** leaving — that single
-   * frame's delta was **4.7×** the entry peak (10.03). `settingsPanelIn` existed
-   * with no counterpart: it did not leave the way it came in.
-   *
-   * Focus return, scroll lock and the Esc handler still read `open`, so behaviour
-   * is unchanged and only **the drawing** is extended. That is why it becomes
-   * `inert` plus `aria-hidden` while leaving, disappearing immediately from
-   * assistive technology and the pointer so two modals are never read at once.
+   * Exit presence, so the sheet leaves the way it came in. Focus return, scroll lock and Esc
+   * still read `open`; while leaving the sheet is `inert` and `aria-hidden`, so two modals are
+   * never read at once.
    */
   const settingsPresence = usePanelPresence(open);
   const settingsMounted = settingsPresence.mounted;
   const settingsExiting = settingsPresence.exiting;
 
+  // In controlled mode React state is the truth for this `<details>`: re-aligning the DOM
+  // open state on every change removes the race (a no-op when uncontrolled).
   useEffect(() => {
     if (detailsRef.current) detailsRef.current.open = open;
     if (open) {
@@ -509,12 +339,8 @@ export function AppSettingsMenu({
   }, [open]);
 
   /*
-   * **A language switch reopens the sheet where it was.** Changing locale remounts the whole
-   * `[locale]` layout, so the sheet the person was using closed under them and focus fell to
-   * `<body>`; refocusing only the gear was not enough, and with three instances mounted it did
-   * not even reach the visible one (inspection, 2026-09-25, `h-locale-switched.png`). The person
-   * changed one value inside settings, so they stay inside settings, on the same pane. The sheet
-   * is `aria-modal`, which `RouteFocusManager` already leaves alone.
+   * A language switch remounts the `[locale]` layout, so the sheet reopens on the same pane
+   * instead of dropping focus to `<body>`; `RouteFocusManager` leaves the `aria-modal` sheet alone.
    */
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -558,24 +384,18 @@ export function AppSettingsMenu({
       open={open}
       className="group relative shrink-0"
       onKeyDown={(event) => {
-        // Guardian B2 — transient mutual exclusion: when ⌘K (the palette) opens,
-        // settings demotes (no simultaneous stack, design.md popup-soup contract).
-        // It closes without returning focus so the palette can take it.
+        // ⌘K opens the palette, so settings closes without returning focus: one transient
+        // surface at a time (design.md).
         if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
           closePanel(false);
           return;
         }
-        // Only an open sheet owns Escape. The gear keeps focus after it is pressed
-        // and after the sheet hands focus back, and a closed sheet that still took
-        // the key left the page's own dismissal order unreachable from it: on the
-        // map a selected node stayed selected however often Escape was pressed
-        // (measured 2026-09-26).
+        // Only an open sheet owns Escape: the gear keeps focus after closing, and a closed sheet
+        // that took the key would leave the map's own dismissal order unreachable.
         if (event.key !== 'Escape' || !open) return;
         event.preventDefault();
-        // This dialog owns Escape so the map's Esc dismissal order (a window
-        // keydown) does not react twice to the same keypress — "one overlay owns
-        // one Escape" (the same contract as the old settings gear). With drill-in
-        // subviews gone the order is one rung: this sheet closes.
+        // This dialog owns Escape, so the map's window-level Esc order does not react to the
+        // same keypress twice; with no subviews the sheet simply closes.
         event.stopPropagation();
         closePanel();
       }}
@@ -621,46 +441,16 @@ export function AppSettingsMenu({
           </span>
         ) : null}
       </summary>
-      {/* `open ||` comes first — at the moment of opening the portal must stand in
-          **the same commit** so autofocus and the focus trap find the panel on the
-          first render (deferring to an effect is one commit late and focus leaks
-          out). The presence check after it extends **only the closing side**. */}
+      {/* `open ||` first, so the portal mounts in the opening commit and autofocus and the trap
+          find the panel; the presence check extends only the closing side. */}
       {(open || settingsMounted) && typeof document !== 'undefined'
         ? createPortal(
       <div
         ref={overlayRef}
         /*
-         * **The right-hand dock is gone — this is a modal** (council prescription
-         * 2026-07-29, owner instruction).
-         *
-         * ## Position and nature changed three times; this is the terminus
-         *
-         * ① centre modal (original) → ② right non-modal dock → ③ centre non-modal
-         * → ④ **centre modal plus dim** (owner, 2026-07-30, referencing Claude
-         * desktop's settings).
-         *
-         * The reason for ② was *"The settings window covers the map"* — the 「Map Background」 and 「Footprint」 sections promise *"change
-         * it and the map updates immediately"* while covering that very map. So the
-         * scrim was removed to keep the map visible.
-         *
-         * **That reason has gone away.** Both sections already carry a **live
-         * preview inside the panel**: `FootprintSettings`' `FootprintPreview` draws
-         * with the **same renderer** as the map, and the background swatches draw
-         * with the real `--canvas-bg-*` tokens. So seeing the result while changing
-         * a value was being solved **by the preview, not by the map**, and the dock
-         * was sacrificing position for a problem already solved.
-         *
-         * So the dim comes back. With no overlap there is no need for the side
-         * wiring that collapsed INDEX either (it was added once and reverted — it
-         * did the dim's job a second time).
-         *
-         * ⚠️ **With a dim, `aria-modal` becomes true.** Not setting it during ②③
-         * was not discipline but **fact** — telling assistive technology to ignore
-         * an outside that is still alive is a lie. It really does block now, so it
-         * is set again. The focus trap returns for the same reason.
-         *
-         * The portal (a direct child of body) stays — whichever chrome container
-         * the trigger sits in, the sheet is not trapped in its stacking context.
+         * A centred modal with a scrim; the map-affecting panes carry live previews, so covering
+         * the map costs nothing. Because it truly blocks, `aria-modal` and the focus trap are set.
+         * Portalled to body so no chrome stacking context traps it.
          */
         className={`${settingsExiting ? 'app-settings-scrim-out' : 'app-settings-scrim-in'} fixed inset-0 z-40 flex items-center justify-center overflow-hidden bg-[color:var(--color-backdrop-medium)] p-3 sm:p-6`}
         aria-hidden={settingsExiting || undefined}
@@ -668,16 +458,9 @@ export function AppSettingsMenu({
         {...transientSurface("sheet")}
       data-testid="app-settings-overlay"
         /*
-         * **A click on the dim closes the sheet**, as it does for every `<Dialog>` (2026-09-25).
-         * The outside-press listener counted this full-screen scrim as inside the sheet, so a
-         * click beside the panel did nothing at all. Only a press that both starts and ends on
-         * the scrim counts: a drag that starts in the panel (selecting a path to copy) and is
-         * released over the dim produces a click on the scrim too, and it is not a dismissal.
-         *
-         * The press is also kept from moving focus. WebKit hands focus to `<body>` when the
-         * pointer goes down on something that cannot take it, so a press on the dim that was
-         * then released over the panel left the sheet open with the keyboard outside it, where
-         * neither Tab's trap nor this sheet's Escape reached.
+         * A press that starts and ends on the scrim closes the sheet, as for every `<Dialog>`; a
+         * drag out of the panel is not a dismissal. The press is kept from moving focus, since
+         * WebKit would hand it to `<body>`, outside the trap and Escape.
          */
         onMouseDown={(event) => {
           scrimPressRef.current = event.target === event.currentTarget;
@@ -692,52 +475,22 @@ export function AppSettingsMenu({
         <div
           ref={panelRef}
           role="dialog"
-          // The dim really does block what is behind, so `aria-modal` is **true**.
-          // It was not set while this was a non-modal dock — the outside was alive
-          // then, and telling anyone to "pretend it is gone" would have been a lie.
           aria-modal="true"
           aria-labelledby={titleId}
           data-surface-role="settings-dock"
           tabIndex={-1}
           /*
-           * **Fixed size** (owner call, 2026-07-29: *"It needs sensible width and height and a fixed
-           * size"* — it needs sensible width and height and a fixed
-           * size). The height used to follow the content length, so the window grew
-           * and shrank with every section change — a flat horizontal band in the
-           * footprints section, a tall narrow window in the workspace section. A
-           * settings window is a place you **stay**, so that wobble reads directly
-           * as "untidy".
-           *
-           * The size has to fit inside the app's minimum window (1040×720) with its
-           * own margin, and shrinks to the viewport on narrow screens (the only case
-           * where the size changes). Overflowing content **scrolls the right pane**;
-           * the window does not grow.
-           *
-           * ## Height 640 → 672 (2026-08-02, owner: *"The
-           * inside of settings feels cramped"*
-           *
-           * At 640, the busiest section "Screen" was **clipped by 41px** (content 626
-           * against a 585 visible pane). At the same time, on the measured 14-inch
-           * viewport (1512×806), **118px outside this panel sat empty** — a clipped
-           * box and spare room on the same screen, which is the mechanical form of
-           * "cramped".
-           *
-           * 672 is not taste but a **derived value**: within the 696 that remains
-           * after subtracting the overlay margin (`p-3`, 12px top and bottom) from
-           * the 720 minimum window, it is the tallest height that leaves **one more
-           * set** of that margin (696 − 24 = 672). Anything larger eats the gutter it
-           * declared for itself in the minimum window. The 880 width is unchanged —
-           * widening it only stretches the empty run between label and control
-           * (measured at up to 541px).
+           * Fixed size, so the window never changes between sections; overflow scrolls the right
+           * pane, and only a narrow viewport shrinks it. 672 = the 720 minimum window minus two
+           * 12px overlay margins on each side (720 − 24 − 24); wider than 880 only stretches the
+           * gap between label and control.
            */
           className={`${settingsExiting ? 'app-settings-panel-out' : 'app-settings-panel-in'} flex h-[672px] max-h-[calc(100dvh-1.5rem)] w-[880px] focus:outline-none max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-body shadow-[var(--shadow-elevation-3)]`}
           data-testid="app-settings-popover"
         >
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-3">
             <div className="flex min-w-0 items-center gap-2">
-              {/* There is no back button — there is nowhere back to go. Every
-                  destination is permanently in the LNB, so the title is always this
-                  sheet's one name. */}
+              {/* No back button: every destination is always in the LNB. */}
               <Settings
                 size={ICON_SIZE.md}
                 aria-hidden
@@ -750,12 +503,8 @@ export function AppSettingsMenu({
                 {t('title')}
               </h2>
             </div>
-            {/* A square icon control, so `IconButton` is the right home — the
-                accessible name is enforced by the type, and size (h-7 w-7) and tone
-                (tertiary) come from the ramp. The missing border is this migration's
-                price: the shape derived from the 36 measured icon controls has no
-                border (`control-class.ts`). Hover and focus come from the consumer,
-                as the discipline requires. */}
+            {/* `IconButton` enforces the accessible name and takes size and tone from the ramp;
+                hover and focus come from the consumer. */}
             <IconButton
               label={t('closeLabel')}
               onClick={() => closePanel()}
@@ -766,17 +515,7 @@ export function AppSettingsMenu({
           </div>
 
           {
-            /*
-             * Two-column LNB — list left, content right. Owner instruction
-             * (2026-07-29, reconfirmed): *"Other services often use a
-             * popup with an LNB; do it that way."* (other services often use a
-             * popup with an LNB; do it that way). The earlier drill-in proposal (a
-             * council recommendation) was overturned — with five sections, drill-in
-             * means going back out and in again every time, which does not suit
-             * comparing a handful of values before choosing. On 2026-08-02 the last
-             * two drill-ins (agent connection · in-app agent) came up into this list
-             * as well, so **no subview remains in this sheet**.
-             */
+            /* Two columns, LNB left and content right, with no subviews, so values compare without going back. */
             <div key="root" className="flex min-h-0 flex-1 flex-col sm:flex-row" data-testid="app-settings-body">
               <nav
                 ref={navRef}
@@ -790,37 +529,13 @@ export function AppSettingsMenu({
                       {t(`sectionGroup.${group.key}`)}
                     </p>
                     {/*
-                      **Signpost row** — the head of the "Connection" group (2026-08-21,
-                      ledger 90, hierarchy seat's prescription).
-
-                      When the runtimes and MCP connection panes left for the
-                      destination, anyone who used to look for them here needed
-                      **to be told where they went**. `surfaces.md`'s
-                      "Blocking only half is the worst
-                      option" is the basis — if it is removed from the nav, the way
-                      in has to answer too.
-
-                      The three hierarchy prescriptions are kept exactly: **zero
-                      indigo** (this is not the sheet's protagonist; the winner is
-                      "Open Chat" inside the destination) · a **single navigation
-                      glyph** with no text in the control position · and it **closes
-                      the sheet and goes** rather than drawing the destination's pane
-                      inside the sheet.
-
-                      No viewport branching — one sheet becoming two shapes costs
-                      more (the hierarchy seat's proviso).
+                      Signpost rows at the Connection group's head tell where moved panes went
+                      (`surfaces.md`): no indigo, one navigation glyph, and a press closes the sheet
+                      and goes rather than drawing that pane here.
                     */}
                     {/*
-                      ⚠️ **Re-aimed to `/mcp` on 2026-09-05** (PO council). Two panes left this
-                      group in 2026-08 — `runtimes` and `agent` — and one row can only point at
-                      one place. It points at the MCP one, because that is the half this group is
-                      still about: what remains here is the folder and the key, both connection
-                      values, and MCP is the folder's connection.
-
-                      The runner list is one named hop further rather than lost: `/mcp`'s
-                      connector dialog carries "see your runtimes", and `/agents` links back here
-                      (`AcpRuntimeSettings`). Both directions exist, which is the property that
-                      matters — "blocking only half is the worst option".
+                      Points at `/mcp`, the folder's connection; the runner list is one named hop
+                      further through its connector dialog, and `AcpRuntimeSettings` links back.
                     */}
                     {group.key === 'connect' ? (
                       <button
@@ -847,12 +562,7 @@ export function AppSettingsMenu({
                         />
                       </button>
                     ) : null}
-                    {/*
-                      **The API Key pane left for Agents → Models** (owner, 2026-09-25). A person
-                      who still reaches for the key here meets one pointer row, the same grammar as
-                      the MCP row above: it names where the keys live now and takes them there. The
-                      pane itself is gone, so nothing about keys is said in two places.
-                    */}
+                    {/* A pointer row to Agents → Models, where the keys live, like the MCP row above. */}
                     {group.key === 'connect' ? (
                       <button
                         type="button"
@@ -980,31 +690,10 @@ export function AppSettingsMenu({
                 {/* The icon set applies outside the map too (INDEX, studio, detail
                     glyphs), so it stays here rather than in a map subview. */}
                 <GlyphSetPicker />
-                {/* The accent is here for the same reason — it is the app's only
-                    colour, not just the map's, so putting it in a map subview would
-                    read as «map settings». */}
+                {/* The accent is the app's colour, not only the map's, so it stays here too. */}
                 <AccentPicker />
-                {/* Replay the on-screen guide (2026-07-26) — a guide appears
-                    automatically only once per destination, so there has to be a way
-                    back. Adding a help button per screen would make the chrome count
-                    diverge screen by screen (the #65 family), so they gather here in
-                    the one menu every screen already has. This popover closes before
-                    the guide opens — a guide card stacked over settings would break
-                    the no-transient-stacking contract. */}
-                {/*
-                  Auto-display switch — it does not delete the guide. Off simply means
-                  it does not appear by itself; "View Again" beside it and the map's compass
-                  tile still open it. Owner: *"It only needs to show the first time, or when clicked"*
-                  (it only needs to show the first time, or when clicked).
-                */}
-                {/*
-                  One row for the guide (2026-09-25): whether it opens by itself, and the
-                  button that opens it now. They were two rows, and the first one's caption
-                  pointed at the second ("the Replay button below"); with the pane head the
-                  Screen pane no longer fitted the 672 sheet. The replay chip is the row's
-                  trailing action and stays outside the switch's reach: turning
-                  auto-display off never hides the way back.
-                */}
+                {/* Guides show once per destination, so replay lives here, and the sheet closes before
+                    the guide opens. Off only stops automatic display; replay and the compass still open it. */}
                 <SettingsRow
                   testId="app-settings-guide-auto-start"
                   label={t('replayGuideLabel')}
@@ -1042,42 +731,15 @@ export function AppSettingsMenu({
                   </>
                 ) : shownSection === 'notify' ? (
                   /*
-                   * Why "Notifications" gets its own pane (2026-08-02, owner report).
-                   *
-                   * These three sat at the **bottom** of the "Screen" section until
-                   * yesterday, justified by a comment saying *"both are settings for
-                   * what the screen says"*. That sentence is true — and it is exactly
-                   * **the argument for a section of their own**. The other six in
-                   * "Screen" (language · view mode · INDEX default · glyph set · two
-                   * guides) are «how the map is drawn», while these three are «what
-                   * the app tells me».
-                   *
-                   * Volume says the same. Measured: "Screen" carried these three (3
-                   * rows plus 6 chips) on top of its own six controls. The 6 chips of
-                   * "Notifications Received" are **primary controls**, not collapsed detail, so
-                   * another subject was occupying half of one section. Removing them
-                   * still leaves six in "Screen".
-                   *
-                   * Why they go under "Visible Things" rather than "Connected Things":
-                   * "Show During Work" literally appears **on the map**, and notifications
-                   * are also something the app shows me. "Connected Things" is the place for
-                   * «what outside thing this connects to», which is a different nature.
+                   * Notifications get their own pane: they are what the app tells me, not how the map
+                   * is drawn, and they sit under the visible-things group because they appear on screen.
                    */
                   <AgentActivitySettings />
                 ) : shownSection === 'background' ? (
                   <>
-                  {/* 3D layout (dome/cloud) is not here — the picker the map's top
-                      "3D" chip opens owns it (`View3dMenu`). It was here at first and
-                      the owner could not find it: *"Where can I see the cloud?"*
-                      (where can I see the cloud?). A control that changes what you are
-                      looking at belongs over what you are looking at, and two homes
-                      break the «one fact, one place» discipline. */}
+                  {/* The 3D layout lives in the map's `View3dMenu`, over what it changes, not here. */}
                   <CanvasBackgroundPicker />
-                  {/* Frame meter — puts the map's real frame output in the
-                      bottom-right meter stack. **Off by default**, and while off the
-                      measurement loop does not run either (a performance meter that
-                      eats performance is a liar). Why here: the "Map" pane collects
-                      how the canvas is drawn, and the meter floats over that canvas. */}
+                  {/* Frame meter: off by default, and while off its measurement loop does not run. */}
                   <SettingsGroup>
                     <SettingsRow
                       testId="app-settings-frame-meter"
@@ -1114,15 +776,12 @@ export function AppSettingsMenu({
                     caption={
                       localVault.status === 'error'
                         ? /*
-                           * ⚠️ **The raw cause is not the caption** (census state 1c, 2026-08-31).
-                           * This read `errorMessage ?? fallback`, so a browser's own
-                           * `NotFoundError` sentence — English, written for a developer — landed
-                           * in a Korean settings row, while `path-missing` (which deliberately
-                           * carries no message) fell through to a sentence telling the person to
-                           * pick the folder again without saying why. `FirstRunPage` already
-                           * branches on the code; this row now says the same thing the same way.
+                           * The caption comes from the error code, never the raw browser message, and
+                           * matches how `FirstRunPage` branches on the same code.
                            */
-                          localVault.errorCode === 'path-missing'
+                          localVault.errorCode === 'grant-needed'
+                          ? t('workspaceFolderErrorGrantNeeded')
+                          : localVault.errorCode === 'path-missing'
                           ? t('workspaceFolderErrorPathMissing')
                           : localVault.errorCode === 'permission-denied'
                             ? t('workspaceFolderErrorPermissionDenied')
@@ -1195,21 +854,11 @@ export function AppSettingsMenu({
                     }
                   />
                 ) : null}
-                {/* #72 — the selected vault's **absolute path** plus copy and reveal
-                    in Finder. The B2 merge (5164f68d7) deleted `VaultToolsMenu`,
-                    orphaning the `LocalVaultPicker` that owned this surface so that
-                    nothing mounted it, and desktop users lost any way to see where
-                    the vault sits on disk (a high-frequency path — pasting it to an
-                    agent). The settings sheet's [workspace] group already handles
-                    open and switch folder, so this is its home. It renders only when
-                    the desktop actually knows the path — on the web it is quietly
-                    absent. */}
+                {/* The vault's absolute path with copy and reveal in Finder, only where the desktop knows it. */}
                 {vaultRootPath ? (
                   <SettingsRow
                     testId="app-settings-vault-path"
-                    /* The row names the value and the buttons name the act (2026-09-25): the
-                       title and its button both read "copy ontology folder path", and Finder
-                       wore the accent that belongs to the pane's one primary act (change). */
+                    /* The row names the value and the buttons name the act; the accent stays on the pane's primary act. */
                     label={t('workspacePathLabel')}
                     caption={vaultRootPath}
                     control={
@@ -1253,10 +902,7 @@ export function AppSettingsMenu({
                         className="flex min-h-11 items-center gap-2 px-3 py-1.5"
                         data-testid="app-settings-recent-vault"
                       >
-                        {/* A whole list row being pressable is `row` (measured 39
-                            instances). `disabled:opacity-60` was removed because the
-                            value layer already carries the disabled affordance — with
-                            two copies, one eventually falls behind. */}
+                        {/* A pressable list row is `row`, which already carries the disabled affordance. */}
                         <RowButton
                           size="sm"
                           onClick={() => void localVault.openRecent(record)}
@@ -1293,12 +939,7 @@ export function AppSettingsMenu({
                       </div>
                     ))
                   : null}
-                {/*
-                  The same row grammar as its neighbours: label and caption on the left, one
-                  `lg` secondary chip on the right. It was the only whole-row link in the group,
-                  closing on a borderless "Open ›" between rows whose actions are all bordered
-                  32px chips (inspection, 2026-09-25, `b-1512-en-workspace.png`).
-                */}
+                {/* The same row grammar as its neighbours: label and caption left, one `lg` secondary chip right. */}
                 <SettingsRow
                   testId="app-settings-vault-docs"
                   label={t('vaultTitle')}
@@ -1315,19 +956,8 @@ export function AppSettingsMenu({
                   }
                 />
                     {/*
-                      "Import nodes from another folder"
-                      — moved here from the bottom of INDEX (2026-08-02, owner:
-                      *"What is this? why is this text here? is it unnecessary?"*).
-
-                      Why here: this job is about **what comes into this folder**, and
-                      that is this section's subject. It does not belong as a permanent
-                      button on a screen for reading the map — it gets used once or
-                      twice in a lifetime.
-
-                      It is the group's last row (2026-09-25) rather than a dim bordered
-                      chip under the card: the pane ended on its lowest-quality element,
-                      11px quaternary ink in a box of its own. The module still owns the
-                      pick, the preview and its states; this pane only draws the row.
+                      Importing nodes is about what comes into this folder, so it is this group's
+                      last row; the module owns the pick, the preview and its states.
                     */}
                     <BlockImportModule
                       renderTrigger={(trigger) => (

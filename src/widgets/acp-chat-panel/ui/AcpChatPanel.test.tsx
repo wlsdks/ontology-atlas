@@ -23,7 +23,7 @@ const bridge = vi.hoisted(() => {
     stopped: [] as string[],
     /** So a test can make the adapter process die. */
     exit: null as ((code: number | null) => void) | null,
-    /** Notices from the Rust side (`acp://notice`) — the first-download indicator arrives this way. */
+    /** Notices from the Rust side — the first-download indicator arrives this way. */
     notice: null as ((message: string) => void) | null,
     /** stderr diagnostics — the clues to a corrupt npx cache arrive this way (measured). */
     stderr: null as ((line: string) => void) | null,
@@ -1968,12 +1968,8 @@ describe('대화 패널 — 못 하는 일은 정직하게', () => {
   });
 
   /*
-   * ⚠️ Measured in the installed v1.0.0-rc.11 build: a turn ended on the agent's side without a
-   * `session/prompt` result. All nine steps finished, the adapter went idle at 0.35s of CPU over
-   * thirteen minutes, and because `prompt` is deliberately given **no timeout**, the panel kept
-   * claiming progress and refused every keystroke. `cancel` recovered it; nothing on screen said so.
-   *
-   * The point of these two is that a long turn and a dead one must *not* look the same.
+   * `prompt` has no timeout, so a turn that stopped answering must not look like a long
+   * one: these two check that the panel says so and points at the way out.
    */
   it('턴이 오래 조용하면 사실대로 말하고 나가는 길을 가리킨다', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
@@ -2912,60 +2908,152 @@ describe('완료된 대화의 추천 — 답변에서 다음 행동으로 잇는
     );
   });
 
-  it('답변 전 바닥에 있으면 긴 답변과 추천 끝까지 따라가되, 직접 위로 올리면 멈춘다', async () => {
-    await bootSession({ suggestions: [{ kind: 'explain', params: { count: 12 } }] });
-    fireEvent.change(screen.getByRole('textbox'), { target: { value: '긴 답변을 줘' } });
-    fireEvent.click(screen.getByTestId('acp-chat-send'));
-    await waitFor(() => expect(screen.getByText('긴 답변을 줘')).toBeInTheDocument());
-
-    const transcript = screen.getByTestId('acp-chat-transcript');
-    let contentHeight = 400;
-    Object.defineProperties(transcript, {
-      clientHeight: { configurable: true, get: () => 200 },
-      scrollHeight: {
-        configurable: true,
-        get: () =>
-          contentHeight
-          + (screen.queryByTestId('acp-chat-post-turn-suggestions') ? 120 : 0),
-      },
-      scrollTop: { configurable: true, writable: true, value: 200 },
-    });
-    fireEvent.scroll(transcript);
-
-    contentHeight = 1_000;
-    emit({
-      jsonrpc: '2.0',
-      method: 'session/update',
-      params: {
-        update: {
-          sessionUpdate: 'agent_message_chunk',
-          content: { text: '아주 긴 첫 조각' },
+  describe('the transcript follows its end only while the person is there', () => {
+    // jsdom has no layout: the box is stubbed and `layout()` reports growth as a browser would.
+    async function streamingTranscript() {
+      const observers = new Set<() => void>();
+      vi.stubGlobal(
+        'ResizeObserver',
+        class {
+          constructor(private readonly callback: () => void) {}
+          observe() { observers.add(this.callback); }
+          unobserve() {}
+          disconnect() { observers.delete(this.callback); }
         },
-      },
-    });
-    await screen.findByText('아주 긴 첫 조각');
-    await waitFor(() => expect(transcript.scrollTop).toBe(1_000));
-
-    contentHeight = 1_200;
-    replyTo('session/prompt', { stopReason: 'end_turn' });
-    await screen.findByTestId('acp-chat-post-turn-suggestions');
-    await waitFor(() => expect(transcript.scrollTop).toBe(1_320));
-
-    transcript.scrollTop = 300;
-    fireEvent.scroll(transcript);
-    contentHeight = 1_400;
-    emit({
-      jsonrpc: '2.0',
-      method: 'session/update',
-      params: {
-        update: {
-          sessionUpdate: 'agent_message_chunk',
-          content: { text: ' 위로 읽는 동안 온 둘째 조각' },
+      );
+      await bootSession({ suggestions: [{ kind: 'explain', params: { count: 12 } }] });
+      fireEvent.change(screen.getByRole('textbox'), { target: { value: '긴 답변을 줘' } });
+      fireEvent.click(screen.getByTestId('acp-chat-send'));
+      await waitFor(() => expect(screen.getByText('긴 답변을 줘')).toBeInTheDocument());
+      const transcript = screen.getByTestId('acp-chat-transcript');
+      const box = { content: 400 };
+      Object.defineProperties(transcript, {
+        clientHeight: { configurable: true, get: () => 200 },
+        scrollHeight: {
+          configurable: true,
+          get: () => box.content + (screen.queryByTestId('acp-chat-post-turn-suggestions') ? 120 : 0),
         },
-      },
+        scrollTop: { configurable: true, writable: true, value: 200 },
+      });
+      fireEvent.scroll(transcript);
+      const layout = () => act(() => { for (const callback of observers) callback(); });
+      const chunk = async (text: string, content: number) => {
+        box.content = content;
+        emit({
+          jsonrpc: '2.0',
+          method: 'session/update',
+          params: { update: { sessionUpdate: 'agent_message_chunk', content: { text } } },
+        });
+        await screen.findByText((_, node) => node?.getAttribute('data-acp-entry') === 'agent' && node.textContent?.includes(text.trim()) === true);
+        layout();
+      };
+      return { transcript, box, layout, chunk };
+    }
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
     });
-    await screen.findByText('아주 긴 첫 조각 위로 읽는 동안 온 둘째 조각');
-    expect(transcript.scrollTop).toBe(300);
+
+    it('follows a long answer and the suggestions to the end from the bottom, and stays put once the person scrolls up', async () => {
+      const { transcript, box, layout, chunk } = await streamingTranscript();
+
+      await chunk('아주 긴 첫 조각', 1_000);
+      await waitFor(() => expect(transcript.scrollTop).toBe(800));
+
+      box.content = 1_200;
+      replyTo('session/prompt', { stopReason: 'end_turn' });
+      await screen.findByTestId('acp-chat-post-turn-suggestions');
+      layout();
+      await waitFor(() => expect(transcript.scrollTop).toBe(1_120));
+
+      transcript.scrollTop = 300;
+      fireEvent.scroll(transcript);
+      box.content = 1_400;
+      layout();
+      expect(transcript.scrollTop).toBe(300);
+      expect(await screen.findByTestId('acp-chat-jump-latest')).toHaveTextContent('jumpToLatest');
+    });
+
+    it('stops at the first upward wheel turn, before the next chunk can pull the reader back', async () => {
+      const { transcript, chunk } = await streamingTranscript();
+      await chunk('첫 조각', 1_000);
+      await waitFor(() => expect(transcript.scrollTop).toBe(800));
+
+      fireEvent.wheel(transcript, { deltaY: -4 });
+      transcript.scrollTop = 796;
+      fireEvent.scroll(transcript);
+      await chunk(' 둘째 조각', 1_040);
+      await chunk(' 셋째 조각', 1_080);
+      expect(transcript.scrollTop).toBe(796);
+    });
+
+    it('applies the wheel turn that stops the follow itself, and leaves later turns to the browser', async () => {
+      const { transcript, chunk } = await streamingTranscript();
+      await chunk('첫 조각', 1_000);
+      await waitFor(() => expect(transcript.scrollTop).toBe(800));
+
+      expect(fireEvent.wheel(transcript, { deltaY: -40 }), 'the stopping turn is taken over').toBe(false);
+      expect(transcript.scrollTop).toBe(760);
+      expect(fireEvent.wheel(transcript, { deltaY: -40 }), 'later turns stay native').toBe(true);
+    });
+
+    it('lets go of a touch released on a line that was replaced meanwhile', async () => {
+      const { transcript, chunk } = await streamingTranscript();
+      await chunk('첫 조각', 1_000);
+      await waitFor(() => expect(transcript.scrollTop).toBe(800));
+      const line = document.createElement('span');
+      transcript.appendChild(line);
+      fireEvent.touchStart(line);
+      line.remove();
+      fireEvent.touchEnd(line);
+
+      await chunk(' 둘째 조각', 1_100);
+      await waitFor(() => expect(transcript.scrollTop).toBe(900));
+    });
+
+    it('stops following when focus moves onto a control inside the transcript', async () => {
+      const { transcript, chunk } = await streamingTranscript();
+      await chunk('첫 조각', 1_000);
+      await waitFor(() => expect(transcript.scrollTop).toBe(800));
+      const control = document.createElement('button');
+      transcript.appendChild(control);
+      fireEvent.focusIn(control);
+
+      await chunk(' 둘째 조각', 1_300);
+      expect(transcript.scrollTop).toBe(800);
+      expect(await screen.findByTestId('acp-chat-jump-latest')).toBeInTheDocument();
+    });
+
+    it('returns to the end and follows again when the person presses the door', async () => {
+      const { transcript, chunk } = await streamingTranscript();
+      await chunk('첫 조각', 1_000);
+      await waitFor(() => expect(transcript.scrollTop).toBe(800));
+      transcript.scrollTop = 100;
+      fireEvent.scroll(transcript);
+      await chunk(' 둘째 조각', 1_300);
+      expect(transcript.scrollTop).toBe(100);
+
+      fireEvent.click(await screen.findByTestId('acp-chat-jump-latest'));
+      await waitFor(() => expect(transcript.scrollTop).toBe(1_100));
+      await chunk(' 셋째 조각', 1_500);
+      await waitFor(() => expect(transcript.scrollTop).toBe(1_300));
+      await waitFor(() => expect(screen.queryByTestId('acp-chat-jump-latest')).toBeNull());
+    });
+
+    it('follows again once the person scrolls back down to the end themselves', async () => {
+      const { transcript, chunk } = await streamingTranscript();
+      await chunk('첫 조각', 1_000);
+      await waitFor(() => expect(transcript.scrollTop).toBe(800));
+      transcript.scrollTop = 500;
+      fireEvent.scroll(transcript);
+      await chunk(' 둘째 조각', 1_100);
+      expect(transcript.scrollTop).toBe(500);
+
+      transcript.scrollTop = 900;
+      fireEvent.scroll(transcript);
+      await chunk(' 셋째 조각', 1_300);
+      await waitFor(() => expect(transcript.scrollTop).toBe(1_100));
+    });
   });
 
   it('사용자가 쓰거나 권한을 검토하는 동안은 추천이 물러난다', async () => {
@@ -4018,6 +4106,51 @@ describe('대화 패널 — 앉힌 요청은 읽을 문장만 서고, 붙은 지
   const SEATED = `${LEAD}\n${DETAIL}`;
 
   const seat = () => bootSession({ prefillRequest: { text: SEATED, nonce: 1 } });
+
+  it('hides unrelated starting suggestions while a prepared draft waits and restores them when cleared', async () => {
+    await bootSession({ prefillRequest: { text: SEATED, nonce: 1 }, suggestions: [{ kind: 'explain', params: { count: 12 } }] });
+    expect(screen.queryByTestId('acp-chat-suggestions')).toBeNull();
+    expect(screen.queryByTestId('acp-starting-suggestions')).toBeNull();
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '' } });
+    expect(screen.getByTestId('acp-chat-suggestions')).toBeInTheDocument();
+    expect(bridge.sent.some((m) => m.method === 'session/prompt')).toBe(false);
+  });
+
+  it('retains the complete folded evidence across a draft-store remount without sending it', async () => {
+    let saved = {text:'',prefillNonce:null as number|null};
+    const draftStore = { read: () => saved, write: (value: typeof saved) => { saved = value; } };
+    await bootSession({ prefillRequest: { text: SEATED, nonce: 1 }, draftStore });
+    await waitFor(() => expect(saved.text).toBe(SEATED));
+    cleanup();bridge.sent.length=0;
+    await bootSession({ draftStore });
+    expect(screen.getByRole('textbox')).toHaveValue(LEAD);
+    fireEvent.click(screen.getByTestId('acp-chat-seated-detail'));
+    expect(screen.getByTestId('acp-chat-seated-detail-text').textContent).toBe(DETAIL.trim());
+    expect(bridge.sent.some((m) => m.method === 'session/prompt')).toBe(false);
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'session/prompt')).toBe(true));
+    const prompt = bridge.sent.filter((m) => m.method === 'session/prompt').at(-1)!;
+    expect((prompt.params as { prompt: Array<{text?:string}> }).prompt[0].text).toBe(SEATED);
+  });
+
+  it.each(['edited', 'cleared', 'sent'] as const)('does not reapply a consumed prefill after a %s draft changes runtime', async (mode) => {
+    let saved = {text:'',prefillNonce:null as number|null};
+    const draftStore = { read: () => saved, write: (value: typeof saved) => { saved = value; } };
+    const prefillRequest = { text: SEATED, nonce: 1 };
+    await bootSession({ prefillRequest, draftStore });
+    const expected = mode === 'edited' ? 'My revised question.' : '';
+    if (mode === 'sent') {
+      fireEvent.click(screen.getByTestId('acp-chat-send'));
+      await waitFor(() => expect(bridge.sent.some((m) => m.method === 'session/prompt')).toBe(true));
+    } else fireEvent.change(screen.getByRole('textbox'), { target: { value: expected } });
+    await waitFor(() => expect(mode === 'edited' ? saved.text.startsWith(expected) : saved.text === '').toBe(true));
+    cleanup();bridge.sent.length=0;
+    const view=render(<AcpChatPanel runtimeId="codex-acp" runtimeLabel="Codex" vaultRoot="/vault" sessionEnabled={false} prefillRequest={prefillRequest} draftStore={draftStore}/>);
+    expect(screen.getByRole('textbox')).toHaveValue(expected);
+    expect(bridge.sent.some((m) => m.method === 'session/prompt')).toBe(false);
+    view.rerender(<AcpChatPanel runtimeId="codex-acp" runtimeLabel="Codex" vaultRoot="/vault" sessionEnabled={false} prefillRequest={{text:'A fresh investigation.\n\nScope:\nnew evidence',nonce:2}} draftStore={draftStore}/>);
+    expect(screen.getByRole('textbox')).toHaveValue('A fresh investigation.');
+  });
 
   it('상자에는 읽을 문장만 앉고, 붙은 지시는 한 번 펼쳐 그대로 보인다', async () => {
     await seat();

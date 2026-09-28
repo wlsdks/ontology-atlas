@@ -1,30 +1,8 @@
 /**
- * The hero object engine — **a depth projection of the real vault graph** (canvas 2D only).
- *
- * The argument: the hero object *is* the product. The four authorable kinds stack as planes on
- * the z axis (project / domain / capability / element), `contains` edges cross between planes,
- * and `depends` edges arc across the capability plane. Every node comes from `docs/ontology` —
- * **the same object** the instrument strip and caption count (the gateway's honesty contract).
- *
- * Depth grammar (no 3D library):
- *   - weak perspective division  s = f / (f + z)
- *   - ink attenuation by depth (far planes recede)
- *   - line-width attenuation
- *   - painter's order: far → near, edges beneath nodes
- *
- * Colours are read from CSS custom properties at mount, so the object follows automatically when
- * the accent token changes (indigo ↔ amber). No hex is written into the code.
- *
- * Motion budget: an autonomous yaw of one revolution per 48s plus drag inertia (a torsion spring
- * per plane). Under reduced-motion it draws a single still frame of the finished assembly —
- * only dragging (user-initiated movement, the WCAG 2.3.3 exception) redraws.
- *
- * Frames are supplied by the gateway's shared loop (`gateway-frame-loop.ts`) — the same single
- * rAF as the current field, decelerating over a 2s ramp and sleeping after 30s of no input (the
- * map's `ambient-sleep.ts` contract verbatim). Any input restores it on the next frame.
- *
- * Mockup measurements (scratchpad `hero-engine.js`, 2026-08-18): draw p50 0.4ms / p95 0.5ms,
- * zero dropped frames. This port is the typed version of that code and changes no visual grammar.
+ * The real vault graph (`docs/ontology`, the same one the caption counts) as a canvas-2D depth
+ * projection: one plane per kind, weak perspective s = f / (f + z), depth fog, painter's order.
+ * Colours come from CSS tokens. Reduced motion draws one still frame and only a drag redraws
+ * (WCAG 2.3.3's user-initiated exception). Per frame O(N log N + E log E): sorts by depth.
  */
 
 import { registerGatewayFrameClient } from './gateway-frame-loop';
@@ -33,10 +11,10 @@ import { echoCount, echoOrder, preferredParents } from './hero-echo';
 const TAU = Math.PI * 2;
 
 interface HeroGraphNode {
-  /** slug — used only as a stable sort key and jitter seed. */
+  /** Slug: only a stable sort key and jitter seed. */
   s: string;
   k: 'project' | 'domain' | 'capability' | 'element';
-  /** Filled in by layout (world coordinates). */
+  /** World coordinates, filled in by layout. */
   px?: number;
   py?: number;
   pz?: number;
@@ -54,71 +32,49 @@ export interface HeroGraphData {
 }
 
 export interface HeroEngineOptions {
-  /** Element to read CSS tokens from; defaults to document.documentElement. */
+  /** Defaults to document.documentElement. */
   tokenEl?: Element;
-  /** One revolution in ms. Default 48000 — a rotation to gaze at, not a carousel. */
+  /** Default 48000: a rotation to gaze at, not a carousel. */
   periodMs?: number;
-  /** Overall ink multiplier (compensating for overlap on the stage). */
   inkScale?: number;
-  /** The world fits within this many px (measured on the shorter side). */
+  /** Measured on the shorter side. */
   fitPx?: number;
-  /** Force reduced-motion (for tests). Defaults to matchMedia. */
+  /** Defaults to matchMedia. */
   forceReduced?: boolean;
-  /**
-   * The typing echo (Direction B, 2026-08-30): when true the object does not assemble on its
-   * own clock — a dot lights only when `setTyping` has earned it (`hero-echo.ts`). Without it
-   * the engine keeps its standalone per-tier assembly, so the object still works with no driver.
-   */
+  /** Dots light only as `setTyping` earns them; without it the engine assembles per tier on its own clock. */
   echo?: boolean;
-  /** A fine pointer resting on a lit dot, or leaving it. Never fires while dragging. */
+  /** Never fires while dragging. */
   onHover?: (slug: string | null) => void;
-  /**
-   * Where the ink envelope's centre sits on the stage, as fractions of width and height
-   * (default 0.5/0.5). The full-bleed hero (2026-09-02) anchors the dome right of centre so the
-   * decision block on the left reads over the dome's faint far side, not its dense near side.
-   */
+  /** Fractions of the stage for the ink envelope's centre (default 0.5/0.5). */
   anchor?: { x: number; y?: number; bottomPx?: number };
-  /** A multiplier on every alpha — the dome as a background must yield to the type over it. */
+  /** A background dome must yield to the type over it. */
   dim?: number;
-  /**
-   * The dome answers the pointer (2026-09-02): yaw and pitch lean toward where the hand is, eased
-   * over frames. Fine pointers only; never under reduced motion; off by default.
-   */
+  /** Lean toward a fine pointer; never under reduced motion. */
   tilt?: boolean;
-  /**
-   * The scroll camera (2026-09-02): a function returning progress 0..1 as the hero leaves the
-   * viewport. The dome turns, grows, lifts, and fades with it — the camera pushes into the map
-   * on the way down to the evidence section. Read per frame; never under reduced motion.
-   */
+  /** Scroll progress 0..1 as the hero leaves; read per frame, ignored under reduced motion. */
   camera?: () => number;
-  /**
-   * `plane` (2026-09-02, owner: *"it doesn't have to be the dome"*): every tier sits on one
-   * ground plane instead of stacked rings, seen from a high pitch — the same graph as a radial
-   * map on a tilted floor. It is the form the evidence section's real map already has, so the
-   * scroll camera can lay it flatter on the way down and hand over to that map.
-   */
+  /** `plane` lays every tier on one floor, the evidence map's own form, so the scroll camera can hand over to it. */
   form?: 'dome' | 'plane';
-  /** Camera pitch in radians. Default 0.34 for the dome; the plane uses 0.95. */
+  /** Radians; default 0.34 for the dome, 0.95 for the plane. */
   pitch?: number;
 }
 
 export interface HeroEngineHandle {
   dispose: () => void;
-  /** How far the headline has been typed. Only read when `echo` is on. */
+  /** Only read when `echo` is on. */
   setTyping: (typed: number, total: number) => void;
-  /** Dots that have been lit so far — the echo's own count, for gates. */
+  /** For gates. */
   litCount: () => number;
-  /** Where every node sat on the last drawn frame, in canvas CSS px — for gates. */
+  /** Last drawn frame, canvas CSS px; for gates. */
   nodesOnScreen: () => { s: string; k: HeroGraphNode['k']; x: number; y: number }[];
 }
 
-/** Clamped smoothstep on [0,1]. */
 function smooth01(u: number): number {
   const x = Math.max(0, Math.min(1, u));
   return x * x * (3 - 2 * x);
 }
 
-/** Deterministic hash → [0,1) — stable per-node jitter. */
+/** Deterministic hash to [0,1) for stable per-node jitter. */
 function hash01(str: string): number {
   let h = 2166136261;
   for (let i = 0; i < str.length; i += 1) {
@@ -149,17 +105,7 @@ interface PlaneSpec {
 }
 
 const PLANE: Record<HeroGraphNode['k'], PlaneSpec> = {
-  /**
-   * The project apex y: 148 → 104 (owner, 2026-08-18: *[too much space at the top]*).
-   *
-   * Measured (1512, a 303px canvas): the top third of the ink (95px) held only 25% of the total —
-   * the cone descending from the apex to the dome is only a thin spine, so although the bbox sat
-   * dead centre (12px of margin above and below), to the eye it was an object "empty at the top
-   * with the dome pushed down". The cause was neither placement nor projection but **dead space
-   * in the shape**, so the apex drops 44 units toward the dome to tighten the cone. With a shorter
-   * envelope the clamp raises the scale and the dome itself grows (ink width 290→324px measured) —
-   * the grammar (apex, rings, spokes, dome) is unchanged.
-   */
+  /** Low enough that the thin spine to the apex leaves no dead space at the top. */
   project: { y: 104, r: 0 },
   domain: { y: 56, r: 148 },
   capability: { y: -48, r: 192 },
@@ -172,7 +118,7 @@ interface HeroModel {
   bySlug: Map<string, HeroGraphNode>;
 }
 
-/** kind → plane; children fan out beneath their parent's angular slice. */
+/** One plane per kind; children fan out beneath their parent's angular slice. */
 function layoutHeroGraph(data: HeroGraphData): HeroModel {
   const nodes = data.nodes;
   const edges = data.edges;
@@ -188,8 +134,6 @@ function layoutHeroGraph(data: HeroGraphData): HeroModel {
     bySlug.set(n.s, n);
   }
 
-  // An element prefers a capability parent (the fan comes out denser) — the one rule every
-  // consumer of a parent shares (`preferredParents`).
   const parentOf = preferredParents(nodes, edges);
 
   const doms = byKind.domain.slice().sort((a, b) => (a.s < b.s ? -1 : 1));
@@ -216,11 +160,8 @@ function layoutHeroGraph(data: HeroGraphData): HeroModel {
       g.forEach((k, i) => {
         const t = g.length === 1 ? 0 : i / (g.length - 1) - 0.5;
         const a = a0 + t * sectorW;
-        // A crowded fan is split across two secondary rings.
+        // A crowded fan splits into two lanes; +11/−5 with ±4 jitter keeps them inside their ring's band.
         const r =
-          // The fan's two lanes stay inside their ring's band (council, 2026-09-02): +26/−12 with
-          // ±5 jitter put 22% of nodes across the neighbouring rim, so the rims asserted a kind
-          // partition the layout did not honour. +11/−5 with ±4 keeps 183–207 and 215–239 disjoint.
           ringR + (g.length > 4 ? (i % 2 ? 11 : -5) : 0) + (hash01(k.s) - 0.5) * 8;
         angle.set(k.s, a);
         k.px = Math.cos(a) * r;
@@ -270,7 +211,7 @@ const KINDS: readonly HeroGraphNode['k'][] = [
   'element',
 ];
 
-/** While dragging, deeper planes follow slightly late (elastic torsion) — and then recover. */
+/** While dragging, deeper planes follow slightly late and then recover. */
 const LAG_WEIGHT: Record<HeroGraphNode['k'], number> = {
   project: 0,
   domain: -0.1,
@@ -284,7 +225,7 @@ export function mountHeroObject(
   opts: HeroEngineOptions = {},
 ): HeroEngineHandle | null {
   const ctx = canvas.getContext('2d');
-  if (!ctx) return null; // jsdom or context exhaustion — leave the stage empty.
+  if (!ctx) return null; // jsdom or context exhaustion.
 
   const reduced =
     opts.forceReduced ??
@@ -296,7 +237,7 @@ export function mountHeroObject(
   const planeY = (kind: HeroGraphNode['k']): number => (flat ? 0 : PLANE[kind].y);
 
   const rootEl = opts.tokenEl ?? document.documentElement;
-  // The accent comes only from a token — the name says indigo but the value follows the switch.
+  // The token's value follows the accent switch despite its name.
   const accent = hexRgb(cssVar(rootEl, '--color-indigo-brand', '#5e6ad2'));
   const accent2 = hexRgb(cssVar(rootEl, '--color-indigo-accent', '#7170ff'));
   const ink = hexRgb(cssVar(rootEl, '--color-text-primary', '#f7f8f8'));
@@ -312,17 +253,9 @@ export function mountHeroObject(
   const sinP0 = Math.sin(PITCH);
 
   /**
-   * The ink envelope (unit space) — the range of projected coordinates **before** multiplying by
-   * `scaleFit`.
-   *
-   * Why it exists (owner, 2026-08-18: *[the part cut off at the bottom needs fixing]*): the world origin used to sit at the stage centre (H/2), but this
-   * object's ink mass is not symmetric about the origin — the element dome (y=-150, r=224) is far
-   * wider than the project apex (y=148), so measured at 1512 there were 39px of space above and
-   * **0px below**, with the dome's bottom clipped by the instrument rule. Sampling a full
-   * revolution of yaw gives an envelope that holds at every rotation and drag angle; then ① the
-   * vertical centre moves to the envelope's centre and ② when the envelope exceeds the box, the
-   * envelope rather than `fitPx` decides the scale (a clamp). The depends arc's lift (+46) sits
-   * between the capability plane and the project apex, so it is inside the envelope.
+   * Projected extent before `scaleFit`, sampled over a full yaw turn so it holds at any angle.
+   * The ink is not symmetric about the origin, so the envelope's centre is what gets anchored,
+   * and it clamps the scale, or the dome's bottom is clipped.
    */
   const envelope = (() => {
     let x0 = Infinity;
@@ -351,7 +284,7 @@ export function mountHeroObject(
       for (const n of model.nodes) {
         consider(n.px ?? 0, n.py ?? 0, n.pz ?? 0, cy, sy, NODE_R[n.k] * 2.1);
       }
-      // The plane disc's rim — the ring line is drawn even at angles where no node sits.
+      // The rim is drawn even where no node sits.
       for (const kind of ['element', 'capability', 'domain'] as const) {
         const P = PLANE[kind];
         for (let i = 0; i < 24; i += 1) {
@@ -377,10 +310,7 @@ export function mountHeroObject(
     canvas.width = Math.round(W * dpr);
     canvas.height = Math.round(H * dpr);
     ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
-    // `fitPx` is «the size we want», the clamp below is «not clipped» — a scale where the
-    // envelope exceeds the box is cut back, leaving 4% margin (see the envelope doc-block).
-    // Tilt leans the dome up to ~0.1 rad past the envelope's yaw sweep, so it gets twice the
-    // margin — a background may run past its box, a boxed stage may not.
+    // Tilt leans up to ~0.1 rad past the sampled sweep, so it gets twice the margin.
     const MARGIN = opts.tilt ? 0.08 : 0.04;
     const envW = Math.max(1, envelope.x1 - envelope.x0);
     const envH = Math.max(1, envelope.y1 - envelope.y0);
@@ -389,34 +319,25 @@ export function mountHeroObject(
       (W * (1 - MARGIN * 2)) / envW,
       (H * (1 - MARGIN * 2)) / envH,
     );
-    // What is centred on the anchor is not the world origin but **the ink envelope's centre**.
     const ax = opts.anchor?.x ?? 0.5;
     const ay = opts.anchor?.y ?? 0.5;
     const envMidY = ((envelope.y0 + envelope.y1) / 2) * scaleFit;
     centerX = W * ax - ((envelope.x0 + envelope.x1) / 2) * scaleFit;
-    // `bottomPx` pins the envelope's centre a fixed distance above the stage's foot — the narrow
-    // layout's plinth is a fixed-height spacer, so a fraction of a content-driven height would
-    // drift with the copy while a pixel distance does not.
+    // Pixels from the foot, not a fraction: the stage grows with the copy, the plinth does not.
     centerY =
       opts.anchor?.bottomPx !== undefined ? H - opts.anchor.bottomPx - envMidY : H * ay - envMidY;
   }
   size();
 
-  /**
-   * The echo's ledger: the order dots light, and the engine clock at which each one did. A dot
-   * fades in over `--motion-base` from its own moment, so a keystroke's dots start together and
-   * two keystrokes' dots never share a frame — that is what makes the echo read as typing.
-   */
   const echo = opts.echo === true;
   const order = echoOrder(model.nodes);
+  /** Each dot fades in from its own moment, so two keystrokes' dots never share a frame. */
   const revealAt = new Map<string, number>();
   const REVEAL_MS = parseFloat(cssVar(rootEl, '--motion-base', '180ms')) || 180;
 
-  /** The parent line of every node — the one stroke a pointed-at dot lights along with itself. */
   const parentOf = preferredParents(model.nodes, model.edges);
 
   let hover: string | null = null;
-  /** A fine pointer within this many CSS px of a dot's centre is resting on it. */
   const HIT_PX = 14;
   let lastProjected = new Map<string, Projected>();
   let lastAlpha = new Map<string, number>();
@@ -434,8 +355,7 @@ export function mountHeroObject(
 
   const onPointerDown = (e: PointerEvent): void => {
     dragging = true;
-    // A turn is not a read: the ring and the caption leave with the first press, or they would
-    // ride the rotating object pinned to a dot the pointer left behind (review, 2026-08-30).
+    // A press clears the hover, or ring and caption ride the turning object on a dot the pointer left.
     setHover(null);
     lastX = e.clientX;
     userVel = 0;
@@ -448,7 +368,7 @@ export function mountHeroObject(
     opts.onHover?.(hover);
     if (reduced) drawAt(lastT);
   };
-  /** Where the hand rests, in canvas px — re-tested every frame while the projection moves. */
+  /** Canvas px, re-tested every frame while the projection moves. */
   let pointerAt: { x: number; y: number } | null = null;
   const hitAt = (x: number, y: number): string | null => {
     let best: string | null = null;
@@ -465,7 +385,6 @@ export function mountHeroObject(
   };
   const onPointerMove = (e: PointerEvent): void => {
     if (!dragging) {
-      // At rest the pointer reads, it does not turn: the nearest lit dot within reach lights.
       const rect = canvas.getBoundingClientRect();
       pointerAt = { x: e.clientX - rect.left, y: e.clientY - rect.top };
       const best = hitAt(pointerAt.x, pointerAt.y);
@@ -479,7 +398,7 @@ export function mountHeroObject(
     userYaw += d;
     userVel = d;
     for (const k of KINDS) lag[k] += d * LAG_WEIGHT[k];
-    if (reduced) drawAt(lastT); // only user-initiated movement redraws
+    if (reduced) drawAt(lastT);
   };
   const onPointerUp = (): void => {
     dragging = false;
@@ -491,12 +410,7 @@ export function mountHeroObject(
     setCursor('default');
   };
   canvas.style.touchAction = 'pan-y';
-  /**
-   * The cursor is a signifier for the dot under it, not for the stage (council, 2026-09-02):
-   * measured, 61% of the hero answered `grab` including bare ground — the first screen told the
-   * hand it could grasp the whole page while the ink was 1.7% of it. `grab` now appears only over
-   * a lit dot, mirrored on `data-hero-cursor` for the gate.
-   */
+  /** `grab` only over a lit dot, not bare ground; mirrored on `data-hero-cursor` for the gate. */
   const setCursor = (value: 'default' | 'grab' | 'grabbing'): void => {
     canvas.style.cursor = value;
     canvas.dataset.heroCursor = value;
@@ -512,24 +426,17 @@ export function mountHeroObject(
     drawAt(lastT);
   };
   addEventListener('resize', onResize);
-  /**
-   * The box can change without the window changing (2026-09-02): at the split width the stage
-   * stretches to the hero band's height, and crossing that breakpoint re-lays the box a frame
-   * after the `resize` event that `size()` answered — measured 834→1280, the canvas was sized
-   * against the old box and stayed blank until the next window resize. The observer follows
-   * the box itself; the window listener stays for browsers without it.
-   */
+  /** The box can change after `resize` fires, leaving the canvas blank; the window listener is the fallback. */
   const boxObserver =
     typeof ResizeObserver === 'function' ? new ResizeObserver(() => onResize()) : null;
   boxObserver?.observe(canvas);
-  /* A lost 2D context (capture, memory pressure) would leave a permanent blank; on restore the
-     stage is sized and drawn again (council, 2026-09-02). */
+  /* A lost 2D context would leave a permanent blank, so restore resizes and redraws. */
   const onContextLost = (e: Event): void => e.preventDefault();
   const onContextRestored = (): void => onResize();
   canvas.addEventListener('contextlost', onContextLost);
   canvas.addEventListener('contextrestored', onContextRestored);
 
-  /** Pointer lean — targets in radians, eased toward per frame; zero when the hand leaves. */
+  /** Radians, eased toward per frame; zero when the pointer leaves. */
   let tiltYawT = 0;
   let tiltPitchT = 0;
   let tiltYaw = 0;
@@ -554,14 +461,12 @@ export function mountHeroObject(
     document.documentElement.addEventListener('mouseleave', onLeanEnd);
     addEventListener('blur', onLeanEnd);
   }
-  /** The scroll camera's eased progress, 0..1, and what it does to the projection. */
   let cam = 0;
   let camScale = 1;
   let camLift = 0;
   let camShiftX = 0;
-  /** Where the camera lays the plane at the end of the hero — near top-down, 1.35 rad. */
   const PITCH_TOP = 1.35;
-  /** The last tick's length, for the time-based followers; 16.7 when drawn outside the loop. */
+  /** 16.7 when drawn outside the loop. */
   let frameDt = 16.7;
   const TILT_TAU_MS = 280;
   const CAM_TAU_MS = 90;
@@ -581,8 +486,6 @@ export function mountHeroObject(
     const y2 = py * cosP + z * sinP;
     const z2 = -py * sinP + z * cosP;
     const s = F / (F + z2);
-    // Not W/2 · H/2 but the envelope centre (`size()`'s centerX/centerY) — see the doc-block above.
-    // The camera's push (`camScale`) and lift (`camLift`) are applied here, on the projection.
     const k = scaleFit * camScale;
     return { x: x * s * k + centerX + camShiftX, y: -y2 * s * k + centerY - camLift, s, z: z2 };
   }
@@ -595,7 +498,7 @@ export function mountHeroObject(
     return 1 - (1 - dt) ** 3;
   }
 
-  /** One node's ink at time t: its own echo moment when driven, its tier's when standalone. */
+  /** Its own echo moment when driven, its tier's when standalone. */
   function nodeAlpha(n: HeroGraphNode, t: number): number {
     if (reduced) return 1;
     if (!echo) return tierAlpha(n.k, t);
@@ -618,9 +521,7 @@ export function mountHeroObject(
     lastT = t;
     ctx!.clearRect(0, 0, W, H);
     if (!reduced) {
-      // Time-based followers (council, 2026-09-02): a per-frame lerp settles twice as fast on a
-      // 120Hz panel as in a 60fps recording. `frameDt` is the loop's tick, already clamped to
-      // 64ms, so a stall cannot make a follower jump.
+      // Time-based, or a per-frame lerp settles twice as fast at 120Hz.
       const kTilt = 1 - Math.exp(-frameDt / TILT_TAU_MS);
       const kCam = 1 - Math.exp(-frameDt / CAM_TAU_MS);
       tiltYaw += (tiltYawT - tiltYaw) * kTilt;
@@ -628,22 +529,13 @@ export function mountHeroObject(
       const target = opts.camera ? Math.max(0, Math.min(1, opts.camera())) : 0;
       cam += (target - cam) * kCam;
     }
-    // The camera: it turns (+0.9 rad over the hero), pushes in (×1.35), looks further down
-    // (+0.22 rad), lifts the dome slower than the page (depth parallax), and fades the ink out
-    // over the last half so the evidence section's real map arrives on a clear ground.
-    // The handoff (2026-09-03): as the hero leaves, the camera lays the plane down toward
-    // top-down (the evidence map's own view), drifts it from the anchor to the centre where the
-    // demo stage rises, grows it toward that stage's width, and fades it out only over the last
-    // third — so the next stage arrives where the plane was, in the view it was tilting toward.
+    // As the hero leaves, the plane lays down toward the evidence map's top-down view, drifts to
+    // the centre and fades over the last third, so the next stage arrives where the plane was.
     const pitch = PITCH + tiltPitch + cam * (PITCH_TOP - PITCH);
     cosP = Math.cos(pitch);
     sinP = Math.sin(pitch);
     camScale = 1 + cam * 0.4;
-    // The plane stays in its own band and scrolls away with the section: following the viewport
-    // down would carry it behind the facts strip's links and into a canvas the section clips
-    // (measured 2026-09-03). The handoff is one of view, not of place — the plane lays down to the
-    // top-down angle the demo's poster shows, drifts toward the centre, and dissolves as the demo
-    // stage rises in the same axis.
+    // It scrolls away with its section; following the viewport would carry it behind the facts links.
     const drift = smooth01((cam - 0.3) / 0.6);
     camLift = cam * H * 0.1;
     camShiftX = drift * (W * 0.5 - W * (opts.anchor?.x ?? 0.5));
@@ -664,10 +556,8 @@ export function mountHeroObject(
     }
     const [cy, sy] = trig.capability;
 
-    // Project everything first and normalize depth per frame — that makes the fog honest.
     const projected = new Map<string, Projected>();
     const alphaOf = new Map<string, number>();
-    // A plane's disc is as present as its most present dot — it arrives with the tier's first.
     const tierMax: Record<HeroGraphNode['k'], number> = { project: 0, domain: 0, capability: 0, element: 0 };
     let zMin = Infinity;
     let zMax = -Infinity;
@@ -682,11 +572,7 @@ export function mountHeroObject(
     }
     lastProjected = projected;
     lastAlpha = alphaOf;
-    /*
-     * The hover follows the dot, not the other way round (council, 2026-09-02): with the pointer
-     * held still, idle yaw carried a hovered dot 117px and the scroll camera 238px while the ring
-     * and caption stayed on it. The projection is fresh here, so the hit test is a lookup.
-     */
+    /* Re-hit every frame, or a still pointer's ring stays while the dot turns away. */
     if (!dragging && pointerAt !== null && !reduced) {
       const best = hitAt(pointerAt.x, pointerAt.y);
       if (best !== hover) {
@@ -695,12 +581,9 @@ export function mountHeroObject(
       }
     }
     const zSpan = Math.max(1, zMax - zMin);
-    // Near → 1, far → 0.09 (a squared family) — this contrast is what reads as 3D.
     const fog = (z: number): number => {
       const u = (z - zMin) / zSpan;
-      // Floor 0.22 (council, 2026-09-02): at 0.09 the far half of every rotation sat below
-      // perceptibility (max 1.12:1 against its own field) for a fact — camera azimuth — that is
-      // not in the vault; the near-side peak is untouched.
+      // Floor 0.22: lower, the far half of each turn fell below perceptibility.
       return 0.22 + 0.78 * (1 - u) ** 1.8;
     };
     const lw = (z: number): number => {
@@ -708,7 +591,6 @@ export function mountHeroObject(
       return 0.45 + 1.15 * (1 - u);
     };
 
-    // 1 · plane discs plus a depth-shaded rim — the material of the stack.
     for (const kind of ['element', 'capability', 'domain'] as const) {
       const P = PLANE[kind];
       const a = tierMax[kind];
@@ -720,25 +602,10 @@ export function mountHeroObject(
           project(Math.cos(ang) * P.r, planeY(kind), Math.sin(ang) * P.r, trig[kind][0], trig[kind][1]),
         );
       }
-      let x0 = Infinity;
-      let y0 = Infinity;
-      let x1 = -Infinity;
-      let y1 = -Infinity;
-      for (const p of pts) {
-        if (p.x < x0) x0 = p.x;
-        if (p.x > x1) x1 = p.x;
-        if (p.y < y0) y0 = p.y;
-        if (p.y > y1) y1 = p.y;
-      }
       ctx!.beginPath();
       pts.forEach((p, i) => (i ? ctx!.lineTo(p.x, p.y) : ctx!.moveTo(p.x, p.y)));
       ctx!.closePath();
-      // A constant fill (council, 2026-09-02): the old top-left gradient asserted a light source,
-      // encoded nothing, and measured ≤1.07:1. `x0..y1` stay in scope for the rim strokes below.
-      void x0;
-      void y0;
-      void x1;
-      void y1;
+      // A constant fill: a gradient would assert a light source that encodes nothing.
       ctx!.fillStyle = `rgba(${ink[0]},${ink[1]},${ink[2]},${0.018 * a})`;
       ctx!.fill();
       for (let i = 0; i < 48; i += 1) {
@@ -754,7 +621,6 @@ export function mountHeroObject(
       }
     }
 
-    // 2 · contains edges, far → near.
     const eSorted = containsEdges
       .map((e) => {
         const A = projected.get(e.a)!;
@@ -768,8 +634,7 @@ export function mountHeroObject(
       const a = Math.min(alphaOf.get(it.e.a) ?? 0, alphaOf.get(it.e.b) ?? 0);
       if (a <= 0.01) continue;
       const f = fog(it.z);
-      // The project's spokes carry their prominence on width alone (council, 2026-09-02): with
-      // the accent gone from them, indigo on this stage means exactly one fact — `depends`.
+      // Spokes stand out by width alone, so indigo here means only `depends`.
       const spine = ka === 'project' || kb === 'project';
       ctx!.strokeStyle = `rgba(${ink[0]},${ink[1]},${ink[2]},${(spine ? 0.34 : 0.24) * f * a})`;
       ctx!.lineWidth = lw(it.z) * (spine ? 1.1 : 0.85);
@@ -779,8 +644,7 @@ export function mountHeroObject(
       ctx!.stroke();
     }
 
-    // 3 · depends edges — an accent arc lifted above the capability plane with a slow dash
-    //     current (the same grammar as the map section's .flow pulse: dash motion, not glow).
+    // Dash motion, not glow: the map section's `.flow` pulse grammar.
     for (const e of dependsEdges) {
       const na = model.bySlug.get(e.a);
       const nb = model.bySlug.get(e.b);
@@ -819,7 +683,6 @@ export function mountHeroObject(
       }
     }
 
-    // 4 · nodes, far → near.
     const nSorted = model.nodes
       .slice()
       .sort((a, b) => projected.get(b.s)!.z - projected.get(a.s)!.z);
@@ -830,7 +693,6 @@ export function mountHeroObject(
       const f = fog(p.z);
       const r = NODE_R[n.k] * p.s * scaleFit * 2.1;
       if (n.k === 'project') {
-    // An accent-stroked hexagon — the same vocabulary as the map section.
         ctx!.beginPath();
         for (let i = 0; i < 6; i += 1) {
           const ang = (i / 6) * TAU - Math.PI / 2;
@@ -861,8 +723,7 @@ export function mountHeroObject(
       }
     }
 
-    // 5 · the pointed-at dot: its parent line in full accent and a ring one step outside it.
-    //     A stroke ring, not a shadow — the same vocabulary as the map's selection.
+    // A stroke ring, not a shadow, as the map's selection draws.
     if (hover !== null) {
       const p = projected.get(hover);
       const n = model.bySlug.get(hover);
@@ -888,13 +749,9 @@ export function mountHeroObject(
   }
 
   if (reduced) {
-    drawAt(ASSEMBLE + 601); // one still frame of the finished assembly
+    drawAt(ASSEMBLE + 601); // the finished assembly
   } else {
-    // Ride the gateway's shared loop — the same single rAF as the current field. The autonomous
-    // yaw advances by an accumulated clock multiplied by the sleep factor, so after 30s of no
-    // input it decelerates over a 2s ramp and stops (no step cut), and once asleep the frame
-    // itself is skipped. Drag and inertia live where the factor is always 1, right after input.
-    // See the `gateway-frame-loop.ts` doc-block.
+    // The yaw clock is scaled by the sleep factor, so idle decelerates to a stop, never a cut.
     let animT = 0;
     unregisterFrame = registerGatewayFrameClient(({ dtMs, factor }) => {
       if (disposed) return;
@@ -929,8 +786,7 @@ export function mountHeroObject(
     },
     setTyping(typed: number, total: number): void {
       const n = echoCount(typed, total, order.length);
-      // Dots are only ever added: a re-render that reports a smaller count (a remount of the
-      // headline) does not put out ink the reader has already seen.
+      // Only ever added: a remounted headline's smaller count must not put out seen ink.
       for (let i = revealAt.size; i < n; i += 1) revealAt.set(order[i], lastT);
       if (reduced) drawAt(lastT);
     },

@@ -16,7 +16,7 @@ const doc = (
   mtime?: number,
 ): ContainmentPlanDoc => ({
   slug,
-  // The manifest carries the file's path, and the row shows it — every fixture keeps that shape.
+  // The manifest carries the file's path and the row shows it.
   path: `${slug}.md`,
   title: slug.split("/").pop() ?? slug,
   frontmatter: { kind, ...frontmatter },
@@ -33,7 +33,7 @@ const DOCS: ContainmentPlanDoc[] = [
 ];
 
 describe("buildContainmentProposals", () => {
-  it("역량은 capabilities, 요소는 elements 로 간다", () => {
+  it("files a capability under capabilities and an element under elements", () => {
     const proposals = buildContainmentProposals(
       [
         { slug: "capabilities/pay", domain: "domains/billing" },
@@ -47,13 +47,13 @@ describe("buildContainmentProposals", () => {
     ]);
   });
 
-  it("이미 적힌 개념은 제안하지 않는다 — 판정과 파일이 어긋나면 아무것도 쓰지 않는다", () => {
+  it("skips a concept already written, so a verdict that disagrees with the file writes nothing", () => {
     expect(
       buildContainmentProposals([{ slug: "capabilities/refund", domain: "domains/billing" }], DOCS),
     ).toEqual([]);
   });
 
-  it("contains 로 이미 담고 있어도 제안하지 않는다", () => {
+  it("skips a concept the domain already holds through contains", () => {
     const docs = [
       doc("domains/billing", "domain", { contains: ["capabilities/pay"] }),
       doc("capabilities/pay", "capability"),
@@ -63,7 +63,7 @@ describe("buildContainmentProposals", () => {
     ).toEqual([]);
   });
 
-  it("문서를 못 찾거나 종류가 맞지 않으면 조용히 건너뛴다 — 없는 파일에 쓰지 않는다", () => {
+  it("skips a missing document or a wrong kind without writing a nonexistent file", () => {
     expect(
       buildContainmentProposals(
         [
@@ -77,7 +77,7 @@ describe("buildContainmentProposals", () => {
     ).toEqual([]);
   });
 
-  it("같은 개념이 두 번 와도 한 줄이다", () => {
+  it("yields one row for a concept that arrives twice", () => {
     const proposals = buildContainmentProposals(
       [
         { slug: "capabilities/pay", domain: "domains/billing" },
@@ -91,13 +91,8 @@ describe("buildContainmentProposals", () => {
 
 
 /**
- * **When each fact is read is the whole guarantee.**
- *
- * The sheet promises a write never lands on a file that changed since the proposal, and that only
- * the named files are written. Neither survives if the plan is rebuilt at Apply: by then an
- * outside change has been read back in, and the guard would be comparing that new state against
- * itself. These cases pin the split — members and mtime frozen at open, justification re-read at
- * Apply.
+ * When each fact is read is the guarantee: members and mtime freeze at open, and the justification is re-read at
+ * Apply, or the guard compares a changed file against itself.
  */
 describe("buildContainmentPlan / selectContainmentWrites", () => {
   const proposals = buildContainmentProposals(
@@ -110,7 +105,7 @@ describe("buildContainmentPlan / selectContainmentWrites", () => {
   );
   const allTicked = new Set(proposals.map((p) => p.id));
 
-  it("한 파일의 한 키는 한 번만 쓴다 — 두 번 쓰면 두 번째가 제 mtime 검사에 걸린다", () => {
+  it("writes each key of a file once, since a second write would fail its own mtime check", () => {
     const { writes, skipped } = selectContainmentWrites(
       buildContainmentPlan(proposals, DOCS),
       allTicked,
@@ -125,22 +120,21 @@ describe("buildContainmentPlan / selectContainmentWrites", () => {
     expect(billingCapabilities?.expectedMtime).toBe(111);
   });
 
-  it("줄이 말하는 파일과 실제로 쓰는 파일이 같다", () => {
+  it("writes the same file the row names", () => {
     const { writes } = selectContainmentWrites(
       buildContainmentPlan(proposals, DOCS),
       allTicked,
       DOCS,
     );
     const shop = writes.find((w) => w.domainSlug === "domains/shop");
-    // The row shows `domainPath`; the run addresses the file by `domainSlug`. Both come from the
-    // one document, so what a person reads is the file that changes.
+    // The row shows `domainPath` and the run addresses `domainSlug`, both from one document.
     expect(shop?.domainPath).toBe("domains/shop.md");
     expect(proposals.find((p) => p.domainSlug === "domains/shop")?.domainPath).toBe(
       "domains/shop.md",
     );
   });
 
-  it("체크를 푼 줄은 쓰지 않는다 — 자동으로 도는 것은 없다", () => {
+  it("does not write an unchecked row", () => {
     const only = proposals.filter((p) => p.conceptSlug === "capabilities/browse");
     const { writes } = selectContainmentWrites(
       buildContainmentPlan(proposals, DOCS),
@@ -156,13 +150,13 @@ describe("buildContainmentPlan / selectContainmentWrites", () => {
     });
   });
 
-  it("아무것도 고르지 않으면 쓰기도 없다", () => {
+  it("plans no write when nothing is selected", () => {
     const run = selectContainmentWrites(buildContainmentPlan(proposals, DOCS), new Set(), DOCS);
     expect(run.writes).toEqual([]);
     expect(run.skipped).toEqual([]);
   });
 
-  it("한 쓰기는 그것이 푸는 모든 줄을 들고 있다 — 실패는 줄마다 알린다", () => {
+  it("carries every row a write resolves so failures report per row", () => {
     const { writes } = selectContainmentWrites(
       buildContainmentPlan(proposals, DOCS),
       allTicked,
@@ -174,10 +168,10 @@ describe("buildContainmentPlan / selectContainmentWrites", () => {
     expect(billingElements?.proposalIds).toEqual(["domains/billing::elements/receipt"]);
   });
 
-  it("열 때 잰 mtime 을 끝까지 들고 간다 — 그 사이 파일이 바뀌어도 기준은 바뀌지 않는다", () => {
+  it("keeps the mtime measured at open as the baseline even if the file changes meanwhile", () => {
     const plan = buildContainmentPlan(proposals, DOCS);
-    // The same folder, read again after someone edited billing: a new mtime and a member the
-    // sheet never saw. Rebuilding here is exactly the defect — the guard would accept the change.
+    // The same folder re-read after an edit to billing: a new mtime and an unseen member. Rebuilding here would let the
+    // guard accept the change.
     const laterDocs = DOCS.map((entry) =>
       entry.slug === "domains/billing"
         ? {
@@ -195,7 +189,7 @@ describe("buildContainmentPlan / selectContainmentWrites", () => {
     expect(billingCapabilities?.members).toEqual(["capabilities/refund", "capabilities/pay"]);
   });
 
-  it("mtime 을 모르는 문서는 적지 않고 이유를 남긴다 — 검사 없는 쓰기는 하지 않는다", () => {
+  it("skips a document with an unknown mtime and records why", () => {
     const docs = [doc("domains/x", "domain"), doc("capabilities/y", "capability", { domain: "domains/x" })];
     const built = buildContainmentProposals([{ slug: "capabilities/y", domain: "domains/x" }], docs);
     const run = selectContainmentWrites(
@@ -214,7 +208,7 @@ describe("buildContainmentPlan / selectContainmentWrites", () => {
     ]);
   });
 
-  it("그 사이에 개념이 다른 도메인을 가리키게 되면 적지 않는다 — 아무도 승인하지 않은 문장이다", () => {
+  it("skips a concept that meanwhile points at another domain, since nobody approved that sentence", () => {
     const plan = buildContainmentPlan(proposals, DOCS);
     const laterDocs = DOCS.map((entry) =>
       entry.slug === "capabilities/pay"
@@ -228,8 +222,7 @@ describe("buildContainmentPlan / selectContainmentWrites", () => {
       reason: "domain-changed",
       proposalIds: ["domains/billing::capabilities/pay"],
     });
-    // The withdrawn row was the only member of that key, so nothing is written for it — while
-    // the same file's other key, whose member still names this domain, is written as planned.
+    // The withdrawn row was its key's only member, so that key is not written; the same file's other key still is.
     const billingCapabilities = run.writes.find(
       (w) => w.domainSlug === "domains/billing" && w.key === "capabilities",
     );
@@ -240,7 +233,7 @@ describe("buildContainmentPlan / selectContainmentWrites", () => {
     expect(billingElements?.members).toEqual(["elements/receipt"]);
   });
 
-  it("도메인을 슬러그 끝자리로 가리켜도 그대로 인정한다 — 판정이 받아준 이름을 뒤집지 않는다", () => {
+  it("accepts a domain named by its slug tail, as the verdict did", () => {
     const docs = [
       doc("domains/billing", "domain", {}, 5),
       doc("capabilities/pay", "capability", { domain: "billing" }),
@@ -257,7 +250,7 @@ describe("buildContainmentPlan / selectContainmentWrites", () => {
 });
 
 describe("runContainmentBatch", () => {
-  it("건너뛴 줄은 이유 문장을 달고, 시도하지 않았다고 말한다", async () => {
+  it("gives a skipped row a reason and marks it not attempted", async () => {
     const docs = [doc("domains/x", "domain"), doc("capabilities/y", "capability", { domain: "domains/x" })];
     const built = buildContainmentProposals([{ slug: "capabilities/y", domain: "domains/x" }], docs);
     const run = selectContainmentWrites(

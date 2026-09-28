@@ -1,0 +1,1 @@
+{ "gate": "comment-bytes.src-entities", "raise": 100, "why": "rankProjectMatches is matching code, so architecture.md requires its one-line complexity statement; the index.ts comment cut that offset it landed first in #2006." }

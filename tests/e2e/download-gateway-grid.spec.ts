@@ -311,8 +311,8 @@ function assertGrid(m: Awaited<ReturnType<typeof measure>>, label: string) {
   expect(stage.headInkLeft, `${label}: 절 제목의 글자를 못 읽었다 — 이 시험이 헛돈다`).not.toBeNull();
   expect(
     Math.abs(stage.headInkLeft! - stage.colLeft),
-    `${label}: 시연 절 제목(${stage.headInkLeft})이 원점(${stage.colLeft})에서 시작하지 않는다 — ` +
-      "한 페이지에 정렬 문법이 둘이면 눈에는 기둥이 끊겨 보인다",
+    `${label}: the demo section title (${stage.headInkLeft}) does not start at the origin (${stage.colLeft}). ` +
+      "With two alignment grammars on one page, the eye sees the column break",
   ).toBeLessThanOrEqual(1);
   expect(
     Math.abs(stage.demoRight - stage.colRight),
@@ -469,11 +469,8 @@ test.describe("관문 다운로드의 그리드", () => {
 
 test.describe("the headline types only its own sentence (council, 2026-09-03)", () => {
   /*
-   * The decoder ghost drew a glyph from the sentence into the caret's slot at the headline's own
-   * size, so the page's one claim read as a misspelling for a frame ("Agents write tlt"). It was
-   * removed; this keeps it from returning quietly, and pins the one cost the kept landing has —
-   * `gatewayTypeLand` interpolates font-weight on a variable face, measured ≤3.73px of h1 width
-   * drift while typing.
+   * The decoder ghost read as a misspelling. The 2026-09-03 decision makes the landing
+   * opacity-only above 4px drift; preserve both regression barriers.
    */
   test("no ghost glyph, and the headline does not wander while it types", async ({ page }) => {
     await page.setViewportSize({ width: 1512, height: 982 });

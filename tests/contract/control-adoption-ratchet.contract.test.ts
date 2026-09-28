@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, 
 import { tmpdir } from 'node:os';
 import { basename, extname, join, relative } from 'node:path';
 
+import ts from 'typescript';
 import { afterAll, describe, expect, it } from 'vitest';
 
 import { judgeRatchet, RAISES_DIR, type RatchetJudgement } from './lib/ratchet-base';
@@ -26,7 +27,7 @@ import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
  * `tests/contract/control-adoption/<registry>/<file>.<claim>.json`, one file per
  * row, so the base's own registry is what the base is measured with and two
  * branches registering different places touch different files. A deliberate
- * rise is a `tests/contract/ratchet-raises/<gate>.<slug>.json` record whose
+ * rise is a `tests/contract/ratchet-raises/<gate>/<slug>.json` record whose
  * `why` is the reason a reviewer reads. Before this, nine baseline literals here
  * changed in 56 of 74 commits to the file, and parallel branches conflicted on
  * them.
@@ -695,12 +696,91 @@ const BUTTON_TAGS = ['button'] as const;
 const ANCHOR_TAGS = ['Link', 'a'] as const;
 const FIELD_TAGS = ['input', 'textarea', 'select', 'label'] as const;
 
+const VALUE_LAYER_CALL = /(?:controlClass|fieldClass|fieldLabel)\s*\(/;
+const VALUE_LAYER = new Set(['controlClass', 'fieldClass', 'fieldLabel']);
+const helperCache = new Map<string, string[]>();
+
+const isFunctionLike = (n: ts.Node): n is ts.FunctionLikeDeclaration =>
+  ts.isArrowFunction(n) || ts.isFunctionExpression(n) || ts.isFunctionDeclaration(n) || ts.isMethodDeclaration(n);
+const rendersJsx = (n: ts.Node): boolean =>
+  ts.isJsxElement(n) || ts.isJsxSelfClosingElement(n) || ts.isJsxFragment(n) || ts.forEachChild(n, rendersJsx) === true;
+
+function returnedValues(fn: ts.FunctionLikeDeclaration): ts.Node[] {
+  if (!fn.body) return [];
+  if (!ts.isBlock(fn.body)) return [fn.body];
+  const values: ts.Node[] = [];
+  const visit = (n: ts.Node): void => {
+    if (isFunctionLike(n)) return;
+    if (ts.isReturnStatement(n) && n.expression) values.push(n.expression);
+    ts.forEachChild(n, visit);
+  };
+  ts.forEachChild(fn.body, visit);
+  return values;
+}
+
+/** A value only the value layer can produce: its call, or a function every return of which is one. */
+function yieldsValueLayer(node: ts.Node): boolean {
+  if (rendersJsx(node)) return false;
+  if (isFunctionLike(node)) {
+    const values = returnedValues(node);
+    return values.length > 0 && values.every(yieldsValueLayer);
+  }
+  const visit = (n: ts.Node): boolean =>
+    isFunctionLike(n)
+      ? yieldsValueLayer(n)
+      : (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && VALUE_LAYER.has(n.expression.text)) ||
+        ts.forEachChild(n, (child) => (visit(child) ? true : undefined)) === true;
+  return visit(node);
+}
+
+/** Names (and `NAME.key`) whose every same-file binding yields the value layer. */
+function valueLayerNames(source: string): string[] {
+  const cached = helperCache.get(source);
+  if (cached) return cached;
+  const verdicts = new Map<string, boolean[]>();
+  const record = (name: string, value: ts.Node) => verdicts.set(name, [...(verdicts.get(name) ?? []), yieldsValueLayer(value)]);
+  const visit = (node: ts.Node): void => {
+    if (ts.isFunctionDeclaration(node) && node.name) record(node.name.text, node);
+    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer) {
+      if (!ts.isObjectLiteralExpression(node.initializer)) record(node.name.text, node.initializer);
+      else {
+        for (const property of node.initializer.properties) {
+          const value = ts.isPropertyAssignment(property) ? property.initializer : property;
+          if (property.name && (ts.isIdentifier(property.name) || ts.isStringLiteral(property.name))) {
+            record(`${node.name.text}.${property.name.text}`, value);
+          }
+        }
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(ts.createSourceFile('control.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX));
+  const names = [...verdicts].filter(([, each]) => each.every(Boolean)).map(([name]) => name);
+  helperCache.set(source, names);
+  return names;
+}
+
+function classValue(tag: string): string {
+  const at = tag.search(/\bclassName\s*=/);
+  if (at < 0) return '';
+  let i = tag.indexOf('=', at) + 1;
+  while (/\s/.test(tag[i] ?? '')) i += 1;
+  if (tag[i] !== '{') return tag.slice(i, tag.indexOf(tag[i], i + 1) + 1);
+  for (let j = i, depth = 0, quote = ''; j < tag.length; j += 1) {
+    if (quote) {
+      if (tag[j] === quote && tag[j - 1] !== '\\') quote = '';
+    } else if (tag[j] === '"' || tag[j] === "'" || tag[j] === '`') quote = tag[j];
+    else if (tag[j] === '{') depth += 1;
+    else if (tag[j] === '}' && --depth === 0) return tag.slice(i, j + 1);
+  }
+  return tag.slice(i);
+}
+
 function handWrittenTags(file: string, tags: readonly string[] = BUTTON_TAGS): string[] {
   const source = stripComments(readFileSync(file, 'utf8'));
-  // Names bound by `const X = controlClass({…})` / `const X = cn(controlClass({…}), …)`.
-  const systemConstants = [
-    ...source.matchAll(/const\s+([A-Za-z_$][\w$]*)\s*=[^;\n]*(?:controlClass|fieldClass|fieldLabel)\s*\(/g),
-  ].map((m) => m[1]);
+  const systemNames = valueLayerNames(source).map(
+    (name) => new RegExp(`(?<![\\w$.])${name.replace(/[.$]/g, (c) => `\\${c}`)}(?![\\w$])`),
+  );
   const found: string[] = [];
   for (const m of source.matchAll(new RegExp(`<(?:${tags.join('|')})\\b`, 'g'))) {
     const tag = openingTag(source, m.index + m[0].length);
@@ -720,8 +800,9 @@ function handWrittenTags(file: string, tags: readonly string[] = BUTTON_TAGS): s
      * places keep counting as debt, so the baseline never falls** — the system
      * (design-systems) seat named this the top idling candidate in that PR.
      */
-    if (/(?:controlClass|fieldClass|fieldLabel)\s*\(/.test(tag)) continue;
-    if (systemConstants.length > 0 && systemConstants.some((name) => new RegExp(`\\b${name}\\b`).test(tag))) continue;
+    const className = classValue(tag);
+    if (VALUE_LAYER_CALL.test(className)) continue;
+    if (systemNames.some((name) => name.test(className))) continue;
     found.push(tag);
   }
   return found;
@@ -1160,8 +1241,8 @@ describe('컨트롤 채택 래칫 — 등재된 「값 층 밖」', () => {
     for (const entry of OUTSIDE_VALUE_LAYER) {
       expect(
         readFileSync(entry.file, 'utf8').includes(entry.proof),
-        `${entry.file} 에서 «${entry.proof}» 가 사라졌다. 이 줄의 주장(${entry.claim})은 그 근거 위에 ` +
-          `서 있다 — 자리가 바뀌었으면 등록부를 다시 쓰고, 값 층으로 옮겼으면 줄을 지워라.`,
+        `"${entry.proof}" disappeared from ${entry.file}. This row's claim (${entry.claim}) stands on that evidence: ` +
+          `if the site moved, rewrite the registry; if it moved onto the value layer, delete the row.`,
       ).toBe(true);
     }
   });
@@ -1172,8 +1253,8 @@ describe('컨트롤 채택 래칫 — 등재된 「값 층 밖」', () => {
     for (const entry of chromeTokens) {
       expect(
         tokenIsBeyondFixedSteps(globalsCss, entry.proof),
-        `${entry.proof} 가 globals.css 에서 **고정 단 하나**가 됐다. 그러면 값 층이 낼 수 있으므로 ` +
-          `«표현 불가» 주장이 죽는다 — ${entry.file} 를 등록부에서 지우고 부채로 갚아라.`,
+        `${entry.proof} became **one fixed step** in globals.css. The value layer can now emit it, so ` +
+          `the "cannot be expressed" claim is dead: remove ${entry.file} from the registry and pay it down as debt.`,
       ).toBe(true);
     }
   });
@@ -1183,8 +1264,8 @@ describe('컨트롤 채택 래칫 — 등재된 「값 층 밖」', () => {
       const actual = byFile.get(file) ?? 0;
       expect(
         claimed,
-        `${file}: 등재 ${claimed} 인데 실측 손 컨트롤은 ${actual} 뿐이다. 자리를 값 층으로 옮겼으면 ` +
-          `등록부의 수도 함께 내려라 — 안 내리면 그만큼이 부채에서 조용히 사라진다.`,
+        `${file}: registered ${claimed}, but only ${actual} hand-built controls were measured. If sites moved onto the value layer, ` +
+          `lower the registry count with them; otherwise that much disappears from the debt without anyone seeing it.`,
       ).toBeLessThanOrEqual(actual);
     }
   });
@@ -1212,8 +1293,8 @@ describe('컨트롤 채택 래칫 — 앵커(`<Link>` · `<a>`)', () => {
     for (const entry of OUTSIDE_VALUE_LAYER_ANCHORS) {
       expect(
         readFileSync(entry.file, 'utf8').includes(entry.proof),
-        `${entry.file} 에서 «${entry.proof}» 가 사라졌다. 이 줄의 주장(${entry.claim})은 그 근거 위에 ` +
-          `서 있다 — 자리가 바뀌었으면 등록부를 다시 쓰고, 값 층으로 옮겼으면 줄을 지워라.`,
+        `"${entry.proof}" disappeared from ${entry.file}. This row's claim (${entry.claim}) stands on that evidence: ` +
+          `if the site moved, rewrite the registry; if it moved onto the value layer, delete the row.`,
       ).toBe(true);
     }
   });
@@ -1224,8 +1305,8 @@ describe('컨트롤 채택 래칫 — 앵커(`<Link>` · `<a>`)', () => {
     for (const entry of chromeTokens) {
       expect(
         tokenIsBeyondFixedSteps(globalsCss, entry.proof),
-        `${entry.proof} 가 globals.css 에서 **고정 단 하나**가 됐다 — 값 층이 낼 수 있으므로 ` +
-          `${entry.file} 를 등록부에서 지우고 부채로 갚아라.`,
+        `${entry.proof} became **one fixed step** in globals.css, so the value layer can emit it: ` +
+          `remove ${entry.file} from the registry and pay it down as debt.`,
       ).toBe(true);
     }
   });
@@ -1235,8 +1316,8 @@ describe('컨트롤 채택 래칫 — 앵커(`<Link>` · `<a>`)', () => {
       const actual = anchorCensus.byFile.get(file) ?? 0;
       expect(
         claimed,
-        `${file}: 앵커 등재 ${claimed} 인데 실측 손 앵커는 ${actual} 뿐이다. 자리를 값 층으로 옮겼으면 ` +
-          `등록부의 수도 함께 내려라.`,
+        `${file}: ${claimed} anchors registered, but only ${actual} hand-built anchors were measured. If sites moved onto the value layer, ` +
+          `lower the registry count with them.`,
       ).toBeLessThanOrEqual(actual);
     }
   });
@@ -1310,8 +1391,8 @@ describe('컨트롤 채택 래칫 — 아직 안 옮긴 부채', () => {
   it('세 수의 합이 전수와 맞는다 — 갈라진 수가 서로를 잃지 않는다', () => {
     expect(
       registered + noBasis + debt,
-      `등재 ${registered} + 근거 없음 ${noBasis} + 부채 ${debt} 가 전수 ${total} 과 다르다. ` +
-        '한 자리를 두 부류에 동시에 넣었거나, 어느 부류가 실측을 넘어 등재됐다.',
+      `registered ${registered} + no basis ${noBasis} + debt ${debt} differs from the census total ${total}. ` +
+        'One site sits in two classes at once, or a class registers more than was measured.',
     ).toBe(total);
   });
 });
@@ -1334,9 +1415,9 @@ describe('컨트롤 채택 래칫 — 근거 없음(값 층이 낼 것이 없다
       const qualified = handWrittenTags(entry.file, tags).filter(isClickSurface).length;
       expect(
         qualified,
-        `${entry.file}: 「${entry.claim}」 ${entry.count} 을 주장하는데 판정을 통과하는 자리는 ${qualified} 뿐이다. ` +
-          '판정은 ① 전면(inset-0) ② 램프 소유 속성 0개 를 동시에 요구한다 — 스크림에 높이·인셋·반경·타입을 ' +
-          '하나라도 달면 값 층이 낼 것이 생긴 것이므로 「낼 것이 없다」가 거짓이 된다. 그 자리는 부채로 갚아라.',
+        `${entry.file}: claims "${entry.claim}" ${entry.count} times, but only ${qualified} sites pass the verdict. ` +
+          'The verdict requires both (1) full cover (inset-0) and (2) zero ramp-owned properties: once a scrim carries any height, inset, radius or type step, ' +
+          'the value layer has something to emit and "nothing to emit" is false. Pay those sites down as debt.',
       ).toBeGreaterThanOrEqual(entry.count);
     }
   });
@@ -1403,6 +1484,118 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
      * scanner's field of view) instead; that is independent of debt.
      */
     expect(scannedFiles.length, '훑은 파일이 너무 적다 — 스캐너의 시야가 죽었다').toBeGreaterThan(150);
+  });
+
+  it('a class counts as adopted only when every path to it runs through the value layer', () => {
+    const cases: Record<string, [string[], number]> = {
+      'a helper, a component, and a hand-written tag that names the component': [
+        [
+          'function chipClass(active: boolean) {',
+          "  return controlClass({ shape: 'pill', active });",
+          '}',
+          'function Toolbar() {',
+          "  return <span className={controlClass({ shape: 'pill' })} />;",
+          '}',
+          'export const P = ({ active }: { active: boolean }) => (',
+          '  <>',
+          '    <button className={chipClass(active)} />',
+          '    <button className={chipClass(!active)} />',
+          '    <button data-owner={Toolbar} className="h-9 px-3" />',
+          '  </>',
+          ');',
+        ],
+        1,
+      ],
+      'a helper that discards the value layer': [
+        [
+          'function chipClass() {',
+          "  void controlClass({ shape: 'pill' });",
+          "  return 'h-8 rounded-full border px-3';",
+          '}',
+          'export const P = () => <button className={chipClass()} />;',
+        ],
+        1,
+      ],
+      'a helper with one hand-written branch': [
+        [
+          'function chipClass(active: boolean) {',
+          "  if (active) return controlClass({ shape: 'pill', active });",
+          "  return 'h-8 rounded-full border px-3';",
+          '}',
+          'export const P = () => <button className={chipClass(false)} />;',
+        ],
+        1,
+      ],
+      'an object mixing adopted and hand-written tones': [
+        [
+          'const TONE = {',
+          "  primary: controlClass({ shape: 'pill' }),",
+          "  ghost: 'h-9 rounded-md px-3',",
+          '};',
+          'export const P = () => <><button className={TONE.primary} /><button className={TONE.ghost} /></>;',
+        ],
+        1,
+      ],
+      'a wrapped local className constant': [
+        [
+          'export function P({ selected }: { selected: boolean }) {',
+          '  const className = cn(',
+          "    controlClass({ shape: 'row' }),",
+          "    selected && 'bg-x',",
+          '  );',
+          '  return (',
+          '    <div>',
+          '      <button className={className}>A</button>',
+          '      <button className="h-9 rounded-md px-3">B</button>',
+          '      <button type="button" className="h-8 rounded px-2">C</button>',
+          '    </div>',
+          '  );',
+          '}',
+        ],
+        2,
+      ],
+      'a helper named label beside aria-label': [
+        [
+          'function label(kind: string) {',
+          '  return fieldLabel({ kind });',
+          '}',
+          'export const P = () => <button aria-label="Close" className="h-9 rounded-md px-3">x</button>;',
+        ],
+        1,
+      ],
+      'a helper named active beside data-active': [
+        [
+          'const active = (on: boolean) =>',
+          "  controlClass({ shape: 'pill', active: on });",
+          'export const P = ({ on }: { on: boolean }) => <button data-active={on} className="h-9 rounded-md px-3">x</button>;',
+        ],
+        1,
+      ],
+      'a shadowed local name': [
+        [
+          "function B() { const chip = 'h-9 px-3'; return <button className={chip} />; }",
+          "function A() { const chip = controlClass({ shape: 'pill' }); return <button className={chip} />; }",
+        ],
+        2,
+      ],
+      'a wrapped cn constant': [
+        ['const CHIP = cn(', "  controlClass({ shape: 'pill' }),", "  'bg-x',", ');', 'export const P = () => <button className={CHIP} />;'],
+        0,
+      ],
+    };
+    const dir = mkdtempSync(join(tmpdir(), 'control-adoption-helper-'));
+    try {
+      const counts = Object.entries(cases).map(([name, [lines]], index) => {
+        const probe = join(dir, `Probe${index}.tsx`);
+        writeFileSync(probe, lines.join('\n'));
+        return [name, countInFile(probe)];
+      });
+      expect(Object.fromEntries(counts)).toEqual(
+        Object.fromEntries(Object.entries(cases).map(([name, [, expected]]) => [name, expected])),
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it('② 등재 안 된 자리를 손 컨트롤로 만들면 **부채**로 잡힌다 — 등재 쪽으로 새지 않는다', () => {
@@ -1896,7 +2089,7 @@ describe('머지 베이스 판정 — 스크래치 저장소 프로브', () => {
   const raise = (repo: string, gate: string, slug: string) =>
     put(
       repo,
-      `${RAISES_DIR}/${gate}.${slug}.json`,
+      `${RAISES_DIR}/${gate}/${slug}.json`,
       JSON.stringify({ gate, raise: 1, why: 'A probe raise that states a full sentence of reason for the growth.' }),
     );
 

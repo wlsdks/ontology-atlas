@@ -37,6 +37,7 @@ import {
   VaultConflictError,
   useLocalVault,
   useStaticVaultSource,
+  useVaultSessionIdentityScope,
   VaultSourceHydrationBoundary,
   type ReferrerRewriteReport,
 } from '@/entities/vault-session';
@@ -48,6 +49,7 @@ import { AppSettingsMenu } from '@/widgets/app-settings-menu';
 import { useNavRailSettingsSlot } from '@/widgets/app-nav-rail';
 import { copyText } from '@/shared/lib/copy-text';
 import { codedFailure } from '@/shared/lib/failure-code';
+import { vaultImageUrl } from '@/shared/lib/open-vault-file';
 import { useFailureSentence } from '@/shared/lib/use-failure-sentence';
 import { useTypingShortcuts } from '@/shared/lib/use-typing-shortcut';
 import { useClaimShellKey } from '@/shared/lib/shell-key-claims';
@@ -297,6 +299,9 @@ function DocsVaultContent({
   const [selectedSlug, setSelectedSlug] = useState<string | null>(querySlug);
   // A truthy `openWith` opens the palette; its value is the initial query (`>`, `#`, ``).
   const { paletteQuery, setPaletteQuery, paletteOpen } = usePaletteState();
+  const [paletteOpened, setPaletteOpened] = useState(false);
+  if (paletteOpen && !paletteOpened) setPaletteOpened(true);
+  const vaultSessionScope = useVaultSessionIdentityScope();
   const [view, setView] = useState<DocsVaultView>(queryView);
   // No visible menu remains; other surfaces still call `setAdvancedOpen(false)` to close popovers.
   const { setOpen: setAdvancedOpen } = useAdvancedMenu();
@@ -749,8 +754,7 @@ function DocsVaultContent({
     return async (path: string) => {
       const fh = handles.get(path);
       if (!fh) return null;
-      const file = await fh.getFile();
-      return URL.createObjectURL(file);
+      return vaultImageUrl(await fh.getFile());
     };
   }, [source, localVault.imageHandles]);
 
@@ -1442,9 +1446,13 @@ function DocsVaultContent({
     () => new Set(collectionDocs.map((doc) => doc.slug)),
     [collectionDocs],
   );
-  // Palette full-text index, keyed by mtime so only changed documents are re-read.
-  const { bodyIndex: docsBodyIndex, indexing: docsBodyIndexing } =
-    useDocsBodyIndex({ docs: collectionDocs, getDocContent });
+  // Palette full-text index from the first open, keyed by mtime.
+  const { bodyIndex: docsBodyIndex, indexing: docsBodyIndexing } = useDocsBodyIndex({
+    docs: collectionDocs,
+    enabled: paletteOpened,
+    scope: vaultSessionScope,
+    getDocContent,
+  });
   // Built from the whole folder: a reserved node keeps waiting whatever the filter shows.
   const reviewQueue = useReviewQueue({
     docs: scopedDocs,
@@ -2229,7 +2237,9 @@ function DocsVaultContent({
                 localVault.errorCode === 'root-rejected'
                 ? t('vaultStatus.rootRejectedBanner')
                 : // Each code owns a finished sentence; append the cause only when there is one.
-                  localVault.errorCode === 'path-missing'
+                  localVault.errorCode === 'grant-needed'
+                  ? t('vaultStatus.grantNeededBanner')
+                  : localVault.errorCode === 'path-missing'
                   ? t('vaultStatus.pathMissingBanner')
                   : localVault.errorCode === 'permission-denied'
                     ? t('vaultStatus.permissionDeniedBanner')

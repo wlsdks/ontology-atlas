@@ -1,13 +1,9 @@
 /**
  * Hangul-aware matching — how a Korean keyboard actually produces a query.
  *
- * **Why it was needed:** every search surface here matched normalised substrings
- * only, so the two things a Korean typist does first both returned nothing
- * (measured 2026-09-19 against the bundled Online Store sample, 125 concepts):
- * a query typed as consonant initials alone, and a name whose last syllable the
- * keyboard has not finished. `hangul-match.test.ts` and the "hangul keyboard"
- * block in `widgets/global-search/lib/match.test.ts` carry those queries as data,
- * which is where the examples belong — source comments here are English.
+ * **Why:** normalised substrings alone miss the two things a Korean typist does
+ * first: a query typed as consonant initials alone, and a name whose last syllable
+ * the keyboard has not finished. `hangul-match.test.ts` carries those queries.
  *
  * The second case is not a convenience: a Hangul IME emits a syllable one jamo at
  * a time, so **every Korean word passes through it on the way to being typed**. A
@@ -18,17 +14,16 @@
  * one consonant reach half the vault with no way for the reader to see why:
  *
  * 1. **Chosung** — a query made only of consonant jamo matches the initials of
- *    consecutive syllables, in order. Spaces are ignored on both sides: nobody
- *    types the space between the words of a name they are abbreviating to its
- *    initials, and a two-word capability got 0 results until they were (measured
- *    live on the Online Store sample, 2026-09-19). The highlighted range spans
- *    back over any space the match crossed.
+ *    consecutive syllables, in order. Spaces are ignored on both sides, because
+ *    nobody types the space between the words of a name they abbreviate to its
+ *    initials. The highlighted range spans back over any space the match crossed.
  * 2. **Trailing partial syllable** — every character but the last must match
- *    exactly, and the last must be a jamo prefix of the syllable it lands on.
- *    Compound medials and final clusters are split into the keys that type them,
- *    so a syllable ending at *o* is a genuine prefix of one whose medial is *wa*
- *    (typed *o* then *a*), and a syllable with no final is a prefix of the same
- *    syllable with one.
+ *    exactly, and the last must be a jamo prefix of the syllable it lands on plus
+ *    the next syllable's initial: a two-set keyboard shows that initial as a final
+ *    until a vowel moves it on. Compound medials and final clusters are split into
+ *    the keys that type them, so a syllable ending at *o* is a genuine prefix of one
+ *    whose medial is *wa* (typed *o* then *a*), and a syllable with no final is a
+ *    prefix of the same syllable with one.
  *
  * Positions are returned so the same match can be highlighted; they index the
  * **NFC form** of the haystack, which is what `normalize("NFC")` on the label
@@ -163,15 +158,20 @@ export interface HangulMatchRange {
   end: number;
 }
 
-/** Does `target` begin with the keys that type `prefix`? */
-function syllableStartsWith(target: string, prefix: string): boolean {
+/**
+ * How many characters the keys that type `prefix` cover from `target` on: 1, or 2 when
+ * they also take `next`'s initial, which a two-set keyboard shows as a final; 0 if none.
+ */
+function prefixReach(target: string, next: string, prefix: string): 0 | 1 | 2 {
   const targetJamo = jamoOf(target);
+  const ownKeys = targetJamo.length;
+  if (isSyllable(next.codePointAt(0) ?? 0)) targetJamo.push(jamoOf(next)[0]!);
   const prefixJamo = jamoOf(prefix);
-  if (prefixJamo.length > targetJamo.length) return false;
+  if (prefixJamo.length > targetJamo.length) return 0;
   for (let i = 0; i < prefixJamo.length; i += 1) {
-    if (targetJamo[i] !== prefixJamo[i]) return false;
+    if (targetJamo[i] !== prefixJamo[i]) return 0;
   }
-  return true;
+  return prefixJamo.length > ownKeys ? 2 : 1;
 }
 
 function containsHangul(value: string): boolean {
@@ -194,6 +194,7 @@ function sameCharacter(a: string, b: string): boolean {
  * This is deliberately *not* a general fuzzy matcher: it only recognises the two
  * states a Hangul keyboard puts a real query in. A literal substring match is
  * the caller's job and should be tried first — it ranks higher.
+ * O(|haystack| · |query|): each start compares up to |query| characters of at most five keys.
  */
 export function findHangulMatch(haystack: string, query: string): HangulMatchRange | null {
   const text = haystack.normalize("NFC");
@@ -230,18 +231,17 @@ export function findHangulMatch(haystack: string, query: string): HangulMatchRan
   const lastIndex = needle.length - 1;
   const limit = text.length - needle.length;
   for (let start = 0; start <= limit; start += 1) {
-    let ok = true;
+    let reach = 1;
     for (let offset = 0; offset <= lastIndex; offset += 1) {
       const target = text[start + offset] ?? "";
       const wanted = needle[offset] ?? "";
-      const matched =
-        offset === lastIndex ? syllableStartsWith(target, wanted) : sameCharacter(target, wanted);
-      if (!matched) {
-        ok = false;
-        break;
-      }
+      reach =
+        offset === lastIndex
+          ? prefixReach(target, text[start + offset + 1] ?? "", wanted)
+          : sameCharacter(target, wanted) ? 1 : 0;
+      if (reach === 0) break;
     }
-    if (ok) return { start, end: start + needle.length };
+    if (reach > 0) return { start, end: start + lastIndex + reach };
   }
   return null;
 }

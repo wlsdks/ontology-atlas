@@ -4,7 +4,6 @@ import { detectVisitorDesktopPlatform } from './visitor-platform';
 describe('detectVisitorDesktopPlatform', () => {
   it('recognises Windows from every mainstream Windows UA', () => {
     for (const ua of [
-      // Chrome/Edge on Windows 10+ — a real UA string.
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 Edg/126.0.0.0',
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:127.0) Gecko/20100101 Firefox/127.0',
@@ -16,8 +15,7 @@ describe('detectVisitorDesktopPlatform', () => {
   it('defaults everything else — mac, Linux, iPadOS, empty — to mac', () => {
     for (const ua of [
       'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15',
-      // Linux: there is no app to download, so this is not a visitor to detect and offer something
-      // else to — the macOS default plus the always-present browser CTA is their honest path.
+      // Linux has no app, so it falls to the mac default beside the browser CTA.
       'Mozilla/5.0 (X11; Linux x86_64; rv:127.0) Gecko/20100101 Firefox/127.0',
       // iPadOS Safari asks for the desktop site and reports a Mac UA; it is treated as one.
       'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15',
@@ -27,10 +25,6 @@ describe('detectVisitorDesktopPlatform', () => {
     }
   });
 
-  /**
-   * A phone cannot install either file, so the file must not be the filled winner there
-   * (measured 2026-09-02 at a phone width: "Download for Apple Silicon" was the winner).
-   */
   it('recognises a phone — iPhone and Android mobile — as handheld', () => {
     for (const ua of [
       'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',

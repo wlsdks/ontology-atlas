@@ -1,14 +1,7 @@
 /**
- * **Does one concept still stand on the code it cites?**
- *
- * The screen and the MCP server must answer this in the same four words, so the rule lives
- * here once and both import it. It was two implementations for a day, and they disagreed:
- * a concept citing both a path that is gone and a path the walk never reached came back
- * `missing` from one and `unknown` from the other (design-handoff, 2026-09-19). One rule
- * cannot drift from itself.
- *
- * This module is `.mjs` with a `.d.mts` beside it for the same reason `wiki-report.mjs` is:
- * the Node MCP server and the browser bundle both load it without a build step.
+ * Does one concept still stand on the code it cites? The screen and the MCP
+ * server import this one rule so their four-word answers cannot
+ * disagree. `.mjs` with a `.d.mts` so Node and the browser bundle load it without a build.
  */
 
 /**
@@ -22,10 +15,10 @@ function toMs(value) {
 }
 
 /**
- * Judge one concept from its document's newest commit and what the walk said about each
- * cited path. Priority is fixed and total: a path that is gone outranks a file that moved,
- * a file that moved outranks anything undated, and a folder that moved is never `stale` —
- * a folder changes on almost any commit, so it says "something under it moved".
+ * Judges one concept from its document's newest commit and the walk's result
+ * per cited path. Fixed, total priority: a gone path beats a moved file, which
+ * beats anything undated; a moved folder is never `stale`, since a folder
+ * changes on almost any commit.
  *
  * @param {{ docChangedAt: string|null|undefined, entries: readonly {path: string, change: {exists: boolean, isDir?: boolean, lastChangedAt: string|null}|null|undefined}[] }} input
  * @returns {{ verdict: 'current'|'stale'|'missing'|'unknown', reason: string|null, moved: {path: string, changedAt: string}[], folders: {path: string, changedAt: string}[], gone: string[] }}

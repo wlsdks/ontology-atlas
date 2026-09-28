@@ -1,10 +1,7 @@
 /**
- * Minting a project source receipt — the pure half.
- *
- * No node imports: the browser workbench, the CLI, and the MCP server all mint
- * receipts now, and they must produce byte-identical output. Keeping this file
- * free of `node:fs` is what lets `src/shared/lib/project-source-receipt.ts`
- * import it directly instead of carrying a second copy.
+ * Minting a project source receipt, the pure half. No node imports, so the
+ * browser workbench (`src/shared/lib/project-source-receipt.ts`), the CLI and
+ * the MCP server share this one copy and mint byte-identical output.
  */
 
 export const PROJECT_SOURCE_RECEIPT_VERSION = 1;
@@ -14,16 +11,9 @@ function normalizedRelativePath(value) {
 }
 
 /**
- * Mint a receipt from a bounded probe and the project's declared source-role
- * claims. `src/shared/lib/project-source-receipt.ts` delegates here rather than
- * carrying a second copy; `tests/contract/project-source-connect.contract.test.ts`
- * pins the two entry points to byte-identical output.
- */
-/**
- * Every path a probe inventory can support: each file plus every ancestor
- * folder, so a declared `path: src/features/x` counts as present when any file
- * beneath it exists. Shared by minting and by the live re-check a stale receipt
- * gets on read, so the two can never disagree about what "supported" means.
+ * Every path a probe inventory supports: each file plus every ancestor folder,
+ * so `path: src/features/x` counts when any file beneath exists. Minting and the
+ * live re-check share it so they agree on "supported".
  */
 export function witnessInventoryPaths(probe) {
   const files = new Set(['.']);
@@ -38,6 +28,11 @@ export function witnessInventoryPaths(probe) {
   return files;
 }
 
+/**
+ * Mints a receipt from a bounded probe and the declared source-role
+ * claims. `tests/contract/project-source-connect.contract.test.ts` pins the app and MCP
+ * entry points to byte-identical output.
+ */
 export function buildProjectSourceReceipt(input) {
   const files = witnessInventoryPaths(input.probe);
   const witnesses = (input.witnesses ?? []).map((candidate) => {

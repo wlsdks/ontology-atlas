@@ -37,8 +37,8 @@ export function useHomeWorkbenchController() {
   }, [requestWorkbenchSection]);
   const toggleMeaningWorkbench = useCallback(() => {
     if (meaningWorkbenchOpen) {
-      // The lit meaning chip is also the route home from history/conversation.
-      // Only a press while already on meaning closes the workbench.
+      // The lit meaning chip is also the way home from history or conversation; only a press on
+      // meaning closes it.
       if (workbenchSectionRef.current !== "meaning") {
         requestWorkbenchSection("meaning");
         return;

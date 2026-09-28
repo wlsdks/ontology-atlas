@@ -5,6 +5,8 @@ import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { pathToFileURL } from 'node:url';
 
+import { rules as SECURITY_RULES } from './check-rules/security.mjs';
+
 import {
   CHECK_RULES_DIRECTORY,
   composeCheckRules,
@@ -28,9 +30,20 @@ function commandNames(result) {
 // source-language scan, so domain assertions leave it out; its own test pins it.
 const isScriptLint = (command) => command.startsWith('pnpm exec eslint --max-warnings 0 --no-warn-ignored ');
 
+const SECURITY_COMMAND = SECURITY_RULES[0].command;
+const TEST_HYGIENE_COMMAND =
+  'pnpm exec vitest run tests/contract/test-title-language.contract.test.ts tests/contract/source-comment-bytes.contract.test.ts';
+const TOKEN_GATES_COMMAND =
+  'pnpm exec vitest run tests/contract/unused-token-ratchet.contract.test.ts tests/contract/undeclared-token-ref.contract.test.ts tests/contract/design-doc-token-integrity.contract.test.ts';
+
 function domainCommands(result) {
   return commandNames(result).filter(
-    (command) => command !== SOURCE_LANGUAGE_COMMAND && command !== DEAD_CODE_COMMAND && !isScriptLint(command),
+    (command) =>
+      command !== SOURCE_LANGUAGE_COMMAND &&
+      command !== DEAD_CODE_COMMAND &&
+      command !== SECURITY_COMMAND &&
+      command !== TEST_HYGIENE_COMMAND &&
+      !isScriptLint(command),
   );
 }
 
@@ -136,12 +149,36 @@ describe('focused check suggestions', () => {
       'scripts/quality/source-language/source-paths.mjs',
       'scripts/quality/source-language/inventory.test.mjs',
     ]);
-    assert.deepEqual(commandNames(gate).filter((command) => command !== DEAD_CODE_COMMAND && !isScriptLint(command)), [
+    assert.deepEqual(commandNames(gate).filter((command) => command !== DEAD_CODE_COMMAND && command !== TEST_HYGIENE_COMMAND && !isScriptLint(command)), [
       SOURCE_LANGUAGE_COMMAND,
       'pnpm test:source:language',
+      'pnpm design:ontology',
+      'pnpm desktop:check',
     ]);
 
     assert.ok(!commandNames(suggestFocusedChecks(['messages/ko.json'])).includes(SOURCE_LANGUAGE_COMMAND));
+  });
+
+  it('suggests the test-source ratchets once for every test source and never for other code', () => {
+    const tests = [
+      'src/shared/lib/cn.test.ts',
+      'src/widgets/example/ui/Example.test.tsx',
+      'tests/e2e/page-frame.spec.ts',
+      'tests/contract/page-frame.contract.test.ts',
+      'scripts/desktop-smoke.test.mjs',
+      'mcp/src/analyze.test.mjs',
+      'cli/src/integration.test.mjs',
+    ];
+    assert.equal(
+      commandNames(suggestFocusedChecks(tests)).filter((command) => command === TEST_HYGIENE_COMMAND).length,
+      1,
+    );
+    for (const path of tests) {
+      assert.ok(commandNames(suggestFocusedChecks([path])).includes(TEST_HYGIENE_COMMAND), path);
+    }
+    for (const path of ['src/shared/lib/cn.ts', 'scripts/desktop-smoke.mjs', 'tests/e2e/settle.ts', 'app/globals.css']) {
+      assert.ok(!commandNames(suggestFocusedChecks([path])).includes(TEST_HYGIENE_COMMAND), path);
+    }
   });
 
   it('suggests the dead-code analyzer once for every scope, manifest, and analyzer config', () => {
@@ -1225,13 +1262,15 @@ describe('focused check suggestions', () => {
     ]);
   });
 
-  it('suggests overflow smoke for global styling changes', () => {
+  it('suggests the token gates and overflow smoke for global styling changes', () => {
     const result = suggestFocusedChecks(['postcss.config.mjs', 'app/globals.css', 'app/styles/tokens.css']);
 
     assert.deepEqual(domainCommands(result), [
       'pnpm check:tokens',
+      TOKEN_GATES_COMMAND,
       'pnpm exec playwright test tests/e2e/overflow-sweep.spec.ts',
     ]);
+    assert.ok(!commandNames(suggestFocusedChecks(['postcss.config.mjs'])).includes(TOKEN_GATES_COMMAND));
   });
 
   it('suggests focused benchmark and onboarding smoke checks', () => {
@@ -1877,5 +1916,38 @@ describe('rule files under scripts/lib/check-rules are the registry', () => {
     const commands = commandNames(suggestFocusedChecks(['scripts/lib/check-rules/mcp.mjs']));
     assert.ok(commands.includes('pnpm test:checks:changed'), commands.join('\n'));
     assert.ok(commands.includes('pnpm test:ci:impact'), commands.join('\n'));
+  });
+});
+
+describe('security surfaces', () => {
+  const securityRow = (path) =>
+    suggestFocusedChecks([path]).commands.find((row) => row.command === SECURITY_COMMAND);
+
+  it('asks for the security lens where untrusted input meets a capability', () => {
+    for (const path of [
+      'mcp/src/vault.mjs',
+      'src-tauri/src/lib.rs',
+      '.github/workflows/checks.yml',
+      'pnpm-lock.yaml',
+      'mcp/pnpm-lock.yaml',
+      'src/shared/lib/tauri-external-link.ts',
+      'src/features/acp-session/model/acp-client.ts',
+    ]) {
+      assert.match(securityRow(path)?.reason ?? '', /`security` lens/, path);
+    }
+  });
+
+  it('runs the security contracts without the lens where vault or agent text is rendered', () => {
+    for (const path of ['src/widgets/docs-vault/ui/DocsVaultViewer.tsx', 'src/widgets/acp-chat-panel/ui/AcpChatPanel.tsx']) {
+      const row = securityRow(path);
+      assert.ok(row, path);
+      assert.doesNotMatch(row.reason, /`security` lens/, path);
+    }
+  });
+
+  it('stays silent outside every security surface', () => {
+    for (const path of ['src/shared/lib/cn.ts', 'mcp/src/vault.test.mjs', 'docs/README.md', 'cli/src/index.mjs']) {
+      assert.equal(securityRow(path), undefined, path);
+    }
   });
 });

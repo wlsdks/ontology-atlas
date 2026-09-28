@@ -5,9 +5,8 @@ import { withBasePath } from '@/shared/lib/base-path';
 import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion';
 
 /**
- * The character accompanies an actual pending operation. Its parent owns the
- * status words and cancellation; this decorative mark never claims READ or
- * SUCCESS. Only the first four native 64px walking poses participate in WAIT.
+ * Decorative company for a real pending operation; the parent owns the status words and
+ * cancellation, and the mark never claims success.
  */
 export function BrandWaitingMark({
   active,
@@ -27,8 +26,8 @@ function ActiveWaitingMark({ initialVisibility }: { initialVisibility: 'observed
   useEffect(() => {
     const mark = ref.current;
     if (!mark || reducedMotion) return;
-    // Without a visibility observer, keep the same static character rather than
-    // running a dance we cannot stop when its surface leaves the viewport.
+    // Without a visibility observer it stays still rather than run a dance it cannot stop off
+    // screen.
     if (typeof IntersectionObserver === 'undefined') {
       mark.dataset.waitingMotion = 'still';
       return;

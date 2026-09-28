@@ -19,16 +19,9 @@ export interface ChangedDocument {
 }
 
 /**
- * The uncommitted changes, **read as documents** (owner direction B, 2026-09-19).
- *
- * The right column used to be a git client's inside: a list grouped by kind with a group
- * label over a single row, a header repeating the left column's row, and a patch drawn as
- * `+`/`-` lines in a terminal face floating on the page ground. Owner: *"this is really
- * hard to look at"*, *"the design itself is poor"*. An ontology document is prose, and
- * what a person judges here is whether its meaning changed for the better — so the pane
- * now reads like the document itself: one header naming the concept, the changed documents
- * as a chip strip to switch between, the whole document in the reading face with the
- * changed lines marked in place, and the document's one destructive door at its foot.
+ * The uncommitted changes read as documents, since a person judges whether meaning changed:
+ * a header naming the concept, a chip strip of changed documents, and the whole document in
+ * the reading face with changed lines marked in place.
  */
 export function PendingDocumentPane({
   t,
@@ -37,6 +30,7 @@ export function PendingDocumentPane({
   others,
   summary,
   hunks,
+  hunksTooLarge,
   selectedPath,
   setSelectedPath,
   stagedOutsideCount,
@@ -51,6 +45,7 @@ export function PendingDocumentPane({
   summary: string;
   /** The hunk diff already read for the whole vault; the reader's fallback when the whole document cannot be read. */
   hunks: readonly AtlasGitDiffFile[];
+  hunksTooLarge: boolean;
   selectedPath: string | null;
   setSelectedPath: (path: string | null) => void;
   stagedOutsideCount: number;
@@ -64,11 +59,7 @@ export function PendingDocumentPane({
     ],
     [documents, others],
   );
-  /*
-   * Default: the first document whose lines changed. A newly created document has no lines
-   * to compare, and opening on it would show a whole document with nothing marked — the
-   * "empty pane nobody asked for" the old default already avoided.
-   */
+  // Opens on the first document whose lines changed; a new document has nothing to mark.
   const fallbackPath =
     all.find((doc) => (hunks.find((h) => h.path === doc.entry.path)?.lines.length ?? 0) > 0)?.entry.path ??
     all[0]?.entry.path ??
@@ -127,12 +118,8 @@ export function PendingDocumentPane({
       {shown ? (
         <div className="flex min-h-0 flex-1 flex-col">
           {/*
-           * The door rides in the reader's header, beside the path and the +/− counts.
-           * Under the whole document it sat where nobody looks and read as a footnote
-           * rather than a control (2026-09-21); the header is where the eye already is,
-           * and it names the same document the counts do. Keyed by document, because an
-           * armed confirm must not survive a chip change and re-aim at another document
-           * (interaction seat, 2026-09-19).
+           * The door rides in the reader's header. Keyed by document, or an armed confirm
+           * would survive a chip change and re-aim at another document.
            */}
           <DocumentChangeReader
             key={shown.entry.path}
@@ -140,6 +127,7 @@ export function PendingDocumentPane({
             vaultPath={vaultPath}
             document={shown}
             fallback={hunks.find((h) => h.path === shown.entry.path) ?? null}
+            fallbackTooLarge={hunksTooLarge}
             action={discard(shown)}
           />
         </div>
@@ -163,23 +151,17 @@ function fileName(path: string): string {
 }
 
 /**
- * One document, whole, in the reading face, with its changed lines marked where they are.
- *
- * git's unit is the line, so each source line is one block: a heading, a list item, a
- * paragraph, or a row of the frontmatter box. An added line sits on the success tint; a
- * removed line sits on the danger tint and is struck through, still readable — what was
- * taken away is part of the judgement. Unchanged lines wear the ordinary reading ink. No
- * `+`, no `-`, no monospace face for prose: the terminal grammar was the complaint.
- *
- * The whole document comes from `git_document_diff` (the file with its changes, every line
- * as context). When that read is unavailable (the web, a stub, a failed read) the hunk
- * diff already on screen is drawn instead, so the pane never goes blank.
+ * One document, whole, in the reading face: each source line is one block, added lines on
+ * the success tint and removed lines struck through on the danger tint, still readable.
+ * The document comes from `git_document_diff`; when that read is unavailable the hunk diff
+ * already on screen is drawn, so the pane never goes blank.
  */
 export function DocumentChangeReader({
   t,
   vaultPath,
   document,
   fallback,
+  fallbackTooLarge = false,
   source,
   action = null,
   heading = null,
@@ -188,24 +170,16 @@ export function DocumentChangeReader({
   vaultPath: string | null;
   document: ChangedDocument;
   fallback: AtlasGitDiffFile | null;
+  fallbackTooLarge?: boolean;
   /** A commit hash to read that commit's change of the document; absent = uncommitted. */
   source?: string;
   /** This document's own door, drawn in the header beside its path and counts. */
   action?: React.ReactNode;
-  /**
-   * A section label drawn in place of the document's name, where a card right above already
-   * names the concept (a step's concepts lens): the reader then opens the way the sections around
-   * it do, instead of printing the name a second time. The document's own first heading, which
-   * repeats that name, stays hidden either way.
-   */
+  /** A section label drawn instead of the document's name when a card above already names it. */
   heading?: string | null;
 }) {
   const { entry, label, kind } = document;
-  /*
-   * `undefined` = not read yet, `null` = the whole document is unavailable (no folder, no
-   * bridge, a refused read), otherwise the document with its changes. Without a folder the
-   * effect never runs and the fallback is drawn from the first render.
-   */
+  // `undefined` = not read yet, `null` = unavailable (no folder, no bridge, a refused read).
   const [whole, setWhole] = useState<AtlasGitDiffFile | null | undefined>(undefined);
   /** The document is past the command's ceiling, so its hunks are what there is to draw. */
   const [tooLarge, setTooLarge] = useState(false);
@@ -231,30 +205,16 @@ export function DocumentChangeReader({
   }, [vaultPath, entry.path, entry.renamedFrom, source]);
 
   const file = whole ?? fallback;
-  /*
-   * Two different sentences, because they are two different facts: the document is longer
-   * than one pane may carry, or this screen could not read it whole at all (the web, a
-   * refused read). Either way what is drawn is the same hunks, and the header says which.
-   */
+  // Both draw hunks, but the header says which: too long for one pane, or unreadable whole.
   const longDocument = tooLarge && fallback !== null;
   const partial = !longDocument && (whole === null || !vaultPath) && fallback !== null;
-  /*
-   * Only a concept document is prose. A file that rides along in the commit — an ignore
-   * file, a config — is characters, and reading it as Markdown misnames them: an ignore
-   * file's first line is a comment (`# Serena MCP project cache`), and the prose reader drew
-   * it as the document's title. Such a file has no front matter either; its leading `---`,
-   * if any, is three hyphens.
-   *
-   * An empty kind is no kind (round four, 2026-09-25): a step's file entry can carry `""`
-   * for a non-concept file, and `!== null` let `config/atlas.json` read as prose in the
-   * document font, labelled "Edited document".
-   */
+  // Only a concept document is prose; an ignore file's `#` line is not a title and its `---`
+  // is not front matter. A step's file entry may carry kind `""`, which is no kind.
   const isDocument = Boolean(kind);
   const { frontmatter, body, lines, frontmatterChanged, firstHeadingIndex } = useMemo(() => {
     const all = file?.lines ?? [];
     const split = isDocument ? splitFrontmatter(all) : { frontmatter: [] as Line[], body: [...all] };
-    // The body's first heading repeats the header's name; drawn twice at the same size,
-    // 280px apart, it was the pane's second mass (lead seat).
+    // The body's first heading repeats the header's name, so it is not drawn.
     const firstHeading = split.body.findIndex((line) => /^#{1,3}\s+/.test(line.text));
     return {
       ...split,
@@ -269,30 +229,20 @@ export function DocumentChangeReader({
   return (
     <article
       data-testid="atlas-git-diff-pre"
-      /*
-       * Focusable so a long document scrolls by keyboard and Tab from the chips lands on
-       * the document before it lands on the destructive door (interaction seat). Below `xl`
-       * the columns stack, and the reader keeps the evidence cap the old patch had.
-       */
+      // Focusable so a long document scrolls by keyboard, and Tab reaches it before the
+      // destructive door.
       tabIndex={0}
       aria-label={label}
       className="git-fade-in flex min-h-0 flex-1 flex-col overflow-y-auto px-5 py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]"
     >
       {/*
-        One reading measure for the whole reader — header, door, box and body — left-anchored
-        at every width (responsive seat): at 1920 the marked sentence ran ~145 characters
-        across the column; `--measure-doc-column` is the measure the Library's documents read
-        at. The header used to span the column while the text stopped at the measure, so the
-        discard door stood 366px right of the last word it acted on (review 2026-09-25); now
+        One reading measure for header, door, box and body, left-anchored at every width, so
         the door's right edge is the text's right edge.
       */}
       <div className="flex w-full max-w-[var(--measure-doc-column)] flex-col gap-4">
       <header className="flex flex-none flex-col gap-1">
-        {/* The concept's name wins the pane (lead seat) when the pane is the uncommitted
-            change: display size, so the largest thing here is the subject, not the metadata
-            box. Inside a step the step's own headline holds the display step, and a document
-            is one part of it, so its name steps down to a panel title (review 2026-09-25:
-            two 23px headlines on one screen, and the selection was neither). */}
+        {/* Display size for the uncommitted change; inside a step, whose headline holds the
+            display step, the name steps down to a panel title. */}
         {heading ? (
           <h3 className="text-label text-[color:var(--color-text-tertiary)]">{heading}</h3>
         ) : (
@@ -307,10 +257,7 @@ export function DocumentChangeReader({
           </h2>
         )}
         <p className="flex min-w-0 flex-wrap items-baseline gap-x-2 font-mono text-caption text-[color:var(--color-text-quaternary)]">
-          {/* The path, unless it is the name already shown above it — a file at the folder's
-              root would otherwise read its own name twice, at two sizes, in two lines. */}
-          {/* Inside a step the file chooser's highlighted row above already prints the path,
-              so the reader does not print it a second time (round three, 2026-09-25). */}
+          {/* The path, unless the name above or the step's file chooser already prints it. */}
           {entry.path === label || source ? null : <span className="min-w-0 break-all">{entry.path}</span>}
           <span className="text-[color:var(--color-text-tertiary)]">
             {t(statusKey(entry.status, isDocument))}
@@ -325,23 +272,17 @@ export function DocumentChangeReader({
           </span>
 
         </p>
-        {/* The door stands under the metadata it acts on, left-aligned in the column's
-            full width: the same slot and card the restore confirm uses. Floated right in
-            the metadata row, its confirm opened as a 424px card detached from both the
-            door and the sentence it answers (2026-09-25 sweep). */}
+        {/* Under the metadata it acts on, in the same slot and card as the restore confirm. */}
         {action ? <div className="mt-1 flex w-full flex-none flex-col">{action}</div> : null}
       </header>
 
-      {lines.length === 0 ? (
-        <p className="text-label leading-prose text-[color:var(--color-text-quaternary)]">{t("diffEmpty")}</p>
+      {lines.length === 0 && (whole !== undefined || !vaultPath) ? (
+        <p className="text-label leading-prose text-[color:var(--color-text-quaternary)]">
+          {t(fallbackTooLarge ? "diffTooLarge" : "diffEmpty")}
+        </p>
       ) : null}
 
-      {/*
-        What follows is a fragment, not the document, and that changes the meaning of every
-        line below it — so it is said in the reader's own voice above the body, in the same
-        cut grammar the skipped stretches use, rather than as a fourth token in the metadata
-        line where it read as one more number (measured on screen, 2026-09-19).
-      */}
+      {/* A fragment changes the meaning of every line below, so it is said above the body. */}
       {longDocument || partial ? (
         <p
           data-testid="atlas-git-doc-fragment"
@@ -367,9 +308,7 @@ export function DocumentChangeReader({
             ))}
           </section>
         ) : (
-          /* Nothing in the front matter changed: one quiet line, opened on demand. Drawn
-             as a bordered box it was the brightest, largest mass on the pane — the eye went
-             to an unchanged uid before it found the one changed sentence (lead seat). */
+          /* Unchanged front matter: one quiet line opened on demand, so it never outweighs the change. */
           <Disclosure
             summary={t("docReaderInfoBoxUnchanged")}
             className="flex-none"
@@ -431,13 +370,8 @@ function MarkLabel({ t, kind }: { t: Translator; kind: Line["kind"] }) {
 }
 
 /**
- * The inline marks an ontology document actually carries, drawn rather than shown raw.
- *
- * Measured in the installed app on a real vault (2026-09-19): a document's body read
- * `**receive, install, attach**` and `` `/agents/` `` with the asterisks and backticks on
- * screen. A person judging a meaning should read the meaning, not its markup. Only the three
- * marks a vault document uses are handled — strong, code, and a link's text — and anything
- * else stays exactly as written, because a reader that guesses is worse than one that shows.
+ * The inline marks a vault document uses (strong, code, a link's text), drawn rather than
+ * shown raw; anything else stays as written, since a guessing reader is worse.
  */
 function inlineMarkdown(text: string): React.ReactNode {
   const pattern = /(\*\*[^*]+\*\*|`[^`]+`|\[\[[^\]]+\]\]|\[[^\]]+\]\([^)]*\))/g;
@@ -461,8 +395,7 @@ function inlineMarkdown(text: string): React.ReactNode {
         </code>,
       );
     } else if (piece.startsWith("[[")) {
-      // A wikilink names another document; its target is a concern of the map, not of this
-      // reader, so the name is what is drawn.
+      // A wikilink's target belongs to the map; this reader draws its name.
       out.push(
         <span key={key} className="text-[color:var(--color-text-primary)]">
           {(piece.slice(2, -2).split("|").pop() ?? "").trim()}
@@ -547,11 +480,7 @@ function ProseLine({
       </Tag>
     );
   }
-  /*
-   * A list item, bulleted or numbered. A numbered item keeps its own number — it is the
-   * document's, and renumbering someone's list while showing them a change would be a small
-   * lie — and only the marker moves into its own column so the text lines up.
-   */
+  // A list item keeps the document's own number; only the marker moves into its own column.
   const item = /^\s*([-*]|\d+[.)])\s+(.*)$/.exec(text);
   if (item) {
     const bullet = item[1] === "-" || item[1] === "*" ? "•" : item[1];

@@ -18,6 +18,7 @@ import { isDiagnosticStderr } from './acp-trouble';
 import { readSlashCommands, type AcpSlashCommand } from './slash-commands';
 import { hasVaultMcpServer, VAULT_MCP_SERVER_NAME, vaultWriteConsentOn } from './vault-mcp-server';
 import { latestSession, orderSessionsByRecency } from './session-recency';
+import { keepToolOutput, type ToolOutputEvidence } from './tool-output';
 import {
   applyCurrentMode,
   createAcpClient,
@@ -60,18 +61,12 @@ export type AcpEvent =
       title: string;
       toolKind: string;
       status: string;
-      /**
-       * The raw arguments the tool received. **Which node was touched exists only here**
-       * (`tool-targets.ts`). It used to be discarded, so a tool row could say "read a concept"
-       * without being able to say which one.
-       */
+      /** The only record of which node was touched (`tool-targets.ts`). */
       rawInput?: unknown;
-      /**
-       * What the tool answered. **How much came back exists only here**
-       * (`tool-outcome.ts`): a line that cannot say the search found nothing leaves a
-       * confident wrong answer with no visible contradiction.
-       */
+      /** The only record of how much came back (`tool-outcome.ts`); large ones are previews. */
       rawOutput?: unknown;
+      /** A trimmed answer's analysis rows, held only until its turn is captured. */
+      outputEvidence?: ToolOutputEvidence;
     }
   | {
       kind: 'notice';
@@ -454,7 +449,7 @@ export function useAcpSession({
    * ⚠️ When the open turn last spoke, so the screen can tell "still working" from "stopped
    * answering". `prompt` is deliberately given no timeout, so a turn that ends without a result
    * would otherwise hold the composer shut forever with nothing on screen saying why
-   * (`turn-liveness.ts`, measured in the installed rc.11 build).
+   * (`turn-liveness.ts`).
    */
   const [lastTurnUpdateAt, setLastTurnUpdateAt] = useState<number | null>(null);
   /*
@@ -471,9 +466,9 @@ export function useAcpSession({
    * interruption left a half-built npx cache that made it never start again (self-healing lives on
    * the Rust side, `acp.rs`). So this indicator is not decoration; it removes that accident's trigger.
    *
-   * `mb` is the measured size the cache directory has grown to (`npx-download-progress:<mb>` on
-   * `acp://notice`). The total size is unknown, so a percentage is **not invented** — it states only
-   * what has been received. While only the first notice has arrived, `mb` is `null`.
+   * `mb` is the measured size the cache directory has grown to (the `npx-download-progress:<mb>`
+   * notice). The total size is unknown, so a percentage is **not invented** — it states only what
+   * has been received. While only the first notice has arrived, `mb` is `null`.
    */
   const [download, setDownload] = useState<{ mb: number | null } | null>(null);
   const setStatusTracked = useCallback((next: AcpSessionStatus) => {
@@ -645,6 +640,13 @@ export function useAcpSession({
       stopReason,
       events: (index < 0 ? [] : eventsRef.current.slice(index)).map((event) => ({ ...event })),
     };
+    if (completion.events.some((event) => event.kind === 'tool' && event.outputEvidence)) {
+      updateEvents((previous) => previous.map((event) => {
+        if (event.kind !== 'tool' || !event.outputEvidence) return event;
+        const { outputEvidence: _handedOver, ...kept } = event;
+        return kept;
+      }));
+    }
     // Archival failure must not retry the prompt or turn a successful model
     // response into an ACP transport error. The caller owns save/retry UI.
     try {
@@ -654,7 +656,7 @@ export function useAcpSession({
     } catch (error) {
       keepDiagnostic(`analysis-archive: ${error instanceof Error ? error.message : String(error)}`);
     }
-  }, [keepDiagnostic]);
+  }, [keepDiagnostic, updateEvents]);
 
   /**
    * **The screen stops claiming a gate it no longer has.**
@@ -736,7 +738,11 @@ export function useAcpSession({
         push({ kind: 'thought', id: nextEventId(), text });
         return;
       }
+      const keptOutput = (rawOutput: unknown) =>
+        keepToolOutput(rawOutput, { evidence: Boolean(activeTurnRef.current?.observer) });
       if (kind === 'tool_call') {
+        // A call that arrives finished carries its answer here, not in a later update.
+        const kept = keptOutput(update.rawOutput);
         push({
           kind: 'tool',
           id: typeof update.toolCallId === 'string' ? update.toolCallId : nextEventId(),
@@ -744,9 +750,8 @@ export function useAcpSession({
           toolKind: typeof update.kind === 'string' ? update.kind : 'other',
           status: typeof update.status === 'string' ? update.status : 'pending',
           rawInput: update.rawInput,
-          // A call that arrives already finished carries its answer here rather than in a
-          // later update, and the row has to be able to say what came back either way.
-          rawOutput: update.rawOutput,
+          rawOutput: kept.rawOutput,
+          ...(kept.evidence ? { outputEvidence: kept.evidence } : {}),
         });
         return;
       }
@@ -758,10 +763,9 @@ export function useAcpSession({
         const nextToolKind = typeof update.kind === 'string' ? update.kind : null;
         const hasRawInput = update.rawInput !== undefined;
         const hasRawOutput = update.rawOutput !== undefined;
-        // claude-agent-acp sends streamed tool_use as a pending row first,
-        // and when input is complete, sends rawInput via **status-less** tool_call_update.
-        // Merging only the status leaves only the tool name on screen, while the exact target and map intent
-        // remain permanently empty. Overwrite existing fields with only the fields actually carried by the update.
+        const kept = hasRawOutput ? keptOutput(update.rawOutput) : null;
+        // The adapter sends a pending row, then its input in a status-less update: merge every
+        // field an update carries, not only its status.
         updateEvents((prev) =>
           prev.map((event) => {
             if (event.kind !== 'tool' || event.id !== id) return event;
@@ -771,7 +775,7 @@ export function useAcpSession({
               ...(nextTitle ? { title: nextTitle } : {}),
               ...(nextToolKind ? { toolKind: nextToolKind } : {}),
               ...(hasRawInput ? { rawInput: update.rawInput } : {}),
-              ...(hasRawOutput ? { rawOutput: update.rawOutput } : {}),
+              ...(kept ? { rawOutput: kept.rawOutput, outputEvidence: kept.evidence ?? undefined } : {}),
             };
           }),
         );
@@ -980,10 +984,8 @@ export function useAcpSession({
            * - `npx-download-done` — download finished; from here it is an ordinary "starting".
            */
           if (message.startsWith('npx-download-progress:')) {
-            // Builds the indicator here even if the first notice was missed — Rust assumes the first
-            // notice can go out before the subscription attaches and uses the progress notice as
-            // that safety net. The screen does not draw it outside "starting" (a render condition),
-            // so a late notice is harmless.
+            // The progress notice builds the indicator on its own, so a missed first notice costs
+            // nothing; it is drawn only while starting, so a late one is harmless.
             const mb = Number(message.slice('npx-download-progress:'.length));
             setDownload({ mb: Number.isFinite(mb) ? mb : null });
             /*

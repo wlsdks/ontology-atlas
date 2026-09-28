@@ -13,50 +13,27 @@ import type { TopologyNodeFocusModel } from "../lib/topology-node-focus";
 import type { NodeDatasheetDerivation } from "./use-node-datasheet-model";
 
 /**
- * Assembles the full-detail card model.
- *
- * **Why it is a separate hook (click-stall prescription, 2026-07-28).** The
- * model was being assembled on every map node click, while the surface that
- * draws it (`FullDetailCard`) does not render until the user opens full
- * detail. So **the most frequent interaction paid up front for the most
- * expensive derivation.** Measured (isolated Chromium, dogfood vault, one node
- * click): `buildConnections` ran **11 times** per click, 9 of them for this
- * closed surface. Those 9 carry
- *
- * - `buildFullDetailReachModel`'s **depth-3 BFS** over the whole graph,
- * - `countContainmentChildren` inside `buildFullDetailGroups`, run for **each**
- *   neighbour row (a full edge scan — neighbours × edges),
- * - the same `deriveCodeLocations` the popover already built.
- *
- * On a small vault this is invisible; as the vault grows this term eats the
- * whole click frame.
- *
- * Hence one contract: **while `open` is false the graph is never traversed.**
- * The open result is identical to before — nothing is deferred or
- * approximated. Opening the card assembles it synchronously in the same
- * render, so there is no "show a wrong value first, fix it later" failure mode.
- *
- * Regression guard: `use-full-detail-a1-model.test.ts` (closed → 0 traversals).
+ * Assembles the full-detail card model only while `open`: a closed card never traverses the graph,
+ * since the depth-3 reach BFS and per-row containment scans (neighbours × edges) otherwise run on
+ * every node click. The open result is unchanged and built in the same render. Guard: the colocated
+ * test.
  */
 export interface UseFullDetailA1ModelArgs {
-  /**
-   * Whether the full-detail card is actually on screen. While `false` the hook
-   * returns `null` immediately and performs no graph traversal.
-   */
+  /** While `false` the hook returns `null` with no traversal. */
   open: boolean;
   nodeFocus: TopologyNodeFocusModel | null;
   selectedOntologyNode: KnowledgeGraphNode | null;
   insight: { nodes: readonly KnowledgeGraphNode[]; edges: readonly KnowledgeGraphEdge[] } | null;
-  /** Session changeset baseline — the fallback when the datasheet has no verdict. */
+  /** The fallback when the datasheet has no verdict. */
   changedSlugs: ReadonlySet<string>;
-  /** Body of the opened document, rendered as markdown when present. */
+  /** Rendered as markdown when present. */
   nodeBody: { slug: string; raw: string; body: string } | null;
-  /** The vault document matching this node; its presence enables inline editing. */
+  /** Its presence enables inline editing. */
   nodeEditTarget: { vaultSlug: string } | null;
-  /** Whether a vault is loaded — read-only samples offer no edit action. */
+  /** Read-only samples offer no edit action. */
   vaultLoaded: boolean;
   onSaveExplanation: (next: string) => void | Promise<void>;
-  /** The freshness / last-edit verdicts the compact popover already made — never made twice. */
+  /** Verdicts the compact popover already made, never made twice. */
   datasheet: NodeDatasheetDerivation["v2DatasheetModel"];
 }
 
@@ -73,7 +50,6 @@ export function useFullDetailA1Model({
   datasheet,
 }: UseFullDetailA1ModelArgs) {
   return useMemo(() => {
-    // A closed surface never traverses the graph — this one line is the whole fix.
     if (!open) return null;
     if (!nodeFocus || !selectedOntologyNode || !insight) return null;
     const slug = nodeFocus.sourceSlug ?? selectedOntologyNode.id;
@@ -96,8 +72,7 @@ export function useFullDetailA1Model({
     const projectTitle = insight.nodes.find((n) => n.kind === "project")?.title ?? null;
     const loadedBody = nodeBody && nodeBody.slug === slug ? nodeBody.body : null;
     const bodyMarkdown = loadedBody ?? selectedOntologyNode.summary ?? null;
-    // Full detail has no evidence list either, so with no document of its own
-    // the link is relabelled as "the document that mentions it" rather than
+    // Without its own document the link is relabelled "the document that mentions it", not
     // dropped.
     const documentHref = nodeFocus.ownDocumentSlug
       ? buildDocsVaultHref({ slug: nodeFocus.ownDocumentSlug })
@@ -115,33 +90,25 @@ export function useFullDetailA1Model({
     return {
       node: {
         id: selectedOntologyNode.id,
-        // The header shows the short display title large and keeps the
-        // original as `fullTitle`, rendered only when the two differ.
+        // `fullTitle` renders only when it differs.
         title: nodeFocus.displayTitle,
         fullTitle: nodeFocus.title,
         kind: nodeFocus.kind,
         slug,
-        // The handoff chain uses the name the vault knows, not the manifest slug.
+        // The name the vault knows, not the manifest slug.
         ...(() => {
           const target = resolveNodeAgentTarget(selectedOntologyNode);
           return { agentSlug: target.ref, documented: target.documented };
         })(),
-        // Freshness has one source: the document mtime ramp (see
-        // `use-node-datasheet-model`). Judging it here from the session
-        // changeset baseline instead produced a sentence contradicting the
-        // datasheet on the same node — "changed 2 days ago" beside "unchanged
-        // for a while" for the same domains/catalog. Take the datasheet's
-        // verdict for the same node, and fall back to the old baseline only
-        // when there is none (different node, or no model built).
+        // Freshness has one source (`use-node-datasheet-model`): the datasheet's verdict for this
+        // node, else the session baseline, or the two surfaces contradict each other.
         fresh:
           datasheet?.nodeId === selectedOntologyNode.id
             ? datasheet.powered
             : changedSlugs.has(selectedOntologyNode.id),
         updatedAtLabel:
           datasheet?.nodeId === selectedOntologyNode.id ? datasheet.updatedAtLabel : null,
-        // Reuse the SAME fact from the compact panel's `v2DatasheetModel` for
-        // this selection: the baseline/heartbeat verdict for this node is never
-        // computed twice (same reason as the count-drift rule).
+        // The compact panel's fact for this selection, never computed twice.
         lastEditSubject:
           datasheet?.nodeId === selectedOntologyNode.id ? datasheet.lastEditSubject : null,
         mtimeConflict:
@@ -152,7 +119,7 @@ export function useFullDetailA1Model({
       codeLocations,
       breadcrumb: {
         projectTitle,
-        // The canonical totals — `renderProjects` used to double-count these.
+        // Canonical totals; `renderProjects` double-counted them.
         totalConcepts: insight.nodes.length,
         totalRelations: insight.edges.length,
       },

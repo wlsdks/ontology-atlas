@@ -3,13 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { GithubMark } from './github-mark';
 
 /**
- * What this test protects is not whether the mark looks good but **the premise the charter
- * decision rested on**.
- *
- * The mark is permitted because it is GitHub's own mark, unmodified, used to point at GitHub.
- * So two regressions would destroy that premise: ① the coordinates no longer being the
- * original, and ② the mark bringing its own colour (against the greyscale-plus-one-indigo
- * charter).
+ * The mark is allowed as GitHub's own, unmodified mark pointing at GitHub, so this pins the
+ * original coordinates and the absence of its own colour.
  */
 describe('GithubMark', () => {
   it('renders the unmodified Octicons mark-github-16 geometry', () => {
@@ -18,7 +13,7 @@ describe('GithubMark', () => {
     expect(svg).toHaveAttribute('viewBox', '0 0 16 16');
 
     const path = container.querySelector('path[data-mark-part="octicon"]');
-    // Start and end of the original path — scaling, simplifying or retouching trips this.
+    // Start and end of the original path; scaling, simplifying or retouching trips this.
     expect(path?.getAttribute('d')).toMatch(/^M8 0c4\.42 0 8 3\.58 8 8/);
     expect(path?.getAttribute('d')).toMatch(/0-4\.42 3\.58-8 8-8Z$/);
   });

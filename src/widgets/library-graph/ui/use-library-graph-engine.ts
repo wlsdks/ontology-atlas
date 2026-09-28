@@ -13,6 +13,7 @@ import {
   LIBRARY_CARD_MAX_WIDTH,
   type LibraryGraphCardSide,
 } from "../model/library-graph-card";
+import { maxOf } from "../model/library-graph-extremes";
 import { easeMotion, type LayoutPoint } from "../model/library-graph-layout";
 import type { FlowLayout, FlowWorld } from "../model/library-flow-layout";
 import { ISLANDS_MIN_MARKS, type IslandsLayout } from "../model/library-islands-layout";
@@ -73,60 +74,35 @@ import {
 import { readLibraryGraphInk, type LibraryGraphInk } from "../render/library-graph-ink";
 
 /**
- * **The engine behind the library canvas** — the clock, the pointer, and the paint.
+ * The library canvas's clock, pointer and paint, kept apart from `LibraryGraph.tsx` so the
+ * loop never re-runs when the component's contract changes.
  *
- * It lives beside `LibraryGraph.tsx` rather than inside it for the reason the map splits
- * `use-topology-loop` out of `OntologyMap`: the component is the screen's contract with
- * the Library — its props, its caption row, its legend and its accessibility description —
- * while everything here is a loop that must not re-run when that contract is edited. The
- * split also keeps the two files apart in a diff.
- *
- * ## Everything reads through refs, and that is deliberate
- *
- * A frame at 60fps cannot afford a React render, so the simulation, the view, the pointer
- * state and the pointed-at node all live in refs and the loop reads them. React state is
- * kept for exactly the three things the DOM has to say out loud: what is hovered (the live
- * region announces it), what has focus, and the picture's aspect (a canvas has no DOM, so a
- * claim about what it drew is otherwise unfalsifiable).
- *
- * ## The five gestures
+ * A 60fps frame cannot afford a React render, so simulation, view and pointer live in refs;
+ * React state holds only what a DOM surface reads: the picture kind and aspect, the islands
+ * list, the keyboard walk order and whether the view is framed.
  *
  * | Gesture | What happens |
  * |---|---|
- * | press and move on a mark | the node follows the pointer, pinned, while the springs pull its neighbours after it; released with a short capped inertia |
- * | press and move on empty canvas | the view pans, 1:1, against the previous sample |
- * | wheel | zoom about the pointer, bounded to half and four times the fit |
- * | two fingers | pinch zoom about the midpoint, same bounds |
+ * | press and move on a mark | the node follows the pointer, pinned; released with capped inertia |
+ * | press and move on empty canvas | the view pans 1:1 |
+ * | wheel | zoom about the pointer, within the zoom bounds |
+ * | two fingers | pinch zoom about the midpoint |
  * | double-click empty canvas | fit, animated |
  *
- * Which of the first two a gesture *is* is decided **once, at pointerdown**, and never
- * re-decided: the map recorded that deciding per move flips the gesture's identity the
- * moment a hand grazes a mark's edge.
+ * Drag or pan is decided once at pointerdown, or a hand grazing a mark's edge flips it.
  */
 
 /**
- * Distance the pointer must travel before a press becomes a drag.
- *
- * 7px is the map's measured value (`--map-hysteresis-px`). It is a literal here
- * rather than a read of that token because the token is scoped to the topology surface and
- * borrowing it would make this canvas a second consumer of a value the map is free to tune
- * for its own reasons; the number is the same because a person's hand is the same.
+ * Travel before a press becomes a drag: the map's measured `--map-hysteresis-px`, as a
+ * literal because that token is scoped to the topology surface.
  */
 const DRAG_THRESHOLD_PX = 7;
 
-/**
- * What the fit reserves on every side, in CSS px.
- *
- * ⚠️ It was derived — the widest mark plus its own name's line — because both of those
- * followed the canvas. Neither does now (`libraryMarkRadii` is a fixed world scale), so the
- * margin is the simulation's own constant and the same at every window size, which is what
- * makes one folder one framing.
- */
+/** What the fit reserves on every side, in CSS px; constant, so one folder has one framing. */
 const FIT_PADDING = LIBRARY_FIT_PADDING;
 /**
- * The world the flow layout is laid in: the pixel box seen through the zoom ceiling, less
- * the fit padding, and a little smaller still so the fit lands **on** the ceiling — which
- * is what draws a small folder's widest mark at `LIBRARY_MAX_MARK_PX` on every window.
+ * The flow layout's world: the padded pixel box seen through the zoom ceiling, shrunk a
+ * little so a small folder's fit lands on the ceiling (`LIBRARY_MAX_MARK_PX`).
  */
 function flowWorld(box: { width: number; height: number }, ceiling: number): FlowWorld {
   const shrink = 0.9;
@@ -136,10 +112,7 @@ function flowWorld(box: { width: number; height: number }, ceiling: number): Flo
     ceiling,
   };
 }
-/**
- * The world the islands overview is laid in: the pixel box less the fit padding, and a
- * little smaller still, so the fit lands at 1:1 and a page dot is drawn at its own size.
- */
+/** The islands overview's world: the padded box shrunk a little, so the fit lands at 1:1. */
 function islandsWorld(box: { width: number; height: number }): { width: number; height: number } {
   const shrink = 0.94;
   return {
@@ -165,9 +138,8 @@ function islandAt(
   );
 }
 /**
- * Writes the bodies' places back onto the picture: each island's centre, and every dot
- * at its offset from that centre, so the simulation's nodes (the position store every
- * frame reads) follow the islands wherever the physics or a hand has put them.
+ * Writes island bodies back onto the picture: each island's centre, and each dot at its
+ * offset, since the simulation's nodes are the position store every frame reads.
  */
 function placeIslandBodies(
   sim: LibrarySimulation,
@@ -199,21 +171,16 @@ const ISLAND_PAGE_LABEL_MIN_PX = 10;
 /** On the overview a file's name waits for a real zoom: a page dot this wide, not merely named. */
 const ISLAND_SOURCE_LABEL_MIN_PX = 36;
 /**
- * An island whose disc spans this share of the view's shorter side has been zoomed into,
- * and opens; so does any island aimed at once the camera is at its ceiling, which a small
- * island reaches first — measured 2026-09-18: at the 3.6× ceiling the largest topic of a
- * 3,424-mark folder spans 360px of a 648px view and a ten-page island 180px.
+ * An island spanning this share of the view's shorter side has been zoomed into and opens;
+ * a small island opens when aimed at from the zoom ceiling instead.
  */
 const ISLAND_OPENS_AT_VIEW_SHARE = 0.45;
 /** An opened island zoomed out to this share of its fit scale gives way to the map. */
 const ISLAND_LEAVES_BELOW_FIT = 0.6;
 /**
- * After a wheel-out returned the map, further wheel-out steps of the same gesture are the
- * return's, not the map's. A wheel is a stream, and the return consumed it: measured on the
- * 3,424-mark folder (dev, 2026-09-19) the two steps that followed the return took the camera
- * off the map's fit to a 0.46 scale, a small archipelago standing in the middle of a dark
- * canvas, the one thing the return exists to avoid. For this long after a wheel return the
- * map ignores wheel-out; wheel-in, a press or a drag still take the camera at once.
+ * After a wheel-out returns the map, further wheel-out of the same stream is ignored this
+ * long, or it zooms the map past its fit into a small archipelago; wheel-in, press and drag
+ * still act at once.
  */
 const WHEEL_RETURN_SETTLE_MS = 700;
 /**
@@ -224,8 +191,7 @@ const ISLAND_DOT_PRESS_MIN_PX = 8;
 
 /**
  * A folded file band (`FlowColumn.grid` above one) names its files only this far past the
- * source threshold: its squares stand 24px apart at the ceiling, which is no room for a
- * name, so the names arrive once the person has zoomed the band to about 60px a row.
+ * source threshold: 24px squares leave no room for a name until about 60px a row.
  */
 const FOLDED_LABEL_MIN_SCALE = SOURCE_LABEL_MIN_SCALE * 3.5;
 
@@ -258,10 +224,8 @@ interface PointerState {
 }
 
 /**
- * Maps an admitted Library work target to the graph's existing node address.
- *
- * This is intentionally stricter than a label match: an unknown, missing, or concept target
- * produces no mark. A graph overlay must never make a model mention look like a file read.
+ * Maps a Library work target to an existing page or source node, stricter than a label
+ * match, or a model's mention would look like a file read.
  */
 function activityNodeId(event: LibraryWorkEvent, graph: LibraryGraph): string | null {
   if (!event.target) return null;
@@ -270,9 +234,8 @@ function activityNodeId(event: LibraryWorkEvent, graph: LibraryGraph): string | 
 }
 
 /**
- * Resolves the finite overlay from epoch receipts, separately from the rAF paint clock.
- * `at` is `Date.now()` by contract; `performance.now()` would make every receipt appear
- * permanently fresh after a page reload.
+ * Resolves the finite overlay from epoch receipts, apart from the rAF clock. Each `at`
+ * is an epoch `Date.now()`, or every receipt reads as fresh after a reload.
  */
 export function libraryGraphActivityMarks(
   activity: LibraryWorkActivity | undefined,
@@ -377,12 +340,7 @@ export interface LibraryGraphEngine {
   onDoubleClick: (event: ReactPointerEvent<HTMLCanvasElement>) => void;
   /** Frames the whole picture again. The corner control and a double-click both call it. */
   fitToView: () => void;
-  /**
-   * Whether the camera is already where {@link LibraryGraphEngine.fitToView} would put it.
-   *
-   * The surface uses it to stop offering a press that could only repaint the same pixels —
-   * see `isSameView`.
-   */
+  /** Whether the camera already sits where {@link LibraryGraphEngine.fitToView} would put it (`isSameView`). */
   framed: boolean;
   /** The settled picture's width over its height, for `data-picture-aspect`. */
   pictureAspect: number | null;
@@ -391,16 +349,11 @@ export interface LibraryGraphEngine {
   /** The islands of the overview, largest first, for the keyboard to step over; empty on any other picture. */
   islands: readonly LibraryIslandPick[];
   /**
-   * The marks in the picture's reading order — column by column, top to bottom — for the
-   * keyboard to step over. Empty when the picture has no columns (force, islands), and the
-   * caller falls back to the graph's own order. Before this the walk followed the model:
-   * three ArrowRights from the top landed on the seventh square from the top (2026-09-19).
+   * The marks in reading order, column by column, top to bottom, for the keyboard; empty
+   * without columns, and the caller falls back to graph order.
    */
   walkOrder: readonly string[];
-  /**
-   * Places the open card now, synchronously — what a layout effect calls on open, passing
-   * the card's own id because this hook's own state ref is not filled until after it.
-   */
+  /** Places the open card synchronously; a layout effect passes the id, since the state ref fills later. */
   placeCard: (openNow?: string | null) => void;
 }
 
@@ -435,19 +388,15 @@ export function useLibraryGraphEngine({
   graph: LibraryGraph;
   canvasRef: RefObject<HTMLCanvasElement | null>;
   /**
-   * `flow` (default since 2026-09-17): sources → pages → concepts in columns, still, the
-   * same on every visit; a press on a mark opens its card, a drag pans. `force`: the live
-   * simulation with draggable marks, kept for the map's reasons and for comparison.
+   * Flow is still columns, sources → pages → concepts, where a press opens a card and a
+   * drag pans; force is the live simulation with draggable marks.
    */
   layout?: "flow" | "force";
   /** The names of the two islands that are not a concept. */
   islandLabels?: { unsorted: string; unread: string };
   /** The page's locale; the renderer groups an island's count with it. */
   locale?: string;
-  /**
-   * Whether the graph is the whole folder. An opened island is not: it is drawn as columns
-   * however many marks it holds, because the person asked for that island by name.
-   */
+  /** Whether the graph is the whole folder; an opened island is drawn as columns at any size. */
   overview?: boolean;
   /** The island the keyboard stands on; its rim wears the focus ring. */
   focusedIslandId?: string | null;
@@ -456,13 +405,9 @@ export function useLibraryGraphEngine({
   hoveredId: string | null;
   focusedId: string | null;
   /**
-   * A set of node ids a **sentence elsewhere on the screen** is about, or null.
-   *
-   * The home strip's `1 source changed` clause names marks rather than moving them
-   * (`docs/DECISIONS.md`, 2026-09-08 "The Library graph stands still"), so it arrives here
-   * as the same neighbourhood a pointer would hold: these keep their ink and the rest of
-   * the folder ramps down to quaternary. A pointer or the keyboard still wins over it —
-   * pointing somewhere else answers "and what about that one" without losing the clause.
+   * Node ids a sentence elsewhere on screen is about (`docs/DECISIONS.md`, "The Library
+   * graph stands still"), held like a pointer's neighbourhood; a pointer or the keyboard
+   * still wins.
    */
   highlight?: ReadonlySet<string> | null;
   activeLabel: string | null;
@@ -470,20 +415,13 @@ export function useLibraryGraphEngine({
   activity?: LibraryWorkActivity;
   visible?: boolean;
   /**
-   * The mark whose card is open, or null.
-   *
-   * It is the widget's state rather than this loop's, because the card is a DOM surface
-   * with content, a keyboard path and an Escape — but the loop is what holds the ego
-   * focus for it, what makes its citations flow, and what keeps it beside its mark as the
-   * picture or the box moves.
+   * The mark whose card is open. The widget owns it as a DOM surface; the loop holds its
+   * focus, flows its citations and keeps it beside its mark.
    */
   cardId?: string | null;
   /** The open card's element. Read for its measured size, never written to — see `placeCard`. */
   cardRef?: RefObject<HTMLElement | null>;
-  /**
-   * Where the card should stand, every time that changes — including once per frame while
-   * the picture or the box is moving. The caller writes it onto its own element.
-   */
+  /** Where the card should stand, on every change, per frame while moving; the caller writes it. */
   onCardPlaced?: (box: LibraryGraphCardBox | null) => void;
   onHover: (id: string | null) => void;
   /** A press, or `Enter`: the mark answers with a card beside it, and stays where it is. */
@@ -507,20 +445,14 @@ export function useLibraryGraphEngine({
   const islandsRef = useRef<IslandsLayout | null>(null);
   /** The island under the pointer on the overview, for its rim and the cursor. */
   const hoveredIslandRef = useRef<string | null>(null);
-  /**
-   * The islands as bodies (`library-islands-physics.ts`): they arrive, they can be carried,
-   * and at rest they are still. Every dot keeps its offset from its island's centre, so a
-   * body moving carries its dots.
-   */
+  /** The islands as bodies (`library-islands-physics.ts`); each dot keeps its offset, so a body carries its dots. */
   const islandFieldRef = useRef<IslandField | null>(null);
   /** Whether the last picture laid was the whole folder, for telling a return from an opened island apart from a growing folder. */
   const lastOverviewRef = useRef(true);
   const islandOffsetsRef = useRef<Map<string, { island: string; dx: number; dy: number }>>(new Map());
   /**
-   * The island the last wheel zoom-in was aimed at, resolved at wheel time in world
-   * units; null after a zoom-out. Resolved then, not per frame, because the camera's
-   * clamp near the picture's edge slides the view under a fixed screen point, and the
-   * island under the pointer at the end of a zoom is not always the one it began on.
+   * The island a wheel zoom-in aimed at, resolved at wheel time; null after a zoom-out. Not
+   * per frame, because the edge clamp slides the view under the pointer mid-zoom.
    */
   const zoomAimRef = useRef<string | null>(null);
   /** When a wheel-out last returned the map, in event time; wheel-out is ignored for a beat after. */
@@ -536,12 +468,9 @@ export function useLibraryGraphEngine({
   /** The scale the fit last asked for; what "zoomed out past the fit" is measured against. */
   const fitScaleRef = useRef(1);
   /**
-   * **A picture changing under the same marks travels, it does not cut.** Opening an island
-   * keeps every mark on it and lays it again as columns; closing one lays the map again.
-   * The marks that are on both pictures ease from where they stood to where they stand
-   * now over one `--motion-settle`, while the ones leaving fade as ghosts and the ones
-   * arriving fade in, and the camera eases to the new fit — one input, one event, every
-   * part starting on the same frame. Reduced motion snaps, as the camera does.
+   * A picture changing under the same marks travels over one `--motion-settle` rather than
+   * cutting: shared marks ease, leavers fade as ghosts, arrivals fade in and the camera
+   * eases, all from one frame. Reduced motion snaps.
    */
   const travelRef = useRef<{ from: Map<string, LayoutPoint>; since: number } | null>(null);
   const pick = (island: IslandsLayout["islands"][number]): LibraryIslandPick => ({
@@ -559,10 +488,7 @@ export function useLibraryGraphEngine({
   const islandReportRef = useRef<string[] | null>(null);
   /** Pages with at least one unverified citation, for the islands' stale counts. */
   const stalePagesRef = useRef<Set<string>>(new Set());
-  /**
-   * Which picture the folder gets: the flow names everything up to `ISLANDS_MIN_MARKS`
-   * marks; past that the overview is islands. The force picture stays what it was.
-   */
+  /** Flow up to `ISLANDS_MIN_MARKS` marks, islands past that; `force` stays force. */
   const pictureRef = useRef<"flow" | "force" | "islands">(layout);
   const localeRef = useRef(locale);
   useEffect(() => {
@@ -578,43 +504,20 @@ export function useLibraryGraphEngine({
     layoutRef.current = layout;
   }, [layout]);
   const viewRef = useRef<LibraryGraphView>({ scale: 1, x: 0, y: 0 });
-  /**
-   * Whether the view is still following the picture, and whether it has caught up.
-   *
-   * One object rather than two refs: `converged` is only ever meaningful while `on` is
-   * true, and the loop reads both in the same breath.
-   */
+  /** Whether the view follows the picture, and whether it has caught up; `converged` means nothing while off. */
   const autoFitRef = useRef({ on: true, converged: false });
   const inkRef = useRef<LibraryGraphInk | null>(null);
   /** Screen-space positions of the last painted frame — what the pointer is tested against. */
   const screenRef = useRef<Map<string, LayoutPoint>>(new Map());
   const radiiRef = useRef<Map<string, number>>(new Map());
   /**
-   * **The camera's ceiling, which is this folder's own** — see `libraryZoomMax`.
-   *
-   * It is a ref rather than a constant because the cap is stated as a drawn mark
-   * ({@link LIBRARY_MAX_MARK_PX}) and the widest mark is a fact about the folder: a wiki of
-   * one-source write-ups may come closer than one with a ten-source hub, and neither may
-   * draw a mark wider than a map node. Rebuilt beside `radiiRef`, from the same map.
+   * This folder's zoom ceiling (`libraryZoomMax`): a cap on the drawn widest mark, so it
+   * depends on the folder. Rebuilt beside `radiiRef`.
    */
   const zoomMaxRef = useRef(LIBRARY_ZOOM_MAX);
-  /**
-   * The same radii **in canvas pixels** — the world scale times the camera's — rebuilt once
-   * per painted frame.
-   *
-   * It exists because a mark's drawn size now comes from the camera (`library-graph-view.ts`,
-   * "Marks scale with the zoom"), and two readers outside the paint need the drawn size
-   * rather than the world one: the hit test, which is answering a question about a pointer
-   * on a screen, and the `e2e` probe, whose whole job is to report what is on the canvas.
-   */
+  /** The radii in canvas pixels, rebuilt per painted frame, for the hit test and the `e2e` probe. */
   const screenRadiiRef = useRef<Map<string, number>>(new Map());
-  /**
-   * **The placed names of the last frame, for a measurement and never for the product.**
-   *
-   * Null while nothing is measuring, which is every ordinary session: the greedy label
-   * pass then fills no array and the frame allocates nothing extra. The `e2e` probe effect
-   * below sets it, and `labels()` reads it.
-   */
+  /** The last frame's placed names, armed only by the `e2e` probe; null otherwise, so nothing is allocated. */
   const labelReportRef = useRef<LibraryGraphLabelBox[] | null>(null);
   const boxRef = useRef({ width: 0, height: 0, dpr: 1 });
   const pendingBoxRef = useRef<{ width: number; height: number; dpr: number } | null>(null);
@@ -642,13 +545,8 @@ export function useLibraryGraphEngine({
   const coarseTapRef = useRef<string | null>(null);
 
   /*
-   * **Everything the loop reads lives in a ref, and the refs are filled in an effect.**
-   *
-   * A frame at 60fps cannot afford a React render, so the loop never reads a prop
-   * directly. Writing these during render would be the shorter spelling and is a genuine
-   * hazard React's own lint names: under a re-render that is thrown away, a ref written on
-   * the way through keeps the discarded value. An effect runs after the commit that
-   * actually happened, and still before the next paint.
+   * The loop reads props through refs filled in an effect, never during render: a discarded
+   * render would leave its values in the ref.
    */
   const graphRef = useRef(graph);
   const stateRef = useRef({ selectedId, hoveredId, focusedId, highlight, activeLabel, standingLabels, reducedMotion, activity, visible, cardId });
@@ -662,13 +560,8 @@ export function useLibraryGraphEngine({
   });
 
   /**
-   * **The card's own state, kept out of the frame's way.**
-   *
-   * `flowRef` holds the two sets the drift is drawn from — recomputed when the card or the
-   * folder changes, never per frame — and the phase the frame advances. `arrivalRef`
-   * remembers which pages have already had their one arrival pass, so a receipt that stays
-   * in the activity window cannot re-run it. `pulseRef.homeAt` is the single breath every
-   * stale citation gets when the home settles, and `null` afterwards: one pulse, not a loop.
+   * The drift's edge sets (`flowRef`), recomputed with the card or folder, never per frame;
+   * the home's one breath for stale citations as it settles is `pulseRef.homeAt`.
    */
   const flowRef = useRef<{ edges: Set<string>; stale: Set<string> }>({ edges: new Set(), stale: new Set() });
   const pulseRef = useRef<{ homeAt: number | null; armed: boolean }>({ homeAt: null, armed: true });
@@ -684,11 +577,7 @@ export function useLibraryGraphEngine({
     })();
   }, [cardId, graph]);
 
-  /*
-   * ⚠️ **The arrival breath is once per folder, not once per settle.** `wasSettling` rises
-   * again on a resize and on every folder sync, and keying the pulse on that alone made a
-   * window drag re-pulse a picture the person had been looking at for a minute.
-   */
+  // The arrival breath is once per folder, or every resize and sync re-pulses the picture.
   useEffect(() => {
     pulseRef.current = { homeAt: null, armed: true };
   }, [graph]);
@@ -705,19 +594,13 @@ export function useLibraryGraphEngine({
   };
   const focusedIslandRef = useRef(focusedIslandId);
 
-  /**
-   * **Whether the picture is already framed**, published for the fit tile.
-   *
-   * State rather than a ref, because what reads it is a React surface deciding whether a
-   * control is pressable — and `publishAspect` below is the same shape for the same reason.
-   * It flips on a gesture and on the arrival, never per frame.
-   */
+  /** Whether the picture is framed, as state for the fit tile; it flips on gestures and arrival, never per frame. */
   const [framed, setFramed] = useState(false);
   const publishFramed = useCallback((next: boolean) => {
     setFramed((current) => (current === next ? current : next));
   }, []);
 
-  // ── The neighbourhood that keeps its ink while everything else dims. ──
+  // The neighbourhood that keeps its ink while everything else dims.
   const neighboursRef = useRef<Map<string, Set<string>>>(new Map());
   useEffect(() => {
     const map = new Map<string, Set<string>>();
@@ -730,12 +613,8 @@ export function useLibraryGraphEngine({
   }, [graph]);
 
   /**
-   * The two clocks this canvas keeps, in milliseconds.
-   *
-   * Parsed from CSS rather than transcribed — a copied motion value drifts, which is the
-   * 2026-07-28 finding `src/shared/motion/tokens.ts` was written after. The fallback is
-   * **that same gated mirror**, never a fresh literal, so a canvas that somehow cannot
-   * read the cascade still animates on the ramp instead of on a number nothing watches.
+   * This canvas's motion clocks in ms, parsed from CSS; the fallback is the gated mirror
+   * (src/shared/motion/tokens.ts), never a fresh literal that could drift.
    */
   const motionRef = useRef({
     fast: MOTION.fast.duration * 1000,
@@ -745,28 +624,14 @@ export function useLibraryGraphEngine({
   });
 
   /**
-   * ── The card, kept beside its mark. ──
-   *
-   * The placement is pure (`placeLibraryGraphCard`) and the write is one `style.left` /
-   * `style.top`: the mark can still move under a drag or a narrowing dock, and a card that
-   * stayed where the mark had been would be a surface pointing at nothing. Two properties
-   * on one element is cheaper than a React render, and it is the same trade the loop
-   * already makes for `data-view-scale`.
-   *
-   * ⚠️ **It is called from a layout effect as well as from the frame.** Effects run after
-   * the browser has painted, so a card placed only by the next `requestAnimationFrame`
-   * showed for one frame at the canvas's top-left corner. Everything it reads is a ref the
-   * last frame already filled, so running it synchronously on open is exact rather than a
-   * guess.
+   * Keeps the card beside its mark as the mark moves, via a pure placement
+   * (`placeLibraryGraphCard`) and two style writes, cheaper than a render. Also called from a
+   * layout effect on open, or the card shows for one frame at the canvas's corner.
    */
   const placeCard = useCallback((openNow?: string | null) => {
     /*
-     * ⚠️ **The caller may name the card, and on open it must.** `stateRef` is filled by a
-     * passive effect, which React runs *after* the layout effect that calls this — so on the
-     * frame a card opens, reading the ref here answers `null`, the placement is not published,
-     * and the surface is visible for one frame with no box. Measured as a race in
-     * `library-graph-card.spec.ts`: `card()` came back null right after the card became
-     * visible, on the faster of two runs of the same spec.
+     * On open the caller must name the card: `stateRef` fills in a passive effect after the
+     * calling layout effect, so the ref still reads null and the card shows with no box.
      */
     const openCardId = openNow === undefined ? stateRef.current.cardId : openNow;
     if (openCardId === null) {
@@ -813,28 +678,21 @@ export function useLibraryGraphEngine({
       Math.abs(previous.top - next.top) > 0.1
     ) {
       /*
-       * ⚠️ **The placement is handed back rather than written here**, and the reason is a
-       * rule rather than a preference: a hook may not mutate what its caller handed it
-       * (`react-hooks/immutability`), and `cardRef` is this hook's argument. The widget
-       * owns the element, so the widget writes the two properties — which also keeps this
-       * loop free of the DOM it does not own. It is still one write per frame and no React
-       * render, because the widget's handler only touches `style`.
+       * Handed back, not written: a hook may not mutate its argument `cardRef`
+       * (`react-hooks/immutability`). The widget's handler only touches `style`, so no render.
        */
       onCardPlacedRef.current(next);
     }
   }, [cardRef]);
 
-  // ── One paint. ──
   const paint = useCallback(
     (now: number) => {
       const canvas = canvasRef.current;
       const sim = simRef.current;
       if (!canvas || !sim) return;
       /*
-       * The ink is resolved from the canvas element itself and cached. A throw here would
-       * mean the application's own palette is missing from `app/globals.css`, in which case
-       * every other surface is already broken — so it is left to propagate rather than
-       * absorbed into a silent default that renders in no colour.
+       * Resolved from the canvas and cached. A throw means `app/globals.css` lacks the palette;
+       * it propagates rather than falling back to a colourless default.
        */
       inkRef.current ??= readLibraryGraphInk(canvas);
       const context = canvas.getContext("2d", { alpha: false });
@@ -842,10 +700,8 @@ export function useLibraryGraphEngine({
       const startedAt = performance.now();
 
       /*
-       * **The backing store is resized here, in the frame, never in the ResizeObserver.**
-       * Writing `canvas.width` clears the bitmap, and an observer callback runs after rAF
-       * and before paint — so resizing there ships an empty canvas for one frame. The map
-       * measured 183–200 ms of blank canvas during a panel transition before it moved this.
+       * The backing store is resized in the frame, never in the ResizeObserver: writing the
+       * canvas width clears the bitmap, and an observer runs after rAF, so it ships a blank frame.
        */
       const pending = pendingBoxRef.current;
       if (pending) {
@@ -862,45 +718,27 @@ export function useLibraryGraphEngine({
 
       const box = { width, height };
       const bounds = librarySimulationBounds(sim);
-      /*
-       * **Where the fit tile would take the camera** — computed on every frame, whether or
-       * not the camera is on the leash, because the surface has to be able to say whether
-       * pressing the tile would do anything at all. Inspection 122 measured a press from the
-       * fitted home producing a pixel-identical frame (S1): an affordance that answers
-       * nothing. The tile stops offering instead, and this is what it reads.
-       */
+      // Where the fit tile would take the camera, every frame, so the tile stops offering a no-op press.
       const fitTarget = fitView(bounds, box, FIT_PADDING, zoomMaxRef.current);
       fitScaleRef.current = fitTarget.scale;
       if (autoFitRef.current.on) {
         const target = fitTarget;
         const current = viewRef.current;
-        // Instant under reduced motion, and instant on the first frame, where there is
-        // nothing to travel from.
+        // Instant under reduced motion and on the first frame.
         const follow = stateRef.current.reducedMotion || current.scale === 1 ? 1 : AUTO_FIT_FOLLOW;
         viewRef.current = {
           scale: current.scale + (target.scale - current.scale) * follow,
           x: current.x + (target.x - current.x) * follow,
           y: current.y + (target.y - current.y) * follow,
         };
-        /*
-         * ⚠️ **Auto-fit stays armed after it arrives, so it cannot be what keeps the loop
-         * awake.** It follows the picture for as long as nobody has taken the camera, which
-         * is most of the widget's life; treating "armed" as "still moving" would have meant
-         * a canvas that repaints every frame forever, which is now the one thing the loop
-         * must never do. What counts as motion is the **distance left to travel**.
-         */
+        // Auto-fit stays armed after arriving, so motion is the distance left, not "armed",
+        // or the loop repaints forever.
         const next = viewRef.current;
         const drift =
           Math.abs(next.scale - target.scale) / Math.max(1e-6, target.scale) +
           (Math.abs(next.x - target.x) + Math.abs(next.y - target.y)) / Math.max(1, box.width);
-        /*
-         * ⚠️ **Arriving means landing on the target, not stopping near it.** The lerp is
-         * asymptotic, so "converged" only ever meant *close enough to stop painting* — and
-         * the remaining fraction was still there the next time anything woke the loop. A
-         * hover, which is supposed to change ink and nothing else, was measured on
-         * 2026-09-08 moving every mark 0.042px as the camera resumed a journey it had
-         * abandoned mid-air. Snapping at the threshold leaves nothing to resume.
-         */
+        // Snap onto the target at the threshold: the lerp is asymptotic, and a leftover
+        // fraction resumes on the next wake, so a hover would move every mark.
         if (drift < 0.002) {
           viewRef.current = target;
           autoFitRef.current.converged = true;
@@ -926,33 +764,15 @@ export function useLibraryGraphEngine({
       }
       const screen = new Map<string, LayoutPoint>();
       for (const [id, point] of world) screen.set(id, worldToScreen(point, view, box));
-      // A mark's drawn size is its world radius through the same camera its position goes
-      // through, so a zoom moves the dots and grows them by exactly the same factor.
+      // Radii go through the same camera as positions, so a zoom grows dots by the same factor.
       const screenRadii = screenRadiiRef.current;
       screenRadii.clear();
       for (const [id, radius] of radiiRef.current) screenRadii.set(id, radius * view.scale);
 
       /*
-       * ── The dim ramp, one `--motion-fast` from end to end, reduced motion included. ──
-       *
-       * ⚠️ **This ramp has no axis to remove, so there is nothing here for the preference
-       * to switch off.** It only changes how much ink a mark is painted with; measured
-       * 2026-09-12, the painted bounding box and the lit-pixel count are identical before
-       * the press and after Escape at both settings — 9108 at ordinary motion, 8959 under
-       * `reduce`, whose synchronous settle lands its own layout — so no mark moves at
-       * either setting.
-       * What a `reducedMotion` snap did instead was land the whole picture in **one frame,
-       * a single 0.3995 step** — the same hard cut this widget just repaired on the
-       * ordinary path, and it takes *what changed* away from the person who asked for less
-       * motion while the panel beside this canvas keeps its 180ms crossfade (`app/globals.css`
-       * swaps `.topology-chrome-in` to `panelCrossfadeIn`: drop the shaking axis, keep the
-       * timing). It is also the D7 case of 2026-07-28, which holds for this canvas too:
-       * WCAG 2.2 §2.3.3 exempts movement a person's own hand starts, and every dim here is
-       * started by their pointer, their press or their Escape.
-       *
-       * Stillness at rest is unaffected and is still the rule: `settling` below already
-       * watches this value, so the ramp keeps the loop awake for exactly its own window and
-       * the frame after it is byte-identical to the last, at both settings.
+       * The dim ramp runs one `--motion-fast` under reduced motion too: it changes ink, not
+       * position, so there is no axis to remove, and a snap would be a hard cut. Every dim is
+       * started by the person's own hand (WCAG 2.2 §2.3.3); `settling` sleeps after the ramp.
        */
       const elapsed = lastPaintRef.current === 0 ? 0 : now - lastPaintRef.current;
       lastPaintRef.current = now;
@@ -965,7 +785,7 @@ export function useLibraryGraphEngine({
             : Math.max(dimState.target, dimState.value - step);
       }
 
-      // ── Arrivals and departures. ──
+      // Arrivals and departures.
       const opacity = new Map<string, number>();
       for (const node of sim.nodes) if (node.entered < 1) opacity.set(node.id, easeMotion(node.entered));
       // On the overview a dot arrives with its island: it fades in as the island closes in.
@@ -999,52 +819,23 @@ export function useLibraryGraphEngine({
 
       screenRef.current = screen;
       /*
-       * **The open page is a focus too** (2026-09-08, owner direction B). Until now only a
-       * pointer or the keyboard could hold the neighbourhood, because choosing a page hid
-       * this canvas outright and there was nothing left to dim. With the canvas standing
-       * beside the reader, the page a person is reading is what the picture should be
-       * about: the selection holds the ego set whenever nothing is being pointed at, and a
-       * hover still wins over it, so pointing somewhere else answers "and what about that
-       * one" without losing the page underneath.
-       */
-      /*
-       * **An open card holds the ego focus, the way a pointer does** (direction B,
-       * 2026-09-12). A press is a question about one mark's neighbourhood, and the card is
-       * the written half of the answer; the dim is the drawn half, and it has to survive
-       * the pointer leaving the mark to read the card. A hover still wins over it, so
-       * pointing somewhere else answers "and what about that one" without closing anything.
+       * The ego focus, strongest first: hover, keyboard, an open card (its dim must survive
+       * the pointer leaving to read it), then the open page. Pointing elsewhere closes nothing.
        */
       const active =
         stateRef.current.hoveredId ??
         stateRef.current.focusedId ??
         stateRef.current.cardId ??
         stateRef.current.selectedId;
-      /*
-       * **A clause on the strip holds the same slot a pointer does** (slice L0,
-       * 2026-09-12). `highlight` is a whole set rather than one node, because the fact it
-       * carries is an *edge* — a citation the folder can no longer vouch for — and an edge
-       * has two ends. A pointer or the keyboard still takes precedence, so the set is the
-       * resting emphasis and not a lock.
-       */
+      // Without one, a strip clause's `highlight` holds the slot as a set, since its fact is an edge with two ends.
       const attention = active
         ? neighboursRef.current.get(active) ?? new Set([active])
         : stateRef.current.highlight && stateRef.current.highlight.size > 0
           ? stateRef.current.highlight
           : null;
       /*
-       * ⚠️ **The set outlives the attention, so the dim can ramp back out.**
-       *
-       * `inkOf` returns full ink whenever `focus` is null, whatever `dim` says — so
-       * dropping the set the instant a pointer leaves or a clause is lifted made the
-       * un-dim a **hard cut**, while the dim going in rode the ramp. Measured 2026-09-12
-       * on the stale clause: 15 of 146 frames changed going in (max step 0.036), and
-       * **1 of 143** coming out, a single 0.41 jump. The eased value was running the whole
-       * time; nothing was reading it.
-       *
-       * So the last set is kept while `dim` is still above zero, which is exactly the
-       * window the ease occupies. At zero `inkOf` returns 1 for everything anyway, so the
-       * held set stops mattering the frame the ramp finishes. This is the canvas's own
-       * pointer-out too, not only the clause's lift.
+       * The last set is kept while `dim` is above zero: the renderer draws full ink whenever
+       * the focus set is null, so dropping it at once makes the un-dim a hard cut.
        */
       if (attention) lastFocusRef.current = attention;
       const focus = attention ?? (dimState.value > 0 ? lastFocusRef.current : null);
@@ -1058,19 +849,10 @@ export function useLibraryGraphEngine({
       );
 
       /*
-       * ── What is moving, and why each thing is allowed to. ──
-       *
-       * Three motions, one object. The **flow** is a card's own citations drifting from
-       * each file toward the write-up: it exists only while a card is open, which is the
-       * only state a person has asked a question in. The **arrival** is one pass along the
-       * citations of a page Compile has just written, plus that page brightening — the one
-       * ambient motion on this home, bounded by the receipt's own trail. The **pulse** is
-       * the amber breath in a stale citation's gap, either while its card is open or once
-       * when the home settles.
-       *
-       * Reduced motion takes `still`: no travel, a chevron for the direction and a full
-       * amber dot for the break. Nothing here schedules a frame by itself — `settling`
-       * below decides that, and at rest with no card open every set is empty.
+       * Three motions: flow (an open card's citations drift toward the page), arrival (one
+       * pass for a just-written page, bounded by its receipt) and pulse (the stale dot's
+       * breath while its card is open, or once as the home settles). Reduced motion sets
+       * the `still` flag. At rest with no card every set is empty; `settling` schedules frames.
        */
       const reduced = stateRef.current.reducedMotion;
       const period = Math.max(1, motionRef.current.activityCycle);
@@ -1102,15 +884,13 @@ export function useLibraryGraphEngine({
         flowRef.current.edges.size > 0 || arrivalEdges.size > 0 || pulse.size > 0
           ? {
               edges: cardOpen ? flowRef.current.edges : EMPTY_EDGE_SET,
-              // One dash period per canvas settle budget: 9px over 900ms, which is slower
-              // than anything a person reads as loading and fast enough to have a direction.
+              // One dash period per activity cycle: slower than loading, fast enough to show direction.
               phase: ((now % period) / period),
               arrivalEdges,
               arrivalPhase: arrived.size > 0 ? Math.min(...arrived.values()) : 0,
               arrived,
               pulse,
-              // One breath over twice the settle budget — the "once per two seconds" the
-              // direction asks for, derived from a token this canvas already reads.
+              // One breath over two activity cycles, derived from tokens this canvas reads.
               pulsePhase:
                 homePulse !== null && !cardOpen
                   ? Math.sin(Math.PI * homePulse) ** 2
@@ -1119,8 +899,7 @@ export function useLibraryGraphEngine({
             }
           : null;
 
-      // The pass below appends; without this the measurement's array would be every
-      // frame's names at once.
+      // The passes below append, so the probe arrays are cleared per frame.
       if (labelReportRef.current) labelReportRef.current.length = 0;
       if (islandReportRef.current) islandReportRef.current.length = 0;
       // The islands in canvas pixels, and how wide a page dot is on screen right now.
@@ -1146,13 +925,10 @@ export function useLibraryGraphEngine({
               };
             })
           : undefined;
-      const widestPagePx = pictureRef.current === "islands" ? 2 * view.scale * Math.max(0, ...nodes.filter((node) => node.kind === "page").map((node) => radiiRef.current.get(node.id) ?? 0)) : Infinity;
+      const widestPagePx = pictureRef.current === "islands" ? 2 * view.scale * maxOf(nodes.filter((node) => node.kind === "page").map((node) => radiiRef.current.get(node.id) ?? 0), 0) : Infinity;
       /*
-       * **Zooming into an island opens it.** The map's own rule — zoom in until the streets
-       * have names — cannot be met by the packed island itself: its pages stand a breath
-       * apart so that it reads as a body, and a name needs room the body does not have. So
-       * once a person has zoomed until one island fills the view, that island is what they
-       * want, and it opens as columns the way a press would. The chip and Escape lead back.
+       * Zooming into an island opens it as columns, as a press would: a packed island has no
+       * room for names however far the camera closes in. The chip and Escape lead back.
        */
       const aim = zoomAimRef.current;
       if (
@@ -1164,8 +940,7 @@ export function useLibraryGraphEngine({
         onPressIslandRef.current
       ) {
         const atCeiling = view.scale >= zoomMaxRef.current - 1e-6;
-        // The Unread island does not open (it is a pile, not a topic), so a zoom into it
-        // stays a zoom.
+        // The Unread island is a pile, not a topic, so it never opens.
         const filling = islands.find(
           (island) => island.id === aim && island.kind !== "unread" && (atCeiling || island.r * 2 >= ISLAND_OPENS_AT_VIEW_SHARE * Math.min(width, height)),
         );
@@ -1189,8 +964,7 @@ export function useLibraryGraphEngine({
         activeLabel: stateRef.current.activeLabel,
         standingLabels: stateRef.current.standingLabels,
         radii: screenRadiiRef.current,
-        // A plain source column has a row for every file name; a folded band names files
-        // only zoomed in, as the force picture always did.
+        // A plain source column names every file; a folded band only once zoomed in.
         sourceLabels:
           pictureRef.current === "flow"
             ? (columnsRef.current?.columns.find((column) => column.kind === "source")?.grid ?? 1) === 1 || view.scale >= FOLDED_LABEL_MIN_SCALE
@@ -1203,8 +977,7 @@ export function useLibraryGraphEngine({
             : pictureRef.current === "islands"
               ? false
               : view.scale >= SOURCE_LABEL_MIN_SCALE,
-        // Each named column's own room, in screen px: the layout hands back world units,
-        // and a name is drawn at screen scale. Only the flow picture lays columns.
+        // Each column's name room in screen px; the layout returns world units.
         flowLabelRoom:
           pictureRef.current === "flow" && columnsRef.current
             ? Object.fromEntries(
@@ -1229,10 +1002,8 @@ export function useLibraryGraphEngine({
       placeCard();
 
       /*
-       * Machine-readable state for a surface that has no DOM. `data-view-scale` is what an
-       * e2e spec reads to say a wheel zoomed rather than panned, and `data-interaction` is
-       * what tells it a gesture grabbed a **node** — the map lost six measurement rounds to
-       * drag specs that were silently measuring a background pan.
+       * Machine-readable state for e2e specs: `data-view-scale` tells a zoom from a pan, and
+       * the `data-interaction` value tells a node grab from a background pan.
        */
       const scaleText = view.scale.toFixed(4);
       if (canvas.dataset.viewScale !== scaleText) canvas.dataset.viewScale = scaleText;
@@ -1244,12 +1015,8 @@ export function useLibraryGraphEngine({
             : "idle";
       if (canvas.dataset.interaction !== interaction) canvas.dataset.interaction = interaction;
 
-      /*
-       * **What one frame cost.** The card's motion is the first thing on this canvas that
-       * paints without a hand on it, so "how much of a frame does it take at three hundred
-       * marks" has to be answerable from outside — the `e2e` probe reads this, and the
-       * budget it is judged against is in `docs/DECISIONS.md`.
-       */
+      // Frame cost for the `e2e` probe, judged against the 2 ms budget in `docs/DECISIONS.md`,
+      // "A press on a Library mark opens a card beside it".
       const cost = performance.now() - startedAt;
       const record = paintCostRef.current;
       record.last = cost;
@@ -1260,7 +1027,6 @@ export function useLibraryGraphEngine({
     [canvasRef, placeCard, publishFramed],
   );
 
-  // ── The loop. ──
   const runningRef = useRef(false);
   const wasSettlingRef = useRef(true);
   const stepRef = useRef<(now: number) => void>(() => undefined);
@@ -1270,8 +1036,7 @@ export function useLibraryGraphEngine({
     const sim = simRef.current;
     const bounds = sim ? librarySimulationBounds(sim) : null;
     if (!bounds) return;
-    // A one-row flow picture (a page and its one source) has no vertical span of centres;
-    // its height is a mark's, so the witness still reports a shape rather than nothing.
+    // A one-row picture has no vertical span of centres, so a mark's height stands in.
     const spanX = Math.max(bounds.maxX - bounds.minX, 2 * WIDEST_MARK_WORLD_RADIUS);
     const spanY = Math.max(bounds.maxY - bounds.minY, 2 * WIDEST_MARK_WORLD_RADIUS);
     setPictureAspect((current) =>
@@ -1294,8 +1059,7 @@ export function useLibraryGraphEngine({
 
   const currentActivitySignature = activitySignature(activity);
   useEffect(() => {
-    // An activity update paints once even when it is a static pending wait. This effect does
-    // not touch simulation state, auto-fit, or the view, so receipts cannot reheat the graph.
+    // An activity update paints once, touching no simulation, auto-fit or view, so receipts never reheat the graph.
     wake();
   }, [currentActivitySignature, wake]);
 
@@ -1324,28 +1088,17 @@ export function useLibraryGraphEngine({
       }
       const busy = isLibrarySimulationRunning(sim) || hasPinnedNode(sim) || (field !== null && isIslandFieldMoving(field));
       /*
-       * ⚠️ **The forces run only under the force picture.** The flow and the islands are
-       * laid, and their marks stand closer than the simulation's collision reach: stepping
-       * it while the islands arrived let the collision blow three thousand packed dots out
-       * into a cloud over every island, which the physics then dragged back each frame —
-       * the "very cluttered and strange" motion the owner saw on 2026-09-18.
+       * Forces run only under the force picture: laid marks stand closer than the collision
+       * reach, so stepping would blow packed dots into a cloud. A laid picture still advances
+       * fade-in arrivals at the simulation's rate.
        */
-      // A laid picture still lets a mark that is fading in arrive, at the simulation's own rate.
       if (pictureRef.current !== "force") for (const node of sim.nodes) if (node.entered < 1) node.entered = Math.min(1, node.entered + 0.08);
       if (busy && pictureRef.current === "force") {
         /*
-         * ⚠️ **Reduced motion settles here, not only where the simulation is created.**
-         * `usePrefersReducedMotion` reports `false` on the first client render by design —
-         * a `matchMedia` read in a `useState` initializer once cost a hydration failure
-         * over 59 character spans — so the preference arrives *after* the picture already
-         * exists, and a resize or a folder change can re-heat it later. Settling only at
-         * creation left a reduced-motion visitor with a picture frozen half-way through
-         * arriving, and a loop that repainted every frame forever because its alpha could
-         * never decay (measured 2026-09-07: alpha pinned at 0.2).
-         *
-         * A held mark is the exception: a drag is the person's own hand, which WCAG 2.2
-         * §2.3.3 exempts, and settling 400 ticks inside one frame would not be a
-         * reduced-motion equivalent so much as a dropped frame.
+         * Reduced motion settles here too: `usePrefersReducedMotion` reads false on the first
+         * render (hydration), so the preference arrives after creation, and a later reheat
+         * would otherwise loop forever. A held mark still steps: the person's own hand
+         * (WCAG 2.2 §2.3.3).
          */
         if (!reduced) stepLibrarySimulation(sim);
         else if (hasPinnedNode(sim)) stepLibrarySimulation(sim);
@@ -1368,53 +1121,29 @@ export function useLibraryGraphEngine({
           reduced,
         ) ||
         /*
-         * ⚠️ **The three card motions are the only things on this canvas that ask for a
-         * frame with nobody's hand on it, and each one is bounded by something.**
-         *
-         * The drift runs while a card is open — a state a person entered by pressing a
-         * mark and leaves with Escape. The home's single stale breath runs for its own two
-         * settle budgets and then clears its own timestamp. Reduced motion takes none of
-         * them: `still` draws a chevron and a full dot in one frame, so nothing is left to
-         * animate and the rule of 2026-09-08 holds unchanged — once nothing is arriving,
-         * ramping, fading, resizing, held **or flowing**, the last frame is painted and the
-         * loop stops.
+         * The only unprompted frames, each bounded: the drift while a card is open, and the
+         * home's one stale breath, which clears itself. Reduced motion takes neither.
          */
         (!reduced &&
           ((stateRef.current.cardId !== null && flowRef.current.edges.size > 0) ||
             pulseRef.current.homeAt !== null));
 
       /*
-       * ⚠️ **A picture with nowhere left to go stops the loop; it does not idle inside it.**
-       *
-       * There used to be a third state here — the ambient drift, painted every fourth frame
-       * forever — and it measured on 2026-09-08 at **362 `requestAnimationFrame` callbacks
-       * in three idle seconds**, every one of them this loop's, while the marks travelled
-       * 0.74px. The owner called it stuttering, and one rule answers both halves of that:
-       * the drift is gone, so once nothing is arriving, ramping, fading, resizing or
-       * held, the last frame is painted and `runningRef` falls. Every later change — hover,
-       * focus, selection, a drag, a resize, a folder that gained a file — comes back through
-       * `wake()`, which is also why a hover costs one dim ramp and not a standing loop.
+       * A picture with nowhere left to go paints its last frame and stops the loop rather
+       * than idling; every later change comes back through `wake()`.
        */
       if (settling) {
         wasSettlingRef.current = true;
         paint(now);
       } else {
-        /*
-         * **The aspect is published when the picture stops, never while it is arriving.**
-         * Read at creation it is the seed spiral's — a near-circle, 0.93 on the folder
-         * measured here, against a settled 1.7 — and a witness that reports the shape of
-         * something the person never saw is worse than no witness at all.
-         */
+        // The aspect is published once the picture stops, or it reports the seed spiral's shape.
         paint(now);
         if (wasSettlingRef.current) {
           wasSettlingRef.current = false;
           publishAspect();
           /*
-           * **One breath for every citation the folder cannot vouch for, as the home
-           * arrives** (direction B). It is armed here rather than on mount because before
-           * the picture settles the marks are still travelling, and a pulse nobody can
-           * locate is a flicker. `homeAt` clears itself two settle budgets later, inside
-           * the frame, so this is a single pulse and never a loop.
+           * One breath for the stale citations once the home settles, not on mount, since a
+           * pulse on travelling marks is a flicker; `homeAt` clears itself, so never a loop.
            */
           if (
             !reduced &&
@@ -1453,14 +1182,7 @@ export function useLibraryGraphEngine({
   useEffect(
     () => () => {
       cancelAnimationFrame(frameRef.current);
-      /*
-       * The flag has to fall with the frame. Under React's development double-mount the
-       * first mount's cleanup ran this cancel while `runningRef` stayed `true`, so every
-       * later `wake()` returned at its first line and the canvas stayed a 300×150 default
-       * for the whole session — measured in the browser on 2026-09-07 (three frames, none
-       * of them this loop's). Production never double-mounts, which is why the installed
-       * app drew the picture the browser did not.
-       */
+      // The flag falls with the frame, or after a dev double-mount every `wake()` is a no-op.
       runningRef.current = false;
     },
     [],
@@ -1469,7 +1191,7 @@ export function useLibraryGraphEngine({
   /** The last shape of every node, so a removed one can still be drawn while it fades. */
   const lastKnownRef = useRef<Map<string, LibraryGraphNode>>(new Map());
 
-  // ── The simulation: created once the canvas has a box, then kept in step with the folder. ──
+  // The simulation: created once the canvas has a box, then kept in step with the folder.
   const syncSimulation = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -1490,8 +1212,7 @@ export function useLibraryGraphEngine({
     };
 
     const box = pendingBoxRef.current ?? boxRef.current;
-    // A fixed world scale: the box is not consulted, and the radii are the same map on a
-    // phone and on a 1920 window.
+    // A fixed world scale: the radii never consult the box.
     radiiRef.current = libraryMarkRadii(graph);
     zoomMaxRef.current =
       radiiRef.current.size === 0 ? LIBRARY_ZOOM_MAX : libraryZoomMax(Math.max(...radiiRef.current.values()));
@@ -1499,11 +1220,8 @@ export function useLibraryGraphEngine({
     setPicture(pictureRef.current);
     const layPicture = (sim: LibrarySimulation, travelling: boolean, known: ReadonlySet<string> | null = null) => {
       /*
-       * Only a mark that was on the previous picture travels. A mark the sync has just
-       * added stands where the simulation seeded it — a spiral across the whole canvas —
-       * and travelling from there sent three thousand dots flying through the map as
-       * their islands arrived (owner, 2026-09-18: "very cluttered and strange while it
-       * moves"). A new mark is placed where it belongs and fades in with its island.
+       * Only marks from the previous picture travel; a just-added mark starts on the seed
+       * spiral, so it is placed where it belongs and fades in instead of flying across.
        */
       const from = travelling && !reducedMotion ? libraryPositions(sim) : null;
       if (from && known) for (const id of [...from.keys()]) if (!known.has(id)) from.delete(id);
@@ -1511,10 +1229,9 @@ export function useLibraryGraphEngine({
         columnsRef.current = null;
         publishWalkOrder(null);
         islandsRef.current = applyLibraryIslandsLayout(sim, graph, islandsWorld(box), islandLabelsRef.current);
-        // The overview's dots are its own size; the ceiling follows them, so zooming in
-        // still ends with a page as wide as a mark on the flow.
+        // The ceiling follows the overview's own dot sizes.
         radiiRef.current = islandsRef.current.radii;
-        zoomMaxRef.current = radiiRef.current.size === 0 ? LIBRARY_ZOOM_MAX : libraryZoomMax(Math.max(...radiiRef.current.values()));
+        zoomMaxRef.current = radiiRef.current.size === 0 ? LIBRARY_ZOOM_MAX : libraryZoomMax(maxOf(radiiRef.current.values()));
         setIslandsList(islandsRef.current.islands.map(pick));
         // Dots belong to their island: each keeps its offset from the island's centre.
         const offsets = new Map<string, { island: string; dx: number; dy: number }>();
@@ -1525,11 +1242,8 @@ export function useLibraryGraphEngine({
           }
         }
         /*
-         * **A dot that changed island does not fly across the map.** A folder loading in
-         * chunks lays the map again as pages arrive, and sixteen hundred files that were
-         * on the Unread pile now belong to topics: travelling them sent a cloud of dots
-         * through every island (owner, 2026-09-18: "very cluttered and strange while it
-         * moves"). Such a dot leaves a ghost where it was and fades in where it belongs.
+         * A dot that changed island leaves a ghost and fades in where it belongs, or a folder
+         * loading in chunks sends clouds of dots flying through every island.
          */
         const previousOffsets = islandOffsetsRef.current;
         if (from && previousOffsets.size > 0) {
@@ -1548,16 +1262,12 @@ export function useLibraryGraphEngine({
         }
         islandOffsetsRef.current = offsets;
         /*
-         * The islands arrive on a folder's first map. A map laid again while it is showing
-         * — a folder loading in chunks, a file added — keeps each island where it stands and
-         * lets the spring carry it to its new home, so a growing folder flows rather than
-         * re-assembling; a return from an opened island travels instead (its marks were on
-         * the columns); reduced motion settles in place.
+         * Islands arrive on a folder's first map, chunked loads included. A relaid map keeps
+         * each island where it stands and springs it home; a return from an opened island
+         * travels instead; reduced motion settles in place.
          */
         const world = islandsWorld(box);
         const previous = islandFieldRef.current;
-        // A folder loading in chunks lays its map on the sync path too; that is still the
-        // first map, and it arrives. Only a return from an opened island does not.
         const returning = travelling && !lastOverviewRef.current;
         const arriving = !reducedMotion && !returning && previous === null;
         const field = createIslandField(islandsRef.current.islands, { x: world.width / 2, y: world.height / 2 }, { arriving });
@@ -1595,11 +1305,7 @@ export function useLibraryGraphEngine({
       if (box.width === 0 || box.height === 0) return;
       const sim = createLibrarySimulation({ graph, box });
       simRef.current = sim;
-      /*
-       * **Reduced motion settles before the first frame and never ticks.** It is not the
-       * animation slowed down; it is the same picture, arrived at synchronously, which is
-       * exactly what the one-shot layout used to give everybody.
-       */
+      // Reduced motion settles before the first frame and never ticks: the same picture, synchronously.
       if (pictureRef.current !== "force") layPicture(sim, false);
       else if (reducedMotion) settleLibrarySimulation(sim);
       autoFitRef.current = { on: true, converged: false };
@@ -1618,16 +1324,12 @@ export function useLibraryGraphEngine({
     syncCostRef.current = (typeof performance === "undefined" ? 0 : performance.now()) - syncStartedAt;
     stalePagesRef.current = new Set(graph.edges.filter((edge) => edge.certainty === "unverified").map((edge) => edge.source));
 
-    // The aspect is not published here: at creation the picture is still the seed spiral.
-    // The loop publishes it the moment the simulation comes to rest.
+    // The loop publishes the aspect at rest; here the picture is still the seed spiral.
     wasSettlingRef.current = true;
     wake();
   }, [canvasRef, wake]);
 
-  /**
-   * The loop and the observer both need this without depending on the identity React gives
-   * it, so it is mirrored into a ref — the same shape `stepRef` above uses.
-   */
+  /** Mirrored into a ref so the loop and the observer do not depend on its identity. */
   const syncSimulationRef = useRef(syncSimulation);
   useEffect(() => {
     syncSimulationRef.current = syncSimulation;
@@ -1637,7 +1339,7 @@ export function useLibraryGraphEngine({
     syncSimulation();
   }, [graph, reducedMotion, syncSimulation]);
 
-  // ── Measure the box; the frame commits it. ──
+  // Measure the box; the frame commits it.
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || typeof ResizeObserver === "undefined") return;
@@ -1648,8 +1350,8 @@ export function useLibraryGraphEngine({
       pendingBoxRef.current = { width: rect.width, height: rect.height, dpr };
       rectRef.current = { left: rect.left, top: rect.top };
       const sim = simRef.current;
-      // A resize records the new box and moves nothing: the mark scale, the collision reach
-      // and the composition are all facts about the folder now, never about the window.
+      // The force picture's scale and composition are facts about the folder, so a resize only
+      // records the box there; the laid flow and islands pictures are re-laid below.
       if (sim) {
         const before = { ...sim.box };
         resizeLibrarySimulation(sim, { width: rect.width, height: rect.height });
@@ -1663,32 +1365,12 @@ export function useLibraryGraphEngine({
           autoFitRef.current = { on: true, converged: false };
         }
       }
-      // The first measurement is also what makes the simulation possible: it runs in the
-      // canvas's own pixels, so before there is a box there is nothing to create.
+      // The first box is what lets the simulation be created at all.
       else if (rect.width > 0 && rect.height > 0) syncSimulationRef.current();
       /*
-       * ⚠️ **A camera somebody took still has to survive the box changing** (owner,
-       * 2026-09-07, installed app: *"the middle is unnatural, things hide behind the
-       * left/right areas … can't it auto-shrink?"*).
-       *
-       * While auto-fit is armed the paint below already follows every new box, so a dock
-       * opening or the index folding re-frames the picture on its own. But dragging a mark
-       * calls `takeCamera` — and pulling the graph apart by hand is what this canvas is
-       * for since 2026-09-07 — so from the first drag onward the view is frozen in the box
-       * it was set in. Narrow that box by a 420px dock and the marks that were on the right
-       * are simply outside it, with no gesture that says so.
-       *
-       * The answer is not to re-fit, which would throw away the arrangement the person just
-       * made and move every mark under their hand. It is to **keep the same world extent
-       * visible**: the box shrank by a ratio, so the scale falls by that ratio and the
-       * centre does not move, and exactly what was on screen is still on screen — smaller.
-       * The smaller of the two axes decides, so neither edge can lose anything. Growing the
-       * box is the same rule read the other way, which is what makes closing the dock give
-       * the picture the room back.
-       *
-       * The result is still folded into `scaleBounds`: those are the same absolute floor and
-       * ceiling a wheel gesture obeys, and a camera the person took should not end up
-       * somewhere they could not have reached by hand.
+       * A taken camera keeps the same world extent visible when the box changes: the scale
+       * follows the smaller axis ratio about a fixed centre, so nothing leaves the edges and
+       * no arrangement is refitted away. Clamped to `scaleBounds`, as a wheel is.
        */
       if (
         !autoFitRef.current.on &&
@@ -1717,16 +1399,9 @@ export function useLibraryGraphEngine({
   }, [canvasRef, wake]);
 
 
-  // Selection, hover, focus and the label are read from a ref by the loop, but a change to
-  // any of them has to reach the screen even when nothing else is moving.
+  // A change to selection, hover, focus or the label must repaint even when nothing moves.
   useEffect(() => {
-    /*
-     * ⚠️ **An open card is one of the things that holds the dim.** Without it in this
-     * list the ramp eased back to zero the moment the pointer left the mark to read the
-     * card — `inkOf` returns full ink at `dim === 0` whatever the focus set says — so the
-     * ego focus a press had just established disappeared while the person was looking at
-     * the answer to it. Direction B's "ego focus … held" is this line.
-     */
+    // An open card holds the dim, or it fades while the person reads the card.
     dimRef.current.target =
       (hoveredId ?? focusedId ?? cardId ?? selectedId) || (highlight !== null && highlight.size > 0)
         ? 1
@@ -1734,7 +1409,6 @@ export function useLibraryGraphEngine({
     wake();
   }, [activeLabel, cardId, focusedId, highlight, hoveredId, selectedId, standingLabels, wake]);
 
-  // ── Pointer geometry. ──
   const pointOf = (event: { clientX: number; clientY: number }): LayoutPoint => ({
     x: event.clientX - rectRef.current.left,
     y: event.clientY - rectRef.current.top,
@@ -1751,7 +1425,7 @@ export function useLibraryGraphEngine({
         { nodes: graphRef.current.nodes, positions: screenRef.current, radii: screenRadiiRef.current },
         point,
         coarsePointer() ? COARSE_HIT_REACH : undefined,
-        // On the overview a dot is pressable only once it is a mark; below that the island is.
+        // On the overview a dot is pressable only once it is mark-sized; below that its island is.
         pictureRef.current === "islands" ? ISLAND_DOT_PRESS_MIN_PX : 0,
       ),
     [],
@@ -1768,10 +1442,7 @@ export function useLibraryGraphEngine({
     autoFitRef.current = { on: false, converged: true };
   };
 
-  /**
-   * Ends whatever was happening, and — when the pointer never travelled — treats the press
-   * as a choice.
-   */
+  /** Ends the gesture; a press that never travelled is a choice. */
   const finishGesture = useCallback(
     (timeStamp: number, commit?: LayoutPoint) => {
       const state = pointerRef.current;
@@ -1799,22 +1470,12 @@ export function useLibraryGraphEngine({
           ? graphRef.current.nodes.find((candidate) => candidate.id === pressed) ?? null
           : null;
         if (node) {
-          /*
-           * ⚠️ **The two-tap dance on a coarse pointer is gone, and the card is why.**
-           *
-           * It existed because the commit *left the screen*: on a 10px target the first tap
-           * had to name the dot before the second one navigated. A press now answers with a
-           * card beside the mark, which is the safe answer the first tap was standing in
-           * for — reversible, Escape away, and carrying `Open` as an explicit door. So one
-           * tap is enough at every pointer type, and a finger reaches the page in the same
-           * two presses it used to, with a sentence in between.
-           */
+          // One tap at every pointer type: a press only opens a reversible card, never navigates.
           coarseTapRef.current = null;
           if (coarsePointer()) onHoverRef.current(node.id);
           onPressMark(node);
         } else {
-          /* A press on an island of the overview opens it; on the empty canvas it dismisses
-             what stands open, and pans nothing. */
+          /* An island press opens it; an empty-canvas press dismisses what stands open. */
           const island = pictureRef.current === "islands" ? islandAt(islandsRef.current?.islands, viewRef.current, boxRef.current, commit) : null;
           if (island && onPressIslandRef.current) {
             onDismiss();
@@ -1838,8 +1499,7 @@ export function useLibraryGraphEngine({
       if (event.pointerType === "touch") {
         touchesRef.current.set(event.pointerId, point);
         if (touchesRef.current.size === 2) {
-          // Two fingers are never a click and never a drag: whatever was in progress is
-          // abandoned before the pinch starts.
+          // Two fingers abandon any press or drag in progress before the pinch starts.
           const [first, second] = [...touchesRef.current.values()];
           pointerRef.current = {
             phase: "idle",
@@ -1884,12 +1544,8 @@ export function useLibraryGraphEngine({
   const onPointerMove = useCallback(
     (event: ReactPointerEvent<HTMLCanvasElement>) => {
       /*
-       * **The box's position is re-read on every move, not only on resize and press.** A
-       * scroll moves the canvas without resizing it and raises no event this hook listened
-       * to, so after scrolling the page the cached `left/top` were the old ones and a hover
-       * hit-tested a point offset by however far the page had travelled — marks lit up beside
-       * the pointer, or nothing lit up at all. One `getBoundingClientRect` per move is a read
-       * of already-committed layout; the frame loop does not write between moves.
+       * The box position is re-read on every move: a scroll moves the canvas with no event
+       * here, so a cached offset hit-tests beside the pointer. The read forces no layout.
        */
       const canvas = canvasRef.current;
       if (canvas) {
@@ -1911,8 +1567,7 @@ export function useLibraryGraphEngine({
           if (pinch.distance > 0) {
             const bounds = scaleBounds(zoomMaxRef.current);
             let next = zoomViewAbout(viewRef.current, box, mid, distance / pinch.distance, bounds);
-            // Two fingers travelling together pan as well as pinch; the midpoint's own
-            // movement is that pan, and taking it here is why one gesture does both.
+            // The midpoint's own movement pans, so one gesture pinches and pans.
             next = panView(next, { x: mid.x - pinch.mid.x, y: mid.y - pinch.mid.y });
             viewRef.current = next;
           }
@@ -1922,8 +1577,7 @@ export function useLibraryGraphEngine({
         return;
       }
 
-      // A pointer that was released outside the canvas leaves the machine stuck; the
-      // button state is the only witness, so it is checked on every move.
+      // A release outside the canvas is only visible in `buttons`, so it is checked on every move.
       if (state.phase !== "idle" && event.buttons === 0) {
         finishGesture(event.timeStamp);
         return;
@@ -1932,15 +1586,13 @@ export function useLibraryGraphEngine({
       if (state.phase === "idle") {
         const hit = hitTest(point);
         if (hit?.id !== stateRef.current.hoveredId) onHoverRef.current(hit?.id ?? null);
-        // On the overview an island is the thing under the pointer when no dot is.
         const island = hit || pictureRef.current !== "islands" ? null : islandAt(islandsRef.current?.islands, viewRef.current, boxRef.current, point);
         if ((island?.id ?? null) !== hoveredIslandRef.current) {
           hoveredIslandRef.current = island?.id ?? null;
           onHoverIslandRef.current?.(island ? pick(island) : null);
           wake();
         }
-        // Nothing else on this canvas says a dot can be pressed, and no gate can see a
-        // cursor over a painted mark (`cursor-affordance.spec.ts` measures DOM elements).
+        // The cursor is the only press affordance on painted marks, which no DOM gate can see.
         event.currentTarget.style.cursor = hit || island ? "pointer" : "grab";
         return;
       }
@@ -1950,12 +1602,10 @@ export function useLibraryGraphEngine({
         if (travelled < DRAG_THRESHOLD_PX) return;
         state.phase = "dragging";
         takeCamera();
-        // Decided **once**: whatever was under the finger when it went down is what this
-        // gesture carries, even if the hand has since left the mark.
+        // Decided once: what was under the pointer at pointerdown is what the gesture carries.
         const grabbed = state.pressedNodeId;
         state.pressedNodeId = null;
-        // On the overview a hand on an island carries the island; the islands it runs into
-        // are shoved aside by the physics and settle back once it has passed.
+        // On the overview a hand carries the island; the physics shoves others aside and back.
         const heldIsland =
           !grabbed && pictureRef.current === "islands" && islandFieldRef.current
             ? islandAt(islandsRef.current?.islands, viewRef.current, boxRef.current, state.down ?? point)
@@ -2033,13 +1683,7 @@ export function useLibraryGraphEngine({
 
   const onDoubleClick = useCallback(
     (event: ReactPointerEvent<HTMLCanvasElement>) => {
-      /*
-       * **A double press is the shortcut past the card.** Since a single press opens the
-       * card rather than the page, the gesture a person already knows for "open it" has
-       * somewhere to go — and it is the mitigation on the record for the second press this
-       * direction costs (the other being `Open` as the card's first door). The empty canvas
-       * keeps its re-frame.
-       */
+      // A double press on a mark skips the card and opens it; on the empty canvas it refits.
       const hit = hitTest(pointOf(event));
       if (hit) {
         onActivate(hit);
@@ -2050,16 +1694,11 @@ export function useLibraryGraphEngine({
     [fitToView, hitTest, onActivate],
   );
 
-  // ── The wheel, on a native listener. ──
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const onWheel = (event: WheelEvent): void => {
-      /*
-       * React's delegated `wheel` listener is passive, so a JSX `onWheel` calling
-       * `preventDefault` logs a warning and does not stop the page scrolling. The map
-       * measured 37 such warnings from one gesture before moving to a native listener.
-       */
+      // A native listener: React's delegated `wheel` is passive, so `preventDefault` there cannot stop page scroll.
       const pixels = wheelPixelDelta(event, typeof window === "undefined" ? 800 : window.innerHeight);
       if (!isWheelZoomIntent(pixels, event.ctrlKey)) return;
       event.preventDefault();
@@ -2068,10 +1707,8 @@ export function useLibraryGraphEngine({
       rectRef.current = { left: rect.left, top: rect.top };
       takeCamera();
       const about = { x: event.clientX - rect.left, y: event.clientY - rect.top };
-      // Where the person is zooming into: the island under this point is the one that
-      // opens once it fills the view, not whichever island the view's centre happens to be on.
-      // The first island of a zoom-in run is the aim; later wheel steps keep it, because the
-      // camera's clamp near the picture's edge slides the view under the pointer as it zooms.
+      // The island under the pointer at the start of a zoom-in run is the aim; later steps
+      // keep it, since the edge clamp slides the view under the pointer.
       if (pixels >= 0) zoomAimRef.current = null;
       else if (pictureRef.current === "islands" && zoomAimRef.current === null) {
         zoomAimRef.current = islandAt(islandsRef.current?.islands, viewRef.current, boxRef.current, about)?.id ?? null;
@@ -2084,13 +1721,9 @@ export function useLibraryGraphEngine({
         scaleBounds(zoomMaxRef.current),
       );
       /*
-       * **Zooming out of an opened island returns to the map** — the mirror of zooming in
-       * to open one. Past the fit by a clear margin the person is asking for more than this
-       * island, and the map is what holds more. The margin keeps a pinch that overshoots
-       * the fit from bouncing back out.
+       * Zooming out of an opened island past a margin below its fit returns to the map; the
+       * margin stops an overshoot bouncing out. The zoom floor counts, since a wide island fits there.
        */
-      // A wide island fits near the camera's floor already; a wheel-out at the floor is the
-      // same ask, so the floor counts as past the margin.
       const scaleNow = viewRef.current.scale;
       if (pixels > 0 && !overviewRef.current && (scaleNow <= fitScaleRef.current * ISLAND_LEAVES_BELOW_FIT || scaleNow <= LIBRARY_ZOOM_MIN + 1e-6)) {
         wheelReturnedAtRef.current = event.timeStamp;
@@ -2103,18 +1736,9 @@ export function useLibraryGraphEngine({
   }, [canvasRef, wake]);
 
   /**
-   * ★ Inspection window, attached only under `?e2e=1`. **Not a product API.**
-   *
-   * The map recorded what it costs not to have one: six consecutive attempts to reproduce
-   * a node-drag defect *only ever dragged the background*, because from outside a canvas
-   * a grab and a pan are the same cursor over the same pixels, and every run answered
-   * "it is not slow here" until the owner looked at the screen. A state a test cannot
-   * distinguish from outside cannot be tested from outside.
-   *
-   * So this exposes the two things a gesture spec cannot otherwise know — **where a mark
-   * is on the screen** (aiming) and **what the current gesture is holding** (confirming) —
-   * plus the view, so a zoom can be asserted without reading pixels. Every field is a
-   * getter over the same refs the product uses, so a frame costs nothing for it.
+   * Inspection window under `?e2e=1` only, not a product API: from outside a canvas a grab
+   * and a pan look identical, so specs read where marks are and what a gesture holds.
+   * Getters over the product's own refs, so a frame pays nothing.
    */
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -2133,11 +1757,7 @@ export function useLibraryGraphEngine({
             radius: screenRadiiRef.current.get(node.id) ?? 0,
           };
         }),
-      /**
-       * Every relation, by endpoint id. Paired with `nodes()` it is what lets a readability
-       * measurement count crossings and label collisions from outside the canvas — the two
-       * facts a screenshot shows a person and hides from a gate.
-       */
+      /** Every relation by endpoint id; with `nodes()`, a spec can count crossings and collisions. */
       edges: () =>
         graphRef.current.edges.map((edge) => ({
           source: edge.source,
@@ -2156,31 +1776,22 @@ export function useLibraryGraphEngine({
         columnsRef.current
           ? { rowGap: columnsRef.current.rowGap, columns: columnsRef.current.columns.map((column) => ({ kind: column.kind, x: column.x, grid: column.grid, count: column.ids.length })) }
           : null,
-      /** The islands of the overview, in world units, or null under any other picture. */
-      /** The scale the fit tile would take the camera to, for a spec to say whether the map stands at its fit. */
+      /** The scale the fit tile would take the camera to. */
       fitScale: () => fitScaleRef.current,
+      /** The islands of the overview, in world units, or null under any other picture. */
       islands: () =>
         islandsRef.current
           ? islandsRef.current.islands.map((island) => ({ id: island.id, kind: island.kind, label: island.label, x: island.x, y: island.y, r: island.r, pages: island.pages.length, sources: island.sources.length, ...(island.band ? { band: island.band } : {}) }))
           : null,
-      /**
-       * Every name the last frame actually placed, in canvas CSS pixels.
-       *
-       * Which names are drawn and where is decided by a greedy screen-space pass that
-       * slides, truncates and drops — so a claim that the picture's names are readable and
-       * do not collide can only be measured from the pass's own output. Empty until one
-       * frame has run with the report armed, which the next line does.
-       */
+      /** Every name the last frame placed, from the label pass's own output; empty until one armed frame. */
       labels: () => labelReportRef.current ?? [],
       /** The islands whose name the last frame placed; a name that lost a collision is not here. */
       islandNames: () => islandReportRef.current ?? [],
       /** Where the simulation is: above the floor it is still arranging itself. */
       alpha: () => simRef.current?.alpha ?? 0,
       /**
-       * Whether the marks are still travelling to where they will stand: the camera easing
-       * to its fit, a mark still entering, a box change not yet applied. Under the flow
-       * layout `alpha()` is 0 from the first frame — the layout is laid, not settled — so a
-       * spec that reads a mark's place to press it waits on this, not on the alpha.
+       * Whether marks are still travelling (camera easing, a mark entering, a pending box);
+       * laid pictures keep `alpha()` at 0, so specs wait on this.
        */
       arriving: () =>
         (autoFitRef.current.on && !autoFitRef.current.converged) ||
@@ -2188,13 +1799,7 @@ export function useLibraryGraphEngine({
         travelRef.current !== null ||
         (islandFieldRef.current !== null && pictureRef.current === "islands" && isIslandFieldMoving(islandFieldRef.current)) ||
         (simRef.current?.nodes.some((node) => node.entered < 1) ?? false),
-      /**
-       * The open card's placement in canvas CSS pixels, with the mark it hangs from.
-       *
-       * A card is a DOM surface, so a spec can read its own rect — but the *mark* is
-       * painted, and "the card never covers its mark" is a claim about both. Only this can
-       * hand over the pair in one frame's coordinates.
-       */
+      /** The open card's placement with its painted mark, in one frame's coordinates. */
       card: () => cardBoxRef.current,
       /** Which lines are moving, and whether they are travelling or standing still. */
       flow: () => ({
@@ -2202,15 +1807,9 @@ export function useLibraryGraphEngine({
         stale: [...flowRef.current.stale],
         pulsing: pulseRef.current.homeAt !== null,
       }),
-      /**
-       * What frames cost, in milliseconds: the last one, the mean, and the worst.
-       *
-       * `reset()` before a measurement, because the arrival of a three-hundred-mark folder
-       * is the most expensive frame this canvas ever paints and it is not what a card's
-       * budget is about.
-       */
-      /** What the last sync of the graph cost, in ms — the one-off work when a folder or an island changes. */
+      /** What the last sync of the graph cost, in ms. */
       syncCost: () => syncCostRef.current,
+      /** Frame costs in ms; `reset()` first, since a folder's arrival is the costliest frame. */
       paint: () => ({
         last: paintCostRef.current.last,
         mean: paintCostRef.current.frames === 0 ? 0 : paintCostRef.current.total / paintCostRef.current.frames,
@@ -2249,11 +1848,8 @@ export function useLibraryGraphEngine({
 }
 
 /**
- * The speed a released mark keeps, in world units per tick.
- *
- * Measured over a trailing window anchored at the release, so a drag that was held still
- * before letting go stops dead instead of continuing on an average taken from earlier in
- * the gesture — the iOS scroll rule, and the same one the map uses.
+ * A released mark's speed in world units per tick, over a trailing window anchored at the
+ * release, so a drag held still before letting go stops dead.
  */
 function releaseVelocity(
   history: ReadonlyArray<{ x: number; y: number; t: number }>,

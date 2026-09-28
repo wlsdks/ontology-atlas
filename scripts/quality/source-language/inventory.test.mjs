@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   auditSourceCommentEntries,
   auditSourceStringEntries,
+  blankComments,
   classifySourcePath,
   classifyStringScanPath,
   extractCommentTokens,
@@ -97,6 +98,34 @@ test('finds CSS and JavaScript comments embedded in HTML without reading prose a
   ]);
   assert.equal(result.unexpectedFiles, 1);
   assert.equal(result.unexpectedLines, 3);
+});
+
+test('blankComments turns only real comments into spaces and keeps every offset and newline', () => {
+  const cases = [
+    [
+      'a.tsx',
+      [
+        'const url = `https://x.dev/${a /* c */}//tail`; // line',
+        'const re = /\\/\\/|\\/\\*/g; /* block',
+        '  spans lines */',
+        'export const P = () => <p className="a//b">Don\'t http://x // text</p>;',
+        'const j = <div>{/* jsx */}</div>;',
+      ],
+      ['/* c */', '// line', '/* block\n  spans lines */', '/* jsx */'],
+    ],
+    ['a.css', ['.a { background: url(//cdn.x/a.png); } /* real */'], ['/* real */']],
+    ['a.yml', ['url: https://x.dev/#frag', '  - uses: actions/checkout@abc # v6'], ['# v6']],
+    ['a.rs', ['let u = r#"// raw /* raw */"#; // tail'], ['// tail']],
+  ];
+  for (const [path, lines, comments] of cases) {
+    const source = lines.join('\n');
+    const expected = comments.reduce((text, comment) => {
+      const at = text.indexOf(comment);
+      assert.ok(at >= 0, `${path}: ${comment}`);
+      return text.slice(0, at) + comment.replace(/[^\n]/g, ' ') + text.slice(at + comment.length);
+    }, source);
+    assert.equal(blankComments(path, source), expected, path);
+  }
 });
 
 test('extractor exposes exact comment ranges for safe rewrites', () => {

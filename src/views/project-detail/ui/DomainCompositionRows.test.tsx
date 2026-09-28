@@ -53,7 +53,7 @@ function renderRows() {
 }
 
 describe("DomainCompositionRows", () => {
-  it("행은 접힌 채로 시작하고, 누르면 그 자리에서 역량 목록이 펼쳐진다", () => {
+  it("starts rows collapsed and expands the capability list in place on click", () => {
     renderRows();
     const [orders] = screen.getAllByTestId("project-detail-domain-row-toggle");
 
@@ -63,13 +63,12 @@ describe("DomainCompositionRows", () => {
     fireEvent.click(orders);
 
     expect(orders).toHaveAttribute("aria-expanded", "true");
-    // All of them, not "the top 2" — the number with nowhere to go ("N more capabilities") disappears.
     expect(screen.getByText("주문 생성")).toBeInTheDocument();
     expect(screen.getByText("주문 취소")).toBeInTheDocument();
     expect(screen.getByText("주문 조회")).toBeInTheDocument();
   });
 
-  it("펼친 행만 자기 disclosure 를 열고, 다른 행은 그대로 접혀 있다", () => {
+  it("opens only the clicked row's disclosure and leaves the others collapsed", () => {
     renderRows();
     const toggles = screen.getAllByTestId("project-detail-domain-row-toggle");
     fireEvent.click(toggles[0]);
@@ -77,11 +76,10 @@ describe("DomainCompositionRows", () => {
     const boxes = screen.getAllByTestId("project-detail-domain-disclosure");
     expect(boxes[0]).toHaveAttribute("data-state", "open");
     expect(boxes[1]).toHaveAttribute("data-state", "closed");
-    // The collapsed side leaves the tab order and the screen reader (what is not visible is not read).
     expect(boxes[1]).toHaveAttribute("inert");
   });
 
-  it("aria-controls 가 실제로 그려진 disclosure 상자를 가리킨다", () => {
+  it("points aria-controls at the rendered disclosure box", () => {
     renderRows();
     const [orders] = screen.getAllByTestId("project-detail-domain-row-toggle");
     const id = orders.getAttribute("aria-controls");
@@ -89,14 +87,14 @@ describe("DomainCompositionRows", () => {
     expect(document.getElementById(id!)).not.toBeNull();
   });
 
-  it("막대는 aria-hidden 이므로 수치가 행의 접근 이름에 실린다", () => {
+  it("carries the counts in the row's accessible name because the bar is aria-hidden", () => {
     renderRows();
     expect(
       screen.getByRole("button", { name: /주문: 전체 14 · 역량 3 · 요소 11/ }),
     ).toBeInTheDocument();
   });
 
-  it("도메인 단위 지도 문은 펼친 안에 하나뿐 — 접힌 상태에는 없다", () => {
+  it("shows one domain map link only inside an expanded row", () => {
     renderRows();
     expect(screen.queryByTestId("project-detail-domain-map-link")).not.toBeInTheDocument();
 
@@ -107,7 +105,7 @@ describe("DomainCompositionRows", () => {
     expect(links[0]).toHaveAttribute("href", "/topology/?mode=focus&p=domain%3Aorders");
   });
 
-  it("펼친 역량 이름은 그 노드의 지도 딥링크다 — 막다른 텍스트가 아니다", () => {
+  it("links each expanded capability name to its map node", () => {
     renderRows();
     fireEvent.click(screen.getAllByTestId("project-detail-domain-row-toggle")[0]);
 
@@ -121,13 +119,13 @@ describe("DomainCompositionRows", () => {
     expect(capabilityLinks[0]).toHaveTextContent("주문 생성");
   });
 
-  it("역량이 0인 도메인은 빈 목록 대신 그 사실을 말한다", () => {
+  it("states that a domain has no capabilities instead of an empty list", () => {
     renderRows();
     fireEvent.click(screen.getAllByTestId("project-detail-domain-row-toggle")[1]);
     expect(screen.getByText("담긴 역량이 아직 없어요.")).toBeInTheDocument();
   });
 
-  it("치수 규칙성 — 모든 행 헤더가 같은 클래스(=같은 높이)를 쓴다", () => {
+  it("gives every row header the same class and therefore the same height", () => {
     renderRows();
     const classes = new Set(
       screen.getAllByTestId("project-detail-domain-row-toggle").map((el) => el.className),

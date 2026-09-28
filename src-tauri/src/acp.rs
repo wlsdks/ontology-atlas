@@ -48,20 +48,23 @@ pub(crate) enum RegistryLaunch {
     },
 }
 
-#[derive(Debug, Clone, serde::Deserialize)]
+#[derive(Debug, Clone, Default, serde::Deserialize)]
 struct RegistrySnapshot {
     agents: Vec<RegistryAgent>,
+    #[serde(default, rename = "npmDependencyCutoff")]
+    npm_dependency_cutoff: Option<String>,
 }
 
 /// Parsed once; a corrupt snapshot yields an empty list, so the UI says "nothing
 /// found" rather than launching something invalid.
+fn snapshot() -> &'static RegistrySnapshot {
+    static SNAPSHOT: std::sync::OnceLock<RegistrySnapshot> = std::sync::OnceLock::new();
+    SNAPSHOT
+        .get_or_init(|| serde_json::from_str(include_str!("acp-registry.json")).unwrap_or_default())
+}
+
 fn registry() -> &'static [RegistryAgent] {
-    static REGISTRY: std::sync::OnceLock<Vec<RegistryAgent>> = std::sync::OnceLock::new();
-    REGISTRY.get_or_init(|| {
-        serde_json::from_str::<RegistrySnapshot>(include_str!("acp-registry.json"))
-            .map(|s| s.agents)
-            .unwrap_or_default()
-    })
+    &snapshot().agents
 }
 
 pub(crate) fn registry_agent(id: &str) -> Option<&'static RegistryAgent> {
@@ -499,7 +502,9 @@ pub(crate) fn resolve_launch(
             }
             let npx = resolve_command("npx", &dirs, probe).ok_or("node-missing")?;
             // `-y` skips the install prompt nobody can answer, which would hang the process.
-            let mut full = vec!["-y".to_string(), package.clone()];
+            let mut full = vec!["-y".to_string()];
+            full.extend(npx_hardening_flags(runtime_id));
+            full.push(package.clone());
             full.extend(args.iter().cloned());
             Ok(AcpLaunch {
                 program: npx,
@@ -635,14 +640,17 @@ pub(crate) fn npx_entry_health(entry: &Path, package: &str) -> NpxEntryHealth {
     NpxEntryHealth::Usable
 }
 
-/// Matches exactly the `npx -y <spec> …` shape `resolve_launch` builds.
+/// Matches exactly the `npx -y [flags] <spec> …` shape `resolve_launch` builds.
 pub(crate) fn npx_launch_package(launch: &AcpLaunch) -> Option<&str> {
     let stem = launch.program.file_stem()?.to_str()?;
     if !stem.eq_ignore_ascii_case("npx") {
         return None;
     }
     match launch.args.as_slice() {
-        [flag, package, ..] if flag == "-y" => Some(package),
+        [flag, rest @ ..] if flag == "-y" => rest
+            .iter()
+            .find(|arg| !arg.starts_with('-'))
+            .map(String::as_str),
         _ => None,
     }
 }
@@ -694,6 +702,54 @@ pub(crate) fn preflight_npx_cache(launch: &AcpLaunch, home: Option<&Path>) -> Np
             },
         },
     }
+}
+
+/// A ready entry's pinned bin, run without the idle `npm exec` parent.
+pub(crate) fn launch_from_npx_cache(
+    launch: &AcpLaunch,
+    home: Option<&Path>,
+    is_executable: &dyn Fn(&Path) -> bool,
+) -> Option<AcpLaunch> {
+    if !cfg!(unix) {
+        return None;
+    }
+    let package = npx_launch_package(launch)?;
+    let adapter_args = launch.args.iter().position(|arg| arg.as_str() == package)? + 1;
+    let (name, pinned) = package
+        .rsplit_once('@')
+        .filter(|(name, _)| !name.is_empty())?;
+    let modules = npx_cache_entry_dir(&npx_cache_root(home)?, package).join("node_modules");
+    let package_dir = std::fs::canonicalize(modules.join(name)).ok()?;
+    let manifest = std::fs::read_to_string(package_dir.join("package.json")).ok()?;
+    let manifest: serde_json::Value = serde_json::from_str(&manifest).ok()?;
+    if manifest.get("version")?.as_str()? != pinned {
+        return None;
+    }
+    let bin_name = adapter_bin_name(package)?;
+    let declared = match manifest.get("bin")? {
+        serde_json::Value::String(path) => path,
+        bins => bins.get(&bin_name)?.as_str()?,
+    };
+    let target = std::fs::canonicalize(package_dir.join(declared)).ok()?;
+    let bin_dir = modules.join(".bin");
+    let program = bin_dir.join(&bin_name);
+    if !target.starts_with(&package_dir)
+        || std::fs::canonicalize(&program).ok()? != target
+        || !is_executable(&program)
+    {
+        return None;
+    }
+    let inherited =
+        std::env::split_paths(&launch.path_env).filter(|dir| !dir.as_os_str().is_empty());
+    let path_env = std::env::join_paths(std::iter::once(bin_dir).chain(inherited))
+        .ok()?
+        .to_string_lossy()
+        .to_string();
+    Some(AcpLaunch {
+        program,
+        args: launch.args[adapter_args..].to_vec(),
+        path_env,
+    })
 }
 
 /// Only bytes received so far: the total is pinned nowhere. Symlinks are not followed.
@@ -776,6 +832,19 @@ pub(crate) fn sanitized_runtime_environment(
             .filter(|(key, _)| runtime_environment_key_allowed(runtime_id, key))
             .collect(),
     )
+}
+
+/// Measured 2026-09-27: both adapters start through npx under the snapshot's cutoff.
+const NPM_HARDENED_RUNTIMES: &[&str] = &["claude-acp", "codex-acp"];
+
+/// A flag npm does not hand on (measured): what the adapter runs keeps its own npm settings.
+pub(crate) fn npx_hardening_flags(runtime_id: &str) -> Vec<String> {
+    match snapshot().npm_dependency_cutoff.as_deref() {
+        Some(cutoff) if NPM_HARDENED_RUNTIMES.contains(&runtime_id) => {
+            vec![format!("--before={cutoff}")]
+        }
+        _ => Vec::new(),
+    }
 }
 
 /// Session start and the login probe share one environment policy.
@@ -1405,6 +1474,7 @@ pub(crate) fn read_bounded_line<R: std::io::BufRead>(
     max_bytes: usize,
 ) -> std::io::Result<Option<Vec<u8>>> {
     let mut out: Vec<u8> = Vec::new();
+    let mut oversized = false;
     loop {
         let available = match reader.fill_buf() {
             Ok(buf) => buf,
@@ -1412,39 +1482,41 @@ pub(crate) fn read_bounded_line<R: std::io::BufRead>(
             Err(e) => return Err(e),
         };
         if available.is_empty() {
+            if oversized {
+                return Err(line_too_long(max_bytes));
+            }
             return Ok(if out.is_empty() { None } else { Some(out) });
         }
-        match available.iter().position(|b| *b == b'\n') {
-            Some(at) => {
-                if out.len() + at > max_bytes {
-                    reader.consume(at + 1);
-                    return Err(std::io::Error::new(
-                        std::io::ErrorKind::InvalidData,
-                        format!("acp line exceeded {max_bytes} bytes"),
-                    ));
-                }
-                out.extend_from_slice(&available[..at]);
-                reader.consume(at + 1);
-                // Lines ending in `\r\n` are accepted too.
-                if out.last() == Some(&b'\r') {
-                    out.pop();
-                }
-                return Ok(Some(out));
-            }
-            None => {
-                let len = available.len();
-                if out.len() + len > max_bytes {
-                    reader.consume(len);
-                    return Err(std::io::Error::new(
-                        std::io::ErrorKind::InvalidData,
-                        format!("acp line exceeded {max_bytes} bytes"),
-                    ));
-                }
-                out.extend_from_slice(available);
-                reader.consume(len);
-            }
+        let newline = available.iter().position(|b| *b == b'\n');
+        let content = &available[..newline.unwrap_or(available.len())];
+        if !oversized && out.len() + content.len() > max_bytes {
+            oversized = true;
+            out = Vec::new();
         }
+        if !oversized {
+            out.extend_from_slice(content);
+        }
+        let consumed = content.len() + usize::from(newline.is_some());
+        reader.consume(consumed);
+        if newline.is_none() {
+            continue;
+        }
+        if oversized {
+            return Err(line_too_long(max_bytes));
+        }
+        // Lines ending in `\r\n` are accepted too.
+        if out.last() == Some(&b'\r') {
+            out.pop();
+        }
+        return Ok(Some(out));
     }
+}
+
+fn line_too_long(max_bytes: usize) -> std::io::Error {
+    std::io::Error::new(
+        std::io::ErrorKind::InvalidData,
+        format!("acp line exceeded {max_bytes} bytes"),
+    )
 }
 
 /// Generous because adapters may send a whole file in one line.
@@ -1899,6 +1971,64 @@ mod tests {
         assert!(output.status.success(), "stdout={stdout}\nstderr={stderr}");
         assert!(stdout.contains("INITIAL_AGENT_MODE=read-only"), "{stdout}");
         assert!(!stdout.contains("INITIAL_AGENT_MODE=agent"), "{stdout}");
+    }
+
+    #[test]
+    fn hardened_npx_launches_resolve_only_up_to_the_snapshot() {
+        let cutoff = snapshot()
+            .npm_dependency_cutoff
+            .as_deref()
+            .expect("the registry snapshot records its npm dependency cutoff");
+        chrono::DateTime::parse_from_rfc3339(cutoff).expect("the cutoff is an RFC 3339 instant");
+        for runtime in NPM_HARDENED_RUNTIMES {
+            assert_eq!(
+                npx_hardening_flags(runtime),
+                [format!("--before={cutoff}")],
+                "{runtime}"
+            );
+
+            let mut command = std::process::Command::new(std::env::current_exe().unwrap());
+            command
+                .args([
+                    "--exact",
+                    "acp::tests::runtime_environment_probe_child",
+                    "--nocapture",
+                ])
+                .stdout(std::process::Stdio::piped())
+                .stderr(std::process::Stdio::piped());
+            apply_runtime_environment(&mut command, runtime, "/atlas/verified/bin");
+            command.env("ATLAS_ENV_PROBE_CHILD", "1");
+
+            let output = command.output().unwrap();
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            assert!(output.status.success(), "stdout={stdout}\nstderr={stderr}");
+            assert!(
+                !stdout.to_ascii_lowercase().contains("npm_config_"),
+                "{runtime}: the commands the adapter runs keep the user's npm settings: {stdout}"
+            );
+        }
+    }
+
+    #[test]
+    fn unmeasured_runtimes_keep_their_own_npm_settings() {
+        assert!(npx_hardening_flags("gemini").is_empty());
+        let mut command = std::process::Command::new("npx");
+        apply_runtime_environment(&mut command, "gemini", "/atlas/verified/bin");
+        assert!(command
+            .get_envs()
+            .all(|(key, _)| !key.to_string_lossy().starts_with("npm_config_")));
+        let flagged = AcpLaunch {
+            program: PathBuf::from("/usr/local/bin/npx"),
+            args: vec![
+                "-y".into(),
+                "--before=2026-01-01T00:00:00.000Z".into(),
+                "pkg@1.0.0".into(),
+                "--acp".into(),
+            ],
+            path_env: String::new(),
+        };
+        assert_eq!(npx_launch_package(&flagged), Some("pkg@1.0.0"));
     }
 
     #[test]
@@ -2475,11 +2605,17 @@ mod tests {
             )
             .unwrap();
             assert_eq!(launch.program, test_bin("npx"));
+            let cutoff = snapshot().npm_dependency_cutoff.as_deref().unwrap();
             assert_eq!(
                 launch.args,
-                vec!["-y".to_string(), npx_package("claude-acp").to_string()],
-                "without an install, launch through version-pinned npx"
+                vec![
+                    "-y".to_string(),
+                    format!("--before={cutoff}"),
+                    npx_package("claude-acp").to_string()
+                ],
+                "without an install, launch through version-pinned npx under the dependency cutoff"
             );
+            assert_eq!(npx_launch_package(&launch), Some(npx_package("claude-acp")));
         }
 
         files.insert(test_bin("claude-agent-acp"));
@@ -2636,6 +2772,19 @@ mod tests {
             Some(&b"{\"ok\":true}"[..]),
             "one oversized line must not kill the session"
         );
+    }
+
+    #[test]
+    fn bounded_line_reader_drops_the_whole_oversized_line_across_buffer_refills() {
+        let data = b"{\"a\":\"0123456789\"}\n{\"ok\":1}\n";
+        let mut input = std::io::BufReader::with_capacity(8, &data[..]);
+        assert!(read_bounded_line(&mut input, 10).is_err());
+        assert_eq!(
+            read_bounded_line(&mut input, 10).unwrap().as_deref(),
+            Some(&b"{\"ok\":1}"[..]),
+            "the tail of the dropped line must not come back as a line of its own"
+        );
+        assert_eq!(read_bounded_line(&mut input, 10).unwrap(), None);
     }
 
     /// Reaping is asynchronous.
@@ -3880,6 +4029,141 @@ mod npx_cache_tests {
         assert_eq!(
             preflight_npx_cache(&npx_launch(CLAUDE_SPEC), None),
             NpxCachePreflight::CacheUnknown,
+        );
+        let _ = std::fs::remove_dir_all(&home);
+    }
+
+    #[cfg(unix)]
+    fn plant_adapter(home: &Path, installed_version: &str) -> PathBuf {
+        let entry = npx_cache_entry_dir(&npx_cache_root(Some(home)).unwrap(), CLAUDE_SPEC);
+        build_entry(
+            &entry,
+            &EntryShape {
+                package_json: Some(HEALTHY_MANIFEST),
+                node_modules: true,
+                bin_entries: &[],
+            },
+        );
+        let package = adapter_package(&entry);
+        let manifest = serde_json::json!({
+            "version": installed_version,
+            "bin": { "claude-agent-acp": "dist/index.js" },
+        });
+        std::fs::write(package.join("package.json"), manifest.to_string()).unwrap();
+        std::fs::create_dir_all(package.join("dist")).unwrap();
+        std::fs::write(
+            package.join("dist").join("index.js"),
+            "#!/usr/bin/env node\n",
+        )
+        .unwrap();
+        link_bin(
+            &entry,
+            Path::new("../@agentclientprotocol/claude-agent-acp/dist/index.js"),
+        );
+        entry
+    }
+
+    #[cfg(unix)]
+    fn adapter_package(entry: &Path) -> PathBuf {
+        entry
+            .join("node_modules")
+            .join("@agentclientprotocol")
+            .join("claude-agent-acp")
+    }
+
+    #[cfg(unix)]
+    fn link_bin(entry: &Path, target: &Path) {
+        let link = entry
+            .join("node_modules")
+            .join(".bin")
+            .join("claude-agent-acp");
+        let _ = std::fs::remove_file(&link);
+        std::os::unix::fs::symlink(target, link).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_ready_entry_launches_its_pinned_bin_without_npm_exec() {
+        let home = scratch("direct");
+        let entry = plant_adapter(&home, "0.69.0");
+        let mut launch = npx_launch(CLAUDE_SPEC);
+        launch
+            .args
+            .insert(1, "--before=2026-01-01T00:00:00.000Z".to_string());
+        launch.args.push("--acp".to_string());
+        launch.path_env = "/opt/node/bin".to_string();
+
+        let direct = launch_from_npx_cache(&launch, Some(&home), &|_| true).expect("direct launch");
+
+        let bin = entry.join("node_modules").join(".bin");
+        assert_eq!(direct.program, bin.join("claude-agent-acp"));
+        assert_eq!(direct.args, vec!["--acp".to_string()]);
+        let path_env = std::env::join_paths([bin, PathBuf::from("/opt/node/bin")]).unwrap();
+        assert_eq!(direct.path_env, path_env.to_string_lossy());
+        let _ = std::fs::remove_dir_all(&home);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_bin_link_that_is_not_the_checked_packages_bin_is_not_run() {
+        let home = scratch("direct-planted");
+        let launch = npx_launch(CLAUDE_SPEC);
+        let entry = plant_adapter(&home, "0.69.0");
+        let planted = home.join("planted.sh");
+        std::fs::write(&planted, "#!/bin/sh\n").unwrap();
+
+        link_bin(&entry, &planted);
+        assert_eq!(launch_from_npx_cache(&launch, Some(&home), &|_| true), None);
+
+        let bin = entry
+            .join("node_modules")
+            .join(".bin")
+            .join("claude-agent-acp");
+        std::fs::remove_file(&bin).unwrap();
+        std::fs::write(&bin, "#!/bin/sh\n").unwrap();
+        assert_eq!(launch_from_npx_cache(&launch, Some(&home), &|_| true), None);
+
+        let leaving = serde_json::json!({
+            "version": "0.69.0",
+            "bin": { "claude-agent-acp": planted },
+        });
+        std::fs::write(
+            adapter_package(&entry).join("package.json"),
+            leaving.to_string(),
+        )
+        .unwrap();
+        link_bin(&entry, &planted);
+        assert_eq!(launch_from_npx_cache(&launch, Some(&home), &|_| true), None);
+        let _ = std::fs::remove_dir_all(&home);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_direct_launch_needs_the_exact_pinned_version_and_a_runnable_bin() {
+        let home = scratch("direct-refused");
+        let launch = npx_launch(CLAUDE_SPEC);
+        plant_adapter(&home, "0.70.0");
+        assert_eq!(launch_from_npx_cache(&launch, Some(&home), &|_| true), None);
+
+        plant_adapter(&home, "0.69.0");
+        assert_eq!(
+            launch_from_npx_cache(&launch, Some(&home), &|_| false),
+            None
+        );
+
+        let unpinned = npx_launch("@agentclientprotocol/claude-agent-acp");
+        assert_eq!(
+            launch_from_npx_cache(&unpinned, Some(&home), &|_| true),
+            None
+        );
+        let installed = AcpLaunch {
+            program: PathBuf::from("/usr/local/bin/claude-agent-acp"),
+            args: vec![],
+            path_env: String::new(),
+        };
+        assert_eq!(
+            launch_from_npx_cache(&installed, Some(&home), &|_| true),
+            None
         );
         let _ = std::fs::remove_dir_all(&home);
     }

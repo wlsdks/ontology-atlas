@@ -2,13 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { buildRestorableRoute, isRestorableRoute } from './route-memory';
 
 describe('RouteMemory', () => {
-  it('locale 하위 작업 surface 만 복원 대상으로 허용한다', () => {
+  it('accepts only work surfaces under a locale as restorable', () => {
     expect(isRestorableRoute('/en/topology/')).toBe(true);
     expect(isRestorableRoute('/ko/ontology/')).toBe(true);
     expect(isRestorableRoute('/en/docs')).toBe(true);
   });
 
-  it('locale root 와 외부 URL 형태는 복원하지 않는다', () => {
+  it('rejects a locale root and external URL shapes', () => {
     expect(isRestorableRoute('/en/')).toBe(false);
     expect(isRestorableRoute('/ko/')).toBe(false);
     expect(isRestorableRoute('/topology/')).toBe(false);
@@ -17,7 +17,7 @@ describe('RouteMemory', () => {
     expect(isRestorableRoute('/en/<script>')).toBe(false);
   });
 
-  it('같은 surface 안의 query와 hash까지 직전 작업 위치로 보존한다', () => {
+  it('keeps the query and hash of the last position on the same surface', () => {
     expect(
       buildRestorableRoute(
         '/ko/docs/',
@@ -29,7 +29,7 @@ describe('RouteMemory', () => {
     );
   });
 
-  it('복원할 수 없는 pathname에는 query나 hash를 붙이지 않는다', () => {
+  it('returns null instead of attaching a query or hash to an unrestorable pathname', () => {
     expect(buildRestorableRoute('/ko/', '?slug=README', '')).toBeNull();
     expect(
       buildRestorableRoute('https://example.com/ko/docs/', '?slug=README', ''),

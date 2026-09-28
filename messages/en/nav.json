@@ -58,6 +58,7 @@
     "workspaceFolderPermissionAction": "Re-allow",
     "workspaceFolderErrorFallback": "Couldn't read the folder: pick it again",
     "workspaceFolderErrorPathMissing": "That folder is gone. It looks like it was moved or deleted. Pick it again.",
+    "workspaceFolderErrorGrantNeeded": "After this update, choose your ontology folder once to confirm access. Your documents are still there.",
     "workspaceFolderErrorPermissionDenied": "Your Mac is not letting this app read that folder. Allow it in System Settings, or pick a folder somewhere else.",
     "workspaceFolderErrorRootRejected": "That location cannot hold a folder. Pick a project folder instead.",
     "workspaceRecentOpenAria": "Open recent workspace {name}",

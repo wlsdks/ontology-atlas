@@ -1,62 +1,23 @@
-// stale-parent — the update-path signal a containment parent owes its children.
-//
-// `detect-drift.mjs` catches a node pointing at code that moved. This catches the
-// other direction of the same rot: a node whose **prose** still describes a set it
-// no longer holds.
-//
-// A `domain` or `project` body is an aggregate. `domains/agent-integration.md`
-// says, in `## Definition` and `## Evidence`, what the capabilities and elements it
-// declares add up to. When that set changes, the sentences do not follow on their
-// own, and no existing check notices: every code in `validate.mjs` asks whether the
-// graph is intact (dangling reference, duplicate uid, parseable frontmatter), never
-// whether it still tells the truth. The failure is silent by construction — a
-// reader orienting before work adopts the stale frame and only discovers it after
-// acting on it.
-//
-// **Why the comparison is prose-against-membership, and not the obvious thing.**
-// The first version compared the parent's file timestamp against its children's. On
-// the dogfood vault that flagged 6 of 7 domains, 4 of them at every child — and
-// inspection showed the flags were wrong. `agent-integration`'s Definition names
-// "MCP servers, terminal CLI, in-app connect flow, and the ACP executor layer",
-// which still covered all four children that had been edited under it. A domain
-// summary is written at a level of abstraction that survives its children being
-// revised; it does not survive them being *added or removed*. Comparing against
-// child edits measures churn, not staleness.
-//
-// The second attempt compared against child *creation* and could never fire at all:
-// containment is declared in the parent's own frontmatter, so adding a child always
-// touches the parent in the same commit.
-//
-// What is left is the comparison this module makes. A parent carries two clocks in
-// one file — the body, which is the judgement, and the containment arrays, which
-// are the membership. Git sees one file, but the two move independently, and the
-// answer is only interesting when membership moved last. That reads as: *the child
-// list changed after anyone last re-wrote the description of it.*
-//
-// **Why the remedy is a question, not a rewrite.** A cache would regenerate the
-// summary and move on. This vault cannot: the parent's body is a human judgement
-// that someone accepted, and `local-first.md` keeps meaning on the user's disk under
-// their signature rather than a model's. So this module reports and stops. It calls
-// no model, writes no file, and adds no frontmatter key.
-//
-// **Falsifier.** If flagged parents turn out, on inspection, to still describe their
-// membership correctly, then the containment array is the wrong proxy for meaning
-// and this check should be withdrawn rather than tuned. The first version's
-// falsifier fired within an hour of being written; this one is recorded so the
-// second can be judged the same way.
-//
-// Revisions are injected rather than read here, so the logic is testable without a
-// repository and the caller decides where history comes from.
+// A domain or project body summarizes its membership, and no validate.mjs code
+// asks whether that summary is still true. This flags a summary node whose
+// containment list changed after its description last did: the body (the
+// judgement) and the containment arrays (the membership) are two clocks in one
+// file. Child edits are not compared (summaries survive revision; that measures
+// churn), and child creation cannot be (it always touches the parent).
+// It reports and stops: the body is a person's accepted judgement
+// (`.claude/rules/local-first.md`), so no model is called and no file written.
+// Falsifier: if flagged parents still describe their membership correctly, the
+// containment array is the wrong proxy and the check should be withdrawn.
+// Revisions are injected, so the caller decides where history comes from.
+
+import { createHash } from 'node:crypto';
 
 /** Frontmatter arrays through which a parent holds what is below it. Mirrors `CONTAINMENT_KEYS` in `validate.mjs`. */
-const CONTAINMENT_KEYS = ['contains', 'capabilities', 'elements', 'domains'];
+export const CONTAINMENT_KEYS = Object.freeze(['contains', 'capabilities', 'elements', 'domains']);
 
 /**
- * Kinds whose body is an aggregate of their membership and therefore goes stale.
- *
- * An `element` may declare containment too, but its prose describes one
- * implementation role rather than summarising a set, so membership changing under
- * it does not falsify its sentences.
+ * Kinds whose body aggregates their membership. An element's prose describes
+ * one role, not a set, so membership changes do not falsify it.
  */
 export const SUMMARY_KINDS = ['project', 'domain'];
 
@@ -86,6 +47,17 @@ export function containedSlugs(frontmatter) {
   return [...new Set(slugs)];
 }
 
+function digest(text) {
+  return createHash('sha256').update(text).digest('base64url');
+}
+
+export function revisionClocks({ body, children } = {}) {
+  return {
+    bodyDigest: digest(String(body ?? '')),
+    membershipDigest: digest(membershipKey(children)),
+  };
+}
+
 function toTime(value) {
   if (value == null) return null;
   const time = value instanceof Date ? value.getTime() : Date.parse(value);
@@ -93,12 +65,9 @@ function toTime(value) {
 }
 
 /**
- * Walks a node's revisions, newest first, and reports when each clock last moved.
- *
- * A revision is `{ changedAt, body, children }`. The first entry is the current
- * state. A clock's last movement is the revision at which its value still differs
- * from the one before it; if a value is identical all the way back to the oldest
- * revision available, that clock is reported as `null` — unknown, not "never".
+ * Walks revisions (`{ changedAt, bodyDigest, membershipDigest }`, newest first,
+ * the first is current) and reports when each clock last moved. A value
+ * unchanged back to the oldest revision is `null`: unknown, not "never".
  */
 export function lastMovementOf(revisions) {
   const list = Array.isArray(revisions) ? revisions.filter(Boolean) : [];
@@ -110,21 +79,17 @@ export function lastMovementOf(revisions) {
   for (let index = 0; index < list.length - 1; index += 1) {
     const newer = list[index];
     const older = list[index + 1];
-    if (bodyChangedAt == null && String(newer.body ?? '') !== String(older.body ?? '')) {
+    if (bodyChangedAt == null && newer.bodyDigest !== older.bodyDigest) {
       bodyChangedAt = newer.changedAt ?? null;
     }
-    if (
-      membershipChangedAt == null &&
-      membershipKey(newer.children) !== membershipKey(older.children)
-    ) {
+    if (membershipChangedAt == null && newer.membershipDigest !== older.membershipDigest) {
       membershipChangedAt = newer.changedAt ?? null;
     }
     if (bodyChangedAt != null && membershipChangedAt != null) break;
   }
 
-  // Reaching the oldest revision without a difference means the value was born that
-  // way. That is a real answer when history is complete, and unknowable when it is
-  // not, so the caller is told which case it has.
+  // Unchanged back to the oldest revision is a real answer only when history is
+  // complete, so the caller is told which case it has.
   const truncated = bodyChangedAt == null || membershipChangedAt == null;
   const oldest = list[list.length - 1]?.changedAt ?? null;
   return {
@@ -135,13 +100,12 @@ export function lastMovementOf(revisions) {
 }
 
 /**
- * Finds summary nodes whose membership changed after their description last did.
+ * Summary nodes whose membership changed after their description last did.
  *
- * @param docs Vault documents, each `{ slug, frontmatter }`.
- * @param revisionsOf `(slug) => [{ changedAt, body, children }]`, newest first. A
- *   slug it returns nothing for is skipped rather than guessed.
- * @returns Rows sorted by how far behind the description is, then by slug, so the
- *   output is stable across runs.
+ * @param docs `{ slug, frontmatter }` documents.
+ * @param revisionsOf `(slug) => [{ changedAt, bodyDigest, membershipDigest }]`,
+ *   newest first; a slug with no revisions is skipped, never guessed.
+ * @returns Rows by lag, then slug, stable across runs.
  */
 export function findStaleParentSummaries({ docs, revisionsOf } = {}) {
   if (typeof revisionsOf !== 'function') return [];
@@ -191,12 +155,9 @@ export function findStaleParentSummaries({ docs, revisionsOf } = {}) {
 const DAY_MS = 86_400_000;
 
 /**
- * Ranks a row between 0 and 1 by how long the description has been behind.
- *
- * Time rather than child count: a domain whose membership changed an hour before
- * someone got around to the prose is not the same problem as one that has been
- * behind for a month, and the second is the one worth a person's attention.
- * Saturates at 30 days so a very old lag cannot crowd everything else out.
+ * 0–1 by how long the description has been behind, saturating at 30 days: a
+ * month-long lag deserves attention an hour-long one does not, and child count
+ * would not tell them apart.
  */
 export function staleParentScore(row) {
   const lag = row?.behindByMs;

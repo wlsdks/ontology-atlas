@@ -44,9 +44,8 @@ export function useTopologyAssetPreload({ prefetchedProjectHrefsRef, router, pre
     const candidateSlugs = new Set<string>();
     if (selectedSlug) candidateSlugs.add(selectedSlug);
 
-    // The top five hubs are preloaded in the background so their screenshots are
-    // already there if the user clicks a hub straight after arriving. Run in an idle
-    // callback so it cannot disturb the current interaction.
+    // Preloads the top five hubs in an idle callback so an early hub click finds its screenshot
+    // ready.
     const addTopHubs = () => {
       hubs.slice(0, 5).forEach((hub) => candidateSlugs.add(hub.slug));
       candidateSlugs.forEach(preloadProjectAsset);

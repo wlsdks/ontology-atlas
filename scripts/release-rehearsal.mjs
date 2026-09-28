@@ -1,37 +1,8 @@
 #!/usr/bin/env node
 /**
- * Walks the release runner's steps on this machine, in order, **before** a tag is
- * pushed.
- *
- * **Why this exists.** `v1.0.0-rc.2` was tagged four times and stopped in the build
- * all four times. Each fix moved the failure to **the very next step**:
- *
- *   1st  Desktop readiness            gate demanded yesterday's doc sentence (#743)
- *   2nd  Native vault bridge tests    externalBin sidecar built too late      (#744)
- *   3rd  Build bundled MCP sidecar    bun, the build tool, absent on runner   (#745)
- *   4th  Build bundled MCP sidecar    mcp/ dependencies absent on runner      (#746)
- *
- * All four **passed locally**, because a person's machine already has everything.
- * And these steps are wired nowhere outside
- * `.github/workflows/release-macos.yml` — neither `checks.yml` nor
- * `deploy-pages.yml` runs `desktop:check` / `desktop:smoke` / `mcp:build-binary` /
- * `test:desktop:bridge`. So these steps **are first executed only by pushing a
- * tag**, and you learn one failure per round trip, at roughly 20 minutes of human
- * time each.
- *
- * This script moves that round trip to before the tag.
- *
- * **Why it reads the workflow file.** Copying the step list in here means this file
- * goes quietly stale when the workflow changes — a failure mode this repository has
- * hit repeatedly (a gate verifying its own constants). So the list is not written
- * down; it is **read straight from the workflow's `build-macos` job**, and a new
- * step in the workflow is picked up by the next rehearsal automatically. Both the
- * protected `admit-release` and `build-macos` are covered.
- *
- * **It says what it cannot do.** Signing and notarisation need Apple secrets; the
- * release slot and draft verification need a real tag. Such steps are not skipped
- * quietly — they are **listed as `SKIP` with the reason**. If green came to mean
- * "everything was checked", this script would be reassurance rather than a gate.
+ * Walks the release workflow's `admit-release` and `build-macos` steps on this machine
+ * before a tag is pushed, reading them from the workflow so a new step is never missed;
+ * a step that needs Apple secrets or a real tag is listed as SKIP with its reason.
  *
  *   node scripts/release-rehearsal.mjs            # everything through the build
  *   node scripts/release-rehearsal.mjs --fast     # stop before app compile / DMG
@@ -70,8 +41,8 @@ export const REHEARSAL_SKIPS = {
     "This step builds a temporary keychain from APPLE_CERTIFICATE_P12_BASE64. It cannot run without the secrets, and running it would touch this machine's keychain, so the rehearsal deliberately leaves it out.",
   "Enable Corepack pnpm":
     "This step installs pnpm on the runner. This machine already has pnpm, and whether the version matches the runner is answered by the tool probe above.",
-  "Build signed and notarized release artifact":
-    "codesign (Developer ID) plus notarytool are required. Instead, the local substitute for the same step runs the ad-hoc signing path end to end and proves the build, smoke, sidecar bundling, DMG, checksum and install smoke. Only Developer ID signing, notarization and DMG container signing are first stepped on by a real tag.",
+  "Sign and notarize release artifact":
+    "codesign (Developer ID) plus notarytool are required. The substitute on the build step already walked ad-hoc signing, the updater repack, DMG, checksum and install smoke; only Developer ID signing, notarization and DMG container signing are first stepped on by a real tag.",
   "Summarize macOS release assets": "It only writes a table into GITHUB_STEP_SUMMARY, so there is nothing here that can hold or fail.",
   "Cleanup Apple signing keychain": "It removes a keychain that only the signing path creates.",
 };
@@ -89,15 +60,15 @@ export const REHEARSAL_SUBSTITUTES = {
     argv: ["node", "scripts/release-rehearsal.mjs", "--check-versions"],
     note: "Instead of a tag name, it checks that the package.json, tauri.conf.json and Cargo.toml versions agree with each other.",
   },
-  "Build signed and notarized release artifact": {
+  "Build release app bundle": {
     argv: ["pnpm", "desktop:release-artifact:unsigned"],
-    note: "The public workflow has no unsigned fallback. Only locally does the ad-hoc signing substitute run the path end to end and prove the chain apart from Developer ID signing and notarization.",
+    note: "The public workflow has no unsigned fallback. Only locally does the ad-hoc signing substitute run the build and the signing chain end to end, apart from Developer ID signing and notarization.",
   },
 };
 
 /** App compile, DMG, and install smoke are slow — `--fast` stops here. */
 export const REHEARSAL_SLOW_STEPS = new Set([
-  "Build signed and notarized release artifact",
+  "Build release app bundle",
 ]);
 
 /**

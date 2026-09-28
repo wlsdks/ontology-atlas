@@ -63,12 +63,9 @@ separate approval tool or writer token.
 Always obtain explicit user approval for the exact plan and visible gaps.
 Unknown is a valid result; invented completeness is not.`;
 
-// What a blocked caller can still do. The bulk `writePlan` is gated on an
-// independent evaluation, but ordinary vault writing is not: `add_concepts` and
-// `add_relation` carry no qualification check. A caller that reads only "packet
-// required" has no action left, so this sentence names the path that stays open
-// rather than leaving the person to read the server source or give up. It names
-// tools rather than a skill because a skill ships only for some clients.
+// The bulk writePlan waits for an independent evaluation, but add_concepts and
+// add_relation do not, so a blocked caller is told the path that stays open.
+// It names tools, not a skill, since skills ship only for some clients.
 const INCREMENTAL_WRITE_RECOVERY =
   'If you cannot run an independent evaluation lane, leave the bulk plan unwritten and ' +
   'grow the vault a few concepts at a time instead: show the person a short batch with ' +
@@ -111,9 +108,8 @@ function proposalRelationRef({ from, to, type } = {}) {
 }
 
 /**
- * Derive the handoff coverage set from the canonical in-memory review plan.
- * This is a receipt helper, not a second ontology schema: no semantic truth is
- * inferred from these labels and no row is written by this function.
+ * The handoff coverage set from the in-memory review plan: a receipt helper that
+ * infers no meaning and writes nothing.
  */
 export function proposalCoverageRefs(reviewPlan) {
   if (!reviewPlan || typeof reviewPlan !== 'object') return [];
@@ -382,10 +378,9 @@ function deriveAdmissionDisposition({
 }
 
 /**
- * Turn a validated candidate plan plus the existing qualification packet into
- * a write eligibility decision. This function is side-effect free: it returns
- * exact writer rows only after the packet and declared human acceptance bind
- * to the same plan and source digest.
+ * Write eligibility from a validated plan and the qualification packet. Pure: it
+ * returns writer rows only when the packet and the declared human acceptance
+ * bind to the same plan and source digest.
  */
 export function evaluateConstructionLifecycle({
   reviewPlan,

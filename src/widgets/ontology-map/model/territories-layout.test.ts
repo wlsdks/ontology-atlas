@@ -7,6 +7,7 @@ import {
   territoryClusterAvoid,
   territorySatellites,
   TERRITORY_GEOMETRY,
+  type TerritoryCapability,
   type TerritoryInputEdge,
   type TerritoryInputNode,
   type TerritoryLayout,
@@ -22,7 +23,6 @@ const FONT_PX: Record<TerritoryTextRole, number> = {
   chip: TERRITORY_GEOMETRY.chipFontPx,
 };
 
-/** A conservative width model: Hangul full-width, Latin a little over half an em. */
 function measure(text: string, role: TerritoryTextRole): number {
   const px = FONT_PX[role];
   let w = 0;
@@ -73,7 +73,6 @@ function synthetic(capabilityCount: number, domainCount: number): { nodes: Terri
     edges.push({ source: "project:p", target: `domain:d${d}`, kind: "contains", relationType: "contains" });
   }
   for (let c = 0; c < capabilityCount; c++) {
-    // Uneven territories: the first domain takes a larger share.
     const d = c % (domainCount + 1) === domainCount ? 0 : c % domainCount;
     const id = `capability:c${c}`;
     nodes.push({ id, label: `${words[c % words.length]} ${c}`, kind: "capability" });
@@ -89,7 +88,6 @@ function synthetic(capabilityCount: number, domainCount: number): { nodes: Terri
   return { nodes, edges };
 }
 
-/** Every pair of placed boxes that overlap. The layout promises none. */
 function overlaps(layout: TerritoryLayout): string[] {
   const out: string[] = [];
   const all = layout.boxes;
@@ -106,6 +104,12 @@ function inSector(angle: number, start: number, end: number): boolean {
   const rel = (((angle - start) % twoPi) + twoPi) % twoPi;
   return rel <= end - start + 1e-9;
 }
+
+const ROOM_1280 = { x: -407, y: -330, w: 834, h: 640 };
+const ROOM_1040 = { x: -287, y: -290, w: 594, h: 560 };
+type Rect = { x: number; y: number; w: number; h: number };
+const inside = (room: Rect, b: Rect) =>
+  b.x >= room.x && b.y >= room.y && b.x + b.w <= room.x + room.w && b.y + b.h <= room.y + room.h;
 
 describe("computeTerritoryLayout", () => {
   it("names every dogfood capability around its own domain with nothing overlapping", () => {
@@ -135,7 +139,7 @@ describe("computeTerritoryLayout", () => {
     const { nodes, edges } = synthetic(capabilityCount, domainCount);
     const layout = computeTerritoryLayout(nodes, edges, options);
     expect(layout.capabilities).toHaveLength(capabilityCount);
-    // At this scale every name is reserved; past it the overview draws discs and names on hover.
+    // Past this scale the overview draws discs and names on hover.
     expect(layout.dense).toBe(dense);
     expect(layout.capabilities.every((c) => c.labelReserved === !dense)).toBe(true);
     expect(overlaps(layout)).toEqual([]);
@@ -161,21 +165,42 @@ describe("computeTerritoryLayout", () => {
   });
 
   it.each([
-    ["1280x800 with INDEX open", { x: -407, y: -330, w: 834, h: 640 }],
-    ["1040x720 with INDEX open", { x: -287, y: -290, w: 594, h: 560 }],
-  ])("keeps every disc and every name it draws at rest inside a %s room", (_label, room) => {
-    // Interaction audit, 2026-09-25: past the room the drawing went under INDEX, the tiles and
-    // the bottom of the window. Inside a smaller room the rings draw in first; names that still
-    // do not fit wait for hover — but nothing drawn at rest may leave the room.
+    ["1280x800 with INDEX open", ROOM_1280],
+    ["1040x720 with INDEX open", ROOM_1040],
+  ])("keeps every disc and every name it can draw, at rest or lit, inside a %s room", (_label, room) => {
+    // Nothing drawn at rest may leave the room: in a smaller room the rings draw in first
+    // and names that still do not fit wait for hover.
     const { nodes, edges } = dogfoodGraph();
     const layout = computeTerritoryLayout(nodes, edges, { ...options, room });
-    const inRoom = (b: { x: number; y: number; w: number; h: number }) =>
-      b.x >= room.x && b.y >= room.y && b.x + b.w <= room.x + room.w && b.y + b.h <= room.y + room.h;
     expect(layout.fitsRoom).toBe(true);
     expect(layout.capabilities).toHaveLength(nodes.filter((n) => n.kind === "capability").length);
     for (const c of layout.capabilities) {
-      expect(inRoom({ x: c.x - c.r, y: c.y - c.r, w: 2 * c.r, h: 2 * c.r }), `${c.id} disc outside the room`).toBe(true);
-      if (c.labelReserved) expect(inRoom(c.label.box), `${c.id} name outside the room`).toBe(true);
+      expect(inside(room, { x: c.x - c.r, y: c.y - c.r, w: 2 * c.r, h: 2 * c.r }), `${c.id} disc outside the room`).toBe(true);
+      expect(inside(room, c.label.box), `${c.id} name outside the room`).toBe(true);
+    }
+    expect(overlaps(layout)).toEqual([]);
+  });
+
+  it("folds a name rather than set a title or pill on another box or outside the room", () => {
+    const { nodes, edges } = synthetic(14, 3);
+    const layout = computeTerritoryLayout(nodes, edges, { ...options, room: ROOM_1280 });
+    expect(layout.fitsRoom).toBe(true);
+    expect(overlaps(layout)).toEqual([]);
+    expect(layout.boxes.filter(({ box }) => !inside(ROOM_1280, box))).toEqual([]);
+  });
+
+  it("folds names before a disc would leave the room", () => {
+    const { nodes, edges } = synthetic(34, 4);
+    const layout = computeTerritoryLayout(nodes, edges, { ...options, room: ROOM_1040 });
+    expect(layout.fitsRoom).toBe(true);
+    expect(layout.capabilities).toHaveLength(34);
+    expect(layout.capabilities.some((c) => !c.labelReserved)).toBe(true);
+    expect(layout.capabilities.some((c) => c.labelReserved)).toBe(true);
+    for (const c of layout.capabilities) {
+      expect(inside(ROOM_1040, { x: c.x - c.r, y: c.y - c.r, w: 2 * c.r, h: 2 * c.r }), `${c.id} disc outside the room`).toBe(true);
+      expect(inside(ROOM_1040, c.label.box), `${c.id} name outside the room`).toBe(true);
+      const domain = layout.domains.find((d) => d.id === c.domainId)!;
+      expect(inSector(c.angle, domain.sectorStart, domain.sectorEnd), `${c.id} left its territory`).toBe(true);
     }
     expect(overlaps(layout)).toEqual([]);
   });
@@ -187,7 +212,6 @@ describe("computeTerritoryLayout", () => {
     for (const cap of layout.capabilities.filter((c) => c.elementIds.length > 0)) {
       const avoid = territoryClusterAvoid(layout, cap);
       const { plate } = placeTerritoryCluster(cap, 120, avoid);
-      // Any place the list may take — beside the disc, one end still level with it.
       const n = cap.elementIds.length;
       const row = TERRITORY_GEOMETRY.satelliteRow;
       const reach = ((n - 1) / 2) * row + row;
@@ -208,6 +232,18 @@ describe("computeTerritoryLayout", () => {
       for (const b of avoid) expect(boxesOverlap(plate, b), `${cap.id}'s list covers its name or its domain's title`).toBe(false);
     }
     expect(checked).toBeGreaterThan(5);
+  });
+
+  it("slides the list past the reach before it covers its domain's title", () => {
+    const cap: TerritoryCapability = {
+      id: "capability:x", name: "X", domainId: "domain:a", x: 0, y: 0, r: 10, angle: 0, shelf: 0,
+      elementIds: ["e1", "e2", "e3", "e4", "e5"], hasDependency: false, labelReserved: true,
+      label: { text: "X", x: 17, y: 4, align: "left", box: { x: 17, y: -8, w: 94, h: 13 } },
+    };
+    const titleOnTheListSide = { x: -150, y: -16, w: 90, h: 32 };
+    const { plate } = placeTerritoryCluster(cap, 120, [cap.label.box, titleOnTheListSide]);
+    expect(boxesOverlap(plate, titleOnTheListSide)).toBe(false);
+    expect(boxesOverlap(plate, cap.label.box)).toBe(false);
   });
 
   it("is deterministic: the same graph draws the same picture", () => {
@@ -271,10 +307,10 @@ describe("computeTerritoryLayout", () => {
     ];
     const layout = computeTerritoryLayout(nodes, edges, options);
     const rollups = Object.fromEntries(layout.rollups.map((r) => [`${r.fromDomain}>${r.toDomain}`, r.count]));
-    // Distinct capability edges: a1→b1 is authored twice (once through elements) and counts once.
+    // a1→b1 is authored twice (once through elements) and counts once.
     expect(rollups).toEqual({ "domain:a>domain:b": 2, "domain:b>domain:a": 1 });
     expect(layout.dependencies.filter((dep) => dep.from === "capability:a1" && dep.to === "capability:b1")).toHaveLength(2);
-    // The two directions bow to opposite sides, so their strokes and chips do not coincide.
+    // The two directions bow to opposite sides, so strokes and chips do not coincide.
     const [ab, ba] = [layout.rollups.find((r) => r.fromDomain === "domain:a")!, layout.rollups.find((r) => r.fromDomain === "domain:b")!];
     expect(Math.hypot(ab.cx - ba.cx, ab.cy - ba.cy)).toBeGreaterThan(10);
   });

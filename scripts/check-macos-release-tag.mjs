@@ -11,16 +11,8 @@ const cargoToml = fs.readFileSync(path.join(root, "src-tauri", "Cargo.toml"), "u
 const cargoVersion = cargoToml.match(/\[package\][\s\S]*?\nversion\s*=\s*"([^"]+)"/)?.[1];
 
 /**
- * The web bundle's `RELEASE_VERSION` — **derived, and this checks that it stays derived.**
- *
- * History: it was a hand-maintained constant, which made it a fifth place to remember. Shipping
- * `v1.0.0-rc.2` produced a green preflight with red tests because this gate looked at four of the
- * five. The literal was removed on 2026-08-25 and the value now comes from `package.json` through
- * `next.config.ts`, so it **cannot** drift.
- *
- * That changes what is worth checking. Comparing a derived value to its own source proves nothing;
- * what can still break is somebody re-introducing a literal, which silently restores the old
- * failure. So the property is asserted instead of the value.
+ * `/download` derives RELEASE_VERSION from package.json through next.config.ts; this
+ * asserts the derivation still exists, because comparing the value with itself proves nothing.
  */
 const releaseFacts = fs.readFileSync(
   path.join(root, "src", "views", "download", "lib", "release-facts.ts"),
@@ -38,7 +30,8 @@ const nextConfigFeedsVersion =
 function printHelp() {
   console.log(`Usage: pnpm desktop:release-tag -- --tag=vX.Y.Z
 
-Fails unless the macOS release tag matches every version declaration:
+Fails unless the macOS release tag is a plain vMAJOR.MINOR.PATCH (release
+candidates are retired) and matches every version declaration:
 package.json, src-tauri/tauri.conf.json and src-tauri/Cargo.toml, and unless
 /download still derives its version from package.json rather than declaring one.
 In GitHub Actions the tag can also come from GITHUB_REF_NAME.
@@ -74,12 +67,20 @@ if (!tag) {
   fail("release tag is required. Pass --tag=vX.Y.Z or set GITHUB_REF_NAME.");
 }
 
-const match = tag.match(/^v(.+)$/);
-if (!match) {
+if (!tag.startsWith("v")) {
   fail(`release tag must be v-prefixed, got ${tag}.`);
 }
+const suffixed = tag.match(/^v(\d+\.\d+\.\d+)[-+]/);
+if (suffixed) {
+  fail(
+    `release tag ${tag} has a pre-release or build suffix. Release candidates are retired: every release is a plain vX.Y.Z tag, so tag v${suffixed[1]} instead.`,
+  );
+}
+if (!/^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(tag)) {
+  fail(`release tag must be vMAJOR.MINOR.PATCH, got ${tag}.`);
+}
 
-const tagVersion = match[1];
+const tagVersion = tag.slice(1);
 if (releaseFactsLiteral) {
   fail(
     `src/views/download/lib/release-facts.ts declares RELEASE_VERSION as the literal "${releaseFactsLiteral}". It must read process.env.NEXT_PUBLIC_RELEASE_VERSION so the download page cannot state a version the app does not have.`,

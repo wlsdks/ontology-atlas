@@ -34,6 +34,9 @@ function runner(overrides: Partial<RoundsRunnerValue> = {}): RoundsRunnerValue {
     connectors: [],
     lastTickAt: null,
     revision: 1,
+    notAllowedHere: new Set(),
+    changedSinceAllowed: new Set(),
+    allow: vi.fn(() => true),
     save: vi.fn(async () => ({ ok: true, startedNow: false })),
     remove: vi.fn(async () => true),
     setEnabled: vi.fn(async () => true),
@@ -97,7 +100,6 @@ describe('Automations manager', () => {
     fireEvent.click(screen.getByTestId('automations-new'));
     fireEvent.change(screen.getByTestId('ontology-automation-name'), { target: { value: 'Discard this name' } });
     fireEvent.change(screen.getByTestId('ontology-automation-focus'), { target: { value: 'Discard this scope' } });
-    /* The same unit + rail picker as the documents sheet; every six hours is the rail's 6h detent. */
     fireEvent.click(screen.getByRole('radio', { name: 'Day' }));
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     await waitFor(() => expect(screen.queryByTestId('ontology-automation-sheet')).not.toBeInTheDocument());
@@ -139,7 +141,6 @@ describe('Automations manager', () => {
     };
     renderPage(runner({ rounds: [round], state: { v: 1, rounds: [round] }, ledger: [entry] }));
 
-    // The row header states the latest outcome; the expanded report leads with its summary.
     expect(screen.getByTestId('automation-ontology-1')).toHaveTextContent(en.automations.outcome.reviewed);
     expect(screen.getByTestId('automations-last-run')).not.toHaveTextContent(en.automations.outcome.reviewed);
     expect(screen.getByTestId('automations-last-run')).toHaveTextContent('one source binding gap');
@@ -147,11 +148,6 @@ describe('Automations manager', () => {
     expect(screen.getByTestId('automations-last-run')).toHaveTextContent('query_ontology');
   });
 
-  /*
-   * Owner review, 2026-09-26: the empty lane said "no schedules yet" in its title, then again as
-   * "schedules appear here" in the list body and "results appear here after the first run" at its
-   * foot. The list under the title is its frame now: title, count and column heads.
-   */
   it.each(['ontology', 'documents'] as const)('says an empty %s lane once, over a list that is only its frame', (lane) => {
     search = `kind=${lane}`;
     renderPage(runner({ storeStatus: 'missing' }));
@@ -267,6 +263,31 @@ describe('Automations manager', () => {
     expect(within(history).getByText(en.automations.failedNoResult)).toBeInTheDocument();
     expect(within(history).getByText(en.library.rounds.ledger.stopped)).toHaveAttribute('data-run-note', 'stopped');
     expect(history).not.toHaveTextContent('completed');
+  });
+
+  it('holds a round the folder switched on until this Mac allows it, with everything it would do written out', () => {
+    search = 'kind=documents';
+    const round: RoundRecord = { id: 'shared', kind: 'service', name: 'Confluence', enabled: true,
+      cadence: { daily: '07:30', weekdaysOnly: true }, limit: 20,
+      places: [{ kind: 'vault', paths: [] }, { kind: 'service', connectorId: 'c1', connectorName: 'confluence', location: 'ENG', query: 'pages changed today' }],
+      createdAt: '2026-09-20T08:00:00Z', nextDueAt: '2026-09-21T07:30:00Z' };
+    const value = runner({ rounds: [round], notAllowedHere: new Set(['shared']) });
+    renderPage(value);
+
+    const row = screen.getByTestId('automation-shared');
+    expect(row).toHaveTextContent(en.automations.allowHere.state);
+    expect(row).toHaveTextContent(en.automations.allowHere.noNextRun);
+    expect(screen.getByTestId('automation-allow-here')).toHaveTextContent(en.automations.allowHere.waiting);
+    const line = screen.getByTestId('automation-allow-here-line');
+    expect(line).toHaveTextContent('confluence · ENG');
+    expect(line).toHaveTextContent('looks for “pages changed today”');
+    expect(line).toHaveTextContent('at most 20 new documents a pass');
+    const runNow = screen.getByRole('button', { name: en.automations.runNow });
+    expect(runNow).toBeDisabled();
+    expect(runNow).toHaveAccessibleDescription(en.automations.allowHere.waiting);
+
+    fireEvent.click(screen.getByTestId('automation-allow-here-button'));
+    expect(value.allow).toHaveBeenCalledWith('shared');
   });
 
   it('requires confirmation to remove the selected schedule and reports failed changes', async () => {

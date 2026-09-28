@@ -1,21 +1,19 @@
 import { createHash } from 'node:crypto';
 
+import { detachText } from './parser.mjs';
 import { nodeUidIssue } from './schema.mjs';
 import { GRAPH_ARRAY_KEYS, collectNeighborRefs, normalizeRelationRefs } from './vault.mjs';
 
 const COMPILER_VERSION = 2;
 
 /**
- * With `summary: true` the nodes / edges / aliases arrays are omitted and only
- * counts and aggregates are returned — a cheap call for an agent detecting a
- * graphHash change or judging size, which keeps a large vault (100+ nodes) under
- * the token limit.
- *
- * With `nodesLimit / nodesOffset` (or `edgesLimit / edgesOffset`) that array is
- * sliced and returned with `nodesPagination: { offset, limit, total, hasMore,
- * nextOffset }` metadata. `summary` wins when both are given.
+ * With `summary: true` it omits the nodes, edges and aliases arrays and returns counts
+ * only, a cheap call for graphHash checks on a large vault. `nodesLimit`
+ * / `nodesOffset` (and the edge pair) slice an array and add `nodesPagination:
+ * { offset, limit, total, hasMore, nextOffset }`. `summary` wins over both.
  */
-export function compileOntology(docs, options = {}) {
+export function compileOntology(loadedDocs, options = {}) {
+  const docs = loadedDocs.map(detachedDocument);
   const includeIndexes = optionalBoolean(options.includeIndexes, 'includeIndexes') ?? false;
   const summary = optionalBoolean(options.summary, 'summary') ?? false;
   const nodesLimit = optionalPositiveInt(options.nodesLimit, 'nodesLimit', { max: 500 });
@@ -26,24 +24,9 @@ export function compileOntology(docs, options = {}) {
   const aliasEntries = new Map();
 
   /**
-   * **A `.md` without `kind:` is not a node** (measured 2026-07-29).
-   *
-   * `AGENTS.md` writes the contract as *"each `.md` with a frontmatter `kind:` is
-   * an ontology node"*. `list`, `validate`, and the web runtime (`deriveDocNode`
-   * returns `null` on an empty kind) all honoured it; only the compiler accepted
-   * every `.md` as a node. So one ordinary memo in the vault produced:
-   *
-   *   list 97 · compile 98 · overview 98      ← same vault, different numbers
-   *   compile --summary: nodeCount 4, byKind { domain: 1 }   ← self-contradictory in one artifact
-   *
-   * Worse, a kind-less node tripped the result contract of `overview` and `hubs`
-   * (which require a non-empty `kind`) and killed **the whole command with exit
-   * 2** — with an internal string that did not even name the file, on a vault
-   * `validate` had just passed.
-   *
-   * The docs, the validator, and the web already stood on one side, so the
-   * compiler moves there. This does not change what is counted; it **returns to
-   * the scope the contract always had.**
+   * A `.md` without `kind:` is not a node (`AGENTS.md`), as list, validate and the
+   * web runtime already hold; counting it gave different totals per command and
+   * broke the overview and hubs contracts.
    */
   const graphDocs = docs.filter((doc) => {
     const kind = doc?.frontmatter?.kind;
@@ -95,11 +78,9 @@ export function compileOntology(docs, options = {}) {
       });
     }
   }
-  // `compileOntology` is also a public library boundary: callers may provide
-  // parsed frontmatter without carrying parser diagnostics. Never let a
-  // scalar/object relation field disappear merely because that metadata was
-  // omitted. The normal parser diagnostic is deduplicated by its exact
-  // message; direct callers still get the same fail-closed issue.
+  // A public library boundary: callers may pass parsed frontmatter without parser
+  // diagnostics, so a scalar or object relation field still fails closed here
+  // (deduplicated by exact message).
   for (const doc of docs) {
     const frontmatter = doc?.frontmatter;
     if (!frontmatter || typeof frontmatter !== 'object') continue;
@@ -259,31 +240,22 @@ export function compileOntology(docs, options = {}) {
     (edge) => !edge.resolved && !edge.external,
   ).length;
   const maxMtime = Math.max(0, ...nodes.map((node) => Number(node.mtime) || 0));
-  // The count of concepts the vault names but that have no document, so never
-  // became nodes. The web map and insights draw these as concepts too (96 dogfood
-  // documents + 193 references = 289), so without this number the screen and the
-  // CLI report different totals and neither explains the gap. They are not
-  // promoted to nodes — inventory, centrality, and health still count only
-  // concepts that have a document.
+  // Concepts named only in relations, with no document. The map and insights draw
+  // them, so without this number the screen and the CLI disagree unexplained.
+  // They are not nodes: inventory, centrality and health ignore them.
   const referencedOnlyCount = new Set(
     edges.filter((edge) => !edge.resolved).map((edge) => edge.ref),
   ).size;
 
-  // Summary mode — omit every array, return counts and aggregates only, so an
-  // agent on a large vault can read graphHash, detect change, and judge size
-  // without exceeding the token limit. byKind / byDomain condense to a *count*
-  // rather than a *slug list*. No marker in the response: the caller knows what it
-  // asked for.
+  // Summary mode: counts and aggregates only (byKind and byDomain become counts),
+  // so a large vault stays under the token limit.
   if (summary) {
     return {
       version: COMPILER_VERSION,
       graphHash,
       maxMtime,
       nodeCount,
-    skippedNonNodeCount,
-      // How many `.md` files were passed over for not being nodes (no kind) — they
-      // are not skipped silently. Ordinary memos mixing into a vault is normal, so
-      // this is not an issue.
+      // `.md` files passed over for having no kind: reported, not an issue.
       skippedNonNodeCount,
       edgeCount,
       resolvedEdgeCount,
@@ -299,7 +271,7 @@ export function compileOntology(docs, options = {}) {
     };
   }
 
-  // Pagination — slice plus metadata. Unspecified returns everything (backward compat).
+  // Unspecified returns everything.
   const slicedNodes = sliceWithMeta(nodes, nodesOffset, nodesLimit);
   const slicedEdges = sliceWithMeta(edges, edgesOffset, edgesLimit);
 
@@ -343,6 +315,15 @@ export function compileOntology(docs, options = {}) {
   };
 }
 
+function detachedDocument(doc) {
+  return {
+    slug: doc?.slug,
+    mtime: doc?.mtime,
+    frontmatter: detachText(doc?.frontmatter),
+    diagnostics: detachText(doc?.diagnostics),
+  };
+}
+
 function optionalNonNegativeInt(value, name) {
   if (value === undefined) return null;
   if (!Number.isInteger(value) || value < 0) {
@@ -377,7 +358,6 @@ function countByGroup(nodes, key) {
     if (typeof value !== 'string' || !value.trim()) continue;
     counts[value] = (counts[value] || 0) + 1;
   }
-  // Alphabetical sort — deterministic
   return Object.fromEntries(
     Object.entries(counts).sort(([a], [b]) => a.localeCompare(b)),
   );
@@ -553,15 +533,8 @@ function validateGraphIdentity(graphDocs) {
 }
 
 /**
- * One identity error **stops every graph command on the whole vault** — the
- * compile ends here, so `overview`, `health`, `agent-brief`, and `query_ontology`
- * all raise the same error. That verdict is correct in itself (half-drawing a
- * graph whose identity is unstable would be worse). But **a dead end has to name
- * the way out.**
- *
- * Measured 2026-08-08: a person writing a node in an editor without `uid:` hits
- * this error, and all the screen said was «what is wrong». With no «how to fix
- * it», one hand-authored node leaves the vault dead.
+ * One identity error stops every graph command on the vault, which is correct
+ * (a half-drawn unstable graph is worse), so the error must name the way out.
  */
 const IDENTITY_REPAIR_HINT = Object.freeze({
   'missing-uid':
@@ -576,9 +549,7 @@ function throwIdentityIssues(issues) {
     `Ontology compilation failed with ${issues.length} node identity error${issues.length === 1 ? '' : 's'}: ` +
       issues
         .map((issue) => {
-          // duplicate-uid / duplicate-merged-uid carry `slugs` (plural) — the one
-          // error that stops every graph command must name the offending files,
-          // not print "(undefined)" (bug sweep 2026-09-01).
+          // duplicate-uid and duplicate-merged-uid carry `slugs`, and the files must be named.
           const where = issue.slug ?? (Array.isArray(issue.slugs) ? issue.slugs.join(' + ') : 'unknown');
           return `${issue.code} (${where})`;
         })

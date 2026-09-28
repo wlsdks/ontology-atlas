@@ -150,13 +150,16 @@ export function useVaultAgentRuntime(
       ...vaultMcpServers(agentServer.launch, vaultRoot, registration, {
         ownsWriteGate: runtimeOwnsWriteGate(runtimeId),
       }),
-      ...(withConnectors ? connectorAcpServers(vaultConnectors.connectors, runtimeId) : []),
+      ...(withConnectors
+        ? connectorAcpServers(vaultConnectors.connectors, runtimeId, vaultConnectors.allowedHere)
+        : []),
     ];
   }, [
     agentServer.launch,
     localVault.agentConfigStatus?.codexConfigValid,
     localVault.agentConfigStatus?.codexRegisteredCommand,
     runtimeId,
+    vaultConnectors.allowedHere,
     vaultConnectors.connectors,
     vaultRoot,
     withConnectors,

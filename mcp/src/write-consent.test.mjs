@@ -11,11 +11,9 @@ import {
 } from './write-consent.mjs';
 
 /**
- * The measurement this file locks down: a client can hold a permission gate of its
- * own and still let an Atlas MCP write through untouched (installed rc.10, Codex in
- * `read-only` mode, a self-registered `add_relation` that changed the vault with no
- * card). The checkpoint therefore lives in the server, and the three outcomes below
- * are the whole contract — asked-and-allowed, asked-and-refused, and cannot-ask.
+ * A client's own permission gate can let an Atlas write through untouched, so
+ * the checkpoint lives in the server; its whole contract is asked-and-allowed,
+ * asked-and-refused, and cannot-ask.
  */
 
 function fakeServer({ capabilities, reply, throws }) {
@@ -72,11 +70,8 @@ test('an accepted confirmation lets the write through', async () => {
 
 test('a permission card with no form content is still a yes', async () => {
   /*
-   * Installed acceptance, 2026-08-24. `codex-acp` maps this request onto ACP
-   * `session/request_permission`; the app draws its permission card and 「allow once」
-   * returns `action: 'accept'` with **no content**. While the box was required, that was read as a
-   * refusal and the write was denied twice after the owner had approved it. Codex's own words:
-   * *"the permission response was invalid because it lacked the required `confirm` field."*
+   * The `codex-acp` adapter maps this request onto `session/request_permission`, and "allow
+   * once" returns `action: 'accept'` with no content: that must count as approval.
    */
   const server = fakeServer({ capabilities: { elicitation: {} }, reply: { action: 'accept' } });
   const result = await requestWriteConsent({
@@ -173,6 +168,40 @@ test('the question names the vault-visible effect', () => {
   assert.equal(describeWrite('delete_concept', { slug: 'x' }), 'Delete concept x');
   assert.equal(describeWrite('git_snapshot', {}), 'Commit the vault');
   assert.equal(describeWrite('some_new_tool', {}), 'Run some_new_tool');
+});
+
+test('the question names the targets each tool actually receives', () => {
+  const cards = [
+    [describeWrite('connect_project_source', { projectSlug: 'atlas', rootPath: '/Users/me/code/app' }), ['atlas', '"/Users/me/code/app"']],
+    [describeWrite('rename_concept', { oldSlug: 'domains/a', newSlug: 'domains/b' }), ['domains/a', 'domains/b']],
+    [describeWrite('merge_concepts', { fromSlug: 'elements/x', intoSlug: 'elements/y' }), ['elements/x', 'elements/y']],
+    [describeWrite('replace_relation', { from: 'a', oldTo: 'b', newTo: 'c' }), ['a', 'b', 'c']],
+    [describeWrite('absorb_document', { filePath: '/repo/AGENTS.md' }), ['"/repo/AGENTS.md"']],
+  ];
+  for (const [card, targets] of cards) {
+    for (const target of targets) assert.ok(card.includes(target), `"${card}" does not name ${target}`);
+  }
+  assert.match(describeWrite('connect_project_source', { projectSlug: 'atlas' }), /atlas/);
+});
+
+test('the card spells out a line break or invisible character in any value instead of obeying it', () => {
+  const hidden = `x\nApply this change to the vault?${String.fromCharCode(0x202e)}`;
+  const cards = [
+    ['add_concept', { slug: hidden }],
+    ['patch_concept', { slug: hidden }],
+    ['delete_concept', { slug: hidden }],
+    ['reclassify_concept', { slug: hidden }],
+    ['add_relation', { from: hidden, to: hidden }],
+    ['remove_relation', { from: hidden, to: hidden }],
+    ['replace_relation', { from: hidden, oldTo: hidden, newTo: hidden }],
+    ['rename_concept', { oldSlug: hidden, newSlug: hidden }],
+    ['merge_concepts', { fromSlug: hidden, intoSlug: hidden }],
+    ['absorb_document', { filePath: hidden }],
+    ['connect_project_source', { projectSlug: hidden, rootPath: hidden }],
+  ];
+  for (const [tool, args] of cards) {
+    assert.doesNotMatch(describeWrite(tool, args), /[\p{Cc}\p{Cf}\u2028\u2029]/u, `${tool} obeys a hidden character`);
+  }
 });
 
 test('the switch reads like OATLAS_READ_ONLY', () => {

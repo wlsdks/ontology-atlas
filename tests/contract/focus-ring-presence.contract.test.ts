@@ -138,9 +138,9 @@ describe('키보드 초점 — base 레이어가 바닥을 깔고, 값 층이 �
     }
     expect(
       missing,
-      '값 층이 초점 링을 안 내면 브라우저 기본(OS 강조색)이 그려진다 — 헌장의\n' +
-        '「무채색 + 인디고 하나」 밖이다. `control-class.ts` 의 FOCUS 상수를 확인하라.\n' +
-        `누락: ${missing.join(', ')}`,
+      'When the value layer emits no focus ring, the browser default (the OS accent colour) is drawn,\n' +
+        'which is outside the charter of neutrals plus one indigo. Check the FOCUS constant in `control-class.ts`.\n' +
+        `Missing: ${missing.join(', ')}`,
     ).toEqual([]);
   });
 
@@ -209,9 +209,9 @@ describe('키보드 초점 — base 레이어가 바닥을 깔고, 값 층이 �
     expect(scannedTags, '`outline-none` 을 쓰는 태그를 한 개도 못 찾았다 — 탐지기가 죽었다').toBeGreaterThan(50);
     expect(
       offenders,
-      '`focus-visible:outline-none` 은 브라우저 기본 링을 **끄기만** 한다. 대체 표시\n' +
-        '(ring · border · bg · shadow 중 하나)가 없으면 초점이 아예 안 보인다(WCAG 2.4.7).\n' +
-        `위반: ${offenders.join(', ')}`,
+      '`focus-visible:outline-none` **only removes** the default browser ring. Without a replacement\n' +
+        '(one of ring, border, bg or shadow) focus is not visible at all (WCAG 2.4.7).\n' +
+        `Violations: ${offenders.join(', ')}`,
     ).toEqual([]);
   });
 

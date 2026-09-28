@@ -16,10 +16,7 @@ import {
 import { CONSTRUCTION_RULES_EN } from './construction-rules.mjs';
 import { parseProjectCompetencyMarkdown } from './project-meaning-receipt.mjs';
 
-/**
- * `read.mjs` resolves the vault root at import time and exits the process when
- * the directory is not a vault, so the root is chosen before the import.
- */
+/** `read.mjs` resolves the vault root at import time and exits on a non-vault, so the root is set first. */
 const scratch = mkdtempSync(join(tmpdir(), 'ontology-atlas-card-'));
 process.env.OATLAS_VAULT = scratch;
 const { connectionInfoTool } = await import('./tools/read.mjs');
@@ -53,11 +50,7 @@ test('every advertised topic resolves to real text, and nothing else does', () =
   assert.throws(() => connectionInfoTool({ guide: 'no_such_topic' }), /must be one of/);
 });
 
-/**
- * Slug shape was the one thing the card never said, and a trial builder wrote a
- * whole vault flat at the root because of it (`slug: option-declaration` instead
- * of `capabilities/option-declaration`).
- */
+/** Without it a builder wrote a whole vault flat at the root. */
 test('the card states where a slug lives', () => {
   for (const clause of ['domains/', 'capabilities/', 'elements/', 'never a code path']) {
     assert.ok(CONSTRUCTION_CARD_EN.includes(clause), `card must say ${clause}`);
@@ -65,11 +58,8 @@ test('the card states where a slug lives', () => {
 });
 
 /**
- * The first version of clause 3 enumerated the body parts a node owes and left
- * `## Uncertainty` out. A trial then built 12 nodes and not one stated an
- * unknown, where every node had before: an enumeration is read as complete, so
- * a silent omission is read as "not required" and the vault quietly starts
- * claiming completeness it never measured.
+ * An enumeration of body parts is read as complete, so leaving `## Uncertainty`
+ * out made builders omit it and nodes claim a completeness nobody measured.
  */
 test('the card says where an unknown goes', () => {
   assert.ok(CONSTRUCTION_CARD_EN.includes('`## Uncertainty`'));
@@ -81,9 +71,8 @@ test('the competency guide returns the layout and an example the real parser acc
   assert.equal(guideText, COMPETENCY_ANSWERS_GUIDE_EN);
   assert.ok(guideText.includes('## Competency answers'));
 
-  // The example is the part a caller copies, so it is fed back through the
-  // parser that `finalize_project_meaning` actually runs. Prose can be wrong
-  // quietly; a parsed example cannot.
+  // The example callers copy is fed through the parser finalize_project_meaning
+  // runs: prose can be wrong quietly, a parsed example cannot.
   const example = /```markdown\n([\s\S]*?)\n```/.exec(guideText);
   assert.ok(example, 'the guide must carry one fenced example');
   const parsed = parseProjectCompetencyMarkdown(example[1]);
@@ -110,8 +99,8 @@ test('the finalize refusal names the layout and the guide that carries it', () =
     assert.ok(COMPETENCY_SECTION_HINT_EN.includes(clause), `hint must say ${clause}`);
   }
 
-  // Derived, not copied: the refusal in `tools/project-source.mjs` must import
-  // this sentence, or the refusal and the guide start describing two layouts.
+  // The refusal in `tools/project-source.mjs` must import this sentence, or the
+  // refusal and the guide describe two layouts.
   const toolSource = readFileSync(
     fileURLToPath(new URL('./tools/project-source.mjs', import.meta.url)),
     'utf8',

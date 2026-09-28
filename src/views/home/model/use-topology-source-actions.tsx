@@ -58,9 +58,8 @@ export function useTopologySourceActions({ toast, v2DatasheetModel, topologyPref
   }, [projectSource, v2DatasheetModel, copyV2NodeHandoff, projectAwareHandoffText, setFullDetailSlug]);
   const projectSourceNextAction = projectSource.view?.nextAction.id ?? null;
   const projectSourceNextActionAvailable = Boolean(
-    // While the proposal is still settling, **draw no prescription at all.** Drawing
-    // early means the button changes label and skin 300 ms later and shifts upward —
-    // out from under a cursor that is already there.
+    // Nothing is prescribed until the proposal settles, or the button changes and shifts under the
+    // cursor.
     projectSource.proposalSettled
     && (projectSource.canRunSourceAction
       || projectSourceNextAction === "use_current_evidence"
@@ -85,14 +84,8 @@ export function useTopologySourceActions({ toast, v2DatasheetModel, topologyPref
       measuredAt: projectSourceMeasuredAtLabel,
       currentness: t(`nodeDatasheet.sourceCurrent_${view.currentness}`),
       gap: t(`nodeDatasheet.sourceGap_${view.topGap?.id ?? "none"}`),
-      /*
-       * On the web this used to **turn into** an explanatory sentence ("you can link a
-       * code folder in the installed app"), i.e. a notice wedged into the slot for an
-       * action label. Web users got one grey unpressable sentence and nothing else —
-       * no why, no where to go, no what still works here. The label is now always an
-       * action label, and the notice for surfaces that cannot act is owned entirely by
-       * `projectSourceDegraded`.
-       */
+      // Always an action label; `projectSourceDegraded` owns the notice for surfaces that cannot
+      // act.
       action: t(`nodeDatasheet.sourceAction_${view.nextAction.id}`),
       why: t(`nodeDatasheet.sourceWhy_${view.nextAction.id}`),
       busy: t("nodeDatasheet.sourceBusy"),
@@ -103,13 +96,8 @@ export function useTopologySourceActions({ toast, v2DatasheetModel, topologyPref
     t,
   ]);
   /**
-   * Built only when this surface cannot perform the action. The four folder-picking
-   * actions (connect, rebind, measure, remeasure) need an absolute path, and a browser
-   * cannot know one (the vault-absolute-path bridge in `.claude/rules/surfaces.md`).
-   *
-   * It carries all three parts: why · where · **and what still works here**. Without
-   * the third, the notice claims things are impossible that are not (2026-08-01: the
-   * web's "cannot connect" was false).
+   * Only where this surface cannot act: the folder actions need an absolute path a browser cannot
+   * know (`.claude/rules/surfaces.md`). It says why, where, and what still works here.
    */
   const projectSourceDegraded = useMemo(
     () => !projectSource.runtimeAvailable && projectSourceNeedsNativeRuntime
@@ -122,11 +110,8 @@ export function useTopologySourceActions({ toast, v2DatasheetModel, topologyPref
       : null,
     [projectSource.runtimeAvailable, projectSourceNeedsNativeRuntime, t],
   );
-  /*
-   * A project with no code folder yet has no "existing connection" to keep. Four of the failure
-   * sentences end by reassuring that it is unchanged, which on the connect path claimed a
-   * binding that does not exist (2026-09-25 sweep); that path reads its own sentence.
-   */
+  // No binding exists yet, so the connect path reads its own failure sentence without "unchanged"
+  // reassurance.
   const projectSourceUnbound = projectSource.view?.nextAction.id === "connect_source";
   const projectSourceErrorLabel = projectSource.error
     ? projectSourceUnbound && t.has(`nodeDatasheet.sourceErrorUnbound_${projectSource.error}`)
@@ -134,18 +119,9 @@ export function useTopologySourceActions({ toast, v2DatasheetModel, topologyPref
       : t(`nodeDatasheet.sourceError_${projectSource.error}`)
     : null;
   /**
-   * **"Is this the right folder?" (the on-screen prompt) — connecting in one step instead of two.**
-   *
-   * Pressing "link a code folder" used to always open the OS folder picker, leaving
-   * the person to find their own repository in a tree again. The app already knows
-   * the answer: measuring the vault root once walks up to the git repository that
-   * contains it.
-   *
-   * The one line of evidence states **only what was measured**: that it is a git
-   * repository, and how many of the declared paths were actually found there. With
-   * zero declared paths it says so rather than inventing a ratio. When there is no
-   * proposal, or confidence is low, this whole value is `null` and the screen draws
-   * only the folder picker as before — no dead CTA.
+   * Measuring the vault root once finds the enclosing git repository, so "link a code folder" can
+   * propose it. The evidence line states only what was measured; with no proposal or low confidence
+   * this is `null` and only the folder picker draws.
    */
   const projectSourceProposal = useMemo(() => {
     const proposed = projectSource.proposedRoot;

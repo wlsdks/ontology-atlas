@@ -3,10 +3,9 @@ import { isPersistableRelativePath, parseSourceRangeCitation } from './source-ra
 const COMPETENCY_HEADING = '## Competency answers';
 
 /**
- * Extract only the evidence/path rows emitted inside the exact, persisted
- * project competency section. Arbitrary prose and generic Evidence headings
- * are not source claims. Any malformed row fails closed to an empty set; the
- * strict competency parser will surface the body error at finalization.
+ * Evidence and path rows from the exact persisted competency section only;
+ * arbitrary prose and generic Evidence headings are not source claims. A
+ * malformed row yields an empty set, and the strict parser reports it at finalization.
  */
 export function extractProjectMeaningEvidencePaths(body) {
   if (typeof body !== 'string') return [];

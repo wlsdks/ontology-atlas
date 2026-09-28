@@ -39,6 +39,7 @@
   "historyEmpty": "아직 커밋한 기록이 없어요",
   "hashCopy": "전체 해시 복사하기 ({hash})",
   "diffEmpty": "새로 만든 문서라 비교할 예전 내용이 없어요.",
+  "diffTooLarge": "바뀐 내용이 너무 커서 줄마다 보여 주지 못해요.",
   "webSummaryTitle": "이번에 바뀐 것",
   "webNodesAdded": "개념 추가 {count}",
   "webNodesChanged": "개념 수정 {count}",

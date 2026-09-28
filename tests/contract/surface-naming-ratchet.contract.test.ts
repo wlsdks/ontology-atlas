@@ -37,7 +37,7 @@ import { judgeRatchet } from './lib/ratchet-base';
  * merge-base tree (`tests/contract/lib/ratchet-base.ts`); only growth fails, and a removal
  * is banked by the next branch's base without anyone lowering a number.
  *
- * A deliberate addition is a `tests/contract/ratchet-raises/surface-named-strings.<slug>.json`
+ * A deliberate addition is a `tests/contract/ratchet-raises/surface-named-strings/<slug>.json`
  * record whose `why` names the render-site check and the test that holds it, as the
  * paragraphs here used to (they are in this file's Git history). One record covers both
  * locales, which must tell the same story (below).

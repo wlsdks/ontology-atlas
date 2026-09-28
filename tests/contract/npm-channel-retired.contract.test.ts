@@ -204,8 +204,8 @@ describe("npm 채널은 폐기됐다 — 죽은 npx 안내 차단", () => {
     expect(
       offences,
       offences.length
-        ? `실행할 수 없는 맨몸 CLI 호출이다 — 이 이름의 전역 바이너리는 없다.\n` +
-            `\`ATLAS_CLI\`(src/shared/config/cli-invocation.ts)로 만들어라.\n${report(offences)}`
+        ? `A bare CLI call that cannot run: no global binary has this name.\n` +
+            `Build it with \`ATLAS_CLI\` (src/shared/config/cli-invocation.ts).\n${report(offences)}`
         : "",
     ).toEqual([]);
   });
@@ -248,8 +248,8 @@ describe("npm 채널은 폐기됐다 — 죽은 npx 안내 차단", () => {
     expect(
       offences,
       offences.length
-        ? `죽은 npm 채널 안내 ${offences.length}건 (npm 발행 폐기, docs/DECISIONS.md 2026-07-27).\n` +
-            `살아있는 경로는 둘뿐이다 — 설치 앱의 「에이전트 연결」 버튼, 또는 소스 체크아웃의\n` +
+        ? `${offences.length} references to the dead npm channel (npm publishing retired, docs/DECISIONS.md 2026-07-27).\n` +
+            `Only two paths are alive: the installed app's Connect agent button, or a source checkout's\n` +
             `\`node <checkout>/cli/src/index.mjs\`.\n${report(offences)}`
         : "",
     ).toEqual([]);
@@ -266,7 +266,7 @@ describe("npm 채널은 폐기됐다 — 죽은 npx 안내 차단", () => {
     expect(
       offences,
       offences.length
-        ? `코드 블록은 "이걸 복사해 실행하라" 는 뜻이다. 죽은 채널은 산문으로만 인용한다.\n${report(offences)}`
+        ? `A code block means "copy this and run it". Cite the dead channel in prose only.\n${report(offences)}`
         : "",
     ).toEqual([]);
   });

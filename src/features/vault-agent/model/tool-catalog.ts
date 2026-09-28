@@ -342,6 +342,17 @@ export const AGENT_READ_TOOLS: readonly AgentToolDefinition[] = [
           type: 'string',
           description: 'Repository root that frontmatter source paths resolve against.',
         },
+        offset: {
+          type: 'integer',
+          minimum: 0,
+          description: 'Zero-based offset into the names referenced without a document.',
+        },
+        limit: {
+          type: 'integer',
+          minimum: 1,
+          maximum: 500,
+          description: 'Max names referenced without a document. Defaults to 100, max 500.',
+        },
       },
     },
   },

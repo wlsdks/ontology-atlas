@@ -59,6 +59,8 @@ before relying on it.
 | E2E · Playwright chromium (x3) | 600 s | 392-421 s avg | rendered journeys |
 | Vault freshness | 30 s | 24 s avg | frontmatter integrity and node drift (FYI, never fails the PR) |
 | Windows beta · verify | 700 s | 582 s avg | Windows-only bundle facts |
+| Windows beta · Rust audit (also in the release) | 40 s | not yet measured alone; its steps took 10 s inside the Windows job | Rust advisories and unsoundness, from a lockfile-only checkout |
+| Dependency audit (manifests, lockfiles, weekly) | 40 s | not yet measured; reads lockfiles, installs nothing | a high production advisory in the app or the bundled MCP server |
 | Checks · Windows install canary | 100 s | derived from the release job's 57 s of shared steps | that **any** change can break `pnpm install` on Windows, which is why it carries no path filter |
 | Pages · build · deploy · verify | 120 s · 30 s · 40 s | 97 s · 9 s · 18 s | the static export builds and the hosted surface answers |
 
@@ -355,7 +357,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Run**: `pnpm exec vitest run tests/contract/control-adoption-ratchet.contract.test.ts`
 **Proves**: Hand-written button, anchor, and form control classNames, their registered and no-basis places, and the full-bleed click surfaces do not grow against the merge base; each registry row is its own file under `tests/contract/control-adoption/`, so the base is measured with its own registry and two branches registering different places do not conflict.
 **Escalate**: `pnpm test:contracts`.
-**Fix**: Move the control onto `controlClass()` / `fieldClass()`, or add a verified registry row plus a `tests/contract/ratchet-raises/control-<gate>.<slug>.json` record saying why.
+**Fix**: Move the control onto `controlClass()` / `fieldClass()`, or add a verified registry row plus a `tests/contract/ratchet-raises/control-<gate>/<slug>.json` record saying why.
 
 ### Copy that names the reader's surface
 
@@ -737,7 +739,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### macOS desktop readiness
 
 **Run**: `pnpm desktop:check`
-**Proves**: the macOS desktop Tauri scaffold readiness gate passes for static export, image mode, docs-vault freshness, CLI/MCP verification, and `src-tauri` shell files. README download and release links follow the configured site and repository; editable explanatory sentences are not pinned.
+**Proves**: the macOS desktop Tauri scaffold readiness gate passes for static export, image mode, docs-vault freshness, CLI/MCP verification, `src-tauri` shell files, and the main-window capability allowlist (including only the explicit print grant). README download and release links follow the configured site and repository; editable explanatory sentences are not pinned.
 **Escalate**: `pnpm desktop:doctor`, then `pnpm test:desktop:check` / `pnpm test:desktop:runtime` / `pnpm test:desktop:bridge`
 **Fix**: keep `package.json`, `src-tauri/tauri.conf.json`, and `src-tauri/Cargo.toml` versions matched so app metadata, DMG filenames, and release tags move together.
 
@@ -823,6 +825,12 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Run**: `pnpm test:mcp:maintenance`
 **Proves**: `maintenance_plan` cursor, filter, resume, and formatter behavior is correct.
 **Escalate**: none.
+
+### MCP memory windows
+
+**Run**: `pnpm perf:mcp:memory:check`
+**Proves**: On a generated 233-node vault with 40 revisions per summary node, the stdio server's heap after two forced collections grows at most 64 KB per call across 50 repeated calls of each of nine read tools, and at most 2 MB per moved Git HEAD across commits 2 to 10. It reads the heap through the test-only fd-3 preload `scripts/lib/mcp-memory-probe.mjs`, never resident size.
+**Escalate**: none. It starts a server and runs about 500 calls, so it stays out of pre-push; run it for changes to caches, the compiler, history reads or response assembly.
 
 ### MCP query_concepts and shared read validation
 
@@ -969,7 +977,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### Ratchets judged against the merge base
 
 **Run**: `pnpm exec vitest run tests/contract/ratchet-merge-base.contract.test.ts`
-**Proves**: The resident-context, hand-hover, appearing-surface and surface-naming ratchets measure the working tree and the merge-base tree with one census and fail only on growth, so parallel improvements share no baseline line; a deliberate raise is a new `tests/contract/ratchet-raises/<gate>.<slug>.json` record, and a clone with no merge base uses the ceiling recorded at conversion.
+**Proves**: The resident-context, hand-hover, appearing-surface and surface-naming ratchets measure the working tree and the merge-base tree with one census and fail only on growth, so parallel improvements share no baseline line; a deliberate raise is a new `tests/contract/ratchet-raises/<gate>/<slug>.json` record, and a clone with no merge base uses the ceiling recorded at conversion.
 **Escalate**: `pnpm test:contracts`.
 **Fix**: Remove the growth, or add the raise record naming why the growth is deliberate; never edit a fallback ceiling.
 
@@ -990,7 +998,6 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Run**: `pnpm desktop:release-secrets`
 **Proves**: The Apple signing/notary secrets and Tauri updater secrets are present and structurally valid before a signed build begins.
 **Escalate**: none.
-**Fix**: Use `--updater-only` to require just the two Tauri updater values before a Windows build.
 
 ### Release slot cleanliness
 
@@ -1001,7 +1008,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### Release tag version alignment
 
 **Run**: `pnpm desktop:release-tag`
-**Proves**: The v-prefixed Git tag matches `package.json`, Tauri, Cargo, and the download page's release facts before signing.
+**Proves**: The Git tag is a plain `vX.Y.Z` (a pre-release or build suffix is refused) and matches `package.json`, Tauri, Cargo, and the download page's release facts before signing.
 **Escalate**: none.
 
 ### Release tag/SHA admission
@@ -1066,8 +1073,8 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 
 **Run**: `pnpm exec vitest run tests/contract/test-title-language.contract.test.ts tests/contract/source-comment-bytes.contract.test.ts tests/contract/source-shape.contract.test.ts`
 **Proves**: In each area the changed files touch, Hangul test titles and assertion messages, comment bytes, files over 800 lines and parent folders over 30 direct files do not grow against the merge base.
-**Escalate**: `pnpm test:contracts`
-**Fix**: Translate the title or message, delete or shorten the comment, or split the file or folder; a deliberate raise is a `tests/contract/ratchet-raises/<gate>.<slug>.json` record saying why.
+**Escalate**: `pnpm test:source:language` when the title and message census changed, otherwise `pnpm test:contracts`
+**Fix**: Translate the title or message, delete or shorten the comment, or split the file or folder; a deliberate raise is a `tests/contract/ratchet-raises/<gate>/<slug>.json` record saying why.
 
 ### Source-checkout MCP dependency preflight
 

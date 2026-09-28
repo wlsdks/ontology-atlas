@@ -1,8 +1,8 @@
-// R16 (b3) — analyzeRepoStructure unit tests.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import {
+  existsSync,
   mkdtempSync,
   mkdirSync,
   writeFileSync,
@@ -13,12 +13,11 @@ import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { analyzeRepoStructure, buildProposalAssessment } from './analyze.mjs';
+import { detectExistingOntologyEvidence } from './analyze/project-detection.mjs';
 import { selectExactCaseEntry } from './analyze/scan-guards.mjs';
 
-// The meaning corpus lives at the repo root (tests/fixtures/meaning-corpus).
-// Resolve it from this file, not process.cwd(), so the suite passes whether it
-// runs from the repo root (root test:mcp:unit) or from mcp/ (mcp test:all).
-// Same pattern as analyze-golden-corpus.test.mjs.
+// Resolved from this file, not process.cwd(), so the suite runs from the repo
+// root or from mcp/.
 const meaningCorpusRoot = join(
   dirname(fileURLToPath(import.meta.url)),
   '../../tests/fixtures/meaning-corpus',
@@ -162,7 +161,7 @@ test('FSD repo — features/ → capabilities, entities/widgets/views → implem
       [...r.capabilities.map((c) => c.slug)].sort(),
       ['capabilities/auth', 'capabilities/billing'],
     );
-    // Slugs are flat role names — location is carried by path/evidence (decided 2026-08-01).
+    // Slugs are flat role names; location lives in path and evidence.
     assert.deepEqual(
       [...r.elements.map((e) => e.slug)].sort(),
       ['elements/header', 'elements/home', 'elements/user'],
@@ -195,9 +194,8 @@ test('Generic repo — src/ depth-1 folders → capabilities', () => {
       r.capabilities.map((c) => c.slug).sort(),
       ['capabilities/api', 'capabilities/db'],
     );
-    // index.ts → element — slug stays flat, the file location goes in `path`.
     const apiEl = r.elements.find((e) => e.slug === 'elements/api-entry');
-    assert.ok(apiEl, 'api index.ts → element 후보');
+    assert.ok(apiEl);
     assert.equal(apiEl.path, 'src/api/index.ts');
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -2602,7 +2600,7 @@ test('pnpm workspace — operational README sections stay out of domains and wor
     const r = analyzeRepoStructure(root);
     assert.equal(r.framework, 'generic');
     assert.deepEqual(r.domains, []);
-    // A workspace member's name is the slug — location goes in path/evidence (decided 2026-08-01).
+    // A workspace member's name is the slug; location lives in path and evidence.
     assert.deepEqual(
       r.elements.map((element) => element.slug),
       [
@@ -2753,21 +2751,18 @@ test('workspace semantic evidence rejects package files that resolve outside the
   }
 });
 
-test('최상위 독립 패키지(mcp/·cli/ 류)가 요소 후보로 잡힌다 — package.json 이 판별자', () => {
-  // Measured 2026-08-01: analyze walked only the src/ FSD layers, so this
-  // repository's agent surfaces (mcp/, cli/) were missing entirely from a
-  // regenerated vault. The tool's field of view is the vault's reach, so a reach
-  // regression is caught here.
+test('a top-level standalone package (like mcp/ or cli/) becomes an element candidate, keyed by package.json', () => {
+  // The tool's field of view is the vault's reach: top-level packages (mcp/,
+  // cli/) must be found, not only the src/ FSD layers.
   const root = withRepo((r) => {
     writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'host-app' }));
     writeFileSync(join(r, 'README.md'), '# Host\n\n## Serving\n');
     mkdirSync(join(r, 'src/features/serve'), { recursive: true });
-    // Two independent packages — these must be proposed.
     mkdirSync(join(r, 'mcp'), { recursive: true });
     writeFileSync(join(r, 'mcp', 'package.json'), '{"name":"host-mcp"}\n');
     mkdirSync(join(r, 'cli'), { recursive: true });
     writeFileSync(join(r, 'cli', 'package.json'), '{"name":"host-cli"}\n');
-    // A top-level folder with no package.json — must not be proposed (blanket coverage is not the goal).
+    // No package.json: not proposed, since blanket coverage is not the goal.
     mkdirSync(join(r, 'scripts'), { recursive: true });
     writeFileSync(join(r, 'scripts', 'run.mjs'), '');
     mkdirSync(join(r, 'tests'), { recursive: true });
@@ -2783,7 +2778,6 @@ test('최상위 독립 패키지(mcp/·cli/ 류)가 요소 후보로 잡힌다 �
       r.elements.some((e) => e.slug.includes('scripts') || e.slug.includes('tests')),
       false,
     );
-    // Carried on the containment spine as well.
     assert.ok(r.suggestedRelations.some((rel) => rel.to === 'elements/mcp'));
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -4652,6 +4646,181 @@ test('existing ontology evidence stops at the Markdown file walk budget and reco
   }
 });
 
+function ontologyEvidence(root) {
+  const skipped = [];
+  const rows = detectExistingOntologyEvidence(root, skipped)
+    .map(({ slug, source }) => ({ slug, source }))
+    .sort((left, right) => (left.slug < right.slug ? -1 : 1));
+  return { rows, skipped: skipped.map((row) => row.reason).sort() };
+}
+
+test('existing ontology evidence keeps the canonical slug when an alias sorts first', () => {
+  const root = withRepo((r) => {
+    mkdirSync(join(r, 'docs/ontology/domains'), { recursive: true });
+    mkdirSync(join(r, 'docs/ontology/capabilities'), { recursive: true });
+    writeFileSync(join(r, 'docs/ontology/domains/ops.md'), ontologyDomainDoc('Ops'));
+    writeFileSync(
+      join(r, 'docs/ontology/capabilities/theme-toggle.md'),
+      '---\nkind: capability\ntitle: Theme Toggle\n---\n',
+    );
+    symlinkSync('domains', join(r, 'docs/ontology/alias'));
+  });
+  try {
+    const { rows, skipped } = ontologyEvidence(root);
+
+    assert.deepEqual(rows, [
+      { slug: 'capabilities/theme-toggle', source: 'docs/ontology/capabilities/theme-toggle.md' },
+      { slug: 'domains/ops', source: 'docs/ontology/domains/ops.md' },
+    ]);
+    assert.deepEqual(skipped, []);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('existing ontology evidence skips the raw-source folder and a link to it', () => {
+  const root = withRepo((r) => {
+    mkdirSync(join(r, 'docs/ontology/domains'), { recursive: true });
+    mkdirSync(join(r, 'docs/ontology/sources/Planning'), { recursive: true });
+    writeFileSync(join(r, 'docs/ontology/domains/ops.md'), ontologyDomainDoc('Ops'));
+    writeFileSync(join(r, 'docs/ontology/sources/Planning/roadmap.md'), ontologyDomainDoc('Roadmap'));
+    symlinkSync('sources', join(r, 'docs/ontology/inbox'));
+  });
+  try {
+    const { rows, skipped } = ontologyEvidence(root);
+
+    assert.deepEqual(rows, [{ slug: 'domains/ops', source: 'docs/ontology/domains/ops.md' }]);
+    assert.deepEqual(skipped, []);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('existing ontology evidence lists a shared subfolder once under its real path', () => {
+  const root = withRepo((r) => {
+    mkdirSync(join(r, 'docs/ontology/domains/alpha'), { recursive: true });
+    mkdirSync(join(r, 'docs/ontology/domains/beta/references'), { recursive: true });
+    writeFileSync(join(r, 'docs/ontology/domains/beta/references/ledger.md'), ontologyDomainDoc('Ledger'));
+    symlinkSync('../beta/references', join(r, 'docs/ontology/domains/alpha/references'));
+  });
+  try {
+    const { rows, skipped } = ontologyEvidence(root);
+
+    assert.deepEqual(rows, [
+      { slug: 'domains/beta/references/ledger', source: 'docs/ontology/domains/beta/references/ledger.md' },
+    ]);
+    assert.deepEqual(skipped, []);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('existing ontology evidence stops a sibling link cycle and keeps both real folders', () => {
+  const root = withRepo((r) => {
+    mkdirSync(join(r, 'docs/ontology/domains/a'), { recursive: true });
+    mkdirSync(join(r, 'docs/ontology/domains/b'), { recursive: true });
+    writeFileSync(join(r, 'docs/ontology/domains/a/one.md'), ontologyDomainDoc('One'));
+    writeFileSync(join(r, 'docs/ontology/domains/b/two.md'), ontologyDomainDoc('Two'));
+    symlinkSync('../b', join(r, 'docs/ontology/domains/a/to-b'));
+    symlinkSync('../a', join(r, 'docs/ontology/domains/b/to-a'));
+  });
+  try {
+    const { rows, skipped } = ontologyEvidence(root);
+
+    assert.deepEqual(rows, [
+      { slug: 'domains/a/one', source: 'docs/ontology/domains/a/one.md' },
+      { slug: 'domains/b/two', source: 'docs/ontology/domains/b/two.md' },
+    ]);
+    assert.deepEqual(skipped, [
+      'ontology-evidence-skip: docs/ontology/domains/a/to-b/to-a repeats a visited directory',
+    ]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('existing ontology evidence stops a link back to an ancestor folder', () => {
+  const root = withRepo((r) => {
+    mkdirSync(join(r, 'docs/ontology/domains'), { recursive: true });
+    writeFileSync(join(r, 'docs/ontology/domains/ops.md'), ontologyDomainDoc('Ops'));
+    symlinkSync('..', join(r, 'docs/ontology/domains/up'));
+  });
+  try {
+    const { rows, skipped } = ontologyEvidence(root);
+
+    assert.deepEqual(rows, [{ slug: 'domains/ops', source: 'docs/ontology/domains/ops.md' }]);
+    assert.deepEqual(skipped, [
+      'ontology-evidence-skip: docs/ontology/domains/up repeats a visited directory',
+    ]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('existing ontology evidence lists one row for two links to one folder outside docs/ontology', () => {
+  const root = withRepo((r) => {
+    mkdirSync(join(r, 'notes'), { recursive: true });
+    mkdirSync(join(r, 'docs/ontology'), { recursive: true });
+    writeFileSync(join(r, 'notes/ledger.md'), ontologyDomainDoc('Ledger'));
+    symlinkSync('../../notes', join(r, 'docs/ontology/ext1'));
+    symlinkSync('../../notes', join(r, 'docs/ontology/ext2'));
+  });
+  try {
+    const { rows, skipped } = ontologyEvidence(root);
+
+    assert.deepEqual(rows, [{ slug: 'ext1/ledger', source: 'docs/ontology/ext1/ledger.md' }]);
+    assert.deepEqual(skipped, []);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('existing ontology evidence walks a folder shared by three links once', () => {
+  const root = withRepo((r) => {
+    mkdirSync(join(r, 'docs/ontology/shared'), { recursive: true });
+    writeFileSync(join(r, 'docs/ontology/shared/ops.md'), ontologyDomainDoc('Ops'));
+    symlinkSync('..', join(r, 'docs/ontology/shared/up'));
+    for (const name of ['a', 'b', 'c']) symlinkSync('shared', join(r, `docs/ontology/${name}`));
+  });
+  try {
+    const { rows, skipped } = ontologyEvidence(root);
+
+    assert.deepEqual(rows, [{ slug: 'shared/ops', source: 'docs/ontology/shared/ops.md' }]);
+    assert.deepEqual(skipped, ['ontology-evidence-skip: docs/ontology/a/up repeats a visited directory']);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+function tmpdirIgnoresCase() {
+  const probe = mkdtempSync(join(tmpdir(), 'ontology-atlas-case-'));
+  try {
+    writeFileSync(join(probe, 'Probe'), '');
+    return existsSync(join(probe, 'probe'));
+  } finally {
+    rmSync(probe, { recursive: true, force: true });
+  }
+}
+
+test(
+  'existing ontology evidence names a differently cased alias by the on-disk folder',
+  { skip: !tmpdirIgnoresCase() && 'the temporary folder is case-sensitive' },
+  () => {
+    const root = withRepo((r) => {
+      mkdirSync(join(r, 'docs/ontology/domains'), { recursive: true });
+      writeFileSync(join(r, 'docs/ontology/domains/ops.md'), ontologyDomainDoc('Ops'));
+      symlinkSync('DOMAINS', join(r, 'docs/ontology/alias'));
+    });
+    try {
+      const { rows } = ontologyEvidence(root);
+
+      assert.deepEqual(rows, [{ slug: 'domains/ops', source: 'docs/ontology/domains/ops.md' }]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  },
+);
+
 test('invalid analyze options are rejected instead of coerced', () => {
   const root = withRepo(() => {});
   try {
@@ -4685,29 +4854,15 @@ test('invalid analyze options are rejected instead of coerced', () => {
 });
 
 /**
- * The defect where one `shared/` folder made it find nothing (measured while
- * dogfooding, 2026-07-28).
- *
- * `fsdMarkers` contained `shared`, so a single `src/shared/` folder — **common in
- * any TS or Node project** — was enough to classify the framework as `fsd`. But
- * FSD mode only walks `features/entities/widgets/views`, so with none of those
- * present it silently returned **0 capabilities and 0 elements**, and nothing in
- * the response said the zero came from the framework verdict.
- *
- * `inferImports` in the same call extracted auth, tasks, db, and notifications
- * correctly from the same repository — **two tools saying different things about
- * one repository.**
- *
- * Promoted to a rule: **do not make a classification that cannot change what gets
- * read.** If the only consequence of calling something FSD is "there are no
- * folders to walk", the name does nothing but suppress.
+ * A classification must change what gets read: a lone `src/shared/` made the
+ * repository "FSD", whose walk found nothing and silently returned zero
+ * capabilities while inferImports found them.
  */
-test('src/shared 하나로 FSD 라 부르지 않는다 — 훑을 폴더가 없으면 일반 경로로 간다', () => {
+test('src/shared alone is not FSD: with no folder to scan it takes the generic path', () => {
   const root = withRepo((r) => {
     writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'taskflow', description: 'x' }));
     writeFileSync(join(r, 'README.md'), '# Taskflow\n');
-    // The shape of the real dogfooding fixture — feature folders sit directly
-    // under src/, with one commonly named shared/ mixed in.
+    // Feature folders directly under src/, plus one shared/.
     mkdirSync(join(r, 'src/auth'), { recursive: true });
     mkdirSync(join(r, 'src/tasks'), { recursive: true });
     mkdirSync(join(r, 'src/notifications'), { recursive: true });
@@ -4719,15 +4874,14 @@ test('src/shared 하나로 FSD 라 부르지 않는다 — 훑을 폴더가 없�
     assert.notEqual(r.framework, 'fsd');
     const slugs = r.capabilities.map((c) => c.slug).sort();
     for (const expected of ['capabilities/auth', 'capabilities/db', 'capabilities/notifications', 'capabilities/tasks']) {
-      assert.ok(slugs.includes(expected), `${expected} 가 후보에 없다: ${slugs.join(', ')}`);
+      assert.ok(slugs.includes(expected), `${expected} is missing from the candidates: ${slugs.join(', ')}`);
     }
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 });
 
-// Real FSD must stay FSD — check the fix did not break the other side.
-test('훑을 폴더가 하나라도 있으면 여전히 FSD 다 (lean FSD 포함)', () => {
+test('is still FSD when at least one folder to scan exists (lean FSD included)', () => {
   const root = withRepo((r) => {
     writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'lean', description: 'x' }));
     writeFileSync(join(r, 'README.md'), '# Lean\n');

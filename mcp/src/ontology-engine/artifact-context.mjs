@@ -2,13 +2,39 @@ import { buildSlugNotFoundGrowthHint } from '../growth-hint.mjs';
 import { suggestCompiledSlugs } from '../suggestions.mjs';
 import { edgeSortKey } from './query-primitives.mjs';
 
+const sharedArtifacts = new WeakSet();
+const indexesByArtifact = new WeakMap();
+
+export function shareArtifact(artifact) {
+  sharedArtifacts.add(deepFreeze(artifact));
+  return artifact;
+}
+
+function deepFreeze(value) {
+  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
+    Object.freeze(value);
+    for (const item of Object.values(value)) deepFreeze(item);
+  }
+  return value;
+}
+
 /** Build the immutable indexes shared by ontology query families. */
 export function createArtifactContext(artifact, options = {}) {
-  const nodes = Array.isArray(artifact?.nodes) ? artifact.nodes : [];
-  const edges = Array.isArray(artifact?.edges) ? artifact.edges : [];
   const sourceDocBySlug = new Map(
     (Array.isArray(options.sourceDocs) ? options.sourceDocs : []).map((doc) => [doc.slug, doc]),
   );
+  const shared = sharedArtifacts.has(artifact);
+  let indexes = shared ? indexesByArtifact.get(artifact) : undefined;
+  if (!indexes) {
+    indexes = buildArtifactIndexes(artifact);
+    if (shared) indexesByArtifact.set(artifact, indexes);
+  }
+  return { artifact, ...indexes, sourceDocBySlug };
+}
+
+function buildArtifactIndexes(artifact) {
+  const nodes = Array.isArray(artifact?.nodes) ? artifact.nodes : [];
+  const edges = Array.isArray(artifact?.edges) ? artifact.edges : [];
   const nodeBySlug = new Map(nodes.map((node) => [node.slug, node]));
   const aliasToSlug = new Map(
     (Array.isArray(artifact?.aliases) ? artifact.aliases : []).map(({ alias, slug }) => [alias, slug]),
@@ -35,6 +61,7 @@ export function createArtifactContext(artifact, options = {}) {
       incoming.get(edge.to).push(edge);
     }
   }
+  for (const list of [...outgoing.values(), ...incoming.values()]) Object.freeze(list);
 
   // Keep unresolved names queryable as evidence even though they are not nodes.
   const referencedOnlyByRef = new Map();
@@ -43,14 +70,15 @@ export function createArtifactContext(artifact, options = {}) {
     const list = referencedOnlyByRef.get(edge.ref);
     if (list) {
       if (!list.some((hit) => hit.slug === edge.from && hit.via === edge.via)) {
-        list.push({ slug: edge.from, via: edge.via });
+        list.push(Object.freeze({ slug: edge.from, via: edge.via }));
       }
     } else {
-      referencedOnlyByRef.set(edge.ref, [{ slug: edge.from, via: edge.via }]);
+      referencedOnlyByRef.set(edge.ref, [Object.freeze({ slug: edge.from, via: edge.via })]);
     }
   }
   for (const list of referencedOnlyByRef.values()) {
     list.sort((left, right) => left.slug.localeCompare(right.slug) || left.via.localeCompare(right.via));
+    Object.freeze(list);
   }
 
   function resolve(input, fieldName = 'slug') {
@@ -100,10 +128,8 @@ export function createArtifactContext(artifact, options = {}) {
   }
 
   return {
-    artifact,
     nodes,
     edges,
-    sourceDocBySlug,
     nodeBySlug,
     aliasToSlug,
     ambiguousAliasByName,

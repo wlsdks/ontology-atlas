@@ -1,0 +1,314 @@
+{
+  "basis": {
+    "bindingDigest": "sha256:fd3dab96649a8200a760499f56dc31b9d9bfd3d54fdf848b33f9f6a988b27f08",
+    "bodyDigest": "sha256:8bc7a7cdb7a469139ef955917d79c1422913a1d8aeaa2b78ab3bff91d1154676",
+    "graphDigest": "98e444572ef67c27a0229ca2424b42bcdd96bed0dc5c3b6a5ac069a1d20fb1ca",
+    "projectSlug": "projects/research-workbench",
+    "selectedUids": [
+      "f5783b86-97ac-4e77-b00c-b34a8b254194"
+    ],
+    "sourceFingerprint": "sha256:23bcd169c3ebeafab74025b82e296d716ce7d748c7b29baf0c5c49939f6fd7d7",
+    "sourceId": "sha256:609768e6d4995452bc85b36b191e7abca570f079d39b5831554eedfd76203bf0",
+    "sourceRoots": [
+      "src/research",
+      "src/retry"
+    ]
+  },
+  "contract": "grayAreaEvidence:v1",
+  "coverage": {
+    "filesScanned": 2,
+    "importsAvailable": true,
+    "importsLimited": false,
+    "inventoryFiles": 5,
+    "limits": [
+      "static_imports_only",
+      "implementation_parent_folders_only_other_callers_unmeasured",
+      "two_recorded_dependency_hops",
+      "source_ranges_only",
+      "historical_gaps_unverified"
+    ],
+    "maxFiles": 2000,
+    "readsLimited": false,
+    "recordedReadsTotal": 7,
+    "sourceFolders": [
+      "src/research",
+      "src/retry"
+    ],
+    "unresolvedImports": 0,
+    "unsupported": [
+      "runtime dispatch",
+      "unsupported languages"
+    ]
+  },
+  "drift": [
+    {
+      "documentChangedAt": "2026-09-20T09:00:00Z",
+      "path": "src/retry/index.ts",
+      "slug": "elements/retry-dispatch",
+      "sourceChangedAt": "2026-09-22T09:00:00Z"
+    },
+    {
+      "documentChangedAt": "2026-09-20T09:00:00Z",
+      "path": "src/policy/index.ts",
+      "slug": "elements/write-policy",
+      "sourceChangedAt": "2026-09-21T09:00:00Z"
+    }
+  ],
+  "edges": [
+    {
+      "external": false,
+      "from": "capabilities/read-only-research",
+      "id": "capabilities/read-only-research->elements/retry-dispatch:dependencies:elements/retry-dispatch",
+      "rationale": "src/research/index.ts imports and invokes retryRequest from src/retry/index.ts.",
+      "ref": "elements/retry-dispatch",
+      "resolved": true,
+      "to": "elements/retry-dispatch",
+      "via": "dependencies"
+    },
+    {
+      "external": false,
+      "from": "capabilities/read-only-research",
+      "id": "capabilities/read-only-research->domains/request-safety:domain:domains/request-safety",
+      "ref": "domains/request-safety",
+      "resolved": true,
+      "to": "domains/request-safety",
+      "via": "domain"
+    },
+    {
+      "external": false,
+      "from": "capabilities/read-only-research",
+      "id": "capabilities/read-only-research->elements/request-shape:elements:elements/request-shape",
+      "ref": "elements/request-shape",
+      "resolved": true,
+      "to": "elements/request-shape",
+      "via": "elements"
+    },
+    {
+      "external": false,
+      "from": "capabilities/read-only-research",
+      "id": "capabilities/read-only-research->elements/retry-dispatch:elements:elements/retry-dispatch",
+      "rationale": "src/research/index.ts imports and invokes retryRequest from src/retry/index.ts.",
+      "ref": "elements/retry-dispatch",
+      "resolved": true,
+      "to": "elements/retry-dispatch",
+      "via": "elements"
+    },
+    {
+      "external": false,
+      "from": "capabilities/read-only-research",
+      "id": "capabilities/read-only-research->elements/title-format:elements:elements/title-format",
+      "ref": "elements/title-format",
+      "resolved": true,
+      "to": "elements/title-format",
+      "via": "elements"
+    },
+    {
+      "external": false,
+      "from": "capabilities/read-only-research",
+      "id": "capabilities/read-only-research->elements/write-policy:elements:elements/write-policy",
+      "ref": "elements/write-policy",
+      "resolved": true,
+      "to": "elements/write-policy",
+      "via": "elements"
+    },
+    {
+      "external": false,
+      "from": "domains/request-safety",
+      "id": "domains/request-safety->capabilities/read-only-research:capabilities:capabilities/read-only-research",
+      "rationale": "Read-only research is the domain outcome.",
+      "ref": "capabilities/read-only-research",
+      "resolved": true,
+      "to": "capabilities/read-only-research",
+      "via": "capabilities"
+    },
+    {
+      "external": false,
+      "from": "elements/request-shape",
+      "id": "elements/request-shape->domains/request-safety:domain:domains/request-safety",
+      "ref": "domains/request-safety",
+      "resolved": true,
+      "to": "domains/request-safety",
+      "via": "domain"
+    },
+    {
+      "external": false,
+      "from": "elements/retry-dispatch",
+      "id": "elements/retry-dispatch->domains/request-safety:domain:domains/request-safety",
+      "ref": "domains/request-safety",
+      "resolved": true,
+      "to": "domains/request-safety",
+      "via": "domain"
+    },
+    {
+      "external": false,
+      "from": "elements/title-format",
+      "id": "elements/title-format->domains/request-safety:domain:domains/request-safety",
+      "ref": "domains/request-safety",
+      "resolved": true,
+      "to": "domains/request-safety",
+      "via": "domain"
+    },
+    {
+      "external": false,
+      "from": "elements/write-policy",
+      "id": "elements/write-policy->domains/request-safety:domain:domains/request-safety",
+      "ref": "domains/request-safety",
+      "resolved": true,
+      "to": "domains/request-safety",
+      "via": "domain"
+    },
+    {
+      "external": false,
+      "from": "projects/research-workbench",
+      "id": "projects/research-workbench->domains/request-safety:contains:domains/request-safety",
+      "rationale": "The request-safety domain defines this project fixture.",
+      "ref": "domains/request-safety",
+      "resolved": true,
+      "to": "domains/request-safety",
+      "via": "contains"
+    }
+  ],
+  "imports": [
+    {
+      "from": "src/retry/index.ts",
+      "importUsage": "value",
+      "kind": "static",
+      "sourceRole": "production",
+      "to": "src/policy/index.ts"
+    },
+    {
+      "from": "src/retry/index.ts",
+      "importUsage": "type_only",
+      "kind": "static",
+      "sourceRole": "production",
+      "to": "src/types/index.ts"
+    },
+    {
+      "from": "src/research/index.ts",
+      "importUsage": "value",
+      "kind": "static",
+      "sourceRole": "production",
+      "to": "src/retry/index.ts"
+    }
+  ],
+  "measuredAt": "2026-09-28T00:28:04.415717+00:00",
+  "nodes": [
+    {
+      "body": "\nStarts an investigation with read-only authority.\n\n## Includes\n- Passing a read-only request to retry dispatch.\n\n## Excludes\n- Authorizing a Wiki write.\n\n## Uncertainty\n- The retry behavior in src/retry/index.ts was not verified.\n",
+      "bodyDigest": "sha256:4e127f0656b0ed318bbd9330d6ae2b7ca92ce9ec13f9e825144468bee83eeca6",
+      "kind": "capability",
+      "path": "src/research/index.ts",
+      "slug": "capabilities/read-only-research",
+      "title": "Read-only research",
+      "uid": "03cb9459-5097-411e-bcfb-310ae7104754"
+    },
+    {
+      "body": "\nNames the read-only request field for TypeScript.\n\n## Includes\n- A compile-time boolean field.\n\n## Excludes\n- Runtime authorization.\n\n## Uncertainty\n- The type declaration is not runtime evidence.\n",
+      "bodyDigest": "sha256:3be88c58c0aa4499355d589e46a533a0dfab836b6a1a26f6600df4c7e85a1379",
+      "kind": "element",
+      "path": "src/types/index.ts",
+      "slug": "elements/request-shape",
+      "title": "Request shape",
+      "uid": "1b4f2d17-3082-4d8d-9d46-61f234bdfabe"
+    },
+    {
+      "body": "\nPasses the request to the local write-policy decision.\n\n## Includes\n- Preserving request fields while selecting a policy.\n\n## Excludes\n- Persisting a report.\n\n## Uncertainty\n- The behavior at src/retry/index.ts:3-5 was not verified after changing the runner.\n",
+      "bodyDigest": "sha256:66814a69e450f044b217dccc550898c0d0b363a470aba5437e0c96efb6ad3c6c",
+      "kind": "element",
+      "path": "src/retry/index.ts",
+      "slug": "elements/retry-dispatch",
+      "title": "Retry dispatch",
+      "uid": "f5783b86-97ac-4e77-b00c-b34a8b254194"
+    },
+    {
+      "body": "\nDerives whether a local request permits writing.\n\n## Includes\n- The readOnly flag check.\n\n## Excludes\n- Executing a write.\n\n## Uncertainty\n- Resolved on 2026-09-20: src/policy/index.ts was read and its synchronous flag decision verified.\n",
+      "bodyDigest": "sha256:1f3f566c4a545605ed2e61c0d4661664435da1130363dedc52658aa0f35564bf",
+      "kind": "element",
+      "path": "src/policy/index.ts",
+      "slug": "elements/write-policy",
+      "title": "Write policy",
+      "uid": "d49d7cd8-2cb3-4d33-96b3-b3af5ad374b0"
+    }
+  ],
+  "recordedReads": [
+    {
+      "kind": "unverified-claim",
+      "paths": [
+        "src/retry/index.ts"
+      ],
+      "proposedAction": "Read src/retry/index.ts, then patch_concept capabilities/read-only-research to state what it settled or to move the statement out of Uncertainty.",
+      "ranges": [],
+      "readRanges": [],
+      "slug": "capabilities/read-only-research",
+      "statement": "The retry behavior in src/retry/index.ts was not verified."
+    },
+    {
+      "kind": "unverified-claim",
+      "paths": [
+        "src/retry/index.ts"
+      ],
+      "proposedAction": "Read src/retry/index.ts, then patch_concept elements/retry-dispatch to state what it settled or to move the statement out of Uncertainty.",
+      "ranges": [],
+      "readRanges": [],
+      "slug": "elements/retry-dispatch",
+      "statement": "The behavior at src/retry/index.ts:3-5 was not verified after changing the runner."
+    },
+    {
+      "kind": "other",
+      "paths": [],
+      "proposedAction": "Read the source behind elements/request-shape, then patch_concept elements/request-shape to state what it settled or to move the statement out of Uncertainty.",
+      "ranges": [],
+      "readRanges": [],
+      "slug": "elements/request-shape",
+      "statement": "The type declaration is not runtime evidence."
+    },
+    {
+      "kind": "other",
+      "paths": [
+        "src/policy/index.ts"
+      ],
+      "proposedAction": "Read src/policy/index.ts, then patch_concept elements/write-policy to state what it settled or to move the statement out of Uncertainty.",
+      "ranges": [],
+      "readRanges": [],
+      "slug": "elements/write-policy",
+      "statement": "Resolved on 2026-09-20: src/policy/index.ts was read and its synchronous flag decision verified."
+    }
+  ],
+  "snapshotId": "sha256:95f1ef2cc0c9ca68c63a123c903d168af64522aeb5cd52b19519d1332eb1b4ea",
+  "witnesses": [
+    {
+      "path": "src/policy/index.ts",
+      "reason": "source_bytes_unavailable",
+      "status": "refused"
+    },
+    {
+      "actualRange": {
+        "endLine": 2,
+        "startLine": 1
+      },
+      "citation": "src/research/index.ts:1-2",
+      "fileComplete": true,
+      "fullFileSha256": "f0204be87a50c1f0edb58abd807e22a8e64519bd4745f094239ba798ac309762",
+      "path": "src/research/index.ts",
+      "status": "read",
+      "text": "import { retryRequest } from '../retry';\nexport const investigate = () => retryRequest({ readOnly: true });"
+    },
+    {
+      "actualRange": {
+        "endLine": 6,
+        "startLine": 1
+      },
+      "citation": "src/retry/index.ts:1-6",
+      "fileComplete": true,
+      "fullFileSha256": "b6f700e2d9aef029eb735f36d76e03cb91845fd2d83a569da92508437ecdfc23",
+      "path": "src/retry/index.ts",
+      "status": "read",
+      "text": "import { canWrite } from '../policy';\nimport type { Request } from '../types';\nexport function retryRequest(request: Request) {\n  return { canWrite: canWrite(request), request };\n}\n// Later retry-source observation; behavior still requires review."
+    },
+    {
+      "path": "src/types/index.ts",
+      "reason": "source_bytes_unavailable",
+      "status": "refused"
+    }
+  ]
+}

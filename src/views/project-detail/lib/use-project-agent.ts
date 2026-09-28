@@ -13,13 +13,8 @@ export interface ProjectAgentOpeningRequest {
 }
 
 /**
- * The agent a project page can hand its overview to. The runtime, vault MCP server and
- * connector wiring is `useVaultAgentRuntime`, read the same way on every screen that docks a
- * conversation; what is this page's own is the dock's open state and the one request it seats:
- * the brief instructions, sent as the first turn once the session is ready.
- *
- * `route` says what the ask button can promise: `agent` opens the dock and seats the request;
- * anything else leaves the copy-to-clipboard path, which works in the browser too.
+ * The dock's open state and the brief request sent as the first turn once the session is ready;
+ * runtime wiring is the shared `useVaultAgentRuntime`. Any `route` but `agent` falls back to copying.
  */
 export function useProjectAgent(vaultRoot: string | null) {
   const { route, runtime, runtimes, runtimeId, setRuntimeId, mcpServers } = useVaultAgentRuntime(vaultRoot);

@@ -25,14 +25,9 @@ import { inspectMergedUids, nodeUidIssue } from "../cli/src/lib/schema.mjs";
  * `meaning-findings.mjs` and `parser.mjs` import only sibling `mcp/src` modules
  * and `node:` builtins, so a plain `node` run resolves them with no install.
  */
-import {
-  boundaryFindings,
-  definitionFinding,
-  epistemicExclusionFinding,
-  uncertaintyFinding,
-} from "../mcp/src/meaning-findings.mjs";
+import { bodyMeaningFindings } from "../mcp/src/meaning-findings.mjs";
 import { parseFrontmatter as parseMcpFrontmatter } from "../mcp/src/parser.mjs";
-import { folderForKind } from "../cli/src/lib/schema.mjs";
+import { VAULT_SOURCES_DIR, folderForKind } from "../cli/src/lib/schema.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
@@ -131,14 +126,15 @@ async function validateVaultDir(vaultDir) {
   }
 }
 
-async function walk(dir) {
+async function walk(dir, root = dir) {
   const out = [];
   const entries = await readdir(dir, { withFileTypes: true });
   for (const entry of entries) {
     if (entry.name.startsWith(".")) continue;
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      out.push(...(await walk(full)));
+      if (dir === root && entry.name === VAULT_SOURCES_DIR) continue;
+      out.push(...(await walk(full, root)));
     } else if (entry.isFile() && entry.name.endsWith(".md")) {
       out.push(full);
     }
@@ -176,14 +172,11 @@ function meaningIssues(raw, slug) {
   if (!kind || !KNOWN_VAULT_KINDS.includes(kind)) return [];
   const title = typeof frontmatter?.title === "string" ? frontmatter.title : "";
   const input = { kind, slug, title, body };
-  const issues = [
-    definitionFinding(input),
-    ...boundaryFindings(input),
-    uncertaintyFinding(input),
-    epistemicExclusionFinding(input),
-  ]
-    .filter(Boolean)
-    .map((finding) => ({ code: finding.code, severity: "warning", message: finding.message }));
+  const issues = bodyMeaningFindings(input).map((finding) => ({
+    code: finding.code,
+    severity: "warning",
+    message: finding.message,
+  }));
   const folder = folderForKind(kind);
   if (slug && folder && !slug.startsWith(folder)) {
     issues.push({

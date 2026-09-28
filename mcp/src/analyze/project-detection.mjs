@@ -3,7 +3,7 @@
 // suggest; and the ontology nodes an existing vault already contributes.
 
 import { readFileSync, readdirSync, statSync, lstatSync, existsSync, realpathSync } from 'node:fs';
-import { join, basename, relative } from 'node:path';
+import { join, basename, relative, isAbsolute, sep } from 'node:path';
 import {
   AUTOTOOLS_IDENTITY_FILES,
   AUTOTOOLS_IDENTITY_MAX_BYTES,
@@ -15,6 +15,7 @@ import {
   STARTER_ONTOLOGY_SLUGS,
 } from './constants.mjs';
 import { cleanHeadingLabel, humanize, isHeadingAdornment, slugify } from './text.mjs';
+import { VAULT_SOURCES_DIR } from '../schema.mjs';
 import {
   packageContractPathIssue,
   pathResolvesInsideRoot,
@@ -228,6 +229,9 @@ export function detectExistingOntologyEvidence(rootPath, skipped = []) {
   }
   const rows = [];
   const seen = new Set();
+  const realOntologyRoot = realpathSync.native(ontologyRoot);
+  const realSourcesDirectory = realVaultSourcesDirectory(ontologyRoot);
+  const ancestors = new Set();
   const visitedDirectories = new Set();
   let entriesSeen = 0;
   let filesSeen = 0;
@@ -235,24 +239,29 @@ export function detectExistingOntologyEvidence(rootPath, skipped = []) {
 
   // O(entries) under the budgets; only a link can leave a folder inside the root.
   function visit(dir) {
-    const realDirectory = realpathSync(dir);
-    if (visitedDirectories.has(realDirectory)) {
+    const realDirectory = realpathSync.native(dir);
+    if (realDirectory === realSourcesDirectory) return;
+    if (ancestors.has(realDirectory)) {
       pushSkippedOnce(skipped, {
         path: dir,
         reason: `ontology-evidence-skip: ${relative(rootPath, dir)} repeats a visited directory`,
       });
       return;
     }
+    if (visitedDirectories.has(realDirectory)) return;
     visitedDirectories.add(realDirectory);
+    ancestors.add(realDirectory);
     for (const entry of readdirSync(dir)) {
       if (walkBudgetReached(dir)) return;
       entriesSeen += 1;
       const path = join(dir, entry);
       let stat;
+      let linked = false;
       let insideRoot = true;
       try {
         stat = lstatSync(path);
-        if (stat.isSymbolicLink()) {
+        linked = stat.isSymbolicLink();
+        if (linked) {
           stat = statSync(path);
           insideRoot = pathResolvesInsideRoot(rootPath, path);
         }
@@ -273,11 +282,20 @@ export function detectExistingOntologyEvidence(rootPath, skipped = []) {
       }
       if (!entry.endsWith('.md')) continue;
       filesSeen += 1;
-      const evidence = readOntologyEvidence(rootPath, ontologyRoot, path);
+      const realFile = linked ? realpathSync.native(path) : join(realDirectory, entry);
+      const evidence = readOntologyEvidence(rootPath, ontologyRoot, canonicalPath(realFile, path));
       if (!evidence || seen.has(evidence.slug)) continue;
       seen.add(evidence.slug);
       rows.push(evidence);
     }
+    ancestors.delete(realDirectory);
+  }
+
+  function canonicalPath(realFile, path) {
+    const fromOntologyRoot = relative(realOntologyRoot, realFile);
+    return fromOntologyRoot.startsWith(`..${sep}`) || isAbsolute(fromOntologyRoot)
+      ? path
+      : join(ontologyRoot, fromOntologyRoot);
   }
 
   function walkBudgetReached(dir) {
@@ -299,6 +317,15 @@ export function detectExistingOntologyEvidence(rootPath, skipped = []) {
 
   visit(ontologyRoot);
   return rows;
+}
+
+function realVaultSourcesDirectory(ontologyRoot) {
+  try {
+    const entry = readdirSync(ontologyRoot, { withFileTypes: true }).find((item) => item.name === VAULT_SOURCES_DIR);
+    return entry ? realpathSync.native(join(ontologyRoot, entry.name)) : null;
+  } catch {
+    return null;
+  }
 }
 
 function readOntologyEvidence(rootPath, ontologyRoot, path) {

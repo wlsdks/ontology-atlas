@@ -1,14 +1,11 @@
 /**
- * Meaning findings — one firing case and one silent case per code.
- *
- * The silent half is the load-bearing half. A body check that flags a node
- * somebody actually wrote is a check the reader turns off, and then the door is
- * open again; every code below therefore has to prove it stays quiet on a body
- * that answered the question.
+ * One firing and one silent case per meaning code. The silent half matters most:
+ * a check that flags a node somebody wrote properly gets switched off.
  */
 
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
+import { execFileSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { randomUUID } from 'node:crypto';
@@ -85,12 +82,8 @@ describe('definition-missing — a label is not a concept', () => {
   });
 
   /*
-   * The shape the qualification lane actually writes, measured 2026-09-21:
-   * nothing above the first `##`, the definition under `## Definition`. The
-   * first version of this check read only the lead and accused 15 of 16 nodes
-   * in a freshly built vault and 72 of 109 in this repository's own — every one
-   * of them defined. A check that is wrong on its debut is one the reader
-   * switches off, and then the door is open again.
+   * The qualification lane's shape: nothing above the first `##`, the definition
+   * under `## Definition`.
    */
   it('stays silent when the definition lives under its own heading and nothing precedes it', () => {
     const body = [
@@ -136,10 +129,8 @@ describe('definition-missing — a label is not a concept', () => {
   });
 
   /*
-   * The review falsifier, and a fair one: length alone cannot tell a terse
-   * definition from the title with grammar wrapped around it. Construction
-   * rule 3a asks for a *non-circular* sentence, so the check counts the words
-   * the title does not already supply.
+   * Length alone cannot tell a terse definition from the title with grammar
+   * around it; rule 3a asks for a non-circular sentence, so novel words count.
    */
   it('fires on an eight-word sentence that only restates the title', () => {
     const finding = definitionFinding({
@@ -259,8 +250,8 @@ describe('uncertainty-missing — a body with no unknown claims completeness', (
   });
 
   it('still fires when the section is there but holds only the scaffold placeholder', () => {
-    // A slot is not an answer. Letting the template satisfy this would mean the
-    // default write silences the one question the default write cannot answer.
+    // A slot is not an answer, or the default write would silence the question it
+    // cannot have answered.
     const finding = uncertaintyFinding({
       kind: 'element',
       slug: 'elements/parser',
@@ -308,10 +299,8 @@ describe('epistemic-exclusion — an evidence limit is not a product boundary', 
   });
 
   /*
-   * Written by a real builder against a real repository, 2026-09-21. All three
-   * say what the writer did not get to, and all three sat under `## Excludes`
-   * on a project node — the one place a reader handed the vault without the
-   * source cannot check the claim, and does repeat it as an established fact.
+   * Three exclusions a real builder wrote under `## Excludes`, each saying what
+   * the writer did not get to; a source-hidden reader repeats them as facts.
    */
   it('fires on the three shapes a real build produced', () => {
     const bullets = [
@@ -327,8 +316,7 @@ describe('epistemic-exclusion — an evidence limit is not a product boundary', 
   });
 
   it('stays silent on product boundaries from the same vault', () => {
-    // Both of these sit under `## Excludes` beside the three above and are
-    // genuine: they say what the product does not do, not what nobody read.
+    // Genuine product boundaries beside the three above.
     const bullets = [
       'flags, which are options rather than positional arguments',
       'deciding the exit code and printing the failure, which is error reporting',
@@ -409,16 +397,13 @@ describe('folder-only-evidence — drift on a folder cannot be checked', () => {
   });
 
   /*
-   * A vault is ordinary Markdown an agent writes, so `path:` is untrusted
-   * input. Rejecting an absolute path was not enough — `../` resolves out of
-   * the tree just as well, and the two things this check does next are read a
-   * directory and put one of its filenames into a tool response.
+   * Security: `path:` is untrusted, and `../` escapes as well as an absolute path;
+   * the check lists a directory and echoes a filename.
    */
   it('refuses to leave the repository through `../`, so nothing outside it is listed', (t) => {
     const root = repo();
     t.after(() => rmSync(root, { recursive: true, force: true }));
-    // A real directory beside the repository, holding a filename that must not
-    // appear anywhere in a response.
+    // A real directory beside the repository whose filename must never appear.
     const outside = join(root, '..', `outside-${randomUUID()}`);
     mkdirSync(outside, { recursive: true });
     writeFileSync(join(outside, 'private-notes.txt'), 'not for a tool response\n');
@@ -434,8 +419,7 @@ describe('folder-only-evidence — drift on a folder cannot be checked', () => {
       }),
       null,
     );
-    // Positive control: the same call one directory in still fires, so the null
-    // above is the clamp and not a typo in the fixture.
+    // Positive control: one directory in still fires, so the null above is the clamp.
     assert.ok(
       folderOnlyEvidenceFinding({
         kind: 'capability',
@@ -444,7 +428,6 @@ describe('folder-only-evidence — drift on a folder cannot be checked', () => {
         repoRoot: root,
       }),
     );
-    // A `../` that climbs and comes back is inside, and is still judged.
     assert.ok(
       folderOnlyEvidenceFinding({
         kind: 'capability',
@@ -467,8 +450,7 @@ describe('folder-only-evidence — drift on a folder cannot be checked', () => {
       }),
       null,
     );
-    // A path that is not on disk is `validate_vault`'s pathDrift answer; saying
-    // it twice is what teaches a reader to skim the channel.
+    // A missing path is validate_vault's pathDrift answer; saying it twice teaches skimming.
     assert.equal(
       folderOnlyEvidenceFinding({
         kind: 'capability',
@@ -525,21 +507,12 @@ describe('meaningFindings — only what this write touched', () => {
 });
 
 /**
- * A declared dependency the citing file never mentions.
- *
- * Measured 2026-09-22 on this repository's own vault: 70 of 85 file-to-file
- * `depends_on` edges are witnessed by the citing file naming the cited one, and
- * 15 are not. The silent half of this block is the load-bearing half twice over.
- * Once for the usual reason — a check that accuses a witnessed edge is a check
- * somebody turns off. And once for a reason peculiar to this code: the absence
- * of an import is not proof of independence, so every input this cannot be sure
- * about has to produce silence rather than a guess.
+ * A declared dependency the citing file never mentions. The silent cases matter
+ * twice here: a missing import is not proof of independence, so every uncertain
+ * input must produce silence rather than a guess.
  */
 describe('dependency-unwitnessed — the file cited does not name the file depended on', () => {
-  /**
-   * Two source files, and the deliberate asymmetry between them: `consumer.ts`
-   * imports the helper by name, `stranger.ts` does not mention it at all.
-   */
+  /** `consumer.ts` imports the helper by name; `stranger.ts` never mentions it. */
   function repoWithSources() {
     const root = mkdtempSync(join(tmpdir(), 'ontology-atlas-dependency-witness-'));
     mkdirSync(join(root, 'src', 'lib'), { recursive: true });
@@ -554,12 +527,9 @@ describe('dependency-unwitnessed — the file cited does not name the file depen
     );
     writeFileSync(join(root, 'src', 'lib', '.toolrc'), '{ "on": true }\n');
     /*
-     * The one file that proves the path branch is load-bearing. For an ordinary
-     * name the two spellings collapse: `src/lib/helper.ts` *contains*
-     * `helper` delimited by `/` and `.`, so the whole-word rule alone already
-     * sees it. A dotfile has no basename left once the extension rule runs, and
-     * a config file is exactly the kind of dependency the message says an import
-     * would never witness.
+     * The file that makes the verbatim-path branch necessary: a dotfile has no
+     * basename left after the extension rule, and a config file is exactly the
+     * dependency no import would witness.
      */
     writeFileSync(
       join(root, 'src', 'quoted.ts'),
@@ -647,27 +617,57 @@ describe('dependency-unwitnessed — the file cited does not name the file depen
     assert.equal(findings.length, 1);
     const [finding] = findings;
     assert.equal(finding.code, 'dependency-unwitnessed');
-    // The target rides in `key`, so the gate's own notice key is per edge.
     assert.equal(finding.key, 'elements/helper');
     assert.deepEqual(finding.refs, ['elements/helper']);
     assert.match(finding.message, /src\/stranger\.ts/);
     assert.match(finding.message, /src\/lib\/helper\.ts/);
-    // An import is evidence; its absence is not proof of independence, so the
-    // sentence must offer the witness before it offers the deletion.
+    // The witness must be offered before the deletion.
     assert.match(finding.message, /not.*proof of independence/);
     assert.match(finding.message, /replace_relation/);
     assert.match(finding.message, /remove_relation/);
   });
 
   /**
-   * The witness the message asks for, read where the message says to put it.
-   *
-   * Corrected 2026-09-22. The first version told the writer to name the file and
-   * the line in the `why`, then read only the source node's own `path:` — so a
-   * repair turn that gave twelve edges an exact witness cleared none of them.
-   * These four cases pin the rule that replaced it: the `why`'s file paths are
-   * candidates, and they are candidates on the same terms as any other file.
+   * File paths in the edge's `why` are witness candidates on the same terms as any
+   * other file, since the message tells the writer to put the witness there.
    */
+  it('a whole-vault pass keeps no cited file text once each document is judged', () => {
+    const root = mkdtempSync(join(tmpdir(), 'atlas-witness-pass-'));
+    try {
+      mkdirSync(join(root, 'src'));
+      const count = 24;
+      const padding = `// ${'x'.repeat(1024 * 1024)}\n`;
+      for (let index = 0; index < count; index += 1) {
+        const imports = index % 2 === 0 ? `import './m-${(index + 1) % count}';\n` : '';
+        writeFileSync(join(root, 'src', `m-${index}.ts`), `${imports}${padding}`);
+      }
+      const script = `
+        import { dependencyWitnessFinding } from ${JSON.stringify(new URL('./meaning-findings.mjs', import.meta.url).href)};
+        const heap = () => { globalThis.gc(); globalThis.gc(); return process.memoryUsage().heapUsed; };
+        const before = heap();
+        globalThis.moduleNamesByPath = new Map();
+        let findings = 0;
+        for (let index = 0; index < ${count}; index += 1) {
+          findings += dependencyWitnessFinding({
+            slug: 'capabilities/m-' + index,
+            frontmatter: { path: 'src/m-' + index + '.ts', dependencies: ['capabilities/m-' + ((index + 1) % ${count})] },
+            repoRoot: ${JSON.stringify(root)},
+            resolveTargetPath: (ref) => 'src/' + ref.split('/').pop() + '.ts',
+            moduleNamesByPath: globalThis.moduleNamesByPath,
+          }).length;
+        }
+        console.log(JSON.stringify({ retained: heap() - before, findings }));
+      `;
+      const measured = JSON.parse(execFileSync(process.execPath, ['--expose-gc', '--input-type=module', '-e', script], {
+        encoding: 'utf8',
+      }));
+      assert.equal(measured.findings, count / 2);
+      assert.ok(measured.retained < 1024 * 1024, `the pass kept ${measured.retained} bytes after reading ${count} MiB`);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('a `why` naming a file that does import the target clears the finding', (t) => {
     const root = repoWithSources();
     t.after(() => rmSync(root, { recursive: true, force: true }));
@@ -708,11 +708,9 @@ describe('dependency-unwitnessed — the file cited does not name the file depen
   });
 
   /*
-   * Measured on this repository's own vault: five of twelve repaired edges named
-   * a real witness file by a path relative to `src/` or to the module's own
-   * folder. Nothing resolves that from the repository root, and guessing which
-   * file was meant is how an advisory starts accusing the wrong one — so the
-   * finding stands and the message says "repository-relative" out loud.
+   * A path relative to `src/` or the module folder resolves nowhere from the root,
+   * and guessing the intended file would accuse the wrong one, so the finding
+   * stands and the message says "repository-relative".
    */
   it('a `why` naming the witness relative to the wrong root does not clear it', (t) => {
     const root = repoWithSources();
@@ -732,9 +730,8 @@ describe('dependency-unwitnessed — the file cited does not name the file depen
       }).length,
       1,
     );
-    // The barrel named the way an editor shows it from src/ (no root segment)
-    // resolves from the citing file's ancestor and clears the finding: the
-    // first repair turn wrote every witness that way and cleared nothing.
+    // A barrel path written relative to src/ resolves from the citing file's
+    // ancestor and clears the finding.
     assert.deepEqual(
       dependencyWitnessFinding({
         slug: 'capabilities/stranger',
@@ -748,7 +745,6 @@ describe('dependency-unwitnessed — the file cited does not name the file depen
       }),
       [],
     );
-    // The same sentence with the root on it clears it too.
     assert.deepEqual(
       dependencyWitnessFinding({
         slug: 'capabilities/stranger',
@@ -765,11 +761,9 @@ describe('dependency-unwitnessed — the file cited does not name the file depen
   });
 
   /*
-   * A `why` is an English sentence, and a word in it is not a file to open. The
-   * fixture makes that bite: `notes` really is a readable file at the fixture
-   * root, and it really does name the target — so a rule that treated every
-   * whitespace token as a path would clear this edge on the strength of a word
-   * in a sentence. A separator AND an extension are both required.
+   * The fixture file `notes` is readable that names the target, so treating every
+   * word as a path would clear this edge: a separator and an extension are both
+   * required.
    */
   it('a `why` that is prose only does not clear it, even when a word names a real file', (t) => {
     const root = repoWithSources();
@@ -791,16 +785,15 @@ describe('dependency-unwitnessed — the file cited does not name the file depen
   });
 
   /*
-   * A `why` is a sentence somebody wrote, so its paths are untrusted input on
-   * exactly the same terms as `path:` — the clamp is what stops a rationale
-   * from making this check open an arbitrary file on the machine.
+   * Security: paths in a `why` are untrusted like `path:`; the clamp stops a
+   * rationale from making the check open an arbitrary file.
    */
   it('a `why` naming a path outside the repository is ignored', (t) => {
     const root = repoWithSources();
     t.after(() => rmSync(root, { recursive: true, force: true }));
     const outside = join(root, '..', `outside-${randomUUID()}`);
     mkdirSync(outside, { recursive: true });
-    // The escaping file WOULD witness the edge if it were ever read.
+    // The escaping file would witness the edge if it were ever read.
     writeFileSync(join(outside, 'witness.ts'), "import './lib/helper';\n");
     t.after(() => rmSync(outside, { recursive: true, force: true }));
     const escape = `../${outside.split(sep).pop()}/witness.ts`;
@@ -860,9 +853,8 @@ describe('dependency-unwitnessed — the file cited does not name the file depen
       }),
       [],
     );
-    // Positive control on the same pair: a file that does not name the config
-    // still fires, so the silence above is the path spelling and not the
-    // dotfile being exempt.
+    // Positive control: a file not naming the config still fires, so the silence
+    // above is the path spelling, not a dotfile exemption.
     assert.equal(
       dependencyWitnessFinding({
         slug: 'capabilities/stranger',
@@ -875,9 +867,8 @@ describe('dependency-unwitnessed — the file cited does not name the file depen
   });
 
   /*
-   * A folder has no text to read, so asking whether it mentions anything has no
-   * answer. `folder-only-evidence` already tells this node what to do about the
-   * same `path:`, and saying it twice under two codes trains a reader to skim.
+   * A folder has no text to read, and `folder-only-evidence` already reports the
+   * same `path:`.
    */
   it('stays silent when the citing node cites a directory rather than a file', (t) => {
     const root = repoWithSources();
@@ -894,9 +885,8 @@ describe('dependency-unwitnessed — the file cited does not name the file depen
   });
 
   /*
-   * `path:` is a value an agent wrote, so both ends are untrusted input. An
-   * escaping target must not cause a file outside the repository to be opened,
-   * named, or judged.
+   * Security: both ends' `path:` are untrusted; an escaping target must not be
+   * opened, named or judged.
    */
   it('stays silent when the target path climbs out of the repository', (t) => {
     const root = repoWithSources();
@@ -915,7 +905,7 @@ describe('dependency-unwitnessed — the file cited does not name the file depen
       }),
       [],
     );
-    // Positive control, so the empty array above is the clamp and not a typo.
+    // Positive control: the empty array above is the clamp, not a fixture typo.
     assert.equal(
       dependencyWitnessFinding({
         slug: 'capabilities/stranger',
@@ -956,9 +946,8 @@ describe('dependency-unwitnessed — the file cited does not name the file depen
   });
 
   /*
-   * `depends_on:` is a legal authoring alias for `dependencies:`. Reading only
-   * the canonical key would judge an `add_relation` edge and say nothing about a
-   * hand-written one, which is the same vault answered two ways.
+   * The `depends_on:` key is an authoring alias; reading only the canonical key would
+   * judge an add_relation edge and ignore a hand-written one.
    */
   it('reads the `depends_on:` alias as the same edge', (t) => {
     const root = repoWithSources();
@@ -975,9 +964,8 @@ describe('dependency-unwitnessed — the file cited does not name the file depen
   });
 
   /*
-   * Omitting `previousFrontmatter` is how the whole-vault passes ask the same
-   * question at a different moment: the write door judges what a write added,
-   * a validator somebody chose to run judges everything.
+   * Without `previousFrontmatter` (the whole-vault passes) every declared edge is
+   * judged.
    */
   it('judges every declared edge when no previous frontmatter is supplied', (t) => {
     const root = repoWithSources();
@@ -996,12 +984,9 @@ describe('dependency-unwitnessed — the file cited does not name the file depen
   });
 
   /*
-   * The decision's falsifier, met on this repository's own vault on
-   * 2026-09-23: a frame loop that never imports the camera module still
-   * cleared its edge because the word "camera" sat inside hook names. A
-   * witness is an import, not a word. The multi-line import is the shape
-   * three of the twelve first-round edges actually had — the closing
-   * `} from '…'` line carries the path and does not begin with `import`.
+   * A witness is an import, not a word: "camera" inside hook names must not clear
+   * an edge. The closing `} from '…'` line of a multi-line import carries the
+   * path and does not begin with `import`.
    */
   it('a bare word does not witness; an import does, even split across lines', (t) => {
     const root = repoWithSources();
@@ -1026,8 +1011,7 @@ describe('dependency-unwitnessed — the file cited does not name the file depen
   });
 
   /*
-   * Measured on a Rust trial vault (2026-09-23): every edge into a `mod.rs`
-   * was unwitnessed because `use crate::export::…` names the folder, and
+   * Rust's `use crate::export::…` names the folder of a `mod.rs`, and
    * `use super::{relative_speed, Benchmark}` hides the module inside braces.
    */
   it('Rust module paths witness the mod.rs they reach, braces included', (t) => {
@@ -1060,9 +1044,7 @@ describe('dependency-unwitnessed — the file cited does not name the file depen
   });
 
   /*
-   * The first repair turn on this vault wrote one witness as a line range,
-   * `lib/barrel.ts:3-9`, and the check dropped the token because only `:42`
-   * and `:42:7` were stripped. An editor's `#L3-L9` is the same address.
+   * A line range `lib/barrel.ts:3-9` and an editor's `#L3-L9` are the same address.
    */
   it('a `why` witness carrying a line range still resolves', (t) => {
     const root = repoWithSources();
@@ -1087,14 +1069,9 @@ describe('dependency-unwitnessed — the file cited does not name the file depen
 });
 
 /**
- * The `init` starter examples, once the vault has outgrown them.
- *
- * Measured 2026-09-22 on two unfamiliar repositories: both builders wrote a real
- * map through the first-run door and left all three scaffold nodes standing,
- * wired only to each other, with "Example domain" on the map beside the real
- * domains. The silent half here is the half that keeps the check honest — a
- * brand-new vault is *nothing but* starters, and a product that scolds a person
- * for the file it just wrote them is worse than one that says nothing.
+ * The `init` starters a vault has outgrown. The silent half keeps it honest: a new
+ * vault is nothing but starters, and scolding a person for the file the product
+ * just wrote is worse than silence.
  */
 describe('starter-example-node — the scaffold left standing', () => {
   const STARTERS = [
@@ -1108,8 +1085,7 @@ describe('starter-example-node — the scaffold left standing', () => {
       ...STARTERS,
       { slug: 'domains/billing', kind: 'domain', title: 'Billing' },
     ]);
-    // Only the domain: no real capability or element has arrived yet, so those
-    // two starters are still the instructions.
+    // No real capability or element yet, so those two starters are still instructions.
     assert.deepEqual(findings.map((row) => row.slug), ['domains/example-domain']);
     const [finding] = findings;
     assert.equal(finding.code, 'starter-example-node');
@@ -1117,7 +1093,7 @@ describe('starter-example-node — the scaffold left standing', () => {
     assert.match(finding.message, /domains\/billing/);
     assert.match(finding.message, /delete_concept/);
     assert.match(finding.message, /rename_concept/);
-    // The repair names the kind's own folder, not the kind with an `s` glued on.
+    // The repair names the kind's own folder, not the kind plus an `s`.
     assert.match(finding.message, /newSlug:"domains\/<real-name>"/);
   });
 
@@ -1131,9 +1107,8 @@ describe('starter-example-node — the scaffold left standing', () => {
   });
 
   /*
-   * A vault straight out of `init`. Every node in it is a starter, which is the
-   * product's own doing — nothing here is wrong yet, and `pnpm --dir cli test`
-   * plus the init integration cases stay clean because of this branch.
+   * A vault straight out of `init`: every node is a starter, and the CLI's init
+   * integration cases stay clean because of this branch.
    */
   it('stays silent in a vault that holds only the three starters', () => {
     assert.deepEqual(starterExampleFindings(STARTERS), []);
@@ -1164,11 +1139,9 @@ describe('starter-example-node — the scaffold left standing', () => {
   });
 
   /*
-   * The generalized shape: somebody copied the starter instead of renaming it.
-   * Both halves are required, and these cases pin which half does what. Neither
-   * half alone is allowed to accuse a real node, and the residual overlap — a
-   * real node about examples, named "Example …", addressed `example-…` — is
-   * accepted rather than papered over.
+   * A copied starter needs both the `example-` address and the "Example" title;
+   * neither alone may accuse a real node, and a real node about examples named
+   * both ways is an accepted false positive.
    */
   it('reads a copied starter, and needs both the address and the title to do it', () => {
     assert.equal(
@@ -1186,8 +1159,7 @@ describe('starter-example-node — the scaffold left standing', () => {
       false,
       'an address alone is not a scaffold',
     );
-    // The three template addresses are recognised without any title at all: the
-    // scaffold's own `title:` is what a builder most often edits first.
+    // Template addresses need no title: builders edit the scaffold's `title:` first.
     assert.equal(
       isStarterExampleNode({ slug: 'elements/example-element', kind: 'element', title: 'Retry policy' }),
       true,
@@ -1195,10 +1167,8 @@ describe('starter-example-node — the scaffold left standing', () => {
   });
 
   /*
-   * A starter somebody rewrote the prose of is still a starter address on the
-   * map. Letting an edited body clear the check would reward exactly the
-   * half-finished state this exists to name — what changes is only whether the
-   * message says the body is untouched.
+   * An edited starter body is still a starter address; only whether the message
+   * says "untouched" changes.
    */
   it('still fires when the body was rewritten, and says so only when it was not', () => {
     const untouched = starterExampleFindings([
@@ -1216,10 +1186,8 @@ describe('starter-example-node — the scaffold left standing', () => {
   });
 
   /**
-   * The read path. This is the one meaning question that needs neither a body
-   * nor a repository root, so unlike its four neighbours it must answer on a
-   * plain `maintenance_plan` call over a compiled artifact with no `sourceDocs`
-   * at all — which is precisely the state the measured vaults were in.
+   * Needs neither bodies nor a repository root, so it must answer a plain
+   * maintenance_plan over a compiled artifact with no `sourceDocs`.
    */
   it('queues as `retire_starter_example` on the read path with no bodies loaded', () => {
     const uid = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;

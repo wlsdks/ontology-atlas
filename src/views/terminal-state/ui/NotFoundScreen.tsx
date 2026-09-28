@@ -17,22 +17,13 @@ import {
 import type { StandaloneMessages } from '@/i18n/standalone-messages';
 
 /**
- * The 404, one component for both not-found files.
- *
- * The static export serves the root `app/not-found.tsx` for every unresolved path, including
- * `/ko/…`; `app/[locale]/not-found.tsx` renders the same screen inside the locale layout. Two
- * hand-kept copies had already drifted once, so both files are now one line each.
- *
- * **One primary, chosen by surface.** On the web a lost visitor usually has no folder open, so
- * "find it with project search" meant nothing to them and still took the filled button; home is
- * their way on, and the gateway nav on top carries the guide and changelog. In the installed app a
- * vault is the home, so project search is the primary there and the gateway chrome is not drawn
- * (the app never offers the gateway's own pages as its chrome).
+ * The one 404 for both not-found files. The primary depends on the surface: home on the web, where
+ * a lost visitor has no folder to search, and project search in the app, which draws no gateway chrome.
  */
 export function NotFoundScreen({
   standaloneMessages,
 }: {
-  /** Given by the root `not-found.tsx` (a server component), which has no locale layout. */
+  /** From the root `not-found.tsx`, which has no locale layout. */
   standaloneMessages?: StandaloneMessages;
 }) {
   return standaloneMessages ? (
@@ -50,8 +41,7 @@ function NotFoundBody() {
   const desktop = useIsDesktopShell();
   const answered = useClientAnswered();
 
-  // With the mobile BottomTabBar visible at the same time, "where to go" splits across two
-  // places and the stage's exits lose their clarity (the CSS rule is in globals.css).
+  // Hides the mobile tab bar, or "where to go" splits across two places (rule in `app/styles/shell.css`).
   useEffect(() => {
     document.body.setAttribute('data-no-tabbar', 'true');
     return () => {
@@ -73,8 +63,7 @@ function NotFoundBody() {
     else router.push('/');
   };
 
-  // On the web "previous" is the only secondary, so it carries a visible edge beside the
-  // primary; in the app it is the third exit and stays ghost behind the outline "home".
+  // Outlined on the web, where it is the only secondary; ghost in the app behind "home".
   const previous = (
     <Button type="button" variant={desktop ? 'ghost' : 'outline'} onClick={goBack}>
       <ArrowLeft size={ICON_SIZE.md} aria-hidden />
@@ -82,8 +71,7 @@ function NotFoundBody() {
     </Button>
   );
 
-  // Until the URL and the shell are known the prerendered answer is "English, web", which is
-  // wrong for a Korean visitor and for the app; the canvas waits one frame instead of lying.
+  // The prerendered answer is "English, web", so the canvas waits a frame instead.
   if (!answered) return <TerminalStatePending testId="not-found-pending" />;
 
   return (
@@ -102,8 +90,7 @@ function NotFoundBody() {
               <Search size={ICON_SIZE.md} aria-hidden />
               {t('findByProject')}
             </Button>
-            {/* Raw `buttonVariants` leaves both the base `border-transparent` and the variant's
-                border, and CSS order lets transparent win — merged through `cn` as `Button` does. */}
+            {/* Through `cn`, or the base transparent border wins over the variant's by CSS order. */}
             <Link href="/" className={cn(buttonVariants({ variant: 'outline' }))}>
               {t('home')}
             </Link>

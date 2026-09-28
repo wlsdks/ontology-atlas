@@ -1,0 +1,1 @@
+{ "gate": "comment-bytes.tests-fixtures", "raise": 94, "why": "The shared zip fixture learns `aliasOf`, an entry that points at an earlier entry's data as no real zip does, which the overlapping-entry refusal tests in both source readers build on; its doc comment says so." }

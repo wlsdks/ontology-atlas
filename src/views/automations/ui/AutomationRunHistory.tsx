@@ -15,7 +15,7 @@ export function AutomationRunHistory({ entries }: { entries: readonly RoundPassE
   const recent = [...entries].reverse();
   return (
     <section data-testid="automations-history" className="space-y-3">
-      {/* A caption, not a heading: at 14px/650 it outweighed the outcomes it labels. */}
+      {/* Caption weight: a heading outweighed the outcomes it labels. */}
       <h3 className="text-label font-[var(--font-weight-emphasis)] text-[color:var(--color-text-tertiary)]">{t('historyTitle')}</h3>
       {entries.length === 0 ? <p className="text-body text-[color:var(--color-text-tertiary)]">{t('noRuns')}</p> : (
         <div className="space-y-3">
@@ -42,38 +42,26 @@ function RunEntry({ entry, latest = false }: { entry: RoundPassEntry; latest?: b
   const t = useTranslations('automations');
   const ledgerText = useTranslations('library.rounds.ledger');
   const locale = useLocale();
-  /*
-   * **Why a pass did less than its round asked, in the Library's own words.** Both screens read
-   * one `rounds-ledger.jsonl`. The Library explained `note` under the pass ("no coding agent was
-   * ready", "you paused it"); this history never read it, so a person who only opened
-   * Automations saw "Failed" or a count and no reason (probe, 2026-09-25). A review never
-   * redrafts anything, so its no-agent line says the review did not run instead.
-   */
+  /* The Library's wording for the same ledger note; a review redrafts nothing, so it says it did not run. */
   const note = entry.note === 'no-agent'
     ? entry.kind === 'ontology' ? t('noAgentReview') : ledgerText('noAgent')
     : entry.note === 'stopped' ? ledgerText('stopped') : null;
-  /*
-   * The pass's own words, else what it checked. With neither, the reason leads; a failed pass
-   * with no reason says it left no result — never the "finished" filler, which read as success
-   * under the word "Failed".
-   */
+  /* A failed pass with nothing to say never gets the "finished" filler, which read as success. */
   const own = entry.summary || (entry.checked > 0 ? t('checked', { count: entry.checked }) : '');
   const noteLeads = !own && note !== null;
   const lead = own || note || (entry.outcome === 'failed' ? t('failedNoResult') : t('noSummary'));
-  /* A stopped pass was the person's own press: leading, it reads as the lead; under a lead, it is quiet. */
+  /* Only a missing agent is a warning; a stopped pass was the person's own press. */
   const leadInk = noteLeads && entry.note === 'no-agent' ? WARNING_INK
     : latest ? 'text-[color:var(--color-text-primary)]' : 'text-[color:var(--color-text-secondary)]';
   return (
             <li data-testid={latest ? 'automations-last-run' : undefined} className="py-3 first:pt-0">
-              {/* The row header already states the latest outcome and its time; saying it again
-                  here, in a second date format, doubled the line. Earlier runs keep theirs. */}
+              {/* The row header already states the latest outcome and time. */}
               {latest ? null : <div className="mb-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
                 <span className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">{t(`outcome.${entry.outcome}`)}</span>
                 <time dateTime={entry.endedAt} className="text-body text-[color:var(--color-text-tertiary)]">{automationDate(locale, entry.endedAt)}</time>
               </div>}
               <p data-run-note={noteLeads ? entry.note : undefined} className={cn('break-words', latest ? 'text-body-lg' : 'text-body', leadInk)}>{lead}</p>
-              {/* Each file is said once: a wiki page is its own link, anything else its path.
-                  A sentence listing the paths and a chip row for the same pages said it twice. */}
+              {/* Each file once: a wiki page as its link, anything else as its path. */}
               {entry.stale.length > 0 || entry.written.length > 0 ? <dl className="mt-3 space-y-2">
                 {entry.stale.length > 0 ? <FileGroup label={t('staleLabel')} paths={entry.stale} page={() => true} /> : null}
                 {entry.written.length > 0 ? <FileGroup label={t('writtenLabel')} paths={entry.written} page={(path) => path.startsWith('wiki/')} /> : null}

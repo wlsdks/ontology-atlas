@@ -45,8 +45,8 @@ function iso(daysAgo: number): string {
   return new Date(NOW.getTime() - daysAgo * DAY_MS).toISOString();
 }
 
-describe("buildDoNextQueue (S5 — 할 일 큐)", () => {
-  it("방치된 허브 — degree 높고 오래된 노드를 degree×경과일 순으로", () => {
+describe("buildDoNextQueue", () => {
+  it("ranks stale hubs by degree times days since update", () => {
     const hub = n("capability:hub", "capability", "capabilities/hub", "Hub");
     const spokes = Array.from({ length: 5 }, (_, i) => n(`element:s${i}`, "element", `elements/s${i}`));
     const edges = spokes.map((s) => e(s.id, hub.id));
@@ -60,7 +60,7 @@ describe("buildDoNextQueue (S5 — 할 일 큐)", () => {
     expect(hubRow?.handoffPayload).toContain('operation:"health"');
   });
 
-  it("최근 갱신된 허브·갱신 시점 미상 허브는 방치로 단정하지 않는다", () => {
+  it("does not call a recently updated or undated hub stale", () => {
     const hub = n("capability:hub", "capability", "capabilities/hub");
     const unknown = n("capability:u", "capability"); // No evidence
     const spokes = Array.from({ length: 5 }, (_, i) => n(`element:s${i}`, "element"));
@@ -73,7 +73,7 @@ describe("buildDoNextQueue (S5 — 할 일 큐)", () => {
     expect(queue.counts.neglectedHub).toBe(0);
   });
 
-  it("고아·승격은 지도 health 칩과 같은 entities 신호를 재사용하고, 핸드오프는 vault slug 를 쓴다", () => {
+  it("reuses the map health signals for orphans and promotions and hands off the vault slug", () => {
     const orphan = n("element:alone", "element", "elements/alone", "Alone");
     const other = n("capability:c", "capability", "capabilities/c");
     const queue = buildDoNextQueue([orphan, other], [], new Map(), { now: NOW, prose: PROSE });
@@ -87,7 +87,7 @@ describe("buildDoNextQueue (S5 — 할 일 큐)", () => {
     expect(row?.handoffPayload).toContain('operation:"health"');
   });
 
-  it("승격 후보 핸드오프도 쓰기 뒤 health 재검증으로 닫는다", () => {
+  it("closes a promotion handoff with a health recheck after the write", () => {
     const hub = n("element:core", "element", "elements/core", "Core");
     const spokes = Array.from({ length: 4 }, (_, i) =>
       n(`element:s${i}`, "element", `elements/s${i}`),
@@ -103,7 +103,7 @@ describe("buildDoNextQueue (S5 — 할 일 큐)", () => {
     expect(promotion?.handoffPayload).toContain('operation:"health"');
   });
 
-  it("유형별 perKindLimit 로 자르되 counts 는 전체를 정직하게 보고한다", () => {
+  it("truncates each kind at perKindLimit while counts report the full totals", () => {
     const orphans = Array.from({ length: 8 }, (_, i) => n(`element:o${i}`, "element", `elements/o${i}`));
     const queue = buildDoNextQueue(orphans, [], new Map(), { now: NOW, perKindLimit: 3, prose: PROSE });
     expect(queue.rows.filter((r) => r.rowKind === "orphan")).toHaveLength(3);

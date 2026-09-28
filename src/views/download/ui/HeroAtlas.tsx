@@ -29,13 +29,8 @@ const subscribePhone = (onChange: () => void): (() => void) => {
 const readPhone = (): boolean => typeof matchMedia === 'function' && matchMedia(HERO_PHONE_MEDIA).matches;
 
 /**
- * True when WebGL is here **and hardware-backed**; false hands the stage to the 2D engine.
- *
- * A software renderer (SwiftShader, llvmpipe — headless browsers, some virtual machines) draws
- * the scene at ~22 fps on the main thread, and that starves everything else on the page: the
- * headline's typing (`setInterval` at 38 ms) measured 4.5 s instead of 1.8 s. The 2D engine costs
- * a fraction of that, so it is the honest choice there. `?hero=three` forces the scene for
- * measurement (the grid gate reads the WebGL object's ink under the type).
+ * A software renderer starves the page (the headline typed 2.5× slower), so it gets the 2D
+ * engine. `?hero=three` forces WebGL for the grid gate's measurement.
  */
 function webglAccelerated(): boolean {
   try {
@@ -52,11 +47,8 @@ function webglAccelerated(): boolean {
 }
 
 /**
- * The hero atlas — the real vault as a lit three.js object (`hero-atlas-scene.ts`), on the same
- * stage, with the same typing echo, hover caption and inspection window the 2D hero had. The
- * three.js chunk is loaded on demand so the gateway's first paint pays nothing for it; while it
- * loads, and wherever WebGL is unavailable, the 2D engine (`HeroObject`) draws the same graph,
- * so the stage is never empty and never lies.
+ * The three.js hero (`hero-atlas-scene.ts`), loaded on demand so the first paint pays nothing;
+ * meanwhile and without WebGL, the 2D `HeroObject` draws the same graph.
  */
 export function HeroAtlas({ graph, typed, total }: { graph: StageGraph; typed: number; total: number }) {
   const t = useTranslations('download');
@@ -74,8 +66,7 @@ export function HeroAtlas({ graph, typed, total }: { graph: StageGraph; typed: n
 
   useEffect(() => {
     let cancelled = false;
-    // Decided off the effect body (a probe plus a chunk load), so the mode lands in a callback:
-    // no WebGL, or a chunk that fails to load, hands the stage to the 2D engine.
+    // In a callback, off the effect body; a failed chunk load also falls back to 2D.
     Promise.resolve()
       .then(() => (webglAccelerated() ? import('../lib/hero-atlas-scene') : Promise.reject(new Error('no webgl'))))
       .then(
@@ -110,15 +101,8 @@ export function HeroAtlas({ graph, typed, total }: { graph: StageGraph; typed: n
             .filter((e) => kept.has(e.source) && kept.has(e.target))
             .map((e) => ({ a: e.source, b: e.target, y: e.kind as 'contains' | 'depends' })),
         },
-        // Wide draws from 5.2 radii (6.1 until 2026-09-25): the canvas is the hero's own height
-        // now that it no longer claims the fold, and the object shrank with it.
-        // Two placements, one breakpoint — the same pair the 2D engine had. Wide: the object
-        // stands beside the decision block, seen across. Narrow: the block spans the stage, so the
-        // object is the ground under it — anchored low, seen from above, and the type stays clear
-        // of its ink (`download-gateway-grid.spec.ts` measures the share under the block).
-        // Narrow places it the way the 2D engine did: centred 210px above the stage's bottom edge
-        // (the plinth band under the facts strip measures 352px; 210 keeps the near rim inside the stage), at a fixed width, seen from
-        // higher up. A phone's band is shorter, so the object is smaller and sits lower.
+        // Wide stands beside the decision block; narrow is ground under it, seen from above so the
+        // type stays clear (`download-gateway-grid.spec.ts`). 210px keeps the near rim in the 352px plinth.
         wide
           ? { onHover: setHover, anchor: { x: 0.72, y: 0.52 }, dim: 0.9, distance: 5.2 }
           : phone
@@ -150,7 +134,7 @@ export function HeroAtlas({ graph, typed, total }: { graph: StageGraph; typed: n
     };
   }, [graph, wide, phone, mode]);
 
-  // Layout, not passive — the same frame as the character (`HeroObject`).
+  // Layout effect, so the echo lands in the same frame as the typed character.
   useLayoutEffect(() => {
     if (total > 0) handleRef.current?.setTyping(typed, total);
   }, [typed, total]);
@@ -173,8 +157,7 @@ export function HeroAtlas({ graph, typed, total }: { graph: StageGraph; typed: n
       data-hero-engine={mode === 'three' ? 'three' : 'pending'}
       className="gateway-hero-stage absolute inset-0 min-w-0 overflow-hidden"
     >
-      {/* The spotlight: a soft pool of the accent behind the object's anchor, so the tree stands
-          in light rather than on black. Tokens only (`.gateway-hero-atlas-wash`); it does not move. */}
+      {/* The tree stands in a still pool of accent light, not on black. */}
       <div className={cn('gateway-hero-atlas-wash absolute inset-0', wide ? 'is-wide' : undefined)} />
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full touch-pan-y" />
       <p

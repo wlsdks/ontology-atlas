@@ -12,6 +12,7 @@ import {
   type RoundStore,
   createVaultFileRoundStore,
   createVaultRoundLedger,
+  roundFingerprint,
   roundPlaceLabels,
   roundPlaces,
   servicePlaces,
@@ -46,6 +47,7 @@ import {
 } from "@/features/library-rounds";
 import type { RoundsRunnerValue, RoundsStoreStatus } from "@/features/library-rounds";
 import { useVaultConnectors } from "@/features/mcp-connectors";
+import { forgetApproval, readMachineApprovals, recordApproval, useMachineApprovals } from "@/shared/lib/machine-approvals";
 import { detectAcpRuntimes, isAcpBridgeAvailable } from "@/shared/lib/tauri-acp";
 import { getTauriVaultRootPath, nativeVaultFileHashes, readTauriVaultText } from "@/shared/lib/tauri-vault-fs";
 import { parseFrontmatter } from "@/shared/lib/parse-frontmatter";
@@ -76,6 +78,9 @@ import { runHeadlessTurn } from "./headless-turn";
  * judge, the compile brief and the library model are TypeScript. A Rust scheduler would have to
  * carry all four across the bridge, and it would only buy running with the window closed, which
  * this slice does not promise (§5, "only while open").
+ *
+ * A clone can arrive with a round on, overdue, its focus bound for an unattended brief, so a
+ * round runs only once this Mac allowed its exact definition (`roundFingerprint`).
  */
 
 interface PassData {
@@ -95,6 +100,9 @@ function citedSourcePaths(docs: readonly VaultDoc[]): string[] {
   }
   return [...out];
 }
+
+const EMPTY_ROUNDS: RoundRecord[] = [];
+const NO_IDS: ReadonlySet<string> = new Set();
 
 function newId(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
@@ -193,9 +201,15 @@ export function useRoundsRunner(): RoundsRunnerValue {
         : null;
     return [
       ...vaultMcpServers(agentServer.launch, rootPath, registration, { ownsWriteGate: runtimeOwnsWriteGate(runtimeId) }),
-      ...connectorAcpServers(connectors.connectors, runtimeId),
+      ...connectorAcpServers(connectors.connectors, runtimeId, connectors.allowedHere),
     ];
-  }, [agentServer.launch, connectors.connectors, rootPath, runtimeId, vault.agentConfigStatus?.codexConfigValid, vault.agentConfigStatus?.codexRegisteredCommand]);
+  }, [agentServer.launch, connectors.allowedHere, connectors.connectors, rootPath, runtimeId, vault.agentConfigStatus?.codexConfigValid, vault.agentConfigStatus?.codexRegisteredCommand]);
+
+  // Read live, not from a render's snapshot, so a stale closure cannot run an unallowed round.
+  const allowedNow = useCallback(
+    (round: RoundRecord) => readMachineApprovals().approves("round", rootPath, round.id, roundFingerprint(round)),
+    [rootPath],
+  );
 
   const agentReady = Boolean(runtimeId && rootPath && agentServer.launch);
 
@@ -334,6 +348,8 @@ export function useRoundsRunner(): RoundsRunnerValue {
 
   const runPass = useCallback(async (round: RoundRecord, trigger: RoundPassEntry["trigger"]) => {
     if (!store || !ledger || !rootPath || runningRef.current) return;
+    // Every way into a pass comes through here.
+    if (!allowedNow(round)) return;
     const startedAt = new Date();
     const mark = (phase: NonNullable<RoundsRunnerValue['running']>['phase']) => {
       const next: NonNullable<RoundsRunnerValue['running']> = { roundId: round.id, roundName: round.name, startedAt: startedAt.toISOString(), phase };
@@ -577,7 +593,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
       setRunning(null);
       await refresh();
     }
-  }, [agentReady, agentTurn, handle, ledger, locale, readPassData, refresh, rootPath, runtimeId, store]);
+  }, [agentReady, agentTurn, allowedNow, handle, ledger, locale, readPassData, refresh, rootPath, runtimeId, store]);
 
   /* ---- The clock ---------------------------------------------------------------------- */
 
@@ -589,6 +605,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
       now,
       lastTickAt: lastTickRef.current,
       running: runningRef.current !== null,
+      allowedHere: allowedNow,
     });
     lastTickRef.current = now;
     setLastTickAt(now.toISOString());
@@ -614,7 +631,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
       if (runningRef.current) break;
       await runPass(round, triggerFor(round, now));
     }
-  }, [ledger, refresh, runPass, store]);
+  }, [allowedNow, ledger, refresh, runPass, store]);
 
   const tickRef = useRef(tick);
   useEffect(() => {
@@ -653,6 +670,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
   const save = useCallback(async (round: RoundRecord) => {
     if (!store) return { ok: false, startedNow: false };
     const result = await store.upsert(round);
+    if (result.status === "saved") recordApproval("round", rootPath, round.id, roundFingerprint(round));
     await refresh();
     /*
      * **A local check runs once as it is saved** (owner, 2026-09-19: the screen was "hard
@@ -665,7 +683,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
     const startedNow = result.status === "saved" && round.kind === "consistency" && round.enabled && !runningRef.current;
     if (startedNow) void runPass(round, "manual");
     return { ok: result.status === "saved", startedNow };
-  }, [refresh, runPass, store]);
+  }, [refresh, rootPath, runPass, store]);
 
   const remove = useCallback(async (id: string) => {
     if (!store) return false;
@@ -677,18 +695,22 @@ export function useRoundsRunner(): RoundsRunnerValue {
      */
     stopPassFor(id);
     const result = await store.remove(id);
+    if (result.status === "saved") forgetApproval("round", rootPath, id);
     await refresh();
     return result.status === "saved";
-  }, [refresh, stopPassFor, store]);
+  }, [refresh, rootPath, stopPassFor, store]);
 
   const setEnabled = useCallback(async (id: string, enabled: boolean) => {
     if (!store) return false;
     // Pausing is the same promise as removing: the round stops, including the pass in flight.
     if (!enabled) stopPassFor(id);
+    // Resuming allows the round as shown; pausing keeps the allowance, so "Run now" still works.
+    const shown = stateRef.current?.rounds.find((entry) => entry.id === id);
+    if (enabled && shown) recordApproval("round", rootPath, id, roundFingerprint(shown));
     const result = await store.patch(id, { enabled });
     await refresh();
     return result.status === "saved";
-  }, [refresh, stopPassFor, store]);
+  }, [refresh, rootPath, stopPassFor, store]);
 
   const runNow = useCallback((id: string) => {
     const round = stateRef.current?.rounds.find((entry) => entry.id === id);
@@ -696,10 +718,31 @@ export function useRoundsRunner(): RoundsRunnerValue {
     void runPass(round, "manual");
   }, [runPass]);
 
-  const rounds = state?.rounds ?? [];
+  // The clock looks at once, so an overdue round runs now rather than at the next minute.
+  const allow = useCallback((id: string) => {
+    const round = stateRef.current?.rounds.find((entry) => entry.id === id);
+    if (!round) return false;
+    const allowed = recordApproval("round", rootPath, id, roundFingerprint(round));
+    if (allowed) void tickRef.current();
+    return allowed;
+  }, [rootPath]);
+
+  const rounds = state?.rounds ?? EMPTY_ROUNDS;
+  const approvals = useMachineApprovals();
+  const notAllowedHere = useMemo(() => {
+    const ids = rounds
+      .filter((round) => !approvals.approves("round", rootPath, round.id, roundFingerprint(round)))
+      .map((round) => round.id);
+    return ids.length > 0 ? new Set(ids) : NO_IDS;
+  }, [approvals, rootPath, rounds]);
+  const changedSinceAllowed = useMemo(() => {
+    const ids = [...notAllowedHere].filter((id) => approvals.allowed("round", rootPath, id) !== null);
+    return ids.length > 0 ? new Set(ids) : NO_IDS;
+  }, [approvals, notAllowedHere, rootPath]);
+  const connectorIsOnHere = connectors.isOnHere;
   const connectorRows = useMemo(
-    () => connectors.connectors.map((connector) => ({ id: connector.id, name: connector.name, enabled: connector.enabled })),
-    [connectors.connectors],
+    () => connectors.connectors.map((connector) => ({ id: connector.id, name: connector.name, enabled: connectorIsOnHere(connector) })),
+    [connectorIsOnHere, connectors.connectors],
   );
 
   return {
@@ -713,6 +756,9 @@ export function useRoundsRunner(): RoundsRunnerValue {
     connectors: connectorRows,
     lastTickAt,
     revision,
+    notAllowedHere,
+    changedSinceAllowed,
+    allow,
     save,
     remove,
     setEnabled,

@@ -28,10 +28,7 @@ function formatAgo(ago: RecentActivityAgo, t: SelectorTranslator) {
   return t("activityAgoDaysAgo", { days: ago.days });
 }
 
-/**
- * The card surface every tile on this screen shares, so a project card and the "next project" tile
- * stand on one material and one radius.
- */
+/** Shared by the project cards and the next-project tile. */
 const TILE_SURFACE =
   "rounded-card border bg-[color:var(--color-panel)] shadow-[inset_0_1px_0_var(--color-overlay-1)]";
 
@@ -56,15 +53,7 @@ export function ProjectSelectorPage() {
             <AppSettingsMenu mode={dataSourceMode} triggerVariant="chrome-tile" />
           </div>
           <div className={`${PAGE_FRAME} pb-6 md:pb-10`}>
-            {/*
-              **One way in to adding a project, and the count says its own scope** (2026-09-25,
-              round four). The header used to carry a "New project" button while the tile closing
-              the grid carried the agent path: two add entries at two control sizes with no rule
-              for which one wins. Both paths now live in that tile, side by side. The sample's
-              scope used to be a caption under the lede explaining the count and pointing at the
-              map's first-run card; the count itself now says "sample", and the control that makes
-              it the person's own count (open a folder) stands where the header's action stood.
-            */}
+            {/* The count names its scope; adding a project lives only in the closing tile. */}
             <header className={PAGE_HEADER_ROW}>
               <div className={PAGE_TITLE_ROW}>
                 <h1 className="text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]">
@@ -85,15 +74,8 @@ export function ProjectSelectorPage() {
               {t("lede")}
             </p>
 
-            {/*
-              **A grid of equal cards, not a page-wide row** (2026-09-25). The content is the compact
-              index's (`docs/records/decisions/2026-09-15-compact-project-identification-…`): linked
-              name, one purpose sentence, last update, details and map. What changed is the shape
-              that holds it. A row stretched to the page put the name at x=104 and its actions past
-              x=1200 with ~900px of empty band between (measured at 1512), and a two-project folder
-              left 70% of the canvas bare below. Cards keep each project's words and doors inside one
-              box a hand can cover, and the tile that closes the grid says how the next card appears.
-            */}
+            {/* Cards, not page-wide rows, so words and doors stay within one hand's reach
+                (`docs/records/decisions/2026-09-15-compact-project-identification-1fd40970-f033-4260-861d-d54d44899bdd.md`). */}
             {projects.length > 0 ? (
               <ul
                 data-testid="project-selector-grid"
@@ -107,8 +89,7 @@ export function ProjectSelectorPage() {
                     </li>
                   );
                 })}
-                {/* An even count leaves the tile alone on its row, so it spans the row as a band
-                    rather than standing half-width beside nothing. */}
+                {/* Alone on its row, the tile spans it. */}
                 <li className={`flex min-w-0 ${projects.length % 2 === 0 ? "md:col-span-2" : ""}`}>
                   <NextProjectTile t={t} />
                 </li>
@@ -127,18 +108,12 @@ export function ProjectSelectorPage() {
 
 function ProjectCard({ project, description, t }: { project: Project; description: string | null; t: SelectorTranslator }) {
   const locale = useLocale();
-  // The word the map and the Library draw for this project on this screen (2026-09-19).
   const name = projectDisplayName(project, locale);
   const detailHref = getProjectRuntimeDetailHref(project.slug);
   const ago = formatAgo(resolveRecentActivityAgo(project.updatedAt, new Date()), t);
 
   return (
-    /*
-      One pressable surface. The name's link is stretched over the card (`after:inset-0`) so the
-      whole box opens the project, and the footer's two doors stand above that layer (`z-[1]`) as
-      the card's secondary actions. Before 2026-09-25 the 24px title was the only target and the
-      row gave no sign under the pointer (a hover diff changed zero pixels).
-    */
+    /* The name's link stretches over the card; the footer doors stand above it on `z-[1]`. */
     <article
       data-testid="project-selector-card"
       className={`${TILE_SURFACE} group relative flex w-full min-w-0 flex-col border-[color:var(--color-border-soft)] transition-[background-color,border-color] duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] focus-within:border-[color:var(--color-border-strong)]`}
@@ -157,20 +132,13 @@ function ProjectCard({ project, description, t }: { project: Project; descriptio
                 className:
                   "min-w-0 max-w-full text-title text-[color:var(--color-text-primary)] after:absolute after:inset-0 after:rounded-card after:content-[''] focus-visible:ring-0 focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-[color:var(--color-indigo-focus-ring)]",
               })}
-              /*
-                The ring is drawn on the stretched layer, not the words (2026-09-25 sweep): the
-                mouse presses the whole card, so the keyboard's focus has to outline the whole
-                card. It hugged the title text alone.
-              */
+              /* The focus ring outlines the whole card, which is what the pointer presses. */
             >
               <span className="min-w-0 truncate">{name}</span>
             </Link>
           </h2>
         </div>
-        {/* Four lines allowed and none reserved. A three-line floor kept an empty ~60px band under
-            a one-line purpose (round four); cards in a row still end on one line because the row
-            stretches them and the footer is pinned to the bottom. The sentence is whole
-            (`resolveAuthoredDescription` never cuts mid-clause); the clamp is the last resort. */}
+        {/* No reserved lines: the row stretches cards and pins footers. The clamp is a last resort. */}
         <p className="mt-2.5 line-clamp-4 text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
           {description ?? (
             <span className="text-[color:var(--color-text-tertiary)]">{t("cardDescriptionFallback")}</span>
@@ -203,30 +171,17 @@ function ProjectCard({ project, description, t }: { project: Project; descriptio
 
 
 /**
- * The tile that closes the grid, and the page's one way to add a project.
- *
- * A project arrives two ways: the form (`/project/new`, which owns creation) or a connected agent
- * given a request to paste. Until round four the form was the header's button and the agent path
- * was this tile, so the page offered two add entries at two control sizes (12.5 against 11px at
- * 1040) with no rule for which one wins. Both paths now stand here side by side, each a sentence
- * saying what happens and a control under it, drawn in the card's own grammar: words in the body,
- * `md` chips on a footer line, the accent on the first door exactly as each card's footer carries it.
- *
- * With two paths in two columns the tile's body is two lines deep, the depth of a card's one- or
- * two-line purpose, so a card standing beside it does not stretch around a void.
- *
- * With an even project count, or no project yet, it spans the row as a band in the same two columns.
+ * The page's one way to add a project: the form or a request to paste into an agent, side by
+ * side in the card's grammar, two lines deep so a neighbouring card does not stretch.
  */
 function NextProjectTile({ t, description }: { t: SelectorTranslator; description?: string }) {
   const copy = useCopyFeedback();
   const copyLabel =
     copy.state === "copied" ? t("nextSlotCopied") : copy.state === "failed" ? t("nextSlotCopyError") : t("nextSlotCopy");
   const newProjectHref = `/project/new/?returnTo=${encodeURIComponent("/projects/")}`;
-  // The two columns share one template in the body and on the footer line, so each control stands
-  // under its own sentence. Narrow, the sentences stack and the controls share one row.
+  // One template for body and footer, so each control stands under its sentence.
   const columns = "grid grid-cols-1 gap-x-6 gap-y-2 @md/next-slot:grid-cols-2";
-  // The slot wears the soft border every card here wears, only dashed: a divider-ink border on
-  // the overlay fill was a ninth surface combination the surface-vocabulary ratchet refuses.
+  // Dashed soft border: a divider-ink one is a surface combination the ratchet refuses.
   return (
     <section
       data-testid="project-selector-next-slot"
@@ -254,7 +209,6 @@ function NextProjectTile({ t, description }: { t: SelectorTranslator; descriptio
           </p>
         </div>
       </div>
-      {/* The card's footer line: same divider, same inset, the doors where the card's doors stand. */}
       <div className="border-t border-dashed border-[color:var(--color-divider)] px-[var(--card-pad)] py-3">
         <div className="flex min-w-0 flex-wrap items-center gap-2 @md/next-slot:grid @md/next-slot:grid-cols-2 @md/next-slot:gap-x-6">
           <div className="min-w-0">

@@ -65,7 +65,7 @@ describe('echoCount', () => {
   });
 
   it('lights nothing before the headline has reported a sentence at all', () => {
-    // The object mounts one commit before the typewriter's first report; that frame must be dark.
+    // The mount frame precedes the typewriter's first report and must be dark.
     expect(echoCount(0, 0, 40)).toBe(0);
     expect(echoCount(5, 0, 40)).toBe(0);
     expect(echoCount(5, 0, 0)).toBe(0);

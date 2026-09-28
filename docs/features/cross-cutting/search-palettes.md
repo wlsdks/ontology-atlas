@@ -9,7 +9,7 @@ routes: []
 # Search palettes
 
 ### Search palettes (separate by design)
-- **`⌘K` `SearchPalette`** — a project page's own palette: projects-focused fuzzy search + top vault docs match (3) + recent (5) + Layer filter (All / Hub / Node)
+- **`⌘K` `SearchPalette`** — a project page's own palette: projects ranked on the shared `rankProjectMatches` ladder (the global palette's) + top vault docs match (3) + recent (5) + Layer filter (All / Hub / Node)
 - **`⌘K` `MountedGlobalSearch`** — ontology nodes + projects unified (`cmdk`-based, kind/project filter chips, virtualized). The map mounts its own (a pick selects on the canvas); every other screen with the rail gets the shell's (`ShellKeyboardSurfaces`, 2026-09-26), mounted on the first ⌘K. Only the map's mount (`onMap`) calls itself "Search this map"; elsewhere the dialog is named for what it searches ("Search concepts"; a project is one), and its empty state and footer name the loaded project, or "this folder" when there are several. Shift is accepted and changes nothing, so the shortcut sheet lists ⌘K once. The ontology documents workspace keeps ⌘K for its unified palette.
 - Both palettes share keyboard: `↑↓` navigate · `↵` select · `Esc` close
 
@@ -20,10 +20,12 @@ capability), and any name mid-syllable — which every Korean word passes throug
 because the IME emits one jamo at a time, so the list blinked empty on most
 keystrokes. `shared/lib/hangul-match` adds exactly two rules, no general fuzziness:
 consonant initials matched in order with spaces ignored on both sides, and a trailing
-partial syllable whose jamo must prefix the syllable it lands on, with compound
-medials and final clusters split into the keys that type them. These rank **below**
-every literal name tier and above a description match, so a name that really contains
-what was typed still wins. The match is marked in the row, including when it spans a
+partial syllable whose jamo must prefix the syllable it lands on, or that syllable plus
+the next one's initial, which a two-set keyboard shows as a final until a vowel moves it
+on (a compound final keeps its first half and moves the second), with compound medials
+and final clusters split into the keys that type them.
+These rank **below** every literal name tier and above a description match, so a name
+that really contains what was typed still wins. The match is marked in the row, including when it spans a
 space, and a description match now opens at the match with a leading ellipsis rather
 than highlighting past the truncation — measured live: rows whose mark rendered
 outside its own box went from 1-2 per English query to 0. The per-node name index is

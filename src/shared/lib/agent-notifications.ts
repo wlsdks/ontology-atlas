@@ -18,9 +18,7 @@
  *   the map is the better channel.
  * - **Tool calls** — explicitly rejected by the 2026-08-01 verdict: *"Drawing a tool-call log turns
  *   Atlas into an MCP call viewer competing with the agent's terminal; this
- *   product's moat is the meaning layer above the tool layer."* (drawing a tool-call log turns
- *   Atlas into an MCP call viewer competing with the agent's terminal; this
- *   product's moat is the meaning layer above the tool layer)
+ *   product's moat is the meaning layer above the tool layer."*
  */
 import type { AgentWriteCounts, AgentWorkSession } from "./agent-work-session";
 import { hasWrites } from "./agent-work-session";
@@ -70,7 +68,28 @@ export interface AgentNotification {
   /** `bridge-inserted` only — how many children it took over. */
   childCount?: number;
   /** `vault-problem` only — how many dangling references / cycles were added. */
-  problems?: { unresolvedEdges: number; dependencyCycles: number };
+  problems?: VaultProblemCounts;
+}
+
+export interface VaultProblemCounts {
+  unresolvedEdges: number;
+  dependencyCycles: number;
+  dependencyCyclesPartial?: boolean;
+}
+
+/** What rose between two readings. A partial cycle count is a floor: a rise to one is a floor, and none is read from one. */
+export function risenVaultProblems(
+  before: VaultProblemCounts,
+  after: VaultProblemCounts,
+): VaultProblemCounts | null {
+  const unresolvedEdges = Math.max(0, after.unresolvedEdges - before.unresolvedEdges);
+  const dependencyCycles = before.dependencyCyclesPartial
+    ? 0
+    : Math.max(0, after.dependencyCycles - before.dependencyCycles);
+  if (unresolvedEdges === 0 && dependencyCycles === 0) return null;
+  return after.dependencyCyclesPartial && dependencyCycles > 0
+    ? { unresolvedEdges, dependencyCycles, dependencyCyclesPartial: true }
+    : { unresolvedEdges, dependencyCycles };
 }
 
 /**

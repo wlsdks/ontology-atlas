@@ -24,7 +24,7 @@ Return one plan:
    the work, each of its acceptance criteria is some slice's acceptance command
    or named capture; list any it leaves uncovered as a gap.
 3. **Order** — which slices run in parallel and which wait, and whether they
-   land as separate train drafts or one integration branch (`/land-bundle`).
+   land as separate train drafts or one integration branch (`/review-and-land`).
 4. **Risk** — what a reviewer must check that tests will not catch.
 
 The lead turns each slice into a `/parallel-brief` for an `implementer`.

@@ -88,8 +88,8 @@ test.describe("지도 라벨 — 그려진 박스로 잰다", () => {
      */
     expect(
       labels.length,
-      `그려진 라벨 ${labels.length}개가 개관 예산(${LABEL_TOP_K})을 넘는다 — ` +
-        "예산이 다시 풀렸다: 잎 라벨이 벽처럼 쌓인다",
+      `${labels.length} drawn labels exceed the overview budget (${LABEL_TOP_K}). ` +
+        "The budget came loose again: leaf labels pile up like a wall",
     ).toBeLessThanOrEqual(LABEL_TOP_K);
 
     const overlaps: string[] = [];

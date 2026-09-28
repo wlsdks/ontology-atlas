@@ -17,31 +17,10 @@ import { ConceptEgoCard } from "./ConceptEgoCard";
 import { DocumentConfirmStep } from "./DocumentConfirmStep";
 
 /**
- * What one step changed — identity (title, hash) always on top, the rest split
- * into two lenses.
- *
- * ## Why tabs here, and why tabs on the list were rejected (2026-08-03)
- *
- * The same word means opposite things in the two places. **On the list** tabs
- * were rejected: what varies there is the *repository's* state (uncommitted ·
- * unpushed · remote-only), and a tab **hides** every pane but its own — "you
- * have something unpushed" sitting behind another tab is the same as it not
- * existing. That decision and the test that holds it already exist
- * ("Commit history never hides behind a tab" — commit history never hides behind a tab).
- *
- * **Here what varies is not state but lens.** "Concepts" (concepts) and "Files"
- * (files) are two ways of looking at *one already-chosen step*, and identity
- * stays above the tabs so it survives either lens. What hides is the
- * presentation, not a fact.
- *
- * Measurement forced the switch: five sections stacked in one column turned the
- * right-hand column into a 2,000px scroll, and "What Changed" (what changed)
- * concatenated four files' patches, so which file you were reading was decided
- * **by scroll position alone**. Owner: *"It looked like too much was being expressed through scrolling."*
- * (it looked like too much was being expressed through scrolling).
- *
- * So the file list became a **chooser** — only the clicked file's patch renders
- * beneath it.
+ * What one step changed: identity always on top, the rest in two lenses. Tabs fit here
+ * because Concepts and Files are two views of one chosen step, hiding presentation, not a
+ * fact; the history list has no tabs, since there a tab would hide repository state.
+ * The file list is a chooser, so only the chosen file's document renders.
  */
 export interface CommitConcept {
   id: string;
@@ -53,12 +32,9 @@ export interface CommitConcept {
 const HEADLINE_CONCEPTS = 2;
 
 /**
- * Does this changed file carry that concept? `matchNodeId` builds a node id as
- * `<kind>:<slug tail>`, so the **tail alone is ambiguous**: `domains/orders.md` and
- * `capabilities/orders.md` share it, and either would answer for the other — naming one
- * document after the other's concept, and opening the restore door onto the wrong file.
- * The kind is the half that tells them apart, so both halves are compared here, exactly as
- * the forward match compares them.
+ * Does this changed file carry that concept? Kind and slug tail are both compared, as the
+ * forward `matchNodeId` does: `domains/orders.md` and `capabilities/orders.md` share a tail, and
+ * matching the tail alone would aim the restore door at the wrong file.
  */
 function fileCarriesNode(file: { slug: string; kind: string | null }, nodeId: string): boolean {
   if (!file.kind) return false;
@@ -121,9 +97,8 @@ export function CommitDetail({
   relativeTime: string;
   subject: string;
   /**
-   * The subject in the reader's language when the subject is one of our own automatic
-   * `ontology snapshot: …` strings; `null` when a person wrote it. The raw subject stays on
-   * screen either way — one line down — because the audit trail is the raw text.
+   * The reader's-language subject for an automatic `ontology snapshot: …` string, `null` for a
+   * person's; the raw subject stays on screen as the audit trail.
    */
   headline?: string | null;
   concepts: readonly CommitConcept[];
@@ -150,17 +125,9 @@ export function CommitDetail({
   kindLabel: (kind: string) => string;
 }) {
   /*
-   * **A jump keeps the document it was reading** (real-bridge QA, 2026-09-25). Pressing a row of
-   * "Other steps that changed this document" used to clear the focus, so the older step opened
-   * on its first document — in a vault's first commit that is `README.md` — and the restore
-   * door beneath it put back `README.md`. The jump now carries the document's path, and this
-   * step opens on it, in the lens it was read in (`arrivalLens`).
-   *
-   * A step whose file list does not hold the followed document **holds**: nothing is selected
-   * in its place, no door is drawn, and the reader says so. The realistic case is a merge — git
-   * lists a merge that resolved a conflict in the document's own history, but prints no files
-   * for a merge. Only the person's own press on a chip or a file ends the hold: another
-   * document never stands in silently for the one being followed.
+   * A jump keeps the followed document and opens on it (`arrivalLens`), or the restore door
+   * would aim at the step's first document. A step whose files lack it (a merge) holds: no
+   * selection and no door until the person picks a chip or file.
    */
   const followEntry = follow ? (files.find((file) => file.path === follow.path) ?? null) : null;
   const followCarried = followEntry !== null && concepts.some((concept) => fileCarriesNode(followEntry, concept.id));
@@ -176,13 +143,8 @@ export function CommitDetail({
   const { state: hashState, copy: copyHash } = useCopyFeedback();
   const authored = stripConventionalPrefix(subject);
   const reason = headline ? t("stepAutoSubject", { summary: headline }) : authored;
-  /*
-   * Round four (2026-09-25): the headline is the step's sentence whenever a person wrote one.
-   * "Payment approval, Payment service and 1 more" put a list of names and an overflow count on the screen's
-   * largest line and demoted the sentence that says what the step did — and the concept chips
-   * a few lines down print those same names again. Only an automatic subject, which has no
-   * sentence of its own, is named by its concepts, with the reader's-language summary under it.
-   */
+  // The headline is the author's sentence; only an automatic subject is named by its
+  // concepts, with the reader's-language summary under it.
   const conceptTitle =
     headline && concepts.length > 0
       ? `${concepts
@@ -204,22 +166,15 @@ export function CommitDetail({
       day: "numeric",
       hour: "numeric",
       minute: "2-digit",
-      // The reader's own clock: the step happened at their local time, and no global
-      // default is configured for the static export.
+      // The reader's local time; the static export configures no global default.
       timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     });
   }, [format, isoTime]);
 
   /*
-   * Concept chips are an **exclusive single selection**: the initial value is
-   * `concepts[0]`, so one is always true and re-clicking never clears it.
-   * Siblings previously carried `aria-pressed` side by side, which left the
-   * exclusivity out of the accessibility tree entirely.
-   *
-   * The container stays as it is — `tone:'secondary'` plus a conditional border
-   * is not a chip-ramp combination, and that border rule comes from a
-   * measurement: never paint over a pressed chip's indigo (decision rule,
-   * ledger 2026-08-15 (8)).
+   * Concept chips are an exclusive single selection starting at `concepts[0]`, exposed as a
+   * radio group. The container keeps its own `tone:'secondary'` plus conditional border,
+   * which never paints over a pressed chip's indigo.
    */
   const conceptGroup = useRovingRadioGroup<string | null>({
     // Holding, nothing is pressed; the group then makes its first chip the tab stop (APG).
@@ -230,13 +185,7 @@ export function CommitDetail({
     },
   });
 
-  /*
-   * The default lens is **concepts**, because that is exactly where this product
-   * parts ways with a git client: every tool has a file list, and "which
-   * concepts did this step touch" exists only here. Only a step with no
-   * concepts at all (a config-only change, say) opens on files — a default that
-   * renders empty is not a default. A followed document opens where it was being read.
-   */
+  // Concepts by default, files for a step without concepts, and a followed document's own lens.
   const [lens, setLens] = useState<Lens>(() =>
     arrivalLens({
       follow,
@@ -248,11 +197,8 @@ export function CommitDetail({
   );
   const [openFile, setOpenFile] = useState<string | null>(followEntry?.path ?? null);
   const [diff, setDiff] = useState<string | null>(null);
-  /*
-   * Arriving by a jump, the selection is brought into view once. A step can hold a hundred
-   * documents, and the chip or row that proves the document was kept can sit far below the
-   * point the column was scrolled to; `nearest` never moves one that is already visible.
-   */
+  const [diffTooLarge, setDiffTooLarge] = useState(false);
+  // After a jump the kept selection is scrolled into view once; `nearest` leaves a visible one.
   const detailRef = useRef<HTMLDivElement>(null);
   const revealOnArrival = useRef(follow !== null);
   useLayoutEffect(() => {
@@ -262,17 +208,18 @@ export function CommitDetail({
     if (anchor && typeof anchor.scrollIntoView === "function") anchor.scrollIntoView({ block: "nearest" });
   }, []);
 
-  // The parent keys this detail by vault + hash + concept count. A step transition
-  // therefore creates the correct initial lens, file selection, and loading state
-  // without a synchronous effect reset.
+  // The parent keys this detail by vault, hash and concept count, so a new step starts
+  // with fresh state and needs no effect reset.
   useEffect(() => {
     if (!vaultPath) return;
     let cancelled = false;
     void gitCommitDiff(vaultPath, hash)
       .then((result) => {
-        if (!cancelled) setDiff(result?.diff ?? "");
+        if (cancelled) return;
+        setDiff(result?.diff ?? "");
+        setDiffTooLarge(result?.tooLarge ?? false);
       })
-      // A failed read does not bring the screen down — that section just says "none".
+      // A failed read leaves that section saying "none".
       .catch(() => {
         if (!cancelled) setDiff("");
       });
@@ -288,19 +235,14 @@ export function CommitDetail({
   const perFile = useMemo(() => parseUnifiedDiff(diff ?? ""), [diff]);
   const activeFile = holding ? null : (openFile ?? files[0]?.path ?? null);
   const activeEntry = activeFile ? files.find((file) => file.path === activeFile) ?? null : null;
-  /*
-   * The document the files lens reads, named the way the concept lens names it: the concept
-   * this file carries (`fileCarriesNode`), else the file name. The same reader the
-   * uncommitted pane uses (owner direction B, 2026-09-19) draws it whole at this commit,
-   * so a step's change and an uncommitted change read the same way.
-   */
+  // The files lens names a document by its concept (`fileCarriesNode`), else its file name,
+  // and reads it with the uncommitted pane's reader.
   const activeDocument = useMemo<ChangedDocument | null>(() => {
     if (!activeEntry) return null;
     const concept = concepts.find((c) => fileCarriesNode(activeEntry, c.id));
     return {
       entry: activeEntry,
-      // A document without a matching concept is named by its file, minus the `.md` the
-      // uncommitted pane's chips also drop; a config file keeps its full name.
+      // A document without a concept drops `.md` like the uncommitted chips; config keeps its name.
       label:
         concept?.label ??
         (activeEntry.kind
@@ -310,24 +252,13 @@ export function CommitDetail({
     };
   }, [activeEntry, concepts]);
   const activeFallback = useMemo(() => patchOf(perFile, activeFile), [perFile, activeFile]);
-  /*
-   * The focused concept's own document in this commit. The concept lens is the default lens
-   * (review, 2026-09-19: an action that lives only under "files" may never be found), so the
-   * restore door opens here too, for the document that carries the concept.
-   */
+  // The focused concept's document in this commit, so the default lens has a restore door too.
   const focusedFile = useMemo(() => {
     if (!focused) return null;
     return files.find((file) => fileCarriesNode(file, focused)) ?? null;
   }, [files, focused]);
-  /*
-   * **What the step changed in that document, read in the concepts lens too** (real-bridge QA,
-   * 2026-09-25). The whole document with its changed lines marked in place is what this screen
-   * has that a git client does not, and the concepts lens is the default because it too exists
-   * only here — yet the lens drew the concept's card and its other steps and never the change
-   * itself; the same document's lines were one lens away. The reader the files lens uses sits
-   * between the card and the document's own steps, so the restore door still closes what was
-   * just read.
-   */
+  // The concepts lens also reads the change itself, between the card and the document's
+  // history, so the restore door follows what was just read.
   const focusedLabel = concepts.find((concept) => concept.id === focused)?.label ?? null;
   const focusedDocument = useMemo<ChangedDocument | null>(
     () =>
@@ -340,12 +271,8 @@ export function CommitDetail({
     () => patchOf(perFile, focusedFile?.path ?? null),
     [perFile, focusedFile],
   );
-  /*
-   * Keyed by hash and path, as in the files lens: a new concept is a new document, and a later
-   * commit patch replaces the fallback rather than layering on it. The card above already names
-   * the concept, so the reader opens with a section label like the card's and the document's
-   * other steps, rather than naming it a second time.
-   */
+  // Keyed by hash and path as in the files lens; opens with a section label, since the card
+  // above already names the concept.
   const conceptReader = focusedDocument ? (
     <div
       key={`${hash}:${focusedDocument.entry.path}:${diff === null ? "reading" : "read"}`}
@@ -357,18 +284,15 @@ export function CommitDetail({
         vaultPath={vaultPath}
         document={focusedDocument}
         fallback={focusedFallback}
+        fallbackTooLarge={diffTooLarge}
         source={hash}
         heading={t("changedLines")}
       />
     </div>
   ) : null;
 
-  /*
-   * One door per document, drawn in one place in both lenses: on the heading of the
-   * document's own history. A step that deleted the document holds no content to put back,
-   * so the door is not drawn — but its absence is said, not left silent: the person would
-   * otherwise read the missing door as a missing feature (installed-app walk, 2026-09-19).
-   */
+  // One door per document, on its history heading in both lenses. A step that deleted the
+  // document has nothing to restore, and says so instead of silently omitting the door.
   const restoreDoor = (file: GitChangeEntry) =>
     file.status === "deleted" ? (
       <p
@@ -379,8 +303,7 @@ export function CommitDetail({
       </p>
     ) : (
       <RestoreDock
-        // Keyed by document: an armed confirm must not survive a file change and re-aim at
-        // another document (interaction seat, 2026-09-19).
+        // Keyed by document, or an armed confirm would re-aim at another document.
         key={file.path}
         t={t}
         path={file.path}
@@ -428,22 +351,9 @@ export function CommitDetail({
       data-testid="atlas-git-history-detail"
     >
       {/*
-        Identity — survives either lens, and is the pane's one headline (review 2026-09-25).
-        It was a 14px line, the same size as every list row, under a 23px page title and above
-        a 23px file title: the thing the person picked was the smallest heading on screen. The
-        page title stepped down to a destination label, the file title inside a step stepped
-        down to `text-title`, and this line took the display step.
-
-        It names the step the way its list row does — concepts first — so the row and the
-        pane agree on what was picked. The author's words follow as the second line without
-        their conventional-commit code, and the meta line carries a short id to copy and a
-        date in the reader's locale instead of a 40-character hash and an ISO timestamp.
-
-        Round three (2026-09-25): the page title went back to the display step every
-        destination's h1 uses, which left two 23px lines 50px apart and no winner. The
-        selection now wins by size, one ramp step above the page title — `text-hero`, the
-        step the Insights brief headline already takes under its own display-size page title
-        (BriefTab.tsx) — at the signature weight, so the larger line does not also shout.
+        Identity, the pane's one headline in either lens: `text-hero`, one step above the page
+        title so the selection wins, at the signature weight. A short id and a locale date
+        replace the full hash and ISO timestamp.
       */}
       <header className="flex flex-none flex-col gap-1.5 px-5 pt-5 pb-4">
         <h2
@@ -491,9 +401,7 @@ export function CommitDetail({
         </p>
       </header>
 
-      {/* The lenses carry their count in the label. "Concepts" alone forces a
-          click to learn how many, and then the tab hides a **fact**, not a
-          presentation. */}
+      {/* Each lens label carries its count, so the tab never hides a fact. */}
       <div
         role="tablist"
         aria-label={t("lensLabel")}
@@ -506,9 +414,7 @@ export function CommitDetail({
             type="button"
             data-testid={`atlas-git-lens-${id}`}
             aria-selected={lens === id}
-            /* A lens with nothing in it is a count, not a place to go (review 2026-09-25:
-               "Concepts changed 0" stayed pressable and opened onto one empty sentence).
-               It stays in the strip, so the zero is still said, but it cannot be chosen. */
+            /* An empty lens stays in the strip to say its zero, but cannot be chosen. */
             disabled={(id === "concepts" ? concepts.length : files.length) === 0}
             onClick={() => setLens(id)}
             className={controlClass({ shape: "segment", size: "md", tone: "muted", className: "-mb-px min-h-9 gap-1.5 rounded-none border-b-2 border-transparent px-2.5 hover:text-[color:var(--color-text-primary)] aria-selected:border-[color:var(--color-indigo-brand)] aria-selected:font-[var(--font-weight-signature)] aria-selected:text-[color:var(--color-text-primary)]" })}
@@ -525,8 +431,6 @@ export function CommitDetail({
         {lens === "concepts" ? (
           concepts.length > 0 ? (
             <>
-              {/* The tab already said how many concepts changed — repeating it
-                  directly below spends ink and says nothing. */}
               <div className="flex flex-none flex-col gap-2.5 px-5 pt-4">
                 <div {...conceptGroup.groupProps} aria-label={t("conceptChipsAria")} className="flex flex-wrap gap-1.5">
                   {concepts.map((concept, index) => (
@@ -556,15 +460,7 @@ export function CommitDetail({
                   ))}
                 </div>
               </div>
-              {/*
-                Card first, then the document's own timeline (round three, 2026-09-25). The
-                card names the concept and where it is written down — once. The line that used
-                to sit above the history ("This concept's document capabilities/checkout.md")
-                printed the same slug the card's two fact cells printed again, three times on
-                the screen's main view; it is gone, and the restore door moved onto the
-                history's own heading, beside the versions it chooses between. The files lens
-                draws the door in exactly the same place.
-              */}
+              {/* Card first, then the document's timeline with the restore door on its heading, as in the files lens. */}
               {focused ? (
                 <Section label={t("egoHeading")} note={t("egoHint")}>
                   <ConceptEgoCard
@@ -579,8 +475,7 @@ export function CommitDetail({
               {conceptReader}
               {focusedFile ? (
                 <div className="px-5 pb-4">
-                  {/* Keyed by document: a new document is a new timeline, never the last
-                      document's rows under this one's heading while its own read is in flight. */}
+                  {/* Keyed by document, so a new document never shows the last one's rows while reading. */}
                   <DocumentHistory
                     key={focusedFile.path}
                     t={t}
@@ -607,8 +502,6 @@ export function CommitDetail({
           )
         ) : (
           <>
-            {/* Files are a **chooser**. Concatenating four patches leaves scroll
-                position as the only indicator of which file you are reading. */}
             <ul
               data-testid="atlas-git-file-list"
               className="flex flex-none flex-col border-b border-[color:var(--color-divider)]"
@@ -618,10 +511,7 @@ export function CommitDetail({
                   <button
                     type="button"
                     data-testid="atlas-git-commit-file"
-                    /* The file list uses `aria-current` for the same reason: the
-                       sibling lens directly above uses `role="tablist"` plus
-                       `aria-selected`, and adding pressed here would put three
-                       vocabularies on one screen. */
+                    /* `aria-current`, not pressed: the lens above already uses `aria-selected`. */
                     aria-current={activeFile === file.path ? "true" : undefined}
                     data-document-anchor={activeFile === file.path ? true : undefined}
                     onClick={() => {
@@ -645,12 +535,8 @@ export function CommitDetail({
             </ul>
 
             {activeDocument ? (
-              /*
-               * Keyed by hash and path: a new step or a new file is a new document, so the
-               * reader starts over rather than showing one document's lines under another's
-               * name while the read is in flight. `diff` in the key means a later commit
-               * patch replaces an earlier one's fallback rather than layering on it.
-               */
+              // Keyed by hash and path so a new document starts over; `diff` in the key makes a
+              // later patch replace the fallback instead of layering on it.
               <div
                 key={`${hash}:${activeDocument.entry.path}:${diff === null ? "reading" : "read"}`}
                 data-testid="atlas-git-commit-diff"
@@ -661,16 +547,12 @@ export function CommitDetail({
                   vaultPath={vaultPath}
                   document={activeDocument}
                   fallback={activeFallback}
+                  fallbackTooLarge={diffTooLarge}
                   source={hash}
                 />
               </div>
             ) : null}
-            {/* Subject first, then its history (round four, 2026-09-25). The document's other
-                steps and the restore door sat between the chooser and the document they refer
-                to, so the timeline was read before its subject and the reader's own title sat
-                further down as a smaller heading. The reader now follows its chooser, and the
-                history with its door closes the document — the door restores what was just
-                read. The concepts lens keeps the same order: card, then history. */}
+            {/* The document first, then its history and door, in the same order as the concepts lens. */}
             {activeEntry ? (
               <div className="px-5 pb-4">
                 <DocumentHistory
@@ -694,12 +576,9 @@ export function CommitDetail({
   );
 }
 
-/** One-character file status — the letter carries the meaning, not the colour. */
 /**
- * Restore — this commit's content for one document, landing as an uncommitted change. Worded
- * apart from discard (review, 2026-09-19): this one is reversible from the same screen, and
- * the confirm says so; it also says when the document's own uncommitted lines would go with
- * it, and which of this commit's other documents stay as they are.
+ * Restore: this commit's content for one document, landing as an uncommitted change. The
+ * confirm says it is reversible, whether uncommitted lines go with it, and which documents stay.
  */
 function RestoreDock({
   t,
@@ -726,9 +605,7 @@ function RestoreDock({
     >
       <DocumentConfirmStep
         testIdPrefix="atlas-git-restore"
-        /* The door names the one file it puts back, before it is pressed (2026-09-25): "Restore
-           this version" under a step with a hundred documents said nothing about which one, and
-           a jump that had silently swapped the selection left it aimed at `README.md`. */
+        /* The door names the one file it puts back before it is pressed. */
         doorLabel={t("restoreAction", { path })}
         confirmLabel={t("restoreButton")}
         busyLabel={t("restoreRunning")}
@@ -760,9 +637,8 @@ const DOCUMENT_HISTORY_LIMIT = 12;
 const DOCUMENT_HISTORY_PREVIEW = 3;
 
 /**
- * The other steps that changed this one document — a meaning's own timeline, read from git
- * scoped to the path. Each row jumps to that step. Without this, "when else did this concept
- * change" meant scanning every row of the list for the concept's name.
+ * The other steps that changed this one document, read from git scoped to the path; each
+ * row jumps to that step.
  */
 function DocumentHistory({
   t,
@@ -812,19 +688,11 @@ function DocumentHistory({
   }, [vaultPath, path]);
 
   const others = useMemo(() => (rows ?? []).filter((commit) => commit.hash !== currentHash), [rows, currentHash]);
-  /*
-   * Three by default (review 2026-09-25): eleven 28px rows pushed the concept's ego drawing,
-   * the richest part of this pane, below the fold on a 949px window. The rest are one press
-   * away and counted, never silently dropped.
-   */
+  // Three by default so the ego drawing stays above the fold; the rest are counted, one press away.
   const [expanded, setExpanded] = useState(false);
   const listRef = useRef<HTMLUListElement>(null);
-  /*
-   * "Show fewer" leaves the way "Show N more" arrived (round four, 2026-09-25): the rows it
-   * removes fade out on the same fast curve before the list shortens, instead of vanishing in
-   * one frame. Opacity only, so the reduced-motion reading is the same fade without the
-   * stagger; where the Web Animations API is missing, the list simply shortens.
-   */
+  // "Show fewer" fades the removed rows out on the arrival curve before shortening; opacity
+  // only, so reduced motion keeps the fade, and without Web Animations it just shortens.
   const collapse = () => {
     const leaving = [...(listRef.current?.querySelectorAll<HTMLLIElement>("li[data-extra]") ?? [])];
     if (leaving.length === 0 || typeof leaving[0].animate !== "function") {
@@ -842,12 +710,8 @@ function DocumentHistory({
     );
     void Promise.allSettled(runs).then(() => setExpanded(false));
   };
-  /*
-   * Until the history is read (or where it cannot be, on the web) the door still stands — in the
-   * same place in the tree it keeps once the rows land. It used to stand in a wrapper of its own
-   * and move into the heading row on arrival, which remounted it: a restore confirm opened in
-   * that window closed by itself when the read landed.
-   */
+  // The door keeps one tree position before and after the history lands; moving it would
+  // remount it and close an open restore confirm.
   const loaded = rows !== null;
   if (!loaded && !action) return null;
   if (loaded && !changedHere && others.length === 0) return null;
@@ -872,10 +736,7 @@ function DocumentHistory({
             <li
               key={commit.hash}
               data-extra={index >= DOCUMENT_HISTORY_PREVIEW ? "true" : undefined}
-              /* "Show N more" was a hard cut (review 2026-09-25). The rows it adds arrive on
-                 the screen's one arrival curve, staggered and capped at eight like the step
-                 list; under reduced motion they crossfade together with no stagger. The first
-                 three rows were already there and do not replay. */
+              /* Added rows arrive on the list's stagger, capped at eight; the first three do not replay. */
               className={index >= DOCUMENT_HISTORY_PREVIEW ? "git-fade-in" : undefined}
               style={
                 index >= DOCUMENT_HISTORY_PREVIEW
@@ -894,9 +755,7 @@ function DocumentHistory({
                   tone: "secondary",
                   hoverInk: "strong",
                   hoverSurface: "lift",
-                  /* The time column is the list's own `--git-when-w`, so a step reads with the
-                     same rhythm here as on the left; the old 6rem left a 93px hole before the
-                     name. */
+                  /* The list's own `--git-when-w` time column, for the same rhythm as the left. */
                   className: "grid w-full grid-cols-[var(--git-when-w)_minmax(0,1fr)] items-center gap-3 rounded-none px-0",
                 })}
               >
@@ -936,6 +795,7 @@ function DocumentHistory({
   );
 }
 
+/** One-character file status — the letter carries the meaning, not the colour. */
 function statusMark(status: string): string {
   switch (status) {
     case "added":
@@ -949,24 +809,9 @@ function statusMark(status: string): string {
   }
 }
 
-
 /**
- * Raw patch → rows grouped **per file**.
- *
- * Why the noise is stripped (2026-08-02): `diff --git a/… b/…`,
- * `index 05d74bf..e04bf82`, `--- a/…` and `+++ b/…` precede every file, and all
- * four say one thing — **the file name**. The list above now carries that name,
- * so these are dropped outright.
- *
- * Colour is the **second** channel: the leading +/- sign stays, so a
- * colour-blind reader gets the same distinction.
- */
-
-/**
- * Find a patch by file path. It also matches on the **path tail**, because the
- * list's paths are vault-relative while the patch's are repository-root
- * relative, so they differ at the front whenever the vault is a subfolder.
- * Exact match first, tail match second.
+ * Find a patch by file path, exact first, then by tail: list paths are vault-relative and
+ * patch paths repository-relative.
  */
 function patchOf(perFile: readonly AtlasGitDiffFile[], path: string | null): AtlasGitDiffFile | null {
   if (!path) return null;

@@ -124,6 +124,7 @@ function scanHangulSegments(text: string, query: string): HighlightSegment[] | n
 export function splitHighlightSegments(
   text: string,
   query: string,
+  readsHangul = true,
 ): HighlightSegment[] {
   const re = buildPhraseMatcher(query);
   if (!re) return [{ text, match: false }];
@@ -140,7 +141,7 @@ export function splitHighlightSegments(
 
   // Still nothing literal: the query may be Hangul the keyboard has not finished
   // writing, which is what the matcher ranked this row on.
-  return scanHangulSegments(text, query) ?? [{ text, match: false }];
+  return (readsHangul ? scanHangulSegments(text, query) : null) ?? [{ text, match: false }];
 }
 
 /**

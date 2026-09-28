@@ -77,6 +77,13 @@ async function installDesktopBridge(page: Page) {
     ({ files, runtime, rootPath }) => {
       const MTIME = 1_757_000_000_000;
       const encoder = new TextEncoder();
+      const stampedBytes = (text: string) => {
+        const body = encoder.encode(text);
+        const stamped = new Uint8Array(8 + body.length);
+        new DataView(stamped.buffer).setBigUint64(0, BigInt(MTIME), true);
+        stamped.set(body, 8);
+        return stamped.buffer;
+      };
 
       const listDirectory = (relative: string) => {
         const prefix = relative ? `${relative}/` : "";
@@ -111,7 +118,7 @@ async function installDesktopBridge(page: Page) {
             return { text: files[relative], lastModified: MTIME };
           case "read_vault_binary_file":
             if (!(relative in files)) throw new Error(`missing ${relative}`);
-            return { bytes: [...encoder.encode(files[relative])], lastModified: MTIME };
+            return stampedBytes(files[relative]);
           case "write_vault_text_file":
             files[relative] = String(args.content ?? "");
             return null;
@@ -216,6 +223,7 @@ test.describe("Compile opens the agent dock", () => {
     await openFolder(page);
     await expect(page.getByTestId("library-compile")).toBeVisible({ timeout: 25_000 });
     await expect(page.getByTestId("library-compile")).toBeEnabled();
+    await page.getByTestId("library-workspace-sources").click();
     /*
      * Four sources, none written up, so the chip has work to do and says so.
      *
@@ -278,6 +286,7 @@ test.describe("Compile opens the agent dock", () => {
     await expect(page.getByTestId("library-stage-transfer")).toHaveCount(0);
     await expect(page.getByTestId("library-transfer")).toHaveCount(0);
     await expect(inlineDisclosure).toHaveCount(0);
+    await page.getByTestId("library-workspace-sources").click();
 
     /*
      * The two popups the home's strip opens (`docs/DECISIONS.md`, 2026-09-12 — "The
@@ -300,6 +309,7 @@ test.describe("Compile opens the agent dock", () => {
     await expect(inlineDisclosure).toHaveCount(0);
     await page.keyboard.press("Escape");
 
+    await page.getByTestId("library-workspace-wiki").click();
     await page.getByTestId("library-wiki-wiki/notes").click();
     await expect(page.getByTestId("library-stage-transfer")).toHaveCount(0);
     await expect(page.getByTestId("library-transfer")).toHaveCount(0);

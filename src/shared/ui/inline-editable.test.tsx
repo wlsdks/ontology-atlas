@@ -15,7 +15,6 @@ describe('InlineEditable — readonly', () => {
     );
     const span = container.firstElementChild as HTMLElement;
     fireEvent.click(span);
-    // No input/textarea should appear.
     expect(container.querySelector('input')).toBeNull();
     expect(container.querySelector('textarea')).toBeNull();
   });
@@ -40,8 +39,7 @@ describe('InlineEditable — readonly', () => {
     expect(button).not.toHaveAttribute('aria-label');
   });
 
-  // 2026-09-25 sweep: the button role sat on the `h1` and replaced it, so an editable page title
-  // was no heading at all. The heading keeps its role; the press is a block inside it.
+  // A button role on the `h1` would erase the heading; the press is a block inside it.
   it('an editable heading stays a heading of its level, with the press inside it', () => {
     render(
       <InlineEditable as="h1" value="Online Store" editable onSave={() => {}} ariaLabel="프로젝트 이름" />,
@@ -119,7 +117,6 @@ describe('InlineEditable — editable', () => {
     fireEvent.change(input, { target: { value: '취소될 값' } });
     fireEvent.keyDown(input, { key: 'Escape' });
     expect(onSave).not.toHaveBeenCalled();
-    // Leaving edit mode removes the input.
     expect(container.querySelector('input')).toBeNull();
   });
 
@@ -158,7 +155,6 @@ describe('InlineEditable — multiline behavior', () => {
     const ta = container.querySelector('textarea') as HTMLTextAreaElement;
     fireEvent.change(ta, { target: { value: '한 줄\n두 줄' } });
     fireEvent.keyDown(ta, { key: 'Enter' });
-    // In multiline, only Cmd/Ctrl+Enter commits.
     expect(onSave).not.toHaveBeenCalled();
   });
 

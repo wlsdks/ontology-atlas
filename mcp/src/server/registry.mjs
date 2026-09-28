@@ -829,7 +829,7 @@ const TOOLS = [
   {
     name: 'find_evidence',
     description:
-      "Find vault docs that mention a given concept by title. Useful when an AI agent asks where a capability is realized in code or docs. Each match includes a prose `excerpt` (max 200 chars, headings/tables/code skipped) so agents see *what the matching doc says* without an extra get_concept call. Matches are RANKED by a deterministic relevance `score` (title match > frontmatter ref > body, plus a title token-overlap tiebreaker), then by whether the doc is a graph node, then slug — best-first. **A vault holds ordinary markdown too** (meeting notes, memos, drafts have no `kind:` and are not graph nodes); every row says which it is via `isNode`, non-nodes rank below nodes of equal relevance, and `nodesOnly: true` filters them out. Do not cite a non-node as graph evidence without saying so. Pass `limit` for the top-N. When zero docs mention the title, the response includes a `growthHint` — near-titled vault nodes to check first, or an add_concept scaffold if the concept looks genuinely new.",
+      "Find vault docs that mention a given concept by title. Useful when an AI agent asks where a capability is realized in code or docs. Each match includes a prose `excerpt` (max 200 chars, headings/tables/code skipped) so agents see *what the matching doc says* without an extra get_concept call. Matches are RANKED by a deterministic relevance `score` (title match > frontmatter ref > body, plus a title token-overlap tiebreaker), then by whether the doc is a graph node, then slug — best-first. **A vault holds ordinary markdown too** (meeting notes, memos, drafts have no `kind:` and are not graph nodes); every row says which it is via `isNode`, non-nodes rank below nodes of equal relevance, and `nodesOnly: true` filters them out. Do not cite a non-node as graph evidence without saying so. Returns the best 50 by default (`limit` up to 500), with `total` matches and `limited` when more matched. When zero docs mention the title, the response includes a `growthHint` — near-titled vault nodes to check first, or an add_concept scaffold if the concept looks genuinely new.",
     inputSchema: {
       type: 'object',
       properties: {
@@ -838,7 +838,7 @@ const TOOLS = [
           type: 'integer',
           minimum: 1,
           maximum: 500,
-          description: 'Return only the top-N highest-scoring matches. Omit for all matches (still ranked).',
+          description: 'Return only the top-N highest-scoring matches. Defaults 50; `total` and `limited` say whether more matched.',
         },
         nodesOnly: {
           type: 'boolean',
@@ -852,6 +852,19 @@ const TOOLS = [
       type: 'object',
       properties: {
         query: NON_BLANK_STRING_SCHEMA,
+        total: {
+          type: 'integer',
+          minimum: 0,
+          description: 'Every document that matched, before `limit`.',
+        },
+        limited: {
+          type: 'boolean',
+          description: 'True when `matches` holds fewer rows than `total`.',
+        },
+        limitHint: {
+          type: 'string',
+          description: 'Only present when `limited`: how to narrow the search or raise `limit`.',
+        },
         nonNodeHint: { type: 'string' },
         matches: {
           type: 'array',
@@ -1842,7 +1855,7 @@ const TOOLS = [
     description:
       'Compile the whole markdown vault into a deterministic graph artifact: canonical nodes, edges, aliases, graph issues, graph-array canonicalization actions, and optional adjacency indexes. ' +
       'This is the compiler-style read path for graph-database-like use: call it before advanced reasoning, indexing, export, or non-developer-friendly graph views. Includes a stable semantic graphHash and maxMtime for cache invalidation. side effect 0. ' +
-      'Large vaults (100+ nodes) can exceed the MCP token cap with the default full payload — use `summary: true` for cheap polling (counts + graphHash, no arrays), or `nodesLimit/nodesOffset` / `edgesLimit/edgesOffset` to slice arrays. The response includes `nodesPagination` / `edgesPagination` meta with `{offset, limit, total, returned, hasMore, nextOffset}` when sliced.',
+      'Large vaults (100+ nodes) can exceed the MCP token cap with the full payload. `summary: true` returns counts + graphHash + byKind/byDomain aggregates with no arrays, for cheap polling, and a call with no argument that asks for arrays returns the same bounded summary plus `delivery`, which names the two ways to the rest: `full: true` for every array, or `nodesLimit/nodesOffset` / `edgesLimit/edgesOffset` to slice them. The response includes `nodesPagination` / `edgesPagination` meta with `{offset, limit, total, returned, hasMore, nextOffset}` when sliced.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -1854,13 +1867,18 @@ const TOOLS = [
         summary: {
           type: 'boolean',
           description:
-            'When true, omit `nodes` / `edges` / `aliases` / `ambiguousAliases` / `canonicalizationActions` / `indexes` arrays — return only `graphHash`, `maxMtime`, counts (`nodeCount`/`edgeCount`/`aliasCount`/...), and aggregate `byKind`/`byDomain` as counts. Cheap polling for cache invalidation and graph-size assessment.',
+            'When true, omit `nodes` / `edges` / `aliases` / `ambiguousAliases` / `canonicalizationActions` / `indexes` arrays — return only `graphHash`, `maxMtime`, counts (`nodeCount`/`edgeCount`/`aliasCount`/...), and aggregate `byKind`/`byDomain` as counts. Cheap polling for cache invalidation and graph-size assessment. Wins over every other argument.',
+        },
+        full: {
+          type: 'boolean',
+          description:
+            'When true, return every array however large the vault is (the answer without arguments is the bounded summary). Page arguments still slice nodes and edges.',
         },
         nodesLimit: {
           type: 'integer',
           minimum: 1,
           maximum: 500,
-          description: 'Positive integer max nodes to return. Pair with `nodesOffset` to paginate. Omit for unlimited (backward compat), max 500 when provided.',
+          description: 'Positive integer max nodes to return. Pair with `nodesOffset` to paginate. Max 500; `full: true` without it returns every node.',
         },
         nodesOffset: {
           type: 'integer',
@@ -1887,6 +1905,11 @@ const TOOLS = [
         graphHash: NON_BLANK_STRING_SCHEMA,
         maxMtime: { type: 'number', minimum: 0 },
         nodeCount: { type: 'integer', minimum: 0 },
+        skippedNonNodeCount: {
+          type: 'integer',
+          minimum: 0,
+          description: 'Summary answers only: `.md` files passed over for having no `kind:`.',
+        },
         edgeCount: { type: 'integer', minimum: 0 },
         resolvedEdgeCount: { type: 'integer', minimum: 0 },
         externalEdgeCount: { type: 'integer', minimum: 0 },
@@ -1896,6 +1919,32 @@ const TOOLS = [
         ambiguousAliasCount: { type: 'integer', minimum: 0 },
         issueCount: { type: 'integer', minimum: 0 },
         canonicalizationActionCount: { type: 'integer', minimum: 0 },
+        delivery: {
+          type: 'object',
+          description:
+            'Present when no argument asked for arrays: this is the bounded summary, and these arguments return the rest.',
+          properties: {
+            selection: { type: 'string', enum: ['summary_default'] },
+            reason: NON_BLANK_STRING_SCHEMA,
+            fullArguments: {
+              type: 'object',
+              properties: { full: { type: 'boolean', enum: [true] } },
+              required: ['full'],
+              additionalProperties: false,
+            },
+            pageArguments: {
+              type: 'object',
+              properties: {
+                nodesLimit: { type: 'integer', minimum: 1 },
+                edgesLimit: { type: 'integer', minimum: 1 },
+              },
+              required: ['nodesLimit', 'edgesLimit'],
+              additionalProperties: false,
+            },
+          },
+          required: ['selection', 'reason', 'fullArguments', 'pageArguments'],
+          additionalProperties: false,
+        },
         byKind: {
           type: 'object',
           additionalProperties: { type: 'integer', minimum: 0 },
@@ -2420,7 +2469,8 @@ const TOOLS = [
       'R+ (cycle 46) — validate every doc in the vault, return per-doc + per-code aggregate. ' +
       'Replaces the K-round-trip pattern of `list_concepts` then per-doc `get_concept` (whose `warnings: [...]` is per-file). ' +
       `8 issue codes — ${VAULT_ISSUE_CODE_DESCRIPTION}. ` +
-      'Returns `{ scanned, problems: [{slug, issues: [{code, severity, message}]}], summary: { problemFiles, errorFiles, warningFiles, byCode: { code: { severity, count, files } } } }`. ' +
+      'Returns `{ scanned, problems: [{slug, issues: [{code, severity, message}]}], problemsPagination, summary: { problemFiles, errorFiles, warningFiles, byCode: { code: { severity, count, files } } } }`. ' +
+      '`problems` is one page, files with errors first and then by slug: `offset` (default 0) and `limit` (default 100, max 500) choose it, a page left at the default `limit` stops sooner when its text would pass 128 KiB, and `problemsPagination.nextOffset` resumes it, so follow pages until `hasMore` is false before calling the vault clean. `summary` always counts the whole vault; each `byCode` entry names at most 20 `files` and says how many more in `filesOmitted`. ' +
       'Also returns `pathDrift`: frontmatter `path:` / `elements:` source paths that no longer exist on disk (vault→code drift), resolved against `repoRoot` (default: the active resolved repository root from connection_info). Ontology-slug references are never flagged. Fix via `patch_concept` or remove the stale entry. ' +
       'Also returns `evidenceDrift`: one Git walk dates every cited path and every concept document, and each concept is `current` (cited code unchanged since the document), `stale` (a cited file changed after the document — read it before trusting the recorded meaning), `missing` (cited path gone) or `unknown` (nothing cited, no commit in the window, or only a folder-level path moved — listed under `folderOnly`, because a folder changes on almost any commit). `checked: false` names why nothing was dated; it never means nothing moved. ' +
       'side effect 0. Use when an agent needs the *whole-vault* health view: first-contact before writes, before / after a batch write, or surfacing issues to the user.',
@@ -2432,6 +2482,17 @@ const TOOLS = [
           description:
             'Repository root that frontmatter source paths resolve against, for the pathDrift check. Defaults to the active resolved repository root from connection_info. Pass this if the vault lives apart from the code repo.',
         },
+        offset: {
+          type: 'integer',
+          minimum: 0,
+          description: 'Zero-based index of the first problem file to return, in the order errors first and then slug. Resume with `problemsPagination.nextOffset`. Defaults 0.',
+        },
+        limit: {
+          type: 'integer',
+          minimum: 1,
+          maximum: 500,
+          description: 'Problem files per page. Defaults 100.',
+        },
       },
     },
     outputSchema: {
@@ -2441,6 +2502,14 @@ const TOOLS = [
           type: 'integer',
           minimum: 0,
           description: 'Number of vault markdown files scanned.',
+        },
+        problemsPagination: {
+          ...paginationOutputSchema(),
+          description: 'The page `problems` holds: `total` problem files, and `nextOffset` for the next page until `hasMore` is false.',
+        },
+        problemsHint: {
+          type: 'string',
+          description: 'Present when the vault has more than one page: which files this page shows and the call for the next one.',
         },
         problems: {
           type: 'array',
@@ -2489,6 +2558,12 @@ const TOOLS = [
                   files: {
                     type: 'array',
                     items: NON_BLANK_STRING_SCHEMA,
+                    description: 'At most 20 of the `count` files with this code, in page order.',
+                  },
+                  filesOmitted: {
+                    type: 'integer',
+                    minimum: 1,
+                    description: 'Present when `files` names fewer than `count`: how many more. Page through `problems` for them.',
                   },
                 },
                 required: ['severity', 'count', 'files'],
@@ -4493,6 +4568,7 @@ const TOOLS = [
         targetPath: { type: 'string' },
         moved: { type: 'boolean' },
         backlinkUpdates: BACKLINK_REWRITE_PLAN_OUTPUT_SCHEMA,
+        warnings: { type: 'array', items: { type: 'string' } },
         message: { type: 'string' },
         changed: { type: 'boolean' },
         postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,

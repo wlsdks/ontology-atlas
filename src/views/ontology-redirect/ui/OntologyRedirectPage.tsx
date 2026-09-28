@@ -12,22 +12,9 @@ import {
 } from "@/entities/knowledge-graph";
 
 /**
- * `/ontology` — a thin convergence entry (the hub is the map). The old tree/ego hub
- * (`OntologyViewPage`, `ontology-tree-view`, `ontology-ego-graph`) is retired; this route now only
- * translates its deep-link contract (`?node=<id>`, return marker, and ask intent)
- * into `/topology`'s (`?p=<id>&index=expanded`) and redirects client-side.
- *
- * A real client redirect (not Next's `redirect()`) because `next.config.ts` sets `output: 'export'` —
- * no server-side redirect surface exists in a static export. Kept as its own route (not folded away) so
- * every existing `/ontology/?node=X` link (global search, project drawer, docs viewer, the insights
- * page, agent handoff text — 7+ call sites build this href via `buildOntologyNodeHref`) keeps resolving
- * instead of 404ing.
- *
- * A `?node=` that fails to resolve against the live vault is NOT diagnosed here — this component
- * redirects unconditionally and synchronously (no ontology data load to wait on). `/topology`
- * (HomePage) is the single place that already resolves `?p=` against `ontologyInsight` and shows a
- * toast on miss (see HomePage's `deeplinkMissNotifiedRef` effect) — one resolution path, one
- * "not found" surface, instead of duplicating it here.
+ * Keeps every `/ontology/?node=X` link (`buildOntologyNodeHref`) resolving by translating it to
+ * the /topology form, client-side since a static export has no server redirect. An unknown node is
+ * diagnosed only by HomePage, the one "not found" surface.
  */
 export function OntologyRedirectPage() {
   const router = useRouter();
@@ -43,17 +30,14 @@ export function OntologyRedirectPage() {
     if (nodeParam) {
       params.set("p", translateOntologyDeeplinkToTopologyParam(nodeParam));
     }
-    // The origin marker (`via=insights:<tab>`) is forwarded only when the marker grammar is valid —
-    // HomePage renders the "return to insights" chip from this value.
+    // Forwarded only when valid: HomePage renders its return chip from it.
     if (viaParam && parseInsightsReturnMarker(viaParam)) {
       params.set(ONTOLOGY_DEEPLINK_VIA_KEY, viaParam);
       if (reviewParam) {
         params.set(ONTOLOGY_DEEPLINK_REVIEW_KEY, reviewParam);
       }
     }
-    // `ask` carries only the kind of request. HomePage owns validation and rebuilds
-    // the localized sentence, so the redirect must preserve the value without ever
-    // turning it into a message or sending it on the person's behalf.
+    // Only the request kind, never a message sent on the person's behalf; HomePage validates it.
     if (askParam) {
       params.set(ONTOLOGY_DEEPLINK_ASK_KEY, askParam);
     }

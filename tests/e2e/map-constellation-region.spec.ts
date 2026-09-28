@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import koMessages from '../../messages/ko.json';
 import { seedFirstRunSeen } from "./first-run-seed";
 import { waitForMapStill } from "./settle";
 
@@ -21,7 +22,7 @@ test("별자리 칩은 이름 있는 영역을 펼치고, 그 영역을 가리�
   await waitForMapStill(page, { what: "camera" });
 
   const trigger = page.getByTestId("saved-constellations-open");
-  const region = page.getByRole("region", { name: /저장한 범위/ });
+  const region = page.getByRole("region", { name: koMessages.constellations.listTitle });
   await expect(trigger).toHaveAttribute("aria-expanded", "false");
   expect(await region.count(), "열기 전에 이미 영역이 있다").toBe(0);
 

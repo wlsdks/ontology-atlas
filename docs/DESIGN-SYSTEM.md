@@ -53,6 +53,7 @@ The criterion for separation is not the topic, but **"when it is read."** All fo
 - [Workbench composition and motion](#workbench-composition-and-motion)
 - [Architecture canvas — the flow surface (new, 2026-08-28)](#architecture-canvas--the-flow-surface-new-2026-08-28)
 - [Library index — readable page titles](#library-index--readable-page-titles)
+- [Wiki question report — editorial evidence grammar (2026-09-27)](#wiki-question-report--editorial-evidence-grammar-2026-09-27)
 - [Absolute rules (Don'ts)](#absolute-rules-donts)
 - [Arrows carry information or they don't ship](#arrows-carry-information-or-they-dont-ship)
 - [Dimensional regularity — when content length varies](#dimensional-regularity--when-content-length-varies)
@@ -971,7 +972,7 @@ panel entry, drag settle, and focus confirmation before adding bespoke easing:
 
 - `--topology-motion-focus-duration`: short focus confirmation.
 - `--topology-motion-panel-duration`: panel/support chrome entry.
-- `--topology-motion-camera-duration`: camera pan/zoom continuity.
+- Camera pan/zoom continuity is canvas physics: `CAMERA_TWEEN_MIN_MS`/`CAMERA_TWEEN_MAX_MS` in `src/widgets/ontology-map/model/motion-physics.ts`.
 - `--topology-motion-drag-settle-duration`: post-drag settle.
 - `--topology-motion-ease-standard`: default topology state transition.
 - `--topology-motion-ease-out`: landing/settle transition.
@@ -1086,7 +1087,7 @@ Canonical utility classes (globals.css `@layer base`):
 The canonical contract for the surface where an inline card opens upon row click ([AI Connection] vendor list).
 
 - **One surface, two states.** Drawing different rows per state (replacement) leaves nothing to transition.
-  The header band (`--control-row-h`) is always the same DOM; only the detail area below
+  The header band is always the same DOM; only the detail area below
   grows in height. Thus, the folded row **becomes** the expanded row rather than changing into something else,
   a fact conveyed through motion.
 - **Open/close/content swap share the same transition.** With only one class, there is no room for
@@ -1231,10 +1232,8 @@ Forcing pages to remember `shrink-0` actually failed: after fixing one screen, t
 |---|---|---|
 | `--git-setup-measure` | 520px | Single task column width before connection (no web/folder, before recording starts) |
 | `--git-setup-action-height` | 36px (coarse 44px) | Primary/secondary action row height |
-| `--git-evidence-min` | 600px | Minimum evidence column width. 11px mono 80 columns ≈ 528 + gutter + padding |
 | `--git-evidence-stack-max` | 460px | Upper bound for vertically stacked evidence (scrolls within) |
 | `--git-row-h` | 26px (coarse 44px) | Change row height — content cannot dictate this as it's a repeating set |
-| `--git-step-h` | 44px | Step row height (summary + name, two lines) |
 | `--git-row-stagger` | 14ms | List appearance stagger interval. Max 8 rows → total delay ≤112ms |
 | `--git-single-measure` | 920px | Single column width when no evidence column is present |
 
@@ -1853,6 +1852,72 @@ derived from the prose measure) and that measure. Its graph opens through one la
 so it retains the same focus trap, Escape, scrim, exit lockout and scroll lock
 as other dialogs. Closing returns to the originating page and scroll position.
 A closed graph must not keep a drawing loop running. The Dialog reads system motion preference through the live shared subscription. Reduced entry and exit use `OVERLAY_RISE_REDUCED` with zero travel, retaining the opacity fade; changing the preference while the workbench is open takes effect without remounting it.
+
+## Wiki question report — editorial evidence grammar (2026-09-27)
+
+The Wiki question desk uses the same Atlas shell as other workbenches. Its entry
+is a bounded question composer followed by actual inventoried originals. Source
+rows open the file without inventing a citation or reading it in the background.
+The entry headline uses the existing hero type/leading step, and the search
+button uses the small control step inside the input's shared frame. Counts name
+the folder inventory until an actual search can report coverage. A large bare
+field uses the existing body-lg type and leading pair; the parent still owns its
+box and dimensions. Source rows carry directory size/format and the observed
+Wiki citation count, without interpreting those facts as evidence quality. Entry,
+no-match,
+activity, and report states share one outer content edge. A failed or active
+agent receipt stays visible in that grid with a conversation action; completed
+reading receipts do not reserve a separate banner above the question. Starting a
+new question request scopes its visible receipts from that request's start;
+older failures remain in the underlying trace instead of preceding a new report.
+Below the desktop band, the question scroll viewport ends above the fixed bottom
+navigation using its existing reserve token. End padding alone does not make
+keyboard-focused citations visible above an overlapping navigation bar.
+Once a
+report arrives, its question is the sole visible headline; the search form becomes
+an explicit Edit question control. Answer prose stays within the document measure.
+The report may span 1120px by combining two existing `--measure-note-column` widths:
+when its actual container is at least 1024px wide and the ACP dock is closed,
+original evidence sits beside a column containing disagreements and unknowns,
+with a 28px gap. Smaller containers read in one column. Search coverage and raw
+leads remain named disclosures. A zero local word match is a retrieval
+limit, not a claim that the originals have no answer. The exact source address
+stays visible beside an actionable citation, and an unreviewed draft never looks
+like accepted Wiki meaning.
+
+| Role | Existing Atlas type and measure | Treatment |
+|---|---|---|
+| Question | `--text-display` + `--leading-display` | One aligned headline above the report; no repeated card title. |
+| Answer lead | `--text-display` + `--leading-display` | The actual first paragraph stays at 23/28 even when long; later explanation uses the reading step. No truncation or fabricated summary. |
+| Explanation and source excerpts | `--text-reading` + `--leading-prose`, within `--measure-doc-column` | Paragraph rhythm and line length carry the reading hierarchy. |
+| Section and source labels | `--text-title` for sections; `--text-body-lg` with `--leading-body` for answer citation blocks; `--text-label` for metadata | Exact source addresses move below their answer paragraph, remain one press away, and break anywhere. Korean sentences keep word boundaries and never inherit Latin mono decoration. |
+
+The report is an open document surface with thin rules, not a stack of cards.
+Markdown, PDF, and filing controls sit in a quiet top-right toolbar; the report
+body has no export row. The PDF reuses the rendered report, keeps all source
+addresses, and requests A4 margins of 18mm vertically and 16mm horizontally.
+Violet marks the selected question and citation path; amber is reserved for a
+confirmed conflict status, not for an agent's unreviewed disagreement heading.
+An unknown remains neutral. Status and source limits use words as well as
+colour. The actual response and visible source addresses survive Markdown and print; print hides controls
+and motion, not uncertainty. No new numeric type or motion token is needed:
+the existing scale already covers 23px question and answer, 14px citations, and 16px
+reading body. A new value needs a measured role and more than one real consumer.
+
+Search completion uses the shared base arrival; report arrival uses settle.
+The shared animated disclosure handles coverage and lead expansion while
+keeping its open state and focus through ACP completion. Reduced motion removes
+travel without removing any content or feedback. Motion starts from the action
+that caused it and never delays the answer or blocks another press.
+
+Reference calibration for the entry redesign uses the composable label, input,
+action, and empty-state patterns in [shadcn/ui](https://ui.shadcn.com/docs/components/empty)
+and [Radix Themes](https://www.radix-ui.com/themes/docs/components/text-area).
+Their repository licenses were checked on 2026-09-27: [shadcn MIT](https://github.com/shadcn-ui/ui/blob/main/LICENSE.md)
+and [Radix MIT](https://github.com/radix-ui/themes/blob/main/LICENSE). The selected
+mock uses only Atlas screenshots as visual input. Its composition is authored
+for Atlas and implemented with existing Atlas primitives and tokens; no external
+code, screenshots, logos, fonts, or assets are copied into this surface.
 
 ## Absolute rules (Don'ts)
 
@@ -2687,8 +2752,6 @@ Widths have **no shared unit; that is the specification.** All widths in this re
 |---|---|---|
 | `--git-setup-measure` | 520px | Single-task column (reuse of prose measured width) |
 
-| `--git-evidence-min` | 600px | 11px mono 80 columns ≈ 528 + gutter + padding |
-
 | `--git-single-measure` | 920px | Single column when evidence column is absent |
 
 | `--agent-panel-width` | `clamp(320px, 26vw, 420px)` | Viewport function |
@@ -3003,7 +3066,7 @@ All reuse existing lamps. Enforcement is not lint but the **full contract of cva
 | **32** | `--control-h-md` | `chip`/`pill` `md`·`lg`, `segment` `lg`, `card` `sm`, `icon` `lg`, `--app-nav-rail-tile-height` | **The app's default control height.** The value layer stands on this value via `min-h-8` |
 | **36** | `--chrome-tile-size` | Chrome field/tile, **document header tile**, `row` `md`, `card` `md` | Workbench chrome dimensions nailed by the "scale fixed contract" |
 | **40** | `--control-h-lg` | Select, large form controls, `card` `lg` | Box for entering text |
-| **44** | `--touch-target-min` | `row` `lg`, `--control-row-h`, `pointer: coarse` promotion (token override + `.touch-hit-expand`) | Touch value from Apple HIG / Material / WCAG **2.5.5(AAA)** — **coarse single source**. The fine front of `link` was reset to 44 (`min-h-11`) on 2026-08-04, then back to 24 below (see "link floor" section) |
+| **44** | `--touch-target-min` | `row` `lg`, `pointer: coarse` promotion (token override + `.touch-hit-expand`) | Touch value from Apple HIG / Material / WCAG **2.5.5(AAA)** — **coarse single source**. The fine front of `link` was reset to 44 (`min-h-11`) on 2026-08-04, then back to 24 below (see "link floor" section) |
 
 **34 disappeared from this table on 2026-08-03.** It was listed as a single-line "chrome lock," but that listing **only recorded it, not justified it**. Tracing the basis leads to a single comment in `DocsHeaderTile` — *"`ChromeTile` fixes `--chrome-tile-size`(**44px**) and does not match header density (34px)."* The chrome tile was **lowered to 36px on 2026-07-23** (owner: "obviously too big"), and on that day the only basis for 34 vanished, yet no one re-derived 34. Only two values and two coarse promotion rules remained for the same role (square icon tile). Now there is only one: `--chrome-tile-size`. Source: `docs/DECISIONS.md` 2026-08-03 "Tile dimensions are one".
 
@@ -3308,11 +3371,9 @@ The settings row-measure token (658px) bound the API Key drill-in's rows to the 
 --control-h-sm: 28px;
 --control-h-md: 32px;   /* Select size="md", dense form controls */
 --control-h-lg: 40px;   /* Select default trigger */
---control-row-h: calc(var(--control-h-md) + 12px);  /* = 44px, list row containing controls */
 ```
 
-- **`--control-row-h` (2026-07-26)** — List row height where buttons/controls sit. Must not equal control height: owner feedback («key register button looks too cramped») stemmed from [AI Connection] vendor row height 32px = button height, leaving 0 vertical margin above/below the button. Three rows touched each other with only a 1px divider between, making the three buttons read as one block. Write as an **expression** so rows grow when controls grow. Resulting 44px matches `--touch-target-min` in value and rationale — fingers and eyes read boundaries via padding around controls.
-  In expanded lists, **expanded card headers must also use this token** to maintain rhythm and name column alignment with other rows (dimensional regularity).
+- **A row that holds controls is taller than its controls (2026-07-26).** Owner feedback («key register button looks too cramped») came from [AI Connection] vendor rows as tall as their 32px buttons: no margin above or below, and three rows parted only by a 1px divider read as one block. Those rows are now `ModelRow` on the Agents Models tab (`src/widgets/app-settings-menu/ui/ModelConnectionsPanel.tsx`), whose header band is `min-h-14` (56px) around its controls; the row-height token that carried the old 44px lost its last consumer in that move (2026-09-25) and was removed.
 - Chrome fill/tiles continue using separate lock token `--chrome-tile-size` (36px) — this control scale is for interactive controls **outside** the chrome system (canonical Select, form inputs, etc.). Map top-right toolbar (auto-align·search·recent changes·workspace·+ concept) belongs to chrome system, all converging to `--chrome-tile-size` (36px) — «+ concept» primary also aligns in height·radius·typography (text-label·icon 14px) (#13).
 
 ### Dialog Width Scale

@@ -121,11 +121,12 @@ function openCustomTab() {
 }
 
 /** A folder handle backed by a map, enough for the store to read and write. */
-function fakeVault(seed?: string) {
+function fakeVault(seed?: string, rootPath?: string) {
   const files = new Map<string, string>();
   if (seed !== undefined) files.set('.ontology-atlas/connectors.json', seed);
   const directories = new Set<string>(seed === undefined ? [] : ['.ontology-atlas']);
   const handle = {
+    ...(rootPath ? { rootPath } : {}),
     getDirectoryHandle: async (name: string, options?: { create?: boolean }) => {
       if (!directories.has(name)) {
         if (!options?.create) throw new DOMException('not found', 'NotFoundError');
@@ -1101,6 +1102,39 @@ describe('a press that writes shows the whole line first', () => {
     fireEvent.click(screen.getByTestId('connectors-item-toggle'));
     await waitFor(() => expect(row).toHaveAttribute('data-connector-enabled', 'true'));
     expect(shown).toContain(whatRuns(stdioRecord));
+  });
+});
+
+describe('a connector a shared folder switched on, in the app', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
+  it('stays off here, says what it would run and pass, and one press allows exactly that', async () => {
+    const shared = {
+      ...stdioRecord,
+      env: [...stdioRecord.env, { name: 'NOTION_VERSION', value: '2022-06-28' }],
+      enabled: true,
+    };
+    bridge.stored.set('connector:c1:NOTION_TOKEN', 'abcd');
+    const vault = fakeVault(seeded(shared), '/Users/probe/cloned');
+    const before = vault.files.get('.ontology-atlas/connectors.json');
+    draw(<Panel handle={vault.handle} />);
+
+    const row = await screen.findByTestId('connectors-item');
+    expect(row).toHaveAttribute('data-connector-enabled', 'false');
+    expect(row).toHaveAttribute('data-connector-waiting', 'true');
+    expect(screen.getByTestId('connectors-on-of-total')).toHaveTextContent('1개 중 0개 켜짐');
+    expect(screen.getByTestId('connectors-item-waiting')).toHaveTextContent(ko.connectors.waitingHere);
+    expect(screen.getByTestId('connectors-item-runs')).toHaveTextContent(whatRuns(shared));
+    const passes = screen.getByTestId('connectors-item-waiting-passes');
+    expect(passes).toHaveTextContent('NOTION_TOKEN(키체인에서)');
+    expect(passes).toHaveTextContent('NOTION_VERSION=2022-06-28');
+
+    fireEvent.click(screen.getByTestId('connectors-item-allow'));
+    await waitFor(() => expect(row).toHaveAttribute('data-connector-enabled', 'true'));
+    expect(screen.queryByTestId('connectors-item-waiting')).not.toBeInTheDocument();
+    expect(vault.files.get('.ontology-atlas/connectors.json')).toBe(before);
   });
 });
 

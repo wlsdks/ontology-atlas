@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { followStep } from '@/widgets/acp-chat-panel/model/transcript-follow';
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
@@ -141,20 +142,21 @@ describe('quiet scrollers', () => {
     expect(panel).toMatch(/transcriptScrolled[\s\S]{0,400}--tabbar-edge-fade/);
   });
 
-  it('lets distance decide how the transcript follows, and leaves reduced motion to the base layer', () => {
+  it('lets distance decide how the transcript follows, and never glides under reduced motion', () => {
+    // The follower glides itself, so it must read reduced motion: `scroll-behavior` never reaches it.
+    const end = 4_400;
+    const box = (gap: number) => ({ scrollTop: end - gap, scrollHeight: 5_000, clientHeight: 600 });
+    const frame = 1000 / 60;
+    const withinOneViewport = followStep(box(200), { instant: false, elapsedMs: frame });
+    expect(withinOneViewport).toBeGreaterThan(end - 200);
+    expect(withinOneViewport).toBeLessThan(end);
+    expect(followStep(box(601), { instant: false, elapsedMs: frame })).toBe(end);
+    expect(followStep(box(200), { instant: true, elapsedMs: frame })).toBe(end);
+
     const panel = readFileSync('src/widgets/acp-chat-panel/ui/AcpChatPanel.tsx', 'utf8');
-    expect(panel).toContain('transcriptPinnedToBottomRef');
-    expect(panel).toContain('transcriptRestoredRef');
-    expect(panel).toMatch(/remaining <= list\.clientHeight/);
-    expect(panel).toMatch(/scrollBehavior = glide \? 'smooth' : 'auto'/);
-    // The global override is what makes a local reduced-motion branch unnecessary — and wrong.
-    expect(CSS).toMatch(
-      /@media \(prefers-reduced-motion: reduce\)[\s\S]{0,400}scroll-behavior:\s*auto\s*!important/,
-    );
-    // The follow effect itself must not read the preference: an `!important` base rule already
-    // wins, and a second opinion here is a branch that can only disagree with it.
-    const follow = /useLayoutEffect\(\(\) => \{\n\s+const list = listRef\.current;[\s\S]*?\}, \[events/.exec(panel)?.[0] ?? '';
-    expect(follow).toContain('scrollBehavior');
-    expect(follow).not.toMatch(/reducedMotion|prefersReducedMotion/);
+    const follower = readFileSync('src/widgets/acp-chat-panel/model/use-transcript-follow.ts', 'utf8');
+    expect(panel).toMatch(/useTranscriptFollow\(\{[\s\S]{0,200}reducedMotion,/);
+    expect(follower).toMatch(/instant: restoreRef\.current \|\| reducedMotionRef\.current/);
+    expect(`${panel}\n${follower}`).not.toMatch(/scrollBehavior\s*=|behavior:\s*'smooth'/);
   });
 });

@@ -13,21 +13,17 @@ const labels: NodeExplanationEditLabels = {
 };
 
 describe("NodeExplanationEdit", () => {
-  it("읽기 모드 — 본문 + 편집 버튼, textarea 없음", () => {
+  it("shows the body and an edit button without a textarea in read mode", () => {
     render(<NodeExplanationEdit value="auth flow" onSave={() => {}} labels={labels} />);
     expect(screen.getByTestId("node-explanation-read")).toHaveTextContent("auth flow");
     expect(screen.getByTestId("node-explanation-edit-button")).toBeInTheDocument();
     expect(screen.queryByTestId("node-explanation-input")).not.toBeInTheDocument();
   });
 
-  it("읽기 모드는 markdown 을 그려서 보여준다 — 작대기·별표가 글자로 새지 않는다", () => {
+  it("renders Markdown in read mode instead of raw markers", () => {
     /*
-     * ⚠️ This read state printed the raw source. A node body is Markdown written by the
-     * construction rules, so `## Definition`, `- Included:` and backticks reached the
-     * reader as literal characters (owner, 2026-09-14, on the installed app).
-     *
-     * So what is measured is **which elements came out**, not whether a substring is
-     * present: a test that only checks the text passes while the source is transcribed.
+     * Measures which elements came out, not whether text is present: a text-only check passes
+     * while the Markdown source is transcribed.
      */
     render(
       <NodeExplanationEdit
@@ -40,24 +36,23 @@ describe("NodeExplanationEdit", () => {
     expect(read.querySelector("h2")).toHaveTextContent("Definition");
     expect(read.querySelectorAll("li")).toHaveLength(2);
     expect(read.querySelector("code")).toHaveTextContent("mcp/");
-    // The source markers do not survive onto the screen.
     expect(read.textContent).not.toContain("##");
     expect(read.textContent).not.toContain("`");
   });
 
-  it("빈 본문 → empty 라벨", () => {
+  it("shows the empty label for an empty body", () => {
     render(<NodeExplanationEdit value="" onSave={() => {}} labels={labels} />);
     expect(screen.getByTestId("node-explanation-read")).toHaveTextContent("설명 없음");
   });
 
-  it("편집 진입 → 현재 본문 든 textarea + 저장/취소", () => {
+  it("opens a textarea holding the current body with save and cancel", () => {
     render(<NodeExplanationEdit value="auth flow" onSave={() => {}} labels={labels} />);
     fireEvent.click(screen.getByTestId("node-explanation-edit-button"));
     expect(screen.getByTestId("node-explanation-input")).toHaveValue("auth flow");
     expect(screen.getByTestId("node-explanation-save")).toBeInTheDocument();
   });
 
-  it("수정 + 저장 → onSave 가 새 본문으로 호출, 읽기 복귀", async () => {
+  it("calls onSave with the new body and returns to read mode", async () => {
     const onSave = vi.fn();
     render(<NodeExplanationEdit value="old" onSave={onSave} labels={labels} />);
     fireEvent.click(screen.getByTestId("node-explanation-edit-button"));
@@ -67,7 +62,6 @@ describe("NodeExplanationEdit", () => {
     await waitFor(() => expect(screen.queryByTestId("node-explanation-input")).not.toBeInTheDocument());
   });
 
-  // Map-edit QA D3 (2026-09-26): a save the vault refused closed the editor and dropped the text.
   it("a refused save keeps the editor open with the person's draft", async () => {
     const onSave = vi.fn().mockRejectedValue(new Error("refused"));
     render(<NodeExplanationEdit value="old" onSave={onSave} labels={labels} />);
@@ -79,7 +73,7 @@ describe("NodeExplanationEdit", () => {
     expect(screen.getByTestId("node-explanation-input")).toHaveValue("my draft");
   });
 
-  it("취소 → onSave 미호출, 원래 본문 복귀", () => {
+  it("restores the original body on cancel without calling onSave", () => {
     const onSave = vi.fn();
     render(<NodeExplanationEdit value="old" onSave={onSave} labels={labels} />);
     fireEvent.click(screen.getByTestId("node-explanation-edit-button"));
@@ -89,7 +83,7 @@ describe("NodeExplanationEdit", () => {
     expect(screen.getByTestId("node-explanation-read")).toHaveTextContent("old");
   });
 
-  it("Cmd/Ctrl+Enter 로 저장, 일반 Enter 는 줄바꿈(저장 안 함)", async () => {
+  it("saves on Cmd/Ctrl+Enter and keeps plain Enter as a newline", async () => {
     const onSave = vi.fn();
     render(<NodeExplanationEdit value="old" onSave={onSave} labels={labels} />);
     fireEvent.click(screen.getByTestId("node-explanation-edit-button"));

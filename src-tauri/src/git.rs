@@ -3,9 +3,11 @@
 // auto-init, no credentials, nothing outside the vault pathspec.
 
 use serde::Serialize;
+use std::collections::HashMap;
 use std::fs;
 use std::path::{Component, Path, PathBuf};
 use std::process::Command;
+use std::sync::{Arc, Mutex, OnceLock};
 
 use crate::errors::coded;
 
@@ -20,7 +22,12 @@ pub(crate) fn validate_vault_dir(vault_path: &str) -> Result<PathBuf, String> {
     if !metadata.is_dir() {
         return Err(coded("vault-path-not-a-folder", ""));
     }
-    fs::canonicalize(&path).map_err(|err| coded("vault-path-unresolvable", err))
+    let canonical = fs::canonicalize(&path).map_err(|err| coded("vault-path-unresolvable", err))?;
+    // Git runs in the vault's directory; only a root the user granted may be one.
+    if !crate::vault_grants::is_vault_granted(&canonical) {
+        return Err(coded("vault-root-not-granted", ""));
+    }
+    Ok(canonical)
 }
 
 struct GitRun {
@@ -29,12 +36,204 @@ struct GitRun {
     stderr: String,
 }
 
+/// Config that neutralises code execution driven by a repository's own git config
+/// before git can honour a hostile repo's settings. The opened vault or connected
+/// project source may be attacker-authored, so every invocation carries these.
+/// `safe.bareRepository=explicit` makes git refuse a bare/embedded repo committed
+/// as tracked files (the `<project>/atlas` open path, which also delivers a repo's
+/// config), and `core.fsmonitor=false` blocks the fsmonitor hook that fires on
+/// `status` with no click.
+pub(crate) const BASE_HARDENING: &[&str] = &[
+    "-c",
+    "safe.bareRepository=explicit",
+    "-c",
+    "core.fsmonitor=false",
+];
+
+/// Repository hooks run a repo-controlled command. `post-index-change` fires on the
+/// no-click `status`, `post-checkout` on `restore`, `post-merge` on `pull` — so
+/// hooks are disabled for every verb except the explicit snapshot `commit`, which
+/// must run the user's pre-commit hook (`classify_git_error` surfaces its rejection).
+const HOOKS_HARDENING: &[&str] = &["-c", "core.hooksPath=/dev/null"];
+
+/// `ext::` remote transports run an arbitrary command; a hostile remote URL must
+/// never reach one. Added on top of the base flags for network invocations.
+const NETWORK_HARDENING: &[&str] = &["-c", "protocol.ext.allow=never"];
+
+/// A `git` command with the base + hooks hardening and prompt silencing applied.
+/// Used by config discovery, the source inspector in `lib.rs`, and `git_probe` —
+/// none of which run `commit`, so disabling hooks is always correct for them.
+pub(crate) fn hardened_base_command() -> Command {
+    let mut command = Command::new("git");
+    command.args(BASE_HARDENING);
+    command.args(HOOKS_HARDENING);
+    silence_git_credential_prompts(&mut command);
+    command
+}
+
+/// The first non-option token: the git subcommand. Skips `-c key=value` pairs.
+fn subcommand_of<'a>(args: &[&'a str]) -> Option<&'a str> {
+    let mut skip_value = false;
+    for arg in args {
+        if skip_value {
+            skip_value = false;
+            continue;
+        }
+        if *arg == "-c" {
+            skip_value = true;
+            continue;
+        }
+        if !arg.starts_with('-') {
+            return Some(arg);
+        }
+    }
+    None
+}
+
+/// Diff, log, and show honour `diff.external` and per-driver `textconv`, both of
+/// which run a config-supplied command; `--no-ext-diff --no-textconv` right after
+/// the subcommand disables them without affecting other verbs.
+fn with_diff_family_guard<'a>(args: &[&'a str]) -> Vec<&'a str> {
+    let mut out: Vec<&str> = Vec::with_capacity(args.len() + 2);
+    let mut guarded = false;
+    let mut skip_value = false;
+    for arg in args {
+        out.push(arg);
+        if guarded {
+            continue;
+        }
+        if skip_value {
+            skip_value = false;
+            continue;
+        }
+        if *arg == "-c" {
+            skip_value = true;
+            continue;
+        }
+        if arg.starts_with('-') {
+            continue;
+        }
+        // First non-option token is the subcommand.
+        if matches!(*arg, "diff" | "log" | "show") {
+            out.push("--no-ext-diff");
+            out.push("--no-textconv");
+        }
+        guarded = true;
+    }
+    out
+}
+
+/// Per-repository overrides that neutralise clean/smudge/process filters. A repo's
+/// own config may bind an attribute to a filter whose command git runs on
+/// `add`/`commit`/`checkout`; the base flags cannot express a wildcard, so each
+/// filter the repo defines is redirected to an identity passthrough.
+/// Computed once per working directory since a session's repo config is stable, and
+/// discovered with the base flags so reading a hostile embedded repo is itself refused.
+fn filter_overrides_cache() -> &'static Mutex<HashMap<PathBuf, Arc<Vec<String>>>> {
+    static CACHE: OnceLock<Mutex<HashMap<PathBuf, Arc<Vec<String>>>>> = OnceLock::new();
+    CACHE.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+/// Adds every `filter.<name>` key from one config scope to `filters`, tracking
+/// whether that name defines a `process` filter.
+fn collect_filter_keys(cwd: &Path, scope_args: &[&str], filters: &mut Vec<(String, bool)>) {
+    let output = hardened_base_command()
+        .args(scope_args)
+        .args(["--includes", "--name-only", "--get-regexp", "^filter\\."])
+        .current_dir(cwd)
+        .output();
+    let Ok(output) = output else {
+        return;
+    };
+    if !output.status.success() {
+        return;
+    }
+    let text = String::from_utf8_lossy(&output.stdout);
+    for key in text.lines() {
+        // key: filter.<name>.clean|smudge|process — name may contain dots.
+        let Some(rest) = key.strip_prefix("filter.") else {
+            continue;
+        };
+        let Some(dot) = rest.rfind('.') else {
+            continue;
+        };
+        let (name, subkey) = (&rest[..dot], &rest[dot + 1..]);
+        if name.is_empty() {
+            continue;
+        }
+        let is_process = subkey == "process";
+        if let Some(entry) = filters.iter_mut().find(|(n, _)| n == name) {
+            entry.1 = entry.1 || is_process;
+        } else {
+            filters.push((name.to_string(), is_process));
+        }
+    }
+}
+
+fn worktree_config_enabled(cwd: &Path) -> bool {
+    let output = hardened_base_command()
+        .args(["config", "--local", "--includes", "--get", "extensions.worktreeConfig"])
+        .current_dir(cwd)
+        .output();
+    matches!(output, Ok(out) if out.status.success()
+        && String::from_utf8_lossy(&out.stdout).trim() == "true")
+}
+
+fn discover_filter_overrides(cwd: &Path) -> Vec<String> {
+    // Every config scope the hostile repo controls. `--local --includes` also sees a
+    // filter body pulled in with `include.path`/`includeIf`; the worktree scope sees
+    // `.git/config.worktree` when the repo turns it on. `--local` is never dropped, so
+    // the user's own global LFS or git-crypt filters keep working untouched.
+    let mut filters: Vec<(String, bool)> = Vec::new();
+    collect_filter_keys(cwd, &["config", "--local"], &mut filters);
+    if worktree_config_enabled(cwd) {
+        collect_filter_keys(cwd, &["config", "--worktree"], &mut filters);
+    }
+    let mut overrides = Vec::with_capacity(filters.len() * 6);
+    for (name, has_process) in filters {
+        // Identity clean/smudge satisfy even a `required` filter (git-crypt), so a
+        // person who encrypts their Markdown can still snapshot.
+        overrides.push("-c".to_string());
+        overrides.push(format!("filter.{name}.clean=cat"));
+        overrides.push("-c".to_string());
+        overrides.push(format!("filter.{name}.smudge=cat"));
+        // Empty the process filter only when one is defined, so git falls back to the
+        // identity clean/smudge above; setting it on a clean-only filter would make a
+        // `required` filter fail.
+        if has_process {
+            overrides.push("-c".to_string());
+            overrides.push(format!("filter.{name}.process="));
+        }
+    }
+    overrides
+}
+
+fn filter_overrides_for(cwd: &Path) -> Arc<Vec<String>> {
+    let mut cache = filter_overrides_cache().lock().unwrap_or_else(|e| e.into_inner());
+    if let Some(found) = cache.get(cwd) {
+        return found.clone();
+    }
+    let overrides = Arc::new(discover_filter_overrides(cwd));
+    cache.insert(cwd.to_path_buf(), overrides.clone());
+    overrides
+}
+
 /// `Err` only when spawn fails; stderr is piped so it stays off the user's terminal.
+/// Every invocation carries the base hardening, per-repo filter neutralisers, and
+/// the diff-family guard so no call site can forget them.
 fn run_git(cwd: &Path, args: &[&str]) -> Result<GitRun, String> {
     let mut command = Command::new("git");
-    command.args(args).current_dir(cwd);
+    command.args(BASE_HARDENING);
+    // Every verb but the snapshot commit runs with hooks off; commit keeps them so
+    // the user's pre-commit hook still guards the write.
+    if subcommand_of(args) != Some("commit") {
+        command.args(HOOKS_HARDENING);
+    }
     silence_git_credential_prompts(&mut command);
+    command.args(filter_overrides_for(cwd).iter());
+    command.args(with_diff_family_guard(args)).current_dir(cwd);
     let output = command
+        .env("GIT_OPTIONAL_LOCKS", "0")
         .output()
         .map_err(|err| coded("git-not-runnable", err))?;
     Ok(GitRun {
@@ -60,51 +259,55 @@ const NETWORK_GIT_DEADLINE: std::time::Duration = std::time::Duration::from_secs
 
 /// Spawns so the wait has a deadline and the whole attempt is killed on expiry.
 fn run_network_git(cwd: &Path, args: &[&str]) -> Result<GitRun, String> {
-    use std::io::Read;
     use std::process::Stdio;
 
+    // Network verbs are fetch/pull, never commit, so hooks stay off (a `pull` must not
+    // run a hostile `post-merge`/`post-checkout` hook just because the user clicked it).
     let mut command = Command::new("git");
+    command.args(BASE_HARDENING);
+    command.args(HOOKS_HARDENING);
+    command.args(NETWORK_HARDENING);
+    silence_git_credential_prompts(&mut command);
+    command.args(filter_overrides_for(cwd).iter());
     command
-        .args(args)
+        .args(with_diff_family_guard(args))
         .current_dir(cwd)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
-    silence_git_credential_prompts(&mut command);
 
     let mut child = command
         .spawn()
         .map_err(|err| coded("git-not-runnable", err))?;
+    let label = args.first().copied().unwrap_or("command");
+    wait_with_deadline(&mut child, label, NETWORK_GIT_DEADLINE)
+}
 
+/// The pipes drain while waiting, or output past their 64 KiB buffer blocks the child.
+fn wait_with_deadline(
+    child: &mut std::process::Child,
+    label: &str,
+    deadline: std::time::Duration,
+) -> Result<GitRun, String> {
+    let stdout = drain_pipe(child.stdout.take());
+    let stderr = drain_pipe(child.stderr.take());
     let started = std::time::Instant::now();
     loop {
         match child.try_wait() {
             Ok(Some(status)) => {
-                let mut stdout = String::new();
-                let mut stderr = String::new();
-                if let Some(mut pipe) = child.stdout.take() {
-                    let _ = pipe.read_to_string(&mut stdout);
-                }
-                if let Some(mut pipe) = child.stderr.take() {
-                    let _ = pipe.read_to_string(&mut stderr);
-                }
                 return Ok(GitRun {
                     success: status.success(),
-                    stdout,
-                    stderr,
+                    stdout: collect_pipe(stdout),
+                    stderr: collect_pipe(stderr),
                 });
             }
             Ok(None) => {
-                if started.elapsed() >= NETWORK_GIT_DEADLINE {
+                if started.elapsed() >= deadline {
                     let _ = child.kill();
                     let _ = child.wait();
                     return Err(coded(
                         "git-network-timeout",
-                        format!(
-                            "git {} did not finish within {}s",
-                            args.first().copied().unwrap_or("command"),
-                            NETWORK_GIT_DEADLINE.as_secs()
-                        ),
+                        format!("git {label} did not finish within {}s", deadline.as_secs()),
                     ));
                 }
                 std::thread::sleep(std::time::Duration::from_millis(50));
@@ -112,6 +315,25 @@ fn run_network_git(cwd: &Path, args: &[&str]) -> Result<GitRun, String> {
             Err(err) => return Err(coded("git-not-runnable", err)),
         }
     }
+}
+
+fn drain_pipe<R: std::io::Read + Send + 'static>(
+    pipe: Option<R>,
+) -> Option<std::thread::JoinHandle<Vec<u8>>> {
+    pipe.map(|mut pipe| {
+        std::thread::spawn(move || {
+            let mut bytes = Vec::new();
+            let _ = pipe.read_to_end(&mut bytes);
+            bytes
+        })
+    })
+}
+
+fn collect_pipe(reader: Option<std::thread::JoinHandle<Vec<u8>>>) -> String {
+    let bytes = reader
+        .and_then(|reader| reader.join().ok())
+        .unwrap_or_default();
+    String::from_utf8_lossy(&bytes).into_owned()
 }
 
 /// `Ok(None)` outside a git repo.
@@ -168,8 +390,7 @@ struct PorcelainRow {
 fn parse_porcelain(out: &str) -> Vec<PorcelainRow> {
     out.lines()
         .filter_map(|line| {
-            // Read with `get`, not sliced: callers are sync commands on the macOS main thread,
-            // where a panic aborts the app. An unrecognized line is skipped.
+            // Read with `get`, not sliced, so an unrecognized line is skipped, not a panic.
             let bytes = line.as_bytes();
             let index = *bytes.first()? as char;
             let worktree = *bytes.get(1)? as char;
@@ -247,19 +468,26 @@ fn classify_change(row: &PorcelainRow) -> &'static str {
     "modified"
 }
 
+type KindSlug = (Option<String>, Option<String>);
+
 // Best-effort top-level `kind:`/`slug:` from the leading `---` block; never
 // blocks a commit.
-fn read_kind_slug(abs_path: &Path) -> (Option<String>, Option<String>) {
-    let Ok(raw) = fs::read_to_string(abs_path) else {
+fn read_kind_slug(abs_path: &Path) -> KindSlug {
+    use std::io::BufRead;
+
+    let Ok(file) = fs::File::open(abs_path) else {
         return (None, None);
     };
-    let mut lines = raw.lines();
-    if lines.next().map(|l| l.trim_end()) != Some("---") {
+    let mut lines = std::io::BufReader::new(file).lines();
+    if !matches!(lines.next(), Some(Ok(first)) if first.trim_end() == "---") {
         return (None, None);
     }
     let mut kind = None;
     let mut slug = None;
     for line in lines {
+        let Ok(line) = line else {
+            return (None, None);
+        };
         let trimmed = line.trim_end();
         if trimmed == "---" {
             break;
@@ -736,6 +964,20 @@ pub struct GitDiffResult {
     files: Vec<ChangeEntry>,
     /// New files appear only in the list.
     diff: String,
+    too_large: bool,
+}
+
+/// The largest of this repository's 1,500 vault commits is 565 KB.
+const MAX_TREE_DIFF_BYTES: usize = 2 * 1024 * 1024;
+
+fn diff_result(files: Vec<ChangeEntry>, diff: String) -> GitDiffResult {
+    let too_large = diff.len() > MAX_TREE_DIFF_BYTES;
+    GitDiffResult {
+        count: files.len(),
+        files,
+        diff: if too_large { String::new() } else { diff },
+        too_large,
+    }
 }
 
 #[derive(Debug, Serialize)]
@@ -759,7 +1001,7 @@ pub struct GitPullResult {
 }
 
 /// Reports `initialized:false` outside a repo instead of an error, since auto-init is forbidden.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn git_status(vault_path: String) -> Result<GitStatusResult, String> {
     let vault_dir = validate_vault_dir(&vault_path)?;
     let Some(repo_root) = find_repo_root(&vault_dir)? else {
@@ -1026,7 +1268,7 @@ fn run_push(repo_root: &Path, set_upstream: bool) -> PushOutcome {
 }
 
 /// Empty list when there are no commits.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn git_history(
     vault_path: String,
     limit: Option<u32>,
@@ -1067,6 +1309,7 @@ pub fn git_history(
     if trimmed.is_empty() {
         return Ok(Vec::new());
     }
+    let mut kinds = std::collections::HashMap::new();
     let commits = trimmed
         .split(REC)
         .filter(|block| !block.trim().is_empty())
@@ -1081,7 +1324,7 @@ pub fn git_history(
                 fields.next().unwrap_or("").to_string(),
             );
             let files = lines
-                .filter_map(|line| history_change_entry(line, &repo_root, &vault_dir))
+                .filter_map(|line| history_change_entry(line, &repo_root, &vault_dir, &mut kinds))
                 .collect();
             Some(GitCommitInfo {
                 short_hash: info.0,
@@ -1098,7 +1341,12 @@ pub fn git_history(
 
 /// One `M\tpath` line. `kind` comes from the file on disk now, not the blob at that
 /// commit, to avoid a `git show` per commit; deleted files get only a path slug.
-fn history_change_entry(line: &str, repo_root: &Path, vault_dir: &Path) -> Option<ChangeEntry> {
+fn history_change_entry(
+    line: &str,
+    repo_root: &Path,
+    vault_dir: &Path,
+    kinds: &mut std::collections::HashMap<String, KindSlug>,
+) -> Option<ChangeEntry> {
     let mut cols = line.split('\t');
     let code = cols.next()?.trim();
     let path = cols.next()?.trim();
@@ -1115,7 +1363,10 @@ fn history_change_entry(line: &str, repo_root: &Path, vault_dir: &Path) -> Optio
     let mut kind = None;
     let mut slug = path_based_slug(vault_dir, &abs_path);
     if path.ends_with(".md") && status != "deleted" {
-        let (k, s) = read_kind_slug(&abs_path);
+        let (k, s) = kinds
+            .entry(path.to_string())
+            .or_insert_with(|| read_kind_slug(&abs_path))
+            .clone();
         if k.is_some() {
             kind = k;
         }
@@ -1132,8 +1383,8 @@ fn history_change_entry(line: &str, repo_root: &Path, vault_dir: &Path) -> Optio
     })
 }
 
-#[tauri::command]
-pub fn git_diff(vault_path: String) -> Result<GitDiffResult, String> {
+#[tauri::command(async)]
+pub fn git_diff(vault_path: String, include_patch: Option<bool>) -> Result<GitDiffResult, String> {
     let vault_dir = validate_vault_dir(&vault_path)?;
     let repo_root = require_repo_root(&vault_dir)?;
     let pathspec = vault_pathspec(&repo_root, &vault_dir);
@@ -1141,25 +1392,25 @@ pub fn git_diff(vault_path: String) -> Result<GitDiffResult, String> {
     let rows = get_porcelain_status(&repo_root, &pathspec)?;
     let changes = build_change_summary(&rows, &repo_root, &vault_dir);
 
-    // Falls back to the index when there is no HEAD.
-    let diff = match run_git(&repo_root, &["diff", "HEAD", "--", &pathspec]) {
-        Ok(out) if out.success => out.stdout,
-        _ => match run_git(&repo_root, &["diff", "--", &pathspec]) {
+    let diff = if include_patch == Some(false) {
+        String::new()
+    } else {
+        // Falls back to the index when there is no HEAD.
+        match run_git(&repo_root, &["diff", "HEAD", "--", &pathspec]) {
             Ok(out) if out.success => out.stdout,
-            _ => String::new(),
-        },
+            _ => match run_git(&repo_root, &["diff", "--", &pathspec]) {
+                Ok(out) if out.success => out.stdout,
+                _ => String::new(),
+            },
+        }
     };
 
-    Ok(GitDiffResult {
-        count: changes.len(),
-        files: changes,
-        diff,
-    })
+    Ok(diff_result(changes, diff))
 }
 
 /// One commit's vault-scope patch; separate from `git_diff`, which reads the
 /// uncommitted tree, so each signature says what it asks.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn git_commit_diff(vault_path: String, hash: String) -> Result<GitDiffResult, String> {
     let vault_dir = validate_vault_dir(&vault_path)?;
     let repo_root = require_repo_root(&vault_dir)?;
@@ -1189,11 +1440,7 @@ pub fn git_commit_diff(vault_path: String, hash: String) -> Result<GitDiffResult
         String::new()
     };
 
-    Ok(GitDiffResult {
-        count: 0,
-        files: Vec::new(),
-        diff,
-    })
+    Ok(diff_result(Vec::new(), diff))
 }
 
 /// Opt-in. Missing upstream, conflict and non-fast-forward return a clean `Err`.
@@ -1274,7 +1521,7 @@ pub struct GitInitResult {
 
 /// Only on a direct user press. It only inits: no add, commit, push, remote or
 /// user setup, and an existing repository is left alone (`reason: "already"`).
-#[tauri::command]
+#[tauri::command(async)]
 pub fn git_init(vault_path: String) -> Result<GitInitResult, String> {
     let vault_dir = validate_vault_dir(&vault_path)?;
 
@@ -1345,7 +1592,7 @@ fn cap_document_diff(path: String, diff: String, untracked: bool) -> GitDocument
     }
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn git_document_diff(
     vault_path: String,
     relative_path: String,
@@ -1551,7 +1798,7 @@ fn validate_restore_source(source: &str) -> Result<String, String> {
 /// Restores one document to `source`, uncommitted. Refuses an untracked path
 /// (restoring would delete it), a missing source, a changed `uid`/`slug`/`merged_uids`
 /// or an unreadable file, since `git restore` is identity-blind. Confirm-button only.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn git_restore_file(
     vault_path: String,
     relative_path: String,
@@ -1630,7 +1877,7 @@ pub struct GitSetRemoteResult {
 }
 
 /// Only addresses the user entered; nothing is guessed. No push happens here.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn git_set_remote(vault_path: String, url: String) -> Result<GitSetRemoteResult, String> {
     let vault_dir = validate_vault_dir(&vault_path)?;
     let repo_root = require_repo_root(&vault_dir)?;
@@ -1690,7 +1937,7 @@ pub struct NodeRevision {
 /// Revisions newest first for the summary-freshness check. Git plumbing only; the
 /// ontology judgement lives in one shared TypeScript module. A slug without history
 /// is absent, not an error.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn vault_node_revisions(
     vault_path: String,
     slugs: Vec<String>,
@@ -1765,7 +2012,7 @@ const EVIDENCE_WALK_COMMITS: &str = "--max-count=3000";
 /// `repo_paths` are repository-relative; `vault_paths` resolve through the vault
 /// pathspec. Anything that could climb, be absolute or look like an option is
 /// dropped, since every value reaches a `git log` argument.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn git_paths_last_change(
     vault_path: String,
     repo_paths: Vec<String>,
@@ -1888,10 +2135,10 @@ const MAX_FRESHNESS_SLUGS: usize = 64;
 
 /// Read-only detection so the UI can pick platform install guidance; it installs
 /// nothing.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn git_probe() -> GitProbe {
     let platform = host_platform().to_string();
-    match Command::new("git").arg("--version").output() {
+    match hardened_base_command().arg("--version").output() {
         Ok(out) if out.status.success() => {
             let version = String::from_utf8_lossy(&out.stdout).trim().to_string();
             GitProbe {
@@ -1921,6 +2168,7 @@ pub fn git_probe() -> GitProbe {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashMap;
 
     #[test]
     fn vault_pathspec_returns_dot_when_vault_is_repo_root() {
@@ -1950,6 +2198,26 @@ mod tests {
     }
 
     #[test]
+    fn a_waited_command_drains_output_larger_than_a_pipe_buffer() {
+        use std::process::Stdio;
+        let mut child = Command::new("node")
+            .args([
+                "-e",
+                "process.stdout.write('o'.repeat(200000)); process.stderr.write('e'.repeat(100000))",
+            ])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .unwrap();
+        let run =
+            wait_with_deadline(&mut child, "probe", std::time::Duration::from_secs(20)).unwrap();
+        assert!(run.success);
+        assert_eq!(run.stdout.len(), 200_000);
+        assert_eq!(run.stderr.len(), 100_000);
+    }
+
+    #[test]
     fn parse_porcelain_reads_rename_source() {
         let rows = parse_porcelain("R  docs/old.md -> docs/new.md\n");
         assert_eq!(rows.len(), 1);
@@ -1963,26 +2231,32 @@ mod tests {
     fn history_change_entry_reads_status_code_and_path() {
         let repo = PathBuf::from("/repo");
         let vault = PathBuf::from("/repo/docs");
-        let added = history_change_entry("A\tdocs/elements/foo.md", &repo, &vault).unwrap();
+        let added = history_change_entry(
+            "A\tdocs/elements/foo.md",
+            &repo,
+            &vault,
+            &mut HashMap::new(),
+        )
+        .unwrap();
         assert_eq!(added.status, "added");
         assert_eq!(added.path, "docs/elements/foo.md");
         assert_eq!(added.slug, "elements/foo");
         assert_eq!(added.kind, None);
 
         assert_eq!(
-            history_change_entry("D\tdocs/gone.md", &repo, &vault)
+            history_change_entry("D\tdocs/gone.md", &repo, &vault, &mut HashMap::new())
                 .unwrap()
                 .status,
             "deleted"
         );
         assert_eq!(
-            history_change_entry("M\tdocs/x.md", &repo, &vault)
+            history_change_entry("M\tdocs/x.md", &repo, &vault, &mut HashMap::new())
                 .unwrap()
                 .status,
             "modified"
         );
         assert_eq!(
-            history_change_entry("R100\tdocs/y.md", &repo, &vault)
+            history_change_entry("R100\tdocs/y.md", &repo, &vault, &mut HashMap::new())
                 .unwrap()
                 .status,
             "renamed"
@@ -1993,9 +2267,9 @@ mod tests {
     fn history_change_entry_rejects_lines_without_a_tab() {
         let repo = PathBuf::from("/repo");
         let vault = PathBuf::from("/repo/docs");
-        assert!(history_change_entry("", &repo, &vault).is_none());
-        assert!(history_change_entry("no tab here", &repo, &vault).is_none());
-        assert!(history_change_entry("M\t", &repo, &vault).is_none());
+        assert!(history_change_entry("", &repo, &vault, &mut HashMap::new()).is_none());
+        assert!(history_change_entry("no tab here", &repo, &vault, &mut HashMap::new()).is_none());
+        assert!(history_change_entry("M\t", &repo, &vault, &mut HashMap::new()).is_none());
     }
 
     #[test]
@@ -2294,6 +2568,38 @@ mod tests {
     }
 
     #[test]
+    fn read_kind_slug_reads_no_further_than_the_frontmatter() {
+        let dir = std::env::temp_dir().join(format!("atlas-git-front-{}", std::process::id()));
+        let _ = fs::create_dir_all(&dir);
+        let file = dir.join("node.md");
+        let mut bytes = b"---\nkind: element\nslug: reader\n---\n".to_vec();
+        bytes.extend_from_slice(&[0xff, 0xfe, b'\n']);
+        fs::write(&file, bytes).unwrap();
+        let (kind, slug) = read_kind_slug(&file);
+        assert_eq!(kind.as_deref(), Some("element"));
+        assert_eq!(slug.as_deref(), Some("reader"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn history_rows_of_one_path_reuse_the_first_read() {
+        let dir = std::env::temp_dir().join(format!("atlas-git-rows-{}", std::process::id()));
+        let _ = fs::create_dir_all(dir.join("docs"));
+        fs::write(dir.join("docs/a.md"), "---\nkind: capability\n---\n").unwrap();
+        let vault = dir.join("docs");
+        let mut kinds = HashMap::new();
+        let first = history_change_entry("M\tdocs/a.md", &dir, &vault, &mut kinds).unwrap();
+        fs::write(dir.join("docs/a.md"), "---\nkind: element\n---\n").unwrap();
+        let second = history_change_entry("A\tdocs/a.md", &dir, &vault, &mut kinds).unwrap();
+        assert_eq!(first.kind.as_deref(), Some("capability"));
+        assert_eq!(
+            second.kind, first.kind,
+            "the second row must not open the file again"
+        );
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
     fn a_document_that_cannot_be_read_stops_the_restore() {
         // A read failing for any reason but absence means the guard never ran.
         let dir = std::env::temp_dir().join(format!("atlas-restore-test-{}", std::process::id()));
@@ -2422,6 +2728,49 @@ mod tests {
         fn drop(&mut self) {
             let _ = fs::remove_dir_all(&self.dir);
         }
+    }
+
+    #[test]
+    fn a_status_read_leaves_the_index_to_writers() {
+        let scratch = Scratch::new("optional-locks");
+        let later = std::time::SystemTime::now() + std::time::Duration::from_secs(5);
+        fs::File::options()
+            .write(true)
+            .open(scratch.work.join("one.md"))
+            .unwrap()
+            .set_modified(later)
+            .unwrap();
+        let index = scratch.work.join(".git").join("index");
+        let before = fs::read(&index).unwrap();
+
+        git_status(scratch.vault()).unwrap();
+
+        assert_eq!(
+            fs::read(&index).unwrap(),
+            before,
+            "a status read refreshed the index, so it held index.lock"
+        );
+    }
+
+    #[test]
+    fn the_file_list_alone_carries_no_patch() {
+        let scratch = Scratch::new("diff-list");
+        fs::write(scratch.work.join("one.md"), "changed\n").unwrap();
+
+        let list = git_diff(scratch.vault(), Some(false)).unwrap();
+        assert_eq!(list.files.len(), 1);
+        assert!(list.diff.is_empty());
+
+        let full = git_diff(scratch.vault(), None).unwrap();
+        assert!(full.diff.contains("+changed"));
+    }
+
+    #[test]
+    fn a_tree_diff_past_the_cap_is_dropped_whole_and_says_so() {
+        let small = diff_result(Vec::new(), "+small\n".to_string());
+        assert_eq!((small.diff.as_str(), small.too_large), ("+small\n", false));
+        let huge = diff_result(Vec::new(), "+line\n".repeat(MAX_TREE_DIFF_BYTES / 6 + 1));
+        assert_eq!((huge.diff.as_str(), huge.too_large), ("", true));
     }
 
     #[test]
@@ -2577,6 +2926,364 @@ mod tests {
         let refused = detached.push.expect("a push was asked for");
         assert!(!refused.pushed);
         assert!(refused.message.unwrap().starts_with("push-detached-head"));
+        let _ = fs::remove_dir_all(&base);
+    }
+
+    // Security regression: a hostile repository (opened as a vault or connected as a
+    // source) must not run code that its own git config asks for. Each test proves
+    // the fixture is a live weapon under an unhardened invocation, then that the
+    // module's helper leaves no marker. Reintroducing the defect fails these.
+
+    fn plain_git(dir: &Path, args: &[&str]) {
+        let out = Command::new("git")
+            .args(args)
+            .current_dir(dir)
+            .output()
+            .unwrap();
+        assert!(
+            out.status.success(),
+            "git {args:?}: {}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+    }
+
+    fn seed_identity(dir: &Path) {
+        plain_git(dir, &["config", "user.email", "test@example.invalid"]);
+        plain_git(dir, &["config", "user.name", "atlas test"]);
+        plain_git(dir, &["config", "commit.gpgsign", "false"]);
+        plain_git(dir, &["config", "core.autocrlf", "false"]);
+    }
+
+    /// A path for a git-config value or shell command, forward-slashed so it parses
+    /// and runs under git's bundled `sh` on Windows as well as unix; a backslash
+    /// Windows path is a bad config line and a mangled shell argument.
+    fn shell_path(path: &Path) -> String {
+        path.to_string_lossy().replace('\\', "/")
+    }
+
+    #[test]
+    fn a_hostile_embedded_repo_config_does_not_execute_on_status() {
+        let base = std::env::temp_dir().join(format!("atlas-sec-embedded-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&base);
+        let upstream = base.join("upstream");
+        let objects = upstream.join("atlas/objects");
+        let refs = upstream.join("atlas/refs/heads");
+        fs::create_dir_all(&objects).unwrap();
+        fs::create_dir_all(&refs).unwrap();
+        // git drops empty dirs on commit; .keep keeps the embedded git dir valid.
+        fs::write(objects.join(".keep"), b"").unwrap();
+        fs::write(refs.join(".keep"), b"").unwrap();
+        fs::write(upstream.join("atlas/HEAD"), b"ref: refs/heads/main\n").unwrap();
+        fs::write(upstream.join("atlas/README.md"), b"# node\n").unwrap();
+        let marker = base.join("EMBEDDED_EXECUTED");
+        let config = format!(
+            "[core]\n\trepositoryformatversion = 0\n\tbare = false\n\tworktree = .\n\tfsmonitor = \"touch {}; false\"\n",
+            shell_path(&marker)
+        );
+        fs::write(upstream.join("atlas/config"), config).unwrap();
+        plain_git(&upstream, &["init", "-q"]);
+        seed_identity(&upstream);
+        plain_git(&upstream, &["add", "-A"]);
+        plain_git(&upstream, &["commit", "-qm", "seed"]);
+
+        let clone = base.join("clone");
+        let out = Command::new("git")
+            .args(["clone", "-q"])
+            .arg(&upstream)
+            .arg(&clone)
+            .output()
+            .unwrap();
+        assert!(
+            out.status.success(),
+            "clone: {}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+        let atlas = clone.join("atlas");
+        let status_args = [
+            "-c",
+            "core.quotepath=false",
+            "status",
+            "--porcelain",
+            "--untracked-files=all",
+            "--",
+            ".",
+        ];
+
+        let _ = Command::new("git")
+            .args(status_args)
+            .current_dir(&atlas)
+            .output()
+            .unwrap();
+        assert!(
+            marker.exists(),
+            "fixture precondition: an unhardened git runs the embedded config"
+        );
+        fs::remove_file(&marker).unwrap();
+
+        let _ = run_git(&atlas, &status_args);
+        assert!(
+            !marker.exists(),
+            "hardened run_git must not execute a hostile embedded repo config"
+        );
+        assert!(
+            find_repo_root(&atlas).unwrap().is_none(),
+            "Atlas must treat a bare embedded repo as not-a-repo, not operate in it"
+        );
+        let _ = fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn a_hostile_local_fsmonitor_is_neutralised_on_status() {
+        let base = std::env::temp_dir().join(format!("atlas-sec-fsmon-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&base);
+        let repo = base.join("repo");
+        fs::create_dir_all(&repo).unwrap();
+        plain_git(&repo, &["init", "-q"]);
+        seed_identity(&repo);
+        fs::write(repo.join("note.md"), b"# one\n").unwrap();
+        plain_git(&repo, &["add", "-A"]);
+        plain_git(&repo, &["commit", "-qm", "one"]);
+        let marker = base.join("FSMON_EXECUTED");
+        plain_git(
+            &repo,
+            &["config", "core.fsmonitor", &format!("touch {}; false", shell_path(&marker))],
+        );
+        fs::write(repo.join("note.md"), b"# two\n").unwrap();
+        let status_args = [
+            "-c",
+            "core.quotepath=false",
+            "status",
+            "--porcelain",
+            "--untracked-files=all",
+            "--",
+            ".",
+        ];
+
+        let _ = Command::new("git")
+            .args(status_args)
+            .current_dir(&repo)
+            .output()
+            .unwrap();
+        assert!(marker.exists(), "fixture precondition: fsmonitor fires unhardened");
+        fs::remove_file(&marker).unwrap();
+
+        let run = run_git(&repo, &status_args).unwrap();
+        assert!(run.success, "a normal repo's status still succeeds");
+        assert!(
+            !marker.exists(),
+            "core.fsmonitor=false must suppress the hook even in a non-bare repo"
+        );
+        let _ = fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn a_hostile_clean_filter_is_neutralised_on_add() {
+        let base = std::env::temp_dir().join(format!("atlas-sec-filter-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&base);
+        let repo = base.join("repo");
+        fs::create_dir_all(&repo).unwrap();
+        plain_git(&repo, &["init", "-q"]);
+        seed_identity(&repo);
+        fs::write(repo.join(".gitattributes"), b"*.md filter=evil\n").unwrap();
+        fs::write(repo.join("note.md"), b"# one\n").unwrap();
+        plain_git(&repo, &["add", "-A"]);
+        plain_git(&repo, &["commit", "-qm", "one"]);
+        let marker = base.join("CLEAN_FILTER_EXECUTED");
+        plain_git(
+            &repo,
+            &[
+                "config",
+                "filter.evil.clean",
+                &format!("sh -c 'touch {}; cat'", shell_path(&marker)),
+            ],
+        );
+        fs::write(repo.join("note.md"), b"# two changed\n").unwrap();
+
+        // Prove the clean filter fires on an unhardened add, in a fresh clone so the
+        // module's per-directory filter cache never saw this path unhardened.
+        let mirror = base.join("mirror");
+        let out = Command::new("git")
+            .args(["clone", "-q"])
+            .arg(&repo)
+            .arg(&mirror)
+            .output()
+            .unwrap();
+        assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
+        // The clone carries .gitattributes but not the local filter config; recreate it.
+        seed_identity(&mirror);
+        plain_git(
+            &mirror,
+            &[
+                "config",
+                "filter.evil.clean",
+                &format!("sh -c 'touch {}; cat'", shell_path(&marker)),
+            ],
+        );
+        fs::write(mirror.join("note.md"), b"# two changed\n").unwrap();
+        let _ = Command::new("git")
+            .args(["add", "-A", "--", "."])
+            .current_dir(&mirror)
+            .output()
+            .unwrap();
+        assert!(
+            marker.exists(),
+            "fixture precondition: clean filter fires on an unhardened add"
+        );
+        fs::remove_file(&marker).unwrap();
+
+        // The hardened helper discovers the repo-local filter and redirects it to an
+        // identity passthrough, so the add stages the file without running the command.
+        let run = run_git(&repo, &["add", "-A", "--", "."]).unwrap();
+        assert!(run.success, "add still succeeds: {}", run.stderr);
+        assert!(
+            !marker.exists(),
+            "a repo-local clean filter must not run under the hardened helper"
+        );
+        let staged = run_git(&repo, &["diff", "--cached", "--name-only"]).unwrap();
+        assert!(
+            staged.stdout.contains("note.md"),
+            "the file is still staged: {:?}",
+            staged.stdout
+        );
+        let _ = fs::remove_dir_all(&base);
+    }
+
+    // Writing an executable hook needs the unix mode bit; the runtime hooks
+    // hardening in `run_git` is platform-independent and always applies.
+    #[cfg(unix)]
+    fn write_hook(repo: &Path, name: &str, marker: &Path) {
+        use std::os::unix::fs::PermissionsExt;
+        let hooks = repo.join(".git/hooks");
+        fs::create_dir_all(&hooks).unwrap();
+        let path = hooks.join(name);
+        fs::write(&path, format!("#!/bin/sh\ntouch {}\n", marker.display())).unwrap();
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o755)).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_hostile_repo_hook_does_not_run_on_a_non_commit_verb() {
+        let base = std::env::temp_dir().join(format!("atlas-sec-hook-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&base);
+        let repo = base.join("repo");
+        fs::create_dir_all(&repo).unwrap();
+        plain_git(&repo, &["init", "-q"]);
+        seed_identity(&repo);
+        fs::write(repo.join("note.md"), b"# one\n").unwrap();
+        plain_git(&repo, &["add", "-A"]);
+        plain_git(&repo, &["commit", "-qm", "one"]);
+        // post-checkout fires deterministically on `git checkout -- <path>`, the hook
+        // family that a restore/checkout would run; status/diff share the same hooks
+        // decision (any verb but commit), so blocking it here covers the no-click paths.
+        let marker = base.join("POST_CHECKOUT");
+        write_hook(&repo, "post-checkout", &marker);
+        fs::write(repo.join("note.md"), b"# two\n").unwrap();
+
+        let _ = Command::new("git")
+            .args(["checkout", "--", "note.md"])
+            .current_dir(&repo)
+            .output()
+            .unwrap();
+        assert!(marker.exists(), "fixture: the hook fires on an unhardened checkout");
+        fs::remove_file(&marker).unwrap();
+
+        fs::write(repo.join("note.md"), b"# three\n").unwrap();
+        let _ = run_git(&repo, &["checkout", "--", "note.md"]);
+        assert!(
+            !marker.exists(),
+            "a repo hook must not run on a non-commit verb (hooks are off for all but commit)"
+        );
+        let _ = fs::remove_dir_all(&base);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn the_snapshot_commit_still_runs_a_rejecting_pre_commit_hook() {
+        let base = std::env::temp_dir().join(format!("atlas-sec-precommit-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&base);
+        let repo = base.join("repo");
+        fs::create_dir_all(&repo).unwrap();
+        plain_git(&repo, &["init", "-q"]);
+        seed_identity(&repo);
+        fs::write(repo.join("note.md"), b"# one\n").unwrap();
+        plain_git(&repo, &["add", "-A"]);
+        plain_git(&repo, &["commit", "-qm", "one"]);
+        let marker = base.join("PRE_COMMIT");
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let path = repo.join(".git/hooks/pre-commit");
+            fs::create_dir_all(repo.join(".git/hooks")).unwrap();
+            fs::write(&path, format!("#!/bin/sh\ntouch {}\nexit 1\n", marker.display())).unwrap();
+            fs::set_permissions(&path, fs::Permissions::from_mode(0o755)).unwrap();
+        }
+        fs::write(repo.join("note.md"), b"# two\n").unwrap();
+        plain_git(&repo, &["add", "-A"]);
+
+        let run = run_git(&repo, &["commit", "-m", "snapshot"]).unwrap();
+        assert!(marker.exists(), "the commit must run the user's pre-commit hook");
+        assert!(!run.success, "a rejecting hook must fail the commit for classify_git_error");
+        let _ = fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn a_filter_hidden_behind_include_path_or_worktree_config_is_still_neutralised() {
+        for scope in ["include", "worktree"] {
+            let base =
+                std::env::temp_dir().join(format!("atlas-sec-filter-{scope}-{}", std::process::id()));
+            let _ = fs::remove_dir_all(&base);
+            let repo = base.join("repo");
+            fs::create_dir_all(&repo).unwrap();
+            plain_git(&repo, &["init", "-q"]);
+            seed_identity(&repo);
+            fs::write(repo.join(".gitattributes"), b"*.md filter=hidden\n").unwrap();
+            fs::write(repo.join("note.md"), b"# one\n").unwrap();
+            plain_git(&repo, &["add", "-A"]);
+            plain_git(&repo, &["commit", "-qm", "one"]);
+            let marker = base.join("HIDDEN_FILTER");
+            let clean = format!("sh -c 'touch {}; cat'", shell_path(&marker));
+            if scope == "include" {
+                fs::write(
+                    repo.join(".git/extra.cfg"),
+                    format!("[filter \"hidden\"]\n\tclean = \"{clean}\"\n"),
+                )
+                .unwrap();
+                plain_git(&repo, &["config", "--local", "include.path", "extra.cfg"]);
+            } else {
+                plain_git(&repo, &["config", "--local", "extensions.worktreeConfig", "true"]);
+                plain_git(&repo, &["config", "--worktree", "filter.hidden.clean", &clean]);
+            }
+            fs::write(repo.join("note.md"), b"# two changed\n").unwrap();
+
+            let run = run_git(&repo, &["add", "-A", "--", "."]).unwrap();
+            assert!(run.success, "{scope}: add still succeeds: {}", run.stderr);
+            assert!(
+                !marker.exists(),
+                "{scope}: a filter reachable only through {scope} scope must be neutralised"
+            );
+            let _ = fs::remove_dir_all(&base);
+        }
+    }
+
+    #[test]
+    fn a_required_filter_still_lets_a_snapshot_succeed() {
+        let base = std::env::temp_dir().join(format!("atlas-sec-required-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&base);
+        let repo = base.join("repo");
+        fs::create_dir_all(&repo).unwrap();
+        plain_git(&repo, &["init", "-q"]);
+        seed_identity(&repo);
+        fs::write(repo.join(".gitattributes"), b"*.md filter=keep\n").unwrap();
+        fs::write(repo.join("note.md"), b"# one\n").unwrap();
+        plain_git(&repo, &["add", "-A"]);
+        plain_git(&repo, &["commit", "-qm", "one"]);
+        // A required clean filter (as git-crypt configures): the override must satisfy
+        // it, not empty its process and make `add` fail.
+        plain_git(&repo, &["config", "filter.keep.clean", "sh -c 'cat'"]);
+        plain_git(&repo, &["config", "filter.keep.required", "true"]);
+        fs::write(repo.join("note.md"), b"# two changed\n").unwrap();
+
+        let run = run_git(&repo, &["add", "-A", "--", "."]).unwrap();
+        assert!(run.success, "a required filter must still let add succeed: {}", run.stderr);
         let _ = fs::remove_dir_all(&base);
     }
 }
