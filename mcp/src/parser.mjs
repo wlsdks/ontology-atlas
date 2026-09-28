@@ -23,6 +23,16 @@ const GRAPH_ARRAY_KEYS = new Set([
 ]);
 const UNSAFE_OBJECT_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
+/** A copy that shares no memory with its file: V8 keeps a whole file alive for any slice of it. */
+export function detachText(value) {
+  if (typeof value === 'string') return JSON.parse(JSON.stringify(value));
+  if (Array.isArray(value)) return value.map(detachText);
+  if (value !== null && typeof value === 'object' && Object.getPrototypeOf(value) === Object.prototype) {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, detachText(item)]));
+  }
+  return value;
+}
+
 function assignParsedKey(target, key, value, diagnostics, line) {
   if (UNSAFE_OBJECT_KEYS.has(key)) {
     diagnostics.push({
@@ -283,35 +293,31 @@ function unquote(value) {
 }
 
 // A separator inside quotes is data: `labels: { ko: "map, search" }` is one value.
+// O(n) in the input: one pass, and each part is one slice of it.
 function splitTopLevel(input, separator) {
   const parts = [];
-  let current = '';
+  let start = 0;
   let quote = null;
   for (let i = 0; i < input.length; i += 1) {
     const ch = input[i];
     if (quote) {
       if (ch === '\\' && i + 1 < input.length) {
-        current += ch + input[i + 1];
         i += 1;
         continue;
       }
       if (ch === quote) quote = null;
-      current += ch;
       continue;
     }
     if (ch === '"' || ch === "'") {
       quote = ch;
-      current += ch;
       continue;
     }
     if (ch === separator) {
-      parts.push(current);
-      current = '';
-      continue;
+      parts.push(input.slice(start, i));
+      start = i + 1;
     }
-    current += ch;
   }
-  parts.push(current);
+  parts.push(input.slice(start));
   return parts;
 }
 

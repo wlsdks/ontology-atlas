@@ -43,7 +43,7 @@ export async function runExport(args) {
   let artifact;
   try {
     // Full graph — no pagination — so the export is a complete snapshot.
-    artifact = await callMcpTool(vaultRoot, 'compile_ontology', {});
+    artifact = await callMcpTool(vaultRoot, 'compile_ontology', { full: true });
   } catch (err) {
     process.stderr.write(
       `${COLORS.red}error${COLORS.reset}  ${err instanceof Error ? err.message : String(err)}\n`,

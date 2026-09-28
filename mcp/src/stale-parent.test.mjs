@@ -13,6 +13,7 @@ import {
   findStaleParentSummaries,
   lastMovementOf,
   membershipKey,
+  revisionClocks,
   staleParentScore,
 } from './stale-parent.mjs';
 
@@ -28,7 +29,7 @@ function domain(slug, children, kind = 'domain') {
 function history(...entries) {
   return [...entries].reverse();
 }
-const rev = (day, body, children) => ({ changedAt: at(day), body, children });
+const rev = (day, body, children) => ({ changedAt: at(day), ...revisionClocks({ body, children }) });
 
 describe('membershipKey', () => {
   it('ignores order and duplicates so a reorder is not a change', () => {

@@ -2843,14 +2843,14 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
       ),
       {
         'definition-missing': ['capabilities/review'],
-        'boundary-missing': ['domains/review', 'capabilities/review'],
+        'boundary-missing': ['capabilities/review', 'domains/review'],
         'folder-only-evidence': ['capabilities/review'],
       },
     );
 
     const compiled = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
-      callTool(2, "compile_ontology", {}),
+      callTool(2, "compile_ontology", { full: true }),
     ]);
     const compiledResult = getCallParsed(compiled.responses, 2);
     assert.equal(compiledResult.issues.filter(({ severity }) => severity === "error").length, 0);
@@ -4596,10 +4596,21 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
     assert.equal(agentBrief.graph.projects, 1);
     assert.doesNotMatch(JSON.stringify(agentBrief.entrypoints), /capabilities\/session/);
     assert.doesNotMatch(JSON.stringify(agentBrief.businessOntologyLens), /capabilities\/session/);
+    const briefValidation = agentBrief.health.validation;
     assert.ok(
-      agentBrief.health.validation.problems.some((problem) => problem.slug === "capabilities/session"),
+      briefValidation.problems.some((problem) => problem.slug === "capabilities/session"),
       "full detail keeps whole-vault validation findings even when graph guidance is project-scoped",
     );
+    assert.deepEqual(
+      {
+        offset: briefValidation.problemsPagination.offset,
+        limit: briefValidation.problemsPagination.limit,
+        total: briefValidation.problemsPagination.total,
+      },
+      { offset: 0, limit: 20, total: briefValidation.summary.problemFiles },
+    );
+    assert.equal(briefValidation.problems.length, Math.min(20, briefValidation.summary.problemFiles));
+    assert.equal(briefValidation.nextCall, undefined);
     assert.equal(agentBrief.projectSlug, "project");
     assert.equal(agentBrief.projectSource.status, "review_required");
     assert.equal(agentBrief.projectSource.currentness, "stale");
