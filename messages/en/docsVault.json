@@ -154,6 +154,7 @@
     "errorBanner": "Workspace folder is unavailable ({message}). Showing sample docs: open the picker to re-pick or refresh.",
     "rootRejectedBanner": "This folder can't be used as a map. Pick a folder that holds your documents, not a system folder or your whole home folder.",
     "pathMissingBanner": "That folder is gone. It looks like it was moved or deleted. Showing sample docs: open the picker and choose it again.",
+    "grantNeededBanner": "After this update, choose your ontology folder once to confirm access. Your documents are still there.",
     "permissionDeniedBanner": "Your Mac is not letting this app read that folder. Allow it in System Settings, or open the picker and choose a folder somewhere else.",
     "unknownErrorBanner": "That folder could not be read, and the reason did not come back. Showing sample docs: open the picker and choose it again.",
     "openPicker": "Open picker",

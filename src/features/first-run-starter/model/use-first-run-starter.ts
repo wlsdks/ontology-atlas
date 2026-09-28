@@ -88,7 +88,9 @@ export function useFirstRunStarter() {
       : vault.status === 'error'
         ? vault.errorCode === 'root-rejected'
           ? { sentence: t('errorRootRejected'), detail: null }
-          : vault.errorCode === 'path-missing'
+          : vault.errorCode === 'grant-needed'
+            ? { sentence: t('errorGrantNeeded'), detail: null }
+            : vault.errorCode === 'path-missing'
             ? { sentence: t('errorPathMissing'), detail: null }
             : vault.errorCode === 'permission-denied'
               // The OS refused; a retry gives the same refusal, so name the folder and the setting.

@@ -351,6 +351,7 @@ type Status =
  */
 type VaultErrorCode =
   | 'path-missing'
+  | 'grant-needed'
   | 'permission-denied'
   | 'access-failed'
   | 'root-rejected';
@@ -432,17 +433,22 @@ function emptyState(status: Status = 'idle'): State {
  * 'path-missing'. Non-Tauri runtimes and records without a path are not preflight
  * candidates and short-circuit to true — their handles carry their own permission.
  */
+type VaultRecordResolution = 'ok' | 'missing' | 'grant-needed';
+
 async function tauriVaultRecordResolves(
   record: LocalFsHandleRecord,
-): Promise<boolean> {
-  if (!isTauriVaultRuntime()) return true;
+): Promise<VaultRecordResolution> {
+  if (!isTauriVaultRuntime()) return 'ok';
   const rootPath = record.desktopRootPath ?? getTauriVaultRootPath(record.handle);
-  if (!rootPath) return true;
+  if (!rootPath) return 'ok';
   try {
-    return await tauriVaultPathExists(rootPath, 'directory');
-  } catch {
-    // A failed path lookup (a canonicalize error, say) also counts as inaccessible.
-    return false;
+    return (await tauriVaultPathExists(rootPath, 'directory')) ? 'ok' : 'missing';
+  } catch (error) {
+    // A real folder the user has not re-granted since the access-scope update refuses
+    // with this code: the folder is present, so it is access to re-confirm, not a loss.
+    // Any other failure (a canonicalize error, say) is treated as gone.
+    const text = error instanceof Error ? error.message : String(error);
+    return text.includes('not-granted') ? 'grant-needed' : 'missing';
   }
 }
 
@@ -1388,13 +1394,15 @@ export function useLocalVaultInternal() {
         // Desktop-only path: the stored absolute path *is* the handle, so it reopens with no
         // FSA picker. But if the folder moved or was deleted since the last session, building
         // the manifest throws a raw io error — preflight first so it classifies as a readable
-        // 'path-missing' and prompts "choose the folder again".
-        if (!(await tauriVaultRecordResolves(record))) {
+        // 'path-missing' and prompts "choose the folder again". A present-but-ungranted vault
+        // (first launch after the access-scope update) is 'grant-needed', not a loss.
+        const resolution = await tauriVaultRecordResolves(record);
+        if (resolution !== 'ok') {
           setState((s) => ({
             ...s,
             status: 'error',
             errorMessage: null,
-            errorCode: 'path-missing',
+            errorCode: resolution === 'grant-needed' ? 'grant-needed' : 'path-missing',
           }));
           return NOT_OPENED;
         }
@@ -2089,7 +2097,8 @@ export function useLocalVaultInternal() {
         // was deleted while the app was closed. Preflight first so it classifies as
         // 'path-missing' and the picker says the folder is gone and to choose again, instead of
         // a raw io error thrown from inside `load`.
-        if (!(await tauriVaultRecordResolves(record))) {
+        const resolution = await tauriVaultRecordResolves(record);
+        if (resolution !== 'ok') {
           if (!cancelled) {
             setState({
               status: 'error',
@@ -2103,7 +2112,7 @@ export function useLocalVaultInternal() {
               imageHandles: new Map(),
     sourceHandles: new Map(),
               errorMessage: null,
-              errorCode: 'path-missing',
+              errorCode: resolution === 'grant-needed' ? 'grant-needed' : 'path-missing',
               lastLoadedAt: null,
               manifestHandle: null,
             });
