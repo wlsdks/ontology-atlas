@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   GALAXY_ARM_COUNT,
   GALAXY_VERTICAL_FLATTEN,
@@ -36,6 +36,54 @@ describe("Galaxy layout", () => {
     expect(layout.domainByNodeId.get("element:mcp")).toBe("domain:ai");
     expect(layout.domainByNodeId.get("element:canvas")).toBe("domain:map");
     expect(computeGalaxyLayout([...NODES].reverse(), RINGS)).toEqual(layout);
+  });
+
+  it("places mixed Hangul and Latin ids the same whatever the machine locale", () => {
+    const nodes = [
+      { id: "project:atlas", kind: "project" as const, parentId: null },
+      { id: "project:부가", kind: "project" as const, parentId: null },
+      { id: "project:extra", kind: "project" as const, parentId: null },
+      { id: "domain:결제", kind: "domain" as const, parentId: "project:atlas" },
+      { id: "domain:auth", kind: "domain" as const, parentId: "project:atlas" },
+      { id: "domain:지도", kind: "domain" as const, parentId: "project:atlas" },
+      { id: "capability:카드", kind: "capability" as const, parentId: "domain:결제" },
+      { id: "capability:refund", kind: "capability" as const, parentId: "domain:결제" },
+      { id: "element:로그", kind: "element" as const, parentId: null },
+      { id: "element:cache", kind: "element" as const, parentId: null },
+    ];
+    const layoutWhereCollationIs = (locale: string) => {
+      const collator = new Intl.Collator(locale);
+      const localeCompare = vi
+        .spyOn(String.prototype, "localeCompare")
+        .mockImplementation(function (this: string, that: string) {
+          return collator.compare(this, that);
+        });
+      try {
+        return computeGalaxyLayout(nodes, RINGS);
+      } finally {
+        localeCompare.mockRestore();
+      }
+    };
+    expect(layoutWhereCollationIs("ko")).toEqual(layoutWhereCollationIs("en"));
+  });
+
+  it("keeps the English order for ids with capitals and underscores", () => {
+    const nodes = [
+      { id: "project:Zeta", kind: "project" as const, parentId: null },
+      { id: "project:alpha", kind: "project" as const, parentId: null },
+      { id: "domain:Billing", kind: "domain" as const, parentId: "project:alpha" },
+      { id: "domain:_shared", kind: "domain" as const, parentId: "project:alpha" },
+      { id: "domain:auth", kind: "domain" as const, parentId: "project:alpha" },
+      { id: "domain:card_payments", kind: "domain" as const, parentId: "project:alpha" },
+    ];
+    const layout = computeGalaxyLayout(nodes, RINGS);
+    const fromCore = (id: string) => {
+      const point = layout.points.get(id)!;
+      return Math.hypot(point.x, point.y / GALAXY_VERTICAL_FLATTEN);
+    };
+    expect(layout.points.get("project:alpha")).toEqual({ id: "project:alpha", x: 0, y: 0 });
+    expect(nodes.filter((node) => node.kind === "domain").map((node) => node.id).sort((a, b) => fromCore(a) - fromCore(b)))
+      .toEqual(["domain:_shared", "domain:auth", "domain:Billing", "domain:card_payments"]);
   });
 
   it("does not place every domain on one ring", () => {

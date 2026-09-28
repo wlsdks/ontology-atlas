@@ -45,4 +45,18 @@ describe('useLastSettled', () => {
     rerender({ value: null, scope: 'vault-a\u00001790000000000' });
     expect(result.current).toBeNull();
   });
+
+  it('settles a value rebuilt on every render by its content, keeping one identity until the content changes', () => {
+    const { result, rerender } = renderHook(
+      ({ stale, label }) => useLastSettled({ rows: [{ label, at: '2026-09-28T00:00:00Z' }], total: stale }, 'vault-a'),
+      { initialProps: { stale: 142, label: 'Payments' } },
+    );
+    const settled = result.current;
+    rerender({ stale: 142, label: 'Payments' });
+    expect(result.current).toBe(settled);
+    rerender({ stale: 142, label: 'Card payments' });
+    expect(result.current).toEqual({ rows: [{ label: 'Card payments', at: '2026-09-28T00:00:00Z' }], total: 142 });
+    rerender({ stale: 140, label: 'Card payments' });
+    expect(result.current?.total).toBe(140);
+  });
 });

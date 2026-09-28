@@ -456,6 +456,22 @@ describe("AgentActivityChip", () => {
       "waiting",
     );
   });
+
+  it("states a cycle rise counted past the step budget as a floor", () => {
+    renderBell({
+      notifications: [
+        {
+          id: "p",
+          kind: "vault-problem",
+          at: NOW - 1000,
+          node: null,
+          problems: { unresolvedEdges: 0, dependencyCycles: 497, dependencyCyclesPartial: true },
+        },
+      ],
+    });
+    fireEvent.click(screen.getByTestId("agent-activity-bell"));
+    expect(screen.getByTestId("agent-inbox-todo-row").textContent).toContain("서로 되짚는 연결 497쌍 이상");
+  });
 });
 
 /**
