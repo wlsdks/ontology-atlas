@@ -452,6 +452,9 @@ describe("FullDetailA1 — last-edit provenance", () => {
         mtimeConflict: true,
       },
     });
-    expect(screen.getByTestId("mtime-conflict-badge")).toBeInTheDocument();
+    const warning = screen.getByTestId("mtime-conflict-badge");
+    expect(warning).toHaveAttribute("role", "status");
+    expect(warning.closest("[data-fulldetail-body]")).not.toBeNull();
+    expect(warning).toHaveTextContent(messages.editProvenance.conflictMessage);
   });
 });
