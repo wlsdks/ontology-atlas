@@ -110,6 +110,8 @@
     "projectLinkTitle": "Project: {slug}",
     "externalLinkUnresolved": "Outside this folder, so it can't be opened here: {href}",
     "imageMissing": "Image missing in this folder: {src}",
+    "remoteImage": "An image on {host}, not loaded, so reading this page tells {host} nothing.",
+    "remoteImageOpen": "Open on {host}",
     "anchorCopiedAria": "Anchor URL copied",
     "anchorCopyAria": "Copy link to this section",
     "anchorCopiedTitle": "Copied",

@@ -51,28 +51,30 @@ jobs:
     timeout-minutes: 2
     name: Publish the MCP server entry
     runs-on: ubuntu-latest
+    env:
+      # A dispatch input is caller-chosen text: it reaches a shell only as "$TAG".
+      TAG: ${{ inputs.tag }}
     steps:
       - name: Resolve the release tag
         id: release
         run: |
-          tag="${{ inputs.tag }}"
-          if [[ -z "${tag}" ]]; then
-            echo "::error::no release tag to publish"
+          if [[ ! "${TAG}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::not a release tag: ${TAG}"
             exit 1
           fi
           # A release candidate must not burn the server version: the registry
           # cannot take that version again once published.
-          if [[ "${tag}" == *-* ]]; then
-            echo "::notice::${tag} is a pre-release; the registry entry is published from final releases only"
+          if [[ "${TAG}" == *-* ]]; then
+            echo "::notice::${TAG} is a pre-release; the registry entry is published from final releases only"
             echo "skip=true" >> "$GITHUB_OUTPUT"
           fi
-          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
 
       - name: Checkout the released source
         if: steps.release.outputs.skip != 'true'
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          ref: ${{ steps.release.outputs.tag }}
+          ref: ${{ env.TAG }}
+          persist-credentials: false
 
       - name: Setup Node.js
         if: steps.release.outputs.skip != 'true'
@@ -101,6 +103,8 @@ jobs:
       - name: Stop if the registry already lists this server version
         if: steps.release.outputs.skip != 'true'
         id: listed
+        env:
+          SERVER_VERSION: ${{ steps.server.outputs.version }}
         run: |
           # The registry rejects a repeat publication of one version, so an app
           # release that changed no server code has nothing to add here.
@@ -111,8 +115,8 @@ jobs:
                 console.log(versions.join(" "));
               })' || echo "")"
           echo "registry lists: ${listed:-(nothing)}"
-          if grep -qw -- "${{ steps.server.outputs.version }}" <<< "${listed}"; then
-            echo "::notice::server version ${{ steps.server.outputs.version }} is already listed; nothing to publish"
+          if grep -qw -- "${SERVER_VERSION}" <<< "${listed}"; then
+            echo "::notice::server version ${SERVER_VERSION} is already listed; nothing to publish"
             echo "skip=true" >> "$GITHUB_OUTPUT"
           fi
 
@@ -121,7 +125,7 @@ jobs:
         run: |
           # Hash what the registry will fetch, not a fresh local build: the entry's
           # digest has to match the bytes a stranger downloads.
-          gh release download "${{ steps.release.outputs.tag }}" \
+          gh release download "${TAG}" \
             --pattern '*.mcpb' --dir .tmp/mcp-bundle --clobber
           ls -l .tmp/mcp-bundle
         env:
@@ -129,9 +133,11 @@ jobs:
 
       - name: Derive server.json from that asset
         if: steps.release.outputs.skip != 'true' && steps.listed.outputs.skip != 'true'
+        env:
+          SERVER_ARTIFACT: ${{ steps.server.outputs.artifact }}
         run: |
-          pnpm mcp:registry -- --tag="${{ steps.release.outputs.tag }}" \
-            --artifact=".tmp/mcp-bundle/${{ steps.server.outputs.artifact }}"
+          pnpm mcp:registry -- --tag="${TAG}" \
+            --artifact=".tmp/mcp-bundle/${SERVER_ARTIFACT}"
           cp .tmp/mcp-registry/server.json server.json
           cat server.json
 
@@ -146,11 +152,17 @@ jobs:
           echo "${url} → HTTP ${code}"
           test "${code}" = "200"
 
+      # This binary receives the job's OIDC assertion, so it is one reviewed release, byte for byte.
       - name: Install mcp-publisher
         if: steps.release.outputs.skip != 'true' && steps.listed.outputs.skip != 'true'
+        env:
+          MCP_PUBLISHER_VERSION: v1.8.1
+          MCP_PUBLISHER_SHA256: a06c9096dcb9727c13555b6be26c7effa707b01f06a4c561ba7a3635443cf2cc
         run: |
-          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" \
-            | tar xz mcp-publisher
+          curl -fsSLo mcp-publisher.tar.gz \
+            "https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}/mcp-publisher_linux_amd64.tar.gz"
+          echo "${MCP_PUBLISHER_SHA256}  mcp-publisher.tar.gz" | sha256sum --check --strict
+          tar xzf mcp-publisher.tar.gz mcp-publisher
           ./mcp-publisher --help | head -5
 
       - name: Authenticate with this repository's own identity
@@ -163,17 +175,22 @@ jobs:
 
       - name: Summarize
         if: always()
+        env:
+          RELEASE_SKIPPED: ${{ steps.release.outputs.skip }}
+          ALREADY_LISTED: ${{ steps.listed.outputs.skip }}
+          SERVER_VERSION: ${{ steps.server.outputs.version }}
+          SERVER_ARTIFACT: ${{ steps.server.outputs.artifact }}
         run: |
           {
             echo "## MCP Registry"
             echo ""
-            if [[ "${{ steps.release.outputs.skip }}" == "true" ]]; then
-              echo "Skipped: ${{ steps.release.outputs.tag }} is a pre-release."
-            elif [[ "${{ steps.listed.outputs.skip }}" == "true" ]]; then
-              echo "Skipped: server version ${{ steps.server.outputs.version }} is already listed."
+            if [[ "${RELEASE_SKIPPED}" == "true" ]]; then
+              echo "Skipped: ${TAG} is a pre-release."
+            elif [[ "${ALREADY_LISTED}" == "true" ]]; then
+              echo "Skipped: server version ${SERVER_VERSION} is already listed."
             else
-              echo "Published \`io.github.wlsdks/ontology-atlas\` version ${{ steps.server.outputs.version }}"
-              echo "from the \`${{ steps.server.outputs.artifact }}\` asset on ${{ steps.release.outputs.tag }}."
+              echo "Published \`io.github.wlsdks/ontology-atlas\` version ${SERVER_VERSION}"
+              echo "from the \`${SERVER_ARTIFACT}\` asset on ${TAG}."
               echo ""
               echo "The OCI entry is deliberately absent: nothing here pushes that image, and"
               echo "a listing naming an unpushed image is what the ownership check refuses."

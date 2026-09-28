@@ -14,8 +14,8 @@ const SERVICE: &str = "Ontology Atlas Connectors";
 
 pub(crate) const SECRET_REF_KEY: &str = "__atlasSecretRef";
 
-/// `connector:<record id>:<VARIABLE>`, validated because it becomes the keychain
-/// account name, or one connector's reference could address another's.
+/// `connector:<record id>:<VARIABLE>`, shape only: the line names the server, not
+/// the record, so the WebView checks ownership (`ownsSecretRef`).
 pub(crate) fn validate_secret_ref(reference: &str) -> Result<&str, String> {
     let mut parts = reference.split(':');
     let ok = matches!(parts.next(), Some("connector"))

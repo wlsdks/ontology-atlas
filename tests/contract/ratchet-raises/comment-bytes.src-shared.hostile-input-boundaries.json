@@ -1,0 +1,1 @@
+{ "gate": "comment-bytes.src-shared", "raise": 242, "why": "The source-passage twin takes the same one-pass document scanners and per-read unpack budget as the MCP reader, and its new perf test carries the measurement testing.md requires; each is a one-line reason." }

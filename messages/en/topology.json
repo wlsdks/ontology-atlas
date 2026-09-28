@@ -466,6 +466,7 @@
     "packetTitle": "Exploration trail",
     "packetOrder": "Visited order (oldest → most recent):",
     "packetReviewHint": "Review each node's context:",
+    "packetUndocumented": "No document yet (it exists only as a reference). add_concept can create it.",
     "packetPathHint": "Check the path between the journey endpoints:",
     "packetDustyHint": "{count} nodes untouched for a while: maintenance candidates:",
     "pastLinkLabel": "Past {count}",

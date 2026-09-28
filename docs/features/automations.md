@@ -27,3 +27,10 @@ Ontology schedules stay read-only: they may inspect evidence and propose changes
 never write concepts, relations, files, or meaning receipts. Document rounds keep
 their previously approved Library scope. Both execute locally while the app has
 the folder open; this redesign does not add a background service.
+
+A schedule runs, by the clock or by Run now, only when the folder has it on and this Mac
+allowed it exactly as it now reads: its kind, cadence, places, focus or query, what it
+does to a stale page, and its cap. `rounds.json` travels with the folder, so a clone can
+arrive with a round switched on; such a round, or one the folder changed since, shows
+"Not on this Mac", its whole definition in words, and one press that allows it. Saving or
+resuming a schedule here allows it, pausing keeps the allowance, and removing forgets it.

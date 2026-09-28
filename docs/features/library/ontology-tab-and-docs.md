@@ -88,6 +88,7 @@ view-doc · pin · unpin · copy URL · print · edit · new doc · rename · de
 #### Visual / behavioral details
 - Indigo accent (`rgba(139,151,255,…)`) for active, gold star for pinned
 - Markdown: GFM tables/lists/blockquotes/code · callout blocks (`> [!tip]` etc.) · wikilinks (`[[slug]]`, `[[slug|label]]`, `[[slug#anchor]]`, `[[project:slug]]`) · heading anchor copy buttons
-- Local images: relative paths resolved to blob URLs via `resolveImage` callback
+- Local images: relative paths resolved to blob URLs via `resolveImage` callback; an SVG as a `data:` URL, so opening it in a tab never runs it in this origin
+- Remote images (`http:`/`https:`) are never loaded: a placeholder names the host and opens the image in a new tab only when pressed
 - Recent + pinned per-vault localStorage (key prefix includes vault folder name)
 - Sample/Local source toggle persisted to localStorage

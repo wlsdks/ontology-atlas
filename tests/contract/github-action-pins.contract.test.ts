@@ -56,4 +56,35 @@ describe("GitHub Actions 공급망 고정", () => {
       "태그와 브랜치는 같은 이름이 다른 코드를 가리킬 수 있다 — 전체 commit SHA를 쓰고 옆 주석에 사람이 읽을 버전을 남겨라",
     ).toEqual([]);
   });
+
+  it("installs toolchains by exact release, never by a moving channel", () => {
+    const files = ACTION_ROOTS.flatMap(yamlFiles).map((path) => ({ path, source: readFileSync(join(ROOT, path), "utf8") }));
+    const floating = files.flatMap(({ path, source }) =>
+      [...source.matchAll(/^\s+((?:[a-z]+-)*version|toolchain):\s*["']?(latest|canary|nightly)["']?\s*$/gm)].map(
+        (match) => `${path}: ${match[1]}: ${match[2]}`,
+      ),
+    );
+    const latestDownloads = files.filter(({ source }) => /\/releases\/latest\//.test(source)).map(({ path }) => path);
+    expect([...floating, ...latestDownloads], "a moving channel ships whatever was newest that day").toEqual([]);
+
+    const bunSteps = files.flatMap(({ path, source }) =>
+      source.split(/(?=^\s+- (?:name|uses):)/m).filter((step) => step.includes("oven-sh/setup-bun@")).map((step) => ({ path, step })),
+    );
+    expect(bunSteps.length).toBeGreaterThanOrEqual(3);
+    for (const { path, step } of bunSteps) {
+      expect(step, `${path}: setup-bun must read .bun-version`).toMatch(/^\s+bun-version-file: \.bun-version$/m);
+      expect(step, `${path}: an inline bun-version outranks the file`).not.toMatch(/^\s+bun-version:/m);
+    }
+    expect(readFileSync(join(ROOT, ".bun-version"), "utf8")).toMatch(/^\d+\.\d+\.\d+\n$/);
+  });
+
+  it("verifies the registry publisher's bytes before it receives the OIDC assertion", () => {
+    const publish = readFileSync(join(ROOT, ".github/workflows/publish-mcp-registry.yml"), "utf8");
+    expect(publish).toMatch(/MCP_PUBLISHER_VERSION: v\d+\.\d+\.\d+\n/);
+    expect(publish).toMatch(/MCP_PUBLISHER_SHA256: [a-f0-9]{64}\n/);
+    const install = publish.indexOf("sha256sum --check --strict");
+    expect(install, "mcp-publisher runs without its SHA-256 being checked").toBeGreaterThan(0);
+    expect(install).toBeLessThan(publish.indexOf("tar xzf mcp-publisher.tar.gz"));
+    expect(install).toBeLessThan(publish.indexOf("./mcp-publisher login"));
+  });
 });

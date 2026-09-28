@@ -65,6 +65,7 @@ export const VAULT_ISSUE_CODE_VALUES = Object.freeze([
    * independence.
    */
   'dependency-unwitnessed',
+  'dependency-unjudged',
   /*
    * Whole-vault only, yet needs nothing but the vault, so it speaks even on a
    * freshly built, uncompiled vault.

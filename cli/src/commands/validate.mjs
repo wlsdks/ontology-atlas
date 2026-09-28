@@ -140,6 +140,12 @@ export const KNOWN_CODES = [
     description: 'a declared dependency whose citing file never names the file the target cites, so nothing in the source witnesses the edge.',
   },
   {
+    code: 'dependency-unjudged',
+    severity: 'warning',
+    scope: 'vault',
+    description: 'a declared dependency whose citing file is too large to read, so no witness was looked for and the edge is not judged.',
+  },
+  {
     code: 'starter-example-node',
     severity: 'warning',
     scope: 'vault',
@@ -667,7 +673,7 @@ function findDependencyWitnessIssues(entries) {
     : '';
   if (!repoRoot) return [];
   const resolveTargetPath = evidencePathIndex(entries);
-  const reads = createDependencyWitnessReads();
+  const fileReads = createDependencyWitnessReads();
   const issues = [];
   for (const entry of entries) {
     const kind = typeof entry.frontmatter?.kind === 'string' ? entry.frontmatter.kind.trim() : '';
@@ -677,7 +683,7 @@ function findDependencyWitnessIssues(entries) {
       frontmatter: entry.frontmatter,
       repoRoot,
       resolveTargetPath,
-      reads,
+      fileReads,
     })) {
       issues.push({
         file: entry.file,

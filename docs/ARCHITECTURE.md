@@ -244,6 +244,15 @@ that rejected this scheme is overturned only for this door; uid addresses, node
 addresses and any URL that writes or executes remain out, and
 `tests/contract/url-scheme-one-door.contract.test.ts` is what keeps them out.
 
+**One page policy for both.** A static host sends no headers, so the production export
+carries its Content-Security-Policy as a meta tag in the root layout
+(`src/shared/config/web-content-security-policy.ts`): no remote image, connection,
+plugin, `<base>` or form target, and scripts from the page's own origin (inline ones
+included until the export's inline scripts are hashed). The app loads the same HTML
+under its own policy (`tauri.conf.json`), and both apply there, so the web policy allows
+everything the app's does, IPC included; `tests/contract/web-csp-parity.contract.test.ts`
+holds the two together. `next dev` gets no meta, because refresh needs `eval`.
+
 **What each surface is for.** The app is where the vault lives day to day: the
 place a person reads the map, judges it, and connects their AI agents. The web
 has two jobs, in this order. (1) It is the **gateway** — it opens the map with

@@ -37,46 +37,52 @@ function crc32(bytes) {
 }
 
 /**
- * A minimal zip of the given entries.
+ * A minimal zip of the given entries. An `aliasOf` entry points at an earlier entry's data, as no real zip does.
  *
- * @param {Array<{ name: string, text: string, store?: boolean, level?: number }>} entries
+ * @param {Array<{ name: string, text?: string, store?: boolean, level?: number, aliasOf?: string }>} entries
  */
 export function zipFile(entries) {
   const locals = [];
   const centrals = [];
+  const records = new Map();
   let offset = 0;
   for (const entry of entries) {
-    const raw = encoder.encode(entry.text);
-    const body = entry.store ? raw : new Uint8Array(deflateRawSync(raw, { level: entry.level ?? 9 }));
     const name = encoder.encode(entry.name);
-    const crc = crc32(raw);
-    const local = new Uint8Array(30 + name.length + body.length);
-    const localView = new DataView(local.buffer);
-    localView.setUint32(0, 0x04034b50, true);
-    localView.setUint16(4, 20, true);
-    localView.setUint16(8, entry.store ? 0 : 8, true);
-    localView.setUint32(14, crc, true);
-    localView.setUint32(18, body.length, true);
-    localView.setUint32(22, raw.length, true);
-    localView.setUint16(26, name.length, true);
-    local.set(name, 30);
-    local.set(body, 30 + name.length);
-    locals.push(local);
+    let record = records.get(entry.aliasOf);
+    if (entry.aliasOf !== undefined && !record) throw new Error(`no earlier entry ${entry.aliasOf}`);
+    if (!record) {
+      const raw = encoder.encode(entry.text);
+      const body = entry.store ? raw : new Uint8Array(deflateRawSync(raw, { level: entry.level ?? 9 }));
+      record = { method: entry.store ? 0 : 8, crc: crc32(raw), compressed: body.length, size: raw.length, offset };
+      const local = new Uint8Array(30 + name.length + body.length);
+      const localView = new DataView(local.buffer);
+      localView.setUint32(0, 0x04034b50, true);
+      localView.setUint16(4, 20, true);
+      localView.setUint16(8, record.method, true);
+      localView.setUint32(14, record.crc, true);
+      localView.setUint32(18, record.compressed, true);
+      localView.setUint32(22, record.size, true);
+      localView.setUint16(26, name.length, true);
+      local.set(name, 30);
+      local.set(body, 30 + name.length);
+      locals.push(local);
+      records.set(entry.name, record);
+      offset += local.length;
+    }
 
     const central = new Uint8Array(46 + name.length);
     const centralView = new DataView(central.buffer);
     centralView.setUint32(0, 0x02014b50, true);
     centralView.setUint16(4, 20, true);
     centralView.setUint16(6, 20, true);
-    centralView.setUint16(10, entry.store ? 0 : 8, true);
-    centralView.setUint32(16, crc, true);
-    centralView.setUint32(20, body.length, true);
-    centralView.setUint32(24, raw.length, true);
+    centralView.setUint16(10, record.method, true);
+    centralView.setUint32(16, record.crc, true);
+    centralView.setUint32(20, record.compressed, true);
+    centralView.setUint32(24, record.size, true);
     centralView.setUint16(28, name.length, true);
-    centralView.setUint32(42, offset, true);
+    centralView.setUint32(42, record.offset, true);
     central.set(name, 46);
     centrals.push(central);
-    offset += local.length;
   }
   const centralSize = centrals.reduce((total, part) => total + part.length, 0);
   const end = new Uint8Array(22);

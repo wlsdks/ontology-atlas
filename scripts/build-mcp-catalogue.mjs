@@ -49,6 +49,7 @@
  *   node scripts/build-mcp-catalogue.mjs --check    # deterministic check from committed capture
  *   node scripts/build-mcp-catalogue.mjs --check-online # compare current live registry facts
  *   node scripts/build-mcp-catalogue.mjs --offline  # rebuild curated rows only (no network)
+ *   node scripts/build-mcp-catalogue.mjs --from-snapshot # rebuild from the committed capture and its date
  */
 
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -87,6 +88,7 @@ const CURATION = [
         transport: 'stdio',
         runtime: 'npx',
         packageId: '@notionhq/notion-mcp-server',
+        version: '2.5.1',
         args: ['-y', '@notionhq/notion-mcp-server'],
         env: [
           {
@@ -113,6 +115,8 @@ const CURATION = [
         transport: 'stdio',
         runtime: 'docker',
         packageId: 'ghcr.io/github/github-mcp-server',
+        version: '1.12.0',
+        digest: 'sha256:46cdbbd810faf6f7aed1745ea04057443f5cb9fcadc15c7308add18cf9a83e33',
         args: [
           'run',
           '-i',
@@ -146,6 +150,7 @@ const CURATION = [
         transport: 'stdio',
         runtime: 'npx',
         packageId: '@playwright/mcp',
+        version: '0.0.80',
         args: ['-y', '@playwright/mcp@latest'],
         env: [],
       },
@@ -173,6 +178,7 @@ const CURATION = [
         transport: 'stdio',
         runtime: 'npx',
         packageId: '@upstash/context7-mcp',
+        version: '4.0.5',
         args: ['-y', '@upstash/context7-mcp'],
         env: [
           {
@@ -337,9 +343,27 @@ function refuseHostedOauth(curated) {
   }
 }
 
-async function build({ offline, registryServers = null, fetchImpl = fetch }) {
+/**
+ * Unpinned, a line runs whatever was published last. The version is the release current on
+ * `verifiedAt`, from the curation: registry versions lag or run ahead. A tag can move; a digest cannot.
+ */
+function pinVariant(variant, curated) {
+  if (variant.kind !== 'local') return variant;
+  if (!curated.version || (variant.runtime === 'docker' && !curated.digest)) {
+    throw new Error(`${variant.packageId}: a program needs the version, and an image the digest, verified on its date`);
+  }
+  const names = (arg) => arg === variant.packageId || arg.startsWith(`${variant.packageId}@`);
+  if (!variant.args.some(names)) throw new Error(`${variant.packageId}: no argument names the package to pin`);
+  const pinned = variant.runtime === 'docker'
+    ? `${variant.packageId}:${curated.version}@${curated.digest}`
+    : `${variant.packageId}@${curated.version}`;
+  const { digest: _digest, ...rest } = variant;
+  return { ...rest, version: curated.version, args: variant.args.map((arg) => (names(arg) ? pinned : arg)) };
+}
+
+async function build({ offline, registryServers = null, fetchImpl = fetch, curation = CURATION }) {
   const entries = [];
-  for (const curated of CURATION) {
+  for (const curated of curation) {
     refuseHostedOauth(curated);
     const variants = curated.variants.map((variant) => ({ ...variant, source: 'curated' }));
     let registryChecked = false;
@@ -405,7 +429,7 @@ async function build({ offline, registryServers = null, fetchImpl = fetch }) {
       verifiedAt: curated.verifiedAt,
       registryName: curated.registryName ?? null,
       registryChecked,
-      variants,
+      variants: variants.map((variant, index) => pinVariant(variant, curated.variants[index])),
     });
   }
   return entries;
@@ -444,17 +468,22 @@ export const MCP_CATALOGUE: readonly CatalogueEntry[] = ${JSON.stringify(entries
 `;
 }
 
-function parseArgs(argv = process.argv.slice(2)) {
-  const allowed = new Set(['--check', '--check-online', '--offline']);
+function parseArgs(rawArgv = process.argv.slice(2)) {
+  const argv = rawArgv.filter((arg) => arg !== '--');
+  const allowed = new Set(['--check', '--check-online', '--offline', '--from-snapshot']);
   const unknown = argv.filter((arg) => !allowed.has(arg));
   if (unknown.length > 0) throw new Error(`unknown argument: ${unknown[0]}`);
   const check = argv.includes('--check');
   const checkOnline = argv.includes('--check-online');
   const offline = argv.includes('--offline');
+  const fromSnapshot = argv.includes('--from-snapshot');
   if (checkOnline && (check || offline)) {
     throw new Error('--check-online cannot be combined with --check or --offline');
   }
-  return { check, checkOnline, offline };
+  if (fromSnapshot && (check || checkOnline || offline)) {
+    throw new Error('--from-snapshot cannot be combined with another mode');
+  }
+  return { check, checkOnline, offline, fromSnapshot };
 }
 
 async function runCatalogue({
@@ -463,7 +492,7 @@ async function runCatalogue({
   snapshotPath = REGISTRY_SNAPSHOT,
   fetchImpl = fetch,
 } = {}) {
-  const { check, checkOnline, offline } = parseArgs(argv);
+  const { check, checkOnline, offline, fromSnapshot } = parseArgs(argv);
   const existing = (() => {
     try {
       return readFileSync(outPath, 'utf8');
@@ -473,12 +502,12 @@ async function runCatalogue({
   })();
   // In either check mode the date must come from the committed file, or every run would differ by a day and
   // the check would fail on a calendar change rather than on a real drift.
-  const generatedAt = check || checkOnline
+  const generatedAt = check || checkOnline || fromSnapshot
     ? (existing?.match(/MCP_CATALOGUE_CAPTURED_AT = '([\d-]+)'/)?.[1] ?? today())
     : today();
   let snapshot = null;
   if (!offline) {
-    snapshot = check
+    snapshot = check || fromSnapshot
       ? readRegistrySnapshot(snapshotPath)
       : await fetchRegistrySnapshot({ fetchImpl });
   }
@@ -496,7 +525,7 @@ async function runCatalogue({
     }
     return `mcp catalogue: ${entries.length} services, unchanged${checkOnline ? ' against the live registry' : ''}.`;
   }
-  if (snapshot) {
+  if (snapshot && !fromSnapshot) {
     writeFileSync(snapshotPath, `${JSON.stringify(snapshot, null, 2)}\n`);
   }
   writeFileSync(outPath, next);
