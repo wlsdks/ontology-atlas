@@ -143,13 +143,6 @@
        * `--app-nav-rail-tile-height` above, so it's not a new spec.
        */
       --chrome-tile-size: max(36px, var(--touch-target-min));
-      --topology-shortcut-sheet-close-size: var(--touch-target-min);
-      /* rank2/18 — Same 44px promotion for close buttons of 3 DOM overlay types (SearchPalette ·
-         GlobalSearch, etc.). ⚠️ This comment once stated «GlobalSearch is already covered
-         by --topology-search-sheet-close-size», but that token was **absent** from this block —
-         the defect verification on 2026-08-04 caught the defect where it remained at
-         32px while the comment claimed promotion, and abolished that token so GlobalSearch
-         now reads --overlay-close-size. */
       --overlay-close-size: var(--touch-target-min);
       /*
        * (Promotion of `--docs-header-tile-size` here on 2026-07-29 became **unnecessary** on 2026-08-03

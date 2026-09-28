@@ -5,10 +5,10 @@ import { badgeClass } from "@/shared/ui/badge-class";
 import { Link, useRouter } from '@/i18n/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { BookOpen, Search, X } from 'lucide-react';
+import { BookOpen, Search } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { cn } from '@/shared/lib/cn';
-import { controlClass } from '@/shared/ui';
+import { CloseButton, controlClass } from '@/shared/ui';
 import {
   EXIT_TRANSITION,
   OVERLAY_RISE,
@@ -391,17 +391,10 @@ function SearchPaletteDialog({
             // The value layer sets the type; a lookup's input must not outweigh its results.
             className={fieldClass({ frame: "bare", className: "flex-1" })}
           />
-          <kbd className="hidden rounded-micro border border-[color:var(--color-divider)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-wider text-[color:var(--color-text-quaternary)] sm:inline-block">
+          <kbd className="hidden rounded-micro border border-[color:var(--color-divider)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)] sm:inline-block">
             ESC
           </kbd>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={t('closeAriaLabel')}
-            className="flex h-[var(--overlay-close-size)] w-[var(--overlay-close-size)] items-center justify-center rounded-chip text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset"
-          >
-            <X size={ICON_SIZE.lg} />
-          </button>
+          <CloseButton label={t('closeAriaLabel')} onClick={onClose} />
         </div>
 
         <div className="flex items-center justify-between gap-3 border-b border-[color:var(--color-overlay-2)] px-4 py-2">

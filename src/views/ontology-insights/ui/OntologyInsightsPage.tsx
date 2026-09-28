@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useSwapHeight } from "@/shared/lib/use-presence";
 import { useDocumentTitle } from "@/shared/lib/use-document-title";
-import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_TITLE_ROW } from "@/shared/ui/page-frame";
+import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_LEDE, PAGE_TITLE, PAGE_TITLE_ROW } from "@/shared/ui/page-frame";
 import { useLocale, useTranslations } from "next-intl";
 import {
   buildEdgeTypeRows,
@@ -1167,10 +1167,10 @@ export function OntologyInsightsPage() {
         >
         <header className={PAGE_HEADER_ROW}>
           <div className={PAGE_TITLE_ROW}>
-            <h1 className="text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]">
+            <h1 className={PAGE_TITLE}>
               {scopeTitle}
             </h1>
-            <p className="max-w-xl text-body text-[color:var(--color-text-tertiary)]">
+            <p className={`max-w-xl ${PAGE_LEDE}`}>
               {scopeSubtitle}
             </p>
           </div>

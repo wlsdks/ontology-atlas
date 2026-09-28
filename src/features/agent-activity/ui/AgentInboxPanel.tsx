@@ -356,9 +356,7 @@ export function AgentInboxPanel({
 
   return (
     <div data-testid="agent-inbox-panel" className="flex min-h-0 flex-1 flex-col">
-      {/* `px-2` rather than `px-3`: the strip is the first thing to run out of room when a
-          browser's text is enlarged, and 8px is 8px of tab. */}
-      <div className="shrink-0 px-2 pt-1">
+      <div className="shrink-0 px-3 pt-1">
         <TabBar
           idPrefix={TAB_ID_PREFIX}
           ariaLabel={t('inboxTabs')}

@@ -53,7 +53,7 @@ const DOC = readFileSync(path.join(ROOT, "docs/DESIGN-SYSTEM.md"), "utf8");
  * not cite non-existent tokens as evidence", not "no old name appears in a
  * historical record".
  */
-const CEILING = 187;
+const CEILING = 186;
 
 /** Every name **defined** as `--x: value;`, including nested blocks and media queries. */
 function definedTokens(): Set<string> {

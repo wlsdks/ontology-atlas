@@ -13,7 +13,7 @@ import {
 import { isTauriVaultRuntime } from '@/shared/lib/tauri-vault-fs';
 import { buttonVariants, Chip, EmptyState, Surface, TabBar } from '@/shared/ui';
 import { PlacedInfoHint } from './PlacedInfoHint';
-import { PAGE_TOP_PAD } from '@/shared/ui/page-frame';
+import { PAGE_TITLE, PAGE_TOP_PAD } from '@/shared/ui/page-frame';
 import { GuidanceRelationshipPreview } from '@/widgets/relationship-preview';
 import { Link } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';
@@ -249,7 +249,7 @@ function HarnessPageInner() {
          */
         className={cn('flex shrink-0 flex-wrap items-end justify-between gap-x-4 gap-y-2 border-b border-[color:var(--color-divider)] pb-0', HARNESS_GUTTER_X, PAGE_TOP_PAD)}
       >
-        <h1 className="pb-3 text-display font-[var(--font-weight-strong)] leading-display-tight text-[color:var(--color-text-primary)]">
+        <h1 className={cn('pb-3', PAGE_TITLE)}>
           {t('title')}
         </h1>
         <div data-testid="harness-views" className="-mb-px min-w-0">

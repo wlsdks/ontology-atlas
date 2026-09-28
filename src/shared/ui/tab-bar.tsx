@@ -194,13 +194,12 @@ export function TabBar({
               ? 'left'
               : undefined
       }
-      // Scrolls inside itself instead of wrapping, so page-level overflow never happens.
       className={
         vertical
           ? "flex flex-col gap-0.5"
           : placement === 'header'
             ? "flex h-full items-end gap-3 overflow-x-auto"
-            : "flex gap-3 overflow-x-auto border-b border-[color:var(--color-divider)]"
+            : "-ml-3 flex gap-3 overflow-x-auto border-b border-[color:var(--color-divider)]"
       }
       style={maskImage ? { maskImage, WebkitMaskImage: maskImage } : undefined}
     >

@@ -11,7 +11,7 @@ import { DESTINATION_HREF } from '@/shared/config/destinations';
 import { queueAgentChatIntent } from '@/shared/lib/agent-chat-intent';
 import { isAcpBridgeAvailable } from '@/shared/lib/tauri-acp';
 import { useSwapHeight } from '@/shared/lib/use-presence';
-import { PAGE_FRAME_FORM, PAGE_HEADER_ROW, PAGE_TITLE_ROW } from '@/shared/ui/page-frame';
+import { PAGE_FRAME_FORM, PAGE_HEADER_ROW, PAGE_LEDE, PAGE_TITLE, PAGE_TITLE_ROW } from '@/shared/ui/page-frame';
 
 import { AGENTS_TAB_PARAM, buildAgentsTabHref, parseAgentsTab, type AgentsTab } from '../lib/agents-tab-state';
 
@@ -90,14 +90,14 @@ export function AgentsPage({
       {/* The lede stays outside: `PAGE_HEADER_ROW` is `justify-between` and would push it right. */}
       <header className={PAGE_HEADER_ROW}>
         <div className={PAGE_TITLE_ROW}>
-          <h1 className="text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]">
+          <h1 className={PAGE_TITLE}>
             {t('title')}
           </h1>
         </div>
       </header>
       <p
         data-testid="agents-lede"
-        className="mt-2 max-w-2xl break-keep text-body-lg leading-title text-[color:var(--color-text-tertiary)]"
+        className={`mt-2 max-w-2xl ${PAGE_LEDE}`}
       >
         {/* On the web the card below says a browser cannot start programs, so the app is the subject. */}
         {tab === 'mcp'

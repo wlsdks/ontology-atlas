@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { useDataSourceMode } from '@/entities/vault-session';
 import { BrandWaitingMark } from '@/shared/ui/brand-waiting-mark';
-import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_TITLE_ROW } from '@/shared/ui/page-frame';
+import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_LEDE, PAGE_TITLE, PAGE_TITLE_ROW } from '@/shared/ui/page-frame';
 import { selectInsightsScopeTitle } from '../lib/insights-scope-title';
 
 /** This shell must not subscribe to graph derivation or import analysis widgets. */
@@ -22,10 +22,10 @@ export function InsightsLoadingView() {
       >
         <header className={PAGE_HEADER_ROW}>
           <div className={PAGE_TITLE_ROW}>
-            <h1 className="text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]">
+            <h1 className={PAGE_TITLE}>
               {selectInsightsScopeTitle(mode, { sample: t('titleSample'), folder: t('title') })}
             </h1>
-            <p className="max-w-xl text-body text-[color:var(--color-text-tertiary)]">
+            <p className={`max-w-xl ${PAGE_LEDE}`}>
               {selectInsightsScopeTitle(mode, { sample: t('subtitleSample'), folder: t('subtitle') })}
             </p>
           </div>

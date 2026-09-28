@@ -351,46 +351,13 @@
     --control-h-sm: 28px;
     --control-h-md: 32px;
     --control-h-lg: 40px;
-    /*
-     * ── Content Icon Size Ramp (2026-08-04 systematization, docs/DECISIONS.md) ────────
-     *
-     * Size vocabulary for **content icon glyphs**(lucide) sitting next to body text/labels.
-     * Previously, 167 call sites were split across 9 px values(10~17 + unspecified 24),
-     * mixing 10·11·12·14 even within the same surface(pallete one file had 4 values).
-     * Since the consumption channel was JSX numeric props(`size={N}`), it fell **outside any existing gate's range** —
-     * the same ailment as when framer durations diverged.
-     *
-     * Tiers based on measurement mode + type pairs(Carbon: icon tiers are paired with type sizes):
-     *   sm 12 — next to label(11)/body(12.5). Measurement mode(77 sites).
-     *   md 14 — next to body-lg(14).
-     *   lg 16 — next to title(16) · standalone icons.
-     * Range applies only to content icons — chrome/rail icons retain their own surface contracts
-     * (`--topology-chrome-icon-size` 12 · `--chrome-icon` 16 ·
-     * `--app-nav-rail-icon-size` 20). Overlapping values are not coincidence
-     * but the same answer from the same type pair, yet chrome density decisions must move independently,
-     * so they are not bundled.
-     *
-     * JS mirror: `src/shared/ui/icon-size.ts` (prop channel cannot read var() —
-     * same structure as MOTION mirror). Gate:
-     * `tests/contract/icon-size-ramp.contract.test.ts` (mirror match + ramp-outside
-     * literal ratchet + unspecified(default 24) ratchet).
-     */
-    --icon-sm: 12px;
-    --icon-md: 14px;
-    --icon-lg: 16px;
-    /*
-     * Dialog width scale — 2-tier is the canonical version (approved by "System" lead on 2026-08-15,
-     * docs/DECISIONS.md). Single source of truth for centered modal/composer widths; consumers
-     * use `src/shared/ui/dialog.tsx`. At runtime,
-     * it wraps narrow viewports with `min(var(--dialog-w-*), calc(100vw - 2rem))`.
-     *
-     * sm was added on 2026-08-15 — the empirically measured clusters of 8 hardcoded widths (360–576)
-     * fall exactly into two groups (360–448 · 480–576), so 2 tiers cover everything. The old
-     * lg 720 mentioned in previous comments and docs was a ghost with zero consumers and zero definitions,
-     * so it was removed together (unused tokens are not specs, they are misinformation).
-     */
+    --icon-sm: 0.75rem;
+    --icon-md: 0.875rem;
+    --icon-lg: 1rem;
     --dialog-w-sm: 420px;
     --dialog-w-md: 560px;
+    --dialog-w-lg: 880px;
+    --dialog-h-lg: 672px;
     /*
      * How tall a dialog may grow before its own body scrolls. Added 2026-09-05 (design council):
      * the add-a-connector dialog carried `max-h-[min(80vh,44rem)]`, the only height clamp in the
@@ -539,9 +506,7 @@
       0 0 0 6px var(--color-indigo-a10);
     --topology-search-lane-compact-width: clamp(84px, 6vw, 96px);
     --topology-search-sheet-floating-width: 36rem;
-    /* Old --topology-search-sheet-close-size (32px) deprecated on 2026-08-04 — unlike `--overlay-close-size` which does the same thing (overlay close 32px + coarse 44px promotion), this token was **absent** from the coarse promotion block, leaving only GlobalSearch close at 32px while the promotion comment below claimed "already covered" (empirical verification round). Close dimensions are solely `--overlay-close-size`. */
     --topology-shortcut-sheet-floating-width: 45rem;
-    --topology-shortcut-sheet-close-size: 32px;
     /* Old --topology-search-sheet-radius (16) · --topology-shortcut-sheet-radius (22)
        deprecated on 2026-08-04 by `--radius-sheet` (18) inclusion — values doing the same thing (floating sheet radius) were split into two outside the ramp. Sheet radius is rounded-sheet. */
     /* #67 — Scrollable signal (scroll edge). Bottom fade indicating "more below" rather than "end here" when a list is clipped. Only one step lighter than panel color, not a decorative gradient, and does not move. */
@@ -810,4 +775,18 @@
      */
   }
 
+  :where(svg.lucide:not(svg *)[width="12"]) {
+    width: var(--icon-sm);
+    height: var(--icon-sm);
+  }
+
+  :where(svg.lucide:not(svg *)[width="14"]) {
+    width: var(--icon-md);
+    height: var(--icon-md);
+  }
+
+  :where(svg.lucide:not(svg *)[width="16"]) {
+    width: var(--icon-lg);
+    height: var(--icon-lg);
+  }
 }

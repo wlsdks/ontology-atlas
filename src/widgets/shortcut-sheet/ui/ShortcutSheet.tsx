@@ -4,13 +4,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from 'next/navigation';
-import { X } from "lucide-react";
 import {
   DESTINATION_IDS,
   DESTINATION_KEY,
   NAV_LEADER_KEY,
 } from "@/shared/config/destinations";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { CloseButton } from "@/shared/ui/close-button";
 import {
   EXIT_TRANSITION,
   MOTION,
@@ -440,17 +439,7 @@ export function ShortcutSheet({ open, onClose, returnFocusSelector }: Props) {
                   {t("help")}
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={onClose}
-                aria-label={t("closeAriaLabel")}
-                data-testid="shortcut-sheet-close"
-                data-shortcut-sheet-close-contract="touch-visible"
-                data-shortcut-sheet-close-size-token="--topology-shortcut-sheet-close-size"
-                className={controlClass({ shape: "chip", tone: "muted", className: "flex h-[var(--topology-shortcut-sheet-close-size)] w-[var(--topology-shortcut-sheet-close-size)] justify-center hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)]" })}
-              >
-                <X size={ICON_SIZE.md} />
-              </button>
+              <CloseButton label={t("closeAriaLabel")} onClick={onClose} data-testid="shortcut-sheet-close" />
             </header>
 
             {/* Tabs pinned with the header so scope stays visible while scrolling. */}

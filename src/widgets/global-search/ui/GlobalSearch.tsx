@@ -6,7 +6,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useReducedMotion } from "framer-motion";
-import { Search, X } from "lucide-react";
+import { Search } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useLocale, useTranslations } from "next-intl";
 import { isGraphDrawnKind, type KnowledgeGraphNode } from "@/entities/knowledge-graph";
@@ -18,7 +18,7 @@ import {
   MEANINGFUL_ONTOLOGY_KINDS,
   type MeaningfulOntologyKind,
 } from "@/entities/knowledge-graph";
-import { controlClass, HighlightedText } from "@/shared/ui";
+import { CloseButton, controlClass, HighlightedText } from "@/shared/ui";
 import { isPathLikeTitle, matchOntologyNodes, matchProjects } from "../lib/match";
 import { describeMatchReason, reasonLineClass } from "../lib/match-reason";
 import { focusMapCanvasWhenReady, MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/focus-map-canvas";
@@ -329,17 +329,7 @@ export function GlobalSearch({
           <kbd className="hidden shrink-0 rounded-micro border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-2)] px-1.5 py-0.5 font-mono text-caption text-[color:var(--color-text-tertiary)] sm:inline-block">
             ESC
           </kbd>
-          <button
-            type="button"
-            onClick={closeAndClear}
-            aria-label={t(placed("closeAriaLabel"))}
-            data-testid="global-search-close"
-            data-global-search-close-contract="touch-visible"
-            data-global-search-close-size-token="--overlay-close-size"
-            className="flex h-[var(--overlay-close-size)] w-[var(--overlay-close-size)] shrink-0 items-center justify-center rounded-chip text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset"
-          >
-            <X size={ICON_SIZE.md} aria-hidden />
-          </button>
+          <CloseButton label={t(placed("closeAriaLabel"))} onClick={closeAndClear} data-testid="global-search-close" />
         </div>
 
         {/*
