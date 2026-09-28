@@ -9,4 +9,4 @@ date: 2026-09-28
 **Decision**: `cycles` counts every simple cycle up to `maxHops` once and lists the shortest up to `limit`; only `searchBudget` can leave `totalCycles` a lower bound, flagged `totalCyclesExact: false`, and `health` repeats the flag. Backlink rows carry `isNode`, `kind` for nodes and `uid` when valid, under one schema both tools share. The card and guide texts use a multi-line text schema.
 **Dissent**: (66)'s dissent applies: a client that flattens conditional JSON Schema treats `uid` and `kind` as optional on every row. A dashboard that kept the capped `totalCycles` sees a larger number after upgrade.
 **Falsifier**: an agent or script that breaks on the larger exact count or on `isNode` rows, or a validating MCP client that rejects the conditional row schema.
-**Owner**: pending; proposed by the fixing agent, and the route (review, one-way, lenses moment, evidence, boundaries) needs one independent reviewer before landing.
+**Owner**: Stark
