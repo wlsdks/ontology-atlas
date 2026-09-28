@@ -1,0 +1,1 @@
+{ "gate": "comment-bytes.src-views", "raise": 141, "why": "Security review of #2042: the first-run and docs-vault surfaces map the new grant-needed error code to honest copy (confirm access once) instead of the moved-or-deleted / sample-docs state; the comment explains why that code is not a retry or a loss." }

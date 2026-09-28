@@ -53,7 +53,7 @@ fn err_str(message: impl Into<String>) -> String {
 }
 
 /// A sibling of the app executable; `tauri dev` copies it next to the dev executable.
-fn resolve_bundled_binary() -> Result<PathBuf, String> {
+pub(crate) fn resolve_bundled_binary() -> Result<PathBuf, String> {
     let exe = std::env::current_exe()
         .map_err(|e| err_str(format!("could not resolve the app executable: {e}")))?;
     let dir = exe
@@ -518,7 +518,11 @@ fn rpc_line(id: u64, method: &str, params: serde_json::Value) -> String {
 /// that cannot read the vault must not show green.
 #[tauri::command(async)]
 pub fn verify_mcp_server(vault_path: String, sample_slug: Option<String>) -> McpVerifyResult {
-    match verify_inner(&vault_path, sample_slug.as_deref()) {
+    // The bundled MCP is spawned against this folder; only a granted vault may be one.
+    let gated = crate::canonical_root(&vault_path).and_then(|root| {
+        verify_inner(&root.to_string_lossy(), sample_slug.as_deref())
+    });
+    match gated {
         Ok(result) => result,
         Err(failure) => McpVerifyResult {
             ok: false,

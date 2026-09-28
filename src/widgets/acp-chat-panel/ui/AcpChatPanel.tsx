@@ -415,7 +415,7 @@ export function AcpChatPanel({
    * (measured 2026-09-25; the Library's dock stays mounted while put away and kept it). A host
    * that unmounts the panel hands it this store, read once on mount and written on every change.
    */
-  draftStore?: { read: () => string; write: (draft: string) => void };
+  draftStore?: { read: () => { text: string; prefillNonce: number | null }; write: (draft: { text: string; prefillNonce: number | null }) => void };
   /**
    * Judges a file write before the person decides, from the screen that knows the folder's
    * contract (the Library judges wiki pages). Null for a request it has no opinion on.
@@ -816,18 +816,12 @@ export function AcpChatPanel({
   const doctor = useAgentDoctor(runtimeId);
   const showDoctor = Boolean(runtimeId) && isAgentDoctorAvailable();
   // The unsent sentence survives the panel being unmounted by its host (`draftStore`).
-  const [draft, setDraft] = useState(() => draftStore?.read() ?? '');
-  useEffect(() => {
-    draftStore?.write(draft);
-  }, [draftStore, draft]);
+  const [restoredDraft] = useState(() => {
+    const restored=draftStore?.read()??{text:'',prefillNonce:null};
+    return {full:restored.text,prefillNonce:restored.prefillNonce,...splitAppRequest(restored.text)};
+  });
+  const [draft, setDraft] = useState(restoredDraft.lead);
   const draftPresent = draft.trim().length > 0;
-  useEffect(() => {
-    onDraftPresenceChange?.(draftPresent);
-  }, [draftPresent, onDraftPresenceChange]);
-  useEffect(
-    () => () => onDraftPresenceChange?.(false),
-    [onDraftPresenceChange],
-  );
   /*
    * Is a `/` selection in progress? Only while the first character is `/` and there
    * is still no space — once arguments are being typed, the choosing step has passed
@@ -1015,7 +1009,7 @@ export function AcpChatPanel({
 
   const prefillNonce = prefillRequest?.nonce ?? null;
   const prefillText = prefillRequest?.text ?? null;
-  const [seenPrefillNonce, setSeenPrefillNonce] = useState<number | null>(null);
+  const [seenPrefillNonce, setSeenPrefillNonce] = useState<number | null>(restoredDraft.prefillNonce);
   /**
    * **The app-composed half of a seated request, held out of the box the person writes in.**
    *
@@ -1037,7 +1031,7 @@ export function AcpChatPanel({
    */
   const [seatedDetail, setSeatedDetail] = useState<
     { lead: string; detail: string; full: string } | null
-  >(null);
+  >(()=>restoredDraft.detail?{lead:restoredDraft.lead,detail:restoredDraft.detail,full:restoredDraft.full}:null);
   if (prefillNonce !== null && prefillText && prefillNonce !== seenPrefillNonce) {
     setSeenPrefillNonce(prefillNonce);
     const parts = splitAppRequest(prefillText);
@@ -1049,11 +1043,20 @@ export function AcpChatPanel({
   /**
    * A request this screen wrote is sitting unsent in the composer.
    *
-   * `seenPrefillNonce` says a seat was consumed; the draft says it is still there. Both are
-   * needed: a seat the person cleared is a blank start again, and a draft the person typed
-   * themselves was never staged by anything.
+   * A consumed seat or restored detail marks an app request; an empty draft returns to a blank start.
    */
-  const seatedRequestWaiting = seenPrefillNonce !== null && draft.trim().length > 0;
+  const seatedRequestWaiting = (seenPrefillNonce !== null || seatedDetail !== null) && draft.trim().length > 0;
+  useEffect(()=>{
+    const text=seatedDetail ? draft===seatedDetail.lead ? seatedDetail.full : `${draft}\n\n${seatedDetail.detail}` : draft;
+    draftStore?.write({text,prefillNonce:seenPrefillNonce});
+  },[draftStore,draft,seatedDetail,seenPrefillNonce]);
+  useEffect(() => {
+    onDraftPresenceChange?.(draftPresent);
+  }, [draftPresent, onDraftPresenceChange]);
+  useEffect(
+    () => () => onDraftPresenceChange?.(false),
+    [onDraftPresenceChange],
+  );
   /*
    * There has to be something to draw while the exit animation runs — if the content
    * disappeared the moment `pending` went null, an **empty box** would be the thing
@@ -1846,7 +1849,7 @@ export function AcpChatPanel({
               disabled until the session is ready, so the wait shows what can be asked the moment
               it can be — and the rows are already where they will be pressed.
             */}
-            {suggestions.length > 0 && !download ? (
+            {suggestions.length > 0 && !download && !seatedRequestWaiting ? (
               <div className="agent-panel-stage-swap mt-5 w-full justify-self-stretch">
                 <StartingSuggestionPreview
                   heading={t('startingSuggestions')}
@@ -1925,7 +1928,7 @@ export function AcpChatPanel({
               suggestions are never trusted again. Which fact suggests what is owned by
               `chat-suggestions.ts`.
             */}
-            {suggestions.length > 0 ? (
+            {suggestions.length > 0 && !seatedRequestWaiting ? (
               <SuggestionRows
                 heading={t('suggest.heading')}
                 testId="acp-chat-suggestions"

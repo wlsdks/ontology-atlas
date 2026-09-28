@@ -24,12 +24,16 @@ mod errors;
 mod git;
 mod jev;
 mod library;
+mod gray_area;
+mod gray_area_rpc;
+mod gray_area_scope;
 mod llm;
 mod llm_audit;
 mod managed_node;
 mod map_entry_diagnostic;
 mod meaning_transition_archive;
 mod secrets;
+mod vault_grants;
 
 /// 20 attempts 250 ms apart: five seconds for a cold start to produce a document.
 #[cfg(desktop)]
@@ -217,6 +221,28 @@ pub(crate) fn canonical_root(root_path: &str) -> Result<PathBuf, String> {
     let metadata = fs::metadata(&root).map_err(|err| err.to_string())?;
     if !metadata.is_dir() {
         return Err("vault root must be a directory".into());
+    }
+    // The renderer chooses this argument; with an XSS it would choose the home
+    // directory. Only a root the user actually granted (picker, app container,
+    // restored prior choice) may be operated on.
+    if !vault_grants::is_vault_granted(&root) {
+        return Err("vault-root-not-granted".into());
+    }
+    Ok(root)
+}
+
+/// Like `canonical_root`, for project-source inspection, which may target the
+/// repository a granted vault lives in as well as the vault itself. It returns only
+/// a file listing and a hash, never file contents, so this wider gate does not let
+/// the content commands out of their vaults.
+pub(crate) fn canonical_source_root(root_path: &str) -> Result<PathBuf, String> {
+    let root = fs::canonicalize(root_path).map_err(|err| err.to_string())?;
+    let metadata = fs::metadata(&root).map_err(|err| err.to_string())?;
+    if !metadata.is_dir() {
+        return Err("vault root must be a directory".into());
+    }
+    if !vault_grants::is_source_granted(&root) {
+        return Err("source-root-not-granted".into());
     }
     Ok(root)
 }
@@ -790,10 +816,9 @@ fn acp_start(
     runtime_id: String,
     cwd: String,
 ) -> Result<String, String> {
-    let root = fs::canonicalize(&cwd).map_err(|err| format!("cwd-unreadable:{err}"))?;
-    if !root.is_dir() {
-        return Err("cwd-not-a-directory".into());
-    }
+    // The agent runs in the vault, so its working folder must be a granted root; an
+    // XSS must not spawn an agent in an arbitrary directory.
+    let root = canonical_root(&cwd).map_err(|err| format!("cwd-unreadable:{err}"))?;
     if let Some(reason) = vault_root_rejection(&root) {
         return Err(format!("vault-root-rejected:{reason}"));
     }
@@ -1433,8 +1458,12 @@ fn open_external_url(url: String) -> Result<(), String> {
     };
     #[cfg(target_os = "windows")]
     let mut command = {
-        let mut c = Command::new("cmd");
-        c.args(["/C", "start", "", &url]);
+        // No shell: `cmd /C start` would let a metacharacter in the URL (`&`, `|`,
+        // `%`, `^`) run a command, and the openable-URL check allows those since it
+        // only bars whitespace. rundll32 hands the URL straight to the protocol
+        // handler as one argument.
+        let mut c = Command::new("rundll32.exe");
+        c.args(["url.dll,FileProtocolHandler", &url]);
         c
     };
     #[cfg(all(not(target_os = "macos"), not(target_os = "windows")))]
@@ -1614,6 +1643,9 @@ fn pick_vault_directory(dialog_title: Option<String>) -> Result<Option<String>, 
         // A stable code, so translation stays on the screen.
         return Err(format!("vault-root-rejected:{reason}"));
     }
+    // The native picker is a genuine user choice, so this is where a vault becomes a
+    // granted root; the redirect into `<project>/atlas` stays inside it.
+    vault_grants::grant_vault_root(&resolved);
     Ok(Some(picked.to_string_lossy().to_string()))
 }
 
@@ -1850,7 +1882,11 @@ fn inspect_source_inventory(root: &Path) -> Result<(String, bool, Vec<String>), 
 }
 
 fn run_source_git(root: &Path, args: &[&str]) -> Result<Vec<u8>, String> {
-    let output = Command::new("git")
+    // A connected project source is untrusted repo content; the base hardening
+    // refuses an embedded bare repo and disables fsmonitor/hooks before git reads
+    // the source's own config. These reads (ls-files/diff --name-only/status/
+    // rev-parse) run no content filter, so name discovery is not needed here.
+    let output = git::hardened_base_command()
         .args(args)
         .current_dir(root)
         .output()
@@ -2022,7 +2058,7 @@ fn inspect_project_source_continuity(
     vault_root: String,
     target_slug: String,
 ) -> Result<ProjectSourceContinuityInspection, String> {
-    let selected_source = canonical_root(&source_root)?;
+    let selected_source = canonical_source_root(&source_root)?;
     let vault = canonical_root(&vault_root)?;
     let slug = normalize_relative_path(&target_slug)?;
     if slug.extension().is_some() || slug.as_os_str().is_empty() {
@@ -2108,7 +2144,7 @@ fn inspect_project_source_continuity(
 
 #[tauri::command(async)]
 fn inspect_project_source(root_path: String) -> Result<ProjectSourceInspection, String> {
-    let selected_root = canonical_root(&root_path)?;
+    let selected_root = canonical_source_root(&root_path)?;
     match git::find_repo_root(&selected_root)? {
         Some(repo_root) => {
             // Git's tracked plus unignored set keeps caches and ignored artifacts out of the budget.
@@ -2818,11 +2854,8 @@ fn vault_path_exists(
 
 #[tauri::command]
 fn open_vault_in_finder(root_path: String) -> Result<(), String> {
-    let root = PathBuf::from(&root_path);
-    let metadata = fs::metadata(&root).map_err(|err| err.to_string())?;
-    if !metadata.is_dir() {
-        return Err("vault root must be a directory".into());
-    }
+    // Only reveal a folder the user granted; an XSS must not open Finder anywhere.
+    let root = canonical_root(&root_path)?;
     // A `.app` passes `is_dir()` and `open` would launch it; the same gate as the vault
     // root, so the looser copy cannot win.
     if let Some(reason) = vault_root_rejection(&root) {
@@ -2866,6 +2899,9 @@ fn ensure_default_vault_parent_dir() -> Result<String, String> {
     let parent = default_vault_parent_dir(&home);
     fs::create_dir_all(&parent).map_err(|err| err.to_string())?;
     let canonical = fs::canonicalize(&parent).map_err(|err| err.to_string())?;
+    // The app's own "just start" container: creating a vault under it is a granted
+    // operation, so the create/list/write commands that follow are allowed.
+    vault_grants::grant_vault_root(&canonical);
     Ok(canonical.to_string_lossy().to_string())
 }
 
@@ -3502,6 +3538,15 @@ pub fn run() {
         .manage(AcpInstallProgressState::default())
         .manage(AcpSessions::default())
         .setup(move |app| {
+            // Seed the vault-grant registry before any command can run: turn the
+            // boundary on, choose where grants persist, and re-grant the app's own
+            // vault container plus every vault a prior launch recorded.
+            if let Ok(store) = app.path().app_data_dir() {
+                let container =
+                    std::env::var("HOME").ok().map(|home| default_vault_parent_dir(&home));
+                vault_grants::initialize(store.join("granted-vault-roots.json"), container);
+            }
+
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Regular);
 
@@ -3709,6 +3754,9 @@ pub fn run() {
             open_vault_in_finder,
             ensure_default_vault_parent_dir,
             library::hash_vault_files,
+            gray_area::read_gray_area_evidence,
+            gray_area::preview_gray_area_scope,
+            gray_area::check_gray_area_evidence,
             library::pick_source_files,
             library::import_source_files,
             library::discover_source_candidates,
@@ -5465,5 +5513,105 @@ mod panic_report_tests {
             format_panic_report("unnamed", "unknown location", "unknown panic payload"),
             "panic in thread 'unnamed' at unknown location: unknown panic payload"
         );
+    }
+}
+
+#[cfg(test)]
+mod vault_scope_tests {
+    use super::{
+        canonical_root, list_vault_directory, read_vault_text_file, remove_vault_entry,
+        resolve_existing_inside, write_vault_text_file,
+    };
+
+    #[test]
+    fn every_vault_door_refuses_an_ungranted_root_and_opens_a_granted_one() {
+        let base = std::env::temp_dir().join(format!("atlas-scope-doors-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        let home = base.join("home");
+        std::fs::create_dir_all(base.join("vault/nested")).unwrap();
+        std::fs::create_dir_all(home.join(".ssh")).unwrap();
+        std::fs::write(base.join("vault/note.md"), b"# note").unwrap();
+        std::fs::write(home.join(".ssh/id_rsa"), b"fixture, not a key").unwrap();
+        let vault = std::fs::canonicalize(base.join("vault")).unwrap();
+        let home_path = home.to_string_lossy().to_string();
+        let vault_path = vault.to_string_lossy().to_string();
+        let scope = crate::vault_grants::EnforcedScope::granting(&[vault.clone()]);
+
+        let refused = |result: Result<(), String>| {
+            let err = result.unwrap_err();
+            assert!(err.contains("not-granted"), "{err}");
+        };
+        refused(read_vault_text_file(home_path.clone(), ".ssh/id_rsa".into()).map(|_| ()));
+        refused(write_vault_text_file(home_path.clone(), "planted.md".into(), "x".into()));
+        refused(remove_vault_entry(home_path.clone(), ".ssh/id_rsa".into(), None));
+        refused(list_vault_directory(home_path.clone(), String::new()).map(|_| ()));
+        refused(crate::git::validate_vault_dir(&home_path).map(|_| ()));
+        refused(canonical_root(&base.to_string_lossy()).map(|_| ()));
+        assert!(!home.join("planted.md").exists());
+        assert!(home.join(".ssh/id_rsa").exists());
+
+        assert!(read_vault_text_file(vault_path.clone(), "note.md".into()).is_ok());
+        assert!(canonical_root(&vault.join("nested").to_string_lossy()).is_ok());
+        assert!(crate::git::validate_vault_dir(&vault_path).is_ok());
+
+        let judged = crate::jev::jev_judge(home_path.clone(), "{}".into()).unwrap_err();
+        assert!(judged.contains("not-granted"), "{judged}");
+        let verified = crate::agent_setup::verify_mcp_server(home_path.clone(), None);
+        assert!(!verified.ok);
+        assert!(
+            verified.failure.as_deref().unwrap_or("").contains("not-granted"),
+            "{:?}",
+            verified.failure
+        );
+        refused(super::open_vault_in_finder(home_path.clone()));
+        let report = crate::library::discover_source_candidates(vec![
+            crate::library::SourceDiscoveryRoot {
+                root_path: home_path.clone(),
+                label: "home".into(),
+                skip_relative: Vec::new(),
+            },
+        ])
+        .unwrap();
+        assert!(report.candidates.is_empty(), "an ungranted root yields no candidates");
+        assert_eq!(report.unreadable_roots, vec!["home".to_string()]);
+
+        drop(scope);
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    // The grant gate is permissive here (production `initialize` never runs in unit
+    // tests); this pins the path-containment half of the boundary the gate rides on.
+    // Unix-only: it needs a real symlink; canonicalisation guards both platforms.
+    #[cfg(unix)]
+    #[test]
+    fn a_symlink_that_escapes_the_root_is_refused() {
+        use std::os::unix::fs::symlink;
+        let base = std::env::temp_dir().join(format!("atlas-scope-symlink-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        let vault = base.join("vault");
+        let outside = base.join("outside");
+        std::fs::create_dir_all(&vault).unwrap();
+        std::fs::create_dir_all(&outside).unwrap();
+        std::fs::write(outside.join("secret.txt"), b"secret").unwrap();
+        symlink(&outside, vault.join("escape")).unwrap();
+
+        let root = vault.to_string_lossy().to_string();
+        std::fs::write(vault.join("inside.md"), b"# ok").unwrap();
+        assert!(resolve_existing_inside(&root, "inside.md").is_ok());
+        // The same relative path through the symlink canonicalises outside the root
+        // and is refused, so a tracked symlink cannot read another directory.
+        let err = resolve_existing_inside(&root, "escape/secret.txt").unwrap_err();
+        assert!(err.contains("stay inside"), "{err}");
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn canonical_root_resolves_a_real_directory_and_rejects_a_missing_one() {
+        let base = std::env::temp_dir().join(format!("atlas-scope-canon-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        std::fs::create_dir_all(&base).unwrap();
+        assert!(canonical_root(&base.to_string_lossy()).is_ok());
+        assert!(canonical_root(&base.join("missing").to_string_lossy()).is_err());
+        let _ = std::fs::remove_dir_all(&base);
     }
 }

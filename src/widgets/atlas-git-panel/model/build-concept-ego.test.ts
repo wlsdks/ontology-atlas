@@ -42,7 +42,6 @@ const NODES = [
 const EDGES = [
   edge("domain:shell", "element:rail", "contains"),
   edge("domain:shell", "element:tabs", "contains"),
-  edge("capability:mcp", "domain:shell", "is_a"),
   edge("capability:mcp", "element:rail", "depends_on"),
 ];
 
@@ -60,7 +59,20 @@ describe("buildConceptEgo relation direction", () => {
       "element:rail",
       "element:tabs",
     ]);
-    expect(ego.neighbors.belongsTo.map((n) => n.id)).toEqual(["capability:mcp"]);
+  });
+
+  it("files a narrower concept under contents and its broader concept under containers", () => {
+    const nodes = [
+      node("capability:payments", "capability", "Payments"),
+      node("capability:card-payments", "capability", "Card payments"),
+    ];
+    const narrowerIsABroader = edge("capability:card-payments", "capability:payments", "is_a");
+    const broader = buildConceptEgo("capability:payments", nodes, [narrowerIsABroader])!;
+    expect(broader.neighbors.contains.map((n) => n.id)).toEqual(["capability:card-payments"]);
+    expect(broader.neighbors.belongsTo).toEqual([]);
+    const narrower = buildConceptEgo("capability:card-payments", nodes, [narrowerIsABroader])!;
+    expect(narrower.neighbors.belongsTo.map((n) => n.id)).toEqual(["capability:payments"]);
+    expect(narrower.neighbors.contains).toEqual([]);
   });
 
   it("splits depends_on into dependencies and dependants by direction", () => {
@@ -74,7 +86,7 @@ describe("buildConceptEgo relation direction", () => {
     const dup = [...EDGES, edge("domain:shell", "element:rail", "contains")];
     const ego = buildConceptEgo("domain:shell", NODES, dup)!;
     expect(ego.neighbors.contains).toHaveLength(2);
-    expect(ego.total).toBe(3);
+    expect(ego.total).toBe(2);
   });
 
   it("takes the domain name from the belongsTo domain neighbour", () => {

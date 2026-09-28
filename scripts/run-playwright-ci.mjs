@@ -12,7 +12,7 @@ export function inventoryFiles(report) {
   const files = new Map();
   const visit = (suite) => {
     for (const spec of suite.specs ?? []) {
-      if (!/^[\w-]+\.spec\.ts$/.test(spec.file)) throw new Error(`unsupported spec path: ${spec.file}`);
+      if (typeof spec.file !== 'string' || spec.file.match(/^(?:[\w-]+\/)*[\w-]+\.spec\.ts$/)?.[0] !== spec.file) throw new Error(`unsupported spec path: ${spec.file}`);
       files.set(spec.file, (files.get(spec.file) ?? 0) + spec.tests.length);
     }
     for (const child of suite.suites ?? []) visit(child);
@@ -73,7 +73,7 @@ export function runPlaywrightCi(argv, { spawn = spawnSync, cwd = process.cwd(), 
     return 0;
   }
   // File arguments are regexes. Anchor and escape them to avoid substring matches.
-  const filters = selected.files.map((file) => `/${file.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`);
+  const filters = selected.files.map((file) => `/tests/e2e/${file.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`);
   const reportFile = resolve(cwd, `output/playwright/results-${index}.json`);
   rmSync(reportFile, { force: true });
   // A red shard cannot become green by running more files, and a shared setup
