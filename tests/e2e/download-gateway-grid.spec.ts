@@ -469,11 +469,8 @@ test.describe("관문 다운로드의 그리드", () => {
 
 test.describe("the headline types only its own sentence (council, 2026-09-03)", () => {
   /*
-   * The decoder ghost drew a glyph from the sentence into the caret's slot at the headline's own
-   * size, so the page's one claim read as a misspelling for a frame ("Agents write tlt"). It was
-   * removed; this keeps it from returning quietly, and pins the one cost the kept landing has —
-   * `gatewayTypeLand` interpolates font-weight on a variable face, measured ≤3.73px of h1 width
-   * drift while typing.
+   * The decoder ghost read as a misspelling. The 2026-09-03 decision makes the landing
+   * opacity-only above 4px drift; preserve both regression barriers.
    */
   test("no ghost glyph, and the headline does not wander while it types", async ({ page }) => {
     await page.setViewportSize({ width: 1512, height: 982 });
