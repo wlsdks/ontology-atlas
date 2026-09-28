@@ -47,7 +47,7 @@
   "followUp": "Analyze further from this version",
   "loadOlder": "Load older records",
   "recordProblems": "{count} unreadable records",
-  "definitionMissing": "No definition is recorded here yet.",
+  "definitionMissing": "A definition preview is not available.",
   "openDefinition": "Read definition and boundaries",
   "kindCriteria": "What belongs in each kind?",
   "relations": "What these connections mean",
