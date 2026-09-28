@@ -412,12 +412,10 @@ describe('permission options — the app picks the one that ends with this call'
  * So the version is asserted against `src-tauri/src/acp-registry.json`, the committed snapshot the
  * app launches from: a bump turns this red and the arrays get re-read.
  */
-// 0.81.2 (2026-09-27), read by running the published builders. SHA-256 of shared f3268e6d…,
-// shell 102de11e…, filesystem a4c5f1cb… and the sort in options.js f3e16436… are unchanged
-// since 0.77.0; tools.js (6a7dc865…) moved only in `buildExitPlanModePermissionOptions`, which now
-// offers `auto` and `bypassPermissions` together — the four cases naming both are new. `optionId`
-// still appears in no `dist/**/*.js` outside `dist/permissions/`.
-const TRANSCRIBED_FROM = '@agentclientprotocol/claude-agent-acp@0.81.2';
+// 0.82.0 (2026-09-28): options.js f3e16436…, options/shared f3268e6d…, shell 102de11e…,
+// filesystem a4c5f1cb… and tools 6a7dc865… are byte-identical to 0.81.2; `optionId` still appears
+// in no `dist/**/*.js` outside `dist/permissions/`.
+const TRANSCRIBED_FROM = '@agentclientprotocol/claude-agent-acp@0.82.0';
 
 describe('transcribed adapter version', () => {
   it('reads the option builders from the version the app actually launches', () => {

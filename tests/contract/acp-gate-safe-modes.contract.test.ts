@@ -187,13 +187,11 @@ describe('작업 방식 목록 — 관문을 없애는 것은 안 내놓는다',
  */
 const TRANSCRIBED_FROM = {
   /**
-   * 0.81.2 (2026-09-27): `dist/session-mode.js` changed (SHA-256 12190554…), but its
-   * `buildAvailableModes` block is byte-identical to 0.77.0's (80ac5acf…), so the five records and
-   * `_meta.kind` values above still stand. What moved is `prePlanMode` bookkeeping and the auto
-   * fallback's notice shape. Bypass is now also withheld when settings set
-   * `disableBypassPermissionsMode`; the app's isolated settings do not, so it is still advertised.
+   * 0.82.0 (2026-09-28): `buildAvailableModes` still builds the same five ids, but `_meta.kind` is
+   * now sent only to the adapter's own AIR client, so Atlas receives no kind and `mode-safety.ts`
+   * judges by id alone; every gate-removing id is on its measured list.
    */
-  claude: '@agentclientprotocol/claude-agent-acp@0.81.2',
+  claude: '@agentclientprotocol/claude-agent-acp@0.82.0',
   /**
    * The launch is the newest upstream since 2026-09-07 (owner: "the version is always the
    * newest"; the pin's overturn is in `docs/DECISIONS.md`). 1.13.1 (2026-09-27): the 110-line
