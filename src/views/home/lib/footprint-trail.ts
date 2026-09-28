@@ -111,6 +111,7 @@ export interface FootprintTrailPacketLabels {
   title: string;
   order: string;
   reviewHint: string;
+  undocumented: string;
   /** Only with 2+ visits. */
   pathHint: string;
   /** Omitted when there are no dusty nodes. */
@@ -147,7 +148,7 @@ export function formatFootprintTrailAgentPacket(
     // document wrote down.
     lines.push(
       entry.documented === false
-        ? `# ${agentRefOf(entry)} — 아직 문서 없음(참조로만 존재). add_concept 로 만들 수 있어요`
+        ? `# ${agentRefOf(entry)} — ${labels.undocumented}`
         : `get_concept("${agentRefOf(entry)}")`,
     );
   }

@@ -251,3 +251,47 @@ test('the curation table holds no ranking or endorsement field', () => {
     assert.ok(!text.includes(`"${forbidden}"`), `catalogue must not rank: ${forbidden}`);
   }
 });
+
+test('pins every program it offers to the release current on the day a person verified it', async () => {
+  const entries = await build({ offline: false, registryServers: readRegistrySnapshot(COMMITTED_SNAPSHOT).servers });
+  const programs = entries.flatMap((entry) => entry.variants.filter((variant) => variant.kind === 'local'));
+  assert.ok(programs.length > 0);
+  for (const variant of programs) {
+    const pinned = variant.runtime === 'docker'
+      ? `${variant.packageId}:${variant.version}@sha256:`
+      : `${variant.packageId}@${variant.version}`;
+    assert.ok(variant.version, `${variant.packageId} names no version`);
+    assert.ok(
+      variant.args.some((arg) => arg.startsWith(pinned)),
+      `${variant.packageId} runs whatever is newest: ${variant.args.join(' ')}`,
+    );
+  }
+});
+
+test('refuses to offer a program without the version verified on its date', async () => {
+  const unpinned = CURATION.map((entry) => ({
+    ...entry,
+    variants: entry.variants.map((variant) => (variant.kind === 'local' ? { ...variant, version: undefined } : variant)),
+  }));
+  await assert.rejects(build({ offline: true, curation: unpinned }), /needs the version/);
+});
+
+test('rebuilds from the committed capture without fetching, and keeps its date', async (t) => {
+  const paths = fixture();
+  t.after(() => rmSync(paths.dir, { recursive: true, force: true }));
+  await runCatalogue({
+    argv: ['--from-snapshot'],
+    ...paths,
+    fetchImpl: async () => assert.fail('a rebuild from the capture reached the network'),
+  });
+  assert.equal(readFileSync(paths.outPath, 'utf8'), readFileSync(COMMITTED_OUT, 'utf8'));
+  assert.equal(readFileSync(paths.snapshotPath, 'utf8'), readFileSync(COMMITTED_SNAPSHOT, 'utf8'));
+});
+
+test('the committed catalogue runs nothing unpinned', () => {
+  const text = readFileSync(COMMITTED_OUT, 'utf8');
+  for (const name of ['@notionhq/notion-mcp-server', '@playwright/mcp', '@upstash/context7-mcp']) {
+    assert.ok(text.includes(`"${name}@`), `${name} is offered without a version`);
+  }
+  assert.match(text, /"ghcr\.io\/github\/github-mcp-server:[\d.]+@sha256:[0-9a-f]{64}"/);
+});

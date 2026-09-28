@@ -927,6 +927,11 @@ function CatalogueSection({
                       {variantRuns(primary, primaryPath)}
                     </code>
                     <span className="break-keep">{asksClause(t, primary)}</span>
+                    {primary.kind === 'local' ? (
+                      <span data-testid={`${testIdPrefix}-catalogue-version`}>
+                        {t('catalogueVersion', { version: primary.version, date: entry.verifiedAt })}
+                      </span>
+                    ) : null}
                   </p>
                   {others.length > 0 ? (
                     <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">

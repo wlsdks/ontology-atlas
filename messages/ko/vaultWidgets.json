@@ -110,6 +110,8 @@
     "projectLinkTitle": "프로젝트: {slug}",
     "externalLinkUnresolved": "이 폴더 밖 링크라 여기선 열 수 없어요: {href}",
     "imageMissing": "폴더에 이미지 없음: {src}",
+    "remoteImage": "{host}에 있는 이미지라 불러오지 않았어요. 이 페이지를 읽어도 {host}에는 아무것도 가지 않아요.",
+    "remoteImageOpen": "{host}에서 열기",
     "anchorCopiedAria": "앵커 URL 복사됨",
     "anchorCopyAria": "이 섹션으로 오는 링크 복사",
     "anchorCopiedTitle": "복사됨",

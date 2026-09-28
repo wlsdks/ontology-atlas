@@ -195,7 +195,7 @@ export function ArchitecturePage({
       ...vaultMcpServers(agentServer.launch, gitVaultPath, registration, {
         ownsWriteGate: runtimeOwnsWriteGate(acpRuntimeId),
       }),
-      ...connectorAcpServers(vaultConnectors.connectors, acpRuntimeId),
+      ...connectorAcpServers(vaultConnectors.connectors, acpRuntimeId, vaultConnectors.allowedHere),
     ];
   }, [
     acpRuntimeId,
@@ -203,6 +203,7 @@ export function ArchitecturePage({
     gitVaultPath,
     localVault.agentConfigStatus?.codexConfigValid,
     localVault.agentConfigStatus?.codexRegisteredCommand,
+    vaultConnectors.allowedHere,
     vaultConnectors.connectors,
   ]);
   const agentRoute = resolveArchitectureAgentRoute({

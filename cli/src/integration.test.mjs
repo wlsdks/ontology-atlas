@@ -4259,6 +4259,36 @@ await test('backlinks — a slug that names no node fails closed with the closes
   }
 });
 
+await test('backlinks — files with no kind that link the target are listed, a wiki page as such', async () => {
+  const root = await buildGraphFixture();
+  mkdirSync(join(root, 'wiki'), { recursive: true });
+  writeFileSync(
+    join(root, 'wiki', 'notes.md'),
+    '---\ntitle: Notes\ncreated_by: human\ncompiled_at: 2026-09-05T10:00:00Z\nsources: []\nsource_hash: {}\n' +
+      'status: draft\nsummary: Notes about Foo.\n---\n\n## Summary\n\nSee [[capabilities/foo]].\n',
+    'utf-8',
+  );
+  mkdirSync(join(root, 'notes'), { recursive: true });
+  writeFileSync(join(root, 'notes', 'meeting.md'), '---\ntitle: Meeting notes\n---\n\nWe discussed [[capabilities/foo]].\n', 'utf-8');
+  try {
+    const human = await run(['backlinks', 'capabilities/foo', root]);
+    assert.equal(human.code, 0, `stdout: ${human.stdout}\nstderr: ${human.stderr}`);
+    const listing = stripAnsi(human.stdout);
+    assert.match(listing, /wiki page {2}wiki\/notes · Notes/);
+    assert.match(listing, /no kind {2}notes\/meeting · Meeting notes/);
+    assert.match(listing, /domains\/auth\s+· Auth/);
+    const json = await run(['backlinks', 'capabilities/foo', root, '--json']);
+    assert.equal(json.code, 0, json.stderr);
+    for (const slug of ['wiki/notes', 'notes/meeting']) {
+      const row = JSON.parse(json.stdout).matches.find((match) => match.slug === slug);
+      assert.equal(row.kind, undefined);
+      assert.equal(row.matchedInBody, true);
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('backlinks --json — parses the JSON response', async () => {
   const root = await buildGraphFixture();
   try {

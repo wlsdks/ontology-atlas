@@ -1,0 +1,1 @@
+{ "gate": "comment-bytes.mcp", "raise": 751, "why": "The two security reviews of the MCP read/write boundary fix asked for one-line purpose comments on the new write-path, limit and source-reader exports; the one-pass document scanners, the per-read unpack budget and a measured test budget each carry the one-line reason architecture.md and testing.md require." }

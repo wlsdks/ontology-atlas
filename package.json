@@ -2,6 +2,7 @@
   "name": "ontology-atlas",
   "version": "1.3.0",
   "private": true,
+  "packageManager": "pnpm@10.18.0",
   "license": "MIT",
   "engines": {
     "node": ">=24 <25"
@@ -116,7 +117,7 @@
     "test:po": "vitest run tests/contract/po-route.contract.test.ts tests/contract/reviewer-wiring.contract.test.ts",
     "design:route": "node scripts/design-proof-router.mjs",
     "test:design-gates": "vitest run tests/contract/design-proof-router.contract.test.ts tests/contract/reviewer-wiring.contract.test.ts tests/contract/design-spec-ledger.contract.test.ts tests/contract/design-build-recipe.contract.test.ts",
-    "test:security": "vitest run tests/contract/security-surfaces.contract.test.ts tests/contract/url-scheme-one-door.contract.test.ts tests/contract/wikilink-url-scheme.contract.test.ts tests/contract/json-ld-script-safety.contract.test.ts tests/contract/desktop-route-payload-csp.contract.test.ts tests/contract/github-action-pins.contract.test.ts tests/contract/workflow-security.contract.test.ts tests/contract/vault-freshness-workflow-security.contract.test.ts tests/contract/secret-read-guard.contract.test.ts tests/contract/connector-secrets-off-disk.contract.test.ts tests/contract/connector-secret-ref-parity.contract.test.ts tests/contract/mcp-vault-safety.contract.test.ts tests/contract/updater-feed.contract.test.ts tests/contract/llm-audit-log.contract.test.ts tests/contract/acp-gate-safe-modes.contract.test.ts tests/contract/acp-runtime-gate.contract.test.ts tests/contract/acp-permission-option-choice.contract.test.ts tests/contract/acp-session-scope.contract.test.ts tests/contract/acp-disk-disclosure.contract.test.ts",
+    "test:security": "vitest run tests/contract/security-surfaces.contract.test.ts tests/contract/url-scheme-one-door.contract.test.ts tests/contract/wikilink-url-scheme.contract.test.ts tests/contract/json-ld-script-safety.contract.test.ts tests/contract/desktop-route-payload-csp.contract.test.ts tests/contract/github-action-pins.contract.test.ts tests/contract/workflow-security.contract.test.ts tests/contract/vault-freshness-workflow-security.contract.test.ts tests/contract/secret-read-guard.contract.test.ts tests/contract/connector-secrets-off-disk.contract.test.ts tests/contract/connector-secret-ref-parity.contract.test.ts tests/contract/mcp-vault-safety.contract.test.ts tests/contract/updater-feed.contract.test.ts tests/contract/llm-audit-log.contract.test.ts tests/contract/acp-gate-safe-modes.contract.test.ts tests/contract/acp-runtime-gate.contract.test.ts tests/contract/acp-permission-option-choice.contract.test.ts tests/contract/acp-session-scope.contract.test.ts tests/contract/acp-disk-disclosure.contract.test.ts tests/contract/web-csp-parity.contract.test.ts",
     "agents:check": "node .agents/check-instructions.mjs && node --test .agents/check-instructions.test.mjs && pnpm test:agent-skills",
     "test:agent-skills": "node --test .agents/skills/ontology-bootstrap/scripts/*.test.mjs",
     "test:vault:validate": "node --test scripts/validate-vault-script.test.mjs",
@@ -297,9 +298,14 @@
     "tailwindcss": "^4.3.3",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vite": "8.1.5",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.11"
   },
   "pnpm": {
+    "ignoredBuiltDependencies": [
+      "@parcel/watcher",
+      "@swc/core",
+      "unrs-resolver"
+    ],
     "overrides": {
       "brace-expansion@<1.1.18": "1.1.18",
       "brace-expansion@>=4.0.0 <5.0.9": "5.0.9",
@@ -307,7 +313,7 @@
       "postcss@<8.5.23": "8.5.23",
       "sharp@<0.35.4": "0.35.4",
       "undici@>=7.0.0 <7.29.0": "7.29.0",
-      "js-yaml@>=4.0.0 <4.3.1": "4.3.1",
+      "js-yaml@>=4.0.0 <4.3.2": "4.3.2",
       "vite@<8.0.16": "8.1.5"
     }
   }

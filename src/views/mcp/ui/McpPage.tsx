@@ -36,7 +36,7 @@ export function McpPage({
   // Under the Agents page the store arrives from above, or a second reader misses the first one's writes.
   const ownConnectors = useVaultConnectors(providedConnectors ? null : handle);
   const connectors = providedConnectors ?? ownConnectors;
-  const enabledCount = connectors.connectors.filter((connector) => connector.enabled).length;
+  const enabledCount = connectors.connectors.filter(connectors.isOnHere).length;
   const countKnown = connectors.status === 'ready';
   const noFolder = connectors.status === 'unavailable';
 

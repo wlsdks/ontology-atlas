@@ -2,7 +2,7 @@ import { mkdirSync, existsSync, readFileSync, realpathSync } from 'node:fs';
 import { readFileRevision, sameFileRevision, writeFileAtomically } from './atomic-write.mjs';
 import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { buildMarkdown, parseFrontmatter } from './parse-frontmatter.mjs';
-import { VAULT_SOURCES_DIR, flatSlugIssue, inspectMergedUids, nodeUidIssue, rawSourceSlugIssue } from './schema.mjs';
+import { VAULT_SOURCES_DIR, flatSlugIssue, inspectMergedUids, nodeUidIssue, rawSourceSlugIssue, unwritableSlugIssue } from './schema.mjs';
 import { walkMd, pathToSlug } from './walk-vault.mjs';
 
 /**
@@ -30,6 +30,17 @@ export function slugToPath(rootPath, slug) {
   // outside it. Same contract as `mcp/src/vault.mjs`.
   assertRealPathInside(candidate, normalizedRoot, slug);
   return candidate;
+}
+
+function slugToWritePath(rootPath, slug) {
+  const issue = unwritableSlugIssue(slug);
+  if (issue) throw new Error(issue);
+  const filePath = slugToPath(rootPath, slug);
+  const real = realSegmentsBelowRoot(resolve(rootPath), filePath);
+  const resolved = real ? segmentsToSlug(real) : slug;
+  const resolvedIssue = resolved === slug ? null : unwritableSlugIssue(resolved);
+  if (resolvedIssue) throw new Error(`slug "${slug}" resolves through a link to "${resolved}". ${resolvedIssue}`);
+  return filePath;
 }
 
 /** Still inside the vault after link resolution. A path that does not exist yet is
@@ -107,7 +118,7 @@ export function writeDoc(rootPath, slug, { frontmatter, body = '' }) {
 /** The single preflight through which a dry run and a real write check the same
  * slug and UID contract. */
 export function preflightWriteDoc(rootPath, slug, frontmatter) {
-  const filePath = slugToPath(rootPath, slug);
+  const filePath = slugToWritePath(rootPath, slug);
   if (existsSync(filePath)) {
     throw new Error(`Doc already exists: ${slug}`);
   }
@@ -179,7 +190,7 @@ export function writeFrontmatterKey(rootPath, slug, key, value, options) {
  * atomically — written separately, a failure between them leaves one without the
  * other. */
 export function writeFrontmatterKeys(rootPath, slug, patch, { expectedRevision = null } = {}) {
-  const filePath = slugToPath(rootPath, slug);
+  const filePath = slugToWritePath(rootPath, slug);
   let current;
   try {
     current = readDocFrontmatter(rootPath, slug);

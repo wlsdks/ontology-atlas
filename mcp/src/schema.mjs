@@ -542,6 +542,56 @@ export function flatSlugIssue(kind, slug) {
   );
 }
 
+/** Kept beside the agent-files classifier by `agent-instruction-files.contract.test.ts`. */
+const AGENT_INSTRUCTION_FILE_STEMS = new Set(['agents', 'agents.override', 'claude', 'claude.local', 'gemini']);
+const HIDDEN_OR_CONTROL_CHARACTER = /[\p{Cc}\p{Cf}\u2028\u2029]/u;
+const SHORT_FILE_NAME_TAIL = /~\d+$/;
+
+/** Why a write tool may not create, edit or delete the file `slug` names, or null when it may. */
+export function unwritableSlugIssue(slug) {
+  if (typeof slug !== 'string') return null;
+  const hiddenCharacter = HIDDEN_OR_CONTROL_CHARACTER.exec(slug)?.[0];
+  if (hiddenCharacter !== undefined) {
+    const codePoint = hiddenCharacter.codePointAt(0).toString(16).toUpperCase().padStart(4, '0');
+    return (
+      `slug ${JSON.stringify(slug)} contains U+${codePoint}, a control or invisible formatting character, and a write ` +
+      'tool never names one: it can break a line or disguise which file is meant. Type the slug in visible characters only.'
+    );
+  }
+  const segments = slug.split(/[\\/]/);
+  const shortName = segments.find((segment) => SHORT_FILE_NAME_TAIL.test(segment));
+  if (shortName !== undefined) {
+    return (
+      `slug "${slug}" has the segment "${shortName}", which ends like a Windows short file name ("~1"), and a write ` +
+      'tool never names one: on Windows it can open a different file. Drop the "~<number>" ending.'
+    );
+  }
+  const hidden = segments.find((segment) => segment.startsWith('.'));
+  if (hidden !== undefined) {
+    return (
+      `slug "${slug}" has the path segment "${hidden}", and a write tool never names a segment that starts with ".": ` +
+      'hidden folders such as .claude, .agents, .codex, .github and .git hold agent and tool configuration, ' +
+      'and the vault never reads them as nodes. Use a slug without a leading-dot segment, such as "capabilities/<name>".'
+    );
+  }
+  const stem = segments.at(-1).normalize('NFKC').toLowerCase();
+  if (AGENT_INSTRUCTION_FILE_STEMS.has(stem)) {
+    return (
+      `slug "${slug}" names ${segments.at(-1)}.md, a file coding agents load as their instructions ` +
+      '(AGENTS.md, AGENTS.override.md, CLAUDE.md, CLAUDE.local.md or GEMINI.md, in any letter case, because macOS ' +
+      'and Windows open those as one file). A write tool never creates, edits or deletes one; a person edits it by hand. ' +
+      'Name the node for what it means instead, such as "domains/agent-runtime".'
+    );
+  }
+  if (segments.length === 1 && stem === 'readme') {
+    return (
+      `slug "${slug}" is the vault README (kind vault-readme), which a write tool never authors. ` +
+      'Write the overview as a document node instead, such as "overview".'
+    );
+  }
+  return null;
+}
+
 /** The kind's starter markdown, used when no body is passed, so a first file explains itself. */
 export function defaultBody(kind, title) {
   const schema = VAULT_KIND_SCHEMA[kind];

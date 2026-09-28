@@ -141,7 +141,7 @@ ${COLORS.bold}Bootstrap${COLORS.reset} ${COLORS.dim}(R16/R17: autonomous ingest 
 
 ${COLORS.bold}Graph-level commands${COLORS.reset} ${COLORS.dim}(R15: wraps the MCP server, same authority as an AI agent)${COLORS.reset}
   ${COLORS.dim}Set OATLAS_CLI_MCP_TIMEOUT_MS=N when a large / slow vault needs a longer one-shot MCP call window.${COLORS.reset}
-  ontology-atlas backlinks <slug>             Every node referencing the slug (--json)
+  ontology-atlas backlinks <slug>             Every file linking the slug (--json)
   ontology-atlas constellations [vault]       Saved constellation metadata (read-only)
        --offset N --limit N --json            ${COLORS.dim}bounded discovery · purpose unknown stays unknown${COLORS.reset}
   ontology-atlas constellation <id> [vault]   Saved scope + current facts, review, real relations, dependencies

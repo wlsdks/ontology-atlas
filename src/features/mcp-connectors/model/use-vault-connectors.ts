@@ -2,13 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import type { ConnectorRecord } from '@/shared/lib/connector-record';
+import { connectorFingerprint, type ConnectorRecord } from '@/shared/lib/connector-record';
 import {
   type ConnectorReadResult,
   type ConnectorStore,
   type ConnectorWriteResult,
   createVaultFileConnectorStore,
 } from '@/shared/lib/connector-store';
+import { forgetApproval, recordApproval, useMachineApprovals } from '@/shared/lib/machine-approvals';
+import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
 
 /**
  * The connectors beside the open vault as screen state. The file is the source of truth: each
@@ -25,9 +27,20 @@ export interface VaultConnectorsState {
   connectors: ConnectorRecord[];
   /** `<connector>.<variable>` for each plaintext credential the file still holds. */
   secretLiteralKeys: string[];
+  /** Null on the web, where nothing attaches, so nothing is asked. */
+  vaultRoot: string | null;
+  allowedHere: (connector: ConnectorRecord) => boolean;
+  isOnHere: (connector: ConnectorRecord) => boolean;
+  waitingHere: ReadonlySet<string>;
+  changedSinceAllowed: ReadonlySet<string>;
+  allowHere: (id: string) => boolean;
   reload: () => Promise<void>;
   setEnabled: (id: string, enabled: boolean) => Promise<ConnectorWriteResult | null>;
-  upsert: (connector: ConnectorRecord) => Promise<ConnectorWriteResult | null>;
+  /** An edit made here to an allowed connector stays allowed. */
+  upsert: (
+    connector: ConnectorRecord,
+    options?: { allowHere?: boolean },
+  ) => Promise<ConnectorWriteResult | null>;
   remove: (id: string) => Promise<ConnectorWriteResult | null>;
 }
 
@@ -36,6 +49,7 @@ export interface VaultConnectorsState {
  */
 const NONE: ConnectorRecord[] = [];
 const NO_KEYS: string[] = [];
+const NO_IDS: ReadonlySet<string> = new Set();
 
 /** Keyed by the folder that answered, so a late answer from the previous vault is dropped. */
 interface Loaded {
@@ -66,6 +80,7 @@ export function useVaultConnectors(
     () => (handle ? createVaultFileConnectorStore(handle) : null),
     [handle],
   );
+  const vaultRoot = handle ? (getTauriVaultRootPath(handle) ?? null) : null;
   const [loaded, setLoaded] = useState<Loaded | null>(null);
 
   useEffect(() => {
@@ -109,14 +124,69 @@ export function useVaultConnectors(
   // Only this folder's answer; before the first read, and after the folder changes, the state
   // is loading, not the previous vault's list.
   const current = loaded && loaded.store === store ? loaded : null;
+  const connectors = current?.connectors ?? NONE;
+
+  const approvals = useMachineApprovals();
+  const allowedHere = useCallback(
+    (connector: ConnectorRecord) =>
+      approvals.approves('connector', vaultRoot, connector.id, connectorFingerprint(connector)),
+    [approvals, vaultRoot],
+  );
+  const isOnHere = useCallback(
+    (connector: ConnectorRecord) =>
+      vaultRoot === null ? connector.enabled : connector.enabled && allowedHere(connector),
+    [allowedHere, vaultRoot],
+  );
+  const waitingHere = useMemo(() => {
+    if (vaultRoot === null) return NO_IDS;
+    const ids = connectors
+      .filter((connector) => connector.enabled && !allowedHere(connector))
+      .map((connector) => connector.id);
+    return ids.length > 0 ? new Set(ids) : NO_IDS;
+  }, [allowedHere, connectors, vaultRoot]);
+  const changedSinceAllowed = useMemo(() => {
+    const ids = [...waitingHere].filter((id) => approvals.allowed('connector', vaultRoot, id) !== null);
+    return ids.length > 0 ? new Set(ids) : NO_IDS;
+  }, [approvals, vaultRoot, waitingHere]);
+
+  // A press consents to the record as the screen shows it.
+  const shown = (id: string) => connectors.find((connector) => connector.id === id);
 
   return {
     status: store ? (current?.status ?? 'loading') : 'unavailable',
-    connectors: current?.connectors ?? NONE,
+    connectors,
     secretLiteralKeys: current?.secretLiteralKeys ?? NO_KEYS,
+    vaultRoot,
+    allowedHere,
+    isOnHere,
+    waitingHere,
+    changedSinceAllowed,
+    allowHere: (id) => {
+      const connector = shown(id);
+      return connector
+        ? recordApproval('connector', vaultRoot, id, connectorFingerprint(connector))
+        : false;
+    },
     reload,
-    setEnabled: (id, enabled) => run((s) => s.setEnabled(id, enabled)),
-    upsert: (connector) => run((s) => s.upsert(connector)),
-    remove: (id) => run((s) => s.remove(id)),
+    setEnabled: (id, enabled) => {
+      const connector = shown(id);
+      // Before the write, so the row never reads "waiting" between the two.
+      if (enabled && connector) {
+        recordApproval('connector', vaultRoot, id, connectorFingerprint(connector));
+      }
+      return run((s) => s.setEnabled(id, enabled));
+    },
+    upsert: (connector, options) => {
+      const before = shown(connector.id);
+      if (options?.allowHere || (before !== undefined && allowedHere(before))) {
+        recordApproval('connector', vaultRoot, connector.id, connectorFingerprint(connector));
+      }
+      return run((s) => s.upsert(connector));
+    },
+    remove: async (id) => {
+      const result = await run((s) => s.remove(id));
+      if (result?.status === 'saved') forgetApproval('connector', vaultRoot, id);
+      return result;
+    },
   };
 }

@@ -14,13 +14,23 @@ export function parseConsentEnv(value) {
   return ['1', 'true', 'yes', 'on'].includes(value.trim().toLowerCase());
 }
 
+const HIDDEN_OR_CONTROL_CHARACTER = /[\p{Cc}\p{Cf}\u2028\u2029]/gu;
+
+/** A value as the card shows it: a line break or invisible character is spelled out, never obeyed. */
+function shown(value) {
+  return String(value).replace(HIDDEN_OR_CONTROL_CHARACTER, (character) => `\\u{${character.codePointAt(0).toString(16)}}`);
+}
+
 /** One line naming the vault-visible effect: the whole question a person answers. */
 export function describeWrite(toolName, args) {
   const a = args && typeof args === 'object' ? args : {};
-  const slug = typeof a.slug === 'string' ? a.slug : null;
-  const from = typeof a.from === 'string' ? a.from : null;
-  const to = typeof a.to === 'string' ? a.to : null;
+  const text = (key) => (typeof a[key] === 'string' ? shown(a[key]) : null);
+  const path = (key) => shown(JSON.stringify(a[key]));
+  const slug = text('slug');
+  const from = text('from');
+  const to = text('to');
   const count = (key) => (Array.isArray(a[key]) ? a[key].length : null);
+  const named = (...keys) => keys.every((key) => typeof a[key] === 'string');
 
   switch (toolName) {
     case 'add_concept':
@@ -38,21 +48,26 @@ export function describeWrite(toolName, args) {
     case 'remove_relation':
       return from && to ? `Remove the link ${from} → ${to}` : 'Remove one relation';
     case 'replace_relation':
-      return from && to ? `Replace the link ${from} → ${to}` : 'Replace one relation';
+      return named('from', 'oldTo', 'newTo')
+        ? `Replace the link ${from} → ${text('oldTo')} with ${from} → ${text('newTo')}`
+        : 'Replace one relation';
     case 'patch_concept':
       return slug ? `Edit concept ${slug}` : 'Edit one concept';
     case 'rename_concept':
-      return from && to ? `Rename ${from} → ${to}` : 'Rename one concept';
+      return named('oldSlug', 'newSlug') ? `Rename ${text('oldSlug')} → ${text('newSlug')}` : 'Rename one concept';
     case 'reclassify_concept':
       return slug ? `Change the kind of ${slug}` : 'Change one concept kind';
     case 'merge_concepts':
-      return from && to ? `Merge ${from} into ${to}` : 'Merge concepts';
+      return named('fromSlug', 'intoSlug') ? `Merge ${text('fromSlug')} into ${text('intoSlug')}` : 'Merge concepts';
     case 'delete_concept':
       return slug ? `Delete concept ${slug}` : 'Delete one concept';
     case 'absorb_document':
-      return 'Absorb a document into typed nodes';
+      return named('filePath') ? `Absorb ${path('filePath')} into typed nodes` : 'Absorb a document into typed nodes';
     case 'connect_project_source':
-      return 'Connect a source folder to this vault';
+      if (!named('projectSlug')) return 'Connect a source folder to this vault';
+      return named('rootPath')
+        ? `Connect ${text('projectSlug')} to the source folder ${path('rootPath')}`
+        : `Connect ${text('projectSlug')} to the source folder inferred from this vault's location`;
     case 'disconnect_project_source':
       return 'Disconnect a source folder from this vault';
     case 'git_snapshot':
