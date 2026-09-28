@@ -41,6 +41,12 @@ const closureScopeSelectors = [
       'A callback in useLocalVaultInternal reads the vault through stateRef, never `state`: a closure keeps its render\'s state, manifest included, after another folder opens.',
   },
   {
+    selector:
+      'FunctionDeclaration[id.name="HomePageImpl"] :function Identifier[name=/^(?:topologyVaultReadModel|vault)$/]:not(MemberExpression[computed=false] > Identifier.property):not(Property[computed=false] > Identifier.key)',
+    message:
+      'A callback in HomePageImpl takes the fields it needs, never `vault` or `topologyVaultReadModel`: a closure keeps its render\'s folder alive after another opens.',
+  },
+  {
     selector: ':function CallExpression[callee.name="derivedHook"]',
     message:
       'Create a derived hook at module level (`const useX = derivedHook(fn)`), so its function closes over no component scope.',

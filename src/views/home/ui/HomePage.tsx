@@ -463,16 +463,18 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     agentDockDefaultOpen, topologyVaultReadModel, topologyGraphProjection, acpRuntimeController,
     homeWorkbenchController, topologyAuthoring, topologyPreferences, topologyIndexPresentation
   });
-  const { agentDockOpen, runtimeChatOpen } = topologyAgentOrchestration;
+  const { agentDockOpen, runtimeChatOpen, closeVaultAgent, openVaultAgent } = topologyAgentOrchestration;
+  const { setFullDetailSlug } = topologyCanvasFocus;
+  const gitVaultPath = topologyVaultReadModel.gitVaultPath;
   const grayArea = useTopologyGrayArea({
     docs: topologyVaultReadModel.vault.manifest?.docs ?? [],
     nodes: topologyVaultReadModel.ontologyInsight?.nodes ?? [],
     selectedSlug: topologyVaultReadModel.selectedOntologyNode?.id ?? null,
     memberSlugs: topologyExplorationLenses.routedConstellation?.memberSlugs ?? null,
-    vaultPath: topologyVaultReadModel.gitVaultPath,
+    vaultPath: gitVaultPath,
     locale: activeLocale, routeState, setRouteState,
-    onOpen: () => { topologyAgentOrchestration.closeVaultAgent(); topologyCanvasFocus.setFullDetailSlug(null); },
-    onPrepare: (text,contextLabel) => { setVaultAgentPrefill({text,nonce:Date.now(),context:{label:contextLabel,vaultPath:topologyVaultReadModel.gitVaultPath}}); topologyAgentOrchestration.openVaultAgent(); },
+    onOpen: () => { closeVaultAgent(); setFullDetailSlug(null); },
+    onPrepare: (text,contextLabel) => { setVaultAgentPrefill({text,nonce:Date.now(),context:{label:contextLabel,vaultPath:gitVaultPath}}); openVaultAgent(); },
   });
   const topologyNavigationActions = useTopologyNavigationActions({
     setExpandAllActive, setRouteState, replayPastWalk, topologyCanvasFocus, topologyPreferences,
