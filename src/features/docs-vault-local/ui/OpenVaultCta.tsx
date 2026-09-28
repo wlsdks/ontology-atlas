@@ -16,9 +16,10 @@ export interface OpenVaultCtaProps {
   variant?: "primary" | "outline";
   tone?: "default" | "accentOnTint";
   className?: string;
+  onOpen?: () => void;
 }
 
-export function OpenVaultCta({ testId, variant, tone, className }: OpenVaultCtaProps) {
+export function OpenVaultCta({ testId, variant, tone, className, onOpen }: OpenVaultCtaProps) {
   const t = useTranslations("openVaultCta");
   const vault = useLocalVault();
   const emphasis = variant ?? (tone === "accentOnTint" ? "primary" : "outline");
@@ -55,7 +56,8 @@ export function OpenVaultCta({ testId, variant, tone, className }: OpenVaultCtaP
       data-open-vault-emphasis={emphasis}
       disabled={busy}
       onClick={() => {
-        void vault.open();
+        if (onOpen) onOpen();
+        else void vault.open();
       }}
       className={cn(className, buttonVariants({ variant: emphasis, size: "sm" }))}
     >

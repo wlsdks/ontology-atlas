@@ -197,9 +197,8 @@ export function ArchitectureRoleDetail({
         <div ref={setModuleGridNode} className="min-w-0">
           {roleModules.length > 0 ? (
             <div className="min-w-0" data-testid={`architecture-modules-${roleId}`}>
-              {/* Revealed cards rise in sequence within the one expand beat. */}
               <StaggeredFadeIn
-                key={`${roleId}-${showAllModules ? 'open' : 'closed'}`}
+                key={`${roleId}-modules`}
                 as="div"
                 className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2.5"
                 stagger={24}
@@ -259,7 +258,7 @@ export function ArchitectureRoleDetail({
         </p>
         {concepts.length > 0 ? (
           <StaggeredFadeIn
-            key={`${roleId}-concepts-${showAllConcepts ? 'all' : 'preview'}`}
+            key={`${roleId}-concepts`}
             as="div"
             className="mt-2.5 grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2.5"
             stagger={24}

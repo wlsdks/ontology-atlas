@@ -2637,7 +2637,7 @@ Tailwind v4 `--radius-*` namespace generates `rounded-<step>`.
 | Unit | Token (Utility) | px | Target |
 |---|---|---|---|
 | micro | `--radius-micro` (`rounded-micro`) | 4 | Micro badge, command tag, kbd — one layer below the chip |
-| chip | `--radius-chip` (`rounded-chip`) | 6 | Chip, badge, field (`fieldClass`, every boxed size above `xs`), `Button` `sm` (32px, the box family of chips and fields) and `lg` (44px hero CTA) |
+| chip | `--radius-chip` (`rounded-chip`) | 6 | Chip, badge, field (`fieldClass`, every boxed size above `xs`), the `Select` trigger, `Button` `sm` (32px, the box family of chips and fields) and `lg` (44px hero CTA) |
 | card | `--radius-card` (`rounded-card`) | 9 | Card · Medium Surface |
 | panel | `--radius-panel` (`rounded-panel`) | 12 | Panel, Modal, Large Surface, `Button` `md` (40px, the default) |
 
@@ -2945,7 +2945,7 @@ Chrome surfaces (tiles/chips) must only be created via `ChromeTile` / `ChromeChi
 
 | Component | Location | Purpose |
 |---|---|---|
-| `Select` (Dark Listbox) | `src/shared/ui/select.tsx` | Native `<select>` replacement — macOS gray system dropdown adapted to dark app syntax |
+| `Select` (Dark Listbox) | `src/shared/ui/select.tsx` | Native `<select>` replacement — macOS gray system dropdown adapted to dark app syntax. The trigger is a field: `rounded-chip`, and at `md`/`lg` the value sits in `text-body-lg` like a `fieldClass` input of the same height, so a select beside an input reads as its sibling (2026-09-29; it was `rounded-card` with 12.5px text). `sm` keeps `text-label` for dense composer rows |
 | `EmptyState` | `src/shared/ui/empty-state.tsx` | Empty lists/charts/pages — skeleton placeholders + icon + one-line guidance |
 | `Button` | `src/shared/ui/button.tsx` | Standard action — `primary` · `outline` · `ghost` · `danger` (the confirm step of an irreversible action only, drawn from the danger ramp). Every size wears the chip radius (`sm` 32px, `md` 40px, `lg` 44px): a Button is a control, and only the boxes that hold content (card, panel, sheet) wear their larger corners. `md` kept the panel radius until 2026-09-26, when a 40px primary on the 12px corner read as a pill beside rectangular primaries on the next screen. Type is `text-body-lg` at every size, the step a 32px field sets its value in, so a Button beside a `fieldClass` field or a `controlClass` chip shares their corner and their text size. While disabled, `danger` drops its hue for `outline`'s (the danger ink at `opacity-55` measured 2.42:1). A page's one way forward is this `primary`, never a `controlClass` `pill`, which carries a state or a count: four web-only doors drawn as filled pills read as a second primary shape beside every other screen's (owner review, 2026-09-26; gate `tests/e2e/primary-action-shape.spec.ts`). Gate: `src/shared/ui/button.test.tsx` |
 | `ChromeTile` / `ChromeChip` | `src/shared/ui/chrome-tile.tsx` · `chrome-chip.tsx` | Chrome tiles/chips (see separate "Chrome Syntax" section) |

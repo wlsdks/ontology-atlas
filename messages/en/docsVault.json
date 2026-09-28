@@ -140,8 +140,7 @@
   },
   "sampleNotice": {
     "title": "This is a read-only sample",
-    "body": "This doc is Atlas's own example, so editing is locked.",
-    "openFolderCta": "Open my folder"
+    "body": "This doc is Atlas's own example, so editing is locked."
   },
   "sampleWelcome": {
     "title": "What is this document space?",
@@ -154,7 +153,6 @@
     "empty": "No documents link here yet"
   },
   "vaultStatus": {
-    "downloadAppCta": "Get the app",
     "unsupportedTooltip": "Local ontology folder editing is available in the installed desktop app.",
     "permissionNeededBanner": "Workspace is paused: re-grant folder access to keep editing. Showing sample docs until then.",
     "errorBanner": "Workspace folder is unavailable ({message}). Showing sample docs: open the picker to re-pick or refresh.",

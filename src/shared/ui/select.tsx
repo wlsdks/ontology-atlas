@@ -467,7 +467,7 @@ export function Select({
         onClick={() => (open ? setOpen(false) : openList())}
         onKeyDown={onKeyDown}
         className={cn(
-          "flex w-full items-center gap-2 rounded-card border px-3 text-left text-body text-[color:var(--color-text-secondary)] outline-none transition-colors focus-visible:outline-none focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a24)] data-[state=open]:border-[color:var(--color-indigo-a46)]",
+          "flex w-full items-center gap-2 rounded-chip border px-3 text-left text-[color:var(--color-text-secondary)] outline-none transition-colors focus-visible:outline-none focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a24)] data-[state=open]:border-[color:var(--color-indigo-a46)]",
           quiet
             ? "border-transparent bg-transparent hover:bg-[color:var(--color-overlay-1)] data-[state=open]:bg-[color:var(--color-overlay-1)]"
             : "border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] hover:border-[color:var(--color-border-strong)]",
@@ -476,8 +476,8 @@ export function Select({
           size === "sm"
             ? cn("h-[var(--control-h-sm)] text-label", quiet ? "gap-1 px-1.5" : "px-2")
             : size === "md"
-              ? "h-[var(--control-h-md)]"
-              : "h-[var(--control-h-lg)]",
+              ? "h-[var(--control-h-md)] text-body-lg"
+              : "h-[var(--control-h-lg)] text-body-lg",
         )}
       >
         <span

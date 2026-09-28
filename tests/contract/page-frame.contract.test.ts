@@ -294,6 +294,8 @@ const TITLE_MEMBERS = [
   "src/widgets/atlas-git-panel/ui/AtlasGitPanel.tsx",
   "src/views/library/ui/parts/LibraryStartStage.tsx",
   "src/views/library/ui/LibraryRounds.tsx",
+  "src/views/library/ui/LibraryConstellations.tsx",
+  "src/views/library/ui/LibraryPage.tsx",
   "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
   "src/views/ontology-insights/ui/InsightsLoadingView.tsx",
 ] as const;
@@ -343,7 +345,9 @@ describe("page title and lede", () => {
   it("every page h1 in a member file wears PAGE_TITLE and restates none of it", () => {
     let measured = 0;
     for (const member of TITLE_MEMBERS) {
-      const tags = headingTags(blankComments(member, read(member)));
+      const tags = headingTags(blankComments(member, read(member))).filter(
+        (tag) => !/className="sr-only"/.test(tag),
+      );
       expect(tags.length, `${member} has no h1 to judge`).toBeGreaterThan(0);
       for (const tag of tags) {
         measured += 1;

@@ -15,7 +15,7 @@ import { useRouter } from '@/i18n/navigation';
 import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
 import { badgeClass } from '@/shared/ui/badge-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
-import { PAGE_COLUMN_FORM, PAGE_FRAME_FORM } from '@/shared/ui/page-frame';
+import { PAGE_COLUMN_FORM, PAGE_FRAME_FORM, PAGE_LEDE, PAGE_TITLE } from '@/shared/ui/page-frame';
 import { Button, EmptyState, RowButton, Surface } from '@/shared/ui';
 import { libraryEyebrowClass } from '../lib/page-eyebrow';
 import { ConstellationsStartingPoint } from './parts/ConstellationsStartingPoint';
@@ -111,10 +111,10 @@ export function LibraryConstellations({
         <p className={libraryEyebrowClass(locale)}>
           {t('eyebrow')}
         </p>
-        <h1 className="mt-2 text-display leading-display font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+        <h1 className={`mt-2 ${PAGE_TITLE}`}>
           {t('title')}
         </h1>
-        <p className="mt-2 max-w-prose text-body-lg leading-title text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
+        <p className={`mt-2 max-w-prose ${PAGE_LEDE}`}>
           {t('description')}
         </p>
       </div>

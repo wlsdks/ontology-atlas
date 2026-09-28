@@ -1,11 +1,13 @@
 "use client";
 
-import type { useTranslations } from "next-intl";
+import { useLocale, type useTranslations } from "next-intl";
 import { CloudDownload, FilePlus2, Search } from "lucide-react";
 
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { PAGE_COLUMN_STAGE, PAGE_LEDE, PAGE_TITLE } from "@/shared/ui/page-frame";
+
+import { libraryEyebrowClass } from "../../lib/page-eyebrow";
 
 /**
  * **An empty folder is an empty state, not a popup** (owner, 2026-09-06).
@@ -57,6 +59,7 @@ export function LibraryStartStage({
   onImportFromService: () => void;
   t: ReturnType<typeof useTranslations<"library">>;
 }) {
+  const locale = useLocale();
   return (
     /*
      * The card, not a band of three inks spread across the pane. The 2026-08-12 empty-state
@@ -69,7 +72,7 @@ export function LibraryStartStage({
       data-testid="library-start-stage"
       className={`${PAGE_COLUMN_STAGE} rounded-panel border border-dashed border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)]`}
     >
-      <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
+      <p className={libraryEyebrowClass(locale)}>
         {t("eyebrow")}
       </p>
       {/*

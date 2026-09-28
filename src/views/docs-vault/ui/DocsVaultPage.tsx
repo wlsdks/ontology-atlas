@@ -2411,10 +2411,7 @@ function DocsVaultContent({
                 </div>
                 {/* Read-only is a vault fact, stated here at zero vertical cost. */}
                 {!editing && !isLocalSourceLoaded ? (
-                  <SampleNotice
-                    canOpenLocalVault={!localSourceDisabled}
-                    onOpenFolder={() => handleSourceChange('local')}
-                  />
+                  <SampleNotice onOpenFolder={() => handleSourceChange('local')} />
                 ) : null}
                 {canEditCurrent ? (
                   <div

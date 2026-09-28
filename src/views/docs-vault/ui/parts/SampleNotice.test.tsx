@@ -1,9 +1,13 @@
 import type { ReactNode } from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import koMessages from "../../../../../messages/ko.json";
 import { SampleNotice } from "./SampleNotice";
+
+const vault = vi.hoisted(() => ({ status: "idle", open: vi.fn() }));
+
+vi.mock("@/entities/vault-session", () => ({ useLocalVault: () => vault }));
 
 vi.mock("@/i18n/navigation", () => ({
   Link: ({
@@ -22,38 +26,45 @@ vi.mock("@/i18n/navigation", () => ({
   ),
 }));
 
-function renderNotice(canOpenLocalVault: boolean, onOpenFolder = vi.fn()) {
+const cta = koMessages.openVaultCta;
+
+function renderNotice(status: string, onOpenFolder = vi.fn()) {
+  vault.status = status;
   return {
     onOpenFolder,
     ...render(
       <NextIntlClientProvider locale="ko" messages={koMessages}>
-        <SampleNotice canOpenLocalVault={canOpenLocalVault} onOpenFolder={onOpenFolder} />
+        <SampleNotice onOpenFolder={onOpenFolder} />
       </NextIntlClientProvider>,
     ),
   };
 }
 
 describe("SampleNotice", () => {
-  it("explains why the doc is read-only in plain language", () => {
-    renderNotice(false);
-    expect(screen.getByText("읽기 전용 샘플이에요")).toBeInTheDocument();
-    expect(
-      screen.getByText(/이 문서는 Atlas 자체 예시라 편집이 잠겨 있어요\./),
-    ).toBeInTheDocument();
+  beforeEach(() => {
+    vault.open.mockReset();
   });
 
-  it("offers 'open my folder' on desktop runtime and calls the reused local-vault flow", () => {
-    const { onOpenFolder } = renderNotice(true);
-    const button = screen.getByRole("button", { name: "내 폴더 열기" });
+  it("explains why the doc is read-only in plain language", () => {
+    renderNotice("unsupported");
+    expect(screen.getByText(koMessages.docsVault.sampleNotice.title)).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(koMessages.docsVault.sampleNotice.body.replace(".", "\\.")))).toBeInTheDocument();
+  });
+
+  it("opens the folder through the page's own flow where a folder can be opened", () => {
+    const { onOpenFolder } = renderNotice("idle");
+    const button = screen.getByRole("button", { name: cta.label });
+    expect(button).toHaveAttribute("data-open-vault-cta", "picker");
     fireEvent.click(button);
     expect(onOpenFolder).toHaveBeenCalledTimes(1);
-    expect(screen.queryByText("앱 받기")).not.toBeInTheDocument();
+    expect(vault.open).not.toHaveBeenCalled();
+    expect(screen.queryByRole("link", { name: cta.unsupportedLabel })).not.toBeInTheDocument();
   });
 
-  it("offers the desktop app download link on web runtime instead of a folder action", () => {
-    renderNotice(false);
-    const link = screen.getByRole("link", { name: "앱 받기" });
+  it("offers the app where the browser cannot open a folder", () => {
+    renderNotice("unsupported");
+    const link = screen.getByRole("link", { name: cta.unsupportedLabel });
     expect(link).toHaveAttribute("href", "/download/");
-    expect(screen.queryByText("내 폴더 열기")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: cta.label })).not.toBeInTheDocument();
   });
 });
