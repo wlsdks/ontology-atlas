@@ -1,23 +1,28 @@
 {
   "basis": {
-    "bindingDigest": "sha256:76eae0b56e02b0405e96da712a4a6f4c3b1400f9a37bc583328cde20d6092c98",
-    "bodyDigest": "sha256:171d428c1b22ab41ec77768336bf8ec7e1f6f0fbd07a399a7c4802476da91f7f",
+    "bindingDigest": "sha256:fd3dab96649a8200a760499f56dc31b9d9bfd3d54fdf848b33f9f6a988b27f08",
+    "bodyDigest": "sha256:8bc7a7cdb7a469139ef955917d79c1422913a1d8aeaa2b78ab3bff91d1154676",
     "graphDigest": "98e444572ef67c27a0229ca2424b42bcdd96bed0dc5c3b6a5ac069a1d20fb1ca",
     "projectSlug": "projects/research-workbench",
     "selectedUids": [
       "f5783b86-97ac-4e77-b00c-b34a8b254194"
     ],
-    "sourceFingerprint": "sha256:07b30bb95999cbb8eac2bc7a7bf301193c45b37d2a77d01476603d7b2e0bdd24",
-    "sourceId": "sha256:5f5b2b97df45517c982fd41967a3f178e8d7fe500aeb5ed85342f40069782bca"
+    "sourceFingerprint": "sha256:23bcd169c3ebeafab74025b82e296d716ce7d748c7b29baf0c5c49939f6fd7d7",
+    "sourceId": "sha256:609768e6d4995452bc85b36b191e7abca570f079d39b5831554eedfd76203bf0",
+    "sourceRoots": [
+      "src/research",
+      "src/retry"
+    ]
   },
   "contract": "grayAreaEvidence:v1",
   "coverage": {
-    "filesScanned": 5,
+    "filesScanned": 2,
     "importsAvailable": true,
     "importsLimited": false,
     "inventoryFiles": 5,
     "limits": [
       "static_imports_only",
+      "implementation_parent_folders_only_other_callers_unmeasured",
       "two_recorded_dependency_hops",
       "source_ranges_only",
       "historical_gaps_unverified"
@@ -26,7 +31,8 @@
     "readsLimited": false,
     "recordedReadsTotal": 7,
     "sourceFolders": [
-      "src"
+      "src/research",
+      "src/retry"
     ],
     "unresolvedImports": 0,
     "unsupported": [
@@ -164,13 +170,6 @@
   ],
   "imports": [
     {
-      "from": "src/research/index.ts",
-      "importUsage": "value",
-      "kind": "static",
-      "sourceRole": "production",
-      "to": "src/retry/index.ts"
-    },
-    {
       "from": "src/retry/index.ts",
       "importUsage": "value",
       "kind": "static",
@@ -183,9 +182,16 @@
       "kind": "static",
       "sourceRole": "production",
       "to": "src/types/index.ts"
+    },
+    {
+      "from": "src/research/index.ts",
+      "importUsage": "value",
+      "kind": "static",
+      "sourceRole": "production",
+      "to": "src/retry/index.ts"
     }
   ],
-  "measuredAt": "2026-09-27T22:51:35.109121+00:00",
+  "measuredAt": "2026-09-28T00:28:04.415717+00:00",
   "nodes": [
     {
       "body": "\nStarts an investigation with read-only authority.\n\n## Includes\n- Passing a read-only request to retry dispatch.\n\n## Excludes\n- Authorizing a Wiki write.\n\n## Uncertainty\n- The retry behavior in src/retry/index.ts was not verified.\n",
@@ -268,95 +274,41 @@
       "statement": "Resolved on 2026-09-20: src/policy/index.ts was read and its synchronous flag decision verified."
     }
   ],
-  "snapshotId": "sha256:000806b61f18eeb0f42f2a0569081568bec144120ee6a6820891d04f1a6b1f9d",
+  "snapshotId": "sha256:95f1ef2cc0c9ca68c63a123c903d168af64522aeb5cd52b19519d1332eb1b4ea",
   "witnesses": [
     {
-      "actualRange": {
-        "endLine": 2,
-        "startLine": 1
-      },
-      "citation": "source:src/policy/index.ts#L1-L2@sha256:5e5d567791258aea6f2f2265152300f9916c8a6ac1aa6e4c0d2aa3e6c08c9568",
-      "fileBytes": 151,
-      "fileComplete": true,
-      "fileLines": 2,
-      "fullFileSha256": "5e5d567791258aea6f2f2265152300f9916c8a6ac1aa6e4c0d2aa3e6c08c9568",
-      "next": null,
       "path": "src/policy/index.ts",
-      "requestComplete": true,
-      "requestedRange": {
-        "maxLines": 80,
-        "startLine": 1
-      },
-      "returnedBytes": 151,
-      "status": "read",
-      "text": "export const canWrite = (request: { readOnly: boolean }) => !request.readOnly;\n// A later observed source change; semantic effect requires inspection.\n",
-      "truncated": false
+      "reason": "source_bytes_unavailable",
+      "status": "refused"
     },
     {
       "actualRange": {
         "endLine": 2,
         "startLine": 1
       },
-      "citation": "source:src/research/index.ts#L1-L2@sha256:f0204be87a50c1f0edb58abd807e22a8e64519bd4745f094239ba798ac309762",
-      "fileBytes": 108,
+      "citation": "src/research/index.ts:1-2",
       "fileComplete": true,
-      "fileLines": 2,
       "fullFileSha256": "f0204be87a50c1f0edb58abd807e22a8e64519bd4745f094239ba798ac309762",
-      "next": null,
       "path": "src/research/index.ts",
-      "requestComplete": true,
-      "requestedRange": {
-        "maxLines": 80,
-        "startLine": 1
-      },
-      "returnedBytes": 108,
       "status": "read",
-      "text": "import { retryRequest } from '../retry';\nexport const investigate = () => retryRequest({ readOnly: true });\n",
-      "truncated": false
+      "text": "import { retryRequest } from '../retry';\nexport const investigate = () => retryRequest({ readOnly: true });"
     },
     {
       "actualRange": {
         "endLine": 6,
         "startLine": 1
       },
-      "citation": "source:src/retry/index.ts#L1-L6@sha256:b6f700e2d9aef029eb735f36d76e03cb91845fd2d83a569da92508437ecdfc23",
-      "fileBytes": 248,
+      "citation": "src/retry/index.ts:1-6",
       "fileComplete": true,
-      "fileLines": 6,
       "fullFileSha256": "b6f700e2d9aef029eb735f36d76e03cb91845fd2d83a569da92508437ecdfc23",
-      "next": null,
       "path": "src/retry/index.ts",
-      "requestComplete": true,
-      "requestedRange": {
-        "maxLines": 80,
-        "startLine": 1
-      },
-      "returnedBytes": 248,
       "status": "read",
-      "text": "import { canWrite } from '../policy';\nimport type { Request } from '../types';\nexport function retryRequest(request: Request) {\n  return { canWrite: canWrite(request), request };\n}\n// Later retry-source observation; behavior still requires review.\n",
-      "truncated": false
+      "text": "import { canWrite } from '../policy';\nimport type { Request } from '../types';\nexport function retryRequest(request: Request) {\n  return { canWrite: canWrite(request), request };\n}\n// Later retry-source observation; behavior still requires review."
     },
     {
-      "actualRange": {
-        "endLine": 1,
-        "startLine": 1
-      },
-      "citation": "source:src/types/index.ts#L1-L1@sha256:32cedf18b8663c98a51ef870dc791ff3b84cd52b86f39f67d003d775cd5c8221",
-      "fileBytes": 47,
-      "fileComplete": true,
-      "fileLines": 1,
-      "fullFileSha256": "32cedf18b8663c98a51ef870dc791ff3b84cd52b86f39f67d003d775cd5c8221",
-      "next": null,
       "path": "src/types/index.ts",
-      "requestComplete": true,
-      "requestedRange": {
-        "maxLines": 80,
-        "startLine": 1
-      },
-      "returnedBytes": 47,
-      "status": "read",
-      "text": "export interface Request { readOnly: boolean }\n",
-      "truncated": false
+      "reason": "source_bytes_unavailable",
+      "status": "refused"
     }
   ]
 }

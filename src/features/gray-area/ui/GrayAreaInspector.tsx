@@ -164,6 +164,12 @@ function Findings({ snapshot,vaultPath,onFocus,onPrepare,onRefresh,escapeFirstRe
       <RowButton tone="secondary" hoverSurface="lift" aria-expanded={scopeOpen} onClick={()=>setScopeOpen(!scopeOpen)}><span className="min-w-0 flex-1 break-words">{t('scopeDetails')}</span><ChevronDown size={14} className="shrink-0"/></RowButton>
       <Surface open={scopeOpen} motion="overlay" className="space-y-2">
         <p>{snapshot.coverage.importsAvailable?t('coverage',{count:snapshot.coverage.filesScanned,limit:snapshot.coverage.maxFiles}):t('scanUnavailable')}</p>
+        {snapshot.basis.sourceRoots?.length ? <div className="space-y-1">
+          <p id="gray-area-source-folders-label">{t('sourceFolders')}</p>
+          <ul aria-labelledby="gray-area-source-folders-label" className="space-y-1">
+            {snapshot.basis.sourceRoots.map(folder=><li key={folder} className="break-all font-mono">{folder&&folder!=='.'?folder:t('sourceFolderRoot')}</li>)}
+          </ul>
+        </div> : <p>{t('sourceFoldersUnknown')}</p>}
         {snapshot.coverage.importsLimited||snapshot.coverage.readsLimited ? <p>{t('limited')}</p>:null}
         <p>{t('scopeBoundary')}</p><p>{t('coverageUnknown')}</p><p>{t('sessionOnly')}</p><p>{t('prepareBoundary')}</p>
       </Surface>

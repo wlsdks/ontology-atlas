@@ -32,6 +32,8 @@ test('reviews the exact folder before any scan and shows bounded actual source w
     await expect.poll(()=>panel.evaluate(e=>{const r=e.getBoundingClientRect();return Math.max(-r.left,r.right-innerWidth,-r.top,r.bottom-innerHeight);})).toBeLessThanOrEqual(1);
     await page.screenshot({path:`/tmp/atlas-gray-area-proof/static-inspector-${width}.png`});
   }
+  await page.getByRole('button',{name:'Scope, limits and permissions',exact:true}).click();
+  await expect(page.getByRole('list',{name:'Implementation folders inspected'}).getByRole('listitem')).toHaveText(['src/research','src/retry']);
 });
 
 test('prepares an editable investigation without sending a provider turn or writing',async({page})=>{
