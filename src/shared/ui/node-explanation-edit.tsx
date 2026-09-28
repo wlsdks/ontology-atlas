@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check, PencilLine, X } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -37,12 +37,21 @@ export function NodeExplanationEdit({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
   const [saving, setSaving] = useState(false);
+  const editButton = useRef<HTMLButtonElement>(null);
+  const restoreFocus = useRef(false);
+  useEffect(() => {
+    if (!editing && restoreFocus.current) {
+      restoreFocus.current = false;
+      editButton.current?.focus();
+    }
+  }, [editing]);
 
   const beginEdit = () => {
     setDraft(value);
     setEditing(true);
   };
   const cancel = () => {
+    restoreFocus.current = true;
     setEditing(false);
     setDraft(value);
   };
@@ -70,6 +79,7 @@ export function NodeExplanationEdit({
             {labels.heading}
           </span>
           <button
+            ref={editButton}
             type="button"
             onClick={beginEdit}
             aria-label={labels.edit}
@@ -137,7 +147,12 @@ export function NodeExplanationEdit({
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void commit();
-          else if (e.key === "Escape") cancel();
+          else if (e.key === "Escape") {
+            e.stopPropagation();
+            if (e.nativeEvent.isComposing) return;
+            e.preventDefault();
+            cancel();
+          }
         }}
         aria-label={labels.heading}
         data-testid="node-explanation-input"

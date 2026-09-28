@@ -4,7 +4,7 @@ doc_type: spec
 status: draft
 area: analysis
 date: 2026-09-28
-decisions: []
+decisions: [90154cfa-a838-4a23-ad93-9a09af2d9e92]
 ---
 
 # Restore access to a connected Gray Area source

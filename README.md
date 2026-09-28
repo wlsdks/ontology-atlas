@@ -211,7 +211,8 @@ with scripts disabled. Copy is edited in `messages/<locale>/<Namespace>.json`.
 - **Explore overlooked areas from a selected concept or Concept set** — the macOS
   app previews the bound code folder, then gathers a few versioned local
   observations with source excerpts, explicit unknowns and an editable investigation
-  packet. An absent graph edge or changed file is not accepted meaning.
+  packet. A connected folder that needs app access can be selected again through
+  the native picker before inspection. An absent graph edge or changed file is not accepted meaning.
 - **Versioned AI analysis kept as local Markdown**, with its evidence and
   selectable history, and measured violations instead of an invented
   maintainability score. [Analysis records](docs/contracts/analysis-records.md).

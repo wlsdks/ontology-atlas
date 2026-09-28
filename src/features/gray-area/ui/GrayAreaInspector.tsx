@@ -1,12 +1,12 @@
 'use client';
 
-import { isTauriVaultRuntime } from '@/shared/lib/tauri-vault-fs';
+import { getTauriVaultRootPath, isTauriVaultRuntime, pickTauriVaultDirectory } from '@/shared/lib/tauri-vault-fs';
 import { cn } from '@/shared/lib/cn';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { copyText } from '@/shared/lib/copy-text';
 import { useHeldValue } from '@/shared/lib/use-presence';
 import { Link } from '@/i18n/navigation';
-import { checkGrayAreaEvidence, readGrayAreaEvidence, previewGrayAreaScope, type GrayAreaScopePreview, type GrayAreaSnapshot, type GrayAreaWitness } from '@/shared/lib/tauri-gray-area';
+import { checkGrayAreaEvidence, grayAreaSourceAccessRequired, readGrayAreaEvidence, previewGrayAreaScope, type GrayAreaScopePreview, type GrayAreaSnapshot, type GrayAreaWitness } from '@/shared/lib/tauri-gray-area';
 import { Button, IconButton, RowButton, Surface, controlClass } from '@/shared/ui';
 import { ArrowRight, Check, ChevronDown, Copy, FileSearch, RefreshCw, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -30,7 +30,9 @@ export function GrayAreaInspector({ open, vaultPath, selection, onClose, onFocus
   const t = useTranslations('grayArea');
   const nativeRuntime = isTauriVaultRuntime();
   const [attempt, setAttempt] = useState(0);
-  const [preview,setPreview] = useState<{key:string;value:GrayAreaScopePreview|null;error:string|null}|null>(null);
+  const [preview,setPreview] = useState<{key:string;value:GrayAreaScopePreview|null;error:unknown}|null>(null);
+  const [sourceSelection,setSourceSelection] = useState<{key:string;busy:boolean;error:'sourceSelectionFailed'|'sourceSelectionMismatch'|null}|null>(null);
+  const sourcePickerRef = useRef<HTMLButtonElement>(null);
   const [scanKey,setScanKey] = useState<string|null>(null);
   const [result, setResult] = useState<{ key: string; snapshot: GrayAreaSnapshot | null; error: string | null } | null>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -46,6 +48,7 @@ export function GrayAreaInspector({ open, vaultPath, selection, onClose, onFocus
   useEffect(() => {
     if (!open) return;
     sequence.current+=1;
+    setSourceSelection(null);
     closeRef.current?.focus();
     let cancelled = false;
     const read = async () => {
@@ -53,7 +56,7 @@ export function GrayAreaInspector({ open, vaultPath, selection, onClose, onFocus
         const value = vaultPath ? await previewGrayAreaScope(vaultPath,selection.projectSlug) : null;
         if (!cancelled) setPreview({key:requestKey,value,error:null});
       } catch (error) {
-        if (!cancelled) setPreview({key:requestKey,value:null,error:String(error)});
+        if (!cancelled) setPreview({key:requestKey,value:null,error});
       }
     };
     void read();
@@ -70,6 +73,34 @@ export function GrayAreaInspector({ open, vaultPath, selection, onClose, onFocus
   }, [open,onClose]);
   const current = result?.key === requestKey ? result : null;
   const proposal = preview?.key===requestKey?preview:null;
+  const sourceAccess = grayAreaSourceAccessRequired(proposal?.error);
+  const sourceSelectionState = sourceSelection?.key===requestKey?sourceSelection:null;
+  useEffect(()=>{
+    if(sourceSelectionState&&!sourceSelectionState.busy)sourcePickerRef.current?.focus();
+  },[sourceSelectionState]);
+  const selectSource = async()=>{
+    if(!vaultPath||!sourceAccess||sourceSelectionState?.busy)return;
+    const ticket=sequence.current;
+    setSourceSelection({key:requestKey,busy:true,error:null});
+    let repreviewing=false;
+    try{
+      const handle=await pickTauriVaultDirectory(t('sourcePickerTitle'));
+      if(ticket!==sequence.current||!handle)return;
+      const selectedSourcePath=getTauriVaultRootPath(handle);
+      if(!selectedSourcePath)throw new Error('picker_failed');
+      repreviewing=true;
+      const value=await previewGrayAreaScope(vaultPath,selection.projectSlug,{selectedSourcePath,expectedBindingDigest:sourceAccess.bindingDigest});
+      if(ticket===sequence.current)setPreview({key:requestKey,value,error:null});
+    }catch(error){
+      if(ticket!==sequence.current)return;
+      if(repreviewing&&error!=='source_selection_mismatch')setPreview({key:requestKey,value:null,error});
+      else setSourceSelection({key:requestKey,busy:false,error:error==='source_selection_mismatch'?'sourceSelectionMismatch':'sourceSelectionFailed'});
+    }finally{
+      if(ticket===sequence.current){
+        setSourceSelection(current=>current?.key===requestKey?{...current,busy:false}:current);
+      }
+    }
+  };
   const start = async()=>{
     if(!vaultPath||!proposal?.value)return;
     const ticket=sequence.current;
@@ -89,7 +120,12 @@ export function GrayAreaInspector({ open, vaultPath, selection, onClose, onFocus
       <IconButton ref={closeRef} label={t('close')} onClick={onClose} size="sm"><X size={16}/></IconButton>
     </header>
     <div ref={bodyRef} data-testid="gray-area-body" className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-[var(--card-pad)]">
-      {proposal?.value && scanKey!==requestKey ? <div className="space-y-4" data-testid="gray-area-scope-preview"><p className="text-body">{t('preview')}</p><p className="break-all rounded-card border border-[color:var(--color-divider)] p-3 font-mono text-caption">{proposal.value.sourcePath}</p><p className="text-caption text-[color:var(--color-text-secondary)]">{t('previewLimit',{limit:proposal.value.maxFiles})}</p><Button className="max-w-full" onClick={()=>void start()}><span className="min-w-0 whitespace-normal">{t('inspectFolder')}</span></Button></div> : !current && (!proposal || scanKey===requestKey) ? <div role="status" className="space-y-3 text-body text-[color:var(--color-text-secondary)]"><FileSearch size={ICON_SIZE.lg}/><p>{t('reading')}</p><p className="text-caption">{t('localOnly')}</p></div> : current?.snapshot && vaultPath ?
+      {sourceAccess ? <div className="space-y-3 text-body" data-testid="gray-area-source-access">
+        <p role="status">{t('sourceAccessRequired')}</p>
+        <p className="break-words text-[color:var(--color-text-secondary)]">{t('sourceAccessHint',{path:sourceAccess.sourcePath})}</p>
+        {sourceSelectionState?.error ? <p role="status">{t(sourceSelectionState.error)}</p>:null}
+        <Button ref={sourcePickerRef} className="max-w-full" disabled={sourceSelectionState?.busy} aria-busy={sourceSelectionState?.busy} onClick={()=>void selectSource()}><span className="min-w-0 whitespace-normal">{t('selectSourceFolder')}</span></Button>
+      </div> : proposal?.value && scanKey!==requestKey ? <div className="space-y-4" data-testid="gray-area-scope-preview" ref={mountResults} tabIndex={-1}><p className="text-body">{t('preview')}</p><p className="break-all rounded-card border border-[color:var(--color-divider)] p-3 font-mono text-caption">{proposal.value.sourcePath}</p><p className="text-caption text-[color:var(--color-text-secondary)]">{t('previewLimit',{limit:proposal.value.maxFiles})}</p><Button className="max-w-full" onClick={()=>void start()}><span className="min-w-0 whitespace-normal">{t('inspectFolder')}</span></Button></div> : !current && (!proposal || scanKey===requestKey) ? <div role="status" className="space-y-3 text-body text-[color:var(--color-text-secondary)]"><FileSearch size={ICON_SIZE.lg}/><p>{t('reading')}</p><p className="text-caption">{t('localOnly')}</p></div> : current?.snapshot && vaultPath ?
         <Findings onReady={mountResults} enabled={open} escapeFirstRef={escapeFirstRef} key={current.snapshot.snapshotId} snapshot={current.snapshot} vaultPath={vaultPath} onFocus={onFocus} onPrepare={onPrepare} onRefresh={() => setAttempt(n=>n+1)}/> :
         <div className="space-y-3 text-body text-[color:var(--color-text-secondary)]" data-testid={current?.error||proposal?.error ? 'gray-area-unavailable' : nativeRuntime ? 'gray-area-local-folder-required' : 'gray-area-web-limit'}>
           <p>{current?.error||proposal?.error ? String(current?.error??proposal?.error).includes('unsupported_platform')?t('platformLimit'):t('unavailable') : nativeRuntime ? t('localFolderRequired') : t('webLimit')}</p>

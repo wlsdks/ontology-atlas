@@ -24,6 +24,12 @@ inspector. Project/domain containment extends the selection scope; it does not
 assert impact. The app previews the bound code folder before an explicit local
 read. No Jev request, agent turn, acceptance or ontology write occurs.
 
+If the app has no content grant for that connected source, the inspector names
+the folder and opens the existing native picker on request. Cancel keeps the
+refusal. The native re-preview checks the same binding digest and exact canonical
+root; another folder cannot replace the binding. A matching choice returns to
+the preview, and inspection still requires its separate action.
+
 Three initial signals are advisory: a production static value reference between
 uniquely mapped concept files absent from the dependency graph; a cited file
 changed after its concept document with a recorded dependent; and authored
