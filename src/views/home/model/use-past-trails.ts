@@ -15,7 +15,7 @@ import {
 } from "../lib/past-trail-record";
 import { createVaultFilePastTrailStore, type PastTrailStore } from "../lib/past-trail-store";
 import type { TopologyPastWalkRow } from "../ui/TopologyTrailChip";
-import { useDerived } from "@/shared/lib/use-derived";
+import { derivedHook } from "@/shared/lib/derived-hook";
 
 // Short, since the wait is a window in which closing loses the last step (tab-hide flushes it).
 const PAST_TRAIL_SAVE_DEBOUNCE_MS = 600;
@@ -63,6 +63,7 @@ function refinePastWalks(
     entries: refinePastWalkEntries(walk.entries, lookup),
   }));
 }
+const useRefinedPastWalks = derivedHook(refinePastWalks);
 
 /**
  * Keeps the walk that `?p=` loses on reload, in a vault file so web and app (different origins)
@@ -166,7 +167,7 @@ export function usePastTrails({
     setSessionWalkId(newPastWalkId());
     void pastTrailStore.clear().then(setPastWalks);
   }, [pastTrailStore]);
-  const refinedPastWalks = useDerived(refinePastWalks, pastWalks, footprintNodeLookup);
+  const refinedPastWalks = useRefinedPastWalks(pastWalks, footprintNodeLookup);
   /**
    * Order matters: flush the current walk; switch to a new id (an unchanged route keeps the
    * original row's date); load the refined steps as the session trail; the caller ego-focuses the

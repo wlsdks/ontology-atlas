@@ -11,7 +11,7 @@ import { type ProjectImpactMode } from "@/entities/project";
 import { useFirstRunSampleModeSettled } from "@/features/first-run-starter";
 import { canAutoStartGuidedTour, readGuideAutoStart, readGuidedTourStatus, resolveAnchorRect, useGuidedTour, useGuidedTourAutoStartReady, useRegisterGuideReplay, watchGuidedTourAutoStartCancel, type TourAnchor } from "@/features/guided-tour";
 import { useClaimShellKey } from "@/shared/lib/shell-key-claims";
-import { useDerived } from "@/shared/lib/use-derived";
+import { derivedHook } from "@/shared/lib/derived-hook";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useCallback, useEffect, useEffectEvent, useRef } from "react";
 import { shouldSuppressGlobalShortcuts } from "../lib/blocking-surface";
@@ -37,6 +37,7 @@ function tourAnchorResolver(nodes: Parameters<typeof resolveTourAnchorNodeId>[0]
     return resolveAnchorRect(anchor.value) !== null;
   };
 }
+const useTourAnchorResolver = derivedHook(tourAnchorResolver);
 
 interface Options {
   setOntologySearchOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -97,7 +98,7 @@ export function useTopologyKeyboardTour({
 
   // Resolves DOM or canvas anchors here and hands the tour feature a boolean, since features may
   // not import widgets.
-  const canResolveTourAnchor = useDerived(tourAnchorResolver, ontologyMapGraph.nodes);
+  const canResolveTourAnchor = useTourAnchorResolver(ontologyMapGraph.nodes);
   const tour = useGuidedTour({
     hasSelection: canvasSelectedSlug != null,
     canResolveAnchor: canResolveTourAnchor,

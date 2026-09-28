@@ -2,7 +2,7 @@ import { renderHook } from '@testing-library/react';
 import { useCallback } from 'react';
 import { describe, expect, it } from 'vitest';
 
-import { useDerived } from './use-derived';
+import { derivedHook } from './derived-hook';
 import { useLatestRef } from './use-latest-ref';
 
 describe('useLatestRef', () => {
@@ -18,11 +18,11 @@ describe('useLatestRef', () => {
   });
 });
 
-describe('useDerived', () => {
-  const pair = (a: string, b: string) => ({ joined: `${a}+${b}` });
+describe('derivedHook', () => {
+  const usePair = derivedHook((a: string, b: string) => ({ joined: `${a}+${b}` }));
 
   it('derives again only when an argument changes', () => {
-    const { result, rerender } = renderHook(({ a, b }) => useDerived(pair, a, b), {
+    const { result, rerender } = renderHook(({ a, b }) => usePair(a, b), {
       initialProps: { a: 'x', b: 'y' },
     });
     const first = result.current;

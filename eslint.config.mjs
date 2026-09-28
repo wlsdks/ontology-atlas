@@ -33,6 +33,20 @@ const checkboxAccentSelectors = [
   },
 ];
 
+const closureScopeSelectors = [
+  {
+    selector:
+      'FunctionDeclaration[id.name="useLocalVaultInternal"] :function Identifier[name="state"]:not(MemberExpression[computed=false] > Identifier.property):not(Property[computed=false] > Identifier.key)',
+    message:
+      'A callback in useLocalVaultInternal reads the vault through stateRef, never `state`: a closure keeps its render\'s state, manifest included, after another folder opens.',
+  },
+  {
+    selector: ':function CallExpression[callee.name="derivedHook"]',
+    message:
+      'Create a derived hook at module level (`const useX = derivedHook(fn)`), so its function closes over no component scope.',
+  },
+];
+
 // ── Indigo Ink License (2026-08-03 Che Gye-seok) ────────────────────────
 // `tone accent` (#7170ff, mark indigo) is only AA (4.5:1) down to the darkest background —
 // when indigo/amber tints are applied, composite contrast drops to 3.5~4.4 (measured:
@@ -1202,6 +1216,7 @@ const eslintConfig = defineConfig([
         ...typographyAxisSelectors,
         ...layerSelectors,
         ...colorLiteralSelectors,
+        ...closureScopeSelectors,
       ],
     },
   },
@@ -1239,6 +1254,7 @@ const eslintConfig = defineConfig([
         ...disabledAffordanceSelectors,
         ...typographyAxisSelectors,
         ...layerSelectors,
+        ...closureScopeSelectors,
       ],
     },
   },
@@ -1263,6 +1279,7 @@ const eslintConfig = defineConfig([
         ...disabledAffordanceSelectors,
         ...typographyAxisSelectors,
         ...layerSelectors,
+        ...closureScopeSelectors,
       ],
     },
   },
@@ -1305,6 +1322,7 @@ const eslintConfig = defineConfig([
           message:
             '설정 시트에서 docs 표면 장식용 quarantine 앰버를 쓰지 않는다 (template literal). --color-amber-source-* / --color-amber-source-text-* 사다리를 쓴다.',
         },
+        ...closureScopeSelectors,
       ],
     },
   },
