@@ -336,6 +336,7 @@ export function AcpChatPanel({
   mcpServers,
   sessionEnabled = true,
   resumeLatest = false,
+  putAway = false,
   runtimes = [],
   onRuntimeChange,
   prefillRequest,
@@ -378,13 +379,8 @@ export function AcpChatPanel({
    * the dock reflow finishes.
    */
   sessionEnabled?: boolean;
-  /**
-   * Open on this folder's latest conversation instead of a blank one. See
-   * `UseAcpSessionOptions.resumeLatest` for what it does and what it falls back to; a dock the
-   * person keeps closing and reopening (the Library's) passes it, and a panel opened to run one
-   * named errand does not.
-   */
   resumeLatest?: boolean;
+  putAway?: boolean;
   /**
    * The runtimes currently selectable — only those **with a guard** are included
    * (`isGuardedRuntime`). If there is only one, there is nothing to choose, so only
@@ -594,6 +590,7 @@ export function AcpChatPanel({
     mcpServers,
     approvalSettleMs: reducedMotion ? 0 : MOTION.settle.duration * 1000,
     resumeLatest,
+    putAway,
     onWorkReceipt: captureWorkReceipt,
     onTurnStarted: captureTurnStart,
     captureTaskBaseline,
