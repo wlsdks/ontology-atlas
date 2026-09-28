@@ -1,7 +1,6 @@
 /**
- * Idle-frame skip predicates. rAF is never stopped: past the grace window only physics and
- * paint are skipped, and every predicate is re-read from refs each frame, so no missed wake
- * can freeze the canvas.
+ * Idle-frame predicates. Past the grace window the frame loop stops, so whatever turns one true
+ * outside a frame must wake it: input and a write to the activity clock do, and so does a render.
  */
 
 export interface CanvasActivityFlags {

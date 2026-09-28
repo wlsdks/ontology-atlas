@@ -14,6 +14,7 @@ import {
 import { type TierRevealConfig } from "../model/tier-visibility";
 import { createAnimatedBackground, type AnimatedBackground } from "../render/animated-background";
 import type { UseTopologyLoopArgs } from "./topology-loop-contract";
+import { requestOntologyMapFrame } from "./use-topology-frame-loop";
 
 interface Dependencies {
   expandPrefRef: RefObject<ExpandPreference>;
@@ -144,6 +145,8 @@ export function useTopologyAppearanceEffects({
     };
     const onLeave = () => {
       bgPointerRef.current = null;
+      // The dome's auto-spin waits while the pointer is over the canvas.
+      requestOntologyMapFrame();
       /*
        * **Leaving the canvas also clears node hover** (measured 2026-08-19).
        *
@@ -188,8 +191,7 @@ export function useTopologyAppearanceEffects({
    *
    * **Recorded as a deadline, released on its own.** A cancelled navigation
    * cannot stop the map forever: it resumes when the cap passes, and one
-   * pointer event over the canvas releases it sooner. Same discipline as
-   * `idle-gate` being designed without wake wiring.
+   * pointer event over the canvas releases it sooner.
    */
   useEffect(() => {
     const onIntent = () => {
