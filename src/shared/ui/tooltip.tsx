@@ -4,6 +4,7 @@ import {
   type ComponentPropsWithoutRef,
   type ReactNode,
   forwardRef,
+  useState,
 } from "react";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 
@@ -66,11 +67,12 @@ export function Tooltip({
   delayMs = 300,
   panelClassName,
 }: TooltipProps) {
+  const [open, setOpen] = useState(false);
   const inner = (
-    <TooltipPrimitive.Root delayDuration={delayMs}>
+    <TooltipPrimitive.Root delayDuration={delayMs} open={open} onOpenChange={setOpen}>
       <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>
       <TooltipPrimitive.Portal>
-        <TooltipContent side={side} align={align} panelClassName={panelClassName}>
+        <TooltipContent side={side} align={align} panelClassName={panelClassName} aria-hidden={open ? undefined : true}>
           {content}
         </TooltipContent>
       </TooltipPrimitive.Portal>
