@@ -516,7 +516,7 @@ export function DocsSidebarBody({
               <>
                 <ul
                   data-testid="docs-sidebar-recently-changed-list"
-                  className="flex flex-col gap-0.5 px-2"
+                  className="flex flex-col gap-0.5 px-0.5"
                 >
                   {recentlyChangedDocs
                     .slice(0, RECENTLY_CHANGED_STRIP_MAX)
@@ -571,7 +571,7 @@ export function DocsSidebarBody({
                 </span>
               ) : null}
             </div>
-            <ul aria-label={tAgentFiles("listAria")} className="flex flex-col gap-0.5 px-2">
+            <ul aria-label={tAgentFiles("listAria")} className="flex flex-col gap-0.5 px-0.5">
               {agentFiles.records.map((record) => {
                 const active = selectedSlug === record.slug;
                 const driftTitle = record.drift
@@ -610,7 +610,7 @@ export function DocsSidebarBody({
         {pinnedSlugs.length > 0 ? (
           <section className="flex-none border-b border-[color:var(--color-overlay-2)] pb-1">
             <SectionLabel>{t("pinnedHeader", { count: pinnedSlugs.length })}</SectionLabel>
-            <ul className="flex max-h-[22vh] flex-col gap-0.5 overflow-auto px-2">
+            <ul className="flex max-h-[22vh] flex-col gap-0.5 overflow-auto px-0.5">
               {pinnedSlugs.map((slug) => {
                 const d = docsBySlug.get(slug);
                 if (!d) return null;
@@ -674,7 +674,7 @@ export function DocsSidebarBody({
         {recentOthers.length > 0 ? (
           <section className="flex-none border-t border-[color:var(--color-overlay-2)] pb-2">
             <SectionLabel>{t("recentHeader", { count: recentOthers.length })}</SectionLabel>
-            <ul className="flex max-h-[22vh] flex-col gap-0.5 overflow-auto px-2">
+            <ul className="flex max-h-[22vh] flex-col gap-0.5 overflow-auto px-0.5">
               {recentOthers.map((slug) => {
                 const d = docsBySlug.get(slug);
                 if (!d) return null;

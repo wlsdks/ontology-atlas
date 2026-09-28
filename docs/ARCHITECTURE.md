@@ -447,7 +447,9 @@ graph. The separation is a property of the **walk**, not a filter applied later.
   authorable kinds. `/docs` redirects ontology and no-slug entries into Library; only an
   exact existing non-ontology target stays in its bounded Document reader with the same
   source context and fragment.
-  Only the active view mounts, and no view imports another view. The mobile Library
+  Only the active view mounts, and no view imports another view. The workspace loads the
+  Concept documents module while idle, so the first switch to it arrives with the panel's
+  own fade rather than after a loading placeholder. The mobile Library
   slot replaces Docs. The editor flushes a pending browser draft on unmount; explicit
   Save and the existing mtime conflict guard still own file writes. Markdown source
   outlines preserve line anchors used by MCP citations and store no converted copy.

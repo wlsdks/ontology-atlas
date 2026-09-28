@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 
 import { cn } from "@/shared/lib/cn";
 
+import { libraryEyebrowClass } from "../../lib/page-eyebrow";
 import type { SinceSpan, SinceSummary } from "../../lib/round-presentation";
 import { pageName, RoundChip } from "./RoundsLedger";
 
@@ -60,7 +61,7 @@ export function SinceYouLeft({
         changed ? "border-[color:var(--color-border-strong)]" : "border-[color:var(--color-divider)]",
       )}
     >
-      <p className="text-caption leading-caption font-[var(--font-weight-strong)] uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-indigo-text-soft)]">
+      <p className={libraryEyebrowClass(locale)}>
         {span.kind === "away" ? t("since.title") : t("since.todayTitle")}
       </p>
       <h2 id="library-rounds-since-title" className="mt-1 text-title leading-title font-[var(--font-weight-signature)] tabular-nums text-[color:var(--color-text-primary)]">

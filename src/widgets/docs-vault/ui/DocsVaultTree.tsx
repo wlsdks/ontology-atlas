@@ -23,6 +23,9 @@ import { normalizeForMatch } from '@/shared/lib/node-name-match';
 import { RowButton } from '@/shared/ui';
 import { matchesDocsTreeQuery } from '../lib/tree-query';
 
+const TREE_ROW_INSET_PX = 10;
+const TREE_INDENT_PX = 12;
+
 interface Props {
   tree: VaultTreeNode;
   selectedSlug: string | null;
@@ -166,7 +169,7 @@ function TreeNode({
         onClick={() => onSelect(node.slug!)}
         aria-current={active ? 'page' : undefined}
         className="group relative transition-[background-color,color,transform] motion-safe:hover:-translate-y-px motion-safe:active:translate-y-0 motion-safe:active:scale-[0.99] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset"
-        style={{ paddingLeft: `${16 + depth * 12}px` }}
+        style={{ paddingLeft: `${TREE_ROW_INSET_PX + depth * TREE_INDENT_PX}px` }}
       >
         {active ? (
           <span
@@ -174,8 +177,8 @@ function TreeNode({
             className="pointer-events-none absolute inset-y-1 left-0 w-[2px] rounded-full bg-[color:var(--color-indigo-accent)]"
           />
         ) : null}
+        <ChevronRight size={ICON_SIZE.sm} aria-hidden data-tree-slot="" className="invisible flex-none" />
         <DocKindGlyph slug={node.slug} docsBySlug={docsBySlug} />
-        {/* Same display name as the list, search and map. */}
         <span className="min-w-0 flex-1 truncate">
           {resolveLocaleDisplayName(
             docsBySlug?.get(node.slug)?.frontmatter,
@@ -195,7 +198,7 @@ function TreeNode({
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         className="font-[var(--font-weight-signature)] transition-[background-color,color,transform] motion-safe:hover:-translate-y-px motion-safe:active:translate-y-0 motion-safe:active:scale-[0.99] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-secondary)]"
-        style={{ paddingLeft: `${16 + depth * 12}px` }}
+        style={{ paddingLeft: `${TREE_ROW_INSET_PX + depth * TREE_INDENT_PX}px` }}
       >
         {open ? (
           <ChevronDown size={ICON_SIZE.sm} aria-hidden />
@@ -270,7 +273,7 @@ export function DocsVaultTree({
   return (
     <nav
       aria-label={t('navAria')}
-      className="flex h-full flex-col gap-0.5 overflow-auto py-2"
+      className="flex h-full flex-col gap-0.5 overflow-auto px-0.5 py-2"
     >
       {sortDocsTreeNodes(children, order).map((child) => (
         <TreeNode

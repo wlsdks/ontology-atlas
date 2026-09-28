@@ -162,7 +162,7 @@ export function mountLibraryConstellation(
    * eating it — `--color-text-secondary` as the base, roughness down and emissive on, which
    * is what lifts the shaded faces rather than only the lit one.
    */
-  const inkSource = cssColor(tokenEl, "--color-text-secondary", "#b4b5bd");
+  const inkSource = cssColor(tokenEl, "--color-text-secondary", "#d0d6e0");
   const inkPage = cssColor(tokenEl, "--color-text-primary", "#f7f8f8");
   const accent = cssColor(tokenEl, "--color-indigo-accent", "#7170ff");
   const line = cssColor(tokenEl, "--color-indigo-brand", "#5e6ad2");

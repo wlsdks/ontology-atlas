@@ -143,6 +143,12 @@
     "body": "이 문서는 Atlas 자체 예시라 편집이 잠겨 있어요.",
     "openFolderCta": "내 폴더 열기"
   },
+  "sampleWelcome": {
+    "title": "이 문서함은 무엇인가요?",
+    "body": "Atlas 자신의 문서를 읽기 전용 샘플로 보여주고 있어요. 왼쪽 목록에서 아무 문서나 눌러 둘러보세요. 대부분은 개발자용 기술 문서예요. 내 마크다운 폴더를 열면 그 폴더가 이 화면을 그대로 채워요.",
+    "openFolderCta": "내 폴더 열기",
+    "dismissAria": "안내 닫기"
+  },
   "backlinksStrip": {
     "openInOntology": "지도에서 열기",
     "empty": "아직 이 문서를 참조한 문서가 없어요"
