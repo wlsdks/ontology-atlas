@@ -512,3 +512,114 @@ describe("draw — the resting line's device-pixel width floor", () => {
     expect(widths({ ...FAR_CONTAINS, minWidthPx: undefined })).toEqual(base);
   });
 });
+
+describe("draw — relation reveal on selection", () => {
+  const TOKENS = {
+    edgeContains: "#3a3a42",
+    edgeDepends: "#4c4c63",
+    edgeDim: "#1a1a1f",
+    indigo: "#5e6ad2",
+    indigoBright: "#8b97ff",
+  };
+
+  interface Stroke {
+    style: string;
+    from: Point;
+    to: Point;
+  }
+
+  function record(state: TraceDrawState): { strokes: Stroke[]; dots: Point[] } {
+    const strokes: Stroke[] = [];
+    const dots: Point[] = [];
+    let from: Point = { x: 0, y: 0 };
+    let to: Point = { x: 0, y: 0 };
+    const ctx: Record<string, unknown> & { strokeStyle: string } = {
+      beginPath() {},
+      moveTo(x: number, y: number) {
+        from = { x, y };
+      },
+      lineTo(x: number, y: number) {
+        to = { x, y };
+      },
+      quadraticCurveTo(_cx: number, _cy: number, x: number, y: number) {
+        to = { x, y };
+      },
+      stroke() {
+        strokes.push({ style: String(ctx.strokeStyle), from, to });
+      },
+      fill() {},
+      setLineDash() {},
+      arc(x: number, y: number) {
+        dots.push({ x, y });
+      },
+      strokeStyle: "",
+      fillStyle: "",
+      lineWidth: 0,
+      lineCap: "butt",
+      lineJoin: "miter",
+      lineDashOffset: 0,
+    };
+    draw(ctx as unknown as CanvasRenderingContext2D, state, TOKENS);
+    return { strokes, dots };
+  }
+
+  const contains: TraceDrawState = {
+    a: { x: 0, y: 0 },
+    b: { x: 100, y: 0 },
+    control: { x: 50, y: 30 },
+    relationType: "contains",
+    egoState: "ego",
+    farT: 0,
+    t: 0.9,
+    containsCometEligible: true,
+  };
+
+  it("lights the source side in ego ink and keeps the rest in its current ink", () => {
+    const { strokes } = record({ ...contains, reveal: { progress: 0.5, from: "a", baseLift: 0 } });
+    expect(strokes).toHaveLength(2);
+    expect(strokes[0].style).toBe(TOKENS.indigo);
+    expect(strokes[0].from).toEqual(contains.a);
+    expect(strokes[0].to.x).toBeCloseTo(bezierPoint(contains.a, contains.control, contains.b, 0.5).x, 9);
+    expect(strokes[1].style).toBe(TOKENS.edgeContains);
+    expect(strokes[1].to).toEqual(contains.b);
+  });
+
+  it("draws from the target end when asked to", () => {
+    const { strokes } = record({ ...contains, reveal: { progress: 0.25, from: "b", baseLift: 0 } });
+    expect(strokes[0].style).toBe(TOKENS.edgeContains);
+    expect(strokes[0].from).toEqual(contains.a);
+    expect(strokes[1].style).toBe(TOKENS.indigo);
+    expect(strokes[1].to).toEqual(contains.b);
+  });
+
+  it("starts from the hover-lit ink when the line was already lit", () => {
+    const { strokes } = record({ ...contains, reveal: { progress: 0.5, from: "a", baseLift: 1 } });
+    expect(strokes[1].style).toBe("rgb(94, 106, 210)");
+  });
+
+  it("keeps comet dots inside the drawn span", () => {
+    const { dots } = record({ ...contains, t: 0.9, reveal: { progress: 0.5, from: "a", baseLift: 0 } });
+    expect(dots).toHaveLength(0);
+    const early = record({ ...contains, t: 0.3, reveal: { progress: 0.5, from: "a", baseLift: 0 } });
+    expect(early.dots).toHaveLength(3);
+  });
+
+  it("clips a tapered depends line segment by segment", () => {
+    const depends: TraceDrawState = { ...contains, relationType: "depends", dependsCometEligible: false };
+    const { strokes } = record({ ...depends, reveal: { progress: 0.5, from: "a", baseLift: 0 } });
+    const lit = strokes.filter((s) => s.style === TOKENS.indigoBright);
+    const rest = strokes.filter((s) => s.style === TOKENS.edgeDepends);
+    expect(lit.length).toBeGreaterThan(0);
+    expect(rest.length).toBeGreaterThan(0);
+    expect(Math.max(...lit.map((s) => s.to.x))).toBeLessThanOrEqual(Math.min(...rest.map((s) => s.from.x)) + 1e-9);
+  });
+
+  it("draws one stroke once the reveal is done", () => {
+    expect(record({ ...contains, reveal: { progress: 1, from: "a", baseLift: 0 } }).strokes).toHaveLength(1);
+  });
+
+  it("mixes a dimming line from its resting ink on the focus ramp", () => {
+    expect(record({ ...contains, egoState: "dim", dimRamp: 0 }).strokes[0].style).toBe("rgb(58, 58, 66)");
+    expect(record({ ...contains, egoState: "dim" }).strokes[0].style).toBe(TOKENS.edgeDim);
+  });
+});
