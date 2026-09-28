@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { seedFirstRunSeen } from './first-run-seed';
+import { waitForAnimationsDone, waitFrames } from './settle';
 
 interface Frame {
   t: number;
@@ -52,14 +53,16 @@ async function measureTooltip(page: Page) {
     .first();
   await startSampling(page);
   await control.hover();
-  await expect(page.locator('.atlas-tooltip[data-state$="open"]')).toBeVisible();
-  await page.waitForTimeout(400);
+  const open = page.locator('.atlas-tooltip[data-state$="open"]');
+  await expect(open).toBeVisible();
+  await waitForAnimationsDone(open);
+  await waitFrames(page, 2);
   const enter = fadeShape(await stopSampling(page), 'in');
 
   await startSampling(page);
   await page.mouse.move(700, 450, { steps: 8 });
   await expect(page.locator('.atlas-tooltip')).toHaveCount(0);
-  await page.waitForTimeout(100);
+  await waitFrames(page, 2);
   const exit = fadeShape(await stopSampling(page), 'out');
   return { enter, exit };
 }
