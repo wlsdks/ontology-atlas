@@ -140,7 +140,7 @@ const BASELINE_HARD_CUTS = 0;
  * runs on the working tree and on the base tree, and only growth this change did not
  * record fails.
  *
- * A new surface is recorded as `tests/contract/ratchet-raises/appearing-surfaces.<slug>.json`,
+ * A new surface is recorded as `tests/contract/ratchet-raises/appearing-surfaces/<slug>.json`,
  * whose `why` names the surface and **where its open path is exercised** (an `OPENERS`
  * entry, or the component or e2e test that opens it when the static sweep cannot).
  * The notes written before this mechanism, one per surface, are in this file's Git

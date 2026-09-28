@@ -27,7 +27,7 @@ import { join } from "node:path";
  * branch's merge base already contains it, so it cannot be spent again. That is what
  * the old "lower the literal" test existed to enforce, and it now holds for free.
  *
- * **A deliberate raise** is a file, not a line: `tests/contract/ratchet-raises/<gate>.<slug>.json`
+ * **A deliberate raise** is a file, not a line: `tests/contract/ratchet-raises/<gate>/<slug>.json`
  * with `{ "gate", "raise", "why" }`. Only records this change adds (absent at the merge
  * base) widen its ceiling, so the reason is reviewed in the diff that needs it, and two
  * branches raising the same gate add two files instead of editing one line. A commit
@@ -126,22 +126,28 @@ function pruneCache(keep: string): void {
 export function readRaises(cwd = process.cwd()): Raise[] {
   const dir = join(cwd, RAISES_DIR);
   if (!existsSync(dir)) return [];
-  return readdirSync(dir)
-    .filter((name) => name.endsWith(".json"))
-    .sort()
-    .map((name) => {
-      const file = `${RAISES_DIR}/${name}`;
+  return readdirSync(dir, { withFileTypes: true })
+    .flatMap((entry) => {
+      if (!entry.isDirectory()) {
+        throw new Error(`${RAISES_DIR}/${entry.name}: move it to ${RAISES_DIR}/<gate>/<slug>.json`);
+      }
+      return readdirSync(join(dir, entry.name))
+        .filter((name) => name.endsWith(".json"))
+        .map((name) => ({ folder: entry.name, file: `${RAISES_DIR}/${entry.name}/${name}` }));
+    })
+    .sort((left, right) => left.file.localeCompare(right.file))
+    .map(({ folder, file }) => {
       const record = JSON.parse(readFileSync(join(cwd, file), "utf8")) as Partial<Raise>;
-      const problems = raiseProblems(name, record);
+      const problems = raiseProblems(folder, record);
       if (problems.length > 0) throw new Error(`${file}: ${problems.join("; ")}`);
       return { file, gate: record.gate!, raise: record.raise!, why: record.why! };
     });
 }
 
-export function raiseProblems(name: string, record: Partial<Raise>): string[] {
+export function raiseProblems(folder: string, record: Partial<Raise>): string[] {
   const problems: string[] = [];
   if (typeof record.gate !== "string" || record.gate === "") problems.push("`gate` must name the ratchet");
-  else if (!name.startsWith(`${record.gate}.`)) problems.push(`file name must start with "${record.gate}."`);
+  else if (folder !== record.gate) problems.push(`the record must sit in the folder "${record.gate}"`);
   if (!Number.isInteger(record.raise) || (record.raise ?? 0) <= 0) problems.push("`raise` must be a positive integer");
   if (typeof record.why !== "string" || record.why.trim().length < 40) {
     problems.push("`why` must say, in a sentence, why this growth is deliberate");
@@ -149,9 +155,14 @@ export function raiseProblems(name: string, record: Partial<Raise>): string[] {
   return problems;
 }
 
-function raiseFilesAt(sha: string, cwd: string): Set<string> {
+function raiseKey(file: string): string {
+  return file.slice(RAISES_DIR.length + 1).replace(/\.json$/, "").replace("/", ".");
+}
+
+function raiseKeysAt(sha: string, cwd: string): Set<string> {
   try {
-    return new Set(git(["ls-tree", "-r", "--name-only", sha, "--", `${RAISES_DIR}/`], cwd).split("\n").filter(Boolean));
+    const files = git(["ls-tree", "-r", "--name-only", sha, "--", `${RAISES_DIR}/`], cwd).split("\n").filter(Boolean);
+    return new Set(files.map(raiseKey));
   } catch {
     return new Set();
   }
@@ -200,8 +211,8 @@ export function judgeRatchet(spec: RatchetSpec): RatchetJudgement {
       atBase = null;
     }
     if (atBase !== null) {
-      const landed = raiseFilesAt(base, cwd);
-      added = raises.filter((r) => !landed.has(r.file));
+      const landed = raiseKeysAt(base, cwd);
+      added = raises.filter((r) => !landed.has(raiseKey(r.file)));
     }
   }
   const relative = atBase === null ? Infinity : atBase + added.reduce((sum, r) => sum + r.raise, 0);
@@ -212,7 +223,7 @@ export function judgeRatchet(spec: RatchetSpec): RatchetJudgement {
       ? `no merge base to compare with — judged against the absolute ceiling ${absolute}`
       : `merge base ${base!.slice(0, 9)} measures ${atBase}; this change measures ${current}`,
     ...added.map((r) => `  +${r.raise} allowed by ${r.file}`),
-    `To grow deliberately, add ${RAISES_DIR}/${spec.gate}.<slug>.json with`,
+    `To grow deliberately, add ${RAISES_DIR}/${spec.gate}/<slug>.json with`,
     `{ "gate": "${spec.gate}", "raise": <n>, "why": "<the sentence a reviewer needs>" }.`,
   ];
   return { gate: spec.gate, current, ceiling, base, atBase, added, absolute, explain: lines.join("\n") };
