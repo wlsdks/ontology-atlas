@@ -7,26 +7,36 @@ import { stubDirectoryPicker } from "./vault-picker-stub";
 
 const DOCS = syntheticVault(990, 10);
 
-const STOPS: { go: { rail?: string; tab?: string; push?: string }; ready: string }[] = [
-  { go: { rail: "architecture" }, ready: '[data-testid="harness-views"]' },
-  { go: { rail: "library" }, ready: '[data-testid="library-workspace-panel"]' },
+const STOPS: { go: { rail?: string; tab?: string; push?: string }; url?: RegExp; ready: string }[] = [
+  { go: { rail: "architecture" }, url: /\/architecture\//, ready: '[data-testid="harness-views"]' },
+  { go: { rail: "library" }, url: /\/library\//, ready: '[data-testid="library-workspace-panel"]' },
   { go: { tab: "library-workspace-wiki" }, ready: "#library-workspace-tabpanel-wiki" },
-  { go: { tab: "library-workspace-ontology" }, ready: "#library-workspace-tabpanel-ontology" },
-  { go: { rail: "automations" }, ready: '[data-testid="automations-list"],[data-testid="automations-empty-workbench"]' },
-  { go: { rail: "insights" }, ready: '[data-testid="brief-tab"]' },
-  { go: { rail: "projects" }, ready: '[data-testid="project-detail-body"]' },
-  { go: { rail: "agents" }, ready: '[data-testid="agents-page"]' },
+  {
+    go: { tab: "library-workspace-ontology" },
+    url: /^(?=.*[?&]tab=ontology\b)(?=.*[?&]slug=)/,
+    ready: "#library-workspace-tabpanel-ontology",
+  },
+  { go: { rail: "automations" }, url: /\/automations\//, ready: '[data-testid="automations-list"],[data-testid="automations-empty-workbench"]' },
+  { go: { rail: "insights" }, url: /\/ontology\/insights\//, ready: '[data-testid="brief-tab"]' },
+  { go: { rail: "projects" }, url: /\/project\//, ready: '[data-testid="project-detail-body"]' },
+  { go: { rail: "agents" }, url: /\/agents\//, ready: '[data-testid="agents-page"]' },
   { go: { tab: "agents-tab-mcp" }, ready: '[data-testid="mcp-page"]' },
-  { go: { rail: "git" }, ready: '[data-testid="git-page"]' },
-  { go: { push: "/en/guide/" }, ready: '[data-testid="gateway-doc-body"]' },
-  { go: { push: "/en/download/?hero=three" }, ready: '[data-testid="gateway-hero-object"][data-hero-engine="three"] canvas' },
+  { go: { rail: "git" }, url: /\/git\//, ready: '[data-testid="git-page"]' },
+  { go: { push: "/en/guide/" }, url: /\/guide\//, ready: '[data-testid="gateway-doc-body"]' },
+  {
+    go: { push: "/en/download/?hero=three" },
+    url: /\/download\//,
+    ready: '[data-testid="gateway-hero-object"][data-hero-engine="three"] canvas',
+  },
 ];
 
-async function visit(page: Page, go: (typeof STOPS)[number]["go"], ready: string): Promise<void> {
+async function visit(page: Page, stop: (typeof STOPS)[number]): Promise<void> {
+  const { go } = stop;
   if (go.rail) await page.getByTestId(`app-nav-rail-item-${go.rail}`).click();
   else if (go.tab) await page.getByTestId(go.tab).click();
   else if (go.push) await routerPush(page, go.push);
-  await page.locator(ready).first().waitFor();
+  if (stop.url) await expect(page).toHaveURL(stop.url);
+  await page.locator(stop.ready).first().waitFor();
   await waitForDomQuiet(page);
 }
 
@@ -69,7 +79,7 @@ test("three tours of every destination leave the map's DOM and listeners flat", 
 
   const afterTour: { nodes: number; listeners: number }[] = [];
   for (let tour = 1; tour <= 3; tour += 1) {
-    for (const stop of STOPS) await visit(page, stop.go, stop.ready);
+    for (const stop of STOPS) await visit(page, stop);
     await backToMap(page);
     afterTour.push(await census(cdp));
   }
