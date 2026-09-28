@@ -148,16 +148,21 @@ fn the_same_offered_file_ticked_twice_reports_one_add_and_one_duplicate() {
     let root = std::env::temp_dir().join(format!("atlas-twice-{}", std::process::id()));
     let _ = fs::remove_dir_all(&root);
     fs::create_dir_all(&root).unwrap();
-    let root_path = fs::canonicalize(&root).unwrap().to_string_lossy().to_string();
+    let root_path = fs::canonicalize(&root)
+        .unwrap()
+        .to_string_lossy()
+        .to_string();
     let picked = root.join("once.pdf");
     fs::write(&picked, b"%PDF-1.7 once\n").unwrap();
 
     let offered = vend(&picked);
-    let results =
-        import_source_files(root_path, vec![offered.clone(), offered]).unwrap();
+    let results = import_source_files(root_path, vec![offered.clone(), offered]).unwrap();
     assert_eq!(results[0].status, "added");
     assert_eq!(results[1].status, "duplicate");
-    assert_eq!(results[1].relative_path.as_deref(), Some("sources/once.pdf"));
+    assert_eq!(
+        results[1].relative_path.as_deref(),
+        Some("sources/once.pdf")
+    );
     let _ = fs::remove_dir_all(&root);
 }
 
@@ -166,7 +171,10 @@ fn an_offered_file_that_has_since_gone_missing_says_so() {
     let root = std::env::temp_dir().join(format!("atlas-gone-{}", std::process::id()));
     let _ = fs::remove_dir_all(&root);
     fs::create_dir_all(&root).unwrap();
-    let root_path = fs::canonicalize(&root).unwrap().to_string_lossy().to_string();
+    let root_path = fs::canonicalize(&root)
+        .unwrap()
+        .to_string_lossy()
+        .to_string();
     let picked = root.join("gone.pdf");
     fs::write(&picked, b"%PDF-1.7 gone\n").unwrap();
 

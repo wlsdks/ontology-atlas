@@ -869,7 +869,10 @@ url = "https://example.test/mcp"
     #[test]
     fn a_windows_verbatim_prefix_normalizes_to_the_plain_project_key() {
         assert_eq!(normalize_path(r"\\?\C:\work\atlas"), r"C:\work\atlas");
-        assert_eq!(normalize_path(r"\\?\UNC\server\share\atlas"), r"\\server\share\atlas");
+        assert_eq!(
+            normalize_path(r"\\?\UNC\server\share\atlas"),
+            r"\\server\share\atlas"
+        );
         assert_eq!(normalize_path("/work/atlas/"), "/work/atlas");
     }
 
@@ -901,7 +904,12 @@ url = "https://example.test/mcp"
         let fs = ConfigFs {
             read_text: &read_text,
         };
-        let found = discover_with(Some(Path::new("/home/me")), Some(Path::new("/work/atlas")), None, &fs);
+        let found = discover_with(
+            Some(Path::new("/home/me")),
+            Some(Path::new("/work/atlas")),
+            None,
+            &fs,
+        );
         assert!(found.connectors.is_empty());
         let vault_source = found
             .sources

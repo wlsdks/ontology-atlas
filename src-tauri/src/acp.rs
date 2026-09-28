@@ -4304,7 +4304,10 @@ mod npx_cache_tests {
         let entries: Vec<PathBuf> = std::env::split_paths(&cleaned).collect();
         assert_eq!(
             entries,
-            vec![PathBuf::from("/usr/bin"), PathBuf::from("/opt/homebrew/bin")]
+            vec![
+                PathBuf::from("/usr/bin"),
+                PathBuf::from("/opt/homebrew/bin")
+            ]
         );
     }
 }

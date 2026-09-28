@@ -24,11 +24,11 @@ mod connectors;
 mod deep_link;
 mod errors;
 mod git;
-mod jev;
-mod library;
 mod gray_area;
 mod gray_area_rpc;
 mod gray_area_scope;
+mod jev;
+mod library;
 mod llm;
 mod llm_audit;
 mod managed_node;
@@ -790,7 +790,12 @@ enum AcpStreamEvent {
 
 type AcpStream = tauri::ipc::Channel<AcpStreamEvent>;
 
-fn adapter_command(program: &Path, args: &[String], launch_dir: &Path, vault_root: &Path) -> Command {
+fn adapter_command(
+    program: &Path,
+    args: &[String],
+    launch_dir: &Path,
+    vault_root: &Path,
+) -> Command {
     debug_assert!(!launch_dir.starts_with(vault_root));
     let mut command = Command::new(program);
     command
@@ -5758,8 +5763,16 @@ mod vault_scope_tests {
             assert!(err.contains("not-granted"), "{err}");
         };
         refused(read_vault_text_file(home_path.clone(), ".ssh/id_rsa".into()).map(|_| ()));
-        refused(write_vault_text_file(home_path.clone(), "planted.md".into(), "x".into()));
-        refused(remove_vault_entry(home_path.clone(), ".ssh/id_rsa".into(), None));
+        refused(write_vault_text_file(
+            home_path.clone(),
+            "planted.md".into(),
+            "x".into(),
+        ));
+        refused(remove_vault_entry(
+            home_path.clone(),
+            ".ssh/id_rsa".into(),
+            None,
+        ));
         refused(list_vault_directory(home_path.clone(), String::new()).map(|_| ()));
         refused(crate::git::validate_vault_dir(&home_path).map(|_| ()));
         refused(canonical_root(&base.to_string_lossy()).map(|_| ()));
@@ -5775,20 +5788,26 @@ mod vault_scope_tests {
         let verified = crate::agent_setup::verify_mcp_server(home_path.clone(), None);
         assert!(!verified.ok);
         assert!(
-            verified.failure.as_deref().unwrap_or("").contains("not-granted"),
+            verified
+                .failure
+                .as_deref()
+                .unwrap_or("")
+                .contains("not-granted"),
             "{:?}",
             verified.failure
         );
         refused(super::open_vault_in_finder(home_path.clone()));
-        let report = crate::library::discover_source_candidates(vec![
-            crate::library::SourceDiscoveryRoot {
+        let report =
+            crate::library::discover_source_candidates(vec![crate::library::SourceDiscoveryRoot {
                 root_path: home_path.clone(),
                 label: "home".into(),
                 skip_relative: Vec::new(),
-            },
-        ])
-        .unwrap();
-        assert!(report.candidates.is_empty(), "an ungranted root yields no candidates");
+            }])
+            .unwrap();
+        assert!(
+            report.candidates.is_empty(),
+            "an ungranted root yields no candidates"
+        );
         assert_eq!(report.unreadable_roots, vec!["home".to_string()]);
 
         drop(scope);
