@@ -167,7 +167,7 @@ describe("computeTerritoryLayout", () => {
   it.each([
     ["1280x800 with INDEX open", ROOM_1280],
     ["1040x720 with INDEX open", ROOM_1040],
-  ])("keeps every disc and every name it draws at rest inside a %s room", (_label, room) => {
+  ])("keeps every disc and every name it can draw, at rest or lit, inside a %s room", (_label, room) => {
     // Nothing drawn at rest may leave the room: in a smaller room the rings draw in first
     // and names that still do not fit wait for hover.
     const { nodes, edges } = dogfoodGraph();
@@ -176,7 +176,7 @@ describe("computeTerritoryLayout", () => {
     expect(layout.capabilities).toHaveLength(nodes.filter((n) => n.kind === "capability").length);
     for (const c of layout.capabilities) {
       expect(inside(room, { x: c.x - c.r, y: c.y - c.r, w: 2 * c.r, h: 2 * c.r }), `${c.id} disc outside the room`).toBe(true);
-      if (c.labelReserved) expect(inside(room, c.label.box), `${c.id} name outside the room`).toBe(true);
+      expect(inside(room, c.label.box), `${c.id} name outside the room`).toBe(true);
     }
     expect(overlaps(layout)).toEqual([]);
   });
@@ -198,7 +198,7 @@ describe("computeTerritoryLayout", () => {
     expect(layout.capabilities.some((c) => c.labelReserved)).toBe(true);
     for (const c of layout.capabilities) {
       expect(inside(ROOM_1040, { x: c.x - c.r, y: c.y - c.r, w: 2 * c.r, h: 2 * c.r }), `${c.id} disc outside the room`).toBe(true);
-      if (c.labelReserved) expect(inside(ROOM_1040, c.label.box), `${c.id} name outside the room`).toBe(true);
+      expect(inside(ROOM_1040, c.label.box), `${c.id} name outside the room`).toBe(true);
       const domain = layout.domains.find((d) => d.id === c.domainId)!;
       expect(inSector(c.angle, domain.sectorStart, domain.sectorEnd), `${c.id} left its territory`).toBe(true);
     }
