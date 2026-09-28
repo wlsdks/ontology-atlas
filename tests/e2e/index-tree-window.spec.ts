@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { seedFirstRunSeen } from "./first-run-seed";
-import { stubDirectoryPicker } from "./vault-picker-stub";
+import { stubDirectoryPicker, writeFolderBeforePick } from "./vault-picker-stub";
 
 const TREE = '[data-testid="topology-index-tree"]';
 const LOOSE_CONCEPTS = 120;
@@ -37,8 +37,9 @@ test("the INDEX renders the rows in view and still reaches every row", async ({ 
   test.setTimeout(120_000);
   await page.setViewportSize({ width: 1512, height: 900 });
   await seedFirstRunSeen(page);
-  await stubDirectoryPicker(page, folderWithLooseConcepts());
+  await stubDirectoryPicker(page, {});
   await page.goto("/en/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
+  await writeFolderBeforePick(page, folderWithLooseConcepts());
   // The probe attaches after mount: press a hydrated button.
   await page.waitForFunction(() => "__atlasMap" in window);
   await page.getByTestId("topology-switch-to-my-data").click();
