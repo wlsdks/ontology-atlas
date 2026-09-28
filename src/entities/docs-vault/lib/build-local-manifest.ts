@@ -1,5 +1,6 @@
 import {
   buildExcerpt,
+  buildDefinitionPreview,
   extractHeadings,
   extractOutLinksWithContext,
   firstHeading,
@@ -381,6 +382,7 @@ function buildMdEntry(
     ...(diagnostics && diagnostics.length > 0 ? { diagnostics } : {}),
     headings,
     excerpt: buildExcerpt(body),
+    definitionPreview: buildDefinitionPreview(body, frontmatter),
     ...(frontmatter.kind === 'project'
       ? { meaningEvidencePaths: extractProjectMeaningEvidencePaths(body) }
       : {}),

@@ -25,6 +25,10 @@ disagree, the code wins; a feature file's history is its Git log
 | MCP | JSON-RPC server an agent registers against a vault | [`mcp/README.md`](../mcp/README.md); the tool list is the server's `tools/list` answer |
 | Website | Static export; `/` is the gateway until a vault is loaded | [Gateway](features/gateway.md) |
 
+Meaning review previews a nonblank authored description or a complete opening
+prose paragraph within 320 characters. The full-document action exposes the
+remaining sections and boundaries, including when no preview is eligible.
+
 ## Destinations
 
 The desktop rail's order and hrefs come from

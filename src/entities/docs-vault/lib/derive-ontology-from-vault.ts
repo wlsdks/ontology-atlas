@@ -41,7 +41,7 @@ interface OntologyStubNode {
    */
   ref?: string;
   source: OntologyStubSource;
-  /** Free-text summary — the first body paragraph, or the `description` key. */
+  /** Nonblank description or complete opening prose within the preview budget. */
   summary?: string;
 }
 
@@ -167,7 +167,7 @@ function deriveDocNode(doc: VaultDoc): OntologyStubNode | null {
     hasOwnDocument: true,
     createdBy: typeof fm.created_by === 'string' ? fm.created_by.trim() : undefined,
     source: 'frontmatter',
-    summary: doc.description ?? doc.excerpt ?? undefined,
+    summary: doc.description?.trim() || doc.definitionPreview || undefined,
   };
 }
 
