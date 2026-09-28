@@ -24,11 +24,11 @@ mod connectors;
 mod deep_link;
 mod errors;
 mod git;
-mod jev;
-mod library;
 mod gray_area;
 mod gray_area_rpc;
 mod gray_area_scope;
+mod jev;
+mod library;
 mod llm;
 mod llm_audit;
 mod managed_node;
@@ -226,10 +226,8 @@ pub(crate) fn canonical_root(root_path: &str) -> Result<PathBuf, String> {
     Ok(root)
 }
 
-/// Like `canonical_root`, for project-source inspection, which may target the
-/// repository a granted vault lives in as well as the vault itself. It returns only
-/// a file listing and a hash, never file contents, so this wider gate does not let
-/// the content commands out of their vaults.
+/// Like `canonical_root`, but also admits the repository a granted vault lives in, for
+/// project-source inspection and document discovery.
 pub(crate) fn canonical_source_root(root_path: &str) -> Result<PathBuf, String> {
     let root = fs::canonicalize(root_path).map_err(|err| err.to_string())?;
     let metadata = fs::metadata(&root).map_err(|err| err.to_string())?;
@@ -792,9 +790,23 @@ enum AcpStreamEvent {
 
 type AcpStream = tauri::ipc::Channel<AcpStreamEvent>;
 
-/// The working folder must pass the picker's vault-root check, the child gets its
-/// own process group so grandchildren end with it, and PATH is rebuilt from the
-/// locations found, or the adapter cannot resolve the real CLI.
+fn adapter_command(
+    program: &Path,
+    args: &[String],
+    launch_dir: &Path,
+    vault_root: &Path,
+) -> Command {
+    debug_assert!(!launch_dir.starts_with(vault_root));
+    let mut command = Command::new(program);
+    command
+        .args(args)
+        .current_dir(launch_dir)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+    command
+}
+
 #[tauri::command(async)]
 fn acp_start(
     app: AppHandle,
@@ -803,8 +815,6 @@ fn acp_start(
     cwd: String,
     on_event: AcpStream,
 ) -> Result<String, String> {
-    // The agent runs in the vault, so its working folder must be a granted root; an
-    // XSS must not spawn an agent in an arbitrary directory.
     let root = canonical_root(&cwd).map_err(|err| format!("cwd-unreadable:{err}"))?;
     if let Some(reason) = vault_root_rejection(&root) {
         return Err(format!("vault-root-rejected:{reason}"));
@@ -826,7 +836,7 @@ fn acp_start(
     let managed_node_bin = app_data_for_paths
         .as_deref()
         .and_then(managed_node::managed_node_bin_dir);
-    let launch = acp::resolve_launch(
+    let mut launch = acp::resolve_launch(
         &runtime_id,
         home.as_deref(),
         std::env::var_os("PATH").as_deref(),
@@ -834,6 +844,9 @@ fn acp_start(
         managed_bin.as_deref(),
         managed_node_bin.as_deref(),
     )?;
+    let repo_root = git::find_repo_root(&root).ok().flatten();
+    launch.path_env =
+        acp::path_without_vault_node_modules_bin(&launch.path_env, &root, repo_root.as_deref());
 
     // Heal a half-downloaded npx entry just before launch (see the npx cache block in `acp.rs`).
     let npx_preflight = acp::preflight_npx_cache(&launch, home.as_deref());
@@ -877,13 +890,7 @@ fn acp_start(
         }
     );
     let spawned = spawned.unwrap_or_else(|| launch.clone());
-    let mut command = Command::new(&spawned.program);
-    command
-        .args(&spawned.args)
-        .current_dir(&root)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped());
+    let mut command = adapter_command(&spawned.program, &spawned.args, &app_data, &root);
     acp::apply_runtime_environment(&mut command, &runtime_id, &spawned.path_env);
     command.env(isolation_env, isolation_dir);
 
@@ -3524,6 +3531,9 @@ fn format_webview_error_report(
 
 pub fn run() {
     install_panic_logger();
+    if let Some(path) = std::env::var_os("PATH") {
+        std::env::set_var("PATH", acp::sanitized_process_path(&path));
+    }
     let verify_webview = std::env::var_os(WEBVIEW_VERIFY_ENV).is_some();
     let mut context = tauri::generate_context!();
     let isolated_window_count =
@@ -3877,6 +3887,16 @@ pub fn run() {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn the_adapter_launches_from_app_data_not_the_vault() {
+        use std::path::{Path, PathBuf};
+        let app_data = PathBuf::from("/private/tmp/atlas-app-support");
+        let vault = PathBuf::from("/private/tmp/atlas-vault");
+        let command = super::adapter_command(Path::new("/bin/echo"), &[], &app_data, &vault);
+        assert_eq!(command.get_current_dir(), Some(app_data.as_path()));
+        assert!(!command.get_current_dir().unwrap().starts_with(&vault));
+    }
+
     #[test]
     fn a_binary_read_is_the_mtime_then_the_raw_bytes() {
         let dir = std::env::temp_dir().join(format!("atlas-binary-read-{}", std::process::id()));
@@ -5743,8 +5763,16 @@ mod vault_scope_tests {
             assert!(err.contains("not-granted"), "{err}");
         };
         refused(read_vault_text_file(home_path.clone(), ".ssh/id_rsa".into()).map(|_| ()));
-        refused(write_vault_text_file(home_path.clone(), "planted.md".into(), "x".into()));
-        refused(remove_vault_entry(home_path.clone(), ".ssh/id_rsa".into(), None));
+        refused(write_vault_text_file(
+            home_path.clone(),
+            "planted.md".into(),
+            "x".into(),
+        ));
+        refused(remove_vault_entry(
+            home_path.clone(),
+            ".ssh/id_rsa".into(),
+            None,
+        ));
         refused(list_vault_directory(home_path.clone(), String::new()).map(|_| ()));
         refused(crate::git::validate_vault_dir(&home_path).map(|_| ()));
         refused(canonical_root(&base.to_string_lossy()).map(|_| ()));
@@ -5760,20 +5788,26 @@ mod vault_scope_tests {
         let verified = crate::agent_setup::verify_mcp_server(home_path.clone(), None);
         assert!(!verified.ok);
         assert!(
-            verified.failure.as_deref().unwrap_or("").contains("not-granted"),
+            verified
+                .failure
+                .as_deref()
+                .unwrap_or("")
+                .contains("not-granted"),
             "{:?}",
             verified.failure
         );
         refused(super::open_vault_in_finder(home_path.clone()));
-        let report = crate::library::discover_source_candidates(vec![
-            crate::library::SourceDiscoveryRoot {
+        let report =
+            crate::library::discover_source_candidates(vec![crate::library::SourceDiscoveryRoot {
                 root_path: home_path.clone(),
                 label: "home".into(),
                 skip_relative: Vec::new(),
-            },
-        ])
-        .unwrap();
-        assert!(report.candidates.is_empty(), "an ungranted root yields no candidates");
+            }])
+            .unwrap();
+        assert!(
+            report.candidates.is_empty(),
+            "an ungranted root yields no candidates"
+        );
         assert_eq!(report.unreadable_roots, vec!["home".to_string()]);
 
         drop(scope);

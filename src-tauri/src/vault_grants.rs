@@ -37,7 +37,9 @@ pub(crate) struct Registry {
 }
 
 fn within(roots: &HashSet<PathBuf>, path: &Path) -> bool {
-    roots.iter().any(|root| path == root || path.starts_with(root))
+    roots
+        .iter()
+        .any(|root| path == root || path.starts_with(root))
 }
 
 impl Registry {
@@ -226,7 +228,10 @@ mod tests {
         // The kind of secret path outside every granted root the exploit reached
         // (a fixed absolute path, so the test does not depend on $HOME/%USERPROFILE%).
         let secret = tmp("outside").join(".ssh/id_rsa");
-        assert!(!reg.is_vault_granted(secret.parent().unwrap()), "an outside dir is not granted");
+        assert!(
+            !reg.is_vault_granted(secret.parent().unwrap()),
+            "an outside dir is not granted"
+        );
         assert!(
             !reg.is_vault_granted(&secret),
             "a secret outside every granted root stays refused"
@@ -242,7 +247,10 @@ mod tests {
         let mut reg = Registry::default();
         reg.grant(vault.clone(), Some(repo.clone()));
 
-        assert!(reg.is_source_granted(&repo), "the vault's repo is a source root");
+        assert!(
+            reg.is_source_granted(&repo),
+            "the vault's repo is a source root"
+        );
         assert!(
             !reg.is_vault_granted(&repo),
             "but the repo is not a content root, so reads stay scoped to the vault"
