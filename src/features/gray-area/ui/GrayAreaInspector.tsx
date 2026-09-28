@@ -7,7 +7,7 @@ import { copyText } from '@/shared/lib/copy-text';
 import { useHeldValue } from '@/shared/lib/use-presence';
 import { Link } from '@/i18n/navigation';
 import { checkGrayAreaEvidence, grayAreaSourceAccessRequired, readGrayAreaEvidence, previewGrayAreaScope, type GrayAreaScopePreview, type GrayAreaSnapshot, type GrayAreaWitness } from '@/shared/lib/tauri-gray-area';
-import { Button, IconButton, RowButton, Surface, controlClass } from '@/shared/ui';
+import { Button, Chip, IconButton, RowButton, Surface, controlClass } from '@/shared/ui';
 import { ArrowRight, Check, ChevronDown, Copy, FileSearch, RefreshCw, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 'react';
@@ -118,9 +118,8 @@ export function GrayAreaInspector({ open, vaultPath, selection, onClose, onFocus
     className={`${styles.inspector} pointer-events-auto fixed inset-x-3 bottom-[var(--map-panel-bottom-reserve)] z-40 flex max-h-[var(--map-inspector-max-height)] flex-col overflow-hidden rounded-panel border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] shadow-[var(--shadow-elevation-dock-side)] lg:inset-x-auto lg:right-[var(--topology-node-popover-right-inset)] lg:top-[var(--topology-node-popover-top)] lg:w-[var(--map-panel-width)]`}>
     <header className="flex shrink-0 items-start gap-3 border-b border-[color:var(--color-divider)] p-[var(--card-pad)]">
       <div className="min-w-0 flex-1">
-        <p className="text-caption text-[color:var(--color-text-secondary)]">{t('eyebrow')}</p>
-        <h2 id="gray-area-title" className="mt-1 text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{t('title')}</h2>
-        <p className="mt-2 break-words text-body text-[color:var(--color-text-secondary)]">{selection.label}</p>
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1"><p className="text-caption text-[color:var(--color-text-secondary)]">{t('eyebrow')}</p><p className="break-words text-body text-[color:var(--color-text-secondary)]">{selection.label}</p></div>
+        <h2 id="gray-area-title" className="mt-1 text-body font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{t('title')}</h2>
       </div>
       <IconButton ref={closeRef} label={t('close')} onClick={onClose} size="sm"><X size={16}/></IconButton>
     </header>
@@ -170,35 +169,35 @@ function Findings({ snapshot,vaultPath,onFocus,onPrepare,onRefresh,escapeFirstRe
   };
   const label = (slug:string|null) => snapshot.nodes.find(n=>n.slug===slug)?.title ?? slug ?? '';
   return <div ref={onReady} tabIndex={-1} role="group" aria-label={t('title')} className="space-y-4 outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]">
-    <p className="text-caption text-[color:var(--color-text-secondary)]">{t('boundary')}</p>
+    <p className="text-body leading-body text-[color:var(--color-text-secondary)]">{t('boundary')}</p>
     {stale ? <div ref={onReady} tabIndex={-1} role="status" className="space-y-3 rounded-card border border-[color:var(--color-divider)] p-[var(--card-pad)] outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]"><p className="text-body">{t('stale')}</p><Button onClick={onRefresh} variant="outline">{t('refresh')}</Button></div> : null}
     {visible.length===0 ? <div role="status" className="space-y-2 py-4"><h3 className="text-body font-[var(--font-weight-strong)]">{dismissed.size ? t('foldedAll') : t('empty')}</h3><p className="text-caption text-[color:var(--color-text-secondary)]">{t('emptyLimit')}</p></div> : null}
     {visible.map(candidate=>{
       const active=expanded===candidate.id;
       const detailsId=`gray-area-${encodeURIComponent(candidate.id)}`;
       return <article key={candidate.id} data-testid={`gray-area-${candidate.kind}`} className="overflow-hidden rounded-card border border-[color:var(--color-divider)]">
-        <RowButton tone="strong" hoverSurface="lift" aria-expanded={active} aria-controls={detailsId} onClick={()=>setExpanded(active?null:candidate.id)}>
-          <span className="min-w-0 flex-1 text-left"><span className="block text-caption text-[color:var(--color-text-secondary)]">{t(`kind.${candidate.kind}`)}</span><span className="mt-1 block whitespace-normal break-words text-body font-[var(--font-weight-strong)]">{label(candidate.slug)}{candidate.relatedSlug ? ` · ${label(candidate.relatedSlug)}` : ''}</span></span><ChevronDown size={16} className="shrink-0"/>
+        <RowButton size="md" tone="strong" hoverSurface="lift" aria-expanded={active} aria-controls={detailsId} onClick={()=>setExpanded(active?null:candidate.id)}>
+          <span className="min-w-0 flex-1 text-left"><span className="block whitespace-normal break-words text-body-lg font-[var(--font-weight-strong)]">{label(candidate.slug)}{candidate.relatedSlug ? ` · ${label(candidate.relatedSlug)}` : ''}</span><span className="mt-1 block whitespace-normal text-caption text-[color:var(--color-text-secondary)]">{t(`kind.${candidate.kind}`)}</span></span><ChevronDown size={16} className="shrink-0"/>
         </RowButton>
         <Surface open={active} id={detailsId} motion="overlay" className="space-y-3 border-t border-[color:var(--color-divider)] p-3">
-          <dl className="space-y-3">
-            <Fact label={t('observed')} value={candidate.kind==='recorded-gap'?candidate.statement:candidate.kind==='missing-link'?`${t('importFact')}\n${candidate.statement}`:t('driftFact')}/>
-            <Fact label={t('relevance')} value={t('pathRelevance',{path:formatRecordedPath(snapshot,candidate.path,label)})}/>
-            <Fact label={t('unknown')} value={t(candidate.currency==='recorded-unverified'?'recordedUnknown':candidate.kind==='missing-link'?'importUnknown':'driftUnknown')}/>
-            <Fact label={t('nextRead')} value={t(candidate.kind==='recorded-gap'?'readGap':candidate.kind==='missing-link'?'readImport':'readDrift')}/>
+          <dl className="space-y-2">
+            <Fact label={t('observed')} value={candidate.kind==='recorded-gap'?candidate.statement:candidate.kind==='missing-link'?t('importFact'):t('driftFact')} detail={candidate.kind==='missing-link'?candidate.statement:undefined}/>
+            <Fact compact label={t('relevance')} value={t('pathRelevance',{path:formatRecordedPath(snapshot,candidate.path,label)})}/>
+            <Fact unknown label={t('unknown')} value={t(candidate.currency==='recorded-unverified'?'recordedUnknown':candidate.kind==='missing-link'?'importUnknown':'driftUnknown')}/>
+            <Fact compact label={t('nextRead')} value={t(candidate.kind==='recorded-gap'?'readGap':candidate.kind==='missing-link'?'readImport':'readDrift')}/>
           </dl>
           <div className="space-y-2">
             <p className="text-caption text-[color:var(--color-text-secondary)]">{t('source')}</p>
             {candidate.sourcePaths.length ? candidate.sourcePaths.map(path=>{
               const source=snapshot.witnesses.find(w=>w.path===path && w.status==='read');
-              return source ? <RowButton key={path} tone="secondary" hoverSurface="lift" size="sm" onClick={event=>{sourceReturn.current=event.currentTarget;void guarded(()=>setWitness({candidateId:candidate.id,source}));}} disabled={stale||busy}><FileSearch size={14} className="shrink-0"/><span className="min-w-0 break-all text-left font-mono text-caption">{path}:{source.actualRange?.startLine}–{source.actualRange?.endLine}</span></RowButton> : <p key={path} className="break-all text-caption text-[color:var(--color-text-tertiary)]">{path} · {t('notCaptured')}</p>;
-            }) : <p className="text-caption text-[color:var(--color-text-tertiary)]">{t('noExactPath')}</p>}
+              return source ? <RowButton key={path} className={styles.sourceRow} tone="secondary" hoverSurface="lift" size="sm" onClick={event=>{sourceReturn.current=event.currentTarget;void guarded(()=>setWitness({candidateId:candidate.id,source}));}} disabled={stale||busy}><FileSearch size={14} className="shrink-0"/><span className="min-w-0 flex-1 break-all text-left font-mono text-body leading-body">{path}:{source.actualRange?.startLine}–{source.actualRange?.endLine}</span><ArrowRight size={14} aria-hidden className="shrink-0"/></RowButton> : <p key={path} className="break-all text-body leading-body text-[color:var(--color-text-tertiary)]">{path} · {t('notCaptured')}</p>;
+            }) : <p className="text-body leading-body text-[color:var(--color-text-tertiary)]">{t('noExactPath')}</p>}
           </div>
           <SourceExcerpt source={witness?.candidateId===candidate.id?witness.source:null} measuredAt={snapshot.measuredAt} onClose={()=>setWitness(null)} onExited={()=>{if(sourceReturn.current?.isConnected)sourceReturn.current.focus();}}/>
-          <div className="space-y-2"><RowButton tone="accentOnTint" hoverSurface="lift" disabled={stale||busy} onClick={()=>void guarded(()=>onFocus(candidate))}><span className="min-w-0 flex-1 break-words">{t(candidate.kind==='missing-link'?'compareConcepts':'showPath')}</span><ArrowRight size={14} className="shrink-0"/></RowButton><RowButton tone="secondary" hoverSurface="lift" disabled={stale||busy} onClick={()=>void guarded(async()=>{const copied=await copyText(buildGrayAreaInvestigation(snapshot,candidate));setNotice(t(copied?'copied':'copyFailed'));})}><Copy size={14} className="shrink-0"/><span className="min-w-0 break-words">{t('copy')}</span></RowButton></div>
-          <RowButton tone="secondary" hoverSurface="lift" disabled={stale||busy} onClick={()=>void guarded(()=>onPrepare(buildGrayAreaInvestigation(snapshot,candidate),candidate))}>{t('prepare')}</RowButton>
-          <p className="text-caption text-[color:var(--color-text-tertiary)]">{t('draftOnly')}</p>
-          <RowButton tone="secondary" hoverSurface="lift" onClick={()=>{const next=new Set([...dismissed,candidate.id]);setDismissed(next);setExpanded(grayAreaCandidatePage(snapshot,next).candidates[0]?.id??null);setWitness(null);}}>{t('dismiss')}</RowButton>
+          <div className="space-y-2"><RowButton size="md" tone="accentOnTint" hoverSurface="lift" disabled={stale||busy} onClick={()=>void guarded(()=>onFocus(candidate))}><span className="min-w-0 flex-1 break-words">{t(candidate.kind==='missing-link'?'compareConcepts':'showPath')}</span><ArrowRight size={14} className="shrink-0"/></RowButton><div className="flex flex-wrap items-center gap-2"><Chip size="sm" className="min-w-0 max-w-full" tone="secondary" hoverSurface="lift" disabled={stale||busy} onClick={()=>void guarded(async()=>{const copied=await copyText(buildGrayAreaInvestigation(snapshot,candidate));setNotice(t(copied?'copied':'copyFailed'));})}><Copy size={14} className="shrink-0"/><span className="min-w-0 whitespace-normal break-words">{t('copy')}</span></Chip>
+          <Chip size="sm" className="min-w-0 max-w-full" tone="secondary" hoverSurface="lift" disabled={stale||busy} onClick={()=>void guarded(()=>onPrepare(buildGrayAreaInvestigation(snapshot,candidate),candidate))}><span className="min-w-0 whitespace-normal break-words">{t('prepare')}</span></Chip></div></div>
+          <p className="text-body leading-body text-[color:var(--color-text-secondary)]">{t('draftOnly')}</p>
+          <div className="border-t border-[color:var(--color-divider)] pt-2"><button type="button" className={controlClass({shape:'link',size:'sm',tone:'secondary',hoverInk:'strong'})} onClick={()=>{const next=new Set([...dismissed,candidate.id]);setDismissed(next);setExpanded(grayAreaCandidatePage(snapshot,next).candidates[0]?.id??null);setWitness(null);}}>{t('dismiss')}</button></div>
         </Surface>
       </article>;
     })}
@@ -222,14 +221,14 @@ function Findings({ snapshot,vaultPath,onFocus,onPrepare,onRefresh,escapeFirstRe
     </footer>
   </div>;
 }
-function Fact({label,value}:{label:string;value:string}) { return <div><dt className="text-caption text-[color:var(--color-text-tertiary)]">{label}</dt><dd className="mt-1 whitespace-pre-wrap break-words text-body leading-[var(--leading-body)] text-[color:var(--color-text-secondary)]">{value}</dd></div>; }
+function Fact({label,value,detail,compact=false,unknown=false}:{label:string;value:string;detail?:string;compact?:boolean;unknown?:boolean}) { return <div className={cn(styles.fact,compact&&styles.compactFact,unknown&&styles.unknown)}><dt className="text-caption text-[color:var(--color-text-tertiary)]">{label}</dt><dd className="mt-1 whitespace-pre-wrap break-words text-body leading-body text-[color:var(--color-text-secondary)]">{value}{detail ? <code className={styles.observedPath}>{detail}</code>:null}</dd></div>; }
 
 function SourceExcerpt({source,measuredAt,onClose,onExited}:{source:GrayAreaWitness|null;measuredAt:string;onClose:()=>void;onExited:()=>void}) {
   const t=useTranslations('grayArea');const shown=useHeldValue(source,source?.path??'');
   const mountSource=useCallback((node:HTMLDivElement|null)=>{if(node&&source){node.focus();node.scrollIntoView({block:'nearest'});}},[source]);
   return <Surface open={Boolean(source)} onExited={onExited} motion="overlay" className="space-y-2 rounded-card border border-[color:var(--color-divider)] p-3" data-testid="gray-area-source-witness">
     <div tabIndex={-1} ref={mountSource} role="region" aria-label={t('source')} className="space-y-2 rounded-chip outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]">
-      <div className="flex items-start gap-2"><p className="min-w-0 flex-1 break-all text-caption font-mono">{shown?.path}:{shown?.actualRange?.startLine}–{shown?.actualRange?.endLine}</p><IconButton size="sm" label={t('closeSource')} onClick={onClose}><X size={14}/></IconButton></div>
+      <div className="flex items-start gap-2"><p className="min-w-0 flex-1 break-all text-body leading-body font-mono">{shown?.path}:{shown?.actualRange?.startLine}–{shown?.actualRange?.endLine}</p><IconButton size="sm" label={t('closeSource')} onClick={onClose}><X size={14}/></IconButton></div>
       <p className="text-caption text-[color:var(--color-text-secondary)]">{t('capturedSource',{time:measuredAt})}</p><pre className="max-h-64 overflow-auto whitespace-pre-wrap break-words text-body leading-body font-mono">{shown?.text}</pre><p className="break-all font-mono text-caption text-[color:var(--color-text-tertiary)]">SHA256 {shown?.fullFileSha256}</p>
     </div>
   </Surface>;
