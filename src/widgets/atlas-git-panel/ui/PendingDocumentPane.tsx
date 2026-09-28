@@ -30,6 +30,7 @@ export function PendingDocumentPane({
   others,
   summary,
   hunks,
+  hunksTooLarge,
   selectedPath,
   setSelectedPath,
   stagedOutsideCount,
@@ -44,6 +45,7 @@ export function PendingDocumentPane({
   summary: string;
   /** The hunk diff already read for the whole vault; the reader's fallback when the whole document cannot be read. */
   hunks: readonly AtlasGitDiffFile[];
+  hunksTooLarge: boolean;
   selectedPath: string | null;
   setSelectedPath: (path: string | null) => void;
   stagedOutsideCount: number;
@@ -125,6 +127,7 @@ export function PendingDocumentPane({
             vaultPath={vaultPath}
             document={shown}
             fallback={hunks.find((h) => h.path === shown.entry.path) ?? null}
+            fallbackTooLarge={hunksTooLarge}
             action={discard(shown)}
           />
         </div>
@@ -158,6 +161,7 @@ export function DocumentChangeReader({
   vaultPath,
   document,
   fallback,
+  fallbackTooLarge = false,
   source,
   action = null,
   heading = null,
@@ -166,6 +170,7 @@ export function DocumentChangeReader({
   vaultPath: string | null;
   document: ChangedDocument;
   fallback: AtlasGitDiffFile | null;
+  fallbackTooLarge?: boolean;
   /** A commit hash to read that commit's change of the document; absent = uncommitted. */
   source?: string;
   /** This document's own door, drawn in the header beside its path and counts. */
@@ -271,8 +276,10 @@ export function DocumentChangeReader({
         {action ? <div className="mt-1 flex w-full flex-none flex-col">{action}</div> : null}
       </header>
 
-      {lines.length === 0 ? (
-        <p className="text-label leading-prose text-[color:var(--color-text-quaternary)]">{t("diffEmpty")}</p>
+      {lines.length === 0 && (whole !== undefined || !vaultPath) ? (
+        <p className="text-label leading-prose text-[color:var(--color-text-quaternary)]">
+          {t(fallbackTooLarge ? "diffTooLarge" : "diffEmpty")}
+        </p>
       ) : null}
 
       {/* A fragment changes the meaning of every line below, so it is said above the body. */}
