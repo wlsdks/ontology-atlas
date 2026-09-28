@@ -1,4 +1,4 @@
-import { act, renderHook, waitFor } from '@testing-library/react';
+import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AcpWorkReceipt } from '@/shared/lib/acp-work-receipt';
 
@@ -41,6 +41,8 @@ const bridge = vi.hoisted(() => ({
   sent: [] as Array<{ id?: number; method?: string; params?: unknown }>,
   holdPrompt: false,
   pendingPrompt: null as number | null,
+  failLoad: false,
+  newSessionId: 's-1',
 }));
 
 vi.mock('@/shared/lib/tauri-acp', () => ({
@@ -77,9 +79,20 @@ vi.mock('@/shared/lib/tauri-acp', () => ({
       );
       return;
     }
+    if (message.method === 'session/load' && bridge.failLoad) {
+      queueMicrotask(() =>
+        bridge.listener?.(
+          JSON.stringify({ jsonrpc: '2.0', id: message.id, error: { code: -32603, message: 'no such session' } }),
+        ),
+      );
+      return;
+    }
     const result =
       message.method === 'session/new' || message.method === 'session/load'
-        ? { sessionId: 's-1', ...(bridge.sessionModes ? { modes: bridge.sessionModes } : {}) }
+        ? {
+            sessionId: message.method === 'session/new' ? bridge.newSessionId : 's-1',
+            ...(bridge.sessionModes ? { modes: bridge.sessionModes } : {}),
+          }
         : { protocolVersion: 1 };
     queueMicrotask(() =>
       bridge.listener?.(JSON.stringify({ jsonrpc: '2.0', id: message.id, result })),
@@ -148,6 +161,7 @@ vi.mock('next-intl', () => ({
 }));
 
 afterEach(() => {
+  cleanup();
   bridge.starts = 0;
   bridge.release = null;
   bridge.listener = null;
@@ -161,6 +175,9 @@ afterEach(() => {
   bridge.sent = [];
   bridge.holdPrompt = false;
   bridge.pendingPrompt = null;
+  bridge.failLoad = false;
+  bridge.newSessionId = 's-1';
+  vi.useRealTimers();
 });
 
 describe('analysis turn capture', () => {
@@ -1402,5 +1419,142 @@ describe('autoDecide — the screen answers a permission it can judge', () => {
     }));
 
     await act(async () => { await result.current.stop(); });
+  });
+});
+
+describe('a conversation put away with nothing to do', () => {
+  const TEN_MINUTES = 10 * 60_000;
+  const permissionRequest = (id: number) =>
+    JSON.stringify({
+      jsonrpc: '2.0',
+      id,
+      method: 'session/request_permission',
+      params: {
+        sessionId: 's-1',
+        options: [
+          { kind: 'reject_once', name: 'Deny', optionId: 'reject' },
+          { kind: 'allow_once', name: 'Allow', optionId: 'allow' },
+        ],
+        toolCall: { toolCallId: `tool-${id}`, title: 'Write /outside/a.md', kind: 'edit', rawInput: { file_path: '/outside/a.md' } },
+      },
+    });
+  const say = (text: string) =>
+    bridge.listener?.(JSON.stringify({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: { sessionId: 's-1', update: { sessionUpdate: 'agent_message_chunk', content: { type: 'text', text } } },
+    }));
+  const finishPrompt = () =>
+    bridge.listener?.(JSON.stringify({ jsonrpc: '2.0', id: bridge.pendingPrompt, result: { stopReason: 'end_turn' } }));
+  const idleFor = (ms: number) => act(async () => { await vi.advanceTimersByTimeAsync(ms); });
+
+  async function ready() {
+    const view = renderHook(
+      ({ putAway }) => useAcpSession({ runtimeId: 'claude-acp', vaultRoot: '/vault', putAway }),
+      { initialProps: { putAway: false } },
+    );
+    const starting = view.result.current.start();
+    await waitFor(() => expect(bridge.starts).toBe(1));
+    await act(async () => { bridge.release?.(); await starting; });
+    expect(view.result.current.status).toBe('ready');
+    return view;
+  }
+
+  async function startAgain(view: Awaited<ReturnType<typeof ready>>) {
+    vi.useRealTimers();
+    view.rerender({ putAway: false });
+    bridge.release = null;
+    bridge.sent = [];
+    const resuming = view.result.current.start();
+    await waitFor(() => expect(bridge.starts).toBe(2));
+    await act(async () => { bridge.release?.(); await resuming; });
+  }
+
+  it('stops the adapter after ten minutes put away, and not a moment before', async () => {
+    const view = await ready();
+    vi.useFakeTimers();
+    view.rerender({ putAway: true });
+    await idleFor(TEN_MINUTES - 1);
+    expect(bridge.stopped).toEqual([]);
+    await idleFor(1);
+    expect(bridge.stopped).toEqual(['acp-1']);
+    expect(view.result.current.status).toBe('idle');
+  });
+
+  it('keeps the adapter while the dock is open', async () => {
+    const view = await ready();
+    vi.useFakeTimers();
+    bridge.holdPrompt = true;
+    let sent!: Promise<void>;
+    await act(async () => { sent = view.result.current.send('Survey the sources.'); });
+    expect(view.result.current.status).toBe('thinking');
+    await act(async () => { finishPrompt(); await sent; });
+    expect(view.result.current.status).toBe('ready');
+    await idleFor(3 * TEN_MINUTES);
+    expect(bridge.stopped).toEqual([]);
+  });
+
+  it('keeps the adapter while a turn runs, and counts ten minutes from the end of that turn', async () => {
+    const view = await ready();
+    bridge.holdPrompt = true;
+    let sent!: Promise<void>;
+    act(() => { sent = view.result.current.send('Survey the sources.'); });
+    await waitFor(() => expect(bridge.pendingPrompt).not.toBeNull());
+    vi.useFakeTimers();
+    view.rerender({ putAway: true });
+    await idleFor(3 * TEN_MINUTES);
+    expect(bridge.stopped).toEqual([]);
+    await act(async () => { finishPrompt(); await sent; });
+    expect(view.result.current.status).toBe('ready');
+    await idleFor(TEN_MINUTES - 1);
+    expect(bridge.stopped).toEqual([]);
+    await idleFor(1);
+    expect(bridge.stopped).toEqual(['acp-1']);
+  });
+
+  it('keeps the adapter while a permission waits for an answer', async () => {
+    const view = await ready();
+    await act(async () => { bridge.listener?.(permissionRequest(301)); });
+    await waitFor(() => expect(view.result.current.pending).not.toBeNull());
+    vi.useFakeTimers();
+    view.rerender({ putAway: true });
+    await idleFor(3 * TEN_MINUTES);
+    expect(bridge.stopped).toEqual([]);
+    await act(async () => { view.result.current.pending?.resolve('reject'); });
+    await idleFor(TEN_MINUTES);
+    expect(bridge.stopped).toEqual(['acp-1']);
+  });
+
+  it('resumes the same conversation on the next start and keeps its transcript', async () => {
+    const view = await ready();
+    await act(async () => { say('Four sources are waiting.'); });
+    vi.useFakeTimers();
+    view.rerender({ putAway: true });
+    await idleFor(TEN_MINUTES);
+    expect(bridge.stopped).toEqual(['acp-1']);
+    await startAgain(view);
+    const load = bridge.sent.find((m) => m.method === 'session/load');
+    expect((load?.params as { sessionId?: string } | undefined)?.sessionId).toBe('s-1');
+    expect(bridge.sent.some((m) => m.method === 'session/new')).toBe(false);
+    expect(view.result.current.status).toBe('ready');
+    expect(view.result.current.events).toContainEqual(
+      expect.objectContaining({ kind: 'agent', text: 'Four sources are waiting.' }),
+    );
+    await act(async () => { await view.result.current.stop(); });
+  });
+
+  it('clears the transcript when the put-away conversation cannot be resumed', async () => {
+    const view = await ready();
+    await act(async () => { say('Four sources are waiting.'); });
+    vi.useFakeTimers();
+    view.rerender({ putAway: true });
+    await idleFor(TEN_MINUTES);
+    bridge.failLoad = true;
+    bridge.newSessionId = 's-2';
+    await startAgain(view);
+    expect(bridge.sent.some((m) => m.method === 'session/new')).toBe(true);
+    expect(view.result.current.status).toBe('ready');
+    expect(view.result.current.events).toEqual([]);
+    await act(async () => { await view.result.current.stop(); });
   });
 });

@@ -425,15 +425,8 @@ export function LibraryAgentDock({
             vaultRoot={vaultRoot}
             mcpServers={mcpServers}
             sessionEnabled={open && settled}
-            /*
-             * Reopening lands in the conversation this folder was last having, rather than in a
-             * blank one (owner, 2026-09-08). It matters here more than on any other dock,
-             * because this is the dock people close: the Library's reader wants the width back.
-             * A live session is untouched by it — `start()` returns at its own lock — so this
-             * decides only what a *cold* dock opens on, which is the case the owner met after
-             * quitting the app.
-             */
             resumeLatest
+            putAway={!open}
             openingRequest={openingRequest}
             answerFold={answerFold ?? null}
             judgeWrite={judgeWrite}
