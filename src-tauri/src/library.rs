@@ -85,21 +85,35 @@ pub(crate) fn discovery_accepts_file(name: &str) -> bool {
     DISCOVERY_DOCUMENT_EXTENSIONS.contains(&lower_extension(&lowered).as_str())
 }
 
-fn hash_path(path: &Path) -> Result<String, String> {
-    use std::io::Read;
-
-    let mut file = fs::File::open(path).map_err(|err| err.to_string())?;
+/// 64 KiB chunks keep a 200 MB scan out of resident memory.
+fn copy_hashing(
+    input: &mut impl std::io::Read,
+    output: &mut impl std::io::Write,
+) -> std::io::Result<(String, u64)> {
     let mut hasher = Sha256::new();
-    // 64 KiB chunks keep a 200 MB scan out of resident memory.
     let mut buffer = [0_u8; 64 * 1024];
+    let mut length = 0_u64;
     loop {
-        let read = file.read(&mut buffer).map_err(|err| err.to_string())?;
-        if read == 0 {
-            break;
-        }
+        let read = match input.read(&mut buffer) {
+            Ok(0) => break,
+            Ok(read) => read,
+            Err(err) if err.kind() == std::io::ErrorKind::Interrupted => continue,
+            Err(err) => return Err(err),
+        };
         hasher.update(&buffer[..read]);
+        output.write_all(&buffer[..read])?;
+        length += read as u64;
     }
-    Ok(format!("{:x}", hasher.finalize()))
+    Ok((format!("{:x}", hasher.finalize()), length))
+}
+
+fn hash_and_length(path: &Path) -> Result<(String, u64), String> {
+    let mut file = fs::File::open(path).map_err(|err| err.to_string())?;
+    copy_hashing(&mut file, &mut std::io::sink()).map_err(|err| err.to_string())
+}
+
+pub(crate) fn hash_path(path: &Path) -> Result<String, String> {
+    hash_and_length(path).map(|(hash, _)| hash)
 }
 
 #[derive(serde::Serialize)]
@@ -110,9 +124,8 @@ pub struct VaultFileHash {
     pub sha256: Option<String>,
 }
 
-/// Hashed natively because a byte array over IPC would cost millions of numbers;
-/// the screen asks only for sources a wiki page cites.
-#[tauri::command]
+/// Hashed natively so a scan never crosses IPC; the screen asks only for cited sources.
+#[tauri::command(async)]
 pub fn hash_vault_files(
     root_path: String,
     relative_paths: Vec<String>,
@@ -210,25 +223,36 @@ fn index_existing_sources(root: &Path) -> Result<Vec<(String, String)>, String> 
 }
 
 #[cfg(unix)]
-fn write_source_bytes(root_path: &str, relative_path: &str, bytes: &[u8]) -> Result<(), String> {
+fn copy_source_into(
+    root_path: &str,
+    relative_path: &str,
+    source: &mut impl std::io::Read,
+) -> Result<(String, u64), String> {
     let root = canonical_root(root_path)?;
     let root_handle = crate::agent_setup::open_absolute_directory_no_follow(&root)?;
     let (parent, file_name) = crate::agent_setup::open_entry_parent(&root_handle, relative_path)?;
-    crate::agent_setup::write_entry_bytes_atomically(&parent, &file_name, bytes, 0o666)
+    crate::agent_setup::write_entry_atomically_with(&parent, &file_name, 0o666, |file| {
+        copy_hashing(source, file)
+    })
 }
 
 /// Windows lacks `openat`/`O_NOFOLLOW`, so `resolve_write_target_inside` checks the
 /// path instead, the same rule `write_vault_text_file` uses, or bytes could escape.
 #[cfg(not(unix))]
-fn write_source_bytes(root_path: &str, relative_path: &str, bytes: &[u8]) -> Result<(), String> {
+fn copy_source_into(
+    root_path: &str,
+    relative_path: &str,
+    source: &mut impl std::io::Read,
+) -> Result<(String, u64), String> {
     let target = crate::resolve_write_target_inside(root_path, relative_path)?;
-    fs::write(&target, bytes).map_err(|err| err.to_string())
+    let mut file = fs::File::create(&target).map_err(|err| err.to_string())?;
+    copy_hashing(source, &mut file).map_err(|err| err.to_string())
 }
 
 /// Never overwrites and refuses a second copy of the same bytes. Nothing is written
 /// beside the copy, since a sidecar index would be a second canonical store
 /// (`.claude/rules/forbidden.md`).
-#[tauri::command]
+#[tauri::command(async)]
 pub fn import_source_files(
     root_path: String,
     source_paths: Vec<String>,
@@ -257,16 +281,13 @@ pub fn import_source_files(
             results.push(failure("unusable-file-name"));
             continue;
         };
-        let bytes = match fs::read(&picked) {
-            Ok(bytes) => bytes,
+        let (hash, length) = match hash_and_length(&picked) {
+            Ok(measured) => measured,
             Err(err) => {
-                results.push(failure(&err.to_string()));
+                results.push(failure(&err));
                 continue;
             }
         };
-        let mut hasher = Sha256::new();
-        hasher.update(&bytes);
-        let hash = format!("{:x}", hasher.finalize());
 
         if let Some((_, relative)) = existing
             .iter()
@@ -277,7 +298,7 @@ pub fn import_source_files(
                 status: "duplicate".into(),
                 relative_path: Some(relative.clone()),
                 sha256: Some(hash),
-                size: Some(bytes.len() as u64),
+                size: Some(length),
                 reason: None,
             });
             continue;
@@ -295,17 +316,23 @@ pub fn import_source_files(
         }
         let renamed = candidate != base_name;
         let relative = format!("{SOURCES_DIR}/{candidate}");
-        if let Err(err) = write_source_bytes(&root_path, &relative, &bytes) {
-            results.push(failure(&err));
-            continue;
-        }
+        let copied = fs::File::open(&picked)
+            .map_err(|err| err.to_string())
+            .and_then(|mut source| copy_source_into(&root_path, &relative, &mut source));
+        let (hash, length) = match copied {
+            Ok(written) => written,
+            Err(err) => {
+                results.push(failure(&err));
+                continue;
+            }
+        };
         existing.push((hash.clone(), relative.clone()));
         results.push(SourceImportResult {
             picked_name,
             status: if renamed { "renamed" } else { "added" }.into(),
             relative_path: Some(relative),
             sha256: Some(hash),
-            size: Some(bytes.len() as u64),
+            size: Some(length),
             reason: None,
         });
     }
@@ -414,7 +441,7 @@ fn walk_candidates(
 }
 
 /// Metadata only: no file is opened and nothing is copied until the person chooses.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn discover_source_candidates(
     roots: Vec<SourceDiscoveryRoot>,
 ) -> Result<SourceDiscoveryReport, String> {
@@ -530,14 +557,46 @@ mod tests {
             .to_string_lossy()
             .to_string();
 
-        write_source_bytes(&root_path, "sources/plan.pdf", b"%PDF-1.7\n").unwrap();
+        let (hash, length) =
+            copy_source_into(&root_path, "sources/plan.pdf", &mut &b"%PDF-1.7\n"[..]).unwrap();
         assert_eq!(
             fs::read(root.join("sources/plan.pdf")).unwrap(),
             b"%PDF-1.7\n".to_vec()
         );
+        assert_eq!(length, 9);
+        assert_eq!(hash, hash_path(&root.join("sources/plan.pdf")).unwrap());
 
-        assert!(write_source_bytes(&root_path, "../escaped.pdf", b"x").is_err());
+        assert!(copy_source_into(&root_path, "../escaped.pdf", &mut &b"x"[..]).is_err());
 
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn an_import_streams_the_copy_and_refuses_the_same_bytes_twice() {
+        let root = std::env::temp_dir().join(format!("atlas-import-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(&root).unwrap();
+        let root_path = fs::canonicalize(&root)
+            .unwrap()
+            .to_string_lossy()
+            .to_string();
+        let picked = root.join("scan.pdf");
+        let body: Vec<u8> = (0..300_000_u32).map(|i| (i % 251) as u8).collect();
+        fs::write(&picked, &body).unwrap();
+        let picked = picked.to_string_lossy().to_string();
+
+        let first = import_source_files(root_path.clone(), vec![picked.clone()]).unwrap();
+        assert_eq!(first[0].status, "added");
+        assert_eq!(first[0].size, Some(body.len() as u64));
+        assert_eq!(fs::read(root.join("sources/scan.pdf")).unwrap(), body);
+        assert_eq!(
+            first[0].sha256,
+            hash_path(&root.join("sources/scan.pdf")).ok()
+        );
+
+        let second = import_source_files(root_path, vec![picked]).unwrap();
+        assert_eq!(second[0].status, "duplicate");
+        assert_eq!(second[0].relative_path.as_deref(), Some("sources/scan.pdf"));
         let _ = fs::remove_dir_all(&root);
     }
 
