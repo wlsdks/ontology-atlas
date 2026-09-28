@@ -8,7 +8,7 @@
 // packages are `externalImports`. Python reads root or src-layout packages only;
 // Go reads in-module imports, skipping vendor, testdata and `_` trees.
 
-import { readFileSync, readdirSync, statSync, lstatSync, existsSync, realpathSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, lstatSync, existsSync, realpathSync, withConfinedSourceReads, confinedSourceReadsEnabled } from './confined-source-fs.mjs';
 import { join, dirname, resolve, relative, isAbsolute, extname, sep } from 'node:path';
 import { createHash } from 'node:crypto';
 
@@ -151,6 +151,11 @@ const SIDE_IMPORT_RE = /\bimport\s+['"]([^'"]+)['"]/g;
  * }}
  */
 export function inferImports(rootPath, options = {}) {
+  if (confinedSourceReadsEnabled() && options.workspacePackages !== undefined) throw new Error('Confined reads do not accept a workspace override.');
+  return withConfinedSourceReads(rootPath, () => inferImportsWithinRoot(rootPath, options));
+}
+
+function inferImportsWithinRoot(rootPath, options = {}) {
   validateRootPath(rootPath);
   if (!existsSync(rootPath) || !statSync(rootPath).isDirectory()) {
     throw new Error(`rootPath not a directory: ${rootPath}`);
@@ -188,7 +193,7 @@ export function inferImports(rootPath, options = {}) {
     roots.push(p);
   }
   if (workspaceDiscovery?.hasDeclaration) configuredRootExists = true;
-  for (const workspacePackage of workspacePackages) {
+  for (const workspacePackage of confinedSourceReadsEnabled() ? [] : workspacePackages) {
     const packageRoot = join(rootPath, workspacePackage.path);
     if (!isDirectoryInsideRoot(rootPath, packageRoot)) continue;
     roots.push(packageRoot);
@@ -205,6 +210,7 @@ export function inferImports(rootPath, options = {}) {
     rootPath,
     ignore,
     Math.max(0, maxFiles - files.length),
+    confinedSourceReadsEnabled() ? sourceFolders : null,
   );
 
   const edges = [];
@@ -989,7 +995,7 @@ function importScanCoverage(rootPath) {
   };
 }
 
-function inferGoPackageImports(rootPath, ignore, maxFiles) {
+function inferGoPackageImports(rootPath, ignore, maxFiles, scopedFolders = null) {
   const rootModule = readRootGoModule(rootPath);
   if (!rootModule) return null;
   const receipt = {
@@ -1015,7 +1021,7 @@ function inferGoPackageImports(rootPath, ignore, maxFiles) {
     return receipt;
   }
 
-  const fileScan = listRootGoSourceFiles(rootPath, ignore, maxFiles);
+  const fileScan = listRootGoSourceFiles(rootPath, ignore, maxFiles, scopedFolders);
   receipt.filesScanned = fileScan.files.length;
   receipt.fileScanLimited = fileScan.fileScanLimited;
   for (const file of fileScan.files) {
@@ -1106,7 +1112,7 @@ function isSafeGoModulePath(modulePath) {
   return modulePath.split('/').every((segment) => segment && segment !== '.' && segment !== '..' && !segment.includes('\0'));
 }
 
-function listRootGoSourceFiles(rootPath, ignore, maxFiles) {
+function listRootGoSourceFiles(rootPath, ignore, maxFiles, scopedFolders = null) {
   const files = [];
   const detectionLimit = maxFiles + 1;
   const visit = (directory) => {
@@ -1138,6 +1144,7 @@ function listRootGoSourceFiles(rootPath, ignore, maxFiles) {
         if (hasNestedGoModule(rootPath, path)) continue;
         visit(path);
       } else if (pathStat.isFile() && extname(entry) === GO_SOURCE_EXTENSION) {
+        if(scopedFolders&&!scopedFolders.some(folder=>{const start=resolve(rootPath,folder);return path===start||path.startsWith(start+sep);}))continue;
         files.push(path);
       }
     }

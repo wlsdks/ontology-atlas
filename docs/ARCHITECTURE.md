@@ -273,11 +273,37 @@ ability. The canonical roster is the bridge table in
 |---|---|---|
 | Vault absolute path | `src/shared/lib/tauri-vault-fs.ts` | FSA handle instead (no path) |
 | Git | `src/shared/lib/tauri-git.ts` | Cannot run → degraded card |
+| Gray-area evidence | `src/shared/lib/tauri-gray-area.ts`, `src-tauri/src/gray_area.rs` | Cannot inspect the bound code root → degraded card |
 | Keychain | `src/shared/lib/tauri-secrets.ts` | Impossible by design → degraded card |
 | LLM calls | `src/shared/lib/tauri-llm.ts` | Impossible by design → action not rendered |
 | In-app agent runtime (ACP) | `src/shared/lib/tauri-acp.ts` | A browser cannot spawn a process → one row states why and where |
 | Connector discovery | `src/shared/lib/tauri-connectors.ts` | Cannot read the person's own agent config files → degraded card; adding one by hand still works |
 | Connector secrets | `src/shared/lib/tauri-connector-secrets.ts` | No keychain in a browser → degraded card |
+
+The gray-area reader is a fixed local read-only MCP client, using only the bundled
+executable and a source root resolved from one existing project binding. Native
+no-follow handles capture a bounded immutable input: implementation-parent code,
+resolver configs, file/directory identities and presence/absence metadata. An
+unlinked read-only descriptor carries it to the child; the child receives a
+private empty filesystem namespace and cannot independently read the original
+source through the import scanner. The server labels this as supplied input,
+not a disk observation or meaning acceptance. Native collection/recheck owns
+that evidence. Source excerpts are native reads, not an analysis tool call. The
+inspector previews that folder before an explicit inspection, then binds the
+result to source bytes, complete Markdown bytes, graph identity and the binding.
+It exposes no generic tool or command invoker and changes no ontology record.
+
+Native excerpt selectors preserve literal path components (no normalization of
+repeated or dot separators) and retain the source-evidence reader's sensitive-name,
+source-type and binary refusal policy. Resolver-only inputs may be bound for
+inference without becoming excerpts. Group scope uses O(VE) containment closure
+within the 500-node/edge cap; dependency traversal is O(V + E), a two-hop BFS. The inspector uses
+the bottom navigation's rem breakpoint for map-sheet clearance, including enlarged
+browser text; global map tokens use pixel breakpoints.
+
+`features/gray-area` owns candidate interpretation and session folding; Home owns
+selection and the existing map path/conversation actions. An investigation action
+prepares an editable draft and does not enforce a new ACP execution mode.
 
 Every bridge follows one convention: `getInvoke()` returns `null` when
 `isTauri()` is false, and the screen then says plainly that it cannot do this
