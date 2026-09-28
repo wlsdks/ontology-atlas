@@ -1731,15 +1731,14 @@ describe("OntologyMapDetailPanel — 시안 재설계 구조", () => {
     expect(primary.className).toContain("--map-panel-primary-text");
   });
 
-  it("renders the domain chip as an indigo-tinted navigable chip (surface token + chevron)", () => {
+  it("renders the domain chip as an indigo-tinted navigable chip with no trailing arrow", () => {
     renderPanel(undefined, undefined, {
       domain: { id: "domains/ai-agent-partner", title: "AI Agent Partner" },
     });
     const chip = screen.getByTestId("map-detail-panel-domain");
     expect(chip.className).toContain("--map-panel-domain-surface");
     expect(chip).toHaveAttribute("aria-label", expect.stringContaining("AI Agent Partner"));
-    // a chevron (svg) affordance is present
-    expect(chip.querySelector("svg")).not.toBeNull();
+    expect(chip.querySelector("svg")).toBeNull();
   });
 
   /**

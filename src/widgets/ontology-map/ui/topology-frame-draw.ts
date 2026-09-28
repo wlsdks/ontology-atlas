@@ -2176,7 +2176,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         trailRamp > 0.001 && walkedEdgeKeys !== null && walkedEdgeKeys.has(walkedKey)
           ? trailRamp * walkedSweep
           : 0;
-      if (
+      const galaxyEdgeReturn =
         galaxyOn &&
         !isGalaxyEdgeVisible(edge, {
           focusedNodeId,
@@ -2185,9 +2185,11 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           path: isPathEdge || isConstellationEdge,
           walked: walkedTrail > 0.01,
         })
-      ) {
-        continue;
-      }
+          ? galaxyIdentityOn
+            ? 0
+            : bodyPresence(galaxy)
+          : 1;
+      if (galaxyEdgeReturn <= 0.001) continue;
       /*
        * The stored direction is in key order (low id → high id); the line is drawn from
        * `edge.sourceId` to `edge.targetId`. When those disagree the light has to run the
@@ -2251,6 +2253,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         hoverRecede *
         edgeAppear *
         filament *
+        galaxyEdgeReturn *
         domeEdgeFogForEdge;
       /*
        * A halo's strength follows **how strong this line currently is**: a near

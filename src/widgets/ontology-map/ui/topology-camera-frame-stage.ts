@@ -205,12 +205,14 @@ export function createCameraFrameStage(sources: CameraFrameStageSources) {
     // spring/snap path. On completion it snaps to the final value and
     // clears, so later frames find the spring already at rest on target.
     let freezeCamera = false;
+    let altitudeScale: number | null = null;
     {
       const tween = cameraTweenRef.current;
       if (tween) {
         if (reducedMotionRef.current) {
           cameraTweenRef.current = null;
         } else {
+          if (tween.altitude === "held-at-target") altitudeScale = tween.target.scale;
           const elapsed = now - tween.startMs;
           if (elapsed >= tween.durationMs) {
             cameraRef.current = {
@@ -285,6 +287,7 @@ export function createCameraFrameStage(sources: CameraFrameStageSources) {
       reducedMotion: reducedMotionRef.current,
       userDrivenCamera: userDrivenCameraRef.current,
       freezeCamera,
+      altitudeScale,
       // This is the **previous frame's** collapsed set; this frame's is not
       // decided until the cluster stage below. Ramps are values over time, so
       // a one-frame lag is the correct behaviour — an expanded node ramps in

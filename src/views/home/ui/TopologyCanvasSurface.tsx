@@ -22,6 +22,7 @@ import { RecentChangesNeedsVaultDialog } from "@/features/vault-ontology";
 import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { cn } from "@/shared/lib/cn";
 import { cancelMapNavigation } from "@/shared/lib/map-navigation-pending";
+import { useSurfaceSwap } from "@/shared/lib/use-presence";
 import { ChromeTile, Surface, Tooltip, WidgetErrorFallback, controlClass } from "@/shared/ui";
 import { ErrorBoundary } from "@/shared/ui/error-boundary";
 import { FrameMeter } from "@/shared/ui/frame-meter";
@@ -51,6 +52,8 @@ const HubRail = dynamic(
   () => import("@/widgets/topology-controls").then((m) => m.HubRail),
   { ssr: false },
 );
+
+type MapSurfaceView = "map" | "territories" | "hex";
 
 interface TopologyCanvasSurfaceProps {
   localGraphRoot: string | null;
@@ -234,13 +237,16 @@ export function TopologyCanvasSurface({
     vault, deeplinkSourceReady, vaultIdentity, spotlightFitToken, selectedOntologyNode, changedSlugs,
     recentNeedsVaultOpen, setRecentNeedsVaultOpen, needsVaultReason, setNeedsVaultReason, ontologyInsight
   } = topologyVaultReadModel;
-  // The insights brief's rule and Git walk, run only while 3D is on.
   const view3dOn = topologyPreferences.view3d;
   const mapEvidence = useMapEvidenceStates({ nodes: ontologyInsight?.nodes, enabled: view3dOn });
   const { analyzePrompt, agentChatUsesRuntime, sendAnalyzeToAgent } = topologyAgentOrchestration;
   const { t, tTopologyKeyboardWalk, galaxy, territories, hexBoard, reducedMotion, audiencePlain, glyphSet, canvasBackground, view3d, mapArrangement, footprint, expand } = topologyPreferences;
-  /** After a hex board throw this session falls back to the flat map with one line. */
   const [hexFailed, setHexFailed] = useState(false);
+  const mapView: MapSurfaceView = territories ? "territories" : hexBoard && !hexFailed ? "hex" : "map";
+  const { leaving: leavingMapView } = useSurfaceSwap(mapView);
+  const [mapViewSwapped, setMapViewSwapped] = useState(false);
+  if (leavingMapView !== null && !mapViewSwapped) setMapViewSwapped(true);
+  const mapViewFrames: MapSurfaceView[] = leavingMapView === null ? [mapView] : [leavingMapView, mapView];
   const { ontologyMapGraph, canvasSelectedSlug, resolvedRealmSlug, localGraphProjects, resolvedSelectionSlug } = topologyGraphProjection;
   const { mapRelationCaptions, mapReviewQuestionIds } = topologyAnalysisReview;
   const { handleClose, handleSelect } = topologyNavigationActions;
@@ -348,10 +354,6 @@ export function TopologyCanvasSurface({
             />
           ) : null}
           {topologyRenderState.renderCanvas && mapMountTaskReady ? (
-            // `ontology-map` (`docs/design/ontology-map.md`) is the one engine for map, graph and
-            // project-neighbour views.
-            // A canvas throw keeps the rail, panels and chrome usable, and only the map offers a
-            // retry.
             <ErrorBoundary
               onError={() => cancelMapNavigation(mapEntryTicket)}
               fallback={({ error, reset }) => (
@@ -365,165 +367,163 @@ export function TopologyCanvasSurface({
                 />
               )}
             >
-              {territories ? (
-                // Shares the selection contract: a click selects through the same handler and
-                // opens the same inspector.
-                <TopologyTerritoriesSurface
-                  nodes={ontologyMapGraph.nodes}
-                  edges={ontologyMapGraph.edges}
-                  insightNodes={ontologyInsight?.nodes}
-                  selectedId={canvasSelectedSlug}
-                  onSelect={(slug) => {
-                    setMeaningEditorState(null);
-                    setSelectedEdge(null);
-                    handleSelect(slug);
-                  }}
-                  onPaneClick={() => {
-                    setMeaningEditorState(null);
-                    setSelectedEdge(null);
-                    handleClose();
-                  }}
-                  onDrawnCountChange={handleMapFrameDrawn}
-                  reducedMotion={reducedMotion}
-                  inspectorOpen={nodePanelMounted}
-                  indexExpanded={renderedIndexState === "expanded"}
-                />
-              ) : hexBoard && !hexFailed ? (
-                // Same selection contract. A board throw falls back to the flat map with a
-                // one-line note.
-                <ErrorBoundary onError={() => setHexFailed(true)} fallback={() => null}>
-                <TopologyHexBoardSurface
-                  nodes={ontologyMapGraph.nodes}
-                  edges={ontologyMapGraph.edges}
-                  insightNodes={ontologyInsight?.nodes}
-                  vaultKey={vaultIdentity}
-                  selectedId={canvasSelectedSlug}
-                  onSelect={(slug) => {
-                    setMeaningEditorState(null);
-                    setSelectedEdge(null);
-                    handleSelect(slug);
-                  }}
-                  onPaneClick={() => {
-                    setMeaningEditorState(null);
-                    setSelectedEdge(null);
-                    handleClose();
-                  }}
-                  onDrawnCountChange={handleMapFrameDrawn}
-                  reducedMotion={reducedMotion}
-                />
-                </ErrorBoundary>
-              ) : (
-              <OntologyMap
-                nodes={ontologyMapGraph.nodes}
-                edges={ontologyMapGraph.edges}
-                relationCaptions={mapRelationCaptions}
-                reviewQuestionIds={mapReviewQuestionIds}
-                // Silence cannot tell "broken" from "nothing that way". The page owns the words;
-                // the widget only emits, since it is tested without a provider.
-                walkNoticeLabel={tTopologyKeyboardWalk("deadEnd")}
-                focus={{ selectedSlug: canvasSelectedSlug }}
-                // The same vault identity signal as the deep-link cleanup, so a vault switch
-                // resets the camera.
-                // Gated on `deeplinkSourceReady`, or a live refresh's transient `sample:` identity
-                // jumps the camera on save.
-                dataSourceKey={deeplinkSourceReady ? vaultIdentity : null}
-                // "Full" only under expand-all: `expandedParentSet` also grows from selections,
-                // which would make every fit full.
-                overviewFit={expandAllActive ? "full" : "spine"}
-                fitViewToken={combinedFitToken}
-                growthReplayToken={growthReplayToken}
-                onGrowthReplayingChange={setGrowthReplaying}
-                spotlightFitToken={spotlightFitToken + constellationFitToken}
-                constellationFocusId={routedConstellation?.id ?? null}
-                relayoutToken={topologyRelayoutToken}
-                revealToken={mapRevealToken}
-                onSelectEdge={(edge) => {
-                  setFullDetailSlug(null);
-                  setHoverEdge(null);
-                  // An edge selection replaces a node's ego focus, mirroring `onSelect`
-                  // clearing `selectedEdge`, so the node focus is released to open the edge
-                  // panel's gate.
-                  if (selectedOntologyNode) handleClose();
-                  setSelectedEdge(edge);
-                }}
-                onHoverEdge={handleHoverEdge}
-                selectedEdge={selectedEdge ? { sourceId: selectedEdge.sourceId, targetId: selectedEdge.targetId, relationType: selectedEdge.relationType } : null}
-                previewEdge={mapRelationPreview}
-                onSelect={(slug) => {
-                  setMeaningEditorState(null);
-                  setSelectedEdge(null);
-                  handleSelect(slug);
-                }}
-                onOpen={handleExpandRequest}
-                onPaneClick={() => {
-                  setMeaningEditorState(null);
-                  setSelectedEdge(null);
-                  handleClose();
-                }}
-                onVisibleCountChange={setTopologyVisibleCount}
-                onDrawnCountChange={handleMapFrameDrawn}
-                onGraphStatsChange={handleTopologyGraphStatsChange}
-                onZoomTierChange={setMapZoomTier}
-                onContextMenuNode={handleContextMenuNode}
-                // Right-click on empty canvas creates a concept; only on a writable vault.
-                onContextMenuPane={canCreateNode ? () => openCreateNode() : undefined}
-                minimal={localGraphRoot !== null}
-                agentFocusNodeId={agentFocusNodeId}
-                spotlightIds={mapLensIds}
-                mapLensKind={mapLensKind}
-                pathEdgeIds={pathLensEdgeIds}
-                expandedParents={
-                  pathExpandedParents ??
-                  (expandAllActive ? allExpandedParentIds : null) ??
-                  spotlightExpandedParents ??
-                  expandedParentSet
-                }
-                onToggleCluster={handleToggleCluster}
-                onHoverCluster={handleHoverCluster}
-                // Galaxy shows every concept, so the density-gate hint would name controls that do
-                // not exist.
-                clusterHint={galaxy ? undefined : t('cluster.hint')}
-                realmRootId={resolvedRealmSlug}
-                onEnterRealm={handleEnterRealm}
-                indexExpanded={renderedIndexState === "expanded"}
-                realmEnterLabel={t('realm.enterAction')}
-                realmEnterTooltip={t('realm.enterTooltip')}
-                realmCaption={realmCaption}
-                clusterBarLabels={clusterBarLabels}
-                domeTierLabels={domeTierLabels}
-                canvasLabel={t('canvas.ariaLabel')}
-                visitedTrail={footprintVisitedIds}
-                trailLensActiveRef={footprintLensActiveRef}
-                trailHoverNodeIdRef={footprintBrushNodeIdRef}
-                panelHoverNodeIdRef={panelHoverNodeIdRef}
-                // Pushes the element tier out of reach; the ego exception still applies.
-                tierReveal={audiencePlain ? PLAIN_TIER_REVEAL : undefined}
-                tourAnchorNodeId={tourAnchorNodeId}
-                tourAnchorRef={tourAnchorRef}
-                // Leaves the accessibility tree while the search palette is open
-                // (the `MountedGlobalSearch` condition).
-                overlayOpen={!createNodeOpen && ontologySearchOpen}
-                // The DOM glyphs read the same store and swap in lockstep.
-                glyphSet={glyphSet}
-                canvasBackground={canvasBackground}
-                view3d={view3d}
-                galaxy={galaxy}
-                mapArrangement={mapArrangement}
-                domeEvidence={mapEvidence.availability === "measured" ? mapEvidence.states : null}
-                domeLightLegend={
-                  <TopologyLightLegend
-                    evidence={mapEvidence}
-                    nodeIds={ontologyMapGraph.nodes.map((node) => node.id)}
-                    kindLabels={domeTierLabels}
-                  />
-                }
-                // Flips when the detail panel covers the screen and when its exit ends; the dome
-                // reframes, 2D ignores it.
-                detailPanelVisible={nodePanelMounted}
-                footprint={footprint}
-                expand={expand}
-              />
-              )}
+              {mapViewFrames.map((view) => {
+                const frameLeaving = view === leavingMapView;
+                return (
+                  <div
+                    key={view}
+                    data-testid="topology-map-view"
+                    data-map-view={view}
+                    data-map-view-leaving={frameLeaving || undefined}
+                    inert={frameLeaving || undefined}
+                    aria-hidden={frameLeaving || undefined}
+                    className={cn(
+                      "absolute inset-0",
+                      frameLeaving ? "map-overlay-out" : mapViewSwapped ? "map-overlay-in" : undefined,
+                    )}
+                  >
+                    {view === "territories" ? (
+                      <TopologyTerritoriesSurface
+                        nodes={ontologyMapGraph.nodes}
+                        edges={ontologyMapGraph.edges}
+                        insightNodes={ontologyInsight?.nodes}
+                        selectedId={canvasSelectedSlug}
+                        onSelect={(slug) => {
+                          setMeaningEditorState(null);
+                          setSelectedEdge(null);
+                          handleSelect(slug);
+                        }}
+                        onPaneClick={() => {
+                          setMeaningEditorState(null);
+                          setSelectedEdge(null);
+                          handleClose();
+                        }}
+                        onDrawnCountChange={handleMapFrameDrawn}
+                        reducedMotion={reducedMotion}
+                        inspectorOpen={nodePanelMounted}
+                        indexExpanded={renderedIndexState === "expanded"}
+                      />
+                    ) : view === "hex" ? (
+                      <ErrorBoundary onError={() => setHexFailed(true)} fallback={() => null}>
+                      <TopologyHexBoardSurface
+                        nodes={ontologyMapGraph.nodes}
+                        edges={ontologyMapGraph.edges}
+                        insightNodes={ontologyInsight?.nodes}
+                        vaultKey={vaultIdentity}
+                        selectedId={canvasSelectedSlug}
+                        onSelect={(slug) => {
+                          setMeaningEditorState(null);
+                          setSelectedEdge(null);
+                          handleSelect(slug);
+                        }}
+                        onPaneClick={() => {
+                          setMeaningEditorState(null);
+                          setSelectedEdge(null);
+                          handleClose();
+                        }}
+                        onDrawnCountChange={handleMapFrameDrawn}
+                        reducedMotion={reducedMotion}
+                      />
+                      </ErrorBoundary>
+                    ) : (
+                    <OntologyMap
+                      nodes={ontologyMapGraph.nodes}
+                      edges={ontologyMapGraph.edges}
+                      relationCaptions={mapRelationCaptions}
+                      reviewQuestionIds={mapReviewQuestionIds}
+                      walkNoticeLabel={tTopologyKeyboardWalk("deadEnd")}
+                      focus={{ selectedSlug: canvasSelectedSlug }}
+                      // The same vault identity signal as the deep-link cleanup, so a vault switch
+                      // resets the camera.
+                      // Gated on `deeplinkSourceReady`, or a live refresh's transient `sample:` identity
+                      // jumps the camera on save.
+                      dataSourceKey={deeplinkSourceReady ? vaultIdentity : null}
+                      overviewFit={expandAllActive ? "full" : "spine"}
+                      fitViewToken={combinedFitToken}
+                      growthReplayToken={growthReplayToken}
+                      onGrowthReplayingChange={setGrowthReplaying}
+                      spotlightFitToken={spotlightFitToken + constellationFitToken}
+                      constellationFocusId={routedConstellation?.id ?? null}
+                      relayoutToken={topologyRelayoutToken}
+                      revealToken={mapRevealToken}
+                      onSelectEdge={(edge) => {
+                        setFullDetailSlug(null);
+                        setHoverEdge(null);
+                        if (selectedOntologyNode) handleClose();
+                        setSelectedEdge(edge);
+                      }}
+                      onHoverEdge={handleHoverEdge}
+                      selectedEdge={selectedEdge ? { sourceId: selectedEdge.sourceId, targetId: selectedEdge.targetId, relationType: selectedEdge.relationType } : null}
+                      previewEdge={mapRelationPreview}
+                      onSelect={(slug) => {
+                        setMeaningEditorState(null);
+                        setSelectedEdge(null);
+                        handleSelect(slug);
+                      }}
+                      onOpen={handleExpandRequest}
+                      onPaneClick={() => {
+                        setMeaningEditorState(null);
+                        setSelectedEdge(null);
+                        handleClose();
+                      }}
+                      onVisibleCountChange={setTopologyVisibleCount}
+                      onDrawnCountChange={handleMapFrameDrawn}
+                      onGraphStatsChange={handleTopologyGraphStatsChange}
+                      onZoomTierChange={setMapZoomTier}
+                      onContextMenuNode={handleContextMenuNode}
+                      onContextMenuPane={canCreateNode ? () => openCreateNode() : undefined}
+                      minimal={localGraphRoot !== null}
+                      agentFocusNodeId={agentFocusNodeId}
+                      spotlightIds={mapLensIds}
+                      mapLensKind={mapLensKind}
+                      pathEdgeIds={pathLensEdgeIds}
+                      expandedParents={
+                        pathExpandedParents ??
+                        (expandAllActive ? allExpandedParentIds : null) ??
+                        spotlightExpandedParents ??
+                        expandedParentSet
+                      }
+                      onToggleCluster={handleToggleCluster}
+                      onHoverCluster={handleHoverCluster}
+                      clusterHint={galaxy ? undefined : t('cluster.hint')}
+                      realmRootId={resolvedRealmSlug}
+                      onEnterRealm={handleEnterRealm}
+                      indexExpanded={renderedIndexState === "expanded"}
+                      realmEnterLabel={t('realm.enterAction')}
+                      realmEnterTooltip={t('realm.enterTooltip')}
+                      realmCaption={realmCaption}
+                      clusterBarLabels={clusterBarLabels}
+                      domeTierLabels={domeTierLabels}
+                      canvasLabel={t('canvas.ariaLabel')}
+                      visitedTrail={footprintVisitedIds}
+                      trailLensActiveRef={footprintLensActiveRef}
+                      trailHoverNodeIdRef={footprintBrushNodeIdRef}
+                      panelHoverNodeIdRef={panelHoverNodeIdRef}
+                      tierReveal={audiencePlain ? PLAIN_TIER_REVEAL : undefined}
+                      tourAnchorNodeId={tourAnchorNodeId}
+                      tourAnchorRef={tourAnchorRef}
+                      overlayOpen={!createNodeOpen && ontologySearchOpen}
+                      glyphSet={glyphSet}
+                      canvasBackground={canvasBackground}
+                      view3d={view3d}
+                      galaxy={galaxy}
+                      mapArrangement={mapArrangement}
+                      domeEvidence={mapEvidence.availability === "measured" ? mapEvidence.states : null}
+                      domeLightLegend={
+                        <TopologyLightLegend
+                          evidence={mapEvidence}
+                          nodeIds={ontologyMapGraph.nodes.map((node) => node.id)}
+                          kindLabels={domeTierLabels}
+                        />
+                      }
+                      detailPanelVisible={nodePanelMounted}
+                      footprint={footprint}
+                      expand={expand}
+                    />
+                    )}
+                  </div>
+                );
+              })}
               {hexBoard && hexFailed ? (
                 <p
                   role="status"

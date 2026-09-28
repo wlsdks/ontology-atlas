@@ -8,6 +8,7 @@ import {
   easeInOutCubic,
   easeOutCubic,
   type CameraKeyframe,
+  type CameraTweenAltitude,
 } from "../model/camera-easing";
 import {
   beginDomeModelBuild,
@@ -16,6 +17,7 @@ import {
   clampDomePitch,
   commitDomeEntrySweep,
   createDomeRuntime,
+  setDomeFolding,
   decayOrbitVelocity,
   DOME_ASSEMBLE_TOTAL_MS,
   DOME_BUILD_SLICE_MS,
@@ -90,7 +92,7 @@ export interface DomeFrameStageSources {
   lastActiveMsRef: SourceRef<number>;
   ambientSleepDelayRef: SourceRef<number | undefined>;
   viewportRef: SourceRef<{ width: number; height: number; dpr: number; }>;
-  beginCameraTween: (target: CameraTarget, durationOverrideMs?: number, ease?: "out") => void;
+  beginCameraTween: (target: CameraTarget, durationOverrideMs?: number, ease?: "out", altitude?: CameraTweenAltitude) => void;
   cameraTokens: (tokens: OntologyMapTokens) => OntologyMapTokens;
   domeFitTarget: (
     model: DomeModel,
@@ -321,9 +323,7 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
           }
         }
         const dtMs = dt * 1000;
-        // Assembly/teardown clock: turning on runs forward with a tier
-        // stagger, turning off runs backward at 1.6×. Reduced-motion snaps —
-        // the assembly choreography is app-generated motion.
+        setDomeFolding(dome, !domeTargetOn);
         if (reducedMotionRef.current) {
           dome.rampClock = domeTargetOn ? DOME_ASSEMBLE_TOTAL_MS : 0;
           /*
@@ -397,7 +397,7 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
           userDrivenCameraRef.current = false;
           dampingRef.current = tokens.cameraDampingDefault;
           cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
-          beginCameraTween(flatTarget, teardownMs > 0 ? teardownMs : undefined);
+          beginCameraTween(flatTarget, teardownMs > 0 ? teardownMs : undefined, undefined, "held-at-target");
           lastActiveMsRef.current = now;
         }
         // 3D selection reframe: consume the ticket the focus effect left

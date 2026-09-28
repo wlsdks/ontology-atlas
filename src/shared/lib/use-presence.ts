@@ -127,20 +127,19 @@ export function useSurfaceSwap<T>(
   current: T,
   exitMs: number = EXIT_WINDOW_MS,
 ): { leaving: T | null } {
-  const [leaving, setLeaving] = useState<T | null>(null);
-  const previousRef = useRef(current);
+  const [swap, setSwap] = useState<{ current: T; leaving: T | null }>({ current, leaving: null });
+  if (!Object.is(swap.current, current)) {
+    setSwap({ current, leaving: swap.current });
+  }
   useEffect(() => {
-    if (previousRef.current === current) return;
-    const previous = previousRef.current;
-    previousRef.current = current;
-    // The previous value is only knowable **after** the swap has happened —
-    // during render the comparison cannot be made at all (same reason as
-    // `usePanelPresence` above).
-    setLeaving(previous);
-    const id = setTimeout(() => setLeaving(null), exitMs);
+    if (swap.leaving === null) return;
+    const id = setTimeout(
+      () => setSwap((state) => (state.leaving === null ? state : { current: state.current, leaving: null })),
+      exitMs,
+    );
     return () => clearTimeout(id);
-  }, [current, exitMs]);
-  return { leaving };
+  }, [swap, exitMs]);
+  return { leaving: Object.is(swap.current, current) ? swap.leaving : null };
 }
 
 /**

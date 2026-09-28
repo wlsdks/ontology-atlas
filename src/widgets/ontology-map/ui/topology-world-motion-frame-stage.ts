@@ -12,7 +12,7 @@ import {
   type SpringOffset,
 } from "../expressive/release-offsets";
 import { tugFactorForHop, tugFalloffForDistance } from "../interaction/drag-tug";
-import type { CameraTween } from "../model/camera-easing";
+import type { CameraTween, CameraTweenAltitude } from "../model/camera-easing";
 import { DOME_ASSEMBLE_TOTAL_MS, type DomeRuntime } from "../model/dome-view";
 import { createForceSimulation, type ForceSimulation } from "../model/force-layout";
 import {
@@ -108,7 +108,7 @@ export interface WorldMotionFrameStageSources {
   userDrivenCameraRef: SourceRef<boolean>;
   overviewScaleRef: SourceRef<number>;
   overviewFitRef: SourceRef<"spine" | "full">;
-  beginCameraTween: (target: CameraTarget, durationOverrideMs?: number) => void;
+  beginCameraTween: (target: CameraTarget, durationOverrideMs?: number, ease?: "out", altitude?: CameraTweenAltitude) => void;
 }
 
 export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSources) {
@@ -589,7 +589,7 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
                 scale: { value: pending.target.tscale, velocity: 0 },
               };
             } else {
-              beginCameraTween(pending.target);
+              beginCameraTween(pending.target, undefined, undefined, "held-at-target");
             }
           }
         }

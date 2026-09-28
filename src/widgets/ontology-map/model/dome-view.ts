@@ -1448,8 +1448,41 @@ function domeEaseOutCubic(t: number): number {
   return 1 - Math.pow(1 - c, 3);
 }
 
-export function domeTierRamp(clockMs: number, kind: DomeViewKind): number {
-  return domeEaseOutCubic((clockMs - DOME_TIER_DELAY_MS[kind]) / DOME_TIER_RISE_MS);
+export interface DomeTierRampAnchor {
+  from: number;
+  fromT: number;
+}
+
+const DOME_TIER_RAMP_START: DomeTierRampAnchor = { from: 0, fromT: 0 };
+
+export function domeTierProgress(clockMs: number, kind: DomeViewKind): number {
+  const t = (clockMs - DOME_TIER_DELAY_MS[kind]) / DOME_TIER_RISE_MS;
+  return t <= 0 ? 0 : t >= 1 ? 1 : t;
+}
+
+export function setDomeFolding(runtime: DomeRuntime, folding: boolean): void {
+  if (runtime.folding === folding) return;
+  for (const kind of DOME_KINDS) {
+    runtime.rampAnchor[kind] = { from: runtime.kindRamp[kind], fromT: domeTierProgress(runtime.rampClock, kind) };
+  }
+  runtime.folding = folding;
+}
+
+export function domeTierRamp(
+  clockMs: number,
+  kind: DomeViewKind,
+  folding = false,
+  anchor: DomeTierRampAnchor = DOME_TIER_RAMP_START,
+): number {
+  const t = domeTierProgress(clockMs, kind);
+  if (folding) {
+    if (anchor.fromT <= 0) return 0;
+    const left = Math.min(1, t / anchor.fromT);
+    return anchor.from * left * left * left;
+  }
+  if (anchor.fromT >= 1) return 1;
+  const rise = Math.max(0, (t - anchor.fromT) / (1 - anchor.fromT));
+  return anchor.from + (1 - anchor.from) * domeEaseOutCubic(rise);
 }
 
 /**
@@ -1531,7 +1564,7 @@ export function updateDomeFrame(
   for (const kind of DOME_KINDS) {
     const yawK = runtime.yaw + runtime.lag[kind] + drawYawOffset;
     trig[kind] = [Math.cos(yawK), Math.sin(yawK)];
-    ramp[kind] = domeTierRamp(runtime.rampClock, kind);
+    ramp[kind] = domeTierRamp(runtime.rampClock, kind, runtime.folding, runtime.rampAnchor[kind]);
     // Kept for `projectDomePlanePoint`, so the lit stage draws at its tier's exact pose.
     runtime.kindTrig[kind][0] = trig[kind][0];
     runtime.kindTrig[kind][1] = trig[kind][1];
@@ -2091,6 +2124,8 @@ export interface DomeRuntime {
   lag: Record<DomeViewKind, number>;
   /** Assembly clock in ms, 0 to `DOME_ASSEMBLE_TOTAL_MS`: forward on, backward off. */
   rampClock: number;
+  folding: boolean;
+  rampAnchor: Record<DomeViewKind, DomeTierRampAnchor>;
   /**
    * Off the moment a hand touches the map: the sweep offsets only the drawn pose, so a grab
    * would back-project against a different pose and the node would jump.
@@ -2152,6 +2187,13 @@ export function createDomeRuntime(model: DomeModel): DomeRuntime {
     drawSinPitch: Math.sin(DOME_PITCH_DEFAULT),
     lag: { project: 0, domain: 0, capability: 0, element: 0 },
     rampClock: 0,
+    folding: false,
+    rampAnchor: {
+      project: DOME_TIER_RAMP_START,
+      domain: DOME_TIER_RAMP_START,
+      capability: DOME_TIER_RAMP_START,
+      element: DOME_TIER_RAMP_START,
+    },
     active: false,
     orbiting: false,
     drag: null,

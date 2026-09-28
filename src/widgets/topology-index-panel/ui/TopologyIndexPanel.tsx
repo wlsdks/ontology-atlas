@@ -434,16 +434,11 @@ export function TopologyIndexPanel({
   }
   const tidyHeadingId = useId();
   return (
-    /*
-     * The panel takes its content's height up to the slot (`max-h-full`) and scrolls longer trees;
-     * the first-run card keeps it full height. It declares itself a side panel
-     * because `computeFreeArea` can no longer infer that from height.
-     */
     <aside
       aria-label={labels.label}
       data-testid="topology-index-panel"
       data-topology-camera-obstacle="side-panel"
-      className={`flex max-h-full flex-col has-[[data-testid=first-run-starter]]:h-full rounded-[var(--map-panel-radius)] border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] p-3 shadow-[var(--map-panel-shadow)] ${className ?? ""}`}
+      className={`flex max-h-full flex-col rounded-[var(--map-panel-radius)] border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] p-3 shadow-[var(--map-panel-shadow)] ${className ?? ""}`}
       style={{ width: "var(--topology-index-width)" }}
     >
       {/*
@@ -482,10 +477,6 @@ export function TopologyIndexPanel({
         onEnablePlainMode={onEnablePlainMode}
         audiencePlain={plainMode}
       >
-      {/*
-       * The whole header row is the collapse toggle, reusing the tree rows' hover grammar; the
-       * chevron is an aria-hidden indicator inside the one button.
-       */}
       <button
         type="button"
         onClick={onCollapse}
@@ -493,9 +484,9 @@ export function TopologyIndexPanel({
         aria-label={labels.foldAria}
         title={labels.fold}
         data-testid="topology-index-fold"
-        className={controlClass({ shape: "row", className: "group mb-3 gap-1.5 rounded-[var(--chrome-radius-inner)] px-0.5 max-md:pr-12 hover:bg-[color:var(--map-panel-row-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset" })}
+        className={controlClass({ shape: "row", className: "group -mx-2 mb-3 w-auto gap-1.5 rounded-[var(--chrome-radius-inner)] px-2 max-md:pr-12 hover:bg-[color:var(--map-panel-row-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset" })}
       >
-        <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--map-panel-text-tertiary)]">
+        <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--map-panel-text-quaternary)]">
           {labels.label}
         </span>
         {/* No visible count here; the terrain HUD shows it and the sr-only census stays. */}
@@ -670,7 +661,7 @@ export function TopologyIndexPanel({
         }}
       >
         {visibleRoots.length === 0 ? (
-          <p className="px-1 py-2 text-label text-[color:var(--map-panel-text-quaternary)]">
+          <p className="py-2 text-label text-[color:var(--map-panel-text-quaternary)]">
             {lensActive ? labels.recentEmptyHint : labels.emptyHint}
           </p>
         ) : (
@@ -712,7 +703,7 @@ export function TopologyIndexPanel({
         <section data-testid="topology-index-tidy" aria-labelledby={tidyHeadingId} className="mt-3 shrink-0">
           <p
             id={tidyHeadingId}
-            className="mb-1 px-1 font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--map-panel-text-quaternary)]"
+            className="mb-1 font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--map-panel-text-quaternary)]"
           >
             {labels.tidyHeading}
           </p>
@@ -743,7 +734,7 @@ export function TopologyIndexPanel({
       {openedInsidePickedFolder ? (
         <div
           data-testid="topology-index-opened-inside"
-          className="mt-2 flex shrink-0 items-start gap-1.5 px-1"
+          className="mt-2 flex shrink-0 items-start gap-1.5"
         >
           <p className="min-w-0 flex-1 break-keep text-caption leading-caption text-[color:var(--map-panel-text-tertiary)]">
             {labels.openedInsideLabel}

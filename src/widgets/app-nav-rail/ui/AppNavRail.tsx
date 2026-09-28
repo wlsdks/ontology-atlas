@@ -30,7 +30,7 @@ import {
 import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { cn } from "@/shared/lib/cn";
 import { signalNavigationIntent } from "@/shared/lib/navigation-intent";
-import { beginMapNavigation, cancelMapNavigation } from "@/shared/lib/map-navigation-pending";
+import { beginMapNavigation, cancelMapNavigation, useMapNavigationPending } from "@/shared/lib/map-navigation-pending";
 import { navigateWithViewTransition } from "@/shared/lib/route-view-transition";
 import {
   buildRouteFocusHref,
@@ -129,6 +129,8 @@ export function AppNavRail({
   });
 
   const activeId = resolveActiveNavRailItem(pathname);
+  const mapEntryPending = useMapNavigationPending() !== null;
+  const shownActiveId: AppNavRailItemId | null = mapEntryPending ? "map" : activeId;
 
   /**
    * The active indicator position is measured from the active tile through a callback ref, not
@@ -168,10 +170,9 @@ export function AppNavRail({
 
   useEffect(() => () => listObserverRef.current?.disconnect(), []);
 
-  // The transition turns on only after the first placement, so the first paint does not slide in.
   useLayoutEffect(() => {
     measureIndicator();
-  }, [activeId, measureIndicator]);
+  }, [shownActiveId, measureIndicator]);
 
   useEffect(() => {
     if (!indicator || indicatorReady) return;
@@ -261,6 +262,7 @@ export function AppNavRail({
           />
           {destinations.map(({ id, href, label, Icon, badgeCount }) => {
             const isActive = activeId === id;
+            const isShownActive = shownActiveId === id;
             const surfacePath = href.split(/[?#]/, 1)[0] || "/";
             return (
               <li key={id}>
@@ -284,7 +286,7 @@ export function AppNavRail({
                    */
                   aria-current={isActive ? "page" : undefined}
                   data-testid={`app-nav-rail-item-${id}`}
-                  data-active={isActive ? "true" : "false"}
+                  data-active={isShownActive ? "true" : "false"}
                   /*
                    * Focus ring so keyboard focus never draws the OS accent colour; ring-inset keeps
                    * the box size.
@@ -302,9 +304,7 @@ export function AppNavRail({
                   <span
                     className={cn(
                       "relative flex h-[var(--app-nav-rail-tile-height)] w-[var(--app-nav-rail-tile-width)] items-center justify-center rounded-card transition-colors",
-                      // The moving indicator draws the active surface; the tile only changes
-                      // colour, on the fast ramp.
-                      isActive
+                      isShownActive
                         ? "z-[1] text-[color:var(--color-indigo-accent)]"
                         : "text-[color:var(--color-text-tertiary)] group-hover:bg-[color:var(--color-overlay-2)] group-hover:text-[color:var(--color-text-primary)]",
                     )}
@@ -330,7 +330,7 @@ export function AppNavRail({
                       // Leading named explicitly: an arbitrary-length size does not bring its ramp
                       // leading.
                       "text-[length:var(--app-nav-rail-label-size)] leading-caption",
-                      isActive
+                      isShownActive
                         ? "font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
                         : "text-[color:var(--color-text-quaternary)]",
                     )}

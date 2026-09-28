@@ -15,7 +15,6 @@ import {
   Check,
   CheckCircle2,
   ChevronDown,
-  ChevronRight,
   CircleDashed,
   CircleHelp,
   Clipboard,
@@ -712,6 +711,8 @@ interface DetailActionItem {
  * emphasis, not the corner.
  */
 const PRIMARY_ACTION_CLASS = "atlas-touch-floor min-w-0 flex-1 rounded-chip";
+const GROUP_GLYPH_SLOT = "flex size-4 shrink-0 items-center justify-center";
+const GROUP_ROW_LIST = "-mx-2.5 flex flex-col";
 
 function DetailActionMenu({
   label,
@@ -943,8 +944,8 @@ function RelationGroupShell({
 }) {
   return (
     <div className="flex flex-col" data-datasheet-group={groupKey}>
-      <div className="mb-1.5 flex items-center gap-2 border-b border-[color:var(--map-panel-group-underline)] px-0.5 pb-2">
-        <span className="flex h-4 w-4 shrink-0 items-center justify-center text-[color:var(--map-panel-group-dir)]">
+      <div className="mb-1.5 flex items-center gap-2 border-b border-[color:var(--map-panel-group-underline)] pb-2">
+        <span className={`${GROUP_GLYPH_SLOT} text-[color:var(--map-panel-group-dir)]`}>
           <GroupDirIcon variant={dir} />
         </span>
         <span
@@ -1256,12 +1257,13 @@ export function OntologyMapDetailPanel({
         headerExtra={summaryToggle}
       >
         {useSummary && view.summary ? (
-          <ul className="flex flex-col gap-0.5" data-testid="map-contains-summary">
+          <ul className={`${GROUP_ROW_LIST} gap-0.5`} data-testid="map-contains-summary">
             {view.summary.groups.map((g) => (
               <li
                 key={`contains-summary:${g.key}`}
-                className="flex items-center gap-2 px-2 py-1"
+                className="flex items-center gap-2 px-2.5 py-1"
               >
+                <span aria-hidden className={GROUP_GLYPH_SLOT} />
                 <span className="min-w-0 flex-1 truncate font-mono text-label text-[color:var(--map-panel-text-secondary)]">
                   {g.key}
                 </span>
@@ -1271,7 +1273,8 @@ export function OntologyMapDetailPanel({
               </li>
             ))}
             {view.summary.otherCount > 0 ? (
-              <li className="flex items-center gap-2 px-2 py-1">
+              <li className="flex items-center gap-2 px-2.5 py-1">
+                <span aria-hidden className={GROUP_GLYPH_SLOT} />
                 <span className="min-w-0 flex-1 truncate font-mono text-label text-[color:var(--map-panel-text-tertiary)]">
                   {labels.containsOtherGroup}
                 </span>
@@ -1282,78 +1285,58 @@ export function OntologyMapDetailPanel({
             ) : null}
           </ul>
         ) : (
-          <ul className="flex flex-col">
+          <ul className={GROUP_ROW_LIST}>
             {shownRows.map((row: V2DatasheetConnection) => (
-              // Neighbor `id` is unique within a direction group post-dedup
-              // (`groupV2ConnectionsByDirection`) — the same neighbor can still
-              // appear once per group (mutual dependency, item 5 — no
-              // cross-group dedup), which is a different `group` prefix.
-              // Per the mockup, a row's left mark is the same kind glyph as the
-              // canvas (what it is) — the relation type is already encoded by the
-              // group itself (container versus dependent).
               <li key={`${group}:${row.id}`}>
                 <RowButton
                   size="md"
                   onClick={() => onSelectConnection(row.id)}
-                  /* **The same contract** as hovering a node name in the chat panel
-                     (`AcpChatPanel`): the node on pointer enter, null on leave. The
-                     cursor is over this panel rather than the canvas, so it does not
-                     compete with canvas hover. */
                   onPointerEnter={() => onHoverConnection?.(row.id)}
                   onPointerLeave={() => onHoverConnection?.(null)}
                   data-datasheet-connection={row.id}
                   className="rounded-chip hover:bg-[color:var(--map-panel-row-hover)] active:bg-[color:var(--map-panel-row-active)]"
                 >
-                  <OntologyMapKindGlyph kind={row.kind} />
+                  <span className={GROUP_GLYPH_SLOT}>
+                    <OntologyMapKindGlyph kind={row.kind} />
+                  </span>
                   <span className="min-w-0 flex-1 truncate text-body text-[color:var(--map-panel-text-secondary)]">
                     {row.title}
                   </span>
                 </RowButton>
               </li>
             ))}
+            {overflow > 0 ? (
+              <li>
+                <RowButton
+                  size="md"
+                  aria-expanded={expanded}
+                  data-datasheet-group-overflow={group}
+                  data-testid={`map-group-more-${group}`}
+                  onClick={() =>
+                    setExpandedGroups((current) => {
+                      const next = new Set(current);
+                      if (next.has(group)) next.delete(group);
+                      else next.add(group);
+                      return next;
+                    })
+                  }
+                  className="rounded-chip hover:bg-[color:var(--map-panel-row-hover)] active:bg-[color:var(--map-panel-row-active)]"
+                >
+                  <span aria-hidden className={GROUP_GLYPH_SLOT} />
+                  <span className="min-w-0 flex-1 truncate text-label text-[color:var(--map-panel-text-tertiary)]">
+                    {expanded ? (
+                      labels.groupShowFewer
+                    ) : (
+                      <>
+                        <span className="tabular-nums">+{overflow}</span> {labels.groupShowMore}
+                      </>
+                    )}
+                  </span>
+                </RowButton>
+              </li>
+            ) : null}
           </ul>
         )}
-        {overflow > 0 && !useSummary ? (
-          // The "+N" that was a dead number becomes a door — the same lineage as the
-          // rejection of "N more capabilities" in the project detail (the 2026-08-12 option B
-          // rationale): showing a number with no route to it makes the user leave the
-          // map and search again.
-          /*
-           * **A row of the list, not a caption under it** (interaction audit, 2026-09-25). It
-           * was a mono link pushed in by a hand-tuned `ml-[34px]`: Korean in JetBrains Mono
-           * spread its "+17 more" label to monospace width and started 34px off the rows' text column. It is now the
-           * rows' own control, with an invisible glyph in the glyph's place, so its words start
-           * exactly where the names above start; only the count keeps tabular figures.
-           */
-          <RowButton
-            size="md"
-            aria-expanded={expanded}
-            data-datasheet-group-overflow={group}
-            data-testid={`map-group-more-${group}`}
-            onClick={() =>
-              setExpandedGroups((current) => {
-                const next = new Set(current);
-                if (next.has(group)) next.delete(group);
-                else next.add(group);
-                return next;
-              })
-            }
-            className="rounded-chip hover:bg-[color:var(--map-panel-row-hover)] active:bg-[color:var(--map-panel-row-active)]"
-          >
-            <span aria-hidden className="invisible">
-              <OntologyMapKindGlyph kind="element" />
-            </span>
-            <span className="min-w-0 flex-1 truncate text-label text-[color:var(--map-panel-text-tertiary)]">
-              {expanded ? (
-                labels.groupShowFewer
-              ) : (
-                <>
-                  <span className="tabular-nums">+{overflow}</span> {labels.groupShowMore}
-                </>
-              )}
-            </span>
-          </RowButton>
-        ) : null}
       </RelationGroupShell>
     );
   };
@@ -1382,20 +1365,15 @@ export function OntologyMapDetailPanel({
         help={labels.metricEvidenceHelp}
         count={evidence.total}
       >
-        <ul className="flex flex-col">
+        <ul className={GROUP_ROW_LIST}>
           {evidence.rows.map((row) => (
             <li key={`evidence:${row.id}`}>
               <Link
                 href={buildDocsVaultHref({ slug: row.id })}
                 data-datasheet-evidence={row.id}
-                /* An evidence document **may not be a node** — if it is not on the
-                   map the caller folds it to null and nothing happens (no error either). */
                 onPointerEnter={() => onHoverEvidence?.(row.id)}
                 onPointerLeave={() => onHoverEvidence?.(null)}
                 title={row.id}
-                // It must be **the same ramp step** as a connection row
-                // (`RowButton`) — row heights diverging inside one panel breaks
-                // dimension regularity.
                 className={controlClass({
                   shape: "row",
                   size: "md",
@@ -1403,11 +1381,13 @@ export function OntologyMapDetailPanel({
                     "rounded-chip hover:bg-[color:var(--map-panel-row-hover)] active:bg-[color:var(--map-panel-row-active)]",
                 })}
               >
-                <FileText
-                  size={ICON_SIZE.md}
-                  aria-hidden="true"
-                  className="shrink-0 text-[color:var(--map-panel-text-tertiary)]"
-                />
+                <span className={GROUP_GLYPH_SLOT}>
+                  <FileText
+                    size={ICON_SIZE.md}
+                    aria-hidden="true"
+                    className="shrink-0 text-[color:var(--map-panel-text-tertiary)]"
+                  />
+                </span>
                 <span className="min-w-0 flex-1 truncate text-body text-[color:var(--map-panel-text-secondary)]">
                   {row.title}
                 </span>
@@ -1434,7 +1414,7 @@ export function OntologyMapDetailPanel({
         label={labels.codeLocationsLabel}
         count={codeLocations.length}
       >
-        <ul className="flex flex-col">
+        <ul className={GROUP_ROW_LIST}>
           {codeLocations.map((path) => (
             <CodeLocationRow
               key={path}
@@ -1609,11 +1589,6 @@ export function OntologyMapDetailPanel({
                   <span className="truncate font-[var(--font-weight-emphasis)] text-[color:var(--map-panel-domain-text)]">
                     {domain.title}
                   </span>
-                  <ChevronRight
-                    size={ICON_SIZE.sm}
-                    aria-hidden="true"
-                    className="shrink-0 text-[color:var(--map-panel-domain-text)] opacity-65"
-                  />
                 </button>
               ) : null}
             </div>
@@ -2008,8 +1983,9 @@ function CodeLocationRow({
   return (
     <li
       data-datasheet-code-location={path}
-      className="flex min-h-[32px] w-full items-center gap-2 rounded-[var(--map-panel-row-radius)] px-1.5 py-2"
+      className="flex min-h-[32px] w-full items-center gap-2 rounded-[var(--map-panel-row-radius)] px-2.5 py-2"
     >
+      <span aria-hidden className={GROUP_GLYPH_SLOT} />
       <span
         title={path}
         className="min-w-0 flex-1 truncate font-mono text-body text-[color:var(--map-panel-text-tertiary)]"

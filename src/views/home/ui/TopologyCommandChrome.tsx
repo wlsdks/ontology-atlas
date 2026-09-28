@@ -101,7 +101,6 @@ interface TopologyCommandChromeProps {
     | "topologyUtilityLaneSuppressionContract"
     | "searchLaneCrowded"
     | "selectedNodeFocusActive"
-    | "nodePanelMounted"
     | "inspectorOwnsRightRail"
     | "activityInboxOpen"
     | "selectedEdgeOwnsRightRail"
@@ -138,7 +137,7 @@ export function TopologyCommandChrome({
   const { t, galaxy, audiencePlain, setAudiencePlain, tWorkbench, tAtlasGit } = topologyPreferences;
   const {
     topologyUtilityChromeState, topologyUtilityChromeCompact, topologyUtilityLaneSuppressionContract,
-    searchLaneCrowded, selectedNodeFocusActive, nodePanelMounted, inspectorOwnsRightRail, activityInboxOpen,
+    searchLaneCrowded, selectedNodeFocusActive, inspectorOwnsRightRail, activityInboxOpen,
     selectedEdgeOwnsRightRail, setActivityInboxOpen
   } = topologyInspectorState;
   const { createNodeOpen, setSelectedEdge } = topologyAuthoring;
@@ -158,7 +157,13 @@ export function TopologyCommandChrome({
   useMapToolbarTopReserve(toolbarElement);
 
   return (<>
-    <div className="pointer-events-none absolute left-4 top-[22px] z-10 -translate-y-1/2 md:hidden">
+    <div
+      data-testid="topology-phone-brand"
+      className={cn(
+        "pointer-events-none absolute left-4 top-[22px] z-10 -translate-y-1/2 md:hidden",
+        renderedIndexState === "expanded" && "hidden",
+      )}
+    >
       <div className="flex items-center gap-2">
         <Image
           src={withBasePath('/logo.png')}
@@ -241,17 +246,8 @@ export function TopologyCommandChrome({
             </div>
           ) : null}
           <div
-            // One flex box holds both lanes, so neither paints over the other when a panel narrows
-            // the map. Below `xl` they stack at the right; from `xl` they share a row
-            // and `flex-wrap-reverse` drops the search lane under the utility lane when both do
-            // not fit. The box owns every horizontal reserve (expanded INDEX, the node inspector
-            // from `xl` in `app/globals.css`, the agent dock seam) and the
-            // one `topology-ui-scale`.
             className={cn(
-              // `items-end` everywhere: from `xl` the wrap-reverse cross axis makes `end` the
-              // line's top, and `items-start` would sink the utility lane onto the fit tile.
-              // From `md` it stands on the chrome inset, level with INDEX.
-              "@container/map-toolbar topology-ui-scale pointer-events-none absolute right-4 top-4 flex flex-col-reverse items-end gap-4 transition-[left,right] duration-[var(--agent-panel-reflow-duration)] ease-[var(--topology-motion-ease-out)] motion-reduce:transition-none md:right-[var(--chrome-inset)] md:top-[var(--chrome-inset)] xl:flex-row xl:flex-wrap-reverse",
+              "@container/map-toolbar topology-ui-scale pointer-events-none absolute right-4 top-4 flex flex-col-reverse items-end gap-4 md:right-[var(--chrome-inset)] md:top-[var(--chrome-inset)] xl:flex-row xl:flex-wrap-reverse",
               // The free map starts one inset past INDEX, open or folded, or the first search tile
               // slides under the tab.
               renderedIndexState === "expanded"
@@ -271,7 +267,7 @@ export function TopologyCommandChrome({
             data-tour-keep-clear="map-toolbar"
             data-agent-dock-adjacent-rail="true"
             data-right-inspector-reserve={
-              nodePanelMounted ? "recenter-in-remaining-map" : undefined
+              inspectorOwnsRightRail ? "recenter-in-remaining-map" : undefined
             }
             data-left-index-reserve={
               renderedIndexState === "expanded" ? "recenter-in-remaining-map" : undefined
@@ -445,10 +441,7 @@ export function TopologyCommandChrome({
           />
           {inspectorOwnsRightRail ? null : (
               <div
-                // Below `md` the lane retreats under the INDEX sheet; `[data-chip-label]` steps
-                // shrink labels at `max-xl` / `max-2xl`. `topology-top-toolbar` owns position and
-                // scale.
-                className={`pointer-events-auto shrink-0 flex-col items-end gap-2 xl:ml-auto ${renderedIndexState === "expanded" ? "hidden md:flex" : "flex"}`}
+                className={`topology-chrome-in pointer-events-auto shrink-0 flex-col items-end gap-2 xl:ml-auto ${renderedIndexState === "expanded" ? "hidden md:flex" : "flex"}`}
                 data-phone-sheet-utility-contract={
                   renderedIndexState === "expanded"
                     ? "hidden-below-md-while-index-sheet-owns-surface"
@@ -465,7 +458,6 @@ export function TopologyCommandChrome({
                 }
                 data-utility-lane-surface-token="--topology-utility-lane-surface"
                 data-utility-lane-border-token="--topology-utility-lane-border"
-                data-utility-lane-shadow-token="--topology-utility-lane-shadow"
               >
                 <div
                   className="relative flex items-center gap-[var(--topology-utility-lane-gap)]"

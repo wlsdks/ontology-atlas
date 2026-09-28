@@ -13,6 +13,7 @@ import type { useTopologySceneControls } from "../model/use-topology-scene-contr
 import type { useTopologySourceReadiness } from "../model/use-topology-source-readiness";
 import type { useTopologyVaultReadModel } from "../model/use-topology-vault-read-model";
 
+import { useState, type ReactNode } from "react";
 import { filterTreeExcludeKind } from "@/entities/knowledge-graph";
 import { focusWhenReady } from "../lib/topology-focus-return";
 import { TopologyIndexPanel, TopologyIndexTab, TopologyRealmLedger } from "@/widgets/topology-index-panel";
@@ -116,12 +117,7 @@ export function TopologyIndexSlot({
           }}
         >
           {frame.state === "expanded" && indexTreeResult ? (
-            // The realm ledger shares the box, so the keyed fade reads as a crossfade; only a
-            // global/realm switch remounts.
-            <div
-              key={realmActive ? "realm" : "index"}
-              className="h-full animate-[panelCrossfadeIn_var(--topology-motion-panel-duration)_var(--topology-motion-ease-out)] motion-reduce:animate-none"
-            >
+            <IndexRealmSwap realmActive={realmActive}>
               {realmActive && realmLedgerModel ? (
                 <TopologyRealmLedger
                   rootKind={realmLedgerModel.rootKind}
@@ -288,7 +284,7 @@ export function TopologyIndexSlot({
                   }}
                 />
               )}
-            </div>
+            </IndexRealmSwap>
           ) : (
             <TopologyIndexTab
               onExpand={() => {
@@ -308,4 +304,18 @@ export function TopologyIndexSlot({
       ))
       : null}
   </>);
+}
+
+function IndexRealmSwap({ realmActive, children }: { realmActive: boolean; children: ReactNode }) {
+  const [shownRealm, setShownRealm] = useState(realmActive);
+  const [swapped, setSwapped] = useState(false);
+  if (shownRealm !== realmActive) {
+    setShownRealm(realmActive);
+    setSwapped(true);
+  }
+  return (
+    <div key={realmActive ? "realm" : "index"} className={swapped ? "map-overlay-in h-full" : "h-full"}>
+      {children}
+    </div>
+  );
 }

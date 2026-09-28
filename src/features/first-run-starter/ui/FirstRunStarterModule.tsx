@@ -17,7 +17,7 @@ import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { useLatinEyebrow } from "@/shared/lib/latin-eyebrow";
 import { useSampleSource } from "@/entities/vault-session";
 import { VaultOpenGuideSheet } from "@/features/docs-vault-local";
-import { CompactCopyButton, controlClass } from "@/shared/ui";
+import { Button, CompactCopyButton, controlClass } from "@/shared/ui";
 import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
 
 import { useFirstRunStarter } from "../model/use-first-run-starter";
@@ -223,7 +223,7 @@ export function FirstRunStarterModule({
    * card's amber dot and `sampleLabel`.
    */
   const reopenRow = (
-    <div className="flex shrink-0 items-center gap-2 border-b border-[color:var(--map-panel-divider)] px-4 py-2">
+    <div className="-mx-3 flex shrink-0 items-center gap-2 border-b border-[color:var(--map-panel-divider)] px-3 py-2">
       <button
         type="button"
         data-testid="first-run-starter-reopen"
@@ -262,7 +262,7 @@ export function FirstRunStarterModule({
     !visible && mapUnbuilt && canBuildFromCode && agentAvailable && !fsaUnsupported ? (
       <div
         data-testid="index-build-from-code-row"
-        className="border-b border-[color:var(--map-panel-border)] px-4 pb-3 pt-3"
+        className="-mx-3 border-b border-[color:var(--map-panel-border)] px-3 pb-3 pt-3"
       >
         <BuildFromCodeDoor build={build} variant="row" disabled={busy} />
       </div>
@@ -292,19 +292,8 @@ export function FirstRunStarterModule({
   return (
     <div
       data-testid="first-run-starter"
-      // min-h-0 + overflow-y-auto: on a short window the card shrinks and scrolls internally so
-      // search and the tree stay reachable.
-      className="relative flex-1 min-h-0 overflow-y-auto overscroll-contain bg-gradient-to-b from-[color:var(--color-indigo-a08)] via-[color:var(--color-indigo-a06)] to-transparent px-4 pb-3.5 pt-4"
+      className="relative -m-3 min-h-0 overflow-y-auto overscroll-contain rounded-[var(--map-panel-radius)] bg-gradient-to-b from-[color:var(--color-indigo-a08)] via-[color:var(--color-indigo-a06)] to-transparent p-3"
     >
-      {/*
-       * `min-h-full` with the reference block at `mt-auto` turns bottom whitespace into a gap
-       * between the action and reference layers. A wrapper, because flex on the scroll root
-       * squashes children in a short window.
-       */}
-      <div className="flex min-h-full flex-col">
-      {/*
-       * The product name as a text wordmark line, with no logo mark.
-       */}
       <p
         data-testid="first-run-starter-brand"
         className="mb-1 text-caption font-[var(--font-weight-signature)] tracking-[var(--tracking-label)] text-[color:var(--map-panel-text-quaternary)]"
@@ -437,25 +426,22 @@ export function FirstRunStarterModule({
           </Link>
         </div>
       ) : (
-        <button
-          type="button"
+        <Button
+          variant="primary"
+          size="md"
           onClick={() => setGuideOpen(true)}
           disabled={busy}
           data-testid="first-run-starter-open"
-          className={controlClass({ shape: "card", className: "touch-hit-expand relative h-10 w-full justify-center gap-2 border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-brand)] text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-on-accent)] focus-visible:ring-[color:var(--color-text-on-accent)] shadow-[inset_0_1px_0_var(--color-overlay-3)] hover:bg-[color:var(--color-indigo-brand-hover)]" })}
+          className="atlas-touch-floor w-full"
         >
           <FolderOpen size={ICON_SIZE.md} aria-hidden />
           {busy && !scaffolding ? t("openBusy") : t("openLabel")}
           {applePlatform ? (
-            /*
-             * No `opacity`: it would drop the inherited `--color-text-on-accent` below contrast
-             * while the computed `color` still passes the licence checks.
-             */
             <span className="rounded-micro border border-b-2 border-[color:var(--color-keycap-edge-on-accent)] px-1.5 py-px font-mono text-caption font-[var(--font-weight-signature)]">
               ⌘O
             </span>
           ) : null}
-        </button>
+        </Button>
       )}
 
       {/*
@@ -466,18 +452,16 @@ export function FirstRunStarterModule({
         <BuildFromCodeDoor build={build} variant="card" disabled={busy} />
       ) : null}
 
-      {/*
-       * The tour CTA beneath the folder CTA, the look-around-first path.
-       */}
       {onStartTour ? (
-        <button
-          type="button"
+        <Button
+          variant="outline"
+          size="sm"
           data-testid="first-run-tour-cta"
           onClick={onStartTour}
-          className={controlClass({ shape: "card", className: "touch-hit-expand mt-2 inline-flex h-8 w-full justify-center gap-1.5 border-[color:var(--map-panel-divider)] text-body text-[color:var(--map-panel-text-secondary)] hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--map-panel-text-primary)]" })}
+          className="atlas-touch-floor mt-2 w-full"
         >
           {t("tourCta")}
-        </button>
+        </Button>
       ) : null}
 
       <p className="mb-1 mt-3 flex items-center justify-between gap-4 text-label">
@@ -561,14 +545,6 @@ export function FirstRunStarterModule({
         </div>
       ) : null}
 
-      {/*
-       * The reference layer (glossary and developer disclosure) stands at the bottom via
-       * `mt-auto`, separated from the action layer.
-       */}
-      <div className="mt-auto">
-      {/*
-       * Always visible, not folded: this is where a beginner learns the three words.
-       */}
       <div className="mt-4 border-t border-[color:var(--map-panel-divider)] pt-3">
         <p
           className={`mb-1.5 text-caption text-[color:var(--map-panel-text-quaternary)] ${eyebrow}`}
@@ -670,8 +646,6 @@ export function FirstRunStarterModule({
             </code>
           </div>
         ) : null}
-      </div>
-      </div>
       </div>
 
       <VaultOpenGuideSheet

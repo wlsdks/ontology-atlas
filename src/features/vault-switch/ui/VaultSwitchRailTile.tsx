@@ -278,7 +278,7 @@ export function VaultSwitchRailTile() {
         onExited={returnFocusIfLost}
         {...transientSurface('anchored')}
         style={{ top: anchor.top, left: anchor.left, width: anchor.width, maxHeight: anchor.maxHeight }}
-        className="fixed z-50 overflow-y-auto rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-2 shadow-[var(--chrome-shadow)]"
+        className="fixed z-50 overflow-y-auto rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-2 shadow-[var(--shadow-elevation-2)]"
       >
         {/* One start line: captions, row glyphs and the picker glyph all begin 12px in. */}
         <div>
