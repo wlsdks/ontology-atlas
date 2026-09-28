@@ -390,7 +390,7 @@ fn append_bundle_after_artifacts(
     })
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub(crate) fn read_meaning_transition_record_text(
     root_path: String,
     expected_root_identity: MeaningTransitionRootIdentity,
@@ -406,7 +406,7 @@ pub(crate) fn read_meaning_transition_record_text(
     String::from_utf8(bytes).map_err(|_| "meaning transition record is not UTF-8".into())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub(crate) fn read_meaning_transition_artifact_text(
     root_path: String,
     expected_root_identity: MeaningTransitionRootIdentity,
@@ -425,7 +425,7 @@ pub(crate) fn read_meaning_transition_artifact_text(
     String::from_utf8(bytes).map_err(|_| "meaning transition artifact is not UTF-8".into())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub(crate) fn list_meaning_transition_history(
     root_path: String,
     expected_root_identity: MeaningTransitionRootIdentity,

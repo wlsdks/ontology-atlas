@@ -269,7 +269,9 @@ describe('tauri vault file-system shim', () => {
       }
       if (command === 'read_vault_binary_file') {
         expect(args?.relativePath).toBe('image.png');
-        return { bytes: [137, 80, 78, 71], lastModified: 456 };
+        const stamped = new Uint8Array([0, 0, 0, 0, 0, 0, 0, 0, 137, 80, 78, 71]);
+        new DataView(stamped.buffer).setBigUint64(0, BigInt(1_790_000_000_456), true);
+        return stamped.buffer;
       }
       throw new Error(`unexpected command: ${command}`);
     });
@@ -283,7 +285,7 @@ describe('tauri vault file-system shim', () => {
     expect(markdown.lastModified).toBe(123);
     expect(image.type).toBe('image/png');
     expect([...new Uint8Array(await image.arrayBuffer())]).toEqual([137, 80, 78, 71]);
-    expect(image.lastModified).toBe(456);
+    expect(image.lastModified).toBe(1_790_000_000_456);
   });
 
   it('creates directories, creates files, writes accumulated text, and removes files', async () => {

@@ -471,7 +471,7 @@ fn split_top_level(inner: &str) -> Vec<String> {
 }
 
 /// Reads only; `None` reads only user-level files.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn discover_mcp_connectors(vault_path: Option<String>) -> Result<ConnectorDiscovery, String> {
     let home = home_dir();
     let vault = vault_path

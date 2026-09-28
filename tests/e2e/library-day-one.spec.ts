@@ -27,7 +27,7 @@ import { waitForAnimationsDone, waitForDomQuiet, waitFrames } from "./settle";
  * installed app is a WKWebView running this exact static export, so stubbing the Rust
  * side exercises the real handle, the real folder walk, the real library model and the
  * real render. It also matters for **this** slice specifically: the app's source read is
- * `read_vault_binary_file`, which hands the WebView a JSON array of bytes, and that is
+ * `read_vault_binary_file`, which hands the WebView the raw bytes, and that is
  * the path both the search and the outline actually take on the surface a person uses.
  * An OPFS picker stub would prove the browser's File System Access path and say nothing
  * about the one that costs.
@@ -111,8 +111,11 @@ async function installDesktopBridge(page: Page) {
           case "read_vault_binary_file": {
             const bytes = bytesFor(relative);
             if (!bytes) throw new Error(`missing ${relative}`);
-            // The real bridge's shape: one JSON number per byte.
-            return { bytes: [...bytes], lastModified: MTIME };
+            // The real bridge's shape: u64 mtime, then the bytes.
+            const stamped = new Uint8Array(8 + bytes.length);
+            new DataView(stamped.buffer).setBigUint64(0, BigInt(MTIME), true);
+            stamped.set(bytes, 8);
+            return stamped.buffer;
           }
           case "write_vault_text_file":
             text[relative] = String(args.content ?? "");

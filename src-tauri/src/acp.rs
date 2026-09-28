@@ -704,6 +704,54 @@ pub(crate) fn preflight_npx_cache(launch: &AcpLaunch, home: Option<&Path>) -> Np
     }
 }
 
+/// A ready entry's pinned bin, run without the idle `npm exec` parent.
+pub(crate) fn launch_from_npx_cache(
+    launch: &AcpLaunch,
+    home: Option<&Path>,
+    is_executable: &dyn Fn(&Path) -> bool,
+) -> Option<AcpLaunch> {
+    if !cfg!(unix) {
+        return None;
+    }
+    let package = npx_launch_package(launch)?;
+    let adapter_args = launch.args.iter().position(|arg| arg.as_str() == package)? + 1;
+    let (name, pinned) = package
+        .rsplit_once('@')
+        .filter(|(name, _)| !name.is_empty())?;
+    let modules = npx_cache_entry_dir(&npx_cache_root(home)?, package).join("node_modules");
+    let package_dir = std::fs::canonicalize(modules.join(name)).ok()?;
+    let manifest = std::fs::read_to_string(package_dir.join("package.json")).ok()?;
+    let manifest: serde_json::Value = serde_json::from_str(&manifest).ok()?;
+    if manifest.get("version")?.as_str()? != pinned {
+        return None;
+    }
+    let bin_name = adapter_bin_name(package)?;
+    let declared = match manifest.get("bin")? {
+        serde_json::Value::String(path) => path,
+        bins => bins.get(&bin_name)?.as_str()?,
+    };
+    let target = std::fs::canonicalize(package_dir.join(declared)).ok()?;
+    let bin_dir = modules.join(".bin");
+    let program = bin_dir.join(&bin_name);
+    if !target.starts_with(&package_dir)
+        || std::fs::canonicalize(&program).ok()? != target
+        || !is_executable(&program)
+    {
+        return None;
+    }
+    let inherited =
+        std::env::split_paths(&launch.path_env).filter(|dir| !dir.as_os_str().is_empty());
+    let path_env = std::env::join_paths(std::iter::once(bin_dir).chain(inherited))
+        .ok()?
+        .to_string_lossy()
+        .to_string();
+    Some(AcpLaunch {
+        program,
+        args: launch.args[adapter_args..].to_vec(),
+        path_env,
+    })
+}
+
 /// Only bytes received so far: the total is pinned nowhere. Symlinks are not followed.
 pub(crate) fn dir_size_bytes(dir: &Path) -> u64 {
     let Ok(entries) = std::fs::read_dir(dir) else {
@@ -1426,6 +1474,7 @@ pub(crate) fn read_bounded_line<R: std::io::BufRead>(
     max_bytes: usize,
 ) -> std::io::Result<Option<Vec<u8>>> {
     let mut out: Vec<u8> = Vec::new();
+    let mut oversized = false;
     loop {
         let available = match reader.fill_buf() {
             Ok(buf) => buf,
@@ -1433,39 +1482,41 @@ pub(crate) fn read_bounded_line<R: std::io::BufRead>(
             Err(e) => return Err(e),
         };
         if available.is_empty() {
+            if oversized {
+                return Err(line_too_long(max_bytes));
+            }
             return Ok(if out.is_empty() { None } else { Some(out) });
         }
-        match available.iter().position(|b| *b == b'\n') {
-            Some(at) => {
-                if out.len() + at > max_bytes {
-                    reader.consume(at + 1);
-                    return Err(std::io::Error::new(
-                        std::io::ErrorKind::InvalidData,
-                        format!("acp line exceeded {max_bytes} bytes"),
-                    ));
-                }
-                out.extend_from_slice(&available[..at]);
-                reader.consume(at + 1);
-                // Lines ending in `\r\n` are accepted too.
-                if out.last() == Some(&b'\r') {
-                    out.pop();
-                }
-                return Ok(Some(out));
-            }
-            None => {
-                let len = available.len();
-                if out.len() + len > max_bytes {
-                    reader.consume(len);
-                    return Err(std::io::Error::new(
-                        std::io::ErrorKind::InvalidData,
-                        format!("acp line exceeded {max_bytes} bytes"),
-                    ));
-                }
-                out.extend_from_slice(available);
-                reader.consume(len);
-            }
+        let newline = available.iter().position(|b| *b == b'\n');
+        let content = &available[..newline.unwrap_or(available.len())];
+        if !oversized && out.len() + content.len() > max_bytes {
+            oversized = true;
+            out = Vec::new();
         }
+        if !oversized {
+            out.extend_from_slice(content);
+        }
+        let consumed = content.len() + usize::from(newline.is_some());
+        reader.consume(consumed);
+        if newline.is_none() {
+            continue;
+        }
+        if oversized {
+            return Err(line_too_long(max_bytes));
+        }
+        // Lines ending in `\r\n` are accepted too.
+        if out.last() == Some(&b'\r') {
+            out.pop();
+        }
+        return Ok(Some(out));
     }
+}
+
+fn line_too_long(max_bytes: usize) -> std::io::Error {
+    std::io::Error::new(
+        std::io::ErrorKind::InvalidData,
+        format!("acp line exceeded {max_bytes} bytes"),
+    )
 }
 
 /// Generous because adapters may send a whole file in one line.
@@ -2723,6 +2774,19 @@ mod tests {
         );
     }
 
+    #[test]
+    fn bounded_line_reader_drops_the_whole_oversized_line_across_buffer_refills() {
+        let data = b"{\"a\":\"0123456789\"}\n{\"ok\":1}\n";
+        let mut input = std::io::BufReader::with_capacity(8, &data[..]);
+        assert!(read_bounded_line(&mut input, 10).is_err());
+        assert_eq!(
+            read_bounded_line(&mut input, 10).unwrap().as_deref(),
+            Some(&b"{\"ok\":1}"[..]),
+            "the tail of the dropped line must not come back as a line of its own"
+        );
+        assert_eq!(read_bounded_line(&mut input, 10).unwrap(), None);
+    }
+
     /// Reaping is asynchronous.
     #[cfg(unix)]
     fn wait_until_gone(pid: u32, within: std::time::Duration) -> bool {
@@ -3965,6 +4029,141 @@ mod npx_cache_tests {
         assert_eq!(
             preflight_npx_cache(&npx_launch(CLAUDE_SPEC), None),
             NpxCachePreflight::CacheUnknown,
+        );
+        let _ = std::fs::remove_dir_all(&home);
+    }
+
+    #[cfg(unix)]
+    fn plant_adapter(home: &Path, installed_version: &str) -> PathBuf {
+        let entry = npx_cache_entry_dir(&npx_cache_root(Some(home)).unwrap(), CLAUDE_SPEC);
+        build_entry(
+            &entry,
+            &EntryShape {
+                package_json: Some(HEALTHY_MANIFEST),
+                node_modules: true,
+                bin_entries: &[],
+            },
+        );
+        let package = adapter_package(&entry);
+        let manifest = serde_json::json!({
+            "version": installed_version,
+            "bin": { "claude-agent-acp": "dist/index.js" },
+        });
+        std::fs::write(package.join("package.json"), manifest.to_string()).unwrap();
+        std::fs::create_dir_all(package.join("dist")).unwrap();
+        std::fs::write(
+            package.join("dist").join("index.js"),
+            "#!/usr/bin/env node\n",
+        )
+        .unwrap();
+        link_bin(
+            &entry,
+            Path::new("../@agentclientprotocol/claude-agent-acp/dist/index.js"),
+        );
+        entry
+    }
+
+    #[cfg(unix)]
+    fn adapter_package(entry: &Path) -> PathBuf {
+        entry
+            .join("node_modules")
+            .join("@agentclientprotocol")
+            .join("claude-agent-acp")
+    }
+
+    #[cfg(unix)]
+    fn link_bin(entry: &Path, target: &Path) {
+        let link = entry
+            .join("node_modules")
+            .join(".bin")
+            .join("claude-agent-acp");
+        let _ = std::fs::remove_file(&link);
+        std::os::unix::fs::symlink(target, link).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_ready_entry_launches_its_pinned_bin_without_npm_exec() {
+        let home = scratch("direct");
+        let entry = plant_adapter(&home, "0.69.0");
+        let mut launch = npx_launch(CLAUDE_SPEC);
+        launch
+            .args
+            .insert(1, "--before=2026-01-01T00:00:00.000Z".to_string());
+        launch.args.push("--acp".to_string());
+        launch.path_env = "/opt/node/bin".to_string();
+
+        let direct = launch_from_npx_cache(&launch, Some(&home), &|_| true).expect("direct launch");
+
+        let bin = entry.join("node_modules").join(".bin");
+        assert_eq!(direct.program, bin.join("claude-agent-acp"));
+        assert_eq!(direct.args, vec!["--acp".to_string()]);
+        let path_env = std::env::join_paths([bin, PathBuf::from("/opt/node/bin")]).unwrap();
+        assert_eq!(direct.path_env, path_env.to_string_lossy());
+        let _ = std::fs::remove_dir_all(&home);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_bin_link_that_is_not_the_checked_packages_bin_is_not_run() {
+        let home = scratch("direct-planted");
+        let launch = npx_launch(CLAUDE_SPEC);
+        let entry = plant_adapter(&home, "0.69.0");
+        let planted = home.join("planted.sh");
+        std::fs::write(&planted, "#!/bin/sh\n").unwrap();
+
+        link_bin(&entry, &planted);
+        assert_eq!(launch_from_npx_cache(&launch, Some(&home), &|_| true), None);
+
+        let bin = entry
+            .join("node_modules")
+            .join(".bin")
+            .join("claude-agent-acp");
+        std::fs::remove_file(&bin).unwrap();
+        std::fs::write(&bin, "#!/bin/sh\n").unwrap();
+        assert_eq!(launch_from_npx_cache(&launch, Some(&home), &|_| true), None);
+
+        let leaving = serde_json::json!({
+            "version": "0.69.0",
+            "bin": { "claude-agent-acp": planted },
+        });
+        std::fs::write(
+            adapter_package(&entry).join("package.json"),
+            leaving.to_string(),
+        )
+        .unwrap();
+        link_bin(&entry, &planted);
+        assert_eq!(launch_from_npx_cache(&launch, Some(&home), &|_| true), None);
+        let _ = std::fs::remove_dir_all(&home);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_direct_launch_needs_the_exact_pinned_version_and_a_runnable_bin() {
+        let home = scratch("direct-refused");
+        let launch = npx_launch(CLAUDE_SPEC);
+        plant_adapter(&home, "0.70.0");
+        assert_eq!(launch_from_npx_cache(&launch, Some(&home), &|_| true), None);
+
+        plant_adapter(&home, "0.69.0");
+        assert_eq!(
+            launch_from_npx_cache(&launch, Some(&home), &|_| false),
+            None
+        );
+
+        let unpinned = npx_launch("@agentclientprotocol/claude-agent-acp");
+        assert_eq!(
+            launch_from_npx_cache(&unpinned, Some(&home), &|_| true),
+            None
+        );
+        let installed = AcpLaunch {
+            program: PathBuf::from("/usr/local/bin/claude-agent-acp"),
+            args: vec![],
+            path_env: String::new(),
+        };
+        assert_eq!(
+            launch_from_npx_cache(&installed, Some(&home), &|_| true),
+            None
         );
         let _ = std::fs::remove_dir_all(&home);
     }
