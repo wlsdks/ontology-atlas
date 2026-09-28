@@ -236,7 +236,7 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
     scopedBy: "setChangeBaselineScope",
     file: "src/entities/knowledge-graph/lib/ontology-tree/change-baseline-store.ts",
     provenBy: "src/entities/knowledge-graph/lib/ontology-tree/change-baseline-store.test.ts",
-    note: "Change baseline, hashed per node; saving one vault's removes every other vault's",
+    note: "Change baseline per folder, hashed per node; other folders' entries give way only when storage refuses a save",
   },
   {
     key: "demo:change-baseline:v1:",
@@ -245,7 +245,7 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
     scopedBy: "setChangeBaselineScope",
     file: "src/entities/knowledge-graph/lib/ontology-tree/change-baseline-store.ts",
     provenBy: "src/entities/knowledge-graph/lib/ontology-tree/change-baseline-store.test.ts",
-    note: "The first form: the open vault's entry is read once into v2, then removed with the rest",
+    note: "The first form: each folder's entry is converted once to its own v2 key, then removed",
   },
   {
     // Which proposed documents this person passed on. Per vault for the same reason as

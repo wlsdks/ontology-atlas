@@ -25,35 +25,61 @@ function storage(): Storage | null {
   }
 }
 
-function isBaselineKey(key: string): boolean {
-  return key.startsWith(PERSIST_KEY_PREFIX) || key.startsWith(FIRST_FORM_KEY_PREFIX) || key === UNSCOPED_FIRST_FORM_KEY;
-}
-
-function removeBaselinesExcept(store: Storage, keep: string | null): void {
-  const stale: string[] = [];
+function keysStartingWith(store: Storage, prefix: string): string[] {
+  const keys: string[] = [];
   for (let i = 0; i < store.length; i += 1) {
     const key = store.key(i);
-    if (key !== null && key !== keep && isBaselineKey(key)) stale.push(key);
+    if (key?.startsWith(prefix)) keys.push(key);
   }
-  for (const key of stale) store.removeItem(key);
+  return keys;
+}
+
+function warnUnsaved(payload: string, error: unknown): void {
+  console.warn(
+    `[change-baseline] The review baseline (${payload.length} characters) was not saved, so it lasts until this page reloads.`,
+    error,
+  );
+}
+
+/** Each folder's first-form entry becomes its own current-form entry, once per page. */
+function convertFirstForm(store: Storage): void {
+  store.removeItem(UNSCOPED_FIRST_FORM_KEY);
+  for (const key of keysStartingWith(store, FIRST_FORM_KEY_PREFIX)) {
+    const snap = deserializeSnapshot(store.getItem(key));
+    store.removeItem(key);
+    const target = `${PERSIST_KEY_PREFIX}${key.slice(FIRST_FORM_KEY_PREFIX.length)}`;
+    if (!snap || store.getItem(target) !== null) continue;
+    const payload = serializeSnapshot(snap);
+    try {
+      store.setItem(target, payload);
+    } catch (error) {
+      warnUnsaved(payload, error);
+    }
+  }
 }
 
 function persistBaseline(snap: OntologySnapshot | null): void {
   const store = storage();
   if (!store || baselineScope === null) return;
   const key = `${PERSIST_KEY_PREFIX}${baselineScope}`;
-  removeBaselinesExcept(store, snap ? key : null);
-  if (!snap) return;
+  if (!snap) {
+    store.removeItem(key);
+    return;
+  }
   const payload = serializeSnapshot(snap);
+  try {
+    store.setItem(key, payload);
+    return;
+  } catch {
+    // Other folders' baselines give way only when storage refuses this one.
+    for (const other of keysStartingWith(store, PERSIST_KEY_PREFIX)) if (other !== key) store.removeItem(other);
+  }
   try {
     store.setItem(key, payload);
   } catch (error) {
     // The previous save would otherwise come back after a reload as if it were this one.
     store.removeItem(key);
-    console.warn(
-      `[change-baseline] The review baseline (${payload.length} characters) was not saved, so it lasts until this page reloads.`,
-      error,
-    );
+    warnUnsaved(payload, error);
   }
 }
 
@@ -71,7 +97,12 @@ function emit(): void {
 /** Declares the active vault and drops the previous vault's baseline. */
 export function setChangeBaselineScope(scope: string): void {
   if (baselineScope === scope) return;
+  const first = baselineScope === null;
   baselineScope = scope;
+  if (first) {
+    const store = storage();
+    if (store) convertFirstForm(store);
+  }
   if (baseline !== null) {
     baseline = null;
     emit();
@@ -100,11 +131,9 @@ export function restorePersistedBaseline(
 ): boolean {
   const store = storage();
   if (!store || baseline !== null || baselineScope === null) return false;
-  const stored = deserializeSnapshot(store.getItem(`${PERSIST_KEY_PREFIX}${baselineScope}`));
-  const snap = stored ?? deserializeSnapshot(store.getItem(`${FIRST_FORM_KEY_PREFIX}${baselineScope}`));
+  const snap = deserializeSnapshot(store.getItem(`${PERSIST_KEY_PREFIX}${baselineScope}`));
   if (!snap || !snapshotMatchesGraph(snap, nodes)) return false;
   baseline = snap;
-  if (!stored) persistBaseline(snap);
   emit();
   return true;
 }

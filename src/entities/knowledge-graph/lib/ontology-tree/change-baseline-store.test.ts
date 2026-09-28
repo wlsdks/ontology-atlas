@@ -101,6 +101,21 @@ describe("change-baseline-store persistence", () => {
     expect(storedKeys()).toEqual([]);
   });
 
+  it("evicts other folders' baselines only when storage refuses a save", () => {
+    markChangeBaseline(nodes, edges, 1);
+    setChangeBaselineScope(VAULT_B);
+    const setItem = Storage.prototype.setItem;
+    vi.spyOn(Storage.prototype, "setItem").mockImplementationOnce(() => {
+      throw new DOMException("The quota has been exceeded.", "QuotaExceededError");
+    }).mockImplementation(function (this: Storage, key: string, value: string) {
+      setItem.call(this, key, value);
+    });
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    markChangeBaseline([node("x"), node("y")], edges, 2);
+    expect(storedKeys()).toEqual([keyFor(VAULT_B)]);
+    expect(warn).not.toHaveBeenCalled();
+  });
+
   it("restores a persisted baseline for an overlapping vault", () => {
     markChangeBaseline(nodes, edges, 42); // a,b persisted.
     clearChangeBaseline_inMemoryOnly();
@@ -149,14 +164,18 @@ describe("change-baseline-store vault switching", () => {
     expect(getChangeBaseline()).toBeNull();
   });
 
-  it("keeps only the open vault's baseline in storage", () => {
+  it("stores each vault's baseline under its own key", () => {
     markChangeBaseline(nodes, edges, 42);
     setChangeBaselineScope(VAULT_B);
     markChangeBaseline(bravoNodes, edges, 99);
-    expect(storedKeys()).toEqual([keyFor(VAULT_B)]);
 
+    expect(window.localStorage.getItem(keyFor(VAULT_A))).not.toBeNull();
+    expect(window.localStorage.getItem(keyFor(VAULT_B))).not.toBeNull();
+
+    // Returning to A restores A's own baseline.
     setChangeBaselineScope(VAULT_A);
-    expect(restorePersistedBaseline(nodes)).toBe(false);
+    expect(restorePersistedBaseline(nodes)).toBe(true);
+    expect(getChangeBaseline()?.takenAt).toBe(42);
   });
 
   it("stores nothing when the vault is unknown", () => {
@@ -167,23 +186,31 @@ describe("change-baseline-store vault switching", () => {
 });
 
 describe("change-baseline-store carry-over from the first stored form", () => {
-  it("restores the open vault's first-form baseline once and drops every first-form entry", () => {
-    const firstForm = JSON.stringify({
-      v: 1,
-      nodeSigs: [["a", "capability\u0001a\u0001\u0001"], ["b", "capability\u0001b\u0001\u0001"]],
-      nodeKinds: [["a", "capability"], ["b", "capability"]],
-      edgeKeys: [],
-      takenAt: 7,
-    });
-    window.localStorage.setItem(firstFormKeyFor(VAULT_A), firstForm);
-    window.localStorage.setItem(firstFormKeyFor(VAULT_B), firstForm);
-    window.localStorage.setItem("demo:change-baseline:v1", firstForm);
+  it("converts every folder's first-form entry to its own key and restores each", async () => {
+    const firstForm = (takenAt: number) =>
+      JSON.stringify({
+        v: 1,
+        nodeSigs: [["a", "capability\u0001a\u0001\u0001"], ["b", "capability\u0001b\u0001\u0001"]],
+        nodeKinds: [["a", "capability"], ["b", "capability"]],
+        edgeKeys: [],
+        takenAt,
+      });
+    window.localStorage.setItem(firstFormKeyFor(VAULT_A), firstForm(7));
+    window.localStorage.setItem(firstFormKeyFor(VAULT_B), firstForm(8));
+    window.localStorage.setItem("demo:change-baseline:v1", firstForm(9));
+    vi.resetModules();
+    const fresh = await import("./change-baseline-store");
 
-    expect(restorePersistedBaseline(nodes)).toBe(true);
-    const restored = getChangeBaseline();
-    expect(restored?.takenAt).toBe(7);
-    expect(computeOntologyChangeset(restored, nodes, edges).total).toBe(0);
-    expect(storedKeys()).toEqual([keyFor(VAULT_A)]);
+    fresh.setChangeBaselineScope(VAULT_A);
+    expect(storedKeys().sort()).toEqual([keyFor(VAULT_A), keyFor(VAULT_B)]);
+    expect(fresh.restorePersistedBaseline(nodes)).toBe(true);
+    expect(fresh.getChangeBaseline()?.takenAt).toBe(7);
+    expect(computeOntologyChangeset(fresh.getChangeBaseline(), nodes, edges).total).toBe(0);
+
+    fresh.setChangeBaselineScope(VAULT_B);
+    expect(fresh.restorePersistedBaseline(nodes)).toBe(true);
+    expect(fresh.getChangeBaseline()?.takenAt).toBe(8);
+    fresh.clearChangeBaseline();
   });
 });
 
