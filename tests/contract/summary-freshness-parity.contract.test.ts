@@ -18,7 +18,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { findStaleParentSummaries } from '../../mcp/src/stale-parent.mjs';
+import { findStaleParentSummaries, revisionClocks } from '../../mcp/src/stale-parent.mjs';
 import {
   summaryStalenessOf,
   type NodeRevision,
@@ -146,7 +146,7 @@ function clientRevisions(testCase: Case): NodeRevision[] {
 function serverRevisions(testCase: Case) {
   return [...testCase.timeline]
     .reverse()
-    .map((step) => ({ changedAt: at(step.day), body: step.body, children: step.children }));
+    .map((step) => ({ changedAt: at(step.day), ...revisionClocks({ body: step.body, children: step.children }) }));
 }
 
 function serverVerdict(testCase: Case) {

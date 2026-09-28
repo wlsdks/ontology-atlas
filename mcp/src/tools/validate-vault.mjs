@@ -127,7 +127,7 @@ function validateVaultTool({ repoRoot } = {}, loadedDocs = null) {
   for (const doc of docs) {
     // The slug is passed because `slug-outside-kind-folder` is a fact about
     // where the file sits, and only this caller knows it.
-    const result = validateVaultDocument(doc.raw || '', { slug: doc.slug });
+    const result = validateVaultDocument(doc.raw || '', { slug: doc.slug, parsed: doc });
     docIssues.set(doc.slug, result.issues || []);
   }
   for (const [slug, danglingIssues] of groupDanglingIssuesBySlug(docs)) {
@@ -340,6 +340,7 @@ function findDependencyWitnessIssues(docs, repoRoot) {
   if (!grounded) return [];
   const root = repoRoot ? assertScanRootAllowed(repoRoot, 'repoRoot') : REPO_ROOT;
   const resolveTargetPath = evidencePathIndex(docs);
+  const moduleNamesByPath = new Map();
   const issues = [];
   for (const doc of docs) {
     const kind = typeof doc?.frontmatter?.kind === 'string' ? doc.frontmatter.kind.trim() : '';
@@ -349,6 +350,7 @@ function findDependencyWitnessIssues(docs, repoRoot) {
       frontmatter: doc.frontmatter,
       repoRoot: root,
       resolveTargetPath,
+      moduleNamesByPath,
     })) {
       issues.push({
         slug: doc.slug,

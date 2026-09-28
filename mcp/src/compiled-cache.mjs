@@ -15,7 +15,7 @@ export function createCompiledOntologyCache({ loadDocs, compile }) {
   // Current bytes are loaded even on a hit, so read-only callers can share them
   // within one request.
   function getWithDocs(options = {}) {
-    const docs = loadDocs();
+    const docs = options.docs ?? loadDocs();
     const signature = docsSignature(docs);
     const includeIndexes = options.includeIndexes === true;
     if (
