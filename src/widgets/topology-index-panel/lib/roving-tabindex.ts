@@ -4,6 +4,7 @@
  */
 
 import type { OntologyTreeNode } from "@/entities/knowledge-graph";
+import { ROVING_PAGE_ROWS } from "@/shared/lib/use-roving-rows";
 
 /**
  * Visible row ids in top-to-bottom order, skipping children of closed parents; `isOpen` is the
@@ -24,12 +25,21 @@ export function flattenVisibleRowIds(
   return out;
 }
 
-export type RovingNavKey = "ArrowDown" | "ArrowUp" | "Home" | "End";
+const ROVING_NAV_KEYS = ["ArrowDown", "ArrowUp", "Home", "End", "PageDown", "PageUp"] as const;
 
-/**
- * Target of one arrow key: ArrowDown/Up clamp at the ends, Home/End go to the first or last; an
- * unknown current id lands on the first row, an empty list gives null.
- */
+export type RovingNavKey = (typeof ROVING_NAV_KEYS)[number];
+
+export function isRovingNavKey(key: string): key is RovingNavKey {
+  return (ROVING_NAV_KEYS as readonly string[]).includes(key);
+}
+
+const ROW_STEPS = {
+  ArrowDown: 1,
+  ArrowUp: -1,
+  PageDown: ROVING_PAGE_ROWS,
+  PageUp: -ROVING_PAGE_ROWS,
+} as const;
+
 export function nextRovingId(
   orderedIds: readonly string[],
   currentId: string | null,
@@ -41,8 +51,7 @@ export function nextRovingId(
   if (key === "End") return orderedIds[last];
   const index = currentId ? orderedIds.indexOf(currentId) : -1;
   if (index < 0) return orderedIds[0];
-  if (key === "ArrowDown") return orderedIds[Math.min(index + 1, last)];
-  return orderedIds[Math.max(index - 1, 0)]; // ArrowUp
+  return orderedIds[Math.min(Math.max(index + ROW_STEPS[key], 0), last)];
 }
 
 /**
