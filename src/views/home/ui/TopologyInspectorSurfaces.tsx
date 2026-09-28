@@ -20,6 +20,7 @@ import { daysBehind } from "@/entities/docs-vault";
 import { MeaningEditorPanel } from "@/features/ontology-meaning-editor";
 import { formatProjectSourceHandoff } from "@/shared/lib/project-source-receipt";
 import { Surface, controlClass } from "@/shared/ui";
+import { morphName, runMorph } from "@/shared/motion/shared-element";
 import { OntologyMapClusterHoverCard, OntologyMapContextMenu, OntologyMapDetailPanel, OntologyMapEdgeHoverCard, OntologyMapEdgePanel } from "@/widgets/ontology-map";
 import { ProjectDrawer } from "@/widgets/project-drawer";
 import { useTranslations } from "next-intl";
@@ -385,7 +386,11 @@ export function TopologyInspectorSurfaces({
               }
               onOpenFullDetail={
                 selectedOntologyNode
-                  ? () => setFullDetailSlug(selectedOntologyNode.id)
+                  ? () => {
+                    const open = () => setFullDetailSlug(selectedOntologyNode.id);
+                    if (FullDetailCard) runMorph(open, [morphName("concept", panelDatasheetModel.nodeId)]);
+                    else open();
+                  }
                   : undefined
               }
               // Plain mode hides handoff copy and the path subline as developer chrome.
