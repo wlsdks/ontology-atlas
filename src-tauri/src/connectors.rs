@@ -474,11 +474,10 @@ fn split_top_level(inner: &str) -> Vec<String> {
 #[tauri::command(async)]
 pub fn discover_mcp_connectors(vault_path: Option<String>) -> Result<ConnectorDiscovery, String> {
     let home = home_dir();
-    let vault = vault_path
-        .as_deref()
-        .map(str::trim)
-        .filter(|path| !path.is_empty())
-        .map(PathBuf::from);
+    let vault = match vault_path.as_deref().map(str::trim).filter(|path| !path.is_empty()) {
+        Some(path) => Some(crate::canonical_root(path)?),
+        None => None,
+    };
     let fs = ConfigFs {
         read_text: &|path: &Path| std::fs::read_to_string(path).ok(),
     };
@@ -832,5 +831,25 @@ url = "https://example.test/mcp"
             inline_table_keys(r#"{ TOKEN = "abc, def", OTHER = "x" }"#),
             ["TOKEN", "OTHER"]
         );
+    }
+
+    #[test]
+    fn discovery_refuses_a_vault_root_the_user_never_granted() {
+        let base = std::env::temp_dir().join(format!("atlas-connector-grant-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        let granted = base.join("vault");
+        let forged = base.join("elsewhere");
+        std::fs::create_dir_all(&granted).unwrap();
+        std::fs::create_dir_all(&forged).unwrap();
+        let granted = std::fs::canonicalize(&granted).unwrap();
+        let forged = std::fs::canonicalize(&forged).unwrap();
+
+        let _scope = crate::vault_grants::EnforcedScope::granting(&[granted.clone()]);
+
+        assert!(discover_mcp_connectors(Some(forged.to_string_lossy().to_string())).is_err());
+        assert!(discover_mcp_connectors(Some(granted.to_string_lossy().to_string())).is_ok());
+        assert!(discover_mcp_connectors(None).is_ok());
+
+        let _ = std::fs::remove_dir_all(&base);
     }
 }
