@@ -332,14 +332,20 @@ function onArc(cx: number, cy: number, radius: number, angle: number): { x: numb
   return { x: cx + radius * Math.cos(angle), y: cy + radius * TERRITORY_GEOMETRY.squash * Math.sin(angle) };
 }
 
+type LabelSide = "right" | "left" | "above" | "below";
+
+function radialSide(angle: number): LabelSide {
+  const cos = Math.cos(angle);
+  return cos > 0.35 ? "right" : cos < -0.35 ? "left" : Math.sin(angle) < 0 ? "above" : "below";
+}
+
 /** Always outside its shelf, on its own radial. */
-function capabilityLabelAt(x: number, y: number, r: number, angle: number, text: string, width: number): TerritoryLabel {
+function capabilityLabelAt(x: number, y: number, r: number, angle: number, text: string, width: number, side = radialSide(angle)): TerritoryLabel {
   const L = TERRITORY_GEOMETRY.capabilityFontPx;
   const h = L + 2;
-  const cos = Math.cos(angle);
-  if (cos > 0.35) return { text, x: x + r + 7, y: y + 4, align: "left", box: { x: x + r + 7, y: y - 8, w: width, h } };
-  if (cos < -0.35) return { text, x: x - r - 7, y: y + 4, align: "right", box: { x: x - r - 7 - width, y: y - 8, w: width, h } };
-  const baseline = Math.sin(angle) < 0 ? y - r - 6 : y + r + 15;
+  if (side === "right") return { text, x: x + r + 7, y: y + 4, align: "left", box: { x: x + r + 7, y: y - 8, w: width, h } };
+  if (side === "left") return { text, x: x - r - 7, y: y + 4, align: "right", box: { x: x - r - 7 - width, y: y - 8, w: width, h } };
+  const baseline = side === "above" ? y - r - 6 : y + r + 15;
   return { text, x, y: baseline, align: "center", box: { x: x - width / 2, y: baseline - L, w: width, h } };
 }
 
@@ -588,7 +594,7 @@ function attempt(
           }
         }
         if (!placed && names !== "keepEvery" && !dense) {
-          // Stand the disc anyway and let the name wait for hover, rather than draw it under the chrome.
+          // Stand the disc; its name waits for hover, turned if needed to stay in the room.
           for (let k = 0; k < G.foldedShelfLimit && !placed; k++) {
             const radius = shelfRadius + k * shelfStep;
             for (const a of angles) {
@@ -596,7 +602,10 @@ function attempt(
               const disc = { x: p.x - r - 3, y: p.y - r - 3, w: 2 * r + 6, h: 2 * r + 6 };
               if (grid.hits(disc)) continue;
               grid.add(c.id, "mark", disc);
-              placed = stand(k, a, p, capabilityLabelAt(p.x, p.y, r, a, c.label, w), false);
+              const radial = radialSide(a);
+              const turned = (["right", "left", "above", "below"] as const).filter((s) => s !== radial);
+              const onEachSide = [radial, ...turned].map((side) => capabilityLabelAt(p.x, p.y, r, a, c.label, w, side));
+              placed = stand(k, a, p, onEachSide.find((l) => !grid.outside(l.box)) ?? onEachSide[0]!, false);
               break;
             }
           }
