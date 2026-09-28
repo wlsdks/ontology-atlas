@@ -848,17 +848,6 @@
   --git-ego-facts-w: clamp(220px, 22vw, 320px);
 
   /*
-   * Setup action height — one level for primary/secondary buttons in the connection flow.
-   *
-   * Why a token: The page's purpose is "connecting," so if its button fails, the whole page fails. 36px matches fixed scale contracts (Chrome tile
-   * 36px) and desktop density, but falls below HIG minimum 44px for coarse pointers (iPad). The single source `@media (pointer: coarse)` below takes precedence —
-   * estimating touch via width breakpoints is prohibited (`design.md` touch contract).
-   *
-   * Marker: unit tests fix whether the primary action inside `atlas-git-setup` references this token (if someone reverts to h-9, touch precedence silently vanishes).
-   */
-  --git-setup-action-height: 36px;
-
-  /*
    * ── Destination Workbench (Redesigned 2026-07-27) ──────────────────────────────
    *
    * Owner verdict: *"This recording page also feels too AI-ish."* Two measured causes

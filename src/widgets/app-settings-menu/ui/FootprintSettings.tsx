@@ -88,12 +88,14 @@ function FootprintPreview({ pref }: { pref: FootprintPreference }) {
     };
 
     // The node bodies first, so the light lands on them rather than under them.
+    const nodeFill = read('--map-node-fill-domain', 'transparent');
+    const nodeStroke = read('--map-node-stroke-domain', 'transparent');
     for (const p of [a, b]) {
       ctx.beginPath();
       ctx.roundRect(p.x - r, p.y - r, r * 2, r * 2, 5);
-      ctx.fillStyle = '#191920';
+      ctx.fillStyle = nodeFill;
       ctx.fill();
-      ctx.strokeStyle = '#48484f';
+      ctx.strokeStyle = nodeStroke;
       ctx.stroke();
     }
 

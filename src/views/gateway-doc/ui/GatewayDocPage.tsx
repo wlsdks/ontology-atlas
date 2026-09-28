@@ -514,7 +514,7 @@ function GuideSidebar({ activeSegment }: { activeSegment?: string }) {
       className="hidden w-full max-w-[15rem] justify-self-start xl:block"
     >
       <div className="sticky top-24">
-        <p className="mb-3 px-2.5 text-label leading-label font-[var(--font-weight-signature)] tracking-wide text-[color:var(--color-text-quaternary)] uppercase">
+        <p className="mb-3 px-2 text-label leading-label font-[var(--font-weight-signature)] tracking-wide text-[color:var(--color-text-quaternary)] uppercase">
           {t('onThisGuide')}
         </p>
         <GuideChapterList activeSegment={activeSegment} />
@@ -577,7 +577,7 @@ function EntrySidebar({ entries }: { entries: DocEntry[] }) {
       className="hidden w-full max-w-[15rem] justify-self-start xl:block"
     >
       <div className="sticky top-24 max-h-[calc(100svh-9rem)] overflow-y-auto pr-1">
-        <p className="mb-3 px-2.5 text-label leading-label font-[var(--font-weight-signature)] tracking-wide text-[color:var(--color-text-quaternary)] uppercase">
+        <p className="mb-3 px-2 text-label leading-label font-[var(--font-weight-signature)] tracking-wide text-[color:var(--color-text-quaternary)] uppercase">
           {t('entryNavLabel')}
         </p>
         <ul lang="en" className="flex flex-col gap-0.5">

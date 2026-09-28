@@ -1,41 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
-import { controlClass } from "@/shared/ui";
+import { Button } from "@/shared/ui";
 
-/**
- * The Git screen's inline confirms (commit, restore, discard) share one shape: every pair
- * and door sits on the chip `lg` step, and only the tone says which decision it is.
- */
-export const CONFIRM_PRIMARY_CLASS = controlClass({
-  shape: "chip",
-  size: "lg",
-  tone: "onAccent",
-  className: "border-transparent",
-});
-const CONFIRM_DANGER_CLASS = controlClass({
-  shape: "chip",
-  size: "lg",
-  tone: "danger",
-  className: "border-[color:var(--color-danger-text)]",
-});
-export const CONFIRM_CANCEL_CLASS = controlClass({
-  shape: "chip",
-  size: "lg",
-  tone: "secondary",
-  hoverInk: "strong",
-  hoverBorder: "strong",
-  className: "border-[color:var(--color-border-soft)]",
-});
-/** A document's own door — quiet at rest, the same height and type as the pair it opens. */
-const DOCUMENT_DOOR_CLASS = controlClass({
-  shape: "chip",
-  size: "lg",
-  tone: "secondary",
-  hoverInk: "strong",
-  hoverBorder: "strong",
-  className: "self-start border-[color:var(--color-border-soft)]",
-});
+export const CONFIRM_PLACEMENT = "atlas-touch-floor";
 
 /**
  * Focus for a confirm that swaps in where its trigger stood. The trigger unmounts on press, so
@@ -150,8 +118,9 @@ export function DocumentConfirmStep({
       >
         {children}
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
+          <Button
+            variant={tone}
+            size="sm"
             data-testid={`${testIdPrefix}-confirm`}
             disabled={busy}
             onClick={() => {
@@ -159,24 +128,25 @@ export function DocumentConfirmStep({
                 if (ok) close();
               });
             }}
-            className={tone === "danger" ? CONFIRM_DANGER_CLASS : CONFIRM_PRIMARY_CLASS}
+            className={CONFIRM_PLACEMENT}
           >
             {busy ? busyLabel : confirmLabel}
-          </button>
+          </Button>
           {/* The safe answer takes focus when the step opens: Enter on a destructive
               confirm must not be one keystroke away from the door that opened it. */}
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="sm"
             ref={(node) => {
               initialRef.current = node;
             }}
             data-testid={`${testIdPrefix}-cancel`}
             disabled={busy}
             onClick={close}
-            className={CONFIRM_CANCEL_CLASS}
+            className={CONFIRM_PLACEMENT}
           >
             {cancelLabel}
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -184,15 +154,16 @@ export function DocumentConfirmStep({
   return (
     <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
       {lead}
-      <button
-        type="button"
+      <Button
+        variant="outline"
+        size="sm"
         ref={triggerRef}
         data-testid={testIdPrefix}
         onClick={() => setConfirming(true)}
-        className={DOCUMENT_DOOR_CLASS}
+        className={`${CONFIRM_PLACEMENT} self-start`}
       >
         {doorLabel}
-      </button>
+      </Button>
     </p>
   );
 }

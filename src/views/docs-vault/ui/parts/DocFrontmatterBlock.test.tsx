@@ -155,9 +155,8 @@ describe("DocFrontmatterBlock", () => {
     fireEvent.click(screen.getByTestId("doc-frontmatter-summary"));
     fireEvent.click(screen.getByText("kind / domain / title / 이름 수정"));
 
-    fireEvent.change(screen.getByLabelText("Domain", { exact: false }), {
-      target: { value: "graph-quality" },
-    });
+    fireEvent.click(screen.getByLabelText("Domain", { exact: false }));
+    fireEvent.click(screen.getByRole("option", { name: "Graph Quality" }));
     fireEvent.click(screen.getByText("저장"));
 
     await vi.waitFor(() => {
@@ -269,7 +268,8 @@ describe("DocFrontmatterBlock", () => {
     fireEvent.click(screen.getByTestId("doc-frontmatter-summary"));
     fireEvent.click(screen.getByText("kind / domain / title / 이름 수정"));
     expect(screen.queryByTestId("doc-frontmatter-move-hint")).not.toBeInTheDocument();
-    fireEvent.change(screen.getByTestId("doc-frontmatter-kind-select"), { target: { value: "element" } });
+    fireEvent.click(screen.getByTestId("doc-frontmatter-kind-select"));
+    fireEvent.click(screen.getByRole("option", { name: "요소" }));
     expect(screen.getByTestId("doc-frontmatter-move-hint")).toHaveTextContent(
       "elements/cli-developer-entry.md",
     );
@@ -345,7 +345,8 @@ describe("DocFrontmatterBlock", () => {
     fireEvent.click(screen.getByText("kind / domain / title / 이름 수정"));
     expect(screen.queryByTestId("doc-frontmatter-kind-referrers")).not.toBeInTheDocument();
 
-    fireEvent.change(screen.getByTestId("doc-frontmatter-kind-select"), { target: { value: "element" } });
+    fireEvent.click(screen.getByTestId("doc-frontmatter-kind-select"));
+    fireEvent.click(screen.getByRole("option", { name: "요소" }));
     // Asked about the future address.
     expect(kindChangeReferrers).toHaveBeenLastCalledWith("element", "elements/cli-developer-entry");
     const lines = screen.getAllByTestId("doc-frontmatter-kind-referrer");

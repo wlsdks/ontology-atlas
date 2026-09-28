@@ -1,0 +1,7 @@
+{
+  "file": "src/widgets/app-settings-menu/ui/AgentSetupSection.tsx",
+  "count": 1,
+  "claim": "standard-button",
+  "proof": "buttonVariants",
+  "why": "The MCP tab's web-only door, \"Get the app\" (2026-09-29): it was an 11px chip while the same door on the Agents and Models tabs beside it is the primary sm standard button with the download glyph. It is a `<Link>` because it navigates, and `control-class.ts` does not replace standard buttons."
+}

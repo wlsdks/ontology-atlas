@@ -87,6 +87,11 @@ export function CadencePicker({
   const index = detentForMinutes(unit === "day" ? null : minutes, detents);
   const settledRatio = detentRatio(index, detents.length);
   const ratio = dragRatio ?? settledRatio;
+  const travel = dragRatio === null ? "transition-transform motion-reduce:transition-none" : "transition-none";
+  const travelTiming =
+    dragRatio === null
+      ? { transitionDuration: "var(--motion-settle)", transitionTimingFunction: "var(--motion-ease-drag-release)" }
+      : {};
 
   const applyFromPointer = useCallback(
     (clientX: number) => {
@@ -207,14 +212,15 @@ export function CadencePicker({
             onPointerMove={onPointerMove}
             onPointerUp={endDrag}
             onPointerCancel={endDrag}
-            className="relative flex h-11 w-full touch-none select-none items-center"
+            className="@container relative flex h-11 w-full touch-none select-none items-center"
           >
-            <span aria-hidden className="absolute inset-x-0 h-1 rounded-full bg-[color:var(--color-overlay-2)]" />
-            <span
-              aria-hidden
-              className="absolute left-0 h-1 rounded-full bg-[color:var(--color-indigo-a66)]"
-              style={{ width: `${ratio * 100}%` }}
-            />
+            <span aria-hidden className="absolute inset-x-0 h-1 overflow-hidden rounded-full bg-[color:var(--color-overlay-2)]">
+              <span
+                data-testid={`${testId}-fill`}
+                className={cn("absolute inset-0 origin-left bg-[color:var(--color-indigo-a66)]", travel)}
+                style={{ transform: `scaleX(${ratio})`, ...travelTiming }}
+              />
+            </span>
             {detents.map((value, tick) => (
               <span
                 key={value}
@@ -243,19 +249,11 @@ export function CadencePicker({
                 shape: "icon",
                 size: "lg",
                 className: cn(
-                  "absolute grid h-11 w-11 -translate-x-1/2 place-items-center rounded-full",
-                  dragRatio === null ? "transition-[left] motion-reduce:transition-none" : "transition-none",
+                  "absolute left-0 grid h-11 w-11 -translate-x-1/2 place-items-center rounded-full",
+                  travel,
                 ),
               })}
-              style={{
-                left: `${ratio * 100}%`,
-                ...(dragRatio === null
-                  ? {
-                      transitionDuration: "var(--motion-settle)",
-                      transitionTimingFunction: "var(--motion-ease-drag-release)",
-                    }
-                  : {}),
-              }}
+              style={{ transform: `translateX(calc(${ratio} * 100cqw))`, ...travelTiming }}
             >
               <span
                 aria-hidden

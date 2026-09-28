@@ -1,0 +1,5 @@
+{
+  "gate": "control-anchor-registered",
+  "raise": 1,
+  "why": "The MCP tab's web-only \"Get the app\" door leaves the value layer's 11px chip for the primary sm standard button (`buttonVariants`), the same door the Agents and Models tabs beside it already wear. It navigates, so it stays a `<Link>`; the value layer has no standard-button shape by design, so the registry row (`AgentSetupSection.standard-button.json`) is the only honest home for it."
+}

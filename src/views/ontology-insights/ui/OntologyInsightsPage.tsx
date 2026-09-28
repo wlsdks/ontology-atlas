@@ -1192,7 +1192,7 @@ export function OntologyInsightsPage() {
         </header>
         {/* The subject is a mode (segmented control); the questions are sections (tabs). Two identical tab rows make the
            active state ambiguous. Only the ontology subject draws the question row. */}
-        <div className="mt-[var(--section-gap)] flex flex-col gap-2">
+        <div className="insights-tab-crossfade mt-[var(--section-gap)] flex flex-col gap-2">
           <div className="self-start">
           <SegmentedControl
             ariaLabel={t("coreAriaLabel")}

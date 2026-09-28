@@ -40,8 +40,6 @@ const FILES_PER_CUBE = 4;
 const MAX_CUBES = 30;
 /** Stride between one week's column starting to rise and the next. */
 const COLUMN_STRIDE_MS = 34;
-/** One column's rise, inside the ~1s band Heer and Robertson (InfoVis 2007) found for staged transitions. */
-const COLUMN_RISE_MS = 420;
 
 export interface VaultHistoryTracksLabels {
   /** Track names, in the product's own words. */
@@ -167,7 +165,7 @@ export function VaultHistoryTracks({
                         )}
                         style={{
                           height: "calc(var(--vault-history-cube) - 1px)",
-                          transition: `transform ${COLUMN_RISE_MS}ms var(--motion-ease)`,
+                          transition: "transform var(--motion-base) var(--motion-ease)",
                           // Every cube in a column shares one transform and duration, so a column rises as one. The 3px
                           // travel stays under the drawn 4px cube; a longer travel moved cubes through each other.
                           transform: up ? "none" : "translateY(3px)",

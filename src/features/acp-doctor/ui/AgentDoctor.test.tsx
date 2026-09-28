@@ -360,7 +360,7 @@ describe('install progress', () => {
     expect(row.textContent).toContain('50%');
     expect(row.textContent).toContain('MB');
     const bar = screen.getByTestId('agent-doctor-progress-bar');
-    expect((bar.firstElementChild as HTMLElement).style.width).toBe('50%');
+    expect((bar.firstElementChild as HTMLElement).style.transform).toBe('translateX(-50%)');
   });
 
   it('shows the tool output line instead of a bar when the total is unknown', async () => {

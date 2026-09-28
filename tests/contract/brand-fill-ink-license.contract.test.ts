@@ -315,7 +315,7 @@ describe("브랜드 면 × 잉크 페어링 — 소스 전수", () => {
   });
 
   it("리터럴 단위가 상수로 뺀 className 도 본다 — 태그 파서가 원리적으로 못 보던 층", () => {
-    const src = readFileSync(join(ROOT, "src/widgets/atlas-git-panel/ui/AtlasGitPanel.tsx"), "utf8");
+    const src = readFileSync(join(ROOT, "src/shared/ui/button.tsx"), "utf8");
     const withFill = literals(src).filter((l) => FILL_RE.test(l));
     expect(withFill.length, "상수 className 의 브랜드 면을 못 찾았다").toBeGreaterThan(0);
     expect(withFill.some((l) => /text-on-accent/.test(l)), "그 상수의 잉크를 못 읽는다").toBe(true);

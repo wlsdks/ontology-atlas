@@ -71,11 +71,11 @@ export function HarnessScanProgressPanel({ progress }: { progress: HarnessScanPr
         >
           <div
             className={cn(
-              'absolute inset-y-0 left-0 rounded-micro bg-[color:var(--color-indigo-a60)]',
-              'transition-[width,opacity] duration-[var(--motion-fast)] ease-[var(--motion-ease)]',
+              'absolute inset-0 rounded-micro bg-[color:var(--color-indigo-a60)]',
+              'transition-[transform,opacity] duration-[var(--motion-fast)] ease-[var(--motion-ease)]',
               determinate ? 'opacity-100' : 'opacity-0',
             )}
-            style={{ width: `${Math.round(ratio * 100)}%` }}
+            style={{ transform: `translateX(${Math.round(ratio * 100) - 100}%)` }}
           />
           <div
             className={cn(

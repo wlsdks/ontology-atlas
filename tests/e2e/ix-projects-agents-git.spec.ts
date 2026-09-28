@@ -158,7 +158,7 @@ test.describe("interaction sweep — projects, agents, git", () => {
     const confirm = await box(page.getByTestId("atlas-git-discard-confirm"));
     const cancel = await box(page.getByTestId("atlas-git-discard-cancel"));
     expect([confirm.height, cancel.height, doorBox.height]).toEqual([32, 32, 32]);
-    expect([confirm.fontSize, cancel.fontSize, doorBox.fontSize]).toEqual([12.5, 12.5, 12.5]);
+    expect([confirm.fontSize, cancel.fontSize, doorBox.fontSize]).toEqual([14, 14, 14]);
     await page.screenshot({ path: "output/ix/git-discard-1512.png" });
 
     await page.keyboard.press("Escape");
@@ -174,7 +174,7 @@ test.describe("interaction sweep — projects, agents, git", () => {
     const commitConfirm = await box(page.getByTestId("atlas-git-confirm-button"));
     const commitCancel = await box(page.getByTestId("atlas-git-cancel-button"));
     expect([commitDoor.height, commitConfirm.height, commitCancel.height]).toEqual([32, 32, 32]);
-    expect([commitDoor.fontSize, commitConfirm.fontSize, commitCancel.fontSize]).toEqual([12.5, 12.5, 12.5]);
+    expect([commitDoor.fontSize, commitConfirm.fontSize, commitCancel.fontSize]).toEqual([14, 14, 14]);
     expect((await box(input)).fontSize, "the commit message is set smaller than the field").toBeGreaterThan(11);
     await page.keyboard.press("Escape");
     await expect(page.getByTestId("atlas-git-confirm-step")).toHaveCount(0);

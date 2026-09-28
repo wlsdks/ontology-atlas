@@ -103,7 +103,7 @@ export function DomainCapacityBar({
           data-testid="domain-capacity-bar-tail"
           className="flex w-[var(--capacity-tail-inline,auto)] flex-none items-baseline gap-2.5 whitespace-nowrap"
         >
-          <span className="text-title font-[var(--font-weight-emphasis)] tabular-nums text-[color:var(--map-numeral-face)]">
+          <span className="min-w-[2ch] text-right text-title font-[var(--font-weight-emphasis)] tabular-nums text-[color:var(--map-numeral-face)]">
             {row.total}
           </span>
           {underTitle ? null : (

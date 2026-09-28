@@ -2030,7 +2030,6 @@ export function AcpChatPanel({
                 {t('presentation.openHint', { count: heldPresentationTrace?.scenes.length ?? 0 })}
               </span>
             </span>
-            <ChevronRight size={ICON_SIZE.md} aria-hidden className="shrink-0" />
           </RowButton>
         </Surface>
         <Surface

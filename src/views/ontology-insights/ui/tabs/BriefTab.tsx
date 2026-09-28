@@ -575,7 +575,7 @@ function DestinationLink({
     <Link
       href={href}
       // `hoverInk: 'strong'` is the registered answer for this shape; without it rest and hover are the same pixel.
-      className={controlClass({ shape: 'link', hoverInk: 'strong', className })}
+      className={controlClass({ shape: 'link', hoverInk: 'strong', className: cn('min-w-6 justify-center', className) })}
       data-brief-destination={sameBoard ?? 'away'}
       onClick={
         sameBoard

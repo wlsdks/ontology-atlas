@@ -47,12 +47,12 @@ describe("ProjectForm missing taxonomy preservation", () => {
 
     expect(
       screen.getByLabelText(koMessages.settings.projectForm.fields.category),
-    ).toHaveDisplayValue(
+    ).toHaveTextContent(
       koMessages.settings.projectForm.fields.categoryUnspecified,
     );
     expect(
       screen.getByLabelText(koMessages.settings.projectForm.fields.status),
-    ).toHaveDisplayValue(
+    ).toHaveTextContent(
       koMessages.settings.projectForm.fields.statusUnspecified,
     );
     expect(

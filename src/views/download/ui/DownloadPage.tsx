@@ -461,9 +461,9 @@ function FactsStrip({
 
   return (
     <div className={cn('gateway-rise gateway-t400', heroIn && 'is-in', 'w-full', className)}>
-      {/* One line when all six fit; otherwise one subgrid so every row shares a start line. A
-          container query, since the column decides the fit. 42rem: four max-content columns and
-          three gaps need 665px. */}
+      {/* One line when all six fit; otherwise one subgrid of equal columns that fill the width, so
+          every row shares a start line. A container query, since the column decides the fit. 54rem:
+          four equal columns hold the widest fact (the Korean requirements value, 173px). */}
       <div
         data-testid="gateway-facts"
         className={cn(
@@ -471,7 +471,7 @@ function FactsStrip({
           '@container/gateway-facts border-t border-[color:var(--color-border-soft)] py-5',
         )}
       >
-        <div className="grid grid-cols-1 gap-x-12 gap-y-4 @min-[21rem]/gateway-facts:grid-cols-2 @min-[42rem]/gateway-facts:grid-cols-[repeat(4,max-content)] @min-[66rem]/gateway-facts:flex">
+        <div className="grid grid-cols-1 gap-x-12 gap-y-4 @min-[21rem]/gateway-facts:grid-cols-2 @min-[54rem]/gateway-facts:grid-cols-[repeat(4,minmax(0,1fr))] @min-[66rem]/gateway-facts:flex">
         <dl className="col-span-full grid min-w-0 grid-cols-subgrid gap-y-4 @min-[66rem]/gateway-facts:flex @min-[66rem]/gateway-facts:gap-x-12">
           {facts.map((fact) => (
             <div key={fact.label} className="min-w-0">
@@ -718,13 +718,21 @@ function EvidenceSection({ graph }: { graph: StageGraph }) {
             <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
             <span
               data-token="engraved-numeral"
-              className="font-mono text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
+              className="text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
             >
               {t.rich('portraitCensus', {
                 concepts: graph.nodes.length,
                 relations: graph.edges.length,
-                c: () => <CountUp value={graph.nodes.length} />,
-                r: () => <CountUp value={graph.edges.length} />,
+                c: () => (
+                  <span className="font-mono">
+                    <CountUp value={graph.nodes.length} />
+                  </span>
+                ),
+                r: () => (
+                  <span className="font-mono">
+                    <CountUp value={graph.edges.length} />
+                  </span>
+                ),
               })}
             </span>
             <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>

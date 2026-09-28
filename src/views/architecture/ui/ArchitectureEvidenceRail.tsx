@@ -73,7 +73,7 @@ export function ArchitectureEvidenceRail({
             aria-hidden
             className={cn(
               'text-[color:var(--color-text-quaternary)]',
-              compact && 'hidden 2xl:inline',
+              compact ? 'hidden 2xl:inline' : 'md:max-xl:hidden',
             )}
           >
             ·
@@ -81,7 +81,7 @@ export function ArchitectureEvidenceRail({
           <span
             className={cn(
               'min-w-0 truncate text-[color:var(--color-text-tertiary)]',
-              compact && 'hidden 2xl:inline',
+              compact ? 'hidden 2xl:inline' : 'md:max-xl:hidden',
             )}
           >
             {observationTitle}

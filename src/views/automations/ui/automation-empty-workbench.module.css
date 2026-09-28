@@ -1,26 +1,22 @@
-/* Top-aligned, since centring floated the first words far below the tabs. The list takes the
-   remaining height up to a 56rem stage, so the page ends in the list instead of a blank floor. */
-.stage { display: flex; flex: 1 1 0; flex-direction: column; min-height: min-content; max-height: 56rem; width: 100%; min-width: 0; }
+/* Top-aligned, since centring floated the first words far below the tabs. */
+.stage { display: flex; flex-direction: column; width: 100%; min-width: 0; }
 .intro { min-width: 0; max-width: 40rem; }
 /* The page h1 owns --text-display, so this title sits one ramp step below it. */
 .title { margin-top: 0; color: var(--color-text-primary); font-size: var(--text-title); line-height: var(--leading-title); font-weight: var(--font-weight-strong); word-break: keep-all; overflow-wrap: break-word; }
-.description { margin-top: .5rem; color: var(--color-text-secondary); font-size: var(--text-body-lg); line-height: var(--leading-title); word-break: keep-all; overflow-wrap: break-word; }
+.description { margin-top: .5rem; color: var(--color-text-secondary); font-size: var(--text-body-lg); line-height: var(--leading-body-lg); word-break: keep-all; overflow-wrap: break-word; }
 .action { display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; margin-top: 1.5rem; }
 /* A divided row, not cards, so the list stays the stage's one raised surface. */
 .facts { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 2rem; margin: 2.5rem 0 0; }
-.fact { min-width: 0; padding-top: 1rem; border-top: 1px solid var(--color-divider); animation: rowIn var(--motion-base) var(--motion-ease) both; }
-.fact:nth-child(2) { animation-delay: .05s; }
-.fact:nth-child(3) { animation-delay: .1s; }
+.fact { min-width: 0; padding-top: 1rem; border-top: 1px solid var(--color-divider); animation: stageIn var(--motion-base) var(--motion-ease) both; }
 .factTitle { color: var(--color-text-primary); font-size: var(--text-body); line-height: var(--leading-body); font-weight: var(--font-weight-emphasis); }
 .factBody { margin: .25rem 0 0; color: var(--color-text-secondary); font-size: var(--text-body); line-height: var(--leading-body); word-break: keep-all; overflow-wrap: break-word; }
-.preview { display: flex; flex: 1 1 auto; flex-direction: column; min-width: 0; min-height: 13rem; margin-top: 2.5rem; border: 1px solid var(--color-border-soft); border-radius: var(--radius-panel); background: var(--color-panel); box-shadow: var(--shadow-elevation-1); animation: previewIn var(--motion-base) var(--motion-ease) .1s both; }
+.preview { display: flex; flex-direction: column; min-width: 0; margin-top: 2.5rem; border: 1px solid var(--color-border-soft); border-radius: var(--radius-panel); background: var(--color-panel); animation: stageIn var(--motion-base) var(--motion-ease) both; }
 .previewHead { display: flex; align-items: center; gap: 1rem; min-height: 3.5rem; padding: 1rem 1.25rem; border-bottom: 1px solid var(--color-divider); }
-.previewTitle { color: var(--color-text-primary); font-size: var(--text-body-lg); font-weight: var(--font-weight-emphasis); }
+.previewTitle { color: var(--color-text-primary); font-size: var(--text-body-lg); line-height: var(--leading-body-lg); font-weight: var(--font-weight-emphasis); }
 .zero { display: inline-grid; place-items: center; min-width: 1.5rem; height: 1.5rem; margin-left: auto; border: 1px solid var(--color-border-soft); border-radius: var(--radius-chip); color: var(--color-text-secondary); font: var(--text-label)/var(--leading-label) var(--font-mono); }
 .columnHead { display: grid; grid-template-columns: minmax(0,1.6fr) minmax(0,.7fr) minmax(0,.7fr); gap: .75rem; padding: .75rem 1.25rem; color: var(--color-text-tertiary); font-size: var(--text-label); line-height: var(--leading-label); }
 /* No sentence and no dashed box: a dashed box read as an add button that did nothing. */
-.rows { flex: 1 1 auto; min-height: 4.5rem; margin: 0 1.25rem; border-top: 1px solid var(--color-divider); }
-@keyframes previewIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes rowIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-@media (max-width: 47.99rem) { .stage { flex: none; } .facts { grid-template-columns: minmax(0,1fr); gap: 1rem; margin-top: 2rem; } .preview { margin-top: 2rem; min-height: 0; } .rows { min-height: 6rem; margin-inline: .875rem; } .columnHead { grid-template-columns: minmax(0,1fr) 3.5rem 3.5rem; padding-inline: .875rem; } .previewHead { padding-inline: .875rem; } }
+.rows { min-height: 4.5rem; margin: 0 1.25rem; border-top: 1px solid var(--color-divider); }
+@keyframes stageIn { from { opacity: 0; } to { opacity: 1; } }
+@media (max-width: 47.99rem) { .facts { grid-template-columns: minmax(0,1fr); gap: 1rem; margin-top: 2rem; } .preview { margin-top: 2rem; } .rows { min-height: 6rem; margin-inline: .875rem; } .columnHead { grid-template-columns: minmax(0,1fr) 3.5rem 3.5rem; padding-inline: .875rem; } .previewHead { padding-inline: .875rem; } }
 @media (prefers-reduced-motion: reduce) { .preview, .fact { animation: none; } }

@@ -77,7 +77,7 @@ export function PendingDocumentPane({
     <div data-testid="atlas-git-pending-pane" className="flex min-h-0 flex-1 flex-col">
       <header
         data-testid="atlas-git-change-groups"
-        className="flex flex-none flex-col gap-3 border-b border-[color:var(--color-divider)] px-5 py-4"
+        className="flex flex-none flex-col gap-3 border-b border-[color:var(--color-divider)] px-4 py-4"
       >
         <p className="flex flex-wrap items-baseline gap-x-2 text-label text-[color:var(--color-text-secondary)]">
           <span>{summary}</span>
@@ -233,7 +233,7 @@ export function DocumentChangeReader({
       // destructive door.
       tabIndex={0}
       aria-label={label}
-      className="git-fade-in flex min-h-0 flex-1 flex-col overflow-y-auto px-5 py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]"
+      className="git-fade-in flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]"
     >
       {/*
         One reading measure for header, door, box and body, left-anchored at every width, so
@@ -256,9 +256,9 @@ export function DocumentChangeReader({
             <span className="min-w-0 truncate">{label}</span>
           </h2>
         )}
-        <p className="flex min-w-0 flex-wrap items-baseline gap-x-2 font-mono text-caption text-[color:var(--color-text-quaternary)]">
+        <p className="flex min-w-0 flex-wrap items-baseline gap-x-2 text-caption text-[color:var(--color-text-quaternary)]">
           {/* The path, unless the name above or the step's file chooser already prints it. */}
-          {entry.path === label || source ? null : <span className="min-w-0 break-all">{entry.path}</span>}
+          {entry.path === label || source ? null : <span className="min-w-0 break-all font-mono">{entry.path}</span>}
           <span className="text-[color:var(--color-text-tertiary)]">
             {t(statusKey(entry.status, isDocument))}
           </span>
@@ -266,7 +266,7 @@ export function DocumentChangeReader({
           {entry.renamedFrom ? (
             <span className="min-w-0 break-all">{t("docReaderRenamedFrom", { path: entry.renamedFrom })}</span>
           ) : null}
-          <span className="tabular-nums">
+          <span className="font-mono tabular-nums">
             <span className="text-[color:var(--color-success-text-a90)]">{`+${added}`}</span>{" "}
             <span className="text-[color:var(--color-danger-text)]">{`−${removed}`}</span>
           </span>
@@ -297,11 +297,11 @@ export function DocumentChangeReader({
         frontmatterChanged ? (
           <section
             data-testid="atlas-git-doc-frontmatter"
-            className="flex flex-none flex-col rounded-[var(--radius-card)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] -mx-2 px-2 py-2 font-mono text-caption leading-label"
+            className="flex flex-none flex-col rounded-[var(--radius-card)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] -mx-2 px-2 py-2 text-caption leading-label"
           >
             <p className="pb-1 text-[color:var(--color-text-quaternary)]">{t("docReaderInfoBox")}</p>
             {frontmatter.map((line, index) => (
-              <p key={index} className={cn("whitespace-pre-wrap break-all -mx-1 px-1 text-[color:var(--color-text-tertiary)]", markClass(line.kind))}>
+              <p key={index} className={cn("whitespace-pre-wrap break-all -mx-1 px-1 font-mono text-[color:var(--color-text-tertiary)]", markClass(line.kind))}>
                 <MarkLabel t={t} kind={line.kind} />
                 {line.text}
               </p>
