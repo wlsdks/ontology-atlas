@@ -11,7 +11,7 @@ import type { useTopologyPreferences } from "../model/use-topology-preferences";
 import type { useTopologyVaultReadModel } from "../model/use-topology-vault-read-model";
 
 import { resolveNodeAgentTarget } from "@/entities/knowledge-graph";
-import { AGENT_DOCK_INSET_SURFACE_CLASS, Surface, WidgetErrorFallback } from "@/shared/ui";
+import { AGENT_DOCK_INSET_SURFACE_CLASS, agentDockReflowStyle, Surface, WidgetErrorFallback } from "@/shared/ui";
 import { ErrorBoundary } from "@/shared/ui/error-boundary";
 import { AcpChatPanel, AcpChatResizeHandle } from "@/widgets/acp-chat-panel";
 import { AnalysisWorkbench, MeaningContext } from "@/widgets/analysis-workbench";
@@ -204,10 +204,7 @@ export function TopologyAgentDock({
         data-right-dock={acpDockFrameOpen || chatMounted || meaningWorkbenchOpen ? "chat" : undefined}
         style={{
           width: acpDockFrameOpen || meaningWorkbenchOpen ? reviewUsesSheet ? '100%' : `${chatWidth.width}px` : "0px",
-          transitionProperty: "width",
-          // Same role and clock as `VaultAgentPanel`, so both branches push the map alike.
-          transitionDuration: "var(--agent-panel-reflow-duration)",
-          transitionTimingFunction: "var(--topology-motion-ease-out)",
+          ...agentDockReflowStyle("width"),
         }}
         onTransitionEnd={(event) => {
           if (event.target !== event.currentTarget || event.propertyName !== "width") return;
