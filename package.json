@@ -1,6 +1,6 @@
 {
   "name": "ontology-atlas",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "private": true,
   "packageManager": "pnpm@10.18.0",
   "license": "MIT",
