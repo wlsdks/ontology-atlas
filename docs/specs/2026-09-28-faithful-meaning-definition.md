@@ -4,7 +4,7 @@ doc_type: spec
 status: draft
 area: analysis
 date: 2026-09-28
-decisions: []
+decisions: [a39a0708-99e0-49a6-b64f-cc9770ff6eb6]
 ---
 
 # Faithful meaning definition fallback

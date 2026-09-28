@@ -61,6 +61,47 @@ test('a changed evidence version blocks source opening and copying; session fold
   await expect(page.getByTestId('gray-area-source-witness')).toHaveCount(0);
 });
 
+test('distinct references from one concept control their own candidate details',async({page})=>{
+  await install(page);
+  await page.evaluate(()=>{
+    const w=window as unknown as {__TAURI_INTERNALS__:{invoke:(command:string,args?:unknown)=>Promise<unknown>}};
+    const invoke=w.__TAURI_INTERNALS__.invoke;
+    w.__TAURI_INTERNALS__.invoke=async(command,args)=>{
+      const result=await invoke(command,args);
+      if(command!=='read_gray_area_evidence')return result;
+      const snapshot=structuredClone(result) as {imports:unknown[]};
+      snapshot.imports.push({from:'src/retry/index.ts',to:'src/types/index.ts',kind:'static',sourceRole:'production',importUsage:'value'});
+      return snapshot;
+    };
+  });
+  await open(page);await page.getByRole('button',{name:'Inspect this folder',exact:true}).click();
+  const cards=page.getByTestId('gray-area-missing-link');await expect(cards).toHaveCount(2);
+  const headers=cards.locator('button[aria-controls]');
+  const ids=await headers.evaluateAll(items=>items.map(e=>e.getAttribute('aria-controls')));
+  expect(new Set(ids).size).toBe(2);
+  await headers.nth(1).click();
+  await expect.poll(()=>cards.nth(1).evaluate(article=>{
+    const button=article.querySelector('button[aria-controls]')!;
+    return button.getAttribute('aria-expanded')==='true'&&article.contains(document.getElementById(button.getAttribute('aria-controls')!));
+  })).toBe(true);
+});
+
+test('source invalidation at a low action reveals focused recovery',async({page})=>{
+  await page.setViewportSize({width:1040,height:768});await install(page);await inspect(page);
+  await page.getByRole('button',{name:/src\/retry\/index.ts:1/}).first().click();
+  await expect(page.getByTestId('gray-area-source-witness')).toBeVisible();
+  await page.evaluate(()=>{(window as unknown as {__gray:{current:boolean}}).__gray.current=false;});
+  await page.getByRole('button',{name:'Copy investigation',exact:true}).first().click();
+  const recovery=page.getByTestId('gray-area-inspector').getByRole('status').filter({hasText:'source, meaning or folder binding changed'});
+  await expect(recovery).toBeFocused();
+  await expect.poll(()=>recovery.evaluate(e=>{
+    const r=e.getBoundingClientRect();const body=e.closest('[data-testid="gray-area-body"]')!.getBoundingClientRect();
+    return r.top>=body.top&&r.bottom<=body.bottom;
+  })).toBe(true);
+  await page.keyboard.press('Tab');
+  await expect(recovery.getByRole('button')).toBeFocused();
+});
+
 test('the inspector, candidate detail, scope and source open with nonempty WCAG coverage',async({page})=>{
   await page.setViewportSize({width:1512,height:949});await install(page);await open(page);
   const receipts: unknown[]=[];

@@ -49,7 +49,10 @@ argument or new MCP write authority.
 
 A snapshot binds the source-content fingerprint, graph digest, full Markdown
 digest and exact project binding. Collection checks the version again; opening
-a captured source or copying/preparing a packet rechecks it. Each source excerpt
+a captured source or copying/preparing a packet rechecks it. If that check finds
+changed evidence, the recovery notice is brought into view and focused, with the
+reinspection action next in the keyboard order. Each candidate controls its own
+detail region, including several observations from the same concept. Each source excerpt
 has real lines and a full-file SHA256. Packets carry bounded current bodies and
 explicit truncation/full-read instructions. Conversation preparation only seats
 an editable draft; sending and permission decisions retain their existing rules.

@@ -130,15 +130,16 @@ function Findings({ snapshot,vaultPath,onFocus,onPrepare,onRefresh,escapeFirstRe
   const label = (slug:string|null) => snapshot.nodes.find(n=>n.slug===slug)?.title ?? slug ?? '';
   return <div ref={onReady} tabIndex={-1} role="group" aria-label={t('title')} className="space-y-4 outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]">
     <p className="text-caption text-[color:var(--color-text-secondary)]">{t('boundary')}</p>
-    {stale ? <div role="status" className="space-y-3 rounded-card border border-[color:var(--color-divider)] p-[var(--card-pad)]"><p className="text-body">{t('stale')}</p><Button onClick={onRefresh} variant="outline">{t('refresh')}</Button></div> : null}
+    {stale ? <div ref={onReady} tabIndex={-1} role="status" className="space-y-3 rounded-card border border-[color:var(--color-divider)] p-[var(--card-pad)] outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]"><p className="text-body">{t('stale')}</p><Button onClick={onRefresh} variant="outline">{t('refresh')}</Button></div> : null}
     {visible.length===0 ? <div role="status" className="space-y-2 py-4"><h3 className="text-body font-[var(--font-weight-strong)]">{dismissed.size ? t('foldedAll') : t('empty')}</h3><p className="text-caption text-[color:var(--color-text-secondary)]">{t('emptyLimit')}</p></div> : null}
     {visible.map(candidate=>{
       const active=expanded===candidate.id;
+      const detailsId=`gray-area-${encodeURIComponent(candidate.id)}`;
       return <article key={candidate.id} data-testid={`gray-area-${candidate.kind}`} className="overflow-hidden rounded-card border border-[color:var(--color-divider)]">
-        <RowButton tone="strong" hoverSurface="lift" aria-expanded={active} aria-controls={`gray-area-${candidate.kind}-${candidate.slug.replaceAll('/','-')}`} onClick={()=>setExpanded(active?null:candidate.id)}>
+        <RowButton tone="strong" hoverSurface="lift" aria-expanded={active} aria-controls={detailsId} onClick={()=>setExpanded(active?null:candidate.id)}>
           <span className="min-w-0 flex-1 text-left"><span className="block text-caption text-[color:var(--color-text-secondary)]">{t(`kind.${candidate.kind}`)}</span><span className="mt-1 block whitespace-normal break-words text-body font-[var(--font-weight-strong)]">{label(candidate.slug)}{candidate.relatedSlug ? ` · ${label(candidate.relatedSlug)}` : ''}</span></span><ChevronDown size={16} className="shrink-0"/>
         </RowButton>
-        <Surface open={active} id={`gray-area-${candidate.kind}-${candidate.slug.replaceAll('/','-')}`} motion="overlay" className="space-y-3 border-t border-[color:var(--color-divider)] p-3">
+        <Surface open={active} id={detailsId} motion="overlay" className="space-y-3 border-t border-[color:var(--color-divider)] p-3">
           <dl className="space-y-3">
             <Fact label={t('observed')} value={candidate.kind==='recorded-gap'?candidate.statement:candidate.kind==='missing-link'?`${t('importFact')}\n${candidate.statement}`:t('driftFact')}/>
             <Fact label={t('relevance')} value={t('pathRelevance',{path:formatRecordedPath(snapshot,candidate.path,label)})}/>
@@ -188,7 +189,7 @@ function SourceExcerpt({source,measuredAt,onClose,onExited}:{source:GrayAreaWitn
   return <Surface open={Boolean(source)} onExited={onExited} motion="overlay" className="space-y-2 rounded-card border border-[color:var(--color-divider)] p-3" data-testid="gray-area-source-witness">
     <div tabIndex={-1} ref={mountSource} role="region" aria-label={t('source')} className="space-y-2 rounded-chip outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]">
       <div className="flex items-start gap-2"><p className="min-w-0 flex-1 break-all text-caption font-mono">{shown?.path}:{shown?.actualRange?.startLine}–{shown?.actualRange?.endLine}</p><IconButton size="sm" label={t('closeSource')} onClick={onClose}><X size={14}/></IconButton></div>
-      <p className="text-caption text-[color:var(--color-text-secondary)]">{t('capturedSource',{time:measuredAt})}</p><pre className="max-h-64 overflow-auto whitespace-pre-wrap break-words text-caption font-mono">{shown?.text}</pre><p className="break-all font-mono text-caption text-[color:var(--color-text-tertiary)]">SHA256 {shown?.fullFileSha256}</p>
+      <p className="text-caption text-[color:var(--color-text-secondary)]">{t('capturedSource',{time:measuredAt})}</p><pre className="max-h-64 overflow-auto whitespace-pre-wrap break-words text-body leading-body font-mono">{shown?.text}</pre><p className="break-all font-mono text-caption text-[color:var(--color-text-tertiary)]">SHA256 {shown?.fullFileSha256}</p>
     </div>
   </Surface>;
 }
