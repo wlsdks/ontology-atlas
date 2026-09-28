@@ -21,6 +21,7 @@ export interface VaultDoc {
   }>;
   headings: VaultHeading[];
   excerpt: string;
+  definitionPreview?: string;
   /** Source paths from the project competency block; derived at load, never written back. */
   meaningEvidencePaths?: string[];
   /**

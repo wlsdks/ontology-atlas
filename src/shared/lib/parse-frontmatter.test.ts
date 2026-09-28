@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildExcerpt, extractOutLinksWithContext, parseFrontmatter } from './parse-frontmatter';
+import { buildDefinitionPreview, buildExcerpt, extractOutLinksWithContext, parseFrontmatter } from './parse-frontmatter';
 
 describe('parseFrontmatter — basics', () => {
   it('returns empty frontmatter when no leading ---', () => {
@@ -332,5 +332,38 @@ describe('parseFrontmatter — malformed-quoted-scalar', () => {
         'Frontmatter line 2 `display_ko:` closes its quote before the end of the value, ' +
         'so the rest is read as literal text. Close the quote or remove it: `display_ko: 에이전트 목적지`',
     });
+  });
+});
+
+
+describe('complete opening definition previews', () => {
+  it('preserves multiline qualifications and inline references under a recorded title', () => {
+    expect(buildDefinitionPreview('\n# 재시도\n\n다시 읽지만 [[report|보고서]]는\n저장하지 않는다. See `path.ts#retry` and [policy](./policy).\n\n## Excludes\nPersisting a report.', { title: 'Retry', display_ko: '재시도' })).toBe('다시 읽지만 [[report|보고서]]는 저장하지 않는다. See `path.ts#retry` and [policy](./policy).');
+  });
+  it('accepts a complete paragraph at the budget and abstains before clipping a late qualification', () => {
+    expect(buildDefinitionPreview('a'.repeat(320), {})).toBe('a'.repeat(320));
+    expect(buildDefinitionPreview('A retry is allowed. '.repeat(20) + 'But this is uncertain.', {})).toBeUndefined();
+  });
+  it.each([
+    '# Excludes\nPersisting a report.',
+    '## Includes\nRetries.',
+    '- Retries.', '+ Retries.', '* Retries.', '1. Retries.',
+    '> Retries.', '```text\nRetries.\n```', '~~~\nRetries.\n~~~',
+    '    Retries.', '\tRetries.', '<div>Retries.</div>',
+    '| Responsibility |\n| --- |\n| Retries |',
+    'Responsibility | Policy\n--- | ---\nRetries | Always',
+    'Excludes\n========\nPersisting a report.',
+    'Excludes\n--------\nPersisting a report.',
+    '# Retry\n\n## Excludes\nPersisting a report.',
+    '# Retry\n\n# Retry\nRetries.',
+    '',
+  ])('does not promote block content into a definition: %s', (body) => {
+    expect(buildDefinitionPreview(body, { title: 'Retry' })).toBeUndefined();
+  });
+  it.each(['## Excludes', '- Excluded', '> Quoted', '```', '| Column |'])('ends prose at the next block: %s', (block) => {
+    expect(buildDefinitionPreview(`Retries but never persists.\n${block}\nPersisting a report.`, {})).toBe('Retries but never persists.');
+  });
+  it('does not treat an inferred first heading as authored title authority', () => {
+    expect(buildDefinitionPreview('# Excludes\nPersisting a report.', {})).toBeUndefined();
   });
 });

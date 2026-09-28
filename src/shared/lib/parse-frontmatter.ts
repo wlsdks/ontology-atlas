@@ -445,6 +445,35 @@ export function extractHeadings(body: string): HeadingInfo[] {
   return out;
 }
 
+export function buildDefinitionPreview(
+  body: string,
+  frontmatter: Record<string, unknown>,
+  max = 320,
+): string | undefined {
+  const titles = Object.entries(frontmatter)
+    .filter(([key, value]) => (key === 'title' || key.startsWith('display_')) && typeof value === 'string')
+    .map(([, value]) => (value as string).trim());
+  const lines = body.split(/\r?\n/);
+  let index = 0;
+  while (index < lines.length && !lines[index].trim()) index += 1;
+  const heading = lines[index]?.match(/^ {0,3}#\s+(.+?)(?:\s+#+)?\s*$/);
+  if (heading && titles.includes(heading[1].trim())) {
+    index += 1;
+    while (index < lines.length && !lines[index].trim()) index += 1;
+  }
+  const paragraph: string[] = [];
+  for (; index < lines.length; index += 1) {
+    const line = lines[index];
+    const trimmed = line.trim();
+    if (!trimmed) break;
+    if (/^(?:=+|-+)\s*$/.test(trimmed) || /^\|?\s*:?-{3,}/.test(trimmed)) return undefined;
+    if (/^(?: {4}|\t)/.test(line) || /^(?:#{1,6}(?:\s|$)|>|`{3,}|~{3,}|[-+*]\s|\d+[.)]\s|<|!\[|\[[^\]]+\]:|(?:\*\s*){3,}$|(?:_\s*){3,}$)/.test(trimmed) || trimmed.replace(/\[\[[^\]]*\]\]/g, '').includes('|')) break;
+    paragraph.push(trimmed);
+  }
+  const preview = paragraph.join(' ').replace(/\s+/g, ' ').trim();
+  return preview && preview.length <= max ? preview : undefined;
+}
+
 export function buildExcerpt(body: string, max = 320): string {
   // Produce a readable prose preview. Markdown tables are the main hazard: a
   // raw excerpt of a table renders as a wall of `|` pipes (e.g.

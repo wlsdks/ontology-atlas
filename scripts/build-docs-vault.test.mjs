@@ -429,3 +429,27 @@ test('a checkout with no mcp/ records null, not an empty list, and says why', as
     await rm(root, { recursive: true, force: true });
   }
 });
+
+
+test('generated manifests retain eligible definitions without flattening boundaries', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'definition-preview-'));
+  const intro = 'Retries a failed read, but does not persist a report.';
+  const cases = [
+    ['intro', 'title: Retry\n', intro + '\n\n## Excludes\nPersisting a report.', intro],
+    ['title', 'title: Retry\n', '# Retry\n\n' + intro, intro],
+    ['display', 'title: Retry\ndisplay_ko: 재시도\n', '# 재시도\n\n다시 읽지만\n보고서를 저장하지 않는다.', '다시 읽지만 보고서를 저장하지 않는다.'],
+    ['misleading', 'title: Retry\n', '# Excludes\nPersisting a report.', undefined],
+    ['inferred-title', '', '# Excludes\nPersisting a report.', undefined],
+    ['section', 'title: Retry\n', '## Excludes\nPersisting a report.', undefined],
+    ['list', 'title: Retry\n', '- Persisting a report.', undefined],
+    ['long', 'title: Retry\n', 'A retry is allowed. '.repeat(20) + 'But this is uncertain.', undefined],
+  ];
+  try {
+    await mkdir(path.join(root, 'docs'));
+    for (const [name, metadata, body] of cases) await writeFile(path.join(root, 'docs', `${name}.md`), `---\nkind: capability\n${metadata}---\n${body}`);
+    const { manifest, content } = await scanVaultDir(path.join(root, 'docs'), { rootDir: root, check: true, publicOutDir: null });
+    for (const [name, , , expected] of cases) assert.equal(manifest.docs.find(doc => doc.slug === name).definitionPreview, expected, name);
+    assert.match(manifest.docs.find(doc => doc.slug === 'intro').excerpt, /Persisting a report/);
+    assert.match(content.intro, /## Excludes\nPersisting a report/);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
