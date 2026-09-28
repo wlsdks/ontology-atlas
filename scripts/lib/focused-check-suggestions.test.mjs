@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { cpSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
@@ -881,6 +881,22 @@ describe('focused check suggestions', () => {
     );
     assert.ok(commands.includes('pnpm exec playwright test tests/e2e/web-surface-smoke.spec.ts'));
     assert.ok(!commands.some((command) => command.includes('mcp-connector-add')));
+  });
+
+  it('points folder-switch and download-hero changes at the leak specs that measure them', () => {
+    const cases = [
+      ['src/entities/vault-session/model/use-local-vault.ts', 'tests/e2e/vault-switch-release.spec.ts'],
+      ['src/entities/vault-session/model/use-local-vault.ts', 'tests/e2e/web-surface-smoke.spec.ts'],
+      ['src/features/vault-switch/ui/VaultSwitchRailTile.tsx', 'tests/e2e/vault-switch-release.spec.ts'],
+      ['src/views/home/model/use-past-trails.ts', 'tests/e2e/vault-switch-release.spec.ts'],
+      ['src/shared/lib/derived-hook.ts', 'tests/e2e/vault-switch-release.spec.ts'],
+      ['src/views/download/lib/hero-atlas-scene.ts', 'tests/e2e/download-hero-release.spec.ts'],
+      ['src/views/download/ui/HeroAtlas.tsx', 'tests/e2e/download-hero-release.spec.ts'],
+    ];
+    for (const [path, spec] of cases) {
+      assert.ok(existsSync(path), `${path} moved; move its mapping with it`);
+      assert.ok(commandNames(suggestFocusedChecks([path])).includes(`pnpm exec playwright test ${spec}`), `${path} → ${spec}`);
+    }
   });
 
   it('suggests the web surface smoke when a desktop capability bridge changes', () => {

@@ -117,9 +117,23 @@ export const rules = [
     matches: [
       /^src\/shared\/lib\/tauri-(?:vault-fs|git|secrets|llm)\.ts$/,
       /^src\/shared\/lib\/desktop-shell\.ts$/,
-      /^src\/features\/docs-vault-local\/model\/use-local-vault\.ts$/,
+      /^src\/entities\/vault-session\/model\/use-local-vault\.ts$/,
       /^src\/features\/first-run-starter\/ui\/FirstRunStarterModule\.tsx$/,
       /^src-tauri\//,
+    ],
+  },
+  {
+    order: 860,
+    command: 'pnpm exec playwright test tests/e2e/vault-switch-release.spec.ts',
+    reason: 'a callback that can outlive a folder switch changed; no earlier folder may stay alive',
+    matches: [
+      /^src\/entities\/vault-session\/model\/use-local-vault\.ts$/,
+      /^src\/features\/vault-switch\//,
+      /^src\/views\/home\/ui\/HomePage\.tsx$/,
+      /^src\/views\/home\/model\/use-(?:topology-agent-orchestration|topology-keyboard-tour|topology-vault-read-model|past-trails|footprint-trail)\.tsx?$/,
+      /^src\/views\/library\/lib\/use-rounds-runner\.ts$/,
+      /^src\/shared\/lib\/(?:use-latest-ref|derived-hook)\.ts$/,
+      /^tests\/e2e\/(?:vault-switch-release\.spec|heap-census)\.ts$/,
     ],
   },
   {
@@ -156,6 +170,15 @@ export const rules = [
       /^src\/views\/download\/.*\.tsx?$/,
       /^src\/widgets\/gateway-chrome\/.*\.tsx?$/,
       /^src\/shared\/lib\/gateway-frame\.ts$/,
+    ],
+  },
+  {
+    order: 1035,
+    command: 'pnpm exec playwright test tests/e2e/download-hero-release.spec.ts',
+    reason: 'the download hero or its renderer changed; leaving /download must give back its WebGL context and page',
+    matches: [
+      /^src\/views\/download\/(?:lib\/hero-atlas-scene\.ts|ui\/HeroAtlas\.tsx|lib\/gateway-frame-loop\.ts)$/,
+      /^tests\/e2e\/(?:download-hero-release\.spec|heap-census)\.ts$/,
     ],
   },
 ];
