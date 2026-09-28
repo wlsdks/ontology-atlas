@@ -2304,7 +2304,10 @@ source to target; comets and pulses stay inside the drawn span.
 
 `WorkStatus` in `src/shared/motion/work-status.tsx`, CSS in `motion-work.css`:
 one glyph (ring, arc, check or X) and a crossfading label. It carries no live
-region; a status mounted as done draws no check.
+region; the consumer's own region announces. A status mounted as done shows a
+static check (`data-drawn="static"`); only a transition into done draws it.
+The arc spins without a real total. Under reduced motion the spin stops, the
+check is whole, and the label fade stays on `--motion-fast`.
 
 ### Expand and collapse
 
@@ -2314,7 +2317,9 @@ region; a status mounted as done draws no check.
 ### Progress to done
 
 `WorkProgress` in `src/shared/motion/work-progress.tsx`, CSS in
-`motion-work.css`: a scaleX fill, an indeterminate sweep only without a total.
+`motion-work.css`: a scaleX fill on `--motion-base`, never width, and an
+indeterminate sweep only without a total. Done fills in success ink. Under
+reduced motion the fill steps and the sweep parks at a third of the track.
 
 ### Press
 

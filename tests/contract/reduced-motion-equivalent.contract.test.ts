@@ -56,6 +56,10 @@ const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
     "Infinite progress travel shown only during a real ACP turn. Reduced motion stops the line while the adjacent planning/editing/verifying/review-wait text preserves the current state.",
   "harness-scan-sweep":
     "Infinite travel shown only while a scan pass whose length is unknown is running. Reduced motion stops it and the bar rests left-anchored at a third of the track, claiming no scale; the stage name, its running count and the seven-stage route list all keep changing from state and carry the same fact.",
+  "motion-work-spin":
+    "Infinite arc rotation shown only while a WorkStatus step of unknown length runs. Reduced motion stops the arc in place; the step's label and the consumer's live region carry the same fact.",
+  "motion-work-sweep":
+    "Infinite travel shown only while a WorkProgress of unknown length runs. Reduced motion parks the bar left-anchored at a third of the track, claiming no scale; the consumer's label and count carry the fact.",
   "overlay-spring-surface":
     "소비처가 감속일 때 `.overlay-fade-only` 로 **클래스를 갈아 끼운다**(GlobalSearch 실측). CSS carve-out 이 아니라 다른 경로로 이미 덮여 있다.",
   // Gateway landing (2026-08-18 remake). An endless caret blink is the same family

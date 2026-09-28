@@ -375,7 +375,7 @@ describe('the segmented control', () => {
     waitPastProgressThreshold();
     const panel = screen.getByTestId('harness-scan-progress');
     expect(panel).toHaveTextContent('세는 중');
-    expect(panel.querySelector('.harness-scan-sweep')).not.toBeNull();
+    expect(panel.querySelector('.motion-work-sweep')).not.toBeNull();
     expect(panel.textContent).not.toMatch(/%/);
   });
 });
