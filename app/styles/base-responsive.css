@@ -201,9 +201,9 @@
   /*
    * `<lg` (BottomTabBar display zone) data sheet max-height — subtract reservation
    * for bottom fixed tab bar (56px + safe-area) to remove underlap (responsive audit rank3).
-   * At lg(1024)+, the tab bar is `lg:hidden`, so the previous 8px margin remains.
+   * Match `lg:hidden` in rem so enlarged default text keeps the same reservation.
    */
-  @media (max-width: 1023px) {
+  @media (width < 64rem) {
     :root {
       --map-panel-bottom-reserve: calc(
         var(--topology-mobile-bottom-tab-reserve) + 8px

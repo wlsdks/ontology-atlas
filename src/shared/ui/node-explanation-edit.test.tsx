@@ -93,4 +93,19 @@ describe("NodeExplanationEdit", () => {
     fireEvent.keyDown(ta, { key: "Enter", metaKey: true });
     await waitFor(() => expect(onSave).toHaveBeenCalled());
   });
+
+  it("consumes editor Escape and returns focus without closing its containing detail", () => {
+    const close = vi.fn();
+    const save = vi.fn();
+    render(<div onKeyDown={close}><NodeExplanationEdit value="old" onSave={save} labels={labels}/></div>);
+    fireEvent.click(screen.getByTestId("node-explanation-edit-button"));
+    fireEvent.change(screen.getByTestId("node-explanation-input"), {target:{value:"unsaved"}});
+    fireEvent.keyDown(screen.getByTestId("node-explanation-input"), {key:"Escape",isComposing:true});
+    expect(screen.getByTestId("node-explanation-input")).toHaveValue("unsaved");
+    fireEvent.keyDown(screen.getByTestId("node-explanation-input"), {key:"Escape"});
+    expect(close).not.toHaveBeenCalled();
+    expect(save).not.toHaveBeenCalled();
+    expect(screen.getByTestId("node-explanation-read")).toHaveTextContent("old");
+    expect(screen.getByTestId("node-explanation-edit-button")).toHaveFocus();
+  });
 });

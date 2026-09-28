@@ -72,15 +72,16 @@ export function FullDetailA1ReachPanel({
   const maxCount = topRows.reduce((max, row) => Math.max(max, row.count), 0) || 1;
 
   return (
-    <section data-fulldetail-reach className={className}>
-      <p className="max-w-[var(--measure-doc-column)] text-body-lg leading-prose tracking-[var(--tracking-title)] text-[color:var(--map-panel-text-secondary)]">
+    <section data-fulldetail-reach className={["border-y border-[color:var(--map-panel-border)] py-4", className ?? ""].join(" ")}>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-body-lg leading-prose tracking-[var(--tracking-title)] text-[color:var(--map-panel-text-secondary)]">
+        <span className="inline-flex items-center gap-2">
         {labels.leadIn}{" "}
         {/*
          * `SegmentedControl`: an exclusive choice whose well draws the affordance at rest;
          * inline-flex keeps it in the sentence, with roving tabindex and the coarse-pointer touch
          * floor.
          */}
-        <span data-fulldetail-reach-steps className="mx-1.5 align-middle">
+        <span data-fulldetail-reach-steps className="inline-flex">
           <SegmentedControl<FullDetailReachDepth>
             ariaLabel={labels.stepsAria}
             value={step}
@@ -92,18 +93,21 @@ export function FullDetailA1ReachPanel({
             onChange={onChangeStep}
             size="md"
           />
-        </span>{" "}
+        </span>
+        </span>
+        <p className="min-w-0 max-w-[var(--measure-doc-column)]">
         {labels.stepUnit} {labels.afterSteps}{" "}
         <span className="font-mono text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]">
           {labels.ofTotal(atDepth.reachableCount, reach.totalNodes)}
         </span>
         {" — "}
         {buildMostlyText(topRows, labels)}
-      </p>
+        </p>
+      </div>
       {topRows.length > 0 ? (
         <div
           data-fulldetail-domain-bars
-          className="mt-3.5 grid max-w-[var(--measure-stage-column)] grid-cols-[170px_1fr_44px] items-center gap-x-3.5 gap-y-1.5"
+          className="mt-3.5 grid max-w-[var(--measure-stage-column)] grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto] sm:grid-cols-[170px_1fr_44px] items-center gap-x-3.5 gap-y-1.5"
         >
           {topRows.map((row) => (
             <DomainBarRow

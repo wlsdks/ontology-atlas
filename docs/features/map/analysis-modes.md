@@ -24,6 +24,12 @@ inspector. Project/domain containment extends the selection scope; it does not
 assert impact. The app previews the bound code folder before an explicit local
 read. No Jev request, agent turn, acceptance or ontology write occurs.
 
+If the app has no content grant for that connected source, the inspector names
+the folder and opens the existing native picker on request. Cancel keeps the
+refusal. The native re-preview checks the same binding digest and exact canonical
+root; another folder cannot replace the binding. A matching choice returns to
+the preview, and inspection still requires its separate action.
+
 Three initial signals are advisory: a production static value reference between
 uniquely mapped concept files absent from the dependency graph; a cited file
 changed after its concept document with a recorded dependent; and authored
@@ -49,7 +55,10 @@ argument or new MCP write authority.
 
 A snapshot binds the source-content fingerprint, graph digest, full Markdown
 digest and exact project binding. Collection checks the version again; opening
-a captured source or copying/preparing a packet rechecks it. Each source excerpt
+a captured source or copying/preparing a packet rechecks it. If that check finds
+changed evidence, the recovery notice is brought into view and focused, with the
+reinspection action next in the keyboard order. Each candidate controls its own
+detail region, including several observations from the same concept. Each source excerpt
 has real lines and a full-file SHA256. Packets carry bounded current bodies and
 explicit truncation/full-read instructions. Conversation preparation only seats
 an editable draft; sending and permission decisions retain their existing rules.

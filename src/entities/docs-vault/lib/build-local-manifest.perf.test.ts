@@ -146,7 +146,7 @@ describe('manifest build at scale', () => {
         `display_ko: 표시 이름 번호 ${i} 입니다`,
         '---',
         '',
-        `# 머리말 ${i}`,
+        `# 문서 제목 번호 ${i} 입니다`,
         '',
         `첫 문단이 [[other-${i}|다른 문서 ${i} 로 가는 링크]] 를 담고 있습니다.`,
         '',
@@ -157,9 +157,13 @@ describe('manifest build at scale', () => {
       gc();
       const before = process.memoryUsage().heapUsed;
       const built = await buildLocalManifest(makeFlatRoot(count, read(pad)));
+      expect(built.manifest.docs.length).toBe(count);
+      for (const doc of built.manifest.docs) {
+        const i = Number(doc.slug.replace('n-', ''));
+        expect(doc.definitionPreview).toBe(`첫 문단이 [[other-${i}|다른 문서 ${i} 로 가는 링크]] 를 담고 있습니다.`);
+      }
       gc();
       const after = process.memoryUsage().heapUsed;
-      expect(built.manifest.docs.length).toBe(count);
       return after - before;
     };
 

@@ -47,7 +47,7 @@
   "followUp": "이 버전에서 추가 분석",
   "loadOlder": "이전 기록 더 보기",
   "recordProblems": "읽지 못한 기록 {count}개",
-  "definitionMissing": "아직 이 개념의 정의가 기록되지 않았어요.",
+  "definitionMissing": "정의 요약을 바로 표시할 수 없어요.",
   "openDefinition": "정의와 경계 읽기",
   "kindCriteria": "각 종류에는 무엇을 담나요?",
   "relations": "이 연결은 어떤 뜻인가요?",

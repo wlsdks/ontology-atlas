@@ -46,6 +46,11 @@ pub(crate) struct BoundSource {
     pub binding_digest: String,
 }
 pub(crate) fn resolve_binding(vault: &Path, project: &str) -> Result<BoundSource, String> {
+    let binding = resolve_binding_metadata(vault, project)?;
+    crate::canonical_root(&binding.root.to_string_lossy())?;
+    Ok(binding)
+}
+pub(crate) fn resolve_binding_metadata(vault: &Path, project: &str) -> Result<BoundSource, String> {
     let text = read_text(vault, Path::new(".ontology-atlas/project-sources.json"))?;
     let data: Value = serde_json::from_str(&text).map_err(|_| "binding_invalid")?;
     binding_from_value(&data, project)
@@ -90,8 +95,15 @@ fn binding_from_value(data: &Value, project: &str) -> Result<BoundSource, String
     {
         return Err("binding_invalid".into());
     }
+    let root = fs::canonicalize(root).map_err(|_| "source_unavailable")?;
+    if !root.is_dir() {
+        return Err("source_unavailable".into());
+    }
+    if crate::source_digest(&[kind.as_bytes(), root.to_string_lossy().as_bytes()]) != source_id {
+        return Err("binding_identity_changed".into());
+    }
     Ok(BoundSource {
-        root: crate::canonical_root(root)?,
+        root,
         source_id: source_id.into(),
         kind: kind.into(),
         binding_digest: digest(

@@ -87,6 +87,10 @@ your-repo/
 3. **Ask for context** — `query_ontology` with `operation: "agent_brief"` gives the agent a bounded brief for its task.
 4. **Review the meaning** — proposed changes arrive as Markdown diffs; you keep, correct, or reject them in Git.
 
+Definition previews preserve complete introductory text; the full document retains
+exclusions and uncertainties. [Local code inspections](docs/features/map/analysis-modes.md)
+show the connected folder and offer native permission recovery before reading.
+
 ```console
 $ node $ATLAS blast-radius capabilities/mcp-tool-server docs/ontology --depth 2
 capabilities/mcp-tool-server — blast radius (depth 2, incoming)

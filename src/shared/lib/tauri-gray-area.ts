@@ -65,7 +65,15 @@ export async function checkGrayAreaEvidence(vaultPath: string, snapshot: GrayAre
 }
 
 export interface GrayAreaScopePreview { projectSlug: string; sourcePath: string; sourceId: string; bindingDigest: string; maxFiles: number }
-export async function previewGrayAreaScope(vaultPath:string,projectSlug:string):Promise<GrayAreaScopePreview|null>{
+export interface GrayAreaSourceAccessRequired { code: 'source-root-not-granted'; sourcePath: string; bindingDigest: string }
+export function grayAreaSourceAccessRequired(error: unknown): GrayAreaSourceAccessRequired | null {
+  if (!error || typeof error !== 'object') return null;
+  const value = error as Partial<GrayAreaSourceAccessRequired>;
+  return value.code === 'source-root-not-granted' && typeof value.sourcePath === 'string' && value.sourcePath.startsWith('/')
+    && typeof value.bindingDigest === 'string' && /^sha256:[a-f0-9]{64}$/.test(value.bindingDigest)
+    ? value as GrayAreaSourceAccessRequired : null;
+}
+export async function previewGrayAreaScope(vaultPath:string,projectSlug:string,recovery?:{selectedSourcePath:string;expectedBindingDigest:string}):Promise<GrayAreaScopePreview|null>{
   if(!isTauri())return null;
-  return invoke<GrayAreaScopePreview>('preview_gray_area_scope',{vaultPath,projectSlug});
+  return invoke<GrayAreaScopePreview>('preview_gray_area_scope',{vaultPath,projectSlug,...recovery});
 }

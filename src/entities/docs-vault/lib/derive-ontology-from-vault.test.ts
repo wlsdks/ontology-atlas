@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { buildLocalManifest } from './build-local-manifest';
 import { deriveOntologyFromVault } from './derive-ontology-from-vault';
 import type { VaultDoc, VaultManifest } from '../model/types';
 
@@ -572,5 +573,40 @@ describe("element display names from code paths", () => {
     }
     // One derived node per relation key, singular `domain` included.
     expect(result.nodes.filter((n) => !n.hasOwnDocument)).toHaveLength(8);
+  });
+});
+
+
+describe('authored definition projection through the local manifest', () => {
+  const intro = 'Retries a failed read, but does not persist a report.';
+  const boundaries = '\n\n## Includes\nRetrying reads.\n\n## Excludes\nPersisting a report.\n\n## Uncertainty\nThe retry limit is unknown.';
+  const cases = [
+    { name: 'inline-pipe-qualification', metadata: '', body: 'Retry dispatch may write reports\nonly for `ReadRequest | WriteRequest` with explicit approval.', expected: 'Retry dispatch may write reports only for `ReadRequest | WriteRequest` with explicit approval.' },
+    { name: 'indented-qualification', metadata: '', body: 'Retry dispatch may write reports\n    only with explicit approval.', expected: 'Retry dispatch may write reports only with explicit approval.' },
+    { name: 'tabbed-qualification', metadata: '', body: 'Retry dispatch may write reports\n\tonly with explicit approval.', expected: 'Retry dispatch may write reports only with explicit approval.' },
+    { name: 'intro', metadata: '', body: intro + boundaries, expected: intro },
+    { name: 'empty', metadata: 'description: ""\n', body: intro, expected: intro },
+    { name: 'blank', metadata: 'description: "   "\n', body: intro, expected: intro },
+    { name: 'authored', metadata: `description: "  ${'Authored qualification. '.repeat(20)}  "\n`, body: intro, expected: 'Authored qualification. '.repeat(20).trim() },
+    { name: 'title', metadata: '', body: '# Retry\n\n' + intro + boundaries, expected: intro },
+    { name: 'display', metadata: 'display_ko: 재시도\n', body: '# 재시도\n\n다시 읽지만\n보고서를 저장하지 않는다.' + boundaries, expected: '다시 읽지만 보고서를 저장하지 않는다.' },
+    { name: 'section', metadata: '', body: '## Excludes\nPersisting a report.', expected: undefined },
+    { name: 'misleading', metadata: '', body: '# Excludes\nPersisting a report.', expected: undefined },
+    { name: 'inferred-title', metadata: '', body: '# Excludes\nPersisting a report.', expected: undefined, omitTitle: true },
+    { name: 'list', metadata: '', body: '- Persisting a report.', expected: undefined },
+    { name: 'long', metadata: '', body: 'A retry is allowed. '.repeat(20) + 'But this is uncertain.', expected: undefined },
+  ];
+  it.each(cases)('preserves definition eligibility for $name', async ({ name, metadata, body, expected, omitTitle }) => {
+    const raw = `---\nkind: capability\n${omitTitle ? '' : 'title: Retry\n'}${metadata}---\n${body}`;
+    const file = { kind: 'file', name: `${name}.md`, getFile: async () => ({ text: async () => raw, lastModified: 1 }) };
+    const root = { kind: 'directory', name: 'Definitions', entries: async function* () { yield [file.name, file]; } } as unknown as FileSystemDirectoryHandle;
+    const { manifest } = await buildLocalManifest(root);
+    const result = deriveOntologyFromVault(manifest);
+    expect(result.nodes).toHaveLength(1);
+    expect(result.nodes[0].summary).toBe(expected);
+    if (name === 'intro') {
+      expect(manifest.docs[0].excerpt).toContain('Persisting a report.');
+      expect(await (await file.getFile()).text()).toContain('## Excludes\nPersisting a report.');
+    }
   });
 });

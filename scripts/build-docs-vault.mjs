@@ -367,6 +367,41 @@ function extractHeadings(body) {
   return out;
 }
 
+function buildDefinitionPreview(
+  body,
+  frontmatter,
+  max = 320,
+) {
+  const titles = Object.entries(frontmatter)
+    .filter(([key, value]) => (key === 'title' || key.startsWith('display_')) && typeof value === 'string')
+    .map(([, value]) => value.trim());
+  const lines = body.split(/\r?\n/);
+  let index = 0;
+  while (index < lines.length && !lines[index].trim()) index += 1;
+  const heading = lines[index]?.match(/^ {0,3}#\s+(.+?)(?:\s+#+)?\s*$/);
+  if (heading && titles.includes(heading[1].trim())) {
+    index += 1;
+    while (index < lines.length && !lines[index].trim()) index += 1;
+  }
+  const paragraph = [];
+  for (; index < lines.length; index += 1) {
+    const line = lines[index];
+    const trimmed = line.trim();
+    if (!trimmed) break;
+    if (/^(?:=+|-+)\s*$/.test(trimmed) || /^\|?\s*:?-{3,}/.test(trimmed)) return undefined;
+    if (/^(?: {4}|\t)/.test(line)) {
+      if (!paragraph.length) return undefined;
+      paragraph.push(trimmed);
+      continue;
+    }
+    if (/^(?:\||<|!\[|\[[^\]]+\]:)/.test(trimmed)) return undefined;
+    if (/^(?:#{1,6}(?:\s|$)|>|`{3,}|~{3,}|[-+*]\s|\d+[.)]\s|(?:\*\s*){3,}$|(?:_\s*){3,}$)/.test(trimmed)) break;
+    paragraph.push(trimmed);
+  }
+  const preview = paragraph.join(' ').replace(/\s+/g, ' ').trim();
+  return preview && preview.length <= max ? preview : undefined;
+}
+
 function buildExcerpt(body) {
   // Kept in sync with src/shared/lib/parse-frontmatter.ts buildExcerpt. Strip
   // markdown table separator/hr rows and turn cell pipes into middot separators
@@ -892,6 +927,7 @@ export async function scanVaultDir(
       ...(diagnostics && diagnostics.length > 0 ? { diagnostics } : {}),
       headings,
       excerpt: buildExcerpt(body),
+      definitionPreview: buildDefinitionPreview(body, frontmatter),
       // `null` is recorded, not dropped: "nobody asked" and "asked and clean" must not
       // read the same downstream.
       ...(meaningCodes === undefined ? {} : { meaningFindings: meaningCodes }),
