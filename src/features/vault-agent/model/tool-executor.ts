@@ -557,6 +557,8 @@ export function createToolExecutor(port: VaultReadPort) {
       }
 
       case 'validate_vault': {
+        const offset = Math.max(num(args.offset) ?? 0, 0);
+        const limit = Math.min(Math.max(num(args.limit) ?? 100, 1), 500);
         const missingDomain = port.docs
           .filter((doc) => doc.kind === 'capability' || doc.kind === 'element')
           .filter((doc) => !doc.domain)
@@ -567,7 +569,7 @@ export function createToolExecutor(port: VaultReadPort) {
           .filter((ref): ref is string => Boolean(ref));
         const packed = pack({
           missingExpectedField: { domain: missingDomain },
-          referencedWithoutDocument: danglingRefs.slice(0, 100),
+          referencedWithoutDocument: danglingRefs.slice(offset, offset + limit),
           referencedWithoutDocumentTotal: danglingRefs.length,
         });
         return {

@@ -199,6 +199,21 @@ describe('tool-executor reads', () => {
     expect(payload.conceptsIncludingReferenced).toBe(3);
   });
 
+  it('validate_vault pages the names referenced without a document', async () => {
+    const execute = createToolExecutor(
+      makePort({
+        nodes: ['a', 'b', 'c'].map((name) =>
+          node(`capability:${name}`, { hasOwnDocument: false, ref: `capabilities/${name}` }),
+        ),
+      }),
+    );
+    const payload = JSON.parse(
+      (await execute(call('validate_vault', { offset: 1, limit: 1 }))).content,
+    ) as { referencedWithoutDocument: string[]; referencedWithoutDocumentTotal: number };
+    expect(payload.referencedWithoutDocument).toEqual(['capabilities/b']);
+    expect(payload.referencedWithoutDocumentTotal).toBe(3);
+  });
+
   it('list_concepts keeps deterministic slug order and offset pagination', async () => {
     const execute = createToolExecutor(
       makePort({
