@@ -39,6 +39,7 @@
   "historyEmpty": "No steps saved yet",
   "hashCopy": "Copy the full id ({hash})",
   "diffEmpty": "This is a new document, so there's nothing earlier to compare.",
+  "diffTooLarge": "This change is too large to show line by line.",
   "webSummaryTitle": "Changed this time",
   "webNodesAdded": "{count} concept(s) added",
   "webNodesChanged": "{count} concept(s) edited",

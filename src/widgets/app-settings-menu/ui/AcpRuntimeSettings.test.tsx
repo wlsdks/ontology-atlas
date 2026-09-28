@@ -525,7 +525,7 @@ describe('runtime list: render first, verify later', () => {
 
     fireEvent.click(screen.getByTestId('app-settings-runtimes-recheck'));
     await waitFor(() => expect(bridge.detect).toHaveBeenCalled());
-    expect(bridge.detect.mock.calls[0][0]?.probeLogin).toBe(true);
+    expect(bridge.detect.mock.calls[0][0]).toEqual({ probeLogin: true, force: true });
   });
 
   // A failed check under load is not a logged-out tool.

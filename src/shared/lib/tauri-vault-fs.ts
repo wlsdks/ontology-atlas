@@ -12,10 +12,8 @@ interface TauriTextFile {
   lastModified: number;
 }
 
-interface TauriBinaryFile {
-  bytes: number[];
-  lastModified: number;
-}
+/** Raw bytes follow a little-endian u64 mtime. */
+const BINARY_FILE_STAMP_BYTES = 8;
 
 export interface ProjectSourceInspection {
   rootPath: string;
@@ -113,13 +111,13 @@ class TauriFileHandle {
         lastModified: file.lastModified,
       });
     }
-    const file = await this.invoke<TauriBinaryFile>('read_vault_binary_file', {
+    const stamped = await this.invoke<ArrayBuffer>('read_vault_binary_file', {
       rootPath: this.rootPath,
       relativePath: this.relativePath,
     });
-    return new File([new Uint8Array(file.bytes)], this.name, {
+    return new File([new Uint8Array(stamped, BINARY_FILE_STAMP_BYTES)], this.name, {
       type: mimeForPath(this.relativePath),
-      lastModified: file.lastModified,
+      lastModified: Number(new DataView(stamped).getBigUint64(0, true)),
     });
   }
 
@@ -170,9 +168,8 @@ export async function nativeVaultFingerprint(
  *
  * The web has no equivalent and returns `null`: a browser hashes the same bytes with
  * `crypto.subtle`, which is not a degradation, only a different place to do the work.
- * The bridge exists because `read_vault_binary_file` hands the WebView a JSON array of
- * bytes — hashing a 20 MB scan that way would move 20 million numbers across IPC to
- * produce 64 characters. Same reasoning as `vault_fingerprint`.
+ * The bridge exists so a 20 MB scan is not carried across IPC to produce 64 characters.
+ * Same reasoning as `vault_fingerprint`.
  */
 export async function nativeVaultFileHashes(
   rootPath: string,
@@ -530,6 +527,17 @@ export async function readTauriVaultText(
   if (!invoke) return null;
   const file = await invoke<TauriTextFile>('read_vault_text_file', { rootPath, relativePath });
   return file.text;
+}
+
+/** The last `maxLines` lines; `null` without the bridge. */
+export async function readTauriVaultTextTail(
+  rootPath: string,
+  relativePath: string,
+  maxLines: number,
+): Promise<string | null> {
+  const invoke = getInvoke();
+  if (!invoke) return null;
+  return invoke<string>('read_vault_text_tail', { rootPath, relativePath, maxLines });
 }
 
 /**
