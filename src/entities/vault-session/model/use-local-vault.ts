@@ -4,6 +4,7 @@ import { type AgentClientId, filesForClient } from '../lib/agent-clients';
 import { WIKI_PAGE_TEMPLATE } from '@/shared/lib/wiki-page-schema';
 import { countVaultContents, type VaultShape } from '@/shared/lib/vault-shape';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useLatestRef } from '@/shared/lib/use-latest-ref';
 import { parseAgentActivityLog, type AgentActivityEntry } from '@/shared/lib/agent-activity-log';
 import {
   ACP_WORK_RECEIPT_FILE,
@@ -1019,6 +1020,7 @@ export function useLocalVaultInternal() {
   // Always start 'idle' and let a mount effect switch to 'unsupported' when FSA is
   // missing — one frame looks supported, but the hydration error is gone.
   const [state, setState] = useState<State>(() => emptyState('idle'));
+  const stateRef = useLatestRef(state);
   const [restoreAttempted, setRestoreAttempted] = useState(false);
   /**
    * **The launch stopped at the chooser on purpose**, because two or more folders are known
@@ -1287,7 +1289,7 @@ export function useLocalVaultInternal() {
     // restored whole. Inferring 'loaded' from the mere presence of a `handle` makes a cancel
     // during permission-needed wake a spurious auto-refresh that surfaces a raw OS error
     // from a stale path.
-    const previousState = state;
+    const previousState = stateRef.current;
     setState((s) => ({
       ...s,
       status: 'opening',
@@ -1373,7 +1375,7 @@ export function useLocalVaultInternal() {
       }));
       return NOT_OPENED;
     }
-  }, [load, refreshRecentVaults, state]);
+  }, [load, refreshRecentVaults, stateRef]);
 
   /** Reopens a known folder; `options.starter` as in `open`. */
   const openRecent = useCallback(
@@ -1466,8 +1468,8 @@ export function useLocalVaultInternal() {
    * accurate. A failure to compute the fingerprint falls back safely to a full rebuild.
    */
   const refresh = useCallback(async () => {
-    if (!state.handle) return;
-    const handle = state.handle;
+    const handle = stateRef.current.handle;
+    if (!handle) return;
     try {
       /*
        * Take the fingerprint **and the stamps behind it**. Previously only the fingerprint was
@@ -1492,7 +1494,7 @@ export function useLocalVaultInternal() {
       // A leftover stamp map reused by the next call would judge against a stale mtime.
       pendingStampsRef.current = null;
     }
-  }, [state.handle, load]);
+  }, [stateRef, load]);
 
   // Auto-refresh when the tab regains focus, so editing in an IDE and coming back rescans
   // by itself. Debounced by 2 s against duplicate calls. The fingerprint is compared first
@@ -1508,9 +1510,10 @@ export function useLocalVaultInternal() {
   }, [load]);
   // Returns true when a change was detected (a reload was triggered) — drives
   // the adaptive poll cadence (burst after a change, idle when quiet).
+  const loadedHandle = state.status === 'loaded' ? state.handle : null;
   const syncWithDisk = useCallback(async (): Promise<boolean> => {
-    if (state.status !== 'loaded' || !state.handle) return false;
-    const handle = state.handle;
+    if (!loadedHandle) return false;
+    const handle = loadedHandle;
     let nativeStamps: VaultStampIndex | null = null;
     try {
       const { fingerprint: fp, nativeStamps: stamps } =
@@ -1544,9 +1547,9 @@ export function useLocalVaultInternal() {
       if (pendingStampsRef.current === nativeStamps) pendingStampsRef.current = null;
     });
     return true;
-  }, [state.status, state.handle]);
+  }, [loadedHandle]);
   useEffect(() => {
-    if (state.status !== 'loaded' || !state.handle) return;
+    if (!loadedHandle) return;
     const tracker = autoRefreshRef.current;
     const fire = () => {
       const now = Date.now();
@@ -1591,7 +1594,7 @@ export function useLocalVaultInternal() {
         tracker.timer = null;
       }
     };
-  }, [state.status, state.handle, syncWithDisk]);
+  }, [loadedHandle, syncWithDisk]);
 
   const freshHeartbeatAt = state.agentActivityStatus.stale
     ? null
@@ -1605,14 +1608,15 @@ export function useLocalVaultInternal() {
   }, [freshHeartbeatAt, syncWithDisk]);
 
   const requestPermission = useCallback(async () => {
-    if (!state.handle) return;
-    const result = await verifyRead(state.handle, true);
+    const handle = stateRef.current.handle;
+    if (!handle) return;
+    const result = await verifyRead(handle, true);
     if (result === 'granted') {
-      await load(state.handle);
+      await load(handle);
     } else {
       setState((s) => ({ ...s, status: 'permission-needed' }));
     }
-  }, [state.handle, load]);
+  }, [stateRef, load]);
 
   /**
    * Walks a slash path from the root handle (creating as requested) and returns the parent
@@ -1620,19 +1624,20 @@ export function useLocalVaultInternal() {
    */
   const getParentAndName = useCallback(
     async (
+      root: FileSystemDirectoryHandle | null,
       slug: string,
       createIntermediate: boolean,
     ): Promise<{
       parent: FileSystemDirectoryHandle;
       fileName: string;
     } | null> => {
-      if (!state.handle) return null;
+      if (!root) return null;
       // Readwrite permission, secured here because this runs only on write paths.
-      await requireWritePermission(state.handle);
+      await requireWritePermission(root);
       const parts = slug.split('/').filter(Boolean);
       if (parts.length === 0) throw new Error('Empty slug');
       const fileName = `${parts[parts.length - 1]}.md`;
-      let parent: FileSystemDirectoryHandle = state.handle;
+      let parent: FileSystemDirectoryHandle = root;
       for (let i = 0; i < parts.length - 1; i += 1) {
         parent = await parent.getDirectoryHandle(parts[i], {
           create: createIntermediate,
@@ -1640,7 +1645,20 @@ export function useLocalVaultInternal() {
       }
       return { parent, fileName };
     },
-    [state.handle, requireWritePermission],
+    [requireWritePermission],
+  );
+
+  const openFolderHandle = state.handle;
+  const openState = useCallback(() => {
+    const live = stateRef.current;
+    if (live.handle !== openFolderHandle) throw new Error('The folder this action was made for is no longer open');
+    return live;
+  }, [stateRef, openFolderHandle]);
+  const reloadIfOpen = useCallback(
+    async (handle: FileSystemDirectoryHandle | null) => {
+      if (handle && stateRef.current.handle === handle) await load(handle);
+    },
+    [stateRef, load],
   );
 
   /**
@@ -1737,21 +1755,22 @@ export function useLocalVaultInternal() {
       content: string,
       options: { expectedMtime?: number } = {},
     ) => {
-      const fh = state.fileHandles.get(slug);
+      const live = openState();
+      const fh = live.fileHandles.get(slug);
       if (!fh) throw new Error(`Local vault: no file handle for "${slug}"`);
       await requireWritePermission(fh);
       const file = await fh.getFile();
       guardExpectedMtime(slug, options.expectedMtime, file.lastModified);
       assertIdentityTransition(await file.text(), content);
-      assertNodeIdentityContent(slug, content, state.manifest?.docs ?? []);
+      assertNodeIdentityContent(slug, content, live.manifest?.docs ?? []);
       const writable = await fh.createWritable();
       await writable.write(content);
       await writable.close();
       markSelfWrite(slug);
       // Rescan the whole manifest after a successful save so backlinks and headings follow.
-      if (state.handle) await load(state.handle);
+      await reloadIfOpen(live.handle);
     },
-    [state.fileHandles, state.handle, state.manifest, load, requireWritePermission, markSelfWrite, guardExpectedMtime],
+    [openState, reloadIfOpen, requireWritePermission, markSelfWrite, guardExpectedMtime],
   );
 
   /**
@@ -1760,11 +1779,12 @@ export function useLocalVaultInternal() {
    */
   const createDoc = useCallback(
     async (slug: string, content: string, opts: { skipRefresh?: boolean } = {}) => {
-      if (state.fileHandles.has(slug)) {
+      const live = openState();
+      if (live.fileHandles.has(slug)) {
         throw new Error(`Document already exists: "${slug}"`);
       }
-      assertNodeIdentityContent(slug, content, state.manifest?.docs ?? []);
-      const resolved = await getParentAndName(slug, true);
+      assertNodeIdentityContent(slug, content, live.manifest?.docs ?? []);
+      const resolved = await getParentAndName(live.handle, slug, true);
       if (!resolved) throw new Error('Vault is not open');
       try {
         await resolved.parent.getFileHandle(resolved.fileName);
@@ -1786,9 +1806,9 @@ export function useLocalVaultInternal() {
       markSelfWrite(slug);
       // `opts.skipRefresh` lets a caller that creates several documents in a row (bootstrap)
       // reload only on the last write — same contract as `updateFrontmatter`.
-      if (!opts.skipRefresh && state.handle) await load(state.handle);
+      if (!opts.skipRefresh) await reloadIfOpen(live.handle);
     },
-    [state.fileHandles, state.handle, state.manifest, getParentAndName, load, markSelfWrite],
+    [openState, getParentAndName, reloadIfOpen, markSelfWrite],
   );
 
   /**
@@ -1802,18 +1822,19 @@ export function useLocalVaultInternal() {
    */
   const deleteDoc = useCallback(
     async (slug: string, options: { expectedMtime?: number } = {}) => {
+      const live = openState();
       if (typeof options.expectedMtime === 'number') {
-        const fh = state.fileHandles.get(slug);
+        const fh = live.fileHandles.get(slug);
         if (!fh) throw new Error(`Local vault: no file handle for "${slug}"`);
         const file = await fh.getFile();
         guardExpectedMtime(slug, options.expectedMtime, file.lastModified);
       }
-      const resolved = await getParentAndName(slug, false);
+      const resolved = await getParentAndName(live.handle, slug, false);
       if (!resolved) throw new Error('Vault is not open');
       await resolved.parent.removeEntry(resolved.fileName);
-      if (state.handle) await load(state.handle);
+      await reloadIfOpen(live.handle);
     },
-    [state.fileHandles, state.handle, getParentAndName, load, guardExpectedMtime],
+    [openState, getParentAndName, reloadIfOpen, guardExpectedMtime],
   );
 
   /**
@@ -1836,7 +1857,8 @@ export function useLocalVaultInternal() {
       updates: Record<string, FrontmatterUpdateValue>,
       opts: { skipRefresh?: boolean; expectedMtime?: number; rewriteBacklinks?: boolean } = {},
     ): Promise<ReferrerRewriteReport> => {
-      const fh = state.fileHandles.get(slug);
+      const live = openState();
+      const fh = live.fileHandles.get(slug);
       if (!fh) throw new Error(`Local vault: no file handle for "${slug}"`);
       await requireWritePermission(fh);
       const file = await fh.getFile();
@@ -1844,7 +1866,7 @@ export function useLocalVaultInternal() {
       const raw = await file.text();
       assertIdentityPatch(raw, updates);
       const next = applyFrontmatterUpdates(raw, updates);
-      assertNodeIdentityContent(slug, next, state.manifest?.docs ?? []);
+      assertNodeIdentityContent(slug, next, live.manifest?.docs ?? []);
       if (next === raw) return EMPTY_REFERRER_REPORT; // nothing changed
       const newKind = opts.rewriteBacklinks ? kindChangeOf(raw, updates) : null;
       const writable = await fh.createWritable();
@@ -1852,20 +1874,20 @@ export function useLocalVaultInternal() {
       await writable.close();
       markSelfWrite(slug);
       const report =
-        newKind && state.manifest
+        newKind && live.manifest
           ? await rewriteReferrerFiles({
-              docs: state.manifest.docs,
-              fileHandles: state.fileHandles,
+              docs: live.manifest.docs,
+              fileHandles: live.fileHandles,
               oldSlug: slug,
               newSlug: slug,
               newKind,
               markSelfWrite,
             })
           : EMPTY_REFERRER_REPORT;
-      if (!opts.skipRefresh && state.handle) await load(state.handle);
+      if (!opts.skipRefresh) await reloadIfOpen(live.handle);
       return report;
     },
-    [state.fileHandles, state.handle, state.manifest, load, requireWritePermission, markSelfWrite, guardExpectedMtime],
+    [openState, reloadIfOpen, requireWritePermission, markSelfWrite, guardExpectedMtime],
   );
 
   const updateFrontmatter = useCallback(
@@ -1925,6 +1947,7 @@ export function useLocalVaultInternal() {
         frontmatterUpdates?: Record<string, FrontmatterUpdateValue>;
       } = {},
     ): Promise<ReferrerRewriteReport> => {
+      const live = openState();
       if (oldSlug === newSlug) return EMPTY_REFERRER_REPORT;
       /*
        * ⚠️ **Names that differ only in case are the same file** (review 2026-08-16 — reproduced
@@ -1940,10 +1963,10 @@ export function useLocalVaultInternal() {
       if (oldSlug.toLowerCase() === newSlug.toLowerCase()) {
         throw new Error(`Case-only rename is not supported: "${oldSlug}" → "${newSlug}"`);
       }
-      if (state.fileHandles.has(newSlug)) {
+      if (live.fileHandles.has(newSlug)) {
         throw new Error(`Document already exists: "${newSlug}"`);
       }
-      const oldFh = state.fileHandles.get(oldSlug);
+      const oldFh = live.fileHandles.get(oldSlug);
       if (!oldFh) throw new Error(`Local vault: no file handle for "${oldSlug}"`);
       const file = await oldFh.getFile();
       guardExpectedMtime(oldSlug, opts.expectedMtime, file.lastModified);
@@ -1954,7 +1977,7 @@ export function useLocalVaultInternal() {
         newSlug,
         updates: opts.frontmatterUpdates,
       });
-      const newResolved = await getParentAndName(newSlug, true);
+      const newResolved = await getParentAndName(live.handle, newSlug, true);
       if (!newResolved) throw new Error('Vault is not open');
       const newFh = await newResolved.parent.getFileHandle(
         newResolved.fileName,
@@ -1963,7 +1986,7 @@ export function useLocalVaultInternal() {
       const writable = await newFh.createWritable();
       await writable.write(content);
       await writable.close();
-      const oldResolved = await getParentAndName(oldSlug, false);
+      const oldResolved = await getParentAndName(live.handle, oldSlug, false);
       if (oldResolved) {
         await oldResolved.parent.removeEntry(oldResolved.fileName);
       }
@@ -1983,10 +2006,10 @@ export function useLocalVaultInternal() {
        * same-key rewrite alone left an element listed under `capabilities:`.
        */
       const report =
-        opts.rewriteBacklinks && state.manifest
+        opts.rewriteBacklinks && live.manifest
           ? await rewriteReferrerFiles({
-              docs: state.manifest.docs,
-              fileHandles: state.fileHandles,
+              docs: live.manifest.docs,
+              fileHandles: live.fileHandles,
               oldSlug,
               newSlug,
               newKind: kindChangeOf(raw, opts.frontmatterUpdates) ?? undefined,
@@ -1995,10 +2018,10 @@ export function useLocalVaultInternal() {
           : EMPTY_REFERRER_REPORT;
 
       markSelfWrite(newSlug);
-      if (state.handle) await load(state.handle);
+      await reloadIfOpen(live.handle);
       return report;
     },
-    [state.fileHandles, state.handle, state.manifest, getParentAndName, load, markSelfWrite, guardExpectedMtime],
+    [openState, getParentAndName, reloadIfOpen, markSelfWrite, guardExpectedMtime],
   );
 
   // Once on mount: try to restore the handle from IDB, and switch to 'unsupported' when the
@@ -2219,20 +2242,21 @@ export function useLocalVaultInternal() {
    * written before the folder is first shown.
    */
   const scaffoldOntology = useCallback(async (starterLocale: string, shape: VaultShape = FULL_STARTER_SHAPE) => {
-    if (!state.handle) {
+    const live = openState();
+    if (!live.handle) {
       throw new Error('Vault is not open');
     }
-    const vaultHandle = state.handle;
+    const vaultHandle = live.handle;
     await requireWritePermission(vaultHandle);
     const { markdownCreated, agentConfigCreated, created, skipped } = await writeVaultStarter(
       vaultHandle,
       starterLocale,
       shape,
-      state.fileHandles,
+      live.fileHandles,
     );
-    await load(vaultHandle);
+    await reloadIfOpen(vaultHandle);
     return { markdownCreated, agentConfigCreated, created, skipped };
-  }, [state.fileHandles, state.handle, load, requireWritePermission]);
+  }, [openState, reloadIfOpen, requireWritePermission]);
 
   /**
    * The write the "connect" button performs — it takes the client and writes **only that
@@ -2243,10 +2267,11 @@ export function useLocalVaultInternal() {
    * that label promises — two uses of one function, not one contract.
    */
   const ensureAgentConfigs = useCallback(async (client?: AgentClientId) => {
-    if (!state.handle) {
+    const live = openState();
+    if (!live.handle) {
       throw new Error('Vault is not open');
     }
-    const vaultHandle = state.handle;
+    const vaultHandle = live.handle;
     await requireWritePermission(vaultHandle);
     const launch = await resolveBundledLaunch();
     if (!launch) {
@@ -2259,9 +2284,9 @@ export function useLocalVaultInternal() {
       launch,
       client ? filesForClient(client) : undefined,
     );
-    await load(vaultHandle);
+    await reloadIfOpen(vaultHandle);
     return result;
-  }, [state.handle, load, requireWritePermission]);
+  }, [openState, reloadIfOpen, requireWritePermission]);
 
   return {
     status: state.status,

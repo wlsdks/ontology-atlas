@@ -28,6 +28,8 @@ const subscribePhone = (onChange: () => void): (() => void) => {
 };
 const readPhone = (): boolean => typeof matchMedia === 'function' && matchMedia(HERO_PHONE_MEDIA).matches;
 
+let acceleratedVerdict: boolean | null = null;
+
 /**
  * A software renderer starves the page (the headline typed 2.5× slower), so it gets the 2D
  * engine. `?hero=three` forces WebGL for the grid gate's measurement.
@@ -35,12 +37,25 @@ const readPhone = (): boolean => typeof matchMedia === 'function' && matchMedia(
 function webglAccelerated(): boolean {
   try {
     if (new URLSearchParams(window.location.search).get('hero') === 'three') return true;
+  } catch {
+    return false;
+  }
+  acceleratedVerdict ??= probeWebglAccelerated();
+  return acceleratedVerdict;
+}
+
+function probeWebglAccelerated(): boolean {
+  try {
     const c = document.createElement('canvas');
     const gl = c.getContext('webgl2') ?? c.getContext('webgl');
     if (!gl) return false;
-    const info = gl.getExtension('WEBGL_debug_renderer_info');
-    const renderer = String(info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER));
-    return !/swiftshader|llvmpipe|softpipe|software/i.test(renderer);
+    try {
+      const info = gl.getExtension('WEBGL_debug_renderer_info');
+      const renderer = String(info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER));
+      return !/swiftshader|llvmpipe|softpipe|software/i.test(renderer);
+    } finally {
+      gl.getExtension('WEBGL_lose_context')?.loseContext();
+    }
   } catch {
     return false;
   }
@@ -53,7 +68,7 @@ function webglAccelerated(): boolean {
 export function HeroAtlas({ graph, typed, total }: { graph: StageGraph; typed: number; total: number }) {
   const t = useTranslations('download');
   const tKinds = useTranslations('kinds');
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const hostRef = useRef<HTMLDivElement | null>(null);
   const handleRef = useRef<AtlasHandle | null>(null);
   const [hover, setHover] = useState<string | null>(null);
   const [mode, setMode] = useState<'pending' | 'three' | 'fallback'>('pending');
@@ -84,8 +99,8 @@ export function HeroAtlas({ graph, typed, total }: { graph: StageGraph; typed: n
 
   useEffect(() => {
     if (mode !== 'three') return;
-    const canvas = canvasRef.current;
-    if (!canvas || graph.nodes.length === 0) return;
+    const host = hostRef.current;
+    if (!host || graph.nodes.length === 0) return;
     let disposed = false;
     let handle: AtlasHandle | null = null;
     const keep = (kind: StageGraph['nodes'][number]['kind']): boolean => !phone || kind !== 'element';
@@ -93,7 +108,7 @@ export function HeroAtlas({ graph, typed, total }: { graph: StageGraph; typed: n
     void import('../lib/hero-atlas-scene').then(({ mountHeroAtlas }) => {
       if (disposed) return;
       handle = mountHeroAtlas(
-        canvas,
+        host,
         {
           nodes: graph.nodes.filter((n) => kept.has(n.id)).map((n) => ({ s: n.id, k: n.kind, l: n.label })),
           edges: graph.edges
@@ -103,11 +118,15 @@ export function HeroAtlas({ graph, typed, total }: { graph: StageGraph; typed: n
         },
         // Wide stands beside the decision block; narrow is ground under it, seen from above so the
         // type stays clear (`download-gateway-grid.spec.ts`). 210px keeps the near rim in the 352px plinth.
-        wide
-          ? { onHover: setHover, anchor: { x: 0.72, y: 0.52 }, dim: 0.9, distance: 5.2 }
-          : phone
-            ? { onHover: setHover, anchor: { x: 0.5, bottomPx: 140 }, dim: 0.75, fitPx: 300, pitch: 0.75 }
-            : { onHover: setHover, anchor: { x: 0.5, bottomPx: 210 }, dim: 0.75, fitPx: 440, pitch: 0.75 },
+        {
+          canvasClassName: 'block h-full w-full touch-pan-y',
+          onHover: setHover,
+          ...(wide
+            ? { anchor: { x: 0.72, y: 0.52 }, dim: 0.9, distance: 5.2 }
+            : phone
+              ? { anchor: { x: 0.5, bottomPx: 140 }, dim: 0.75, fitPx: 300, pitch: 0.75 }
+              : { anchor: { x: 0.5, bottomPx: 210 }, dim: 0.75, fitPx: 440, pitch: 0.75 }),
+        },
       );
       if (!handle) {
         setMode('fallback');
@@ -159,7 +178,7 @@ export function HeroAtlas({ graph, typed, total }: { graph: StageGraph; typed: n
     >
       {/* The tree stands in a still pool of accent light, not on black. */}
       <div className={cn('gateway-hero-atlas-wash absolute inset-0', wide ? 'is-wide' : undefined)} />
-      <canvas ref={canvasRef} className="absolute inset-0 h-full w-full touch-pan-y" />
+      <div ref={hostRef} className="absolute inset-0" />
       <p
         data-testid="gateway-hero-caption"
         className={cn(

@@ -235,6 +235,8 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     vault, selectedOntologyNode, ontologyInsight, recentChanges, docFreshnessIndex, docFileDateIndex, docDatesReading,
     updatedAgoNowMs, spotlightOn, changedSlugs, dustySlugs, deeplinkSourceReady, handoffSource, vaultIdentity
   } = topologyVaultReadModel;
+  const vaultStatus = vault.status;
+  const openVault = vault.open;
   // `AppNavRail` lives in the layout, so this page registers its settings node
   // through `useNavRailSettingsSlot`. The memo sits after `vault` and `ontologyChangeset`, which
   // the history tile reads.
@@ -243,7 +245,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
       <>
         {/* Map-only screen state enters the single settings sheet through `screenControls`. */}
         <AppSettingsMenu
-          mode={vault.status === 'loaded' ? 'local' : 'static'}
+          mode={vaultStatus === 'loaded' ? 'local' : 'static'}
           triggerVariant="rail-tile"
           screenControls={{
             audiencePlain,
@@ -259,7 +261,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
       handleChangeIndexDefaultCollapsed,
       audiencePlain,
       setAudiencePlain,
-      vault.status,
+      vaultStatus,
     ],
   );
   useNavRailSettingsSlot(navRailSettingsSlot);
@@ -268,15 +270,15 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   const sampleModeSettled = useFirstRunSampleModeSettled();
   // Without File System Access the pill and ⌘O open the same sheet in its unsupported mode,
   // instead of silently doing nothing.
-  const fsaUnsupported = vault.status === "unsupported";
+  const fsaUnsupported = vaultStatus === "unsupported";
   const [unsupportedGuideOpen, setUnsupportedGuideOpen] = useState(false);
   const requestVaultOpen = useCallback(() => {
     if (fsaUnsupported) {
       setUnsupportedGuideOpen(true);
       return;
     }
-    void vault.open();
-  }, [fsaUnsupported, vault, setUnsupportedGuideOpen]);
+    void openVault();
+  }, [fsaUnsupported, openVault, setUnsupportedGuideOpen]);
   // Accepts both the sample and a real folder settling (`use-auto-start-ready.ts`).
   const tourAutoStartReady = useGuidedTourAutoStartReady();
   const topologyAuthoring = useTopologyAuthoring({ setRouteState, meaningEditorIntent, meaningEditParam, toast, topologyVaultReadModel, topologyPreferences });
@@ -461,16 +463,18 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     agentDockDefaultOpen, topologyVaultReadModel, topologyGraphProjection, acpRuntimeController,
     homeWorkbenchController, topologyAuthoring, topologyPreferences, topologyIndexPresentation
   });
-  const { agentDockOpen, runtimeChatOpen } = topologyAgentOrchestration;
+  const { agentDockOpen, runtimeChatOpen, closeVaultAgent, openVaultAgent } = topologyAgentOrchestration;
+  const { setFullDetailSlug } = topologyCanvasFocus;
+  const gitVaultPath = topologyVaultReadModel.gitVaultPath;
   const grayArea = useTopologyGrayArea({
     docs: topologyVaultReadModel.vault.manifest?.docs ?? [],
     nodes: topologyVaultReadModel.ontologyInsight?.nodes ?? [],
     selectedSlug: topologyVaultReadModel.selectedOntologyNode?.id ?? null,
     memberSlugs: topologyExplorationLenses.routedConstellation?.memberSlugs ?? null,
-    vaultPath: topologyVaultReadModel.gitVaultPath,
+    vaultPath: gitVaultPath,
     locale: activeLocale, routeState, setRouteState,
-    onOpen: () => { topologyAgentOrchestration.closeVaultAgent(); topologyCanvasFocus.setFullDetailSlug(null); },
-    onPrepare: (text,contextLabel) => { setVaultAgentPrefill({text,nonce:Date.now(),context:{label:contextLabel,vaultPath:topologyVaultReadModel.gitVaultPath}}); topologyAgentOrchestration.openVaultAgent(); },
+    onOpen: () => { closeVaultAgent(); setFullDetailSlug(null); },
+    onPrepare: (text,contextLabel) => { setVaultAgentPrefill({text,nonce:Date.now(),context:{label:contextLabel,vaultPath:gitVaultPath}}); openVaultAgent(); },
   });
   const topologyNavigationActions = useTopologyNavigationActions({
     setExpandAllActive, setRouteState, replayPastWalk, topologyCanvasFocus, topologyPreferences,

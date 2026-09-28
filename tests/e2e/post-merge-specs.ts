@@ -40,6 +40,7 @@ export const POST_MERGE_SPECS = [
   "map-trail.spec.ts",
   "nav-yield-map-frames.spec.ts",
   "offscreen-node-census.spec.ts",
+  "route-cycle-leak.spec.ts",
   // ── Timing-paced sweeps (2026-09-27): an ease-out curve, a settle deadline, a press budget
   // and an 81-width sweep whose verdict depends on how fast the runner paints ──
   "map-3d-lit-strata.spec.ts",

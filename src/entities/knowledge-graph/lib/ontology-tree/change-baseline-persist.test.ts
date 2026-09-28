@@ -19,19 +19,48 @@ describe("change-baseline-persist — serialization", () => {
   it("round-trips a snapshot, keeping Map and Set", () => {
     const snap = snapshotOntology(nodes, edges, 1234);
     const back = deserializeSnapshot(serializeSnapshot(snap));
-    expect(back).not.toBeNull();
     expect(back?.takenAt).toBe(1234);
-    expect(back?.nodeSigs.size).toBe(3);
-    expect(back?.nodeSigs.get("a")).toBe(snap.nodeSigs.get("a"));
-    expect(back?.nodeKinds.get("a")).toBe("capability");
+    expect([...(back?.nodeSigs ?? [])]).toEqual([...snap.nodeSigs]);
+    expect([...(back?.nodeKinds ?? [])]).toEqual([...snap.nodeKinds]);
     expect([...(back?.edgeKeys ?? [])]).toEqual([...snap.edgeKeys]);
   });
 
-  it("returns null for corrupt, null or old-version input", () => {
+  it("keeps an edge whose endpoint is not a baseline node", () => {
+    const snap = snapshotOntology(nodes, [{ ...edges[0], id: "az", to: "z" }], 1);
+    const back = deserializeSnapshot(serializeSnapshot(snap));
+    expect([...(back?.edgeKeys ?? [])]).toEqual([...snap.edgeKeys]);
+    expect(back?.nodeSigs.has("z")).toBe(false);
+  });
+
+  it("stores a number per node, not the node's text", () => {
+    const summary = "A long definition sentence. ".repeat(200);
+    const wordy = [{ ...node("a"), title: "Payments settlement ledger", summary }];
+    const stored = serializeSnapshot(snapshotOntology(wordy, [], 1));
+    expect(stored).not.toContain("Payments settlement ledger");
+    expect(stored.length).toBeLessThan(summary.length / 20);
+  });
+
+  it("reads the first stored form, whose signatures were text, as today's hashes", () => {
+    const snap = snapshotOntology(nodes, edges, 7);
+    const signature = (id: string, outgoing: string) => ["capability", id, "", outgoing].join("\u0001");
+    const first = JSON.stringify({
+      v: 1,
+      nodeSigs: [["a", signature("a", "b:contains")], ["b", signature("b", "")], ["c", signature("c", "")]],
+      nodeKinds: [["a", "capability"], ["b", "capability"], ["c", "capability"]],
+      edgeKeys: [...snap.edgeKeys],
+      takenAt: 7,
+    });
+    expect([...(deserializeSnapshot(first)?.nodeSigs ?? [])]).toEqual([...snap.nodeSigs]);
+  });
+
+  it("returns null for corrupt, null or unknown-version input", () => {
+    const stored = JSON.parse(serializeSnapshot(snapshotOntology(nodes, edges, 1)));
     expect(deserializeSnapshot(null)).toBeNull();
     expect(deserializeSnapshot("not json")).toBeNull();
     expect(deserializeSnapshot("{}")).toBeNull();
-    expect(deserializeSnapshot(JSON.stringify({ v: 2, nodeSigs: [], nodeKinds: [], edgeKeys: [], takenAt: 0 }))).toBeNull();
+    expect(deserializeSnapshot(JSON.stringify({ ...stored, v: 3 }))).toBeNull();
+    expect(deserializeSnapshot(JSON.stringify({ ...stored, edges: [0, 99, 0] }))).toBeNull();
+    expect(deserializeSnapshot(JSON.stringify({ ...stored, kindOf: [0] }))).toBeNull();
     expect(deserializeSnapshot(JSON.stringify({ v: 1, nodeSigs: "x", nodeKinds: [], edgeKeys: [], takenAt: 0 }))).toBeNull();
   });
 });

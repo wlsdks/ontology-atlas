@@ -52,6 +52,7 @@ import { detectAcpRuntimes, isAcpBridgeAvailable } from "@/shared/lib/tauri-acp"
 import { getTauriVaultRootPath, nativeVaultFileHashes, readTauriVaultText } from "@/shared/lib/tauri-vault-fs";
 import { parseFrontmatter } from "@/shared/lib/parse-frontmatter";
 import { selectOpenVaultHandle } from "@/shared/lib/select-open-vault-handle";
+import { useLatestRef } from "@/shared/lib/use-latest-ref";
 import { isWikiFurnitureSlug } from "@/shared/lib/wiki-page-schema";
 
 import { runHeadlessTurn } from "./headless-turn";
@@ -126,10 +127,9 @@ export function useRoundsRunner(): RoundsRunnerValue {
   const stateRef = useRef<RoundState | null>(null);
   const runningRef = useRef<RoundsRunnerValue['running']>(null);
   const lastTickRef = useRef<Date | null>(null);
-  const manifestRef = useRef(vault.manifest);
-  useEffect(() => {
-    manifestRef.current = vault.manifest;
-  }, [vault.manifest]);
+  const manifestRef = useLatestRef(vault.manifest);
+  const codexRegisteredCommand = vault.agentConfigStatus?.codexRegisteredCommand ?? null;
+  const codexConfigValid = vault.agentConfigStatus?.codexConfigValid === true;
 
   const refresh = useCallback(async () => {
     // Always a turn later than the effect that asked, so a folder change never sets state
@@ -195,15 +195,15 @@ export function useRoundsRunner(): RoundsRunnerValue {
     const registration =
       vaultSelfReadSlot(runtimeId) === "codex-config"
         ? {
-            command: vault.agentConfigStatus?.codexRegisteredCommand ?? null,
-            validForCurrentVault: vault.agentConfigStatus?.codexConfigValid === true,
+            command: codexRegisteredCommand,
+            validForCurrentVault: codexConfigValid,
           }
         : null;
     return [
       ...vaultMcpServers(agentServer.launch, rootPath, registration, { ownsWriteGate: runtimeOwnsWriteGate(runtimeId) }),
       ...connectorAcpServers(connectors.connectors, runtimeId, connectors.allowedHere),
     ];
-  }, [agentServer.launch, connectors.allowedHere, connectors.connectors, rootPath, runtimeId, vault.agentConfigStatus?.codexConfigValid, vault.agentConfigStatus?.codexRegisteredCommand]);
+  }, [agentServer.launch, connectors.allowedHere, connectors.connectors, rootPath, runtimeId, codexConfigValid, codexRegisteredCommand]);
 
   // Read live, not from a render's snapshot, so a stale closure cannot run an unallowed round.
   const allowedNow = useCallback(
@@ -344,7 +344,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
       }
     }
     return { sources, docs, hashes, pageTexts };
-  }, [rootPath]);
+  }, [manifestRef, rootPath]);
 
   const runPass = useCallback(async (round: RoundRecord, trigger: RoundPassEntry["trigger"]) => {
     if (!store || !ledger || !rootPath || runningRef.current) return;

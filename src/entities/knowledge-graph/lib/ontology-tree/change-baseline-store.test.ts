@@ -1,16 +1,16 @@
 import { act, renderHook } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../../model";
 import {
   clearChangeBaseline,
   getChangeBaseline,
-  getChangeBaselineScope,
   markChangeBaseline,
   restorePersistedBaseline,
   setChangeBaselineScope,
   shouldAutoMarkBaseline,
   useChangeBaseline,
 } from "./change-baseline-store";
+import { computeOntologyChangeset } from "./ontology-changeset";
 
 function node(id: string): KnowledgeGraphNode {
   return { id, title: id, kind: "capability", projectIds: [], evidenceIds: [], lastApprovedAt: new Date(0), lastApprovedBy: "t" };
@@ -21,13 +21,19 @@ const edges: KnowledgeGraphEdge[] = [];
 /** Storage happens only once the vault is known, so every spec sets a scope first. */
 const VAULT_A = "local:alpha";
 const VAULT_B = "local:bravo";
-const keyFor = (scope: string) => `demo:change-baseline:v1:${scope}`;
+const keyFor = (scope: string) => `demo:change-baseline:v2:${scope}`;
+const firstFormKeyFor = (scope: string) => `demo:change-baseline:v1:${scope}`;
+const storedKeys = () =>
+  Array.from({ length: window.localStorage.length }, (_, i) => window.localStorage.key(i)).filter((key) =>
+    key?.startsWith("demo:change-baseline"),
+  );
 
 beforeEach(() => {
   setChangeBaselineScope(VAULT_A);
 });
 
 afterEach(() => {
+  vi.restoreAllMocks();
   clearChangeBaseline();
   try {
     window.localStorage.clear();
@@ -74,15 +80,40 @@ describe("change-baseline-store persistence", () => {
 
   it("persists to a vault-scoped localStorage key on mark", () => {
     markChangeBaseline(nodes, edges, 77);
-    expect(window.localStorage.getItem(keyFor(VAULT_A))).not.toBeNull();
-    // The pre-scope global key is no longer written.
-    expect(window.localStorage.getItem("demo:change-baseline:v1")).toBeNull();
+    expect(storedKeys()).toEqual([keyFor(VAULT_A)]);
   });
 
   it("removes the persisted baseline on clear", () => {
     markChangeBaseline(nodes, edges, 1);
     clearChangeBaseline();
-    expect(window.localStorage.getItem(keyFor(VAULT_A))).toBeNull();
+    expect(storedKeys()).toEqual([]);
+  });
+
+  it("reports a baseline storage refuses and keeps it for the session", () => {
+    markChangeBaseline(nodes, edges, 1);
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new DOMException("The quota has been exceeded.", "QuotaExceededError");
+    });
+    markChangeBaseline(nodes, edges, 2);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(getChangeBaseline()?.takenAt).toBe(2);
+    expect(storedKeys()).toEqual([]);
+  });
+
+  it("evicts other folders' baselines only when storage refuses a save", () => {
+    markChangeBaseline(nodes, edges, 1);
+    setChangeBaselineScope(VAULT_B);
+    const setItem = Storage.prototype.setItem;
+    vi.spyOn(Storage.prototype, "setItem").mockImplementationOnce(() => {
+      throw new DOMException("The quota has been exceeded.", "QuotaExceededError");
+    }).mockImplementation(function (this: Storage, key: string, value: string) {
+      setItem.call(this, key, value);
+    });
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    markChangeBaseline([node("x"), node("y")], edges, 2);
+    expect(storedKeys()).toEqual([keyFor(VAULT_B)]);
+    expect(warn).not.toHaveBeenCalled();
   });
 
   it("restores a persisted baseline for an overlapping vault", () => {
@@ -115,10 +146,9 @@ describe("change-baseline-store persistence", () => {
 // Clears memory but keeps localStorage, simulating a reload; `clearChangeBaseline` wipes both.
 function clearChangeBaseline_inMemoryOnly() {
   // No in-memory-only reset exists, so back up, clear and restore the stored value.
-  const scope = getChangeBaselineScope() ?? VAULT_A;
-  const saved = window.localStorage.getItem(keyFor(scope));
+  const saved = window.localStorage.getItem(keyFor(VAULT_A));
   clearChangeBaseline();
-  if (saved !== null) window.localStorage.setItem(keyFor(scope), saved);
+  if (saved !== null) window.localStorage.setItem(keyFor(VAULT_A), saved);
 }
 
 /** A vault switch must drop the previous baseline; the overlap guard runs only on restore. */
@@ -152,6 +182,35 @@ describe("change-baseline-store vault switching", () => {
     // The unscoped singleton cannot be rebuilt, so fail-closed is checked from the restore side.
     setChangeBaselineScope(VAULT_B);
     expect(restorePersistedBaseline(bravoNodes)).toBe(false);
+  });
+});
+
+describe("change-baseline-store carry-over from the first stored form", () => {
+  it("converts every folder's first-form entry to its own key and restores each", async () => {
+    const firstForm = (takenAt: number) =>
+      JSON.stringify({
+        v: 1,
+        nodeSigs: [["a", "capability\u0001a\u0001\u0001"], ["b", "capability\u0001b\u0001\u0001"]],
+        nodeKinds: [["a", "capability"], ["b", "capability"]],
+        edgeKeys: [],
+        takenAt,
+      });
+    window.localStorage.setItem(firstFormKeyFor(VAULT_A), firstForm(7));
+    window.localStorage.setItem(firstFormKeyFor(VAULT_B), firstForm(8));
+    window.localStorage.setItem("demo:change-baseline:v1", firstForm(9));
+    vi.resetModules();
+    const fresh = await import("./change-baseline-store");
+
+    fresh.setChangeBaselineScope(VAULT_A);
+    expect(storedKeys().sort()).toEqual([keyFor(VAULT_A), keyFor(VAULT_B)]);
+    expect(fresh.restorePersistedBaseline(nodes)).toBe(true);
+    expect(fresh.getChangeBaseline()?.takenAt).toBe(7);
+    expect(computeOntologyChangeset(fresh.getChangeBaseline(), nodes, edges).total).toBe(0);
+
+    fresh.setChangeBaselineScope(VAULT_B);
+    expect(fresh.restorePersistedBaseline(nodes)).toBe(true);
+    expect(fresh.getChangeBaseline()?.takenAt).toBe(8);
+    fresh.clearChangeBaseline();
   });
 });
 

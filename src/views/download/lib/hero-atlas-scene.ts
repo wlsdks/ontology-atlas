@@ -33,6 +33,7 @@ export interface AtlasData {
 }
 
 export interface AtlasOptions {
+  canvasClassName?: string;
   tokenEl?: Element;
   reducedMotion?: boolean;
   onHover?: (slug: string | null) => void;
@@ -86,14 +87,49 @@ function haloTexture(): THREE.Texture {
   return tex;
 }
 
-export function mountHeroAtlas(canvas: HTMLCanvasElement, data: AtlasData, opts: AtlasOptions = {}): AtlasHandle | null {
-  let renderer: THREE.WebGLRenderer;
+interface RendererLease {
+  renderer: THREE.WebGLRenderer;
+  release: () => void;
+}
+
+function createRenderer(): THREE.WebGLRenderer | null {
   try {
     // Keep the drawing buffer, or `download-gateway-grid.spec.ts` reads a blank copy of the frame.
-    renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'low-power', preserveDrawingBuffer: true });
+    return new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'low-power', preserveDrawingBuffer: true });
   } catch {
     return null;
   }
+}
+
+let sessionRenderer: THREE.WebGLRenderer | null = null;
+let sessionRendererLent = false;
+
+function borrowRenderer(): RendererLease | null {
+  if (sessionRendererLent) return null;
+  if (sessionRenderer?.getContext().isContextLost()) {
+    sessionRenderer.dispose();
+    sessionRenderer = null;
+  }
+  sessionRenderer ??= createRenderer();
+  const renderer = sessionRenderer;
+  if (!renderer) return null;
+  sessionRendererLent = true;
+  return {
+    renderer,
+    release: () => {
+      renderer.setSize(1, 1, false);
+      sessionRendererLent = false;
+    },
+  };
+}
+
+export function mountHeroAtlas(host: HTMLElement, data: AtlasData, opts: AtlasOptions = {}): AtlasHandle | null {
+  const lease = borrowRenderer();
+  if (!lease) return null;
+  const { renderer } = lease;
+  const canvas = renderer.domElement;
+  canvas.className = opts.canvasClassName ?? '';
+  host.appendChild(canvas);
   const rootEl = opts.tokenEl ?? document.documentElement;
   const reduced =
     opts.reducedMotion ?? (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -479,7 +515,9 @@ export function mountHeroAtlas(canvas: HTMLCanvasElement, data: AtlasData, opts:
       for (const h of haloSprites) (h.sprite.material as THREE.Material).dispose();
       for (const m of [containsMat, spineMat, dependsMat, dependsGlowMat, beadMat, floorMat]) m.dispose();
       for (const l of [containsLine, spineLine, dependsLine, dependsGlow]) l?.geometry.dispose();
-      renderer.dispose();
+      canvas.style.cursor = '';
+      canvas.remove();
+      lease.release();
     },
   };
 }

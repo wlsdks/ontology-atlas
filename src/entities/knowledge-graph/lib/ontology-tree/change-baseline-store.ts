@@ -10,23 +10,76 @@ import {
   snapshotMatchesGraph,
 } from "./change-baseline-persist";
 
-// Review state only, keyed per vault so one vault's baseline never overwrites another's or
-// counts a different vault as all added. The overlap guard still catches a same-named vault.
-const PERSIST_KEY_PREFIX = "demo:change-baseline:v1:";
-/** The pre-scope global key; never read, cleared once when a scope is first set. */
-const LEGACY_UNSCOPED_KEY = "demo:change-baseline:v1";
+const PERSIST_KEY_PREFIX = "demo:change-baseline:v2:";
+const FIRST_FORM_KEY_PREFIX = "demo:change-baseline:v1:";
+const UNSCOPED_FIRST_FORM_KEY = "demo:change-baseline:v1";
 
 /** The active vault; while null nothing is stored or restored. */
 let baselineScope: string | null = null;
 
-function persistBaseline(snap: OntologySnapshot | null): void {
-  if (typeof window === "undefined" || baselineScope === null) return;
+function storage(): Storage | null {
   try {
-    const key = `${PERSIST_KEY_PREFIX}${baselineScope}`;
-    if (snap) window.localStorage.setItem(key, serializeSnapshot(snap));
-    else window.localStorage.removeItem(key);
+    return typeof window === "undefined" ? null : window.localStorage;
   } catch {
-    /* private mode — skip */
+    return null;
+  }
+}
+
+function keysStartingWith(store: Storage, prefix: string): string[] {
+  const keys: string[] = [];
+  for (let i = 0; i < store.length; i += 1) {
+    const key = store.key(i);
+    if (key?.startsWith(prefix)) keys.push(key);
+  }
+  return keys;
+}
+
+function warnUnsaved(payload: string, error: unknown): void {
+  console.warn(
+    `[change-baseline] The review baseline (${payload.length} characters) was not saved, so it lasts until this page reloads.`,
+    error,
+  );
+}
+
+/** Each folder's first-form entry becomes its own current-form entry, once per page. */
+function convertFirstForm(store: Storage): void {
+  store.removeItem(UNSCOPED_FIRST_FORM_KEY);
+  for (const key of keysStartingWith(store, FIRST_FORM_KEY_PREFIX)) {
+    const snap = deserializeSnapshot(store.getItem(key));
+    store.removeItem(key);
+    const target = `${PERSIST_KEY_PREFIX}${key.slice(FIRST_FORM_KEY_PREFIX.length)}`;
+    if (!snap || store.getItem(target) !== null) continue;
+    const payload = serializeSnapshot(snap);
+    try {
+      store.setItem(target, payload);
+    } catch (error) {
+      warnUnsaved(payload, error);
+    }
+  }
+}
+
+function persistBaseline(snap: OntologySnapshot | null): void {
+  const store = storage();
+  if (!store || baselineScope === null) return;
+  const key = `${PERSIST_KEY_PREFIX}${baselineScope}`;
+  if (!snap) {
+    store.removeItem(key);
+    return;
+  }
+  const payload = serializeSnapshot(snap);
+  try {
+    store.setItem(key, payload);
+    return;
+  } catch {
+    // Other folders' baselines give way only when storage refuses this one.
+    for (const other of keysStartingWith(store, PERSIST_KEY_PREFIX)) if (other !== key) store.removeItem(other);
+  }
+  try {
+    store.setItem(key, payload);
+  } catch (error) {
+    // The previous save would otherwise come back after a reload as if it were this one.
+    store.removeItem(key);
+    warnUnsaved(payload, error);
   }
 }
 
@@ -46,22 +99,14 @@ export function setChangeBaselineScope(scope: string): void {
   if (baselineScope === scope) return;
   const first = baselineScope === null;
   baselineScope = scope;
-  if (first && typeof window !== "undefined") {
-    try {
-      window.localStorage.removeItem(LEGACY_UNSCOPED_KEY);
-    } catch {
-      /* private mode — skip */
-    }
+  if (first) {
+    const store = storage();
+    if (store) convertFirstForm(store);
   }
   if (baseline !== null) {
     baseline = null;
     emit();
   }
-}
-
-/** For tests and diagnostics. */
-export function getChangeBaselineScope(): string | null {
-  return baselineScope;
 }
 
 export function markChangeBaseline(
@@ -84,15 +129,9 @@ export function clearChangeBaseline(): void {
 export function restorePersistedBaseline(
   nodes: readonly KnowledgeGraphNode[],
 ): boolean {
-  if (typeof window === "undefined" || baseline !== null) return false;
-  if (baselineScope === null) return false;
-  let raw: string | null = null;
-  try {
-    raw = window.localStorage.getItem(`${PERSIST_KEY_PREFIX}${baselineScope}`);
-  } catch {
-    return false;
-  }
-  const snap = deserializeSnapshot(raw);
+  const store = storage();
+  if (!store || baseline !== null || baselineScope === null) return false;
+  const snap = deserializeSnapshot(store.getItem(`${PERSIST_KEY_PREFIX}${baselineScope}`));
   if (!snap || !snapshotMatchesGraph(snap, nodes)) return false;
   baseline = snap;
   emit();
