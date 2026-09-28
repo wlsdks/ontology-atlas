@@ -84,8 +84,7 @@ export const MOTION_MECHANISMS = [
   // entrance and exit even when mounted conditionally (ratified by the system seat,
   // 2026-08-15, dialog.tsx).
   '<Dialog',
-  'animate-out',
-  'data-[state=closed]',
+  'atlas-tooltip',
 ];
 
 export interface HardCut {

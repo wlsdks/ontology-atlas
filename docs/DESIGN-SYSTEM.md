@@ -2383,6 +2383,13 @@ fade only under reduced motion. Anchored popovers grow from their trigger,
 agent docks share one reflow grammar, drawers slide from their edge, modals
 rise; each leaves the way it came. CSS in `motion-surface.css`.
 
+- Tooltips carry `atlas-tooltip`: they fade in on `--motion-fast` and out on
+  two thirds of it under `overlayFadeOut`, keeping both fades under reduced
+  motion. A closing tooltip takes no pointer.
+- All five agent docks spread `agentDockReflowStyle()` onto their frame and
+  wrap the conversation in `Surface motion="overlay"`; only the project dock
+  also reflows `margin-left`.
+
 ## Page header — English caption + Korean h1
 
 The header on each operations page (currently `/ontology/insights`) follows a **two-line pattern**. The user-facing Korean title is the primary heading, and the English category caption serves as a micro identifier that yields one step in the visual hierarchy.

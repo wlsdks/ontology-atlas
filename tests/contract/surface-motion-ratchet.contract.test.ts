@@ -314,5 +314,6 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
     // gate counts.
     expect(MOTION_MECHANISMS).not.toContain('map-overlay-in');
     expect(MOTION_MECHANISMS).not.toContain('animate-in');
+    expect(MOTION_MECHANISMS).not.toContain('animate-out');
   });
 });
