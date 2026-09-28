@@ -4,14 +4,14 @@
  * `topology-world.ts`) with the parent's *live* coordinates and calls the pure
  * `computeDensityGate`.
  *
- * The anchor is recomputed from the live position every frame because a drag or the
- * living graph moves the parent and the chip has to follow (a static anchor drifts).
  * Every decision (who collapses, which chips appear) lives in the pure model
  * (`density-gate.ts`); this file only injects coordinates.
  */
 
 import {
+  chipAnchor,
   computeDensityGate,
+  type ClusterChip,
   type DensityGateParentGeometry,
   type DensityGateResult,
 } from "../model/density-gate";
@@ -41,5 +41,22 @@ export function computeTopologyClusterState(
     // domain children (a project's skeleton) are exempt from the gate — the Part 0 domain-tier gate exemption.
     kindOf: (id) => world.nodeById.get(id)?.kind,
     heldOpen,
+  });
+}
+
+/**
+ * The same chips at their parents' live positions: a drag or the living graph moves a parent every
+ * frame, while which ids fold and which chips exist change only with the graph, the expanded set
+ * and the focus.
+ */
+export function placeClusterChips(
+  world: Pick<TopologyWorld, "nodeById" | "clusterMetaByParent">,
+  chips: readonly ClusterChip[],
+): ClusterChip[] {
+  return chips.map((chip) => {
+    const parent = world.nodeById.get(chip.parentId);
+    const meta = world.clusterMetaByParent.get(chip.parentId);
+    if (!parent || !meta) return chip;
+    return { ...chip, anchor: chipAnchor({ x: parent.x, y: parent.y, angle: meta.angle, ring: meta.ring }, chip.expanded) };
   });
 }

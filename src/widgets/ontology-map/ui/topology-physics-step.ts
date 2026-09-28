@@ -11,7 +11,7 @@
 import { stepCamera, type CameraAxes, type CameraTarget } from "../engine/camera";
 import { computeAltitudeBand, computeFarT } from "../model/altitude";
 import { isNodeEmphasisActive, resolveEdgePulseSpeed, stepEmphasis, stepFocusRamp } from "../model/focus-state";
-import { edgePairKey, selectEgoContainsComets, updateParticles } from "../render/edge-fireflies";
+import { selectEgoContainsComets, updateParticles } from "../render/edge-fireflies";
 import { computeZoomRatio, DEFAULT_TIER_REVEAL, isSpineOnlyZoom, type TierRevealConfig } from "../model/tier-visibility";
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 import {
@@ -19,9 +19,6 @@ import {
   computeEffectiveCameraScaleMin,
   computeUnfocusedPanBounds, focusPanBounds, type FocusLeashPx } from "./topology-camera-math";
 import type { TopologyWorld } from "./topology-world";
-
-/** No focus → no ego contains comets. Reused so the no-focus path allocates nothing. */
-const EMPTY_EGO_CONTAINS_COMETS: ReadonlySet<string> = new Set();
 
 export interface PhysicsStepInput {
   world: TopologyWorld;
@@ -408,22 +405,12 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     );
   }
 
-  // Design Guardian's approved prescription E — on selection (ego) the incident
-  // `contains` edges carry comet flow too. Only `contains` edges attached to the
-  // focused node are candidates (= "incident"), and only the top 24 by seed actually
-  // advance (`selectEgoContainsComets`'s cap, so a high-fanout node does not become a
-  // bundle of particles). `render/traces.ts`'s draw gate has to use the same cap
-  // decision, so this Set is recomputed with identical logic in the frame draw
-  // (`topology-frame-draw.ts`) — both are deterministic, so the values agree within a
-  // frame with no shared state and no drift.
-  const egoContainsComets =
+  // Prescription E: the focused node's capped incident `contains` edges advance like depends
+  // edges. The draw asks `selectEgoContainsComets` the same question and gets the same cached answer.
+  const egoCometEdges =
     focusedNodeId === null
-      ? EMPTY_EGO_CONTAINS_COMETS
-      : selectEgoContainsComets(
-          world.edges.filter(
-            (edge) => edge.kind === "contains" && (edge.sourceId === focusedNodeId || edge.targetId === focusedNodeId),
-          ),
-        );
+      ? null
+      : selectEgoContainsComets(world.edges, world.edgeIndexByNode.get(focusedNodeId)).edges;
 
   // R6 permanent comets — the comet phase of `depends` edges always advances
   // (`updateParticles`, the pure model `render/edge-fireflies.ts`). It flows on
@@ -447,7 +434,7 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
         ambient
       );
     },
-    (edge) => egoContainsComets.has(edgePairKey(edge.sourceId, edge.targetId)),
+    egoCometEdges === null || egoCometEdges.size === 0 ? undefined : (edge) => egoCometEdges.has(edge),
   );
 
   return { camera: nextCamera, farT, zoomRatio };

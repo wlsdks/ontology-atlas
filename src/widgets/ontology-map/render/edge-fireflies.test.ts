@@ -10,6 +10,7 @@ import {
   pulseHeadTrail,
   pulseScale,
   edgePairMeta,
+  selectAmbientDependsComets,
   selectEgoContainsComets,
   spawnHoverPulses,
   updateParticles,
@@ -131,73 +132,121 @@ describe("edgePairKey", () => {
   });
 });
 
+type CometTestEdge = { sourceId: string; targetId: string; kind: "contains" | "depends" };
+
+/** The world build's `edgeIndexByNode`: every edge index under both endpoints. */
+function indexByNode(edges: readonly CometTestEdge[]): Map<string, number[]> {
+  const index = new Map<string, number[]>();
+  edges.forEach((edge, i) => {
+    for (const id of [edge.sourceId, edge.targetId]) index.set(id, [...(index.get(id) ?? []), i]);
+  });
+  return index;
+}
+
+/** The per-frame ranking the cached selectors replace: sort by seed then pair key, keep `limit`. */
+function rankedKeysByFullSort(edges: readonly CometTestEdge[], limit: number): Set<string> {
+  const ranked = [...edges].sort((a, b) => {
+    const seedDiff = fireflySeed(a.sourceId, a.targetId) - fireflySeed(b.sourceId, b.targetId);
+    if (seedDiff !== 0) return seedDiff;
+    const ka = edgePairKey(a.sourceId, a.targetId);
+    const kb = edgePairKey(b.sourceId, b.targetId);
+    return ka < kb ? -1 : ka > kb ? 1 : 0;
+  });
+  return new Set(ranked.slice(0, Math.max(0, limit)).map((e) => edgePairKey(e.sourceId, e.targetId)));
+}
+
+function seededRandom(seed: number): () => number {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let t = Math.imul(state ^ (state >>> 15), 1 | state);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 describe("selectEgoContainsComets", () => {
-  const edges = [
-    { sourceId: "hub", targetId: "x1" },
-    { sourceId: "hub", targetId: "x2" },
-    { sourceId: "hub", targetId: "x3" },
-  ];
+  const hubEdges = (count: number): CometTestEdge[] =>
+    Array.from({ length: count }, (_, i) => ({ sourceId: "hub", targetId: `n${i}`, kind: "contains" }));
 
-  it("결정론 — 같은 입력은 같은 결과(seed 랭크)", () => {
-    const a = selectEgoContainsComets(edges);
-    const b = selectEgoContainsComets(edges);
-    expect([...a].sort()).toEqual([...b].sort());
+  it("caps a node's incident contains edges at the limit, taking them in rank order", () => {
+    const edges = hubEdges(40);
+    const { keys, edges: cometEdges } = selectEgoContainsComets(edges, indexByNode(edges).get("hub"));
+    expect(keys).toEqual(rankedKeysByFullSort(edges, EGO_CONTAINS_COMET_LIMIT));
+    expect(cometEdges.size).toBe(EGO_CONTAINS_COMET_LIMIT);
   });
 
-  it("limit 미만이면 전부 포함", () => {
-    const selected = selectEgoContainsComets(edges, 24);
-    expect(selected.size).toBe(3);
-    for (const e of edges) expect(selected.has(edgePairKey(e.sourceId, e.targetId))).toBe(true);
+  it("ignores depends edges and edges that do not touch the node", () => {
+    const edges: CometTestEdge[] = [
+      { sourceId: "hub", targetId: "a", kind: "contains" },
+      { sourceId: "hub", targetId: "b", kind: "depends" },
+      { sourceId: "c", targetId: "d", kind: "contains" },
+    ];
+    const { keys } = selectEgoContainsComets(edges, indexByNode(edges).get("hub"));
+    expect([...keys]).toEqual(["hub a"]);
   });
 
-  it("limit 초과분은 seed 순 상위만 선택 — 총 개수는 limit 을 넘지 않는다", () => {
-    const many = Array.from({ length: 40 }, (_, i) => ({ sourceId: "hub", targetId: `n${i}` }));
-    const selected = selectEgoContainsComets(many, EGO_CONTAINS_COMET_LIMIT);
-    expect(selected.size).toBe(EGO_CONTAINS_COMET_LIMIT);
+  it("counts a self-loop once although the node lists it under both endpoints", () => {
+    const edges: CometTestEdge[] = [...hubEdges(24), { sourceId: "hub", targetId: "hub", kind: "contains" }];
+    const { keys } = selectEgoContainsComets(edges, indexByNode(edges).get("hub"));
+    expect(keys).toEqual(rankedKeysByFullSort(edges, EGO_CONTAINS_COMET_LIMIT));
   });
 
-  it("기본 limit = EGO_CONTAINS_COMET_LIMIT(24)", () => {
-    const many = Array.from({ length: 40 }, (_, i) => ({ sourceId: "hub", targetId: `n${i}` }));
-    expect(selectEgoContainsComets(many).size).toBe(24);
+  it("answers a repeated question for the same edge list and node with the same object", () => {
+    const edges = hubEdges(5);
+    const incident = indexByNode(edges).get("hub");
+    expect(selectEgoContainsComets(edges, incident)).toBe(selectEgoContainsComets(edges, incident));
   });
 
-  it("빈 입력은 빈 Set", () => {
-    expect(selectEgoContainsComets([]).size).toBe(0);
+  it("is empty for a node with no edges", () => {
+    expect(selectEgoContainsComets(hubEdges(3), undefined).keys.size).toBe(0);
   });
 });
 
-describe("edgePairMeta — 캐시가 원본 함수와 같은 값을 낸다 (perf 2026-08-19)", () => {
-  it("seed 와 key 가 fireflySeed/edgePairKey 와 동일하고, 같은 객체엔 같은 메타를 재사용한다", () => {
+describe("selectAmbientDependsComets", () => {
+  it("replaces the previous frame's keys with the first candidates in rank order", () => {
+    const edges: CometTestEdge[] = Array.from({ length: 30 }, (_, i) => ({ sourceId: `s${i}`, targetId: `t${i}`, kind: "depends" }));
+    const into = new Set(["stale key"]);
+    const selected = selectAmbientDependsComets(edges, (i) => i % 2 === 0, into, 5);
+    expect(selected).toBe(into);
+    expect(selected).toEqual(rankedKeysByFullSort(edges.filter((_, i) => i % 2 === 0), 5));
+  });
+});
+
+describe("edgePairMeta", () => {
+  it("matches fireflySeed and edgePairKey and reuses one meta per edge object", () => {
     const edge = { sourceId: "kind:alpha", targetId: "kind:beta" };
     const meta = edgePairMeta(edge);
     expect(meta.seed).toBe(fireflySeed(edge.sourceId, edge.targetId));
     expect(meta.key).toBe(edgePairKey(edge.sourceId, edge.targetId));
-    expect(edgePairMeta(edge)).toBe(meta); // WeakMap cache hit
+    expect(edgePairMeta(edge)).toBe(meta);
   });
 });
 
-describe("rankCometEdges 재구현 파리티 — 종전 비교자(seed→key 사전순)와 원소까지 동일", () => {
-  /** Reference implementation, transcribed verbatim from the code before the cache. */
-  const reference = (edges: readonly { sourceId: string; targetId: string }[], limit: number): Set<string> => {
-    const ranked = [...edges].sort((a, b) => {
-      const seedDiff = fireflySeed(a.sourceId, a.targetId) - fireflySeed(b.sourceId, b.targetId);
-      if (seedDiff !== 0) return seedDiff;
-      const ka = edgePairKey(a.sourceId, a.targetId);
-      const kb = edgePairKey(b.sourceId, b.targetId);
-      return ka < kb ? -1 : ka > kb ? 1 : 0;
-    });
-    return new Set(ranked.slice(0, Math.max(0, limit)).map((e) => edgePairKey(e.sourceId, e.targetId)));
-  };
+describe("cached comet selection against the per-frame sort it replaces", () => {
+  it("picks the same keys on random graphs with duplicate pairs, self-loops and hidden edges", () => {
+    for (let seed = 1; seed <= 200; seed += 1) {
+      const random = seededRandom(seed);
+      const nodeCount = 2 + Math.floor(random() * 40);
+      const edges: CometTestEdge[] = Array.from({ length: Math.floor(random() * 300) }, () => ({
+        sourceId: `n${Math.floor(random() * nodeCount)}`,
+        targetId: `n${Math.floor(random() * nodeCount)}`,
+        kind: random() < 0.5 ? "contains" : "depends",
+      }));
+      const visible = edges.map(() => random() < 0.6);
+      const limit = [0, 1, 24, 400][seed % 4];
+      const isCandidate = (i: number) => edges[i].kind === "depends" && visible[i];
+      const ambient = selectAmbientDependsComets(edges, isCandidate, new Set(), limit);
+      expect(ambient).toEqual(rankedKeysByFullSort(edges.filter((_, i) => isCandidate(i)), limit));
 
-  it("400개 결정론 픽스처에서 컷 안 원소가 참조판과 완전히 같다", () => {
-    const edges = Array.from({ length: 400 }, (_, i) => ({
-      sourceId: `node:${(i * 37) % 97}`,
-      targetId: `node:${(i * 61) % 89}-t`,
-    }));
-    for (const limit of [0, 1, 24, 400]) {
-      const got = selectEgoContainsComets(edges, limit);
-      const want = reference(edges, limit);
-      expect([...got].sort()).toEqual([...want].sort());
+      const focused = `n${Math.floor(random() * nodeCount)}`;
+      const incidentContains = edges.filter(
+        (edge) => edge.kind === "contains" && (edge.sourceId === focused || edge.targetId === focused),
+      );
+      const ego = selectEgoContainsComets(edges, indexByNode(edges).get(focused), limit);
+      const wantKeys = rankedKeysByFullSort(incidentContains, limit);
+      expect(ego.keys).toEqual(wantKeys);
+      expect(ego.edges).toEqual(new Set(incidentContains.filter((edge) => wantKeys.has(edgePairKey(edge.sourceId, edge.targetId)))));
     }
   });
 });

@@ -320,9 +320,7 @@ export function useTopologyInput({
    */
   const noteInput = useCallback(() => {
     lastInputMsRef.current = performance.now();
-    // If it was asleep, drawing must resume from this frame. `idle-gate`
-    // re-evaluates the refs every frame, so pushing the activity timestamp is
-    // enough to guarantee it.
+    // Writing the activity clock wakes a sleeping loop.
     lastActiveMsRef.current = lastInputMsRef.current;
   }, [lastActiveMsRef, lastInputMsRef]);
 

@@ -18,7 +18,10 @@ const pipeline = vi.hoisted(() => {
   return { order, gate, dome, motion, camera, clusters, realm, reveal, presentation };
 });
 
-vi.mock("./topology-frame-gate", () => ({ createFrameGate: vi.fn(() => pipeline.gate) }));
+vi.mock("./topology-frame-gate", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./topology-frame-gate")>()),
+  createFrameGate: vi.fn(() => pipeline.gate),
+}));
 vi.mock("./topology-dome-frame-stage", () => ({ createDomeFrameStage: vi.fn(() => pipeline.dome) }));
 vi.mock("./topology-world-motion-frame-stage", () => ({ createWorldMotionFrameStage: vi.fn(() => pipeline.motion) }));
 vi.mock("./topology-camera-frame-stage", () => ({ createCameraFrameStage: vi.fn(() => pipeline.camera) }));
@@ -28,8 +31,9 @@ vi.mock("./topology-reveal-frame-stage", () => ({ createRevealFrameStage: vi.fn(
 vi.mock("./topology-presentation-frame-stage", () => ({ createPresentationFrameStage: vi.fn(() => pipeline.presentation) }));
 
 import { createCameraFrameStage } from "./topology-camera-frame-stage";
-import { createFrameGate } from "./topology-frame-gate";
-import { useTopologyFrameLoop } from "./use-topology-frame-loop";
+import { createFrameGate, FRAME_ASLEEP, FRAME_NOT_READY } from "./topology-frame-gate";
+import { useTopologyActivityState } from "./use-topology-activity-state";
+import { requestOntologyMapFrame, useTopologyFrameLoop } from "./use-topology-frame-loop";
 
 const readyFrame = { tokens: {}, world: {}, width: 800, height: 600, dpr: 2, dt: 0.016 };
 
@@ -38,7 +42,7 @@ function configuration(canvas: HTMLCanvasElement) {
   return {
     canvasRef: { current: canvas },
     projection: { domeRuntimeRef: { current: null }, cameraRef: { current: {} }, reducedMotionRef: { current: false }, neuralRampRef: { current: 0 } },
-    recovery: { lastActiveMsRef: { current: 0 }, viewportRebuildPendingRef: { current: false } },
+    recovery: { lastActiveMsRef: { current: 0 }, viewportRebuildPendingRef: { current: false }, wakeFrameLoopRef: { current: () => {} } },
     domeFrameStage: {}, worldMotionFrameStage: {}, cameraFrameStage: {}, clusterFrameStage: {},
     realmFrameStage: {}, revealFrameStage: {}, frameGate: {}, presentationFrameStage: {},
   } as unknown as Parameters<typeof useTopologyFrameLoop>[0];
@@ -83,7 +87,7 @@ describe("topology frame scheduling", () => {
   });
 
   it.each(["gate", "dome"] as const)("reschedules after a %s yield without drawing a partial frame", (stage) => {
-    if (stage === "gate") pipeline.gate.mockImplementation(() => { pipeline.order.push("gate"); return null; });
+    if (stage === "gate") pipeline.gate.mockImplementation(() => { pipeline.order.push("gate"); return FRAME_NOT_READY; });
     else pipeline.dome.mockImplementation(() => { pipeline.order.push("dome"); return false; });
     const { unmount } = renderHook(() => useTopologyFrameLoop(configuration(canvas)));
     act(() => nextFrame(1234));
@@ -143,5 +147,81 @@ describe("topology frame scheduling", () => {
     expect(state.recovery.viewportRebuildPendingRef.current).toBe(false);
     act(() => queued(1300));
     expect(pipeline.gate).not.toHaveBeenCalled();
+  });
+});
+
+describe("a sleeping topology frame loop", () => {
+  let queued: FrameRequestCallback[];
+  let canvas: HTMLCanvasElement;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    queued = [];
+    pipeline.gate.mockImplementation(() => FRAME_ASLEEP);
+    vi.stubGlobal("requestAnimationFrame", vi.fn((callback: FrameRequestCallback) => queued.push(callback)));
+    vi.stubGlobal("cancelAnimationFrame", vi.fn());
+    canvas = document.createElement("canvas");
+    vi.spyOn(canvas, "getContext").mockReturnValue({} as CanvasRenderingContext2D);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  const runQueued = () => {
+    const due = queued;
+    queued = [];
+    act(() => due.forEach((callback) => callback(1000)));
+  };
+
+  it("schedules no further frame once the gate reports nothing to draw", () => {
+    const { unmount } = renderHook(() => useTopologyFrameLoop(configuration(canvas)));
+    expect(queued).toHaveLength(1);
+    runQueued();
+    expect(queued).toHaveLength(0);
+    unmount();
+  });
+
+  it("wakes for exactly one frame per wake while a frame is pending", () => {
+    const state = configuration(canvas);
+    const { unmount } = renderHook(() => useTopologyFrameLoop(state));
+    runQueued();
+    state.recovery.wakeFrameLoopRef.current();
+    state.recovery.wakeFrameLoopRef.current();
+    requestOntologyMapFrame();
+    expect(queued).toHaveLength(1);
+    runQueued();
+    expect(pipeline.gate).toHaveBeenCalledTimes(2);
+    expect(queued).toHaveLength(0);
+    unmount();
+  });
+
+  it("wakes on a render, since a render carries new props into the refs the gate reads", () => {
+    const state = configuration(canvas);
+    const { rerender, unmount } = renderHook(() => useTopologyFrameLoop({ ...state }));
+    runQueued();
+    rerender();
+    expect(queued).toHaveLength(1);
+    unmount();
+  });
+
+  it("leaves an unmounted map alone when another surface asks for a frame", () => {
+    const state = configuration(canvas);
+    const { unmount } = renderHook(() => useTopologyFrameLoop(state));
+    runQueued();
+    unmount();
+    requestOntologyMapFrame();
+    state.recovery.wakeFrameLoopRef.current();
+    expect(queued).toHaveLength(0);
+  });
+
+  it("wakes when activity is recorded, which is how the map asks to be drawn once more", () => {
+    const { result } = renderHook(() => useTopologyActivityState());
+    const wake = vi.fn();
+    result.current.wakeFrameLoopRef.current = wake;
+    result.current.lastActiveMsRef.current = 42;
+    expect(wake).toHaveBeenCalledOnce();
+    expect(result.current.lastActiveMsRef.current).toBe(42);
   });
 });

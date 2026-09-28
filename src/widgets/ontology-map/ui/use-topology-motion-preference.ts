@@ -4,6 +4,7 @@ import {
   useEffect,
   type RefObject
 } from "react";
+import { requestOntologyMapFrame } from "./use-topology-frame-loop";
 
 interface Dependencies {
   reducedMotionRef: RefObject<boolean>;
@@ -20,6 +21,7 @@ export function useTopologyMotionPreference({
     reducedMotionRef.current = query.matches;
     const onChange = (e: MediaQueryListEvent) => {
       reducedMotionRef.current = e.matches;
+      requestOntologyMapFrame();
     };
     query.addEventListener?.("change", onChange);
     return () => query.removeEventListener?.("change", onChange);
