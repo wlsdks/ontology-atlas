@@ -13,6 +13,7 @@ import {
 } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
+import { hardenedGitArgs } from '../lib/hardened-git.mjs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { cwd } from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -147,7 +148,7 @@ export async function runAgentSetup(args) {
 function installPreCommitHook(codebaseRoot) {
   let hooksDir;
   try {
-    hooksDir = execFileSync('git', ['rev-parse', '--git-path', 'hooks'], {
+    hooksDir = execFileSync('git', hardenedGitArgs(codebaseRoot, ['rev-parse', '--git-path', 'hooks']), {
       cwd: codebaseRoot,
       encoding: 'utf-8',
     }).trim();

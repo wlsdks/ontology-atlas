@@ -58,6 +58,7 @@
     "workspaceFolderPermissionAction": "다시 허용",
     "workspaceFolderErrorFallback": "폴더를 읽지 못했어요. 다시 선택해 주세요",
     "workspaceFolderErrorPathMissing": "그 폴더를 찾지 못했어요. 옮겼거나 지워진 것 같아요. 다시 골라 주세요.",
+    "workspaceFolderErrorGrantNeeded": "이번 업데이트 후에는 온톨로지 폴더를 한 번 다시 골라 접근을 확인해 주세요. 문서는 그대로 있어요.",
     "workspaceFolderErrorPermissionDenied": "맥이 이 앱에게 그 폴더를 읽도록 허락하지 않았어요. 시스템 설정에서 허용하거나 다른 곳의 폴더를 골라 주세요.",
     "workspaceFolderErrorRootRejected": "그 위치는 폴더로 쓸 수 없어요. 프로젝트 폴더를 골라 주세요.",
     "workspaceRecentOpenAria": "최근 작업공간 {name} 열기",

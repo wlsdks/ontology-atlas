@@ -99,7 +99,10 @@ export function FirstRunPage() {
           ? // Rejections, a missing folder and an OS refusal are not fixed by a retry.
             vault.errorCode === "root-rejected"
             ? { sentence: t("errorRootRejected"), detail: null }
-            : vault.errorCode === "path-missing"
+            : vault.errorCode === "grant-needed"
+              ? /* A folder not yet re-granted since the access-scope update: confirm once, not "gone". */
+                { sentence: t("errorGrantNeeded"), detail: null }
+              : vault.errorCode === "path-missing"
               ? { sentence: t("errorPathMissing"), detail: null }
               : /* The errno never names the System Settings checkbox, so the sentence does. */
                 vault.errorCode === "permission-denied"

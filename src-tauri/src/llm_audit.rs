@@ -767,7 +767,15 @@ mod tests {
 
         let result = reserve(&vault, verify_draft());
         let mut leaked = Vec::new();
-        reader.read_to_end(&mut leaked).unwrap();
+        // A parallel test's child between fork and exec can hold an inherited copy of
+        // reserve's O_RDWR fd (the same inheritance the flock retry absorbs), so the
+        // kernel may still see a writer and answer EAGAIN instead of EOF. Both mean
+        // the FIFO is empty; bytes read before the error stay in `leaked`.
+        match reader.read_to_end(&mut leaked) {
+            Ok(_) => {}
+            Err(err) if err.kind() == std::io::ErrorKind::WouldBlock => {}
+            Err(err) => panic!("reading the FIFO failed: {err}"),
+        }
 
         fs::remove_file(&path).ok();
         fs::remove_dir_all(&vault).ok();
