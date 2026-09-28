@@ -22,7 +22,7 @@ import {
 } from 'node:fs';
 import { basename, join, relative, dirname, resolve, sep } from 'node:path';
 
-import { parseFrontmatter, buildMarkdown } from './parser.mjs';
+import { detachText, parseFrontmatter, buildMarkdown } from './parser.mjs';
 import { previewDocumentPatch } from './document-patch.mjs';
 import {
   CONTAINMENT_KEY_FOR_KIND,
@@ -760,7 +760,7 @@ function buildGateIndex(rootPath) {
     const tail = doc.slug.split('/').pop();
     if (tail) names.add(tail);
     const fmSlug = doc.frontmatter?.slug;
-    if (typeof fmSlug === 'string' && fmSlug.trim()) names.add(fmSlug.trim());
+    if (typeof fmSlug === 'string' && fmSlug.trim()) names.add(detachText(fmSlug.trim()));
   }
   return { rootPath, names };
 }

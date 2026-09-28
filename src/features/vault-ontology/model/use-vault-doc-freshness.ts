@@ -108,7 +108,7 @@ function requestDocGitState(root: string, manifest: VaultManifest): void {
       for (let from = 0; from < paths.length; from += GIT_WALK_PATH_LIMIT) {
         batches.push(gitPathsLastChange(root, [], paths.slice(from, from + GIT_WALK_PATH_LIMIT)));
       }
-      const [changes, rows] = await Promise.all([gitDiff(root), Promise.all(batches)]);
+      const [changes, rows] = await Promise.all([gitDiff(root, { includePatch: false }), Promise.all(batches)]);
       if (!changes || rows.some((batch) => batch === null)) return null;
       const committedAt = new Map<string, string | null>();
       for (const batch of rows) for (const row of batch ?? []) committedAt.set(row.path, row.lastChangedAt);

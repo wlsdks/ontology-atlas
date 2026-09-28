@@ -46,6 +46,33 @@ const MUST_NOT_BLOCK_THE_MAIN_THREAD: { file: string; fn: string; because: strin
   { file: 'git.rs', fn: 'git_fetch', because: 'network git' },
   { file: 'git.rs', fn: 'git_snapshot', because: 'may push, which is network git' },
   { file: 'agent_setup.rs', fn: 'verify_mcp_server', because: 'spawns the bundled MCP server' },
+  { file: 'lib.rs', fn: 'acp_start', because: 'runs keychain subprocesses and spawns the adapter' },
+  { file: 'lib.rs', fn: 'acp_stop', because: 'waits for the process tree to exit' },
+  { file: 'lib.rs', fn: 'vault_fingerprint', because: 'walks the whole vault' },
+  { file: 'lib.rs', fn: 'list_vault_directory', because: 'lists a folder of any size' },
+  { file: 'lib.rs', fn: 'read_vault_text_file', because: 'reads a file of any size' },
+  { file: 'lib.rs', fn: 'read_vault_text_tail', because: 'reads the end of a file' },
+  { file: 'lib.rs', fn: 'read_vault_binary_file', because: 'reads a file of any size' },
+  { file: 'lib.rs', fn: 'read_library_collections', because: 'reads a vault file' },
+  { file: 'library.rs', fn: 'hash_vault_files', because: 'hashes whole scans' },
+  { file: 'library.rs', fn: 'import_source_files', because: 'copies and hashes whole documents' },
+  { file: 'library.rs', fn: 'discover_source_candidates', because: 'walks granted roots' },
+  { file: 'git.rs', fn: 'git_status', because: 'runs up to seven git commands' },
+  { file: 'git.rs', fn: 'git_history', because: 'runs git log over up to 1,500 commits' },
+  { file: 'git.rs', fn: 'git_diff', because: 'runs git status and git diff' },
+  { file: 'git.rs', fn: 'git_commit_diff', because: 'runs git show' },
+  { file: 'git.rs', fn: 'vault_node_revisions', because: 'runs git' },
+  { file: 'git.rs', fn: 'git_paths_last_change', because: 'runs git' },
+  { file: 'git.rs', fn: 'git_document_diff', because: 'runs git' },
+  { file: 'git.rs', fn: 'git_probe', because: 'runs git' },
+  { file: 'git.rs', fn: 'git_init', because: 'runs git' },
+  { file: 'git.rs', fn: 'git_set_remote', because: 'runs git' },
+  { file: 'git.rs', fn: 'git_restore_file', because: 'runs git' },
+  { file: 'connectors.rs', fn: 'discover_mcp_connectors', because: 'parses agent config files of any size' },
+  { file: 'analysis_archive.rs', fn: 'read_analysis_record_text', because: 'reads a vault file' },
+  { file: 'meaning_transition_archive.rs', fn: 'read_meaning_transition_record_text', because: 'reads a vault file' },
+  { file: 'meaning_transition_archive.rs', fn: 'read_meaning_transition_artifact_text', because: 'reads and digests a vault file' },
+  { file: 'meaning_transition_archive.rs', fn: 'list_meaning_transition_history', because: 'lists and reads the archive' },
 ];
 
 /** Commands that must stay on the main thread, with the reason they are exceptions. */
@@ -53,6 +80,11 @@ const MUST_STAY_ON_THE_MAIN_THREAD: { file: string; fn: string; because: string 
   {
     file: 'lib.rs',
     fn: 'pick_vault_directory',
+    because: 'NSOpenPanel must open on the main thread and runs its own modal event loop',
+  },
+  {
+    file: 'library.rs',
+    fn: 'pick_source_files',
     because: 'NSOpenPanel must open on the main thread and runs its own modal event loop',
   },
 ];
@@ -64,7 +96,7 @@ function source(file: string): string {
 /** The attribute immediately above the definition, or null when the function is not a command. */
 function commandAttributeOf(file: string, fn: string): string | null {
   const body = source(file);
-  const match = new RegExp(`(#\\[tauri::command[^\\]]*\\])\\n(?:pub )?fn ${fn}\\b`).exec(body);
+  const match = new RegExp(`(#\\[tauri::command[^\\]]*\\])\\n(?:pub(?:\\(crate\\))? )?fn ${fn}\\b`).exec(body);
   return match ? match[1] : null;
 }
 

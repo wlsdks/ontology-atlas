@@ -51,7 +51,7 @@ import { judgeRatchet } from "./lib/ratchet-base";
  * falls is in this file's Git history.
  *
  * A hover that must be hand-written, with a reason the axis cannot carry, is a
- * `tests/contract/ratchet-raises/hand-hover-declarations.<slug>.json` record.
+ * `tests/contract/ratchet-raises/hand-hover-declarations/<slug>.json` record.
  *
  * 280 is the measurement at conversion. It is never edited: it serves a clone with no
  * merge base, and is a floor for a tree compared with itself.

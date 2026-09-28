@@ -12,7 +12,7 @@ import {
   requireOptionalNonBlankString,
   requireOptionalPositiveInteger,
 } from '../server/validate.mjs';
-import { validateVaultTool } from './validate-vault.mjs';
+import { validateVaultReport } from './validate-vault.mjs';
 
 /** The three git tools: working-tree status, recent history, and a vault snapshot commit. */
 
@@ -37,7 +37,7 @@ function gitSnapshotTool({ confirm = false, expectedHead, message } = {}) {
     throw new Error('message must be one line and at most 200 characters.');
   }
 
-  const report = validateVaultTool();
+  const report = validateVaultReport();
   const validation = {
     scanned: report.scanned,
     problemFiles: report.summary.problemFiles,

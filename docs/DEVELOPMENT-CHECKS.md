@@ -357,7 +357,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Run**: `pnpm exec vitest run tests/contract/control-adoption-ratchet.contract.test.ts`
 **Proves**: Hand-written button, anchor, and form control classNames, their registered and no-basis places, and the full-bleed click surfaces do not grow against the merge base; each registry row is its own file under `tests/contract/control-adoption/`, so the base is measured with its own registry and two branches registering different places do not conflict.
 **Escalate**: `pnpm test:contracts`.
-**Fix**: Move the control onto `controlClass()` / `fieldClass()`, or add a verified registry row plus a `tests/contract/ratchet-raises/control-<gate>.<slug>.json` record saying why.
+**Fix**: Move the control onto `controlClass()` / `fieldClass()`, or add a verified registry row plus a `tests/contract/ratchet-raises/control-<gate>/<slug>.json` record saying why.
 
 ### Copy that names the reader's surface
 
@@ -826,6 +826,12 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Proves**: `maintenance_plan` cursor, filter, resume, and formatter behavior is correct.
 **Escalate**: none.
 
+### MCP memory windows
+
+**Run**: `pnpm perf:mcp:memory:check`
+**Proves**: On a generated 233-node vault with 40 revisions per summary node, the stdio server's heap after two forced collections grows at most 64 KB per call across 50 repeated calls of each of nine read tools, and at most 2 MB per moved Git HEAD across commits 2 to 10. It reads the heap through the test-only fd-3 preload `scripts/lib/mcp-memory-probe.mjs`, never resident size.
+**Escalate**: none. It starts a server and runs about 500 calls, so it stays out of pre-push; run it for changes to caches, the compiler, history reads or response assembly.
+
 ### MCP query_concepts and shared read validation
 
 **Run**: `pnpm integration:mcp:read`
@@ -971,7 +977,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### Ratchets judged against the merge base
 
 **Run**: `pnpm exec vitest run tests/contract/ratchet-merge-base.contract.test.ts`
-**Proves**: The resident-context, hand-hover, appearing-surface and surface-naming ratchets measure the working tree and the merge-base tree with one census and fail only on growth, so parallel improvements share no baseline line; a deliberate raise is a new `tests/contract/ratchet-raises/<gate>.<slug>.json` record, and a clone with no merge base uses the ceiling recorded at conversion.
+**Proves**: The resident-context, hand-hover, appearing-surface and surface-naming ratchets measure the working tree and the merge-base tree with one census and fail only on growth, so parallel improvements share no baseline line; a deliberate raise is a new `tests/contract/ratchet-raises/<gate>/<slug>.json` record, and a clone with no merge base uses the ceiling recorded at conversion.
 **Escalate**: `pnpm test:contracts`.
 **Fix**: Remove the growth, or add the raise record naming why the growth is deliberate; never edit a fallback ceiling.
 
@@ -1068,7 +1074,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Run**: `pnpm exec vitest run tests/contract/test-title-language.contract.test.ts tests/contract/source-comment-bytes.contract.test.ts tests/contract/source-shape.contract.test.ts`
 **Proves**: In each area the changed files touch, Hangul test titles and assertion messages, comment bytes, files over 800 lines and parent folders over 30 direct files do not grow against the merge base.
 **Escalate**: `pnpm test:source:language` when the title and message census changed, otherwise `pnpm test:contracts`
-**Fix**: Translate the title or message, delete or shorten the comment, or split the file or folder; a deliberate raise is a `tests/contract/ratchet-raises/<gate>.<slug>.json` record saying why.
+**Fix**: Translate the title or message, delete or shorten the comment, or split the file or folder; a deliberate raise is a `tests/contract/ratchet-raises/<gate>/<slug>.json` record saying why.
 
 ### Source-checkout MCP dependency preflight
 

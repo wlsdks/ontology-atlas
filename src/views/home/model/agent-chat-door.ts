@@ -5,6 +5,12 @@
  * different windows.
  */
 
+export interface VaultAgentPrefill {
+  text: string;
+  nonce: number;
+  context?: { label: string; vaultPath: string | null };
+}
+
 export interface AgentChatDoorInput {
   /** A gated coding agent was detected and there is a folder to give it. */
   hasRuntime: boolean;

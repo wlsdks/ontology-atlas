@@ -2,9 +2,10 @@
 // A pure wrapper: `run` is injectable so unit tests need no git process.
 
 import { execFileSync } from 'node:child_process';
+import { hardenedGitArgs } from './hardened-git.mjs';
 
 function defaultRun(args, cwd) {
-  return execFileSync('git', args, { cwd, encoding: 'utf-8' });
+  return execFileSync('git', hardenedGitArgs(cwd, args), { cwd, encoding: 'utf-8' });
 }
 
 /**

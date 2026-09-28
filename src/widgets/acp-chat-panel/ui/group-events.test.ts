@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { groupEvents } from './group-events';
 import type { AcpEvent } from '@/features/acp-session/model/use-acp-session';
@@ -265,5 +265,32 @@ describe('groupEvents — thinking stays separated from the answer', () => {
 
   it('makes nothing out of nothing', () => {
     expect(groupEvents([])).toEqual([]);
+  });
+});
+
+describe('groupEvents — a render does not re-read what it already read', () => {
+  it('reads each call once however often the transcript is grouped again', () => {
+    const events = [user('u'), sameCall('a'), sameCall('b'), sameCall('c'), agent('m')];
+    const stringify = vi.spyOn(JSON, 'stringify');
+    try {
+      groupEvents(events);
+      const firstPass = stringify.mock.calls.length;
+      expect(firstPass).toBeGreaterThan(0);
+      groupEvents(events);
+      groupEvents([...events, agent('n')]);
+      expect(stringify.mock.calls.length).toBe(firstPass);
+    } finally {
+      stringify.mockRestore();
+    }
+  });
+
+  it('still tells apart answers of equal length that differ only past their opening', () => {
+    const answer = (last: string) => ({ text: `${'same opening '.repeat(40)}${last}` });
+    const out = groupEvents([
+      tool('a', { title: 'read', rawInput: { slug: 'x' }, rawOutput: answer('A') }),
+      tool('b', { title: 'read', rawInput: { slug: 'x' }, rawOutput: answer('B') }),
+      tool('c', { title: 'read', rawInput: { slug: 'x' }, rawOutput: answer('A') }),
+    ]);
+    expect(out[0].kind === 'toolRun' && out[0].rows.map((row) => row.repeat)).toEqual([1, 1, 1]);
   });
 });

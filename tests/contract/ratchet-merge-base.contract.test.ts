@@ -52,12 +52,11 @@ function judge(dir: string, base: string | null, fallback = 100) {
   return judgeRatchet({ gate: "probe-debt", measure: lines, reads: ["src"], fallback, cwd: dir, base });
 }
 
-function writeRaise(dir: string, slug: string, raise: number): void {
-  mkdirSync(join(dir, RAISES_DIR), { recursive: true });
-  writeFileSync(
-    join(dir, RAISES_DIR, `probe-debt.${slug}.json`),
-    JSON.stringify({ gate: "probe-debt", raise, why: "A probe raise that states a full sentence of reason." }),
-  );
+const PROBE_RAISE = { gate: "probe-debt", why: "A probe raise that states a full sentence of reason." };
+
+function writeRaise(dir: string, slug: string, raise: number, file = join("probe-debt", `${slug}.json`)): void {
+  mkdirSync(join(dir, RAISES_DIR, file, ".."), { recursive: true });
+  writeFileSync(join(dir, RAISES_DIR, file), JSON.stringify({ ...PROBE_RAISE, raise }));
 }
 
 describe("ratchet judged against the merge base", () => {
@@ -87,8 +86,29 @@ describe("ratchet judged against the merge base", () => {
 
     writeRaise(dir, "this-change", 1);
     const raised = judge(dir, base);
-    expect(raised.added.map((r) => r.file)).toEqual([`${RAISES_DIR}/probe-debt.this-change.json`]);
+    expect(raised.added.map((r) => r.file)).toEqual([`${RAISES_DIR}/probe-debt/this-change.json`]);
     expect(raised.current).toBeLessThanOrEqual(raised.ceiling);
+  });
+
+  it("treats a landed flat record moved into its gate's folder as the same landed raise", () => {
+    const dir = repo("moved", 5);
+    writeRaise(dir, "landed", 1, "probe-debt.landed.json");
+    git(dir, "add", ".");
+    git(dir, "commit", "-q", "-m", "a raise in the flat layout");
+    const base = git(dir, "rev-parse", "HEAD");
+
+    mkdirSync(join(dir, RAISES_DIR, "probe-debt"));
+    git(dir, "mv", join(RAISES_DIR, "probe-debt.landed.json"), join(RAISES_DIR, "probe-debt", "landed.json"));
+    writeDebt(dir, "debt.txt", 6);
+    const moved = judge(dir, base);
+    expect(moved.added, "moving a landed record must not raise the ceiling again").toEqual([]);
+    expect(moved.current).toBeGreaterThan(moved.ceiling);
+  });
+
+  it("refuses a record left flat in the raises folder, naming where it belongs", () => {
+    const dir = repo("flat", 5);
+    writeRaise(dir, "stray", 1, "probe-debt.stray.json");
+    expect(() => readRaises(dir)).toThrow(/probe-debt\.stray\.json: move it to tests\/contract\/ratchet-raises\/<gate>\/<slug>\.json/);
   });
 
   it("lets two branches that each lower the metric merge without a conflict", () => {
@@ -140,11 +160,11 @@ describe("ratchet judged against the merge base", () => {
 });
 
 describe("raise records", () => {
-  it("refuses a record without a reason, a positive integer, or a matching file name", () => {
-    expect(raiseProblems("x.a.json", { gate: "x", raise: 1, why: "too short" })).toHaveLength(1);
-    expect(raiseProblems("x.a.json", { gate: "x", raise: 0, why: "a".repeat(40) })).toHaveLength(1);
-    expect(raiseProblems("y.a.json", { gate: "x", raise: 1, why: "a".repeat(40) })).toHaveLength(1);
-    expect(raiseProblems("x.a.json", { gate: "x", raise: 2, why: "a".repeat(40) })).toEqual([]);
+  it("refuses a record without a reason, a positive integer, or its gate's folder", () => {
+    expect(raiseProblems("x", { gate: "x", raise: 1, why: "too short" })).toHaveLength(1);
+    expect(raiseProblems("x", { gate: "x", raise: 0, why: "a".repeat(40) })).toHaveLength(1);
+    expect(raiseProblems("y", { gate: "x", raise: 1, why: "a".repeat(40) })).toHaveLength(1);
+    expect(raiseProblems("x", { gate: "x", raise: 2, why: "a".repeat(40) })).toEqual([]);
   });
 
   it("every record in this repository is valid and names a gate that reads it", () => {

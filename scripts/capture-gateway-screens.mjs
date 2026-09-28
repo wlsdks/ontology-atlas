@@ -446,7 +446,7 @@ function makeBridge(overlay, unstubbed) {
         return { text: readText(vaultRootOf(input), input.relativePath, overlay), lastModified: MTIME };
       case "read_vault_binary_file": {
         const text = readText(vaultRootOf(input), input.relativePath, overlay);
-        return { bytes: [...Buffer.from(text, "utf8")], lastModified: MTIME };
+        return { base64: Buffer.from(text, "utf8").toString("base64"), lastModified: MTIME };
       }
       case "write_vault_text_file":
       case "create_vault_text_file": {
@@ -604,7 +604,12 @@ async function installRuntime(context, bridge) {
       async invoke(command, input = {}) {
         const answer = await window.__atlasCaptureBridge(command, input);
         if (!answer.ok) throw new Error(answer.message);
-        return answer.value;
+        if (command !== "read_vault_binary_file") return answer.value;
+        const raw = atob(answer.value.base64);
+        const stamped = new Uint8Array(8 + raw.length);
+        new DataView(stamped.buffer).setBigUint64(0, BigInt(answer.value.lastModified), true);
+        for (let index = 0; index < raw.length; index += 1) stamped[8 + index] = raw.charCodeAt(index);
+        return stamped.buffer;
       },
     };
     window.__TAURI_EVENT_PLUGIN_INTERNALS__ = { unregisterListener: () => undefined };

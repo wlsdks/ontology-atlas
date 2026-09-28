@@ -138,6 +138,7 @@ type GitWorkspaceRead = {
   status: GitStatusResult;
   changes: GitChangeEntry[];
   diffText: string;
+  diffTooLarge: boolean;
   history: GitCommitInfo[];
   /** Whether git holds steps older than the ones read — the list says so instead of just stopping. */
   historyHasMore: boolean;
@@ -184,12 +185,15 @@ async function readGitWorkspace(
 ): Promise<GitWorkspaceRead | null> {
   const status = await gitStatus(vaultPath);
   if (!status) return null;
-  if (!status.initialized) return { status, changes: [], diffText: "", history: [], historyHasMore: false };
+  if (!status.initialized) {
+    return { status, changes: [], diffText: "", diffTooLarge: false, history: [], historyHasMore: false };
+  }
   const [diff, page] = await Promise.all([gitDiff(vaultPath), readGitHistoryPage(vaultPath, historyLimit)]);
   return {
     status,
     changes: diff?.files ?? [],
     diffText: diff?.diff ?? "",
+    diffTooLarge: diff?.tooLarge ?? false,
     ...page,
   };
 }
@@ -312,6 +316,7 @@ export function AtlasGitPanel({
   const currentBranch = status?.branch ?? "";
   const changes = workspace?.read.changes ?? NO_CHANGES;
   const diffText = workspace?.read.diffText ?? "";
+  const diffTooLarge = workspace?.read.diffTooLarge ?? false;
   const history = workspace?.read.history ?? NO_HISTORY;
   const historyHasMore = workspace?.read.historyHasMore ?? false;
   /*
@@ -630,12 +635,12 @@ export function AtlasGitPanel({
   // the per-row line counts both read it, and two computations could state two facts.
   const diffFiles = useMemo(() => parseUnifiedDiff(diffText), [diffText]);
   /*
-   * Default: uncommitted changes when there are parsed diff files, else the latest commit;
-   * new documents alone have no lines to compare.
+   * Default: uncommitted changes when they have lines to compare, else the latest commit;
+   * new documents alone have none.
    */
   const selection: WorkbenchSelection =
     selectionChoice ??
-    (diffFiles.length > 0
+    (diffFiles.length > 0 || diffTooLarge
       ? { kind: "pending" }
       : history.length > 0
         ? { kind: "commit", hash: history[0].hash }
@@ -977,6 +982,7 @@ export function AtlasGitPanel({
             selection={selection}
             setSelection={selectStep}
             diffFiles={diffFiles}
+            diffTooLarge={diffTooLarge}
             history={localizedHistory}
             historyHasMore={historyHasMore}
             historyMoreBusy={historyMoreBusy}
@@ -2576,6 +2582,7 @@ function DesktopBody({
   selection,
   setSelection,
   diffFiles,
+  diffTooLarge,
   history,
   historyHasMore,
   historyMoreBusy,
@@ -2646,6 +2653,7 @@ function DesktopBody({
   selection: WorkbenchSelection;
   setSelection: (v: WorkbenchSelection) => void;
   diffFiles: AtlasGitDiffFile[];
+  diffTooLarge: boolean;
   history: GitCommitInfo[];
   /** Whether git holds steps older than `history` — drawn as one "show older steps" row. */
   historyHasMore: boolean;
@@ -3062,6 +3070,7 @@ function DesktopBody({
                   .filter(Boolean)
                   .join(" · ")}
                 hunks={diffFiles}
+                hunksTooLarge={diffTooLarge}
                 selectedPath={selectedPath}
                 setSelectedPath={setSelectedPath}
                 stagedOutsideCount={status?.stagedOutsideVault.length ?? 0}

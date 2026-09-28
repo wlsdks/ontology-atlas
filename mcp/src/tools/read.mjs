@@ -367,7 +367,9 @@ function getConceptsBatch({ slugs, uids, body }) {
   return { concepts };
 }
 
-function findEvidence({ title, limit, nodesOnly = false } = {}) {
+const FIND_EVIDENCE_DEFAULT_LIMIT = 50;
+
+function findEvidence({ title, limit = FIND_EVIDENCE_DEFAULT_LIMIT, nodesOnly = false } = {}) {
   requireNonBlankString(title, 'title');
   requireOptionalPositiveInteger(limit, 'limit', { max: 500 });
   requireOptionalBoolean(nodesOnly, 'nodesOnly');
@@ -428,8 +430,17 @@ function findEvidence({ title, limit, nodesOnly = false } = {}) {
       Number(b.isNode) - Number(a.isNode) ||
       a.slug.localeCompare(b.slug),
   );
-  const limited = typeof limit === 'number' ? matches.slice(0, limit) : matches;
-  const result = { query: title, matches: limited };
+  const limited = matches.slice(0, limit);
+  const moreMatched = limited.length < matches.length;
+  const result = {
+    ...(moreMatched
+      ? { limitHint: `The ${limited.length} best of ${matches.length} matches. Narrow the title, pass nodesOnly: true, or raise limit (at most 500).` }
+      : {}),
+    query: title,
+    total: matches.length,
+    limited: moreMatched,
+    matches: limited,
+  };
   // When loose documents came back in the results, say so and give the way to
   // narrow it — rather than filtering silently, hand the reader what they need to
   // judge for themselves.

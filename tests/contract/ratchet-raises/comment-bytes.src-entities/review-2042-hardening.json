@@ -1,0 +1,1 @@
+{ "gate": "comment-bytes.src-entities", "raise": 427, "why": "Security review of #2042: the desktop restore preflight now tells a present-but-ungranted vault (first launch after the access-scope update) apart from a deleted one, so returning users are asked to confirm access once instead of being told their vault was lost; the comment explains the grant-needed classification." }

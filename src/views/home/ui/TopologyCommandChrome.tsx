@@ -39,6 +39,7 @@ import { TopologyTrailChip } from "./TopologyTrailChip";
 
 
 interface TopologyCommandChromeProps {
+  grayAreaAction?: {label:string;onOpen:()=>void};
   routeState: import("@/views/home/model/url-state").HomeRouteState;
   setRouteState: (updater: Partial<import("@/views/home/model/url-state").HomeRouteState> | ((current: import("@/views/home/model/url-state").HomeRouteState) => import("@/views/home/model/url-state").HomeRouteState), options?: import("@/views/home/model/use-home-route-state").HomeRouteStateUpdateOptions | undefined) => void;
   setVaultAgentPrefill: React.Dispatch<React.SetStateAction<{ text: string; nonce: number; } | null>>;
@@ -119,6 +120,7 @@ interface TopologyCommandChromeProps {
 }
 
 export function TopologyCommandChrome({
+  grayAreaAction,
   routeState, setRouteState, setVaultAgentPrefill, setOntologySearchOpen, setTopologyRelayoutToken, toast,
   expandAllActive, insightsReturnTab, insightsReturnReviewId, analysisMode, footprintTrailEntries,
   footprintTrailStepCaptions, footprintPacketCopied, copyFootprintPacket, clearFootprintTrail,
@@ -282,6 +284,7 @@ export function TopologyCommandChrome({
             density={topologyUtilityChromeCompact || searchLaneCrowded ? "compact-focus" : "default"}
             phoneFocusSuppressed={selectedNodeFocusActive}
             constellationControl={(
+              <>
               <SavedConstellationsControl
                 handle={vault.status === 'loaded' ? vault.handle : null}
                 candidates={constellationCandidates}
@@ -323,6 +326,8 @@ export function TopologyCommandChrome({
                 }}
                 canPrepare={llmBridgeAvailable}
               />
+              {routedConstellation && grayAreaAction ? <ChromeChip onClick={grayAreaAction.onOpen} icon={<ScanSearch size={14}/>} data-testid="gray-area-set-entry">{grayAreaAction.label}</ChromeChip> : null}
+              </>
             )}
             // Below `md` expanded INDEX is a full-bleed sheet, so the top chrome column is demoted
             // like the utility lane.

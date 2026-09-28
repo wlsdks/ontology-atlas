@@ -62,7 +62,7 @@ export function createHealthQuery({
         message:
           issueCount === 0
             ? 'Compiled ontology artifact has no compiler issues.'
-            : 'Compiled ontology artifact has compiler issues; inspect compile_ontology.issues.',
+            : 'Compiled ontology artifact has compiler issues; compile_ontology({ nodesLimit: 1, edgesLimit: 1 }) returns every issue.',
       }),
       healthCheck({
         id: 'unresolved_edges',

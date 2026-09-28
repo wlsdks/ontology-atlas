@@ -258,7 +258,7 @@ describe("`.claude/rules` path scoping contract", () => {
    * each saved bytes conflicted on one line and bundle merges recounted it by
    * hand. A saving is now permanent without bookkeeping, because the next
    * branch's base already contains it. A deliberate raise is a
-   * `tests/contract/ratchet-raises/resident-context-bytes.<slug>.json` record
+   * `tests/contract/ratchet-raises/resident-context-bytes/<slug>.json` record
    * saying why the bytes must be resident; the raises made before that
    * mechanism, with their reasons, are in this file's Git history.
    *

@@ -155,6 +155,7 @@ export interface GitDiffResult {
   files: GitChangeEntry[];
   /** Text diff of tracked files; untracked new files appear only in `files`. */
   diff: string;
+  tooLarge: boolean;
 }
 
 /** Rust `GitPullResult`. */
@@ -348,10 +349,13 @@ export async function gitHistory(
 }
 
 /** File list plus text diff for uncommitted changes within the vault. */
-export async function gitDiff(vaultPath: string): Promise<GitDiffResult | null> {
+export async function gitDiff(
+  vaultPath: string,
+  options?: { includePatch?: boolean },
+): Promise<GitDiffResult | null> {
   const invoke = getInvoke();
   if (!invoke) return null;
-  return invoke<GitDiffResult>('git_diff', { vaultPath });
+  return invoke<GitDiffResult>('git_diff', { vaultPath, includePatch: options?.includePatch ?? true });
 }
 
 /**

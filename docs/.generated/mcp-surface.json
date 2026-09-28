@@ -93,6 +93,7 @@
         "arguments": [
           "edgesLimit",
           "edgesOffset",
+          "full",
           "includeIndexes",
           "nodesLimit",
           "nodesOffset",
@@ -533,6 +534,8 @@
         "name": "validate_vault",
         "mode": "read",
         "arguments": [
+          "limit",
+          "offset",
           "repoRoot"
         ],
         "required": []

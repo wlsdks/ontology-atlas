@@ -7,6 +7,7 @@ import {
   territoryClusterAvoid,
   territorySatellites,
   TERRITORY_GEOMETRY,
+  type TerritoryCapability,
   type TerritoryInputEdge,
   type TerritoryInputNode,
   type TerritoryLayout,
@@ -104,6 +105,12 @@ function inSector(angle: number, start: number, end: number): boolean {
   return rel <= end - start + 1e-9;
 }
 
+const ROOM_1280 = { x: -407, y: -330, w: 834, h: 640 };
+const ROOM_1040 = { x: -287, y: -290, w: 594, h: 560 };
+type Rect = { x: number; y: number; w: number; h: number };
+const inside = (room: Rect, b: Rect) =>
+  b.x >= room.x && b.y >= room.y && b.x + b.w <= room.x + room.w && b.y + b.h <= room.y + room.h;
+
 describe("computeTerritoryLayout", () => {
   it("names every dogfood capability around its own domain with nothing overlapping", () => {
     const { nodes, edges } = dogfoodGraph();
@@ -158,20 +165,42 @@ describe("computeTerritoryLayout", () => {
   });
 
   it.each([
-    ["1280x800 with INDEX open", { x: -407, y: -330, w: 834, h: 640 }],
-    ["1040x720 with INDEX open", { x: -287, y: -290, w: 594, h: 560 }],
-  ])("keeps every disc and every name it draws at rest inside a %s room", (_label, room) => {
+    ["1280x800 with INDEX open", ROOM_1280],
+    ["1040x720 with INDEX open", ROOM_1040],
+  ])("keeps every disc and every name it can draw, at rest or lit, inside a %s room", (_label, room) => {
     // Nothing drawn at rest may leave the room: in a smaller room the rings draw in first
     // and names that still do not fit wait for hover.
     const { nodes, edges } = dogfoodGraph();
     const layout = computeTerritoryLayout(nodes, edges, { ...options, room });
-    const inRoom = (b: { x: number; y: number; w: number; h: number }) =>
-      b.x >= room.x && b.y >= room.y && b.x + b.w <= room.x + room.w && b.y + b.h <= room.y + room.h;
     expect(layout.fitsRoom).toBe(true);
     expect(layout.capabilities).toHaveLength(nodes.filter((n) => n.kind === "capability").length);
     for (const c of layout.capabilities) {
-      expect(inRoom({ x: c.x - c.r, y: c.y - c.r, w: 2 * c.r, h: 2 * c.r }), `${c.id} disc outside the room`).toBe(true);
-      if (c.labelReserved) expect(inRoom(c.label.box), `${c.id} name outside the room`).toBe(true);
+      expect(inside(room, { x: c.x - c.r, y: c.y - c.r, w: 2 * c.r, h: 2 * c.r }), `${c.id} disc outside the room`).toBe(true);
+      expect(inside(room, c.label.box), `${c.id} name outside the room`).toBe(true);
+    }
+    expect(overlaps(layout)).toEqual([]);
+  });
+
+  it("folds a name rather than set a title or pill on another box or outside the room", () => {
+    const { nodes, edges } = synthetic(14, 3);
+    const layout = computeTerritoryLayout(nodes, edges, { ...options, room: ROOM_1280 });
+    expect(layout.fitsRoom).toBe(true);
+    expect(overlaps(layout)).toEqual([]);
+    expect(layout.boxes.filter(({ box }) => !inside(ROOM_1280, box))).toEqual([]);
+  });
+
+  it("folds names before a disc would leave the room", () => {
+    const { nodes, edges } = synthetic(34, 4);
+    const layout = computeTerritoryLayout(nodes, edges, { ...options, room: ROOM_1040 });
+    expect(layout.fitsRoom).toBe(true);
+    expect(layout.capabilities).toHaveLength(34);
+    expect(layout.capabilities.some((c) => !c.labelReserved)).toBe(true);
+    expect(layout.capabilities.some((c) => c.labelReserved)).toBe(true);
+    for (const c of layout.capabilities) {
+      expect(inside(ROOM_1040, { x: c.x - c.r, y: c.y - c.r, w: 2 * c.r, h: 2 * c.r }), `${c.id} disc outside the room`).toBe(true);
+      expect(inside(ROOM_1040, c.label.box), `${c.id} name outside the room`).toBe(true);
+      const domain = layout.domains.find((d) => d.id === c.domainId)!;
+      expect(inSector(c.angle, domain.sectorStart, domain.sectorEnd), `${c.id} left its territory`).toBe(true);
     }
     expect(overlaps(layout)).toEqual([]);
   });
@@ -203,6 +232,18 @@ describe("computeTerritoryLayout", () => {
       for (const b of avoid) expect(boxesOverlap(plate, b), `${cap.id}'s list covers its name or its domain's title`).toBe(false);
     }
     expect(checked).toBeGreaterThan(5);
+  });
+
+  it("slides the list past the reach before it covers its domain's title", () => {
+    const cap: TerritoryCapability = {
+      id: "capability:x", name: "X", domainId: "domain:a", x: 0, y: 0, r: 10, angle: 0, shelf: 0,
+      elementIds: ["e1", "e2", "e3", "e4", "e5"], hasDependency: false, labelReserved: true,
+      label: { text: "X", x: 17, y: 4, align: "left", box: { x: 17, y: -8, w: 94, h: 13 } },
+    };
+    const titleOnTheListSide = { x: -150, y: -16, w: 90, h: 32 };
+    const { plate } = placeTerritoryCluster(cap, 120, [cap.label.box, titleOnTheListSide]);
+    expect(boxesOverlap(plate, titleOnTheListSide)).toBe(false);
+    expect(boxesOverlap(plate, cap.label.box)).toBe(false);
   });
 
   it("is deterministic: the same graph draws the same picture", () => {

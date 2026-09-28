@@ -15,7 +15,7 @@ import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
 import { useAgentDockDefaultOpen } from "@/shared/lib/use-agent-dock-default";
 import { useLatestRef } from "@/shared/lib/use-latest-ref";
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { agentChatDoor } from "./agent-chat-door";
+import { agentChatDoor, type VaultAgentPrefill } from "./agent-chat-door";
 import { planRouteAskDockSync, type RouteAskDockRequest } from "./route-ask-dock-sync";
 function hashAskRequest(kind: string, ref: string): number {
   const source = `${kind}:${ref}`;
@@ -27,7 +27,7 @@ function hashAskRequest(kind: string, ref: string): number {
 }
 interface Options {
   setOntologySearchOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  setVaultAgentPrefill: React.Dispatch<React.SetStateAction<{ text: string; nonce: number; } | null>>;
+  setVaultAgentPrefill: React.Dispatch<React.SetStateAction<VaultAgentPrefill | null>>;
   routeState: import("@/views/home/model/url-state").HomeRouteState;
   agentDockTouchedRef: React.RefObject<boolean>;
   setRouteState: (updater: Partial<import("@/views/home/model/url-state").HomeRouteState> | ((current: import("@/views/home/model/url-state").HomeRouteState) => import("@/views/home/model/url-state").HomeRouteState), options?: import("@/views/home/model/use-home-route-state").HomeRouteStateUpdateOptions | undefined) => void;
