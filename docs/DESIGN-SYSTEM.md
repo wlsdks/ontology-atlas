@@ -2336,7 +2336,13 @@ Hover changes ink, surface or border on `--motion-fast`, never position.
 `useSlidingIndicator` in `src/shared/motion/use-sliding-indicator.ts`, CSS in
 `motion-indicator.css`: one indicator per group, placed without a transition
 first. Tabs, segments, rail and LNB move on `--motion-base`; palette rows on
-`--motion-fast`.
+`--motion-fast`. The indicator carries `motion-indicator`,
+`data-selection-indicator` (its shape) and `data-animated`; the transition
+runs only while `data-animated="true"`, and reduced motion drops it, so the
+indicator jumps. Until `placed`, the active item keeps its static style.
+Underlines move by translateX + scaleX of a 1px bar; surfaces by translate +
+width/height. TabBar, the SegmentedControl well and the rail use it; a new
+`role="tab"` outside TabBar is held by `tab-adoption-ratchet`.
 
 ### Success and failure
 

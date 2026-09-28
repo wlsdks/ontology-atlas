@@ -2,6 +2,7 @@
 
 import { type ReactNode } from "react";
 
+import { useSlidingIndicator } from "@/shared/motion/use-sliding-indicator";
 import { cn } from "@/shared/lib/cn";
 import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
 import { controlClass, type ControlSize } from "./control-class";
@@ -69,27 +70,47 @@ export function SegmentedControl<T extends string | number | boolean>({
     onChange,
     busy,
   });
+  const well = variant === "well";
+  const { containerRef, itemRef, indicatorStyle, placed, animated } = useSlidingIndicator(
+    well ? String(value) : null,
+    "surface-x",
+  );
 
   return (
     <div
       {...group.groupProps}
+      ref={containerRef}
       aria-label={ariaLabel}
       aria-labelledby={labelledBy}
       data-testid={testId}
       className={cn(
         variant === "well"
-          ? "inline-flex items-center gap-px rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-px"
+          ? "relative inline-flex items-center gap-px rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-px"
           : "flex flex-wrap items-center gap-1.5",
         fill && (variant === "well" ? "flex w-full" : "w-full"),
         className,
       )}
     >
+      {placed ? (
+        <span
+          aria-hidden
+          data-selection-indicator="surface-x"
+          data-animated={animated ? "true" : "false"}
+          className="motion-indicator rounded-chip bg-[color:var(--color-indigo-a16)]"
+          style={indicatorStyle}
+        />
+      ) : null}
       {options.map((option, index) => {
         const item = group.itemProps(index);
+        const key = String(option.value);
         return (
           <button
-            key={String(option.value)}
+            key={key}
             {...item}
+            ref={(el) => {
+              item.ref(el);
+              itemRef(key)(el);
+            }}
             type="button"
             aria-label={option.ariaLabel}
             title={option.title}
@@ -100,7 +121,11 @@ export function SegmentedControl<T extends string | number | boolean>({
               active: item["aria-checked"],
               hoverInk: "strong",
               hoverSurface: "lift",
-              className: fill ? "min-w-0 flex-1" : undefined,
+              className: cn(
+                well && "relative",
+                well && placed && "bg-transparent",
+                fill && "min-w-0 flex-1",
+              ),
             })}
           >
             {option.label}

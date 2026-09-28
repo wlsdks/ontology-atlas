@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
 
+import { useSlidingIndicator } from '@/shared/motion/use-sliding-indicator';
+
 /**
  * Section tabs with a 2px bottom indicator. Presentational: `onSelect` is the only integration
  * point, so the caller owns how the active tab is stored.
@@ -49,7 +51,17 @@ export function TabBar({
   const tabRefs = useRef(new Map<string, HTMLButtonElement>());
   const pendingFocusKey = useRef<string | null>(null);
   const stripRef = useRef<HTMLDivElement | null>(null);
-  /* Without an edge fade on the hidden side, a scrolling strip looks like one that ends. */
+  const { containerRef, itemRef, indicatorStyle, placed, animated } = useSlidingIndicator(
+    activeKey,
+    vertical ? 'surface-y' : 'underline-x',
+  );
+  const attachStrip = useCallback(
+    (el: HTMLDivElement | null) => {
+      stripRef.current = el;
+      containerRef(el);
+    },
+    [containerRef],
+  );
   const [edgeOverflow, setEdgeOverflow] = useState({ left: false, right: false });
 
   const recomputeEdges = useCallback(() => {
@@ -90,10 +102,6 @@ export function TabBar({
     if (!strip) return;
     recomputeEdges();
     strip.addEventListener('scroll', recomputeEdges, { passive: true });
-    /*
-     * A resize can push the active tab out without a remount, so the same correction runs,
-     * unanimated because it is a layout consequence.
-     */
     const onResize = () => {
       recomputeEdges();
       scrollActiveIntoView('auto');
@@ -111,7 +119,6 @@ export function TabBar({
     const reduced =
       typeof window !== 'undefined' &&
       window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    // The tab count re-corrects on the frame where a new tab changed the width.
     const frame = requestAnimationFrame(() => scrollActiveIntoView(reduced ? 'auto' : 'smooth'));
     return () => cancelAnimationFrame(frame);
   }, [scrollActiveIntoView, items.length]);
@@ -173,7 +180,7 @@ export function TabBar({
 
   return (
     <div
-      ref={stripRef}
+      ref={attachStrip}
       data-testid={testId}
       role="tablist"
       aria-orientation={vertical ? 'vertical' : 'horizontal'}
@@ -196,15 +203,29 @@ export function TabBar({
       }
       className={
         vertical
-          ? "flex flex-col gap-0.5"
+          ? "relative flex flex-col gap-0.5"
           : placement === 'header'
-            ? "flex h-full items-end gap-3 overflow-x-auto"
-            : "-ml-3 flex gap-3 overflow-x-auto border-b border-[color:var(--color-divider)]"
+            ? "relative flex h-full items-end gap-3 overflow-x-auto"
+            : "relative -ml-3 flex gap-3 overflow-x-auto border-b border-[color:var(--color-divider)]"
       }
       style={maskImage ? { maskImage, WebkitMaskImage: maskImage } : undefined}
     >
+      {placed ? (
+        <span
+          aria-hidden
+          data-selection-indicator={vertical ? 'surface-y' : 'underline-x'}
+          data-animated={animated ? 'true' : 'false'}
+          className={
+            vertical
+              ? "motion-indicator rounded-card bg-[color:var(--color-indigo-a14)] shadow-[inset_0_0_0_1px_var(--color-indigo-line-a22)]"
+              : "motion-indicator h-[length:var(--tabbar-underline)] bg-[color:var(--color-indigo-accent)]"
+          }
+          style={indicatorStyle}
+        />
+      ) : null}
       {items.map((item, index) => {
         const active = item.key === activeKey;
+        const selfPainted = active && !placed;
         return (
           <button
             key={item.key}
@@ -212,6 +233,7 @@ export function TabBar({
             ref={(element) => {
               if (element) tabRefs.current.set(item.key, element);
               else tabRefs.current.delete(item.key);
+              itemRef(item.key)(element);
             }}
             type="button"
             role="tab"
@@ -235,13 +257,17 @@ export function TabBar({
             className={
               vertical
                 ? "atlas-touch-floor relative inline-flex min-h-[var(--control-h-lg)] w-full items-center gap-2 rounded-card px-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)] " +
-                  (active
+                  (selfPainted
                     ? "bg-[color:var(--color-indigo-a14)] font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)] shadow-[inset_0_0_0_1px_var(--color-indigo-line-a22)]"
+                    : active
+                    ? "bg-transparent font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
                     : "bg-transparent font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]")
                 :
               "atlas-touch-floor atlas-touch-floor-wide relative -mb-px inline-flex min-h-[var(--control-h-lg)] shrink-0 items-center gap-2 whitespace-nowrap border-b-[length:var(--tabbar-underline)] bg-transparent px-3 font-[var(--font-weight-emphasis)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)] " +
-              (active
+              (selfPainted
                 ? "border-b-[color:var(--color-indigo-accent)] font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
+                : active
+                ? "border-transparent font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
                 : "border-transparent text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]")
             }
           >
