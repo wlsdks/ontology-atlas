@@ -223,11 +223,12 @@ mod tests {
             !reg.is_vault_granted(&base),
             "the parent of a granted root is not granted"
         );
-        // The home-directory / .ssh reach the exploit relied on.
-        let home = std::env::var_os("HOME").map(PathBuf::from).unwrap();
-        assert!(!reg.is_vault_granted(&home), "home is not granted");
+        // The kind of secret path outside every granted root the exploit reached
+        // (a fixed absolute path, so the test does not depend on $HOME/%USERPROFILE%).
+        let secret = tmp("outside").join(".ssh/id_rsa");
+        assert!(!reg.is_vault_granted(secret.parent().unwrap()), "an outside dir is not granted");
         assert!(
-            !reg.is_vault_granted(&home.join(".ssh/id_rsa")),
+            !reg.is_vault_granted(&secret),
             "a secret outside every granted root stays refused"
         );
     }

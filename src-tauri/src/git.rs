@@ -2996,6 +2996,9 @@ mod tests {
         let _ = fs::remove_dir_all(&base);
     }
 
+    // Writing an executable hook needs the unix mode bit; the runtime hooks
+    // hardening in `run_git` is platform-independent and always applies.
+    #[cfg(unix)]
     fn write_hook(repo: &Path, name: &str, marker: &Path) {
         use std::os::unix::fs::PermissionsExt;
         let hooks = repo.join(".git/hooks");
@@ -3005,6 +3008,7 @@ mod tests {
         fs::set_permissions(&path, fs::Permissions::from_mode(0o755)).unwrap();
     }
 
+    #[cfg(unix)]
     #[test]
     fn a_hostile_repo_hook_does_not_run_on_a_non_commit_verb() {
         let base = std::env::temp_dir().join(format!("atlas-sec-hook-{}", std::process::id()));
@@ -3040,6 +3044,7 @@ mod tests {
         let _ = fs::remove_dir_all(&base);
     }
 
+    #[cfg(unix)]
     #[test]
     fn the_snapshot_commit_still_runs_a_rejecting_pre_commit_hook() {
         let base = std::env::temp_dir().join(format!("atlas-sec-precommit-{}", std::process::id()));

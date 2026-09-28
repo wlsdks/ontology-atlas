@@ -5575,6 +5575,8 @@ mod vault_scope_tests {
 
     // The grant gate is permissive here (production `initialize` never runs in unit
     // tests); this pins the path-containment half of the boundary the gate rides on.
+    // Unix-only: it needs a real symlink; canonicalisation guards both platforms.
+    #[cfg(unix)]
     #[test]
     fn a_symlink_that_escapes_the_root_is_refused() {
         use std::os::unix::fs::symlink;
