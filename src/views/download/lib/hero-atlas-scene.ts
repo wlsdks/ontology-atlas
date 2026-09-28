@@ -136,8 +136,8 @@ export function mountHeroAtlas(host: HTMLElement, data: AtlasData, opts: AtlasOp
   const accent = new THREE.Color(cssVar(rootEl, '--color-indigo-brand', '#5e6ad2'));
   const accentBright = new THREE.Color(cssVar(rootEl, '--color-indigo-accent', '#7170ff'));
   const ink = new THREE.Color(cssVar(rootEl, '--color-text-primary', '#f7f8f8'));
-  const inkSoft = new THREE.Color(cssVar(rootEl, '--color-text-tertiary', '#8a8b93'));
-  const inkDim = new THREE.Color(cssVar(rootEl, '--color-text-quaternary', '#61626c'));
+  const inkSoft = new THREE.Color(cssVar(rootEl, '--color-text-tertiary', '#8a8f98'));
+  const inkDim = new THREE.Color(cssVar(rootEl, '--color-text-quaternary', '#82828a'));
 
   renderer.setClearColor(0x000000, 0);
   // 1.5 hides sphere edge steps on Retina; 2 doubles fill cost for nothing visible through fog.

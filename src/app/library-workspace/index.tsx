@@ -3,9 +3,10 @@
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import { useFormatter, useTranslations } from 'next-intl';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentProps, type ComponentType } from 'react';
 
 import { LibraryConstellations, LibraryPage, LibraryRounds, useLibraryRounds } from '@/views/library';
+import type { DocsVaultPage } from '@/views/docs-vault';
 import { useLocalVault } from '@/entities/vault-session';
 import { selectWikiPages } from '@/entities/docs-vault';
 import { useRouter } from '@/i18n/navigation';
@@ -14,15 +15,28 @@ import { selectOpenVaultHandle } from '@/shared/lib/select-open-vault-handle';
 import { RouteLoadingFallback, TabBar } from '@/shared/ui';
 import { SegmentedControl } from '@/shared/ui/segmented-control';
 
+import { fadeIn, prefersReducedMotion, tabSwitchFade, whenIdle, whenLoaded, type LibraryTab } from './panel-arrival';
 import styles from './library-workspace.module.css';
 
-// The app layer composes both views so neither imports the other.
-const OntologyPage = dynamic(
-  () => import('@/views/docs-vault').then((module) => module.DocsVaultPage),
+type OntologyPageComponent = ComponentType<ComponentProps<typeof DocsVaultPage>>;
+
+let loadedOntologyPage: OntologyPageComponent | null = null;
+
+function rememberOntologyPage(module: { DocsVaultPage: typeof DocsVaultPage }): OntologyPageComponent {
+  loadedOntologyPage = module.DocsVaultPage;
+  return module.DocsVaultPage;
+}
+
+const LazyOntologyPage = dynamic(
+  () => import('@/views/docs-vault').then(rememberOntologyPage),
   { loading: () => <RouteLoadingFallback /> },
 );
 
-type LibraryTab = 'sources' | 'wiki' | 'ontology' | 'rounds';
+function OntologyDocuments() {
+  const [Page] = useState<OntologyPageComponent>(() => loadedOntologyPage ?? LazyOntologyPage);
+  return <Page initialCollection="ontology" documentScope="ontology" />;
+}
+
 type OntologyView = 'documents' | 'sets';
 
 function carriedQuery(params: URLSearchParams): URLSearchParams {
@@ -34,7 +48,6 @@ function carriedQuery(params: URLSearchParams): URLSearchParams {
 
 export function LibraryWorkspace() {
   const t = useTranslations('library');
-  // Counts are grouped the way the messages' `{count, number}` writes them.
   const format = useFormatter();
   const params = useSearchParams();
   const router = useRouter();
@@ -55,35 +68,23 @@ export function LibraryWorkspace() {
     query.set('ontologyView', 'sets');
     router.replace(`/library/?${query}${window.location.hash}`, { scroll: false });
   }, [params, requested, router]);
+  useEffect(() => whenIdle(() => void import('@/views/docs-vault').then(rememberOntologyPage)), []);
   const handle = selectOpenVaultHandle(vault.status, vault.handle);
-  /** The strip's empty right end, where `LibraryPage` portals the info glyph and column fold. */
   const [toolsHost, setToolsHost] = useState<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
+  const ontologyRef = useRef<HTMLDivElement | null>(null);
   const previousTab = useRef(tab);
-  /*
-   * Sources and Wiki share one keyed view, so their CSS enter never replays; the same fade is
-   * played on the mounted panel instead, before paint, keeping the view's selection and scroll.
-   * Opacity only, so no fixed popover inside changes its containing block.
-   *
-   * The global reduced-motion rule cuts CSS animations, so under reduced motion every switch
-   * plays the fade here, without travel, on the short step.
-   */
   useLayoutEffect(() => {
     const from = previousTab.current;
     previousTab.current = tab;
     const panel = panelRef.current;
-    if (from === tab || !panel || typeof panel.animate !== 'function') return;
-    const segmentSwitch = (from === 'sources' || from === 'wiki') && (tab === 'sources' || tab === 'wiki');
-    const reduced = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (!segmentSwitch && !reduced) return;
-    const style = getComputedStyle(panel);
-    // The browser hands the token back normalised (`.18s`, not `180ms`), so read the unit.
-    const raw = style.getPropertyValue(reduced ? '--motion-fast' : '--motion-base').trim();
-    const duration = (Number.parseFloat(raw) || 0) * (raw.endsWith('ms') ? 1 : 1000);
-    if (duration <= 0) return;
-    const easing = style.getPropertyValue('--motion-ease').trim() || undefined;
-    panel.animate([{ opacity: 0 }, { opacity: 1 }], { duration, easing });
+    const token = panel ? tabSwitchFade(from, tab, prefersReducedMotion()) : null;
+    if (panel && token) fadeIn(panel, token);
   }, [tab]);
+  useLayoutEffect(() => {
+    const host = ontologyRef.current;
+    return host ? whenLoaded(host, () => fadeIn(host, '--motion-fast')) : undefined;
+  }, [tab, ontologyView]);
 
   const selectTab = useCallback((next: LibraryTab) => {
     if (next === tab) return;
@@ -102,10 +103,6 @@ export function LibraryWorkspace() {
   return (
     <div data-testid="library-workspace" className="flex min-h-0 w-full flex-1 flex-col overflow-hidden">
       <header className="topology-ui-scale flex h-14 shrink-0 items-stretch border-b border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-0">
-        {/*
-          No title in the strip: the rail names the place.
-          The tabs start on the index column's text line.
-        */}
         <TabBar
           ariaLabel={t('workspace.aria')}
           activeKey={tab}
@@ -142,17 +139,8 @@ export function LibraryWorkspace() {
             },
           ]}
         />
-        {/*
-          The column's glyph and fold sit on the tabs' row: the tabs stand on the strip's bottom
-          edge at `--control-h-lg`, so this box takes that seat rather than the strip's centre.
-        */}
         <div ref={setToolsHost} data-testid="library-strip-tools" className="ml-auto flex min-h-[var(--control-h-lg)] shrink-0 items-center gap-1 self-end pr-3" />
       </header>
-      {/*
-        Keyed by the view, so a tab switch remounts the panel and plays its short enter.
-        Sources and Wiki share one view (`LibraryPage` with a segment), so they share one key:
-        switching between them keeps that view's state and does not replay the enter.
-      */}
       <div
         key={tab === 'sources' || tab === 'wiki' ? 'library' : tab}
         id={'library-workspace-tabpanel-' + tab}
@@ -175,7 +163,11 @@ export function LibraryWorkspace() {
             <div key={ontologyView} className={`flex min-h-0 flex-1 ${styles.panel}`}>
               {ontologyView === 'sets'
                 ? <LibraryConstellations handle={handle} documents={vault.manifest?.docs ?? []} />
-                : <OntologyPage initialCollection="ontology" documentScope="ontology" />}
+                : (
+                  <div ref={ontologyRef} data-testid="library-ontology-documents-view" className="flex min-h-0 min-w-0 flex-1">
+                    <OntologyDocuments />
+                  </div>
+                )}
             </div>
           </div>
         ) : tab === 'rounds' ? (

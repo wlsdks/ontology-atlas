@@ -18,6 +18,7 @@ import { Button, EmptyState, RowButton, buttonVariants } from "@/shared/ui";
 
 import { useLibraryRounds } from "../lib/library-rounds-context";
 import { capitalize } from "../lib/round-presentation";
+import { libraryEyebrowClass } from "../lib/page-eyebrow";
 import { lastOutcome, nextRound, sinceSpan, summarizeSince } from "../lib/round-presentation";
 import { RoundsLedger } from "./parts/RoundsLedger";
 import { SinceYouLeft } from "./parts/SinceYouLeft";
@@ -250,19 +251,9 @@ export function LibraryRounds() {
           PAGE_FRAME_FORM,
           "flex flex-col gap-8 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]",
         )}>
-          {/*
-            The same page head Work scope draws: eyebrow, display headline, then the status as
-            its description. The status line used to be the head, at body size, and the largest
-            text on the screen was the empty state's own headline below it.
-
-            No "last pass" in it (round three): the ledger's top row is the last pass, one line
-            below, and the header's 09:00 beside the away card's "→ 09:02" read as two different
-            "now"s on one screen. The header says how many and what runs next; the ledger says
-            what ran.
-          */}
           <header className="min-w-0">
             <div className="min-w-0">
-              <p className="text-caption leading-caption font-[var(--font-weight-strong)] uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-indigo-text-soft)]">
+              <p className={libraryEyebrowClass(locale)}>
                 {t("eyebrow")}
               </p>
               <h1 className="mt-2 text-display leading-display font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
@@ -316,7 +307,7 @@ export function LibraryRounds() {
                   </Link>
                 </div>
                 <ul aria-label={t("indexAria")} data-testid="library-rounds-list"
-                  className="grid grid-cols-1 gap-x-4 border-y border-[color:var(--color-divider)] py-1 md:grid-cols-2">
+                  className="-mx-2 grid grid-cols-1 gap-x-4 border-y border-[color:var(--color-divider)] py-1 md:grid-cols-2">
                   {rounds.map((round) => {
                     const word = outcomeWord(round);
                     const isRunning = running?.roundId === round.id;
@@ -389,10 +380,11 @@ export function LibraryRounds() {
 }
 
 function Header({ t }: { t: ReturnType<typeof useTranslations<"library.rounds">> }) {
+  const locale = useLocale();
   return (
     <header className="flex min-w-0 flex-wrap items-start justify-between gap-4">
       <div className="min-w-0">
-        <p className="text-caption leading-caption font-[var(--font-weight-strong)] uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-indigo-text-soft)]">
+        <p className={libraryEyebrowClass(locale)}>
           {t("eyebrow")}
         </p>
         <h1 className="mt-2 text-display leading-display font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">{t("title")}</h1>

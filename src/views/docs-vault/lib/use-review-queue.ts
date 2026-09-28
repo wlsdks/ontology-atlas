@@ -1,10 +1,24 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocale } from 'next-intl';
 import { buildReviewQueue, type ReviewQueueRow, type VaultDoc } from '@/entities/docs-vault';
 import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
 import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
+
+let lastQueue: { key: string; rows: ReviewQueueRow[] } | null = null;
+
+export function reviewQueueKey(docs: VaultDoc[], locale: string): string {
+  const marks = [locale];
+  for (const doc of docs) {
+    const frontmatter = doc.frontmatter ?? {};
+    if (frontmatter.review_state === undefined) continue;
+    marks.push([doc.slug, doc.title, doc.mtime ?? doc.updatedAt, frontmatter.review_state, frontmatter.review_note, frontmatter.reviewed_by, frontmatter.reviewed_digest]
+      .map((value) => String(value ?? ''))
+      .join('\u0000'));
+  }
+  return marks.join('\u0001');
+}
 
 /**
  * The review queue for the loaded folder. A stateful hook because drift hashing uses the
@@ -21,8 +35,9 @@ export function useReviewQueue({
   getDocContent: ((slug: string) => Promise<string>) | undefined;
   bundledContent: Record<string, string> | undefined;
 }): ReviewQueueRow[] {
-  const [rows, setRows] = useState<ReviewQueueRow[]>([]);
   const locale = useLocale();
+  const key = useMemo(() => reviewQueueKey(docs, locale), [docs, locale]);
+  const [rows, setRows] = useState<ReviewQueueRow[]>(() => (lastQueue?.key === key ? lastQueue.rows : []));
 
   useEffect(() => {
     let cancelled = false;
@@ -34,7 +49,6 @@ export function useReviewQueue({
         // An unreadable file is not evidence of drift, so `buildReviewQueue` drops the row on null.
         return raw === null ? null : parseFrontmatter(raw).body;
       });
-      // Show the reader's `display_<locale>` name as the rest of the sidebar does.
       const bySlug = new Map(docs.map((doc) => [doc.slug, doc]));
       const localized = next.map((row) => {
         const doc = bySlug.get(row.slug);
@@ -42,12 +56,13 @@ export function useReviewQueue({
           ? { ...row, title: resolveLocaleDisplayName(doc.frontmatter, locale, row.title) }
           : row;
       });
+      lastQueue = { key, rows: localized };
       if (!cancelled) setRows(localized);
     })();
     return () => {
       cancelled = true;
     };
-  }, [docs, getDocContent, bundledContent, locale]);
+  }, [docs, getDocContent, bundledContent, locale, key]);
 
   return rows;
 }

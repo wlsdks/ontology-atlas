@@ -53,6 +53,8 @@ test.describe("Library rounds", () => {
     const ledgerBox = await page.getByTestId("library-rounds-ledger").boundingBox();
     expect(indexBox && headline && Math.abs(indexBox.x - headline.x)).toBeLessThanOrEqual(1);
     expect(indexBox && ledgerBox && indexBox.y < ledgerBox.y).toBe(true);
+    const firstRoundGlyph = await page.getByTestId("library-rounds-list").locator("li").first().locator("svg").first().boundingBox();
+    expect(firstRoundGlyph && headline && Math.abs(firstRoundGlyph.x - headline.x)).toBeLessThanOrEqual(1);
 
     const ledger = page.getByTestId("library-rounds-ledger");
     await expect(ledger.locator("[data-outcome='held']")).toHaveCount(3);
@@ -170,6 +172,51 @@ test.describe("Library rounds", () => {
     });
     expect(stored).toHaveLength(1);
     expect(stored[0]).toMatchObject({ kind: "consistency", outcome: "held", trigger: "manual", agentTurns: 0 });
+  });
+
+  test("the empty sheet starts its lines on the page's text edge, under the grey caption eyebrow", async ({ page }) => {
+    await seedFirstRunSeen(page);
+    await installDesktopBridge(page, { seedRounds: false });
+    await openRounds(page);
+    await expect(page.getByTestId("library-rounds")).toHaveAttribute("data-rounds-state", "empty");
+
+    const sheet = await page.getByTestId("library-rounds").evaluate((root) => {
+      const x = (element: Element | null | undefined) => (element ? element.getBoundingClientRect().x : Number.NaN);
+      const textX = (element: Element | null | undefined) => {
+        const node = element ? [...element.querySelectorAll("*"), element].find((candidate) => [...candidate.childNodes].some((child) => child.nodeType === 3 && child.textContent?.trim())) : null;
+        if (!node) return Number.NaN;
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        return range.getClientRects()[0]?.x ?? Number.NaN;
+      };
+      const group = root.querySelector('[data-testid="library-rounds-empty-ledger"] [role="group"]');
+      const band = root.querySelector('[data-testid="library-rounds-empty-signals"]');
+      const eyebrow = root.querySelector("header p");
+      const probe = document.createElement("span");
+      probe.style.color = "var(--color-text-quaternary)";
+      root.append(probe);
+      const quaternary = getComputedStyle(probe).color;
+      probe.remove();
+      return {
+        headline: x(root.querySelector("h1")),
+        eyebrow: x(eyebrow),
+        eyebrowInk: eyebrow ? getComputedStyle(eyebrow).color : null,
+        eyebrowWeight: eyebrow ? getComputedStyle(eyebrow).fontWeight : null,
+        quaternary,
+        bandHead: textX(band?.querySelector("h3")),
+        bandFirst: x(band?.querySelector("li")),
+        group: x(group),
+        groupHead: textX(group?.firstElementChild),
+        kindGlyph: x(group?.querySelector("li svg")),
+      };
+    });
+    expect(Math.abs(sheet.eyebrow - sheet.headline)).toBeLessThanOrEqual(0.5);
+    expect(Math.abs(sheet.bandHead - sheet.headline)).toBeLessThanOrEqual(0.5);
+    expect(Math.abs(sheet.bandFirst - sheet.headline)).toBeLessThanOrEqual(0.5);
+    expect(Math.abs(sheet.groupHead - sheet.group)).toBeLessThanOrEqual(0.5);
+    expect(Math.abs(sheet.kindGlyph - sheet.group)).toBeLessThanOrEqual(0.5);
+    expect(sheet.eyebrowInk).toBe(sheet.quaternary);
+    expect(sheet.eyebrowWeight).toBe("400");
   });
 
   test("the web build explains and points at the app", async ({ page }) => {

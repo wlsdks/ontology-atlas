@@ -1,20 +1,10 @@
-/*
- * The rows of the "what you can schedule" list. The frame (grid, intro, the ruled list and its
- * head) is Work scope's starting point, imported from its module, so the two empty tabs share
- * one geometry; only these two-line rows are this list's own.
- */
 .kinds { margin: 0; padding: 0; list-style: none; }
-.kinds li { display: flex; align-items: flex-start; gap: .625rem; padding: .75rem .5rem; border-top: 1px solid var(--color-divider); }
-.mark { display: inline-grid; flex: none; place-items: center; width: 1rem; height: var(--leading-body); color: var(--color-text-tertiary); }
+.kinds li { display: flex; align-items: flex-start; gap: .625rem; padding: .75rem 0; border-top: 1px solid var(--color-divider); }
+.mark { display: inline-grid; flex: none; place-items: center start; width: 1rem; height: var(--leading-body); color: var(--color-text-tertiary); }
 .copy { display: flex; min-width: 0; flex-direction: column; gap: .125rem; }
 .name { color: var(--color-text-primary); font-size: var(--text-body); line-height: var(--leading-body); font-weight: var(--font-weight-emphasis); }
 .body { max-width: var(--measure-prose); color: var(--color-text-tertiary); font-size: var(--text-label); line-height: var(--leading-label); word-break: keep-all; }
 
-/*
- * The legend band under both columns (round three) wears the shared band from the frame module
- * (round four, so Work scope's steps band is the same sheet). Only the dots are this list's own:
- * the away card's amber stale, indigo redrafted, danger refused, quiet no change.
- */
 .dot { flex: none; width: .5rem; height: .5rem; border-radius: 9999px; background: var(--color-text-quaternary); }
 .dot[data-tone="stale"] { background: var(--color-status-warning); }
 .dot[data-tone="redrafted"] { background: var(--color-indigo-text-soft); }
