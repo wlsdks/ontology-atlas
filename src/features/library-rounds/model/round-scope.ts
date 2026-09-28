@@ -37,6 +37,7 @@ export interface ScopeInput {
   atlasToolMode: (toolName: string | null, serverName: string) => 'read' | 'write' | null;
   /** The Library's page judge: a verdict for a `wiki/` page write, `null` for anything else. */
   judgeWrite: (request: ScopeRequest) => { path: string; ok: boolean; text: string } | null;
+  node?: (relative: string) => boolean;
 }
 
 /** The note the ledger records: `read <path>`, `write <path>` or `call <tool>`. */
@@ -87,6 +88,7 @@ export function judgeRoundScope({
   vaultServerName,
   atlasToolMode,
   judgeWrite,
+  node,
 }: ScopeInput): ScopeVerdict {
   if (request.reviewKind === 'ontology-write') {
     return { decision: 'reject', reason: request.toolName ?? 'ontology-write' };
@@ -121,7 +123,7 @@ export function judgeRoundScope({
   }
 
   // Ontology rounds are read-only reviews: they may inspect source evidence but never edit the vault.
-  if (round.kind === 'ontology') {
+  if (round.kind === 'ontology' || node?.(relative)) {
     return { decision: 'reject', reason: relative || request.toolName || 'ontology review is read-only' };
   }
 

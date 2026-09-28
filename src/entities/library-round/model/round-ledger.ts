@@ -45,6 +45,7 @@ export interface RoundPassEntry {
   /** `no-agent`: no guarded agent was ready, so nothing was written; `stopped`: removed or paused mid-pass. */
   note?: 'no-agent' | 'stopped';
   undone?: RoundUndone[];
+  leftAsIs?: string[];
 }
 
 export type RoundUndoReason = 'not-draft' | 'duplicate-key' | 'forbidden-key' | 'no-frontmatter' | 'unreadable';
@@ -54,6 +55,7 @@ export interface RoundUndone {
   reason: RoundUndoReason;
   key?: string;
   action: 'restored' | 'removed' | 'failed';
+  copy?: string;
 }
 
 const UNDO_REASONS: readonly RoundUndoReason[] = ['not-draft', 'duplicate-key', 'forbidden-key', 'no-frontmatter', 'unreadable'];
@@ -66,6 +68,7 @@ function parseUndone(value: unknown): RoundUndone[] {
   if (!UNDO_ACTIONS.includes(item.action as RoundUndone['action'])) return [];
   const undone: RoundUndone = { path: item.path, reason: item.reason as RoundUndoReason, action: item.action as RoundUndone['action'] };
   if (typeof item.key === 'string') undone.key = item.key;
+  if (typeof item.copy === 'string') undone.copy = item.copy;
   return [undone];
 }
 
@@ -115,6 +118,8 @@ export function parseRoundPassEntry(line: string): RoundPassEntry | null {
   if (places.length > 0) entry.places = places;
   const undone = Array.isArray(record.undone) ? record.undone.flatMap(parseUndone) : [];
   if (undone.length > 0) entry.undone = undone;
+  const leftAsIs = stringList(record.leftAsIs);
+  if (leftAsIs.length > 0) entry.leftAsIs = leftAsIs;
   return entry;
 }
 

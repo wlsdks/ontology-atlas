@@ -80,6 +80,7 @@
     "removed": "Atlas removed {page}, which this run had created.",
     "failed": "Atlas could not put {page} back after this run. Open it and check it before you rely on it."
   },
+  "leftAsIs": "{page} was changed by someone else during this run, so Atlas left it as it is.",
   "refused": "Refused: {tools}",
   "called": "Read: {tools}",
   "saving": "Scheduling…",

@@ -108,6 +108,16 @@ describe('round scope', () => {
     expect(judge({ request: page(DRAFT.replace('status: draft', 'status: draft\ndescribes: [capabilities/checkout]')) }).decision).toBe('reject');
   });
 
+  it('never writes a path that belongs to an ontology node, under wiki/ or sources/', () => {
+    const node = (relative: string) => relative === 'wiki/checkout.md' || relative === 'sources/pricing.md';
+    for (const path of ['wiki/checkout.md', 'sources/pricing.md']) {
+      const write = request({ filePath: `${VAULT}/${path}`, toolKind: 'edit', rawInput: { content: DRAFT } });
+      expect(judge({ request: write, round: service, node })).toEqual({ decision: 'reject', reason: path });
+    }
+    const notes = request({ filePath: `${VAULT}/sources/notes.md`, toolKind: 'edit', rawInput: { content: '# Notes' } });
+    expect(judge({ request: notes, round: service, node }).decision).toBe('allow');
+  });
+
   it('never writes retained answers or the wiki\'s furniture, under any spelling of their names', () => {
     for (const path of ['wiki/answers/q-1.md', 'wiki/Answers/q-1.md', 'wiki/_log.md', 'wiki/notes/_draft.md', 'Wiki/plan.md']) {
       const write = request({ filePath: `${VAULT}/${path}`, toolKind: 'edit', rawInput: { content: DRAFT } });

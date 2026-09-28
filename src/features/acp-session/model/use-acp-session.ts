@@ -144,6 +144,7 @@ export interface UseAcpSessionOptions {
    * the ledger can.
    */
   autoDecide?: (request: AcpPermissionRequest) => string | { reject: string } | null;
+  onToolSettled?: (toolCallId: string, status: string) => void;
   /**
    * A paragraph the consumer appends after the vault handoff, for the rules that hold only on
    * its own screen. The Library adds how an answer must cite so it can be filed as a page
@@ -414,6 +415,7 @@ export function useAcpSession({
   onTurnStarted,
   captureTaskBaseline,
   autoDecide,
+  onToolSettled,
   systemPromptAppendix = null,
   resumeLatest = false,
   putAway = false,
@@ -553,6 +555,7 @@ export function useAcpSession({
    */
   const startRef = useRef<(() => Promise<void>) | null>(null);
   const autoDecideRef = useRef<UseAcpSessionOptions['autoDecide']>(undefined);
+  const onToolSettledRef = useRef<UseAcpSessionOptions['onToolSettled']>(undefined);
   const systemPromptAppendixRef = useRef<string | null>(systemPromptAppendix);
   const stopRef = useRef<(() => Promise<void>) | null>(null);
   const acpSessionRef = useRef<string | null>(null);
@@ -738,6 +741,9 @@ export function useAcpSession({
           rawOutput: kept.rawOutput,
           ...(kept.evidence ? { outputEvidence: kept.evidence } : {}),
         });
+        if (typeof update.toolCallId === 'string' && typeof update.status === 'string' && TERMINAL_TOOL_STATES.has(update.status)) {
+          onToolSettledRef.current?.(update.toolCallId, update.status);
+        }
         return;
       }
       if (kind === 'tool_call_update') {
@@ -765,6 +771,7 @@ export function useAcpSession({
           }),
         );
         if (!nextStatus) return;
+        if (TERMINAL_TOOL_STATES.has(nextStatus)) onToolSettledRef.current?.(id, nextStatus);
         const approvedReceipt = approvedReceiptRef.current;
         if (
           TERMINAL_TOOL_STATES.has(nextStatus) &&
@@ -1477,9 +1484,10 @@ export function useAcpSession({
   useEffect(() => {
     startRef.current = start;
     autoDecideRef.current = autoDecide;
+    onToolSettledRef.current = onToolSettled;
     systemPromptAppendixRef.current = systemPromptAppendix;
     stopRef.current = stop;
-  }, [start, stop, setStatusTracked, autoDecide, systemPromptAppendix]);
+  }, [start, stop, setStatusTracked, autoDecide, onToolSettled, systemPromptAppendix]);
 
   useEffect(() => {
     disposedRef.current = false;

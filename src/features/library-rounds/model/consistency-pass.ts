@@ -1,5 +1,5 @@
 import type { VaultDoc, VaultSourceFile } from '@/entities/docs-vault';
-import { buildLibraryModel } from '@/entities/docs-vault';
+import { buildLibraryModel, isWikiPage } from '@/entities/docs-vault';
 import { isWikiFurnitureSlug, validateWikiPage } from '@/shared/lib/wiki-page-schema';
 
 /** Does every page still match its sources? The Library's own verdicts, computed locally with no agent turn. */
@@ -30,6 +30,17 @@ export interface ConsistencyPassResult {
   offTemplate: string[];
   /** Sources nobody has written up. Reported, never acted on by a round. */
   notCompiled: number;
+}
+
+export function citedSourcePaths(docs: readonly VaultDoc[]): string[] {
+  const out = new Set<string>();
+  for (const doc of docs) {
+    if (!isWikiPage(doc)) continue;
+    const value = doc.frontmatter.sources;
+    const list = Array.isArray(value) ? value : typeof value === 'string' ? [value] : [];
+    for (const path of list) if (typeof path === 'string' && path.trim()) out.add(path.trim());
+  }
+  return [...out];
 }
 
 /** Is `path` the folder itself or inside it? `wiki/releases` never matches `wiki/releases-old`. */

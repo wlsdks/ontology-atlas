@@ -16,9 +16,7 @@ import {
   parseRoundLedger,
   roundFingerprint,
 } from '@/entities/library-round';
-import { writeWikiFile } from '@/features/library';
 import { readMachineApprovals, recordApproval } from '@/shared/lib/machine-approvals';
-import { WIKI_PAGE_TEMPLATE } from '@/shared/lib/wiki-page-schema';
 
 import { useRoundsRunner } from './use-rounds-runner';
 
@@ -108,6 +106,7 @@ vi.mock('@/shared/lib/tauri-vault-fs', () => ({
   },
 }));
 
+const noWiki = { name: 'vault', getDirectoryHandle: async () => { throw Object.assign(new Error('missing'), { name: 'NotFoundError' }); } };
 const READY_CLAUDE = { id: 'claude-acp', label: 'Claude', state: 'ready', verified: true, isolated: true };
 
 function review(id: string, name: string): RoundRecord {
@@ -307,7 +306,7 @@ describe('the clock, the lock and the folder', () => {
   const lines = () => parseRoundLedger((h.ledger as RoundLedger & { text(): string | null }).text());
   const advance = (ms: number) => act(() => vi.advanceTimersByTimeAsync(ms));
 
-  function scriptedSession(requests: Record<string, unknown>[], decisions: Decision[], apply?: (request: Record<string, unknown>) => void) {
+  function scriptedSession(requests: Record<string, unknown>[], decisions: Decision[]) {
     return {
       status: 'ready',
       start: vi.fn(async () => {}),
@@ -322,10 +321,7 @@ describe('the clock, the lock and the folder', () => {
           const decided = autoDecide(request);
           decisions.push(decided);
           if (decided && typeof decided === 'object') events.push({ kind: 'notice', id: `n${events.length}`, text: 'auto-refused', detail: decided.reject });
-          else if (typeof decided === 'string') {
-            events.push({ kind: 'notice', id: `n${events.length}`, text: 'auto-allowed', detail: decided });
-            apply?.(request);
-          }
+          else if (typeof decided === 'string') events.push({ kind: 'notice', id: `n${events.length}`, text: 'auto-allowed', detail: decided });
         }
         events.push({ kind: 'agent', id: 'a1', text: 'Two capabilities lack a source path.' });
         observer?.({ ...start, endedAt: new Date().toISOString(), outcome: 'completed', stopReason: 'end_turn', events });
@@ -339,7 +335,7 @@ describe('the clock, the lock and the folder', () => {
     h.options = null;
     h.onRead = null;
     h.runtimes = [];
-    h.vault = { status: 'loaded', handle: { name: 'vault' }, manifest: { docs: [], sources: [] }, agentConfigStatus: null };
+    h.vault = { status: 'loaded', handle: noWiki, manifest: { docs: [], sources: [] }, agentConfigStatus: null };
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'] });
     vi.setSystemTime(new Date('2026-09-28T09:10:00.000Z'));
   });
@@ -352,7 +348,7 @@ describe('the clock, the lock and the folder', () => {
     const check = at('check', { kind: 'consistency', onStale: 'mark', nextDueAt: '2026-09-28T02:00:00.000Z' });
     h.store = createMemoryRoundStore(JSON.stringify({ v: 1, rounds: [check] }));
     allowHere(check);
-    h.vault = { status: 'loading', handle: { name: 'vault' }, manifest: null, agentConfigStatus: null };
+    h.vault = { status: 'loading', handle: noWiki, manifest: null, agentConfigStatus: null };
     const { rerender } = renderHook(() => useRoundsRunner(), { wrapper });
     await flush();
     await advance(2_100);
@@ -625,7 +621,7 @@ describe('the clock, the lock and the folder', () => {
     const svc = at('s', { kind: 'service', connectorId: 'c1', connectorName: 'confluence', nextDueAt: '2099-01-01T00:00:00.000Z',
       places: [{ kind: 'vault', paths: [] }, { kind: 'service', connectorId: 'c1', connectorName: 'confluence' }] });
     h.store = createMemoryRoundStore(JSON.stringify({ v: 1, rounds: [svc] }));
-    h.vault = { status: 'loaded', handle: { name: 'vault' }, manifest: { docs: [], sources: [{ path: 'sources/notes.md' }] }, agentConfigStatus: null };
+    h.vault = { status: 'loaded', handle: noWiki, manifest: { docs: [], sources: [{ path: 'sources/notes.md' }] }, agentConfigStatus: null };
     h.files = { 'sources/notes.md': '---\nsource_url: https://example.test/9\n---\n' };
     h.onRead = (path) => {
       if (path === 'sources/notes.md') recordApproval('round', '/vault', 's', 'an edited definition');
@@ -671,97 +667,5 @@ describe('the clock, the lock and the folder', () => {
       if (zone === undefined) delete process.env.TZ;
       else process.env.TZ = zone;
     }
-  });
-
-  describe('a document pass judges each write against the page as its earlier writes left it', () => {
-    const PAGE = '/vault/wiki/plan.md';
-    const onDisk = WIKI_PAGE_TEMPLATE.replace(/sources\/<file>/g, 'sources/plan.pdf');
-    const lead = '<Two or three sentences. What a reader needs before the facts.>';
-    const serviceRound = at('svc', {
-      kind: 'service',
-      connectorId: 'c1',
-      connectorName: 'confluence',
-      nextDueAt: '2099-01-01T00:00:00.000Z',
-      places: [{ kind: 'vault', paths: [] }, { kind: 'service', connectorId: 'c1', connectorName: 'confluence' }],
-    });
-    const write = (path: string, content: string) => ({ filePath: path, toolName: 'Write', toolKind: 'edit', rawInput: { file_path: path, content }, reviewKind: 'permission' });
-    const edit = (path: string, oldString: string, newString: string) => ({ filePath: path, toolName: 'Edit', toolKind: 'edit', rawInput: { file_path: path, old_string: oldString, new_string: newString }, reviewKind: 'permission' });
-
-    async function pass(requests: Record<string, unknown>[], apply?: (request: Record<string, unknown>) => void, slug = 'wiki/plan') {
-      h.pages = [{ slug }];
-      h.files = { [`${slug}.md`]: onDisk };
-      h.vault = { status: 'loaded', handle: { name: 'vault' }, manifest: { docs: [], sources: [{ path: 'sources/plan.pdf' }] }, agentConfigStatus: null };
-      h.store = createMemoryRoundStore(JSON.stringify({ v: 1, rounds: [serviceRound] }));
-      h.runtimes = [READY_CLAUDE];
-      allowHere(serviceRound);
-      const decisions: Decision[] = [];
-      h.session = scriptedSession(requests, decisions, apply);
-      const { result } = renderHook(() => useRoundsRunner(), { wrapper });
-      await flush();
-      await flush();
-      act(() => result.current.runNow('svc'));
-      await flush();
-      await advance(6_000);
-      return decisions;
-    }
-
-    afterEach(() => {
-      h.pages = [];
-      h.files = {};
-    });
-
-    it('refuses an edit that would make the page an earlier write left in this pass read as reviewed', async () => {
-      const moved = onDisk.replace('summary: <one sentence about what this page is about>', `summary: ${lead}`).replace(`\n${lead}\n`, '\nA reader needs this first.\n');
-      const decisions = await pass([
-        write(PAGE, moved),
-        edit(PAGE, lead, `${lead}\nstatus: reviewed\ndescribes: [capabilities/checkout]`),
-      ]);
-      expect(decisions).toEqual(['write wiki/plan.md', { reject: 'wiki/plan.md' }]);
-    });
-
-    it('still allows a later edit that keeps the page a draft', async () => {
-      const decisions = await pass([
-        write(PAGE, onDisk.replace('<Anything you could not ground in a source. It goes here and nowhere else.>', 'Nothing yet.')),
-        edit(PAGE, 'Nothing yet.', 'Pricing is not in the sources.'),
-      ]);
-      expect(decisions).toEqual(['write wiki/plan.md', 'write wiki/plan.md']);
-    });
-
-    it('counts a document the pass brought in as a known source for the page that cites it', async () => {
-      const decisions = await pass([
-        write('/vault/sources/refunds.md', '---\nsource_url: https://example.atlassian.net/wiki/9\n---\n# Refunds\n'),
-        write('/vault/wiki/refunds.md', WIKI_PAGE_TEMPLATE.replace(/sources\/<file>/g, 'sources/refunds.md')),
-      ]);
-      expect(decisions).toEqual(['write sources/refunds.md', 'write wiki/refunds.md']);
-    });
-
-    const moved = onDisk.replace('summary: <one sentence about what this page is about>', `summary: ${lead}`).replace(`\n${lead}\n`, '\nA reader needs this first.\n');
-    const endA = moved.replace(lead, `${lead}\nstatus: reviewed\ndescribes: [capabilities/checkout]`);
-    const endB = onDisk.replace('title: <the page name>\n', 'title: <the page name>\nstatus: reviewed\n')
-      .replace('status: draft\nsummary: <one sentence about what this page is about>\n', 'summary: <one sentence about what this page is about>status: draft\n');
-
-    it.each([
-      ['A', 'wiki/plan', endA, { reason: 'duplicate-key', key: 'status' }],
-      ['B', 'wiki/plan', endB, { reason: 'not-draft' }],
-      ['D', 'wiki/결제', endA, { reason: 'duplicate-key', key: 'status' }],
-    ])('puts a page left in probe %s\'s end state back as the pass found it, and fails the pass naming the page and why', async (_probe, slug, planted, problem) => {
-      const path = `${slug}.md`;
-      const decisions = await pass([write(`/vault/${path}`, onDisk)], () => {
-        h.files[path] = planted;
-      }, slug);
-      expect(decisions).toEqual([`write ${path}`]);
-      expect(h.files[path]).toBe(onDisk);
-      expect(writeWikiFile).toHaveBeenCalledWith(h.vault.handle, path, onDisk);
-      expect(lines()[0]).toMatchObject({ outcome: 'failed', written: [], undone: [{ path, ...problem, action: 'restored' }] });
-    });
-
-    it('removes a page the pass created when it does not read as a draft', async () => {
-      const decisions = await pass([write('/vault/wiki/new.md', onDisk)], () => {
-        h.files['wiki/new.md'] = onDisk.replace('status: draft', 'status: draft\ndescribes: [capabilities/checkout]');
-      });
-      expect(decisions).toEqual(['write wiki/new.md']);
-      expect(h.files['wiki/new.md']).toBeUndefined();
-      expect(lines()[0]).toMatchObject({ outcome: 'failed', written: [], undone: [{ path: 'wiki/new.md', reason: 'forbidden-key', key: 'describes', action: 'removed' }] });
-    });
   });
 });

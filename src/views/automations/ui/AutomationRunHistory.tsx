@@ -51,7 +51,7 @@ function RunEntry({ entry, latest = false }: { entry: RoundPassEntry; latest?: b
     ? entry.kind === 'ontology' ? t('noAgentReview') : ledgerText('noAgent')
     : entry.note === 'stopped' ? ledgerText('stopped') : null;
   const undone = (entry.undone ?? []).map((item) =>
-    `${t(`undone.${item.action}`, { page: item.path })} ${ledgerText(`undoneReason.${undoneReasonKey(item.reason)}`, { key: item.key ?? '' })}`);
+    `${t(`undone.${item.action}`, { page: item.path })} ${ledgerText(`undoneReason.${undoneReasonKey(item.reason)}`, { key: item.key ?? '' })}${item.copy ? ` ${ledgerText('undoneCopy', { copy: item.copy })}` : ''}`);
   const failure = undone.length > 0 ? undone.join(' ') : entry.outcome === 'failed' && entry.summary
     ? entry.summary === 'no-manifest' ? t('failedFolderNotRead') : t('failedError', { detail: entry.summary })
     : null;
@@ -67,6 +67,9 @@ function RunEntry({ entry, latest = false }: { entry: RoundPassEntry; latest?: b
                 <time dateTime={entry.endedAt} className="text-body text-[color:var(--color-text-tertiary)]">{automationDate(locale, entry.endedAt)}</time>
               </div>}
               <p data-run-note={noteLeads ? entry.note : undefined} className={cn('break-words', latest ? 'text-body-lg' : 'text-body', leadInk)}>{lead}</p>
+              {entry.leftAsIs?.length ? <p data-testid="automations-left-as-is" className="mt-2 break-words text-body text-[color:var(--color-text-tertiary)]">
+                {entry.leftAsIs.map((page) => t('leftAsIs', { page })).join(' ')}
+              </p> : null}
               {entry.stale.length > 0 || entry.written.length > 0 ? <dl className="mt-3 space-y-2">
                 {entry.stale.length > 0 ? <FileGroup label={t('staleLabel')} paths={entry.stale} page={() => true} /> : null}
                 {entry.written.length > 0 ? <FileGroup label={t('writtenLabel')} paths={entry.written} page={(path) => path.startsWith('wiki/')} /> : null}

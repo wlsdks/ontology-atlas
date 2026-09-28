@@ -942,7 +942,9 @@
         "forbiddenKey": "It carried a {key}: line, which only a person may add.",
         "noFrontmatter": "It had no info block at the top, so it could not be read as a draft.",
         "unreadable": "Atlas could not read it back to check it."
-      }
+      },
+      "undoneCopy": "The text Atlas took out is saved in {copy}.",
+      "leftAsIs": "{page} was changed by someone else during this pass, so Atlas left it as it is."
     },
     "sheet": {
       "readbackConsistency": "{cadence}, check that every page still matches its originals, and {onStale} a page that has gone stale. It runs once as soon as you save.",

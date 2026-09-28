@@ -304,7 +304,12 @@ export function RoundsLedger({
                       </p>
                       {entry.undone?.length ? (
                         <p data-testid="library-rounds-undone" className="mt-2 text-body leading-body text-[color:var(--color-amber-source-a90)]">
-                          {entry.undone.map((item) => `${t(`ledger.undone.${item.action}`, { page: item.path })} ${t(`ledger.undoneReason.${undoneReasonKey(item.reason)}`, { key: item.key ?? "" })}`).join(" ")}
+                          {entry.undone.map((item) => `${t(`ledger.undone.${item.action}`, { page: item.path })} ${t(`ledger.undoneReason.${undoneReasonKey(item.reason)}`, { key: item.key ?? "" })}${item.copy ? ` ${t("ledger.undoneCopy", { copy: item.copy })}` : ""}`).join(" ")}
+                        </p>
+                      ) : null}
+                      {entry.leftAsIs?.length ? (
+                        <p data-testid="library-rounds-left-as-is" className="mt-2 text-body leading-body text-[color:var(--color-text-tertiary)]">
+                          {entry.leftAsIs.map((page) => t("ledger.leftAsIs", { page })).join(" ")}
                         </p>
                       ) : null}
                       {entry.stale.length > 0 || pagesWritten(entry).length > 0 ? (

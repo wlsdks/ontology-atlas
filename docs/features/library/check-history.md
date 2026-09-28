@@ -25,9 +25,10 @@ pages that changed. Registration is one sheet whose primary press reads **Allow 
 save** above the exact scope granted, with the daily agent-turn bill in words; during a
 pass the standing scope answers every permission request itself and refuses anything
 outside `sources/` and `wiki/` pages that fit the template, naming the refusal in the
-ledger. A page the pass left that does not read as a draft is put back as the pass found it,
-or removed if the pass created it, and the pass's card names the page and why in amber. The
-stage opens on **Since you left**: the span the window was away, the pages
+ledger. A page the pass's own write left that does not read as a draft is put back as the
+pass found it, or removed if the pass created it, and the pass's card names the page, why, and
+where the text it took out is saved, in amber. A page someone else changed during the pass is
+left as it is, and the card says so. The stage opens on **Since you left**: the span the window was away, the pages
 that went stale, the redrafts waiting, the refusals, and the passes that held, each page
 a press into Wiki. Below it the **ledger** draws passes on a time axis, newest first: a
 held pass is one quiet line, a change is a card, and a sleep gap is a hatched band with

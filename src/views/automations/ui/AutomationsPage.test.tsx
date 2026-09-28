@@ -237,12 +237,17 @@ describe('Automations manager', () => {
       cadence: { every: 'hour' }, createdAt: '2026-09-25T00:00:00Z', nextDueAt: '2026-09-26T01:00:00Z' };
     const putBack: RoundPassEntry = { v: 1, id: 'undo', roundId: round.id, roundName: round.name, kind: 'consistency',
       startedAt: '2026-09-25T15:08:00Z', endedAt: '2026-09-25T15:09:00Z', outcome: 'failed', checked: 3, stale: [],
-      written: [], refused: [], called: [], agentTurns: 1, summary: '', trigger: 'clock',
-      undone: [{ path: 'wiki/plan.md', reason: 'not-draft', action: 'restored' }] };
+      written: [], refused: [], called: [], agentTurns: 1, summary: '', trigger: 'clock', leftAsIs: ['wiki/notes.md'],
+      undone: [{ path: 'wiki/plan.md', reason: 'not-draft', action: 'restored', copy: '.ontology-atlas/undone/undo/wiki/plan.md' }] };
     renderPage(runner({ rounds: [round], ledger: [putBack] }));
     const last = screen.getByTestId('automations-last-run');
-    expect(last).toHaveTextContent(`${en.automations.undone.restored.replace('{page}', 'wiki/plan.md')} ${en.library.rounds.ledger.undoneReason.notDraft}`);
+    expect(last).toHaveTextContent([
+      en.automations.undone.restored.replace('{page}', 'wiki/plan.md'),
+      en.library.rounds.ledger.undoneReason.notDraft,
+      en.library.rounds.ledger.undoneCopy.replace('{copy}', '.ontology-atlas/undone/undo/wiki/plan.md'),
+    ].join(' '));
     expect(last).not.toHaveTextContent(en.automations.failedNoResult);
+    expect(screen.getByTestId('automations-left-as-is')).toHaveTextContent(en.automations.leftAsIs.replace('{page}', 'wiki/notes.md'));
   });
 
   it('says on the row when a run could not be written, and which file refused it', () => {

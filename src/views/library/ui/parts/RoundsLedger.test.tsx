@@ -107,13 +107,16 @@ describe('the ledger', () => {
   });
 
   it('names each page a pass left outside its scope, why, and what Atlas did about it', () => {
-    draw({ entries: [entry({ id: 'undo', outcome: 'failed', stale: [], undone: [
-      { path: 'wiki/plan.md', reason: 'duplicate-key', key: 'status', action: 'restored' },
+    const copy = '.ontology-atlas/undone/undo/wiki/plan.md';
+    draw({ entries: [entry({ id: 'undo', outcome: 'failed', stale: [], leftAsIs: ['wiki/notes.md'], undone: [
+      { path: 'wiki/plan.md', reason: 'duplicate-key', key: 'status', action: 'restored', copy },
       { path: 'wiki/new.md', reason: 'forbidden-key', key: 'describes', action: 'removed' },
     ] })] });
     const ledger = createTranslator({ locale: 'en', messages: en, namespace: 'library.rounds.ledger' });
-    const line = within(screen.getByTestId('library-rounds-pass-undo')).getByTestId('library-rounds-undone');
-    expect(line).toHaveTextContent(`${ledger('undone.restored', { page: 'wiki/plan.md' })} ${ledger('undoneReason.duplicateKey', { key: 'status' })}`);
+    const card = within(screen.getByTestId('library-rounds-pass-undo'));
+    const line = card.getByTestId('library-rounds-undone');
+    expect(line).toHaveTextContent(`${ledger('undone.restored', { page: 'wiki/plan.md' })} ${ledger('undoneReason.duplicateKey', { key: 'status' })} ${ledger('undoneCopy', { copy })}`);
     expect(line).toHaveTextContent(`${ledger('undone.removed', { page: 'wiki/new.md' })} ${ledger('undoneReason.forbiddenKey', { key: 'describes' })}`);
+    expect(card.getByTestId('library-rounds-left-as-is')).toHaveTextContent(ledger('leftAsIs', { page: 'wiki/notes.md' }));
   });
 });

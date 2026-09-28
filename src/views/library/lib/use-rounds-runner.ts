@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "next-intl";
 
-import { buildLibraryModel, isWikiPage, selectWikiPages, type VaultDoc, type VaultSourceFile } from "@/entities/docs-vault";
+import { buildLibraryModel, type VaultDoc, type VaultSourceFile } from "@/entities/docs-vault";
 import {
   type RoundLedger,
   type RoundPassEntry,
@@ -41,6 +41,8 @@ import {
   afterPass,
   buildServiceRoundBrief,
   buildOntologyRoundBrief,
+  citedSourcePaths,
+  createLandings,
   createPassPages,
   judgeRoundScope,
   pageIdentity,
@@ -48,6 +50,7 @@ import {
   planTick,
   readOrMissing,
   runConsistencyPass,
+  scanWikiFolder,
   scopeNoteEffect,
   settlePassPages,
   triggerFor,
@@ -62,7 +65,6 @@ import { getTauriVaultRootPath, nativeVaultFileHashes, readTauriVaultText } from
 import { parseFrontmatter } from "@/shared/lib/parse-frontmatter";
 import { selectOpenVaultHandle } from "@/shared/lib/select-open-vault-handle";
 import { useLatestRef } from "@/shared/lib/use-latest-ref";
-import { isWikiFurnitureSlug } from "@/shared/lib/wiki-page-schema";
 
 import { runHeadlessTurn } from "./headless-turn";
 
@@ -100,17 +102,6 @@ interface PassData {
   pageTexts: Map<string, string>;
   pages: PassPages;
   knownSources: Set<string>;
-}
-
-function citedSourcePaths(docs: readonly VaultDoc[]): string[] {
-  const out = new Set<string>();
-  for (const doc of docs) {
-    if (!isWikiPage(doc)) continue;
-    const value = doc.frontmatter.sources;
-    const list = Array.isArray(value) ? value : typeof value === "string" ? [value] : [];
-    for (const path of list) if (typeof path === "string" && path.trim()) out.add(path.trim());
-  }
-  return [...out];
 }
 
 const EMPTY_ROUNDS: RoundRecord[] = [];
@@ -244,10 +235,10 @@ export function useRoundsRunner(): RoundsRunnerValue {
 
   const agentReady = Boolean(runtimeId && rootPath && agentServer.launch);
 
-  const activeRef = useRef<{ round: RoundRecord; data: PassData } | null>(null);
+  const activeRef = useRef<{ round: RoundRecord; data: PassData; landings: ReturnType<typeof createLandings> } | null>(null);
   const completionRef = useRef<((completion: AcpTurnCompletion) => void) | null>(null);
 
-  const autoDecide = useCallback((request: ScopeRequest & { title?: string | null }) => {
+  const autoDecide = useCallback((request: ScopeRequest & { title?: string | null; toolCallId?: string | null }) => {
     const active = activeRef.current;
     if (!active || !rootPath) return { reject: "no-round" };
     const verdict = judgeRoundScope({
@@ -270,10 +261,13 @@ export function useRoundsRunner(): RoundsRunnerValue {
         });
         return page && !active.data.pages.conflict(page.path) ? page : null;
       },
+      node: (relative) => active.data.pages.node(relative),
     });
     if (verdict.decision !== "allow") return { reject: verdict.reason };
-    if (verdict.wrote?.text != null) active.data.pages.commit(verdict.wrote.path, verdict.wrote.text);
-    else if (verdict.wrote) active.data.knownSources.add(verdict.wrote.path);
+    if (verdict.wrote?.text != null) {
+      active.data.pages.commit(verdict.wrote.path, verdict.wrote.text);
+      active.landings.expect(request.toolCallId, verdict.wrote.path);
+    } else if (verdict.wrote) active.data.knownSources.add(verdict.wrote.path);
     return verdict.note;
   }, [rootPath]);
 
@@ -283,6 +277,8 @@ export function useRoundsRunner(): RoundsRunnerValue {
     };
   }, []);
 
+  const onToolSettled = useCallback((toolCallId: string, status: string) => activeRef.current?.landings.settled(toolCallId, status), []);
+
   const session = useAcpSession({
     runtimeId: runtimeId ?? "",
     vaultRoot: rootPath,
@@ -290,6 +286,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
     approvalSettleMs: 0,
     autoDecide,
     onTurnStarted,
+    onToolSettled,
   });
   const statusRef = useRef(session.status);
   const sessionRef = useRef(session);
@@ -353,18 +350,15 @@ export function useRoundsRunner(): RoundsRunnerValue {
 
   const readPassData = useCallback(async (): Promise<PassData | null> => {
     const manifest = manifestRef.current;
-    if (!manifest || !rootPath) return null;
+    if (!manifest || !rootPath || !handle) return null;
     const docs = manifest.docs;
     const sources = manifest.sources ?? [];
     const hashes = (await nativeVaultFileHashes(rootPath, citedSourcePaths(docs))) ?? new Map<string, string>();
-    const start: { path: string; text: string | null }[] = [];
-    for (const page of selectWikiPages(docs)) {
-      if (isWikiFurnitureSlug(page.slug)) continue;
-      start.push({ path: `${page.slug}.md`, text: await readTauriVaultText(rootPath, `${page.slug}.md`).catch(() => null) });
-    }
+    const start = await scanWikiFolder(handle);
+    const nodes = docs.filter((doc) => typeof doc.frontmatter.kind === "string").map((doc) => doc.path);
     const pageTexts = new Map(start.flatMap((page) => (page.text === null ? [] : [[page.path.slice(0, -3), page.text] as const])));
-    return { sources, docs, hashes, pageTexts, pages: createPassPages(start), knownSources: new Set(sources.map((source) => source.path)) };
-  }, [manifestRef, rootPath]);
+    return { sources, docs, hashes, pageTexts, pages: createPassPages({ pages: start, complete: true, nodes }), knownSources: new Set(sources.map((source) => source.path)) };
+  }, [handle, manifestRef, rootPath]);
 
   const runPass = useCallback(async (round: RoundRecord, trigger: RoundPassEntry["trigger"]) => {
     if (!store || !ledger || !rootPath || !handle || runningRef.current) return;
@@ -427,27 +421,32 @@ export function useRoundsRunner(): RoundsRunnerValue {
       let called: string[] = [];
       let answer: string | null = null;
       let undone: RoundUndone[] = [];
+      let leftAsIs: string[] = [];
       let failed = false;
       let agentTurns: 0 | 1 = 0;
       let note: RoundPassEntry["note"];
       /** Service round: the documents this pass was sent to refresh — what `checked` counts there. */
       let refreshed = 0;
-      const turn = async (brief: string): Promise<Awaited<ReturnType<typeof agentTurn>> & { undone: RoundUndone[]; agentTurns: 0 | 1 }> => {
+      const turn = async (brief: string): Promise<Awaited<ReturnType<typeof agentTurn>> & { undone: RoundUndone[]; leftAsIs: string[]; agentTurns: 0 | 1 }> => {
         if (stoppedByPerson || !allowedNow(round)) {
           stoppedByPerson = true;
-          return { failed: true, written: [], refused: [], called: [], answer: null, undone: [], agentTurns: 0 };
+          return { failed: true, written: [], refused: [], called: [], answer: null, undone: [], leftAsIs: [], agentTurns: 0 };
         }
-        activeRef.current = { round, data };
+        const read = readOrMissing(vault, (path) => readTauriVaultText(rootPath, path));
+        const landings = createLandings(data.pages, read);
+        activeRef.current = { round, data, landings };
         mark("agent");
         const result = await agentTurn(brief, aborted);
         activeRef.current = null;
+        await landings.done();
         const settled = await settlePassPages({
           pages: data.pages,
-          read: readOrMissing(vault, (path) => readTauriVaultText(rootPath, path)),
+          read,
+          keep: (path, text) => writeWikiFile(vault, `.ontology-atlas/undone/${base.id}/${path}`, text).then(() => `.ontology-atlas/undone/${base.id}/${path}`),
           restore: (path, text) => writeWikiFile(vault, path, text),
           remove: (path) => deleteWikiFile(vault, path),
         });
-        return { ...result, undone: settled, agentTurns: 1 };
+        return { ...result, ...settled, agentTurns: 1 };
       };
 
       if (round.kind === "consistency" && check) {
@@ -464,7 +463,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
             hashes: data.hashes,
             now: new Date(),
           });
-          ({ failed, written, refused, called, answer, undone, agentTurns } = await turn(brief));
+          ({ failed, written, refused, called, answer, undone, leftAsIs, agentTurns } = await turn(brief));
         }
       } else if (round.kind === "service") {
         if (!agentReady || !runtimeId) {
@@ -501,7 +500,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
             }),
             now: new Date(),
           });
-          ({ failed, written, refused, called, answer, undone, agentTurns } = await turn(brief));
+          ({ failed, written, refused, called, answer, undone, leftAsIs, agentTurns } = await turn(brief));
         }
       } else {
         /*
@@ -513,7 +512,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
           note = "no-agent";
         } else {
           const brief = buildOntologyRoundBrief({ vaultRoot: rootPath, locale, focus: round.query });
-          ({ failed, written, refused, called, answer, undone, agentTurns } = await turn(brief));
+          ({ failed, written, refused, called, answer, undone, leftAsIs, agentTurns } = await turn(brief));
         }
       }
       const putBack = new Set(undone.filter((item) => item.action !== "failed").map((item) => pageIdentity(item.path)));
@@ -539,6 +538,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
         summary: round.kind === "ontology" && !failed ? answer ?? "" : "",
       };
       if (undone.length > 0) entry.undone = undone;
+      if (leftAsIs.length > 0) entry.leftAsIs = leftAsIs;
       if (stoppedByPerson) entry.note = "stopped";
       else if (note) entry.note = note;
     } catch (error) {

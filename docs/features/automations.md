@@ -55,11 +55,16 @@ keep their previously approved Library scope, and a page they write lands only a
 judged as the agent's edit tool applies the write and against the page as the pass's earlier
 writes left it, under whatever letter case or Unicode form the path is spelled in. A write to a
 spelling that differs from an existing page only in case or Unicode form is refused, and so is
-a page whose frontmatter writes a key twice. After the agent's turn, Atlas reads back every
-page the pass wrote: a page that does not read `status: draft`, repeats a frontmatter key, or
-carries `describes:` or `kind:` is put back as the pass found it, or removed if the pass
-created it, and the run is marked failed with a sentence naming the page and the reason. Both
-execute locally while the app has the folder open; this redesign does not add a background
+a page whose frontmatter writes a key twice. A pass knows the pages under `wiki/` from the files
+on disk when it starts, not from the folder's last scan, and never writes over a file that
+carries `kind:`, wherever it is filed. After the agent's turn, Atlas reads back every page the
+pass wrote. A page that no longer holds what the pass's own write left was changed by someone
+else during the run: Atlas leaves it as it is, and the run says so without failing. A page that
+still holds the pass's own text but does not read `status: draft`, repeats a frontmatter key,
+or carries `describes:` or `kind:` is put back as the pass found it, or removed if the pass
+created it. Atlas first saves the text it takes out under `.ontology-atlas/undone/`, and names
+that copy in the run, which is marked failed with a sentence naming the page and the reason.
+Both execute locally while the app has the folder open; this redesign does not add a background
 service.
 
 A schedule runs, by the clock or by Run now, only when the folder has it on and this Mac

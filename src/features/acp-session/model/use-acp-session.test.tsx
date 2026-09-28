@@ -871,6 +871,30 @@ describe('관문을 못 세웠으면 화면이 말한다', () => {
   });
 });
 
+describe('a tool call reaching its end', () => {
+  it('is reported once it completes, fails or is cancelled, and not while it is pending or refined', async () => {
+    const settled = vi.fn();
+    const { result } = renderHook(() => useAcpSession({ runtimeId: 'claude-acp', vaultRoot: '/vault', onToolSettled: settled }));
+    const starting = result.current.start();
+    await waitFor(() => expect(bridge.starts).toBe(1));
+    await act(async () => {
+      bridge.release?.();
+      await starting;
+    });
+    const send = (update: Record<string, unknown>) =>
+      bridge.listener?.(JSON.stringify({ jsonrpc: '2.0', method: 'session/update', params: { sessionId: 's-1', update } }));
+    act(() => {
+      send({ sessionUpdate: 'tool_call', toolCallId: 'edit-1', title: 'Edit', kind: 'edit', status: 'pending' });
+      send({ sessionUpdate: 'tool_call_update', toolCallId: 'edit-1', rawInput: { file_path: '/vault/wiki/plan.md' } });
+      send({ sessionUpdate: 'tool_call_update', toolCallId: 'edit-1', status: 'in_progress' });
+      send({ sessionUpdate: 'tool_call_update', toolCallId: 'edit-1', status: 'completed' });
+      send({ sessionUpdate: 'tool_call', toolCallId: 'read-1', title: 'Read', kind: 'read', status: 'completed' });
+      send({ sessionUpdate: 'tool_call_update', toolCallId: 'write-1', status: 'cancelled' });
+    });
+    expect(settled.mock.calls).toEqual([['edit-1', 'completed'], ['read-1', 'completed'], ['write-1', 'cancelled']]);
+  });
+});
+
 describe('도구 입력 refinement — 실제 Claude ACP 순서', () => {
   it('status 없는 tool_call_update가 뒤늦게 보낸 rawInput을 기존 도구 행에 합친다', async () => {
     const { result } = renderHook(() =>
