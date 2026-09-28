@@ -2318,13 +2318,24 @@ region; a status mounted as done draws no check.
 
 ### Press
 
-`CONTROL_TRANSITION` includes `translate`; detached shapes and `Button` travel
-`active:translate-y-px`, flush shapes press with one surface or ink step, and
-reduced motion uses `motion-reduce:translate-none`.
+`CONTROL_TRANSITION` transitions colour, background, border, shadow and
+`translate`: Tailwind v4 compiles `translate-*` to the `translate` property, so a
+`transform` transition never animates it. Detached shapes (`chip`, `pill`, `icon`,
+`tile`), `Button`, `ChromeTile`, `ChromeChip` and the `Select` trigger add
+`CONTROL_PRESS_TRAVEL` (`active:translate-y-px`) and one surface step. Flush shapes
+(`row`, `link`, `segment`, `card`) press with one surface or ink step and no travel;
+`onAccent` presses with `--shadow-control-press`; a selected control keeps travel
+only. Reduced motion uses `motion-reduce:active:translate-none`: an unqualified
+`translate-none` loses to `.x:active` on specificity. `.select-chevron` rotates
+through `transform`, which its CSS transition animates.
+`press-feedback-presence` holds the value layer;
+`registered-press-ratchet` and `transform-property-mismatch-ratchet` only fall.
 
 ### Hover
 
-Hover changes ink, surface or border on `--motion-fast`, never position.
+Hover changes ink, surface or border on `--motion-fast`, never position. The axes
+stay opt-in; `hover-presence-ratchet` keeps `controlClass` calls without hover
+from growing.
 
 ### Toggle and checkbox draw
 
