@@ -94,8 +94,11 @@ it. The panel now stays mounted behind the shut frame. The frame is what closes,
 same width movement as before, and while it is shut it is `inert` and `aria-hidden`, so
 nothing behind it can be tabbed into or read out. A turn keeps running, its clock keeps
 counting, and a permission card raised while the dock was shut is still waiting when it
-opens. The conversation ends when the person leaves the Library, which is when the screen
-that started it goes away. While a turn runs behind the shut dock, the same *Conversation*
+opens. The adapter process ends when the person leaves the Library, or once the dock has
+stayed shut for ten minutes with no turn running and no permission waiting (2026-09-28, the
+project page's dock too); the panel keeps its transcript and draft, and the next opening
+resumes that same conversation, or opens a new one with the transcript cleared when the
+adapter cannot reload it. While a turn runs behind the shut dock, the same *Conversation*
 chip — right end of the graph's status row and of the reader's top row — says which step is
 running and what it is on (*Editing · Write wiki/contractor-quotes.md*, *Waiting for
 approval · …*) with one indigo dot beside it; there is no second resting surface, because

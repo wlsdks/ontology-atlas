@@ -147,6 +147,7 @@ afterEach(() => {
   bridge.listener = null;
   bridge.stopped = [];
   bridge.started = 0;
+  vi.useRealTimers();
   vi.restoreAllMocks();
 });
 
@@ -197,6 +198,36 @@ describe("pressing X on the Library dock", () => {
     // One process, one conversation. A second `session/new` is the blank screen the owner met.
     expect(bridge.started).toBe(1);
     expect(bridge.sent.filter((message) => message.method === "session/new")).toHaveLength(1);
+  });
+
+  it("ends the adapter after ten idle minutes put away, and reopening resumes that conversation", async () => {
+    const view = await openWithSession();
+    emit({
+      jsonrpc: "2.0",
+      method: "session/update",
+      params: { sessionId: "s-1", update: { sessionUpdate: "agent_message_chunk", content: { text: "Four sources are waiting." } } },
+    });
+    await screen.findByText("Four sources are waiting.");
+    vi.useFakeTimers();
+    view.close();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10 * 60_000);
+    });
+    expect(bridge.stopped).toEqual(["acp-1"]);
+    vi.useRealTimers();
+    view.reopen();
+    await waitFor(() => expect(bridge.started).toBe(2));
+    await waitFor(() => expect(bridge.sent.filter((m) => m.method === "initialize")).toHaveLength(2));
+    replyTo("initialize", { protocolVersion: 1 });
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === "session/load")).toBe(true));
+    const load = bridge.sent.find((m) => m.method === "session/load");
+    expect((load?.params as { sessionId?: string } | undefined)?.sessionId).toBe("s-1");
+    replyTo("session/load", { sessionId: "s-1" });
+    await waitFor(() =>
+      expect(screen.getByTestId("acp-chat-panel")).toHaveAttribute("data-acp-status", "ready"),
+    );
+    expect(screen.getByText("Four sources are waiting.")).toBeInTheDocument();
+    expect(bridge.sent.filter((m) => m.method === "session/new")).toHaveLength(1);
   });
 
   it("ends the conversation when the Library itself goes away", async () => {
