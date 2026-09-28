@@ -470,7 +470,7 @@ describe('reduced-motion 동등물 계약', () => {
       return CSS.slice(open + 1, i);
     }
 
-    for (const name of ['topologyChromeIn', 'topologyChromeOut']) {
+    for (const name of ['topologyChromeIn', 'topologyChromeOut', 'overlaySpringIn', 'overlaySpringOut']) {
       it(`${name} 은 이동만 담는다 — opacity 를 다시 묶지 않는다`, () => {
         expect(/opacity\s*:/.test(keyframeBody(name))).toBe(false);
       });

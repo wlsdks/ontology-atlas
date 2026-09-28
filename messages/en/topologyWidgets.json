@@ -11,6 +11,6 @@
     "itemTitle": "{name} · {degree} connections"
   },
   "keyboardWalk": {
-    "deadEnd": "No connected node this way"
+    "deadEnd": "No connected concept this way"
   }
 }

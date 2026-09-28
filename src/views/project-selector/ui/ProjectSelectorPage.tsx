@@ -13,7 +13,7 @@ import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { OntologyMapKindGlyph } from "@/shared/ui";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { controlClass } from "@/shared/ui/control-class";
-import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_TITLE_ROW } from "@/shared/ui/page-frame";
+import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_LEDE, PAGE_TITLE, PAGE_TITLE_ROW } from "@/shared/ui/page-frame";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { useNavRailSettingsSlot } from "@/widgets/app-nav-rail";
 import { resolveAuthoredDescription } from "../lib/authored-description";
@@ -56,7 +56,7 @@ export function ProjectSelectorPage() {
             {/* The count names its scope; adding a project lives only in the closing tile. */}
             <header className={PAGE_HEADER_ROW}>
               <div className={PAGE_TITLE_ROW}>
-                <h1 className="text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]">
+                <h1 className={PAGE_TITLE}>
                   {t("headerTitle")}
                 </h1>
                 <span
@@ -70,7 +70,7 @@ export function ProjectSelectorPage() {
               </div>
               {dataSourceMode === "static" ? <OpenVaultCta testId="project-selector-open-vault" /> : null}
             </header>
-            <p className="mt-2 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] text-body leading-title text-[color:var(--color-text-tertiary)]">
+            <p className={`mt-2 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] ${PAGE_LEDE}`}>
               {t("lede")}
             </p>
 

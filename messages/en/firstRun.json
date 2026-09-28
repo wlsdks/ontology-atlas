@@ -28,8 +28,8 @@
   "shapeWikiTitle": "A documents wiki",
   "shapeWikiBody": "Your files go in sources/, and an agent writes one wiki page per document. No map, no code needed.",
   "shapeMapTitle": "An ontology map of a codebase",
-  "shapeMapBody": "Starter nodes and agent skills for describing what the code builds and why. No wiki.",
+  "shapeMapBody": "Starter concepts and agent skills for describing what the code builds and why. No wiki.",
   "shapeBothTitle": "Both",
-  "shapeBothBody": "The map and the wiki side by side, with the wiki able to propose nodes to the map.",
+  "shapeBothBody": "The map and the wiki side by side, with the wiki able to propose concepts to the map.",
   "shapeBack": "Back"
 }

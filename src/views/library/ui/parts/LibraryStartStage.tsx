@@ -5,7 +5,7 @@ import { CloudDownload, FilePlus2, Search } from "lucide-react";
 
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
-import { PAGE_COLUMN_STAGE } from "@/shared/ui/page-frame";
+import { PAGE_COLUMN_STAGE, PAGE_LEDE, PAGE_TITLE } from "@/shared/ui/page-frame";
 
 /**
  * **An empty folder is an empty state, not a popup** (owner, 2026-09-06).
@@ -82,10 +82,10 @@ export function LibraryStartStage({
         heading is the destination's name with the state sentence under it, here the
         heading **is** the state and the rail carries the name.
       */}
-      <h1 className="mt-1 text-display leading-display font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)] [word-break:keep-all]">
+      <h1 className={`mt-1 break-keep ${PAGE_TITLE}`}>
         {t("emptyTitle")}
       </h1>
-      <p className="mt-2 text-body leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
+      <p className={`mt-2 ${PAGE_LEDE}`}>
         {t("emptyBody")}
       </p>
       <div className="mt-5 flex flex-wrap items-center gap-2">

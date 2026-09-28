@@ -94,8 +94,8 @@
     "validatorWarningsAriaLabel": "온톨로지 검증 경고",
     "validatorIssues": {
       "unclosedFrontmatter": "파일 맨 위 정보칸(frontmatter)이 닫히지 않아서, 이 문서는 지도에 올라가지 않아요.",
-      "emptyKind": "kind 값이 비어 있어요. 그래프 노드로 인식되지 않아요.",
-      "missingKind": "kind가 없어서 이 문서는 아직 그래프 노드가 아니에요.",
+      "emptyKind": "kind 값이 비어 있어요. 개념으로 인식되지 않아요.",
+      "missingKind": "kind가 없어서 이 문서는 아직 개념이 아니에요.",
       "unknownKind": "kind 값이 알려진 종류가 아니에요. 그래프에서 인식되지 않을 수 있어요.",
       "missingExpectedField": "이 kind에 필요한 필드(예: domain)가 비어 있어요. 트리에서 부모를 찾지 못해요.",
       "nonCanonicalGraphArray": "관계 목록의 정렬/중복 상태가 정리되지 않았어요. 자동으로 정리할 수 있어요.",
@@ -103,7 +103,7 @@
       "missingUid": "고유 번호(uid)가 없어요. 문서마다 절대 바뀌지 않는 고유 번호가 있어야 이름을 바꿔도 같은 문서로 알아봐요.",
       "invalidUid": "고유 번호(uid) 형식이 잘못됐어요. 주소나 제목으로 만들지 말고, 도구가 자동으로 만들어 주는 값을 그대로 쓰세요.",
       "duplicateUid": "다른 문서가 이미 이 고유 번호(uid)를 쓰고 있어요.",
-      "invalidMergedUids": "merged_uids 형식이 맞지 않아요. 흡수된 노드의 UUIDv4 목록이어야 해요.",
+      "invalidMergedUids": "merged_uids 형식이 맞지 않아요. 흡수된 개념의 UUIDv4 목록이어야 해요.",
       "nonCanonicalMergedUids": "merged_uids가 중복 없이 정렬된 목록이 아니에요.",
       "malformedFrontmatterLine": "정보칸의 한 줄을 읽지 못했어요. 그 줄의 콜론과 띄어쓰기를 확인해 주세요.",
       "malformedQuotedScalar": "정보칸에서 따옴표로 연 값이 닫히지 않았어요. 빠진 따옴표를 넣어 주세요.",
@@ -132,7 +132,7 @@
     "editKindUnset": "아직 정해지지 않음",
     "diagnosticAriaLabel": "이 문서가 지도에 없는 이유",
     "notOnMapTitle": "이 문서는 지도에 없어요. 종류가 정해지지 않았어요",
-    "notOnMapBody": "종류(kind)를 정하면 이 문서가 지도의 노드가 되고, 에이전트가 인용할 수 있게 돼요."
+    "notOnMapBody": "종류(kind)를 정하면 이 문서가 지도의 개념이 되고, 에이전트가 인용할 수 있게 돼요."
   },
   "readingAids": {
     "backToTop": "맨 위로",
@@ -427,7 +427,7 @@
   },
   "newDocDialog": {
     "title": "새 문서",
-    "subtitle": "이 문서가 어떤 종류의 노드인지 먼저 고르세요. 저장될 폴더와 시작 내용이 그 종류를 따라가요.",
+    "subtitle": "이 문서가 어떤 종류의 개념인지 먼저 고르세요. 저장될 폴더와 시작 내용이 그 종류를 따라가요.",
     "cancel": "취소"
   },
   "fileActions": {
@@ -478,8 +478,8 @@
     "notRendered": "문서를 아직 화면에 못 그렸어요. 다시 시도해 주세요.",
     "renameAlreadyExists": "이미 존재하는 문서예요: {slug}",
     "newDocTitlePrompt": "새 문서의 제목:",
-    "similarNodeWarning": "비슷한 노드가 이미 있어요. {title}",
-    "similarNodeOpen": "그 노드 열기",
+    "similarNodeWarning": "비슷한 개념이 이미 있어요. {title}",
+    "similarNodeOpen": "그 개념 열기",
     "similarNodeCreateAnyway": "그래도 새로 만들기"
   },
   "linkCopied": "문서 링크를 복사했어요",

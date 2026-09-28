@@ -987,6 +987,13 @@ The usability motion for "verifying meaning" in the map contextual editor and in
 3-step ramps are ≤240ms (above that, only **exception tokens with a name and reason** — currently 2:
 `--agent-panel-reflow-duration` 260ms panel reflow · `--overlay-spring-response`
 300ms overlay spring. Both have critical damping so their physics are correct; what was misaligned was not the code but this sentence).
+The overlay spring moves position only. Its opacity takes `--motion-base` on `--motion-ease` on the way in,
+and on the way out the movement accelerates on `--motion-ease-exit` while the fade stays on `--motion-ease`,
+both in `calc(var(--motion-base) * 0.67)`, with the scrim fading on that same clock (2026-09-29: the expo
+curve had carried the opacity, the exit decelerated, and the scrim outlived the surface by 60ms; an
+accelerating fade left 26% of the View menu on its last frame when its 140ms unmount window closed). Under
+reduced motion every consumer swaps `.overlay-spring-surface` for `.overlay-fade-only`, the map's View menu
+included.
 `prefers-reduced-motion` is immediately neutralized by the global rule in the `app/globals.css` base layer.
 
 - `--motion-fast: 120ms` — **Verification**. Confirming a state that has already occurred (hover/focus/color/
@@ -1198,7 +1205,7 @@ Width breakpoints alone cannot express "tablet = touch" — a 1024px display cou
 - **`--touch-target-min: 44px`** (`:root`) + **`@media (pointer: coarse)`**
   block serve as the single source. In coarse mode, `--app-nav-rail-tile-height` (32→44) ·
   `--topology-chrome-control-height` (clamp 32–36→44) ·
-  `--topology-shortcut-sheet-close-size` are promoted to 44px. Fine-pointer retains density. No dark/single/color changes — only height/Hit area.
+  `--overlay-close-size` are promoted to 44px. Fine-pointer retains density. No dark/single/color changes — only height/Hit area.
 - **Bottom tab bar reservation** — For `<lg` where BottomTabBar exists, surfaces anchored to the bottom or having scroll ends must subtract/pad `--topology-mobile-bottom-tab-reserve`
   (56px + safe-area). Application points: expanded INDEX (`--topology-index-bottom-inset`) · bottom-right gauge
   (`--topology-relation-legend-bottom-inset`, bottom-specific separate token) · datasheet max-height (`--map-panel-bottom-reserve` single knob) · content page main `max-lg` bottom padding · the reading pane's back-to-top pill (`--doc-reading-back-to-top-inset`). **"Blocked by tab bar behind it is a defect"** — when creating new bottom-anchored surfaces, contract from this reservation.
@@ -2595,6 +2602,16 @@ The size vocabulary for **content icon glyphs** (lucide) sitting next to body te
 
 **Scope — content icons only.** Chrome and rail icons remain owned by their respective surface contracts: `--topology-chrome-icon-size` (12) · `--chrome-icon` (16) · `--app-nav-rail-icon-size` (20). Overlapping values represent the same answer for the same type pair, but Chrome density decisions must move independently, so they are not bundled.
 
+**Content icons follow the reader's text size (2026-09-29).** The three steps are declared in `rem`
+(`0.75rem` · `0.875rem` · `1rem`), and a zero-specificity rule in `base-root-alpha.css` binds a
+lucide glyph whose `width` attribute is 12, 14 or 16 to the matching token, so the numeric prop
+stays the 16px-root value while the rendered box follows the root. A size class on the glyph or
+its slot (`[&>svg]:size-*`) still wins, and an SVG nested inside a drawn diagram keeps its
+attribute, because its position is computed from it. Measured on the built export at 1440×900
+with a 16px root: 0 differing pixels on `/ko/agents/`, `/ko/project/storefront/` and the settings
+sheet; at a 32px root the glyphs measure 24/28/32 while the rail icons hold at 20. Before this, a
+reader at 200% text size read doubled words beside half-size glyphs.
+
 **The gate is a ratchet, not lint** (`tests/contract/icon-size-ramp.contract.test.ts`): ① CSS ↔ JS mirror consistency ② Per-file ledger for sizes outside the ramp (`size={N}` prop + `size-N`/`h-N w-N` classes) — **new files start at 0 on day one**, existing debt of 64 cases/17 files can only decrease ③ Ratchet for unspecified (default 24px render): 3 cases/2 files ④ Composite probe + dead-code prevention denominator. The reason it's not lint: replacing the 64-case debt implies ±1–2px render changes, requiring design judgment at each site (the founding judgment of the ratchet), and an icon-specific exception block would replace ramp selectors for those files due to flat config multi-block pitfalls.
 
 **Debt repayment is a design pass with before→after tables per site.** Whether 10·11 (44 sites) target sm (12) — and whether micro steps (10 or 11) are separately needed — is judged after screen measurement (queued alongside mono command tag tracking confirmation). Until then, this ramp guarantees only one thing: **newly used icons do not expand the set from 9 to 10.**
@@ -2633,7 +2650,7 @@ Registration partners: `app/styles/tokens.css` (imported by `app/globals.css`) +
 
 **`sheet` (18px) was added in the 2026-08-04 system establishment.** As the drawer judgment converged content steps to 12, the same bug surfaced one layer up — at 1512px empirical measurement, **overlay radii spanned six values** (12 · 9 · 22 · 16 · 18 · 20, plus mobile 28 in source), and among them, 16/18/20 differed by only 2px from each other, failing to create hierarchy. Sources were also fractured: 2 component-specific tokens (`--topology-shortcut-sheet-radius` 22 · `--topology-search-sheet-radius` 16, deprecated) + 4 eslint-disables (one literally "pending registration") + 1 directional-suffix lint blind spot (`rounded-t-[28px]`). **Five values were performing one job — floating sheets/palettes.** The reason for value 18: it is the current mode frequency and continues the ramp's common ratio (4→6→9→12→18, ≈1.5×). Scope rule — **only large transient surfaces that float and obscure below** (shortcut/search/agent connection sheets, quick action/gesture hints, mobile bottom sheet tops) qualify as sheet. Anchor popovers · menus use card/panel; small confirmation dialogs use panel; **inflow content is prohibited from using sheet regardless of size** (craft entry card 16 → panel, drawer hero 20 → panel are those judgments). The border partner for the sheet step is `--color-divider` (0.08) — the previous `--color-overlay-3` (0.10) instance was also converged. Gate: eslint radius selector (extended to include directional suffixes) + `RADIUS_RAMP_STEPS` sync contract (`cn.test.ts`).
 
-> **Relationship with Chrome radius ladder.** The `--chrome-radius` > (10px) · `--chrome-radius-inner` (7px) · keycap (4px) ladder in the "Chrome Syntax" section below is a **separate system encapsulated in components** (ChromeTile / ChromeChip / status chip specific). The `rounded-chip/card/panel` in this codex governs **general JSX surfaces** outside that scope. Since Chrome surfaces use components rather than inline `rounded-[Npx]`, the two systems do not conflict — Chrome boxes follow the Chrome ladder, everything else follows this ramp.
+> **Relationship with Chrome radius ladder.** The `--chrome-radius` > (9px, `--radius-card`) · `--chrome-radius-inner` (6px, `--radius-chip`) · keycap (4px, `--radius-micro`) ladder in the "Chrome Syntax" section below is a **separate system encapsulated in components** (ChromeTile / ChromeChip / status chip specific). The `rounded-chip/card/panel` in this codex governs **general JSX surfaces** outside that scope. Since Chrome surfaces use components rather than inline `rounded-[Npx]`, the two systems do not conflict — Chrome boxes follow the Chrome ladder, everything else follows this ramp.
 
 ### Page Column — Single `--page-max`
 
@@ -2673,6 +2690,16 @@ reservation is the bottom tab bar and its size depends on the surface.
 Ownership and gates: `src/shared/ui/page-frame.ts` is the single definition site;
 `tests/contract/page-frame.contract.test.ts` pins each screen's membership and both frames'
 bottom breath, and `tests/e2e/page-frame.spec.ts` measures the rendered agreement.
+
+**One page title, one lede (2026-09-29).** A destination's `h1` wears `PAGE_TITLE` —
+`text-display` on its own `leading-display`, weight 510, `--tracking-display` — and the sentence
+under it wears `PAGE_LEDE`, `text-body-lg` on `leading-body-lg` in tertiary ink. The audit found
+seven title styles across eleven h1s (23/510 with three trackings, 23/650 twice at display-tight
+leading, 30/510 on the project editor from `md`, 16/650 on the history screen below `sm`) and four
+lede pairs (14/24, 14/22, 12.5/24, 12.5/20); moving between two destinations changed the title's
+weight or tracking with nothing else changing. A call site adds only placement (`mt-*`, `pb-*`, a
+width, a flex role) around the constant; the page-frame contract reads every `h1` in the member
+files and fails one that restates a type, leading, weight or tracking value.
 
 **`--page-col-utility`(960px) has been retired** (Design Council Verdict ③, 2026-07-29).
 The specification itself — "narrow the screen one more time from the inside for a single judgment view" — was not wrong, but **it produced the exact opposite result in its sole consumer.** The `/download` page is a surface that **attaches to the left** of the download panel, but centering only the footer with this token created two alignment references within the same page — measured (1920): panel x=160 · footer x=480. No element aligned with another.
@@ -2788,9 +2815,9 @@ Each box references only the tokens below. Do not reimplement inline px/radius o
 
 | Box | Height | Radius | Padding | Typography Unit |
 |---|---|---|---|---|
-| Chrome Tile (ChromeTile) | `--chrome-tile-size` 36px | `--chrome-radius` 10px | `--chrome-inset` alignment | Icon 16px |
+| Chrome Tile (ChromeTile) | `--chrome-tile-size` 36px | `--chrome-radius` 9px | `--chrome-inset` alignment | Icon 16px |
 
-| Status Chip (`CHROME_STATUS_CHIP_CLASS`) | 44px (same as tile) | `--chrome-radius` 10px | `px-3.5` | body / label |
+| Status Chip (`CHROME_STATUS_CHIP_CLASS`) | `--chrome-tile-size` 36px (same as tile) | `--chrome-radius` 9px | `px-3.5` | body / label |
 
 | Panel (INDEX · Datasheet) | Content | `--map-panel-radius` 12px (= `rounded-panel`) | `--map-panel-pad` | title header · body row |
 | Popover (ego popover) | Content | `rounded-panel` | `--card-pad` | title + body/label |
@@ -2849,15 +2876,15 @@ The "machined tile" syntax shared by Topology chrome (brand pill, top HUD lane, 
 | Step | Value | Target |
 |---|---|---|
 | Keycap | 4px | `<kbd>` shortcut key cap |
-| Inner | 7px (`--chrome-radius-inner`) | Small controls nested inside tiles, such as the collapse button |
-| Tile / Chip / Pill | 10px (`--chrome-radius`) | ChromeTile · ChromeChip · Brand pill |
+| Inner | 6px (`--chrome-radius-inner` = `--radius-chip`) | Small controls nested inside tiles, such as the collapse button |
+| Tile / Chip / Pill | 9px (`--chrome-radius` = `--radius-card`) | ChromeTile · ChromeChip · Brand pill |
 | Panel | 12px (`--map-panel-radius`) | INDEX panel · Compressed datasheet |
 
 ### Four-Layer Hierarchy: Tile / Chip / Pill / Panel
 
 - **Tile (ChromeTile)** — 36px square (`--chrome-tile-size`) icon button. One destination = one tile (e.g., view all, vault, builder). If `href` is provided, it acts as a link; otherwise, it's a button.
-- **Chip (ChromeChip)** — 44px tall label button. Icon (14px) + text + optional `kbd` cap. Used for controls where the label is part of the meaning, such as auto-alignment, search, and workspaces.
-- **Pill (Brand pill)** — Same surface as a chip (10px radius) but contains a pip (brand mark) + two lines of text (title + census). A composite surface. `HeroCollapsed`.
+- **Chip (ChromeChip)** — 36px tall label button (`--chrome-tile-size`). Icon (14px) + text + optional `kbd` cap. Used for controls where the label is part of the meaning, such as auto-alignment, search, and workspaces.
+- **Pill (Brand pill)** — Same surface as a chip (9px radius) but contains a pip (brand mark) + two lines of text (title + census). A composite surface. `HeroCollapsed`.
 - **Panel (INDEX · Compressed datasheet)** — 12px radius, one level larger than the three above, with its own internal header/body/footer rhythm.
 
 ### Box Specifications (Geometry Ladder) — "Applied Uniformly Everywhere" Contract
@@ -2867,8 +2894,8 @@ The "machined tile" syntax shared by Topology chrome (brand pill, top HUD lane, 
 | Specification | Token | Value | Target |
 |---|---|---|---|
 | Chrome Tile Height | `--chrome-tile-size` | 36px | ChromeTile · ChromeChip · Status chips (realm, return, path) — **Single specification** |
-| Tile/Chip/Pill Radius | `--chrome-radius` | 10px | All above chrome surfaces |
-| Inner Radius | `--chrome-radius-inner` | 7px | Small controls nested inside tiles |
+| Tile/Chip/Pill Radius | `--chrome-radius` | 9px (`--radius-card`) | All above chrome surfaces |
+| Inner Radius | `--chrome-radius-inner` | 6px (`--radius-chip`) | Small controls nested inside tiles |
 | Keycap Radius | (kbd) | 4px | `<kbd>` shortcut key cap |
 | Panel Radius | `--map-panel-radius` | 12px | INDEX panel · Compressed datasheet |
 | Border · Surface · Shadow | `--chrome-border` · `--chrome-surface` · `--chrome-shadow` | — | All above chrome surfaces |
@@ -2887,7 +2914,7 @@ Owner of `docs/prototypes/chrome-rail-combined.html` — a permanent 64px vertic
 
 ### Tokens
 
-- `--chrome-tile-size: 36px` · `--chrome-radius: 10px` · `--chrome-radius-inner: 7px`
+- `--chrome-tile-size: 36px` · `--chrome-radius: var(--radius-card)` (9px) · `--chrome-radius-inner: var(--radius-chip)` (6px)
 - `--chrome-icon: 16px` (ChromeTile icon) — ChromeChip icons are 14px (enforced by the chip class itself, no separate token — chips have denser packing than tiles, so this width matches visual measurements).
 - `--chrome-surface` · `--chrome-border`(refers to `--color-border-soft`) · `--chrome-shadow` · `--chrome-engrave` — Dark mode specific values.
 - `--chrome-inset: 24px` — Left/right alignment baseline. `--topology-index-inset` references this (single source of truth) — new chrome surfaces always use only this token for left/right margins.
@@ -2906,7 +2933,7 @@ All left/right outer margins of the topology chrome converge to a single `--chro
 
 ### Consumption Norms
 
-Chrome surfaces (tiles/chips) must only be created via `ChromeTile` / `ChromeChip`. Do not reimplement 44px square buttons or label buttons inline with classes inside JSX — drift (e.g., 43px, 11px radius) is hard to detect visually, and without going through the component, subsequent token revisions will miss these instances.
+Chrome surfaces (tiles/chips) must only be created via `ChromeTile` / `ChromeChip`. Do not reimplement 36px square buttons or label buttons inline with classes inside JSX — drift (e.g., 43px, 11px radius) is hard to detect visually, and without going through the component, subsequent token revisions will miss these instances.
 
 ## Control Inventory (Canonical Components) — Design Front-End Overhaul Phase 1 (2026-07-25)
 
@@ -2924,6 +2951,7 @@ Chrome surfaces (tiles/chips) must only be created via `ChromeTile` / `ChromeChi
 | `ChromeTile` / `ChromeChip` | `src/shared/ui/chrome-tile.tsx` · `chrome-chip.tsx` | Chrome tiles/chips (see separate "Chrome Syntax" section) |
 | `controlClass()` | `src/shared/ui/control-class.ts` | **Value Layer** — single source of classes for interactive elements (see section below) |
 | `Chip` · `IconButton` · `RowButton` | `src/shared/ui/controls.tsx` | **Action Layer** — defaults to `type="button"` · enforces accessible names · button semantics |
+| `CloseButton` | `src/shared/ui/close-button.tsx` | **The one close control** for overlays, sheets, palettes and the toast: an `IconButton` in `--overlay-close-size` (32px, 44px under a coarse pointer) around `X` at `ICON_SIZE.md`, hover from the value axes. The toast cannot render a component (sonner owns its button), so it reads the same `OVERLAY_CLOSE_BOX` and `OVERLAY_CLOSE_ICON_SIZE`. Before 2026-09-29 four surfaces drew four closes: 28px, 32px, 28px with a 12px glyph, and a bordered chip that squeezed its glyph to 10px. Gate: `src/shared/ui/close-button.test.tsx` |
 | `Surface` | `src/shared/ui/surface.tsx` | Appearance/disappearance of conditional surfaces — **not a modal** |
 | `Dialog` | `src/shared/ui/dialog.tsx` | **Blocking center dialog** — comes with scrim (`--overlay-scrim`), trap, Esc, return, scroll lock, `--z-dialog`, and two-step width (`--dialog-w-sm/md`) by default. No `modal={false}` (non-modals are consumers of Surface). Gate: `tests/contract/dialog-adoption-ratchet.contract.test.ts` — raw `role="dialog"` markup outside primitives cannot pass the ledger |
 | `Input` / `Textarea` | `src/shared/ui/input.tsx` | **Action Layer** for form fields — enforces accessible names (label/aria-label/labelledBy pick one) + auto-wires `error`/`hint` to `aria-invalid`·`aria-describedby`·`role="alert"`. Styles are **byte-identical** to the result of `fieldClass` calls (contract assertion — values exist in only one place in the value layer). Gate: `tests/contract/field-adoption-ratchet.contract.test.ts` — raw text fields in new files must be 0 |
@@ -3381,10 +3409,15 @@ The settings row-measure token (658px) bound the API Key drill-in's rows to the 
 ```
 --dialog-w-sm: 420px;   /* Dialog default — convergence point of hardcoded cluster 360~448 */
 --dialog-w-md: 560px;   /* Topology «Add Concept» composer · wide sheet */
+--dialog-w-lg: 880px;   /* Settings: a two-pane dialog, LNB beside the section */
+--dialog-h-lg: 672px;   /* Settings' fixed height: the 720 minimum window less four 12px gutters */
 --dialog-max-h: 44rem;  /* Ceiling before a dialog's own body scrolls (2026-09-05) */
 ```
 
-- **That’s all for Level 2** (approved by the "System" team on 2026-08-15). The old `--dialog-w-lg: 720` was removed because it was a ghost with zero consumers and zero definitions — unused tokens are not specifications, they are misinformation. If a new level is needed, declaring `design-contract` comes first.
+- **Three widths** (the third added 2026-09-29 under `design-contract`). `lg` has one consumer, the
+  settings sheet, which wrote 880×672 by hand; it stays fixed so the window never changes between
+  sections. Its height is derived, not chosen, and `settings-sheet-type-dialect.contract.test.ts`
+  holds it under the minimum window less four gutters.
 - Single source of truth for centered modal/composer width; primary consumer is `Dialog`
   (`src/shared/ui/dialog.tsx`). Actual application wraps narrow viewports with
   `w-[min(var(--dialog-w-*), calc(100vw - 2rem))]`.

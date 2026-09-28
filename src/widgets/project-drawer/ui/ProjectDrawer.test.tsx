@@ -121,7 +121,7 @@ describe('ProjectDrawer impact mode help', () => {
     const first = renderDrawer({ impactMode: "none", onChangeImpactMode });
     expect(
       within(screen.getByTestId("project-drawer-impact-help")).getByText(
-        "강조 없이 현재 노드만 봐요",
+        "강조 없이 현재 개념만 봐요",
       ),
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("radio", { name: /^의존 —/ }));

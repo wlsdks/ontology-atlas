@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type MouseEvent } from "react";
-import { PAGE_FRAME_FORM } from "@/shared/ui/page-frame";
+import { PAGE_FRAME_FORM, PAGE_LEDE, PAGE_TITLE } from "@/shared/ui/page-frame";
 import { Link } from "@/i18n/navigation";
 import { useRouter } from "@/i18n/navigation";
 import { ArrowLeft, ArrowUpRight, CopyPlus } from "lucide-react";
@@ -270,7 +270,7 @@ function EditorContent({
             </p>
           )}
           <div className="mt-2 flex flex-col gap-2 md:flex-row md:items-baseline md:justify-between">
-            <h1 className="text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-section)] text-[color:var(--color-text-primary)] md:text-hero">
+            <h1 className={PAGE_TITLE}>
               {mode === "create"
                 ? duplicateFromSlug
                   ? t("titleDuplicate", { name: project?.name ?? duplicateFromSlug })
@@ -291,7 +291,7 @@ function EditorContent({
               </span>
             )}
           </div>
-          <p className="mt-2 max-w-xl text-body-lg leading-title text-[color:var(--color-text-tertiary)]">
+          <p className={`mt-2 max-w-xl ${PAGE_LEDE}`}>
             {mode === "create" ? t("headerSubtitleCreate") : t("headerSubtitle")}
           </p>
           <div className={mode === "edit" ? "mt-4 flex justify-start" : "hidden"}>

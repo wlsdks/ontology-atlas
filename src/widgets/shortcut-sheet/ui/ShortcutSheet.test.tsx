@@ -90,9 +90,9 @@ describe("ShortcutSheet — topology section", () => {
 
   it("lists the real canvas interactions: click select, drag pan/move, wheel zoom, ⌘K search, Esc, right-click menu", () => {
     renderSheet();
-    expect(screen.getByText("Select a node")).toBeInTheDocument();
+    expect(screen.getByText("Select a concept")).toBeInTheDocument();
     expect(
-      screen.getByText("Pan the map (empty space) or move a node (spring rebound)"),
+      screen.getByText("Pan the map (empty space) or move a concept (spring rebound)"),
     ).toBeInTheDocument();
     expect(screen.getByText("Zoom in or out")).toBeInTheDocument();
     expect(

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { StaggeredFadeIn } from './staggered-fade-in';
 
 describe('StaggeredFadeIn', () => {
@@ -65,5 +65,32 @@ describe('StaggeredFadeIn', () => {
     const capped = screen.getByTestId('c11').getAttribute('style') ?? '';
     expect(capped).toContain('480ms');
     expect(capped).not.toContain('660ms');
+  });
+
+  it('reveals only children that arrive later, so the ones on screen do not replay', async () => {
+    const frame = () => act(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
+    const list = (count: number) => (
+      <StaggeredFadeIn stagger={24}>
+        {Array.from({ length: count }, (_, i) => (
+          <div key={`card-${i}`} data-testid={`card-${i}`}>
+            {i}
+          </div>
+        ))}
+      </StaggeredFadeIn>
+    );
+    const { rerender } = render(list(2));
+    await frame();
+    expect(screen.getByTestId('card-1').style.opacity).toBe('1');
+
+    rerender(list(4));
+    expect(screen.getByTestId('card-0').style.opacity).toBe('1');
+    expect(screen.getByTestId('card-1').style.opacity).toBe('1');
+    expect(screen.getByTestId('card-2').style.opacity).toBe('0');
+    expect(screen.getByTestId('card-3').style.transition).toContain('24ms');
+
+    await frame();
+    expect(screen.getByTestId('card-2').style.opacity).toBe('1');
+    expect(screen.getByTestId('card-2').style.transition).toContain(' 0ms');
+    expect(screen.getByTestId('card-3').style.transition).toContain('24ms');
   });
 });

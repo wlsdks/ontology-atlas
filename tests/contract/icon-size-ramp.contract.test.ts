@@ -69,9 +69,8 @@ const CSS = readGlobalCss();
 /**
  * A ramp token's length **in pixels at the default 16px root**.
  *
- * `px` and `rem` are both read, because since 2026-09-12 the type ramp is written in `rem` so
- * that a browser's text-only zoom reaches it (`app/globals.css`, "The ramp is written in
- * `rem`"), while the icon ramp beside it stays in `px` — an icon is a box. The unit used to be
+ * `px` and `rem` are both read, because the type ramp (2026-09-12) and the content icon ramp
+ * (2026-09-29) are written in `rem` so that a browser's text-only zoom reaches them. The unit used to be
  * hard-coded into this regex, which made the first `rem` step read as **"the token is
  * missing"** rather than as a changed value; that is the one thing this helper must never say
  * about a token that is right there.

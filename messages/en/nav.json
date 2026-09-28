@@ -19,20 +19,20 @@
     "indexDefaultExpanded": "Expanded",
     "indexDefaultCollapsed": "Collapsed",
     "canvasBgLabel": "Canvas background",
-    "canvasBgCaption": "Pick the map's background texture: it always stays fainter than nodes and links",
+    "canvasBgCaption": "Pick the map's background texture: it always stays fainter than concepts and links",
     "canvasBg": {
       "dot": "Dots (default)",
       "web": "Constellation",
       "depth": "Depth dots"
     },
-    "glyphSetLabel": "Node icons",
-    "glyphSetCaption": "Pick the node icon style: the shapes (kinds) never change",
+    "glyphSetLabel": "Concept icons",
+    "glyphSetCaption": "Pick the concept icon style: the shapes (kinds) never change",
     "glyphSet": {
       "geometric": "Geometric (default)",
       "line": "Line"
     },
     "arrangementLabel": "Arrange by",
-    "arrangementCaption": "Pick what decides where nodes sit in the 3D map. Ownership stacks the containment tree in layers; coupling pulls closely related nodes near each other",
+    "arrangementCaption": "Pick what decides where concepts sit in the 3D map. Ownership stacks the containment tree in layers; coupling pulls closely related concepts near each other",
     "arrangement": {
       "ownership": "Ownership",
       "coupling": "Coupling"
@@ -101,12 +101,12 @@
     "expand": {
       "affordanceLabel": "Open control",
       "affordancePill": "Floating pill",
-      "affordanceBar": "Bar above the node",
+      "affordanceBar": "Bar above the concept",
       "affordanceBadge": "Shoulder badge",
       "affordanceHint": {
-        "pill": "Sits in open space away from the node, joined by a dotted line. The only one of the three that has to find a spot: as space runs out it drifts further away.",
-        "bar": "A row of text buttons directly above the selected node. Nothing shows until you select, and it says in numbers how many will open.",
-        "badge": "A small circle docked on the node's upper-left shoulder. It travels with the node so it never has to find a spot; hover tells you what it will do."
+        "pill": "Sits in open space away from the concept, joined by a dotted line. The only one of the three that has to find a spot: as space runs out it drifts further away.",
+        "bar": "A row of text buttons directly above the selected concept. Nothing shows until you select, and it says in numbers how many will open.",
+        "badge": "A small circle docked on the concept's upper-left shoulder. It travels with the concept so it never has to find a spot; hover tells you what it will do."
       },
       "structureLabel": "Child layout",
       "structureDisc": "Spiral disc",
@@ -168,7 +168,7 @@
     "agentStatusLabel": "Show work in progress",
     "agentStatusCaption": "Shows “Working” and the time of the last write on the map while an agent or a person edits this folder. On by default.",
     "agentNotificationsLabel": "Notifications",
-    "agentNotificationsCaption": "Announces when a task starts and ends, and when a domain appears or disappears. Single nodes and single relations are not announced: the map already shows them.",
+    "agentNotificationsCaption": "Announces when a task starts and ends, and when a domain appears or disappears. Single concepts and single relations are not announced: the map already shows them.",
     "agentNotificationKindsLabel": "What to receive",
     "agentNotificationKindsCaption": "Muted kinds never reach the bell.",
     "runtimes": {

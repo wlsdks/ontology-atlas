@@ -71,9 +71,9 @@
     "impactModeUpstream": "Upstream",
     "impactModeDownstream": "Downstream",
     "impactModeNetwork": "Network",
-    "impactHelpNone": "No highlight: shows only the current node",
-    "impactHelpUpstream": "Highlights what this node depends on",
-    "impactHelpDownstream": "Highlights what depends on this node",
+    "impactHelpNone": "No highlight: shows only the current concept",
+    "impactHelpUpstream": "Highlights what this concept depends on",
+    "impactHelpDownstream": "Highlights what depends on this concept",
     "impactHelpNetwork": "Highlights connections in both directions",
     "impactModeGroupAria": "Impact view mode",
     "tagsAndStack": "Tags and stack",
@@ -265,7 +265,7 @@
         "ontology": {
           "label": "Map docs",
           "count": "{count}",
-          "tooltip": "Map docs: only nodes that appear on the map ({count})"
+          "tooltip": "Map docs: only concepts that appear on the map ({count})"
         }
       },
       "pinnedHeader": "Pinned · {count}",

@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
+import { readGlobalCss } from "../../scripts/lib/global-css.mjs";
+
 /**
  * The settings sheet has **one** type dialect (2026-08-02, three owner reports).
  *
@@ -437,8 +439,10 @@ describe("패널은 최소 창 안에서 자기 거터를 먹지 않는다", () 
    */
   it("패널 높이가 최소 창 − 오버레이 거터 2벌 을 넘지 않는다", () => {
     const menu = sourceWithoutComments("AppSettingsMenu.tsx");
-    const height = Number(/h-\[(\d+)px\] max-h-\[calc\(100dvh-1\.5rem\)\]/.exec(menu)?.[1]);
-    expect(Number.isFinite(height), "패널 고정 높이를 못 찾았다").toBe(true);
+    const token = /h-\[var\((--[a-z0-9-]+)\)\] max-h-\[calc\(100dvh-1\.5rem\)\]/.exec(menu)?.[1];
+    expect(token, "the panel's fixed height is not a token").toBeDefined();
+    const height = Number(new RegExp(`${token}:\\s*(\\d+)px;`).exec(readGlobalCss())?.[1]);
+    expect(Number.isFinite(height), `${token} has no px value in app/styles`).toBe(true);
 
     const tauri = JSON.parse(readFileSync("src-tauri/tauri.conf.json", "utf8"));
     const minHeight: number = tauri.app.windows[0].minHeight;

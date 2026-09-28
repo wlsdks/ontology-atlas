@@ -60,7 +60,7 @@
       "ownerPlaceholder": "진안",
       "iconPlaceholder": "🗺️",
       "progressPlaceholder": "50",
-      "isHubLabel": "허브 노드로 표시",
+      "isHubLabel": "허브로 표시",
       "isHubHint": "(인증·에이전트 허브처럼 인디고 강조)",
       "slugAutoLabel": "문서 주소",
       "slugAutoPending": "이름을 넣으면 자동으로 만들어져요",

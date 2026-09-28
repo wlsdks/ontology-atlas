@@ -35,6 +35,7 @@ import { useDialogFocusTrap } from '@/shared/lib/use-dialog-focus-trap';
 import { cn } from '@/shared/lib/cn';
 import { isDesktopShell } from '@/shared/lib/desktop-shell';
 import { Chip, IconButton, RowButton } from '@/shared/ui/controls';
+import { CloseButton } from '@/shared/ui/close-button';
 
 import {
   buildRouteFocusHref,
@@ -479,13 +480,7 @@ export function AppSettingsMenu({
           aria-labelledby={titleId}
           data-surface-role="settings-dock"
           tabIndex={-1}
-          /*
-           * Fixed size, so the window never changes between sections; overflow scrolls the right
-           * pane, and only a narrow viewport shrinks it. 672 = the 720 minimum window minus two
-           * 12px overlay margins on each side (720 − 24 − 24); wider than 880 only stretches the
-           * gap between label and control.
-           */
-          className={`${settingsExiting ? 'app-settings-panel-out' : 'app-settings-panel-in'} flex h-[672px] max-h-[calc(100dvh-1.5rem)] w-[880px] focus:outline-none max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-body shadow-[var(--shadow-elevation-3)]`}
+          className={`${settingsExiting ? 'app-settings-panel-out' : 'app-settings-panel-in'} flex h-[var(--dialog-h-lg)] max-h-[calc(100dvh-1.5rem)] w-[var(--dialog-w-lg)] focus:outline-none max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-body shadow-[var(--shadow-elevation-3)]`}
           data-testid="app-settings-popover"
         >
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-3">
@@ -503,15 +498,7 @@ export function AppSettingsMenu({
                 {t('title')}
               </h2>
             </div>
-            {/* `IconButton` enforces the accessible name and takes size and tone from the ramp;
-                hover and focus come from the consumer. */}
-            <IconButton
-              label={t('closeLabel')}
-              onClick={() => closePanel()}
-              className="hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset"
-            >
-              <X size={ICON_SIZE.md} aria-hidden />
-            </IconButton>
+            <CloseButton label={t('closeLabel')} onClick={() => closePanel()} />
           </div>
 
           {
@@ -525,7 +512,7 @@ export function AppSettingsMenu({
               >
                 {settingsGroups.map((group) => (
                   <div key={group.key} className="flex w-max shrink-0 gap-1 sm:mb-3 sm:block sm:w-auto sm:last:mb-0">
-                    <p className="hidden px-2.5 pb-1 font-mono text-label uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)] sm:block">
+                    <p className="hidden px-3 pb-1 font-mono text-label uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)] sm:block">
                       {t(`sectionGroup.${group.key}`)}
                     </p>
                     {/*

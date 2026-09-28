@@ -71,7 +71,7 @@
     "impactModeUpstream": "의존",
     "impactModeDownstream": "영향",
     "impactModeNetwork": "네트워크",
-    "impactHelpNone": "강조 없이 현재 노드만 봐요",
+    "impactHelpNone": "강조 없이 현재 개념만 봐요",
     "impactHelpUpstream": "이 항목에 필요한 대상을 강조해요",
     "impactHelpDownstream": "이 항목을 필요로 하는 대상을 강조해요",
     "impactHelpNetwork": "양방향으로 연결된 곳을 강조해요",
@@ -265,7 +265,7 @@
         "ontology": {
           "label": "지도 문서",
           "count": "{count}개",
-          "tooltip": "지도 문서: 지도에 나오는 노드 문서만 ({count})"
+          "tooltip": "지도 문서: 지도에 나오는 개념 문서만 ({count})"
         }
       },
       "pinnedHeader": "고정 · {count}",
