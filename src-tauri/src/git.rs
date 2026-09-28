@@ -348,7 +348,15 @@ pub(crate) fn find_repo_root(vault_dir: &Path) -> Result<Option<PathBuf>, String
     }
     // Canonicalized to match vault_dir's pathspec base (for example /var vs /private/var).
     let root = PathBuf::from(trimmed);
-    Ok(Some(fs::canonicalize(&root).unwrap_or(root)))
+    let canonical = fs::canonicalize(&root).unwrap_or(root);
+    if !repo_toplevel_is_trustworthy(&canonical) {
+        return Ok(None);
+    }
+    Ok(Some(canonical))
+}
+
+fn repo_toplevel_is_trustworthy(toplevel: &Path) -> bool {
+    toplevel.join(".git").exists() && crate::vault_root_rejection(toplevel).is_none()
 }
 
 /// `Err` outside a repo; this never auto-inits. The `git_init` button is a separate,
@@ -2169,6 +2177,27 @@ pub fn git_probe() -> GitProbe {
 mod tests {
     use super::*;
     use std::collections::HashMap;
+
+    #[test]
+    fn a_redirected_or_dangerous_toplevel_is_not_a_trustworthy_repo_root() {
+        let base = std::env::temp_dir().join(format!("atlas-toplevel-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&base);
+        let repo = base.join("repo");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        let plain = base.join("redirect-target");
+        fs::create_dir_all(&plain).unwrap();
+
+        assert!(repo_toplevel_is_trustworthy(&fs::canonicalize(&repo).unwrap()));
+        assert!(
+            !repo_toplevel_is_trustworthy(&fs::canonicalize(&plain).unwrap()),
+            "a core.worktree redirect target holds no .git of its own"
+        );
+        assert!(
+            !repo_toplevel_is_trustworthy(Path::new("/")),
+            "the filesystem root is refused even if it held a .git"
+        );
+        let _ = fs::remove_dir_all(&base);
+    }
 
     #[test]
     fn vault_pathspec_returns_dot_when_vault_is_repo_root() {

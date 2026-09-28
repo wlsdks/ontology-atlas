@@ -61,6 +61,7 @@ const CURSOR_USER: &str = "cursor-user";
 pub(crate) fn discover_with(
     home: Option<&Path>,
     vault: Option<&Path>,
+    vault_mcp_json: Option<&Path>,
     fs: &ConfigFs<'_>,
 ) -> ConnectorDiscovery {
     let mut connectors: Vec<DiscoveredConnector> = Vec::new();
@@ -91,8 +92,12 @@ pub(crate) fn discover_with(
     }
 
     if let Some(vault) = vault {
-        let mcp_json = vault.join(".mcp.json");
-        read_json_file(&mcp_json, VAULT_MCP_JSON, fs, &mut connectors, &mut sources);
+        match vault_mcp_json {
+            Some(mcp_json) => {
+                read_json_file(mcp_json, VAULT_MCP_JSON, fs, &mut connectors, &mut sources)
+            }
+            None => sources.push(missing(VAULT_MCP_JSON, &vault.join(".mcp.json"))),
+        }
     }
 
     if let Some(home) = home {
@@ -173,9 +178,15 @@ fn project_servers<'a>(root: &'a Value, vault: &Path) -> Option<&'a Value> {
 }
 
 fn normalize_path(raw: &str) -> String {
-    let trimmed = raw.trim().trim_end_matches(['/', '\\']);
+    let unverbatim = raw
+        .trim()
+        .strip_prefix(r"\\?\UNC\")
+        .map(|rest| format!(r"\\{rest}"))
+        .or_else(|| raw.trim().strip_prefix(r"\\?\").map(str::to_string))
+        .unwrap_or_else(|| raw.trim().to_string());
+    let trimmed = unverbatim.trim_end_matches(['/', '\\']);
     if trimmed.is_empty() {
-        raw.trim().to_string()
+        unverbatim
     } else {
         trimmed.to_string()
     }
@@ -470,18 +481,33 @@ fn split_top_level(inner: &str) -> Vec<String> {
     out.into_iter().filter(|item| !item.is_empty()).collect()
 }
 
+fn discovery_vault_root(
+    vault_path: Option<&str>,
+    resolve: impl Fn(&str) -> Result<PathBuf, String>,
+) -> Result<Option<PathBuf>, String> {
+    match vault_path.map(str::trim).filter(|path| !path.is_empty()) {
+        Some(path) => resolve(path).map(Some),
+        None => Ok(None),
+    }
+}
+
 /// Reads only; `None` reads only user-level files.
 #[tauri::command(async)]
 pub fn discover_mcp_connectors(vault_path: Option<String>) -> Result<ConnectorDiscovery, String> {
     let home = home_dir();
-    let vault = match vault_path.as_deref().map(str::trim).filter(|path| !path.is_empty()) {
-        Some(path) => Some(crate::canonical_root(path)?),
-        None => None,
-    };
+    let vault = discovery_vault_root(vault_path.as_deref(), |path| crate::canonical_root(path))?;
+    let vault_mcp_json = vault
+        .as_deref()
+        .and_then(|root| crate::resolve_existing_inside(&root.to_string_lossy(), ".mcp.json").ok());
     let fs = ConfigFs {
         read_text: &|path: &Path| std::fs::read_to_string(path).ok(),
     };
-    Ok(discover_with(home.as_deref(), vault.as_deref(), &fs))
+    Ok(discover_with(
+        home.as_deref(),
+        vault.as_deref(),
+        vault_mcp_json.as_deref(),
+        &fs,
+    ))
 }
 
 /// Resolves a fixed allow-list of runtimes to paths because the agent's spawned
@@ -559,7 +585,14 @@ mod tests {
         let fs = ConfigFs {
             read_text: &read_text,
         };
-        discover_with(Some(Path::new("/home/me")), vault.map(Path::new), &fs)
+        let vault = vault.map(Path::new);
+        let vault_mcp_json = vault.map(|root| root.join(".mcp.json"));
+        discover_with(
+            Some(Path::new("/home/me")),
+            vault,
+            vault_mcp_json.as_deref(),
+            &fs,
+        )
     }
 
     const CLAUDE_JSON: &str = r#"{
@@ -834,22 +867,47 @@ url = "https://example.test/mcp"
     }
 
     #[test]
-    fn discovery_refuses_a_vault_root_the_user_never_granted() {
-        let base = std::env::temp_dir().join(format!("atlas-connector-grant-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&base);
-        let granted = base.join("vault");
-        let forged = base.join("elsewhere");
-        std::fs::create_dir_all(&granted).unwrap();
-        std::fs::create_dir_all(&forged).unwrap();
-        let granted = std::fs::canonicalize(&granted).unwrap();
-        let forged = std::fs::canonicalize(&forged).unwrap();
+    fn a_windows_verbatim_prefix_normalizes_to_the_plain_project_key() {
+        assert_eq!(normalize_path(r"\\?\C:\work\atlas"), r"C:\work\atlas");
+        assert_eq!(normalize_path(r"\\?\UNC\server\share\atlas"), r"\\server\share\atlas");
+        assert_eq!(normalize_path("/work/atlas/"), "/work/atlas");
+    }
 
-        let _scope = crate::vault_grants::EnforcedScope::granting(&[granted.clone()]);
+    #[test]
+    fn the_vault_gate_delegates_to_the_resolver_and_refuses_the_rest() {
+        let resolve = |path: &str| {
+            if path == "/granted" {
+                Ok(PathBuf::from("/granted"))
+            } else {
+                Err("vault-root-not-granted".to_string())
+            }
+        };
+        assert_eq!(discovery_vault_root(None, &resolve), Ok(None));
+        assert_eq!(discovery_vault_root(Some("   "), &resolve), Ok(None));
+        assert_eq!(
+            discovery_vault_root(Some("/granted"), &resolve).unwrap(),
+            Some(PathBuf::from("/granted"))
+        );
+        assert!(discovery_vault_root(Some("/forged"), &resolve).is_err());
+    }
 
-        assert!(discover_mcp_connectors(Some(forged.to_string_lossy().to_string())).is_err());
-        assert!(discover_mcp_connectors(Some(granted.to_string_lossy().to_string())).is_ok());
-        assert!(discover_mcp_connectors(None).is_ok());
-
-        let _ = std::fs::remove_dir_all(&base);
+    #[test]
+    fn a_vault_mcp_json_that_did_not_resolve_is_reported_missing_not_read() {
+        let map = files(&[(
+            "/work/atlas/.mcp.json",
+            r#"{"mcpServers":{"local":{"command":"/bin/echo"}}}"#,
+        )]);
+        let read_text = probe(&map);
+        let fs = ConfigFs {
+            read_text: &read_text,
+        };
+        let found = discover_with(Some(Path::new("/home/me")), Some(Path::new("/work/atlas")), None, &fs);
+        assert!(found.connectors.is_empty());
+        let vault_source = found
+            .sources
+            .iter()
+            .find(|source| source.id == VAULT_MCP_JSON)
+            .expect("vault mcp source");
+        assert_eq!(vault_source.status, "missing");
     }
 }
