@@ -1854,6 +1854,44 @@ describe("AtlasGitPanel reader states what it renders", () => {
     expect(reader).not.toHaveTextContent("문서 전체를 읽지 못해");
   });
 
+  it("says the change is too large when the vault's diff was dropped and the document cannot be read whole", async () => {
+    const reads = new Map<unknown, (result: unknown) => void>();
+    installDesktopGit({
+      diff: { ...DIFF_WITH_CHANGES, diff: "", tooLarge: true },
+      documentDiff: (args: Record<string, unknown>) => new Promise((resolve) => reads.set(args.relativePath, resolve)),
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    await screen.findByTestId("atlas-git-pending-pane");
+    const chips = screen.getAllByTestId("atlas-git-change-row");
+    fireEvent.click(chips.find((c) => c.getAttribute("title")?.includes("bar"))!);
+    await waitFor(() => expect(reads.has("docs/elements/bar.md")).toBe(true));
+    expect(screen.getByTestId("atlas-git-diff-pre")).not.toHaveTextContent("바뀐 내용이 너무 커서");
+
+    await act(async () => {
+      reads.get("docs/elements/bar.md")?.({ path: "docs/elements/bar.md", diff: "", untracked: false, tooLarge: true });
+    });
+    expect(screen.getByTestId("atlas-git-diff-pre")).toHaveTextContent("바뀐 내용이 너무 커서");
+    expect(screen.getByTestId("atlas-git-diff-pre")).not.toHaveTextContent("새로 만든 문서라");
+  });
+
+  it("says a step's change is too large when that step's diff was dropped", async () => {
+    installDesktopGit({
+      documentDiff: () => ({ path: "docs/capabilities/foo.md", diff: "", untracked: false, tooLarge: true }),
+    });
+    const standardInvoke = tauriApiMock.invoke.getMockImplementation()!;
+    tauriApiMock.invoke.mockImplementation((command: string, args?: Record<string, unknown>) =>
+      command === "git_commit_diff"
+        ? Promise.resolve({ count: 0, files: [], diff: "", tooLarge: true })
+        : standardInvoke(command, args),
+    );
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    await screen.findByTestId("atlas-git-steps");
+    fireEvent.click(screen.getByTestId("atlas-git-history-item"));
+    fireEvent.click(await screen.findByTestId("atlas-git-lens-files"));
+
+    await waitFor(() => expect(screen.getByTestId("atlas-git-commit-diff")).toHaveTextContent("바뀐 내용이 너무 커서"));
+  });
+
   it("asks for a renamed document with its old name", async () => {
     installDesktopGit({
       diff: {

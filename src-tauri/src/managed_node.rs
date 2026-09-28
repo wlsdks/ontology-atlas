@@ -101,11 +101,8 @@ fn download_url(artifact: &ManagedNodeArtifact) -> String {
 }
 
 /// Without this comparison the feature would execute unverified downloads.
-pub(crate) fn sha256_matches(bytes: &[u8], expected: &str) -> bool {
-    use sha2::{Digest, Sha256};
-    let digest = Sha256::digest(bytes);
-    let actual: String = digest.iter().map(|b| format!("{b:02x}")).collect();
-    actual.eq_ignore_ascii_case(expected)
+pub(crate) fn file_sha256_matches(path: &Path, expected: &str) -> Result<bool, String> {
+    Ok(crate::library::hash_path(path)?.eq_ignore_ascii_case(expected))
 }
 
 /// A callback keeps this module free of Tauri; unknown sizes are `None` so the
@@ -138,12 +135,12 @@ pub(crate) fn ensure_managed_node(
     )?;
 
     report("verifying", None, None);
-    let bytes = std::fs::read(&archive).map_err(|err| format!("node-read-failed:{err}"))?;
-    if !sha256_matches(&bytes, artifact.sha256) {
+    let verified = file_sha256_matches(&archive, artifact.sha256)
+        .map_err(|err| format!("node-read-failed:{err}"))?;
+    if !verified {
         let _ = std::fs::remove_file(&archive);
         return Err("node-hash-mismatch".to_string());
     }
-    drop(bytes);
 
     report("extracting", None, None);
     extract(&archive, &root)?;
@@ -246,14 +243,25 @@ mod tests {
 
     #[test]
     fn hash_check_accepts_the_real_thing_and_refuses_anything_else() {
+        let dir = std::env::temp_dir().join(format!("atlas-node-hash-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let empty_file = dir.join("empty");
+        let x_file = dir.join("x");
+        std::fs::write(&empty_file, b"").unwrap();
+        std::fs::write(&x_file, b"x").unwrap();
         // sha256 of empty input.
         let empty = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
-        assert!(sha256_matches(b"", empty));
-        assert!(sha256_matches(b"", &empty.to_uppercase()));
-        assert!(!sha256_matches(b"x", empty));
+        assert_eq!(file_sha256_matches(&empty_file, empty), Ok(true));
+        assert_eq!(
+            file_sha256_matches(&empty_file, &empty.to_uppercase()),
+            Ok(true)
+        );
+        assert_eq!(file_sha256_matches(&x_file, empty), Ok(false));
         let mut tampered = empty.to_string();
         tampered.replace_range(0..1, "f");
-        assert!(!sha256_matches(b"", &tampered));
+        assert_eq!(file_sha256_matches(&empty_file, &tampered), Ok(false));
+        assert!(file_sha256_matches(&dir.join("missing"), empty).is_err());
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

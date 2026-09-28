@@ -64,7 +64,7 @@ function manifest(docs: VaultDoc[]): VaultManifest {
 
 const committed = (path: string, lastChangedAt: string | null): GitPathLastChange => ({ path, exists: true, isDir: false, lastChangedAt });
 const change = (path: string): GitChangeEntry => ({ path, status: 'modified', kind: null, slug: path.replace(/\.md$/, ''), renamedFrom: null });
-const diff = (paths: string[]): GitDiffResult => ({ count: paths.length, files: paths.map(change), diff: '' });
+const diff = (paths: string[]): GitDiffResult => ({ count: paths.length, files: paths.map(change), diff: '', tooLarge: false });
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -104,6 +104,7 @@ describe('useVaultDocDates', () => {
     // Edited since its last commit: the edit is the change.
     expect(result.current.index.get('capabilities/library')).toBe(LANDED);
     expect(mocks.pathsLastChange).toHaveBeenCalledWith(`/vaults/atlas-${folder}`, [], ['capabilities/git-history.md', 'capabilities/library.md']);
+    expect(mocks.diff).toHaveBeenCalledWith(`/vaults/atlas-${folder}`, { includePatch: false });
   });
 
   it('keeps the last answer across a re-read of the same folder, dating only a rewritten file by its file', async () => {

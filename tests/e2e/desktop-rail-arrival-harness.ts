@@ -277,7 +277,18 @@ export async function installDesktopRailRuntime(
           case "read_vault_binary_file": {
             const path = relative(args.relativePath);
             if (!(path in files)) return Promise.reject(new Error(`missing ${path}`));
-            return slow({ bytes: [...new TextEncoder().encode(files[path])], lastModified: mtime });
+            const body = new TextEncoder().encode(files[path]);
+            const stamped = new Uint8Array(8 + body.length);
+            new DataView(stamped.buffer).setBigUint64(0, BigInt(mtime), true);
+            stamped.set(body, 8);
+            return slow(stamped.buffer);
+          }
+          case "read_vault_text_tail": {
+            const path = relative(args.relativePath);
+            if (!(path in files)) return Promise.reject(new Error(`missing ${path}`));
+            const lines = files[path].split(/\r?\n/);
+            if (lines.at(-1) === "") lines.pop();
+            return slow(lines.slice(Math.max(0, lines.length - Number(args.maxLines))).join("\n"));
           }
           // The native answer for a vault that never saved a constellation is `null`
           // (`read_library_collections` returns `Ok(None)` for an absent sidecar or file).
