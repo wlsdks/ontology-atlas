@@ -2,6 +2,7 @@
 
 import { CalendarClock, Clock3, Pause, Play, TriangleAlert } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import { useSearchParams } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 
 import type { RoundPassEntry, RoundRecord } from "@/entities/library-round";
@@ -44,7 +45,8 @@ export function LibraryRounds() {
   const router = useRouter();
   const runner = useLibraryRounds();
   const vault = useLocalVault();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const params = useSearchParams();
+  const [selectedId, setSelectedId] = useState<string | null>(() => params.get("round"));
 
   const time = useMemo(() => new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" }), [locale]);
   const dayTime = useMemo(() => new Intl.DateTimeFormat(locale, { weekday: "short", hour: "2-digit", minute: "2-digit" }), [locale]);
@@ -201,13 +203,14 @@ export function LibraryRounds() {
   }
 
   if (runner.storeStatus === "malformed" || runner.storeStatus === "unavailable") {
+    const problem = runner.storeStatus;
     return (
-      <main id="main" tabIndex={-1} data-testid="library-rounds" data-rounds-state="malformed" className="min-h-0 flex-1 overflow-y-auto bg-[color:var(--color-canvas)]">
+      <main id="main" tabIndex={-1} data-testid="library-rounds" data-rounds-state={problem} className="min-h-0 flex-1 overflow-y-auto bg-[color:var(--color-canvas)]">
         <div className={`${PAGE_FRAME_FORM} flex flex-col gap-6`}>
           <Header t={t} />
           <EmptyState
-            title={t("malformedTitle")}
-            description={t("malformedDescription")}
+            title={t(`${problem}Title`)}
+            description={t(`${problem}Description`)}
             icon={<TriangleAlert />}
             tone="solid"
             className="border-[color:var(--color-amber-source-a35)]"
@@ -300,8 +303,7 @@ export function LibraryRounds() {
                   <h2 id="library-rounds-index-title" className="text-body-lg leading-body font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
                     {t("index.title")}
                   </h2>
-                  {/* Schedule changes live in Automations; this door keeps results and controls distinct. */}
-                  <Link href={DOCUMENT_AUTOMATIONS_HREF} data-testid="library-rounds-new"
+                  <Link href={selected ? withQuery(DOCUMENT_AUTOMATIONS_HREF, { round: selected.id }) : DOCUMENT_AUTOMATIONS_HREF} data-testid="library-rounds-new"
                     className={cn(controlClass({ shape: "link", size: "sm", tone: "secondary" }), "atlas-touch-floor")}>
                     <CalendarClock size={ICON_SIZE.sm} aria-hidden />{t("manageAutomations")}
                   </Link>

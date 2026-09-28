@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import {
+  type RoundCadence,
   type RoundRecord,
   cadenceFromKey,
   cadenceFromMinutes,
@@ -16,6 +17,7 @@ import {
   nextDueAt,
   parseRoundState,
   roundProblems,
+  roundWidens,
   serializeRoundState,
 } from './round-record';
 
@@ -66,6 +68,51 @@ describe("what this Mac's allowance covers", () => {
   });
 });
 
+describe('an edit that widens what this Mac allowed', () => {
+  const service = round({
+    kind: 'service',
+    connectorId: 'c1',
+    connectorName: 'slack',
+    limit: 20,
+    cadence: { every: '6h' },
+    places: [
+      { kind: 'vault', paths: ['wiki/releases'] },
+      { kind: 'service', connectorId: 'c1', connectorName: 'slack', location: '#release-room' },
+    ],
+  });
+
+  it('widens when a pass may run more often, write more, or read somewhere new', () => {
+    expect(roundWidens(service, { ...service, cadence: { every: 'hour' } })).toBe(true);
+    expect(roundWidens(round({ onStale: 'mark' }), round({ onStale: 'redraft' }))).toBe(true);
+    expect(roundWidens(round({ kind: 'consistency' }), { ...service, cadence: { every: 'hour' } })).toBe(true);
+    expect(roundWidens(service, { ...service, limit: 50 })).toBe(true);
+    expect(roundWidens(service, { ...service, places: [{ kind: 'vault', paths: [] }, service.places![1]] })).toBe(true);
+    expect(roundWidens(service, { ...service, places: [{ kind: 'vault', paths: ['wiki/releases', 'sources/planning'] }, service.places![1]] })).toBe(true);
+    expect(roundWidens(service, { ...service, places: [service.places![0], { kind: 'service', connectorId: 'c1', connectorName: 'slack' }] })).toBe(true);
+    expect(roundWidens(service, { ...service, places: [...service.places!, { kind: 'service', connectorId: 'c2', connectorName: 'github' }] })).toBe(true);
+    const own = round({ places: [{ kind: 'vault', paths: [], ownDocumentsOnly: true }] });
+    expect(roundWidens(own, round({ places: [{ kind: 'vault', paths: [] }] }))).toBe(true);
+    const weekdays = round({ cadence: { daily: '09:00', weekdaysOnly: true } });
+    expect(roundWidens(weekdays, round({ cadence: { daily: '09:00', weekdaysOnly: false } }))).toBe(true);
+    expect(roundWidens(round({ cadence: { daily: '09:00', weekdaysOnly: false } }), weekdays)).toBe(false);
+    expect(roundWidens(weekdays, round({ cadence: { daily: '18:30', weekdaysOnly: true } }))).toBe(false);
+  });
+
+  it('does not widen for a new name, a slower cadence, fewer places, or a different question', () => {
+    expect(roundWidens(service, { ...service, name: 'Release room' })).toBe(false);
+    expect(roundWidens(service, { ...service, cadence: { daily: '09:00', weekdaysOnly: true } })).toBe(false);
+    expect(roundWidens(service, { ...service, places: [{ kind: 'vault', paths: ['wiki/releases/2026'] }, service.places![1]] })).toBe(false);
+    expect(roundWidens(service, { ...service, places: [service.places![0]], kind: 'consistency' })).toBe(false);
+    expect(roundWidens(service, {
+      ...service,
+      query: 'incidents only',
+      places: [service.places![0], { kind: 'service', connectorId: 'c1', connectorName: 'slack', location: '#release-room', query: 'incidents only' }],
+    })).toBe(false);
+    expect(roundWidens(round({ onStale: 'redraft' }), round({ onStale: 'mark' }))).toBe(false);
+    expect(roundWidens(round({ kind: 'ontology', query: 'source gaps' }), round({ kind: 'ontology', query: 'relations' }))).toBe(false);
+  });
+});
+
 describe('cadence', () => {
   it('an hourly round runs on the hour, strictly after the moment it is asked from', () => {
     expect(nextDueAt({ every: 'hour' }, local(2026, 9, 17, 9, 2))).toEqual(local(2026, 9, 17, 10, 0));
@@ -108,15 +155,56 @@ describe('cadence', () => {
     expect(nextDueAt({ everyMinutes: 1440 }, local(2026, 9, 17, 9, 2))).toEqual(local(2026, 9, 18, 0, 0));
   });
 
-  it('a daylight-saving day keeps the wall clock, not a fixed number of milliseconds', () => {
-    /* Spring-forward (2026-03-29, EU) and fall-back (2026-11-01, US) still land on whole wall-clock hours. */
-    for (const day of [[2026, 3, 29], [2026, 11, 1]] as const) {
-      const from = local(day[0], day[1], day[2], 9, 2);
-      const next = nextDueAt({ everyMinutes: 120 }, from);
-      expect(next.getTime()).toBeGreaterThan(from.getTime());
-      expect(next.getMinutes()).toBe(0);
-      expect(next.getHours() % 2).toBe(0);
-    }
+  describe('on a daylight-saving day', () => {
+    let zone: string | undefined;
+    beforeAll(() => {
+      zone = process.env.TZ;
+    });
+    afterAll(() => {
+      if (zone === undefined) delete process.env.TZ;
+      else process.env.TZ = zone;
+    });
+    const runs = (cadence: RoundCadence, fromIso: string, count: number) => {
+      const out: string[] = [];
+      let at = new Date(fromIso);
+      for (let i = 0; i < count; i += 1) {
+        at = nextDueAt(cadence, new Date(at.getTime() + 30_000));
+        out.push(at.toISOString());
+      }
+      return out;
+    };
+
+    it('runs at both 01:00s when the clocks go back, so no real hour goes without its run', () => {
+      process.env.TZ = 'America/New_York';
+      expect(runs({ everyMinutes: 5 }, '2026-11-01T05:54:00.000Z', 2)).toEqual(['2026-11-01T05:55:00.000Z', '2026-11-01T06:00:00.000Z']);
+      expect(runs({ every: 'hour' }, '2026-11-01T04:30:00.000Z', 3)).toEqual([
+        '2026-11-01T05:00:00.000Z',
+        '2026-11-01T06:00:00.000Z',
+        '2026-11-01T07:00:00.000Z',
+      ]);
+    });
+
+    it('runs a time the clock skips at the first minute after the jump, then keeps its grid', () => {
+      process.env.TZ = 'Europe/Berlin';
+      expect(runs({ everyMinutes: 120 }, '2026-03-28T22:30:00.000Z', 3)).toEqual([
+        '2026-03-28T23:00:00.000Z',
+        '2026-03-29T01:00:00.000Z',
+        '2026-03-29T02:00:00.000Z',
+      ]);
+      process.env.TZ = 'America/New_York';
+      expect(runs({ every: '6h' }, '2026-03-08T04:30:00.000Z', 3)).toEqual([
+        '2026-03-08T05:00:00.000Z',
+        '2026-03-08T10:00:00.000Z',
+        '2026-03-08T16:00:00.000Z',
+      ]);
+    });
+
+    it('runs every day, including the day whose midnight does not exist', () => {
+      process.env.TZ = 'America/Santiago';
+      expect(runs({ everyMinutes: 1440 }, '2026-09-05T05:00:00.000Z', 2)).toEqual(['2026-09-06T04:00:00.000Z', '2026-09-07T03:00:00.000Z']);
+      expect(nextDueAt({ daily: '00:00', weekdaysOnly: false }, new Date('2026-09-05T05:00:00.000Z')).toISOString()).toBe('2026-09-06T04:00:00.000Z');
+      expect(runs({ everyMinutes: 120 }, '2026-09-06T03:00:00.000Z', 2)).toEqual(['2026-09-06T04:00:00.000Z', '2026-09-06T05:00:00.000Z']);
+    });
   });
 
   it('60 and 360 keep their literals so a file written today reads on the previous build', () => {
