@@ -5,7 +5,7 @@ import { projectDomeEdgeControl } from '../model/dome-edge';
 import { createCameraFrameStage } from "./topology-camera-frame-stage";
 import { createClusterFrameStage } from "./topology-cluster-frame-stage";
 import { createDomeFrameStage } from "./topology-dome-frame-stage";
-import { createFrameGate } from "./topology-frame-gate";
+import { createFrameGate, FRAME_ASLEEP, FRAME_NOT_READY } from "./topology-frame-gate";
 import { createPresentationFrameStage } from "./topology-presentation-frame-stage";
 import { createRealmFrameStage } from "./topology-realm-frame-stage";
 import { createRevealFrameStage } from "./topology-reveal-frame-stage";
@@ -15,7 +15,9 @@ import { createWorldMotionFrameStage } from "./topology-world-motion-frame-stage
 interface Configuration {
   canvasRef: RefObject<HTMLCanvasElement | null>;
   projection: Pick<Parameters<typeof createPresentationFrameStage>[0], "domeRuntimeRef" | "reducedMotionRef" | "neuralRampRef"> & { cameraRef: RefObject<CameraAxes>; };
-  recovery: Pick<Parameters<typeof createFrameGate>[0], "lastActiveMsRef" | "viewportRebuildPendingRef">;
+  recovery: Pick<Parameters<typeof createFrameGate>[0], "lastActiveMsRef" | "viewportRebuildPendingRef"> & {
+    wakeFrameLoopRef: RefObject<() => void>;
+  };
   domeFrameStage: Parameters<typeof createDomeFrameStage>[0];
   worldMotionFrameStage: Parameters<typeof createWorldMotionFrameStage>[0];
   cameraFrameStage: Parameters<typeof createCameraFrameStage>[0];
@@ -24,6 +26,17 @@ interface Configuration {
   revealFrameStage: Parameters<typeof createRevealFrameStage>[0];
   frameGate: Parameters<typeof createFrameGate>[0];
   presentationFrameStage: Omit<Parameters<typeof createPresentationFrameStage>[0], "ctx" | "domeEdgeControlForFrame">;
+}
+
+/** Every mounted map loop's frame request, for `requestOntologyMapFrame`. */
+const frameRequests = new Set<() => void>();
+
+/**
+ * Asks every mounted map for a frame. For state a map reads through a ref it does not own, such as
+ * a side panel's hover or the trail lens, which reaches it without a render.
+ */
+export function requestOntologyMapFrame(): void {
+  for (const requestFrame of frameRequests) requestFrame();
 }
 
 /** Configure stages once, then own scheduling, early yields, and context recovery.
@@ -36,11 +49,15 @@ export function useTopologyFrameLoop(configuration: Configuration) {
   const getConfiguration = useEffectEvent(() => configuration);
   const { beginCameraTween, cameraTokens, domeFitTarget } = configuration.domeFrameStage;
   const { endGrowthReplay } = configuration.frameGate;
+  // A render carries new props into the refs the gate reads, so it earns one look.
+  useEffect(() => {
+    getConfiguration().recovery.wakeFrameLoopRef.current();
+  });
   useEffect(() => {
     const configuration = getConfiguration();
     const { canvasRef, projection, recovery } = configuration;
     const { domeRuntimeRef, cameraRef, reducedMotionRef, neuralRampRef } = projection;
-    const { lastActiveMsRef, viewportRebuildPendingRef } = recovery;
+    const { lastActiveMsRef, viewportRebuildPendingRef, wakeFrameLoopRef } = recovery;
     const canvas = canvasRef.current;
     if (!canvas) return;
     /*
@@ -85,24 +102,30 @@ export function useTopologyFrameLoop(configuration: Configuration) {
     const ctx = canvas.getContext("2d", { alpha: false });
     if (!ctx) return;
 
+    /** The scheduled frame's id, 0 while none is scheduled. */
     let handle = 0;
     let cancelled = false;
+    const requestFrame = () => {
+      if (handle === 0 && !cancelled) handle = requestAnimationFrame(frame);
+    };
 
     const runFrameGate = createFrameGate(configuration.frameGate);
 
     const runPresentationFrameStage = createPresentationFrameStage({ ...configuration.presentationFrameStage, ctx, domeEdgeControlForFrame });
 
     const frame = (now: number) => {
+      handle = 0;
       if (cancelled) return;
       const frameState = runFrameGate(now);
-      if (!frameState) {
-        handle = requestAnimationFrame(frame);
+      if (frameState === FRAME_ASLEEP) return;
+      if (frameState === FRAME_NOT_READY) {
+        requestFrame();
         return;
       }
       const { tokens, world, width, height, dpr, dt } = frameState;
 
       if (!runDomeFrameStage(now, dt, tokens, world, width, height)) {
-        handle = requestAnimationFrame(frame);
+        requestFrame();
         return;
       }
       runWorldMotionFrameStage(now, dt, tokens, world, width, height);
@@ -154,7 +177,7 @@ export function useTopologyFrameLoop(configuration: Configuration) {
       );
       runPresentationFrameStage(frameChips, frameClusteredIds, realmTierKinds, now, dt, tokens, trailLensActive, camera, width, height, dpr, world, farT, zoomRatio, focusedNodeId, hoveredNodeId, panelEmphasisNodeId, realmWarding, realmDepthById, realmDepthParallax, realmDustParallax, realmOutsideReturnAlphaById);
 
-      handle = requestAnimationFrame(frame);
+      requestFrame();
     };
 
     /**
@@ -178,18 +201,22 @@ export function useTopologyFrameLoop(configuration: Configuration) {
       event.preventDefault(); // Without this the browser does not attempt recovery.
     };
     const onContextRestored = () => {
-      // The idle gate may be skipping frames, so mark the moment after
-      // recovery as activity to guarantee the next frame is drawn.
-      lastActiveMsRef.current = performance.now();
+      // The loop may be asleep, so mark the moment after recovery as activity
+      // to guarantee the next frame is drawn.
       viewportRebuildPendingRef.current = true;
+      lastActiveMsRef.current = performance.now();
     };
     canvas.addEventListener("contextlost", onContextLost);
     canvas.addEventListener("contextrestored", onContextRestored);
 
-    handle = requestAnimationFrame(frame);
+    wakeFrameLoopRef.current = requestFrame;
+    frameRequests.add(requestFrame);
+    requestFrame();
     return () => {
       cancelled = true;
       cancelAnimationFrame(handle);
+      frameRequests.delete(requestFrame);
+      if (wakeFrameLoopRef.current === requestFrame) wakeFrameLoopRef.current = () => {};
       canvas.removeEventListener("contextlost", onContextLost);
       canvas.removeEventListener("contextrestored", onContextRestored);
     };

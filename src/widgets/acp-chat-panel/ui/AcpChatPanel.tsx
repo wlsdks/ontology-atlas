@@ -86,7 +86,7 @@ import {
   type AcpPresentationScene,
 } from '@/features/acp-session';
 import { isAgentDoctorAvailable, useAgentDoctor } from '@/features/acp-doctor';
-import type { ChatSuggestion } from '@/features/acp-session';
+import type { ChatSuggestion, KnownRelations } from '@/features/acp-session';
 import type { AcpWorkReceipt } from '@/shared/lib/acp-work-receipt';
 
 
@@ -167,7 +167,7 @@ const WORK_MARKDOWN = [
  */
 const SLASH_MENU_LIMIT = 8;
 const EMPTY_KNOWN_SLUGS: ReadonlySet<string> = new Set();
-const EMPTY_KNOWN_RELATIONS: ReadonlySet<string> = new Set();
+const EMPTY_KNOWN_RELATIONS: KnownRelations = new Set<string>();
 
 /**
  * **The floor under a composer picker** — the width below which the trigger stops saying
@@ -484,7 +484,7 @@ export function AcpChatPanel({
    */
   noticeActions?: { openPage: (path: string) => void; askNext: () => void } | null;
   /** Current graph relation keys (`from\0type\0to`) used to reject invented presentation edges. */
-  knownRelations?: ReadonlySet<string>;
+  knownRelations?: KnownRelations;
   /**
    * **One app-authored request whose answer belongs on a page, not in the chat.**
    *

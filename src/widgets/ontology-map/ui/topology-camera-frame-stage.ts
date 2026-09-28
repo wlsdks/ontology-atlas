@@ -328,8 +328,8 @@ export function createCameraFrameStage(sources: CameraFrameStageSources) {
     // offsets from the frame delta of camera input (the world centre moved by
     // pan/zoom). When the camera stops they decay exponentially to 0;
     // reduced-motion holds them at 0. The decay tail is effectively 0 within
-    // the idle grace of 1200 ms (tau 0.18 s), so this honours the idle-gate
-    // contract without wake wiring. The entering phase's dolly-in is a
+    // the idle grace of 1200 ms (tau 0.18 s), so it ends before the loop
+    // sleeps. The entering phase's dolly-in is a
     // programmatic move and is excluded — parallax responds to input only —
     // with the centre kept in sync so entering `active` does not produce a
     // large delta spike. ---

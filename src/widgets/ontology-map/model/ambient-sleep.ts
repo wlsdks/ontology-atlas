@@ -1,10 +1,9 @@
 /**
- * Ambient sleep: always-on motion runs while input is recent and ramps to a stop long
- * after the hand leaves, so `isCanvasActive` can close and an idle, visible window stops
- * repainting the full canvas every frame. The motion sleeps rather than switching off
- * because the comet is the only channel carrying a `depends` edge's direction. Any input
- * restores it next frame, since `idle-gate` re-reads its refs every frame. A ramp, not a
- * step, because a comet frozen mid-orbit reads as breakage.
+ * Ambient sleep: always-on motion runs while input is recent and ramps to a stop long after the
+ * hand leaves, so `isCanvasActive` can close and the frame loop can stop. The motion sleeps rather
+ * than switching off because the comet is the only channel carrying a `depends` edge's direction.
+ * Any input wakes the loop and restores it. A ramp, not a step, because a comet frozen mid-orbit
+ * reads as breakage.
  */
 
 export const AMBIENT_SLEEP_DELAY_MS = 30_000;

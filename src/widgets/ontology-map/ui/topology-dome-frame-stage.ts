@@ -773,8 +773,7 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
           // sleep, not switched off (`model/ambient-sleep.ts`). 30 s after
           // the hand lets go, rotation ramps to 0 over 2 s; the moment it
           // reaches 0 the activity flag above drops and the idle gate closes.
-          // Any input pushes `lastInputMs` and the factor returns to 1 on the
-          // next frame, so no wake wiring is needed. A ramp rather than a
+          // Any input wakes the loop and returns the factor to 1. A ramp rather than a
           // step for the same reason as the comets: cutting it in one frame
           // reads as the dome having seized.
           const spinFactor = ambientSleepFactor(now, lastInputMsRef.current, ambientSleepDelayRef.current);

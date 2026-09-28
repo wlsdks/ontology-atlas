@@ -58,6 +58,8 @@ export async function stubDirectoryPicker(page: Page, seed: Record<string, strin
     (window as unknown as { showDirectoryPicker: () => Promise<FileSystemDirectoryHandle> })
       .showDirectoryPicker = async () => {
       const root = await navigator.storage.getDirectory();
+      const prepared = (window as unknown as { __stubPreparedFolder?: string }).__stubPreparedFolder;
+      if (prepared) return patch(await root.getDirectoryHandle(prepared));
       const dir = await root.getDirectoryHandle(`stub-vault-${Date.now()}`, { create: true });
       for (const [path, body] of Object.entries(files)) {
         const segments = path.split("/");
@@ -73,5 +75,24 @@ export async function stubDirectoryPicker(page: Page, seed: Record<string, strin
       }
       return patch(dir);
     };
+  }, seed);
+}
+
+export async function writeFolderBeforePick(page: Page, seed: Record<string, string>) {
+  await page.evaluate(async (files: Record<string, string>) => {
+    const name = `stub-vault-prepared-${Date.now()}`;
+    const dir = await (await navigator.storage.getDirectory()).getDirectoryHandle(name, { create: true });
+    await Promise.all(
+      Object.entries(files).map(async ([path, body]) => {
+        const segments = path.split("/");
+        const fileName = segments.pop() as string;
+        let cursor = dir;
+        for (const segment of segments) cursor = await cursor.getDirectoryHandle(segment, { create: true });
+        const writable = await (await cursor.getFileHandle(fileName, { create: true })).createWritable();
+        await writable.write(body);
+        await writable.close();
+      }),
+    );
+    (window as unknown as { __stubPreparedFolder?: string }).__stubPreparedFolder = name;
   }, seed);
 }
