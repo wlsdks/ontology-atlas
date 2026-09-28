@@ -102,11 +102,12 @@ interface TopologyAgentDockProps {
 }
 
 export function TopologyAgentDock({
-  vaultAgentPrefill, chatSuggestions, routeState, topologyVaultReadModel, topologyPreferences,
+  vaultAgentPrefill: incomingPrefill, chatSuggestions, routeState, topologyVaultReadModel, topologyPreferences,
   topologyAgentOrchestration, topologyNavigationActions, homeWorkbenchController, acpRuntimeController,
   topologyAgentActivity, topologyAnalysisReview, topologyAuthoring, topologyCanvasFocus
 }: TopologyAgentDockProps) {
   const { llmBridgeAvailable, gitVaultPath, ontologyInsight, vault, selectedOntologyNode } = topologyVaultReadModel;
+  const vaultAgentPrefill=incomingPrefill?.context&&incomingPrefill.context.vaultPath!==gitVaultPath?null:incomingPrefill;
   const { t, activeLocale, tWorkbench } = topologyPreferences;
   const {
     keyChatOpen, closeVaultAgent, vaultAgentScreenContext, askPrefill, runtimeChatOpen,
@@ -129,12 +130,25 @@ export function TopologyAgentDock({
     meaningRelations, captureTaskBaseline
   } = topologyAnalysisReview;
   const { edgePanelModel, selectedEdge, setAcpRelationPreview } = topologyAuthoring;
-  const draftContextKey=JSON.stringify([gitVaultPath,acpRuntime?.id,vaultAgentPrefill?.nonce]);
+  // The draft outlives the panel, which unmounts on an idle close; one folder's draft, in memory.
+  const draftRef = useRef<{ folder: string | null; text: string; prefillNonce:number|null }>({ folder: null, text: "", prefillNonce:null });
+  const draftStore = useMemo(
+    () => ({
+      read: () => (draftRef.current.folder === gitVaultPath ? {text:draftRef.current.text,prefillNonce:draftRef.current.prefillNonce} : {text:"",prefillNonce:null}),
+      write: (draft: {text:string;prefillNonce:number|null}) => {
+        draftRef.current = { folder: gitVaultPath, ...draft };
+      },
+    }),
+    [gitVaultPath],
+  );
+  const draftContextKey=JSON.stringify([gitVaultPath,vaultAgentPrefill?.nonce]);
   const [draftContext,setDraftContext]=useState<{key:string;seen:boolean;retired:boolean}|null>(null);
-  const handleDraftPresence=useCallback((present:boolean)=>setDraftContext(current=>{
-    if(current?.key!==draftContextKey)return {key:draftContextKey,seen:present,retired:false};
-    return {...current,seen:current.seen||present,retired:current.retired||(!present&&current.seen)};
-  }),[draftContextKey]);
+  const handleDraftPresence=useCallback((present:boolean)=>{
+    const hasDraft=present||(draftRef.current.folder===gitVaultPath&&draftRef.current.text.trim().length>0);
+    setDraftContext(current=>{
+    if(current?.key!==draftContextKey)return {key:draftContextKey,seen:hasDraft,retired:false};
+    return {...current,seen:current.seen||hasDraft,retired:current.retired||(!hasDraft&&current.seen)};
+  });},[draftContextKey,gitVaultPath]);
   const preparedContext=vaultAgentPrefill?.context?.vaultPath===gitVaultPath && (draftContext?.key!==draftContextKey||!draftContext.retired) ? vaultAgentPrefill?.context?.label : null;
   // One subject for header, composer and asks: a picked concept, or the folder.
   const composerSubject = preparedContext ?? (edgePanelModel ? null : selectedOntologyNode?.display ?? selectedOntologyNode?.title ?? null);
@@ -146,17 +160,7 @@ export function TopologyAgentDock({
   // An empty history tab ends the surface under its card (see AnalysisWorkbench).
   const [workbenchFitsContent, setWorkbenchFitsContent] = useState(false);
   const { chatKnownSlugs, chatKnownRelations, handleChatHoverSlug } = topologyCanvasFocus;
-  // The draft outlives the panel, which unmounts on an idle close; one folder's draft, in memory.
-  const draftRef = useRef<{ folder: string | null; text: string }>({ folder: null, text: "" });
-  const draftStore = useMemo(
-    () => ({
-      read: () => (draftRef.current.folder === gitVaultPath ? draftRef.current.text : ""),
-      write: (text: string) => {
-        draftRef.current = { folder: gitVaultPath, text };
-      },
-    }),
-    [gitVaultPath],
-  );
+
 
   return (<>
     {llmBridgeAvailable ? (

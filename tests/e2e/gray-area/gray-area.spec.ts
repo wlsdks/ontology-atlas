@@ -118,7 +118,7 @@ test('a comparison from the saved Hex view draws both elements on the flat recor
 });
 
 test('a prepared pair draft leads with its localized topic, retains folded evidence and retires its topic when cleared',async({page})=>{
-  await page.setViewportSize({width:1512,height:949});await install(page);await page.goto('/ko/topology/?p=elements/retry-dispatch&guides=off');
+  await page.setViewportSize({width:1512,height:949});await install(page,{runtimeIds:['claude-acp','codex-acp']});await page.goto('/ko/topology/?p=elements/retry-dispatch&guides=off');
   await page.getByTestId('map-detail-panel-more-menu-trigger').click();await page.getByTestId('map-detail-panel-action-gray-area').click();
   await page.getByRole('button',{name:'이 폴더에서 검사',exact:true}).click();
   await page.getByRole('button',{name:'지도에서 두 개념 보기',exact:true}).click();
@@ -133,9 +133,14 @@ test('a prepared pair draft leads with its localized topic, retains folded evide
   await page.getByTestId('acp-chat-seated-detail').click();
   const detail=page.getByTestId('acp-chat-seated-detail-text');await expect(detail).toContainText('grayAreaInvestigation:v1');await expect(detail).toContainText('bodyDigest');await expect(detail).toContainText('requestedMode');
   await page.screenshot({path:'/tmp/atlas-gray-area-proof/prepared-pair-ko.png'});
+  await composer.fill('제가 고친 조사 질문이에요');
+  await page.getByTestId('acp-chat-runtime').click();await page.getByRole('option',{name:'Codex',exact:true}).click();
+  await expect(composer).toHaveText('제가 고친 조사 질문이에요');await expect(heading).toContainText('재시도 전달');
   await dock.getByRole('tab',{name:'의미',exact:true}).click();await expect(heading).not.toContainText('재시도 전달');
   await dock.getByRole('tab',{name:'대화',exact:true}).click();await expect(heading).toContainText('재시도 전달');
   await composer.fill('');await expect(heading).not.toContainText('재시도 전달');
+  await page.getByTestId('acp-chat-runtime').click();await page.getByRole('option',{name:'Claude Agent',exact:true}).click();
+  await expect(composer).toHaveText('');await expect(heading).not.toContainText('재시도 전달');
   await composer.fill('다른 질문을 준비해요');await expect(heading).not.toContainText('재시도 전달');
   const state=await page.evaluate(()=> (window as unknown as {__atlasLibraryWorkHarness:{snapshot:()=>{calls:{method:string}[];writes:unknown[]}}}).__atlasLibraryWorkHarness.snapshot());
   expect(state.calls.filter(c=>c.method==='session/prompt')).toHaveLength(0);expect(state.writes).toHaveLength(0);

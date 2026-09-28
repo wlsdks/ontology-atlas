@@ -1,7 +1,7 @@
 import { expect, type Page } from '@playwright/test';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { installLibraryWorkHarness } from '../library-work-harness';
+import { installLibraryWorkHarness, type LibraryWorkRuntimeId } from '../library-work-harness';
 import { waitForAnimationsDone } from '../settle';
 import snapshot from './fixtures/evidence.json';
 
@@ -11,8 +11,8 @@ function fixtureFiles(directory:string,prefix=''):Record<string,string>{
     return entry.isDirectory()?Object.entries(fixtureFiles(path,relative+'/')):[[relative,readFileSync(path,'utf8')]];
   }));
 }
-export async function installGrayAreaHarness(page:Page){
-  await installLibraryWorkHarness(page,{files:fixtureFiles(join(process.cwd(),'tests/e2e/gray-area/fixtures/vault'))});
+export async function installGrayAreaHarness(page:Page,options:{runtimeIds?:readonly LibraryWorkRuntimeId[]}={}){
+  await installLibraryWorkHarness(page,{files:fixtureFiles(join(process.cwd(),'tests/e2e/gray-area/fixtures/vault')),...options});
   await page.addInitScript(({snapshot})=>{
     const w=window as unknown as {__TAURI_INTERNALS__?:{invoke:(command:string,args?:Record<string,unknown>)=>Promise<unknown>};__gray:{current:boolean;calls:{command:string;args:unknown}[]}};
     w.__gray={current:true,calls:[]};

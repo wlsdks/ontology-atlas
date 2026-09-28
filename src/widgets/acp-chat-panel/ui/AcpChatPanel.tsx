@@ -415,7 +415,7 @@ export function AcpChatPanel({
    * (measured 2026-09-25; the Library's dock stays mounted while put away and kept it). A host
    * that unmounts the panel hands it this store, read once on mount and written on every change.
    */
-  draftStore?: { read: () => string; write: (draft: string) => void };
+  draftStore?: { read: () => { text: string; prefillNonce: number | null }; write: (draft: { text: string; prefillNonce: number | null }) => void };
   /**
    * Judges a file write before the person decides, from the screen that knows the folder's
    * contract (the Library judges wiki pages). Null for a request it has no opinion on.
@@ -817,18 +817,11 @@ export function AcpChatPanel({
   const showDoctor = Boolean(runtimeId) && isAgentDoctorAvailable();
   // The unsent sentence survives the panel being unmounted by its host (`draftStore`).
   const [restoredDraft] = useState(() => {
-    const full=draftStore?.read()??'';
-    return {full,...splitAppRequest(full)};
+    const restored=draftStore?.read()??{text:'',prefillNonce:null};
+    return {full:restored.text,prefillNonce:restored.prefillNonce,...splitAppRequest(restored.text)};
   });
   const [draft, setDraft] = useState(restoredDraft.lead);
   const draftPresent = draft.trim().length > 0;
-  useEffect(() => {
-    onDraftPresenceChange?.(draftPresent);
-  }, [draftPresent, onDraftPresenceChange]);
-  useEffect(
-    () => () => onDraftPresenceChange?.(false),
-    [onDraftPresenceChange],
-  );
   /*
    * Is a `/` selection in progress? Only while the first character is `/` and there
    * is still no space — once arguments are being typed, the choosing step has passed
@@ -1016,7 +1009,7 @@ export function AcpChatPanel({
 
   const prefillNonce = prefillRequest?.nonce ?? null;
   const prefillText = prefillRequest?.text ?? null;
-  const [seenPrefillNonce, setSeenPrefillNonce] = useState<number | null>(null);
+  const [seenPrefillNonce, setSeenPrefillNonce] = useState<number | null>(restoredDraft.prefillNonce);
   /**
    * **The app-composed half of a seated request, held out of the box the person writes in.**
    *
@@ -1054,8 +1047,16 @@ export function AcpChatPanel({
    */
   const seatedRequestWaiting = (seenPrefillNonce !== null || seatedDetail !== null) && draft.trim().length > 0;
   useEffect(()=>{
-    draftStore?.write(seatedDetail ? draft===seatedDetail.lead ? seatedDetail.full : `${draft}\n\n${seatedDetail.detail}` : draft);
-  },[draftStore,draft,seatedDetail]);
+    const text=seatedDetail ? draft===seatedDetail.lead ? seatedDetail.full : `${draft}\n\n${seatedDetail.detail}` : draft;
+    draftStore?.write({text,prefillNonce:seenPrefillNonce});
+  },[draftStore,draft,seatedDetail,seenPrefillNonce]);
+  useEffect(() => {
+    onDraftPresenceChange?.(draftPresent);
+  }, [draftPresent, onDraftPresenceChange]);
+  useEffect(
+    () => () => onDraftPresenceChange?.(false),
+    [onDraftPresenceChange],
+  );
   /*
    * There has to be something to draw while the exit animation runs — if the content
    * disappeared the moment `pending` went null, an **empty box** would be the thing

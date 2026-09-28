@@ -56,7 +56,10 @@ an editable draft; sending and permission decisions retain their existing rules.
 A localized question and its concept names lead that draft; the unchanged evidence
 and request boundaries remain in the existing disclosure. Prepared drafts suppress
 starting suggestions. Their topic label retires when the draft is cleared or sent,
-and folded evidence survives the existing in-memory draft store.
+and folded evidence survives the existing in-memory draft store. That folder-bound
+store also retains the consumed prefill nonce: changing runtimes preserves edits
+and cannot revive a cleared or sent request. Topic retirement uses the same
+lifetime, and a prepared request for a different folder is not reseated.
 
 The initial reader caps graph input at 500 nodes/edges, expanded scope at 40
 concepts, imports at 2,000 files, code/config capture at 32 MiB and 512 KiB per file,
