@@ -1,6 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { PendingPermission, TaskBaselineCaptureResult } from '@/features/acp-session';
+import { keepToolOutput } from '@/features/acp-session/model/tool-output';
 import { useTaskMeaningReview } from './use-task-meaning-review';
 
 const hash = (value: string) => `sha256:${value.repeat(64)}`;
@@ -17,6 +18,10 @@ function pending(input: Record<string, unknown> = {}): PendingPermission {
   return { request: { requestId: 1, sessionId: 'session', title: 'patch_concept', toolCallId: 'tool', toolName: 'mcp__atlas-vault__patch_concept', toolKind: 'other', filePath: null, reviewKind: 'ontology-write', rawInput: { slug: 'capabilities/refund', expected_mtime: 100, frontmatter: { description: null, relation_notes: { 'elements/new': 'New rule' } }, body: '', ...input }, options: [] }, origin: { sessionGeneration: 2, turn: { sessionId: 'session', vaultRoot: '/vault', userEventId: 'event', text: 'Change refund meaning' }, task: { outcome: 'Change refund meaning', nonGoals: null, structure: 'unstructured' }, taskBaseline: baseline() }, resolve: vi.fn() };
 }
 const stableCapture = async () => baseline();
+const trimmedConnectionAnswer = keepToolOutput(
+  [{ type: 'text', text: JSON.stringify({ vaultRoot: '/vault', guide: 'x'.repeat(70_000) }) }],
+  { evidence: false },
+).rawOutput;
 
 describe('useTaskMeaningReview', () => {
   it('preserves null removal, empty body, and complete relation-note map semantics', async () => {
@@ -53,6 +58,7 @@ describe('useTaskMeaningReview', () => {
     { name: 'failed result', rows: [events[0]!, { ...events[1]!, status: 'failed' }] },
     { name: 'truncated result', rows: [events[0]!, { ...events[1]!, rawOutput: { vaultRoot: '/vault', truncated: true } }] },
     { name: 'agent prose', rows: [events[0]!, { kind: 'agent' as const, id: 'answer', text: 'connection_info says vaultRoot is /vault' }] },
+    { name: 'an answer kept only as a preview', rows: [events[0]!, { ...events[1]!, rawOutput: trimmedConnectionAnswer }] },
   ])('refuses $name as write-vault proof', async ({ rows }) => {
     const request = pending();
     const { result } = renderHook(() => useTaskMeaningReview({ pending: request, runtimeId: 'codex', vaultRoot: '/vault', captureTaskBaseline: stableCapture, events: rows }));

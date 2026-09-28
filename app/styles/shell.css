@@ -38,9 +38,9 @@ body[data-no-tabbar] [data-tabbar="primary"] {
  * ⚠️ **It removes a mark, not a behaviour.** Keyboard, trackpad and wheel scrolling are
  * untouched, so nothing about reach changes. What does change is the only *visual* signal
  * that more content exists below — so a surface where the bar was the sole "there is more"
- * cue pairs this with a `--tabbar-edge-fade` mask (the history popover does). A transcript
- * that is always pinned to its tail, and a view whose content ends at a card boundary, do
- * not need one: the last line's position already says it.
+ * cue pairs this with a `--tabbar-edge-fade` mask (the history popover does). The transcript
+ * says it with its jump-to-latest chip, and a view whose content ends at a card boundary
+ * needs no cue: the last line's position already says it.
  *
  * Applies to: the chat transcript, the slash menu, the past-conversation list, the
  * presentation body, and the workbench's two view scrollers.
@@ -79,9 +79,8 @@ body[data-no-tabbar] [data-tabbar="primary"] {
  * returns before the scroller has arrived. Eight measuring specs across this repository
  * set `scrollTop` or call `scrollIntoView` on inner scrollers and read the result on the
  * next line, so applying it to every box would have made those measurements race rather
- * than measure. The document scroller has no such caller. Surfaces that want to glide ask
- * for it in their own code, as the chat transcript already does
- * (`scrollBehavior = glide ? 'smooth' : 'auto'`).
+ * than measure. The document scroller has no such caller. Surfaces that want to glide drive
+ * it in their own code, as the chat transcript does (`use-transcript-follow.ts`).
  *
  * The reduced-motion block above carries `scroll-behavior: auto !important`, so the
  * preference already wins here and no second opinion is written.
