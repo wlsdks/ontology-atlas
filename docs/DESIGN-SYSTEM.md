@@ -2308,8 +2308,13 @@ region; a status mounted as done draws no check.
 
 ### Expand and collapse
 
-`Disclosure` animates through `RowDisclosure`; `Input` error text opens through
-`RowDisclosure` and stays `role="alert"`.
+`Disclosure` animates through `RowDisclosure`: a link-shaped button with a
+turning `ChevronRight` over a body that is unmounted and inert while closed.
+`Input` and `Textarea` error text opens through `RowDisclosure`, keeps its last
+message while closing, and stays `role="alert"`. Height moves on `--motion-base`
+and content on `--motion-fast`; under reduced motion the height is instant and
+only the fade remains. `details-adoption-ratchet` keeps raw `<details>` elements
+outside `Disclosure` from growing.
 
 ### Progress to done
 
