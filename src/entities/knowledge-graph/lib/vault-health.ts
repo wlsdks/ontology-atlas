@@ -73,6 +73,8 @@ export interface VaultHealthResult {
     actionableComponents: number;
     ignoredComponents: number;
     dependencyCycles: number;
+    /** The search hit its step budget, so `dependencyCycles` is a floor. */
+    dependencyCyclesPartial: boolean;
     relationRecommendations: number;
   };
   /** Repair targets for linking to the offending node, sorted by slug. */
@@ -341,41 +343,42 @@ function missingDomainContainment(graph: CompiledGraph): MissingContainmentTarge
   return targets;
 }
 
-// Dependency cycles up to MAX_DEPTH, matching the engine's `cycles({types:['dependencies']})`.
-// Search lists simple cycles up to MAX_DEPTH, worst case O(V·b^MAX_DEPTH) for out-degree b; a reverse
-// BFS per start, O(V·(V+E)), prunes branches that cannot close.
-function dependencyCycleCount(graph: CompiledGraph): number {
+/** DFS calls the cycle count may spend, as many as the Insights cycle list; past it the count is a floor. */
+const CYCLE_STEP_BUDGET = 500_000;
+
+// Dependency cycles up to MAX_DEPTH, matching the engine's `cycles({types:['dependencies']})`, where a
+// node that depends on itself is a cycle of one. Each is counted once, from its smallest slug (the
+// minimum-vertex rule), so no key set grows with the count. Worst case O(V·b^MAX_DEPTH) for out-degree
+// b, stopped at CYCLE_STEP_BUDGET calls; a reverse BFS per start over the slugs above it, O(V·(V+E)),
+// prunes branches that cannot close.
+function dependencyCycleCount(graph: CompiledGraph): { count: number; partial: boolean } {
   const MAX_DEPTH = 8;
-  const dependencySuccessors = new Map<string, string[]>();
+  const successors = new Map<string, Set<string>>();
+  const predecessors = new Map<string, Set<string>>();
+  const selfDependent = new Set<string>();
+  const link = (links: Map<string, Set<string>>, from: string, to: string) => {
+    const targets = links.get(from);
+    if (targets) targets.add(to);
+    else links.set(from, new Set([to]));
+  };
   for (const edge of graph.edges) {
-    if (!edge.resolved) continue;
-    if (normalizeRelationType(edge.via) !== 'dependencies') continue;
-    if (!dependencySuccessors.has(edge.from)) dependencySuccessors.set(edge.from, []);
-    dependencySuccessors.get(edge.from)!.push(edge.to);
-  }
-  const cycleKeys = new Set<string>();
-  const sortedSlugs = graph.nodes.map((n) => n.slug).sort((a, b) => a.localeCompare(b));
-  const dependencyPredecessors = new Map<string, string[]>();
-  for (const [from, targets] of dependencySuccessors) {
-    for (const to of targets) {
-      if (!dependencyPredecessors.has(to)) dependencyPredecessors.set(to, []);
-      dependencyPredecessors.get(to)!.push(from);
+    if (!edge.resolved || normalizeRelationType(edge.via) !== 'dependencies') continue;
+    if (edge.from === edge.to) {
+      selfDependent.add(edge.from);
+      continue;
     }
+    link(successors, edge.from, edge.to);
+    link(predecessors, edge.to, edge.from);
   }
 
-  /**
-   * Nodes that can reach `start` within MAX_DEPTH, with distances; other branches cannot close a
-   * cycle and are pruned; a 2000-node graph with few short cycles stays in milliseconds, while dense
-   * short cycles still grow exponentially with MAX_DEPTH.
-   */
   const reverseDistances = (start: string): Map<string, number> => {
     const dist = new Map<string, number>();
     let frontier = [start];
     for (let step = 1; step <= MAX_DEPTH && frontier.length > 0; step += 1) {
       const next: string[] = [];
       for (const node of frontier) {
-        for (const prev of dependencyPredecessors.get(node) ?? []) {
-          if (dist.has(prev) || prev === start) continue;
+        for (const prev of predecessors.get(node) ?? []) {
+          if (prev <= start || dist.has(prev)) continue;
           dist.set(prev, step);
           next.push(prev);
         }
@@ -385,46 +388,40 @@ function dependencyCycleCount(graph: CompiledGraph): number {
     return dist;
   };
 
-  const normalizeCycle = (path: string[]): string => {
-    // A closed walk start..start: drop the repeat and rotate to the minimum.
-    const ring = path.slice(0, -1);
-    let minIdx = 0;
-    for (let i = 1; i < ring.length; i += 1) {
-      if (ring[i].localeCompare(ring[minIdx]) < 0) minIdx = i;
+  let count = selfDependent.size;
+  let steps = 0;
+  let partial = false;
+  const onPath = new Set<string>();
+  const dfs = (start: string, current: string, length: number, backDist: Map<string, number>) => {
+    if (steps++ > CYCLE_STEP_BUDGET) {
+      partial = true;
+      return;
     }
-    const rotated = [...ring.slice(minIdx), ...ring.slice(0, minIdx)];
-    return rotated.join('\0');
-  };
-
-  const dfs = (
-    start: string,
-    current: string,
-    path: string[],
-    visited: Set<string>,
-    backDist: Map<string, number>,
-  ) => {
-    if (path.length > MAX_DEPTH) return;
-    for (const next of dependencySuccessors.get(current) ?? []) {
-      if (next === start && path.length > 1) {
-        cycleKeys.add(normalizeCycle([...path, next]));
+    for (const next of successors.get(current) ?? []) {
+      if (next === start) {
+        count += 1;
         continue;
       }
-      if (visited.has(next) || path.length >= MAX_DEPTH) continue;
-      // Cycle length = path.length + backDist ≤ MAX_DEPTH, or this branch cannot close.
+      if (next < start || onPath.has(next) || length >= MAX_DEPTH) continue;
+      // Cycle length = length + backDist ≤ MAX_DEPTH, or this branch cannot close.
       const back = backDist.get(next);
-      if (back === undefined || path.length + back > MAX_DEPTH) continue;
-      visited.add(next);
-      dfs(start, next, [...path, next], visited, backDist);
-      visited.delete(next);
+      if (back === undefined || length + back > MAX_DEPTH) continue;
+      onPath.add(next);
+      dfs(start, next, length + 1, backDist);
+      onPath.delete(next);
+      if (partial) return;
     }
   };
 
-  for (const slug of sortedSlugs) {
-    const backDist = reverseDistances(slug);
-    if (backDist.size === 0) continue; // Nothing reaches start.
-    dfs(slug, slug, [slug], new Set([slug]), backDist);
+  for (const start of [...successors.keys()].sort()) {
+    const backDist = reverseDistances(start);
+    if (backDist.size === 0) continue;
+    onPath.add(start);
+    dfs(start, start, 1, backDist);
+    onPath.delete(start);
+    if (partial) break;
   }
-  return cycleKeys.size;
+  return { count, partial };
 }
 
 /** Capabilities with neither a `path:` nor a resolved `elements:` ref (MCP `capability_without_evidence`). */
@@ -453,7 +450,7 @@ export function computeVaultHealth(docs: readonly VaultHealthDoc[]): VaultHealth
   const graph = compileHealthGraph(docs);
   const unresolvedEdges = graph.edges.filter((e) => !e.resolved && !e.external).length;
   const { actionable, ignored, actionableGroups } = actionableComponentCounts(graph);
-  const dependencyCycles = dependencyCycleCount(graph);
+  const { count: dependencyCycles, partial: dependencyCyclesPartial } = dependencyCycleCount(graph);
   const missingContainment = missingDomainContainment(graph);
   const relationRecommendations = missingContainment.length;
   // Every actionable group except the largest.
@@ -491,6 +488,7 @@ export function computeVaultHealth(docs: readonly VaultHealthDoc[]): VaultHealth
       actionableComponents: actionable,
       ignoredComponents: ignored,
       dependencyCycles,
+      dependencyCyclesPartial,
       relationRecommendations,
     },
     missingContainment,

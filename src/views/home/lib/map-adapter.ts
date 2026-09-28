@@ -5,7 +5,7 @@ import {
   isContainmentRelation,
 } from "@/entities/knowledge-graph";
 import type { OntologyMapEdge, OntologyMapNode } from "@/widgets/ontology-map";
-import { buildOntologySkeleton } from "./topology-ontology-skeleton";
+import { computeSubtreeWeights } from "./subtree-weights";
 import { classifyTopologyRelationQuality } from "./topology-analysis";
 
 const RENDERABLE_KINDS = new Set(["project", "domain", "capability", "element"]);
@@ -47,7 +47,7 @@ export function buildOntologyMapGraph(
     (edge) => includedIds.has(edge.from) && includedIds.has(edge.to) && edge.from !== edge.to,
   );
 
-  const { subtreeWeightBySlug } = buildOntologySkeleton(nodes, edges);
+  const subtreeWeightBySlug = computeSubtreeWeights(nodes, edges);
   // One numeral source for project/domain nodes: the capability+element census INDEX and /projects
   // show.
   const censusById = domainCensusById(computeDomainCensusRows(nodes, edges));
