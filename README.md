@@ -208,6 +208,10 @@ with scripts disabled. Copy is edited in `messages/<locale>/<Namespace>.json`.
 - **Saved constellations keep a task's concept set together** — name a set in
   Galaxy, record its purpose, reopen the whole set on the map, inspect its real
   members in Library, or recover the same read-only context through MCP and CLI.
+- **Explore overlooked areas from a selected concept or Concept set** — the macOS
+  app previews the bound code folder, then gathers a few versioned local
+  observations with source excerpts, explicit unknowns and an editable investigation
+  packet. An absent graph edge or changed file is not accepted meaning.
 - **Versioned AI analysis kept as local Markdown**, with its evidence and
   selectable history, and measured violations instead of an invented
   maintainability score. [Analysis records](docs/contracts/analysis-records.md).
@@ -756,6 +760,7 @@ be resolved together land through `/land-bundle` as one integration branch.
 | `pnpm knip` | Dead files, exports and types across every scope |
 | `pnpm lessons` · `pnpm lessons:check` | Shared harness lessons that are open or verified but not yet fixed; record and review them with `/harness-retro` ([records guide](docs/records/README.md#harness-lessons)) |
 | `pnpm messages:build` · `pnpm messages:check` · `pnpm messages:adopt` | Compose the ignored `messages/<locale>.json` from one file per namespace (`messages/<locale>/<Namespace>.json`), prove it current, and carry a pre-split branch's catalogue edits onto the parts while merging main |
+| `pnpm perf:mcp:memory` · `pnpm perf:mcp:memory:check` | Whether the MCP server keeps memory it should release: heap after two forced collections across 50 repeated calls per tool and across moved Git HEADs, on a generated vault; about a minute, kept out of pre-push |
 | `pnpm pr:ci <n>` | Fire CI on a draft now, so a green, disjoint change can take the fast path |
 | `pnpm pr:land --plan <n...>` · `pnpm pr:land --conduct` | Dry-run what a landing would do without writing to GitHub, and run trains until the queue is empty |
 | `pnpm pr:land <n>` · `pnpm pr:queue` | Queue a pull request for the landing train (or merge it on the fast path), and show the queue and the train in flight |

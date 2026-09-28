@@ -34,6 +34,7 @@
   "audit-log-tampered": "The record file changed while it was being written, so the earlier records were kept and nothing was sent. Check whether another program is touching that file.",
   "vault-path-empty": "No folder was given. Open a folder first.",
   "vault-path-missing": "That folder is not there any more. It may have moved or been deleted. Open it again.",
+  "vault-root-not-granted": "Atlas can only use a folder you chose. Choose your ontology folder once to confirm access.",
   "vault-path-not-a-folder": "That path is a file, not a folder. Choose the folder that holds the notes.",
   "vault-path-unresolvable": "Could not settle where that folder really is. Check the folder's permissions and open it again.",
   "git-not-runnable": "Could not run git on this computer. Install git, then try again.",

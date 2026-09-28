@@ -74,6 +74,7 @@ const SEED_VAULT: Record<string, string> = {
   ].join("\n"),
   "capabilities/checkout.md": [
     "---",
+    "uid: 00000000-0000-4000-8000-000000000003",
     "kind: capability",
     "slug: smoke-checkout",
     "title: Checkout",
@@ -301,6 +302,21 @@ type DegradedSurface = {
 };
 
 const DEGRADED_SURFACES: readonly DegradedSurface[] = [
+  {
+    name: "회색지대 — 브라우저는 연결된 코드 폴더를 검사하지 못한다",
+    url: "/ko/library/",
+    needsVault: true,
+    open: async (page) => {
+      await page.getByTestId("library-open-vault").click();
+      await expect(page.getByTestId("library-find-documents")).toBeVisible();
+      await gotoSettled(page,"/ko/topology/?p=capabilities/checkout&guides=off");
+      await page.getByTestId("map-detail-panel-more-menu-trigger").click();
+      await page.getByTestId("map-detail-panel-action-gray-area").click();
+    },
+    card: "gray-area-web-limit",
+    reason: /브라우저는[\s\S]*코드 폴더[\s\S]*설치한 앱/,
+    destination: "gray-area-get-app",
+  },
   {
     name: "기록(git) — 브라우저는 이 컴퓨터의 git 을 실행할 수 없다",
     url: "/ko/git/?focus=main",

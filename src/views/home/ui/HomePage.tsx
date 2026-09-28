@@ -1,4 +1,6 @@
 "use client";
+import type { VaultAgentPrefill } from "../model/agent-chat-door";
+import { useTopologyGrayArea } from "../model/gray-area/use-topology-gray-area";
 import { useTopologyAgentActivity } from "../model/use-topology-agent-activity";
 import { useTopologyAgentOrchestration } from "../model/use-topology-agent-orchestration";
 import { useTopologyAnalysisReview } from "../model/use-topology-analysis-review";
@@ -157,10 +159,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   // Opening goes through the one door (`openAgentChat`), which picks the branch, or two panels
   // open.
   // A first line handed in lands in the input unsent; `nonce` lets the same sentence land again.
-  const [vaultAgentPrefill, setVaultAgentPrefill] = useState<{
-    text: string;
-    nonce: number;
-  } | null>(null);
+  const [vaultAgentPrefill, setVaultAgentPrefill] = useState<VaultAgentPrefill | null>(null);
   // ⌘K on a project page leaves a sessionStorage flag; the lazy initializer opens the palette on
   // the first render. It runs only on the client, so SSR and hydration both see `false`.
   const [ontologySearchOpen, setOntologySearchOpen] = useState(() => {
@@ -463,6 +462,16 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     homeWorkbenchController, topologyAuthoring, topologyPreferences, topologyIndexPresentation
   });
   const { agentDockOpen, runtimeChatOpen } = topologyAgentOrchestration;
+  const grayArea = useTopologyGrayArea({
+    docs: topologyVaultReadModel.vault.manifest?.docs ?? [],
+    nodes: topologyVaultReadModel.ontologyInsight?.nodes ?? [],
+    selectedSlug: topologyVaultReadModel.selectedOntologyNode?.id ?? null,
+    memberSlugs: topologyExplorationLenses.routedConstellation?.memberSlugs ?? null,
+    vaultPath: topologyVaultReadModel.gitVaultPath,
+    locale: activeLocale, routeState, setRouteState,
+    onOpen: () => { topologyAgentOrchestration.closeVaultAgent(); topologyCanvasFocus.setFullDetailSlug(null); },
+    onPrepare: (text,contextLabel) => { setVaultAgentPrefill({text,nonce:Date.now(),context:{label:contextLabel,vaultPath:topologyVaultReadModel.gitVaultPath}}); topologyAgentOrchestration.openVaultAgent(); },
+  });
   const topologyNavigationActions = useTopologyNavigationActions({
     setExpandAllActive, setRouteState, replayPastWalk, topologyCanvasFocus, topologyPreferences,
     topologyAuthoring, topologyGraphProjection, topologyIndexPresentation, topologySourceReadiness,
@@ -529,6 +538,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
           />
           <>
             <TopologyCommandChrome
+              grayAreaAction={grayArea.action}
               routeState={routeState}
               setRouteState={setRouteState}
               setVaultAgentPrefill={setVaultAgentPrefill}
@@ -654,6 +664,8 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
           />
           {/* The alert text is held through the exit window. */}
           <TopologyInspectorSurfaces
+            grayAreaOpen={grayArea.open}
+            grayAreaAction={grayArea.action}
             projectsError={projectsError}
             heldProjectsError={heldProjectsError}
             renderProjects={renderProjects}
@@ -694,6 +706,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
           />
         </div>
         {/* In the same flex row as the map column, so one width animation moves both. */}
+        {grayArea.inspector}
         <TopologyAgentDock
           vaultAgentPrefill={vaultAgentPrefill}
           chatSuggestions={chatSuggestions}

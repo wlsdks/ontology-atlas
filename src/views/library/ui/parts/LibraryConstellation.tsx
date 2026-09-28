@@ -9,20 +9,14 @@ import {
   buildConstellation,
   type ConstellationInput,
 } from "../../expressive/constellation-model";
-import { mountLibraryConstellation } from "../../expressive/constellation-scene";
+import type { ConstellationHandle } from "../../expressive/constellation-scene";
+
+/** Loaded on mount: every workbench route prefetches the Library page, and three.js with it. */
+const loadConstellationScene = () => import("../../expressive/constellation-scene");
 
 /**
- * **The Library's backdrop** — one canvas, one call, and nothing else knows it is there.
- *
- * The host contract the map's expressive layer set: a single component that mounts a
- * self-contained scene and can be deleted along with `../../expressive/` to put the
- * screen back exactly as it was. Everything above this line is ordinary Library markup on
- * an ordinary panel; this only paints behind it.
- *
- * `aria-hidden` and `pointer-events-none` are not decoration-by-accident — they are the
- * statement that every fact this object draws is also written in the copy on top of it.
- * The counts it visualises are the same ones the stage and the index print in words, so a
- * reader who never sees the canvas loses nothing at all.
+ * The Library's backdrop: one canvas that can be deleted with `../../expressive/` to restore the
+ * screen. `aria-hidden`, because the copy on top states every count it draws.
  */
 export function LibraryConstellation({
   input,
@@ -57,8 +51,18 @@ export function LibraryConstellation({
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const handle = mountLibraryConstellation(canvas, model, { reducedMotion, dim, distance });
-    return () => handle?.dispose();
+    let handle: ConstellationHandle | null = null;
+    let disposed = false;
+    loadConstellationScene()
+      .then(({ mountLibraryConstellation }) => {
+        if (!disposed) handle = mountLibraryConstellation(canvas, model, { reducedMotion, dim, distance });
+      })
+      // A chunk that fails to load leaves the backdrop empty, as a missing GPU does.
+      .catch(() => {});
+    return () => {
+      disposed = true;
+      handle?.dispose();
+    };
     // `model` is the only input that redraws; the rest remount by design.
   }, [model, reducedMotion, dim, distance]);
 

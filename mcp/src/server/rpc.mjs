@@ -15,6 +15,31 @@ function formatUnknownToolError(name) {
   return `Unknown tool: ${name}.${suggestionText} Allowed tools: ${allowedNames.join(', ')}.`;
 }
 
+const OK_ENVELOPE_BYTES = Buffer.byteLength('{"content":[{"type":"text","text":""}],"structuredContent":}');
+
+function okResponseBytes(result, prettyText = JSON.stringify(result, null, 2)) {
+  let charsEscapedAsText = 0;
+  let layoutOutsideStrings = 0;
+  let inString = false;
+  let escaping = false;
+  for (const char of prettyText) {
+    if (char === '"' || char === '\\' || char === '\n') charsEscapedAsText += 1;
+    if (inString) {
+      if (escaping) escaping = false;
+      else if (char === '\\') escaping = true;
+      else if (char === '"') inString = false;
+    } else if (char === '"') {
+      inString = true;
+    } else if (char === ' ' || char === '\n') {
+      layoutOutsideStrings += 1;
+    }
+  }
+  const prettyBytes = Buffer.byteLength(prettyText, 'utf8');
+  const textFieldBytes = prettyBytes + charsEscapedAsText;
+  const structuredContentBytes = prettyBytes - layoutOutsideStrings;
+  return OK_ENVELOPE_BYTES + textFieldBytes + structuredContentBytes;
+}
+
 function ok(result) {
   const compactPrompt = result?.contract === 'agentBriefCompact:v2'
     && typeof result?.handoffPrompt === 'string'
@@ -247,6 +272,7 @@ function classifyErrorCode(err, message) {
 export {
   formatUnknownToolError,
   ok,
+  okResponseBytes,
   error,
   structuredRowErrorDetails,
 };

@@ -59,6 +59,8 @@ const DEFINITION_KINDS = new Set(['domain', 'capability', 'element']);
 const BOUNDARY_KINDS = new Set(['domain', 'capability']);
 const UNCERTAINTY_KINDS = new Set(['domain', 'capability', 'element']);
 const EPISTEMIC_KINDS = new Set(['domain', 'capability', 'element', 'project']);
+const BODY_CHECK_KINDS = new Set([...DEFINITION_KINDS, ...BOUNDARY_KINDS, ...UNCERTAINTY_KINDS, ...EPISTEMIC_KINDS]);
+const BODY_CHECKS = [definitionFinding, boundaryFindings, uncertaintyFinding, epistemicExclusionFinding];
 const FOLDER_EVIDENCE_KINDS = new Set(['capability', 'element']);
 
 /** Entry-point filenames in the order an unfamiliar agent would try them, to say "open this instead". */
@@ -202,6 +204,17 @@ function starterPlaceholders(starter) {
   return placeholders;
 }
 
+function bodyView(kind, title, body) {
+  const starter = starterShape(kind, title);
+  return { ...parseBodySections(body), starter, placeholders: starterPlaceholders(starter) };
+}
+
+export function bodyMeaningFindings(input) {
+  if (!BODY_CHECK_KINDS.has(input.kind)) return [];
+  const view = bodyView(input.kind, input.title, input.body);
+  return BODY_CHECKS.flatMap((check) => check(input, view) ?? []);
+}
+
 /**
  * Is this line still a slot? Either untouched (matches the template) or reworded
  * around a surviving `<…>` slot, which a counter reads as filled.
@@ -225,11 +238,9 @@ function contentLines(section, placeholders) {
  * containment, so appending one line does not pass) or too little new prose
  * before the first `##` share one code.
  */
-export function definitionFinding({ kind, slug, title, body }) {
+export function definitionFinding({ kind, slug, title, body }, view = null) {
   if (!DEFINITION_KINDS.has(kind)) return null;
-  const { lead, sections } = parseBodySections(body);
-  const starter = starterShape(kind, title);
-  const placeholders = starterPlaceholders(starter);
+  const { lead, sections, starter, placeholders } = view ?? bodyView(kind, title, body);
   const leadText = lead.join(' ');
   const starterLead = starter ? starter.lead.join(' ') : '';
   const leadIsStarter = Boolean(starterLead) && fold(leadText).includes(fold(starterLead));
@@ -258,10 +269,9 @@ export function definitionFinding({ kind, slug, title, body }) {
  * One finding per missing boundary side, named in `key`: the two are different
  * work, and reporting them together lets half an answer read as whole.
  */
-export function boundaryFindings({ kind, slug, title, body }) {
+export function boundaryFindings({ kind, slug, title, body }, view = null) {
   if (!BOUNDARY_KINDS.has(kind)) return [];
-  const { sections } = parseBodySections(body);
-  const placeholders = starterPlaceholders(starterShape(kind, title));
+  const { sections, placeholders } = view ?? bodyView(kind, title, body);
   const findings = [];
   for (const side of ['includes', 'excludes']) {
     const section = findBoundarySection(sections, side);
@@ -283,10 +293,9 @@ export function boundaryFindings({ kind, slug, title, body }) {
  * completeness. A placeholder bullet does not count, or the default write would
  * silence the question it cannot have answered.
  */
-export function uncertaintyFinding({ kind, slug, title, body }) {
+export function uncertaintyFinding({ kind, slug, title, body }, view = null) {
   if (!UNCERTAINTY_KINDS.has(kind)) return null;
-  const { sections } = parseBodySections(body);
-  const placeholders = starterPlaceholders(starterShape(kind, title));
+  const { sections, placeholders } = view ?? bodyView(kind, title, body);
   const section = sections.find((row) => headingNames(row.heading, BODY_UNCERTAINTY_SECTIONS)) ?? null;
   if (contentLines(section, placeholders).length > 0) return null;
   return {
@@ -305,10 +314,10 @@ export function uncertaintyFinding({ kind, slug, title, body }) {
  * imports it so the write-time question and the read-time queue agree.
  */
 export function uncertaintySectionLines({ kind, title, body }) {
-  const { sections } = parseBodySections(body);
+  const { sections, placeholders } = bodyView(kind, title, body);
   const section =
     sections.find((row) => headingNames(row.heading, BODY_UNCERTAINTY_SECTIONS)) ?? null;
-  return contentLines(section, starterPlaceholders(starterShape(kind, title ?? '')));
+  return contentLines(section, placeholders);
 }
 
 /**
@@ -316,12 +325,11 @@ export function uncertaintySectionLines({ kind, title, body }) {
  * does not do. The rule is imported from `construction-rules.mjs`, never
  * re-derived, so the qualification lane and this door agree on each bullet.
  */
-export function epistemicExclusionFinding({ kind, slug, title, body }) {
+export function epistemicExclusionFinding({ kind, slug, title, body }, view = null) {
   if (!EPISTEMIC_KINDS.has(kind)) return null;
-  const { sections } = parseBodySections(body);
+  const { sections, placeholders } = view ?? bodyView(kind, title, body);
   const section = findBoundarySection(sections, 'excludes');
   if (!section) return null;
-  const placeholders = starterPlaceholders(starterShape(kind, title));
   const offending = contentLines(section, placeholders)
     .map((line) => stripMarker(line))
     .filter((text) => text && isEpistemicExclusionBoundary(text));
@@ -469,9 +477,13 @@ const GO_IMPORT_BLOCK = /^[ \t]*import\s*\(((?:(?!\n[ \t]*import\b)[^)])*)\)/gm;
 const WITNESS_TEXT_MAX_BYTES = 2 * 1024 * 1024;
 
 function readWitnessText(absolute) {
-  const stat = statSync(absolute);
-  if (!stat.isFile()) return null;
-  return stat.size > WITNESS_TEXT_MAX_BYTES ? { tooLarge: true } : { text: readFileSync(absolute, 'utf-8') };
+  try {
+    const stat = statSync(absolute);
+    if (!stat.isFile()) return null;
+    return stat.size > WITNESS_TEXT_MAX_BYTES ? { tooLarge: true } : { text: readFileSync(absolute, 'utf-8') };
+  } catch {
+    return null;
+  }
 }
 
 function moduleSpecifiers(text) {
@@ -493,18 +505,18 @@ function moduleSpecifiers(text) {
  * specifier. A bare word elsewhere is no witness (unrelated identifiers would
  * keep an edge green with no import). Case-sensitive: `Vault` and `vault` differ.
  */
-function textWitnesses(text, targetPath, witnessNames, moduleNamesByText) {
-  if (String(text).includes(targetPath)) return true;
+function textWitnesses({ text, path }, targetPath, witnessNames, moduleNamesByPath) {
+  if (text.includes(targetPath)) return true;
   const names = witnessNames.filter(Boolean);
   if (names.length === 0) return false;
-  let moduleNames = moduleNamesByText.get(text);
+  let moduleNames = moduleNamesByPath.get(path);
   if (!moduleNames) {
     moduleNames = new Set(moduleSpecifiers(text).flatMap((specifier) =>
       specifier
         .split(/::|[/\\{},\s]+|\.(?![A-Za-z0-9]{1,10}$)/)
         .map((segment) => segment.replace(/\.[^.]+$/, '')),
     ));
-    moduleNamesByText.set(text, moduleNames);
+    moduleNamesByPath.set(path, moduleNames);
   }
   return names.some((name) => moduleNames.has(name));
 }
@@ -590,22 +602,17 @@ export function dependencyWitnessFinding({
   previousFrontmatter,
   repoRoot,
   resolveTargetPath,
+  moduleNamesByPath = new Map(),
 }) {
   if (!repoRoot || typeof resolveTargetPath !== 'function') return [];
   const source = insideRepo(repoRoot, frontmatter?.path);
   if (!source) return [];
-  let sourceRead;
-  try {
-    sourceRead = readWitnessText(source.absolute);
-  } catch {
-    return [];
-  }
-  if (sourceRead === null) return [];
   const previous = previousFrontmatter ? declaredDependencies(previousFrontmatter) : new Set();
-  /** One read per file however many edges cite it; `null` marks unreadable. */
+  const targets = [...declaredDependencies(frontmatter)].filter((target) => !previous.has(target));
+  if (targets.length === 0) return [];
+  const sourceRead = readWitnessText(source.absolute);
+  if (sourceRead === null) return [];
   const readCache = new Map([[source.path, { ...sourceRead, path: source.path }]]);
-  // Parse each shared source or rationale file's imports once per invocation.
-  const moduleNamesByText = new Map();
   /**
    * A note path is tried from the repository root, then from each ancestor of the
    * citing file, nearest first, since writers copy editor-relative paths. Every
@@ -621,20 +628,15 @@ export function dependencyWitnessFinding({
     for (const base of ['', ...sourceAncestors]) {
       const resolved = insideRepo(repoRoot, base ? `${base}/${path}` : path);
       if (!resolved) continue;
-      try {
-        const found = readWitnessText(resolved.absolute);
-        read = found && { ...found, path: resolved.path };
-        if (read) break;
-      } catch {
-        continue;
-      }
+      const found = readWitnessText(resolved.absolute);
+      read = found && { ...found, path: resolved.path };
+      if (read) break;
     }
     readCache.set(path, read);
     return read;
   };
   const findings = [];
-  for (const target of declaredDependencies(frontmatter)) {
-    if (previous.has(target)) continue;
+  for (const target of targets) {
     let targetPath;
     try {
       targetPath = resolveTargetPath(target);
@@ -649,8 +651,7 @@ export function dependencyWitnessFinding({
       const read = readCandidate(token);
       if (read) reads.push(read);
     }
-    const texts = reads.filter((read) => read.text !== undefined).map((read) => read.text);
-    if (texts.some((text) => textWitnesses(text, resolved.path, witnessNames, moduleNamesByText))) continue;
+    if (reads.some((read) => read.text !== undefined && textWitnesses(read, resolved.path, witnessNames, moduleNamesByPath))) continue;
     const unread = [...new Set(reads.filter((read) => read.tooLarge).map((read) => read.path))];
     findings.push({
       code: unread.length > 0 ? 'dependency-unjudged' : 'dependency-unwitnessed',

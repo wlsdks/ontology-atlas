@@ -1,0 +1,1 @@
+{ "gate": "comment-bytes.mcp", "raise": 976, "why": "Security review of #2042: the hardened-git helper now disables repository hooks for every verb but the snapshot commit and discovers filters across include.path/worktree scopes with a per-filter process rule; the added comments explain why each rule exists so a later change cannot quietly reopen the hook or filter vector." }

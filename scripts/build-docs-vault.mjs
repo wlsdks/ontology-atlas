@@ -787,21 +787,8 @@ if (!meaningRules) {
 function meaningFindingCodes({ kind, slug, title, body }) {
   if (typeof kind !== 'string' || !kind.trim()) return undefined;
   if (!meaningRules) return null;
-  const {
-    definitionFinding,
-    boundaryFindings,
-    uncertaintyFinding,
-    epistemicExclusionFinding,
-  } = meaningRules.findings;
   const input = { kind, slug: slug ?? '', title: title ?? '', body: body ?? '' };
-  const codes = [
-    definitionFinding(input),
-    ...boundaryFindings(input),
-    uncertaintyFinding(input),
-    epistemicExclusionFinding(input),
-  ]
-    .filter(Boolean)
-    .map((finding) => finding.code);
+  const codes = meaningRules.findings.bodyMeaningFindings(input).map((finding) => finding.code);
   const folder = meaningRules.folderForKind(kind);
   if (slug && folder && !slug.startsWith(folder)) {
     codes.push('slug-outside-kind-folder');

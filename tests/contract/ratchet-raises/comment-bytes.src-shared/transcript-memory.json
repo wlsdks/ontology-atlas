@@ -1,0 +1,1 @@
+{ "gate": "comment-bytes.src-shared", "raise": 200, "why": "Two new shared helpers each carry the one line their code cannot show: detachedCopy's JSON round trip exists because a long V8 slice keeps its whole parent alive, and stringHash states its complexity as the architecture rule requires for algorithmic code." }

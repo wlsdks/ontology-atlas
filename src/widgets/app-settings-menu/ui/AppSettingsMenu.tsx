@@ -779,7 +779,9 @@ export function AppSettingsMenu({
                            * The caption comes from the error code, never the raw browser message, and
                            * matches how `FirstRunPage` branches on the same code.
                            */
-                          localVault.errorCode === 'path-missing'
+                          localVault.errorCode === 'grant-needed'
+                          ? t('workspaceFolderErrorGrantNeeded')
+                          : localVault.errorCode === 'path-missing'
                           ? t('workspaceFolderErrorPathMissing')
                           : localVault.errorCode === 'permission-denied'
                             ? t('workspaceFolderErrorPermissionDenied')

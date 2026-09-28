@@ -10,24 +10,24 @@ import {
   COMPILED_ONTOLOGY_CACHE,
   VAULT_ROOT,
 } from '../server/runtime.mjs';
+import { drainNodeEligibilityFindings } from '../vault.mjs';
 import {
-  drainNodeEligibilityFindings,
-  loadVaultDocs,
-} from '../vault.mjs';
-import { validateVaultTool } from './validate-vault.mjs';
+  briefVaultValidation,
+  validateVaultReport,
+} from './validate-vault.mjs';
 import { buildSummaryFreshness } from './vault-nodes.mjs';
 
-function attachVaultValidation(result, args = {}, loadedDocs = null) {
-  const validation = validateVaultTool({}, loadedDocs);
-  const pathsChecked = validation.pathDrift?.checked !== false;
-  const driftCount = validation.pathDrift?.drifts?.length ?? 0;
-  const errorCount = validation.summary.errorFiles;
-  const frontmatterWarnings = validation.summary.warningFiles;
+function attachVaultValidation(result, args = {}, loadedDocs = null, report = validateVaultReport({}, loadedDocs)) {
+  const validation = briefVaultValidation(report);
+  const pathsChecked = report.pathDrift?.checked !== false;
+  const driftCount = report.pathDrift?.drifts?.length ?? 0;
+  const errorCount = report.summary.errorFiles;
+  const frontmatterWarnings = report.summary.warningFiles;
   const warningCount = frontmatterWarnings + driftCount;
   // The sentence names which check found the warnings, so frontmatter warnings and
   // code-path warnings are never merged into one unexplained number.
   const scopeTail = pathsChecked
-    ? ` (frontmatter/graph refs ${frontmatterWarnings}, source paths ${driftCount}; repoRoot ${validation.pathDrift?.repoRoot ?? 'unknown'})`
+    ? ` (frontmatter/graph refs ${frontmatterWarnings}, source paths ${driftCount}; repoRoot ${report.pathDrift?.repoRoot ?? 'unknown'})`
     : ' (frontmatter/graph refs only — source paths were NOT checked; pass repoRoot / OATLAS_REPO_ROOT to include them)';
   const check = {
     id: 'vault_validation',
@@ -106,13 +106,12 @@ function attachVaultValidation(result, args = {}, loadedDocs = null) {
 
 function compactPostWriteMaintenance(limit = 5) {
   COMPILED_ONTOLOGY_CACHE.clear();
-  const artifact = COMPILED_ONTOLOGY_CACHE.get({ includeIndexes: true });
+  const { artifact, docs: maintenanceDocs } = COMPILED_ONTOLOGY_CACHE.getWithDocs();
   const ontologyAtlasIgnorePatterns = loadOntologyAtlasIgnore(VAULT_ROOT);
   // The node-eligibility gate runs inside `commitDoc` for every write door. Draining
   // here, where a write response is assembled, lets batch rows accumulate findings
   // and the batch's closing call report them once.
   const nodeEligibilityFindings = drainNodeEligibilityFindings();
-  const maintenanceDocs = loadVaultDocs(VAULT_ROOT);
   // Same signal `validate_vault` reports as `summaryFreshness`, surfaced here as an
   // action so an agent planning work sees it without running a second tool. Reading
   // history is bounded to summary nodes and degrades to silence outside a repo.
@@ -125,7 +124,7 @@ function compactPostWriteMaintenance(limit = 5) {
     nodeEligibilityFindings,
     staleSummaries: freshness.checked ? freshness.stale : [],
     // The empty-bridge audit needs bodies to tell an abandoned node from a documented
-    // but childless one; the compiled-cache read above already loaded every doc.
+    // but childless one.
     sourceDocs: maintenanceDocs,
   });
   return {

@@ -57,6 +57,7 @@ export async function runCompile(args) {
   let artifact;
   try {
     artifact = await callMcpTool(vaultRoot, 'compile_ontology', {
+      full: true,
       includeIndexes: parsed.includeIndexes,
       summary: parsed.summary && !parsed.fix,
       nodesLimit: parsed.nodesLimit,
@@ -117,6 +118,7 @@ export async function runCompile(args) {
     // Recompile after fixes so the user sees the settled graphHash / action count.
     try {
       artifact = await callMcpTool(vaultRoot, 'compile_ontology', {
+        full: true,
         includeIndexes: parsed.includeIndexes,
         summary: parsed.summary,
         nodesLimit: parsed.nodesLimit,

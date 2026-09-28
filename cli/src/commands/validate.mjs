@@ -231,11 +231,12 @@ export function runValidate(args) {
     // The body travels with the frontmatter so the whole-vault passes can say
     // exactly what `validate_vault` says about the same node — one vault must
     // not be described two ways by the two tools that read it.
-    const { frontmatter, body } = parseFrontmatter(raw);
+    const parsed = parseFrontmatter(raw);
+    const { frontmatter, body } = parsed;
     entries.push({ file, slug, frontmatter, body });
     // The slug travels with the raw text: `slug-outside-kind-folder` is a fact
     // about where the file sits, which the bytes alone never state.
-    const report = validateVaultDocument(raw, { slug });
+    const report = validateVaultDocument(raw, { slug, parsed });
     reportByFile.set(file, report);
   }
 
@@ -671,6 +672,7 @@ function findDependencyWitnessIssues(entries) {
     : '';
   if (!repoRoot) return [];
   const resolveTargetPath = evidencePathIndex(entries);
+  const moduleNamesByPath = new Map();
   const issues = [];
   for (const entry of entries) {
     const kind = typeof entry.frontmatter?.kind === 'string' ? entry.frontmatter.kind.trim() : '';
@@ -680,6 +682,7 @@ function findDependencyWitnessIssues(entries) {
       frontmatter: entry.frontmatter,
       repoRoot,
       resolveTargetPath,
+      moduleNamesByPath,
     })) {
       issues.push({
         file: entry.file,

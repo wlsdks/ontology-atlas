@@ -27,7 +27,7 @@ import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
  * `tests/contract/control-adoption/<registry>/<file>.<claim>.json`, one file per
  * row, so the base's own registry is what the base is measured with and two
  * branches registering different places touch different files. A deliberate
- * rise is a `tests/contract/ratchet-raises/<gate>.<slug>.json` record whose
+ * rise is a `tests/contract/ratchet-raises/<gate>/<slug>.json` record whose
  * `why` is the reason a reviewer reads. Before this, nine baseline literals here
  * changed in 56 of 74 commits to the file, and parallel branches conflicted on
  * them.
@@ -2089,7 +2089,7 @@ describe('머지 베이스 판정 — 스크래치 저장소 프로브', () => {
   const raise = (repo: string, gate: string, slug: string) =>
     put(
       repo,
-      `${RAISES_DIR}/${gate}.${slug}.json`,
+      `${RAISES_DIR}/${gate}/${slug}.json`,
       JSON.stringify({ gate, raise: 1, why: 'A probe raise that states a full sentence of reason for the growth.' }),
     );
 
