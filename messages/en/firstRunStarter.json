@@ -31,7 +31,7 @@
   "sampleSourceDogfood": "This app's code",
   "sampleSourceStorefront": "Example store",
   "nodeHint": {
-    "action": "Tap a node on the map",
+    "action": "Tap a concept on the map",
     "reason": "all of it comes from real documents"
   },
   "readout": {

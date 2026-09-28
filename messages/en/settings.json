@@ -60,7 +60,7 @@
       "ownerPlaceholder": "Name",
       "iconPlaceholder": "🗺️",
       "progressPlaceholder": "50",
-      "isHubLabel": "Mark as hub node",
+      "isHubLabel": "Mark as a hub",
       "isHubHint": "(emphasized indigo, like auth/agent hubs)",
       "slugAutoLabel": "Document address",
       "slugAutoPending": "Generated once you type a name",

@@ -317,7 +317,7 @@
     },
     "island": {
       "label": "{count} items including “{firstLabel}” are not connected to anything else. Find where they should connect",
-      "prompt": "{count} nodes including “{firstLabel}” ({first}) are not connected to the rest of the map. Using the code as evidence, work out where they belong and propose the links along with why."
+      "prompt": "{count} concepts including “{firstLabel}” ({first}) are not connected to the rest of the map. Using the code as evidence, work out where they belong and propose the links along with why."
     },
     "containment": {
       "label": "The “{slugLabel}” document says it belongs to “{domainLabel}”, but the “{domainLabel}” document’s list does not include “{slugLabel}”. Check which side is right and make the two documents agree",
@@ -329,7 +329,7 @@
     },
     "explain": {
       "label": "Explain what this folder does from the map alone",
-      "prompt": "Using only the {count} nodes on the map and their relations, explain to a newcomer what this folder is. Invent nothing that is not on the map, and point out any place the explanation stalls, because that is a hole in the map."
+      "prompt": "Using only the {count} concepts on the map and their relations, explain to a newcomer what this folder is. Invent nothing that is not on the map, and point out any place the explanation stalls, because that is a hole in the map."
     },
     "explainSubject": {
       "label": "Explain what “{subject}” does from its record and relations",

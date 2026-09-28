@@ -4,8 +4,8 @@
   "census": "{concepts} CONCEPTS · {relations} RELATIONS",
   "freshOn": "Recently updated",
   "freshOff": "Quiet",
-  "copyLink": "Copy node link",
-  "copyLinkCopied": "Copied the node link",
+  "copyLink": "Copy concept link",
+  "copyLinkCopied": "Copied the concept link",
   "close": "Close",
   "metric": {
     "contains": "Contains",
@@ -14,11 +14,11 @@
     "reach": "Reach at 3 steps"
   },
   "groups": {
-    "containsTitle": "What this node contains",
+    "containsTitle": "What this concept contains",
     "containsCaption": "What sits inside this concept",
-    "usedByTitle": "Places that use this node",
+    "usedByTitle": "Places that use this concept",
     "usedByCaption": "The side that uses this one",
-    "dependsOnTitle": "Places this node leans on",
+    "dependsOnTitle": "Places this concept leans on",
     "dependsOnCaption": "Without these it does not work",
     "belongsToTitle": "Belongs to",
     "belongsToCaption": "The concept this one sits inside",
@@ -26,10 +26,10 @@
     "freshDotTitle": "Recently updated"
   },
   "reach": {
-    "leadIn": "From this node,",
+    "leadIn": "From this concept,",
     "stepUnit": "step",
     "afterSteps": "away it reaches",
-    "stepsAria": "Steps away from this node",
+    "stepsAria": "Steps away from this concept",
     "ofTotal": "{count} / {total}",
     "mostlyNone": "It doesn't reach any other concepts.",
     "mostlyOne": "mostly in {a} ({aCount}).",

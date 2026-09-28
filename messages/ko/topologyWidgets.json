@@ -11,6 +11,6 @@
     "itemTitle": "{name} · 연결 {degree}"
   },
   "keyboardWalk": {
-    "deadEnd": "이 방향엔 이어진 노드가 없어요"
+    "deadEnd": "이 방향엔 이어진 개념이 없어요"
   }
 }

@@ -4,8 +4,8 @@
   "census": "{concepts} 개념 · {relations} 관계",
   "freshOn": "최근 갱신",
   "freshOff": "한동안 그대로",
-  "copyLink": "노드 링크 복사",
-  "copyLinkCopied": "노드 링크를 복사했어요",
+  "copyLink": "개념 링크 복사",
+  "copyLinkCopied": "개념 링크를 복사했어요",
   "close": "닫기",
   "metric": {
     "contains": "하위 항목",
@@ -26,10 +26,10 @@
     "freshDotTitle": "최근 갱신"
   },
   "reach": {
-    "leadIn": "이 노드에서",
+    "leadIn": "이 개념에서",
     "stepUnit": "단계",
     "afterSteps": "안에 닿는 개념",
-    "stepsAria": "이 노드에서 떨어진 단계",
+    "stepsAria": "이 개념에서 떨어진 단계",
     "ofTotal": "{count} / {total}",
     "mostlyNone": "도달하는 개념이 없어요.",
     "mostlyOne": "대부분 {a}({aCount})에 있다.",
