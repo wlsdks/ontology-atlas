@@ -130,5 +130,4 @@ Invoicing declares one dependency on the tax table; nothing else is declared yet
 - Relations: \`capabilities/issue-invoice\` --depends_on--> \`elements/tax-table\`
 - Evidence: \`src/billing/issue-invoice.ts\`
 - Gap: delivery declares no dependency, so its change impact stays unknown.
-\`\`\`
-`;
+\`\`\``;

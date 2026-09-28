@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { underCollation } from "../../../../tests/helpers/under-collation";
 import {
   buildTopologyAnalysisSummary,
   buildTopologyHealthActionTarget,
@@ -466,6 +467,18 @@ describe("computeTopologyShortestPath", () => {
       "b",
       "c",
     ]);
+  });
+
+  it("breaks the tie between equally short paths the same whatever the machine locale", () => {
+    const tiedNodes = [{ id: "a" }, { id: "결제" }, { id: "auth" }, { id: "c" }] as unknown as Parameters<typeof computeTopologyShortestPath>[2];
+    const tiedEdges = [
+      { id: "edge-a-pay", from: "a", to: "결제", type: "depends_on" },
+      { id: "edge-pay-c", from: "결제", to: "c", type: "depends_on" },
+      { id: "edge-a-auth", from: "a", to: "auth", type: "depends_on" },
+      { id: "edge-auth-c", from: "auth", to: "c", type: "depends_on" },
+    ] as unknown as Parameters<typeof computeTopologyShortestPath>[3];
+    const route = () => computeTopologyShortestPath("a", "c", tiedNodes, tiedEdges)?.nodeIds;
+    expect(underCollation("ko", route)).toEqual(underCollation("en", route));
   });
 
   it("fails closed for missing endpoints and disconnected nodes", () => {

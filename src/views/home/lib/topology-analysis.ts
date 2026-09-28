@@ -472,6 +472,8 @@ interface PathCandidate {
   reversed: boolean;
 }
 
+const compareCodeUnits = (left: string, right: string): number => (left < right ? -1 : left > right ? 1 : 0);
+
 /**
  * Shortest path over visible nodes, walking relations in either direction but keeping their
  * declared direction. BFS over an adjacency map, O(V + E log E) with sorted neighbours: ties break
@@ -510,9 +512,9 @@ export function computeTopologyShortestPath(
   for (const candidates of adjacent.values()) {
     candidates.sort(
       (left, right) =>
-        left.next.localeCompare(right.next) ||
-        left.edge.type.localeCompare(right.edge.type) ||
-        left.edge.id.localeCompare(right.edge.id),
+        compareCodeUnits(left.next, right.next) ||
+        compareCodeUnits(left.edge.type, right.edge.type) ||
+        compareCodeUnits(left.edge.id, right.edge.id),
     );
   }
 

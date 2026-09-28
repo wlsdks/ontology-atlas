@@ -160,6 +160,7 @@ export function createHealthQuery({
       },
       dependencyCycles: {
         totalCycles: cycleResult.totalCycles,
+        totalCyclesExact: cycleResult.totalCyclesExact,
         limited: cycleResult.limited,
         cycles: cycleResult.cycles,
       },
