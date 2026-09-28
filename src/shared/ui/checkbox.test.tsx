@@ -3,8 +3,6 @@ import { describe, expect, it, vi } from "vitest";
 
 import { Checkbox } from "./checkbox";
 
-/** Pins one brand accent, `size-4`, and the value layer's focus-ring grammar. */
-
 describe("Checkbox", () => {
   it("toggles on a label click and wears the fieldLabel(row) grammar", () => {
     const onChange = vi.fn();
@@ -16,10 +14,13 @@ describe("Checkbox", () => {
     expect(label.className).toContain("min-h-6");
   });
 
-  it("uses the brand accent, size-4 and the focus ring", () => {
+  it("draws its own token box at size-4 with the focus ring", () => {
     render(<Checkbox label="x" checked readOnly />);
     const box = screen.getByRole("checkbox");
-    expect(box.className).toContain("accent-[color:var(--color-indigo-brand)]");
+    expect(box.className).toContain("appearance-none");
+    expect(box.className).toContain("peer");
+    expect(box.className).toContain("border-[color:var(--color-text-quaternary)]");
+    expect(box.className).toContain("checked:bg-[color:var(--color-indigo-brand)]");
     expect(box.className).toContain("size-4");
     expect(box.className).toContain("focus-visible:ring-2");
     expect(box.className).toContain("var(--color-indigo-focus-ring)");
@@ -30,5 +31,13 @@ describe("Checkbox", () => {
     const box = screen.getByRole("checkbox") as HTMLInputElement;
     expect(box.checked).toBe(true);
     expect(box.disabled).toBe(true);
+  });
+
+  it("keeps one static check beside the box for the peer rule to draw", () => {
+    const { container } = render(<Checkbox label="x" checked readOnly />);
+    const mark = container.querySelector(".motion-checkbox-mark");
+    expect(mark).toHaveAttribute("data-drawn", "static");
+    expect(mark).toHaveAttribute("aria-hidden");
+    expect(mark?.previousElementSibling).toBe(screen.getByRole("checkbox"));
   });
 });

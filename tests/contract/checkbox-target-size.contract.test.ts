@@ -138,7 +138,8 @@ function collectFromSource(label: string, raw: string): Site[] {
     const tag = inputTagAt(source, m.index ?? 0);
     const typeMatch = tag.match(/type=["'](checkbox|radio)["']/);
     if (!typeMatch) continue;
-    const className = tag.match(/className=["']([^"']*)["']/)?.[1] ?? '';
+    const classMatch = tag.match(/className=(?:["']([^"']*)["']|\{`([^`]*)`\})/);
+    const className = classMatch?.[1] ?? classMatch?.[2] ?? '';
     sites.push({
       file: label,
       type: typeMatch[1],
@@ -159,7 +160,8 @@ function collect(files: string[]): Site[] {
       const tag = inputTagAt(source, m.index ?? 0);
       const typeMatch = tag.match(/type=["'](checkbox|radio)["']/);
       if (!typeMatch) continue;
-      const className = tag.match(/className=["']([^"']*)["']/)?.[1] ?? '';
+      const classMatch = tag.match(/className=(?:["']([^"']*)["']|\{`([^`]*)`\})/);
+      const className = classMatch?.[1] ?? classMatch?.[2] ?? '';
 
       const before = source.slice(0, m.index ?? 0);
       const labelOpen = before.lastIndexOf('<label');
