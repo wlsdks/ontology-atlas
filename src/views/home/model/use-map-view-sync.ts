@@ -17,10 +17,10 @@ import type { HomeMapView, HomeRouteState } from './url-state';
 import type { HomeRouteStateUpdateOptions } from './use-home-route-state';
 
 /** Writes all the flags as the view picker does. */
-function applyMapView(view: HomeMapView): void {
+export function applyMapView(view: HomeMapView | null): void {
   writeTerritories(view === 'territories');
   writeHexBoard(view === 'hex');
-  if (view === 'territories' || view === 'galaxy' || view === 'hex') {
+  if (view === null || view === 'territories' || view === 'galaxy' || view === 'hex') {
     writeGalaxy(view === 'galaxy');
     writeView3d(false);
     return;

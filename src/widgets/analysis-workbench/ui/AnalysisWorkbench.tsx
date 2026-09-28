@@ -36,9 +36,10 @@ function InlineAlert({ children }: { children: ReactNode }) {
   return <p role="alert" className="rounded-card border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-3 py-2 text-label leading-label text-[color:var(--color-danger-text)]">{children}</p>;
 }
 
-export function AnalysisWorkbench({ context, contextLabel, contextKind = null, open, requestNonce, sectionRequest, onSectionChange, onFitContentChange, initialTab = 'meaning', facts, conversation, onRequest, relationNoteGaps = 0, onClose, onEvidence, onFinding, onFindingsChange, capture, returnFocusSelector }: {
+export function AnalysisWorkbench({ context, contextLabel, conversationLabel = null, contextKind = null, open, requestNonce, sectionRequest, onSectionChange, onFitContentChange, initialTab = 'meaning', facts, conversation, onRequest, relationNoteGaps = 0, onClose, onEvidence, onFinding, onFindingsChange, capture, returnFocusSelector }: {
   context: AnalysisCaptureContext;
   contextLabel: string;
+  conversationLabel?: string | null;
   /** The picked node's kind, shown in the header eyebrow beside the view name. */
   contextKind?: string | null;
   open: boolean;
@@ -241,7 +242,7 @@ export function AnalysisWorkbench({ context, contextLabel, contextKind = null, o
      * subject.
      */}
     <header className="relative flex shrink-0 flex-wrap items-end justify-between gap-x-4 gap-y-2 pr-8">
-      <div className="min-w-0 flex-1 basis-36"><p data-testid="analysis-workbench-eyebrow" className="flex min-w-0 flex-wrap items-center gap-x-1.5 text-label leading-label text-[color:var(--color-text-secondary)]"><span>{t(tab === 'conversation' ? 'conversationTitle' : context.mode === 'meaning' ? 'meaningTitle' : 'architectureTitle')}</span>{contextKind ? <><span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span><span className="inline-flex items-center gap-1 text-[color:var(--color-text-tertiary)]"><OntologyMapKindGlyph kind={contextKind} size={11} />{kindLabel(KNOWN_KINDS.includes(contextKind) ? contextKind : 'unknown')}</span></> : null}</p><h2 className="break-words text-title font-[var(--font-weight-strong)]">{contextLabel}</h2></div>
+      <div className="min-w-0 flex-1 basis-36"><p data-testid="analysis-workbench-eyebrow" className="flex min-w-0 flex-wrap items-center gap-x-1.5 text-label leading-label text-[color:var(--color-text-secondary)]"><span>{t(tab === 'conversation' ? 'conversationTitle' : context.mode === 'meaning' ? 'meaningTitle' : 'architectureTitle')}</span>{contextKind && !(tab === 'conversation' && conversationLabel) ? <><span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span><span className="inline-flex items-center gap-1 text-[color:var(--color-text-tertiary)]"><OntologyMapKindGlyph kind={contextKind} size={11} />{kindLabel(KNOWN_KINDS.includes(contextKind) ? contextKind : 'unknown')}</span></> : null}</p><h2 className="break-words text-title font-[var(--font-weight-strong)]">{tab === 'conversation' ? conversationLabel ?? contextLabel : contextLabel}</h2></div>
       {/*
        * TabBar, not SegmentedControl: these are views, not a value; panels carry the matching
        * workbench-tabpanel-* id.

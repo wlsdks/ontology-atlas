@@ -4107,6 +4107,51 @@ describe('대화 패널 — 앉힌 요청은 읽을 문장만 서고, 붙은 지
 
   const seat = () => bootSession({ prefillRequest: { text: SEATED, nonce: 1 } });
 
+  it('hides unrelated starting suggestions while a prepared draft waits and restores them when cleared', async () => {
+    await bootSession({ prefillRequest: { text: SEATED, nonce: 1 }, suggestions: [{ kind: 'explain', params: { count: 12 } }] });
+    expect(screen.queryByTestId('acp-chat-suggestions')).toBeNull();
+    expect(screen.queryByTestId('acp-starting-suggestions')).toBeNull();
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '' } });
+    expect(screen.getByTestId('acp-chat-suggestions')).toBeInTheDocument();
+    expect(bridge.sent.some((m) => m.method === 'session/prompt')).toBe(false);
+  });
+
+  it('retains the complete folded evidence across a draft-store remount without sending it', async () => {
+    let saved = {text:'',prefillNonce:null as number|null};
+    const draftStore = { read: () => saved, write: (value: typeof saved) => { saved = value; } };
+    await bootSession({ prefillRequest: { text: SEATED, nonce: 1 }, draftStore });
+    await waitFor(() => expect(saved.text).toBe(SEATED));
+    cleanup();bridge.sent.length=0;
+    await bootSession({ draftStore });
+    expect(screen.getByRole('textbox')).toHaveValue(LEAD);
+    fireEvent.click(screen.getByTestId('acp-chat-seated-detail'));
+    expect(screen.getByTestId('acp-chat-seated-detail-text').textContent).toBe(DETAIL.trim());
+    expect(bridge.sent.some((m) => m.method === 'session/prompt')).toBe(false);
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'session/prompt')).toBe(true));
+    const prompt = bridge.sent.filter((m) => m.method === 'session/prompt').at(-1)!;
+    expect((prompt.params as { prompt: Array<{text?:string}> }).prompt[0].text).toBe(SEATED);
+  });
+
+  it.each(['edited', 'cleared', 'sent'] as const)('does not reapply a consumed prefill after a %s draft changes runtime', async (mode) => {
+    let saved = {text:'',prefillNonce:null as number|null};
+    const draftStore = { read: () => saved, write: (value: typeof saved) => { saved = value; } };
+    const prefillRequest = { text: SEATED, nonce: 1 };
+    await bootSession({ prefillRequest, draftStore });
+    const expected = mode === 'edited' ? 'My revised question.' : '';
+    if (mode === 'sent') {
+      fireEvent.click(screen.getByTestId('acp-chat-send'));
+      await waitFor(() => expect(bridge.sent.some((m) => m.method === 'session/prompt')).toBe(true));
+    } else fireEvent.change(screen.getByRole('textbox'), { target: { value: expected } });
+    await waitFor(() => expect(mode === 'edited' ? saved.text.startsWith(expected) : saved.text === '').toBe(true));
+    cleanup();bridge.sent.length=0;
+    const view=render(<AcpChatPanel runtimeId="codex-acp" runtimeLabel="Codex" vaultRoot="/vault" sessionEnabled={false} prefillRequest={prefillRequest} draftStore={draftStore}/>);
+    expect(screen.getByRole('textbox')).toHaveValue(expected);
+    expect(bridge.sent.some((m) => m.method === 'session/prompt')).toBe(false);
+    view.rerender(<AcpChatPanel runtimeId="codex-acp" runtimeLabel="Codex" vaultRoot="/vault" sessionEnabled={false} prefillRequest={{text:'A fresh investigation.\n\nScope:\nnew evidence',nonce:2}} draftStore={draftStore}/>);
+    expect(screen.getByRole('textbox')).toHaveValue('A fresh investigation.');
+  });
+
   it('상자에는 읽을 문장만 앉고, 붙은 지시는 한 번 펼쳐 그대로 보인다', async () => {
     await seat();
     expect(screen.getByRole('textbox')).toHaveValue(LEAD);

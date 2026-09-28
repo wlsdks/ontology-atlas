@@ -16,3 +16,55 @@ routes: [/topology]
   - **Focus** — enters via node click on the map (selection state); `mode=focus` deep links preserved What the focus dims recedes to `--map-ego-rest-alpha` (0.42): the node, its lines, its chip and, for a project or domain, its name, on one number (2026-09-20; before, the dim was a colour ramp of 1.37:1 and dimmed siblings drew as bright nameless circles) A name whose slot below its node falls under the floor band (the readout's corner) takes the slot above the node instead of vanishing (2026-09-20: two domains at y 741 of 806 drew nameless).
   - **Path** — enters via shift-click of 2 nodes or `mode=path` deep links
   - **Health** — enters via the maintenance queue count chip on the view rail; `mode=health` deep links preserved
+
+## Explore overlooked areas
+
+A selected concept's More menu or the active Concept set opens a map-linked
+inspector. Project/domain containment extends the selection scope; it does not
+assert impact. The app previews the bound code folder before an explicit local
+read. No Jev request, agent turn, acceptance or ontology write occurs.
+
+Three initial signals are advisory: a production static value reference between
+uniquely mapped concept files absent from the dependency graph; a cited file
+changed after its concept document with a recorded dependent; and authored
+unread/unverified text on the selected dependency path. Existing prose may
+already explain a code reference. Historical unknowns are recorded gaps with
+unverified current status; removed statements are not reused from old results.
+
+The inspector presents three suggestions at a time, ordered by scope proximity
+then signal/address, with the total and omitted count. Folding is memory-only
+for this inspection/version; folding a row reveals the next available row.
+Existing graph paths are highlighted without manufacturing an edge for an import.
+Comparison switches to Flat through the existing view controller so individual
+elements and recorded paths remain visible, including when inspection began in
+Hex. The inspector stays open; the view picker and address reflect Flat.
+
+The import scan starts at the selected dependency scope's implementation-parent
+folders. Other callers and patterns outside those folders remain unmeasured;
+workspace metadata may resolve a package without expanding the scan. The native
+collector binds all resolver bytes and complete bounded metadata, including
+missing preferred paths and directory identity. The child scanner reads only
+that immutable input through its fixed app context. There is no public snapshot
+argument or new MCP write authority.
+
+A snapshot binds the source-content fingerprint, graph digest, full Markdown
+digest and exact project binding. Collection checks the version again; opening
+a captured source or copying/preparing a packet rechecks it. Each source excerpt
+has real lines and a full-file SHA256. Packets carry bounded current bodies and
+explicit truncation/full-read instructions. Conversation preparation only seats
+an editable draft; sending and permission decisions retain their existing rules.
+A localized question and its concept names lead that draft; the unchanged evidence
+and request boundaries remain in the existing disclosure. Prepared drafts suppress
+starting suggestions. Their topic label retires when the draft is cleared or sent,
+and folded evidence survives the existing in-memory draft store. That folder-bound
+store also retains the consumed prefill nonce: changing runtimes preserves edits
+and cannot revive a cleared or sent request. Topic retirement uses the same
+lifetime, and a prepared request for a different folder is not reseated.
+
+The initial reader caps graph input at 500 nodes/edges, expanded scope at 40
+concepts, imports at 2,000 files, code/config capture at 32 MiB and 512 KiB per file,
+metadata at 12,000 entries, and native source excerpts at 16 files, 80 lines and
+8 KiB per excerpt (256 KiB per full source file). Unsupported, excluded, oversized and limited work remains
+unknown. Zero candidates is not proof of completeness or safety. Windows secure
+reads currently refuse; the web explains the native boundary and retains map
+and document reading.

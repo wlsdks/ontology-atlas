@@ -29,6 +29,8 @@ import { resolveNodeVaultRef } from "../lib/topology-node-edit";
 
 
 interface TopologyInspectorSurfacesProps {
+  grayAreaOpen?: boolean;
+  grayAreaAction?: {label:string;onOpen:()=>void};
   projectsError: string | null;
   heldProjectsError: string | null;
   renderProjects: import("@/entities/project/model/types").Project[];
@@ -112,6 +114,7 @@ interface TopologyInspectorSurfacesProps {
 }
 
 export function TopologyInspectorSurfaces({
+  grayAreaOpen, grayAreaAction,
   projectsError, heldProjectsError, renderProjects, impactMode, tEditProvenance, tSummaryFreshness,
   topologyPreferences, topologyAuthoring, topologyKeyboardTour, topologyNavigationActions,
   topologyInspectorState, topologyCanvasFocus, topologyVaultReadModel, topologySourceReadiness,
@@ -194,7 +197,7 @@ export function TopologyInspectorSurfaces({
     ) : null}
     {/* Stays mounted until the panel's `<Surface>` reports `onExited`, drawing the retained model
        as it folds. */}
-    {nodePanelMounted && panelDatasheetModel ? (
+    {!grayAreaOpen && nodePanelMounted && panelDatasheetModel ? (
       <div
         ref={nodePopoverPositionerRef}
         data-testid="topology-node-popover-positioner"
@@ -217,6 +220,7 @@ export function TopologyInspectorSurfaces({
         <div className="pointer-events-none grid">
           {panelDatasheetModel ? (
             <OntologyMapDetailPanel
+              discoveryAction={grayAreaAction}
               closeButtonRef={detailCloseButtonRef}
               key={panelDatasheetModel.slug}
               open={panelOpen}

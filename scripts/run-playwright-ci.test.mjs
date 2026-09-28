@@ -14,6 +14,40 @@ test('discovery rejects errors, empty subjects and unsupported paths', () => {
   assert.deepEqual(inventoryFiles(report(['a.spec.ts', 'a.spec.ts'])), [{file:'a.spec.ts',tests:2}]);
 });
 
+test('recursive discovery retains nested file identities and every test', () => {
+  const found=inventoryFiles({suites:[{specs:[{file:'a.spec.ts',tests:[{}]}],suites:[
+    {specs:[{file:'gray-area/gray-area.spec.ts',tests:[{},{}]},{file:'other/a.spec.ts',tests:[{}]}]},
+  ]}]});
+  assert.deepEqual(found,[{file:'a.spec.ts',tests:1},{file:'gray-area/gray-area.spec.ts',tests:2},{file:'other/a.spec.ts',tests:1}]);
+  const shards=balanceFiles(found,{files:{}},5);
+  assert.deepEqual(shards.flatMap(s=>s.files).sort(),found.map(f=>f.file).sort());
+  assert.equal(shards.reduce((sum,s)=>sum+s.tests,0),4);
+});
+
+test('nested discovery still rejects absolute, traversal, control and shell paths', () => {
+  for(const file of ['/tmp/a.spec.ts','../a.spec.ts','area/../a.spec.ts','area/./a.spec.ts','area//a.spec.ts','area\\a.spec.ts','C:/a.spec.ts','area/a.spec.ts\n','area/a.spec.ts\r','area/a.spec.ts;touch','$(touch)/a.spec.ts','area/*/a.spec.ts']) {
+    assert.throws(()=>inventoryFiles(report([file])),/unsupported/,file);
+  }
+});
+
+test('execution filters distinguish a root spec from the same basename in a nested folder', () => {
+  const cwd=mkdtempSync(join(tmpdir(),'atlas-playwright-nested-'));
+  try {
+    const files=['a.spec.ts','other/a.spec.ts'];let filters=[];
+    const spawn=(_bin,args,options)=>{
+      if(args.includes('--list'))return {status:0,stdout:JSON.stringify(report(files))};
+      filters=args.filter(arg=>arg.endsWith('$'));
+      writeFileSync(options.env.PLAYWRIGHT_JSON_OUTPUT_NAME,JSON.stringify(report(files)));
+      return {status:0};
+    };
+    assert.equal(runPlaywrightCi(['--shard=1/1'],{cwd,spawn}),0);
+    for(const file of files){
+      const matching=filters.filter(filter=>new RegExp(filter).test(`${cwd}/tests/e2e/${file}`));
+      assert.equal(matching.length,1,file);
+    }
+  } finally {rmSync(cwd,{recursive:true,force:true});}
+});
+
 test('balancing partitions every live file exactly once including new files; timing is only advisory', () => {
   const files = ['a', 'b', 'c', 'd', 'new'].map((name) => ({file:`${name}.spec.ts`,tests:1}));
   const history = {files:{'a.spec.ts':{seconds:100,tests:1},'b.spec.ts':{seconds:90,tests:1},'c.spec.ts':{seconds:80,tests:1}}};
@@ -44,7 +78,7 @@ test('executor keeps discovery errors and test failures red, and excludes only s
       return args.includes('--list') ? {status:0,stdout:JSON.stringify(report(['a.spec.ts','web-surface-smoke.spec.ts']))} : {status:7};
     };
     assert.equal(runPlaywrightCi(['--shard=1/1','--exclude=web-surface-smoke.spec.ts'],{cwd,spawn,env:{CI:'true'}}),7);
-    assert.ok(calls[1].includes('/a\\.spec\\.ts$'));
+    assert.ok(calls[1].includes('/tests/e2e/a\\.spec\\.ts$'));
     assert.ok(!calls[1].some((arg)=>arg.includes('web-surface')));
     assert.ok(calls[1].includes('--max-failures=5'), 'a red CI shard stops early, but late enough to show independent failures together');
     assert.equal(runPlaywrightCi(['--shard=1/1','--exclude=web-surface-smoke.spec.ts'],{cwd,spawn,env:{CI:'false'}}),7);
@@ -92,4 +126,3 @@ test('refreshed weights count every attempt, keep unmeasured files, and never re
   assert.deepEqual(merged.files, { 'a.spec.ts': { seconds: 3, tests: 2 }, 'b.spec.ts': { seconds: 9, tests: 1 } });
   assert.deepEqual(merged.sourceRuns, [7, 1, 2]);
 });
-

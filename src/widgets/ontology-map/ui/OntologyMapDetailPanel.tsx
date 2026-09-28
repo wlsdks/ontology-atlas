@@ -368,6 +368,7 @@ export interface OntologyMapDetailPanelProps {
   onAskAgent?: () => void;
   /** Open the shared meaning context without sending a model request. */
   meaningReview?: { label: string; onOpen: () => void };
+  discoveryAction?: { label: string; onOpen: () => void };
   /** Hide this panel's filled action while another surface owns the primary next step. */
   suppressPrimaryAction?: boolean;
   onClose: () => void;
@@ -992,6 +993,7 @@ export function OntologyMapDetailPanel({
   onCreateLinked,
   onAskAgent,
   meaningReview,
+  discoveryAction,
   suppressPrimaryAction = false,
   onClose,
   closeButtonRef,
@@ -1110,6 +1112,7 @@ export function OntologyMapDetailPanel({
       : []),
   ];
   const moreActions: DetailActionItem[] = [
+    ...(discoveryAction ? [{ label:discoveryAction.label, icon:<CircleHelp size={ICON_SIZE.sm} aria-hidden/>, testId:"map-detail-panel-action-gray-area", onSelect:discoveryAction.onOpen }] : []),
     ...(documentHref
       ? [
           {

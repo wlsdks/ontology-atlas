@@ -6,6 +6,7 @@ import {
   deriveTaskNotifications,
   filterNotifications,
   mergeNotifications,
+  risenVaultProblems,
   type AgentNotification,
 } from "./agent-notifications";
 import type { AgentWorkSession } from "./agent-work-session";
@@ -121,5 +122,30 @@ describe("AGENT_NOTIFICATION_KINDS", () => {
       "bridge-inserted",
       "vault-problem",
     ]);
+  });
+});
+
+describe("risenVaultProblems", () => {
+  it("reports only what rose between two exact readings", () => {
+    const before = { unresolvedEdges: 1, dependencyCycles: 4 };
+    expect(risenVaultProblems(before, { unresolvedEdges: 3, dependencyCycles: 2 })).toEqual({
+      unresolvedEdges: 2,
+      dependencyCycles: 0,
+    });
+    expect(risenVaultProblems(before, before)).toBeNull();
+  });
+
+  it("reports a rise to a partial cycle count as a floor", () => {
+    const after = { unresolvedEdges: 0, dependencyCycles: 500, dependencyCyclesPartial: true };
+    expect(risenVaultProblems({ unresolvedEdges: 0, dependencyCycles: 3 }, after)).toEqual({
+      unresolvedEdges: 0,
+      dependencyCycles: 497,
+      dependencyCyclesPartial: true,
+    });
+  });
+
+  it("reads no cycle rise after a partial baseline", () => {
+    const before = { unresolvedEdges: 0, dependencyCycles: 500, dependencyCyclesPartial: true };
+    expect(risenVaultProblems(before, { unresolvedEdges: 0, dependencyCycles: 900 })).toBeNull();
   });
 });

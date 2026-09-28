@@ -53,7 +53,7 @@ fn err_str(message: impl Into<String>) -> String {
 }
 
 /// A sibling of the app executable; `tauri dev` copies it next to the dev executable.
-fn resolve_bundled_binary() -> Result<PathBuf, String> {
+pub(crate) fn resolve_bundled_binary() -> Result<PathBuf, String> {
     let exe = std::env::current_exe()
         .map_err(|e| err_str(format!("could not resolve the app executable: {e}")))?;
     let dir = exe
