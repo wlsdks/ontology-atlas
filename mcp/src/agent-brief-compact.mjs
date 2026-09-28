@@ -496,8 +496,7 @@ function compactValidation(brief) {
     errorFiles,
     warningFiles,
     sourcePathsChecked: pathDrift?.checked === true,
-    driftCount: (Array.isArray(pathDrift?.drifts) ? pathDrift.drifts.length : 0)
-      + (Number.isInteger(pathDrift?.driftsOmitted) ? pathDrift.driftsOmitted : 0),
+    driftCount: Array.isArray(pathDrift?.drifts) ? pathDrift.drifts.length : 0,
   };
 }
 

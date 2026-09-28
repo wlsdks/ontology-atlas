@@ -15,7 +15,6 @@ import {
   VAULT_ROOT,
   assertScanRootAllowed,
 } from '../server/runtime.mjs';
-import { RESPONSE_TEXT_BUDGET_BYTES } from '../server/rpc.mjs';
 import {
   requireOptionalNonBlankString,
   requireOptionalNonNegativeInteger,
@@ -126,10 +125,9 @@ function validateWikiTool({ paths } = {}) {
 }
 
 const VALIDATION_PAGE_LIMIT = 100;
+const VALIDATION_PAGE_TEXT_BYTES = 128 * 1024;
 const BRIEF_PROBLEM_LIMIT = 20;
 const BY_CODE_FILE_SAMPLE = 20;
-const VALIDATION_DRIFT_LIMIT = 100;
-const BRIEF_DRIFT_LIMIT = 20;
 
 function validateVaultTool({ repoRoot, offset, limit } = {}, loadedDocs = null) {
   requireOptionalNonNegativeInteger(offset, 'offset');
@@ -137,7 +135,8 @@ function validateVaultTool({ repoRoot, offset, limit } = {}, loadedDocs = null) 
   return pageVaultValidation(validateVaultReport({ repoRoot }, loadedDocs), {
     offset: offset ?? 0,
     limit: limit ?? VALIDATION_PAGE_LIMIT,
-    textBudget: limit === undefined ? RESPONSE_TEXT_BUDGET_BYTES : null,
+    textBudget: limit === undefined ? VALIDATION_PAGE_TEXT_BYTES : null,
+    callerArguments: { ...(repoRoot === undefined ? {} : { repoRoot }), ...(limit === undefined ? {} : { limit }) },
   });
 }
 
@@ -151,7 +150,7 @@ function problemRowBytes(row) {
   return Buffer.byteLength(text, 'utf8') + PROBLEM_ROW_INDENT_BYTES * text.split('\n').length + ',\n'.length;
 }
 
-function pageVaultValidation(report, { offset, limit, textBudget = null, driftLimit = VALIDATION_DRIFT_LIMIT }) {
+function pageVaultValidation(report, { offset, limit, textBudget = null, callerArguments = {} }) {
   const total = report.problems.length;
   const start = Math.min(offset, total);
   const byCode = Object.fromEntries(Object.entries(report.summary.byCode).map(([code, entry]) => [code, {
@@ -160,16 +159,7 @@ function pageVaultValidation(report, { offset, limit, textBudget = null, driftLi
     files: entry.files.slice(0, BY_CODE_FILE_SAMPLE),
     ...(entry.files.length > BY_CODE_FILE_SAMPLE ? { filesOmitted: entry.files.length - BY_CODE_FILE_SAMPLE } : {}),
   }]));
-  const drifts = report.pathDrift?.drifts ?? [];
-  const frame = {
-    ...report,
-    problems: [],
-    problemsPagination: { offset: start, limit, total, returned: 0, hasMore: false, nextOffset: null },
-    summary: { ...report.summary, byCode },
-    ...(drifts.length > driftLimit
-      ? { pathDrift: { ...report.pathDrift, drifts: drifts.slice(0, driftLimit), driftsOmitted: drifts.length - driftLimit } }
-      : {}),
-  };
+  const frame = { ...report, problems: [], summary: { ...report.summary, byCode } };
   let problems = report.problems.slice(start, start + limit);
   let stoppedForSize = false;
   if (textBudget !== null) {
@@ -186,9 +176,8 @@ function pageVaultValidation(report, { offset, limit, textBudget = null, driftLi
   }
   const end = start + problems.length;
   const nextOffset = end < total ? end : null;
+  const nextArguments = { offset: nextOffset, ...callerArguments };
   return {
-    ...frame,
-    problems,
     problemsPagination: { offset: start, limit, total, returned: problems.length, hasMore: nextOffset !== null, nextOffset },
     ...(start > 0 || nextOffset !== null
       ? {
@@ -196,25 +185,21 @@ function pageVaultValidation(report, { offset, limit, textBudget = null, driftLi
             (problems.length > 0
               ? `Problem files ${start + 1}-${end} of ${total}, files with errors first and then by slug`
               : `No problem files from offset ${start}; the vault has ${total}`)
-            + (stoppedForSize ? `; the page stopped before ${limit} files to stay within the response size budget` : '')
-            + (nextOffset !== null ? `. The next page: validate_vault({ offset: ${nextOffset} }).` : '.'),
+            + (stoppedForSize ? `; the page stopped before ${limit} files to stay within 128 KiB of text` : '')
+            + (nextOffset !== null ? `. The next page: validate_vault(${JSON.stringify(nextArguments)}).` : '.'),
         }
       : {}),
+    ...frame,
+    problems,
   };
 }
 
 function briefVaultValidation(report) {
-  const page = pageVaultValidation(report, { offset: 0, limit: BRIEF_PROBLEM_LIMIT, driftLimit: BRIEF_DRIFT_LIMIT });
+  const page = pageVaultValidation(report, { offset: 0, limit: BRIEF_PROBLEM_LIMIT });
+  const { hasMore, nextOffset } = page.problemsPagination;
   return {
+    ...(hasMore ? { nextCall: { tool: 'validate_vault', arguments: { offset: nextOffset } } } : {}),
     ...page,
-    ...(page.problemsPagination.hasMore || page.pathDrift?.driftsOmitted > 0
-      ? {
-          nextCall: {
-            tool: 'validate_vault',
-            arguments: page.problemsPagination.hasMore ? { offset: page.problemsPagination.nextOffset } : {},
-          },
-        }
-      : {}),
   };
 }
 

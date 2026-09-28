@@ -97,7 +97,7 @@ function compileOntologyTool({
   // Summary mode — the artifact is itself the count/aggregate, so the wrapper's
   // extra summary stats would duplicate it. Returned as-is.
   if (summary === true) return artifact;
-  if (summaryOnly) return { ...artifact, delivery: COMPILE_SUMMARY_DELIVERY };
+  if (summaryOnly) return { delivery: COMPILE_SUMMARY_DELIVERY, ...artifact };
   return {
     ...artifact,
     summary: {

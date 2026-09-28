@@ -40,141 +40,18 @@ function okResponseBytes(result, prettyText = JSON.stringify(result, null, 2)) {
   return OK_ENVELOPE_BYTES + textFieldBytes + structuredContentBytes;
 }
 
-const RESPONSE_TEXT_BUDGET_BYTES = 128 * 1024;
-const TRUNCATION_NOTE_RESERVE_BYTES = 2048;
-const TRUNCATION_MAX_DEPTH = 6;
-const TRUNCATION_MAX_PASSES = 4;
-
-const isRecord = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
-const prettyBytes = (value) => Buffer.byteLength(JSON.stringify(value, null, 2) ?? '', 'utf8');
-
-function ok(result, { tool = null, bounded = true } = {}) {
+function ok(result) {
   const compactPrompt = result?.contract === 'agentBriefCompact:v2'
     && typeof result?.handoffPrompt === 'string'
     ? result.handoffPrompt
     : null;
-  let delivered = result;
-  let text = compactPrompt ?? JSON.stringify(result, null, 2);
-  if (bounded && compactPrompt === null && isRecord(result)) {
-    const bytes = Buffer.byteLength(text, 'utf8');
-    if (bytes > RESPONSE_TEXT_BUDGET_BYTES) {
-      delivered = fitToResponseBudget(result, { bytes, budgetBytes: RESPONSE_TEXT_BUDGET_BYTES, tool });
-      if (delivered !== result) text = JSON.stringify(delivered, null, 2);
-    }
+  const response = {
+    content: [{ type: 'text', text: compactPrompt ?? JSON.stringify(result, null, 2) }],
+  };
+  if (result && typeof result === 'object' && !Array.isArray(result)) {
+    response.structuredContent = result;
   }
-  const response = { content: [{ type: 'text', text }] };
-  if (isRecord(delivered)) response.structuredContent = delivered;
   return response;
-}
-
-function arraysByTextSize(result) {
-  const found = [];
-  const visit = (value, path) => {
-    if (path.length > TRUNCATION_MAX_DEPTH) return;
-    for (const [key, child] of Object.entries(value)) {
-      if (Array.isArray(child)) {
-        if (child.length > 1) found.push({ path: [...path, key], array: child, bytes: prettyBytes(child) });
-      } else if (isRecord(child)) {
-        visit(child, [...path, key]);
-      }
-    }
-  };
-  visit(result, []);
-  return found.sort((left, right) => right.bytes - left.bytes);
-}
-
-function leadingElementsToKeep(array, excess, depth) {
-  const elementIndentBytes = 2 * (depth + 1);
-  const lineOverhead = elementIndentBytes + ',\n'.length;
-  let kept = array.length;
-  let removed = 0;
-  while (kept > 1 && removed < excess) {
-    kept -= 1;
-    removed += prettyBytes(array[kept]) + lineOverhead;
-  }
-  return { kept, removed };
-}
-
-function withValueAt(root, path, value) {
-  const copy = { ...root };
-  let cursor = copy;
-  for (const key of path.slice(0, -1)) {
-    cursor[key] = { ...cursor[key] };
-    cursor = cursor[key];
-  }
-  cursor[path.at(-1)] = value;
-  return copy;
-}
-
-function withCorrectedPage(root, path, originalLength, kept) {
-  const parentPath = path.slice(0, -1);
-  const key = path.at(-1);
-  const parent = parentPath.reduce((value, step) => value?.[step], root);
-  for (const pageKey of [`${key}Pagination`, 'pagination']) {
-    const page = parent?.[pageKey];
-    if (!isRecord(page) || page.returned !== originalLength || !Number.isInteger(page.offset)) continue;
-    const nextOffset = page.offset + kept;
-    let next = withValueAt(root, [...parentPath, pageKey], { ...page, returned: kept, hasMore: true, nextOffset });
-    if (parent.returned === originalLength) next = withValueAt(next, [...parentPath, 'returned'], kept);
-    if (typeof parent.limited === 'boolean') next = withValueAt(next, [...parentPath, 'limited'], true);
-    const call = parent.nextCall;
-    if (isRecord(call?.arguments) && call.arguments.offset === page.nextOffset) {
-      next = withValueAt(next, [...parentPath, 'nextCall'], { ...call, arguments: { ...call.arguments, offset: nextOffset } });
-    }
-    if (typeof parent[`${key}Hint`] === 'string') {
-      const holder = parentPath.reduce((value, step) => value[step], next);
-      delete holder[`${key}Hint`];
-    }
-    return next;
-  }
-  return root;
-}
-
-const PAGING_ARGUMENT = /(?:limit|offset|cursor)$/i;
-const SHAPE_ARGUMENTS = new Set(['full', 'detail', 'body', 'summary', 'includeIndexes', 'allowLargeResponse', 'reviewMode']);
-
-function pagingArgumentsOf(tool) {
-  const properties = TOOL_BY_NAME.get(tool)?.inputSchema?.properties ?? {};
-  return Object.keys(properties).filter((name) => PAGING_ARGUMENT.test(name));
-}
-
-function callerChoseSize(args) {
-  return Object.entries(args ?? {}).some(([name, value]) => (
-    value !== undefined && (PAGING_ARGUMENT.test(name) || SHAPE_ARGUMENTS.has(name))
-  ));
-}
-
-function fitToResponseBudget(result, { bytes, budgetBytes, tool }) {
-  let fitted = result;
-  let current = bytes;
-  const cuts = new Map();
-  for (let pass = 0; pass < TRUNCATION_MAX_PASSES && current > budgetBytes; pass += 1) {
-    let excess = current - budgetBytes + TRUNCATION_NOTE_RESERVE_BYTES;
-    for (const { path, array } of arraysByTextSize(fitted)) {
-      if (excess <= 0) break;
-      const { kept, removed } = leadingElementsToKeep(array, excess, path.length);
-      if (kept === array.length) continue;
-      const name = path.join('.');
-      cuts.set(name, { path: name, kept, total: cuts.get(name)?.total ?? array.length });
-      fitted = withCorrectedPage(withValueAt(fitted, path, array.slice(0, kept)), path, array.length, kept);
-      excess -= removed;
-    }
-    current = prettyBytes(fitted);
-  }
-  if (cuts.size === 0) return result;
-  const paging = pagingArgumentsOf(tool);
-  return {
-    ...fitted,
-    truncated: true,
-    truncation: {
-      budgetBytes,
-      fullBytes: bytes,
-      cut: [...cuts.values()],
-      hint:
-        `The answer was ${bytes} bytes of text, over the ${budgetBytes}-byte budget, so each list under cut keeps only its first rows. `
-        + `Resume from the nextOffset a page reports${paging.length > 0 ? `, or narrow the call with ${paging.join(', ')}` : ', or narrow the call'}.`,
-    },
-  };
 }
 
 function error(err) {
@@ -393,8 +270,6 @@ function classifyErrorCode(err, message) {
 }
 
 export {
-  RESPONSE_TEXT_BUDGET_BYTES,
-  callerChoseSize,
   formatUnknownToolError,
   ok,
   okResponseBytes,

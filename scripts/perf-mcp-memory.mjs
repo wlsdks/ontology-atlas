@@ -24,8 +24,8 @@ const BUDGETS = {
   leakBytesPerCall: 64 * KB,
   // measured 2026-09-28: 85 KB per commit
   headMoveBytesPerCommit: 2 * MB,
-  // measured 2026-09-28: at most 243 KB (agent_brief), the response budget itself
-  briefWireBytes: 256 * KB,
+  // measured 2026-09-28: 46.9 KB of validation per brief
+  briefValidationBytes: 256 * KB,
 };
 
 function integerFlag(prefix, fallback, { min, max }) {
@@ -126,7 +126,7 @@ async function startServer(vault) {
       for (let end = pending.indexOf('\n'); end >= 0; end = pending.indexOf('\n')) {
         const line = pending.slice(0, end);
         pending = pending.slice(end + 1);
-        if (line.trim()) handle(JSON.parse(line), Buffer.byteLength(line, 'utf8') + 1);
+        if (line.trim()) handle(JSON.parse(line));
       }
     });
   };
@@ -142,7 +142,7 @@ async function startServer(vault) {
     replies.delete(key);
     settle?.(value);
   };
-  onLines(child.stdout, (message, bytes) => settleReply(`rpc:${message.id}`, { ...message, bytes }));
+  onLines(child.stdout, (message) => settleReply(`rpc:${message.id}`, message));
   onLines(child.stdio[3], (message) => settleReply(`probe:${message.id}`, message));
   let nextId = 1;
   const rpc = (method, params) => {
@@ -161,12 +161,12 @@ async function startServer(vault) {
   };
   await rpc('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'perf-mcp-memory', version: '1' } });
   child.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' })}\n`);
-  const call = async (name, argumentsValue, { withBytes = false } = {}) => {
+  const call = async (name, argumentsValue) => {
     const reply = await rpc('tools/call', { name, arguments: argumentsValue });
     if (reply.error || reply.result?.isError) {
       throw new Error(`${name} failed: ${JSON.stringify(reply.error ?? reply.result?.content)}`.slice(0, 400));
     }
-    return withBytes ? { result: reply.result, bytes: reply.bytes } : reply.result;
+    return reply.result;
   };
   const stop = async () => {
     child.kill('SIGKILL');
@@ -224,10 +224,12 @@ async function measureBriefs(server) {
   const rows = [];
   for (const operation of BRIEF_OPERATIONS) {
     // measurement window: one answer each, after the leak window warmed the
-    // server. A brief must fit by its own bounds (20 problem files and a pointer
-    // to validate_vault), so an answer the response budget had to cut fails too.
-    const { result, bytes } = await server.call('query_ontology', { operation }, { withBytes: true });
-    rows.push({ window: 'briefs', label: operation, bytes, cut: result?.structuredContent?.truncated === true });
+    // server; the validation receipt a brief embeds, which the vault's size must
+    // not set (20 problem files and a pointer to validate_vault).
+    const result = await server.call('query_ontology', { operation });
+    const brief = result.structuredContent;
+    const validation = operation === 'health' ? brief.validation : brief.health?.validation;
+    rows.push({ window: 'briefs', label: operation, bytes: Buffer.byteLength(JSON.stringify(validation ?? null)) });
   }
   return rows;
 }
@@ -235,7 +237,7 @@ async function measureBriefs(server) {
 function overBudget(row) {
   if (row.window === 'leak') return row.bytesPerCall > BUDGETS.leakBytesPerCall;
   if (row.window === 'head-moves') return row.bytesPerCommit > BUDGETS.headMoveBytesPerCommit;
-  if (row.window === 'briefs') return row.bytes > BUDGETS.briefWireBytes || row.cut;
+  if (row.window === 'briefs') return row.bytes > BUDGETS.briefValidationBytes;
   return true;
 }
 
@@ -245,7 +247,7 @@ function describe(row) {
     return `${row.label.padEnd(26)} ${kilobytes(row.bytesPerCall).padStart(10)} per call  (budget ${kilobytes(BUDGETS.leakBytesPerCall)}, ${row.calls} calls)`;
   }
   if (row.window === 'briefs') {
-    return `${row.label.padEnd(26)} ${kilobytes(row.bytes).padStart(10)} on the wire (budget ${kilobytes(BUDGETS.briefWireBytes)}${row.cut ? ', cut by the response budget' : ''})`;
+    return `${row.label.padEnd(26)} ${kilobytes(row.bytes).padStart(10)} of validation (budget ${kilobytes(BUDGETS.briefValidationBytes)})`;
   }
   return `${row.label.padEnd(26)} ${kilobytes(row.bytesPerCommit).padStart(10)} per commit (budget ${kilobytes(BUDGETS.headMoveBytesPerCommit)})`;
 }

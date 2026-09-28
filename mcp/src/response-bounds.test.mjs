@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 
 import { TOOLS_FOR_LIST } from './server/registry.mjs';
-import { RESPONSE_TEXT_BUDGET_BYTES, ok } from './server/rpc.mjs';
+import { ok } from './server/rpc.mjs';
 
 const SCHEMA_KEYWORDS = new Set([
   'type', 'description', 'properties', 'required', 'additionalProperties', 'items', 'enum', 'const',
@@ -121,7 +121,7 @@ function inServer(root, body) {
   const script = `
     const { queryOntologyTool, compileOntologyTool } = await import(${JSON.stringify(modules['tools/graph.mjs'])});
     const { validateVaultTool } = await import(${JSON.stringify(modules['tools/validate-vault.mjs'])});
-    const { findEvidence } = await import(${JSON.stringify(modules['tools/read.mjs'])});
+    const { findEvidence, readSourceTool } = await import(${JSON.stringify(modules['tools/read.mjs'])});
     const { ok } = await import(${JSON.stringify(modules['server/rpc.mjs'])});
     ${body}
   `;
@@ -151,6 +151,7 @@ test('a brief carries at most 20 problem files and the validate_vault call for t
       assert.equal(validation.summary.errorFiles, 2);
       assert.deepEqual(validation.problemsPagination, { offset: 0, limit: 20, total: 32, returned: 20, hasMore: true, nextOffset: 20 });
       assert.deepEqual(validation.nextCall, { tool: 'validate_vault', arguments: { offset: 20 } });
+      assert.deepEqual(Object.keys(validation).slice(0, 3), ['nextCall', 'problemsPagination', 'problemsHint'], 'the way on comes first');
       assert.deepEqual(validation.problems.slice(0, 2).map((row) => row.slug), ['broken-a', 'broken-b'], 'files with errors come first');
       assert.ok(Object.values(validation.summary.byCode).every((entry) => entry.files.length <= 20));
     }
@@ -163,7 +164,7 @@ test('a brief carries at most 20 problem files and the validate_vault call for t
   }
 });
 
-test('path drifts past a brief\'s list are counted, not dropped', () => {
+test('a brief and validate_vault list every path drift', () => {
   const root = realpathSync(mkdtempSync(join(tmpdir(), 'atlas-drift-bounds-')));
   try {
     mkdirSync(join(root, 'domains'));
@@ -181,19 +182,15 @@ test('path drifts past a brief\'s list are counted, not dropped', () => {
       const compact = await queryOntologyTool({ operation: 'agent_brief', detail: 'compact', task: 'Explain the drift fixture.' });
       console.log(JSON.stringify({
         drift: health.validation.pathDrift,
-        nextCall: health.validation.nextCall,
         check: health.checks.find((check) => check.id === 'vault_validation'),
         compactDrifts: compact.validation.driftCount,
         tool: validateVaultTool({}).pathDrift,
       }));
     `);
-    assert.equal(result.drift.drifts.length, 20);
-    assert.equal(result.drift.driftsOmitted, 5);
-    assert.equal(result.nextCall.tool, 'validate_vault');
+    assert.equal(result.drift.drifts.length, 25);
     assert.match(result.check.message, /source paths 25;/, 'the check counts every drift');
-    assert.equal(result.compactDrifts, 25, 'the compact brief counts the omitted drifts too');
-    assert.equal(result.tool.drifts.length, 25, 'validate_vault lists up to 100');
-    assert.equal(result.tool.driftsOmitted, undefined);
+    assert.equal(result.compactDrifts, 25);
+    assert.equal(result.tool.drifts.length, 25);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -212,7 +209,8 @@ test('validate_vault pages every problem file once, errors first, and each page 
         offset = page.problemsPagination.nextOffset;
       }
       const whole = validateVaultTool({ limit: 500 });
-      console.log(JSON.stringify({ pages, whole }));
+      const rooted = validateVaultTool({ repoRoot: process.env.OATLAS_REPO_ROOT, limit: 12 });
+      console.log(JSON.stringify({ pages, whole, rooted }));
     `);
     const slugs = result.pages.flatMap((page) => page.problems.map((row) => row.slug));
     assert.equal(result.pages.length, 3);
@@ -221,7 +219,12 @@ test('validate_vault pages every problem file once, errors first, and each page 
     assert.deepEqual(slugs, result.whole.problems.map((row) => row.slug), 'pages concatenate to the whole list');
     assert.deepEqual(slugs.slice(0, 2), ['broken-a', 'broken-b']);
     assert.deepEqual(slugs.slice(2), [...slugs.slice(2)].sort((left, right) => left.localeCompare(right)), 'then by slug');
-    assert.match(result.pages[0].problemsHint, /^Problem files 1-12 of 32.*validate_vault\(\{ offset: 12 \}\)/);
+    assert.match(result.pages[0].problemsHint, /^Problem files 1-12 of 32.*validate_vault\(\{"offset":12,"limit":12\}\)/);
+    assert.ok(
+      result.rooted.problemsHint.endsWith(`validate_vault(${JSON.stringify({ offset: 12, repoRoot: root, limit: 12 })}).`),
+      'the next call keeps the caller\'s repoRoot and limit',
+    );
+    assert.deepEqual(Object.keys(result.pages[0]).slice(0, 2), ['problemsPagination', 'problemsHint']);
     assert.equal(result.pages.at(-1).problemsPagination.nextOffset, null);
     const warningCode = Object.entries(result.whole.summary.byCode).find(([, entry]) => entry.count === 30);
     assert.ok(warningCode, 'a code every capability has');
@@ -247,6 +250,7 @@ test('compile_ontology answers with the bounded summary unless arrays are asked 
     assert.equal(result.bare.nodes, undefined);
     assert.equal(result.bare.nodeCount, 32);
     assert.deepEqual(result.bare.delivery.fullArguments, { full: true });
+    assert.equal(Object.keys(result.bare)[0], 'delivery');
     assert.equal(result.full.nodes.length, 32);
     assert.equal(result.full.delivery, undefined);
     assert.equal(result.paged.nodes.length, 5);
@@ -270,6 +274,7 @@ test('find_evidence returns the best 50 by default and says how many matched', (
     assert.equal(result.bare.total, 60);
     assert.equal(result.bare.limited, true);
     assert.match(result.bare.limitHint, /50 best of 60/);
+    assert.equal(Object.keys(result.bare)[0], 'limitHint');
     assert.equal(result.wide.matches.length, 60);
     assert.equal(result.wide.limited, false);
     assert.equal(result.wide.limitHint, undefined);
@@ -279,33 +284,6 @@ test('find_evidence returns the best 50 by default and says how many matched', (
   }
 });
 
-test('the response budget cuts the longest list, keeps its page resumable and says so', () => {
-  const rows = Array.from({ length: 900 }, (_, index) => ({ slug: `capabilities/c-${index}`, note: 'x'.repeat(300) }));
-  const result = {
-    rows,
-    rowsPagination: { offset: 40, limit: 900, total: 2000, returned: 900, hasMore: true, nextOffset: 940 },
-    rowsHint: 'Rows 41-940 of 2000.',
-    nextCall: { tool: 'some_tool', arguments: { offset: 940 } },
-    small: [1, 2, 3],
-  };
-  const response = ok(result, { tool: 'validate_vault' });
-  const structured = response.structuredContent;
-  const text = response.content[0].text;
-  assert.deepEqual(JSON.parse(text), structured, 'the text and structuredContent carry one answer');
-  assert.ok(Buffer.byteLength(text, 'utf8') <= RESPONSE_TEXT_BUDGET_BYTES, 'the answer fits the budget');
-  assert.equal(structured.truncated, true);
-  const kept = structured.rows.length;
-  assert.ok(kept > 0 && kept < 900);
-  assert.deepEqual(structured.truncation.cut, [{ path: 'rows', kept, total: 900 }]);
-  assert.deepEqual(structured.rows, rows.slice(0, kept), 'a cut keeps the leading rows');
-  assert.deepEqual(structured.rowsPagination, { offset: 40, limit: 900, total: 2000, returned: kept, hasMore: true, nextOffset: 40 + kept });
-  assert.deepEqual(structured.nextCall.arguments, { offset: 40 + kept }, 'a pointer to the next page moves with it');
-  assert.equal(structured.rowsHint, undefined, 'a hint about the uncut page is dropped');
-  assert.deepEqual(structured.small, [1, 2, 3]);
-  assert.match(structured.truncation.hint, /offset, limit/);
-  assert.deepEqual(result.rows.length, 900, 'the handler result is not modified');
-});
-
 test('ok() sends the JSON text the MCP spec asks for and the structuredContent an outputSchema client requires', () => {
   const result = { rows: [{ slug: 'a' }] };
   const response = ok(result);
@@ -313,45 +291,21 @@ test('ok() sends the JSON text the MCP spec asks for and the structuredContent a
   assert.equal(response.structuredContent, result);
 });
 
-test('the response budget leaves small, explicit and list-free answers alone', () => {
-  const small = { rows: [{ slug: 'a' }] };
-  assert.equal(ok(small).structuredContent, small);
-  const large = { rows: Array.from({ length: 900 }, () => 'y'.repeat(300)) };
-  assert.equal(ok(large, { bounded: false }).structuredContent, large, 'bounded: false is honoured');
-  const noList = { text: 'z'.repeat(RESPONSE_TEXT_BUDGET_BYTES + 10) };
-  assert.equal(ok(noList).structuredContent, noList, 'nothing to cut means nothing cut');
-  const compact = { contract: 'agentBriefCompact:v2', handoffPrompt: 'Read these files.', rows: large.rows };
-  assert.equal(ok(compact).content[0].text, 'Read these files.');
-});
-
-test('a cut list_concepts page corrects returned, limited and nextOffset and still matches its schema', () => {
-  const nodes = Array.from({ length: 500 }, (_, index) => ({
-    uid: randomUUID(),
-    slug: `capabilities/c-${index}`,
-    kind: 'capability',
-    title: `Capability ${index} ${'t'.repeat(200)}`,
-    mtime: 1,
-  }));
-  const result = {
-    total: 1200,
-    vaultRoot: '/vault',
-    nodes,
-    returned: 500,
-    limited: false,
-    pagination: { offset: 0, limit: 500, total: 1200, returned: 500, hasMore: true, nextOffset: 500 },
-  };
-  const structured = ok(result, { tool: 'list_concepts' }).structuredContent;
-  const kept = structured.nodes.length;
-  assert.ok(kept < 500);
-  assert.equal(structured.returned, kept);
-  assert.equal(structured.limited, true);
-  assert.equal(structured.pagination.nextOffset, kept);
-  assertConforms('list_concepts', structured);
-});
-
-test('every tool output schema declares the truncation note', () => {
-  for (const tool of TOOLS_FOR_LIST) {
-    assert.equal(tool.outputSchema?.properties?.truncated?.type, 'boolean', tool.name);
-    assert.deepEqual(tool.outputSchema?.properties?.truncation?.required, ['budgetBytes', 'fullBytes', 'cut', 'hint'], tool.name);
+test('read_source answers match its outputSchema whether or not they are cut', () => {
+  const root = realpathSync(mkdtempSync(join(tmpdir(), 'atlas-read-source-schema-')));
+  try {
+    mkdirSync(join(root, 'sources'));
+    writeFileSync(join(root, 'sources', 'plan.txt'), Array.from({ length: 30 }, (_, index) => `Line ${index + 1} of the plan.`).join('\n'));
+    const result = inServer(root, `
+      console.log(JSON.stringify({
+        whole: readSourceTool({ path: 'sources/plan.txt' }),
+        cut: readSourceTool({ path: 'sources/plan.txt', limit: 5 }),
+      }));
+    `);
+    assert.equal(result.whole.truncated, false);
+    assert.equal(result.cut.truncated, true);
+    for (const answer of Object.values(result)) assertConforms('read_source', answer);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
   }
 });

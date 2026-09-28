@@ -846,13 +846,10 @@ function finalizeProjectMeaningSchemaFailure(tool) {
     'measuredAt',
     'meaningAssessment',
   ];
-  const responseBudgetFields = new Set(['truncated', 'truncation']);
-  const receiptFields = Object.keys(output?.properties ?? {})
-    .filter((name) => !responseBudgetFields.has(name));
   if (
     output?.type !== 'object' ||
     !sameArray(output.required, required) ||
-    !sameArray(receiptFields, required) ||
+    !sameArray(Object.keys(output.properties ?? {}), required) ||
     output.additionalProperties !== false ||
     output.properties?.ok?.type !== 'boolean' ||
     output.properties?.changed?.type !== 'boolean' ||

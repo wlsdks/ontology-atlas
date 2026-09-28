@@ -1,1 +1,1 @@
-{ "gate": "comment-bytes.scripts", "raise": 306, "why": "perf-mcp-memory.mjs marks the brief-size measurement window and names the brief budget's measurement and date (testing.md)." }
+{ "gate": "comment-bytes.scripts", "raise": 266, "why": "perf-mcp-memory.mjs marks the brief validation window and names its budget's measurement and date (testing.md)." }

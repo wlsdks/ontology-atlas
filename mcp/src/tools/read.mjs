@@ -431,11 +431,16 @@ function findEvidence({ title, limit = FIND_EVIDENCE_DEFAULT_LIMIT, nodesOnly = 
       a.slug.localeCompare(b.slug),
   );
   const limited = matches.slice(0, limit);
-  const result = { query: title, total: matches.length, limited: limited.length < matches.length, matches: limited };
-  if (result.limited) {
-    result.limitHint =
-      `The ${limited.length} best of ${matches.length} matches. Narrow the title, pass nodesOnly: true, or raise limit (at most 500).`;
-  }
+  const moreMatched = limited.length < matches.length;
+  const result = {
+    ...(moreMatched
+      ? { limitHint: `The ${limited.length} best of ${matches.length} matches. Narrow the title, pass nodesOnly: true, or raise limit (at most 500).` }
+      : {}),
+    query: title,
+    total: matches.length,
+    limited: moreMatched,
+    matches: limited,
+  };
   // When loose documents came back in the results, say so and give the way to
   // narrow it — rather than filtering silently, hand the reader what they need to
   // judge for themselves.

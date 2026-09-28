@@ -136,7 +136,7 @@ export async function runIndex(args) {
       problemFiles: validation.summary?.problemFiles ?? 0,
       errorFiles: validation.summary?.errorFiles ?? 0,
       warningFiles: validation.summary?.warningFiles ?? 0,
-      pathDrift: (validation.pathDrift?.drifts?.length ?? 0) + (validation.pathDrift?.driftsOmitted ?? 0),
+      pathDrift: validation.pathDrift?.drifts?.length ?? 0,
       /*
        * `checked: false` is not zero drift: when nothing was looked at every count is 0, so report
        * `null`, which cannot pass for a clean bill of health, and let `evidenceChecked` carry the reason.
