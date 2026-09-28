@@ -248,7 +248,7 @@ pub(crate) fn candidate_bin_dirs(
 
     if let Some(path) = path_env {
         for entry in std::env::split_paths(path) {
-            if !entry.as_os_str().is_empty() && entry.is_absolute() {
+            if !entry.as_os_str().is_empty() && entry.has_root() {
                 push(entry, &mut dirs);
             }
         }
@@ -580,7 +580,7 @@ pub(crate) fn path_without_vault_node_modules_bin(
         }
     }
     let kept: Vec<PathBuf> = std::env::split_paths(&OsString::from(path_env))
-        .filter(|entry| !entry.as_os_str().is_empty() && entry.is_absolute())
+        .filter(|entry| !entry.as_os_str().is_empty() && entry.has_root())
         .filter(|entry| !is_node_modules_bin(entry) || !under_untrusted_root(entry, &roots))
         .collect();
     std::env::join_paths(kept)
@@ -590,7 +590,7 @@ pub(crate) fn path_without_vault_node_modules_bin(
 
 pub(crate) fn sanitized_process_path(path_env: &OsStr) -> OsString {
     let kept: Vec<PathBuf> = std::env::split_paths(path_env)
-        .filter(|entry| !entry.as_os_str().is_empty() && entry.is_absolute())
+        .filter(|entry| !entry.as_os_str().is_empty() && entry.has_root())
         .collect();
     std::env::join_paths(kept).unwrap_or_else(|_| path_env.to_os_string())
 }

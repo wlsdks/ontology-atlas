@@ -195,12 +195,12 @@ fn a_discovered_candidate_imports_through_the_string_the_page_builds() {
     fs::create_dir_all(&vault).unwrap();
     fs::create_dir_all(&project).unwrap();
     fs::write(project.join("plan.pdf"), b"%PDF-1.7 plan\n").unwrap();
+    let root_path = format!("{}/", project.to_string_lossy());
     let vault = fs::canonicalize(&vault).unwrap();
     let project = fs::canonicalize(&project).unwrap();
 
     let _scope = crate::vault_grants::EnforcedScope::granting(&[vault.clone(), project.clone()]);
 
-    let root_path = format!("{}/", project.to_string_lossy());
     let report = discover_source_candidates(vec![SourceDiscoveryRoot {
         root_path: root_path.clone(),
         label: "project".into(),
