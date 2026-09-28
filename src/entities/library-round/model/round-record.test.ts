@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import {
+  type RoundCadence,
   type RoundRecord,
   cadenceFromKey,
   cadenceFromMinutes,
@@ -108,15 +109,53 @@ describe('cadence', () => {
     expect(nextDueAt({ everyMinutes: 1440 }, local(2026, 9, 17, 9, 2))).toEqual(local(2026, 9, 18, 0, 0));
   });
 
-  it('a daylight-saving day keeps the wall clock, not a fixed number of milliseconds', () => {
-    /* Spring-forward (2026-03-29, EU) and fall-back (2026-11-01, US) still land on whole wall-clock hours. */
-    for (const day of [[2026, 3, 29], [2026, 11, 1]] as const) {
-      const from = local(day[0], day[1], day[2], 9, 2);
-      const next = nextDueAt({ everyMinutes: 120 }, from);
-      expect(next.getTime()).toBeGreaterThan(from.getTime());
-      expect(next.getMinutes()).toBe(0);
-      expect(next.getHours() % 2).toBe(0);
-    }
+  describe('on a daylight-saving day', () => {
+    let zone: string | undefined;
+    beforeAll(() => {
+      zone = process.env.TZ;
+    });
+    afterAll(() => {
+      process.env.TZ = zone;
+    });
+    const runs = (cadence: RoundCadence, fromIso: string, count: number) => {
+      const out: string[] = [];
+      let at = new Date(fromIso);
+      for (let i = 0; i < count; i += 1) {
+        at = nextDueAt(cadence, new Date(at.getTime() + 30_000));
+        out.push(at.toISOString());
+      }
+      return out;
+    };
+
+    it('runs through the repeated hour when the clocks go back', () => {
+      process.env.TZ = 'America/New_York';
+      expect(runs({ everyMinutes: 5 }, '2026-11-01T05:54:00.000Z', 2)).toEqual(['2026-11-01T05:55:00.000Z', '2026-11-01T06:00:00.000Z']);
+      expect(runs({ every: 'hour' }, '2026-11-01T04:30:00.000Z', 3)).toEqual([
+        '2026-11-01T05:00:00.000Z',
+        '2026-11-01T06:00:00.000Z',
+        '2026-11-01T07:00:00.000Z',
+      ]);
+    });
+
+    it('stays on its wall-clock grid when the clocks go forward', () => {
+      process.env.TZ = 'Europe/Berlin';
+      expect(runs({ everyMinutes: 120 }, '2026-03-28T22:30:00.000Z', 3)).toEqual([
+        '2026-03-28T23:00:00.000Z',
+        '2026-03-29T02:00:00.000Z',
+        '2026-03-29T04:00:00.000Z',
+      ]);
+      process.env.TZ = 'America/New_York';
+      expect(runs({ every: '6h' }, '2026-03-08T04:30:00.000Z', 3)).toEqual([
+        '2026-03-08T05:00:00.000Z',
+        '2026-03-08T10:00:00.000Z',
+        '2026-03-08T16:00:00.000Z',
+      ]);
+    });
+
+    it('keeps the day aligned when midnight itself is skipped', () => {
+      process.env.TZ = 'America/Santiago';
+      expect(runs({ everyMinutes: 120 }, '2026-09-06T03:00:00.000Z', 2)).toEqual(['2026-09-06T05:00:00.000Z', '2026-09-06T07:00:00.000Z']);
+    });
   });
 
   it('60 and 360 keep their literals so a file written today reads on the previous build', () => {

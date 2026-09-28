@@ -140,29 +140,22 @@ function isWeekend(date: Date): boolean {
   return day === 0 || day === 6;
 }
 
+const MINUTE_MS = 60_000;
+
+function nextOnClockGrid(minutes: number, from: Date): Date {
+  const start = Math.floor(from.getTime() / MINUTE_MS) * MINUTE_MS + MINUTE_MS;
+  for (let step = 0; Number.isFinite(start) && step < 3 * MAX_INTERVAL_MINUTES; step += 1) {
+    const clock = new Date(start + step * MINUTE_MS);
+    if ((clock.getHours() * 60 + clock.getMinutes()) % minutes === 0) return clock;
+  }
+  return new Date(Number.NaN);
+}
+
 /** The first scheduled time strictly after `from`, so a missed window catches up once. */
 export function nextDueAt(cadence: RoundCadence, from: Date): Date {
   const minutes = cadenceMinutes(cadence);
-  if (minutes !== null && minutes > 0) {
-    const next = new Date(from);
-    if (minutes < 60 && 60 % minutes === 0) {
-      // Under an hour: aligned to the hour so equal cadences share a ledger column.
-      next.setSeconds(0, 0);
-      next.setMinutes(Math.floor(next.getMinutes() / minutes) * minutes);
-      while (next.getTime() <= from.getTime()) next.setMinutes(next.getMinutes() + minutes);
-      return next;
-    }
-    /* An hour or longer: aligned to local midnight; `setMinutes` walks wall time across DST. */
-    next.setHours(0, 0, 0, 0);
-    const elapsed = Math.floor((from.getTime() - next.getTime()) / 60_000);
-    next.setMinutes(Math.max(0, Math.floor(elapsed / minutes)) * minutes);
-    while (next.getTime() <= from.getTime()) next.setMinutes(next.getMinutes() + minutes);
-    return next;
-  }
-  if (!('daily' in cadence)) {
-    // A non-positive interval falls back to hourly rather than looping.
-    return nextDueAt({ every: 'hour' }, from);
-  }
+  if (minutes !== null) return nextOnClockGrid(minutes > 0 ? minutes : 60, from);
+  if (!('daily' in cadence)) return nextOnClockGrid(60, from);
   const [clockHours, clockMinutes] = cadence.daily.split(':').map(Number);
   const next = new Date(from);
   next.setHours(clockHours, clockMinutes, 0, 0);
@@ -171,6 +164,13 @@ export function nextDueAt(cadence: RoundCadence, from: Date): Date {
     next.setHours(clockHours, clockMinutes, 0, 0);
   }
   return next;
+}
+
+export function dueOnThisClock(round: RoundRecord, now: Date): string {
+  const stored = Date.parse(round.nextDueAt);
+  if (!Number.isFinite(stored) || stored <= now.getTime()) return round.nextDueAt;
+  if (nextDueAt(round.cadence, new Date(stored - 1)).getTime() === stored) return round.nextDueAt;
+  return nextDueAt(round.cadence, now).toISOString();
 }
 
 export function isRoundDue(round: RoundRecord, now: Date): boolean {

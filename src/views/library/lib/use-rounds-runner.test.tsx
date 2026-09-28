@@ -1,16 +1,21 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import type { ReactNode } from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import ko from '../../../../messages/ko.json';
 import {
   type RoundLedger,
+  type RoundPassEntry,
   type RoundRecord,
   type RoundStore,
   createMemoryRoundLedger,
   createMemoryRoundStore,
+  createRoundStore,
+  parseRoundLedger,
+  roundFingerprint,
 } from '@/entities/library-round';
+import { recordApproval } from '@/shared/lib/machine-approvals';
 
 import { useRoundsRunner } from './use-rounds-runner';
 
@@ -34,10 +39,11 @@ const h = vi.hoisted(() => ({
   ledger: null as unknown,
   runtimes: [] as unknown[],
   session: null as unknown,
+  options: null as null | Record<string, unknown>,
   vault: {
     status: 'loaded',
     handle: { name: 'vault' },
-    manifest: { docs: [], sources: [] },
+    manifest: { docs: [], sources: [] } as unknown,
     agentConfigStatus: null,
   },
   agentServer: { launch: { command: '/Applications/Ontology Atlas.app/mcp', args: [] } },
@@ -54,17 +60,20 @@ vi.mock('@/entities/library-round', async (importOriginal) => ({
   createVaultRoundLedger: () => h.ledger,
 }));
 vi.mock('@/entities/docs-vault', () => ({
-  buildLibraryModel: vi.fn(),
+  buildLibraryModel: vi.fn(() => ({ sources: [], wikiPages: [], notCompiledCount: 0 })),
   isWikiPage: () => false,
   selectWikiPages: () => [],
 }));
-vi.mock('@/features/acp-session', () => ({
+vi.mock('@/features/acp-session', async () => ({
   VAULT_MCP_SERVER_NAME: 'atlas-vault',
-  atlasToolMode: () => 'read',
+  atlasToolMode: (await import('@/features/acp-session/model/atlas-tool-policy')).atlasToolMode,
   connectorAcpServers: () => [],
   isGuardedRuntime: () => true,
   runtimeOwnsWriteGate: () => true,
-  useAcpSession: () => h.session,
+  useAcpSession: (options: Record<string, unknown>) => {
+    h.options = options;
+    return h.session;
+  },
   vaultMcpServers: () => [],
   vaultSelfReadSlot: () => null,
 }));
@@ -262,5 +271,210 @@ describe('the rounds runner', () => {
     expect(ledgerLines()[0]).toMatchObject({ roundId: 'first', outcome: 'failed', note: 'no-agent', agentTurns: 0, summary: '' });
     expect((h.session as Session).start).not.toHaveBeenCalled();
     await waitFor(() => expect(result.current.running).toBeNull());
+  });
+});
+
+describe('the clock, the lock and the folder', () => {
+  type Decision = string | { reject: string } | null;
+
+  const at = (id: string, overrides: Partial<RoundRecord> = {}): RoundRecord => ({
+    id,
+    name: `Round ${id}`,
+    kind: 'ontology',
+    cadence: { every: 'hour' },
+    enabled: true,
+    query: '',
+    createdAt: '2026-09-20T00:00:00.000Z',
+    nextDueAt: '2026-09-28T06:00:00.000Z',
+    ...overrides,
+  });
+  const allowHere = (record: RoundRecord) => recordApproval('round', '/vault', record.id, roundFingerprint(record));
+  const lines = () => parseRoundLedger((h.ledger as RoundLedger & { text(): string | null }).text());
+  const advance = (ms: number) => act(() => vi.advanceTimersByTimeAsync(ms));
+
+  function scriptedSession(requests: Record<string, unknown>[], decisions: Decision[]) {
+    return {
+      status: 'ready',
+      start: vi.fn(async () => {}),
+      send: vi.fn(async () => {
+        const options = h.options!;
+        const autoDecide = options.autoDecide as (request: Record<string, unknown>) => Decision;
+        const onTurnStarted = options.onTurnStarted as (turn: Record<string, unknown>) => ((completion: unknown) => void) | null;
+        const start = { runtimeId: 'claude-acp', sessionId: 's-1', vaultRoot: '/vault', userEventId: 'u-1', text: 'brief', startedAt: new Date().toISOString() };
+        const observer = onTurnStarted(start);
+        const events: Record<string, unknown>[] = [];
+        for (const request of requests) {
+          const decided = autoDecide(request);
+          decisions.push(decided);
+          if (decided && typeof decided === 'object') events.push({ kind: 'notice', id: `n${events.length}`, text: 'auto-refused', detail: decided.reject });
+          else if (typeof decided === 'string') events.push({ kind: 'notice', id: `n${events.length}`, text: 'auto-allowed', detail: decided });
+        }
+        events.push({ kind: 'agent', id: 'a1', text: 'Two capabilities lack a source path.' });
+        observer?.({ ...start, endedAt: new Date().toISOString(), outcome: 'completed', stopReason: 'end_turn', events });
+      }),
+      cancel: vi.fn(),
+      stop: vi.fn(async () => {}),
+    };
+  }
+
+  beforeEach(() => {
+    h.options = null;
+    h.runtimes = [];
+    h.vault = { status: 'loaded', handle: { name: 'vault' }, manifest: { docs: [], sources: [] }, agentConfigStatus: null };
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'] });
+    vi.setSystemTime(new Date('2026-09-28T09:10:00.000Z'));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('keeps an overdue document round for the first tick after the folder is read', async () => {
+    const check = at('check', { kind: 'consistency', onStale: 'mark', nextDueAt: '2026-09-28T02:00:00.000Z' });
+    h.store = createMemoryRoundStore(JSON.stringify({ v: 1, rounds: [check] }));
+    allowHere(check);
+    h.vault = { status: 'loading', handle: { name: 'vault' }, manifest: null, agentConfigStatus: null };
+    const { rerender } = renderHook(() => useRoundsRunner(), { wrapper });
+    await flush();
+    await advance(2_100);
+    expect(lines()).toEqual([]);
+    h.vault = { status: 'loaded', handle: h.vault.handle, manifest: { docs: [], sources: [] }, agentConfigStatus: null };
+    rerender();
+    await advance(60_000);
+    expect(lines().map((line) => [line.roundId, line.outcome, line.trigger])).toEqual([['check', 'held', 'catch-up']]);
+  });
+
+  it('does not run a round that was paused while it waited behind another pass', async () => {
+    const first = at('a', { nextDueAt: '2026-09-28T08:00:00.000Z' });
+    const second = at('b', { nextDueAt: '2026-09-28T09:00:00.000Z' });
+    h.store = createMemoryRoundStore(JSON.stringify({ v: 1, rounds: [first, second] }));
+    h.runtimes = [READY_CLAUDE];
+    allowHere(first);
+    allowHere(second);
+    const { result } = renderHook(() => useRoundsRunner(), { wrapper });
+    await flush();
+    await flush();
+    await advance(2_100);
+    expect(result.current.running?.roundId).toBe('a');
+    await act(async () => {
+      await result.current.setEnabled('b', false);
+    });
+    await act(async () => {
+      await result.current.setEnabled('a', false);
+    });
+    await flush();
+    expect(result.current.running).toBeNull();
+    expect((h.session as Session).start).toHaveBeenCalledTimes(1);
+    expect(lines().map((line) => [line.roundId, line.note])).toEqual([['a', 'stopped']]);
+  });
+
+  it('resumes a round whose time passed while paused at its next boundary, with no catch-up', async () => {
+    const paused = at('p', { kind: 'consistency', onStale: 'mark', enabled: false, nextDueAt: '2026-09-21T09:00:00.000Z' });
+    h.store = createMemoryRoundStore(JSON.stringify({ v: 1, rounds: [paused] }));
+    allowHere(paused);
+    const { result } = renderHook(() => useRoundsRunner(), { wrapper });
+    await flush();
+    await advance(2_100);
+    await act(async () => {
+      await result.current.setEnabled('p', true);
+    });
+    expect(result.current.rounds[0].nextDueAt).toBe('2026-09-28T10:00:00.000Z');
+    await advance(60_000);
+    expect(lines()).toEqual([]);
+  });
+
+  it('gives the lock back and throws nothing when the folder disappears mid-pass', async () => {
+    let gone = false;
+    const disk = { rounds: JSON.stringify({ v: 1, rounds: [at('o', { nextDueAt: '2099-01-01T00:00:00.000Z' })] }), ledger: '' };
+    const missing = () => {
+      if (gone) throw 'No such file or directory (os error 2)';
+    };
+    h.store = createRoundStore({
+      read: async () => {
+        missing();
+        return disk.rounds;
+      },
+      write: async (text) => {
+        missing();
+        disk.rounds = text;
+      },
+    });
+    h.ledger = {
+      read: async () => {
+        missing();
+        return parseRoundLedger(disk.ledger);
+      },
+      append: async (entry: RoundPassEntry) => {
+        missing();
+        disk.ledger += `${JSON.stringify(entry)}\n`;
+      },
+      text: () => disk.ledger,
+    };
+    h.runtimes = [READY_CLAUDE];
+    h.session = scriptedSession([], []);
+    const unhandled: unknown[] = [];
+    const onUnhandled = (reason: unknown) => unhandled.push(reason);
+    process.on('unhandledRejection', onUnhandled);
+    try {
+      const { result } = renderHook(() => useRoundsRunner(), { wrapper });
+      await flush();
+      await flush();
+      allowHere(at('o', { nextDueAt: '2099-01-01T00:00:00.000Z' }));
+      gone = true;
+      act(() => result.current.runNow('o'));
+      await flush();
+      await advance(10_000);
+      expect(result.current.running).toBeNull();
+      expect(result.current.storeStatus).toBe('unavailable');
+      expect(unhandled).toEqual([]);
+    } finally {
+      process.off('unhandledRejection', onUnhandled);
+    }
+  });
+
+  it('moves a next run left by another time zone onto this clock', async () => {
+    const zone = process.env.TZ;
+    process.env.TZ = 'Europe/Berlin';
+    try {
+      vi.setSystemTime(new Date('2026-09-29T18:00:00.000Z'));
+      const morning = at('m', { cadence: { daily: '09:00', weekdaysOnly: false }, nextDueAt: '2026-09-30T00:00:00.000Z' });
+      h.store = createMemoryRoundStore(JSON.stringify({ v: 1, rounds: [morning] }));
+      const { result } = renderHook(() => useRoundsRunner(), { wrapper });
+      await flush();
+      expect(result.current.rounds[0].nextDueAt).toBe('2026-09-30T07:00:00.000Z');
+    } finally {
+      process.env.TZ = zone;
+    }
+  });
+
+  it('refuses every write an ontology review asks for and names each in the ledger', async () => {
+    const reviewRound = at('review', { nextDueAt: '2099-01-01T00:00:00.000Z' });
+    h.store = createMemoryRoundStore(JSON.stringify({ v: 1, rounds: [reviewRound] }));
+    h.runtimes = [READY_CLAUDE];
+    allowHere(reviewRound);
+    const writes = [
+      { filePath: '/vault/capabilities/checkout.md', toolName: 'Write', toolKind: 'edit', rawInput: {}, reviewKind: 'permission' },
+      { filePath: '/vault/wiki/checkout.md', toolName: 'Edit', toolKind: 'edit', rawInput: {}, reviewKind: 'permission' },
+      { filePath: null, toolName: 'mcp__atlas-vault__add_concept', toolKind: 'other', rawInput: {}, reviewKind: 'ontology-write' },
+      { filePath: null, toolName: 'Bash', toolKind: 'execute', rawInput: {}, reviewKind: 'permission' },
+    ];
+    const reads = [
+      { filePath: null, toolName: 'mcp__atlas-vault__list_concepts', toolKind: 'read', rawInput: {}, reviewKind: 'permission' },
+      { filePath: '/vault/capabilities/checkout.md', toolName: 'Read', toolKind: 'read', rawInput: {}, reviewKind: 'permission' },
+    ];
+    const decisions: Decision[] = [];
+    h.session = scriptedSession([...writes, ...reads], decisions);
+    const { result } = renderHook(() => useRoundsRunner(), { wrapper });
+    await flush();
+    await flush();
+    act(() => result.current.runNow('review'));
+    await flush();
+    await advance(6_000);
+    expect(decisions.slice(writes.length)).toEqual(['call mcp__atlas-vault__list_concepts', 'read capabilities/checkout.md']);
+    expect(lines()[0]).toMatchObject({
+      outcome: 'refused',
+      written: [],
+      refused: ['capabilities/checkout.md', 'wiki/checkout.md', 'mcp__atlas-vault__add_concept', 'Bash'],
+    });
   });
 });

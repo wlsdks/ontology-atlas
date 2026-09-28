@@ -12,6 +12,9 @@ import {
   type RoundStore,
   createVaultFileRoundStore,
   createVaultRoundLedger,
+  dueOnThisClock,
+  isRoundDue,
+  nextDueAt,
   roundFingerprint,
   roundPlaceLabels,
   roundPlaces,
@@ -132,8 +135,6 @@ export function useRoundsRunner(): RoundsRunnerValue {
   const codexConfigValid = vault.agentConfigStatus?.codexConfigValid === true;
 
   const refresh = useCallback(async () => {
-    // Always a turn later than the effect that asked, so a folder change never sets state
-    // synchronously inside an effect body.
     await Promise.resolve();
     if (!store || !ledger) {
       setStoreStatus("no-vault");
@@ -143,9 +144,17 @@ export function useRoundsRunner(): RoundsRunnerValue {
       return;
     }
     const [read, lines] = await Promise.all([store.read(), ledger.read().catch(() => [] as RoundPassEntry[])]);
+    const now = new Date();
+    const current: RoundState = {
+      ...read.state,
+      rounds: read.state.rounds.map((round) => {
+        const due = dueOnThisClock(round, now);
+        return due === round.nextDueAt ? round : { ...round, nextDueAt: due };
+      }),
+    };
     setStoreStatus(read.status);
-    setState(read.state);
-    stateRef.current = read.state;
+    setState(current);
+    stateRef.current = current;
     setEntries(lines);
     setRevision((value) => value + 1);
   }, [ledger, store]);
@@ -562,22 +571,10 @@ export function useRoundsRunner(): RoundsRunnerValue {
       activeRef.current = null;
       abortRef.current = null;
     }
-    try {
+    const record = async () => {
       await ledger.append(entry);
-      /*
-       * **A pass writes back only the two fields it owns.** It used to write the whole record as
-       * it stood when the pass began, so a Pause pressed mid-pass was undone the moment the
-       * stopped pass finished (`enabled: true` from that old copy), along with anything else
-       * changed meanwhile. A removed round is not written back at all: `patch` skips an id it
-       * no longer finds.
-       */
       const next = afterPass(round, new Date());
       await store.patch(round.id, { lastPassAt: next.lastPassAt, nextDueAt: next.nextDueAt });
-      /*
-       * The wiki's own record stays complete (spec §8): a page a round wrote is a compile
-       * event in `wiki/_log.md` like any other, with the round as the writer, so a person
-       * reading the log in an editor sees who touched the page and when.
-       */
       const pages = entry.written.filter((path) => path.startsWith("wiki/")).map((path) => path.replace(/^wiki\//, "").replace(/\.md$/, ""));
       if (handle && pages.length > 0) {
         const sources = round.kind === "consistency" ? entry.stale.map((slug) => slug.replace(/^wiki\//, "")).join(", ") : (round.connectorName ?? round.name);
@@ -588,10 +585,13 @@ export function useRoundsRunner(): RoundsRunnerValue {
           writer: `round:${round.name}`,
         }).catch(() => undefined);
       }
+    };
+    try {
+      await record().catch(() => undefined);
+      await refresh();
     } finally {
       runningRef.current = null;
       setRunning(null);
-      await refresh();
     }
   }, [agentReady, agentTurn, allowedNow, handle, ledger, locale, readPassData, refresh, rootPath, runtimeId, store]);
 
@@ -606,6 +606,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
       lastTickAt: lastTickRef.current,
       running: runningRef.current !== null,
       allowedHere: allowedNow,
+      ready: (round) => round.kind === "ontology" || manifestRef.current !== null,
     });
     lastTickRef.current = now;
     setLastTickAt(now.toISOString());
@@ -624,14 +625,16 @@ export function useRoundsRunner(): RoundsRunnerValue {
         agentTurns: 0,
         summary: "",
         trigger: "clock",
-      });
+      }).catch(() => undefined);
       await refresh();
     }
-    for (const round of plan.due) {
+    for (const planned of plan.due) {
       if (runningRef.current) break;
+      const round = stateRef.current?.rounds.find((entry) => entry.id === planned.id);
+      if (!round || !isRoundDue(round, new Date()) || !allowedNow(round)) continue;
       await runPass(round, triggerFor(round, now));
     }
-  }, [allowedNow, ledger, refresh, runPass, store]);
+  }, [allowedNow, ledger, manifestRef, refresh, runPass, store]);
 
   const tickRef = useRef(tick);
   useEffect(() => {
@@ -702,12 +705,15 @@ export function useRoundsRunner(): RoundsRunnerValue {
 
   const setEnabled = useCallback(async (id: string, enabled: boolean) => {
     if (!store) return false;
-    // Pausing is the same promise as removing: the round stops, including the pass in flight.
     if (!enabled) stopPassFor(id);
-    // Resuming allows the round as shown; pausing keeps the allowance, so "Run now" still works.
     const shown = stateRef.current?.rounds.find((entry) => entry.id === id);
     if (enabled && shown) recordApproval("round", rootPath, id, roundFingerprint(shown));
-    const result = await store.patch(id, { enabled });
+    const now = new Date();
+    const change: Partial<RoundRecord> = { enabled };
+    if (enabled && shown && !(Date.parse(shown.nextDueAt) > now.getTime())) {
+      change.nextDueAt = nextDueAt(shown.cadence, now).toISOString();
+    }
+    const result = await store.patch(id, change);
     await refresh();
     return result.status === "saved";
   }, [refresh, rootPath, stopPassFor, store]);

@@ -17,6 +17,7 @@ export interface TickInput {
   running: boolean;
   /** `enabled` can arrive with a clone; a round this Mac never allowed is never due here. */
   allowedHere: (round: RoundRecord) => boolean;
+  ready?: (round: RoundRecord) => boolean;
   asleepAfterMs?: number;
 }
 
@@ -27,14 +28,14 @@ export interface TickPlan {
   due: RoundRecord[];
 }
 
-export function planTick({ rounds, now, lastTickAt, running, allowedHere, asleepAfterMs = ASLEEP_AFTER_MS }: TickInput): TickPlan {
+export function planTick({ rounds, now, lastTickAt, running, allowedHere, ready = () => true, asleepAfterMs = ASLEEP_AFTER_MS }: TickInput): TickPlan {
   const asleep =
     lastTickAt && now.getTime() - lastTickAt.getTime() > asleepAfterMs
       ? { from: lastTickAt, to: now }
       : null;
   if (running) return { asleep, due: [] };
   const due = rounds
-    .filter((round) => isRoundDue(round, now) && allowedHere(round))
+    .filter((round) => isRoundDue(round, now) && allowedHere(round) && ready(round))
     .sort((a, b) => rank(a) - rank(b) || Date.parse(a.nextDueAt) - Date.parse(b.nextDueAt));
   return { asleep, due };
 }
