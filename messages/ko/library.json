@@ -930,7 +930,19 @@
       "runningNow": "{name} · {phase} · {seconds, number}초",
       "phaseChecking": "문서 확인 중",
       "phaseAgent": "에이전트 턴 진행 중",
-      "stopped": "도는 중에 이 자동 점검을 빼거나 멈춰서 실행이 거기서 끝났어요."
+      "stopped": "도는 중에 이 자동 점검을 바꾸거나 빼거나 멈춰서 실행이 거기서 끝났어요.",
+      "undone": {
+        "restored": "{page} 문서를 이번 점검 전 상태로 되돌렸어요.",
+        "removed": "이번 점검이 새로 만든 {page} 문서를 지웠어요.",
+        "failed": "이번 점검 뒤 {page} 문서를 되돌리지 못했어요. 믿고 쓰기 전에 문서를 열어 확인하세요."
+      },
+      "undoneReason": {
+        "notDraft": "status: draft로 남지 않았어요. 예약 작업은 초안만 써요.",
+        "duplicateKey": "파일 맨 위 정보칸(frontmatter)에 {key}: 항목이 두 번 있어 읽는 쪽마다 다르게 읽을 수 있었어요.",
+        "forbiddenKey": "{key}: 항목이 있었어요. 이 항목은 사람만 넣을 수 있어요.",
+        "noFrontmatter": "파일 맨 위 정보칸(frontmatter)이 없어 초안으로 읽을 수 없었어요.",
+        "unreadable": "Atlas가 다시 읽어 확인하지 못했어요."
+      }
     },
     "sheet": {
       "readbackConsistency": "{cadence} 문서가 원문과 여전히 맞는지 확인하고, 낡은 문서는 {onStale}. 저장하면 바로 한 번 돌아요.",

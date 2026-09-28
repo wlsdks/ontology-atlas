@@ -231,6 +231,20 @@ describe('Automations manager', () => {
     expect(screen.getByTestId('automations-last-run')).toHaveTextContent(en.automations.failedFolderNotRead);
   });
 
+  it('names the page a run put back and why, instead of a failure with no result', () => {
+    search = 'kind=documents';
+    const round: RoundRecord = { id: 'docs', kind: 'consistency', name: 'Pages match sources', enabled: true, onStale: 'redraft',
+      cadence: { every: 'hour' }, createdAt: '2026-09-25T00:00:00Z', nextDueAt: '2026-09-26T01:00:00Z' };
+    const putBack: RoundPassEntry = { v: 1, id: 'undo', roundId: round.id, roundName: round.name, kind: 'consistency',
+      startedAt: '2026-09-25T15:08:00Z', endedAt: '2026-09-25T15:09:00Z', outcome: 'failed', checked: 3, stale: [],
+      written: [], refused: [], called: [], agentTurns: 1, summary: '', trigger: 'clock',
+      undone: [{ path: 'wiki/plan.md', reason: 'not-draft', action: 'restored' }] };
+    renderPage(runner({ rounds: [round], ledger: [putBack] }));
+    const last = screen.getByTestId('automations-last-run');
+    expect(last).toHaveTextContent(`${en.automations.undone.restored.replace('{page}', 'wiki/plan.md')} ${en.library.rounds.ledger.undoneReason.notDraft}`);
+    expect(last).not.toHaveTextContent(en.automations.failedNoResult);
+  });
+
   it('says on the row when a run could not be written, and which file refused it', () => {
     search = 'kind=documents';
     const round: RoundRecord = { id: 'docs', kind: 'consistency', name: 'Pages match sources', enabled: true, onStale: 'mark',

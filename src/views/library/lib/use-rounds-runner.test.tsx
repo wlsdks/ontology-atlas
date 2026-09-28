@@ -16,7 +16,8 @@ import {
   parseRoundLedger,
   roundFingerprint,
 } from '@/entities/library-round';
-import { recordApproval } from '@/shared/lib/machine-approvals';
+import { writeWikiFile } from '@/features/library';
+import { readMachineApprovals, recordApproval } from '@/shared/lib/machine-approvals';
 import { WIKI_PAGE_TEMPLATE } from '@/shared/lib/wiki-page-schema';
 
 import { useRoundsRunner } from './use-rounds-runner';
@@ -52,6 +53,7 @@ const h = vi.hoisted(() => ({
   connectors: { connectors: [], allowedHere: () => false, isOnHere: () => false },
   pages: [] as { slug: string }[],
   files: {} as Record<string, string>,
+  onRead: null as null | ((path: string) => void),
 }));
 
 vi.mock('@/entities/vault-session', () => ({
@@ -85,6 +87,12 @@ vi.mock('@/features/library', async () => ({
   appendWikiLog: vi.fn(async () => undefined),
   buildCompileBrief: () => 'compile brief',
   judgePageWrite: (await import('@/features/library/lib/judge-page-write')).judgePageWrite,
+  writeWikiFile: vi.fn(async (_vault: unknown, path: string, text: string) => {
+    h.files[path] = text;
+  }),
+  deleteWikiFile: vi.fn(async (_vault: unknown, path: string) => {
+    delete h.files[path];
+  }),
 }));
 vi.mock('@/features/mcp-connectors', () => ({ useVaultConnectors: () => h.connectors }));
 vi.mock('@/shared/lib/tauri-acp', () => ({
@@ -94,7 +102,10 @@ vi.mock('@/shared/lib/tauri-acp', () => ({
 vi.mock('@/shared/lib/tauri-vault-fs', () => ({
   getTauriVaultRootPath: () => '/vault',
   nativeVaultFileHashes: async () => new Map(),
-  readTauriVaultText: async (_root: string, path: string) => h.files[path] ?? null,
+  readTauriVaultText: async (_root: string, path: string) => {
+    h.onRead?.(path);
+    return h.files[path] ?? null;
+  },
 }));
 
 const READY_CLAUDE = { id: 'claude-acp', label: 'Claude', state: 'ready', verified: true, isolated: true };
@@ -296,7 +307,7 @@ describe('the clock, the lock and the folder', () => {
   const lines = () => parseRoundLedger((h.ledger as RoundLedger & { text(): string | null }).text());
   const advance = (ms: number) => act(() => vi.advanceTimersByTimeAsync(ms));
 
-  function scriptedSession(requests: Record<string, unknown>[], decisions: Decision[]) {
+  function scriptedSession(requests: Record<string, unknown>[], decisions: Decision[], apply?: (request: Record<string, unknown>) => void) {
     return {
       status: 'ready',
       start: vi.fn(async () => {}),
@@ -311,7 +322,10 @@ describe('the clock, the lock and the folder', () => {
           const decided = autoDecide(request);
           decisions.push(decided);
           if (decided && typeof decided === 'object') events.push({ kind: 'notice', id: `n${events.length}`, text: 'auto-refused', detail: decided.reject });
-          else if (typeof decided === 'string') events.push({ kind: 'notice', id: `n${events.length}`, text: 'auto-allowed', detail: decided });
+          else if (typeof decided === 'string') {
+            events.push({ kind: 'notice', id: `n${events.length}`, text: 'auto-allowed', detail: decided });
+            apply?.(request);
+          }
         }
         events.push({ kind: 'agent', id: 'a1', text: 'Two capabilities lack a source path.' });
         observer?.({ ...start, endedAt: new Date().toISOString(), outcome: 'completed', stopReason: 'end_turn', events });
@@ -323,6 +337,7 @@ describe('the clock, the lock and the folder', () => {
 
   beforeEach(() => {
     h.options = null;
+    h.onRead = null;
     h.runtimes = [];
     h.vault = { status: 'loaded', handle: { name: 'vault' }, manifest: { docs: [], sources: [] }, agentConfigStatus: null };
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'] });
@@ -572,6 +587,92 @@ describe('the clock, the lock and the folder', () => {
     expect((await store().read()).state.rounds[0]).toMatchObject({ cadence: { every: '6h' }, nextDueAt: nextSix });
   });
 
+  it('moves this Mac\'s allowance to the edited version before the file answers, and puts the old one back when the save fails', async () => {
+    const review = at('r', { nextDueAt: '2099-01-01T00:00:00.000Z' });
+    const gate = { hold: false, answer: (_fail: boolean) => {} };
+    let text = JSON.stringify({ v: 1, rounds: [review] });
+    h.store = createRoundStore({
+      read: async () => text,
+      write: async (next) => {
+        if (gate.hold && (await new Promise<boolean>((resolve) => (gate.answer = resolve)))) throw new Error('read-only volume');
+        text = next;
+      },
+    });
+    h.runtimes = [READY_CLAUDE];
+    allowHere(review);
+    const { result } = renderHook(() => useRoundsRunner(), { wrapper });
+    await flush();
+    await flush();
+    const edited: RoundRecord = { ...review, cadence: { every: '6h' } };
+    gate.hold = true;
+    let saving: Promise<boolean> = Promise.resolve(false);
+    act(() => {
+      saving = result.current.update(edited);
+    });
+    await flush();
+    act(() => result.current.runNow('r'));
+    await flush();
+    expect((h.session as Session).start).not.toHaveBeenCalled();
+    expect(readMachineApprovals().approves('round', '/vault', 'r', roundFingerprint(edited))).toBe(true);
+    await act(async () => {
+      gate.answer(true);
+      expect(await saving).toBe(false);
+    });
+    expect(readMachineApprovals().approves('round', '/vault', 'r', roundFingerprint(review))).toBe(true);
+  });
+
+  it('starts no agent turn once this Mac stops allowing the round during the local check', async () => {
+    const svc = at('s', { kind: 'service', connectorId: 'c1', connectorName: 'confluence', nextDueAt: '2099-01-01T00:00:00.000Z',
+      places: [{ kind: 'vault', paths: [] }, { kind: 'service', connectorId: 'c1', connectorName: 'confluence' }] });
+    h.store = createMemoryRoundStore(JSON.stringify({ v: 1, rounds: [svc] }));
+    h.vault = { status: 'loaded', handle: { name: 'vault' }, manifest: { docs: [], sources: [{ path: 'sources/notes.md' }] }, agentConfigStatus: null };
+    h.files = { 'sources/notes.md': '---\nsource_url: https://example.test/9\n---\n' };
+    h.onRead = (path) => {
+      if (path === 'sources/notes.md') recordApproval('round', '/vault', 's', 'an edited definition');
+    };
+    h.runtimes = [READY_CLAUDE];
+    allowHere(svc);
+    const { result } = renderHook(() => useRoundsRunner(), { wrapper });
+    await flush();
+    await flush();
+    act(() => result.current.runNow('s'));
+    await flush();
+    await advance(6_000);
+    expect((h.session as Session).start).not.toHaveBeenCalled();
+    expect(lines()[0]).toMatchObject({ roundId: 's', outcome: 'failed', note: 'stopped', agentTurns: 0 });
+    h.files = {};
+  });
+
+  it('saves a next run moved to this clock only while the stored time is still the one it read', async () => {
+    const zone = process.env.TZ;
+    process.env.TZ = 'Europe/Berlin';
+    try {
+      vi.setSystemTime(new Date('2026-09-29T18:00:00.000Z'));
+      const morning = at('m', { kind: 'consistency', onStale: 'mark', cadence: { daily: '09:00', weekdaysOnly: false }, nextDueAt: '2026-09-30T00:00:00.000Z' });
+      const memory = createMemoryRoundStore(JSON.stringify({ v: 1, rounds: [morning] }));
+      let raced = false;
+      h.store = {
+        ...memory,
+        patch: async (id: string, change: Parameters<RoundStore['patch']>[1]) => {
+          if (!raced) {
+            raced = true;
+            await memory.patch(id, { nextDueAt: '2026-10-01T07:00:00.000Z' });
+          }
+          return memory.patch(id, change);
+        },
+      };
+      allowHere(morning);
+      const { result } = renderHook(() => useRoundsRunner(), { wrapper });
+      await flush();
+      await flush();
+      expect((await memory.read()).state.rounds[0].nextDueAt).toBe('2026-10-01T07:00:00.000Z');
+      expect(result.current.rounds[0].nextDueAt).toBe('2026-10-01T07:00:00.000Z');
+    } finally {
+      if (zone === undefined) delete process.env.TZ;
+      else process.env.TZ = zone;
+    }
+  });
+
   describe('a document pass judges each write against the page as its earlier writes left it', () => {
     const PAGE = '/vault/wiki/plan.md';
     const onDisk = WIKI_PAGE_TEMPLATE.replace(/sources\/<file>/g, 'sources/plan.pdf');
@@ -586,15 +687,15 @@ describe('the clock, the lock and the folder', () => {
     const write = (path: string, content: string) => ({ filePath: path, toolName: 'Write', toolKind: 'edit', rawInput: { file_path: path, content }, reviewKind: 'permission' });
     const edit = (path: string, oldString: string, newString: string) => ({ filePath: path, toolName: 'Edit', toolKind: 'edit', rawInput: { file_path: path, old_string: oldString, new_string: newString }, reviewKind: 'permission' });
 
-    async function pass(requests: Record<string, unknown>[]) {
-      h.pages = [{ slug: 'wiki/plan' }];
-      h.files = { 'wiki/plan.md': onDisk };
+    async function pass(requests: Record<string, unknown>[], apply?: (request: Record<string, unknown>) => void, slug = 'wiki/plan') {
+      h.pages = [{ slug }];
+      h.files = { [`${slug}.md`]: onDisk };
       h.vault = { status: 'loaded', handle: { name: 'vault' }, manifest: { docs: [], sources: [{ path: 'sources/plan.pdf' }] }, agentConfigStatus: null };
       h.store = createMemoryRoundStore(JSON.stringify({ v: 1, rounds: [serviceRound] }));
       h.runtimes = [READY_CLAUDE];
       allowHere(serviceRound);
       const decisions: Decision[] = [];
-      h.session = scriptedSession(requests, decisions);
+      h.session = scriptedSession(requests, decisions, apply);
       const { result } = renderHook(() => useRoundsRunner(), { wrapper });
       await flush();
       await flush();
@@ -632,6 +733,35 @@ describe('the clock, the lock and the folder', () => {
         write('/vault/wiki/refunds.md', WIKI_PAGE_TEMPLATE.replace(/sources\/<file>/g, 'sources/refunds.md')),
       ]);
       expect(decisions).toEqual(['write sources/refunds.md', 'write wiki/refunds.md']);
+    });
+
+    const moved = onDisk.replace('summary: <one sentence about what this page is about>', `summary: ${lead}`).replace(`\n${lead}\n`, '\nA reader needs this first.\n');
+    const endA = moved.replace(lead, `${lead}\nstatus: reviewed\ndescribes: [capabilities/checkout]`);
+    const endB = onDisk.replace('title: <the page name>\n', 'title: <the page name>\nstatus: reviewed\n')
+      .replace('status: draft\nsummary: <one sentence about what this page is about>\n', 'summary: <one sentence about what this page is about>status: draft\n');
+
+    it.each([
+      ['A', 'wiki/plan', endA, { reason: 'duplicate-key', key: 'status' }],
+      ['B', 'wiki/plan', endB, { reason: 'not-draft' }],
+      ['D', 'wiki/결제', endA, { reason: 'duplicate-key', key: 'status' }],
+    ])('puts a page left in probe %s\'s end state back as the pass found it, and fails the pass naming the page and why', async (_probe, slug, planted, problem) => {
+      const path = `${slug}.md`;
+      const decisions = await pass([write(`/vault/${path}`, onDisk)], () => {
+        h.files[path] = planted;
+      }, slug);
+      expect(decisions).toEqual([`write ${path}`]);
+      expect(h.files[path]).toBe(onDisk);
+      expect(writeWikiFile).toHaveBeenCalledWith(h.vault.handle, path, onDisk);
+      expect(lines()[0]).toMatchObject({ outcome: 'failed', written: [], undone: [{ path, ...problem, action: 'restored' }] });
+    });
+
+    it('removes a page the pass created when it does not read as a draft', async () => {
+      const decisions = await pass([write('/vault/wiki/new.md', onDisk)], () => {
+        h.files['wiki/new.md'] = onDisk.replace('status: draft', 'status: draft\ndescribes: [capabilities/checkout]');
+      });
+      expect(decisions).toEqual(['write wiki/new.md']);
+      expect(h.files['wiki/new.md']).toBeUndefined();
+      expect(lines()[0]).toMatchObject({ outcome: 'failed', written: [], undone: [{ path: 'wiki/new.md', reason: 'forbidden-key', key: 'describes', action: 'removed' }] });
     });
   });
 });

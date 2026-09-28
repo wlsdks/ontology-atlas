@@ -930,7 +930,19 @@
       "runningNow": "{name} · {phase} · {seconds, number} s",
       "phaseChecking": "Checking documents",
       "phaseAgent": "Agent turn in progress",
-      "stopped": "You removed or paused this round while it was running, so the pass stopped there."
+      "stopped": "You changed, paused or removed this round while it was running, so the pass stopped there.",
+      "undone": {
+        "restored": "Atlas put {page} back as it was before this pass.",
+        "removed": "Atlas removed {page}, which this pass had created.",
+        "failed": "Atlas could not put {page} back after this pass. Open it and check it before you rely on it."
+      },
+      "undoneReason": {
+        "notDraft": "It did not read status: draft, and a schedule writes drafts only.",
+        "duplicateKey": "The info block at the top of the page had two {key}: lines, so readers could disagree about it.",
+        "forbiddenKey": "It carried a {key}: line, which only a person may add.",
+        "noFrontmatter": "It had no info block at the top, so it could not be read as a draft.",
+        "unreadable": "Atlas could not read it back to check it."
+      }
     },
     "sheet": {
       "readbackConsistency": "{cadence}, check that every page still matches its originals, and {onStale} a page that has gone stale. It runs once as soon as you save.",

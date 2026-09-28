@@ -92,6 +92,10 @@ describe('an edit that widens what this Mac allowed', () => {
     expect(roundWidens(service, { ...service, places: [...service.places!, { kind: 'service', connectorId: 'c2', connectorName: 'github' }] })).toBe(true);
     const own = round({ places: [{ kind: 'vault', paths: [], ownDocumentsOnly: true }] });
     expect(roundWidens(own, round({ places: [{ kind: 'vault', paths: [] }] }))).toBe(true);
+    const weekdays = round({ cadence: { daily: '09:00', weekdaysOnly: true } });
+    expect(roundWidens(weekdays, round({ cadence: { daily: '09:00', weekdaysOnly: false } }))).toBe(true);
+    expect(roundWidens(round({ cadence: { daily: '09:00', weekdaysOnly: false } }), weekdays)).toBe(false);
+    expect(roundWidens(weekdays, round({ cadence: { daily: '18:30', weekdaysOnly: true } }))).toBe(false);
   });
 
   it('does not widen for a new name, a slower cadence, fewer places, or a different question', () => {

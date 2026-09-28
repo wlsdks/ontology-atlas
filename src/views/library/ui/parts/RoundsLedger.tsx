@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 
 import type { RoundPassEntry, RoundPassOutcome } from "@/entities/library-round";
+import { undoneReasonKey } from "@/features/library-rounds";
 import { Link } from "@/i18n/navigation";
 import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { cn } from "@/shared/lib/cn";
@@ -301,6 +302,11 @@ export function RoundsLedger({
                           ? entry.summary === "no-manifest" ? t("ledger.failedFolderNotRead") : t("ledger.failedError", { detail: entry.summary })
                           : <>{t("ledger.checked", { count: entry.checked })}{entry.summary ? ` · ${entry.summary}` : null}</>}
                       </p>
+                      {entry.undone?.length ? (
+                        <p data-testid="library-rounds-undone" className="mt-2 text-body leading-body text-[color:var(--color-amber-source-a90)]">
+                          {entry.undone.map((item) => `${t(`ledger.undone.${item.action}`, { page: item.path })} ${t(`ledger.undoneReason.${undoneReasonKey(item.reason)}`, { key: item.key ?? "" })}`).join(" ")}
+                        </p>
+                      ) : null}
                       {entry.stale.length > 0 || pagesWritten(entry).length > 0 ? (
                         <div className="mt-2 flex flex-wrap gap-1.5">
                           {staleNotRedrafted(entry).map((slug) => (

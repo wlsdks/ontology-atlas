@@ -10,6 +10,7 @@ import {
   type RoundRecord,
   type RoundState,
   type RoundStore,
+  type RoundUndone,
   createVaultFileRoundStore,
   createVaultRoundLedger,
   dueOnThisClock,
@@ -34,18 +35,23 @@ import {
   vaultMcpServers,
   vaultSelfReadSlot,
 } from "@/features/acp-session";
-import { appendWikiLog, buildCompileBrief, judgePageWrite } from "@/features/library";
+import { appendWikiLog, buildCompileBrief, deleteWikiFile, judgePageWrite, writeWikiFile } from "@/features/library";
 import {
   TICK_MS,
   afterPass,
   buildServiceRoundBrief,
   buildOntologyRoundBrief,
+  createPassPages,
   judgeRoundScope,
+  pageIdentity,
   passLedgerFacts,
   planTick,
+  readOrMissing,
   runConsistencyPass,
   scopeNoteEffect,
+  settlePassPages,
   triggerFor,
+  type PassPages,
   type ScopeRequest,
 } from "@/features/library-rounds";
 import type { RoundUnrecorded, RoundsRunnerValue, RoundsStoreStatus } from "@/features/library-rounds";
@@ -92,6 +98,7 @@ interface PassData {
   docs: readonly VaultDoc[];
   hashes: Map<string, string>;
   pageTexts: Map<string, string>;
+  pages: PassPages;
   knownSources: Set<string>;
 }
 
@@ -158,8 +165,10 @@ export function useRoundsRunner(): RoundsRunnerValue {
       if (kept !== undefined && Date.parse(round.nextDueAt) >= Date.parse(kept)) held.delete(round.id);
       let due = held.get(round.id) ?? dueOnThisClock(round, now);
       if (due !== round.nextDueAt && !held.has(round.id)) {
-        const moved = await store.patch(round.id, { nextDueAt: due });
+        const seen = round.nextDueAt;
+        const moved = await store.patch(round.id, (current) => (current.nextDueAt === seen ? { nextDueAt: due } : {}));
         if (moved.status !== "saved") held.set(round.id, due);
+        else due = moved.state.rounds.find((entry) => entry.id === round.id)?.nextDueAt ?? due;
         due = held.get(round.id) ?? due;
       }
       rounds.push(due === round.nextDueAt ? round : { ...round, nextDueAt: due });
@@ -235,7 +244,6 @@ export function useRoundsRunner(): RoundsRunnerValue {
 
   const agentReady = Boolean(runtimeId && rootPath && agentServer.launch);
 
-  /** The round whose pass is in flight, for the scope judge and the page judge. */
   const activeRef = useRef<{ round: RoundRecord; data: PassData } | null>(null);
   const completionRef = useRef<((completion: AcpTurnCompletion) => void) | null>(null);
 
@@ -253,16 +261,18 @@ export function useRoundsRunner(): RoundsRunnerValue {
       vaultRoot: rootPath,
       vaultServerName: VAULT_MCP_SERVER_NAME,
       atlasToolMode,
-      judgeWrite: (req) =>
-        judgePageWrite({
+      judgeWrite: (req) => {
+        const page = judgePageWrite({
           request: req,
           vaultRoot: rootPath,
-          currentText: (slug) => active.data.pageTexts.get(slug) ?? null,
+          currentText: (slug) => active.data.pages.current(`${slug}.md`),
           knownSources: active.data.knownSources,
-        }),
+        });
+        return page && !active.data.pages.conflict(page.path) ? page : null;
+      },
     });
     if (verdict.decision !== "allow") return { reject: verdict.reason };
-    if (verdict.wrote?.text != null) active.data.pageTexts.set(verdict.wrote.path.replace(/\.md$/, ""), verdict.wrote.text);
+    if (verdict.wrote?.text != null) active.data.pages.commit(verdict.wrote.path, verdict.wrote.text);
     else if (verdict.wrote) active.data.knownSources.add(verdict.wrote.path);
     return verdict.note;
   }, [rootPath]);
@@ -297,7 +307,6 @@ export function useRoundsRunner(): RoundsRunnerValue {
     return true;
   }, []);
 
-  /** Open a session, send one brief, wait for the turn, close. Returns what the turn did. */
   const agentTurn = useCallback(async (
     brief: string,
     aborted: Promise<void>,
@@ -348,23 +357,20 @@ export function useRoundsRunner(): RoundsRunnerValue {
     const docs = manifest.docs;
     const sources = manifest.sources ?? [];
     const hashes = (await nativeVaultFileHashes(rootPath, citedSourcePaths(docs))) ?? new Map<string, string>();
-    const pageTexts = new Map<string, string>();
+    const start: { path: string; text: string | null }[] = [];
     for (const page of selectWikiPages(docs)) {
       if (isWikiFurnitureSlug(page.slug)) continue;
-      try {
-        const text = await readTauriVaultText(rootPath, `${page.slug}.md`);
-        if (text !== null) pageTexts.set(page.slug, text);
-      } catch {
-        /* An unreadable page has no verdict this pass; the next one may read it. */
-      }
+      start.push({ path: `${page.slug}.md`, text: await readTauriVaultText(rootPath, `${page.slug}.md`).catch(() => null) });
     }
-    return { sources, docs, hashes, pageTexts, knownSources: new Set(sources.map((source) => source.path)) };
+    const pageTexts = new Map(start.flatMap((page) => (page.text === null ? [] : [[page.path.slice(0, -3), page.text] as const])));
+    return { sources, docs, hashes, pageTexts, pages: createPassPages(start), knownSources: new Set(sources.map((source) => source.path)) };
   }, [manifestRef, rootPath]);
 
   const runPass = useCallback(async (round: RoundRecord, trigger: RoundPassEntry["trigger"]) => {
-    if (!store || !ledger || !rootPath || runningRef.current) return;
+    if (!store || !ledger || !rootPath || !handle || runningRef.current) return;
     // Every way into a pass comes through here.
     if (!allowedNow(round)) return;
+    const vault = handle;
     const startedAt = new Date();
     const mark = (phase: NonNullable<RoundsRunnerValue['running']>['phase']) => {
       const next: NonNullable<RoundsRunnerValue['running']> = { roundId: round.id, roundName: round.name, startedAt: startedAt.toISOString(), phase };
@@ -385,6 +391,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
     const places = roundPlaces(round);
     const watched = vaultPlace(places);
     const services = servicePlaces(places);
+    const base = { v: 1 as const, id: newId(), roundId: round.id, roundName: round.name, kind: round.kind, startedAt: startedAt.toISOString(), places: roundPlaceLabels(places), trigger };
     let entry: RoundPassEntry;
     try {
       /*
@@ -392,7 +399,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
        * opens with an empty pass set: nothing local to hash, nothing local to compile.
        */
       const data: PassData | null = round.kind === "ontology"
-        ? { sources: [], docs: [], hashes: new Map<string, string>(), pageTexts: new Map<string, string>(), knownSources: new Set<string>() }
+        ? { sources: [], docs: [], hashes: new Map<string, string>(), pageTexts: new Map<string, string>(), pages: createPassPages([]), knownSources: new Set<string>() }
         : await readPassData();
       if (!data) throw new Error("no-manifest");
       const fromService = new Set<string>();
@@ -419,19 +426,34 @@ export function useRoundsRunner(): RoundsRunnerValue {
       let refused: string[] = [];
       let called: string[] = [];
       let answer: string | null = null;
+      let undone: RoundUndone[] = [];
       let failed = false;
       let agentTurns: 0 | 1 = 0;
       let note: RoundPassEntry["note"];
       /** Service round: the documents this pass was sent to refresh — what `checked` counts there. */
       let refreshed = 0;
+      const turn = async (brief: string): Promise<Awaited<ReturnType<typeof agentTurn>> & { undone: RoundUndone[]; agentTurns: 0 | 1 }> => {
+        if (stoppedByPerson || !allowedNow(round)) {
+          stoppedByPerson = true;
+          return { failed: true, written: [], refused: [], called: [], answer: null, undone: [], agentTurns: 0 };
+        }
+        activeRef.current = { round, data };
+        mark("agent");
+        const result = await agentTurn(brief, aborted);
+        activeRef.current = null;
+        const settled = await settlePassPages({
+          pages: data.pages,
+          read: readOrMissing(vault, (path) => readTauriVaultText(rootPath, path)),
+          restore: (path, text) => writeWikiFile(vault, path, text),
+          remove: (path) => deleteWikiFile(vault, path),
+        });
+        return { ...result, undone: settled, agentTurns: 1 };
+      };
 
       if (round.kind === "consistency" && check) {
         const redraft = round.onStale !== "mark" && check.staleSources.length > 0;
         if (redraft && !(agentReady && runtimeId)) note = "no-agent";
         if (redraft && agentReady && runtimeId) {
-          activeRef.current = { round, data };
-          mark("agent");
-          agentTurns = 1;
           const brief = buildCompileBrief({
             sources: model!.sources.filter((row) => check.staleSources.includes(row.path)),
             existingPages: model!.wikiPages,
@@ -442,16 +464,13 @@ export function useRoundsRunner(): RoundsRunnerValue {
             hashes: data.hashes,
             now: new Date(),
           });
-          ({ failed, written, refused, called, answer } = await agentTurn(brief, aborted));
+          ({ failed, written, refused, called, answer, undone, agentTurns } = await turn(brief));
         }
       } else if (round.kind === "service") {
         if (!agentReady || !runtimeId) {
           failed = true;
           note = "no-agent";
         } else {
-          activeRef.current = { round, data };
-          mark("agent");
-          agentTurns = 1;
           const knownSources: string[] = [];
           for (const source of data.sources) {
             if (!source.path.endsWith(".md")) continue;
@@ -482,7 +501,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
             }),
             now: new Date(),
           });
-          ({ failed, written, refused, called, answer } = await agentTurn(brief, aborted));
+          ({ failed, written, refused, called, answer, undone, agentTurns } = await turn(brief));
         }
       } else {
         /*
@@ -493,50 +512,38 @@ export function useRoundsRunner(): RoundsRunnerValue {
           failed = true;
           note = "no-agent";
         } else {
-          activeRef.current = { round, data };
-          mark("agent");
-          agentTurns = 1;
           const brief = buildOntologyRoundBrief({ vaultRoot: rootPath, locale, focus: round.query });
-          ({ failed, written, refused, called, answer } = await agentTurn(brief, aborted));
+          ({ failed, written, refused, called, answer, undone, agentTurns } = await turn(brief));
         }
       }
+      const putBack = new Set(undone.filter((item) => item.action !== "failed").map((item) => pageIdentity(item.path)));
+      const kept = written.filter((path) => !putBack.has(pageIdentity(path)));
       const { outcome, checked, stale } = passLedgerFacts({
         kind: round.kind,
         check,
         refreshed,
-        failed,
-        written,
+        failed: failed || undone.length > 0,
+        written: kept,
         refused,
       });
       entry = {
-        v: 1,
-        id: newId(),
-        roundId: round.id,
-        roundName: round.name,
-        kind: round.kind,
-        startedAt: startedAt.toISOString(),
+        ...base,
         endedAt: new Date().toISOString(),
         outcome,
         checked,
         stale,
-        written,
+        written: kept,
         refused,
         called,
-        places: roundPlaceLabels(places),
         agentTurns,
         summary: round.kind === "ontology" && !failed ? answer ?? "" : "",
-        trigger,
       };
+      if (undone.length > 0) entry.undone = undone;
       if (stoppedByPerson) entry.note = "stopped";
       else if (note) entry.note = note;
     } catch (error) {
       entry = {
-        v: 1,
-        id: newId(),
-        roundId: round.id,
-        roundName: round.name,
-        kind: round.kind,
-        startedAt: startedAt.toISOString(),
+        ...base,
         endedAt: new Date().toISOString(),
         outcome: "failed",
         checked: 0,
@@ -544,10 +551,8 @@ export function useRoundsRunner(): RoundsRunnerValue {
         written: [],
         refused: [],
         called: [],
-        places: roundPlaceLabels(places),
         agentTurns: 0,
         summary: error instanceof Error ? error.message : String(error),
-        trigger,
       };
       if (stoppedByPerson) entry.note = "stopped";
     } finally {
@@ -697,7 +702,9 @@ export function useRoundsRunner(): RoundsRunnerValue {
     if (!store) return false;
     const before = stateRef.current?.rounds.find((entry) => entry.id === next.id);
     if (!before) return false;
+    const prior = readMachineApprovals().allowed("round", rootPath, next.id);
     if (roundFingerprint(before) !== roundFingerprint(next)) stopPassFor(next.id);
+    recordApproval("round", rootPath, next.id, roundFingerprint(next));
     heldDueRef.current.delete(next.id);
     const result = await store.patch(next.id, {
       name: next.name,
@@ -710,10 +717,12 @@ export function useRoundsRunner(): RoundsRunnerValue {
       connectorName: next.connectorName,
       limit: next.limit,
       nextDueAt: next.nextDueAt,
-    });
-    if (result.status === "saved") recordApproval("round", rootPath, next.id, roundFingerprint(next));
+    }).catch(() => null);
+    const saved = result?.status === "saved";
+    if (!saved && prior) recordApproval("round", rootPath, next.id, prior);
+    else if (!saved) forgetApproval("round", rootPath, next.id);
     await refresh();
-    return result.status === "saved";
+    return saved;
   }, [refresh, rootPath, stopPassFor, store]);
 
   const setEnabled = useCallback(async (id: string, enabled: boolean) => {

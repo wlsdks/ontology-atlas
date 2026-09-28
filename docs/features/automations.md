@@ -21,9 +21,12 @@ The browser explains the installed-app requirement.
 
 Edit opens the schedule's own sheet on the schedule as it stands, with its name, cadence and
 scope editable. Saving keeps its id and its run history and recomputes its next run. When the
-edit lets the schedule do more than this Mac allowed (run more often, read or write somewhere
-new, or rewrite a stale page instead of marking it), the press reads "Allow and save" above a
-line saying so, and saving allows the new version on this Mac.
+edit lets the schedule do more than this Mac allowed (run more often or on more days, read or
+write somewhere new, or rewrite a stale page instead of marking it), the press reads "Allow and
+save" above a line saying so, and saving allows the new version on this Mac. The allowance
+moves to the new version as the save starts, so the old version cannot start a run while the
+file is written, and it moves back if the save fails. A pass checks the allowance again just
+before its agent turn, and does not start the turn for a version this Mac no longer allows.
 
 A missing schedule file is a valid empty collection and offers the first schedule action.
 Unreadable or malformed files remain protected from overwrite; when Atlas cannot read
@@ -49,8 +52,15 @@ Ontology schedules stay read-only: they may inspect evidence and propose changes
 never write concepts, relations, files, or meaning receipts. An Atlas write the agent asks
 for during a pass is refused at once and named in the run's tool activity. Document rounds
 keep their previously approved Library scope, and a page they write lands only as a draft,
-judged against the page as the pass's earlier writes left it. Both execute locally while the
-app has the folder open; this redesign does not add a background service.
+judged as the agent's edit tool applies the write and against the page as the pass's earlier
+writes left it, under whatever letter case or Unicode form the path is spelled in. A write to a
+spelling that differs from an existing page only in case or Unicode form is refused, and so is
+a page whose frontmatter writes a key twice. After the agent's turn, Atlas reads back every
+page the pass wrote: a page that does not read `status: draft`, repeats a frontmatter key, or
+carries `describes:` or `kind:` is put back as the pass found it, or removed if the pass
+created it, and the run is marked failed with a sentence naming the page and the reason. Both
+execute locally while the app has the folder open; this redesign does not add a background
+service.
 
 A schedule runs, by the clock or by Run now, only when the folder has it on and this Mac
 allowed it exactly as it now reads: its kind, cadence, places, focus or query, what it

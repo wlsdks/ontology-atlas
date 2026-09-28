@@ -309,8 +309,10 @@ const isUnderFolder = (path: string, folder: string) => {
   return path === clean || path.startsWith(`${clean}/`);
 };
 
+const turnsPerWeek = (cadence: RoundCadence) => ('daily' in cadence ? (cadence.weekdaysOnly ? 5 : 7) : 7 * turnsPerDay(cadence));
+
 export function roundWidens(before: RoundRecord, after: RoundRecord): boolean {
-  if (turnsPerDay(after.cadence) > turnsPerDay(before.cadence)) return true;
+  if (turnsPerWeek(after.cadence) > turnsPerWeek(before.cadence)) return true;
   if (before.kind !== 'service' && after.kind === 'service') return true;
   if (before.kind === 'consistency' && after.kind === 'consistency' && before.onStale === 'mark' && after.onStale !== 'mark') return true;
   if (after.kind === 'service' && (after.limit ?? DEFAULT_SERVICE_ROUND_LIMIT) > (before.limit ?? DEFAULT_SERVICE_ROUND_LIMIT)) return true;

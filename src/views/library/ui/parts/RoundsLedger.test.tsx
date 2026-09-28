@@ -103,6 +103,17 @@ describe('the ledger', () => {
 
   it('says a pass was cut short by a press rather than by a fault', () => {
     draw({ entries: [entry({ outcome: 'failed', note: 'stopped' })] });
-    expect(screen.getByTestId('library-rounds-ledger')).toHaveTextContent('You removed or paused this round while it was running');
+    expect(screen.getByTestId('library-rounds-ledger')).toHaveTextContent(en.library.rounds.ledger.stopped);
+  });
+
+  it('names each page a pass left outside its scope, why, and what Atlas did about it', () => {
+    draw({ entries: [entry({ id: 'undo', outcome: 'failed', stale: [], undone: [
+      { path: 'wiki/plan.md', reason: 'duplicate-key', key: 'status', action: 'restored' },
+      { path: 'wiki/new.md', reason: 'forbidden-key', key: 'describes', action: 'removed' },
+    ] })] });
+    const ledger = createTranslator({ locale: 'en', messages: en, namespace: 'library.rounds.ledger' });
+    const line = within(screen.getByTestId('library-rounds-pass-undo')).getByTestId('library-rounds-undone');
+    expect(line).toHaveTextContent(`${ledger('undone.restored', { page: 'wiki/plan.md' })} ${ledger('undoneReason.duplicateKey', { key: 'status' })}`);
+    expect(line).toHaveTextContent(`${ledger('undone.removed', { page: 'wiki/new.md' })} ${ledger('undoneReason.forbiddenKey', { key: 'describes' })}`);
   });
 });

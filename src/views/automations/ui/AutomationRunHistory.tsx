@@ -3,7 +3,7 @@
 import { FileText } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import type { RoundPassEntry } from '@/entities/library-round';
-import type { RoundUnrecorded } from '@/features/library-rounds';
+import { type RoundUnrecorded, undoneReasonKey } from '@/features/library-rounds';
 import { Link } from '@/i18n/navigation';
 import { DESTINATION_HREF } from '@/shared/config/destinations';
 import { cn } from '@/shared/lib/cn';
@@ -50,13 +50,15 @@ function RunEntry({ entry, latest = false }: { entry: RoundPassEntry; latest?: b
   const note = entry.note === 'no-agent'
     ? entry.kind === 'ontology' ? t('noAgentReview') : ledgerText('noAgent')
     : entry.note === 'stopped' ? ledgerText('stopped') : null;
-  const failure = entry.outcome === 'failed' && entry.summary
+  const undone = (entry.undone ?? []).map((item) =>
+    `${t(`undone.${item.action}`, { page: item.path })} ${ledgerText(`undoneReason.${undoneReasonKey(item.reason)}`, { key: item.key ?? '' })}`);
+  const failure = undone.length > 0 ? undone.join(' ') : entry.outcome === 'failed' && entry.summary
     ? entry.summary === 'no-manifest' ? t('failedFolderNotRead') : t('failedError', { detail: entry.summary })
     : null;
   const own = failure ?? (entry.summary || (entry.checked > 0 ? t('checked', { count: entry.checked }) : ''));
   const noteLeads = !own && note !== null;
   const lead = own || note || (entry.outcome === 'failed' ? t('failedNoResult') : t('noSummary'));
-  const leadInk = noteLeads && entry.note === 'no-agent' ? WARNING_INK
+  const leadInk = (noteLeads && entry.note === 'no-agent') || undone.length > 0 ? WARNING_INK
     : latest ? 'text-[color:var(--color-text-primary)]' : 'text-[color:var(--color-text-secondary)]';
   return (
             <li data-testid={latest ? 'automations-last-run' : undefined} className="py-3 first:pt-0">

@@ -75,6 +75,11 @@
   "openAgents": "Open Agents",
   "failedError": "This run stopped on an error: {detail}. Run it again; if the same error comes back, open the folder again.",
   "failedFolderNotRead": "Atlas had not finished reading this folder, so this run checked nothing. Run it again in a moment.",
+  "undone": {
+    "restored": "Atlas put {page} back as it was before this run.",
+    "removed": "Atlas removed {page}, which this run had created.",
+    "failed": "Atlas could not put {page} back after this run. Open it and check it before you rely on it."
+  },
   "refused": "Refused: {tools}",
   "called": "Read: {tools}",
   "saving": "Scheduling…",

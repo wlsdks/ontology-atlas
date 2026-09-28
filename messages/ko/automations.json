@@ -75,6 +75,11 @@
   "openAgents": "에이전트 화면 열기",
   "failedError": "이번 실행은 오류로 멈췄어요: {detail}. 다시 실행하고, 같은 오류가 또 나면 폴더를 다시 여세요.",
   "failedFolderNotRead": "Atlas가 이 폴더를 아직 다 읽지 못해 이번 실행은 아무것도 점검하지 못했어요. 잠시 뒤 다시 실행하세요.",
+  "undone": {
+    "restored": "{page} 문서를 이번 실행 전 상태로 되돌렸어요.",
+    "removed": "이번 실행이 새로 만든 {page} 문서를 지웠어요.",
+    "failed": "이번 실행 뒤 {page} 문서를 되돌리지 못했어요. 믿고 쓰기 전에 문서를 열어 확인하세요."
+  },
   "refused": "거부됨: {tools}",
   "called": "읽은 도구: {tools}",
   "saving": "예약 중…",

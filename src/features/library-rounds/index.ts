@@ -5,4 +5,6 @@ export { buildOntologyRoundBrief } from './model/ontology-round-brief';
 export type { RoundUnrecorded, RoundsRunnerValue, RoundsStoreStatus } from './model/rounds-runner';
 export { runConsistencyPass } from './model/consistency-pass';
 export { passLedgerFacts } from './model/pass-outcome';
+export { createPassPages, pageIdentity, readOrMissing, settlePassPages, undoneReasonKey } from './model/pass-pages';
+export type { PassPages } from './model/pass-pages';
 export { TICK_MS, afterPass, planTick, triggerFor } from './model/round-schedule';

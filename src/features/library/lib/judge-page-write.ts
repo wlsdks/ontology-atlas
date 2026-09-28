@@ -1,4 +1,3 @@
-import { parseFrontmatter } from "@/shared/lib/parse-frontmatter";
 import { WIKI_DIR, validateWikiPage } from "@/shared/lib/wiki-page-schema";
 
 import type { WikiTemplateProblem } from "./describe-wiki-problem";
@@ -14,7 +13,6 @@ export interface PageWriteVerdict {
   ok: boolean;
   /** Findings with `detail`, so the card can say them in the reader's language. */
   problems: ReadonlyArray<WikiTemplateProblem>;
-  status: string | null;
   text: string;
 }
 
@@ -61,10 +59,11 @@ export function proposedPageText(
   if (oldString === null || newString === null) return null;
   if (current === null) return null;
   if (oldString === "") return current === "" ? newString : null;
-  const pieces = current.split(oldString);
-  if (pieces.length === 1) return null;
-  if (rawInput.replace_all === true) return pieces.join(newString);
-  return pieces.length === 2 ? current.replace(oldString, () => newString) : null;
+  const matches = current.split(oldString).length - 1;
+  const replaceAll = rawInput.replace_all === true;
+  if (matches === 0 || (matches > 1 && !replaceAll)) return null;
+  const target = newString === "" && !oldString.endsWith("\n") && current.includes(`${oldString}\n`) ? `${oldString}\n` : oldString;
+  return replaceAll ? current.split(target).join(newString) : current.replace(target, () => newString);
 }
 
 export function judgePageWrite({
@@ -80,6 +79,5 @@ export function judgePageWrite({
   const proposed = proposedPageText(request.rawInput, currentText(slug));
   if (proposed === null) return null;
   const { ok, problems } = validateWikiPage(proposed, { knownSources });
-  const status = parseFrontmatter(proposed).frontmatter.status;
-  return { path, ok, problems, status: typeof status === "string" ? status.trim() : null, text: proposed };
+  return { path, ok, problems, text: proposed };
 }

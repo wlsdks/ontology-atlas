@@ -44,6 +44,29 @@ export interface RoundPassEntry {
   trigger: 'clock' | 'manual' | 'catch-up';
   /** `no-agent`: no guarded agent was ready, so nothing was written; `stopped`: removed or paused mid-pass. */
   note?: 'no-agent' | 'stopped';
+  undone?: RoundUndone[];
+}
+
+export type RoundUndoReason = 'not-draft' | 'duplicate-key' | 'forbidden-key' | 'no-frontmatter' | 'unreadable';
+
+export interface RoundUndone {
+  path: string;
+  reason: RoundUndoReason;
+  key?: string;
+  action: 'restored' | 'removed' | 'failed';
+}
+
+const UNDO_REASONS: readonly RoundUndoReason[] = ['not-draft', 'duplicate-key', 'forbidden-key', 'no-frontmatter', 'unreadable'];
+const UNDO_ACTIONS: readonly RoundUndone['action'][] = ['restored', 'removed', 'failed'];
+
+function parseUndone(value: unknown): RoundUndone[] {
+  if (!value || typeof value !== 'object') return [];
+  const item = value as Record<string, unknown>;
+  if (typeof item.path !== 'string' || !UNDO_REASONS.includes(item.reason as RoundUndoReason)) return [];
+  if (!UNDO_ACTIONS.includes(item.action as RoundUndone['action'])) return [];
+  const undone: RoundUndone = { path: item.path, reason: item.reason as RoundUndoReason, action: item.action as RoundUndone['action'] };
+  if (typeof item.key === 'string') undone.key = item.key;
+  return [undone];
 }
 
 const OUTCOMES: readonly RoundPassOutcome[] = ['held', 'reviewed', 'stale', 'redrafted', 'refused', 'failed', 'asleep'];
@@ -90,6 +113,8 @@ export function parseRoundPassEntry(line: string): RoundPassEntry | null {
   if (record.note === 'no-agent' || record.note === 'stopped') entry.note = record.note;
   const places = stringList(record.places);
   if (places.length > 0) entry.places = places;
+  const undone = Array.isArray(record.undone) ? record.undone.flatMap(parseUndone) : [];
+  if (undone.length > 0) entry.undone = undone;
   return entry;
 }
 

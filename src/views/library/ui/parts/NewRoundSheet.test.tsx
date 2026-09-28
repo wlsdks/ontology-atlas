@@ -324,4 +324,11 @@ describe('editing a round', () => {
     open({ connectors: CONNECTORS, round, allowedHere: false });
     expect(screen.getByTestId('library-rounds-allow')).toHaveTextContent(en.library.rounds.sheet.allowAndSaveEdit);
   });
+
+  it('counts weekdays to every day as a widening, since the round then runs on weekends too', () => {
+    open({ connectors: CONNECTORS, round: { ...round, cadence: { daily: '09:00', weekdaysOnly: true } }, allowedHere: true });
+    expect(screen.getByTestId('library-rounds-allow')).toHaveTextContent(en.library.rounds.sheet.saveChanges);
+    fireEvent.click(within(screen.getByTestId('library-rounds-cadence-day')).getByRole('radio', { name: en.library.rounds.cadence.dailyChip }));
+    expect(screen.getByTestId('library-rounds-allow')).toHaveTextContent(en.library.rounds.sheet.allowAndSaveEdit);
+  });
 });
