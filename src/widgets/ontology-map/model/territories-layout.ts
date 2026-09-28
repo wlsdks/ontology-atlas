@@ -231,6 +231,10 @@ class BoxGrid {
     return false;
   }
 
+  popTo(count: number): void {
+    while (this.all.length > count) for (const key of this.keys(this.all.pop()!.box)) this.cells.get(key)!.pop();
+  }
+
   add(id: string, role: "mark" | "label" | "chip", b: Box): void {
     this.all.push({ id, role, box: b });
     for (const key of this.keys(b)) {
@@ -344,14 +348,15 @@ interface Attempt {
   complete: boolean;
 }
 
+type NameRule = "keepEvery" | "foldWithoutPlace" | "yieldToDiscs";
+
 function attempt(
   tree: Tree,
   dependencies: readonly TerritoryDependency[],
   options: TerritoryLayoutOptions,
   room: Box | null,
   dense: boolean,
-  /** Inside a room a name that finds no place leaves a bare disc, named on hover. */
-  foldNames = false,
+  names: NameRule = "keepEvery",
   /** 1 is the tuned spacing; names keep one size. */
   spread = 1,
 ): Attempt {
@@ -525,6 +530,7 @@ function attempt(
   const capabilities: TerritoryCapability[] = [];
   const shelves: TerritoryShelf[] = [];
   const dependent = new Set(dependencies.map((d) => d.from));
+  const shelfLimit = dense ? G.denseShelfLimit : G.maxShelves;
   let complete = true;
   for (const s of sectors) {
     const m = markOf.get(s.t)!;
@@ -541,85 +547,86 @@ function attempt(
       if (up <= s.end) angles.push(up);
       if (k > 0 && down >= s.start) angles.push(down);
     }
-    const used = new Map<number, number[]>();
-    const shelfLimit = dense ? G.denseShelfLimit : G.maxShelves;
-    for (const c of caps) {
-      const elementIds = tree.capabilityElements.get(c.id) ?? [];
-      const r = capabilityRadius(elementIds.length);
-      // Reserve the wider focus variant ("name · N") so positions never move between states.
-      const reserve = elementIds.length > 0 ? `${c.label} · ${elementIds.length}` : c.label;
-      const w = measure(reserve, "capability");
-      let placed: TerritoryCapability | null = null;
-      for (let k = 0; k < shelfLimit && !placed; k++) {
-        const radius = shelfRadius + k * shelfStep;
-        for (const a of angles) {
-          const p = onArc(m.x, m.y, radius, a);
-          const disc = { x: p.x - r - 3, y: p.y - r - 3, w: 2 * r + 6, h: 2 * r + 6 };
-          if (grid.hits(disc)) continue;
-          const label = capabilityLabelAt(p.x, p.y, r, a, c.label, w);
-          if (!dense && grid.hits(label.box)) continue;
-          grid.add(c.id, "mark", disc);
-          if (!dense) grid.add(c.id, "label", label.box);
-          placed = {
-            id: c.id,
-            name: c.label,
-            domainId: s.t.domain ? s.t.id : null,
-            x: p.x,
-            y: p.y,
-            r,
-            angle: a,
-            shelf: k,
-            elementIds,
-            hasDependency: dependent.has(c.id),
-            label,
-            labelReserved: !dense,
-          };
+    const place = (unnamed: ReadonlySet<string>) => {
+      const placedCaps: TerritoryCapability[] = [];
+      const used = new Map<number, number[]>();
+      for (const c of caps) {
+        const elementIds = tree.capabilityElements.get(c.id) ?? [];
+        const r = capabilityRadius(elementIds.length);
+        // Reserve the wider focus variant ("name · N") so positions never move between states.
+        const reserve = elementIds.length > 0 ? `${c.label} · ${elementIds.length}` : c.label;
+        const w = measure(reserve, "capability");
+        const stand = (k: number, a: number, p: { x: number; y: number }, label: TerritoryLabel, labelReserved: boolean) => {
           const list = used.get(k);
           if (list) list.push(a);
           else used.set(k, [a]);
-          break;
-        }
-      }
-      if (!placed && foldNames && !dense) {
-        // Stand the disc anyway and let the name wait for hover, rather than draw it under the chrome.
-        for (let k = 0; k < G.foldedShelfLimit && !placed; k++) {
+          return {
+            id: c.id, name: c.label, domainId: s.t.domain ? s.t.id : null, x: p.x, y: p.y, r, angle: a, shelf: k,
+            elementIds, hasDependency: dependent.has(c.id), label, labelReserved,
+          };
+        };
+        let placed: TerritoryCapability | null = null;
+        for (let k = 0; k < shelfLimit && !placed && !unnamed.has(c.id); k++) {
           const radius = shelfRadius + k * shelfStep;
           for (const a of angles) {
             const p = onArc(m.x, m.y, radius, a);
             const disc = { x: p.x - r - 3, y: p.y - r - 3, w: 2 * r + 6, h: 2 * r + 6 };
             if (grid.hits(disc)) continue;
+            const label = capabilityLabelAt(p.x, p.y, r, a, c.label, w);
+            if (!dense && grid.hits(label.box)) continue;
             grid.add(c.id, "mark", disc);
-            placed = {
-              id: c.id,
-              name: c.label,
-              domainId: s.t.domain ? s.t.id : null,
-              x: p.x,
-              y: p.y,
-              r,
-              angle: a,
-              shelf: k,
-              elementIds,
-              hasDependency: dependent.has(c.id),
-              label: capabilityLabelAt(p.x, p.y, r, a, c.label, w),
-              labelReserved: false,
-            };
-            const list = used.get(k);
-            if (list) list.push(a);
-            else used.set(k, [a]);
+            if (!dense) grid.add(c.id, "label", label.box);
+            placed = stand(k, a, p, label, !dense);
             break;
           }
         }
+        if (!placed && names !== "keepEvery" && !dense) {
+          // Stand the disc anyway and let the name wait for hover, rather than draw it under the chrome.
+          for (let k = 0; k < G.foldedShelfLimit && !placed; k++) {
+            const radius = shelfRadius + k * shelfStep;
+            for (const a of angles) {
+              const p = onArc(m.x, m.y, radius, a);
+              const disc = { x: p.x - r - 3, y: p.y - r - 3, w: 2 * r + 6, h: 2 * r + 6 };
+              if (grid.hits(disc)) continue;
+              grid.add(c.id, "mark", disc);
+              placed = stand(k, a, p, capabilityLabelAt(p.x, p.y, r, a, c.label, w), false);
+              break;
+            }
+          }
+        }
+        if (!placed) return { placedCaps, used, complete: false };
+        placedCaps.push(placed);
       }
-      if (!placed) {
-        complete = false;
-        break;
+      return { placedCaps, used, complete: true };
+    };
+    const before = grid.all.length;
+    let result = place(new Set());
+    if (!result.complete && names === "yieldToDiscs" && !dense) {
+      // Bisects the tail whose names must fold: O(log n) placements.
+      const retry = (n: number) => {
+        grid.popTo(before);
+        return place(new Set(caps.slice(caps.length - n).map((c) => c.id)));
+      };
+      let [lo, hi] = [0, caps.length];
+      if (retry(hi).complete) {
+        while (hi - lo > 1) {
+          const mid = (lo + hi) >> 1;
+          if (retry(mid).complete) hi = mid;
+          else lo = mid;
+        }
       }
-      capabilities.push(placed);
+      result = retry(hi);
+    }
+    for (const c of result.placedCaps) {
+      capabilities.push(c);
       if (s.t.domain) domainById.get(s.t.id)!.capabilityIds.push(c.id);
     }
-    if (!complete) break;
+    if (!result.complete) {
+      complete = false;
+      break;
+    }
     if (s.t.domain) {
-      for (const [k, list] of [...used.entries()].sort((x, y) => x[0] - y[0])) {
+      for (const [k, list] of [...result.used.entries()].sort((x, y) => x[0] - y[0])) {
         shelves.push({
           domainId: s.t.id,
           cx: m.x,
@@ -674,16 +681,14 @@ export function computeTerritoryLayout(
   const dependencies = rollDependencies(tree, edges);
   const forcedDense = tree.domains.length > TERRITORY_GEOMETRY.denseDomainCount;
   if (!forcedDense) {
-    // Inside the room with every name, then with names folded, then unbounded (the camera
-    // pans), then dense. Every name at any spacing beats some names folded at the tuned one.
+    // Inside the room with every name, then names folded, then yielding to discs, then unbounded
+    // (the camera pans), then dense. Every name at any spacing beats some names folded.
     if (options.room) {
-      for (const spread of TERRITORY_GEOMETRY.roomSpreads) {
-        const inRoom = attempt(tree, dependencies, options, options.room, false, false, spread);
-        if (inRoom.complete) return inRoom.layout;
-      }
-      for (const spread of TERRITORY_GEOMETRY.roomSpreads) {
-        const folded = attempt(tree, dependencies, options, options.room, false, true, spread);
-        if (folded.complete) return folded.layout;
+      for (const names of ["keepEvery", "foldWithoutPlace", "yieldToDiscs"] as const) {
+        for (const spread of TERRITORY_GEOMETRY.roomSpreads) {
+          const inRoom = attempt(tree, dependencies, options, options.room, false, names, spread);
+          if (inRoom.complete) return inRoom.layout;
+        }
       }
     }
     const open = attempt(tree, dependencies, options, null, false);
@@ -737,13 +742,18 @@ export function placeTerritoryCluster(
   const clear = (plate: Box) => !avoid.some((b) => boxesOverlap(plate, b));
   // One end of the list stays level with the disc, so the spine still reaches it.
   const reach = ((n - 1) / 2) * G.satelliteRow + G.satelliteRow;
-  const shifts = [0];
-  for (let d = G.satelliteRow; d <= reach; d += G.satelliteRow) shifts.push(-d, d);
-  for (const side of [home, (home === 1 ? -1 : 1) as 1 | -1]) {
-    for (const shift of shifts) {
-      const satellites = at(side, shift);
-      const plate = clusterPlate(satellites, side, widest);
-      if (clear(plate)) return { side, satellites, plate };
+  const besideDisc = [0];
+  for (let d = G.satelliteRow; d <= reach; d += G.satelliteRow) besideDisc.push(-d, d);
+  const clearOfTallestBox = reach + (n - 1) * G.satelliteRow + 24 + Math.max(0, ...avoid.map((b) => b.h));
+  const spineRunsOn: number[] = [];
+  for (let d = reach + G.satelliteRow; d <= clearOfTallestBox; d += G.satelliteRow) spineRunsOn.push(-d, d);
+  for (const shifts of [besideDisc, spineRunsOn]) {
+    for (const side of [home, (home === 1 ? -1 : 1) as 1 | -1]) {
+      for (const shift of shifts) {
+        const satellites = at(side, shift);
+        const plate = clusterPlate(satellites, side, widest);
+        if (clear(plate)) return { side, satellites, plate };
+      }
     }
   }
   return { ...first, plate: clusterPlate(first.satellites, home, widest) };
