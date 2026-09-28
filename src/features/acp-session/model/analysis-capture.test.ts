@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { serializeAnalysisRecord } from '@/entities/analysis-record';
 import { analysisGraphDigest, analysisGraphFromInsight, buildAnalysisRun, type AnalysisCaptureContext } from './analysis-capture';
 import { architectureResultRows, fullBodyResultRows } from './tool-output-evidence';
-import { TOOL_OUTPUT_PREVIEW_CHARS, keepToolOutput } from './tool-output';
+import { TOOL_OUTPUT_KEEP_CHARS, keepToolOutput } from './tool-output';
 import type { KnowledgeProjectInsight } from '@/entities/knowledge-graph';
 import { VAULT_MCP_SERVER_NAME } from './vault-mcp-server';
 import type { AcpEvent, AcpTurnCompletion } from './use-acp-session';
@@ -82,7 +82,7 @@ describe('analysis evidence capture', () => {
     expect(fullBodyResultRows({ ...row, bodyInfo: { ...row.bodyInfo, returnedChars: 0 } })).toEqual([]);
   });
   it('keeps full-body evidence from an answer too large for the transcript to hold', async () => {
-    const output = { content: [{ type: 'text', text: JSON.stringify({ items: [row], note: 'x'.repeat(TOOL_OUTPUT_PREVIEW_CHARS) }) }] };
+    const output = { content: [{ type: 'text', text: JSON.stringify({ items: [row], note: 'x'.repeat(TOOL_OUTPUT_KEEP_CHARS) }) }] };
     const kept = keepToolOutput(output, { evidence: true });
     expect(kept.rawOutput).toMatchObject({ preview: 'tool-output' });
     const event: AcpEvent = { ...(read() as Extract<AcpEvent, { kind: 'tool' }>), rawOutput: kept.rawOutput, ...(kept.evidence ? { outputEvidence: kept.evidence } : {}) };

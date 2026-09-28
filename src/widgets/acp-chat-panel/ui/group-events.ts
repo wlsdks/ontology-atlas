@@ -1,4 +1,5 @@
 import type { AcpEvent } from '@/features/acp-session';
+import { stringHash } from '@/shared/lib/string-hash';
 
 type AcpWorkEvent = Extract<AcpEvent, { kind: 'thought' }>;
 
@@ -36,9 +37,7 @@ export type TranscriptItem =
  */
 const REPEAT_THRESHOLD = 3;
 
-const KEY_PREFIX_CHARS = 256;
-
-/** Length, FNV-1a hash and opening: tells two values apart without holding either. */
+/** Length and hash: tells two values apart without holding either (a slice would pin its parent). */
 function fingerprint(value: unknown): string {
   if (value === undefined || value === null) return '-';
   let text: string;
@@ -47,11 +46,7 @@ function fingerprint(value: unknown): string {
   } catch {
     text = String(value);
   }
-  let hash = 0x811c9dc5;
-  for (let index = 0; index < text.length; index += 1) {
-    hash = Math.imul(hash ^ text.charCodeAt(index), 0x01000193);
-  }
-  return `${text.length}:${(hash >>> 0).toString(36)}:${text.slice(0, KEY_PREFIX_CHARS)}`;
+  return `${text.length}:${stringHash(text)}`;
 }
 
 /** An event is replaced whenever its call changes, so a key cached per event never goes stale. */

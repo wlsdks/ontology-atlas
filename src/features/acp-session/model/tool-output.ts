@@ -1,16 +1,19 @@
+import { stringHash } from '@/shared/lib/string-hash';
+
 import { outputCount } from './tool-outcome';
 import { architectureResultRows, fullBodyResultRows } from './tool-output-evidence';
 
 /**
  * A transcript keeps what it reads of a tool answer: the row's count and, while a turn awaits
- * capture, its analysis rows. Past this size only the opening and length are held.
+ * capture, its analysis rows. Past this size only its length and hash are held.
  */
-export const TOOL_OUTPUT_PREVIEW_CHARS = 64 * 1024;
+export const TOOL_OUTPUT_KEEP_CHARS = 64 * 1024;
 
 interface ToolOutputPreview {
   readonly preview: 'tool-output';
   readonly chars: number;
-  readonly head: string;
+  /** Tells the answer apart when repeated calls fold into one row. */
+  readonly hash: string;
   readonly total?: number;
   readonly count?: number;
 }
@@ -46,15 +49,6 @@ function exceeds(value: unknown, limit: number): boolean {
   return false;
 }
 
-/**
- * A long `slice` is a view that keeps its whole parent alive in V8, so the head is copied out.
- * Measured: thirty 64K heads of 500K answers held 15 MB as slices, 2.5 MB copied.
- */
-function detachedHead(serialized: string): string {
-  const head = serialized.slice(0, TOOL_OUTPUT_PREVIEW_CHARS);
-  return JSON.parse(JSON.stringify(head)) as string;
-}
-
 function serialize(value: unknown): string {
   try {
     return JSON.stringify(value) ?? '';
@@ -68,7 +62,7 @@ export function keepToolOutput(
   rawOutput: unknown,
   options: { evidence: boolean },
 ): { rawOutput: unknown; evidence: ToolOutputEvidence | null } {
-  if (rawOutput === undefined || rawOutput === null || !exceeds(rawOutput, TOOL_OUTPUT_PREVIEW_CHARS)) {
+  if (rawOutput === undefined || rawOutput === null || !exceeds(rawOutput, TOOL_OUTPUT_KEEP_CHARS)) {
     return { rawOutput, evidence: null };
   }
   const serialized = serialize(rawOutput);
@@ -76,7 +70,7 @@ export function keepToolOutput(
   const preview: ToolOutputPreview = {
     preview: 'tool-output',
     chars: serialized.length,
-    head: detachedHead(serialized),
+    hash: stringHash(serialized),
     ...(count ? { [count.key]: count.value } : {}),
   };
   if (!options.evidence) return { rawOutput: preview, evidence: null };
