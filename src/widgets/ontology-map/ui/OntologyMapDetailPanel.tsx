@@ -37,6 +37,7 @@ import { useRowDisclosure } from "@/shared/lib/use-row-disclosure";
 import { useViewportBelow } from "@/shared/lib/use-viewport-below";
 import { truncateMiddlePath } from "@/shared/lib/truncate-middle-path";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
+import { morphName, morphTargetProps } from "@/shared/motion/shared-element";
 import {
   slugDisplaySegment,
   V2_CONTAINS_SUMMARY_THRESHOLD,
@@ -1498,7 +1499,9 @@ export function OntologyMapDetailPanel({
             up for long names too. */}
         <div className="px-[var(--map-panel-pad)] pt-[15px] pb-4">
           <div className="mb-[11px] flex items-center gap-2.5">
-            <h2 className="min-w-0 flex-1 truncate text-title font-[var(--font-weight-strong)] leading-title tracking-title text-[color:var(--map-panel-text-primary)]">
+            <h2
+              {...morphTargetProps(morphName("concept", nodeId))}
+              className="min-w-0 flex-1 truncate text-title font-[var(--font-weight-strong)] leading-title tracking-title text-[color:var(--map-panel-text-primary)]">
               {title}
             </h2>
             {/* kind = a badge you read (glyph plus word), the counterweight on the right.
