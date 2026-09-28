@@ -48,7 +48,7 @@ import {
   triggerFor,
   type ScopeRequest,
 } from "@/features/library-rounds";
-import type { RoundsRunnerValue, RoundsStoreStatus } from "@/features/library-rounds";
+import type { RoundUnrecorded, RoundsRunnerValue, RoundsStoreStatus } from "@/features/library-rounds";
 import { useVaultConnectors } from "@/features/mcp-connectors";
 import { forgetApproval, readMachineApprovals, recordApproval, useMachineApprovals } from "@/shared/lib/machine-approvals";
 import { detectAcpRuntimes, isAcpBridgeAvailable } from "@/shared/lib/tauri-acp";
@@ -108,6 +108,9 @@ function citedSourcePaths(docs: readonly VaultDoc[]): string[] {
 
 const EMPTY_ROUNDS: RoundRecord[] = [];
 const NO_IDS: ReadonlySet<string> = new Set();
+const NO_UNRECORDED: ReadonlyMap<string, RoundUnrecorded> = new Map();
+const SCHEDULE_FILE = ".ontology-atlas/rounds.json";
+const LEDGER_FILE = ".ontology-atlas/rounds-ledger.jsonl";
 
 function newId(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
@@ -131,6 +134,8 @@ export function useRoundsRunner(): RoundsRunnerValue {
   const stateRef = useRef<RoundState | null>(null);
   const runningRef = useRef<RoundsRunnerValue['running']>(null);
   const lastTickRef = useRef<Date | null>(null);
+  const heldDueRef = useRef(new Map<string, string>());
+  const [unrecorded, setUnrecorded] = useState<ReadonlyMap<string, RoundUnrecorded>>(NO_UNRECORDED);
   const manifestRef = useLatestRef(vault.manifest);
   const codexRegisteredCommand = vault.agentConfigStatus?.codexRegisteredCommand ?? null;
   const codexConfigValid = vault.agentConfigStatus?.codexConfigValid === true;
@@ -146,13 +151,20 @@ export function useRoundsRunner(): RoundsRunnerValue {
     }
     const [read, lines] = await Promise.all([store.read(), ledger.read().catch(() => [] as RoundPassEntry[])]);
     const now = new Date();
-    const current: RoundState = {
-      ...read.state,
-      rounds: read.state.rounds.map((round) => {
-        const due = dueOnThisClock(round, now);
-        return due === round.nextDueAt ? round : { ...round, nextDueAt: due };
-      }),
-    };
+    const held = heldDueRef.current;
+    const rounds: RoundRecord[] = [];
+    for (const round of read.state.rounds) {
+      const kept = held.get(round.id);
+      if (kept !== undefined && Date.parse(round.nextDueAt) >= Date.parse(kept)) held.delete(round.id);
+      let due = held.get(round.id) ?? dueOnThisClock(round, now);
+      if (due !== round.nextDueAt && !held.has(round.id)) {
+        const moved = await store.patch(round.id, { nextDueAt: due });
+        if (moved.status !== "saved") held.set(round.id, due);
+        due = held.get(round.id) ?? due;
+      }
+      rounds.push(due === round.nextDueAt ? round : { ...round, nextDueAt: due });
+    }
+    const current: RoundState = { ...read.state, rounds };
     setStoreStatus(read.status);
     setState(current);
     stateRef.current = current;
@@ -276,14 +288,6 @@ export function useRoundsRunner(): RoundsRunnerValue {
     sessionRef.current = session;
   }, [session]);
 
-  /**
-   * **A pass that is no longer wanted ends now, not in twenty minutes.** Removing or pausing a
-   * round whose pass is in flight used to leave the header saying "running now · <name>" for a
-   * round that no longer existed, and, worse, `runningRef` stayed set, so every other round's
-   * pass was blocked until `PASS_TIMEOUT_MS`. The resolver below is what `remove` and a pause
-   * pull: it ends the agent turn at whatever step it is in — the handshake included
-   * (`runHeadlessTurn`) — and the pass writes one ledger line noting it was stopped.
-   */
   const abortRef = useRef<{ roundId: string; stop: () => void } | null>(null);
 
   const stopPassFor = useCallback((roundId: string) => {
@@ -391,13 +395,6 @@ export function useRoundsRunner(): RoundsRunnerValue {
         ? { sources: [], docs: [], hashes: new Map<string, string>(), pageTexts: new Map<string, string>(), knownSources: new Set<string>() }
         : await readPassData();
       if (!data) throw new Error("no-manifest");
-      /*
-       * **Only a consistency round runs the consistency check.** It is the whole of that
-       * round's verdict, and it is none of a service round's: a service pass that re-read four
-       * documents and changed nothing used to wear `stale · N` in the ledger, counting pages it
-       * never looked at, because the check ran for every pass and fed the outcome either way.
-       * An ontology round has no local check at all; its verdict comes from its one turn.
-       */
       const fromService = new Set<string>();
       if (watched.ownDocumentsOnly) {
         for (const source of data.sources) {
@@ -466,14 +463,6 @@ export function useRoundsRunner(): RoundsRunnerValue {
             }
           }
           refreshed = knownSources.length;
-          /*
-           * **The compile brief carries this round's documents, not the folder's.** With
-           * `model.sources` the brief listed every local file in the vault as a target, so an
-           * unattended service pass could be instructed to write wiki pages for documents that
-           * have nothing to do with the connector it was approved for. The scope this round was
-           * given is exactly the fetched set: the documents above, which are the ones under
-           * `sources/` carrying a `source_url` this pass refreshes or adds.
-           */
           const roundSources = new Set(knownSources);
           const brief = buildServiceRoundBrief({
             places: services,
@@ -535,14 +524,6 @@ export function useRoundsRunner(): RoundsRunnerValue {
         called,
         places: roundPlaceLabels(places),
         agentTurns,
-        /*
-         * **Only a finished review leaves a summary.** Every ontology pass without answer text
-         * used to be stored as "Read-only refinement review completed." — a failed or no-agent
-         * pass included, and in English whatever the locale (probe, 2026-09-25: the row read
-         * "Failed" above a sentence claiming completion). The ledger keeps what the agent said;
-         * what Atlas says about a pass is chosen on screen from `outcome` and `note`, in the
-         * reader's locale.
-         */
         summary: round.kind === "ontology" && !failed ? answer ?? "" : "",
         trigger,
       };
@@ -574,9 +555,29 @@ export function useRoundsRunner(): RoundsRunnerValue {
       abortRef.current = null;
     }
     const record = async () => {
-      await ledger.append(entry);
-      const next = afterPass(round, new Date());
-      await store.patch(round.id, { lastPassAt: next.lastPassAt, nextDueAt: next.nextDueAt });
+      const endedAt = new Date(entry.endedAt);
+      let next = afterPass(round, endedAt);
+      const advanced = await store
+        .patch(round.id, (current) => {
+          next = afterPass(current, endedAt);
+          return { lastPassAt: next.lastPassAt, nextDueAt: next.nextDueAt };
+        })
+        .catch(() => null);
+      const files: string[] = [];
+      if (advanced?.status === "saved") heldDueRef.current.delete(round.id);
+      else {
+        heldDueRef.current.set(round.id, next.nextDueAt);
+        files.push(SCHEDULE_FILE);
+      }
+      const logged = await ledger.append(entry).then(() => true, () => false);
+      if (!logged) files.push(LEDGER_FILE);
+      setUnrecorded((current) => {
+        if (files.length === 0 && !current.has(round.id)) return current;
+        const changed = new Map(current);
+        if (files.length > 0) changed.set(round.id, { endedAt: entry.endedAt, outcome: entry.outcome, files });
+        else changed.delete(round.id);
+        return changed;
+      });
       const pages = entry.written.filter((path) => path.startsWith("wiki/")).map((path) => path.replace(/^wiki\//, "").replace(/\.md$/, ""));
       if (handle && pages.length > 0) {
         const sources = round.kind === "consistency" ? entry.stale.map((slug) => slug.replace(/^wiki\//, "")).join(", ") : (round.connectorName ?? round.name);
@@ -677,14 +678,6 @@ export function useRoundsRunner(): RoundsRunnerValue {
     const result = await store.upsert(round);
     if (result.status === "saved") recordApproval("round", rootPath, round.id, roundFingerprint(round));
     await refresh();
-    /*
-     * **A local check runs once as it is saved** (owner, 2026-09-19: the screen was "hard
-     * to operate"; measured on the installed app, a check saved at 21:35 showed nothing
-     * until its 22:00 boundary or until a person found "run now"). A consistency pass costs
-     * no agent turn, so the first result can stand on the screen before the sheet's close
-     * animation ends. A service round spends a turn per pass; its first pass stays on the
-     * clock the person just chose.
-     */
     const startedNow = result.status === "saved" && round.kind === "consistency" && round.enabled && !runningRef.current;
     if (startedNow) void runPass(round, "manual");
     return { ok: result.status === "saved", startedNow };
@@ -692,15 +685,33 @@ export function useRoundsRunner(): RoundsRunnerValue {
 
   const remove = useCallback(async (id: string) => {
     if (!store) return false;
-    /*
-     * **Removing a round ends its pass.** Measured in the browser, 2026-09-21: the header kept
-     * saying "running now · <name>" for a round that was gone, and the ghost held the one-pass
-     * lock for the full twenty-minute timeout, so no other round could run. The pass is asked
-     * to stop before the record leaves the file, and it writes one ledger line noting it.
-     */
     stopPassFor(id);
+    heldDueRef.current.delete(id);
     const result = await store.remove(id);
     if (result.status === "saved") forgetApproval("round", rootPath, id);
+    await refresh();
+    return result.status === "saved";
+  }, [refresh, rootPath, stopPassFor, store]);
+
+  const update = useCallback(async (next: RoundRecord) => {
+    if (!store) return false;
+    const before = stateRef.current?.rounds.find((entry) => entry.id === next.id);
+    if (!before) return false;
+    if (roundFingerprint(before) !== roundFingerprint(next)) stopPassFor(next.id);
+    heldDueRef.current.delete(next.id);
+    const result = await store.patch(next.id, {
+      name: next.name,
+      kind: next.kind,
+      cadence: next.cadence,
+      places: next.places,
+      onStale: next.onStale,
+      query: next.query,
+      connectorId: next.connectorId,
+      connectorName: next.connectorName,
+      limit: next.limit,
+      nextDueAt: next.nextDueAt,
+    });
+    if (result.status === "saved") recordApproval("round", rootPath, next.id, roundFingerprint(next));
     await refresh();
     return result.status === "saved";
   }, [refresh, rootPath, stopPassFor, store]);
@@ -708,6 +719,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
   const setEnabled = useCallback(async (id: string, enabled: boolean) => {
     if (!store) return false;
     if (!enabled) stopPassFor(id);
+    else heldDueRef.current.delete(id);
     const shown = stateRef.current?.rounds.find((entry) => entry.id === id);
     if (enabled && shown) recordApproval("round", rootPath, id, roundFingerprint(shown));
     const now = new Date();
@@ -766,8 +778,10 @@ export function useRoundsRunner(): RoundsRunnerValue {
     revision,
     notAllowedHere,
     changedSinceAllowed,
+    unrecorded,
     allow,
     save,
+    update,
     remove,
     setEnabled,
     runNow,

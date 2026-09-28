@@ -5,8 +5,11 @@ import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 
 import type { RoundPassEntry, RoundPassOutcome } from "@/entities/library-round";
+import { Link } from "@/i18n/navigation";
+import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { cn } from "@/shared/lib/cn";
 import { badgeClass } from "@/shared/ui/badge-class";
+import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Chip } from "@/shared/ui";
 
@@ -316,7 +319,10 @@ export function RoundsLedger({
                         </p>
                       ) : null}
                       {entry.note === "no-agent" ? (
-                        <p className="mt-2 text-label leading-label text-[color:var(--color-amber-source-a90)]">{t("ledger.noAgent")}</p>
+                        <p className="mt-2 text-label leading-label text-[color:var(--color-amber-source-a90)]">
+                          {t("ledger.noAgent")}{" "}
+                          <Link href={DESTINATION_HREF.agents} className={controlClass({ shape: "link", size: "md", tone: "accent" })}>{t("ledger.openAgents")}</Link>
+                        </p>
                       ) : null}
                       {entry.note === "stopped" ? (
                         <p className="mt-2 text-label leading-label text-[color:var(--color-text-tertiary)]">{t("ledger.stopped")}</p>

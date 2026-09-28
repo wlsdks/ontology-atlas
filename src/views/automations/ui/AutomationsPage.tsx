@@ -9,6 +9,7 @@ import { OpenVaultCta } from "@/features/docs-vault-local";
 import type { RoundRecord } from "@/entities/library-round";
 import type { RoundsRunnerValue } from "@/features/library-rounds";
 import { Link, useRouter } from "@/i18n/navigation";
+import { DESTINATION_HREF, withQuery } from "@/shared/config/destinations";
 import { isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
 import { cn } from "@/shared/lib/cn";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
@@ -34,9 +35,11 @@ function isLaneRound(round: RoundRecord, lane: AutomationLane): boolean {
 export function AutomationsPage({
   runner,
   onOpenDocumentSchedule,
+  onEditDocumentSchedule,
 }: {
   runner: RoundsRunnerValue | null;
   onOpenDocumentSchedule: () => void;
+  onEditDocumentSchedule: (round: RoundRecord) => void;
 }) {
   const t = useTranslations("automations");
   const desktop = useSyncExternalStore(subscribeToRuntime, isTauriVaultRuntime, serverRuntimeSnapshot);
@@ -48,6 +51,7 @@ export function AutomationsPage({
   const [selectedId, setSelectedId] = useState<string | null | undefined>(undefined);
   const [ontologySheetOpen, setOntologySheetOpen] = useState(false);
   const [ontologyDraft, setOntologyDraft] = useState(0);
+  const [editingOntology, setEditingOntology] = useState<RoundRecord | null>(null);
   const [lanePending, startLaneTransition] = useTransition();
 
   const allRounds = runner?.rounds ?? EMPTY_RUNNER_ROUNDS;
@@ -67,16 +71,26 @@ export function AutomationsPage({
 
   const saveOntology = async (round: RoundRecord) => {
     if (!runner) return false;
-    // An ontology round never starts its first pass on save, so `startedNow` is ignored.
-    const { ok } = await runner.save(round);
-    if (ok) toast.show(t("saved", { name: round.name }), "success");
+    const ok = editingOntology ? await runner.update(round) : (await runner.save(round)).ok;
+    if (ok) toast.show(t(editingOntology ? "edited" : "saved", { name: round.name }), "success");
     return ok;
+  };
+
+  const edit = (round: RoundRecord) => {
+    if (round.kind !== "ontology") {
+      onEditDocumentSchedule(round);
+      return;
+    }
+    setEditingOntology(round);
+    setOntologyDraft((draft) => draft + 1);
+    setOntologySheetOpen(true);
   };
 
   const ready = desktop === true && (runner?.storeStatus === "ok" || runner?.storeStatus === "missing");
   const state = desktop === null ? "loading" : !desktop || !runner ? "app-required" : runner.storeStatus === "no-vault" ? "no-vault"
     : runner.storeStatus === "loading" ? "loading" : ready ? "ready" : runner.storeStatus === "unavailable" ? "unavailable" : "malformed";
   const add = lane === "ontology" ? () => {
+    setEditingOntology(null);
     setOntologyDraft((draft) => draft + 1);
     setOntologySheetOpen(true);
   } : onOpenDocumentSchedule;
@@ -146,7 +160,7 @@ export function AutomationsPage({
                 </div>
                 {runner.running ? <p role="status" className="text-body text-[color:var(--color-indigo-text-soft)]">{t("running", { name: runner.running.roundName })}</p> : null}
                 {/* -mr-3.5 cancels the ghost's px-3.5 so the label ends on the cards' right edge. */}
-                {lane === "documents" ? <Link href="/library/?tab=rounds" data-testid="automations-open-library-rounds" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "atlas-touch-floor atlas-touch-floor-wide -mr-3.5")}>
+                {lane === "documents" ? <Link href={withQuery(DESTINATION_HREF.library, selected ? { tab: "rounds", round: selected.id } : { tab: "rounds" })} data-testid="automations-open-library-rounds" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "atlas-touch-floor atlas-touch-floor-wide -mr-3.5")}>
                   <LibraryBig size={ICON_SIZE.sm} aria-hidden />{t("documents.openRounds")}
                 </Link> : null}
               </div> : null}
@@ -159,13 +173,15 @@ export function AutomationsPage({
               ) : (
                 <ul data-testid="automations-list" className="flex flex-col gap-2">
                   {rounds.map((round) => <AutomationScheduleRow key={round.id} round={round} runner={runner}
-                    expanded={selected?.id === round.id} onToggle={() => setSelectedId(selected?.id === round.id ? null : round.id)} />)}
+                    expanded={selected?.id === round.id} onToggle={() => setSelectedId(selected?.id === round.id ? null : round.id)}
+                    onEdit={() => edit(round)} />)}
                 </ul>
               )}
             </>
           ) : null}
         </section>
-        <NewOntologyRoundSheet key={ontologyDraft} open={ready && ontologySheetOpen} onClose={() => setOntologySheetOpen(false)} onSave={saveOntology} />
+        <NewOntologyRoundSheet key={ontologyDraft} open={ready && ontologySheetOpen} onClose={() => setOntologySheetOpen(false)} onSave={saveOntology}
+          round={editingOntology} allowedHere={editingOntology ? !runner?.notAllowedHere.has(editingOntology.id) : true} />
       </div>
     </main>
   );

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 
+import type { RoundRecord } from '@/entities/library-round';
 import { NewRoundSheet, useLibraryRounds, useVaultFolders } from '@/views/library';
 import { AutomationsPage } from '@/views/automations';
 
@@ -9,7 +10,9 @@ export function AutomationsWorkspace() {
   const runner = useLibraryRounds();
   const [documentsSheetOpen, setDocumentsSheetOpen] = useState(false);
   const [documentsDraft, setDocumentsDraft] = useState(0);
-  const openDocumentsSheet = () => {
+  const [editing, setEditing] = useState<RoundRecord | null>(null);
+  const openDocumentsSheet = (round: RoundRecord | null) => {
+    setEditing(round);
     setDocumentsDraft((draft) => draft + 1);
     setDocumentsSheetOpen(true);
   };
@@ -19,7 +22,7 @@ export function AutomationsWorkspace() {
 
   return (
     <>
-      <AutomationsPage runner={runner} onOpenDocumentSchedule={openDocumentsSheet} />
+      <AutomationsPage runner={runner} onOpenDocumentSchedule={() => openDocumentsSheet(null)} onEditDocumentSchedule={openDocumentsSheet} />
       {runner ? (
         <NewRoundSheet
           key={documentsDraft}
@@ -28,10 +31,11 @@ export function AutomationsWorkspace() {
           connectors={runner.connectors}
           agentReady={runner.agentReady}
           folders={folders}
-          /* This lane only needs `save`'s `ok`; the Library screen also reports `startedNow`. */
-          onSave={async (round) => (await runner.save(round)).ok}
-          existingNames={documentRounds.map((round) => round.name)}
+          onSave={async (round) => (editing ? runner.update(round) : (await runner.save(round)).ok)}
+          existingNames={documentRounds.filter((round) => round.id !== editing?.id).map((round) => round.name)}
           passRunning={runner.running !== null}
+          round={editing}
+          allowedHere={editing ? !runner.notAllowedHere.has(editing.id) : true}
         />
       ) : null}
     </>

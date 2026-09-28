@@ -11,8 +11,9 @@ routes: [/library]
 ### Library — Check history: the Library keeps itself current while nobody is looking (2026-09-17)
 
 A fifth Library tab, **Check history**, in the installed app. Automations owns the
-round's creation, pause, run-now, and removal controls; Library shows its pass history
-and links to the same document schedule in Automations. A round is a rule the Library
+round's creation, edit, pause, run-now, and removal controls; Library shows its pass history
+and links to the same document schedule in Automations, and a link from that schedule opens
+Check history with the round selected. A round is a rule the Library
 keeps on its own while Ontology Atlas is open on this Mac: what to check, how often,
 and what it may write. Two kinds ship. **Pages still match their sources** hashes every
 cited source on this Mac and runs the page check with no agent turn, hourly, every six

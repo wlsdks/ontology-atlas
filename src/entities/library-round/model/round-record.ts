@@ -142,11 +142,24 @@ function isWeekend(date: Date): boolean {
 
 const MINUTE_MS = 60_000;
 
+const minuteOfDay = (at: Date) => at.getHours() * 60 + at.getMinutes();
+
+function jumpsOverGrid(before: Date, after: Date, minutes: number): boolean {
+  const skipped = before.getTimezoneOffset() - after.getTimezoneOffset();
+  for (let step = 1; step <= skipped; step += 1) {
+    if (((minuteOfDay(before) + step) % MAX_INTERVAL_MINUTES) % minutes === 0) return true;
+  }
+  return false;
+}
+
 function nextOnClockGrid(minutes: number, from: Date): Date {
   const start = Math.floor(from.getTime() / MINUTE_MS) * MINUTE_MS + MINUTE_MS;
-  for (let step = 0; Number.isFinite(start) && step < 3 * MAX_INTERVAL_MINUTES; step += 1) {
+  if (!Number.isFinite(start)) return new Date(Number.NaN);
+  let before = new Date(start - MINUTE_MS);
+  for (let step = 0; step < 3 * MAX_INTERVAL_MINUTES; step += 1) {
     const clock = new Date(start + step * MINUTE_MS);
-    if ((clock.getHours() * 60 + clock.getMinutes()) % minutes === 0) return clock;
+    if (minuteOfDay(clock) % minutes === 0 || jumpsOverGrid(before, clock, minutes)) return clock;
+    before = clock;
   }
   return new Date(Number.NaN);
 }
@@ -289,6 +302,28 @@ export function roundFingerprint(round: RoundRecord): string {
     query: round.query ?? null,
     limit: round.limit ?? null,
   });
+}
+
+const isUnderFolder = (path: string, folder: string) => {
+  const clean = folder.replace(/\/+$/, '');
+  return path === clean || path.startsWith(`${clean}/`);
+};
+
+export function roundWidens(before: RoundRecord, after: RoundRecord): boolean {
+  if (turnsPerDay(after.cadence) > turnsPerDay(before.cadence)) return true;
+  if (before.kind !== 'service' && after.kind === 'service') return true;
+  if (before.kind === 'consistency' && after.kind === 'consistency' && before.onStale === 'mark' && after.onStale !== 'mark') return true;
+  if (after.kind === 'service' && (after.limit ?? DEFAULT_SERVICE_ROUND_LIMIT) > (before.limit ?? DEFAULT_SERVICE_ROUND_LIMIT)) return true;
+  const beforePlaces = roundPlaces(before);
+  const afterPlaces = roundPlaces(after);
+  const was = vaultPlace(beforePlaces);
+  const now = vaultPlace(afterPlaces);
+  if (was.paths.length > 0 && (now.paths.length === 0 || now.paths.some((path) => !was.paths.some((folder) => isUnderFolder(path, folder))))) return true;
+  if (was.ownDocumentsOnly && !now.ownDocumentsOnly) return true;
+  const reach = (place: RoundPlaceService) => `${place.connectorId}\u0000${place.location?.trim() ?? ''}`;
+  const allowed = new Set(servicePlaces(beforePlaces).map(reach));
+  const anywhere = new Set(servicePlaces(beforePlaces).filter((place) => !place.location?.trim()).map((place) => place.connectorId));
+  return servicePlaces(afterPlaces).some((place) => !anywhere.has(place.connectorId) && !allowed.has(reach(place)));
 }
 
 /** Labels naming a pass's places. */

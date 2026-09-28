@@ -275,3 +275,53 @@ describe('the new round sheet', () => {
     }
   });
 });
+
+describe('editing a round', () => {
+  const round: RoundRecord = {
+    id: 'watch',
+    name: 'Release notes',
+    kind: 'service',
+    cadence: { every: '6h' },
+    enabled: false,
+    onStale: 'redraft',
+    connectorId: 'c1',
+    connectorName: 'slack',
+    query: 'release notes',
+    limit: 20,
+    places: [
+      { kind: 'vault', paths: ['wiki/releases'] },
+      { kind: 'service', connectorId: 'c1', connectorName: 'slack', location: '#release-room', query: 'release notes' },
+    ],
+    createdAt: '2026-09-20T08:00:00.000Z',
+    lastPassAt: '2026-09-28T06:00:00.000Z',
+    nextDueAt: '2026-09-28T12:00:00.000Z',
+  };
+
+  it('opens on the round as it stands and keeps its id, switch and history when saved', async () => {
+    const onSave = vi.fn(async () => true);
+    const sheet = open({ connectors: CONNECTORS, round, allowedHere: true, onSave, existingNames: ['Release notes'] });
+    expect(screen.getByText(en.library.rounds.sheet.editTitle)).toBeInTheDocument();
+    expect(sheet.name()).toBe('Release notes');
+    expect(screen.getByTestId('library-rounds-place-0-where')).toHaveValue('#release-room');
+    expect(screen.getByTestId('library-rounds-place-0-query')).toHaveValue('release notes');
+    expect(screen.getByTestId('library-rounds-place-vault')).toHaveTextContent('wiki/releases');
+    expect(screen.getByTestId('library-rounds-allow')).toHaveTextContent(en.library.rounds.sheet.saveChanges);
+    fireEvent.click(screen.getByTestId('library-rounds-allow'));
+    await vi.waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    const saved = (onSave.mock.calls[0] as unknown as [RoundRecord])[0];
+    expect(saved).toMatchObject({ id: 'watch', enabled: false, createdAt: round.createdAt, lastPassAt: round.lastPassAt, cadence: { every: '6h' }, places: round.places });
+    expect(Date.parse(saved.nextDueAt)).toBeGreaterThan(Date.now());
+  });
+
+  it('asks this Mac to allow the new version when the edit widens what the round may do', () => {
+    open({ connectors: CONNECTORS, round, allowedHere: true });
+    addPlace('Confluence');
+    expect(screen.getByTestId('library-rounds-allow')).toHaveTextContent(en.library.rounds.sheet.allowAndSaveEdit);
+    expect(screen.getByTestId('library-rounds-widens')).toHaveTextContent(en.library.rounds.sheet.editWidens);
+  });
+
+  it('asks for the allowance when this Mac never allowed the round, even for a narrower edit', () => {
+    open({ connectors: CONNECTORS, round, allowedHere: false });
+    expect(screen.getByTestId('library-rounds-allow')).toHaveTextContent(en.library.rounds.sheet.allowAndSaveEdit);
+  });
+});

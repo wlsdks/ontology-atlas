@@ -2,6 +2,7 @@
 
 import { CalendarClock, Clock3, Pause, Play, TriangleAlert } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import { useSearchParams } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 
 import type { RoundPassEntry, RoundRecord } from "@/entities/library-round";
@@ -43,7 +44,8 @@ export function LibraryRounds() {
   const router = useRouter();
   const runner = useLibraryRounds();
   const vault = useLocalVault();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const params = useSearchParams();
+  const [selectedId, setSelectedId] = useState<string | null>(() => params.get("round"));
 
   const time = useMemo(() => new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" }), [locale]);
   const dayTime = useMemo(() => new Intl.DateTimeFormat(locale, { weekday: "short", hour: "2-digit", minute: "2-digit" }), [locale]);

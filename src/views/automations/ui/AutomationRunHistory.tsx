@@ -3,6 +3,7 @@
 import { FileText } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import type { RoundPassEntry } from '@/entities/library-round';
+import type { RoundUnrecorded } from '@/features/library-rounds';
 import { Link } from '@/i18n/navigation';
 import { DESTINATION_HREF } from '@/shared/config/destinations';
 import { cn } from '@/shared/lib/cn';
@@ -11,14 +12,17 @@ import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { automationDate } from './automation-date';
 
-export function AutomationRunHistory({ entries }: { entries: readonly RoundPassEntry[] }) {
+export function AutomationRunHistory({ entries, unrecorded }: { entries: readonly RoundPassEntry[]; unrecorded?: RoundUnrecorded }) {
   const t = useTranslations('automations');
+  const locale = useLocale();
   const recent = [...entries].reverse();
   return (
     <section data-testid="automations-history" className="space-y-3">
-      {/* Caption weight: a heading outweighed the outcomes it labels. */}
       <h3 className="text-label font-[var(--font-weight-emphasis)] text-[color:var(--color-text-tertiary)]">{t('historyTitle')}</h3>
-      {entries.length === 0 ? <p className="text-body text-[color:var(--color-text-tertiary)]">{t('noRuns')}</p> : (
+      {unrecorded ? <p data-testid="automations-unrecorded" role="status" className={cn('break-words text-body', WARNING_INK)}>
+        {unrecorded.files.map((file) => t(file.endsWith('.jsonl') ? 'unrecorded.ledger' : 'unrecorded.schedule', { time: automationDate(locale, unrecorded.endedAt), file })).join(' ')}
+      </p> : null}
+      {entries.length === 0 ? unrecorded ? null : <p className="text-body text-[color:var(--color-text-tertiary)]">{t('noRuns')}</p> : (
         <div className="space-y-3">
         <ol className="divide-y divide-[color:var(--color-divider)]">
           {recent.slice(0, 1).map((entry, index) => (

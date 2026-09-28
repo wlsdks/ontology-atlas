@@ -17,6 +17,7 @@ import {
   nextDueAt,
   parseRoundState,
   roundProblems,
+  roundWidens,
   serializeRoundState,
 } from './round-record';
 
@@ -64,6 +65,47 @@ describe("what this Mac's allowance covers", () => {
       { ...base, places: [...base.places!, { kind: 'service', connectorId: 'c2', connectorName: 'github' }] },
     ];
     for (const changed of changes) expect(roundFingerprint(changed)).not.toBe(allowed);
+  });
+});
+
+describe('an edit that widens what this Mac allowed', () => {
+  const service = round({
+    kind: 'service',
+    connectorId: 'c1',
+    connectorName: 'slack',
+    limit: 20,
+    cadence: { every: '6h' },
+    places: [
+      { kind: 'vault', paths: ['wiki/releases'] },
+      { kind: 'service', connectorId: 'c1', connectorName: 'slack', location: '#release-room' },
+    ],
+  });
+
+  it('widens when a pass may run more often, write more, or read somewhere new', () => {
+    expect(roundWidens(service, { ...service, cadence: { every: 'hour' } })).toBe(true);
+    expect(roundWidens(round({ onStale: 'mark' }), round({ onStale: 'redraft' }))).toBe(true);
+    expect(roundWidens(round({ kind: 'consistency' }), { ...service, cadence: { every: 'hour' } })).toBe(true);
+    expect(roundWidens(service, { ...service, limit: 50 })).toBe(true);
+    expect(roundWidens(service, { ...service, places: [{ kind: 'vault', paths: [] }, service.places![1]] })).toBe(true);
+    expect(roundWidens(service, { ...service, places: [{ kind: 'vault', paths: ['wiki/releases', 'sources/planning'] }, service.places![1]] })).toBe(true);
+    expect(roundWidens(service, { ...service, places: [service.places![0], { kind: 'service', connectorId: 'c1', connectorName: 'slack' }] })).toBe(true);
+    expect(roundWidens(service, { ...service, places: [...service.places!, { kind: 'service', connectorId: 'c2', connectorName: 'github' }] })).toBe(true);
+    const own = round({ places: [{ kind: 'vault', paths: [], ownDocumentsOnly: true }] });
+    expect(roundWidens(own, round({ places: [{ kind: 'vault', paths: [] }] }))).toBe(true);
+  });
+
+  it('does not widen for a new name, a slower cadence, fewer places, or a different question', () => {
+    expect(roundWidens(service, { ...service, name: 'Release room' })).toBe(false);
+    expect(roundWidens(service, { ...service, cadence: { daily: '09:00', weekdaysOnly: true } })).toBe(false);
+    expect(roundWidens(service, { ...service, places: [{ kind: 'vault', paths: ['wiki/releases/2026'] }, service.places![1]] })).toBe(false);
+    expect(roundWidens(service, { ...service, places: [service.places![0]], kind: 'consistency' })).toBe(false);
+    expect(roundWidens(service, {
+      ...service,
+      query: 'incidents only',
+      places: [service.places![0], { kind: 'service', connectorId: 'c1', connectorName: 'slack', location: '#release-room', query: 'incidents only' }],
+    })).toBe(false);
+    expect(roundWidens(round({ onStale: 'redraft' }), round({ onStale: 'mark' }))).toBe(false);
+    expect(roundWidens(round({ kind: 'ontology', query: 'source gaps' }), round({ kind: 'ontology', query: 'relations' }))).toBe(false);
   });
 });
 
@@ -115,7 +157,8 @@ describe('cadence', () => {
       zone = process.env.TZ;
     });
     afterAll(() => {
-      process.env.TZ = zone;
+      if (zone === undefined) delete process.env.TZ;
+      else process.env.TZ = zone;
     });
     const runs = (cadence: RoundCadence, fromIso: string, count: number) => {
       const out: string[] = [];
@@ -127,7 +170,7 @@ describe('cadence', () => {
       return out;
     };
 
-    it('runs through the repeated hour when the clocks go back', () => {
+    it('runs at both 01:00s when the clocks go back, so no real hour goes without its run', () => {
       process.env.TZ = 'America/New_York';
       expect(runs({ everyMinutes: 5 }, '2026-11-01T05:54:00.000Z', 2)).toEqual(['2026-11-01T05:55:00.000Z', '2026-11-01T06:00:00.000Z']);
       expect(runs({ every: 'hour' }, '2026-11-01T04:30:00.000Z', 3)).toEqual([
@@ -137,12 +180,12 @@ describe('cadence', () => {
       ]);
     });
 
-    it('stays on its wall-clock grid when the clocks go forward', () => {
+    it('runs a time the clock skips at the first minute after the jump, then keeps its grid', () => {
       process.env.TZ = 'Europe/Berlin';
       expect(runs({ everyMinutes: 120 }, '2026-03-28T22:30:00.000Z', 3)).toEqual([
         '2026-03-28T23:00:00.000Z',
+        '2026-03-29T01:00:00.000Z',
         '2026-03-29T02:00:00.000Z',
-        '2026-03-29T04:00:00.000Z',
       ]);
       process.env.TZ = 'America/New_York';
       expect(runs({ every: '6h' }, '2026-03-08T04:30:00.000Z', 3)).toEqual([
@@ -152,9 +195,11 @@ describe('cadence', () => {
       ]);
     });
 
-    it('keeps the day aligned when midnight itself is skipped', () => {
+    it('runs every day, including the day whose midnight does not exist', () => {
       process.env.TZ = 'America/Santiago';
-      expect(runs({ everyMinutes: 120 }, '2026-09-06T03:00:00.000Z', 2)).toEqual(['2026-09-06T05:00:00.000Z', '2026-09-06T07:00:00.000Z']);
+      expect(runs({ everyMinutes: 1440 }, '2026-09-05T05:00:00.000Z', 2)).toEqual(['2026-09-06T04:00:00.000Z', '2026-09-07T03:00:00.000Z']);
+      expect(nextDueAt({ daily: '00:00', weekdaysOnly: false }, new Date('2026-09-05T05:00:00.000Z')).toISOString()).toBe('2026-09-06T04:00:00.000Z');
+      expect(runs({ everyMinutes: 120 }, '2026-09-06T03:00:00.000Z', 2)).toEqual(['2026-09-06T04:00:00.000Z', '2026-09-06T05:00:00.000Z']);
     });
   });
 

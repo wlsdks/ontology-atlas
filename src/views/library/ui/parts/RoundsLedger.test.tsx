@@ -1,11 +1,15 @@
-import { render, screen } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
-import { describe, expect, it } from 'vitest';
+import { render, screen, within } from '@testing-library/react';
+import { NextIntlClientProvider, createTranslator } from 'next-intl';
+import { describe, expect, it, vi } from 'vitest';
 
 import type { RoundPassEntry } from '@/entities/library-round';
 
 import en from '../../../../../messages/en.json';
 import { RoundsLedger, type RunningPass } from './RoundsLedger';
+
+vi.mock('@/i18n/navigation', () => ({
+  Link: ({ href, children, ...props }: { href: string; children: React.ReactNode }) => <a href={href} {...props}>{children}</a>,
+}));
 
 function entry(overrides: Partial<RoundPassEntry> = {}): RoundPassEntry {
   return {
@@ -48,8 +52,16 @@ describe('the ledger', () => {
   it('says what stopped a failed pass and what to do next, instead of the raw error', () => {
     draw({ entries: [entry({ id: 'err', outcome: 'failed', checked: 0, stale: [], summary: 'No such file or directory (os error 2)' })] });
     const card = screen.getByTestId('library-rounds-pass-err');
-    expect(card).toHaveTextContent(en.library.rounds.ledger.failedError.replace('{detail}', 'No such file or directory (os error 2)'));
-    expect(card).not.toHaveTextContent('0 checked');
+    const ledger = createTranslator({ locale: 'en', messages: en, namespace: 'library.rounds.ledger' });
+    expect(card).toHaveTextContent(ledger('failedError', { detail: 'No such file or directory (os error 2)' }));
+    expect(card).not.toHaveTextContent(ledger('checked', { count: 0 }));
+  });
+
+  it('gives a pass that had no agent the way to the Agents screen its note names', () => {
+    draw({ entries: [entry({ id: 'solo', note: 'no-agent' })] });
+    const card = screen.getByTestId('library-rounds-pass-solo');
+    expect(card).toHaveTextContent(en.library.rounds.ledger.noAgent);
+    expect(within(card).getByRole('link', { name: en.library.rounds.ledger.openAgents })).toHaveAttribute('href', '/agents/');
   });
 
   it('draws the pass in flight and drops the empty sentence that contradicted it', () => {
