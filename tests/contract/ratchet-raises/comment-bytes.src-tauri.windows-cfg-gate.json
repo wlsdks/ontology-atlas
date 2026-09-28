@@ -1,0 +1,1 @@
+{ "gate": "comment-bytes.src-tauri", "raise": 314, "why": "The hook and symlink tests use unix-only APIs (mode bits, symlink) and are now #[cfg(unix)] so the Windows build compiles; the comments state that the runtime hooks and filter hardening in run_git is platform-independent and still applies on Windows, so a later reader does not cfg the defence itself away with the test." }

@@ -50,6 +50,7 @@
   "cliBridgeSourceOnly": "This command runs inside an ontology-atlas source checkout. You do not need it if you only use the app.",
   "errorRootRejected": "This folder cannot become a map. Pick a folder that holds documents, not a system folder or your whole home folder.",
   "errorPathMissing": "That folder is gone. It looks like it was moved or deleted. Pick another one.",
+  "errorGrantNeeded": "After this update, choose your ontology folder once to confirm access. Your documents are still there.",
   "errorPermission": "Atlas cannot read this folder. Pick it again to grant access.",
   "buildFromCodeWillCreate": "Create the map folder inside this project?",
   "buildFromCodeReuse": "Continue in this project's map folder?",
