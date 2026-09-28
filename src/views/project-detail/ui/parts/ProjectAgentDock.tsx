@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 
 import { cn } from "@/shared/lib/cn";
 import { usePanelPresence } from "@/shared/lib/use-presence";
-import { AGENT_DOCK_INSET_SURFACE_CLASS, OntologyMapKindGlyph, Surface } from "@/shared/ui";
+import { AGENT_DOCK_INSET_SURFACE_CLASS, agentDockReflowStyle, OntologyMapKindGlyph, Surface } from "@/shared/ui";
 import { AcpChatPanel, AcpChatResizeHandle, AcpDockHeader } from "@/widgets/acp-chat-panel";
 
 import type { ProjectAgentOpeningRequest, ProjectAgentRuntime } from "../../lib/use-project-agent";
@@ -137,9 +137,7 @@ export function ProjectAgentDock({
       style={
         {
           "--project-agent-chat-width": `${chatWidth.width}px`,
-          transitionProperty: "width, margin-left",
-          transitionDuration: "var(--agent-panel-reflow-duration)",
-          transitionTimingFunction: "var(--topology-motion-ease-out)",
+          ...agentDockReflowStyle("width, margin-left"),
         } as React.CSSProperties
       }
       className={cn(
