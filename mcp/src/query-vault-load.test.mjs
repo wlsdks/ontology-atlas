@@ -147,3 +147,117 @@ test('graph read requests load every vault document once and observe edits on th
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('write-side maintenance and project-source tools read each vault document once per call', () => {
+  const root = realpathSync(mkdtempSync(join(tmpdir(), 'atlas-write-vault-load-')));
+  const sourceRoot = realpathSync(mkdtempSync(join(tmpdir(), 'atlas-write-vault-source-')));
+  writeFileSync(join(sourceRoot, 'index.js'), 'export const ready = true;\n');
+  try {
+    mkdirSync(join(root, 'domains'));
+    mkdirSync(join(root, 'capabilities'));
+    for (const [slug, frontmatter] of [
+      ['project', { kind: 'project', domains: ['domains/p'] }],
+      ['domains/p', { kind: 'domain', capabilities: ['capabilities/a'] }],
+      ['capabilities/a', { kind: 'capability', domain: 'domains/p' }],
+    ]) {
+      writeFileSync(join(root, `${slug}.md`), ['---', ...Object.entries({ uid: randomUUID(), slug, title: slug, ...frontmatter })
+        .map(([key, value]) => `${key}: ${JSON.stringify(value)}`), '---', 'Recorded meaning.',
+      ].join('\n'));
+    }
+    const maintenanceModule = new URL('./tools/maintenance.mjs', import.meta.url).href;
+    const projectSourceModule = new URL('./tools/project-source.mjs', import.meta.url).href;
+    const script = `
+      import fs from 'node:fs';
+      import { syncBuiltinESMExports } from 'node:module';
+      import { isAbsolute, relative, sep } from 'node:path';
+      const root = process.env.OATLAS_VAULT;
+      const originalOpen = fs.openSync;
+      const reads = new Map();
+      fs.openSync = function(path, ...args) {
+        if (typeof path === 'string' && path.endsWith('.md')) {
+          const local = relative(root, path);
+          if (!isAbsolute(local) && local !== '..' && !local.startsWith('..' + sep)) {
+            reads.set(local, (reads.get(local) ?? 0) + 1);
+          }
+        }
+        return originalOpen.call(this, path, ...args);
+      };
+      syncBuiltinESMExports();
+      const { compactPostWriteMaintenance } = await import(${JSON.stringify(maintenanceModule)});
+      const { connectProjectSourceTool, finalizeProjectMeaningTool } = await import(${JSON.stringify(projectSourceModule)});
+      const observe = (run) => {
+        reads.clear();
+        let outcome = 'returned';
+        try { run(); } catch (error) { outcome = error.message.slice(0, 80); }
+        return { outcome, reads: [...reads.values()] };
+      };
+      const projectMtime = fs.statSync(root + '/project.md').mtimeMs;
+      console.log(JSON.stringify({
+        maintenance: observe(() => compactPostWriteMaintenance()),
+        connect: observe(() => connectProjectSourceTool({ projectSlug: 'project', rootPath: process.env.SOURCE_ROOT })),
+        finalize: observe(() => finalizeProjectMeaningTool({ projectSlug: 'project', expected_mtime: projectMtime })),
+      }));
+    `;
+    const result = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', script], {
+      encoding: 'utf8',
+      env: { ...process.env, OATLAS_VAULT: root, OATLAS_REPO_ROOT: root, SOURCE_ROOT: sourceRoot },
+    }));
+    assert.equal(result.maintenance.outcome, 'returned');
+    assert.equal(result.connect.outcome, 'returned');
+    assert.match(result.finalize.outcome, /finalize_project_meaning blocked: current project witness inventory/);
+    for (const [tool, { reads }] of Object.entries(result)) {
+      assert.deepEqual(reads, [1, 1, 1], `${tool} must read each document once`);
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+    rmSync(sourceRoot, { recursive: true, force: true });
+  }
+});
+
+test('find_neighbors lists each vault directory once however many references it resolves', () => {
+  const root = realpathSync(mkdtempSync(join(tmpdir(), 'atlas-neighbors-listing-')));
+  try {
+    mkdirSync(join(root, 'domains'));
+    mkdirSync(join(root, 'capabilities'));
+    const capabilities = Array.from({ length: 12 }, (_, index) => `capabilities/c-${index}`);
+    const write = (slug, frontmatter) => writeFileSync(join(root, `${slug}.md`), [
+      '---',
+      ...Object.entries({ uid: randomUUID(), slug, title: slug, ...frontmatter })
+        .map(([key, value]) => `${key}: ${JSON.stringify(value)}`),
+      '---',
+      'Recorded meaning.',
+    ].join('\n'));
+    write('project', { kind: 'project', domains: ['domains/core'] });
+    write('domains/core', { kind: 'domain', capabilities });
+    capabilities.forEach((slug, index) => write(slug, {
+      kind: 'capability',
+      domain: 'domains/core',
+      depends_on: [capabilities[(index + 1) % capabilities.length], capabilities[(index + 5) % capabilities.length]],
+    }));
+    const readModule = new URL('./tools/read.mjs', import.meta.url).href;
+    const script = `
+      import fs from 'node:fs';
+      import { syncBuiltinESMExports } from 'node:module';
+      const listings = new Map();
+      const originalReaddir = fs.readdirSync;
+      fs.readdirSync = function(path, ...args) {
+        const key = String(path);
+        listings.set(key, (listings.get(key) ?? 0) + 1);
+        return originalReaddir.call(this, path, ...args);
+      };
+      syncBuiltinESMExports();
+      const { findNeighborsTool } = await import(${JSON.stringify(readModule)});
+      listings.clear();
+      const result = findNeighborsTool({ slug: 'capabilities/c-3' });
+      console.log(JSON.stringify({ edges: result.totalEdges, listings: [...listings.values()] }));
+    `;
+    const result = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', script], {
+      encoding: 'utf8',
+      env: { ...process.env, OATLAS_VAULT: root, OATLAS_REPO_ROOT: root },
+    }));
+    assert.equal(result.edges, 6, 'its domain and two dependencies out, three edges in');
+    assert.deepEqual(result.listings, [1, 1, 1], 'the root, domains/ and capabilities/ are each listed once');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

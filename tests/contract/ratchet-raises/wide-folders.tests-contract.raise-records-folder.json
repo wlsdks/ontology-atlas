@@ -1,0 +1,1 @@
+{ "gate": "wide-folders.tests-contract", "raise": 1, "why": "tests/contract/ratchet-raises/ holds one file per raise and is read from that one folder, so it passes 30 files as records accumulate; this change adds the 31st." }

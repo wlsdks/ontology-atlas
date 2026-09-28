@@ -1,0 +1,1 @@
+{ "gate": "comment-bytes.scripts", "raise": 567, "why": "perf-mcp-memory.mjs names each budget's measurement and date and marks both measurement windows (testing.md), and its fd-3 probe says the server never imports it." }

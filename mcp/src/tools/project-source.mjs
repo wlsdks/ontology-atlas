@@ -84,7 +84,7 @@ function connectProjectSourceTool({ projectSlug, rootPath, confirm, repair } = {
 
   const allDocs = loadVaultDocs(VAULT_ROOT);
   const canonicalSlug = resolveProjectNodeSlug(projectSlug, allDocs);
-  const artifact = COMPILED_ONTOLOGY_CACHE.get({ includeIndexes: true });
+  const artifact = COMPILED_ONTOLOGY_CACHE.get({ docs: allDocs });
   const { docs, graphHash } = projectSourceScope(artifact, canonicalSlug, allDocs);
   if (!graphHash) {
     throw new Error(
@@ -307,22 +307,24 @@ function finalizeProjectMeaningTool({ projectSlug, expected_mtime } = {}) {
     throw new VaultConflictError(canonicalSlug, expected_mtime, projectDoc.mtime);
   }
 
-  const validation = validateVaultTool({});
+  const validation = validateVaultTool({}, allDocs);
   if (validation.summary.errorFiles > 0) {
     throw new Error(
       `finalize_project_meaning blocked: validate_vault found ${validation.summary.errorFiles} file(s) with errors. Repair them before finalizing.`,
     );
   }
 
-  const artifact = COMPILED_ONTOLOGY_CACHE.get({ includeIndexes: true });
+  const artifact = COMPILED_ONTOLOGY_CACHE.get({ docs: allDocs });
   const brief = attachVaultValidation(
     queryCompiledOntology(artifact, {
       operation: 'agent_brief',
       project: canonicalSlug,
     }),
     { operation: 'agent_brief', project: canonicalSlug },
+    allDocs,
+    validation,
   );
-  const context = projectMeaningContext(artifact, canonicalSlug, brief.readiness?.status);
+  const context = projectMeaningContext(artifact, canonicalSlug, brief.readiness?.status, null, allDocs);
   if (!context.graphHash || context.inventoryResult.status !== 'ready') {
     throw new Error(
       `finalize_project_meaning blocked: current project witness inventory is unavailable (${context.inventoryResult.reason ?? 'unknown'}).`,

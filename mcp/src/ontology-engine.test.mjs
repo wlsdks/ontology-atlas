@@ -8,7 +8,8 @@ import { fileURLToPath } from 'node:url';
 import { runJsonRpcProcess } from '../../scripts/lib/mcp-test-rpc.mjs';
 
 import { compileOntology } from './ontology-compiler.mjs';
-import { deriveBridgeShapes, queryCompiledOntology } from './ontology-engine.mjs';
+import { deriveBridgeShapes, queryCompiledOntology, shareArtifact } from './ontology-engine.mjs';
+import { createArtifactContext } from './ontology-engine/artifact-context.mjs';
 import { createContextOperations } from './ontology-engine/context-operations.mjs';
 import { defaultBody } from './schema.mjs';
 import { parseFrontmatter } from './parser.mjs';
@@ -201,6 +202,18 @@ describe('queryCompiledOntology', () => {
     assert.deepEqual(queryCompiledOntology(graph, query).recommendations.map((row) => row.to), [
       'capabilities/a', 'capabilities/d',
     ]);
+  });
+
+  it('freezes a shared artifact and builds its query indexes once', () => {
+    const graph = shareArtifact(artifact());
+    const [edge] = graph.edges;
+    assert.throws(() => { graph.nodes[0].title = 'Renamed'; }, TypeError);
+    assert.throws(() => graph.edges.push(edge), TypeError);
+    const first = createArtifactContext(graph);
+    assert.equal(createArtifactContext(graph).outgoing, first.outgoing);
+    assert.throws(() => first.outgoing.get(edge.from).push(edge), TypeError);
+    const unshared = artifact();
+    assert.notEqual(createArtifactContext(unshared).outgoing, createArtifactContext(unshared).outgoing);
   });
 
   it('suggests close enum values for direct graph-engine callers', () => {

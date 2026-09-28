@@ -142,6 +142,7 @@ export {
   RELATION_TYPE_VALUES,
   WRITE_RELATION_TYPE_VALUES,
 } from './ontology-engine/query-values.mjs';
+export { shareArtifact } from './ontology-engine/artifact-context.mjs';
 // Frontmatter key (edge.via) → the public relation `type` for dangling-reference
 // hints; only `dependencies` differs (`depends_on`). The inverse of
 // RELATION_KEY in tools/relation-keys.mjs.
