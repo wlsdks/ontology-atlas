@@ -51,13 +51,9 @@ export interface MapStillOptions {
 }
 
 /**
- * Resolve once the map has drawn {@link STILL_FRAMES} consecutive frames with the
- * same camera / layout / pose. The predicate runs **in the page** on animation
+ * Resolve once {@link STILL_FRAMES} consecutive page frames read the same camera /
+ * layout / pose from the probe. The predicate runs **in the page** on animation
  * frames, so a settle costs one round trip rather than one per sample.
- *
- * The idle gate never stops rAF (`model/idle-gate.ts`); it skips the physics step
- * and the paint. A skipped frame therefore reports the last drawn values, which is
- * exactly the "still" this waits for.
  */
 export async function waitForMapStill(page: Page, options: MapStillOptions = {}): Promise<void> {
   const { what = "layout", frames = STILL_FRAMES, timeout = HANG_TIMEOUT_MS } = options;

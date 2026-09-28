@@ -168,11 +168,11 @@ const EXPANDED_COHORT_ALPHA = 0.42;
 const BACKGROUND_DIM_WHEN_EXPANDED = 0.8;
 
 const EMPTY_NEIGHBOR_SET: ReadonlySet<string> = new Set();
-/** Reused empty cap set for frames with no focus (or no incident `contains` edges). */
-const EMPTY_EGO_CONTAINS_COMETS: ReadonlySet<string> = new Set();
-// perf sweep 2026-07 — reused frame-scratch Map, see its `.clear()` call
-// site in `drawTopologyFrame` below for why this is safe.
+const EMPTY_EGO_COMET_EDGES: ReadonlySet<WorldEdge> = new Set();
+/** Kept across frames: each frame overwrites or deletes every node's key, so the table stops regrowing. */
 const effectiveAlphaByIdReused = new Map<string, number>();
+/** The world those keys belong to; weak, so a closed map keeps no graph alive. */
+let effectiveAlphaWorld: WeakRef<TopologyWorld> | null = null;
 
 /*
  * ── Scratch buffers, aiming at zero allocation per frame ─────────────────
@@ -226,8 +226,7 @@ const domeEdgeFrameAReused: DomeNodeFrame[] = [];
 const domeEdgeFrameBReused: DomeNodeFrame[] = [];
 /** The radius the node pass actually drew — reused each frame via `.clear()`. */
 const drawnScreenRadiusByIdReused = new Map<string, number>();
-/** Input to the ambient `depends` comet cap — replaces the array `filter` built every frame. */
-const ambientDependsInputReused: WorldEdge[] = [];
+const ambientDependsCometsReused = new Set<string>();
 /**
  * Edge endpoint projection scratch — replaces the 4 temporaries (3 points + 1
  * wrapper) `projectEdgePoints` allocated per edge. Safe for the same reason as
@@ -257,14 +256,8 @@ let sheenTopCacheTint = "";
 let sheenTopCacheBlend = -1;
 /** The two kind passes, in ink order — hoisted so no array literal is built per frame. */
 const EDGE_KIND_PASSES = ["contains", "depends"] as const;
-/**
- * perf 2026-08-19 — precomputed edge alpha, keyed by original edge index. The
- * ambient comet filter and the draw loop each used to repeat 2 `clusteredIds.has`
- * plus 2 `effectiveAlphaById.get` calls per edge; now one pass computes it and
- * both consumers read the same value. -1 marks an edge folded away by the density
- * condition (not drawn).
- */
-const edgeAlphaReused: number[] = [];
+/** Each edge's alpha by edge index, written once per frame; -1 marks an edge folded away. */
+const edgeAlphaByEdges = new WeakMap<readonly WorldEdge[], Float64Array>();
 /**
  * perf 2026-08-19 — `NodeVisual` cache for focus-free frames.
  *
@@ -1705,7 +1698,10 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // synchronously from the single active rAF loop (`use-topology-loop.ts`) —
   // there is no concurrent/re-entrant call that could see stale entries from
   // a previous frame between the `.clear()` below and this frame's own fill.
-  effectiveAlphaByIdReused.clear();
+  if (effectiveAlphaWorld?.deref() !== world) {
+    effectiveAlphaByIdReused.clear();
+    effectiveAlphaWorld = new WeakRef(world);
+  }
   const effectiveAlphaById = effectiveAlphaByIdReused;
   for (let nodeIndex = 0; nodeIndex < world.nodes.length; nodeIndex += 1) {
     const node = world.nodes[nodeIndex];
@@ -1717,7 +1713,10 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // guard on the same first line, and hit testing (`isNodeHittable`) returns
     // false on collapse before it reads the alpha map. A chip's parent is by
     // definition not collapsed, and even it falls back to `?? 1`.
-    if (isPreviewEndpointHidden(clusteredIds.has(node.id), previewEdge, node.id)) continue;
+    if (isPreviewEndpointHidden(clusteredIds.has(node.id), previewEdge, node.id)) {
+      effectiveAlphaById.delete(node.id);
+      continue;
+    }
     const tierKind = realmTierKinds?.get(node.id) ?? node.kind;
     const tierAlpha = nodeTierAlpha(tierKind, node.isHub, zoomRatio, tierReveal);
     const isPairMember =
@@ -1834,37 +1833,19 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   }
   const anyExpanded = expandedParentIds.size > 0;
 
-  // Comet cap for the `contains` edges incident to the focused node. Exactly the
-  // deterministic logic `topology-physics-step.ts` uses to decide whether to
-  // advance a phase (incident `contains` edges → the top 24 by seed order), so
-  // both produce the same Set on the same frame with no shared state — computing
-  // the draw-side condition separately cannot drift.
-  const egoContainsComets =
+  // The same cached answer `topology-physics-step.ts` advances phases by, so both agree per frame.
+  const egoCometEdges =
     focusedNodeId === null || litOn
-      ? EMPTY_EGO_CONTAINS_COMETS
-      : selectEgoContainsComets(
-          world.edges.filter(
-            (edge) => edge.kind === "contains" && (edge.sourceId === focusedNodeId || edge.targetId === focusedNodeId),
-          ),
-        );
+      ? EMPTY_EGO_COMET_EDGES
+      : selectEgoContainsComets(world.edges, world.edgeIndexByNode.get(focusedNodeId)).edges;
 
-  // Always-on ambient `depends` comet cap — applies the limit of 24 its sibling
-  // branch (`contains`) already had to the branch that was missing one. **This
-  // does not re-reverse #512** (the owner's restoration of the ambient comets):
-  // comets still flow permanently, regardless of focus, at the same speed. What it
-  // caps, with the same deterministic ranking the sibling uses, is the previously
-  // unbounded number of points flowing at once when the element tier fills the
-  // screen with `depends`.
-  //
-  // The input is "the `depends` edges this frame will actually draw" — only edges
-  // that passed the same two conditions as the draw loop (density, tier alpha) may
-  // take a cap slot, so an invisible edge can never hold a slot while a visible
-  // one loses its comet.
-  // perf 2026-08-19 — compute each edge's alpha once, keyed by original index
-  // (see the `edgeAlphaReused` doc-block). The ambient comet filter below and the
-  // edge draw loop read the same value; predicates and values are unchanged, so
-  // the results are too.
-  edgeAlphaReused.length = 0;
+  // Only a `depends` edge this frame will draw (the draw loop's density and tier-alpha
+  // conditions) may take one of the capped ambient comet slots.
+  let edgeAlphaReused = edgeAlphaByEdges.get(world.edges);
+  if (edgeAlphaReused === undefined) {
+    edgeAlphaReused = new Float64Array(world.edges.length);
+    edgeAlphaByEdges.set(world.edges, edgeAlphaReused);
+  }
   const captionCandidates: RelationCaption[] = [];
   drawnRelationCaptions = [];
   const isSpineEndpoint = (id: string): boolean => {
@@ -1873,14 +1854,11 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   };
   for (let i = 0; i < world.edges.length; i += 1) {
     const edge = world.edges[i];
-    edgeAlphaReused.push(
+    edgeAlphaReused[i] =
       clusteredIds.has(edge.sourceId) || clusteredIds.has(edge.targetId)
         ? -1
-        : edgeTierAlpha(effectiveAlphaById.get(edge.sourceId) ?? 1, effectiveAlphaById.get(edge.targetId) ?? 1),
-    );
+        : edgeTierAlpha(effectiveAlphaById.get(edge.sourceId) ?? 1, effectiveAlphaById.get(edge.targetId) ?? 1);
   }
-  // Replaces the array `filter` allocated every frame — same elements, same order.
-  ambientDependsInputReused.length = 0;
   /*
    * Lit 3D (2026-09-25): particles run **only along the focused subtree's dependency edges**
    * — an edge with at least one end at or under the focus. At rest nothing flows, so the one
@@ -1897,14 +1875,15 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     return false;
   };
   const litComets = litOn && litFocusId !== null && domeLight !== null && !domeLight.reducedMotion;
-  for (let i = 0; i < world.edges.length; i += 1) {
-    const edge = world.edges[i];
-    if (edge.kind === "depends" && edgeAlphaReused[i] > 0.02) {
-      if (litOn && !(litComets && (inLitSubtree(edge.sourceId) || inLitSubtree(edge.targetId)))) continue;
-      ambientDependsInputReused.push(edge);
-    }
-  }
-  const ambientDependsComets = selectAmbientDependsComets(ambientDependsInputReused);
+  const ambientDependsComets = selectAmbientDependsComets(
+    world.edges,
+    (i) => {
+      const edge = world.edges[i];
+      if (edge.kind !== "depends" || edgeAlphaReused[i] <= 0.02) return false;
+      return !litOn || (litComets && (inLitSubtree(edge.sourceId) || inLitSubtree(edge.targetId)));
+    },
+    ambientDependsCometsReused,
+  );
 
   /*
    * ── 3D painter's ordering + depth halos ──────────────────────────────
@@ -2383,7 +2362,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           // so the 2D↔3D morph cannot step a stroke.
           minWidthPx: domeEdgeExempt ? 0 : domeMinWidthPx,
           halo: domeHaloWidthPx > 0.05 ? edgeHaloScratch : null,
-          containsCometEligible: kind === "contains" ? egoContainsComets.has(edgePairMeta(edge).key) : undefined,
+          containsCometEligible: kind === "contains" ? egoCometEdges.has(edge) : undefined,
           dependsCometEligible: kind === "depends" ? ambientDependsComets.has(edgePairMeta(edge).key) : undefined,
         },
         traceTokensFrame,

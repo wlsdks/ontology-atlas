@@ -153,7 +153,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const {
     lastActiveCausesRef, idleDebugEnabledRef, lastFrameTimeRef, navYieldUntilRef, reducedMotionRef,
     selectionPulseRef, pulsesRef, hasDependsEdgesRef, hasContainsEdgesRef, lastActiveMsRef, lastInputMsRef,
-    prevCameraSampleRef,
+    prevCameraSampleRef, wakeFrameLoopRef,
   } = useTopologyActivityState();
   const {
     expandPrefRef, expandedParentsRef, prevExpandedParentsRef, clusterChipsRef, clusteredIdsRef,
@@ -386,6 +386,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     bornNodeIdsRef,
     hasDependsEdgesRef,
     hasContainsEdgesRef,
+    lastActiveMsRef,
     pulsesRef,
     simRef,
     nodeDragRef,
@@ -430,6 +431,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       commitViewportSizeRef,
       rebuildViewportLayersRef,
       reframeViewportRef,
+      wakeFrameLoopRef,
     },
     trySnapInitialCamera,
     rescueCameraIfEverythingOffscreen,
@@ -607,7 +609,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   useTopologyFrameLoop({
     canvasRef,
     projection: { domeRuntimeRef, cameraRef, reducedMotionRef, neuralRampRef },
-    recovery: { lastActiveMsRef, viewportRebuildPendingRef },
+    recovery: { lastActiveMsRef, viewportRebuildPendingRef, wakeFrameLoopRef },
     domeFrameStage: {
       view3dRef,
       realmTransitionRef,

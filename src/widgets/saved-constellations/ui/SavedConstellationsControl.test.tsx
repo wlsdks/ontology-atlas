@@ -77,12 +77,12 @@ function saved(name: string, purpose: string, items: LibraryCollectionItem[]): S
   };
 }
 
-function renderControl() {
+function renderControl(concepts: readonly ConstellationCandidate[] = candidates) {
   return render(
     <NextIntlClientProvider locale="ko" messages={koMessages}>
       <SavedConstellationsControl
         handle={{ kind: 'directory', name: 'vault' } as FileSystemDirectoryHandle}
-        candidates={candidates}
+        candidates={concepts}
         selectedSlug={null}
         onFocus={vi.fn()}
         onClear={vi.fn()}
@@ -100,6 +100,29 @@ async function openEditedDraft() {
   fireEvent.click(screen.getByRole('button', { name: koMessages.constellations.save }));
   await screen.findByRole('button', { name: '변경 내용 확인' });
 }
+
+describe('SavedConstellationsControl — the member picker', () => {
+  beforeEach(() => {
+    mocks.constellations = [saved('이전 이름', '이전 목적', [item(UID_A, '첫 번째', 0)])];
+  });
+
+  it('builds no member row until the editor opens, then one per concept', async () => {
+    let labelReads = 0;
+    const counted = candidates.map((concept) => {
+      const copy = { ...concept };
+      Object.defineProperty(copy, 'label', { get: () => { labelReads += 1; return concept.label; } });
+      return copy;
+    });
+    renderControl(counted);
+    fireEvent.click(screen.getByRole('button', { name: koMessages.constellations.openLabel }));
+    expect(labelReads).toBe(0);
+
+    fireEvent.click(await screen.findByRole('button', { name: '편집' }));
+    expect(labelReads).toBeGreaterThanOrEqual(counted.length);
+    expect(screen.getByRole('checkbox', { name: /첫 번째/ })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: /두 번째/ })).not.toBeChecked();
+  });
+});
 
 /**
  * The chip is a disclosure expanding a named region, not a dialog: there is no scrim or focus trap,

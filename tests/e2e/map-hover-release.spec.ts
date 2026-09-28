@@ -187,8 +187,8 @@ test("커서가 캔버스를 벗어나면 지도가 프레임을 그만 그린�
     // measurement window: outlasts the rail's script-driven tail described above.
     await page.waitForTimeout(3_500);
     const released = await idleCost(1_000);
-    // If no frames arrived at all (a backgrounded tab, say) this measurement is void.
-    expect(released.frames).toBeGreaterThan(20);
+    // A backgrounded tab draws no frame either; rule it out.
+    expect(await page.evaluate(() => document.visibilityState)).toBe("visible");
     releasedSamples.push(released.cpuMsPerSec);
   }
 
