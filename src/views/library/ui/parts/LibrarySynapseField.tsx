@@ -68,7 +68,7 @@ export function LibrarySynapseField({
      * ink leaves it as the dust it is.
      */
     const fieldInk =
-      styles.getPropertyValue("--color-text-quaternary").trim() || "#61626c";
+      styles.getPropertyValue("--color-text-quaternary").trim() || "#82828a";
 
     let width = 1;
     let height = 1;

@@ -59,6 +59,7 @@ import { useDocumentTitle } from '@/shared/lib/use-document-title';
 import { isDesktopShell } from '@/shared/lib/desktop-shell';
 import { useHydrated } from '@/shared/lib/use-hydrated';
 import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion';
+import { usePanelPresence } from '@/shared/lib/use-presence';
 import {
   createTauriVaultHandle,
   getTauriVaultRootPath,
@@ -366,12 +367,12 @@ function DocsVaultContent({
     // Mount only, so a closed panel does not reopen on reload.
   }, [isDesktopRuntime, querySource, setAdvancedOpen]);
   const [sourceTreeOpen, setSourceTreeOpen] = useState(false);
-  // Collapsed means width 0, persisted as a workspace preference.
-  const [docListCollapsed, setDocListCollapsedState] = useState(false);
-  useEffect(() => {
-    scheduleStateSync(() => setDocListCollapsedState(readStoredListCollapsed()));
-  }, []);
+  const [docListCollapsed, setDocListCollapsedState] = useState(readStoredListCollapsed);
+  const [docListToggled, setDocListToggled] = useState(false);
+  const docListPresence = usePanelPresence(!docListCollapsed);
+  const docListLeaving = docListToggled && docListCollapsed && docListPresence.mounted;
   const toggleDocListCollapsed = useCallback(() => {
+    setDocListToggled(true);
     setDocListCollapsedState((collapsed) => {
       const next = !collapsed;
       storeListCollapsed(next);
@@ -2336,18 +2337,18 @@ function DocsVaultContent({
             </aside>
         </Surface>
 
-        {/* `--docs-list-width` tree at lg+, replaced by the drawer below. Collapsed means width 0. */}
         <aside
-          // The docs tour anchor; while collapsed it fails to resolve and the tour folds to one step.
           data-testid="docs-vault-doc-list"
+          data-doc-list-state={docListCollapsed ? (docListLeaving ? 'exiting' : 'collapsed') : 'open'}
           aria-label={t('mobileDrawer.title')}
           aria-hidden={docListCollapsed}
-          // `inert` also removes the hidden controls from the Tab order.
           inert={docListCollapsed}
-          style={{ width: docListCollapsed ? 0 : 'var(--docs-list-width)' }}
-          className={`hidden flex-none flex-col overflow-hidden bg-[color:var(--color-panel)] transition-[width] duration-[var(--motion-base)] ease-[var(--motion-ease)] lg:flex ${
-            docListCollapsed ? '' : 'border-r border-[color:var(--color-border-soft)]'
-          }`}
+          className={cn(
+            'hidden w-[var(--docs-list-width)] flex-none flex-col overflow-hidden border-r border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]',
+            !docListCollapsed
+              ? cn('lg:flex', docListToggled && 'map-overlay-in')
+              : docListLeaving && 'map-overlay-out absolute inset-y-0 left-0 lg:flex',
+          )}
         >
           {sidebarBody}
         </aside>

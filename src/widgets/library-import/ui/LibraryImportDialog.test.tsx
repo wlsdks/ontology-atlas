@@ -254,3 +254,12 @@ describe('bringing documents in from a service', () => {
     });
   });
 });
+
+describe('the service tiles fill their column', () => {
+  it('lets an odd last tile span both columns, so the two-column grid leaves no hole', () => {
+    draw();
+    const cells = screen.getAllByTestId('library-import-service').map((tile) => tile.closest('li'));
+    const spanning = cells.filter((cell) => cell?.className.includes('sm:col-span-2'));
+    expect(spanning).toEqual(cells.length % 2 === 1 ? [cells.at(-1)] : []);
+  });
+});

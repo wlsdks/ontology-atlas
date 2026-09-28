@@ -89,15 +89,13 @@ function ReviewGroup({
 }) {
   return (
     <div data-testid={testId}>
-      {/* Carries an icon because two groups sit under one border. */}
       <h3 className="flex flex-none items-center gap-1.5 px-3 pb-1.5 pt-3 font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
         {icon}
         {label}
       </h3>
-      <ul className="px-1 pb-1">
+      <ul className="px-0.5 pb-1">
         {rows.map((row) => {
           const active = row.slug === selectedSlug;
-          // The agent's own sentence makes the row triageable without opening it.
           const detail = row.note ?? describe?.(row);
           return (
             <li key={row.slug}>
@@ -105,15 +103,13 @@ function ReviewGroup({
                 type="button"
                 onClick={() => onSelect(row.slug)}
                 aria-current={active ? "true" : undefined}
-                // The shared `row` control owns touch floor, width and transition; the second line flips the axis to column.
                 className={controlClass({
                   shape: "row",
                   size: "md",
                   tone: "muted",
                   active,
-                  // `lift` and `active` come from the shared row, not hand-written surfaces.
                   hoverSurface: "lift",
-                  className: "flex-col items-start gap-0.5 rounded-chip px-2 py-1.5",
+                  className: "flex-col items-start gap-0.5 rounded-chip py-1.5",
                 })}
               >
                 <span

@@ -6,6 +6,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import {
@@ -15,11 +16,6 @@ import {
 } from '@/widgets/docs-vault';
 import type { VaultRecentKey } from '@/widgets/docs-vault';
 import { scheduleStateSync } from './persistence';
-
-/**
- * Pinned and recent documents for `DocsVaultPage`, per vault `recentKey`. The setters are
- * exposed for the view's delete and create paths.
- */
 
 interface LocalVaultLike {
   handle: FileSystemDirectoryHandle | null;
@@ -55,10 +51,10 @@ export function useDocsVaultPersistence({
     return 'server';
   }, [source, localVault.handle]);
 
-  const [recentSlugs, setRecentSlugsInternal] = useState<string[]>([]);
-  const [pinnedSlugs, setPinnedSlugsInternal] = useState<string[]>([]);
+  const [recentSlugs, setRecentSlugsInternal] = useState<string[]>(() => readRecentDocs(recentKey));
+  const [pinnedSlugs, setPinnedSlugsInternal] = useState<string[]>(() => readPinnedDocs(recentKey));
+  const readKey = useRef(recentKey);
 
-  // Wrapped so exhaustive-deps sees a stable setter; no functional effect.
   const setRecentSlugs = useCallback<typeof setRecentSlugsInternal>(
     (next) => setRecentSlugsInternal(next),
     [],
@@ -69,6 +65,8 @@ export function useDocsVaultPersistence({
   );
 
   useEffect(() => {
+    if (readKey.current === recentKey) return;
+    readKey.current = recentKey;
     scheduleStateSync(() => {
       setRecentSlugsInternal(readRecentDocs(recentKey));
       setPinnedSlugsInternal(readPinnedDocs(recentKey));

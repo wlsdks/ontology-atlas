@@ -1,9 +1,3 @@
-/*
- * One short enter for every tab's panel, so a switch arrives rather than cuts in.
- *
- * Fill mode `backwards`, not `both`: a finished transform would leave `translateY(0)` on the panel, making
- * it the containing block for every `position: fixed` popover inside it.
- */
 .panel {
   animation: libraryPanelIn var(--motion-base) var(--motion-ease) backwards;
 }
@@ -11,16 +5,9 @@
 @keyframes libraryPanelIn {
   from {
     opacity: 0;
-    transform: translateY(4px);
   }
 
   to {
     opacity: 1;
-    transform: none;
   }
 }
-
-/*
- * No reduced-motion block: the global rule cuts CSS animations with `!important`, so `index.tsx`
- * plays the reduced fade with the Web Animations API instead.
- */

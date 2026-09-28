@@ -1,6 +1,8 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
+import enMessages from "../../../../../messages/en.json";
+import koMessages from "../../../../../messages/ko.json";
 import { SampleWelcomeNote } from "./SampleWelcomeNote";
 
 function renderNote(
@@ -13,7 +15,7 @@ function renderNote(
     onOpenFolder,
     onDismiss,
     ...render(
-      <NextIntlClientProvider locale={locale} messages={{}}>
+      <NextIntlClientProvider locale={locale} messages={locale === "ko" ? koMessages : enMessages}>
         <SampleWelcomeNote
           canOpenLocalVault={canOpenLocalVault}
           onOpenFolder={onOpenFolder}
@@ -29,11 +31,11 @@ describe("SampleWelcomeNote", () => {
     renderNote("ko", false);
     expect(screen.getByText("이 문서함은 무엇인가요?")).toBeInTheDocument();
     expect(
-      screen.getByText(/ontology-atlas 프로젝트 자신의 문서를 읽기 전용 샘플로/),
+      screen.getByText(/Atlas 자신의 문서를 읽기 전용 샘플로/),
     ).toBeInTheDocument();
   });
 
-  it("falls back to English copy for the en locale", () => {
+  it("reads its English copy from the English catalog", () => {
     renderNote("en", false);
     expect(screen.getByText("What is this document space?")).toBeInTheDocument();
   });
@@ -54,5 +56,11 @@ describe("SampleWelcomeNote", () => {
     const { onDismiss } = renderNote("ko", false);
     fireEvent.click(screen.getByRole("button", { name: "안내 닫기" }));
     expect(onDismiss).toHaveBeenCalledTimes(1);
+  });
+
+  it("marks itself with its surface and one hairline, not a coloured left stripe", () => {
+    renderNote("en", false);
+    const note = screen.getByTestId("docs-vault-sample-welcome-note");
+    expect(note.className).not.toMatch(/border-l/);
   });
 });

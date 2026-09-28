@@ -17,6 +17,7 @@ import { badgeClass } from '@/shared/ui/badge-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { PAGE_COLUMN_FORM, PAGE_FRAME_FORM } from '@/shared/ui/page-frame';
 import { Button, EmptyState, RowButton, Surface } from '@/shared/ui';
+import { libraryEyebrowClass } from '../lib/page-eyebrow';
 import { ConstellationsStartingPoint } from './parts/ConstellationsStartingPoint';
 
 type MemberRow =
@@ -107,7 +108,7 @@ export function LibraryConstellations({
   const pageHeader = (
     <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div className="min-w-0">
-        <p className="text-caption leading-caption font-[var(--font-weight-strong)] uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-indigo-text-soft)]">
+        <p className={libraryEyebrowClass(locale)}>
           {t('eyebrow')}
         </p>
         <h1 className="mt-2 text-display leading-display font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">

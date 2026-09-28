@@ -8,6 +8,7 @@ import { Button, Chip, Dialog, IconButton, ServiceMark, resolveServiceMark } fro
 import { Link } from '@/i18n/navigation';
 import { DESTINATION_HREF } from '@/shared/config/destinations';
 import { Input } from '@/shared/ui/input';
+import { cn } from '@/shared/lib/cn';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { connectorSecretRef, connectorSecretSet } from '@/shared/lib/tauri-connector-secrets';
@@ -195,19 +196,13 @@ export function LibraryImportDialog({
           </p>
           <ul
             data-testid={`${testIdPrefix}-services`}
-            /*
-             * Equal-height tiles: `.claude/rules/forbidden.md` refuses cards whose heights differ
-             * only by copy length.
-             */
-            /*
-             * The grid uses `auto-rows-fr`: one track height for every tile, including a last tile
-             * alone on its
-             * row (`.claude/rules/forbidden.md`).
-             */
             className="mt-3 grid auto-rows-fr grid-cols-1 gap-2 sm:grid-cols-2"
           >
-            {IMPORT_SERVICES.map((candidate) => (
-              <li key={candidate.id} className="min-w-0">
+            {IMPORT_SERVICES.map((candidate, index) => (
+              <li
+                key={candidate.id}
+                className={cn('min-w-0', index === IMPORT_SERVICES.length - 1 && index % 2 === 0 && 'sm:col-span-2')}
+              >
                 <button
                   type="button"
                   data-testid={`${testIdPrefix}-service`}

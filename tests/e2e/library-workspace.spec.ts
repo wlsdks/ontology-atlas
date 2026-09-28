@@ -94,6 +94,73 @@ test('closing New wiki page preserves the source passage underneath', async ({ p
   await expect(page.getByTestId('library-source-passage')).toBeVisible();
 });
 
+async function listEdges(page: Page) {
+  return page.getByTestId('docs-vault-doc-list').evaluate((aside) => {
+    const textX = (button: Element) => {
+      const span = [...button.querySelectorAll('span')].find((node) => node.textContent?.trim() && !node.querySelector('span'));
+      return span ? span.getBoundingClientRect().x : null;
+    };
+    const header = aside.querySelector('[data-testid="docs-sidebar-recently-changed-toggle"] svg')?.getBoundingClientRect().x ?? null;
+    const rows = [...aside.querySelectorAll('nav > *')].map((row) => {
+      const button = row.matches('button') ? row : row.querySelector(':scope > button');
+      return button ? { glyph: button.querySelector('svg')!.getBoundingClientRect().x, text: textX(button), folder: button.hasAttribute('aria-expanded') } : null;
+    }).filter((row) => row !== null);
+    return { header, rows };
+  });
+}
+
+test('the ontology list keeps one glyph column and one text line, and its fold moves the page once', async ({ page }) => {
+  await openLibrary(page);
+  await page.getByTestId('library-workspace-ontology').click();
+  await expect(page.getByTestId('docs-vault-doc-list')).toBeVisible();
+  const edges = await listEdges(page);
+  const folders = edges.rows.filter((row) => row.folder);
+  const leaves = edges.rows.filter((row) => !row.folder);
+  expect(folders.length).toBeGreaterThan(0);
+  expect(leaves.length).toBeGreaterThan(0);
+  expect(edges.header).not.toBeNull();
+  for (const row of edges.rows) expect(Math.abs(row.glyph - edges.header!)).toBeLessThanOrEqual(0.5);
+  for (const leaf of leaves) expect(Math.abs(leaf.text! - folders[0].text!)).toBeLessThanOrEqual(0.5);
+
+  const fold = page.locator('[data-docs-header-zone="identity"] button[aria-expanded]').first();
+  const openX = await page.locator('#main').evaluate((element) => element.getBoundingClientRect().x);
+  await fold.click();
+  const xs = await page.locator('#main').evaluate((element) => new Promise<number[]>((resolve) => {
+    const seen: number[] = [];
+    const sample = () => {
+      seen.push(Math.round(element.getBoundingClientRect().x));
+      if (seen.length < 12) requestAnimationFrame(sample);
+      else resolve(seen);
+    };
+    requestAnimationFrame(sample);
+  }));
+  expect(new Set(xs).size).toBe(1);
+  expect(xs[0]).toBeLessThan(openX);
+  await expect(page.getByTestId('docs-vault-doc-list')).toHaveAttribute('data-doc-list-state', 'collapsed');
+
+  await page.getByTestId('library-workspace-sources').click();
+  await expect(page.getByTestId('library-index')).toBeVisible();
+  await page.evaluate(() => {
+    const seen: Array<string | null> = [];
+    (window as unknown as { __listStates: Array<string | null> }).__listStates = seen;
+    const sample = () => {
+      const aside = document.querySelector('[data-testid="docs-vault-doc-list"]');
+      if (aside) seen.push(aside.getAttribute('data-doc-list-state'));
+      if (seen.length < 20) requestAnimationFrame(sample);
+    };
+    requestAnimationFrame(sample);
+  });
+  await page.getByTestId('library-workspace-ontology').click();
+  await expect(page.getByTestId('docs-vault-doc-list')).toHaveAttribute('data-doc-list-state', 'collapsed');
+  await expect.poll(() => page.evaluate(() => (window as unknown as { __listStates: string[] }).__listStates.length)).toBeGreaterThan(5);
+  const states = await page.evaluate(() => (window as unknown as { __listStates: string[] }).__listStates);
+  expect(new Set(states)).toEqual(new Set(['collapsed']));
+
+  await fold.click();
+  await expect(page.getByTestId('docs-vault-doc-list')).toHaveAttribute('data-doc-list-state', 'open');
+  await expect(page.getByTestId('docs-vault-doc-list')).toHaveCSS('animation-name', 'panelCrossfadeIn');
+});
+
 test('a legacy document link and the last unsaved keystroke survive a Library tab round trip', async ({ page }) => {
   await openLibrary(page);
   await page.goto('/en/docs/?slug=capabilities/checkout&guides=off&e2e=1#checkout');

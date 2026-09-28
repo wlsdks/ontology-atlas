@@ -143,6 +143,12 @@
     "body": "This doc is Atlas's own example, so editing is locked.",
     "openFolderCta": "Open my folder"
   },
+  "sampleWelcome": {
+    "title": "What is this document space?",
+    "body": "You're browsing Atlas's own documentation as a read-only sample. Pick anything from the list on the left. Most of it is developer reference material. Open your own markdown folder and it fills this screen instead.",
+    "openFolderCta": "Open my folder",
+    "dismissAria": "Dismiss"
+  },
   "backlinksStrip": {
     "openInOntology": "Open in the map",
     "empty": "No documents link here yet"
