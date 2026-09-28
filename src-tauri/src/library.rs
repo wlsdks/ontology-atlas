@@ -2,12 +2,34 @@
 //! Discovery returns metadata for granted roots only, so no credential is scanned
 //! (`.claude/rules/local-first.md`); mirrored in `source-discovery.ts`, or they drift.
 
+use std::collections::HashMap;
 use std::fs;
+use std::io::{Seek, SeekFrom};
 use std::path::{Path, PathBuf};
+use std::sync::{Mutex, OnceLock};
 
 use sha2::{Digest, Sha256};
 
 use crate::{canonical_root, canonical_source_root, resolve_existing_inside};
+
+fn vended_source_paths() -> &'static Mutex<HashMap<String, PathBuf>> {
+    static VENDED: OnceLock<Mutex<HashMap<String, PathBuf>>> = OnceLock::new();
+    VENDED.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+fn remember_source_path(vended: String, canonical: PathBuf) {
+    vended_source_paths()
+        .lock()
+        .unwrap_or_else(|err| err.into_inner())
+        .insert(vended, canonical);
+}
+
+fn take_source_path(vended: &str) -> Option<PathBuf> {
+    vended_source_paths()
+        .lock()
+        .unwrap_or_else(|err| err.into_inner())
+        .remove(vended)
+}
 
 /// Same value as TS `VAULT_SOURCES_DIR`.
 const SOURCES_DIR: &str = "sources";
@@ -150,10 +172,16 @@ pub fn pick_source_files(dialog_title: Option<String>) -> Result<Vec<String>, St
     let Some(picked) = rfd::FileDialog::new().set_title(title).pick_files() else {
         return Ok(Vec::new());
     };
-    Ok(picked
-        .into_iter()
+    let vended: Vec<String> = picked
+        .iter()
         .map(|path| path.to_string_lossy().to_string())
-        .collect())
+        .collect();
+    for (path, vended) in picked.iter().zip(vended.iter()) {
+        if let Ok(canonical) = fs::canonicalize(path) {
+            remember_source_path(vended.clone(), canonical);
+        }
+    }
+    Ok(vended)
 }
 
 #[derive(serde::Serialize)]
@@ -261,30 +289,60 @@ pub fn import_source_files(
     fs::create_dir_all(root.join(SOURCES_DIR)).map_err(|err| err.to_string())?;
     let mut existing = index_existing_sources(&root)?;
     let mut results = Vec::with_capacity(source_paths.len());
+    let mut resolved: HashMap<String, PathBuf> = HashMap::new();
+    let mut landed: HashMap<PathBuf, String> = HashMap::new();
 
     for source_path in source_paths {
-        let picked = PathBuf::from(&source_path);
-        let picked_name = picked
+        let canonical = match resolved.get(&source_path) {
+            Some(canonical) => Some(canonical.clone()),
+            None => match take_source_path(&source_path) {
+                Some(canonical) => {
+                    resolved.insert(source_path.clone(), canonical.clone());
+                    Some(canonical)
+                }
+                None => None,
+            },
+        };
+        let Some(canonical) = canonical else {
+            let picked_name = Path::new(&source_path)
+                .file_name()
+                .map(|name| name.to_string_lossy().to_string())
+                .unwrap_or_else(|| source_path.clone());
+            results.push(import_failure(&picked_name, "source-not-offered"));
+            continue;
+        };
+
+        let picked_name = canonical
             .file_name()
             .map(|name| name.to_string_lossy().to_string())
             .unwrap_or_else(|| source_path.clone());
-        let failure = |reason: &str| SourceImportResult {
-            picked_name: picked_name.clone(),
-            status: "failed".into(),
-            relative_path: None,
-            sha256: None,
-            size: None,
-            reason: Some(reason.to_string()),
-        };
+        let failure = |reason: &str| import_failure(&picked_name, reason);
+
+        if let Some(relative) = landed.get(&canonical) {
+            results.push(import_duplicate(picked_name, relative.clone(), None, None));
+            continue;
+        }
 
         let Some(base_name) = safe_source_file_name(&picked_name) else {
             results.push(failure("unusable-file-name"));
             continue;
         };
-        let (hash, length) = match hash_and_length(&picked) {
+
+        let mut source = match fs::File::open(&canonical) {
+            Ok(source) => source,
+            Err(err) if err.kind() == std::io::ErrorKind::NotFound => {
+                results.push(failure("source-missing"));
+                continue;
+            }
+            Err(err) => {
+                results.push(failure(&err.to_string()));
+                continue;
+            }
+        };
+        let (hash, length) = match copy_hashing(&mut source, &mut std::io::sink()) {
             Ok(measured) => measured,
             Err(err) => {
-                results.push(failure(&err));
+                results.push(failure(&err.to_string()));
                 continue;
             }
         };
@@ -293,14 +351,12 @@ pub fn import_source_files(
             .iter()
             .find(|(existing_hash, _)| *existing_hash == hash)
         {
-            results.push(SourceImportResult {
+            results.push(import_duplicate(
                 picked_name,
-                status: "duplicate".into(),
-                relative_path: Some(relative.clone()),
-                sha256: Some(hash),
-                size: Some(length),
-                reason: None,
-            });
+                relative.clone(),
+                Some(hash),
+                Some(length),
+            ));
             continue;
         }
 
@@ -316,9 +372,10 @@ pub fn import_source_files(
         }
         let renamed = candidate != base_name;
         let relative = format!("{SOURCES_DIR}/{candidate}");
-        let copied = fs::File::open(&picked)
+        let copied = source
+            .seek(SeekFrom::Start(0))
             .map_err(|err| err.to_string())
-            .and_then(|mut source| copy_source_into(&root_path, &relative, &mut source));
+            .and_then(|_| copy_source_into(&root_path, &relative, &mut source));
         let (hash, length) = match copied {
             Ok(written) => written,
             Err(err) => {
@@ -327,6 +384,7 @@ pub fn import_source_files(
             }
         };
         existing.push((hash.clone(), relative.clone()));
+        landed.insert(canonical, relative.clone());
         results.push(SourceImportResult {
             picked_name,
             status: if renamed { "renamed" } else { "added" }.into(),
@@ -338,6 +396,33 @@ pub fn import_source_files(
     }
 
     Ok(results)
+}
+
+fn import_failure(picked_name: &str, reason: &str) -> SourceImportResult {
+    SourceImportResult {
+        picked_name: picked_name.to_string(),
+        status: "failed".into(),
+        relative_path: None,
+        sha256: None,
+        size: None,
+        reason: Some(reason.to_string()),
+    }
+}
+
+fn import_duplicate(
+    picked_name: String,
+    relative: String,
+    sha256: Option<String>,
+    size: Option<u64>,
+) -> SourceImportResult {
+    SourceImportResult {
+        picked_name,
+        status: "duplicate".into(),
+        relative_path: Some(relative),
+        sha256,
+        size,
+        reason: None,
+    }
 }
 
 #[derive(serde::Deserialize)]
@@ -458,7 +543,18 @@ pub fn discover_source_candidates(
             report.unreadable_roots.push(root.label.clone());
             continue;
         };
+        if crate::vault_root_rejection(&canonical).is_some() {
+            report.unreadable_roots.push(root.label.clone());
+            continue;
+        }
+        let start = report.candidates.len();
         walk_candidates(&canonical, root, "", 0, &mut report);
+        for candidate in &report.candidates[start..] {
+            remember_source_path(
+                format!("{}/{}", candidate.root_path, candidate.relative_path),
+                canonical.join(&candidate.relative_path),
+            );
+        }
     }
     report
         .candidates
@@ -504,6 +600,12 @@ pub(crate) const REVEAL_UNSUPPORTED: &str = "reveal-unsupported-on-this-platform
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn vend(path: &Path) -> String {
+        let vended = path.to_string_lossy().to_string();
+        remember_source_path(vended.clone(), fs::canonicalize(path).unwrap());
+        vended
+    }
 
     #[test]
     fn discovery_refuses_the_files_local_first_forbids_reading() {
@@ -583,9 +685,9 @@ mod tests {
         let picked = root.join("scan.pdf");
         let body: Vec<u8> = (0..300_000_u32).map(|i| (i % 251) as u8).collect();
         fs::write(&picked, &body).unwrap();
-        let picked = picked.to_string_lossy().to_string();
 
-        let first = import_source_files(root_path.clone(), vec![picked.clone()]).unwrap();
+        let vended = vend(&picked);
+        let first = import_source_files(root_path.clone(), vec![vended.clone()]).unwrap();
         assert_eq!(first[0].status, "added");
         assert_eq!(first[0].size, Some(body.len() as u64));
         assert_eq!(fs::read(root.join("sources/scan.pdf")).unwrap(), body);
@@ -594,10 +696,142 @@ mod tests {
             hash_path(&root.join("sources/scan.pdf")).ok()
         );
 
-        let second = import_source_files(root_path, vec![picked]).unwrap();
+        let vended = vend(&picked);
+        let second = import_source_files(root_path, vec![vended]).unwrap();
         assert_eq!(second[0].status, "duplicate");
         assert_eq!(second[0].relative_path.as_deref(), Some("sources/scan.pdf"));
         let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn import_refuses_a_source_the_app_never_offered() {
+        let root = std::env::temp_dir().join(format!("atlas-vended-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(&root).unwrap();
+        let root_path = fs::canonicalize(&root)
+            .unwrap()
+            .to_string_lossy()
+            .to_string();
+
+        let chosen = root.join("chosen.pdf");
+        fs::write(&chosen, b"%PDF-1.7 chosen\n").unwrap();
+        let secret = root.join("stolen.pdf");
+        fs::write(&secret, b"%PDF-1.7 secret\n").unwrap();
+
+        let offered = vend(&chosen);
+        let results = import_source_files(
+            root_path.clone(),
+            vec![offered.clone(), secret.to_string_lossy().to_string()],
+        )
+        .unwrap();
+        let outcome = |name: &str| {
+            results
+                .iter()
+                .find(|result| result.picked_name == name)
+                .unwrap()
+        };
+        assert_eq!(outcome("chosen.pdf").status, "added");
+        assert_eq!(outcome("stolen.pdf").status, "failed");
+        assert_eq!(
+            outcome("stolen.pdf").reason.as_deref(),
+            Some("source-not-offered")
+        );
+        assert!(!root.join("sources/stolen.pdf").exists());
+
+        let replay = import_source_files(root_path, vec![offered]).unwrap();
+        assert_eq!(replay[0].status, "failed");
+        assert_eq!(replay[0].reason.as_deref(), Some("source-not-offered"));
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn the_same_offered_file_ticked_twice_reports_one_add_and_one_duplicate() {
+        let root = std::env::temp_dir().join(format!("atlas-twice-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(&root).unwrap();
+        let root_path = fs::canonicalize(&root).unwrap().to_string_lossy().to_string();
+        let picked = root.join("once.pdf");
+        fs::write(&picked, b"%PDF-1.7 once\n").unwrap();
+
+        let offered = vend(&picked);
+        let results =
+            import_source_files(root_path, vec![offered.clone(), offered]).unwrap();
+        assert_eq!(results[0].status, "added");
+        assert_eq!(results[1].status, "duplicate");
+        assert_eq!(results[1].relative_path.as_deref(), Some("sources/once.pdf"));
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn an_offered_file_that_has_since_gone_missing_says_so() {
+        let root = std::env::temp_dir().join(format!("atlas-gone-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(&root).unwrap();
+        let root_path = fs::canonicalize(&root).unwrap().to_string_lossy().to_string();
+        let picked = root.join("gone.pdf");
+        fs::write(&picked, b"%PDF-1.7 gone\n").unwrap();
+
+        let offered = vend(&picked);
+        fs::remove_file(&picked).unwrap();
+        let results = import_source_files(root_path, vec![offered]).unwrap();
+        assert_eq!(results[0].status, "failed");
+        assert_eq!(results[0].reason.as_deref(), Some("source-missing"));
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_discovered_candidate_imports_through_the_string_the_page_builds() {
+        let base = std::env::temp_dir().join(format!("atlas-disc-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&base);
+        let vault = base.join("vault");
+        let project = base.join("project");
+        fs::create_dir_all(&vault).unwrap();
+        fs::create_dir_all(&project).unwrap();
+        fs::write(project.join("plan.pdf"), b"%PDF-1.7 plan\n").unwrap();
+        let vault = fs::canonicalize(&vault).unwrap();
+        let project = fs::canonicalize(&project).unwrap();
+
+        let _scope = crate::vault_grants::EnforcedScope::granting(&[vault.clone(), project.clone()]);
+
+        let root_path = format!("{}/", project.to_string_lossy());
+        let report = discover_source_candidates(vec![SourceDiscoveryRoot {
+            root_path: root_path.clone(),
+            label: "project".into(),
+            skip_relative: Vec::new(),
+        }])
+        .unwrap();
+        assert_eq!(report.candidates.len(), 1);
+        let candidate = &report.candidates[0];
+        assert_eq!(candidate.root_path, root_path);
+        let page_string = format!("{}/{}", candidate.root_path, candidate.relative_path);
+
+        let results =
+            import_source_files(vault.to_string_lossy().to_string(), vec![page_string]).unwrap();
+        assert_eq!(results[0].status, "added");
+        assert!(vault.join("sources/plan.pdf").is_file());
+        let _ = fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn discovery_refuses_a_source_root_the_vault_gate_forbids() {
+        let base = std::env::temp_dir().join(format!("atlas-badroot-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&base);
+        let bundle = base.join("thing.app");
+        fs::create_dir_all(&bundle).unwrap();
+        fs::write(bundle.join("plan.pdf"), b"%PDF-1.7\n").unwrap();
+        let bundle = fs::canonicalize(&bundle).unwrap();
+
+        let _scope = crate::vault_grants::EnforcedScope::granting(&[bundle.clone()]);
+
+        let report = discover_source_candidates(vec![SourceDiscoveryRoot {
+            root_path: bundle.to_string_lossy().to_string(),
+            label: "bundle".into(),
+            skip_relative: Vec::new(),
+        }])
+        .unwrap();
+        assert!(report.candidates.is_empty());
+        assert_eq!(report.unreadable_roots, vec!["bundle".to_string()]);
+        let _ = fs::remove_dir_all(&base);
     }
 
     #[test]

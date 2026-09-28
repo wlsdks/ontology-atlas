@@ -3,7 +3,7 @@
 //! a login shell (it would execute the user's whole config). npx adapters are pinned.
 
 use std::ffi::{OsStr, OsString};
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 
 /// Generated into `src-tauri/src/acp-registry.json` by `scripts/build-acp-registry.mjs`
 /// and never fetched at runtime: no unrequested network traffic, and it works offline.
@@ -248,7 +248,7 @@ pub(crate) fn candidate_bin_dirs(
 
     if let Some(path) = path_env {
         for entry in std::env::split_paths(path) {
-            if !entry.as_os_str().is_empty() {
+            if !entry.as_os_str().is_empty() && entry.is_absolute() {
                 push(entry, &mut dirs);
             }
         }
@@ -542,6 +542,57 @@ pub(crate) struct AcpLaunch {
     pub args: Vec<String>,
     /// The adapter finds the real CLI by name, so it needs the reconstructed PATH too.
     pub path_env: String,
+}
+
+fn is_node_modules_bin(entry: &Path) -> bool {
+    let mut tail = entry.components().rev();
+    matches!(tail.next(), Some(Component::Normal(last)) if last == ".bin")
+        && matches!(tail.next(), Some(Component::Normal(parent)) if parent == "node_modules")
+}
+
+fn path_spellings(path: &Path) -> Vec<PathBuf> {
+    let mut forms = vec![path.to_path_buf()];
+    if let Ok(canonical) = std::fs::canonicalize(path) {
+        if !forms.contains(&canonical) {
+            forms.push(canonical);
+        }
+    }
+    forms
+}
+
+fn under_untrusted_root(entry: &Path, roots: &[PathBuf]) -> bool {
+    path_spellings(entry)
+        .iter()
+        .any(|form| roots.iter().any(|root| form.starts_with(root)))
+}
+
+pub(crate) fn path_without_vault_node_modules_bin(
+    path_env: &str,
+    vault_root: &Path,
+    repo_root: Option<&Path>,
+) -> String {
+    let mut roots: Vec<PathBuf> = Vec::new();
+    for root in std::iter::once(vault_root).chain(repo_root) {
+        for form in path_spellings(root) {
+            if !roots.contains(&form) {
+                roots.push(form);
+            }
+        }
+    }
+    let kept: Vec<PathBuf> = std::env::split_paths(&OsString::from(path_env))
+        .filter(|entry| !entry.as_os_str().is_empty() && entry.is_absolute())
+        .filter(|entry| !is_node_modules_bin(entry) || !under_untrusted_root(entry, &roots))
+        .collect();
+    std::env::join_paths(kept)
+        .map(|joined| joined.to_string_lossy().into_owned())
+        .unwrap_or_else(|_| path_env.to_string())
+}
+
+pub(crate) fn sanitized_process_path(path_env: &OsStr) -> OsString {
+    let kept: Vec<PathBuf> = std::env::split_paths(path_env)
+        .filter(|entry| !entry.as_os_str().is_empty() && entry.is_absolute())
+        .collect();
+    std::env::join_paths(kept).unwrap_or_else(|_| path_env.to_os_string())
 }
 
 // An interrupted first npx download leaves a half-made `~/.npm/_npx/<hash>/` that
@@ -4205,5 +4256,55 @@ mod npx_cache_tests {
         assert_eq!(dir_size_bytes(&dir), 1500);
         assert_eq!(dir_size_bytes(&dir.join("missing")), 0);
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_vault_or_repo_bin_never_reaches_the_adapter_path() {
+        let base = scratch("adapter-path");
+        let repo = base.join("repo");
+        let vault = repo.join("atlas");
+        std::fs::create_dir_all(vault.join("node_modules/.bin")).unwrap();
+        std::fs::create_dir_all(repo.join("node_modules/.bin")).unwrap();
+        let repo = std::fs::canonicalize(&repo).unwrap();
+        let vault = std::fs::canonicalize(&vault).unwrap();
+
+        let path_env = std::env::join_paths([
+            vault.join("node_modules/.bin"),
+            repo.join("node_modules/.bin"),
+            PathBuf::from("node_modules/.bin"),
+            PathBuf::from("relative/tool/bin"),
+            PathBuf::from("/opt/homebrew/bin"),
+            PathBuf::from("/usr/bin"),
+            PathBuf::from("/opt/other/node_modules/.bin"),
+        ])
+        .unwrap()
+        .to_string_lossy()
+        .into_owned();
+
+        let cleaned = path_without_vault_node_modules_bin(&path_env, &vault, Some(&repo));
+        let entries: Vec<PathBuf> = std::env::split_paths(&OsString::from(cleaned)).collect();
+
+        assert!(!entries.iter().any(|entry| entry.starts_with(&vault)));
+        assert!(!entries.iter().any(|entry| entry.starts_with(&repo)));
+        assert!(!entries.iter().any(|entry| entry.is_relative()));
+        assert!(entries.contains(&PathBuf::from("/opt/homebrew/bin")));
+        assert!(entries.contains(&PathBuf::from("/usr/bin")));
+        assert!(entries.contains(&PathBuf::from("/opt/other/node_modules/.bin")));
+
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn the_process_path_sanitizer_drops_empty_and_relative_entries() {
+        let cleaned = sanitized_process_path(OsStr::new(
+            "/usr/bin::relative/bin:node_modules/.bin:/opt/homebrew/bin",
+        ));
+        let entries: Vec<PathBuf> = std::env::split_paths(&cleaned).collect();
+        assert_eq!(
+            entries,
+            vec![PathBuf::from("/usr/bin"), PathBuf::from("/opt/homebrew/bin")]
+        );
     }
 }
