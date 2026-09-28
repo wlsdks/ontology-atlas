@@ -21,12 +21,7 @@ const requiredSecrets = [
   "TAURI_SIGNING_PRIVATE_KEY",
   "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
 ];
-const environmentSecrets = [
-  "APPLE_API_KEY_P8_BASE64",
-  "APPLE_API_KEY_ID",
-  "APPLE_API_ISSUER_ID",
-];
-const repositorySecrets = [
+const movedToEnvironmentSecrets = [
   "APPLE_CERTIFICATE_P12_BASE64",
   "APPLE_CERTIFICATE_PASSWORD",
   "TAURI_SIGNING_PRIVATE_KEY",
@@ -115,8 +110,8 @@ if (args[0] === "api" && args[1]?.startsWith("repos/wlsdks/ontology-atlas/git/re
 }
 if (args[0] === "secret" && args[1] === "list") {
   const names = args.includes("--env")
-    ? (scenario.secretNames ?? ${JSON.stringify(environmentSecrets)})
-    : (scenario.repoSecretNames ?? ${JSON.stringify(repositorySecrets)});
+    ? (scenario.secretNames ?? ${JSON.stringify(requiredSecrets)})
+    : (scenario.repoSecretNames ?? []);
   out(names.map((name) => ({ name })));
   process.exit(0);
 }
@@ -191,7 +186,7 @@ test("desktop GitHub release gate proves workflows, secrets, tag version, and cl
     const result = runReleaseGithub(fakeGhPath, fakeGitPath);
 
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, /all required split-scope signing secret names/);
+    assert.match(result.stdout, /every required signing secret name in release-signing/);
     assert.match(result.stdout, new RegExp(`${APP_TAG_PATTERN} matches package, Tauri, and Cargo versions`));
     assert.match(result.stdout, new RegExp(`${APP_TAG_PATTERN} has no existing local Git tag`));
     assert.match(result.stdout, new RegExp(`${APP_TAG_PATTERN} has no existing Git tag`));
@@ -199,14 +194,20 @@ test("desktop GitHub release gate proves workflows, secrets, tag version, and cl
   });
 });
 
-test("desktop GitHub release gate accepts API credentials in release-signing and legacy signing material at repository scope", () => {
+test("desktop GitHub release gate requires the certificate and updater secrets in release-signing, not at repository scope", () => {
   withFakeGh(
-    { secretNames: environmentSecrets, repoSecretNames: repositorySecrets },
+    {
+      secretNames: requiredSecrets.filter((name) => !movedToEnvironmentSecrets.includes(name)),
+      repoSecretNames: movedToEnvironmentSecrets,
+    },
     (fakeGhPath, fakeGitPath) => {
       const result = runReleaseGithub(fakeGhPath, fakeGitPath);
 
-      assert.equal(result.status, 0, result.stderr);
-      assert.match(result.stdout, /protected release-signing environment/);
+      assert.equal(result.status, 1);
+      assert.match(result.stderr, /missing release-signing environment secrets/);
+      for (const name of movedToEnvironmentSecrets) {
+        assert.match(result.stderr, new RegExp(`gh secret set ${name} --env release-signing --repo wlsdks/ontology-atlas`));
+      }
     },
   );
 });
@@ -223,19 +224,35 @@ test("desktop GitHub release gate fails before tag push when Developer ID direct
   });
 });
 
-test("desktop GitHub release gate requires the retained certificate and updater repository secrets", () => {
-  withFakeGh({ repoSecretNames: repositorySecrets.slice(0, -1) }, (fakeGhPath, fakeGitPath) => {
+test("desktop GitHub release gate rejects repository copies of the moved signing secrets outside the transition release", () => {
+  withFakeGh({ repoSecretNames: movedToEnvironmentSecrets }, (fakeGhPath, fakeGitPath) => {
     const result = runReleaseGithub(fakeGhPath, fakeGitPath);
 
     assert.equal(result.status, 1);
-    assert.match(result.stderr, /missing required repository signing secrets/);
-    assert.match(result.stderr, /TAURI_SIGNING_PRIVATE_KEY_PASSWORD/);
+    assert.match(result.stderr, /obsolete or over-scoped repository signing secrets remain/);
+    for (const name of movedToEnvironmentSecrets) {
+      assert.match(result.stderr, new RegExp(`gh secret delete ${name} --repo wlsdks/ontology-atlas`));
+    }
+  });
+});
+
+test("desktop GitHub release gate allows repository copies of the moved signing secrets for one transition release", () => {
+  withFakeGh({ repoSecretNames: movedToEnvironmentSecrets }, (fakeGhPath, fakeGitPath) => {
+    const result = runReleaseGithub(fakeGhPath, fakeGitPath, [
+      `--tag=${APP_TAG}`,
+      "--allow-obsolete-repository-secrets",
+    ]);
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stderr, /transition release only/);
+    assert.match(result.stderr, /wins over a repository secret of the same name/);
+    assert.match(result.stderr, /gh secret delete TAURI_SIGNING_PRIVATE_KEY --repo wlsdks\/ontology-atlas/);
   });
 });
 
 test("desktop GitHub release gate rejects obsolete Apple ID repository secrets", () => {
   withFakeGh({
-    repoSecretNames: [...repositorySecrets, "APPLE_ID"],
+    repoSecretNames: ["APPLE_ID"],
   }, (fakeGhPath, fakeGitPath) => {
     const result = runReleaseGithub(fakeGhPath, fakeGitPath);
 
@@ -248,7 +265,6 @@ test("desktop GitHub release gate rejects obsolete Apple ID repository secrets",
 test("desktop GitHub release gate allows obsolete Apple ID names only for one proven transition release", () => {
   withFakeGh({
     repoSecretNames: [
-      ...repositorySecrets,
       "APPLE_ID",
       "APPLE_APP_SPECIFIC_PASSWORD",
       "APPLE_TEAM_ID",
@@ -261,15 +277,15 @@ test("desktop GitHub release gate allows obsolete Apple ID names only for one pr
 
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stderr, /transition release only/);
-    assert.match(result.stderr, /not referenced by release-macos\.yml/);
-    assert.match(result.stderr, /delete them only after this release passes/);
+    assert.match(result.stderr, /never reads the Apple ID values/);
+    assert.match(result.stderr, /delete them only after it passes/);
     assert.match(result.stderr, /gh secret delete APPLE_ID --repo wlsdks\/ontology-atlas/);
   });
 });
 
 test("desktop GitHub release gate rejects API credential copies at repository scope", () => {
   withFakeGh({
-    repoSecretNames: [...repositorySecrets, "APPLE_API_KEY_ID"],
+    repoSecretNames: ["APPLE_API_KEY_ID"],
   }, (fakeGhPath, fakeGitPath) => {
     const result = runReleaseGithub(fakeGhPath, fakeGitPath);
 
@@ -281,7 +297,7 @@ test("desktop GitHub release gate rejects API credential copies at repository sc
 
 test("desktop GitHub release transition never allows API credential copies at repository scope", () => {
   withFakeGh({
-    repoSecretNames: [...repositorySecrets, "APPLE_API_KEY_ID"],
+    repoSecretNames: [...movedToEnvironmentSecrets, "APPLE_API_KEY_ID"],
   }, (fakeGhPath, fakeGitPath) => {
     const result = runReleaseGithub(fakeGhPath, fakeGitPath, [
       `--tag=${APP_TAG}`,

@@ -28,13 +28,11 @@ const STRUCTURALLY_VALID_P8 = Buffer.from(
   "-----BEGIN PRIVATE KEY-----\nprivate-key-material\n-----END PRIVATE KEY-----\n",
 ).toString("base64");
 const ENVIRONMENT_SECRET_NAMES = [
+  "APPLE_CERTIFICATE_P12_BASE64",
+  "APPLE_CERTIFICATE_PASSWORD",
   "APPLE_API_KEY_P8_BASE64",
   "APPLE_API_KEY_ID",
   "APPLE_API_ISSUER_ID",
-];
-const REPOSITORY_SECRET_NAMES = [
-  "APPLE_CERTIFICATE_P12_BASE64",
-  "APPLE_CERTIFICATE_PASSWORD",
   "TAURI_SIGNING_PRIVATE_KEY",
   "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
 ];
@@ -224,7 +222,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(readinessOutput, /protected release trigger accepts only a dispatched tag input and names that tag in the run|release-macos\.yml must have only workflow_dispatch/);
   assert.match(readinessOutput, /unprivileged release admission binds a protected branch dispatch to its trusted workflow commit|admit-release must be unprivileged/);
-  assert.match(readinessOutput, /macOS and Windows signing builds consume the admitted commit from release-signing|build-macos and build-windows must need admit-release/);
+  assert.match(readinessOutput, /macOS builds and verifies without secrets, signs from release-signing, and every build job consumes the admitted commit|build-macos, sign-macos, verify-macos and build-windows must need admit-release/);
   assert.match(readinessOutput, /staging and publication use the admitted commit and requested release tag|stage-macos and publish-macos must need admit-release/);
   assert.match(readinessOutput, /Windows builds its installer with no signing secret in the job|build-windows must run desktop:build:windows and reference no secret/);
   assert.match(result.stdout, /✓ desktop release secret gate blocks unsigned releases and malformed PKCS#12 or App Store Connect \.p8 credentials/);
@@ -533,10 +531,9 @@ process.exit(1);
 
     assert.equal(result.status, 1);
     assert.match(result.stderr, /missing release-signing environment secrets/);
-    assert.doesNotMatch(result.stderr, /APPLE_CERTIFICATE_P12_BASE64/);
-    assert.match(result.stderr, /APPLE_API_ISSUER_ID/);
-    assert.doesNotMatch(result.stderr, /gh secret set APPLE_CERTIFICATE_P12_BASE64/);
-    assert.match(result.stderr, /gh secret set APPLE_API_ISSUER_ID --env release-signing --repo wlsdks\/ontology-atlas/);
+    for (const name of ENVIRONMENT_SECRET_NAMES) {
+      assert.match(result.stderr, new RegExp(`gh secret set ${name} --env release-signing --repo wlsdks/ontology-atlas`));
+    }
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -619,7 +616,7 @@ if (args[0] === 'api') {
   process.exit(0);
 }
 if (args[0] === 'secret' && args[1] === 'list') {
-  console.log(JSON.stringify(args.includes('--env') ? ${JSON.stringify(secretNames.map((name) => ({ name })))} : ${JSON.stringify(REPOSITORY_SECRET_NAMES.map((name) => ({ name })))}));
+  console.log(JSON.stringify(args.includes('--env') ? ${JSON.stringify(secretNames.map((name) => ({ name })))} : []));
   process.exit(0);
 }
 if (args[0] === 'release' && args[1] === 'view') {
@@ -644,7 +641,7 @@ process.exit(1);
     );
 
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, /all required split-scope signing secret names/);
+    assert.match(result.stdout, /every required signing secret name in release-signing/);
     assert.match(result.stdout, new RegExp(`${APP_TAG_PATTERN} matches package, Tauri, and Cargo versions`));
     assert.match(result.stdout, new RegExp(`${APP_TAG_PATTERN} has no existing GitHub Release`));
   } finally {
@@ -680,7 +677,7 @@ if (args[0] === 'api') {
   process.exit(0);
 }
 if (args[0] === 'secret' && args[1] === 'list') {
-  console.log(JSON.stringify(args.includes('--env') ? ${JSON.stringify(secretNames.map((name) => ({ name })))} : ${JSON.stringify(REPOSITORY_SECRET_NAMES.map((name) => ({ name })))}));
+  console.log(JSON.stringify(args.includes('--env') ? ${JSON.stringify(secretNames.map((name) => ({ name })))} : []));
   process.exit(0);
 }
 if (args[0] === 'release' && args[1] === 'view') {

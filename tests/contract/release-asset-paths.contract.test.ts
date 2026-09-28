@@ -33,7 +33,8 @@ import {
 const WORKFLOW_PATH = ".github/workflows/release-macos.yml";
 const workflow = readFileSync(WORKFLOW_PATH, "utf-8");
 
-const buildJob = section(workflow, "  build-macos:", "  stage-macos:");
+const buildJob = section(workflow, "  build-macos:", "  sign-macos:");
+const signJob = section(workflow, "  sign-macos:", "  verify-macos:");
 const stageJob = section(workflow, "  stage-macos:", "  publish-macos:");
 const publishJob = section(workflow, "  publish-macos:", null);
 
@@ -133,18 +134,34 @@ describe("릴리스 자산 경로 계약", () => {
     // Given several paths, `upload-artifact` takes the least common ancestor as the
     // root: here that is `bundle/`, which adds a `dmg/` and
     // `macos/` level, and the downloading side had no way to know that depth.
-    const upload = step(buildJob, "Upload workflow artifact");
+    const upload = step(signJob, "Upload workflow artifact");
     expect(yamlValues(upload, "path")).toEqual(["release-upload"]);
     expect(yamlValues(upload, "name")).toEqual(["ontology-atlas-macos-${{ matrix.arch }}"]);
-    expect(buildJob).toContain("node scripts/stage-macos-release-assets.mjs");
+    expect(signJob).toContain("node scripts/stage-macos-release-assets.mjs");
   });
 
   it("아티팩트 폴더 이름이 아치를 나른다", () => {
     // On download, the folder is the only thing separating the two architectures.
-    const uploadName = yamlValues(step(buildJob, "Upload workflow artifact"), "name")[0];
+    const uploadName = yamlValues(step(signJob, "Upload workflow artifact"), "name")[0];
     for (const arch of ["aarch64", "x64"]) {
       expect(uploadName.replace("${{ matrix.arch }}", arch)).toBe(artifactNameForArch(arch));
     }
+  });
+
+  it("keeps the unsigned build artifact out of the pattern the release jobs download", () => {
+    const unsigned = yamlValues(step(buildJob, "Upload unsigned app and symbols"), "name")[0];
+    expect(unsigned).toContain("${{ matrix.arch }}");
+    for (const job of [stageJob, publishJob]) {
+      const pattern = yamlValues(step(job, "Download macOS artifacts"), "pattern")[0];
+      const matches = (name: string) =>
+        new RegExp(`^${pattern.split("*").map((part) => part.replace(/[.+?^${}()|[\]\\-]/g, "\\$&")).join(".*")}$`).test(name);
+      for (const arch of ["aarch64", "x64"]) {
+        expect(matches(artifactNameForArch(arch)), `${pattern} must still fetch ${arch}`).toBe(true);
+        expect(matches(unsigned.replace("${{ matrix.arch }}", arch)), `${pattern} would fetch the unsigned ${arch} app`).toBe(false);
+      }
+    }
+    const download = step(signJob, "Download unsigned app and symbols");
+    expect(yamlValues(download, "name")).toEqual([unsigned]);
   });
 
   it("매니페스트 빌더가 실제 레이아웃에서 두 아치를 찾는다", () => {

@@ -98,7 +98,7 @@ pnpm desktop:release-rehearsal --tag=vX.Y.Z
 ```
 
 Run the untagged rehearsal before creating every `v*` tag. It walks the
-`admit-release` and `build-macos` jobs of
+`admit-release`, `build-macos`, `sign-macos`, and `verify-macos` jobs of
 `.github/workflows/release-macos.yml` **in file order** on your machine, so a
 step that would stop the runner stops you first — for free.
 
@@ -117,6 +117,7 @@ step is picked up automatically. Steps it cannot run are printed as `SKIP`
 | --- | --- | --- |
 | Protected dispatch context | GitHub owns the event/ref/workflow SHA context | the `main` workflow_dispatch run |
 | Tag version and source admission | needs an existing remote tag; `--tag` rehearses both against current HEAD | the tagged rehearsal, then `admit-release` |
+| `Pack` / `Unpack unsigned app and symbols` | the tarball only crosses from the build runner to a fresh signing runner | the dispatched run |
 | Signing credentials / `Import Apple Developer ID certificate` | protected environment secrets | the runner |
 | `Sign and notarize release artifact` | `codesign` with a real identity + `notarytool` | the runner |
 | `Stage Draft Desktop Release` / `Publish Desktop Release` jobs | a real draft release and the `release` environment gate | the dispatched run |

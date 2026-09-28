@@ -7,7 +7,6 @@ import {
   LOCAL_ONLY_VALUES,
   OBSOLETE_REPOSITORY_SECRETS,
   OWNER_ENTERED_SECRETS,
-  REPOSITORY_SECRETS,
   REQUIRED_SECRETS,
   missingSecrets,
   parseArgs,
@@ -38,16 +37,12 @@ test("owner-entered secrets are the credential ones", () => {
   ]);
 });
 
-test("setup commands keep API credentials in release-signing and retained identities at repository scope", () => {
+test("setup commands put every signing secret in release-signing", () => {
   const commands = REQUIRED_SECRETS.map((name) => setupSecretCommand(name, "me/fork"));
 
   assert.equal(commands.length, 7);
-  for (const command of ENVIRONMENT_SECRETS.map((name) => setupSecretCommand(name, "me/fork"))) {
+  for (const command of commands) {
     assert.match(command, /gh secret set [A-Z0-9_]+ --env release-signing --repo me\/fork/);
-  }
-  for (const command of REPOSITORY_SECRETS.map((name) => setupSecretCommand(name, "me/fork"))) {
-    assert.match(command, /gh secret set [A-Z0-9_]+ --repo me\/fork/);
-    assert.doesNotMatch(command, /--env/);
   }
   for (const command of commands) {
     for (const localOnly of LOCAL_ONLY_VALUES) {
@@ -101,20 +96,19 @@ test("verify reports exactly what is still missing", () => {
 
   assert.deepEqual(
     missingSecrets(`${header}APPLE_CERTIFICATE_P12_BASE64  2026-07-27\nAPPLE_CERTIFICATE_PASSWORD  2026-07-27\n`),
-    ENVIRONMENT_SECRETS,
+    ENVIRONMENT_SECRETS.filter((name) => !name.startsWith("APPLE_CERTIFICATE_")),
   );
 
   assert.deepEqual(missingSecrets(""), ENVIRONMENT_SECRETS);
-  assert.deepEqual(missingSecrets("", REPOSITORY_SECRETS), REPOSITORY_SECRETS);
 });
 
-test("repository copies are reported without treating them as environment secrets", () => {
+test("a repository copy of any signing secret is reported for deletion", () => {
   const header = "NAME                          UPDATED\n";
   assert.deepEqual(
     repositoryScopedSecrets(
       `${header}APPLE_API_KEY_ID  2026-07-27\nAPPLE_ID  2026-07-27\nTAURI_SIGNING_PRIVATE_KEY  2026-07-27\nUNRELATED  2026-07-27\n`,
     ),
-    ["APPLE_API_KEY_ID", "APPLE_ID"],
+    ["APPLE_API_KEY_ID", "TAURI_SIGNING_PRIVATE_KEY", "APPLE_ID"],
   );
   assert.ok(OBSOLETE_REPOSITORY_SECRETS.includes("APPLE_ID"));
 });
