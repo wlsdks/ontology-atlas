@@ -589,7 +589,7 @@ await test("tools/list — each single-item tool description cross-references it
     assert.deepEqual(findBacklinks?.outputSchema?.required, ["target", "total", "matches"]);
     assert.equal(findBacklinks?.outputSchema?.additionalProperties, false);
     assert.equal(findBacklinks?.outputSchema?.properties?.total?.type, "integer");
-    assert.deepEqual(findBacklinks?.outputSchema?.properties?.matches?.items?.required, ["uid", "slug", "kind", "title", "mtime"]);
+    assert.deepEqual(findBacklinks?.outputSchema?.properties?.matches?.items?.required, ["slug", "isNode", "title", "mtime"]);
     assert.equal(findBacklinks?.outputSchema?.properties?.matches?.items?.additionalProperties, false);
     assert.equal(findBacklinks?.outputSchema?.properties?.matches?.items?.properties?.matchedKeys?.items?.type, "string");
     const findNeighbors = findTool("find_neighbors");
@@ -1208,14 +1208,14 @@ await test("tools/list — each single-item tool description cross-references it
     assert.equal(deleteConcept?.outputSchema?.properties?.changed?.type, "boolean");
     assert.equal(deleteConcept?.outputSchema?.properties?.backlinks?.items?.type, "object");
     assert.equal(deleteConcept?.outputSchema?.properties?.backlinksAtDelete?.items?.type, "object");
-    assert.deepEqual(deleteConcept?.outputSchema?.properties?.backlinks?.items?.required, ["uid", "slug", "kind", "title", "mtime"]);
+    assert.deepEqual(deleteConcept?.outputSchema?.properties?.backlinks?.items?.required, ["slug", "isNode", "title", "mtime"]);
     assert.equal(deleteConcept?.outputSchema?.properties?.backlinks?.items?.additionalProperties, false);
     const deleteBacklinkRow = deleteConcept?.outputSchema?.properties?.backlinksAtDelete?.items;
     assert.equal(deleteBacklinkRow?.properties?.uid?.pattern, "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$");
     assertCleanStringSchema(deleteBacklinkRow?.properties?.slug, "delete backlink slug");
     assertCleanStringSchema(deleteBacklinkRow?.properties?.kind, "delete backlink kind");
     assertCleanStringSchema(deleteBacklinkRow?.properties?.title, "delete backlink title");
-    assertCleanStringSchema(deleteBacklinkRow?.properties?.domain, "delete backlink domain");
+    assert.equal(deleteBacklinkRow?.properties?.domain?.type, "string");
     assertCleanStringSchema(deleteBacklinkRow?.properties?.matchedKeys?.items, "delete backlink matchedKeys item");
     assert.equal(deleteBacklinkRow?.properties?.matchedInBody?.type, "boolean");
     assert.equal(deleteConcept?.outputSchema?.properties?.captured?.type, "object");

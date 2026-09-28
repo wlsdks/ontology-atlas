@@ -75,12 +75,14 @@ export function createHealthQuery({
       }),
       healthCheck({
         id: 'dependency_cycles',
-        status: cycleResult.totalCycles === 0 ? 'pass' : 'fail',
+        status: cycleResult.totalCycles > 0 ? 'fail' : orderResult.acyclic ? 'pass' : 'warn',
         count: cycleResult.totalCycles,
         message:
-          cycleResult.totalCycles === 0
-            ? 'No directed dependency cycles were detected.'
-            : 'Directed dependency cycles block a clean prerequisite-first graph order.',
+          cycleResult.totalCycles > 0
+            ? 'Directed dependency cycles block a clean prerequisite-first graph order.'
+            : orderResult.acyclic
+              ? 'No directed dependency cycles were detected.'
+              : 'The dependency order is not acyclic, but the cycle search ran out of budget before naming a cycle; cycles({ maxHops }) with a narrower scope names them.',
       }),
       healthCheck({
         id: 'relation_recommendations',
@@ -160,6 +162,7 @@ export function createHealthQuery({
       },
       dependencyCycles: {
         totalCycles: cycleResult.totalCycles,
+        totalCyclesExact: cycleResult.totalCyclesExact,
         limited: cycleResult.limited,
         cycles: cycleResult.cycles,
       },

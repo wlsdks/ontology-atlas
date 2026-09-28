@@ -46,7 +46,7 @@ export function placeRelationCaptions(
 ): PlacedRelationCaption[] {
   const placed: PlacedRelationCaption[] = [];
   const overlaps = (left: CaptionBox, right: CaptionBox) => left.minX < right.maxX && left.maxX > right.minX && left.minY < right.maxY && left.maxY > right.minY;
-  for (const candidate of [...candidates].sort((a, b) => b.priority - a.priority || a.edgeId.localeCompare(b.edgeId))) {
+  for (const candidate of [...candidates].sort((a, b) => b.priority - a.priority || (a.edgeId < b.edgeId ? -1 : a.edgeId > b.edgeId ? 1 : 0))) {
     if (placed.length >= limit) break;
     const width = measure(candidate.text) + 8;
     const box = { ...candidate, minX: candidate.x - width / 2, maxX: candidate.x + width / 2, minY: candidate.y - height / 2, maxY: candidate.y + height / 2 };

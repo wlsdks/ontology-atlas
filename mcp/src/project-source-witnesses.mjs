@@ -128,5 +128,5 @@ export function deriveProjectSourceWitnessesFromDocs(input) {
     });
   }
 
-  return candidates.sort((left, right) => left.id.localeCompare(right.id));
+  return candidates.sort((left, right) => (left.id < right.id ? -1 : left.id > right.id ? 1 : 0));
 }

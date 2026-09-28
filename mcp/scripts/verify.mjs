@@ -530,19 +530,32 @@ function capturedDocSchemaFailure(schema, label) {
   return null;
 }
 
+const BACKLINK_IDENTITY_BRANCHES = [
+  {
+    properties: { isNode: { const: true } },
+    required: ['kind'],
+  },
+  {
+    properties: { isNode: { const: false } },
+    not: { anyOf: [{ required: ['uid'] }, { required: ['kind'] }] },
+  },
+];
+
 function backlinkRowsSchemaFailure(schema, label) {
   const row = schema?.items;
   if (
     schema?.type !== 'array' ||
     row?.type !== 'object' ||
-    !sameArray(row.required, ['uid', 'slug', 'kind', 'title', 'mtime']) ||
+    !sameArray(row.required, ['slug', 'isNode', 'title', 'mtime']) ||
+    !isDeepStrictEqual(row.oneOf, BACKLINK_IDENTITY_BRANCHES) ||
     row.additionalProperties !== false ||
     row.properties?.uid?.type !== 'string' ||
     row.properties?.uid?.pattern !== NODE_UID_PATTERN ||
+    row.properties?.isNode?.type !== 'boolean' ||
     nonBlankStringSchemaFailure(row.properties?.slug) ||
     nonBlankStringSchemaFailure(row.properties?.kind) ||
     nonBlankStringSchemaFailure(row.properties?.title) ||
-    nonBlankStringSchemaFailure(row.properties?.domain) ||
+    row.properties?.domain?.type !== 'string' ||
     row.properties?.mtime?.type !== 'number' ||
     row.properties?.mtime?.minimum !== 0 ||
     row.properties?.matchedKeys?.type !== 'array' ||
@@ -1298,34 +1311,11 @@ export function toolsListSchemaFailure(tools) {
   if (backlinksTotalSchema?.type !== 'integer' || backlinksTotalSchema.minimum !== 0) {
     return 'find_backlinks outputSchema total drift';
   }
-  const backlinksMatchesSchema = outputPropertyAt(findBacklinksTool, ['properties', 'matches']);
-  if (
-    backlinksMatchesSchema?.type !== 'array' ||
-    backlinksMatchesSchema.items?.type !== 'object' ||
-    !sameArray(backlinksMatchesSchema.items?.required, ['uid', 'slug', 'kind', 'title', 'mtime'])
-  ) {
-    return 'find_backlinks outputSchema matches drift';
-  }
-  if (backlinksMatchesSchema.items?.additionalProperties !== false) {
-    return 'find_backlinks outputSchema match openness drift';
-  }
-  if (backlinksMatchesSchema.items?.properties?.uid?.type !== 'string' || backlinksMatchesSchema.items?.properties?.uid?.pattern !== NODE_UID_PATTERN) {
-    return 'find_backlinks outputSchema match uid drift';
-  }
-  for (const propertyName of ['slug', 'kind', 'title']) {
-    if (backlinksMatchesSchema.items?.properties?.[propertyName]?.type !== 'string') {
-      return `find_backlinks outputSchema match ${propertyName} drift`;
-    }
-  }
-  if (backlinksMatchesSchema.items?.properties?.mtime?.type !== 'number' || backlinksMatchesSchema.items?.properties?.mtime?.minimum !== 0) {
-    return 'find_backlinks outputSchema match mtime drift';
-  }
-  if (backlinksMatchesSchema.items?.properties?.matchedKeys?.type !== 'array' || backlinksMatchesSchema.items?.properties?.matchedKeys?.items?.type !== 'string') {
-    return 'find_backlinks outputSchema match matchedKeys drift';
-  }
-  if (backlinksMatchesSchema.items?.properties?.matchedInBody?.type !== 'boolean') {
-    return 'find_backlinks outputSchema match matchedInBody drift';
-  }
+  const backlinksMatchesFailure = backlinkRowsSchemaFailure(
+    outputPropertyAt(findBacklinksTool, ['properties', 'matches']),
+    'find_backlinks outputSchema matches',
+  );
+  if (backlinksMatchesFailure) return backlinksMatchesFailure;
 
   const findNeighborsTool = tools.find((tool) => tool?.name === 'find_neighbors');
   if (!findNeighborsTool) return 'tools/list response missing find_neighbors tool';
@@ -5662,7 +5652,8 @@ function destructiveBacklinkRowsFailure(rows, toolName, propertyName) {
     if (
       !row ||
       !isCleanNonBlankString(row.slug) ||
-      !isCleanNonBlankString(row.kind) ||
+      typeof row.isNode !== 'boolean' ||
+      (row.isNode ? !isCleanNonBlankString(row.kind) : row.uid !== undefined || row.kind !== undefined) ||
       !isCleanNonBlankString(row.title) ||
       !Number.isFinite(row.mtime) ||
       row.mtime < 0
@@ -5671,7 +5662,7 @@ function destructiveBacklinkRowsFailure(rows, toolName, propertyName) {
     }
     if (
       Object.prototype.hasOwnProperty.call(row, 'domain') &&
-      !isCleanNonBlankString(row.domain)
+      typeof row.domain !== 'string'
     ) {
       return `${toolName} dry-run response ${propertyName}[${index}] domain drift`;
     }
@@ -6033,12 +6024,12 @@ function readMatchRowFailure(label, row, index, { evidence = false, backlinks = 
   if (typeof row.slug !== 'string' || row.slug.length === 0) {
     return `${label} response missing match slug at index ${index}`;
   }
-  if (evidence) {
+  if (evidence || backlinks) {
     if (typeof row.isNode !== 'boolean') {
       return `${label} response missing isNode: ${row.slug}`;
     }
     if (row.isNode) {
-      if (typeof row.uid !== 'string' || row.uid.length === 0) {
+      if (evidence && (typeof row.uid !== 'string' || row.uid.length === 0)) {
         return `${label} response missing node uid: ${row.slug}`;
       }
       if (typeof row.kind !== 'string' || row.kind.length === 0) {

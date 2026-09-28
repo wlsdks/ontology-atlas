@@ -526,29 +526,40 @@ export function createScopeQueries({
     return { rows: sortLineageRows(rows), edges: collectedEdges, limited };
   }
 
+  // Johnson's minimum-vertex rule: each simple cycle up to maxDepth is found once, from its lowest-ranked node, in O(searchBudget · (out-degree + log limit)).
   function cycles(options = {}) {
     const limit = normalizeLimit(options.limit, 20);
     const maxDepth = normalizeDepth(options.maxHops ?? options.depth, 8);
     const typeSet = normalizeTypes(options.types ?? ['dependencies'], options.typeName || 'types');
     const searchBudget = normalizeSearchBudget(options.searchBudget);
-    const cycleMap = new Map();
-    const sortedNodes = [...nodes].sort((a, b) => a.slug.localeCompare(b.slug));
-    // Path enumeration is exponential and a cycle-free graph never trips the cycle
-    // limit, so this uses `allPaths`' searchBudget contract; hitting it reports `exhaustive: false`
-    // rather than truncating silently.
+    const rank = new Map(
+      [...nodes].sort((a, b) => a.slug.localeCompare(b.slug)).map((node, index) => [node.slug, index]),
+    );
+    const successors = new Map();
+    for (const [from, list] of outgoing) {
+      const edgeByTarget = new Map();
+      for (const edge of list) {
+        if (edge.resolved && typeAllowed(edge.via, typeSet) && rank.has(edge.to) && !edgeByTarget.has(edge.to)) {
+          edgeByTarget.set(edge.to, edge);
+        }
+      }
+      if (rank.has(from) && edgeByTarget.size > 0) successors.set(from, [...edgeByTarget.values()]);
+    }
+    const shortest = [];
+    let longestKept = Number.POSITIVE_INFINITY;
+    const path = [];
+    const edgePath = [];
+    let totalCycles = 0;
     let expandedStates = 0;
     let truncatedByBudget = false;
 
-    for (const node of sortedNodes) {
-      if (cycleMap.size > limit || truncatedByBudget) break;
-      findCyclesFrom(node.slug, node.slug, [node.slug], [], new Set([node.slug]));
+    for (const start of [...successors.keys()].sort((a, b) => rank.get(a) - rank.get(b))) {
+      if (maxDepth === 0 || truncatedByBudget) break;
+      expand(rank.get(start), start);
     }
+    keepShortest();
 
-    const rows = [...cycleMap.values()].sort(
-      (a, b) => a.length - b.length || a.nodes.join('\0').localeCompare(b.nodes.join('\0')),
-    );
-
-    const complete = !truncatedByBudget && rows.length <= limit;
+    const complete = !truncatedByBudget && totalCycles <= limit;
     return {
       operation: 'cycles',
       relationTypes: [...typeSet].sort(),
@@ -557,21 +568,25 @@ export function createScopeQueries({
       expandedStates,
       exhaustive: !truncatedByBudget,
       truncatedByBudget,
-      totalCycles: rows.length,
-      // Once the budget is hit, "0" means "not fully examined", not "none".
-      // Without this field, zero cycles reads as acyclic.
+      totalCycles,
       totalCyclesExact: !truncatedByBudget,
-      limited: rows.length > limit || truncatedByBudget,
-      cycles: rows.slice(0, limit),
+      limited: totalCycles > shortest.length || truncatedByBudget,
+      cycles: shortest.map((cycle) => ({
+        id: cycle.key,
+        length: cycle.nodes.length - 1,
+        nodes: cycle.nodes,
+        nodeSummaries: pathNodes(cycle.nodes),
+        edges: cycle.edges.map(formatCompiledEdge),
+      })),
       evidence: {
         status: complete ? 'complete' : 'partial',
-        reason: truncatedByBudget ? 'search_budget' : rows.length > limit ? 'limit' : 'complete',
+        reason: truncatedByBudget ? 'search_budget' : totalCycles > limit ? 'limit' : 'complete',
         nextStep: complete ? 'use' : 'narrow',
         recommendation: complete
           ? 'Safe to treat totalCycles as complete for the requested bounds: zero means acyclic within maxDepth.'
           : truncatedByBudget
-            ? 'Search budget hit before the graph was exhausted; zero cycles here does NOT mean acyclic. Reduce maxHops, narrow types, or raise searchBudget.'
-            : 'totalCycles is exact, but the list is truncated by limit; raise limit to see the rest.',
+            ? 'Search budget hit before the graph was exhausted, so totalCycles is a lower bound and zero does NOT mean acyclic. Reduce maxHops, narrow types, or raise searchBudget.'
+            : 'totalCycles is exact, but the list holds only the shortest cycles up to limit; raise limit to see the rest.',
         saferQuery: complete
           ? undefined
           : {
@@ -584,36 +599,38 @@ export function createScopeQueries({
       },
     };
 
-    function findCyclesFrom(start, current, path, edgePath, visited) {
-      if (path.length > maxDepth || cycleMap.size > limit || truncatedByBudget) return;
+    function expand(startRank, current) {
       if (expandedStates >= searchBudget) {
         truncatedByBudget = true;
         return;
       }
       expandedStates += 1;
-
-      for (const edge of outgoing.get(current) || []) {
-        if (!edge.resolved || !typeAllowed(edge.via, typeSet)) continue;
-        // A self-edge is a length-1 cycle. `add_relation` accepts one, and skipping it
-        // would contradict `topological_order`'s `acyclic: false` on the same graph.
-        if (edge.to === start && (path.length > 1 || edge.to === current)) {
-          const cycle = normalizeCycle(path, [...edgePath, edge]);
-          if (!cycleMap.has(cycle.key) && cycleMap.size <= limit) {
-            cycleMap.set(cycle.key, {
-              id: cycle.key,
-              length: cycle.nodes.length - 1,
-              nodes: cycle.nodes,
-              nodeSummaries: pathNodes(cycle.nodes),
-              edges: cycle.edges.map(formatCompiledEdge),
-            });
-          }
-          continue;
+      path.push(current);
+      for (const edge of successors.get(current) ?? []) {
+        if (edge.to === path[0]) {
+          record(edge);
+        } else if (path.length < maxDepth && rank.get(edge.to) > startRank && !path.includes(edge.to)) {
+          edgePath.push(edge);
+          expand(startRank, edge.to);
+          edgePath.pop();
+          if (truncatedByBudget) break;
         }
-        if (visited.has(edge.to) || path.length >= maxDepth) continue;
-        visited.add(edge.to);
-        findCyclesFrom(start, edge.to, [...path, edge.to], [...edgePath, edge], visited);
-        visited.delete(edge.to);
       }
+      path.pop();
+    }
+
+    function record(closingEdge) {
+      totalCycles += 1;
+      if (path.length > longestKept) return;
+      const cycle = normalizeCycle(path, [...edgePath, closingEdge]);
+      shortest.push({ ...cycle, sortKey: cycle.nodes.join('\0') });
+      if (shortest.length === 2 * limit) keepShortest();
+    }
+
+    function keepShortest() {
+      shortest.sort((a, b) => a.nodes.length - b.nodes.length || a.sortKey.localeCompare(b.sortKey));
+      shortest.length = Math.min(shortest.length, limit);
+      if (shortest.length === limit) longestKept = shortest[limit - 1].nodes.length - 1;
     }
   }
 

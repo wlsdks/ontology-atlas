@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { underCollation } from '../../../../tests/helpers/under-collation';
 import { captionWithinFlatBudget, placeRelationCaptions, relationCaptionText } from './relation-captions';
 
 describe('map relation meaning captions', () => {
@@ -15,6 +16,13 @@ describe('map relation meaning captions', () => {
       { edgeId: 'offscreen', text: 'contains', x: 290, y: 80, priority: 0 },
     ], [{ minX: 60, maxX: 100, minY: 60, maxY: 100 }], { left: 16, right: 284, top: 16, bottom: 180 }, (text) => text.length * 6, 20);
     expect(result.map((item) => item.edgeId)).toEqual(['depends']);
+  });
+  it('gives a contested spot to the same caption whatever the machine locale', () => {
+    const place = () => placeRelationCaptions([
+      { edgeId: 'edge:결제', text: 'pays', x: 150, y: 80, priority: 1 },
+      { edgeId: 'edge:auth', text: 'signs in', x: 150, y: 80, priority: 1 },
+    ], [], { left: 16, right: 284, top: 16, bottom: 180 }, (text) => text.length * 6, 20).map((item) => item.edgeId);
+    expect(underCollation('ko', place)).toEqual(underCollation('en', place));
   });
 });
 

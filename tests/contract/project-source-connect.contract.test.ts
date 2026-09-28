@@ -11,6 +11,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { underCollation } from "../helpers/under-collation";
 import { deriveProjectSourceWitnesses } from "../../src/views/home/lib/project-source-witnesses";
 import { deriveProjectSourceWitnessesFromDocs } from "../../mcp/src/project-source-witnesses.mjs";
 import { extractProjectMeaningEvidencePaths as extractMcpMeaningEvidence } from "../../mcp/src/project-meaning-evidence.mjs";
@@ -155,6 +156,27 @@ describe("witness derivation parity", () => {
       "jsonschema",
       "transform",
     ]);
+  });
+
+  it("orders witnesses the same in the app and the MCP server whatever the machine locale", () => {
+    const docs = [
+      { slug: "music-streaming", frontmatter: { kind: "project", slug: "music-streaming", title: "Music" } },
+      { slug: "capabilities/재생", frontmatter: { kind: "capability", path: "src/play.ts" } },
+      { slug: "capabilities/queue", frontmatter: { kind: "capability", path: "src/queue.ts" } },
+    ];
+    const nodes = [
+      { id: "project:music-streaming", kind: "project", title: "Music", projectIds: [], agentSlug: "music-streaming" },
+      { id: "capability:재생", kind: "capability", title: "재생", projectIds: ["music-streaming"], agentSlug: "capabilities/재생" },
+      { id: "capability:queue", kind: "capability", title: "Queue", projectIds: ["music-streaming"], agentSlug: "capabilities/queue" },
+    ];
+    const witnessIds = (locale: string) => underCollation(locale, () => ({
+      app: deriveProjectSourceWitnesses({ projectSlug: "music-streaming", nodes: nodes as never, docs: docs as never }).map((witness) => witness.id),
+      mcp: deriveProjectSourceWitnessesFromDocs({ projectSlug: "music-streaming", docs }).map((witness) => witness.id),
+    }));
+    const english = witnessIds("en");
+    expect(english.app).toHaveLength(2);
+    expect(english.mcp).toEqual(english.app);
+    expect(witnessIds("ko")).toEqual(english);
   });
 });
 

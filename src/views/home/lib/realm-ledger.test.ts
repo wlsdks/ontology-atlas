@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { underCollation } from "../../../../tests/helpers/under-collation";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { buildOntologyTree } from "@/entities/knowledge-graph/lib/ontology-tree";
 import {
@@ -134,5 +135,16 @@ describe("computeRealmBoundary", () => {
     const a = computeRealmBoundary({ edges, memberIds, nodeById });
     const b = computeRealmBoundary({ edges: [...edges].reverse(), memberIds, nodeById });
     expect(a.crossings.map((c) => c.edgeId)).toEqual(b.crossings.map((c) => c.edgeId));
+  });
+
+  it("orders crossings the same whatever the machine locale", () => {
+    const titled = new Map(nodeById);
+    titled.set("E1", node("E1", "element", "결제"));
+    titled.set("C2", node("C2", "capability", "auth"));
+    const crossingEdges = [...edges, edge("C2", "E9", "uses")];
+    const memberIds = collectRealmMemberIds(findRealmSubtree(roots, "D1")!);
+    const order = () =>
+      computeRealmBoundary({ edges: crossingEdges, memberIds, nodeById: titled }).crossings.map((c) => c.edgeId);
+    expect(underCollation("ko", order)).toEqual(underCollation("en", order));
   });
 });

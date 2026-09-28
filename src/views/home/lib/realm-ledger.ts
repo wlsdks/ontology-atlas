@@ -38,6 +38,8 @@ const REALM_BOUNDARY_EXCLUDED_TYPES: ReadonlySet<string> = new Set([
   "belongs_to",
 ]);
 
+const compareCodeUnits = (left: string, right: string): number => (left < right ? -1 : left > right ? 1 : 0);
+
 function findInNode(node: OntologyTreeNode, id: string): OntologyTreeNode | null {
   if (node.node.id === id) return node;
   for (const child of node.children) {
@@ -133,10 +135,10 @@ export function computeRealmBoundary(input: {
 
   crossings.sort(
     (a, b) =>
-      a.relationType.localeCompare(b.relationType) ||
-      a.fromTitle.localeCompare(b.fromTitle) ||
-      a.toTitle.localeCompare(b.toTitle) ||
-      a.edgeId.localeCompare(b.edgeId),
+      compareCodeUnits(a.relationType, b.relationType) ||
+      compareCodeUnits(a.fromTitle, b.fromTitle) ||
+      compareCodeUnits(a.toTitle, b.toTitle) ||
+      compareCodeUnits(a.edgeId, b.edgeId),
   );
 
   return { total: crossings.length, crossings };

@@ -37,6 +37,11 @@ const NON_BLANK_STRING_SCHEMA = Object.freeze({
   minLength: 1,
   pattern: '^(?!\\s)(?!.*\\s$)(?!.*\\u0000).+$',
 });
+const NON_BLANK_MULTILINE_TEXT_SCHEMA = Object.freeze({
+  type: 'string',
+  minLength: 1,
+  pattern: '^(?!\\s)(?![\\s\\S]*\\s$)(?![\\s\\S]*\\u0000)[\\s\\S]+$',
+});
 const BACKLINK_REWRITE_VALUE_OUTPUT_SCHEMA = Object.freeze({
   type: ['array', 'object', 'string'],
   minLength: NON_BLANK_STRING_SCHEMA.minLength,
@@ -1224,19 +1229,35 @@ const BACKLINK_REWRITE_PLAN_OUTPUT_SCHEMA = Object.freeze({
 const BACKLINK_ROW_OUTPUT_SCHEMA = Object.freeze({
   type: 'object',
   properties: {
-    uid: { ...NON_BLANK_STRING_SCHEMA, pattern: NODE_UID_PATTERN },
+    uid: {
+      ...NON_BLANK_STRING_SCHEMA,
+      pattern: NODE_UID_PATTERN,
+      description: 'The referring node\'s permanent UID. Absent when that node has no valid `uid:` (validate_vault reports it) and on every non-node row.',
+    },
     slug: NON_BLANK_STRING_SCHEMA,
     kind: NON_BLANK_STRING_SCHEMA,
+    isNode: {
+      type: 'boolean',
+      description: 'True when the referrer is a graph node (has `kind:`). False for a wiki page or other Markdown that links to the target; such a row carries neither `uid` nor `kind`.',
+    },
     title: NON_BLANK_STRING_SCHEMA,
-    domain: NON_BLANK_STRING_SCHEMA,
+    domain: { type: 'string' },
     mtime: { type: 'number', minimum: 0 },
     matchedKeys: { type: 'array', items: NON_BLANK_STRING_SCHEMA },
     matchedInBody: { type: 'boolean' },
-    // Set when the referrer names an ambiguous tail that only *could* mean this
-    // node — delete_concept widens its safety check to these rows.
     ambiguousTail: { type: 'boolean' },
   },
-  required: ['uid', 'slug', 'kind', 'title', 'mtime'],
+  required: ['slug', 'isNode', 'title', 'mtime'],
+  oneOf: [
+    {
+      properties: { isNode: { const: true } },
+      required: ['kind'],
+    },
+    {
+      properties: { isNode: { const: false } },
+      not: { anyOf: [{ required: ['uid'] }, { required: ['kind'] }] },
+    },
+  ],
   additionalProperties: false,
 });
 const CAPTURED_DOC_OUTPUT_SCHEMA = Object.freeze({
@@ -2175,6 +2196,7 @@ const GIT_HISTORY_OUTPUT_SCHEMA = Object.freeze({
 
 export {
   NON_BLANK_STRING_SCHEMA,
+  NON_BLANK_MULTILINE_TEXT_SCHEMA,
   GRAPH_REF_ARRAY_MAX_ITEMS,
   LOCALE_LABELS_SCHEMA,
   IGNORE_ARRAY_MAX_ITEMS,

@@ -194,7 +194,7 @@ describe("evaluateDogfoodGate", () => {
     backlinksOutputSchemaDrifted.tools.find((tool) => tool.name === "find_backlinks").outputSchema.properties.matches.items.properties.matchedKeys.items.type = "number";
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, toolsList: backlinksOutputSchemaDrifted }),
-      ["tools/list: find_backlinks outputSchema match matchedKeys drift"],
+      ["tools/list: find_backlinks outputSchema matches drift"],
     );
     const neighborsOutputSchemaDrifted = makeDogfoodToolsList();
     neighborsOutputSchemaDrifted.tools.find((tool) => tool.name === "find_neighbors").outputSchema.properties.edges.items.required = ["direction", "from", "to", "via", "resolved"];
