@@ -101,7 +101,7 @@ describe("<html lang> is right before the first paint", () => {
  * 356 → 342 (2026-09-25, models tab): the API Key pane moved from the settings sheet to the
  * Agents destination and was rewritten without per-element sites.
  */
-const BREAK_KEEP_CEILING = 342;
+const BREAK_KEEP_CEILING = 338;
 
 function stripComments(source: string): string {
   return source

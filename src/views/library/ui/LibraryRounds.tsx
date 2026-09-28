@@ -13,7 +13,7 @@ import { cn } from "@/shared/lib/cn";
 import { badgeClass } from "@/shared/ui/badge-class";
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
-import { PAGE_FRAME_FORM } from "@/shared/ui/page-frame";
+import { PAGE_FRAME_FORM, PAGE_LEDE, PAGE_TITLE } from "@/shared/ui/page-frame";
 import { Button, EmptyState, RowButton, buttonVariants } from "@/shared/ui";
 
 import { useLibraryRounds } from "../lib/library-rounds-context";
@@ -256,10 +256,10 @@ export function LibraryRounds() {
               <p className={libraryEyebrowClass(locale)}>
                 {t("eyebrow")}
               </p>
-              <h1 className="mt-2 text-display leading-display font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+              <h1 className={`mt-2 ${PAGE_TITLE}`}>
                 {t("title")}
               </h1>
-              <p data-testid="library-rounds-header-line" className="mt-2 max-w-prose text-body-lg leading-title text-[color:var(--color-text-tertiary)]">
+              <p data-testid="library-rounds-header-line" className={`mt-2 max-w-prose ${PAGE_LEDE}`}>
                 <span className="text-[color:var(--color-text-secondary)]">{t("header.rounds", { count: rounds.length })}</span>
                 {" · "}
                 <span className={running ? "text-[color:var(--color-indigo-text-soft)]" : undefined}>{headerLine}</span>
@@ -387,8 +387,8 @@ function Header({ t }: { t: ReturnType<typeof useTranslations<"library.rounds">>
         <p className={libraryEyebrowClass(locale)}>
           {t("eyebrow")}
         </p>
-        <h1 className="mt-2 text-display leading-display font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">{t("title")}</h1>
-        <p className="mt-2 max-w-prose text-body-lg leading-title text-[color:var(--color-text-tertiary)] [word-break:keep-all]">{t("lede")}</p>
+        <h1 className={`mt-2 ${PAGE_TITLE}`}>{t("title")}</h1>
+        <p className={`mt-2 max-w-prose ${PAGE_LEDE}`}>{t("lede")}</p>
       </div>
       <Link href={DOCUMENT_AUTOMATIONS_HREF} data-testid="library-rounds-manage-automations" className={cn(controlClass({ shape: "link", size: "sm", tone: "secondary" }), "atlas-touch-floor")}>
         <CalendarClock size={ICON_SIZE.sm} aria-hidden />

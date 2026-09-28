@@ -28,8 +28,8 @@
   "shapeWikiTitle": "문서 위키",
   "shapeWikiBody": "sources/에 문서를 넣으면 에이전트가 문서마다 위키 페이지를 써요. 지도도 코드도 필요 없어요.",
   "shapeMapTitle": "코드베이스 기반 온톨로지 지도",
-  "shapeMapBody": "코드가 무엇을 만들고 왜 그런지 적어 두는 시작 노드와 에이전트 스킬. 위키는 없어요.",
+  "shapeMapBody": "코드가 무엇을 만들고 왜 그런지 적어 두는 시작 개념과 에이전트 스킬. 위키는 없어요.",
   "shapeBothTitle": "둘 다",
-  "shapeBothBody": "지도와 위키를 나란히. 위키가 지도에 노드를 제안할 수 있어요.",
+  "shapeBothBody": "지도와 위키를 나란히. 위키가 지도에 개념을 제안할 수 있어요.",
   "shapeBack": "뒤로"
 }

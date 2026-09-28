@@ -13,6 +13,7 @@ export { Checkbox } from './checkbox';
  * button semantics. `<Button>` covers only the standard button.
  */
 export { Chip, IconButton, RowButton } from './controls';
+export { CloseButton } from './close-button';
 export { controlClass } from './control-class';
 export { LiveAnnouncer } from './live-announcer';
 export { InfoHint } from './info-hint';

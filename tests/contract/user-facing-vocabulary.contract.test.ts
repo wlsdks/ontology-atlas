@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import en from '../../messages/en.json';
 import ko from '../../messages/ko.json';
 
 /**
@@ -34,8 +35,7 @@ import ko from '../../messages/ko.json';
  * The rule it enforces lives in `.claude/rules/design.md`, "One word per thing".
  */
 
-/** Every user-facing Korean string, flattened with its key path for a readable failure. */
-function korean(): Array<{ path: string; text: string }> {
+function strings(catalog: unknown): Array<{ path: string; text: string }> {
   const out: Array<{ path: string; text: string }> = [];
   const walk = (node: unknown, path: string) => {
     if (typeof node === 'string') {
@@ -47,8 +47,12 @@ function korean(): Array<{ path: string; text: string }> {
       walk(value, path ? `${path}.${key}` : key);
     }
   };
-  walk(ko, '');
+  walk(catalog, '');
   return out;
+}
+
+function korean(): Array<{ path: string; text: string }> {
+  return strings(ko);
 }
 
 function hits(word: string): string[] {
@@ -181,6 +185,25 @@ describe('사용자가 읽는 말 — 한 가지는 한 이름으로', () => {
           `name; a plainer word makes people learn the vocabulary again in files and the CLI.`,
       ).toBeLessThanOrEqual(cap);
     }
+  });
+
+  it('one node on the map is a concept in Korean copy', () => {
+    const scanned = korean().length;
+    expect(scanned, 'the Korean catalog read nothing').toBeGreaterThan(1000);
+    expect(hits('노드')).toEqual([]);
+  });
+
+  it('English copy does not grow the node word back', () => {
+    const NODE_BASELINE = 9;
+    const survivors = strings(en)
+      .filter((entry) => /\bnodes?\b/i.test(entry.text.replace(/\{nodes\}/g, '')))
+      .map((entry) => entry.path);
+    expect(strings(en).length, 'the English catalog read nothing').toBeGreaterThan(1000);
+    expect(
+      survivors.length,
+      `"node" grew from ${NODE_BASELINE} to ${survivors.length}: ${survivors.join(', ')}. ` +
+        'Name the Node.js runtime or a CLI command only; a node on the map is a concept.',
+    ).toBeLessThanOrEqual(NODE_BASELINE);
   });
 
   it('빈 지도 화면은 종류 이름으로 말하지 않는다', () => {

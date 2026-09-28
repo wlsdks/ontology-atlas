@@ -19,20 +19,20 @@
     "indexDefaultExpanded": "펼침",
     "indexDefaultCollapsed": "접힘",
     "canvasBgLabel": "캔버스 배경",
-    "canvasBgCaption": "지도 배경 무늬를 골라요. 배경은 언제나 노드·연결보다 옅어요",
+    "canvasBgCaption": "지도 배경 무늬를 골라요. 배경은 언제나 개념·연결보다 옅어요",
     "canvasBg": {
       "dot": "도트(기본)",
       "web": "근접 성좌",
       "depth": "깊이 도트"
     },
-    "glyphSetLabel": "노드 아이콘",
-    "glyphSetCaption": "노드 아이콘 그림체를 골라요. 모양(종류)은 그대로예요",
+    "glyphSetLabel": "개념 아이콘",
+    "glyphSetCaption": "개념 아이콘 그림체를 골라요. 모양(종류)은 그대로예요",
     "glyphSet": {
       "geometric": "기하(기본)",
       "line": "라인"
     },
     "arrangementLabel": "배치 기준",
-    "arrangementCaption": "3D 지도에서 노드의 자리를 무엇이 정할지 골라요. 「소유」는 담는 구조를 층으로 쌓고, 「결합」은 관계가 많은 노드끼리 가까이 모아요",
+    "arrangementCaption": "3D 지도에서 개념의 자리를 무엇이 정할지 골라요. 「소유」는 담는 구조를 층으로 쌓고, 「결합」은 관계가 많은 개념끼리 가까이 모아요",
     "arrangement": {
       "ownership": "소유",
       "coupling": "결합"
@@ -104,9 +104,9 @@
       "affordanceBar": "머리 위 막대",
       "affordanceBadge": "어깨 배지",
       "affordanceHint": {
-        "pill": "노드에서 떨어진 빈 자리에 뜨고 점선으로 이어져요. 셋 중 유일하게 자리를 「찾아야」 해서, 빈 곳이 없어지면 멀어져요.",
-        "bar": "고른 노드 바로 위에 글자 버튼이 떠요. 고르지 않으면 아무것도 없고, 몇 개가 열릴지 숫자로 알려 줘요.",
-        "badge": "노드 왼쪽 위 어깨에 붙은 작은 원이에요. 노드를 따라다녀서 자리를 찾을 일이 없고, 무엇을 할지는 호버로 알려 줘요."
+        "pill": "개념에서 떨어진 빈 자리에 뜨고 점선으로 이어져요. 셋 중 유일하게 자리를 「찾아야」 해서, 빈 곳이 없어지면 멀어져요.",
+        "bar": "고른 개념 바로 위에 글자 버튼이 떠요. 고르지 않으면 아무것도 없고, 몇 개가 열릴지 숫자로 알려 줘요.",
+        "badge": "개념 왼쪽 위 어깨에 붙은 작은 원이에요. 개념을 따라다녀서 자리를 찾을 일이 없고, 무엇을 할지는 호버로 알려 줘요."
       },
       "structureLabel": "확장 구조",
       "structureDisc": "나선 원반",
@@ -168,7 +168,7 @@
     "agentStatusLabel": "작업 중 표시",
     "agentStatusCaption": "에이전트나 사람이 이 폴더에 쓰는 동안 지도 위에 「작업 중」과 마지막 작업 시각을 띄워요. 기본은 켜짐.",
     "agentNotificationsLabel": "알림",
-    "agentNotificationsCaption": "작업이 시작·끝날 때, 도메인이 생기거나 사라질 때 벨에 남겨요. 노드 하나·관계 하나는 알리지 않아요. 지도가 이미 보여줘요.",
+    "agentNotificationsCaption": "작업이 시작·끝날 때, 도메인이 생기거나 사라질 때 벨에 남겨요. 개념 하나·관계 하나는 알리지 않아요. 지도가 이미 보여줘요.",
     "agentNotificationKindsLabel": "받을 알림",
     "agentNotificationKindsCaption": "끈 갈래는 벨에 쌓이지 않아요.",
     "runtimes": {

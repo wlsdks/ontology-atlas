@@ -85,7 +85,7 @@
     "explored": "Explored {title}",
     "missing": "This concept is no longer in the current folder. Your past experience remains.",
     "rulesTitle": "How do I earn experience?",
-    "rules": "Preview a concept here for {explore} XP, then keep a discovery about it for {reflect} XP. Each activity counts once per concept. Generated node counts and approvals do not earn XP. Personal memories are not converted into experience.Adventure rewards accumulate separately. Away progress is capped at four hours.",
+    "rules": "Preview a concept here for {explore} XP, then keep a discovery about it for {reflect} XP. Each activity counts once per concept. Generated concept counts and approvals do not earn XP. Personal memories are not converted into experience.Adventure rewards accumulate separately. Away progress is capped at four hours.",
     "storage": "Growth and discoveries stay on this device. They are separated by project UID; copies of the same project share progress. Clearing app data removes them.",
     "unreadable": "Growth records could not be read. Existing data is preserved and no new experience is being saved.",
     "failed": "Growth could not be saved. Your discovery draft is still here.",

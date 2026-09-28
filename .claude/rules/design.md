@@ -49,7 +49,7 @@ is a defect. Source: `docs/DESIGN-SYSTEM.md`, "Scale fixed contract" and
   create a gateway token only once a second real consumer exists.
 - Settings sheets and their drill-ins: row labels and interactive text use
   `text-body`, descriptions and values `text-label`, and `text-caption` (9.5px)
-  only for one uppercase eyebrow. LNB rows use `px-3 py-2` and `text-body-lg`.
+  only for one uppercase eyebrow. LNB rows use `px-3 py-2` and `text-body`.
   Gate: `tests/contract/settings-sheet-type-dialect.contract.test.ts`.
 
 ## Design charter

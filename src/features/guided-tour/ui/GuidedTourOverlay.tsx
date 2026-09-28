@@ -323,7 +323,7 @@ export function GuidedTourOverlay({
       {step.anchor === null ? (
         <div
           data-testid="guided-tour-scrim"
-          className="fixed inset-0 z-[var(--z-tour)] transition-opacity duration-[var(--topology-tour-transition-ms)] ease-[var(--topology-motion-ease-out)] motion-reduce:transition-none"
+          className="fixed inset-0 z-[var(--z-tour)] transition-opacity duration-[var(--topology-tour-transition-ms)] ease-[var(--motion-ease)] motion-reduce:transition-none"
           style={{ background: "var(--topology-tour-scrim-surface)" }}
         />
       ) : anchorRect ? (

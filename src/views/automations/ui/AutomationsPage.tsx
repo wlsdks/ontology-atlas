@@ -14,7 +14,7 @@ import { cn } from "@/shared/lib/cn";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Button, buttonVariants, EmptyState, TabBar, useToast } from "@/shared/ui";
 
-import { PAGE_FRAME_FORM, PAGE_HEADER_ROW } from "@/shared/ui/page-frame";
+import { PAGE_FRAME_FORM, PAGE_HEADER_ROW, PAGE_TITLE } from "@/shared/ui/page-frame";
 import { AutomationScheduleRow } from "./AutomationScheduleRow";
 import { AutomationEmptyWorkbench } from "./AutomationEmptyWorkbench";
 
@@ -97,7 +97,7 @@ export function AutomationsPage({
       <div className={`${PAGE_FRAME_FORM} flex min-h-full flex-col gap-6 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))] lg:pb-[var(--page-bottom-breath)]`}>
         <header className={PAGE_HEADER_ROW}>
           <div className="min-w-0">
-            <h1 className="text-display font-[var(--font-weight-signature)]">{t("title")}</h1>
+            <h1 className={PAGE_TITLE}>{t("title")}</h1>
             <p className="mt-2 max-w-prose text-body-lg text-[color:var(--color-text-tertiary)]">{t("lede")}</p>
           </div>
         </header>

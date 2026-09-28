@@ -73,6 +73,7 @@ import {
 } from "./DocumentConfirmStep";
 import { PendingDocumentPane, type ChangedDocument } from "./PendingDocumentPane";
 import { cn } from "@/shared/lib/cn";
+import { PAGE_TITLE } from "@/shared/ui/page-frame";
 
 /**
  * Atlas Git, the body of the history destination. When the screen cannot record yet it is
@@ -1051,7 +1052,7 @@ function PageHeader({
         {/* Ramp utilities only: an arbitrary-length token raises the size but keeps the smaller step's
             leading. The display step matches every destination's h1; the pane's selection headline
             outranks it with `text-hero`. */}
-        <h1 className="flex items-center gap-2 text-title font-[var(--font-weight-strong)] tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)] sm:text-display">
+        <h1 className={cn("flex items-center gap-2", PAGE_TITLE)}>
           <HistoryIcon size={ICON_SIZE.lg} aria-hidden className="text-[color:var(--color-indigo-text-soft)]" />
           {t("title")}
         </h1>
@@ -1297,7 +1298,7 @@ function SetupFrame({
           {t("title")}
         </p>
         <div className="flex flex-col gap-2">
-          <h1 className="text-display font-[var(--font-weight-strong)] tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]">
+          <h1 className={PAGE_TITLE}>
             {title}
           </h1>
           {body ? (

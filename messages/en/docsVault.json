@@ -94,8 +94,8 @@
     "validatorWarningsAriaLabel": "Folder validation warnings",
     "validatorIssues": {
       "unclosedFrontmatter": "The info block at the top of the file (frontmatter) never closes, so this document does not reach the map.",
-      "emptyKind": "The kind value is empty: it won't be recognized as a graph node.",
-      "missingKind": "No kind: this document isn't a graph node yet.",
+      "emptyKind": "The kind value is empty: it won't be recognized as a concept.",
+      "missingKind": "No kind: this document isn't a concept yet.",
       "unknownKind": "This kind isn't one of the recognized values: it may not show up in the graph.",
       "missingExpectedField": "A field this kind expects (e.g. domain) is empty: the tree can't find its parent.",
       "nonCanonicalGraphArray": "A relation list isn't sorted/deduplicated: it can be cleaned up automatically.",
@@ -103,7 +103,7 @@
       "missingUid": "This document has no unique id (uid). Every document needs one id that never changes, so a rename still points at the same document.",
       "invalidUid": "This unique id (uid) has the wrong format. Don’t build it from the address or the title: use the value a tool generates.",
       "duplicateUid": "Another document already uses this unique id (uid).",
-      "invalidMergedUids": "merged_uids is malformed: it must list absorbed nodes' UUIDv4s.",
+      "invalidMergedUids": "merged_uids is malformed: it must list absorbed concepts' UUIDv4s.",
       "nonCanonicalMergedUids": "merged_uids is not a sorted, duplicate-free set.",
       "malformedFrontmatterLine": "One line in the info block could not be read. Check the colon and the spacing on that line.",
       "malformedQuotedScalar": "A quoted value in the info block never closes its quote. Add the missing quote mark.",
@@ -132,7 +132,7 @@
     "editKindUnset": "Not set yet",
     "diagnosticAriaLabel": "Why this document is not on the map",
     "notOnMapTitle": "This document is not on the map: its kind is not set",
-    "notOnMapBody": "Set a kind and this document becomes a node on the map that agents can cite."
+    "notOnMapBody": "Set a kind and this document becomes a concept on the map that agents can cite."
   },
   "readingAids": {
     "backToTop": "Back to top",
@@ -140,8 +140,7 @@
   },
   "sampleNotice": {
     "title": "This is a read-only sample",
-    "body": "This doc is Atlas's own example, so editing is locked.",
-    "openFolderCta": "Open my folder"
+    "body": "This doc is Atlas's own example, so editing is locked."
   },
   "sampleWelcome": {
     "title": "What is this document space?",
@@ -154,7 +153,6 @@
     "empty": "No documents link here yet"
   },
   "vaultStatus": {
-    "downloadAppCta": "Get the app",
     "unsupportedTooltip": "Local ontology folder editing is available in the installed desktop app.",
     "permissionNeededBanner": "Workspace is paused: re-grant folder access to keep editing. Showing sample docs until then.",
     "errorBanner": "Workspace folder is unavailable ({message}). Showing sample docs: open the picker to re-pick or refresh.",
@@ -427,7 +425,7 @@
   },
   "newDocDialog": {
     "title": "New document",
-    "subtitle": "Pick what kind of node this document is first: its folder and starter content follow that choice.",
+    "subtitle": "Pick what kind of concept this document is first: its folder and starter content follow that choice.",
     "cancel": "Cancel"
   },
   "fileActions": {
@@ -478,8 +476,8 @@
     "notRendered": "This document has not been drawn yet. Try again.",
     "renameAlreadyExists": "Document already exists: {slug}",
     "newDocTitlePrompt": "Title for the new document:",
-    "similarNodeWarning": "A similar node already exists: {title}",
-    "similarNodeOpen": "Open that node",
+    "similarNodeWarning": "A similar concept already exists: {title}",
+    "similarNodeOpen": "Open that concept",
     "similarNodeCreateAnyway": "Create new anyway"
   },
   "linkCopied": "Copied the document link",

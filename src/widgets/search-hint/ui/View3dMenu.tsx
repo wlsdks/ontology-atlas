@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, type RefObject } from 'react';
 import { usePanelPresence } from '@/shared/lib/use-presence';
+import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
 import { useRovingRadioGroup } from '@/shared/lib/use-roving-radio-group';
@@ -68,8 +69,8 @@ export function View3dMenu({
   const hexBoard = useHexBoard();
   const value: View3dChoice = view3d ? arrangement : hexBoard ? 'hex' : territories ? 'territories' : galaxy ? 'galaxy' : 'flat';
   const boxRef = useRef<HTMLDivElement | null>(null);
-  // A conditional surface owes an exit motion (`surface-motion-ratchet`), or it vanishes in one frame.
   const presence = usePanelPresence(open);
+  const reducedMotion = usePrefersReducedMotion();
 
   const write = (next: View3dChoice) => {
     // At most one view flag is on; each row writes all of them.
@@ -158,7 +159,7 @@ export function View3dMenu({
       data-testid="topology-view-3d-menu"
       data-state={presence.exiting ? 'closed' : 'open'}
       className={cn(
-        'overlay-spring-surface',
+        reducedMotion ? 'overlay-fade-only' : 'overlay-spring-surface',
         presence.exiting && 'pointer-events-none',
         // Hangs from the chip's left edge into the map; growing leftward would put it under INDEX.
         'absolute left-0 top-full z-40 mt-2 w-60',

@@ -573,8 +573,6 @@
     transition-delay: 0ms;
   }
 
-  /* W6 LNB agent heartbeat dot — mount feels like "state awakens." Appears by fading in via opacity 0→1 + scale 0.4→1 from center origin instead of sliding (prevents sudden pop). Reuses only chrome motion family tokens
-     (`--topology-motion-panel-duration` 180ms + `--topology-motion-ease-out`) without new duration/easing — token drift 0. prefers-reduced-motion is neutralized to immediate appearance by global rule in base layer below (animation-duration 0.01ms). */
   @keyframes railStatusDotIn {
     from {
       opacity: 0;
@@ -589,52 +587,31 @@
 
   .rail-status-dot-in {
     animation: railStatusDotIn var(--topology-motion-panel-duration)
-      var(--topology-motion-ease-out) both;
+      var(--motion-ease) both;
     transform-origin: center;
   }
 
-  /*
-   * Staggered appearance of guide tour card steps (2026-07-28 — promoted from inline arbitrary animate).
-   *
-   * **Reason for lifting to class is reduced-motion equivalent.** Inline
-   * `animate-[panelCrossfadeIn_…]` had **no name for the reduced-motion section to target**, so it fell under global kill rule (all animations 0.01ms) and received no equivalent — staggered transitions were entirely hard-cut for reduced-motion users. The section is a selector list, and the list defines scope.
-   *
-   * Keyframes are **opacity-only** (`panelCrossfadeIn`), so no reason to disable in reduced mode. Axes touching foreground are movement, but this surface has no movement — disabling it removes "what changed" information with nothing gained (same form as #737 toast: vendor disabled information axis but kept movement axis, that failure).
-   *
-   * Card remounts via `key` per step, so this appearance runs once per step.
-   * Position interpolation is absent here — canvas node anchor steps follow rect every frame,
-   * pulled by camera spring (2026-07-24 ruling, reviewed and rejected then).
-   */
   .guided-tour-card-in {
     animation: panelCrossfadeIn var(--topology-tour-transition-ms)
-      var(--topology-motion-ease-out) both;
+      var(--motion-ease) both;
   }
 
-  /* rank2 — single entry syntax for 3 DOM overlays (GlobalSearch · SearchPalette · NewDocKindDialog).
-     opacity 0→1 + translateY(--overlay-enter-translate)→0 only — no scale entry (avoid hover:scale-* prohibition confusion, no scale on exit for entry/exit symmetry). transform-origin is trigger direction (--overlay-spring-origin, center top fallback on missing consumer injection). */
   @keyframes overlaySpringIn {
     from {
-      opacity: 0;
       transform: translateY(var(--overlay-enter-translate));
     }
 
     to {
-      opacity: 1;
       transform: translateY(0);
     }
   }
 
-  /* Exit = reverse trajectory of entry. Do not add new cubic-bezier/duration literals;
-     reference the same formula used by .topology-chrome-out
-     (calc(--topology-motion-panel-duration * 0.67) + --topology-motion-ease-out) as-is — single source, zero inline literal rewrites. */
   @keyframes overlaySpringOut {
     from {
-      opacity: 1;
       transform: translateY(0);
     }
 
     to {
-      opacity: 0;
       transform: translateY(var(--overlay-enter-translate));
     }
   }
@@ -692,38 +669,38 @@
   }
 
   .overlay-spring-surface[data-state="open"] {
-    animation: overlaySpringIn calc(var(--overlay-spring-response) * 1s)
-      var(--topology-motion-ease-out) both;
+    animation:
+      overlaySpringIn calc(var(--overlay-spring-response) * 1s)
+        var(--topology-motion-ease-out) both,
+      panelCrossfadeIn var(--motion-base) var(--motion-ease) both;
     transform-origin: var(--overlay-spring-origin, center top);
   }
 
   .overlay-spring-surface[data-state="closed"] {
-    animation: overlaySpringOut
-      calc(var(--topology-motion-panel-duration) * 0.67)
-      var(--topology-motion-ease-out) both;
+    animation:
+      overlaySpringOut calc(var(--motion-base) * 0.67) var(--motion-ease-exit)
+        both,
+      overlayFadeOut calc(var(--motion-base) * 0.67) var(--motion-ease) both;
     transform-origin: var(--overlay-spring-origin, center top);
     pointer-events: none;
   }
 
-  /* Scream — reuse existing panelCrossfadeIn(opacity-only) keyframes, 0 new keyframes. Closing plays the same keyframes in reverse. */
   .overlay-spring-scrim[data-state="open"] {
-    animation: panelCrossfadeIn var(--topology-motion-panel-duration)
-      var(--topology-motion-ease-out) both;
+    animation: panelCrossfadeIn var(--motion-base) var(--motion-ease) both;
   }
 
   .overlay-spring-scrim[data-state="closed"] {
-    animation: overlayFadeOut var(--topology-motion-panel-duration)
-      var(--topology-motion-ease-out) both;
+    animation: overlayFadeOut calc(var(--motion-base) * 0.67) var(--motion-ease)
+      both;
     pointer-events: none;
   }
 
-  /* Reduced-motion only — remove translate, use opacity crossfade only. The 120ms duration copies --map-tip-fade-ms(120) (this token is scoped to the ontology-map feature flag, so direct var() references in this DOM overlay trio are prohibited per DESIGN-SYSTEM v2 §Scope Caution — we match the value only). GlobalSearch/NewDocKindDialog applies this class instead of .overlay-spring-surface based on useReducedMotion(); SearchPalette/NewDocKindDialog(framer) plays the same 120ms from JS via OVERLAY_SPRING_REDUCED. */
   .overlay-fade-only[data-state="open"] {
-    animation: panelCrossfadeIn 120ms linear both;
+    animation: panelCrossfadeIn var(--motion-fast) linear both;
   }
 
   .overlay-fade-only[data-state="closed"] {
-    animation: overlayFadeOut 120ms linear both;
+    animation: overlayFadeOut var(--motion-fast) linear both;
     pointer-events: none;
   }
 

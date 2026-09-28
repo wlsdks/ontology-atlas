@@ -105,7 +105,8 @@ import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
 import { citedPassage as resolveCitedPassage } from '@/shared/lib/source-passage';
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
-import { PAGE_COLUMN_STAGE } from "@/shared/ui/page-frame";
+import { PAGE_COLUMN_STAGE, PAGE_LEDE, PAGE_TITLE } from "@/shared/ui/page-frame";
+import { libraryEyebrowClass } from "../lib/page-eyebrow";
 import {
   LIBRARY_TOAST_BOTTOM_OFFSET,
   LIBRARY_TOAST_DIALOG_OFFSET,
@@ -2271,13 +2272,13 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
             holds gathered documents and the pages written from them, which is what the
             two rows below say at length, with their own names for the two kinds.
           */}
-          <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
+          <p className={libraryEyebrowClass(locale)}>
             {t("title")}
           </p>
-          <h1 className="mt-1 text-display leading-display font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)] [word-break:keep-all]">
+          <h1 className={`mt-1 break-keep ${PAGE_TITLE}`}>
             {t("emptyTitle")}
           </h1>
-          <p className="mt-2 text-body leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
+          <p className={`mt-2 ${PAGE_LEDE}`}>
             {t("emptyBody")}
           </p>
           {/*

@@ -6,6 +6,8 @@ import { describe, expect, it } from "vitest";
 import {
   PAGE_FRAME,
   PAGE_HEADER_ROW,
+  PAGE_LEDE,
+  PAGE_TITLE,
   PAGE_TITLE_ROW,
   PAGE_COLUMN_FORM,
   PAGE_FRAME_FORM,
@@ -116,8 +118,7 @@ describe("페이지 틀 규격", () => {
    * the pixels, and it did not catch this — not through a defect of its own, but because it opens
    * every route **with no folder**, and in that state these two are shorter than the viewport, so
    * its measurement is skipped before it begins. A gate that cannot reach the state cannot judge
-   * it. The pixel layer stays; this is the prescription layer beside it, the same pairing the
-   * frame file's own header describes.
+   * it. The pixel layer stays; this is the prescription layer beside it.
    *
    * Below `lg` the reservation is a **different quantity** (the bottom tab bar stands there and
    * how much to reserve depends on the surface), so the frame deliberately says nothing there and
@@ -213,9 +214,8 @@ describe("페이지 틀 — 둘째 컬럼과 상단 여백 (2026-08-11)", () => 
   /**
    * **960 is written once, and both constants read the same one** (PO council, 2026-09-05).
    *
-   * `PAGE_COLUMN_FORM` arrived carrying its own `max-w-[960px]`, which is the second copy this
-   * file's header promises there will not be ("this file is the single definition site so no
-   * screen restates 960"). The two are bound rather than merged, because they are different
+   * `PAGE_COLUMN_FORM` arrived carrying its own `max-w-[960px]`, a second copy of a width
+   * `page-frame.ts` is meant to define once. The two are bound rather than merged, because they are different
    * roles — one is the page column, the other the column of rows inside a page-width card — and
    * merging them would be the drift in the other direction. Binding them means a re-decided 960
    * cannot move on one and stay on the other.
@@ -275,12 +275,88 @@ describe("읽기 컬럼은 문서함이 소유한다 (2026-08-11 판정)", () =>
     );
   });
 
-  // The verdict is "the third column is not the frame's"; its record is the table in page-frame.ts.
   it("no page-frame constant claims the reading column", () => {
     const frames = Object.entries(pageFrame).filter(([, value]) => typeof value === "string");
     expect(frames.length, "no frame constants were read").toBeGreaterThan(3);
     for (const [name, value] of frames) {
       expect(value, `${name} claims the docs reading column`).not.toContain("--measure-doc-column");
     }
+  });
+});
+
+const TITLE_MEMBERS = [
+  "src/views/agents/ui/AgentsPage.tsx",
+  "src/views/automations/ui/AutomationsPage.tsx",
+  "src/views/architecture/ui/HarnessPage.tsx",
+  "src/views/project-detail/ui/ProjectDetailPage.tsx",
+  "src/views/project-editor/ui/ProjectEditorPage.tsx",
+  "src/views/project-selector/ui/ProjectSelectorPage.tsx",
+  "src/widgets/atlas-git-panel/ui/AtlasGitPanel.tsx",
+  "src/views/library/ui/parts/LibraryStartStage.tsx",
+  "src/views/library/ui/LibraryRounds.tsx",
+  "src/views/library/ui/LibraryConstellations.tsx",
+  "src/views/library/ui/LibraryPage.tsx",
+  "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
+  "src/views/ontology-insights/ui/InsightsLoadingView.tsx",
+] as const;
+
+function openingTagAt(source: string, from: number): string {
+  let depth = 0;
+  let quote: string | null = null;
+  for (let i = from; i < source.length; i += 1) {
+    const c = source[i];
+    if (quote) {
+      if (c === quote && source[i - 1] !== "\\") quote = null;
+    } else if (c === '"' || c === "'" || c === "`") quote = c;
+    else if (c === "{") depth += 1;
+    else if (c === "}") depth -= 1;
+    else if (c === ">" && depth === 0) return source.slice(from, i);
+  }
+  return source.slice(from);
+}
+
+function headingTags(source: string): string[] {
+  const tags = [...source.matchAll(/<h1\b/g)].map((hit) => openingTagAt(source, hit.index!));
+  for (const hit of source.matchAll(/\bas="h1"/g)) {
+    tags.push(openingTagAt(source, source.lastIndexOf("<", hit.index!)));
+  }
+  return tags;
+}
+
+const typeStep = (spec: string) => spec.match(/(?:^|\s)text-(caption|label|body-lg|body|title|display|hero)(?=\s|$)/)?.[1];
+const leadingStep = (spec: string) => spec.match(/(?:^|\s)leading-([a-z-]+)(?=\s|$)/)?.[1];
+
+describe("page title and lede", () => {
+  it("the title and lede constants match the ledger", () => {
+    expect(PAGE_TITLE).toBe(
+      "text-display leading-display font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]",
+    );
+    expect(PAGE_LEDE).toBe("text-body-lg leading-body-lg break-keep text-[color:var(--color-text-tertiary)]");
+  });
+
+  it("each constant pairs one type step with that step's own leading", () => {
+    for (const spec of [PAGE_TITLE, PAGE_LEDE]) {
+      const step = typeStep(spec);
+      expect(step, `${spec} names no type step`).toBeDefined();
+      expect(leadingStep(spec), `${spec} pairs ${step} with another step's leading`).toBe(step);
+    }
+  });
+
+  it("every page h1 in a member file wears PAGE_TITLE and restates none of it", () => {
+    let measured = 0;
+    for (const member of TITLE_MEMBERS) {
+      const tags = headingTags(blankComments(member, read(member))).filter(
+        (tag) => !/className="sr-only"/.test(tag),
+      );
+      expect(tags.length, `${member} has no h1 to judge`).toBeGreaterThan(0);
+      for (const tag of tags) {
+        measured += 1;
+        expect(tag, `${member}: an h1 does not wear PAGE_TITLE`).toContain("PAGE_TITLE");
+        expect(tag, `${member}: an h1 restates a type, leading, weight or tracking value`).not.toMatch(
+          /(?:^|[\s"'`])(?:text-(?:caption|label|body|body-lg|title|display|hero)|leading-[a-z-]+|font-\[|tracking-)/,
+        );
+      }
+    }
+    expect(measured, "the heading scan read nothing").toBeGreaterThan(TITLE_MEMBERS.length);
   });
 });

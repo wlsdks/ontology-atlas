@@ -635,8 +635,8 @@ describe('AppSettingsMenu appearance pickers', () => {
         .sort()
         .join(' ');
     const baseline = sizeClasses();
-    expect(baseline, 'the dialog needs a fixed height so content does not size it').toMatch(/h-\[\d+px\]/);
-    expect(baseline, 'the dialog needs a fixed width').toMatch(/w-\[\d+px\]/);
+    expect(baseline, 'the dialog needs a fixed height so content does not size it').toMatch(/(?:^| )h-\[var\(--dialog-h-lg\)\]/);
+    expect(baseline, 'the dialog needs a fixed width').toMatch(/(?:^| )w-\[var\(--dialog-w-lg\)\]/);
     for (const item of ['background', 'expand', 'footprint', 'notify', 'workspace']) {
       fireEvent.click(screen.getByTestId(`app-settings-nav-${item}`));
       expect(sizeClasses(), `the dialog size changes in the ${item} section`).toBe(baseline);

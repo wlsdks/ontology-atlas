@@ -7,6 +7,7 @@ import { useRouter } from "@/i18n/navigation";
 import { motion } from "framer-motion";
 import { ArrowLeft, BookOpen, FileText, FolderSearch, Layers, Waypoints } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { PAGE_TITLE } from "@/shared/ui/page-frame";
 import { useLocale, useTranslations } from "next-intl";
 import { OpenVaultCta } from "@/features/docs-vault-local";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
@@ -505,7 +506,7 @@ export function ProjectDetailPage({
                   editable={canManageProject}
                   onSave={(next) => saveProjectField("name", next)}
                   ariaLabel={t("inlineNameAria")}
-                  className="min-w-0 text-display leading-display-tight font-[var(--font-weight-strong)] tracking-[var(--tracking-card)] text-pretty text-[color:var(--color-text-primary)]"
+                  className={`min-w-0 text-pretty ${PAGE_TITLE}`}
                 />
               </div>
               <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-body text-[color:var(--color-text-tertiary)]">

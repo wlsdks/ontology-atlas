@@ -1,0 +1,8 @@
+{
+  "file": "src/features/docs-vault-local/ui/OpenVaultCta.tsx",
+  "count": 1,
+  "claim": "standard-button",
+  "proof": "buttonVariants",
+  "why": "The open-folder door is the page's primary or outline Button (2026-09-29, one open-folder treatment). It stays a raw button so the variant is merged after the caller's className and owns the colour: the Library, MCP connectors and Agent setup doors still pass the tint the old chip needed, and `<Button>` merges a caller's className last.",
+  "conditional": "Move to `<Button>` once no caller passes a colour class."
+}

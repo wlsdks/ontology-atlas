@@ -48,7 +48,7 @@
     "matchFieldCategory": "Category",
     "layerAll": "All",
     "layerHub": "Hub",
-    "layerNode": "Node",
+    "layerNode": "Other",
     "inputLabel": "Project search",
     "inputPlaceholder": "Search projects… name, tags, stack",
     "closeAriaLabel": "Close search palette",
@@ -137,8 +137,8 @@
       "toggleDocsDrawer": "Open or close the quick document preview (with edit access)",
       "showShortcuts": "Show or hide keyboard shortcuts",
       "stepCloseOverlays": "Close open panels one step at a time",
-      "clickSelect": "Select a node",
-      "dragPan": "Pan the map (empty space) or move a node (spring rebound)",
+      "clickSelect": "Select a concept",
+      "dragPan": "Pan the map (empty space) or move a concept (spring rebound)",
       "wheelZoom": "Zoom in or out",
       "keyZoom": "Zoom in or out one step",
       "keyFit": "Fit the whole map",
@@ -159,8 +159,8 @@
       "moveExecuteClose": "Move · execute · close",
       "scrollHeading": "TOC sidebar follows the current heading",
       "clickToc": "TOC / backlinks / tag chips → jump",
-      "clickGraphNode": "Select node → jump to document",
-      "dragGraphNode": "Manually reposition a node",
+      "clickGraphNode": "Select concept → jump to document",
+      "dragGraphNode": "Manually reposition a concept",
       "hoverNeighbor": "Highlight directly connected concepts and fade the rest",
       "toggleFullNeighbor": "Switch between the whole map and what is within two steps of the pick",
       "togglePillView": "Switch view via the top pill",
@@ -204,19 +204,19 @@
     "openDocsVault": "Open workspace"
   },
   "workspaceStrip": {
-    "ontologyTitle": "Sum of ontology nodes owned by this project: excludes project / vault-readme nodes. May differ from the 'N nodes' count on /ontology.",
+    "ontologyTitle": "Sum of ontology concepts owned by this project: excludes project / vault-readme concepts. May differ from the 'N concepts' count on /ontology.",
     "stubTitle": "Documents that other files point to but that do not exist yet. Create or discard them from the list at the bottom of the map."
   },
   "hint": {
     "relayoutAriaLabel": "Auto-arrange",
-    "relayoutTitle": "Auto-arrange node layout",
+    "relayoutTitle": "Auto-arrange concept layout",
     "relayoutLabel": "Auto-arrange",
     "relayoutActiveLabel": "Arranging",
-    "expandAllAriaLabel": "Expand every node",
-    "expandAllTitle": "Expand every collapsed node and fit them on screen",
+    "expandAllAriaLabel": "Expand every concept",
+    "expandAllTitle": "Expand every collapsed concept and fit them on screen",
     "expandAllLabel": "Expand all",
     "collapseAllAriaLabel": "Close the expanded overview",
-    "collapseAllTitle": "Collapse the nodes expanded together",
+    "collapseAllTitle": "Collapse the concepts expanded together",
     "collapseAllLabel": "Collapse all",
     "view3dChoice": {
       "flat": "Flat",
@@ -242,7 +242,7 @@
   },
   "gestureHint": {
     "eyebrow": "Map gestures",
-    "body": "Two-finger pinch to zoom, drag to pan. Tap a node to open details.",
+    "body": "Two-finger pinch to zoom, drag to pan. Tap a concept to open details.",
     "tapDetail": "Tap = details",
     "closeAriaLabel": "Close hint"
   }

@@ -13,6 +13,7 @@ import {
 import { CircleAlert, CircleCheck, Info, TriangleAlert, X } from 'lucide-react';
 import { toast as sonnerToast, Toaster, useSonner } from 'sonner';
 
+import { OVERLAY_CLOSE_BOX, OVERLAY_CLOSE_ICON_SIZE } from './close-button';
 import { ICON_SIZE } from './icon-size';
 import {
   publishToastLane,
@@ -193,15 +194,13 @@ export function ToastProvider({
           info: <Info size={TONE_GLYPH_SIZE} aria-hidden />,
           warning: <TriangleAlert size={TONE_GLYPH_SIZE} aria-hidden />,
           error: <CircleAlert size={TONE_GLYPH_SIZE} aria-hidden />,
-          close: <X size={ICON_SIZE.sm} aria-hidden />,
+          close: <X size={OVERLAY_CLOSE_ICON_SIZE} aria-hidden />,
         }}
         toastOptions={{
           unstyled: true,
           classNames: {
-            // `app-toast` is the motion hook (sonner's ease-in replaced by the app ramp and its
-            // reduced-motion equivalent, `app/globals.css`); `pr-10` seats the close button.
             toast:
-              'app-toast group inset-x-0 mx-auto flex w-fit max-w-full items-center data-[x-position=right]:mr-0 gap-2.5 rounded-[var(--radius-card)] border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] py-2.5 pl-3 pr-10 text-body leading-body text-[color:var(--color-text-primary)] shadow-[var(--shadow-elevation-1)] [@media(pointer:coarse)]:pr-14',
+              'app-toast group inset-x-0 mx-auto flex w-fit max-w-full items-center data-[x-position=right]:mr-0 gap-2.5 rounded-[var(--radius-card)] border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] py-2.5 pl-3 pr-11 text-body leading-body text-[color:var(--color-text-primary)] shadow-[var(--shadow-elevation-1)] [@media(pointer:coarse)]:pr-14',
             content: 'flex min-w-0 flex-1 flex-col items-stretch',
             // A long sentence wraps to a second line instead of losing its end to an ellipsis.
             title:
@@ -213,13 +212,9 @@ export function ToastProvider({
             info: '[&_[data-icon]]:text-[color:var(--color-text-tertiary)]',
             warning: '[&_[data-icon]]:text-[color:var(--color-status-warning)]',
             error: '[&_[data-icon]]:text-[color:var(--color-danger-text)]',
-            // Quiet on purpose: a self-dismissing toast must not pull the eye. Soft indigo ink
-            // keeps AA on the hover tint, where accent ink does not.
             actionButton:
-              'ml-0 h-7 shrink-0 rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 text-label leading-label font-[var(--font-weight-signature)] text-[color:var(--color-indigo-text-soft)] hover:bg-[color:var(--color-indigo-a16)] focus-visible:bg-[color:var(--color-indigo-a16)] [@media(pointer:coarse)]:min-h-[var(--touch-target-min)]',
-            // Close-button ink and hover live in `app/globals.css`: sonner's stylesheet loads
-            // later and outranks a utility class.
-            closeButton: 'flex size-7 items-center justify-center rounded-[var(--radius-chip)] [@media(pointer:coarse)]:size-[var(--touch-target-min)]',
+              'ml-0 min-h-[var(--control-h-md)] shrink-0 rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 text-label leading-label font-[var(--font-weight-signature)] text-[color:var(--color-indigo-text-soft)] hover:bg-[color:var(--color-indigo-a16)] focus-visible:bg-[color:var(--color-indigo-a16)]',
+            closeButton: `flex ${OVERLAY_CLOSE_BOX} items-center justify-center rounded-[var(--radius-chip)]`,
           },
         }}
       />
