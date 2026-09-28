@@ -22,6 +22,7 @@ vi.mock("@/i18n/navigation", () => ({
 }));
 
 vi.mock("next/navigation", () => ({
+  usePathname: () => "/ko/docs/",
   useSearchParams: () => new URLSearchParams(),
 }));
 

@@ -1,11 +1,6 @@
 'use client';
 
-/**
- * Replaces `DocsVaultPage` URL state through `history.replaceState` and
- * dispatches `app:urlchange` for callers to sync. The default view is omitted. A module-level function,
- * so it needs no `useCallback` and stays out of deps.
- */
-
+import { withBasePath } from '@/shared/lib/base-path';
 import {
   serializeDocsTreeGroup,
   serializeDocsTreeSort,
@@ -13,10 +8,9 @@ import {
   type DocsTreeSort,
 } from '@/widgets/docs-vault';
 
-// One view remains; the `view?:` caller contract is kept.
-export type DocsVaultView = 'doc';
+import type { DocsVaultView } from './persistence';
 
-export function replaceDocsVaultUrlState(next: {
+interface DocsVaultUrlState {
   slug?: string | null;
   view?: DocsVaultView;
   intent?: 'local' | null;
@@ -24,8 +18,9 @@ export function replaceDocsVaultUrlState(next: {
   sample?: 'dogfood' | null;
   sort?: DocsTreeSort;
   group?: DocsTreeGroup;
-}): void {
-  if (typeof window === 'undefined') return;
+}
+
+function docsVaultHref(next: DocsVaultUrlState): string {
   const url = new URL(window.location.href);
   if ('source' in next) {
     if (next.source) url.searchParams.set('source', next.source);
@@ -50,7 +45,6 @@ export function replaceDocsVaultUrlState(next: {
     if (next.intent === 'local') url.searchParams.set('intent', 'local');
     else url.searchParams.delete('intent');
   }
-  // Defaults are omitted by the serializer in tree-order.ts.
   if ('sort' in next && next.sort) {
     const value = serializeDocsTreeSort(next.sort);
     if (value) url.searchParams.set('sort', value);
@@ -61,6 +55,20 @@ export function replaceDocsVaultUrlState(next: {
     if (value) url.searchParams.set('group', value);
     else url.searchParams.delete('group');
   }
-  window.history.replaceState({}, '', url.toString());
+  return url.toString();
+}
+
+export function replaceDocsVaultUrlState(next: DocsVaultUrlState): void {
+  if (typeof window === 'undefined') return;
+  window.history.replaceState({}, '', docsVaultHref(next));
+  window.dispatchEvent(new Event('app:urlchange'));
+}
+
+const withoutTrailingSlash = (pathname: string) => pathname.replace(/\/+$/, '');
+
+export function settleDocsVaultAddress(routePathname: string, slug: string): void {
+  if (typeof window === 'undefined') return;
+  if (withoutTrailingSlash(window.location.pathname) !== withoutTrailingSlash(withBasePath(routePathname))) return;
+  window.history.replaceState(window.history.state, '', docsVaultHref({ slug }));
   window.dispatchEvent(new Event('app:urlchange'));
 }

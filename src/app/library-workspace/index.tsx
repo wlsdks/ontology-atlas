@@ -25,6 +25,13 @@ const OntologyPage = dynamic(
 type LibraryTab = 'sources' | 'wiki' | 'ontology' | 'rounds';
 type OntologyView = 'documents' | 'sets';
 
+function carriedQuery(params: URLSearchParams): URLSearchParams {
+  const query = new URLSearchParams(params.toString());
+  const openSlug = new URLSearchParams(window.location.search).get('slug');
+  if (openSlug) query.set('slug', openSlug);
+  return query;
+}
+
 export function LibraryWorkspace() {
   const t = useTranslations('library');
   // Counts are grouped the way the messages' `{count, number}` writes them.
@@ -81,14 +88,12 @@ export function LibraryWorkspace() {
   const selectTab = useCallback((next: LibraryTab) => {
     if (next === tab) return;
     if (next === 'sources' || next === 'wiki') writeLibraryIndexSegment(next);
-    // Carry the selected document and its source/review context across a tab
-    // round trip. The Docs URL writer preserves this tab parameter as well.
-    const query = new URLSearchParams(params.toString());
+    const query = carriedQuery(params);
     query.set('tab', next);
     router.push(`/library/?${query}${window.location.hash}`, { scroll: false });
   }, [params, router, tab]);
   const selectOntologyView = (next: OntologyView) => {
-    const query = new URLSearchParams(params.toString());
+    const query = carriedQuery(params);
     query.set('tab', 'ontology');
     query.set('ontologyView', next);
     router.push(`/library/?${query}${window.location.hash}`, { scroll: false });
