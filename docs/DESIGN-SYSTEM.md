@@ -2279,9 +2279,16 @@ their behaviour.
 ### Shared-element morph
 
 `runMorph` and `morphName` in `src/shared/motion/shared-element.ts`, CSS in
-`motion-morph.css`. The first target is concept popover to full detail. Names
-exist only while a transition runs; React `ViewTransition` and `transitionTypes`
-are not used.
+`motion-morph.css`. The first target is concept popover to full detail: the
+popover title and the full-detail heading carry `morphTargetProps(morphName(...))`,
+and `runMorph` names the source, commits the update with `flushSync` inside
+`document.startViewTransition`, then names the target. Names and
+`html.morph-transition` exist only while a transition runs. Groups and images move
+on `--motion-base` `--motion-ease`; under reduced motion the group does not travel
+and the images crossfade on `--motion-fast`. It runs only once the full-detail
+chunk is loaded; otherwise the overlay fade opens it. The full-detail heading
+takes focus on mount. React `ViewTransition` and `transitionTypes` are not used;
+`view-transition-engine.contract.test.ts` holds all three rules.
 
 ### Staggered entrance
 
